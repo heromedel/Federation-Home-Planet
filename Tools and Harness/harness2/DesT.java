@@ -1,5 +1,5 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
-/** Design Ship's back end on a migrated world: checks, export, art files, commissioning. args: gamedir, migratedSaves, work */
+/** Design Ship's back end on the test world: checks, export, art files, commissioning. args: gamedir, world saves (from WorldT), work */
 public class DesT { public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);

@@ -1,14 +1,37 @@
-import java.io.*; import net.blerf.ftl.parser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
+import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
 /** Shared harness bootstrap: game data from gamedir, the vault on a saves folder. */
 public class Setup {
  public static Vault open(File gamedir, File saves) throws Exception {
   System.setProperty("homeplanet.noGameCheck", "true");
   HomePlanet.savedGameParser = new SavedGameParser();
   HomePlanet.save_location = saves;
+  // a stand-in Slipstream folder beside the saves, so the companion mod is written there and not into the current folder
+  File slip = new File(saves.getAbsoluteFile().getParentFile(), "slipstream");
+  new File(slip, "mods").mkdirs(); new File(slip, "modman.jar").createNewFile();
+  HomePlanet.config.setProperty(Slipstream.CFG_DIR, slip.getAbsolutePath());
   Vault v = Vault.open(saves);
   if (DataManager.get() == null) { DefaultDataManager dm = new DefaultDataManager(gamedir); DataManager.setInstance(dm); dm.setDLCEnabledByDefault(true); }
   CompanionMod.register(CompanionMod.load());
   return v;
+ }
+ /** The test world's ships: blueprint id and name. The first is boarded, the rest docked; the Stealth is retrofitted (onto PLAYER_SHIP_STEALTH_HP), the Lanius is an AE ship. */
+ public static final String[][] WORLD = {{"PLAYER_SHIP_HARD", "Test Kestrel"}, {"PLAYER_SHIP_CIRCLE", "Test Engi"}, {"PLAYER_SHIP_STEALTH", "Test Stealth"},
+   {"PLAYER_SHIP_FED", "Test Federation"}, {"PLAYER_SHIP_ANAEROBIC", "Test Lanius"}};
+ /** A fresh 4B world in work/saves, made from the game data alone: the WORLD ships commissioned, one boarded, an empty storage hold. */
+ public static File world(File gamedir, File work) throws Exception {
+  SafeFiles.deleteTree(work);
+  File saves = new File(work, "saves"); saves.mkdirs();
+  Vault v = open(gamedir, saves);
+  List<Ship> made = new ArrayList<Ship>();
+  for (String[] w : WORLD) {
+   SavedGameState g = Commission.build(w[0], w[1], net.blerf.ftl.constants.Difficulty.NORMAL, new Random(w[0].hashCode()));
+   if (w[0].equals("PLAYER_SHIP_STEALTH")) Retrofit.apply(g, false);
+   made.add(v.adopt(g));
+  }
+  v.board(made.get(0));
+  v.storage();
+  v.takeStock();
+  return saves;
  }
  public static void copyTree(File from, File to) throws IOException {
   File[] fs = from.listFiles(); to.mkdirs(); if (fs == null) return;

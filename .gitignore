@@ -7,6 +7,7 @@ Tools and Harness/hw2fhp-converter/classes/
 logs/
 # harness scratch
 Tools and Harness/harness2/*.ftl
+Tools and Harness/harness2/work/
 # downloaded by Build - FHP.bat
 tools/
 # the jar is built by Build - FHP.bat, not tracked

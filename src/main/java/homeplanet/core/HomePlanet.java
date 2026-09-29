@@ -107,21 +107,24 @@ public class HomePlanet {
 			showErrorDialog("FTL's files were not found.\n" + APP_NAME + " will now exit.");
 			System.exit(1);
 		}
-		// First setup, asked once each: Steam launching, and where trading and new journeys are allowed
+		// First setup, asked once: Steam launching (for the Steam version), then the House Rules window while any rule was never set.
+		// A rule missing from the config starts ticked, except selling missiles and drone parts; rules already set keep their value.
 		if (config.getProperty("launch_through_steam") == null && datsPath.getAbsolutePath().toLowerCase().contains("steamapps")) {
 			launchThroughSteam = confirm("This looks like the Steam version of FTL.\nLaunch FTL through Steam?", "Launch through Steam");
 			config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
 			writeConfig = true;
 		}
-		if (config.getProperty("store_requirement") == null) {
-			storeRequirement = askAnyOrStores("Ships can trade with other ships or the station at:", "Trading");
-			config.setProperty("store_requirement", Boolean.toString(storeRequirement));
-			writeConfig = true;
-		}
-		if (config.getProperty("new_journey_store_requirement") == null) {
-			journeyStoreRequirement = askAnyOrStores("A New Journey can begin at:", "New Journey");
-			config.setProperty("new_journey_store_requirement", Boolean.toString(journeyStoreRequirement));
-			writeConfig = true;
+		boolean rulesMissing = false;
+		for (String key : RULE_KEYS) if (config.getProperty(key) == null) rulesMissing = true;
+		if (rulesMissing) {
+			storeRequirement = flag("store_requirement", true);
+			journeyStoreRequirement = flag("new_journey_store_requirement", true);
+			scrapKeepsSystems = flag("scrap_keeps_systems", true);
+			sellSupplies = flag("sell_supplies", false);
+			commissionUnlockedOnly = flag("commission_unlocked_only", true);
+			commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only", true);
+			homeplanet.ui.HouseRulesDialog.ask();
+			writeConfig = true; // saveConfig writes every rule, so this is asked once
 		}
 
 		// FTL's saves
@@ -194,7 +197,12 @@ public class HomePlanet {
 
 	// ---- config ----
 
-	private static boolean flag(String key) { return Boolean.parseBoolean(config.getProperty(key, "false")); }
+	private static boolean flag(String key) { return flag(key, false); }
+	private static boolean flag(String key, boolean dflt) { return Boolean.parseBoolean(config.getProperty(key, Boolean.toString(dflt))); }
+
+	/** The rules the first-run House Rules window sets. */
+	private static final String[] RULE_KEYS = {"store_requirement", "new_journey_store_requirement", "scrap_keeps_systems", "sell_supplies",
+			"commission_unlocked_only", "commission_custom_unlocked_only"};
 
 	/** Reads the config; imports FTL Homeworld's old one when there's none yet. Returns true if it should be written. */
 	private static boolean loadConfig() {
@@ -241,11 +249,6 @@ public class HomePlanet {
 
 	private static boolean confirm(String message, String title) {
 		return JOptionPane.showConfirmDialog(null, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
-	}
-	/** Setup question with two answers; returns true for "Stores only". Closing the window means "Any beacon". */
-	private static boolean askAnyOrStores(String question, String title) {
-		Object[] options = {"Any beacon", "Stores only"};
-		return JOptionPane.showOptionDialog(null, question, title, JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]) == 1;
 	}
 	public static void showErrorDialog(String message) {
 		JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
