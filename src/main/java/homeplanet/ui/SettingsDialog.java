@@ -33,7 +33,7 @@ public class SettingsDialog extends JDialog {
 	private File game = HomePlanet.datsPath;
 	private final JLabel savesLabel = new JLabel();
 	private final JLabel gameLabel = new JLabel();
-	private final JCheckBox steamBox = RuleBoxes.steamBox(HomePlanet.launchThroughSteam);
+	private final JCheckBox steamBox = new JCheckBox("Launch FTL through Steam", HomePlanet.launchThroughSteam);
 	private final RuleBoxes rules = new RuleBoxes();
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging (shown in the console window)", HomePlanet.debugLogging);

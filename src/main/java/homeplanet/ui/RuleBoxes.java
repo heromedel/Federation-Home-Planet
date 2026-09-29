@@ -23,8 +23,6 @@ public class RuleBoxes {
 	final JCheckBox lockedBox = new JCheckBox("Locked ship models cannot be commissioned (as unlocked in your FTL profile)", HomePlanet.commissionUnlockedOnly);
 	final JCheckBox customLockedBox = new JCheckBox("Custom ships based on locked models cannot be commissioned", HomePlanet.commissionCustomUnlockedOnly);
 
-	public static JCheckBox steamBox(boolean on) { return new JCheckBox("Launch FTL through Steam", on); }
-
 	public RuleBoxes() {
 		scrapBox.setToolTipText("Optional systems only: standard equipment and damaged systems are lost with the hull");
 		sellBox.setToolTipText("Shows a sell button under the supplies in the Cargo Bay: 3 scrap a missile, 4 a drone part. Junking them is always possible");

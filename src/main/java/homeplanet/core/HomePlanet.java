@@ -107,20 +107,23 @@ public class HomePlanet {
 			showErrorDialog("FTL's files were not found.\n" + APP_NAME + " will now exit.");
 			System.exit(1);
 		}
-		// First setup: the House Rules window, once, while any rule (or Steam launching, for the Steam version) was never set.
+		// First setup, asked once: Steam launching (for the Steam version), then the House Rules window while any rule was never set.
 		// A rule missing from the config starts ticked, except selling missiles and drone parts; rules already set keep their value.
-		boolean offerSteam = config.getProperty("launch_through_steam") == null && datsPath.getAbsolutePath().toLowerCase().contains("steamapps");
+		if (config.getProperty("launch_through_steam") == null && datsPath.getAbsolutePath().toLowerCase().contains("steamapps")) {
+			launchThroughSteam = confirm("This looks like the Steam version of FTL.\nLaunch FTL through Steam?", "Launch through Steam");
+			config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
+			writeConfig = true;
+		}
 		boolean rulesMissing = false;
 		for (String key : RULE_KEYS) if (config.getProperty(key) == null) rulesMissing = true;
-		if (offerSteam || rulesMissing) {
-			if (offerSteam) launchThroughSteam = true;
+		if (rulesMissing) {
 			storeRequirement = flag("store_requirement", true);
 			journeyStoreRequirement = flag("new_journey_store_requirement", true);
 			scrapKeepsSystems = flag("scrap_keeps_systems", true);
 			sellSupplies = flag("sell_supplies", false);
 			commissionUnlockedOnly = flag("commission_unlocked_only", true);
 			commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only", true);
-			homeplanet.ui.HouseRulesDialog.ask(offerSteam);
+			homeplanet.ui.HouseRulesDialog.ask();
 			writeConfig = true; // saveConfig writes every rule, so this is asked once
 		}
 
