@@ -25,7 +25,7 @@ if not exist "%MVN%\bin\mvn.cmd" (
     if not exist "%TOOLS%" mkdir "%TOOLS%"
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
       "$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol='Tls12';" ^
-      "Invoke-WebRequest 'https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip' -OutFile '%TOOLS%\maven.zip';" ^
+      "Invoke-WebRequest 'https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip' -OutFile '%TOOLS%\maven.zip';" ^
       "Expand-Archive '%TOOLS%\maven.zip' '%TOOLS%\maven-tmp' -Force;" ^
       "$d = Get-ChildItem '%TOOLS%\maven-tmp' -Directory | Select-Object -First 1; Move-Item $d.FullName '%MVN%';" ^
       "Remove-Item '%TOOLS%\maven-tmp' -Recurse -Force; Remove-Item '%TOOLS%\maven.zip'"
