@@ -1,4 +1,5 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import homeplanet.core.*; import homeplanet.vault.*;
+/** Homeworld's two storage holds (standard and AE) merge into one when converted. args: gamedir, converted saves (from ConvT), Homeworld.sav, HomeworldAE.sav */
 public class StoT { public static void main(String[] a) throws Exception {
  Vault v = Setup.open(new File(a[0]), new File(a[1])); v.takeStock();
  SavedGameParser p = new SavedGameParser();

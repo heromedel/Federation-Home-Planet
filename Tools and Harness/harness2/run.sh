@@ -1,21 +1,43 @@
 #!/bin/bash
-# The harness2 regression: migration, vault, round-trips, storage merge, pictures (and the design tests when present).
-# Runs headless against the sandbox game data and a copy of the 4.23 test world.
-J="/home/claude/fhp/target/Federation Home Planet.jar"
-H=/home/claude/harness2
-GAME=/home/claude/uitest/game
-OLDSAVES=/tmp/saves.bak
-OLDAPP=/home/claude/uitest/app
-W=/tmp/h2work
-cd $H && javac -cp "$J:." -d . *.java 2>&1 | grep -v "^Picked up"; echo "harness compiled (errors above, if any)"
-run() { java -Djava.awt.headless=true -Dhomeplanet.noGameCheck=true -cp "$J:$H" "$@" 2>&1 | grep -v "^Picked up\|SLF4J\|^[0-9:.]* \[main\] \(INFO\|DEBUG\|WARN\)" ; }
-# the converted world comes from the (separate) HW to FHP converter, run the way a user would after a first launch
-CV=/home/claude/hw2fhp; C="$CV/dist/HW to FHP Converter.jar"
-(cd $CV && ./build.sh >/dev/null 2>&1 && javac -cp "$J:$C:$H" -d test test/ConvT.java 2>&1 | grep -v "^Picked up")
-echo "== ConvT"; java -Djava.awt.headless=true -Dhomeplanet.noGameCheck=true -cp "$J:$C:$H:$CV/test" ConvT $GAME $OLDSAVES $OLDAPP $W/mig afterFirstLaunch 2>&1 | grep -E "FAIL|ALL PASSED|FAILED|Exception|at hw2fhp|at homeplanet"
-echo "== VaultT"; run VaultT $GAME $W/mig/saves $W/vault | grep -E "FAIL|ALL PASSED|FAILED|Exception|at org"
-echo "== RoundT"; run RoundT $GAME $W/mig/saves | grep -E "FAIL|ALL PASSED|FAILED|Exception|at org|identical"
-echo "== StoT"; run StoT $GAME $W/mig/saves $OLDSAVES/Homeworld.sav $OLDSAVES/HomeworldAE.sav | grep -E "FAIL|ALL PASSED|FAILED|Exception|at org"
-echo "== PicT"; run PicT $GAME $W/mig/saves | grep -cE "bp=" | sed "s/^/ships drawn: /"
-if [ -f $H/DesT.class ]; then echo "== DesT"; run DesT $GAME $W/mig/saves $W/des | grep -E "FAIL|ALL PASSED|FAILED|Exception|at org"; fi
-echo "== CommT"; run CommT $GAME $W/mig/saves $W/comm | grep -E "FAIL|ALL PASSED|FAILED|Exception|at homeplanet"
+# The harness2 regression: a fresh 4B test world built from the game data alone, then the vault, round trips,
+# pictures, design and commissioning tests on copies of it. Runs headless.
+#
+#   run.sh GAMEDIR [OLDSAVES OLDAPP]
+#     GAMEDIR           the folder with FTL's ftl.dat
+#     OLDSAVES OLDAPP   optional: an old FTL Homeworld saves folder and program folder, to also test the
+#                       HW to FHP converter (ConvT, StoT)
+#
+# Build the jar first (mvn package in the repo root). Scratch files go in harness2/work.
+H="$(cd "$(dirname "$0")" && pwd)"
+REPO="$(cd "$H/../.." && pwd)"
+J="$REPO/target/Federation Home Planet.jar"
+GAME="${1:?usage: run.sh GAMEDIR [OLDSAVES OLDAPP]}"
+GAME="$(cd "$GAME" && pwd)"
+W="$H/work"
+[ -f "$J" ] || { echo "No jar: build it first (mvn package in $REPO)"; exit 1; }
+rm -rf "$W" && mkdir -p "$W/classes"
+javac -cp "$J" -d "$W/classes" "$H"/*.java 2>&1 | grep -v "^Picked up"; echo "harness compiled (errors above, if any)"
+CP="$J:$W/classes"
+run() { (cd "$W" && java -Djava.awt.headless=true -Dhomeplanet.noGameCheck=true -cp "$CP" "$@" 2>&1) | grep -v "^Picked up\|SLF4J\|^[0-9:.]* \[main\] \(INFO\|DEBUG\|WARN\)" ; }
+PICK="FAIL|ALL PASSED|FAILED|Exception|at org|at homeplanet|unreadable"
+
+echo "== WorldT"; run WorldT "$GAME" "$W/world" | grep -E "$PICK"
+WORLD="$W/world/saves"
+echo "== VaultT"; run VaultT "$GAME" "$WORLD" "$W/vault" | grep -E "$PICK"
+echo "== RoundT"; run RoundT "$GAME" "$WORLD" | grep -E "$PICK|identical|DIFF"
+echo "== PicT"; run PicT "$GAME" "$WORLD" | grep -cE "img=[0-9]" | sed "s/^/ships drawn: /"
+echo "== DesT"; run DesT "$GAME" "$WORLD" "$W/des" | grep -E "$PICK"
+echo "== CommT"; run CommT "$GAME" "$WORLD" "$W/comm" | grep -E "$PICK"
+
+# the converter, only with old Homeworld data to convert
+if [ $# -ge 3 ]; then
+	OLDSAVES="$(cd "$2" && pwd)"; OLDAPP="$(cd "$3" && pwd)"
+	CV="$H/../hw2fhp-converter"; C="$CV/dist/HW to FHP Converter.jar"
+	"$CV/build.sh" "$J" >/dev/null 2>&1 || echo "converter build failed"
+	javac -cp "$J:$C:$W/classes" -d "$W/classes" "$CV"/test/*.java 2>&1 | grep -v "^Picked up"
+	CP="$J:$C:$W/classes"
+	echo "== ConvT"; run ConvT "$GAME" "$OLDSAVES" "$OLDAPP" "$W/conv" afterFirstLaunch | grep -E "$PICK|at hw2fhp"
+	echo "== StoT"; run StoT "$GAME" "$W/conv/saves" "$OLDSAVES/Homeworld.sav" "$OLDSAVES/HomeworldAE.sav" | grep -E "$PICK"
+else
+	echo "(converter tests skipped: no old Homeworld data given)"
+fi

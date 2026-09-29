@@ -1,5 +1,5 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import net.blerf.ftl.xml.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
-/** Commissions every player ship variant, every remodel and every built design, and reads each save back. args: gamedir, migratedSaves, work */
+/** Commissions every player ship variant, every remodel and every built design, and reads each save back. args: gamedir, world saves (from WorldT), work */
 public class CommT { public static void main(String[] a) throws Exception {
  File work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);

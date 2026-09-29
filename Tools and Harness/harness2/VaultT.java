@@ -1,5 +1,5 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
-/** Vault operations on a migrated world. args: gamedir, migratedSaves (from MigT), work */
+/** Vault operations on the test world. args: gamedir, world saves (from WorldT), work */
 public class VaultT { public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
@@ -51,8 +51,8 @@ public class VaultT { public static void main(String[] a) throws Exception {
  Vault v5 = Vault.open(saves); v5.takeStock();
  Setup.chk("transaction wrote both ships and the file", v5.byId(x.id).save().getPlayerShip().getScrapAmt() == sx + 50 && new String(SafeFiles.read(txt), "UTF-8").startsWith("# test") && !new File(txt.getParentFile(), txt.getName() + ".tx").exists());
  // usingBlueprint
- List<Ship> users = v5.usingBlueprint("PLAYER_SHIP_DESIGN_1_HP");
- Setup.chk("usingBlueprint finds the Test Frigate", users.size() == 1 && users.get(0).name.contains("Frigate"));
+ List<Ship> users = v5.usingBlueprint("PLAYER_SHIP_STEALTH_HP");
+ Setup.chk("usingBlueprint finds the Test Stealth", users.size() == 1 && users.get(0).name.equals("Test Stealth"));
  Setup.chk("storage holds untouched", v5.storage().save() != null);
  Setup.done();
 }}
