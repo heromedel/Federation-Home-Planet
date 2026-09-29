@@ -1,0 +1,86 @@
+package homeplanet.ui;
+
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
+import homeplanet.core.HomePlanet;
+
+/**
+ * First run: the station's rules (and Steam launching, for the Steam version) in one window, starting from
+ * HomePlanet's current values. OK, or closing the window, keeps what is ticked; the caller saves the config.
+ */
+public class HouseRulesDialog extends JDialog {
+
+	private final RuleBoxes rules = new RuleBoxes();
+	private final JCheckBox steamBox = RuleBoxes.steamBox(HomePlanet.launchThroughSteam);
+	private final boolean offerSteam;
+
+	/** Shows the window and waits; the choices are set on HomePlanet when it closes. */
+	public static void ask(boolean offerSteam) {
+		HouseRulesDialog d = new HouseRulesDialog(offerSteam);
+		d.setVisible(true);
+	}
+
+	private HouseRulesDialog(boolean offerSteam) {
+		super((java.awt.Window) null, "House Rules", ModalityType.APPLICATION_MODAL);
+		this.offerSteam = offerSteam;
+		JPanel body = new JPanel(new GridBagLayout());
+		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridx = 0;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.WEST;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.insets = new Insets(2, 0, 2, 0);
+		c.weightx = 1;
+
+		body.add(new JLabel("Choose how strict the station is. You can change these any time in Settings."), (GridBagConstraints) c.clone());
+		c.gridy++;
+		if (offerSteam) {
+			SettingsDialog.heading(body, c, "Launching");
+			body.add(steamBox, (GridBagConstraints) c.clone());
+			c.gridy++;
+		}
+		SettingsDialog.heading(body, c, "Rules");
+		rules.addTo(body, c);
+
+		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		JButton ok = new JButton("OK");
+		ok.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { dispose(); }
+		});
+		buttons.add(ok);
+		getRootPane().setDefaultButton(ok);
+
+		getContentPane().add(body, BorderLayout.CENTER);
+		getContentPane().add(buttons, BorderLayout.SOUTH);
+		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		pack();
+		setResizable(false);
+		setLocationRelativeTo(null);
+	}
+
+	/** OK and the close button both end here, and both keep what is ticked (before setVisible returns to ask()). */
+	@Override
+	public void dispose() {
+		apply();
+		super.dispose();
+	}
+
+	private void apply() {
+		if (offerSteam) HomePlanet.launchThroughSteam = steamBox.isSelected();
+		rules.apply();
+	}
+}
