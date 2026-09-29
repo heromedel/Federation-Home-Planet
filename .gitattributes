@@ -1,0 +1,5 @@
+* text=auto
+*.jar binary
+*.png binary
+*.ftl binary
+*.bat text eol=crlf

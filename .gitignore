@@ -1,0 +1,13 @@
+# build output
+target/
+*.class
+Tools and Harness/hw2fhp-converter/classes/
+# per-machine files: settings and logs beside the jar
+*.cfg
+logs/
+# harness scratch
+Tools and Harness/harness2/*.ftl
+# downloaded by Build - FHP.bat
+tools/
+# the jar is built by Build - FHP.bat, not tracked
+Current Build/*.jar

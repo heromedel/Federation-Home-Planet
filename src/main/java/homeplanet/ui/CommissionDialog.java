@@ -1,0 +1,277 @@
+package homeplanet.ui;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
+
+import net.blerf.ftl.constants.Difficulty;
+import net.blerf.ftl.parser.DataManager;
+import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
+import net.blerf.ftl.xml.ShipBlueprint;
+
+import homeplanet.core.HomePlanet;
+import homeplanet.core.HistoryLog;
+import homeplanet.parser.Commission;
+import homeplanet.parser.CompanionMod;
+import homeplanet.parser.SaveHelper;
+
+/**
+ * Commission Ship: choose a blueprint, name her, pick a difficulty; the station builds a brand-new ship save
+ * (as a new game would start her) and docks her at the Space Dock.
+ */
+public class CommissionDialog extends JDialog {
+
+	/** A row in the list: a header, or a blueprint. */
+	private static class Entry {
+		final String id, label;
+		Entry(String id, String label) { this.id = id; this.label = label; }
+		boolean header() { return id == null; }
+		public String toString() { return label; }
+	}
+
+	private final SpaceDockUI dock;
+	private final DefaultListModel<Entry> model = new DefaultListModel<Entry>();
+	private final JList<Entry> list = new JList<Entry>(model);
+	private final JPanel preview = new JPanel(new BorderLayout());
+	private final JTextField nameField = new JTextField(18);
+	private final JComboBox<String> difficulty = new JComboBox<String>(new String[] {"Easy", "Normal", "Hard"});
+	private final Random rng = new Random();
+	private homeplanet.vault.Ship made = null;
+
+	/** Opens the window. Returns the new ship (docked in the vault), or null if nothing was commissioned. */
+	public static homeplanet.vault.Ship open(SpaceDockUI dock) {
+		CommissionDialog d = new CommissionDialog(dock);
+		d.setVisible(true);
+		return d.made;
+	}
+
+	private CommissionDialog(SpaceDockUI dock) {
+		super(SwingUtilities.getWindowAncestor(dock), "Commission Ship", ModalityType.APPLICATION_MODAL);
+		this.dock = dock;
+		fill();
+
+		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		list.setCellRenderer(new DefaultListCellRenderer() {
+			@Override
+			public Component getListCellRendererComponent(JList<?> l, Object v, int i, boolean sel, boolean focus) {
+				super.getListCellRendererComponent(l, v, i, sel && !((Entry) v).header(), focus);
+				Entry e = (Entry) v;
+				if (e.header()) {
+					setFont(getFont().deriveFont(java.awt.Font.BOLD));
+					setBorder(BorderFactory.createEmptyBorder(6, 2, 2, 2));
+				} else {
+					setBorder(BorderFactory.createEmptyBorder(1, 14, 1, 2));
+				}
+				return this;
+			}
+		});
+		list.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+			public void valueChanged(javax.swing.event.ListSelectionEvent e) {
+				if (e.getValueIsAdjusting()) return;
+				Entry sel = list.getSelectedValue();
+				if (sel == null) return;
+				if (sel.header()) { list.setSelectedIndex(Math.min(list.getSelectedIndex() + 1, model.size() - 1)); return; }
+				showPreview(sel);
+			}
+		});
+		JScrollPane sp = new JScrollPane(list);
+		sp.setPreferredSize(new Dimension(300, 460));
+
+		JPanel form = new JPanel(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		c.insets = new Insets(2, 4, 2, 4);
+		c.anchor = GridBagConstraints.WEST;
+		form.add(new JLabel("Ship name:"), c);
+		c.gridx = 1;
+		form.add(nameField, c);
+		c.gridx = 2;
+		form.add(new JLabel("  Difficulty:"), c);
+		c.gridx = 3;
+		difficulty.setToolTipText("How dangerous her first journey will be");
+		form.add(difficulty, c);
+
+		JPanel right = new JPanel(new BorderLayout(0, 6));
+		preview.setPreferredSize(new Dimension(520, 440));
+		right.add(new JScrollPane(preview), BorderLayout.CENTER);
+		right.add(form, BorderLayout.SOUTH);
+
+		JPanel body = new JPanel(new BorderLayout(10, 8));
+		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
+		JLabel intro = new JLabel("<html>Choose a ship to commission. She's built as a new game starts her: first sector, "
+				+ "starting crew, weapons and supplies. She docks at the Space Dock.</html>");
+		if (listNote != null) {
+			JPanel top = new JPanel(new BorderLayout(0, 4));
+			top.add(intro, BorderLayout.NORTH);
+			JLabel note = new JLabel(listNote);
+			note.setForeground(new Color(255, 170, 90));
+			top.add(note, BorderLayout.SOUTH);
+			body.add(top, BorderLayout.NORTH);
+		} else {
+			body.add(intro, BorderLayout.NORTH);
+		}
+		body.add(sp, BorderLayout.WEST);
+		body.add(right, BorderLayout.CENTER);
+
+		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		JButton ok = new JButton("Commission");
+		JButton cancel = new JButton("Cancel");
+		ok.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { commission(); } });
+		cancel.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
+		buttons.add(ok);
+		buttons.add(cancel);
+		getRootPane().setDefaultButton(ok);
+
+		getContentPane().add(body, BorderLayout.CENTER);
+		getContentPane().add(buttons, BorderLayout.SOUTH);
+		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		pack();
+		setLocationRelativeTo(dock);
+		for (int i = 0; i < model.size(); i++) if (!model.get(i).header()) { list.setSelectedIndex(i); break; }
+	}
+
+	/** Why some ships are missing from the list (rules, or an unreadable profile), or null. */
+	private String listNote = null;
+
+	/** Vanilla ships by model (A, B, C), then the station's own blueprints flagged as starter ships; the unlock rules may hide some. */
+	private void fill() {
+		String[] letters = {"A", "B", "C"};
+		boolean lockRule = HomePlanet.commissionUnlockedOnly;
+		boolean customRule = lockRule && HomePlanet.commissionCustomUnlockedOnly;
+		homeplanet.parser.Unlocks unlocks = lockRule ? homeplanet.parser.Unlocks.read() : null;
+		if (unlocks != null && unlocks.problem() != null) {
+			listNote = unlocks.problem() + " Every ship is shown.";
+			unlocks = null;
+		}
+		int hidden = 0;
+		List<String> bases = DataManager.get().getPlayerShipBaseIds(true);
+		model.addElement(new Entry(null, "Standard ships"));
+		for (String base : bases) {
+			for (int n = 0; n < 3; n++) {
+				ShipBlueprint bp;
+				try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
+				if (bp == null) continue;
+				if (unlocks != null && !unlocks.unlocked(base, n)) { hidden++; continue; }
+				model.addElement(new Entry(bp.getId(), classOf(bp) + " " + letters[n]));
+			}
+		}
+		List<Entry> custom = new ArrayList<Entry>();
+		for (CompanionMod.Remodel r : CompanionMod.load()) {
+			if (!r.starter) continue; // only blueprints made starter ships can be commissioned
+			if (!CompanionMod.inGameData(r.id)) continue; // she couldn't fly yet
+			ShipBlueprint bp = DataManager.get().getShip(r.id);
+			if (bp == null) continue;
+			if (customRule && unlocks != null && !unlocks.unlockedBlueprint(r.base)) { hidden++; continue; }
+			boolean named = r.loadout != null && r.loadout.className.length() > 0;
+			custom.add(new Entry(r.id, (named ? r.loadout.className : classOf(bp) + " " + CompanionMod.numberOf(r.id)) + " (" + r.ship + "'s layout)"));
+		}
+		for (homeplanet.parser.ShipDesign d : homeplanet.parser.DesignExport.built()) {
+			if (!d.starter || d.frozenOf != null) continue; // kept old versions only fly for the ships already built from them
+			String id = homeplanet.parser.DesignExport.bpId(d);
+			if (!CompanionMod.inGameData(id)) continue; // not patched in yet
+			ShipBlueprint bp = DataManager.get().getShip(id);
+			if (bp == null) continue;
+			custom.add(new Entry(id, classOf(bp) + " (designed: " + d.name + (d.version > 1 ? " v" + d.version : "") + ")"));
+		}
+		if (!custom.isEmpty()) {
+			model.addElement(new Entry(null, "Your blueprints"));
+			for (Entry e : custom) model.addElement(e);
+		}
+		if (hidden > 0 && listNote == null) {
+			listNote = (hidden == 1 ? "1 ship is" : hidden + " ships are") + " not shown: locked in your FTL profile (see Settings, Rules).";
+		}
+	}
+
+	static String classOf(ShipBlueprint bp) {
+		try {
+			String t = bp.getShipClass() == null ? null : bp.getShipClass().getTextValue();
+			if (t != null && t.length() > 0) return t;
+		} catch (Exception e) { }
+		return bp.getId();
+	}
+	static String defaultName(ShipBlueprint bp) {
+		try {
+			String t = bp.getName() == null ? null : bp.getName().getTextValue();
+			if (t != null && t.length() > 0) return t;
+		} catch (Exception e) { }
+		return classOf(bp);
+	}
+
+	private Difficulty chosenDifficulty() {
+		int i = difficulty.getSelectedIndex();
+		return i == 1 ? Difficulty.NORMAL : i == 2 ? Difficulty.HARD : Difficulty.EASY;
+	}
+
+	/** The same report the Info button shows, for the ship as she'd be commissioned. */
+	private void showPreview(Entry e) {
+		ShipBlueprint bp = DataManager.get().getShip(e.id);
+		nameField.setText(defaultName(bp));
+		preview.removeAll();
+		try {
+			SavedGameState s = Commission.build(e.id, defaultName(bp), Difficulty.EASY, new Random(0));
+			JPanel p = dock.shipSummaryPanel(s);
+			JLabel stats = new JLabel("<html>" + classOf(bp) + ": hull " + bp.getHealth().amount + ", reactor "
+					+ (bp.getMaxPower() == null ? "?" : bp.getMaxPower().amount) + ", " + (bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots())
+					+ " weapon slots, " + (bp.getDroneSlots() == null ? 3 : bp.getDroneSlots()) + " drone slots</html>");
+			stats.setBorder(BorderFactory.createEmptyBorder(4, 6, 8, 6));
+			preview.add(stats, BorderLayout.NORTH);
+			preview.add(p, BorderLayout.CENTER);
+		} catch (Exception ex) {
+			preview.add(new JLabel("This ship can't be built: " + ex.getMessage()), BorderLayout.NORTH);
+		}
+		preview.revalidate();
+		preview.repaint();
+	}
+
+	private void commission() {
+		Entry e = list.getSelectedValue();
+		if (e == null || e.header()) return;
+		String name = nameField.getText().trim();
+		if (name.isEmpty()) { JOptionPane.showMessageDialog(this, "She needs a name.", "Commission Ship", JOptionPane.INFORMATION_MESSAGE); return; }
+		SavedGameState s;
+		try {
+			s = Commission.build(e.id, name, chosenDifficulty(), rng);
+		} catch (Exception ex) {
+			HomePlanet.showErrorDialog("The ship could not be built:\n" + ex);
+			return;
+		}
+		homeplanet.vault.Ship ship;
+		try {
+			ship = homeplanet.vault.Vault.get().adopt(s);
+		} catch (Exception ex) {
+			HomePlanet.showErrorDialog("The new ship could not be saved:\n" + ex);
+			return;
+		}
+		List<String> lines = new ArrayList<String>();
+		lines.add(e.label + " (" + e.id + "), difficulty " + difficulty.getSelectedItem());
+		lines.add("Crew: " + s.getPlayerShip().getCrewList().size());
+		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines);
+		made = ship;
+		dispose();
+	}
+}

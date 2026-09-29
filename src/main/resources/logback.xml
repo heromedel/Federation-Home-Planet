@@ -1,0 +1,16 @@
+<configuration>
+	<!--
+		Quiet by default: only warnings and errors reach the console.
+		For troubleshooting, set debug_logging=true in federation-home-planet.cfg
+		(or launch with -Dhomeplanet.debug=true) to see DEBUG output.
+	-->
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} %-5level %logger{0} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<root level="WARN">
+		<appender-ref ref="CONSOLE" />
+	</root>
+</configuration>

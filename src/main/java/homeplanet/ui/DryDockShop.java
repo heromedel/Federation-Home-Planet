@@ -1,0 +1,625 @@
+package homeplanet.ui;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JSpinner;
+import javax.swing.event.ChangeListener;
+
+import net.blerf.ftl.parser.DataManager;
+import net.blerf.ftl.parser.SavedGameParser;
+import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
+import net.blerf.ftl.parser.SavedGameParser.ShipState;
+import net.blerf.ftl.parser.SavedGameParser.StoreItem;
+import net.blerf.ftl.parser.SavedGameParser.StoreItemType;
+import net.blerf.ftl.parser.SavedGameParser.StoreShelf;
+import net.blerf.ftl.parser.SavedGameParser.StoreState;
+import net.blerf.ftl.parser.SavedGameParser.SystemType;
+import net.blerf.ftl.xml.AugBlueprint;
+import net.blerf.ftl.xml.DroneBlueprint;
+import net.blerf.ftl.xml.ShipBlueprint;
+import net.blerf.ftl.xml.WeaponBlueprint;
+
+import homeplanet.model.Items;
+import homeplanet.vault.Ship;
+import homeplanet.parser.SaveHelper;
+import homeplanet.resource.ResourceClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * The Dry Dock shop in the Cargo Bay: buy from the shop at any of your ships' current beacons.
+ * Purchases change the saves in memory only; the Cargo Bay's Save button writes them (buyer first,
+ * then each shop), and Reset/Pick throw them away like any other unsaved change.
+ */
+class DryDockShop {
+	private static final Logger log = LoggerFactory.getLogger(DryDockShop.class);
+	// Store prices for supplies (per unit)
+	static final int FUEL_PRICE = 3, MISSILE_PRICE = 6, DRONE_PART_PRICE = 8;
+	// Where the panel sits (top left, level with the Save panel)
+	static final int PX = 6, PY = 48; // below the Return to Dock panel
+
+	enum Kind { HEADER, ITEM, SYSTEM, FUEL, MISSILES, PARTS }
+
+	/** One line in the shop list. Items remember which save and shelf they came from. */
+	static class Entry {
+		Kind kind;
+		String title;      // text shown in the list
+		String id;         // item blueprint id (items only)
+		String shipName;   // whose shop
+		Ship ship;         // the ship whose beacon the store is at
+		int shelf, slot;   // position in that shop (items only)
+		int price, count;
+		Entry(Kind kind, String title) { this.kind = kind; this.title = title; }
+		public String toString() { return title; }
+	}
+
+	private final CargoBayUI bay;
+	private final Map<Ship, SavedGameState> otherSaves = new LinkedHashMap<Ship, SavedGameState>(); // saves read just for the shop
+	private final Set<Ship> dirty = new LinkedHashSet<Ship>();
+	private final List<String> purchases = new ArrayList<String>(); // for the history log
+	// What purchases changed on each buyer, keyed like HistoryLog.inventory, so the TRADE entry leaves them out
+	private final Map<SavedGameState, Map<String, Integer>> bought = new java.util.IdentityHashMap<SavedGameState, Map<String, Integer>>();
+
+
+	DryDockShop(CargoBayUI bay) { this.bay = bay; }
+
+	// ---- The Shop tab ----
+	private final JPanel panel = new JPanel(null);
+	private final JPanel content = new JPanel(null);
+	private final JScrollPane scroll = new JScrollPane(content, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+	private final CargoParts.Label scrapLbl = new CargoParts.Label("", FtlFont.MENU, CargoParts.TEXT, -1);
+	private final CargoParts.Label storesLbl = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
+	private FtlButton buyerBtn, info;
+	private final JLabel shipPic = new JLabel();
+	private final CargoParts.Label classLbl = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, -1);
+	private boolean toStorage = false; // buying for the Cargo Bay rather than the boarded ship
+
+	/** The Shop tab (built once; its contents are rebuilt from the saves). */
+	JPanel panel() {
+		if (buyerBtn != null) return panel;
+		panel.setOpaque(false);
+		// the Trade tab's left side: her picture, a small label, the drop-down, and her grey line with an info button
+		int dx = 16 + CargoBayUI.DROP_IN;
+		shipPic.setBounds(16, 8, 120, 62);
+		shipPic.setHorizontalAlignment(JLabel.CENTER);
+		shipPic.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+		shipPic.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { if (!toStorage) bay.showCurrentShipInfo(); } });
+		panel.add(shipPic);
+		CargoParts.Label bf = new CargoParts.Label("BUYING FOR", FtlFont.BODY, CargoParts.DIM, -1);
+		bf.setBounds(dx, 6, CargoBayUI.DROP_W, 16);
+		panel.add(bf);
+		buyerBtn = CargoBayUI.dropButton();
+		buyerBtn.setBounds(dx, 22, CargoBayUI.DROP_W, 30);
+		info = new CargoParts.IconButton(CargoParts.infoIcon(), "", new ActionListener() {
+			public void actionPerformed(ActionEvent e) { if (toStorage) bay.storageInfo(); else bay.showCurrentShipInfo(); }
+		});
+		info.setBounds(dx, 55, 24, 22);
+		panel.add(info);
+		classLbl.setBounds(dx + 30, 58, 400, 16);
+		panel.add(classLbl);
+		buyerBtn.setToolTipText("Buy for the boarded ship, or for the Cargo Bay's storage");
+		buyerBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				javax.swing.JPopupMenu m = new javax.swing.JPopupMenu();
+				javax.swing.JMenuItem a = new javax.swing.JMenuItem(bay.currentSave.getPlayerShipName() + " (your ship)");
+				javax.swing.JMenuItem b = new javax.swing.JMenuItem("Spacedock Storage (items and supplies, not systems)");
+				a.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toStorage = false; rebuild(); } });
+				b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toStorage = true; rebuild(); } });
+				m.add(a); m.add(b);
+				CargoParts.darkPopup(m);
+				m.show(buyerBtn, 0, buyerBtn.getHeight());
+			}
+		});
+		panel.add(buyerBtn);
+		scrapLbl.setBounds(dx + CargoBayUI.DROP_W + 20, 22, 260, 30);
+		panel.add(scrapLbl);
+		CargoParts.Label title = new CargoParts.Label("STORES AT YOUR SHIPS' BEACONS", FtlFont.MENU, CargoParts.GOLD, 1);
+		title.setBounds(664, 6, 600, 26);
+		panel.add(title);
+		storesLbl.setBounds(664, 34, 600, 16);
+		panel.add(storesLbl);
+		content.setOpaque(false);
+		scroll.setOpaque(false);
+		scroll.getViewport().setOpaque(false);
+		scroll.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+		scroll.getVerticalScrollBar().setUI(new MenuTheme.DarkScrollBarUI(new Color(214, 230, 222, 170), new Color(40, 50, 58, 200)));
+		scroll.getVerticalScrollBar().setPreferredSize(new java.awt.Dimension(12, 12));
+		scroll.getVerticalScrollBar().setUnitIncrement(34);
+		scroll.getVerticalScrollBar().setOpaque(false);
+		scroll.setBounds(16, 84, 1248, CargoBayUI.H - 52 - 26 - 88);
+		panel.add(scroll);
+		return panel;
+	}
+
+	/** Rebuilds from the saves (throws away any unsaved purchases). */
+	void init() {
+		otherSaves.clear();
+		dirty.clear();
+		purchases.clear();
+		bought.clear();
+		toStorage = false;
+		rebuild();
+	}
+
+	/** Why this store system can't be bought for the chosen buyer, or null. */
+	String systemReason(String sysId) {
+		if (toStorage) return NOT_FITTED;
+		return bay.systems.reason(sysId);
+	}
+	/** The boarded ship's systems changed (Refit): the greying may have too. */
+	void systemsChanged() { rebuild(); }
+
+	private SavedGameState buyer() { return toStorage ? resolve(bay.homeSave) : bay.currentSave; }
+	String helpText() {
+		return "Supplies show how many the store has left and the price of one. Greyed out: hover to see why. Nothing is paid until you Save.";
+	}
+
+	/** Lays out every store: its items in three columns, then its systems and supplies. */
+	void rebuild() {
+		if (buyerBtn == null) panel();
+		content.removeAll();
+		if (bay.currentPath == null) { content.revalidate(); content.repaint(); return; }
+		SavedGameState buyer = buyer();
+		int scrap = buyer == null ? 0 : buyer.getPlayerShip().getScrapAmt();
+		buyerBtn.setText(toStorage ? "Spacedock Storage" : bay.currentSave.getPlayerShipName());
+		shipPic.setIcon(toStorage ? null : bay.shipIcon(bay.currentSave));
+		shipPic.setToolTipText(toStorage ? null : "Click for her report, and to rename her");
+		classLbl.setText(toStorage ? "Items and supplies only, no systems" : CargoBayUI.shipClass(bay.currentState));
+		info.setToolTipText(toStorage ? "What Spacedock Storage is" : "Her report, and to rename her");
+		scrapLbl.setText(scrap + " scrap to spend");
+		List<Entry> entries = buildEntries();
+		int stores = 0;
+		for (Entry e : entries) if (e.kind == Kind.HEADER && e.ship != null) stores++;
+		storesLbl.setText(stores == 0 ? "No stores in range: dock a ship at a Station" : (stores == 1 ? "1 store" : stores + " stores") + " in range  ·  anything bought waits for Save");
+		int w = 1234, colW = (w - 20) / 3, y = 4;
+		int i = 0;
+		while (i < entries.size()) {
+			Entry h = entries.get(i++);
+			if (h.kind != Kind.HEADER || h.ship == null) continue;
+			List<Entry> items = new ArrayList<Entry>();
+			while (i < entries.size() && entries.get(i).kind != Kind.HEADER) items.add(entries.get(i++));
+			CargoParts.Header head = new CargoParts.Header(h.title, false);
+			head.setBounds(0, y, w - 90, 22);
+			content.add(head);
+			SavedGameState src = resolve(h.ship);
+			CargoParts.Label sector = new CargoParts.Label(src == null ? "" : "Sector " + (src.getSectorNumber() + 1), FtlFont.BODY, CargoParts.DIM, 1);
+			sector.setBounds(w - 90, y + 3, 90, 16);
+			content.add(sector);
+			y += 26;
+			String[] cols = {"Weapons", "Drones", "Augments"};
+			int[] colY = {y + 20, y + 20, y + 20};
+			for (int c = 0; c < 3; c++) {
+				CargoParts.Label l = new CargoParts.Label(cols[c], FtlFont.BODY, CargoParts.GOLD, -1);
+				l.setBounds(c * (colW + 10), y, colW, 18);
+				content.add(l);
+			}
+			List<Entry> sys = new ArrayList<Entry>(), sup = new ArrayList<Entry>();
+			for (Entry e : items) {
+				if (e.kind == Kind.SYSTEM) { sys.add(e); continue; }
+				if (e.kind != Kind.ITEM) { sup.add(e); continue; }
+				int c = Items.isWeapon(e.id) ? 0 : Items.isDrone(e.id) ? 1 : 2;
+				StoreRow r = new StoreRow(e, scrap);
+				r.setBounds(c * (colW + 10), colY[c], colW, 30);
+				content.add(r);
+				colY[c] += 34;
+			}
+			for (int c = 0; c < 3; c++) if (colY[c] == y + 20) { emptyNote(c * (colW + 10), colY[c], "Sold out"); colY[c] += 34; }
+			y = Math.max(colY[0], Math.max(colY[1], colY[2])) + 4;
+			CargoParts.Label sl = new CargoParts.Label("Systems", FtlFont.BODY, CargoParts.GOLD, -1), ul = new CargoParts.Label("Supplies", FtlFont.BODY, CargoParts.GOLD, -1);
+			sl.setBounds(0, y, colW, 18);
+			ul.setBounds(colW + 10, y, colW, 18);
+			content.add(sl); content.add(ul);
+			int sy = y + 20;
+			if (sys.isEmpty()) { emptyNote(0, sy, "None for sale"); sy += 34; }
+			for (Entry e : sys) {
+				StoreRow r = new StoreRow(e, scrap);
+				r.setBounds(0, sy, colW, 30);
+				content.add(r);
+				sy += 34;
+			}
+			int ux = colW + 10, uw = w - colW - 10, cw = (uw - 20) / 3, uy = y + 20;
+			if (sup.isEmpty()) { emptyNote(ux, uy, "Out of supplies"); }
+			for (int k = 0; k < sup.size(); k++) {
+				StoreRow r = new StoreRow(sup.get(k), scrap);
+				r.setBounds(ux + k * (cw + 10), uy, cw, 30);
+				content.add(r);
+			}
+			y = Math.max(sy, uy + 34) + 16;
+		}
+		if (stores == 0) {
+			CargoParts.Label none = new CargoParts.Label("None of your ships is docked at a Station with a store.", FtlFont.MENU, CargoParts.DIM, 0);
+			none.setBounds(0, 60, w, 30);
+			content.add(none);
+			y = 120;
+		}
+		content.setPreferredSize(new java.awt.Dimension(w, y));
+		content.revalidate();
+		content.repaint();
+		scroll.revalidate();
+	}
+	private void emptyNote(int x, int y, String s) {
+		CargoParts.Label l = new CargoParts.Label(s, FtlFont.BODY, CargoParts.DIM, -1);
+		l.setBounds(x + 8, y + 7, 200, 16);
+		content.add(l);
+	}
+
+	/** One thing for sale: icon, name, price and a Buy button. */
+	private class StoreRow extends JComponent {
+		final Entry e;
+		final boolean can;
+		StoreRow(final Entry e, int scrap) {
+			this.e = e;
+			String why = e.kind == Kind.SYSTEM ? systemReason(e.id) : e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(bay.currentSave, e.id) : null;
+			can = why == null && e.price <= scrap;
+			setLayout(null);
+			setToolTipText(why != null ? why : tipFor(e));
+			FtlButton buy = new FtlButton("Buy", FtlFont.BODY, 54, 22);
+			buy.setEnabled(can);
+			buy.setToolTipText(why != null ? why : e.price > scrap ? "Not enough scrap" : "Buy one (Save makes it official)");
+			buy.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent ae) { buy(e); } });
+			add(buy);
+			this.buy = buy;
+		}
+		private final FtlButton buy;
+		@Override public void doLayout() { buy.setBounds(getWidth() - 60, 4, 54, 22); }
+		@Override protected void paintComponent(java.awt.Graphics g0) {
+			java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
+			CargoParts.paintBox(g, 0, 0, getWidth(), getHeight(), CargoParts.BOX_LINE);
+			javax.swing.Icon ic = iconFor(e);
+			int tx = 8;
+			if (ic != null) { ic.paintIcon(this, g, 6 + (30 - ic.getIconWidth()) / 2, 15 - ic.getIconHeight() / 2); tx = 42; }
+			String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) : supplyName(e.kind) + "  x" + e.count;
+			int px = getWidth() - 110;
+			CargoParts.text(g, FtlFont.BODY.fit(name, px - tx - 8), FtlFont.BODY, can ? CargoParts.TEXT : CargoParts.DIM, tx, 8);
+			javax.swing.Icon sc = IconFactory.supplyIcon("scrap");
+			if (sc != null) sc.paintIcon(this, g, px, 7);
+			CargoParts.text(g, "" + e.price, FtlFont.BODY, can ? CargoParts.GOLD : CargoParts.DIM, px + 18, 8);
+			g.dispose();
+		}
+	}
+
+	static final String NOT_FITTED = "The Cargo Bay is not fitted to hold ship systems";
+
+	// ---- Building the list ----
+
+	private List<Entry> buildEntries() {
+		List<Entry> list = new ArrayList<Entry>();
+		for (Ship ss : bay.tradeableShips()) {
+			SavedGameState gs = resolve(ss);
+			if (gs == null || !SaveHelper.isAtStation(gs)) continue;
+			StoreState store = gs.getBeaconList().get(gs.getCurrentBeaconId()).getStore();
+			String ship = gs.getPlayerShipName();
+			List<Entry> items = new ArrayList<Entry>();
+			List<StoreShelf> shelves = store.getShelfList();
+			for (int s = 0; s < shelves.size(); s++) {
+				StoreShelf shelf = shelves.get(s);
+				StoreItemType t = shelf.getItemType();
+				boolean sys = t == StoreItemType.SYSTEM;
+				if (t != StoreItemType.WEAPON && t != StoreItemType.DRONE && t != StoreItemType.AUGMENT && !sys) continue; // crew: not yet
+				for (int i = 0; i < shelf.getItems().size(); i++) {
+					StoreItem it = shelf.getItems().get(i);
+					if (!it.isAvailable()) continue; // already bought
+					int price = sys ? systemPrice(it.getItemId()) : priceOf(it.getItemId());
+					if (price < 0) continue; // not in the game data (removed mod?)
+					String title = sys ? systemTitle(it.getItemId()) : Items.title(it.getItemId());
+					Entry e = new Entry(sys ? Kind.SYSTEM : Kind.ITEM, title + " · " + price);
+					e.id = it.getItemId();
+					e.shelf = s;
+					e.slot = i;
+					e.price = price;
+					items.add(e);
+				}
+			}
+			addSupply(items, Kind.FUEL, "Fuel", store.getFuel(), FUEL_PRICE);
+			addSupply(items, Kind.MISSILES, "Missiles", store.getMissiles(), MISSILE_PRICE);
+			addSupply(items, Kind.PARTS, "Drone parts", store.getDroneParts(), DRONE_PART_PRICE);
+			if (items.isEmpty()) continue;
+			Entry h = new Entry(Kind.HEADER, "Store at " + ship + "'s beacon");
+			h.shipName = ship;
+			h.ship = ss;
+			list.add(h);
+			for (Entry e : items) { e.shipName = ship; e.ship = ss; list.add(e); }
+		}
+		if (list.isEmpty()) list.add(new Entry(Kind.HEADER, "No stores in range"));
+		return list;
+	}
+
+	private static void addSupply(List<Entry> items, Kind kind, String name, int count, int price) {
+		if (count <= 0) return;
+		Entry e = new Entry(kind, supplyTitle(name, count, price));
+		e.count = count;
+		e.price = price;
+		items.add(e);
+	}
+	private static String supplyTitle(String name, int count, int price) {
+		return name + " ×" + count + " · " + price + " each";
+	}
+
+	/** The ship's save as the Cargo Bay has it in memory right now (boarded ship, trade partner, or one read for the shop). */
+	SavedGameState resolve(Ship ship) {
+		if (ship == null) return null;
+		if (ship == bay.currentShip) return bay.currentSave;
+		if (ship == bay.tradeShip) return bay.tradeSave;
+		SavedGameState gs = otherSaves.get(ship);
+		if (gs == null) {
+			try {
+				gs = new SavedGameParser().readSavedGame(ship.file()); // its own copy: purchases stay unsaved until Save
+				otherSaves.put(ship, gs);
+			} catch (Exception e) {
+				log.warn("Shop: could not read " + ship.file(), e);
+			}
+		}
+		return gs;
+	}
+
+
+	// ---- Buying ----
+
+	void buy(Entry e) {
+		if (e == null) return;
+		SavedGameState buyer = toStorage ? resolve(bay.homeSave) : bay.currentSave;
+		SavedGameState source = resolve(e.ship);
+		if (buyer == null || source == null) {
+			homeplanet.core.HomePlanet.showErrorDialog("Could not read the saves needed for this purchase.");
+			return;
+		}
+		ShipState bs = buyer.getPlayerShip();
+		String buyerName = toStorage ? "The Cargo Bay" : buyer.getPlayerShipName();
+		String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) : supplyName(e.kind);
+		if (e.kind == Kind.SYSTEM && toStorage) {
+			JOptionPane.showMessageDialog(bay, NOT_FITTED + ".", "Shop", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		if (e.kind == Kind.SYSTEM && systemBlocked(buyer, e.id, name)) return; // before the scrap check: "already has" says more than "not enough scrap"
+		String refused = e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(buyer, e.id) : null;
+		if (refused != null) { JOptionPane.showMessageDialog(bay, refused, "Advanced Edition only", JOptionPane.INFORMATION_MESSAGE); return; }
+		if (bs.getScrapAmt() < e.price) {
+			JOptionPane.showMessageDialog(bay, buyerName + " has " + bs.getScrapAmt() + " scrap; " + name + " costs " + e.price + ".",
+					"Not enough scrap", JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+		StoreState store = source.getBeaconList().get(source.getCurrentBeaconId()).getStore();
+		boolean toCargo = false;
+
+		if (e.kind == Kind.SYSTEM) {
+			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
+			if (!it.isAvailable() || !e.id.equals(it.getItemId())) {
+				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
+				return;
+			}
+			if (!installSystem(buyer, e.id, name)) return; // refused or cancelled
+			it.setAvailable(false);
+		} else if (e.kind == Kind.ITEM) {
+			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
+			if (!it.isAvailable() || !e.id.equals(it.getItemId())) { // shouldn't happen, but never sell something twice
+				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that shop.");
+				return;
+			}
+			if (!toStorage) {
+				Boolean c = roomCheck(bs, buyer, e.id);
+				if (c == null) return; // refused or cancelled
+				toCargo = c;
+			}
+			it.setAvailable(false);
+			if (toCargo) {
+				buyer.getCargoIdList().add(e.id);
+			} else if (Items.isWeapon(e.id)) {
+				bs.getWeaponList().add(SaveHelper.newIdleWeapon(e.id));
+			} else if (Items.isDrone(e.id)) {
+				bs.getDroneList().add(SaveHelper.newIdleDrone(e.id));
+			} else {
+				bs.getAugmentIdList().add(e.id);
+			}
+		} else {
+			int left;
+			if (e.kind == Kind.FUEL) { left = store.getFuel() - 1; if (left < 0) return; store.setFuel(left); bs.setFuelAmt(bs.getFuelAmt() + 1); }
+			else if (e.kind == Kind.MISSILES) { left = store.getMissiles() - 1; if (left < 0) return; store.setMissiles(left); bs.setMissilesAmt(bs.getMissilesAmt() + 1); }
+			else { left = store.getDroneParts() - 1; if (left < 0) return; store.setDroneParts(left); bs.setDronePartsAmt(bs.getDronePartsAmt() + 1); }
+			e.count = left;
+		}
+		bs.setScrapAmt(bs.getScrapAmt() - e.price);
+
+		// Anything not already written by the Cargo Bay's Save gets written by us
+		markDirty(buyer);
+		markDirty(source);
+		note(buyer, "Scrap", -e.price);
+		if (e.kind == Kind.ITEM) note(buyer, Items.title(e.id) + (toCargo ? " (cargo)" : ""), 1);
+		else if (e.kind != Kind.SYSTEM) note(buyer, supplyName(e.kind), 1); // systems aren't in the TRADE inventory
+		purchases.add(name + " (" + e.price + " scrap) from the store at " + e.shipName + "'s beacon -> " + buyerName + (toCargo ? " (cargo)" : ""));
+		log.debug("Bought {} for {} from {} -> {}", name, e.price, e.ship.name, buyerName);
+
+		bay.showPurchase(buyer, e.kind == Kind.ITEM ? e.id : null, toCargo);
+		bay.systems.refresh(); // a bought system shows on the Refit tab
+		rebuild();
+		bay.help("Bought " + name + " for " + e.price + " scrap" + (toCargo ? " (into the cargo hold)" : "") + ". Save makes it official.");
+	}
+
+	/**
+	 * Installs a system on the boarded ship, the way a store does: at the system's starting level, unpowered.
+	 * Medbay and Clone Bay share a room: buying one replaces the other and keeps its level.
+	 * Returns false if the ship can't take it (after telling the player why) or the player cancels.
+	 */
+	private boolean installSystem(SavedGameState buyer, String sysId, String name) {
+		ShipState bs = buyer.getPlayerShip();
+		if (systemBlocked(buyer, sysId, name)) return false;
+		SystemType type = SystemType.findById(sysId);
+		SavedGameParser.SystemState st = bs.getSystem(type);
+		net.blerf.ftl.xml.SystemBlueprint sbp = DataManager.get().getSystem(sysId);
+		int level = sbp != null ? Math.max(1, sbp.getStartPower()) : 1;
+		// Medbay <-> Clone Bay share a room
+		SystemType other = type == SystemType.CLONEBAY ? SystemType.MEDBAY : type == SystemType.MEDBAY ? SystemType.CLONEBAY : null;
+		SavedGameParser.SystemState os = other == null ? null : bs.getSystem(other);
+		if (os != null && os.getCapacity() > 0) {
+			String otherName = systemTitle(other.getId());
+			int r = JOptionPane.showConfirmDialog(bay, "Replace the " + otherName + " with a " + name + "? It keeps the " + otherName + "'s level.",
+					"Replace " + otherName + "?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (r != JOptionPane.YES_OPTION) return false;
+			level = os.getCapacity();
+			os.setCapacity(0);
+			os.setPower(0);
+			os.setDamagedBars(0);
+			os.setIonizedBars(0);
+		}
+		if (st == null) {
+			st = new SavedGameParser.SystemState(type);
+			bs.addSystem(st);
+		}
+		st.setCapacity(level);
+		st.setPower(type.isSubsystem() ? level : 0); // subsystems don't use reactor power (as FTL sets up a new ship)
+		st.setDamagedBars(0);
+		st.setIonizedBars(0);
+		SaveHelper.ensureAdvancedInfo(bs, buyer.getFileFormat()); // Clone Bay, Battery, Cloaking, Hacking and Mind Control keep extra data in the save
+		homeplanet.parser.Retrofit.syncStations(bs); // a manned system needs its station in the save
+		return true;
+	}
+
+	/** True (after telling the player) if this ship has no room for the system or already has it. */
+	private boolean systemBlocked(SavedGameState buyer, String sysId, String name) {
+		ShipState bs = buyer.getPlayerShip();
+		String ship = buyer.getPlayerShipName();
+		SystemType type = SystemType.findById(sysId);
+		ShipBlueprint bp = DataManager.get().getShip(bs.getShipBlueprintId());
+		if (type == null || bp == null || bp.getSystemList() == null || bp.getSystemList().getSystemRoom(type) == null) {
+			JOptionPane.showMessageDialog(bay, SystemsPanel.NO_ROOM + ".", "No room", JOptionPane.WARNING_MESSAGE);
+			return true;
+		}
+		SavedGameParser.SystemState st = bs.getSystem(type);
+		if (st != null && st.getCapacity() > 0) {
+			JOptionPane.showMessageDialog(bay, SystemsPanel.INSTALLED + ".", "Already installed", JOptionPane.INFORMATION_MESSAGE);
+			return true;
+		}
+		return false;
+	}
+
+	/** Room on the boarded ship: TRUE = send to cargo, FALSE = fits, null = stop. */
+	private Boolean roomCheck(ShipState bs, SavedGameState buyer, String id) {
+		ShipBlueprint bp = DataManager.get().getShip(bs.getShipBlueprintId());
+		String what;
+		int slots, used;
+		String question;
+		if (Items.isAugment(id)) {
+			if (bs.getAugmentIdList().size() >= 3) {
+				JOptionPane.showMessageDialog(bay, "This ship has no further room for a new Augment.", "No room", JOptionPane.WARNING_MESSAGE);
+				return null;
+			}
+			return Boolean.FALSE;
+		} else if (Items.isWeapon(id)) {
+			what = "weapon";
+			slots = (bp != null && bp.getWeaponSlots() != null) ? bp.getWeaponSlots() : 4;
+			used = bs.getWeaponList().size();
+			question = "No room for the weapon, should it be sent to cargo?";
+		} else {
+			what = "drone";
+			slots = (bp != null && bp.getDroneSlots() != null) ? bp.getDroneSlots() : 3;
+			if (!SaveHelper.hasSystem(bs, SystemType.DRONE_CTRL)) slots = 0;
+			used = bs.getDroneList().size();
+			question = slots == 0 ? "This ship has no Drone Control system, should the drone be sent to cargo?"
+					: "No room for the drone, should it be sent to cargo?";
+		}
+		if (used < slots) return Boolean.FALSE;
+		if (buyer.getCargoIdList().size() >= 4) {
+			JOptionPane.showMessageDialog(bay, "No room for the " + what + ", and the cargo hold is full too.", "No room", JOptionPane.WARNING_MESSAGE);
+			return null;
+		}
+		int r = JOptionPane.showConfirmDialog(bay, question, "Send to cargo?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+		return r == JOptionPane.YES_OPTION ? Boolean.TRUE : null;
+	}
+
+	private void markDirty(SavedGameState gs) {
+		for (Map.Entry<Ship, SavedGameState> m : otherSaves.entrySet()) {
+			if (m.getValue() == gs) dirty.add(m.getKey());
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	// ---- Save ----
+
+	/** Adds the saves only the shop touched (storage bought for, other ships' stores) to the Cargo Bay's save. */
+	void addTo(homeplanet.vault.Vault.Transaction tx) {
+		for (Ship s : dirty) tx.put(s, otherSaves.get(s));
+	}
+	List<String> purchases() { return purchases; }
+
+	private void note(SavedGameState gs, String key, int n) {
+		Map<String, Integer> m = bought.get(gs);
+		if (m == null) bought.put(gs, m = new LinkedHashMap<String, Integer>());
+		m.put(key, (m.containsKey(key) ? m.get(key) : 0) + n);
+	}
+	/** Adds this save's purchases to its "before" inventory, so the TRADE log entry only lists actual trades. */
+	void countPurchasesAsBefore(Map<String, Integer> before, SavedGameState gs) {
+		Map<String, Integer> m = bought.get(gs);
+		if (before == null || m == null) return;
+		for (Map.Entry<String, Integer> e : m.entrySet()) {
+			int v = (before.containsKey(e.getKey()) ? before.get(e.getKey()) : 0) + e.getValue();
+			if (v == 0) before.remove(e.getKey()); else before.put(e.getKey(), v);
+		}
+	}
+
+	// ---- Names, prices, icons ----
+
+	static int priceOf(String id) {
+		WeaponBlueprint w = DataManager.get().getWeapons().get(id);
+		if (w != null) return w.getCost();
+		DroneBlueprint d = DataManager.get().getDrones().get(id);
+		if (d != null) return d.getCost();
+		AugBlueprint a = DataManager.get().getAugments().get(id);
+		if (a != null) return a.getCost();
+		return -1;
+	}
+	static int systemPrice(String id) {
+		net.blerf.ftl.xml.SystemBlueprint s = DataManager.get().getSystem(id);
+		return s == null ? -1 : s.getCost();
+	}
+	static String systemTitle(String id) { return Items.systemTitle(id); }
+	private static String supplyName(Kind k) {
+		return k == Kind.FUEL ? "Fuel" : k == Kind.MISSILES ? "Missiles" : "Drone parts";
+	}
+	private static javax.swing.Icon iconFor(Entry e) {
+		switch (e.kind) {
+			case ITEM: return IconFactory.itemIcon(e.id);
+			case SYSTEM: return null;
+			case FUEL: return IconFactory.supplyIcon("fuel");
+			case MISSILES: return IconFactory.supplyIcon("missiles");
+			case PARTS: return IconFactory.supplyIcon("drones");
+			default: return null;
+		}
+	}
+	private static String tipFor(Entry e) {
+		String from = "This store is at the beacon " + e.shipName + " is visiting.";
+		if (e.kind == Kind.SYSTEM) {
+			net.blerf.ftl.xml.SystemBlueprint s = DataManager.get().getSystem(e.id);
+			String desc = (s == null || s.getDescription() == null) ? "" : s.getDescription().getTextValue();
+			return "<html><b>" + homeplanet.parser.XmlText.text(systemTitle(e.id)) + "</b><div style='width:260px; margin-top:4px'>" + homeplanet.parser.XmlText.text(desc) + "</div>"
+					+ "<div style='margin-top:4px'>Price: " + e.price + " scrap</div><div style='margin-top:4px'><i>" + homeplanet.parser.XmlText.text(from) + "</i></div></html>";
+		}
+		if (e.kind == Kind.ITEM) {
+			String t = ItemTooltips.tooltip(e.id);
+			if (t != null) return t.replace("</html>", "<div style='margin-top:4px'><i>" + homeplanet.parser.XmlText.text(from) + "</i></div></html>");
+			return "<html>" + homeplanet.parser.XmlText.text(Items.title(e.id)) + "<br><i>" + homeplanet.parser.XmlText.text(from) + "</i></html>";
+		}
+		return "<html>" + homeplanet.parser.XmlText.text(supplyName(e.kind)) + ": " + e.count + " in stock, " + e.price + " scrap each<br><i>" + homeplanet.parser.XmlText.text(from) + "</i></html>";
+	}
+}

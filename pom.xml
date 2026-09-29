@@ -1,0 +1,120 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>homeplanet</groupId>
+	<artifactId>federation-home-planet</artifactId>
+	<version>4B.03</version>
+	<name>Federation Home Planet</name>
+
+	<!--
+		Federation Home Planet: a save-game manager for FTL 1.6.x, grown out of
+		FTL Homeworld 3.1 (ManApart / iceburg333, 2014). See README.md and CREDITS.md.
+		- Save/profile parsing and ftl.dat reading come from the final
+		  FTL Profile Editor source (Vhati, v28 master, 2020), lightly extended.
+		- Builds a single runnable jar that works on Java 8 and newer
+		  (JAXB is bundled because Java 11+ no longer ships it).
+	-->
+
+	<properties>
+		<maven.compiler.release>8</maven.compiler.release>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>2.0.16</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>1.3.16</version>
+		</dependency>
+		<dependency>
+			<!-- Ogg Vorbis decoding for the title music (LGPL: JOrbis + VorbisSPI + Tritonus-Share) -->
+			<groupId>com.github.trilarion</groupId>
+			<artifactId>java-vorbis-support</artifactId>
+			<version>1.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jdom</groupId>
+			<artifactId>jdom2</artifactId>
+			<version>2.0.6.1</version>
+		</dependency>
+		<dependency>
+			<!-- JAXB (javax.xml.bind). Removed from the JDK in Java 11, so it is bundled. -->
+			<groupId>org.glassfish.jaxb</groupId>
+			<artifactId>jaxb-runtime</artifactId>
+			<version>2.3.9</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<finalName>Federation Home Planet</finalName>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+			<resource>
+				<!-- the credits, licence and readme ride along in the jar (Settings > About shows them) -->
+				<directory>${basedir}</directory>
+				<includes>
+					<include>CREDITS.md</include>
+					<include>LICENSE</include>
+					<include>README.md</include>
+				</includes>
+			</resource>
+		</resources>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.13.0</version>
+				<configuration>
+					<compilerArgs>
+						<arg>-Xlint:unchecked</arg>
+					</compilerArgs>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.6.0</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>module-info.class</exclude>
+										<exclude>META-INF/versions/*/module-info.class</exclude>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+										<exclude>META-INF/MANIFEST.MF</exclude>
+									</excludes>
+								</filter>
+							</filters>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>homeplanet.core.HomePlanet</mainClass>
+									<manifestEntries>
+										<!-- The bundled JAXB has Java 9+ variants of a few classes. -->
+										<Multi-Release>true</Multi-Release>
+									</manifestEntries>
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>
