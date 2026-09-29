@@ -8,30 +8,48 @@ set "TOOLS=%~dp0tools"
 set "JDK=%TOOLS%\jdk"
 set "MVN=%TOOLS%\maven"
 
-if not exist "%JDK%\bin\javac.exe" (
-    echo Getting a JDK into tools\jdk ...
-    if not exist "%TOOLS%" mkdir "%TOOLS%"
+set "JDK_URL=https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk"
+set "MVN_URL=https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip"
+
+if not exist "%JDK%\bin\javac.exe" call :fetch "a JDK" "%JDK_URL%" "%TOOLS%\jdk.zip" "%JDK%" 100000000 || exit /b 1
+if not exist "%MVN%\bin\mvn.cmd" call :fetch "Maven" "%MVN_URL%" "%TOOLS%\maven.zip" "%MVN%" 5000000 || exit /b 1
+goto :build
+
+rem ---- :fetch name url zip dest minbytes ----
+rem Downloads with curl (resumes a cut-off download on the next run), checks the size, unpacks the zip's
+rem single top folder as dest. Invoke-WebRequest is only the fallback: it holds the file in memory and
+rem gives up on any hiccup.
+:fetch
+echo Getting %~1 into tools ...
+if not exist "%TOOLS%" mkdir "%TOOLS%"
+where curl.exe >nul 2>&1
+if errorlevel 1 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
       "$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol='Tls12';" ^
-      "Invoke-WebRequest 'https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk' -OutFile '%TOOLS%\jdk.zip';" ^
-      "Expand-Archive '%TOOLS%\jdk.zip' '%TOOLS%\jdk-tmp' -Force;" ^
-      "$d = Get-ChildItem '%TOOLS%\jdk-tmp' -Directory | Select-Object -First 1; Move-Item $d.FullName '%JDK%';" ^
-      "Remove-Item '%TOOLS%\jdk-tmp' -Recurse -Force; Remove-Item '%TOOLS%\jdk.zip'"
-    if not exist "%JDK%\bin\javac.exe" ( echo The JDK download failed. & pause & exit /b 1 )
+      "Invoke-WebRequest '%~2' -OutFile '%~3'"
+) else (
+    curl.exe -L --fail --retry 5 --retry-delay 3 -C - -o "%~3" "%~2"
 )
-
-if not exist "%MVN%\bin\mvn.cmd" (
-    echo Getting Maven into tools\maven ...
-    if not exist "%TOOLS%" mkdir "%TOOLS%"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-      "$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol='Tls12';" ^
-      "Invoke-WebRequest 'https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip' -OutFile '%TOOLS%\maven.zip';" ^
-      "Expand-Archive '%TOOLS%\maven.zip' '%TOOLS%\maven-tmp' -Force;" ^
-      "$d = Get-ChildItem '%TOOLS%\maven-tmp' -Directory | Select-Object -First 1; Move-Item $d.FullName '%MVN%';" ^
-      "Remove-Item '%TOOLS%\maven-tmp' -Recurse -Force; Remove-Item '%TOOLS%\maven.zip'"
-    if not exist "%MVN%\bin\mvn.cmd" ( echo The Maven download failed. & pause & exit /b 1 )
+if not exist "%~3" ( echo The %~1 download failed: nothing was saved. Check the connection and run this again. & pause & exit /b 1 )
+for %%s in ("%~3") do set "GOT=%%~zs"
+if %GOT% LSS %~5 (
+    echo The %~1 download stopped early ^(%GOT% bytes^). Run this again: it carries on where it left off.
+    pause
+    exit /b 1
 )
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$ProgressPreference='SilentlyContinue';" ^
+  "Expand-Archive '%~3' '%~3.tmp' -Force;" ^
+  "$d = Get-ChildItem '%~3.tmp' -Directory | Select-Object -First 1; Move-Item $d.FullName '%~4';" ^
+  "Remove-Item '%~3.tmp' -Recurse -Force; Remove-Item '%~3'"
+if not exist "%~4" (
+    echo The %~1 zip could not be unpacked. Delete "%~3" and run this again.
+    pause
+    exit /b 1
+)
+exit /b 0
 
+:build
 set "JAVA_HOME=%JDK%"
 set "PATH=%JDK%\bin;%MVN%\bin;%PATH%"
 
