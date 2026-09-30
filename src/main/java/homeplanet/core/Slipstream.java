@@ -34,6 +34,8 @@ public class Slipstream {
 
 	/** Config key: Slipstream's folder (has modman.jar and a mods folder). */
 	public static final String CFG_DIR = "slipstream_dir";
+	/** Config key: Slipstream was offered at startup (so "Not now" isn't asked again). */
+	public static final String CFG_OFFERED = "slipstream_offered";
 	/** Config keys for the Patch window: remembered mod file names (in order, separated by |), and the toggles. */
 	public static final String CFG_MODS = "patch_mods", CFG_REMEMBER = "patch_remember", CFG_RUN = "patch_run_ftl";
 
@@ -80,13 +82,35 @@ public class Slipstream {
 	public static File locate(Component owner) {
 		File d = dir();
 		if (d != null) return d;
+		return ask(owner, "Where is Slipstream Mod Manager?\n\n"
+				+ "Browse to its folder (the one with modman.jar and a mods folder),\n"
+				+ "or let the station download Slipstream " + VERSION + " into its own folder.",
+				"Slipstream", "Cancel");
+	}
+
+	/**
+	 * First run: offers Slipstream once, before anything needs it. Asked only while no Slipstream folder is set and it
+	 * hasn't been offered yet; "Not now" isn't asked again at startup (locate() still asks when a ship needs the mod).
+	 * Returns true if the config changed.
+	 */
+	public static boolean offerAtStart() {
+		if (dir() != null || HomePlanet.config.getProperty(CFG_OFFERED) != null) return false;
+		ask(null, "Retrofitted, remodeled and designed ships fly on the station's own blueprints,\n"
+				+ "and those reach FTL through Slipstream Mod Manager. Everything else works without it.\n\n"
+				+ "Point the station at your Slipstream folder (the one with modman.jar),\n"
+				+ "or have the Federation Home Planet download Slipstream " + VERSION + " for you.\n\n"
+				+ "You can also do this later in Settings.",
+				"Slipstream Mod Manager", "Not now");
+		HomePlanet.config.setProperty(CFG_OFFERED, "true");
+		return true;
+	}
+
+	/** Browse, download, or the last option (which returns null). Remembers the folder chosen. */
+	private static File ask(Component owner, String message, String title, String noLabel) {
+		File d;
 		while (true) {
-			Object[] options = {"Browse...", "Download it for me", "Cancel"};
-			int choice = JOptionPane.showOptionDialog(owner,
-					"Where is Slipstream Mod Manager?\n\n"
-					+ "Browse to its folder (the one with modman.jar and a mods folder),\n"
-					+ "or let the station download Slipstream " + VERSION + " into its own folder.",
-					"Slipstream", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+			Object[] options = {"Browse...", "Download it for me", noLabel};
+			int choice = JOptionPane.showOptionDialog(owner, message, title, JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 			if (choice == 0) {
 				d = browse(owner);
 			} else if (choice == 1) {

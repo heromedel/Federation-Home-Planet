@@ -29,7 +29,8 @@ it does and CREDITS.md for where the code came from.
     mvn -q -B package -DskipTests      # makes target/Federation Home Planet.jar (Java 8 target)
 
 The config (`federation-home-planet.cfg`) is a Java properties file beside the jar. First startup asks for the
-FTL and saves folders, Steam launching (Steam installs only), then the House Rules window.
+FTL and saves folders, Steam launching (Steam installs only), the House Rules window, then offers
+Slipstream once (`slipstream_offered`).
 
 ## Test
 

@@ -736,7 +736,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (n == 1) what = supplyIdx == 2 ? "missile" : "drone part";
 		int price = sell ? n * (SUPPLY_PRICE[supplyIdx] / 2) : 0;
 		String q = sell ? "Sell " + n + " " + what + " for " + price + " scrap?" : "Junk " + n + " " + what + "?\nYou get nothing for " + (n == 1 ? "it." : "them.");
-		if (JOptionPane.showConfirmDialog(this, q, sell ? "Sell" : "Junk", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
+		if (!HomePlanet.confirmNo(this, q, sell ? "Sell" : "Junk")) return;
 		setSupply(state, supplyIdx, have - n);
 		if (sell) state.setScrapAmt(state.getScrapAmt() + price);
 		disposals.add(new Disposal(save, sell ? "SELL" : "JUNK", key, price, n + " " + what + (sell ? " for " + price + " scrap" : "") + "  (" + save.getPlayerShipName() + ")", n));
@@ -975,7 +975,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		int price = sell ? sellPrice(r.id) : 0;
 		if (sell && price <= 0) { HomePlanet.showErrorDialog(title + " has no price, so no one will buy it."); return; }
 		String q = sell ? "Sell the " + title + " for " + price + " scrap?" : "Junk the " + title + "?\nYou get nothing for it.";
-		if (JOptionPane.showConfirmDialog(this, q, sell ? "Sell" : "Junk", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
+		if (!HomePlanet.confirmNo(this, q, sell ? "Sell" : "Junk")) return;
 		if (r.inCargo) {
 			if (!save.getCargoIdList().remove(r.id)) { HomePlanet.showErrorDialog("Cargo item not found!"); return; }
 		} else if (kind == 0) {
@@ -1004,8 +1004,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		SavedGameState save = mine ? currentSave : tradeSave;
 		if (SaveHelper.getOwnCrew(state).size() <= 1 && (mine || !partnerIsStorage())) { HomePlanet.showErrorDialog("At least one crew must man the ship!"); return; }
 		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't retire right now."); return; }
-		if (JOptionPane.showConfirmDialog(this, "Retire " + cs.getName() + "?\nThey leave " + save.getPlayerShipName() + " for good.", "Retire",
-				JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
+		if (!HomePlanet.confirmNo(this, "Retire " + cs.getName() + "?\nThey leave " + save.getPlayerShipName() + " for good.", "Retire")) return;
 		state.getCrewList().remove(cs);
 		String diskName = crewRenames.containsKey(cs) ? crewRenames.remove(cs) : cs.getName();
 		disposals.add(new Disposal(save, "RETIRE", "Crew " + diskName, 0, cs.getName() + " (" + Crew.raceTitle(cs) + ")  (" + save.getPlayerShipName() + ")"));

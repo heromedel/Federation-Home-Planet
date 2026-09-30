@@ -186,6 +186,13 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "About");
 		JPanel about = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		about.add(new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; after ManApart's FTL Homeworld; made by heromedel with Claude.  "));
+		JButton loreBtn = new JButton("Lore...");
+		loreBtn.setToolTipText("A transmission from the Federation Home Planet");
+		loreBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { showLore(); }
+		});
+		about.add(loreBtn);
+		about.add(javax.swing.Box.createHorizontalStrut(8));
 		JButton creditsBtn = new JButton("Credits...");
 		creditsBtn.setToolTipText("Who made what, and what is bundled");
 		creditsBtn.addActionListener(new ActionListener() {
@@ -407,6 +414,23 @@ public class SettingsDialog extends JDialog {
 	}
 
 	/** Shows a text file bundled in the jar (CREDITS.md, LICENSE) in a window of its own. */
+	static final String LORE = "~ Incoming transmission from the Federation Home Planet ~\n\n"
+			+ "Despite the ongoing war with the Rebellion, the Federation has restored its long-range trade and communication network, "
+			+ "carried by official stores and stations across the sectors.\n\n"
+			+ "From the Home Planet, the Federation can once more reach beacons in many star systems: moving goods and crew between ships "
+			+ "almost instantly, refitting hulls in its dry docks, and commissioning new ships wherever a captain needs one.\n\n"
+			+ "Welcome home, Captain, and godspeed.";
+
+	private void showLore() {
+		javax.swing.JTextArea ta = new javax.swing.JTextArea(LORE, 11, 52);
+		ta.setEditable(false);
+		ta.setLineWrap(true);
+		ta.setWrapStyleWord(true);
+		ta.setOpaque(false);
+		ta.setFont(new JLabel().getFont().deriveFont(13f));
+		JOptionPane.showMessageDialog(this, ta, "Lore", JOptionPane.PLAIN_MESSAGE);
+	}
+
 	private void showBundledText(String name, String title) {
 		String text;
 		try {

@@ -474,9 +474,8 @@ class DryDockShop {
 		SavedGameParser.SystemState os = other == null ? null : bs.getSystem(other);
 		if (os != null && os.getCapacity() > 0) {
 			String otherName = systemTitle(other.getId());
-			int r = JOptionPane.showConfirmDialog(bay, "Replace the " + otherName + " with a " + name + "? It keeps the " + otherName + "'s level.",
-					"Replace " + otherName + "?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-			if (r != JOptionPane.YES_OPTION) return false;
+			if (!homeplanet.core.HomePlanet.confirmNo(bay, "Replace the " + otherName + " with a " + name + "? It keeps the " + otherName + "'s level.",
+					"Replace " + otherName + "?")) return false;
 			level = os.getCapacity();
 			os.setCapacity(0);
 			os.setPower(0);
