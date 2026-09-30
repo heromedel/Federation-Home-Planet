@@ -39,7 +39,7 @@ public class MainFrame extends JFrame {
 		addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
 			public void windowClosing(java.awt.event.WindowEvent e) {
-				if (!atSpaceDock && !cargoBay.confirmLeave("close The Home Planet Station interface")) return;
+				if (!atSpaceDock && !atMuseum && !cargoBay.confirmLeave("close The Home Planet Station interface")) return;
 				rememberWindow(); // its size, position and maximized state
 				System.exit(0);
 			}
@@ -66,6 +66,8 @@ public class MainFrame extends JFrame {
 		JScrollPane cargoBayPane = new JScrollPane(cargoBay);
 		cargoBayPane.setBorder(javax.swing.BorderFactory.createEmptyBorder()); // the border alone could tip a just-fitting window into scroll bars
 		tasksPane.add(cargoBayPane, "cargo");
+		museum = new MuseumUI(this);
+		tasksPane.add(museum, "museum");
 		// big enough for the Cargo Bay without scroll bars (never bigger than the screen); a remembered size wins
 		java.awt.Dimension want = cargoBay.getPreferredSize();
 		java.awt.Rectangle screen = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
@@ -84,12 +86,22 @@ public class MainFrame extends JFrame {
 			}
 		});
 	}
-	private boolean atSpaceDock = true;
+	private boolean atSpaceDock = true, atMuseum = false;
+	public final MuseumUI museum;
+
+	/** Opens the Federation Museum. */
+	public void showMuseum() {
+		atSpaceDock = false;
+		atMuseum = true;
+		screens.show(tasksPane, "museum");
+		museum.init();
+	}
 
 	/** Opens the Cargo Bay, fresh from the saves. */
 	public void showCargoBay() {
 		cargoBay.init();
 		atSpaceDock = false;
+		atMuseum = false;
 		screens.show(tasksPane, "cargo");
 		cargoBay.revalidate();
 		cargoBay.repaint();
@@ -98,6 +110,7 @@ public class MainFrame extends JFrame {
 	public void showSpaceDock() {
 		spaceDock.init();
 		atSpaceDock = true;
+		atMuseum = false;
 		screens.show(tasksPane, "dock");
 		spaceDock.revalidate();
 		spaceDock.repaint();

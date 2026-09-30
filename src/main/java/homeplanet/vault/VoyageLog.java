@@ -48,6 +48,19 @@ public final class VoyageLog {
 		try { return f.isFile() ? new String(SafeFiles.read(f), StandardCharsets.UTF_8) : ""; }
 		catch (IOException e) { return "The Home Planet Station could not read her voyage log (" + f + "): " + e.getMessage(); }
 	}
+	/** The log of a ship by her id (she may have left the fleet: the museum), oldest first; empty if none. */
+	public static String read(Vault v, String id) {
+		File f = new File(new File(v.historyDir(), id), LOG);
+		try { return f.isFile() ? new String(SafeFiles.read(f), StandardCharsets.UTF_8) : ""; }
+		catch (IOException e) { return ""; }
+	}
+	/** The sectors a ship (by id) visited in all her journeys, at least the sector she's in in this save. */
+	public static int visited(Vault v, String id, SavedGameState gs) {
+		Properties p = new Properties();
+		File f = new File(new File(v.historyDir(), id), LAST);
+		try { if (f.isFile()) p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); } catch (IOException e) { }
+		return Math.max(intOf(p, "visited", 0), gs == null ? 0 : gs.getSectorNumber() + 1);
+	}
 	/** The sectors she has visited in all her journeys, as far as the station has seen (at least the current one). */
 	public static int visited(Vault v, Ship s) {
 		Properties last = last(v, s);

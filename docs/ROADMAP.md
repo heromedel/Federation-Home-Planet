@@ -15,9 +15,9 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 8. Transmissions: the inbox, commission orders, promotions, achievement rewards (draft: docs/TRANSMISSIONS.md)
 9. Immersive Mode, part 3: the briefing, its own FTL profile, the stipend, unlock hints, Steam Cloud
 10. After a final victory: rescue her (or the museum), or a reward of her value
-11. The museum: planned, with mockups (not built yet)
+11. The museum
 
-Items 1-10 are built. What remains is testing in real play, bug checks, and the museum.
+All built. What remains is testing in real play and bug checks.
 
 ---
 
@@ -245,7 +245,7 @@ How it works (confirmed with heromedel's run of the Shrapnel R.U. and a save log
   Space Dock takes stock as soon as its window comes to the front after FTL deletes the save.
 - Harness test VicT (synthetic saves), and a replay of a logger's folder when VICLOG is set.
 
-## 11. The museum — planned (heromedel approved the plan and the mockups; not built yet)
+## 11. The museum — built (4B.31; harness checks in VicT)
 
 A screen of its own (the Space Dock's **Museum** button, shown once there's a victory or a ship lost), in the
 station's style: the FTL fonts, gold headings, ships from the game art. The heading shows the fleet's total victories.

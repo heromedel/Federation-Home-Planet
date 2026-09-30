@@ -57,6 +57,17 @@ public class Unlocks {
 		if (missing() || profile == null || profile.getStats() == null) return -1; // a missing profile can't say: it may be mid-write
 		return profile.getStats().getIntRecord(net.blerf.ftl.model.Stats.StatType.TOTAL_VICTORIES);
 	}
+	/** Her best victorious Top Scores or Ship Best entry (score, difficulty), or null. */
+	public net.blerf.ftl.model.Score bestVictoriousScore(String shipName, String shipId) {
+		if (missing() || profile == null || profile.getStats() == null) return null;
+		net.blerf.ftl.model.Score best = null;
+		List<net.blerf.ftl.model.Score> all = new java.util.ArrayList<net.blerf.ftl.model.Score>(profile.getStats().getTopScores());
+		all.addAll(profile.getStats().getShipBest());
+		for (net.blerf.ftl.model.Score s : all) {
+			if (s.isVictory() && shipName.equals(s.getShipName()) && shipId.equals(s.getShipId()) && (best == null || s.getValue() > best.getValue())) best = s;
+		}
+		return best;
+	}
 	/** Victorious entries naming this ship (her name and blueprint) in the profile's Top Scores and Ship Best, or -1 if unread. */
 	public int victoriousScores(String shipName, String shipId) {
 		if (missing() || profile == null || profile.getStats() == null) return -1;

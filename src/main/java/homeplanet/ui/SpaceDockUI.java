@@ -49,6 +49,7 @@ import homeplanet.vault.Vault;
 public class SpaceDockUI extends JPanel implements ActionListener {
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
+	private JButton museumBtn;
 	private JButton inboxBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn;
 	final MainFrame parent;
 
@@ -133,7 +134,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
 		controlGroup(controls, "Helm", launchBtn, journeyBtn);
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
-		controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn);
+		if (homeplanet.parser.Museum.anything(vault)) { // once a ship has won, or been lost in action
+			museumBtn = controlButton("Museum", "The Federation Museum: the Hall of Victors, and the Memorial to ships lost in action");
+			controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn, museumBtn);
+		} else {
+			museumBtn = null;
+			controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn);
+		}
 		String designLock = homeplanet.parser.Clearance.customReason();
 		designBtn = controlButton("Design Ship", designLock == null ? "Lay out a new ship of your own on a blank grid"
 				: "<html>" + homeplanet.parser.XmlText.text(designLock).replace("\n", "<br>") + "</html>");
@@ -544,6 +551,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			init(); // rules or the saves folder may have changed
 		} else if (o == refreshBtn) {
 			refresh();
+		} else if (o == museumBtn && museumBtn != null) {
+			parent.showMuseum();
 		} else if (o == otherBtn) {
 			otherOrders();
 		} else if (o == inboxBtn) {
@@ -666,7 +675,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Other...: the station's rarely used orders, in a window of their own. */
 	private void otherOrders() {
 		java.util.List<OtherOrdersDialog.Order> orders = new java.util.ArrayList<OtherOrdersDialog.Order>();
-		orders.add(new OtherOrdersDialog.Order("Recover a ship", "Bring back a destroyed ship, or one lost in action, from her last kept version.",
+		orders.add(new OtherOrdersDialog.Order("Recover a ship", "For when a ship is lost to a bug or a malfunction: restores her from the station's last record of her.",
 				HomePlanet.immersiveMode ? "Immersive Mode: ships lost or destroyed stay gone." : null,
 				new Runnable() { public void run() { recoverShip(); } }, false));
 		orders.add(new OtherOrdersDialog.Order("Clean up blueprints", "Remove old blueprints no ship uses any more from the Federation Home Planet Mod. Rarely needed.",

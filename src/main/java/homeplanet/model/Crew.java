@@ -39,6 +39,13 @@ public final class Crew {
 			{"Repair", skillText(cs.getRepairSkill(), CONSTANTS.getMasteryIntervalRepair(r), cs.getRepairMasteryOne(), cs.getRepairMasteryTwo())},
 			{"Combat", skillText(cs.getCombatSkill(), CONSTANTS.getMasteryIntervalCombat(r), cs.getCombatMasteryOne(), cs.getCombatMasteryTwo())}};
 	}
+	/** Her skill levels (0, 1 or 2, from the save's mastery flags): pilot, engines, shields, weapons, repair, combat. */
+	public static int[] skillLevels(CrewState cs) {
+		return new int[] {lv(cs.getPilotMasteryOne(), cs.getPilotMasteryTwo()), lv(cs.getEngineMasteryOne(), cs.getEngineMasteryTwo()),
+				lv(cs.getShieldMasteryOne(), cs.getShieldMasteryTwo()), lv(cs.getWeaponMasteryOne(), cs.getWeaponMasteryTwo()),
+				lv(cs.getRepairMasteryOne(), cs.getRepairMasteryTwo()), lv(cs.getCombatMasteryOne(), cs.getCombatMasteryTwo())};
+	}
+	private static int lv(boolean one, boolean two) { return two ? 2 : one ? 1 : 0; }
 	/** Hover text for a crew member: race and skill levels. */
 	public static String tooltip(CrewState cs) {
 		if (cs == null || cs.getRace() == null) return null;

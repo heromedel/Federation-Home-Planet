@@ -159,13 +159,23 @@ public class CommissionDialog extends JDialog {
 		body.add(sp, BorderLayout.WEST);
 		body.add(right, BorderLayout.CENTER);
 
-		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		JPanel buttons = new JPanel(new BorderLayout());
+		JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		if (!locked.isEmpty()) {
+			JButton lockedBtn = new JButton("Locked ships...");
+			lockedBtn.setToolTipText("The ships not yet unlocked in your FTL profile, and how FTL unlocks each");
+			lockedBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { LockedShipsDialog.open(CommissionDialog.this, locked); } });
+			JPanel leftButtons = new JPanel(new FlowLayout(FlowLayout.LEFT));
+			leftButtons.add(lockedBtn);
+			buttons.add(leftButtons, BorderLayout.WEST);
+		}
+		buttons.add(rightButtons, BorderLayout.EAST);
 		JButton ok = new JButton("Commission");
 		JButton cancel = new JButton("Cancel");
 		ok.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { commission(); } });
 		cancel.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
-		buttons.add(ok);
-		buttons.add(cancel);
+		rightButtons.add(ok);
+		rightButtons.add(cancel);
 		getRootPane().setDefaultButton(ok);
 
 		getContentPane().add(body, BorderLayout.CENTER);
@@ -178,6 +188,8 @@ public class CommissionDialog extends JDialog {
 
 	/** Why some ships are missing from the list (rules, or an unreadable profile), or null. */
 	private String listNote = null;
+	/** The standard layouts the profile hasn't unlocked (hidden from the list; Locked ships... shows them). */
+	private final List<LockedShipsDialog.Locked> locked = new ArrayList<LockedShipsDialog.Locked>();
 
 	/** Vanilla ships by model (A, B, C), then the station's own blueprints flagged as starter ships; the unlock rules may hide some. */
 	private void fill() {
@@ -215,7 +227,7 @@ public class CommissionDialog extends JDialog {
 				ShipBlueprint bp;
 				try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
 				if (bp == null) continue;
-				if (unlocks != null && !unlocks.unlocked(base, n)) { hidden++; continue; }
+				if (unlocks != null && !unlocks.unlocked(base, n)) { hidden++; locked.add(new LockedShipsDialog.Locked(base, bp, n)); continue; }
 				String id = bp.getId();
 				model.addElement(new Entry(id, classOf(bp) + " " + letters[n] + (free(id) ? " (free)" : "")));
 			}

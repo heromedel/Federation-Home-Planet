@@ -182,6 +182,7 @@ public final class Vault {
 		saveManifest();
 		VoyageLog.baseline(this, s, gs);
 		VoyageLog.note(this, s, note);
+		homeplanet.parser.Museum.setOut(this, s, note.startsWith("Commissioned")); // her command starts: honours count from here
 	}
 	/** Hasn't she left the beacon the station set her out at? */
 	public boolean stillAtHomePlanet(Ship s) {
@@ -641,6 +642,7 @@ public final class Vault {
 		s.fresh = position(gs); // she's back at The Home Planet Station
 		VoyageLog.baseline(this, s, gs);
 		VoyageLog.note(this, s, "Rescued after the final engagement: back at The Home Planet Station, ready for a new journey");
+		homeplanet.parser.Museum.setOut(this, s, false);
 		try {
 			saveManifest();
 		} catch (IOException e) {

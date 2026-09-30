@@ -100,6 +100,7 @@ public final class FinalVictory {
 				boolean won = f.victoriesThen >= 0 ? u.victories() > f.victoriesThen
 						: u.victoriousScores(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId()) > Math.max(0, f.scoresThen);
 				String c = choice();
+				if (won) Museum.recordVictory(v, f, gs, u); // every victor has a place in the Hall of Victors
 				if (!won || NOTHING.equals(c)) {
 					v.closeFinal(f, won);
 					if (won) HistoryLog.entry("VICTORY", f.name + " won the last battle and was lost with the run (after a final victory: nothing)");
@@ -144,6 +145,7 @@ public final class FinalVictory {
 	/** Keep her: she docks, ready for a new journey. Returns what came of it, in words. */
 	public static String keep(Vault.FinalBattle f) throws IOException {
 		Ship s = Vault.get().bringHome(f);
+		Museum.kept(Vault.get(), f.id);
 		return s.name + " is docked at the Space Dock, ready for her next journey.";
 	}
 	/** The museum's offer: her value to the Cargo Hold, and she goes to the museum. Returns what came of it, in words. */
@@ -152,6 +154,7 @@ public final class FinalVictory {
 		Vault v = Vault.get();
 		v.depositToStorage(value);
 		v.toMuseum(f);
+		Museum.preserved(v, f.id, value);
 		HistoryLog.entry("MUSEUM", value + " scrap to the Cargo Hold for " + f.name);
 		return f.name + " is honoured in the Federation museum. " + value + " scrap is waiting in the Cargo Hold.";
 	}

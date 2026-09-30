@@ -48,6 +48,10 @@ And More.
 - **Immersive Mode:** a career of its own, with its own fleet and FTL profile. The Federation Home Planet's rules are
   locked, you rise in rank (Commander, Captain, Commodore), and transmissions bring commission orders, promotions,
   achievement rewards and a stipend. Return to normal mode at any time, and keep the career or end it.
+- **The Federation Museum:** every ship that won in the Hall of Victors (preserved in the museum, still in service,
+  honoured in memory, or lost in action later), and the ships lost in action in the Memorial: her record, honours,
+  crew, voyage and loadout, an epitaph of your own, and a picture of the exhibit to save.
+- **Commission's Locked ships list:** the ships your FTL profile hasn't unlocked yet, with FTL's own hint for each.
 - **Ship's records:** the last versions of every ship (restore one, or recover a ship that was lost), her voyage log
   (jumps, battles, crew, upgrades, damage, written as FTL saves while the station is open), and the sectors she has
   visited in all her journeys.

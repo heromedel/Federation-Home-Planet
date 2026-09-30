@@ -15,6 +15,7 @@ public class VicT { public static void main(String[] a) throws Exception {
  rescueMuseum(v);
  reward(v);
  inbox(v);
+ museum(v);
  if (a.length > 3) replay(game, new File(a[3]), new File(work, "replay"));
  Setup.done();
 }
@@ -129,6 +130,28 @@ public class VicT { public static void main(String[] a) throws Exception {
   m = null; for (Transmissions.Message x : Transmissions.load()) if (x.key.equals("rescue:" + id)) m = x;
   Setup.chk("I: decided in the inbox: she's docked, the message says so", v.byId(id) != null && m.claimed && m.claimedWhat.contains("docked"));
   HomePlanet.immersiveNotifications = false;
+ }
+ /** The museum: every victor in the Hall of Victors with her status, the ship lost without a victory in the Memorial. */
+ static void museum(Vault v) throws Exception {
+  List<Museum.Exhibit> all = Museum.exhibits(v);
+  Map<Museum.Status, Integer> n = new HashMap<Museum.Status, Integer>();
+  for (Museum.Exhibit e : all) n.put(e.status, (n.containsKey(e.status) ? n.get(e.status) : 0) + 1);
+  System.out.println("museum: " + n);
+  Setup.chk("U: the ship lost without a victory is in the Memorial, and only there", n.containsKey(Museum.Status.MEMORIAL) && n.get(Museum.Status.MEMORIAL) == 1);
+  Setup.chk("U: the kept victors are Still in Service", n.containsKey(Museum.Status.IN_SERVICE) && n.get(Museum.Status.IN_SERVICE) == 2);
+  Setup.chk("U: the one sold to the museum is Preserved", n.containsKey(Museum.Status.PRESERVED) && n.get(Museum.Status.PRESERVED) == 1);
+  Setup.chk("U: the one rewarded (not kept) is Honoured in Memory", n.containsKey(Museum.Status.MEMORY) && n.get(Museum.Status.MEMORY) == 1);
+  Setup.chk("U: victories counted, and the Hall before the Memorial", Museum.totalVictories(all) == 4 && all.get(0).victor && !all.get(all.size() - 1).victor);
+  Museum.Exhibit kept = null; for (Museum.Exhibit e : all) if (e.status == Museum.Status.IN_SERVICE) kept = e;
+  String[] vd = kept.victoryDetails().get(0);
+  Setup.chk("U: a victory's details are kept (date, sector, score from the profile)", !vd[0].isEmpty() && !vd[3].isEmpty() && "4431".equals(vd[1]));
+  Museum.setEpitaph(v, kept.id, "She held the line.");
+  Museum.Exhibit again = null; for (Museum.Exhibit e : Museum.exhibits(v)) if (e.id.equals(kept.id)) again = e;
+  Setup.chk("U: an epitaph stays on her plate", "She held the line.".equals(again.epitaph()));
+  // a kept victor later lost in action
+  Ship s = v.byId(kept.id); v.board(s); v.takeStock(); v.continueFile().delete(); v.reload(); v.takeStock();
+  Museum.Exhibit lost = null; for (Museum.Exhibit e : Museum.exhibits(v)) if (e.id.equals(kept.id)) lost = e;
+  Setup.chk("U: a victor kept and later lost: Lost in Action, still in the Hall", lost != null && lost.victor && lost.status == Museum.Status.LOST);
  }
  /** Replays a save logger's files in order into a fresh saves folder, then settles: the logged run ended in a victory. */
  static void replay(File game, File logDir, File work) throws Exception {
