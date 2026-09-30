@@ -498,6 +498,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		ShipState ship = g.getPlayerShip();
 		if (bp != null) statRow(p, "Class", CommissionDialog.classOf(bp), k, v);
 		statRow(p, "Sector", String.valueOf(g.getSectorNumber() + 1), k, v);
+		statRow(p, "Visited", String.valueOf(homeplanet.vault.VoyageLog.visited(Vault.get(), ship0)), k, v); // sectors, all her journeys
 		statRow(p, "Crew", String.valueOf(ship.getCrewList().size()), k, v);
 		statRow(p, "Hull", ship.getHullAmt() + (bp != null && bp.getHealth() != null ? " / " + bp.getHealth().amount : ""), k, v);
 		statRow(p, "Scrap", String.valueOf(ship.getScrapAmt()), k, v);
@@ -953,7 +954,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		while (it.hasNext()) if (!SaveHelper.isOwnCrew(it.next())) it.remove();
 		try {
 			Vault.get().write(ship, gs);
-			Vault.get().setOut(ship, gs); // at The Home Planet Station until she jumps
+			Vault.get().setOut(ship, gs, "A new journey plotted from sector 1"); // at The Home Planet Station until she jumps
 			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + fee + " scrap from Spacedock Storage" : ""));
 		} catch (Exception e) {
 			ship.invalidate();
@@ -965,7 +966,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The Home Planet Station could not save her new journey:\n" + e + refund);
 			return;
 		}
-		JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is fueled and ready. A new journey awaits, Captain.",
+		JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is ready to depart: a new journey is plotted, Captain.",
 				"New Journey", JOptionPane.INFORMATION_MESSAGE);
 		init();
 	}

@@ -26,7 +26,7 @@ public class CommT { public static void main(String[] a) throws Exception {
  static void setOut(Vault v) throws Exception {
   boolean was = HomePlanet.storeRequirement; HomePlanet.storeRequirement = true;
   SavedGameState g = Commission.build("PLAYER_SHIP_HARD", "Fresh Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(11));
-  Ship s = v.adopt(g); v.setOut(s, g);
+  Ship s = v.adopt(g); v.setOut(s, g, "Commissioned (test)");
   Setup.chk("O: a new ship may trade before her first jump, though no store is at her beacon", !SaveHelper.isAtStation(s.save()) && v.mayTrade(s) && v.stillAtHomePlanet(s));
   v.board(s);
   Setup.chk("O: still so once boarded", v.mayTrade(v.boarded()));

@@ -40,8 +40,8 @@ import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
 /**
- * A ship's records: the earlier versions of her the station keeps (newest first), with Restore this version, and her
- * entries in history.log.
+ * A ship's records: the earlier versions of her the station keeps (newest first), with Restore this version; her
+ * voyage log (what FTL did to her, save by save); and her entries in history.log.
  */
 public class ShipRecordsDialog extends JDialog {
 	private final Ship ship;
@@ -87,15 +87,12 @@ public class ShipRecordsDialog extends JDialog {
 		restoreRow.add(restore);
 		if (!versions.isEmpty()) top.add(restoreRow, BorderLayout.SOUTH);
 
-		JTextArea logArea = new JTextArea(logLines(ship));
-		logArea.setEditable(false);
-		logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-		logArea.setCaretPosition(logArea.getDocument().getLength()); // the latest entries in view
-		JScrollPane ls = new JScrollPane(logArea);
-		ls.setPreferredSize(new Dimension(560, 200));
-		JPanel logPanel = new JPanel(new BorderLayout(0, 4));
-		logPanel.add(new JLabel("Her entries in the station's log (history.log):"), BorderLayout.NORTH);
-		logPanel.add(ls, BorderLayout.CENTER);
+		String voyage = homeplanet.vault.VoyageLog.read(Vault.get(), ship);
+		javax.swing.JTabbedPane logPanel = new javax.swing.JTabbedPane();
+		logPanel.addTab("Voyage log", logTab(voyage.isEmpty() ? "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
+				+ "while the station is open (and on Refresh): jumps, sectors, battles, crew, what came aboard, upgrades and repairs." : voyage,
+				"What FTL did to her, save by save (newest last). Sectors visited in all her journeys: " + homeplanet.vault.VoyageLog.visited(Vault.get(), ship)));
+		logPanel.addTab("Station log", logTab(logLines(ship), "Her entries in the station's log (history.log):"));
 
 		JPanel body = new JPanel(new BorderLayout(0, 14));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
@@ -114,6 +111,20 @@ public class ShipRecordsDialog extends JDialog {
 		setLocationRelativeTo(getOwner());
 	}
 
+	/** A log's text, scrolled to its latest lines, under a line saying what it is. */
+	private static JPanel logTab(String text, String what) {
+		JTextArea area = new JTextArea(text);
+		area.setEditable(false);
+		area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+		area.setCaretPosition(area.getDocument().getLength()); // the latest entries in view
+		JScrollPane sp = new JScrollPane(area);
+		sp.setPreferredSize(new Dimension(640, 220));
+		JPanel p = new JPanel(new BorderLayout(0, 4));
+		p.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+		p.add(new JLabel(what), BorderLayout.NORTH);
+		p.add(sp, BorderLayout.CENTER);
+		return p;
+	}
 	/** One line for a kept version: when it was kept, and where she was. */
 	private static String describe(File f) {
 		String when = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(f.lastModified()));

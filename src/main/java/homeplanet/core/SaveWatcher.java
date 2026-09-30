@@ -77,6 +77,7 @@ public final class SaveWatcher implements Runnable {
 					changedAt = 0;
 					SwingUtilities.invokeLater(new Runnable() {
 						public void run() {
+							try { if (homeplanet.vault.Vault.isOpen()) homeplanet.vault.Vault.get().observeBoarded(); } catch (Exception e) { log.warn("The voyage log's look failed: {}", e.toString()); }
 							try { homeplanet.parser.FinalVictory.watch(); } catch (Exception e) { log.warn("The final-victory watch failed: {}", e.toString()); }
 						}
 					});

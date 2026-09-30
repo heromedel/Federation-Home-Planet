@@ -177,9 +177,11 @@ public final class Vault {
 
 	private static String position(SavedGameState gs) { return gs.getSectorNumber() + "|" + gs.getCurrentBeaconId(); }
 	/** The station has just set her out (commissioned, a New Journey, rescued): until she leaves this beacon she may trade. */
-	public synchronized void setOut(Ship s, SavedGameState gs) throws IOException {
+	public synchronized void setOut(Ship s, SavedGameState gs, String note) throws IOException {
 		s.fresh = position(gs);
 		saveManifest();
+		VoyageLog.baseline(this, s, gs);
+		VoyageLog.note(this, s, note);
 	}
 	/** Hasn't she left the beacon the station set her out at? */
 	public boolean stillAtHomePlanet(Ship s) {
@@ -637,6 +639,8 @@ public final class Vault {
 		writeQuietly(s, gs);
 		ships.add(s);
 		s.fresh = position(gs); // she's back at The Home Planet Station
+		VoyageLog.baseline(this, s, gs);
+		VoyageLog.note(this, s, "Rescued after the final engagement: back at The Home Planet Station, ready for a new journey");
 		try {
 			saveManifest();
 		} catch (IOException e) {
@@ -737,7 +741,8 @@ public final class Vault {
 		SavedGameState gs = b.save();
 		if (gs == null) return false;
 		String now = marksOf(gs);
-		if (b.marks == null || b.marks.isEmpty()) { b.marks = now; return true; }
+		if (b.marks == null || b.marks.isEmpty()) { b.marks = now; VoyageLog.observe(this, b, gs); return true; }
+		if (sameShip(b.marks, gs)) VoyageLog.observe(this, b, gs); // her voyage log (repairs, trades at a store... change no marks)
 		if (now.equals(b.marks)) return false;
 		if (sameShip(b.marks, gs)) {
 			snapshot(b); // FTL's progress, kept: if FTL later writes over her, this is what comes back
@@ -762,6 +767,16 @@ public final class Vault {
 	/** After the station writes the boarded ship: her marks follow (a rename, a New Journey, a retrofit are the station's own). */
 	private void marked(Ship s, SavedGameState state) {
 		if (s.state == Ship.State.BOARDED && state != null) s.marks = marksOf(state);
+		VoyageLog.baseline(this, s, state); // the station's own change: not in her voyage log
+	}
+	/** FTL has written continue.sav (the save watcher): the boarded ship's voyage log takes note, if it's her. */
+	public synchronized void observeBoarded() {
+		Ship b = boarded();
+		if (b == null || !continueFile().isFile()) return;
+		SavedGameState gs;
+		try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(continueFile()); } catch (Exception e) { return; } // mid-write: Refresh catches up
+		if (b.marks != null && !b.marks.isEmpty() && !sameShip(b.marks, gs)) return;
+		VoyageLog.observe(this, b, gs);
 	}
 	private void adoptStrays(File dir, Ship.State state, List<String> notes) {
 		File[] files = dir.listFiles();

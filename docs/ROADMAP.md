@@ -132,7 +132,7 @@ ship pays, and Save makes it official (Reset undoes it).
 
 - **Hull repairs at FTL's rate:** 2 scrap a point in sectors 1-3, 3 in sectors 4-6, 4 in sectors 7-8 (FTL wiki).
 - **Reactor prices:** heromedel's numbers from FTL's upgrade screen: 15 a bar for bars 1-5, 20 for 6-10, 25 for
-  11-15, 30 for 16-20, 35 for 21-25 (to be confirmed in a real run). The price table is in one place
+  11-15, 30 for 16-20, 35 for 21-25 (confirmed by heromedel). The price table is in one place
   (`Pricing.reactorBar`).
 - **Open the station's folder:** a button in Settings, beside the folder fields.
 - **Clean up blueprints:** moves from Settings to Other…, with an explanation of what it's for: it removes

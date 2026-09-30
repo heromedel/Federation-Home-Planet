@@ -6,12 +6,15 @@ it does and CREDITS.md for where the code came from.
 ## Working with heromedel
 
 - Discuss first, and ask before changing code. When asked to "discuss" or "don't write yet", don't edit.
+- Ask before writing (say what will change and wait for a yes), and ask again before committing (show what changed).
+- Answer questions without writing code. Collect small fixes and requests in a list, show it when it changes, and do
+  them as one batch when heromedel asks; don't make a version or a commit for each small change.
 - Never commit or push to `main`. Work only on your own session branch; heromedel decides what goes into
   `main` (a pull request or their own merge).
 - heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build - FHP.bat`.
   Say what to test and how, in plain steps.
 - `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
-- The version (4B.nn) goes up by one with each batch pushed for heromedel to test: `<version>` in `pom.xml` and
+- The version (4B.nn) goes up by one only with a commit: `<version>` in `pom.xml` and
   `APP_VERSION` in `HomePlanet.java`, always together.
 - The repo is public. Never commit FTL's game files (ftl.dat, its pictures or music) or a link to them.
 
