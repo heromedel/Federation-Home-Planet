@@ -221,6 +221,7 @@ public final class Vault {
 		if (b != null && !cont.isFile()) {
 			notes.add(b.name + " was boarded, and continue.sav is gone: lost in action (FTL ends a run by deleting the save). "
 					+ (historyOf(b).isDirectory() ? "Her last versions are in history/" + b.id : ""));
+			recordFate(b, Fate.LOST);
 			ships.remove(b);
 			b = null;
 		}
@@ -322,18 +323,29 @@ public final class Vault {
 		public int compare(File a, File b) { return order(a).compareTo(order(b)); }
 	};
 
-	/** Copies her current save into her history folder (before it's changed), keeping the last KEEP. */
+	/** Copies her current save into her history folder (before it's changed), keeping the last KEEP. Nothing if her newest kept version is the same. */
 	public synchronized void snapshot(Ship s) throws IOException {
 		File f = fileOf(s);
 		if (!f.isFile()) return;
 		File dir = historyOf(s);
 		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
+		List<File> kept = history(s);
+		if (!kept.isEmpty() && SafeFiles.hash(kept.get(kept.size() - 1)).equals(SafeFiles.hash(f))) return;
 		File target = historyTarget(dir);
 		SafeFiles.copy(f, target);
 		prune(dir);
 	}
+	/**
+	 * After the station writes the boarded ship: her new version goes into her history too. FTL ends a run by deleting
+	 * continue.sav, and then her history is all that's left of her; without this, a lost ship would come back as she
+	 * was before the station's last change (with goods she had already traded away, say). Not fatal if it fails.
+	 */
+	private void keepBoarded(Ship s) {
+		if (s.state != Ship.State.BOARDED) return;
+		try { snapshot(s); } catch (IOException e) { log.warn("Could not keep {}'s new version in her history: {}", s, e.toString()); }
+	}
 	private void prune(File dir) {
-		File[] files = dir.listFiles();
+		File[] files = dir.listFiles(new java.io.FileFilter() { public boolean accept(File f) { return f.isFile() && f.getName().endsWith(".sav"); } });
 		if (files == null || files.length <= KEEP) return;
 		java.util.Arrays.sort(files, OLDEST_FIRST);
 		for (int i = 0; i < files.length - KEEP; i++) {
@@ -355,6 +367,7 @@ public final class Vault {
 	public synchronized void write(Ship s, SavedGameState state) throws IOException {
 		snapshot(s);
 		writeQuietly(s, state);
+		keepBoarded(s);
 		saveManifest();
 	}
 	private void writeQuietly(Ship s, SavedGameState state) throws IOException {
@@ -453,7 +466,7 @@ public final class Vault {
 					for (File t : tmps) t.delete();
 					throw e;
 				}
-				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) e.getKey().written(e.getValue(), SafeFiles.hash(fileOf(e.getKey())));
+				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) { e.getKey().written(e.getValue(), SafeFiles.hash(fileOf(e.getKey()))); keepBoarded(e.getKey()); }
 				saveManifest();
 			}
 		}
@@ -539,10 +552,95 @@ public final class Vault {
 	public synchronized void remove(Ship s, String why) throws IOException {
 		File f = fileOf(s);
 		if (f.isFile()) moveToHistory(s, f);
+		recordFate(s, "DESTROY".equals(why) ? Fate.DESTROYED : Fate.SCRAPPED);
 		ships.remove(s);
 		saveManifest();
 		if (why != null) HistoryLog.entry(why, s.name + "  " + s.state.key + "/" + s.id + ".sav -> history/" + s.id + "/");
 	}
+	// ---- ships that left, and earlier versions ----
+
+	/** Why a ship left the fleet, kept in her history folder: it decides whether she can be recovered. */
+	public enum Fate {
+		/** Destroyed from the Junkyard: her last save is whole. */
+		DESTROYED,
+		/** FTL ended her run while she was boarded (continue.sav deleted): her last save is the one she was boarded with. */
+		LOST,
+		/** Stripped for parts: everything aboard went into storage, so she can't come back without duplicating it. */
+		SCRAPPED
+	}
+	private static final String FATE_FILE = "fate.txt";
+	private void recordFate(Ship s, Fate fate) {
+		try {
+			File dir = historyOf(s);
+			if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
+			SafeFiles.writeText(new File(dir, FATE_FILE), fate.name() + "\n" + s.name + "\n", false);
+		} catch (IOException e) {
+			log.warn("Could not record what became of {}: {}", s, e.toString());
+		}
+	}
+
+	/** A ship that left the fleet and can come back: her id, name, what became of her, and her last kept save. */
+	public static final class Departed {
+		public final String id, name;
+		public final Fate fate;
+		public final File last;
+		Departed(String id, String name, Fate fate, File last) { this.id = id; this.name = name; this.fate = fate; this.last = last; }
+	}
+	/** Destroyed and lost ships with a kept save, newest departure first. Scrapped ships never come back (their gear is in storage). */
+	public synchronized List<Departed> recoverable() {
+		List<Departed> out = new ArrayList<Departed>();
+		File[] dirs = historyDir().listFiles();
+		if (dirs == null) return out;
+		for (File d : dirs) {
+			if (!d.isDirectory() || byId(d.getName()) != null) continue;
+			File fate = new File(d, FATE_FILE);
+			if (!fate.isFile()) continue; // left before fates were kept: what became of her isn't known
+			try {
+				String[] lines = new String(SafeFiles.read(fate), java.nio.charset.StandardCharsets.UTF_8).split("\n");
+				Fate f = Fate.valueOf(lines[0].trim());
+				if (f == Fate.SCRAPPED) continue;
+				File[] saves = d.listFiles(new java.io.FileFilter() { public boolean accept(File x) { return x.isFile() && x.getName().endsWith(".sav"); } });
+				if (saves == null || saves.length == 0) continue;
+				java.util.Arrays.sort(saves, OLDEST_FIRST);
+				out.add(new Departed(d.getName(), lines.length > 1 ? lines[1].trim() : d.getName(), f, saves[saves.length - 1]));
+			} catch (Exception e) {
+				log.warn("Could not read {}: {}", fate, e.toString());
+			}
+		}
+		java.util.Collections.sort(out, new java.util.Comparator<Departed>() {
+			public int compare(Departed a, Departed b) { return Long.compare(new File(b.last.getParentFile(), FATE_FILE).lastModified(), new File(a.last.getParentFile(), FATE_FILE).lastModified()); }
+		});
+		return out;
+	}
+	/** Brings a departed ship back to the Space Dock, docked, from her last kept save (which stays in her history too). */
+	public synchronized Ship recover(Departed d) throws IOException {
+		if (byId(d.id) != null) throw new IOException(d.name + " is already in the fleet");
+		Ship s = new Ship(d.id, d.name, Ship.State.DOCKED, true);
+		File to = fileOf(s);
+		SafeFiles.write(to, SafeFiles.read(d.last));
+		s.hash = SafeFiles.hash(to);
+		ships.add(s);
+		new File(d.last.getParentFile(), FATE_FILE).delete();
+		saveManifest();
+		s.save(); // her name and DLC flag, as the save has them
+		HistoryLog.entry("RECOVER", s.name + " (" + d.fate.name().toLowerCase() + ")  history/" + s.id + "/" + d.last.getName() + " -> ships/" + s.id + ".sav");
+		return s;
+	}
+	/** Puts one of her earlier versions back as her current save; the one it replaces goes into her history first. */
+	public synchronized void restore(Ship s, File version) throws IOException {
+		if (s.state == Ship.State.STORAGE) throw new IOException("The storage hold has no earlier versions to go back to");
+		byte[] bytes = SafeFiles.read(version); // before the snapshot below, which may prune it
+		snapshot(s);
+		File f = fileOf(s);
+		SafeFiles.write(f, bytes);
+		s.invalidate();
+		s.hash = SafeFiles.hash(f);
+		s.save();
+		keepBoarded(s);
+		saveManifest();
+		HistoryLog.entry("RESTORE", s.name + "  history/" + s.id + "/" + version.getName() + " -> " + (s.isBoarded() ? "continue.sav" : s.state.key + "/" + s.id + ".sav"));
+	}
+
 	/** A ship just built (commissioned): written into the ships folder, docked. */
 	public synchronized Ship adopt(SavedGameState state) throws IOException {
 		Ship s = new Ship(newId(), state.getPlayerShipName(), Ship.State.DOCKED, state.isDLCEnabled());
@@ -570,6 +668,11 @@ public final class Vault {
 	private void moveToHistory(Ship s, File f) throws IOException {
 		File dir = historyOf(s);
 		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
+		List<File> kept = history(s);
+		if (!kept.isEmpty() && SafeFiles.hash(kept.get(kept.size() - 1)).equals(SafeFiles.hash(f))) {
+			if (!f.delete()) throw new IOException("Could not remove " + f); // her newest kept version is the same
+			return;
+		}
 		File target = historyTarget(dir);
 		SafeFiles.move(f, target);
 		prune(dir);

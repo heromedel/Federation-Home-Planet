@@ -49,7 +49,7 @@ import homeplanet.vault.Vault;
 public class SpaceDockUI extends JPanel implements ActionListener {
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
-	private JButton settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn;
+	private JButton otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn;
 	final MainFrame parent;
 
 	/** Width of one docked ship's place in the list. */
@@ -118,7 +118,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
 		controlGroup(controls, "Helm", launchBtn, journeyBtn);
-		controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn);
+		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship");
+		controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn);
 		designBtn = controlButton("Design Ship", "Lay out a new ship of your own on a blank grid");
 		controlGroup(controls, "Shipyard", commissionBtn, designBtn, salvageBtn, disbandBtn);
 
@@ -389,6 +390,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			init(); // rules or the saves folder may have changed
 		} else if (o == refreshBtn) {
 			refresh();
+		} else if (o == otherBtn) {
+			otherOrders();
 		} else if (o == journeyBtn) {
 			newJourney();
 		} else if (o == commissionBtn) {
@@ -421,6 +424,55 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		homeplanet.core.Music.refresh();
 		init();
 		HistoryLog.loaded("refresh");
+	}
+
+	/** Other...: the station's rarely used orders, in a menu under the button. */
+	private void otherOrders() {
+		javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+		javax.swing.JMenuItem recover = new javax.swing.JMenuItem("Recover a ship...");
+		recover.setToolTipText("Bring back a destroyed ship, or one lost in action, from her last kept version");
+		recover.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(ActionEvent e) { recoverShip(); }
+		});
+		menu.add(recover);
+		menu.show(otherBtn, 0, otherBtn.getHeight());
+	}
+	/** Brings a destroyed or lost ship back to the Space Dock from her last kept version. */
+	void recoverShip() {
+		List<Vault.Departed> gone = Vault.get().recoverable();
+		if (gone.isEmpty()) {
+			JOptionPane.showMessageDialog(null, "The Home Planet Station has no records of a destroyed or lost ship to recover.\n"
+					+ "(Scrapped ships can't be recovered: everything aboard them went into Spacedock Storage.)", "Recover a Ship", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		String[] names = new String[gone.size()];
+		java.text.SimpleDateFormat when = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+		for (int i = 0; i < names.length; i++) {
+			Vault.Departed d = gone.get(i);
+			names[i] = d.name + "  (" + (d.fate == Vault.Fate.LOST ? "lost in action" : "destroyed") + "; last kept " + when.format(new java.util.Date(d.last.lastModified())) + ")";
+		}
+		javax.swing.JComboBox<String> pick = new javax.swing.JComboBox<String>(names);
+		JPanel panel = new JPanel(new java.awt.BorderLayout(0, 8));
+		panel.add(new JLabel("<html>The Home Planet Station keeps the last version of every ship that leaves the fleet.<br>"
+				+ "A recovered ship returns to the Space Dock as she was in that version: her crew, cargo and journey with her.<br>"
+				+ "(A ship lost in action returns as she was when the station last saw her, before her final battle.)<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
+		panel.add(pick, java.awt.BorderLayout.CENTER);
+		Object[] options = {"Recover", "Cancel"};
+		int choice = JOptionPane.showOptionDialog(null, panel, "Recover a Ship", JOptionPane.DEFAULT_OPTION,
+				JOptionPane.QUESTION_MESSAGE, null, options, options[1]); // Cancel is the default
+		if (choice != 0) return;
+		Vault.Departed d = gone.get(pick.getSelectedIndex());
+		Ship back;
+		try {
+			back = Vault.get().recover(d);
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not recover " + d.name + ":\n" + e.getMessage()
+					+ "\n\nHer records are still in " + d.last.getParentFile());
+			init();
+			return;
+		}
+		init();
+		JOptionPane.showMessageDialog(null, back.name + " has been recovered. She waits at the Space Dock.", "Recover a Ship", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	/** Takes command of a docked ship (docking the boarded one first). True if she was boarded. */
@@ -462,7 +514,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					"Ship's report", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
-		if (!showReport(sgs)) return;
+		int choice = reportChoice(sgs, true);
+		if (choice == 2) {
+			if (ShipRecordsDialog.open(this, ship)) init();
+			return;
+		}
+		if (choice != 1) return;
 		String oldName = sgs.getPlayerShipName();
 		String newName = promptForName("What shall she be called?", "Rename Ship", oldName);
 		if (newName == null || newName.equals(oldName)) return;
@@ -486,15 +543,18 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	 * drones, augments, and the retrofit/remodel status in the title. Returns true if the player pressed Rename.
 	 */
 	public boolean showReport(SavedGameState sgs) {
+		return reportChoice(sgs, false) == 1;
+	}
+	/** The report, with Records (her kept versions and log) when she's one of the fleet. 0 OK, 1 Rename, 2 Records. */
+	private int reportChoice(SavedGameState sgs, boolean records) {
 		boolean retrofitted = Retrofit.isRetrofitted(sgs.getPlayerShip());
 		String bpId = sgs.getPlayerShip().getShipBlueprintId();
 		String tag = !retrofitted ? "" : CompanionMod.isRemodelId(bpId) ? " (Remodeled " + CompanionMod.numberOf(bpId) + ")" : " (Retrofitted)";
 		if (retrofitted && !Retrofit.inGame(sgs.getPlayerShip())) tag += " - needs the mod sent to FTL via Slipstream";
-		Object[] options = {"OK", "Rename"};
-		int choice = JOptionPane.showOptionDialog(null, fitToScreen(shipSummaryPanel(sgs)),
+		Object[] options = records ? new Object[] {"OK", "Rename", "Records"} : new Object[] {"OK", "Rename"};
+		return JOptionPane.showOptionDialog(null, fitToScreen(shipSummaryPanel(sgs)),
 				String.format("Ship's report: %s%s", sgs.getPlayerShipName(), tag),
 				JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
-		return choice == 1;
 	}
 	/** The panel as it is, or in a scroll pane when it's taller than the screen leaves room for (a big crew and cargo). */
 	static java.awt.Component fitToScreen(JPanel panel) {
@@ -683,7 +743,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Removes a junked ship for good (her last save stays in her history folder). */
 	void destroyShip(Ship ship) {
 		if (!confirmIrreversible("Destroy Ship", "Destroy " + ship.name + "?\n\n"
-				+ "The ship, her cargo and her crew will be lost forever. This cannot be undone.", "Destroy")) return;
+				+ "The ship, her cargo and her crew will be lost. The Home Planet Station keeps her last records,\n"
+				+ "so she could be recovered later (Other... > Recover a ship).", "Destroy")) return;
 		try {
 			Vault.get().remove(ship, "DESTROY");
 		} catch (IOException e) {

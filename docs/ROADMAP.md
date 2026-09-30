@@ -51,12 +51,18 @@ ship moving between the Space Dock, Junkyard and history needs no bookkeeping.
   The design and remodel files stay the master copy; a ship's copy is only a backup, used to rebuild a missing
   master, and never overrides it.
 
-## 3. Ship history and restore
+## 3. Ship history and restore — done (harness test HistT)
 
-- The vault already keeps a ship's last 10 versions (`Vault.history`, never called). Show them in her report, with
-  **Restore this version**, and her entries from `history.log`.
-- Bring back a destroyed, scrapped or lost ship from her last kept save.
-- Turned off by Immersive Mode (restoring is a do-over).
+- The ship report has a **Records** button: her kept versions (newest first, with sector, beacons, hull, scrap and
+  fuel), **Restore this version**, and her entries from `history.log`. Restoring keeps the version it replaces, so
+  it can be undone.
+- **Other… > Recover a ship…** on the Space Dock brings back a destroyed ship, or one lost in action, from her last
+  kept version. Why each ship left is recorded in her history folder (`fate.txt`).
+- **Scrapped ships can't be recovered**: everything aboard went into storage, so she'd come back with a second copy
+  of it. (The Scrap message already says the hull "can never be recovered".)
+- While a ship is boarded, each change the station makes to her is kept in her records too, so a ship lost in
+  action comes back as the station last saw her. Identical versions aren't kept twice.
+- Still to do with Immersive Mode (item 4): turn off Restore and Recover.
 
 ## 4. Pricing and house rules
 
