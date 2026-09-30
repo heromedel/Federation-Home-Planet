@@ -10,6 +10,7 @@ it does and CREDITS.md for where the code came from.
   `main` (a pull request or their own merge).
 - heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build - FHP.bat`.
   Say what to test and how, in plain steps.
+- `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
 - The repo is public. Never commit FTL's game files (ftl.dat, its pictures or music) or a link to them.
 
 ## Layout
