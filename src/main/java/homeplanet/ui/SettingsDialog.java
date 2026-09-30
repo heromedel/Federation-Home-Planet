@@ -243,12 +243,13 @@ public class SettingsDialog extends JDialog {
 		getRootPane().setDefaultButton(ok);
 
 		refreshLabels();
-		getContentPane().add(ScreenFit.wrap(body, 120), BorderLayout.CENTER); // scrolls on a short screen
+		getContentPane().add(ScreenFit.wrap(body, 120, owner), BorderLayout.CENTER); // scrolls on a short screen
 		getContentPane().add(buttons, BorderLayout.SOUTH);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		pack();
 		setResizable(false);
 		setLocationRelativeTo(owner);
+		ScreenFit.keepOnScreen(this); // all of it on its screen, never under the taskbar
 	}
 
 	private void apply() {
