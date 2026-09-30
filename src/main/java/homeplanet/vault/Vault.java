@@ -362,6 +362,8 @@ public final class Vault {
 				if (id.isEmpty()) continue;
 				Ship s = new Ship(id, e.getAttribute("name"), Ship.State.of(e.getAttribute("state")), "true".equals(e.getAttribute("dlc")));
 				s.hash = e.getAttribute("hash");
+				s.marks = e.getAttribute("marks");
+				s.stranger = "true".equals(e.getAttribute("stranger"));
 				ships.add(s);
 			}
 		} catch (Exception e) {
@@ -395,6 +397,7 @@ public final class Vault {
 		if (b == null && cont.isFile()) {
 			Ship n = new Ship(newId(), "Unknown ship", Ship.State.BOARDED, true);
 			n.name = ""; // filled in by takeStock() once the game data is loaded
+			n.stranger = true; // not commissioned here (FTL's New Game, most likely)
 			ships.add(n);
 			notes.add("continue.sav is a ship the station didn't know (a new game started in FTL, most likely): she is now boarded");
 			b = n;
@@ -422,7 +425,68 @@ public final class Vault {
 			s.hash = h;
 			changed = true;
 		}
+		if (checkBoarded()) changed = true;
 		if (changed) saveManifest();
+	}
+
+	// ---- is continue.sav still her? ----
+
+	/** A save's marks: model, name, sector, beacons explored, ships defeated, scrap collected. */
+	static String marksOf(SavedGameState gs) {
+		return gs.getPlayerShipBlueprintId() + "|" + gs.getPlayerShipName() + "|" + gs.getSectorNumber() + "|" + gs.getTotalBeaconsExplored()
+				+ "|" + gs.getTotalShipsDefeated() + "|" + gs.getTotalScrapCollected();
+	}
+	/** Could this save be the ship last seen with these marks? Same model and name, and no total gone down. */
+	static boolean sameShip(String marks, SavedGameState gs) {
+		String[] a = marks.split("\\|", -1), b = marksOf(gs).split("\\|", -1);
+		if (a.length != 6 || b.length != 6) return true; // marks from elsewhere: nothing to judge by
+		if (!a[0].equals(b[0]) || !a[1].equals(b[1])) return false;
+		try {
+			for (int i = 2; i < 6; i++) if (Long.parseLong(b[i]) < Long.parseLong(a[i])) return false;
+		} catch (NumberFormatException e) {
+			return true;
+		}
+		return true;
+	}
+	private String overwritten = null;
+	/** The name of a boarded ship FTL overwrote since this was last asked (her last seen version is in her records), or null. */
+	public synchronized String takeOverwritten() { String o = overwritten; overwritten = null; return o; }
+
+	/**
+	 * Checks continue.sav against the boarded ship as last seen. If it's her, FTL's progress is noted (and kept in
+	 * her records). If not (FTL's New Game wrote over her), she is recorded lost, and continue.sav becomes a new,
+	 * uncommissioned ship. True if the manifest changed.
+	 */
+	private boolean checkBoarded() throws IOException {
+		Ship b = boarded();
+		if (b == null) return false;
+		SavedGameState gs = b.save();
+		if (gs == null) return false;
+		String now = marksOf(gs);
+		if (b.marks == null || b.marks.isEmpty()) { b.marks = now; return true; }
+		if (now.equals(b.marks)) return false;
+		if (sameShip(b.marks, gs)) {
+			snapshot(b); // FTL's progress, kept: if FTL later writes over her, this is what comes back
+			b.marks = now;
+			return true;
+		}
+		String lostName = b.marks.split("\\|", -1)[1];
+		b.name = lostName;
+		recordFate(b, Fate.LOST);
+		ships.remove(b);
+		Ship n = new Ship(newId(), gs.getPlayerShipName(), Ship.State.BOARDED, gs.isDLCEnabled());
+		n.stranger = true;
+		n.hash = SafeFiles.hash(continueFile());
+		n.marks = now;
+		ships.add(n);
+		overwritten = lostName;
+		HistoryLog.entry("OVERWRITTEN", lostName + " (" + b.id + ") was boarded, and continue.sav is now another ship: " + n.name
+				+ " (FTL's New Game, most likely). Her last seen version is in history/" + b.id);
+		return true;
+	}
+	/** After the station writes the boarded ship: her marks follow (a rename, a New Journey, a retrofit are the station's own). */
+	private void marked(Ship s, SavedGameState state) {
+		if (s.state == Ship.State.BOARDED && state != null) s.marks = marksOf(state);
 	}
 	private void adoptStrays(File dir, Ship.State state, List<String> notes) {
 		File[] files = dir.listFiles();
@@ -455,6 +519,8 @@ public final class Vault {
 		for (Ship s : ships) {
 			sb.append("\t<ship id=\"").append(s.id).append("\" name=\"").append(XmlText.attr(s.name)).append("\" state=\"").append(s.state.key)
 					.append("\" dlc=\"").append(s.dlc).append("\" hash=\"").append(s.hash == null ? "" : s.hash).append("\"");
+			if (s.state == Ship.State.BOARDED && s.marks != null && !s.marks.isEmpty()) sb.append(" marks=\"").append(XmlText.attr(s.marks)).append("\"");
+			if (s.stranger) sb.append(" stranger=\"true\"");
 			sb.append("/>\r\n");
 		}
 		sb.append("</manifest>\r\n");
@@ -534,6 +600,7 @@ public final class Vault {
 	public synchronized void write(Ship s, SavedGameState state) throws IOException {
 		snapshot(s);
 		writeQuietly(s, state);
+		marked(s, state);
 		keepBoarded(s);
 		saveManifest();
 	}
@@ -633,7 +700,7 @@ public final class Vault {
 					for (File t : tmps) t.delete();
 					throw e;
 				}
-				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) { e.getKey().written(e.getValue(), SafeFiles.hash(fileOf(e.getKey()))); keepBoarded(e.getKey()); }
+				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) { e.getKey().written(e.getValue(), SafeFiles.hash(fileOf(e.getKey()))); marked(e.getKey(), e.getValue()); keepBoarded(e.getKey()); }
 				saveManifest();
 			}
 		}
@@ -661,6 +728,7 @@ public final class Vault {
 		}
 		s.state = Ship.State.BOARDED;
 		s.hash = hash;
+		s.marks = ""; // seen afresh at the next look
 		saveManifest();
 		HistoryLog.entry("BOARD", s.name + "  ships/" + s.id + ".sav -> continue.sav");
 	}
@@ -802,7 +870,7 @@ public final class Vault {
 		SafeFiles.write(f, bytes);
 		s.invalidate();
 		s.hash = SafeFiles.hash(f);
-		s.save();
+		marked(s, s.save());
 		keepBoarded(s);
 		saveManifest();
 		HistoryLog.entry("RESTORE", s.name + "  history/" + s.id + "/" + version.getName() + " -> " + (s.isBoarded() ? "continue.sav" : s.state.key + "/" + s.id + ".sav"));
@@ -982,6 +1050,44 @@ public final class Vault {
 			if (!back.delete()) log.warn("Could not remove {}", back);
 		}
 		HistoryLog.entry("SWITCH FLEET", "now the " + (toImmersive ? "Immersive" : "normal") + " fleet" + (to.boarded() == null ? "" : "; " + to.boarded().name + " boarded again"));
+		return to;
+	}
+
+	/**
+	 * An uncommissioned ship leaves this fleet for the other one's Space Dock or Junkyard: her save is moved there
+	 * under her name, and the other fleet takes her in the next time it opens (as it does any save dropped in).
+	 */
+	public synchronized void sendToOtherFleet(Ship s, boolean junkyard) throws IOException {
+		File dir = new File(otherRoot(), junkyard ? "junkyard" : "ships");
+		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
+		String stem = (s.name == null || s.name.trim().isEmpty() ? "Unknown ship" : s.name.trim()).replaceAll("[\\\\/:*?\"<>|]", "_");
+		File to = new File(dir, stem + ".sav");
+		for (int i = 2; to.exists(); i++) to = new File(dir, stem + " " + i + ".sav");
+		SafeFiles.move(fileOf(s), to);
+		ships.remove(s);
+		saveManifest();
+		HistoryLog.entry("SENT", s.name + "  " + (s.isBoarded() ? "continue.sav" : s.state.key + "/" + s.id + ".sav") + " -> the "
+				+ (immersive ? "normal" : "Immersive") + " fleet's " + (junkyard ? "Junkyard" : "Space Dock"));
+	}
+	/**
+	 * The player takes this boarded ship to the other fleet and switches to it (an uncommissioned ship in Immersive
+	 * Mode, flown in the normal fleet instead): she leaves this fleet's records, continue.sav stays, and the other
+	 * fleet opens with her boarded. Its own parked ship stays docked. Returns the vault now in use.
+	 */
+	public static Vault handOverBoarded(Ship s) throws IOException {
+		Vault from = get();
+		if (s.state != Ship.State.BOARDED || !from.ships.contains(s)) throw new IOException(s.name + " isn't the boarded ship");
+		synchronized (from) {
+			from.ships.remove(s);
+			from.saveManifest();
+		}
+		HistoryLog.entry("HANDED OVER", s.name + " (continue.sav) to the " + (from.immersive ? "normal" : "Immersive") + " fleet, now in use");
+		Vault to = open(from.saves, !from.immersive);
+		File park = new File(to.root, PARKED);
+		if (park.isFile() && !park.delete()) log.warn("Could not remove {}", park);
+		Ship b = to.boarded();
+		if (b != null) b.stranger = false; // she's this fleet's now
+		to.saveManifest();
 		return to;
 	}
 

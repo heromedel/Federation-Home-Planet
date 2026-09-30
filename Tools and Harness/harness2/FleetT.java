@@ -5,6 +5,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  Vault v = Setup.open(game, saves); v.takeStock();
  fleets(v);
+ detection();
  rules();
  Setup.done();
 }
@@ -37,5 +38,44 @@ public class FleetT { public static void main(String[] a) throws Exception {
   Setup.chk("R: the player's own rules are kept apart", !own.store && !own.costs && own.percent == 50 && !own.unlockFree);
   HomePlanet.leaveImmersive();
   Setup.chk("R: and come back when it's turned off", !HomePlanet.immersiveMode && !HomePlanet.storeRequirement && !HomePlanet.commissionCosts && HomePlanet.commissionPercent == 50);
+ }
+ static SavedGameState read(File f) throws Exception { return HomePlanet.savedGameParser.readSavedGame(f); }
+ static void detection() throws Exception {
+  Vault v = Vault.get();
+  if (v.immersive) v = Vault.switchFleet(false);
+  if (v.boarded() == null) v.board(v.docked().get(0));
+  v.takeStock();
+  Ship a = v.boarded(); String aName = a.name;
+  // FTL plays on: one more beacon
+  SavedGameState g = read(v.continueFile()); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1);
+  int kept = v.history(a).size();
+  SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock();
+  Setup.chk("N: FTL's own progress is still her, and kept in her records", v.boarded() == a && v.takeOverwritten() == null && v.history(a).size() == kept + 1);
+  // the station renames her: its own change
+  SavedGameState r = v.readCopy(a).save; r.setPlayerShipName(aName + " II"); r.getPlayerShip().setShipName(aName + " II"); v.write(a, r); v.takeStock();
+  Setup.chk("N: the station's own changes are her too", v.boarded() == a && v.takeOverwritten() == null);
+  aName = aName + " II";
+  // FTL's New Game, same model and name: the totals went down
+  SavedGameState fresh = Commission.build(read(v.continueFile()).getPlayerShipBlueprintId(), aName, net.blerf.ftl.constants.Difficulty.NORMAL, new Random(9));
+  SaveHelper.writeSavedGame(v.continueFile(), fresh); v.takeStock();
+  Setup.chk("N: a New Game with the same name and model is noticed", aName.equals(v.takeOverwritten()) && v.boarded() != a && v.boarded().stranger);
+  boolean lost = false; for (Vault.Departed d : v.recoverable()) if (d.id.equals(a.id) && d.fate == Vault.Fate.LOST) lost = true;
+  Setup.chk("N: the overwritten ship is recorded lost, and recoverable", lost);
+  // Immersive: an uncommissioned ship is sent to the normal Space Dock
+  Ship st = v.boarded(); v.dock(); // (leave the stranger docked in the normal fleet)
+  Vault im = Vault.switchFleet(true);
+  if (im.boarded() != null) im.dock();
+  SaveHelper.writeSavedGame(im.continueFile(), Commission.build("PLAYER_SHIP_CIRCLE", "Stray Engi", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(2)));
+  im.reload(); im.takeStock();
+  Setup.chk("I: a continue.sav Immersive Mode didn't commission is an uncommissioned ship", im.boarded() != null && im.boarded().stranger);
+  im.sendToOtherFleet(im.boarded(), false);
+  Setup.chk("I: sent to the normal fleet, she's gone from this one", im.boarded() == null && !im.continueFile().exists());
+  SaveHelper.writeSavedGame(im.continueFile(), Commission.build("PLAYER_SHIP_ROCK", "Stray Rock", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)));
+  im.reload(); im.takeStock();
+  Vault norm = Vault.handOverBoarded(im.boarded());
+  boolean engi = false; for (Ship x : norm.docked()) if ("Stray Engi".equals(x.name)) engi = true;
+  Setup.chk("I: switching now: she's boarded in the normal fleet", !norm.immersive && norm.boarded() != null && "Stray Rock".equals(read(norm.continueFile()).getPlayerShipName()) && !norm.boarded().stranger);
+  norm.takeStock(); engi = false; for (Ship x : norm.docked()) if ("Stray Engi".equals(x.name)) engi = true;
+  Setup.chk("I: and the one sent over waits at the normal Space Dock", engi);
  }
 }

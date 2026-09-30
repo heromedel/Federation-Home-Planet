@@ -43,6 +43,13 @@ public final class Ship {
 	public boolean dlc;
 	/** Fingerprint of the file as last written or seen, to notice when FTL changed it. */
 	public String hash = "";
+	/**
+	 * The boarded ship as the station last saw her (model, name, and the journey's totals, which only go up), so a
+	 * continue.sav that isn't her (FTL's New Game) is noticed. Empty until first seen.
+	 */
+	String marks = "";
+	/** A ship The Home Planet Station didn't commission: a continue.sav it didn't know (Immersive Mode asks about her). */
+	public boolean stranger;
 
 	private SavedGameState save;
 	private String readError;

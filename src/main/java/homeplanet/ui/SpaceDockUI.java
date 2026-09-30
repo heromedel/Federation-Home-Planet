@@ -160,6 +160,72 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HistoryLog.loaded("startup");
 			loggedStartup = true;
 		}
+		// FTL's New Game wrote over the boarded ship, or continue.sav is a ship the station never commissioned
+		final String over = vault.takeOverwritten();
+		final Ship stranger = vault.boarded() != null && vault.boarded().stranger && !deferredStrangers.contains(vault.boarded().id) ? vault.boarded() : null;
+		if (over != null || (stranger != null && HomePlanet.immersiveMode)) {
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { newGameNotice(over, stranger); } });
+		}
+	}
+
+	private boolean askingAboutStranger = false;
+	/** Uncommissioned ships the player put off deciding about: asked again at the next start. */
+	private final java.util.Set<String> deferredStrangers = new java.util.HashSet<String>();
+	/** Tells the player a boarded ship was overwritten; in Immersive Mode, asks what's to become of an uncommissioned ship. */
+	private void newGameNotice(String over, Ship stranger) {
+		if (askingAboutStranger) return;
+		String lost = over == null ? "" : over + " was boarded, and FTL started a new game over her.\n"
+				+ (HomePlanet.immersiveMode ? "She is lost. Her last version is in the station's records.\n"
+						: "Her last version is in the station's records: Other... > Recover a ship brings her back.\n");
+		if (stranger == null || !HomePlanet.immersiveMode) {
+			JOptionPane.showMessageDialog(null, lost + (stranger == null ? "" : "\n" + stranger.name + " is now boarded."), "New game in FTL", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		askingAboutStranger = true;
+		try {
+			askAboutStranger(lost, stranger);
+		} finally {
+			askingAboutStranger = false;
+		}
+	}
+	private void askAboutStranger(String lost, Ship stranger) {
+		String message = (lost.isEmpty() ? "" : lost + "\n")
+				+ "Uncommissioned ship detected.\n\n" + stranger.name + " was not commissioned by The Federation Home Planet: this save was not made in Immersive Mode.\n"
+				+ "What should be done with her?";
+		Object[] options = {"Send her to the normal Space Dock", "Decommission her", "Switch to normal mode now", "Close The Home Planet Station"};
+		int c = JOptionPane.showOptionDialog(null, message, "Uncommissioned ship", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+		if (c == 3) { if (parent != null) parent.dispatchEvent(new java.awt.event.WindowEvent(parent, java.awt.event.WindowEvent.WINDOW_CLOSING)); return; }
+		if (c < 0) { deferredStrangers.add(stranger.id); init(); return; } // closed: asked again at the next start
+		if (GameGuard.isFtlRunning()) {
+			JOptionPane.showMessageDialog(null, "FTL is running. Quit FTL first; The Home Planet Station will ask again.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		Vault v = Vault.get();
+		try {
+			if (c == 0) {
+				v.sendToOtherFleet(stranger, false);
+				JOptionPane.showMessageDialog(null, stranger.name + " waits at the normal Space Dock.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
+			} else if (c == 1) {
+				Object[] how = {"Send her to the normal Junkyard", "Destroy her", "Cancel"};
+				int d = JOptionPane.showOptionDialog(null, "Decommission " + stranger.name + ":\n\n"
+						+ "Send her to the normal fleet's Junkyard, or destroy her? (A destroyed ship's last version stays in the station's records.)",
+						"Decommission", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, how, how[2]);
+				if (d == 0) v.sendToOtherFleet(stranger, true);
+				else if (d == 1) v.remove(stranger, "DESTROY");
+				else { deferredStrangers.add(stranger.id); init(); return; }
+			} else {
+				homeplanet.parser.UnlockGrants.leaving(homeplanet.parser.Unlocks.read());
+				Vault.handOverBoarded(stranger);
+				HomePlanet.leaveImmersive();
+				HomePlanet.saveConfig();
+				homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());
+				JOptionPane.showMessageDialog(null, "Immersive Mode is off. " + stranger.name + " is boarded in your normal fleet.\n"
+						+ "Your Immersive fleet is kept as it was.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
+			}
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not do that:\n" + e.getMessage());
+		}
+		init();
 	}
 
 	/** Why the Cargo Bay can't open now (no ship boarded, or she's away from a station), or null if it can. */
