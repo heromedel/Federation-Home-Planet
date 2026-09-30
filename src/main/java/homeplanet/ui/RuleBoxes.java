@@ -34,10 +34,11 @@ public class RuleBoxes {
 	final JComboBox<String> freeBox = new JComboBox<String>(new String[] {"a Kestrel A", "any ship", "a Federation relief ship"});
 	private final JLabel freeLabel = new JLabel("When the shipyard is empty, The Federation Home Planet grants one free ship:  ");
 	private final JPanel freeRow = row(22);
+	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
-	private final JComponent[] locked = {tradeBox, journeyBox, sellBox, sellSystemsBox, costBox, percentBox, unlockBox, lockedBox, customLockedBox};
+	private final JComponent[] locked = {tradeBox, journeyBox, sellBox, sellSystemsBox, costBox, percentBox, unlockBox, lockedBox, customLockedBox, notifyBox};
 	private final String[] tips = new String[locked.length];
 	private static final String SET_BY_IMMERSIVE = "Set by Immersive Mode";
 
@@ -79,6 +80,8 @@ public class RuleBoxes {
 		freeLabel.setToolTipText(freeTip);
 		freeRow.add(freeLabel);
 		freeRow.add(freeBox);
+		notifyBox.setToolTipText("Without Immersive Mode: orders for the free ships the rules grant. With it, also news, promotions and rewards");
+		notifyBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Mode, which turns it on
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A Report for Reassignment doesn't reset it");
 		unlockBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		for (int i = 0; i < locked.length; i++) tips[i] = locked[i].getToolTipText();
@@ -104,6 +107,7 @@ public class RuleBoxes {
 			unlockBox.setSelected(true);
 			lockedBox.setSelected(true);
 			customLockedBox.setSelected(true);
+			notifyBox.setSelected(true);
 		}
 		for (int i = 0; i < locked.length; i++) {
 			locked[i].setEnabled(!im);
@@ -129,6 +133,7 @@ public class RuleBoxes {
 		unlockBox.setSelected(r.unlockFree);
 		lockedBox.setSelected(r.lockedOnly);
 		customLockedBox.setSelected(r.customLockedOnly);
+		notifyBox.setSelected(r.notifications);
 	}
 	/** Is Immersive Mode ticked? */
 	public boolean immersiveWanted() { return immersiveBox.isSelected(); }
@@ -137,7 +142,7 @@ public class RuleBoxes {
 
 	/** Adds the boxes one per row, starting at c's row and leaving c on the row after the last. */
 	public void addTo(JPanel body, GridBagConstraints c) {
-		for (JComponent b : new JComponent[] {immersiveBox, tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
+		for (JComponent b : new JComponent[] {immersiveBox, notifyBox, tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
 			body.add(b, (GridBagConstraints) c.clone());
 			c.gridy++;
 		}
@@ -156,6 +161,7 @@ public class RuleBoxes {
 		if (costBox.isSelected() != HomePlanet.commissionCosts) changed.add("Commissioning costs scrap: " + costBox.isSelected());
 		if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
 		if (!FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Free ship for an empty shipyard: " + freeBox.getSelectedItem());
+		if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
 		if (unlockBox.isSelected() != HomePlanet.unlockFreeShips) changed.add("A free ship for each new FTL unlock: " + unlockBox.isSelected());
 		// (with Immersive Mode on, the locked rules above show its values; the player's own are kept apart)
 	}
@@ -177,6 +183,7 @@ public class RuleBoxes {
 			HomePlanet.unlockFreeShips = unlockBox.isSelected();
 			HomePlanet.commissionUnlockedOnly = lockedBox.isSelected();
 			HomePlanet.commissionCustomUnlockedOnly = customLockedBox.isSelected();
+			HomePlanet.immersiveNotifications = notifyBox.isSelected();
 		} else if (!HomePlanet.immersiveMode) {
 			HomePlanet.immersiveMode = true;
 			HomePlanet.applyImmersive(); // the player's own rules are kept as they are

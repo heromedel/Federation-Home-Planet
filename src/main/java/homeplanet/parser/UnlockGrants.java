@@ -51,20 +51,26 @@ public final class UnlockGrants {
 	public static void turnedOn(Unlocks u) {
 		if (u == null || u.problem() != null) return;
 		Set<String> seen = read("seen"), add = new LinkedHashSet<String>();
-		for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
-			for (int n = 0; n < 3; n++) {
-				String k = base + " " + n;
-				if (u.unlocked(base, n) && !seen.contains(k)) add.add(k);
-			}
-		}
+		for (String k : unlockedNow(u)) if (!seen.contains(k)) add.add(k);
 		try { append("seen", add); } catch (Exception e) { log.warn("Could not record the unlocked ships: {}", e.toString()); }
 	}
 
-	/** The layouts unlocked now, as keys. */
+	/** The layouts unlocked now, as keys, and the achievements earned ("ACH:" and the id). */
 	private static Set<String> unlockedNow(Unlocks u) {
 		Set<String> out = new LinkedHashSet<String>();
 		for (String base : DataManager.get().getPlayerShipBaseIds(true))
 			for (int n = 0; n < 3; n++) if (u.unlocked(base, n)) out.add(base + " " + n);
+		for (String a : u.achievements()) out.add(ACH + a);
+		return out;
+	}
+	private static final String ACH = "ACH:";
+	/** Achievements earned since the record began (in this fleet, not while away), for the rewards. */
+	public static Set<String> newAchievements(Unlocks u) {
+		Set<String> out = new LinkedHashSet<String>();
+		if (u == null || u.problem() != null || !Vault.isOpen()) return out;
+		if (!file().isFile()) turnedOn(u);
+		Set<String> seen = read("seen");
+		for (String a : u.achievements()) if (!seen.contains(ACH + a)) out.add(a);
 		return out;
 	}
 	/** Leaving this fleet (Immersive Mode off): what's unlocked now is noted, so unlocks made while away never count. */

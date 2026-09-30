@@ -72,10 +72,12 @@ public class HomePlanet {
 	 * scrap from the storage hold; selling supplies and systems pays 25%; restoring and recovering are off.
 	 */
 	public static boolean immersiveMode = false;
+	/** Transmissions from The Federation Home Planet (the inbox on the Space Dock). Immersive Mode turns it on. */
+	public static boolean immersiveNotifications = false;
 	public static final int JOURNEY_FEE = 200;
 	/** The rules Immersive Mode sets, as the player had them: kept apart, written to the cfg, and back when it's turned off. */
 	public static final class Rules {
-		public boolean store, journey, sellSupplies, sellSystems, costs, unlockFree, lockedOnly, customLockedOnly;
+		public boolean store, journey, sellSupplies, sellSystems, costs, unlockFree, lockedOnly, customLockedOnly, notifications;
 		public int percent;
 		static Rules current() {
 			Rules r = new Rules();
@@ -83,6 +85,7 @@ public class HomePlanet {
 			r.sellSystems = HomePlanet.sellSystems; r.costs = HomePlanet.commissionCosts; r.percent = HomePlanet.commissionPercent;
 			r.unlockFree = HomePlanet.unlockFreeShips;
 			r.lockedOnly = HomePlanet.commissionUnlockedOnly; r.customLockedOnly = HomePlanet.commissionCustomUnlockedOnly;
+			r.notifications = HomePlanet.immersiveNotifications;
 			return r;
 		}
 		void set() {
@@ -90,6 +93,7 @@ public class HomePlanet {
 			HomePlanet.sellSystems = sellSystems; HomePlanet.commissionCosts = costs; HomePlanet.commissionPercent = percent;
 			HomePlanet.unlockFreeShips = unlockFree;
 			HomePlanet.commissionUnlockedOnly = lockedOnly; HomePlanet.commissionCustomUnlockedOnly = customLockedOnly;
+			HomePlanet.immersiveNotifications = notifications;
 		}
 	}
 	private static Rules normalRules = null;
@@ -105,6 +109,7 @@ public class HomePlanet {
 		if (!immersiveMode) return;
 		if (normalRules == null) normalRules = Rules.current();
 		unlockFreeShips = true;
+		immersiveNotifications = true;
 		commissionUnlockedOnly = true;
 		commissionCustomUnlockedOnly = true;
 		storeRequirement = true;
@@ -153,6 +158,7 @@ public class HomePlanet {
 		if (!"any".equals(freeShip) && !"relief".equals(freeShip)) freeShip = "kestrel";
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
+		immersiveNotifications = flag("immersive_notifications");
 		applyImmersive();
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 		log.debug("{} {} starting on Java {}", APP_NAME, APP_VERSION, System.getProperty("java.version"));
@@ -328,6 +334,7 @@ public class HomePlanet {
 		config.setProperty("free_ship", freeShip);
 		config.setProperty("unlock_free_ships", Boolean.toString(own.unlockFree));
 		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
+		config.setProperty("immersive_notifications", Boolean.toString(own.notifications));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
 		try {
 			ByteArrayOutputStream buf = new ByteArrayOutputStream();

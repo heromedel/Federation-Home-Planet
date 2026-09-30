@@ -162,7 +162,7 @@ ship pays, and Save makes it official (Reset undoes it).
   (`unlock-grants.txt`, "promoted" lines). Commission marks custom ships "(Captains only)" / "(Commodores only)".
   **Open:** should the Captain lock also cover the Cargo Bay's Remodel and Overhaul deck plan? (Not locked now.)
 
-## 8. Transmissions
+## 8. Transmissions — done (harness test TransT)
 
 Draft of every message and reward: `docs/TRANSMISSIONS.md` (rewards approved by heromedel; messages for review).
 
@@ -175,6 +175,11 @@ Draft of every message and reward: `docs/TRANSMISSIONS.md` (rewards approved by 
 - **Achievement rewards** (Immersive Mode only; achievements earned after it was turned on): scrap, supplies, items,
   crew volunteers and systems, into Spacedock Storage; a free ship becomes a commission order used up in Commission.
 - Checked at startup and on Refresh; each message is sent once.
+- As built: the texts and rewards live in `src/main/resources/homeplanet/resource/transmissions.txt` (edit it to
+  change wording or rewards; TransT checks every achievement has a message and every reward exists in FTL). The inbox
+  is kept per fleet (`transmissions.xml`). Commission orders and promotions have a **Commission…** button; the free
+  ship itself follows the free-ship rules. Achievements count from when the fleet's record began, and not while away
+  in the other fleet.
 
 ## 9. Keep ships after victory
 

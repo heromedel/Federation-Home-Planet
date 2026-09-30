@@ -47,6 +47,14 @@ public class Unlocks {
 	/** Null if the profile was read; otherwise why not (then nothing counts as locked). */
 	public String problem() { return problem; }
 
+	/** The achievement ids the profile has earned (empty if it couldn't be read). */
+	public java.util.Set<String> achievements() {
+		java.util.Set<String> out = new java.util.LinkedHashSet<String>();
+		if (profile == null) return out;
+		for (AchievementRecord rec : profile.getAchievements()) out.add(rec.getAchievementId());
+		return out;
+	}
+
 	/** Is layout n (0 = A, 1 = B, 2 = C) of this base ship (PLAYER_SHIP_HARD...) unlocked? */
 	public boolean unlocked(String baseId, int n) {
 		if (profile == null) return true;

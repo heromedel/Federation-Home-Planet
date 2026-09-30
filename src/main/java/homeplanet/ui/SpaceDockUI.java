@@ -49,7 +49,7 @@ import homeplanet.vault.Vault;
 public class SpaceDockUI extends JPanel implements ActionListener {
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
-	private JButton otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn;
+	private JButton inboxBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn;
 	final MainFrame parent;
 
 	/** Width of one docked ship's place in the list. */
@@ -121,7 +121,21 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
-		controlGroup(controls, "Helm", launchBtn, journeyBtn);
+		if (HomePlanet.immersiveNotifications) {
+			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
+			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
+			inboxBtn.addActionListener(this);
+			JPanel helm = new JPanel(new java.awt.BorderLayout(4, 0));
+			helm.setOpaque(false);
+			helm.add(new FtlButton.Header("Helm", 142), java.awt.BorderLayout.CENTER);
+			helm.add(inboxBtn, java.awt.BorderLayout.EAST);
+			helm.setAlignmentX(LEFT_ALIGNMENT);
+			helm.setMaximumSize(new Dimension(186, 30));
+			controlGroup(controls, helm, launchBtn, journeyBtn);
+		} else {
+			inboxBtn = null;
+			controlGroup(controls, "Helm", launchBtn, journeyBtn);
+		}
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn);
 		designBtn = controlButton("Design Ship", "Lay out a new ship of your own on a blank grid");
@@ -248,7 +262,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return b;
 	}
 	private static void controlGroup(JPanel column, String title, JButton... buttons) {
-		column.add(new FtlButton.Header(title, 186));
+		controlGroup(column, new FtlButton.Header(title, 186), buttons);
+	}
+	private static void controlGroup(JPanel column, javax.swing.JComponent header, JButton... buttons) {
+		column.add(header);
 		column.add(Box.createRigidArea(new Dimension(1, 10)));
 		for (JButton b : buttons) {
 			column.add(b);
@@ -462,6 +479,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			refresh();
 		} else if (o == otherBtn) {
 			otherOrders();
+		} else if (o == inboxBtn) {
+			boolean go = InboxDialog.open(this);
+			init();
+			if (go) commissionShip();
 		} else if (o == journeyBtn) {
 			newJourney();
 		} else if (o == commissionBtn) {
@@ -494,6 +515,50 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		homeplanet.core.Music.refresh();
 		init();
 		HistoryLog.loaded("refresh");
+	}
+
+	/** The transmissions icon: an antenna, and a green light with the unread count. */
+	private static final class TransmissionButton extends JButton {
+		private final int unread;
+		TransmissionButton(int unread) {
+			this.unread = unread;
+			setPreferredSize(new Dimension(40, 30));
+			setContentAreaFilled(false);
+			setBorderPainted(false);
+			setFocusPainted(false);
+			setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+			setToolTipText(unread == 0 ? "Transmissions from The Federation Home Planet" : unread + " new transmission" + (unread == 1 ? "" : "s") + " from The Federation Home Planet");
+		}
+		@Override protected void paintComponent(Graphics g0) {
+			Graphics2D g = (Graphics2D) g0.create();
+			g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+			boolean hot = getModel().isRollover();
+			Color line = hot ? new Color(255, 230, 160) : new Color(214, 230, 222);
+			g.setColor(new Color(20, 28, 34, 200));
+			g.fillRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 8, 8);
+			g.setColor(line);
+			g.setStroke(new java.awt.BasicStroke(1.6f));
+			g.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 8, 8);
+			// a mast with a dish, and waves
+			int cx = 14, cy = getHeight() / 2;
+			g.drawLine(cx, cy - 2, cx, getHeight() - 6);
+			g.drawLine(cx - 5, getHeight() - 6, cx + 5, getHeight() - 6);
+			g.fillOval(cx - 2, cy - 5, 5, 5);
+			g.drawArc(cx - 7, cy - 10, 14, 14, 30, 120);
+			g.drawArc(cx - 11, cy - 14, 22, 22, 30, 120);
+			// the light
+			int lx = getWidth() - 15, ly = cy - 7;
+			g.setColor(unread > 0 ? new Color(70, 220, 90) : new Color(60, 80, 70));
+			g.fillOval(lx, ly, 13, 13);
+			if (unread > 0) {
+				g.setColor(new Color(10, 40, 15));
+				g.setFont(getFont().deriveFont(java.awt.Font.BOLD, 10f));
+				String n = unread > 9 ? "9+" : String.valueOf(unread);
+				java.awt.FontMetrics fm = g.getFontMetrics();
+				g.drawString(n, lx + (13 - fm.stringWidth(n)) / 2, ly + 10);
+			}
+			g.dispose();
+		}
 	}
 
 	/** Other...: the station's rarely used orders, in a menu under the button. */

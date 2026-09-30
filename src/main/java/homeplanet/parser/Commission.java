@@ -288,6 +288,21 @@ public class Commission {
 		}
 	}
 
+	/** A crew volunteer of this race (a reward), named and tinted as a new game's crew are, placed nowhere yet. Null for an unknown race. */
+	public static CrewState volunteer(String raceId, Random rng) {
+		CrewType race = CrewType.findById(raceId);
+		if (race == null) return null;
+		CrewState c = new CrewState();
+		c.setRace(race);
+		boolean male = race != CrewType.HUMAN || rng.nextBoolean();
+		c.setMale(male);
+		c.setName(uniqueName(male, new HashSet<String>()));
+		c.setHealth(race.getMaxHealth());
+		c.setPlayerControlled(true);
+		c.setSpriteTintIndeces(tints(race, rng));
+		return c;
+	}
+
 	private static String uniqueName(boolean male, Set<String> used) {
 		String n = null;
 		for (int tries = 0; tries < 50; tries++) {
