@@ -11,15 +11,29 @@
 
 == welcome
 from: Home Planet Liaison
-subject: Welcome to the front
+subject: Welcome to the Front
 
-Commander,
+{rank},
 
-Welcome to the front. From today The Home Planet Station runs by The Federation Home Planet's rules: trade only where there's a station, pay your way at the shipyard, and fund your own journeys. To get you started, 25 scrap is waiting in the Cargo Hold, and a stipend follows every month of service.
+I see you have volunteered to serve in the war against the rebellion.
 
-The fleet is stretched thin against the Rebellion, but it looks after its own. Serve well and you will hear from us. Watch this channel.
+The Federation Home Planet has approved you to begin building your fleet. Congratulations: your sign-on bonus of 25 scrap is already waiting in The Home Planet Station's Cargo Hold.
 
-Home Planet Liaison
+Just remember: once you have your first ship and set out, you will need to reach another beacon with a station to be able to trade with The Home Planet Station or your other ships.
+
+Aside from your monthly stipend, you will have to earn your way or fund your fleet yourself. It's not cheap.
+
+Expect a message from Home Planet Shipyard about your first ship. My recommendation: find a way to acquire 200 scrap, and when things start looking bleak out there, get your ship to a station and plot a New Journey. It's the only way to keep the rebels off your tail.
+
+The Fleet is stretched thin out there, but it looks after its own. Serve us well and you will be rewarded. Betray us and die with the rebels.
+
+Watch this channel. The Federation will be in contact.
+
+---
+
+For the Federation, and all its worlds.
+Until every beacon is free.
+~ Home Planet Liaison
 
 == rescue
 from: Federation Fleet Command
@@ -73,7 +87,7 @@ subject: Priority: selected for promotion
 
 Priority message from the Federation Fleet Admiral:
 
-Commander, your ongoing efforts against the Rebellion have not gone unnoticed. It is my honor to inform you that The Federation Home Planet has selected you for commendation and promotion.
+Commander, your ongoing efforts against the rebellion have not gone unnoticed. It is my honor to inform you that The Federation Home Planet has selected you for commendation and promotion.
 
 From here on you will command your ships as a Federation Captain, with all the dignity and honor that comes with it, including a Federation Cruiser, Type A, of your very own.
 
@@ -213,7 +227,7 @@ reward: scrap 60, missiles 4, parts 4, fuel 4
 
 {rank},
 
-You've carried the fight into the last sectors. The struggle against the Rebellion is far from over, and the fleet needs you supplied: scrap, missiles, drone parts and fuel, on us.
+You've carried the fight into the last sectors. The struggle against the rebellion is far from over, and the fleet needs you supplied: scrap, missiles, drone parts and fuel, on us.
 
 Home Planet Quartermaster
 
@@ -224,7 +238,7 @@ reward: scrap 300
 
 {rank},
 
-A victory for the Federation, and every station from here to the Home Planet is celebrating. The war goes on, but the Rebellion will remember your name. Your share of the victory purse is waiting at The Home Planet Station.
+A victory for the Federation, and every station from here to the Home Planet is celebrating. The war goes on, but the rebellion will remember your name. Your share of the victory purse is waiting at The Home Planet Station.
 
 Your Fleet Admiral
 
@@ -235,7 +249,7 @@ reward: scrap 400
 
 {rank},
 
-That was no training exercise. You faced the Rebellion at its strongest and drove it back. The war is far from over, but The Federation Home Planet has authorized a victory purse worthy of the deed.
+That was no training exercise. You faced the rebellion at its strongest and drove it back. The war is far from over, but The Federation Home Planet has authorized a victory purse worthy of the deed.
 
 Your Fleet Admiral
 
@@ -270,7 +284,7 @@ reward: item FTL_JUMPER, item FTL_BOOSTER
 
 {rank},
 
-A thousand enemy ships. There are Rebel captains who change course at the sound of your name. For a hunter who never stops moving: an Adv. FTL Navigation and an FTL Recharge Booster.
+A thousand enemy ships. There are rebel captains who change course at the sound of your name. For a hunter who never stops moving: an Adv. FTL Navigation and an FTL Recharge Booster.
 
 Your Fleet Admiral
 
@@ -292,7 +306,7 @@ reward: item FTL_BOOSTER
 
 {rank},
 
-Not a single shot fired, and you still made sector 5. Some admirals call that cowardice. The ones who've fought the Rebellion call it survival. An FTL Recharge Booster, for leaving even faster.
+Not a single shot fired, and you still made sector 5. Some admirals call that cowardice. The ones who've fought the rebellion call it survival. An FTL Recharge Booster, for leaving even faster.
 
 Home Planet Liaison
 

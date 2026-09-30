@@ -12,3 +12,5 @@ Tools and Harness/harness2/work/
 tools/
 # the jar is built by Build The Federation Home Planet Station.bat, not tracked
 Current Build/*.jar
+# the Quick Link icon, made by the build
+Current Build/*.ico

@@ -173,7 +173,7 @@ public class ShipRecordsDialog extends JDialog {
 		setLocationRelativeTo(getOwner());
 	}
 
-	/** Her name in gold, and under it her class, the sectors she has visited, beacons explored and ships defeated. */
+	/** Her name in gold, and under it her class, current sector, sectors visited, journeys, beacons explored and ships defeated. */
 	private static JComponent header(Ship ship) {
 		SavedGameState gs = ship.save();
 		List<String> facts = new ArrayList<String>();
@@ -183,7 +183,9 @@ public class ShipRecordsDialog extends JDialog {
 				if (!cls.isEmpty() && !"null".equals(cls)) facts.add(cls);
 			} catch (Exception e) { } // a ship the game data doesn't have: no class shown
 		}
+		if (gs != null) facts.add("Current sector " + (gs.getSectorNumber() + 1));
 		facts.add("Sectors visited " + homeplanet.vault.VoyageLog.visited(Vault.get(), ship));
+		facts.add("Journeys " + homeplanet.vault.VoyageLog.journeys(Vault.get(), ship));
 		if (gs != null) {
 			facts.add("Beacons explored " + gs.getTotalBeaconsExplored());
 			facts.add("Ships defeated " + gs.getTotalShipsDefeated());

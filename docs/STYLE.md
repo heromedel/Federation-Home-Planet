@@ -35,3 +35,17 @@ One of each, in `MenuTheme`:
 | Red `RED` (235,110,95), an exception | damage and losses only |
 
 `MenuTheme.DIM` (140,152,150) stays for disabled text, which should look dimmer than a note.
+
+## The Federation's voice
+
+The rebellion and the rebels are never capitalised (the Federation won't dignify them with a title); only the Rebel
+Flagship keeps its capitals. Messages may use `{rank}` where a phrase names the player ("Hold the line, {rank}.").
+
+Catch phrases. The most common of all: **"The Federation endures."**
+
+| Formal (Fleet Admiral, Liaison) | Warm (sign-offs) | Fighting words (Quartermaster, battle orders) |
+|---|---|---|
+| Hold the line, Captain. | Godspeed, and come home. | Give the rebellion nothing. |
+| For the Federation, and all its worlds. | Fair flights between the stars. | Not one more sector. |
+| Many worlds, one Federation. | The Home Planet stands with you. | Stand fast. The Federation endures. |
+| Until every beacon is free. | Safe jumps, Captain. | |

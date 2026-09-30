@@ -83,6 +83,7 @@ public class TransT { public static void main(String[] a) throws Exception {
  static void flow(File saves) throws Exception {
   int n = Transmissions.check();
   Setup.chk("T: a new career: the welcome, and the empty shipyard's free command", n == 2 && find("welcome") != null && find("empty") != null && find("empty").body.contains("Kestrel"));
+  Setup.chk("T: the welcome is on top of the inbox (sent last)", Transmissions.load().get(0).key.equals("welcome"));
   Setup.chk("T: each is sent once", Transmissions.check() == 0 && Transmissions.unread() == 2);
   Setup.chk("T: an achievement from before Immersive Mode earns nothing", find("ach:ACH_SECTOR_5") == null);
   profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_FED"}, new String[] {"ACH_SECTOR_5", "ACH_TOUGH_SHIP", "ACH_NO_BUYING", "ACH_MANTIS_SLAUGHTER", "ACH_NO_UPGRADES"});

@@ -193,7 +193,6 @@ public final class Transmissions {
 		String rank = rankName(u);
 		int before = all.size();
 		boolean wasOpen = emptyOpen;
-		if (HomePlanet.immersiveMode) send(all, sent, "welcome", "welcome", rank, null);
 		if (HomePlanet.immersiveMode) {
 			int r = UnlockGrants.rank(u);
 			for (int i = 1; i <= r; i++) send(all, sent, "promo:" + i, "promo:" + i, rank, null);
@@ -226,6 +225,8 @@ public final class Transmissions {
 			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, "ach:" + a, rank, null);
 		}
 		if (HomePlanet.immersiveMode && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
+		// the welcome last: the inbox shows the newest first, so it tops everything that arrives with it
+		if (HomePlanet.immersiveMode) send(all, sent, "welcome", "welcome", rank, null);
 		int added = all.size() - before;
 		if (added > 0 || wasOpen != emptyOpen) {
 			try { save(all); } catch (IOException e) { log.error("Could not save the transmissions", e); }

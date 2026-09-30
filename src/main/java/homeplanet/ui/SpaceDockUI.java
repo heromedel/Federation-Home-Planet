@@ -946,7 +946,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		String message = "Prepare " + gs.getPlayerShipName() + " for a new journey?\n\n"
 				+ "Crew, cargo and supplies stay aboard. The old star charts are wiped, and the ship sets out\n"
-				+ "once more from the first sector with the Rebel fleet in pursuit.\n\n"
+				+ "once more from the first sector with the rebel fleet in pursuit.\n\n"
 				+ "How dangerous will this journey be?";
 		Object[] options = {"Easy", "Normal", "Hard", "Cancel"};
 		int choice = JOptionPane.showOptionDialog(null, message, "New Journey", JOptionPane.DEFAULT_OPTION,
@@ -983,7 +983,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		while (it.hasNext()) if (!SaveHelper.isOwnCrew(it.next())) it.remove();
 		try {
 			Vault.get().write(ship, gs);
-			Vault.get().setOut(ship, gs, "A new journey plotted from sector 1"); // at The Home Planet Station until she jumps
+			Vault.get().setOut(ship, gs, homeplanet.vault.VoyageLog.NEW_JOURNEY); // at The Home Planet Station until she jumps
 			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + fee + " scrap from the Cargo Hold" : ""));
 		} catch (Exception e) {
 			ship.invalidate();

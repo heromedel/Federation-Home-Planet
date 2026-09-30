@@ -47,6 +47,13 @@ public class HistT { public static void main(String[] a) throws Exception {
   g = cont(v); g.getPlayerShip().setHullAmt(g.getPlayerShip().getHullAmt() + 3);
   homeplanet.parser.SaveHelper.writeSavedGame(v.continueFile(), g); b.invalidate(); v.takeStock();
   Setup.chk("Y: a repair at a store, no jump", newLines(v, b, at).contains("Hull repaired"));
+  // her journeys: the first, and one more with each New Journey (kept through the station's own changes)
+  int journeys = VoyageLog.journeys(v, b);
+  v.setOut(b, cont(v), VoyageLog.NEW_JOURNEY);
+  Setup.chk("Y: a New Journey counts one more journey", VoyageLog.journeys(v, b) == journeys + 1 && journeys >= 1);
+  c = v.readCopy(b); c.save.getPlayerShip().setScrapAmt(c.save.getPlayerShip().getScrapAmt() - 1); v.begin().put(b, c.save, c.hash).commit();
+  b.invalidate(); v.takeStock();
+  Setup.chk("Y: the count survives the station's own change", VoyageLog.journeys(v, b) == journeys + 1);
   System.out.print(VoyageLog.read(v, b));
  }
  static Ship named(Vault v, String name) { for (Ship s : v.all()) if (name.equals(s.name)) return s; return null; }

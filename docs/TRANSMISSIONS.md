@@ -27,17 +27,34 @@ Titles, not names: **Federation Fleet Admiral** (promotions, the big news), **Ho
 
 ## Standing messages
 
-**Welcome to Immersive Mode** (Home Planet Liaison, when Immersive Mode is turned on)
+**Welcome to the Front** (Home Planet Liaison, when Immersive Mode is turned on; sent last, so it's on top of the inbox)
 
 > Commander,
 >
-> Welcome to the front. From today The Home Planet Station runs by The Federation Home Planet's rules: trade only
-> where there's a station, pay your way at the shipyard, and fund your own journeys.
+> I see you have volunteered to serve in the war against the rebellion.
 >
-> The fleet is stretched thin against the Rebellion, but it looks after its own. Serve well and you will hear from
-> us. Watch this channel.
+> The Federation Home Planet has approved you to begin building your fleet. Congratulations: your sign-on bonus of
+> 25 scrap is already waiting in The Home Planet Station's Cargo Hold.
 >
-> Home Planet Liaison
+> Just remember: once you have your first ship and set out, you will need to reach another beacon with a station to
+> be able to trade with The Home Planet Station or your other ships.
+>
+> Aside from your monthly stipend, you will have to earn your way or fund your fleet yourself. It's not cheap.
+>
+> Expect a message from Home Planet Shipyard about your first ship. My recommendation: find a way to acquire 200
+> scrap, and when things start looking bleak out there, get your ship to a station and plot a New Journey. It's the
+> only way to keep the rebels off your tail.
+>
+> The Fleet is stretched thin out there, but it looks after its own. Serve us well and you will be rewarded. Betray
+> us and die with the rebels.
+>
+> Watch this channel. The Federation will be in contact.
+>
+> \---
+>
+> For the Federation, and all its worlds.
+> Until every beacon is free.
+> ~ Home Planet Liaison
 
 **The stipend** (The Federation Home Planet; every 4 sectors travelled; Delete, not Archive)
 
@@ -99,7 +116,7 @@ notice on the Space Dock instead when Transmissions are off. `{ship}` is her nam
 
 > Priority message from the Federation Fleet Admiral:
 >
-> Commander, your ongoing efforts against the Rebellion have not gone unnoticed. It is my honor to inform you that
+> Commander, your ongoing efforts against the rebellion have not gone unnoticed. It is my honor to inform you that
 > The Federation Home Planet has selected you for commendation and promotion.
 >
 > From here on you will command your ships as a Federation Captain, with all the dignity and honor that comes with
@@ -213,15 +230,15 @@ Each opens with the player's rank. Signatures as listed.
 > scrap and fuel, waiting at The Home Planet Station.
 
 **Federation Base in Range** (Quartermaster)
-> You've carried the fight into the last sectors. The struggle against the Rebellion is far from over, and the fleet
+> You've carried the fight into the last sectors. The struggle against the rebellion is far from over, and the fleet
 > needs you supplied: scrap, missiles, drone parts and fuel, on us.
 
 **Federation Victory (Easy)** (Federation Fleet Admiral)
 > A victory for the Federation, and every station from here to the Home Planet is celebrating. The war goes on, but
-> the Rebellion will remember your name. Your share of the victory purse is waiting at The Home Planet Station.
+> the rebellion will remember your name. Your share of the victory purse is waiting at The Home Planet Station.
 
 **Federation Victory (Normal)** (Federation Fleet Admiral)
-> That was no training exercise. You faced the Rebellion at its strongest and drove it back. The war is far from
+> That was no training exercise. You faced the rebellion at its strongest and drove it back. The war is far from
 > over, but The Federation Home Planet has authorized a victory purse worthy of the deed.
 
 **Your Own Fleet** (Federation Fleet Admiral)
@@ -235,7 +252,7 @@ Each opens with the player's rank. Signatures as listed.
 > into the artillery of your own designs.
 
 **Warlord** (Federation Fleet Admiral)
-> A thousand enemy ships. There are Rebel captains who change course at the sound of your name. For a hunter who
+> A thousand enemy ships. There are rebel captains who change course at the sound of your name. For a hunter who
 > never stops moving: an Adv. FTL Navigation and an FTL Recharge Booster.
 
 **I don't need no stinkin' upgrades!** (Federation Engineering Corps)
@@ -244,7 +261,7 @@ Each opens with the player's rank. Signatures as listed.
 
 **Coming in for my Pacifism run!** (Home Planet Liaison)
 > Not a single shot fired, and you still made sector 5. Some admirals call that cowardice. The ones who've fought
-> the Rebellion call it survival. An FTL Recharge Booster, for leaving even faster.
+> the rebellion call it survival. An FTL Recharge Booster, for leaving even faster.
 
 **On a Wing and a Prayer** (Federation Engineering Corps)
 > You flew to sector 5 without a single repair. Engineering is fascinated, and horrified. Please accept this Repair

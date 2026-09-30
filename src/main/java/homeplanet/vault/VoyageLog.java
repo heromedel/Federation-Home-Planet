@@ -70,11 +70,32 @@ public final class VoyageLog {
 		return Math.max(n, now);
 	}
 
+	/** The station's note for a New Journey (her log counts her journeys by it). */
+	public static final String NEW_JOURNEY = "A new journey plotted from sector 1";
+	/**
+	 * Her journeys: the first (commissioning) and each New Journey since, as her voyage log tells (logs began in 4B.29,
+	 * so an older ship counts from then). The count is kept in voyage.txt too, so a log cut down to its newer half
+	 * doesn't lose any.
+	 */
+	public static int journeys(Vault v, Ship s) {
+		int counted = 1;
+		for (String line : read(v, s).split("\r?\n")) if (line.endsWith(NEW_JOURNEY)) counted++;
+		Properties last = last(v, s);
+		int kept = intOf(last, "journeys", 0), n = Math.max(kept, counted);
+		if (n != kept && !last.isEmpty()) { last.setProperty("journeys", Integer.toString(n)); save(v, s, last); }
+		return n;
+	}
+	/** What voyage.txt keeps across looks besides her summary. */
+	private static void carry(Properties last, Properties now) {
+		if (last.getProperty("journeys") != null) now.setProperty("journeys", last.getProperty("journeys"));
+	}
+
 	/** FTL has written her save: logs what changed since the last look. Nothing on the first look (it only starts the record). */
 	static void observe(Vault v, Ship s, SavedGameState gs) {
 		if (s == null || gs == null || s.state == Ship.State.STORAGE) return;
 		Properties last = last(v, s);
 		Properties now = summary(gs);
+		carry(last, now);
 		int visited = intOf(last, "visited", gs.getSectorNumber() + 1);
 		if (last.isEmpty()) { now.setProperty("visited", Integer.toString(visited)); save(v, s, now); return; }
 		List<String> lines = new ArrayList<String>();
@@ -90,6 +111,7 @@ public final class VoyageLog {
 		if (s == null || gs == null || s.state == Ship.State.STORAGE) return;
 		Properties last = last(v, s);
 		Properties now = summary(gs);
+		carry(last, now);
 		now.setProperty("visited", Integer.toString(Math.max(intOf(last, "visited", 0), gs.getSectorNumber() + 1)));
 		save(v, s, now);
 	}

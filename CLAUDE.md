@@ -63,6 +63,8 @@ a BufferedImage.
   these titles, even mid-sentence.
 - **a station** (lowercase) is an FTL store beacon. Crew "stations" in the ship editor are FTL's manned squares.
 - Slipstream is the transmission channel: mods and blueprints are "sent to FTL via Slipstream".
+- **the rebellion** and **the rebels** are never capitalised: the Federation won't dignify them with a title. Only
+  the Rebel Flagship (FTL's name for that ship) keeps its capitals. Catch phrases: see `docs/STYLE.md`.
 - Never imply the Rebel Flagship has been destroyed: the war goes on. Its weapons come from plans stolen from the
   Rebels, not salvage.
 - Places: the Space Dock, the Cargo Bay, the Cargo Hold (the storage; its save keeps the internal name "Spacedock

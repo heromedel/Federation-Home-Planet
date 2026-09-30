@@ -401,7 +401,7 @@ public class SettingsDialog extends JDialog {
 
 	/** Shows a text file bundled in the jar (CREDITS.md, LICENSE) in a window of its own. */
 	static final String LORE = "~ Incoming transmission from the Federation Home Planet ~\n\n"
-			+ "Despite the ongoing war with the Rebellion, the Federation has restored its long-range trade and communication network, "
+			+ "Despite the ongoing war with the rebellion, the Federation has restored its long-range trade and communication network, "
 			+ "carried by official stores and stations across the sectors.\n\n"
 			+ "From the Home Planet, the Federation can once more reach beacons in many star systems: moving goods and crew between ships "
 			+ "almost instantly, refitting hulls in its dry docks, and commissioning new ships wherever a captain needs one.\n\n"

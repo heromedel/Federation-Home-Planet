@@ -52,7 +52,7 @@ public class MainFrame extends JFrame {
 				if (gone || e.getOppositeWindow() == null) spaceDock.init();
 			}
 		});
-		setTitle(appName + " " + appVersion);
+		setTitle("The Home Planet Station  -  " + appName + " " + appVersion);
 		Image img = (new ImageIcon((new ResourceClass()).getClass().getResource("LogoIcon.png"))).getImage();
 		setIconImage(img);
 		tasksPane = new JPanel(screens);
