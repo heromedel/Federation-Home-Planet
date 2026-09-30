@@ -39,6 +39,17 @@ Titles, not names: **Federation Fleet Admiral** (promotions, the big news), **Ho
 >
 > Home Planet Liaison
 
+**The stipend** (The Federation Home Planet; every 4 sectors travelled; Delete, not Archive)
+
+> Automated message from The Federation Home Planet
+>
+> Your monthly stipend of {amount} scrap has been transferred to The Home Planet Station. It is waiting for you in
+> Spacedock Storage.
+>
+> Thank you for your service, {rank}.
+
+("Your stipend for the last 2 months of…" when several are due at once.)
+
 **The shipyard is empty** (Home Planet Shipyard)
 
 > {rank},

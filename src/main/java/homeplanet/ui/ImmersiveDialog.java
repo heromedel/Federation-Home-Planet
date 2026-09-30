@@ -25,7 +25,6 @@ import homeplanet.core.HomePlanet;
 import homeplanet.core.ProfileSwap;
 import homeplanet.parser.Career;
 import homeplanet.parser.Clearance;
-import homeplanet.parser.Pricing;
 import homeplanet.parser.UnlockGrants;
 import homeplanet.parser.Unlocks;
 import homeplanet.vault.Ship;
@@ -200,7 +199,7 @@ public final class ImmersiveDialog {
 				+ "<li>Commissioning costs scrap from Spacedock Storage, at full price. An empty shipyard earns one free ship.</li>"
 				+ "<li>Each ship you unlock in FTL from now on can be commissioned free, once. Locked ships can't be commissioned.</li>"
 				+ "<li>A New Journey costs " + HomePlanet.JOURNEY_FEE + " scrap from Spacedock Storage.</li>"
-				+ "<li>Missiles, drone parts and stored systems sell at 25% of the store price. Hull repairs cost " + Pricing.HULL_REPAIR + " scrap a point.</li>"
+				+ "<li>Missiles, drone parts and stored systems sell at 25% of the store price.</li>"
 				+ "<li>Earlier versions of a ship can't be restored, lost ships can't be recovered, and a report for reassignment is final.</li></ul>"
 				+ "<p><b>Rank.</b> You start as a Commander.</p><ul>"
 				+ "<li><b>Captain</b>: design ships, remodel, overhaul, commission custom ships. " + Clearance.HOW_CAPTAIN.replace("\n", " ") + "</li>"

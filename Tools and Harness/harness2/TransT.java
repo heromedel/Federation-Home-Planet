@@ -12,6 +12,8 @@ public class TransT { public static void main(String[] a) throws Exception {
  flow(saves);
  clearance(saves);
  reentry();
+ stipend();
+ profiles(saves);
  Setup.done();
 }
  static void profile(File saves, String[] unlockedA, String[] achievements) throws Exception {
@@ -117,9 +119,53 @@ public class TransT { public static void main(String[] a) throws Exception {
   Object r = Class.forName("homeplanet.ui.RuleBoxes").getConstructor().newInstance();
   java.lang.reflect.Field f = r.getClass().getDeclaredField("immersiveBox"); f.setAccessible(true);
   ((javax.swing.JCheckBox) f.get(r)).setSelected(true);
-  Vault.switchFleet(true);
+  Vault.switchFleet(true); // as ImmersiveDialog.enter does
+  HomePlanet.immersiveMode = true; HomePlanet.applyImmersive();
   UnlockGrants.returning(Unlocks.read());
-  r.getClass().getMethod("apply").invoke(r);
+  r.getClass().getMethod("apply").invoke(r); // then OK in Settings
   Setup.chk("U: back in Immersive Mode through Settings, she's still free", HomePlanet.immersiveMode && UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_MANTIS"));
+ }
+ static void stipend() throws Exception {
+  Vault v = Vault.get();
+  int before = v.storageScrap();
+  if (!Career.started(v.root)) Career.start(false, false);
+  Setup.chk("S: a career begins with 25 scrap in Spacedock Storage", Career.started(v.root) && v.storageScrap() == before + 25);
+  if (v.boarded() == null) { Ship n = v.adopt(Commission.build("PLAYER_SHIP_HARD", "Stipend Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(7))); v.board(n); }
+  v.takeStock();
+  int sectors = v.sectorsSeen();
+  SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
+  g.setSectorNumber(g.getSectorNumber() + 9); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 40);
+  SaveHelper.writeSavedGame(v.continueFile(), g);
+  v.takeStock();
+  Setup.chk("S: FTL's progress is counted in sectors", v.sectorsSeen() == sectors + 9);
+  int scrap = v.storageScrap();
+  int achievements = 5; // earned in Immersive Mode above: TOUGH_SHIP, NO_BUYING, MANTIS_SLAUGHTER, NO_UPGRADES, SCRAP
+  int each = Career.stipend(UnlockGrants.rank(Unlocks.read()), achievements);
+  Transmissions.check();
+  Transmissions.Message m = find("stipend:");
+  Setup.chk("S: 9 sectors pay 2 months in one message", m != null && m.body.contains("stipend for the last 2 months") && m.body.contains((2 * each) + " scrap") && v.storageScrap() == scrap + 2 * each);
+  System.out.println("Stipend: " + each + " a month (Captain, 5 achievements): " + m.body.replace("\n", " / "));
+  Transmissions.check();
+  int stipends = 0; for (Transmissions.Message x : Transmissions.load()) if (Transmissions.isStipend(x)) stipends++;
+  Setup.chk("S: the odd sector waits for the next month", stipends == 1);
+  Transmissions.delete(m);
+  Setup.chk("S: a stipend's notice can be deleted", find("stipend:") == null);
+  Setup.chk("S: the stipend's formula (20 + achievements x rank multiple)", Career.stipend(0, 51) == 71 && Career.stipend(1, 51) == 122 && Career.stipend(2, 51) == 173);
+ }
+ static void profiles(File saves) throws Exception {
+  File normal = new File(saves, Vault.FOLDER), immersive = new File(saves, Vault.IMMERSIVE_FOLDER);
+  File prof = new File(saves, "ae_prof.sav");
+  String normalHash = SafeFiles.hash(prof);
+  File copy = ProfileSwap.backup(saves, normal);
+  Setup.chk("P: a backup copy of the FTL profile", copy.isFile() && SafeFiles.hash(copy).equals(normalHash) && prof.isFile());
+  ProfileSwap.swap(saves, normal, immersive);
+  Setup.chk("P: entering: the normal profile is set aside, and FTL has none (a fresh one next start)", !prof.exists() && new File(normal, "ftl-profile/ae_prof.sav").isFile());
+  SafeFiles.writeText(prof, "immersive profile", false); // FTL made its own
+  String immersiveHash = SafeFiles.hash(prof);
+  ProfileSwap.swap(saves, immersive, normal);
+  Setup.chk("P: leaving: the normal profile is back, the Immersive one kept", SafeFiles.hash(prof).equals(normalHash) && SafeFiles.hash(new File(immersive, "ftl-profile/ae_prof.sav")).equals(immersiveHash));
+  ProfileSwap.swap(saves, normal, immersive);
+  Setup.chk("P: entering again: the Immersive profile comes back", SafeFiles.hash(prof).equals(immersiveHash) && SafeFiles.hash(new File(normal, "ftl-profile/ae_prof.sav")).equals(normalHash));
+  ProfileSwap.swap(saves, immersive, normal);
  }
 }

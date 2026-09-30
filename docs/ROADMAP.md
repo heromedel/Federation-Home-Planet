@@ -13,7 +13,8 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 6. Fixes from testing, and the settings moves
 7. Immersive Mode, part 2: its own vault, rules kept apart, uncommissioned-ship detection, rank and locks
 8. Transmissions: the inbox, commission orders, promotions, achievement rewards (draft: docs/TRANSMISSIONS.md)
-9. Keep ships after victory (waiting on a real run)
+9. Immersive Mode, part 3: the briefing, its own FTL profile, the stipend, unlock hints, Steam Cloud
+10. Keep ships after victory (save timing confirmed; waiting on the flagship stages 2 and 3)
 
 ---
 
@@ -182,7 +183,29 @@ Draft of every message and reward: `docs/TRANSMISSIONS.md` (rewards approved by 
   ship itself follows the free-ship rules. Achievements count from when the fleet's record began, and not while away
   in the other fleet.
 
-## 9. Keep ships after victory
+## 9. Immersive Mode, part 3 — done (harness tests TransT, VaultT)
+
+- **The button:** Settings shows **Enter Immersive Mode…** / **Return to Normal Mode…** instead of a tick box. Entering
+  opens the briefing (everything Immersive Mode does, with how to earn each rank) and the career's choices, fixed once
+  made: whether the stipend counts **every achievement** in the FTL profile or **only those earned from now on**, and
+  whether Immersive Mode gets **its own FTL profile** (ticked by default; the salary choice is then "from now on").
+  Confirm (Cancel is the default) switches at once; FTL must be closed.
+- **Its own FTL profile:** `ae_prof.sav` (or `prof.sav`) is moved into the normal fleet's `ftl-profile` folder and FTL
+  starts a fresh one; leaving moves the Immersive one into its fleet's folder and brings the normal one back. Nothing
+  is deleted. The briefing names the file and folder, and **Back up my FTL profile** copies it to
+  `FederationHomePlanet/profile-backups`.
+- **A career** begins with 25 scrap in Spacedock Storage (`career.txt` in the Immersive fleet's folder).
+- **The stipend:** every 4 sectors the fleet's ships travel (FTL's own progress, counted in `sectors.txt`), 20 scrap
+  plus, per achievement counted, 1 (Commander), 2 (Captain), 3 (Commodore): 71 / 122 / 173 with all 51. Paid into
+  Spacedock Storage; one message for all the months due ("your stipend for the last 2 months"), with **Delete**.
+- **Unlock hints:** Design Ship, Remodel, Commission rows and the artillery picker say what they need and how to earn
+  it (the promotion conditions are from the FTL wiki, since FTL keeps them in the game itself).
+- **Hull repairs:** a flat 4 scrap a point (The Federation charges a premium), in both modes.
+- **Steam Cloud:** a warning at first start (Steam installs), in Settings and in the briefing. And a `continue.sav`
+  that's a byte-for-byte copy of a docked ship or one of her kept versions (Steam Cloud restoring its last upload) is
+  set aside in her records with a notice, instead of becoming a second ship.
+
+## 10. Keep ships after victory
 
 Off by default: "Keep ships after victory (The Home Planet Station must stay open while you play)."
 
@@ -192,8 +215,10 @@ Off by default: "Keep ships after victory (The Home Planet Station must stay ope
   state. Keep the copy written **on arriving for the third battle**, the latest point FTL saves.
 - When `continue.sav` disappears and the FTL profile shows a new victory, offer to bring her home from that copy.
   A death stays "lost in action".
-- **To confirm with a real run first:** that FTL writes `continue.sav` on every jump around the flagship, and how
-  the flagship stage reads in the save.
+- **Confirmed** with heromedel's run (the Shrapnel R.U., sector 8): FTL writes `continue.sav` on arriving at a beacon,
+  with the game still running, and saving and exiting there adds nothing (the files were identical). The save holds
+  the sector (7 = sector 8) and the flagship's pending stage (1 = the first battle next).
+- **Still to see:** the stage reading 2 and 3 before the second and third battles.
 
 ## Naming decisions still open
 
