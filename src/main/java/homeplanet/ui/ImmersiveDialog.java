@@ -61,21 +61,52 @@ public final class ImmersiveDialog {
 
 	/** Back to the normal fleet (and profile), after a confirmation. True if it's done. */
 	public static boolean leave(Component owner) {
-		Ship b = Vault.get().boarded();
-		String message = "Return to normal mode?\n\nYour Immersive fleet is kept exactly as it is, and comes back when you enter Immersive Mode again.\n"
-				+ "Your normal fleet and your own rules return" + (Career.ownProfile(Vault.get().root) ? ", with your own FTL profile." : ".")
-				+ (b == null ? "" : "\n\n" + b.name + " docks here first, and will be boarded again when you return.");
-		Object[] opts = {"Return to Normal Mode", "Cancel"};
-		if (JOptionPane.showOptionDialog(owner, message, "Return to Normal Mode", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[1]) != 0) return false;
+		Vault v = Vault.get();
+		Ship b = v.boarded();
+		boolean ownProfile = Career.ownProfile(v.root);
+		String message = "Return to normal mode?\n\nYour normal fleet and your own rules return" + (ownProfile ? ", with your own FTL profile." : ".")
+				+ (b == null ? "" : "\n" + b.name + " docks first.")
+				+ "\n\nKeep your Immersive career, and it comes back exactly as it is when you enter Immersive Mode again.\n"
+				+ "Or end it: everything in it is lost, and the next time you enter Immersive Mode a new career begins.";
+		Object[] opts = {"Return and keep my career", "Return and end my career...", "Cancel"};
+		int c = JOptionPane.showOptionDialog(owner, message, "Return to Normal Mode", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
+		if (c != 0 && c != 1) return false;
+		boolean end = c == 1;
+		if (end && !confirmEnd(owner, v, ownProfile)) return false;
 		if (!ftlClosed(owner, "Return to Normal Mode")) return false;
 		try {
 			leaveNow(null);
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not return to normal mode:\n" + e.getMessage()
-					+ "\n\nThe fleet in use now is the " + (Vault.get().immersive ? "Immersive" : "normal") + " one.");
+					+ "\n\nThe fleet in use now is the " + (Vault.get().immersive ? "Immersive" : "normal") + " one."
+					+ (end ? " Your Immersive career was not ended." : ""));
 			return !Vault.get().immersive;
 		}
+		if (end) {
+			try {
+				File zip = Vault.endImmersiveCareer();
+				JOptionPane.showMessageDialog(owner, "Your Immersive career has ended. The next time you enter Immersive Mode, a new career begins.\n\n"
+						+ "A copy was kept, just in case, in:\n" + zip, "Return to Normal Mode", JOptionPane.INFORMATION_MESSAGE);
+			} catch (IOException e) {
+				HomePlanet.showErrorDialog("You're back in normal mode, but The Home Planet Station could not end the Immersive career:\n" + e.getMessage());
+			}
+		}
 		return true;
+	}
+	/** The second confirmation: what ending the career loses, in its own numbers. Cancel is the default. */
+	private static boolean confirmEnd(Component owner, Vault v, boolean ownProfile) {
+		int docked = v.docked().size(), junked = v.junked().size(), boarded = v.boarded() == null ? 0 : 1, ships = docked + junked + boarded;
+		Unlocks u = Unlocks.read();
+		String rank = UnlockGrants.rankName(UnlockGrants.rank(u.problem() == null ? u : null));
+		String message = "End your Immersive career?\n\nThis can't be undone in The Home Planet Station. Lost for good:\n"
+				+ " \u2022 " + ships + (ships == 1 ? " ship" : " ships") + (ships == 0 ? "" : " (" + (docked + boarded) + " at the Space Dock, " + junked + " in the Junkyard)")
+				+ " and Spacedock Storage (" + v.storageScrap() + " scrap)\n"
+				+ " \u2022 Your rank (" + rank + "), transmissions and stipend record\n"
+				+ (ownProfile ? " \u2022 Immersive Mode's own FTL profile (its unlocks and achievements)\n" : "")
+				+ "\nYour normal fleet, your own FTL profile, and your designs and remodels are not touched.\n"
+				+ "A copy of the career is kept in " + Vault.FOLDER + "\\" + Vault.OLD_CAREERS + ", in case of a mistake.";
+		Object[] opts = {"End my career", "Cancel"};
+		return JOptionPane.showOptionDialog(owner, message, "End your Immersive career", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, opts, opts[1]) == 0;
 	}
 
 	/**

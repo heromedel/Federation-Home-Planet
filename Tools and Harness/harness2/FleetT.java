@@ -7,8 +7,27 @@ public class FleetT { public static void main(String[] a) throws Exception {
  fleets(v);
  detection();
  rules();
+ endCareer();
  Setup.done();
 }
+ /** Ending the Immersive career: the folder zipped into old-immersive-careers, then gone; the normal fleet untouched. */
+ static void endCareer() throws Exception {
+  Vault v = Vault.get();
+  if (!v.immersive) v = Vault.switchFleet(true);
+  if (!Career.started(v.root)) Career.start(false, false);
+  File im = v.root;
+  int files = 0; for (File f : listAll(im)) files++;
+  Vault n = Vault.switchFleet(false);
+  int normalShips = n.all().size();
+  File zip = Vault.endImmersiveCareer();
+  java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip); int zipped = z.size(); boolean hasCareer = z.getEntry("career.txt") != null; z.close();
+  Setup.chk("E: ending the career keeps the whole of it, zipped, in old-immersive-careers", zip.getParentFile().getName().equals(Vault.OLD_CAREERS) && zipped == files && hasCareer);
+  Setup.chk("E: then its folder is gone, and the normal fleet untouched", !im.exists() && Vault.get().all().size() == normalShips && !Vault.get().immersive);
+  Vault again = Vault.switchFleet(true);
+  Setup.chk("E: entering again: a new career, an empty shipyard", !Career.started(again.root) && again.shipyardEmpty());
+  Vault.switchFleet(false);
+ }
+ static List<File> listAll(File d) { List<File> out = new ArrayList<File>(); File[] fs = d.listFiles(); if (fs != null) for (File f : fs) { if (f.isDirectory()) out.addAll(listAll(f)); else out.add(f); } return out; }
  static String continueName(Vault v) throws Exception { return HomePlanet.savedGameParser.readSavedGame(v.continueFile()).getPlayerShipName(); }
  static void fleets(Vault v) throws Exception {
   if (v.boarded() == null) v.board(v.docked().get(0));

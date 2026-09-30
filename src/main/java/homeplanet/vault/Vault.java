@@ -1322,6 +1322,38 @@ public final class Vault {
 	 * An uncommissioned ship leaves this fleet for the other one's Space Dock or Junkyard: her save is moved there
 	 * under her name, and the other fleet takes her in the next time it opens (as it does any save dropped in).
 	 */
+	/** Where ended Immersive careers are kept, zipped (in the normal fleet's folder). */
+	public static final String OLD_CAREERS = "old-immersive-careers";
+	/**
+	 * Ends the Immersive career (from the normal fleet, Immersive Mode already left): its whole folder (ships, storage,
+	 * records, its own FTL profile) is zipped into old-immersive-careers/, checked, and only then deleted. Returns the zip.
+	 */
+	public static File endImmersiveCareer() throws IOException {
+		Vault v = get();
+		if (v.immersive) throw new IOException("Return to normal mode first");
+		File im = v.otherRoot();
+		if (!im.isDirectory()) throw new IOException("There is no Immersive career to end");
+		String stamp;
+		synchronized (STAMP) { stamp = STAMP.format(new Date()); }
+		File zip = new File(new File(v.root, OLD_CAREERS), "Immersive career " + stamp + ".zip");
+		SafeFiles.zipFolder(im, zip, null);
+		int files = countFiles(im), zipped;
+		java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip);
+		try { zipped = z.size(); } finally { z.close(); }
+		if (zipped != files) throw new IOException("The copy in " + zip + " is incomplete (" + zipped + " of " + files + " files): nothing was deleted");
+		if (!SafeFiles.deleteTree(im))
+			throw new IOException("Some of " + im + " could not be deleted (a file in use?). The whole career is kept in " + zip
+					+ "; delete the folder by hand once The Home Planet Station is closed");
+		HistoryLog.entry("CAREER ENDED", "the Immersive career was ended; a copy is kept in " + OLD_CAREERS + "/" + zip.getName());
+		return zip;
+	}
+	private static int countFiles(File dir) {
+		File[] fs = dir.listFiles();
+		int n = 0;
+		if (fs != null) for (File f : fs) n += f.isDirectory() ? countFiles(f) : f.isFile() ? 1 : 0;
+		return n;
+	}
+
 	public synchronized void sendToOtherFleet(Ship s, boolean junkyard) throws IOException {
 		File dir = new File(otherRoot(), junkyard ? "junkyard" : "ships");
 		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);

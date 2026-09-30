@@ -210,6 +210,11 @@ Draft of every message and reward: `docs/TRANSMISSIONS.md` (rewards approved by 
   that's a byte-for-byte copy of a docked ship or one of her kept versions (Steam Cloud restoring its last upload) is
   set aside in her records with a notice, instead of becoming a second ship.
 
+- **Ending a career** (heromedel, 4B.24): Return to Normal Mode offers "Return and keep my career" (the default) or
+  "Return and end my career...", with a second confirmation (Cancel the default) listing what's lost in the career's
+  own numbers. The whole Immersive folder (its own FTL profile too) is zipped into
+  `FederationHomePlanet/old-immersive-careers/`, checked, and only then deleted; the next entry begins a new career.
+
 ## 10. After a final victory — built
 
 A setting (Settings, and the Immersive briefing), each fleet its own choice, default Nothing:
