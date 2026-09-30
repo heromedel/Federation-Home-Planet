@@ -30,7 +30,7 @@ public final class FinalVictory {
 
 	/** A choice as Settings and the Immersive briefing offer it. */
 	public static String label(String choice) {
-		if (RESCUE.equals(choice)) return "Rescue her ship (with an offer to sell her to the museum)";
+		if (RESCUE.equals(choice)) return "Rescue the ship (with an offer to sell her to the museum)";
 		if (REWARD.equals(choice)) return "Receive a reward equal to her value";
 		return "Nothing (she is lost with the run)";
 	}

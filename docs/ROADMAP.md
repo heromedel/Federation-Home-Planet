@@ -220,7 +220,7 @@ Draft of every message and reward: `docs/TRANSMISSIONS.md` (rewards approved by 
 A setting (Settings, and the Immersive briefing), each fleet its own choice, default Nothing:
 
 - **Nothing** (she is lost with the run).
-- **Rescue her ship** (with an offer to sell her to the museum): she comes back as she was moments before the final
+- **Rescue the ship** (with an offer to sell her to the museum): she comes back as she was moments before the final
   engagement. Keep her (docked, ready for a new journey from sector 1: the run itself is over), or accept The Federation
   Home Planet's offer of her full value for the Federation museum (scrap to Spacedock Storage; her fate is MUSEUM, and
   she can't be recovered).

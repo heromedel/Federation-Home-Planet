@@ -40,7 +40,8 @@ public class SettingsDialog extends JDialog {
 	private boolean savesChanged = false;
 	/** After a final victory: nothing, rescue her, or a reward of her value (the fleet in use has its own choice). */
 	private final javax.swing.JRadioButton[] victoryButtons = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
-	private final String victoryWas = homeplanet.parser.FinalVictory.choice();
+	private String victoryWas = homeplanet.parser.FinalVictory.choice();
+	private final JLabel victoryHeading = new JLabel();
 
 	/** Shows the dialog. Returns true if the saves folder changed (so the Space Dock should reload). */
 	public static boolean open(java.awt.Component owner) {
@@ -187,7 +188,9 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Rules");
 		rules.addTo(body, c);
 
-		heading(body, c, "After a final victory" + (homeplanet.vault.Vault.get().immersive ? " (Immersive fleet)" : ""));
+		victoryHeading.setFont(victoryHeading.getFont().deriveFont(Font.BOLD));
+		victoryHeading.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
+		body.add(victoryHeading, next(c));
 		javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
 		for (int i = 0; i < victoryButtons.length; i++) {
 			String ch = homeplanet.parser.FinalVictory.CHOICES[i];
@@ -195,6 +198,8 @@ public class SettingsDialog extends JDialog {
 			victoryGroup.add(victoryButtons[i]);
 			body.add(victoryButtons[i], next(c));
 		}
+		refreshVictory();
+		rules.afterFleetChange = new Runnable() { public void run() { refreshVictory(); } };
 		victoryButtons[1].setToolTipText("She comes back as she was moments before the final engagement, ready for a new journey; or take her full value for the museum");
 		victoryButtons[2].setToolTipText("Her full value, as the shipyard would charge for her, goes to Spacedock Storage");
 		JLabel victoryNote = new JLabel("<html><div style='width:520px'><font color='#777777'>For a rescue or a reward, The Home Planet Station must be open while you play: "
@@ -431,6 +436,12 @@ public class SettingsDialog extends JDialog {
 		JOptionPane.showMessageDialog(this, sp, title, JOptionPane.PLAIN_MESSAGE);
 	}
 
+	/** The fleet in use's choice after a final victory (entering or leaving Immersive Mode here switches fleets). */
+	private void refreshVictory() {
+		victoryWas = homeplanet.parser.FinalVictory.choice();
+		victoryHeading.setText("After a final victory" + (homeplanet.vault.Vault.get().immersive ? " (Immersive fleet)" : ""));
+		for (int i = 0; i < victoryButtons.length; i++) victoryButtons[i].setSelected(homeplanet.parser.FinalVictory.CHOICES[i].equals(victoryWas));
+	}
 	private String victoryChoice() {
 		for (int i = 0; i < victoryButtons.length; i++) if (victoryButtons[i].isSelected()) return homeplanet.parser.FinalVictory.CHOICES[i];
 		return homeplanet.parser.FinalVictory.NOTHING;

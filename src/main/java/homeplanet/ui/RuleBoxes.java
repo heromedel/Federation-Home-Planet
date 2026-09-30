@@ -18,6 +18,9 @@ import homeplanet.core.HomePlanet;
  * Nothing changes until apply(). Immersive Mode sets and greys out the rules it decides.
  */
 public class RuleBoxes {
+	/** Run after the Immersive button switched fleets (Settings refreshes what each fleet keeps apart). */
+	Runnable afterFleetChange;
+
 
 	/** Immersive Mode, as the boxes show it (switched by the button, at once: see ImmersiveDialog). */
 	final JCheckBox immersiveBox = new JCheckBox("", HomePlanet.immersiveMode);
@@ -94,6 +97,7 @@ public class RuleBoxes {
 				if (!done) return;
 				immersiveBox.setSelected(HomePlanet.immersiveMode);
 				sync();
+				if (afterFleetChange != null) afterFleetChange.run(); // Settings shows the other fleet's choices now
 			}
 		});
 		costBox.addActionListener(sync);
