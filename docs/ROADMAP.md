@@ -134,7 +134,7 @@ ship pays, and Save makes it official (Reset undoes it).
 - **Rules kept apart:** today Immersive Mode overwrites the normal rules, and they stay changed when it's turned off.
   The normal rules are kept separately and come back untouched (done with item 7).
 
-## 7. Immersive Mode, part 2
+## 7. Immersive Mode, part 2 — done (harness tests FleetT, RuleT)
 
 - **Its own vault.** `FederationHomePlanet-Immersive` beside the normal one, with its own Space Dock, Junkyard,
   storage hold, stored systems, ship records, surrenders, unlock grants, rank and transmissions. The first switch
@@ -157,7 +157,10 @@ ship pays, and Save makes it official (Reset undoes it).
 - **Locks by rank** (Immersive Mode): locked standard ships are hidden (as the lock rule does); **Captains** may
   commission custom ships (remodels and designs); **Commodores** may commission designs with an artillery system.
   Greyed out in Commission with the reason.
-- **Unlock-once free ships:** Immersive Mode turns this rule on and locks it.
+- **Unlock-once free ships:** Immersive Mode turns this rule on and locks it, with the two "locked ships" rules.
+- As built: the rank shows in the Space Dock's "Docked Ships" header; the rank record lives with the unlock record
+  (`unlock-grants.txt`, "promoted" lines). Commission marks custom ships "(Captains only)" / "(Commodores only)".
+  **Open:** should the Captain lock also cover the Cargo Bay's Remodel and Overhaul deck plan? (Not locked now.)
 
 ## 8. Transmissions
 

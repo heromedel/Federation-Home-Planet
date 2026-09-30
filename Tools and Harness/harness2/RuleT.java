@@ -6,6 +6,7 @@ public class RuleT { public static void main(String[] a) throws Exception {
  Vault v = Setup.open(game, saves); v.takeStock();
  immersive();
  unlocks(saves);
+ ranks(saves);
  Setup.done();
 }
  static void immersive() {
@@ -47,5 +48,28 @@ public class RuleT { public static void main(String[] a) throws Exception {
   Vault.get().surrender();
   profile(saves, "PLAYER_SHIP_HARD", "PLAYER_SHIP_STEALTH", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_CIRCLE", "PLAYER_SHIP_FED");
   Setup.chk("U: a report for reassignment doesn't reset it; later unlocks still count", !UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_MANTIS") && UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_FED"));
+ }
+ static void ranks(File saves) throws Exception {
+  SafeFiles.deleteTree(new File(Vault.get().root, "unlock-grants.txt"));
+  new File(Vault.get().root, "unlock-grants.txt").delete();
+  profile(saves, "PLAYER_SHIP_HARD");
+  Setup.chk("K: a new career starts as Commander", UnlockGrants.rank(Unlocks.read()) == 0 && "Commander".equals(UnlockGrants.rankName(0)));
+  // the Type C first: still one step
+  Profile p = Profile.createEmptyProfile(); p.setFileFormat(9); // Advanced Edition: it keeps the C layouts
+  Map<String, ShipAvailability> m = new LinkedHashMap<String, ShipAvailability>();
+  for (String base : DataManager.get().getPlayerShipBaseIds(true)) m.put(base, new ShipAvailability(base, false, false));
+  m.put("PLAYER_SHIP_HARD", new ShipAvailability("PLAYER_SHIP_HARD", true, false));
+  m.put("PLAYER_SHIP_FED", new ShipAvailability("PLAYER_SHIP_FED", false, true));
+  p.setShipUnlockMap(m);
+  OutputStream out = new FileOutputStream(new File(saves, "ae_prof.sav")); new ProfileParser().writeProfile(out, p); out.close();
+  Setup.chk("K: one promotion, whichever Federation cruiser came first", UnlockGrants.rank(Unlocks.read()) == 1);
+  m.put("PLAYER_SHIP_FED", new ShipAvailability("PLAYER_SHIP_FED", true, true));
+  out = new FileOutputStream(new File(saves, "ae_prof.sav")); new ProfileParser().writeProfile(out, p); out.close();
+  Setup.chk("K: both: Commodore", UnlockGrants.rank(Unlocks.read()) == 2 && "Commodore".equals(UnlockGrants.rankName(2)));
+  profile(saves, "PLAYER_SHIP_HARD");
+  Setup.chk("K: promotions stay whatever the profile does later", UnlockGrants.rank(Unlocks.read()) == 2);
+  new File(Vault.get().root, "unlock-grants.txt").delete();
+  profile(saves, "PLAYER_SHIP_HARD", "PLAYER_SHIP_FED");
+  Setup.chk("K: a Federation cruiser unlocked before the record began earns nothing", UnlockGrants.rank(Unlocks.read()) == 0);
  }
 }

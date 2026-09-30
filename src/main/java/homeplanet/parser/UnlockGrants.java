@@ -112,6 +112,33 @@ public final class UnlockGrants {
 		return !read("seen").contains(k) && !read("claimed").contains(k);
 	}
 
+	// ---- rank (Immersive Mode) ----
+
+	/** The ranks, lowest first. */
+	public static final String[] RANKS = {"Commander", "Captain", "Commodore"};
+	/** The layouts whose unlock earns a promotion: the Federation Cruiser A, then its Type C. */
+	private static final String[] PROMOTIONS = {"PLAYER_SHIP_FED 0", "PLAYER_SHIP_FED 2"};
+	/**
+	 * The player's rank in this fleet: one step for each promotion layout unlocked in FTL since the rule's record began
+	 * (in either order). Promotions are recorded once seen, so they stay whatever the profile does later.
+	 */
+	public static int rank(Unlocks u) {
+		if (!Vault.isOpen()) return 0;
+		Set<String> promoted = read("promoted");
+		if (u != null && u.problem() == null) {
+			if (!file().isFile()) turnedOn(u);
+			Set<String> seen = read("seen"), add = new LinkedHashSet<String>();
+			for (String k : PROMOTIONS) {
+				String[] p = k.split(" ");
+				if (!promoted.contains(k) && !seen.contains(k) && u.unlocked(p[0], Integer.parseInt(p[1]))) add.add(k);
+			}
+			try { append("promoted", add); promoted.addAll(add); } catch (Exception e) { log.warn("Could not record a promotion: {}", e.toString()); }
+		}
+		return Math.min(promoted.size(), RANKS.length - 1);
+	}
+	/** The rank's title. */
+	public static String rankName(int rank) { return RANKS[Math.max(0, Math.min(rank, RANKS.length - 1))]; }
+
 	/** Records that this layout's free ship was taken. */
 	public static void claim(String bpId) throws java.io.IOException {
 		int[] n = new int[1];

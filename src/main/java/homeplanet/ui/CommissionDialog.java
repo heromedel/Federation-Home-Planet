@@ -71,6 +71,8 @@ public class CommissionDialog extends JDialog {
 	private final boolean emptyYard = HomePlanet.commissionCosts && homeplanet.vault.Vault.get().shipyardEmpty();
 	/** HR2 with the unlock-once rule: standard layouts unlocked in FTL since the rule was turned on, not yet claimed. */
 	private final java.util.Set<String> unlockFree = new java.util.HashSet<String>();
+	/** Immersive Mode: the player's rank (custom ships need a Captain, artillery on them a Commodore); -1 outside it. */
+	private int rank = -1;
 
 	/** Opens the window. Returns the new ship (docked in the vault), or null if nothing was commissioned. */
 	public static homeplanet.vault.Ship open(SpaceDockUI dock) {
@@ -185,6 +187,7 @@ public class CommissionDialog extends JDialog {
 			unlocks = null;
 		}
 		int hidden = 0;
+		if (HomePlanet.immersiveMode) rank = homeplanet.parser.UnlockGrants.rank(unlocks != null ? unlocks : homeplanet.parser.Unlocks.read());
 		if (HomePlanet.commissionCosts && HomePlanet.unlockFreeShips) {
 			homeplanet.parser.Unlocks u = unlocks != null ? unlocks : homeplanet.parser.Unlocks.read();
 			for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
@@ -219,7 +222,7 @@ public class CommissionDialog extends JDialog {
 			if (bp == null) continue;
 			if (customRule && unlocks != null && !unlocks.unlockedBlueprint(r.base)) { hidden++; continue; }
 			boolean named = r.loadout != null && r.loadout.className.length() > 0;
-			custom.add(new Entry(r.id, (named ? r.loadout.className : classOf(bp) + " " + CompanionMod.numberOf(r.id)) + " (" + r.ship + "'s layout)"));
+			custom.add(new Entry(r.id, (named ? r.loadout.className : classOf(bp) + " " + CompanionMod.numberOf(r.id)) + " (" + r.ship + "'s layout)" + rankNote(r.id)));
 		}
 		for (homeplanet.parser.ShipDesign d : homeplanet.parser.DesignExport.built()) {
 			if (!d.starter || d.frozenOf != null || d.retired) continue; // kept old versions and retired designs only fly for the ships already built from them
@@ -227,7 +230,7 @@ public class CommissionDialog extends JDialog {
 			if (!CompanionMod.inGameData(id)) continue; // not patched in yet
 			ShipBlueprint bp = DataManager.get().getShip(id);
 			if (bp == null) continue;
-			custom.add(new Entry(id, classOf(bp) + " (designed: " + d.name + (d.version > 1 ? " v" + d.version : "") + ")"));
+			custom.add(new Entry(id, classOf(bp) + " (designed: " + d.name + (d.version > 1 ? " v" + d.version : "") + ")" + rankNote(id)));
 		}
 		if (!custom.isEmpty()) {
 			model.addElement(new Entry(null, "Your blueprints"));
@@ -249,6 +252,25 @@ public class CommissionDialog extends JDialog {
 		if ("relief".equals(HomePlanet.freeShip)) return RELIEF.equals(id);
 		return homeplanet.parser.Commission.RELIEF_BASE.equals(id); // the Kestrel A
 	}
+	/** Immersive Mode: the rank a custom blueprint needs (Captain; Commodore with an artillery system), or 0 for a standard ship. */
+	private static int rankNeeded(String bpId) {
+		if (!bpId.endsWith(homeplanet.parser.Retrofit.SUFFIX)) return 0; // the station's own blueprints (remodels, designs) end so
+		ShipBlueprint bp = DataManager.get().getShip(bpId);
+		boolean artillery = bp != null && bp.getSystemList() != null && bp.getSystemList().getSystemRoom(net.blerf.ftl.parser.SavedGameParser.SystemType.ARTILLERY) != null;
+		return artillery ? 2 : 1;
+	}
+	/** Why the player's rank doesn't allow this blueprint, or null. */
+	private String rankReason(String bpId) {
+		if (rank < 0) return null;
+		int need = rankNeeded(bpId);
+		if (rank >= need) return null;
+		return "The Federation Home Planet clears " + (need == 2 ? "custom ships with artillery for Commodores" : "custom ships for Captains") + " and above. You are a "
+				+ homeplanet.parser.UnlockGrants.rankName(rank) + ".";
+	}
+	private String rankNote(String bpId) {
+		return rankReason(bpId) == null ? "" : " (" + homeplanet.parser.UnlockGrants.rankName(rankNeeded(bpId)) + "s only)";
+	}
+
 	/** Builds the ship a row stands for. */
 	private static SavedGameState make(String id, String name, Difficulty d, Random rng) {
 		return RELIEF.equals(id) ? Commission.buildRelief(name, d, rng) : Commission.build(id, name, d, rng);
@@ -323,6 +345,8 @@ public class CommissionDialog extends JDialog {
 	private void commission() {
 		Entry e = list.getSelectedValue();
 		if (e == null || e.header()) return;
+		String why = rankReason(e.id);
+		if (why != null) { JOptionPane.showMessageDialog(this, why, "Commission Ship", JOptionPane.INFORMATION_MESSAGE); return; }
 		String name = nameField.getText().trim();
 		if (name.isEmpty()) { JOptionPane.showMessageDialog(this, "She needs a name.", "Commission Ship", JOptionPane.INFORMATION_MESSAGE); return; }
 		SavedGameState s;

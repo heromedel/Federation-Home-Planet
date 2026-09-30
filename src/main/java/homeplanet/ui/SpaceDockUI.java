@@ -100,7 +100,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final JPanel docked = new JPanel(new java.awt.BorderLayout(0, 6));
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
-		docked.add(new FtlButton.Header("Docked Ships", CELL_W * 3), java.awt.BorderLayout.NORTH);
+		String title = "Docked Ships";
+		if (HomePlanet.immersiveMode) title += "  -  " + homeplanet.parser.UnlockGrants.rankName(homeplanet.parser.UnlockGrants.rank(homeplanet.parser.Unlocks.read())); // her captain's rank
+		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3);
+		if (HomePlanet.immersiveMode) dockedHeader.setToolTipText("Immersive Mode: your rank. Captains may commission custom ships; Commodores, custom ships with artillery");
+		docked.add(dockedHeader, java.awt.BorderLayout.NORTH);
 		docked.add(gridScroll, java.awt.BorderLayout.CENTER);
 		final int dockedW = 14 + CELL_W * 3 + 18;
 

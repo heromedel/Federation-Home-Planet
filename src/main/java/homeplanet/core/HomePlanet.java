@@ -75,19 +75,21 @@ public class HomePlanet {
 	public static final int JOURNEY_FEE = 200;
 	/** The rules Immersive Mode sets, as the player had them: kept apart, written to the cfg, and back when it's turned off. */
 	public static final class Rules {
-		public boolean store, journey, sellSupplies, sellSystems, costs, unlockFree;
+		public boolean store, journey, sellSupplies, sellSystems, costs, unlockFree, lockedOnly, customLockedOnly;
 		public int percent;
 		static Rules current() {
 			Rules r = new Rules();
 			r.store = HomePlanet.storeRequirement; r.journey = HomePlanet.journeyStoreRequirement; r.sellSupplies = HomePlanet.sellSupplies;
 			r.sellSystems = HomePlanet.sellSystems; r.costs = HomePlanet.commissionCosts; r.percent = HomePlanet.commissionPercent;
 			r.unlockFree = HomePlanet.unlockFreeShips;
+			r.lockedOnly = HomePlanet.commissionUnlockedOnly; r.customLockedOnly = HomePlanet.commissionCustomUnlockedOnly;
 			return r;
 		}
 		void set() {
 			HomePlanet.storeRequirement = store; HomePlanet.journeyStoreRequirement = journey; HomePlanet.sellSupplies = sellSupplies;
 			HomePlanet.sellSystems = sellSystems; HomePlanet.commissionCosts = costs; HomePlanet.commissionPercent = percent;
 			HomePlanet.unlockFreeShips = unlockFree;
+			HomePlanet.commissionUnlockedOnly = lockedOnly; HomePlanet.commissionCustomUnlockedOnly = customLockedOnly;
 		}
 	}
 	private static Rules normalRules = null;
@@ -103,6 +105,8 @@ public class HomePlanet {
 		if (!immersiveMode) return;
 		if (normalRules == null) normalRules = Rules.current();
 		unlockFreeShips = true;
+		commissionUnlockedOnly = true;
+		commissionCustomUnlockedOnly = true;
 		storeRequirement = true;
 		journeyStoreRequirement = true;
 		commissionCosts = true;
@@ -316,8 +320,8 @@ public class HomePlanet {
 		config.setProperty("new_journey_store_requirement", Boolean.toString(own.journey));
 		config.setProperty("scrap_keeps_systems", Boolean.toString(scrapKeepsSystems));
 		config.setProperty("sell_supplies", Boolean.toString(own.sellSupplies));
-		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));
-		config.setProperty("commission_custom_unlocked_only", Boolean.toString(commissionCustomUnlockedOnly));
+		config.setProperty("commission_unlocked_only", Boolean.toString(own.lockedOnly));
+		config.setProperty("commission_custom_unlocked_only", Boolean.toString(own.customLockedOnly));
 		config.setProperty("sell_systems", Boolean.toString(own.sellSystems));
 		config.setProperty("commission_costs_scrap", Boolean.toString(own.costs));
 		config.setProperty("commission_price_percent", Integer.toString(own.percent));
