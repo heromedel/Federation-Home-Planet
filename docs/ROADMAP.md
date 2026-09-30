@@ -70,6 +70,13 @@ Progress: pricing (`parser/Pricing`), HR1 and HR2 are built (harness test PriceT
 under HR2 (systems 497, reactor 255, gear 118, crew 135). Reactor bars are priced 30 each for the first 5, then 5
 more every 5 bars. Selling a stored system pays the boarded ship, as a store would.
 
+Also built: the empty-shipyard free ship (a setting under HR2: a Kestrel A by default, any ship, or the relief ship,
+which comes to 777 under HR2), and Report for Reassignment under Other…. What was surrendered is kept in the vault's
+`surrendered/` folder; **Undo Reassignment** works only until the new command is taken (no ship at the Space Dock)
+and while the hold is untouched, so undoing never keeps both. The free ship only matters with HR2 on (otherwise every
+commission is free), so the setting sits under it. The relief ship's reactor is 7: enough for a shield layer, both
+guns, engines, oxygen and medbay.
+
 Prices come from FTL's blueprints (system cost and upgrade costs, weapon, drone, augment and crew costs). Measured
 from the game data: a Kestrel A is about 590 scrap for systems, starting upgrades and gear, roughly 950 with reactor
 and crew; the 28 player ships average 656 before reactor and crew. The Federation artillery weapon has no price (0);

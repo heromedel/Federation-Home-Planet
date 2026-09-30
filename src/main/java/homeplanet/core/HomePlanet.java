@@ -63,6 +63,8 @@ public class HomePlanet {
 	/** HR2: commissioning a ship costs scrap from the storage hold, at this percent of her price (50, 75 or 100). */
 	public static boolean commissionCosts = false;
 	public static int commissionPercent = 100;
+	/** With HR2: the free ship an empty shipyard (no ship docked, boarded or in the Junkyard) offers: "kestrel", "any" or "relief". */
+	public static String freeShip = "kestrel";
 	public static boolean debugLogging = false;
 
 	/** The config file, beside the program (whatever folder it was started from), and its values (the Settings window changes and saves them). */
@@ -96,6 +98,8 @@ public class HomePlanet {
 		sellSystems = flag("sell_systems");
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
+		freeShip = config.getProperty("free_ship", "kestrel");
+		if (!"any".equals(freeShip) && !"relief".equals(freeShip)) freeShip = "kestrel";
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 		log.debug("{} {} starting on Java {}", APP_NAME, APP_VERSION, System.getProperty("java.version"));
 
@@ -265,6 +269,7 @@ public class HomePlanet {
 		config.setProperty("sell_systems", Boolean.toString(sellSystems));
 		config.setProperty("commission_costs_scrap", Boolean.toString(commissionCosts));
 		config.setProperty("commission_price_percent", Integer.toString(commissionPercent));
+		config.setProperty("free_ship", freeShip);
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
 		try {
 			ByteArrayOutputStream buf = new ByteArrayOutputStream();

@@ -152,6 +152,10 @@ public final class Vault {
 		return s;
 	}
 
+	/** No ship docked, boarded or in the Junkyard (the storage hold doesn't count): with HR2, a free ship is offered. */
+	public synchronized boolean shipyardEmpty() {
+		return docked().isEmpty() && boarded() == null && junked().isEmpty();
+	}
 	/** The scrap in the storage hold (0 if it can't be read). */
 	public int storageScrap() {
 		try {
@@ -183,6 +187,115 @@ public final class Vault {
 		st.invalidate();
 		st.hash = SafeFiles.hash(f);
 		saveManifest();
+	}
+
+	// ---- Report for Reassignment ----
+
+	/** Where each Report for Reassignment keeps what was surrendered (one folder each), so it can be undone. */
+	public File surrenderedDir() { return new File(root, "surrendered"); }
+	private static final String SURRENDER_SHIPS = "ships.txt", SURRENDER_HOLD = "storage.sav", SURRENDER_SYSTEMS = "storage-systems.txt", SURRENDER_AFTER = "after.txt";
+
+	/**
+	 * Report for Reassignment: the storage hold (scrap, supplies, items, crew, stored systems) and every hull in the
+	 * Junkyard are surrendered to The Federation Home Planet. The hold starts again empty. All of it is kept in a new
+	 * folder under surrendered/, for {@link #undoSurrender}. Returns that folder.
+	 */
+	public synchronized File surrender() throws IOException {
+		File dir;
+		synchronized (STAMP) { dir = new File(surrenderedDir(), STAMP.format(new java.util.Date())); }
+		if (dir.exists() || !dir.mkdirs()) throw new IOException("Could not create " + dir);
+		Ship st = storage();
+		File hold = fileOf(st), systems = systemsFile();
+		List<Ship> junk = junked();
+		List<Ship> moved = new ArrayList<Ship>();
+		try {
+			SafeFiles.copy(hold, new File(dir, SURRENDER_HOLD));
+			if (systems.isFile()) SafeFiles.copy(systems, new File(dir, SURRENDER_SYSTEMS));
+			StringBuilder list = new StringBuilder();
+			for (Ship s : junk) list.append(s.id).append('\t').append(s.name).append('\n');
+			SafeFiles.writeText(new File(dir, SURRENDER_SHIPS), list.toString(), false);
+			for (Ship s : junk) { SafeFiles.move(fileOf(s), new File(dir, s.id + ".sav")); moved.add(s); }
+		} catch (IOException e) {
+			for (Ship s : moved) {
+				try { SafeFiles.move(new File(dir, s.id + ".sav"), fileOf(s)); } catch (IOException again) { log.error("Could not put " + s + " back in the Junkyard", again); }
+			}
+			SafeFiles.deleteTree(dir);
+			throw e;
+		}
+		ships.removeAll(junk);
+		snapshot(st);
+		writeQuietly(st, SaveHelper.createStorageSave(st.name, true));
+		if (systems.isFile() && !systems.delete()) log.warn("Could not remove {}", systems);
+		SafeFiles.writeText(new File(dir, SURRENDER_AFTER), SafeFiles.hash(hold) + "\n", false);
+		saveManifest();
+		List<String> lines = new ArrayList<String>();
+		for (Ship s : junk) lines.add("hull: " + s.name);
+		HistoryLog.entry("REASSIGN", "the storage hold and " + junk.size() + " hull(s) from the Junkyard surrendered; kept in surrendered/" + dir.getName(), lines);
+		return dir;
+	}
+	/** The newest surrender not yet undone, or null. */
+	public synchronized File lastSurrender() {
+		File[] dirs = surrenderedDir().listFiles();
+		if (dirs == null) return null;
+		File best = null;
+		for (File d : dirs) {
+			if (!d.isDirectory() || !new File(d, SURRENDER_AFTER).isFile()) continue;
+			if (best == null || d.getName().compareTo(best.getName()) > 0) best = d;
+		}
+		return best;
+	}
+	/** The hull names a surrender holds. */
+	public List<String> surrenderedNames(File dir) throws IOException {
+		List<String> out = new ArrayList<String>();
+		for (String line : new String(SafeFiles.read(new File(dir, SURRENDER_SHIPS)), java.nio.charset.StandardCharsets.UTF_8).split("\n")) {
+			int t = line.indexOf('\t');
+			if (t > 0) out.add(line.substring(t + 1).trim());
+		}
+		return out;
+	}
+	/**
+	 * Undoes a Report for Reassignment: the hold as it was and the hulls back in the Junkyard. Refused once a ship is
+	 * docked or boarded again (the new command was taken: undoing then would keep both), or if the hold has changed
+	 * since (what it holds now would be lost).
+	 */
+	public synchronized void undoSurrender(File dir) throws IOException {
+		if (!docked().isEmpty() || boarded() != null)
+			throw new IOException("A new command has been taken since the report for reassignment: it can only be undone while no ship is at the Space Dock");
+		Ship st = storage();
+		File hold = fileOf(st);
+		String after = new String(SafeFiles.read(new File(dir, SURRENDER_AFTER)), java.nio.charset.StandardCharsets.UTF_8).trim();
+		if (!SafeFiles.hash(hold).equals(after))
+			throw new IOException("Spacedock Storage has changed since the report for reassignment: undoing it would lose what it holds now");
+		List<String[]> list = new ArrayList<String[]>();
+		for (String line : new String(SafeFiles.read(new File(dir, SURRENDER_SHIPS)), java.nio.charset.StandardCharsets.UTF_8).split("\n")) {
+			int t = line.indexOf('\t');
+			if (t > 0) list.add(new String[] {line.substring(0, t), line.substring(t + 1).trim()});
+		}
+		List<Ship> back = new ArrayList<Ship>();
+		try {
+			for (String[] e : list) {
+				if (byId(e[0]) != null) continue; // already back (recovered by hand)
+				Ship s = new Ship(e[0], e[1], Ship.State.JUNKED, true);
+				SafeFiles.move(new File(dir, e[0] + ".sav"), fileOf(s));
+				back.add(s);
+			}
+		} catch (IOException e) {
+			for (Ship s : back) {
+				try { SafeFiles.move(fileOf(s), new File(dir, s.id + ".sav")); } catch (IOException again) { log.error("Could not return " + s + " to " + dir, again); }
+			}
+			throw e;
+		}
+		snapshot(st);
+		SafeFiles.write(hold, SafeFiles.read(new File(dir, SURRENDER_HOLD)));
+		st.invalidate();
+		st.hash = SafeFiles.hash(hold);
+		File sys = new File(dir, SURRENDER_SYSTEMS);
+		if (sys.isFile()) SafeFiles.write(systemsFile(), SafeFiles.read(sys));
+		ships.addAll(back);
+		saveManifest();
+		File done = new File(dir.getParentFile(), dir.getName() + "-undone");
+		if (!new File(dir, SURRENDER_AFTER).delete() || !dir.renameTo(done)) log.warn("Could not mark {} as undone", dir);
+		HistoryLog.entry("UNDO REASSIGN", "the storage hold and " + back.size() + " hull(s) returned from surrendered/" + dir.getName());
 	}
 
 	/** A new id: short, unique, safe in a file name. */
@@ -742,8 +855,11 @@ public final class Vault {
 	 */
 	public synchronized java.util.Set<String> blueprintsInUseOrHistory() {
 		java.util.Set<String> out = blueprintsInUse();
-		File[] dirs = historyDir().listFiles();
-		if (dirs != null) for (File d : dirs) {
+		List<File> dirs = new ArrayList<File>();
+		File[] h = historyDir().listFiles(), r = surrenderedDir().listFiles();
+		if (h != null) dirs.addAll(java.util.Arrays.asList(h));
+		if (r != null) dirs.addAll(java.util.Arrays.asList(r)); // a surrender can be undone: its ships still count
+		for (File d : dirs) {
 			File[] fs = d.listFiles();
 			if (fs == null) continue;
 			for (File f : fs) {

@@ -26,6 +26,10 @@ public class RuleBoxes {
 	final JCheckBox costBox = new JCheckBox("Commissioning a ship costs scrap, paid from Spacedock Storage, at", HomePlanet.commissionCosts);
 	final javax.swing.JComboBox<String> percentBox = new javax.swing.JComboBox<String>(new String[] {"100%", "75%", "50%"});
 	private final JPanel costRow = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+	private static final String[] FREE_KEYS = {"kestrel", "any", "relief"};
+	final javax.swing.JComboBox<String> freeBox = new javax.swing.JComboBox<String>(new String[] {"a Kestrel A", "any ship", "a Federation relief ship"});
+	private final javax.swing.JLabel freeLabel = new javax.swing.JLabel("When the shipyard is empty, The Federation Home Planet grants one free ship:  ");
+	private final JPanel freeRow = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
 
 	public RuleBoxes() {
 		scrapBox.setToolTipText("Optional systems only: standard equipment and damaged systems are lost with the hull");
@@ -40,13 +44,24 @@ public class RuleBoxes {
 		percentBox.setSelectedItem(HomePlanet.commissionPercent + "%");
 		percentBox.setEnabled(costBox.isSelected());
 		costBox.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { percentBox.setEnabled(costBox.isSelected()); }
+			public void actionPerformed(ActionEvent e) { percentBox.setEnabled(costBox.isSelected()); freeBox.setEnabled(costBox.isSelected()); freeLabel.setEnabled(costBox.isSelected()); }
 		});
 		costRow.setOpaque(false);
 		costRow.add(costBox);
 		costRow.add(javax.swing.Box.createHorizontalStrut(6));
 		costRow.add(percentBox);
 		costRow.add(new javax.swing.JLabel("  of her price"));
+		freeBox.setSelectedIndex(java.util.Arrays.asList(FREE_KEYS).indexOf(HomePlanet.freeShip) < 0 ? 0 : java.util.Arrays.asList(FREE_KEYS).indexOf(HomePlanet.freeShip));
+		String freeTip = "No ship docked, boarded or in the Junkyard: this ship can be commissioned free. (Other... > Report for Reassignment empties the Junkyard.) "
+				+ "The relief ship is a Kestrel A stripped to basics: one crew, a basic laser and an ion blast, every system at its minimum";
+		freeBox.setToolTipText(freeTip);
+		freeLabel.setToolTipText(freeTip);
+		freeBox.setEnabled(costBox.isSelected());
+		freeLabel.setEnabled(costBox.isSelected());
+		freeRow.setOpaque(false);
+		freeRow.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // nested under the rule above
+		freeRow.add(freeLabel);
+		freeRow.add(freeBox);
 		lockedBox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { customLockedBox.setEnabled(lockedBox.isSelected()); }
 		});
@@ -54,7 +69,7 @@ public class RuleBoxes {
 
 	/** Adds the boxes one per row, starting at c's row and leaving c on the row after the last. */
 	public void addTo(JPanel body, GridBagConstraints c) {
-		for (javax.swing.JComponent b : new javax.swing.JComponent[] {tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow}) {
+		for (javax.swing.JComponent b : new javax.swing.JComponent[] {tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow}) {
 			body.add(b, (GridBagConstraints) c.clone());
 			c.gridy++;
 		}
@@ -71,6 +86,7 @@ public class RuleBoxes {
 		if (sellSystemsBox.isSelected() != HomePlanet.sellSystems) changed.add("Selling stored systems: " + sellSystemsBox.isSelected());
 		if (costBox.isSelected() != HomePlanet.commissionCosts) changed.add("Commissioning costs scrap: " + costBox.isSelected());
 		if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
+		if (!FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Free ship for an empty shipyard: " + freeBox.getSelectedItem());
 	}
 
 	/** Sets the rules from the boxes (the caller saves the config). */
@@ -84,6 +100,7 @@ public class RuleBoxes {
 		HomePlanet.sellSystems = sellSystemsBox.isSelected();
 		HomePlanet.commissionCosts = costBox.isSelected();
 		HomePlanet.commissionPercent = percent();
+		HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()];
 	}
 	private int percent() { String s = (String) percentBox.getSelectedItem(); return Integer.parseInt(s.substring(0, s.length() - 1)); }
 }

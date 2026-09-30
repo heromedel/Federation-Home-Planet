@@ -65,6 +65,10 @@ public class CommissionDialog extends JDialog {
 	/** HR2: her price, under the name and difficulty (hidden when commissioning is free). */
 	private final JLabel priceLabel = new JLabel(" ");
 	private homeplanet.vault.Ship made = null;
+	/** The relief ship's row (not a blueprint of its own: a Kestrel A, stripped). */
+	private static final String RELIEF = "RELIEF";
+	/** HR2 with an empty shipyard: one ship is free (see {@link #free}). */
+	private final boolean emptyYard = HomePlanet.commissionCosts && homeplanet.vault.Vault.get().shipyardEmpty();
 
 	/** Opens the window. Returns the new ship (docked in the vault), or null if nothing was commissioned. */
 	public static homeplanet.vault.Ship open(SpaceDockUI dock) {
@@ -179,6 +183,10 @@ public class CommissionDialog extends JDialog {
 			unlocks = null;
 		}
 		int hidden = 0;
+		if (emptyYard && "relief".equals(HomePlanet.freeShip)) {
+			model.addElement(new Entry(null, "Relief"));
+			model.addElement(new Entry(RELIEF, "Federation relief ship (free)"));
+		}
 		List<String> bases = DataManager.get().getPlayerShipBaseIds(true);
 		model.addElement(new Entry(null, "Standard ships"));
 		for (String base : bases) {
@@ -187,7 +195,8 @@ public class CommissionDialog extends JDialog {
 				try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
 				if (bp == null) continue;
 				if (unlocks != null && !unlocks.unlocked(base, n)) { hidden++; continue; }
-				model.addElement(new Entry(bp.getId(), classOf(bp) + " " + letters[n]));
+				String id = bp.getId();
+				model.addElement(new Entry(id, classOf(bp) + " " + letters[n] + (free(id) ? " (free)" : "")));
 			}
 		}
 		List<Entry> custom = new ArrayList<Entry>();
@@ -217,6 +226,18 @@ public class CommissionDialog extends JDialog {
 		}
 	}
 
+	/** HR2 with an empty shipyard: is this row the free ship? (The unlock and hiding rules still apply to it.) */
+	private boolean free(String id) {
+		if (!emptyYard) return false;
+		if ("any".equals(HomePlanet.freeShip)) return true;
+		if ("relief".equals(HomePlanet.freeShip)) return RELIEF.equals(id);
+		return homeplanet.parser.Commission.RELIEF_BASE.equals(id); // the Kestrel A
+	}
+	/** Builds the ship a row stands for. */
+	private static SavedGameState make(String id, String name, Difficulty d, Random rng) {
+		return RELIEF.equals(id) ? Commission.buildRelief(name, d, rng) : Commission.build(id, name, d, rng);
+	}
+
 	static String classOf(ShipBlueprint bp) {
 		try {
 			String t = bp.getShipClass() == null ? null : bp.getShipClass().getTextValue();
@@ -239,19 +260,22 @@ public class CommissionDialog extends JDialog {
 
 	/** The same report the Info button shows, for the ship as she'd be commissioned. */
 	private void showPreview(Entry e) {
-		ShipBlueprint bp = DataManager.get().getShip(e.id);
-		nameField.setText(defaultName(bp));
+		ShipBlueprint bp = DataManager.get().getShip(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id);
+		nameField.setText(RELIEF.equals(e.id) ? "Federation Relief" : defaultName(bp));
 		preview.removeAll();
 		try {
-			SavedGameState s = Commission.build(e.id, defaultName(bp), Difficulty.EASY, new Random(0));
+			SavedGameState s = make(e.id, nameField.getText(), Difficulty.EASY, new Random(0));
 			JPanel p = dock.shipSummaryPanel(s);
 			JLabel stats = new JLabel("<html>" + classOf(bp) + ": hull " + bp.getHealth().amount + ", reactor "
-					+ (bp.getMaxPower() == null ? "?" : bp.getMaxPower().amount) + ", " + (bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots())
+					+ s.getPlayerShip().getReservePowerCapacity() + ", " + (bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots())
 					+ " weapon slots, " + (bp.getDroneSlots() == null ? 3 : bp.getDroneSlots()) + " drone slots</html>");
 			stats.setBorder(BorderFactory.createEmptyBorder(4, 6, 8, 6));
 			preview.add(stats, BorderLayout.NORTH);
 			preview.add(p, BorderLayout.CENTER);
-			if (HomePlanet.commissionCosts) showPrice(quote(e.id, s));
+			if (HomePlanet.commissionCosts) {
+				if (free(e.id)) priceLabel.setText("<html><b>Free.</b> The shipyard is empty: The Federation Home Planet grants you a new command at no cost.</html>");
+				else showPrice(quote(e.id, s));
+			}
 		} catch (Exception ex) {
 			preview.add(new JLabel("The shipyard can't build this ship: " + ex.getMessage()), BorderLayout.NORTH);
 		}
@@ -286,7 +310,7 @@ public class CommissionDialog extends JDialog {
 		if (name.isEmpty()) { JOptionPane.showMessageDialog(this, "She needs a name.", "Commission Ship", JOptionPane.INFORMATION_MESSAGE); return; }
 		SavedGameState s;
 		try {
-			s = Commission.build(e.id, name, chosenDifficulty(), rng);
+			s = make(e.id, name, chosenDifficulty(), rng);
 		} catch (Exception ex) {
 			HomePlanet.showErrorDialog("The shipyard could not build her:\n" + ex);
 			return;
@@ -294,7 +318,8 @@ public class CommissionDialog extends JDialog {
 		homeplanet.vault.Vault vault = homeplanet.vault.Vault.get();
 		int price = 0;
 		byte[] storageBefore = null;
-		if (HomePlanet.commissionCosts) {
+		boolean isFree = free(e.id);
+		if (HomePlanet.commissionCosts && !isFree) {
 			homeplanet.parser.Pricing.Quote q = quote(e.id, s);
 			price = q.total();
 			int have = vault.storageScrap();
@@ -327,6 +352,7 @@ public class CommissionDialog extends JDialog {
 		List<String> lines = new ArrayList<String>();
 		lines.add(e.label + " (" + e.id + "), difficulty " + difficulty.getSelectedItem());
 		if (price > 0) lines.add("Paid " + price + " scrap from Spacedock Storage");
+		if (isFree) lines.add("Free: the shipyard was empty");
 		lines.add("Crew: " + s.getPlayerShip().getCrewList().size());
 		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines);
 		made = ship;

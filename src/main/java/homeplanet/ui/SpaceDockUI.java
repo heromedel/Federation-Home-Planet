@@ -118,7 +118,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
 		controlGroup(controls, "Helm", launchBtn, journeyBtn);
-		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship");
+		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, report for reassignment");
 		controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn);
 		designBtn = controlButton("Design Ship", "Lay out a new ship of your own on a blank grid");
 		controlGroup(controls, "Shipyard", commissionBtn, designBtn, salvageBtn, disbandBtn);
@@ -435,7 +435,76 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			public void actionPerformed(ActionEvent e) { recoverShip(); }
 		});
 		menu.add(recover);
+		menu.addSeparator();
+		Vault v = Vault.get();
+		javax.swing.JMenuItem report = new javax.swing.JMenuItem("Report for Reassignment...");
+		String why = !HomePlanet.commissionCosts ? "Commissioning is free (Settings, Rules): Commission a new ship instead"
+				: !v.docked().isEmpty() || v.boarded() != null ? "Only a captain with no ship at the Space Dock can report for reassignment" : null;
+		report.setEnabled(why == null);
+		report.setToolTipText(why != null ? why : "Surrender Spacedock Storage and the Junkyard's hulls in exchange for a free new command");
+		report.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(ActionEvent e) { reportForReassignment(); }
+		});
+		menu.add(report);
+		final File last = v.lastSurrender();
+		if (last != null) {
+			javax.swing.JMenuItem undo = new javax.swing.JMenuItem("Undo Reassignment...");
+			boolean taken = !v.docked().isEmpty() || v.boarded() != null;
+			undo.setEnabled(!taken);
+			undo.setToolTipText(taken ? "Only before a new command is taken: no ship may be at the Space Dock"
+					: "Take back the storage hold and hulls surrendered in the last report for reassignment");
+			undo.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(ActionEvent e) { undoReassignment(last); }
+			});
+			menu.add(undo);
+		}
 		menu.show(otherBtn, 0, otherBtn.getHeight());
+	}
+	/** What an empty shipyard grants, in words. */
+	private static String freeShipWords() {
+		return "any".equals(HomePlanet.freeShip) ? "any ship you choose" : "relief".equals(HomePlanet.freeShip) ? "a Federation relief ship" : "a Kestrel A";
+	}
+	/** HR2: surrender the storage hold and the Junkyard for a free new command, then open Commission. */
+	void reportForReassignment() {
+		Vault v = Vault.get();
+		List<Ship> junk = v.junked();
+		StringBuilder hulls = new StringBuilder();
+		for (int i = 0; i < junk.size(); i++) hulls.append(i == 0 ? "" : ", ").append(junk.get(i).name);
+		String message = "Report for reassignment?\n\n"
+				+ "You surrender to The Federation Home Planet:\n"
+				+ "  - Spacedock Storage: its " + v.storageScrap() + " scrap, supplies, weapons, drones, augments, crew and stored systems\n"
+				+ (junk.isEmpty() ? "  - (the Junkyard is empty)\n" : "  - every hull in the Junkyard: " + hulls + "\n")
+				+ "\nIn exchange, The Federation Home Planet grants you a new command: " + freeShipWords() + ", free.\n\n"
+				+ "The Home Planet Station keeps a record of what was surrendered. Until you take your new command,\n"
+				+ "this can be undone (Other... > Undo Reassignment).";
+		if (!confirmIrreversible("Report for Reassignment", message, "Report")) return;
+		try {
+			v.surrender();
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not complete the report for reassignment. Nothing was surrendered:\n" + e.getMessage());
+			init();
+			return;
+		}
+		init();
+		JOptionPane.showMessageDialog(null, "Your report is accepted, Captain. The shipyard stands ready to build your new command.", "Report for Reassignment", JOptionPane.INFORMATION_MESSAGE);
+		commissionShip();
+	}
+	void undoReassignment(File dir) {
+		String hulls;
+		try { hulls = String.join(", ", Vault.get().surrenderedNames(dir)); } catch (IOException e) { hulls = "?"; }
+		if (!HomePlanet.confirmNo(this, "Take back what was surrendered in the last report for reassignment?\n\n"
+				+ "Spacedock Storage returns as it was, and these hulls return to the Junkyard: " + (hulls.isEmpty() ? "(none)" : hulls) + ".\n"
+				+ "The free command it earned is given up.", "Undo Reassignment")) return;
+		try {
+			Vault.get().undoSurrender(dir);
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not undo the report for reassignment:\n" + e.getMessage()
+					+ "\n\nWhat was surrendered is still kept in " + dir);
+			init();
+			return;
+		}
+		init();
+		JOptionPane.showMessageDialog(null, "Spacedock Storage and the Junkyard are as they were before your report.", "Undo Reassignment", JOptionPane.INFORMATION_MESSAGE);
 	}
 	/** Brings a destroyed or lost ship back to the Space Dock from her last kept version. */
 	void recoverShip() {

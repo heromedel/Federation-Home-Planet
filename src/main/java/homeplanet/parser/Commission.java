@@ -80,6 +80,37 @@ public class Commission {
 		return gs;
 	}
 
+	/** The Federation relief ship: a Kestrel A stripped to basics, the free ship of an empty shipyard. */
+	public static final String RELIEF_BASE = "PLAYER_SHIP_HARD";
+	/**
+	 * Builds the relief ship: a Kestrel A with one human crew, a basic laser and an ion blast, her missiles, no drones
+	 * or augments, every system at its minimum (a shield layer, two bars of weapons for her two guns) and a reactor of 7.
+	 */
+	public static SavedGameState buildRelief(String shipName, Difficulty difficulty, Random rng) {
+		SavedGameState gs = build(RELIEF_BASE, shipName, difficulty, rng);
+		ShipState ship = gs.getPlayerShip();
+		while (ship.getCrewList().size() > 1) ship.getCrewList().remove(ship.getCrewList().size() - 1);
+		ship.getWeaponList().clear();
+		ship.addWeapon(SaveHelper.newIdleWeapon("LASER_BURST_1"));
+		ship.addWeapon(SaveHelper.newIdleWeapon("ION_1"));
+		ship.getDroneList().clear();
+		ship.setDronePartsAmt(0);
+		ship.getAugmentIdList().clear();
+		for (SystemType t : SystemType.values()) {
+			SystemState st = ship.getSystem(t);
+			if (st == null || st.getCapacity() <= 0) continue;
+			st.setCapacity(t == SystemType.SHIELDS || t == SystemType.WEAPONS ? 2 : 1);
+			if (t.isSubsystem()) st.setPower(st.getCapacity());
+		}
+		ship.setReservePowerCapacity(7);
+		fillPower(ship);
+		net.blerf.ftl.parser.SavedGameParser.ShieldsInfo sh = ship.getExtendedSystemInfo(net.blerf.ftl.parser.SavedGameParser.ShieldsInfo.class);
+		SystemState shields = ship.getSystem(SystemType.SHIELDS);
+		if (sh != null) sh.setShieldLayers(shields == null ? 0 : shields.getPower() / 2);
+		gs.setTotalCrewHired(ship.getCrewList().size());
+		return gs;
+	}
+
 	static ShipState buildShip(ShipBlueprint bp, String shipName, Difficulty difficulty, Random rng) {
 		ShipState ship = new ShipState(shipName, bp, false);
 		ship.refit(); // systems at their starting levels and power, rooms, doors, augments, hull, missiles, drone parts
@@ -172,6 +203,14 @@ public class Commission {
 			st.setCapacity(present ? Math.max(1, r[0].getPower()) : 0);
 			st.setPower(present && t.isSubsystem() ? st.getCapacity() : 0);
 			st.setDeionizationTicks(0);
+		}
+		fillPower(ship);
+	}
+	/** Powers a new ship's main systems from her reactor, as FTL does at the start (see {@link #setLevelsAndPower}). Subsystems keep their power. */
+	static void fillPower(ShipState ship) {
+		for (SystemType t : SystemType.values()) {
+			SystemState st = ship.getSystem(t);
+			if (st != null && !t.isSubsystem()) st.setPower(0);
 		}
 		int budget = ship.getReservePowerCapacity();
 		// oxygen's first bar comes before everything else (a ship with big shields and guns could otherwise start airless)

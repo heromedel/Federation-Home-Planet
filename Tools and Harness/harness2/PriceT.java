@@ -6,6 +6,8 @@ public class PriceT { public static void main(String[] a) throws Exception {
  Vault v = Setup.open(game, saves); v.takeStock();
  prices();
  paying(v);
+ relief();
+ reassign(v);
  Setup.done();
 }
  static void prices() throws Exception {
@@ -35,4 +37,47 @@ public class PriceT { public static void main(String[] a) throws Exception {
   v.refundStorage(before);
   Setup.chk("S: a refund puts it back", v.storageScrap() == 300);
  }
+ static void relief() throws Exception {
+  SavedGameState r = Commission.buildRelief("Relief", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(2));
+  SavedGameParser.ShipState s = r.getPlayerShip();
+  List<String> w = new ArrayList<String>(); for (SavedGameParser.WeaponState x : s.getWeaponList()) w.add(x.getWeaponId());
+  Setup.chk("F: relief ship: one crew, a basic laser and an ion blast, no drones or augments", s.getCrewList().size() == 1 && w.equals(Arrays.asList("LASER_BURST_1", "ION_1")) && s.getDroneList().isEmpty() && s.getAugmentIdList().isEmpty());
+  int power = 0; boolean minimal = true;
+  for (SavedGameParser.SystemType t : SavedGameParser.SystemType.values()) {
+   SavedGameParser.SystemState st = s.getSystem(t); if (st == null || st.getCapacity() <= 0) continue;
+   int want = t == SavedGameParser.SystemType.SHIELDS || t == SavedGameParser.SystemType.WEAPONS ? 2 : 1;
+   if (st.getCapacity() != want) minimal = false;
+   if (!t.isSubsystem()) power += st.getPower();
+  }
+  Setup.chk("F: every system at its minimum, reactor 7, power within it", minimal && s.getReservePowerCapacity() == 7 && power + 2 <= 7);
+  File tmp = File.createTempFile("relief", ".sav"); SafeFiles.write(tmp, SaveHelper.toBytes(r));
+  SavedGameState back = HomePlanet.savedGameParser.readSavedGame(tmp); tmp.delete();
+  Setup.chk("F: she reads back", back.getPlayerShip().getCrewList().size() == 1 && back.getPlayerShip().getWeaponList().size() == 2);
+  int rp = Pricing.ship(r, 0, 0, 100).total(), kp = Pricing.ship(Commission.build("PLAYER_SHIP_HARD", "K", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1)), 0, 0, 100).total();
+  System.out.println("Relief ship: " + rp);
+  Setup.chk("F: she costs less than a Kestrel A", rp < kp);
+ }
+ static void reassign(Vault v) throws Exception {
+  Setup.chk("F: a shipyard with ships isn't empty", !v.shipyardEmpty());
+  Ship x = null; for (Ship s : v.docked()) x = s;
+  v.board(x); v.disband();
+  String bp = x.save().getPlayerShipBlueprintId();
+  SafeFiles.writeText(v.systemsFile(), SystemsPanelHeader.H + "\nteleporter 2\n", false);
+  File dir = v.surrender();
+  Setup.chk("F: surrender empties the hold and the Junkyard", v.junked().isEmpty() && v.storageScrap() == 0 && !v.systemsFile().exists());
+  Setup.chk("F: what was surrendered is kept", new File(dir, x.id + ".sav").isFile() && new File(dir, "storage.sav").isFile() && new File(dir, "storage-systems.txt").isFile() && dir.equals(v.lastSurrender()));
+  List<String> ids = Retrofit.blueprintIds(new File(dir, x.id + ".sav"));
+  Setup.chk("F: a surrendered hull's blueprints still count", ids != null && v.blueprintsInUseOrHistory().containsAll(ids));
+  boolean refused = false; try { v.undoSurrender(dir); } catch (IOException e) { refused = true; }
+  Setup.chk("F: undo is refused once a ship is at the Space Dock", refused && v.junked().isEmpty());
+  for (Ship s : v.docked()) v.remove(s, "DESTROY");
+  Setup.chk("F: no ship docked, boarded or junked: the shipyard is empty", v.shipyardEmpty());
+  v.undoSurrender(dir);
+  Setup.chk("F: undo returns the hold and the hulls", v.storageScrap() == 300 && v.byId(x.id) != null && v.byId(x.id).state == Ship.State.JUNKED && v.systemsFile().isFile() && v.lastSurrender() == null);
+  File dir2 = v.surrender();
+  SavedGameState g = v.readCopy(v.storage()).save; g.getPlayerShip().setScrapAmt(5); v.write(v.storage(), g);
+  refused = false; try { v.undoSurrender(dir2); } catch (IOException e) { refused = e.getMessage().contains("changed"); }
+  Setup.chk("F: undo is refused once the hold has changed", refused && v.storageScrap() == 5);
+ }
 }
+class SystemsPanelHeader { static final String H = "# Ship systems stored in the Cargo Bay"; }
