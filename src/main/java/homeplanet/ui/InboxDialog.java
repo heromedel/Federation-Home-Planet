@@ -128,8 +128,6 @@ public class InboxDialog extends JDialog {
 		archiveTab.setText("Archive (" + out + ")");
 		model.clear();
 		for (Transmissions.Message m : all) if (m.archived == arch) model.addElement(m);
-		archive.setText(arch ? "Move to Inbox" : "Archive");
-		archive.setToolTipText(arch ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
 		if (!model.isEmpty()) list.setSelectedIndex(0);
 		else show(null);
 		if (model.isEmpty()) text.setText(arch ? "Nothing archived. Archive a transmission to keep it here." : "No transmissions. The Federation Home Planet will be in touch.");
@@ -138,6 +136,7 @@ public class InboxDialog extends JDialog {
 		Transmissions.Message m = list.getSelectedValue();
 		if (m == null) return;
 		try {
+			if (Transmissions.isStipend(m)) { Transmissions.delete(m); all.remove(m); fill(); return; } // the scrap is already in storage
 			Transmissions.setArchived(m, !m.archived);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not file the transmission:\n" + e.getMessage());
@@ -161,6 +160,9 @@ public class InboxDialog extends JDialog {
 		claim.setEnabled(canClaim);
 		commission.setVisible(m.isOrder());
 		archive.setVisible(true);
+		boolean stipend = Transmissions.isStipend(m);
+		archive.setText(stipend ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
+		archive.setToolTipText(stipend ? "Delete this notice: the scrap is already in Spacedock Storage" : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
 		rewardLabel.setForeground(canClaim ? new Color(40, 150, 60) : Color.GRAY);
 		rewardLabel.setText(!m.hasReward() ? " " : m.claimed ? "Claimed: " + m.claimedWhat : "Reward: " + Transmissions.describeReward(m));
 		Transmissions.markRead(m);

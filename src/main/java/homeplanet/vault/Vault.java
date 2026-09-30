@@ -412,6 +412,22 @@ public final class Vault {
 			b = null;
 		}
 		if (b == null && cont.isFile()) {
+			Ship original = cloudCopyOf(cont);
+			if (original != null) {
+				// Steam Cloud brought back a continue.sav the station already has (a docked ship, or one of her kept versions)
+				try {
+					File dir = historyOf(original);
+					if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
+					SafeFiles.move(cont, new File(dir, "cloud-copy-" + STAMP.format(new Date()) + ".sav"));
+					prune(dir);
+					cloudCopy = original.name;
+					notes.add("continue.sav was a copy of " + original.name + " (" + original.state.key + "), brought back by Steam Cloud most likely: set aside in history/" + original.id);
+				} catch (IOException e) {
+					log.warn("Could not set aside the copy of {} in continue.sav: {}", original, e.toString());
+				}
+			}
+		}
+		if (b == null && cont.isFile()) {
 			Ship n = new Ship(newId(), "Unknown ship", Ship.State.BOARDED, true);
 			n.name = ""; // filled in by takeStock() once the game data is loaded
 			n.stranger = true; // not commissioned here (FTL's New Game, most likely)
@@ -444,6 +460,52 @@ public final class Vault {
 		}
 		if (checkBoarded()) changed = true;
 		if (changed) saveManifest();
+	}
+
+	// ---- Steam Cloud's copies ----
+
+	private String cloudCopy = null;
+	/** The name of a ship whose copy continue.sav turned out to be (set aside since this was last asked), or null. */
+	public synchronized String takeCloudCopy() { String c = cloudCopy; cloudCopy = null; return c; }
+	/**
+	 * The fleet's ship this continue.sav is a copy of, byte for byte: her current save, or one of her kept versions
+	 * (Steam Cloud restoring the last continue.sav it uploaded after she was docked). Null if it's none of them.
+	 */
+	private Ship cloudCopyOf(File cont) {
+		String h;
+		try { h = SafeFiles.hash(cont); } catch (IOException e) { return null; }
+		for (Ship s : ships) {
+			if (s.state == Ship.State.STORAGE || s.state == Ship.State.BOARDED) continue;
+			try { if (fileOf(s).isFile() && h.equals(SafeFiles.hash(fileOf(s)))) return s; } catch (IOException e) { }
+			File[] kept = historyOf(s).listFiles();
+			if (kept != null) for (File f : kept) {
+				if (!f.getName().endsWith(".sav")) continue;
+				try { if (h.equals(SafeFiles.hash(f))) return s; } catch (IOException e) { }
+			}
+		}
+		return null;
+	}
+
+	// ---- sectors travelled (the Immersive stipend) ----
+
+	private File sectorsFile() { return new File(root, "sectors.txt"); }
+	/** Sectors this fleet's boarded ships have been seen to advance, in all (FTL's progress, not the station's own changes). */
+	public synchronized int sectorsSeen() {
+		try { return Integer.parseInt(new String(SafeFiles.read(sectorsFile()), java.nio.charset.StandardCharsets.UTF_8).trim()); }
+		catch (Exception e) { return 0; }
+	}
+	private void addSectors(int n) {
+		if (n <= 0) return;
+		try { SafeFiles.writeText(sectorsFile(), (sectorsSeen() + n) + "\n", false); }
+		catch (IOException e) { log.warn("Could not count the sectors travelled: {}", e.toString()); }
+	}
+
+	/** Adds scrap to the storage hold (a stipend). */
+	public synchronized void depositToStorage(int scrap) throws IOException {
+		Ship st = storage();
+		Copy c = readCopy(st);
+		c.save.getPlayerShip().setScrapAmt(c.save.getPlayerShip().getScrapAmt() + scrap);
+		begin().put(st, c.save, c.hash).commit();
 	}
 
 	// ---- is continue.sav still her? ----
@@ -484,6 +546,7 @@ public final class Vault {
 		if (now.equals(b.marks)) return false;
 		if (sameShip(b.marks, gs)) {
 			snapshot(b); // FTL's progress, kept: if FTL later writes over her, this is what comes back
+			try { addSectors(gs.getSectorNumber() - Integer.parseInt(b.marks.split("\\|", -1)[2])); } catch (NumberFormatException e) { }
 			b.marks = now;
 			return true;
 		}

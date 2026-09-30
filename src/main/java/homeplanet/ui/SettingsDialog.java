@@ -134,6 +134,10 @@ public class SettingsDialog extends JDialog {
 
 		heading(body, c, "Launching");
 		body.add(steamBox, next(c));
+		JLabel cloud = new JLabel("<html><div style='width:560px; color:#a05a00'>Steam version: turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties, General). "
+				+ "With it on, Steam can bring back a docked ship as a copy, or an old FTL profile.</div></html>");
+		cloud.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
+		body.add(cloud, next(c));
 
 		heading(body, c, "Mods");
 		JPanel modRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -253,7 +257,6 @@ public class SettingsDialog extends JDialog {
 		}
 		HomePlanet.datsPath = game;
 		HomePlanet.launchThroughSteam = steamBox.isSelected();
-		if (rules.immersiveWanted() != HomePlanet.immersiveMode && !switchFleet(rules.immersiveWanted())) rules.keepImmersive(HomePlanet.immersiveMode);
 		rules.apply();
 		HomePlanet.setDebugLogging(debugBox.isSelected());
 		homeplanet.core.Music.enabled = musicBox.isSelected();
@@ -335,39 +338,6 @@ public class SettingsDialog extends JDialog {
 		String text = cls + "  (" + r.ship + "'s layout, " + r.made + ")";
 		if (!homeplanet.parser.CompanionMod.inGameData(r.id)) text += "  - not patched in yet";
 		return text;
-	}
-
-	/** Immersive Mode on or off: the other fleet comes in (FTL must be closed). False if the player cancelled or it failed. */
-	private boolean switchFleet(boolean toImmersive) {
-		String title = toImmersive ? "Immersive Mode" : "Leave Immersive Mode";
-		if (homeplanet.core.GameGuard.isFtlRunning()) {
-			JOptionPane.showMessageDialog(this, "FTL is running. Quit FTL first: " + (toImmersive ? "Immersive Mode" : "the normal fleet")
-					+ " takes over the ship FTL is flying.\nNothing was changed.", title, JOptionPane.INFORMATION_MESSAGE);
-			return false;
-		}
-		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
-		homeplanet.vault.Ship b = v.boarded();
-		String message = (toImmersive
-				? "Switch to Immersive Mode?\n\nImmersive Mode has a fleet of its own. Your current fleet (the Space Dock, the Junkyard,\n"
-					+ "Spacedock Storage and their records) is kept exactly as it is, and comes back when you turn Immersive Mode off."
-				: "Leave Immersive Mode?\n\nYour Immersive fleet is kept exactly as it is, and comes back when you turn Immersive Mode on again.\n"
-					+ "Your normal fleet and your own rules return.")
-				+ (b == null ? "" : "\n\n" + b.name + " docks here first, and will be boarded again when you return.")
-				+ "\nYour designs and remodels are shared by both fleets.";
-		Object[] opts = {toImmersive ? "Switch" : "Leave", "Cancel"};
-		if (JOptionPane.showOptionDialog(this, message, title, JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[1]) != 0) return false;
-		try {
-			if (!toImmersive) homeplanet.parser.UnlockGrants.leaving(homeplanet.parser.Unlocks.read());
-			homeplanet.vault.Vault.switchFleet(toImmersive);
-			if (toImmersive) homeplanet.parser.UnlockGrants.returning(homeplanet.parser.Unlocks.read()); // a new career starts its record here
-			homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());
-			homeplanet.vault.Vault.get().takeStock();
-		} catch (java.io.IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not switch fleets:\n" + e.getMessage()
-					+ "\n\nThe fleet in use now is the " + (homeplanet.vault.Vault.get().immersive ? "Immersive" : "normal") + " one.");
-			return homeplanet.vault.Vault.get().immersive == toImmersive;
-		}
-		return true;
 	}
 
 	private void refreshLabels() {

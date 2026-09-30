@@ -19,7 +19,11 @@ import homeplanet.core.HomePlanet;
  */
 public class RuleBoxes {
 
-	final JCheckBox immersiveBox = new JCheckBox("Immersive Mode: the station runs by The Federation Home Planet's rules (sets and locks the rules it decides)", HomePlanet.immersiveMode);
+	/** Immersive Mode, as the boxes show it (switched by the button, at once: see ImmersiveDialog). */
+	final JCheckBox immersiveBox = new JCheckBox("", HomePlanet.immersiveMode);
+	private final javax.swing.JButton immersiveButton = new javax.swing.JButton();
+	private final JLabel immersiveLabel = new JLabel();
+	private final JPanel immersiveRow = row(0);
 	final JCheckBox tradeBox = new JCheckBox("Trading and scrapping need a station (the ship must be at a beacon with a store)", HomePlanet.storeRequirement);
 	final JCheckBox journeyBox = new JCheckBox("New Journey needs a station (the boarded ship must be at a beacon with a store)", HomePlanet.journeyStoreRequirement);
 	final JCheckBox scrapBox = new JCheckBox("Scrapping a ship also moves her systems to the Cargo Bay", HomePlanet.scrapKeepsSystems);
@@ -54,12 +58,6 @@ public class RuleBoxes {
 
 	public RuleBoxes() {
 		if (HomePlanet.immersiveMode) showOwn(); // the boxes start from the player's own rules; sync() sets Immersive Mode's over them
-		immersiveBox.setToolTipText("<html>A fleet of its own: your current fleet is kept as it is and comes back when Immersive Mode is turned off.<br>"
-				+ "Sets and locks: trading, scrapping and New Journey need a station; commissioning costs scrap at 100%; locked ships can't be commissioned;<br>"
-				+ "each ship unlocked in FTL is free once; a New Journey costs " + HomePlanet.JOURNEY_FEE + " scrap from Spacedock Storage; missiles, drone parts and stored systems<br>"
-				+ "sell at 25% of the store price; earlier versions of a ship can't be restored, and lost ships can't be recovered.<br>"
-				+ "Your rank decides what you may build: Captains, custom ships, remodels and overhauls; Commodores, the Federation's artillery;<br>"
-				+ "the Rebel Flagship's weapons, once you earn Rule Ten: Greed is Eternal.</html>");
 		scrapBox.setToolTipText("Optional systems only: standard equipment and damaged systems are lost with the hull");
 		sellBox.setToolTipText("Shows a sell button under the supplies in the Cargo Bay: 3 scrap a missile, 4 a drone part. Junking them is always possible");
 		sellSystemsBox.setToolTipText("Shows a Sell button beside each system stored in the Cargo Bay (Refit tab). The boarded ship is paid");
@@ -88,6 +86,16 @@ public class RuleBoxes {
 		for (int i = 0; i < locked.length; i++) tips[i] = locked[i].getToolTipText();
 		ActionListener sync = new ActionListener() { public void actionPerformed(ActionEvent e) { sync(); } };
 		immersiveBox.addActionListener(sync);
+		immersiveRow.add(immersiveButton);
+		immersiveRow.add(immersiveLabel);
+		immersiveButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				boolean done = HomePlanet.immersiveMode ? ImmersiveDialog.leave(immersiveButton) : ImmersiveDialog.enter(immersiveButton);
+				if (!done) return;
+				immersiveBox.setSelected(HomePlanet.immersiveMode);
+				sync();
+			}
+		});
 		costBox.addActionListener(sync);
 		lockedBox.addActionListener(sync);
 		sync();
@@ -96,6 +104,12 @@ public class RuleBoxes {
 	/** Greys out what depends on an unticked rule, and sets what Immersive Mode decides. */
 	private void sync() {
 		boolean im = immersiveBox.isSelected();
+		boolean vaultOpen = homeplanet.vault.Vault.isOpen();
+		immersiveButton.setText(im ? "Return to Normal Mode..." : "Enter Immersive Mode...");
+		immersiveButton.setEnabled(vaultOpen);
+		immersiveButton.setToolTipText(!vaultOpen ? "Once The Home Planet Station is set up, enter Immersive Mode from Settings"
+				: im ? "Back to your normal fleet and rules (your Immersive career is kept)" : "The briefing: what Immersive Mode is, and your career's choices");
+		immersiveLabel.setText(im ? "   Immersive Mode is on: The Federation Home Planet's rules below are locked." : "   The station runs by The Federation Home Planet's rules, and your service becomes a career.");
 		if (!im && showingImmersive) showOwn();
 		showingImmersive = im;
 		if (im) {
@@ -136,14 +150,10 @@ public class RuleBoxes {
 		customLockedBox.setSelected(r.customLockedOnly);
 		notifyBox.setSelected(r.notifications);
 	}
-	/** Is Immersive Mode ticked? */
-	public boolean immersiveWanted() { return immersiveBox.isSelected(); }
-	/** Puts the Immersive Mode tick back (a switch of fleets that didn't happen). */
-	public void keepImmersive(boolean on) { immersiveBox.setSelected(on); sync(); }
 
 	/** Adds the boxes one per row, starting at c's row and leaving c on the row after the last. */
 	public void addTo(JPanel body, GridBagConstraints c) {
-		for (JComponent b : new JComponent[] {immersiveBox, notifyBox, tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
+		for (JComponent b : new JComponent[] {immersiveRow, notifyBox, tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
 			body.add(b, (GridBagConstraints) c.clone());
 			c.gridy++;
 		}
@@ -151,7 +161,6 @@ public class RuleBoxes {
 
 	/** What apply() would change, for the history log. */
 	public void describeChanges(java.util.List<String> changed) {
-		if (immersiveBox.isSelected() != HomePlanet.immersiveMode) changed.add("Immersive Mode: " + immersiveBox.isSelected());
 		if (tradeBox.isSelected() != HomePlanet.storeRequirement) changed.add("Trading requires a station: " + tradeBox.isSelected());
 		if (journeyBox.isSelected() != HomePlanet.journeyStoreRequirement) changed.add("New Journey requires a station: " + journeyBox.isSelected());
 		if (scrapBox.isSelected() != HomePlanet.scrapKeepsSystems) changed.add("Scrapping keeps systems: " + scrapBox.isSelected());
@@ -169,12 +178,11 @@ public class RuleBoxes {
 
 	/** Sets the rules from the boxes (the caller saves the config, and switches fleets first when Immersive Mode changes). */
 	public void apply() {
-		boolean unlockWasOn = HomePlanet.unlockFreeShips, enteringImmersive = immersiveBox.isSelected() && !HomePlanet.immersiveMode;
+		boolean unlockWasOn = HomePlanet.unlockFreeShips;
 		// the rules Immersive Mode leaves to the player
 		HomePlanet.scrapKeepsSystems = scrapBox.isSelected();
 		HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()];
-		if (!immersiveBox.isSelected()) {
-			if (HomePlanet.immersiveMode) HomePlanet.leaveImmersive();
+		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)
 			HomePlanet.storeRequirement = tradeBox.isSelected();
 			HomePlanet.journeyStoreRequirement = journeyBox.isSelected();
 			HomePlanet.sellSupplies = sellBox.isSelected();
@@ -185,14 +193,10 @@ public class RuleBoxes {
 			HomePlanet.commissionUnlockedOnly = lockedBox.isSelected();
 			HomePlanet.commissionCustomUnlockedOnly = customLockedBox.isSelected();
 			HomePlanet.immersiveNotifications = notifyBox.isSelected();
-		} else if (!HomePlanet.immersiveMode) {
-			HomePlanet.immersiveMode = true;
-			HomePlanet.applyImmersive(); // the player's own rules are kept as they are
 		}
-		// unlocks from before the rule was (re)turned on never count
-		// (not when entering Immersive Mode: its fleet keeps its own record, and the switch already settled it; see
-		// UnlockGrants.returning. Marking everything seen here would lose the free ships still waiting there.)
-		if (HomePlanet.unlockFreeShips && !unlockWasOn && !enteringImmersive && homeplanet.vault.Vault.isOpen())
+		// unlocks from before the rule was turned on never count (in Immersive Mode its fleet keeps its own record:
+		// see UnlockGrants.returning; marking everything seen there would lose the free ships still waiting)
+		if (HomePlanet.unlockFreeShips && !unlockWasOn && !HomePlanet.immersiveMode && homeplanet.vault.Vault.isOpen())
 			homeplanet.parser.UnlockGrants.turnedOn(homeplanet.parser.Unlocks.read());
 	}
 	private int percent() { String s = (String) percentBox.getSelectedItem(); return Integer.parseInt(s.substring(0, s.length() - 1)); }

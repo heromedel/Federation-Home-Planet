@@ -183,6 +183,12 @@ public class HomePlanet {
 		// A rule missing from the config starts ticked, except the selling and pricing house rules; rules already set keep their value.
 		if (config.getProperty("launch_through_steam") == null && datsPath.getAbsolutePath().toLowerCase().contains("steamapps")) {
 			launchThroughSteam = confirm("This looks like the Steam version of FTL.\nLaunch FTL through Steam?", "Launch through Steam");
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+				JOptionPane.showMessageDialog(null, "One more thing for the Steam version: turn off Steam Cloud for FTL.\n\n"
+						+ "In your Steam library, right-click FTL, then Properties, General, and untick keeping saves in the Steam Cloud.\n\n"
+						+ "With it on, Steam can bring back a ship you docked as a second copy, or restore an old FTL profile.", "Steam Cloud", JOptionPane.WARNING_MESSAGE);
+				return null;
+			} });
 			config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
 			writeConfig = true;
 		}

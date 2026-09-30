@@ -218,11 +218,50 @@ public final class Transmissions {
 		if (HomePlanet.immersiveMode && u != null) {
 			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, "ach:" + a, rank, null);
 		}
+		if (HomePlanet.immersiveMode && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
 		int added = all.size() - before;
 		if (added > 0 || wasOpen != emptyOpen) {
 			try { save(all); } catch (IOException e) { log.error("Could not save the transmissions", e); }
 		}
 		return added;
+	}
+	/** The stipend for whole months travelled (every 4 sectors), paid into Spacedock Storage, in one message. */
+	private static void payStipend(List<Message> all, java.util.Set<String> sent, Unlocks u, String rank) {
+		int months = Career.unpaidMonths();
+		if (months <= 0) return;
+		int amount = months * Career.stipend(UnlockGrants.rank(u), Career.achievementsCounted(u));
+		try {
+			Career.markPaid(months); // marked first: a payment whose mark was lost would be paid again
+			try {
+				Vault.get().depositToStorage(amount);
+			} catch (IOException e) {
+				Career.markPaid(-months);
+				throw e;
+			}
+		} catch (IOException e) {
+			log.warn("Could not pay the stipend (tried again next time): {}", e.toString());
+			return;
+		}
+		String period = months == 1 ? "monthly stipend" : "stipend for the last " + months + " months";
+		Template t = templates().get("stipend");
+		if (t == null) return;
+		Message m = new Message();
+		m.key = "stipend:" + stamp();
+		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.from = t.from;
+		m.subject = Character.toUpperCase(period.charAt(0)) + period.substring(1) + ": " + amount + " scrap";
+		m.body = fill(t.body.toString().trim(), rank, null).replace("{period}", period).replace("{amount}", Integer.toString(amount));
+		all.add(0, m);
+		sent.add(m.key);
+		HistoryLog.entry("STIPEND", amount + " scrap to Spacedock Storage (" + months + " month" + (months == 1 ? "" : "s") + ")");
+	}
+	/** A stipend's notice: deleted rather than archived, so they don't pile up. */
+	public static boolean isStipend(Message m) { return m.key.startsWith("stipend:"); }
+	/** Deletes a message for good. */
+	public static synchronized void delete(Message m) throws IOException {
+		List<Message> all = load();
+		for (java.util.Iterator<Message> it = all.iterator(); it.hasNext();) if (it.next().key.equals(m.key)) it.remove();
+		save(all);
 	}
 	private static String stamp() { return new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()); }
 	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship) {

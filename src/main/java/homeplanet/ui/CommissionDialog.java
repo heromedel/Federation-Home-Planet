@@ -97,6 +97,8 @@ public class CommissionDialog extends JDialog {
 					setBorder(BorderFactory.createEmptyBorder(6, 2, 2, 2));
 				} else {
 					setBorder(BorderFactory.createEmptyBorder(1, 14, 1, 2));
+					String why = rankReason(e.id); // Immersive Mode: why it's not cleared, and how to be
+					setToolTipText(why == null ? null : "<html>" + homeplanet.parser.XmlText.text(why).replace("\n", "<br>") + "</html>");
 				}
 				return this;
 			}

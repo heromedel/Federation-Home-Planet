@@ -138,7 +138,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn);
-		designBtn = controlButton("Design Ship", "Lay out a new ship of your own on a blank grid");
+		String designLock = homeplanet.parser.Clearance.customReason();
+		designBtn = controlButton("Design Ship", designLock == null ? "Lay out a new ship of your own on a blank grid"
+				: "<html>" + homeplanet.parser.XmlText.text(designLock).replace("\n", "<br>") + "</html>");
 		controlGroup(controls, "Shipyard", commissionBtn, designBtn, salvageBtn, disbandBtn);
 
 		// The ship at your command, large, at the top beside the station's saucer (not touching it), a few of her
@@ -179,6 +181,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			loggedStartup = true;
 		}
 		// FTL's New Game wrote over the boarded ship, or continue.sav is a ship the station never commissioned
+		final String cloud = vault.takeCloudCopy();
+		if (cloud != null) {
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() {
+				JOptionPane.showMessageDialog(null, "Steam Cloud brought back an old copy of " + cloud + ", who is already in your fleet.\n"
+						+ "The copy was set aside in her records, not added as a second ship.\n\n"
+						+ "To stop this, turn off Steam Cloud for FTL: in your Steam library, right-click FTL, Properties, General.", "Steam Cloud", JOptionPane.WARNING_MESSAGE);
+			} });
+		}
 		final String over = vault.takeOverwritten();
 		final Ship stranger = vault.boarded() != null && vault.boarded().stranger && !deferredStrangers.contains(vault.boarded().id) ? vault.boarded() : null;
 		if (over != null || (stranger != null && HomePlanet.immersiveMode)) {
@@ -232,11 +242,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				else if (d == 1) v.remove(stranger, "DESTROY");
 				else { deferredStrangers.add(stranger.id); init(); return; }
 			} else {
-				homeplanet.parser.UnlockGrants.leaving(homeplanet.parser.Unlocks.read());
-				Vault.handOverBoarded(stranger);
-				HomePlanet.leaveImmersive();
-				HomePlanet.saveConfig();
-				homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());
+				ImmersiveDialog.leaveNow(stranger); // her fleet, rules and FTL profile: the normal ones
 				JOptionPane.showMessageDialog(null, "Immersive Mode is off. " + stranger.name + " is boarded in your normal fleet.\n"
 						+ "Your Immersive fleet is kept as it was.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
 			}

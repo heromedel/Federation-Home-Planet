@@ -5,7 +5,7 @@
 # Rewards, comma separated (they go to Spacedock Storage): scrap N, fuel N, missiles N, parts N (drone parts),
 # item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
-# Keys: welcome, empty, promo:1, promo:2, order:<base ship id>, ach:<achievement id>.
+# Keys: welcome, stipend ({period} and {amount} are filled in), empty, promo:1, promo:2, order:<base ship id>, ach:<achievement id>.
 
 == welcome
 from: Home Planet Liaison
@@ -13,11 +13,21 @@ subject: Welcome to the front
 
 Commander,
 
-Welcome to the front. From today The Home Planet Station runs by The Federation Home Planet's rules: trade only where there's a station, pay your way at the shipyard, and fund your own journeys.
+Welcome to the front. From today The Home Planet Station runs by The Federation Home Planet's rules: trade only where there's a station, pay your way at the shipyard, and fund your own journeys. To get you started, 25 scrap is waiting in Spacedock Storage, and a stipend follows every month of service.
 
 The fleet is stretched thin against the Rebellion, but it looks after its own. Serve well and you will hear from us. Watch this channel.
 
 Home Planet Liaison
+
+== stipend
+from: The Federation Home Planet
+subject: Stipend
+
+Automated message from The Federation Home Planet
+
+Your {period} of {amount} scrap has been transferred to The Home Planet Station. It is waiting for you in Spacedock Storage.
+
+Thank you for your service, {rank}.
 
 == empty
 from: Home Planet Shipyard

@@ -68,10 +68,9 @@ public final class Pricing {
 	}
 	/** FTL's reactor limit (Advanced Edition). */
 	public static final int REACTOR_MAX = 25;
-	/** One point of hull repaired at a store in this sector (1-based), as FTL charges: 2 scrap in sectors 1-3, 3 in 4-6, 4 after. */
-	public static int hullRepair(int sector) {
-		return sector <= 3 ? 2 : sector <= 6 ? 3 : 4;
-	}
+	/** One point of hull repaired in the Dry Dock: a flat 4 scrap, the top of FTL's store prices (The Federation charges a premium). */
+	public static final int HULL_REPAIR = 4;
+	public static int hullRepair() { return HULL_REPAIR; }
 
 	/** The price of the reactor's nth bar (1-based), as FTL's upgrade screen charges: 30 for bars 1-5, then 5 more every 5 bars. */
 	public static int reactorBar(int n) {

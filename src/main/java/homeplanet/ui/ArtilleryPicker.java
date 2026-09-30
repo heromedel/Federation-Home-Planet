@@ -80,7 +80,7 @@ final class ArtilleryPicker {
 			public void valueChanged(javax.swing.event.ListSelectionEvent e) {
 				String id = list.getSelectedValue();
 				String why = id == null ? null : homeplanet.parser.Clearance.artilleryReason(id);
-				about.setText(id == null ? "" : why == null ? tip(id) : tip(id).replace("</html>", "<div style='margin-top:6px; color:#d05030'><b>" + why + "</b></div></html>"));
+				about.setText(id == null ? "" : why == null ? tip(id) : tip(id).replace("</html>", "<div style='margin-top:6px; color:#d05030'><b>" + homeplanet.parser.XmlText.text(why).replace("\n", "<br>") + "</b></div></html>"));
 			}
 		});
 		list.setSelectedIndex(Math.max(0, current == null ? 0 : ids.indexOf(current)));

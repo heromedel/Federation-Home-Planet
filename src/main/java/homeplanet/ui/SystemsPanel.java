@@ -242,6 +242,9 @@ public class SystemsPanel {
 		lists.add(layoutLbl);
 		y += 24;
 		remodelBtn.setEnabled(retro);
+		String remodelLock = homeplanet.parser.Clearance.customReason(); // Immersive Mode: a Captain's work
+		remodelBtn.setToolTipText(remodelLock == null ? "Move her systems and doors, or overhaul her deck plan (a retrofitted ship only)"
+				: "<html>" + homeplanet.parser.XmlText.text(remodelLock).replace("\n", "<br>") + "</html>");
 		remodelBtn.setBounds(0, y, 180, 34);
 		lists.add(remodelBtn);
 		retrofitBtn.setText(retro ? "Undo Retrofit" : "Retrofit");
@@ -506,9 +509,9 @@ public class SystemsPanel {
 		reactor.setBounds(0, y, w, 28);
 		sysList.add(reactor);
 		y += 32;
-		int hull = bs.getHullAmt(), max = maxHull(bs), each = homeplanet.parser.Pricing.hullRepair(bay.currentSave.getSectorNumber() + 1);
+		int hull = bs.getHullAmt(), max = maxHull(bs), each = homeplanet.parser.Pricing.hullRepair();
 		int can = Math.min(max - hull, scrap / each);
-		SysRow repair = new SysRow("Hull " + hull + " / " + max, -1, "", null, "Hull repairs: " + each + " scrap a point in this sector", null);
+		SysRow repair = new SysRow("Hull " + hull + " / " + max, -1, "", null, "Hull repairs: " + each + " scrap a point (The Federation charges a premium)", null);
 		if (hull < max) {
 			repair.addButton("Repair", 78, ROW_W - 82, can > 0, can <= 0 ? "Each point costs " + each + " scrap; she has " + scrap
 					: "Repair " + can + (can == 1 ? " point" : " points") + " for " + can * each + " scrap (" + each + " a point" + (can < max - hull ? "; all she can afford" : "") + ")",
@@ -543,7 +546,7 @@ public class SystemsPanel {
 	}
 	private void repairHull() {
 		ShipState bs = bay.currentSave.getPlayerShip();
-		int each = homeplanet.parser.Pricing.hullRepair(bay.currentSave.getSectorNumber() + 1);
+		int each = homeplanet.parser.Pricing.hullRepair();
 		int n = Math.min(maxHull(bs) - bs.getHullAmt(), bs.getScrapAmt() / each);
 		if (n <= 0) return;
 		bs.setHullAmt(bs.getHullAmt() + n);
