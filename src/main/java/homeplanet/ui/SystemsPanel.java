@@ -129,7 +129,7 @@ public class SystemsPanel {
 		remodelBtn.setToolTipText("Move her systems and doors, or overhaul her deck plan (a retrofitted ship only)");
 		remodelBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (RemodelDialog.open(bay)) { load(); bay.markDirty(); refresh(); bay.refreshTrade(); }
+				if (RemodelDialog.open(bay)) { load(); refresh(); bay.refreshTrade(); } // the remodel saved the Cargo Bay: nothing left unsaved
 			}
 		});
 		retrofitBtn = new FtlButton("Retrofit", FtlFont.MENU, 220, 34);

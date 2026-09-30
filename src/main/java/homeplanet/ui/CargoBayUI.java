@@ -1099,13 +1099,13 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	// ============================================================== Save
 
-	/** Writes every pending change: ship, trade partner, shop, systems, and the history log entries. */
-	public void saveAll() {
+	/** Writes every pending change (ship, trade partner, shop, systems, and the history log entries); true if all of it was written (false after telling the player why not). */
+	public boolean saveAll() {
 		if (currentPath == null || currentShip == null) {
 			HomePlanet.showErrorDialog("Nothing to save: no ship is boarded. Board one at the Space Dock first.");
-			return;
+			return false;
 		}
-		if (currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return;
+		if (currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return false;
 		try {
 			Map<String, Integer> curBefore = null, tradeBefore = null;
 			String nameBefore = null, tradeNameBefore = null;
@@ -1186,13 +1186,14 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		} catch (Vault.StaleException e) {
 			log.warn("Save refused: {}", e.getMessage());
 			HomePlanet.showErrorDialog(e.getMessage() + "\n\nPress Reset to load her as she is now, then make the changes again.");
-			return;
+			return false;
 		} catch (Exception e) {
 			log.error("Saving failed", e);
 			HomePlanet.showErrorDialog("The Home Planet Station could not save the changes:\n" + e);
-			return;
+			return false;
 		}
 		init(); // everything fresh from the files, so what's shown is what's saved
 		help("Saved.");
+		return true;
 	}
 }

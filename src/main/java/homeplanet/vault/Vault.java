@@ -444,10 +444,16 @@ public final class Vault {
 		if (b != null) dock();
 		File from = fileOf(s), to = continueFile();
 		if (to.exists()) throw new IOException("continue.sav is already there (a ship the station doesn't know?)");
-		SafeFiles.copy(from, to);
-		String hash = SafeFiles.hash(to);
-		// her vault copy goes into her history: from now on continue.sav is the only current version
-		moveToHistory(s, from);
+		String hash;
+		try {
+			SafeFiles.copy(from, to);
+			hash = SafeFiles.hash(to);
+			// her vault copy goes into her history: from now on continue.sav is the only current version
+			moveToHistory(s, from);
+		} catch (IOException e) {
+			to.delete(); // a copy left in continue.sav would come back as a second, boarded her on the next Refresh
+			throw e;
+		}
 		s.state = Ship.State.BOARDED;
 		s.hash = hash;
 		saveManifest();
@@ -459,9 +465,9 @@ public final class Vault {
 		if (b == null) return;
 		File from = continueFile();
 		if (!from.isFile()) throw new IOException("continue.sav is missing: " + b.name + " may have been lost in FTL. Refresh to take stock.");
+		File to = new File(shipsDir(), b.id + ".sav"); // where a docked ship's save lives (fileOf, once she's docked)
+		SafeFiles.write(to, SafeFiles.read(from)); // a temporary file, then one move: a failure leaves her boarded, as she was
 		b.state = Ship.State.DOCKED;
-		File to = fileOf(b);
-		SafeFiles.copy(from, to);
 		b.hash = SafeFiles.hash(to);
 		if (!from.delete()) {
 			b.state = Ship.State.BOARDED;
@@ -515,8 +521,8 @@ public final class Vault {
 	/** A ship just built (commissioned): written into the ships folder, docked. */
 	public synchronized Ship adopt(SavedGameState state) throws IOException {
 		Ship s = new Ship(newId(), state.getPlayerShipName(), Ship.State.DOCKED, state.isDLCEnabled());
+		writeQuietly(s, state); // her file first: a failed write leaves no entry without one
 		ships.add(s);
-		writeQuietly(s, state);
 		saveManifest();
 		return s;
 	}

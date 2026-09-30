@@ -8,6 +8,7 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ import net.blerf.ftl.xml.ShipBlueprint;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.GameGuard;
 import homeplanet.core.HistoryLog;
+import homeplanet.core.SafeFiles;
 import homeplanet.model.Items;
 import homeplanet.parser.CompanionMod;
 import homeplanet.parser.Retrofit;
@@ -632,8 +634,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault vault = Vault.get();
 			Ship storageShip = vault.storage();
-			SavedGameState storage = storageShip.save();
-			if (storage == null) throw new IOException("The storage hold can't be read: " + storageShip.readError());
+			// a fresh copy: the shared one must not keep the additions if anything below fails
+			Vault.Copy storageCopy;
+			try { storageCopy = vault.readCopy(storageShip); } catch (IOException e) { throw new IOException("The storage hold can't be read: " + e.getMessage()); }
+			SavedGameState storage = storageCopy.save;
+			// what the hold and the stored-systems list hold now, to put back if the wreck can't be removed after them
+			File storageFile = storageShip.file(), systemsFile = vault.systemsFile();
+			byte[] storageBefore = SafeFiles.read(storageFile), systemsBefore = systemsFile.isFile() ? SafeFiles.read(systemsFile) : null;
 			scrapped = HistoryLog.changes(new java.util.HashMap<String, Integer>(), HistoryLog.inventory(wreck));
 			ShipState from = wreck.getPlayerShip();
 			ShipState to = storage.getPlayerShip();
@@ -654,10 +661,18 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			for (CrewState c : SaveHelper.getOwnCrew(from)) {
 				if (SaveHelper.hasBody(c) && SaveHelper.placeCrew(to, c, true)) to.getCrewList().add(c);
 			}
-			Vault.Transaction tx = vault.begin().put(storageShip, storage);
+			Vault.Transaction tx = vault.begin().put(storageShip, storage, storageCopy.hash);
 			if (HomePlanet.scrapKeepsSystems) scrapped.addAll(SystemsPanel.scrapSystems(from, tx));
 			tx.commit();
-			vault.remove(wreckShip, null); // logged below, with what came off her
+			try {
+				vault.remove(wreckShip, null); // logged below, with what came off her
+			} catch (IOException e) {
+				// she's still in the Junkyard with everything aboard: the hold must not keep a second copy
+				SafeFiles.write(storageFile, storageBefore);
+				if (systemsBefore != null) SafeFiles.write(systemsFile, systemsBefore); else systemsFile.delete();
+				storageShip.invalidate();
+				throw e;
+			}
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The order to scrap was called off. Nothing was changed:\n" + e);
 			return;

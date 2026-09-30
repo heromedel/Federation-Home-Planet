@@ -7,6 +7,7 @@ public class SafeT { public static void main(String[] a) throws Exception {
  damagedFiles(work);
  staleSaves(v);
  halfwayFailure(v, work);
+ failedBoardAndDock(v);
  Setup.done();
 }
  /** A: a designs.xml or remodels.xml that doesn't read in full is left alone, and the art sweep deletes nothing. */
@@ -73,6 +74,24 @@ public class SafeT { public static void main(String[] a) throws Exception {
   boolean failed = false; try { v.begin().put(d, c.save, c.hash).put(blocker, "x".getBytes("UTF-8")).commit(); } catch (IOException e) { failed = true; }
   Setup.chk("F: a save that fails halfway puts the first file back", failed && SafeFiles.hash(d.file()).equals(before));
   Setup.chk("F: and leaves no temporary files behind", !new File(d.file().getParentFile(), d.file().getName() + ".tx").exists() && !new File(work, "blocker.tx").exists());
+ }
+ /** D and H: a Board or Dock that fails partway leaves every ship as she was, with no stray continue.sav. */
+ static void failedBoardAndDock(Vault v) throws Exception {
+  Ship was = v.boarded(), next = v.docked().get(0);
+  // H: Dock can't write her into the ships folder (a folder sits where her file goes)
+  File where = new File(v.shipsDir(), was.id + ".sav"); new File(where, "x").mkdirs();
+  boolean failed = false; try { v.dock(); } catch (IOException e) { failed = true; }
+  Setup.chk("H: a failed Dock leaves her boarded, continue.sav in place", failed && v.boarded() == was && v.continueFile().isFile());
+  SafeFiles.deleteTree(where);
+  v.dock();
+  Setup.chk("H: once cleared, she docks", v.boarded() == null && was.state == Ship.State.DOCKED && where.isFile());
+  // D: Board can't move her vault copy into her history (a file sits where her history folder goes)
+  File hist = v.historyOf(next); SafeFiles.deleteTree(hist); SafeFiles.write(hist, new byte[] {1});
+  failed = false; try { v.board(next); } catch (IOException e) { failed = true; }
+  Setup.chk("D: a failed Board leaves no copy in continue.sav, and her still docked", failed && !v.continueFile().exists() && next.state == Ship.State.DOCKED && next.file().isFile());
+  hist.delete();
+  v.board(was);
+  Setup.chk("D: once cleared, boarding works", v.boarded() == was && v.continueFile().isFile());
  }
  static boolean saveOk() { try { ShipDesign.save(ShipDesign.load()); CompanionMod.save(CompanionMod.load()); return true; } catch (IOException e) { return false; } }
 }
