@@ -127,7 +127,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		journeyBtn = controlButton("New Journey", "Set out from the first sector with the boarded ship, crew and cargo");
 		commissionBtn = controlButton("Commission", "Have a brand-new ship built, as a new game would start her");
 		salvageBtn = controlButton("Salvage", "Salvage, scrap or destroy a ship in the Junkyard");
-		disbandBtn = controlButton("Disband", "Decommission the boarded ship and send it to the Junkyard");
+		disbandBtn = controlButton("Decommission", "Decommission the boarded ship: she goes to the Junkyard");
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
@@ -497,8 +497,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		ShipBlueprint bp = DataManager.get().getShip(g.getPlayerShipBlueprintId());
 		ShipState ship = g.getPlayerShip();
 		if (bp != null) statRow(p, "Class", CommissionDialog.classOf(bp), k, v);
-		statRow(p, "Sector", String.valueOf(g.getSectorNumber() + 1), k, v);
-		statRow(p, "Visited", String.valueOf(homeplanet.vault.VoyageLog.visited(Vault.get(), ship0)), k, v); // sectors, all her journeys
+		statPair(p, "Sector", String.valueOf(g.getSectorNumber() + 1), "Visited", String.valueOf(homeplanet.vault.VoyageLog.visited(Vault.get(), ship0)), k, v); // visited: all her journeys
 		statRow(p, "Crew", String.valueOf(ship.getCrewList().size()), k, v);
 		statRow(p, "Hull", ship.getHullAmt() + (bp != null && bp.getHealth() != null ? " / " + bp.getHealth().amount : ""), k, v);
 		statRow(p, "Scrap", String.valueOf(ship.getScrapAmt()), k, v);
@@ -507,6 +506,23 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		statRow(p, "Drone parts", String.valueOf(ship.getDronePartsAmt()), k, v);
 		p.setSize(p.getPreferredSize());
 		return p;
+	}
+	/** Two stats side by side on one row (the column must fit beside her picture). */
+	private void statPair(JPanel p, String key1, String value1, String key2, String value2, Color k, Color v) {
+		JPanel row = new JPanel(new java.awt.GridLayout(1, 2, 12, 0));
+		row.setOpaque(false);
+		row.setAlignmentX(LEFT_ALIGNMENT);
+		for (String[] kv : new String[][] {{key1, value1}, {key2, value2}}) {
+			JPanel cell = new JPanel();
+			cell.setLayout(new BoxLayout(cell, BoxLayout.Y_AXIS));
+			cell.setOpaque(false);
+			cell.add(smallLabel(kv[0], k));
+			cell.add(new FtlButton.Text(kv[1], FtlFont.BODY, v, Math.min(STATS_W / 2, FtlFont.BODY.render(kv[1], v).getWidth() + 2)));
+			row.add(cell);
+		}
+		row.setMaximumSize(new Dimension(STATS_W, row.getPreferredSize().height));
+		p.add(row);
+		p.add(Box.createRigidArea(new Dimension(1, 5)));
 	}
 	private void statRow(JPanel p, String key, String value, Color k, Color v) {
 		p.add(smallLabel(key, k));
@@ -657,14 +673,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				null, new Runnable() { public void run() { BlueprintCleanup.run(SpaceDockUI.this); } }, false));
 		Vault v = Vault.get();
 		boolean taken = !v.docked().isEmpty() || v.boarded() != null;
-		orders.add(new OtherOrdersDialog.Order("Report for Reassignment", "Surrender Spacedock Storage and the Junkyard's hulls in exchange for a free new command.",
+		orders.add(new OtherOrdersDialog.Order("Report for Reassignment", "Surrender the Cargo Hold and the Junkyard's hulls in exchange for a free new command.",
 				!HomePlanet.commissionCosts ? "commissioning is free (Settings, Rules): Commission a new ship instead."
 						: taken ? "only a captain with no ship at the Space Dock can report for reassignment."
 						: v.freeCommandOpen() ? "a free command is already waiting for you at Commission." : null,
 				new Runnable() { public void run() { reportForReassignment(); } }, true));
 		final File last = v.lastSurrender();
 		if (last != null) {
-			orders.add(new OtherOrdersDialog.Order("Undo Reassignment", "Take back the storage hold and hulls surrendered in the last report for reassignment.",
+			orders.add(new OtherOrdersDialog.Order("Undo Reassignment", "Take back the Cargo Hold and hulls surrendered in the last report for reassignment.",
 					HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final."
 							: taken ? "only before a new command is taken: no ship may be at the Space Dock." : null,
 					new Runnable() { public void run() { undoReassignment(last); } }, false));
@@ -683,7 +699,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		for (int i = 0; i < junk.size(); i++) hulls.append(i == 0 ? "" : ", ").append(junk.get(i).name);
 		String message = "Report for reassignment?\n\n"
 				+ "You surrender to The Federation Home Planet:\n"
-				+ "  - Spacedock Storage: its " + v.storageScrap() + " scrap, supplies, weapons, drones, augments, crew and stored systems\n"
+				+ "  - The Cargo Hold: its " + v.storageScrap() + " scrap, supplies, weapons, drones, augments, crew and stored systems\n"
 				+ (junk.isEmpty() ? "  - (the Junkyard is empty)\n" : "  - every hull in the Junkyard: " + hulls + "\n")
 				+ "\nIn exchange, The Federation Home Planet grants you a new command: " + freeShipWords() + ", free.\n\n"
 				+ (HomePlanet.immersiveMode ? "This is final (Immersive Mode)."
@@ -705,7 +721,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String hulls;
 		try { hulls = String.join(", ", Vault.get().surrenderedNames(dir)); } catch (IOException e) { hulls = "?"; }
 		if (!HomePlanet.confirmNo(this, "Take back what was surrendered in the last report for reassignment?\n\n"
-				+ "Spacedock Storage returns as it was, and these hulls return to the Junkyard: " + (hulls.isEmpty() ? "(none)" : hulls) + ".\n"
+				+ "The Cargo Hold returns as it was, and these hulls return to the Junkyard: " + (hulls.isEmpty() ? "(none)" : hulls) + ".\n"
 				+ "The free command it earned is given up.", "Undo Reassignment")) return;
 		try {
 			Vault.get().undoSurrender(dir);
@@ -716,14 +732,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		init();
-		JOptionPane.showMessageDialog(null, "Spacedock Storage and the Junkyard are as they were before your report.", "Undo Reassignment", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(null, "The Cargo Hold and the Junkyard are as they were before your report.", "Undo Reassignment", JOptionPane.INFORMATION_MESSAGE);
 	}
 	/** Brings a destroyed or lost ship back to the Space Dock from her last kept version. */
 	void recoverShip() {
 		List<Vault.Departed> gone = Vault.get().recoverable();
 		if (gone.isEmpty()) {
 			JOptionPane.showMessageDialog(null, "The Home Planet Station has no records of a destroyed or lost ship to recover.\n"
-					+ "(Scrapped ships can't be recovered: everything aboard them went into Spacedock Storage.)", "Recover a Ship", JOptionPane.INFORMATION_MESSAGE);
+					+ "(Scrapped ships can't be recovered: everything aboard them went into the Cargo Hold.)", "Recover a Ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		String[] names = new String[gone.size()];
@@ -868,17 +884,17 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void disbandCurrentShip() {
 		Ship ship = Vault.get().boarded();
 		if (ship == null || !ship.file().exists()) {
-			JOptionPane.showMessageDialog(null, "No ship is at your command.\nBoard a ship before giving the order to disband.", "Disband Ship", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(null, "No ship is at your command.\nBoard a ship before giving the order to decommission her.", "Decommission", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		String message = "Decommission " + ship.name + "?\n\n"
 				+ "Her crew will stand down and every scrap, supply and part aboard goes with her to the Junkyard.\n"
 				+ "Should she ever be salvaged, her crew will return to their posts.";
-		Object[] options = {"Disband", "Cancel"};
-		int choice = JOptionPane.showOptionDialog(null, message, "Disband Ship", JOptionPane.DEFAULT_OPTION,
+		Object[] options = {"Decommission", "Cancel"};
+		int choice = JOptionPane.showOptionDialog(null, message, "Decommission", JOptionPane.DEFAULT_OPTION,
 				JOptionPane.WARNING_MESSAGE, null, options, options[1]); // Cancel is the default
 		if (choice != 0) return;
-		if (!GameGuard.allows(this, "disband her")) return;
+		if (!GameGuard.allows(this, "decommission her")) return;
 		try {
 			Vault.get().disband();
 		} catch (IOException e) {
@@ -927,11 +943,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (fee > 0) {
 			int have = Vault.get().storageScrap();
 			if (have < fee) {
-				JOptionPane.showMessageDialog(null, "The Federation Home Planet charges " + fee + " scrap to plot a new journey, paid from Spacedock Storage,\n"
+				JOptionPane.showMessageDialog(null, "The Federation Home Planet charges " + fee + " scrap to plot a new journey, paid from the Cargo Hold,\n"
 						+ "which holds " + have + ". Store more scrap in the Cargo Bay first.", "New Journey", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
-			if (!HomePlanet.confirmNo(this, "The Federation Home Planet charges " + fee + " scrap to plot a new journey,\npaid from Spacedock Storage (which holds " + have + "). Pay it?", "New Journey")) return;
+			if (!HomePlanet.confirmNo(this, "The Federation Home Planet charges " + fee + " scrap to plot a new journey,\npaid from the Cargo Hold (which holds " + have + "). Pay it?", "New Journey")) return;
 		}
 		if (!GameGuard.allows(this, "start her new journey")) return;
 		byte[] storageBefore = null;
@@ -939,7 +955,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			try {
 				storageBefore = Vault.get().payFromStorage(fee);
 			} catch (IOException e) {
-				HomePlanet.showErrorDialog("The Home Planet Station could not take the fee from Spacedock Storage. Nothing was changed:\n" + e.getMessage());
+				HomePlanet.showErrorDialog("The Home Planet Station could not take the fee from the Cargo Hold. Nothing was changed:\n" + e.getMessage());
 				return;
 			}
 		}
@@ -955,13 +971,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault.get().write(ship, gs);
 			Vault.get().setOut(ship, gs, "A new journey plotted from sector 1"); // at The Home Planet Station until she jumps
-			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + fee + " scrap from Spacedock Storage" : ""));
+			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + fee + " scrap from the Cargo Hold" : ""));
 		} catch (Exception e) {
 			ship.invalidate();
 			String refund = "";
 			if (storageBefore != null) {
-				try { Vault.get().refundStorage(storageBefore); refund = "\nThe fee was returned to Spacedock Storage."; }
-				catch (IOException again) { refund = "\nThe fee could not be returned to Spacedock Storage: " + again.getMessage(); }
+				try { Vault.get().refundStorage(storageBefore); refund = "\nThe fee was returned to the Cargo Hold."; }
+				catch (IOException again) { refund = "\nThe fee could not be returned to the Cargo Hold: " + again.getMessage(); }
 			}
 			HomePlanet.showErrorDialog("The Home Planet Station could not save her new journey:\n" + e + refund);
 			return;
@@ -977,7 +993,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				JOptionPane.WARNING_MESSAGE, null, options, options[1]) == 0; // Cancel is the default
 	}
 
-	/** Strips a junked ship: everything aboard goes to Spacedock Storage, then her save goes into her history. */
+	/** Strips a junked ship: everything aboard goes to the Cargo Hold, then her save goes into her history. */
 	void scrapShip(Ship wreckShip) {
 		SavedGameState wreck = wreckShip.save();
 		if (wreck == null) {
@@ -990,9 +1006,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					+ "The Home Planet Station cannot scrap her for supplies unless you salvage her and fly her to a beacon with a station first.", "Scrap Ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
-		String aboard = "Everything aboard will be moved to Spacedock Storage.\n";
+		String aboard = "Everything aboard will be moved to the Cargo Hold.\n";
 		if (HomePlanet.scrapKeepsSystems) {
-			aboard = "Everything aboard, including her systems, will be moved to Spacedock Storage.\n" + SystemsPanel.scrapPreview(wreck.getPlayerShip());
+			aboard = "Everything aboard, including her systems, will be moved to the Cargo Hold.\n" + SystemsPanel.scrapPreview(wreck.getPlayerShip());
 		}
 		if (!confirmIrreversible("Scrap Ship", "Strip " + name + " for parts?\n\n" + aboard
 				+ "The hull will be broken up and can never be recovered.", "Scrap")) return;
@@ -1002,7 +1018,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			Ship storageShip = vault.storage();
 			// a fresh copy: the shared one must not keep the additions if anything below fails
 			Vault.Copy storageCopy;
-			try { storageCopy = vault.readCopy(storageShip); } catch (IOException e) { throw new IOException("The storage hold can't be read: " + e.getMessage()); }
+			try { storageCopy = vault.readCopy(storageShip); } catch (IOException e) { throw new IOException("The Cargo Hold can't be read: " + e.getMessage()); }
 			SavedGameState storage = storageCopy.save;
 			// what the hold and the stored-systems list hold now, to put back if the wreck can't be removed after them
 			File storageFile = storageShip.file(), systemsFile = vault.systemsFile();
@@ -1074,7 +1090,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "<b>Salvage:</b> haul her back to the Space Dock, crew and cargo intact.<br>"
 				+ "<b>Scrap:</b> strip her down. Weapons, drones, augments, cargo, supplies and crew"
 				+ (HomePlanet.scrapKeepsSystems ? ", and her optional systems," : "") + " are sent to<br>"
-				+ "Spacedock Storage, and the hull is broken up for good.<br>"
+				+ "the Cargo Hold, and the hull is broken up for good.<br>"
 				+ "<b>Destroy:</b> reduce her to space debris, with everything aboard. Nothing is recovered,<br>"
 				+ "and her crew are retired from service.<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
 		panel.add(pick, java.awt.BorderLayout.CENTER);

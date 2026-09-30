@@ -328,7 +328,7 @@ public class CommissionDialog extends JDialog {
 		int have = homeplanet.vault.Vault.get().storageScrap();
 		StringBuilder sb = new StringBuilder("<html><b>Price: " + q.total() + " scrap</b>");
 		if (q.percent != 100) sb.append(" (" + q.percent + "% of " + q.subtotal + ")");
-		sb.append(", paid from Spacedock Storage, which holds " + have + ".");
+		sb.append(", paid from the Cargo Hold, which has " + have + ".");
 		if (have < q.total()) sb.append(" <font color='#ff8844'>Not enough scrap.</font>");
 		sb.append("<br><font size='-2'>").append(String.join(" · ", q.lines)).append("</font></html>");
 		priceLabel.setText(sb.toString());
@@ -357,16 +357,16 @@ public class CommissionDialog extends JDialog {
 			price = q.total();
 			int have = vault.storageScrap();
 			if (have < price) {
-				JOptionPane.showMessageDialog(this, "The shipyard asks " + price + " scrap for her, and Spacedock Storage holds " + have + ".\n"
+				JOptionPane.showMessageDialog(this, "The shipyard asks " + price + " scrap for her, and the Cargo Hold has " + have + ".\n"
 						+ "Store more scrap in the Cargo Bay, or choose a smaller ship.", "Commission Ship", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
-			if (JOptionPane.showConfirmDialog(this, "Commission " + name + " for " + price + " scrap from Spacedock Storage?",
+			if (JOptionPane.showConfirmDialog(this, "Commission " + name + " for " + price + " scrap from the Cargo Hold?",
 					"Commission Ship", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
 			try {
 				storageBefore = vault.payFromStorage(price);
 			} catch (Exception ex) {
-				HomePlanet.showErrorDialog("The Home Planet Station could not take the scrap from Spacedock Storage. Nothing was changed:\n" + ex.getMessage());
+				HomePlanet.showErrorDialog("The Home Planet Station could not take the scrap from the Cargo Hold. Nothing was changed:\n" + ex.getMessage());
 				return;
 			}
 		}
@@ -377,15 +377,15 @@ public class CommissionDialog extends JDialog {
 		} catch (Exception ex) {
 			String refund = "";
 			if (storageBefore != null) {
-				try { vault.refundStorage(storageBefore); refund = "\nThe " + price + " scrap was returned to Spacedock Storage."; }
-				catch (Exception again) { refund = "\nThe " + price + " scrap could not be returned to Spacedock Storage: " + again.getMessage(); }
+				try { vault.refundStorage(storageBefore); refund = "\nThe " + price + " scrap was returned to the Cargo Hold."; }
+				catch (Exception again) { refund = "\nThe " + price + " scrap could not be returned to the Cargo Hold: " + again.getMessage(); }
 			}
 			HomePlanet.showErrorDialog("The new ship could not be docked; her save could not be written:\n" + ex + refund);
 			return;
 		}
 		List<String> lines = new ArrayList<String>();
 		lines.add(e.label + " (" + e.id + "), difficulty " + difficulty.getSelectedItem());
-		if (price > 0) lines.add("Paid " + price + " scrap from Spacedock Storage");
+		if (price > 0) lines.add("Paid " + price + " scrap from the Cargo Hold");
 		if (isFree && emptyFree(e.id)) {
 			lines.add("Free: the free command");
 			homeplanet.vault.Vault.get().useFreeCommand("commissioned " + name);

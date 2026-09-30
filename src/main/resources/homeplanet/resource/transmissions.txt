@@ -2,7 +2,7 @@
 # Edit freely. Each message starts with "== key", then "from:", "subject:" and, if it carries one, "reward:" lines,
 # a blank line, and the text. {rank} is the player's rank, {ship} a ship's class and layout.
 #
-# Rewards, comma separated (they go to Spacedock Storage): scrap N, fuel N, missiles N, parts N (drone parts),
+# Rewards, comma separated (they go to the Cargo Hold): scrap N, fuel N, missiles N, parts N (drone parts),
 # item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
 # Keys: welcome, stipend ({period} and {amount} are filled in), empty, promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
@@ -15,7 +15,7 @@ subject: Welcome to the front
 
 Commander,
 
-Welcome to the front. From today The Home Planet Station runs by The Federation Home Planet's rules: trade only where there's a station, pay your way at the shipyard, and fund your own journeys. To get you started, 25 scrap is waiting in Spacedock Storage, and a stipend follows every month of service.
+Welcome to the front. From today The Home Planet Station runs by The Federation Home Planet's rules: trade only where there's a station, pay your way at the shipyard, and fund your own journeys. To get you started, 25 scrap is waiting in the Cargo Hold, and a stipend follows every month of service.
 
 The fleet is stretched thin against the Rebellion, but it looks after its own. Serve well and you will hear from us. Watch this channel.
 
@@ -43,7 +43,7 @@ subject: In Recognition
 
 The Rebel Flagship has withdrawn, and the {ship} gave everything to make it so. She could not be recovered.
 
-In recognition of her service, The Federation Home Planet has granted her full value, {value} scrap, to The Home Planet Station. It is waiting in Spacedock Storage: enough to commission a ship of equal worth.
+In recognition of her service, The Federation Home Planet has granted her full value, {value} scrap, to The Home Planet Station. It is waiting in the Station's Cargo Hold: enough to commission a ship of equal worth.
 
 The Federation Home Planet
 
@@ -53,7 +53,7 @@ subject: Stipend
 
 Automated message from The Federation Home Planet
 
-Your {period} of {amount} scrap has been transferred to The Home Planet Station. It is waiting for you in Spacedock Storage.
+Your {period} of {amount} scrap has been transferred to The Home Planet Station. It is waiting for you in the Station's Cargo Hold.
 
 Thank you for your service, {rank}.
 
@@ -490,7 +490,7 @@ reward: crew energy
 
 {rank},
 
-Sector 5 without a single reactor upgrade: the Zoltan crew powered the ship themselves. One of them has asked to serve with you. They're waiting in Spacedock Storage.
+Sector 5 without a single reactor upgrade: the Zoltan crew powered the ship themselves. One of them has asked to serve with you. They're waiting in the Cargo Hold.
 
 Office of Alien Affairs
 
@@ -611,7 +611,7 @@ reward: crew mantis
 
 {rank},
 
-Five enemy crew, no hull damage, no losses. A Mantis warrior heard about it and wants in. They love this sort of thing. They're waiting in Spacedock Storage.
+Five enemy crew, no hull damage, no losses. A Mantis warrior heard about it and wants in. They love this sort of thing. They're waiting in the Cargo Hold.
 
 Office of Alien Affairs
 
@@ -678,7 +678,7 @@ reward: crew human
 
 {rank},
 
-Four delicate situations handled with tact by sector 5. The Diplomatic Corps has assigned one of its officers to serve with you. They're waiting in Spacedock Storage.
+Four delicate situations handled with tact by sector 5. The Diplomatic Corps has assigned one of its officers to serve with you. They're waiting in the Cargo Hold.
 
 Office of Alien Affairs
 

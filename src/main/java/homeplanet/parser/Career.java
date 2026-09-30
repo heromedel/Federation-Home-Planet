@@ -23,7 +23,7 @@ public final class Career {
 	private static final Logger log = LoggerFactory.getLogger(Career.class);
 	private Career() { }
 
-	/** Scrap in Spacedock Storage when a career begins. */
+	/** Scrap in the Cargo Hold when a career begins. */
 	public static final int STARTING_SCRAP = 25;
 	/** The stipend: this much, plus the rank's multiple for each achievement counted, every SECTORS_PER_MONTH sectors. */
 	public static final int STIPEND_BASE = 20, SECTORS_PER_MONTH = 4;
@@ -71,7 +71,7 @@ public final class Career {
 		v.depositToStorage(STARTING_SCRAP);
 		v.grantFreeCommand("an Immersive career began");
 		homeplanet.core.HistoryLog.entry("CAREER", "Immersive career begun: stipend counts " + (salaryAll ? "every achievement" : "achievements earned from now on")
-				+ (ownProfile ? "; its own FTL profile" : "") + "; " + STARTING_SCRAP + " scrap in Spacedock Storage");
+				+ (ownProfile ? "; its own FTL profile" : "") + "; " + STARTING_SCRAP + " scrap in the Cargo Hold");
 	}
 
 	/** The achievements the stipend counts now (real ones, not FTL's hidden unlock markers). */

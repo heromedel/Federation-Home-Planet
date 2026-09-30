@@ -15,7 +15,9 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 8. Transmissions: the inbox, commission orders, promotions, achievement rewards (draft: docs/TRANSMISSIONS.md)
 9. Immersive Mode, part 3: the briefing, its own FTL profile, the stipend, unlock hints, Steam Cloud
 10. After a final victory: rescue her (or the museum), or a reward of her value
-11. The museum screen (later)
+11. The museum: planned, with mockups (not built yet)
+
+Items 1-10 are built. What remains is testing in real play, bug checks, and the museum.
 
 ---
 
@@ -67,7 +69,7 @@ ship moving between the Space Dock, Junkyard and history needs no bookkeeping.
   of it. (The Scrap message already says the hull "can never be recovered".)
 - While a ship is boarded, each change the station makes to her is kept in her records too, so a ship lost in
   action comes back as the station last saw her. Identical versions aren't kept twice.
-- Still to do with Immersive Mode (item 4): turn off Restore and Recover.
+- In Immersive Mode, Restore and Recover are off (done).
 
 ## 4. Pricing and house rules — done (harness tests PriceT, RuleT)
 
@@ -108,7 +110,7 @@ the artillery system costs 150, upgrades 30/50/80.
 - **Report for Reassignment.** How a captain claims that free ship: surrender the storage hold (items, crew, scrap,
   stored systems) and every hull in the Junkyard to The Federation Home Planet in exchange for a new command. What was
   surrendered is kept in a backup so it can be undone. Lives behind a new **Other…** button on the Space Dock for
-  rarely used actions. **Open:** the button's name (Other… / Operations…).
+  rarely used actions. Named **Other…**; it opens the Other Orders window (each order with what it does, and why not).
 - **Unlocks grant a free ship once** (off by default). Each ship type unlocked in the FTL profile **after the setting
   is turned on** can be commissioned free once. Claimed types are recorded in the vault; Report for Reassignment
   doesn't reset them. Unlocks from before the setting was turned on never count.
@@ -243,18 +245,42 @@ How it works (confirmed with heromedel's run of the Shrapnel R.U. and a save log
   Space Dock takes stock as soon as its window comes to the front after FTL deletes the save.
 - Harness test VicT (synthetic saves), and a replay of a logger's folder when VICLOG is set.
 
-## 11. The museum (later)
+## 11. The museum — planned (heromedel approved the plan and the mockups; not built yet)
 
-A screen of its own, with a really nice layout, for the ships sold to the Federation museum: her picture, her victory
-(difficulty, sector, score from the profile's Top Scores, the date), and a crew service record: who was aboard, their
-species, skills and FTL's per-crew stats (repairs, combat kills, evasions, jumps survived, masteries). The crew is as the
-kept copy has them: as she turned for the final engagement (anyone lost in that last fight is still listed).
+A screen of its own (the Space Dock's **Museum** button, shown once there's a victory or a ship lost), in the
+station's style: the FTL fonts, gold headings, ships from the game art. The heading shows the fleet's total victories.
 
-## Naming decisions still open
+- **Two wings, as tabs:**
+  - **Hall of Victors:** every ship that won, whatever the choice after a final victory. She stands on a lit plinth
+    with a gold name plate; her victories are counted (a kept ship can win again). Under the plate, her status:
+    **★ Preserved in the Museum ★** (gold, sold to the museum), **Still in Service** (green, kept and flying),
+    **Honoured in Memory** (silver, won but not kept), **Lost in Action, Sector N** (silver, kept and lost later).
+  - **Memorial:** ships lost in action without a victory: a plain silver plate, her class, where she was lost, her
+    beacons and ships defeated. No trophies, stars or honours.
+- **Moving around:** ‹ › arrows beside her (and the Left/Right keys), and a gallery strip of framed thumbnails along
+  the bottom (the one shown framed in gold), within the wing shown.
+- **Tabs for each ship:**
+  - **Record:** commissioned and victory dates, difficulty, final score, sectors visited, beacons, ships defeated,
+    scrap collected, crew at the end, the museum's price or her victories. Victors also get **Honours** (gold stars:
+    FTL achievements earned during her command, the flagship driven off, a free commission) and **Museum records**
+    (what she holds among the honoured ships: highest score, most ships defeated, fewest beacons to victory...).
+  - **Crew:** at the final engagement (portrait, name, species, six skill meters, FTL's counts: repairs, kills,
+    evasions, jumps, masteries), and **Lost on the way** (from her voyage log). The crew is as the kept copy has
+    them: as she turned for the final engagement (FTL saves nothing during the last fight).
+  - **Voyage:** her voyage log.
+  - **Loadout:** weapons, drones, augments, systems and reactor, with the Cargo Bay's item icons.
+- **Extras:** an **epitaph**, one line the player writes on her plate; and **Save as picture** (the exhibit as a PNG).
+- **To record from now on** (ships from before have less): the profile's achievements when a ship is set out and at
+  victory (the difference is her honours), and the victory's date and Top Scores entry.
 
-- The storage hold has several names ("Spacedock Storage", "storage hold", "the Space Dock's Cargo Hold", "the
-  storage"). Pick one. ("Spacedock Storage" is also stored in save files, so renaming the save needs care.)
-- "Disband" vs "Decommission" for the same action ("Decommission" pairs with "Commission").
-- "Patch" buttons vs "sent to FTL via Slipstream" in messages ("Send to FTL" / "Transmitting…"?).
-- Which tab is the Dry Dock (the "Shop" tab?), and one line explaining Refit → Retrofit → Remodel → Overhaul.
-- README: out of date (the rules list, "docking" for trading); refresh when features land.
+## Naming decisions — settled (4B.30)
+
+- The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo
+  Hold). The storage save keeps its old internal name, "Spacedock Storage", so old saves still load. Transmissions may
+  vary the wording for flavour.
+- **Decommission** (not Disband): the boarded ship goes to the Junkyard. The same word as for an uncommissioned ship in
+  Immersive Mode (send her to the normal Junkyard, or destroy her).
+- Buttons say **Patch** ("Patch mods...", "Patch Now"): players know what patching is. Sentences describe it as the
+  patch being **sent to FTL via Slipstream** ("The Home Planet Station is sending the patch to FTL via Slipstream").
+- The Dry Dock and the Refit → Retrofit → Remodel → Overhaul steps keep their names.
+- README: the owner's part (above the last dashed line) is kept as written; the part below is updated with the features.

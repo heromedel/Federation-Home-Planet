@@ -38,7 +38,7 @@ import homeplanet.vault.Vault;
 
 /**
  * Transmissions from The Federation Home Planet (Immersive Notifications): the messages, kept per fleet in
- * transmissions.xml, and the rewards some carry, claimed into Spacedock Storage. The texts and rewards are in the
+ * transmissions.xml, and the rewards some carry, claimed into the Cargo Hold. The texts and rewards are in the
  * resource transmissions.txt. {@link #check} sends what's due; each message is sent once.
  */
 public final class Transmissions {
@@ -232,7 +232,7 @@ public final class Transmissions {
 		}
 		return added;
 	}
-	/** The stipend for whole months travelled (every 4 sectors), paid into Spacedock Storage, in one message. */
+	/** The stipend for whole months travelled (every 4 sectors), paid into the Cargo Hold, in one message. */
 	private static void payStipend(List<Message> all, java.util.Set<String> sent, Unlocks u, String rank) {
 		int months = Career.unpaidMonths();
 		if (months <= 0) return;
@@ -260,7 +260,7 @@ public final class Transmissions {
 		m.body = fill(t.body.toString().trim(), rank, null).replace("{period}", period).replace("{amount}", Integer.toString(amount));
 		all.add(0, m);
 		sent.add(m.key);
-		HistoryLog.entry("STIPEND", amount + " scrap to Spacedock Storage (" + months + " month" + (months == 1 ? "" : "s") + ")");
+		HistoryLog.entry("STIPEND", amount + " scrap to the Cargo Hold (" + months + " month" + (months == 1 ? "" : "s") + ")");
 	}
 	/** A stipend's notice: deleted rather than archived, so they don't pile up. */
 	public static boolean isStipend(Message m) { return m.key.startsWith("stipend:"); }
@@ -382,7 +382,7 @@ public final class Transmissions {
 	}
 
 	/**
-	 * Claims a message's reward into Spacedock Storage (with the choice made, for a choice reward): one save, all or
+	 * Claims a message's reward into the Cargo Hold (with the choice made, for a choice reward): one save, all or
 	 * nothing. Returns what was claimed, in words.
 	 */
 	public static synchronized String claim(Message m, int choice) throws IOException {
@@ -418,7 +418,7 @@ public final class Transmissions {
 			} else if (kind.equals("crew")) {
 				CrewState crew = Commission.volunteer(val, rng);
 				if (crew == null) throw new IOException("Unknown crew race in the reward: " + val);
-				if (!SaveHelper.placeCrew(s, crew, true)) throw new IOException("Spacedock Storage has no room for another crew member");
+				if (!SaveHelper.placeCrew(s, crew, true)) throw new IOException("The Cargo Hold has no room for another crew member");
 				s.getCrewList().add(crew);
 			} else if (kind.equals("system")) {
 				SystemType t = SystemType.findById(val);
@@ -454,7 +454,7 @@ public final class Transmissions {
 		}
 		m.claimed = true;
 		m.claimedWhat = what;
-		HistoryLog.entry("CLAIM", m.subject + ": " + what + " to Spacedock Storage");
+		HistoryLog.entry("CLAIM", m.subject + ": " + what + " to the Cargo Hold");
 		return what;
 	}
 	/** Moves a message to the Archive (read), or back to the inbox. */

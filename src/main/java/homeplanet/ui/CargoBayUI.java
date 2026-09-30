@@ -57,7 +57,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Cargo Bay: trade with the storage or another docked ship (Trade), buy at the stores your ships are docked at (Shop),
+ * The Cargo Bay: trade with the Cargo Hold or another docked ship (Trade), buy at the stores your ships are docked at (Shop),
  * and store, install and rearrange systems (Refit). Nothing is written until Save; Reset throws the changes away.
  *
  * Built in the Space Dock's style: FTL fonts and buttons over the hangar art. Your ship is always on the left and the
@@ -162,7 +162,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		});
 		stage.add(back);
 		String[] titles = {"Trade", "Shop", "Refit"};
-		String[] tips = {"Swap equipment, crew and supplies with the storage or another docked ship", "Buy at the stores your ships are docked at",
+		String[] tips = {"Swap equipment, crew and supplies with the Cargo Hold or another docked ship", "Buy at the stores your ships are docked at",
 				"Store, install and upgrade systems, upgrade the reactor, repair the hull, remodel, retrofit"};
 		for (int i = 0; i < 3; i++) {
 			final String name = tabNames[i];
@@ -303,10 +303,10 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			homeSave = Vault.get().storage();
 		} catch (java.io.IOException e) {
 			homeSave = null;
-			HomePlanet.showErrorDialog("Could not open the Space Dock's storage hold:\n" + e);
+			HomePlanet.showErrorDialog("Could not open the Cargo Hold:\n" + e);
 		}
 		if (homeSave != null && homeSave.save() == null) {
-			HomePlanet.showErrorDialog("Could not read the storage hold's file:\n" + homeSave.file() + "\n\n" + homeSave.readError());
+			HomePlanet.showErrorDialog("Could not read the Cargo Hold's file:\n" + homeSave.file() + "\n\n" + homeSave.readError());
 		}
 		String partnerId = tradeShip == null ? null : tradeShip.id;
 		shipSelect = new ArrayList<Ship>();
@@ -396,7 +396,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		for (int i = 0; i < shipSelect.size(); i++) {
 			final int idx = i;
 			Ship s = shipSelect.get(i);
-			JMenuItem it = new JMenuItem((s == homeSave ? "Spacedock Storage" : s.name) + (i == partnerIndex ? "   (now)" : ""));
+			JMenuItem it = new JMenuItem((s == homeSave ? "Cargo Hold" : s.name) + (i == partnerIndex ? "   (now)" : ""));
 			it.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					if (idx == partnerIndex) return;
@@ -480,14 +480,14 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private static String the(String name) { return name.toLowerCase().startsWith("the ") ? name : "the " + name; }
 	/** What the storage is, for its info button. */
 	void storageInfo() {
-		JOptionPane.showMessageDialog(this, "<html><div style='width:360px'><b>Spacedock Storage</b><br><br>"
+		JOptionPane.showMessageDialog(this, "<html><div style='width:360px'><b>The Cargo Hold</b><br><br>"
 				+ "The Home Planet Station's own hold. Weapons, drones, augments, crew and supplies (scrap, fuel, missiles and drone parts) "
 				+ "wait here when they aren't aboard any ship, with no slot limits.<br><br>"
 				+ "Send things here from your ship, then take them aboard any ship docked at a station. "
 				+ "Systems taken off in the Refit tab are kept on that tab's own list.</div></html>",
-				"Spacedock Storage", JOptionPane.PLAIN_MESSAGE);
+				"Cargo Hold", JOptionPane.PLAIN_MESSAGE);
 	}
-	private String partnerName() { return partnerIsStorage() ? "Spacedock Storage" : tradeSave.getPlayerShipName(); }
+	private String partnerName() { return partnerIsStorage() ? "Cargo Hold" : tradeSave.getPlayerShipName(); }
 
 	// ============================================================== Trade tab
 
@@ -606,7 +606,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		tw.setBounds(RX + RW - DROP_IN - DROP_W, 58 + o, DROP_W, 16);
 		trade.add(tw);
 		partnerBtn.setBounds(RX + RW - DROP_IN - DROP_W, 74 + o, DROP_W, 30);
-		partnerBtn.setToolTipText("Choose who to trade with: the storage, or another of your ships docked at a station");
+		partnerBtn.setToolTipText("Choose who to trade with: the Cargo Hold, or another of your ships docked at a station");
 		partnerBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pickPartner(); } });
 		trade.add(partnerBtn);
 		theirInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "Her report", new ActionListener() {
@@ -859,12 +859,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 		myPic.setIcon(shipIcon(currentSave));
 		partnerBtn.setText(partnerName());
-		partnerNote.setText(shipSelect.isEmpty() ? "Nothing to trade with" : partnerIsStorage() ? "The Space Dock's Cargo Hold has no limit on slots for storage."
+		partnerNote.setText(shipSelect.isEmpty() ? "Nothing to trade with" : partnerIsStorage() ? "The Cargo Hold has no limit on slots for storage."
 				: shipClass(tradeState));
 		theirPic.setToolTipText(partnerIsStorage() || shipSelect.isEmpty() ? null : "Click for her report, and to rename her");
 		theirPic.setIcon(partnerIsStorage() ? null : shipIcon(tradeSave));
 		theirInfo.setVisible(!shipSelect.isEmpty());
-		theirInfo.setToolTipText(partnerIsStorage() ? "What Spacedock Storage is" : "Her report, and to rename her");
+		theirInfo.setToolTipText(partnerIsStorage() ? "What the Cargo Hold is" : "Her report, and to rename her");
 		myInfo.setVisible(currentPath != null);
 		for (int k = 0; k < 4; k++) {
 			Category c = cats[k];

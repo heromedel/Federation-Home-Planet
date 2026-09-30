@@ -41,7 +41,7 @@ import homeplanet.vault.Vault;
 
 /**
  * A ship's records: the earlier versions of her the station keeps (newest first), with Restore this version; her
- * voyage log (what FTL did to her, save by save); and her entries in history.log.
+ * voyage log (events in FTL, save by save); and her entries in history.log.
  */
 public class ShipRecordsDialog extends JDialog {
 	private final Ship ship;
@@ -91,7 +91,7 @@ public class ShipRecordsDialog extends JDialog {
 		javax.swing.JTabbedPane logPanel = new javax.swing.JTabbedPane();
 		logPanel.addTab("Voyage log", logTab(voyage.isEmpty() ? "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
 				+ "while the station is open (and on Refresh): jumps, sectors, battles, crew, what came aboard, upgrades and repairs." : voyage,
-				"What FTL did to her, save by save (newest last). Sectors visited in all her journeys: " + homeplanet.vault.VoyageLog.visited(Vault.get(), ship)));
+				"Events in FTL, save by save (newest last). Sectors visited in all her journeys: " + homeplanet.vault.VoyageLog.visited(Vault.get(), ship)));
 		logPanel.addTab("Station log", logTab(logLines(ship), "Her entries in the station's log (history.log):"));
 
 		JPanel body = new JPanel(new BorderLayout(0, 14));

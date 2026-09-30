@@ -25,7 +25,7 @@ public final class Ship {
 		BOARDED("boarded"),
 		/** Disbanded: in the vault's junkyard folder, awaiting salvage or scrap. */
 		JUNKED("junked"),
-		/** A storage hold (Spacedock Storage): a save FTL never loads, used as a warehouse. */
+		/** A storage hold (the Cargo Hold): a save FTL never loads, used as a warehouse. */
 		STORAGE("storage");
 		public final String key;
 		State(String key) { this.key = key; }

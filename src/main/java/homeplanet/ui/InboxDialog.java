@@ -96,7 +96,7 @@ public class InboxDialog extends JDialog {
 		archive.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { archiveSelected(); } });
 		keep.setToolTipText("She docks at the Space Dock, ready for a new journey from the first sector");
 		keep.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(true); } });
-		museum.setToolTipText("Her full value goes to Spacedock Storage, and she to the Federation museum");
+		museum.setToolTipText("Her full value goes to the Cargo Hold, and she to the Federation museum");
 		museum.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(false); } });
 		javax.swing.ButtonGroup tabs = new javax.swing.ButtonGroup();
 		tabs.add(inboxTab);
@@ -174,7 +174,7 @@ public class InboxDialog extends JDialog {
 		archive.setVisible(true);
 		boolean stipend = Transmissions.isStipend(m);
 		archive.setText(stipend ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
-		archive.setToolTipText(stipend ? "Delete this notice: the scrap is already in Spacedock Storage" : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
+		archive.setToolTipText(stipend ? "Delete this notice: the scrap is already in the Cargo Hold" : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
 		rewardLabel.setForeground(canClaim ? new Color(40, 150, 60) : Color.GRAY);
 		rewardLabel.setText(Transmissions.isRescue(m) ? (m.claimed ? m.claimedWhat : " ") : !m.hasReward() ? " " : m.claimed ? "Claimed: " + m.claimedWhat : "Reward: " + Transmissions.describeReward(m));
 		if (Transmissions.isRescue(m)) rewardLabel.setForeground(Color.GRAY);
@@ -211,7 +211,7 @@ public class InboxDialog extends JDialog {
 		}
 		try {
 			String what = Transmissions.claim(m, choice);
-			JOptionPane.showMessageDialog(this, "Delivered to Spacedock Storage: " + what + ".", "Claim", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, "Delivered to the Cargo Hold: " + what + ".", "Claim", JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not take delivery. Nothing was changed:\n" + e.getMessage());
 		}

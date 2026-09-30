@@ -88,12 +88,12 @@ public class SettingsDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().root); }
 		});
 		JButton openJunk = new JButton("Open Junkyard");
-		openJunk.setToolTipText("Open the Junkyard folder (disbanded ships) in Windows Explorer");
+		openJunk.setToolTipText("Open the Junkyard folder (decommissioned ships) in Windows Explorer");
 		openJunk.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				File junk = homeplanet.vault.Vault.get().junkyardDir();
 				if (!junk.isDirectory() || homeplanet.vault.Vault.get().junked().isEmpty()) {
-					JOptionPane.showMessageDialog(SettingsDialog.this, "The Junkyard is empty. No ship has been disbanded yet.",
+					JOptionPane.showMessageDialog(SettingsDialog.this, "The Junkyard is empty. No ship has been decommissioned yet.",
 							"Open Junkyard", JOptionPane.INFORMATION_MESSAGE);
 					return;
 				}
@@ -201,7 +201,7 @@ public class SettingsDialog extends JDialog {
 		refreshVictory();
 		rules.afterFleetChange = new Runnable() { public void run() { refreshVictory(); } };
 		victoryButtons[1].setToolTipText("She comes back as she was moments before the final engagement, ready for a new journey; or take her full value for the museum");
-		victoryButtons[2].setToolTipText("Her full value, as the shipyard would charge for her, goes to Spacedock Storage");
+		victoryButtons[2].setToolTipText("Her full value, as the shipyard would charge for her, goes to the Cargo Hold");
 		JLabel victoryNote = new JLabel("<html><div style='width:520px'><font color='#777777'>For a rescue or a reward, The Home Planet Station must be open while you play: "
 				+ "it keeps her as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
 		victoryNote.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));

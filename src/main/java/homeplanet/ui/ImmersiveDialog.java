@@ -100,7 +100,7 @@ public final class ImmersiveDialog {
 		String rank = UnlockGrants.rankName(UnlockGrants.rank(u.problem() == null ? u : null));
 		String message = "End your Immersive career?\n\nThis can't be undone in The Home Planet Station. Lost for good:\n"
 				+ " \u2022 " + ships + (ships == 1 ? " ship" : " ships") + (ships == 0 ? "" : " (" + (docked + boarded) + " at the Space Dock, " + junked + " in the Junkyard)")
-				+ " and Spacedock Storage (" + v.storageScrap() + " scrap)\n"
+				+ " and the Cargo Hold (" + v.storageScrap() + " scrap)\n"
 				+ " \u2022 Your rank (" + rank + "), transmissions and stipend record\n"
 				+ (ownProfile ? " \u2022 Immersive Mode's own FTL profile (its unlocks and achievements)\n" : "")
 				+ "\nYour normal fleet, your own FTL profile, and your designs and remodels are not touched.\n"

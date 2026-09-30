@@ -107,12 +107,12 @@ final class ImmersiveBriefing extends JDialog {
 
 	private JPanel whatChanges() {
 		JPanel p = page();
-		p.add(section("A fleet of its own", "Your current fleet (the Space Dock, the Junkyard, Spacedock Storage and their records) is kept exactly as it is, "
+		p.add(section("A fleet of its own", "Your current fleet (the Space Dock, the Junkyard, the Cargo Hold and their records) is kept exactly as it is, "
 				+ "and comes back when you return to normal mode. Your designs and remodels are shared by both."
-				+ (begun ? "" : " Your career begins with an empty shipyard, a free Kestrel and " + Career.STARTING_SCRAP + " scrap in Spacedock Storage.")));
+				+ (begun ? "" : " Your career begins with an empty shipyard, a free Kestrel and " + Career.STARTING_SCRAP + " scrap in the Cargo Hold.")));
 		p.add(section("The rules", "Set and locked while it's on:",
 				"Trading, scrapping and New Journey need a station (a beacon with a store).",
-				"Commissioning costs scrap from Spacedock Storage, at full price. With no ship left, commission one or report for reassignment (surrender Spacedock Storage and the Junkyard for a free new command).",
+				"Commissioning costs scrap from the Cargo Hold, at full price. With no ship left, commission one or report for reassignment (surrender the Cargo Hold and the Junkyard for a free new command).",
 				"Each ship you unlock in FTL from now on can be commissioned free, once. Locked ships can't be commissioned.",
 				"A New Journey costs " + HomePlanet.JOURNEY_FEE + " scrap. Missiles, drone parts and stored systems sell at 25%.",
 				"Lost ships stay lost: no restoring earlier versions, no recovering, and a report for reassignment is final."));
@@ -122,7 +122,7 @@ final class ImmersiveBriefing extends JDialog {
 				"The plans for the Rebel Flagship's weapons: earn Rule Ten: Greed is Eternal."));
 		p.add(section("Transmissions and the stipend", "An inbox on the Space Dock brings commission orders, promotions and a reward for each FTL achievement "
 				+ "earned from now on. Every " + Career.SECTORS_PER_MONTH + " sectors your ships travel, a stipend of " + Career.STIPEND_BASE
-				+ " scrap, plus 1 to 3 more for each achievement counted (by rank), is paid into Spacedock Storage."));
+				+ " scrap, plus 1 to 3 more for each achievement counted (by rank), is paid into the Cargo Hold."));
 		return p;
 	}
 

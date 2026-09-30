@@ -242,7 +242,7 @@ public final class Vault {
 		Ship st = storage();
 		Copy c = readCopy(st);
 		int have = c.save.getPlayerShip().getScrapAmt();
-		if (have < scrap) throw new IOException("Spacedock Storage holds " + have + " scrap; " + scrap + " is needed");
+		if (have < scrap) throw new IOException("The Cargo Hold has " + have + " scrap; " + scrap + " is needed");
 		byte[] before = SafeFiles.read(fileOf(st));
 		c.save.getPlayerShip().setScrapAmt(have - scrap);
 		begin().put(st, c.save, c.hash).commit();
@@ -311,7 +311,7 @@ public final class Vault {
 		saveManifest();
 		List<String> lines = new ArrayList<String>();
 		for (Ship s : junk) lines.add("hull: " + s.name);
-		HistoryLog.entry("REASSIGN", "the storage hold and " + junk.size() + " hull(s) from the Junkyard surrendered; kept in surrendered/" + dir.getName(), lines);
+		HistoryLog.entry("REASSIGN", "the Cargo Hold and " + junk.size() + " hull(s) from the Junkyard surrendered; kept in surrendered/" + dir.getName(), lines);
 		grantFreeCommand("reported for reassignment");
 		return dir;
 	}
@@ -352,7 +352,7 @@ public final class Vault {
 		File hold = fileOf(st);
 		String after = new String(SafeFiles.read(new File(dir, SURRENDER_AFTER)), java.nio.charset.StandardCharsets.UTF_8).trim();
 		if (!SafeFiles.hash(hold).equals(after))
-			throw new IOException("Spacedock Storage has changed since the report for reassignment: undoing it would lose what it holds now");
+			throw new IOException("The Cargo Hold has changed since the report for reassignment: undoing it would lose what it holds now");
 		List<String[]> list = new ArrayList<String[]>();
 		for (String line : new String(SafeFiles.read(new File(dir, SURRENDER_SHIPS)), java.nio.charset.StandardCharsets.UTF_8).split("\n")) {
 			int t = line.indexOf('\t');
@@ -382,7 +382,7 @@ public final class Vault {
 		saveManifest();
 		File done = new File(dir.getParentFile(), dir.getName() + "-undone");
 		if (!new File(dir, SURRENDER_AFTER).delete() || !dir.renameTo(done)) log.warn("Could not mark {} as undone", dir);
-		HistoryLog.entry("UNDO REASSIGN", "the storage hold and " + back.size() + " hull(s) returned from surrendered/" + dir.getName());
+		HistoryLog.entry("UNDO REASSIGN", "the Cargo Hold and " + back.size() + " hull(s) returned from surrendered/" + dir.getName());
 		useFreeCommand("the report for reassignment was undone");
 	}
 
@@ -1165,7 +1165,7 @@ public final class Vault {
 	}
 	/** Puts one of her earlier versions back as her current save; the one it replaces goes into her history first. */
 	public synchronized void restore(Ship s, File version) throws IOException {
-		if (s.state == Ship.State.STORAGE) throw new IOException("The storage hold has no earlier versions to go back to");
+		if (s.state == Ship.State.STORAGE) throw new IOException("The Cargo Hold has no earlier versions to go back to");
 		byte[] bytes = SafeFiles.read(version); // before the snapshot below, which may prune it
 		snapshot(s);
 		File f = fileOf(s);

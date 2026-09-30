@@ -34,7 +34,7 @@ public class RuleBoxes {
 	final JCheckBox sellSystemsBox = new JCheckBox("Allow selling stored systems (house rule: half the system's price, plus half the upgrades paid for)", HomePlanet.sellSystems);
 	final JCheckBox lockedBox = new JCheckBox("Locked ship models cannot be commissioned (as unlocked in your FTL profile)", HomePlanet.commissionUnlockedOnly);
 	final JCheckBox customLockedBox = new JCheckBox("Custom ships based on locked models cannot be commissioned", HomePlanet.commissionCustomUnlockedOnly);
-	final JCheckBox costBox = new JCheckBox("Commissioning a ship costs scrap, paid from Spacedock Storage, at", HomePlanet.commissionCosts);
+	final JCheckBox costBox = new JCheckBox("Commissioning a ship costs scrap, paid from the Cargo Hold, at", HomePlanet.commissionCosts);
 	final JComboBox<String> percentBox = new JComboBox<String>(new String[] {"100%", "75%", "50%"});
 	private final JPanel costRow = row(0);
 	private static final String[] FREE_KEYS = {"kestrel", "any", "relief"};

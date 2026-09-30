@@ -121,7 +121,7 @@ public final class FinalVictory {
 						throw e;
 					}
 					v.closeFinal(f, true);
-					HistoryLog.entry("REWARD", value + " scrap to Spacedock Storage for " + f.name);
+					HistoryLog.entry("REWARD", value + " scrap to the Cargo Hold for " + f.name);
 					if (HomePlanet.immersiveNotifications) Transmissions.post("reward:" + f.id, "reward", fills);
 					else out.add(notice("reward", fills, null, value));
 				}
@@ -146,13 +146,13 @@ public final class FinalVictory {
 		Ship s = Vault.get().bringHome(f);
 		return s.name + " is docked at the Space Dock, ready for her next journey.";
 	}
-	/** The museum's offer: her value to Spacedock Storage, and she goes to the museum. Returns what came of it, in words. */
+	/** The museum's offer: her value to the Cargo Hold, and she goes to the museum. Returns what came of it, in words. */
 	public static String museum(Vault.FinalBattle f) throws IOException {
 		int value = value(HomePlanet.savedGameParser.readSavedGame(f.copy));
 		Vault v = Vault.get();
 		v.depositToStorage(value);
 		v.toMuseum(f);
-		HistoryLog.entry("MUSEUM", value + " scrap to Spacedock Storage for " + f.name);
-		return f.name + " is honoured in the Federation museum. " + value + " scrap is waiting in Spacedock Storage.";
+		HistoryLog.entry("MUSEUM", value + " scrap to the Cargo Hold for " + f.name);
+		return f.name + " is honoured in the Federation museum. " + value + " scrap is waiting in the Cargo Hold.";
 	}
 }

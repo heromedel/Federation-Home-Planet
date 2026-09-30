@@ -126,7 +126,7 @@ class DryDockShop {
 			public void actionPerformed(ActionEvent e) {
 				javax.swing.JPopupMenu m = new javax.swing.JPopupMenu();
 				javax.swing.JMenuItem a = new javax.swing.JMenuItem(bay.currentSave.getPlayerShipName() + " (your ship)");
-				javax.swing.JMenuItem b = new javax.swing.JMenuItem("Spacedock Storage (items and supplies, not systems)");
+				javax.swing.JMenuItem b = new javax.swing.JMenuItem("Cargo Hold (items and supplies, not systems)");
 				a.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toStorage = false; rebuild(); } });
 				b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toStorage = true; rebuild(); } });
 				m.add(a); m.add(b);
@@ -186,11 +186,11 @@ class DryDockShop {
 		if (bay.currentPath == null) { content.revalidate(); content.repaint(); return; }
 		SavedGameState buyer = buyer();
 		int scrap = buyer == null ? 0 : buyer.getPlayerShip().getScrapAmt();
-		buyerBtn.setText(toStorage ? "Spacedock Storage" : bay.currentSave.getPlayerShipName());
+		buyerBtn.setText(toStorage ? "Cargo Hold" : bay.currentSave.getPlayerShipName());
 		shipPic.setIcon(toStorage ? null : bay.shipIcon(bay.currentSave));
 		shipPic.setToolTipText(toStorage ? null : "Click for her report, and to rename her");
 		classLbl.setText(toStorage ? "Items and supplies only, no systems" : CargoBayUI.shipClass(bay.currentState));
-		info.setToolTipText(toStorage ? "What Spacedock Storage is" : "Her report, and to rename her");
+		info.setToolTipText(toStorage ? "What the Cargo Hold is" : "Her report, and to rename her");
 		scrapLbl.setText(scrap + " scrap to spend");
 		List<Entry> entries = buildEntries();
 		int stores = 0;
@@ -394,7 +394,7 @@ class DryDockShop {
 		String buyerName = toStorage ? "The Cargo Bay" : buyer.getPlayerShipName();
 		String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) : supplyName(e.kind);
 		if (e.kind == Kind.SYSTEM && toStorage) {
-			JOptionPane.showMessageDialog(bay, "Systems can't be bought into the storage hold. Buy it for your ship, then store it from the Refit tab.", "Shop", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(bay, "Systems can't be bought into the Cargo Hold. Buy it for your ship, then store it from the Refit tab.", "Shop", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		if (e.kind == Kind.SYSTEM && systemBlocked(buyer, e.id, name)) return; // before the scrap check: "already has" says more than "not enough scrap"
