@@ -183,7 +183,7 @@ Approved by heromedel, with the exact FTL item names checked in ftl.dat. **Notes
    Flagship's weapons (Boss Laser, Missile, Beam, Ion) by Rule Ten. Artillery guns are a luxury: the Artillery Beam 200
    scrap, Flak Artillery 150, each Flagship weapon 100.
 2. **Warlord:** Adv. FTL Navigation already is the "jump back to a visited beacon" augment (it still costs fuel in
-   FTL). I added the FTL Recharge Booster to make jumps easier too. Or 20 fuel?
+   FTL). The FTL Recharge Booster comes with it to make jumps easier too (heromedel: keep both).
 3. **Living off the Land:** FTL doesn't record which ship earned a general achievement, so the player chooses when
    claiming: a Repair Arm, or a Hull Repair drone (for drone ships).
 4. **Ancestry:** FTL's crystal weapons are Crystal Burst I/II and Heavy Crystal I/II. I picked Heavy Crystal Mark I.
