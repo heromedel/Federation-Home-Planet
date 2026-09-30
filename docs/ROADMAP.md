@@ -14,7 +14,7 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 
 ---
 
-## 1. Save safety — done (4B.04 branch; harness test SafeT)
+## 1. Save safety — done (harness test SafeT)
 
 Found in a code review; each was traced through the code. Common thread: when a later step fails, undo what the
 earlier steps did, and never save over data that didn't load properly. Add a harness test for each failure case.
