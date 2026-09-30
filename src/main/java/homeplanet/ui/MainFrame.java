@@ -66,7 +66,7 @@ public class MainFrame extends JFrame {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
 				if (!atSpaceDock || !isFocused()) return;
 				Object[] opts = {"Yes", "No"};
-				int r = javax.swing.JOptionPane.showOptionDialog(MainFrame.this, "Leave Space Dock and quit Federation Home Planet?", "Quit",
+				int r = javax.swing.JOptionPane.showOptionDialog(MainFrame.this, "Leave the Space Dock and close The Home Planet Station interface?", "Quit",
 						javax.swing.JOptionPane.DEFAULT_OPTION, javax.swing.JOptionPane.QUESTION_MESSAGE, null, opts, opts[1]);
 				if (r == 0) dispatchEvent(new java.awt.event.WindowEvent(MainFrame.this, java.awt.event.WindowEvent.WINDOW_CLOSING)); // the same path as the close box
 			}

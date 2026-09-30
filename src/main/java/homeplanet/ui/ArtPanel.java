@@ -302,7 +302,7 @@ public class ArtPanel extends JPanel {
 			if (floor) { d.floor = src; d.floorX = 0; d.floorY = 0; }
 			else { d.art = src; d.ellipseW = d.ellipseH = 0; d.artScale = 100; }
 		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(this, "Couldn't use that picture:\n" + ex.getMessage(), "Hull art", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, "The Home Planet Station couldn't use that picture:\n" + ex.getMessage(), "Hull art", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		loadArt();
@@ -367,7 +367,7 @@ public class ArtPanel extends JPanel {
 		try {
 			for (int i = 0; i < files.size() && i < 6; i++) d.gibFiles.add(ShipArt.importFile(files.get(i), d.id, "gib" + (i + 1)));
 		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(this, "Couldn't use those pictures:\n" + ex.getMessage(), "Gib pictures", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, "The Home Planet Station couldn't use those pictures:\n" + ex.getMessage(), "Gib pictures", JOptionPane.WARNING_MESSAGE);
 			d.gibFiles.clear();
 		}
 		d.gibs = d.gibFiles.isEmpty() ? "cut" : "files";

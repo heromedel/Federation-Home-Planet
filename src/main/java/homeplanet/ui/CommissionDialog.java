@@ -123,8 +123,8 @@ public class CommissionDialog extends JDialog {
 
 		JPanel body = new JPanel(new BorderLayout(10, 8));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
-		JLabel intro = new JLabel("<html>Choose a ship to commission. She's built as a new game starts her: first sector, "
-				+ "starting crew, weapons and supplies. She docks at the Space Dock.</html>");
+		JLabel intro = new JLabel("<html>Choose a ship to commission. The Home Planet Station builds her to FTL specifications: first sector, "
+				+ "starting crew, weapons and supplies. She will wait at the Space Dock.</html>");
 		if (listNote != null) {
 			JPanel top = new JPanel(new BorderLayout(0, 4));
 			top.add(intro, BorderLayout.NORTH);
@@ -242,7 +242,7 @@ public class CommissionDialog extends JDialog {
 			preview.add(stats, BorderLayout.NORTH);
 			preview.add(p, BorderLayout.CENTER);
 		} catch (Exception ex) {
-			preview.add(new JLabel("This ship can't be built: " + ex.getMessage()), BorderLayout.NORTH);
+			preview.add(new JLabel("The shipyard can't build this ship: " + ex.getMessage()), BorderLayout.NORTH);
 		}
 		preview.revalidate();
 		preview.repaint();
@@ -257,14 +257,14 @@ public class CommissionDialog extends JDialog {
 		try {
 			s = Commission.build(e.id, name, chosenDifficulty(), rng);
 		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("The ship could not be built:\n" + ex);
+			HomePlanet.showErrorDialog("The shipyard could not build her:\n" + ex);
 			return;
 		}
 		homeplanet.vault.Ship ship;
 		try {
 			ship = homeplanet.vault.Vault.get().adopt(s);
 		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("The new ship could not be saved:\n" + ex);
+			HomePlanet.showErrorDialog("The new ship could not be docked; her save could not be written:\n" + ex);
 			return;
 		}
 		List<String> lines = new ArrayList<String>();

@@ -102,7 +102,7 @@ public class SettingsDialog extends JDialog {
 				try {
 					Desktop.getDesktop().open(homeplanet.core.HistoryLog.file().getAbsoluteFile());
 				} catch (Exception ex) {
-					JOptionPane.showMessageDialog(SettingsDialog.this, "Could not open:\n" + homeplanet.core.HistoryLog.file().getAbsolutePath(),
+					JOptionPane.showMessageDialog(SettingsDialog.this, "The Home Planet Station could not open its history log:\n" + homeplanet.core.HistoryLog.file().getAbsolutePath(),
 							"History log", JOptionPane.WARNING_MESSAGE);
 				}
 			}
@@ -112,7 +112,7 @@ public class SettingsDialog extends JDialog {
 		openLogs.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				File d = HomePlanet.logDir();
-				if (d == null || !d.isDirectory()) { JOptionPane.showMessageDialog(SettingsDialog.this, "No log folder could be made beside the program.", "Logs", JOptionPane.INFORMATION_MESSAGE); return; }
+				if (d == null || !d.isDirectory()) { JOptionPane.showMessageDialog(SettingsDialog.this, "No log folder could be made beside Federation Home Planet.jar.", "Logs", JOptionPane.INFORMATION_MESSAGE); return; }
 				openFolder(d);
 			}
 		});
@@ -248,7 +248,7 @@ public class SettingsDialog extends JDialog {
 				homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());
 				homeplanet.vault.Vault.get().takeStock();
 			} catch (java.io.IOException e) {
-				HomePlanet.showErrorDialog("Could not open the vault in " + saves + ":\n" + e);
+				HomePlanet.showErrorDialog("The Home Planet Station could not open its fleet records in:\n" + saves + "\n\n" + e);
 			}
 		}
 		HomePlanet.datsPath = game;
@@ -260,7 +260,7 @@ public class SettingsDialog extends JDialog {
 		java.awt.Window owner = getOwner();
 		if (owner instanceof MainFrame) ((MainFrame) owner).cargoBay.updateSupplyButtons(); // the sell buttons follow the rule at once
 		if (HomePlanet.saveConfig() && gameChanged) {
-			JOptionPane.showMessageDialog(this, "The new FTL game folder will be used the next time " + HomePlanet.APP_NAME + " starts.",
+			JOptionPane.showMessageDialog(this, "The Home Planet Station will use the new FTL game folder the next time it starts.",
 					"Settings", JOptionPane.INFORMATION_MESSAGE);
 		}
 		dispose();
@@ -320,7 +320,7 @@ public class SettingsDialog extends JDialog {
 		try {
 			homeplanet.parser.CompanionMod.save(all);
 		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("Could not update the blueprint list:\n" + ex);
+			HomePlanet.showErrorDialog("The Home Planet Station could not update the blueprint list:\n" + ex);
 			return;
 		}
 		homeplanet.parser.CompanionMod.register(all); // Commission sees the changes at once
@@ -345,7 +345,7 @@ public class SettingsDialog extends JDialog {
 		}
 		homeplanet.vault.Vault vault = homeplanet.vault.Vault.get();
 		if (vault.anyUnscannable()) {
-			JOptionPane.showMessageDialog(this, "One of the ships' saves can't be read right now (is FTL running?), so it's not safe to say which blueprints are unused.\n"
+			JOptionPane.showMessageDialog(this, "One of the ships' saves can't be read right now (is FTL running?), so The Home Planet Station can't safely tell which blueprints are unused.\n"
 					+ "Try again later.", "Clean up blueprints", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
@@ -371,7 +371,7 @@ public class SettingsDialog extends JDialog {
 			for (homeplanet.parser.CompanionMod.Remodel u : unused) { homeplanet.parser.CompanionMod.retire(u); all.remove(u); }
 			homeplanet.parser.CompanionMod.save(all);
 		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("Could not update the blueprint files:\n" + ex);
+			HomePlanet.showErrorDialog("The Home Planet Station could not update the blueprint files:\n" + ex);
 			return;
 		}
 		java.util.List<String> ids = new java.util.ArrayList<String>();
@@ -379,7 +379,8 @@ public class SettingsDialog extends JDialog {
 		homeplanet.core.HistoryLog.entry("CLEAN", "Removed " + unused.size() + " unused blueprint(s)", ids);
 		File mod = homeplanet.core.Slipstream.writeMod();
 		Object[] opts2 = {"Patch Now", "Later"};
-		int p = JOptionPane.showOptionDialog(this, "Removed. The companion mod was rebuilt" + (mod == null ? "." : " at:\n" + mod.getPath()) + "\n\nPatch it in now so the game matches?",
+		int p = JOptionPane.showOptionDialog(this, "Removed. The Federation Home Planet Mod was rebuilt" + (mod == null ? "." : " at:\n" + mod.getPath())
+				+ "\n\nSend the patch to FTL via Slipstream now so the game matches?",
 				"Clean up blueprints", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts2, opts2[0]);
 		if (p == 0) PatchDialog.open(this);
 	}
@@ -396,7 +397,7 @@ public class SettingsDialog extends JDialog {
 		try {
 			Desktop.getDesktop().open(dir);
 		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(this, "Could not open the folder:\n" + dir.getPath(),
+			JOptionPane.showMessageDialog(this, "The Home Planet Station could not open the folder:\n" + dir.getPath(),
 					"Open folder", JOptionPane.WARNING_MESSAGE);
 		}
 	}
@@ -439,7 +440,7 @@ public class SettingsDialog extends JDialog {
 			text = new String(homeplanet.core.SafeFiles.readAll(in), "UTF-8");
 			if (name.endsWith(".md")) text = text.replaceAll("(?<!\n)\n(?![\n*|#-])", " "); // the file is wrapped by hand; let the window wrap it
 		} catch (Exception ex) {
-			text = name + " couldn't be read from the program: it's beside the jar in the source download, at the project's page.";
+			text = name + " couldn't be read from this build. It's in the source download, on the project's page.";
 		}
 		javax.swing.JTextArea ta = new javax.swing.JTextArea(text, 32, 92);
 		ta.setEditable(false);

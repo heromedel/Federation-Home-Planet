@@ -82,9 +82,9 @@ public class Slipstream {
 	public static File locate(Component owner) {
 		File d = dir();
 		if (d != null) return d;
-		return ask(owner, "Where is Slipstream Mod Manager?\n\n"
+		return ask(owner, "Locate Slipstream (Mod Manager)\n\n"
 				+ "Browse to its folder (the one with modman.jar and a mods folder),\n"
-				+ "or let the station download Slipstream " + VERSION + " into its own folder.",
+				+ "or have The Home Planet Station download Slipstream into its own database.",
 				"Slipstream", "Cancel");
 	}
 
@@ -95,10 +95,11 @@ public class Slipstream {
 	 */
 	public static boolean offerAtStart() {
 		if (dir() != null || HomePlanet.config.getProperty(CFG_OFFERED) != null) return false;
-		ask(null, "Retrofitted, remodeled and designed ships fly on the station's own blueprints,\n"
-				+ "and those reach FTL through Slipstream Mod Manager. Everything else works without it.\n\n"
-				+ "Point the station at your Slipstream folder (the one with modman.jar),\n"
-				+ "or have the Federation Home Planet download Slipstream " + VERSION + " for you.\n\n"
+		ask(null, "Retrofitted, remodeled and designed ships are made with custom blueprints from The Federation Home Planet,\n"
+				+ "and those are sent to FTL via Slipstream (Mod Manager).\n\n"
+				+ "The rest of The Home Planet Station's functionality works without it.\n\n"
+				+ "Point The Station's databases at your Slipstream folder (the one with modman.jar),\n"
+				+ "or have The Home Planet Station download Slipstream for you.\n\n"
 				+ "You can also do this later in Settings.",
 				"Slipstream Mod Manager", "Not now");
 		HomePlanet.config.setProperty(CFG_OFFERED, "true");
@@ -144,7 +145,7 @@ public class Slipstream {
 		// a folder chosen by name from inside itself can come back doubled (...\Slipstream\Slipstream): try around it
 		if (valid(f.getParentFile())) return f.getParentFile();
 		if (valid(fc.getCurrentDirectory())) return fc.getCurrentDirectory();
-		JOptionPane.showMessageDialog(owner, "That folder has no modman.jar:\n" + f.getPath(), "Slipstream", JOptionPane.WARNING_MESSAGE);
+		JOptionPane.showMessageDialog(owner, "The Home Planet Station found no modman.jar in that folder:\n" + f.getPath(), "Slipstream", JOptionPane.WARNING_MESSAGE);
 		return null;
 	}
 
@@ -215,7 +216,7 @@ public class Slipstream {
 		if (error[0] == null && valid(target)) return target;
 		Object[] options = {"Open download page", "OK"};
 		int r = JOptionPane.showOptionDialog(owner,
-				"Slipstream couldn't be downloaded" + (error[0] == null ? "." : ":\n" + error[0]) + "\n\n"
+				"The Home Planet Station couldn't download Slipstream" + (error[0] == null ? "." : ":\n" + error[0]) + "\n\n"
 				+ "You can download it yourself from SourceForge, unzip it anywhere, and use Browse.",
 				"Slipstream", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[1]);
 		if (r == 0) {
@@ -483,7 +484,7 @@ public class Slipstream {
 			pb.start();
 		} catch (Exception e) {
 			log.warn("Could not restart", e);
-			JOptionPane.showMessageDialog(null, "Federation Home Planet couldn't restart itself. Please start it again yourself.", "Restart", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(null, "The Home Planet Station systems were unable to reboot by themselves. Please start it again.", "Restart", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		System.exit(0);

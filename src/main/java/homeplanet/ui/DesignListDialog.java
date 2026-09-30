@@ -115,7 +115,7 @@ public class DesignListDialog extends JDialog {
 		if (bpId == null) return;
 		ShipDesign nw = ShipDesign.create(designs);
 		if (!ShipDesign.fromGameShip(nw, bpId)) {
-			JOptionPane.showMessageDialog(this, "That ship's layout couldn't be read.", "Design Ship", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, "The Home Planet Station couldn't read that ship's layout.", "Design Ship", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		nw.name = uniqueName(nw.loadout != null && !nw.loadout.className.isEmpty() ? nw.loadout.className : bpId);
@@ -199,7 +199,7 @@ public class DesignListDialog extends JDialog {
 		try {
 			ShipDesign.save(designs);
 		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("Could not write " + ShipDesign.file().getAbsolutePath() + ":\n" + ex);
+			HomePlanet.showErrorDialog("The Home Planet Station couldn't save the designs to " + ShipDesign.file().getAbsolutePath() + ":\n" + ex);
 		}
 		homeplanet.parser.ShipArt.sweep(); // pictures of discarded imports
 		refresh();
@@ -207,8 +207,8 @@ public class DesignListDialog extends JDialog {
 		homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load()); // the station sees her at once
 		java.io.File mod = homeplanet.core.Slipstream.writeMod();
 		Object[] options = {"Patch Now", "Later"};
-		int p = JOptionPane.showOptionDialog(this, "Her blueprint is in the companion mod" + (mod == null ? " (which could not be written!)." : ".")
-				+ "\nPatch it into FTL to commission her (tick her as a starter ship to see her in Commission).",
+		int p = JOptionPane.showOptionDialog(this, (mod == null ? "Her blueprint is ready, but the " + homeplanet.parser.CompanionMod.TITLE + " could not be written." : "Her blueprint is in the " + homeplanet.parser.CompanionMod.TITLE + ".")
+				+ "\nSend it to FTL via Slipstream to commission her (tick her as a starter ship to see her in Commission).",
 				"Design Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 		if (p == 0) PatchDialog.open(this);
 	}

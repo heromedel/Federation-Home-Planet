@@ -40,7 +40,7 @@ public class HouseRulesDialog extends JDialog {
 		c.insets = new Insets(2, 0, 2, 0);
 		c.weightx = 1;
 
-		body.add(new JLabel("Choose how strict the station is. You can change these any time in Settings."), (GridBagConstraints) c.clone());
+		body.add(new JLabel("Choose how strict The Home Planet Station's functionality is. You can change these any time in Settings."), (GridBagConstraints) c.clone());
 		c.gridy++;
 		SettingsDialog.heading(body, c, "Rules");
 		rules.addTo(body, c);

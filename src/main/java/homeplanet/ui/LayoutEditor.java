@@ -529,7 +529,7 @@ public class LayoutEditor {
 		try {
 			if (designArt && baseImg != null) homeplanet.parser.ShipArt.flipVertically(d);
 		} catch (Exception e) {
-			host.say("Her pictures couldn't be flipped: " + e.getMessage());
+			host.say("The Home Planet Station couldn't flip her pictures: " + e.getMessage());
 			return;
 		}
 		d.flipVertically(h);
@@ -725,7 +725,7 @@ public class LayoutEditor {
 				artDrag = true;
 				artGrabX = x - originX - d.artX;
 				artGrabY = y - originY - d.artY;
-			} else host.say(designArt ? "Choose her hull art first." : "Her art moves in a deck plan overhaul.");
+			} else host.say(designArt ? "Choose her hull art first." : "Her art moves only in an overhaul: Overhaul deck plan... unlocks it.");
 			return;
 		}
 

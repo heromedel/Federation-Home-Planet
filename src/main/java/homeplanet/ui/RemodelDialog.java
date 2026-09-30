@@ -69,7 +69,7 @@ public class RemodelDialog extends ShipEditorDialog {
 		String id = bay.currentSave.getPlayerShip().getShipBlueprintId();
 		ShipBlueprint current = DataManager.get().getShips().get(id), plain = DataManager.get().getShips().get(Retrofit.vanillaId(id) + Retrofit.SUFFIX);
 		if (current == null || plain == null) {
-			JOptionPane.showMessageDialog(w, HomePlanet.APP_NAME + " has no blueprint for " + id + ".", "Remodel", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(w, "The Home Planet Station has no blueprint for " + id + ".", "Remodel", JOptionPane.WARNING_MESSAGE);
 			return false;
 		}
 		RemodelDialog d = new RemodelDialog(w, bay, current, plain);
@@ -284,8 +284,8 @@ public class RemodelDialog extends ShipEditorDialog {
 		String name = save.getPlayerShipName();
 		List<Remodel> all = CompanionMod.load();
 		Remodel before = already ? CompanionMod.find(all, id) : null;
-		String intro = "This creates a custom blueprint for " + homeplanet.parser.XmlText.text(name) + " and also saves the current state of the Cargo Bay.<br>"
-				+ "This ship can't be launched unless the updated " + CompanionMod.TITLE + " is installed.";
+		String intro = "The Federation Home Planet draws up a custom blueprint for " + homeplanet.parser.XmlText.text(name) + " and saves the Cargo Bay as it stands.<br>"
+				+ "She can't launch until the updated " + CompanionMod.TITLE + " is sent to FTL via Slipstream. ";
 		boolean plain = moved.isEmpty() && !doorsChanged;
 		BlueprintDialog.Result chosen = null;
 		if (plain) {
@@ -336,7 +336,7 @@ public class RemodelDialog extends ShipEditorDialog {
 				CompanionMod.save(all);
 			} catch (Exception e) {
 				log.error("Could not write " + CompanionMod.remodelsFile(), e);
-				HomePlanet.showErrorDialog("Could not write " + CompanionMod.remodelsFile().getAbsolutePath() + ":\n" + e);
+				HomePlanet.showErrorDialog("The Home Planet Station couldn't save her remodel to " + CompanionMod.remodelsFile().getAbsolutePath() + ":\n" + e + "\n\nHer blueprint is unchanged.");
 				return;
 			}
 			CompanionMod.register(all); // she can be drawn right away
@@ -353,11 +353,11 @@ public class RemodelDialog extends ShipEditorDialog {
 		openKey = ShipDesign.editKey(d);
 		File mod = Slipstream.writeMod();
 		dispose();
-		String where = mod == null ? "The mod could not be written." : "The updated mod is at:\n" + mod.getPath();
+		String where = mod == null ? "The " + CompanionMod.TITLE + " could not be written." : "The updated mod is at:\n" + mod.getPath();
 		Object[] options = {"Patch Now", "OK"};
 		int r = JOptionPane.showOptionDialog(bay, name + " now uses blueprint " + ship.getShipBlueprintId() + ".\n\n" + where + "\n\n"
-				+ (Slipstream.dir() == null ? "Move it into Slipstream's mods folder and patch it in, or press Patch Now to let " + HomePlanet.APP_NAME + " do it."
-						: "Patch it in with Slipstream, or press Patch Now to let " + HomePlanet.APP_NAME + " do it."),
+				+ (Slipstream.dir() == null ? "Move it into Slipstream's mods folder and send it to FTL, or press Patch Now and The Home Planet Station will send it."
+						: "Send it to FTL via Slipstream, or press Patch Now and The Home Planet Station will send it."),
 				"Blueprint finalized", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 		if (r == 0) PatchDialog.open(bay);
 	}

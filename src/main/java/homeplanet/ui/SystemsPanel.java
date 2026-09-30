@@ -295,7 +295,7 @@ public class SystemsPanel {
 			}
 		} catch (Exception e) {
 			log.error("Could not read " + f, e);
-			homeplanet.core.HomePlanet.showErrorDialog("Could not read the stored systems:\n" + f + "\n\n" + e);
+			homeplanet.core.HomePlanet.showErrorDialog("Could not read the list of systems stored in the Cargo Bay:\n" + f + "\n\n" + e);
 		} finally {
 			try { if (r != null) r.close(); } catch (Exception e) { }
 		}
@@ -348,7 +348,7 @@ public class SystemsPanel {
 		if (type == SystemType.MEDBAY) return homeplanet.parser.Retrofit.isRetrofitted(ship) ? null : MEDBAY;
 		if (type == SystemType.CLONEBAY) return hasRoomFor(ship, SystemType.MEDBAY) ? null : STARTING; // storing it leaves a Medbay in the room
 		if (isStarting(ship, type)) {
-			return homeplanet.parser.Retrofit.blankAvailable(ship) ? STARTING + ". Press Retrofit (above) to allow removing it" : STARTING + ". Install the " + homeplanet.parser.Retrofit.MOD_NAME + " (Settings > Patch mods) to allow retrofitting";
+			return homeplanet.parser.Retrofit.blankAvailable(ship) ? STARTING + ". Press Retrofit (below) to allow removing it" : STARTING + ". Send the " + homeplanet.parser.Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Patch mods) to allow retrofitting";
 		}
 		return null;
 	}
@@ -507,7 +507,7 @@ public class SystemsPanel {
 		boolean undo = homeplanet.parser.Retrofit.isRetrofitted(ship);
 		if (!undo && !homeplanet.parser.Retrofit.blankAvailable(ship)) {
 			JOptionPane.showMessageDialog(bay, "Retrofit needs the " + homeplanet.parser.Retrofit.MOD_NAME + ".\n"
-					+ "Install it with Settings > Patch mods (it comes with Federation Home Planet), then restart the station.", "Retrofit", JOptionPane.INFORMATION_MESSAGE);
+					+ "Send it to FTL via Slipstream with Settings > Patch mods (it comes with Federation Home Planet), then restart The Home Planet Station.", "Retrofit", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		if (undo) {
@@ -539,7 +539,7 @@ public class SystemsPanel {
 		} else {
 			if (JOptionPane.showConfirmDialog(bay, "Prepare " + name + " so any of her systems can be removed, including standard equipment.\n\n"
 					+ "Warning: FTL may no longer count her as the original ship model for achievements.\n"
-					+ "She will only load in FTL while the " + homeplanet.parser.Retrofit.MOD_NAME + " is installed.",
+					+ "She will only load in FTL once the " + homeplanet.parser.Retrofit.MOD_NAME + " has been sent to FTL via Slipstream.",
 					"Retrofit", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
 		}
 		String before = ship.getShipBlueprintId();

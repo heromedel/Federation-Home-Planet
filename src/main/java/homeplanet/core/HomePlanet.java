@@ -99,12 +99,12 @@ public class HomePlanet {
 		}
 		if (datsPath == null) {
 			datsPath = FTLUtilities.findDatsDir(); // the usual Steam, GOG and Humble folders
-			if (datsPath != null && !confirm("FTL's files were found in:\n" + datsPath.getPath() + "\nIs this correct?", "Confirm")) datsPath = null;
+			if (datsPath != null && !confirm("The Home Planet Station found FTL's files in:\n" + datsPath.getPath() + "\nIs this correct?", "Confirm")) datsPath = null;
 			if (datsPath == null) datsPath = promptForFtlPath();
 			if (datsPath != null) { config.setProperty("ftlDatsPath", datsPath.getAbsolutePath()); writeConfig = true; }
 		}
 		if (datsPath == null) {
-			showErrorDialog("FTL's files were not found.\n" + APP_NAME + " will now exit.");
+			showErrorDialog("FTL's files were not found. The Home Planet Station can't open without them.\nIt will now close.");
 			System.exit(1);
 		}
 		// First setup, asked once: Steam launching (for the Steam version), then the House Rules window while any rule was never set.
@@ -139,12 +139,12 @@ public class HomePlanet {
 				for (File file : getPossibleUserDataLocations(known)) if (file.exists()) { save_location = file.getParentFile(); break; }
 				if (save_location != null) break;
 			}
-			if (save_location != null && !confirm("FTL's saves were found in:\n" + save_location.getPath() + "\nIs this correct?", "Confirm")) save_location = null;
+			if (save_location != null && !confirm("The Home Planet Station found FTL's saves in:\n" + save_location.getPath() + "\nIs this correct?", "Confirm")) save_location = null;
 			if (save_location == null) save_location = promptForSavePath();
 			if (save_location != null) { config.setProperty("ftlSavePath", save_location.getAbsolutePath()); writeConfig = true; }
 		}
 		if (save_location == null) {
-			showErrorDialog("FTL's saves folder was not found.\n" + APP_NAME + " will now exit.");
+			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
 			System.exit(1);
 		}
 		if (writeConfig) saveConfig();
@@ -154,7 +154,7 @@ public class HomePlanet {
 			Vault.open(save_location);
 		} catch (IOException e) {
 			log.error("Could not open the vault in " + save_location, e);
-			showErrorDialog("Could not open the vault in:\n" + save_location + "\n\n" + e);
+			showErrorDialog("The Home Planet Station could not open its fleet records in:\n" + save_location + "\n\n" + e);
 			System.exit(1);
 		}
 		// Slipstream, offered once before anything needs it (after the vault opens, so its log entry goes there).
@@ -177,7 +177,7 @@ public class HomePlanet {
 			CompanionMod.register(CompanionMod.load());
 		} catch (Exception e) {
 			log.error("Error parsing FTL resources in " + datsPath, e);
-			showErrorDialog("Error reading FTL's files in:\n" + datsPath + "\n\n" + e);
+			showErrorDialog("The Home Planet Station could not read FTL's files in:\n" + datsPath + "\n\n" + e);
 			System.exit(1);
 		}
 
@@ -186,7 +186,7 @@ public class HomePlanet {
 			Vault.get().storage();
 		} catch (IOException e) {
 			log.error("Could not take stock of the vault", e);
-			showErrorDialog("Could not take stock of the vault:\n" + e);
+			showErrorDialog("The Home Planet Station could not take stock of the fleet:\n" + e);
 		}
 
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {
@@ -199,7 +199,7 @@ public class HomePlanet {
 					Music.refresh();
 				} catch (Exception e) {
 					log.error("Exception while creating the main window.", e);
-					showErrorDialog("The station could not be opened:\n" + e);
+					showErrorDialog("Communication with The Home Planet Station could not be opened:\n" + e);
 					System.exit(1);
 				}
 			}
@@ -223,7 +223,7 @@ public class HomePlanet {
 			in = new FileInputStream(propFile);
 			config.load(in);
 		} catch (IOException e) {
-			showErrorDialog("Error loading the config from " + propFile.getPath());
+			showErrorDialog("The Home Planet Station could not read its settings from " + propFile.getPath());
 			log.error("Could not read " + propFile, e);
 		} finally {
 			try { if (in != null) in.close(); } catch (IOException e) { }
@@ -251,7 +251,7 @@ public class HomePlanet {
 			return true;
 		} catch (IOException e) {
 			log.error("Error saving config to " + propFile.getPath(), e);
-			showErrorDialog("Error saving the config to " + propFile.getPath());
+			showErrorDialog("The Home Planet Station could not save its settings to " + propFile.getPath());
 			return false;
 		}
 	}
@@ -278,8 +278,8 @@ public class HomePlanet {
 		if (cont.exists() && !modPatchedThisSession) {
 			List<String> missing = Retrofit.missingBlueprints(cont);
 			if (!missing.isEmpty()) {
-				showErrorDialog("The boarded ship needs the " + Retrofit.MOD_NAME + ", which isn't in the game data ("
-						+ String.join(", ", missing) + ").\n\nInstall it first (Settings > Patch mods), or board a different ship.");
+				showErrorDialog("The boarded ship flies on blueprints from the " + Retrofit.MOD_NAME + ", which isn't in FTL yet ("
+						+ String.join(", ", missing) + ").\n\nSend it to FTL via Slipstream first (Settings > Patch mods), or board a different ship.");
 				return;
 			}
 		}
@@ -292,7 +292,7 @@ public class HomePlanet {
 				else java.awt.Desktop.getDesktop().browse(new java.net.URI(steamUri));
 			} catch (Exception ex) {
 				log.error("Could not launch FTL through Steam.", ex);
-				showErrorDialog("Could not launch FTL through Steam:\n" + ex);
+				showErrorDialog("The Home Planet Station could not launch FTL through Steam:\n" + ex);
 			}
 			return;
 		}
@@ -300,7 +300,7 @@ public class HomePlanet {
 		File ftl = FTLUtilities.findGameExe(datsPath);
 		if (ftl == null) {
 			log.warn("Could not find the FTL executable near {}", datsPath);
-			showErrorDialog("Could not find FTL's executable near:\n" + datsPath);
+			showErrorDialog("The Home Planet Station could not find FTL's executable near:\n" + datsPath + "\n\nCheck the game folder in Settings.");
 			return;
 		}
 		log.debug("Running FTL: {}", ftl.getAbsolutePath());
@@ -321,7 +321,7 @@ public class HomePlanet {
 		return path.exists() && path.isDirectory() && FTLUtilities.isDatsDirValid(path);
 	}
 	public static File promptForFtlPath() {
-		JOptionPane.showMessageDialog(null, APP_NAME + " uses images and data from FTL,\nbut the path to FTL's files could not be guessed.\n\n"
+		JOptionPane.showMessageDialog(null, "The Home Planet Station's interface draws its images and data from FTL,\nbut its search could not find FTL's files on its own.\n\n"
 				+ "Select 'ftl.dat' in your FTL folder (FTL 1.6 and newer),\nor '(FTL dir)/resources/data.dat' for older versions,\nor 'FTL.app' on a Mac.",
 				"FTL Not Found", JOptionPane.INFORMATION_MESSAGE);
 		final JFileChooser fc = new JFileChooser();
@@ -346,7 +346,7 @@ public class HomePlanet {
 		return ftlPath != null && isDatsPathValid(ftlPath) ? ftlPath : null;
 	}
 	public static File promptForSavePath() {
-		JOptionPane.showMessageDialog(null, APP_NAME + " manages saves from FTL,\nbut the path to FTL's saves could not be guessed.\n\n"
+		JOptionPane.showMessageDialog(null, "The Home Planet Station sends ships out using FTL's saves,\nbut its search could not find FTL's saves folder on its own.\n\n"
 				+ "Select '/Documents/My Games/FasterThanLight/continue.sav' (or ae_prof.sav).", "FTL Save Not Found", JOptionPane.INFORMATION_MESSAGE);
 		final JFileChooser fc = new JFileChooser();
 		fc.setDialogTitle("Find continue.sav or ae_prof.sav");

@@ -47,6 +47,17 @@ folder are passed as the 2nd and 3rd arguments.
 To see a window without a display, run it under `xvfb-run -a java ...` and paint the dialog's root pane into
 a BufferedImage.
 
+## Voice (player-facing text)
+
+- **The Home Planet Station** is the base: it builds, sends, searches, stores, and has systems, an interface,
+  databases and communications that can fail ("The Home Planet Station could not…"). **The Federation Home
+  Planet** is the authority: it approves, commissions, draws up blueprints. "The" is capitalized as part of
+  these titles, even mid-sentence.
+- **a station** (lowercase) is an FTL store beacon. Crew "stations" in the ship editor are FTL's manned squares.
+- Slipstream is the transmission channel: mods and blueprints are "sent to FTL via Slipstream".
+- Places: the Space Dock, the Cargo Bay, the Dry Dock, the Junkyard. Ships are "she". Never "Home World",
+  never "FHP" in player-facing text. Errors stay actionable (what failed, what to do, the file or path).
+
 ## Style
 
 Match the surrounding code: tabs, `homeplanet.*` classes referenced by full name where the file already does,

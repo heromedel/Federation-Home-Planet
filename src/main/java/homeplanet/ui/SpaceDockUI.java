@@ -71,7 +71,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			vault.takeStock();
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog("Could not take stock of the vault:\n" + e);
+			HomePlanet.showErrorDialog("The Home Planet Station could not take stock of the fleet:\n" + e);
 		}
 		boardButtons.clear();
 		infoButtons.clear();
@@ -162,9 +162,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Why the Cargo Bay can't open now (no ship boarded, or she's away from a station), or null if it can. */
 	private String cargoBayClosedReason() {
 		Ship ship = Vault.get().boarded();
-		if (ship == null || ship.save() == null) return "No ship at your command.\nBoard a ship first, then open the Cargo Bay to trade.";
+		if (ship == null || ship.save() == null) return "No ship is at your command.\nBoard a ship before returning to the Cargo Bay to trade.";
 		if (!SaveHelper.mayTrade(ship.save()))
-			return ship.name + " is not within range of a Station.\nFind a beacon with a Station, then return to trade.";
+			return ship.name + " is not within range of a station.\nFind a beacon with a station, then return to trade.";
 		return null;
 	}
 	private FtlButton controlButton(String text, String tip) {
@@ -308,7 +308,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, CELL_W - 12));
 		p.add(smallLabel(beacons(ship0), new Color(200, 210, 205)));
 		boolean off = offStation(ship0);
-		JLabel away = smallLabel(off ? "Not within range of a Station" : " ", new Color(255, 170, 90));
+		JLabel away = smallLabel(off ? "Not within range of a station" : " ", new Color(255, 170, 90));
 		if (off) away.setToolTipText("She must reach a beacon with a Station before she can trade.");
 		p.add(away);
 		p.add(Box.createRigidArea(new Dimension(1, 4)));
@@ -331,7 +331,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		head.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, BERTH_W));
 		head.add(smallLabel(beacons(ship0), new Color(200, 210, 205)));
 		boolean off = offStation(ship0);
-		if (off) head.add(smallLabel("Not within range of a Station", new Color(255, 170, 90)));
+		if (off) head.add(smallLabel("Not within range of a station", new Color(255, 170, 90)));
 		head.setSize(head.getPreferredSize());
 		p.add(head);
 		p.add(Box.createRigidArea(new Dimension(1, BERTH_PIC_Y)));
@@ -414,7 +414,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault.get().reload();
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog("Could not read the vault again:\n" + e);
+			HomePlanet.showErrorDialog("The Home Planet Station could not take stock of the fleet again:\n" + e);
 		}
 		homeplanet.core.Music.refresh();
 		init();
@@ -428,7 +428,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault.get().board(ship);
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog("Could not board " + ship.name + ":\n" + e.getMessage());
+			HomePlanet.showErrorDialog(ship.name + " could not be boarded; command was not transferred:\n" + e.getMessage());
 			init();
 			return false;
 		}
@@ -443,7 +443,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault.get().dock();
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog("Could not dock " + b.name + ":\n" + e.getMessage());
+			HomePlanet.showErrorDialog(b.name + " could not be docked:\n" + e.getMessage());
 			init();
 			return false;
 		}
@@ -455,14 +455,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private void showShipInfo(Ship ship) {
 		SavedGameState sgs = ship.save();
 		if (sgs == null) {
-			JOptionPane.showMessageDialog(this, ship.name + "'s save can't be read:\n" + ship.readError()
-					+ (Retrofit.missingBlueprints(ship.file()).isEmpty() ? "" : "\n\nShe needs the " + Retrofit.MOD_NAME + " patched into the game (Settings > Patch mods)."),
+			JOptionPane.showMessageDialog(this, "The Home Planet Station can't read " + ship.name + "'s save:\n" + ship.readError()
+					+ (Retrofit.missingBlueprints(ship.file()).isEmpty() ? "" : "\n\nShe can't fly until The Home Planet Station sends the " + Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Patch mods)."),
 					"Ship's report", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		if (!showReport(sgs)) return;
 		String oldName = sgs.getPlayerShipName();
-		String newName = promptForName("Enter a new name for the ship:", "Rename Ship", oldName);
+		String newName = promptForName("What shall she be called?", "Rename Ship", oldName);
 		if (newName == null || newName.equals(oldName)) return;
 		if (ship.isBoarded() && !GameGuard.allows(this, "rename her")) return;
 		sgs.setPlayerShipName(newName);
@@ -472,7 +472,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} catch (Exception e) {
 			sgs.setPlayerShipName(oldName);
 			sgs.getPlayerShip().setShipName(oldName);
-			HomePlanet.showErrorDialog("The ship could not be renamed:\n" + e);
+			HomePlanet.showErrorDialog("She could not be renamed; her save could not be written:\n" + e);
 			return;
 		}
 		HistoryLog.entry("RENAME", oldName + " -> " + newName + "  (" + ship.id + ")");
@@ -487,10 +487,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		boolean retrofitted = Retrofit.isRetrofitted(sgs.getPlayerShip());
 		String bpId = sgs.getPlayerShip().getShipBlueprintId();
 		String tag = !retrofitted ? "" : CompanionMod.isRemodelId(bpId) ? " (Remodeled " + CompanionMod.numberOf(bpId) + ")" : " (Retrofitted)";
-		if (retrofitted && !Retrofit.inGame(sgs.getPlayerShip())) tag += " - mod not patched in";
+		if (retrofitted && !Retrofit.inGame(sgs.getPlayerShip())) tag += " - needs the mod sent to FTL via Slipstream";
 		Object[] options = {"OK", "Rename"};
 		int choice = JOptionPane.showOptionDialog(null, fitToScreen(shipSummaryPanel(sgs)),
-				String.format("Report for ship %s%s", sgs.getPlayerShipName(), tag),
+				String.format("Ship's report: %s%s", sgs.getPlayerShipName(), tag),
 				JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
 		return choice == 1;
 	}
@@ -539,7 +539,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault.get().disband();
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog("Could not move the save to the Junkyard:\n" + e.getMessage());
+			HomePlanet.showErrorDialog("She could not be towed to the Junkyard; her save was not moved:\n" + e.getMessage());
 			return;
 		}
 		init();
@@ -550,7 +550,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		Ship made = CommissionDialog.open(this);
 		if (made == null) return;
 		init();
-		int r = JOptionPane.showConfirmDialog(null, made.name + " has been commissioned and is waiting at the Space Dock.\n\nBoard her now?",
+		int r = JOptionPane.showConfirmDialog(null, "The Federation Home Planet has commissioned " + made.name + ". She waits at the Space Dock.\n\nBoard her now?",
 				"Commission Ship", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 		if (r == JOptionPane.YES_OPTION) board(made);
 	}
@@ -564,12 +564,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		ship.invalidate();
 		SavedGameState gs = ship.save();
 		if (gs == null) {
-			HomePlanet.showErrorDialog("Could not read " + ship.file() + "\n\n" + ship.readError());
+			HomePlanet.showErrorDialog("The Home Planet Station could not read her save:\n" + ship.file() + "\n\n" + ship.readError());
 			return;
 		}
 		if (HomePlanet.journeyStoreRequirement && !SaveHelper.isAtStation(gs)) {
-			JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is not within range of a Station.\n"
-					+ "Plotting a new journey can only begin at a beacon with a Station.", "New Journey", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is not within range of a station.\n"
+					+ "The Federation Home Planet can only approve or assist in plotting a new journey from a beacon with a station.", "New Journey", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		String message = "Prepare " + gs.getPlayerShipName() + " for a new journey?\n\n"
@@ -595,7 +595,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice]);
 		} catch (Exception e) {
 			ship.invalidate();
-			HomePlanet.showErrorDialog("Could not save the new journey:\n" + e);
+			HomePlanet.showErrorDialog("The Home Planet Station could not save her new journey:\n" + e);
 			return;
 		}
 		JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is fueled and ready. A new journey awaits, Captain.",
@@ -613,13 +613,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void scrapShip(Ship wreckShip) {
 		SavedGameState wreck = wreckShip.save();
 		if (wreck == null) {
-			HomePlanet.showErrorDialog(wreckShip.name + "'s save can't be read, so she can't be stripped:\n" + wreckShip.readError());
+			HomePlanet.showErrorDialog("The Home Planet Station can't read " + wreckShip.name + "'s save, so she can't be stripped:\n" + wreckShip.readError());
 			return;
 		}
 		String name = wreckShip.name;
 		if (HomePlanet.storeRequirement && !SaveHelper.isAtStation(wreck)) {
-			JOptionPane.showMessageDialog(null, name + " is not within range of a Station.\n"
-					+ "To scrap her for supplies, salvage her and fly her to a beacon with a Station first.", "Scrap Ship", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(null, name + " is not within range of a station.\n"
+					+ "The Home Planet Station cannot scrap her for supplies unless you salvage her and fly her to a beacon with a station first.", "Scrap Ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		String aboard = "Everything aboard will be moved to Spacedock Storage.\n";
@@ -659,7 +659,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			tx.commit();
 			vault.remove(wreckShip, null); // logged below, with what came off her
 		} catch (Exception e) {
-			HomePlanet.showErrorDialog("Scrapping failed, nothing was changed:\n" + e);
+			HomePlanet.showErrorDialog("The order to scrap was called off. Nothing was changed:\n" + e);
 			return;
 		}
 		HistoryLog.entry("SCRAP", name + " stripped into storage, hull broken up", scrapped);
@@ -672,7 +672,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault.get().remove(ship, "DESTROY");
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog("Could not remove the ship's save:\n" + e);
+			HomePlanet.showErrorDialog("She could not be destroyed; her save was not removed:\n" + e);
 			return;
 		}
 		init();
@@ -706,7 +706,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault.get().salvage(ship);
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog("Could not move the save out of the Junkyard:\n" + e);
+			HomePlanet.showErrorDialog("She could not be hauled out of the Junkyard; her save data was not moved:\n" + e);
 			return;
 		}
 		init();
@@ -715,7 +715,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (!missing.isEmpty()) {
 			Object[] opts = {"Patch Now", "Later"};
 			int r = JOptionPane.showOptionDialog(this, ship.name + " is a retrofitted hull (" + String.join(", ", missing) + ").\n"
-					+ "She'll sit at the Space Dock, but can't fly until the " + CompanionMod.TITLE + " is installed again.",
+					+ "She'll wait at the Space Dock, but can't fly until The Home Planet Station sends the " + CompanionMod.TITLE + " to FTL via Slipstream.",
 					"Salvage", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[0]);
 			if (r == 0) PatchDialog.open(this);
 		}
