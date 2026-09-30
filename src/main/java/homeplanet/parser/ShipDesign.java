@@ -351,7 +351,7 @@ public class ShipDesign {
 	public static List<ShipDesign> load() {
 		List<ShipDesign> out = new ArrayList<ShipDesign>();
 		File FILE = file();
-		if (!FILE.isFile()) return out;
+		if (!FILE.isFile()) { BlueprintBackup.restoreDesigns(out); return out; }
 		try {
 			readInto(FILE, out);
 			// files from before snapshots: a built design was its own blueprint, so its copy is the snapshot
@@ -366,9 +366,10 @@ public class ShipDesign {
 		} catch (Exception ex) {
 			log.error("Could not read " + FILE, ex);
 		}
+		BlueprintBackup.restoreDesigns(out); // any built copy a ship needs that the file lacks (damaged, or lost)
 		return out;
 	}
-	private static void readInto(File f, List<ShipDesign> out) throws Exception {
+	static void readInto(File f, List<ShipDesign> out) throws Exception {
 		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f);
 		NodeList ds = doc.getElementsByTagName("design");
 		for (int i = 0; i < ds.getLength(); i++) {
@@ -420,6 +421,7 @@ public class ShipDesign {
 		for (ShipDesign d : designs) sb.append(xmlOf(d));
 		sb.append("</designs>").append(CRLF);
 		homeplanet.core.SafeFiles.writeText(file(), sb.toString(), true);
+		BlueprintBackup.keepDesigns(designs);
 	}
 
 	/** One design as it's written to the file (also used to tell whether a design has changed). */

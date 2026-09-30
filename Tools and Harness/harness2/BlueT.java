@@ -5,6 +5,7 @@ public class BlueT { public static void main(String[] a) throws Exception {
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  Vault v = Setup.open(game, saves); v.takeStock();
  retired(v);
+ backups(v);
  Setup.done();
 }
  /** A small built design, with its built copy (what ships fly), added to the list. */
@@ -25,6 +26,33 @@ public class BlueT { public static void main(String[] a) throws Exception {
  static ShipDesign copyOf(String bpId) { for (ShipDesign x : ShipDesign.load()) if (!x.isWorking() && DesignExport.bpId(x).equals(bpId)) return x; return null; }
  static boolean inMod(String bpId) { for (ShipDesign x : DesignExport.built()) if (DesignExport.bpId(x).equals(bpId)) return true; return false; }
 
+ /** Every blueprint has a backup; a lost one a ship needs comes back from it, one no ship needs doesn't. */
+ static void backups(Vault v) throws Exception {
+  // a remodel of the Kestrel that a docked ship flies, and one nobody flies
+  List<CompanionMod.Remodel> rs = CompanionMod.load();
+  CompanionMod.Remodel flown = CompanionMod.create("PLAYER_SHIP_HARD", "Backup Test", rs); rs.add(flown);
+  CompanionMod.Remodel idle = CompanionMod.create("PLAYER_SHIP_HARD", "Idle Remodel", rs); rs.add(idle);
+  CompanionMod.save(rs); CompanionMod.register(CompanionMod.load());
+  Ship k = null; for (Ship s : v.all()) if ("Test Kestrel".equals(s.name)) k = s;
+  if (k.isBoarded()) v.dock();
+  SavedGameState g = k.save(); Retrofit.switchTo(g, flown.id); v.write(k, g);
+  Setup.chk("K: each remodel has a backup", new File(v.blueprintsDir(), flown.id + ".xml").isFile() && new File(v.blueprintsDir(), idle.id + ".xml").isFile());
+  Setup.chk("K: the ship flies the remodel", v.usingBlueprint(flown.id).contains(k));
+  // remodels.xml is lost
+  CompanionMod.remodelsFile().delete();
+  List<CompanionMod.Remodel> back = CompanionMod.load();
+  Setup.chk("K: a lost remodel a ship flies comes back from its backup", CompanionMod.find(back, flown.id) != null);
+  Setup.chk("K: one no ship flies stays gone", CompanionMod.find(back, idle.id) == null);
+  CompanionMod.save(back);
+  Setup.chk("K: the next save writes it back into remodels.xml", new String(SafeFiles.read(CompanionMod.remodelsFile()), "UTF-8").contains(flown.id));
+  // designs.xml is lost: the retired design's built copy (from the test above) is gone with it... unless a ship needs it
+  List<ShipDesign> all = ShipDesign.load();
+  String bp = DesignExport.bpId(design(all, "Backup Design"));
+  ShipDesign.save(all); Slipstream.writeMod(); CompanionMod.register(CompanionMod.load());
+  v.adopt(Commission.build(bp, "Backup Ship", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(4)));
+  ShipDesign.file().delete();
+  Setup.chk("K: a lost design's built copy a ship flies comes back, retired", copyOf(bp) != null && copyOf(bp).retired && inMod(bp));
+ }
  /** Deleting a design ships still fly retires it: out of the list and Commission, still in the mod, until nothing needs it. */
  static void retired(Vault v) throws Exception {
   List<ShipDesign> all = ShipDesign.load();

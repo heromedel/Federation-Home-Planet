@@ -499,12 +499,13 @@ public class CompanionMod {
 	}
 	private static List<Remodel> parse(File REMODELS) {
 		List<Remodel> out = new ArrayList<Remodel>();
-		if (!REMODELS.isFile()) return out;
+		if (!REMODELS.isFile()) { BlueprintBackup.restoreRemodels(out); return out; }
 		try {
 			readInto(REMODELS, out);
 		} catch (Exception e) {
 			log.error("Could not read " + REMODELS, e);
 		}
+		BlueprintBackup.restoreRemodels(out); // any a ship needs that the file lacks (damaged, or lost)
 		return out;
 	}
 	/** True if remodels.xml is missing (nothing to lose) or reads in full. A damaged file must never be written over. */
@@ -518,7 +519,7 @@ public class CompanionMod {
 			return false;
 		}
 	}
-	private static void readInto(File REMODELS, List<Remodel> out) throws Exception {
+	static void readInto(File REMODELS, List<Remodel> out) throws Exception {
 		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(REMODELS);
 		NodeList rs = doc.getElementsByTagName("remodel");
 		for (int i = 0; i < rs.getLength(); i++) {
@@ -564,6 +565,7 @@ public class CompanionMod {
 		for (Remodel r : remodels) sb.append(remodelXml(r));
 		sb.append("</remodels>").append(CRLF);
 		homeplanet.core.SafeFiles.writeText(remodelsFile(), sb.toString(), true);
+		BlueprintBackup.keepRemodels(remodels);
 	}
 	static String remodelXml(Remodel r) {
 		StringBuilder sb = new StringBuilder();

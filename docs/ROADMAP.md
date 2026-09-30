@@ -37,7 +37,11 @@ earlier steps did, and never save over data that didn't load properly. Add a har
   `appDir()`; title music ignores FTL on Mac/Linux (`Music.isFtlRunning`); history pruning can drop the newest
   snapshot (sort by time, not name); a failed Commission leaves a ghost entry (`Vault.adopt`).
 
-## 2. Retired designs, and a blueprint copy with each ship
+## 2. Retired designs, and blueprint backups — done (harness test BlueT)
+
+Built as a backup per blueprint (the vault's `blueprints/` folder) rather than per ship: the same protection, and a
+ship moving between the Space Dock, Junkyard and history needs no bookkeeping.
+
 
 - Deleting a design that ships still use **retires** it: hidden from the Design list and from Commission, kept in
   `designs.xml`, still built into the Federation Home Planet Mod while any ship uses it (Space Dock, Junkyard or

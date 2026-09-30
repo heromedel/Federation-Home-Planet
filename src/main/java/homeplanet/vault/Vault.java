@@ -83,6 +83,8 @@ public final class Vault {
 	public File artDir() { return new File(root, "art"); }
 	public File designsFile() { return new File(root, "designs.xml"); }
 	public File remodelsFile() { return new File(root, "remodels.xml"); }
+	/** A copy of every blueprint on file, one per file (see homeplanet.parser.BlueprintBackup). */
+	public File blueprintsDir() { return new File(root, "blueprints"); }
 	public File removedBlueprintsLog() { return new File(root, "removed-blueprints.log"); }
 	public File historyLog() { return new File(root, "history.log"); }
 	public File manifestFile() { return new File(root, MANIFEST); }
