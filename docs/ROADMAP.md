@@ -10,7 +10,10 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 3. Ship history and restore
 4. Pricing and house rules (HR1, HR2, Report for Reassignment, free unlock ships, Immersive Mode)
 5. Dry Dock: repairs and upgrades
-6. Keep ships after victory
+6. Fixes from testing, and the settings moves
+7. Immersive Mode, part 2: its own vault, rules kept apart, uncommissioned-ship detection, rank and locks
+8. Transmissions: the inbox, commission orders, promotions, achievement rewards (draft: docs/TRANSMISSIONS.md)
+9. Keep ships after victory (waiting on a real run)
 
 ---
 
@@ -120,7 +123,57 @@ ship pays, and Save makes it official (Reset undoes it).
 - **Repairs:** a Hull row; Repair fixes as many points as she can afford. **Check:** the price is 2 scrap a point in
   sectors 1-2 and one more every two sectors after; FTL's own store rate should be confirmed in a real run.
 
-## 6. Keep ships after victory
+## 6. Fixes from testing, and the settings moves
+
+- **Hull repairs at FTL's rate:** 2 scrap a point in sectors 1-3, 3 in sectors 4-6, 4 in sectors 7-8 (FTL wiki).
+- **Reactor prices:** waiting on heromedel's numbers from FTL's upgrade screen (he remembers about 25, then 30, then
+  35, changing every 10 bars or so). The price table is in one place (`Pricing.reactorBar`).
+- **Open the station's folder:** a button in Settings, beside the folder fields.
+- **Clean up blueprints:** moves from Settings to Other…, with an explanation of what it's for: it removes
+  blueprints no ship flies any more (retired designs included) from the Federation Home Planet Mod.
+- **Rules kept apart:** today Immersive Mode overwrites the normal rules, and they stay changed when it's turned off.
+  The normal rules are kept separately and come back untouched (done with item 7).
+
+## 7. Immersive Mode, part 2
+
+- **Its own vault.** `FederationHomePlanet-Immersive` beside the normal one, with its own Space Dock, Junkyard,
+  storage hold, stored systems, ship records, surrenders, unlock grants, rank and transmissions. The first switch
+  into it starts with an empty shipyard (a new career).
+- **Shared by both vaults:** designs, remodels and their blueprint backups (FTL has only one Federation Home Planet
+  Mod, so it carries both fleets' blueprints). "Clean up blueprints" and "in use" checks look at both vaults.
+- **Switching modes** (the Immersive Mode tick): only while FTL is closed. The boarded ship is docked into the vault
+  being left; then the other vault's boarded ship, if it had one, goes back into `continue.sav`.
+- **Uncommissioned-ship detection** (both modes). The station knows every ship it commissioned and which one is
+  boarded. `continue.sav` is not her if the name or model differs, or if any number that only goes up during a
+  journey (sector, beacons explored, ships defeated, scrap collected) is lower than the station last saw. FTL's New
+  Game overwrites the boarded ship, so she is then recorded lost and can be recovered (normal mode).
+  - Normal mode: the new ship is taken in, as now, and the player is told if a boarded ship was overwritten.
+  - Immersive Mode asks: **Send her to the normal Space Dock** / **Decommission her** (then: send to the normal
+    Junkyard, or Destroy, which keeps a copy in her records) / **Switch to normal mode now** / **Close The Home
+    Planet Station**.
+- **Rank** (Immersive vault only): Commander at the start; Captain when the Federation Cruiser A unlocks; Commodore
+  when the Federation Cruiser C unlocks. Each unlock raises one rank, whatever the order. Only unlocks after
+  Immersive Mode is on count.
+- **Locks by rank** (Immersive Mode): locked standard ships are hidden (as the lock rule does); **Captains** may
+  commission custom ships (remodels and designs); **Commodores** may commission designs with an artillery system.
+  Greyed out in Commission with the reason.
+- **Unlock-once free ships:** Immersive Mode turns this rule on and locks it.
+
+## 8. Transmissions
+
+Draft of every message and reward: `docs/TRANSMISSIONS.md` (rewards approved by heromedel; messages for review).
+
+- **The inbox:** a transmission icon on the Space Dock, a green light with the unread count; the inbox lists
+  sender, subject and date; messages with a reward have **Claim**.
+- **Immersive Notifications:** a setting of its own; Immersive Mode ticks and locks it. Without it, the free-ship
+  rules still work, silently ("(free)" in Commission).
+- **Messages:** welcome to Immersive Mode; the empty shipyard's free command; a commission order for each ship
+  unlocked in FTL (a lore reason per race); promotions from the Fleet Admiral.
+- **Achievement rewards** (Immersive Mode only; achievements earned after it was turned on): scrap, supplies, items,
+  crew volunteers and systems, into Spacedock Storage; a free ship becomes a commission order used up in Commission.
+- Checked at startup and on Refresh; each message is sent once.
+
+## 9. Keep ships after victory
 
 Off by default: "Keep ships after victory (The Home Planet Station must stay open while you play)."
 

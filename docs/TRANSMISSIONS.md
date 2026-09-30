@@ -112,14 +112,14 @@ Approved by heromedel, with the exact FTL item names checked in ftl.dat. **Notes
 | Federation Victory (Easy) | Beat the boss on Easy | 300 scrap |
 | Federation Victory (Normal) | Beat the boss on Normal | 400 scrap |
 | Your Own Fleet | Every Type A unlocked | 500 scrap |
-| Rule Ten: Greed is Eternal | 10,000 scrap over all games | Scrap Recovery Arm; also unlocks building ships with special artillery (see note 1) |
+| Rule Ten: Greed is Eternal | 10,000 scrap over all games | Scrap Recovery Arm (note 1) |
 | Warlord | Defeat 1000 ships | Adv. FTL Navigation + FTL Recharge Booster (note 2) |
 | I don't need no stinkin' upgrades! | Sector 5, no upgrades | A Cloaking system |
 | Coming in for my Pacifism run! | Sector 5 without firing | FTL Recharge Booster |
 | On a Wing and a Prayer | Sector 5, no store repairs | Repair Arm |
 | Ballistophobia | Sector 8, no missiles | A Backup Battery system |
 | Technophobia | Sector 8, no drones | Defense Scrambler |
-| Living off the Land | Sector 8, no buying | Repair Arm (note 3) |
+| Living off the Land | Sector 8, no buying | Repair Arm or Hull Repair drone, the player's choice (note 3) |
 | No Redshirts Here | Sector 8, no crew lost | Backup DNA Bank |
 | Some people just like to watch ships burn | Every enemy square on fire | Fire Suppression |
 | Astronomically Low Odds | Fail 5 dodges, engines maxed | Shield Charge Booster |
@@ -166,13 +166,12 @@ Approved by heromedel, with the exact FTL item names checked in ftl.dat. **Notes
 
 ### Notes
 
-1. **Special artillery:** in Immersive Mode, designs with an artillery system would be greyed out in Commission
-   ("The Federation Home Planet has not cleared this design's artillery: earn Rule Ten: Greed is Eternal") until
-   this achievement.
+1. **Special artillery:** now earned by rank instead (Commodores may commission designs with artillery; see the
+   roadmap, item 7). Open: should Rule Ten also clear it, as an earlier route?
 2. **Warlord:** Adv. FTL Navigation already is the "jump back to a visited beacon" augment (it still costs fuel in
    FTL). I added the FTL Recharge Booster to make jumps easier too. Or 20 fuel?
-3. **Living off the Land:** FTL also has a **Hull Repair drone** that repairs the hull between jumps. It might fit
-   better here than a second Repair Arm.
+3. **Living off the Land:** FTL doesn't record which ship earned a general achievement, so the player chooses when
+   claiming: a Repair Arm, or a Hull Repair drone (for drone ships).
 4. **Ancestry:** FTL's crystal weapons are Crystal Burst I/II and Heavy Crystal I/II. I picked Heavy Crystal Mark I.
 5. **Loss of Cabin Pressure:** there is no Breach Missile Mark II. There's Breach Missiles, and Breach Bomb Mark I
    and II. I picked the Breach Bomb Mark II.
@@ -205,7 +204,7 @@ Each opens with the player's rank. Signatures as listed.
 
 **Rule Ten: Greed is Eternal** (Home Planet Liaison)
 > Ten thousand scrap through your hands. The auditors are impressed, and a little worried. Take this Scrap Recovery
-> Arm, and the Admiralty's clearance to build designs with special artillery.
+> Arm, and keep counting.
 
 **Warlord** (Federation Fleet Admiral)
 > A thousand enemy ships. There are Rebel captains who change course at the sound of your name. For a hunter who
