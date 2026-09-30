@@ -489,10 +489,21 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String tag = !retrofitted ? "" : CompanionMod.isRemodelId(bpId) ? " (Remodeled " + CompanionMod.numberOf(bpId) + ")" : " (Retrofitted)";
 		if (retrofitted && !Retrofit.inGame(sgs.getPlayerShip())) tag += " - mod not patched in";
 		Object[] options = {"OK", "Rename"};
-		int choice = JOptionPane.showOptionDialog(null, shipSummaryPanel(sgs),
+		int choice = JOptionPane.showOptionDialog(null, fitToScreen(shipSummaryPanel(sgs)),
 				String.format("Report for ship %s%s", sgs.getPlayerShipName(), tag),
 				JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
 		return choice == 1;
+	}
+	/** The panel as it is, or in a scroll pane when it's taller than the screen leaves room for (a big crew and cargo). */
+	static java.awt.Component fitToScreen(JPanel panel) {
+		int room = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds().height - 160; // title bar, buttons, margin
+		java.awt.Dimension pref = panel.getPreferredSize();
+		if (pref.height <= room) return panel;
+		javax.swing.JScrollPane sp = new javax.swing.JScrollPane(panel, javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		sp.setBorder(null);
+		sp.getVerticalScrollBar().setUnitIncrement(16);
+		sp.setPreferredSize(new java.awt.Dimension(pref.width + sp.getVerticalScrollBar().getPreferredSize().width, room));
+		return sp;
 	}
 	/** Asks for a name. Returns the trimmed name, or null if cancelled or left blank. */
 	public static String promptForName(String message, String title, String current) {
@@ -713,14 +724,18 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	// ---- the report ----
 
 	/** The ship report: a picture of the ship, then supplies, crew, weapons, drones and augments, with FTL's icons. */
+	/** The tallest a ship's picture is drawn in her report. */
+	private static final int REPORT_PIC_H = 200;
+
 	public JPanel shipSummaryPanel(SavedGameState sgs) {
 		ShipState state = sgs.getPlayerShip();
 		JPanel p = new JPanel(new java.awt.BorderLayout(18, 4));
 		ShipBlueprint ship = blueprintOf(sgs.getPlayerShipBlueprintId());
 		if (ship != null) {
 			BufferedImage img = parent.getResourceImage("img/ship/" + ship.getGraphicsBaseName() + "_base.png", false);
-			if (img != null) { // half the Space Dock size
-				int w = Math.max(1, img.getWidth() / 2), h = Math.max(1, img.getHeight() / 2);
+			if (img != null) { // half the Space Dock size, and no taller than REPORT_PIC_H (the Lanius would push the lists off the screen)
+				double scale = Math.min(0.5, (double) REPORT_PIC_H / img.getHeight());
+				int w = Math.max(1, (int) Math.round(img.getWidth() * scale)), h = Math.max(1, (int) Math.round(img.getHeight() * scale));
 				BufferedImage small = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 				Graphics2D g = small.createGraphics();
 				g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
