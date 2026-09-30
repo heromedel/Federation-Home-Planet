@@ -110,15 +110,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else {
 			inboxBtn = null;
 		}
-		int inboxW = inboxBtn == null ? 0 : inboxBtn.getPreferredSize().width + 8;
+		boolean inboxHere = inboxBtn != null && vault.boarded() == null; // with a ship at your command, it sits on her heading instead
+		int inboxW = inboxHere ? inboxBtn.getPreferredSize().width + 8 : 0;
 		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW);
 		if (HomePlanet.immersiveMode) dockedHeader.setToolTipText("Immersive Mode: your rank. Captains may commission custom ships; Commodores, custom ships with artillery");
-		// the transmissions light at the end of the heading's line, where the eye goes first
-		JPanel headRow = new JPanel(new java.awt.BorderLayout(8, 0));
-		headRow.setOpaque(false);
-		headRow.add(dockedHeader, java.awt.BorderLayout.CENTER);
-		if (inboxBtn != null) headRow.add(inboxBtn, java.awt.BorderLayout.EAST);
-		docked.add(headRow, java.awt.BorderLayout.NORTH);
+		docked.add(withInbox(dockedHeader, inboxHere), java.awt.BorderLayout.NORTH);
 		docked.add(gridScroll, java.awt.BorderLayout.CENTER);
 		final int dockedW = 14 + CELL_W * 3 + 18;
 
@@ -459,7 +455,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		head.setLayout(new BoxLayout(head, BoxLayout.Y_AXIS));
 		head.setOpaque(false);
 		head.setAlignmentX(LEFT_ALIGNMENT);
-		head.add(new FtlButton.Header("At your command", BERTH_W));
+		int inboxW = inboxBtn == null ? 0 : inboxBtn.getPreferredSize().width + 8;
+		head.add(withInbox(new FtlButton.Header("At your command", BERTH_W - inboxW), inboxBtn != null));
 		head.add(Box.createRigidArea(new Dimension(1, 6)));
 		head.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, BERTH_W));
 		head.add(smallLabel(beacons(ship0), new Color(200, 210, 205)));
@@ -474,6 +471,16 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.setSize(p.getPreferredSize());
 		p.setToolTipText("The ship at your command, berthed at The Home Planet Station");
 		return p;
+	}
+	/** A heading with the transmissions light at the end of its line (where the eye goes first), if it goes here. */
+	private JPanel withInbox(FtlButton.Header header, boolean here) {
+		JPanel row = new JPanel(new java.awt.BorderLayout(8, 0));
+		row.setOpaque(false);
+		row.setAlignmentX(LEFT_ALIGNMENT);
+		row.add(header, java.awt.BorderLayout.CENTER);
+		if (here) row.add(inboxBtn, java.awt.BorderLayout.EAST);
+		row.setMaximumSize(row.getPreferredSize());
+		return row;
 	}
 	/** A few of her particulars, shown to the left of her picture when there's room. */
 	private JPanel statsPanel(Ship ship0) {
