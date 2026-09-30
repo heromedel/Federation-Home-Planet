@@ -117,6 +117,8 @@ public final class MenuTheme {
 		} else if (isDefault(c.getBackground())) {
 			c.setBackground(field ? FIELD : button ? BUTTON : BG);
 		}
+		// an HTML view keeps its own black text unless told to use the component's colour and font
+		if (c instanceof javax.swing.JEditorPane) ((javax.swing.JEditorPane) c).putClientProperty(javax.swing.JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		Color fg = c.getForeground();
 		if (isDefault(fg)) {
 			c.setForeground(TEXT);

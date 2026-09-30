@@ -243,7 +243,7 @@ public class SettingsDialog extends JDialog {
 		getRootPane().setDefaultButton(ok);
 
 		refreshLabels();
-		getContentPane().add(body, BorderLayout.CENTER);
+		getContentPane().add(ScreenFit.wrap(body, 120), BorderLayout.CENTER); // scrolls on a short screen
 		getContentPane().add(buttons, BorderLayout.SOUTH);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		pack();

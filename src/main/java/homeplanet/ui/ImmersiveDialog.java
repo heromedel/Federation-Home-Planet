@@ -131,7 +131,7 @@ public final class ImmersiveDialog {
 		}
 
 		Object[] opts = {"Confirm", "Cancel"};
-		if (JOptionPane.showOptionDialog(owner, p, "Immersive Mode", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[1]) != 0) return false;
+		if (JOptionPane.showOptionDialog(owner, ScreenFit.wrap(p, 140), "Immersive Mode", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[1]) != 0) return false;
 		if (!ftlClosed(owner, "Immersive Mode")) return false;
 		boolean ownProfile = begun ? Career.ownProfile(immersiveRoot) : own.isSelected();
 		File normalRoot = v.root;
