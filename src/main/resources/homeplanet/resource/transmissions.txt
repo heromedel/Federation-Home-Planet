@@ -121,7 +121,7 @@ subject: Commission order: {ship}
 
 {rank},
 
-The Zoltan have offered a {ship} in thanks for the fleet's protection of their trade routes. The Federation Home Planet accepted on your behalf.
+Your restraint among the Zoltan has not gone unnoticed. Where others would have fired first, you chose peace, and the Zoltan Council has answered in kind: they have offered a {ship} to mark the peaceful relations between our peoples. The Federation Home Planet has agreed to let you command the new ship.
 
 Office of Alien Affairs
 

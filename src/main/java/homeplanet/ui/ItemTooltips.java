@@ -65,7 +65,7 @@ public class ItemTooltips {
 		if (w.getPersDamage() != 0 && crew > 0) row(sb, "Crew damage", "" + crew);
 		if (w.getSysDamage() != 0 && sys > 0) row(sb, "System damage", "" + sys);
 		if (w.isHullBust()) row(sb, "Hull bonus", "double hull damage on rooms without systems");
-		if (w.getMissiles() > 0) row(sb, "Uses", w.getMissiles() + " missile" + (w.getMissiles() > 1 ? "s" : "") + " per shot");
+		if (w.getMissiles() > 0) row(sb, "Uses", w.getMissiles() + " missile" + (w.getMissiles() > 1 ? "s" : "") + " per volley"); // per firing, however many projectiles (Pegasus, Swarm)
 		return finish(sb, desc, w.getCost());
 	}
 

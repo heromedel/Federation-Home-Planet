@@ -66,8 +66,9 @@ the layout letter filled in)
   One is yours to commission, on the house."
 - **Engi:** "The Engi have shared the plans of their {ship}. They say it is 'to better the mutual efficiency of
   allied peoples'. We say thank you, and the first one built from them is yours."
-- **Zoltan:** "The Zoltan have offered a {ship} in thanks for the fleet's protection of their trade routes.
-  The Federation Home Planet accepted on your behalf."
+- **Zoltan:** "Your restraint among the Zoltan has not gone unnoticed. Where others would have fired first, you
+  chose peace, and the Zoltan Council has answered in kind: they have offered a {ship} to mark the peaceful
+  relations between our peoples. The Federation Home Planet has agreed to let you command the new ship."
 - **Mantis:** "Intelligence recovered a {ship} from a raiding party that thought better of it. The Engineering
   Corps has made her safe to fly. Mostly. She's yours."
 - **Slug:** "A Slug consortium sold us the plans for their {ship}. The price was suspiciously fair. Engineering has
