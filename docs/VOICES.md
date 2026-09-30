@@ -15,9 +15,9 @@ free."
 
 Playful, occasionally unprofessional. Likes ships. Impressed by newly earned ones, and sometimes confused by their
 systems ("How does a Zoltan shield work anyway?"). Teases the player ("Lucky Duck", "That will not do. That will not
-do at all."), but never cruelly: she's sorry when things go badly. Commission orders and the free command. Only talks
-about a ship as an order until she's commissioned: she hasn't seen her yet. Warm sign-offs ("Godspeed and come
-home.").
+do at all."), but never cruelly: she's sorry when things go badly. Commission orders, the free command, and the
+achievements about ships themselves (Full Arsenal, Tough Little Ship, Shields Holding). Only talks about a ship as an
+order until she's commissioned: she hasn't seen her yet. Warm sign-offs ("Godspeed and come home.").
 
 ## Office of Alien Affairs
 
@@ -31,8 +31,8 @@ fly. Mostly."). Augments and systems.
 
 ## Home Planet Quartermaster
 
-Gruff logistics; counts every scrap. Short sentences, supplies and numbers. Fighting words ("Not one more sector.",
-"Give the rebellion nothing.").
+Gruff logistics; counts every scrap. Short sentences, supplies and numbers, and salvage from the wreckage.
+Fighting words ("Not one more sector.", "Give the rebellion nothing.").
 
 ## Federation Fleet Admiral
 

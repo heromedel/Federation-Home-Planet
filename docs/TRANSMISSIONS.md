@@ -1,7 +1,8 @@
-# Transmissions: draft for review
+# Transmissions
 
-The transmissions inbox (roadmap item 6). Every message and reward below is a draft for heromedel to approve,
-change or deny. Nothing here is built yet.
+The transmissions inbox: the letters The Federation Home Planet's people send in Immersive Mode, and their rewards.
+The letters themselves live in `src/main/resources/homeplanet/resource/transmissions.txt`, the one place their text is
+kept; this page covers how they work, who sends them, and the rewards.
 
 ## How it works
 
@@ -10,165 +11,38 @@ change or deny. Nothing here is built yet.
 - **Immersive Notifications** (its own setting) turns the inbox on. Immersive Mode ticks it and locks it on.
   Without it, the free-ship rules still work silently ("(free)" in Commission).
 - **Rewards need Immersive Mode**, and count only for achievements earned after it was turned on.
-- Claimed items, supplies, crew and systems go to Spacedock Storage (systems to its stored-systems list). A free ship
+- Claimed items, supplies, crew and systems go to the Cargo Hold (systems to its stored-systems list). A free ship
   becomes a **commission order**, used up in Commission.
 - Checked at startup and on Refresh; each message is sent once.
 - `{rank}` is the player's rank (Commander, Captain, Commodore); `{ship}` is the ship's class name.
 
 ## Senders
 
-Titles, not names: **Federation Fleet Admiral** (promotions, the big news), **Home Planet Liaison** (most rewards),
-**Home Planet Quartermaster** (supplies and scrap), **Federation Engineering Corps** (augments, systems),
-**Office of Alien Affairs** (crew volunteers, alien technology), **Home Planet Shipyard** (commission orders).
-Each has a voice of their own: see `VOICES.md`.
+Titles, not names. Each has a voice of their own, described in `VOICES.md`: the **Home Planet Liaison** (the welcome,
+advice, and rewards for how the player fights), the **Home Planet Shipyard Comm. Officer** (the free command,
+commission orders, and ship achievements), the **Office of Alien Affairs** (alien ships, crew volunteers, alien
+technology), the **Federation Engineering Corps** (systems and technical feats), the **Home Planet Quartermaster**
+(supplies, scrap and salvage), the **Federation Fleet Admiral** (promotions and the great victories), **Federation
+Fleet Command** (the rescue after the final engagement) and **The Federation Home Planet** itself (the stipend and
+formal awards).
 
----
+heromedel's own letters are kept exactly as written: the welcome, "A new command", "Back from nothing", the first
+promotion, the stipend, "Master of Patience" and the Zoltan commission order.
 
 **Lore rule:** never imply the Rebel Flagship has been destroyed. The war goes on; its weapons come from stolen plans.
 
-## Standing messages
+## Which letter, when
 
-**Welcome to the Front** (Home Planet Liaison, when Immersive Mode is turned on; sent last, so it's on top of the inbox)
-
-> Commander,
->
-> I see you have volunteered to serve in the war against the rebellion.
->
-> The Federation Home Planet has approved you to begin building your fleet. Congratulations: your sign-on bonus of
-> 25 scrap is already waiting in The Home Planet Station's Cargo Hold.
->
-> Just remember: once you have your first ship and set out, you will need to reach another beacon with a station to
-> be able to trade with The Home Planet Station or your other ships.
->
-> Aside from your monthly stipend, you will have to earn your way or fund your fleet yourself. It's not cheap.
->
-> Expect a message from Home Planet Shipyard about your first ship. My recommendation: find a way to acquire 200
-> scrap, and when things start looking bleak out there, get your ship to a station and plot a New Journey. It's the
-> only way to keep the rebels off your tail.
->
-> The Fleet is stretched thin out there, but it looks after its own. Serve us well and you will be rewarded. Betray
-> us and die with the rebels.
->
-> Watch this channel. The Federation will be in contact.
->
-> \---
->
-> For the Federation, and all its worlds.
-> Until every beacon is free.
-> ~ Home Planet Liaison
-
-**The stipend** (The Federation Home Planet; every 4 sectors travelled; Delete, not Archive)
-
-> Automated message from The Federation Home Planet
->
-> Your monthly stipend of {amount} scrap has been transferred to The Home Planet Station. It is waiting for you in
-> Spacedock Storage.
->
-> Thank you for your service, {rank}.
-
-("Your stipend for the last 2 months of…" when several are due at once.)
-
-**A new command** (Home Planet Shipyard Comm. Officer: the free command, when the fleet or an Immersive career starts;
-{ship} is the free ship: a Kestrel Type A, any ship you choose, or a Federation relief ship)
-
-> {rank},
->
-> Our records show you without a ship at your command.
-> That will not do. That will not do at all.
->
-> The Federation Home Planet has authorized a new ship in your name: {ship}, at no cost to you. Lucky Duck, this
-> doesn't happen often. Take this order to Commission and she's yours.
->
-> Last guy I knew who needed a new ship, they demanded he hand over his entire cargo hold.
->
-> Godspeed and come home.
-> ~ Home Planet Shipyard Comm. Officer
-
-**Back from nothing** (Home Planet Shipyard Comm. Officer: the free command after a Report for Reassignment)
-
-> {rank},
->
-> Well, you're back. Guess you're an unlucky duck..
-> Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
->
-> The order is for {ship}. Take this order to Commission and she's yours.
->
-> And maybe don't lose this one?
->
-> Godspeed and come home.
-> ~ Home Planet Shipyard Comm. Officer
-
-In Immersive Mode the ship goes by everything of value surrendered (the Cargo Hold and the Junkyard's hulls), and a
-line after "Sorry to hear…" says so:
-
-- 1000 scrap's worth or more, any ship: "They must've liked what you turned in. You get your pick of the shipyard."
-- 500 or more, a Kestrel Type A: "What you turned in was enough for a proper Kestrel. Not bad."
-- Less, a relief ship: "I won't lie, what you turned in didn't buy much."
-
-**A ship unlocked in FTL: commission orders** (Home Planet Shipyard / Office of Alien Affairs; one per ship type,
-the layout letter filled in)
-
-- **Kestrel:** "The Kestrel's shipyards have turned out another pattern of their workhorse, the Type {layout}.
-  One is yours to commission, on the house."
-- **Engi:** "The Engi have shared the plans of their {ship}. They say it is 'to better the mutual efficiency of
-  allied peoples'. We say thank you, and the first one built from them is yours."
-- **Zoltan:** "Your restraint among the Zoltan has not gone unnoticed. Where others would have fired first, you
-  chose peace, and the Zoltan Council has answered in kind: they have offered a {ship} to mark the peaceful
-  relations between our peoples. The Federation Home Planet has agreed to let you command the new ship."
-- **Mantis:** "Intelligence recovered a {ship} from a raiding party that thought better of it. The Engineering
-  Corps has made her safe to fly. Mostly. She's yours."
-- **Slug:** "A Slug consortium sold us the plans for their {ship}. The price was suspiciously fair. Engineering has
-  checked her twice. Commission her free, and check her a third time."
-- **Rock:** "A Rock clan that has broken with the pirates sends a {ship} as a gesture of good faith. It is a first.
-  Treat her well."
-- **Stealth:** "Federation Intelligence has cleared the {ship} for your use. Officially, she does not exist.
-  Unofficially, enjoy her."
-- **Crystal:** "First contact has been made with the Crystal. They have allowed our engineers to study one of their
-  vessels, and the first {ship} built from that study is assigned to you."
-- **Lanius:** "A Lanius vessel was captured intact, a first for the fleet. Engineering has learned enough to build
-  a {ship}. Keep her away from your spare metal."
-
-## After a final victory
-
-Sent when a ship wins the last battle and the fleet's choice is a rescue or a reward (ROADMAP item 10); shown as a
-notice on the Space Dock instead when Transmissions are off. `{ship}` is her name, `{value}` her full value.
-
-- **rescue** (Federation Fleet Command, "Rescued from the Final Engagement"): the Rebel Flagship has withdrawn; she is
-  restored as she was moments before the final engagement; keep her, or accept the museum's offer of her full value.
-  The message has the buttons **Keep her** and **Accept the museum's offer**, until one is chosen.
-- **reward** (The Federation Home Planet, "In Recognition"): she could not be recovered; her full value is waiting in
-  Spacedock Storage.
-
-## Promotions (Federation Fleet Admiral)
-
-**Commander → Captain** (when the Federation Cruiser A unlocks). Based on heromedel's draft:
-
-> Priority message from the Federation Fleet Admiral:
->
-> Commander, your ongoing efforts against the rebellion have not gone unnoticed. It is my honor to inform you that
-> The Federation Home Planet has selected you for commendation and promotion.
->
-> From here on you will command your ships as a Federation Captain, with all the dignity and honor that comes with
-> it, including a Federation Cruiser, Type A, of your very own.
->
-> Keep up the good work and make excellent use of her. This class of ship is a real beauty.
->
-> Godspeed,
-> Your Fleet Admiral
-
-**Captain → Commodore** (when the Federation Cruiser C unlocks)
-
-> Priority message from the Federation Fleet Admiral:
->
-> Captain, the fleet has taken notice again. Few officers hold the line the way you have. The Federation Home Planet
-> has approved your promotion to Commodore, effective immediately.
->
-> A Commodore needs a ship worthy of the rank. A Federation Cruiser, Type C, is waiting for you at the shipyard.
->
-> Godspeed, Commodore.
-> Your Fleet Admiral
-
----
+- **welcome**: Immersive Mode turned on (sent last, so it's on top of the inbox).
+- **empty**: the free command, when the fleet or an Immersive career starts. **reassigned**: the free command after a
+  Report for Reassignment; in Immersive Mode **reassigned:any / :kestrel / :relief**, by everything of value
+  surrendered (1000 scrap or more, any ship; 500 or more, a Kestrel Type A; less, a relief ship).
+- **order:<ship>**: a ship unlocked in FTL (with free unlock ships on), one per ship type.
+- **promo:1 / promo:2**: promoted to Captain (the Federation Cruiser A unlocks) and to Commodore (the C).
+- **stipend**: every 4 sectors travelled.
+- **ach:<achievement>**: an FTL achievement earned after Immersive Mode began.
+- **rescue / reward**: after a final victory, when the fleet's choice is a rescue or a reward (shown as a notice on
+  the Space Dock instead when Transmissions are off).
 
 ## Achievement rewards
 
@@ -247,210 +121,3 @@ Approved by heromedel, with the exact FTL item names checked in ftl.dat. **Notes
 4. **Ancestry:** FTL's crystal weapons are Crystal Burst I/II and Heavy Crystal I/II. I picked Heavy Crystal Mark I.
 5. **Loss of Cabin Pressure:** there is no Breach Missile Mark II. There's Breach Missiles, and Breach Bomb Mark I
    and II. I picked the Breach Bomb Mark II.
-
----
-
-## Achievement messages
-
-Each opens with the player's rank. Signatures as listed.
-
-**Just Getting Started** (Quartermaster)
-> Word from the frontier is that you've made sector 5 in one piece. Most don't. A little something for the road:
-> scrap and fuel, waiting at The Home Planet Station.
-
-**Federation Base in Range** (Quartermaster)
-> You've carried the fight into the last sectors. The struggle against the rebellion is far from over, and the fleet
-> needs you supplied: scrap, missiles, drone parts and fuel, on us.
-
-**Federation Victory (Easy)** (Federation Fleet Admiral)
-> A victory for the Federation, and every station from here to the Home Planet is celebrating. The war goes on, but
-> the rebellion will remember your name. Your share of the victory purse is waiting at The Home Planet Station.
-
-**Federation Victory (Normal)** (Federation Fleet Admiral)
-> That was no training exercise. You faced the rebellion at its strongest and drove it back. The war is far from
-> over, but The Federation Home Planet has authorized a victory purse worthy of the deed.
-
-**Your Own Fleet** (Federation Fleet Admiral)
-> Every ship of the line has sailed under your command. That is a fleet, {rank}, and fleets need funding.
-> The Federation Home Planet has allocated a fleet budget in your name.
-
-**Rule Ten: Greed is Eternal** (Home Planet Liaison)
-> Ten thousand scrap through your hands. The auditors are impressed, and a little worried. Take this Scrap Recovery
-> Arm. And since you clearly know what to do with scrap, here is something worth spending it on: Federation
-> Intelligence has stolen the plans for the Rebel Flagship's weapons, and the Admiralty has cleared you to build them
-> into the artillery of your own designs.
-
-**Warlord** (Federation Fleet Admiral)
-> A thousand enemy ships. There are rebel captains who change course at the sound of your name. For a hunter who
-> never stops moving: an Adv. FTL Navigation and an FTL Recharge Booster.
-
-**I don't need no stinkin' upgrades!** (Federation Engineering Corps)
-> Sector 5 on factory settings. Engineering wants to know how. Since you clearly don't need upgrades, here's
-> something that isn't one: a Cloaking system, yours to install.
-
-**Coming in for my Pacifism run!** (Home Planet Liaison)
-> Not a single shot fired, and you still made sector 5. Some admirals call that cowardice. The ones who've fought
-> the rebellion call it survival. An FTL Recharge Booster, for leaving even faster.
-
-**On a Wing and a Prayer** (Federation Engineering Corps)
-> You flew to sector 5 without a single repair. Engineering is fascinated, and horrified. Please accept this Repair
-> Arm. Please use it.
-
-**Ballistophobia** (Federation Engineering Corps)
-> All the way to sector 8 without a missile. A clean-shooting captain needs power for the guns: a Backup Battery,
-> to keep your weapons firing when the reactor can't.
-
-**Technophobia** (Federation Engineering Corps)
-> No drones for you, and apparently none for anyone else either. This Defense Scrambler will make sure enemy
-> defense drones don't bother you.
-
-**Living off the Land** (Home Planet Quartermaster)
-> Sector 8 without spending a scrap at a store. The Quartermaster salutes you. For a ship that fixes herself:
-> a Repair Arm, which patches the hull every time you collect scrap.
-
-**No Redshirts Here** (Home Planet Liaison)
-> Every crew member who set out with you reached sector 8. That is rarer than it should be. The Federation Home
-> Planet awards you a Backup DNA Bank, so it stays that way.
-
-**Some people just like to watch ships burn** (Federation Engineering Corps)
-> We saw the footage. Every square. Impressive and alarming. Since you know exactly how that's done, here's
-> Fire Suppression, so nobody ever does it to you.
-
-**Astronomically Low Odds** (Federation Engineering Corps)
-> Five shots. Five hits. Fully powered engines. Engineering has studied the logs and concluded that you simply
-> cannot dodge. So stop trying: here's a Shield Charge Booster. Let the shields do the work.
-
-**They never saw it coming** (Home Planet Liaison)
-> One volley, one ship, gone before it could fire. Beautiful. For the battles that don't end so quickly: a Chain
-> Vulcan.
-
-**BOARDING OBJECTIVE SUCCESSFUL** (Federation Engineering Corps)
-> One boarding drone, four enemy crew. The enemy will be trying the same on you. An Anti-Personnel Drone, to
-> return the favor.
-
-**Trustworthy Auto-Pilot** (Home Planet Liaison)
-> Your entire crew aboard the enemy ship, and your own ship flying herself. Bold. For crews who like to take
-> risks: a Clone Bay, so they come back when it goes wrong.
-
-**Slice and Dice** (Federation Engineering Corps)
-> Every room in five seconds. Our beam specialists have printed the recording and hung it on the wall. A Weapon
-> Pre-igniter, so your beams are ready the moment you arrive.
-
-**Victory through Asphyxiation** (Home Planet Liaison)
-> An enemy crew without air. Effective, if grim. Emergency Respirators, so it never happens to yours.
-
-**The United Federation** (Office of Alien Affairs)
-> Six peoples aboard one Kestrel, working as one. That is what the Federation is for. A Clone Bay, so none of them
-> is ever lost for good.
-
-**Full Arsenal** (Federation Engineering Corps)
-> Eleven systems in one Kestrel. We didn't think she had the room. Titanium System Casing, to protect all of them.
-
-**Tough Little Ship** (Federation Engineering Corps)
-> One hull point left, and you brought her all the way back. She's a tough little ship, and so are you. Rock
-> Plating, so next time she doesn't get that close.
-
-**Shields Holding** (Office of Alien Affairs)
-> The enemy never got through the Zoltan Shield. The Zoltan are pleased; you used it as intended. A Shield Charge
-> Booster, with their compliments.
-
-**Givin' her all she's got, Captain!** (Federation Engineering Corps)
-> Twenty-nine power in systems at once. The reactor must have been singing. A Battery Charger, for when she needs
-> even more.
-
-**Manpower** (Office of Alien Affairs)
-> Sector 5 without a single reactor upgrade: the Zoltan crew powered the ship themselves. One of them has asked to
-> serve with you. They're waiting in Spacedock Storage.
-
-**Bird of Prey** (Federation Intelligence, via Home Planet Liaison)
-> A full-health ship destroyed before your cloak dropped. Intelligence would like to know your secret. For now,
-> a Weapon Pre-igniter, so the strike comes even sooner.
-
-**Phase Shift** (Federation Intelligence, via Home Planet Liaison)
-> Nine points of damage, and none of it landed. An FTL Jammer, so the ones you're hunting can't run either.
-
-**Tactical Approach** (Home Planet Quartermaster)
-> Sector 8 without flying into a single storm, sun or asteroid field. Responsible flying saves the fleet a fortune
-> in repairs. 500 scrap, from the money you saved us.
-
-**Robotic Warfare** (Office of Alien Affairs)
-> Three drones working at once. The Engi approve. A Drone Reactor Booster, with their compliments.
-
-**I hardly lifted a finger** (Office of Alien Affairs)
-> An enemy ship destroyed by drones alone. The Engi call it "elegant". A Drone Recovery Arm, so your drones come
-> home too.
-
-**The guns... They've stopped** (Office of Alien Affairs)
-> Four enemy systems ioned at once. The Engi have shared their Reverse Ion Field so the same never happens to you.
-
-**Is it warm in here?** (Office of Alien Affairs)
-> Your Rock crew fought a burning enemy and won. They didn't even notice the fire. The rest of your crew might.
-> Fire Suppression.
-
-**Defense Drones Don't Do D'anything!** (Federation Engineering Corps)
-> Missiles only, through a defense drone. The drone did not, in fact, do anything. A Defense Scrambler and six
-> missiles, to keep proving it.
-
-**Ancestry** (Office of Alien Affairs)
-> You found the Crystal's hidden sector. Your Rock crew won't stop talking about it. The Crystal, surprisingly,
-> sent a gift: a Heavy Crystal Mark I.
-
-**Take no prisoners!** (Office of Alien Affairs)
-> Twenty enemy crews by sector 6. Even the Mantis are impressed, and they're never impressed. Mantis Pheromones,
-> to keep your crew moving.
-
-**Avast, ye scurvy dogs!** (Office of Alien Affairs)
-> Five enemy crew, no hull damage, no losses. A Mantis warrior heard about it and wants in. They love this sort of
-> thing. They're waiting in Spacedock Storage.
-
-**Battle Royale** (Office of Alien Affairs)
-> One of yours against one of theirs, and yours walked away. Too close. The Slugs have "generously" offered an
-> Anti-Bio Beam, so it's never that close again. We checked it for tricks. Twice.
-
-**We're in Position!** (Office of Alien Affairs)
-> Every room of the enemy ship seen without sensors. The Slugs keep their secrets, but they did sell us a
-> Lifeform Scanner.
-
-**Home Sweet Home** (Office of Alien Affairs)
-> Thirty nebulas before sector 8. The Slugs would feel right at home. Slug Repair Gel, to keep the breaches sealed.
-
-**Disintegration Ray** (Office of Alien Affairs)
-> Three enemy crew, one shot. The Slugs are delighted, and sent another Anti-Bio Beam.
-
-**Master of Patience** (Home Planet Liaison; heromedel's draft)
-> Word got around about your recent victory using only the Artillery Beam, without taking a scratch. The Admirals
-> are impressed. They have negotiated with the Zoltan and acquired a Zoltan Shield for your ship: more time to
-> charge the artillery.
->
-> Make good use of it.
-
-**Diplomatic Immunity** (Office of Alien Affairs)
-> Four delicate situations handled with tact by sector 5. The Diplomatic Corps has assigned one of its officers to
-> serve with you. They're waiting in Spacedock Storage.
-
-**Artillery Mastery** (Federation Engineering Corps)
-> Sector 5 without upgrading your weapons: you trusted the artillery, and it carried you. A Weapon Pre-igniter, so
-> it fires the moment you arrive.
-
-**Sweet Revenge** (Office of Alien Affairs)
-> Destroyed by its own damage, turned back on it. Poetic. Titanium System Casing, hardened on the Crystal pattern.
-
-**No Escape** (Office of Alien Affairs)
-> Four enemy crew locked in one room. Nowhere to run. The Crystal have sent a Crystal Lockdown Bomb, so you can do it
-> again.
-
-**Clash of the Titans** (Home Planet Liaison)
-> Ten Rock ships broken up by the Crystal Cruiser. The salvage crews found good Rock Plating in the wreckage. It's
-> yours.
-
-**Advanced Mastery** (Federation Engineering Corps)
-> Hacking, Mind Control and the Battery, all at once. The Lanius would be proud, if they were ever proud. Hacking
-> Stun, to make the combination even nastier.
-
-**Scrap Hoarder** (Home Planet Quartermaster)
-> Six hundred scrap aboard, and not a scrap spent. The Quartermaster respects a saver. A Repair Arm and a Scrap
-> Recovery Arm, to save more and find more.
-
-**Loss of Cabin Pressure** (Office of Alien Affairs)
-> Sector 8 with the air nearly gone. The Lanius manage; the rest of us marvel. A Breach Bomb Mark II, so your
-> enemies can try breathing space too.

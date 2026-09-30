@@ -78,8 +78,19 @@ public class TransT { public static void main(String[] a) throws Exception {
    }
   }
   Setup.chk("T: every achievement has a message " + missing, missing.isEmpty());
-  Setup.chk("T: every reward names something FTL has " + bad, bad.isEmpty());
+    Setup.chk("T: every reward names something FTL has " + bad, bad.isEmpty());
+  // every letter: a sender, a subject and text; the lore held (the rebellion lowercase, the Rebel Flagship never destroyed)
+  List<String> loose = new ArrayList<String>();
+  for (Map.Entry<?, ?> e : ((Map<?, ?>) t.invoke(null)).entrySet()) {
+   Object tp = e.getValue();
+   String from = (String) field(tp, "from"), subject = (String) field(tp, "subject"), body = field(tp, "body").toString();
+   if (from.isEmpty() || subject.isEmpty() || body.trim().isEmpty()) loose.add(e.getKey() + ": missing sender, subject or text");
+   if (body.contains("Rebellion") || body.contains("Rebels")) loose.add(e.getKey() + ": the rebellion capitalised");
+   if (java.util.regex.Pattern.compile("Flagship[^.\\n]*(destroyed|killed|wrecked|blown up)").matcher(body).find()) loose.add(e.getKey() + ": the Rebel Flagship destroyed");
+  }
+  Setup.chk("T: every letter has a sender, subject and text, and keeps the lore " + loose, loose.isEmpty());
  }
+  static Object field(Object o, String name) throws Exception { java.lang.reflect.Field f = o.getClass().getDeclaredField(name); f.setAccessible(true); return f.get(o); }
  static Transmissions.Message find(String key) { for (Transmissions.Message m : Transmissions.load()) if (m.key.startsWith(key)) return m; return null; }
  static void flow(File saves) throws Exception {
   int n = Transmissions.check();
