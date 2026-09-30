@@ -202,7 +202,7 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 			helpPane.setEditable(false);
 			helpPane.setBorder(null);
 			helpPane.putClientProperty(javax.swing.JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE); // the window's font, not HTML's
-			helpPane.setFont(status.getFont().deriveFont(13f));
+			helpPane.setFont(MenuTheme.TEXT_FONT);
 			JScrollPane sp = new JScrollPane(helpPane, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 			sp.setPreferredSize(new Dimension(600, 560));
 			sp.getVerticalScrollBar().setUnitIncrement(16);

@@ -138,7 +138,7 @@ public class SettingsDialog extends JDialog {
 
 		heading(body, c, "Launching");
 		body.add(steamBox, next(c));
-		JLabel cloud = new JLabel("<html><div style='width:560px; color:#a05a00'>Steam version: turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties, General). "
+		JLabel cloud = new JLabel("<html><div style='width:560px; color:" + MenuTheme.HTML_ORANGE + "'>Steam version: turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties, General). "
 				+ "With it on, Steam can bring back a docked ship as a copy, or an old FTL profile.</div></html>");
 		cloud.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
 		body.add(cloud, next(c));
@@ -188,7 +188,8 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Rules");
 		rules.addTo(body, c);
 
-		victoryHeading.setFont(victoryHeading.getFont().deriveFont(Font.BOLD));
+		victoryHeading.setFont(MenuTheme.HEADING_FONT);
+		victoryHeading.setForeground(MenuTheme.GOLD);
 		victoryHeading.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
 		body.add(victoryHeading, next(c));
 		javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
@@ -202,7 +203,7 @@ public class SettingsDialog extends JDialog {
 		rules.afterFleetChange = new Runnable() { public void run() { refreshVictory(); } };
 		victoryButtons[1].setToolTipText("She comes back as she was moments before the final engagement, ready for a new journey; or take her full value for the museum");
 		victoryButtons[2].setToolTipText("Her full value, as the shipyard would charge for her, goes to the Cargo Hold");
-		JLabel victoryNote = new JLabel("<html><div style='width:520px'><font color='#777777'>For a rescue or a reward, The Home Planet Station must be open while you play: "
+		JLabel victoryNote = new JLabel("<html><div style='width:520px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>For a rescue or a reward, The Home Planet Station must be open while you play: "
 				+ "it keeps her as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
 		victoryNote.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		body.add(victoryNote, next(c));
@@ -412,7 +413,7 @@ public class SettingsDialog extends JDialog {
 		ta.setLineWrap(true);
 		ta.setWrapStyleWord(true);
 		ta.setOpaque(false);
-		ta.setFont(new JLabel().getFont().deriveFont(13f));
+		ta.setFont(MenuTheme.TEXT_FONT);
 		JOptionPane.showMessageDialog(this, ta, "Lore", JOptionPane.PLAIN_MESSAGE);
 	}
 
@@ -449,7 +450,8 @@ public class SettingsDialog extends JDialog {
 
 	static void heading(JPanel body, GridBagConstraints c, String text) {
 		JLabel h = new JLabel(text);
-		h.setFont(h.getFont().deriveFont(Font.BOLD));
+		h.setFont(MenuTheme.HEADING_FONT);
+		h.setForeground(MenuTheme.GOLD);
 		if (c.gridy > 0) h.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
 		body.add(h, next(c));
 	}

@@ -20,7 +20,6 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
@@ -34,7 +33,8 @@ public class InboxDialog extends JDialog {
 	private final SpaceDockUI dock;
 	private final DefaultListModel<Transmissions.Message> model = new DefaultListModel<Transmissions.Message>();
 	private final JList<Transmissions.Message> list = new JList<Transmissions.Message>(model);
-	private final JTextArea text = new JTextArea();
+	/** The transmission: its subject as a gold title, who sent it and when, then the message, with a little air between lines. */
+	private final javax.swing.JTextPane text = new javax.swing.JTextPane();
 	private final JLabel rewardLabel = new JLabel(" ");
 	private final JButton claim = new JButton("Claim");
 	private final JButton commission = new JButton("Commission...");
@@ -62,7 +62,7 @@ public class InboxDialog extends JDialog {
 				Transmissions.Message m = (Transmissions.Message) v;
 				String mark = m.hasReward() && !m.claimed ? "  [reward]" : Transmissions.isRescue(m) && !m.claimed ? "  [your decision]" : "";
 				super.getListCellRendererComponent(l, "<html>" + (m.read ? "" : "<b>") + homeplanet.parser.XmlText.text(m.subject) + (m.read ? "" : "</b>")
-						+ "<br><font color='#888888'>" + homeplanet.parser.XmlText.text(m.from) + " · " + m.date + mark + "</font></html>", i, sel, focus);
+						+ "<br><font color='" + MenuTheme.HTML_GREY_GREEN + "'>" + homeplanet.parser.XmlText.text(m.from) + " · " + m.date + mark + "</font></html>", i, sel, focus);
 				setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
 				return this;
 			}
@@ -74,9 +74,7 @@ public class InboxDialog extends JDialog {
 		ls.setPreferredSize(new Dimension(360, 420));
 
 		text.setEditable(false);
-		text.setLineWrap(true);
-		text.setWrapStyleWord(true);
-		text.setFont(new Font(Font.SERIF, Font.PLAIN, 14));
+		text.setFont(MenuTheme.TEXT_FONT);
 		text.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
 		JScrollPane ts = new JScrollPane(text);
 		ts.setPreferredSize(new Dimension(520, 420));
@@ -137,7 +135,7 @@ public class InboxDialog extends JDialog {
 		for (Transmissions.Message m : all) if (m.archived == arch) model.addElement(m);
 		if (!model.isEmpty()) list.setSelectedIndex(0);
 		else show(null);
-		if (model.isEmpty()) text.setText(arch ? "Nothing archived. Archive a transmission to keep it here." : "No transmissions. The Federation Home Planet will be in touch.");
+		if (model.isEmpty()) message(null, null, arch ? "Nothing archived. Archive a transmission to keep it here." : "No transmissions. The Federation Home Planet will be in touch.");
 	}
 	private void archiveSelected() {
 		Transmissions.Message m = list.getSelectedValue();
@@ -151,9 +149,37 @@ public class InboxDialog extends JDialog {
 		fill();
 	}
 
+	/** Shows a transmission (a title and a line of who and when, if given, then the text). */
+	private void message(String title, String meta, String body) {
+		javax.swing.text.StyledDocument doc = text.getStyledDocument();
+		try {
+			doc.remove(0, doc.getLength());
+			if (title != null) {
+				javax.swing.text.SimpleAttributeSet t = new javax.swing.text.SimpleAttributeSet();
+				javax.swing.text.StyleConstants.setFontFamily(t, Font.DIALOG);
+				javax.swing.text.StyleConstants.setFontSize(t, 16);
+				javax.swing.text.StyleConstants.setBold(t, true);
+				javax.swing.text.StyleConstants.setForeground(t, MenuTheme.GOLD);
+				doc.insertString(doc.getLength(), title + "\n", t);
+			}
+			if (meta != null) {
+				javax.swing.text.SimpleAttributeSet a = new javax.swing.text.SimpleAttributeSet();
+				javax.swing.text.StyleConstants.setForeground(a, MenuTheme.GREY_GREEN);
+				doc.insertString(doc.getLength(), meta + "\n\n", a);
+			}
+			doc.insertString(doc.getLength(), body, null);
+			javax.swing.text.SimpleAttributeSet p = new javax.swing.text.SimpleAttributeSet();
+			javax.swing.text.StyleConstants.setLineSpacing(p, 0.2f);
+			doc.setParagraphAttributes(0, doc.getLength(), p, false);
+		} catch (javax.swing.text.BadLocationException e) {
+			text.setText(body); // not expected: the plain text, at least
+		}
+		text.setCaretPosition(0);
+	}
+
 	private void show(Transmissions.Message m) {
 		if (m == null) {
-			text.setText("");
+			message(null, null, "");
 			claim.setVisible(false);
 			commission.setVisible(false);
 			keep.setVisible(false);
@@ -162,8 +188,7 @@ public class InboxDialog extends JDialog {
 			rewardLabel.setText(" ");
 			return;
 		}
-		text.setText("From: " + m.from + "\nReceived: " + m.date + "\nSubject: " + m.subject + "\n\n" + m.body);
-		text.setCaretPosition(0);
+		message(m.subject, m.from + "  \u00b7  " + m.date, m.body);
 		boolean canClaim = m.hasReward() && !m.claimed;
 		claim.setVisible(m.hasReward());
 		claim.setEnabled(canClaim);

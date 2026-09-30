@@ -38,7 +38,7 @@ import homeplanet.vault.Vault;
  * Confirm is on the last page only; Cancel on every one. The caller does the switching.
  */
 final class ImmersiveBriefing extends JDialog {
-	static final Color HEAD = new Color(255, 170, 90);
+	static final Color HEAD = MenuTheme.GOLD;
 	private static final int TEXT_W = 560;
 	private static final String[] TITLES = {"What changes", "Your career", "Before you begin"};
 
@@ -67,7 +67,7 @@ final class ImmersiveBriefing extends JDialog {
 
 		JPanel top = new JPanel(new BorderLayout());
 		top.setBorder(BorderFactory.createEmptyBorder(12, 16, 4, 16));
-		pageTitle.setFont(pageTitle.getFont().deriveFont(Font.BOLD, pageTitle.getFont().getSize2D() + 5f));
+		pageTitle.setFont(new Font(Font.DIALOG, Font.BOLD, 16));
 		pageTitle.setForeground(HEAD);
 		top.add(pageTitle, BorderLayout.WEST);
 		top.add(pageCount, BorderLayout.EAST);

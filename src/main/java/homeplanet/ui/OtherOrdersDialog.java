@@ -70,7 +70,7 @@ public final class OtherOrdersDialog extends JDialog {
 			buttons.add(b);
 			widest = Math.max(widest, b.getPreferredSize().width);
 			String text = XmlText.text(o.what);
-			if (o.whyNot != null) text += "<br><font color='#b25a00'>Not now: " + XmlText.text(o.whyNot) + "</font>";
+			if (o.whyNot != null) text += "<br><font color='" + MenuTheme.HTML_ORANGE + "'>Not now: " + XmlText.text(o.whyNot) + "</font>";
 			JLabel l = new JLabel("<html><div style='width:360px'>" + text + "</div></html>");
 			if (o.whyNot != null) l.setForeground(Color.GRAY);
 			c.gridx = 0; c.insets = new Insets(0, 0, 12, 12);

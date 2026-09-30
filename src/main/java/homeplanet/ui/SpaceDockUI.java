@@ -214,7 +214,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		t.setWrapStyleWord(true);
 		t.setOpaque(false);
 		t.setColumns(52);
-		t.setFont(new java.awt.Font(java.awt.Font.SERIF, java.awt.Font.PLAIN, 14));
+		t.setFont(MenuTheme.TEXT_FONT);
 		t.setSize(new Dimension(520, 10)); // wraps to this width before the dialog measures it
 		if (n.offer == null) {
 			JOptionPane.showMessageDialog(null, t, n.title, JOptionPane.INFORMATION_MESSAGE);
@@ -385,7 +385,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				g.dispose();
 			}
 		};
-		l.setFont(bold ? l.getFont().deriveFont(java.awt.Font.BOLD) : new java.awt.Font(java.awt.Font.SANS_SERIF, java.awt.Font.PLAIN, 11));
+		l.setFont(bold ? l.getFont().deriveFont(java.awt.Font.BOLD) : MenuTheme.TEXT_FONT);
 		l.setForeground(color);
 		l.setAlignmentX(LEFT_ALIGNMENT);
 		return l;
@@ -430,7 +430,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	private static String beacons(Ship s) {
 		SavedGameState gs = s.save();
-		return gs == null ? "save can't be read" : gs.getTotalBeaconsExplored() + " beacons explored";
+		return gs == null ? "save can't be read" : gs.getTotalBeaconsExplored() + (gs.getTotalBeaconsExplored() == 1 ? " beacon explored" : " beacons explored");
 	}
 	private static boolean offStation(Ship s) {
 		return s.save() != null && !Vault.get().mayTrade(s);
@@ -442,9 +442,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.setOpaque(false);
 		p.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 0, 14, 0));
 		p.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, CELL_W - 12));
-		p.add(smallLabel(beacons(ship0), new Color(200, 210, 205)));
+		p.add(smallLabel(beacons(ship0), MenuTheme.GREY_GREEN));
 		boolean off = offStation(ship0);
-		JLabel away = smallLabel(off ? "Not within range of a station" : " ", new Color(255, 170, 90));
+		JLabel away = smallLabel(off ? "Not within range of a station" : " ", MenuTheme.ORANGE);
 		if (off) away.setToolTipText("She must reach a beacon with a station before she can trade.");
 		p.add(away);
 		p.add(Box.createRigidArea(new Dimension(1, 4)));
@@ -466,9 +466,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		head.add(withInbox(new FtlButton.Header("At your command", BERTH_W - inboxW), inboxBtn != null));
 		head.add(Box.createRigidArea(new Dimension(1, 6)));
 		head.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, BERTH_W));
-		head.add(smallLabel(beacons(ship0), new Color(200, 210, 205)));
+		head.add(smallLabel(beacons(ship0), MenuTheme.GREY_GREEN));
 		boolean off = offStation(ship0);
-		if (off) head.add(smallLabel("Not within range of a station", new Color(255, 170, 90)));
+		if (off) head.add(smallLabel("Not within range of a station", MenuTheme.ORANGE));
 		head.setSize(head.getPreferredSize());
 		p.add(head);
 		p.add(Box.createRigidArea(new Dimension(1, BERTH_PIC_Y)));
@@ -495,7 +495,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
 		p.setOpaque(false);
 		SavedGameState g = ship0.save();
-		Color k = new Color(170, 185, 180), v = Color.white;
+		Color k = MenuTheme.GREY_GREEN, v = MenuTheme.WHITE;
 		if (g == null) {
 			statRow(p, "Save", "unreadable", k, v);
 			p.setSize(p.getPreferredSize());
@@ -514,6 +514,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.setSize(p.getPreferredSize());
 		return p;
 	}
+	/** A stat's label to its value, and one stat to the next (the column must still fit beside her picture). */
+	private static final int STAT_GAP = 3, STAT_ROW_GAP = 3;
 	/** Two stats side by side on one row (the column must fit beside her picture). */
 	private void statPair(JPanel p, String key1, String value1, String key2, String value2, Color k, Color v) {
 		JPanel row = new JPanel(new java.awt.GridLayout(1, 2, 12, 0));
@@ -524,18 +526,20 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			cell.setLayout(new BoxLayout(cell, BoxLayout.Y_AXIS));
 			cell.setOpaque(false);
 			cell.add(smallLabel(kv[0], k));
+			cell.add(Box.createRigidArea(new Dimension(1, STAT_GAP)));
 			cell.add(new FtlButton.Text(kv[1], FtlFont.BODY, v, Math.min(STATS_W / 2, FtlFont.BODY.render(kv[1], v).getWidth() + 2)));
 			row.add(cell);
 		}
 		row.setMaximumSize(new Dimension(STATS_W, row.getPreferredSize().height));
 		p.add(row);
-		p.add(Box.createRigidArea(new Dimension(1, 5)));
+		p.add(Box.createRigidArea(new Dimension(1, STAT_ROW_GAP)));
 	}
 	private void statRow(JPanel p, String key, String value, Color k, Color v) {
 		p.add(smallLabel(key, k));
+		p.add(Box.createRigidArea(new Dimension(1, STAT_GAP)));
 		int w = Math.min(STATS_W, FtlFont.BODY.render(value, v).getWidth() + 2); // one line, cut with "..." only if very long
 		p.add(new FtlButton.Text(value, FtlFont.BODY, v, w));
-		p.add(Box.createRigidArea(new Dimension(1, 5)));
+		p.add(Box.createRigidArea(new Dimension(1, STAT_ROW_GAP)));
 	}
 
 	// ---- actions ----

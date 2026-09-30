@@ -99,8 +99,8 @@ public final class BuildDialog extends JDialog {
 		top.add(report, BorderLayout.CENTER);
 
 		StringBuilder html = new StringBuilder("<html><body style='width:560px'>");
-		if (!fix.isEmpty()) { html.append("<p><b style='color:#c04040'>To fix (stops the build)</b><ul>"); for (String x : fix) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
-		if (!notes.isEmpty()) { html.append("<p><b style='color:#b08a00'>Notes (her choice, not The Station's)</b><ul>"); for (String x : notes) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
+		if (!fix.isEmpty()) { html.append("<p><b style='color:" + MenuTheme.HTML_RED + "'>To fix (stops the build)</b><ul>"); for (String x : fix) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
+		if (!notes.isEmpty()) { html.append("<p><b style='color:" + MenuTheme.HTML_GOLD + "'>Notes (her choice, not The Station's)</b><ul>"); for (String x : notes) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
 		html.append("<p><b>What Build does</b><ul>"); for (String x : does) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p></body></html>");
 		JLabel lines = new JLabel(html.toString());
 		lines.setVerticalAlignment(JLabel.TOP);

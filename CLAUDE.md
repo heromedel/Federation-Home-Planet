@@ -11,7 +11,7 @@ it does and CREDITS.md for where the code came from.
   them as one batch when heromedel asks; don't make a version or a commit for each small change.
 - Never commit or push to `main`. Work only on your own session branch; heromedel decides what goes into
   `main` (a pull request or their own merge).
-- heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build - FHP.bat`.
+- heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build The Federation Home Planet Station.bat`.
   Say what to test and how, in plain steps.
 - `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
 - The version (4B.nn) goes up by one only with a commit: `<version>` in `pom.xml` and
@@ -27,7 +27,7 @@ it does and CREDITS.md for where the code came from.
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
 - `Tools and Harness/harness2/`: the regression harness (Claude's test bench, not a user tool).
 - `Tools and Harness/hw2fhp-converter/`: the FTL Homeworld to FHP converter (a separate jar) and its tests.
-- `Build - FHP.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
+- `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
   `Current Build\`).
 
 ## Build
@@ -55,6 +55,8 @@ a BufferedImage.
 
 ## Voice (player-facing text)
 
+- Immersion and understandability matter more than identical phrasing: messages may vary their wording for flavour.
+- Fonts and colours: see `docs/STYLE.md` (a guide, not law).
 - **The Home Planet Station** is the base: it builds, sends, searches, stores, and has systems, an interface,
   databases and communications that can fail ("The Home Planet Station could not…"). **The Federation Home
   Planet** is the authority: it approves, commissions, draws up blueprints. "The" is capitalized as part of

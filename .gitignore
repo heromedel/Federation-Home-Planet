@@ -8,7 +8,7 @@ logs/
 # harness scratch
 Tools and Harness/harness2/*.ftl
 Tools and Harness/harness2/work/
-# downloaded by Build - FHP.bat
+# downloaded by Build The Federation Home Planet Station.bat
 tools/
-# the jar is built by Build - FHP.bat, not tracked
+# the jar is built by Build The Federation Home Planet Station.bat, not tracked
 Current Build/*.jar

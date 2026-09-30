@@ -49,7 +49,7 @@ import homeplanet.vault.Vault;
  * voyage log (events in FTL, save by save); and her entries in history.log.
  */
 public class ShipRecordsDialog extends JDialog {
-	private static final Color ROW = new Color(36, 46, 56), GOLD = FtlButton.GOLD, TXT = MenuTheme.TEXT, DIM = MenuTheme.DIM;
+	private static final Color ROW = new Color(36, 46, 56), GOLD = MenuTheme.GOLD, TXT = MenuTheme.WHITE, DIM = MenuTheme.GREY_GREEN;
 	private final Ship ship;
 	private final List<File> versions = new ArrayList<File>();
 	private final JList<Version> list;
@@ -95,7 +95,7 @@ public class ShipRecordsDialog extends JDialog {
 		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		list.setCellRenderer(new VersionRow());
 		list.setBackground(RecordsLog.BG);
-		list.setVisibleRowCount(Math.max(3, Math.min(5, versions.size())));
+		list.setVisibleRowCount(Math.max(3, Math.min(Vault.KEEP, versions.size())));
 		list.addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent e) { restore.setEnabled(list.getSelectedIndex() >= 0 && !HomePlanet.immersiveMode); }
 		});
@@ -106,57 +106,58 @@ public class ShipRecordsDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) { restoreSelected(); }
 		});
 
-		JPanel top = new JPanel(new BorderLayout(0, 8));
-		top.setOpaque(false);
-		JPanel heads = new JPanel(new BorderLayout(0, 6));
-		heads.setOpaque(false);
-		heads.add(header(ship), BorderLayout.NORTH);
-		JPanel kept = new JPanel(new BorderLayout(0, 2));
-		kept.setOpaque(false);
-		kept.add(text("KEPT VERSIONS", FtlFont.MENU, GOLD), BorderLayout.NORTH);
-		JPanel intro = new JPanel(new BorderLayout(0, 2));
-		intro.setOpaque(false);
-		intro.add(text("The Home Planet Station keeps her last " + Vault.KEEP + " versions: the one before each change the station makes,", FtlFont.BODY, DIM), BorderLayout.NORTH);
-		intro.add(text("and the one she had when she was boarded. Newest first.", FtlFont.BODY, DIM), BorderLayout.SOUTH);
-		kept.add(intro, BorderLayout.SOUTH);
-		heads.add(kept, BorderLayout.SOUTH);
-		top.add(heads, BorderLayout.NORTH);
+		// the Kept versions page: what they are, the list, and Restore
+		JPanel kept = new JPanel(new BorderLayout(0, 10));
+		kept.setBackground(RecordsLog.BG);
+		kept.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, GOLD), BorderFactory.createEmptyBorder(12, 14, 12, 14)));
+		kept.add(text("The Home Planet Station keeps her last " + Vault.KEEP + " versions: the one before each change the station makes, "
+				+ "and the one she had when she was boarded. Newest first.", DIM), BorderLayout.NORTH);
 		JScrollPane vs = new JScrollPane(list);
 		vs.getViewport().setBackground(RecordsLog.BG);
 		vs.setBorder(BorderFactory.createLineBorder(RecordsLog.LINE));
-		top.add(versions.isEmpty() ? text("No earlier versions of her are kept yet.", FtlFont.BODY, DIM) : vs, BorderLayout.CENTER);
+		kept.add(versions.isEmpty() ? text("No earlier versions of her are kept yet.", DIM) : vs, BorderLayout.CENTER);
 		JPanel restoreRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		restoreRow.setOpaque(false);
 		restoreRow.add(restore);
 		restoreRow.add(Box.createHorizontalStrut(14));
-		restoreRow.add(text(HomePlanet.immersiveMode ? "Immersive Mode: what's done is done." : "Her current version is kept too, so a restore can be undone.",
-				FtlFont.BODY, DIM));
-		if (!versions.isEmpty()) top.add(restoreRow, BorderLayout.SOUTH);
+		javax.swing.JLabel note = new javax.swing.JLabel(HomePlanet.immersiveMode ? "Immersive Mode: what's done is done." : "Her current version is kept too, so a restore can be undone.");
+		note.setFont(MenuTheme.TEXT_FONT);
+		note.setForeground(DIM);
+		restoreRow.add(note);
+		if (!versions.isEmpty()) kept.add(restoreRow, BorderLayout.SOUTH);
 
+		// three pages under her header: the voyage log, the station's log, and the kept versions
 		String voyage = homeplanet.vault.VoyageLog.read(Vault.get(), ship);
 		final java.awt.CardLayout cards = new java.awt.CardLayout();
-		final JPanel logs = new JPanel(cards);
-		logs.add(logTab(RecordsLog.voyage(voyage, "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
+		final JPanel pages = new JPanel(cards);
+		pages.add(logTab(RecordsLog.voyage(voyage, "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
 				+ "while the station is open (and on Refresh): jumps, sectors, battles, crew, what came aboard, upgrades and repairs.")), "voyage");
-		logs.add(logTab(RecordsLog.station(logLines(ship), "No entries for her yet.")), "station");
-		final Tab voyageTab = new Tab("Voyage log", "Events in FTL, save by save (newest last)"),
-				stationTab = new Tab("Station log", "Her entries in the station's log (history.log), newest last");
-		voyageTab.on = true;
-		voyageTab.onClick = new Runnable() { public void run() { voyageTab.on = true; stationTab.on = false; cards.show(logs, "voyage"); voyageTab.repaint(); stationTab.repaint(); } };
-		stationTab.onClick = new Runnable() { public void run() { voyageTab.on = false; stationTab.on = true; cards.show(logs, "station"); voyageTab.repaint(); stationTab.repaint(); } };
-		JPanel tabs = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		tabs.setOpaque(false);
-		tabs.add(voyageTab);
-		tabs.add(Box.createHorizontalStrut(6));
-		tabs.add(stationTab);
+		pages.add(logTab(RecordsLog.station(logLines(ship), "No entries for her yet.")), "station");
+		pages.add(kept, "kept");
+		final Tab[] tabs = {new Tab("Voyage log", "Events in FTL, save by save (newest last)", "voyage"),
+				new Tab("Station log", "Her entries in the station's log (history.log), newest last", "station"),
+				new Tab("Kept versions (" + versions.size() + ")", "Her earlier versions, to look back on or restore", "kept")};
+		JPanel tabRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		tabRow.setOpaque(false);
+		for (final Tab t : tabs) {
+			t.onClick = new Runnable() {
+				public void run() {
+					for (Tab o : tabs) { o.on = o == t; o.repaint(); }
+					cards.show(pages, t.page);
+				}
+			};
+			if (tabRow.getComponentCount() > 0) tabRow.add(Box.createHorizontalStrut(6));
+			tabRow.add(t);
+		}
+		tabs[0].on = true;
 		JPanel logPanel = new JPanel(new BorderLayout(0, 0));
 		logPanel.setOpaque(false);
-		logPanel.add(tabs, BorderLayout.NORTH);
-		logPanel.add(logs, BorderLayout.CENTER);
+		logPanel.add(tabRow, BorderLayout.NORTH);
+		logPanel.add(pages, BorderLayout.CENTER);
 
-		JPanel body = new JPanel(new BorderLayout(0, 14));
+		JPanel body = new JPanel(new BorderLayout(0, 12));
 		body.setBorder(BorderFactory.createEmptyBorder(14, 16, 6, 16));
-		body.add(top, BorderLayout.NORTH);
+		body.add(header(ship), BorderLayout.NORTH);
 		body.add(logPanel, BorderLayout.CENTER);
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 10));
 		JButton close = new FtlButton("Close", FtlFont.BODY, 100, 32);
@@ -168,6 +169,7 @@ public class ShipRecordsDialog extends JDialog {
 		getContentPane().add(buttons, BorderLayout.SOUTH);
 		getRootPane().setDefaultButton(close);
 		pack();
+		fitScreen();
 		setLocationRelativeTo(getOwner());
 	}
 
@@ -188,26 +190,47 @@ public class ShipRecordsDialog extends JDialog {
 		}
 		JPanel p = new JPanel(new BorderLayout(0, 4));
 		p.setOpaque(false);
-		p.add(text(ship.name.toUpperCase(), FtlFont.MENU, GOLD), BorderLayout.NORTH);
-		p.add(text(String.join("   -   ", facts), FtlFont.BODY, DIM), BorderLayout.CENTER);
+		p.add(ftlText(ship.name.toUpperCase(), FtlFont.MENU, GOLD), BorderLayout.NORTH);
+		p.add(text(String.join("   \u00b7   ", facts), DIM), BorderLayout.CENTER);
 		JComponent rule = new JComponent() { protected void paintComponent(Graphics g) { g.setColor(new Color(70, 86, 96)); g.drawLine(0, 6, getWidth(), 6); } };
 		rule.setPreferredSize(new Dimension(10, 10));
 		p.add(rule, BorderLayout.SOUTH);
 		return p;
 	}
 	/** A line of text in FTL's font. */
-	private static JComponent text(String s, FtlFont font, Color c) {
+	private static JComponent ftlText(String s, FtlFont font, Color c) {
 		final BufferedImage img = font.render(s, c);
 		JComponent comp = new JComponent() { protected void paintComponent(Graphics g) { g.drawImage(img, 0, 0, null); } };
 		comp.setPreferredSize(new Dimension(img.getWidth(), img.getHeight() + 2));
 		return comp;
+	}
+	/** A line of text in the style guide's normal text (Sans Serif 12), wrapping if the window is narrow. */
+	private static JComponent text(String s, Color c) {
+		javax.swing.JTextArea t = new javax.swing.JTextArea(s);
+		t.setEditable(false);
+		t.setFocusable(false);
+		t.setLineWrap(true);
+		t.setWrapStyleWord(true);
+		t.setOpaque(false);
+		t.setFont(MenuTheme.TEXT_FONT);
+		t.setForeground(c);
+		return t;
+	}
+	/** No bigger than the screen (less its taskbar): with Windows' display scaling, the window can be larger than it. */
+	private void fitScreen() {
+		java.awt.GraphicsConfiguration gc = getOwner() != null ? getOwner().getGraphicsConfiguration() : getGraphicsConfiguration();
+		java.awt.Rectangle b = gc.getBounds();
+		java.awt.Insets in = java.awt.Toolkit.getDefaultToolkit().getScreenInsets(gc);
+		int maxW = b.width - in.left - in.right - 20, maxH = b.height - in.top - in.bottom - 20;
+		if (getWidth() > maxW || getHeight() > maxH) setSize(Math.min(getWidth(), maxW), Math.min(getHeight(), maxH));
+		setLocationRelativeTo(getOwner());
 	}
 	/** A log in its scroll pane, scrolled to its latest lines. */
 	private static JScrollPane logTab(RecordsLog log) {
 		final JScrollPane sp = new JScrollPane(log);
 		sp.getViewport().setBackground(RecordsLog.BG);
 		sp.setBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, GOLD)); // the tabs sit on this line
-		sp.setPreferredSize(new Dimension(900, 320));
+		sp.setPreferredSize(new Dimension(760, 380));
 		sp.getVerticalScrollBar().setUnitIncrement(22);
 		SwingUtilities.invokeLater(new Runnable() { // the latest entries in view, once it's laid out
 			public void run() { sp.getViewport().revalidate(); javax.swing.JScrollBar b = sp.getVerticalScrollBar(); b.setValue(b.getMaximum()); }
@@ -220,8 +243,10 @@ public class ShipRecordsDialog extends JDialog {
 		boolean on;
 		Runnable onClick;
 		private final String label;
-		Tab(String label, String tip) {
+		final String page;
+		Tab(String label, String tip, String page) {
 			this.label = label;
+			this.page = page;
 			setToolTipText(tip);
 			setPreferredSize(new Dimension(FtlFont.BODY.width(label) + 36, 32));
 			setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
@@ -244,7 +269,7 @@ public class ShipRecordsDialog extends JDialog {
 	private static final class VersionRow extends JComponent implements javax.swing.ListCellRenderer<Version> {
 		private Version v;
 		private boolean selected;
-		VersionRow() { setPreferredSize(new Dimension(860, 34)); }
+		VersionRow() { setPreferredSize(new Dimension(700, 30)); }
 		public Component getListCellRendererComponent(JList<? extends Version> list, Version value, int index, boolean isSelected, boolean hasFocus) {
 			v = value;
 			selected = isSelected;
@@ -258,15 +283,17 @@ public class ShipRecordsDialog extends JDialog {
 			g.fillRect(0, 0, getWidth(), getHeight());
 			g.setColor(selected ? MenuTheme.SELECT : ROW);
 			g.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 6, 6);
-			int y = (getHeight() - FtlFont.BODY.render("Ag", TXT).getHeight()) / 2;
-			draw(g, v.when, 12, y, selected ? TXT : DIM);
-			if (v.error != null) { draw(g, v.error, 176, y, DIM); return; }
-			draw(g, "Sector " + v.sector, 176, y, TXT);
-			draw(g, v.beacons + (v.beacons == 1 ? " beacon" : " beacons"), 266, y, DIM);
-			draw(g, "Hull", 390, y, DIM);
+			g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+			java.awt.FontMetrics fm = g.getFontMetrics(MenuTheme.TEXT_FONT);
+			int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+			draw(g, v.when, 12, y, selected ? TXT : DIM, false);
+			if (v.error != null) { draw(g, v.error, 140, y, DIM, false); return; }
+			draw(g, "Sector " + v.sector, 140, y, TXT, true);
+			draw(g, v.beacons + (v.beacons == 1 ? " beacon" : " beacons"), 212, y, DIM, false);
+			draw(g, "Hull", 312, y, DIM, false);
 			boolean low = v.maxHull > 0 && v.hull * 3 < v.maxHull;
 			if (v.maxHull > 0) {
-				int bx = 428, by = getHeight() / 2 - 5, bw = 100;
+				int bx = 342, by = getHeight() / 2 - 5, bw = 100;
 				g.setColor(new Color(20, 26, 30));
 				g.fillRect(bx, by, bw, 10);
 				g.setColor(low ? RecordsLog.BAD : v.hull * 3 < v.maxHull * 2 ? GOLD : RecordsLog.GOOD);
@@ -274,11 +301,15 @@ public class ShipRecordsDialog extends JDialog {
 				g.setColor(RecordsLog.LINE);
 				g.drawRect(bx, by, bw, 10);
 			}
-			draw(g, v.maxHull > 0 ? v.hull + "/" + v.maxHull : Integer.toString(v.hull), v.maxHull > 0 ? 538 : 428, y, low ? RecordsLog.BAD : TXT);
-			draw(g, "Scrap " + v.scrap, 620, y, TXT);
-			draw(g, "Fuel " + v.fuel, 730, y, TXT);
+			draw(g, v.maxHull > 0 ? v.hull + "/" + v.maxHull : Integer.toString(v.hull), v.maxHull > 0 ? 452 : 342, y, low ? RecordsLog.BAD : TXT, false);
+			draw(g, "Scrap " + v.scrap, 530, y, TXT, false);
+			draw(g, "Fuel " + v.fuel, 620, y, TXT, false);
 		}
-		private static void draw(Graphics2D g, String s, int x, int y, Color c) { g.drawImage(FtlFont.BODY.render(s, c), x, y, null); }
+		private static void draw(Graphics2D g, String s, int x, int baseline, Color c, boolean bold) {
+			g.setFont(bold ? MenuTheme.LABEL_FONT : MenuTheme.TEXT_FONT);
+			g.setColor(c);
+			g.drawString(s, x, baseline);
+		}
 	}
 
 	/** Her entries in history.log: those whose headline names her (by name or by her file's id). */

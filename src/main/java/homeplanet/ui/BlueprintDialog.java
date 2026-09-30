@@ -386,13 +386,14 @@ public class BlueprintDialog extends JDialog {
 
 	private static JLabel hint(String text) {
 		JLabel l = new JLabel(text);
-		l.setFont(l.getFont().deriveFont(java.awt.Font.PLAIN, 11f));
-		l.setForeground(new Color(150, 160, 158));
+		l.setFont(MenuTheme.TEXT_FONT);
+		l.setForeground(MenuTheme.GREY_GREEN);
 		return l;
 	}
 	private static void heading(JPanel body, GridBagConstraints c, String text) {
 		JLabel h = new JLabel(text);
-		h.setFont(h.getFont().deriveFont(java.awt.Font.BOLD));
+		h.setFont(MenuTheme.HEADING_FONT);
+		h.setForeground(MenuTheme.GOLD);
 		h.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
 		body.add(h, next(c));
 	}

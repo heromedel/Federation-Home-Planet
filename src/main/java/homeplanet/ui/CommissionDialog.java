@@ -341,7 +341,7 @@ public class CommissionDialog extends JDialog {
 		StringBuilder sb = new StringBuilder("<html><b>Price: " + q.total() + " scrap</b>");
 		if (q.percent != 100) sb.append(" (" + q.percent + "% of " + q.subtotal + ")");
 		sb.append(", paid from the Cargo Hold, which has " + have + ".");
-		if (have < q.total()) sb.append(" <font color='#ff8844'>Not enough scrap.</font>");
+		if (have < q.total()) sb.append(" <font color='" + MenuTheme.HTML_ORANGE + "'>Not enough scrap.</font>");
 		sb.append("<br><font size='-2'>").append(String.join(" · ", q.lines)).append("</font></html>");
 		priceLabel.setText(sb.toString());
 	}

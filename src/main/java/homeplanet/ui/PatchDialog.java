@@ -252,7 +252,7 @@ public class PatchDialog extends JDialog {
 			HistoryLog.entry("PATCH", "Slipstream patch failed" + (res == null ? "" : " (exit " + res.exitCode + ")"), details);
 			JTextArea ta = new JTextArea(out.length() == 0 ? "(no output)" : out, 12, 70);
 			ta.setEditable(false);
-			ta.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.PLAIN, 11));
+			ta.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.PLAIN, 12));
 			JPanel p = new JPanel(new BorderLayout(0, 6));
 			p.add(note("Slipstream ran into a problem. It starts every patch from a clean copy of FTL, so FTL probably has no mods "
 					+ "installed right now. Retrofitted ships can't fly until a patch reaches FTL via Slipstream.\n\nWhat Slipstream said:"), BorderLayout.NORTH);

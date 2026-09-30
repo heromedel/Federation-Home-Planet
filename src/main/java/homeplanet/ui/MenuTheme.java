@@ -4,6 +4,7 @@ import java.awt.AWTEvent;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.AWTEventListener;
@@ -41,6 +42,15 @@ public final class MenuTheme {
 	public static final Color TEXT = new Color(228, 237, 232);
 	public static final Color DIM = new Color(140, 152, 150);
 	public static final Color SELECT = new Color(78, 106, 122);
+	// The style guide's colours (docs/STYLE.md): one of each
+	public static final Color GOLD = new Color(250, 210, 120), WHITE = Color.white, GREY_GREEN = new Color(170, 185, 180),
+			GREEN = new Color(120, 215, 140), ORANGE = new Color(255, 170, 90), RED = new Color(235, 110, 95);
+	/** The same colours for HTML text (#rrggbb). */
+	public static final String HTML_GOLD = "#fad278", HTML_GREY_GREEN = "#aab9b4", HTML_ORANGE = "#ffaa5a", HTML_RED = "#eb6e5f";
+	/** Normal text and labels (docs/STYLE.md). */
+	public static final Font TEXT_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 12), LABEL_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 12);
+	/** Section headings in a dialog (docs/STYLE.md), in gold. */
+	public static final Font HEADING_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 14);
 
 	private static boolean installed = false;
 

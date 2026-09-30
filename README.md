@@ -58,7 +58,7 @@ And More.
 
 ## Running and building
 
-Java 8 or newer runs it: `Current Build\Start - FHP.bat` (or `java -jar "Federation Home Planet.jar"`). On first start it
+Java 8 or newer runs it: `Current Build\Start Federation Home Planet.bat` (or `java -jar "Federation Home Planet.jar"`). On first start it
 asks where FTL is (the folder with `ftl.dat`) and where the saves are. Quit FTL before boarding, docking or saving in
 the Cargo Bay. Keep the station open while you play: it notices FTL's saves as they're written (for the voyage log and
 final victories) and takes stock when you switch back to it.
@@ -66,7 +66,7 @@ final victories) and takes stock when you switch back to it.
 If your FTL is the Steam version, turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties,
 General): it can bring back an old copy of a docked ship, or an old FTL profile.
 
-To build from source, double-click `Build - FHP.bat`: the first run downloads a JDK and Maven into `tools\` (once),
+To build from source, double-click `Build The Federation Home Planet Station.bat`: the first run downloads a JDK and Maven into `tools\` (once),
 then every run puts a fresh `Federation Home Planet.jar` in `Current Build\`. Or with your own Maven: `mvn package` →
 `target/Federation Home Planet.jar`.
 

@@ -68,8 +68,8 @@ import homeplanet.vault.VoyageLog;
  * Loadout.
  */
 public class MuseumUI extends JPanel {
-	static final Color GOLD = FtlButton.GOLD, TXT = new Color(228, 237, 232), DIMC = new Color(150, 165, 160), SILVER = new Color(200, 210, 215),
-			GREEN = new Color(120, 220, 160), PANEL = new Color(20, 28, 36, 215), LINEC = new Color(214, 230, 222, 120);
+	static final Color GOLD = FtlButton.GOLD, TXT = new Color(228, 237, 232), DIMC = MenuTheme.GREY_GREEN, SILVER = new Color(200, 210, 215),
+			GREEN = MenuTheme.GREEN, PANEL = new Color(20, 28, 36, 215), LINEC = new Color(214, 230, 222, 120);
 	private static final int INFO_W = 470;
 
 	private final MainFrame parent;
@@ -147,7 +147,7 @@ public class MuseumUI extends JPanel {
 		Museum.Exhibit ex = current();
 		int stageW = W - INFO_W - 60;
 		if (ex == null) {
-			JLabel none = label("No ship is on show yet.", 15, DIMC, false);
+			JLabel none = label("No ship is on show yet.", 14, DIMC, false);
 			place(none, 20 + stageW / 2 - none.getPreferredSize().width / 2, H / 2, none.getPreferredSize());
 		} else {
 			SavedGameState gs = read(ex.save);
@@ -222,7 +222,7 @@ public class MuseumUI extends JPanel {
 		String[] last = vd.isEmpty() ? null : vd.get(vd.size() - 1);
 		String sub = cls + (ex.victor && last != null && !last[2].isEmpty() ? "   •   Victory on " + last[2] : "")
 				+ (ex.victor && last != null && !last[1].isEmpty() ? "   •   Score " + String.format("%,d", Integer.parseInt(last[1])) : "");
-		JLabel s = label(sub, 15, TXT, false);
+		JLabel s = label(sub, 14, TXT, false);
 		center(st, s, cx, plinthY + 46);
 		JComponent status = statusLine(ex);
 		status.setBounds(cx - status.getPreferredSize().width / 2, plinthY + 72, status.getPreferredSize().width, status.getPreferredSize().height);
@@ -358,7 +358,7 @@ public class MuseumUI extends JPanel {
 		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 		content.setOpaque(false);
 		content.setBorder(BorderFactory.createEmptyBorder(4, 14, 10, 14));
-		if (gs == null) content.add(label("Her record can't be read: " + (ex.save == null ? "no save kept" : ex.save.getName()), 13, DIMC, false));
+		if (gs == null) content.add(label("Her record can't be read: " + (ex.save == null ? "no save kept" : ex.save.getName()), 12, DIMC, false));
 		else if ("Crew".equals(tab)) crew(content, ex, gs);
 		else if ("Voyage".equals(tab)) voyage(content, ex);
 		else if ("Loadout".equals(tab)) loadout(content, gs);
@@ -383,7 +383,7 @@ public class MuseumUI extends JPanel {
 		JPanel r = new JPanel(new BorderLayout());
 		r.setOpaque(false);
 		r.setAlignmentX(LEFT_ALIGNMENT);
-		JLabel kl = label(k, 13, DIMC, false);
+		JLabel kl = label(k, 12, DIMC, false);
 		kl.setPreferredSize(new Dimension(170, kl.getPreferredSize().height));
 		r.add(kl, BorderLayout.WEST);
 		r.add(label(v, 14, TXT, true), BorderLayout.CENTER);
@@ -396,7 +396,7 @@ public class MuseumUI extends JPanel {
 		r.setOpaque(false);
 		r.setAlignmentX(LEFT_ALIGNMENT);
 		r.add(label(sym, 14, c, true));
-		r.add(label(text, 13, TXT, false));
+		r.add(label(text, 12, TXT, false));
 		r.setMaximumSize(new Dimension(INFO_W, r.getPreferredSize().height + 4));
 		p.add(r);
 	}
@@ -476,7 +476,7 @@ public class MuseumUI extends JPanel {
 			JLabel nm = label(FtlFont.BODY.fit(c.getName(), 150), 14, TXT, true);
 			nm.setBounds(54, 0, 150, 18);
 			r.add(nm);
-			JLabel race = label(homeplanet.model.Crew.raceTitle(c), 11, DIMC, false);
+			JLabel race = label(homeplanet.model.Crew.raceTitle(c), 12, DIMC, false);
 			race.setBounds(54, 18, 150, 14);
 			r.add(race);
 			final int[] lv = homeplanet.model.Crew.skillLevels(c);
@@ -509,7 +509,7 @@ public class MuseumUI extends JPanel {
 		}
 		if (ex.victor) {
 			p.add(Box.createRigidArea(new Dimension(1, 10)));
-			p.add(label("As she turned for the final engagement: FTL saves nothing during the last fight.", 10, DIMC, false));
+			p.add(label("As she turned for the final engagement: FTL saves nothing during the last fight.", 12, DIMC, false));
 		}
 	}
 	/** Her crew lost on the way, from her voyage log: "Name (Race), lost in sector N". */
@@ -534,7 +534,7 @@ public class MuseumUI extends JPanel {
 		a.setWrapStyleWord(true);
 		a.setOpaque(false);
 		a.setForeground(TXT);
-		a.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+		a.setFont(MenuTheme.TEXT_FONT);
 		a.setAlignmentX(LEFT_ALIGNMENT);
 		a.setSize(new Dimension(INFO_W - 44, 10));
 		p.add(a);
@@ -544,10 +544,10 @@ public class MuseumUI extends JPanel {
 		heading(p, "Weapons and drones");
 		for (WeaponState w : s.getWeaponList()) item(p, w.getWeaponId());
 		for (DroneState d : s.getDroneList()) item(p, d.getDroneId());
-		if (s.getWeaponList().isEmpty() && s.getDroneList().isEmpty()) p.add(label("None", 13, DIMC, false));
+		if (s.getWeaponList().isEmpty() && s.getDroneList().isEmpty()) p.add(label("None", 12, DIMC, false));
 		heading(p, "Augments");
 		for (String a : s.getAugmentIdList()) item(p, a);
-		if (s.getAugmentIdList().isEmpty()) p.add(label("None", 13, DIMC, false));
+		if (s.getAugmentIdList().isEmpty()) p.add(label("None", 12, DIMC, false));
 		heading(p, "Systems");
 		for (SystemType t : SystemType.values()) {
 			SystemState st = s.getSystem(t);
@@ -556,7 +556,7 @@ public class MuseumUI extends JPanel {
 		row(p, "Reactor", s.getReservePowerCapacity() + " power");
 	}
 	private static void item(JPanel p, String id) {
-		JLabel l = label(homeplanet.model.Items.title(id), 13, TXT, false);
+		JLabel l = label(homeplanet.model.Items.title(id), 12, TXT, false);
 		Icon ic = IconFactory.itemIcon(id);
 		if (ic != null) l.setIcon(ic);
 		l.setIconTextGap(10);

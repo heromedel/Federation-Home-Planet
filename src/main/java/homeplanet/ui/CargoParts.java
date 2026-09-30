@@ -32,10 +32,10 @@ final class CargoParts {
 	private CargoParts() { }
 
 	static final Color GOLD = FtlButton.GOLD, TEXT = FtlButton.TEXT, LINE = FtlButton.LINE;
-	static final Color DIM = new Color(150, 162, 158);
+	static final Color DIM = MenuTheme.GREY_GREEN;
 	static final Color BOX = new Color(16, 20, 26, 215), BOX_LINE = new Color(214, 230, 222, 150);
 	static final Color SEL = new Color(250, 210, 120, 70);
-	static final Color ORANGE = new Color(255, 170, 110);
+	static final Color ORANGE = MenuTheme.ORANGE;
 
 	/** A cut-corner outline, the shape of every box and button. */
 	static Polygon cut(int x, int y, int w, int h, int c) {
