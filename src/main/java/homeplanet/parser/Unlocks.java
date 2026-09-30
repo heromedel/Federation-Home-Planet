@@ -36,7 +36,9 @@ public class Unlocks {
 		File dir = HomePlanet.save_location;
 		File ae = new File(dir, "ae_prof.sav"), plain = new File(dir, "prof.sav");
 		File f = ae.isFile() ? ae : plain.isFile() ? plain : null;
-		if (f == null) return new Unlocks(null, null, "No FTL profile (ae_prof.sav or prof.sav) was found in the saves folder.");
+		// no profile yet (a new install, or Immersive Mode's own profile before FTL's first start): FTL makes a fresh one,
+		// so nothing is unlocked but the Kestrel A
+		if (f == null) { Profile fresh = Profile.createEmptyProfile(); fresh.setFileFormat(9); return new Unlocks(null, fresh, null); }
 		try {
 			return new Unlocks(f, new ProfileParser().readProfile(f), null);
 		} catch (Exception e) {
@@ -44,17 +46,20 @@ public class Unlocks {
 		}
 	}
 
+	/** True if there's no profile yet: it's taken as FTL's fresh one (only the Kestrel A unlocked, no achievements, no victories). */
+	public boolean missing() { return file == null; }
+
 	/** Null if the profile was read; otherwise why not (then nothing counts as locked). */
 	public String problem() { return problem; }
 
 	/** The profile's total victories (FTL's own count), or -1 if it couldn't be read. */
 	public int victories() {
-		if (profile == null || profile.getStats() == null) return -1;
+		if (missing() || profile == null || profile.getStats() == null) return -1; // a missing profile can't say: it may be mid-write
 		return profile.getStats().getIntRecord(net.blerf.ftl.model.Stats.StatType.TOTAL_VICTORIES);
 	}
 	/** Victorious entries naming this ship (her name and blueprint) in the profile's Top Scores and Ship Best, or -1 if unread. */
 	public int victoriousScores(String shipName, String shipId) {
-		if (profile == null || profile.getStats() == null) return -1;
+		if (missing() || profile == null || profile.getStats() == null) return -1;
 		int n = 0;
 		List<net.blerf.ftl.model.Score> all = new java.util.ArrayList<net.blerf.ftl.model.Score>(profile.getStats().getTopScores());
 		all.addAll(profile.getStats().getShipBest());

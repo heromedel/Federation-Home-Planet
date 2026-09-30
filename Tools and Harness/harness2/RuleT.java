@@ -28,6 +28,10 @@ public class RuleT { public static void main(String[] a) throws Exception {
  }
  static void unlocks(File saves) throws Exception {
   Setup.chk("U: no profile, no free ships", !UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_MANTIS"));
+  Unlocks none = Unlocks.read();
+  Setup.chk("U: no profile yet is FTL's fresh one: only the Kestrel A unlocked", none.missing() && none.problem() == null && none.unlocked("PLAYER_SHIP_HARD", 0)
+    && !none.unlocked("PLAYER_SHIP_HARD", 1) && !none.unlocked("PLAYER_SHIP_STEALTH", 0) && !none.unlocked("PLAYER_SHIP_FED", 2));
+  Setup.chk("U: but its victories are unknown, not zero (a final victory is judged by them)", none.victories() == -1);
   new File(saves, "ae_prof.sav").delete();
   profile(saves, "PLAYER_SHIP_HARD", "PLAYER_SHIP_STEALTH");
   Unlocks u = Unlocks.read();

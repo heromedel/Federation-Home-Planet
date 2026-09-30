@@ -95,7 +95,7 @@ public final class FinalVictory {
 					continue;
 				}
 				if ("rewarded".equals(f.outcome)) { v.closeFinal(f, true); continue; } // paid; only the closing was left
-				if (u.problem() != null) continue; // the profile can't say: asked again next time
+				if (u.problem() != null || u.missing()) continue; // the profile can't say: asked again next time
 				// the victory count gone up; if it couldn't be read then, a victorious Top Scores entry naming her
 				boolean won = f.victoriesThen >= 0 ? u.victories() > f.victoriesThen
 						: u.victoriousScores(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId()) > Math.max(0, f.scoresThen);

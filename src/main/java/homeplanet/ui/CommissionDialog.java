@@ -184,6 +184,9 @@ public class CommissionDialog extends JDialog {
 		boolean lockRule = HomePlanet.commissionUnlockedOnly;
 		boolean customRule = lockRule && HomePlanet.commissionCustomUnlockedOnly;
 		homeplanet.parser.Unlocks unlocks = lockRule ? homeplanet.parser.Unlocks.read() : null;
+		if (unlocks != null && unlocks.missing() && lockRule) {
+			listNote = "FTL hasn't made its profile yet (it does the first time it starts): only the Kestrel A is unlocked.";
+		}
 		if (unlocks != null && unlocks.problem() != null) {
 			listNote = unlocks.problem() + " Every ship is shown.";
 			unlocks = null;
