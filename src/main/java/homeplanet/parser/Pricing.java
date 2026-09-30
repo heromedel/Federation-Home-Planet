@@ -49,6 +49,23 @@ public final class Pricing {
 		return system(id, Math.max(1, level)) * percent / 100;
 	}
 
+	/** What upgrading a system from this level to the next costs, or -1 if FTL has no next level for it. */
+	public static int upgrade(String id, int level) {
+		SystemBlueprint b = DataManager.get().getSystem(id);
+		if (b == null || b.getUpgradeCosts() == null || level < 1 || level - 1 >= b.getUpgradeCosts().size()) return -1;
+		if (b.getMaxPower() > 0 && level >= b.getMaxPower()) return -1;
+		return b.getUpgradeCosts().get(level - 1);
+	}
+	/** FTL's reactor limit (Advanced Edition). */
+	public static final int REACTOR_MAX = 25;
+	/**
+	 * One point of hull repaired at a store in this sector (1-based). FTL's stores charge more as the journey goes on;
+	 * the station's rate is 2 scrap in sectors 1-2, one more every two sectors after.
+	 */
+	public static int hullRepair(int sector) {
+		return 2 + (Math.max(1, sector) - 1) / 2;
+	}
+
 	/** The price of the reactor's nth bar (1-based), as FTL's upgrade screen charges: 30 for bars 1-5, then 5 more every 5 bars. */
 	public static int reactorBar(int n) {
 		return 30 + 5 * ((Math.max(1, n) - 1) / 5);

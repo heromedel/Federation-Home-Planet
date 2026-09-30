@@ -18,6 +18,9 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("P: a Clone Bay (no level) sells as level 1", Pricing.systemSale("clonebay", 0) == Pricing.system("clonebay", 1) / 2);
   Setup.chk("P: reactor bars: 30 each to 5, then 35", Pricing.reactor(5) == 150 && Pricing.reactor(8) == 255 && Pricing.reactorBar(11) == 40);
   Setup.chk("P: an unknown system has the flat price", Pricing.system("no_such_system", 2) == Pricing.UNPRICED_SYSTEM);
+  Setup.chk("D: an upgrade costs FTL's upgrade price", Pricing.upgrade("shields", 1) == sh.getUpgradeCosts().get(0) && Pricing.upgrade("shields", 2) == sh.getUpgradeCosts().get(1));
+  Setup.chk("D: no upgrade past FTL's limit", Pricing.upgrade("shields", sh.getMaxPower()) == -1);
+  Setup.chk("D: hull repairs cost more deeper in", Pricing.hullRepair(1) == 2 && Pricing.hullRepair(2) == 2 && Pricing.hullRepair(3) == 3 && Pricing.hullRepair(8) == 5);
   SavedGameState k = Commission.build("PLAYER_SHIP_HARD", "Price Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
   Pricing.Quote full = Pricing.ship(k, 0, 0, 100), half = Pricing.ship(k, 0, 0, 50), custom = Pricing.ship(k, 5, 4, 100);
   System.out.println("Kestrel A: " + full.total() + " " + full.lines);

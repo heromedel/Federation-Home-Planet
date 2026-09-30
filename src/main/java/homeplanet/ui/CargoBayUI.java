@@ -163,7 +163,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		stage.add(back);
 		String[] titles = {"Trade", "Shop", "Refit"};
 		String[] tips = {"Swap equipment, crew and supplies with the storage or another docked ship", "Buy at the stores your ships are docked at",
-				"Store and install systems, remodel, retrofit"};
+				"Store, install and upgrade systems, upgrade the reactor, repair the hull, remodel, retrofit"};
 		for (int i = 0; i < 3; i++) {
 			final String name = tabNames[i];
 			tabButtons[i] = new FtlButton(titles[i], FtlFont.MENU, 120, 34);

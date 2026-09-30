@@ -110,12 +110,15 @@ the artillery system costs 150, upgrades 30/50/80.
   selling missiles, drone parts and systems is **on, at 25%** of the store price; restoring old versions of a ship
   is off. Keep ships after victory stays available. Turning Immersive Mode off unlocks the settings.
 
-## 5. Dry Dock: repairs and upgrades
+## 5. Dry Dock: repairs and upgrades — done (checks in PriceT)
 
-- **Upgrades:** system levels and reactor power, at FTL's upgrade prices.
-- **Repairs:** hull, at FTL's store price.
-- Both follow the one trading rule, like the rest of the Cargo Bay (a split rule doesn't work: if trading is free,
-  another ship could buy for you).
+Built into the Cargo Bay's Refit tab, so it follows the one trading rule with the rest of the Cargo Bay; the boarded
+ship pays, and Save makes it official (Reset undoes it).
+
+- **Upgrades:** an **Up: price** button on each installed system (FTL's upgrade cost for the next level, up to FTL's
+  limit or her room's), and a Reactor row (30 a bar up to 5, then 5 more every 5 bars, up to 25).
+- **Repairs:** a Hull row; Repair fixes as many points as she can afford. **Check:** the price is 2 scrap a point in
+  sectors 1-2 and one more every two sectors after; FTL's own store rate should be confirmed in a real run.
 
 ## 6. Keep ships after victory
 

@@ -146,7 +146,7 @@ public class SystemsPanel {
 		refresh();
 	}
 	String helpText() {
-		return "Store takes a system off the ship at its level, to install on a ship later. Greyed out: hover to see why.";
+		return "Store takes a system off at its level. Up upgrades it; the Dry Dock repairs her hull. Greyed out: hover to see why.";
 	}
 
 	/** Lays out the installed and stored systems and the layout section. */
@@ -180,11 +180,20 @@ public class SystemsPanel {
 			SysRow r = new SysRow(DryDockShop.systemTitle(t.getId()), st.getCapacity(), "Store", why,
 					why == null ? "Take the " + DryDockShop.systemTitle(t.getId()) + " off the ship; it keeps its level" : why,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { storeSystem(type); } });
+			int up = upgradePrice(bs, t);
+			if (up > 0) {
+				int scrap = bs.getScrapAmt();
+				r.addButton("Up: " + up, 78, ROW_W - 66 - 82, scrap >= up,
+						scrap >= up ? "Upgrade the " + DryDockShop.systemTitle(t.getId()) + " to level " + (st.getCapacity() + 1) + " for " + up + " scrap"
+						: "Upgrading to level " + (st.getCapacity() + 1) + " costs " + up + " scrap; she has " + scrap,
+						new ActionListener() { public void actionPerformed(ActionEvent e) { upgradeSystem(type); } });
+			}
 			r.setBounds(0, y + i * 32, w, 28);
 			sysList.add(r);
 			i++;
 		}
 		y += i * 32 + 12;
+		y = dryDock(bs, y, w);
 		CargoParts.Header h2 = new CargoParts.Header("Systems in the Cargo Bay", false);
 		h2.setBounds(0, y, w, 22);
 		sysList.add(h2);
@@ -256,6 +265,7 @@ public class SystemsPanel {
 			setToolTipText(tip);
 			FtlButton b = new FtlButton(action, FtlFont.BODY, action.length() > 5 ? 78 : 62, 22);
 			b.setEnabled(ok);
+			if (action.isEmpty()) b.setVisible(false); // a row with only its own extra buttons
 			b.setToolTipText(tip);
 			b.addActionListener(a);
 			b.setBounds(ROW_W - (action.length() > 5 ? 82 : 66), 3, action.length() > 5 ? 78 : 62, 22);
@@ -263,10 +273,15 @@ public class SystemsPanel {
 		}
 		/** HR1: a Sell button beside the row's own. */
 		void addSell(int price, ActionListener a) {
-			FtlButton b = new FtlButton("Sell", FtlFont.BODY, 62, 22);
-			b.setToolTipText("Sell it to the station for " + price + " scrap (paid to the boarded ship)");
+			addButton("Sell", 62, ROW_W - 82 - 70, true, "Sell it to the station for " + price + " scrap (paid to the boarded ship)", a);
+		}
+		/** Another button, left of the row's own. */
+		void addButton(String text, int bw, int x, boolean enabled, String tip, ActionListener a) {
+			FtlButton b = new FtlButton(text, FtlFont.BODY, bw, 22);
+			b.setEnabled(enabled);
+			b.setToolTipText(tip);
 			b.addActionListener(a);
-			b.setBounds(ROW_W - 82 - 70, 3, 62, 22);
+			b.setBounds(x, 3, bw, 22);
 			add(b);
 		}
 		@Override protected void paintComponent(java.awt.Graphics g0) {
@@ -278,7 +293,7 @@ public class SystemsPanel {
 				g.setColor(ok ? new Color(120, 230, 120) : new Color(90, 130, 95));
 				g.fillRect(310 + k * 8, 9, 6, 11);
 			}
-			if (level <= 0) CargoParts.text(g, "uses the Medbay's level", FtlFont.BODY, CargoParts.DIM, 250, 7);
+			if (level == 0) CargoParts.text(g, "uses the Medbay's level", FtlFont.BODY, CargoParts.DIM, 250, 7); // (below 0: a Dry Dock row, no level)
 			g.dispose();
 		}
 	}
@@ -455,6 +470,85 @@ public class SystemsPanel {
 		changes.add("Installed " + name + " (level " + level + ") on " + save.getPlayerShipName());
 		log.debug("Installed {} level {} on {}", type, level, save.getPlayerShipName());
 		changed();
+	}
+
+	// ---- The Dry Dock: upgrades and repairs, at FTL's prices, paid by the boarded ship ----
+
+	/** Upgrading this installed system one level: FTL's upgrade cost, or -1 at its limit (FTL's, or her room's). */
+	static int upgradePrice(ShipState bs, SystemType t) {
+		SystemState st = bs.getSystem(t);
+		if (st == null || st.getCapacity() <= 0) return -1;
+		ShipBlueprint bp = DataManager.get().getShip(bs.getShipBlueprintId());
+		ShipBlueprint.SystemList.SystemRoom[] rooms = bp == null || bp.getSystemList() == null ? null : bp.getSystemList().getSystemRoom(t);
+		if (rooms != null && rooms.length > 0 && rooms[0].getMaxPower() != null && st.getCapacity() >= rooms[0].getMaxPower()) return -1;
+		return homeplanet.parser.Pricing.upgrade(t.getId(), st.getCapacity());
+	}
+	/** Her hull at full strength (her model's). */
+	static int maxHull(ShipState bs) {
+		ShipBlueprint bp = DataManager.get().getShip(bs.getShipBlueprintId());
+		return bp == null || bp.getHealth() == null ? bs.getHullAmt() : bp.getHealth().amount;
+	}
+	/** The Dry Dock rows: reactor power and hull repairs. Returns the y below them. */
+	private int dryDock(ShipState bs, int y, int w) {
+		CargoParts.Header h = new CargoParts.Header("Dry Dock: upgrades and repairs", false);
+		h.setBounds(0, y, w, 22);
+		sysList.add(h);
+		y += 26;
+		int scrap = bs.getScrapAmt();
+		int bars = bs.getReservePowerCapacity(), rp = homeplanet.parser.Pricing.reactorBar(bars + 1);
+		SysRow reactor = new SysRow("Reactor", bars, "", null, "Reactor power: " + bars + " bars", null);
+		if (bars < homeplanet.parser.Pricing.REACTOR_MAX) {
+			reactor.addButton("Up: " + rp, 78, ROW_W - 82, scrap >= rp, scrap >= rp ? "One more bar of reactor power for " + rp + " scrap" : "One more bar costs " + rp + " scrap; she has " + scrap,
+					new ActionListener() { public void actionPerformed(ActionEvent e) { upgradeReactor(); } });
+		}
+		reactor.setBounds(0, y, w, 28);
+		sysList.add(reactor);
+		y += 32;
+		int hull = bs.getHullAmt(), max = maxHull(bs), each = homeplanet.parser.Pricing.hullRepair(bay.currentSave.getSectorNumber() + 1);
+		int can = Math.min(max - hull, scrap / each);
+		SysRow repair = new SysRow("Hull " + hull + " / " + max, -1, "", null, "Hull repairs: " + each + " scrap a point in this sector", null);
+		if (hull < max) {
+			repair.addButton("Repair", 78, ROW_W - 82, can > 0, can <= 0 ? "Each point costs " + each + " scrap; she has " + scrap
+					: "Repair " + can + (can == 1 ? " point" : " points") + " for " + can * each + " scrap (" + each + " a point" + (can < max - hull ? "; all she can afford" : "") + ")",
+					new ActionListener() { public void actionPerformed(ActionEvent e) { repairHull(); } });
+		}
+		repair.setBounds(0, y, w, 28);
+		sysList.add(repair);
+		y += 32 + 12;
+		return y;
+	}
+	private void upgradeSystem(SystemType t) {
+		ShipState bs = bay.currentSave.getPlayerShip();
+		int price = upgradePrice(bs, t);
+		if (price <= 0 || bs.getScrapAmt() < price) return;
+		SystemState st = bs.getSystem(t);
+		st.setCapacity(st.getCapacity() + 1);
+		if (t.isSubsystem()) st.setPower(st.getCapacity()); // subsystems run at their full level
+		bs.setScrapAmt(bs.getScrapAmt() - price);
+		changes.add("Upgraded " + DryDockShop.systemTitle(t.getId()) + " to level " + st.getCapacity() + " for " + price + " scrap");
+		changed();
+		bay.help("Upgraded the " + DryDockShop.systemTitle(t.getId()) + " to level " + st.getCapacity() + ". Save makes it official.");
+	}
+	private void upgradeReactor() {
+		ShipState bs = bay.currentSave.getPlayerShip();
+		int bars = bs.getReservePowerCapacity(), price = homeplanet.parser.Pricing.reactorBar(bars + 1);
+		if (bars >= homeplanet.parser.Pricing.REACTOR_MAX || bs.getScrapAmt() < price) return;
+		bs.setReservePowerCapacity(bars + 1);
+		bs.setScrapAmt(bs.getScrapAmt() - price);
+		changes.add("Reactor upgraded to " + (bars + 1) + " bars for " + price + " scrap");
+		changed();
+		bay.help("Reactor power is now " + (bars + 1) + ". Save makes it official.");
+	}
+	private void repairHull() {
+		ShipState bs = bay.currentSave.getPlayerShip();
+		int each = homeplanet.parser.Pricing.hullRepair(bay.currentSave.getSectorNumber() + 1);
+		int n = Math.min(maxHull(bs) - bs.getHullAmt(), bs.getScrapAmt() / each);
+		if (n <= 0) return;
+		bs.setHullAmt(bs.getHullAmt() + n);
+		bs.setScrapAmt(bs.getScrapAmt() - n * each);
+		changes.add("Hull repaired by " + n + " for " + n * each + " scrap");
+		changed();
+		bay.help("Repaired " + n + " hull for " + n * each + " scrap. Save makes it official.");
 	}
 
 	/** HR1: what a stored system sells for. */
