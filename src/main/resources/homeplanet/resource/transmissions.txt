@@ -5,7 +5,9 @@
 # Rewards, comma separated (they go to Spacedock Storage): scrap N, fuel N, missiles N, parts N (drone parts),
 # item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
-# Keys: welcome, stipend ({period} and {amount} are filled in), empty, promo:1, promo:2, order:<base ship id>, ach:<achievement id>.
+# Keys: welcome, stipend ({period} and {amount} are filled in), empty, promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
+# rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
+# notice when Transmissions are off).
 
 == welcome
 from: Home Planet Liaison
@@ -18,6 +20,32 @@ Welcome to the front. From today The Home Planet Station runs by The Federation 
 The fleet is stretched thin against the Rebellion, but it looks after its own. Serve well and you will hear from us. Watch this channel.
 
 Home Planet Liaison
+
+== rescue
+from: Federation Fleet Command
+subject: Rescued from the Final Engagement
+
+{rank},
+
+The Rebel Flagship has broken off her assault and withdrawn, and the Federation fleet still holds. The war goes on, but it goes on because of you.
+
+The Federation recovered the {ship}, and The Home Planet Station has restored her as she was moments before the final engagement.
+
+The Federation Home Planet has made an offer: her full value, {value} scrap, to place so heroic a ship in the Federation museum. Or keep her, and she will be waiting at the Space Dock for her next journey.
+
+Federation Fleet Command
+
+== reward
+from: The Federation Home Planet
+subject: In Recognition
+
+{rank},
+
+The Rebel Flagship has withdrawn, and the {ship} gave everything to make it so. She could not be recovered.
+
+In recognition of her service, The Federation Home Planet has granted her full value, {value} scrap, to The Home Planet Station. It is waiting in Spacedock Storage: enough to commission a ship of equal worth.
+
+The Federation Home Planet
 
 == stipend
 from: The Federation Home Planet

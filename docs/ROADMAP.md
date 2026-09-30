@@ -14,7 +14,8 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 7. Immersive Mode, part 2: its own vault, rules kept apart, uncommissioned-ship detection, rank and locks
 8. Transmissions: the inbox, commission orders, promotions, achievement rewards (draft: docs/TRANSMISSIONS.md)
 9. Immersive Mode, part 3: the briefing, its own FTL profile, the stipend, unlock hints, Steam Cloud
-10. Keep ships after victory (save timing confirmed; waiting on the flagship stages 2 and 3)
+10. After a final victory: rescue her (or the museum), or a reward of her value
+11. The museum screen (later)
 
 ---
 
@@ -112,7 +113,7 @@ the artillery system costs 150, upgrades 30/50/80.
   trading and scrapping need a station; New Journey needs a station; commissioning costs scrap at 100%; **a New
   Journey costs 200 scrap, paid from the storage hold** (so a stranded ship that reached a station can be rescued);
   selling missiles, drone parts and systems is **on, at 25%** of the store price; restoring old versions of a ship
-  is off. Keep ships after victory stays available. Turning Immersive Mode off unlocks the settings.
+  is off. The choice after a final victory stays available (each fleet its own). Turning Immersive Mode off unlocks the settings.
 
 ## 5. Dry Dock: repairs and upgrades — done (checks in PriceT)
 
@@ -206,20 +207,40 @@ Draft of every message and reward: `docs/TRANSMISSIONS.md` (rewards approved by 
   that's a byte-for-byte copy of a docked ship or one of her kept versions (Steam Cloud restoring its last upload) is
   set aside in her records with a notice, instead of becoming a second ship.
 
-## 10. Keep ships after victory
+## 10. After a final victory — built
 
-Off by default: "Keep ships after victory (The Home Planet Station must stay open while you play)."
+A setting (Settings, and the Immersive briefing), each fleet its own choice, default Nothing:
 
-- While FHP is open it watches `continue.sav` for changes (no timed polling) and keeps the latest copy in the boarded
-  ship's records. If FTL crashes before saving, there is nothing new to keep, and that's fine.
-- FTL saves on each jump, and the flagship's three battles are separated by jumps; the save records the flagship's
-  state. Keep the copy written **on arriving for the third battle**, the latest point FTL saves.
-- When `continue.sav` disappears and the FTL profile shows a new victory, offer to bring her home from that copy.
-  A death stays "lost in action".
-- **Confirmed** with heromedel's run (the Shrapnel R.U., sector 8): FTL writes `continue.sav` on arriving at a beacon,
-  with the game still running, and saving and exiting there adds nothing (the files were identical). The save holds
-  the sector (7 = sector 8) and the flagship's pending stage (1 = the first battle next).
-- **Still to see:** the stage reading 2 and 3 before the second and third battles.
+- **Nothing** (she is lost with the run).
+- **Rescue her ship** (with an offer to sell her to the museum): she comes back as she was moments before the final
+  engagement. Keep her (docked, ready for a new journey from sector 1: the run itself is over), or accept The Federation
+  Home Planet's offer of her full value for the Federation museum (scrap to Spacedock Storage; her fate is MUSEUM, and
+  she can't be recovered).
+- **Receive a reward equal to her value**: her full value to Spacedock Storage, and she stays lost.
+
+Her value is the full commission price (systems and levels, reactor, weapons, drones, augments, cargo, crew, a custom
+hull's rooms and doors), always 100%. The messages come by Transmissions (the rescue offer waits in the inbox), or as a
+notice on the Space Dock when Transmissions are off. The lore holds: the Rebel Flagship withdraws, never destroyed.
+
+How it works (confirmed with heromedel's run of the Shrapnel R.U. and a save logger's record of the last two battles):
+
+- FTL writes `continue.sav` as the flagship heads for each battle (her pending stage 1-3, not alongside), again as she
+  arrives (alongside) and as the player closes her message, then **nothing during the fight**. A win writes the profile
+  (Total Victories +1, a Top Scores entry naming the ship with Victory: true) and deletes `continue.sav` 58 ms later.
+  Waiting in place also counts as a beacon explored.
+- While the station is open it watches the saves folder (the system's change notices, no timed polling) and keeps the
+  latest copy written with the flagship **on her way to the last battle** (stage 3, not alongside): a calm save, no
+  battle in it. `history/<id>/final-battle.sav`, with the profile's victory count then.
+- When the ship is found lost (the run ended), a victory count gone up means she won; then the choice applies. The
+  Space Dock takes stock as soon as its window comes to the front after FTL deletes the save.
+- Harness test VicT (synthetic saves), and a replay of a logger's folder when VICLOG is set.
+
+## 11. The museum (later)
+
+A screen of its own, with a really nice layout, for the ships sold to the Federation museum: her picture, her victory
+(difficulty, sector, score from the profile's Top Scores, the date), and a crew service record: who was aboard, their
+species, skills and FTL's per-crew stats (repairs, combat kills, evasions, jumps survived, masteries). The crew is as the
+kept copy has them: as she turned for the final engagement (anyone lost in that last fight is still listed).
 
 ## Naming decisions still open
 

@@ -74,6 +74,8 @@ public class HomePlanet {
 	public static boolean immersiveMode = false;
 	/** Transmissions from The Federation Home Planet (the inbox on the Space Dock). Immersive Mode turns it on. */
 	public static boolean immersiveNotifications = false;
+	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
+	public static String finalVictory = "nothing";
 	public static final int JOURNEY_FEE = 200;
 	/** The rules Immersive Mode sets, as the player had them: kept apart, written to the cfg, and back when it's turned off. */
 	public static final class Rules {
@@ -159,6 +161,7 @@ public class HomePlanet {
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
 		immersiveNotifications = flag("immersive_notifications");
+		finalVictory = config.getProperty("final_victory", "nothing");
 		applyImmersive();
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 		log.debug("{} {} starting on Java {}", APP_NAME, APP_VERSION, System.getProperty("java.version"));
@@ -276,6 +279,7 @@ public class HomePlanet {
 					MainFrame frame = new MainFrame(APP_NAME, APP_VERSION);
 					frame.setVisible(true);
 					Music.refresh();
+					SaveWatcher.start(); // FTL's writes to continue.sav, for final victories
 				} catch (Exception e) {
 					log.error("Exception while creating the main window.", e);
 					showErrorDialog("Communication with The Home Planet Station could not be opened:\n" + e);
@@ -340,6 +344,7 @@ public class HomePlanet {
 		config.setProperty("free_ship", freeShip);
 		config.setProperty("unlock_free_ships", Boolean.toString(own.unlockFree));
 		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
+		config.setProperty("final_victory", finalVictory);
 		config.setProperty("immersive_notifications", Boolean.toString(own.notifications));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
 		try {

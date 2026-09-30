@@ -4,6 +4,7 @@
 #
 #   run.sh GAMEDIR [OLDSAVES OLDAPP]
 #     GAMEDIR           the folder with FTL's ftl.dat
+#     (VICLOG=folder    optional, in the environment: a save logger's folder ending in a final victory, for VicT to replay)
 #     OLDSAVES OLDAPP   optional: an old FTL Homeworld saves folder and program folder, to also test the
 #                       HW to FHP converter (ConvT, StoT)
 #
@@ -35,6 +36,7 @@ echo "== PriceT"; run PriceT "$GAME" "$WORLD" "$W/price" | grep -E "$PICK|^PASS|
 echo "== RuleT"; run RuleT "$GAME" "$WORLD" "$W/rule" | grep -E "$PICK|^PASS"
 echo "== FleetT"; run FleetT "$GAME" "$WORLD" "$W/fleet" | grep -E "$PICK|^PASS"
 echo "== TransT"; run TransT "$GAME" "$WORLD" "$W/trans" | grep -E "$PICK|^PASS"
+echo "== VicT"; run VicT "$GAME" "$WORLD" "$W/vic" $VICLOG | grep -E "$PICK|^PASS|^replay"
 
 # the converter, only with old Homeworld data to convert
 if [ $# -ge 3 ]; then

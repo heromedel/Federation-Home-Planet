@@ -25,6 +25,7 @@ import homeplanet.core.HomePlanet;
 import homeplanet.core.ProfileSwap;
 import homeplanet.parser.Career;
 import homeplanet.parser.Clearance;
+import homeplanet.parser.FinalVictory;
 import homeplanet.parser.UnlockGrants;
 import homeplanet.parser.Unlocks;
 import homeplanet.vault.Ship;
@@ -90,6 +91,21 @@ public final class ImmersiveDialog {
 			p.add(gap());
 			p.add(note("Your Immersive career continues where you left it" + (Career.ownProfile(immersiveRoot) ? ", with its own FTL profile" : "") + "."));
 		}
+		p.add(gap());
+		p.add(heading("After a final victory (you can change this later in Settings)"));
+		String was = begun ? Career.finalVictory(immersiveRoot) : FinalVictory.NOTHING;
+		final JRadioButton[] victory = new JRadioButton[FinalVictory.CHOICES.length];
+		ButtonGroup vg = new ButtonGroup();
+		for (int i = 0; i < victory.length; i++) {
+			victory[i] = new JRadioButton(FinalVictory.label(FinalVictory.CHOICES[i]), FinalVictory.CHOICES[i].equals(was));
+			victory[i].setAlignmentX(Component.LEFT_ALIGNMENT);
+			vg.add(victory[i]);
+			p.add(victory[i]);
+		}
+		if (vg.getSelection() == null) victory[0].setSelected(true);
+		p.add(note("Ships are precious in Immersive Mode. A rescue brings her back as she was moments before the final engagement, "
+				+ "or The Federation Home Planet buys her for the museum at her full value; a reward pays her full value instead. "
+				+ "The Home Planet Station must be open while you play."));
 		if (profile != null && (begun ? !Career.ownProfile(immersiveRoot) : true)) {
 			p.add(gap());
 			p.add(heading("Your FTL profile"));
@@ -131,6 +147,7 @@ public final class ImmersiveDialog {
 			HomePlanet.applyImmersive();
 			HomePlanet.saveConfig();
 			if (!begun) Career.start(salaryAll.isSelected() && !ownProfile, ownProfile);
+			for (int i = 0; i < victory.length; i++) if (victory[i].isSelected()) Career.setFinalVictory(Vault.get().root, FinalVictory.CHOICES[i]);
 			UnlockGrants.returning(Unlocks.read()); // a new career starts its record here
 			homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());
 			Vault.get().takeStock();

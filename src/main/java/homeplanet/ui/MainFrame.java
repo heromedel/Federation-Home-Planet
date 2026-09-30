@@ -43,6 +43,11 @@ public class MainFrame extends JFrame {
 				rememberWindow(); // its size, position and maximized state
 				System.exit(0);
 			}
+			@Override
+			public void windowActivated(java.awt.event.WindowEvent e) {
+				// FTL deleted continue.sav while the player was away (a run ended): the Space Dock takes stock at once
+				if (atSpaceDock && homeplanet.core.SaveWatcher.takeGone()) spaceDock.init();
+			}
 		});
 		setTitle(appName + " " + appVersion);
 		Image img = (new ImageIcon((new ResourceClass()).getClass().getResource("LogoIcon.png"))).getImage();

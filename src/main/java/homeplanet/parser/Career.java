@@ -16,7 +16,8 @@ import homeplanet.vault.Vault;
 /**
  * The Immersive career (career.txt in the Immersive fleet's folder): the choices made when it began, fixed from then
  * on (whether the stipend counts every achievement in the FTL profile or only those earned since, and whether
- * Immersive Mode has an FTL profile of its own), and the stipend months paid.
+ * Immersive Mode has an FTL profile of its own), and the stipend months paid. Also what comes after a final victory
+ * (FinalVictory), which can change at any time.
  */
 public final class Career {
 	private static final Logger log = LoggerFactory.getLogger(Career.class);
@@ -48,6 +49,15 @@ public final class Career {
 	public static boolean ownProfile(File immersiveRoot) { return "true".equals(read(immersiveRoot).getProperty("ownProfile")); }
 	/** Does the stipend count every achievement in the FTL profile (chosen when it began), rather than only those earned since? */
 	public static boolean salaryAll(File immersiveRoot) { return "true".equals(read(immersiveRoot).getProperty("salaryAll")); }
+
+	/** What comes after a final victory in this Immersive fleet (FinalVictory.NOTHING, RESCUE or REWARD). */
+	public static String finalVictory(File immersiveRoot) { return read(immersiveRoot).getProperty("finalVictory", FinalVictory.NOTHING); }
+	/** Sets what comes after a final victory in this Immersive fleet (its career must have begun). */
+	public static void setFinalVictory(File immersiveRoot, String choice) throws IOException {
+		Properties p = read(immersiveRoot);
+		p.setProperty("finalVictory", choice);
+		write(immersiveRoot, p);
+	}
 
 	/** Begins a career in the Immersive fleet now open: its choices, and the starting scrap. */
 	public static void start(boolean salaryAll, boolean ownProfile) throws IOException {

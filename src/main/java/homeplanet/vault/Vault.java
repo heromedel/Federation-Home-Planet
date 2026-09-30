@@ -462,6 +462,151 @@ public final class Vault {
 		if (changed) saveManifest();
 	}
 
+	// ---- the final victory (rescue or reward) ----
+
+	/*
+	 * FTL writes continue.sav as the Rebel Flagship heads for the last battle (her pending stage 3, not yet alongside),
+	 * again as she arrives and as the player closes her message, then nothing until the fight ends; a win updates the
+	 * profile (its victory count, a Top Scores entry) and deletes continue.sav a moment later. So the station keeps the
+	 * last copy written while she is on her way, a calm save with no battle in it, and the profile's victory count then.
+	 * When the ship is later found lost, a count gone up means she won.
+	 */
+	private static final String FINAL = "final-battle.sav", FINAL_NOTE = "final-battle.txt";
+	/** Is this save the boarded ship with the Rebel Flagship on her way to the last battle? */
+	static boolean flagshipOnHerWay(SavedGameState gs) {
+		return !gs.isRebelFlagshipNearby() && gs.getRebelFlagshipState() != null && gs.getRebelFlagshipState().getPendingStage() >= 3;
+	}
+	/**
+	 * Watching continue.sav: if it's the boarded ship with the flagship on her way to the last battle, keeps a copy (the
+	 * latest replaces the one before), with the profile's victory count now and her victorious Top Scores entries now.
+	 * True if kept. A save FTL is still writing doesn't read, and is left for the next look.
+	 */
+	public synchronized boolean watchContinue(int victoriesNow, java.util.function.BiFunction<String, String, Integer> victoriousScores) {
+		Ship b = boarded();
+		File cont = continueFile();
+		if (b == null || !cont.isFile()) return false;
+		File dir = historyOf(b), tmp = new File(dir, FINAL + ".tmp");
+		try {
+			if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
+			SafeFiles.copy(cont, tmp); // read from a copy: FTL may write again meanwhile
+			SavedGameState gs;
+			try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(tmp); } catch (Exception e) { return false; } // mid-write
+			if (b.marks != null && !b.marks.isEmpty() && !sameShip(b.marks, gs)) return false; // not her: the next look sorts that out
+			if (!flagshipOnHerWay(gs)) return false;
+			boolean first = !new File(dir, FINAL).isFile();
+			SafeFiles.move(tmp, new File(dir, FINAL));
+			int scoresNow = victoriousScores.apply(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId());
+			if (victoriesNow < 0 || scoresNow < 0) { // the profile didn't read (FTL writing it?): the counts from the copy before stand
+				java.util.Properties p = new java.util.Properties();
+				try { p.load(new java.io.StringReader(new String(SafeFiles.read(new File(dir, FINAL_NOTE)), java.nio.charset.StandardCharsets.UTF_8))); } catch (IOException e) { }
+				if (victoriesNow < 0) victoriesNow = intOf(p, "victoriesThen");
+				if (scoresNow < 0) scoresNow = intOf(p, "scoresThen");
+			}
+			SafeFiles.writeText(new File(dir, FINAL_NOTE), "victoriesThen=" + victoriesNow + "\nscoresThen=" + scoresNow + "\n", false);
+			if (first) HistoryLog.entry("FINAL BATTLE", b.name + ": the Rebel Flagship is on her way to the last battle. A copy is kept in history/" + b.id + "/" + FINAL);
+			return true;
+		} catch (IOException e) {
+			log.warn("Could not keep {}'s copy before the last battle: {}", b, e.toString());
+			return false;
+		} finally {
+			tmp.delete();
+		}
+	}
+	/** A ship lost with a copy kept before the last battle: her id, name, blueprint, the copy, and the profile's counts then. */
+	public static final class FinalBattle {
+		public final String id, name;
+		public final File copy;
+		public final int victoriesThen, scoresThen;
+		/** "offered" once a rescued ship's offer is out (keep her, or the museum); empty before it's settled. */
+		public final String outcome;
+		FinalBattle(String id, String name, File copy, int victoriesThen, int scoresThen, String outcome) {
+			this.id = id; this.name = name; this.copy = copy; this.victoriesThen = victoriesThen; this.scoresThen = scoresThen; this.outcome = outcome;
+		}
+	}
+	/** Ships lost (no longer in the fleet) with a copy kept before the last battle, still to settle or with an offer open. */
+	public synchronized List<FinalBattle> finalBattles() {
+		List<FinalBattle> out = new ArrayList<FinalBattle>();
+		File[] dirs = historyDir().listFiles();
+		if (dirs == null) return out;
+		java.util.Arrays.sort(dirs);
+		for (File d : dirs) {
+			File copy = new File(d, FINAL), note = new File(d, FINAL_NOTE);
+			if (!d.isDirectory() || byId(d.getName()) != null || !copy.isFile()) continue;
+			java.util.Properties p = new java.util.Properties();
+			try { p.load(new java.io.StringReader(new String(SafeFiles.read(note), java.nio.charset.StandardCharsets.UTF_8))); } catch (IOException e) { }
+			String name = d.getName();
+			try {
+				String[] lines = new String(SafeFiles.read(new File(d, FATE_FILE)), java.nio.charset.StandardCharsets.UTF_8).split("\n");
+				if (lines.length > 1) name = lines[1].trim();
+			} catch (IOException e) { }
+			out.add(new FinalBattle(d.getName(), name, copy, intOf(p, "victoriesThen"), intOf(p, "scoresThen"), p.getProperty("outcome", "")));
+		}
+		return out;
+	}
+	private static int intOf(java.util.Properties p, String key) {
+		try { return Integer.parseInt(p.getProperty(key, "-1").trim()); } catch (NumberFormatException e) { return -1; }
+	}
+	/** This ship's final battle (lost, with a copy kept), or null. */
+	public synchronized FinalBattle finalBattle(String id) {
+		for (FinalBattle f : finalBattles()) if (f.id.equals(id)) return f;
+		return null;
+	}
+	/** Notes that a rescued ship's offer is out (so it isn't made twice). */
+	public synchronized void finalOffered(FinalBattle f) throws IOException { finalNote(f, "offered"); }
+	/** Notes that her reward is being paid (so it isn't paid twice). */
+	public synchronized void finalRewarded(FinalBattle f) throws IOException { finalNote(f, "rewarded"); }
+	/** Takes back a note (a payment that failed). */
+	public synchronized void finalUnsettled(FinalBattle f) {
+		try { finalNote(f, ""); } catch (IOException e) { log.error("Could not take back the note on {}'s final battle", f.name, e); }
+	}
+	private void finalNote(FinalBattle f, String outcome) throws IOException {
+		SafeFiles.writeText(new File(f.copy.getParentFile(), FINAL_NOTE), "victoriesThen=" + f.victoriesThen + "\nscoresThen=" + f.scoresThen
+				+ (outcome.isEmpty() ? "" : "\noutcome=" + outcome) + "\n", false);
+	}
+	/**
+	 * Closes a final battle: her copy stays in her history as a kept version, named for what came of it
+	 * ("victory-…" or "final-battle-…").
+	 */
+	public synchronized void closeFinal(FinalBattle f, boolean victory) {
+		File dir = f.copy.getParentFile();
+		String stamp;
+		synchronized (STAMP) { stamp = STAMP.format(new Date()); }
+		if (!f.copy.renameTo(new File(dir, (victory ? "victory-" : "final-battle-") + stamp + ".sav"))) log.warn("Could not rename {}", f.copy);
+		new File(dir, FINAL_NOTE).delete();
+	}
+	/**
+	 * Brings a victorious ship home from her copy: docked, her journey reset as a New Journey would (the flagship and
+	 * its fleet gone from her charts), her crew, cargo and damage as they were.
+	 */
+	public synchronized Ship bringHome(FinalBattle f) throws IOException {
+		if (byId(f.id) != null) throw new IOException(f.name + " is already in the fleet");
+		SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(f.copy);
+		SaveHelper.startJourney(gs, gs.getDifficulty());
+		java.util.Iterator<net.blerf.ftl.parser.SavedGameParser.CrewState> it = gs.getPlayerShip().getCrewList().iterator();
+		while (it.hasNext()) if (!SaveHelper.isOwnCrew(it.next())) it.remove(); // boarders and the like stay behind
+		Ship s = new Ship(f.id, gs.getPlayerShipName(), Ship.State.DOCKED, gs.isDLCEnabled());
+		writeQuietly(s, gs);
+		ships.add(s);
+		try {
+			saveManifest();
+		} catch (IOException e) {
+			ships.remove(s);
+			fileOf(s).delete();
+			throw e;
+		}
+		new File(historyOf(s), FATE_FILE).delete();
+		closeFinal(f, true);
+		HistoryLog.entry("VICTORY", s.name + " was rescued after the last battle: docked, ready for a new journey");
+		return s;
+	}
+	/** A rescued ship goes to the Federation museum instead: her fate recorded, her copy kept as her last version. */
+	public synchronized void toMuseum(FinalBattle f) {
+		Ship gone = new Ship(f.id, f.name, Ship.State.DOCKED, true);
+		recordFate(gone, Fate.MUSEUM);
+		closeFinal(f, true);
+		HistoryLog.entry("MUSEUM", f.name + " is honoured in the Federation museum");
+	}
+
 	// ---- Steam Cloud's copies ----
 
 	private String cloudCopy = null;
@@ -889,7 +1034,9 @@ public final class Vault {
 		/** FTL ended her run while she was boarded (continue.sav deleted): her last save is the one she was boarded with. */
 		LOST,
 		/** Stripped for parts: everything aboard went into storage, so she can't come back without duplicating it. */
-		SCRAPPED
+		SCRAPPED,
+		/** Sold to the Federation museum after a final victory: her price was paid, so she doesn't come back. */
+		MUSEUM
 	}
 	private static final String FATE_FILE = "fate.txt";
 	private void recordFate(Ship s, Fate fate) {
@@ -921,7 +1068,7 @@ public final class Vault {
 			try {
 				String[] lines = new String(SafeFiles.read(fate), java.nio.charset.StandardCharsets.UTF_8).split("\n");
 				Fate f = Fate.valueOf(lines[0].trim());
-				if (f == Fate.SCRAPPED) continue;
+				if (f == Fate.SCRAPPED || f == Fate.MUSEUM) continue;
 				File[] saves = d.listFiles(new java.io.FileFilter() { public boolean accept(File x) { return x.isFile() && x.getName().endsWith(".sav"); } });
 				if (saves == null || saves.length == 0) continue;
 				java.util.Arrays.sort(saves, OLDEST_FIRST);
@@ -944,6 +1091,7 @@ public final class Vault {
 		s.hash = SafeFiles.hash(to);
 		ships.add(s);
 		new File(d.last.getParentFile(), FATE_FILE).delete();
+		if (new File(d.last.getParentFile(), FINAL).isFile()) closeFinal(new FinalBattle(d.id, d.name, new File(d.last.getParentFile(), FINAL), -1, -1, ""), false); // settled by coming back
 		saveManifest();
 		s.save(); // her name and DLC flag, as the save has them
 		HistoryLog.entry("RECOVER", s.name + " (" + d.fate.name().toLowerCase() + ")  history/" + s.id + "/" + d.last.getName() + " -> ships/" + s.id + ".sav");

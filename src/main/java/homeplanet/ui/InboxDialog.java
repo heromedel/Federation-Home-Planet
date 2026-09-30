@@ -39,6 +39,7 @@ public class InboxDialog extends JDialog {
 	private final JButton claim = new JButton("Claim");
 	private final JButton commission = new JButton("Commission...");
 	private final JButton archive = new JButton("Archive");
+	private final JButton keep = new JButton("Keep her"), museum = new JButton("Accept the museum's offer");
 	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton();
 	private java.util.List<Transmissions.Message> all;
 	private boolean openCommission;
@@ -59,7 +60,7 @@ public class InboxDialog extends JDialog {
 			@Override
 			public Component getListCellRendererComponent(JList<?> l, Object v, int i, boolean sel, boolean focus) {
 				Transmissions.Message m = (Transmissions.Message) v;
-				String mark = m.hasReward() && !m.claimed ? "  [reward]" : "";
+				String mark = m.hasReward() && !m.claimed ? "  [reward]" : Transmissions.isRescue(m) && !m.claimed ? "  [your decision]" : "";
 				super.getListCellRendererComponent(l, "<html>" + (m.read ? "" : "<b>") + homeplanet.parser.XmlText.text(m.subject) + (m.read ? "" : "</b>")
 						+ "<br><font color='#888888'>" + homeplanet.parser.XmlText.text(m.from) + " · " + m.date + mark + "</font></html>", i, sel, focus);
 				setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
@@ -84,6 +85,8 @@ public class InboxDialog extends JDialog {
 		JPanel act = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
 		act.add(claim);
 		act.add(commission);
+		act.add(keep);
+		act.add(museum);
 		act.add(archive);
 		act.add(rewardLabel);
 		right.add(act, BorderLayout.SOUTH);
@@ -91,6 +94,10 @@ public class InboxDialog extends JDialog {
 		commission.setToolTipText("Go to Commission: the ship this order grants is marked free there");
 		commission.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { openCommission = true; dispose(); } });
 		archive.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { archiveSelected(); } });
+		keep.setToolTipText("She docks at the Space Dock, ready for a new journey from the first sector");
+		keep.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(true); } });
+		museum.setToolTipText("Her full value goes to Spacedock Storage, and she to the Federation museum");
+		museum.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(false); } });
 		javax.swing.ButtonGroup tabs = new javax.swing.ButtonGroup();
 		tabs.add(inboxTab);
 		tabs.add(archiveTab);
@@ -149,6 +156,8 @@ public class InboxDialog extends JDialog {
 			text.setText("");
 			claim.setVisible(false);
 			commission.setVisible(false);
+			keep.setVisible(false);
+			museum.setVisible(false);
 			archive.setVisible(false);
 			rewardLabel.setText(" ");
 			return;
@@ -159,14 +168,33 @@ public class InboxDialog extends JDialog {
 		claim.setVisible(m.hasReward());
 		claim.setEnabled(canClaim);
 		commission.setVisible(m.isOrder());
+		boolean open = Transmissions.isRescue(m) && !m.claimed;
+		keep.setVisible(open);
+		museum.setVisible(open);
 		archive.setVisible(true);
 		boolean stipend = Transmissions.isStipend(m);
 		archive.setText(stipend ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
 		archive.setToolTipText(stipend ? "Delete this notice: the scrap is already in Spacedock Storage" : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
 		rewardLabel.setForeground(canClaim ? new Color(40, 150, 60) : Color.GRAY);
-		rewardLabel.setText(!m.hasReward() ? " " : m.claimed ? "Claimed: " + m.claimedWhat : "Reward: " + Transmissions.describeReward(m));
+		rewardLabel.setText(Transmissions.isRescue(m) ? (m.claimed ? m.claimedWhat : " ") : !m.hasReward() ? " " : m.claimed ? "Claimed: " + m.claimedWhat : "Reward: " + Transmissions.describeReward(m));
+		if (Transmissions.isRescue(m)) rewardLabel.setForeground(Color.GRAY);
 		Transmissions.markRead(m);
 		list.repaint();
+	}
+
+	/** A rescued ship's offer: keep her, or the museum's price. */
+	private void decide(boolean keepHer) {
+		Transmissions.Message m = list.getSelectedValue();
+		if (m == null || m.claimed) return;
+		try {
+			homeplanet.vault.Vault.FinalBattle f = homeplanet.parser.FinalVictory.offer(Transmissions.rescueId(m));
+			String what = f == null ? "Already settled." : keepHer ? homeplanet.parser.FinalVictory.keep(f) : homeplanet.parser.FinalVictory.museum(f);
+			Transmissions.decided(m, what);
+			JOptionPane.showMessageDialog(this, what, m.subject, JOptionPane.INFORMATION_MESSAGE);
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not do that:\n" + e.getMessage());
+		}
+		show(m);
 	}
 
 	private void claimSelected() {

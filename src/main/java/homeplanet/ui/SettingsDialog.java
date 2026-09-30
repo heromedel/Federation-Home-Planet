@@ -38,6 +38,9 @@ public class SettingsDialog extends JDialog {
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging (shown in the console window)", HomePlanet.debugLogging);
 	private boolean savesChanged = false;
+	/** After a final victory: nothing, rescue her, or a reward of her value (the fleet in use has its own choice). */
+	private final javax.swing.JRadioButton[] victoryButtons = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
+	private final String victoryWas = homeplanet.parser.FinalVictory.choice();
 
 	/** Shows the dialog. Returns true if the saves folder changed (so the Space Dock should reload). */
 	public static boolean open(java.awt.Component owner) {
@@ -184,6 +187,21 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Rules");
 		rules.addTo(body, c);
 
+		heading(body, c, "After a final victory" + (homeplanet.vault.Vault.get().immersive ? " (Immersive fleet)" : ""));
+		javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
+		for (int i = 0; i < victoryButtons.length; i++) {
+			String ch = homeplanet.parser.FinalVictory.CHOICES[i];
+			victoryButtons[i] = new javax.swing.JRadioButton(homeplanet.parser.FinalVictory.label(ch), ch.equals(victoryWas));
+			victoryGroup.add(victoryButtons[i]);
+			body.add(victoryButtons[i], next(c));
+		}
+		victoryButtons[1].setToolTipText("She comes back as she was moments before the final engagement, ready for a new journey; or take her full value for the museum");
+		victoryButtons[2].setToolTipText("Her full value, as the shipyard would charge for her, goes to Spacedock Storage");
+		JLabel victoryNote = new JLabel("<html><div style='width:520px'><font color='#777777'>For a rescue or a reward, The Home Planet Station must be open while you play: "
+				+ "it keeps her as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
+		victoryNote.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
+		body.add(victoryNote, next(c));
+
 		heading(body, c, "Troubleshooting");
 		body.add(debugBox, next(c));
 
@@ -240,6 +258,7 @@ public class SettingsDialog extends JDialog {
 		if (gameChanged) changed.add("Game folder: " + game.getPath());
 		if (steamBox.isSelected() != HomePlanet.launchThroughSteam) changed.add("Launch through Steam: " + steamBox.isSelected());
 		rules.describeChanges(changed);
+		if (!victoryChoice().equals(victoryWas)) changed.add("After a final victory: " + victoryChoice());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
 		if (!changed.isEmpty()) homeplanet.core.HistoryLog.entry("SETTINGS", "", changed);
@@ -258,6 +277,10 @@ public class SettingsDialog extends JDialog {
 		HomePlanet.datsPath = game;
 		HomePlanet.launchThroughSteam = steamBox.isSelected();
 		rules.apply();
+		if (!savesChanged && !victoryChoice().equals(victoryWas)) {
+			try { homeplanet.parser.FinalVictory.setChoice(victoryChoice()); }
+			catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not record the choice after a final victory:\n" + e.getMessage()); }
+		}
 		HomePlanet.setDebugLogging(debugBox.isSelected());
 		homeplanet.core.Music.enabled = musicBox.isSelected();
 		homeplanet.core.Music.refresh(); // starts or stops right away
@@ -405,6 +428,11 @@ public class SettingsDialog extends JDialog {
 		ta.setCaretPosition(0);
 		javax.swing.JScrollPane sp = new javax.swing.JScrollPane(ta);
 		JOptionPane.showMessageDialog(this, sp, title, JOptionPane.PLAIN_MESSAGE);
+	}
+
+	private String victoryChoice() {
+		for (int i = 0; i < victoryButtons.length; i++) if (victoryButtons[i].isSelected()) return homeplanet.parser.FinalVictory.CHOICES[i];
+		return homeplanet.parser.FinalVictory.NOTHING;
 	}
 
 	static void heading(JPanel body, GridBagConstraints c, String text) {

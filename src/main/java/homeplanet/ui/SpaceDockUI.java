@@ -75,6 +75,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not take stock of the fleet:\n" + e);
 		}
+		final List<homeplanet.parser.FinalVictory.Notice> victories = homeplanet.parser.FinalVictory.settle(); // before the inbox counts its messages
 		boardButtons.clear();
 		infoButtons.clear();
 		setLayout(new java.awt.BorderLayout(0, 0));
@@ -189,11 +190,49 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 						+ "To stop this, turn off Steam Cloud for FTL: in your Steam library, right-click FTL, Properties, General.", "Steam Cloud", JOptionPane.WARNING_MESSAGE);
 			} });
 		}
+		for (final homeplanet.parser.FinalVictory.Notice n : victories) {
+			if (n.offer != null && deferredOffers.contains(n.offer.id)) continue;
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { victoryNotice(n); } });
+		}
 		final String over = vault.takeOverwritten();
 		final Ship stranger = vault.boarded() != null && vault.boarded().stranger && !deferredStrangers.contains(vault.boarded().id) ? vault.boarded() : null;
 		if (over != null || (stranger != null && HomePlanet.immersiveMode)) {
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { newGameNotice(over, stranger); } });
 		}
+	}
+
+	/** Rescue offers the player put off deciding: asked again at the next start (or in the inbox, with Transmissions on). */
+	private final java.util.Set<String> deferredOffers = new java.util.HashSet<String>();
+	private final java.util.Set<String> askingOffers = new java.util.HashSet<String>();
+	/** A final victory, with Transmissions off: the reward's notice, or the rescue's offer (keep her, or the museum's price). */
+	private void victoryNotice(homeplanet.parser.FinalVictory.Notice n) {
+		javax.swing.JTextArea t = new javax.swing.JTextArea(n.text);
+		t.setEditable(false);
+		t.setLineWrap(true);
+		t.setWrapStyleWord(true);
+		t.setOpaque(false);
+		t.setColumns(52);
+		t.setFont(new java.awt.Font(java.awt.Font.SERIF, java.awt.Font.PLAIN, 14));
+		t.setSize(new Dimension(520, 10)); // wraps to this width before the dialog measures it
+		if (n.offer == null) {
+			JOptionPane.showMessageDialog(null, t, n.title, JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		if (!askingOffers.add(n.offer.id)) return; // already on screen
+		try {
+			Object[] options = {"Keep her", "Accept the museum's offer (" + n.value + " scrap)", "Decide later"};
+			int c = JOptionPane.showOptionDialog(null, t, n.title, JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+			if (c != 0 && c != 1) { deferredOffers.add(n.offer.id); return; }
+			homeplanet.vault.Vault.FinalBattle f = homeplanet.parser.FinalVictory.offer(n.offer.id);
+			if (f == null) return; // settled meanwhile
+			String what = c == 0 ? homeplanet.parser.FinalVictory.keep(f) : homeplanet.parser.FinalVictory.museum(f);
+			JOptionPane.showMessageDialog(null, what, n.title, JOptionPane.INFORMATION_MESSAGE);
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not do that:\n" + e.getMessage());
+		} finally {
+			askingOffers.remove(n.offer.id);
+		}
+		init();
 	}
 
 	private boolean askingAboutStranger = false;

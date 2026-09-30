@@ -113,6 +113,17 @@ public final class Pricing {
 	 * drones, augments (her cargo too) and crew. A custom design also pays for each room and door
 	 * ({@code rooms}, {@code doors}; 0 for FTL's own ships and remodels of them).
 	 */
+	/** The same, with the rooms and doors of the custom design she was built from, if she was (none for FTL's own ships). */
+	public static Quote ship(SavedGameState gs, int percent) {
+		int rooms = 0, doors = 0;
+		String bpId = gs.getPlayerShipBlueprintId();
+		for (ShipDesign d : DesignExport.built()) {
+			if (!bpId.equals(DesignExport.bpId(d))) continue;
+			rooms = d.rooms.size();
+			doors = d.doors.size();
+		}
+		return ship(gs, rooms, doors, percent);
+	}
 	public static Quote ship(SavedGameState gs, int rooms, int doors, int percent) {
 		Quote q = new Quote();
 		q.percent = percent;

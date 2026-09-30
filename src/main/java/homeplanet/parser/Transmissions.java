@@ -263,6 +263,52 @@ public final class Transmissions {
 		for (java.util.Iterator<Message> it = all.iterator(); it.hasNext();) if (it.next().key.equals(m.key)) it.remove();
 		save(all);
 	}
+	// ---- a final victory's messages ----
+
+	/** A message's from, subject and text from its template, with {rank} and the other {placeholders} filled. */
+	public static String[] text(String templateKey, Map<String, String> fills) {
+		Template t = templates().get(templateKey);
+		if (t == null) return null;
+		Map<String, String> f = new LinkedHashMap<String, String>(fills);
+		if (!f.containsKey("rank")) {
+			Unlocks u = Unlocks.read();
+			f.put("rank", rankName(u.problem() == null ? u : null));
+		}
+		String[] out = {t.from, t.subject, t.body.toString().trim()};
+		for (int i = 0; i < out.length; i++) for (Map.Entry<String, String> e : f.entrySet()) out[i] = out[i].replace("{" + e.getKey() + "}", e.getValue());
+		return out;
+	}
+	/** Sends one message now, from its template with the {placeholders} filled; nothing if one with this key was sent before. */
+	public static synchronized void post(String key, String templateKey, Map<String, String> fills) throws IOException {
+		List<Message> all = load();
+		for (Message m : all) if (m.key.equals(key)) return;
+		String[] t = text(templateKey, fills);
+		if (t == null) return;
+		Message m = new Message();
+		m.key = key;
+		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.from = t[0];
+		m.subject = t[1];
+		m.body = t[2];
+		m.reward = "";
+		all.add(0, m);
+		save(all);
+		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
+	}
+	/** A rescued ship's offer (keep her, or the museum's price), until it's decided. */
+	public static boolean isRescue(Message m) { return m.key.startsWith("rescue:"); }
+	/** The ship id a rescue offer is about. */
+	public static String rescueId(Message m) { return m.key.substring("rescue:".length()); }
+	/** Records a rescue offer as decided, with what came of it in words. */
+	public static synchronized void decided(Message m, String what) throws IOException {
+		m.claimed = true;
+		m.read = true;
+		m.claimedWhat = what;
+		List<Message> all = load();
+		for (Message x : all) if (x.key.equals(m.key)) { x.claimed = true; x.read = true; x.claimedWhat = what; }
+		save(all);
+	}
+
 	private static String stamp() { return new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()); }
 	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship) {
 		if (sent.contains(key)) return;

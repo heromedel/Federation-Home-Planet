@@ -318,13 +318,7 @@ public class CommissionDialog extends JDialog {
 
 	/** HR2: her price as built, with a custom design's rooms and doors. */
 	static homeplanet.parser.Pricing.Quote quote(String bpId, SavedGameState s) {
-		int rooms = 0, doors = 0;
-		for (homeplanet.parser.ShipDesign d : homeplanet.parser.DesignExport.built()) {
-			if (!bpId.equals(homeplanet.parser.DesignExport.bpId(d))) continue;
-			rooms = d.rooms.size();
-			doors = d.doors.size();
-		}
-		return homeplanet.parser.Pricing.ship(s, rooms, doors, HomePlanet.commissionPercent);
+		return homeplanet.parser.Pricing.ship(s, HomePlanet.commissionPercent);
 	}
 	private void showPrice(homeplanet.parser.Pricing.Quote q) {
 		int have = homeplanet.vault.Vault.get().storageScrap();

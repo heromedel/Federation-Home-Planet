@@ -81,6 +81,17 @@ the layout letter filled in)
 - **Lanius:** "A Lanius vessel was captured intact, a first for the fleet. Engineering has learned enough to build
   a {ship}. Keep her away from your spare metal."
 
+## After a final victory
+
+Sent when a ship wins the last battle and the fleet's choice is a rescue or a reward (ROADMAP item 10); shown as a
+notice on the Space Dock instead when Transmissions are off. `{ship}` is her name, `{value}` her full value.
+
+- **rescue** (Federation Fleet Command, "Rescued from the Final Engagement"): the Rebel Flagship has withdrawn; she is
+  restored as she was moments before the final engagement; keep her, or accept the museum's offer of her full value.
+  The message has the buttons **Keep her** and **Accept the museum's offer**, until one is chosen.
+- **reward** (The Federation Home Planet, "In Recognition"): she could not be recovered; her full value is waiting in
+  Spacedock Storage.
+
 ## Promotions (Federation Fleet Admiral)
 
 **Commander → Captain** (when the Federation Cruiser A unlocks). Based on heromedel's draft:

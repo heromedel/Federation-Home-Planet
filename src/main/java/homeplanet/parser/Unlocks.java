@@ -47,6 +47,23 @@ public class Unlocks {
 	/** Null if the profile was read; otherwise why not (then nothing counts as locked). */
 	public String problem() { return problem; }
 
+	/** The profile's total victories (FTL's own count), or -1 if it couldn't be read. */
+	public int victories() {
+		if (profile == null || profile.getStats() == null) return -1;
+		return profile.getStats().getIntRecord(net.blerf.ftl.model.Stats.StatType.TOTAL_VICTORIES);
+	}
+	/** Victorious entries naming this ship (her name and blueprint) in the profile's Top Scores and Ship Best, or -1 if unread. */
+	public int victoriousScores(String shipName, String shipId) {
+		if (profile == null || profile.getStats() == null) return -1;
+		int n = 0;
+		List<net.blerf.ftl.model.Score> all = new java.util.ArrayList<net.blerf.ftl.model.Score>(profile.getStats().getTopScores());
+		all.addAll(profile.getStats().getShipBest());
+		for (net.blerf.ftl.model.Score s : all) {
+			if (s.isVictory() && shipName.equals(s.getShipName()) && shipId.equals(s.getShipId())) n++;
+		}
+		return n;
+	}
+
 	/** The achievement ids the profile has earned (empty if it couldn't be read). */
 	public java.util.Set<String> achievements() {
 		java.util.Set<String> out = new java.util.LinkedHashSet<String>();
