@@ -279,7 +279,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	void markDirty() { dirty = true; saveBtn.repaint(); }
 	boolean isDirty() { return dirty; }
 	/** Asks before throwing away unsaved changes; true to go on. */
-	private boolean confirmLeave(String doing) {
+	boolean confirmLeave(String doing) {
 		if (!dirty) return true;
 		Object[] opts = {"Save first", "Discard changes", "Cancel"};
 		int r = JOptionPane.showOptionDialog(this, "You have unsaved changes in the Cargo Bay.\nSave them before you " + doing + "?", "Unsaved changes",

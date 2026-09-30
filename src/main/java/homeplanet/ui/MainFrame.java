@@ -35,10 +35,14 @@ public class MainFrame extends JFrame {
 	private final HashMap<String, BufferedImage> scaledCache = new HashMap<String, BufferedImage>();
 
 	public MainFrame(String appName, String appVersion) {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		addWindowListener(new java.awt.event.WindowAdapter() { // remember the window's size, position and maximized state
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // closing asks first when the Cargo Bay has unsaved changes
+		addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
-			public void windowClosing(java.awt.event.WindowEvent e) { rememberWindow(); }
+			public void windowClosing(java.awt.event.WindowEvent e) {
+				if (!atSpaceDock && !cargoBay.confirmLeave("close The Home Planet Station interface")) return;
+				rememberWindow(); // its size, position and maximized state
+				System.exit(0);
+			}
 		});
 		setTitle(appName + " " + appVersion);
 		Image img = (new ImageIcon((new ResourceClass()).getClass().getResource("LogoIcon.png"))).getImage();
