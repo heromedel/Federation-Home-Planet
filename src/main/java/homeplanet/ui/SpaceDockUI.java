@@ -118,7 +118,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
 		controlGroup(controls, "Helm", launchBtn, journeyBtn);
-		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, report for reassignment");
+		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn);
 		designBtn = controlButton("Design Ship", "Lay out a new ship of your own on a blank grid");
 		controlGroup(controls, "Shipyard", commissionBtn, designBtn, salvageBtn, disbandBtn);
@@ -437,6 +437,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			public void actionPerformed(ActionEvent e) { recoverShip(); }
 		});
 		menu.add(recover);
+		javax.swing.JMenuItem clean = new javax.swing.JMenuItem("Clean up blueprints...");
+		clean.setToolTipText("Remove old blueprints no ship uses any more from the Federation Home Planet Mod (rarely needed)");
+		clean.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(ActionEvent e) { BlueprintCleanup.run(SpaceDockUI.this); }
+		});
+		menu.add(clean);
 		menu.addSeparator();
 		Vault v = Vault.get();
 		javax.swing.JMenuItem report = new javax.swing.JMenuItem("Report for Reassignment...");

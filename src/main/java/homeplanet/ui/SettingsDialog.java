@@ -78,6 +78,11 @@ public class SettingsDialog extends JDialog {
 		openSaves.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { openFolder(saves); }
 		});
+		JButton openStation = new JButton("Open the station's folder");
+		openStation.setToolTipText("Open The Home Planet Station's own folder (its ships, Junkyard, records and blueprints) in Windows Explorer: for backups, or a look around");
+		openStation.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().root); }
+		});
 		JButton openJunk = new JButton("Open Junkyard");
 		openJunk.setToolTipText("Open the Junkyard folder (disbanded ships) in Windows Explorer");
 		openJunk.addActionListener(new ActionListener() {
@@ -118,6 +123,8 @@ public class SettingsDialog extends JDialog {
 		});
 		openRow.add(openSaves);
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
+		openRow.add(openStation);
+		openRow.add(javax.swing.Box.createHorizontalStrut(8));
 		openRow.add(openJunk);
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
 		openRow.add(openLog);
@@ -153,16 +160,9 @@ public class SettingsDialog extends JDialog {
 				if (d != null) openFolder(homeplanet.core.Slipstream.modsDir(d));
 			}
 		});
-		JButton cleanBtn = new JButton("Clean up blueprints");
-		cleanBtn.setToolTipText("Remove The Home Planet Station's own blueprints that no ship uses anymore. Checks every save at the Space Dock, docked, and in the Junkyard");
-		cleanBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { cleanBlueprints(); }
-		});
 		modRow.add(patchBtn);
 		modRow.add(javax.swing.Box.createHorizontalStrut(8));
 		modRow.add(modsBtn);
-		modRow.add(javax.swing.Box.createHorizontalStrut(8));
-		modRow.add(cleanBtn);
 		modRow.add(javax.swing.Box.createHorizontalStrut(8));
 		JButton starterBtn = new JButton("Blueprints...");
 		starterBtn.setToolTipText("Your own blueprints (remodels and designs): which can be commissioned, and their names and starting loadouts");
@@ -334,68 +334,6 @@ public class SettingsDialog extends JDialog {
 		String text = cls + "  (" + r.ship + "'s layout, " + r.made + ")";
 		if (!homeplanet.parser.CompanionMod.inGameData(r.id)) text += "  - not patched in yet";
 		return text;
-	}
-
-	/** Moves remodels no save names into Removed Blueprints.log, rebuilds the mod, and offers to patch. */
-	private void cleanBlueprints() {
-		java.util.List<homeplanet.parser.CompanionMod.Remodel> all = homeplanet.parser.CompanionMod.load();
-		java.util.List<homeplanet.parser.ShipDesign> designs = homeplanet.parser.ShipDesign.load();
-		boolean anyRetired = false;
-		for (homeplanet.parser.ShipDesign d : designs) if (d.retired) anyRetired = true;
-		if (all.isEmpty() && !anyRetired) {
-			JOptionPane.showMessageDialog(this, "No ship has been remodeled, and no design retired: there's nothing to clean up.", "Clean up blueprints", JOptionPane.INFORMATION_MESSAGE);
-			return;
-		}
-		homeplanet.vault.Vault vault = homeplanet.vault.Vault.get();
-		if (vault.anyUnscannable()) {
-			JOptionPane.showMessageDialog(this, "One of the ships' saves can't be read right now (is FTL running?), so The Home Planet Station can't safely tell which blueprints are unused.\n"
-					+ "Try again later.", "Clean up blueprints", JOptionPane.WARNING_MESSAGE);
-			return;
-		}
-		java.util.Set<String> used = vault.blueprintsInUseOrHistory(); // a ship's kept earlier versions may still need one to come back
-		java.util.List<homeplanet.parser.CompanionMod.Remodel> unused = new java.util.ArrayList<homeplanet.parser.CompanionMod.Remodel>();
-		java.util.List<homeplanet.parser.ShipDesign> unusedDesigns = new java.util.ArrayList<homeplanet.parser.ShipDesign>();
-		StringBuilder list = new StringBuilder();
-		for (homeplanet.parser.CompanionMod.Remodel r : all) {
-			if (used.contains(r.id)) continue;
-			unused.add(r);
-			list.append("\n  ").append(r.id).append("  (made for ").append(r.ship).append(", ").append(r.made).append(")");
-		}
-		for (homeplanet.parser.ShipDesign d : designs) {
-			if (!d.retired || used.contains(homeplanet.parser.DesignExport.bpId(d))) continue;
-			unusedDesigns.add(d);
-			list.append("\n  ").append(homeplanet.parser.DesignExport.bpId(d)).append("  (retired design ").append(d.name).append(d.version > 1 ? " v" + d.version : "").append(")");
-		}
-		int count = unused.size() + unusedDesigns.size();
-		if (count == 0) {
-			JOptionPane.showMessageDialog(this, "Every blueprint on file is still used by a ship, or by a ship's kept records.", "Clean up blueprints", JOptionPane.INFORMATION_MESSAGE);
-			return;
-		}
-		Object[] opts = {"Remove", "Cancel"};
-		int r = JOptionPane.showOptionDialog(this, (count == 1 ? "1 blueprint is" : count + " blueprints are") + " no longer used by any ship:" + list
-				+ "\n\nRemove " + (count == 1 ? "it" : "them") + "? " + (count == 1 ? "It goes" : "They go") + " into " + homeplanet.parser.CompanionMod.removedLog().getName() + ", where "
-				+ (count == 1 ? "it" : "they") + " can be pasted back by hand.",
-				"Clean up blueprints", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, opts, opts[1]);
-		if (r != 0) return;
-		try {
-			for (homeplanet.parser.CompanionMod.Remodel u : unused) { homeplanet.parser.CompanionMod.retire(u); all.remove(u); }
-			for (homeplanet.parser.ShipDesign d : unusedDesigns) { homeplanet.parser.CompanionMod.retire(d); designs.remove(d); }
-			if (!unused.isEmpty()) homeplanet.parser.CompanionMod.save(all);
-			if (!unusedDesigns.isEmpty()) homeplanet.parser.ShipDesign.save(designs);
-		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not update the blueprint files:\n" + ex);
-			return;
-		}
-		java.util.List<String> ids = new java.util.ArrayList<String>();
-		for (homeplanet.parser.CompanionMod.Remodel u : unused) ids.add(u.id);
-		for (homeplanet.parser.ShipDesign d : unusedDesigns) ids.add(homeplanet.parser.DesignExport.bpId(d) + " (" + d.name + ")");
-		homeplanet.core.HistoryLog.entry("CLEAN", "Removed " + count + " unused blueprint(s)", ids);
-		File mod = homeplanet.core.Slipstream.writeMod();
-		Object[] opts2 = {"Patch Now", "Later"};
-		int p = JOptionPane.showOptionDialog(this, "Removed. The Federation Home Planet Mod was rebuilt" + (mod == null ? "." : " at:\n" + mod.getPath())
-				+ "\n\nSend the patch to FTL via Slipstream now so the game matches?",
-				"Clean up blueprints", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts2, opts2[0]);
-		if (p == 0) PatchDialog.open(this);
 	}
 
 	private void refreshLabels() {

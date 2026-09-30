@@ -123,7 +123,7 @@ ship pays, and Save makes it official (Reset undoes it).
 - **Repairs:** a Hull row; Repair fixes as many points as she can afford. **Check:** the price is 2 scrap a point in
   sectors 1-2 and one more every two sectors after; FTL's own store rate should be confirmed in a real run.
 
-## 6. Fixes from testing, and the settings moves
+## 6. Fixes from testing, and the settings moves — done, except the reactor prices
 
 - **Hull repairs at FTL's rate:** 2 scrap a point in sectors 1-3, 3 in sectors 4-6, 4 in sectors 7-8 (FTL wiki).
 - **Reactor prices:** waiting on heromedel's numbers from FTL's upgrade screen (he remembers about 25, then 30, then

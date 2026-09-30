@@ -58,12 +58,9 @@ public final class Pricing {
 	}
 	/** FTL's reactor limit (Advanced Edition). */
 	public static final int REACTOR_MAX = 25;
-	/**
-	 * One point of hull repaired at a store in this sector (1-based). FTL's stores charge more as the journey goes on;
-	 * the station's rate is 2 scrap in sectors 1-2, one more every two sectors after.
-	 */
+	/** One point of hull repaired at a store in this sector (1-based), as FTL charges: 2 scrap in sectors 1-3, 3 in 4-6, 4 after. */
 	public static int hullRepair(int sector) {
-		return 2 + (Math.max(1, sector) - 1) / 2;
+		return sector <= 3 ? 2 : sector <= 6 ? 3 : 4;
 	}
 
 	/** The price of the reactor's nth bar (1-based), as FTL's upgrade screen charges: 30 for bars 1-5, then 5 more every 5 bars. */
