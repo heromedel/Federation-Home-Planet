@@ -72,9 +72,9 @@ public final class Pricing {
 	public static final int HULL_REPAIR = 4;
 	public static int hullRepair() { return HULL_REPAIR; }
 
-	/** The price of the reactor's nth bar (1-based), as FTL's upgrade screen charges: 30 for bars 1-5, then 5 more every 5 bars. */
+	/** The price of the reactor's nth bar (1-based), as FTL's upgrade screen charges: 15 for bars 1-5, then 5 more every 5 bars (35 for 21-25). */
 	public static int reactorBar(int n) {
-		return 30 + 5 * ((Math.max(1, n) - 1) / 5);
+		return 15 + 5 * ((Math.max(1, n) - 1) / 5);
 	}
 	/** Reactor power, bar by bar from the first. */
 	public static int reactor(int bars) {

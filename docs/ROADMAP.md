@@ -70,8 +70,8 @@ ship moving between the Space Dock, Junkyard and history needs no bookkeeping.
 
 ## 4. Pricing and house rules — done (harness tests PriceT, RuleT)
 
-Pricing (`parser/Pricing`), HR1 and HR2 are built (harness test PriceT). A Kestrel A comes to 1005 scrap
-under HR2 (systems 497, reactor 255, gear 118, crew 135). Reactor bars are priced 30 each for the first 5, then 5
+Pricing (`parser/Pricing`), HR1 and HR2 are built (harness test PriceT). A Kestrel A comes to 885 scrap
+under HR2 (systems 497, reactor 135, gear 118, crew 135). Reactor bars are priced 15 each for the first 5, then 5
 more every 5 bars. Selling a stored system pays the boarded ship, as a store would.
 
 Also built: the empty-shipyard free ship (a setting under HR2: a Kestrel A by default, any ship, or the relief ship,
@@ -120,15 +120,16 @@ Built into the Cargo Bay's Refit tab, so it follows the one trading rule with th
 ship pays, and Save makes it official (Reset undoes it).
 
 - **Upgrades:** an **Up: price** button on each installed system (FTL's upgrade cost for the next level, up to FTL's
-  limit or her room's), and a Reactor row (30 a bar up to 5, then 5 more every 5 bars, up to 25).
+  limit or her room's), and a Reactor row (15 a bar up to 5, then 5 more every 5 bars, up to 25).
 - **Repairs:** a Hull row; Repair fixes as many points as she can afford. **Check:** the price is 2 scrap a point in
   sectors 1-2 and one more every two sectors after; FTL's own store rate should be confirmed in a real run.
 
-## 6. Fixes from testing, and the settings moves — done, except the reactor prices
+## 6. Fixes from testing, and the settings moves — done
 
 - **Hull repairs at FTL's rate:** 2 scrap a point in sectors 1-3, 3 in sectors 4-6, 4 in sectors 7-8 (FTL wiki).
-- **Reactor prices:** waiting on heromedel's numbers from FTL's upgrade screen (he remembers about 25, then 30, then
-  35, changing every 10 bars or so). The price table is in one place (`Pricing.reactorBar`).
+- **Reactor prices:** heromedel's numbers from FTL's upgrade screen: 15 a bar for bars 1-5, 20 for 6-10, 25 for
+  11-15, 30 for 16-20, 35 for 21-25 (to be confirmed in a real run). The price table is in one place
+  (`Pricing.reactorBar`).
 - **Open the station's folder:** a button in Settings, beside the folder fields.
 - **Clean up blueprints:** moves from Settings to Other…, with an explanation of what it's for: it removes
   blueprints no ship flies any more (retired designs included) from the Federation Home Planet Mod.

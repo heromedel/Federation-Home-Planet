@@ -16,7 +16,7 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("P: each level adds its upgrade cost", Pricing.system("shields", 3) == sh.getCost() + sh.getUpgradeCosts().get(0) + sh.getUpgradeCosts().get(1));
   Setup.chk("P: HR1 sells for half", Pricing.systemSale("shields", 3) == Pricing.system("shields", 3) / 2);
   Setup.chk("P: a Clone Bay (no level) sells as level 1", Pricing.systemSale("clonebay", 0) == Pricing.system("clonebay", 1) / 2);
-  Setup.chk("P: reactor bars: 30 each to 5, then 35", Pricing.reactor(5) == 150 && Pricing.reactor(8) == 255 && Pricing.reactorBar(11) == 40);
+  Setup.chk("P: reactor bars: 15 each to 5, then 20", Pricing.reactor(5) == 75 && Pricing.reactor(8) == 135 && Pricing.reactorBar(11) == 25 && Pricing.reactor(25) == 625);
   Setup.chk("P: an unknown system has the flat price", Pricing.system("no_such_system", 2) == Pricing.UNPRICED_SYSTEM);
   Setup.chk("D: an upgrade costs FTL's upgrade price", Pricing.upgrade("shields", 1) == sh.getUpgradeCosts().get(0) && Pricing.upgrade("shields", 2) == sh.getUpgradeCosts().get(1));
   Setup.chk("D: no upgrade past FTL's limit", Pricing.upgrade("shields", sh.getMaxPower()) == -1);
@@ -24,7 +24,7 @@ public class PriceT { public static void main(String[] a) throws Exception {
   SavedGameState k = Commission.build("PLAYER_SHIP_HARD", "Price Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
   Pricing.Quote full = Pricing.ship(k, 0, 0, 100), half = Pricing.ship(k, 0, 0, 50), custom = Pricing.ship(k, 5, 4, 100);
   System.out.println("Kestrel A: " + full.total() + " " + full.lines);
-  Setup.chk("P: a Kestrel A costs about 1000", full.total() > 900 && full.total() < 1100);
+  Setup.chk("P: a Kestrel A costs about 885", full.total() > 800 && full.total() < 1000);
   Setup.chk("P: the multiplier scales the total", half.total() == (full.subtotal * 50 + 50) / 100);
   Setup.chk("P: a custom hull adds rooms and doors", custom.total() == full.total() + 5 * Pricing.PER_ROOM + 4 * Pricing.PER_DOOR);
  }
