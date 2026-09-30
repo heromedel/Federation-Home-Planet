@@ -23,6 +23,8 @@ Titles, not names: **Federation Fleet Admiral** (promotions, the big news), **Ho
 
 ---
 
+**Lore rule:** never imply the Rebel Flagship has been destroyed. The war goes on; its weapons come from stolen plans.
+
 ## Standing messages
 
 **Welcome to Immersive Mode** (Home Planet Liaison, when Immersive Mode is turned on)
@@ -192,12 +194,12 @@ Each opens with the player's rank. Signatures as listed.
 > needs you supplied: scrap, missiles, drone parts and fuel, on us.
 
 **Federation Victory (Easy)** (Federation Fleet Admiral)
-> A victory for the Federation, and every station from here to the Home Planet is celebrating. The Rebellion will
-> remember your name. Your share of the victory purse is waiting at The Home Planet Station.
+> A victory for the Federation, and every station from here to the Home Planet is celebrating. The war goes on, but
+> the Rebellion will remember your name. Your share of the victory purse is waiting at The Home Planet Station.
 
 **Federation Victory (Normal)** (Federation Fleet Admiral)
-> That was no training exercise. You faced the Rebellion at its strongest and won. The Federation Home Planet has
-> authorized a victory purse worthy of the deed.
+> That was no training exercise. You faced the Rebellion at its strongest and drove it back. The war is far from
+> over, but The Federation Home Planet has authorized a victory purse worthy of the deed.
 
 **Your Own Fleet** (Federation Fleet Admiral)
 > Every ship of the line has sailed under your command. That is a fleet, {rank}, and fleets need funding.
@@ -205,8 +207,9 @@ Each opens with the player's rank. Signatures as listed.
 
 **Rule Ten: Greed is Eternal** (Home Planet Liaison)
 > Ten thousand scrap through your hands. The auditors are impressed, and a little worried. Take this Scrap Recovery
-> Arm. And since you clearly know what to do with scrap, here is something worth spending it on: the Admiralty has
-> cleared you to fit the weapons salvaged from the Rebel Flagship to the artillery of your own designs.
+> Arm. And since you clearly know what to do with scrap, here is something worth spending it on: Federation
+> Intelligence has stolen the plans for the Rebel Flagship's weapons, and the Admiralty has cleared you to build them
+> into the artillery of your own designs.
 
 **Warlord** (Federation Fleet Admiral)
 > A thousand enemy ships. There are Rebel captains who change course at the sound of your name. For a hunter who

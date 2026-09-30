@@ -186,7 +186,7 @@ reward: scrap 300
 
 {rank},
 
-A victory for the Federation, and every station from here to the Home Planet is celebrating. The Rebellion will remember your name. Your share of the victory purse is waiting at The Home Planet Station.
+A victory for the Federation, and every station from here to the Home Planet is celebrating. The war goes on, but the Rebellion will remember your name. Your share of the victory purse is waiting at The Home Planet Station.
 
 Your Fleet Admiral
 
@@ -197,7 +197,7 @@ reward: scrap 400
 
 {rank},
 
-That was no training exercise. You faced the Rebellion at its strongest and won. The Federation Home Planet has authorized a victory purse worthy of the deed.
+That was no training exercise. You faced the Rebellion at its strongest and drove it back. The war is far from over, but The Federation Home Planet has authorized a victory purse worthy of the deed.
 
 Your Fleet Admiral
 
@@ -221,7 +221,7 @@ reward: item SCRAP_COLLECTOR
 
 Ten thousand scrap through your hands. The auditors are impressed, and a little worried. Take this Scrap Recovery Arm.
 
-And since you clearly know what to do with scrap, here is something worth spending it on: the Admiralty has cleared you to fit the weapons salvaged from the Rebel Flagship to the artillery of your own designs.
+And since you clearly know what to do with scrap, here is something worth spending it on: Federation Intelligence has stolen the plans for the Rebel Flagship's weapons, and the Admiralty has cleared you to build them into the artillery of your own designs.
 
 Home Planet Liaison
 

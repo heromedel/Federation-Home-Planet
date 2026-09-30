@@ -56,6 +56,8 @@ a BufferedImage.
   these titles, even mid-sentence.
 - **a station** (lowercase) is an FTL store beacon. Crew "stations" in the ship editor are FTL's manned squares.
 - Slipstream is the transmission channel: mods and blueprints are "sent to FTL via Slipstream".
+- Never imply the Rebel Flagship has been destroyed: the war goes on. Its weapons come from plans stolen from the
+  Rebels, not salvage.
 - Places: the Space Dock, the Cargo Bay, the Dry Dock, the Junkyard. Ships are "she". Never "Home World",
   never "FHP" in player-facing text. Errors stay actionable (what failed, what to do, the file or path).
 
