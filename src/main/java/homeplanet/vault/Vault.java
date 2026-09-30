@@ -598,6 +598,24 @@ public final class Vault {
 		}
 		return out;
 	}
+	/**
+	 * As {@link #blueprintsInUse}, plus every blueprint the ships' kept earlier versions (history) name: a blueprint
+	 * in here may still be needed to bring a ship back, so it isn't cleaned up.
+	 */
+	public synchronized java.util.Set<String> blueprintsInUseOrHistory() {
+		java.util.Set<String> out = blueprintsInUse();
+		File[] dirs = historyDir().listFiles();
+		if (dirs != null) for (File d : dirs) {
+			File[] fs = d.listFiles();
+			if (fs == null) continue;
+			for (File f : fs) {
+				if (!f.getName().endsWith(".sav")) continue;
+				List<String> ids = homeplanet.parser.Retrofit.blueprintIds(f);
+				if (ids != null) out.addAll(ids);
+			}
+		}
+		return out;
+	}
 	/** True if any ship's save couldn't even be scanned (so "unused" can't be trusted). */
 	public synchronized boolean anyUnscannable() {
 		for (Ship s : ships) {

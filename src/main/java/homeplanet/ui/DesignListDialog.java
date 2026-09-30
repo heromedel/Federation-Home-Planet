@@ -162,16 +162,16 @@ public class DesignListDialog extends JDialog {
 		ShipDesign d = shown.get(row);
 		List<String> ships = new java.util.ArrayList<String>();
 		for (String bp : bpIds(d.id)) ships.addAll(DesignDialog.shipsUsing(bp));
-		if (!ships.isEmpty()) {
-			JOptionPane.showMessageDialog(this, "Ships are still flying " + d.name + ": " + String.join(", ", ships) + ".\nDisband them first (Space Dock, Disband), then delete the design.",
-					"Design Ship", JOptionPane.INFORMATION_MESSAGE);
-			return;
-		}
-		if (JOptionPane.showConfirmDialog(this, "Delete the design \"" + d.name + "\"" + (d.version > 1 ? " and its older versions" : "") + "?", "Design Ship",
-				JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
-		for (java.util.Iterator<ShipDesign> it = designs.iterator(); it.hasNext();) if (d.id.equals(it.next().id)) it.remove();
-		store(d.built); // her built copy left the mod
-		HistoryLog.entry("DESIGN", "Deleted " + d.name + " (" + d.id + ")");
+		java.util.Set<String> kept = homeplanet.vault.Vault.get().blueprintsInUseOrHistory(); // her ships, and their kept earlier versions
+		boolean anyKept = false;
+		for (String bp : bpIds(d.id)) if (kept.contains(bp)) anyKept = true;
+		String ask = !anyKept ? "Delete the design \"" + d.name + "\"" + (d.version > 1 ? " and its older versions" : "") + "?"
+				: (ships.isEmpty() ? "Ships' kept records still name " + d.name + "." : "Ships are still flying " + d.name + ": " + String.join(", ", ships) + ".")
+						+ "\n\nThe Federation Home Planet will retire the design: it leaves this list and Commission, and its blueprint stays in the "
+						+ homeplanet.parser.CompanionMod.TITLE + " for as long as any ship needs it.\n\nRetire \"" + d.name + "\"?";
+		if (JOptionPane.showConfirmDialog(this, ask, "Design Ship", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
+		store(ShipDesign.deleteOrRetire(designs, d.id, kept));
+		HistoryLog.entry("DESIGN", (anyKept ? "Retired " : "Deleted ") + d.name + " (" + d.id + ")");
 	}
 	/**
 	 * Saves a design the editor handed back. Save alone changes the working copy only; Build blueprint takes a fresh

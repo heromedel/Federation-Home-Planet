@@ -634,11 +634,14 @@ public class CompanionMod {
 	static String attr(String s) { return XmlText.attr(s); }
 
 	/** Moves a remodel out of the file into Removed Blueprints.log (it can be pasted back by hand). */
-	public static void retire(Remodel r) throws IOException {
+	public static void retire(Remodel r) throws IOException { logRemoved(remodelXml(r)); }
+	/** A retired design's built copy, into the removed-blueprints log the same way. */
+	public static void retire(ShipDesign d) throws IOException { logRemoved(ShipDesign.xmlOf(d)); }
+	private static void logRemoved(String xml) throws IOException {
 		java.io.Writer w = new java.io.OutputStreamWriter(new FileOutputStream(removedLog(), true), "UTF-8");
 		try {
 			w.write("<!-- removed " + new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()) + " -->" + CRLF);
-			w.write(remodelXml(r));
+			w.write(xml);
 		} finally { w.close(); }
 	}
 

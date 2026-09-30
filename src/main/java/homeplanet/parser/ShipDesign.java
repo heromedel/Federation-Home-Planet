@@ -69,6 +69,11 @@ public class ShipDesign {
 	public final List<String> gibFiles = new ArrayList<String>();
 	/** Step C, her blueprint: built into the companion mod; a starter ship (can be commissioned); hull, reactor, drone slots. */
 	public boolean built = false, starter = false;
+	/**
+	 * A built copy of a deleted design, kept because ships still fly it (or their kept earlier versions do): it stays in
+	 * the Federation Home Planet Mod, out of the Design list and Commission, until Clean up blueprints finds it unused.
+	 */
+	public boolean retired = false;
 	public int hull = 30, reactor = 8, droneSlots = 2;
 	/** Where she sits on screen, in squares (FTL's X_OFFSET / Y_OFFSET); -1 = worked out from the art. */
 	public int offX = -1, offY = -1;
@@ -299,6 +304,7 @@ public class ShipDesign {
 		d.artScale = numOr(e, "artScale", 100);
 		if (e.hasAttribute("frozenOf")) d.frozenOf = e.getAttribute("frozenOf");
 		if (e.hasAttribute("snapshotOf")) d.snapshotOf = e.getAttribute("snapshotOf");
+		d.retired = "true".equals(e.getAttribute("retired"));
 		NodeList ns = e.getElementsByTagName("nostart");
 		for (int j = 0; j < ns.getLength(); j++) d.notAtStart.add(((Element) ns.item(j)).getAttribute("id"));
 		d.loadout = CompanionMod.readLoadout(e);
@@ -389,6 +395,22 @@ public class ShipDesign {
 	private static int num(Element e, String a) { return Integer.parseInt(e.getAttribute(a)); }
 	private static int numOr(Element e, String a, int or) { try { return Integer.parseInt(e.getAttribute(a)); } catch (Exception x) { return or; } }
 
+	/**
+	 * Deletes a design from the list: its working copy and every built copy no ship needs go; a built copy whose
+	 * blueprint is in {@code kept} (ships fly it, or their kept records name it) stays, retired. True if the mod changes.
+	 */
+	public static boolean deleteOrRetire(List<ShipDesign> designs, String id, java.util.Set<String> kept) {
+		boolean modChanged = false;
+		for (java.util.Iterator<ShipDesign> it = designs.iterator(); it.hasNext();) {
+			ShipDesign x = it.next();
+			if (!id.equals(x.id)) continue;
+			if (x.built && !x.isWorking() && kept.contains(DesignExport.bpId(x))) { x.retired = true; continue; }
+			if (x.built && !x.isWorking()) modChanged = true; // a built copy no ship needs leaves the mod
+			it.remove();
+		}
+		return modChanged;
+	}
+
 	public static void save(List<ShipDesign> designs) throws IOException {
 		if (!intact()) throw damaged(file()); // the list in hand may be short: writing it would lose the designs that didn't read
 		StringBuilder sb = new StringBuilder();
@@ -410,7 +432,7 @@ public class ShipDesign {
 					.append("\" gibs=\"").append(d.gibs).append("\" built=\"").append(d.built).append("\" starter=\"").append(d.starter)
 					.append("\" hull=\"").append(d.hull).append("\" reactor=\"").append(d.reactor).append("\" droneSlots=\"").append(d.droneSlots)
 					.append("\" offX=\"").append(d.offX).append("\" offY=\"").append(d.offY).append("\" version=\"").append(d.version).append("\" artScale=\"").append(d.artScale)
-					.append(d.frozenOf != null ? "\" frozenOf=\"" + d.frozenOf : "").append(d.snapshotOf != null ? "\" snapshotOf=\"" + d.snapshotOf : "").append("\">").append(CRLF);
+					.append(d.frozenOf != null ? "\" frozenOf=\"" + d.frozenOf : "").append(d.snapshotOf != null ? "\" snapshotOf=\"" + d.snapshotOf : "").append(d.retired ? "\" retired=\"true" : "").append("\">").append(CRLF);
 			for (String n : d.notAtStart) sb.append("\t\t<nostart id=\"").append(n).append("\"/>").append(CRLF);
 			if (d.loadout != null) sb.append(CompanionMod.loadoutXml(d.loadout, "\t\t"));
 			for (Mount m : d.mounts) sb.append("\t\t<mount x=\"").append(m.x).append("\" y=\"").append(m.y).append("\" rotate=\"").append(m.rotate)
@@ -476,7 +498,7 @@ public class ShipDesign {
 		for (Mount m : o.mounts) d.mounts.add(m.copy());
 		d.built = o.built; d.starter = o.starter; d.hull = o.hull; d.reactor = o.reactor; d.droneSlots = o.droneSlots;
 		d.offX = o.offX; d.offY = o.offY; d.notAtStart.addAll(o.notAtStart);
-		d.version = o.version; d.frozenOf = o.frozenOf; d.snapshotOf = o.snapshotOf; d.artScale = o.artScale;
+		d.version = o.version; d.frozenOf = o.frozenOf; d.snapshotOf = o.snapshotOf; d.artScale = o.artScale; d.retired = o.retired;
 		d.loadout = o.loadout == null ? null : CompanionMod.copy(o.loadout);
 		for (Room r : o.rooms) d.rooms.add(new Room(r.x, r.y, r.w, r.h));
 		for (CompanionMod.Door r : o.doors) d.doors.add(new CompanionMod.Door(r.x, r.y, r.a, r.b, r.v));

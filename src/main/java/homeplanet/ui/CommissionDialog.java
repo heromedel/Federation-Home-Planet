@@ -191,7 +191,7 @@ public class CommissionDialog extends JDialog {
 			custom.add(new Entry(r.id, (named ? r.loadout.className : classOf(bp) + " " + CompanionMod.numberOf(r.id)) + " (" + r.ship + "'s layout)"));
 		}
 		for (homeplanet.parser.ShipDesign d : homeplanet.parser.DesignExport.built()) {
-			if (!d.starter || d.frozenOf != null) continue; // kept old versions only fly for the ships already built from them
+			if (!d.starter || d.frozenOf != null || d.retired) continue; // kept old versions and retired designs only fly for the ships already built from them
 			String id = homeplanet.parser.DesignExport.bpId(d);
 			if (!CompanionMod.inGameData(id)) continue; // not patched in yet
 			ShipBlueprint bp = DataManager.get().getShip(id);
