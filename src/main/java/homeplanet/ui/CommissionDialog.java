@@ -373,6 +373,7 @@ public class CommissionDialog extends JDialog {
 		homeplanet.vault.Ship ship;
 		try {
 			ship = vault.adopt(s);
+			vault.setOut(ship, s); // she waits at The Home Planet Station until her first jump
 		} catch (Exception ex) {
 			String refund = "";
 			if (storageBefore != null) {

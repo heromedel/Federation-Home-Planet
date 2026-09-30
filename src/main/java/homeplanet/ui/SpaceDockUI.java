@@ -103,9 +103,22 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
 		String title = "Docked Ships";
 		if (HomePlanet.immersiveMode) title += "  -  " + homeplanet.parser.UnlockGrants.rankName(homeplanet.parser.UnlockGrants.rank(homeplanet.parser.Unlocks.read())); // her captain's rank
-		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3);
+		if (HomePlanet.immersiveNotifications) {
+			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
+			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
+			inboxBtn.addActionListener(this);
+		} else {
+			inboxBtn = null;
+		}
+		int inboxW = inboxBtn == null ? 0 : inboxBtn.getPreferredSize().width + 8;
+		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW);
 		if (HomePlanet.immersiveMode) dockedHeader.setToolTipText("Immersive Mode: your rank. Captains may commission custom ships; Commodores, custom ships with artillery");
-		docked.add(dockedHeader, java.awt.BorderLayout.NORTH);
+		// the transmissions light at the end of the heading's line, where the eye goes first
+		JPanel headRow = new JPanel(new java.awt.BorderLayout(8, 0));
+		headRow.setOpaque(false);
+		headRow.add(dockedHeader, java.awt.BorderLayout.CENTER);
+		if (inboxBtn != null) headRow.add(inboxBtn, java.awt.BorderLayout.EAST);
+		docked.add(headRow, java.awt.BorderLayout.NORTH);
 		docked.add(gridScroll, java.awt.BorderLayout.CENTER);
 		final int dockedW = 14 + CELL_W * 3 + 18;
 
@@ -122,21 +135,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
-		if (HomePlanet.immersiveNotifications) {
-			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
-			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
-			inboxBtn.addActionListener(this);
-			JPanel helm = new JPanel(new java.awt.BorderLayout(4, 0));
-			helm.setOpaque(false);
-			helm.add(new FtlButton.Header("Helm", 142), java.awt.BorderLayout.CENTER);
-			helm.add(inboxBtn, java.awt.BorderLayout.EAST);
-			helm.setAlignmentX(LEFT_ALIGNMENT);
-			helm.setMaximumSize(new Dimension(186, 30));
-			controlGroup(controls, helm, launchBtn, journeyBtn);
-		} else {
-			inboxBtn = null;
-			controlGroup(controls, "Helm", launchBtn, journeyBtn);
-		}
+		controlGroup(controls, "Helm", launchBtn, journeyBtn);
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn);
 		String designLock = homeplanet.parser.Clearance.customReason();
@@ -295,7 +294,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private String cargoBayClosedReason() {
 		Ship ship = Vault.get().boarded();
 		if (ship == null || ship.save() == null) return "No ship is at your command.\nBoard a ship before returning to the Cargo Bay to trade.";
-		if (!SaveHelper.mayTrade(ship.save()))
+		if (!Vault.get().mayTrade(ship))
 			return ship.name + " is not within range of a station.\nFind a beacon with a station, then return to trade.";
 		return null;
 	}
@@ -431,8 +430,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return gs == null ? "save can't be read" : gs.getTotalBeaconsExplored() + " beacons explored";
 	}
 	private static boolean offStation(Ship s) {
-		SavedGameState gs = s.save();
-		return gs != null && !SaveHelper.mayTrade(gs);
+		return s.save() != null && !Vault.get().mayTrade(s);
 	}
 	/** One docked ship: name, beacons, picture, Board and Info. */
 	private JPanel shipPanel(Ship ship0) {
@@ -565,44 +563,77 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 
 	/** The transmissions icon: an antenna, and a green light with the unread count. */
+	/**
+	 * The transmissions light, at the end of the Docked Ships heading: a mast and dish, and with anything unread a green
+	 * light and "N NEW" in gold, and a small hop every few seconds until the inbox is opened.
+	 */
 	private static final class TransmissionButton extends JButton {
+		private static final int HOP_EVERY = 3000, HOP_MS = 360, HOP_PX = 6;
 		private final int unread;
+		private javax.swing.Timer every, frames;
+		private long hopStart = 0;
 		TransmissionButton(int unread) {
 			this.unread = unread;
-			setPreferredSize(new Dimension(40, 30));
+			setPreferredSize(new Dimension(unread > 0 ? 104 : 46, 38));
 			setContentAreaFilled(false);
 			setBorderPainted(false);
 			setFocusPainted(false);
 			setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 			setToolTipText(unread == 0 ? "Transmissions from The Federation Home Planet" : unread + " new transmission" + (unread == 1 ? "" : "s") + " from The Federation Home Planet");
 		}
+		@Override public void addNotify() {
+			super.addNotify();
+			if (unread == 0 || every != null) return;
+			frames = new javax.swing.Timer(30, new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					if (System.currentTimeMillis() - hopStart >= HOP_MS) frames.stop();
+					repaint();
+				}
+			});
+			every = new javax.swing.Timer(HOP_EVERY, new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) { hopStart = System.currentTimeMillis(); frames.restart(); }
+			});
+			every.setInitialDelay(800);
+			every.start();
+		}
+		@Override public void removeNotify() { // the Space Dock is rebuilt: this one's timers stop with it
+			if (every != null) every.stop();
+			if (frames != null) frames.stop();
+			every = null;
+			super.removeNotify();
+		}
+		private int hop() {
+			long t = System.currentTimeMillis() - hopStart;
+			return t < 0 || t >= HOP_MS ? 0 : (int) Math.round(HOP_PX * Math.sin(Math.PI * t / HOP_MS));
+		}
 		@Override protected void paintComponent(Graphics g0) {
 			Graphics2D g = (Graphics2D) g0.create();
 			g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+			int h = getHeight() - HOP_PX; // room above for the hop
+			g.translate(0, HOP_PX - hop());
 			boolean hot = getModel().isRollover();
-			Color line = hot ? new Color(255, 230, 160) : new Color(214, 230, 222);
-			g.setColor(new Color(20, 28, 34, 200));
-			g.fillRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 8, 8);
+			Color line = hot ? new Color(255, 230, 160) : unread > 0 ? FtlButton.GOLD : new Color(214, 230, 222);
+			g.setColor(new Color(20, 28, 34, 220));
+			g.fillRoundRect(1, 1, getWidth() - 3, h - 3, 8, 8);
 			g.setColor(line);
-			g.setStroke(new java.awt.BasicStroke(1.6f));
-			g.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 8, 8);
+			g.setStroke(new java.awt.BasicStroke(1.8f));
+			g.drawRoundRect(1, 1, getWidth() - 3, h - 3, 8, 8);
 			// a mast with a dish, and waves
-			int cx = 14, cy = getHeight() / 2;
-			g.drawLine(cx, cy - 2, cx, getHeight() - 6);
-			g.drawLine(cx - 5, getHeight() - 6, cx + 5, getHeight() - 6);
+			int cx = 14, cy = h / 2;
+			g.drawLine(cx, cy - 2, cx, h - 6);
+			g.drawLine(cx - 5, h - 6, cx + 5, h - 6);
 			g.fillOval(cx - 2, cy - 5, 5, 5);
 			g.drawArc(cx - 7, cy - 10, 14, 14, 30, 120);
 			g.drawArc(cx - 11, cy - 14, 22, 22, 30, 120);
-			// the light
-			int lx = getWidth() - 15, ly = cy - 7;
+			// the light, and how many are new
+			int lx = 28, ly = cy - 6;
 			g.setColor(unread > 0 ? new Color(70, 220, 90) : new Color(60, 80, 70));
-			g.fillOval(lx, ly, 13, 13);
+			g.fillOval(lx, ly, 12, 12);
 			if (unread > 0) {
-				g.setColor(new Color(10, 40, 15));
-				g.setFont(getFont().deriveFont(java.awt.Font.BOLD, 10f));
-				String n = unread > 9 ? "9+" : String.valueOf(unread);
-				java.awt.FontMetrics fm = g.getFontMetrics();
-				g.drawString(n, lx + (13 - fm.stringWidth(n)) / 2, ly + 10);
+				String n = (unread > 99 ? "99+" : String.valueOf(unread)) + " NEW";
+				java.awt.image.BufferedImage t = FtlFont.MENU.render(n, FtlButton.GOLD);
+				int tw = Math.min(t.getWidth(), getWidth() - lx - 20);
+				g.drawImage(t, lx + 17, (h - 2 - t.getHeight()) / 2 + 1, tw, t.getHeight(), null);
 			}
 			g.dispose();
 		}
@@ -871,7 +902,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The Home Planet Station could not read her save:\n" + ship.file() + "\n\n" + ship.readError());
 			return;
 		}
-		if (HomePlanet.journeyStoreRequirement && !SaveHelper.isAtStation(gs)) {
+		if (HomePlanet.journeyStoreRequirement && !SaveHelper.isAtStation(gs) && !Vault.get().stillAtHomePlanet(ship)) {
 			JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is not within range of a station.\n"
 					+ "The Federation Home Planet can only approve or assist in plotting a new journey from a beacon with a station.", "New Journey", JOptionPane.INFORMATION_MESSAGE);
 			return;
@@ -915,6 +946,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		while (it.hasNext()) if (!SaveHelper.isOwnCrew(it.next())) it.remove();
 		try {
 			Vault.get().write(ship, gs);
+			Vault.get().setOut(ship, gs); // at The Home Planet Station until she jumps
 			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + fee + " scrap from Spacedock Storage" : ""));
 		} catch (Exception e) {
 			ship.invalidate();

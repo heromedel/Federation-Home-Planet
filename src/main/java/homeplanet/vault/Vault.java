@@ -173,6 +173,25 @@ public final class Vault {
 		return s;
 	}
 
+	// ---- a ship just set out: still at The Home Planet Station ----
+
+	private static String position(SavedGameState gs) { return gs.getSectorNumber() + "|" + gs.getCurrentBeaconId(); }
+	/** The station has just set her out (commissioned, a New Journey, rescued): until she leaves this beacon she may trade. */
+	public synchronized void setOut(Ship s, SavedGameState gs) throws IOException {
+		s.fresh = position(gs);
+		saveManifest();
+	}
+	/** Hasn't she left the beacon the station set her out at? */
+	public boolean stillAtHomePlanet(Ship s) {
+		SavedGameState gs = s == null ? null : s.save();
+		return gs != null && s.fresh != null && !s.fresh.isEmpty() && s.fresh.equals(position(gs));
+	}
+	/** May she trade (the station rule): at a beacon with a store, or not yet gone from where The Home Planet Station set her out. */
+	public boolean mayTrade(Ship s) {
+		SavedGameState gs = s == null ? null : s.save();
+		return gs != null && (SaveHelper.mayTrade(gs) || stillAtHomePlanet(s));
+	}
+
 	/** No ship docked, boarded or in the Junkyard (the storage hold doesn't count). */
 	public synchronized boolean shipyardEmpty() {
 		return docked().isEmpty() && boarded() == null && junked().isEmpty();
@@ -410,6 +429,7 @@ public final class Vault {
 				s.hash = e.getAttribute("hash");
 				s.marks = e.getAttribute("marks");
 				s.stranger = "true".equals(e.getAttribute("stranger"));
+				s.fresh = e.getAttribute("fresh");
 				ships.add(s);
 			}
 		} catch (Exception e) {
@@ -616,6 +636,7 @@ public final class Vault {
 		Ship s = new Ship(f.id, gs.getPlayerShipName(), Ship.State.DOCKED, gs.isDLCEnabled());
 		writeQuietly(s, gs);
 		ships.add(s);
+		s.fresh = position(gs); // she's back at The Home Planet Station
 		try {
 			saveManifest();
 		} catch (IOException e) {
@@ -775,6 +796,7 @@ public final class Vault {
 					.append("\" dlc=\"").append(s.dlc).append("\" hash=\"").append(s.hash == null ? "" : s.hash).append("\"");
 			if (s.state == Ship.State.BOARDED && s.marks != null && !s.marks.isEmpty()) sb.append(" marks=\"").append(XmlText.attr(s.marks)).append("\"");
 			if (s.stranger) sb.append(" stranger=\"true\"");
+			if (s.fresh != null && !s.fresh.isEmpty()) sb.append(" fresh=\"").append(XmlText.attr(s.fresh)).append("\"");
 			sb.append("/>\r\n");
 		}
 		sb.append("</manifest>\r\n");

@@ -50,6 +50,11 @@ public final class Ship {
 	String marks = "";
 	/** A ship The Home Planet Station didn't commission: a continue.sav it didn't know (Immersive Mode asks about her). */
 	public boolean stranger;
+	/**
+	 * Where the station last set her out (sector|beacon: commissioned, a New Journey, rescued): until she leaves that
+	 * beacon she counts as still at The Home Planet Station, and may trade. Empty otherwise.
+	 */
+	String fresh = "";
 
 	private SavedGameState save;
 	private String readError;

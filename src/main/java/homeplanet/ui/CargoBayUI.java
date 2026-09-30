@@ -288,7 +288,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		return r == 1;
 	}
 	private boolean tradeUnavailable() {
-		return currentPath == null || (currentSave != null && !SaveHelper.mayTrade(currentSave));
+		return currentPath == null || (currentSave != null && !SaveHelper.mayTrade(currentSave) && !Vault.get().stillAtHomePlanet(currentShip));
 	}
 
 	// ---- loading ----
@@ -311,7 +311,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		String partnerId = tradeShip == null ? null : tradeShip.id;
 		shipSelect = new ArrayList<Ship>();
 		if (homeSave != null && homeSave.save() != null) shipSelect.add(homeSave);
-		for (Ship s : tradeableShips()) if (s != currentShip && SaveHelper.mayTrade(s.save())) shipSelect.add(s);
+		for (Ship s : tradeableShips()) if (s != currentShip && Vault.get().mayTrade(s)) shipSelect.add(s);
 		// keep the same partner across a Reset or Save, if she's still there
 		partnerIndex = 0;
 		if (partnerId != null) for (int i = 0; i < shipSelect.size(); i++) if (shipSelect.get(i).id.equals(partnerId)) partnerIndex = i;
@@ -320,7 +320,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		systems.init();
 		refreshTrade();
 		if (currentPath == null) notice.setText("Board a ship at the Space Dock, then return to trade.");
-		else if (!SaveHelper.mayTrade(currentSave)) notice.setText(currentSave.getPlayerShipName() + " is not within range of a station. Take her to a beacon with a store to trade.");
+		else if (!SaveHelper.mayTrade(currentSave) && !Vault.get().stillAtHomePlanet(currentShip)) notice.setText(currentSave.getPlayerShipName() + " is not within range of a station. Take her to a beacon with a store to trade.");
 		for (FtlButton b : tabButtons) b.setEnabled(!tradeUnavailable());
 		saveBtn.setEnabled(!tradeUnavailable());
 		resetBtn.setEnabled(!tradeUnavailable());

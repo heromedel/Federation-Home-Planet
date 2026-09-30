@@ -20,5 +20,21 @@ public class CommT { public static void main(String[] a) throws Exception {
   } catch (Exception e) { bad++; System.out.println("FAIL  " + id + ": " + e); }
  }
  Setup.chk(ok + " ships commissioned and read back (" + bad + " failed)", bad == 0 && ok >= 28);
+ setOut(v);
  Setup.done();
-}}
+} /** A ship just commissioned counts as at The Home Planet Station (the station rule) until she leaves her first beacon. */
+ static void setOut(Vault v) throws Exception {
+  boolean was = HomePlanet.storeRequirement; HomePlanet.storeRequirement = true;
+  SavedGameState g = Commission.build("PLAYER_SHIP_HARD", "Fresh Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(11));
+  Ship s = v.adopt(g); v.setOut(s, g);
+  Setup.chk("O: a new ship may trade before her first jump, though no store is at her beacon", !SaveHelper.isAtStation(s.save()) && v.mayTrade(s) && v.stillAtHomePlanet(s));
+  v.board(s);
+  Setup.chk("O: still so once boarded", v.mayTrade(v.boarded()));
+  v.reload(); v.takeStock();
+  Setup.chk("O: and after the station reloads its records", v.mayTrade(v.boarded()));
+  SavedGameState c = HomePlanet.savedGameParser.readSavedGame(v.continueFile()); c.setCurrentBeaconId(c.getCurrentBeaconId() + 1); c.setTotalBeaconsExplored(c.getTotalBeaconsExplored() + 1);
+  SaveHelper.writeSavedGame(v.continueFile(), c); v.boarded().invalidate(); v.takeStock();
+  Setup.chk("O: once she jumps, the station rule applies again", !v.mayTrade(v.boarded()));
+  HomePlanet.storeRequirement = was;
+ }
+}
