@@ -112,7 +112,7 @@ Approved by heromedel, with the exact FTL item names checked in ftl.dat. **Notes
 | Federation Victory (Easy) | Beat the boss on Easy | 300 scrap |
 | Federation Victory (Normal) | Beat the boss on Normal | 400 scrap |
 | Your Own Fleet | Every Type A unlocked | 500 scrap |
-| Rule Ten: Greed is Eternal | 10,000 scrap over all games | Scrap Recovery Arm (note 1) |
+| Rule Ten: Greed is Eternal | 10,000 scrap over all games | Scrap Recovery Arm, and clearance for the Rebel Flagship's weapons as artillery (note 1) |
 | Warlord | Defeat 1000 ships | Adv. FTL Navigation + FTL Recharge Booster (note 2) |
 | I don't need no stinkin' upgrades! | Sector 5, no upgrades | A Cloaking system |
 | Coming in for my Pacifism run! | Sector 5 without firing | FTL Recharge Booster |
@@ -166,8 +166,9 @@ Approved by heromedel, with the exact FTL item names checked in ftl.dat. **Notes
 
 ### Notes
 
-1. **Special artillery:** now earned by rank instead (Commodores may commission designs with artillery; see the
-   roadmap, item 7). Open: should Rule Ten also clear it, as an earlier route?
+1. **Artillery:** the Federation's artillery (Artillery Beam, Flak Artillery) is cleared for Commodores; the Rebel
+   Flagship's weapons (Boss Laser, Missile, Beam, Ion) by Rule Ten. The Artillery Beam, which FTL never sells, is priced
+   at 120 scrap (above the Glaive Beam's 95, since it ignores shields); the others have prices in FTL.
 2. **Warlord:** Adv. FTL Navigation already is the "jump back to a visited beacon" augment (it still costs fuel in
    FTL). I added the FTL Recharge Booster to make jumps easier too. Or 20 fuel?
 3. **Living off the Land:** FTL doesn't record which ship earned a general achievement, so the player chooses when
@@ -204,7 +205,8 @@ Each opens with the player's rank. Signatures as listed.
 
 **Rule Ten: Greed is Eternal** (Home Planet Liaison)
 > Ten thousand scrap through your hands. The auditors are impressed, and a little worried. Take this Scrap Recovery
-> Arm, and keep counting.
+> Arm. And since you clearly know what to do with scrap, here is something worth spending it on: the Admiralty has
+> cleared you to fit the weapons salvaged from the Rebel Flagship to the artillery of your own designs.
 
 **Warlord** (Federation Fleet Admiral)
 > A thousand enemy ships. There are Rebel captains who change course at the sound of your name. For a hunter who

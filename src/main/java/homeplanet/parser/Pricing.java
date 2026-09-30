@@ -30,6 +30,17 @@ public final class Pricing {
 	public static final int PER_ROOM = 10, PER_DOOR = 5;
 	/** An artillery weapon with no price (the Federation cruiser's): what the station charges for it. */
 	public static final int UNPRICED_ARTILLERY = 100;
+	/**
+	 * The Federation Cruiser's Artillery Beam, which FTL never sells: priced above the best beam in the stores (the
+	 * Glaive Beam, 95), since it ignores shields entirely. (Its Type C Flak Artillery has a price of its own, 75.)
+	 */
+	public static final int FEDERATION_ARTILLERY = 120;
+	/** An artillery weapon: the Federation's Artillery Beam at FEDERATION_ARTILLERY, others at their price, or UNPRICED_ARTILLERY. */
+	public static int artillery(String id) {
+		if ("ARTILLERY_FED".equals(id)) return FEDERATION_ARTILLERY;
+		WeaponBlueprint w = id == null ? null : DataManager.get().getWeapons().get(id);
+		return w != null && w.getCost() > 0 ? w.getCost() : UNPRICED_ARTILLERY;
+	}
 
 	/** A system at a level: its price plus each upgrade to that level. UNPRICED_SYSTEM if FTL gives it no price. */
 	public static int system(String id, int level) {
@@ -77,7 +88,7 @@ public final class Pricing {
 	/** A weapon, drone or augment at store price; an unpriced artillery weapon at UNPRICED_ARTILLERY; 0 if unknown. */
 	public static int item(String id) {
 		WeaponBlueprint w = DataManager.get().getWeapons().get(id);
-		if (w != null) return w.getCost() > 0 ? w.getCost() : id.toUpperCase().contains("ARTILLERY") ? UNPRICED_ARTILLERY : 0;
+		if (w != null) return id.toUpperCase().startsWith("ARTILLERY") ? artillery(id) : Math.max(0, w.getCost());
 		DroneBlueprint d = DataManager.get().getDrones().get(id);
 		if (d != null) return Math.max(0, d.getCost());
 		AugBlueprint a = DataManager.get().getAugments().get(id);
@@ -121,6 +132,8 @@ public final class Pricing {
 		for (DroneState d : s.getDroneList()) gear += item(d.getDroneId());
 		for (String a : s.getAugmentIdList()) gear += item(a);
 		for (String c : gs.getCargoIdList()) gear += item(c);
+		SystemState art = s.getSystem(SystemType.ARTILLERY);
+		if (art != null && art.getCapacity() > 0) gear += artillery(Commission.artilleryWeapon(gs.getPlayerShipBlueprintId())); // the gun her artillery fires
 		q.add("Weapons, drones and augments", gear);
 		int crew = 0, n = 0;
 		for (CrewState c : SaveHelper.getOwnCrew(s)) { crew += crew(c.getRace().getId()); n++; }

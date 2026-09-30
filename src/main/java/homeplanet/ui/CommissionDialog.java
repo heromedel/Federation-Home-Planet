@@ -252,23 +252,15 @@ public class CommissionDialog extends JDialog {
 		if ("relief".equals(HomePlanet.freeShip)) return RELIEF.equals(id);
 		return homeplanet.parser.Commission.RELIEF_BASE.equals(id); // the Kestrel A
 	}
-	/** Immersive Mode: the rank a custom blueprint needs (Captain; Commodore with an artillery system), or 0 for a standard ship. */
-	private static int rankNeeded(String bpId) {
-		if (!bpId.endsWith(homeplanet.parser.Retrofit.SUFFIX)) return 0; // the station's own blueprints (remodels, designs) end so
-		ShipBlueprint bp = DataManager.get().getShip(bpId);
-		boolean artillery = bp != null && bp.getSystemList() != null && bp.getSystemList().getSystemRoom(net.blerf.ftl.parser.SavedGameParser.SystemType.ARTILLERY) != null;
-		return artillery ? 2 : 1;
-	}
-	/** Why the player's rank doesn't allow this blueprint, or null. */
+	/** Why the player's rank doesn't clear this blueprint (Immersive Mode), or null. */
 	private String rankReason(String bpId) {
-		if (rank < 0) return null;
-		int need = rankNeeded(bpId);
-		if (rank >= need) return null;
-		return "The Federation Home Planet clears " + (need == 2 ? "custom ships with artillery for Commodores" : "custom ships for Captains") + " and above. You are a "
-				+ homeplanet.parser.UnlockGrants.rankName(rank) + ".";
+		return rank < 0 ? null : homeplanet.parser.Clearance.commissionReason(bpId);
 	}
 	private String rankNote(String bpId) {
-		return rankReason(bpId) == null ? "" : " (" + homeplanet.parser.UnlockGrants.rankName(rankNeeded(bpId)) + "s only)";
+		if (rankReason(bpId) == null) return "";
+		if (homeplanet.parser.Clearance.customReason() != null) return " (Captains only)";
+		String w = Commission.artilleryWeapon(bpId);
+		return w != null && w.startsWith("ARTILLERY_FED") ? " (Commodores only)" : " (needs Rule Ten: Greed is Eternal)";
 	}
 
 	/** Builds the ship a row stands for. */

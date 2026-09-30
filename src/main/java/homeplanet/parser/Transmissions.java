@@ -54,6 +54,8 @@ public final class Transmissions {
 	public static final class Message {
 		public String key, date, from, subject, body, reward;
 		public boolean read, claimed;
+		/** Stored in the Archive tab, out of the inbox. */
+		public boolean archived;
 		/** What was claimed, in words (after a claim). */
 		public String claimedWhat = "";
 		public boolean hasReward() { return reward != null && !reward.trim().isEmpty(); }
@@ -127,6 +129,7 @@ public final class Transmissions {
 				m.reward = e.getAttribute("reward");
 				m.read = "true".equals(e.getAttribute("read"));
 				m.claimed = "true".equals(e.getAttribute("claimed"));
+				m.archived = "true".equals(e.getAttribute("archived"));
 				m.claimedWhat = e.getAttribute("claimedWhat");
 				m.body = e.getTextContent();
 				out.add(m);
@@ -144,7 +147,7 @@ public final class Transmissions {
 			sb.append("\t<message key=\"").append(XmlText.attr(m.key)).append("\" date=\"").append(XmlText.attr(m.date))
 					.append("\" from=\"").append(XmlText.attr(m.from)).append("\" subject=\"").append(XmlText.attr(m.subject))
 					.append("\" reward=\"").append(XmlText.attr(m.reward)).append("\" read=\"").append(m.read)
-					.append("\" claimed=\"").append(m.claimed).append("\" claimedWhat=\"").append(XmlText.attr(m.claimedWhat)).append("\">")
+					.append("\" claimed=\"").append(m.claimed).append("\" archived=\"").append(m.archived).append("\" claimedWhat=\"").append(XmlText.attr(m.claimedWhat)).append("\">")
 					.append(XmlText.text(m.body)).append("</message>\r\n");
 		}
 		sb.append("</transmissions>\r\n");
@@ -152,7 +155,7 @@ public final class Transmissions {
 	}
 	public static int unread() {
 		int n = 0;
-		for (Message m : load()) if (!m.read) n++;
+		for (Message m : load()) if (!m.read && !m.archived) n++;
 		return n;
 	}
 
@@ -353,6 +356,14 @@ public final class Transmissions {
 		m.claimedWhat = what;
 		HistoryLog.entry("CLAIM", m.subject + ": " + what + " to Spacedock Storage");
 		return what;
+	}
+	/** Moves a message to the Archive (read), or back to the inbox. */
+	public static synchronized void setArchived(Message m, boolean archived) throws IOException {
+		m.archived = archived;
+		if (archived) m.read = true;
+		List<Message> all = load();
+		for (Message x : all) if (x.key.equals(m.key)) { x.archived = archived; if (archived) x.read = true; }
+		save(all);
 	}
 	/** Marks a message read. */
 	public static synchronized void markRead(Message m) {

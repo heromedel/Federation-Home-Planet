@@ -155,12 +155,13 @@ ship pays, and Save makes it official (Reset undoes it).
   when the Federation Cruiser C unlocks. Each unlock raises one rank, whatever the order. Only unlocks after
   Immersive Mode is on count.
 - **Locks by rank** (Immersive Mode): locked standard ships are hidden (as the lock rule does); **Captains** may
-  commission custom ships (remodels and designs); **Commodores** may commission designs with an artillery system.
-  Greyed out in Commission with the reason.
+  design ships, remodel and overhaul, and commission custom ships; **Commodores** may fit the Federation's artillery
+  (Artillery Beam, Flak Artillery); the **Rebel Flagship's weapons** as artillery are cleared by "Rule Ten: Greed is
+  Eternal" earned in Immersive Mode. Marked in Commission and the artillery picker with the reason.
+- **Artillery prices (HR2):** the Artillery Beam, which FTL never sells, at 120 scrap; the others at their FTL price.
 - **Unlock-once free ships:** Immersive Mode turns this rule on and locks it, with the two "locked ships" rules.
 - As built: the rank shows in the Space Dock's "Docked Ships" header; the rank record lives with the unlock record
   (`unlock-grants.txt`, "promoted" lines). Commission marks custom ships "(Captains only)" / "(Commodores only)".
-  **Open:** should the Captain lock also cover the Cargo Bay's Remodel and Overhaul deck plan? (Not locked now.)
 
 ## 8. Transmissions — done (harness test TransT)
 

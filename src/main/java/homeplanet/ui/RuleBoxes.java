@@ -58,7 +58,8 @@ public class RuleBoxes {
 				+ "Sets and locks: trading, scrapping and New Journey need a station; commissioning costs scrap at 100%; locked ships can't be commissioned;<br>"
 				+ "each ship unlocked in FTL is free once; a New Journey costs " + HomePlanet.JOURNEY_FEE + " scrap from Spacedock Storage; missiles, drone parts and stored systems<br>"
 				+ "sell at 25% of the store price; earlier versions of a ship can't be restored, and lost ships can't be recovered.<br>"
-				+ "Your rank decides what you may commission: Captains, custom ships; Commodores, custom ships with artillery.</html>");
+				+ "Your rank decides what you may build: Captains, custom ships, remodels and overhauls; Commodores, the Federation's artillery;<br>"
+				+ "the Rebel Flagship's weapons, once you earn Rule Ten: Greed is Eternal.</html>");
 		scrapBox.setToolTipText("Optional systems only: standard equipment and damaged systems are lost with the hull");
 		sellBox.setToolTipText("Shows a sell button under the supplies in the Cargo Bay: 3 scrap a missile, 4 a drone part. Junking them is always possible");
 		sellSystemsBox.setToolTipText("Shows a Sell button beside each system stored in the Cargo Bay (Refit tab). The boarded ship is paid");

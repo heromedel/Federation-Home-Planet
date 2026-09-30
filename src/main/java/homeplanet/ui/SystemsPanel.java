@@ -130,6 +130,8 @@ public class SystemsPanel {
 		remodelBtn.setToolTipText("Move her systems and doors, or overhaul her deck plan (a retrofitted ship only)");
 		remodelBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				String why = homeplanet.parser.Clearance.customReason(); // Immersive Mode: a Captain's work
+				if (why != null) { JOptionPane.showMessageDialog(bay, why, "Remodel", JOptionPane.INFORMATION_MESSAGE); return; }
 				if (RemodelDialog.open(bay)) { load(); refresh(); bay.refreshTrade(); } // the remodel saved the Cargo Bay: nothing left unsaved
 			}
 		});

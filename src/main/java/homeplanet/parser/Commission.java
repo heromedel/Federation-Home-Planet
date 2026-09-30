@@ -338,6 +338,14 @@ public class Commission {
 		return out;
 	}
 
+	/** The weapon a blueprint's artillery fires (its artillery line), or null if she has none. */
+	public static String artilleryWeapon(String blueprintId) {
+		String block = rawBlock(blueprintId);
+		if (block == null) return null;
+		Matcher m = Pattern.compile("<artillery[^>]*weapon=\"([^\"]+)\"").matcher(block);
+		return m.find() ? m.group(1) : null;
+	}
+
 	/** The raw text of a ship blueprint: the station's own first, else the game data's last definition (later files win). */
 	static String rawBlock(String id) {
 		List<CompanionMod.Remodel> remodels = CompanionMod.load();

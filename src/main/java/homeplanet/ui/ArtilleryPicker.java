@@ -66,6 +66,7 @@ final class ArtilleryPicker {
 		list.setCellRenderer(new DefaultListCellRenderer() {
 			@Override public Component getListCellRendererComponent(JList<?> l, Object v, int i, boolean sel, boolean f) {
 				super.getListCellRendererComponent(l, label((String) v), i, sel, f);
+				if (homeplanet.parser.Clearance.artilleryReason((String) v) != null) setForeground(java.awt.Color.GRAY); // not cleared (Immersive Mode)
 				setIcon(IconFactory.itemIcon((String) v));
 				setToolTipText(tip((String) v));
 				return this;
@@ -78,7 +79,8 @@ final class ArtilleryPicker {
 		list.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
 			public void valueChanged(javax.swing.event.ListSelectionEvent e) {
 				String id = list.getSelectedValue();
-				about.setText(id == null ? "" : tip(id));
+				String why = id == null ? null : homeplanet.parser.Clearance.artilleryReason(id);
+				about.setText(id == null ? "" : why == null ? tip(id) : tip(id).replace("</html>", "<div style='margin-top:6px; color:#d05030'><b>" + why + "</b></div></html>"));
 			}
 		});
 		list.setSelectedIndex(Math.max(0, current == null ? 0 : ids.indexOf(current)));
@@ -91,7 +93,12 @@ final class ArtilleryPicker {
 		p.add(q, BorderLayout.NORTH);
 		p.add(sp, BorderLayout.WEST);
 		p.add(about, BorderLayout.CENTER);
-		int r = JOptionPane.showConfirmDialog(parent, p, "Artillery", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-		return r == JOptionPane.OK_OPTION ? list.getSelectedValue() : null;
+		while (true) {
+			int r = JOptionPane.showConfirmDialog(parent, p, "Artillery", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+			if (r != JOptionPane.OK_OPTION) return null;
+			String why = homeplanet.parser.Clearance.artilleryReason(list.getSelectedValue());
+			if (why == null) return list.getSelectedValue();
+			JOptionPane.showMessageDialog(parent, why, "Artillery", JOptionPane.INFORMATION_MESSAGE); // Immersive Mode: choose another
+		}
 	}
 }

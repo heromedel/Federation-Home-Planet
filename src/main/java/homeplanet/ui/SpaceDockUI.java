@@ -491,6 +491,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			salvageShip();
 		} else if (o == disbandBtn) {
 			disbandCurrentShip();
+		} else if (o == designBtn && homeplanet.parser.Clearance.customReason() != null) {
+			JOptionPane.showMessageDialog(this, homeplanet.parser.Clearance.customReason(), "Design Ship", JOptionPane.INFORMATION_MESSAGE);
 		} else if (o == designBtn) {
 			DesignListDialog.open(this);
 		} else if (o == cargoBtn) {

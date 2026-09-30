@@ -10,6 +10,7 @@ public class TransT { public static void main(String[] a) throws Exception {
  Vault.switchFleet(true);
  UnlockGrants.returning(Unlocks.read());
  flow(saves);
+ clearance(saves);
  Setup.done();
 }
  static void profile(File saves, String[] unlockedA, String[] achievements) throws Exception {
@@ -78,5 +79,31 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("T: a crew volunteer joins Spacedock Storage", v.storage().save().getPlayerShip().getCrewList().size() == crew + 1);
   Transmissions.claim(find("ach:ACH_NO_UPGRADES"), -1);
   Setup.chk("T: a system goes to the stored systems", new String(SafeFiles.read(v.systemsFile()), "UTF-8").contains("cloaking 1"));
+ }
+ static void clearance(File saves) throws Exception {
+  // archive
+  Transmissions.Message w = find("welcome");
+  int unread = Transmissions.unread();
+  Transmissions.setArchived(w, true);
+  Setup.chk("A: an archived transmission leaves the inbox, and is kept", find("welcome").archived && Transmissions.unread() <= unread);
+  Transmissions.setArchived(find("welcome"), false);
+  Setup.chk("A: and can come back", !find("welcome").archived);
+  // rank 1 (Captain) from the test above: custom ships yes, the Federation's artillery not yet
+  Setup.chk("C: a Captain may build custom ships", Clearance.customReason() == null);
+  Setup.chk("C: the Federation's artillery waits for a Commodore", Clearance.artilleryReason("ARTILLERY_FED") != null && Clearance.artilleryReason("ARTILLERY_FED_C") != null);
+  Setup.chk("C: the Flagship's weapons wait for Rule Ten", Clearance.artilleryReason("ARTILLERY_BOSS_1") != null);
+  profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_FED"}, new String[] {"ACH_SECTOR_5", "ACH_TOUGH_SHIP", "ACH_NO_BUYING", "ACH_MANTIS_SLAUGHTER", "ACH_NO_UPGRADES", "ACH_SCRAP"});
+  Transmissions.check();
+  Setup.chk("C: after Rule Ten, they're cleared", Clearance.artilleryReason("ARTILLERY_BOSS_1") == null && find("ach:ACH_SCRAP").body.contains("Flagship"));
+  HomePlanet.immersiveMode = false;
+  Setup.chk("C: outside Immersive Mode, everything is cleared", Clearance.customReason() == null && Clearance.artilleryReason("ARTILLERY_FED") == null);
+  HomePlanet.immersiveMode = true;
+  // prices
+  Setup.chk("P: the Artillery Beam has a price", Pricing.artillery("ARTILLERY_FED") == Pricing.FEDERATION_ARTILLERY && Pricing.artillery("ARTILLERY_FED_C") == 75);
+  SavedGameParser.SavedGameState fed = Commission.build("PLAYER_SHIP_FED", "Fed", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
+  SavedGameParser.SavedGameState kes = Commission.build("PLAYER_SHIP_HARD", "Kes", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
+  Pricing.Quote q = Pricing.ship(fed, 0, 0, 100);
+  System.out.println("Federation Cruiser A: " + q.total() + " " + q.lines);
+  Setup.chk("P: a Federation Cruiser pays for her artillery's gun", String.join(" ", q.lines).contains("Weapons") && Commission.artilleryWeapon("PLAYER_SHIP_FED") != null);
  }
 }

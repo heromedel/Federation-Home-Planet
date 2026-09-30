@@ -219,7 +219,9 @@ reward: item SCRAP_COLLECTOR
 
 {rank},
 
-Ten thousand scrap through your hands. The auditors are impressed, and a little worried. Take this Scrap Recovery Arm, and keep counting.
+Ten thousand scrap through your hands. The auditors are impressed, and a little worried. Take this Scrap Recovery Arm.
+
+And since you clearly know what to do with scrap, here is something worth spending it on: the Admiralty has cleared you to fit the weapons salvaged from the Rebel Flagship to the artillery of your own designs.
 
 Home Planet Liaison
 

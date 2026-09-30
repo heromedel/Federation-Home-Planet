@@ -38,6 +38,9 @@ public class InboxDialog extends JDialog {
 	private final JLabel rewardLabel = new JLabel(" ");
 	private final JButton claim = new JButton("Claim");
 	private final JButton commission = new JButton("Commission...");
+	private final JButton archive = new JButton("Archive");
+	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton();
+	private java.util.List<Transmissions.Message> all;
 	private boolean openCommission;
 
 	/** Opens the inbox. True if the player asked to go to Commission (a commission order). */
@@ -50,7 +53,7 @@ public class InboxDialog extends JDialog {
 	private InboxDialog(SpaceDockUI dock) {
 		super(SwingUtilities.getWindowAncestor(dock), "Transmissions", ModalityType.APPLICATION_MODAL);
 		this.dock = dock;
-		for (Transmissions.Message m : Transmissions.load()) model.addElement(m);
+		all = Transmissions.load();
 		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		list.setCellRenderer(new DefaultListCellRenderer() {
 			@Override
@@ -81,17 +84,29 @@ public class InboxDialog extends JDialog {
 		JPanel act = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
 		act.add(claim);
 		act.add(commission);
+		act.add(archive);
 		act.add(rewardLabel);
 		right.add(act, BorderLayout.SOUTH);
 		claim.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { claimSelected(); } });
 		commission.setToolTipText("Go to Commission: the ship this order grants is marked free there");
 		commission.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { openCommission = true; dispose(); } });
+		archive.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { archiveSelected(); } });
+		javax.swing.ButtonGroup tabs = new javax.swing.ButtonGroup();
+		tabs.add(inboxTab);
+		tabs.add(archiveTab);
+		inboxTab.setSelected(true);
+		ActionListener refill = new ActionListener() { public void actionPerformed(ActionEvent e) { fill(); } };
+		inboxTab.addActionListener(refill);
+		archiveTab.addActionListener(refill);
+		JPanel tabRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+		tabRow.add(inboxTab);
+		tabRow.add(archiveTab);
 
 		JPanel body = new JPanel(new BorderLayout(10, 8));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
 		body.add(ls, BorderLayout.WEST);
 		body.add(right, BorderLayout.CENTER);
-		if (model.isEmpty()) body.add(new JLabel("No transmissions yet. The Federation Home Planet will be in touch."), BorderLayout.NORTH);
+		body.add(tabRow, BorderLayout.NORTH);
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton close = new JButton("Close");
 		close.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
@@ -101,8 +116,33 @@ public class InboxDialog extends JDialog {
 		getRootPane().setDefaultButton(close);
 		pack();
 		setLocationRelativeTo(getOwner());
+		fill();
+	}
+
+	/** The list for the tab shown: the inbox, or the Archive. */
+	private void fill() {
+		boolean arch = archiveTab.isSelected();
+		int in = 0, out = 0;
+		for (Transmissions.Message m : all) { if (m.archived) out++; else in++; }
+		inboxTab.setText("Inbox (" + in + ")");
+		archiveTab.setText("Archive (" + out + ")");
+		model.clear();
+		for (Transmissions.Message m : all) if (m.archived == arch) model.addElement(m);
+		archive.setText(arch ? "Move to Inbox" : "Archive");
+		archive.setToolTipText(arch ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
 		if (!model.isEmpty()) list.setSelectedIndex(0);
 		else show(null);
+		if (model.isEmpty()) text.setText(arch ? "Nothing archived. Archive a transmission to keep it here." : "No transmissions. The Federation Home Planet will be in touch.");
+	}
+	private void archiveSelected() {
+		Transmissions.Message m = list.getSelectedValue();
+		if (m == null) return;
+		try {
+			Transmissions.setArchived(m, !m.archived);
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not file the transmission:\n" + e.getMessage());
+		}
+		fill();
 	}
 
 	private void show(Transmissions.Message m) {
@@ -110,6 +150,7 @@ public class InboxDialog extends JDialog {
 			text.setText("");
 			claim.setVisible(false);
 			commission.setVisible(false);
+			archive.setVisible(false);
 			rewardLabel.setText(" ");
 			return;
 		}
@@ -119,6 +160,7 @@ public class InboxDialog extends JDialog {
 		claim.setVisible(m.hasReward());
 		claim.setEnabled(canClaim);
 		commission.setVisible(m.isOrder());
+		archive.setVisible(true);
 		rewardLabel.setForeground(canClaim ? new Color(40, 150, 60) : Color.GRAY);
 		rewardLabel.setText(!m.hasReward() ? " " : m.claimed ? "Claimed: " + m.claimedWhat : "Reward: " + Transmissions.describeReward(m));
 		Transmissions.markRead(m);
