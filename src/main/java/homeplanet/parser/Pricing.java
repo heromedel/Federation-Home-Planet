@@ -42,7 +42,11 @@ public final class Pricing {
 	}
 	/** HR1: what a system sells for, half its price and half the upgrades paid for (level 0: a Clone Bay, which has no level of its own). */
 	public static int systemSale(String id, int level) {
-		return system(id, Math.max(1, level)) / 2;
+		return systemSale(id, level, 50);
+	}
+	/** A system's sale at this share of its price and upgrades (Immersive Mode pays 25%). */
+	public static int systemSale(String id, int level, int percent) {
+		return system(id, Math.max(1, level)) * percent / 100;
 	}
 
 	/** The price of the reactor's nth bar (1-based), as FTL's upgrade screen charges: 30 for bars 1-5, then 5 more every 5 bars. */

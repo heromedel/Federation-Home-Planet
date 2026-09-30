@@ -458,7 +458,7 @@ public class SystemsPanel {
 	}
 
 	/** HR1: what a stored system sells for. */
-	static int salePrice(Stored s) { return homeplanet.parser.Pricing.systemSale(s.id, s.level); }
+	static int salePrice(Stored s) { return homeplanet.parser.Pricing.systemSale(s.id, s.level, homeplanet.core.HomePlanet.sellPercent()); }
 	private void sellSystem(Stored sel) {
 		String name = DryDockShop.systemTitle(sel.id) + (sel.level > 0 ? " (level " + sel.level + ")" : "");
 		int price = salePrice(sel);

@@ -69,6 +69,8 @@ public class CommissionDialog extends JDialog {
 	private static final String RELIEF = "RELIEF";
 	/** HR2 with an empty shipyard: one ship is free (see {@link #free}). */
 	private final boolean emptyYard = HomePlanet.commissionCosts && homeplanet.vault.Vault.get().shipyardEmpty();
+	/** HR2 with the unlock-once rule: standard layouts unlocked in FTL since the rule was turned on, not yet claimed. */
+	private final java.util.Set<String> unlockFree = new java.util.HashSet<String>();
 
 	/** Opens the window. Returns the new ship (docked in the vault), or null if nothing was commissioned. */
 	public static homeplanet.vault.Ship open(SpaceDockUI dock) {
@@ -183,6 +185,16 @@ public class CommissionDialog extends JDialog {
 			unlocks = null;
 		}
 		int hidden = 0;
+		if (HomePlanet.commissionCosts && HomePlanet.unlockFreeShips) {
+			homeplanet.parser.Unlocks u = unlocks != null ? unlocks : homeplanet.parser.Unlocks.read();
+			for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
+				for (int n = 0; n < 3; n++) {
+					ShipBlueprint bp;
+					try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
+					if (bp != null && homeplanet.parser.UnlockGrants.freeNow(u, bp.getId())) unlockFree.add(bp.getId());
+				}
+			}
+		}
 		if (emptyYard && "relief".equals(HomePlanet.freeShip)) {
 			model.addElement(new Entry(null, "Relief"));
 			model.addElement(new Entry(RELIEF, "Federation relief ship (free)"));
@@ -228,6 +240,10 @@ public class CommissionDialog extends JDialog {
 
 	/** HR2 with an empty shipyard: is this row the free ship? (The unlock and hiding rules still apply to it.) */
 	private boolean free(String id) {
+		if (unlockFree.contains(id)) return true;
+		return emptyFree(id);
+	}
+	private boolean emptyFree(String id) {
 		if (!emptyYard) return false;
 		if ("any".equals(HomePlanet.freeShip)) return true;
 		if ("relief".equals(HomePlanet.freeShip)) return RELIEF.equals(id);
@@ -273,7 +289,8 @@ public class CommissionDialog extends JDialog {
 			preview.add(stats, BorderLayout.NORTH);
 			preview.add(p, BorderLayout.CENTER);
 			if (HomePlanet.commissionCosts) {
-				if (free(e.id)) priceLabel.setText("<html><b>Free.</b> The shipyard is empty: The Federation Home Planet grants you a new command at no cost.</html>");
+				if (emptyFree(e.id)) priceLabel.setText("<html><b>Free.</b> The shipyard is empty: The Federation Home Planet grants you a new command at no cost.</html>");
+				else if (free(e.id)) priceLabel.setText("<html><b>Free, once.</b> Newly unlocked in FTL: The Federation Home Planet commissions the first of her line at no cost.</html>");
 				else showPrice(quote(e.id, s));
 			}
 		} catch (Exception ex) {
@@ -352,7 +369,12 @@ public class CommissionDialog extends JDialog {
 		List<String> lines = new ArrayList<String>();
 		lines.add(e.label + " (" + e.id + "), difficulty " + difficulty.getSelectedItem());
 		if (price > 0) lines.add("Paid " + price + " scrap from Spacedock Storage");
-		if (isFree) lines.add("Free: the shipyard was empty");
+		if (isFree && emptyFree(e.id)) lines.add("Free: the shipyard was empty");
+		else if (isFree) {
+			lines.add("Free: newly unlocked in FTL (claimed)");
+			try { homeplanet.parser.UnlockGrants.claim(e.id); }
+			catch (Exception ex) { HomePlanet.showErrorDialog("The Home Planet Station could not record that this free ship was claimed:\n" + ex.getMessage()); }
+		}
 		lines.add("Crew: " + s.getPlayerShip().getCrewList().size());
 		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines);
 		made = ship;

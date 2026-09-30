@@ -68,10 +68,11 @@ public class ShipRecordsDialog extends JDialog {
 		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		list.setVisibleRowCount(Math.max(4, Math.min(Vault.KEEP, versions.size())));
 		list.addListSelectionListener(new ListSelectionListener() {
-			public void valueChanged(ListSelectionEvent e) { restore.setEnabled(list.getSelectedIndex() >= 0); }
+			public void valueChanged(ListSelectionEvent e) { restore.setEnabled(list.getSelectedIndex() >= 0 && !HomePlanet.immersiveMode); }
 		});
 		restore.setEnabled(false);
-		restore.setToolTipText("Put her back as she was in this version. Her current version is kept here too, so this can be undone.");
+		restore.setToolTipText(HomePlanet.immersiveMode ? "Immersive Mode: what's done is done. Earlier versions can't be restored"
+				: "Put her back as she was in this version. Her current version is kept here too, so this can be undone.");
 		restore.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { restoreSelected(); }
 		});
@@ -148,6 +149,7 @@ public class ShipRecordsDialog extends JDialog {
 		int i = list.getSelectedIndex();
 		if (i < 0) return;
 		File version = versions.get(i);
+		if (HomePlanet.immersiveMode) return;
 		if (!HomePlanet.confirmNo(this, "Restore " + ship.name + " to this version?\n\n" + describe(version) + "\n\n"
 				+ "Everything since then is undone: her crew, cargo, scrap and journey go back to how they were.\n"
 				+ "Her current version is kept in her records, so you can restore it again.", "Restore this version")) return;

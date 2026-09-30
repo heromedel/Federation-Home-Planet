@@ -32,6 +32,7 @@ echo "== SafeT"; run SafeT "$GAME" "$WORLD" "$W/safe" | grep -E "$PICK|^PASS"
 echo "== BlueT"; run BlueT "$GAME" "$WORLD" "$W/blue" | grep -E "$PICK|^PASS"
 echo "== HistT"; run HistT "$GAME" "$WORLD" "$W/hist" | grep -E "$PICK|^PASS"
 echo "== PriceT"; run PriceT "$GAME" "$WORLD" "$W/price" | grep -E "$PICK|^PASS|^Kestrel|^Relief"
+echo "== RuleT"; run RuleT "$GAME" "$WORLD" "$W/rule" | grep -E "$PICK|^PASS"
 
 # the converter, only with old Homeworld data to convert
 if [ $# -ge 3 ]; then

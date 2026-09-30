@@ -64,9 +64,9 @@ ship moving between the Space Dock, Junkyard and history needs no bookkeeping.
   action comes back as the station last saw her. Identical versions aren't kept twice.
 - Still to do with Immersive Mode (item 4): turn off Restore and Recover.
 
-## 4. Pricing and house rules
+## 4. Pricing and house rules — done (harness tests PriceT, RuleT)
 
-Progress: pricing (`parser/Pricing`), HR1 and HR2 are built (harness test PriceT). A Kestrel A comes to 1005 scrap
+Pricing (`parser/Pricing`), HR1 and HR2 are built (harness test PriceT). A Kestrel A comes to 1005 scrap
 under HR2 (systems 497, reactor 255, gear 118, crew 135). Reactor bars are priced 30 each for the first 5, then 5
 more every 5 bars. Selling a stored system pays the boarded ship, as a store would.
 
@@ -76,6 +76,12 @@ which comes to 777 under HR2), and Report for Reassignment under Other…. What 
 and while the hold is untouched, so undoing never keeps both. The free ship only matters with HR2 on (otherwise every
 commission is free), so the setting sits under it. The relief ship's reactor is 7: enough for a shield layer, both
 guns, engines, oxygen and medbay.
+
+Unlock-once free ships and Immersive Mode are built too. The unlock record is `unlock-grants.txt` in the vault
+(layouts seen when the rule was turned on, and free ships claimed); turning the rule off and on again adds what's
+unlocked by then to "seen". Both rules sit under HR2 in the rules window, since without HR2 every ship is free.
+Immersive Mode also makes a Report for Reassignment final (no Undo). It leaves "Scrapping moves her systems" and the
+unlock rules to the player, as the list below doesn't name them.
 
 Prices come from FTL's blueprints (system cost and upgrade costs, weapon, drone, augment and crew costs). Measured
 from the game data: a Kestrel A is about 590 scrap for systems, starting upgrades and gear, roughly 950 with reactor

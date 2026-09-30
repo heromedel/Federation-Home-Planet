@@ -430,7 +430,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private void otherOrders() {
 		javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 		javax.swing.JMenuItem recover = new javax.swing.JMenuItem("Recover a ship...");
-		recover.setToolTipText("Bring back a destroyed ship, or one lost in action, from her last kept version");
+		recover.setEnabled(!HomePlanet.immersiveMode);
+		recover.setToolTipText(HomePlanet.immersiveMode ? "Immersive Mode: ships lost or destroyed stay gone"
+				: "Bring back a destroyed ship, or one lost in action, from her last kept version");
 		recover.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(ActionEvent e) { recoverShip(); }
 		});
@@ -450,8 +452,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (last != null) {
 			javax.swing.JMenuItem undo = new javax.swing.JMenuItem("Undo Reassignment...");
 			boolean taken = !v.docked().isEmpty() || v.boarded() != null;
-			undo.setEnabled(!taken);
-			undo.setToolTipText(taken ? "Only before a new command is taken: no ship may be at the Space Dock"
+			undo.setEnabled(!taken && !HomePlanet.immersiveMode);
+			undo.setToolTipText(HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final"
+					: taken ? "Only before a new command is taken: no ship may be at the Space Dock"
 					: "Take back the storage hold and hulls surrendered in the last report for reassignment");
 			undo.addActionListener(new java.awt.event.ActionListener() {
 				public void actionPerformed(ActionEvent e) { undoReassignment(last); }
@@ -475,8 +478,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "  - Spacedock Storage: its " + v.storageScrap() + " scrap, supplies, weapons, drones, augments, crew and stored systems\n"
 				+ (junk.isEmpty() ? "  - (the Junkyard is empty)\n" : "  - every hull in the Junkyard: " + hulls + "\n")
 				+ "\nIn exchange, The Federation Home Planet grants you a new command: " + freeShipWords() + ", free.\n\n"
-				+ "The Home Planet Station keeps a record of what was surrendered. Until you take your new command,\n"
-				+ "this can be undone (Other... > Undo Reassignment).";
+				+ (HomePlanet.immersiveMode ? "This is final (Immersive Mode)."
+				: "The Home Planet Station keeps a record of what was surrendered. Until you take your new command,\n"
+				+ "this can be undone (Other... > Undo Reassignment).");
 		if (!confirmIrreversible("Report for Reassignment", message, "Report")) return;
 		try {
 			v.surrender();
@@ -711,7 +715,26 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		int choice = JOptionPane.showOptionDialog(null, message, "New Journey", JOptionPane.DEFAULT_OPTION,
 				JOptionPane.WARNING_MESSAGE, null, options, options[3]); // Cancel is the default
 		if (choice < 0 || choice > 2) return;
+		int fee = HomePlanet.immersiveMode ? HomePlanet.JOURNEY_FEE : 0;
+		if (fee > 0) {
+			int have = Vault.get().storageScrap();
+			if (have < fee) {
+				JOptionPane.showMessageDialog(null, "The Federation Home Planet charges " + fee + " scrap to plot a new journey, paid from Spacedock Storage,\n"
+						+ "which holds " + have + ". Store more scrap in the Cargo Bay first.", "New Journey", JOptionPane.INFORMATION_MESSAGE);
+				return;
+			}
+			if (!HomePlanet.confirmNo(this, "The Federation Home Planet charges " + fee + " scrap to plot a new journey,\npaid from Spacedock Storage (which holds " + have + "). Pay it?", "New Journey")) return;
+		}
 		if (!GameGuard.allows(this, "start her new journey")) return;
+		byte[] storageBefore = null;
+		if (fee > 0) {
+			try {
+				storageBefore = Vault.get().payFromStorage(fee);
+			} catch (IOException e) {
+				HomePlanet.showErrorDialog("The Home Planet Station could not take the fee from Spacedock Storage. Nothing was changed:\n" + e.getMessage());
+				return;
+			}
+		}
 		net.blerf.ftl.constants.Difficulty[] diffs = {net.blerf.ftl.constants.Difficulty.EASY,
 				net.blerf.ftl.constants.Difficulty.NORMAL, net.blerf.ftl.constants.Difficulty.HARD};
 		SaveHelper.startJourney(gs, diffs[choice]);
@@ -723,10 +746,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		while (it.hasNext()) if (!SaveHelper.isOwnCrew(it.next())) it.remove();
 		try {
 			Vault.get().write(ship, gs);
-			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice]);
+			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + fee + " scrap from Spacedock Storage" : ""));
 		} catch (Exception e) {
 			ship.invalidate();
-			HomePlanet.showErrorDialog("The Home Planet Station could not save her new journey:\n" + e);
+			String refund = "";
+			if (storageBefore != null) {
+				try { Vault.get().refundStorage(storageBefore); refund = "\nThe fee was returned to Spacedock Storage."; }
+				catch (IOException again) { refund = "\nThe fee could not be returned to Spacedock Storage: " + again.getMessage(); }
+			}
+			HomePlanet.showErrorDialog("The Home Planet Station could not save her new journey:\n" + e + refund);
 			return;
 		}
 		JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is fueled and ready. A new journey awaits, Captain.",
@@ -812,8 +840,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Removes a junked ship for good (her last save stays in her history folder). */
 	void destroyShip(Ship ship) {
 		if (!confirmIrreversible("Destroy Ship", "Destroy " + ship.name + "?\n\n"
-				+ "The ship, her cargo and her crew will be lost. The Home Planet Station keeps her last records,\n"
-				+ "so she could be recovered later (Other... > Recover a ship).", "Destroy")) return;
+				+ "The ship, her cargo and her crew will be lost. " + (HomePlanet.immersiveMode ? "This cannot be undone."
+				: "The Home Planet Station keeps her last records,\nso she could be recovered later (Other... > Recover a ship)."), "Destroy")) return;
 		try {
 			Vault.get().remove(ship, "DESTROY");
 		} catch (IOException e) {

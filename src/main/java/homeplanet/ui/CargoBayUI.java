@@ -728,6 +728,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (myJunkSupply == null) return;
 		boolean can = supplyIdx >= 2 && currentState != null && tradeState != null;
 		mySellSupply.setVisible(HomePlanet.sellSupplies);
+		String share = HomePlanet.sellPercent() == 50 ? "half the store price" : HomePlanet.sellPercent() + "% of the store price, set by Immersive Mode";
+		mySellSupply.setToolTipText("Sell that many of your ship's missiles or drone parts (" + share + ")");
+		theirSellSupply.setToolTipText("Sell that many of the partner's missiles or drone parts (" + share + ")");
 		theirSellSupply.setVisible(HomePlanet.sellSupplies);
 		myJunkSupply.setEnabled(can); mySellSupply.setEnabled(can);
 		theirJunkSupply.setEnabled(can); theirSellSupply.setEnabled(can);
@@ -742,7 +745,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (have <= 0) { help(save.getPlayerShipName() + " has no " + what + "."); return; }
 		int n = Math.min((Integer) moveAmount.getValue(), have);
 		if (n == 1) what = supplyIdx == 2 ? "missile" : "drone part";
-		int price = sell ? n * (SUPPLY_PRICE[supplyIdx] / 2) : 0;
+		int price = sell ? n * SUPPLY_PRICE[supplyIdx] * HomePlanet.sellPercent() / 100 : 0; // half the store price (a quarter in Immersive Mode)
 		String q = sell ? "Sell " + n + " " + what + " for " + price + " scrap?" : "Junk " + n + " " + what + "?\nYou get nothing for " + (n == 1 ? "it." : "them.");
 		if (!HomePlanet.confirmNo(this, q, sell ? "Sell" : "Junk")) return;
 		setSupply(state, supplyIdx, have - n);

@@ -65,6 +65,26 @@ public class HomePlanet {
 	public static int commissionPercent = 100;
 	/** With HR2: the free ship an empty shipyard (no ship docked, boarded or in the Junkyard) offers: "kestrel", "any" or "relief". */
 	public static String freeShip = "kestrel";
+	/** With HR2: each ship layout unlocked in the FTL profile after this was turned on can be commissioned free, once. */
+	public static boolean unlockFreeShips = false;
+	/**
+	 * Immersive Mode: sets and locks the rules (see {@link #applyImmersive}); a New Journey costs {@link #JOURNEY_FEE}
+	 * scrap from the storage hold; selling supplies and systems pays 25%; restoring and recovering are off.
+	 */
+	public static boolean immersiveMode = false;
+	public static final int JOURNEY_FEE = 200;
+	/** Immersive Mode's rules, set over whatever the player had. */
+	public static void applyImmersive() {
+		if (!immersiveMode) return;
+		storeRequirement = true;
+		journeyStoreRequirement = true;
+		commissionCosts = true;
+		commissionPercent = 100;
+		sellSupplies = true;
+		sellSystems = true;
+	}
+	/** What selling missiles, drone parts and stored systems pays, as a share of the store price: 50%, or 25% in Immersive Mode. */
+	public static int sellPercent() { return immersiveMode ? 25 : 50; }
 	public static boolean debugLogging = false;
 
 	/** The config file, beside the program (whatever folder it was started from), and its values (the Settings window changes and saves them). */
@@ -100,6 +120,9 @@ public class HomePlanet {
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
 		freeShip = config.getProperty("free_ship", "kestrel");
 		if (!"any".equals(freeShip) && !"relief".equals(freeShip)) freeShip = "kestrel";
+		unlockFreeShips = flag("unlock_free_ships");
+		immersiveMode = flag("immersive_mode");
+		applyImmersive();
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 		log.debug("{} {} starting on Java {}", APP_NAME, APP_VERSION, System.getProperty("java.version"));
 
@@ -135,6 +158,7 @@ public class HomePlanet {
 			sellSupplies = flag("sell_supplies", false);
 			commissionUnlockedOnly = flag("commission_unlocked_only", true);
 			commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only", true);
+			applyImmersive();
 			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() { homeplanet.ui.HouseRulesDialog.ask(); return null; } });
 			writeConfig = true; // saveConfig writes every rule, so this is asked once
 		}
@@ -270,6 +294,8 @@ public class HomePlanet {
 		config.setProperty("commission_costs_scrap", Boolean.toString(commissionCosts));
 		config.setProperty("commission_price_percent", Integer.toString(commissionPercent));
 		config.setProperty("free_ship", freeShip);
+		config.setProperty("unlock_free_ships", Boolean.toString(unlockFreeShips));
+		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
 		try {
 			ByteArrayOutputStream buf = new ByteArrayOutputStream();
