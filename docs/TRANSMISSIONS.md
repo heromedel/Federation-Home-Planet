@@ -169,8 +169,8 @@ Approved by heromedel, with the exact FTL item names checked in ftl.dat. **Notes
 ### Notes
 
 1. **Artillery:** the Federation's artillery (Artillery Beam, Flak Artillery) is cleared for Commodores; the Rebel
-   Flagship's weapons (Boss Laser, Missile, Beam, Ion) by Rule Ten. The Artillery Beam, which FTL never sells, is priced
-   at 120 scrap (above the Glaive Beam's 95, since it ignores shields); the others have prices in FTL.
+   Flagship's weapons (Boss Laser, Missile, Beam, Ion) by Rule Ten. Artillery guns are a luxury: the Artillery Beam 200
+   scrap, Flak Artillery 150, each Flagship weapon 100.
 2. **Warlord:** Adv. FTL Navigation already is the "jump back to a visited beacon" augment (it still costs fuel in
    FTL). I added the FTL Recharge Booster to make jumps easier too. Or 20 fuel?
 3. **Living off the Land:** FTL doesn't record which ship earned a general achievement, so the player chooses when

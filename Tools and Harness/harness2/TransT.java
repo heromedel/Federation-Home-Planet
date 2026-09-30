@@ -99,7 +99,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("C: outside Immersive Mode, everything is cleared", Clearance.customReason() == null && Clearance.artilleryReason("ARTILLERY_FED") == null);
   HomePlanet.immersiveMode = true;
   // prices
-  Setup.chk("P: the Artillery Beam has a price", Pricing.artillery("ARTILLERY_FED") == Pricing.FEDERATION_ARTILLERY && Pricing.artillery("ARTILLERY_FED_C") == 75);
+  Setup.chk("P: the Artillery Beam has a price", Pricing.artillery("ARTILLERY_FED") == 200 && Pricing.artillery("ARTILLERY_FED_C") == 150 && Pricing.artillery("ARTILLERY_BOSS_2") == 100);
   SavedGameParser.SavedGameState fed = Commission.build("PLAYER_SHIP_FED", "Fed", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
   SavedGameParser.SavedGameState kes = Commission.build("PLAYER_SHIP_HARD", "Kes", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
   Pricing.Quote q = Pricing.ship(fed, 0, 0, 100);

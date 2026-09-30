@@ -158,7 +158,7 @@ ship pays, and Save makes it official (Reset undoes it).
   design ships, remodel and overhaul, and commission custom ships; **Commodores** may fit the Federation's artillery
   (Artillery Beam, Flak Artillery); the **Rebel Flagship's weapons** as artillery are cleared by "Rule Ten: Greed is
   Eternal" earned in Immersive Mode. Marked in Commission and the artillery picker with the reason.
-- **Artillery prices (HR2):** the Artillery Beam, which FTL never sells, at 120 scrap; the others at their FTL price.
+- **Artillery prices (HR2), a luxury:** the Artillery Beam 200 scrap, Flak Artillery 150, each Rebel Flagship weapon 100.
 - **Unlock-once free ships:** Immersive Mode turns this rule on and locks it, with the two "locked ships" rules.
 - As built: the rank shows in the Space Dock's "Docked Ships" header; the rank record lives with the unlock record
   (`unlock-grants.txt`, "promoted" lines). Commission marks custom ships "(Captains only)" / "(Commodores only)".

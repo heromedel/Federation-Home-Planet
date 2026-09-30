@@ -30,14 +30,13 @@ public final class Pricing {
 	public static final int PER_ROOM = 10, PER_DOOR = 5;
 	/** An artillery weapon with no price (the Federation cruiser's): what the station charges for it. */
 	public static final int UNPRICED_ARTILLERY = 100;
-	/**
-	 * The Federation Cruiser's Artillery Beam, which FTL never sells: priced above the best beam in the stores (the
-	 * Glaive Beam, 95), since it ignores shields entirely. (Its Type C Flak Artillery has a price of its own, 75.)
-	 */
-	public static final int FEDERATION_ARTILLERY = 120;
-	/** An artillery weapon: the Federation's Artillery Beam at FEDERATION_ARTILLERY, others at their price, or UNPRICED_ARTILLERY. */
+	/** Artillery guns are a luxury (heromedel's prices): the Artillery Beam, the Type C's Flak Artillery, and each of the Rebel Flagship's weapons. */
+	public static final int FEDERATION_ARTILLERY = 200, FLAK_ARTILLERY = 150, FLAGSHIP_ARTILLERY = 100;
+	/** An artillery weapon's price: the luxury prices above, else FTL's price, else UNPRICED_ARTILLERY. */
 	public static int artillery(String id) {
 		if ("ARTILLERY_FED".equals(id)) return FEDERATION_ARTILLERY;
+		if ("ARTILLERY_FED_C".equals(id)) return FLAK_ARTILLERY;
+		if (id != null && id.startsWith("ARTILLERY_BOSS")) return FLAGSHIP_ARTILLERY;
 		WeaponBlueprint w = id == null ? null : DataManager.get().getWeapons().get(id);
 		return w != null && w.getCost() > 0 ? w.getCost() : UNPRICED_ARTILLERY;
 	}
