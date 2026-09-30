@@ -122,7 +122,7 @@ public class PatchDialog extends JDialog {
 		JPanel toggles = new JPanel();
 		toggles.setLayout(new BoxLayout(toggles, BoxLayout.Y_AXIS));
 		rememberBox.setToolTipText("Tick the same mods, in the same order, next time this window opens");
-		runBox.setToolTipText("Start FTL once the mods are installed (uses the Launch FTL setting above in Settings)");
+		runBox.setToolTipText("Start FTL once Slipstream has sent the mods (uses the Launch FTL setting in Settings)");
 		toggles.add(rememberBox);
 		toggles.add(runBox);
 		JLabel where = new JLabel("Slipstream: " + dir.getPath());

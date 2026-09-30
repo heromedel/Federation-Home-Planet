@@ -90,7 +90,7 @@ public class DesignDialog extends ShipEditorDialog {
 		addBottomButton(button("Loadout...", "Her class, default name, crew, weapons, drones, augments, missiles and drone parts, and which systems she starts with", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { loadoutThenMaybeBuild(); }
 		}));
-		addBottomButton(button("Build blueprint...", "Her report as she'd be commissioned, what's wrong or worth knowing, then into the companion mod", new ActionListener() {
+		addBottomButton(button("Build blueprint...", "Her report as she'd be commissioned, what's wrong or worth knowing, then into the Federation Home Planet Mod", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { buildBlueprint(); }
 		}));
 		addBottomButton(button("Save design", "Saves the design to work on later, without building the blueprint or making it available to commission ships (Ctrl+S)", new ActionListener() {

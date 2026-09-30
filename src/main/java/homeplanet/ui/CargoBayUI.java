@@ -475,8 +475,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 				+ "The Home Planet Station's own hold. Weapons, drones, augments, crew and supplies (scrap, fuel, missiles and drone parts) "
 				+ "wait here when they aren't aboard any ship, with no slot limits.<br><br>"
 				+ "Send things here from your ship, then take them aboard any ship docked at a station. "
-				+ "Systems taken off in the Refit tab are kept on that tab's own list.<br><br>"
-				+ "Advanced Edition ships and original-game ships each have their own hold.</div></html>",
+				+ "Systems taken off in the Refit tab are kept on that tab's own list.</div></html>",
 				"Spacedock Storage", JOptionPane.PLAIN_MESSAGE);
 	}
 	private String partnerName() { return partnerIsStorage() ? "Spacedock Storage" : tradeSave.getPlayerShipName(); }
@@ -578,7 +577,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		ca.setBounds(LX + DROP_IN, 58 + o, DROP_W, 16);
 		trade.add(ca);
 		boardBtn.setBounds(LX + DROP_IN, 74 + o, DROP_W, 30);
-		boardBtn.setToolTipText("Board another of your ships docked at a Station, without leaving the Cargo Bay");
+		boardBtn.setToolTipText("Board another of your ships docked at a station, without leaving the Cargo Bay");
 		boardBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pickBoard(); } });
 		trade.add(boardBtn);
 		myInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "Her report, and to rename her", new ActionListener() { public void actionPerformed(ActionEvent e) { showCurrentShipInfo(); } });
@@ -598,7 +597,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		tw.setBounds(RX + RW - DROP_IN - DROP_W, 58 + o, DROP_W, 16);
 		trade.add(tw);
 		partnerBtn.setBounds(RX + RW - DROP_IN - DROP_W, 74 + o, DROP_W, 30);
-		partnerBtn.setToolTipText("Choose who to trade with: the storage, or another of your ships docked at a Station");
+		partnerBtn.setToolTipText("Choose who to trade with: the storage, or another of your ships docked at a station");
 		partnerBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pickPartner(); } });
 		trade.add(partnerBtn);
 		theirInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "Her report", new ActionListener() {

@@ -309,7 +309,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.add(smallLabel(beacons(ship0), new Color(200, 210, 205)));
 		boolean off = offStation(ship0);
 		JLabel away = smallLabel(off ? "Not within range of a station" : " ", new Color(255, 170, 90));
-		if (off) away.setToolTipText("She must reach a beacon with a Station before she can trade.");
+		if (off) away.setToolTipText("She must reach a beacon with a station before she can trade.");
 		p.add(away);
 		p.add(Box.createRigidArea(new Dimension(1, 4)));
 		p.add(pictureButton(ship0, shipPicture(ship0, 150, 86, off), 154, 90));
@@ -339,7 +339,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.add(Box.createRigidArea(new Dimension(1, 10)));
 		p.add(buttonRow(ship0, 110, 32));
 		p.setSize(p.getPreferredSize());
-		p.setToolTipText("The ship at your command, berthed at the station");
+		p.setToolTipText("The ship at your command, berthed at The Home Planet Station");
 		return p;
 	}
 	/** A few of her particulars, shown to the left of her picture when there's room. */

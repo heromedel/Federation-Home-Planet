@@ -122,7 +122,7 @@ public final class BuildDialog extends JDialog {
 		loadout.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { choice = Choice.LOADOUT; dispose(); } });
 		JButton build = new JButton(notes.isEmpty() ? "Build blueprint" : "Build anyway");
 		build.setEnabled(fix.isEmpty());
-		build.setToolTipText(fix.isEmpty() ? "Put her blueprint in the companion mod" : "Not until the To fix list is empty");
+		build.setToolTipText(fix.isEmpty() ? "Put her blueprint in the Federation Home Planet Mod" : "Not until the To fix list is empty");
 		build.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { choice = Choice.BUILD; dispose(); } });
 		JButton cancel = new JButton("Cancel");
 		cancel.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });

@@ -92,7 +92,7 @@ public class SettingsDialog extends JDialog {
 			}
 		});
 		JButton openLog = new JButton("Open history log");
-		openLog.setToolTipText("Open history.log: what the station loaded and did");
+		openLog.setToolTipText("Open history.log: what The Home Planet Station loaded and did");
 		openLog.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (!homeplanet.core.HistoryLog.file().exists()) {
@@ -131,7 +131,7 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Mods");
 		JPanel modRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JButton patchBtn = new JButton("Patch mods...");
-		patchBtn.setToolTipText("Choose which mods to install in FTL; Slipstream does the installing (the Federation Home Planet mod is always included)");
+		patchBtn.setToolTipText("Choose which mods to send to FTL; Slipstream carries them (the Federation Home Planet Mod is always included)");
 		patchBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { PatchDialog.open(SettingsDialog.this); }
 		});
@@ -154,7 +154,7 @@ public class SettingsDialog extends JDialog {
 			}
 		});
 		JButton cleanBtn = new JButton("Clean up blueprints");
-		cleanBtn.setToolTipText("Remove station-made blueprints that no ship uses anymore. Checks every save at the Space Dock, docked, and in the Junkyard");
+		cleanBtn.setToolTipText("Remove The Home Planet Station's own blueprints that no ship uses anymore. Checks every save at the Space Dock, docked, and in the Junkyard");
 		cleanBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { cleanBlueprints(); }
 		});

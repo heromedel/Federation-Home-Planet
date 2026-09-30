@@ -54,7 +54,7 @@ public class DesignListDialog extends JDialog {
 		sp.setPreferredSize(new Dimension(420, 220));
 		JPanel body = new JPanel(new BorderLayout(0, 6));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
-		body.add(new JLabel("<html>Ships you've designed from scratch. Open one and press Build blueprint to put her in the<br>companion mod; tick her as a starter ship to commission her.</html>"), BorderLayout.NORTH);
+		body.add(new JLabel("<html>Ships you've designed from scratch. Open one and press Build blueprint to put her in the<br>Federation Home Planet Mod; tick her as a starter ship to commission her.</html>"), BorderLayout.NORTH);
 		body.add(sp, BorderLayout.CENTER);
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton nw = new JButton("New design");
