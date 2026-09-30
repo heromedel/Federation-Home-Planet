@@ -134,12 +134,16 @@ public class Slipstream {
 		fc.setFileSelectionMode(javax.swing.JFileChooser.FILES_AND_DIRECTORIES);
 		fc.setFileFilter(new javax.swing.filechooser.FileFilter() {
 			public String getDescription() { return "Slipstream Mod Manager (modman.jar)"; }
-			public boolean accept(File f) { return f.isDirectory() || f.getName().equals("modman.jar"); }
+			public boolean accept(File f) { return f.isDirectory() || f.getName().equalsIgnoreCase("modman.jar"); }
 		});
 		if (fc.showOpenDialog(owner) != javax.swing.JFileChooser.APPROVE_OPTION) return null;
 		File f = fc.getSelectedFile();
+		if (f == null) f = fc.getCurrentDirectory();
 		if (f.isFile()) f = f.getParentFile();
 		if (valid(f)) return f;
+		// a folder chosen by name from inside itself can come back doubled (...\Slipstream\Slipstream): try around it
+		if (valid(f.getParentFile())) return f.getParentFile();
+		if (valid(fc.getCurrentDirectory())) return fc.getCurrentDirectory();
 		JOptionPane.showMessageDialog(owner, "That folder has no modman.jar:\n" + f.getPath(), "Slipstream", JOptionPane.WARNING_MESSAGE);
 		return null;
 	}

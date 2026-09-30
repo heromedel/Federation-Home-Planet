@@ -96,7 +96,7 @@ public class RemodelDialog extends ShipEditorDialog {
 
 		editor = new LayoutEditor(d, this, false, 0, 0);
 		showModelArt(current);
-		overhaulBtn = button("Rework rooms...", "Move, add and remove rooms, and move her art, weapon mounts and shield", new ActionListener() {
+		overhaulBtn = button("Overhaul deck plan...", "Move, add and remove rooms, and move her art, weapon mounts and shield", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { askOverhaul(); }
 		});
 		addSideButton(overhaulBtn);
@@ -116,8 +116,8 @@ public class RemodelDialog extends ShipEditorDialog {
 		openKey = ShipDesign.editKey(d);
 		refreshChecks();
 		fitToScreen();
-		say(overhaul ? "Rework rooms: rooms, doors, systems, art, mounts and shield are all editable."
-				: "Click a system to move it. Only systems and doors move here: Rework rooms... unlocks her rooms, art and weapon mounts.");
+		say(overhaul ? "Overhaul: rooms, doors, systems, art, mounts and shield are all editable."
+				: "Click a system to move it. Only systems and doors move here: Overhaul deck plan... unlocks her rooms, art and weapon mounts.");
 	}
 
 	// ---- ShipEditorDialog ----
@@ -196,14 +196,14 @@ public class RemodelDialog extends ShipEditorDialog {
 	// ---- the overhaul ----
 
 	private void askOverhaul() {
-		int r = JOptionPane.showConfirmDialog(this, "Reworking her rooms lets you move, add and remove them, move her art and weapon mounts, reshape her shield,\n"
+		int r = JOptionPane.showConfirmDialog(this, "Overhauling her deck plan lets you move, add and remove rooms, move her art and weapon mounts, reshape her shield,\n"
 				+ "and drop or replace her floor art. Systems and doors stay where they can; rooms holding installed systems stay.\n"
 				+ "Crew standing where a room no longer is are moved to a free square when you finalize.\n\n"
-				+ "Restore original layout undoes all of it.", "Rework rooms: " + save.getPlayerShipName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+				+ "Restore original layout undoes the whole overhaul.", "Overhaul deck plan: " + save.getPlayerShipName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
 		if (r != JOptionPane.OK_OPTION) return;
 		enterOverhaul(null);
 		fitToScreen();
-		say("Rework rooms: use the room tools on the right, and the art tools beside them. Finalize when she's ready.");
+		say("Overhaul: use the room tools on the right, and the art tools beside them. Finalize when she's ready.");
 	}
 
 	/** Opens the rooms and art for editing: from her earlier overhaul (g) if she had one, else from her current layout and art. */
@@ -270,7 +270,7 @@ public class RemodelDialog extends ShipEditorDialog {
 	private void finalizeBlueprint() {
 		List<String> p = check().problems;
 		if (!p.isEmpty()) {
-			JOptionPane.showMessageDialog(this, "The " + (overhaul ? "reworked layout" : "layout") + " isn't finished:\n  " + String.join("\n  ", p), "Finalize blueprint", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, "The " + (overhaul ? "overhaul" : "layout") + " isn't finished:\n  " + String.join("\n  ", p), "Finalize blueprint", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		Map<String, Sys> moved = diffs();
@@ -346,7 +346,7 @@ public class RemodelDialog extends ShipEditorDialog {
 		List<String> lines = new ArrayList<String>();
 		for (Sys s : moved.values()) lines.add(Items.systemTitle(s.id) + (s.room < 0 ? ": off the blueprint" : ": room " + s.room + (s.square != null ? ", square " + s.square + (s.dir != null ? " facing " + s.dir : "") : "")));
 		if (doorsChanged) lines.add("Doors: " + d.doors.size() + " (the model has " + origDoors.size() + ")");
-		if (overhaul) lines.add("Rooms reworked: " + d.rooms.size() + " rooms, " + d.mounts.size() + " weapon mounts, art " + d.art + (d.floor.isEmpty() ? ", no floor" : ""));
+		if (overhaul) lines.add("Overhauled: " + d.rooms.size() + " rooms, " + d.mounts.size() + " weapon mounts, art " + d.art + (d.floor.isEmpty() ? ", no floor" : ""));
 		HistoryLog.entry("REMODEL", name + " -> " + ship.getShipBlueprintId(), lines);
 		bay.saveAll();
 		finalized = true;

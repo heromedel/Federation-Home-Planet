@@ -725,7 +725,7 @@ public class LayoutEditor {
 				artDrag = true;
 				artGrabX = x - originX - d.artX;
 				artGrabY = y - originY - d.artY;
-			} else host.say(designArt ? "Choose her hull art first." : "Her art moves once you choose Rework rooms.");
+			} else host.say(designArt ? "Choose her hull art first." : "Her art moves in a deck plan overhaul.");
 			return;
 		}
 
