@@ -157,6 +157,17 @@ public class HomePlanet {
 			showErrorDialog("Could not open the vault in:\n" + save_location + "\n\n" + e);
 			System.exit(1);
 		}
+		// Slipstream, offered once before anything needs it (after the vault opens, so its log entry goes there).
+		// On the event thread: a file chooser opened from this thread comes up empty on Windows, and every later one with it.
+		final boolean[] offered = {false};
+		try {
+			javax.swing.SwingUtilities.invokeAndWait(new Runnable() {
+				public void run() { offered[0] = Slipstream.offerAtStart(); }
+			});
+		} catch (Exception e) {
+			log.warn("Could not offer Slipstream", e);
+		}
+		if (offered[0]) saveConfig();
 
 		// The game data, plus our own blueprints (retrofit copies, remodels, designs) so their ships can be read
 		try {
@@ -249,6 +260,11 @@ public class HomePlanet {
 
 	private static boolean confirm(String message, String title) {
 		return JOptionPane.showConfirmDialog(null, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+	}
+	/** Yes or No, starting on No: for anything that can't be undone (selling, junking, retiring). Closing the window means No. */
+	public static boolean confirmNo(java.awt.Component owner, String message, String title) {
+		Object[] options = {"Yes", "No"};
+		return JOptionPane.showOptionDialog(owner, message, title, JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) == 0;
 	}
 	public static void showErrorDialog(String message) {
 		JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);

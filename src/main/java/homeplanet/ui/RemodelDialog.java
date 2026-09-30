@@ -96,7 +96,7 @@ public class RemodelDialog extends ShipEditorDialog {
 
 		editor = new LayoutEditor(d, this, false, 0, 0);
 		showModelArt(current);
-		overhaulBtn = button("Overhaul...", "Move, add and remove rooms, and move her art, weapon mounts and shield", new ActionListener() {
+		overhaulBtn = button("Overhaul deck plan...", "Move, add and remove rooms, and move her art, weapon mounts and shield", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { askOverhaul(); }
 		});
 		addSideButton(overhaulBtn);
@@ -116,7 +116,8 @@ public class RemodelDialog extends ShipEditorDialog {
 		openKey = ShipDesign.editKey(d);
 		refreshChecks();
 		fitToScreen();
-		say(overhaul ? "Overhaul: rooms, doors, systems, art, mounts and shield are all editable." : "Click a system to start.");
+		say(overhaul ? "Overhaul: rooms, doors, systems, art, mounts and shield are all editable."
+				: "Click a system to move it. Only systems and doors move here: Overhaul deck plan... unlocks her rooms, art and weapon mounts.");
 	}
 
 	// ---- ShipEditorDialog ----
@@ -195,10 +196,10 @@ public class RemodelDialog extends ShipEditorDialog {
 	// ---- the overhaul ----
 
 	private void askOverhaul() {
-		int r = JOptionPane.showConfirmDialog(this, "An overhaul lets you move, add and remove rooms, move her art and weapon mounts, reshape her shield,\n"
+		int r = JOptionPane.showConfirmDialog(this, "Overhauling her deck plan lets you move, add and remove rooms, move her art and weapon mounts, reshape her shield,\n"
 				+ "and drop or replace her floor art. Systems and doors stay where they can; rooms holding installed systems stay.\n"
 				+ "Crew standing where a room no longer is are moved to a free square when you finalize.\n\n"
-				+ "Restore original layout undoes the whole overhaul.", "Overhaul " + save.getPlayerShipName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+				+ "Restore original layout undoes the whole overhaul.", "Overhaul deck plan: " + save.getPlayerShipName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
 		if (r != JOptionPane.OK_OPTION) return;
 		enterOverhaul(null);
 		fitToScreen();

@@ -126,7 +126,7 @@ public class SystemsPanel {
 		sysScroll.getVerticalScrollBar().setOpaque(false);
 		sysScroll.getVerticalScrollBar().setUnitIncrement(32);
 		remodelBtn = new FtlButton("Remodel...", FtlFont.MENU, 180, 34);
-		remodelBtn.setToolTipText("Move her systems and doors, or overhaul her rooms (a retrofitted ship only)");
+		remodelBtn.setToolTipText("Move her systems and doors, or overhaul her deck plan (a retrofitted ship only)");
 		remodelBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (RemodelDialog.open(bay)) { load(); bay.markDirty(); refresh(); bay.refreshTrade(); }
@@ -237,7 +237,7 @@ public class SystemsPanel {
 		retrofitBtn.setBounds(192, y, 220, 34);
 		lists.add(retrofitBtn);
 		y += 42;
-		layoutHint.setText(retro ? "Remodel moves systems and doors, or overhauls her rooms."
+		layoutHint.setText(retro ? "Remodel moves systems and doors, or overhauls her deck plan."
 				: "Retrofit first to remodel her or to store standard equipment.");
 		layoutHint.setBounds(0, y, w, 16);
 		lists.add(layoutHint);

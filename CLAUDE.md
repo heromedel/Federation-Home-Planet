@@ -6,6 +6,8 @@ it does and CREDITS.md for where the code came from.
 ## Working with heromedel
 
 - Discuss first, and ask before changing code. When asked to "discuss" or "don't write yet", don't edit.
+- Never commit or push to `main`. Work only on your own session branch; heromedel decides what goes into
+  `main` (a pull request or their own merge).
 - heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build - FHP.bat`.
   Say what to test and how, in plain steps.
 - The repo is public. Never commit FTL's game files (ftl.dat, its pictures or music) or a link to them.
@@ -27,7 +29,8 @@ it does and CREDITS.md for where the code came from.
     mvn -q -B package -DskipTests      # makes target/Federation Home Planet.jar (Java 8 target)
 
 The config (`federation-home-planet.cfg`) is a Java properties file beside the jar. First startup asks for the
-FTL and saves folders, Steam launching (Steam installs only), then the House Rules window.
+FTL and saves folders, Steam launching (Steam installs only), the House Rules window, then offers
+Slipstream once (`slipstream_offered`).
 
 ## Test
 
