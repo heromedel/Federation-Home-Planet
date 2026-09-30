@@ -223,8 +223,11 @@ public final class Vault {
 	 */
 	public synchronized File surrender() throws IOException {
 		File dir;
-		synchronized (STAMP) { dir = new File(surrenderedDir(), STAMP.format(new java.util.Date())); }
-		if (dir.exists() || !dir.mkdirs()) throw new IOException("Could not create " + dir);
+		String base;
+		synchronized (STAMP) { base = STAMP.format(new java.util.Date()); }
+		dir = new File(surrenderedDir(), base);
+		for (int i = 2; dir.exists(); i++) dir = new File(surrenderedDir(), base + "-" + i); // two in one second
+		if (!dir.mkdirs()) throw new IOException("Could not create " + dir);
 		Ship st = storage();
 		File hold = fileOf(st), systems = systemsFile();
 		List<Ship> junk = junked();
@@ -243,9 +246,18 @@ public final class Vault {
 			SafeFiles.deleteTree(dir);
 			throw e;
 		}
+		try {
+			snapshot(st);
+			writeQuietly(st, SaveHelper.createStorageSave(st.name, true));
+		} catch (IOException e) {
+			// the hold wasn't emptied: the hulls go back to the Junkyard, and nothing was surrendered
+			for (Ship s : moved) {
+				try { SafeFiles.move(new File(dir, s.id + ".sav"), fileOf(s)); } catch (IOException again) { log.error("Could not put " + s + " back in the Junkyard; her save is in " + dir, again); return dirFailed(dir, e); }
+			}
+			SafeFiles.deleteTree(dir);
+			throw e;
+		}
 		ships.removeAll(junk);
-		snapshot(st);
-		writeQuietly(st, SaveHelper.createStorageSave(st.name, true));
 		if (systems.isFile() && !systems.delete()) log.warn("Could not remove {}", systems);
 		SafeFiles.writeText(new File(dir, SURRENDER_AFTER), SafeFiles.hash(hold) + "\n", false);
 		saveManifest();
@@ -254,6 +266,11 @@ public final class Vault {
 		HistoryLog.entry("REASSIGN", "the storage hold and " + junk.size() + " hull(s) from the Junkyard surrendered; kept in surrendered/" + dir.getName(), lines);
 		return dir;
 	}
+	/** A hull couldn't be put back after a failed surrender: the folder keeps it, and the error says where. */
+	private static File dirFailed(File dir, IOException e) throws IOException {
+		throw new IOException(e.getMessage() + ". Some hulls could not be put back in the Junkyard: their saves are in " + dir, e);
+	}
+
 	/** The newest surrender not yet undone, or null. */
 	public synchronized File lastSurrender() {
 		File[] dirs = surrenderedDir().listFiles();
@@ -552,8 +569,16 @@ public final class Vault {
 		}
 		return new File(dir, last == 0 ? stamp + ".sav" : stamp + "-" + (last + 1) + ".sav");
 	}
+	/**
+	 * Oldest first: by when each was kept, then by name. (Names alone won't do: before 4B.04 they were in local time,
+	 * now UTC, so an old name can sort after a new one.) A version is kept by a copy (stamped then) or a move of
+	 * her current file (stamped when last written, which is after every version kept before it).
+	 */
 	private static final java.util.Comparator<File> OLDEST_FIRST = new java.util.Comparator<File>() {
-		public int compare(File a, File b) { return order(a).compareTo(order(b)); }
+		public int compare(File a, File b) {
+			int t = Long.compare(a.lastModified(), b.lastModified());
+			return t != 0 ? t : order(a).compareTo(order(b));
+		}
 	};
 
 	/** Copies her current save into her history folder (before it's changed), keeping the last KEEP. Nothing if her newest kept version is the same. */

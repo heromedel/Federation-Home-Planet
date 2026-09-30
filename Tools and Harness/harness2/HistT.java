@@ -6,6 +6,7 @@ public class HistT { public static void main(String[] a) throws Exception {
  Vault v = Setup.open(game, saves); v.takeStock();
  if (v.boarded() != null) v.dock();
  restore(v);
+ oldNames(v);
  lost(v);
  destroyedAndScrapped(v);
  Setup.done();
@@ -70,5 +71,17 @@ public class HistT { public static void main(String[] a) throws Exception {
   v.recover(d);
   boolean refused = false; try { v.recover(d); } catch (IOException e) { refused = true; }
   Setup.chk("H: she can't be recovered twice", refused && v.byId(a.id) != null);
+ }
+ /** A kept version named in local time (before UTC names), ahead of UTC: still sorted by when it was kept. */
+ static void oldNames(Vault v) throws Exception {
+  Ship s = named(v, "Test Engi");
+  File dir = v.historyOf(s); dir.mkdirs();
+  File old = new File(dir, "20991231-235959.sav");
+  SafeFiles.copy(s.file(), old);
+  old.setLastModified(System.currentTimeMillis() - 86400000L);
+  addScrap(v, s, 7);
+  List<File> h = v.history(s);
+  Setup.chk("H: an old local-time name doesn't pass for the newest version", !h.get(h.size() - 1).equals(old) && h.contains(old));
+  old.delete();
  }
 }

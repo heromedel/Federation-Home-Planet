@@ -93,16 +93,17 @@ public final class BlueprintBackup {
 		for (File f : files) {
 			String name = f.getName();
 			if (!name.endsWith(".xml") || have.contains(name.substring(0, name.length() - 4))) continue;
-			candidates.add(f);
+			// only backups of this kind: a remodel's backup is always "missing" from the designs, and must not
+			// set off the scan of every save below each time designs are read
+			try {
+				if (new String(SafeFiles.read(f), StandardCharsets.UTF_8).startsWith(kind)) candidates.add(f);
+			} catch (Exception e) { }
 		}
 		if (candidates.isEmpty()) return out;
 		Set<String> needed = Vault.get().blueprintsInUseOrHistory();
 		for (File f : candidates) {
 			String id = f.getName().substring(0, f.getName().length() - 4);
-			if (!needed.contains(id)) continue;
-			try {
-				if (new String(SafeFiles.read(f), StandardCharsets.UTF_8).startsWith(kind)) out.add(f);
-			} catch (Exception e) { }
+			if (needed.contains(id)) out.add(f);
 		}
 		return out;
 	}

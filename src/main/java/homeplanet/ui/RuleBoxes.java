@@ -169,7 +169,7 @@ public class RuleBoxes {
 
 	/** Sets the rules from the boxes (the caller saves the config, and switches fleets first when Immersive Mode changes). */
 	public void apply() {
-		boolean unlockWasOn = HomePlanet.unlockFreeShips;
+		boolean unlockWasOn = HomePlanet.unlockFreeShips, enteringImmersive = immersiveBox.isSelected() && !HomePlanet.immersiveMode;
 		// the rules Immersive Mode leaves to the player
 		HomePlanet.scrapKeepsSystems = scrapBox.isSelected();
 		HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()];
@@ -190,7 +190,9 @@ public class RuleBoxes {
 			HomePlanet.applyImmersive(); // the player's own rules are kept as they are
 		}
 		// unlocks from before the rule was (re)turned on never count
-		if (HomePlanet.unlockFreeShips && !unlockWasOn && homeplanet.vault.Vault.isOpen())
+		// (not when entering Immersive Mode: its fleet keeps its own record, and the switch already settled it; see
+		// UnlockGrants.returning. Marking everything seen here would lose the free ships still waiting there.)
+		if (HomePlanet.unlockFreeShips && !unlockWasOn && !enteringImmersive && homeplanet.vault.Vault.isOpen())
 			homeplanet.parser.UnlockGrants.turnedOn(homeplanet.parser.Unlocks.read());
 	}
 	private int percent() { String s = (String) percentBox.getSelectedItem(); return Integer.parseInt(s.substring(0, s.length() - 1)); }

@@ -345,13 +345,21 @@ public final class Transmissions {
 			lines.addAll(systems);
 			tx.put(f, (String.join("\n", lines) + "\n").getBytes(StandardCharsets.UTF_8));
 		}
-		tx.commit();
 		List<String> words = new ArrayList<String>();
 		for (String p : give) words.add(describe(p));
 		String what = String.join(", ", words);
+		// marked claimed before delivery: if the delivery fails the mark is taken back, but a failure to save the mark
+		// after a delivery could never be undone, and the reward would be offered again
 		List<Message> all = load();
 		for (Message x : all) if (x.key.equals(m.key)) { x.claimed = true; x.read = true; x.claimedWhat = what; }
 		save(all);
+		try {
+			tx.commit();
+		} catch (IOException e) {
+			for (Message x : all) if (x.key.equals(m.key)) { x.claimed = false; x.claimedWhat = ""; }
+			try { save(all); } catch (IOException again) { log.error("Could not take back the claim on " + m.key, again); }
+			throw e;
+		}
 		m.claimed = true;
 		m.claimedWhat = what;
 		HistoryLog.entry("CLAIM", m.subject + ": " + what + " to Spacedock Storage");

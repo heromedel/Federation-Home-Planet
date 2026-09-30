@@ -11,6 +11,7 @@ public class TransT { public static void main(String[] a) throws Exception {
  UnlockGrants.returning(Unlocks.read());
  flow(saves);
  clearance(saves);
+ reentry();
  Setup.done();
 }
  static void profile(File saves, String[] unlockedA, String[] achievements) throws Exception {
@@ -105,5 +106,20 @@ public class TransT { public static void main(String[] a) throws Exception {
   Pricing.Quote q = Pricing.ship(fed, 0, 0, 100);
   System.out.println("Federation Cruiser A: " + q.total() + " " + q.lines);
   Setup.chk("P: a Federation Cruiser pays for her artillery's gun", String.join(" ", q.lines).contains("Weapons") && Commission.artilleryWeapon("PLAYER_SHIP_FED") != null);
+ }
+ /** Leaving Immersive Mode and coming back through Settings keeps the free ships still waiting there. */
+ static void reentry() throws Exception {
+  Unlocks u = Unlocks.read();
+  Setup.chk("U: the Mantis Cruiser A waits, free", UnlockGrants.freeNow(u, "PLAYER_SHIP_MANTIS"));
+  UnlockGrants.leaving(u);
+  Vault.switchFleet(false);
+  HomePlanet.leaveImmersive();
+  Object r = Class.forName("homeplanet.ui.RuleBoxes").getConstructor().newInstance();
+  java.lang.reflect.Field f = r.getClass().getDeclaredField("immersiveBox"); f.setAccessible(true);
+  ((javax.swing.JCheckBox) f.get(r)).setSelected(true);
+  Vault.switchFleet(true);
+  UnlockGrants.returning(Unlocks.read());
+  r.getClass().getMethod("apply").invoke(r);
+  Setup.chk("U: back in Immersive Mode through Settings, she's still free", HomePlanet.immersiveMode && UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_MANTIS"));
  }
 }
