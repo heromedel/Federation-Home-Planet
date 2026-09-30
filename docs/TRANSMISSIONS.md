@@ -20,6 +20,7 @@ change or deny. Nothing here is built yet.
 Titles, not names: **Federation Fleet Admiral** (promotions, the big news), **Home Planet Liaison** (most rewards),
 **Home Planet Quartermaster** (supplies and scrap), **Federation Engineering Corps** (augments, systems),
 **Office of Alien Affairs** (crew volunteers, alien technology), **Home Planet Shipyard** (commission orders).
+Each has a voice of their own: see `VOICES.md`.
 
 ---
 
@@ -67,14 +68,42 @@ Titles, not names: **Federation Fleet Admiral** (promotions, the big news), **Ho
 
 ("Your stipend for the last 2 months of…" when several are due at once.)
 
-**The shipyard is empty** (Home Planet Shipyard)
+**A new command** (Home Planet Shipyard Comm. Officer: the free command, when the fleet or an Immersive career starts;
+{ship} is the free ship: a Kestrel Type A, any ship you choose, or a Federation relief ship)
 
 > {rank},
 >
-> Our records show you without a command. That will not do. The Federation Home Planet has authorized a new ship in
-> your name: a {ship}, at no cost to you. Present this order at Commission.
+> Our records show you without a ship at your command.
+> That will not do. That will not do at all.
 >
-> Home Planet Shipyard
+> The Federation Home Planet has authorized a new ship in your name: {ship}, at no cost to you. Lucky Duck, this
+> doesn't happen often. Take this order to Commission and she's yours.
+>
+> Last guy I knew who needed a new ship, they demanded he hand over his entire cargo hold.
+>
+> Godspeed and come home.
+> ~ Home Planet Shipyard Comm. Officer
+
+**Back from nothing** (Home Planet Shipyard Comm. Officer: the free command after a Report for Reassignment)
+
+> {rank},
+>
+> Well, you're back. Guess you're an unlucky duck..
+> Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
+>
+> The order is for {ship}. Take this order to Commission and she's yours.
+>
+> And maybe don't lose this one?
+>
+> Godspeed and come home.
+> ~ Home Planet Shipyard Comm. Officer
+
+In Immersive Mode the ship goes by everything of value surrendered (the Cargo Hold and the Junkyard's hulls), and a
+line after "Sorry to hear…" says so:
+
+- 1000 scrap's worth or more, any ship: "They must've liked what you turned in. You get your pick of the shipyard."
+- 500 or more, a Kestrel Type A: "What you turned in was enough for a proper Kestrel. Not bad."
+- Less, a relief ship: "I won't lie, what you turned in didn't buy much."
 
 **A ship unlocked in FTL: commission orders** (Home Planet Shipyard / Office of Alien Affairs; one per ship type,
 the layout letter filled in)

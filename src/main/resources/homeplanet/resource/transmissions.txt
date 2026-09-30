@@ -5,7 +5,9 @@
 # Rewards, comma separated (they go to the Cargo Hold): scrap N, fuel N, missiles N, parts N (drone parts),
 # item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
-# Keys: welcome, stipend ({period} and {amount} are filled in), empty, promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
+# Keys: welcome, stipend ({period} and {amount} are filled in), empty (the free command), reassigned (the free command
+# after a Report for Reassignment; in Immersive Mode reassigned:any, reassigned:kestrel or reassigned:relief, by what
+# was surrendered), promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
 # rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
 # notice when Transmissions are off).
 
@@ -77,9 +79,82 @@ subject: A new command
 
 {rank},
 
-Our records show you without a command. That will not do. The Federation Home Planet has authorized a new ship in your name: {ship}, at no cost to you. Present this order at Commission.
+Our records show you without a ship at your command.
+That will not do. That will not do at all.
 
-Home Planet Shipyard
+The Federation Home Planet has authorized a new ship in your name: {ship}, at no cost to you. Lucky Duck, this doesn't happen often. Take this order to Commission and she's yours.
+
+Last guy I knew who needed a new ship, they demanded he hand over his entire cargo hold.
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== reassigned
+from: Home Planet Shipyard
+subject: Back from nothing
+
+{rank},
+
+Well, you're back. Guess you're an unlucky duck..
+Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
+
+The order is for {ship}. Take this order to Commission and she's yours.
+
+And maybe don't lose this one?
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== reassigned:any
+from: Home Planet Shipyard
+subject: Back from nothing
+
+{rank},
+
+Well, you're back. Guess you're an unlucky duck..
+Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
+They must've liked what you turned in. You get your pick of the shipyard.
+
+The order is for {ship}. Take this order to Commission and she's yours.
+
+And maybe don't lose this one?
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== reassigned:kestrel
+from: Home Planet Shipyard
+subject: Back from nothing
+
+{rank},
+
+Well, you're back. Guess you're an unlucky duck..
+Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
+What you turned in was enough for a proper Kestrel. Not bad.
+
+The order is for {ship}. Take this order to Commission and she's yours.
+
+And maybe don't lose this one?
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== reassigned:relief
+from: Home Planet Shipyard
+subject: Back from nothing
+
+{rank},
+
+Well, you're back. Guess you're an unlucky duck..
+Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
+I won't lie, what you turned in didn't buy much.
+
+The order is for {ship}. Take this order to Commission and she's yours.
+
+And maybe don't lose this one?
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
 
 == promo:1
 from: Federation Fleet Admiral

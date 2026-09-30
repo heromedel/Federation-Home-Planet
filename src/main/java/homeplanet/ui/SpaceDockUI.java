@@ -702,7 +702,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	/** What an empty shipyard grants, in words. */
 	private static String freeShipWords() {
-		return "any".equals(HomePlanet.freeShip) ? "any ship you choose" : "relief".equals(HomePlanet.freeShip) ? "a Federation relief ship" : "a Kestrel A";
+		return homeplanet.parser.FreeCommand.words(homeplanet.parser.FreeCommand.ship());
 	}
 	/** HR2: surrender the storage hold and the Junkyard for a free new command, then open Commission. */
 	void reportForReassignment() {

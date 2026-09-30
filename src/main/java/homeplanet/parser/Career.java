@@ -69,7 +69,7 @@ public final class Career {
 		p.setProperty("sectorsAtStart", Integer.toString(v.sectorsSeen()));
 		write(v.root, p);
 		v.depositToStorage(STARTING_SCRAP);
-		v.grantFreeCommand("an Immersive career began");
+		v.grantFreeCommand("an Immersive career began", FreeCommand.KESTREL); // a Kestrel Type A, as a new FTL game starts
 		homeplanet.core.HistoryLog.entry("CAREER", "Immersive career begun: stipend counts " + (salaryAll ? "every achievement" : "achievements earned from now on")
 				+ (ownProfile ? "; its own FTL profile" : "") + "; " + STARTING_SCRAP + " scrap in the Cargo Hold");
 	}

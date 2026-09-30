@@ -36,6 +36,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("F: the command taken, then the shipyard empty again: no new order, nothing free", orders() == 1 && !v.freeCommandOpen() && v.shipyardEmpty());
   File dir = v.surrender(); Transmissions.check();
   Setup.chk("F: a report for reassignment grants another, with its own order", v.freeCommandOpen() && orders() == 2);
+  Setup.chk("F: and it's the Shipyard's letter for after a reassignment", "Back from nothing".equals(find("empty").subject) && v.freeCommandReassigned());
   v.undoSurrender(dir);
   Setup.chk("F: undoing the report takes the grant back", !v.freeCommandOpen());
  }

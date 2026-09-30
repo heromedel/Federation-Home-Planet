@@ -75,6 +75,10 @@ public class PriceT { public static void main(String[] a) throws Exception {
   block.delete();
   v.reload();
   Setup.chk("F: and they're still there after a reload", v.junked().size() == junked);
+    int worth = homeplanet.parser.FreeCommand.surrenderValue(v);
+  Setup.chk("F: what a surrender gives up is valued: the hold's scrap, its stored systems and the Junkyard's hulls", worth > 300 + homeplanet.parser.Pricing.system("teleporter", 2));
+  Setup.chk("F: Immersive Mode's reassignment ship goes by that value", "any".equals(homeplanet.parser.FreeCommand.earned(1000)) && "kestrel".equals(homeplanet.parser.FreeCommand.earned(999))
+    && "kestrel".equals(homeplanet.parser.FreeCommand.earned(500)) && "relief".equals(homeplanet.parser.FreeCommand.earned(499)));
   File dir = v.surrender();
   Setup.chk("F: surrender empties the hold and the Junkyard", v.junked().isEmpty() && v.storageScrap() == 0 && !v.systemsFile().exists());
   Setup.chk("F: what was surrendered is kept", new File(dir, x.id + ".sav").isFile() && new File(dir, "storage.sav").isFile() && new File(dir, "storage-systems.txt").isFile() && dir.equals(v.lastSurrender()));

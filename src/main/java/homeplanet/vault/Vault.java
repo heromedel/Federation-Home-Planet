@@ -218,12 +218,23 @@ public final class Vault {
 		try { return new String(SafeFiles.read(f), java.nio.charset.StandardCharsets.UTF_8).trim().startsWith("open"); }
 		catch (IOException e) { return false; }
 	}
-	/** Grants the free command (a new fleet or career, a report for reassignment). */
-	public synchronized void grantFreeCommand(String why) { setFreeCommand(true, why); }
+	/** Grants the free command (a new fleet or career, a report for reassignment); its ship is Settings'. */
+	public synchronized void grantFreeCommand(String why) { setFreeCommand(true, why, null); }
+	/** Grants the free command with the ship it brings ({@link homeplanet.parser.FreeCommand}: an Immersive career or report). */
+	public synchronized void grantFreeCommand(String why, String ship) { setFreeCommand(true, why, ship); }
+	/** The ship the open free command earned (Immersive Mode), or null: Settings' free ship. */
+	public synchronized String freeCommandShip() { String[] l = freeCommandLines(); return l.length > 2 && l[0].startsWith("open") && l[2].startsWith("ship ") ? l[2].substring(5).trim() : null; }
+	/** Was the open free command granted by a Report for Reassignment (rather than a new fleet or career)? */
+	public synchronized boolean freeCommandReassigned() { String[] l = freeCommandLines(); return l.length > 1 && l[0].startsWith("open") && l[1].startsWith("reported for reassignment"); }
+	private String[] freeCommandLines() {
+		try { return new String(SafeFiles.read(freeCommandFile()), java.nio.charset.StandardCharsets.UTF_8).trim().split("\\r?\\n"); }
+		catch (IOException e) { return new String[0]; }
+	}
 	/** The free command is taken (her commission), or taken back (an undone report). */
-	public synchronized void useFreeCommand(String why) { setFreeCommand(false, why); }
-	private void setFreeCommand(boolean open, String why) {
-		try { SafeFiles.writeText(freeCommandFile(), (open ? "open" : "used") + "\n" + why + "\n", false); }
+	public synchronized void useFreeCommand(String why) { setFreeCommand(false, why, null); }
+	private void setFreeCommand(boolean open, String why) { setFreeCommand(open, why, null); }
+	private void setFreeCommand(boolean open, String why, String ship) {
+		try { SafeFiles.writeText(freeCommandFile(), (open ? "open" : "used") + "\n" + why + "\n" + (ship == null ? "" : "ship " + ship + "\n"), false); }
 		catch (IOException e) { log.warn("Could not record the free command: {}", e.toString()); }
 	}
 	/** The scrap in the storage hold (0 if it can't be read). */
@@ -277,7 +288,8 @@ public final class Vault {
 		dir = new File(surrenderedDir(), base);
 		for (int i = 2; dir.exists(); i++) dir = new File(surrenderedDir(), base + "-" + i); // two in one second
 		if (!dir.mkdirs()) throw new IOException("Could not create " + dir);
-		Ship st = storage();
+				Ship st = storage();
+		int value = homeplanet.parser.FreeCommand.surrenderValue(this); // before any of it moves
 		File hold = fileOf(st), systems = systemsFile();
 		List<Ship> junk = junked();
 		List<Ship> moved = new ArrayList<Ship>();
@@ -312,8 +324,11 @@ public final class Vault {
 		saveManifest();
 		List<String> lines = new ArrayList<String>();
 		for (Ship s : junk) lines.add("hull: " + s.name);
-		HistoryLog.entry("REASSIGN", "the Cargo Hold and " + junk.size() + " hull(s) from the Junkyard surrendered; kept in surrendered/" + dir.getName(), lines);
-		grantFreeCommand("reported for reassignment");
+		// in Immersive Mode the ship it earns goes by what was surrendered; otherwise Settings' free ship
+		String earned = immersive ? homeplanet.parser.FreeCommand.earned(value) : null;
+		HistoryLog.entry("REASSIGN", "the Cargo Hold and " + junk.size() + " hull(s) from the Junkyard surrendered (worth " + value + " scrap"
+				+ (earned == null ? "" : ": " + homeplanet.parser.FreeCommand.words(earned)) + "); kept in surrendered/" + dir.getName(), lines);
+		grantFreeCommand("reported for reassignment", earned);
 		return dir;
 	}
 	/** A hull couldn't be put back after a failed surrender: the folder keeps it, and the error says where. */

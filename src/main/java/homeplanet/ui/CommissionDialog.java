@@ -198,7 +198,7 @@ public class CommissionDialog extends JDialog {
 		boolean customRule = lockRule && HomePlanet.commissionCustomUnlockedOnly;
 		homeplanet.parser.Unlocks unlocks = lockRule ? homeplanet.parser.Unlocks.read() : null;
 		if (unlocks != null && unlocks.missing() && lockRule) {
-			listNote = "FTL hasn't made its profile yet (it does the first time it starts): only the Kestrel A is unlocked.";
+			listNote = "FTL hasn't made its profile yet (it does the first time it starts): only the Kestrel Type A is unlocked.";
 		}
 		if (unlocks != null && unlocks.problem() != null) {
 			listNote = unlocks.problem() + " Every ship is shown.";
@@ -216,7 +216,7 @@ public class CommissionDialog extends JDialog {
 				}
 			}
 		}
-		if (emptyYard && "relief".equals(HomePlanet.freeShip)) {
+		if (emptyYard && homeplanet.parser.FreeCommand.RELIEF.equals(homeplanet.parser.FreeCommand.ship())) {
 			model.addElement(new Entry(null, "Relief"));
 			model.addElement(new Entry(RELIEF, "Federation relief ship (free)"));
 		}
@@ -266,8 +266,9 @@ public class CommissionDialog extends JDialog {
 	}
 	private boolean emptyFree(String id) {
 		if (!emptyYard) return false;
-		if ("any".equals(HomePlanet.freeShip)) return true;
-		if ("relief".equals(HomePlanet.freeShip)) return RELIEF.equals(id);
+		String free = homeplanet.parser.FreeCommand.ship(); // Settings', or what an Immersive career or report earned
+		if (homeplanet.parser.FreeCommand.ANY.equals(free)) return true;
+		if (homeplanet.parser.FreeCommand.RELIEF.equals(free)) return RELIEF.equals(id);
 		return homeplanet.parser.Commission.RELIEF_BASE.equals(id); // the Kestrel A
 	}
 	/** Why the player's rank doesn't clear this blueprint (Immersive Mode), or null. */

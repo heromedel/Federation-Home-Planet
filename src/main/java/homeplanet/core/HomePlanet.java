@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.34";
+	public static final String APP_VERSION = "4B.35";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -64,7 +64,7 @@ public class HomePlanet {
 	public static boolean commissionCosts = false;
 	public static int commissionPercent = 100;
 	/** With HR2: the free ship an empty shipyard (no ship docked, boarded or in the Junkyard) offers: "kestrel", "any" or "relief". */
-	public static String freeShip = "kestrel";
+	public static String freeShip = "relief";
 	/** With HR2: each ship layout unlocked in the FTL profile after this was turned on can be commissioned free, once. */
 	public static boolean unlockFreeShips = false;
 	/**
@@ -156,8 +156,8 @@ public class HomePlanet {
 		sellSystems = flag("sell_systems");
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
-		freeShip = config.getProperty("free_ship", "kestrel");
-		if (!"any".equals(freeShip) && !"relief".equals(freeShip)) freeShip = "kestrel";
+		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
+		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
 		immersiveNotifications = flag("immersive_notifications");

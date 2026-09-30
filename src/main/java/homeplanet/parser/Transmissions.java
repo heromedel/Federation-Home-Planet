@@ -175,7 +175,7 @@ public final class Transmissions {
 		return cls + ", Type " + "ABC".charAt(Math.max(0, Math.min(n, 2)));
 	}
 	private static String freeShipWords() {
-		return "any".equals(HomePlanet.freeShip) ? "any ship you choose" : "relief".equals(HomePlanet.freeShip) ? "a Federation relief ship" : "a Kestrel Cruiser, Type A";
+		return FreeCommand.words(FreeCommand.ship());
 	}
 
 	/**
@@ -204,7 +204,9 @@ public final class Transmissions {
 			if (!emptyOpen) {
 				String key = "empty:" + stamp();
 				for (int i = 2; sent.contains(key); i++) key = "empty:" + stamp() + "-" + i; // two in one second
-				send(all, sent, key, "empty", rank, freeShipWords());
+				// after a Report for Reassignment, the Shipyard's other letter (in Immersive Mode, the one for the ship it earned)
+				String letter = !v.freeCommandReassigned() ? "empty" : v.immersive ? "reassigned:" + FreeCommand.ship() : "reassigned";
+				send(all, sent, key, letter, rank, freeShipWords());
 				emptyOpen = true;
 			}
 		} else if (!granted) {

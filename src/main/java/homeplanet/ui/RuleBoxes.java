@@ -38,7 +38,7 @@ public class RuleBoxes {
 	final JComboBox<String> percentBox = new JComboBox<String>(new String[] {"100%", "75%", "50%"});
 	private final JPanel costRow = row(0);
 	private static final String[] FREE_KEYS = {"kestrel", "any", "relief"};
-	final JComboBox<String> freeBox = new JComboBox<String>(new String[] {"a Kestrel A", "any ship", "a Federation relief ship"});
+	final JComboBox<String> freeBox = new JComboBox<String>(new String[] {"a Kestrel Type A", "any ship", "a Federation relief ship"});
 	private final JLabel freeLabel = new JLabel("The free command (once at the start, and with each report for reassignment):  ");
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
@@ -77,7 +77,7 @@ public class RuleBoxes {
 		int free = java.util.Arrays.asList(FREE_KEYS).indexOf(HomePlanet.freeShip);
 		freeBox.setSelectedIndex(free < 0 ? 0 : free);
 		String freeTip = "No ship docked, boarded or in the Junkyard: this ship can be commissioned free. (Other... > Report for Reassignment empties the Junkyard.) "
-				+ "The relief ship is a Kestrel A stripped to basics: one crew, a basic laser and an ion blast, every system at its minimum";
+				+ "The relief ship is a Kestrel Type A stripped to basics: one crew, a basic laser and an ion blast, every system at its minimum";
 		freeBox.setToolTipText(freeTip);
 		freeLabel.setToolTipText(freeTip);
 		freeRow.add(freeLabel);

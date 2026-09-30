@@ -82,7 +82,10 @@ which comes to 777 under HR2), and Report for Reassignment under Other…. What 
 `surrendered/` folder; **Undo Reassignment** works only until the new command is taken (no ship at the Space Dock)
 and while the hold is untouched, so undoing never keeps both. The free ship only matters with HR2 on (otherwise every
 commission is free), so the setting sits under it. The relief ship's reactor is 7: enough for a shield layer, both
-guns, engines, oxygen and medbay.
+guns, engines, oxygen and medbay. Settings' free ship defaults to the relief ship. In Immersive Mode the setting doesn't
+apply: a new career starts on a Kestrel Type A, as a new FTL game does, and a Report for Reassignment earns a ship by
+everything of value surrendered (the Cargo Hold and the Junkyard's hulls): 1000 scrap or more, any ship; 500 or more,
+a Kestrel Type A; less, a relief ship. The Shipyard Comm. Officer's letters say which (`docs/VOICES.md`).
 
 Unlock-once free ships and Immersive Mode are built too. The unlock record is `unlock-grants.txt` in the vault
 (layouts seen when the rule was turned on, and free ships claimed); turning the rule off and on again adds what's
