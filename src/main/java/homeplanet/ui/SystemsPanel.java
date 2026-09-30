@@ -201,6 +201,7 @@ public class SystemsPanel {
 			SysRow r = new SysRow(DryDockShop.systemTitle(s.id), s.level, "Install", why,
 					why == null ? "Install the " + DryDockShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName() : why,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { installSystem(s); } });
+			if (homeplanet.core.HomePlanet.sellSystems) r.addSell(salePrice(s), new ActionListener() { public void actionPerformed(ActionEvent e) { sellSystem(s); } });
 			r.setBounds(0, y + j * 32, w, 28);
 			sysList.add(r);
 			j++;
@@ -258,6 +259,14 @@ public class SystemsPanel {
 			b.setToolTipText(tip);
 			b.addActionListener(a);
 			b.setBounds(ROW_W - (action.length() > 5 ? 82 : 66), 3, action.length() > 5 ? 78 : 62, 22);
+			add(b);
+		}
+		/** HR1: a Sell button beside the row's own. */
+		void addSell(int price, ActionListener a) {
+			FtlButton b = new FtlButton("Sell", FtlFont.BODY, 62, 22);
+			b.setToolTipText("Sell it to the station for " + price + " scrap (paid to the boarded ship)");
+			b.addActionListener(a);
+			b.setBounds(ROW_W - 82 - 70, 3, 62, 22);
 			add(b);
 		}
 		@Override protected void paintComponent(java.awt.Graphics g0) {
@@ -445,6 +454,19 @@ public class SystemsPanel {
 		stored.remove(sel);
 		changes.add("Installed " + name + " (level " + level + ") on " + save.getPlayerShipName());
 		log.debug("Installed {} level {} on {}", type, level, save.getPlayerShipName());
+		changed();
+	}
+
+	/** HR1: what a stored system sells for. */
+	static int salePrice(Stored s) { return homeplanet.parser.Pricing.systemSale(s.id, s.level); }
+	private void sellSystem(Stored sel) {
+		String name = DryDockShop.systemTitle(sel.id) + (sel.level > 0 ? " (level " + sel.level + ")" : "");
+		int price = salePrice(sel);
+		if (!homeplanet.core.HomePlanet.confirmNo(bay, "Sell the " + name + " for " + price + " scrap?\n" + bay.currentSave.getPlayerShipName() + " is paid.", "Sell")) return;
+		stored.remove(sel);
+		ShipState bs = bay.currentSave.getPlayerShip();
+		bs.setScrapAmt(bs.getScrapAmt() + price);
+		changes.add("Sold " + name + " for " + price + " scrap (" + bay.currentSave.getPlayerShipName() + " was paid)");
 		changed();
 	}
 

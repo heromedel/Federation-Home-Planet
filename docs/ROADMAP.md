@@ -66,6 +66,10 @@ ship moving between the Space Dock, Junkyard and history needs no bookkeeping.
 
 ## 4. Pricing and house rules
 
+Progress: pricing (`parser/Pricing`), HR1 and HR2 are built (harness test PriceT). A Kestrel A comes to 1005 scrap
+under HR2 (systems 497, reactor 255, gear 118, crew 135). Reactor bars are priced 30 each for the first 5, then 5
+more every 5 bars. Selling a stored system pays the boarded ship, as a store would.
+
 Prices come from FTL's blueprints (system cost and upgrade costs, weapon, drone, augment and crew costs). Measured
 from the game data: a Kestrel A is about 590 scrap for systems, starting upgrades and gear, roughly 950 with reactor
 and crew; the 28 player ships average 656 before reactor and crew. The Federation artillery weapon has no price (0);

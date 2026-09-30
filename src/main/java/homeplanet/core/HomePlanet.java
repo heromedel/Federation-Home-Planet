@@ -58,6 +58,11 @@ public class HomePlanet {
 	public static boolean sellSupplies = false;
 	/** Commission: only ship layouts the FTL profile has unlocked; and (nested) custom ships only if their base layout is unlocked. */
 	public static boolean commissionUnlockedOnly = false, commissionCustomUnlockedOnly = false;
+	/** HR1: stored systems can be sold, for half their price and half the upgrades paid for. */
+	public static boolean sellSystems = false;
+	/** HR2: commissioning a ship costs scrap from the storage hold, at this percent of her price (50, 75 or 100). */
+	public static boolean commissionCosts = false;
+	public static int commissionPercent = 100;
 	public static boolean debugLogging = false;
 
 	/** The config file, beside the program (whatever folder it was started from), and its values (the Settings window changes and saves them). */
@@ -88,6 +93,9 @@ public class HomePlanet {
 		sellSupplies = flag("sell_supplies");
 		commissionUnlockedOnly = flag("commission_unlocked_only");
 		commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only");
+		sellSystems = flag("sell_systems");
+		commissionCosts = flag("commission_costs_scrap");
+		commissionPercent = percent(config.getProperty("commission_price_percent"));
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 		log.debug("{} {} starting on Java {}", APP_NAME, APP_VERSION, System.getProperty("java.version"));
 
@@ -108,7 +116,7 @@ public class HomePlanet {
 			System.exit(1);
 		}
 		// First setup, asked once: Steam launching (for the Steam version), then the House Rules window while any rule was never set.
-		// A rule missing from the config starts ticked, except selling missiles and drone parts; rules already set keep their value.
+		// A rule missing from the config starts ticked, except the selling and pricing house rules; rules already set keep their value.
 		if (config.getProperty("launch_through_steam") == null && datsPath.getAbsolutePath().toLowerCase().contains("steamapps")) {
 			launchThroughSteam = confirm("This looks like the Steam version of FTL.\nLaunch FTL through Steam?", "Launch through Steam");
 			config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
@@ -209,6 +217,11 @@ public class HomePlanet {
 	// ---- config ----
 
 	private static boolean flag(String key) { return flag(key, false); }
+	/** A price multiplier from the cfg: 50, 75 or 100 (anything else is 100). */
+	private static int percent(String v) {
+		try { int p = Integer.parseInt(v == null ? "" : v.trim()); if (p == 50 || p == 75) return p; } catch (NumberFormatException e) { }
+		return 100;
+	}
 	private static boolean flag(String key, boolean dflt) { return Boolean.parseBoolean(config.getProperty(key, Boolean.toString(dflt))); }
 
 	/** The rules the first-run House Rules window sets. */
@@ -249,6 +262,9 @@ public class HomePlanet {
 		config.setProperty("sell_supplies", Boolean.toString(sellSupplies));
 		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));
 		config.setProperty("commission_custom_unlocked_only", Boolean.toString(commissionCustomUnlockedOnly));
+		config.setProperty("sell_systems", Boolean.toString(sellSystems));
+		config.setProperty("commission_costs_scrap", Boolean.toString(commissionCosts));
+		config.setProperty("commission_price_percent", Integer.toString(commissionPercent));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
 		try {
 			ByteArrayOutputStream buf = new ByteArrayOutputStream();

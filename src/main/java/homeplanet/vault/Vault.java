@@ -152,6 +152,39 @@ public final class Vault {
 		return s;
 	}
 
+	/** The scrap in the storage hold (0 if it can't be read). */
+	public int storageScrap() {
+		try {
+			SavedGameState g = storage().save();
+			return g == null ? 0 : g.getPlayerShip().getScrapAmt();
+		} catch (IOException e) {
+			return 0;
+		}
+	}
+	/**
+	 * Pays scrap from the storage hold (a commission, a journey's fee). Refuses, changing nothing, if the hold has less.
+	 * Returns the hold's file as it was, for {@link #refundStorage} if what was paid for then fails.
+	 */
+	public synchronized byte[] payFromStorage(int scrap) throws IOException {
+		Ship st = storage();
+		Copy c = readCopy(st);
+		int have = c.save.getPlayerShip().getScrapAmt();
+		if (have < scrap) throw new IOException("Spacedock Storage holds " + have + " scrap; " + scrap + " is needed");
+		byte[] before = SafeFiles.read(fileOf(st));
+		c.save.getPlayerShip().setScrapAmt(have - scrap);
+		begin().put(st, c.save, c.hash).commit();
+		return before;
+	}
+	/** Puts the storage hold back as {@link #payFromStorage} found it. */
+	public synchronized void refundStorage(byte[] before) throws IOException {
+		Ship st = storage();
+		File f = fileOf(st);
+		SafeFiles.write(f, before);
+		st.invalidate();
+		st.hash = SafeFiles.hash(f);
+		saveManifest();
+	}
+
 	/** A new id: short, unique, safe in a file name. */
 	static String newId() {
 		return UUID.randomUUID().toString().replace("-", "").substring(0, 16);

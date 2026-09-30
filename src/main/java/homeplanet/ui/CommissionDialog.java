@@ -62,6 +62,8 @@ public class CommissionDialog extends JDialog {
 	private final JTextField nameField = new JTextField(18);
 	private final JComboBox<String> difficulty = new JComboBox<String>(new String[] {"Easy", "Normal", "Hard"});
 	private final Random rng = new Random();
+	/** HR2: her price, under the name and difficulty (hidden when commissioning is free). */
+	private final JLabel priceLabel = new JLabel(" ");
 	private homeplanet.vault.Ship made = null;
 
 	/** Opens the window. Returns the new ship (docked in the vault), or null if nothing was commissioned. */
@@ -119,7 +121,15 @@ public class CommissionDialog extends JDialog {
 		JPanel right = new JPanel(new BorderLayout(0, 6));
 		preview.setPreferredSize(new Dimension(520, 440));
 		right.add(new JScrollPane(preview), BorderLayout.CENTER);
-		right.add(form, BorderLayout.SOUTH);
+		if (HomePlanet.commissionCosts) {
+			JPanel south = new JPanel(new BorderLayout(0, 4));
+			south.add(form, BorderLayout.NORTH);
+			priceLabel.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 6));
+			south.add(priceLabel, BorderLayout.SOUTH);
+			right.add(south, BorderLayout.SOUTH);
+		} else {
+			right.add(form, BorderLayout.SOUTH);
+		}
 
 		JPanel body = new JPanel(new BorderLayout(10, 8));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
@@ -241,11 +251,32 @@ public class CommissionDialog extends JDialog {
 			stats.setBorder(BorderFactory.createEmptyBorder(4, 6, 8, 6));
 			preview.add(stats, BorderLayout.NORTH);
 			preview.add(p, BorderLayout.CENTER);
+			if (HomePlanet.commissionCosts) showPrice(quote(e.id, s));
 		} catch (Exception ex) {
 			preview.add(new JLabel("The shipyard can't build this ship: " + ex.getMessage()), BorderLayout.NORTH);
 		}
 		preview.revalidate();
 		preview.repaint();
+	}
+
+	/** HR2: her price as built, with a custom design's rooms and doors. */
+	static homeplanet.parser.Pricing.Quote quote(String bpId, SavedGameState s) {
+		int rooms = 0, doors = 0;
+		for (homeplanet.parser.ShipDesign d : homeplanet.parser.DesignExport.built()) {
+			if (!bpId.equals(homeplanet.parser.DesignExport.bpId(d))) continue;
+			rooms = d.rooms.size();
+			doors = d.doors.size();
+		}
+		return homeplanet.parser.Pricing.ship(s, rooms, doors, HomePlanet.commissionPercent);
+	}
+	private void showPrice(homeplanet.parser.Pricing.Quote q) {
+		int have = homeplanet.vault.Vault.get().storageScrap();
+		StringBuilder sb = new StringBuilder("<html><b>Price: " + q.total() + " scrap</b>");
+		if (q.percent != 100) sb.append(" (" + q.percent + "% of " + q.subtotal + ")");
+		sb.append(", paid from Spacedock Storage, which holds " + have + ".");
+		if (have < q.total()) sb.append(" <font color='#ff8844'>Not enough scrap.</font>");
+		sb.append("<br><font size='-2'>").append(String.join(" · ", q.lines)).append("</font></html>");
+		priceLabel.setText(sb.toString());
 	}
 
 	private void commission() {
@@ -260,15 +291,42 @@ public class CommissionDialog extends JDialog {
 			HomePlanet.showErrorDialog("The shipyard could not build her:\n" + ex);
 			return;
 		}
+		homeplanet.vault.Vault vault = homeplanet.vault.Vault.get();
+		int price = 0;
+		byte[] storageBefore = null;
+		if (HomePlanet.commissionCosts) {
+			homeplanet.parser.Pricing.Quote q = quote(e.id, s);
+			price = q.total();
+			int have = vault.storageScrap();
+			if (have < price) {
+				JOptionPane.showMessageDialog(this, "The shipyard asks " + price + " scrap for her, and Spacedock Storage holds " + have + ".\n"
+						+ "Store more scrap in the Cargo Bay, or choose a smaller ship.", "Commission Ship", JOptionPane.INFORMATION_MESSAGE);
+				return;
+			}
+			if (JOptionPane.showConfirmDialog(this, "Commission " + name + " for " + price + " scrap from Spacedock Storage?",
+					"Commission Ship", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
+			try {
+				storageBefore = vault.payFromStorage(price);
+			} catch (Exception ex) {
+				HomePlanet.showErrorDialog("The Home Planet Station could not take the scrap from Spacedock Storage. Nothing was changed:\n" + ex.getMessage());
+				return;
+			}
+		}
 		homeplanet.vault.Ship ship;
 		try {
-			ship = homeplanet.vault.Vault.get().adopt(s);
+			ship = vault.adopt(s);
 		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("The new ship could not be docked; her save could not be written:\n" + ex);
+			String refund = "";
+			if (storageBefore != null) {
+				try { vault.refundStorage(storageBefore); refund = "\nThe " + price + " scrap was returned to Spacedock Storage."; }
+				catch (Exception again) { refund = "\nThe " + price + " scrap could not be returned to Spacedock Storage: " + again.getMessage(); }
+			}
+			HomePlanet.showErrorDialog("The new ship could not be docked; her save could not be written:\n" + ex + refund);
 			return;
 		}
 		List<String> lines = new ArrayList<String>();
 		lines.add(e.label + " (" + e.id + "), difficulty " + difficulty.getSelectedItem());
+		if (price > 0) lines.add("Paid " + price + " scrap from Spacedock Storage");
 		lines.add("Crew: " + s.getPlayerShip().getCrewList().size());
 		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines);
 		made = ship;
