@@ -45,8 +45,11 @@ public class MainFrame extends JFrame {
 			}
 			@Override
 			public void windowActivated(java.awt.event.WindowEvent e) {
-				// FTL deleted continue.sav while the player was away (a run ended): the Space Dock takes stock at once
-				if (atSpaceDock && homeplanet.core.SaveWatcher.takeGone()) spaceDock.init();
+				// back from another program (FTL, most likely): the Space Dock takes stock, as Refresh does. Not when one of
+				// the station's own windows closes, and not in the Cargo Bay (unsaved trades)
+				if (!atSpaceDock) return;
+				boolean gone = homeplanet.core.SaveWatcher.takeGone(); // FTL ended a run meanwhile
+				if (gone || e.getOppositeWindow() == null) spaceDock.init();
 			}
 		});
 		setTitle(appName + " " + appVersion);
