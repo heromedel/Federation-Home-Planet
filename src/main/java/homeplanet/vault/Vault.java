@@ -339,18 +339,61 @@ public final class Vault {
 		s.written(state, SafeFiles.hash(f));
 	}
 
+	/** A copy of a ship's save to change and write back, with the fingerprint of the file it came from. */
+	public static final class Copy {
+		public final SavedGameState save;
+		public final String hash;
+		Copy(SavedGameState save, String hash) { this.save = save; this.hash = hash; }
+	}
+	/**
+	 * Reads a fresh copy of her save (not the shared parsed one), fingerprinted, so a later write can tell whether FTL
+	 * changed the file in between (see {@link Transaction#put(Ship, SavedGameState, String)}).
+	 */
+	public Copy readCopy(Ship s) throws IOException {
+		File f = fileOf(s);
+		for (int tries = 0; tries < 3; tries++) {
+			String before = SafeFiles.hash(f);
+			SavedGameState g = new net.blerf.ftl.parser.SavedGameParser().readSavedGame(f);
+			if (before.equals(SafeFiles.hash(f))) return new Copy(g, before); // else FTL wrote it mid-read: again
+		}
+		throw new IOException(f.getName() + " kept changing while The Home Planet Station read it. Is FTL running?");
+	}
+
+	/** A save changed or vanished since it was read: nothing was written. */
+	public static final class StaleException extends IOException {
+		public final Ship ship;
+		StaleException(Ship ship, boolean gone) {
+			super(ship.name + "'s save " + (gone ? "is gone" : "changed") + " since it was read (FTL "
+					+ (gone ? "ended her run" : "saved her") + ", most likely). Nothing was saved.");
+			this.ship = ship;
+		}
+	}
+
 	/**
 	 * Several ships written together, or none: every save is serialized and written to a temporary file first
-	 * (any failure there changes nothing), then the temporaries replace the real files one after another.
+	 * (any failure there changes nothing), then the temporaries replace the real files one after another; if one of
+	 * those replacements fails, the files already replaced get their old contents back.
 	 */
 	public final class Transaction {
 		private final Map<Ship, SavedGameState> pending = new LinkedHashMap<Ship, SavedGameState>();
+		private final Map<Ship, String> expected = new LinkedHashMap<Ship, String>();
 		private final Map<File, byte[]> extra = new LinkedHashMap<File, byte[]>();
 		public Transaction put(Ship s, SavedGameState state) { pending.put(s, state); return this; }
+		/** As {@link #put(Ship, SavedGameState)}, written only if her file is still the one fingerprinted {@code readHash} (from {@link #readCopy}). */
+		public Transaction put(Ship s, SavedGameState state, String readHash) {
+			pending.put(s, state);
+			if (readHash != null) expected.put(s, readHash);
+			return this;
+		}
 		/** Another file that belongs with the change (a stored-systems list), written with the same care. */
 		public Transaction put(File f, byte[] bytes) { extra.put(f, bytes); return this; }
 		public void commit() throws IOException {
 			synchronized (Vault.this) {
+				for (Map.Entry<Ship, String> e : expected.entrySet()) {
+					File f = fileOf(e.getKey());
+					if (!f.isFile()) throw new StaleException(e.getKey(), true);
+					if (!SafeFiles.hash(f).equals(e.getValue())) throw new StaleException(e.getKey(), false);
+				}
 				Map<File, byte[]> bytes = new LinkedHashMap<File, byte[]>();
 				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) bytes.put(fileOf(e.getKey()), SaveHelper.toBytes(e.getValue()));
 				bytes.putAll(extra);
@@ -366,9 +409,25 @@ public final class Vault {
 					for (File t : tmps) t.delete();
 					throw e;
 				}
+				// what each file holds now, to put back if a later replacement fails
+				Map<File, byte[]> before = new LinkedHashMap<File, byte[]>();
+				for (File f : bytes.keySet()) before.put(f, f.isFile() ? SafeFiles.read(f) : null);
 				for (Ship s : pending.keySet()) snapshot(s);
 				int i = 0;
-				for (File f : bytes.keySet()) SafeFiles.replace(tmps.get(i++), f);
+				List<File> done = new ArrayList<File>();
+				try {
+					for (File f : bytes.keySet()) { SafeFiles.replace(tmps.get(i++), f); done.add(f); }
+				} catch (IOException e) {
+					for (File f : done) {
+						try {
+							if (before.get(f) == null) f.delete(); else SafeFiles.write(f, before.get(f));
+						} catch (IOException again) {
+							log.error("Could not put back " + f + " after a failed save", again);
+						}
+					}
+					for (File t : tmps) t.delete();
+					throw e;
+				}
 				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) e.getKey().written(e.getValue(), SafeFiles.hash(fileOf(e.getKey())));
 				saveManifest();
 			}

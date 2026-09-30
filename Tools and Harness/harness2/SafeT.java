@@ -5,6 +5,8 @@ public class SafeT { public static void main(String[] a) throws Exception {
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  Vault v = Setup.open(game, saves); v.takeStock();
  damagedFiles(work);
+ staleSaves(v);
+ halfwayFailure(v, work);
  Setup.done();
 }
  /** A: a designs.xml or remodels.xml that doesn't read in full is left alone, and the art sweep deletes nothing. */
@@ -41,6 +43,36 @@ public class SafeT { public static void main(String[] a) throws Exception {
   Setup.chk("A: the art sweep deletes nothing while remodels.xml is damaged", ShipArt.sweep() == 0 && art.isFile());
   SafeFiles.writeText(rf, goodR, false);
   Setup.chk("A: once repaired, both save again", saveOk());
+ }
+ /** B: a copy read for editing isn't written back over a file FTL changed or removed since. */
+ static void staleSaves(Vault v) throws Exception {
+  Ship d = v.docked().get(0);
+  Vault.Copy mine = v.readCopy(d);
+  mine.save.getPlayerShip().setScrapAmt(mine.save.getPlayerShip().getScrapAmt() + 500); // the Cargo Bay's change
+  // meanwhile FTL writes her: a different scrap amount
+  Vault.Copy ftl = v.readCopy(d); ftl.save.getPlayerShip().setScrapAmt(7); SafeFiles.write(d.file(), SaveHelper.toBytes(ftl.save));
+  String ftlHash = SafeFiles.hash(d.file());
+  boolean stale = false; try { v.begin().put(d, mine.save, mine.hash).commit(); } catch (Vault.StaleException e) { stale = e.ship == d; }
+  Setup.chk("B: a save FTL changed since it was read isn't written over", stale && SafeFiles.hash(d.file()).equals(ftlHash));
+  Vault.Copy fresh = v.readCopy(d);
+  v.begin().put(d, fresh.save, fresh.hash).commit();
+  Setup.chk("B: a fresh copy saves normally", fresh.save.getPlayerShip().getScrapAmt() == 7);
+  // the boarded ship's run ends in FTL: continue.sav is deleted
+  Ship b = v.boarded(); Vault.Copy run = v.readCopy(b);
+  File cont = v.continueFile(); byte[] keep = SafeFiles.read(cont); cont.delete();
+  boolean gone = false; try { v.begin().put(b, run.save, run.hash).commit(); } catch (Vault.StaleException e) { gone = e.getMessage().contains("gone"); }
+  Setup.chk("B: a ship whose run ended isn't brought back by a stale save", gone && !cont.exists());
+  SafeFiles.write(cont, keep);
+ }
+ /** F: when the second file of a save can't be replaced, the first gets its old contents back. */
+ static void halfwayFailure(Vault v, File work) throws Exception {
+  Ship d = v.docked().get(1);
+  String before = SafeFiles.hash(d.file());
+  Vault.Copy c = v.readCopy(d); c.save.getPlayerShip().setScrapAmt(c.save.getPlayerShip().getScrapAmt() + 99);
+  File blocker = new File(work, "blocker"); new File(blocker, "inside").mkdirs(); // a folder with something in it can't be replaced by a file
+  boolean failed = false; try { v.begin().put(d, c.save, c.hash).put(blocker, "x".getBytes("UTF-8")).commit(); } catch (IOException e) { failed = true; }
+  Setup.chk("F: a save that fails halfway puts the first file back", failed && SafeFiles.hash(d.file()).equals(before));
+  Setup.chk("F: and leaves no temporary files behind", !new File(d.file().getParentFile(), d.file().getName() + ".tx").exists() && !new File(work, "blocker.tx").exists());
  }
  static boolean saveOk() { try { ShipDesign.save(ShipDesign.load()); CompanionMod.save(CompanionMod.load()); return true; } catch (IOException e) { return false; } }
 }

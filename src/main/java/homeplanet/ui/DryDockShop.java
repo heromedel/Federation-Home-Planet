@@ -78,6 +78,7 @@ class DryDockShop {
 
 	private final CargoBayUI bay;
 	private final Map<Ship, SavedGameState> otherSaves = new LinkedHashMap<Ship, SavedGameState>(); // saves read just for the shop
+	private final Map<Ship, String> otherHashes = new LinkedHashMap<Ship, String>(); // their files' fingerprints as read
 	private final Set<Ship> dirty = new LinkedHashSet<Ship>();
 	private final List<String> purchases = new ArrayList<String>(); // for the history log
 	// What purchases changed on each buyer, keyed like HistoryLog.inventory, so the TRADE entry leaves them out
@@ -157,6 +158,7 @@ class DryDockShop {
 	/** Rebuilds from the saves (throws away any unsaved purchases). */
 	void init() {
 		otherSaves.clear();
+		otherHashes.clear();
 		dirty.clear();
 		purchases.clear();
 		bought.clear();
@@ -366,8 +368,10 @@ class DryDockShop {
 		SavedGameState gs = otherSaves.get(ship);
 		if (gs == null) {
 			try {
-				gs = new SavedGameParser().readSavedGame(ship.file()); // its own copy: purchases stay unsaved until Save
+				homeplanet.vault.Vault.Copy c = homeplanet.vault.Vault.get().readCopy(ship); // its own copy: purchases stay unsaved until Save
+				gs = c.save;
 				otherSaves.put(ship, gs);
+				otherHashes.put(ship, c.hash);
 			} catch (Exception e) {
 				log.warn("Shop: could not read " + ship.file(), e);
 			}
@@ -558,7 +562,7 @@ class DryDockShop {
 
 	/** Adds the saves only the shop touched (storage bought for, other ships' stores) to the Cargo Bay's save. */
 	void addTo(homeplanet.vault.Vault.Transaction tx) {
-		for (Ship s : dirty) tx.put(s, otherSaves.get(s));
+		for (Ship s : dirty) tx.put(s, otherSaves.get(s), otherHashes.get(s));
 	}
 	List<String> purchases() { return purchases; }
 

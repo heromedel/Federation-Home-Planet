@@ -80,6 +80,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	ShipState tradeState;
 	File currentPath;
 	File tradePath;
+	/** Fingerprints of the two files as they were read: Save refuses if FTL changed either since (see Vault.Transaction). */
+	String currentHash, tradeHash;
 	private int partnerIndex = 0; // in shipSelect
 
 	final DryDockShop shop = new DryDockShop(this);
@@ -343,8 +345,11 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			return;
 		}
 		currentPath = currentShip.file();
+		currentHash = null;
 		try {
-			currentSave = new SavedGameParser().readSavedGame(currentPath); // the Cargo Bay's own copy: nothing sticks until Save
+			Vault.Copy c = Vault.get().readCopy(currentShip); // the Cargo Bay's own copy: nothing sticks until Save
+			currentSave = c.save;
+			currentHash = c.hash;
 		} catch (Exception e) {
 			log.error("Could not read " + currentPath, e);
 			HomePlanet.showErrorDialog("Could not read " + currentPath + "\n\n" + e);
@@ -363,12 +368,16 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		} else {
 			tradeShip = shipSelect.get(Math.min(partnerIndex, shipSelect.size() - 1));
 			tradePath = tradeShip.file();
+			tradeHash = null;
 			try {
-				tradeSave = new SavedGameParser().readSavedGame(tradePath);
+				Vault.Copy c = Vault.get().readCopy(tradeShip);
+				tradeSave = c.save;
+				tradeHash = c.hash;
 			} catch (Exception e) {
 				log.error("Could not read " + tradePath, e);
 				HomePlanet.showErrorDialog("Could not read " + tradePath + "\n\n" + e);
 				tradeSave = tradeShip.save();
+				if (tradeSave == null) { shipSelect.remove(tradeShip); partnerIndex = 0; loadPartner(); return; }
 			}
 		}
 		tradeState = tradeSave.getPlayerShip();
@@ -1113,8 +1122,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			shop.countPurchasesAsBefore(tradeBefore, tradeSave);
 			// every file together, or none: the ships, the storage, the shops bought from, the stored-systems list
 			Vault.Transaction tx = Vault.get().begin();
-			tx.put(currentShip, currentSave);
-			if (tradeShip != null && tradePath != null) tx.put(tradeShip, tradeSave);
+			tx.put(currentShip, currentSave, currentHash);
+			if (tradeShip != null && tradePath != null) tx.put(tradeShip, tradeSave, tradeHash);
 			shop.addTo(tx);
 			systems.addTo(tx);
 			tx.commit();
@@ -1174,6 +1183,10 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			}
 			if (!lines.isEmpty())
 				homeplanet.core.HistoryLog.entry("TRADE", currentSave.getPlayerShipName() + (tradeSave != null ? " <-> " + tradeSave.getPlayerShipName() : ""), lines);
+		} catch (Vault.StaleException e) {
+			log.warn("Save refused: {}", e.getMessage());
+			HomePlanet.showErrorDialog(e.getMessage() + "\n\nPress Reset to load her as she is now, then make the changes again.");
+			return;
 		} catch (Exception e) {
 			log.error("Saving failed", e);
 			HomePlanet.showErrorDialog("The Home Planet Station could not save the changes:\n" + e);
