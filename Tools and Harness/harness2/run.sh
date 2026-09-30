@@ -28,6 +28,7 @@ echo "== RoundT"; run RoundT "$GAME" "$WORLD" | grep -E "$PICK|identical|DIFF"
 echo "== PicT"; run PicT "$GAME" "$WORLD" | grep -cE "img=[0-9]" | sed "s/^/ships drawn: /"
 echo "== DesT"; run DesT "$GAME" "$WORLD" "$W/des" | grep -E "$PICK"
 echo "== CommT"; run CommT "$GAME" "$WORLD" "$W/comm" | grep -E "$PICK"
+echo "== SafeT"; run SafeT "$GAME" "$WORLD" "$W/safe" | grep -E "$PICK|^PASS"
 
 # the converter, only with old Homeworld data to convert
 if [ $# -ge 3 ]; then

@@ -501,47 +501,62 @@ public class CompanionMod {
 		List<Remodel> out = new ArrayList<Remodel>();
 		if (!REMODELS.isFile()) return out;
 		try {
-			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(REMODELS);
-			NodeList rs = doc.getElementsByTagName("remodel");
-			for (int i = 0; i < rs.getLength(); i++) {
-				Element e = (Element) rs.item(i);
-				Remodel r = new Remodel();
-				r.id = e.getAttribute("id");
-				r.base = e.getAttribute("base");
-				r.file = e.getAttribute("file");
-				r.ship = e.getAttribute("ship");
-				r.made = e.getAttribute("made");
-				r.starter = "true".equals(e.getAttribute("starter"));
-				for (Element se : children(e, "sys")) {
-					Sys s = new Sys(se.getAttribute("id"));
-					s.room = Integer.parseInt(se.getAttribute("room"));
-					if (se.hasAttribute("power")) s.power = Integer.parseInt(se.getAttribute("power"));
-					if (se.hasAttribute("dir")) s.dir = se.getAttribute("dir");
-					if (se.hasAttribute("square")) s.square = Integer.valueOf(se.getAttribute("square"));
-					if (se.hasAttribute("weapon")) s.weapon = se.getAttribute("weapon");
-					r.systems.put(s.id, s);
-				}
-				List<Element> doorsEl = children(e, "doors");
-				if (!doorsEl.isEmpty()) {
-					r.doors = new ArrayList<Door>();
-					for (Element de : children(doorsEl.get(0), "door")) {
-						r.doors.add(new Door(Integer.parseInt(de.getAttribute("x")), Integer.parseInt(de.getAttribute("y")),
-								Integer.parseInt(de.getAttribute("a")), Integer.parseInt(de.getAttribute("b")), Integer.parseInt(de.getAttribute("v"))));
-					}
-				}
-				r.loadout = readLoadout(e);
-				List<Element> geo = children(e, "design");
-				if (!geo.isEmpty()) r.geometry = ShipDesign.parse(geo.get(0));
-				if (r.id.length() > 0 && r.file.length() > 0) out.add(r);
-			}
+			readInto(REMODELS, out);
 		} catch (Exception e) {
 			log.error("Could not read " + REMODELS, e);
 		}
 		return out;
 	}
+	/** True if remodels.xml is missing (nothing to lose) or reads in full. A damaged file must never be written over. */
+	public static boolean intact() {
+		File f = remodelsFile();
+		if (!f.isFile()) return true;
+		try {
+			readInto(f, new ArrayList<Remodel>());
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+	private static void readInto(File REMODELS, List<Remodel> out) throws Exception {
+		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(REMODELS);
+		NodeList rs = doc.getElementsByTagName("remodel");
+		for (int i = 0; i < rs.getLength(); i++) {
+			Element e = (Element) rs.item(i);
+			Remodel r = new Remodel();
+			r.id = e.getAttribute("id");
+			r.base = e.getAttribute("base");
+			r.file = e.getAttribute("file");
+			r.ship = e.getAttribute("ship");
+			r.made = e.getAttribute("made");
+			r.starter = "true".equals(e.getAttribute("starter"));
+			for (Element se : children(e, "sys")) {
+				Sys s = new Sys(se.getAttribute("id"));
+				s.room = Integer.parseInt(se.getAttribute("room"));
+				if (se.hasAttribute("power")) s.power = Integer.parseInt(se.getAttribute("power"));
+				if (se.hasAttribute("dir")) s.dir = se.getAttribute("dir");
+				if (se.hasAttribute("square")) s.square = Integer.valueOf(se.getAttribute("square"));
+				if (se.hasAttribute("weapon")) s.weapon = se.getAttribute("weapon");
+				r.systems.put(s.id, s);
+			}
+			List<Element> doorsEl = children(e, "doors");
+			if (!doorsEl.isEmpty()) {
+				r.doors = new ArrayList<Door>();
+				for (Element de : children(doorsEl.get(0), "door")) {
+					r.doors.add(new Door(Integer.parseInt(de.getAttribute("x")), Integer.parseInt(de.getAttribute("y")),
+							Integer.parseInt(de.getAttribute("a")), Integer.parseInt(de.getAttribute("b")), Integer.parseInt(de.getAttribute("v"))));
+				}
+			}
+			r.loadout = readLoadout(e);
+			List<Element> geo = children(e, "design");
+			if (!geo.isEmpty()) r.geometry = ShipDesign.parse(geo.get(0));
+			if (r.id.length() > 0 && r.file.length() > 0) out.add(r);
+		}
+	}
 
 	public static synchronized void save(List<Remodel> remodels) throws IOException {
 		cache = null; // whatever happens below, the next load() reads the file
+		if (!intact()) throw ShipDesign.damaged(remodelsFile()); // the list in hand may be short: writing it would lose remodels
 		StringBuilder sb = new StringBuilder();
 		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>").append(CRLF);
 		sb.append("<!-- Ship blueprints remodeled with Federation Home Planet, which rebuilds the companion mod from this file. -->").append(CRLF);

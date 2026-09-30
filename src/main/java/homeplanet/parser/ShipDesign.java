@@ -338,17 +338,16 @@ public class ShipDesign {
 		return d;
 	}
 
+	/**
+	 * The designs on file. A file that can't be read in full gives what could be read (so the screens still work),
+	 * and {@link #save} then refuses to write over it: see {@link #intact}.
+	 */
 	public static List<ShipDesign> load() {
 		List<ShipDesign> out = new ArrayList<ShipDesign>();
 		File FILE = file();
 		if (!FILE.isFile()) return out;
 		try {
-			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(FILE);
-			NodeList ds = doc.getElementsByTagName("design");
-			for (int i = 0; i < ds.getLength(); i++) {
-				ShipDesign d = parse((Element) ds.item(i));
-				if (d.id.length() > 0) out.add(d);
-			}
+			readInto(FILE, out);
 			// files from before snapshots: a built design was its own blueprint, so its copy is the snapshot
 			List<ShipDesign> add = new ArrayList<ShipDesign>();
 			for (ShipDesign d : out) {
@@ -363,10 +362,35 @@ public class ShipDesign {
 		}
 		return out;
 	}
+	private static void readInto(File f, List<ShipDesign> out) throws Exception {
+		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f);
+		NodeList ds = doc.getElementsByTagName("design");
+		for (int i = 0; i < ds.getLength(); i++) {
+			ShipDesign d = parse((Element) ds.item(i));
+			if (d.id.length() > 0) out.add(d);
+		}
+	}
+	/** True if the designs file is missing (nothing to lose) or reads in full. A damaged file must never be written over. */
+	public static boolean intact() {
+		File f = file();
+		if (!f.isFile()) return true;
+		try {
+			readInto(f, new ArrayList<ShipDesign>());
+			return true;
+		} catch (Exception ex) {
+			return false;
+		}
+	}
+	/** Why a damaged file is left alone, for the player. */
+	static IOException damaged(File f) {
+		return new IOException("The Home Planet Station could not read " + f.getName() + " in full, so it won't write over it:\n" + f.getAbsolutePath()
+				+ "\n\nThe previous version is beside it as " + f.getName() + ".bak. Put that one back, or move the damaged file aside.");
+	}
 	private static int num(Element e, String a) { return Integer.parseInt(e.getAttribute(a)); }
 	private static int numOr(Element e, String a, int or) { try { return Integer.parseInt(e.getAttribute(a)); } catch (Exception x) { return or; } }
 
 	public static void save(List<ShipDesign> designs) throws IOException {
+		if (!intact()) throw damaged(file()); // the list in hand may be short: writing it would lose the designs that didn't read
 		StringBuilder sb = new StringBuilder();
 		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>").append(CRLF);
 		sb.append("<!-- Ships designed in Federation Home Planet's Design Ship window. -->").append(CRLF);
