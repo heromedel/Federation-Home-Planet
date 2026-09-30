@@ -69,6 +69,7 @@ public class SystemsPanel {
 
 	private final CargoBayUI bay;
 	private final List<Stored> stored = new ArrayList<Stored>();
+	private final List<String> unknownLines = new ArrayList<String>(); // lines naming a system this version doesn't know: written back as they were
 	private final List<String> changes = new ArrayList<String>(); // for the history log
 	private boolean storedSomething = false;
 
@@ -277,6 +278,7 @@ public class SystemsPanel {
 
 	private void load() {
 		stored.clear();
+		unknownLines.clear();
 		File f = file();
 		if (f == null || !f.exists()) return;
 		BufferedReader r = null;
@@ -287,7 +289,7 @@ public class SystemsPanel {
 				line = line.trim();
 				if (line.isEmpty() || line.startsWith("#")) continue;
 				String[] p = line.split("\\s+");
-				if (SystemType.findById(p[0]) == null) { log.warn("Unknown system in {}: {}", f.getName(), line); continue; }
+				if (SystemType.findById(p[0]) == null) { log.warn("Unknown system in {}: {}", f.getName(), line); unknownLines.add(line); continue; }
 				int level = 1;
 				try { if (p.length > 1) level = Math.max(1, Integer.parseInt(p[1])); } catch (NumberFormatException e) { }
 				if (SystemType.findById(p[0]) == SystemType.CLONEBAY) level = 0; // the level stays with the Medbay
@@ -308,6 +310,7 @@ public class SystemsPanel {
 		if (f == null) return;
 		StringBuilder sb = new StringBuilder(HEADER).append("\n");
 		for (Stored s : stored) sb.append(line(s.id, s.level)).append("\n");
+		for (String u : unknownLines) sb.append(u).append("\n"); // lines this version can't use are kept, not dropped
 		tx.put(f, sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
 	}
 	public static final String HEADER = "# Ship systems stored in the Cargo Bay: <system id> <level> (a Clone Bay has no level: it uses the Medbay's)";

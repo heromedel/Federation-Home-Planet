@@ -425,7 +425,7 @@ public final class Vault {
 					for (Map.Entry<File, byte[]> e : bytes.entrySet()) {
 						File tmp = new File(e.getKey().getAbsoluteFile().getParentFile(), e.getKey().getName() + ".tx");
 						tmp.getParentFile().mkdirs();
-						java.nio.file.Files.write(tmp.toPath(), e.getValue());
+						SafeFiles.writeSynced(tmp, e.getValue());
 						tmps.add(tmp);
 					}
 				} catch (IOException e) {

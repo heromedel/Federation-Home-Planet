@@ -30,18 +30,23 @@ public final class SafeFiles {
 		File dir = target.getAbsoluteFile().getParentFile();
 		if (dir != null && !dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
 		File tmp = new File(dir, target.getName() + ".tmp");
-		OutputStream out = new FileOutputStream(tmp);
-		try {
-			out.write(bytes);
-			out.flush();
-		} finally {
-			out.close();
-		}
+		writeSynced(tmp, bytes);
 		if (keepBackup && target.isFile()) {
 			File bak = new File(dir, target.getName() + ".bak");
 			Files.copy(target.toPath(), bak.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		}
 		replace(tmp, target);
+	}
+	/** Writes the bytes and waits until they're on the disk (so a power cut can't leave an empty file behind the move). */
+	public static void writeSynced(File f, byte[] bytes) throws IOException {
+		FileOutputStream out = new FileOutputStream(f);
+		try {
+			out.write(bytes);
+			out.flush();
+			out.getFD().sync();
+		} finally {
+			out.close();
+		}
 	}
 	/** Writes UTF-8 text the same way. */
 	public static void writeText(File target, String text, boolean keepBackup) throws IOException {
