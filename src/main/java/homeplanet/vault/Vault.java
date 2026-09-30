@@ -40,6 +40,10 @@ import org.slf4j.LoggerFactory;
  *     designs.xml, remodels.xml, art/, history.log, removed-blueprints.log
  * </pre>
  *
+ * Immersive Mode has a fleet of its own in FederationHomePlanet-Immersive (the same layout, less the blueprint files):
+ * designs, remodels, their art and blueprint backups stay in FederationHomePlanet, shared by both fleets, since FTL
+ * has one Federation Home Planet Mod for both.
+ *
  * Board copies a ship's file to continue.sav; Dock copies it back. Every write of a ship's save is preceded by
  * a snapshot into her history folder, so the last KEEP versions can always be recovered by hand.
  */
@@ -47,6 +51,10 @@ public final class Vault {
 	private static final Logger log = LoggerFactory.getLogger(Vault.class);
 
 	public static final String FOLDER = "FederationHomePlanet";
+	/** Immersive Mode's own fleet. */
+	public static final String IMMERSIVE_FOLDER = "FederationHomePlanet-Immersive";
+	/** In a fleet's folder: the ship that was boarded when the player switched to the other fleet, boarded again on return. */
+	private static final String PARKED = "parked-boarded.txt";
 	public static final String MANIFEST = "manifest.xml";
 	/** How many earlier versions of a ship's save are kept. */
 	public static final int KEEP = 10;
@@ -57,22 +65,35 @@ public final class Vault {
 		return instance;
 	}
 	public static boolean isOpen() { return instance != null; }
-	/** Opens (creating if needed) the vault inside this saves folder and makes it the one in use. */
+	/** Opens (creating if needed) the normal fleet's vault inside this saves folder and makes it the one in use. */
 	public static Vault open(File savesFolder) throws IOException {
-		Vault v = new Vault(savesFolder);
+		return open(savesFolder, false);
+	}
+	/** Opens the normal fleet's vault, or Immersive Mode's, and makes it the one in use. */
+	public static Vault open(File savesFolder, boolean immersive) throws IOException {
+		Vault v = new Vault(savesFolder, immersive);
 		instance = v; // before load(), so what load() logs goes into the vault's own log
 		v.load();
 		return v;
 	}
 
 	public final File saves;
+	/** This fleet's folder. */
 	public final File root;
+	/** Where the blueprint files shared by both fleets are: the normal vault's folder. */
+	public final File shared;
+	/** Immersive Mode's fleet. */
+	public final boolean immersive;
 	private final List<Ship> ships = new ArrayList<Ship>();
 
-	private Vault(File savesFolder) {
+	private Vault(File savesFolder, boolean immersive) {
 		this.saves = savesFolder;
-		this.root = new File(savesFolder, FOLDER);
+		this.immersive = immersive;
+		this.shared = new File(savesFolder, FOLDER);
+		this.root = immersive ? new File(savesFolder, IMMERSIVE_FOLDER) : shared;
 	}
+	/** The other fleet's folder (Immersive Mode's, or the normal one). */
+	public File otherRoot() { return immersive ? shared : new File(saves, IMMERSIVE_FOLDER); }
 
 	// ---- places ----
 
@@ -80,12 +101,12 @@ public final class Vault {
 	public File shipsDir() { return new File(root, "ships"); }
 	public File junkyardDir() { return new File(root, "junkyard"); }
 	public File historyDir() { return new File(root, "history"); }
-	public File artDir() { return new File(root, "art"); }
-	public File designsFile() { return new File(root, "designs.xml"); }
-	public File remodelsFile() { return new File(root, "remodels.xml"); }
+	public File artDir() { return new File(shared, "art"); }
+	public File designsFile() { return new File(shared, "designs.xml"); }
+	public File remodelsFile() { return new File(shared, "remodels.xml"); }
 	/** A copy of every blueprint on file, one per file (see homeplanet.parser.BlueprintBackup). */
-	public File blueprintsDir() { return new File(root, "blueprints"); }
-	public File removedBlueprintsLog() { return new File(root, "removed-blueprints.log"); }
+	public File blueprintsDir() { return new File(shared, "blueprints"); }
+	public File removedBlueprintsLog() { return new File(shared, "removed-blueprints.log"); }
 	public File historyLog() { return new File(root, "history.log"); }
 	public File manifestFile() { return new File(root, MANIFEST); }
 	/** The stored-systems list that goes with the storage hold. */
@@ -855,6 +876,7 @@ public final class Vault {
 	 */
 	public synchronized java.util.Set<String> blueprintsInUseOrHistory() {
 		java.util.Set<String> out = blueprintsInUse();
+		out.addAll(otherFleetBlueprints()); // the other fleet flies the same mod
 		List<File> dirs = new ArrayList<File>();
 		File[] h = historyDir().listFiles(), r = surrenderedDir().listFiles();
 		if (h != null) dirs.addAll(java.util.Arrays.asList(h));
@@ -870,6 +892,99 @@ public final class Vault {
 		}
 		return out;
 	}
+	/**
+	 * Every blueprint the other fleet's saves name: its docked and junked ships, their kept versions and surrenders.
+	 * (Its boarded ship, if any, was docked into it when the player switched fleets.)
+	 */
+	public java.util.Set<String> otherFleetBlueprints() {
+		java.util.Set<String> out = new java.util.LinkedHashSet<String>();
+		for (File f : otherFleetSaves()) {
+			List<String> ids = homeplanet.parser.Retrofit.blueprintIds(f);
+			if (ids != null) out.addAll(ids);
+		}
+		return out;
+	}
+	/** The names of the other fleet's ships (docked or junked) whose saves name this blueprint. */
+	public List<String> otherFleetUsing(String bpId) {
+		List<String> out = new ArrayList<String>();
+		File other = otherRoot();
+		Map<String, String> names = manifestNames(new File(other, MANIFEST));
+		for (String dir : new String[] {"ships", "junkyard"}) {
+			File[] fs = new File(other, dir).listFiles();
+			if (fs == null) continue;
+			for (File f : fs) {
+				if (!f.getName().endsWith(".sav")) continue;
+				List<String> ids = homeplanet.parser.Retrofit.blueprintIds(f);
+				if (ids != null && !ids.contains(bpId)) continue; // an unreadable one counts, as usingBlueprint does
+				String id = f.getName().substring(0, f.getName().length() - 4);
+				out.add((names.containsKey(id) ? names.get(id) : id) + (immersive ? " (normal fleet)" : " (Immersive fleet)"));
+			}
+		}
+		return out;
+	}
+	private List<File> otherFleetSaves() {
+		List<File> out = new ArrayList<File>();
+		File other = otherRoot();
+		for (String dir : new String[] {"ships", "junkyard", "history", "surrendered"}) collectSaves(new File(other, dir), out, 2);
+		return out;
+	}
+	private static void collectSaves(File dir, List<File> out, int depth) {
+		File[] fs = dir.listFiles();
+		if (fs == null) return;
+		for (File f : fs) {
+			if (f.isDirectory() && depth > 1) collectSaves(f, out, depth - 1);
+			else if (f.isFile() && f.getName().endsWith(".sav")) out.add(f);
+		}
+	}
+	/** Ship ids and names from a manifest file (empty if there's none, or it can't be read). */
+	static Map<String, String> manifestNames(File manifest) {
+		Map<String, String> out = new LinkedHashMap<String, String>();
+		if (!manifest.isFile()) return out;
+		try {
+			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(manifest);
+			NodeList list = doc.getElementsByTagName("ship");
+			for (int i = 0; i < list.getLength(); i++) {
+				Element e = (Element) list.item(i);
+				out.put(e.getAttribute("id"), e.getAttribute("name"));
+			}
+		} catch (Exception e) {
+			log.warn("Could not read {}: {}", manifest, e.toString());
+		}
+		return out;
+	}
+
+	// ---- switching fleets (Immersive Mode) ----
+
+	/**
+	 * Switches to the other fleet: the boarded ship is docked into this one (and noted, to be boarded again on
+	 * return), then the other fleet's vault is opened and its noted ship boarded. FTL must be closed (the caller
+	 * checks). Returns the vault now in use. On a failure before the other fleet opens, nothing has changed but a dock.
+	 */
+	public static Vault switchFleet(boolean toImmersive) throws IOException {
+		Vault from = get();
+		if (from.immersive == toImmersive) return from;
+		from.reload();
+		Ship b = from.boarded();
+		File park = new File(from.root, PARKED);
+		if (b != null) {
+			from.dock();
+			SafeFiles.writeText(park, b.id + "\n", false);
+		} else if (park.isFile() && !park.delete()) {
+			log.warn("Could not remove {}", park);
+		}
+		HistoryLog.entry("SWITCH FLEET", "to the " + (toImmersive ? "Immersive" : "normal") + " fleet" + (b == null ? "" : "; " + b.name + " docked here, to be boarded again on return"));
+		Vault to = open(from.saves, toImmersive);
+		File back = new File(to.root, PARKED);
+		if (back.isFile()) {
+			String id = new String(SafeFiles.read(back), java.nio.charset.StandardCharsets.UTF_8).trim();
+			Ship s = to.byId(id);
+			if (s != null && s.state == Ship.State.DOCKED && !to.continueFile().exists()) to.board(s);
+			if (!back.delete()) log.warn("Could not remove {}", back);
+		}
+		HistoryLog.entry("SWITCH FLEET", "now the " + (toImmersive ? "Immersive" : "normal") + " fleet" + (to.boarded() == null ? "" : "; " + to.boarded().name + " boarded again"));
+		return to;
+	}
+
 	/** True if any ship's save couldn't even be scanned (so "unused" can't be trusted). */
 	public synchronized boolean anyUnscannable() {
 		for (Ship s : ships) {

@@ -37,7 +37,7 @@ public class RuleBoxes {
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
-	private final JComponent[] locked = {tradeBox, journeyBox, sellBox, sellSystemsBox, costBox, percentBox};
+	private final JComponent[] locked = {tradeBox, journeyBox, sellBox, sellSystemsBox, costBox, percentBox, unlockBox};
 	private final String[] tips = new String[locked.length];
 	private static final String SET_BY_IMMERSIVE = "Set by Immersive Mode";
 
@@ -48,7 +48,11 @@ public class RuleBoxes {
 		return p;
 	}
 
+	/** Whether the boxes show Immersive Mode's rules (so unticking it puts the player's own back). */
+	private boolean showingImmersive = HomePlanet.immersiveMode;
+
 	public RuleBoxes() {
+		if (HomePlanet.immersiveMode) showOwn(); // the boxes start from the player's own rules; sync() sets Immersive Mode's over them
 		immersiveBox.setToolTipText("<html>Sets and locks: trading, scrapping and New Journey need a station; commissioning costs scrap at 100%;<br>"
 				+ "a New Journey costs " + HomePlanet.JOURNEY_FEE + " scrap from Spacedock Storage; missiles, drone parts and stored systems sell at 25% of the store price;<br>"
 				+ "earlier versions of a ship can't be restored, and lost ships can't be recovered. Turn it off to unlock the rules again.</html>");
@@ -86,6 +90,8 @@ public class RuleBoxes {
 	/** Greys out what depends on an unticked rule, and sets what Immersive Mode decides. */
 	private void sync() {
 		boolean im = immersiveBox.isSelected();
+		if (!im && showingImmersive) showOwn();
+		showingImmersive = im;
 		if (im) {
 			tradeBox.setSelected(true);
 			journeyBox.setSelected(true);
@@ -93,6 +99,7 @@ public class RuleBoxes {
 			sellSystemsBox.setSelected(true);
 			costBox.setSelected(true);
 			percentBox.setSelectedItem("100%");
+			unlockBox.setSelected(true);
 		}
 		for (int i = 0; i < locked.length; i++) {
 			locked[i].setEnabled(!im);
@@ -102,9 +109,25 @@ public class RuleBoxes {
 		if (!im) percentBox.setEnabled(cost);
 		freeBox.setEnabled(cost);
 		freeLabel.setEnabled(cost);
-		unlockBox.setEnabled(cost);
+		if (!im) unlockBox.setEnabled(cost);
 		customLockedBox.setEnabled(lockedBox.isSelected());
 	}
+
+	/** The player's own rules in the boxes Immersive Mode sets. */
+	private void showOwn() {
+		HomePlanet.Rules r = HomePlanet.normalRules();
+		tradeBox.setSelected(r.store);
+		journeyBox.setSelected(r.journey);
+		sellBox.setSelected(r.sellSupplies);
+		sellSystemsBox.setSelected(r.sellSystems);
+		costBox.setSelected(r.costs);
+		percentBox.setSelectedItem(r.percent + "%");
+		unlockBox.setSelected(r.unlockFree);
+	}
+	/** Is Immersive Mode ticked? */
+	public boolean immersiveWanted() { return immersiveBox.isSelected(); }
+	/** Puts the Immersive Mode tick back (a switch of fleets that didn't happen). */
+	public void keepImmersive(boolean on) { immersiveBox.setSelected(on); sync(); }
 
 	/** Adds the boxes one per row, starting at c's row and leaving c on the row after the last. */
 	public void addTo(JPanel body, GridBagConstraints c) {
@@ -128,24 +151,30 @@ public class RuleBoxes {
 		if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
 		if (!FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Free ship for an empty shipyard: " + freeBox.getSelectedItem());
 		if (unlockBox.isSelected() != HomePlanet.unlockFreeShips) changed.add("A free ship for each new FTL unlock: " + unlockBox.isSelected());
+		// (with Immersive Mode on, the locked rules above show its values; the player's own are kept apart)
 	}
 
-	/** Sets the rules from the boxes (the caller saves the config). */
+	/** Sets the rules from the boxes (the caller saves the config, and switches fleets first when Immersive Mode changes). */
 	public void apply() {
 		boolean unlockWasOn = HomePlanet.unlockFreeShips;
-		HomePlanet.immersiveMode = immersiveBox.isSelected();
-		HomePlanet.storeRequirement = tradeBox.isSelected();
-		HomePlanet.journeyStoreRequirement = journeyBox.isSelected();
+		// the rules Immersive Mode leaves to the player
 		HomePlanet.scrapKeepsSystems = scrapBox.isSelected();
-		HomePlanet.sellSupplies = sellBox.isSelected();
 		HomePlanet.commissionUnlockedOnly = lockedBox.isSelected();
 		HomePlanet.commissionCustomUnlockedOnly = customLockedBox.isSelected();
-		HomePlanet.sellSystems = sellSystemsBox.isSelected();
-		HomePlanet.commissionCosts = costBox.isSelected();
-		HomePlanet.commissionPercent = percent();
 		HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()];
-		HomePlanet.unlockFreeShips = unlockBox.isSelected();
-		HomePlanet.applyImmersive();
+		if (!immersiveBox.isSelected()) {
+			if (HomePlanet.immersiveMode) HomePlanet.leaveImmersive();
+			HomePlanet.storeRequirement = tradeBox.isSelected();
+			HomePlanet.journeyStoreRequirement = journeyBox.isSelected();
+			HomePlanet.sellSupplies = sellBox.isSelected();
+			HomePlanet.sellSystems = sellSystemsBox.isSelected();
+			HomePlanet.commissionCosts = costBox.isSelected();
+			HomePlanet.commissionPercent = percent();
+			HomePlanet.unlockFreeShips = unlockBox.isSelected();
+		} else if (!HomePlanet.immersiveMode) {
+			HomePlanet.immersiveMode = true;
+			HomePlanet.applyImmersive(); // the player's own rules are kept as they are
+		}
 		// unlocks from before the rule was (re)turned on never count
 		if (HomePlanet.unlockFreeShips && !unlockWasOn && homeplanet.vault.Vault.isOpen())
 			homeplanet.parser.UnlockGrants.turnedOn(homeplanet.parser.Unlocks.read());

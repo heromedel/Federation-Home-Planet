@@ -380,9 +380,9 @@ public class RemodelDialog extends ShipEditorDialog {
 		if (r == 0) PatchDialog.open(bay);
 	}
 
-	/** True if another save file (docked, boarded or in the junkyard) also names this blueprint. */
+	/** True if another save file (docked, boarded or in the junkyard, in either fleet) also names this blueprint. */
 	private boolean usedByAnotherSave(String bpId) {
 		for (homeplanet.vault.Ship s : homeplanet.vault.Vault.get().usingBlueprint(bpId)) if (s != bay.currentShip) return true;
-		return false;
+		return !homeplanet.vault.Vault.get().otherFleetUsing(bpId).isEmpty(); // the other fleet flies the same blueprints
 	}
 }

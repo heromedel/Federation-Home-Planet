@@ -24,7 +24,7 @@ public class ShipArt {
 	public static File file(String source) {
 		String p = source.startsWith("file:") ? source.substring(5) : source;
 		File f = new File(p);
-		return f.isAbsolute() ? f : new File(homeplanet.vault.Vault.get().root, p);
+		return f.isAbsolute() ? f : new File(homeplanet.vault.Vault.get().shared, p); // the art is shared by both fleets
 	}
 
 	/** A piece of the hull for the explosion: its picture and where it sits on the hull art. */

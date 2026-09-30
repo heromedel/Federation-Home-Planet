@@ -73,9 +73,36 @@ public class HomePlanet {
 	 */
 	public static boolean immersiveMode = false;
 	public static final int JOURNEY_FEE = 200;
-	/** Immersive Mode's rules, set over whatever the player had. */
+	/** The rules Immersive Mode sets, as the player had them: kept apart, written to the cfg, and back when it's turned off. */
+	public static final class Rules {
+		public boolean store, journey, sellSupplies, sellSystems, costs, unlockFree;
+		public int percent;
+		static Rules current() {
+			Rules r = new Rules();
+			r.store = HomePlanet.storeRequirement; r.journey = HomePlanet.journeyStoreRequirement; r.sellSupplies = HomePlanet.sellSupplies;
+			r.sellSystems = HomePlanet.sellSystems; r.costs = HomePlanet.commissionCosts; r.percent = HomePlanet.commissionPercent;
+			r.unlockFree = HomePlanet.unlockFreeShips;
+			return r;
+		}
+		void set() {
+			HomePlanet.storeRequirement = store; HomePlanet.journeyStoreRequirement = journey; HomePlanet.sellSupplies = sellSupplies;
+			HomePlanet.sellSystems = sellSystems; HomePlanet.commissionCosts = costs; HomePlanet.commissionPercent = percent;
+			HomePlanet.unlockFreeShips = unlockFree;
+		}
+	}
+	private static Rules normalRules = null;
+	/** The player's own rules (what the rules in effect would be without Immersive Mode). */
+	public static Rules normalRules() { return normalRules != null ? normalRules : Rules.current(); }
+	/** Immersive Mode is off again: the player's own rules come back. */
+	public static void leaveImmersive() {
+		immersiveMode = false;
+		if (normalRules != null) { normalRules.set(); normalRules = null; }
+	}
+	/** Immersive Mode's rules, set over the player's own (which are kept, see {@link #normalRules}). */
 	public static void applyImmersive() {
 		if (!immersiveMode) return;
+		if (normalRules == null) normalRules = Rules.current();
+		unlockFreeShips = true;
 		storeRequirement = true;
 		journeyStoreRequirement = true;
 		commissionCosts = true;
@@ -187,7 +214,7 @@ public class HomePlanet {
 
 		// The vault (files only so far; the ships are read once the game data is in)
 		try {
-			Vault.open(save_location);
+			Vault.open(save_location, immersiveMode); // Immersive Mode has a fleet of its own
 		} catch (IOException e) {
 			log.error("Could not open the vault in " + save_location, e);
 			showErrorDialog("The Home Planet Station could not open its fleet records in:\n" + save_location + "\n\n" + e);
@@ -284,17 +311,18 @@ public class HomePlanet {
 		if (datsPath != null) config.setProperty("ftlDatsPath", datsPath.getAbsolutePath());
 		config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
 		config.setProperty("debug_logging", Boolean.toString(debugLogging));
-		config.setProperty("store_requirement", Boolean.toString(storeRequirement));
-		config.setProperty("new_journey_store_requirement", Boolean.toString(journeyStoreRequirement));
+		Rules own = normalRules(); // Immersive Mode's rules are never written over the player's own
+		config.setProperty("store_requirement", Boolean.toString(own.store));
+		config.setProperty("new_journey_store_requirement", Boolean.toString(own.journey));
 		config.setProperty("scrap_keeps_systems", Boolean.toString(scrapKeepsSystems));
-		config.setProperty("sell_supplies", Boolean.toString(sellSupplies));
+		config.setProperty("sell_supplies", Boolean.toString(own.sellSupplies));
 		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));
 		config.setProperty("commission_custom_unlocked_only", Boolean.toString(commissionCustomUnlockedOnly));
-		config.setProperty("sell_systems", Boolean.toString(sellSystems));
-		config.setProperty("commission_costs_scrap", Boolean.toString(commissionCosts));
-		config.setProperty("commission_price_percent", Integer.toString(commissionPercent));
+		config.setProperty("sell_systems", Boolean.toString(own.sellSystems));
+		config.setProperty("commission_costs_scrap", Boolean.toString(own.costs));
+		config.setProperty("commission_price_percent", Integer.toString(own.percent));
 		config.setProperty("free_ship", freeShip);
-		config.setProperty("unlock_free_ships", Boolean.toString(unlockFreeShips));
+		config.setProperty("unlock_free_ships", Boolean.toString(own.unlockFree));
 		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
 		try {

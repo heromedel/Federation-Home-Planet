@@ -310,6 +310,7 @@ public class DesignDialog extends ShipEditorDialog {
 	static List<String> shipsUsing(String bpId) {
 		List<String> out = new ArrayList<String>();
 		for (homeplanet.vault.Ship s : homeplanet.vault.Vault.get().usingBlueprint(bpId)) out.add(s.name);
+		out.addAll(homeplanet.vault.Vault.get().otherFleetUsing(bpId));
 		return out;
 	}
 }

@@ -60,6 +60,47 @@ public final class UnlockGrants {
 		try { append("seen", add); } catch (Exception e) { log.warn("Could not record the unlocked ships: {}", e.toString()); }
 	}
 
+	/** The layouts unlocked now, as keys. */
+	private static Set<String> unlockedNow(Unlocks u) {
+		Set<String> out = new LinkedHashSet<String>();
+		for (String base : DataManager.get().getPlayerShipBaseIds(true))
+			for (int n = 0; n < 3; n++) if (u.unlocked(base, n)) out.add(base + " " + n);
+		return out;
+	}
+	/** Leaving this fleet (Immersive Mode off): what's unlocked now is noted, so unlocks made while away never count. */
+	public static void leaving(Unlocks u) {
+		if (u == null || u.problem() != null || !file().isFile()) return;
+		try {
+			StringBuilder sb = new StringBuilder();
+			for (String line : new String(SafeFiles.read(file()), StandardCharsets.UTF_8).split("\r?\n")) {
+				if (!line.isEmpty() && !line.startsWith("away ")) sb.append(line).append('\n');
+			}
+			for (String k : unlockedNow(u)) sb.append("away ").append(k).append('\n');
+			SafeFiles.writeText(file(), sb.toString(), false);
+		} catch (Exception e) {
+			log.warn("Could not note the unlocked ships: {}", e.toString());
+		}
+	}
+	/** Back in this fleet: unlocks made while away are seen (they never count); unclaimed ones from before still do. */
+	public static void returning(Unlocks u) {
+		if (u == null || u.problem() != null) return;
+		if (!file().isFile()) { turnedOn(u); return; }
+		Set<String> away = read("away");
+		if (away.isEmpty()) return;
+		Set<String> seen = read("seen"), add = new LinkedHashSet<String>();
+		for (String k : unlockedNow(u)) if (!away.contains(k) && !seen.contains(k)) add.add(k);
+		try {
+			StringBuilder sb = new StringBuilder();
+			for (String line : new String(SafeFiles.read(file()), StandardCharsets.UTF_8).split("\r?\n")) {
+				if (!line.isEmpty() && !line.startsWith("away ")) sb.append(line).append('\n');
+			}
+			for (String k : add) sb.append("seen ").append(k).append('\n');
+			SafeFiles.writeText(file(), sb.toString(), false);
+		} catch (Exception e) {
+			log.warn("Could not record the unlocked ships: {}", e.toString());
+		}
+	}
+
 	/** Is this standard layout free now: unlocked since the rule was turned on, and not yet claimed? */
 	public static boolean freeNow(Unlocks u, String bpId) {
 		if (u == null || u.problem() != null) return false;
