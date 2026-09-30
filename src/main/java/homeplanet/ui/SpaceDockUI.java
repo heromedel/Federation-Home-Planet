@@ -620,7 +620,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		boolean taken = !v.docked().isEmpty() || v.boarded() != null;
 		orders.add(new OtherOrdersDialog.Order("Report for Reassignment", "Surrender Spacedock Storage and the Junkyard's hulls in exchange for a free new command.",
 				!HomePlanet.commissionCosts ? "commissioning is free (Settings, Rules): Commission a new ship instead."
-						: taken ? "only a captain with no ship at the Space Dock can report for reassignment." : null,
+						: taken ? "only a captain with no ship at the Space Dock can report for reassignment."
+						: v.freeCommandOpen() ? "a free command is already waiting for you at Commission." : null,
 				new Runnable() { public void run() { reportForReassignment(); } }, true));
 		final File last = v.lastSurrender();
 		if (last != null) {

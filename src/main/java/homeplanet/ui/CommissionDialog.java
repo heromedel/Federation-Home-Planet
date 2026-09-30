@@ -67,8 +67,8 @@ public class CommissionDialog extends JDialog {
 	private homeplanet.vault.Ship made = null;
 	/** The relief ship's row (not a blueprint of its own: a Kestrel A, stripped). */
 	private static final String RELIEF = "RELIEF";
-	/** HR2 with an empty shipyard: one ship is free (see {@link #free}). */
-	private final boolean emptyYard = HomePlanet.commissionCosts && homeplanet.vault.Vault.get().shipyardEmpty();
+	/** HR2: the free command is waiting (granted once when the fleet starts, and with each report for reassignment) and no ship is here. */
+	private final boolean emptyYard = HomePlanet.commissionCosts && homeplanet.vault.Vault.get().shipyardEmpty() && homeplanet.vault.Vault.get().freeCommandOpen();
 	/** HR2 with the unlock-once rule: standard layouts unlocked in FTL since the rule was turned on, not yet claimed. */
 	private final java.util.Set<String> unlockFree = new java.util.HashSet<String>();
 	/** Immersive Mode: the player's rank (custom ships need a Captain, artillery on them a Commodore); -1 outside it. */
@@ -126,6 +126,7 @@ public class CommissionDialog extends JDialog {
 		form.add(new JLabel("  Difficulty:"), c);
 		c.gridx = 3;
 		difficulty.setToolTipText("How dangerous her first journey will be");
+		difficulty.setSelectedIndex(1); // Normal, as FTL starts
 		form.add(difficulty, c);
 
 		JPanel right = new JPanel(new BorderLayout(0, 6));
@@ -308,7 +309,7 @@ public class CommissionDialog extends JDialog {
 			preview.add(stats, BorderLayout.NORTH);
 			preview.add(p, BorderLayout.CENTER);
 			if (HomePlanet.commissionCosts) {
-				if (emptyFree(e.id)) priceLabel.setText("<html><b>Free.</b> The shipyard is empty: The Federation Home Planet grants you a new command at no cost.</html>");
+				if (emptyFree(e.id)) priceLabel.setText("<html><b>Free.</b> The Federation Home Planet grants you a new command at no cost (once; a report for reassignment grants another).</html>");
 				else if (free(e.id)) priceLabel.setText("<html><b>Free, once.</b> Newly unlocked in FTL: The Federation Home Planet commissions the first of her line at no cost.</html>");
 				else showPrice(quote(e.id, s));
 			}
@@ -384,7 +385,10 @@ public class CommissionDialog extends JDialog {
 		List<String> lines = new ArrayList<String>();
 		lines.add(e.label + " (" + e.id + "), difficulty " + difficulty.getSelectedItem());
 		if (price > 0) lines.add("Paid " + price + " scrap from Spacedock Storage");
-		if (isFree && emptyFree(e.id)) lines.add("Free: the shipyard was empty");
+		if (isFree && emptyFree(e.id)) {
+			lines.add("Free: the free command");
+			homeplanet.vault.Vault.get().useFreeCommand("commissioned " + name);
+		}
 		else if (isFree) {
 			lines.add("Free: newly unlocked in FTL (claimed)");
 			try { homeplanet.parser.UnlockGrants.claim(e.id); }

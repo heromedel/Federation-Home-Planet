@@ -98,8 +98,11 @@ the artillery system costs 150, upgrades 30/50/80.
   level + reactor power + weapons, drones, augments at store price + crew at hiring price. Custom designs add: 25 per
   system with no known price, 10 per room, 5 per door, 100 for an artillery weapon with no price. Paid from the
   storage hold; the Commission window shows the price. A **price multiplier** (50% / 75% / 100%) sits beside it.
-- **Empty shipyard.** When no ship is at the Space Dock, boarded, or in the Junkyard, a free ship is available. A
-  setting chooses which: any ship / only a Kestrel A / only a **Federation relief ship** (a Kestrel A save stripped to
+- **The free command** (heromedel, 4B.23: "an empty shipyard should always require you to either commission a new one
+  or report for reassignment"). Granted **once when the fleet starts** (a new fleet, an Immersive career) and **again
+  with each Report for Reassignment**; one transmission per grant. An empty shipyard alone never grants one, and an
+  uncommissioned ship coming and going changes nothing. Undoing a report takes its grant back. A setting chooses which
+  ship: any ship / only a Kestrel A / only a **Federation relief ship** (a Kestrel A save stripped to
   basics: one human crew, a basic laser and a basic ion, missiles, no drones, every system at its minimum, a small
   reactor; no custom blueprint needed).
 - **Report for Reassignment.** How a captain claims that free ship: surrender the storage hold (items, crew, scrap,

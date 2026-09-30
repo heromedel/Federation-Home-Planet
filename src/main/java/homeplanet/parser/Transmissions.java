@@ -199,10 +199,17 @@ public final class Transmissions {
 			for (int i = 1; i <= r; i++) send(all, sent, "promo:" + i, "promo:" + i, rank, null);
 		}
 		Vault v = Vault.get();
-		if (HomePlanet.commissionCosts && v.shipyardEmpty()) {
-			if (!emptyOpen) { send(all, sent, "empty:" + stamp(), "empty", rank, freeShipWords()); emptyOpen = true; }
-		} else {
-			emptyOpen = false;
+		// one order per free command (the fleet's start, a report for reassignment), never for an empty shipyard alone
+		boolean granted = v.freeCommandOpen();
+		if (HomePlanet.commissionCosts && granted && v.shipyardEmpty()) {
+			if (!emptyOpen) {
+				String key = "empty:" + stamp();
+				for (int i = 2; sent.contains(key); i++) key = "empty:" + stamp() + "-" + i; // two in one second
+				send(all, sent, key, "empty", rank, freeShipWords());
+				emptyOpen = true;
+			}
+		} else if (!granted) {
+			emptyOpen = false; // taken: the next grant sends its own order
 		}
 		if (HomePlanet.commissionCosts && HomePlanet.unlockFreeShips && u != null) {
 			for (String base : DataManager.get().getPlayerShipBaseIds(true)) {

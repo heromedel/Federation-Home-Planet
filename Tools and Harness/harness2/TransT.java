@@ -14,8 +14,31 @@ public class TransT { public static void main(String[] a) throws Exception {
  reentry();
  stipend();
  profiles(saves);
+ freeCommand(game, new File(work, "free"));
  Setup.done();
 }
+ static int orders() { int n = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.startsWith("empty:")) n++; return n; }
+ /** The free command: once when a fleet starts, again with each report for reassignment; an empty shipyard alone never sends one. */
+ static void freeCommand(File game, File work) throws Exception {
+  File saves = new File(work, "saves"); saves.mkdirs();
+  HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
+  HomePlanet.commissionCosts = true; HomePlanet.immersiveNotifications = true;
+  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
+  Transmissions.check();
+  Setup.chk("F: a new fleet: the free command, and one order for it", v.freeCommandOpen() && orders() == 1);
+  Ship stranger = v.adopt(Commission.build("PLAYER_SHIP_HARD", "New Game Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)));
+  v.board(stranger); Transmissions.check();
+  v.remove(v.boarded(), "DESTROY"); Transmissions.check();
+  Setup.chk("F: a ship came and was destroyed: still the one order, the command still waiting", orders() == 1 && v.freeCommandOpen());
+  v.useFreeCommand("commissioned"); Ship k = v.adopt(Commission.build("PLAYER_SHIP_HARD", "Free Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(4)));
+  v.board(k); Transmissions.check();
+  v.remove(v.boarded(), "DESTROY"); Transmissions.check();
+  Setup.chk("F: the command taken, then the shipyard empty again: no new order, nothing free", orders() == 1 && !v.freeCommandOpen() && v.shipyardEmpty());
+  File dir = v.surrender(); Transmissions.check();
+  Setup.chk("F: a report for reassignment grants another, with its own order", v.freeCommandOpen() && orders() == 2);
+  v.undoSurrender(dir);
+  Setup.chk("F: undoing the report takes the grant back", !v.freeCommandOpen());
+ }
  static void profile(File saves, String[] unlockedA, String[] achievements) throws Exception {
   Profile p = Profile.createEmptyProfile(); p.setFileFormat(9);
   Map<String, ShipAvailability> m = new LinkedHashMap<String, ShipAvailability>();

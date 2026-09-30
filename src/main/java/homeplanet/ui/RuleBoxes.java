@@ -36,7 +36,7 @@ public class RuleBoxes {
 	private final JPanel costRow = row(0);
 	private static final String[] FREE_KEYS = {"kestrel", "any", "relief"};
 	final JComboBox<String> freeBox = new JComboBox<String>(new String[] {"a Kestrel A", "any ship", "a Federation relief ship"});
-	private final JLabel freeLabel = new JLabel("When the shipyard is empty, The Federation Home Planet grants one free ship:  ");
+	private final JLabel freeLabel = new JLabel("The free command (once at the start, and with each report for reassignment):  ");
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);

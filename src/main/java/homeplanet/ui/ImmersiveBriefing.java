@@ -112,7 +112,7 @@ final class ImmersiveBriefing extends JDialog {
 				+ (begun ? "" : " Your career begins with an empty shipyard, a free Kestrel and " + Career.STARTING_SCRAP + " scrap in Spacedock Storage.")));
 		p.add(section("The rules", "Set and locked while it's on:",
 				"Trading, scrapping and New Journey need a station (a beacon with a store).",
-				"Commissioning costs scrap from Spacedock Storage, at full price. An empty shipyard earns one free ship.",
+				"Commissioning costs scrap from Spacedock Storage, at full price. With no ship left, commission one or report for reassignment (surrender Spacedock Storage and the Junkyard for a free new command).",
 				"Each ship you unlock in FTL from now on can be commissioned free, once. Locked ships can't be commissioned.",
 				"A New Journey costs " + HomePlanet.JOURNEY_FEE + " scrap. Missiles, drone parts and stored systems sell at 25%.",
 				"Lost ships stay lost: no restoring earlier versions, no recovering, and a report for reassignment is final."));

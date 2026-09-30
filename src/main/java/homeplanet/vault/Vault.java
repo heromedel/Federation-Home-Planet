@@ -173,9 +173,36 @@ public final class Vault {
 		return s;
 	}
 
-	/** No ship docked, boarded or in the Junkyard (the storage hold doesn't count): with HR2, a free ship is offered. */
+	/** No ship docked, boarded or in the Junkyard (the storage hold doesn't count). */
 	public synchronized boolean shipyardEmpty() {
 		return docked().isEmpty() && boarded() == null && junked().isEmpty();
+	}
+
+	// ---- the free command (HR2): once when the fleet starts, and again with each Report for Reassignment ----
+
+	private File freeCommandFile() { return new File(root, "free-command.txt"); }
+	/**
+	 * Is a free command granted and not yet taken? An empty shipyard alone never grants one: the captain commissions a
+	 * ship with scrap, or reports for reassignment. (A fleet from before this was recorded: granted if its shipyard is
+	 * empty now, once.)
+	 */
+	public synchronized boolean freeCommandOpen() {
+		File f = freeCommandFile();
+		if (!f.isFile()) {
+			boolean open = shipyardEmpty();
+			setFreeCommand(open, "recorded: " + (open ? "the shipyard is empty" : "the fleet has a ship"));
+			return open;
+		}
+		try { return new String(SafeFiles.read(f), java.nio.charset.StandardCharsets.UTF_8).trim().startsWith("open"); }
+		catch (IOException e) { return false; }
+	}
+	/** Grants the free command (a new fleet or career, a report for reassignment). */
+	public synchronized void grantFreeCommand(String why) { setFreeCommand(true, why); }
+	/** The free command is taken (her commission), or taken back (an undone report). */
+	public synchronized void useFreeCommand(String why) { setFreeCommand(false, why); }
+	private void setFreeCommand(boolean open, String why) {
+		try { SafeFiles.writeText(freeCommandFile(), (open ? "open" : "used") + "\n" + why + "\n", false); }
+		catch (IOException e) { log.warn("Could not record the free command: {}", e.toString()); }
 	}
 	/** The scrap in the storage hold (0 if it can't be read). */
 	public int storageScrap() {
@@ -264,6 +291,7 @@ public final class Vault {
 		List<String> lines = new ArrayList<String>();
 		for (Ship s : junk) lines.add("hull: " + s.name);
 		HistoryLog.entry("REASSIGN", "the storage hold and " + junk.size() + " hull(s) from the Junkyard surrendered; kept in surrendered/" + dir.getName(), lines);
+		grantFreeCommand("reported for reassignment");
 		return dir;
 	}
 	/** A hull couldn't be put back after a failed surrender: the folder keeps it, and the error says where. */
@@ -334,6 +362,7 @@ public final class Vault {
 		File done = new File(dir.getParentFile(), dir.getName() + "-undone");
 		if (!new File(dir, SURRENDER_AFTER).delete() || !dir.renameTo(done)) log.warn("Could not mark {} as undone", dir);
 		HistoryLog.entry("UNDO REASSIGN", "the storage hold and " + back.size() + " hull(s) returned from surrendered/" + dir.getName());
+		useFreeCommand("the report for reassignment was undone");
 	}
 
 	/** A new id: short, unique, safe in a file name. */
