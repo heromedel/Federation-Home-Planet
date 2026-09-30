@@ -324,12 +324,20 @@ public class HomePlanet {
 		JOptionPane.showMessageDialog(null, APP_NAME + " uses images and data from FTL,\nbut the path to FTL's files could not be guessed.\n\n"
 				+ "Select 'ftl.dat' in your FTL folder (FTL 1.6 and newer),\nor '(FTL dir)/resources/data.dat' for older versions,\nor 'FTL.app' on a Mac.",
 				"FTL Not Found", JOptionPane.INFORMATION_MESSAGE);
+		final JFileChooser fc = new JFileChooser();
+		fc.setDialogTitle("Find ftl.dat, data.dat or FTL.app");
+		fc.setFileHidingEnabled(false);
+		fc.addChoosableFileFilter(new FileFilter() {
+			@Override public String getDescription() { return "FTL Resources (ftl.dat; data.dat; FTL.app)"; }
+			@Override public boolean accept(File f) {
+				return f.isDirectory() || f.getName().equals("ftl.dat") || f.getName().equals("data.dat") || f.getName().equals("FTL.app");
+			}
+		});
+		fc.setMultiSelectionEnabled(false);
 		File ftlPath = null;
-		File f = pickFile(null, "Find ftl.dat, data.dat or FTL.app", "FTL Resources (ftl.dat; data.dat; FTL.app)", firstFolder(
-				new File(System.getenv("ProgramFiles(x86)") + "/Steam/steamapps/common"), new File("C:/Program Files (x86)/Steam/steamapps/common"),
-				new File(System.getenv("ProgramFiles") + "/Steam/steamapps/common")), "*.dat", "ftl.dat", "data.dat", "FTL.app");
-		if (f != null) {
-			if (f.getName().equalsIgnoreCase("ftl.dat") || f.getName().equalsIgnoreCase("data.dat")) ftlPath = f.getParentFile();
+		if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+			File f = fc.getSelectedFile();
+			if (f.getName().equals("ftl.dat") || f.getName().equals("data.dat")) ftlPath = f.getParentFile();
 			else if (f.getName().endsWith(".app") && f.isDirectory()) {
 				File contentsPath = new File(f, "Contents");
 				if (new File(contentsPath, "Resources").exists()) ftlPath = new File(contentsPath, "Resources");
@@ -340,45 +348,18 @@ public class HomePlanet {
 	public static File promptForSavePath() {
 		JOptionPane.showMessageDialog(null, APP_NAME + " manages saves from FTL,\nbut the path to FTL's saves could not be guessed.\n\n"
 				+ "Select '/Documents/My Games/FasterThanLight/continue.sav' (or ae_prof.sav).", "FTL Save Not Found", JOptionPane.INFORMATION_MESSAGE);
-		File f = pickFile(null, "Find continue.sav or ae_prof.sav", "FTL save files (continue.sav, ae_prof.sav, prof.sav)",
-				firstFolder(new File(System.getProperty("user.home"), "Documents/My Games/FasterThanLight"), new File(System.getProperty("user.home"), "Documents/My Games")),
-				"*.sav", "continue.sav", "ae_prof.sav", "prof.sav");
-		File path = f == null ? null : f.getParentFile();
-		return path != null && path.isDirectory() ? path : null;
-	}
-
-	/**
-	 * Asks for one file. On Windows it's Windows' own Open window (Quick Access, recent folders, search); elsewhere Java's
-	 * file chooser, showing folders and the named files. {@code pattern} filters Windows' window ("*.dat"). Starts in
-	 * {@code startIn} when it's a folder. Returns the file picked, or null.
-	 */
-	public static File pickFile(java.awt.Component owner, String title, String description, File startIn, String pattern, final String... names) {
-		if (System.getProperty("os.name").startsWith("Windows")) {
-			java.awt.Window w = owner == null ? null : owner instanceof java.awt.Window ? (java.awt.Window) owner : javax.swing.SwingUtilities.getWindowAncestor(owner);
-			java.awt.FileDialog fd = w instanceof java.awt.Dialog ? new java.awt.FileDialog((java.awt.Dialog) w, title, java.awt.FileDialog.LOAD)
-					: new java.awt.FileDialog(w instanceof java.awt.Frame ? (java.awt.Frame) w : null, title, java.awt.FileDialog.LOAD);
-			if (startIn != null) fd.setDirectory(startIn.getAbsolutePath());
-			fd.setFile(pattern);
-			fd.setVisible(true); // waits
-			return fd.getFile() == null ? null : new File(fd.getDirectory(), fd.getFile());
-		}
-		JFileChooser fc = new JFileChooser(startIn);
-		fc.setDialogTitle(title);
-		fc.setFileHidingEnabled(false);
+		final JFileChooser fc = new JFileChooser();
+		fc.setDialogTitle("Find continue.sav or ae_prof.sav");
 		fc.addChoosableFileFilter(new FileFilter() {
-			@Override public String getDescription() { return description; }
+			@Override public String getDescription() { return "FTL save files (continue.sav, ae_prof.sav, prof.sav)"; }
 			@Override public boolean accept(File f) {
-				if (f.isDirectory()) return true;
-				for (String n : names) if (f.getName().equalsIgnoreCase(n)) return true;
-				return false;
+				return f.isDirectory() || f.getName().equals("continue.sav") || f.getName().equals("ae_prof.sav") || f.getName().equals("prof.sav");
 			}
 		});
-		return fc.showOpenDialog(owner) == JFileChooser.APPROVE_OPTION ? fc.getSelectedFile() : null;
-	}
-	/** The first of these that is a folder, or null. */
-	private static File firstFolder(File... candidates) {
-		for (File f : candidates) if (f.isDirectory()) return f;
-		return null;
+		fc.setMultiSelectionEnabled(false);
+		File path = null;
+		if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) path = fc.getSelectedFile().getParentFile();
+		return path != null && path.isDirectory() ? path : null;
 	}
 	public static File[] getPossibleUserDataLocations(String fileName) {
 		if (fileName == null) fileName = "";
