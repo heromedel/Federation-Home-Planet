@@ -608,48 +608,28 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 	}
 
-	/** Other...: the station's rarely used orders, in a menu under the button. */
+	/** Other...: the station's rarely used orders, in a window of their own. */
 	private void otherOrders() {
-		javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
-		javax.swing.JMenuItem recover = new javax.swing.JMenuItem("Recover a ship...");
-		recover.setEnabled(!HomePlanet.immersiveMode);
-		recover.setToolTipText(HomePlanet.immersiveMode ? "Immersive Mode: ships lost or destroyed stay gone"
-				: "Bring back a destroyed ship, or one lost in action, from her last kept version");
-		recover.addActionListener(new java.awt.event.ActionListener() {
-			public void actionPerformed(ActionEvent e) { recoverShip(); }
-		});
-		menu.add(recover);
-		javax.swing.JMenuItem clean = new javax.swing.JMenuItem("Clean up blueprints...");
-		clean.setToolTipText("Remove old blueprints no ship uses any more from the Federation Home Planet Mod (rarely needed)");
-		clean.addActionListener(new java.awt.event.ActionListener() {
-			public void actionPerformed(ActionEvent e) { BlueprintCleanup.run(SpaceDockUI.this); }
-		});
-		menu.add(clean);
-		menu.addSeparator();
+		java.util.List<OtherOrdersDialog.Order> orders = new java.util.ArrayList<OtherOrdersDialog.Order>();
+		orders.add(new OtherOrdersDialog.Order("Recover a ship", "Bring back a destroyed ship, or one lost in action, from her last kept version.",
+				HomePlanet.immersiveMode ? "Immersive Mode: ships lost or destroyed stay gone." : null,
+				new Runnable() { public void run() { recoverShip(); } }, false));
+		orders.add(new OtherOrdersDialog.Order("Clean up blueprints", "Remove old blueprints no ship uses any more from the Federation Home Planet Mod. Rarely needed.",
+				null, new Runnable() { public void run() { BlueprintCleanup.run(SpaceDockUI.this); } }, false));
 		Vault v = Vault.get();
-		javax.swing.JMenuItem report = new javax.swing.JMenuItem("Report for Reassignment...");
-		String why = !HomePlanet.commissionCosts ? "Commissioning is free (Settings, Rules): Commission a new ship instead"
-				: !v.docked().isEmpty() || v.boarded() != null ? "Only a captain with no ship at the Space Dock can report for reassignment" : null;
-		report.setEnabled(why == null);
-		report.setToolTipText(why != null ? why : "Surrender Spacedock Storage and the Junkyard's hulls in exchange for a free new command");
-		report.addActionListener(new java.awt.event.ActionListener() {
-			public void actionPerformed(ActionEvent e) { reportForReassignment(); }
-		});
-		menu.add(report);
+		boolean taken = !v.docked().isEmpty() || v.boarded() != null;
+		orders.add(new OtherOrdersDialog.Order("Report for Reassignment", "Surrender Spacedock Storage and the Junkyard's hulls in exchange for a free new command.",
+				!HomePlanet.commissionCosts ? "commissioning is free (Settings, Rules): Commission a new ship instead."
+						: taken ? "only a captain with no ship at the Space Dock can report for reassignment." : null,
+				new Runnable() { public void run() { reportForReassignment(); } }, true));
 		final File last = v.lastSurrender();
 		if (last != null) {
-			javax.swing.JMenuItem undo = new javax.swing.JMenuItem("Undo Reassignment...");
-			boolean taken = !v.docked().isEmpty() || v.boarded() != null;
-			undo.setEnabled(!taken && !HomePlanet.immersiveMode);
-			undo.setToolTipText(HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final"
-					: taken ? "Only before a new command is taken: no ship may be at the Space Dock"
-					: "Take back the storage hold and hulls surrendered in the last report for reassignment");
-			undo.addActionListener(new java.awt.event.ActionListener() {
-				public void actionPerformed(ActionEvent e) { undoReassignment(last); }
-			});
-			menu.add(undo);
+			orders.add(new OtherOrdersDialog.Order("Undo Reassignment", "Take back the storage hold and hulls surrendered in the last report for reassignment.",
+					HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final."
+							: taken ? "only before a new command is taken: no ship may be at the Space Dock." : null,
+					new Runnable() { public void run() { undoReassignment(last); } }, false));
 		}
-		menu.show(otherBtn, 0, otherBtn.getHeight());
+		OtherOrdersDialog.open(this, orders);
 	}
 	/** What an empty shipyard grants, in words. */
 	private static String freeShipWords() {

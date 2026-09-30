@@ -62,6 +62,6 @@ if not exist "Current Build" mkdir "Current Build"
 copy /y "target\Federation Home Planet.jar" "Current Build\Federation Home Planet.jar" >nul
 echo.
 echo Done: "Current Build\Federation Home Planet.jar"
-for /f "tokens=2 delims=<>" %%v in ('findstr /c:"<version>" pom.xml') do ( echo Version %%v & goto :shown )
+for /f "tokens=2 delims=<>	 " %%v in ('findstr /c:"<version>" pom.xml') do ( echo Version %%v & goto :shown )
 :shown
 pause
