@@ -293,7 +293,32 @@ public final class Vault {
 
 	// ---- history ----
 
+	/** History file names: UTC, so they keep their order across clock changes (daylight saving). */
 	private static final SimpleDateFormat STAMP = new SimpleDateFormat("yyyyMMdd-HHmmss");
+	static { STAMP.setTimeZone(java.util.TimeZone.getTimeZone("UTC")); }
+	/** A history file's place in time: its stamp, then its counter ("…-2.sav" after "….sav" from the same second). */
+	private static String order(File f) {
+		String n = f.getName().replace(".sav", "");
+		int dash = n.indexOf('-', 9); // past the date-time's own dash
+		int count = 1;
+		if (dash > 0) { try { count = Integer.parseInt(n.substring(dash + 1)); } catch (NumberFormatException e) { } n = n.substring(0, dash); }
+		return n + String.format("%06d", count);
+	}
+	/** A new history file's name: this second's stamp, numbered past any from the same second (never reusing a pruned number). */
+	private static File historyTarget(File dir) {
+		String stamp = STAMP.format(new Date());
+		int last = 0;
+		File[] files = dir.listFiles();
+		if (files != null) for (File f : files) {
+			if (!f.getName().startsWith(stamp)) continue;
+			String o = order(f);
+			last = Math.max(last, Integer.parseInt(o.substring(o.length() - 6)));
+		}
+		return new File(dir, last == 0 ? stamp + ".sav" : stamp + "-" + (last + 1) + ".sav");
+	}
+	private static final java.util.Comparator<File> OLDEST_FIRST = new java.util.Comparator<File>() {
+		public int compare(File a, File b) { return order(a).compareTo(order(b)); }
+	};
 
 	/** Copies her current save into her history folder (before it's changed), keeping the last KEEP. */
 	public synchronized void snapshot(Ship s) throws IOException {
@@ -301,16 +326,14 @@ public final class Vault {
 		if (!f.isFile()) return;
 		File dir = historyOf(s);
 		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
-		String stamp = STAMP.format(new Date());
-		File target = new File(dir, stamp + ".sav");
-		for (int n = 2; target.exists(); n++) target = new File(dir, stamp + "-" + n + ".sav");
+		File target = historyTarget(dir);
 		SafeFiles.copy(f, target);
 		prune(dir);
 	}
 	private void prune(File dir) {
 		File[] files = dir.listFiles();
 		if (files == null || files.length <= KEEP) return;
-		java.util.Arrays.sort(files);
+		java.util.Arrays.sort(files, OLDEST_FIRST);
 		for (int i = 0; i < files.length - KEEP; i++) {
 			if (!files[i].delete()) log.warn("Could not prune {}", files[i]);
 		}
@@ -320,7 +343,7 @@ public final class Vault {
 		File[] files = historyOf(s).listFiles();
 		List<File> out = new ArrayList<File>();
 		if (files != null) for (File f : files) if (f.isFile() && f.getName().endsWith(".sav")) out.add(f);
-		Collections.sort(out);
+		Collections.sort(out, OLDEST_FIRST);
 		return out;
 	}
 
@@ -545,9 +568,7 @@ public final class Vault {
 	private void moveToHistory(Ship s, File f) throws IOException {
 		File dir = historyOf(s);
 		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
-		String stamp = STAMP.format(new Date());
-		File target = new File(dir, stamp + ".sav");
-		for (int n = 2; target.exists(); n++) target = new File(dir, stamp + "-" + n + ".sav");
+		File target = historyTarget(dir);
 		SafeFiles.move(f, target);
 		prune(dir);
 	}

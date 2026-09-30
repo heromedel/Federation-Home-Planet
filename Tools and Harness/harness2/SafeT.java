@@ -8,6 +8,7 @@ public class SafeT { public static void main(String[] a) throws Exception {
  staleSaves(v);
  halfwayFailure(v, work);
  failedBoardAndDock(v);
+ historyOrder(v);
  Setup.done();
 }
  /** A: a designs.xml or remodels.xml that doesn't read in full is left alone, and the art sweep deletes nothing. */
@@ -92,6 +93,18 @@ public class SafeT { public static void main(String[] a) throws Exception {
   hist.delete();
   v.board(was);
   Setup.chk("D: once cleared, boarding works", v.boarded() == was && v.continueFile().isFile());
+ }
+ /** Pruning keeps the newest versions, even when many are written in the same second (…-2.sav, …-10.sav). */
+ static void historyOrder(Vault v) throws Exception {
+  Ship e = v.docked().get(0);
+  byte[] beforeLast = null;
+  for (int i = 0; i < 15; i++) {
+   SavedGameParser.SavedGameState g = e.save(); g.getPlayerShip().setScrapAmt(1000 + i);
+   beforeLast = SafeFiles.read(e.file());
+   v.write(e, g);
+  }
+  List<File> h = v.history(e);
+  Setup.chk("history keeps " + Vault.KEEP + ", the newest last", h.size() == Vault.KEEP && Arrays.equals(SafeFiles.read(h.get(h.size() - 1)), beforeLast));
  }
  static boolean saveOk() { try { ShipDesign.save(ShipDesign.load()); CompanionMod.save(CompanionMod.load()); return true; } catch (IOException e) { return false; } }
 }

@@ -60,8 +60,8 @@ public class HomePlanet {
 	public static boolean commissionUnlockedOnly = false, commissionCustomUnlockedOnly = false;
 	public static boolean debugLogging = false;
 
-	/** The config file, beside the program, and its values (the Settings window changes and saves them). */
-	public static final File propFile = new File("federation-home-planet.cfg");
+	/** The config file, beside the program (whatever folder it was started from), and its values (the Settings window changes and saves them). */
+	public static final File propFile = new File(appDir(), "federation-home-planet.cfg");
 	public static final Properties config = new Properties();
 
 	/**
@@ -123,7 +123,7 @@ public class HomePlanet {
 			sellSupplies = flag("sell_supplies", false);
 			commissionUnlockedOnly = flag("commission_unlocked_only", true);
 			commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only", true);
-			homeplanet.ui.HouseRulesDialog.ask();
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() { homeplanet.ui.HouseRulesDialog.ask(); return null; } });
 			writeConfig = true; // saveConfig writes every rule, so this is asked once
 		}
 
@@ -217,18 +217,24 @@ public class HomePlanet {
 
 	/** Reads the config; imports FTL Homeworld's old one when there's none yet. Returns true if it should be written. */
 	private static boolean loadConfig() {
-		if (!propFile.isFile()) return true;
+		File from = propFile;
+		if (!from.isFile()) {
+			// before 4B.04 the config was looked for in the folder the program was started from: carry it over
+			File old = new File("federation-home-planet.cfg").getAbsoluteFile();
+			if (!old.isFile() || old.equals(propFile.getAbsoluteFile())) return true;
+			from = old;
+		}
 		InputStream in = null;
 		try {
-			in = new FileInputStream(propFile);
+			in = new FileInputStream(from);
 			config.load(in);
 		} catch (IOException e) {
-			showErrorDialog("The Home Planet Station could not read its settings from " + propFile.getPath());
-			log.error("Could not read " + propFile, e);
+			showErrorDialog("The Home Planet Station could not read its settings from " + from.getPath());
+			log.error("Could not read " + from, e);
 		} finally {
 			try { if (in != null) in.close(); } catch (IOException e) { }
 		}
-		return false;
+		return from != propFile; // an old config: written to its new place
 	}
 
 	/** Writes the current settings to the cfg (a temporary file, then one move). Returns false, after telling the user, on failure. */
@@ -258,16 +264,44 @@ public class HomePlanet {
 
 	// ---- dialogs ----
 
-	private static boolean confirm(String message, String title) {
-		return JOptionPane.showConfirmDialog(null, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+	/**
+	 * Runs a dialog on the event thread and waits for its answer (directly, when already on it). Startup runs on the
+	 * main thread, and Swing windows opened from there misbehave: a Windows file chooser comes up empty, and every
+	 * later one with it.
+	 */
+	@SuppressWarnings("unchecked")
+	static <T> T onEdt(final java.util.concurrent.Callable<T> c) {
+		try {
+			if (javax.swing.SwingUtilities.isEventDispatchThread()) return c.call();
+			final Object[] out = {null};
+			final Exception[] err = {null};
+			javax.swing.SwingUtilities.invokeAndWait(new Runnable() {
+				public void run() { try { out[0] = c.call(); } catch (Exception e) { err[0] = e; } }
+			});
+			if (err[0] != null) throw err[0];
+			return (T) out[0];
+		} catch (RuntimeException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static boolean confirm(final String message, final String title) {
+		return onEdt(new java.util.concurrent.Callable<Boolean>() { public Boolean call() {
+			return JOptionPane.showConfirmDialog(null, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+		}});
 	}
 	/** Yes or No, starting on No: for anything that can't be undone (selling, junking, retiring). Closing the window means No. */
 	public static boolean confirmNo(java.awt.Component owner, String message, String title) {
 		Object[] options = {"Yes", "No"};
 		return JOptionPane.showOptionDialog(owner, message, title, JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) == 0;
 	}
-	public static void showErrorDialog(String message) {
-		JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+	public static void showErrorDialog(final String message) {
+		onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+			JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+			return null;
+		}});
 	}
 
 	// ---- FTL itself ----
@@ -321,6 +355,9 @@ public class HomePlanet {
 		return path.exists() && path.isDirectory() && FTLUtilities.isDatsDirValid(path);
 	}
 	public static File promptForFtlPath() {
+		return onEdt(new java.util.concurrent.Callable<File>() { public File call() { return promptForFtlPathHere(); } });
+	}
+	private static File promptForFtlPathHere() {
 		JOptionPane.showMessageDialog(null, "The Home Planet Station's interface draws its images and data from FTL,\nbut its search could not find FTL's files on its own.\n\n"
 				+ "Select 'ftl.dat' in your FTL folder (FTL 1.6 and newer),\nor '(FTL dir)/resources/data.dat' for older versions,\nor 'FTL.app' on a Mac.",
 				"FTL Not Found", JOptionPane.INFORMATION_MESSAGE);
@@ -346,6 +383,9 @@ public class HomePlanet {
 		return ftlPath != null && isDatsPathValid(ftlPath) ? ftlPath : null;
 	}
 	public static File promptForSavePath() {
+		return onEdt(new java.util.concurrent.Callable<File>() { public File call() { return promptForSavePathHere(); } });
+	}
+	private static File promptForSavePathHere() {
 		JOptionPane.showMessageDialog(null, "The Home Planet Station sends ships out using FTL's saves,\nbut its search could not find FTL's saves folder on its own.\n\n"
 				+ "Select '/Documents/My Games/FasterThanLight/continue.sav' (or ae_prof.sav).", "FTL Save Not Found", JOptionPane.INFORMATION_MESSAGE);
 		final JFileChooser fc = new JFileChooser();
