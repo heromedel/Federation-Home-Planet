@@ -1,4 +1,12 @@
-# Federation-Home-Planet
+~ Incoming transmission from the Federation Home Planet ~
+
+Despite the ongoing war with the Rebellion, the Federation has restored its long-range trade and communication network, carried by official stores and stations across the sectors.
+
+From the Home Planet, the Federation can once more reach beacons in many star systems: moving goods and crew between ships almost instantly, refitting hulls in its dry docks, and commissioning new ships wherever a captain needs one.
+
+Welcome home, Captain, and godspeed.
+
+-----
 
 Federation-Home-Planet (FHP)
 An external application for use with FTL: Faster Than Light that allows you to keep a fleet between runs: Switch ships, start a new journey with the same ship, or trade gear, crew and scrap through a storage hold or between ships, shop at any ships' beacons, refit, remodel, design and commission new ships. New blueprints work with Slipstream.
