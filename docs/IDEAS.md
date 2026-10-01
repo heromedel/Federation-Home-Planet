@@ -45,6 +45,7 @@ Custom triggers for letters or letter chains (ties into Idea A). Examples:
    pay 100 scrap from the Cargo Hold. Possibly a chain of letters, or just one angry one.
 
 The homework is done: `SAVE_SIGNALS.md` lists what the save records and how sure we are of each.
+Ideas for the achievements themselves, with their letters and chains: `achievement-and-events-ideas.md` (Idea E).
 
 Notes: triggers have to come from what FTL's save records. Ships defeated, crew joined and lost, sectors, scrap, what's
 aboard and the ship type are all visible; how an enemy crew died, or a surrender accepted, may not be, and would need a
