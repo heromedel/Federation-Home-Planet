@@ -383,12 +383,33 @@ public final class Exchange {
 		lines.add("gave: " + r.outWords());
 		lines.add("received (" + whereTheyGo(r.in) + "): " + r.inWords());
 		HistoryLog.entry("LONG RANGE TRADE", "with " + r.peerTitle + "  (trade " + r.id + ")", lines);
-		homeplanet.parser.Transmissions.deliver("trade:" + r.id, "Home Planet Quartermaster", "Received from " + r.peerTitle,
-				homeplanet.parser.Transmissions.rank() + ",\n\n"
+		homeplanet.parser.Transmissions.deliver("trade:" + r.id, "Home Planet Quartermaster", RECEIPT_SUBJECT, receipt(r));
+	}
+	/** The Quartermaster's receipt: a title nobody takes for the other commander's own message. */
+	public static final String RECEIPT_SUBJECT = "Receipt of Transfer: Signed by Quartermaster";
+	private static final String[] RECEIPT_OPEN = {
+		"The transfer from %s came through the long range channel clean.",
+		"%s's station kept its end of the bargain.",
+		"The long range channel to %s is quiet again, and the manifest is closed.",
+		"Another transfer with %s, logged and filed.",
+	};
+	private static final String[] RECEIPT_CLOSE = {
+		"Counted twice. Fair trade.",
+		"Every crate tallied and stamped. Pleasure doing business.",
+		"Inventory reconciled, in triplicate, as regulations require.",
+		"Weighed, counted and initialled. The books balance.",
+	};
+	/** The receipt's words: which flavour a trade gets follows from its id, so a receipt reads the same every time it's made. */
+	static String receipt(Record r) {
+		int pick = r.id.hashCode() & 0x7fffffff;
+		String where = whereTheyGo(r.in);
+		return homeplanet.parser.Transmissions.rank() + ",\n\n"
+				+ RECEIPT_OPEN[pick % RECEIPT_OPEN.length].replace("%s", r.peerTitle) + "\n\n"
 				+ (r.in.isEmpty() ? "Nothing came back from " + r.peerTitle + ". Generous of you.\n\n"
-						: "Signed for at The Home Planet Station: " + r.inWords() + ". " + capital(whereTheyGo(r.in).startsWith("in the") ? "all of it " + whereTheyGo(r.in) : whereTheyGo(r.in)) + ".\n\n")
-				+ (r.out.isEmpty() ? "Nothing went out for it. Good trading." : "Sent to " + r.peerTitle + ": " + r.outWords() + ".\n\nCounted twice. Fair trade.")
-				+ "\n~ Home Planet Quartermaster");
+						: "Signed for at The Home Planet Station: " + r.inWords() + ". " + capital(where.startsWith("in the") ? "all of it " + where : where) + ".\n\n")
+				+ (r.out.isEmpty() ? "Nothing went out for it. I won't ask how you managed that."
+						: "Sent to " + r.peerTitle + ": " + r.outWords() + ".\n\n" + RECEIPT_CLOSE[(pick / RECEIPT_OPEN.length) % RECEIPT_CLOSE.length])
+				+ "\n~ Home Planet Quartermaster";
 	}
 	/** This station's own lines go back, into the Cargo Hold, and the record is marked called off. */
 	public static void callOff(Record r, String why) throws IOException {

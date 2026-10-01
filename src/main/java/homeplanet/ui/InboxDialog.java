@@ -40,6 +40,7 @@ public class InboxDialog extends JDialog {
 	private final JButton reply = new JButton("Reply...");
 	private final JButton commission = new JButton("Commission...");
 	private final JButton archive = new JButton("Archive");
+	private final JButton delete = new JButton("Delete");
 	private final JButton keep = new JButton("Keep her"), museum = new JButton("Accept the museum's offer");
 	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton();
 	private java.util.List<Transmissions.Message> all;
@@ -88,6 +89,7 @@ public class InboxDialog extends JDialog {
 		act.add(keep);
 		act.add(museum);
 		act.add(archive);
+		act.add(delete);
 		act.add(rewardLabel);
 		right.add(act, BorderLayout.SOUTH);
 		reply.setToolTipText("Choose your answer: the reply comes in a few beacons later");
@@ -96,6 +98,8 @@ public class InboxDialog extends JDialog {
 		commission.setToolTipText("Go to Commission: the ship this order grants is marked free there");
 		commission.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { openCommission = true; dispose(); } });
 		archive.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { archiveSelected(); } });
+		delete.setToolTipText("Delete this receipt for good: the trade stays in the station's history");
+		delete.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { deleteSelected(); } });
 		keep.setToolTipText("She docks at the Space Dock, ready for a new journey from the first sector");
 		keep.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(true); } });
 		museum.setToolTipText("Her full value goes to the Cargo Hold, and she to the Federation museum");
@@ -153,6 +157,20 @@ public class InboxDialog extends JDialog {
 		fill();
 	}
 
+	/** Deletes a receipt for good (it asks first). */
+	private void deleteSelected() {
+		Transmissions.Message m = list.getSelectedValue();
+		if (m == null || !Transmissions.isReceipt(m)) return;
+		if (!HomePlanet.confirmNo(this, "Delete this receipt?\nThe trade stays in the station's history.", "Delete")) return;
+		try {
+			Transmissions.delete(m);
+			all.remove(m);
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not delete the transmission:\n" + e.getMessage());
+		}
+		fill();
+	}
+
 	/** Shows a transmission (a title and a line of who and when, if given, then the text). */
 	private void message(String title, String meta, String body) {
 		javax.swing.text.StyledDocument doc = text.getStyledDocument();
@@ -190,6 +208,7 @@ public class InboxDialog extends JDialog {
 			keep.setVisible(false);
 			museum.setVisible(false);
 			archive.setVisible(false);
+			delete.setVisible(false);
 			rewardLabel.setText(" ");
 			return;
 		}
@@ -204,6 +223,7 @@ public class InboxDialog extends JDialog {
 		keep.setVisible(open);
 		museum.setVisible(open);
 		archive.setVisible(true);
+		delete.setVisible(Transmissions.isReceipt(m)); // receipts pile up: archive one or be rid of it
 		boolean stipend = Transmissions.deletable(m);
 		archive.setText(stipend ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
 		archive.setToolTipText(stipend ? (Transmissions.isStipend(m) ? "Delete this notice: the scrap is already in the Cargo Hold" : "Delete this order: its free command has been taken") : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");

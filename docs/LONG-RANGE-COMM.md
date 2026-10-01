@@ -11,7 +11,10 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 - **The button:** "Long Range" (the full name doesn't fit FTL's font on the Space Dock's buttons), in the Station group under Cargo Bay. It needs no boarded ship.
 - **The screen** (`ui/LongRangeCommUI`): the Cargo Bay's look. Your side on the left (the Cargo Hold, or a ship at a
   station), the offer in the middle (yours, theirs, a notice line, two acceptance lamps, Accept), the other station on
-  the right (what they have to offer, read-only). Before a channel opens the right side finds stations.
+  the right (what they have to offer, read-only). Before a channel opens the right side finds stations. Board / Dock
+  beside the chosen ship takes command of her, or docks her, with the Space Dock's own steps (FTL closed), so ships
+  change without leaving the screen: off during an exchange, and it withdraws your acceptance. What's already
+  offered from either ship stays: the station finds a ship's save wherever she is.
 - **Finding and hailing** (`comm/Beacon`, `comm/Channel`): a station listens only while the screen is open, on the
   first free port of 47610 to 47619 (TCP for the channel, UDP for the scan), so two stations can share a computer.
   Establish Connection broadcasts on each local network and to this computer; By address hails an IP (with :port, or
@@ -27,7 +30,8 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   career to its own level. A refused hail says why.
 - **The offer** (`comm/Session`): each side owns its lines and numbers each version of them. Accept names both
   versions, so any change withdraws every acceptance (the notice line says what changed). A line the other station
-  can't take (an item or race its game data lacks) shows grey, and Accept stays off.
+  can't take (an item or race its game data lacks) shows grey, and Accept stays off. Notices are short enough for
+  one line ("Wolfy added 10 scrap: accept again."); the whole of a long one shows on hover.
 - **The exchange** (`comm/Exchange`): the station that hailed leads. Once both accept: the leader takes its goods off
   its ships into escrow (one save, with a trade record in the vault's `comm/` folder) and sends PREPARE; the other does
   the same and answers READY; the leader completes (what arrives goes into the Cargo Hold, which has no slot limits)
@@ -43,15 +47,17 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   rebuilt field by field within FTL's limits; a ship's package holds only its four files, and her save must read and be
   the ship offered. A malformed message closes the channel.
 - **History and letters:** a LONG RANGE TRADE (or TRADE CALLED OFF) entry in history.log; with the inbox on, a receipt
-  from the Home Planet Quartermaster.
+  from the Home Planet Quartermaster, "Receipt of Transfer: Signed by Quartermaster" (a title nobody takes for the other
+  commander's own message), in a few wordings. Receipts pile up, so they can be deleted as well as archived: the trade
+  stays in history.log and its record.
 - **Testing alone:** `java -jar "Federation Home Planet.jar" --station <folder>` runs a second station with its own
   settings in that folder; it asks for a saves folder of its own (a copy of the FTL saves folder).
 
 ## Whole ships
 
 - Between two Sandbox fleets, always (there are no commissioning rules to get around). Between Immersive careers, only
-  when both have **allow trading whole ships** on (Settings, General, off by default). The ship must be docked (not
-  boarded), at a station, with no final battle to settle. Everything aboard
+  when both have **allow trading whole ships** on (Settings, General, off by default). The ship must be docked, at a
+  station, with no final battle to settle: Offer the whole ship docks the ship at your command first, if you say so. Everything aboard
   goes with her.
 - What travels: her save, her voyage log and its summary, and her last trade mark. Her museum record, kept versions and
   fate stay with the fleet she leaves, where her history is kept as a record (fate TRANSFERRED: she can't be recovered,
@@ -92,5 +98,5 @@ Protocol 2: custom ships' papers.
 LinkT runs station A in its own process and station B (LinkPeer) in another, over localhost: goods, supplies and crew
 both ways; a change withdrawing acceptance; a refused line; each side crashing at each step of the exchange and the
 trade settling on the next link; modes and levels refused or allowed; whole ships there and back with their marks,
-commission dates and no packages left behind; custom ships and tampered papers; messages (cut, flooded, and kept
+commission dates and no packages left behind; custom ships and tampered papers; boarding another ship mid-offer; the receipt and deleting it; messages (cut, flooded, and kept
 from an older station); garbled messages and out-of-range crew.

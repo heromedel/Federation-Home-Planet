@@ -121,8 +121,10 @@ public class LinkT {
   b("clear");
   a("close"); b("wait ended");
   b("protocol " + (Session.PROTOCOL + 1));
+  int bEnds = Integer.parseInt(b("ends"));
   String rp = a("hail " + port);
   Setup.chk("a different protocol: refused, saying one of them needs to update", rp.startsWith("REFUSED") && rp.contains("update"));
+  b("wait ends " + (bEnds + 1)); // B answered before A refused: its side of that channel closes first
   b("protocol " + Session.PROTOCOL); b("version " + HomePlanet.APP_VERSION);
   Setup.chk("A hails again", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
 
@@ -166,6 +168,24 @@ public class LinkT {
   Thread.sleep(1500);
   Setup.chk("the boarded ship can't change hands", a("problems").contains("must be docked") && a("fleet").contains("Test_Kestrel"));
   a("clear"); b("clear");
+
+  // ---- changing ships mid-offer: what's offered stays, taken from wherever she is now ----
+  a("inbox on");
+  int kFuel = num(a("ship Test_Kestrel"), "fuel");
+  a("offer supply fuel 2 @Test_Kestrel"); b("offer supply scrap 3");
+  a("board Test_Engi");
+  Setup.chk("A boards another ship mid-offer (the Kestrel docked)", a("boarded").equals("Test_Engi"));
+  trade("goods from a ship since docked");
+  Setup.chk("the fuel came off the docked Kestrel", num(a("ship Test_Kestrel"), "fuel") == kFuel - 2);
+  a("dock");
+  Setup.chk("A docks her ship: none at command", a("boarded").equals("none"));
+  a("board Test_Kestrel");
+  String receipt = a("receipt");
+  Setup.chk("the receipt is the Quartermaster's, titled as a receipt", receipt.startsWith("Home Planet Quartermaster|Receipt of Transfer: Signed by Quartermaster|"));
+  Setup.chk("it names the other commander and what came and went", receipt.contains("Commander Bree") && receipt.contains("3 scrap") && receipt.contains("2 fuel"));
+  int receipts = Integer.parseInt(a("receipts"));
+  Setup.chk("a receipt can be deleted", a("delreceipt").equals("OK") && Integer.parseInt(a("receipts")) == receipts - 1);
+  a("inbox off");
   a("rename Test_Engi Wanderer"); // B has a Test Engi of its own
   a("commissioned Wanderer 30 September 2026");
   String engiA = a("idof Wanderer");

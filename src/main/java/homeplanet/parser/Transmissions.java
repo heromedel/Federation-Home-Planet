@@ -402,6 +402,8 @@ public final class Transmissions {
 		if (isStipend(m)) return true;
 		return m.key.startsWith("empty:") && Vault.isOpen() && !Vault.get().freeCommandOpen();
 	}
+	/** A Long Range Comm. receipt from the Quartermaster: archived or deleted, as the commander likes. */
+	public static boolean isReceipt(Message m) { return m.key.startsWith("trade:"); }
 	/** Deletes a message for good. */
 	public static synchronized void delete(Message m) throws IOException {
 		List<Message> all = load();

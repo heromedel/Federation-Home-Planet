@@ -36,7 +36,9 @@ public class LinkPeer {
   volatile boolean chat = true;
   public void problem(String t) { problems.add(t); }
   public void settled(Exchange.Record r) { settled++; }
-  public void ended(String why) { ended = why; session = null; }
+  public void ended(String why) { ended = why; session = null; ends++; }
+  /** How many channels have ended here: a test waits for one to be over before the next hail. */
+  volatile int ends = 0;
 
   /** Whether this station lets whole ships change hands (a normal fleet always does; "noships" plays an Immersive one that doesn't). */
   volatile boolean ships = true;
@@ -97,6 +99,14 @@ public class LinkPeer {
    if (c.equals("heard")) return heard.isEmpty() ? "none" : heard.get(heard.size() - 1);
    if (c.equals("heardcount")) return "" + heard.size();
    if (c.equals("nochat")) { chat = w.length > 1 && w[1].equals("off"); return "OK"; }
+   if (c.equals("ends")) return "" + ends;
+   if (c.equals("board")) { v.board(shipNamed(w[1])); return "OK"; }
+   if (c.equals("dock")) { v.dock(); return "OK"; }
+   if (c.equals("boarded")) { Ship b = v.boarded(); return b == null ? "none" : b.name.replace(' ', '_'); }
+   if (c.equals("inbox")) { HomePlanet.immersiveNotifications = w[1].equals("on"); return "OK"; }
+   if (c.equals("receipts")) { int n = 0; for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isReceipt(m)) n++; return "" + n; }
+   if (c.equals("receipt")) { for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isReceipt(m)) return m.from + "|" + m.subject + "|" + m.body.replace('\n', ' '); return "none"; }
+   if (c.equals("delreceipt")) { for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isReceipt(m)) { Transmissions.delete(m); return "OK"; } return "none"; }
    if (c.equals("version")) { version = w[1]; return "OK"; }
    if (c.equals("protocol")) { protocol = Integer.parseInt(w[1]); return "OK"; }
    if (c.equals("mode")) { mode = w[1]; anyLevel = w.length < 3 || w[2].equals("on"); return "OK"; }
@@ -230,6 +240,7 @@ public class LinkPeer {
      if (w.equals("open")) return s != null;
      if (w.equals("ended")) return s == null && ended != null;
      if (w.equals("settled")) return settled >= Integer.parseInt(a);
+     if (w.equals("ends")) return ends >= Integer.parseInt(a);
      if (s == null) return false;
      if (w.equals("theirs")) return s.theirs().size() == Integer.parseInt(a);
      if (w.equals("they")) return s.theyAccepted();

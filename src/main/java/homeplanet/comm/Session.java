@@ -187,7 +187,7 @@ public final class Session implements Channel.Listener {
 		iAccept = false;
 		theyAccept = false;
 		sendOffer();
-		if (was) view.notice("You changed the offer: every acceptance is withdrawn.");
+		if (was) view.notice("You changed the offer: accept again.");
 		view.changed();
 	}
 	private void sendOffer() {
@@ -337,7 +337,7 @@ public final class Session implements Channel.Listener {
 			String who = shortName(peer.title);
 			String s = !added.isEmpty() ? who + " added " + Exchange.wordsOf(added) : who + " took back " + Exchange.wordsOf(removed);
 			if (!added.isEmpty() && !removed.isEmpty()) s += " and took back " + Exchange.wordsOf(removed);
-			view.notice(s + (was ? ", so your acceptance was withdrawn." : "."));
+			view.notice(s + (was ? ": accept again." : "."));
 		}
 		view.changed();
 	}

@@ -66,6 +66,7 @@ import org.slf4j.LoggerFactory;
 public class LongRangeCommUI extends JPanel implements Scrollable, Session.View {
 	private static final Logger log = LoggerFactory.getLogger(LongRangeCommUI.class);
 	static final int W = CargoBayUI.W, H = CargoBayUI.H;
+	private static final int HELP_Y = 646;
 	private static final int LX = 16, LW = 404, MX = 436, MW = 408, RX = 860, RW = 404;
 	private static final String CFG_FIREWALL = "long_range_comm_noted";
 
@@ -84,6 +85,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private Ship source;
 	private final JLabel myPic = new JLabel();
 	private final FtlButton sourceBtn = CargoBayUI.dropButton();
+	private final FtlButton boardBtn = new FtlButton("Board", FtlFont.BODY, 74, 22);
 	private final CargoParts.Label sourceNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, -1);
 	private final SupplyBox[] mySupply = new SupplyBox[4];
 	private int supplyIdx = 0;
@@ -149,9 +151,10 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		JComponent strip = new JComponent() {
 			@Override protected void paintComponent(Graphics g) { g.setColor(new Color(10, 14, 20, 210)); g.fillRect(0, 0, getWidth(), getHeight()); }
 		};
-		help.setBounds(16, H - 24, W - 32, 24);
+		// just under the panels, not at the very bottom: a window a few pixels short of the screen still shows it
+		help.setBounds(16, HELP_Y, W - 32, 24);
 		stage.add(help);
-		strip.setBounds(0, H - 24, W, 24);
+		strip.setBounds(0, HELP_Y, W, 24);
 		stage.add(strip);
 	}
 
@@ -238,7 +241,10 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		sourceBtn.setToolTipText("Offer from the Cargo Hold, or from one of your ships at a station");
 		sourceBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pickSource(); } });
 		stage.add(sourceBtn);
-		sourceNote.setBounds(LX + 122, 110, 282, 16);
+		boardBtn.setBounds(LX + 330, 108, 74, 22);
+		boardBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { boardOrDock(); } });
+		stage.add(boardBtn);
+		sourceNote.setBounds(LX + 122, 110, 200, 16);
 		stage.add(sourceNote);
 
 		header("Supplies", false, LX, 136, LW);
@@ -893,26 +899,76 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		help("Offered " + l.title() + ".");
 	}
 	/** Why the chosen source can't be offered whole, or null if she can. */
-	private String whyNotShip() {
+	private String whyNotShip() { return whyNotShip(false); }
+	/** forShip: asked by Offer the whole ship itself, which can dock her first. */
+	private String whyNotShip(boolean forShip) {
 		if (session == null) return "Open a channel first.";
 		if (!session.shipsAllowed())
 			return !shipsAllowed() ? "Allow trading whole ships first (Settings, General)."
 					: session.peer.title + "'s career doesn't allow trading whole ships.";
 		if (source == null || source.isStorage()) return "Choose one of your ships under Offering From.";
-		if (source.isBoarded()) return source.name + " is the ship at your command: board another ship before offering her.";
+		if (source.isBoarded() && !forShip) return source.name + " is the ship at your command: Offer the whole ship docks her first.";
 		if (sourceOfferedWhole()) return source.name + " is already in the offer.";
 		if (Vault.get().finalBattlePending(source)) return source.name + " has a final battle still to settle.";
 		if (sourceSave == null) return source.name + "'s save can't be read.";
 		return Exchange.shipRefused(sourceSave.getPlayerShipBlueprintId());
 	}
 	private void offerShip() {
-		String why = whyNotShip();
+		String why = whyNotShip(true);
 		if (why != null) { help(why); return; }
-		if (!HomePlanet.confirmNo(this, "Offer " + source.name + " whole?\nHer crew, weapons, systems and cargo go with her.", "Offer the whole ship")) return;
+		if (source.isBoarded()) {
+			// she has to be docked to change hands: the Space Dock's own Dock does it (FTL closed, her save back in the vault)
+			if (!HomePlanet.confirmNo(this, source.name + " is the ship at your command.\nDock her and offer her whole? Her crew, weapons, systems and cargo go with her.", "Offer the whole ship")) return;
+			if (!dockFromHere()) return;
+			why = whyNotShip();
+			if (why != null) { help(why); return; }
+		} else if (!HomePlanet.confirmNo(this, "Offer " + source.name + " whole?\nHer crew, weapons, systems and cargo go with her.", "Offer the whole ship")) return;
 		for (Line l : new ArrayList<Line>(session.mine())) if (l.from.equals(source.id)) session.remove(l.n); // all of it goes with her now
 		Line l = Line.ship(0, sourceSave.getPlayerShipBlueprintId(), source.name, CargoBayUI.shipClass(sourceSave.getPlayerShip()));
 		session.add(mark(l, false));
 		help("Offered " + source.name + ", whole.");
+	}
+	/** Why the chosen source can't be boarded (or docked, if she's boarded) from here, or null if she can. */
+	private String whyNotBoardOrDock() {
+		if (source == null || source.isStorage()) return "Choose one of your ships under Offering From to board her";
+		if (session != null && session.exchanging()) return "Not while the exchange is under way";
+		if (!source.isBoarded() && sourceOfferedWhole()) return source.name + " is offered whole: take her back to board her";
+		if (!source.isBoarded() && sourceSave == null) return source.name + "'s save can't be read";
+		return null;
+	}
+	/**
+	 * Boards the chosen ship (the ship at your command is docked), or docks her if she's the one boarded: the Space
+	 * Dock's own Board and Dock, FTL's check and all. What's offered from either ship stays (the station finds a ship's
+	 * save wherever she is), but your acceptance is withdrawn: accept again, once FTL is in order.
+	 */
+	private void boardOrDock() {
+		String why = whyNotBoardOrDock();
+		if (why != null) { help(why + "."); return; }
+		Ship s = source;
+		Ship before = Vault.get().boarded();
+		if (s.isBoarded()) {
+			if (!dockFromHere()) return;
+			help(s.name + " is docked. No ship is at your command.");
+			return;
+		}
+		if (!HomePlanet.confirmNo(this, "Board " + s.name + "?" + (before != null ? "\n" + before.name + " is docked." : ""), "Board Ship")) return;
+		withdrawMine();
+		boolean ok = parent.spaceDock.board(s); // docks the boarded ship, boards this one, redraws the Space Dock
+		readSource();
+		refreshAll();
+		if (ok) help("Boarded " + s.name + "." + (before != null ? " " + before.name + " is docked." : ""));
+	}
+	/** Docks the ship at your command with the Space Dock's own Dock. False if she wasn't (it said why). */
+	private boolean dockFromHere() {
+		withdrawMine();
+		boolean ok = parent.spaceDock.dock();
+		readSource();
+		refreshAll();
+		return ok;
+	}
+	/** A ship moving withdraws your acceptance: accepting again checks FTL's state once more. */
+	private void withdrawMine() {
+		if (session != null && session.iAccepted()) session.accept(false);
 	}
 	private void takeBack() {
 		if (session == null) return;
@@ -1054,9 +1110,16 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		offerSupplyBtn.setEnabled(open && availableSupply(supplyIdx) > 0);
 		for (int k = 0; k < 4; k++) offerBtns[k].setEnabled(open && myLists[k].selectedValue() != null);
 		takeBackBtn.setEnabled(open && myOffer.selectedValue() != null);
-		String noShip = whyNotShip();
+		String noShip = whyNotShip(true);
 		offerShipBtn.setEnabled(open && noShip == null);
-		offerShipBtn.setToolTipText(noShip != null ? noShip : "Offer " + (source == null ? "her" : source.name) + " whole: her crew, weapons, systems and cargo go with her");
+		offerShipBtn.setToolTipText(noShip != null ? noShip : "Offer " + (source == null ? "her" : source.name) + " whole: her crew, weapons, systems and cargo go with her"
+				+ (source != null && source.isBoarded() ? " (she's docked first)" : ""));
+		String noBoard = whyNotBoardOrDock();
+		boolean ship = source != null && !source.isStorage();
+		boardBtn.setText(ship && source.isBoarded() ? "Dock" : "Board");
+		boardBtn.setEnabled(noBoard == null);
+		boardBtn.setToolTipText(noBoard != null ? noBoard : source.isBoarded() ? "Dock " + source.name + " at the Space Dock (no ship at your command)"
+				: "Take command of " + source.name + (Vault.get().boarded() != null ? " (" + Vault.get().boarded().name + " is docked)" : ""));
 		clearBtn.setEnabled(open && session.mine().size() > 0);
 		acceptBtn.setEnabled(session != null && !session.isOver() && !session.exchanging() && (session.iAccepted() || session.whyNotAccept() == null));
 		disconnectBtn.setEnabled(session != null);
