@@ -1220,7 +1220,9 @@ public final class Vault {
 		/** Sold to the Federation museum after a final victory: her price was paid, so she doesn't come back. */
 		MUSEUM,
 		/** Traded in or auctioned off from the Junkyard: she was paid for, so she doesn't come back. */
-		SOLD
+		SOLD,
+		/** Traded to another commander's fleet over Long Range Comm. (or on her way, in escrow): she flies for them now. */
+		TRANSFERRED
 	}
 	private static final String FATE_FILE = "fate.txt";
 	private void recordFate(Ship s, Fate fate) {
@@ -1252,7 +1254,7 @@ public final class Vault {
 			try {
 				String[] lines = new String(SafeFiles.read(fate), java.nio.charset.StandardCharsets.UTF_8).split("\n");
 				Fate f = Fate.valueOf(lines[0].trim());
-				if (f == Fate.SCRAPPED || f == Fate.MUSEUM || f == Fate.SOLD) continue;
+				if (f == Fate.SCRAPPED || f == Fate.MUSEUM || f == Fate.SOLD || f == Fate.TRANSFERRED) continue; // a traded ship brought back would be in two fleets
 				File[] saves = d.listFiles(new java.io.FileFilter() { public boolean accept(File x) { return x.isFile() && x.getName().endsWith(".sav"); } });
 				if (saves == null || saves.length == 0) continue;
 				java.util.Arrays.sort(saves, OLDEST_FIRST);
@@ -1295,6 +1297,149 @@ public final class Vault {
 		saveManifest();
 		HistoryLog.entry("RESTORE", s.name + "  history/" + s.id + "/" + version.getName() + " -> " + (s.isBoarded() ? "continue.sav" : s.state.key + "/" + s.id + ".sav"));
 	}
+
+	// ---- Long Range Comm.: ships that change hands ----
+
+	/** What travels with a ship: her save, her voyage log and its last look, and her last trade mark. */
+	static final String[] PACKAGE = {"ship.sav", VoyageLog.LOG, VoyageLog.LAST, TradeMark.FILE, "papers.txt"};
+	private static final int PACKAGE_MAX = 16 * 1024 * 1024;
+
+	/** A docked ship's package for another station (a zip of {@link #PACKAGE}). */
+	public synchronized byte[] packageOf(Ship s) throws IOException {
+		java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+		java.util.zip.ZipOutputStream z = new java.util.zip.ZipOutputStream(bo);
+		try {
+			File[] files = {fileOf(s), new File(historyOf(s), VoyageLog.LOG), new File(historyOf(s), VoyageLog.LAST), new File(historyOf(s), TradeMark.FILE)};
+			for (int i = 0; i < files.length; i++) {
+				if (!files[i].isFile()) { if (i == 0) throw new IOException(s.name + "'s save is missing"); continue; }
+				z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE[i]));
+				z.write(SafeFiles.read(files[i]));
+				z.closeEntry();
+			}
+			// her papers: when she was first commissioned, carried through every trade
+			TradeMark old = TradeMark.of(this, s.id);
+			String commissioned = old != null && !old.commissioned.isEmpty() ? old.commissioned : homeplanet.parser.Museum.commissioned(this, s.id);
+			java.util.Properties papers = new java.util.Properties();
+			papers.setProperty("commissioned", commissioned);
+			java.io.StringWriter pw = new java.io.StringWriter();
+			papers.store(pw, "Her papers");
+			z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE[4]));
+			z.write(pw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			z.closeEntry();
+		} finally {
+			z.close();
+		}
+		return bo.toByteArray();
+	}
+	/** A package's files by name: only the ones a package holds, each within its limit. */
+	public static Map<String, byte[]> unpack(byte[] pkg) throws IOException {
+		Map<String, byte[]> out = new LinkedHashMap<String, byte[]>();
+		java.util.zip.ZipInputStream z = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(pkg));
+		try {
+			int total = 0;
+			for (java.util.zip.ZipEntry e; (e = z.getNextEntry()) != null;) {
+				if (!java.util.Arrays.asList(PACKAGE).contains(e.getName()) || out.containsKey(e.getName())) throw new IOException("unexpected file " + e.getName() + " in a ship's package");
+				java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
+				byte[] buf = new byte[8192];
+				for (int n; (n = z.read(buf)) > 0;) {
+					b.write(buf, 0, n);
+					total += n;
+					if (total > PACKAGE_MAX) throw new IOException("a ship's package is too large");
+				}
+				out.put(e.getName(), b.toByteArray());
+			}
+		} finally {
+			z.close();
+		}
+		if (!out.containsKey(PACKAGE[0])) throw new IOException("a ship's package has no save in it");
+		return out;
+	}
+
+	/** She leaves the fleet in a trade's escrow: her save goes into her history, and her fate says where she went. */
+	public synchronized void sendAway(Ship s, String to) throws IOException {
+		if (s.state != Ship.State.DOCKED) throw new IOException(s.name + " isn't docked");
+		File f = fileOf(s);
+		if (f.isFile()) moveToHistory(s, f);
+		writeFate(s.id, Fate.TRANSFERRED, s.name, to);
+		ships.remove(s);
+		saveManifest();
+		HistoryLog.entry("SENT AWAY", s.name + " (" + s.id + ") to " + to + "'s fleet, over Long Range Comm.");
+	}
+	/** A trade with her in it was called off: she comes back docked, from her package (unless she's here already). */
+	public synchronized Ship comeBack(String id, byte[] pkg) throws IOException {
+		Ship here = byId(id);
+		if (here != null) return here;
+		byte[] sav = unpack(pkg).get(PACKAGE[0]);
+		Ship s = new Ship(id, "", Ship.State.DOCKED, true);
+		File to = fileOf(s);
+		SafeFiles.write(to, sav);
+		s.hash = SafeFiles.hash(to);
+		ships.add(s);
+		s.save();
+		if (s.name == null || s.name.isEmpty()) s.name = "Unknown ship";
+		new File(historyOf(s), FATE_FILE).delete();
+		saveManifest();
+		HistoryLog.entry("RETURNED", s.name + " (" + id + "): the trade was called off, and she is back at the Space Dock");
+		return s;
+	}
+	/** The trade went through: she flies for the other fleet now (her history stays here, as a record). */
+	public synchronized void transferred(String id, String name, String to) throws IOException {
+		Ship still = byId(id);
+		if (still != null && still.state == Ship.State.DOCKED) sendAway(still, to); // escrow didn't get as far as sending her
+		writeFate(id, Fate.TRANSFERRED, name, to);
+	}
+	private void writeFate(String id, Fate fate, String name, String detail) throws IOException {
+		File dir = new File(historyDir(), id);
+		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
+		SafeFiles.writeText(new File(dir, FATE_FILE), fate.name() + "\n" + name + "\n" + (detail == null ? "" : detail) + "\n", false);
+	}
+	/**
+	 * A ship arriving from another station, from her package: docked under a new id, her voyage log kept, a trade
+	 * mark (see {@link TradeMark}) naming the sender and her original owner, and set out at The Home Planet Station as
+	 * a newly commissioned ship is. A ship already received for this trade line isn't received twice.
+	 */
+	public synchronized Ship receive(byte[] pkg, SavedGameState gs, String tradeLine, String from) throws IOException {
+		for (Ship s : ships) {
+			TradeMark m = TradeMark.of(this, s.id);
+			if (m != null && m.trade.equals(tradeLine)) return s;
+		}
+		Map<String, byte[]> files = unpack(pkg);
+		Ship s = new Ship(newId(), gs.getPlayerShipName(), Ship.State.DOCKED, gs.isDLCEnabled());
+		File dir = historyOf(s);
+		try {
+			if (!dir.mkdirs()) throw new IOException("Could not create " + dir);
+			if (files.containsKey(VoyageLog.LOG)) SafeFiles.write(new File(dir, VoyageLog.LOG), files.get(VoyageLog.LOG));
+			if (files.containsKey(VoyageLog.LAST)) SafeFiles.write(new File(dir, VoyageLog.LAST), files.get(VoyageLog.LAST));
+			String original = TradeMark.originalIn(files.get(TradeMark.FILE));
+			String commissioned = papersCommissioned(files.get(PACKAGE[4]));
+			int sectors = VoyageLog.visited(this, s.id, gs);
+			SafeFiles.write(new File(dir, TradeMark.FILE), TradeMark.text(tradeLine, from, original == null ? from : original, commissioned, gs, sectors));
+			File f = fileOf(s);
+			SafeFiles.write(f, files.get(PACKAGE[0]));
+			s.hash = SafeFiles.hash(f);
+			ships.add(s);
+			setOut(s, gs, "Received from " + from + "'s fleet at The Home Planet Station");
+			homeplanet.parser.Museum.setCommissioned(this, s.id, commissioned); // her own date, not her arrival
+		} catch (IOException e) {
+			ships.remove(s);
+			fileOf(s).delete();
+			SafeFiles.deleteTree(dir);
+			try { saveManifest(); } catch (IOException again) { log.error("Could not write the manifest", again); }
+			throw e;
+		}
+		HistoryLog.entry("RECEIVED", s.name + " (" + s.id + ") from " + from + "'s fleet, over Long Range Comm.: docked");
+		return s;
+	}
+	/** The commission date a ship's papers give, or "". */
+	private static String papersCommissioned(byte[] papers) {
+		if (papers == null) return "";
+		java.util.Properties p = new java.util.Properties();
+		try { p.load(new java.io.StringReader(new String(papers, java.nio.charset.StandardCharsets.UTF_8))); } catch (IOException e) { return ""; }
+		String d = p.getProperty("commissioned", "").trim();
+		return d.length() > 40 ? "" : d;
+	}
+	/** Is a copy kept of her on the way to the last battle (a final battle not yet settled)? Such a ship stays in the fleet. */
+	public boolean finalBattlePending(Ship s) { return new File(historyOf(s), FINAL).isFile(); }
 
 	/** A ship just built (commissioned): written into the ships folder, docked. */
 	public synchronized Ship adopt(SavedGameState state) throws IOException {

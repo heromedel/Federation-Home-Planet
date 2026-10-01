@@ -257,6 +257,7 @@ public class MuseumUI extends JPanel {
 		switch (ex.status) {
 			case PRESERVED: t = "PRESERVED IN THE MUSEUM"; c = GOLD; break;
 			case IN_SERVICE: t = "STILL IN SERVICE"; c = GREEN; break;
+			case TRANSFERRED: t = "TRANSFERRED TO ANOTHER FLEET"; c = SILVER; break;
 			case LOST: t = "LOST IN ACTION" + (ex.lostSector > 0 ? ", SECTOR " + ex.lostSector : ""); c = SILVER; break;
 			case MEMORIAL: t = "LOST IN ACTION" + (ex.lostSector > 0 ? ", SECTOR " + ex.lostSector : ""); c = SILVER; break;
 			default: t = "HONOURED IN MEMORY"; c = SILVER;
@@ -404,6 +405,12 @@ public class MuseumUI extends JPanel {
 	private void record(JPanel p, Museum.Exhibit ex, SavedGameState gs) {
 		heading(p, "Service record");
 		if (!ex.get("commissioned").isEmpty()) row(p, "Commissioned", ex.get("commissioned"));
+		homeplanet.vault.TradeMark mark = homeplanet.vault.TradeMark.of(Vault.get(), ex.id);
+		if (mark != null) {
+			row(p, "Original owner", mark.original);
+			if (!mark.from.equals(mark.original)) row(p, "Received from", mark.from);
+		}
+		if (!ex.get("transferredTo").isEmpty()) row(p, "Transferred to", ex.get("transferredTo") + "'s fleet");
 		List<String[]> vd = ex.victoryDetails();
 		if (ex.victor) {
 			String[] last = vd.isEmpty() ? null : vd.get(vd.size() - 1);

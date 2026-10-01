@@ -41,7 +41,10 @@ it does and CREDITS.md for where the code came from.
 ## Layout
 
 - `src/main/java/homeplanet/`: the program. `core` (startup, config, Slipstream, music), `ui` (windows),
-  `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`.
+  `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
+  Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`).
+- **Traded ships:** anything that rewards or reacts to what a ship has done (events, rewards, letters, achievements)
+  counts only what she did since her last trade: ask `homeplanet.vault.TradeMark`. Displays keep her whole life.
 - `src/main/java/net/blerf/ftl`, `net/vhati`: Vhati's save parser and ftl.dat reader (GPL, lightly extended;
   each changed file says so at the top).
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
@@ -65,8 +68,8 @@ scratchpad, never in the repo. Then, after building the jar:
 
     "Tools and Harness/harness2/run.sh" /path/to/folder-with-ftl.dat
 
-It builds a fresh test world from ftl.dat alone (WorldT), then runs VaultT, RoundT, PicT, DesT and CommT on copies
-of it. Every test should print ALL PASSED, and RoundT "0 differ, 0 unreadable". Scratch goes in
+It builds a fresh test world from ftl.dat alone (WorldT), then runs VaultT, RoundT, PicT, DesT, CommT and the rest on
+copies of it (LinkT runs a second station in its own process, over localhost). Every test should print ALL PASSED, and RoundT "0 differ, 0 unreadable". Scratch goes in
 `harness2/work/` (ignored). The converter tests (ConvT, StoT) run only when old Homeworld saves and program
 folder are passed as the 2nd and 3rd arguments.
 
