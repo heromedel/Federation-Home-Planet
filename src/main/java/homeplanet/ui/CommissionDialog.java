@@ -62,6 +62,10 @@ public class CommissionDialog extends JDialog {
 	private final JTextField nameField = new JTextField(18);
 	private final JComboBox<String> difficulty = new JComboBox<String>(new String[] {"Easy", "Normal", "Hard"});
 	private final Random rng = new Random();
+	/** Her starting crew as previewed (names and looks): the crew she's built with. Rolled when a ship is chosen. */
+	private List<net.blerf.ftl.parser.SavedGameParser.CrewState> crew = null;
+	private String crewFor = null;
+	private final JButton newNames = new JButton("New crew names");
 	/** HR2: her price, under the name and difficulty (hidden when commissioning is free). */
 	private final JLabel priceLabel = new JLabel(" ");
 	private homeplanet.vault.Ship made = null;
@@ -128,6 +132,15 @@ public class CommissionDialog extends JDialog {
 		difficulty.setToolTipText("How dangerous her first journey will be");
 		difficulty.setSelectedIndex(1); // Normal, as FTL starts
 		form.add(difficulty, c);
+		c.gridx = 0; c.gridy = 1; c.gridwidth = 4;
+		newNames.setToolTipText("Roll new names for her starting crew (click a name in the preview to choose one yourself)");
+		newNames.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent ev) {
+			Entry sel = list.getSelectedValue();
+			if (sel == null || sel.header()) return;
+			crewFor = null;
+			showPreview(sel);
+		}});
+		form.add(newNames, c);
 
 		JPanel right = new JPanel(new BorderLayout(0, 6));
 		preview.setPreferredSize(new Dimension(520, 440));
@@ -310,11 +323,19 @@ public class CommissionDialog extends JDialog {
 	/** The same report the Info button shows, for the ship as she'd be commissioned. */
 	private void showPreview(Entry e) {
 		ShipBlueprint bp = DataManager.get().getShip(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id);
-		nameField.setText(RELIEF.equals(e.id) ? "Federation Relief" : defaultName(bp));
+		boolean another = !e.id.equals(previewFor);
+		if (another) nameField.setText(RELIEF.equals(e.id) ? "Federation Relief" : defaultName(bp)); // a new crew roll keeps the name typed
+		previewFor = e.id;
 		preview.removeAll();
 		try {
 			SavedGameState s = make(e.id, nameField.getText(), Difficulty.EASY, new Random(0));
-			JPanel p = dock.shipSummaryPanel(s);
+			if (e.id.equals(crewFor)) Commission.sameCrew(s.getPlayerShip(), crew);
+			else { s = make(e.id, nameField.getText(), Difficulty.EASY, rng); crew = SaveHelper.getOwnCrew(s.getPlayerShip()); crewFor = e.id; }
+			final Entry shown = e;
+			final List<net.blerf.ftl.parser.SavedGameParser.CrewState> aboard = SaveHelper.getOwnCrew(s.getPlayerShip());
+			JPanel p = dock.shipSummaryPanel(s, new java.util.function.Consumer<net.blerf.ftl.parser.SavedGameParser.CrewState>() {
+				public void accept(net.blerf.ftl.parser.SavedGameParser.CrewState c) { renameCrew(shown, aboard.indexOf(c), c); }
+			});
 			JLabel stats = new JLabel("<html>" + classOf(bp) + ": hull " + bp.getHealth().amount + ", reactor "
 					+ s.getPlayerShip().getReservePowerCapacity() + ", " + (bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots())
 					+ " weapon slots, " + (bp.getDroneSlots() == null ? 3 : bp.getDroneSlots()) + " drone slots</html>");
@@ -331,6 +352,16 @@ public class CommissionDialog extends JDialog {
 		}
 		preview.revalidate();
 		preview.repaint();
+	}
+
+	private String previewFor = null;
+	/** Clicking a crew member's name in the preview: her name in the crew she'll be built with. */
+	private void renameCrew(Entry e, int i, net.blerf.ftl.parser.SavedGameParser.CrewState shown) {
+		if (crew == null || i < 0 || i >= crew.size()) return;
+		String name = SpaceDockUI.promptForName("New name for " + shown.getName() + " (" + homeplanet.model.Crew.raceTitle(shown) + "):", "Rename Crew", shown.getName());
+		if (name == null) return;
+		crew.get(i).setName(name);
+		showPreview(e);
 	}
 
 	/** HR2: her price as built, with a custom design's rooms and doors. */
@@ -357,6 +388,7 @@ public class CommissionDialog extends JDialog {
 		SavedGameState s;
 		try {
 			s = make(e.id, name, chosenDifficulty(), rng);
+			if (e.id.equals(crewFor)) Commission.sameCrew(s.getPlayerShip(), crew); // the crew in the preview, as named there
 		} catch (Exception ex) {
 			HomePlanet.showErrorDialog("The shipyard could not build her:\n" + ex);
 			return;

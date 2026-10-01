@@ -1139,7 +1139,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** The tallest a ship's picture is drawn in her report. */
 	private static final int REPORT_PIC_H = 200;
 
-	public JPanel shipSummaryPanel(SavedGameState sgs) {
+	public JPanel shipSummaryPanel(SavedGameState sgs) { return shipSummaryPanel(sgs, null); }
+	/** As {@link #shipSummaryPanel(SavedGameState)}; with {@code rename}, clicking a crew member's name asks for a new one (Commission). */
+	public JPanel shipSummaryPanel(SavedGameState sgs, final java.util.function.Consumer<CrewState> rename) {
 		ShipState state = sgs.getPlayerShip();
 		JPanel p = new JPanel(new java.awt.BorderLayout(18, 4));
 		ShipBlueprint ship = blueprintOf(sgs.getPlayerShipBlueprintId());
@@ -1170,8 +1172,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		reportRow(left, IconFactory.supplyIcon("drones"), "Drone Parts: " + state.getDronePartsAmt());
 		reportRow(left, IconFactory.supplyIcon("scrap"), "Scrap: " + state.getScrapAmt());
 		reportHeading(crew, "Crew");
-		for (CrewState c : SaveHelper.getOwnCrew(state)) {
-			reportRow(crew, IconFactory.crewIcon(c), c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")");
+		for (final CrewState c : SaveHelper.getOwnCrew(state)) {
+			JLabel row = reportRow(crew, IconFactory.crewIcon(c), c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")");
+			if (rename == null) continue;
+			row.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+			row.setToolTipText("Click to rename " + c.getName());
+			row.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { rename.accept(c); } });
 		}
 		reportHeading(right, "Weapons");
 		for (WeaponState w : state.getWeaponList()) reportRow(right, IconFactory.itemIcon(w.getWeaponId()), Items.weaponTitle(w.getWeaponId()));
@@ -1228,11 +1234,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.add(Box.createRigidArea(new Dimension(0, 6)));
 		p.add(shadowLabel(text, null, true));
 	}
-	private static void reportRow(JPanel p, javax.swing.Icon icon, String text) {
+	private static JLabel reportRow(JPanel p, javax.swing.Icon icon, String text) {
 		JLabel l = new JLabel(text, icon, JLabel.LEFT);
 		l.setIconTextGap(6);
 		l.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, (icon == null ? 40 : 34 - icon.getIconWidth()), 1, 0));
 		l.setAlignmentX(LEFT_ALIGNMENT);
 		p.add(l);
+		return l;
 	}
 }

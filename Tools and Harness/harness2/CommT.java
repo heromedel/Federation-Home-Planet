@@ -21,6 +21,7 @@ public class CommT { public static void main(String[] a) throws Exception {
  }
  Setup.chk(ok + " ships commissioned and read back (" + bad + " failed)", bad == 0 && ok >= 28);
  setOut(v);
+ crewNamed();
  Setup.done();
 } /** A ship just commissioned counts as at The Home Planet Station (the station rule) until she leaves her first beacon. */
  static void setOut(Vault v) throws Exception {
@@ -36,5 +37,20 @@ public class CommT { public static void main(String[] a) throws Exception {
   SaveHelper.writeSavedGame(v.continueFile(), c); v.boarded().invalidate(); v.takeStock();
   Setup.chk("O: once she jumps, the station rule applies again", !v.mayTrade(v.boarded()));
   HomePlanet.storeRequirement = was;
+ }
+ /** The crew chosen (and renamed) in the Commission preview is the crew she's built with, her starting-crew record too. */
+ static void crewNamed() throws Exception {
+  SavedGameState pick = Commission.build("PLAYER_SHIP_HARD", "Preview", net.blerf.ftl.constants.Difficulty.EASY, new Random(11));
+  List<CrewState> chosen = SaveHelper.getOwnCrew(pick.getPlayerShip());
+  chosen.get(0).setName("Lucky Duck");
+  SavedGameState built = Commission.build("PLAYER_SHIP_HARD", "Built", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(12));
+  Commission.sameCrew(built.getPlayerShip(), chosen);
+  File f = File.createTempFile("named", ".sav"); SaveHelper.writeSavedGame(f, built);
+  SavedGameState back = HomePlanet.savedGameParser.readSavedGame(f); f.delete();
+  List<CrewState> got = SaveHelper.getOwnCrew(back.getPlayerShip());
+  boolean same = got.size() == chosen.size();
+  for (int i = 0; same && i < got.size(); i++) same = got.get(i).getName().equals(chosen.get(i).getName()) && got.get(i).getSpriteTintIndeces().equals(chosen.get(i).getSpriteTintIndeces());
+  boolean record = false; for (StartingCrewState sc : back.getPlayerShip().getStartingCrewList()) if ("Lucky Duck".equals(sc.getName())) record = true;
+  Setup.chk("N: the previewed crew, renamed, is the crew she's built with (and her starting-crew record)", same && record);
  }
 }

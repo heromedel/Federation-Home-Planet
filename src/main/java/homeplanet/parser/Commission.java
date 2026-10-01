@@ -288,6 +288,24 @@ public class Commission {
 		}
 	}
 
+	/**
+	 * Gives a new ship the crew chosen for her (the Commission preview's: names, and looks), member by member, where
+	 * the races match. Her starting-crew record (FTL's end-of-game screen) takes the names too.
+	 */
+	public static void sameCrew(ShipState ship, List<CrewState> chosen) {
+		if (chosen == null) return;
+		List<CrewState> mine = SaveHelper.getOwnCrew(ship);
+		for (int i = 0; i < mine.size() && i < chosen.size(); i++) {
+			CrewState c = mine.get(i), from = chosen.get(i);
+			if (c.getRace() != from.getRace()) continue;
+			String old = c.getName();
+			c.setName(from.getName());
+			c.setMale(from.isMale());
+			c.setSpriteTintIndeces(new ArrayList<Integer>(from.getSpriteTintIndeces()));
+			for (StartingCrewState sc : ship.getStartingCrewList()) if (old.equals(sc.getName()) && sc.getRace() == c.getRace()) { sc.setName(from.getName()); break; }
+		}
+	}
+
 	/** A crew volunteer of this race (a reward), named and tinted as a new game's crew are, placed nowhere yet. Null for an unknown race. */
 	public static CrewState volunteer(String raceId, Random rng) {
 		CrewType race = CrewType.findById(raceId);
