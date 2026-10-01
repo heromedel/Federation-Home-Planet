@@ -50,6 +50,17 @@ public class ChainT { public static void main(String[] a) throws Exception {
  v.dock(); v.board(k);
  Setup.chk("C: a ship with crew launches as ever", HomePlanet.noOneAboard(v.continueFile()) == null);
 
+ // FTL closed and continue.sav gone: she's lost; a different ship in it afterwards is uncommissioned (no take-backs)
+ v.takeStock();
+ Ship was = v.boarded();
+ v.continueFile().delete();
+ v.reload();
+ Setup.chk("G: FTL closed, continue.sav gone: recorded lost", v.boarded() == null && new File(new File(v.historyDir(), was.id), "fate.txt").exists());
+ SavedGameParser.SavedGameState other = Commission.build("PLAYER_SHIP_STEALTH", "Somebody Else", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(9));
+ SaveHelper.writeSavedGame(v.continueFile(), other);
+ v.reload(); v.takeStock();
+ Setup.chk("G: another ship in continue.sav afterwards is an uncommissioned stranger", v.boarded() != null && v.boarded().stranger && !v.boarded().id.equals(was.id));
+
  // the paid claim, on the other branch (a fresh fleet's own letters)
  paidClaim(game, new File(work, "tool"));
  Setup.done();

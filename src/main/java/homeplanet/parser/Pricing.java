@@ -71,6 +71,8 @@ public final class Pricing {
 	/** One point of hull repaired in the Dry Dock: a flat 4 scrap, the top of FTL's store prices (The Federation charges a premium). */
 	public static final int HULL_REPAIR = 4;
 	public static int hullRepair() { return HULL_REPAIR; }
+	/** Mending one broken bar of a system, and sealing one hull breach, in the Dry Dock. */
+	public static final int SYSTEM_REPAIR = 5, BREACH_REPAIR = 5;
 
 	/** The price of the reactor's nth bar (1-based), as FTL's upgrade screen charges: 15 for bars 1-5, then 5 more every 5 bars (35 for 21-25). */
 	public static int reactorBar(int n) {
@@ -97,6 +99,65 @@ public final class Pricing {
 	public static int crew(String race) {
 		CrewBlueprint c = DataManager.get().getCrews().get(race);
 		return c == null ? 0 : Math.max(0, c.getCost());
+	}
+
+	/** FTL's store prices for one fuel, missile and drone part. */
+	public static final int FUEL = 3, MISSILE = 6, DRONE_PART = 8;
+	/** Trade In and Auction: each point of missing hull takes this much off her value. */
+	public static final int HULL_DAMAGE = 5;
+
+	/** What she's worth to a buyer, before her hull damage: as commissioned at full price (crew aside: they stay with the fleet), and her fuel, missiles and drone parts at store price. */
+	public static int saleValue(SavedGameState gs) {
+		ShipState s = gs.getPlayerShip();
+		int crew = 0;
+		for (CrewState c : SaveHelper.getOwnCrew(s)) crew += crew(c.getRace().getId());
+		return ship(gs, 100).subtotal - crew + s.getFuelAmt() * FUEL + s.getMissilesAmt() * MISSILE + s.getDronePartsAmt() * DRONE_PART;
+	}
+	/** Her missing hull points (her model's full hull, less what she has). */
+	public static int missingHull(ShipState s) {
+		net.blerf.ftl.xml.ShipBlueprint bp = DataManager.get().getShip(s.getShipBlueprintId());
+		int max = bp == null || bp.getHealth() == null ? s.getHullAmt() : bp.getHealth().amount;
+		return Math.max(0, max - s.getHullAmt());
+	}
+	/** Her broken system bars (each one mended in the Dry Dock for SYSTEM_REPAIR). */
+	public static int brokenBars(ShipState s) {
+		int n = 0;
+		for (SystemType t : SystemType.values()) { SystemState st = s.getSystem(t); if (st != null && st.getCapacity() > 0) n += st.getDamagedBars(); }
+		return n;
+	}
+	/** What a buyer takes off for her damage: 5 scrap a missing hull point, 5 a broken system bar and 5 a breach, as the Dry Dock would charge. */
+	public static int damage(ShipState s) {
+		return HULL_DAMAGE * missingHull(s) + SYSTEM_REPAIR * brokenBars(s) + BREACH_REPAIR * s.getBreachMap().size();
+	}
+	/** Systems a buyer won't do without: no Engines or Piloting and she can't fly, no Oxygen and no one can live aboard. */
+	public static final SystemType[] CORE = {SystemType.ENGINES, SystemType.PILOT, SystemType.OXYGEN};
+	/** Each core system she's missing takes this many points off what Trade In and Auction pay. */
+	public static final int CORE_PENALTY = 15;
+	/** The core systems she doesn't have installed, whatever her model or design: few buyers want a ship without them. */
+	public static List<SystemType> missingCore(ShipState s) {
+		List<SystemType> out = new ArrayList<SystemType>();
+		for (SystemType t : CORE) { SystemState st = s.getSystem(t); if (st == null || st.getCapacity() <= 0) out.add(t); }
+		return out;
+	}
+	/** Trade In: half her value (15 points less for each missing core system), less her damage (never below 0). */
+	public static int tradeIn(SavedGameState gs) {
+		int share = Math.max(5, 50 - CORE_PENALTY * missingCore(gs.getPlayerShip()).size());
+		return Math.max(0, saleValue(gs) * share / 100 - damage(gs.getPlayerShip()));
+	}
+	/** Auction (and a derelict's price): what the bidding starts from, her value less her damage (never below 0). */
+	public static int auctionBase(SavedGameState gs) {
+		return Math.max(0, saleValue(gs) - damage(gs.getPlayerShip()));
+	}
+	/** The lowest and highest share bidders offer: 25% to 75%, both 15 points less for each missing core system (never under 5%). */
+	public static int[] auctionRange(ShipState s) {
+		int k = CORE_PENALTY * missingCore(s).size();
+		return new int[] {Math.max(5, 25 - k), Math.max(5, 75 - k)};
+	}
+	/** The best bid at auction: within {@link #auctionRange} of {@link #auctionBase}, the same for the same save (bidders don't change their minds). */
+	public static int auction(SavedGameState gs, long seed) {
+		int[] r = auctionRange(gs.getPlayerShip());
+		int pct = r[0] + new java.util.Random(seed).nextInt(r[1] - r[0] + 1);
+		return auctionBase(gs) * pct / 100;
 	}
 
 	/** A priced list: its lines (for the player) and total, before and after the multiplier. */

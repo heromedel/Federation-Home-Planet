@@ -27,6 +27,7 @@ import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
+import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 import net.blerf.ftl.xml.ShipBlueprint;
 
@@ -103,7 +104,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
 		String title = "Docked Ships";
-		if (HomePlanet.immersiveMode) title += "  -  " + homeplanet.parser.UnlockGrants.rankName(homeplanet.parser.UnlockGrants.rank(homeplanet.parser.Unlocks.read())); // her captain's rank
 		if (HomePlanet.immersiveNotifications) {
 			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
 			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
@@ -263,7 +263,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String message = (lost.isEmpty() ? "" : lost + "\n")
 				+ "Uncommissioned ship detected.\n\n" + stranger.name + " was not commissioned by The Federation Home Planet: this save was not made in Immersive Mode.\n"
 				+ "What should be done with her?";
-		Object[] options = {"Send her to the normal Space Dock", "Decommission her", "Switch to normal mode now", "Close The Home Planet Station"};
+		Object[] options = {"Send her to the Sandbox fleet's Space Dock", "Decommission her", "Switch to Sandbox Mode now", "Close The Home Planet Station"};
 		int c = JOptionPane.showOptionDialog(null, message, "Uncommissioned ship", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
 		if (c == 3) { if (parent != null) parent.dispatchEvent(new java.awt.event.WindowEvent(parent, java.awt.event.WindowEvent.WINDOW_CLOSING)); return; }
 		if (c < 0) { deferredStrangers.add(stranger.id); init(); return; } // closed: asked again at the next start
@@ -275,18 +275,18 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			if (c == 0) {
 				v.sendToOtherFleet(stranger, false);
-				JOptionPane.showMessageDialog(null, stranger.name + " waits at the normal Space Dock.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(null, stranger.name + " waits at the Sandbox fleet's Space Dock.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
 			} else if (c == 1) {
 				Object[] how = {"Send her to the normal Junkyard", "Destroy her", "Cancel"};
 				int d = JOptionPane.showOptionDialog(null, "Decommission " + stranger.name + ":\n\n"
-						+ "Send her to the normal fleet's Junkyard, or destroy her? (A destroyed ship's last version stays in the station's records.)",
+						+ "Send her to the Sandbox fleet's Junkyard, or destroy her? (A destroyed ship's last version stays in the station's records.)",
 						"Decommission", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, how, how[2]);
 				if (d == 0) v.sendToOtherFleet(stranger, true);
 				else if (d == 1) v.remove(stranger, "DESTROY");
 				else { deferredStrangers.add(stranger.id); init(); return; }
 			} else {
 				ImmersiveDialog.leaveNow(stranger); // her fleet, rules and FTL profile: the normal ones
-				JOptionPane.showMessageDialog(null, "Immersive Mode is off. " + stranger.name + " is boarded in your normal fleet.\n"
+				JOptionPane.showMessageDialog(null, "Immersive Mode is off. " + stranger.name + " is boarded in your Sandbox fleet.\n"
 						+ "Your Immersive fleet is kept as it was.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
 			}
 		} catch (IOException e) {
@@ -728,7 +728,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "  - The Cargo Hold: its " + v.storageScrap() + " scrap, supplies, weapons, drones, augments, crew and stored systems\n"
 				+ (junk.isEmpty() ? "  - (the Junkyard is empty)\n" : "  - every hull in the Junkyard: " + hulls + "\n")
 				+ "\nIn exchange, The Federation Home Planet grants you a new command: " + homeplanet.parser.FreeCommand.words(homeplanet.parser.FreeCommand.onReport(v)) + ", free."
-				+ (v.immersive ? " (What you surrender is worth " + homeplanet.parser.FreeCommand.surrenderValue(v) + " scrap: " + homeplanet.parser.FreeCommand.KESTREL_FROM
+				+ (homeplanet.parser.FreeCommand.byValue(v) ? " (What you surrender is worth " + homeplanet.parser.FreeCommand.surrenderValue(v) + " scrap: " + homeplanet.parser.FreeCommand.KESTREL_FROM
 						+ " earns a Kestrel Type A, " + homeplanet.parser.FreeCommand.ANY_FROM + " any ship.)" : "") + "\n\n"
 				+ (HomePlanet.immersiveMode ? "This is final (Immersive Mode)."
 				: "The Home Planet Station keeps a record of what was surrendered. Until you take your new command,\n"
@@ -973,7 +973,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		int choice = JOptionPane.showOptionDialog(null, message, "New Journey", JOptionPane.DEFAULT_OPTION,
 				JOptionPane.WARNING_MESSAGE, null, options, options[3]); // Cancel is the default
 		if (choice < 0 || choice > 2) return;
-		int fee = HomePlanet.immersiveMode ? HomePlanet.JOURNEY_FEE : 0;
+		int fee = homeplanet.core.Economy.journeyFee();
 		if (fee > 0) {
 			int have = Vault.get().storageScrap();
 			if (have < fee) {
@@ -1035,17 +1035,34 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		String name = wreckShip.name;
-		if (HomePlanet.storeRequirement && !SaveHelper.isAtStation(wreck)) {
+		if (HomePlanet.storeRequirement && !SaveHelper.isAtStation(wreck) && !Vault.get().stillAtHomePlanet(wreckShip)) { // just set out at The Home Planet Station counts, as for trading
 			JOptionPane.showMessageDialog(null, name + " is not within range of a station.\n"
 					+ "The Home Planet Station cannot scrap her for supplies unless you salvage her and fly her to a beacon with a station first.", "Scrap Ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
-		String aboard = "Everything aboard will be moved to the Cargo Hold.\n";
-		if (HomePlanet.scrapKeepsSystems) {
-			aboard = "Everything aboard, including her systems, will be moved to the Cargo Hold.\n" + SystemsPanel.scrapPreview(wreck.getPlayerShip());
+		// stripping her systems, where allowed, costs a fee for each, paid from the Cargo Hold and her own scrap together
+		int systems = homeplanet.core.Economy.stripAllowed() ? SystemsPanel.strippable(wreck.getPlayerShip()) : 0;
+		final int stripCost = systems * homeplanet.core.Economy.stripFee();
+		final boolean strip;
+		if (systems > 0) {
+			int have = Vault.get().storageScrap() + wreck.getPlayerShip().getScrapAmt();
+			String fee = stripCost == 0 ? "free of charge" : "for " + stripCost + " scrap (" + homeplanet.core.Economy.stripFee() + " a system), paid from the Cargo Hold";
+			String message = "Strip " + name + " for parts?\n\nWeapons, drones, augments, cargo, supplies and crew will be moved to the Cargo Hold.\n"
+					+ "Her systems can be stripped too, " + fee + ":\n" + SystemsPanel.scrapPreview(wreck.getPlayerShip())
+					+ (stripCost > have ? "The Cargo Hold and her own scrap come to " + have + ": not enough to strip her systems.\n" : "")
+					+ "\nThe hull will be broken up and can never be recovered.";
+			Object[] options = stripCost > have ? new Object[] {"Scrap, systems lost", "Cancel"}
+					: new Object[] {stripCost == 0 ? "Scrap and strip" : "Scrap and strip (" + stripCost + ")", "Scrap, systems lost", "Cancel"};
+			int c = JOptionPane.showOptionDialog(null, message, "Scrap Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[options.length - 1]);
+			if (c < 0 || c == options.length - 1) return;
+			strip = options.length == 3 && c == 0;
+		} else {
+			String aboard = "Everything aboard will be moved to the Cargo Hold. Her systems are lost with the hull"
+					+ (homeplanet.core.Economy.stripAllowed() ? " (none of them can be stored).\n" : ".\n");
+			if (!confirmIrreversible("Scrap Ship", "Strip " + name + " for parts?\n\n" + aboard
+					+ "The hull will be broken up and can never be recovered.", "Scrap")) return;
+			strip = false;
 		}
-		if (!confirmIrreversible("Scrap Ship", "Strip " + name + " for parts?\n\n" + aboard
-				+ "The hull will be broken up and can never be recovered.", "Scrap")) return;
 		List<String> scrapped;
 		try {
 			Vault vault = Vault.get();
@@ -1078,7 +1095,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				if (SaveHelper.hasBody(c) && SaveHelper.placeCrew(to, c, true)) to.getCrewList().add(c);
 			}
 			Vault.Transaction tx = vault.begin().put(storageShip, storage, storageCopy.hash);
-			if (HomePlanet.scrapKeepsSystems) scrapped.addAll(SystemsPanel.scrapSystems(from, tx));
+			if (strip) {
+				scrapped.addAll(SystemsPanel.scrapSystems(from, tx));
+				if (stripCost > 0) {
+					if (to.getScrapAmt() < stripCost) throw new IOException("the Cargo Hold holds " + to.getScrapAmt() + " scrap, short of the " + stripCost + " stripping costs");
+					to.setScrapAmt(to.getScrapAmt() - stripCost);
+					scrapped.add("- " + stripCost + " scrap (stripping her systems)");
+				}
+			}
 			tx.commit();
 			try {
 				vault.remove(wreckShip, null); // logged below, with what came off her
@@ -1095,6 +1119,124 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		HistoryLog.entry("SCRAP", name + " stripped into storage, hull broken up", scrapped);
 		init();
+	}
+	/**
+	 * Trade In (half her value, less her hull damage) or Auction (a quarter to three quarters of her value, less her hull
+	 * damage, the same bid for the same save): her scrap and crew go to the Cargo Hold, the payment with them, and
+	 * she leaves the fleet with everything else aboard.
+	 */
+	void sellShip(Ship ship, boolean auction) {
+		SavedGameState gs = ship.save();
+		if (gs == null) {
+			HomePlanet.showErrorDialog("The Home Planet Station can't read " + ship.name + "'s save, so she can't be sold:\n" + ship.readError());
+			return;
+		}
+		String name = ship.name;
+		if (HomePlanet.storeRequirement && !SaveHelper.isAtStation(gs) && !Vault.get().stillAtHomePlanet(ship)) { // as Scrap: a store, or not yet gone from The Home Planet Station
+			JOptionPane.showMessageDialog(null, name + " is not within range of a station.\n"
+					+ "Buyers only come to a beacon with a store. Salvage her and fly her to one first.", auction ? "Auction" : "Trade In", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		ShipState from = gs.getPlayerShip();
+		int value = homeplanet.parser.Pricing.saleValue(gs), missing = homeplanet.parser.Pricing.missingHull(from), broken = homeplanet.parser.Pricing.brokenBars(from);
+		int damage = homeplanet.parser.Pricing.damage(from);
+		int breaches = from.getBreachMap().size();
+		List<String> parts = new java.util.ArrayList<String>();
+		if (missing > 0) parts.add(missing + " points of missing hull");
+		if (broken > 0) parts.add(broken + (broken == 1 ? " broken system bar" : " broken system bars"));
+		if (breaches > 0) parts.add(breaches + (breaches == 1 ? " breach" : " breaches"));
+		List<SystemType> core = homeplanet.parser.Pricing.missingCore(from);
+		String coreNote = "";
+		if (!core.isEmpty()) {
+			List<String> names = new java.util.ArrayList<String>();
+			for (SystemType t : core) names.add(DryDockShop.systemTitle(t.getId()));
+			coreNote = "No " + String.join(" or ", names) + ": buyers pay " + homeplanet.parser.Pricing.CORE_PENALTY * core.size() + " points less.\n";
+		}
+		String hurt = parts.size() <= 1 ? (parts.isEmpty() ? "" : parts.get(0))
+				: String.join(", ", parts.subList(0, parts.size() - 1)) + " and " + parts.get(parts.size() - 1);
+		final int price;
+		String message;
+		if (auction) {
+			long seed = 0;
+			try { seed = java.util.Arrays.hashCode(SafeFiles.read(ship.file())) * 31L + ship.id.hashCode(); } catch (IOException e) { seed = ship.id.hashCode(); }
+			price = homeplanet.parser.Pricing.auction(gs, seed);
+			int base = homeplanet.parser.Pricing.auctionBase(gs);
+			message = "Put " + name + " up for auction?\n\n"
+					+ "Her value: " + value + " scrap" + (damage > 0 ? ", less " + damage + " for " + hurt + ": " + base : "") + ".\n"
+					+ coreNote
+					+ "Bidders will offer between " + homeplanet.parser.Pricing.auctionRange(from)[0] + "% and " + homeplanet.parser.Pricing.auctionRange(from)[1] + "% of that ("
+					+ base * homeplanet.parser.Pricing.auctionRange(from)[0] / 100 + " to " + base * homeplanet.parser.Pricing.auctionRange(from)[1] / 100 + " scrap).\n"
+					+ "The Home Planet Station accepts the highest bid automatically: once the auction is held, she is sold.\n\n";
+		} else {
+			price = homeplanet.parser.Pricing.tradeIn(gs);
+			int share = Math.max(5, 50 - homeplanet.parser.Pricing.CORE_PENALTY * core.size());
+			message = "The Federation Home Planet's shipyard offers " + price + " scrap for " + name + " in trade:\n"
+					+ (share == 50 ? "half her value of " : share + "% of her value of ") + value + " scrap" + (damage > 0 ? ", less " + damage + " for " + hurt : "") + ".\n"
+					+ coreNote + "\n";
+		}
+		int crew = SaveHelper.getOwnCrew(from).size();
+		message += "Her scrap (" + from.getScrapAmt() + ")" + (crew > 0 ? " and crew (" + crew + ")" : "") + " go to the Cargo Hold first, with the payment.\n"
+				+ "Her fuel, missiles, drone parts, weapons, drones, augments, cargo and systems go with her.\nShe leaves the fleet for good.";
+		if (!confirmIrreversible(auction ? "Auction" : "Trade In", message, auction ? "Hold Auction" : "Trade In")) return;
+		try {
+			Vault vault = Vault.get();
+			Ship storageShip = vault.storage();
+			Vault.Copy storageCopy;
+			try { storageCopy = vault.readCopy(storageShip); } catch (IOException e) { throw new IOException("The Cargo Hold can't be read: " + e.getMessage()); }
+			SavedGameState storage = storageCopy.save;
+			File storageFile = storageShip.file();
+			byte[] storageBefore = SafeFiles.read(storageFile);
+			ShipState to = storage.getPlayerShip();
+			to.setScrapAmt(to.getScrapAmt() + from.getScrapAmt() + price);
+			for (CrewState c : SaveHelper.getOwnCrew(from)) {
+				if (SaveHelper.hasBody(c) && SaveHelper.placeCrew(to, c, true)) to.getCrewList().add(c);
+			}
+			vault.begin().put(storageShip, storage, storageCopy.hash).commit();
+			try {
+				vault.remove(ship, null, Vault.Fate.SOLD);
+			} catch (IOException e) {
+				SafeFiles.write(storageFile, storageBefore); // she's still in the Junkyard: the hold mustn't keep her scrap and crew too
+				storageShip.invalidate();
+				throw e;
+			}
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The sale of " + name + " was called off. Nothing was changed:\n" + e);
+			return;
+		}
+		HistoryLog.entry("SELL", name + (auction ? " sold at auction" : " traded in") + " for " + price + " scrap; her scrap and crew to the Cargo Hold");
+		if (auction) {
+			int base = homeplanet.parser.Pricing.auctionBase(gs);
+			Object[] accept = {"Accept Bid"};
+			JOptionPane.showOptionDialog(null, "The auction is over. The highest bid for " + name + ": " + price + " scrap"
+					+ (base > 0 ? " (" + (price * 100 / base) + "% of her value)" : "") + ".\n\n" + price + " scrap, her own scrap and her crew are in the Cargo Hold.",
+					"Auction", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, accept, accept[0]);
+		} else {
+			JOptionPane.showMessageDialog(null, name + " is traded in. " + price + " scrap is in the Cargo Hold.", "Trade In", JOptionPane.INFORMATION_MESSAGE);
+		}
+		init();
+	}
+	/** A junked ship in a few lines, for the Junkyard list's tooltip: her class, hull, crew, what's wrong, and what she'd sell for. */
+	private static String junkTip(Ship ship) {
+		SavedGameState gs = ship.save();
+		if (gs == null) return ship.name + ": her save can't be read";
+		ShipState s = gs.getPlayerShip();
+		int max = SystemsPanel.maxHull(s), crew = SaveHelper.getOwnCrew(s).size(), broken = homeplanet.parser.Pricing.brokenBars(s), breaches = s.getBreachMap().size();
+		StringBuilder sb = new StringBuilder("<html><b>").append(homeplanet.parser.XmlText.text(gs.getPlayerShipName())).append("</b>, ")
+				.append(homeplanet.parser.XmlText.text(CargoBayUI.shipClass(s))).append("<br>Hull ").append(s.getHullAmt()).append(" / ").append(max)
+				.append(", crew ").append(crew).append(", scrap ").append(s.getScrapAmt());
+		if (broken > 0 || breaches > 0) sb.append("<br>").append(broken).append(broken == 1 ? " broken bar" : " broken bars").append(", ").append(breaches).append(breaches == 1 ? " breach" : " breaches");
+		java.util.List<SystemType> core = homeplanet.parser.Pricing.missingCore(s);
+		if (!core.isEmpty()) {
+			java.util.List<String> names = new java.util.ArrayList<String>();
+			for (SystemType t : core) names.add(DryDockShop.systemTitle(t.getId()));
+			sb.append("<br>Missing: ").append(String.join(", ", names));
+		}
+		sb.append("<br>Trade In: ").append(homeplanet.parser.Pricing.tradeIn(gs)).append(" scrap</html>");
+		return sb.toString();
+	}
+	/** The foreman's derelicts for sale. */
+	void browseDerelicts() {
+		if (DerelictsDialog.open(this)) init();
 	}
 	/** Removes a junked ship for good (her last save stays in her history folder). */
 	void destroyShip(Ship ship) {
@@ -1113,7 +1255,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void salvageShip() {
 		List<Ship> junk = Vault.get().junked();
 		if (junk.isEmpty()) {
-			JOptionPane.showMessageDialog(null, "The Junkyard is empty. Nothing left to salvage.", "Salvage Ship", JOptionPane.INFORMATION_MESSAGE);
+			Object[] opts = {"Browse derelicts...", "Close"};
+			if (JOptionPane.showOptionDialog(null, "None of your ships are in the Junkyard. The foreman has some derelicts for sale, though.", "Salvage Ship",
+					JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[1]) == 0) browseDerelicts();
 			return;
 		}
 		String[] names = new String[junk.size()];
@@ -1123,18 +1267,49 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		panel.add(new JLabel("<html>The Junkyard foreman awaits your orders. Choose a hull and what's to be done with her:<br><br>"
 				+ "<b>Salvage:</b> haul her back to the Space Dock, crew and cargo intact.<br>"
 				+ "<b>Scrap:</b> strip her down. Weapons, drones, augments, cargo, supplies and crew"
-				+ (HomePlanet.scrapKeepsSystems ? ", and her optional systems," : "") + " are sent to<br>"
-				+ "the Cargo Hold, and the hull is broken up for good.<br>"
+				+ (homeplanet.core.Economy.stripAllowed() ? ", and her optional systems<br>if you pay to strip them," : "") + " are sent to "
+				+ (homeplanet.core.Economy.stripAllowed() ? "" : "<br>") + "the Cargo Hold, and the hull is broken up for good.<br>"
+				+ "<b>Trade In:</b> The Federation Home Planet's shipyard takes her for half her value, less her damage (less still without Engines, Piloting or Oxygen).<br>"
+				+ "<b>Auction:</b> sell her to the highest bidder: a quarter to three quarters of her value, less her damage.<br>"
+				+ "&nbsp;&nbsp;&nbsp;&nbsp;(Selling her sends her scrap and crew to the Cargo Hold; all else goes with her.)<br>"
+				+ "<b>Derelicts:</b> see the hulls the foreman has for sale.<br>"
 				+ "<b>Destroy:</b> reduce her to space debris, with everything aboard. Nothing is recovered,<br>"
 				+ "and her crew are retired from service.<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
-		panel.add(pick, java.awt.BorderLayout.CENTER);
-		Object[] options = {"Salvage", "Scrap", "Destroy", "Cancel"};
+		// each hull's short report as the list's tooltip; Info... opens her full report
+		final String[] tips = new String[junk.size()];
+		for (int i = 0; i < tips.length; i++) tips[i] = junkTip(junk.get(i));
+		pick.setRenderer(new javax.swing.DefaultListCellRenderer() {
+			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
+				java.awt.Component c = super.getListCellRendererComponent(list, value, index, selected, focus);
+				if (selected && index >= 0 && index < tips.length) list.setToolTipText(tips[index]);
+				return c;
+			}
+		});
+		pick.setToolTipText(tips[0]);
+		pick.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { int i = pick.getSelectedIndex(); if (i >= 0) pick.setToolTipText(tips[i]); } });
+		JButton info = new JButton("Info...");
+		info.setToolTipText("Her report: what's aboard, her crew, her systems");
+		info.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				SavedGameState gs = junk.get(pick.getSelectedIndex()).save();
+				if (gs == null) { HomePlanet.showErrorDialog("Her save can't be read: " + junk.get(pick.getSelectedIndex()).readError()); return; }
+				JOptionPane.showMessageDialog(info, fitToScreen(shipSummaryPanel(gs)), "Ship's report: " + gs.getPlayerShipName(), JOptionPane.PLAIN_MESSAGE);
+			}
+		});
+		JPanel pickRow = new JPanel(new java.awt.BorderLayout(8, 0));
+		pickRow.add(pick, java.awt.BorderLayout.CENTER);
+		pickRow.add(info, java.awt.BorderLayout.EAST);
+		panel.add(pickRow, java.awt.BorderLayout.CENTER);
+		Object[] options = {"Salvage", "Scrap", "Trade In", "Auction", "Destroy", "Derelicts...", "Cancel"};
 		int choice = JOptionPane.showOptionDialog(null, panel, "Salvage Ship", JOptionPane.DEFAULT_OPTION,
-				JOptionPane.QUESTION_MESSAGE, null, options, options[3]); // Cancel is the default
-		if (choice < 0 || choice > 2) return;
+				JOptionPane.QUESTION_MESSAGE, null, options, options[6]); // Cancel is the default
+		if (choice == 5) { browseDerelicts(); return; }
+		if (choice < 0 || choice > 4) return;
 		Ship ship = junk.get(pick.getSelectedIndex());
 		if (choice == 1) { scrapShip(ship); return; }
-		if (choice == 2) { destroyShip(ship); return; }
+		if (choice == 2) { sellShip(ship, false); return; }
+		if (choice == 3) { sellShip(ship, true); return; }
+		if (choice == 4) { destroyShip(ship); return; }
 		try {
 			Vault.get().salvage(ship);
 		} catch (IOException e) {

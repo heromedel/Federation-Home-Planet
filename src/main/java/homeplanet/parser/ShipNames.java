@@ -48,7 +48,7 @@ public final class ShipNames {
 		for (int tries = 0; tries < 200; tries++) {
 			String n;
 			int pick = rng.nextInt(10);
-			if (own != null && !own.isEmpty() && pick < 4) n = any(own, rng);              // the model's own, 4 in 10
+			if (own != null && !own.isEmpty() && pick < 3) n = any(own, rng);              // the model's own, 3 in 10
 			else if (pick < 7) n = any(l.get("single"), rng);                              // a whole name
 			else { String a = any(l.get("first"), rng), b = any(l.get("second"), rng); n = a == null || b == null ? null : a + " " + b; }
 			if (n == null || n.isEmpty() || n.length() > MAX || used.contains(n.toLowerCase())) continue;

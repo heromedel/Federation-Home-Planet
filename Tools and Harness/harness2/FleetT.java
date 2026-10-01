@@ -7,9 +7,84 @@ public class FleetT { public static void main(String[] a) throws Exception {
  fleets(v);
  detection();
  rules();
+ difficulties();
+ slots();
  endCareer();
  Setup.done();
 }
+ /** Difficulties: each sets its rules, Custom any level of each, and a career from before them keeps what it had. */
+ static void difficulties() throws Exception {
+  Vault v = Vault.get();
+  if (!v.immersive) v = Vault.switchFleet(true);
+  HomePlanet.immersiveMode = true; HomePlanet.applyImmersive();
+  File career = new File(v.root, "career.txt");
+  String[] names = {CareerRules.EASY, CareerRules.NORMAL, CareerRules.HARD};
+  int[][] want = {{200, 0, 0, 50, 2, 75, 50}, {500, 25, 10, 25, 3, 100, 25}, {1000, 50, -1, 0, 4, 100, 10}};
+  String[] reassign = {FreeCommand.KESTREL, FreeCommand.VARIABLE, FreeCommand.RELIEF};
+  String[] victory = {FinalVictory.RESCUE, FinalVictory.RESCUE, FinalVictory.MUSEUM};
+  int[] museum = {100, 50, 50};
+  for (int d = 0; d < 3; d++) {
+   career.delete();
+   int before = v.storageScrap();
+   Career.start(false, false, CareerRules.of(names[d]));
+   int[] w = want[d];
+   boolean ok = Economy.journeyFee() == w[0] && Economy.removalFee() == w[1] && (w[2] < 0 ? !Economy.stripAllowed() : Economy.stripAllowed() && Economy.stripFee() == w[2])
+     && Economy.supplyPercent() == w[3] && Career.sectorsPerMonth() == w[4] && Economy.commissionPercent() == w[5] && v.storageScrap() - before == w[6]
+     && Economy.reassignment().equals(reassign[d]) && FinalVictory.choice().equals(victory[d]) && FinalVictory.museumPercent() == museum[d];
+   Setup.chk("D: " + names[d] + ": its fees, prices, stipend, starting scrap, reassignment and final victory", ok);
+  }
+  Setup.chk("D: Hard: missiles and drone parts sell for 1 scrap each", Economy.supplySale(5, Pricing.MISSILE) == 5);
+  career.delete();
+  Career.start(false, false, new CareerRules(CareerRules.CUSTOM, new int[] {2, 0, 2, 1, 0, 2, 0, 0, 1}));
+  Setup.chk("D: Custom: each rule at its own level", "Custom".equals(CareerRules.current().title()) && FinalVictory.choice().equals(FinalVictory.MUSEUM)
+    && Economy.journeyFee() == 200 && Economy.reassignment().equals(FreeCommand.RELIEF) && Economy.removalFee() == 25 && Economy.stripFee() == 0
+    && Economy.supplySale(5, Pricing.MISSILE) == 5 && Career.sectorsPerMonth() == 2 && Economy.commissionPercent() == 75);
+  // a career from before difficulties: no difficulty in its career.txt
+  Properties p = new Properties(); p.setProperty("salaryAll", "false"); p.setProperty("ownProfile", "false"); p.setProperty("finalVictory", FinalVictory.REWARD);
+  p.setProperty("paidMonths", "0"); p.setProperty("sectorsAtStart", "0");
+  java.io.StringWriter sw = new java.io.StringWriter(); p.store(sw, ""); SafeFiles.writeText(career, sw.toString(), false);
+  Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
+  HomePlanet.stripAllowed = true;
+  CareerRules e = Career.rules(v.root);
+  Setup.chk("D: a career from before difficulties keeps its rules: journeys 200, Variable, free removal and stripping, 25%, every 4 sectors, full price",
+    CareerRules.EARLIER.equals(e.name) && e.journeyFee() == 200 && FreeCommand.VARIABLE.equals(e.reassignment()) && e.removalFee() == 0 && e.stripAllowed() && e.stripFee() == 0
+    && e.supplyPercent() == 25 && e.stipendSectors() == 4 && e.commissionPercent() == 100);
+  HomePlanet.stripAllowed = false;
+  Setup.chk("D: and its own final victory choice, written down once", FinalVictory.choice().equals(FinalVictory.REWARD) && FinalVictory.fixed() == null
+    && Career.rules(v.root).stripAllowed() && new String(SafeFiles.read(career), "UTF-8").contains("difficulty=earlier"));
+  HomePlanet.leaveImmersive();
+  Vault.switchFleet(false);
+ }
+ /** Five modes, five fleets: each career its own folder; switching between careers goes by way of Sandbox Mode; one can end alone. */
+ static void slots() throws Exception {
+  Vault v = Vault.get();
+  if (v.immersive) v = Vault.switchFleet(false);
+  Setup.chk("M: each mode's folder", Vault.folderOf(Vault.SANDBOX).equals(Vault.FOLDER) && Vault.folderOf(Vault.CUSTOM).equals(Vault.IMMERSIVE_FOLDER)
+    && Vault.folderOf(Vault.EASY).equals("FederationHomePlanet-Immersive-Easy") && Vault.folderOf(Vault.HARD).equals("FederationHomePlanet-Immersive-Hard")
+    && "Immersive Normal".equals(Vault.title(Vault.NORMAL)) && "Sandbox Mode".equals(Vault.title(Vault.SANDBOX)) && Vault.CUSTOM.equals(Vault.slotOf("nonsense")));
+  Vault easy = Vault.switchFleet(Vault.EASY);
+  Setup.chk("M: the Easy career opens its own, empty fleet", easy.immersive && Vault.EASY.equals(easy.slot) && easy.root.getName().equals("FederationHomePlanet-Immersive-Easy") && easy.shipyardEmpty());
+  Career.start(false, false, CareerRules.of(CareerRules.EASY));
+  Ship e = easy.adopt(Commission.build("PLAYER_SHIP_CIRCLE", "Easy Engi", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(8)));
+  Setup.chk("M: its difficulty is its own", CareerRules.EASY.equals(CareerRules.current().name));
+  Vault.switchFleet(Vault.SANDBOX);
+  Vault normal = Vault.switchFleet(Vault.NORMAL);
+  Setup.chk("M: the Normal career doesn't see the Easy one's ships", normal.byId(e.id) == null && Vault.NORMAL.equals(normal.slot));
+  File fake = new File(Vault.rootOf(normal.saves, Vault.EASY), "ships/retrofit.sav"); // a hull on the station's blueprint, as far as the scan cares
+  SafeFiles.writeText(fake, "PLAYER_SHIP_CIRCLE" + Retrofit.SUFFIX, false);
+  Setup.chk("M: but every other fleet's ships count for blueprints in use", normal.otherFleetUsing("PLAYER_SHIP_CIRCLE" + Retrofit.SUFFIX).contains("retrofit (Immersive Easy fleet)")
+    && normal.otherFleetBlueprints().contains("PLAYER_SHIP_CIRCLE" + Retrofit.SUFFIX));
+  fake.delete();
+  boolean refused = false; Vault.switchFleet(Vault.EASY);
+  try { Vault.endCareer(Vault.EASY); } catch (IOException x) { refused = true; }
+  Setup.chk("M: the career in use can't be ended", refused);
+  Vault.switchFleet(Vault.SANDBOX);
+  int sandboxShips = Vault.get().all().size();
+  File zip = Vault.endCareer(Vault.EASY);
+  Setup.chk("M: ending the Easy career zips it, named, and leaves the others", zip.getName().startsWith("Immersive Easy career ") && !Vault.rootOf(Vault.get().saves, Vault.EASY).exists()
+    && Vault.rootOf(Vault.get().saves, Vault.NORMAL).isDirectory() && Vault.get().all().size() == sandboxShips);
+  Setup.chk("M: a fleet's ships are counted without opening it", Vault.shipCount(Vault.rootOf(Vault.get().saves, Vault.CUSTOM)) >= 0);
+ }
  /** Ending the Immersive career: the folder zipped into old-immersive-careers, then gone; the normal fleet untouched. */
  static void endCareer() throws Exception {
   Vault v = Vault.get();

@@ -17,6 +17,11 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 10. After a final victory: rescue her (or the museum), or a reward of her value
 11. The museum
 12. Reply chains, and the first one: the One Point of Hull (Idea C)
+13. The station's economy: Trade In and Auction, Refit removal, stripping, fees (4B.58)
+14. Immersive difficulties: Easy, Normal, Hard and Custom (4B.59)
+15. Switch Game Mode: Sandbox and four careers, each with its own fleet and profile (4B.60)
+16. Derelicts for sale in the Junkyard, and Dry Dock system and breach repairs (4B.61)
+17. Settings in tabs, and the Station Log window (4B.61)
 
 All built. What remains is testing in real play and bug checks.
 
@@ -294,6 +299,101 @@ comes a random number of beacons later (the fleet counts every beacon its ships 
   Cargo Hold (refused, changing nothing, when the hold is short).
 - **No one aboard:** she can be boarded empty (to take on crew in the Cargo Bay), but FTL won't launch with a boarded
   ship that has no crew (FTL would end her journey at once); the station says to move someone aboard first.
+
+## 13. The station's economy — built (4B.58; harness checks in RuleT)
+
+Every fee and sale price is read from one place (`core.Economy`): Sandbox Mode's from Settings, Immersive Mode's
+from the career.
+
+- **Trade In** (Junkyard): The Federation Home Planet's shipyard pays half her value, less 5 scrap for each point of
+  missing hull, 5 for each broken system bar and 5 for each breach. Her value is her commission price at 100% without her crew, plus her fuel, missiles and drone parts at
+  store price.
+- **Auction** (Junkyard): explained first (Cancel highlighted); Hold Auction sells her at once for the highest bid, 25% to 75% of her value less her damage (as Trade In), and the result shows with only Accept Bid.
+  The same save always draws the same bid.
+- **Missing core systems** (Engines, Piloting or Oxygen not installed, whatever her design): each takes 15 points off what Trade In
+  and Auction pay (Trade In 50/35/20/5%; bids 25-75% with both ends 15 points lower each, never under 5%). A
+  derelict's price ignores them, so a cheap one flips only if she's whole, and restoring one pays.
+- Both send her scrap and crew to the Cargo Hold with the payment; everything else goes with her. She leaves the
+  fleet as **sold** (kept in her history, never recoverable). Both follow the station rule, as Scrap does: a beacon with a store, or not yet gone from The Home Planet Station (a bought derelict that hasn't jumped).
+- **Refit removal** (Sandbox setting): taking a system off at Refit is not allowed, free (the default), 25 or 50
+  scrap, paid by the boarded ship (given back by Reset, as all Refit changes are).
+- **Stripping when scrapping** (allowed or not; replaces "scrapping keeps systems", carried over from the old cfg):
+  each storable, undamaged system costs a discount on removal (free for free, 10 for 25, 20 for 50, 10 where removal
+  isn't allowed), paid from the Cargo Hold and her own scrap together. The scrap window offers to strip or not.
+  Off: her systems are lost with the hull.
+- **Selling:** stored systems always sell for half their price and upgrades; missiles and drone parts follow the mode
+  (half in Sandbox Mode).
+- **New Journey fee** (Sandbox setting): free (the default), 200, 500 or 1000 scrap from the Cargo Hold.
+- **Without a ship** (the Liaison's letter): commission a ship if the hold can pay; with a hull in the Junkyard,
+  salvage her, or trade in or auction a ship that can't be repaired; Report for Reassignment as the last resort.
+
+## 14. Immersive difficulties — built (4B.59; harness checks in FleetT)
+
+Chosen on the briefing's career page, fixed for the career's life, and shown on the Space Dock heading and in
+Settings (the rules it sets are locked there). Custom picks any level of each rule. Kept in the career's
+`career.txt` (`difficulty`, and `rules` for Custom); read through `parser.CareerRules`.
+
+| Rule | Easy | Normal | Hard |
+|---|---|---|---|
+| After a final victory | save her, or the museum at full value | save her, or the museum at half value | the museum takes her, at half value |
+| New Journey | 200 | 500 | 1000 |
+| Report for Reassignment grants | Kestrel Type A | Variable | relief ship |
+| Refit removal | free | 25 | 50 |
+| Stripping when scrapping | allowed, free | allowed, 10 a system | not allowed |
+| Missiles and drone parts sell for | half | a quarter | 1 scrap each |
+| The stipend every | 2 sectors | 3 sectors | 4 sectors |
+| Commissioning costs | 75% | 100% | 100% |
+| Starting scrap | 50 | 25 | 10 |
+
+The same at every difficulty: stored systems sell at half, hull repairs 4 a point, the stipend's 20 plus rank,
+commissions cost scrap, station requirements, locked models, free unlock ships, rank clearances, a final
+reassignment, a Kestrel Type A to start.
+
+A career from before difficulties becomes **Custom (from before difficulties)**, written down once with what it had:
+its final victory choice (still changeable in Settings), journeys 200, Variable, removal free, stripping as Settings
+had it (free), a quarter, every 4 sectors, full price. On Hard the museum letter ("Into the Museum") replaces the
+rescue offer.
+
+## 15. Switch Game Mode — built (4B.60; harness checks in FleetT)
+
+Settings' **Switch Game Mode...** opens a window of the five modes: Sandbox Mode, and the Immersive careers Easy,
+Normal, Hard and Custom. Each has a fleet folder of its own (`FederationHomePlanet`, `FederationHomePlanet-Immersive-Easy`,
+`-Normal`, `-Hard`, and `FederationHomePlanet-Immersive` for Custom, so the first Immersive fleet carries on as Custom),
+and each career can keep an FTL profile of its own. The window shows what each holds (in use, not begun, its ships,
+its own profile), switches to one (a career not begun is briefed first, its difficulty set by its slot; Custom picks
+each rule), and ends a career (the one in use: Sandbox Mode first). Switching from one career to another goes by way
+of Sandbox Mode, so profiles are swapped the same tested way. The first-startup choice offers the same: Sandbox
+Mode, or Easy, Normal, Hard or Custom. The Space Dock heading and Settings name the mode in use; blueprints flown by
+any other fleet stay protected. The cfg remembers the career last used (`immersive_slot`).
+
+## 16. Derelicts in the Junkyard — built (4B.61; harness test DerT)
+
+The Junkyard window's **Derelicts...** (also offered when none of your ships is there) shows three hulls for sale,
+kept in the fleet's `derelicts/` folder. New ones come in after 15-45 beacons the fleet travels (5 times 3 to 9, rolled each time; counted when you look:
+no letters, you come and check).
+
+- Each is on the station's blank copy of her model: no crew, hull 15-50%, a system or two missing, at odd levels or
+  added where she has a room for it, many broken bars, 1-3 breaches, thin air, the reactor down a little, fuel 0-3,
+  no scrap or cargo. Each of her own weapons and drones survives 1 time in 12, and 1 time in 12 there's another
+  (a store weapon or drone she didn't come with) if a slot is free; an augment 1 in 8. With a missile weapon, half the
+  time 1-3 missiles (+1 a further launcher); with drones, half the time 1-3 drone parts (+1 a further drone); with a
+  hacking system, half the time 1 more part.
+- Her model is one the FTL profile has unlocked; one listing in 30 is a locked model (about once in 10 rerolls).
+- One in 15 is rebuilt strangely: two unmanned systems' rooms swapped, or an inner door welded shut (every room still
+  reachable). Only when she's bought does this become a remodel of her own; the patch prompt follows.
+- Price: 25-75% of her value as she is (less 5 a missing hull point and 5 a broken bar), from the Cargo Hold. She goes to the Junkyard,
+  set out at The Home Planet Station so she can take on crew once salvaged.
+- The Dry Dock bills the Cargo Hold (4B.64): every price on the Refit tab (upgrades, reactor bars, hull, Fix, Seal,
+  removal fees) goes on a running bill, checked against the Cargo Hold's scrap and paid in the same save as the ship;
+  Reset drops it. Selling a stored system pays the Cargo Hold.
+- The Dry Dock now mends broken system bars (5 scrap a bar, shown as Fix instead of the upgrade) and seals breaches
+  (5 each), beside hull repairs.
+
+
+- **Thruster glow for designs.** FTL lights the engines of some of its own ships (the Kestrel's, when piloted and
+  ready to jump) from positions written into the game itself; nothing in a blueprint, layout or art file sets them, and
+  only the Hyperspace mod lets custom ships have them. Designs need just their one PNG; glowing engines can be painted
+  into the art. Settled with heromedel: not worth pursuing.
 
 ## Naming decisions — settled (4B.30)
 

@@ -26,6 +26,13 @@ public class TransT { public static void main(String[] a) throws Exception {
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
   Transmissions.check();
   Setup.chk("F: a new fleet: the free command, and one order for it", v.freeCommandOpen() && orders() == 1);
+  String setting = HomePlanet.freeShip;
+  HomePlanet.freeShip = FreeCommand.ANY;
+  Setup.chk("F: a new fleet starts with a Kestrel Type A, whatever a report would grant", FreeCommand.KESTREL.equals(FreeCommand.ship()));
+  HomePlanet.freeShip = FreeCommand.VARIABLE;
+  Setup.chk("F: Variable outside Immersive Mode: a report earns by what it surrenders", FreeCommand.byValue(v)
+    && FreeCommand.earned(FreeCommand.surrenderValue(v)).equals(FreeCommand.onReport(v)));
+  HomePlanet.freeShip = setting;
   Ship stranger = v.adopt(Commission.build("PLAYER_SHIP_HARD", "New Game Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)));
   v.board(stranger); Transmissions.check();
   v.remove(v.boarded(), "DESTROY"); Transmissions.check();
@@ -39,12 +46,24 @@ public class TransT { public static void main(String[] a) throws Exception {
   int stranded = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.startsWith("stranded:")) stranded++;
   Setup.chk("F: no ship and no free command: the Liaison's letter, once", stranded == 1 && "Without a ship".equals(find("stranded").subject)
     && find("stranded").body.contains("Report for Reassignment") && !find("stranded").body.contains("Junkyard: Salvage"));
+  Ship again = v.adopt(Commission.build("PLAYER_SHIP_HARD", "Short Lived", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(5)));
+  Transmissions.check(); v.remove(again, "DESTROY"); Transmissions.check(); Transmissions.check();
+  int stranded2 = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.startsWith("stranded:")) stranded2++;
+  Setup.chk("F: a ship again, then none again: no second letter (only the first time)", stranded2 == 1);
   Setup.chk("F: a report's free ship outside Immersive Mode is Settings'", HomePlanet.freeShip.equals(FreeCommand.onReport(v)));
   File dir = v.surrender(); Transmissions.check();
   Setup.chk("F: a report for reassignment grants another, and its order replaces the old one", v.freeCommandOpen() && orders() == 1 && !Transmissions.deletable(find("empty")));
   Setup.chk("F: and it's the Shipyard's letter for after a reassignment", "Back from nothing".equals(find("empty").subject) && v.freeCommandReassigned());
   v.undoSurrender(dir);
   Setup.chk("F: undoing the report takes the grant back", !v.freeCommandOpen());
+  // Career messages in Sandbox Mode: the career begins once, with its letter and scrap, and no free ship
+  int scrap = v.storageScrap(), ordersBefore = orders();
+  HomePlanet.careerMessages = true;
+  Transmissions.check(); Transmissions.check();
+  int welcomes = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.equals("welcome:career")) welcomes++;
+  Setup.chk("C: Career messages begin a Sandbox career: the Liaison's letter, once, and 25 scrap", welcomes == 1 && Career.started(v.root) && v.storageScrap() == scrap + Career.STARTING_SCRAP);
+  Setup.chk("C: and no free ship with it (the Sandbox fleet has its own)", orders() == ordersBefore && find("welcome") != null && find("welcome").key.equals("welcome:career"));
+  HomePlanet.careerMessages = false;
  }
  static void profile(File saves, String[] unlockedA, String[] achievements) throws Exception {
   Profile p = Profile.createEmptyProfile(); p.setFileFormat(9);
@@ -101,6 +120,7 @@ public class TransT { public static void main(String[] a) throws Exception {
  static void flow(File saves) throws Exception {
   int n = Transmissions.check();
   Setup.chk("T: a new career: the welcome, and the empty shipyard's free command", n == 2 && find("welcome") != null && find("empty") != null && find("empty").body.contains("Kestrel"));
+  Setup.chk("T: the welcome names the career's own sign-on bonus", find("welcome").body.contains("bonus of " + Career.startingScrap() + " scrap") && !find("welcome").body.contains("{start}"));
   Setup.chk("T: the welcome is on top of the inbox (sent last)", Transmissions.load().get(0).key.equals("welcome"));
   Setup.chk("T: each is sent once", Transmissions.check() == 0 && Transmissions.unread() == 2);
   Setup.chk("T: an achievement from before Immersive Mode earns nothing", find("ach:ACH_SECTOR_5") == null);
@@ -176,16 +196,17 @@ public class TransT { public static void main(String[] a) throws Exception {
   v.takeStock();
   int sectors = v.sectorsSeen();
   SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
-  g.setSectorNumber(g.getSectorNumber() + 9); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 40);
+  int month = Career.sectorsPerMonth(), jump = 2 * month + 1; // two months and a sector, at the career's difficulty
+  g.setSectorNumber(g.getSectorNumber() + jump); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 40);
   SaveHelper.writeSavedGame(v.continueFile(), g);
   v.takeStock();
-  Setup.chk("S: FTL's progress is counted in sectors", v.sectorsSeen() == sectors + 9);
+  Setup.chk("S: FTL's progress is counted in sectors", v.sectorsSeen() == sectors + jump);
   int scrap = v.storageScrap();
   int achievements = 5; // earned in Immersive Mode above: TOUGH_SHIP, NO_BUYING, MANTIS_SLAUGHTER, NO_UPGRADES, SCRAP
   int each = Career.stipend(UnlockGrants.rank(Unlocks.read()), achievements);
   Transmissions.check();
   Transmissions.Message m = find("stipend:");
-  Setup.chk("S: 9 sectors pay 2 months in one message", m != null && m.body.contains("stipend for the last 2 months") && m.body.contains((2 * each) + " scrap") && v.storageScrap() == scrap + 2 * each);
+  Setup.chk("S: " + jump + " sectors (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last 2 months") && m.body.contains((2 * each) + " scrap") && v.storageScrap() == scrap + 2 * each);
   System.out.println("Stipend: " + each + " a month (Captain, 5 achievements): " + m.body.replace("\n", " / "));
   Transmissions.check();
   int stipends = 0; for (Transmissions.Message x : Transmissions.load()) if (Transmissions.isStipend(x)) stipends++;

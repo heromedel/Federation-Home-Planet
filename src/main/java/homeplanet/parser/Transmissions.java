@@ -202,7 +202,7 @@ public final class Transmissions {
 		return rankName(u.problem() != null ? null : u);
 	}
 	private static String rankName(Unlocks u) {
-		return HomePlanet.immersiveMode ? UnlockGrants.rankName(UnlockGrants.rank(u)) : UnlockGrants.RANKS[0];
+		return HomePlanet.career() ? UnlockGrants.rankName(UnlockGrants.rank(u)) : UnlockGrants.RANKS[0];
 	}
 	/** A layout's name for messages: "Engi Cruiser, Type A". */
 	static String layoutName(String base, int n) {
@@ -233,11 +233,20 @@ public final class Transmissions {
 		int before = all.size();
 		boolean wasOpen = emptyOpen, wasStranded = strandedOpen;
 		int replaced = 0;
-		if (HomePlanet.immersiveMode) {
+		Vault v = Vault.get();
+		// Sandbox Mode's Career messages, first ticked: the career begins (no free ship: the fleet has its own), counting
+		// only achievements earned from now on
+		if (HomePlanet.career() && !v.immersive && !Career.started(v.root)) {
+			try {
+				UnlockGrants.achievementsSeen(u);
+				Career.start(false, false, false);
+				send(all, sent, "welcome:career", "welcome:career", rank, null);
+			} catch (IOException e) { log.warn("Could not begin the Sandbox career: {}", e.toString()); }
+		}
+		if (HomePlanet.career()) {
 			int r = UnlockGrants.rank(u);
 			for (int i = 1; i <= r; i++) send(all, sent, "promo:" + i, "promo:" + i, rank, null);
 		}
-		Vault v = Vault.get();
 		// one order per free command (the fleet's start, a report for reassignment), never for an empty shipyard alone
 		boolean granted = v.freeCommandOpen();
 		if (HomePlanet.commissionCosts && granted && v.shipyardEmpty()) {
@@ -257,10 +266,11 @@ public final class Transmissions {
 		} else if (!granted) {
 			emptyOpen = false; // taken: the next grant sends its own order
 		}
-		// no ship to command and no free command waiting: the Liaison says what can be done (once per stranding)
+		// no ship to command and no free command waiting: the Liaison says what can be done, the first time only (each fleet)
 		boolean stranded = HomePlanet.commissionCosts && !granted && v.docked().isEmpty() && v.boarded() == null;
-		if (stranded && !strandedOpen) {
+		if (stranded && !strandedOpen && v.event("stranded-letter") == null) {
 			send(all, sent, "stranded:" + stamp(), v.junked().isEmpty() ? "stranded" : "stranded:junkyard", rank, null);
+			v.recordEvent("stranded-letter", stamp());
 			strandedOpen = true;
 		} else if (!stranded) {
 			strandedOpen = false;
@@ -276,10 +286,10 @@ public final class Transmissions {
 				}
 			}
 		}
-		if (HomePlanet.immersiveMode && u != null) {
+		if (HomePlanet.career() && u != null) {
 			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, "ach:" + a, rank, null);
 		}
-		if (HomePlanet.immersiveMode && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
+		if (HomePlanet.career() && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
 		// reply chains: a letter for what the fleet has been through, and the letters now due
 		boolean chained = false;
 		String oneHull = v.event(Vault.EVENT_ONE_HULL);
@@ -490,6 +500,7 @@ public final class Transmissions {
 		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
 	}
 	private static String fill(String s, String rank, String ship) {
+		if (s.contains("{start}")) s = s.replace("{start}", Integer.toString(Career.startingScrap())); // the career's sign-on bonus, by difficulty
 		return s.replace("{rank}", rank).replace("{ship}", ship == null ? "" : ship);
 	}
 

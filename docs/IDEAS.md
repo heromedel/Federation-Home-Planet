@@ -44,6 +44,8 @@ Custom triggers for letters or letter chains (ties into Idea A). Examples:
    like a Slug, and offers to join your crew and bring a crew teleporter to show you how it's done, but only if you
    pay 100 scrap from the Cargo Hold. Possibly a chain of letters, or just one angry one.
 
+The homework is done: `SAVE_SIGNALS.md` lists what the save records and how sure we are of each.
+
 Notes: triggers have to come from what FTL's save records. Ships defeated, crew joined and lost, sectors, scrap, what's
 aboard and the ship type are all visible; how an enemy crew died, or a surrender accepted, may not be, and would need a
 nearby trigger the save does show. Letters from aliens writing directly (the Mantis) would widen the cast beyond the

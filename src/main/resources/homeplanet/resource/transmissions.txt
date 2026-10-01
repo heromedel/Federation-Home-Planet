@@ -5,7 +5,7 @@
 # Rewards, comma separated (they go to the Cargo Hold): scrap N, fuel N, missiles N, parts N (drone parts),
 # item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
-# Keys: welcome, stipend ({period} and {amount} are filled in), empty (the free command), reassigned (the free command
+# Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), reassigned (the free command
 # after a Report for Reassignment; in Immersive Mode reassigned:any, reassigned:kestrel or reassigned:relief, by what
 # was surrendered), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
 # a hull waits in the Junkyard), promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
@@ -27,7 +27,7 @@ subject: Welcome to the Front
 
 I see you have volunteered to serve in the war against the rebellion.
 
-The Federation Home Planet has approved you to begin building your fleet. Congratulations: your sign-on bonus of 25 scrap is already waiting in The Home Planet Station's Cargo Hold.
+The Federation Home Planet has approved you to begin building your fleet. Congratulations: your sign-on bonus of {start} scrap is already waiting in The Home Planet Station's Cargo Hold.
 
 Just remember: once you have your first ship and set out, you will need to reach another beacon with a station to be able to trade with The Home Planet Station or your other ships.
 
@@ -53,7 +53,7 @@ subject: Without a ship
 
 The Home Planet Station reports that you have no ship under your command. I am sorry. She served the Federation, and so did you.
 
-This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship. If it does not, Report for Reassignment (Other... at the Space Dock): The Federation Home Planet takes the Cargo Hold and the Junkyard, and gives you a new command in return.
+This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship. If it does not, there is a last resort: Report for Reassignment (Other... at the Space Dock). The Federation Home Planet takes the Cargo Hold and the Junkyard, and gives you a new command in return.
 
 Every commander loses a ship sooner or later. What matters is that you come back.
 
@@ -68,11 +68,27 @@ subject: Without a ship
 
 The Home Planet Station reports that you have no ship under your command. I am sorry. She served the Federation, and so did you.
 
-This is not the end of your service. There is a hull in the Junkyard: Salvage her at the Space Dock and she is yours again, at no cost. If the Cargo Hold holds enough scrap, you can commission a new ship instead. If neither will do, Report for Reassignment (Other... at the Space Dock): The Federation Home Planet takes the Cargo Hold and the Junkyard, and gives you a new command in return.
+This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship. There is a hull in the Junkyard, too: Salvage her at the Space Dock and she is yours again, at no cost; if you have a ship in the Junkyard that you cannot afford to repair, try trading it in or auctioning it off to raise money.
+
+If none of that will do, there is a last resort: Report for Reassignment (Other... at the Space Dock). The Federation Home Planet takes the Cargo Hold and the Junkyard, and gives you a new command in return.
 
 Every commander loses a ship sooner or later. What matters is that you come back.
 
 For the Federation, and all its worlds.
+~ Home Planet Liaison
+
+== welcome:career
+from: Home Planet Liaison
+subject: On the career rolls
+
+{rank},
+
+The Federation Home Planet has added your service to its career rolls. From today your achievements will be noticed, and rewarded. Promotions will follow as they are earned, and a stipend will reach the Cargo Hold as your ships cover the sectors. To start you off, {start} scrap is already waiting there.
+
+Your fleet stays your own, and so do your rules. The Federation asks only that you keep fighting the rebellion.
+
+For the Federation, and all its worlds.
+Until every beacon is free.
 ~ Home Planet Liaison
 
 == rescue
@@ -87,7 +103,23 @@ The Rebel Flagship has broken off her assault and withdrawn. The line held. The 
 
 Recovery teams reached the {ship} in time, and The Home Planet Station has restored her as she was moments before the final engagement.
 
-The Federation Home Planet makes an offer: her full value, {value} scrap, to place her in the Federation museum. Or keep her, and she will be waiting at the Space Dock for her next journey. The decision is yours.
+The Federation Home Planet makes an offer: {worth}, {value} scrap, to place her in the Federation museum. Or keep her, and she will be waiting at the Space Dock for her next journey. The decision is yours.
+
+~ Federation Fleet Command
+
+== museum
+from: Federation Fleet Command
+subject: Into the Museum
+
+{rank},
+
+Dispatch from Federation Fleet Command.
+
+The Rebel Flagship has broken off her assault and withdrawn. The line held. The war continues.
+
+Recovery teams reached the {ship} in time. By order of The Federation Home Planet she will not fly again: she has been placed in the Federation museum, where her service will be remembered.
+
+In recognition, {worth}, {value} scrap, has been granted to The Home Planet Station. It is waiting in the Station's Cargo Hold.
 
 ~ Federation Fleet Command
 

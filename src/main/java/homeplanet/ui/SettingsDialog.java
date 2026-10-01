@@ -24,7 +24,8 @@ import javax.swing.SwingUtilities;
 import homeplanet.core.HomePlanet;
 
 /**
- * Settings: folders, launching, trading/journey rules and debug logging.
+ * Settings, in four tabs: General (folders, launching, mods, audio), Rules (the game mode, the rules, after a final
+ * victory), Records (the station log, log files, debug logging) and About.
  * Nothing changes until OK; OK writes the cfg file.
  */
 public class SettingsDialog extends JDialog {
@@ -44,6 +45,7 @@ public class SettingsDialog extends JDialog {
 	private final JLabel victoryHeading = new JLabel();
 	private final String commanderWas = homeplanet.comm.Commander.name() == null ? "" : homeplanet.comm.Commander.name();
 	private final javax.swing.JTextField commanderField = new javax.swing.JTextField(commanderWas, 18);
+	private final javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
 
 	/** Shows the dialog. Returns true if the saves folder changed (so the Space Dock should reload). */
 	public static boolean open(java.awt.Component owner) {
@@ -55,15 +57,10 @@ public class SettingsDialog extends JDialog {
 
 	private SettingsDialog(Window owner) {
 		super(owner, "Settings", ModalityType.APPLICATION_MODAL);
-		JPanel body = new JPanel(new GridBagLayout());
-		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
-		GridBagConstraints c = new GridBagConstraints();
-		c.gridx = 0;
-		c.gridy = 0;
-		c.anchor = GridBagConstraints.WEST;
-		c.fill = GridBagConstraints.HORIZONTAL;
-		c.insets = new Insets(2, 0, 2, 0);
-		c.weightx = 1;
+		// four tabs: General (folders, launching, mods, audio), Rules, Records, About
+		JPanel general = page(), rulesPage = page(), recordsPage = page(), aboutPage = page();
+		JPanel body = general;
+		GridBagConstraints c = constraints();
 
 		heading(body, c, "Commander");
 		JPanel nameRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -144,11 +141,9 @@ public class SettingsDialog extends JDialog {
 		openRow.add(openStation);
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
 		openRow.add(openJunk);
-		openRow.add(javax.swing.Box.createHorizontalStrut(8));
-		openRow.add(openLog);
-		openRow.add(javax.swing.Box.createHorizontalStrut(8));
-		openRow.add(openLogs);
 		body.add(openRow, next(c));
+		JPanel slipRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0)); // Slipstream's folder, filled below
+		body.add(slipRow, next(c));
 
 		heading(body, c, "Launching");
 		body.add(steamBox, next(c));
@@ -184,29 +179,29 @@ public class SettingsDialog extends JDialog {
 		});
 		modRow.add(patchBtn);
 		modRow.add(javax.swing.Box.createHorizontalStrut(8));
-		modRow.add(modsBtn);
-		modRow.add(javax.swing.Box.createHorizontalStrut(8));
+		slipRow.add(slipBtn);
+		slipRow.add(javax.swing.Box.createHorizontalStrut(8));
+		slipRow.add(modsBtn);
 		JButton starterBtn = new JButton("Blueprints...");
 		starterBtn.setToolTipText("Your own blueprints (remodels and designs): which can be commissioned, and their names and starting loadouts");
 		starterBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { starterShips(); }
 		});
 		modRow.add(starterBtn);
-		modRow.add(javax.swing.Box.createHorizontalStrut(8));
-		modRow.add(slipBtn);
 		body.add(modRow, next(c));
 
 		heading(body, c, "Audio");
 		body.add(musicBox, next(c));
 
-		heading(body, c, "Rules");
+		body = rulesPage;
+		c = constraints();
+		heading(body, c, "Game mode and rules");
 		rules.addTo(body, c);
 
 		victoryHeading.setFont(MenuTheme.HEADING_FONT);
 		victoryHeading.setForeground(MenuTheme.GOLD);
 		victoryHeading.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
 		body.add(victoryHeading, next(c));
-		javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
 		for (int i = 0; i < victoryButtons.length; i++) {
 			String ch = homeplanet.parser.FinalVictory.CHOICES[i];
 			victoryButtons[i] = new javax.swing.JRadioButton(homeplanet.parser.FinalVictory.label(ch), ch.equals(victoryWas));
@@ -222,9 +217,30 @@ public class SettingsDialog extends JDialog {
 		victoryNote.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		body.add(victoryNote, next(c));
 
+		body = recordsPage;
+		c = constraints();
+		heading(body, c, "Records");
+		JPanel logRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		JButton viewLog = new JButton("View the station log...");
+		viewLog.setToolTipText("Everything The Home Planet Station has done, fleet by fleet: commissions, boardings, trades, switches, what it found when taking stock");
+		viewLog.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { StationLogDialog.open(SettingsDialog.this); }
+		});
+		logRow.add(viewLog);
+		logRow.add(javax.swing.Box.createHorizontalStrut(8));
+		logRow.add(openLog);
+		logRow.add(javax.swing.Box.createHorizontalStrut(8));
+		logRow.add(openLogs);
+		body.add(logRow, next(c));
+		JLabel logNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>Each mode keeps its own history log in its folder. "
+				+ "Open history log opens the one in use; the log folder holds the program's own logs, one per run, for bug reports.</font></div></html>");
+		logNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
+		body.add(logNote, next(c));
 		heading(body, c, "Troubleshooting");
 		body.add(debugBox, next(c));
 
+		body = aboutPage;
+		c = constraints();
 		heading(body, c, "About");
 		JPanel about = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		about.add(new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; after ManApart's FTL Homeworld; made by heromedel with Claude.  "));
@@ -263,7 +279,24 @@ public class SettingsDialog extends JDialog {
 		getRootPane().setDefaultButton(ok);
 
 		refreshLabels();
-		getContentPane().add(ScreenFit.wrap(body, 120, owner), BorderLayout.CENTER); // scrolls on a short screen
+		javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
+		JPanel[] pages = {general, rulesPage, recordsPage, aboutPage};
+		String[] names = {"General", "Rules", "Records", "About"};
+		for (int i = 0; i < pages.length; i++) {
+			JPanel holder = new JPanel(new BorderLayout());
+			holder.add(pages[i], BorderLayout.NORTH); // each page at the top of its tab
+			tabs.addTab(names[i], holder);
+		}
+		final javax.swing.JTabbedPane t = tabs;
+		final java.awt.Color normal = new java.awt.Color(220, 228, 235); // as the theme draws the others
+		javax.swing.event.ChangeListener mark = new javax.swing.event.ChangeListener() { // the open tab's name in dark on its light tab
+			public void stateChanged(javax.swing.event.ChangeEvent e) {
+				for (int i = 0; i < t.getTabCount(); i++) t.setForegroundAt(i, i == t.getSelectedIndex() ? new java.awt.Color(20, 28, 40) : normal);
+			}
+		};
+		tabs.addChangeListener(mark);
+		mark.stateChanged(null);
+		getContentPane().add(ScreenFit.wrap(tabs, 120, owner), BorderLayout.CENTER); // scrolls on a short screen
 		getContentPane().add(buttons, BorderLayout.SOUTH);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		pack();
@@ -467,14 +500,37 @@ public class SettingsDialog extends JDialog {
 	/** The fleet in use's choice after a final victory (entering or leaving Immersive Mode here switches fleets). */
 	private void refreshVictory() {
 		victoryWas = homeplanet.parser.FinalVictory.choice();
-		victoryHeading.setText("After a final victory" + (homeplanet.vault.Vault.get().immersive ? " (Immersive fleet)" : ""));
-		for (int i = 0; i < victoryButtons.length; i++) victoryButtons[i].setSelected(homeplanet.parser.FinalVictory.CHOICES[i].equals(victoryWas));
+		homeplanet.parser.CareerRules career = homeplanet.parser.FinalVictory.fixed() != null ? homeplanet.parser.CareerRules.current() : null;
+		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
+		victoryHeading.setText("After a final victory" + (career != null ? " (" + homeplanet.vault.Vault.title(v.slot) + "): " + career.words(homeplanet.parser.CareerRules.VICTORY)
+				: v.immersive ? " (" + homeplanet.vault.Vault.title(v.slot) + ")" : ""));
+		victoryGroup.clearSelection();
+		for (int i = 0; i < victoryButtons.length; i++) {
+			victoryButtons[i].setSelected(homeplanet.parser.FinalVictory.CHOICES[i].equals(victoryWas));
+			victoryButtons[i].setEnabled(career == null); // the career's difficulty decides it
+		}
 	}
 	private String victoryChoice() {
+		if (homeplanet.parser.FinalVictory.fixed() != null) return victoryWas;
 		for (int i = 0; i < victoryButtons.length; i++) if (victoryButtons[i].isSelected()) return homeplanet.parser.FinalVictory.CHOICES[i];
 		return homeplanet.parser.FinalVictory.NOTHING;
 	}
 
+	private static JPanel page() {
+		JPanel p = new JPanel(new GridBagLayout());
+		p.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
+		return p;
+	}
+	private static GridBagConstraints constraints() {
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridx = 0;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.WEST;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.insets = new Insets(2, 0, 2, 0);
+		c.weightx = 1;
+		return c;
+	}
 	static void heading(JPanel body, GridBagConstraints c, String text) {
 		JLabel h = new JLabel(text);
 		h.setFont(MenuTheme.HEADING_FONT);

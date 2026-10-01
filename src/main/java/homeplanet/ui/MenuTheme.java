@@ -102,9 +102,41 @@ public final class MenuTheme {
 	/** A combo box whose arrow is drawn in the text colour on our button colour, and whose list is themed like the fields. */
 	private static class DarkComboBoxUI extends javax.swing.plaf.basic.BasicComboBoxUI {
 		@Override protected JButton createArrowButton() {
-			javax.swing.plaf.basic.BasicArrowButton b = new javax.swing.plaf.basic.BasicArrowButton(javax.swing.SwingConstants.SOUTH, BUTTON, BUTTON, TEXT, BUTTON);
+			// drawn here, enabled or not: Swing's own greys out with a white outline that glares on the dark theme
+			JButton b = new JButton() {
+				@Override protected void paintComponent(java.awt.Graphics g0) {
+					java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
+					g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+					boolean on = comboBox == null || comboBox.isEnabled();
+					g.setColor(on ? BUTTON : BG);
+					g.fillRect(0, 0, getWidth(), getHeight());
+					int w = 8, h = 4, x = (getWidth() - w) / 2, y = (getHeight() - h) / 2;
+					g.setColor(on ? TEXT : DIM);
+					g.fillPolygon(new int[] {x, x + w, x + w / 2}, new int[] {y, y, y + h + 1}, 3);
+					g.dispose();
+				}
+			};
 			b.setName("ComboBox.arrowButton");
+			b.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+			b.setFocusable(false);
+			b.setContentAreaFilled(false);
+			b.setPreferredSize(new java.awt.Dimension(18, 18));
 			return b;
+		}
+		/** Greyed out (a rule Immersive Mode sets, say): dimmed on the theme's own colours, not Swing's white. */
+		@Override public void paintCurrentValueBackground(java.awt.Graphics g, java.awt.Rectangle bounds, boolean hasFocus) {
+			g.setColor(comboBox.isEnabled() ? comboBox.getBackground() : BG);
+			g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+		}
+		@Override public void paintCurrentValue(java.awt.Graphics g, java.awt.Rectangle bounds, boolean hasFocus) {
+			if (comboBox.isEnabled()) { super.paintCurrentValue(g, bounds, hasFocus); return; }
+			@SuppressWarnings("unchecked")
+			javax.swing.ListCellRenderer<Object> r = (javax.swing.ListCellRenderer<Object>) comboBox.getRenderer();
+			Component c = r.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
+			c.setFont(comboBox.getFont());
+			c.setForeground(DIM);
+			c.setBackground(BG);
+			currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height, c instanceof javax.swing.JPanel);
 		}
 		@Override protected javax.swing.plaf.basic.ComboPopup createPopup() {
 			javax.swing.plaf.basic.BasicComboPopup p = (javax.swing.plaf.basic.BasicComboPopup) super.createPopup();

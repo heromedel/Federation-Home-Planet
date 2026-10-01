@@ -26,6 +26,8 @@ public final class FinalVictory {
 	private FinalVictory() { }
 
 	public static final String NOTHING = "nothing", RESCUE = "rescue", REWARD = "reward";
+	/** An Immersive career on Hard: the museum takes her, at half her value (never a choice in Settings). */
+	public static final String MUSEUM = "museum";
 	public static final String[] CHOICES = {NOTHING, RESCUE, REWARD};
 
 	/** A choice as Settings and the Immersive briefing offer it. */
@@ -35,11 +37,27 @@ public final class FinalVictory {
 		return "Nothing (she is lost with the run)";
 	}
 	private static String norm(String c) { return RESCUE.equals(c) || REWARD.equals(c) ? c : NOTHING; }
-	/** The choice of the fleet in use (the Immersive fleet's is kept in its career). */
+	/** The choice of the fleet in use (the Immersive fleet's is its difficulty's, or, from before difficulties, kept in its career). */
 	public static String choice() {
 		Vault v = Vault.get();
+		String fixed = fixed();
+		if (fixed != null) return fixed;
 		return norm(v.immersive ? Career.finalVictory(v.root) : HomePlanet.finalVictory);
 	}
+	/** The Immersive career's difficulty decides it (RESCUE or MUSEUM), or null where the player chooses. */
+	public static String fixed() {
+		CareerRules r = CareerRules.current();
+		return r == null ? null : r.victory();
+	}
+	/** What the museum pays, as a share of her value: the difficulty's (full or half), otherwise full. */
+	public static int museumPercent() {
+		CareerRules r = CareerRules.current();
+		return r == null ? 100 : r.museumPercent();
+	}
+	/** The museum's price for her. */
+	public static int museumPrice(int value) { return value * museumPercent() / 100; }
+	/** "her full value" or "half her value", for the letters. */
+	static String worth() { return museumPercent() >= 100 ? "her full value" : "half her value"; }
 	/** Sets the choice of the fleet in use (the normal fleet's is in the cfg: the caller saves it). */
 	public static void setChoice(String c) throws IOException {
 		Vault v = Vault.get();
@@ -89,9 +107,11 @@ public final class FinalVictory {
 				Map<String, String> fills = new LinkedHashMap<String, String>();
 				fills.put("ship", f.name);
 				fills.put("value", Integer.toString(value));
+				fills.put("worth", worth());
 				if ("offered".equals(f.outcome)) {
+					fills.put("value", Integer.toString(museumPrice(value)));
 					if (HomePlanet.immersiveNotifications) Transmissions.post("rescue:" + f.id, "rescue", fills); // nothing if it's there already
-					else out.add(notice("rescue", fills, f, value));
+					else out.add(notice("rescue", fills, f, museumPrice(value)));
 					continue;
 				}
 				if ("rewarded".equals(f.outcome)) { v.closeFinal(f, true); continue; } // paid; only the closing was left
@@ -109,10 +129,16 @@ public final class FinalVictory {
 				boolean named = u.victoriousScores(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId()) > f.scoresThen;
 				HistoryLog.entry("VICTORY", f.name + " won the last battle (the profile's victories " + f.victoriesThen + " -> " + u.victories()
 						+ (named ? ", and a Top Scores entry names her" : "") + "); after a final victory: " + c + ", her value " + value + " scrap");
-				if (RESCUE.equals(c)) {
+				if (MUSEUM.equals(c)) { // Hard: no keeping her; the museum takes her at its price
+					fills.put("value", Integer.toString(museumPrice(value)));
+					museum(f);
+					if (HomePlanet.immersiveNotifications) Transmissions.post("museum:" + f.id, "museum", fills);
+					else out.add(notice("museum", fills, null, museumPrice(value)));
+				} else if (RESCUE.equals(c)) {
+					fills.put("value", Integer.toString(museumPrice(value)));
 					v.finalOffered(f);
 					if (HomePlanet.immersiveNotifications) Transmissions.post("rescue:" + f.id, "rescue", fills);
-					else out.add(notice("rescue", fills, v.finalBattle(f.id), value));
+					else out.add(notice("rescue", fills, v.finalBattle(f.id), museumPrice(value)));
 				} else {
 					v.finalRewarded(f); // noted before paying: a payment whose note was lost would be paid again
 					try {
@@ -148,9 +174,9 @@ public final class FinalVictory {
 		Museum.kept(Vault.get(), f.id);
 		return s.name + " is docked at the Space Dock, ready for her next journey.";
 	}
-	/** The museum's offer: her value to the Cargo Hold, and she goes to the museum. Returns what came of it, in words. */
+	/** The museum's offer: its price (her value, or half on harder careers) to the Cargo Hold, and she goes to the museum. Returns what came of it, in words. */
 	public static String museum(Vault.FinalBattle f) throws IOException {
-		int value = value(HomePlanet.savedGameParser.readSavedGame(f.copy));
+		int value = museumPrice(value(HomePlanet.savedGameParser.readSavedGame(f.copy)));
 		Vault v = Vault.get();
 		v.depositToStorage(value);
 		v.toMuseum(f);

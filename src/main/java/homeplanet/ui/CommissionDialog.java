@@ -368,6 +368,8 @@ public class CommissionDialog extends JDialog {
 	}
 
 	private String previewFor = null;
+	/** Names the die has rolled in this window (not rolled again until they run out). */
+	private final java.util.Set<String> rolled = new java.util.HashSet<String>();
 	/** The die beside the ship name: a name for her model, unlike any ship's in the fleet (or the one shown). */
 	private void rollShipName() {
 		Entry e = list.getSelectedValue();
@@ -375,8 +377,14 @@ public class CommissionDialog extends JDialog {
 		List<String> taken = new ArrayList<String>();
 		for (homeplanet.vault.Ship s : homeplanet.vault.Vault.get().all()) taken.add(s.name);
 		taken.add(nameField.getText());
-		String n = homeplanet.parser.ShipNames.roll(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id, taken, rng);
-		if (n != null) nameField.setText(n);
+		String id = RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id;
+		List<String> all = new ArrayList<String>(taken);
+		all.addAll(rolled); // no repeats in this window...
+		String n = homeplanet.parser.ShipNames.roll(id, all, rng);
+		if (n == null) { rolled.clear(); n = homeplanet.parser.ShipNames.roll(id, taken, rng); } // ...until they run out
+		if (n == null) return;
+		rolled.add(n);
+		nameField.setText(n);
 	}
 	/** Clicking a crew member's name in the preview: her name in the crew she'll be built with. */
 	private void renameCrew(Entry e, int i, net.blerf.ftl.parser.SavedGameParser.CrewState shown) {
@@ -389,7 +397,7 @@ public class CommissionDialog extends JDialog {
 
 	/** HR2: her price as built, with a custom design's rooms and doors. */
 	static homeplanet.parser.Pricing.Quote quote(String bpId, SavedGameState s) {
-		return homeplanet.parser.Pricing.ship(s, HomePlanet.commissionPercent);
+		return homeplanet.parser.Pricing.ship(s, homeplanet.core.Economy.commissionPercent());
 	}
 	private void showPrice(homeplanet.parser.Pricing.Quote q) {
 		int have = homeplanet.vault.Vault.get().storageScrap();

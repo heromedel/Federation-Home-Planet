@@ -49,6 +49,7 @@ public class MainFrame extends JFrame {
 				// back from another program (FTL, most likely): the Space Dock takes stock, as Refresh does. Not when one of
 				// the station's own windows closes, and not in the Cargo Bay (unsaved trades)
 				if (!atSpaceDock) return;
+				if (homeplanet.core.GameGuard.isFtlRunning() && !homeplanet.vault.Vault.get().continueFile().exists()) return; // FTL is saving or still on its game-over screen: judged once it's closed
 				boolean gone = homeplanet.core.SaveWatcher.takeGone(); // FTL ended a run meanwhile
 				if (gone) spaceDock.refresh(); // her save is gone: the fleet is read again, so she leaves the Space Dock (lost in action)
 				else if (e.getOppositeWindow() == null) spaceDock.init();
@@ -68,6 +69,8 @@ public class MainFrame extends JFrame {
 		setContentPane(contentPane);
 		contentPane.add(tasksPane, BorderLayout.CENTER);
 		spaceDock = new SpaceDockUI(this);
+		// a lost ship is judged when the player comes back to the station (windowActivated above), never while FTL is
+		// saving: FTL rewrites continue.sav by deleting it first, and a look in that instant would lose her
 		tasksPane.add(new SpaceDockScrollPane(this, spaceDock), "dock");
 		cargoBay = new CargoBayUI(this);
 		JScrollPane cargoBayPane = new JScrollPane(cargoBay);

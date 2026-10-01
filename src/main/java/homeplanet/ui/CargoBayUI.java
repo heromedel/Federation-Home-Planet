@@ -122,7 +122,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private final CargoParts.Label partnerNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
 	private static final String[][] SUPPLIES = {{"scrap", "Scrap"}, {"fuel", "Fuel"}, {"missiles", "Missiles"}, {"drones", "Parts"}};
 	/** What FTL's stores charge for one (fuel 3, missile 6, drone part 8); selling, where allowed, pays half. */
-	private static final int[] SUPPLY_PRICE = {0, 3, 6, 8};
+	private static final int[] SUPPLY_PRICE = {0, homeplanet.parser.Pricing.FUEL, homeplanet.parser.Pricing.MISSILE, homeplanet.parser.Pricing.DRONE_PART};
 	private final SupplyCell[] mySupply = new SupplyCell[4], theirSupply = new SupplyCell[4];
 	private FtlButton myJunkSupply, mySellSupply, theirJunkSupply, theirSellSupply;
 	private int supplyIdx = 0;
@@ -734,7 +734,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (myJunkSupply == null) return;
 		boolean can = supplyIdx >= 2 && currentState != null && tradeState != null;
 		mySellSupply.setVisible(HomePlanet.sellSupplies);
-		String share = HomePlanet.sellPercent() == 50 ? "half the store price" : HomePlanet.sellPercent() + "% of the store price, set by Immersive Mode";
+		String share = homeplanet.core.Economy.supplyShare();
 		mySellSupply.setToolTipText("Sell that many of your ship's missiles or drone parts (" + share + ")");
 		theirSellSupply.setToolTipText("Sell that many of the partner's missiles or drone parts (" + share + ")");
 		theirSellSupply.setVisible(HomePlanet.sellSupplies);
@@ -751,7 +751,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (have <= 0) { help(save.getPlayerShipName() + " has no " + what + "."); return; }
 		int n = Math.min((Integer) moveAmount.getValue(), have);
 		if (n == 1) what = supplyIdx == 2 ? "missile" : "drone part";
-		int price = sell ? n * SUPPLY_PRICE[supplyIdx] * HomePlanet.sellPercent() / 100 : 0; // half the store price (a quarter in Immersive Mode)
+		int price = sell ? homeplanet.core.Economy.supplySale(n, SUPPLY_PRICE[supplyIdx]) : 0;
 		String q = sell ? "Sell " + n + " " + what + " for " + price + " scrap?" : "Junk " + n + " " + what + "?\nYou get nothing for " + (n == 1 ? "it." : "them.");
 		if (!HomePlanet.confirmNo(this, q, sell ? "Sell" : "Junk")) return;
 		setSupply(state, supplyIdx, have - n);
@@ -1019,7 +1019,6 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (cs == null) return;
 		ShipState state = mine ? currentState : tradeState;
 		SavedGameState save = mine ? currentSave : tradeSave;
-		if (SaveHelper.getOwnCrew(state).size() <= 1 && (mine || !partnerIsStorage())) { HomePlanet.showErrorDialog("At least one crew member must stay aboard."); return; }
 		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't retire right now."); return; }
 		if (!HomePlanet.confirmNo(this, "Retire " + cs.getName() + "?\nThey leave " + save.getPlayerShipName() + " for good.", "Retire")) return;
 		state.getCrewList().remove(cs);
@@ -1038,9 +1037,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		CrewState cs = (CrewState) (fromMine ? c.mine : c.theirs).selectedValue();
 		if (cs == null) return;
 		ShipState startState = fromMine ? currentState : tradeState, destState = fromMine ? tradeState : currentState;
-		boolean startIsShip = !(!fromMine && partnerIsStorage());
+		// a ship may be left with no one aboard (fixing up a derelict, say): FTL just won't launch her until someone is (HomePlanet.noOneAboard)
 		boolean destIsStorage = fromMine && partnerIsStorage();
-		if (startIsShip && SaveHelper.getOwnCrew(startState).size() <= 1) { HomePlanet.showErrorDialog("At least one crew member must stay aboard."); return; }
 		if (!destIsStorage && SaveHelper.getOwnCrew(destState).size() >= 8) { HomePlanet.showErrorDialog("No room for more crew: a ship carries 8 at most."); return; }
 		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't be moved right now."); return; }
 		String refused = destIsStorage ? null : Dlc.refusesCrew(fromMine ? tradeSave : currentSave, cs);
@@ -1115,6 +1113,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			return false;
 		}
 		if (currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return false;
+		int billed = 0; // taken from the Cargo Hold in memory (it's the partner): given back if the save fails
 		try {
 			Map<String, Integer> curBefore = null, tradeBefore = null;
 			String nameBefore = null, tradeNameBefore = null;
@@ -1135,6 +1134,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			if (tradeShip != null && tradePath != null) tx.put(tradeShip, tradeSave, tradeHash);
 			shop.addTo(tx);
 			systems.addTo(tx);
+			billed = systems.payBill(tx); // the Dry Dock's work, from the Cargo Hold, in the same save
 			tx.commit();
 			if (!systems.changes().isEmpty())
 				homeplanet.core.HistoryLog.entry("SYSTEMS", currentSave.getPlayerShipName(), new ArrayList<String>(systems.changes()));
@@ -1193,10 +1193,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			if (!lines.isEmpty())
 				homeplanet.core.HistoryLog.entry("TRADE", currentSave.getPlayerShipName() + (tradeSave != null ? " <-> " + tradeSave.getPlayerShipName() : ""), lines);
 		} catch (Vault.StaleException e) {
+			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
 			log.warn("Save refused: {}", e.getMessage());
 			HomePlanet.showErrorDialog(e.getMessage() + "\n\nPress Reset to load her as she is now, then make the changes again.");
 			return false;
 		} catch (Exception e) {
+			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
 			log.error("Saving failed", e);
 			HomePlanet.showErrorDialog("The Home Planet Station could not save the changes:\n" + e);
 			return false;

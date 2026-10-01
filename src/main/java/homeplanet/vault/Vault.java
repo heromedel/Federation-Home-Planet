@@ -40,9 +40,10 @@ import org.slf4j.LoggerFactory;
  *     designs.xml, remodels.xml, art/, history.log, removed-blueprints.log
  * </pre>
  *
- * Immersive Mode has a fleet of its own in FederationHomePlanet-Immersive (the same layout, less the blueprint files):
- * designs, remodels, their art and blueprint backups stay in FederationHomePlanet, shared by both fleets, since FTL
- * has one Federation Home Planet Mod for both.
+ * Each Immersive career has a fleet of its own, by difficulty: FederationHomePlanet-Immersive-Easy, -Normal and -Hard,
+ * and FederationHomePlanet-Immersive for Custom (the first Immersive fleet, from before difficulties). The same layout,
+ * less the blueprint files: designs, remodels, their art and blueprint backups stay in FederationHomePlanet, shared by
+ * every fleet, since FTL has one Federation Home Planet Mod for all.
  *
  * Board copies a ship's file to continue.sav; Dock copies it back. Every write of a ship's save is preceded by
  * a snapshot into her history folder, so the last KEEP versions can always be recovered by hand.
@@ -51,8 +52,31 @@ public final class Vault {
 	private static final Logger log = LoggerFactory.getLogger(Vault.class);
 
 	public static final String FOLDER = "FederationHomePlanet";
-	/** Immersive Mode's own fleet. */
+	/** The Immersive Custom career's fleet (the first Immersive fleet, from before difficulties). */
 	public static final String IMMERSIVE_FOLDER = "FederationHomePlanet-Immersive";
+	/** The game modes, each with a fleet of its own: Sandbox Mode, and the Immersive careers by difficulty. */
+	public static final String SANDBOX = "sandbox", EASY = "easy", NORMAL = "normal", HARD = "hard", CUSTOM = "custom";
+	public static final String[] SLOTS = {SANDBOX, EASY, NORMAL, HARD, CUSTOM};
+	/** A slot from the cfg (an unknown one is Custom, the Immersive fleet from before difficulties). */
+	public static String slotOf(String s) {
+		for (String k : SLOTS) if (k.equals(s) && !SANDBOX.equals(k)) return k;
+		return CUSTOM;
+	}
+	/** A mode's fleet folder's name. */
+	public static String folderOf(String slot) {
+		if (SANDBOX.equals(slot)) return FOLDER;
+		if (CUSTOM.equals(slot)) return IMMERSIVE_FOLDER;
+		return IMMERSIVE_FOLDER + "-" + Character.toUpperCase(slot.charAt(0)) + slot.substring(1);
+	}
+	/** A mode's fleet folder in this saves folder. */
+	public static File rootOf(File savesFolder, String slot) { return new File(savesFolder, folderOf(slot)); }
+	/** A mode's name: "Sandbox Mode", "Immersive Easy"... */
+	public static String title(String slot) {
+		if (SANDBOX.equals(slot)) return "Sandbox Mode";
+		return "Immersive " + Character.toUpperCase(slot.charAt(0)) + slot.substring(1);
+	}
+	/** The Immersive career Immersive Mode means when no other is named (the one last used). */
+	public static String immersiveSlot = CUSTOM;
 	/** In a fleet's folder: the ship that was boarded when the player switched to the other fleet, boarded again on return. */
 	private static final String PARKED = "parked-boarded.txt";
 	public static final String MANIFEST = "manifest.xml";
@@ -69,9 +93,13 @@ public final class Vault {
 	public static Vault open(File savesFolder) throws IOException {
 		return open(savesFolder, false);
 	}
-	/** Opens the normal fleet's vault, or Immersive Mode's, and makes it the one in use. */
+	/** Opens the normal fleet's vault, or Immersive Mode's (the career last used), and makes it the one in use. */
 	public static Vault open(File savesFolder, boolean immersive) throws IOException {
-		Vault v = new Vault(savesFolder, immersive);
+		return open(savesFolder, immersive ? immersiveSlot : SANDBOX);
+	}
+	/** Opens this mode's fleet and makes it the one in use. */
+	public static Vault open(File savesFolder, String slot) throws IOException {
+		Vault v = new Vault(savesFolder, slot);
 		instance = v; // before load(), so what load() logs goes into the vault's own log
 		v.load();
 		return v;
@@ -82,18 +110,36 @@ public final class Vault {
 	public final File root;
 	/** Where the blueprint files shared by both fleets are: the normal vault's folder. */
 	public final File shared;
-	/** Immersive Mode's fleet. */
+	/** An Immersive career's fleet. */
 	public final boolean immersive;
+	/** Which mode's fleet: SANDBOX, EASY, NORMAL, HARD or CUSTOM. */
+	public final String slot;
 	private final List<Ship> ships = new ArrayList<Ship>();
 
-	private Vault(File savesFolder, boolean immersive) {
+	private Vault(File savesFolder, String slot) {
 		this.saves = savesFolder;
-		this.immersive = immersive;
+		this.slot = SANDBOX.equals(slot) ? SANDBOX : slotOf(slot);
+		this.immersive = !SANDBOX.equals(this.slot);
 		this.shared = new File(savesFolder, FOLDER);
-		this.root = immersive ? new File(savesFolder, IMMERSIVE_FOLDER) : shared;
+		this.root = rootOf(savesFolder, this.slot);
 	}
-	/** The other fleet's folder (Immersive Mode's, or the normal one). */
-	public File otherRoot() { return immersive ? shared : new File(saves, IMMERSIVE_FOLDER); }
+	/** The other fleet's folder: from an Immersive career the Sandbox one; from Sandbox Mode the Immersive career last used. */
+	public File otherRoot() { return immersive ? shared : rootOf(saves, immersiveSlot); }
+	/** How many ships a fleet folder holds (docked, boarded when it was left, and in the Junkyard), without opening it. */
+	public static int shipCount(File fleetRoot) {
+		int n = 0;
+		for (String dir : new String[] {"ships", "junkyard"}) {
+			File[] fs = new File(fleetRoot, dir).listFiles();
+			if (fs != null) for (File f : fs) if (f.isFile() && f.getName().endsWith(".sav")) n++;
+		}
+		return n;
+	}
+	/** Every other mode's fleet folder that exists. */
+	public List<File> otherRoots() {
+		List<File> out = new ArrayList<File>();
+		for (String k : SLOTS) if (!k.equals(slot) && rootOf(saves, k).isDirectory()) out.add(rootOf(saves, k));
+		return out;
+	}
 
 	// ---- places ----
 
@@ -324,8 +370,8 @@ public final class Vault {
 		saveManifest();
 		List<String> lines = new ArrayList<String>();
 		for (Ship s : junk) lines.add("hull: " + s.name);
-		// in Immersive Mode the ship it earns goes by what was surrendered; otherwise Settings' free ship
-		String earned = immersive ? homeplanet.parser.FreeCommand.earned(value) : null;
+		// the ship it earns goes by what was surrendered in Immersive Mode or with Variable chosen; otherwise Settings' free ship
+		String earned = homeplanet.parser.FreeCommand.byValue(this) ? homeplanet.parser.FreeCommand.earned(value) : null;
 		HistoryLog.entry("REASSIGN", "the Cargo Hold and " + junk.size() + " hull(s) from the Junkyard surrendered (worth " + value + " scrap"
 				+ (earned == null ? "" : ": " + homeplanet.parser.FreeCommand.words(earned)) + "); kept in surrendered/" + dir.getName(), lines);
 		grantFreeCommand("reported for reassignment", earned);
@@ -471,7 +517,8 @@ public final class Vault {
 		// the boarded ship: continue.sav is hers, if it's there
 		Ship b = boarded();
 		File cont = continueFile();
-		if (b != null && !cont.isFile()) {
+		// never while FTL is running: it rewrites continue.sav by deleting it first, so a missing file there proves nothing
+		if (b != null && !cont.isFile() && !homeplanet.core.GameGuard.isFtlRunning()) {
 			notes.add(b.name + " was boarded, and continue.sav is gone: lost in action (FTL ends a run by deleting the save). "
 					+ (historyOf(b).isDirectory() ? "Her last versions are in history/" + b.id : ""));
 			recordFate(b, Fate.LOST);
@@ -1149,9 +1196,13 @@ public final class Vault {
 	}
 	/** Removes a ship for good (scrapped or destroyed): her last save goes into her history, and she leaves the manifest. Logged under {@code why} unless null. */
 	public synchronized void remove(Ship s, String why) throws IOException {
+		remove(s, why, "DESTROY".equals(why) ? Fate.DESTROYED : Fate.SCRAPPED);
+	}
+	/** The same, recording this fate (a ship traded in or auctioned off is SOLD). */
+	public synchronized void remove(Ship s, String why, Fate fate) throws IOException {
 		File f = fileOf(s);
 		if (f.isFile()) moveToHistory(s, f);
-		recordFate(s, "DESTROY".equals(why) ? Fate.DESTROYED : Fate.SCRAPPED);
+		recordFate(s, fate);
 		ships.remove(s);
 		saveManifest();
 		if (why != null) HistoryLog.entry(why, s.name + "  " + s.state.key + "/" + s.id + ".sav -> history/" + s.id + "/");
@@ -1168,6 +1219,8 @@ public final class Vault {
 		SCRAPPED,
 		/** Sold to the Federation museum after a final victory: her price was paid, so she doesn't come back. */
 		MUSEUM,
+		/** Traded in or auctioned off from the Junkyard: she was paid for, so she doesn't come back. */
+		SOLD,
 		/** Traded to another commander's fleet over Long Range Comm. (or on her way, in escrow): she flies for them now. */
 		TRANSFERRED
 	}
@@ -1201,7 +1254,7 @@ public final class Vault {
 			try {
 				String[] lines = new String(SafeFiles.read(fate), java.nio.charset.StandardCharsets.UTF_8).split("\n");
 				Fate f = Fate.valueOf(lines[0].trim());
-				if (f == Fate.SCRAPPED || f == Fate.MUSEUM || f == Fate.TRANSFERRED) continue; // a traded ship brought back would be in two fleets
+				if (f == Fate.SCRAPPED || f == Fate.MUSEUM || f == Fate.SOLD || f == Fate.TRANSFERRED) continue; // a traded ship brought back would be in two fleets
 				File[] saves = d.listFiles(new java.io.FileFilter() { public boolean accept(File x) { return x.isFile() && x.getName().endsWith(".sav"); } });
 				if (saves == null || saves.length == 0) continue;
 				java.util.Arrays.sort(saves, OLDEST_FIRST);
@@ -1472,28 +1525,31 @@ public final class Vault {
 		}
 		return out;
 	}
-	/** The names of the other fleet's ships (docked or junked) whose saves name this blueprint. */
+	/** The names of every other fleet's ships (docked or junked) whose saves name this blueprint. */
 	public List<String> otherFleetUsing(String bpId) {
 		List<String> out = new ArrayList<String>();
-		File other = otherRoot();
-		Map<String, String> names = manifestNames(new File(other, MANIFEST));
-		for (String dir : new String[] {"ships", "junkyard"}) {
-			File[] fs = new File(other, dir).listFiles();
-			if (fs == null) continue;
-			for (File f : fs) {
-				if (!f.getName().endsWith(".sav")) continue;
-				List<String> ids = homeplanet.parser.Retrofit.blueprintIds(f);
-				if (ids != null && !ids.contains(bpId)) continue; // an unreadable one counts, as usingBlueprint does
-				String id = f.getName().substring(0, f.getName().length() - 4);
-				out.add((names.containsKey(id) ? names.get(id) : id) + (immersive ? " (normal fleet)" : " (Immersive fleet)"));
+		for (String k : SLOTS) {
+			if (k.equals(slot)) continue;
+			File other = rootOf(saves, k);
+			Map<String, String> names = manifestNames(new File(other, MANIFEST));
+			for (String dir : new String[] {"ships", "junkyard"}) {
+				File[] fs = new File(other, dir).listFiles();
+				if (fs == null) continue;
+				for (File f : fs) {
+					if (!f.getName().endsWith(".sav")) continue;
+					List<String> ids = homeplanet.parser.Retrofit.blueprintIds(f);
+					if (ids != null && !ids.contains(bpId)) continue; // an unreadable one counts, as usingBlueprint does
+					String id = f.getName().substring(0, f.getName().length() - 4);
+					out.add((names.containsKey(id) ? names.get(id) : id) + " (" + title(k) + " fleet)");
+				}
 			}
 		}
 		return out;
 	}
 	private List<File> otherFleetSaves() {
 		List<File> out = new ArrayList<File>();
-		File other = otherRoot();
-		for (String dir : new String[] {"ships", "junkyard", "history", "surrendered"}) collectSaves(new File(other, dir), out, 2);
+		for (File other : otherRoots())
+			for (String dir : new String[] {"ships", "junkyard", "history", "surrendered"}) collectSaves(new File(other, dir), out, 2);
 		return out;
 	}
 	private static void collectSaves(File dir, List<File> out, int depth) {
@@ -1529,8 +1585,12 @@ public final class Vault {
 	 * checks). Returns the vault now in use. On a failure before the other fleet opens, nothing has changed but a dock.
 	 */
 	public static Vault switchFleet(boolean toImmersive) throws IOException {
+		return switchFleet(toImmersive ? immersiveSlot : SANDBOX);
+	}
+	/** As {@link #switchFleet(boolean)}, to this mode's fleet. */
+	public static Vault switchFleet(String toSlot) throws IOException {
 		Vault from = get();
-		if (from.immersive == toImmersive) return from;
+		if (from.slot.equals(toSlot)) return from;
 		from.reload();
 		Ship b = from.boarded();
 		File park = new File(from.root, PARKED);
@@ -1540,8 +1600,8 @@ public final class Vault {
 		} else if (park.isFile() && !park.delete()) {
 			log.warn("Could not remove {}", park);
 		}
-		HistoryLog.entry("SWITCH FLEET", "to the " + (toImmersive ? "Immersive" : "normal") + " fleet" + (b == null ? "" : "; " + b.name + " docked here, to be boarded again on return"));
-		Vault to = open(from.saves, toImmersive);
+		HistoryLog.entry("SWITCH FLEET", "to the " + title(toSlot) + " fleet" + (b == null ? "" : "; " + b.name + " docked here, to be boarded again on return"));
+		Vault to = open(from.saves, toSlot);
 		File back = new File(to.root, PARKED);
 		if (back.isFile()) {
 			String id = new String(SafeFiles.read(back), java.nio.charset.StandardCharsets.UTF_8).trim();
@@ -1549,7 +1609,7 @@ public final class Vault {
 			if (s != null && s.state == Ship.State.DOCKED && !to.continueFile().exists()) to.board(s);
 			if (!back.delete()) log.warn("Could not remove {}", back);
 		}
-		HistoryLog.entry("SWITCH FLEET", "now the " + (toImmersive ? "Immersive" : "normal") + " fleet" + (to.boarded() == null ? "" : "; " + to.boarded().name + " boarded again"));
+		HistoryLog.entry("SWITCH FLEET", "now the " + title(toSlot) + " fleet" + (to.boarded() == null ? "" : "; " + to.boarded().name + " boarded again"));
 		return to;
 	}
 
@@ -1564,13 +1624,18 @@ public final class Vault {
 	 * records, its own FTL profile) is zipped into old-immersive-careers/, checked, and only then deleted. Returns the zip.
 	 */
 	public static File endImmersiveCareer() throws IOException {
+		return endCareer(immersiveSlot);
+	}
+	/** Ends this Immersive career, as {@link #endImmersiveCareer()}; its fleet mustn't be the one in use. */
+	public static File endCareer(String slot) throws IOException {
 		Vault v = get();
-		if (v.immersive) throw new IOException("Return to normal mode first");
-		File im = v.otherRoot();
-		if (!im.isDirectory()) throw new IOException("There is no Immersive career to end");
+		if (SANDBOX.equals(slot)) throw new IOException("Sandbox Mode has no career to end");
+		if (v.slot.equals(slot)) throw new IOException("Switch to another mode first");
+		File im = rootOf(v.saves, slot);
+		if (!im.isDirectory()) throw new IOException("There is no " + title(slot) + " career to end");
 		String stamp;
 		synchronized (STAMP) { stamp = STAMP.format(new Date()); }
-		File zip = new File(new File(v.root, OLD_CAREERS), "Immersive career " + stamp + ".zip");
+		File zip = new File(new File(v.shared, OLD_CAREERS), title(slot) + " career " + stamp + ".zip");
 		SafeFiles.zipFolder(im, zip, null);
 		int files = countFiles(im), zipped;
 		java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip);
@@ -1579,7 +1644,7 @@ public final class Vault {
 		if (!SafeFiles.deleteTree(im))
 			throw new IOException("Some of " + im + " could not be deleted (a file in use?). The whole career is kept in " + zip
 					+ "; delete the folder by hand once The Home Planet Station is closed");
-		HistoryLog.entry("CAREER ENDED", "the Immersive career was ended; a copy is kept in " + OLD_CAREERS + "/" + zip.getName());
+		HistoryLog.entry("CAREER ENDED", "the " + title(slot) + " career was ended; a copy is kept in " + OLD_CAREERS + "/" + zip.getName());
 		return zip;
 	}
 	private static int countFiles(File dir) {
@@ -1599,7 +1664,7 @@ public final class Vault {
 		ships.remove(s);
 		saveManifest();
 		HistoryLog.entry("SENT", s.name + "  " + (s.isBoarded() ? "continue.sav" : s.state.key + "/" + s.id + ".sav") + " -> the "
-				+ (immersive ? "normal" : "Immersive") + " fleet's " + (junkyard ? "Junkyard" : "Space Dock"));
+				+ (immersive ? "Sandbox" : title(immersiveSlot)) + " fleet's " + (junkyard ? "Junkyard" : "Space Dock"));
 	}
 	/**
 	 * The player takes this boarded ship to the other fleet and switches to it (an uncommissioned ship in Immersive
@@ -1613,8 +1678,8 @@ public final class Vault {
 			from.ships.remove(s);
 			from.saveManifest();
 		}
-		HistoryLog.entry("HANDED OVER", s.name + " (continue.sav) to the " + (from.immersive ? "normal" : "Immersive") + " fleet, now in use");
-		Vault to = open(from.saves, !from.immersive);
+		HistoryLog.entry("HANDED OVER", s.name + " (continue.sav) to the " + (from.immersive ? "Sandbox" : title(immersiveSlot)) + " fleet, now in use");
+		Vault to = open(from.saves, from.immersive ? SANDBOX : immersiveSlot);
 		File park = new File(to.root, PARKED);
 		if (park.isFile() && !park.delete()) log.warn("Could not remove {}", park);
 		Ship b = to.boarded();
