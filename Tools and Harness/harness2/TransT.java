@@ -26,6 +26,13 @@ public class TransT { public static void main(String[] a) throws Exception {
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
   Transmissions.check();
   Setup.chk("F: a new fleet: the free command, and one order for it", v.freeCommandOpen() && orders() == 1);
+  String setting = HomePlanet.freeShip;
+  HomePlanet.freeShip = FreeCommand.ANY;
+  Setup.chk("F: a new fleet starts with a Kestrel Type A, whatever a report would grant", FreeCommand.KESTREL.equals(FreeCommand.ship()));
+  HomePlanet.freeShip = FreeCommand.VARIABLE;
+  Setup.chk("F: Variable outside Immersive Mode: a report earns by what it surrenders", FreeCommand.byValue(v)
+    && FreeCommand.earned(FreeCommand.surrenderValue(v)).equals(FreeCommand.onReport(v)));
+  HomePlanet.freeShip = setting;
   Ship stranger = v.adopt(Commission.build("PLAYER_SHIP_HARD", "New Game Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)));
   v.board(stranger); Transmissions.check();
   v.remove(v.boarded(), "DESTROY"); Transmissions.check();

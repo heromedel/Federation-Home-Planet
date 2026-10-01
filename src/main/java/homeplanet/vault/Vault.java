@@ -324,8 +324,8 @@ public final class Vault {
 		saveManifest();
 		List<String> lines = new ArrayList<String>();
 		for (Ship s : junk) lines.add("hull: " + s.name);
-		// in Immersive Mode the ship it earns goes by what was surrendered; otherwise Settings' free ship
-		String earned = immersive ? homeplanet.parser.FreeCommand.earned(value) : null;
+		// the ship it earns goes by what was surrendered in Immersive Mode or with Variable chosen; otherwise Settings' free ship
+		String earned = homeplanet.parser.FreeCommand.byValue(this) ? homeplanet.parser.FreeCommand.earned(value) : null;
 		HistoryLog.entry("REASSIGN", "the Cargo Hold and " + junk.size() + " hull(s) from the Junkyard surrendered (worth " + value + " scrap"
 				+ (earned == null ? "" : ": " + homeplanet.parser.FreeCommand.words(earned)) + "); kept in surrendered/" + dir.getName(), lines);
 		grantFreeCommand("reported for reassignment", earned);

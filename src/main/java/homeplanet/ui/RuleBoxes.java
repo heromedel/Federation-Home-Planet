@@ -37,10 +37,17 @@ public class RuleBoxes {
 	final JCheckBox costBox = new JCheckBox("Commissioning a ship costs scrap, paid from the Cargo Hold, at", HomePlanet.commissionCosts);
 	final JComboBox<String> percentBox = new JComboBox<String>(new String[] {"100%", "75%", "50%"});
 	private final JPanel costRow = row(0);
-	private static final String[] FREE_KEYS = {"kestrel", "any", "relief"};
-	final JComboBox<String> freeBox = new JComboBox<String>(new String[] {"a Kestrel Type A", "any ship", "a Federation relief ship"});
+	private static final String[] FREE_KEYS = {"kestrel", "relief", "any", "variable"};
+	final JComboBox<String> freeBox = new JComboBox<String>(new String[] {"Kestrel Type A", "Relief Ship", "Any", "Variable (Depending on how much you gave up)"});
+	/** Each choice's explanation, shown as the list is open. */
+	private static final String[] FREE_TIPS = {
+		"A standard Kestrel Type A, as a new FTL game starts",
+		"The Federation relief ship: a Kestrel Type A stripped to basics (one crew, a Basic Laser and an Ion Blast, every system at its minimum, a reactor of 7)",
+		"Any ship you choose at Commission",
+		"By what the report surrenders (the Cargo Hold and the Junkyard, at full value): " + homeplanet.parser.FreeCommand.ANY_FROM
+				+ " scrap or more, any ship; " + homeplanet.parser.FreeCommand.KESTREL_FROM + " or more, a Kestrel Type A; less, the relief ship"};
 	private String freeTip = "";
-	private final JLabel freeLabel = new JLabel("The free command (once at the start, and with each report for reassignment):  ");
+	private final JLabel freeLabel = new JLabel("Report for Reassignment grants:  ");
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
@@ -77,8 +84,15 @@ public class RuleBoxes {
 		costRow.add(new JLabel("  of her price"));
 		int free = java.util.Arrays.asList(FREE_KEYS).indexOf(HomePlanet.freeShip);
 		freeBox.setSelectedIndex(free < 0 ? 0 : free);
-		freeTip = "No ship docked, boarded or in the Junkyard: this ship can be commissioned free. (Other... > Report for Reassignment empties the Junkyard.) "
-				+ "The relief ship is a Kestrel Type A stripped to basics: one crew, a basic laser and an ion blast, every system at its minimum";
+		freeTip = "The free ship a Report for Reassignment (Other... at the Space Dock) earns, in exchange for the Cargo Hold and the Junkyard. "
+				+ "A new fleet always starts with a Kestrel Type A";
+		freeBox.setRenderer(new javax.swing.DefaultListCellRenderer() {
+			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
+				java.awt.Component c = super.getListCellRendererComponent(list, value, index, selected, focus);
+				if (index >= 0 && index < FREE_TIPS.length) list.setToolTipText(selected ? FREE_TIPS[index] : list.getToolTipText());
+				return c;
+			}
+		});
 		freeBox.setToolTipText(freeTip);
 		freeLabel.setToolTipText(freeTip);
 		freeRow.add(freeLabel);
@@ -138,8 +152,9 @@ public class RuleBoxes {
 		// Immersive Mode: the ship a report earns goes by what it surrenders, not by this choice
 		freeBox.setEnabled(cost && !im);
 		freeLabel.setEnabled(cost && !im);
-		String byValue = "Set by Immersive Mode: a new career starts with a Kestrel Type A; a Report for Reassignment earns a ship by what it surrenders ("
-				+ homeplanet.parser.FreeCommand.ANY_FROM + " scrap or more: any ship; " + homeplanet.parser.FreeCommand.KESTREL_FROM + " or more: a Kestrel Type A; less: a Federation relief ship)";
+		if (im) freeBox.setSelectedIndex(3); // Immersive Mode: Variable, always
+		else if (freeBox.getSelectedIndex() == 3 && !"variable".equals(HomePlanet.freeShip)) freeBox.setSelectedIndex(Math.max(0, java.util.Arrays.asList(FREE_KEYS).indexOf(HomePlanet.freeShip))); // back to the player's own
+		String byValue = "Set by Immersive Mode: Variable. " + FREE_TIPS[3];
 		freeBox.setToolTipText(im ? byValue : freeTip);
 		freeLabel.setToolTipText(im ? byValue : freeTip);
 		if (!im) unlockBox.setEnabled(cost);
@@ -180,7 +195,7 @@ public class RuleBoxes {
 		if (sellSystemsBox.isSelected() != HomePlanet.sellSystems) changed.add("Selling stored systems: " + sellSystemsBox.isSelected());
 		if (costBox.isSelected() != HomePlanet.commissionCosts) changed.add("Commissioning costs scrap: " + costBox.isSelected());
 		if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
-		if (!FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Free ship for an empty shipyard: " + freeBox.getSelectedItem());
+		if (!HomePlanet.immersiveMode && !FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Report for Reassignment grants: " + freeBox.getSelectedItem());
 		if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
 		if (unlockBox.isSelected() != HomePlanet.unlockFreeShips) changed.add("A free ship for each new FTL unlock: " + unlockBox.isSelected());
 		// (with Immersive Mode on, the locked rules above show its values; the player's own are kept apart)
@@ -191,7 +206,7 @@ public class RuleBoxes {
 		boolean unlockWasOn = HomePlanet.unlockFreeShips;
 		// the rules Immersive Mode leaves to the player
 		HomePlanet.scrapKeepsSystems = scrapBox.isSelected();
-		HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()];
+		if (!HomePlanet.immersiveMode) HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()]; // (Immersive Mode shows its own, Variable)
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)
 			HomePlanet.storeRequirement = tradeBox.isSelected();
 			HomePlanet.journeyStoreRequirement = journeyBox.isSelected();
