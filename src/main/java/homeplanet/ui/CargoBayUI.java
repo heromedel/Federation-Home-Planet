@@ -120,7 +120,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	/** Info buttons beside each ship's line, mirrored: they open the same report as clicking her picture. */
 	private FtlButton myInfo, theirInfo;
 	private final CargoParts.Label partnerNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
-	/** The repair job's Return Her: shown when the partner is the Nightjar, whole again. */
+	/** Return (ship): shown aboard a borrowed ship (the repair job's Nightjar) that's ready to go home. */
 	private FtlButton returnBtn;
 	private static final String[][] SUPPLIES = {{"scrap", "Scrap"}, {"fuel", "Fuel"}, {"missiles", "Missiles"}, {"drones", "Parts"}};
 	/** What FTL's stores charge for one (fuel 3, missile 6, drone part 8); selling, where allowed, pays half. */
@@ -627,13 +627,13 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		trade.add(theirInfo);
 		partnerNote.setBounds(RX + RW - DROP_IN - 30 - 400, 110 + o, 400, 16);
 		trade.add(partnerNote);
-		// in the top bar, between the tabs and Reset: the Trade tab has no room for it
-		returnBtn = new FtlButton("Return Her", FtlFont.MENU, 150, 34);
-		returnBtn.setBounds(842, 12, 150, 34);
+		// beside the ship you're aboard: it's her it returns
+		returnBtn = new FtlButton("Return", FtlFont.BODY, 180, 24);
+		returnBtn.setBounds(LX + LW - 180, 106 + o, 180, 24);
 		returnBtn.setToolTipText("The Home Planet Station reports her fully repaired: send her back to her owner, and be paid");
 		returnBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { returnHer(); } });
 		returnBtn.setVisible(false);
-		stage.add(returnBtn);
+		trade.add(returnBtn);
 		JComponent how = new JComponent() {
 			@Override protected void paintComponent(Graphics g0) {
 				Graphics2D g = (Graphics2D) g0.create();
@@ -874,9 +874,10 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 		myPic.setIcon(shipIcon(currentSave));
 		partnerBtn.setText(partnerName());
-		boolean ready = !shipSelect.isEmpty() && !partnerIsStorage() && homeplanet.parser.RepairJob.ready(Vault.get(), tradeShip);
 		partnerNote.setText(shipSelect.isEmpty() ? "Nothing to trade with" : partnerIsStorage() ? "The Cargo Hold has no limit on slots for storage."
-				: ready ? "Fully repaired: she can go home." : shipClass(tradeState));
+				: shipClass(tradeState));
+		boolean ready = currentShip != null && homeplanet.vault.Borrowed.of(Vault.get(), currentShip.id) != null && homeplanet.parser.RepairJob.ready(Vault.get(), currentShip);
+		if (ready) returnBtn.setText("Return " + currentSave.getPlayerShipName());
 		returnBtn.setVisible(ready && !tradeUnavailable());
 		theirPic.setToolTipText(partnerIsStorage() || shipSelect.isEmpty() ? null : "Click for her report, and to rename her");
 		theirPic.setIcon(partnerIsStorage() ? null : shipIcon(tradeSave));
@@ -935,19 +936,21 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	// ---- the repair job ----
 
-	/** Sends the Nightjar back to her owner (saved changes first: she goes as she was last saved). */
+	/** Sends the borrowed ship you're aboard back to her owner (saved changes first: she goes as she was last saved). */
 	private void returnHer() {
-		if (tradeShip == null || !confirmLeave("return her")) return;
-		Ship s = tradeShip;
-		int pay = homeplanet.parser.RepairJob.payment(Vault.get(), homeplanet.parser.Transmissions.wasSent(homeplanet.parser.RepairJob.OVERDUE_LETTER));
-		if (!HomePlanet.confirmNo(this, "Return the " + s.name + " to her owner?\nShe leaves the fleet, and " + pay + " scrap is paid into the Cargo Hold.", "Return Her")) return;
+		if (currentShip == null || !confirmLeave("return her")) return;
+		if (!homeplanet.core.GameGuard.allows(this, "return her")) return;
+		Ship s = currentShip;
+		String title = "Return " + s.name;
+		int pay = homeplanet.parser.RepairJob.payment(Vault.get(), homeplanet.parser.RepairJob.late(Vault.get()));
+		if (!HomePlanet.confirmNo(this, "Return the " + s.name + " to her owner?\nShe leaves the fleet, and " + pay + " scrap is paid into the Cargo Hold.\n"
+				+ "You'll have no ship boarded: board another at the Space Dock.", title)) return;
 		try {
 			int paid = homeplanet.parser.RepairJob.returnHer(Vault.get(), s);
-			JOptionPane.showMessageDialog(this, "The " + s.name + " is on her way home. " + paid + " scrap has been paid into the Cargo Hold.", "Return Her", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, "The " + s.name + " is on her way home. " + paid + " scrap has been paid into the Cargo Hold.", title, JOptionPane.INFORMATION_MESSAGE);
 		} catch (java.io.IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not return her:\n" + e.getMessage());
 		}
-		tradeShip = null;
 		init();
 	}
 

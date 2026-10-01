@@ -28,6 +28,7 @@ import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
+import homeplanet.vault.Borrowed;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
@@ -52,8 +53,10 @@ public final class RepairJob {
 	/** Beacons after her delivery before her owner demands her back. */
 	public static final int OVERDUE = 200;
 	public static final int EXTRA_MIN = 200, EXTRA_MAX = 500;
+	/** Her owner, as the letters sign and her Borrowed mark names her. */
+	public static final String OWNER = "A Collector, Civilian Sector";
 
-	public static final String OFFER = "chain:repair-job", ACCEPTED = OFFER + ":accepted", PAID = OFFER + ":paid", LATE = OFFER + ":returned-late",
+	public static final String OFFER = "chain:repair-job", ACCEPTED = OFFER + ":accepted", READY = OFFER + ":ready", PAID = OFFER + ":paid", LATE = OFFER + ":returned-late",
 			OVERDUE_LETTER = OFFER + ":overdue", DEFIED = OFFER + ":defied", SEIZED = OFFER + ":seized", COLLECTED = OFFER + ":collected", HIDDEN = OFFER + ":hidden";
 	/** Every letter's key starts with this. */
 	public static boolean isJob(String key) { return key != null && key.startsWith(OFFER); }
@@ -132,13 +135,20 @@ public final class RepairJob {
 			}
 			String stage = p.getProperty("stage", "");
 			int at = intOf(p, "deliveredAt", -1);
-			if (at >= 0 && stage.isEmpty() && now >= at + OVERDUE && !sent.contains(OVERDUE_LETTER)) out.add(OVERDUE_LETTER);
+			if (at >= 0 && stage.isEmpty() && now >= at + OVERDUE && !sent.contains(OVERDUE_LETTER)) {
+				p.setProperty("late", "true"); // her owner has had to ask: the bonus is gone
+				changed = true;
+				out.add(OVERDUE_LETTER);
+			}
 			if ("defied".equals(stage) && now >= intOf(p, "seizeAt", Integer.MAX_VALUE) && !sent.contains(SEIZED)) {
 				seize(v, p);
 				changed = false; // seize() wrote it
 				out.add(SEIZED);
 			}
 			Ship s = ship(v);
+			// whole again, before her owner had to ask: The Home Planet Station says so, and offers to send her home
+			if (stage.isEmpty() && !"true".equals(p.getProperty("late")) && !sent.contains(READY) && !sent.contains(OVERDUE_LETTER) && s != null
+					&& (s.state == Ship.State.DOCKED || s.state == Ship.State.BOARDED) && s.save() != null && whole(s.save().getPlayerShip())) out.add(READY);
 			if ("true".equals(p.getProperty("collectLater")) && s != null && s.state == Ship.State.DOCKED && !sent.contains(COLLECTED)) {
 				v.remove(s, null, Vault.Fate.SEIZED);
 				p.setProperty("collectLater", "false");
@@ -173,7 +183,7 @@ public final class RepairJob {
 		return changed;
 	}
 
-	/** The {placeholders} the job's letters use, from the state: {class}, {extra}, {pay}, {value}, {taken}, {paidline}. */
+	/** The {placeholders} the job's letters use, from the state: {class}, {extra}, {pay}, {waiting}, {value}, {taken}, {paidline}. */
 	public static String fill(Vault v, String s) {
 		if (!s.contains("{")) return s;
 		Properties p = read(v);
@@ -183,7 +193,8 @@ public final class RepairJob {
 			if (bp != null && bp.getShipClass() != null && bp.getShipClass().getTextValue() != null) cls = bp.getShipClass().getTextValue();
 		} catch (Exception e) { }
 		int paid = intOf(p, "paid", 0);
-		return s.replace("{class}", cls).replace("{extra}", p.getProperty("extra", Integer.toString(EXTRA_MIN)))
+		int waiting = intOf(p, "cost", 0) + ("true".equals(p.getProperty("late")) ? 0 : intOf(p, "extra", EXTRA_MIN));
+		return s.replace("{waiting}", Integer.toString(waiting)).replace("{class}", cls).replace("{extra}", p.getProperty("extra", Integer.toString(EXTRA_MIN)))
 				.replace("{pay}", Integer.toString(paid)).replace("{value}", p.getProperty("value", "0")).replace("{taken}", p.getProperty("taken", "nothing"))
 				.replace("{paidline}", paid > 0 ? "Your payment for the work is enclosed: " + paid + " scrap. Nothing more." : "She came back unfinished, and I do not pay for unfinished work.");
 	}
@@ -191,7 +202,7 @@ public final class RepairJob {
 	public static Map<String, String> fills(Vault v) {
 		Map<String, String> m = new java.util.LinkedHashMap<String, String>();
 		m.put("name", NAME);
-		for (String k : new String[] {"class", "extra", "pay", "value", "taken", "paidline"}) m.put(k, fill(v, "{" + k + "}"));
+		for (String k : new String[] {"class", "extra", "pay", "waiting", "value", "taken", "paidline"}) m.put(k, fill(v, "{" + k + "}"));
 		return m;
 	}
 
@@ -206,12 +217,20 @@ public final class RepairJob {
 		if (OFFER.equals(key)) {
 			p.setProperty("answer", option == 0 ? "accepted" : "refused");
 			write(v, p);
+		} else if (READY.equals(key)) {
+			if (option == 0) {
+				Ship s = ship(v);
+				String why = whyNot(v, s, true);
+				if (why != null) throw new IOException(why);
+				giveBack(v, s, p, late(v), true);
+			}
+			// Not yet: she stays; the Cargo Bay's Return button sends her when you're aboard her
 		} else if (OVERDUE_LETTER.equals(key)) {
 			if (option == 0) {
 				Ship s = ship(v);
-				if (s == null) throw new IOException("The " + NAME + " is no longer in your fleet, so she can't be sent back.");
-				if (s.state == Ship.State.BOARDED) throw new IOException("The " + NAME + " is the boarded ship. Board another ship at the Space Dock, then reply.");
-				giveBack(v, s, p, true);
+				String why = whyNot(v, s, false);
+				if (why != null) throw new IOException(why);
+				giveBack(v, s, p, true, false); // her owner's answer follows by itself (the reply's letter)
 			} else {
 				p.setProperty("stage", "defied");
 				p.setProperty("seizeAt", Integer.toString(v.beaconsSeen() + 7 + new Random().nextInt(8)));
@@ -281,6 +300,7 @@ public final class RepairJob {
 		SavedGameState gs = build(new Random());
 		Ship s = v.adoptJunked(gs);
 		v.setOut(s, gs, NOTE);
+		Borrowed.mark(v, s.id, OWNER, "repair-job");
 		p.setProperty("ship", s.id);
 		p.setProperty("deliveredAt", Integer.toString(v.beaconsSeen()));
 		p.setProperty("cost", Integer.toString(repairCost(gs.getPlayerShip())));
@@ -300,9 +320,28 @@ public final class RepairJob {
 				+ "To fly her in FTL, The Home Planet Station must first send the " + CompanionMod.TITLE + " to FTL via Slipstream (Settings > Patch mods).";
 	}
 
-	/** Can the Cargo Bay offer to return her: this is her, docked, whole, and the job still open? */
+	/**
+	 * Why she can't go home by a reply now, or null if she can: she must be in the fleet; aboard her, FTL closed and her
+	 * at a station; and, to be paid as agreed, whole (a demand takes her back as she is, from the Junkyard too).
+	 */
+	public static String whyNot(Vault v, Ship s, boolean mustBeWhole) {
+		if (s == null) return "The " + NAME + " is no longer in your fleet, so she can't be sent back.";
+		if (s.state == Ship.State.BOARDED) {
+			if (homeplanet.core.GameGuard.isFtlRunning()) return "FTL is running with the " + NAME + " aboard. Close FTL, then reply again.";
+			if (!v.mayTrade(s)) return "The " + NAME + " isn't at a station. Take her to a beacon with a store, then reply again.";
+		}
+		if (mustBeWhole && s.state == Ship.State.JUNKED) return "The " + NAME + " is in the Junkyard. Salvage her, then reply again.";
+		SavedGameState gs = s.save();
+		if (mustBeWhole && (gs == null || !whole(gs.getPlayerShip())))
+			return "The " + NAME + " has been damaged since. Repair her (every hull point, every breach, Engines and Piloting working), then reply again.";
+		return null;
+	}
+	/** Has her owner had to ask for her (the bonus is gone)? */
+	public static boolean late(Vault v) { return "true".equals(read(v).getProperty("late")); }
+
+	/** Can she be returned: this is her, docked or boarded, whole, and the job still open? (The Cargo Bay offers it only aboard her.) */
 	public static boolean ready(Vault v, Ship s) {
-		if (s == null || s.state != Ship.State.DOCKED) return false;
+		if (s == null || (s.state != Ship.State.DOCKED && s.state != Ship.State.BOARDED)) return false;
 		Properties p = read(v);
 		if (!s.id.equals(p.getProperty("ship")) || !p.getProperty("stage", "").isEmpty()) return false;
 		SavedGameState gs = s.save();
@@ -313,17 +352,16 @@ public final class RepairJob {
 		Properties p = read(v);
 		return intOf(p, "cost", 0) + (late ? 0 : intOf(p, "extra", EXTRA_MIN));
 	}
-	/** The Cargo Bay's Return Her: she leaves the fleet (RETURNED), her payment goes to the Cargo Hold, and her owner writes. */
+	/** The Cargo Bay's Return button: she leaves the fleet (RETURNED), her payment goes to the Cargo Hold, and her owner writes. */
 	public static synchronized int returnHer(Vault v, Ship s) throws IOException {
-		if (!ready(v, s)) throw new IOException("The " + NAME + " can't be returned yet: she must be docked and whole (every hull point back, no breaches).");
-		Properties p = read(v);
-		boolean late = Transmissions.wasSent(OVERDUE_LETTER);
-		return giveBack(v, s, p, late);
+		if (!ready(v, s)) throw new IOException("The " + NAME + " can't be returned yet: she must be whole (every hull point back, no breaches).");
+		return giveBack(v, s, read(v), late(v), true);
 	}
-	/** She goes back: paid in full when whole (less the bonus if late), nothing when she isn't. */
-	private static int giveBack(Vault v, Ship s, Properties p, boolean late) throws IOException {
+	/** She goes back: paid in full when whole (less the bonus if late), nothing when she isn't; her owner writes now if {@code letter}. */
+	private static int giveBack(Vault v, Ship s, Properties p, boolean late, boolean letter) throws IOException {
 		SavedGameState gs = s.save();
 		int pay = gs != null && whole(gs.getPlayerShip()) ? payment(v, late) : 0;
+		if (s.state == Ship.State.BOARDED) v.dock(); // continue.sav comes back into the vault first (refused while FTL runs)
 		v.remove(s, null, Vault.Fate.RETURNED);
 		p.setProperty("stage", late ? "returned-late" : "returned");
 		p.setProperty("paid", Integer.toString(pay));
@@ -333,7 +371,7 @@ public final class RepairJob {
 			catch (IOException e) { log.error("The " + NAME + "'s payment of " + pay + " scrap could not reach the Cargo Hold", e); throw new IOException("The " + NAME + " was returned, but her payment of " + pay + " scrap could not be put in the Cargo Hold: " + e.getMessage()); }
 		}
 		HistoryLog.entry("RETURNED", s.name + " (" + s.id + ") to her owner" + (pay > 0 ? ", for " + pay + " scrap" : ", unpaid"));
-		if (!late) Transmissions.post(PAID, PAID, fills(v));
+		if (letter) Transmissions.post(late ? LATE : PAID, late ? LATE : PAID, fills(v));
 		return pay;
 	}
 

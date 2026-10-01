@@ -8,6 +8,7 @@ public class RepT {
   HomePlanet.commissionCosts = true; HomePlanet.immersiveNotifications = true;
   returned();
   build();
+  sentByReply();
   seizedDocked();
   lateAndBoarded();
   hidden();
@@ -84,7 +85,15 @@ public class RepT {
   v.salvage(n);
   Setup.chk("R: salvaged but broken: Return Her isn't offered", !RepairJob.ready(v, n));
   mend(v, n);
-  Setup.chk("R: whole again: Return Her is offered", RepairJob.ready(v, n));
+  Setup.chk("R: whole again: she can be returned; she's marked as borrowed from the collector", RepairJob.ready(v, n)
+    && Borrowed.of(v, n.id) != null && RepairJob.OWNER.equals(Borrowed.of(v, n.id).owner));
+  Transmissions.check(); Transmissions.check();
+  Transmissions.Message ready = find(RepairJob.READY);
+  int letters = 0; for (Transmissions.Message x : Transmissions.load()) if (x.key.equals(RepairJob.READY)) letters++;
+  Setup.chk("R: The Home Planet Station's letter: ready to return, two replies, the payment named, once", ready != null && letters == 1
+    && Transmissions.replyTexts(ready).equals(Arrays.asList("Send her home.", "Not yet.")) && ready.body.contains(RepairJob.payment(v, false) + " scrap"));
+  Transmissions.reply(ready, 1);
+  Setup.chk("R: Not yet: she stays, the letter's answered, she can still be returned", v.byId(n.id) != null && !Transmissions.canReply(find(RepairJob.READY)) && RepairJob.ready(v, n));
   int pay = RepairJob.payment(v, false), before = v.storageScrap();
   Setup.chk("R: the payment is the repair cost and the bonus (" + pay + ")", pay >= 200 + 4 * 10);
   int paid = RepairJob.returnHer(v, n);
@@ -94,6 +103,24 @@ public class RepT {
   Setup.chk("R: She's home, with the sum paid", m != null && m.body.contains(pay + " scrap"));
   ChainT.jump(v, 250); Transmissions.check();
   Setup.chk("R: returned: no demand ever comes", find(RepairJob.OVERDUE_LETTER) == null);
+ }
+
+ /** Send her home by reply: refused while she's damaged (try again later), then from aboard her: she leaves, no ship boarded. */
+ static void sentByReply() throws Exception {
+  Vault v = fleet(true);
+  Ship n = RepairJob.ship(v);
+  v.salvage(n); mend(v, n); Transmissions.check();
+  Transmissions.Message ready = find(RepairJob.READY);
+  SavedGameState g = v.readCopy(n).save; g.getPlayerShip().setHullAmt(g.getPlayerShip().getHullAmt() - 3); v.write(n, g);
+  boolean refused = false; try { Transmissions.reply(ready, 0); } catch (IOException e) { refused = e.getMessage().contains("damaged since"); }
+  Setup.chk("Y: damaged since the letter: Send her home is refused, with the reason; the letter still answerable", refused && v.byId(n.id) != null && Transmissions.canReply(find(RepairJob.READY)));
+  mend(v, n); v.dock(); v.board(n);
+  int pay = RepairJob.payment(v, false), before = v.storageScrap();
+  Transmissions.reply(find(RepairJob.READY), 0);
+  Setup.chk("Y: mended, aboard her: Send her home returns her and pays; no ship boarded", v.byId(n.id) == null && v.boarded() == null && v.storageScrap() == before + pay
+    && !v.continueFile().exists());
+  Transmissions.Message m = find(RepairJob.PAID);
+  Setup.chk("Y: She's home, with the sum paid", m != null && m.body.contains(pay + " scrap"));
  }
 
  /** Defied; the Cargo Hold holds her value; she's docked: her value and she are taken. */
@@ -128,12 +155,11 @@ public class RepT {
   ChainT.jump(v, 200); Transmissions.check();
   Transmissions.Message d = find(RepairJob.OVERDUE_LETTER);
   v.salvage(n); v.dock(); v.board(n);
-  boolean refused = false; try { Transmissions.reply(d, 0); } catch (IOException e) { refused = e.getMessage().contains("boarded"); }
-  Setup.chk("L: she's the boarded ship: Send her back now is refused, with the reason", refused && Transmissions.canReply(find(RepairJob.OVERDUE_LETTER)));
-  v.dock(); v.board(run);
   int before = v.storageScrap();
-  Transmissions.reply(find(RepairJob.OVERDUE_LETTER), 0);
-  Setup.chk("L: sent back unfinished: she leaves, nothing paid", v.byId(n.id) == null && v.storageScrap() == before);
+  Transmissions.reply(d, 0);
+  Setup.chk("L: sent back unfinished from aboard her: she leaves, nothing paid, no ship boarded", v.byId(n.id) == null && v.storageScrap() == before && v.boarded() == null);
+  Setup.chk("L: no station letter once her owner had to ask", find(RepairJob.READY) == null);
+  v.board(run);
   ChainT.jump(v, 2); ChainT.jump(v, 2); Transmissions.check(); // the first jump after boarding again sets where she starts counting from
   Transmissions.Message r = find(RepairJob.LATE);
   Setup.chk("L: Received: she came back unfinished", r != null && r.body.contains("unfinished"));

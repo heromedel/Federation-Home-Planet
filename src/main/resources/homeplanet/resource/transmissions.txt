@@ -20,7 +20,7 @@
 # ({name} is her name).
 # chain:repair-job starts once per fleet, after three ships that couldn't fly were made to fly again; "action:
 # repair-job" delivers the Nightjar to the Junkyard. Its letters may use {class} (her model), {extra} (the bonus),
-# {pay} (what was paid), {value} (her value, for the claims office), {taken} (what it took) and {paidline}.
+# {pay} (what was paid), {waiting} (what returning her pays now), {value} (her value, for the claims office), {taken} (what it took) and {paidline}.
 
 == welcome
 from: Home Planet Liaison
@@ -1167,6 +1167,19 @@ Repair her completely: every hull plate, every breach sealed. When she's whole, 
 Please take care of her. She is older than both of us.
 
 ~ A Collector, Civilian Sector
+
+== chain:repair-job:ready
+from: The Home Planet Station
+subject: Ready to return: the {name}
+replies: Send her home. | Not yet.
+
+Automated message from The Home Planet Station.
+
+{rank},
+
+The {name} has been fully repaired: every hull point restored, every breach sealed, Engines and Piloting working. She is ready to return to her owner, who will pay {waiting} scrap into the Cargo Hold when she arrives.
+
+Reply to send her home now. Or return her later from the Cargo Bay while you are aboard her (at a station, with FTL closed).
 
 == chain:repair-job:paid
 from: A Collector, Civilian Sector

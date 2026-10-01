@@ -360,14 +360,14 @@ public final class Transmissions {
 		if (option < 0 || option >= options.length) throw new IOException("Choose a reply first");
 		String[] parts = options[option].split("->");
 		String words = parts[0].trim();
+		// the repair job's replies act first (a reply that can't be carried out is refused, with the reason), before the
+		// inbox is read: what they do may send a letter of its own
+		if (RepairJob.isJob(m.key)) RepairJob.replied(Vault.get(), m.key, option);
 		List<Message> all = load(); // also reads the letters already due
 		String name = "";
 		for (Pending p : pending) if (p.name != null && !p.name.isEmpty()) name = p.name;
 		if (name.isEmpty() && Vault.isOpen()) { String n = Vault.get().event(Vault.EVENT_ONE_HULL); if (n != null) name = n; }
-		if (RepairJob.isJob(m.key)) {
-			name = RepairJob.NAME;
-			RepairJob.replied(Vault.get(), m.key, option); // first: a reply that can't be carried out is refused, with the reason
-		}
+		if (RepairJob.isJob(m.key)) name = RepairJob.NAME;
 		if (parts.length > 1 && !parts[1].trim().isEmpty()) schedule(parts[1].trim(), name);
 		for (Message x : all) if (x.key.equals(m.key)) { x.replied = words; x.read = true; }
 		save(all);

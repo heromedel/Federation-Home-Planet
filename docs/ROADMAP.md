@@ -397,8 +397,12 @@ no letters, you come and check).
 - The repair job (4B.68): after the fleet makes three unflyable ships fly again (no working Engines or Piloting, then
   both), a collector in the Civilian Sector offers 200-500 scrap over the repair cost to restore her Stealth,
   the Nightjar (on the blank copy: a teleporter, and FTL's Zoltan shield augment). Accepted, she's delivered to the
-  Junkyard; docked and whole (full hull, no breaches, flyable), the Cargo Bay's Return Her sends her home for the cost
-  (assessed at delivery at Dry Dock prices) plus the bonus. Not returned 200 beacons after she came, for any reason,
+  Junkyard, marked as borrowed (history/<id>/borrowed.txt, beside TradeMark). Whole again (full hull, no breaches,
+  flyable), The Home Planet Station writes that she's ready, with two replies: Send her home (at once, from the Space
+  Dock or aboard her with FTL closed and at a station; refused with the reason otherwise, and the letter stays
+  answerable) or Not yet. Aboard her, the Cargo Bay shows Return (her name) beside her: it returns the borrowed ship
+  you're aboard, as decommissioning does (FTL closed), so a ship on loan over Long Range Comm. could use it later
+  (IDEAS.md, Idea D). Either way she goes home for the cost (assessed at delivery at Dry Dock prices) plus the bonus. Not returned 200 beacons after she came, for any reason,
   her owner demands her: sent back then, she pays the cost only if she's whole; refused, 7-14 beacons later the
   Federation Office of Salvage and Claims takes her value from the Cargo Hold's scrap, else a docked ship, else
   everything in the Cargo Hold but its crew, and her too if docked (boarded: when she next docks). Hidden in the
