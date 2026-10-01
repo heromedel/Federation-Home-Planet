@@ -292,8 +292,8 @@ comes a random number of beacons later (the fleet counts every beacon its ships 
   brings her to the Space Dock, set out at The Home Planet Station, so she may take on crew.
 - **Reply "I could definitely use a repair tool.":** 3-5 beacons, then a Repair Arm, claimed for 25 scrap from the
   Cargo Hold (refused, changing nothing, when the hold is short).
-- **No one aboard:** a ship with no crew can't be boarded (FTL would end the game). The station offers a crew member
-  from the Cargo Hold, or says to move one in the Cargo Bay.
+- **No one aboard:** she can be boarded empty (to take on crew in the Cargo Bay), but FTL won't launch with a boarded
+  ship that has no crew (FTL would end her journey at once); the station says to move someone aboard first.
 
 ## Naming decisions — settled (4B.30)
 
