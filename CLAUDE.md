@@ -28,6 +28,11 @@ it does and CREDITS.md for where the code came from.
   version is pushed, the branch stays frozen while heromedel tests it, so what they test is exactly what they merge.
   Newer work stays committed locally until they say it's merged (or needs a fix), then goes up as the next version.
   Don't bring up commits in conversation; the automatic "uncommitted changes" check is answered in a few words.
+- **Other branches:** before planning work on your branch, fetch and check whether `main` or another session's branch
+  has moved on since you last looked (a newer version). If it has, look over what changed, especially files you'll
+  touch, settings, names and shared tools. Plan to fit with it (the same patterns and paths, no clashing names or
+  files), so the later merge is easy, and say what will need care when the branches are merged. Two branches may use
+  the same version number meanwhile; the merge renumbers to follow `main`.
 - Never commit or push to `main`. Work only on your own session branch; heromedel decides what goes into
   `main` (a pull request or their own merge).
 - heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build The Federation Home Planet Station.bat`.
