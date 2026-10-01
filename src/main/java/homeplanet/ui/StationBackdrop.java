@@ -34,9 +34,11 @@ final class StationBackdrop {
 	private static final Logger log = LoggerFactory.getLogger(StationBackdrop.class);
 
 	/** The picture's size; the station's centre, and the left edge of her hull at her widest. */
-	static final int W = 1920, H = 1080, STATION_X = 1150;
+	static final int W = 1920, H = 1080, STATION_X = 1060;
 	/** The cruiser's scale on the station, and how far behind her engine bays she's cut (in her own pixels). */
 	private static final double STATION_SCALE = 0.78;
+	/** How far down the station's top end stands (high, clear of the top edge). */
+	private static final int STATION_TOP = 40;
 	private static final int CUT = 180;
 	/** The planet: its scale and where its top-left corner goes (low on the left, her lit side toward the station). */
 	private static final double PLANET_SCALE = 2.6;
@@ -47,22 +49,24 @@ final class StationBackdrop {
 	 * counter-clockwise from pointing right, away from the station; turned round for a ship coming in) and a length in pixels (shorter is further).
 	 */
 	private static final int[][] LANES = {
-		{1450, 180, 30, 70},
-		{1500, 420, 0, 80},
-		{1420, 640, -10, 60},
-		{1600, 840, -25, 80},
-		{1350, 960, -35, 62},
-		{880, 520, 190, 90},
-		{760, 710, 200, 66},
-		{900, 900, 215, 70},
-		{330, 150, 158, 70},
-		{150, 60, 172, 52},
+		{740, 250, 170, 70},
+		{760, 480, 185, 74},
+		{690, 700, 200, 64},
+		{780, 840, 215, 70},
+		{880, 990, 200, 60},
+		{1120, 985, -60, 60},
+		{1350, 150, 30, 70},
+		{1500, 380, 5, 90},
+		{1400, 600, -10, 70},
+		{1580, 820, -25, 80},
+		{1330, 960, -35, 62},
+		{1640, 560, 0, 60},
 	};
 	/**
 	 * Where the boarded ship's panel ends, in the picture: well left of the station (as with the stock picture), which
 	 * leaves open space beside her for ships to leave through.
 	 */
-	private static final int BERTH_EDGE = 1000;
+	private static final int BERTH_EDGE = 600;
 	/** The share of ships flying in to the station rather than leaving her. */
 	private static final double ARRIVING = 0.35;
 	/** How many ships, at least and at most. */
@@ -95,7 +99,7 @@ final class StationBackdrop {
 			g.drawImage(world, PLANET_X, top, PLANET_X + pw, top + ph, world.getWidth(), 0, 0, world.getHeight(), null);
 
 			BufferedImage station = station(cruiser);
-			int sx = STATION_X - station.getWidth() / 2, sy = (H - station.getHeight()) / 2;
+			int sx = STATION_X - station.getWidth() / 2, sy = STATION_TOP;
 			g.drawImage(station, sx, sy, null);
 			int[] edges = hullEdges(station);
 			lights(g, sx, sy, station, edges);
