@@ -136,15 +136,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		if (homeplanet.parser.Museum.anything(vault)) { // once a ship has won, or been lost in action
 			museumBtn = controlButton("Museum", "The Federation Museum: the Hall of Victors, and the Memorial to ships lost in action");
-			controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn, museumBtn);
+			controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, museumBtn);
 		} else {
 			museumBtn = null;
-			controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, otherBtn);
+			controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn);
 		}
 		String designLock = homeplanet.parser.Clearance.customReason();
 		designBtn = controlButton("Design Ship", designLock == null ? "Lay out a new ship of your own on a blank grid"
 				: "<html>" + homeplanet.parser.XmlText.text(designLock).replace("\n", "<br>") + "</html>");
-		controlGroup(controls, "Shipyard", commissionBtn, designBtn, salvageBtn, disbandBtn);
+		controlGroup(controls, "Shipyard", commissionBtn, designBtn, salvageBtn, disbandBtn, otherBtn); // its orders are all shipyard business: recover, blueprints, reassignment
 
 		// The ship at your command, large, at the top beside the station's saucer (not touching it), a few of her
 		// particulars to her left when there's room; the docked ships below. Nothing of her at all when none is boarded.
