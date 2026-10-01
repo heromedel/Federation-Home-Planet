@@ -27,6 +27,11 @@ public final class Career {
 	public static final int STARTING_SCRAP = 25;
 	/** The stipend: this much, plus the rank's multiple for each achievement counted, every SECTORS_PER_MONTH sectors (an Immersive career's: its difficulty's). */
 	public static final int STIPEND_BASE = 20, SECTORS_PER_MONTH = 4;
+	/** Scrap a career in the fleet in use began with: its difficulty's, or a Sandbox career's STARTING_SCRAP. */
+	public static int startingScrap() {
+		CareerRules r = CareerRules.current();
+		return r != null ? r.startingScrap() : STARTING_SCRAP;
+	}
 	/** Sectors between stipends in the fleet in use. */
 	public static int sectorsPerMonth() {
 		CareerRules r = CareerRules.current();

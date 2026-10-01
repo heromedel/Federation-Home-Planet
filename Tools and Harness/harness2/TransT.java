@@ -116,6 +116,7 @@ public class TransT { public static void main(String[] a) throws Exception {
  static void flow(File saves) throws Exception {
   int n = Transmissions.check();
   Setup.chk("T: a new career: the welcome, and the empty shipyard's free command", n == 2 && find("welcome") != null && find("empty") != null && find("empty").body.contains("Kestrel"));
+  Setup.chk("T: the welcome names the career's own sign-on bonus", find("welcome").body.contains("bonus of " + Career.startingScrap() + " scrap") && !find("welcome").body.contains("{start}"));
   Setup.chk("T: the welcome is on top of the inbox (sent last)", Transmissions.load().get(0).key.equals("welcome"));
   Setup.chk("T: each is sent once", Transmissions.check() == 0 && Transmissions.unread() == 2);
   Setup.chk("T: an achievement from before Immersive Mode earns nothing", find("ach:ACH_SECTOR_5") == null);

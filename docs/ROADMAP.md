@@ -20,6 +20,8 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 13. The station's economy: Trade In and Auction, Refit removal, stripping, fees (4B.58)
 14. Immersive difficulties: Easy, Normal, Hard and Custom (4B.59)
 15. Switch Game Mode: Sandbox and four careers, each with its own fleet and profile (4B.60)
+16. Derelicts for sale in the Junkyard, and Dry Dock system and breach repairs (4B.61)
+17. Settings in tabs, and the Station Log window (4B.61)
 
 All built. What remains is testing in real play and bug checks.
 
@@ -361,7 +363,23 @@ of Sandbox Mode, so profiles are swapped the same tested way. The first-startup 
 Mode, or Easy, Normal, Hard or Custom. The Space Dock heading and Settings name the mode in use; blueprints flown by
 any other fleet stay protected. The cfg remembers the career last used (`immersive_slot`).
 
-## Not doing
+## 16. Derelicts in the Junkyard — built (4B.61; harness test DerT)
+
+The Junkyard window's **Derelicts...** (also offered when none of your ships is there) shows three hulls for sale,
+kept in the fleet's `derelicts/` folder. New ones come in every 30 beacons the fleet travels (counted when you look:
+no letters, you come and check).
+
+- Each is on the station's blank copy of her model: no crew, hull 15-50%, a system or two missing, at odd levels or
+  added where she has a room for it, many broken bars, 1-3 breaches, thin air, the reactor down a little, fuel 0-3,
+  no missiles, drone parts, scrap or cargo; a weapon about 1 in 12, a drone 1 in 20, an augment 1 in 8.
+- Her model is one the FTL profile has unlocked; one listing in 30 is a locked model (about once in 10 rerolls).
+- One in 15 is rebuilt strangely: two unmanned systems' rooms swapped, or an inner door welded shut (every room still
+  reachable). Only when she's bought does this become a remodel of her own; the patch prompt follows.
+- Price: 10-25% of her value as she is (less 5 a missing hull point), from the Cargo Hold. She goes to the Junkyard,
+  set out at The Home Planet Station so she can take on crew once salvaged.
+- The Dry Dock now mends broken system bars (5 scrap a bar, shown as Fix instead of the upgrade) and seals breaches
+  (5 each), beside hull repairs.
+
 
 - **Thruster glow for designs.** FTL lights the engines of some of its own ships (the Kestrel's, when piloted and
   ready to jump) from positions written into the game itself; nothing in a blueprint, layout or art file sets them, and

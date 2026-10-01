@@ -27,7 +27,7 @@ subject: Welcome to the Front
 
 I see you have volunteered to serve in the war against the rebellion.
 
-The Federation Home Planet has approved you to begin building your fleet. Congratulations: your sign-on bonus of 25 scrap is already waiting in The Home Planet Station's Cargo Hold.
+The Federation Home Planet has approved you to begin building your fleet. Congratulations: your sign-on bonus of {start} scrap is already waiting in The Home Planet Station's Cargo Hold.
 
 Just remember: once you have your first ship and set out, you will need to reach another beacon with a station to be able to trade with The Home Planet Station or your other ships.
 
@@ -83,7 +83,7 @@ subject: On the career rolls
 
 {rank},
 
-The Federation Home Planet has added your service to its career rolls. From today your achievements will be noticed, and rewarded. Promotions will follow as they are earned, and a stipend will reach the Cargo Hold as your ships cover the sectors. To start you off, 25 scrap is already waiting there.
+The Federation Home Planet has added your service to its career rolls. From today your achievements will be noticed, and rewarded. Promotions will follow as they are earned, and a stipend will reach the Cargo Hold as your ships cover the sectors. To start you off, {start} scrap is already waiting there.
 
 Your fleet stays your own, and so do your rules. The Federation asks only that you keep fighting the rebellion.
 

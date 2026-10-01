@@ -103,8 +103,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
 		String title = "Docked Ships";
-		if (HomePlanet.career()) title += "  -  " + homeplanet.parser.UnlockGrants.rankName(homeplanet.parser.UnlockGrants.rank(homeplanet.parser.Unlocks.read())); // her captain's rank
-		if (vault.immersive) title += "  (" + Vault.title(vault.slot) + ")"; // which career
 		if (HomePlanet.immersiveNotifications) {
 			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
 			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
@@ -1177,6 +1175,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		JOptionPane.showMessageDialog(null, name + (auction ? " is sold. " : " is traded in. ") + price + " scrap is in the Cargo Hold.", auction ? "Auction" : "Trade In", JOptionPane.INFORMATION_MESSAGE);
 		init();
 	}
+	/** The foreman's derelicts for sale. */
+	void browseDerelicts() {
+		if (DerelictsDialog.open(this)) init();
+	}
 	/** Removes a junked ship for good (her last save stays in her history folder). */
 	void destroyShip(Ship ship) {
 		if (!confirmIrreversible("Destroy Ship", "Destroy " + ship.name + "?\n\n"
@@ -1194,7 +1196,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void salvageShip() {
 		List<Ship> junk = Vault.get().junked();
 		if (junk.isEmpty()) {
-			JOptionPane.showMessageDialog(null, "The Junkyard is empty. Nothing left to salvage.", "Salvage Ship", JOptionPane.INFORMATION_MESSAGE);
+			Object[] opts = {"Browse derelicts...", "Close"};
+			if (JOptionPane.showOptionDialog(null, "None of your ships are in the Junkyard. The foreman has some derelicts for sale, though.", "Salvage Ship",
+					JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[1]) == 0) browseDerelicts();
 			return;
 		}
 		String[] names = new String[junk.size()];
@@ -1209,12 +1213,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "<b>Trade In:</b> The Federation Home Planet's shipyard takes her for half her value, less her hull damage.<br>"
 				+ "<b>Auction:</b> sell her to the highest bidder: a quarter to three quarters of her value, less her hull damage.<br>"
 				+ "&nbsp;&nbsp;&nbsp;&nbsp;(Selling her sends her scrap and crew to the Cargo Hold; all else goes with her.)<br>"
+				+ "<b>Derelicts:</b> see the hulls the foreman has for sale.<br>"
 				+ "<b>Destroy:</b> reduce her to space debris, with everything aboard. Nothing is recovered,<br>"
 				+ "and her crew are retired from service.<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
 		panel.add(pick, java.awt.BorderLayout.CENTER);
-		Object[] options = {"Salvage", "Scrap", "Trade In", "Auction", "Destroy", "Cancel"};
+		Object[] options = {"Salvage", "Scrap", "Trade In", "Auction", "Destroy", "Derelicts...", "Cancel"};
 		int choice = JOptionPane.showOptionDialog(null, panel, "Salvage Ship", JOptionPane.DEFAULT_OPTION,
-				JOptionPane.QUESTION_MESSAGE, null, options, options[5]); // Cancel is the default
+				JOptionPane.QUESTION_MESSAGE, null, options, options[6]); // Cancel is the default
+		if (choice == 5) { browseDerelicts(); return; }
 		if (choice < 0 || choice > 4) return;
 		Ship ship = junk.get(pick.getSelectedIndex());
 		if (choice == 1) { scrapShip(ship); return; }

@@ -183,8 +183,14 @@ public class SystemsPanel {
 			SysRow r = new SysRow(DryDockShop.systemTitle(t.getId()), st.getCapacity(), "Store", why,
 					why == null ? "Take the " + DryDockShop.systemTitle(t.getId()) + " off the ship; it keeps its level" + (fee > 0 ? " (the Dry Dock charges " + fee + " scrap)" : "") : why,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { storeSystem(type); } });
-			int up = upgradePrice(bs, t);
-			if (up > 0) {
+			int up = upgradePrice(bs, t), broken = st.getDamagedBars();
+			if (broken > 0) { // mended first: then she can be upgraded
+				int scrap = bs.getScrapAmt(), fix = broken * homeplanet.parser.Pricing.SYSTEM_REPAIR;
+				r.addButton("Fix: " + fix, 78, ROW_W - 66 - 82, scrap >= fix,
+						scrap >= fix ? "Mend the " + DryDockShop.systemTitle(t.getId()) + "'s " + broken + (broken == 1 ? " broken bar" : " broken bars") + " for " + fix + " scrap ("
+								+ homeplanet.parser.Pricing.SYSTEM_REPAIR + " a bar)" : "Mending " + broken + (broken == 1 ? " bar" : " bars") + " costs " + fix + " scrap; she has " + scrap,
+						new ActionListener() { public void actionPerformed(ActionEvent e) { repairSystem(type); } });
+			} else if (up > 0) {
 				int scrap = bs.getScrapAmt();
 				r.addButton("Up: " + up, 78, ROW_W - 66 - 82, scrap >= up,
 						scrap >= up ? "Upgrade the " + DryDockShop.systemTitle(t.getId()) + " to level " + (st.getCapacity() + 1) + " for " + up + " scrap"
@@ -416,7 +422,7 @@ public class SystemsPanel {
 		if (st == null || st.getCapacity() <= 0) return;
 		String name = DryDockShop.systemTitle(sel.type.getId());
 		if (st.getDamagedBars() > 0) { // storing must not be a free repair
-			JOptionPane.showMessageDialog(bay, name + " is damaged. Repair it before storing.", "Systems", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(bay, name + " is damaged. Mend it (Fix, beside it) before storing.", "Systems", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		int fee = homeplanet.core.Economy.removalFee();
@@ -537,7 +543,18 @@ public class SystemsPanel {
 		}
 		repair.setBounds(0, y, w, 28);
 		sysList.add(repair);
-		y += 32 + 12;
+		y += 32;
+		int breaches = bs.getBreachMap().size();
+		if (breaches > 0) {
+			int seal = breaches * homeplanet.parser.Pricing.BREACH_REPAIR;
+			SysRow br = new SysRow("Hull breaches: " + breaches, -1, "", null, "Holes in her hull, venting air: " + homeplanet.parser.Pricing.BREACH_REPAIR + " scrap each to seal", null);
+			br.addButton("Seal", 78, ROW_W - 82, scrap >= seal, scrap >= seal ? "Seal all " + breaches + " for " + seal + " scrap" : "Sealing them costs " + seal + " scrap; she has " + scrap,
+					new ActionListener() { public void actionPerformed(ActionEvent e) { sealBreaches(); } });
+			br.setBounds(0, y, w, 28);
+			sysList.add(br);
+			y += 32;
+		}
+		y += 12;
 		return y;
 	}
 	private void upgradeSystem(SystemType t) {
@@ -561,6 +578,29 @@ public class SystemsPanel {
 		changes.add("Reactor upgraded to " + (bars + 1) + " bars for " + price + " scrap");
 		changed();
 		bay.help("Reactor power is now " + (bars + 1) + ". Save makes it official.");
+	}
+	private void repairSystem(SystemType t) {
+		ShipState bs = bay.currentSave.getPlayerShip();
+		SystemState st = bs.getSystem(t);
+		if (st == null || st.getDamagedBars() <= 0) return;
+		int n = st.getDamagedBars(), price = n * homeplanet.parser.Pricing.SYSTEM_REPAIR;
+		if (bs.getScrapAmt() < price) return;
+		st.setDamagedBars(0);
+		if (t.isSubsystem()) st.setPower(st.getCapacity()); // subsystems run at their full level
+		bs.setScrapAmt(bs.getScrapAmt() - price);
+		changes.add("Mended the " + DryDockShop.systemTitle(t.getId()) + " (" + n + (n == 1 ? " bar" : " bars") + ") for " + price + " scrap");
+		changed();
+		bay.help("Mended the " + DryDockShop.systemTitle(t.getId()) + ". Save makes it official.");
+	}
+	private void sealBreaches() {
+		ShipState bs = bay.currentSave.getPlayerShip();
+		int n = bs.getBreachMap().size(), price = n * homeplanet.parser.Pricing.BREACH_REPAIR;
+		if (n == 0 || bs.getScrapAmt() < price) return;
+		bs.getBreachMap().clear();
+		bs.setScrapAmt(bs.getScrapAmt() - price);
+		changes.add("Sealed " + n + (n == 1 ? " hull breach" : " hull breaches") + " for " + price + " scrap");
+		changed();
+		bay.help("Sealed " + n + (n == 1 ? " breach" : " breaches") + ". Save makes it official.");
 	}
 	private void repairHull() {
 		ShipState bs = bay.currentSave.getPlayerShip();

@@ -71,6 +71,8 @@ public final class Pricing {
 	/** One point of hull repaired in the Dry Dock: a flat 4 scrap, the top of FTL's store prices (The Federation charges a premium). */
 	public static final int HULL_REPAIR = 4;
 	public static int hullRepair() { return HULL_REPAIR; }
+	/** Mending one broken bar of a system, and sealing one hull breach, in the Dry Dock. */
+	public static final int SYSTEM_REPAIR = 5, BREACH_REPAIR = 5;
 
 	/** The price of the reactor's nth bar (1-based), as FTL's upgrade screen charges: 15 for bars 1-5, then 5 more every 5 bars (35 for 21-25). */
 	public static int reactorBar(int n) {

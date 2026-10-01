@@ -476,6 +476,7 @@ public final class Transmissions {
 		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
 	}
 	private static String fill(String s, String rank, String ship) {
+		if (s.contains("{start}")) s = s.replace("{start}", Integer.toString(Career.startingScrap())); // the career's sign-on bonus, by difficulty
 		return s.replace("{rank}", rank).replace("{ship}", ship == null ? "" : ship);
 	}
 
