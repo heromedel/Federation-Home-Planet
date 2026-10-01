@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The Space Dock's backdrop, put together from the player's own FTL data so the repo carries none of it: FTL's
  * starfield, a populated planet low on the left, The Home Planet Station (a Federation Cruiser, cut behind her engine
- * bays and mirrored) and two or three ships leaving her. The ships are drawn from those Commission would list, so the
+ * bays and mirrored) and two or three ships coming and going. The ships are drawn from those Commission would list, so the
  * unlock rules apply to them too. Every effect (running lights, planetshine, engine glow) is placed from where its
  * ship actually landed, so they always line up.
  */
@@ -34,7 +34,7 @@ final class StationBackdrop {
 	private static final Logger log = LoggerFactory.getLogger(StationBackdrop.class);
 
 	/** The picture's size; the station's centre, and the left edge of her hull at her widest. */
-	static final int W = 1920, H = 1080, STATION_X = 1420;
+	static final int W = 1920, H = 1080, STATION_X = 1150;
 	/** The cruiser's scale on the station, and how far behind her engine bays she's cut (in her own pixels). */
 	private static final double STATION_SCALE = 0.78;
 	private static final int CUT = 180;
@@ -44,23 +44,32 @@ final class StationBackdrop {
 
 	/**
 	 * Open space the ships may fly through, clear of the panels and buttons at 16:9: a centre, a heading (degrees,
-	 * counter-clockwise from pointing right, always away from the station) and a length in pixels (shorter is further).
+	 * counter-clockwise from pointing right, away from the station; turned round for a ship coming in) and a length in pixels (shorter is further).
 	 */
 	private static final int[][] LANES = {
-		{1120, 470, 168, 100},
-		{860, 610, 196, 66},
-		{1700, 890, -28, 80},
-		{1060, 790, 205, 74},
-		{1640, 720, -8, 58},
-		{1160, 990, 222, 62},
-		{300, 170, 158, 70},
-		{560, 80, 172, 52},
+		{1450, 180, 30, 70},
+		{1500, 420, 0, 80},
+		{1420, 640, -10, 60},
+		{1600, 840, -25, 80},
+		{1350, 960, -35, 62},
+		{880, 520, 190, 90},
+		{760, 710, 200, 66},
+		{900, 900, 215, 70},
+		{330, 150, 158, 70},
+		{150, 60, 172, 52},
 	};
+	/**
+	 * Where the boarded ship's panel ends, in the picture: well left of the station (as with the stock picture), which
+	 * leaves open space beside her for ships to leave through.
+	 */
+	private static final int BERTH_EDGE = 1000;
+	/** The share of ships flying in to the station rather than leaving her. */
+	private static final double ARRIVING = 0.35;
 	/** How many ships, at least and at most. */
 	private static final int SHIPS_MIN = 2, SHIPS_MAX = 3;
 
 	final BufferedImage image;
-	/** The left edge of the station's hull at her widest, in the picture (the boarded ship's panel keeps left of it). */
+	/** Where the boarded ship's panel ends, in the picture (left of the station, with room between). */
 	final int saucerLeft;
 
 	private StationBackdrop(BufferedImage image, int saucerLeft) {
@@ -93,7 +102,7 @@ final class StationBackdrop {
 
 			for (Ship s : roll(frame, rng)) drawShip(g, s);
 			g.dispose();
-			return new StationBackdrop(out, sx + edges[0]);
+			return new StationBackdrop(out, Math.min(BERTH_EDGE, sx + edges[0]));
 		} catch (Exception e) {
 			log.warn("Could not build the Space Dock backdrop from FTL's pictures; using the stock one", e);
 			return null;
@@ -231,7 +240,8 @@ final class StationBackdrop {
 			BufferedImage art = pool.get(rng.nextInt(pool.size()));
 			double length = l[3] * (0.85 + rng.nextDouble() * 0.3);
 			float alpha = (float) Math.max(0.7, Math.min(0.95, 0.55 + length / 250)); // further (smaller) is fainter
-			ships.add(new Ship(art, l[0] + rng.nextInt(41) - 20, l[1] + rng.nextInt(41) - 20, l[2] + rng.nextInt(21) - 10, length, alpha));
+			int heading = l[2] + (rng.nextDouble() < ARRIVING ? 180 : 0); // most leave her; some are coming in
+			ships.add(new Ship(art, l[0] + rng.nextInt(41) - 20, l[1] + rng.nextInt(41) - 20, heading + rng.nextInt(21) - 10, length, alpha));
 		}
 		return ships;
 	}
