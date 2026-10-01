@@ -465,7 +465,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		ask.setOpaque(false);
 		ask.add(new JLabel("Board " + the(name) + " and return to the Cargo Bay?"), java.awt.BorderLayout.NORTH);
 		ask.add(parent.spaceDock.shipSummaryPanel(s.save()), java.awt.BorderLayout.CENTER);
-		int r = JOptionPane.showOptionDialog(this, ask, "Board Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[0]);
+		int r = JOptionPane.showOptionDialog(this, SpaceDockUI.fitToScreen(ask), "Board Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[0]);
 		if (r != 0) return;
 		if (!confirmLeave("board " + the(name))) return;
 		Ship left = currentShip;

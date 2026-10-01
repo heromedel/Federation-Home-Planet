@@ -716,6 +716,52 @@ public final class Vault {
 		catch (IOException e) { log.warn("Could not count the sectors travelled: {}", e.toString()); }
 	}
 
+	// ---- beacons travelled (transmissions that answer a reply some beacons later) ----
+
+	private File beaconsFile() { return new File(root, "beacons.txt"); }
+	/** Beacons this fleet's boarded ships have been seen to explore, in all (FTL's progress, as with the sectors). */
+	public synchronized int beaconsSeen() {
+		try { return Integer.parseInt(new String(SafeFiles.read(beaconsFile()), java.nio.charset.StandardCharsets.UTF_8).trim()); }
+		catch (Exception e) { return 0; }
+	}
+	private void addBeacons(int n) {
+		if (n <= 0) return;
+		try { SafeFiles.writeText(beaconsFile(), (beaconsSeen() + n) + "\n", false); }
+		catch (IOException e) { log.warn("Could not count the beacons travelled: {}", e.toString()); }
+	}
+
+	// ---- one-time events (what the fleet has been through, for the transmissions that answer it) ----
+
+	private File eventsFile() { return new File(root, "events.txt"); }
+	private java.util.Properties events() {
+		java.util.Properties p = new java.util.Properties();
+		try { if (eventsFile().isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(eventsFile()), java.nio.charset.StandardCharsets.UTF_8))); }
+		catch (IOException e) { log.warn("Could not read {}: {}", eventsFile(), e.toString()); }
+		return p;
+	}
+	/** What an event recorded (a ship's name, say), or null if it hasn't happened. */
+	public synchronized String event(String key) { return events().getProperty(key); }
+	/** Records an event once: the first record stands. */
+	public synchronized void recordEvent(String key, String value) {
+		java.util.Properties p = events();
+		if (p.getProperty(key) != null) return;
+		p.setProperty(key, value);
+		try {
+			java.io.StringWriter w = new java.io.StringWriter();
+			p.store(w, "What this fleet has been through, once each (Federation Home Planet's transmissions answer them)");
+			SafeFiles.writeText(eventsFile(), w.toString(), false);
+		} catch (IOException e) { log.warn("Could not record the event {}: {}", key, e.toString()); }
+	}
+	/** A boarded ship's new save: down to one point of hull with the fight over (no enemy alongside, or one beaten). */
+	private void noteHull(Ship b, SavedGameState gs) {
+		net.blerf.ftl.parser.SavedGameParser.ShipState s = gs.getPlayerShip(), enemy = gs.getNearbyShip();
+		if (s == null || s.getHullAmt() != 1) return;
+		if (enemy != null && enemy.getHullAmt() > 0 && enemy.isHostile()) return; // still in the fight
+		recordEvent(EVENT_ONE_HULL, gs.getPlayerShipName());
+	}
+	/** One of the fleet's ships came out of a battle with one point of hull (her name). */
+	public static final String EVENT_ONE_HULL = "one-hull";
+
 	/** Adds scrap to the storage hold (a stipend). */
 	public synchronized void depositToStorage(int scrap) throws IOException {
 		Ship st = storage();
@@ -758,12 +804,13 @@ public final class Vault {
 		SavedGameState gs = b.save();
 		if (gs == null) return false;
 		String now = marksOf(gs);
-		if (b.marks == null || b.marks.isEmpty()) { b.marks = now; VoyageLog.observe(this, b, gs); return true; }
-		if (sameShip(b.marks, gs)) VoyageLog.observe(this, b, gs); // her voyage log (repairs, trades at a store... change no marks)
+		if (b.marks == null || b.marks.isEmpty()) { b.marks = now; VoyageLog.observe(this, b, gs); noteHull(b, gs); return true; }
+		if (sameShip(b.marks, gs)) { VoyageLog.observe(this, b, gs); noteHull(b, gs); } // her voyage log (repairs, trades at a store... change no marks)
 		if (now.equals(b.marks)) return false;
 		if (sameShip(b.marks, gs)) {
 			snapshot(b); // FTL's progress, kept: if FTL later writes over her, this is what comes back
 			try { addSectors(gs.getSectorNumber() - Integer.parseInt(b.marks.split("\\|", -1)[2])); } catch (NumberFormatException e) { }
+			try { addBeacons(gs.getTotalBeaconsExplored() - Integer.parseInt(b.marks.split("\\|", -1)[3])); } catch (NumberFormatException e) { }
 			b.marks = now;
 			return true;
 		}
@@ -794,6 +841,7 @@ public final class Vault {
 		try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(continueFile()); } catch (Exception e) { return; } // mid-write: Refresh catches up
 		if (b.marks != null && !b.marks.isEmpty() && !sameShip(b.marks, gs)) return;
 		VoyageLog.observe(this, b, gs);
+		noteHull(b, gs);
 	}
 	private void adoptStrays(File dir, Ship.State state, List<String> notes) {
 		File[] files = dir.listFiles();
@@ -1202,6 +1250,34 @@ public final class Vault {
 		ships.add(s);
 		saveManifest();
 		return s;
+	}
+	/** A ship that arrives as a wreck (a gift of salvage): written straight into the Junkyard. */
+	public synchronized Ship adoptJunked(SavedGameState state) throws IOException {
+		Ship s = new Ship(newId(), state.getPlayerShipName(), Ship.State.JUNKED, state.isDLCEnabled());
+		writeQuietly(s, state); // her file first: a failed write leaves no entry without one
+		ships.add(s);
+		saveManifest();
+		return s;
+	}
+	/** The crew waiting in the storage hold (for a ship with no one aboard to take on before she can fly). */
+	public synchronized List<net.blerf.ftl.parser.SavedGameParser.CrewState> holdCrew() throws IOException {
+		SavedGameState g = storage().save();
+		return g == null ? new ArrayList<net.blerf.ftl.parser.SavedGameParser.CrewState>() : SaveHelper.getOwnCrew(g.getPlayerShip());
+	}
+	/** Moves the hold's crew member (by her place in {@link #holdCrew}) aboard a docked ship: both saves, or neither. */
+	public synchronized void crewFromHold(Ship s, int index) throws IOException {
+		Ship st = storage();
+		Copy hold = readCopy(st), ship = readCopy(s);
+		List<net.blerf.ftl.parser.SavedGameParser.CrewState> crew = SaveHelper.getOwnCrew(hold.save.getPlayerShip());
+		if (index < 0 || index >= crew.size()) throw new IOException("That crew member is no longer in the Cargo Hold");
+		net.blerf.ftl.parser.SavedGameParser.CrewState c = crew.get(index);
+		String refused = homeplanet.parser.Dlc.refusesCrew(ship.save, c);
+		if (refused != null) throw new IOException(refused);
+		hold.save.getPlayerShip().getCrewList().remove(c);
+		if (!SaveHelper.placeCrew(ship.save.getPlayerShip(), c, false)) throw new IOException(s.name + " has no free floor space for crew");
+		snapshot(s);
+		begin().put(st, hold.save, hold.hash).put(s, ship.save, ship.hash).commit();
+		HistoryLog.entry("CREW", c.getName() + "  Cargo Hold -> " + s.name);
 	}
 	/** A save file from elsewhere (a file the player dropped in, a converter's) taken into the vault: the file is moved. */
 	public synchronized Ship adoptFile(File f, Ship.State state, String cachedName) throws IOException {

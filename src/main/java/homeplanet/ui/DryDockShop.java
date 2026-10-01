@@ -96,6 +96,7 @@ class DryDockShop {
 	private FtlButton buyerBtn, info;
 	private final JLabel shipPic = new JLabel();
 	private final CargoParts.Label classLbl = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, -1);
+	private final Aboard aboard = new Aboard();
 	private boolean toStorage = false; // buying for the Cargo Bay rather than the boarded ship
 
 	/** The Shop tab (built once; its contents are rebuilt from the saves). */
@@ -119,7 +120,7 @@ class DryDockShop {
 		});
 		info.setBounds(dx, 55, 24, 22);
 		panel.add(info);
-		classLbl.setBounds(dx + 30, 58, 400, 16);
+		classLbl.setBounds(dx + 30, 58, CargoBayUI.DROP_W - 30, 16);
 		panel.add(classLbl);
 		buyerBtn.setToolTipText("Buy for the boarded ship, or for the Cargo Bay's storage");
 		buyerBtn.addActionListener(new ActionListener() {
@@ -137,6 +138,8 @@ class DryDockShop {
 		panel.add(buyerBtn);
 		scrapLbl.setBounds(dx + CargoBayUI.DROP_W + 20, 22, 260, 30);
 		panel.add(scrapLbl);
+		aboard.setBounds(dx + CargoBayUI.DROP_W + 20, 54, 1264 - (dx + CargoBayUI.DROP_W + 20), 22);
+		panel.add(aboard);
 		CargoParts.Label title = new CargoParts.Label("STORES AT YOUR SHIPS' BEACONS", FtlFont.MENU, CargoParts.GOLD, 1);
 		title.setBounds(664, 6, 600, 26);
 		panel.add(title);
@@ -192,6 +195,7 @@ class DryDockShop {
 		classLbl.setText(toStorage ? "Items and supplies only, no systems" : CargoBayUI.shipClass(bay.currentState));
 		info.setToolTipText(toStorage ? "What the Cargo Hold is" : "Her report, and to rename her");
 		scrapLbl.setText(scrap + " scrap to spend");
+		aboard.show(buyer, toStorage);
 		List<Entry> entries = buildEntries();
 		int stores = 0;
 		for (Entry e : entries) if (e.kind == Kind.HEADER && e.ship != null) stores++;
@@ -271,11 +275,12 @@ class DryDockShop {
 	/** One thing for sale: icon, name, price and a Buy button. */
 	private class StoreRow extends JComponent {
 		final Entry e;
-		final boolean can;
+		final boolean can, installed;
 		StoreRow(final Entry e, int scrap) {
 			this.e = e;
 			String why = e.kind == Kind.SYSTEM ? systemReason(e.id) : e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(bay.currentSave, e.id) : null;
 			can = why == null && e.price <= scrap;
+			installed = e.kind == Kind.SYSTEM && SystemsPanel.INSTALLED.equals(why);
 			setLayout(null);
 			setToolTipText(why != null ? why : tipFor(e));
 			FtlButton buy = new FtlButton("Buy", FtlFont.BODY, 54, 22);
@@ -293,13 +298,60 @@ class DryDockShop {
 			javax.swing.Icon ic = iconFor(e);
 			int tx = 8;
 			if (ic != null) { ic.paintIcon(this, g, 6 + (30 - ic.getIconWidth()) / 2, 15 - ic.getIconHeight() / 2); tx = 42; }
-			String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) : supplyName(e.kind) + "  x" + e.count;
+			String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) + (installed ? "  (installed)" : "") : supplyName(e.kind) + "  x" + e.count;
 			int px = getWidth() - 110;
 			CargoParts.text(g, FtlFont.BODY.fit(name, px - tx - 8), FtlFont.BODY, can ? CargoParts.TEXT : CargoParts.DIM, tx, 8);
 			javax.swing.Icon sc = IconFactory.supplyIcon("scrap");
 			if (sc != null) sc.paintIcon(this, g, px, 7);
 			CargoParts.text(g, "" + e.price, FtlFont.BODY, can ? CargoParts.GOLD : CargoParts.DIM, px + 18, 8);
 			g.dispose();
+		}
+	}
+
+	/**
+	 * What the buyer already has, beside the scrap: her fuel, missiles and drone parts, then her weapon, drone and
+	 * cargo slots in use (hover for their names). For the Cargo Hold, its supplies only (it has no slots).
+	 */
+	private static class Aboard extends JComponent {
+		private SavedGameState g;
+		private boolean hold;
+		void show(SavedGameState g, boolean hold) {
+			this.g = g;
+			this.hold = hold;
+			setToolTipText(g == null || hold ? null : tip(g));
+			repaint();
+		}
+		private static String tip(SavedGameState g) {
+			ShipState s = g.getPlayerShip();
+			List<String> w = new ArrayList<String>(), d = new ArrayList<String>(), c = new ArrayList<String>();
+			for (net.blerf.ftl.parser.SavedGameParser.WeaponState x : s.getWeaponList()) w.add(Items.title(x.getWeaponId()));
+			for (net.blerf.ftl.parser.SavedGameParser.DroneState x : s.getDroneList()) d.add(Items.title(x.getDroneId()));
+			if (g.getCargoIdList() != null) for (String id : g.getCargoIdList()) c.add(Items.title(id));
+			return "<html>Weapons: " + (w.isEmpty() ? "none" : String.join(", ", w)) + "<br>Drones: " + (d.isEmpty() ? "none" : String.join(", ", d))
+					+ "<br>Cargo: " + (c.isEmpty() ? "empty" : String.join(", ", c)) + "</html>";
+		}
+		@Override protected void paintComponent(java.awt.Graphics g0) {
+			if (g == null) return;
+			java.awt.Graphics2D gr = (java.awt.Graphics2D) g0.create();
+			ShipState s = g.getPlayerShip();
+			String[] icons = {"fuel", "missiles", "drones"};
+			int[] counts = {s.getFuelAmt(), s.getMissilesAmt(), s.getDronePartsAmt()};
+			int x = 0;
+			for (int i = 0; i < 3; i++) {
+				javax.swing.Icon ic = IconFactory.supplyIcon(icons[i]);
+				if (ic != null) { ic.paintIcon(this, gr, x, (getHeight() - ic.getIconHeight()) / 2); x += ic.getIconWidth() + 4; }
+				String n = "" + counts[i];
+				CargoParts.text(gr, n, FtlFont.BODY, CargoParts.TEXT, x, 3);
+				x += CargoParts.width(n, FtlFont.BODY) + 18;
+			}
+			if (!hold) {
+				int ds = CargoBayUI.droneSlots(s);
+				String slots = "Weapons " + s.getWeaponList().size() + "/" + CargoBayUI.weaponSlots(s)
+						+ "  \u00b7  Drones " + (ds == 0 ? "none" : s.getDroneList().size() + "/" + ds)
+						+ "  \u00b7  Cargo " + (g.getCargoIdList() == null ? 0 : g.getCargoIdList().size()) + "/" + SaveHelper.CARGO_SLOTS;
+				CargoParts.text(gr, FtlFont.BODY.fit(slots, getWidth() - x - 12), FtlFont.BODY, CargoParts.TEXT, x + 12, 3);
+			}
+			gr.dispose();
 		}
 	}
 
