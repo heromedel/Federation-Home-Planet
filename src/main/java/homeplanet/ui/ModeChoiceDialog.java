@@ -12,7 +12,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 /**
- * First setup: Sandbox Mode or Immersive Mode, each explained, then the rules that mode leaves to the player.
+ * First setup: Sandbox Mode or Immersive Mode, each explained; then Sandbox Mode's house rules, or Immersive Mode's briefing.
  * Shown once the station's folders and fleet exist, so Immersive Mode can be entered from here.
  */
 public class ModeChoiceDialog extends JDialog {
@@ -24,8 +24,11 @@ public class ModeChoiceDialog extends JDialog {
 			ModeChoiceDialog d = new ModeChoiceDialog();
 			d.setVisible(true);
 			boolean immersive = Boolean.TRUE.equals(d.chosen);
-			if (immersive && !ImmersiveDialog.enter(null)) continue; // the briefing cancelled: choose again
-			HouseRulesDialog.ask(immersive);
+			if (immersive) {
+				if (!ImmersiveDialog.enter(null)) continue; // the briefing cancelled: choose again
+				return; // the briefing asked everything Immersive Mode leaves to the player
+			}
+			HouseRulesDialog.ask(false);
 			return;
 		}
 	}
@@ -42,8 +45,8 @@ public class ModeChoiceDialog extends JDialog {
 				"Play in Sandbox Mode", false));
 		choices.add(choice("Immersive Mode", "A Federation career",
 				"You start with a Kestrel Type A and rise in rank as you earn FTL's achievements. Ships cost scrap; The Federation Home "
-				+ "Planet sends orders, rewards and a monthly stipend, and sets most of the rules. It has a fleet of its own, and can "
-				+ "keep an FTL profile of its own too.",
+				+ "Planet stays in contact with you, sends rewards and a monthly stipend, and sets most of the rules. This mode has a "
+				+ "fleet of its own, and can keep an FTL profile of its own too.",
 				"Begin an Immersive career...", true));
 		body.add(choices, BorderLayout.CENTER);
 		getContentPane().add(body);

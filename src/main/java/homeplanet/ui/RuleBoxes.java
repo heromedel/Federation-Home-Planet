@@ -47,9 +47,12 @@ public class RuleBoxes {
 		"By what the report surrenders (the Cargo Hold and the Junkyard, at full value): " + homeplanet.parser.FreeCommand.ANY_FROM
 				+ " scrap or more, any ship; " + homeplanet.parser.FreeCommand.KESTREL_FROM + " or more, a Kestrel Type A; less, the relief ship"};
 	private String freeTip = "";
+	private String careerTip = null;
+	private boolean showingCareerOwn = !HomePlanet.immersiveMode;
 	private final JLabel freeLabel = new JLabel("Report for Reassignment grants:  ");
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
+	final JCheckBox careerBox = new JCheckBox("Career messages: a welcome, promotions, rewards for FTL achievements and a monthly stipend, in Sandbox Mode too", HomePlanet.careerMessages);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
@@ -97,8 +100,13 @@ public class RuleBoxes {
 		freeLabel.setToolTipText(freeTip);
 		freeRow.add(freeLabel);
 		freeRow.add(freeBox);
-		notifyBox.setToolTipText("Without Immersive Mode: orders for the free ships the rules grant. With it, also news, promotions and rewards");
+		notifyBox.setToolTipText("<html>Orders for the free ships the rules grant, the Liaison's word when you're left without a ship, and letters you can reply to."
+				+ "<br>With Career messages (always, in Immersive Mode), also the welcome, promotions, achievement rewards and the stipend.</html>");
 		notifyBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Mode, which turns it on
+		careerBox.setToolTipText("Your rank rises as you unlock FTL's Federation Cruisers; achievements earned from now on are rewarded, and the stipend comes every "
+				+ homeplanet.parser.Career.SECTORS_PER_MONTH + " sectors. Your fleet and rules stay your own. (Always on in Immersive Mode.)");
+		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 44, 0, 0)); // under Immersive Notifications, which it needs
+		careerTip = careerBox.getToolTipText();
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A Report for Reassignment doesn't reset it");
 		unlockBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		for (int i = 0; i < locked.length; i++) tips[i] = locked[i].getToolTipText();
@@ -116,6 +124,7 @@ public class RuleBoxes {
 			}
 		});
 		costBox.addActionListener(sync);
+		notifyBox.addActionListener(sync); // Career messages need it
 		lockedBox.addActionListener(sync);
 		sync();
 	}
@@ -147,6 +156,12 @@ public class RuleBoxes {
 			locked[i].setEnabled(!im);
 			locked[i].setToolTipText(im ? SET_BY_IMMERSIVE : tips[i]);
 		}
+		// Career messages: Sandbox Mode's own choice, with Immersive Notifications on; Immersive Mode always has them
+		careerBox.setEnabled(!im && notifyBox.isSelected());
+		if (im) careerBox.setSelected(true);
+		else if (!showingCareerOwn) { careerBox.setSelected(HomePlanet.careerMessages); }
+		showingCareerOwn = !im;
+		careerBox.setToolTipText(im ? SET_BY_IMMERSIVE : careerTip);
 		boolean cost = costBox.isSelected();
 		if (!im) percentBox.setEnabled(cost);
 		// Immersive Mode: the ship a report earns goes by what it surrenders, not by this choice
@@ -180,18 +195,12 @@ public class RuleBoxes {
 	public void addTo(JPanel body, GridBagConstraints c) { addTo(body, c, true); }
 	/** As {@link #addTo(JPanel, GridBagConstraints)}; without the Immersive Mode row for Sandbox Mode's first setup. */
 	public void addTo(JPanel body, GridBagConstraints c, boolean withImmersive) {
-		if (!withImmersive) notifyBox.setBorder(BorderFactory.createEmptyBorder()); // nothing above it to sit under
-		for (JComponent b : new JComponent[] {immersiveRow, notifyBox, tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
+		if (!withImmersive) { notifyBox.setBorder(BorderFactory.createEmptyBorder()); careerBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); } // nothing above it to sit under
+		for (JComponent b : new JComponent[] {immersiveRow, notifyBox, careerBox, tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
 			if (b == immersiveRow && !withImmersive) continue;
 			body.add(b, (GridBagConstraints) c.clone());
 			c.gridy++;
 		}
-	}
-
-	/** The rules Immersive Mode leaves to the player (its first setup shows only these). */
-	public void addImmersiveOwn(JPanel body, GridBagConstraints c) {
-		body.add(scrapBox, (GridBagConstraints) c.clone());
-		c.gridy++;
 	}
 
 	/** What apply() would change, for the history log. */
@@ -207,6 +216,7 @@ public class RuleBoxes {
 		if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
 		if (!HomePlanet.immersiveMode && !FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Report for Reassignment grants: " + freeBox.getSelectedItem());
 		if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
+		if (!HomePlanet.immersiveMode && careerBox.isSelected() != HomePlanet.careerMessages) changed.add("Career messages: " + careerBox.isSelected());
 		if (unlockBox.isSelected() != HomePlanet.unlockFreeShips) changed.add("A free ship for each new FTL unlock: " + unlockBox.isSelected());
 		// (with Immersive Mode on, the locked rules above show its values; the player's own are kept apart)
 	}
@@ -217,6 +227,7 @@ public class RuleBoxes {
 		// the rules Immersive Mode leaves to the player
 		HomePlanet.scrapKeepsSystems = scrapBox.isSelected();
 		if (!HomePlanet.immersiveMode) HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()]; // (Immersive Mode shows its own, Variable)
+		if (!HomePlanet.immersiveMode) HomePlanet.careerMessages = careerBox.isSelected();
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)
 			HomePlanet.storeRequirement = tradeBox.isSelected();
 			HomePlanet.journeyStoreRequirement = journeyBox.isSelected();

@@ -5,7 +5,7 @@
 # Rewards, comma separated (they go to the Cargo Hold): scrap N, fuel N, missiles N, parts N (drone parts),
 # item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
-# Keys: welcome, stipend ({period} and {amount} are filled in), empty (the free command), reassigned (the free command
+# Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), reassigned (the free command
 # after a Report for Reassignment; in Immersive Mode reassigned:any, reassigned:kestrel or reassigned:relief, by what
 # was surrendered), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
 # a hull waits in the Junkyard), promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
@@ -73,6 +73,20 @@ This is not the end of your service. There is a hull in the Junkyard: Salvage he
 Every commander loses a ship sooner or later. What matters is that you come back.
 
 For the Federation, and all its worlds.
+~ Home Planet Liaison
+
+== welcome:career
+from: Home Planet Liaison
+subject: On the career rolls
+
+{rank},
+
+The Federation Home Planet has added your service to its career rolls. From today your achievements will be noticed, and rewarded. Promotions will follow as they are earned, and a stipend will reach the Cargo Hold as your ships cover the sectors. To start you off, 25 scrap is already waiting there.
+
+Your fleet stays your own, and so do your rules. The Federation asks only that you keep fighting the rebellion.
+
+For the Federation, and all its worlds.
+Until every beacon is free.
 ~ Home Planet Liaison
 
 == rescue

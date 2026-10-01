@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.56";
+	public static final String APP_VERSION = "4B.57";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -74,6 +74,10 @@ public class HomePlanet {
 	public static boolean immersiveMode = false;
 	/** Transmissions from The Federation Home Planet (the inbox on the Space Dock). Immersive Mode turns it on. */
 	public static boolean immersiveNotifications = false;
+	/** Sandbox Mode's Career messages (with Immersive Notifications): the welcome, promotions, achievement rewards, the stipend. */
+	public static boolean careerMessages = false;
+	/** Is a career running in the fleet in use: always in Immersive Mode, and in Sandbox Mode with Career messages on. */
+	public static boolean career() { return immersiveMode || (immersiveNotifications && careerMessages); }
 	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
 	public static final int JOURNEY_FEE = 200;
@@ -161,6 +165,7 @@ public class HomePlanet {
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
 		immersiveNotifications = flag("immersive_notifications");
+		careerMessages = flag("career_messages");
 		finalVictory = config.getProperty("final_victory", "nothing");
 		applyImmersive();
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
@@ -344,6 +349,7 @@ public class HomePlanet {
 		config.setProperty("store_requirement", Boolean.toString(own.store));
 		config.setProperty("new_journey_store_requirement", Boolean.toString(own.journey));
 		config.setProperty("scrap_keeps_systems", Boolean.toString(scrapKeepsSystems));
+		config.setProperty("career_messages", Boolean.toString(careerMessages));
 		config.setProperty("sell_supplies", Boolean.toString(own.sellSupplies));
 		config.setProperty("commission_unlocked_only", Boolean.toString(own.lockedOnly));
 		config.setProperty("commission_custom_unlocked_only", Boolean.toString(own.customLockedOnly));

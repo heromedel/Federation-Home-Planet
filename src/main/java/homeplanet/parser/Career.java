@@ -59,8 +59,10 @@ public final class Career {
 		write(immersiveRoot, p);
 	}
 
-	/** Begins a career in the Immersive fleet now open: its choices, and the starting scrap. */
-	public static void start(boolean salaryAll, boolean ownProfile) throws IOException {
+	/** Begins a career in the Immersive fleet now open: its choices, the starting scrap, and a Kestrel Type A to command. */
+	public static void start(boolean salaryAll, boolean ownProfile) throws IOException { start(salaryAll, ownProfile, true); }
+	/** Begins a career in the fleet now open; a Sandbox fleet's (Career messages) brings no ship: it has its own. */
+	public static void start(boolean salaryAll, boolean ownProfile, boolean withShip) throws IOException {
 		Vault v = Vault.get();
 		Properties p = new Properties();
 		p.setProperty("salaryAll", Boolean.toString(salaryAll));
@@ -69,8 +71,8 @@ public final class Career {
 		p.setProperty("sectorsAtStart", Integer.toString(v.sectorsSeen()));
 		write(v.root, p);
 		v.depositToStorage(STARTING_SCRAP);
-		v.grantFreeCommand("an Immersive career began", FreeCommand.KESTREL); // a Kestrel Type A, as a new FTL game starts
-		homeplanet.core.HistoryLog.entry("CAREER", "Immersive career begun: stipend counts " + (salaryAll ? "every achievement" : "achievements earned from now on")
+		if (withShip) v.grantFreeCommand("an Immersive career began", FreeCommand.KESTREL); // a Kestrel Type A, as a new FTL game starts
+		homeplanet.core.HistoryLog.entry("CAREER", (v.immersive ? "Immersive" : "Sandbox") + " career begun: stipend counts " + (salaryAll ? "every achievement" : "achievements earned from now on")
 				+ (ownProfile ? "; its own FTL profile" : "") + "; " + STARTING_SCRAP + " scrap in the Cargo Hold");
 	}
 

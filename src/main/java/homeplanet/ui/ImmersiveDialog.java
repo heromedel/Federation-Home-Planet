@@ -45,6 +45,7 @@ public final class ImmersiveDialog {
 			}
 			HomePlanet.immersiveMode = true;
 			HomePlanet.applyImmersive();
+			HomePlanet.scrapKeepsSystems = brief.scrapKeeps.isSelected(); // the rule Immersive Mode leaves to the player
 			HomePlanet.saveConfig();
 			if (!begun) Career.start(brief.salaryAll.isSelected() && !ownProfile, ownProfile);
 			Career.setFinalVictory(Vault.get().root, brief.victoryChoice());

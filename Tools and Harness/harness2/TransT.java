@@ -52,6 +52,14 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("F: and it's the Shipyard's letter for after a reassignment", "Back from nothing".equals(find("empty").subject) && v.freeCommandReassigned());
   v.undoSurrender(dir);
   Setup.chk("F: undoing the report takes the grant back", !v.freeCommandOpen());
+  // Career messages in Sandbox Mode: the career begins once, with its letter and scrap, and no free ship
+  int scrap = v.storageScrap(), ordersBefore = orders();
+  HomePlanet.careerMessages = true;
+  Transmissions.check(); Transmissions.check();
+  int welcomes = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.equals("welcome:career")) welcomes++;
+  Setup.chk("C: Career messages begin a Sandbox career: the Liaison's letter, once, and 25 scrap", welcomes == 1 && Career.started(v.root) && v.storageScrap() == scrap + Career.STARTING_SCRAP);
+  Setup.chk("C: and no free ship with it (the Sandbox fleet has its own)", orders() == ordersBefore && find("welcome") != null && find("welcome").key.equals("welcome:career"));
+  HomePlanet.careerMessages = false;
  }
  static void profile(File saves, String[] unlockedA, String[] achievements) throws Exception {
   Profile p = Profile.createEmptyProfile(); p.setFileFormat(9);

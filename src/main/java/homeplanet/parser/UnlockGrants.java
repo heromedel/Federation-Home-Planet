@@ -55,6 +55,15 @@ public final class UnlockGrants {
 		try { append("seen", add); } catch (Exception e) { log.warn("Could not record the unlocked ships: {}", e.toString()); }
 	}
 
+	/** A career begins (Sandbox Mode's Career messages): achievements earned until now are seen, and never rewarded. */
+	public static void achievementsSeen(Unlocks u) {
+		if (u == null || u.problem() != null) return;
+		if (!file().isFile()) { turnedOn(u); return; }
+		Set<String> seen = read("seen"), add = new LinkedHashSet<String>();
+		for (String a : u.achievements()) if (!seen.contains(ACH + a)) add.add(ACH + a);
+		try { append("seen", add); } catch (Exception e) { log.warn("Could not record the achievements earned: {}", e.toString()); }
+	}
+
 	/** The layouts unlocked now, as keys, and the achievements earned ("ACH:" and the id). */
 	private static Set<String> unlockedNow(Unlocks u) {
 		Set<String> out = new LinkedHashSet<String>();

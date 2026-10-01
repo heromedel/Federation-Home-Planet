@@ -46,6 +46,8 @@ final class ImmersiveBriefing extends JDialog {
 	final JRadioButton salaryNew = new JRadioButton("Only achievements earned from now on", true);
 	final JRadioButton salaryAll = new JRadioButton("Every achievement already in your FTL profile");
 	final JRadioButton[] victory = new JRadioButton[FinalVictory.CHOICES.length];
+	/** The one house rule Immersive Mode leaves to the player, chosen here rather than on a screen of its own. */
+	final JCheckBox scrapKeeps = new JCheckBox("Scrapping a ship also moves her systems to the Cargo Bay", HomePlanet.scrapKeepsSystems);
 	boolean confirmed = false;
 
 	private final boolean begun;
@@ -168,6 +170,11 @@ final class ImmersiveBriefing extends JDialog {
 		p.add(note("Ships are precious in Immersive Mode. A rescue brings her back as she was moments before the final engagement, "
 				+ "or The Federation Home Planet buys her for the museum at her full value; a reward pays her full value instead. "
 				+ "The Home Planet Station must be open while you play."));
+		p.add(Box.createRigidArea(new Dimension(1, 8)));
+		p.add(heading("Scrapping a ship (you can change this later in Settings)"));
+		scrapKeeps.setAlignmentX(Component.LEFT_ALIGNMENT);
+		p.add(scrapKeeps);
+		p.add(note("Otherwise her systems are scrapped with her. Every other rule is The Federation Home Planet's."));
 		return p;
 	}
 
@@ -213,7 +220,8 @@ final class ImmersiveBriefing extends JDialog {
 		} else {
 			sb.append("• Your career continues as it began<br>");
 		}
-		for (int i = 0; i < victory.length; i++) if (victory[i].isSelected()) sb.append("• After a final victory: ").append(XmlText.text(FinalVictory.label(FinalVictory.CHOICES[i])));
+		for (int i = 0; i < victory.length; i++) if (victory[i].isSelected()) sb.append("• After a final victory: ").append(XmlText.text(FinalVictory.label(FinalVictory.CHOICES[i]))).append("<br>");
+		sb.append("• Scrapping a ship ").append(scrapKeeps.isSelected() ? "moves her systems to the Cargo Bay" : "scraps her systems too");
 		return sb.toString();
 	}
 

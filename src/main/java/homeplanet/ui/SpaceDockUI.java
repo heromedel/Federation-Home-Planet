@@ -103,7 +103,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
 		String title = "Docked Ships";
-		if (HomePlanet.immersiveMode) title += "  -  " + homeplanet.parser.UnlockGrants.rankName(homeplanet.parser.UnlockGrants.rank(homeplanet.parser.Unlocks.read())); // her captain's rank
+		if (HomePlanet.career()) title += "  -  " + homeplanet.parser.UnlockGrants.rankName(homeplanet.parser.UnlockGrants.rank(homeplanet.parser.Unlocks.read())); // her captain's rank
 		if (HomePlanet.immersiveNotifications) {
 			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
 			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
