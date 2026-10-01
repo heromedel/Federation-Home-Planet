@@ -5,11 +5,32 @@ it does and CREDITS.md for where the code came from.
 
 ## Working with heromedel
 
-- Discuss first, and ask before changing code. When asked to "discuss" or "don't write yet", don't edit.
+- The workflow: **discuss, create a plan, ask to write, ask to commit.** When asked to "discuss" or "don't write
+  yet", don't edit. Those two asks (write, commit) are the only gates: the plan itself makes the sensible choices
+  (from `docs/VOICES.md`, `docs/STYLE.md`, the roadmap) rather than stopping on each one. Ask only what can't be
+  worked out; never about wording, capitals or details you can decide.
+- In discussions, talk in normal paragraphs, like a conversation: start with what you think of the idea (what's good
+  about it, what you'd build from it), and fold practical details in or handle them in the plan. Don't answer an idea
+  with lists of problems, issues and questions; keep lists for the plans themselves.
+- Plans and ideas are lettered; their steps are numbered:
+
+      Idea A            Plan B
+      1. ...            1. ...
+      2. ...            2. ...
+
+- heromedel's own text (letters, messages, names) goes in exactly as written, capitals included (they're often
+  deliberate: "Lucky Duck" is a nickname). Suggested edits to it are a short list, only ones that matter, to answer
+  yes or no.
+- Answer questions without writing code. Collect small fixes and requests in a list, show it when it changes, and do
+  them as one batch when heromedel asks; don't make a version or a commit for each small change.
 - Never commit or push to `main`. Work only on your own session branch; heromedel decides what goes into
   `main` (a pull request or their own merge).
-- heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build - FHP.bat`.
-  Say what to test and how, in plain steps.
+- heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build The Federation Home Planet Station.bat`.
+  They know how to fetch and build: don't repeat test steps after each commit. Mention what to test only when it's
+  something unusual they wouldn't find on their own.
+- `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
+- The version (4B.nn) goes up by one only with a commit: `<version>` in `pom.xml` and
+  `APP_VERSION` in `HomePlanet.java`, always together.
 - The repo is public. Never commit FTL's game files (ftl.dat, its pictures or music) or a link to them.
 
 ## Layout
@@ -21,7 +42,7 @@ it does and CREDITS.md for where the code came from.
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
 - `Tools and Harness/harness2/`: the regression harness (Claude's test bench, not a user tool).
 - `Tools and Harness/hw2fhp-converter/`: the FTL Homeworld to FHP converter (a separate jar) and its tests.
-- `Build - FHP.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
+- `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
   `Current Build\`).
 
 ## Build
@@ -46,6 +67,24 @@ folder are passed as the 2nd and 3rd arguments.
 
 To see a window without a display, run it under `xvfb-run -a java ...` and paint the dialog's root pane into
 a BufferedImage.
+
+## Voice (player-facing text)
+
+- Immersion and understandability matter more than identical phrasing: messages may vary their wording for flavour.
+- Fonts and colours: see `docs/STYLE.md` (a guide, not law).
+- **The Home Planet Station** is the base: it builds, sends, searches, stores, and has systems, an interface,
+  databases and communications that can fail ("The Home Planet Station could not…"). **The Federation Home
+  Planet** is the authority: it approves, commissions, draws up blueprints. "The" is capitalized as part of
+  these titles, even mid-sentence.
+- **a station** (lowercase) is an FTL store beacon. Crew "stations" in the ship editor are FTL's manned squares.
+- Slipstream is the transmission channel: mods and blueprints are "sent to FTL via Slipstream".
+- **the rebellion** and **the rebels** are never capitalised: the Federation won't dignify them with a title. Only
+  the Rebel Flagship (FTL's name for that ship) keeps its capitals. Catch phrases: see `docs/STYLE.md`.
+- Never imply the Rebel Flagship has been destroyed: the war goes on. Its weapons come from plans stolen from the
+  Rebels, not salvage.
+- Places: the Space Dock, the Cargo Bay, the Cargo Hold (the storage; its save keeps the internal name "Spacedock
+  Storage"), the Dry Dock, the Junkyard. A ship is **decommissioned** (not disbanded). Ships are "she". Never "Home World",
+  never "FHP" in player-facing text. Errors stay actionable (what failed, what to do, the file or path).
 
 ## Style
 

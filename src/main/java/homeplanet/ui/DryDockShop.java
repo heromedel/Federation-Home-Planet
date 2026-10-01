@@ -78,6 +78,7 @@ class DryDockShop {
 
 	private final CargoBayUI bay;
 	private final Map<Ship, SavedGameState> otherSaves = new LinkedHashMap<Ship, SavedGameState>(); // saves read just for the shop
+	private final Map<Ship, String> otherHashes = new LinkedHashMap<Ship, String>(); // their files' fingerprints as read
 	private final Set<Ship> dirty = new LinkedHashSet<Ship>();
 	private final List<String> purchases = new ArrayList<String>(); // for the history log
 	// What purchases changed on each buyer, keyed like HistoryLog.inventory, so the TRADE entry leaves them out
@@ -125,7 +126,7 @@ class DryDockShop {
 			public void actionPerformed(ActionEvent e) {
 				javax.swing.JPopupMenu m = new javax.swing.JPopupMenu();
 				javax.swing.JMenuItem a = new javax.swing.JMenuItem(bay.currentSave.getPlayerShipName() + " (your ship)");
-				javax.swing.JMenuItem b = new javax.swing.JMenuItem("Spacedock Storage (items and supplies, not systems)");
+				javax.swing.JMenuItem b = new javax.swing.JMenuItem("Cargo Hold (items and supplies, not systems)");
 				a.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toStorage = false; rebuild(); } });
 				b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toStorage = true; rebuild(); } });
 				m.add(a); m.add(b);
@@ -157,6 +158,7 @@ class DryDockShop {
 	/** Rebuilds from the saves (throws away any unsaved purchases). */
 	void init() {
 		otherSaves.clear();
+		otherHashes.clear();
 		dirty.clear();
 		purchases.clear();
 		bought.clear();
@@ -184,16 +186,16 @@ class DryDockShop {
 		if (bay.currentPath == null) { content.revalidate(); content.repaint(); return; }
 		SavedGameState buyer = buyer();
 		int scrap = buyer == null ? 0 : buyer.getPlayerShip().getScrapAmt();
-		buyerBtn.setText(toStorage ? "Spacedock Storage" : bay.currentSave.getPlayerShipName());
+		buyerBtn.setText(toStorage ? "Cargo Hold" : bay.currentSave.getPlayerShipName());
 		shipPic.setIcon(toStorage ? null : bay.shipIcon(bay.currentSave));
 		shipPic.setToolTipText(toStorage ? null : "Click for her report, and to rename her");
 		classLbl.setText(toStorage ? "Items and supplies only, no systems" : CargoBayUI.shipClass(bay.currentState));
-		info.setToolTipText(toStorage ? "What Spacedock Storage is" : "Her report, and to rename her");
+		info.setToolTipText(toStorage ? "What the Cargo Hold is" : "Her report, and to rename her");
 		scrapLbl.setText(scrap + " scrap to spend");
 		List<Entry> entries = buildEntries();
 		int stores = 0;
 		for (Entry e : entries) if (e.kind == Kind.HEADER && e.ship != null) stores++;
-		storesLbl.setText(stores == 0 ? "No stores in range: dock a ship at a Station" : (stores == 1 ? "1 store" : stores + " stores") + " in range  ·  anything bought waits for Save");
+		storesLbl.setText(stores == 0 ? "No stores in range: dock a ship at a station" : (stores == 1 ? "1 store" : stores + " stores") + " in range  ·  anything bought waits for Save");
 		int w = 1234, colW = (w - 20) / 3, y = 4;
 		int i = 0;
 		while (i < entries.size()) {
@@ -250,7 +252,7 @@ class DryDockShop {
 			y = Math.max(sy, uy + 34) + 16;
 		}
 		if (stores == 0) {
-			CargoParts.Label none = new CargoParts.Label("None of your ships is docked at a Station with a store.", FtlFont.MENU, CargoParts.DIM, 0);
+			CargoParts.Label none = new CargoParts.Label("None of your ships is docked at a station with a store.", FtlFont.MENU, CargoParts.DIM, 0);
 			none.setBounds(0, 60, w, 30);
 			content.add(none);
 			y = 120;
@@ -366,8 +368,10 @@ class DryDockShop {
 		SavedGameState gs = otherSaves.get(ship);
 		if (gs == null) {
 			try {
-				gs = new SavedGameParser().readSavedGame(ship.file()); // its own copy: purchases stay unsaved until Save
+				homeplanet.vault.Vault.Copy c = homeplanet.vault.Vault.get().readCopy(ship); // its own copy: purchases stay unsaved until Save
+				gs = c.save;
 				otherSaves.put(ship, gs);
+				otherHashes.put(ship, c.hash);
 			} catch (Exception e) {
 				log.warn("Shop: could not read " + ship.file(), e);
 			}
@@ -383,14 +387,14 @@ class DryDockShop {
 		SavedGameState buyer = toStorage ? resolve(bay.homeSave) : bay.currentSave;
 		SavedGameState source = resolve(e.ship);
 		if (buyer == null || source == null) {
-			homeplanet.core.HomePlanet.showErrorDialog("Could not read the saves needed for this purchase.");
+			homeplanet.core.HomePlanet.showErrorDialog("The Home Planet Station could not read the saves needed for this purchase.");
 			return;
 		}
 		ShipState bs = buyer.getPlayerShip();
 		String buyerName = toStorage ? "The Cargo Bay" : buyer.getPlayerShipName();
 		String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) : supplyName(e.kind);
 		if (e.kind == Kind.SYSTEM && toStorage) {
-			JOptionPane.showMessageDialog(bay, NOT_FITTED + ".", "Shop", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(bay, "Systems can't be bought into the Cargo Hold. Buy it for your ship, then store it from the Refit tab.", "Shop", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		if (e.kind == Kind.SYSTEM && systemBlocked(buyer, e.id, name)) return; // before the scrap check: "already has" says more than "not enough scrap"
@@ -415,7 +419,7 @@ class DryDockShop {
 		} else if (e.kind == Kind.ITEM) {
 			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
 			if (!it.isAvailable() || !e.id.equals(it.getItemId())) { // shouldn't happen, but never sell something twice
-				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that shop.");
+				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
 				return;
 			}
 			if (!toStorage) {
@@ -454,7 +458,7 @@ class DryDockShop {
 		bay.showPurchase(buyer, e.kind == Kind.ITEM ? e.id : null, toCargo);
 		bay.systems.refresh(); // a bought system shows on the Refit tab
 		rebuild();
-		bay.help("Bought " + name + " for " + e.price + " scrap" + (toCargo ? " (into the cargo hold)" : "") + ". Save makes it official.");
+		bay.help("Bought " + name + " for " + e.price + " scrap" + (toCargo ? " (into the cargo hold)" : "") + ". Save to make it official.");
 	}
 
 	/**
@@ -521,7 +525,7 @@ class DryDockShop {
 		String question;
 		if (Items.isAugment(id)) {
 			if (bs.getAugmentIdList().size() >= 3) {
-				JOptionPane.showMessageDialog(bay, "This ship has no further room for a new Augment.", "No room", JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(bay, "This ship's augment slots are full (3).", "No room", JOptionPane.WARNING_MESSAGE);
 				return null;
 			}
 			return Boolean.FALSE;
@@ -529,14 +533,14 @@ class DryDockShop {
 			what = "weapon";
 			slots = (bp != null && bp.getWeaponSlots() != null) ? bp.getWeaponSlots() : 4;
 			used = bs.getWeaponList().size();
-			question = "No room for the weapon, should it be sent to cargo?";
+			question = "No free weapon slot. Put the weapon in the cargo hold?";
 		} else {
 			what = "drone";
 			slots = (bp != null && bp.getDroneSlots() != null) ? bp.getDroneSlots() : 3;
 			if (!SaveHelper.hasSystem(bs, SystemType.DRONE_CTRL)) slots = 0;
 			used = bs.getDroneList().size();
-			question = slots == 0 ? "This ship has no Drone Control system, should the drone be sent to cargo?"
-					: "No room for the drone, should it be sent to cargo?";
+			question = slots == 0 ? "This ship has no Drone Control system. Put the drone in the cargo hold?"
+					: "No free drone slot. Put the drone in the cargo hold?";
 		}
 		if (used < slots) return Boolean.FALSE;
 		if (buyer.getCargoIdList().size() >= 4) {
@@ -558,7 +562,7 @@ class DryDockShop {
 
 	/** Adds the saves only the shop touched (storage bought for, other ships' stores) to the Cargo Bay's save. */
 	void addTo(homeplanet.vault.Vault.Transaction tx) {
-		for (Ship s : dirty) tx.put(s, otherSaves.get(s));
+		for (Ship s : dirty) tx.put(s, otherSaves.get(s), otherHashes.get(s));
 	}
 	List<String> purchases() { return purchases; }
 

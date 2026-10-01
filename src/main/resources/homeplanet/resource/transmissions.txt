@@ -1,0 +1,993 @@
+# Transmissions: the messages The Federation Home Planet sends (Immersive Notifications), and their rewards.
+# Edit freely. Each message starts with "== key", then "from:", "subject:" and, if it carries one, "reward:" lines,
+# a blank line, and the text. {rank} is the player's rank, {ship} a ship's class and layout.
+#
+# Rewards, comma separated (they go to the Cargo Hold): scrap N, fuel N, missiles N, parts N (drone parts),
+# item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
+# anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
+# Keys: welcome, stipend ({period} and {amount} are filled in), empty (the free command), reassigned (the free command
+# after a Report for Reassignment; in Immersive Mode reassigned:any, reassigned:kestrel or reassigned:relief, by what
+# was surrendered), promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
+# rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
+# notice when Transmissions are off).
+
+== welcome
+from: Home Planet Liaison
+subject: Welcome to the Front
+
+{rank},
+
+I see you have volunteered to serve in the war against the rebellion.
+
+The Federation Home Planet has approved you to begin building your fleet. Congratulations: your sign-on bonus of 25 scrap is already waiting in The Home Planet Station's Cargo Hold.
+
+Just remember: once you have your first ship and set out, you will need to reach another beacon with a station to be able to trade with The Home Planet Station or your other ships.
+
+Aside from your monthly stipend, you will have to earn your way or fund your fleet yourself. It's not cheap.
+
+Expect a message from Home Planet Shipyard about your first ship. My recommendation: find a way to acquire 200 scrap, and when things start looking bleak out there, get your ship to a station and plot a New Journey. It's the only way to keep the rebels off your tail.
+
+The Fleet is stretched thin out there, but it looks after its own. Serve us well and you will be rewarded. Betray us and die with the rebels.
+
+Watch this channel. The Federation will be in contact.
+
+---
+
+For the Federation, and all its worlds.
+Until every beacon is free.
+~ Home Planet Liaison
+
+== rescue
+from: Federation Fleet Command
+subject: Rescued from the Final Engagement
+
+{rank},
+
+Dispatch from Federation Fleet Command.
+
+The Rebel Flagship has broken off her assault and withdrawn. The line held. The war continues.
+
+Recovery teams reached the {ship} in time, and The Home Planet Station has restored her as she was moments before the final engagement.
+
+The Federation Home Planet makes an offer: her full value, {value} scrap, to place her in the Federation museum. Or keep her, and she will be waiting at the Space Dock for her next journey. The decision is yours.
+
+~ Federation Fleet Command
+
+== reward
+from: The Federation Home Planet
+subject: In Recognition
+
+Official notice from The Federation Home Planet
+
+{rank},
+
+The Rebel Flagship has withdrawn. The {ship} was lost in the engagement that forced her back. Recovery was not possible.
+
+In recognition of her service, her full value of {value} scrap has been granted to The Home Planet Station. It is waiting in the Station's Cargo Hold: enough to commission a ship of equal worth.
+
+Her name has been entered in the fleet's records.
+
+~ The Federation Home Planet
+
+== stipend
+from: The Federation Home Planet
+subject: Stipend
+
+Automated message from The Federation Home Planet
+
+Your {period} of {amount} scrap has been transferred to The Home Planet Station. It is waiting for you in the Station's Cargo Hold.
+
+Thank you for your service, {rank}.
+
+== empty
+from: Home Planet Shipyard
+subject: A new command
+
+{rank},
+
+Our records show you without a ship at your command.
+That will not do. That will not do at all.
+
+The Federation Home Planet has authorized a new ship in your name: {ship}, at no cost to you. Lucky Duck, this doesn't happen often. Take this order to Commission and she's yours.
+
+Last guy I knew who needed a new ship, they demanded he hand over his entire cargo hold.
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== reassigned
+from: Home Planet Shipyard
+subject: Back from nothing
+
+{rank},
+
+Well, you're back. Guess you're an unlucky duck..
+Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
+
+The order is for {ship}. Take this order to Commission and she's yours.
+
+And maybe don't lose this one?
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== reassigned:any
+from: Home Planet Shipyard
+subject: Back from nothing
+
+{rank},
+
+Well, you're back. Guess you're an unlucky duck..
+Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
+They must've liked what you turned in. You get your pick of the shipyard.
+
+The order is for {ship}. Take this order to Commission and she's yours.
+
+And maybe don't lose this one?
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== reassigned:kestrel
+from: Home Planet Shipyard
+subject: Back from nothing
+
+{rank},
+
+Well, you're back. Guess you're an unlucky duck..
+Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
+What you turned in was enough for a proper Kestrel. Not bad.
+
+The order is for {ship}. Take this order to Commission and she's yours.
+
+And maybe don't lose this one?
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== reassigned:relief
+from: Home Planet Shipyard
+subject: Back from nothing
+
+{rank},
+
+Well, you're back. Guess you're an unlucky duck..
+Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
+I won't lie, what you turned in didn't buy much.
+
+The order is for {ship}. Take this order to Commission and she's yours.
+
+And maybe don't lose this one?
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== promo:1
+from: Federation Fleet Admiral
+subject: Priority: selected for promotion
+
+Priority message from the Federation Fleet Admiral:
+
+Commander, your ongoing efforts against the rebellion have not gone unnoticed. It is my honor to inform you that The Federation Home Planet has selected you for commendation and promotion.
+
+From here on you will command your ships as a Federation Captain, with all the dignity and honor that comes with it, including a Federation Cruiser, Type A, of your very own.
+
+Keep up the good work and make excellent use of her. This class of ship is a real beauty.
+
+Godspeed,
+Your Fleet Admiral
+
+== promo:2
+from: Federation Fleet Admiral
+subject: Priority: promoted to Commodore
+
+Priority message from the Federation Fleet Admiral:
+
+Captain, the fleet has taken notice again. Few officers hold the line the way you have, and fewer still bring their crews home while doing it. The Federation Home Planet has approved your promotion to Commodore, effective immediately.
+
+A Commodore's flag needs a ship to fly from. Home Planet Shipyard has a Federation Cruiser, Type C, on order in your name.
+
+Hold the line, Commodore.
+Your Fleet Admiral
+
+== order:PLAYER_SHIP_HARD
+from: Home Planet Shipyard
+subject: Commission order: {ship}
+
+{rank},
+
+The Kestrel yards have turned out another pattern of the old workhorse: the {ship}, at no cost to you. Take this order to Commission and she's yours.
+
+I know, I know. "Just another Kestrel." But there's a reason the Federation keeps building them: they come home.
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== order:PLAYER_SHIP_CIRCLE
+from: Office of Alien Affairs
+subject: Commission order: {ship}
+
+{rank},
+
+The Engi have shared the plans of their {ship}. In their words, it is "to better the mutual efficiency of allied peoples." In ours: thank you.
+
+The first one built from those plans is yours. Take this order to Commission. The Engi ask that you log her performance carefully; they find our reports "insufficiently detailed."
+
+~ Office of Alien Affairs
+
+== order:PLAYER_SHIP_ENERGY
+from: Office of Alien Affairs
+subject: Commission order: {ship}
+
+{rank},
+
+Your restraint among the Zoltan has not gone unnoticed. Where others would have fired first, you chose peace, and the Zoltan Council has answered in kind: they have offered a {ship} to mark the peaceful relations between our peoples. The Federation Home Planet has agreed to let you command the new ship.
+
+Office of Alien Affairs
+
+== order:PLAYER_SHIP_MANTIS
+from: Home Planet Shipyard
+subject: Commission order: {ship}
+
+{rank},
+
+Intelligence recovered a {ship} from a raiding party that thought better of it. The Engineering Corps says the design is safe to fly. Mostly. I asked what "mostly" meant, and they walked away.
+
+Take this order to Commission and she's yours. Maybe keep the crew quarters locked for the first week.
+
+~ Home Planet Shipyard Comm. Officer
+
+== order:PLAYER_SHIP_JELLY
+from: Office of Alien Affairs
+subject: Commission order: {ship}
+
+{rank},
+
+A Slug consortium has sold us the plans for their {ship}. The price was suspiciously fair. In this office's experience, Slug generosity usually arrives with a second invoice.
+
+Engineering has checked the plans twice. Take this order to Commission, and have your own people check her a third time.
+
+~ Office of Alien Affairs
+
+== order:PLAYER_SHIP_ROCK
+from: Office of Alien Affairs
+subject: Commission order: {ship}
+
+{rank},
+
+A Rock clan that has broken with the pirates has sent us a {ship} as a gesture of good faith. The Rocks do not make gestures lightly. This is a first.
+
+Take this order to Commission and treat her with respect. They will ask.
+
+~ Office of Alien Affairs
+
+== order:PLAYER_SHIP_STEALTH
+from: Home Planet Shipyard
+subject: Commission order: {ship}
+
+{rank},
+
+Federation Intelligence has cleared the {ship} for your use. Officially, she doesn't exist. Unofficially, I've been dying to see one of these on an order.
+
+Take this order to Commission. And if anyone asks, you didn't get it from me.
+
+~ Home Planet Shipyard Comm. Officer
+
+== order:PLAYER_SHIP_CRYSTAL
+from: Office of Alien Affairs
+subject: Commission order: {ship}
+
+{rank},
+
+First contact has been made with the Crystal. After long talks they allowed our engineers to study one of their vessels. This {ship} is what we learned, and she is assigned to you.
+
+Take this order to Commission. The Crystal remember everything; fly her with honor.
+
+~ Office of Alien Affairs
+
+== order:PLAYER_SHIP_ANAEROBIC
+from: Home Planet Shipyard
+subject: Commission order: {ship}
+
+{rank},
+
+A Lanius vessel was captured intact, a first for the fleet, and Engineering learned enough to build a {ship}. No air aboard, by design. I still don't understand how that's a feature.
+
+Take this order to Commission and she's yours. Keep the spare metal locked up; the Lanius eat it. Literally.
+
+~ Home Planet Shipyard Comm. Officer
+
+== order:PLAYER_SHIP_FED
+from: Home Planet Shipyard
+subject: Commission order: {ship}
+
+{rank},
+
+The Federation Home Planet has released another {ship} to the fleet, and this one has your name on it. Do you know how long I've waited to write up one of these?
+
+Take this order to Commission and she's yours, on the house.
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== ach:ACH_SECTOR_5
+from: Home Planet Quartermaster
+subject: Just Getting Started
+reward: scrap 25, fuel 4
+
+{rank},
+
+Sector 5. Half the captains who set out never see it. You did.
+
+25 scrap and 4 fuel, in the Cargo Hold. Don't waste them. I'll know.
+
+~ Home Planet Quartermaster
+
+== ach:ACH_SECTOR_8
+from: Home Planet Quartermaster
+subject: Federation Base in Range
+reward: scrap 60, missiles 4, parts 4, fuel 4
+
+{rank},
+
+Sector 8. You've carried the fight a long way from home, and a fight that long runs on supplies.
+
+60 scrap, 4 missiles, 4 drone parts and 4 fuel, counted, signed for and waiting in the Cargo Hold. The struggle against the rebellion is far from over. Make every piece count.
+
+Not one more sector.
+~ Home Planet Quartermaster
+
+== ach:ACH_WIN_EASY
+from: Federation Fleet Admiral
+subject: Federation Victory
+reward: scrap 300
+
+{rank},
+
+The Rebel Flagship has been driven off, and every freed beacon from here to The Home Planet Station is celebrating tonight. Let them. Tomorrow the rebellion regroups, and so will we.
+
+The Federation Home Planet has authorized your share of the victory purse. It is waiting at The Home Planet Station. Spend it on the next fight.
+
+Many worlds, one Federation.
+Your Fleet Admiral
+
+== ach:ACH_WIN_NORMAL
+from: Federation Fleet Admiral
+subject: Federation Victory
+reward: scrap 400
+
+{rank},
+
+That was no training exercise. You met the rebellion at its full strength and turned it back, and the whole fleet knows it. I have read the reports. So has every officer in the fleet.
+
+The war is far from over. But The Federation Home Planet has authorized a victory purse worthy of the deed, and I signed it myself.
+
+Hold the line, {rank}.
+Your Fleet Admiral
+
+== ach:ACH_UNLOCK_ALL
+from: Federation Fleet Admiral
+subject: Your Own Fleet
+reward: scrap 500
+
+{rank},
+
+Every class of ship the Federation fields has now been cleared for your command. There are admirals who cannot say that.
+
+That is a fleet, {rank}, and fleets need funding. The Federation Home Planet has allocated a fleet budget in your name. Use it well. The rebels are counting their ships too.
+
+Many worlds, one Federation.
+Your Fleet Admiral
+
+== ach:ACH_SCRAP
+from: Home Planet Quartermaster
+subject: Rule Ten: Greed is Eternal
+reward: item SCRAP_COLLECTOR
+
+{rank},
+
+Ten thousand scrap through your hands. I've counted every piece. Twice.
+
+The auditors are impressed and a little nervous, so here's a Scrap Recovery Arm to keep the numbers climbing.
+
+One more thing. Intelligence stole the plans for the Rebel Flagship's weapons. You're cleared to build them into the artillery of your own designs. They don't come cheap. Neither did the plans.
+
+Give the rebellion nothing.
+~ Home Planet Quartermaster
+
+== ach:ACH_SHIPS
+from: Federation Fleet Admiral
+subject: Warlord
+reward: item FTL_JUMPER, item FTL_BOOSTER
+
+{rank},
+
+One thousand enemy ships. I had the number checked. There are rebel captains who change course at the sound of your name, and I intend to keep it that way.
+
+For a hunter who never stops moving: an Adv. FTL Navigation and an FTL Recharge Booster. Wherever they run, be there first.
+
+Stand fast. The Federation endures.
+Your Fleet Admiral
+
+== ach:ACH_NO_UPGRADES
+from: Federation Engineering Corps
+subject: I don't need no stinkin' upgrades!
+reward: system cloaking
+
+{rank},
+
+Sector 5 on factory settings. We ran the numbers. They should not have worked.
+
+Since you clearly don't need upgrades, here is something that isn't one: a Cloaking system, crated and waiting in the Cargo Hold. Installation instructions are included. Please read them.
+
+~ Federation Engineering Corps
+
+== ach:ACH_PACIFIST
+from: Home Planet Liaison
+subject: Coming in for my Pacifism run!
+reward: item FTL_BOOSTER
+
+{rank},
+
+Sector 5, and not a single shot fired. Some officers will call that cowardice. They are the ones who have never seen what the rebels do to a ship that stays to fight.
+
+Knowing when to run is a skill, and you have it. Here is an FTL Recharge Booster to make you better at it.
+
+My advice: don't make a habit of it. The rebellion won't be outrun forever.
+
+~ Home Planet Liaison
+
+== ach:ACH_NO_REPAIR
+from: Federation Engineering Corps
+subject: On a Wing and a Prayer
+reward: item REPAIR_ARM
+
+{rank},
+
+Sector 5 without a single repair. The Corps is fascinated. The Corps is also horrified.
+
+Please accept this Repair Arm. Please use it.
+
+~ Federation Engineering Corps
+
+== ach:ACH_NO_MISSILES
+from: Federation Engineering Corps
+subject: Ballistophobia
+reward: system battery
+
+{rank},
+
+Your missile tubes arrived at sector 8 exactly as full as they left. Admirable restraint, or a supply problem. We didn't ask.
+
+A captain who shoots clean needs power for the guns: a Backup Battery, for when the reactor can't keep up. It's in the Cargo Hold.
+
+~ Federation Engineering Corps
+
+== ach:ACH_NO_DRONES
+from: Federation Engineering Corps
+subject: Technophobia
+reward: item DEFENSE_SCRAMBLER
+
+{rank},
+
+Not one drone launched, all the way to sector 8. You clearly don't trust them. Frankly, neither do we.
+
+This Defense Scrambler will make sure the enemy's defense drones can't bother you either. Consider it a professional courtesy.
+
+~ Federation Engineering Corps
+
+== ach:ACH_NO_BUYING
+from: Home Planet Quartermaster
+subject: Living off the Land
+reward: choice item REPAIR_ARM | item SHIP_REPAIR
+
+{rank},
+
+Sector 8 without spending a scrap at a store. Do you know how rare that is? I do. I keep the ledgers.
+
+A ship that lives off the land should fix herself too. Pick one: a Repair Arm, which patches the hull every time you collect scrap, or a Hull Repair drone, if you fly with drones. Your choice.
+
+~ Home Planet Quartermaster
+
+== ach:ACH_NO_DEATH
+from: Home Planet Liaison
+subject: No Redshirts Here
+reward: item BACKUP_DNA
+
+{rank},
+
+Every crew member who set out with you reached sector 8. Every one.
+
+You would be surprised how rare that is. Some captains spend lives like scrap out there; the good ones don't. The Federation Home Planet has awarded you a Backup DNA Bank, so it stays that way.
+
+Loyalty runs both ways. Your crew will remember this.
+
+For the Federation, and all its worlds.
+~ Home Planet Liaison
+
+== ach:ACH_BURNING
+from: Federation Engineering Corps
+subject: Some people just like to watch ships burn
+reward: item FIRE_EXTINGUISHERS
+
+{rank},
+
+We've seen the footage. That was a great deal of fire. Impressive, and a little alarming.
+
+A Fire Suppression system. Professional courtesy between arsonists.
+
+~ Federation Engineering Corps
+
+== ach:ACH_BAD_DODGING
+from: Federation Engineering Corps
+subject: Astronomically Low Odds
+reward: item SHIELD_RECHARGE
+
+{rank},
+
+Five shots. Five hits. Engines at full power.
+
+The Corps has reviewed the logs and reached a conclusion: you cannot dodge. We checked the engines. The engines are fine.
+
+So stop trying. Here is a Shield Charge Booster. Let the shields do the work.
+
+~ Federation Engineering Corps
+
+== ach:ACH_ONE_VOLLEY
+from: Home Planet Liaison
+subject: They never saw it coming
+reward: item LASER_CHAINGUN_2
+
+{rank},
+
+One volley, and the enemy ship was gone before she could fire back. Clean work.
+
+Not every fight ends that fast, and the rebels are learning. For the battles that drag on: a Chain Vulcan. It starts slow and doesn't stop.
+
+~ Home Planet Liaison
+
+== ach:ACH_BOARDING_DRONE
+from: Federation Engineering Corps
+subject: BOARDING OBJECTIVE SUCCESSFUL
+reward: item BATTLE
+
+{rank},
+
+One boarding drone, four enemy crew. The report wrote itself.
+
+Expect the enemy to try the same on you. An Anti-Personnel Drone, to be waiting when they do.
+
+~ Federation Engineering Corps
+
+== ach:ACH_INVADE_SHIP
+from: Home Planet Liaison
+subject: Trustworthy Auto-Pilot
+reward: system clonebay
+
+{rank},
+
+Your whole crew aboard the enemy ship, and your own ship left flying herself. I've read the report. Bold. Reckless. It worked.
+
+Next time it might not. The Federation Home Planet is sending a Clone Bay, so the people who follow you that far get to come home.
+
+~ Home Planet Liaison
+
+== ach:ACH_SLICE_DICE
+from: Federation Engineering Corps
+subject: Slice and Dice
+reward: item WEAPON_PREIGNITE
+
+{rank},
+
+Every room of the enemy ship in five seconds. The beam specialists printed the recording and hung it on the lab wall.
+
+A Weapon Pre-igniter. The specialists would like you to do it again, faster.
+
+~ Federation Engineering Corps
+
+== ach:ACH_SUFFOCATE
+from: Home Planet Liaison
+subject: Victory through Asphyxiation
+reward: item O2_MASKS
+
+{rank},
+
+An enemy crew left without air. Grim work. But it is a war, and the rebels would do the same to you without a second thought.
+
+Which is why you're getting Emergency Respirators. Make sure it never happens to yours.
+
+~ Home Planet Liaison
+
+== ach:ACH_UNITED_FEDERATION
+from: Office of Alien Affairs
+subject: The United Federation
+reward: system clonebay
+
+{rank},
+
+Six peoples aboard one Kestrel, working as a single crew. This office read that report aloud, start to finish. That is what the Federation is for.
+
+A Clone Bay. Six peoples, one crew; keep it that way.
+
+Many worlds, one Federation.
+~ Office of Alien Affairs
+
+== ach:ACH_FULL_ARSENAL
+from: Home Planet Shipyard
+subject: Full Arsenal
+reward: item SYSTEM_CASING
+
+{rank},
+
+Eleven systems in one Kestrel. ELEVEN. I've worked on those hulls. I didn't think she had the room.
+
+Titanium System Casing, to protect all of them. And send me a picture of that engine room, please. For science.
+
+Godspeed and come home.
+~ Home Planet Shipyard Comm. Officer
+
+== ach:ACH_TOUGH_SHIP
+from: Home Planet Shipyard
+subject: Tough Little Ship
+reward: item ROCK_ARMOR
+
+{rank},
+
+One hull point. ONE. And you brought her all the way back to full. That's a tough little ship, and whoever's flying her isn't bad either.
+
+Rock Plating, so next time she doesn't get quite that close. I'd like her back in one piece.
+
+~ Home Planet Shipyard Comm. Officer
+
+== ach:ACH_ENERGY_SHIELDS
+from: Home Planet Shipyard
+subject: Shields Holding
+reward: item SHIELD_RECHARGE
+
+{rank},
+
+The enemy never got through your Zoltan Shield. Not once. The Zoltan are very pleased; apparently you used it "as intended."
+
+How does a Zoltan shield work anyway? I've asked three engineers and gotten four answers.
+
+Here's a Shield Charge Booster, with the Zoltan's compliments. They say it will all make sense once it's installed. I'll take their word for it.
+
+~ Home Planet Shipyard Comm. Officer
+
+== ach:ACH_ENERGY_POWER
+from: Federation Engineering Corps
+subject: Givin' her all she's got, Captain!
+reward: item BATTERY_BOOSTER
+
+{rank},
+
+Twenty-nine power running through your systems at once. The reactor must have been singing. We would have liked to hear it.
+
+A Battery Charger, for when she needs even more. There is always more.
+
+~ Federation Engineering Corps
+
+== ach:ACH_ENERGY_MANPOWER
+from: Office of Alien Affairs
+subject: Manpower
+reward: crew energy
+
+{rank},
+
+Sector 5 without a single reactor upgrade: your Zoltan crew powered the ship themselves. The Zoltan consider this simply good manners.
+
+One of them has asked to serve with you. They are reporting to The Home Planet Station, and they will thank you for the opportunity. At length.
+
+~ Office of Alien Affairs
+
+== ach:ACH_STEALTH_DESTROY
+from: Home Planet Liaison
+subject: Bird of Prey
+reward: item WEAPON_PREIGNITE
+
+{rank},
+
+A ship at full strength, destroyed before your cloak even dropped. Federation Intelligence has asked me how you did it. I told them to read your logs like the rest of us.
+
+Until they work it out, a Weapon Pre-igniter, so the strike lands even sooner.
+
+~ Home Planet Liaison
+
+== ach:ACH_STEALTH_AVOID
+from: Home Planet Liaison
+subject: Phase Shift
+reward: item FTL_JAMMER
+
+{rank},
+
+Nine points of incoming fire, and not one of them found you. The rebels are wasting ammunition on shadows.
+
+Here is an FTL Jammer, so the ones you're hunting can't run either. Once you've found them, finish it.
+
+Until every beacon is free.
+~ Home Planet Liaison
+
+== ach:ACH_STEALTH_TACTICAL
+from: Home Planet Quartermaster
+subject: Tactical Approach
+reward: scrap 500
+
+{rank},
+
+Sector 8 without flying into a single storm, sun or asteroid field. Hull repairs cost the fleet a fortune. You didn't need any.
+
+You saved us a fortune, so here's some of it back: 500 scrap. Don't let it go to your head.
+
+~ Home Planet Quartermaster
+
+== ach:ACH_ROBOTIC
+from: Office of Alien Affairs
+subject: Robotic Warfare
+reward: item DRONE_SPEED
+
+{rank},
+
+Three drones working at once. The Engi sent a note that simply reads: "Acceptable." From the Engi, that is a standing ovation.
+
+A Drone Reactor Booster, on their recommendation.
+
+~ Office of Alien Affairs
+
+== ach:ACH_ONLY_DRONES
+from: Office of Alien Affairs
+subject: I hardly lifted a finger
+reward: item DRONE_RECOVERY
+
+{rank},
+
+An enemy ship destroyed by drones alone. The Engi called it "elegant." We have never heard them call anything elegant.
+
+A Drone Recovery Arm, so your drones come home too.
+
+~ Office of Alien Affairs
+
+== ach:ACH_IONED
+from: Office of Alien Affairs
+subject: The guns... They've stopped
+reward: item ION_ARMOR
+
+{rank},
+
+Four enemy systems ioned at once. The Engi were watching, and they have shared their Reverse Ion Field with you: the same trick won't work on your ship.
+
+It has not left Engi hands before. Please do not take it apart.
+
+~ Office of Alien Affairs
+
+== ach:ACH_ROCK_FIRE
+from: Office of Alien Affairs
+subject: Is it warm in here?
+reward: item FIRE_EXTINGUISHERS
+
+{rank},
+
+Your Rock crew fought a burning enemy and won. According to the report, they didn't notice the fire.
+
+The rest of your crew did. A Fire Suppression system, for everyone aboard who isn't made of stone.
+
+~ Office of Alien Affairs
+
+== ach:ACH_ROCK_MISSILES
+from: Federation Engineering Corps
+subject: Defense Drones Don't Do D'anything!
+reward: item DEFENSE_SCRAMBLER, missiles 6
+
+{rank},
+
+Missiles only, straight through a defense drone. We can now confirm that the drone did not, in fact, do anything.
+
+A Defense Scrambler and six missiles, to keep proving it.
+
+~ Federation Engineering Corps
+
+== ach:ACH_ROCK_CRYSTAL
+from: Office of Alien Affairs
+subject: Ancestry
+reward: item CRYSTAL_HEAVY_1
+
+{rank},
+
+You found the Crystal's hidden sector. Your Rock crew hasn't stopped talking about it. They say it feels like visiting family.
+
+The Crystal, to everyone's surprise, sent a gift: a Heavy Crystal Mark I. We are told this is a great honor. We are also told not to ask why.
+
+~ Office of Alien Affairs
+
+== ach:ACH_MANTIS_CREW_DEAD
+from: Office of Alien Affairs
+subject: Take no prisoners!
+reward: item CREW_STIMS
+
+{rank},
+
+The crews of twenty ships defeated by sector 6. Even the Mantis are impressed, and the Mantis are never impressed.
+
+Mantis Pheromones, to keep your crew moving. The Mantis ambassador insisted. This office does not argue with the Mantis ambassador.
+
+~ Office of Alien Affairs
+
+== ach:ACH_MANTIS_SLAUGHTER
+from: Office of Alien Affairs
+subject: Avast, ye scurvy dogs!
+reward: crew mantis
+
+{rank},
+
+Five enemy crew taken down, without a scratch on your hull or a single loss. A Mantis warrior heard the story and asked to join you. They love this sort of thing.
+
+They are reporting to The Home Planet Station. Mantis custom says you greet a new warrior with a hunt, not a handshake.
+
+~ Office of Alien Affairs
+
+== ach:ACH_MANTIS_SURVIVOR
+from: Office of Alien Affairs
+subject: Battle Royale
+reward: item BEAM_BIO
+
+{rank},
+
+Your last crew member against their last, and yours walked away. That was far too close.
+
+The Slugs have offered an Anti-Bio Beam, so it's never that close again. They were quite insistent.
+
+~ Office of Alien Affairs
+
+== ach:ACH_SLUG_VISION
+from: Office of Alien Affairs
+subject: We're in Position!
+reward: item LIFE_SCANNER
+
+{rank},
+
+Every room of the enemy ship seen without sensors. The Slugs call it "simply paying attention." They would not explain further.
+
+They did, however, sell us a Lifeform Scanner, so you can pay attention the way they do.
+
+~ Office of Alien Affairs
+
+== ach:ACH_SLUG_NEBULA
+from: Office of Alien Affairs
+subject: Home Sweet Home
+reward: item SLUG_GEL
+
+{rank},
+
+Thirty nebulas before sector 8. The Slugs say you would feel right at home among them. We believe that is a compliment.
+
+Slug Repair Gel, to keep the breaches sealed. It smells exactly as you would expect.
+
+~ Office of Alien Affairs
+
+== ach:ACH_SLUG_BIO
+from: Office of Alien Affairs
+subject: Disintegration Ray
+reward: item BEAM_BIO
+
+{rank},
+
+Three enemy crew with a single Anti-Bio shot. The Slugs are delighted that someone finally uses their weapon properly, and they have sent another.
+
+This one came without an invoice. We are still looking for the catch.
+
+~ Office of Alien Affairs
+
+== ach:ACH_FED_PATIENCE
+from: Home Planet Liaison
+subject: Master of Patience
+reward: item ENERGY_SHIELD
+
+{rank},
+
+Word got around about your recent victory using only the Artillery Beam, without taking a scratch. The Admirals are impressed. They have negotiated with the Zoltan and acquired a Zoltan Shield for your ship: more time to charge the artillery.
+
+Make good use of it.
+Home Planet Liaison
+
+== ach:ACH_FED_DIPLOMACY
+from: Office of Alien Affairs
+subject: Diplomatic Immunity
+reward: crew human
+
+{rank},
+
+Four delicate situations resolved with tact by sector 5. This office notices these things, even when the Admiralty doesn't.
+
+The Diplomatic Corps has assigned one of its officers to serve with you. They are reporting to The Home Planet Station. They speak nine languages and will mention it.
+
+~ Office of Alien Affairs
+
+== ach:ACH_FED_UPGRADE
+from: Federation Engineering Corps
+subject: Artillery Mastery
+reward: item WEAPON_PREIGNITE
+
+{rank},
+
+Sector 5 without a single weapon upgrade. You trusted the artillery, and it carried you. We designed it to. It's nice when someone notices.
+
+A Weapon Pre-igniter, so the rest of your guns are ready while the artillery charges.
+
+~ Federation Engineering Corps
+
+== ach:ACH_CRYSTAL_SHARD
+from: Office of Alien Affairs
+subject: Sweet Revenge
+reward: item SYSTEM_CASING
+
+{rank},
+
+An enemy ship destroyed by its own damage, turned back on it by a Vengeance shard. The Crystal call that justice. We call it poetic.
+
+Titanium System Casing, hardened on the Crystal pattern.
+
+~ Office of Alien Affairs
+
+== ach:ACH_CRYSTAL_LOCKDOWN
+from: Office of Alien Affairs
+subject: No Escape
+reward: item BOMB_LOCK
+
+{rank},
+
+Four enemy crew sealed in one room, with nowhere to run. The Crystal were watching, and they approve.
+
+They have sent a Crystal Lockdown Bomb, so you can do it again. They ask that you use it only on those who deserve it. We assured them the rebels qualify.
+
+~ Office of Alien Affairs
+
+== ach:ACH_CRYSTAL_CLASH
+from: Home Planet Quartermaster
+subject: Clash of the Titans
+reward: item ROCK_ARMOR
+
+{rank},
+
+Ten Rock ships broken up by your Crystal Cruiser. The salvage crews went through the wreckage and pulled out good Rock Plating. Waste not.
+
+It's in the Cargo Hold. Bolt it onto something that's going to get shot at.
+
+~ Home Planet Quartermaster
+
+== ach:ACH_LANIUS_ADVANCED
+from: Federation Engineering Corps
+subject: Advanced Mastery
+reward: item HACKING_STUN
+
+{rank},
+
+Hacking, Mind Control and a Battery, all running at once. The Lanius do this without thinking. Now so do you.
+
+Hacking Stun, to make the combination even nastier.
+
+~ Federation Engineering Corps
+
+== ach:ACH_LANIUS_SCRAP
+from: Home Planet Quartermaster
+subject: Scrap Hoarder
+reward: item REPAIR_ARM, item SCRAP_COLLECTOR
+
+{rank},
+
+Six hundred scrap aboard and not a piece spent. Finally, someone who understands.
+
+A Repair Arm and a Scrap Recovery Arm: save more, find more. Keep hoarding. When the fleet needs it, you'll be the one who has it.
+
+~ Home Planet Quartermaster
+
+== ach:ACH_LANIUS_OXYGEN
+from: Office of Alien Affairs
+subject: Loss of Cabin Pressure
+reward: item BOMB_BREACH_2
+
+{rank},
+
+Sector 8 with the air nearly gone. The Lanius manage without it; the rest of us marvel that your crew did.
+
+A Breach Bomb Mark II, so your enemies can find out what breathing space feels like.
+
+~ Office of Alien Affairs

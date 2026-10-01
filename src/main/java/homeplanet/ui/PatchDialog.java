@@ -122,7 +122,7 @@ public class PatchDialog extends JDialog {
 		JPanel toggles = new JPanel();
 		toggles.setLayout(new BoxLayout(toggles, BoxLayout.Y_AXIS));
 		rememberBox.setToolTipText("Tick the same mods, in the same order, next time this window opens");
-		runBox.setToolTipText("Start FTL once the mods are installed (uses the Launch FTL setting above in Settings)");
+		runBox.setToolTipText("Start FTL once Slipstream has sent the mods (uses the Launch FTL setting in Settings)");
 		toggles.add(rememberBox);
 		toggles.add(runBox);
 		JLabel where = new JLabel("Slipstream: " + dir.getPath());
@@ -197,8 +197,8 @@ public class PatchDialog extends JDialog {
 	private void patch() {
 		boolean hasCompanionMod = model.size() > 0 && model.get(model.size() - 1).locked;
 		if (!hasCompanionMod) {
-			int r = JOptionPane.showConfirmDialog(this, "The " + Retrofit.MOD_NAME + " couldn't be written to Slipstream's mods folder.\n"
-					+ "Retrofitted ships won't load without it. Install the other mods anyway?", "Patch mods", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+			int r = JOptionPane.showConfirmDialog(this, "The Home Planet Station couldn't write the " + Retrofit.MOD_NAME + " to Slipstream's mods folder.\n"
+					+ "Retrofitted ships can't fly without it. Send the other mods to FTL anyway?", "Patch mods", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 			if (r != JOptionPane.YES_OPTION) return;
 		}
 		final List<String> names = picked();
@@ -243,7 +243,7 @@ public class PatchDialog extends JDialog {
 			Object[] options = {"Restart now", "Later"};
 			int r = JOptionPane.showOptionDialog(this,
 					"Done. FTL now has " + count(names.size()) + " installed" + (runFtl ? ", and FTL is starting." : ".") + "\n\n"
-					+ "Federation Home Planet only reads FTL's files when it opens, so restart it to pick up the new mods.",
+					+ "The Home Planet Station reads FTL's files only when it opens. Restart it to pick up the new mods.",
 					"Patch mods", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 			dispose();
 			if (r == 0) Slipstream.restart();
@@ -252,10 +252,10 @@ public class PatchDialog extends JDialog {
 			HistoryLog.entry("PATCH", "Slipstream patch failed" + (res == null ? "" : " (exit " + res.exitCode + ")"), details);
 			JTextArea ta = new JTextArea(out.length() == 0 ? "(no output)" : out, 12, 70);
 			ta.setEditable(false);
-			ta.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.PLAIN, 11));
+			ta.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.PLAIN, 12));
 			JPanel p = new JPanel(new BorderLayout(0, 6));
 			p.add(note("Slipstream ran into a problem. It starts every patch from a clean copy of FTL, so FTL probably has no mods "
-					+ "installed right now. Retrofitted ships won't load until a patch succeeds.\n\nWhat Slipstream said:"), BorderLayout.NORTH);
+					+ "installed right now. Retrofitted ships can't fly until a patch reaches FTL via Slipstream.\n\nWhat Slipstream said:"), BorderLayout.NORTH);
 			p.add(new JScrollPane(ta), BorderLayout.CENTER);
 			JOptionPane.showMessageDialog(this, p, "Patch failed", JOptionPane.ERROR_MESSAGE);
 		}

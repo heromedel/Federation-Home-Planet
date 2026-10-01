@@ -145,6 +145,20 @@ public class FtlFont {
 		return img;
 	}
 
+	/** The width the text takes, without drawing it (for wrapping long text). */
+	public synchronized int width(String s) {
+		if (covers(s)) {
+			int w = 0;
+			for (int i = 0; i < s.length(); i++) w += glyphs.get(s.charAt(i)).advance;
+			return w * scale;
+		}
+		BufferedImage probe = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D pg = probe.createGraphics();
+		int w = pg.getFontMetrics(fallback).stringWidth(s);
+		pg.dispose();
+		return w;
+	}
+
 	/** Cuts the text down with "..." until it fits the width. */
 	public String fit(String s, int maxWidth) {
 		if (render(s, Color.white).getWidth() <= maxWidth) return s;

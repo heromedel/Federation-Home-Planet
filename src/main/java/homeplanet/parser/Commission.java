@@ -80,6 +80,37 @@ public class Commission {
 		return gs;
 	}
 
+	/** The Federation relief ship: a Kestrel A stripped to basics, the free ship of an empty shipyard. */
+	public static final String RELIEF_BASE = "PLAYER_SHIP_HARD";
+	/**
+	 * Builds the relief ship: a Kestrel A with one human crew, a basic laser and an ion blast, her missiles, no drones
+	 * or augments, every system at its minimum (a shield layer, two bars of weapons for her two guns) and a reactor of 7.
+	 */
+	public static SavedGameState buildRelief(String shipName, Difficulty difficulty, Random rng) {
+		SavedGameState gs = build(RELIEF_BASE, shipName, difficulty, rng);
+		ShipState ship = gs.getPlayerShip();
+		while (ship.getCrewList().size() > 1) ship.getCrewList().remove(ship.getCrewList().size() - 1);
+		ship.getWeaponList().clear();
+		ship.addWeapon(SaveHelper.newIdleWeapon("LASER_BURST_1"));
+		ship.addWeapon(SaveHelper.newIdleWeapon("ION_1"));
+		ship.getDroneList().clear();
+		ship.setDronePartsAmt(0);
+		ship.getAugmentIdList().clear();
+		for (SystemType t : SystemType.values()) {
+			SystemState st = ship.getSystem(t);
+			if (st == null || st.getCapacity() <= 0) continue;
+			st.setCapacity(t == SystemType.SHIELDS || t == SystemType.WEAPONS ? 2 : 1);
+			if (t.isSubsystem()) st.setPower(st.getCapacity());
+		}
+		ship.setReservePowerCapacity(7);
+		fillPower(ship);
+		net.blerf.ftl.parser.SavedGameParser.ShieldsInfo sh = ship.getExtendedSystemInfo(net.blerf.ftl.parser.SavedGameParser.ShieldsInfo.class);
+		SystemState shields = ship.getSystem(SystemType.SHIELDS);
+		if (sh != null) sh.setShieldLayers(shields == null ? 0 : shields.getPower() / 2);
+		gs.setTotalCrewHired(ship.getCrewList().size());
+		return gs;
+	}
+
 	static ShipState buildShip(ShipBlueprint bp, String shipName, Difficulty difficulty, Random rng) {
 		ShipState ship = new ShipState(shipName, bp, false);
 		ship.refit(); // systems at their starting levels and power, rooms, doors, augments, hull, missiles, drone parts
@@ -173,6 +204,14 @@ public class Commission {
 			st.setPower(present && t.isSubsystem() ? st.getCapacity() : 0);
 			st.setDeionizationTicks(0);
 		}
+		fillPower(ship);
+	}
+	/** Powers a new ship's main systems from her reactor, as FTL does at the start (see {@link #setLevelsAndPower}). Subsystems keep their power. */
+	static void fillPower(ShipState ship) {
+		for (SystemType t : SystemType.values()) {
+			SystemState st = ship.getSystem(t);
+			if (st != null && !t.isSubsystem()) st.setPower(0);
+		}
 		int budget = ship.getReservePowerCapacity();
 		// oxygen's first bar comes before everything else (a ship with big shields and guns could otherwise start airless)
 		SystemState oxy = ship.getSystem(SystemType.OXYGEN);
@@ -249,6 +288,21 @@ public class Commission {
 		}
 	}
 
+	/** A crew volunteer of this race (a reward), named and tinted as a new game's crew are, placed nowhere yet. Null for an unknown race. */
+	public static CrewState volunteer(String raceId, Random rng) {
+		CrewType race = CrewType.findById(raceId);
+		if (race == null) return null;
+		CrewState c = new CrewState();
+		c.setRace(race);
+		boolean male = race != CrewType.HUMAN || rng.nextBoolean();
+		c.setMale(male);
+		c.setName(uniqueName(male, new HashSet<String>()));
+		c.setHealth(race.getMaxHealth());
+		c.setPlayerControlled(true);
+		c.setSpriteTintIndeces(tints(race, rng));
+		return c;
+	}
+
 	private static String uniqueName(boolean male, Set<String> used) {
 		String n = null;
 		for (int tries = 0; tries < 50; tries++) {
@@ -282,6 +336,14 @@ public class Commission {
 		Matcher m = CREW.matcher(block);
 		while (m.find()) out.add(new CrewGroup(m.group(2), Integer.parseInt(m.group(1))));
 		return out;
+	}
+
+	/** The weapon a blueprint's artillery fires (its artillery line), or null if she has none. */
+	public static String artilleryWeapon(String blueprintId) {
+		String block = rawBlock(blueprintId);
+		if (block == null) return null;
+		Matcher m = Pattern.compile("<artillery[^>]*weapon=\"([^\"]+)\"").matcher(block);
+		return m.find() ? m.group(1) : null;
 	}
 
 	/** The raw text of a ship blueprint: the station's own first, else the game data's last definition (later files win). */

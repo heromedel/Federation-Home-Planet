@@ -4,6 +4,7 @@
 #
 #   run.sh GAMEDIR [OLDSAVES OLDAPP]
 #     GAMEDIR           the folder with FTL's ftl.dat
+#     (VICLOG=folder    optional, in the environment: a save logger's folder ending in a final victory, for VicT to replay)
 #     OLDSAVES OLDAPP   optional: an old FTL Homeworld saves folder and program folder, to also test the
 #                       HW to FHP converter (ConvT, StoT)
 #
@@ -28,6 +29,14 @@ echo "== RoundT"; run RoundT "$GAME" "$WORLD" | grep -E "$PICK|identical|DIFF"
 echo "== PicT"; run PicT "$GAME" "$WORLD" | grep -cE "img=[0-9]" | sed "s/^/ships drawn: /"
 echo "== DesT"; run DesT "$GAME" "$WORLD" "$W/des" | grep -E "$PICK"
 echo "== CommT"; run CommT "$GAME" "$WORLD" "$W/comm" | grep -E "$PICK"
+echo "== SafeT"; run SafeT "$GAME" "$WORLD" "$W/safe" | grep -E "$PICK|^PASS"
+echo "== BlueT"; run BlueT "$GAME" "$WORLD" "$W/blue" | grep -E "$PICK|^PASS"
+echo "== HistT"; run HistT "$GAME" "$WORLD" "$W/hist" | grep -E "$PICK|^PASS"
+echo "== PriceT"; run PriceT "$GAME" "$WORLD" "$W/price" | grep -E "$PICK|^PASS|^Kestrel|^Relief"
+echo "== RuleT"; run RuleT "$GAME" "$WORLD" "$W/rule" | grep -E "$PICK|^PASS"
+echo "== FleetT"; run FleetT "$GAME" "$WORLD" "$W/fleet" | grep -E "$PICK|^PASS"
+echo "== TransT"; run TransT "$GAME" "$WORLD" "$W/trans" | grep -E "$PICK|^PASS"
+echo "== VicT"; run VicT "$GAME" "$WORLD" "$W/vic" $VICLOG | grep -E "$PICK|^PASS|^replay"
 
 # the converter, only with old Homeworld data to convert
 if [ $# -ge 3 ]; then

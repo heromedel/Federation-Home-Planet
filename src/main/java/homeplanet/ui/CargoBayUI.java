@@ -57,7 +57,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Cargo Bay: trade with the storage or another docked ship (Trade), buy at the stores your ships are docked at (Shop),
+ * The Cargo Bay: trade with the Cargo Hold or another docked ship (Trade), buy at the stores your ships are docked at (Shop),
  * and store, install and rearrange systems (Refit). Nothing is written until Save; Reset throws the changes away.
  *
  * Built in the Space Dock's style: FTL fonts and buttons over the hangar art. Your ship is always on the left and the
@@ -80,6 +80,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	ShipState tradeState;
 	File currentPath;
 	File tradePath;
+	/** Fingerprints of the two files as they were read: Save refuses if FTL changed either since (see Vault.Transaction). */
+	String currentHash, tradeHash;
 	private int partnerIndex = 0; // in shipSelect
 
 	final DryDockShop shop = new DryDockShop(this);
@@ -160,8 +162,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		});
 		stage.add(back);
 		String[] titles = {"Trade", "Shop", "Refit"};
-		String[] tips = {"Swap equipment, crew and supplies with the storage or another docked ship", "Buy at the stores your ships are docked at",
-				"Store and install systems, remodel, retrofit"};
+		String[] tips = {"Swap equipment, crew and supplies with the Cargo Hold or another docked ship", "Buy at the stores your ships are docked at",
+				"Store, install and upgrade systems, upgrade the reactor, repair the hull, remodel, retrofit"};
 		for (int i = 0; i < 3; i++) {
 			final String name = tabNames[i];
 			tabButtons[i] = new FtlButton(titles[i], FtlFont.MENU, 120, 34);
@@ -176,7 +178,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		resetBtn.setBounds(1000, 12, 110, 34);
 		resetBtn.setToolTipText("Throw away the changes you haven't saved");
 		resetBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { init(); help("Changes thrown away: everything is as it was saved."); }
+			public void actionPerformed(ActionEvent e) { init(); help("Changes discarded. Everything stands as it was last saved."); }
 		});
 		stage.add(resetBtn);
 		saveBtn = new FtlButton("Save", FtlFont.MENU, 146, 34) {
@@ -277,7 +279,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	void markDirty() { dirty = true; saveBtn.repaint(); }
 	boolean isDirty() { return dirty; }
 	/** Asks before throwing away unsaved changes; true to go on. */
-	private boolean confirmLeave(String doing) {
+	boolean confirmLeave(String doing) {
 		if (!dirty) return true;
 		Object[] opts = {"Save first", "Discard changes", "Cancel"};
 		int r = JOptionPane.showOptionDialog(this, "You have unsaved changes in the Cargo Bay.\nSave them before you " + doing + "?", "Unsaved changes",
@@ -286,7 +288,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		return r == 1;
 	}
 	private boolean tradeUnavailable() {
-		return currentPath == null || (currentSave != null && !SaveHelper.mayTrade(currentSave));
+		return currentPath == null || (currentSave != null && !SaveHelper.mayTrade(currentSave) && !Vault.get().stillAtHomePlanet(currentShip));
 	}
 
 	// ---- loading ----
@@ -301,15 +303,15 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			homeSave = Vault.get().storage();
 		} catch (java.io.IOException e) {
 			homeSave = null;
-			HomePlanet.showErrorDialog("Could not open the Spacedock storage hold:\n" + e);
+			HomePlanet.showErrorDialog("Could not open the Cargo Hold:\n" + e);
 		}
 		if (homeSave != null && homeSave.save() == null) {
-			HomePlanet.showErrorDialog("Could not read the Spacedock storage file:\n" + homeSave.file() + "\n\n" + homeSave.readError());
+			HomePlanet.showErrorDialog("Could not read the Cargo Hold's file:\n" + homeSave.file() + "\n\n" + homeSave.readError());
 		}
 		String partnerId = tradeShip == null ? null : tradeShip.id;
 		shipSelect = new ArrayList<Ship>();
 		if (homeSave != null && homeSave.save() != null) shipSelect.add(homeSave);
-		for (Ship s : tradeableShips()) if (s != currentShip && SaveHelper.mayTrade(s.save())) shipSelect.add(s);
+		for (Ship s : tradeableShips()) if (s != currentShip && Vault.get().mayTrade(s)) shipSelect.add(s);
 		// keep the same partner across a Reset or Save, if she's still there
 		partnerIndex = 0;
 		if (partnerId != null) for (int i = 0; i < shipSelect.size(); i++) if (shipSelect.get(i).id.equals(partnerId)) partnerIndex = i;
@@ -318,7 +320,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		systems.init();
 		refreshTrade();
 		if (currentPath == null) notice.setText("Board a ship at the Space Dock, then return to trade.");
-		else if (!SaveHelper.mayTrade(currentSave)) notice.setText(currentSave.getPlayerShipName() + " is not at a Station. Find a beacon with a Station to trade.");
+		else if (!SaveHelper.mayTrade(currentSave) && !Vault.get().stillAtHomePlanet(currentShip)) notice.setText(currentSave.getPlayerShipName() + " is not within range of a station. Take her to a beacon with a store to trade.");
 		for (FtlButton b : tabButtons) b.setEnabled(!tradeUnavailable());
 		saveBtn.setEnabled(!tradeUnavailable());
 		resetBtn.setEnabled(!tradeUnavailable());
@@ -343,8 +345,11 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			return;
 		}
 		currentPath = currentShip.file();
+		currentHash = null;
 		try {
-			currentSave = new SavedGameParser().readSavedGame(currentPath); // the Cargo Bay's own copy: nothing sticks until Save
+			Vault.Copy c = Vault.get().readCopy(currentShip); // the Cargo Bay's own copy: nothing sticks until Save
+			currentSave = c.save;
+			currentHash = c.hash;
 		} catch (Exception e) {
 			log.error("Could not read " + currentPath, e);
 			HomePlanet.showErrorDialog("Could not read " + currentPath + "\n\n" + e);
@@ -363,12 +368,16 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		} else {
 			tradeShip = shipSelect.get(Math.min(partnerIndex, shipSelect.size() - 1));
 			tradePath = tradeShip.file();
+			tradeHash = null;
 			try {
-				tradeSave = new SavedGameParser().readSavedGame(tradePath);
+				Vault.Copy c = Vault.get().readCopy(tradeShip);
+				tradeSave = c.save;
+				tradeHash = c.hash;
 			} catch (Exception e) {
 				log.error("Could not read " + tradePath, e);
 				HomePlanet.showErrorDialog("Could not read " + tradePath + "\n\n" + e);
 				tradeSave = tradeShip.save();
+				if (tradeSave == null) { shipSelect.remove(tradeShip); partnerIndex = 0; loadPartner(); return; }
 			}
 		}
 		tradeState = tradeSave.getPlayerShip();
@@ -387,7 +396,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		for (int i = 0; i < shipSelect.size(); i++) {
 			final int idx = i;
 			Ship s = shipSelect.get(i);
-			JMenuItem it = new JMenuItem((s == homeSave ? "Spacedock Storage" : s.name) + (i == partnerIndex ? "   (now)" : ""));
+			JMenuItem it = new JMenuItem((s == homeSave ? "Cargo Hold" : s.name) + (i == partnerIndex ? "   (now)" : ""));
 			it.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					if (idx == partnerIndex) return;
@@ -401,7 +410,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			m.add(it);
 		}
 		if (shipSelect.size() <= 1) {
-			JMenuItem none = new JMenuItem("No other ships are docked at a Station");
+			JMenuItem none = new JMenuItem("No other ships are docked at a station");
 			none.setEnabled(false);
 			m.add(none);
 		}
@@ -437,7 +446,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			m.add(it);
 		}
 		if (!any) {
-			JMenuItem none = new JMenuItem("No other ships are docked at a Station");
+			JMenuItem none = new JMenuItem("No other ships are docked at a station");
 			none.setEnabled(false);
 			m.add(none);
 		}
@@ -471,15 +480,14 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private static String the(String name) { return name.toLowerCase().startsWith("the ") ? name : "the " + name; }
 	/** What the storage is, for its info button. */
 	void storageInfo() {
-		JOptionPane.showMessageDialog(this, "<html><div style='width:360px'><b>Spacedock Storage</b><br><br>"
-				+ "The station's own hold. Weapons, drones, augments, crew and supplies (scrap, fuel, missiles and drone parts) "
+		JOptionPane.showMessageDialog(this, "<html><div style='width:360px'><b>The Cargo Hold</b><br><br>"
+				+ "The Home Planet Station's own hold. Weapons, drones, augments, crew and supplies (scrap, fuel, missiles and drone parts) "
 				+ "wait here when they aren't aboard any ship, with no slot limits.<br><br>"
-				+ "Send things here from your ship, then take them aboard any ship docked at a Station. "
-				+ "Ship systems you take off in the Refit tab are kept in the Refit tab's own list.<br><br>"
-				+ "Advanced Edition ships and original-game ships each have their own storage.</div></html>",
-				"Spacedock Storage", JOptionPane.PLAIN_MESSAGE);
+				+ "Send things here from your ship, then take them aboard any ship docked at a station. "
+				+ "Systems taken off in the Refit tab are kept on that tab's own list.</div></html>",
+				"Cargo Hold", JOptionPane.PLAIN_MESSAGE);
 	}
-	private String partnerName() { return partnerIsStorage() ? "Spacedock Storage" : tradeSave.getPlayerShipName(); }
+	private String partnerName() { return partnerIsStorage() ? "Cargo Hold" : tradeSave.getPlayerShipName(); }
 
 	// ============================================================== Trade tab
 
@@ -578,7 +586,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		ca.setBounds(LX + DROP_IN, 58 + o, DROP_W, 16);
 		trade.add(ca);
 		boardBtn.setBounds(LX + DROP_IN, 74 + o, DROP_W, 30);
-		boardBtn.setToolTipText("Board another of your ships docked at a Station, without leaving the Cargo Bay");
+		boardBtn.setToolTipText("Board another of your ships docked at a station, without leaving the Cargo Bay");
 		boardBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pickBoard(); } });
 		trade.add(boardBtn);
 		myInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "Her report, and to rename her", new ActionListener() { public void actionPerformed(ActionEvent e) { showCurrentShipInfo(); } });
@@ -598,7 +606,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		tw.setBounds(RX + RW - DROP_IN - DROP_W, 58 + o, DROP_W, 16);
 		trade.add(tw);
 		partnerBtn.setBounds(RX + RW - DROP_IN - DROP_W, 74 + o, DROP_W, 30);
-		partnerBtn.setToolTipText("Choose who to trade with: the storage, or another of your ships docked at a Station");
+		partnerBtn.setToolTipText("Choose who to trade with: the Cargo Hold, or another of your ships docked at a station");
 		partnerBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pickPartner(); } });
 		trade.add(partnerBtn);
 		theirInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "Her report", new ActionListener() {
@@ -720,6 +728,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (myJunkSupply == null) return;
 		boolean can = supplyIdx >= 2 && currentState != null && tradeState != null;
 		mySellSupply.setVisible(HomePlanet.sellSupplies);
+		String share = HomePlanet.sellPercent() == 50 ? "half the store price" : HomePlanet.sellPercent() + "% of the store price, set by Immersive Mode";
+		mySellSupply.setToolTipText("Sell that many of your ship's missiles or drone parts (" + share + ")");
+		theirSellSupply.setToolTipText("Sell that many of the partner's missiles or drone parts (" + share + ")");
 		theirSellSupply.setVisible(HomePlanet.sellSupplies);
 		myJunkSupply.setEnabled(can); mySellSupply.setEnabled(can);
 		theirJunkSupply.setEnabled(can); theirSellSupply.setEnabled(can);
@@ -734,7 +745,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (have <= 0) { help(save.getPlayerShipName() + " has no " + what + "."); return; }
 		int n = Math.min((Integer) moveAmount.getValue(), have);
 		if (n == 1) what = supplyIdx == 2 ? "missile" : "drone part";
-		int price = sell ? n * (SUPPLY_PRICE[supplyIdx] / 2) : 0;
+		int price = sell ? n * SUPPLY_PRICE[supplyIdx] * HomePlanet.sellPercent() / 100 : 0; // half the store price (a quarter in Immersive Mode)
 		String q = sell ? "Sell " + n + " " + what + " for " + price + " scrap?" : "Junk " + n + " " + what + "?\nYou get nothing for " + (n == 1 ? "it." : "them.");
 		if (!HomePlanet.confirmNo(this, q, sell ? "Sell" : "Junk")) return;
 		setSupply(state, supplyIdx, have - n);
@@ -848,12 +859,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 		myPic.setIcon(shipIcon(currentSave));
 		partnerBtn.setText(partnerName());
-		partnerNote.setText(shipSelect.isEmpty() ? "Nothing to trade with" : partnerIsStorage() ? "Storage holds anything, no slot limits"
+		partnerNote.setText(shipSelect.isEmpty() ? "Nothing to trade with" : partnerIsStorage() ? "The Cargo Hold has no limit on slots for storage."
 				: shipClass(tradeState));
 		theirPic.setToolTipText(partnerIsStorage() || shipSelect.isEmpty() ? null : "Click for her report, and to rename her");
 		theirPic.setIcon(partnerIsStorage() ? null : shipIcon(tradeSave));
 		theirInfo.setVisible(!shipSelect.isEmpty());
-		theirInfo.setToolTipText(partnerIsStorage() ? "What Spacedock Storage is" : "Her report, and to rename her");
+		theirInfo.setToolTipText(partnerIsStorage() ? "What the Cargo Hold is" : "Her report, and to rename her");
 		myInfo.setVisible(currentPath != null);
 		for (int k = 0; k < 4; k++) {
 			Category c = cats[k];
@@ -898,8 +909,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 				}
 				ItemRef r = (ItemRef) v;
 				int p = sellPrice(r.id);
-				return Items.title(r.id) + " (" + where + (r.inCargo ? ", in cargo" : "") + "):  " + (side == 0 ? "Send > gives it to " + partnerName() : "< Take puts it on your ship")
-						+ ".  Trash junks it." + (p > 0 ? "  Cog sells it for " + p + " scrap." : "  It can't be sold.");
+				return Items.title(r.id) + " (" + where + (r.inCargo ? ", in cargo" : "") + "): " + (side == 0 ? "Send > gives it to " + partnerName() : "< Take puts it on your ship")
+						+ ". Trash junks it." + (p > 0 ? " The scrap button sells it for " + p + " scrap." : " It can't be sold.");
 			}
 		}
 		return "Select something in either list, then use the buttons in the middle. Click a supply to move it. Nothing changes until you Save.";
@@ -937,16 +948,16 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		// take it from the sender (releasing its power if it was powered)
 		DroneState srcDrone = null;
 		if (r.inCargo) {
-			if (!startSave.getCargoIdList().remove(id)) { HomePlanet.showErrorDialog("Cargo item not found!"); return; }
+			if (!startSave.getCargoIdList().remove(id)) { HomePlanet.showErrorDialog("That item is no longer in the cargo hold."); return; }
 		} else if (kind == 0) {
 			WeaponState w = SaveHelper.findWeapon(startState.getWeaponList(), id);
-			if (w == null) { HomePlanet.showErrorDialog("Weapon not found!"); return; }
+			if (w == null) { HomePlanet.showErrorDialog("That weapon is no longer aboard."); return; }
 			SaveHelper.removeWeapon(startState, w);
 		} else if (kind == 1) {
 			srcDrone = SaveHelper.findDrone(startState.getDroneList(), id);
-			if (srcDrone == null) { HomePlanet.showErrorDialog("Drone not found!"); return; }
+			if (srcDrone == null) { HomePlanet.showErrorDialog("That drone is no longer aboard."); return; }
 			SaveHelper.removeDrone(startState, srcDrone);
-		} else if (!startState.getAugmentIdList().remove(id)) { HomePlanet.showErrorDialog("Augment not found!"); return; }
+		} else if (!startState.getAugmentIdList().remove(id)) { HomePlanet.showErrorDialog("That augment is no longer aboard."); return; }
 		// give it to the receiver, unpowered
 		if (toCargo) destSave.getCargoIdList().add(id);
 		else if (kind == 0) destState.getWeaponList().add(SaveHelper.newIdleWeapon(id));
@@ -977,16 +988,16 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		String q = sell ? "Sell the " + title + " for " + price + " scrap?" : "Junk the " + title + "?\nYou get nothing for it.";
 		if (!HomePlanet.confirmNo(this, q, sell ? "Sell" : "Junk")) return;
 		if (r.inCargo) {
-			if (!save.getCargoIdList().remove(r.id)) { HomePlanet.showErrorDialog("Cargo item not found!"); return; }
+			if (!save.getCargoIdList().remove(r.id)) { HomePlanet.showErrorDialog("That item is no longer in the cargo hold."); return; }
 		} else if (kind == 0) {
 			WeaponState w = SaveHelper.findWeapon(state.getWeaponList(), r.id);
-			if (w == null) { HomePlanet.showErrorDialog("Weapon not found!"); return; }
+			if (w == null) { HomePlanet.showErrorDialog("That weapon is no longer aboard."); return; }
 			SaveHelper.removeWeapon(state, w);
 		} else if (kind == 1) {
 			DroneState d = SaveHelper.findDrone(state.getDroneList(), r.id);
-			if (d == null) { HomePlanet.showErrorDialog("Drone not found!"); return; }
+			if (d == null) { HomePlanet.showErrorDialog("That drone is no longer aboard."); return; }
 			SaveHelper.removeDrone(state, d);
-		} else if (!state.getAugmentIdList().remove(r.id)) { HomePlanet.showErrorDialog("Augment not found!"); return; }
+		} else if (!state.getAugmentIdList().remove(r.id)) { HomePlanet.showErrorDialog("That augment is no longer aboard."); return; }
 		if (sell) state.setScrapAmt(state.getScrapAmt() + price);
 		String from = save.getPlayerShipName() + (r.inCargo ? " (cargo)" : "");
 		disposals.add(new Disposal(save, sell ? "SELL" : "JUNK", title + (r.inCargo ? " (cargo)" : ""), price,
@@ -1002,7 +1013,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (cs == null) return;
 		ShipState state = mine ? currentState : tradeState;
 		SavedGameState save = mine ? currentSave : tradeSave;
-		if (SaveHelper.getOwnCrew(state).size() <= 1 && (mine || !partnerIsStorage())) { HomePlanet.showErrorDialog("At least one crew must man the ship!"); return; }
+		if (SaveHelper.getOwnCrew(state).size() <= 1 && (mine || !partnerIsStorage())) { HomePlanet.showErrorDialog("At least one crew member must stay aboard."); return; }
 		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't retire right now."); return; }
 		if (!HomePlanet.confirmNo(this, "Retire " + cs.getName() + "?\nThey leave " + save.getPlayerShipName() + " for good.", "Retire")) return;
 		state.getCrewList().remove(cs);
@@ -1023,13 +1034,13 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		ShipState startState = fromMine ? currentState : tradeState, destState = fromMine ? tradeState : currentState;
 		boolean startIsShip = !(!fromMine && partnerIsStorage());
 		boolean destIsStorage = fromMine && partnerIsStorage();
-		if (startIsShip && SaveHelper.getOwnCrew(startState).size() <= 1) { HomePlanet.showErrorDialog("At least one crew must man the ship!"); return; }
-		if (!destIsStorage && SaveHelper.getOwnCrew(destState).size() >= 8) { HomePlanet.showErrorDialog("No room for more crew!"); return; }
+		if (startIsShip && SaveHelper.getOwnCrew(startState).size() <= 1) { HomePlanet.showErrorDialog("At least one crew member must stay aboard."); return; }
+		if (!destIsStorage && SaveHelper.getOwnCrew(destState).size() >= 8) { HomePlanet.showErrorDialog("No room for more crew: a ship carries 8 at most."); return; }
 		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't be moved right now."); return; }
 		String refused = destIsStorage ? null : Dlc.refusesCrew(fromMine ? tradeSave : currentSave, cs);
 		if (refused != null) { JOptionPane.showMessageDialog(this, refused, "Advanced Edition only", JOptionPane.INFORMATION_MESSAGE); return; }
 		// their room and square referred to the old ship: stand them on a free square of the new one
-		if (!SaveHelper.placeCrew(destState, cs, destIsStorage)) { HomePlanet.showErrorDialog("No free floor space for more crew on that ship!"); return; }
+		if (!SaveHelper.placeCrew(destState, cs, destIsStorage)) { HomePlanet.showErrorDialog("That ship has no free floor space for more crew."); return; }
 		startState.getCrewList().remove(cs);
 		destState.getCrewList().add(cs);
 		log.debug("Sent crew {} to {}", cs.getName(), destState.getShipName());
@@ -1091,13 +1102,13 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	// ============================================================== Save
 
-	/** Writes every pending change: ship, trade partner, shop, systems, and the history log entries. */
-	public void saveAll() {
+	/** Writes every pending change (ship, trade partner, shop, systems, and the history log entries); true if all of it was written (false after telling the player why not). */
+	public boolean saveAll() {
 		if (currentPath == null || currentShip == null) {
-			HomePlanet.showErrorDialog("Can't save because there is no current ship!");
-			return;
+			HomePlanet.showErrorDialog("Nothing to save: no ship is boarded. Board one at the Space Dock first.");
+			return false;
 		}
-		if (currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return;
+		if (currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return false;
 		try {
 			Map<String, Integer> curBefore = null, tradeBefore = null;
 			String nameBefore = null, tradeNameBefore = null;
@@ -1114,8 +1125,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			shop.countPurchasesAsBefore(tradeBefore, tradeSave);
 			// every file together, or none: the ships, the storage, the shops bought from, the stored-systems list
 			Vault.Transaction tx = Vault.get().begin();
-			tx.put(currentShip, currentSave);
-			if (tradeShip != null && tradePath != null) tx.put(tradeShip, tradeSave);
+			tx.put(currentShip, currentSave, currentHash);
+			if (tradeShip != null && tradePath != null) tx.put(tradeShip, tradeSave, tradeHash);
 			shop.addTo(tx);
 			systems.addTo(tx);
 			tx.commit();
@@ -1175,12 +1186,17 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			}
 			if (!lines.isEmpty())
 				homeplanet.core.HistoryLog.entry("TRADE", currentSave.getPlayerShipName() + (tradeSave != null ? " <-> " + tradeSave.getPlayerShipName() : ""), lines);
+		} catch (Vault.StaleException e) {
+			log.warn("Save refused: {}", e.getMessage());
+			HomePlanet.showErrorDialog(e.getMessage() + "\n\nPress Reset to load her as she is now, then make the changes again.");
+			return false;
 		} catch (Exception e) {
 			log.error("Saving failed", e);
-			HomePlanet.showErrorDialog("Saving failed:\n" + e);
-			return;
+			HomePlanet.showErrorDialog("The Home Planet Station could not save the changes:\n" + e);
+			return false;
 		}
 		init(); // everything fresh from the files, so what's shown is what's saved
 		help("Saved.");
+		return true;
 	}
 }

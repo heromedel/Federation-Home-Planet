@@ -1,10 +1,8 @@
 package homeplanet.core;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -120,21 +118,8 @@ public class Music {
 	}
 
 	/** True if FTLGame.exe is running (Windows task list). Elsewhere, assumes not. */
+	/** FTL's own music takes over while the game runs (GameGuard knows how to tell on Windows, Linux and macOS). */
 	public static boolean isFtlRunning() {
-		if (!System.getProperty("os.name", "").startsWith("Windows")) return false;
-		try {
-			Process p = new ProcessBuilder("tasklist", "/FI", "IMAGENAME eq FTLGame.exe", "/NH").redirectErrorStream(true).start();
-			BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			String l;
-			boolean found = false;
-			while ((l = r.readLine()) != null) {
-				if (l.toLowerCase().contains("ftlgame.exe")) found = true;
-			}
-			p.waitFor();
-			return found;
-		} catch (Exception e) {
-			log.debug("Could not check for FTL: " + e);
-			return false;
-		}
+		return GameGuard.isFtlRunning();
 	}
 }

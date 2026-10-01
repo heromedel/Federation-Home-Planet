@@ -25,7 +25,7 @@ public final class Ship {
 		BOARDED("boarded"),
 		/** Disbanded: in the vault's junkyard folder, awaiting salvage or scrap. */
 		JUNKED("junked"),
-		/** A storage hold (Spacedock Storage): a save FTL never loads, used as a warehouse. */
+		/** A storage hold (the Cargo Hold): a save FTL never loads, used as a warehouse. */
 		STORAGE("storage");
 		public final String key;
 		State(String key) { this.key = key; }
@@ -43,6 +43,18 @@ public final class Ship {
 	public boolean dlc;
 	/** Fingerprint of the file as last written or seen, to notice when FTL changed it. */
 	public String hash = "";
+	/**
+	 * The boarded ship as the station last saw her (model, name, and the journey's totals, which only go up), so a
+	 * continue.sav that isn't her (FTL's New Game) is noticed. Empty until first seen.
+	 */
+	String marks = "";
+	/** A ship The Home Planet Station didn't commission: a continue.sav it didn't know (Immersive Mode asks about her). */
+	public boolean stranger;
+	/**
+	 * Where the station last set her out (sector|beacon: commissioned, a New Journey, rescued): until she leaves that
+	 * beacon she counts as still at The Home Planet Station, and may trade. Empty otherwise.
+	 */
+	String fresh = "";
 
 	private SavedGameState save;
 	private String readError;

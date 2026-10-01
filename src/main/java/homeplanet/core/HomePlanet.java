@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.03";
+	public static final String APP_VERSION = "4B.36";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -58,10 +58,75 @@ public class HomePlanet {
 	public static boolean sellSupplies = false;
 	/** Commission: only ship layouts the FTL profile has unlocked; and (nested) custom ships only if their base layout is unlocked. */
 	public static boolean commissionUnlockedOnly = false, commissionCustomUnlockedOnly = false;
+	/** HR1: stored systems can be sold, for half their price and half the upgrades paid for. */
+	public static boolean sellSystems = false;
+	/** HR2: commissioning a ship costs scrap from the storage hold, at this percent of her price (50, 75 or 100). */
+	public static boolean commissionCosts = false;
+	public static int commissionPercent = 100;
+	/** With HR2: the free ship an empty shipyard (no ship docked, boarded or in the Junkyard) offers: "kestrel", "any" or "relief". */
+	public static String freeShip = "relief";
+	/** With HR2: each ship layout unlocked in the FTL profile after this was turned on can be commissioned free, once. */
+	public static boolean unlockFreeShips = false;
+	/**
+	 * Immersive Mode: sets and locks the rules (see {@link #applyImmersive}); a New Journey costs {@link #JOURNEY_FEE}
+	 * scrap from the storage hold; selling supplies and systems pays 25%; restoring and recovering are off.
+	 */
+	public static boolean immersiveMode = false;
+	/** Transmissions from The Federation Home Planet (the inbox on the Space Dock). Immersive Mode turns it on. */
+	public static boolean immersiveNotifications = false;
+	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
+	public static String finalVictory = "nothing";
+	public static final int JOURNEY_FEE = 200;
+	/** The rules Immersive Mode sets, as the player had them: kept apart, written to the cfg, and back when it's turned off. */
+	public static final class Rules {
+		public boolean store, journey, sellSupplies, sellSystems, costs, unlockFree, lockedOnly, customLockedOnly, notifications;
+		public int percent;
+		static Rules current() {
+			Rules r = new Rules();
+			r.store = HomePlanet.storeRequirement; r.journey = HomePlanet.journeyStoreRequirement; r.sellSupplies = HomePlanet.sellSupplies;
+			r.sellSystems = HomePlanet.sellSystems; r.costs = HomePlanet.commissionCosts; r.percent = HomePlanet.commissionPercent;
+			r.unlockFree = HomePlanet.unlockFreeShips;
+			r.lockedOnly = HomePlanet.commissionUnlockedOnly; r.customLockedOnly = HomePlanet.commissionCustomUnlockedOnly;
+			r.notifications = HomePlanet.immersiveNotifications;
+			return r;
+		}
+		void set() {
+			HomePlanet.storeRequirement = store; HomePlanet.journeyStoreRequirement = journey; HomePlanet.sellSupplies = sellSupplies;
+			HomePlanet.sellSystems = sellSystems; HomePlanet.commissionCosts = costs; HomePlanet.commissionPercent = percent;
+			HomePlanet.unlockFreeShips = unlockFree;
+			HomePlanet.commissionUnlockedOnly = lockedOnly; HomePlanet.commissionCustomUnlockedOnly = customLockedOnly;
+			HomePlanet.immersiveNotifications = notifications;
+		}
+	}
+	private static Rules normalRules = null;
+	/** The player's own rules (what the rules in effect would be without Immersive Mode). */
+	public static Rules normalRules() { return normalRules != null ? normalRules : Rules.current(); }
+	/** Immersive Mode is off again: the player's own rules come back. */
+	public static void leaveImmersive() {
+		immersiveMode = false;
+		if (normalRules != null) { normalRules.set(); normalRules = null; }
+	}
+	/** Immersive Mode's rules, set over the player's own (which are kept, see {@link #normalRules}). */
+	public static void applyImmersive() {
+		if (!immersiveMode) return;
+		if (normalRules == null) normalRules = Rules.current();
+		unlockFreeShips = true;
+		immersiveNotifications = true;
+		commissionUnlockedOnly = true;
+		commissionCustomUnlockedOnly = true;
+		storeRequirement = true;
+		journeyStoreRequirement = true;
+		commissionCosts = true;
+		commissionPercent = 100;
+		sellSupplies = true;
+		sellSystems = true;
+	}
+	/** What selling missiles, drone parts and stored systems pays, as a share of the store price: 50%, or 25% in Immersive Mode. */
+	public static int sellPercent() { return immersiveMode ? 25 : 50; }
 	public static boolean debugLogging = false;
 
-	/** The config file, beside the program, and its values (the Settings window changes and saves them). */
-	public static final File propFile = new File("federation-home-planet.cfg");
+	/** The config file, beside the program (whatever folder it was started from), and its values (the Settings window changes and saves them). */
+	public static final File propFile = new File(appDir(), "federation-home-planet.cfg");
 	public static final Properties config = new Properties();
 
 	/**
@@ -88,6 +153,16 @@ public class HomePlanet {
 		sellSupplies = flag("sell_supplies");
 		commissionUnlockedOnly = flag("commission_unlocked_only");
 		commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only");
+		sellSystems = flag("sell_systems");
+		commissionCosts = flag("commission_costs_scrap");
+		commissionPercent = percent(config.getProperty("commission_price_percent"));
+		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
+		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
+		unlockFreeShips = flag("unlock_free_ships");
+		immersiveMode = flag("immersive_mode");
+		immersiveNotifications = flag("immersive_notifications");
+		finalVictory = config.getProperty("final_victory", "nothing");
+		applyImmersive();
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 		log.debug("{} {} starting on Java {}", APP_NAME, APP_VERSION, System.getProperty("java.version"));
 
@@ -99,18 +174,24 @@ public class HomePlanet {
 		}
 		if (datsPath == null) {
 			datsPath = FTLUtilities.findDatsDir(); // the usual Steam, GOG and Humble folders
-			if (datsPath != null && !confirm("FTL's files were found in:\n" + datsPath.getPath() + "\nIs this correct?", "Confirm")) datsPath = null;
+			if (datsPath != null && !confirm("The Home Planet Station found FTL's files in:\n" + datsPath.getPath() + "\nIs this correct?", "Confirm")) datsPath = null;
 			if (datsPath == null) datsPath = promptForFtlPath();
 			if (datsPath != null) { config.setProperty("ftlDatsPath", datsPath.getAbsolutePath()); writeConfig = true; }
 		}
 		if (datsPath == null) {
-			showErrorDialog("FTL's files were not found.\n" + APP_NAME + " will now exit.");
+			showErrorDialog("FTL's files were not found. The Home Planet Station can't open without them.\nIt will now close.");
 			System.exit(1);
 		}
 		// First setup, asked once: Steam launching (for the Steam version), then the House Rules window while any rule was never set.
-		// A rule missing from the config starts ticked, except selling missiles and drone parts; rules already set keep their value.
+		// A rule missing from the config starts ticked, except the selling and pricing house rules; rules already set keep their value.
 		if (config.getProperty("launch_through_steam") == null && datsPath.getAbsolutePath().toLowerCase().contains("steamapps")) {
 			launchThroughSteam = confirm("This looks like the Steam version of FTL.\nLaunch FTL through Steam?", "Launch through Steam");
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+				JOptionPane.showMessageDialog(null, "One more thing for the Steam version: turn off Steam Cloud for FTL.\n\n"
+						+ "In your Steam library, right-click FTL, then Properties, General, and untick keeping saves in the Steam Cloud.\n\n"
+						+ "With it on, Steam can bring back a ship you docked as a second copy, or restore an old FTL profile.", "Steam Cloud", JOptionPane.WARNING_MESSAGE);
+				return null;
+			} });
 			config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
 			writeConfig = true;
 		}
@@ -123,7 +204,8 @@ public class HomePlanet {
 			sellSupplies = flag("sell_supplies", false);
 			commissionUnlockedOnly = flag("commission_unlocked_only", true);
 			commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only", true);
-			homeplanet.ui.HouseRulesDialog.ask();
+			applyImmersive();
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() { homeplanet.ui.HouseRulesDialog.ask(); return null; } });
 			writeConfig = true; // saveConfig writes every rule, so this is asked once
 		}
 
@@ -139,22 +221,22 @@ public class HomePlanet {
 				for (File file : getPossibleUserDataLocations(known)) if (file.exists()) { save_location = file.getParentFile(); break; }
 				if (save_location != null) break;
 			}
-			if (save_location != null && !confirm("FTL's saves were found in:\n" + save_location.getPath() + "\nIs this correct?", "Confirm")) save_location = null;
+			if (save_location != null && !confirm("The Home Planet Station found FTL's saves in:\n" + save_location.getPath() + "\nIs this correct?", "Confirm")) save_location = null;
 			if (save_location == null) save_location = promptForSavePath();
 			if (save_location != null) { config.setProperty("ftlSavePath", save_location.getAbsolutePath()); writeConfig = true; }
 		}
 		if (save_location == null) {
-			showErrorDialog("FTL's saves folder was not found.\n" + APP_NAME + " will now exit.");
+			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
 			System.exit(1);
 		}
 		if (writeConfig) saveConfig();
 
 		// The vault (files only so far; the ships are read once the game data is in)
 		try {
-			Vault.open(save_location);
+			Vault.open(save_location, immersiveMode); // Immersive Mode has a fleet of its own
 		} catch (IOException e) {
 			log.error("Could not open the vault in " + save_location, e);
-			showErrorDialog("Could not open the vault in:\n" + save_location + "\n\n" + e);
+			showErrorDialog("The Home Planet Station could not open its fleet records in:\n" + save_location + "\n\n" + e);
 			System.exit(1);
 		}
 		// Slipstream, offered once before anything needs it (after the vault opens, so its log entry goes there).
@@ -177,7 +259,7 @@ public class HomePlanet {
 			CompanionMod.register(CompanionMod.load());
 		} catch (Exception e) {
 			log.error("Error parsing FTL resources in " + datsPath, e);
-			showErrorDialog("Error reading FTL's files in:\n" + datsPath + "\n\n" + e);
+			showErrorDialog("The Home Planet Station could not read FTL's files in:\n" + datsPath + "\n\n" + e);
 			System.exit(1);
 		}
 
@@ -186,7 +268,7 @@ public class HomePlanet {
 			Vault.get().storage();
 		} catch (IOException e) {
 			log.error("Could not take stock of the vault", e);
-			showErrorDialog("Could not take stock of the vault:\n" + e);
+			showErrorDialog("The Home Planet Station could not take stock of the fleet:\n" + e);
 		}
 
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {
@@ -197,9 +279,10 @@ public class HomePlanet {
 					MainFrame frame = new MainFrame(APP_NAME, APP_VERSION);
 					frame.setVisible(true);
 					Music.refresh();
+					SaveWatcher.start(); // FTL's writes to continue.sav, for final victories
 				} catch (Exception e) {
 					log.error("Exception while creating the main window.", e);
-					showErrorDialog("The station could not be opened:\n" + e);
+					showErrorDialog("Communication with The Home Planet Station could not be opened:\n" + e);
 					System.exit(1);
 				}
 			}
@@ -209,6 +292,11 @@ public class HomePlanet {
 	// ---- config ----
 
 	private static boolean flag(String key) { return flag(key, false); }
+	/** A price multiplier from the cfg: 50, 75 or 100 (anything else is 100). */
+	private static int percent(String v) {
+		try { int p = Integer.parseInt(v == null ? "" : v.trim()); if (p == 50 || p == 75) return p; } catch (NumberFormatException e) { }
+		return 100;
+	}
 	private static boolean flag(String key, boolean dflt) { return Boolean.parseBoolean(config.getProperty(key, Boolean.toString(dflt))); }
 
 	/** The rules the first-run House Rules window sets. */
@@ -217,18 +305,24 @@ public class HomePlanet {
 
 	/** Reads the config; imports FTL Homeworld's old one when there's none yet. Returns true if it should be written. */
 	private static boolean loadConfig() {
-		if (!propFile.isFile()) return true;
+		File from = propFile;
+		if (!from.isFile()) {
+			// before 4B.04 the config was looked for in the folder the program was started from: carry it over
+			File old = new File("federation-home-planet.cfg").getAbsoluteFile();
+			if (!old.isFile() || old.equals(propFile.getAbsoluteFile())) return true;
+			from = old;
+		}
 		InputStream in = null;
 		try {
-			in = new FileInputStream(propFile);
+			in = new FileInputStream(from);
 			config.load(in);
 		} catch (IOException e) {
-			showErrorDialog("Error loading the config from " + propFile.getPath());
-			log.error("Could not read " + propFile, e);
+			showErrorDialog("The Home Planet Station could not read its settings from " + from.getPath());
+			log.error("Could not read " + from, e);
 		} finally {
 			try { if (in != null) in.close(); } catch (IOException e) { }
 		}
-		return false;
+		return from != propFile; // an old config: written to its new place
 	}
 
 	/** Writes the current settings to the cfg (a temporary file, then one move). Returns false, after telling the user, on failure. */
@@ -237,12 +331,21 @@ public class HomePlanet {
 		if (datsPath != null) config.setProperty("ftlDatsPath", datsPath.getAbsolutePath());
 		config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
 		config.setProperty("debug_logging", Boolean.toString(debugLogging));
-		config.setProperty("store_requirement", Boolean.toString(storeRequirement));
-		config.setProperty("new_journey_store_requirement", Boolean.toString(journeyStoreRequirement));
+		Rules own = normalRules(); // Immersive Mode's rules are never written over the player's own
+		config.setProperty("store_requirement", Boolean.toString(own.store));
+		config.setProperty("new_journey_store_requirement", Boolean.toString(own.journey));
 		config.setProperty("scrap_keeps_systems", Boolean.toString(scrapKeepsSystems));
-		config.setProperty("sell_supplies", Boolean.toString(sellSupplies));
-		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));
-		config.setProperty("commission_custom_unlocked_only", Boolean.toString(commissionCustomUnlockedOnly));
+		config.setProperty("sell_supplies", Boolean.toString(own.sellSupplies));
+		config.setProperty("commission_unlocked_only", Boolean.toString(own.lockedOnly));
+		config.setProperty("commission_custom_unlocked_only", Boolean.toString(own.customLockedOnly));
+		config.setProperty("sell_systems", Boolean.toString(own.sellSystems));
+		config.setProperty("commission_costs_scrap", Boolean.toString(own.costs));
+		config.setProperty("commission_price_percent", Integer.toString(own.percent));
+		config.setProperty("free_ship", freeShip);
+		config.setProperty("unlock_free_ships", Boolean.toString(own.unlockFree));
+		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
+		config.setProperty("final_victory", finalVictory);
+		config.setProperty("immersive_notifications", Boolean.toString(own.notifications));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
 		try {
 			ByteArrayOutputStream buf = new ByteArrayOutputStream();
@@ -251,23 +354,51 @@ public class HomePlanet {
 			return true;
 		} catch (IOException e) {
 			log.error("Error saving config to " + propFile.getPath(), e);
-			showErrorDialog("Error saving the config to " + propFile.getPath());
+			showErrorDialog("The Home Planet Station could not save its settings to " + propFile.getPath());
 			return false;
 		}
 	}
 
 	// ---- dialogs ----
 
-	private static boolean confirm(String message, String title) {
-		return JOptionPane.showConfirmDialog(null, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+	/**
+	 * Runs a dialog on the event thread and waits for its answer (directly, when already on it). Startup runs on the
+	 * main thread, and Swing windows opened from there misbehave: a Windows file chooser comes up empty, and every
+	 * later one with it.
+	 */
+	@SuppressWarnings("unchecked")
+	static <T> T onEdt(final java.util.concurrent.Callable<T> c) {
+		try {
+			if (javax.swing.SwingUtilities.isEventDispatchThread()) return c.call();
+			final Object[] out = {null};
+			final Exception[] err = {null};
+			javax.swing.SwingUtilities.invokeAndWait(new Runnable() {
+				public void run() { try { out[0] = c.call(); } catch (Exception e) { err[0] = e; } }
+			});
+			if (err[0] != null) throw err[0];
+			return (T) out[0];
+		} catch (RuntimeException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static boolean confirm(final String message, final String title) {
+		return onEdt(new java.util.concurrent.Callable<Boolean>() { public Boolean call() {
+			return JOptionPane.showConfirmDialog(null, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+		}});
 	}
 	/** Yes or No, starting on No: for anything that can't be undone (selling, junking, retiring). Closing the window means No. */
 	public static boolean confirmNo(java.awt.Component owner, String message, String title) {
 		Object[] options = {"Yes", "No"};
 		return JOptionPane.showOptionDialog(owner, message, title, JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) == 0;
 	}
-	public static void showErrorDialog(String message) {
-		JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+	public static void showErrorDialog(final String message) {
+		onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+			JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+			return null;
+		}});
 	}
 
 	// ---- FTL itself ----
@@ -278,8 +409,8 @@ public class HomePlanet {
 		if (cont.exists() && !modPatchedThisSession) {
 			List<String> missing = Retrofit.missingBlueprints(cont);
 			if (!missing.isEmpty()) {
-				showErrorDialog("The boarded ship needs the " + Retrofit.MOD_NAME + ", which isn't in the game data ("
-						+ String.join(", ", missing) + ").\n\nInstall it first (Settings > Patch mods), or board a different ship.");
+				showErrorDialog("The boarded ship flies on blueprints from the " + Retrofit.MOD_NAME + ", which isn't in FTL yet ("
+						+ String.join(", ", missing) + ").\n\nSend it to FTL via Slipstream first (Settings > Patch mods), or board a different ship.");
 				return;
 			}
 		}
@@ -292,7 +423,7 @@ public class HomePlanet {
 				else java.awt.Desktop.getDesktop().browse(new java.net.URI(steamUri));
 			} catch (Exception ex) {
 				log.error("Could not launch FTL through Steam.", ex);
-				showErrorDialog("Could not launch FTL through Steam:\n" + ex);
+				showErrorDialog("The Home Planet Station could not launch FTL through Steam:\n" + ex);
 			}
 			return;
 		}
@@ -300,7 +431,7 @@ public class HomePlanet {
 		File ftl = FTLUtilities.findGameExe(datsPath);
 		if (ftl == null) {
 			log.warn("Could not find the FTL executable near {}", datsPath);
-			showErrorDialog("Could not find FTL's executable near:\n" + datsPath);
+			showErrorDialog("The Home Planet Station could not find FTL's executable near:\n" + datsPath + "\n\nCheck the game folder in Settings.");
 			return;
 		}
 		log.debug("Running FTL: {}", ftl.getAbsolutePath());
@@ -321,7 +452,10 @@ public class HomePlanet {
 		return path.exists() && path.isDirectory() && FTLUtilities.isDatsDirValid(path);
 	}
 	public static File promptForFtlPath() {
-		JOptionPane.showMessageDialog(null, APP_NAME + " uses images and data from FTL,\nbut the path to FTL's files could not be guessed.\n\n"
+		return onEdt(new java.util.concurrent.Callable<File>() { public File call() { return promptForFtlPathHere(); } });
+	}
+	private static File promptForFtlPathHere() {
+		JOptionPane.showMessageDialog(null, "The Home Planet Station's interface draws its images and data from FTL,\nbut its search could not find FTL's files on its own.\n\n"
 				+ "Select 'ftl.dat' in your FTL folder (FTL 1.6 and newer),\nor '(FTL dir)/resources/data.dat' for older versions,\nor 'FTL.app' on a Mac.",
 				"FTL Not Found", JOptionPane.INFORMATION_MESSAGE);
 		final JFileChooser fc = new JFileChooser();
@@ -346,7 +480,10 @@ public class HomePlanet {
 		return ftlPath != null && isDatsPathValid(ftlPath) ? ftlPath : null;
 	}
 	public static File promptForSavePath() {
-		JOptionPane.showMessageDialog(null, APP_NAME + " manages saves from FTL,\nbut the path to FTL's saves could not be guessed.\n\n"
+		return onEdt(new java.util.concurrent.Callable<File>() { public File call() { return promptForSavePathHere(); } });
+	}
+	private static File promptForSavePathHere() {
+		JOptionPane.showMessageDialog(null, "The Home Planet Station sends ships out using FTL's saves,\nbut its search could not find FTL's saves folder on its own.\n\n"
 				+ "Select '/Documents/My Games/FasterThanLight/continue.sav' (or ae_prof.sav).", "FTL Save Not Found", JOptionPane.INFORMATION_MESSAGE);
 		final JFileChooser fc = new JFileChooser();
 		fc.setDialogTitle("Find continue.sav or ae_prof.sav");

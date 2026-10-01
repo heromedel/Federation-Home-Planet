@@ -83,14 +83,14 @@ public final class BuildDialog extends JDialog {
 
 		// what Build does
 		List<String> does = new ArrayList<String>();
-		does.add("Blueprint " + bpId + " (layout " + DesignExport.layoutId(d) + ") goes into the companion mod, which then needs patching in (Settings > Patch mods).");
+		does.add("Blueprint " + bpId + " (layout " + DesignExport.layoutId(d) + ") goes into the " + homeplanet.parser.CompanionMod.TITLE + ", which then needs sending to FTL via Slipstream (Settings > Patch mods).");
 		if (snapshot != null && DesignExport.changesBlueprint(snapshot, d)) {
 			List<String> ships = DesignDialog.shipsUsing(DesignExport.bpId(snapshot));
 			if (!ships.isEmpty()) does.add("She was built before (v" + snapshot.version + ") and " + (ships.size() == 1 ? "1 ship flies it" : ships.size() + " ships fly it")
 					+ ": " + String.join(", ", ships) + ". This build becomes v" + DesignDialog.nextVersion(d.id) + "; they keep v" + snapshot.version + ".");
 			else does.add("She was built before (v" + snapshot.version + ") and no ship flies it: you'll be asked whether to replace it or make v" + DesignDialog.nextVersion(d.id) + ".");
 		} else if (snapshot != null) does.add("Nothing the game sees has changed since her last build; building again changes nothing in the mod.");
-		does.add(d.starter ? "She's a starter ship: she'll be listed in Commission once the mod is patched in." : "Not a starter ship: she won't be listed in Commission (the Loadout... tick box).");
+		does.add(d.starter ? "She's a starter ship: she'll be listed in Commission once the mod is sent to FTL via Slipstream." : "Not a starter ship: she won't be listed in Commission (the Loadout... tick box).");
 
 		JPanel top = new JPanel(new BorderLayout(0, 4));
 		JLabel sl = new JLabel(stats);
@@ -99,8 +99,8 @@ public final class BuildDialog extends JDialog {
 		top.add(report, BorderLayout.CENTER);
 
 		StringBuilder html = new StringBuilder("<html><body style='width:560px'>");
-		if (!fix.isEmpty()) { html.append("<p><b style='color:#c04040'>To fix (stops the build)</b><ul>"); for (String x : fix) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
-		if (!notes.isEmpty()) { html.append("<p><b style='color:#b08a00'>Notes (her choice, not the station's)</b><ul>"); for (String x : notes) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
+		if (!fix.isEmpty()) { html.append("<p><b style='color:" + MenuTheme.HTML_RED + "'>To fix (stops the build)</b><ul>"); for (String x : fix) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
+		if (!notes.isEmpty()) { html.append("<p><b style='color:" + MenuTheme.HTML_GOLD + "'>Notes (her choice, not The Station's)</b><ul>"); for (String x : notes) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
 		html.append("<p><b>What Build does</b><ul>"); for (String x : does) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p></body></html>");
 		JLabel lines = new JLabel(html.toString());
 		lines.setVerticalAlignment(JLabel.TOP);
@@ -122,7 +122,7 @@ public final class BuildDialog extends JDialog {
 		loadout.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { choice = Choice.LOADOUT; dispose(); } });
 		JButton build = new JButton(notes.isEmpty() ? "Build blueprint" : "Build anyway");
 		build.setEnabled(fix.isEmpty());
-		build.setToolTipText(fix.isEmpty() ? "Put her blueprint in the companion mod" : "Not until the To fix list is empty");
+		build.setToolTipText(fix.isEmpty() ? "Put her blueprint in the Federation Home Planet Mod" : "Not until the To fix list is empty");
 		build.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { choice = Choice.BUILD; dispose(); } });
 		JButton cancel = new JButton("Cancel");
 		cancel.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });

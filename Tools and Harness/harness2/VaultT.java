@@ -34,8 +34,15 @@ public class VaultT { public static void main(String[] a) throws Exception {
  Ship e = v.docked().get(0);
  for (int i = 0; i < 14; i++) { SavedGameState g = e.save(); g.getPlayerShip().setScrapAmt(g.getPlayerShip().getScrapAmt() + 1); v.write(e, g); Thread.sleep(2); }
  Setup.chk("history pruned to " + Vault.KEEP, v.history(e).size() == Vault.KEEP);
- // unknown continue.sav (a new game in FTL): adopted on reload
+ // Steam Cloud's copy of a docked ship in continue.sav: set aside in her records, not a second ship
+ int before = v.fleet().size();
  SafeFiles.copy(new File(v.shipsDir(), e.id + ".sav"), v.continueFile());
+ Vault vc = Vault.open(saves); vc.takeStock();
+ Setup.chk("cloud copy of a docked ship: set aside, not adopted", vc.boarded() == null && !vc.continueFile().exists() && e.name.equals(vc.takeCloudCopy()) && vc.fleet().size() == before);
+ // unknown continue.sav (a new game in FTL): adopted on reload
+ SavedGameState other = HomePlanet.savedGameParser.readSavedGame(new File(v.shipsDir(), e.id + ".sav"));
+ other.getPlayerShip().setScrapAmt(other.getPlayerShip().getScrapAmt() + 1000);
+ SaveHelper.writeSavedGame(v.continueFile(), other);
  Vault v3 = Vault.open(saves); v3.takeStock();
  Setup.chk("stray continue.sav adopted as boarded", v3.boarded() != null && !v3.boarded().id.equals(e.id) && v3.boarded().name.equals(e.name));
  // boarded ship lost (FTL deleted continue.sav)

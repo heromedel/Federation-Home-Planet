@@ -24,7 +24,7 @@ public class ShipArt {
 	public static File file(String source) {
 		String p = source.startsWith("file:") ? source.substring(5) : source;
 		File f = new File(p);
-		return f.isAbsolute() ? f : new File(homeplanet.vault.Vault.get().root, p);
+		return f.isAbsolute() ? f : new File(homeplanet.vault.Vault.get().shared, p); // the art is shared by both fleets
 	}
 
 	/** A piece of the hull for the explosion: its picture and where it sits on the hull art. */
@@ -153,6 +153,7 @@ public class ShipArt {
 	public static int sweep() {
 		File dir = dir();
 		if (!dir.isDirectory()) return 0;
+		if (!ShipDesign.intact() || !CompanionMod.intact()) return 0; // a damaged list can't say what's still used: delete nothing
 		java.util.Set<File> used = new java.util.HashSet<File>();
 		for (ShipDesign d : ShipDesign.load()) for (String f : filesOf(d)) used.add(file(f).getAbsoluteFile());
 		for (CompanionMod.Remodel r : CompanionMod.load()) for (String f : filesOf(r.geometry)) used.add(file(f).getAbsoluteFile());

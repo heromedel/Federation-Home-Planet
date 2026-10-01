@@ -38,6 +38,10 @@ public class SettingsDialog extends JDialog {
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging (shown in the console window)", HomePlanet.debugLogging);
 	private boolean savesChanged = false;
+	/** After a final victory: nothing, rescue her, or a reward of her value (the fleet in use has its own choice). */
+	private final javax.swing.JRadioButton[] victoryButtons = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
+	private String victoryWas = homeplanet.parser.FinalVictory.choice();
+	private final JLabel victoryHeading = new JLabel();
 
 	/** Shows the dialog. Returns true if the saves folder changed (so the Space Dock should reload). */
 	public static boolean open(java.awt.Component owner) {
@@ -78,13 +82,18 @@ public class SettingsDialog extends JDialog {
 		openSaves.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { openFolder(saves); }
 		});
+		JButton openStation = new JButton("Open the station's folder");
+		openStation.setToolTipText("Open The Home Planet Station's own folder (its ships, Junkyard, records and blueprints) in Windows Explorer: for backups, or a look around");
+		openStation.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().root); }
+		});
 		JButton openJunk = new JButton("Open Junkyard");
-		openJunk.setToolTipText("Open the Junkyard folder (disbanded ships) in Windows Explorer");
+		openJunk.setToolTipText("Open the Junkyard folder (decommissioned ships) in Windows Explorer");
 		openJunk.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				File junk = homeplanet.vault.Vault.get().junkyardDir();
 				if (!junk.isDirectory() || homeplanet.vault.Vault.get().junked().isEmpty()) {
-					JOptionPane.showMessageDialog(SettingsDialog.this, "The Junkyard is empty. No ship has been disbanded yet.",
+					JOptionPane.showMessageDialog(SettingsDialog.this, "The Junkyard is empty. No ship has been decommissioned yet.",
 							"Open Junkyard", JOptionPane.INFORMATION_MESSAGE);
 					return;
 				}
@@ -92,7 +101,7 @@ public class SettingsDialog extends JDialog {
 			}
 		});
 		JButton openLog = new JButton("Open history log");
-		openLog.setToolTipText("Open history.log: what the station loaded and did");
+		openLog.setToolTipText("Open history.log: what The Home Planet Station loaded and did");
 		openLog.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (!homeplanet.core.HistoryLog.file().exists()) {
@@ -102,7 +111,7 @@ public class SettingsDialog extends JDialog {
 				try {
 					Desktop.getDesktop().open(homeplanet.core.HistoryLog.file().getAbsoluteFile());
 				} catch (Exception ex) {
-					JOptionPane.showMessageDialog(SettingsDialog.this, "Could not open:\n" + homeplanet.core.HistoryLog.file().getAbsolutePath(),
+					JOptionPane.showMessageDialog(SettingsDialog.this, "The Home Planet Station could not open its history log:\n" + homeplanet.core.HistoryLog.file().getAbsolutePath(),
 							"History log", JOptionPane.WARNING_MESSAGE);
 				}
 			}
@@ -112,11 +121,13 @@ public class SettingsDialog extends JDialog {
 		openLogs.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				File d = HomePlanet.logDir();
-				if (d == null || !d.isDirectory()) { JOptionPane.showMessageDialog(SettingsDialog.this, "No log folder could be made beside the program.", "Logs", JOptionPane.INFORMATION_MESSAGE); return; }
+				if (d == null || !d.isDirectory()) { JOptionPane.showMessageDialog(SettingsDialog.this, "No log folder could be made beside Federation Home Planet.jar.", "Logs", JOptionPane.INFORMATION_MESSAGE); return; }
 				openFolder(d);
 			}
 		});
 		openRow.add(openSaves);
+		openRow.add(javax.swing.Box.createHorizontalStrut(8));
+		openRow.add(openStation);
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
 		openRow.add(openJunk);
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
@@ -127,11 +138,15 @@ public class SettingsDialog extends JDialog {
 
 		heading(body, c, "Launching");
 		body.add(steamBox, next(c));
+		JLabel cloud = new JLabel("<html><div style='width:560px; color:" + MenuTheme.HTML_ORANGE + "'>Steam version: turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties, General). "
+				+ "With it on, Steam can bring back a docked ship as a copy, or an old FTL profile.</div></html>");
+		cloud.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
+		body.add(cloud, next(c));
 
 		heading(body, c, "Mods");
 		JPanel modRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JButton patchBtn = new JButton("Patch mods...");
-		patchBtn.setToolTipText("Choose which mods to install in FTL; Slipstream does the installing (the Federation Home Planet mod is always included)");
+		patchBtn.setToolTipText("Choose which mods to send to FTL; Slipstream carries them (the Federation Home Planet Mod is always included)");
 		patchBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { PatchDialog.open(SettingsDialog.this); }
 		});
@@ -153,16 +168,9 @@ public class SettingsDialog extends JDialog {
 				if (d != null) openFolder(homeplanet.core.Slipstream.modsDir(d));
 			}
 		});
-		JButton cleanBtn = new JButton("Clean up blueprints");
-		cleanBtn.setToolTipText("Remove station-made blueprints that no ship uses anymore. Checks every save at the Space Dock, docked, and in the Junkyard");
-		cleanBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { cleanBlueprints(); }
-		});
 		modRow.add(patchBtn);
 		modRow.add(javax.swing.Box.createHorizontalStrut(8));
 		modRow.add(modsBtn);
-		modRow.add(javax.swing.Box.createHorizontalStrut(8));
-		modRow.add(cleanBtn);
 		modRow.add(javax.swing.Box.createHorizontalStrut(8));
 		JButton starterBtn = new JButton("Blueprints...");
 		starterBtn.setToolTipText("Your own blueprints (remodels and designs): which can be commissioned, and their names and starting loadouts");
@@ -179,6 +187,26 @@ public class SettingsDialog extends JDialog {
 
 		heading(body, c, "Rules");
 		rules.addTo(body, c);
+
+		victoryHeading.setFont(MenuTheme.HEADING_FONT);
+		victoryHeading.setForeground(MenuTheme.GOLD);
+		victoryHeading.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
+		body.add(victoryHeading, next(c));
+		javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
+		for (int i = 0; i < victoryButtons.length; i++) {
+			String ch = homeplanet.parser.FinalVictory.CHOICES[i];
+			victoryButtons[i] = new javax.swing.JRadioButton(homeplanet.parser.FinalVictory.label(ch), ch.equals(victoryWas));
+			victoryGroup.add(victoryButtons[i]);
+			body.add(victoryButtons[i], next(c));
+		}
+		refreshVictory();
+		rules.afterFleetChange = new Runnable() { public void run() { refreshVictory(); } };
+		victoryButtons[1].setToolTipText("She comes back as she was moments before the final engagement, ready for a new journey; or take her full value for the museum");
+		victoryButtons[2].setToolTipText("Her full value, as the shipyard would charge for her, goes to the Cargo Hold");
+		JLabel victoryNote = new JLabel("<html><div style='width:520px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>For a rescue or a reward, The Home Planet Station must be open while you play: "
+				+ "it keeps her as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
+		victoryNote.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
+		body.add(victoryNote, next(c));
 
 		heading(body, c, "Troubleshooting");
 		body.add(debugBox, next(c));
@@ -221,12 +249,13 @@ public class SettingsDialog extends JDialog {
 		getRootPane().setDefaultButton(ok);
 
 		refreshLabels();
-		getContentPane().add(body, BorderLayout.CENTER);
+		getContentPane().add(ScreenFit.wrap(body, 120, owner), BorderLayout.CENTER); // scrolls on a short screen
 		getContentPane().add(buttons, BorderLayout.SOUTH);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		pack();
 		setResizable(false);
 		setLocationRelativeTo(owner);
+		ScreenFit.keepOnScreen(this); // all of it on its screen, never under the taskbar
 	}
 
 	private void apply() {
@@ -236,6 +265,7 @@ public class SettingsDialog extends JDialog {
 		if (gameChanged) changed.add("Game folder: " + game.getPath());
 		if (steamBox.isSelected() != HomePlanet.launchThroughSteam) changed.add("Launch through Steam: " + steamBox.isSelected());
 		rules.describeChanges(changed);
+		if (!victoryChoice().equals(victoryWas)) changed.add("After a final victory: " + victoryChoice());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
 		if (!changed.isEmpty()) homeplanet.core.HistoryLog.entry("SETTINGS", "", changed);
@@ -244,23 +274,27 @@ public class SettingsDialog extends JDialog {
 		if (savesChanged) {
 			// another saves folder is another vault (its own ships, designs and remodels)
 			try {
-				homeplanet.vault.Vault.open(saves);
+				homeplanet.vault.Vault.open(saves, HomePlanet.immersiveMode);
 				homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());
 				homeplanet.vault.Vault.get().takeStock();
 			} catch (java.io.IOException e) {
-				HomePlanet.showErrorDialog("Could not open the vault in " + saves + ":\n" + e);
+				HomePlanet.showErrorDialog("The Home Planet Station could not open its fleet records in:\n" + saves + "\n\n" + e);
 			}
 		}
 		HomePlanet.datsPath = game;
 		HomePlanet.launchThroughSteam = steamBox.isSelected();
 		rules.apply();
+		if (!savesChanged && !victoryChoice().equals(victoryWas)) {
+			try { homeplanet.parser.FinalVictory.setChoice(victoryChoice()); }
+			catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not record the choice after a final victory:\n" + e.getMessage()); }
+		}
 		HomePlanet.setDebugLogging(debugBox.isSelected());
 		homeplanet.core.Music.enabled = musicBox.isSelected();
 		homeplanet.core.Music.refresh(); // starts or stops right away
 		java.awt.Window owner = getOwner();
 		if (owner instanceof MainFrame) ((MainFrame) owner).cargoBay.updateSupplyButtons(); // the sell buttons follow the rule at once
 		if (HomePlanet.saveConfig() && gameChanged) {
-			JOptionPane.showMessageDialog(this, "The new FTL game folder will be used the next time " + HomePlanet.APP_NAME + " starts.",
+			JOptionPane.showMessageDialog(this, "The Home Planet Station will use the new FTL game folder the next time it starts.",
 					"Settings", JOptionPane.INFORMATION_MESSAGE);
 		}
 		dispose();
@@ -320,7 +354,7 @@ public class SettingsDialog extends JDialog {
 		try {
 			homeplanet.parser.CompanionMod.save(all);
 		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("Could not update the blueprint list:\n" + ex);
+			HomePlanet.showErrorDialog("The Home Planet Station could not update the blueprint list:\n" + ex);
 			return;
 		}
 		homeplanet.parser.CompanionMod.register(all); // Commission sees the changes at once
@@ -336,54 +370,6 @@ public class SettingsDialog extends JDialog {
 		return text;
 	}
 
-	/** Moves remodels no save names into Removed Blueprints.log, rebuilds the mod, and offers to patch. */
-	private void cleanBlueprints() {
-		java.util.List<homeplanet.parser.CompanionMod.Remodel> all = homeplanet.parser.CompanionMod.load();
-		if (all.isEmpty()) {
-			JOptionPane.showMessageDialog(this, "No ship has been remodeled yet: there's nothing to clean up.", "Clean up blueprints", JOptionPane.INFORMATION_MESSAGE);
-			return;
-		}
-		homeplanet.vault.Vault vault = homeplanet.vault.Vault.get();
-		if (vault.anyUnscannable()) {
-			JOptionPane.showMessageDialog(this, "One of the ships' saves can't be read right now (is FTL running?), so it's not safe to say which blueprints are unused.\n"
-					+ "Try again later.", "Clean up blueprints", JOptionPane.WARNING_MESSAGE);
-			return;
-		}
-		java.util.Set<String> used = vault.blueprintsInUse();
-		java.util.List<homeplanet.parser.CompanionMod.Remodel> unused = new java.util.ArrayList<homeplanet.parser.CompanionMod.Remodel>();
-		StringBuilder list = new StringBuilder();
-		for (homeplanet.parser.CompanionMod.Remodel r : all) {
-			if (used.contains(r.id)) continue;
-			unused.add(r);
-			list.append("\n  ").append(r.id).append("  (made for ").append(r.ship).append(", ").append(r.made).append(")");
-		}
-		if (unused.isEmpty()) {
-			JOptionPane.showMessageDialog(this, "Every remodeled blueprint on file is still used by a ship.", "Clean up blueprints", JOptionPane.INFORMATION_MESSAGE);
-			return;
-		}
-		Object[] opts = {"Remove", "Cancel"};
-		int r = JOptionPane.showOptionDialog(this, (unused.size() == 1 ? "1 blueprint is" : unused.size() + " blueprints are") + " no longer used by any ship:" + list
-				+ "\n\nRemove " + (unused.size() == 1 ? "it" : "them") + "? " + (unused.size() == 1 ? "It goes" : "They go") + " into " + homeplanet.parser.CompanionMod.removedLog().getName() + ", where "
-				+ (unused.size() == 1 ? "it" : "they") + " can be pasted back by hand.",
-				"Clean up blueprints", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, opts, opts[1]);
-		if (r != 0) return;
-		try {
-			for (homeplanet.parser.CompanionMod.Remodel u : unused) { homeplanet.parser.CompanionMod.retire(u); all.remove(u); }
-			homeplanet.parser.CompanionMod.save(all);
-		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("Could not update the blueprint files:\n" + ex);
-			return;
-		}
-		java.util.List<String> ids = new java.util.ArrayList<String>();
-		for (homeplanet.parser.CompanionMod.Remodel u : unused) ids.add(u.id);
-		homeplanet.core.HistoryLog.entry("CLEAN", "Removed " + unused.size() + " unused blueprint(s)", ids);
-		File mod = homeplanet.core.Slipstream.writeMod();
-		Object[] opts2 = {"Patch Now", "Later"};
-		int p = JOptionPane.showOptionDialog(this, "Removed. The companion mod was rebuilt" + (mod == null ? "." : " at:\n" + mod.getPath()) + "\n\nPatch it in now so the game matches?",
-				"Clean up blueprints", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts2, opts2[0]);
-		if (p == 0) PatchDialog.open(this);
-	}
-
 	private void refreshLabels() {
 		savesLabel.setText(saves.getPath());
 		savesLabel.setToolTipText(saves.getPath());
@@ -396,7 +382,7 @@ public class SettingsDialog extends JDialog {
 		try {
 			Desktop.getDesktop().open(dir);
 		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(this, "Could not open the folder:\n" + dir.getPath(),
+			JOptionPane.showMessageDialog(this, "The Home Planet Station could not open the folder:\n" + dir.getPath(),
 					"Open folder", JOptionPane.WARNING_MESSAGE);
 		}
 	}
@@ -415,7 +401,7 @@ public class SettingsDialog extends JDialog {
 
 	/** Shows a text file bundled in the jar (CREDITS.md, LICENSE) in a window of its own. */
 	static final String LORE = "~ Incoming transmission from the Federation Home Planet ~\n\n"
-			+ "Despite the ongoing war with the Rebellion, the Federation has restored its long-range trade and communication network, "
+			+ "Despite the ongoing war with the rebellion, the Federation has restored its long-range trade and communication network, "
 			+ "carried by official stores and stations across the sectors.\n\n"
 			+ "From the Home Planet, the Federation can once more reach beacons in many star systems: moving goods and crew between ships "
 			+ "almost instantly, refitting hulls in its dry docks, and commissioning new ships wherever a captain needs one.\n\n"
@@ -427,7 +413,7 @@ public class SettingsDialog extends JDialog {
 		ta.setLineWrap(true);
 		ta.setWrapStyleWord(true);
 		ta.setOpaque(false);
-		ta.setFont(new JLabel().getFont().deriveFont(13f));
+		ta.setFont(MenuTheme.TEXT_FONT);
 		JOptionPane.showMessageDialog(this, ta, "Lore", JOptionPane.PLAIN_MESSAGE);
 	}
 
@@ -439,7 +425,7 @@ public class SettingsDialog extends JDialog {
 			text = new String(homeplanet.core.SafeFiles.readAll(in), "UTF-8");
 			if (name.endsWith(".md")) text = text.replaceAll("(?<!\n)\n(?![\n*|#-])", " "); // the file is wrapped by hand; let the window wrap it
 		} catch (Exception ex) {
-			text = name + " couldn't be read from the program: it's beside the jar in the source download, at the project's page.";
+			text = name + " couldn't be read from this build. It's in the source download, on the project's page.";
 		}
 		javax.swing.JTextArea ta = new javax.swing.JTextArea(text, 32, 92);
 		ta.setEditable(false);
@@ -451,9 +437,21 @@ public class SettingsDialog extends JDialog {
 		JOptionPane.showMessageDialog(this, sp, title, JOptionPane.PLAIN_MESSAGE);
 	}
 
+	/** The fleet in use's choice after a final victory (entering or leaving Immersive Mode here switches fleets). */
+	private void refreshVictory() {
+		victoryWas = homeplanet.parser.FinalVictory.choice();
+		victoryHeading.setText("After a final victory" + (homeplanet.vault.Vault.get().immersive ? " (Immersive fleet)" : ""));
+		for (int i = 0; i < victoryButtons.length; i++) victoryButtons[i].setSelected(homeplanet.parser.FinalVictory.CHOICES[i].equals(victoryWas));
+	}
+	private String victoryChoice() {
+		for (int i = 0; i < victoryButtons.length; i++) if (victoryButtons[i].isSelected()) return homeplanet.parser.FinalVictory.CHOICES[i];
+		return homeplanet.parser.FinalVictory.NOTHING;
+	}
+
 	static void heading(JPanel body, GridBagConstraints c, String text) {
 		JLabel h = new JLabel(text);
-		h.setFont(h.getFont().deriveFont(Font.BOLD));
+		h.setFont(MenuTheme.HEADING_FONT);
+		h.setForeground(MenuTheme.GOLD);
 		if (c.gridy > 0) h.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
 		body.add(h, next(c));
 	}

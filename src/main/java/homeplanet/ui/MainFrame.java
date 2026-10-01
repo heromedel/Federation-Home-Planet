@@ -35,12 +35,24 @@ public class MainFrame extends JFrame {
 	private final HashMap<String, BufferedImage> scaledCache = new HashMap<String, BufferedImage>();
 
 	public MainFrame(String appName, String appVersion) {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		addWindowListener(new java.awt.event.WindowAdapter() { // remember the window's size, position and maximized state
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // closing asks first when the Cargo Bay has unsaved changes
+		addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
-			public void windowClosing(java.awt.event.WindowEvent e) { rememberWindow(); }
+			public void windowClosing(java.awt.event.WindowEvent e) {
+				if (!atSpaceDock && !atMuseum && !cargoBay.confirmLeave("close The Home Planet Station interface")) return;
+				rememberWindow(); // its size, position and maximized state
+				System.exit(0);
+			}
+			@Override
+			public void windowActivated(java.awt.event.WindowEvent e) {
+				// back from another program (FTL, most likely): the Space Dock takes stock, as Refresh does. Not when one of
+				// the station's own windows closes, and not in the Cargo Bay (unsaved trades)
+				if (!atSpaceDock) return;
+				boolean gone = homeplanet.core.SaveWatcher.takeGone(); // FTL ended a run meanwhile
+				if (gone || e.getOppositeWindow() == null) spaceDock.init();
+			}
 		});
-		setTitle(appName + " " + appVersion);
+		setTitle("The Home Planet Station  -  " + appName + " " + appVersion);
 		Image img = (new ImageIcon((new ResourceClass()).getClass().getResource("LogoIcon.png"))).getImage();
 		setIconImage(img);
 		tasksPane = new JPanel(screens);
@@ -54,6 +66,8 @@ public class MainFrame extends JFrame {
 		JScrollPane cargoBayPane = new JScrollPane(cargoBay);
 		cargoBayPane.setBorder(javax.swing.BorderFactory.createEmptyBorder()); // the border alone could tip a just-fitting window into scroll bars
 		tasksPane.add(cargoBayPane, "cargo");
+		museum = new MuseumUI(this);
+		tasksPane.add(museum, "museum");
 		// big enough for the Cargo Bay without scroll bars (never bigger than the screen); a remembered size wins
 		java.awt.Dimension want = cargoBay.getPreferredSize();
 		java.awt.Rectangle screen = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
@@ -66,18 +80,28 @@ public class MainFrame extends JFrame {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
 				if (!atSpaceDock || !isFocused()) return;
 				Object[] opts = {"Yes", "No"};
-				int r = javax.swing.JOptionPane.showOptionDialog(MainFrame.this, "Leave Space Dock and quit Federation Home Planet?", "Quit",
+				int r = javax.swing.JOptionPane.showOptionDialog(MainFrame.this, "Leave the Space Dock and close The Home Planet Station interface?", "Quit",
 						javax.swing.JOptionPane.DEFAULT_OPTION, javax.swing.JOptionPane.QUESTION_MESSAGE, null, opts, opts[1]);
 				if (r == 0) dispatchEvent(new java.awt.event.WindowEvent(MainFrame.this, java.awt.event.WindowEvent.WINDOW_CLOSING)); // the same path as the close box
 			}
 		});
 	}
-	private boolean atSpaceDock = true;
+	private boolean atSpaceDock = true, atMuseum = false;
+	public final MuseumUI museum;
+
+	/** Opens the Federation Museum. */
+	public void showMuseum() {
+		atSpaceDock = false;
+		atMuseum = true;
+		screens.show(tasksPane, "museum");
+		museum.init();
+	}
 
 	/** Opens the Cargo Bay, fresh from the saves. */
 	public void showCargoBay() {
 		cargoBay.init();
 		atSpaceDock = false;
+		atMuseum = false;
 		screens.show(tasksPane, "cargo");
 		cargoBay.revalidate();
 		cargoBay.repaint();
@@ -86,6 +110,7 @@ public class MainFrame extends JFrame {
 	public void showSpaceDock() {
 		spaceDock.init();
 		atSpaceDock = true;
+		atMuseum = false;
 		screens.show(tasksPane, "dock");
 		spaceDock.revalidate();
 		spaceDock.repaint();
