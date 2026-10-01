@@ -18,6 +18,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -28,8 +29,8 @@ import javax.swing.SwingUtilities;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.ProfileSwap;
 import homeplanet.parser.Career;
+import homeplanet.parser.CareerRules;
 import homeplanet.parser.Clearance;
-import homeplanet.parser.FinalVictory;
 import homeplanet.parser.XmlText;
 import homeplanet.vault.Vault;
 
@@ -45,9 +46,13 @@ final class ImmersiveBriefing extends JDialog {
 	final JCheckBox own = new JCheckBox("Give Immersive Mode its own FTL profile (recommended)", true);
 	final JRadioButton salaryNew = new JRadioButton("Only achievements earned from now on", true);
 	final JRadioButton salaryAll = new JRadioButton("Every achievement already in your FTL profile");
-	final JRadioButton[] victory = new JRadioButton[FinalVictory.CHOICES.length];
-	/** The one house rule Immersive Mode leaves to the player, chosen here rather than on a screen of its own. */
-	final JCheckBox scrapKeeps = new JCheckBox("Allow stripping when scrapping: her systems can go to the Cargo Bay, 10 scrap each", HomePlanet.stripAllowed);
+	/** The difficulty: Easy, Normal, Hard or Custom (CareerRules.NAMES). */
+	private final JRadioButton[] difficulty = new JRadioButton[CareerRules.NAMES.length];
+	/** Each rule's level, chosen freely for Custom; the difficulty's otherwise. */
+	@SuppressWarnings("unchecked")
+	private final JComboBox<String>[] levels = new JComboBox[CareerRules.RULES.length];
+	/** For each rule, the level each of its choices stands for (Commission's Normal and Hard are the same, so it offers two). */
+	private final int[][] levelOf = new int[CareerRules.RULES.length][];
 	boolean confirmed = false;
 
 	private final boolean begun;
@@ -111,19 +116,19 @@ final class ImmersiveBriefing extends JDialog {
 		JPanel p = page();
 		p.add(section("A fleet of its own", "Your current fleet (the Space Dock, the Junkyard, the Cargo Hold and their records) is kept exactly as it is, "
 				+ "and comes back when you return to Sandbox Mode. Your designs and remodels are shared by both."
-				+ (begun ? "" : " Your career begins with an empty shipyard, a free Kestrel and " + Career.STARTING_SCRAP + " scrap in the Cargo Hold.")));
+				+ (begun ? "" : " Your career begins with an empty shipyard, a free Kestrel and some scrap in the Cargo Hold (by its difficulty).")));
 		p.add(section("The rules", "Set and locked while it's on:",
 				"Trading, scrapping and New Journey need a station (a beacon with a store).",
-				"Commissioning costs scrap from the Cargo Hold, at full price. With no ship left, commission one or report for reassignment (surrender the Cargo Hold and the Junkyard for a free new command).",
+				"Commissioning costs scrap from the Cargo Hold. With no ship left, commission one, sell a hull from the Junkyard, or report for reassignment (surrender the Cargo Hold and the Junkyard for a free new command).",
 				"Each ship you unlock in FTL from now on can be commissioned free, once. Locked ships can't be commissioned.",
-				"A New Journey costs " + homeplanet.core.Economy.IMMERSIVE_JOURNEY_FEE + " scrap. Missiles and drone parts sell at 25%, stored systems at half their price.",
+				"Fees and prices are set by the career's difficulty, chosen on the next page: a New Journey, taking systems off, missiles and drone parts sold. Stored systems sell at half their price.",
 				"Lost ships stay lost: no restoring earlier versions, no recovering, and a report for reassignment is final."));
 		p.add(section("Rank", "You start as a Commander.",
 				"Captain: design ships, remodel, overhaul, commission custom ships. " + oneLine(Clearance.HOW_CAPTAIN),
 				"Commodore: the Federation's artillery. " + oneLine(Clearance.HOW_COMMODORE),
 				"The plans for the Rebel Flagship's weapons: earn Rule Ten: Greed is Eternal."));
 		p.add(section("Transmissions and the stipend", "An inbox on the Space Dock brings commission orders, promotions and a reward for each FTL achievement "
-				+ "earned from now on. Every " + Career.SECTORS_PER_MONTH + " sectors your ships travel, a stipend of " + Career.STIPEND_BASE
+				+ "earned from now on. Every few sectors your ships travel (by difficulty), a stipend of " + Career.STIPEND_BASE
 				+ " scrap, plus 1 to 3 more for each achievement counted (by rank), is paid into the Cargo Hold."));
 		return p;
 	}
@@ -157,25 +162,74 @@ final class ImmersiveBriefing extends JDialog {
 					+ ". Its choices were fixed when it began."));
 		}
 		p.add(Box.createRigidArea(new Dimension(1, 8)));
-		p.add(heading("After a final victory (you can change this later in Settings)"));
-		String was = begun ? Career.finalVictory(immersiveRoot) : FinalVictory.NOTHING;
-		ButtonGroup vg = new ButtonGroup();
-		for (int i = 0; i < victory.length; i++) {
-			victory[i] = new JRadioButton(FinalVictory.label(FinalVictory.CHOICES[i]), FinalVictory.CHOICES[i].equals(was));
-			victory[i].setAlignmentX(Component.LEFT_ALIGNMENT);
-			vg.add(victory[i]);
-			p.add(victory[i]);
+		CareerRules was = begun ? Career.rules(immersiveRoot) : CareerRules.of(CareerRules.NORMAL);
+		p.add(heading(begun ? "Its difficulty: " + was.title() : "Difficulty (fixed once chosen)"));
+		JPanel pick = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		pick.setAlignmentX(Component.LEFT_ALIGNMENT);
+		ButtonGroup dg = new ButtonGroup();
+		String[] titles = {"Easy", "Normal", "Hard", "Custom"};
+		ActionListener chosen = new ActionListener() { public void actionPerformed(ActionEvent e) { syncLevels(); } };
+		for (int i = 0; i < difficulty.length; i++) {
+			difficulty[i] = new JRadioButton(titles[i], CareerRules.NAMES[i].equals(was.name) || (i == 3 && CareerRules.EARLIER.equals(was.name)));
+			difficulty[i].setEnabled(!begun);
+			difficulty[i].addActionListener(chosen);
+			dg.add(difficulty[i]);
+			pick.add(difficulty[i]);
+			pick.add(Box.createHorizontalStrut(14));
 		}
-		if (vg.getSelection() == null) victory[0].setSelected(true);
-		p.add(note("Ships are precious in Immersive Mode. A rescue brings her back as she was moments before the final engagement, "
-				+ "or The Federation Home Planet buys her for the museum at her full value; a reward pays her full value instead. "
-				+ "The Home Planet Station must be open while you play."));
-		p.add(Box.createRigidArea(new Dimension(1, 8)));
-		p.add(heading("Scrapping a ship (you can change this later in Settings)"));
-		scrapKeeps.setAlignmentX(Component.LEFT_ALIGNMENT);
-		p.add(scrapKeeps);
-		p.add(note("Otherwise her systems are scrapped with her. Every other rule is The Federation Home Planet's."));
+		pick.setMaximumSize(pick.getPreferredSize());
+		p.add(pick);
+		JPanel grid = new JPanel(new java.awt.GridBagLayout());
+		grid.setAlignmentX(Component.LEFT_ALIGNMENT);
+		grid.setBorder(BorderFactory.createEmptyBorder(6, 16, 6, 0));
+		java.awt.GridBagConstraints c = new java.awt.GridBagConstraints();
+		c.anchor = java.awt.GridBagConstraints.WEST;
+		c.insets = new java.awt.Insets(1, 0, 1, 12);
+		for (int i = 0; i < levels.length; i++) {
+			java.util.List<String> words = new java.util.ArrayList<String>();
+			java.util.List<Integer> lv = new java.util.ArrayList<Integer>();
+			for (int l = 0; l < 3; l++) if (!words.contains(CareerRules.LEVELS[i][l])) { words.add(CareerRules.LEVELS[i][l]); lv.add(l); }
+			if (i == CareerRules.VICTORY && was.level(i) == CareerRules.OWN_CHOICE) { words.add(was.words(i)); lv.add(CareerRules.OWN_CHOICE); }
+			levelOf[i] = new int[lv.size()];
+			for (int k = 0; k < levelOf[i].length; k++) levelOf[i][k] = lv.get(k);
+			levels[i] = new JComboBox<String>(words.toArray(new String[0]));
+			levels[i].setSelectedIndex(Math.max(0, lv.indexOf(was.level(i))));
+			c.gridx = 0; c.gridy = i;
+			grid.add(new JLabel(CareerRules.RULES[i]), c);
+			c.gridx = 1;
+			grid.add(levels[i], c);
+		}
+		grid.setMaximumSize(grid.getPreferredSize());
+		p.add(grid);
+		p.add(note(begun ? "Its rules were fixed when it began." : "Custom chooses each rule's level. Every other rule is The Federation Home Planet's, the same at every difficulty. "
+				+ "A rescue brings her back as she was moments before the final engagement; The Home Planet Station must be open while you play."));
+		syncLevels();
 		return p;
+	}
+	/** The difficulty's levels in the table; Custom leaves them to the player (and a career already begun, to no one). */
+	private void syncLevels() {
+		int d = chosen();
+		boolean custom = d == 3;
+		for (int i = 0; i < levels.length; i++) {
+			if (!custom && !begun) {
+				int k = 0;
+				while (k + 1 < levelOf[i].length && levelOf[i][k + 1] <= d) k++; // Commission offers two: Hard is Normal's
+				levels[i].setSelectedIndex(k);
+			}
+			levels[i].setEnabled(custom && !begun);
+		}
+	}
+	private int chosen() {
+		for (int i = 0; i < difficulty.length; i++) if (difficulty[i].isSelected()) return i;
+		return 1;
+	}
+	/** The difficulty chosen, with its levels. */
+	CareerRules rules() {
+		int d = chosen();
+		if (d < 3) return CareerRules.of(CareerRules.NAMES[d]);
+		int[] lv = new int[levels.length];
+		for (int i = 0; i < lv.length; i++) lv[i] = levelOf[i][Math.max(0, levels[i].getSelectedIndex())];
+		return new CareerRules(CareerRules.CUSTOM, lv);
 	}
 
 	private JPanel beforeYouBegin(final File profile) {
@@ -218,17 +272,13 @@ final class ImmersiveBriefing extends JDialog {
 			sb.append("• ").append(own.isSelected() ? "Its own FTL profile (a fresh one)" : "Your current FTL profile").append("<br>");
 			sb.append("• The stipend counts ").append(salaryAll.isSelected() && !own.isSelected() ? "every achievement in your profile" : "achievements earned from now on").append("<br>");
 		} else {
-			sb.append("• Your career continues as it began<br>");
+			sb.append("• Your career continues as it began (").append(Career.rules(immersiveRoot).title()).append(")");
 		}
-		for (int i = 0; i < victory.length; i++) if (victory[i].isSelected()) sb.append("• After a final victory: ").append(XmlText.text(FinalVictory.label(FinalVictory.CHOICES[i]))).append("<br>");
-		sb.append("• Scrapping a ship ").append(scrapKeeps.isSelected() ? "may strip her systems into the Cargo Bay" : "scraps her systems too");
+		if (begun) return sb.toString();
+		CareerRules r = rules();
+		sb.append("• Difficulty: ").append(r.title());
+		for (int i = 0; i < CareerRules.RULES.length; i++) sb.append("<br>&nbsp;&nbsp;&nbsp;").append(XmlText.text(CareerRules.RULES[i])).append(": ").append(XmlText.text(r.words(i)));
 		return sb.toString();
-	}
-
-	/** The final-victory choice made. */
-	String victoryChoice() {
-		for (int i = 0; i < victory.length; i++) if (victory[i].isSelected()) return FinalVictory.CHOICES[i];
-		return FinalVictory.NOTHING;
 	}
 
 	// ---- layout ----

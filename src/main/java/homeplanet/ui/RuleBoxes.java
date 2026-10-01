@@ -64,7 +64,7 @@ public class RuleBoxes {
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
 	private final JComponent[] locked = {tradeBox, journeyBox, sellBox, sellSystemsBox, costBox, percentBox, unlockBox, lockedBox, customLockedBox, notifyBox,
-			removalBox, removalLabel, journeyFeeBox, journeyFeeLabel};
+			removalBox, removalLabel, journeyFeeBox, journeyFeeLabel, scrapBox};
 	private final String[] tips = new String[locked.length];
 	private static final String SET_BY_IMMERSIVE = "Set by Immersive Mode";
 
@@ -124,7 +124,7 @@ public class RuleBoxes {
 				+ "<br>With Career messages (always, in Immersive Mode), also the welcome, promotions, achievement rewards and the stipend.</html>");
 		notifyBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Mode, which turns it on
 		careerBox.setToolTipText("Your rank rises as you unlock FTL's Federation Cruisers; achievements earned from now on are rewarded, and the stipend comes every "
-				+ homeplanet.parser.Career.SECTORS_PER_MONTH + " sectors. Your fleet and rules stay your own. (Always on in Immersive Mode.)");
+				+ homeplanet.parser.Career.SECTORS_PER_MONTH + " sectors. Your fleet and rules stay your own. (Always on in Immersive Mode, at its difficulty.)");
 		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 44, 0, 0)); // under Immersive Notifications, which it needs
 		careerTip = careerBox.getToolTipText();
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A Report for Reassignment doesn't reset it");
@@ -157,7 +157,8 @@ public class RuleBoxes {
 		immersiveButton.setEnabled(vaultOpen);
 		immersiveButton.setToolTipText(!vaultOpen ? "Once The Home Planet Station is set up, enter Immersive Mode from Settings"
 				: im ? "Back to your Sandbox fleet and rules (your Immersive career is kept)" : "The briefing: what Immersive Mode is, and your career's choices");
-		immersiveLabel.setText(im ? "   Immersive Mode is on: The Federation Home Planet's rules below are locked." : "   The station runs by The Federation Home Planet's rules, and your service becomes a career.");
+		homeplanet.parser.CareerRules career = im ? homeplanet.parser.CareerRules.current() : null;
+		immersiveLabel.setText(im ? "   Immersive Mode is on" + (career != null ? " (" + career.title() + ")" : "") + ": The Federation Home Planet's rules below are locked." : "   The station runs by The Federation Home Planet's rules, and your service becomes a career.");
 		if (!im && showingImmersive) showOwn();
 		showingImmersive = im;
 		if (im) {
@@ -166,13 +167,14 @@ public class RuleBoxes {
 			sellBox.setSelected(true);
 			sellSystemsBox.setSelected(true);
 			costBox.setSelected(true);
-			percentBox.setSelectedItem("100%");
+			percentBox.setSelectedItem(homeplanet.core.Economy.commissionPercent() + "%");
 			unlockBox.setSelected(true);
 			lockedBox.setSelected(true);
 			customLockedBox.setSelected(true);
 			notifyBox.setSelected(true);
-			removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, 0));
-			journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, homeplanet.core.Economy.IMMERSIVE_JOURNEY_FEE));
+			removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, homeplanet.core.Economy.removalFee()));
+			scrapBox.setSelected(homeplanet.core.Economy.stripAllowed());
+			journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, homeplanet.core.Economy.journeyFee()));
 		}
 		journeyFeeAfter.setEnabled(!im);
 		for (int i = 0; i < locked.length; i++) {
@@ -190,9 +192,8 @@ public class RuleBoxes {
 		// Immersive Mode: the ship a report earns goes by what it surrenders, not by this choice
 		freeBox.setEnabled(cost && !im);
 		freeLabel.setEnabled(cost && !im);
-		if (im) freeBox.setSelectedIndex(3); // Immersive Mode: Variable, always
-		else if (freeBox.getSelectedIndex() == 3 && !"variable".equals(HomePlanet.freeShip)) freeBox.setSelectedIndex(Math.max(0, java.util.Arrays.asList(FREE_KEYS).indexOf(HomePlanet.freeShip))); // back to the player's own
-		String byValue = "Set by Immersive Mode: Variable. " + FREE_TIPS[3];
+		if (im) freeBox.setSelectedIndex(Math.max(0, java.util.Arrays.asList(FREE_KEYS).indexOf(homeplanet.core.Economy.reassignment()))); // the career's
+		String byValue = "Set by Immersive Mode: " + freeBox.getSelectedItem() + (freeBox.getSelectedIndex() == 3 ? ". " + FREE_TIPS[3] : "");
 		freeBox.setToolTipText(im ? byValue : freeTip);
 		freeLabel.setToolTipText(im ? byValue : freeTip);
 		if (!im) unlockBox.setEnabled(cost);
@@ -214,6 +215,8 @@ public class RuleBoxes {
 		notifyBox.setSelected(r.notifications);
 		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
 		journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, HomePlanet.journeyFee));
+		scrapBox.setSelected(HomePlanet.stripAllowed);
+		freeBox.setSelectedIndex(Math.max(0, java.util.Arrays.asList(FREE_KEYS).indexOf(HomePlanet.freeShip)));
 	}
 	private static int indexOf(int[] list, int v) { for (int i = 0; i < list.length; i++) if (list[i] == v) return i; return 0; }
 
@@ -233,7 +236,7 @@ public class RuleBoxes {
 	public void describeChanges(java.util.List<String> changed) {
 		if (tradeBox.isSelected() != HomePlanet.storeRequirement) changed.add("Trading requires a station: " + tradeBox.isSelected());
 		if (journeyBox.isSelected() != HomePlanet.journeyStoreRequirement) changed.add("New Journey requires a station: " + journeyBox.isSelected());
-		if (scrapBox.isSelected() != HomePlanet.stripAllowed) changed.add("Stripping when scrapping: " + scrapBox.isSelected());
+		if (!HomePlanet.immersiveMode && scrapBox.isSelected() != HomePlanet.stripAllowed) changed.add("Stripping when scrapping: " + scrapBox.isSelected());
 		if (!HomePlanet.immersiveMode && removalFee() != HomePlanet.removalFee) changed.add("Refit removal: " + removalBox.getSelectedItem());
 		if (!HomePlanet.immersiveMode && journeyFee() != HomePlanet.journeyFee) changed.add("New Journey fee: " + journeyFeeBox.getSelectedItem());
 		if (sellBox.isSelected() != HomePlanet.sellSupplies) changed.add("Selling missiles and drone parts: " + sellBox.isSelected());
@@ -252,8 +255,6 @@ public class RuleBoxes {
 	/** Sets the rules from the boxes (the caller saves the config, and switches fleets first when Immersive Mode changes). */
 	public void apply() {
 		boolean unlockWasOn = HomePlanet.unlockFreeShips;
-		// the rules Immersive Mode leaves to the player
-		HomePlanet.stripAllowed = scrapBox.isSelected();
 		if (!HomePlanet.immersiveMode) HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()]; // (Immersive Mode shows its own, Variable)
 		if (!HomePlanet.immersiveMode) HomePlanet.careerMessages = careerBox.isSelected();
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)
@@ -267,6 +268,7 @@ public class RuleBoxes {
 			HomePlanet.commissionUnlockedOnly = lockedBox.isSelected();
 			HomePlanet.commissionCustomUnlockedOnly = customLockedBox.isSelected();
 			HomePlanet.immersiveNotifications = notifyBox.isSelected();
+			HomePlanet.stripAllowed = scrapBox.isSelected();
 			HomePlanet.removalFee = removalFee();
 			HomePlanet.journeyFee = journeyFee();
 		}

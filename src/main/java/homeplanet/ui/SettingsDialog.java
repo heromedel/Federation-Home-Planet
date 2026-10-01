@@ -42,6 +42,7 @@ public class SettingsDialog extends JDialog {
 	private final javax.swing.JRadioButton[] victoryButtons = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
 	private String victoryWas = homeplanet.parser.FinalVictory.choice();
 	private final JLabel victoryHeading = new JLabel();
+	private final javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
 
 	/** Shows the dialog. Returns true if the saves folder changed (so the Space Dock should reload). */
 	public static boolean open(java.awt.Component owner) {
@@ -192,7 +193,6 @@ public class SettingsDialog extends JDialog {
 		victoryHeading.setForeground(MenuTheme.GOLD);
 		victoryHeading.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
 		body.add(victoryHeading, next(c));
-		javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
 		for (int i = 0; i < victoryButtons.length; i++) {
 			String ch = homeplanet.parser.FinalVictory.CHOICES[i];
 			victoryButtons[i] = new javax.swing.JRadioButton(homeplanet.parser.FinalVictory.label(ch), ch.equals(victoryWas));
@@ -440,10 +440,17 @@ public class SettingsDialog extends JDialog {
 	/** The fleet in use's choice after a final victory (entering or leaving Immersive Mode here switches fleets). */
 	private void refreshVictory() {
 		victoryWas = homeplanet.parser.FinalVictory.choice();
-		victoryHeading.setText("After a final victory" + (homeplanet.vault.Vault.get().immersive ? " (Immersive fleet)" : ""));
-		for (int i = 0; i < victoryButtons.length; i++) victoryButtons[i].setSelected(homeplanet.parser.FinalVictory.CHOICES[i].equals(victoryWas));
+		homeplanet.parser.CareerRules career = homeplanet.parser.FinalVictory.fixed() != null ? homeplanet.parser.CareerRules.current() : null;
+		victoryHeading.setText("After a final victory" + (career != null ? " (Immersive fleet, " + career.title() + "): " + career.words(homeplanet.parser.CareerRules.VICTORY)
+				: homeplanet.vault.Vault.get().immersive ? " (Immersive fleet)" : ""));
+		victoryGroup.clearSelection();
+		for (int i = 0; i < victoryButtons.length; i++) {
+			victoryButtons[i].setSelected(homeplanet.parser.FinalVictory.CHOICES[i].equals(victoryWas));
+			victoryButtons[i].setEnabled(career == null); // the career's difficulty decides it
+		}
 	}
 	private String victoryChoice() {
+		if (homeplanet.parser.FinalVictory.fixed() != null) return victoryWas;
 		for (int i = 0; i < victoryButtons.length; i++) if (victoryButtons[i].isSelected()) return homeplanet.parser.FinalVictory.CHOICES[i];
 		return homeplanet.parser.FinalVictory.NOTHING;
 	}

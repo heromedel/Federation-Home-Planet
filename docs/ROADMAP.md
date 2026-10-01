@@ -320,6 +320,33 @@ from the career.
 - **Without a ship** (the Liaison's letter): commission a ship if the hold can pay; with a hull in the Junkyard,
   salvage her, or trade in or auction a ship that can't be repaired; Report for Reassignment as the last resort.
 
+## 14. Immersive difficulties — built (4B.59; harness checks in FleetT)
+
+Chosen on the briefing's career page, fixed for the career's life, and shown on the Space Dock heading and in
+Settings (the rules it sets are locked there). Custom picks any level of each rule. Kept in the career's
+`career.txt` (`difficulty`, and `rules` for Custom); read through `parser.CareerRules`.
+
+| Rule | Easy | Normal | Hard |
+|---|---|---|---|
+| After a final victory | save her, or the museum at full value | save her, or the museum at half value | the museum takes her, at half value |
+| New Journey | 200 | 500 | 1000 |
+| Report for Reassignment grants | Kestrel Type A | Variable | relief ship |
+| Refit removal | free | 25 | 50 |
+| Stripping when scrapping | allowed, free | allowed, 10 a system | not allowed |
+| Missiles and drone parts sell for | half | a quarter | 1 scrap each |
+| The stipend every | 2 sectors | 3 sectors | 4 sectors |
+| Commissioning costs | 75% | 100% | 100% |
+| Starting scrap | 50 | 25 | 10 |
+
+The same at every difficulty: stored systems sell at half, hull repairs 4 a point, the stipend's 20 plus rank,
+commissions cost scrap, station requirements, locked models, free unlock ships, rank clearances, a final
+reassignment, a Kestrel Type A to start.
+
+A career from before difficulties becomes **Custom (from before difficulties)**, written down once with what it had:
+its final victory choice (still changeable in Settings), journeys 200, Variable, removal free, stripping as Settings
+had it (free), a quarter, every 4 sectors, full price. On Hard the museum letter ("Into the Museum") replaces the
+rescue offer.
+
 ## Not doing
 
 - **Thruster glow for designs.** FTL lights the engines of some of its own ships (the Kestrel's, when piloted and

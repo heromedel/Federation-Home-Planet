@@ -45,10 +45,8 @@ public final class ImmersiveDialog {
 			}
 			HomePlanet.immersiveMode = true;
 			HomePlanet.applyImmersive();
-			HomePlanet.stripAllowed = brief.scrapKeeps.isSelected(); // the rule Immersive Mode leaves to the player
 			HomePlanet.saveConfig();
-			if (!begun) Career.start(brief.salaryAll.isSelected() && !ownProfile, ownProfile);
-			Career.setFinalVictory(Vault.get().root, brief.victoryChoice());
+			if (!begun) Career.start(brief.salaryAll.isSelected() && !ownProfile, ownProfile, brief.rules());
 			UnlockGrants.returning(Unlocks.read()); // a new career starts its record here
 			homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());
 			Vault.get().takeStock();

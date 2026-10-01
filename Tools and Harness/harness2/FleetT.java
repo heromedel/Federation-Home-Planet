@@ -7,9 +7,53 @@ public class FleetT { public static void main(String[] a) throws Exception {
  fleets(v);
  detection();
  rules();
+ difficulties();
  endCareer();
  Setup.done();
 }
+ /** Difficulties: each sets its rules, Custom any level of each, and a career from before them keeps what it had. */
+ static void difficulties() throws Exception {
+  Vault v = Vault.get();
+  if (!v.immersive) v = Vault.switchFleet(true);
+  HomePlanet.immersiveMode = true; HomePlanet.applyImmersive();
+  File career = new File(v.root, "career.txt");
+  String[] names = {CareerRules.EASY, CareerRules.NORMAL, CareerRules.HARD};
+  int[][] want = {{200, 0, 0, 50, 2, 75, 50}, {500, 25, 10, 25, 3, 100, 25}, {1000, 50, -1, 0, 4, 100, 10}};
+  String[] reassign = {FreeCommand.KESTREL, FreeCommand.VARIABLE, FreeCommand.RELIEF};
+  String[] victory = {FinalVictory.RESCUE, FinalVictory.RESCUE, FinalVictory.MUSEUM};
+  int[] museum = {100, 50, 50};
+  for (int d = 0; d < 3; d++) {
+   career.delete();
+   int before = v.storageScrap();
+   Career.start(false, false, CareerRules.of(names[d]));
+   int[] w = want[d];
+   boolean ok = Economy.journeyFee() == w[0] && Economy.removalFee() == w[1] && (w[2] < 0 ? !Economy.stripAllowed() : Economy.stripAllowed() && Economy.stripFee() == w[2])
+     && Economy.supplyPercent() == w[3] && Career.sectorsPerMonth() == w[4] && Economy.commissionPercent() == w[5] && v.storageScrap() - before == w[6]
+     && Economy.reassignment().equals(reassign[d]) && FinalVictory.choice().equals(victory[d]) && FinalVictory.museumPercent() == museum[d];
+   Setup.chk("D: " + names[d] + ": its fees, prices, stipend, starting scrap, reassignment and final victory", ok);
+  }
+  Setup.chk("D: Hard: missiles and drone parts sell for 1 scrap each", Economy.supplySale(5, Pricing.MISSILE) == 5);
+  career.delete();
+  Career.start(false, false, new CareerRules(CareerRules.CUSTOM, new int[] {2, 0, 2, 1, 0, 2, 0, 0, 1}));
+  Setup.chk("D: Custom: each rule at its own level", "Custom".equals(CareerRules.current().title()) && FinalVictory.choice().equals(FinalVictory.MUSEUM)
+    && Economy.journeyFee() == 200 && Economy.reassignment().equals(FreeCommand.RELIEF) && Economy.removalFee() == 25 && Economy.stripFee() == 0
+    && Economy.supplySale(5, Pricing.MISSILE) == 5 && Career.sectorsPerMonth() == 2 && Economy.commissionPercent() == 75);
+  // a career from before difficulties: no difficulty in its career.txt
+  Properties p = new Properties(); p.setProperty("salaryAll", "false"); p.setProperty("ownProfile", "false"); p.setProperty("finalVictory", FinalVictory.REWARD);
+  p.setProperty("paidMonths", "0"); p.setProperty("sectorsAtStart", "0");
+  java.io.StringWriter sw = new java.io.StringWriter(); p.store(sw, ""); SafeFiles.writeText(career, sw.toString(), false);
+  Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
+  HomePlanet.stripAllowed = true;
+  CareerRules e = Career.rules(v.root);
+  Setup.chk("D: a career from before difficulties keeps its rules: journeys 200, Variable, free removal and stripping, 25%, every 4 sectors, full price",
+    CareerRules.EARLIER.equals(e.name) && e.journeyFee() == 200 && FreeCommand.VARIABLE.equals(e.reassignment()) && e.removalFee() == 0 && e.stripAllowed() && e.stripFee() == 0
+    && e.supplyPercent() == 25 && e.stipendSectors() == 4 && e.commissionPercent() == 100);
+  HomePlanet.stripAllowed = false;
+  Setup.chk("D: and its own final victory choice, written down once", FinalVictory.choice().equals(FinalVictory.REWARD) && FinalVictory.fixed() == null
+    && Career.rules(v.root).stripAllowed() && new String(SafeFiles.read(career), "UTF-8").contains("difficulty=earlier"));
+  HomePlanet.leaveImmersive();
+  Vault.switchFleet(false);
+ }
  /** Ending the Immersive career: the folder zipped into old-immersive-careers, then gone; the normal fleet untouched. */
  static void endCareer() throws Exception {
   Vault v = Vault.get();

@@ -103,7 +103,23 @@ The Rebel Flagship has broken off her assault and withdrawn. The line held. The 
 
 Recovery teams reached the {ship} in time, and The Home Planet Station has restored her as she was moments before the final engagement.
 
-The Federation Home Planet makes an offer: her full value, {value} scrap, to place her in the Federation museum. Or keep her, and she will be waiting at the Space Dock for her next journey. The decision is yours.
+The Federation Home Planet makes an offer: {worth}, {value} scrap, to place her in the Federation museum. Or keep her, and she will be waiting at the Space Dock for her next journey. The decision is yours.
+
+~ Federation Fleet Command
+
+== museum
+from: Federation Fleet Command
+subject: Into the Museum
+
+{rank},
+
+Dispatch from Federation Fleet Command.
+
+The Rebel Flagship has broken off her assault and withdrawn. The line held. The war continues.
+
+Recovery teams reached the {ship} in time. By order of The Federation Home Planet she will not fly again: she has been placed in the Federation museum, where her service will be remembered.
+
+In recognition, {worth}, {value} scrap, has been granted to The Home Planet Station. It is waiting in the Station's Cargo Hold.
 
 ~ Federation Fleet Command
 

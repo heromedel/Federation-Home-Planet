@@ -38,20 +38,21 @@ public final class FreeCommand {
 		String k = v.freeCommandShip();
 		if (k != null) return k;
 		if (!v.freeCommandReassigned()) return KESTREL; // a new fleet or career starts with a Kestrel Type A, as FTL does
-		return VARIABLE.equals(HomePlanet.freeShip) ? KESTREL : HomePlanet.freeShip; // (a report from before Variable recorded nothing)
+		String k2 = homeplanet.core.Economy.reassignment();
+		return VARIABLE.equals(k2) ? KESTREL : k2; // (a report from before Variable recorded nothing)
 	}
 	/** The free ship in words, for messages and the Space Dock: "a Kestrel Type A", "any ship you choose", "a Federation relief ship". */
 	public static String words(String kind) {
 		return ANY.equals(kind) ? "any ship you choose" : RELIEF.equals(kind) ? "a Federation relief ship"
 				: VARIABLE.equals(kind) ? "a ship by what you surrender" : "a Kestrel Type A";
 	}
-	/** The free ship a Report for Reassignment would earn now: in Immersive Mode by what it surrenders, otherwise Settings'. */
+	/** The free ship a Report for Reassignment would earn now: Settings' or the career's, or, for Variable, by what it surrenders. */
 	public static String onReport(Vault v) {
-		return byValue(v) ? earned(surrenderValue(v)) : HomePlanet.freeShip;
+		return byValue(v) ? earned(surrenderValue(v)) : homeplanet.core.Economy.reassignment();
 	}
-	/** Does a report earn its ship by what it surrenders? Always in Immersive Mode; otherwise when Settings say Variable. */
+	/** Does a report earn its ship by what it surrenders (Variable, in Settings or the career's difficulty)? */
 	public static boolean byValue(Vault v) {
-		return v.immersive || VARIABLE.equals(HomePlanet.freeShip);
+		return VARIABLE.equals(homeplanet.core.Economy.reassignment());
 	}
 	/** The ship a Report for Reassignment earns in Immersive Mode, by the value surrendered. */
 	public static String earned(int value) {

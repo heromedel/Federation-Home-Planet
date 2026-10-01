@@ -191,16 +191,17 @@ public class TransT { public static void main(String[] a) throws Exception {
   v.takeStock();
   int sectors = v.sectorsSeen();
   SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
-  g.setSectorNumber(g.getSectorNumber() + 9); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 40);
+  int month = Career.sectorsPerMonth(), jump = 2 * month + 1; // two months and a sector, at the career's difficulty
+  g.setSectorNumber(g.getSectorNumber() + jump); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 40);
   SaveHelper.writeSavedGame(v.continueFile(), g);
   v.takeStock();
-  Setup.chk("S: FTL's progress is counted in sectors", v.sectorsSeen() == sectors + 9);
+  Setup.chk("S: FTL's progress is counted in sectors", v.sectorsSeen() == sectors + jump);
   int scrap = v.storageScrap();
   int achievements = 5; // earned in Immersive Mode above: TOUGH_SHIP, NO_BUYING, MANTIS_SLAUGHTER, NO_UPGRADES, SCRAP
   int each = Career.stipend(UnlockGrants.rank(Unlocks.read()), achievements);
   Transmissions.check();
   Transmissions.Message m = find("stipend:");
-  Setup.chk("S: 9 sectors pay 2 months in one message", m != null && m.body.contains("stipend for the last 2 months") && m.body.contains((2 * each) + " scrap") && v.storageScrap() == scrap + 2 * each);
+  Setup.chk("S: " + jump + " sectors (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last 2 months") && m.body.contains((2 * each) + " scrap") && v.storageScrap() == scrap + 2 * each);
   System.out.println("Stipend: " + each + " a month (Captain, 5 achievements): " + m.body.replace("\n", " / "));
   Transmissions.check();
   int stipends = 0; for (Transmissions.Message x : Transmissions.load()) if (Transmissions.isStipend(x)) stipends++;

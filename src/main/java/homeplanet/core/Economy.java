@@ -13,30 +13,59 @@ public final class Economy {
 	public static final int[] REMOVAL_FEES = {NOT_ALLOWED, 0, 25, 50};
 	/** New Journey fees Sandbox Mode can choose. */
 	public static final int[] JOURNEY_FEES = {0, 200, 500, 1000};
-	/** Immersive Mode's New Journey fee. */
-	public static final int IMMERSIVE_JOURNEY_FEE = 200;
 	/** Stored systems sell for half their price and upgrades, in every mode. */
 	public static final int SYSTEM_SALE_PERCENT = 50;
 
+	/** The Immersive career's difficulty, or null in Sandbox Mode. */
+	private static homeplanet.parser.CareerRules career() { return HomePlanet.immersiveMode ? homeplanet.parser.CareerRules.current() : null; }
+
 	/** What taking a system off at Refit costs, paid by the boarded ship, or {@link #NOT_ALLOWED}. */
-	public static int removalFee() { return HomePlanet.immersiveMode ? 0 : HomePlanet.removalFee; }
+	public static int removalFee() {
+		homeplanet.parser.CareerRules c = career();
+		return c != null ? c.removalFee() : HomePlanet.immersiveMode ? 0 : HomePlanet.removalFee;
+	}
 	/** Scrapping a ship may strip her systems into the Cargo Bay (at {@link #stripFee} each). */
-	public static boolean stripAllowed() { return HomePlanet.stripAllowed; }
-	/** Stripping one system when scrapping: a discount on Refit's removal fee (10 for 25, 20 for 50; 10 where Refit doesn't allow it). */
+	public static boolean stripAllowed() {
+		homeplanet.parser.CareerRules c = career();
+		return c != null ? c.stripAllowed() : HomePlanet.stripAllowed;
+	}
+	/** Stripping one system when scrapping: in Sandbox Mode a discount on Refit's removal fee (10 for 25, 20 for 50; 10 where Refit doesn't allow it). */
 	public static int stripFee() {
+		homeplanet.parser.CareerRules c = career();
+		if (c != null) return c.stripFee();
 		int r = removalFee();
 		return r == 0 ? 0 : r == 50 ? 20 : 10;
 	}
 	/** What plotting a New Journey costs, paid from the Cargo Hold. */
-	public static int journeyFee() { return HomePlanet.immersiveMode ? IMMERSIVE_JOURNEY_FEE : HomePlanet.journeyFee; }
-	/** Missiles and drone parts sell at this share of the store price: half, or a quarter in Immersive Mode. */
-	public static int supplyPercent() { return HomePlanet.immersiveMode ? 25 : 50; }
+	public static int journeyFee() {
+		homeplanet.parser.CareerRules c = career();
+		return c != null ? c.journeyFee() : HomePlanet.immersiveMode ? 200 : HomePlanet.journeyFee;
+	}
+	/** Missiles and drone parts sell at this share of the store price: half in Sandbox Mode, the difficulty's in a career (0: 1 scrap each). */
+	public static int supplyPercent() {
+		homeplanet.parser.CareerRules c = career();
+		return c != null ? c.supplyPercent() : HomePlanet.immersiveMode ? 25 : 50;
+	}
 	/** What n missiles or drone parts at this store price sell for. */
-	public static int supplySale(int n, int storePrice) { return n * storePrice * supplyPercent() / 100; }
+	public static int supplySale(int n, int storePrice) {
+		int p = supplyPercent();
+		return p <= 0 ? n : n * storePrice * p / 100;
+	}
 	/** How missiles and drone parts sell, for tooltips. */
 	public static String supplyShare() {
 		int p = supplyPercent();
-		return p == 50 ? "half the store price" : p + "% of the store price, set by Immersive Mode";
+		if (!HomePlanet.immersiveMode) return "half the store price";
+		return (p <= 0 ? "1 scrap each" : p == 50 ? "half the store price" : p + "% of the store price") + ", set by your career";
+	}
+	/** What a Report for Reassignment grants: FreeCommand's kestrel, relief, any or variable (Settings', or the career's). */
+	public static String reassignment() {
+		homeplanet.parser.CareerRules c = career();
+		return c != null ? c.reassignment() : HomePlanet.immersiveMode ? homeplanet.parser.FreeCommand.VARIABLE : HomePlanet.freeShip;
+	}
+	/** Commissioning costs this share of her price (Settings', or the career's). */
+	public static int commissionPercent() {
+		homeplanet.parser.CareerRules c = career();
+		return c != null ? c.commissionPercent() : HomePlanet.commissionPercent;
 	}
 
 	/** A removal fee as Settings words it. */
