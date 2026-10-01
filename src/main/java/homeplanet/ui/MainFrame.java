@@ -67,13 +67,8 @@ public class MainFrame extends JFrame {
 		setContentPane(contentPane);
 		contentPane.add(tasksPane, BorderLayout.CENTER);
 		spaceDock = new SpaceDockUI(this);
-		// FTL ended a run while the Space Dock is showing (FTL in a window, say): she leaves at once, no Refresh needed
-		homeplanet.core.SaveWatcher.onGone = new Runnable() { public void run() {
-			// only a loss: the station's own docking deletes continue.sav too, but then no ship is boarded any more
-			homeplanet.vault.Vault v = homeplanet.vault.Vault.isOpen() ? homeplanet.vault.Vault.get() : null;
-			boolean lost = v != null && v.boarded() != null && !v.continueFile().exists();
-			if (atSpaceDock && lost && homeplanet.core.SaveWatcher.takeGone()) spaceDock.refresh(); // (FTL may still be open, on its game-over screen: reading is safe)
-		} };
+		// a lost ship is judged when the player comes back to the station (windowActivated above), never while FTL is
+		// saving: FTL rewrites continue.sav by deleting it first, and a look in that instant would lose her
 		tasksPane.add(new SpaceDockScrollPane(this, spaceDock), "dock");
 		cargoBay = new CargoBayUI(this);
 		JScrollPane cargoBayPane = new JScrollPane(cargoBay);

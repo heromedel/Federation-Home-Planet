@@ -50,6 +50,25 @@ public class ChainT { public static void main(String[] a) throws Exception {
  v.dock(); v.board(k);
  Setup.chk("C: a ship with crew launches as ever", HomePlanet.noOneAboard(v.continueFile()) == null);
 
+ // FTL rewrites continue.sav by deleting it first: a look in that moment mustn't lose her for good
+ v.takeStock();
+ Ship was = v.boarded();
+ byte[] save = SafeFiles.read(v.continueFile());
+ v.continueFile().delete();
+ v.reload();
+ Setup.chk("G: continue.sav gone for a moment: recorded lost", v.boarded() == null);
+ SafeFiles.write(v.continueFile(), save);
+ v.reload(); v.takeStock();
+ Ship back = v.boarded();
+ Setup.chk("G: FTL writes her back: she's boarded again, the same ship, not a stranger, not lost",
+   back != null && back.id.equals(was.id) && !back.stranger && !new File(new File(v.historyDir(), was.id), "fate.txt").exists());
+ // a real loss followed by a different ship (FTL's New Game) is still a stranger
+ v.continueFile().delete(); v.reload();
+ SavedGameParser.SavedGameState other = Commission.build("PLAYER_SHIP_STEALTH", "Somebody Else", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(9));
+ SaveHelper.writeSavedGame(v.continueFile(), other);
+ v.reload(); v.takeStock();
+ Setup.chk("G: another ship in continue.sav is still an uncommissioned stranger", v.boarded() != null && v.boarded().stranger && !v.boarded().id.equals(was.id));
+
  // the paid claim, on the other branch (a fresh fleet's own letters)
  paidClaim(game, new File(work, "tool"));
  Setup.done();
