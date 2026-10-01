@@ -106,6 +106,10 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private final Lamp myLamp = new Lamp(), theirLamp = new Lamp();
 	private final FtlButton acceptBtn = new FtlButton("Accept", FtlFont.MENU, MW - 120, 40);
 	private final FtlButton clearBtn = new FtlButton("Clear my offer", FtlFont.BODY, 160, 22);
+	private final CargoParts.RowList messages = new CargoParts.RowList();
+	private final List<CargoParts.Row> messageRows = new ArrayList<CargoParts.Row>();
+	private final JTextField message = new JTextField();
+	private final FtlButton sendBtn = new FtlButton("Send", FtlFont.BODY, 92, 26);
 
 	// ---- their side ----
 	private final CardLayout rightCards = new CardLayout();
@@ -313,31 +317,53 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		takeBackBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { takeBack(); } });
 		open.add(takeBackBtn);
 		myOffer.setEmptyText("Nothing offered");
-		myOffer.setBounds(0, 48, MW, 150);
+		myOffer.setBounds(0, 48, MW, 115);
 		myOffer.onChange(new Runnable() { public void run() { updateButtons(); } });
 		myOffer.onDoubleClick(new Runnable() { public void run() { takeBack(); } });
 		open.add(myOffer);
-		theyOfferLabel.setBounds(0, 208, 150, 16);
+		theyOfferLabel.setBounds(0, 170, 150, 16);
 		open.add(theyOfferLabel);
-		theirShipLabel.setBounds(150, 208, MW - 150, 16);
+		theirShipLabel.setBounds(150, 170, MW - 150, 16);
 		open.add(theirShipLabel);
 		theirOffer.setEmptyText("Nothing offered");
-		theirOffer.setBounds(0, 228, MW, 150);
+		theirOffer.setBounds(0, 190, MW, 115);
 		theirOffer.onDoubleClick(new Runnable() { public void run() { info((Line) theirOffer.selectedValue()); } });
 		open.add(theirOffer);
-		notice.setBounds(0, 386, MW, 28);
+		notice.setBounds(0, 312, MW, 28);
 		open.add(notice);
-		myLamp.setBounds(0, 422, MW / 2 - 4, 32);
+		myLamp.setBounds(0, 346, MW / 2 - 4, 30);
 		open.add(myLamp);
-		theirLamp.setBounds(MW / 2 + 4, 422, MW / 2 - 4, 32);
+		theirLamp.setBounds(MW / 2 + 4, 346, MW / 2 - 4, 30);
 		open.add(theirLamp);
-		acceptBtn.setBounds(60, 466, MW - 120, 40);
+		acceptBtn.setBounds(60, 384, MW - 120, 36);
 		acceptBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pressAccept(); } });
 		open.add(acceptBtn);
-		clearBtn.setBounds(0, 518, 160, 22);
+		clearBtn.setBounds(0, 426, 160, 22);
 		clearBtn.setToolTipText("Take everything back out of your offer");
 		clearBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { if (session != null) session.clearMine(); } });
 		open.add(clearBtn);
+		// messages between the two commanders: the latest at the bottom, a line to write in under them
+		messages.setEmptyText("No messages");
+		messages.setBounds(0, 456, MW, 92);
+		open.add(messages);
+		message.setBounds(0, 554, MW - 100, 26);
+		message.setBackground(new Color(16, 20, 26));
+		message.setForeground(CargoParts.TEXT);
+		message.setCaretColor(CargoParts.GOLD);
+		message.setFont(message.getFont().deriveFont(java.awt.Font.PLAIN, 13f));
+		message.setBorder(javax.swing.BorderFactory.createCompoundBorder(javax.swing.BorderFactory.createLineBorder(CargoParts.BOX_LINE),
+				javax.swing.BorderFactory.createEmptyBorder(0, 6, 0, 6)));
+		message.setDocument(new javax.swing.text.PlainDocument() {
+			@Override public void insertString(int offs, String str, javax.swing.text.AttributeSet a) throws javax.swing.text.BadLocationException {
+				if (str != null && getLength() + str.length() <= Session.SAY_MAX) super.insertString(offs, str, a);
+			}
+		});
+		message.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { sendMessage(); } });
+		open.add(message);
+		sendBtn.setBounds(MW - 92, 554, 92, 26);
+		sendBtn.setToolTipText("Send the message to the other commander (Enter)");
+		sendBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { sendMessage(); } });
+		open.add(sendBtn);
 		middle.add(open, "open");
 	}
 
@@ -543,10 +569,11 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 						foundList = f;
 						List<CargoParts.Row> rows = new ArrayList<CargoParts.Row>();
 						for (Beacon.Found x : f) {
-							boolean same = x.version.equals(HomePlanet.APP_VERSION);
+							boolean same = x.compatible();
 							String mode = Vault.title(x.mode);
-							rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), same ? mode : "version " + x.version, x,
-									same ? x.title + "'s Home Planet Station (" + mode + "), at " + x.host + ":" + x.port : "A different version of Federation Home Planet (" + x.version + "): both stations need the same one", !same));
+							rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), same ? mode : "needs an update", x,
+									same ? x.title + "'s Home Planet Station (" + mode + ", Federation Home Planet " + x.version + "), at " + x.host + ":" + x.port
+											: "Federation Home Planet " + x.version + ": its Long Range Comm. is " + (x.protocol < homeplanet.comm.Session.PROTOCOL ? "older" : "newer") + " than this station's. One of you needs to update to trade.", !same));
 						}
 						found.setRows(rows);
 						if (!rows.isEmpty()) found.list.setSelectedIndex(0);
@@ -669,6 +696,9 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		session = s;
 		lastShow = null;
 		notice.set("");
+		messageRows.clear();
+		messages.setRows(messageRows);
+		message.setText("");
 		who.setText(s.peer.title);
 		connectedTo.setText("CONNECTED TO  (" + s.peer.modeTitle().toUpperCase() + ")");
 		theyOfferLabel.setText(shortName(s.peer.title).toUpperCase() + " OFFERS");
@@ -702,11 +732,39 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 
 	public void changed() { refreshAll(); }
 	public void notice(String text) { notice.set(text); }
+	public void said(String who, String text) { addMessage(shortName(who), text, false); }
+	/** A line in the message log: who, what (cut to fit; the whole of it on hover), and when. */
+	private void addMessage(String who, String text, boolean mine) {
+		String time = new java.text.SimpleDateFormat("HH:mm").format(new java.util.Date());
+		messageRows.add(new CargoParts.Row(null, who + ": " + text, time, null, "<html><div style='width:320px'>" + who + ": " + htmlText(text) + "</div></html>", mine));
+		while (messageRows.size() > 100) messageRows.remove(0);
+		messages.setRows(messageRows);
+		messages.list.ensureIndexIsVisible(messageRows.size() - 1);
+	}
+	private static String htmlText(String s) { return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"); }
+	private void sendMessage() {
+		if (session == null) return;
+		String t = message.getText();
+		if (!session.say(t)) return;
+		addMessage("You", Line.text(t, Session.SAY_MAX), true);
+		message.setText("");
+	}
 	public void problem(String text) { JOptionPane.showMessageDialog(this, text, "Long Range Comm.", JOptionPane.WARNING_MESSAGE); }
 	public void settled(Exchange.Record r) {
 		lastShow = null;
 		if (Exchange.DONE.equals(r.state)) help("Trade with " + r.peerTitle + " complete. Received " + r.inWords() + "; gave " + r.outWords() + ".");
 		else help("Trade with " + r.peerTitle + " called off: " + r.outWords() + " came back: " + Exchange.whereTheyGo(r.out) + ".");
+		if (r.needsPatch) {
+			// a custom ship's blueprint came with her: FTL needs it before she can fly
+			final Exchange.Record rec = r;
+			SwingUtilities.invokeLater(new Runnable() { public void run() {
+				Object[] options = {"Patch Now", "Later"};
+				int p = JOptionPane.showOptionDialog(LongRangeCommUI.this, "A ship from " + rec.peerTitle + " flies on a blueprint of her own, and it is now in the "
+						+ homeplanet.parser.CompanionMod.TITLE + ".\nSend it to FTL via Slipstream before you board her.", "Long Range Comm.",
+						JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+				if (p == 0) PatchDialog.open(LongRangeCommUI.this);
+			} });
+		}
 		readSource();
 		refreshAll();
 	}
@@ -1002,9 +1060,14 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		clearBtn.setEnabled(open && session.mine().size() > 0);
 		acceptBtn.setEnabled(session != null && !session.isOver() && !session.exchanging() && (session.iAccepted() || session.whyNotAccept() == null));
 		disconnectBtn.setEnabled(session != null);
+		boolean chat = session != null && !session.isOver() && session.peer.chat;
+		message.setEnabled(chat);
+		sendBtn.setEnabled(chat);
+		String chatTip = session != null && !session.peer.chat ? session.peer.title + "'s station can't show messages (an older version)" : "A message to the other commander (" + Session.SAY_MAX + " letters at most)";
+		message.setToolTipText(chatTip);
 		boolean idle = session == null && !hailing;
 		Object f = found.selectedValue();
-		hailBtn.setEnabled(idle && f instanceof Beacon.Found && ((Beacon.Found) f).version.equals(HomePlanet.APP_VERSION));
+		hailBtn.setEnabled(idle && f instanceof Beacon.Found && ((Beacon.Found) f).compatible());
 		hailAddrBtn.setEnabled(idle);
 		establishBtn.setEnabled(idle);
 		sourceBtn.setEnabled(session == null || !session.exchanging());

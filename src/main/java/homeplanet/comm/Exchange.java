@@ -47,6 +47,8 @@ public final class Exchange {
 		public boolean leader;
 		public List<Line> out = new ArrayList<Line>(), in = new ArrayList<Line>();
 		public File file;
+		/** Set when a trade brought a blueprint new to this station: the mod was rebuilt, and needs sending to FTL. */
+		public transient boolean needsPatch;
 		public String outWords() { return words(out); }
 		public String inWords() { return words(in); }
 	}
@@ -132,16 +134,16 @@ public final class Exchange {
 			case CREW: return net.blerf.ftl.parser.DataManager.get().getCrews().containsKey(l.crew.getRace().getId()) ? null
 					: "Crew of this race aren't in this station's game data (a mod?)";
 			case SHIP: return shipRefused(l.id);
+			case OTHER: return "This station doesn't know what this is: the other station's Long Range Comm. is newer";
 			default: return null;
 		}
 	}
 	/**
-	 * Why a ship of this blueprint can't change hands, or null. A remodel's or a design's blueprint is the station's
-	 * own, numbered there: another station may have a different ship under the same id, so those don't travel yet.
+	 * Why a ship of this blueprint can't change hands, or null. A remodel's or a design's blueprint travels with her
+	 * (homeplanet.parser.ShipPapers); any other must be in this station's game data.
 	 */
 	public static String shipRefused(String blueprint) {
-		if (homeplanet.parser.CompanionMod.isRemodelId(blueprint) || blueprint.contains("DESIGN_"))
-			return "Remodeled and designed ships can't be traded yet: their blueprints belong to the station that drew them up";
+		if (homeplanet.parser.ShipPapers.custom(blueprint)) return null;
 		if (!net.blerf.ftl.parser.DataManager.get().getShips().containsKey(blueprint))
 			return "Her blueprint (" + blueprint + ") isn't in this station's game data";
 		return null;
@@ -251,17 +253,37 @@ public final class Exchange {
 		Line l = null;
 		for (Line x : r.in) if (x.n == n && x.kind == Line.Kind.SHIP) l = x;
 		if (l == null) throw new IOException("A ship arrived that wasn't in the offer");
-		SavedGameState gs = readShip(pkg);
-		if (!gs.getPlayerShipBlueprintId().equals(l.id)) throw new IOException(l.name + " isn't the ship that was offered");
-		String why = shipRefused(gs.getPlayerShipBlueprintId());
-		if (why != null) throw new IOException(l.name + ": " + why);
+		if (homeplanet.parser.ShipPapers.custom(l.id)) {
+			// her save can't be read yet (her blueprint isn't here, or a different ship has its number): her papers are checked instead
+			Map<String, byte[]> files = Vault.unpack(pkg);
+			try { homeplanet.parser.ShipPapers.check(files, l.id); }
+			catch (IOException e) { throw new IOException(l.name + ": " + e.getMessage()); }
+			if (!namesBlueprint(files.get("ship.sav"), l.id)) throw new IOException(l.name + " isn't the ship that was offered");
+		} else {
+			SavedGameState gs = readShip(pkg);
+			if (!gs.getPlayerShipBlueprintId().equals(l.id)) throw new IOException(l.name + " isn't the ship that was offered");
+			String why = shipRefused(gs.getPlayerShipBlueprintId());
+			if (why != null) throw new IOException(l.name + ": " + why);
+		}
 		File f = pkgFile(r, false, n);
 		f.getParentFile().mkdirs();
 		SafeFiles.write(f, pkg);
 	}
+	/** Does this save name this blueprint (scanned, not read: the blueprint may not be here yet)? */
+	private static boolean namesBlueprint(byte[] sav, String bpId) throws IOException {
+		dir().mkdirs();
+		File tmp = File.createTempFile("incoming-", ".sav", dir());
+		try {
+			SafeFiles.write(tmp, sav);
+			List<String> ids = homeplanet.parser.Retrofit.blueprintIds(tmp);
+			return ids != null && ids.contains(bpId);
+		} finally {
+			tmp.delete();
+		}
+	}
 	/** The save in a ship's package, read (from a temporary file beside the trades). */
-	static SavedGameState readShip(byte[] pkg) throws IOException {
-		byte[] sav = Vault.unpack(pkg).get("ship.sav");
+	static SavedGameState readShip(byte[] pkg) throws IOException { return readSave(Vault.unpack(pkg).get("ship.sav")); }
+	static SavedGameState readSave(byte[] sav) throws IOException {
 		dir().mkdirs();
 		File tmp = File.createTempFile("incoming-", ".sav", dir());
 		try {
@@ -336,8 +358,24 @@ public final class Exchange {
 			File f = pkgFile(r, false, l.n);
 			if (!f.isFile()) throw new IOException(l.name + "'s papers never arrived from " + r.peerTitle + "'s station");
 			byte[] pkg = SafeFiles.read(f);
-			v.receive(pkg, readShip(pkg), r.id + "#" + l.n, r.peerTitle);
+			Map<String, byte[]> files = Vault.unpack(pkg);
+			byte[] sav = files.get("ship.sav");
+			homeplanet.parser.ShipPapers.Installed papers = null;
+			if (homeplanet.parser.ShipPapers.custom(l.id)) {
+				papers = homeplanet.parser.ShipPapers.install(files, sav, l.id); // her blueprint fitted in here, her save renamed to match
+				sav = papers.save;
+			}
+			SavedGameState gs;
+			try {
+				gs = readSave(sav);
+			} catch (IOException e) {
+				if (papers != null && papers.newBlueprint) homeplanet.parser.ShipPapers.uninstall(papers.bpId);
+				throw new IOException(l.name + " couldn't be read on her blueprint here: " + e.getMessage());
+			}
+			v.receive(pkg, sav, gs, r.id + "#" + l.n, r.peerTitle);
+			if (papers != null && papers.newBlueprint) r.needsPatch = true;
 		}
+		if (r.needsPatch) homeplanet.core.Slipstream.writeMod(); // her blueprint goes into the Federation Home Planet Mod
 		settle(r, r.in, DONE);
 		for (Line l : r.out) if (l.kind == Line.Kind.SHIP) v.transferred(l.from, l.name, r.peerTitle);
 		cleanUp(r);
