@@ -4,6 +4,7 @@
 # (kestrel, stealth, mantis, engi, federation, slug, rock, zoltan, crystal, lanius) are whole names for that model's
 # ships: a roll for one of them picks from its own section some of the time, and from the Federation's names the rest.
 # Names longer than 20 letters are skipped (FTL may cut them off), and so are names a ship in the fleet already has.
+# The dice don't repeat a name in the same Commission window until they run out.
 
 == single
 Perseverance
@@ -36,6 +37,138 @@ Hold Fast
 Better Days
 Liberty
 Faithful
+Valiant
+Intrepid
+Relentless
+Indomitable
+Unyielding
+Dauntless
+Forbearance
+Providence
+Serendipity
+Reckoning
+Clemency
+Constancy
+Diligence
+Audacity
+Integrity
+Persistence
+Gumption
+Moxie
+Grit
+Chutzpah
+Bootstraps
+Elbow Grease
+Duct Tape
+Spare Parts
+Borrowed Time
+Close Call
+Near Miss
+Not Today
+One More Jump
+Almost There
+Just in Time
+Plan B
+Plan C
+Odds Be Damned
+Against the Odds
+Long Shot
+Fair Wind
+Smooth Sailing
+Rough Landing
+Hull Breach Hal
+Emergency Exit
+Evasive Action
+Full Power
+Shields Up
+Weapons Hot
+Ready or Not
+Here Goes Nothing
+Hold My Fuel
+Mostly Harmless
+Free and Clear
+Open Skies
+Clear Signal
+Steady Hands
+Cool Head
+Warm Welcome
+Kind Regards
+Fond Farewell
+Safe Harbor
+Home Fires
+Hearth
+Beacon Light
+Northstar
+Polaris
+Meridian
+Zenith
+Equinox
+Solstice
+Aurora
+Daybreak
+Nightfall
+Twilight
+Eventide
+Morningtide
+High Noon
+Midnight Oil
+Sunrise Promise
+Starward
+Skyward
+Outbound
+Inbound
+Wayfarer
+Pathfinder
+Trailblazer
+Waymaker
+Farseer
+Lookout
+Watchful Eye
+Second Chance
+Third Time Lucky
+Lucky Seven
+Ace of Spades
+Wild Card
+Full House
+Royal Flush
+Snake Eyes
+Long Odds
+All In
+Fair Play
+Good Sport
+Old Reliable
+Iron Will
+Brass Tacks
+Bare Knuckles
+Rolling Thunder
+Quiet Storm
+Calm Before
+Eye of the Storm
+Silver Lining
+Thin Ice
+Fine Margin
+Free Lunch
+Overdue
+Overtime
+Last Orders
+Closing Time
+Paid in Full
+No Refunds
+Tax Deductible
+Borrowed Kestrel
+Federation Property
+Do Not Disturb
+Some Assembly Required
+Batteries Included
+Still Flying
+Not Dead Yet
+Rebel Bane
+Flagship Chaser
+Sector Eight Bound
+Jump Drive Jenny
+Scrap Magnet
+Fuel Efficient
+Missile Sponge
 
 == first
 Iron
@@ -60,6 +193,58 @@ Gallant
 Honest
 Lucky
 Free
+Brave
+Bold
+Faithful
+Fearless
+Gentle
+Grim
+Hidden
+Hollow
+Humble
+Jolly
+Keen
+Last
+Little
+Loyal
+Mighty
+Noble
+Old
+Proud
+Rapid
+Rusty
+Scarlet
+Shining
+Silent
+Sleepless
+Sly
+Southern
+Stray
+Stubborn
+Sudden
+Tired
+Valiant
+Wild
+Wise
+Young
+Azure
+Copper
+Cobalt
+Emerald
+Amber
+Ivory
+Midnight
+Solar
+Lunar
+Stellar
+Eastern
+Western
+Distant
+Blazing
+Frozen
+Thunder
+Storm
+Brass
 
 == second
 Heron
@@ -84,6 +269,68 @@ Shield
 Duck
 Courier
 Pilgrim
+Albatross
+Badger
+Bear
+Beetle
+Bell
+Blade
+Bolt
+Bulldog
+Candle
+Compass
+Crane
+Crown
+Dagger
+Dawn
+Dragon
+Eagle
+Ember
+Finch
+Flame
+Fox
+Gale
+Gauntlet
+Ghost
+Griffin
+Hammer
+Hawk
+Hornet
+Hound
+Jackal
+Lance
+Lion
+Lynx
+Magpie
+Mantle
+Mule
+Nomad
+Oath
+Otter
+Owl
+Phoenix
+Pike
+Raven
+Rider
+Ronin
+Sabre
+Sentinel
+Shepherd
+Skylark
+Song
+Storm
+Swallow
+Talon
+Tern
+Tiger
+Torch
+Trident
+Viper
+Vow
+Warden
+Whisper
+Wolf
+Wren
 
 == kestrel
 Red-Tail
@@ -93,6 +340,29 @@ Workhorse
 Little Kestrel
 Second Kestrel
 Hardtack
+Kestrel Mk II
+Ol' Reliable
+Orange Stripe
+Hover Hawk
+Plain Jane
+Kestrel's Nest
+Standard Issue
+By the Book
+Classic
+Daily Driver
+Old Bird
+Kestrel's Cry
+Wing and a Prayer
+Tail Feather
+Little Raptor
+Windhover
+Sparrowhawk
+Kestrel Blue
+The Usual
+Nothing Fancy
+Good Old Girl
+Shiny New Kestrel
+Kestrel Again
 
 == stealth
 Nesasio
@@ -102,6 +372,29 @@ Shadowfall
 Quietus
 Blind Spot
 Nightjar
+Damselfly
+Moonless
+Hush
+Phantom
+Vanishing Act
+Now You See Me
+Cloak and Dagger
+Silent Partner
+Shade
+Penumbra
+Umbra
+Murmur
+Nobody Here
+Missing Signal
+Lights Out
+Off the Books
+Unseen Hand
+Smoke and Mirrors
+Dark Horse
+Sleight of Hand
+Thief in the Night
+Ghostwalk
+Cat's Paw
 
 == mantis
 Bloodfang
@@ -111,6 +404,29 @@ Mandible
 Hive Hunter
 Twelve Knives
 Praying Fury
+Scythe Arm
+Chitin Crusher
+Boarding Party
+Many Legs
+Swarm Mother
+Ambush
+Carapace
+Molting Season
+Bug Out
+Six Legged Terror
+Green Menace
+Hungry Mantis
+Shred
+Clicking Doom
+Thorax
+Vivisector
+Snap Hook
+Raking Claw
+Kill Count
+Last Meal
+Pounce
+Leap of Faith
+Gnash
 
 == engi
 Unit of Repair 7
@@ -120,6 +436,29 @@ Gentle Wrench
 Mender Prime
 Many Hands
 Iterative Process
+Vortex
+Spanner
+Fixer Upper
+Nanite Swarm
+Patch Notes
+Version Two
+Diagnostic
+Calibrator
+Maintenance Mode
+Routine Check
+Spare Gear
+Cog and Sprocket
+Delta Function
+Polite Request
+Systems Nominal
+Unit of Kindness
+Helpful Sequence
+Logic Gate
+Soldering Iron
+Clockwork
+Firmware
+Debugged
+All Repaired
 
 == federation
 Osprey
@@ -129,6 +468,29 @@ Federation Pride
 Admiral's Promise
 Unity
 Charter
+Commonwealth
+Accord
+Concord
+Compact
+Assembly
+Covenant
+Mandate
+Allegiance
+Free Sectors
+Home Planet Pride
+Senate's Hope
+Treaty
+Many Worlds
+Citizen
+Ballot
+Charter Rights
+Lawful Order
+Constitution
+Rule of Law
+Declaration
+Sovereign
+Fleet Command
+Every Beacon Free
 
 == slug
 Nobody Important
@@ -138,6 +500,29 @@ Friendly Visitor
 Honest Trader
 Not a Trap
 Bad Idea
+Trust Me
+Just Passing
+Harmless Freighter
+No Funny Business
+Lost Tourist
+Charity Ship
+Free Samples
+Innocent Bystander
+Definitely Legal
+Fair Deal
+Slime Time
+Good Intentions
+Pure Coincidence
+Misunderstanding
+Wrong Beacon
+Mind Your Business
+Small Favor
+Nothing to See
+Pleasant Surprise
+Totally Normal
+Gooey Embrace
+Psychic Hotline
+Bless Your Heart
 
 == rock
 Bulwark
@@ -147,6 +532,29 @@ Unmovable
 Mountain
 Slow Avalanche
 Bedrock
+Obsidian
+Boulder
+Landslide
+Monolith
+Cornerstone
+Keystone
+Slab
+Quarry
+Tectonic
+Magma Heart
+Igneous
+Shale
+Flint
+Rubble
+Stonewall
+Unbudging
+Rockfall
+Iron Ore
+Hard Place
+Cold Lava
+Pebble
+Grindstone
+Gravel
 
 == zoltan
 Calm Lattice
@@ -156,6 +564,29 @@ Radiant Thought
 Quiet Current
 Harmonic
 Peace Keeper
+Luminous
+Serene Field
+Glow
+Resonance
+Pure Thought
+Shining Path
+Stillness
+Equilibrium
+Clear Mind
+Soft Light
+Halo
+Bright Accord
+Lambent
+Gentle Charge
+Kind Energy
+Inner Light
+Balanced Field
+Wise Counsel
+Patient Glow
+Radiance
+Aurora Mind
+Still Water
+Shield of Light
 
 == crystal
 Bravais
@@ -165,6 +596,29 @@ Shard of Ancestry
 Lattice Heart
 Geode
 Clear Note
+Refraction
+Spectrum
+Quartz
+Amethyst
+Diamond Edge
+Cleave
+Crystal Song
+Lumen
+Gemstone
+Hard Light
+Ancient Shard
+Resonant Crystal
+Sharp Facet
+Glass Garden
+Mirror
+Many Faces
+Crystalline
+Splinter
+Glint
+Sparkle
+Cut Glass
+Brilliant
+Formation
 
 == lanius
 Hunger
@@ -174,3 +628,26 @@ Rust Choir
 Corroded Psalm
 Scrap Eater
 Hollow
+Vacuum
+Airless
+Breathless
+Metal Teeth
+Devourer
+Tarnish
+Oxide
+Corrosion
+Rusted Hymn
+Silent Feast
+Gnawing
+Leech
+Consumer
+Iron Appetite
+Empty Lungs
+Unbreathing
+Cold Feast
+Bare Bones
+Strip Mine
+Second Helping
+Picked Clean
+Grey Hunger
+Ferrous

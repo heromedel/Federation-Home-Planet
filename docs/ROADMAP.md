@@ -295,6 +295,13 @@ comes a random number of beacons later (the fleet counts every beacon its ships 
 - **No one aboard:** she can be boarded empty (to take on crew in the Cargo Bay), but FTL won't launch with a boarded
   ship that has no crew (FTL would end her journey at once); the station says to move someone aboard first.
 
+## Not doing
+
+- **Thruster glow for designs.** FTL lights the engines of some of its own ships (the Kestrel's, when piloted and
+  ready to jump) from positions written into the game itself; nothing in a blueprint, layout or art file sets them, and
+  only the Hyperspace mod lets custom ships have them. Designs need just their one PNG; glowing engines can be painted
+  into the art. Settled with heromedel: not worth pursuing.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo
