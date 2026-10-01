@@ -39,7 +39,9 @@ public class LinkPeer {
   volatile boolean ships = true;
   /** Its mode as the hello gives it ("mode hard on" plays an Immersive Hard career that trades with any level). */
   volatile String mode = Vault.SANDBOX; volatile boolean anyLevel = true;
-  Wire.Msg hello() { return Session.hello(HomePlanet.APP_VERSION, id, title, "", mode, ships, anyLevel); }
+  /** The version and protocol its hello claims ("version 4B.99", "protocol 2": a newer station). */
+  volatile String version = HomePlanet.APP_VERSION; volatile int protocol = Session.PROTOCOL;
+  Wire.Msg hello() { return Session.hello(version, id, title, "", mode, ships, anyLevel).put("protocol", protocol); }
   String why(Session.Peer p) { return Session.incompatible(p, HomePlanet.APP_VERSION, id, mode, anyLevel); }
 
   /** Runs on the event thread, returning what it returns. */
@@ -81,6 +83,15 @@ public class LinkPeer {
    }
    if (c.equals("packages")) { int n = 0; File[] fs = Exchange.dir().listFiles(); if (fs != null) for (File f : fs) if (f.isDirectory()) n++; return "" + n; }
    if (c.equals("commissioned")) { Ship sh = shipNamed(w[1]); if (w.length > 2) Museum.setCommissioned(v, sh.id, cmd.substring(cmd.indexOf(w[2]))); return Museum.commissioned(v, sh.id); }
+   if (c.equals("makedesign")) return makeDesign(w[1], w[2]);
+   if (c.equals("makeremodel")) return makeRemodel(w[1], w[2]);
+   if (c.equals("bp")) { Ship sh = shipNamed(w[1]); if (sh == null) return "none"; sh.invalidate(); SavedGameState g = sh.save(); return g == null ? "unreadable" : g.getPlayerShipBlueprintId(); }
+   if (c.equals("blueprints")) { int d = 0, r = CompanionMod.load().size(); for (ShipDesign x : ShipDesign.load()) if (x.built && !x.isWorking()) d++; return "designs=" + d + " remodels=" + r; }
+   if (c.equals("known")) return "" + (DataManager.get().getShip(w[1]) != null);
+   if (c.equals("starter")) { for (ShipDesign x : ShipDesign.load()) if (DesignExport.bpId(x).equals(w[1]) && !x.isWorking()) return "starter=" + x.starter + " retired=" + x.retired; CompanionMod.Remodel r = CompanionMod.find(CompanionMod.load(), w[1]); return r == null ? "none" : "starter=" + r.starter; }
+   if (c.equals("artof")) { for (ShipDesign x : ShipDesign.load()) if (!x.isWorking() && DesignExport.bpId(x).equals(w[1])) return x.art + (ShipArt.load(x.art, "") != null ? " ok" : " missing"); return "none"; }
+   if (c.equals("version")) { version = w[1]; return "OK"; }
+   if (c.equals("protocol")) { protocol = Integer.parseInt(w[1]); return "OK"; }
    if (c.equals("mode")) { mode = w[1]; anyLevel = w.length < 3 || w[2].equals("on"); return "OK"; }
    if (c.equals("noships")) { ships = w.length > 1 && w[1].equals("off"); return "OK ships=" + ships; }
    if (c.equals("crash")) { Session.crashAt = w.length > 1 ? w[1] : null; return "OK"; }
@@ -123,6 +134,43 @@ public class LinkPeer {
    if (c.equals("quit")) { if (post != null) post.close(); if (responder != null) responder.close(); return "bye"; }
    return "unknown command " + c;
   }
+  /** A design of this station's own (its own hull art, a class name to tell it apart), built, and a ship of it docked. */
+  String makeDesign(String cls, String shipName) throws Exception {
+   File png = File.createTempFile("hull-", ".png");
+   { InputStream in = DataManager.get().getResourceInputStream("img/ship/stealth_base.png"); java.nio.file.Files.copy(in, png.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING); in.close(); }
+   List<ShipDesign> all = ShipDesign.load();
+   ShipDesign d = ShipDesign.create(all); all.add(d);
+   d.name = cls;
+   int[][] rooms = {{4,5,2,2},{6,5,2,2},{8,5,2,2},{6,4,2,1},{10,5,1,2}};
+   for (int[] r : rooms) d.rooms.add(new ShipDesign.Room(r[0], r[1], r[2], r[3]));
+   d.doors.add(d.doorFor(6,5,1)); d.doors.add(d.doorFor(8,5,1)); d.doors.add(d.doorFor(10,5,1)); d.doors.add(d.doorFor(6,5,0)); d.doors.add(d.doorFor(4,5,1));
+   String[][] sys = {{"pilot","4"},{"engines","0"},{"oxygen","3"},{"shields","1"},{"weapons","2"}};
+   for (String[] x : sys) { CompanionMod.Sys y = new CompanionMod.Sys(x[0]); y.room = Integer.parseInt(x[1]); y.power = CompanionMod.usualPower(x[0]); if (ShipDesign.manned(x[0])) { y.square = 0; y.dir = ShipDesign.defaultDir(x[0]); } d.systems.put(x[0], y); }
+   d.art = ShipArt.importFile(png, d.id, "base"); d.artX = 4*35 - 80; d.artY = 5*35 - 150; d.mounts.add(new ShipDesign.Mount(400, 120)); d.mounts.add(new ShipDesign.Mount(400, 320));
+   d.built = true; d.starter = true;
+   CompanionMod.Loadout l = new CompanionMod.Loadout(); l.className = cls + " Class"; l.shipName = shipName; l.crew.put("human", 2); l.weapons.add("LASER_BURST_2"); d.loadout = l;
+   ShipDesign snap = ShipDesign.copy(d); snap.snapshotOf = d.id; all.add(snap);
+   ShipDesign.save(all);
+   CompanionMod.register(CompanionMod.load());
+   png.delete();
+   return commission(DesignExport.bpId(snap), shipName);
+  }
+  /** A remodel of the Kestrel A (with a class name of its own, so two stations' differ), and a ship of it docked. */
+  String makeRemodel(String cls, String shipName) throws Exception {
+   List<CompanionMod.Remodel> all = CompanionMod.load();
+   CompanionMod.Remodel r = CompanionMod.create("PLAYER_SHIP_HARD", shipName, all);
+   r.loadout = CompanionMod.loadoutOf("PLAYER_SHIP_HARD"); r.loadout.className = cls + " Class";
+   all.add(r);
+   CompanionMod.save(all);
+   CompanionMod.register(CompanionMod.load());
+   return commission(r.id, shipName);
+  }
+  String commission(String bpId, String shipName) throws Exception {
+   SavedGameState g = Commission.build(bpId, shipName.replace('_', ' '), net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3));
+   Ship sh = v.adopt(g);
+   v.setOut(sh, g, "Commissioned at The Home Planet Station");
+   return bpId;
+  }
   List<File> listTrades() { List<File> out = new ArrayList<File>(); File[] fs = Exchange.dir().listFiles(); if (fs != null) for (File f : fs) if (f.isFile() && f.getName().startsWith("trade-")) out.add(f); Collections.sort(out); return out; }
   Ship shipNamed(String n) { for (Ship s : v.all()) if (s.name.replace(' ', '_').equals(n)) return s; return null; }
   static String holdText(SavedGameState g) {
@@ -160,6 +208,7 @@ public class LinkPeer {
    else if (k.equals("supply")) l = Line.supply(0, Line.Kind.valueOf(w.get(2).toUpperCase()), Integer.parseInt(w.get(3)));
    else if (k.equals("crew")) { CrewState found = null; for (CrewState c : SaveHelper.getOwnCrew(g.getPlayerShip())) if (c.getName().replace(' ', '_').equals(w.get(2))) found = c; if (found == null) return "no such crew"; l = Line.crew(0, found); }
    else if (k.equals("ship")) l = Line.ship(0, g.getPlayerShipBlueprintId(), src.name, "");
+   else if (k.equals("unknown")) l = new Line(0, Line.Kind.OTHER, "", 1, null, "telescope", null);
    else return "unknown offer";
    l.from = src.id; l.fromName = src.name;
    final Line fl = l;

@@ -12,7 +12,9 @@ import net.blerf.ftl.parser.SavedGameParser.CrewType;
  */
 public final class Line {
 	public enum Kind {
-		WEAPON("weapon"), DRONE("drone"), AUGMENT("augment"), CREW("crew"), SCRAP("scrap"), FUEL("fuel"), MISSILES("missiles"), PARTS("parts"), SHIP("ship");
+		WEAPON("weapon"), DRONE("drone"), AUGMENT("augment"), CREW("crew"), SCRAP("scrap"), FUEL("fuel"), MISSILES("missiles"), PARTS("parts"), SHIP("ship"),
+		/** Something a newer station offers that this one doesn't know: shown, refused, never traded. */
+		OTHER("other");
 		public final String key;
 		Kind(String key) { this.key = key; }
 		public boolean isSupply() { return this == SCRAP || this == FUEL || this == MISSILES || this == PARTS; }
@@ -64,6 +66,7 @@ public final class Line {
 			case PARTS: return amount + (amount == 1 ? " drone part" : " drone parts");
 			case CREW: return crew.getName() + " (" + homeplanet.model.Crew.raceTitle(crew) + ")";
 			case SHIP: return name + (shipClass.isEmpty() ? "" : " (" + shipClass + ")");
+			case OTHER: return "Something new (" + name + ")";
 			default: return homeplanet.model.Items.title(id);
 		}
 	}
@@ -75,6 +78,7 @@ public final class Line {
 			case WEAPON: return "weapon";
 			case DRONE: return "drone";
 			case AUGMENT: return "augment";
+			case OTHER: return "unknown";
 			default: return "supply";
 		}
 	}
@@ -92,7 +96,7 @@ public final class Line {
 	static Line read(Wire.Msg m, String p) throws Wire.Garbled {
 		int n = m.num(p + "n", 0, 1000000);
 		Kind k = Kind.of(m.get(p + "kind"));
-		if (k == null) throw new Wire.Garbled("unknown kind " + m.get(p + "kind"));
+		if (k == null || k == Kind.OTHER) return new Line(n, Kind.OTHER, "", 1, null, text(m.get(p + "kind"), 24), null); // a newer station's: refused, not garbled
 		String id = m.get(p + "id");
 		if (id.length() > 128 || !id.matches("[A-Za-z0-9_]*")) throw new Wire.Garbled("item id");
 		int amount = k.isSupply() ? m.num(p + "amount", 1, MAX_AMOUNT) : 1;

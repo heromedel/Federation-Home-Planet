@@ -37,6 +37,9 @@ public final class Beacon {
 		/** Its mode: the vault's slot (sandbox, easy, normal, hard, custom). */
 		public final String mode;
 		public final int port;
+		/** Its Long Range Comm. protocol: stations trade when theirs match. */
+		public int protocol;
+		public boolean compatible() { return protocol == Session.PROTOCOL; }
 		Found(String host, int port, String title, String ship, String version, String station, String mode) {
 			this.host = host; this.port = port; this.title = title; this.ship = ship; this.version = version; this.station = station; this.mode = mode;
 		}
@@ -126,7 +129,9 @@ public final class Beacon {
 			if (port < Channel.PORT0 || port >= Channel.PORT0 + Channel.PORTS) return null;
 			if (!l[4].matches("[0-9a-f]{16}")) return null;
 			String mode = l.length > 7 && java.util.Arrays.asList(homeplanet.vault.Vault.SLOTS).contains(l[7].trim()) ? l[7].trim() : homeplanet.vault.Vault.SANDBOX;
-			return new Found(host, port, Line.text(l[5], 48), Line.text(l[6], 64), Line.text(l[3], 16), l[4], mode);
+			Found f = new Found(host, port, Line.text(l[5], 48), Line.text(l[6], 64), Line.text(l[3], 16), l[4], mode);
+			try { f.protocol = Integer.parseInt(l[2].trim()); } catch (NumberFormatException e) { f.protocol = -1; }
+			return f;
 		} catch (NumberFormatException e) {
 			return null;
 		}

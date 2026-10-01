@@ -16,8 +16,10 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   first free port of 47610 to 47619 (TCP for the channel, UDP for the scan), so two stations can share a computer.
   Establish Connection broadcasts on each local network and to this computer; By address hails an IP (with :port, or
   each port in turn); the screen shows the port this station listens on, to forward on a router for a hail over the
-  internet (a virtual LAN needs nothing). The hailed commander must answer. One channel at a time. Stations must run the same version;
-  A one-time note warns about the Windows Firewall prompt.
+  internet (a virtual LAN needs nothing). The hailed commander must answer. One channel at a time. Stations must match
+  on the Long Range Comm. protocol (`Session.PROTOCOL`), not on the program's version: a Laser Cannon is a Laser
+  Cannon in any version, and each line is checked against this station's own game data anyway. A mismatch is refused,
+  saying one of them needs to update; the scan shows each station's version for information.
 - **Modes and levels:** each station's hello and scan answer give its mode: Sandbox Mode, or an Immersive career's
   level (Easy, Normal, Hard, Custom), shown beside the commander's name. Sandbox trades only with Sandbox, Immersive
   only with Immersive. Two careers of different levels trade when both have **Allow trading with any Immersive level**
@@ -44,7 +46,8 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 ## Whole ships
 
 - Between two Sandbox fleets, always (there are no commissioning rules to get around). Between Immersive careers, only
-  when both have **allow trading whole ships** on (Settings, General, off by default). The ship must be docked (not boarded), at a station, with no final battle to settle. Everything aboard
+  when both have **allow trading whole ships** on (Settings, General, off by default). The ship must be docked (not
+  boarded), at a station, with no final battle to settle. Everything aboard
   goes with her.
 - What travels: her save, her voyage log and its summary, and her last trade mark. Her museum record, kept versions and
   fate stay with the fleet she leaves, where her history is kept as a record (fate TRANSFERRED: she can't be recovered,
@@ -52,9 +55,15 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 - She arrives docked under a new id, set out at The Home Planet Station as a newly commissioned ship is. Her papers
   carry her original commission date, which goes into her museum record (and her trade mark), through every trade.
 - Once a trade settles, the ships' packages in `comm/trade-<id>/` are deleted; the trade record stays as a receipt.
-- **Not yet:** remodeled ships and ships from Design Ship. Their blueprints are numbered by the station that drew them
-  up, so another station may have a different ship under the same id. Taking them across means sending the blueprint
-  (and art), re-numbering it on arrival and rewriting her save to match.
+- **Custom ships** (remodels and Design Ship ships) carry their papers (`parser/ShipPapers`): the blueprint as the
+  sending station keeps it (a remodel, or the design's built copy for her version) and the pictures it uses. On arrival
+  the papers are checked (one blueprint, the one her save names, read by the station's own readers; real pictures, all
+  of them there) before anything is installed. A blueprint with the same content as one here is used as it is (a ship
+  coming home finds her own); otherwise she gets the next free number (`_R` or `DESIGN_`), her pictures are filed under
+  it, and the three names her save gives (her blueprint, twice, and her picture set) are renamed in the save's bytes
+  before it's read, since a different ship may have her old number here. A received blueprint isn't commissionable (she
+  came as a ship, not plans): a design is filed as retired, a remodel as a non-starter, both kept in the mod while ships
+  fly them. The mod is rebuilt and the station offers Patch Now / Later.
 
 ## The trade mark (`vault/TradeMark`, history/&lt;id&gt;/traded.txt)
 
@@ -67,6 +76,12 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   `beaconsSince`, `scrapSince`, `sectorsSince`, `countsFrom`). A never-traded ship counts from her commissioning.
 - What already works this way: Museum honours start from her arrival (`achievementsAtStart`), and the fleet counters
   (sectors and beacons seen, the stipend, reply chains) count only changes after she was first seen.
+
+## Changing Long Range Comm.
+
+Each side ignores message fields, offer kinds and package files it doesn't know, so adding one is safe. Bump
+`Session.PROTOCOL` only when an older station would trade wrongly (a new step in the exchange, a field it must read).
+Protocol 2: custom ships' papers.
 
 ## Harness
 

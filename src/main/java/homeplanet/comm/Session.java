@@ -20,8 +20,12 @@ import org.slf4j.LoggerFactory;
  */
 public final class Session implements Channel.Listener {
 	private static final Logger log = LoggerFactory.getLogger(Session.class);
-	/** Bumped when the messages change: stations must match. */
-	public static final int PROTOCOL = 1;
+	/**
+	 * The shape of Long Range Comm.'s messages and ships' packages. Stations must match on this, not on the program's
+	 * version: a Laser Cannon is a Laser Cannon in any version. Each side ignores fields and files it doesn't know, so
+	 * adding one is safe; bump this only when an older station would trade wrongly (a new step, a field it must read).
+	 */
+	public static final int PROTOCOL = 2; // 2: custom ships travel with their papers
 
 	/** What the screen hears about. All on the event thread. */
 	public interface View {
@@ -40,6 +44,8 @@ public final class Session implements Channel.Listener {
 	/** The other station, as its hello describes it. */
 	public static final class Peer {
 		public String station, title, version, ship;
+		/** Its Long Range Comm. protocol (see {@link Session#PROTOCOL}). */
+		public int protocol;
 		/** Its mode: the vault's slot (sandbox, easy, normal, hard, custom). */
 		public String mode = homeplanet.vault.Vault.SANDBOX;
 		public boolean ships, anyLevel;
@@ -107,7 +113,7 @@ public final class Session implements Channel.Listener {
 		if (!java.util.Arrays.asList(homeplanet.vault.Vault.SLOTS).contains(p.mode)) throw new Wire.Garbled("mode " + Line.text(p.mode, 16));
 		p.ships = m.flag("ships");
 		p.anyLevel = m.flag("anyLevel");
-		if (!m.get("protocol").equals("" + PROTOCOL)) p.version = p.version + " (protocol " + Line.text(m.get("protocol"), 8) + ")";
+		try { p.protocol = Integer.parseInt(m.get("protocol").trim()); } catch (NumberFormatException e) { throw new Wire.Garbled("protocol"); }
 		return p;
 	}
 	/**
@@ -116,8 +122,10 @@ public final class Session implements Channel.Listener {
 	 */
 	public static String incompatible(Peer p, String myVersion, String myStation, String myMode, boolean myAnyLevel) {
 		if (p.station.equals(myStation)) return "That is this station's own signal.";
-		if (!p.version.equals(myVersion))
-			return p.title + "'s station is running a different version (" + p.version + "; this one is " + myVersion + "). Both stations need the same version to trade.";
+		if (p.protocol != PROTOCOL)
+			return (p.protocol < PROTOCOL ? p.title + "'s station uses an older Long Range Comm. (Federation Home Planet " + p.version + "; this one is " + myVersion + "). "
+					: "This station uses an older Long Range Comm. than " + p.title + "'s (Federation Home Planet " + myVersion + "; theirs is " + p.version + "). ")
+					+ "One of you needs to update to trade.";
 		boolean meImmersive = !homeplanet.vault.Vault.SANDBOX.equals(myMode);
 		if (p.immersive() != meImmersive)
 			return p.title + "'s station is in " + p.modeTitle() + "; this one is in " + homeplanet.vault.Vault.title(myMode)

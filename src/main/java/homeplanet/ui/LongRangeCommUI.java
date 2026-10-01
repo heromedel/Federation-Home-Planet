@@ -543,10 +543,11 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 						foundList = f;
 						List<CargoParts.Row> rows = new ArrayList<CargoParts.Row>();
 						for (Beacon.Found x : f) {
-							boolean same = x.version.equals(HomePlanet.APP_VERSION);
+							boolean same = x.compatible();
 							String mode = Vault.title(x.mode);
-							rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), same ? mode : "version " + x.version, x,
-									same ? x.title + "'s Home Planet Station (" + mode + "), at " + x.host + ":" + x.port : "A different version of Federation Home Planet (" + x.version + "): both stations need the same one", !same));
+							rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), same ? mode : "needs an update", x,
+									same ? x.title + "'s Home Planet Station (" + mode + ", Federation Home Planet " + x.version + "), at " + x.host + ":" + x.port
+											: "Federation Home Planet " + x.version + ": its Long Range Comm. is " + (x.protocol < homeplanet.comm.Session.PROTOCOL ? "older" : "newer") + " than this station's. One of you needs to update to trade.", !same));
 						}
 						found.setRows(rows);
 						if (!rows.isEmpty()) found.list.setSelectedIndex(0);
@@ -707,6 +708,17 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		lastShow = null;
 		if (Exchange.DONE.equals(r.state)) help("Trade with " + r.peerTitle + " complete. Received " + r.inWords() + "; gave " + r.outWords() + ".");
 		else help("Trade with " + r.peerTitle + " called off: " + r.outWords() + " came back: " + Exchange.whereTheyGo(r.out) + ".");
+		if (r.needsPatch) {
+			// a custom ship's blueprint came with her: FTL needs it before she can fly
+			final Exchange.Record rec = r;
+			SwingUtilities.invokeLater(new Runnable() { public void run() {
+				Object[] options = {"Patch Now", "Later"};
+				int p = JOptionPane.showOptionDialog(LongRangeCommUI.this, "A ship from " + rec.peerTitle + " flies on a blueprint of her own, and it is now in the "
+						+ homeplanet.parser.CompanionMod.TITLE + ".\nSend it to FTL via Slipstream before you board her.", "Long Range Comm.",
+						JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+				if (p == 0) PatchDialog.open(LongRangeCommUI.this);
+			} });
+		}
 		readSource();
 		refreshAll();
 	}
@@ -1004,7 +1016,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		disconnectBtn.setEnabled(session != null);
 		boolean idle = session == null && !hailing;
 		Object f = found.selectedValue();
-		hailBtn.setEnabled(idle && f instanceof Beacon.Found && ((Beacon.Found) f).version.equals(HomePlanet.APP_VERSION));
+		hailBtn.setEnabled(idle && f instanceof Beacon.Found && ((Beacon.Found) f).compatible());
 		hailAddrBtn.setEnabled(idle);
 		establishBtn.setEnabled(idle);
 		sourceBtn.setEnabled(session == null || !session.exchanging());
