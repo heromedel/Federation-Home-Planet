@@ -40,10 +40,11 @@ public class SpaceDockScrollPane extends JPanel {
 		setBackground(Color.black);
 		add(panel, BorderLayout.CENTER);
 		built = StationBackdrop.make(frame, rng);
-		// Ctrl+Shift+B: a new roll of ships, to look at a few without restarting
+		CargoBayUI.rerollHold(frame);
+		// Ctrl+Shift+B: a new roll of ships, and of the Cargo Hold's contents, to look at a few without restarting
 		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_B, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "reroll");
 		getActionMap().put("reroll", new AbstractAction() {
-			public void actionPerformed(ActionEvent e) { reroll(frame, true); }
+			public void actionPerformed(ActionEvent e) { reroll(frame, true); CargoBayUI.rerollHold(frame); frame.repaint(); }
 		});
 	}
 

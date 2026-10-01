@@ -38,7 +38,7 @@ final class StationBackdrop {
 	/** The cruiser's scale on the station, and how far behind her engine bays she's cut (in her own pixels). */
 	private static final double STATION_SCALE = 0.78;
 	private static final int CUT = 180;
-	/** The planet: its scale and where its top-left corner goes (low on the left, mostly the night side). */
+	/** The planet: its scale and where its top-left corner goes (low on the left, her lit side toward the station). */
 	private static final double PLANET_SCALE = 2.6;
 	private static final int PLANET_X = -560, PLANET_BELOW = 700;
 
@@ -53,6 +53,8 @@ final class StationBackdrop {
 		{1060, 790, 205, 74},
 		{1640, 720, -8, 58},
 		{1160, 990, 222, 62},
+		{300, 170, 158, 70},
+		{560, 80, 172, 52},
 	};
 	/** How many ships, at least and at most. */
 	private static final int SHIPS_MIN = 2, SHIPS_MAX = 3;
@@ -79,7 +81,9 @@ final class StationBackdrop {
 			smooth(g);
 			g.drawImage(stars, 0, 0, W, H, null);
 			int pw = (int) Math.round(planet.getWidth() * PLANET_SCALE), ph = (int) Math.round(planet.getHeight() * PLANET_SCALE);
-			g.drawImage(planet, PLANET_X, H - ph + PLANET_BELOW, pw, ph, null);
+			BufferedImage world = greenWorld(planet);
+			int top = H - ph + PLANET_BELOW; // mirrored (source drawn right to left): FTL lights its planets from the left
+			g.drawImage(world, PLANET_X, top, PLANET_X + pw, top + ph, world.getWidth(), 0, 0, world.getHeight(), null);
 
 			BufferedImage station = station(cruiser);
 			int sx = STATION_X - station.getWidth() / 2, sy = (H - station.getHeight()) / 2;
@@ -94,6 +98,38 @@ final class StationBackdrop {
 			log.warn("Could not build the Space Dock backdrop from FTL's pictures; using the stock one", e);
 			return null;
 		}
+	}
+
+	// ---- the planet ----
+
+	/** How far her sandy land turns forest green, how much darker it gets, and where the shift thins out toward her rim. */
+	private static final double GREEN = 0.95, GREEN_GAIN = 0.40, GREEN_BLUE = 0.06, GREEN_DARK = 0.26, RIM_START = 0.75, RIM_END = 0.97;
+
+	/**
+	 * A copy of the planet with her land leaning forest green: where red outweighs blue (sand), some red moves into green
+	 * and the land darkens a little. Seas, clouds and city lights stay as they are; toward her rim the shift thins out,
+	 * so the sunlit edge doesn't glow.
+	 */
+	private static BufferedImage greenWorld(BufferedImage src) {
+		int w = src.getWidth(), h = src.getHeight();
+		BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+		double cx = w / 2.0, cy = h / 2.0, r = Math.min(w, h) / 2.0;
+		for (int y = 0; y < h; y++) {
+			for (int x = 0; x < w; x++) {
+				int argb = src.getRGB(x, y);
+				int a = argb >>> 24, red = (argb >> 16) & 255, gr = (argb >> 8) & 255, bl = argb & 255;
+				double land = Math.max(0, Math.min(1, (red - bl) / 60.0)) * GREEN;
+				double d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy) / r;
+				land *= Math.max(0.3, Math.min(1, (RIM_END - d) / (RIM_END - RIM_START)));
+				double move = red * 0.45 * land, f = 1 - GREEN_DARK * land;
+				int nr = clamp((red - move) * f), ng = clamp((gr + move * GREEN_GAIN) * f), nb = clamp((bl + move * GREEN_BLUE) * f);
+				out.setRGB(x, y, (a << 24) | (nr << 16) | (ng << 8) | nb);
+			}
+		}
+		return out;
+	}
+	private static int clamp(double v) {
+		return (int) Math.max(0, Math.min(255, Math.round(v)));
 	}
 
 	// ---- the station ----

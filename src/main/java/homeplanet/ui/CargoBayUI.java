@@ -234,10 +234,24 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	public boolean getScrollableTracksViewportWidth() { return getParent() != null && getParent().getWidth() >= W - 2 * MARGIN; }
 	public boolean getScrollableTracksViewportHeight() { return getParent() != null && getParent().getHeight() >= H; }
 
+	/** The Cargo Hold's deck plan, rolled at startup and on Ctrl+Shift+B (with the Space Dock's ships); null for the stock picture. */
+	private static BufferedImage hold = null;
+	private static final java.util.Random holdRng = new java.util.Random();
 	private BufferedImage hangar, hangarScaled;
+
+	/** A new roll of the Cargo Hold's contents. */
+	static void rerollHold(MainFrame frame) {
+		BufferedImage b = CargoHoldBackdrop.make(frame, holdRng);
+		if (b != null) hold = b;
+	}
+
 	@Override protected void paintComponent(Graphics g0) {
 		super.paintComponent(g0);
 		Graphics2D g = (Graphics2D) g0;
+		if (hold != null && hangar != hold) { // a new roll: scale it again
+			hangar = hold;
+			hangarScaled = null;
+		}
 		if (hangar == null) {
 			try {
 				BufferedImage art = ImageIO.read(new ResourceClass().getClass().getResource("CargoBaySplash.png"));

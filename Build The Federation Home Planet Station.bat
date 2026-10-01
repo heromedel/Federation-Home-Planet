@@ -66,10 +66,8 @@ rem ---- :quicklink: a desktop shortcut to the Interface, with the station's ico
 echo.
 echo Adding a Quick Link to the Station Interface on your desktop ...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "Add-Type -AssemblyName System.Drawing;" ^
-  "$png = '%HERE%src\main\resources\homeplanet\resource\LogoIcon.png'; $ico = '%HERE%Current Build\Federation Home Planet.ico';" ^
-  "$b = New-Object Drawing.Bitmap ([Drawing.Image]::FromFile($png)), 64, 64; $i = [Drawing.Icon]::FromHandle($b.GetHicon());" ^
-  "$f = [IO.File]::Create($ico); $i.Save($f); $f.Close();" ^
+  "$ico = '%HERE%Current Build\Federation Home Planet.ico';" ^
+  "Copy-Item -Force '%HERE%src\main\resources\homeplanet\resource\icon\FederationHomePlanet.ico' $ico;" ^
   "$s = (New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Federation Home Planet Interface.lnk');" ^
   "$s.TargetPath = '%HERE%Current Build\Federation Home Planet Interface.bat'; $s.WorkingDirectory = '%HERE%Current Build';" ^
   "$s.IconLocation = $ico; $s.Description = 'Establish a connection with The Home Planet Station'; $s.Save()"

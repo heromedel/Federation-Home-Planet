@@ -54,8 +54,13 @@ public class MainFrame extends JFrame {
 			}
 		});
 		setTitle("The Home Planet Station  -  " + appName + " " + appVersion);
-		Image img = (new ImageIcon((new ResourceClass()).getClass().getResource("LogoIcon.png"))).getImage();
-		setIconImage(img);
+		// the station's icon, in every size it's drawn at, so Windows picks a sharp one for the title bar and the taskbar
+		java.util.List<Image> icons = new java.util.ArrayList<Image>();
+		for (int size : new int[] {16, 32, 48, 64, 128, 256}) {
+			java.net.URL u = (new ResourceClass()).getClass().getResource("icon/StationIcon" + size + ".png");
+			if (u != null) icons.add(new ImageIcon(u).getImage());
+		}
+		setIconImages(icons);
 		tasksPane = new JPanel(screens);
 		JPanel contentPane = new JPanel();
 		contentPane.setLayout(new BorderLayout(0, 0));
