@@ -37,7 +37,10 @@ public class LinkPeer {
 
   /** Whether this station lets whole ships change hands (a normal fleet always does; "noships" plays an Immersive one that doesn't). */
   volatile boolean ships = true;
-  Wire.Msg hello() { return Session.hello(HomePlanet.APP_VERSION, id, title, "", false, ships); }
+  /** Its mode as the hello gives it ("mode hard on" plays an Immersive Hard career that trades with any level). */
+  volatile String mode = Vault.SANDBOX; volatile boolean anyLevel = true;
+  Wire.Msg hello() { return Session.hello(HomePlanet.APP_VERSION, id, title, "", mode, ships, anyLevel); }
+  String why(Session.Peer p) { return Session.incompatible(p, HomePlanet.APP_VERSION, id, mode, anyLevel); }
 
   /** Runs on the event thread, returning what it returns. */
   static <T> T edt(final java.util.concurrent.Callable<T> c) throws Exception {
@@ -54,23 +57,31 @@ public class LinkPeer {
     post = new Channel.Post(new Channel.Post.Handler() { public void hailed(final Channel ch) {
      try {
       final Session.Peer p = Session.peerOf(ch.readFirst(10000));
+      String no = why(p);
+      if (no != null) { ch.close(no); return; } // as the screen does: refused, with the reason
       ch.send(hello());
       SwingUtilities.invokeLater(new Runnable() { public void run() { ended = null; session = new Session(ch, false, p, id, ships); session.start(Station.this); } });
      } catch (IOException e) { ch.close(""); }
     } });
     final int port = post.port;
-    responder = new Beacon.Responder(new Beacon.Self() { public String answer() { return Beacon.answer(port, HomePlanet.APP_VERSION, id, title, "Wanderer"); } });
+    responder = new Beacon.Responder(new Beacon.Self() { public String answer() { return Beacon.answer(port, HomePlanet.APP_VERSION, id, title, "Wanderer", mode); } });
     return "PORT " + post.port;
    }
    if (c.equals("hail")) {
     Channel ch = Channel.connect("127.0.0.1", Integer.parseInt(w[1]));
     ch.send(hello());
     Wire.Msg r = ch.readFirst(10000);
+    if (r.type.equals("BYE")) { ch.close(""); return "REFUSED " + r.get("why"); }
     final Session.Peer p = Session.peerOf(r);
+    String no = why(p);
+    if (no != null) { ch.close(no); return "REFUSED " + no; }
     final Channel fch = ch;
     edt(new java.util.concurrent.Callable<Void>() { public Void call() { ended = null; session = new Session(fch, true, p, id, ships); session.start(Station.this); return null; } });
     return "OK " + p.title;
    }
+   if (c.equals("packages")) { int n = 0; File[] fs = Exchange.dir().listFiles(); if (fs != null) for (File f : fs) if (f.isDirectory()) n++; return "" + n; }
+   if (c.equals("commissioned")) { Ship sh = shipNamed(w[1]); if (w.length > 2) Museum.setCommissioned(v, sh.id, cmd.substring(cmd.indexOf(w[2]))); return Museum.commissioned(v, sh.id); }
+   if (c.equals("mode")) { mode = w[1]; anyLevel = w.length < 3 || w[2].equals("on"); return "OK"; }
    if (c.equals("noships")) { ships = w.length > 1 && w[1].equals("off"); return "OK ships=" + ships; }
    if (c.equals("crash")) { Session.crashAt = w.length > 1 ? w[1] : null; return "OK"; }
    if (c.equals("wait")) return waitFor(w[1], w.length > 2 ? w[2] : "");

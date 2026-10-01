@@ -24,6 +24,8 @@ public final class TradeMark {
 	static final String FILE = "traded.txt";
 
 	public final String trade, date, from, original;
+	/** When her original owner commissioned her ("1 October 2026"), or "" if not known. */
+	public final String commissioned;
 	/** Her FTL totals (they only go up) and the sectors she had visited, at the trade. */
 	public final int defeated, beacons, scrap, sectors;
 
@@ -32,6 +34,7 @@ public final class TradeMark {
 		date = p.getProperty("date", "");
 		from = p.getProperty("from", "");
 		original = p.getProperty("original", from);
+		commissioned = p.getProperty("commissioned", "");
 		defeated = num(p, "defeated");
 		beacons = num(p, "beacons");
 		scrap = num(p, "scrap");
@@ -84,12 +87,13 @@ public final class TradeMark {
 	// ---- writing ----
 
 	/** Her mark as a file's text, for a ship arriving: this trade, this sender, the original owner carried along. */
-	static byte[] text(String trade, String from, String original, SavedGameState gs, int sectors) throws IOException {
+	static byte[] text(String trade, String from, String original, String commissioned, SavedGameState gs, int sectors) throws IOException {
 		Properties p = new Properties();
 		p.setProperty("trade", trade);
 		p.setProperty("date", new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date()));
 		p.setProperty("from", from);
 		p.setProperty("original", original);
+		if (commissioned != null && !commissioned.isEmpty()) p.setProperty("commissioned", commissioned);
 		p.setProperty("defeated", Integer.toString(gs.getTotalShipsDefeated()));
 		p.setProperty("beacons", Integer.toString(gs.getTotalBeaconsExplored()));
 		p.setProperty("scrap", Integer.toString(gs.getTotalScrapCollected()));

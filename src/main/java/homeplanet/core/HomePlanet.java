@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.65";
+	public static final String APP_VERSION = "4B.66";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -80,6 +80,8 @@ public class HomePlanet {
 	public static boolean immersiveNotifications = false;
 	/** Immersive Mode: whole ships may change hands over Long Range Comm. (with another Immersive fleet that allows it too). */
 	public static boolean immersiveShipTrading = false;
+	/** Long Range Comm.: an Immersive career may trade with one of another difficulty (when the other allows it too). */
+	public static boolean immersiveAnyLevel = true;
 	/** Sandbox Mode's Career messages (with Immersive Notifications): the welcome, promotions, achievement rewards, the stipend. */
 	public static boolean careerMessages = false;
 	/** Is a career running in the fleet in use: always in Immersive Mode, and in Sandbox Mode with Career messages on. */
@@ -182,6 +184,7 @@ public class HomePlanet {
 		Vault.immersiveSlot = Vault.slotOf(config.getProperty("immersive_slot")); // which Immersive career (a fleet from before difficulties is Custom's)
 		immersiveNotifications = flag("immersive_notifications");
 		immersiveShipTrading = flag("immersive_ship_trading");
+		immersiveAnyLevel = flag("immersive_any_level", true);
 		careerMessages = flag("career_messages");
 		finalVictory = config.getProperty("final_victory", "nothing");
 		applyImmersive();
@@ -398,6 +401,7 @@ public class HomePlanet {
 		config.setProperty("final_victory", finalVictory);
 		config.setProperty("immersive_notifications", Boolean.toString(own.notifications));
 		config.setProperty("immersive_ship_trading", Boolean.toString(immersiveShipTrading));
+		config.setProperty("immersive_any_level", Boolean.toString(immersiveAnyLevel));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
 		try {
 			ByteArrayOutputStream buf = new ByteArrayOutputStream();

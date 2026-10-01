@@ -40,7 +40,12 @@ public final class Session implements Channel.Listener {
 	/** The other station, as its hello describes it. */
 	public static final class Peer {
 		public String station, title, version, ship;
-		public boolean immersive, ships;
+		/** Its mode: the vault's slot (sandbox, easy, normal, hard, custom). */
+		public String mode = homeplanet.vault.Vault.SANDBOX;
+		public boolean ships, anyLevel;
+		public boolean immersive() { return !homeplanet.vault.Vault.SANDBOX.equals(mode); }
+		/** "Sandbox Mode", "Immersive Hard". */
+		public String modeTitle() { return homeplanet.vault.Vault.title(mode); }
 	}
 
 	/** What the other station shows of the ship (or hold) it offers from. */
@@ -83,10 +88,10 @@ public final class Session implements Channel.Listener {
 
 	// ---- hellos ----
 
-	/** This station's hello: who it is and what it allows. */
-	public static Wire.Msg hello(String version, String station, String title, String ship, boolean immersive, boolean ships) {
+	/** This station's hello: who it is, its mode (Sandbox, or an Immersive career's level) and what it allows. */
+	public static Wire.Msg hello(String version, String station, String title, String ship, String mode, boolean ships, boolean anyLevel) {
 		return new Wire.Msg("HELLO").put("protocol", PROTOCOL).put("version", version).put("station", station).put("title", title)
-				.put("ship", ship == null ? "" : ship).put("immersive", immersive).put("ships", ships);
+				.put("ship", ship == null ? "" : ship).put("mode", mode).put("ships", ships).put("anyLevel", anyLevel);
 	}
 	/** The other station from its hello; Garbled if it isn't one. */
 	public static Peer peerOf(Wire.Msg m) throws Wire.Garbled {
@@ -98,19 +103,28 @@ public final class Session implements Channel.Listener {
 		if (p.title.isEmpty()) p.title = "An unnamed commander";
 		p.version = Line.text(m.get("version"), 16);
 		p.ship = Line.text(m.get("ship"), 64);
-		p.immersive = m.flag("immersive");
+		p.mode = m.get("mode");
+		if (!java.util.Arrays.asList(homeplanet.vault.Vault.SLOTS).contains(p.mode)) throw new Wire.Garbled("mode " + Line.text(p.mode, 16));
 		p.ships = m.flag("ships");
+		p.anyLevel = m.flag("anyLevel");
 		if (!m.get("protocol").equals("" + PROTOCOL)) p.version = p.version + " (protocol " + Line.text(m.get("protocol"), 8) + ")";
 		return p;
 	}
-	/** Why these two stations can't trade (shown to both), or null if they can. */
-	public static String incompatible(Peer p, String myVersion, String myStation, boolean myImmersive) {
+	/**
+	 * Why these two stations can't trade (shown to both), or null if they can. Sandbox trades with Sandbox, Immersive
+	 * with Immersive; two careers of different levels when both allow trading with any level.
+	 */
+	public static String incompatible(Peer p, String myVersion, String myStation, String myMode, boolean myAnyLevel) {
 		if (p.station.equals(myStation)) return "That is this station's own signal.";
 		if (!p.version.equals(myVersion))
 			return p.title + "'s station is running a different version (" + p.version + "; this one is " + myVersion + "). Both stations need the same version to trade.";
-		if (p.immersive != myImmersive)
-			return myImmersive ? p.title + "'s station is not in Immersive Mode. Immersive fleets trade only with other Immersive fleets."
-					: p.title + "'s station is in Immersive Mode. Immersive fleets trade only with other Immersive fleets.";
+		boolean meImmersive = !homeplanet.vault.Vault.SANDBOX.equals(myMode);
+		if (p.immersive() != meImmersive)
+			return p.title + "'s station is in " + p.modeTitle() + "; this one is in " + homeplanet.vault.Vault.title(myMode)
+					+ ". Sandbox fleets trade only with Sandbox fleets, and Immersive careers only with Immersive careers.";
+		if (meImmersive && !p.mode.equals(myMode) && !(myAnyLevel && p.anyLevel))
+			return p.title + "'s career is " + p.modeTitle() + "; this one is " + homeplanet.vault.Vault.title(myMode)
+					+ ". Careers of different levels trade only when both allow trading with any Immersive level (Settings, General).";
 		return null;
 	}
 
@@ -280,7 +294,7 @@ public final class Session implements Channel.Listener {
 		int k = 0;
 		for (Line l : theirs) {
 			l.refused = Exchange.refuses(l);
-			if (l.kind == Line.Kind.SHIP && l.refused == null && !ships) l.refused = "Whole ships need \"Allow trading immersive ships\" on at both Immersive stations (Settings, Rules)";
+			if (l.kind == Line.Kind.SHIP && l.refused == null && !ships) l.refused = "Whole ships need \"allow trading whole ships\" on at both Immersive careers (Settings, General)";
 			if (l.refused != null) cant.put("n" + k, l.n).put("why" + k++, l.refused);
 		}
 		cant.put("count", k);
@@ -435,7 +449,12 @@ public final class Session implements Channel.Listener {
 		}
 		channel.trySend(new Wire.Msg("COMMIT").put("trade", r.id));
 		finish(r);
-		view.notice("Trade complete: arrivals are in the Cargo Hold.");
+		view.notice(completeNotice(r));
+	}
+	/** "Trade complete: ..." with where what arrived went. */
+	private static String completeNotice(Exchange.Record r) {
+		String where = Exchange.whereTheyGo(r.in);
+		return where.isEmpty() ? "Trade complete." : where.startsWith("in the") ? "Trade complete: arrivals are " + where + "." : "Trade complete: " + where + ".";
 	}
 	private void onRefuse(Wire.Msg m) {
 		if (!leader || pending == null || !pending.id.equals(m.get("trade"))) return;
@@ -449,7 +468,7 @@ public final class Session implements Channel.Listener {
 					+ "\n\nThe trade's record is kept: see Other... at the Space Dock.");
 		}
 		finish(r);
-		view.notice(shortName(peer.title) + "'s station couldn't go ahead: " + why + (r.out.isEmpty() ? "" : " Your goods are in the Cargo Hold."));
+		view.notice(shortName(peer.title) + "'s station couldn't go ahead: " + why + (r.out.isEmpty() ? "" : " Yours came back: " + Exchange.whereTheyGo(r.out) + "."));
 	}
 	private void onCommit(Wire.Msg m) {
 		if (leader || pending == null || !pending.id.equals(m.get("trade"))) return;
@@ -466,7 +485,7 @@ public final class Session implements Channel.Listener {
 		}
 		channel.trySend(new Wire.Msg("DONE").put("trade", r.id));
 		finish(r);
-		view.notice("Trade complete: arrivals are in the Cargo Hold.");
+		view.notice(completeNotice(r));
 	}
 	private void onAbort(Wire.Msg m) {
 		if (leader || pending == null || !pending.id.equals(m.get("trade"))) return;
@@ -479,7 +498,7 @@ public final class Session implements Channel.Listener {
 			view.problem("The trade was called off, and The Home Planet Station could not return your goods:\n" + e.getMessage() + "\n\nSee Other... at the Space Dock.");
 		}
 		finish(r);
-		view.notice("The trade was called off: " + why + (r.out.isEmpty() ? "" : " Your goods are in the Cargo Hold."));
+		view.notice("The trade was called off: " + why + (r.out.isEmpty() ? "" : " Yours came back: " + Exchange.whereTheyGo(r.out) + "."));
 	}
 	private String peerSide(String what) { return peer.title + "'s station " + what + "."; }
 	/** After a trade settles: both offers start again empty. */

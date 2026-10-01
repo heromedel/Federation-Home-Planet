@@ -45,6 +45,8 @@ public class SettingsDialog extends JDialog {
 	private final JLabel victoryHeading = new JLabel();
 	private final String commanderWas = homeplanet.comm.Commander.name() == null ? "" : homeplanet.comm.Commander.name();
 	private final javax.swing.JTextField commanderField = new javax.swing.JTextField(commanderWas, 18);
+	private final JCheckBox shipTradeBox = new JCheckBox("Immersive careers: allow trading whole ships (with a career that allows it too; Sandbox fleets always may)", HomePlanet.immersiveShipTrading);
+	private final JCheckBox anyLevelBox = new JCheckBox("Immersive careers: allow trading with any Immersive level: Easy, Normal, Hard, Custom (when the other allows it too)", HomePlanet.immersiveAnyLevel);
 	private final javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
 
 	/** Shows the dialog. Returns true if the saves folder changed (so the Space Dock should reload). */
@@ -73,6 +75,11 @@ public class SettingsDialog extends JDialog {
 		nameRow.add(nameNote);
 		commanderField.setToolTipText("Up to " + homeplanet.comm.Commander.MAX + " letters, numbers, spaces and ' - . (your rank goes in front of it)");
 		body.add(nameRow, next(c));
+		shipTradeBox.setToolTipText("Sandbox fleets always may. A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
+		anyLevelBox.setToolTipText("Off: your career trades only with careers of its own difficulty");
+		heading(body, c, "Long Range Comm.");
+		body.add(shipTradeBox, next(c));
+		body.add(anyLevelBox, next(c));
 
 		heading(body, c, "Folders");
 		body.add(folderRow("Saves folder:", savesLabel, new ActionListener() {
@@ -317,6 +324,10 @@ public class SettingsDialog extends JDialog {
 		}
 		boolean gameChanged = !game.equals(HomePlanet.datsPath);
 		java.util.List<String> changed = new java.util.ArrayList<String>();
+		if (shipTradeBox.isSelected() != HomePlanet.immersiveShipTrading) changed.add("Trading immersive ships: " + shipTradeBox.isSelected());
+		if (anyLevelBox.isSelected() != HomePlanet.immersiveAnyLevel) changed.add("Trading with any Immersive level: " + anyLevelBox.isSelected());
+		HomePlanet.immersiveShipTrading = shipTradeBox.isSelected();
+		HomePlanet.immersiveAnyLevel = anyLevelBox.isSelected();
 		if (!commander.equals(commanderWas)) {
 			changed.add("Commander name: " + commander);
 			HomePlanet.config.setProperty(homeplanet.comm.Commander.CFG_NAME, commander); // written with the rest below

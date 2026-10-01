@@ -1301,7 +1301,7 @@ public final class Vault {
 	// ---- Long Range Comm.: ships that change hands ----
 
 	/** What travels with a ship: her save, her voyage log and its last look, and her last trade mark. */
-	static final String[] PACKAGE = {"ship.sav", VoyageLog.LOG, VoyageLog.LAST, TradeMark.FILE};
+	static final String[] PACKAGE = {"ship.sav", VoyageLog.LOG, VoyageLog.LAST, TradeMark.FILE, "papers.txt"};
 	private static final int PACKAGE_MAX = 16 * 1024 * 1024;
 
 	/** A docked ship's package for another station (a zip of {@link #PACKAGE}). */
@@ -1316,6 +1316,16 @@ public final class Vault {
 				z.write(SafeFiles.read(files[i]));
 				z.closeEntry();
 			}
+			// her papers: when she was first commissioned, carried through every trade
+			TradeMark old = TradeMark.of(this, s.id);
+			String commissioned = old != null && !old.commissioned.isEmpty() ? old.commissioned : homeplanet.parser.Museum.commissioned(this, s.id);
+			java.util.Properties papers = new java.util.Properties();
+			papers.setProperty("commissioned", commissioned);
+			java.io.StringWriter pw = new java.io.StringWriter();
+			papers.store(pw, "Her papers");
+			z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE[4]));
+			z.write(pw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			z.closeEntry();
 		} finally {
 			z.close();
 		}
@@ -1401,13 +1411,15 @@ public final class Vault {
 			if (files.containsKey(VoyageLog.LOG)) SafeFiles.write(new File(dir, VoyageLog.LOG), files.get(VoyageLog.LOG));
 			if (files.containsKey(VoyageLog.LAST)) SafeFiles.write(new File(dir, VoyageLog.LAST), files.get(VoyageLog.LAST));
 			String original = TradeMark.originalIn(files.get(TradeMark.FILE));
+			String commissioned = papersCommissioned(files.get(PACKAGE[4]));
 			int sectors = VoyageLog.visited(this, s.id, gs);
-			SafeFiles.write(new File(dir, TradeMark.FILE), TradeMark.text(tradeLine, from, original == null ? from : original, gs, sectors));
+			SafeFiles.write(new File(dir, TradeMark.FILE), TradeMark.text(tradeLine, from, original == null ? from : original, commissioned, gs, sectors));
 			File f = fileOf(s);
 			SafeFiles.write(f, files.get(PACKAGE[0]));
 			s.hash = SafeFiles.hash(f);
 			ships.add(s);
 			setOut(s, gs, "Received from " + from + "'s fleet at The Home Planet Station");
+			homeplanet.parser.Museum.setCommissioned(this, s.id, commissioned); // her own date, not her arrival
 		} catch (IOException e) {
 			ships.remove(s);
 			fileOf(s).delete();
@@ -1417,6 +1429,14 @@ public final class Vault {
 		}
 		HistoryLog.entry("RECEIVED", s.name + " (" + s.id + ") from " + from + "'s fleet, over Long Range Comm.: docked");
 		return s;
+	}
+	/** The commission date a ship's papers give, or "". */
+	private static String papersCommissioned(byte[] papers) {
+		if (papers == null) return "";
+		java.util.Properties p = new java.util.Properties();
+		try { p.load(new java.io.StringReader(new String(papers, java.nio.charset.StandardCharsets.UTF_8))); } catch (IOException e) { return ""; }
+		String d = p.getProperty("commissioned", "").trim();
+		return d.length() > 40 ? "" : d;
 	}
 	/** Is a copy kept of her on the way to the last battle (a final battle not yet settled)? Such a ship stays in the fleet. */
 	public boolean finalBattlePending(Ship s) { return new File(historyOf(s), FINAL).isFile(); }

@@ -17,7 +17,12 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   Establish Connection broadcasts on each local network and to this computer; By address hails an IP (with :port, or
   each port in turn); the screen shows the port this station listens on, to forward on a router for a hail over the
   internet (a virtual LAN needs nothing). The hailed commander must answer. One channel at a time. Stations must run the same version;
-  Immersive fleets trade only with Immersive fleets. A one-time note warns about the Windows Firewall prompt.
+  A one-time note warns about the Windows Firewall prompt.
+- **Modes and levels:** each station's hello and scan answer give its mode: Sandbox Mode, or an Immersive career's
+  level (Easy, Normal, Hard, Custom), shown beside the commander's name. Sandbox trades only with Sandbox, Immersive
+  only with Immersive. Two careers of different levels trade when both have **Allow trading with any Immersive level**
+  on (Settings, General; on by default): one player on Hard and another on Easy can trade, and a purist can keep a
+  career to its own level. A refused hail says why.
 - **The offer** (`comm/Session`): each side owns its lines and numbers each version of them. Accept names both
   versions, so any change withdraws every acceptance (the notice line says what changed). A line the other station
   can't take (an item or race its game data lacks) shows grey, and Accept stays off.
@@ -38,21 +43,22 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 
 ## Whole ships
 
-- Between two normal fleets, always (there are no commissioning rules to get around). Between Immersive fleets, only
-  when both have **Allow trading immersive ships** on (Settings, Rules, off by default). A normal fleet and an
-  Immersive one don't trade at all. The ship must be docked (not boarded), at a station, with no final battle to settle. Everything aboard
+- Between two Sandbox fleets, always (there are no commissioning rules to get around). Between Immersive careers, only
+  when both have **allow trading whole ships** on (Settings, General, off by default). The ship must be docked (not boarded), at a station, with no final battle to settle. Everything aboard
   goes with her.
 - What travels: her save, her voyage log and its summary, and her last trade mark. Her museum record, kept versions and
   fate stay with the fleet she leaves, where her history is kept as a record (fate TRANSFERRED: she can't be recovered,
   and a victor's exhibit reads "Transferred to another fleet").
-- She arrives docked under a new id, set out at The Home Planet Station as a newly commissioned ship is.
+- She arrives docked under a new id, set out at The Home Planet Station as a newly commissioned ship is. Her papers
+  carry her original commission date, which goes into her museum record (and her trade mark), through every trade.
+- Once a trade settles, the ships' packages in `comm/trade-<id>/` are deleted; the trade record stays as a receipt.
 - **Not yet:** remodeled ships and ships from Design Ship. Their blueprints are numbered by the station that drew them
   up, so another station may have a different ship under the same id. Taking them across means sending the blueprint
   (and art), re-numbering it on arrival and rewriting her save to match.
 
 ## The trade mark (`vault/TradeMark`, history/&lt;id&gt;/traded.txt)
 
-- Written when a ship arrives: the trade, the date, who sent her, her **original owner** (whoever first commissioned
+- Written when a ship arrives: the trade, the date, who sent her, her commission date, her **original owner** (whoever first commissioned
   her, carried through every trade), and her FTL totals at that moment (ships defeated, beacons, scrap, sectors).
 - **Displays show her whole life** (Space Dock, Ship Records, the Museum), plus "Original owner" (and "Received from"
   when that's someone else).
@@ -66,4 +72,5 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 
 LinkT runs station A in its own process and station B (LinkPeer) in another, over localhost: goods, supplies and crew
 both ways; a change withdrawing acceptance; a refused line; each side crashing at each step of the exchange and the
-trade settling on the next link; whole ships there and back with their marks; garbled messages and out-of-range crew.
+trade settling on the next link; modes and levels refused or allowed; whole ships there and back with their marks,
+commission dates and no packages left behind; garbled messages and out-of-range crew.

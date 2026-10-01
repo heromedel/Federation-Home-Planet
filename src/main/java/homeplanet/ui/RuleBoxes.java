@@ -59,7 +59,6 @@ public class RuleBoxes {
 	private final JLabel freeLabel = new JLabel("Report for Reassignment grants:  ");
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
-	final JCheckBox shipTradeBox = new JCheckBox("Allow trading immersive ships (whole ships over Long Range Comm., with another Immersive fleet that allows it too)", HomePlanet.immersiveShipTrading);
 	final JCheckBox careerBox = new JCheckBox("Career messages: a welcome, promotions, rewards for FTL achievements and a monthly stipend, in Sandbox Mode too", HomePlanet.careerMessages);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
@@ -124,8 +123,6 @@ public class RuleBoxes {
 		notifyBox.setToolTipText("<html>Orders for the free ships the rules grant, the Liaison's word when you're left without a ship, and letters you can reply to."
 				+ "<br>With Career messages (always, in Immersive Mode), also the welcome, promotions, achievement rewards and the stipend.</html>");
 		notifyBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Mode, which turns it on
-		shipTradeBox.setToolTipText("Normal fleets always may. A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
-		shipTradeBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		careerBox.setToolTipText("Your rank rises as you unlock FTL's Federation Cruisers; achievements earned from now on are rewarded, and the stipend comes every "
 				+ homeplanet.parser.Career.SECTORS_PER_MONTH + " sectors. Your fleet and rules stay your own. (Always on in Immersive Mode, at its difficulty.)");
 		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 44, 0, 0)); // under Immersive Notifications, which it needs
@@ -201,7 +198,6 @@ public class RuleBoxes {
 		freeBox.setToolTipText(im ? byValue : freeTip);
 		freeLabel.setToolTipText(im ? byValue : freeTip);
 		if (!im) unlockBox.setEnabled(cost);
-		shipTradeBox.setEnabled(im); // an Immersive fleet's own choice: normal fleets don't trade whole ships
 		if (!im) customLockedBox.setEnabled(lockedBox.isSelected());
 	}
 
@@ -252,7 +248,6 @@ public class RuleBoxes {
 		if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
 		if (!HomePlanet.immersiveMode && !FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Report for Reassignment grants: " + freeBox.getSelectedItem());
 		if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
-		if (shipTradeBox.isSelected() != HomePlanet.immersiveShipTrading) changed.add("Trading immersive ships: " + shipTradeBox.isSelected());
 		if (!HomePlanet.immersiveMode && careerBox.isSelected() != HomePlanet.careerMessages) changed.add("Career messages: " + careerBox.isSelected());
 		if (unlockBox.isSelected() != HomePlanet.unlockFreeShips) changed.add("A free ship for each new FTL unlock: " + unlockBox.isSelected());
 		// (with Immersive Mode on, the locked rules above show its values; the player's own are kept apart)
@@ -261,7 +256,6 @@ public class RuleBoxes {
 	/** Sets the rules from the boxes (the caller saves the config, and switches fleets first when Immersive Mode changes). */
 	public void apply() {
 		boolean unlockWasOn = HomePlanet.unlockFreeShips;
-		HomePlanet.immersiveShipTrading = shipTradeBox.isSelected();
 		if (!HomePlanet.immersiveMode) HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()]; // (Immersive Mode shows its own, Variable)
 		if (!HomePlanet.immersiveMode) HomePlanet.careerMessages = careerBox.isSelected();
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)

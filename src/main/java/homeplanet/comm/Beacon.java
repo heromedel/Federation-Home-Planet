@@ -34,9 +34,11 @@ public final class Beacon {
 	/** A station that answered. */
 	public static final class Found {
 		public final String host, title, ship, version, station;
+		/** Its mode: the vault's slot (sandbox, easy, normal, hard, custom). */
+		public final String mode;
 		public final int port;
-		Found(String host, int port, String title, String ship, String version, String station) {
-			this.host = host; this.port = port; this.title = title; this.ship = ship; this.version = version; this.station = station;
+		Found(String host, int port, String title, String ship, String version, String station, String mode) {
+			this.host = host; this.port = port; this.title = title; this.ship = ship; this.version = version; this.station = station; this.mode = mode;
 		}
 	}
 
@@ -78,9 +80,9 @@ public final class Beacon {
 		public void close() { open = false; socket.close(); }
 	}
 
-	/** The answer's text: one field a line (tcp port, protocol, version, station id, title, ship). */
-	public static String answer(int tcpPort, String version, String station, String title, String ship) {
-		return tcpPort + "\n" + Session.PROTOCOL + "\n" + version + "\n" + station + "\n" + title + "\n" + (ship == null ? "" : ship);
+	/** The answer's text: one field a line (tcp port, protocol, version, station id, title, ship, mode). */
+	public static String answer(int tcpPort, String version, String station, String title, String ship, String mode) {
+		return tcpPort + "\n" + Session.PROTOCOL + "\n" + version + "\n" + station + "\n" + title + "\n" + (ship == null ? "" : ship) + "\n" + mode;
 	}
 
 	/** Asks every station in reach, listening for answers this long. Not on the event thread. Leaves out this station. */
@@ -123,7 +125,8 @@ public final class Beacon {
 			int port = Integer.parseInt(l[1].trim());
 			if (port < Channel.PORT0 || port >= Channel.PORT0 + Channel.PORTS) return null;
 			if (!l[4].matches("[0-9a-f]{16}")) return null;
-			return new Found(host, port, Line.text(l[5], 48), Line.text(l[6], 64), Line.text(l[3], 16), l[4]);
+			String mode = l.length > 7 && java.util.Arrays.asList(homeplanet.vault.Vault.SLOTS).contains(l[7].trim()) ? l[7].trim() : homeplanet.vault.Vault.SANDBOX;
+			return new Found(host, port, Line.text(l[5], 48), Line.text(l[6], 64), Line.text(l[3], 16), l[4], mode);
 		} catch (NumberFormatException e) {
 			return null;
 		}

@@ -86,6 +86,15 @@ public final class Museum {
 	}
 	private static String today() { return new SimpleDateFormat("d MMMM yyyy").format(new Date()); }
 
+	/** When she was first commissioned ("1 October 2026"), or "" if not known. */
+	public static String commissioned(Vault v, String id) { return read(v, id).getProperty("commissioned", ""); }
+	/** Her commission date, as it came with her from another fleet (Long Range Comm.). */
+	public static void setCommissioned(Vault v, String id, String date) {
+		if (date == null || date.trim().isEmpty()) return;
+		Properties p = read(v, id);
+		p.setProperty("commissioned", date.trim());
+		write(v, id, p);
+	}
 	/** The station set her out (commissioned, a New Journey, rescued): the profile's achievements now start her command's honours. */
 	public static void setOut(Vault v, Ship s, boolean commissioned) {
 		Properties p = read(v, s.id);

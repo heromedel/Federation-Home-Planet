@@ -118,6 +118,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private final FtlButton hailBtn = new FtlButton("Hail", FtlFont.MENU, 146, 30), hailAddrBtn = new FtlButton("Hail", FtlFont.MENU, 146, 30);
 	private final JTextField address = new JTextField();
 	private final JLabel theirPic = new JLabel();
+	/** "CONNECTED TO", with the other station's mode. */
+	private final CargoParts.Label connectedTo = new CargoParts.Label("CONNECTED TO", FtlFont.BODY, CargoParts.DIM, 1);
 	private final FtlButton who = new FtlButton("", FtlFont.MENU, RW - 122, 30);
 	private final CargoParts.Label theirNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
 	private final SupplyBox[] theirSupply = new SupplyBox[4];
@@ -399,9 +401,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		theirPic.setBounds(RW - 110, 2, 110, 62);
 		theirPic.setHorizontalAlignment(JLabel.CENTER);
 		partner.add(theirPic);
-		CargoParts.Label to = new CargoParts.Label("CONNECTED TO", FtlFont.BODY, CargoParts.DIM, 1);
-		to.setBounds(0, 0, RW - 122, 16);
-		partner.add(to);
+		connectedTo.setBounds(0, 0, RW - 122, 16);
+		partner.add(connectedTo);
 		who.setBounds(0, 16, RW - 122, 30);
 		who.setFocusable(false);
 		who.setCursor(java.awt.Cursor.getDefaultCursor());
@@ -517,7 +518,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	}
 	private String selfAnswer() {
 		Ship b = Vault.get().boarded();
-		return Beacon.answer(post == null ? Channel.PORT0 : post.port, HomePlanet.APP_VERSION, Commander.stationId(), Commander.title(), b == null ? "" : b.name);
+		return Beacon.answer(post == null ? Channel.PORT0 : post.port, HomePlanet.APP_VERSION, Commander.stationId(), Commander.title(), b == null ? "" : b.name, Vault.get().slot);
 	}
 	private void closePost() {
 		if (post != null) post.close();
@@ -543,8 +544,9 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 						List<CargoParts.Row> rows = new ArrayList<CargoParts.Row>();
 						for (Beacon.Found x : f) {
 							boolean same = x.version.equals(HomePlanet.APP_VERSION);
-							rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), same ? x.host : "version " + x.version, x,
-									same ? x.title + "'s Home Planet Station, at " + x.host + ":" + x.port : "A different version of Federation Home Planet (" + x.version + "): both stations need the same one", !same));
+							String mode = Vault.title(x.mode);
+							rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), same ? mode : "version " + x.version, x,
+									same ? x.title + "'s Home Planet Station (" + mode + "), at " + x.host + ":" + x.port : "A different version of Federation Home Planet (" + x.version + "): both stations need the same one", !same));
 						}
 						found.setRows(rows);
 						if (!rows.isEmpty()) found.list.setSelectedIndex(0);
@@ -621,7 +623,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (fail == null && reply != null) {
 			try {
 				Session.Peer p = Session.peerOf(reply);
-				String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId(), HomePlanet.immersiveMode);
+				String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId(), Vault.get().slot, HomePlanet.immersiveAnyLevel);
 				if (why != null) { ch.close(why); fail = why; }
 				else { begin(new Session(ch, true, p, Commander.stationId(), shipsAllowed())); return; }
 			} catch (Wire.Garbled e) {
@@ -644,11 +646,11 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	}
 	private void answer(Channel ch, Session.Peer p) {
 		if (session != null || hailing || !isShowing()) { ch.close(Commander.title() + " is busy with another channel."); return; }
-		String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId(), HomePlanet.immersiveMode);
+		String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId(), Vault.get().slot, HomePlanet.immersiveAnyLevel);
 		if (why != null) { ch.close(why); notice.set(p.title + " hailed this station, but: " + why); return; }
 		hailing = true;
 		Object[] opts = {"Answer", "Ignore"};
-		int r = JOptionPane.showOptionDialog(this, p.title + (p.ship.isEmpty() ? "" : ", aboard " + p.ship) + ", is hailing The Home Planet Station.\nAnswer the hail?",
+		int r = JOptionPane.showOptionDialog(this, p.title + " (" + p.modeTitle() + ")" + (p.ship.isEmpty() ? "" : ", aboard " + p.ship) + ", is hailing The Home Planet Station.\nAnswer the hail?",
 				"Incoming hail", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
 		hailing = false;
 		if (r != 0 || ch.isClosed()) { ch.close(Commander.title() + " did not answer the hail."); return; }
@@ -658,9 +660,9 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	}
 	private Wire.Msg myHello() {
 		Ship b = Vault.get().boarded();
-		return Session.hello(HomePlanet.APP_VERSION, Commander.stationId(), Commander.title(), b == null ? "" : b.name, HomePlanet.immersiveMode, shipsAllowed());
+		return Session.hello(HomePlanet.APP_VERSION, Commander.stationId(), Commander.title(), b == null ? "" : b.name, Vault.get().slot, shipsAllowed(), HomePlanet.immersiveAnyLevel);
 	}
-	/** Whether this station lets whole ships change hands: a normal fleet always; an Immersive fleet by its own setting. */
+	/** Whether this station lets whole ships change hands: a Sandbox fleet always; an Immersive career by its own setting. */
 	public static boolean shipsAllowed() { return !HomePlanet.immersiveMode || HomePlanet.immersiveShipTrading; }
 
 	private void begin(Session s) {
@@ -668,6 +670,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		lastShow = null;
 		notice.set("");
 		who.setText(s.peer.title);
+		connectedTo.setText("CONNECTED TO  (" + s.peer.modeTitle().toUpperCase() + ")");
 		theyOfferLabel.setText(shortName(s.peer.title).toUpperCase() + " OFFERS");
 		middleCards.show(middle, "open");
 		rightCards.show(right, "partner");
@@ -703,7 +706,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	public void settled(Exchange.Record r) {
 		lastShow = null;
 		if (Exchange.DONE.equals(r.state)) help("Trade with " + r.peerTitle + " complete. Received " + r.inWords() + "; gave " + r.outWords() + ".");
-		else help("Trade with " + r.peerTitle + " called off: " + r.outWords() + " returned (ships to the Space Dock, the rest to the Cargo Hold).");
+		else help("Trade with " + r.peerTitle + " called off: " + r.outWords() + " came back: " + Exchange.whereTheyGo(r.out) + ".");
 		readSource();
 		refreshAll();
 	}
@@ -835,8 +838,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private String whyNotShip() {
 		if (session == null) return "Open a channel first.";
 		if (!session.shipsAllowed())
-			return !shipsAllowed() ? "Allow trading immersive ships first (Settings, Rules)."
-					: session.peer.title + "'s station doesn't allow trading immersive ships.";
+			return !shipsAllowed() ? "Allow trading whole ships first (Settings, General)."
+					: session.peer.title + "'s career doesn't allow trading whole ships.";
 		if (source == null || source.isStorage()) return "Choose one of your ships under Offering From.";
 		if (source.isBoarded()) return source.name + " is the ship at your command: board another ship before offering her.";
 		if (sourceOfferedWhole()) return source.name + " is already in the offer.";
@@ -1022,19 +1025,19 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				if (r.leader) {
 					Object[] opts = {"Call it off", "Leave it"};
 					int c = JOptionPane.showOptionDialog(owner, what + "The link was lost before this station completed the trade, so " + r.peerTitle
-							+ " received nothing.\nCalling it off returns what you gave to the Cargo Hold. (It is also called off the next time you connect to them.)",
+							+ " received nothing.\nCalling it off brings back what you gave: ships to the Space Dock, the rest to the Cargo Hold. (It is also called off the next time you connect to them.)",
 							"Unfinished trade", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
-					if (c == 0) { Exchange.callOff(r, "called off by hand"); JOptionPane.showMessageDialog(owner, "Called off. " + r.outWords() + ": back in the Cargo Hold.", "Unfinished trade", JOptionPane.INFORMATION_MESSAGE); }
+					if (c == 0) { Exchange.callOff(r, "called off by hand"); JOptionPane.showMessageDialog(owner, "Called off. " + r.outWords() + " came back: " + Exchange.whereTheyGo(r.out) + ".", "Unfinished trade", JOptionPane.INFORMATION_MESSAGE); }
 				} else {
 					Object[] opts = {"Leave it", "Finish it", "Call it off"};
 					int c = JOptionPane.showOptionDialog(owner, what + r.peerTitle + "'s station led this trade, and only it knows whether it went through.\n"
 							+ "The simplest way to settle it: connect to " + r.peerTitle + " with Long Range Comm. It settles by itself.\n\n"
 							+ "If that can't happen, ask them how it ended:\n  Finish it: only if it went through at their end (you receive what was offered).\n"
-							+ "  Call it off: only if it didn't (what you gave returns to the Cargo Hold).",
+							+ "  Call it off: only if it didn't (what you gave comes back).",
 							"Unfinished trade", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
 					if (c == 1 && HomePlanet.confirmNo(owner, "Finish the trade with " + r.peerTitle + "?\nYou receive " + r.inWords() + ".", "Unfinished trade")) {
 						Exchange.complete(r);
-					} else if (c == 2 && HomePlanet.confirmNo(owner, "Call off the trade with " + r.peerTitle + "?\n" + r.outWords() + " returns to the Cargo Hold.", "Unfinished trade")) {
+					} else if (c == 2 && HomePlanet.confirmNo(owner, "Call off the trade with " + r.peerTitle + "?\n" + r.outWords() + " comes back: " + Exchange.whereTheyGo(r.out) + ".", "Unfinished trade")) {
 						Exchange.callOff(r, "called off by hand");
 					}
 				}

@@ -112,6 +112,23 @@ public class LinkT {
   Setup.chk("both called off: nothing changed hands", a("unfinished").equals("0") && b("unfinished").equals("0")
     && num(a("hold"), "scrap") == num(aHold, "scrap") && num(b("hold"), "fuel") == num(bHold, "fuel"));
 
+  // ---- modes and levels ----
+  a("close"); b("wait ended");
+  b("mode easy on");
+  String r = a("hail " + port);
+  Setup.chk("Sandbox and Immersive don't trade: refused, with the reason", r.startsWith("REFUSED") && r.contains("Sandbox Mode") && r.contains("Immersive Easy"));
+  a("mode hard on");
+  Setup.chk("an Immersive Hard career hails an Easy one (both allow any level)", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+  a("close"); b("wait ended");
+  b("mode easy off");
+  r = a("hail " + port);
+  Setup.chk("an Easy career that trades only within its level refuses Hard", r.startsWith("REFUSED") && r.contains("different levels"));
+  b("mode easy on"); a("mode easy off");
+  Setup.chk("two Easy careers trade whatever the setting", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+  a("close"); b("wait ended");
+  a("mode sandbox"); b("mode sandbox");
+  Setup.chk("back to Sandbox: A hails B", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+
   // ---- who may trade whole ships ----
   boolean im = HomePlanet.immersiveMode, st = HomePlanet.immersiveShipTrading;
   HomePlanet.immersiveMode = false; HomePlanet.immersiveShipTrading = false;
@@ -121,7 +138,7 @@ public class LinkT {
   HomePlanet.immersiveShipTrading = true;
   boolean immersiveOn = homeplanet.ui.LongRangeCommUI.shipsAllowed();
   HomePlanet.immersiveMode = im; HomePlanet.immersiveShipTrading = st;
-  Setup.chk("ships: a normal fleet always may, an Immersive one by its setting", normal && !immersiveOff && immersiveOn);
+  Setup.chk("ships: a Sandbox fleet always may, an Immersive career by its setting", normal && !immersiveOff && immersiveOn);
   a("close"); b("wait ended"); b("noships");
   Setup.chk("A hails a station that doesn't allow ships", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
   a("offer ship Test_Federation");
@@ -136,6 +153,7 @@ public class LinkT {
   Setup.chk("the boarded ship can't change hands", a("problems").contains("must be docked") && a("fleet").contains("Test_Kestrel"));
   a("clear"); b("clear");
   a("rename Test_Engi Wanderer"); // B has a Test Engi of its own
+  a("commissioned Wanderer 30 September 2026");
   String engiA = a("idof Wanderer");
   a("offer ship Wanderer"); b("offer supply fuel 1");
   trade("a whole ship");
@@ -144,6 +162,8 @@ public class LinkT {
   Setup.chk("A can't recover a traded ship", !a("recoverable").contains("Wanderer"));
   Setup.chk("B's fleet has her", b("fleet").contains("Wanderer"));
   Setup.chk("her mark: from and first commissioned by Captain Ash", b("mark Wanderer").startsWith("from=Captain_Ash original=Captain_Ash"));
+  Setup.chk("her commission date came with her", b("commissioned Wanderer").equals("30 September 2026"));
+  Setup.chk("a settled trade leaves no packages behind (A and B)", a("packages").equals("0") && b("packages").equals("0"));
   b("defeat Wanderer 3");
   String since = b("since Wanderer");
   Setup.chk("only what she does for B counts", num(since, "defeated") == 3 && num(since, "lifetime") >= 3);
@@ -155,6 +175,7 @@ public class LinkT {
   since = a("since Wanderer");
   Setup.chk("her kills for B don't count for A", num(since, "defeated") == 0 && num(since, "lifetime") >= 3);
   Setup.chk("a new id, not her old one", !a("idof Wanderer").equals(engiA));
+  Setup.chk("her commission date survives the trip back", a("commissioned Wanderer").equals("30 September 2026"));
 
   // ---- garbled transmissions ----
   Setup.chk("an oversized frame is garbled", garbled(new byte[] {0x7f, 0, 0, 0}));

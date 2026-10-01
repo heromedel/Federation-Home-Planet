@@ -315,7 +315,16 @@ public final class Exchange {
 		return s.getAugmentIdList().remove(l.id);
 	}
 
-	// ---- done, or called off: either way, lines go into the Cargo Hold ----
+	// ---- done, or called off: goods go into the Cargo Hold, ships to the Space Dock ----
+
+	/** Where these lines end up, in words: "in the Cargo Hold", "docked at the Space Dock", or both. */
+	public static String whereTheyGo(List<Line> lines) {
+		int ships = 0, goods = 0;
+		for (Line l : lines) { if (l.kind == Line.Kind.SHIP) ships++; else goods++; }
+		if (ships == 0) return goods == 0 ? "" : "in the Cargo Hold";
+		String docked = ships == 1 ? "she is docked at the Space Dock" : "they are docked at the Space Dock";
+		return goods == 0 ? docked : docked + ", and the rest is in the Cargo Hold";
+	}
 
 	/** The other station's lines go into the Cargo Hold, and the record is marked done. */
 	public static void complete(Record r) throws IOException {
@@ -331,14 +340,15 @@ public final class Exchange {
 		}
 		settle(r, r.in, DONE);
 		for (Line l : r.out) if (l.kind == Line.Kind.SHIP) v.transferred(l.from, l.name, r.peerTitle);
+		cleanUp(r);
 		List<String> lines = new ArrayList<String>();
 		lines.add("gave: " + r.outWords());
-		lines.add("received (in the Cargo Hold): " + r.inWords());
+		lines.add("received (" + whereTheyGo(r.in) + "): " + r.inWords());
 		HistoryLog.entry("LONG RANGE TRADE", "with " + r.peerTitle + "  (trade " + r.id + ")", lines);
 		homeplanet.parser.Transmissions.deliver("trade:" + r.id, "Home Planet Quartermaster", "Received from " + r.peerTitle,
 				homeplanet.parser.Transmissions.rank() + ",\n\n"
 				+ (r.in.isEmpty() ? "Nothing came back from " + r.peerTitle + ". Generous of you.\n\n"
-						: "Signed for at The Home Planet Station: " + r.inWords() + ". All of it in the Cargo Hold.\n\n")
+						: "Signed for at The Home Planet Station: " + r.inWords() + ". " + capital(whereTheyGo(r.in).startsWith("in the") ? "all of it " + whereTheyGo(r.in) : whereTheyGo(r.in)) + ".\n\n")
 				+ (r.out.isEmpty() ? "Nothing went out for it. Good trading." : "Sent to " + r.peerTitle + ": " + r.outWords() + ".\n\nCounted twice. Fair trade.")
 				+ "\n~ Home Planet Quartermaster");
 	}
@@ -347,11 +357,18 @@ public final class Exchange {
 		if (!ESCROW.equals(r.state)) throw new IOException("This trade was already settled (" + r.state + ")");
 		for (Line l : r.out) if (l.kind == Line.Kind.SHIP) Vault.get().comeBack(l.from, SafeFiles.read(pkgFile(r, true, l.n)));
 		settle(r, r.out, CALLED_OFF);
+		cleanUp(r);
 		List<String> lines = new ArrayList<String>();
-		lines.add("returned (ships to the Space Dock, the rest to the Cargo Hold): " + r.outWords());
+		lines.add("came back (" + whereTheyGo(r.out) + "): " + r.outWords());
 		if (why != null && !why.isEmpty()) lines.add("why: " + why);
 		HistoryLog.entry("TRADE CALLED OFF", "with " + r.peerTitle + "  (trade " + r.id + ")", lines);
 	}
+	/** A settled trade's ships' packages have done their job: only the record stays, as a receipt. */
+	private static void cleanUp(Record r) {
+		File f = folderOf(r.id);
+		if (f.isDirectory() && !SafeFiles.deleteTree(f)) log.warn("Could not clear {}", f);
+	}
+	private static String capital(String s) { return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
 	private static void settle(Record r, List<Line> into, String state) throws IOException {
 		if (!ESCROW.equals(r.state)) throw new IOException("This trade was already settled (" + r.state + ")");
 		Vault v = Vault.get();
