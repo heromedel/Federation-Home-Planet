@@ -1,0 +1,176 @@
+# Ship names: what the dice beside "Ship name" at Commission roll. Edit freely.
+#
+# "== single" are whole names. "== first" and "== second" are put together ("Iron" + "Heron"). The race sections
+# (kestrel, stealth, mantis, engi, federation, slug, rock, zoltan, crystal, lanius) are whole names for that model's
+# ships: a roll for one of them picks from its own section some of the time, and from the Federation's names the rest.
+# Names longer than 20 letters are skipped (FTL may cut them off), and so are names a ship in the fleet already has.
+
+== single
+Perseverance
+Steadfast
+Second Wind
+Resolute
+Vigilant
+Endurance
+Fortitude
+Last Light
+Lucky Break
+Homeward
+Good Fortune
+Tenacity
+Free Beacon
+Hope's Edge
+Unbroken
+Defiance
+Long Haul
+Dawn Patrol
+Little Victory
+Far Horizon
+Hard Bargain
+Brave Little Toaster
+Stubborn
+Undaunted
+Sentinel
+Nightwatch
+Hold Fast
+Better Days
+Liberty
+Faithful
+
+== first
+Iron
+Quiet
+Morning
+Silver
+Swift
+Bright
+Stalwart
+Distant
+Wandering
+Burning
+Patient
+Steel
+Starlit
+Restless
+Golden
+Crimson
+Northern
+Lonely
+Gallant
+Honest
+Lucky
+Free
+
+== second
+Heron
+Thunder
+Star
+Arrow
+Falcon
+Lantern
+Promise
+Sparrow
+Comet
+Harbor
+Anvil
+Kestrel
+Voyager
+Banner
+Spark
+Tide
+Wing
+Spirit
+Shield
+Duck
+Courier
+Pilgrim
+
+== kestrel
+Red-Tail
+Old Faithful
+Kestrel's Pride
+Workhorse
+Little Kestrel
+Second Kestrel
+Hardtack
+
+== stealth
+Nesasio
+Whisper
+Ghost Moth
+Shadowfall
+Quietus
+Blind Spot
+Nightjar
+
+== mantis
+Bloodfang
+Gutripper
+Skittering Death
+Mandible
+Hive Hunter
+Twelve Knives
+Praying Fury
+
+== engi
+Unit of Repair 7
+Torus
+Recompiler
+Gentle Wrench
+Mender Prime
+Many Hands
+Iterative Process
+
+== federation
+Osprey
+Swift Justice
+Free Worlds
+Federation Pride
+Admiral's Promise
+Unity
+Charter
+
+== slug
+Nobody Important
+Totally Unarmed
+Gift Horse
+Friendly Visitor
+Honest Trader
+Not a Trap
+Bad Idea
+
+== rock
+Bulwark
+Basalt
+Granite Fist
+Unmovable
+Mountain
+Slow Avalanche
+Bedrock
+
+== zoltan
+Calm Lattice
+Bright Pattern
+Adjudicator
+Radiant Thought
+Quiet Current
+Harmonic
+Peace Keeper
+
+== crystal
+Bravais
+Facet
+Prism
+Shard of Ancestry
+Lattice Heart
+Geode
+Clear Note
+
+== lanius
+Hunger
+Bitter Metal
+Ate the Hull
+Rust Choir
+Corroded Psalm
+Scrap Eater
+Hollow

@@ -1147,9 +1147,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** The tallest a ship's picture is drawn in her report. */
 	private static final int REPORT_PIC_H = 200;
 
-	public JPanel shipSummaryPanel(SavedGameState sgs) { return shipSummaryPanel(sgs, null); }
-	/** As {@link #shipSummaryPanel(SavedGameState)}; with {@code rename}, clicking a crew member's name asks for a new one (Commission). */
-	public JPanel shipSummaryPanel(SavedGameState sgs, final java.util.function.Consumer<CrewState> rename) {
+	public JPanel shipSummaryPanel(SavedGameState sgs) { return shipSummaryPanel(sgs, null, null); }
+	/**
+	 * As {@link #shipSummaryPanel(SavedGameState)}; with {@code rename}, clicking a crew member's name asks for a new one,
+	 * and with {@code reroll} a die beside the Crew heading rolls new names (Commission).
+	 */
+	public JPanel shipSummaryPanel(SavedGameState sgs, final java.util.function.Consumer<CrewState> rename, Runnable reroll) {
 		ShipState state = sgs.getPlayerShip();
 		JPanel p = new JPanel(new java.awt.BorderLayout(18, 4));
 		ShipBlueprint ship = blueprintOf(sgs.getPlayerShipBlueprintId());
@@ -1179,7 +1182,17 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		reportRow(left, IconFactory.supplyIcon("missiles"), "Missiles: " + state.getMissilesAmt());
 		reportRow(left, IconFactory.supplyIcon("drones"), "Drone Parts: " + state.getDronePartsAmt());
 		reportRow(left, IconFactory.supplyIcon("scrap"), "Scrap: " + state.getScrapAmt());
-		reportHeading(crew, "Crew");
+		if (reroll == null) reportHeading(crew, "Crew");
+		else {
+			crew.add(Box.createRigidArea(new Dimension(0, 6)));
+			JPanel head = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+			head.setOpaque(false);
+			head.setAlignmentX(LEFT_ALIGNMENT);
+			head.add(shadowLabel("Crew", null, true));
+			head.add(DiceIcon.button("New names for her crew (or click a name to choose one)", reroll));
+			head.setMaximumSize(head.getPreferredSize());
+			crew.add(head);
+		}
 		for (final CrewState c : SaveHelper.getOwnCrew(state)) {
 			JLabel row = reportRow(crew, IconFactory.crewIcon(c), c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")");
 			if (rename == null) continue;

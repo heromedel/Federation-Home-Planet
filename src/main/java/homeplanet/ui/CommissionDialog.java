@@ -65,7 +65,6 @@ public class CommissionDialog extends JDialog {
 	/** Her starting crew as previewed (names and looks): the crew she's built with. Rolled when a ship is chosen. */
 	private List<net.blerf.ftl.parser.SavedGameParser.CrewState> crew = null;
 	private String crewFor = null;
-	private final JButton newNames = new JButton("New crew names");
 	/** HR2: her price, under the name and difficulty (hidden when commissioning is free). */
 	private final JLabel priceLabel = new JLabel(" ");
 	private homeplanet.vault.Ship made = null;
@@ -125,22 +124,16 @@ public class CommissionDialog extends JDialog {
 		c.anchor = GridBagConstraints.WEST;
 		form.add(new JLabel("Ship name:"), c);
 		c.gridx = 1;
-		form.add(nameField, c);
+		JPanel named = new JPanel(new java.awt.BorderLayout(2, 0));
+		named.add(nameField, java.awt.BorderLayout.CENTER);
+		named.add(DiceIcon.button("A new name for her", new Runnable() { public void run() { rollShipName(); } }), java.awt.BorderLayout.EAST);
+		form.add(named, c);
 		c.gridx = 2;
 		form.add(new JLabel("  Difficulty:"), c);
 		c.gridx = 3;
 		difficulty.setToolTipText("How dangerous her first journey will be");
 		difficulty.setSelectedIndex(1); // Normal, as FTL starts
 		form.add(difficulty, c);
-		c.gridx = 0; c.gridy = 1; c.gridwidth = 4;
-		newNames.setToolTipText("Roll new names for her starting crew (click a name in the preview to choose one yourself)");
-		newNames.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent ev) {
-			Entry sel = list.getSelectedValue();
-			if (sel == null || sel.header()) return;
-			crewFor = null;
-			showPreview(sel);
-		}});
-		form.add(newNames, c);
 
 		JPanel right = new JPanel(new BorderLayout(0, 6));
 		preview.setPreferredSize(new Dimension(520, 440));
@@ -335,7 +328,7 @@ public class CommissionDialog extends JDialog {
 			final List<net.blerf.ftl.parser.SavedGameParser.CrewState> aboard = SaveHelper.getOwnCrew(s.getPlayerShip());
 			JPanel p = dock.shipSummaryPanel(s, new java.util.function.Consumer<net.blerf.ftl.parser.SavedGameParser.CrewState>() {
 				public void accept(net.blerf.ftl.parser.SavedGameParser.CrewState c) { renameCrew(shown, aboard.indexOf(c), c); }
-			});
+			}, new Runnable() { public void run() { crewFor = null; showPreview(shown); } });
 			JLabel stats = new JLabel("<html>" + classOf(bp) + ": hull " + bp.getHealth().amount + ", reactor "
 					+ s.getPlayerShip().getReservePowerCapacity() + ", " + (bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots())
 					+ " weapon slots, " + (bp.getDroneSlots() == null ? 3 : bp.getDroneSlots()) + " drone slots</html>");
@@ -355,6 +348,16 @@ public class CommissionDialog extends JDialog {
 	}
 
 	private String previewFor = null;
+	/** The die beside the ship name: a name for her model, unlike any ship's in the fleet (or the one shown). */
+	private void rollShipName() {
+		Entry e = list.getSelectedValue();
+		if (e == null || e.header()) return;
+		List<String> taken = new ArrayList<String>();
+		for (homeplanet.vault.Ship s : homeplanet.vault.Vault.get().all()) taken.add(s.name);
+		taken.add(nameField.getText());
+		String n = homeplanet.parser.ShipNames.roll(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id, taken, rng);
+		if (n != null) nameField.setText(n);
+	}
 	/** Clicking a crew member's name in the preview: her name in the crew she'll be built with. */
 	private void renameCrew(Entry e, int i, net.blerf.ftl.parser.SavedGameParser.CrewState shown) {
 		if (crew == null || i < 0 || i >= crew.size()) return;

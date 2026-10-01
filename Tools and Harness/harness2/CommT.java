@@ -22,6 +22,7 @@ public class CommT { public static void main(String[] a) throws Exception {
  Setup.chk(ok + " ships commissioned and read back (" + bad + " failed)", bad == 0 && ok >= 28);
  setOut(v);
  crewNamed();
+ shipNames();
  Setup.done();
 } /** A ship just commissioned counts as at The Home Planet Station (the station rule) until she leaves her first beacon. */
  static void setOut(Vault v) throws Exception {
@@ -52,5 +53,21 @@ public class CommT { public static void main(String[] a) throws Exception {
   for (int i = 0; same && i < got.size(); i++) same = got.get(i).getName().equals(chosen.get(i).getName()) && got.get(i).getSpriteTintIndeces().equals(chosen.get(i).getSpriteTintIndeces());
   boolean record = false; for (StartingCrewState sc : back.getPlayerShip().getStartingCrewList()) if ("Lucky Duck".equals(sc.getName())) record = true;
   Setup.chk("N: the previewed crew, renamed, is the crew she's built with (and her starting-crew record)", same && record);
+ }
+ /** The dice's ship names: never blank, never too long, never one the fleet has; a model's own names turn up. */
+ static void shipNames() throws Exception {
+  Random rng = new Random(5);
+  List<String> taken = Arrays.asList("Perseverance", "Bloodfang", "iron heron");
+  boolean ok = true, own = false;
+  for (String id : new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_MANTIS_2", "PLAYER_SHIP_JELLY_HP", "SOME_DESIGN"}) {
+   for (int i = 0; i < 300; i++) {
+    String n = ShipNames.roll(id, taken, rng);
+    if (n == null || n.trim().isEmpty() || n.length() > ShipNames.MAX) ok = false;
+    else for (String t : taken) if (t.equalsIgnoreCase(n)) ok = false;
+    if ("Gutripper".equals(n) || "Mandible".equals(n)) own = true;
+   }
+  }
+  Setup.chk("N: rolled ship names are never blank, too long, or the fleet's", ok);
+  Setup.chk("N: a Mantis cruiser rolls Mantis names too", own);
  }
 }
