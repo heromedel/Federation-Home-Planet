@@ -39,8 +39,9 @@ public class SpaceDockScrollPane extends JPanel {
 		built = StationBackdrop.make(frame, rng);
 		CargoBayUI.rerollHold(frame);
 		// Ctrl+Shift+B: a new roll of ships, and of the Cargo Hold's contents, to look at a few without restarting
-		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_B, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "reroll");
-		getActionMap().put("reroll", new AbstractAction() {
+		// (on the window itself, so it works in the Cargo Bay too, where this panel is hidden)
+		frame.getRootPane().getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_B, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "reroll");
+		frame.getRootPane().getActionMap().put("reroll", new AbstractAction() {
 			public void actionPerformed(ActionEvent e) { reroll(frame, true); CargoBayUI.rerollHold(frame); frame.repaint(); }
 		});
 	}
