@@ -1208,6 +1208,25 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		init();
 	}
+	/** A junked ship in a few lines, for the Junkyard list's tooltip: her class, hull, crew, what's wrong, and what she'd sell for. */
+	private static String junkTip(Ship ship) {
+		SavedGameState gs = ship.save();
+		if (gs == null) return ship.name + ": her save can't be read";
+		ShipState s = gs.getPlayerShip();
+		int max = SystemsPanel.maxHull(s), crew = SaveHelper.getOwnCrew(s).size(), broken = homeplanet.parser.Pricing.brokenBars(s), breaches = s.getBreachMap().size();
+		StringBuilder sb = new StringBuilder("<html><b>").append(homeplanet.parser.XmlText.text(gs.getPlayerShipName())).append("</b>, ")
+				.append(homeplanet.parser.XmlText.text(CargoBayUI.shipClass(s))).append("<br>Hull ").append(s.getHullAmt()).append(" / ").append(max)
+				.append(", crew ").append(crew).append(", scrap ").append(s.getScrapAmt());
+		if (broken > 0 || breaches > 0) sb.append("<br>").append(broken).append(broken == 1 ? " broken bar" : " broken bars").append(", ").append(breaches).append(breaches == 1 ? " breach" : " breaches");
+		java.util.List<SystemType> core = homeplanet.parser.Pricing.missingCore(s);
+		if (!core.isEmpty()) {
+			java.util.List<String> names = new java.util.ArrayList<String>();
+			for (SystemType t : core) names.add(DryDockShop.systemTitle(t.getId()));
+			sb.append("<br>Missing: ").append(String.join(", ", names));
+		}
+		sb.append("<br>Trade In: ").append(homeplanet.parser.Pricing.tradeIn(gs)).append(" scrap</html>");
+		return sb.toString();
+	}
 	/** The foreman's derelicts for sale. */
 	void browseDerelicts() {
 		if (DerelictsDialog.open(this)) init();
@@ -1243,13 +1262,37 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "<b>Scrap:</b> strip her down. Weapons, drones, augments, cargo, supplies and crew"
 				+ (homeplanet.core.Economy.stripAllowed() ? ", and her optional systems<br>if you pay to strip them," : "") + " are sent to "
 				+ (homeplanet.core.Economy.stripAllowed() ? "" : "<br>") + "the Cargo Hold, and the hull is broken up for good.<br>"
-				+ "<b>Trade In:</b> The Federation Home Planet's shipyard takes her for half her value, less her hull damage.<br>"
-				+ "<b>Auction:</b> sell her to the highest bidder: a quarter to three quarters of her value, less her hull damage.<br>"
+				+ "<b>Trade In:</b> The Federation Home Planet's shipyard takes her for half her value, less her damage (less still without Engines, Piloting or Oxygen).<br>"
+				+ "<b>Auction:</b> sell her to the highest bidder: a quarter to three quarters of her value, less her damage.<br>"
 				+ "&nbsp;&nbsp;&nbsp;&nbsp;(Selling her sends her scrap and crew to the Cargo Hold; all else goes with her.)<br>"
 				+ "<b>Derelicts:</b> see the hulls the foreman has for sale.<br>"
 				+ "<b>Destroy:</b> reduce her to space debris, with everything aboard. Nothing is recovered,<br>"
 				+ "and her crew are retired from service.<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
-		panel.add(pick, java.awt.BorderLayout.CENTER);
+		// each hull's short report as the list's tooltip; Info... opens her full report
+		final String[] tips = new String[junk.size()];
+		for (int i = 0; i < tips.length; i++) tips[i] = junkTip(junk.get(i));
+		pick.setRenderer(new javax.swing.DefaultListCellRenderer() {
+			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
+				java.awt.Component c = super.getListCellRendererComponent(list, value, index, selected, focus);
+				if (selected && index >= 0 && index < tips.length) list.setToolTipText(tips[index]);
+				return c;
+			}
+		});
+		pick.setToolTipText(tips[0]);
+		pick.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { int i = pick.getSelectedIndex(); if (i >= 0) pick.setToolTipText(tips[i]); } });
+		JButton info = new JButton("Info...");
+		info.setToolTipText("Her report: what's aboard, her crew, her systems");
+		info.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				SavedGameState gs = junk.get(pick.getSelectedIndex()).save();
+				if (gs == null) { HomePlanet.showErrorDialog("Her save can't be read: " + junk.get(pick.getSelectedIndex()).readError()); return; }
+				JOptionPane.showMessageDialog(info, fitToScreen(shipSummaryPanel(gs)), "Ship's report: " + gs.getPlayerShipName(), JOptionPane.PLAIN_MESSAGE);
+			}
+		});
+		JPanel pickRow = new JPanel(new java.awt.BorderLayout(8, 0));
+		pickRow.add(pick, java.awt.BorderLayout.CENTER);
+		pickRow.add(info, java.awt.BorderLayout.EAST);
+		panel.add(pickRow, java.awt.BorderLayout.CENTER);
 		Object[] options = {"Salvage", "Scrap", "Trade In", "Auction", "Destroy", "Derelicts...", "Cancel"};
 		int choice = JOptionPane.showOptionDialog(null, panel, "Salvage Ship", JOptionPane.DEFAULT_OPTION,
 				JOptionPane.QUESTION_MESSAGE, null, options, options[6]); // Cancel is the default

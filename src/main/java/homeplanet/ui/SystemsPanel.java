@@ -91,6 +91,8 @@ public class SystemsPanel {
 	private FtlButton info;
 	private final CargoParts.Label name = new CargoParts.Label("", FtlFont.MENU, CargoParts.GOLD, 0);
 	private final CargoParts.Label sub = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 0);
+	/** What the Cargo Hold can still spend at the Dry Dock, always in view under her name. */
+	private final CargoParts.Label holdLbl = new CargoParts.Label("", FtlFont.BODY, CargoParts.GOLD, 0);
 	private final JPanel lists = new JPanel(null);
 	/** The installed and stored systems scroll inside the top of the column; Layout and model stays pinned below. */
 	private final JPanel sysList = new JPanel(null);
@@ -114,6 +116,9 @@ public class SystemsPanel {
 		panel.add(name);
 		sub.setBounds(16, 520, 640, 16);
 		panel.add(sub);
+		holdLbl.setBounds(16, 542, 640, 16);
+		holdLbl.setToolTipText("The Dry Dock's work is paid from the Cargo Hold when you Save; this is what it has left to spend");
+		panel.add(holdLbl);
 		info = new CargoParts.IconButton(CargoParts.infoIcon(), "Her report, and to rename her", new ActionListener() { public void actionPerformed(ActionEvent e) { bay.showCurrentShipInfo(); } });
 		panel.add(info);
 		lists.setOpaque(false);
@@ -170,6 +175,7 @@ public class SystemsPanel {
 		int tw = CargoParts.width(cls, FtlFont.BODY), gx = 16 + (640 - tw - 30) / 2;
 		info.setBounds(gx, 517, 24, 22);
 		sub.setBounds(gx + 30, 520, tw + 4, 16);
+		holdLbl.setText("Cargo Hold: " + hold() + " scrap" + (bill > 0 ? " (" + bill + " spent here, paid on Save)" : bill < 0 ? " (" + (-bill) + " to come from sales, on Save)" : ""));
 		int w = ROW_W, y = 0;
 		sysList.removeAll();
 		CargoParts.Header h1 = new CargoParts.Header("Installed systems", false);
@@ -570,12 +576,16 @@ public class SystemsPanel {
 		sysList.add(reactor);
 		y += 32;
 		int hull = bs.getHullAmt(), max = maxHull(bs), each = homeplanet.parser.Pricing.hullRepair();
-		int can = Math.min(max - hull, Math.max(0, scrap) / each);
+		int gap = max - hull, all = gap * each;
 		SysRow repair = new SysRow("Hull " + hull + " / " + max, -1, "", null, "Hull repairs: " + each + " scrap a point (The Federation charges a premium)", null);
 		if (hull < max) {
-			repair.addButton("Repair", 78, ROW_W - 82, can > 0, can <= 0 ? "Each point costs " + each + " scrap; the Cargo Hold has " + scrap
-					: "Repair " + can + (can == 1 ? " point" : " points") + " for " + can * each + " scrap (" + each + " a point" + (can < max - hull ? "; all she can afford" : "") + ")",
-					new ActionListener() { public void actionPerformed(ActionEvent e) { repairHull(); } });
+			// as FTL's stores: one point at a time, or all of it at once, each with its price
+			repair.addButton("+1: " + each, 78, ROW_W - 82 - 82, scrap >= each, scrap >= each ? "Repair 1 point of hull for " + each + " scrap"
+					: "A point costs " + each + " scrap; the Cargo Hold has " + scrap,
+					new ActionListener() { public void actionPerformed(ActionEvent e) { repairHull(1); } });
+			repair.addButton("All: " + all, 78, ROW_W - 82, scrap >= all, scrap >= all ? "Repair all " + gap + (gap == 1 ? " point" : " points") + " for " + all + " scrap"
+					: "Repairing all " + gap + " points costs " + all + " scrap; the Cargo Hold has " + scrap + " (use +1 for what it can pay)",
+					new ActionListener() { public void actionPerformed(ActionEvent e) { repairHull(Integer.MAX_VALUE); } });
 		}
 		repair.setBounds(0, y, w, 28);
 		sysList.add(repair);
@@ -584,7 +594,7 @@ public class SystemsPanel {
 		if (breaches > 0) {
 			int seal = breaches * homeplanet.parser.Pricing.BREACH_REPAIR;
 			SysRow br = new SysRow("Hull breaches: " + breaches, -1, "", null, "Holes in her hull, venting air: " + homeplanet.parser.Pricing.BREACH_REPAIR + " scrap each to seal", null);
-			br.addButton("Seal", 78, ROW_W - 82, scrap >= seal, scrap >= seal ? "Seal all " + breaches + " for " + seal + " scrap" : "Sealing them costs " + seal + " scrap; the Cargo Hold has " + scrap,
+			br.addButton("Seal: " + seal, 78, ROW_W - 82, scrap >= seal, scrap >= seal ? "Seal all " + breaches + " for " + seal + " scrap" : "Sealing them costs " + seal + " scrap; the Cargo Hold has " + scrap,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { sealBreaches(); } });
 			br.setBounds(0, y, w, 28);
 			sysList.add(br);
@@ -634,10 +644,11 @@ public class SystemsPanel {
 		changed();
 		bay.help("Sealed " + n + (n == 1 ? " breach" : " breaches") + ". Save makes it official.");
 	}
-	private void repairHull() {
+	/** Repairs up to this many points of hull (all of it: Integer.MAX_VALUE), if the Cargo Hold can pay for them all. */
+	private void repairHull(int points) {
 		ShipState bs = bay.currentSave.getPlayerShip();
 		int each = homeplanet.parser.Pricing.hullRepair();
-		int n = Math.min(maxHull(bs) - bs.getHullAmt(), Math.max(0, hold()) / each);
+		int n = Math.min(maxHull(bs) - bs.getHullAmt(), points);
 		if (n <= 0 || !charge(n * each)) return;
 		bs.setHullAmt(bs.getHullAmt() + n);
 		changes.add("Hull repaired by " + n + " for " + n * each + " scrap");
