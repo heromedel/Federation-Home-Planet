@@ -122,18 +122,21 @@ public final class Transmissions {
 
 	static File file() { return new File(Vault.get().root, "transmissions.xml"); }
 	private static boolean emptyOpen = false; // an empty-shipyard order is out while the shipyard stays empty (read with load())
+	private static boolean strandedOpen = false; // the Liaison's stranded letter is out while the fleet stays without a ship (read with load())
 	/** Letters due later (read with load(), written with save()). */
 	private static List<Pending> pending = new ArrayList<Pending>();
 
 	public static synchronized List<Message> load() {
 		List<Message> out = new ArrayList<Message>();
 		emptyOpen = false;
+		strandedOpen = false;
 		pending = new ArrayList<Pending>();
 		File f = file();
 		if (!f.isFile()) return out;
 		try {
 			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f);
 			emptyOpen = "true".equals(doc.getDocumentElement().getAttribute("emptyOpen"));
+			strandedOpen = "true".equals(doc.getDocumentElement().getAttribute("strandedOpen"));
 			NodeList ns = doc.getElementsByTagName("message");
 			for (int i = 0; i < ns.getLength(); i++) {
 				Element e = (Element) ns.item(i);
@@ -170,7 +173,7 @@ public final class Transmissions {
 	public static synchronized void save(List<Message> all) throws IOException {
 		StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n");
 		sb.append("<!-- Transmissions from The Federation Home Planet. Federation Home Planet rewrites this file. -->\r\n");
-		sb.append("<transmissions emptyOpen=\"").append(emptyOpen).append("\">\r\n");
+		sb.append("<transmissions emptyOpen=\"").append(emptyOpen).append("\" strandedOpen=\"").append(strandedOpen).append("\">\r\n");
 		for (Message m : all) {
 			sb.append("\t<message key=\"").append(XmlText.attr(m.key)).append("\" date=\"").append(XmlText.attr(m.date))
 					.append("\" from=\"").append(XmlText.attr(m.from)).append("\" subject=\"").append(XmlText.attr(m.subject))
@@ -193,6 +196,11 @@ public final class Transmissions {
 	// ---- what's due ----
 
 	/** The player's rank, as messages name it. */
+	/** The player's rank now, as messages name it (Captain outside Immersive Mode). */
+	public static String rank() {
+		Unlocks u = Unlocks.read();
+		return rankName(u.problem() != null ? null : u);
+	}
 	private static String rankName(Unlocks u) {
 		return HomePlanet.immersiveMode ? UnlockGrants.rankName(UnlockGrants.rank(u)) : UnlockGrants.RANKS[0];
 	}
@@ -223,7 +231,8 @@ public final class Transmissions {
 		if (u.problem() != null) u = null;
 		String rank = rankName(u);
 		int before = all.size();
-		boolean wasOpen = emptyOpen;
+		boolean wasOpen = emptyOpen, wasStranded = strandedOpen;
+		int replaced = 0;
 		if (HomePlanet.immersiveMode) {
 			int r = UnlockGrants.rank(u);
 			for (int i = 1; i <= r; i++) send(all, sent, "promo:" + i, "promo:" + i, rank, null);
@@ -237,11 +246,24 @@ public final class Transmissions {
 				for (int i = 2; sent.contains(key); i++) key = "empty:" + stamp() + "-" + i; // two in one second
 				// after a Report for Reassignment, the Shipyard's other letter (in Immersive Mode, the one for the ship it earned)
 				String letter = !v.freeCommandReassigned() ? "empty" : v.immersive ? "reassigned:" + FreeCommand.ship() : "reassigned";
+				// the new order replaces the last one still in the inbox (it's done with: one order per free command)
+				for (java.util.Iterator<Message> it = all.iterator(); it.hasNext();) {
+					Message old = it.next();
+					if (old.key.startsWith("empty:") && !old.archived) { it.remove(); replaced++; }
+				}
 				send(all, sent, key, letter, rank, freeShipWords());
 				emptyOpen = true;
 			}
 		} else if (!granted) {
 			emptyOpen = false; // taken: the next grant sends its own order
+		}
+		// no ship to command and no free command waiting: the Liaison says what can be done (once per stranding)
+		boolean stranded = HomePlanet.commissionCosts && !granted && v.docked().isEmpty() && v.boarded() == null;
+		if (stranded && !strandedOpen) {
+			send(all, sent, "stranded:" + stamp(), v.junked().isEmpty() ? "stranded" : "stranded:junkyard", rank, null);
+			strandedOpen = true;
+		} else if (!stranded) {
+			strandedOpen = false;
 		}
 		if (HomePlanet.commissionCosts && HomePlanet.unlockFreeShips && u != null) {
 			for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
@@ -268,8 +290,8 @@ public final class Transmissions {
 		}
 		// the welcome last: the inbox shows the newest first, so it tops everything that arrives with it
 		if (HomePlanet.immersiveMode) send(all, sent, "welcome", "welcome", rank, null);
-		int added = all.size() - before;
-		if (added > 0 || wasOpen != emptyOpen || chained) {
+		int added = all.size() - before + replaced;
+		if (added > 0 || replaced > 0 || wasOpen != emptyOpen || wasStranded != strandedOpen || chained) {
 			try { save(all); } catch (IOException e) { log.error("Could not save the transmissions", e); }
 		}
 		return added;
@@ -365,6 +387,11 @@ public final class Transmissions {
 	}
 	/** A stipend's notice: deleted rather than archived, so they don't pile up. */
 	public static boolean isStipend(Message m) { return m.key.startsWith("stipend:"); }
+	/** A notice with nothing left to keep, deleted rather than archived: a stipend (paid already), an order for a free command since taken. */
+	public static boolean deletable(Message m) {
+		if (isStipend(m)) return true;
+		return m.key.startsWith("empty:") && Vault.isOpen() && !Vault.get().freeCommandOpen();
+	}
 	/** Deletes a message for good. */
 	public static synchronized void delete(Message m) throws IOException {
 		List<Message> all = load();

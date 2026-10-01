@@ -34,8 +34,14 @@ public class TransT { public static void main(String[] a) throws Exception {
   v.board(k); Transmissions.check();
   v.remove(v.boarded(), "DESTROY"); Transmissions.check();
   Setup.chk("F: the command taken, then the shipyard empty again: no new order, nothing free", orders() == 1 && !v.freeCommandOpen() && v.shipyardEmpty());
+  Setup.chk("F: the order for a command since taken is deleted, not archived", Transmissions.deletable(find("empty")));
+  Transmissions.check(); Transmissions.check();
+  int stranded = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.startsWith("stranded:")) stranded++;
+  Setup.chk("F: no ship and no free command: the Liaison's letter, once", stranded == 1 && "Without a ship".equals(find("stranded").subject)
+    && find("stranded").body.contains("Report for Reassignment") && !find("stranded").body.contains("Junkyard: Salvage"));
+  Setup.chk("F: a report's free ship outside Immersive Mode is Settings'", HomePlanet.freeShip.equals(FreeCommand.onReport(v)));
   File dir = v.surrender(); Transmissions.check();
-  Setup.chk("F: a report for reassignment grants another, with its own order", v.freeCommandOpen() && orders() == 2);
+  Setup.chk("F: a report for reassignment grants another, and its order replaces the old one", v.freeCommandOpen() && orders() == 1 && !Transmissions.deletable(find("empty")));
   Setup.chk("F: and it's the Shipyard's letter for after a reassignment", "Back from nothing".equals(find("empty").subject) && v.freeCommandReassigned());
   v.undoSurrender(dir);
   Setup.chk("F: undoing the report takes the grant back", !v.freeCommandOpen());

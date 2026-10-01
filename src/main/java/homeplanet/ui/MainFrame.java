@@ -49,7 +49,8 @@ public class MainFrame extends JFrame {
 				// the station's own windows closes, and not in the Cargo Bay (unsaved trades)
 				if (!atSpaceDock) return;
 				boolean gone = homeplanet.core.SaveWatcher.takeGone(); // FTL ended a run meanwhile
-				if (gone || e.getOppositeWindow() == null) spaceDock.init();
+				if (gone) spaceDock.refresh(); // her save is gone: the fleet is read again, so she leaves the Space Dock (lost in action)
+				else if (e.getOppositeWindow() == null) spaceDock.init();
 			}
 		});
 		setTitle("The Home Planet Station  -  " + appName + " " + appVersion);

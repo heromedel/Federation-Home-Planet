@@ -715,7 +715,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "You surrender to The Federation Home Planet:\n"
 				+ "  - The Cargo Hold: its " + v.storageScrap() + " scrap, supplies, weapons, drones, augments, crew and stored systems\n"
 				+ (junk.isEmpty() ? "  - (the Junkyard is empty)\n" : "  - every hull in the Junkyard: " + hulls + "\n")
-				+ "\nIn exchange, The Federation Home Planet grants you a new command: " + freeShipWords() + ", free.\n\n"
+				+ "\nIn exchange, The Federation Home Planet grants you a new command: " + homeplanet.parser.FreeCommand.words(homeplanet.parser.FreeCommand.onReport(v)) + ", free."
+				+ (v.immersive ? " (What you surrender is worth " + homeplanet.parser.FreeCommand.surrenderValue(v) + " scrap: " + homeplanet.parser.FreeCommand.KESTREL_FROM
+						+ " earns a Kestrel Type A, " + homeplanet.parser.FreeCommand.ANY_FROM + " any ship.)" : "") + "\n\n"
 				+ (HomePlanet.immersiveMode ? "This is final (Immersive Mode)."
 				: "The Home Planet Station keeps a record of what was surrendered. Until you take your new command,\n"
 				+ "this can be undone (Other... > Undo Reassignment).");
@@ -728,7 +730,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		init();
-		JOptionPane.showMessageDialog(null, "Your report is accepted, Captain. The shipyard stands ready to build your new command.", "Report for Reassignment", JOptionPane.INFORMATION_MESSAGE);
+		String rank = homeplanet.parser.Transmissions.rank();
+		if (HomePlanet.immersiveNotifications) {
+			// the Shipyard's order says what she is and where to take it: the player commissions her from there
+			JOptionPane.showMessageDialog(null, "Your report is accepted, " + rank + ". The order for your new command is in Transmissions.", "Report for Reassignment", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		JOptionPane.showMessageDialog(null, "Your report is accepted, " + rank + ". The shipyard stands ready to build your new command.", "Report for Reassignment", JOptionPane.INFORMATION_MESSAGE);
 		commissionShip();
 	}
 	void undoReassignment(File dir) {

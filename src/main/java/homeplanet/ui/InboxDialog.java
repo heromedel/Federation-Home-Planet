@@ -145,7 +145,7 @@ public class InboxDialog extends JDialog {
 		Transmissions.Message m = list.getSelectedValue();
 		if (m == null) return;
 		try {
-			if (Transmissions.isStipend(m)) { Transmissions.delete(m); all.remove(m); fill(); return; } // the scrap is already in storage
+			if (Transmissions.deletable(m)) { Transmissions.delete(m); all.remove(m); fill(); return; } // a paid stipend, a used order: nothing to keep
 			Transmissions.setArchived(m, !m.archived);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not file the transmission:\n" + e.getMessage());
@@ -199,14 +199,14 @@ public class InboxDialog extends JDialog {
 		boolean canClaim = m.hasReward() && !m.claimed;
 		claim.setVisible(m.hasReward());
 		claim.setEnabled(canClaim);
-		commission.setVisible(m.isOrder());
+		commission.setVisible(m.isOrder() && !Transmissions.deletable(m)); // a used order has nothing left to commission
 		boolean open = Transmissions.isRescue(m) && !m.claimed;
 		keep.setVisible(open);
 		museum.setVisible(open);
 		archive.setVisible(true);
-		boolean stipend = Transmissions.isStipend(m);
+		boolean stipend = Transmissions.deletable(m);
 		archive.setText(stipend ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
-		archive.setToolTipText(stipend ? "Delete this notice: the scrap is already in the Cargo Hold" : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
+		archive.setToolTipText(stipend ? (Transmissions.isStipend(m) ? "Delete this notice: the scrap is already in the Cargo Hold" : "Delete this order: its free command has been taken") : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
 		rewardLabel.setForeground(canClaim ? new Color(40, 150, 60) : Color.GRAY);
 		rewardLabel.setText(Transmissions.isRescue(m) ? (m.claimed ? m.claimedWhat : " ") : !m.hasReward() ? " " : m.claimed ? "Claimed: " + m.claimedWhat : "Reward: " + Transmissions.describeReward(m)
 				+ (Transmissions.price(m) > 0 ? ", for " + Transmissions.price(m) + " scrap" : ""));

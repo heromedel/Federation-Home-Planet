@@ -43,6 +43,10 @@ public final class FreeCommand {
 	public static String words(String kind) {
 		return ANY.equals(kind) ? "any ship you choose" : RELIEF.equals(kind) ? "a Federation relief ship" : "a Kestrel Type A";
 	}
+	/** The free ship a Report for Reassignment would earn now: in Immersive Mode by what it surrenders, otherwise Settings'. */
+	public static String onReport(Vault v) {
+		return v.immersive ? earned(surrenderValue(v)) : HomePlanet.freeShip;
+	}
 	/** The ship a Report for Reassignment earns in Immersive Mode, by the value surrendered. */
 	public static String earned(int value) {
 		return value >= ANY_FROM ? ANY : value >= KESTREL_FROM ? KESTREL : RELIEF;
