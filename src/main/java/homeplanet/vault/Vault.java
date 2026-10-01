@@ -502,11 +502,6 @@ public final class Vault {
 		}
 	}
 
-	/** The boarded ship last recorded lost, and when: for a continue.sav that comes back as her (see reconcile). */
-	private Ship lastLost;
-	private long lastLostAt;
-	/** How long a ship recorded lost can still turn out to have been FTL rewriting her save. */
-	private static final long RETURN_MS = 2 * 60 * 1000;
 	/** Makes the list match the files: adopts strays, drops ships whose files are gone, settles who's boarded. */
 	private void reconcile() {
 		List<String> notes = new ArrayList<String>();
@@ -522,29 +517,13 @@ public final class Vault {
 		// the boarded ship: continue.sav is hers, if it's there
 		Ship b = boarded();
 		File cont = continueFile();
-		if (b != null && !cont.isFile()) {
+		// never while FTL is running: it rewrites continue.sav by deleting it first, so a missing file there proves nothing
+		if (b != null && !cont.isFile() && !homeplanet.core.GameGuard.isFtlRunning()) {
 			notes.add(b.name + " was boarded, and continue.sav is gone: lost in action (FTL ends a run by deleting the save). "
 					+ (historyOf(b).isDirectory() ? "Her last versions are in history/" + b.id : ""));
 			recordFate(b, Fate.LOST);
 			ships.remove(b);
-			lastLost = b; // FTL also deletes the save for a moment as it rewrites it: if she's back soon, she wasn't lost
-			lastLostAt = System.currentTimeMillis();
 			b = null;
-		}
-		if (b == null && cont.isFile() && lastLost != null && System.currentTimeMillis() - lastLostAt < RETURN_MS) {
-			try {
-				SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(cont);
-				if (lastLost.marks == null || lastLost.marks.isEmpty() ? lastLost.name.equals(gs.getPlayerShipName()) : sameShip(lastLost.marks, gs)) {
-					b = lastLost;
-					ships.add(b);
-					File fate = new File(historyOf(b), FATE_FILE);
-					if (fate.isFile() && !fate.delete()) log.warn("Could not remove {}", fate);
-					notes.add(b.name + " is back: continue.sav was only being rewritten by FTL. She is boarded, as she was");
-				}
-			} catch (Exception e) {
-				log.debug("continue.sav couldn't be read to see if it's {}: {}", lastLost.name, e.toString()); // mid-write: the next look decides
-			}
-			if (b != null) lastLost = null;
 		}
 		if (b == null && cont.isFile()) {
 			Ship original = cloudCopyOf(cont);

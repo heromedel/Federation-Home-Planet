@@ -24,8 +24,6 @@ public final class SaveWatcher implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(SaveWatcher.class);
 	/** How long FTL must be quiet before continue.sav is read (it writes in bursts, and a save mid-write doesn't read). */
 	private static final long QUIET_MS = 800;
-	/** continue.sav deleted and not back after this long: FTL ended the run (its own rewrite takes a moment, not seconds). */
-	private static final long GONE_MS = 3000;
 	private static Thread thread;
 	private static volatile boolean gone = false;
 
@@ -56,7 +54,7 @@ public final class SaveWatcher implements Runnable {
 		}
 		File dir = null;
 		WatchKey key = null;
-		long changedAt = 0, goneAt = 0;
+		long changedAt = 0;
 		while (true) {
 			try {
 				File want = HomePlanet.save_location; // Settings may change it
@@ -71,16 +69,12 @@ public final class SaveWatcher implements Runnable {
 					for (WatchEvent<?> e : k.pollEvents()) {
 						if (!(e.context() instanceof Path) || !"continue.sav".equalsIgnoreCase(((Path) e.context()).toString())) continue;
 						if (e.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-							goneAt = System.currentTimeMillis(); // FTL rewrites the save by deleting it first: a loss only if it stays gone
+							gone = true; // looked at when the player comes back to the station, never while FTL plays
 							changedAt = 0;
 						}
-						else { changedAt = System.currentTimeMillis(); goneAt = 0; }
+						else changedAt = System.currentTimeMillis();
 					}
 					k.reset();
-				}
-				if (goneAt != 0 && System.currentTimeMillis() - goneAt >= GONE_MS) {
-					goneAt = 0;
-					if (dir != null && !new File(dir, "continue.sav").exists()) gone = true; // the window takes stock when the player comes back
 				}
 				if (changedAt != 0 && System.currentTimeMillis() - changedAt >= QUIET_MS) {
 					changedAt = 0;
