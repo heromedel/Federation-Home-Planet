@@ -35,7 +35,7 @@ public final class Museum {
 	private Museum() { }
 
 	static final String FILE = "museum.txt";
-	public enum Status { PRESERVED, IN_SERVICE, MEMORY, LOST, MEMORIAL }
+	public enum Status { PRESERVED, IN_SERVICE, MEMORY, LOST, MEMORIAL, TRANSFERRED }
 
 	/** One ship on show. */
 	public static final class Exhibit {
@@ -165,8 +165,10 @@ public final class Museum {
 			if (victories > 0) {
 				Status st = "true".equals(p.getProperty("preserved")) || "MUSEUM".equals(fate[0]) ? Status.PRESERVED
 						: inFleet != null ? Status.IN_SERVICE
+						: "TRANSFERRED".equals(fate[0]) ? Status.TRANSFERRED
 						: "LOST".equals(fate[0]) && "true".equals(p.getProperty("kept")) ? Status.LOST : Status.MEMORY;
 				File show = newest(d, true);
+				if (st == Status.TRANSFERRED) p.setProperty("transferredTo", fate[2]); // shown with her record (never written back)
 				victors.add(new Exhibit(id, name, true, st, show != null ? show : last, victories, st == Status.LOST ? sectorOf(last) : 0, p));
 			} else if ("LOST".equals(fate[0]) && inFleet == null && last != null) {
 				memorial.add(new Exhibit(id, name, false, Status.MEMORIAL, last, 0, sectorOf(last), p));
@@ -194,9 +196,9 @@ public final class Museum {
 	private static String[] fate(File d) {
 		try {
 			String[] l = new String(SafeFiles.read(new File(d, "fate.txt")), StandardCharsets.UTF_8).split("\n");
-			return new String[] {l[0].trim(), l.length > 1 ? l[1].trim() : ""};
+			return new String[] {l[0].trim(), l.length > 1 ? l[1].trim() : "", l.length > 2 ? l[2].trim() : ""};
 		} catch (IOException e) {
-			return new String[] {"", ""};
+			return new String[] {"", "", ""};
 		}
 	}
 	/** Her newest kept save: a victory's copy (victory) or any version. */

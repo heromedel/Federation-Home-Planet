@@ -50,7 +50,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
 	private JButton museumBtn;
-	private JButton inboxBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn;
+	private JButton inboxBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn;
 	final MainFrame parent;
 
 	/** Width of one docked ship's place in the list. */
@@ -132,14 +132,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
+		commBtn = controlButton("Long Range", "Long Range Comm.: trade with another commander's Home Planet Station over the local network");
 		controlGroup(controls, "Helm", launchBtn, journeyBtn);
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		if (homeplanet.parser.Museum.anything(vault)) { // once a ship has won, or been lost in action
 			museumBtn = controlButton("Museum", "The Federation Museum: the Hall of Victors, and the Memorial to ships lost in action");
-			controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn, museumBtn);
+			controlGroup(controls, "Station", cargoBtn, commBtn, settingsBtn, refreshBtn, museumBtn);
 		} else {
 			museumBtn = null;
-			controlGroup(controls, "Station", cargoBtn, settingsBtn, refreshBtn);
+			controlGroup(controls, "Station", cargoBtn, commBtn, settingsBtn, refreshBtn);
 		}
 		String designLock = homeplanet.parser.Clearance.customReason();
 		designBtn = controlButton("Design Ship", designLock == null ? "Lay out a new ship of your own on a blank grid"
@@ -584,6 +585,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			String why = cargoBayClosedReason();
 			if (why == null) parent.showCargoBay();
 			else JOptionPane.showMessageDialog(this, why, "Cargo Bay", JOptionPane.INFORMATION_MESSAGE);
+		} else if (o == commBtn) {
+			parent.showLongRangeComm();
 		} else if (o == launchBtn) {
 			HomePlanet.launchFTL();
 		} else if (infoButtons.containsKey(o)) {
@@ -703,6 +706,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final."
 							: taken ? "only before a new command is taken: no ship may be at the Space Dock." : null,
 					new Runnable() { public void run() { undoReassignment(last); } }, false));
+		}
+		if (!homeplanet.comm.Exchange.unfinished().isEmpty()) {
+			orders.add(new OtherOrdersDialog.Order("Unfinished trades", "Long Range Comm. trades a lost link left unsettled: what you gave is held until they're settled.",
+					null, new Runnable() { public void run() { LongRangeCommUI.reviewUnfinished(SpaceDockUI.this); init(); } }, true));
 		}
 		OtherOrdersDialog.open(this, orders);
 	}

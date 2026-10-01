@@ -43,6 +43,7 @@ public class RuleBoxes {
 	private final JLabel freeLabel = new JLabel("The free command (once at the start, and with each report for reassignment):  ");
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
+	final JCheckBox shipTradeBox = new JCheckBox("Allow trading immersive ships (whole ships over Long Range Comm., with another Immersive fleet that allows it too)", HomePlanet.immersiveShipTrading);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
@@ -85,6 +86,8 @@ public class RuleBoxes {
 		freeRow.add(freeBox);
 		notifyBox.setToolTipText("Without Immersive Mode: orders for the free ships the rules grant. With it, also news, promotions and rewards");
 		notifyBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Mode, which turns it on
+		shipTradeBox.setToolTipText("A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
+		shipTradeBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A Report for Reassignment doesn't reset it");
 		unlockBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		for (int i = 0; i < locked.length; i++) tips[i] = locked[i].getToolTipText();
@@ -143,6 +146,7 @@ public class RuleBoxes {
 		freeBox.setToolTipText(im ? byValue : freeTip);
 		freeLabel.setToolTipText(im ? byValue : freeTip);
 		if (!im) unlockBox.setEnabled(cost);
+		shipTradeBox.setEnabled(im); // an Immersive fleet's own choice: normal fleets don't trade whole ships
 		if (!im) customLockedBox.setEnabled(lockedBox.isSelected());
 	}
 
@@ -163,7 +167,7 @@ public class RuleBoxes {
 
 	/** Adds the boxes one per row, starting at c's row and leaving c on the row after the last. */
 	public void addTo(JPanel body, GridBagConstraints c) {
-		for (JComponent b : new JComponent[] {immersiveRow, notifyBox, tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
+		for (JComponent b : new JComponent[] {immersiveRow, notifyBox, shipTradeBox, tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
 			body.add(b, (GridBagConstraints) c.clone());
 			c.gridy++;
 		}
@@ -182,6 +186,7 @@ public class RuleBoxes {
 		if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
 		if (!FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Free ship for an empty shipyard: " + freeBox.getSelectedItem());
 		if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
+		if (shipTradeBox.isSelected() != HomePlanet.immersiveShipTrading) changed.add("Trading immersive ships: " + shipTradeBox.isSelected());
 		if (unlockBox.isSelected() != HomePlanet.unlockFreeShips) changed.add("A free ship for each new FTL unlock: " + unlockBox.isSelected());
 		// (with Immersive Mode on, the locked rules above show its values; the player's own are kept apart)
 	}
@@ -192,6 +197,7 @@ public class RuleBoxes {
 		// the rules Immersive Mode leaves to the player
 		HomePlanet.scrapKeepsSystems = scrapBox.isSelected();
 		HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()];
+		HomePlanet.immersiveShipTrading = shipTradeBox.isSelected();
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)
 			HomePlanet.storeRequirement = tradeBox.isSelected();
 			HomePlanet.journeyStoreRequirement = journeyBox.isSelected();

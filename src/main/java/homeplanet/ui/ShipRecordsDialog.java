@@ -190,6 +190,11 @@ public class ShipRecordsDialog extends JDialog {
 			facts.add("Beacons explored " + gs.getTotalBeaconsExplored());
 			facts.add("Ships defeated " + gs.getTotalShipsDefeated());
 		}
+		homeplanet.vault.TradeMark mark = homeplanet.vault.TradeMark.of(ship);
+		if (mark != null) {
+			facts.add("Original owner " + mark.original);
+			if (!mark.from.equals(mark.original)) facts.add("Received from " + mark.from);
+		}
 		JPanel p = new JPanel(new BorderLayout(0, 4));
 		p.setOpaque(false);
 		p.add(ftlText(ship.name.toUpperCase(), FtlFont.MENU, GOLD), BorderLayout.NORTH);

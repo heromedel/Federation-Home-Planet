@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.52";
+	public static final String APP_VERSION = "4B.53";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -74,6 +74,8 @@ public class HomePlanet {
 	public static boolean immersiveMode = false;
 	/** Transmissions from The Federation Home Planet (the inbox on the Space Dock). Immersive Mode turns it on. */
 	public static boolean immersiveNotifications = false;
+	/** Immersive Mode: whole ships may change hands over Long Range Comm. (with another Immersive fleet that allows it too). */
+	public static boolean immersiveShipTrading = false;
 	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
 	public static final int JOURNEY_FEE = 200;
@@ -126,7 +128,10 @@ public class HomePlanet {
 	public static boolean debugLogging = false;
 
 	/** The config file, beside the program (whatever folder it was started from), and its values (the Settings window changes and saves them). */
-	public static final File propFile = new File(appDir(), "federation-home-planet.cfg");
+	/** The settings file: beside the program, or in the folder a second station was started with (--station). */
+	public static File propFile = new File(appDir(), "federation-home-planet.cfg");
+	/** A second station on this computer (for trying Long Range Comm. alone): its own settings and saves folder. */
+	public static boolean secondStation = false;
 	public static final Properties config = new Properties();
 
 	/**
@@ -136,6 +141,13 @@ public class HomePlanet {
 	public static boolean modPatchedThisSession = false;
 
 	public static void main(String[] args) {
+		for (int i = 0; i + 1 < args.length; i++) {
+			if (!args[i].equals("--station")) continue;
+			File dir = new File(args[i + 1]).getAbsoluteFile();
+			dir.mkdirs();
+			propFile = new File(dir, "federation-home-planet.cfg");
+			secondStation = true;
+		}
 		homeplanet.ui.MenuTheme.install(); // pop-up windows in the station's dark blue
 		ImageIO.setUseCache(false); // small images don't need disk buffering
 		savedGameParser = new SavedGameParser();
@@ -161,6 +173,7 @@ public class HomePlanet {
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
 		immersiveNotifications = flag("immersive_notifications");
+		immersiveShipTrading = flag("immersive_ship_trading");
 		finalVictory = config.getProperty("final_victory", "nothing");
 		applyImmersive();
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
@@ -214,6 +227,17 @@ public class HomePlanet {
 		if (savePathString != null) {
 			save_location = new File(savePathString);
 			if (!save_location.isDirectory()) save_location = null;
+		}
+		if (save_location == null && secondStation) {
+			// a second station needs saves of its own: never the first station's folder
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+				JOptionPane.showMessageDialog(null, "This is a second Home Planet Station, for trying Long Range Comm. on one computer.\n\n"
+						+ "Choose a saves folder for it that the first station doesn't use: a copy of your FTL saves folder works well.",
+						"Second station", JOptionPane.INFORMATION_MESSAGE);
+				return null;
+			} });
+			save_location = promptForSavePath();
+			if (save_location != null) { config.setProperty("ftlSavePath", save_location.getAbsolutePath()); writeConfig = true; }
 		}
 		if (save_location == null) {
 			// FTL 1.5.4+ keeps its profile in ae_prof.sav; older versions used prof.sav
@@ -307,6 +331,7 @@ public class HomePlanet {
 	private static boolean loadConfig() {
 		File from = propFile;
 		if (!from.isFile()) {
+			if (secondStation) return true; // a second station starts afresh, never with the first one's settings
 			// before 4B.04 the config was looked for in the folder the program was started from: carry it over
 			File old = new File("federation-home-planet.cfg").getAbsoluteFile();
 			if (!old.isFile() || old.equals(propFile.getAbsoluteFile())) return true;
@@ -346,6 +371,7 @@ public class HomePlanet {
 		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
 		config.setProperty("final_victory", finalVictory);
 		config.setProperty("immersive_notifications", Boolean.toString(own.notifications));
+		config.setProperty("immersive_ship_trading", Boolean.toString(immersiveShipTrading));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
 		try {
 			ByteArrayOutputStream buf = new ByteArrayOutputStream();

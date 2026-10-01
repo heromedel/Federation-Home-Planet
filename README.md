@@ -40,6 +40,9 @@ And More.
 - **The Cargo Bay:** trade crew, weapons, drones, augments, systems and supplies with the Cargo Hold (the station's
   warehouse) or another docked ship; shop at the stores your ships are docked at; repair and upgrade in the Dry Dock;
   refit, retrofit, remodel or overhaul a ship's layout.
+- **Long Range Comm.:** trade with another commander's Home Planet Station over the local network (or a virtual
+  LAN): items, supplies and crew, and between Immersive fleets that allow it, whole ships. Both commanders build the
+  offer and accept it; any change withdraws acceptance, and what arrives goes into the Cargo Hold.
 - **The shipyard:** commission any unlocked ship, a remodel, or a ship you designed yourself. New blueprints are sent
   to FTL via Slipstream.
 - **House rules** (Settings): trading and New Journey only at a store beacon, commissioning that costs scrap, locked

@@ -237,6 +237,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private static final java.util.Random holdRng = new java.util.Random();
 	private BufferedImage hangar, hangarScaled;
 
+	/** The Cargo Hold's deck plan as last rolled (Long Range Comm. stands in the hold too), or null. */
+	static BufferedImage holdBackdrop() { return hold; }
 	/** A new roll of the Cargo Hold's contents. */
 	static void rerollHold(MainFrame frame) {
 		BufferedImage b = CargoHoldBackdrop.make(frame, holdRng);

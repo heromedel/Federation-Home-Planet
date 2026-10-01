@@ -444,6 +444,29 @@ public final class Transmissions {
 		save(all);
 	}
 
+	/**
+	 * A letter written by the station itself rather than from a template (a Long Range Comm. receipt): sent once per
+	 * key, only while the inbox is on.
+	 */
+	public static synchronized void deliver(String key, String from, String subject, String body) {
+		if (!HomePlanet.immersiveNotifications || !Vault.isOpen()) return;
+		List<Message> all = load();
+		for (Message x : all) if (x.key.equals(key)) return;
+		Message m = new Message();
+		m.key = key;
+		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.from = from;
+		m.subject = subject;
+		m.body = body;
+		m.reward = "";
+		all.add(0, m);
+		try {
+			save(all);
+			HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
+		} catch (IOException e) {
+			log.warn("Could not deliver {}: {}", key, e.toString());
+		}
+	}
 	private static String stamp() { return new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()); }
 	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship) {
 		send(all, sent, key, templateKey, rank, ship, null);

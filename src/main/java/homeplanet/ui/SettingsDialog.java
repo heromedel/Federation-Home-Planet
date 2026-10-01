@@ -42,6 +42,8 @@ public class SettingsDialog extends JDialog {
 	private final javax.swing.JRadioButton[] victoryButtons = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
 	private String victoryWas = homeplanet.parser.FinalVictory.choice();
 	private final JLabel victoryHeading = new JLabel();
+	private final String commanderWas = homeplanet.comm.Commander.name() == null ? "" : homeplanet.comm.Commander.name();
+	private final javax.swing.JTextField commanderField = new javax.swing.JTextField(commanderWas, 18);
 
 	/** Shows the dialog. Returns true if the saves folder changed (so the Space Dock should reload). */
 	public static boolean open(java.awt.Component owner) {
@@ -62,6 +64,18 @@ public class SettingsDialog extends JDialog {
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.insets = new Insets(2, 0, 2, 0);
 		c.weightx = 1;
+
+		heading(body, c, "Commander");
+		JPanel nameRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		JLabel nameLabel = new JLabel("Name:");
+		nameLabel.setPreferredSize(new java.awt.Dimension(103, nameLabel.getPreferredSize().height)); // lines up with the folder paths below
+		nameRow.add(nameLabel);
+		nameRow.add(commanderField);
+		JLabel nameNote = new JLabel("   How other commanders know you over Long Range Comm. (your rank goes in front)");
+		nameNote.setForeground(MenuTheme.GREY_GREEN);
+		nameRow.add(nameNote);
+		commanderField.setToolTipText("Up to " + homeplanet.comm.Commander.MAX + " letters, numbers, spaces and ' - . (your rank goes in front of it)");
+		body.add(nameRow, next(c));
 
 		heading(body, c, "Folders");
 		body.add(folderRow("Saves folder:", savesLabel, new ActionListener() {
@@ -259,8 +273,21 @@ public class SettingsDialog extends JDialog {
 	}
 
 	private void apply() {
+		String commander = homeplanet.comm.Commander.clean(commanderField.getText());
+		if (!commander.equals(commanderWas)) {
+			String why = commander.isEmpty() && !commanderWas.isEmpty() ? "Your commander name can be changed, but not left empty." : homeplanet.comm.Commander.check(commander);
+			if (why != null) {
+				JOptionPane.showMessageDialog(this, why, "Commander name", JOptionPane.INFORMATION_MESSAGE);
+				commanderField.requestFocusInWindow();
+				return;
+			}
+		}
 		boolean gameChanged = !game.equals(HomePlanet.datsPath);
 		java.util.List<String> changed = new java.util.ArrayList<String>();
+		if (!commander.equals(commanderWas)) {
+			changed.add("Commander name: " + commander);
+			HomePlanet.config.setProperty(homeplanet.comm.Commander.CFG_NAME, commander); // written with the rest below
+		}
 		if (!saves.equals(HomePlanet.save_location)) changed.add("Saves folder: " + saves.getPath());
 		if (gameChanged) changed.add("Game folder: " + game.getPath());
 		if (steamBox.isSelected() != HomePlanet.launchThroughSteam) changed.add("Launch through Steam: " + steamBox.isSelected());

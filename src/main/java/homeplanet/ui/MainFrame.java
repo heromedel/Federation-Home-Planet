@@ -39,7 +39,8 @@ public class MainFrame extends JFrame {
 		addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
 			public void windowClosing(java.awt.event.WindowEvent e) {
-				if (!atSpaceDock && !atMuseum && !cargoBay.confirmLeave("close The Home Planet Station interface")) return;
+				if (atComm && !comm.confirmLeave("close The Home Planet Station interface")) return;
+				if (!atSpaceDock && !atMuseum && !atComm && !cargoBay.confirmLeave("close The Home Planet Station interface")) return;
 				rememberWindow(); // its size, position and maximized state
 				System.exit(0);
 			}
@@ -53,7 +54,7 @@ public class MainFrame extends JFrame {
 				else if (e.getOppositeWindow() == null) spaceDock.init();
 			}
 		});
-		setTitle("The Home Planet Station  -  " + appName + " " + appVersion);
+		setTitle("The Home Planet Station  -  " + appName + " " + appVersion + (HomePlanet.secondStation ? "  (second station: " + HomePlanet.propFile.getParent() + ")" : ""));
 		// the station's icon, in every size it's drawn at, so Windows picks a sharp one for the title bar and the taskbar
 		java.util.List<Image> icons = new java.util.ArrayList<Image>();
 		for (int size : new int[] {16, 32, 48, 64, 128, 256}) {
@@ -74,6 +75,10 @@ public class MainFrame extends JFrame {
 		tasksPane.add(cargoBayPane, "cargo");
 		museum = new MuseumUI(this);
 		tasksPane.add(museum, "museum");
+		comm = new LongRangeCommUI(this);
+		JScrollPane commPane = new JScrollPane(comm);
+		commPane.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+		tasksPane.add(commPane, "comm");
 		// big enough for the Cargo Bay without scroll bars (never bigger than the screen); a remembered size wins
 		java.awt.Dimension want = cargoBay.getPreferredSize();
 		java.awt.Rectangle screen = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
@@ -92,13 +97,26 @@ public class MainFrame extends JFrame {
 			}
 		});
 	}
-	private boolean atSpaceDock = true, atMuseum = false;
+	private boolean atSpaceDock = true, atMuseum = false, atComm = false;
 	public final MuseumUI museum;
+	public final LongRangeCommUI comm;
+
+	/** Opens Long Range Comm. (asking for the commander's name the first time). */
+	public void showLongRangeComm() {
+		screens.show(tasksPane, "comm");
+		atSpaceDock = false;
+		atMuseum = false;
+		atComm = true;
+		if (!comm.init()) { showSpaceDock(); return; }
+		comm.revalidate();
+		comm.repaint();
+	}
 
 	/** Opens the Federation Museum. */
 	public void showMuseum() {
 		atSpaceDock = false;
 		atMuseum = true;
+		atComm = false;
 		screens.show(tasksPane, "museum");
 		museum.init();
 	}
@@ -108,6 +126,7 @@ public class MainFrame extends JFrame {
 		cargoBay.init();
 		atSpaceDock = false;
 		atMuseum = false;
+		atComm = false;
 		screens.show(tasksPane, "cargo");
 		cargoBay.revalidate();
 		cargoBay.repaint();
@@ -117,6 +136,7 @@ public class MainFrame extends JFrame {
 		spaceDock.init();
 		atSpaceDock = true;
 		atMuseum = false;
+		atComm = false;
 		screens.show(tasksPane, "dock");
 		spaceDock.revalidate();
 		spaceDock.repaint();
