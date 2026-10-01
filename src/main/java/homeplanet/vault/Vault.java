@@ -1227,7 +1227,11 @@ public final class Vault {
 		/** Traded in or auctioned off from the Junkyard: she was paid for, so she doesn't come back. */
 		SOLD,
 		/** Traded to another commander's fleet over Long Range Comm. (or on her way, in escrow): she flies for them now. */
-		TRANSFERRED
+		TRANSFERRED,
+		/** Given back to her owner (the repair job): she was never the fleet's to keep. */
+		RETURNED,
+		/** Taken by the Federation Office of Salvage and Claims (the repair job): she doesn't come back. */
+		SEIZED
 	}
 	private static final String FATE_FILE = "fate.txt";
 	private void recordFate(Ship s, Fate fate) {
@@ -1259,7 +1263,7 @@ public final class Vault {
 			try {
 				String[] lines = new String(SafeFiles.read(fate), java.nio.charset.StandardCharsets.UTF_8).split("\n");
 				Fate f = Fate.valueOf(lines[0].trim());
-				if (f == Fate.SCRAPPED || f == Fate.MUSEUM || f == Fate.SOLD || f == Fate.TRANSFERRED) continue; // a traded ship brought back would be in two fleets
+				if (f == Fate.SCRAPPED || f == Fate.MUSEUM || f == Fate.SOLD || f == Fate.TRANSFERRED || f == Fate.RETURNED || f == Fate.SEIZED) continue; // a traded ship brought back would be in two fleets
 				File[] saves = d.listFiles(new java.io.FileFilter() { public boolean accept(File x) { return x.isFile() && x.getName().endsWith(".sav"); } });
 				if (saves == null || saves.length == 0) continue;
 				java.util.Arrays.sort(saves, OLDEST_FIRST);

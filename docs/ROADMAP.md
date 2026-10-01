@@ -394,6 +394,18 @@ no letters, you come and check).
   Fuel, missile and drone part prices live in one place. A derelict's listing keeps her share (25-75%), so her price
   follows any change to the prices. The Refit bill, the auction and the Junkyard window are tested in the harness
   (GuiT, on a virtual display).
+- The repair job (4B.68): after the fleet makes three unflyable ships fly again (no working Engines or Piloting, then
+  both), a collector in the Civilian Sector offers 200-500 scrap over the repair cost to restore her Stealth,
+  the Nightjar (on the blank copy: a teleporter, and FTL's Zoltan shield augment). Accepted, she's delivered to the
+  Junkyard; docked and whole (full hull, no breaches, flyable), the Cargo Bay's Return Her sends her home for the cost
+  (assessed at delivery at Dry Dock prices) plus the bonus. Not returned 200 beacons after she came, for any reason,
+  her owner demands her: sent back then, she pays the cost only if she's whole; refused, 7-14 beacons later the
+  Federation Office of Salvage and Claims takes her value from the Cargo Hold's scrap, else a docked ship, else
+  everything in the Cargo Hold but its crew, and her too if docked (boarded: when she next docks). Hidden in the
+  Junkyard she isn't found; salvaged later, the Junkyard Foreman writes. New fates: RETURNED, SEIZED. Without
+  Slipstream the whole job still works at The Home Planet Station; only flying her in FTL needs the patch (a note
+  says so when the offer is taken). To test: whether FTL takes the Zoltan shield as a fourth augment beyond the
+  three slots; if it does, the shield could stop counting as a slot.
 
 
 - **Thruster glow for designs.** FTL lights the engines of some of its own ships (the Kestrel's, when piloted and

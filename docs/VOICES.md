@@ -49,6 +49,22 @@ Not the Federation's own: Engi who mend what others throw away, writing from out
 and a dry, literal humour ("A ship with no one aboard is only a very large box."). No profit from repairs. Their
 letters come as a reply chain (the One Point of Hull), and sign off with the title alone.
 
+## A Collector, Civilian Sector
+
+A civilian, the first voice from outside the war: comfortable, particular about old ships, fond of the Nightjar and
+worn out by the brother who wrecked her (he's mentioned, never heard from). Polite and fair; pays well, and expects
+her back. Calls her "her". Cools sharply when crossed ("Very well."). The repair job's letters.
+
+## Federation Office of Salvage and Claims
+
+Attorneys for the Collector: colder than The Federation Home Planet. Numbered points, legal wording, no anger. Never
+threatens; states what will happen, then does it. Signs "~ Federation Office of Salvage and Claims, Recovery Division".
+
+## Junkyard Foreman
+
+The man who minds the Junkyard (the Derelicts window names him). A small-time fixer who admires a good dodge, knows
+what's hidden in his own yard, and never asks for anything, which is more unsettling than a threat.
+
 ## The Federation Home Planet
 
 The institution itself: automated and bureaucratic ("Automated message from The Federation Home Planet"). Stipends and

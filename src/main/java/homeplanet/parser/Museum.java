@@ -35,7 +35,7 @@ public final class Museum {
 	private Museum() { }
 
 	static final String FILE = "museum.txt";
-	public enum Status { PRESERVED, IN_SERVICE, MEMORY, LOST, MEMORIAL, TRANSFERRED }
+	public enum Status { PRESERVED, IN_SERVICE, MEMORY, LOST, MEMORIAL, TRANSFERRED, RETURNED, SEIZED }
 
 	/** One ship on show. */
 	public static final class Exhibit {
@@ -175,6 +175,8 @@ public final class Museum {
 				Status st = "true".equals(p.getProperty("preserved")) || "MUSEUM".equals(fate[0]) ? Status.PRESERVED
 						: inFleet != null ? Status.IN_SERVICE
 						: "TRANSFERRED".equals(fate[0]) ? Status.TRANSFERRED
+						: "RETURNED".equals(fate[0]) ? Status.RETURNED
+						: "SEIZED".equals(fate[0]) ? Status.SEIZED
 						: "LOST".equals(fate[0]) && "true".equals(p.getProperty("kept")) ? Status.LOST : Status.MEMORY;
 				File show = newest(d, true);
 				if (st == Status.TRANSFERRED) p.setProperty("transferredTo", fate[2]); // shown with her record (never written back)

@@ -298,6 +298,8 @@ public final class Transmissions {
 			if (p.due > v.beaconsSeen()) continue;
 			if (chain(all, sent, p.template, rank, p.name)) { pending.remove(p); chained = true; }
 		}
+		// the repair job: the collector's offer, her demand, the claims office, the foreman
+		for (String key : RepairJob.due(v, sent)) chained |= chain(all, sent, key, rank, RepairJob.NAME);
 		// the welcome last: the inbox shows the newest first, so it tops everything that arrives with it
 		if (HomePlanet.immersiveMode) send(all, sent, "welcome", "welcome", rank, null);
 		int added = all.size() - before + replaced;
@@ -319,6 +321,10 @@ public final class Transmissions {
 		if ("derelict".equals(t.action)) {
 			try { Derelict.deliver(Vault.get()); }
 			catch (Exception e) { log.warn("Could not deliver the derelict (tried again next time): {}", e.toString()); return false; }
+		}
+		if ("repair-job".equals(t.action)) {
+			try { RepairJob.deliver(Vault.get()); }
+			catch (Exception e) { log.warn("Could not deliver the Nightjar (tried again next time): {}", e.toString()); return false; }
 		}
 		send(all, sent, templateKey, templateKey, rank, null, name);
 		if (!t.then.isEmpty()) schedule(t.then, name);
@@ -358,6 +364,10 @@ public final class Transmissions {
 		String name = "";
 		for (Pending p : pending) if (p.name != null && !p.name.isEmpty()) name = p.name;
 		if (name.isEmpty() && Vault.isOpen()) { String n = Vault.get().event(Vault.EVENT_ONE_HULL); if (n != null) name = n; }
+		if (RepairJob.isJob(m.key)) {
+			name = RepairJob.NAME;
+			RepairJob.replied(Vault.get(), m.key, option); // first: a reply that can't be carried out is refused, with the reason
+		}
 		if (parts.length > 1 && !parts[1].trim().isEmpty()) schedule(parts[1].trim(), name);
 		for (Message x : all) if (x.key.equals(m.key)) { x.replied = words; x.read = true; }
 		save(all);
@@ -501,7 +511,13 @@ public final class Transmissions {
 	}
 	private static String fill(String s, String rank, String ship) {
 		if (s.contains("{start}")) s = s.replace("{start}", Integer.toString(Career.startingScrap())); // the career's sign-on bonus, by difficulty
+		if (s.contains("{") && Vault.isOpen()) s = RepairJob.fill(Vault.get(), s);
 		return s.replace("{rank}", rank).replace("{ship}", ship == null ? "" : ship);
+	}
+	/** Has a letter with this key been sent to this fleet? */
+	public static synchronized boolean wasSent(String key) {
+		for (Message m : load()) if (m.key.equals(key)) return true;
+		return false;
 	}
 
 	// ---- rewards ----

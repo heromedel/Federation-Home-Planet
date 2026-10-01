@@ -38,6 +38,7 @@ echo "== FleetT"; run FleetT "$GAME" "$WORLD" "$W/fleet" | grep -E "$PICK|^PASS"
 echo "== TransT"; run TransT "$GAME" "$WORLD" "$W/trans" | grep -E "$PICK|^PASS"
 echo "== ChainT"; run ChainT "$GAME" "$WORLD" "$W/chain" | grep -E "$PICK|^PASS"
 echo "== DerT"; run DerT "$GAME" "$WORLD" "$W/der" | grep -E "$PICK|^PASS|^derelicts|^locked|^rebuild"
+echo "== RepT"; run RepT "$GAME" "$WORLD" "$W/rep" | grep -E "$PICK|^PASS"
 echo "== VicT"; run VicT "$GAME" "$WORLD" "$W/vic" $VICLOG | grep -E "$PICK|^PASS|^replay"
 echo "== LinkT"; run LinkT "$GAME" "$WORLD" "$W/link" | grep -E "$PICK|^PASS"
 # the windows themselves, driven as a player would: needs a display, so a virtual one
