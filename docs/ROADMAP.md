@@ -306,12 +306,15 @@ Every fee and sale price is read from one place (`core.Economy`): Sandbox Mode's
 from the career.
 
 - **Trade In** (Junkyard): The Federation Home Planet's shipyard pays half her value, less 5 scrap for each point of
-  missing hull. Her value is her commission price at 100% without her crew, plus her fuel, missiles and drone parts at
+  missing hull, 5 for each broken system bar and 5 for each breach. Her value is her commission price at 100% without her crew, plus her fuel, missiles and drone parts at
   store price.
-- **Auction** (Junkyard): the best bid is 25% to 75% of her value less 5 scrap a missing hull point, shown before it's
-  accepted. The same save always draws the same bid, so declining and asking again doesn't help.
+- **Auction** (Junkyard): explained first (Cancel highlighted); Hold Auction sells her at once for the highest bid, 25% to 75% of her value less her damage (as Trade In), and the result shows with only Accept Bid.
+  The same save always draws the same bid.
+- **Missing core systems** (Engines, Piloting or Oxygen not installed, whatever her design): each takes 15 points off what Trade In
+  and Auction pay (Trade In 50/35/20/5%; bids 25-75% with both ends 15 points lower each, never under 5%). A
+  derelict's price ignores them, so a cheap one flips only if she's whole, and restoring one pays.
 - Both send her scrap and crew to the Cargo Hold with the payment; everything else goes with her. She leaves the
-  fleet as **sold** (kept in her history, never recoverable). Neither needs a station: the buyer comes to the Junkyard.
+  fleet as **sold** (kept in her history, never recoverable). Both follow the station rule, as Scrap does: a beacon with a store, or not yet gone from The Home Planet Station (a bought derelict that hasn't jumped).
 - **Refit removal** (Sandbox setting): taking a system off at Refit is not allowed, free (the default), 25 or 50
   scrap, paid by the boarded ship (given back by Reset, as all Refit changes are).
 - **Stripping when scrapping** (allowed or not; replaces "scrapping keeps systems", carried over from the old cfg):
@@ -366,17 +369,23 @@ any other fleet stay protected. The cfg remembers the career last used (`immersi
 ## 16. Derelicts in the Junkyard — built (4B.61; harness test DerT)
 
 The Junkyard window's **Derelicts...** (also offered when none of your ships is there) shows three hulls for sale,
-kept in the fleet's `derelicts/` folder. New ones come in every 30 beacons the fleet travels (counted when you look:
+kept in the fleet's `derelicts/` folder. New ones come in after 15-45 beacons the fleet travels (5 times 3 to 9, rolled each time; counted when you look:
 no letters, you come and check).
 
 - Each is on the station's blank copy of her model: no crew, hull 15-50%, a system or two missing, at odd levels or
   added where she has a room for it, many broken bars, 1-3 breaches, thin air, the reactor down a little, fuel 0-3,
-  no missiles, drone parts, scrap or cargo; a weapon about 1 in 12, a drone 1 in 20, an augment 1 in 8.
+  no scrap or cargo. Each of her own weapons and drones survives 1 time in 12, and 1 time in 12 there's another
+  (a store weapon or drone she didn't come with) if a slot is free; an augment 1 in 8. With a missile weapon, half the
+  time 1-3 missiles (+1 a further launcher); with drones, half the time 1-3 drone parts (+1 a further drone); with a
+  hacking system, half the time 1 more part.
 - Her model is one the FTL profile has unlocked; one listing in 30 is a locked model (about once in 10 rerolls).
 - One in 15 is rebuilt strangely: two unmanned systems' rooms swapped, or an inner door welded shut (every room still
   reachable). Only when she's bought does this become a remodel of her own; the patch prompt follows.
-- Price: 10-25% of her value as she is (less 5 a missing hull point), from the Cargo Hold. She goes to the Junkyard,
+- Price: 25-75% of her value as she is (less 5 a missing hull point and 5 a broken bar), from the Cargo Hold. She goes to the Junkyard,
   set out at The Home Planet Station so she can take on crew once salvaged.
+- The Dry Dock bills the Cargo Hold (4B.64): every price on the Refit tab (upgrades, reactor bars, hull, Fix, Seal,
+  removal fees) goes on a running bill, checked against the Cargo Hold's scrap and paid in the same save as the ship;
+  Reset drops it. Selling a stored system pays the Cargo Hold.
 - The Dry Dock now mends broken system bars (5 scrap a bar, shown as Fix instead of the upgrade) and seals breaches
   (5 each), beside hull repairs.
 

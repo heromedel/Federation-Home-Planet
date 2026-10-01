@@ -84,8 +84,8 @@ final class DerelictsDialog extends JDialog {
 			for (Derelicts.Listing x : all) if (x.index == i) l = x;
 			cols.add(l == null ? sold() : column(l, hold));
 		}
-		int next = Derelicts.beaconsToNext(v);
-		foot.setText("New derelicts come in after " + next + (next == 1 ? " more beacon" : " more beacons") + " of travel.   The Cargo Hold holds " + hold + " scrap.");
+		// never a count: the foreman doesn't know either
+		foot.setText("More hulls come in from time to time: check back in a week to a month, after some time spent exploring the stars.   The Cargo Hold holds " + hold + " scrap.");
 		cols.revalidate();
 		cols.repaint();
 		pack();
@@ -150,8 +150,12 @@ final class DerelictsDialog extends JDialog {
 		List<String> missing = Retrofit.missingStandard(s);
 		if (!missing.isEmpty()) {
 			List<String> names = new ArrayList<String>();
-			for (String id : missing) names.add(Items.systemTitle(id));
+			for (String id : missing) names.add(Items.systemTitle(id)
+					+ ("engines".equals(id) || "pilot".equals(id) ? " (can't fly)" : "oxygen".equals(id) ? " (no air)" : ""));
 			sb.append("<br><font color='#d86a4a'>Missing: ").append(String.join(", ", names)).append("</font>");
+			int core = homeplanet.parser.Pricing.missingCore(s).size();
+			if (core > 0) sb.append("<br><font color='").append(dim).append("'>Sells for ").append(core * homeplanet.parser.Pricing.CORE_PENALTY)
+					.append(" points less until ").append(core == 1 ? "it's" : "they're").append(" put back</font>");
 		}
 		List<String> aboard = new ArrayList<String>();
 		for (WeaponState w : s.getWeaponList()) aboard.add(Items.title(w.getWeaponId()));

@@ -13,6 +13,7 @@ public class DerT { public static void main(String[] a) throws Exception {
  /** Many derelicts of every model: wrecked as promised, and each save the same when read back and written again. */
  static void wrecks() throws Exception {
   Random rng = new Random(11);
+  int missiles = 0, parts = 0;
   int n = 0, roundTrip = 0, wrecked = 0, stripped = 0, armed = 0, odd = 0, levels = 0, missing = 0, added = 0, breaches = 0;
   for (String base : DataManager.get().getPlayerShipBaseIds(true)) for (int k = 0; k < 3; k++) {
    String id = k == 0 ? base : base + "_" + (k + 1);
@@ -26,7 +27,13 @@ public class DerT { public static void main(String[] a) throws Exception {
     if (Arrays.equals(once, twice)) roundTrip++;
     int max = DataManager.get().getShip(s.getShipBlueprintId()).getHealth().amount;
     if (s.getHullAmt() <= max / 2 && s.getHullAmt() >= 1 && s.getCrewList().isEmpty() && s.getShipBlueprintId().endsWith(Retrofit.SUFFIX)) wrecked++;
-    if (s.getMissilesAmt() == 0 && s.getDronePartsAmt() == 0 && s.getScrapAmt() == 0 && gs.getCargoIdList().isEmpty()) stripped++;
+    int launchers = 0; for (SavedGameParser.WeaponState w : s.getWeaponList()) if (DataManager.get().getWeapons().get(w.getWeaponId()).getMissiles() > 0) launchers++;
+    SystemState hk = s.getSystem(SystemType.HACKING); boolean hacking = hk != null && hk.getCapacity() > 0;
+    int slots = DataManager.get().getShip(s.getShipBlueprintId()).getWeaponSlots() == null ? 4 : DataManager.get().getShip(s.getShipBlueprintId()).getWeaponSlots();
+    if (s.getScrapAmt() == 0 && gs.getCargoIdList().isEmpty() && (launchers > 0 || s.getMissilesAmt() == 0) && s.getMissilesAmt() <= 2 + launchers
+      && (!s.getDroneList().isEmpty() || hacking || s.getDronePartsAmt() == 0) && s.getWeaponList().size() <= slots) stripped++;
+    if (s.getMissilesAmt() > 0) missiles++;
+    if (s.getDronePartsAmt() > 0) parts++;
     if (!s.getWeaponList().isEmpty() || !s.getDroneList().isEmpty()) armed++;
     if (!s.getBreachMap().isEmpty()) breaches++;
     SavedGameState fresh = Commission.build(id, "x", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
@@ -38,11 +45,11 @@ public class DerT { public static void main(String[] a) throws Exception {
     }
    }
   }
-  System.out.println("derelicts: " + n + " built; " + armed + " with a weapon or drone; systems missing " + missing + ", added " + added + ", re-levelled " + levels);
+  System.out.println("derelicts: " + n + " built; " + armed + " with a weapon or drone, " + missiles + " with missiles, " + parts + " with drone parts; systems missing " + missing + ", added " + added + ", re-levelled " + levels);
   Setup.chk("W: every derelict reads back byte for byte", n > 100 && roundTrip == n);
   Setup.chk("W: on the blank copy, no crew, hull 1 to half", wrecked == n);
-  Setup.chk("W: no missiles, drone parts, scrap or cargo", stripped == n);
-  Setup.chk("W: almost never a weapon or drone", armed * 6 < n);
+  Setup.chk("W: no scrap or cargo; missiles only with a launcher (1-3, +1 a launcher more), drone parts only with drones or hacking; never past her slots", stripped == n);
+  Setup.chk("W: weapons and drones only now and then (each of hers 1 in 12, another 1 in 12)", armed > 0 && armed * 2 < n);
   Setup.chk("W: oddities: systems missing, added and re-levelled; breaches", missing > 0 && added > 0 && levels > 0 && breaches == n);
   Setup.chk("W: no broken bar carries power", odd == 0);
  }
@@ -50,15 +57,20 @@ public class DerT { public static void main(String[] a) throws Exception {
   List<Derelicts.Listing> l = Derelicts.current(v);
   Setup.chk("L: three for sale", l.size() == 3);
   String first = l.get(0).save.getPlayerShipName();
-  Setup.chk("L: looking again brings the same ones", Derelicts.current(v).get(0).save.getPlayerShipName().equals(first) && Derelicts.beaconsToNext(v) == 30);
-  ChainT.jump(v, 29);
-  Setup.chk("L: 29 beacons on: still the same", Derelicts.current(v).get(0).save.getPlayerShipName().equals(first) && Derelicts.beaconsToNext(v) == 1);
+  int wait = Derelicts.beaconsToNext(v);
+  Setup.chk("L: looking again brings the same ones; new ones in 15-45 beacons, a multiple of 5 (" + wait + ")", Derelicts.current(v).get(0).save.getPlayerShipName().equals(first)
+    && wait >= 15 && wait <= 45 && wait % 5 == 0);
+  ChainT.jump(v, wait - 1);
+  Setup.chk("L: a beacon short: still the same", Derelicts.current(v).get(0).save.getPlayerShipName().equals(first) && Derelicts.beaconsToNext(v) == 1);
   ChainT.jump(v, 1);
   List<Derelicts.Listing> again = Derelicts.current(v);
-  Setup.chk("L: 30 beacons on: new ones", again.size() == 3 && Derelicts.beaconsToNext(v) == 30 && !again.get(0).save.getPlayerShipName().equals(first));
+  Setup.chk("L: then new ones", again.size() == 3 && Derelicts.beaconsToNext(v) >= 15 && !again.get(0).save.getPlayerShipName().equals(first));
+  java.util.Set<Integer> waits = new java.util.TreeSet<Integer>(); Random wr = new Random(3);
+  for (int i = 0; i < 500; i++) { java.lang.reflect.Method m = Derelicts.class.getDeclaredMethod("interval", Random.class); m.setAccessible(true); waits.add((Integer) m.invoke(null, wr)); }
+  Setup.chk("L: the waits run 15, 20 ... 45 " + waits, waits.equals(new java.util.TreeSet<Integer>(Arrays.asList(15, 20, 25, 30, 35, 40, 45))));
   for (Derelicts.Listing x : again) {
    int base = Pricing.auctionBase(x.save);
-   Setup.chk("L: priced at 10-25% of her value as she is (" + x.price + " of " + base + ")", x.price >= Math.max(10, base / 10) - 1 && x.price <= Math.max(10, base / 4) + 1);
+   Setup.chk("L: priced at 25-75% of her value as she is, missing systems or not (" + x.price + " of " + base + ")", x.price >= Math.max(10, base / 4) - 1 && x.price <= Math.max(10, base * 3 / 4) + 1);
   }
   Derelicts.Listing pick = again.get(1);
   int scrap = v.storageScrap();
@@ -67,6 +79,7 @@ public class DerT { public static void main(String[] a) throws Exception {
   Ship s = Derelicts.buy(v, pick);
   Setup.chk("L: bought: paid from the Cargo Hold, she's in the Junkyard", v.storageScrap() == before - pick.price && v.junked().size() == junk + 1 && s.state == Ship.State.JUNKED);
   Setup.chk("L: and gone from the listings", Derelicts.current(v).size() == 2);
+  Setup.chk("L: she counts as set out at The Home Planet Station (she may be traded or scrapped without a store)", v.stillAtHomePlanet(s) && v.mayTrade(s));
   boolean refused = false; try { Derelicts.buy(v, pick); } catch (IOException e) { refused = true; }
   Setup.chk("L: she can't be bought twice", refused);
   Derelicts.Listing other = Derelicts.current(v).get(0);

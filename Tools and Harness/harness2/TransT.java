@@ -46,6 +46,10 @@ public class TransT { public static void main(String[] a) throws Exception {
   int stranded = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.startsWith("stranded:")) stranded++;
   Setup.chk("F: no ship and no free command: the Liaison's letter, once", stranded == 1 && "Without a ship".equals(find("stranded").subject)
     && find("stranded").body.contains("Report for Reassignment") && !find("stranded").body.contains("Junkyard: Salvage"));
+  Ship again = v.adopt(Commission.build("PLAYER_SHIP_HARD", "Short Lived", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(5)));
+  Transmissions.check(); v.remove(again, "DESTROY"); Transmissions.check(); Transmissions.check();
+  int stranded2 = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.startsWith("stranded:")) stranded2++;
+  Setup.chk("F: a ship again, then none again: no second letter (only the first time)", stranded2 == 1);
   Setup.chk("F: a report's free ship outside Immersive Mode is Settings'", HomePlanet.freeShip.equals(FreeCommand.onReport(v)));
   File dir = v.surrender(); Transmissions.check();
   Setup.chk("F: a report for reassignment grants another, and its order replaces the old one", v.freeCommandOpen() && orders() == 1 && !Transmissions.deletable(find("empty")));

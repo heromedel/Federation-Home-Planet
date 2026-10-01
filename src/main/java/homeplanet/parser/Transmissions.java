@@ -266,10 +266,11 @@ public final class Transmissions {
 		} else if (!granted) {
 			emptyOpen = false; // taken: the next grant sends its own order
 		}
-		// no ship to command and no free command waiting: the Liaison says what can be done (once per stranding)
+		// no ship to command and no free command waiting: the Liaison says what can be done, the first time only (each fleet)
 		boolean stranded = HomePlanet.commissionCosts && !granted && v.docked().isEmpty() && v.boarded() == null;
-		if (stranded && !strandedOpen) {
+		if (stranded && !strandedOpen && v.event("stranded-letter") == null) {
 			send(all, sent, "stranded:" + stamp(), v.junked().isEmpty() ? "stranded" : "stranded:junkyard", rank, null);
+			v.recordEvent("stranded-letter", stamp());
 			strandedOpen = true;
 		} else if (!stranded) {
 			strandedOpen = false;

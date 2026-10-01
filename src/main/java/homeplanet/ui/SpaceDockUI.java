@@ -27,6 +27,7 @@ import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
+import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 import net.blerf.ftl.xml.ShipBlueprint;
 
@@ -1027,7 +1028,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		String name = wreckShip.name;
-		if (HomePlanet.storeRequirement && !SaveHelper.isAtStation(wreck)) {
+		if (HomePlanet.storeRequirement && !SaveHelper.isAtStation(wreck) && !Vault.get().stillAtHomePlanet(wreckShip)) { // just set out at The Home Planet Station counts, as for trading
 			JOptionPane.showMessageDialog(null, name + " is not within range of a station.\n"
 					+ "The Home Planet Station cannot scrap her for supplies unless you salvage her and fly her to a beacon with a station first.", "Scrap Ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
@@ -1124,9 +1125,28 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		String name = ship.name;
+		if (HomePlanet.storeRequirement && !SaveHelper.isAtStation(gs) && !Vault.get().stillAtHomePlanet(ship)) { // as Scrap: a store, or not yet gone from The Home Planet Station
+			JOptionPane.showMessageDialog(null, name + " is not within range of a station.\n"
+					+ "Buyers only come to a beacon with a store. Salvage her and fly her to one first.", auction ? "Auction" : "Trade In", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
 		ShipState from = gs.getPlayerShip();
-		int value = homeplanet.parser.Pricing.saleValue(gs), missing = homeplanet.parser.Pricing.missingHull(from);
-		int damage = missing * homeplanet.parser.Pricing.HULL_DAMAGE;
+		int value = homeplanet.parser.Pricing.saleValue(gs), missing = homeplanet.parser.Pricing.missingHull(from), broken = homeplanet.parser.Pricing.brokenBars(from);
+		int damage = homeplanet.parser.Pricing.damage(from);
+		int breaches = from.getBreachMap().size();
+		List<String> parts = new java.util.ArrayList<String>();
+		if (missing > 0) parts.add(missing + " points of missing hull");
+		if (broken > 0) parts.add(broken + (broken == 1 ? " broken system bar" : " broken system bars"));
+		if (breaches > 0) parts.add(breaches + (breaches == 1 ? " breach" : " breaches"));
+		List<SystemType> core = homeplanet.parser.Pricing.missingCore(from);
+		String coreNote = "";
+		if (!core.isEmpty()) {
+			List<String> names = new java.util.ArrayList<String>();
+			for (SystemType t : core) names.add(DryDockShop.systemTitle(t.getId()));
+			coreNote = "No " + String.join(" or ", names) + ": buyers pay " + homeplanet.parser.Pricing.CORE_PENALTY * core.size() + " points less.\n";
+		}
+		String hurt = parts.size() <= 1 ? (parts.isEmpty() ? "" : parts.get(0))
+				: String.join(", ", parts.subList(0, parts.size() - 1)) + " and " + parts.get(parts.size() - 1);
 		final int price;
 		String message;
 		if (auction) {
@@ -1134,18 +1154,23 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			try { seed = java.util.Arrays.hashCode(SafeFiles.read(ship.file())) * 31L + ship.id.hashCode(); } catch (IOException e) { seed = ship.id.hashCode(); }
 			price = homeplanet.parser.Pricing.auction(gs, seed);
 			int base = homeplanet.parser.Pricing.auctionBase(gs);
-			message = "The Home Planet Station put " + name + " up for auction.\n\n"
-					+ "Her value: " + value + " scrap" + (missing > 0 ? ", less " + damage + " for " + missing + " points of missing hull: " + base : "") + ".\n"
-					+ "The best bid: " + price + " scrap" + (base > 0 ? " (" + (price * 100 / base) + "%)" : "") + ". The bidders won't raise it.\n\n";
+			message = "Put " + name + " up for auction?\n\n"
+					+ "Her value: " + value + " scrap" + (damage > 0 ? ", less " + damage + " for " + hurt + ": " + base : "") + ".\n"
+					+ coreNote
+					+ "Bidders will offer between " + homeplanet.parser.Pricing.auctionRange(from)[0] + "% and " + homeplanet.parser.Pricing.auctionRange(from)[1] + "% of that ("
+					+ base * homeplanet.parser.Pricing.auctionRange(from)[0] / 100 + " to " + base * homeplanet.parser.Pricing.auctionRange(from)[1] / 100 + " scrap).\n"
+					+ "The Home Planet Station accepts the highest bid automatically: once the auction is held, she is sold.\n\n";
 		} else {
 			price = homeplanet.parser.Pricing.tradeIn(gs);
+			int share = Math.max(5, 50 - homeplanet.parser.Pricing.CORE_PENALTY * core.size());
 			message = "The Federation Home Planet's shipyard offers " + price + " scrap for " + name + " in trade:\n"
-					+ "half her value of " + value + " scrap" + (missing > 0 ? ", less " + damage + " for " + missing + " points of missing hull" : "") + ".\n\n";
+					+ (share == 50 ? "half her value of " : share + "% of her value of ") + value + " scrap" + (damage > 0 ? ", less " + damage + " for " + hurt : "") + ".\n"
+					+ coreNote + "\n";
 		}
 		int crew = SaveHelper.getOwnCrew(from).size();
 		message += "Her scrap (" + from.getScrapAmt() + ")" + (crew > 0 ? " and crew (" + crew + ")" : "") + " go to the Cargo Hold first, with the payment.\n"
 				+ "Her fuel, missiles, drone parts, weapons, drones, augments, cargo and systems go with her.\nShe leaves the fleet for good.";
-		if (!confirmIrreversible(auction ? "Auction" : "Trade In", message, auction ? "Accept the bid" : "Trade In")) return;
+		if (!confirmIrreversible(auction ? "Auction" : "Trade In", message, auction ? "Hold Auction" : "Trade In")) return;
 		try {
 			Vault vault = Vault.get();
 			Ship storageShip = vault.storage();
@@ -1172,7 +1197,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		HistoryLog.entry("SELL", name + (auction ? " sold at auction" : " traded in") + " for " + price + " scrap; her scrap and crew to the Cargo Hold");
-		JOptionPane.showMessageDialog(null, name + (auction ? " is sold. " : " is traded in. ") + price + " scrap is in the Cargo Hold.", auction ? "Auction" : "Trade In", JOptionPane.INFORMATION_MESSAGE);
+		if (auction) {
+			int base = homeplanet.parser.Pricing.auctionBase(gs);
+			Object[] accept = {"Accept Bid"};
+			JOptionPane.showOptionDialog(null, "The auction is over. The highest bid for " + name + ": " + price + " scrap"
+					+ (base > 0 ? " (" + (price * 100 / base) + "% of her value)" : "") + ".\n\n" + price + " scrap, her own scrap and her crew are in the Cargo Hold.",
+					"Auction", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, accept, accept[0]);
+		} else {
+			JOptionPane.showMessageDialog(null, name + " is traded in. " + price + " scrap is in the Cargo Hold.", "Trade In", JOptionPane.INFORMATION_MESSAGE);
+		}
 		init();
 	}
 	/** The foreman's derelicts for sale. */

@@ -33,9 +33,10 @@ import homeplanet.vault.Vault;
 
 /**
  * The Junkyard's derelicts for sale: three hulls nobody wanted, on the station's blank copies of FTL's ships, always
- * badly damaged and stripped of nearly everything, often odd (systems missing, added or at strange levels), now and
+ * badly damaged and stripped of nearly everything (each of her own weapons and drones survives 1 time in 12), often odd (systems missing, added or at strange levels), now and
  * then a locked model, and rarely one rebuilt strangely (two systems' rooms swapped, a door welded shut), which
- * becomes a blueprint of her own only once she's bought. New ones come in every REROLL beacons the fleet travels.
+ * becomes a blueprint of her own only once she's bought. New ones come in after 15 to 45 beacons the fleet travels
+ * (5 times 3 to 9, rolled each time: 30 on average).
  * Kept in the fleet's derelicts/ folder.
  */
 public final class Derelicts {
@@ -43,11 +44,17 @@ public final class Derelicts {
 	private Derelicts() { }
 
 	/** Listings at a time; beacons the fleet travels before new ones come in. */
-	public static final int LISTINGS = 3, REROLL = 30;
+	public static final int LISTINGS = 3;
+	/** Beacons until new ones come in: 5 times 3 to 9, rolled with each set (30 on average). */
+	static int interval(Random rng) { return 5 * (3 + rng.nextInt(7)); }
+	/** A set from before the interval was rolled waits this long. */
+	private static final int OLD_INTERVAL = 30;
 	/** One listing in this many is a model the FTL profile hasn't unlocked; one in this many is oddly built. */
 	public static final int LOCKED_ONE_IN = 30, ODD_ONE_IN = 15;
 	/** The price: this share of her value as she is (her hull damage taken off). */
-	public static final int PRICE_MIN = 10, PRICE_MAX = 25;
+	public static final int PRICE_MIN = 25, PRICE_MAX = 75; // her missing systems don't lower it: they lower what she resells for
+	/** Each of her own weapons and drones survives one time in this many, and as often there's one she didn't come with. */
+	public static final int SURVIVES_ONE_IN = 12;
 	/** Systems no derelict's oddity moves (their room holds more than the system: a clear square, a gun). */
 	private static final Set<SystemType> FIXED = java.util.EnumSet.of(SystemType.MEDBAY, SystemType.CLONEBAY, SystemType.ARTILLERY);
 
@@ -74,14 +81,14 @@ public final class Derelicts {
 	public static int beaconsToNext(Vault v) {
 		Properties p = read(v);
 		int at = intOf(p, "rolledAt", -1);
-		return at < 0 ? 0 : Math.max(0, at + REROLL - v.beaconsSeen());
+		return at < 0 ? 0 : Math.max(0, at + intOf(p, "interval", OLD_INTERVAL) - v.beaconsSeen());
 	}
 
 	/** What's for sale now: new listings first if it's time (or there have never been any). */
 	public static synchronized List<Listing> current(Vault v) {
 		Properties p = read(v);
 		int at = intOf(p, "rolledAt", -1);
-		if (at < 0 || v.beaconsSeen() >= at + REROLL) {
+		if (at < 0 || v.beaconsSeen() >= at + intOf(p, "interval", OLD_INTERVAL)) {
 			try { roll(v, new Random()); p = read(v); }
 			catch (Exception e) { log.warn("Could not bring in new derelicts: {}", e.toString()); }
 		}
@@ -107,6 +114,7 @@ public final class Derelicts {
 		for (Ship s : v.all()) if (s.name != null) taken.add(s.name);
 		Properties p = new Properties();
 		p.setProperty("rolledAt", Integer.toString(v.beaconsSeen()));
+		p.setProperty("interval", Integer.toString(interval(rng)));
 		for (int i = 0; i < LISTINGS; i++) {
 			boolean wantLocked = rng.nextInt(LOCKED_ONE_IN) == 0;
 			String id = pickModel(rng, u, wantLocked);
@@ -187,23 +195,47 @@ public final class Derelicts {
 			if (t.isSubsystem()) st.setPower(st.getCapacity() - st.getDamagedBars());
 		}
 
-		// stripped: almost never a weapon or drone left, nothing in the magazine
+		// stripped: each of her own weapons and drones survives one time in 12, and one time in 12 someone left another
+		// (a free slot permitting); a launcher may still have a few missiles, a drone bay or a hacking system a few parts
 		List<net.blerf.ftl.parser.SavedGameParser.WeaponState> guns = new ArrayList<net.blerf.ftl.parser.SavedGameParser.WeaponState>(ship.getWeaponList());
 		ship.getWeaponList().clear();
 		SystemState weapons = ship.getSystem(SystemType.WEAPONS);
-		if (!guns.isEmpty() && weapons != null && weapons.getCapacity() > 0 && rng.nextInt(12) == 0)
-			ship.addWeapon(SaveHelper.newIdleWeapon(guns.get(rng.nextInt(guns.size())).getWeaponId()));
+		if (weapons != null && weapons.getCapacity() > 0) {
+			for (net.blerf.ftl.parser.SavedGameParser.WeaponState w : guns)
+				if (rng.nextInt(SURVIVES_ONE_IN) == 0) ship.addWeapon(SaveHelper.newIdleWeapon(w.getWeaponId()));
+			int slots = bp == null || bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots();
+			if (ship.getWeaponList().size() < slots && rng.nextInt(SURVIVES_ONE_IN) == 0) {
+				String extra = any(storeWeapons(), rng);
+				if (extra != null) ship.addWeapon(SaveHelper.newIdleWeapon(extra));
+			}
+		}
 		List<net.blerf.ftl.parser.SavedGameParser.DroneState> drones = new ArrayList<net.blerf.ftl.parser.SavedGameParser.DroneState>(ship.getDroneList());
 		ship.getDroneList().clear();
 		SystemState bay = ship.getSystem(SystemType.DRONE_CTRL);
-		if (!drones.isEmpty() && bay != null && bay.getCapacity() > 0 && rng.nextInt(20) == 0)
-			ship.addDrone(SaveHelper.newIdleDrone(drones.get(rng.nextInt(drones.size())).getDroneId()));
+		if (bay != null && bay.getCapacity() > 0) {
+			for (net.blerf.ftl.parser.SavedGameParser.DroneState d : drones)
+				if (rng.nextInt(SURVIVES_ONE_IN) == 0) ship.addDrone(SaveHelper.newIdleDrone(d.getDroneId()));
+			int slots = bp == null || bp.getDroneSlots() == null ? 2 : bp.getDroneSlots();
+			if (ship.getDroneList().size() < slots && rng.nextInt(SURVIVES_ONE_IN) == 0) {
+				String extra = any(storeDrones(), rng);
+				if (extra != null) ship.addDrone(SaveHelper.newIdleDrone(extra));
+			}
+		}
 		List<String> augs = new ArrayList<String>(ship.getAugmentIdList());
 		ship.getAugmentIdList().clear();
 		if (!augs.isEmpty() && rng.nextInt(8) == 0) ship.getAugmentIdList().add(augs.get(rng.nextInt(augs.size())));
+		int launchers = 0;
+		for (net.blerf.ftl.parser.SavedGameParser.WeaponState w : ship.getWeaponList()) {
+			net.blerf.ftl.xml.WeaponBlueprint wb = DataManager.get().getWeapons().get(w.getWeaponId());
+			if (wb != null && wb.getMissiles() > 0) launchers++;
+		}
+		ship.setMissilesAmt(launchers > 0 && rng.nextBoolean() ? 1 + rng.nextInt(3) + (launchers - 1) : 0);
+		int droneCount = ship.getDroneList().size();
+		SystemState hacking = ship.getSystem(SystemType.HACKING);
+		int parts = droneCount > 0 && rng.nextBoolean() ? 1 + rng.nextInt(3) + (droneCount - 1) : 0;
+		if (hacking != null && hacking.getCapacity() > 0 && rng.nextBoolean()) parts += 1;
+		ship.setDronePartsAmt(parts);
 		gs.getCargoIdList().clear();
-		ship.setMissilesAmt(0);
-		ship.setDronePartsAmt(0);
 		ship.setScrapAmt(0);
 		ship.setFuelAmt(rng.nextInt(4));
 		ship.setReservePowerCapacity(Math.max(2, ship.getReservePowerCapacity() - rng.nextInt(4)));
@@ -230,6 +262,19 @@ public final class Derelicts {
 		}
 		return gs;
 	}
+	/** Weapons and drones FTL's stores sell (a price and a rarity: no artillery, no Flagship guns), for the one someone left aboard. */
+	private static List<String> storeWeapons() {
+		List<String> out = new ArrayList<String>();
+		for (net.blerf.ftl.xml.WeaponBlueprint w : DataManager.get().getWeapons().values())
+			if (w.getCost() > 0 && w.getRarity() > 0 && !w.getId().startsWith("ARTILLERY")) out.add(w.getId());
+		return out;
+	}
+	private static List<String> storeDrones() {
+		List<String> out = new ArrayList<String>();
+		for (net.blerf.ftl.xml.DroneBlueprint d : DataManager.get().getDrones().values()) if (d.getCost() > 0 && d.getRarity() > 0) out.add(d.getId());
+		return out;
+	}
+	private static String any(List<String> l, Random rng) { return l.isEmpty() ? null : l.get(rng.nextInt(l.size())); }
 	private static void clear(SystemState st) {
 		st.setCapacity(0); st.setPower(0); st.setDamagedBars(0); st.setIonizedBars(0);
 	}

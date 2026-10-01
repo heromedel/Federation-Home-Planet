@@ -72,6 +72,8 @@ public class SystemsPanel {
 	private final List<String> unknownLines = new ArrayList<String>(); // lines naming a system this version doesn't know: written back as they were
 	private final List<String> changes = new ArrayList<String>(); // for the history log
 	private boolean storedSomething = false;
+	/** What the Dry Dock's work since the last save costs the Cargo Hold (less what selling stored systems paid in): paid on Save, dropped on Reset. */
+	private int bill = 0;
 
 	SystemsPanel(CargoBayUI bay) { this.bay = bay; }
 
@@ -143,6 +145,7 @@ public class SystemsPanel {
 	/** Rebuilds from the boarded ship and the file (throws away unsaved changes). */
 	void init() {
 		changes.clear();
+		bill = 0;
 		storedSomething = false;
 		load();
 		refresh();
@@ -185,16 +188,16 @@ public class SystemsPanel {
 					new ActionListener() { public void actionPerformed(ActionEvent e) { storeSystem(type); } });
 			int up = upgradePrice(bs, t), broken = st.getDamagedBars();
 			if (broken > 0) { // mended first: then she can be upgraded
-				int scrap = bs.getScrapAmt(), fix = broken * homeplanet.parser.Pricing.SYSTEM_REPAIR;
+				int scrap = hold(), fix = broken * homeplanet.parser.Pricing.SYSTEM_REPAIR;
 				r.addButton("Fix: " + fix, 78, ROW_W - 66 - 82, scrap >= fix,
 						scrap >= fix ? "Mend the " + DryDockShop.systemTitle(t.getId()) + "'s " + broken + (broken == 1 ? " broken bar" : " broken bars") + " for " + fix + " scrap ("
-								+ homeplanet.parser.Pricing.SYSTEM_REPAIR + " a bar)" : "Mending " + broken + (broken == 1 ? " bar" : " bars") + " costs " + fix + " scrap; she has " + scrap,
+								+ homeplanet.parser.Pricing.SYSTEM_REPAIR + " a bar)" : "Mending " + broken + (broken == 1 ? " bar" : " bars") + " costs " + fix + " scrap; the Cargo Hold has " + scrap,
 						new ActionListener() { public void actionPerformed(ActionEvent e) { repairSystem(type); } });
 			} else if (up > 0) {
-				int scrap = bs.getScrapAmt();
+				int scrap = hold();
 				r.addButton("Up: " + up, 78, ROW_W - 66 - 82, scrap >= up,
 						scrap >= up ? "Upgrade the " + DryDockShop.systemTitle(t.getId()) + " to level " + (st.getCapacity() + 1) + " for " + up + " scrap"
-						: "Upgrading to level " + (st.getCapacity() + 1) + " costs " + up + " scrap; she has " + scrap,
+						: "Upgrading to level " + (st.getCapacity() + 1) + " costs " + up + " scrap; the Cargo Hold has " + scrap,
 						new ActionListener() { public void actionPerformed(ActionEvent e) { upgradeSystem(type); } });
 			}
 			r.setBounds(0, y + i * 32, w, 28);
@@ -340,6 +343,39 @@ public class SystemsPanel {
 	}
 
 	/** Adds the stored-systems list to the Cargo Bay's save, if it changed (written with the ships, or not at all). */
+	/** The Cargo Hold's scrap the Dry Dock can still spend: what it holds (as the Trade tab has it, when it's the partner) less the bill. */
+	int hold() {
+		int have;
+		if (bay.partnerIsStorage() && bay.tradeState != null) have = bay.tradeState.getScrapAmt();
+		else { try { have = homeplanet.vault.Vault.get().storageScrap(); } catch (Exception e) { have = 0; } }
+		return have - bill;
+	}
+	/** Puts a price on the bill, if the Cargo Hold can pay it. */
+	private boolean charge(int price) {
+		if (price > hold()) return false;
+		bill += price;
+		return true;
+	}
+	/**
+	 * The bill, paid from the Cargo Hold in the same save as her (the hold is the Trade tab's partner, or read fresh for
+	 * it). Returns what was taken from the partner in memory, for the caller to put back if the save fails.
+	 */
+	int payBill(homeplanet.vault.Vault.Transaction tx) throws java.io.IOException {
+		if (bill == 0) return 0;
+		if (bay.partnerIsStorage() && bay.tradeState != null) {
+			if (bay.tradeState.getScrapAmt() < bill) throw new java.io.IOException("The Cargo Hold holds " + bay.tradeState.getScrapAmt() + " scrap; the Dry Dock's work costs " + bill);
+			bay.tradeState.setScrapAmt(bay.tradeState.getScrapAmt() - bill); // saved with the partner; init() reloads it after
+			return bill;
+		}
+		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
+		homeplanet.vault.Ship hold = v.storage();
+		homeplanet.vault.Vault.Copy c = v.readCopy(hold);
+		ShipState s = c.save.getPlayerShip();
+		if (s.getScrapAmt() < bill) throw new java.io.IOException("The Cargo Hold holds " + s.getScrapAmt() + " scrap; the Dry Dock's work costs " + bill);
+		s.setScrapAmt(s.getScrapAmt() - bill);
+		tx.put(hold, c.save, c.hash);
+		return 0;
+	}
 	void addTo(homeplanet.vault.Vault.Transaction tx) {
 		if (changes.isEmpty()) return;
 		File f = file();
@@ -427,12 +463,12 @@ public class SystemsPanel {
 		}
 		int fee = homeplanet.core.Economy.removalFee();
 		if (fee > 0) {
-			if (bs.getScrapAmt() < fee) {
-				JOptionPane.showMessageDialog(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off; " + save.getPlayerShipName() + " has " + bs.getScrapAmt() + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
+			if (hold() < fee) {
+				JOptionPane.showMessageDialog(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off; the Cargo Hold has " + hold() + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
-			if (!homeplanet.core.HomePlanet.confirmNo(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName() + ".\nShe pays. Store it?", "Systems")) return;
-			bs.setScrapAmt(bs.getScrapAmt() - fee);
+			if (!homeplanet.core.HomePlanet.confirmNo(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName() + ".\nThe Cargo Hold pays (on Save). Store it?", "Systems")) return;
+			charge(fee);
 			changes.add("Paid " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName());
 		}
 		int level = st.getCapacity();
@@ -519,25 +555,25 @@ public class SystemsPanel {
 	}
 	/** The Dry Dock rows: reactor power and hull repairs. Returns the y below them. */
 	private int dryDock(ShipState bs, int y, int w) {
-		CargoParts.Header h = new CargoParts.Header("Dry Dock: upgrades and repairs", false);
+		CargoParts.Header h = new CargoParts.Header("Dry Dock: the Cargo Hold pays (" + hold() + " scrap)", false);
 		h.setBounds(0, y, w, 22);
 		sysList.add(h);
 		y += 26;
-		int scrap = bs.getScrapAmt();
+		int scrap = hold();
 		int bars = bs.getReservePowerCapacity(), rp = homeplanet.parser.Pricing.reactorBar(bars + 1);
 		SysRow reactor = new SysRow("Reactor", bars, "", null, "Reactor power: " + bars + " bars", null);
 		if (bars < homeplanet.parser.Pricing.REACTOR_MAX) {
-			reactor.addButton("Up: " + rp, 78, ROW_W - 82, scrap >= rp, scrap >= rp ? "One more bar of reactor power for " + rp + " scrap" : "One more bar costs " + rp + " scrap; she has " + scrap,
+			reactor.addButton("Up: " + rp, 78, ROW_W - 82, scrap >= rp, scrap >= rp ? "One more bar of reactor power for " + rp + " scrap" : "One more bar costs " + rp + " scrap; the Cargo Hold has " + scrap,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { upgradeReactor(); } });
 		}
 		reactor.setBounds(0, y, w, 28);
 		sysList.add(reactor);
 		y += 32;
 		int hull = bs.getHullAmt(), max = maxHull(bs), each = homeplanet.parser.Pricing.hullRepair();
-		int can = Math.min(max - hull, scrap / each);
+		int can = Math.min(max - hull, Math.max(0, scrap) / each);
 		SysRow repair = new SysRow("Hull " + hull + " / " + max, -1, "", null, "Hull repairs: " + each + " scrap a point (The Federation charges a premium)", null);
 		if (hull < max) {
-			repair.addButton("Repair", 78, ROW_W - 82, can > 0, can <= 0 ? "Each point costs " + each + " scrap; she has " + scrap
+			repair.addButton("Repair", 78, ROW_W - 82, can > 0, can <= 0 ? "Each point costs " + each + " scrap; the Cargo Hold has " + scrap
 					: "Repair " + can + (can == 1 ? " point" : " points") + " for " + can * each + " scrap (" + each + " a point" + (can < max - hull ? "; all she can afford" : "") + ")",
 					new ActionListener() { public void actionPerformed(ActionEvent e) { repairHull(); } });
 		}
@@ -548,7 +584,7 @@ public class SystemsPanel {
 		if (breaches > 0) {
 			int seal = breaches * homeplanet.parser.Pricing.BREACH_REPAIR;
 			SysRow br = new SysRow("Hull breaches: " + breaches, -1, "", null, "Holes in her hull, venting air: " + homeplanet.parser.Pricing.BREACH_REPAIR + " scrap each to seal", null);
-			br.addButton("Seal", 78, ROW_W - 82, scrap >= seal, scrap >= seal ? "Seal all " + breaches + " for " + seal + " scrap" : "Sealing them costs " + seal + " scrap; she has " + scrap,
+			br.addButton("Seal", 78, ROW_W - 82, scrap >= seal, scrap >= seal ? "Seal all " + breaches + " for " + seal + " scrap" : "Sealing them costs " + seal + " scrap; the Cargo Hold has " + scrap,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { sealBreaches(); } });
 			br.setBounds(0, y, w, 28);
 			sysList.add(br);
@@ -560,11 +596,10 @@ public class SystemsPanel {
 	private void upgradeSystem(SystemType t) {
 		ShipState bs = bay.currentSave.getPlayerShip();
 		int price = upgradePrice(bs, t);
-		if (price <= 0 || bs.getScrapAmt() < price) return;
+		if (price <= 0 || !charge(price)) return;
 		SystemState st = bs.getSystem(t);
 		st.setCapacity(st.getCapacity() + 1);
 		if (t.isSubsystem()) st.setPower(st.getCapacity()); // subsystems run at their full level
-		bs.setScrapAmt(bs.getScrapAmt() - price);
 		changes.add("Upgraded " + DryDockShop.systemTitle(t.getId()) + " to level " + st.getCapacity() + " for " + price + " scrap");
 		changed();
 		bay.help("Upgraded the " + DryDockShop.systemTitle(t.getId()) + " to level " + st.getCapacity() + ". Save makes it official.");
@@ -572,9 +607,8 @@ public class SystemsPanel {
 	private void upgradeReactor() {
 		ShipState bs = bay.currentSave.getPlayerShip();
 		int bars = bs.getReservePowerCapacity(), price = homeplanet.parser.Pricing.reactorBar(bars + 1);
-		if (bars >= homeplanet.parser.Pricing.REACTOR_MAX || bs.getScrapAmt() < price) return;
+		if (bars >= homeplanet.parser.Pricing.REACTOR_MAX || !charge(price)) return;
 		bs.setReservePowerCapacity(bars + 1);
-		bs.setScrapAmt(bs.getScrapAmt() - price);
 		changes.add("Reactor upgraded to " + (bars + 1) + " bars for " + price + " scrap");
 		changed();
 		bay.help("Reactor power is now " + (bars + 1) + ". Save makes it official.");
@@ -584,10 +618,9 @@ public class SystemsPanel {
 		SystemState st = bs.getSystem(t);
 		if (st == null || st.getDamagedBars() <= 0) return;
 		int n = st.getDamagedBars(), price = n * homeplanet.parser.Pricing.SYSTEM_REPAIR;
-		if (bs.getScrapAmt() < price) return;
+		if (!charge(price)) return;
 		st.setDamagedBars(0);
 		if (t.isSubsystem()) st.setPower(st.getCapacity()); // subsystems run at their full level
-		bs.setScrapAmt(bs.getScrapAmt() - price);
 		changes.add("Mended the " + DryDockShop.systemTitle(t.getId()) + " (" + n + (n == 1 ? " bar" : " bars") + ") for " + price + " scrap");
 		changed();
 		bay.help("Mended the " + DryDockShop.systemTitle(t.getId()) + ". Save makes it official.");
@@ -595,9 +628,8 @@ public class SystemsPanel {
 	private void sealBreaches() {
 		ShipState bs = bay.currentSave.getPlayerShip();
 		int n = bs.getBreachMap().size(), price = n * homeplanet.parser.Pricing.BREACH_REPAIR;
-		if (n == 0 || bs.getScrapAmt() < price) return;
+		if (n == 0 || !charge(price)) return;
 		bs.getBreachMap().clear();
-		bs.setScrapAmt(bs.getScrapAmt() - price);
 		changes.add("Sealed " + n + (n == 1 ? " hull breach" : " hull breaches") + " for " + price + " scrap");
 		changed();
 		bay.help("Sealed " + n + (n == 1 ? " breach" : " breaches") + ". Save makes it official.");
@@ -605,10 +637,9 @@ public class SystemsPanel {
 	private void repairHull() {
 		ShipState bs = bay.currentSave.getPlayerShip();
 		int each = homeplanet.parser.Pricing.hullRepair();
-		int n = Math.min(maxHull(bs) - bs.getHullAmt(), bs.getScrapAmt() / each);
-		if (n <= 0) return;
+		int n = Math.min(maxHull(bs) - bs.getHullAmt(), Math.max(0, hold()) / each);
+		if (n <= 0 || !charge(n * each)) return;
 		bs.setHullAmt(bs.getHullAmt() + n);
-		bs.setScrapAmt(bs.getScrapAmt() - n * each);
 		changes.add("Hull repaired by " + n + " for " + n * each + " scrap");
 		changed();
 		bay.help("Repaired " + n + " hull for " + n * each + " scrap. Save makes it official.");
@@ -619,11 +650,10 @@ public class SystemsPanel {
 	private void sellSystem(Stored sel) {
 		String name = DryDockShop.systemTitle(sel.id) + (sel.level > 0 ? " (level " + sel.level + ")" : "");
 		int price = salePrice(sel);
-		if (!homeplanet.core.HomePlanet.confirmNo(bay, "Sell the " + name + " for " + price + " scrap?\n" + bay.currentSave.getPlayerShipName() + " is paid.", "Sell")) return;
+		if (!homeplanet.core.HomePlanet.confirmNo(bay, "Sell the " + name + " for " + price + " scrap?\nThe Cargo Hold is paid (on Save).", "Sell")) return;
 		stored.remove(sel);
-		ShipState bs = bay.currentSave.getPlayerShip();
-		bs.setScrapAmt(bs.getScrapAmt() + price);
-		changes.add("Sold " + name + " for " + price + " scrap (" + bay.currentSave.getPlayerShipName() + " was paid)");
+		bill -= price;
+		changes.add("Sold " + name + " for " + price + " scrap (the Cargo Hold was paid)");
 		changed();
 	}
 

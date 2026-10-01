@@ -39,6 +39,25 @@ public class RuleT { public static void main(String[] a) throws Exception {
   Setup.chk("S: whole hull: Trade In is half her value", Pricing.missingHull(s) == 0 && Pricing.tradeIn(g) == value / 2);
   s.setHullAmt(s.getHullAmt() - 6);
   Setup.chk("S: 6 hull missing: 30 scrap off", Pricing.missingHull(s) == 6 && Pricing.tradeIn(g) == value / 2 - 30 && Pricing.auctionBase(g) == value - 30);
+  s.getSystem(SavedGameParser.SystemType.SHIELDS).setDamagedBars(2);
+  Setup.chk("S: two broken system bars: 10 more off", Pricing.brokenBars(s) == 2 && Pricing.tradeIn(g) == value / 2 - 40 && Pricing.auctionBase(g) == value - 40);
+  s.getSystem(SavedGameParser.SystemType.SHIELDS).setDamagedBars(0);
+  s.setBreach(1, 1, 100);
+  Setup.chk("S: a breach: 5 more off", Pricing.tradeIn(g) == value / 2 - 35 && Pricing.auctionBase(g) == value - 35);
+  s.getBreachMap().clear();
+  // a missing Engines, Piloting or Oxygen: 15 points off what each buyer pays
+  int full = Pricing.tradeIn(g);
+  SavedGameParser.SystemState pil = s.getSystem(SavedGameParser.SystemType.PILOT); int pilLevel = pil.getCapacity(); pil.setCapacity(0);
+  int v1 = Pricing.saleValue(g), dmg1 = Pricing.damage(s);
+  Setup.chk("S: no Piloting: Trade In pays 35%, bids run 10-60%", Pricing.missingCore(s).size() == 1 && Pricing.tradeIn(g) == Math.max(0, v1 * 35 / 100 - dmg1)
+    && Arrays.equals(Pricing.auctionRange(s), new int[] {10, 60}));
+  SavedGameParser.SystemState eng = s.getSystem(SavedGameParser.SystemType.ENGINES); int engLevel = eng.getCapacity(); eng.setCapacity(0);
+  SavedGameParser.SystemState oxy = s.getSystem(SavedGameParser.SystemType.OXYGEN); int oxyLevel = oxy.getCapacity(); oxy.setCapacity(0);
+  int v3 = Pricing.saleValue(g), dmg3 = Pricing.damage(s);
+  Setup.chk("S: all three missing: Trade In 5%, bids 5-30% (the low end at its floor)", Pricing.missingCore(s).size() == 3 && Pricing.tradeIn(g) == Math.max(0, v3 * 5 / 100 - dmg3)
+    && Arrays.equals(Pricing.auctionRange(s), new int[] {5, 30}));
+  pil.setCapacity(pilLevel); eng.setCapacity(engLevel); oxy.setCapacity(oxyLevel);
+  Setup.chk("S: put back, the prices are whole again", Pricing.missingCore(s).isEmpty() && Pricing.tradeIn(g) == full && Arrays.equals(Pricing.auctionRange(s), new int[] {25, 75}));
   int lo = Integer.MAX_VALUE, hi = 0; boolean same = true;
   for (long seed = 0; seed < 400; seed++) { int b = Pricing.auction(g, seed); lo = Math.min(lo, b); hi = Math.max(hi, b); same &= b == Pricing.auction(g, seed); }
   int base = Pricing.auctionBase(g);

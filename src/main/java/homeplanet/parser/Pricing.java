@@ -119,17 +119,44 @@ public final class Pricing {
 		int max = bp == null || bp.getHealth() == null ? s.getHullAmt() : bp.getHealth().amount;
 		return Math.max(0, max - s.getHullAmt());
 	}
-	/** Trade In: half her value, less 5 scrap for each point of missing hull (never below 0). */
+	/** Her broken system bars (each one mended in the Dry Dock for SYSTEM_REPAIR). */
+	public static int brokenBars(ShipState s) {
+		int n = 0;
+		for (SystemType t : SystemType.values()) { SystemState st = s.getSystem(t); if (st != null && st.getCapacity() > 0) n += st.getDamagedBars(); }
+		return n;
+	}
+	/** What a buyer takes off for her damage: 5 scrap a missing hull point, 5 a broken system bar and 5 a breach, as the Dry Dock would charge. */
+	public static int damage(ShipState s) {
+		return HULL_DAMAGE * missingHull(s) + SYSTEM_REPAIR * brokenBars(s) + BREACH_REPAIR * s.getBreachMap().size();
+	}
+	/** Systems a buyer won't do without: no Engines or Piloting and she can't fly, no Oxygen and no one can live aboard. */
+	public static final SystemType[] CORE = {SystemType.ENGINES, SystemType.PILOT, SystemType.OXYGEN};
+	/** Each core system she's missing takes this many points off what Trade In and Auction pay. */
+	public static final int CORE_PENALTY = 15;
+	/** The core systems she doesn't have installed, whatever her model or design: few buyers want a ship without them. */
+	public static List<SystemType> missingCore(ShipState s) {
+		List<SystemType> out = new ArrayList<SystemType>();
+		for (SystemType t : CORE) { SystemState st = s.getSystem(t); if (st == null || st.getCapacity() <= 0) out.add(t); }
+		return out;
+	}
+	/** Trade In: half her value (15 points less for each missing core system), less her damage (never below 0). */
 	public static int tradeIn(SavedGameState gs) {
-		return Math.max(0, saleValue(gs) / 2 - HULL_DAMAGE * missingHull(gs.getPlayerShip()));
+		int share = Math.max(5, 50 - CORE_PENALTY * missingCore(gs.getPlayerShip()).size());
+		return Math.max(0, saleValue(gs) * share / 100 - damage(gs.getPlayerShip()));
 	}
-	/** Auction: what the bidding starts from, her value less 5 scrap for each point of missing hull (never below 0). */
+	/** Auction (and a derelict's price): what the bidding starts from, her value less her damage (never below 0). */
 	public static int auctionBase(SavedGameState gs) {
-		return Math.max(0, saleValue(gs) - HULL_DAMAGE * missingHull(gs.getPlayerShip()));
+		return Math.max(0, saleValue(gs) - damage(gs.getPlayerShip()));
 	}
-	/** The best bid at auction: 25% to 75% of {@link #auctionBase}, the same for the same save (bidders don't change their minds). */
+	/** The lowest and highest share bidders offer: 25% to 75%, both 15 points less for each missing core system (never under 5%). */
+	public static int[] auctionRange(ShipState s) {
+		int k = CORE_PENALTY * missingCore(s).size();
+		return new int[] {Math.max(5, 25 - k), Math.max(5, 75 - k)};
+	}
+	/** The best bid at auction: within {@link #auctionRange} of {@link #auctionBase}, the same for the same save (bidders don't change their minds). */
 	public static int auction(SavedGameState gs, long seed) {
-		int pct = 25 + new java.util.Random(seed).nextInt(51);
+		int[] r = auctionRange(gs.getPlayerShip());
+		int pct = r[0] + new java.util.Random(seed).nextInt(r[1] - r[0] + 1);
 		return auctionBase(gs) * pct / 100;
 	}
 

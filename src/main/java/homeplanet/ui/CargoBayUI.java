@@ -1017,7 +1017,6 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (cs == null) return;
 		ShipState state = mine ? currentState : tradeState;
 		SavedGameState save = mine ? currentSave : tradeSave;
-		if (SaveHelper.getOwnCrew(state).size() <= 1 && (mine || !partnerIsStorage())) { HomePlanet.showErrorDialog("At least one crew member must stay aboard."); return; }
 		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't retire right now."); return; }
 		if (!HomePlanet.confirmNo(this, "Retire " + cs.getName() + "?\nThey leave " + save.getPlayerShipName() + " for good.", "Retire")) return;
 		state.getCrewList().remove(cs);
@@ -1036,9 +1035,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		CrewState cs = (CrewState) (fromMine ? c.mine : c.theirs).selectedValue();
 		if (cs == null) return;
 		ShipState startState = fromMine ? currentState : tradeState, destState = fromMine ? tradeState : currentState;
-		boolean startIsShip = !(!fromMine && partnerIsStorage());
+		// a ship may be left with no one aboard (fixing up a derelict, say): FTL just won't launch her until someone is (HomePlanet.noOneAboard)
 		boolean destIsStorage = fromMine && partnerIsStorage();
-		if (startIsShip && SaveHelper.getOwnCrew(startState).size() <= 1) { HomePlanet.showErrorDialog("At least one crew member must stay aboard."); return; }
 		if (!destIsStorage && SaveHelper.getOwnCrew(destState).size() >= 8) { HomePlanet.showErrorDialog("No room for more crew: a ship carries 8 at most."); return; }
 		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't be moved right now."); return; }
 		String refused = destIsStorage ? null : Dlc.refusesCrew(fromMine ? tradeSave : currentSave, cs);
@@ -1113,6 +1111,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			return false;
 		}
 		if (currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return false;
+		int billed = 0; // taken from the Cargo Hold in memory (it's the partner): given back if the save fails
 		try {
 			Map<String, Integer> curBefore = null, tradeBefore = null;
 			String nameBefore = null, tradeNameBefore = null;
@@ -1133,6 +1132,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			if (tradeShip != null && tradePath != null) tx.put(tradeShip, tradeSave, tradeHash);
 			shop.addTo(tx);
 			systems.addTo(tx);
+			billed = systems.payBill(tx); // the Dry Dock's work, from the Cargo Hold, in the same save
 			tx.commit();
 			if (!systems.changes().isEmpty())
 				homeplanet.core.HistoryLog.entry("SYSTEMS", currentSave.getPlayerShipName(), new ArrayList<String>(systems.changes()));
@@ -1191,10 +1191,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			if (!lines.isEmpty())
 				homeplanet.core.HistoryLog.entry("TRADE", currentSave.getPlayerShipName() + (tradeSave != null ? " <-> " + tradeSave.getPlayerShipName() : ""), lines);
 		} catch (Vault.StaleException e) {
+			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
 			log.warn("Save refused: {}", e.getMessage());
 			HomePlanet.showErrorDialog(e.getMessage() + "\n\nPress Reset to load her as she is now, then make the changes again.");
 			return false;
 		} catch (Exception e) {
+			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
 			log.error("Saving failed", e);
 			HomePlanet.showErrorDialog("The Home Planet Station could not save the changes:\n" + e);
 			return false;
