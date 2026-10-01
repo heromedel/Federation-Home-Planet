@@ -49,6 +49,11 @@ aboard and the ship type are all visible; how an enemy crew died, or a surrender
 nearby trigger the save does show. Letters from aliens writing directly (the Mantis) would widen the cast beyond the
 Federation's own offices.
 
+## Idea C: the One Point of Hull — built (ROADMAP 12)
+
+An Engi writes when a ship comes out of a battle with one point of hull, and offers a derelict to restore or a repair
+tool. Built as the first reply chain, so Idea A's mechanism exists now; Ancestry is next in line for it.
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just

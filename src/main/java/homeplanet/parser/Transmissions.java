@@ -48,7 +48,14 @@ public final class Transmissions {
 	/** A message as the resource file has it. */
 	static final class Template {
 		String key, from = "", subject = "", reward = "";
+		/** Reply chains: the replies offered ("text -> next-key 5-10 | ..."), the letter that follows by itself some beacons later ("next-key 5-7"), a price for the reward ("scrap 25"), and something done when it's sent ("derelict"). */
+		String replies = "", then = "", cost = "", action = "";
 		final StringBuilder body = new StringBuilder();
+	}
+	/** A letter due some beacons from now (the answer to a reply, or the next of a chain). */
+	static final class Pending {
+		String template, name;
+		int due;
 	}
 	/** A message sent. */
 	public static final class Message {
@@ -58,6 +65,8 @@ public final class Transmissions {
 		public boolean archived;
 		/** What was claimed, in words (after a claim). */
 		public String claimedWhat = "";
+		/** The replies it offers (as the template has them), the one chosen, and the reward's price. */
+		public String replies = "", replied = "", cost = "";
 		public boolean hasReward() { return reward != null && !reward.trim().isEmpty(); }
 		/** A commission order: its free ship waits in Commission. */
 		public boolean isOrder() { return key.startsWith("order:") || key.startsWith("empty") || key.startsWith("promo:"); }
@@ -94,6 +103,10 @@ public final class Transmissions {
 					if (k.equals("from")) t.from = v;
 					else if (k.equals("subject")) t.subject = v;
 					else if (k.equals("reward")) t.reward = v;
+					else if (k.equals("replies")) t.replies = v;
+					else if (k.equals("then")) t.then = v;
+					else if (k.equals("cost")) t.cost = v;
+					else if (k.equals("action")) t.action = v;
 					continue;
 				}
 				t.body.append(line).append('\n');
@@ -109,10 +122,13 @@ public final class Transmissions {
 
 	static File file() { return new File(Vault.get().root, "transmissions.xml"); }
 	private static boolean emptyOpen = false; // an empty-shipyard order is out while the shipyard stays empty (read with load())
+	/** Letters due later (read with load(), written with save()). */
+	private static List<Pending> pending = new ArrayList<Pending>();
 
 	public static synchronized List<Message> load() {
 		List<Message> out = new ArrayList<Message>();
 		emptyOpen = false;
+		pending = new ArrayList<Pending>();
 		File f = file();
 		if (!f.isFile()) return out;
 		try {
@@ -131,8 +147,20 @@ public final class Transmissions {
 				m.claimed = "true".equals(e.getAttribute("claimed"));
 				m.archived = "true".equals(e.getAttribute("archived"));
 				m.claimedWhat = e.getAttribute("claimedWhat");
+				m.replies = e.getAttribute("replies");
+				m.replied = e.getAttribute("replied");
+				m.cost = e.getAttribute("cost");
 				m.body = e.getTextContent();
 				out.add(m);
+			}
+			NodeList ps = doc.getElementsByTagName("pending");
+			for (int i = 0; i < ps.getLength(); i++) {
+				Element e = (Element) ps.item(i);
+				Pending p = new Pending();
+				p.template = e.getAttribute("template");
+				p.name = e.getAttribute("name");
+				try { p.due = Integer.parseInt(e.getAttribute("due")); } catch (NumberFormatException x) { continue; }
+				pending.add(p);
 			}
 		} catch (Exception e) {
 			log.error("Could not read " + f, e);
@@ -147,9 +175,12 @@ public final class Transmissions {
 			sb.append("\t<message key=\"").append(XmlText.attr(m.key)).append("\" date=\"").append(XmlText.attr(m.date))
 					.append("\" from=\"").append(XmlText.attr(m.from)).append("\" subject=\"").append(XmlText.attr(m.subject))
 					.append("\" reward=\"").append(XmlText.attr(m.reward)).append("\" read=\"").append(m.read)
-					.append("\" claimed=\"").append(m.claimed).append("\" archived=\"").append(m.archived).append("\" claimedWhat=\"").append(XmlText.attr(m.claimedWhat)).append("\">")
+					.append("\" claimed=\"").append(m.claimed).append("\" archived=\"").append(m.archived).append("\" claimedWhat=\"").append(XmlText.attr(m.claimedWhat))
+					.append("\" replies=\"").append(XmlText.attr(m.replies)).append("\" replied=\"").append(XmlText.attr(m.replied)).append("\" cost=\"").append(XmlText.attr(m.cost)).append("\">")
 					.append(XmlText.text(m.body)).append("</message>\r\n");
 		}
+		for (Pending p : pending)
+			sb.append("\t<pending template=\"").append(XmlText.attr(p.template)).append("\" due=\"").append(p.due).append("\" name=\"").append(XmlText.attr(p.name)).append("\"/>\r\n");
 		sb.append("</transmissions>\r\n");
 		SafeFiles.writeText(file(), sb.toString(), true);
 	}
@@ -227,13 +258,80 @@ public final class Transmissions {
 			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, "ach:" + a, rank, null);
 		}
 		if (HomePlanet.immersiveMode && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
+		// reply chains: a letter for what the fleet has been through, and the letters now due
+		boolean chained = false;
+		String oneHull = v.event(Vault.EVENT_ONE_HULL);
+		if (oneHull != null && !sent.contains(ONE_HULL)) chained |= chain(all, sent, ONE_HULL, rank, oneHull);
+		for (Pending p : new ArrayList<Pending>(pending)) {
+			if (p.due > v.beaconsSeen()) continue;
+			if (chain(all, sent, p.template, rank, p.name)) { pending.remove(p); chained = true; }
+		}
 		// the welcome last: the inbox shows the newest first, so it tops everything that arrives with it
 		if (HomePlanet.immersiveMode) send(all, sent, "welcome", "welcome", rank, null);
 		int added = all.size() - before;
-		if (added > 0 || wasOpen != emptyOpen) {
+		if (added > 0 || wasOpen != emptyOpen || chained) {
 			try { save(all); } catch (IOException e) { log.error("Could not save the transmissions", e); }
 		}
 		return added;
+	}
+	/** The first letter of the chain for a ship that came out of a battle with one point of hull. */
+	static final String ONE_HULL = "chain:one-hull";
+	/**
+	 * Sends a chain letter (its key is its template's, so each goes once), first doing what it carries (the derelict's
+	 * delivery), and schedules the letter that follows it. False if it must wait (its action failed: tried again later).
+	 */
+	private static boolean chain(List<Message> all, Set<String> sent, String templateKey, String rank, String name) {
+		if (sent.contains(templateKey)) return true; // sent before: nothing more to do
+		Template t = templates().get(templateKey);
+		if (t == null) return true; // no letter written for it
+		if ("derelict".equals(t.action)) {
+			try { Derelict.deliver(Vault.get()); }
+			catch (Exception e) { log.warn("Could not deliver the derelict (tried again next time): {}", e.toString()); return false; }
+		}
+		send(all, sent, templateKey, templateKey, rank, null, name);
+		if (!t.then.isEmpty()) schedule(t.then, name);
+		return true;
+	}
+	/** Schedules "next-key 5-7": that letter, a random 5 to 7 beacons from now. */
+	private static void schedule(String next, String name) {
+		String[] w = next.trim().split("\\s+");
+		Pending p = new Pending();
+		p.template = w[0];
+		p.name = name == null ? "" : name;
+		int min = 0, max = 0;
+		if (w.length > 1) {
+			String[] r = w[1].split("-");
+			try { min = Integer.parseInt(r[0].trim()); max = r.length > 1 ? Integer.parseInt(r[1].trim()) : min; } catch (NumberFormatException e) { }
+		}
+		p.due = Vault.get().beaconsSeen() + min + (max > min ? new Random().nextInt(max - min + 1) : 0);
+		pending.add(p);
+	}
+	/** A letter's replies: the words of each. Empty if it offers none. */
+	public static List<String> replyTexts(Message m) {
+		List<String> out = new ArrayList<String>();
+		if (m.replies == null || m.replies.trim().isEmpty()) return out;
+		for (String r : m.replies.split("\\|")) out.add(r.split("->")[0].trim());
+		return out;
+	}
+	/** Can the player still reply to this letter? */
+	public static boolean canReply(Message m) { return !replyTexts(m).isEmpty() && (m.replied == null || m.replied.isEmpty()); }
+	/** Sends the chosen reply: recorded on the letter, and its answer scheduled some beacons from now. */
+	public static synchronized void reply(Message m, int option) throws IOException {
+		if (!canReply(m)) throw new IOException("This transmission has been answered already");
+		String[] options = m.replies.split("\\|");
+		if (option < 0 || option >= options.length) throw new IOException("Choose a reply first");
+		String[] parts = options[option].split("->");
+		String words = parts[0].trim();
+		List<Message> all = load(); // also reads the letters already due
+		String name = "";
+		for (Pending p : pending) if (p.name != null && !p.name.isEmpty()) name = p.name;
+		if (name.isEmpty() && Vault.isOpen()) { String n = Vault.get().event(Vault.EVENT_ONE_HULL); if (n != null) name = n; }
+		if (parts.length > 1 && !parts[1].trim().isEmpty()) schedule(parts[1].trim(), name);
+		for (Message x : all) if (x.key.equals(m.key)) { x.replied = words; x.read = true; }
+		save(all);
+		m.replied = words;
+		m.read = true;
+		HistoryLog.entry("REPLY", m.from + ": " + words);
 	}
 	/** The stipend for whole months travelled (every 4 sectors), paid into the Cargo Hold, in one message. */
 	private static void payStipend(List<Message> all, java.util.Set<String> sent, Unlocks u, String rank) {
@@ -321,6 +419,10 @@ public final class Transmissions {
 
 	private static String stamp() { return new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()); }
 	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship) {
+		send(all, sent, key, templateKey, rank, ship, null);
+	}
+	/** As above, with {name}: a ship's own name (the one a chain is about). */
+	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship, String name) {
 		if (sent.contains(key)) return;
 		Template t = templates().get(templateKey);
 		if (t == null) return; // no message written for it
@@ -328,9 +430,11 @@ public final class Transmissions {
 		m.key = key;
 		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
 		m.from = t.from;
-		m.subject = fill(t.subject, rank, ship);
-		m.body = fill(t.body.toString().trim(), rank, ship);
+		m.subject = fill(t.subject, rank, ship).replace("{name}", name == null ? "" : name);
+		m.body = fill(t.body.toString().trim(), rank, ship).replace("{name}", name == null ? "" : name);
 		m.reward = t.reward;
+		m.replies = t.replies;
+		m.cost = t.cost;
 		all.add(0, m); // newest first
 		sent.add(key);
 		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
@@ -377,6 +481,13 @@ public final class Transmissions {
 		}
 		return part;
 	}
+	/** The scrap a reward costs to claim (its "cost: scrap N"), or 0. */
+	public static int price(Message m) {
+		if (m.cost == null) return 0;
+		String[] w = m.cost.trim().split("\\s+");
+		if (w.length == 2 && w[0].equals("scrap")) { try { return Math.max(0, Integer.parseInt(w[1])); } catch (NumberFormatException e) { } }
+		return 0;
+	}
 	/** The whole reward in words. */
 	public static String describeReward(Message m) {
 		List<String> names = new ArrayList<String>();
@@ -404,6 +515,9 @@ public final class Transmissions {
 		Ship st = v.storage();
 		Vault.Copy c = v.readCopy(st);
 		ShipState s = c.save.getPlayerShip();
+		int price = price(m);
+		if (price > s.getScrapAmt()) throw new IOException("This costs " + price + " scrap, and the Cargo Hold has " + s.getScrapAmt() + ". Store more scrap in the Cargo Hold (the Cargo Bay), then claim it.");
+		s.setScrapAmt(s.getScrapAmt() - price); // paid in the same save as the delivery: all or nothing
 		List<String> systems = new ArrayList<String>();
 		Random rng = new Random();
 		for (String p : give) {
@@ -442,7 +556,7 @@ public final class Transmissions {
 		}
 		List<String> words = new ArrayList<String>();
 		for (String p : give) words.add(describe(p));
-		String what = String.join(", ", words);
+		String what = String.join(", ", words) + (price > 0 ? " (" + price + " scrap paid)" : "");
 		// marked claimed before delivery: if the delivery fails the mark is taken back, but a failure to save the mark
 		// after a delivery could never be undone, and the reward would be offered again
 		List<Message> all = load();

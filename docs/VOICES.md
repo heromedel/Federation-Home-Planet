@@ -17,7 +17,7 @@ Playful, occasionally unprofessional. Likes ships. Impressed by newly earned one
 systems ("How does a Zoltan shield work anyway?"). Teases the player ("Lucky Duck", "That will not do. That will not
 do at all."), but never cruelly: she's sorry when things go badly. Commission orders, the free command, and the
 achievements about ships themselves (Full Arsenal, Tough Little Ship, Shields Holding). Only talks about a ship as an
-order until she's commissioned: she hasn't seen her yet. Warm sign-offs ("Godspeed and come home.").
+order until she's commissioned: she hasn't seen her yet. Warm sign-offs that vary with the letter ("Godspeed and come home.", "Try not to scratch the paint.").
 
 ## Office of Alien Affairs
 
@@ -41,6 +41,13 @@ Grave and formal: duty and sacrifice. Promotions and the great victories. "Hold 
 ## Federation Fleet Command
 
 Terse military dispatch: just the facts. The rescue after the final engagement.
+
+## Engi Restoration Collective
+
+Not the Federation's own: Engi who mend what others throw away, writing from outside the chain of command. Speak as
+"we", formally and precisely, never with contractions. Quiet affection for broken things ("We find her beautiful."),
+and a dry, literal humour ("A ship with no one aboard is only a very large box."). No profit from repairs. Their
+letters come as a reply chain (the One Point of Hull), and sign off with the title alone.
 
 ## The Federation Home Planet
 

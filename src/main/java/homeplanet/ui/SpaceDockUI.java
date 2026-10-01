@@ -790,6 +790,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	public boolean board(Ship ship) {
 		if (ship == null || ship.isBoarded()) return false;
 		if (!GameGuard.allows(this, "board a ship")) return false;
+		if (!crewed(ship)) return false;
 		try {
 			Vault.get().board(ship);
 		} catch (IOException e) {
@@ -798,6 +799,38 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return false;
 		}
 		init();
+		return true;
+	}
+	/**
+	 * FTL ends a game with no crew alive, so a ship with no one aboard (the Collective's derelict) can't be boarded:
+	 * the station offers a crew member from the Cargo Hold, or says how to get one aboard. True if she has crew now.
+	 */
+	private boolean crewed(Ship ship) {
+		SavedGameState gs = ship.save();
+		if (gs == null || !SaveHelper.getOwnCrew(gs.getPlayerShip()).isEmpty()) return true;
+		List<net.blerf.ftl.parser.SavedGameParser.CrewState> hold;
+		try { hold = Vault.get().holdCrew(); } catch (IOException e) { hold = new java.util.ArrayList<net.blerf.ftl.parser.SavedGameParser.CrewState>(); }
+		if (hold.isEmpty()) {
+			JOptionPane.showMessageDialog(null, ship.name + " has no one aboard, and a ship needs at least one crew member to fly.\n"
+					+ "Move crew to her in the Cargo Bay first (from your boarded ship or the Cargo Hold), then board her.", "No crew aboard", JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
+		String[] names = new String[hold.size()];
+		for (int i = 0; i < names.length; i++) names[i] = hold.get(i).getName() + "  (" + homeplanet.model.Crew.raceTitle(hold.get(i)) + ")";
+		javax.swing.JComboBox<String> pick = new javax.swing.JComboBox<String>(names);
+		JPanel panel = new JPanel(new java.awt.BorderLayout(0, 8));
+		panel.add(new JLabel("<html>" + ship.name + " has no one aboard, and a ship needs at least one crew member to fly.<br>"
+				+ "Send a crew member from the Cargo Hold to take her?<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
+		panel.add(pick, java.awt.BorderLayout.CENTER);
+		Object[] options = {"Send aboard", "Cancel"};
+		if (JOptionPane.showOptionDialog(null, panel, "No crew aboard", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) != 0) return false;
+		try {
+			Vault.get().crewFromHold(ship, pick.getSelectedIndex());
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not send the crew member aboard " + ship.name + ". Nothing was changed:\n" + e.getMessage());
+			init();
+			return false;
+		}
 		return true;
 	}
 	/** Docks the boarded ship. True if she was docked. */

@@ -10,6 +10,13 @@
 # was surrendered), promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
 # rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
 # notice when Transmissions are off).
+#
+# Reply chains: a letter with "replies: words -> next-key 5-10 | other words -> other-key 3-5" gets a Reply button;
+# the chosen reply sends next-key's letter a random 5 to 10 beacons later. "then: next-key 5-7" sends the next letter
+# by itself, that many beacons after this one. "cost: scrap N" makes the reward's claim cost N scrap from the Cargo
+# Hold. "action: derelict" delivers the Engi Restoration Collective's derelict to the Junkyard with the letter.
+# chain:one-hull starts once per fleet, the first time the boarded ship comes out of a battle with one point of hull
+# ({name} is her name).
 
 == welcome
 from: Home Planet Liaison
@@ -200,7 +207,7 @@ The Kestrel yards have turned out another pattern of the old workhorse: the {shi
 
 I know, I know. "Just another Kestrel." But there's a reason the Federation keeps building them: they come home.
 
-Godspeed and come home.
+Try not to scratch the paint.
 ~ Home Planet Shipyard Comm. Officer
 
 == order:PLAYER_SHIP_CIRCLE
@@ -307,7 +314,7 @@ The Federation Home Planet has released another {ship} to the fleet, and this on
 
 Take this order to Commission and she's yours, on the house.
 
-Godspeed and come home.
+Look after her. I want to hear all about her when you get back.
 ~ Home Planet Shipyard Comm. Officer
 
 == ach:ACH_SECTOR_5
@@ -621,9 +628,9 @@ reward: item SYSTEM_CASING
 
 Eleven systems in one Kestrel. ELEVEN. I've worked on those hulls. I didn't think she had the room.
 
-Titanium System Casing, to protect all of them. And send me a picture of that engine room, please. For science.
+Here, take a Titanium System Casing, to protect all of them. And send me a picture of that engine room, please. For science.
 
-Godspeed and come home.
+Don't let anyone dent her.
 ~ Home Planet Shipyard Comm. Officer
 
 == ach:ACH_TOUGH_SHIP
@@ -991,3 +998,64 @@ Sector 8 with the air nearly gone. The Lanius manage without it; the rest of us 
 A Breach Bomb Mark II, so your enemies can find out what breathing space feels like.
 
 ~ Office of Alien Affairs
+
+== chain:one-hull
+from: Engi Restoration Collective
+subject: One point of hull
+replies: Tell me about these derelict vessels. -> chain:one-hull:derelict 5-10 | I could definitely use a repair tool. -> chain:one-hull:tool 3-5
+
+{rank},
+
+We have received word that the {name} returned from battle with one point of hull remaining. One. We hope she was kept, and repaired, and not discarded.
+
+It is a common error to treat damaged things as finished things. Most are only waiting for someone with patience and the right tools.
+
+We maintain several derelict vessels that are waiting for such a person. Perhaps you are one. Or, if keeping things repaired is not where your talents lie, we have a tool that would help.
+
+Reply, and tell us which.
+
+~ Engi Restoration Collective
+
+== chain:one-hull:derelict
+from: Engi Restoration Collective
+subject: A vessel in need
+then: chain:one-hull:delivered 5-7
+
+{rank},
+
+We have chosen a vessel for you. She is a Slug Cruiser, found drifting, and she has had a difficult life. We call her Patience.
+
+Her hull holds at one fifth. Her oxygen system does not work. Someone tore out her medbay and installed a hacking bay, and it does not work either. Her piloting is better than her engines, which is the wrong way round. Her airlock and her weapons room are breached. Her only weapon is poor.
+
+We find her beautiful. She is being prepared for transfer to your Junkyard. This will take time.
+
+~ Engi Restoration Collective
+
+== chain:one-hull:delivered
+from: Engi Restoration Collective
+subject: Delivered
+action: derelict
+
+{rank},
+
+Patience has been delivered to the Junkyard at The Home Planet Station.
+
+To restore her, use Salvage at the Space Dock to bring her back into service, then move at least one crew member aboard through the Cargo Bay before she flies. A ship with no one aboard is only a very large box.
+
+Repair her well. We will ask.
+
+~ Engi Restoration Collective
+
+== chain:one-hull:tool
+from: Engi Restoration Collective
+subject: The tool
+reward: item REPAIR_ARM
+cost: scrap 25
+
+{rank},
+
+We have set aside a Repair Arm for you. It mends the hull a little each time you collect scrap. We ask 25 scrap from your Cargo Hold to cover its parts, which is less than any store will ask. We do not believe in profit from repairs.
+
+Claim it when you are ready.
+
+~ Engi Restoration Collective

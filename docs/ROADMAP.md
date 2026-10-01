@@ -16,6 +16,7 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 9. Immersive Mode, part 3: the briefing, its own FTL profile, the stipend, unlock hints, Steam Cloud
 10. After a final victory: rescue her (or the museum), or a reward of her value
 11. The museum
+12. Reply chains, and the first one: the One Point of Hull (Idea C)
 
 All built. What remains is testing in real play and bug checks.
 
@@ -275,6 +276,24 @@ station's style: the FTL fonts, gold headings, ships from the game art. The head
 - **Extras:** an **epitaph**, one line the player writes on her plate; and **Save as picture** (the exhibit as a PNG).
 - **To record from now on** (ships from before have less): the profile's achievements when a ship is set out and at
   victory (the difference is her honours), and the victory's date and Top Scores entry.
+
+## 12. Reply chains: the One Point of Hull — built (4B.38; harness test ChainT)
+
+From IDEAS.md (Ideas A and C). Letters can carry a **Reply** button: the player picks an answer, and the next letter
+comes a random number of beacons later (the fleet counts every beacon its ships jump to). The machinery is all in
+`transmissions.txt` (`replies:`, `then:`, `cost:`, `action:`), so later chains (Ancestry first) need only letters.
+
+- **The trigger:** once per fleet, the first time the boarded ship comes out of a battle with one point of hull (no
+  hostile ship alongside). The Engi Restoration Collective writes, naming her.
+- **Reply "Tell me about these derelict vessels.":** 5-10 beacons, then *A vessel in need*; 5-7 more, then
+  *Delivered*, which puts **Patience** in the Junkyard: a Slug Cruiser A on the station's blank copy, no crew, medbay
+  torn out, a broken hacking bay, broken oxygen, piloting 2 and engines 1, a damaged weapons system with only a Mini
+  Beam, hull 6 of 30, breaches in the airlock and weapons room, thin air, no scrap. Salvage
+  brings her to the Space Dock, set out at The Home Planet Station, so she may take on crew.
+- **Reply "I could definitely use a repair tool.":** 3-5 beacons, then a Repair Arm, claimed for 25 scrap from the
+  Cargo Hold (refused, changing nothing, when the hold is short).
+- **No one aboard:** a ship with no crew can't be boarded (FTL would end the game). The station offers a crew member
+  from the Cargo Hold, or says to move one in the Cargo Bay.
 
 ## Naming decisions — settled (4B.30)
 

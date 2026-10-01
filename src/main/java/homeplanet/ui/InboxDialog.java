@@ -37,6 +37,7 @@ public class InboxDialog extends JDialog {
 	private final javax.swing.JTextPane text = new javax.swing.JTextPane();
 	private final JLabel rewardLabel = new JLabel(" ");
 	private final JButton claim = new JButton("Claim");
+	private final JButton reply = new JButton("Reply...");
 	private final JButton commission = new JButton("Commission...");
 	private final JButton archive = new JButton("Archive");
 	private final JButton keep = new JButton("Keep her"), museum = new JButton("Accept the museum's offer");
@@ -81,6 +82,7 @@ public class InboxDialog extends JDialog {
 		JPanel right = new JPanel(new BorderLayout(0, 6));
 		right.add(ts, BorderLayout.CENTER);
 		JPanel act = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+		act.add(reply);
 		act.add(claim);
 		act.add(commission);
 		act.add(keep);
@@ -88,6 +90,8 @@ public class InboxDialog extends JDialog {
 		act.add(archive);
 		act.add(rewardLabel);
 		right.add(act, BorderLayout.SOUTH);
+		reply.setToolTipText("Choose your answer: the reply comes in a few beacons later");
+		reply.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { replySelected(); } });
 		claim.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { claimSelected(); } });
 		commission.setToolTipText("Go to Commission: the ship this order grants is marked free there");
 		commission.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { openCommission = true; dispose(); } });
@@ -180,6 +184,7 @@ public class InboxDialog extends JDialog {
 	private void show(Transmissions.Message m) {
 		if (m == null) {
 			message(null, null, "");
+			reply.setVisible(false);
 			claim.setVisible(false);
 			commission.setVisible(false);
 			keep.setVisible(false);
@@ -188,7 +193,9 @@ public class InboxDialog extends JDialog {
 			rewardLabel.setText(" ");
 			return;
 		}
-		message(m.subject, m.from + "  \u00b7  " + m.date, m.body);
+		boolean answered = m.replied != null && !m.replied.isEmpty();
+		message(m.subject, m.from + "  \u00b7  " + m.date, answered ? m.body + "\n\nYou replied: \u201c" + m.replied + "\u201d" : m.body);
+		reply.setVisible(Transmissions.canReply(m));
 		boolean canClaim = m.hasReward() && !m.claimed;
 		claim.setVisible(m.hasReward());
 		claim.setEnabled(canClaim);
@@ -201,7 +208,8 @@ public class InboxDialog extends JDialog {
 		archive.setText(stipend ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
 		archive.setToolTipText(stipend ? "Delete this notice: the scrap is already in the Cargo Hold" : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
 		rewardLabel.setForeground(canClaim ? new Color(40, 150, 60) : Color.GRAY);
-		rewardLabel.setText(Transmissions.isRescue(m) ? (m.claimed ? m.claimedWhat : " ") : !m.hasReward() ? " " : m.claimed ? "Claimed: " + m.claimedWhat : "Reward: " + Transmissions.describeReward(m));
+		rewardLabel.setText(Transmissions.isRescue(m) ? (m.claimed ? m.claimedWhat : " ") : !m.hasReward() ? " " : m.claimed ? "Claimed: " + m.claimedWhat : "Reward: " + Transmissions.describeReward(m)
+				+ (Transmissions.price(m) > 0 ? ", for " + Transmissions.price(m) + " scrap" : ""));
 		if (Transmissions.isRescue(m)) rewardLabel.setForeground(Color.GRAY);
 		Transmissions.markRead(m);
 		list.repaint();
@@ -218,6 +226,25 @@ public class InboxDialog extends JDialog {
 			JOptionPane.showMessageDialog(this, what, m.subject, JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not do that:\n" + e.getMessage());
+		}
+		show(m);
+	}
+
+	/** Answers a letter that asks for one: the choice of replies, then the answer is on its way. */
+	private void replySelected() {
+		Transmissions.Message m = list.getSelectedValue();
+		if (m == null || !Transmissions.canReply(m)) return;
+		List<String> options = Transmissions.replyTexts(m);
+		Object[] names = new Object[options.size() + 1];
+		for (int i = 0; i < options.size(); i++) names[i] = options.get(i);
+		names[options.size()] = "Cancel";
+		int choice = JOptionPane.showOptionDialog(this, "How will you answer?", "Reply to " + m.from, JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, names, names[names.length - 1]);
+		if (choice < 0 || choice >= options.size()) return;
+		try {
+			Transmissions.reply(m, choice);
+			JOptionPane.showMessageDialog(this, "Reply sent. Expect an answer within a few beacons.", "Reply", JOptionPane.INFORMATION_MESSAGE);
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not send the reply. Nothing was changed:\n" + e.getMessage());
 		}
 		show(m);
 	}

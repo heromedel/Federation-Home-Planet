@@ -36,6 +36,7 @@ echo "== PriceT"; run PriceT "$GAME" "$WORLD" "$W/price" | grep -E "$PICK|^PASS|
 echo "== RuleT"; run RuleT "$GAME" "$WORLD" "$W/rule" | grep -E "$PICK|^PASS"
 echo "== FleetT"; run FleetT "$GAME" "$WORLD" "$W/fleet" | grep -E "$PICK|^PASS"
 echo "== TransT"; run TransT "$GAME" "$WORLD" "$W/trans" | grep -E "$PICK|^PASS"
+echo "== ChainT"; run ChainT "$GAME" "$WORLD" "$W/chain" | grep -E "$PICK|^PASS"
 echo "== VicT"; run VicT "$GAME" "$WORLD" "$W/vic" $VICLOG | grep -E "$PICK|^PASS|^replay"
 
 # the converter, only with old Homeworld data to convert
