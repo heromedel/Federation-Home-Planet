@@ -65,6 +65,7 @@ final class CargoHoldBackdrop {
 			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 			new CargoHoldBackdrop(g, rng, frame).draw();
 			g.dispose();
+			tone(small);
 			BufferedImage out = new BufferedImage(W * ZOOM, H * ZOOM, BufferedImage.TYPE_INT_RGB);
 			Graphics2D o = out.createGraphics();
 			o.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
@@ -76,6 +77,23 @@ final class CargoHoldBackdrop {
 			return null;
 		}
 	}
+
+	/** How much colour the hold keeps (FTL's interiors are muted greys), and how bright it is. */
+	private static final float SATURATION = 0.5f, BRIGHTNESS = 0.85f;
+	/** Mutes the whole hold at once, drawn parts and FTL's pictures alike, toward FTL's own interiors. */
+	private static void tone(BufferedImage img) {
+		for (int y = 0; y < img.getHeight(); y++) {
+			for (int x = 0; x < img.getWidth(); x++) {
+				int p = img.getRGB(x, y), a = p >>> 24, r = (p >> 16) & 255, gr = (p >> 8) & 255, b = p & 255;
+				float lum = 0.3f * r + 0.59f * gr + 0.11f * b;
+				r = clamp((lum + (r - lum) * SATURATION) * BRIGHTNESS);
+				gr = clamp((lum + (gr - lum) * SATURATION) * BRIGHTNESS);
+				b = clamp((lum + (b - lum) * SATURATION) * BRIGHTNESS);
+				img.setRGB(x, y, (a << 24) | (r << 16) | (gr << 8) | b);
+			}
+		}
+	}
+	private static int clamp(float v) { return Math.max(0, Math.min(255, Math.round(v))); }
 
 	private void draw() {
 		fill(SPACE, 0, 0, W, H);
