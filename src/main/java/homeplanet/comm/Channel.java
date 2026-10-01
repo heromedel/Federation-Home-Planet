@@ -41,6 +41,8 @@ public final class Channel {
 	private volatile boolean closed = false;
 	private volatile long lastSent = System.currentTimeMillis();
 	public final String address;
+	/** The other end's address alone (no port). */
+	public final String host;
 
 	private Channel(Socket s) throws IOException {
 		socket = s;
@@ -48,7 +50,8 @@ public final class Channel {
 		s.setSoTimeout(SILENT_MS);
 		in = new BufferedInputStream(s.getInputStream());
 		out = new BufferedOutputStream(s.getOutputStream());
-		address = s.getInetAddress().getHostAddress() + ":" + s.getPort();
+		host = s.getInetAddress().getHostAddress();
+		address = host + ":" + s.getPort();
 	}
 
 	/** Connects to a station (off the event thread: it can take a few seconds). */

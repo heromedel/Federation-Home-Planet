@@ -132,7 +132,24 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
-		commBtn = controlButton("Long Range", "Long Range Comm.: trade with another commander's Home Planet Station over the local network");
+		commBtn = new FtlButton("Long Range", FtlFont.MENU, 180, 40) {
+			@Override protected void paintComponent(Graphics g) {
+				super.paintComponent(g);
+				// a lamp: green while powered up (hailing frequencies left open), orange for a hail that went unanswered
+				int lamp = parent == null || parent.comm == null ? 0 : parent.comm.lamp();
+				if (lamp == 0) return;
+				Graphics2D g2 = (Graphics2D) g.create();
+				g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setColor(lamp == 2 ? CargoParts.ORANGE : MenuTheme.GREEN);
+				g2.fillOval(getWidth() - 20, 9, 9, 9);
+				g2.setColor(Color.black);
+				g2.drawOval(getWidth() - 20, 9, 9, 9);
+				g2.dispose();
+			}
+		};
+		commBtn.setToolTipText("Long Range Comm.: trade with another commander's Home Planet Station over the network");
+		commBtn.addActionListener(this);
+		commBtn.setAlignmentX(LEFT_ALIGNMENT);
 		controlGroup(controls, "Helm", launchBtn, journeyBtn);
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		if (homeplanet.parser.Museum.anything(vault)) { // once a ship has won, or been lost in action

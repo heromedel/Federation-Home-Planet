@@ -40,7 +40,34 @@ public class LinkT {
   System.exit(0);
  }
 
+ /** Does A's scan find this station? */
+ static boolean finds(String station) {
+  for (Beacon.Found f : Beacon.scan(1200, "aaaaaaaaaaaaaaaa")) if (f.station.equals(station)) return true;
+  return false;
+ }
+ /** Asks the bare question an older station's scan asks (no id after it): does this station answer? */
+ static boolean bareAnswer(String station) throws IOException {
+  java.net.DatagramSocket s = new java.net.DatagramSocket();
+  try {
+   byte[] q = "FHP-LRC?".getBytes("UTF-8");
+   for (int i = 0; i < Channel.PORTS; i++) s.send(new java.net.DatagramPacket(q, q.length, java.net.InetAddress.getLoopbackAddress(), Channel.PORT0 + i));
+   s.setSoTimeout(1500);
+   byte[] buf = new byte[1024];
+   while (true) {
+    java.net.DatagramPacket p = new java.net.DatagramPacket(buf, buf.length);
+    try { s.receive(p); } catch (java.net.SocketTimeoutException e) { return false; }
+    if (new String(p.getData(), 0, p.getLength(), "UTF-8").contains(station)) return true;
+   }
+  } finally { s.close(); }
+ }
  static void run() throws Exception {
+  // ---- hailing frequencies: a station is found and hailed only once they're open ----
+  boolean early = false;
+  for (Beacon.Found f : Beacon.scan(1200, "aaaaaaaaaaaaaaaa")) if (f.station.equals("bbbbbbbbbbbbbbbb")) early = true;
+  Setup.chk("a station with its hailing frequencies closed isn't found", !early);
+  boolean reached = false;
+  for (int i = 0; i < Channel.PORTS; i++) { try { a("hail " + (Channel.PORT0 + i)); reached = true; } catch (IOException e) { } }
+  Setup.chk("nor can it be hailed", !reached);
   String port = b("listen").replace("PORT ", "");
   boolean seen = false;
   for (Beacon.Found f : Beacon.scan(1500, "aaaaaaaaaaaaaaaa")) if (f.station.equals("bbbbbbbbbbbbbbbb") && f.title.equals("Commander Bree") && ("" + f.port).equals(port)) seen = true;
@@ -111,6 +138,26 @@ public class LinkT {
   b("wait settled " + (bs + 1));
   Setup.chk("both called off: nothing changed hands", a("unfinished").equals("0") && b("unfinished").equals("0")
     && num(a("hold"), "scrap") == num(aHold, "scrap") && num(b("hold"), "fuel") == num(bHold, "fuel"));
+
+  // ---- declining and blocking ----
+  a("close"); b("wait ended");
+  b("decline on");
+  String dr = a("hail " + port);
+  Setup.chk("a declined hail: the hailer is told the commander is busy", dr.startsWith("REFUSED") && dr.contains("Commander Bree is busy"));
+  b("decline off");
+  b("block aaaaaaaaaaaaaaaa Captain_Ash 127.0.0.1:50000");
+  Setup.chk("a block keeps no address from this computer or a home network (another station there would go with it)", b("blocks").equals("aaaaaaaaaaaaaaaa|Captain Ash|"));
+  Setup.chk("a blocked commander's search gets no answer", !finds("bbbbbbbbbbbbbbbb"));
+  String br = a("hail " + port);
+  Setup.chk("a blocked commander's hail goes unanswered, as if nobody were listening", br.startsWith("REFUSED") && br.contains("did not answer") && !br.contains("block"));
+  Setup.chk("an older station's search (the bare question) is still answered", bareAnswer("bbbbbbbbbbbbbbbb"));
+  b("unblock aaaaaaaaaaaaaaaa");
+  Setup.chk("unblocked: found again", finds("bbbbbbbbbbbbbbbb"));
+  Setup.chk("and hailed again", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+  Blocks.block("cccccccccccccccc", "Captain Pest", "203.0.113.5:47610");
+  Setup.chk("an address from beyond the home network is kept with a block, and blocks by itself", Blocks.blocked(null, "203.0.113.5") && Blocks.blocked("dddddddddddddddd", "203.0.113.5:47611") && !Blocks.blocked("dddddddddddddddd", "203.0.113.6"));
+  Blocks.unblock("cccccccccccccccc");
+  Setup.chk("unblocking clears it", !Blocks.blocked(null, "203.0.113.5") && Blocks.list().isEmpty());
 
   // ---- versions: the protocol decides ----
   a("close"); b("wait ended");

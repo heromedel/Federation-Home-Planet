@@ -80,6 +80,23 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Long Range Comm.");
 		body.add(shipTradeBox, next(c));
 		body.add(anyLevelBox, next(c));
+		JPanel blockRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		final JLabel blockedLabel = new JLabel();
+		final JButton unblockBtn = new JButton("Blocked commanders...");
+		unblockBtn.setToolTipText("Commanders whose hails go unanswered: unblock them here");
+		final Runnable showBlocked = new Runnable() {
+			public void run() {
+				int n = homeplanet.comm.Blocks.list().size();
+				blockedLabel.setText("   " + (n == 0 ? "Nobody is blocked." : n == 1 ? "1 commander blocked." : n + " commanders blocked."));
+				unblockBtn.setEnabled(n > 0);
+			}
+		};
+		unblockBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { unblock(); showBlocked.run(); } });
+		blockedLabel.setForeground(MenuTheme.GREY_GREEN);
+		showBlocked.run();
+		blockRow.add(unblockBtn);
+		blockRow.add(blockedLabel);
+		body.add(blockRow, next(c));
 
 		heading(body, c, "Folders");
 		body.add(folderRow("Saves folder:", savesLabel, new ActionListener() {
@@ -555,4 +572,28 @@ public class SettingsDialog extends JDialog {
 		c.gridy++;
 		return copy;
 	}
+
+	/** The blocked commanders, to unblock one at a time (at once: it isn't one of the settings Save waits for). */
+	private void unblock() {
+		while (true) {
+			java.util.List<homeplanet.comm.Blocks.Entry> l = homeplanet.comm.Blocks.list();
+			if (l.isEmpty()) return;
+			String[] names = new String[l.size()];
+			for (int i = 0; i < names.length; i++) {
+				homeplanet.comm.Blocks.Entry e = l.get(i);
+				names[i] = (e.name.isEmpty() ? "A commander" : e.name) + "  (station " + e.station + (e.address.isEmpty() ? "" : ", " + e.address) + ")";
+			}
+			javax.swing.JList<String> list = new javax.swing.JList<String>(names);
+			list.setSelectedIndex(0);
+			list.setVisibleRowCount(Math.min(8, names.length));
+			JPanel p = new JPanel(new java.awt.BorderLayout(0, 8));
+			p.add(new JLabel("Their hails go unanswered, and your station doesn't answer their searches."), java.awt.BorderLayout.NORTH);
+			p.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
+			Object[] opts = {"Unblock", "Close"};
+			int r = javax.swing.JOptionPane.showOptionDialog(this, p, "Blocked commanders", javax.swing.JOptionPane.DEFAULT_OPTION, javax.swing.JOptionPane.PLAIN_MESSAGE, null, opts, opts[1]);
+			if (r != 0 || list.getSelectedIndex() < 0) return;
+			homeplanet.comm.Blocks.unblock(l.get(list.getSelectedIndex()).station);
+		}
+	}
+
 }

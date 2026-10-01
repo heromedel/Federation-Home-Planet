@@ -22,8 +22,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Finding other stations on the local network: a scan broadcasts "any stations?" to the stations' ports, and each
- * station with its channel open answers with its commander, the ship they're aboard and where to hail it. Text only,
- * one short line each way; an answer that doesn't parse is ignored.
+ * station with its hailing frequencies open answers with its commander, the ship they're aboard and where to hail it.
+ * Text only, one short line each way; an answer that doesn't parse is ignored.
+ * <p>
+ * A scan asks twice: once with its station's id after the question (so a station that blocked it can stay silent),
+ * and once without, for stations older than 4B.70, which answer only the bare question. A newer station answers the
+ * first and ignores the bare one from the same scan.
  */
 public final class Beacon {
 	private static final Logger log = LoggerFactory.getLogger(Beacon.class);
@@ -52,6 +56,8 @@ public final class Beacon {
 	public static final class Responder {
 		private final DatagramSocket socket;
 		private volatile boolean open = true;
+		/** Where an id-bearing question last came from, and when (read and written on the beacon's own thread). */
+		private final Map<String, Long> asked = new LinkedHashMap<String, Long>();
 		public Responder(final Self self) throws IOException {
 			DatagramSocket s = null;
 			for (int i = 0; i < Channel.PORTS && s == null; i++) {
@@ -68,7 +74,19 @@ public final class Beacon {
 							DatagramPacket p = new DatagramPacket(buf, buf.length);
 							socket.receive(p);
 							String q = new String(p.getData(), 0, p.getLength(), StandardCharsets.UTF_8);
-							if (!q.equals(ASK)) continue;
+							String from = p.getSocketAddress().toString(), host = p.getAddress().getHostAddress();
+							long now = System.currentTimeMillis();
+							if (q.startsWith(ASK + "\n")) {
+								asked.put(from, now); // its bare question, right behind, is the same scan
+								while (asked.size() > 64) asked.remove(asked.keySet().iterator().next());
+								if (Blocks.blocked(q.substring(ASK.length() + 1).trim(), host)) continue;
+							} else if (q.equals(ASK)) {
+								Long t = asked.get(from);
+								if (t != null && now - t < 5000) continue;
+								if (Blocks.blocked(null, host)) continue;
+							} else {
+								continue;
+							}
 							byte[] a = (ANSWER + "\n" + self.answer()).getBytes(StandardCharsets.UTF_8);
 							socket.send(new DatagramPacket(a, a.length, p.getSocketAddress()));
 						} catch (IOException e) {
@@ -95,10 +113,13 @@ public final class Beacon {
 		try {
 			s = new DatagramSocket();
 			s.setBroadcast(true);
-			byte[] q = ASK.getBytes(StandardCharsets.UTF_8);
+			byte[] q = (ASK + "\n" + self).getBytes(StandardCharsets.UTF_8), bare = ASK.getBytes(StandardCharsets.UTF_8);
 			for (InetAddress a : targets()) {
 				for (int i = 0; i < Channel.PORTS; i++) {
-					try { s.send(new DatagramPacket(q, q.length, a, Channel.PORT0 + i)); } catch (IOException e) { /* that network refused: the others may not */ }
+					try {
+						s.send(new DatagramPacket(q, q.length, a, Channel.PORT0 + i));
+						s.send(new DatagramPacket(bare, bare.length, a, Channel.PORT0 + i));
+					} catch (IOException e) { /* that network refused: the others may not */ }
 				}
 			}
 			long end = System.currentTimeMillis() + ms;

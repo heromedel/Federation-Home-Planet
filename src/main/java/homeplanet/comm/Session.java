@@ -203,6 +203,11 @@ public final class Session implements Channel.Listener {
 		channel.trySend(m);
 	}
 
+	/** What a hail that wasn't answered is told (a blocked station hears only this: nothing to try again against). */
+	public static String notAnswered(String title) { return title + " did not answer the hail."; }
+	/** What a declined hail is told. */
+	public static String busy(String title) { return title + " is busy. Try again shortly."; }
+
 	/** The most a message can say. */
 	public static final int SAY_MAX = 200;
 	private long[] heard = new long[8];

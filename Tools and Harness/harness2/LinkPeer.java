@@ -6,6 +6,7 @@ import java.io.*; import java.util.*; import javax.swing.SwingUtilities; import 
  */
 public class LinkPeer {
  public static void main(String[] a) throws Exception {
+  HomePlanet.propFile = new File(new File(a[1]).getParentFile(), "station.cfg"); // its own settings (a block list), beside its saves
   Station s = new Station(new File(a[0]), new File(a[1]), a[2], a[3]);
   BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
   for (String line; (line = in.readLine()) != null;) {
@@ -34,6 +35,8 @@ public class LinkPeer {
   final List<String> heard = Collections.synchronizedList(new ArrayList<String>());
   public void said(String who, String text) { heard.add(who + "|" + text); }
   volatile boolean chat = true;
+  /** Turns every hail away as busy ("decline on"): the commander pressing Decline. */
+  volatile boolean decline = false;
   public void problem(String t) { problems.add(t); }
   public void settled(Exchange.Record r) { settled++; }
   public void ended(String why) { ended = why; session = null; ends++; }
@@ -64,6 +67,8 @@ public class LinkPeer {
     post = new Channel.Post(new Channel.Post.Handler() { public void hailed(final Channel ch) {
      try {
       final Session.Peer p = Session.peerOf(ch.readFirst(10000));
+      if (Blocks.blocked(p.station, ch.host)) { ch.close(Session.notAnswered(title)); return; } // as the screen does
+      if (decline) { ch.close(Session.busy(title)); return; } // the commander pressed Decline
       String no = why(p);
       if (no != null) { ch.close(no); return; } // as the screen does: refused, with the reason
       ch.send(hello());
@@ -100,6 +105,11 @@ public class LinkPeer {
    if (c.equals("heardcount")) return "" + heard.size();
    if (c.equals("nochat")) { chat = w.length > 1 && w[1].equals("off"); return "OK"; }
    if (c.equals("ends")) return "" + ends;
+   if (c.equals("unlisten")) { if (post != null) post.close(); if (responder != null) responder.close(); post = null; responder = null; return "OK"; }
+   if (c.equals("decline")) { decline = w[1].equals("on"); return "OK"; }
+   if (c.equals("block")) { Blocks.block(w[1], w[2].replace('_', ' '), w.length > 3 ? w[3] : ""); return "OK"; }
+   if (c.equals("unblock")) { Blocks.unblock(w[1]); return "OK"; }
+   if (c.equals("blocks")) { List<String> n = new ArrayList<String>(); for (Blocks.Entry e : Blocks.list()) n.add(e.station + "|" + e.name + "|" + e.address); return String.join(";", n); }
    if (c.equals("board")) { v.board(shipNamed(w[1])); return "OK"; }
    if (c.equals("dock")) { v.dock(); return "OK"; }
    if (c.equals("boarded")) { Ship b = v.boarded(); return b == null ? "none" : b.name.replace(' ', '_'); }

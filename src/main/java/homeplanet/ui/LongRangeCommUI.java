@@ -41,6 +41,7 @@ import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.comm.Beacon;
+import homeplanet.comm.Blocks;
 import homeplanet.comm.Channel;
 import homeplanet.comm.Commander;
 import homeplanet.comm.Exchange;
@@ -61,7 +62,8 @@ import org.slf4j.LoggerFactory;
  * Long Range Comm.: trading with another commander's Home Planet Station. Built like the Cargo Bay: your side on the
  * left (a ship at a station, or the Cargo Hold), the other station's on the right, and between them the offer
  * both commanders build and accept. Nothing changes hands until both accept the same offer; what arrives goes into
- * the Cargo Hold. The station listens for hails only while this screen is open.
+ * the Cargo Hold. The station listens for hails only once the commander opens hailing frequencies, and only while
+ * this screen is open unless they leave it powered up.
  */
 public class LongRangeCommUI extends JPanel implements Scrollable, Session.View {
 	private static final Logger log = LoggerFactory.getLogger(LongRangeCommUI.class);
@@ -120,8 +122,20 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private final CargoParts.Label scanNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
 	/** The port this station listens on, for a hail by address. */
 	private final CargoParts.Label portNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
-	private final FtlButton establishBtn = new FtlButton("Establish Connection", FtlFont.MENU, RW - 44, 34);
+	private final CargoParts.Label freqLabel = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
+	private final FtlButton establishBtn = new FtlButton("Open Hailing Frequencies", FtlFont.MENU, RW, 34);
+	private final FtlButton powerBtn = new FtlButton("Stay Powered Up", FtlFont.MENU, RW, 30);
 	private final FtlButton hailBtn = new FtlButton("Hail", FtlFont.MENU, 146, 30), hailAddrBtn = new FtlButton("Hail", FtlFont.MENU, 146, 30);
+	private final FtlButton blockBtn = new FtlButton("Block", FtlFont.MENU, 146, 30);
+	/** Hails nobody answered, newest last (shown on this screen; the Space Dock's button lights until they're seen). */
+	private final CargoParts.Label missedNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.ORANGE, 1);
+	private final List<String> missed = new ArrayList<String>();
+	private boolean missedUnseen;
+	/** Hailing frequencies left open when the commander leaves this screen (their choice, for this run of the program). */
+	private boolean poweredUp;
+	/** The list of stations, searched again every few seconds while frequencies are open and this screen is showing. */
+	private final javax.swing.Timer rescan = new javax.swing.Timer(5000, new ActionListener() { public void actionPerformed(ActionEvent e) { autoScan(); } });
+	private boolean scanning;
 	private final JTextField address = new JTextField();
 	private final JLabel theirPic = new JLabel();
 	/** "CONNECTED TO", with the other station's mode. */
@@ -299,7 +313,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 			@Override protected void paintComponent(Graphics g0) {
 				Graphics2D g = (Graphics2D) g0.create();
 				CargoParts.paintBox(g, 0, 0, getWidth(), getHeight(), CargoParts.BOX_LINE);
-				String[] l = {"NO CHANNEL OPEN", "", "Establish a connection with another", "commander's Home Planet Station to trade."};
+				String[] l = {"NO CHANNEL OPEN", "", "Open hailing frequencies, then hail another", "commander's Home Planet Station to trade."};
 				for (int i = 0; i < l.length; i++) {
 					FtlFont f = i == 0 ? FtlFont.MENU : FtlFont.BODY;
 					CargoParts.text(g, l[i], f, i == 0 ? CargoParts.GOLD : CargoParts.DIM, (getWidth() - CargoParts.width(l[i], f)) / 2, 200 + i * 20);
@@ -380,22 +394,27 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 
 		JPanel connect = new JPanel(null);
 		connect.setOpaque(false);
-		CargoParts.Label none = new CargoParts.Label("NO CONNECTION", FtlFont.BODY, CargoParts.DIM, 1);
-		none.setBounds(0, 0, RW, 16);
-		connect.add(none);
-		establishBtn.setBounds(44, 16, RW - 44, 34);
-		establishBtn.setToolTipText("Search the local network for other Home Planet Stations with Long Range Comm. open");
-		establishBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { scan(); } });
+		freqLabel.setBounds(0, 0, RW, 16);
+		connect.add(freqLabel);
+		establishBtn.setBounds(0, 16, RW, 34);
+		establishBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toggleFrequencies(); } });
 		connect.add(establishBtn);
-		header("Commanders in range", true, 0, 78, RW, connect);
-		found.setEmptyText("Press Establish Connection to search");
-		found.setBounds(0, 102, RW, 150);
+		powerBtn.setBounds(0, 56, RW, 30);
+		powerBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { togglePower(); } });
+		connect.add(powerBtn);
+		header("Commanders in range", true, 0, 94, RW, connect);
+		found.setEmptyText("Open Hailing Frequencies to search");
+		found.setBounds(0, 118, RW, 136);
 		found.onChange(new Runnable() { public void run() { updateButtons(); } });
 		found.onDoubleClick(new Runnable() { public void run() { hailFound(); } });
 		connect.add(found);
-		scanNote.setBounds(0, 256, RW, 16);
+		scanNote.setBounds(0, 258, RW, 16);
 		connect.add(scanNote);
-		hailBtn.setBounds(RW - 146, 278, 146, 30);
+		// what can be done with the chosen commander: more of these may come (a message, offers left open)
+		blockBtn.setBounds(0, 280, 146, 30);
+		blockBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { blockFound(); } });
+		connect.add(blockBtn);
+		hailBtn.setBounds(RW - 146, 280, 146, 30);
 		hailBtn.setToolTipText("Open a channel to the chosen commander's station: they must answer");
 		hailBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { hailFound(); } });
 		connect.add(hailBtn);
@@ -426,6 +445,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		portHint.setBounds(0, 438, RW, 16);
 		portHint.setToolTipText(portNote.getToolTipText());
 		connect.add(portHint);
+		missedNote.setBounds(0, 472, RW, 16);
+		connect.add(missedNote);
 		right.add(connect, "connect");
 
 		JPanel partner = new JPanel(null);
@@ -493,17 +514,14 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 
 	// ============================================================== opening and leaving
 
-	/** Opens the screen: asks for a name the first time, starts listening, reads your side. False if it shouldn't open. */
+	/**
+	 * Opens the screen: asks for a name the first time and reads your side. Nothing is opened to the network until the
+	 * commander opens hailing frequencies (or left them open, powered up). False if the screen shouldn't open.
+	 */
 	public boolean init() {
 		if (!Commander.ensure(this)) return false;
-		if (!HomePlanet.config.containsKey(CFG_FIREWALL)) {
-			JOptionPane.showMessageDialog(this, "<html><div style='width:420px'>Long Range Comm. listens for other commanders' stations on your local network while this screen is open.<br><br>"
-					+ "The first time, Windows Firewall may ask whether to let Java (\"OpenJDK Platform binary\") use the network. Allow it on private networks, "
-					+ "or other stations won't be able to reach this one.</div></html>", "Long Range Comm.", JOptionPane.INFORMATION_MESSAGE);
-			HomePlanet.config.setProperty(CFG_FIREWALL, "true");
-			HomePlanet.saveConfig();
-		}
-		openPost();
+		missedUnseen = false;
+		if (post != null && session == null) { rescan.start(); SwingUtilities.invokeLater(new Runnable() { public void run() { autoScan(); } }); }
 		if (source == null || Vault.get().byId(source.id) == null) source = null;
 		readSource();
 		if (session == null) {
@@ -511,20 +529,66 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 			rightCards.show(right, "connect");
 		}
 		refreshAll();
-		help(session == null ? "Establish Connection searches the local network for other Home Planet Stations. Choose a commander, then Hail." : helpOpen());
+		help(session == null ? helpIdle() : helpOpen());
 		revalidate();
 		repaint();
 		return true;
 	}
-	/** Asks before closing an open channel; true to go on. */
+	/** Asks before closing an open channel; true to go on. Hailing frequencies close too, unless powered up. */
 	boolean confirmLeave(String doing) {
-		if (session == null || session.isOver()) { closePost(); return true; }
-		if (!HomePlanet.confirmNo(this, "Close the channel with " + session.peer.title + " and " + doing + "?", "Long Range Comm.")) return false;
-		session.close(Commander.title() + " closed the channel.");
-		disconnected(null);
-		closePost();
+		if (session != null && !session.isOver()) {
+			if (!HomePlanet.confirmNo(this, "Close the channel with " + session.peer.title + " and " + doing + "?", "Long Range Comm.")) return false;
+			session.close(Commander.title() + " closed the channel.");
+			disconnected(null);
+		}
+		rescan.stop();
+		if (!poweredUp) closePost();
 		return true;
 	}
+	private String helpIdle() {
+		return post == null ? "Open Hailing Frequencies to find other Home Planet Stations, and to be found by them."
+				: "Choose a commander, then Hail. Only stations with their hailing frequencies open are listed.";
+	}
+
+	/** Opens hailing frequencies (the first time, a word about the firewall), or closes them (powering down). */
+	private void toggleFrequencies() {
+		if (post != null) {
+			poweredUp = false;
+			closePost();
+			foundList = new ArrayList<Beacon.Found>();
+			found.setRows(new ArrayList<CargoParts.Row>());
+			found.setEmptyText("Open Hailing Frequencies to search");
+			scanNote.setText("");
+			refreshAll();
+			help(helpIdle());
+			return;
+		}
+		if (!HomePlanet.config.containsKey(CFG_FIREWALL)) {
+			JOptionPane.showMessageDialog(this, "<html><div style='width:420px'>Opening hailing frequencies lets other commanders' stations on your network find and hail this one, "
+					+ "until you close them or leave this screen.<br><br>"
+					+ "The first time, Windows Firewall may ask whether to let Java (\"OpenJDK Platform binary\") use the network. Allow it on private networks, "
+					+ "or other stations won't be able to reach this one.</div></html>", "Long Range Comm.", JOptionPane.INFORMATION_MESSAGE);
+			HomePlanet.config.setProperty(CFG_FIREWALL, "true");
+			HomePlanet.saveConfig();
+		}
+		openPost();
+		if (post != null) { rescan.start(); autoScan(); }
+		refreshAll();
+		help(helpIdle());
+	}
+	/** Leaves hailing frequencies open after this screen is left (asked first), or powers down. */
+	private void togglePower() {
+		if (poweredUp) { toggleFrequencies(); return; }
+		if (post == null) return;
+		if (!HomePlanet.confirmNo(this, "Leave Long Range Comm. powered up, with your hailing frequency (port " + post.port + ") open?\n\n"
+				+ "(This leaves your station available for other commanders to find and hail, from any screen,\nuntil you power down or close the program.)", "Stay Powered Up")) return;
+		poweredUp = true;
+		refreshAll();
+		repaintDock();
+		help("Long Range Comm. stays powered up: a hail reaches you on any screen. Power Down closes your hailing frequencies.");
+	}
+	/** For the Space Dock's Long Range button: 2 a missed hail not yet seen, 1 powered up, 0 neither. */
+	public int lamp() { return missedUnseen ? 2 : post != null && poweredUp ? 1 : 0; }
 	private void openPost() {
 		if (post != null) return;
 		try {
@@ -540,12 +604,12 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 					return a[0];
 				}
 			});
-			portNote.setText("This station listens on port " + post.port + ".");
+			portNote.setText("Your hailing frequency: port " + post.port + ".");
 		} catch (IOException e) {
 			log.warn("Long Range Comm. could not listen: {}", e.toString());
 			closePost();
-			scanNote.setText("Can't listen (ports busy): you can still hail.");
-			portNote.setText("Not listening: every port is in use.");
+			scanNote.setText("Can't open hailing frequencies: every port is in use.");
+			portNote.setText("No hailing frequency: every port is in use.");
 		}
 	}
 	private String selfAnswer() {
@@ -557,47 +621,85 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (responder != null) responder.close();
 		post = null;
 		responder = null;
+		rescan.stop();
+		portNote.setText("");
+		repaintDock();
 	}
+	private void repaintDock() { if (parent.spaceDock != null) parent.spaceDock.repaint(); }
 
 	// ============================================================== finding and hailing
 
 	private List<Beacon.Found> foundList = new ArrayList<Beacon.Found>();
+	/** Searches again, quietly, when nothing else is going on here. */
+	private void autoScan() {
+		if (post == null || session != null || hailing || scanning || !isShowing()) return;
+		scan();
+	}
 	private void scan() {
-		establishBtn.setEnabled(false);
-		scanNote.setText("Scanning the local network...");
+		scanning = true;
+		if (foundList.isEmpty()) scanNote.setText("Scanning the local network...");
 		final String self = Commander.stationId();
 		new Thread(new Runnable() {
 			public void run() {
 				final List<Beacon.Found> f = Beacon.scan(1500, self);
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run() {
-						establishBtn.setEnabled(true);
+						scanning = false;
+						if (post == null) return; // closed meanwhile
+						Object was = found.selectedValue();
+						String keep = was instanceof Beacon.Found ? ((Beacon.Found) was).station : null;
 						foundList = f;
-						List<CargoParts.Row> rows = new ArrayList<CargoParts.Row>();
-						for (Beacon.Found x : f) {
-							boolean same = x.compatible();
-							String mode = Vault.title(x.mode);
-							rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), same ? mode : "needs an update", x,
-									same ? x.title + "'s Home Planet Station (" + mode + ", Federation Home Planet " + x.version + "), at " + x.host + ":" + x.port
-											: "Federation Home Planet " + x.version + ": its Long Range Comm. is " + (x.protocol < homeplanet.comm.Session.PROTOCOL ? "older" : "newer") + " than this station's. One of you needs to update to trade.", !same));
-						}
-						found.setRows(rows);
-						if (!rows.isEmpty()) found.list.setSelectedIndex(0);
-						found.setEmptyText("No stations answered");
-						scanNote.setText(f.isEmpty() ? "No answer: is their Long Range Comm. open?" : f.size() == 1 ? "1 station in range." : f.size() + " stations in range.");
+						showFound(keep);
+						found.setEmptyText("No stations with hailing frequencies open");
+						scanNote.setText(f.isEmpty() ? "None yet: the list keeps searching." : f.size() == 1 ? "1 station in range." : f.size() + " stations in range.");
 						updateButtons();
 					}
 				});
 			}
 		}, "Long Range Comm. scan").start();
 	}
+	/** The list of stations, the one chosen kept chosen (blocked ones say so). */
+	private void showFound(String keep) {
+		List<CargoParts.Row> rows = new ArrayList<CargoParts.Row>();
+		int sel = -1;
+		for (Beacon.Found x : foundList) {
+			boolean same = x.compatible(), blocked = Blocks.blocked(x.station, null);
+			String mode = Vault.title(x.mode);
+			if (x.station.equals(keep)) sel = rows.size();
+			rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), blocked ? "blocked" : same ? mode : "needs an update", x,
+					blocked ? "You blocked " + x.title + ": their hails go unanswered. Unblock to hail them."
+							: same ? x.title + "'s Home Planet Station (" + mode + ", Federation Home Planet " + x.version + "), at " + x.host + ":" + x.port
+							: "Federation Home Planet " + x.version + ": its Long Range Comm. is " + (x.protocol < homeplanet.comm.Session.PROTOCOL ? "older" : "newer") + " than this station's. One of you needs to update to trade.",
+					blocked || !same));
+		}
+		found.setRows(rows);
+		if (!rows.isEmpty()) found.list.setSelectedIndex(sel >= 0 ? sel : 0);
+	}
+	/** Blocks the chosen commander (asked first), or unblocks them. */
+	private void blockFound() {
+		Object v = found.selectedValue();
+		if (!(v instanceof Beacon.Found)) return;
+		Beacon.Found f = (Beacon.Found) v;
+		if (Blocks.blocked(f.station, null)) {
+			Blocks.unblock(f.station);
+			help("Unblocked " + f.title + ".");
+		} else {
+			if (!HomePlanet.confirmNo(this, "Block " + f.title + "?\nTheir hails will go unanswered, and your station won't answer their searches.\nUnblock them here, or in Settings.", "Block")) return;
+			Blocks.block(f.station, f.title, f.host);
+			help("Blocked " + f.title + ".");
+		}
+		showFound(f.station);
+		updateButtons();
+	}
 	private void hailFound() {
 		Object v = found.selectedValue();
 		if (!(v instanceof Beacon.Found)) return;
 		Beacon.Found f = (Beacon.Found) v;
+		if (!f.compatible() || Blocks.blocked(f.station, null)) return;
 		hail(f.host, new int[] {f.port}, f.title);
 	}
 	private void hailAddress() {
+		if (post == null) return;
 		String a = address.getText().trim();
 		if (a.isEmpty()) { address.requestFocusInWindow(); return; }
 		String host = a;
@@ -626,9 +728,9 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				Wire.Msg reply = null;
 				for (int p : ports) {
 					try { ch = Channel.connect(host, p); break; }
-					catch (java.net.SocketTimeoutException e) { fail = "No answer from " + host + ". Is the address right, and their Long Range Comm. screen open?"; break; }
+					catch (java.net.SocketTimeoutException e) { fail = "No answer from " + host + ". Is the address right, and their hailing frequencies open?"; break; }
 					catch (java.net.UnknownHostException e) { fail = "There's no computer called " + host + " on the network."; break; }
-					catch (IOException e) { fail = "No Home Planet Station answered at " + host + ". Their Long Range Comm. screen must be open."; }
+					catch (IOException e) { fail = "No Home Planet Station answered at " + host + ". Their hailing frequencies must be open."; }
 				}
 				if (ch != null) {
 					try {
@@ -675,21 +777,78 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		try { m = ch.readFirst(10000); } catch (IOException e) { ch.close(""); return; }
 		final Session.Peer p;
 		try { p = Session.peerOf(m); } catch (Wire.Garbled e) { ch.close("The other station's hail was garbled."); return; }
-		SwingUtilities.invokeLater(new Runnable() { public void run() { answer(ch, p); } });
+		if (Blocks.blocked(p.station, ch.host)) { ch.close(Session.notAnswered(Commander.title())); return; } // as if nobody were listening
+		final long until = System.currentTimeMillis() + ANSWER_MS;
+		SwingUtilities.invokeLater(new Runnable() { public void run() { answer(ch, p, until); } });
 	}
-	private void answer(Channel ch, Session.Peer p) {
-		if (session != null || hailing || !isShowing()) { ch.close(Commander.title() + " is busy with another channel."); return; }
+	/** How long a hail waits for an answer here: less than a hailing station waits (90 seconds), so it's told why. */
+	private static final int ANSWER_MS = 80000;
+	/**
+	 * Asks the commander, on whatever screen they're on (powered up). A window open over the station (Settings, a
+	 * report) is finished first: the hail waits for it to close. Answering from the Cargo Bay asks about its unsaved
+	 * work before the screen changes; Cancel there declines the hail.
+	 */
+	private void answer(final Channel ch, final Session.Peer p, final long until) {
+		if (session != null || hailing) { ch.close(Commander.title() + " is busy with another channel."); return; }
 		String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId(), Vault.get().slot, HomePlanet.immersiveAnyLevel);
 		if (why != null) { ch.close(why); notice.set(p.title + " hailed this station, but: " + why); return; }
+		if (otherWindowOpen()) {
+			if (System.currentTimeMillis() > until) { ch.close(Session.notAnswered(Commander.title())); missedHail(p); return; }
+			javax.swing.Timer later = new javax.swing.Timer(500, new ActionListener() { public void actionPerformed(ActionEvent e) { answer(ch, p, until); } });
+			later.setRepeats(false);
+			later.start();
+			return;
+		}
 		hailing = true;
-		Object[] opts = {"Answer", "Ignore"};
-		int r = JOptionPane.showOptionDialog(this, p.title + " (" + p.modeTitle() + ")" + (p.ship.isEmpty() ? "" : ", aboard " + p.ship) + ", is hailing The Home Planet Station.\nAnswer the hail?",
-				"Incoming hail", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
+		java.awt.Component owner = isShowing() ? this : parent;
+		Object[] opts = {"Answer", "Decline", "Block"};
+		JOptionPane pane = new JOptionPane(p.title + " (" + p.modeTitle() + ")" + (p.ship.isEmpty() ? "" : ", aboard " + p.ship) + ", is hailing The Home Planet Station.\nAnswer the hail?",
+				JOptionPane.QUESTION_MESSAGE, JOptionPane.DEFAULT_OPTION, null, opts, opts[0]);
+		final javax.swing.JDialog d = pane.createDialog(owner, "Incoming hail");
+		final boolean[] timedOut = {false};
+		javax.swing.Timer giveUp = new javax.swing.Timer(1000, new ActionListener() {
+			public void actionPerformed(ActionEvent e) { if (System.currentTimeMillis() > until) { timedOut[0] = true; d.dispose(); } }
+		});
+		giveUp.start();
+		d.setVisible(true); // waits here for the answer
+		giveUp.stop();
+		d.dispose();
 		hailing = false;
-		if (r != 0 || ch.isClosed()) { ch.close(Commander.title() + " did not answer the hail."); return; }
+		Object v = pane.getValue();
+		if (timedOut[0] || ch.isClosed()) { ch.close(Session.notAnswered(Commander.title())); missedHail(p); return; }
+		if ("Block".equals(v)) {
+			Blocks.block(p.station, p.title, ch.host);
+			ch.close(Session.notAnswered(Commander.title()));
+			if (isShowing()) { showFound(null); updateButtons(); help("Blocked " + p.title + ". Unblock them from the list, or in Settings."); }
+			return;
+		}
+		if (!"Answer".equals(v)) { ch.close(Session.busy(Commander.title())); return; }
+		if (!isShowing()) {
+			if (parent.atCargoBay() && !parent.cargoBay.confirmLeave("answer " + p.title + "'s hail")) { ch.close(Session.busy(Commander.title())); return; }
+			parent.showLongRangeComm();
+			if (!parent.atLongRangeComm()) { ch.close(Session.busy(Commander.title())); return; }
+		}
+		if (System.currentTimeMillis() > until) { ch.close(Session.notAnswered(Commander.title())); missedHail(p); return; }
 		try { ch.send(myHello()); }
 		catch (IOException e) { JOptionPane.showMessageDialog(this, "The link to " + p.title + " was lost.", "Long Range Comm.", JOptionPane.INFORMATION_MESSAGE); return; }
 		begin(new Session(ch, false, p, Commander.stationId(), shipsAllowed()));
+	}
+	/** A window of the station's own open over it (a dialog, or a second frame): a hail waits for it. */
+	private boolean otherWindowOpen() {
+		for (java.awt.Window w : java.awt.Window.getWindows())
+			if (w != parent && w.isShowing() && (w instanceof java.awt.Dialog || w instanceof java.awt.Frame)) return true;
+		return false;
+	}
+	/** A hail nobody answered: noted on this screen, and the Space Dock's button lights until it's seen. */
+	private void missedHail(Session.Peer p) {
+		missed.add(shortName(p.title) + " " + new java.text.SimpleDateFormat("HH:mm").format(new java.util.Date()));
+		while (missed.size() > 5) missed.remove(0);
+		StringBuilder sb = new StringBuilder();
+		for (int i = missed.size() - 1; i >= 0; i--) sb.append(sb.length() == 0 ? "" : ", ").append(missed.get(i));
+		missedNote.setText("Missed hails: " + sb);
+		missedNote.setToolTipText("Hails that went unanswered (the newest first): " + sb);
+		if (!isShowing()) missedUnseen = true;
+		repaintDock();
 	}
 	private Wire.Msg myHello() {
 		Ship b = Vault.get().boarded();
@@ -730,7 +889,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		rightCards.show(right, "connect");
 		readSource();
 		refreshAll();
-		help("Establish Connection searches the local network for other Home Planet Stations. Choose a commander, then Hail.");
+		help(helpIdle());
 		if (why != null) JOptionPane.showMessageDialog(this, why, "Long Range Comm.", JOptionPane.INFORMATION_MESSAGE);
 	}
 
@@ -1117,6 +1276,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		String noBoard = whyNotBoardOrDock();
 		boolean ship = source != null && !source.isStorage();
 		boardBtn.setText(ship && source.isBoarded() ? "Dock" : "Board");
+		boardBtn.setVisible(ship); // the Cargo Hold is never boarded: its note has the line to itself
+		sourceNote.setSize(ship ? 200 : 282, 16);
 		boardBtn.setEnabled(noBoard == null);
 		boardBtn.setToolTipText(noBoard != null ? noBoard : source.isBoarded() ? "Dock " + source.name + " at the Space Dock (no ship at your command)"
 				: "Take command of " + source.name + (Vault.get().boarded() != null ? " (" + Vault.get().boarded().name + " is docked)" : ""));
@@ -1128,11 +1289,25 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		sendBtn.setEnabled(chat);
 		String chatTip = session != null && !session.peer.chat ? session.peer.title + "'s station can't show messages (an older version)" : "A message to the other commander (" + Session.SAY_MAX + " letters at most)";
 		message.setToolTipText(chatTip);
-		boolean idle = session == null && !hailing;
+		boolean idle = session == null && !hailing, freq = post != null;
 		Object f = found.selectedValue();
-		hailBtn.setEnabled(idle && f instanceof Beacon.Found && ((Beacon.Found) f).compatible());
-		hailAddrBtn.setEnabled(idle);
+		Beacon.Found ff = f instanceof Beacon.Found ? (Beacon.Found) f : null;
+		boolean blocked = ff != null && Blocks.blocked(ff.station, null);
+		freqLabel.setText(!freq ? "HAILING FREQUENCIES CLOSED" : poweredUp ? "POWERED UP: HAILING FREQUENCIES OPEN" : "HAILING FREQUENCIES OPEN");
+		establishBtn.setText(freq ? "Close Hailing Frequencies" : "Open Hailing Frequencies");
+		establishBtn.setToolTipText(freq ? "Close them: other stations can no longer find or hail this one" : "Let other Home Planet Stations find and hail this one, and search for theirs");
 		establishBtn.setEnabled(idle);
+		powerBtn.setText(poweredUp ? "Power Down" : "Stay Powered Up");
+		powerBtn.setLit(poweredUp);
+		powerBtn.setEnabled(idle && freq);
+		powerBtn.setToolTipText(poweredUp ? "Close your hailing frequencies: no station can find or hail this one"
+				: freq ? "Keep your hailing frequencies open after you leave this screen: a hail reaches you on any screen" : "Open Hailing Frequencies first");
+		hailBtn.setEnabled(idle && freq && ff != null && ff.compatible() && !blocked);
+		hailAddrBtn.setEnabled(idle && freq);
+		hailAddrBtn.setToolTipText(freq ? "Open a channel to the station at that address: they must answer" : "Open Hailing Frequencies first");
+		blockBtn.setText(blocked ? "Unblock" : "Block");
+		blockBtn.setEnabled(ff != null);
+		blockBtn.setToolTipText(ff == null ? "Choose a commander in the list" : blocked ? "Hear from " + ff.title + " again" : "Their hails go unanswered, and your station won't answer their searches");
 		sourceBtn.setEnabled(session == null || !session.exchanging());
 	}
 	private void help(String s) { help.setText(s == null ? "" : s); }

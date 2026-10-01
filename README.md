@@ -43,7 +43,8 @@ And More.
 - **Long Range Comm.:** trade with another commander's Home Planet Station over the local network, a virtual LAN or
   the internet: items, supplies, crew and whole ships, Sandbox with Sandbox and Immersive with Immersive (any level,
   unless a career keeps to its own). Both commanders build the offer and accept it; any change withdraws acceptance.
-  Goods arrive in the Cargo Hold, ships at the Space Dock.
+  Goods arrive in the Cargo Hold, ships at the Space Dock. Nothing is open to the network until you open your
+  hailing frequencies; stay powered up to be hailed from any screen, and block a commander you'd rather not hear from.
 - **The shipyard:** commission any unlocked ship, a remodel, or a ship you designed yourself. New blueprints are sent
   to FTL via Slipstream.
 - **House rules** (Settings): trading and New Journey only at a store beacon, commissioning that costs scrap, locked

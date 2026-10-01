@@ -15,11 +15,29 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   beside the chosen ship takes command of her, or docks her, with the Space Dock's own steps (FTL closed), so ships
   change without leaving the screen: off during an exchange, and it withdraws your acceptance. What's already
   offered from either ship stays: the station finds a ship's save wherever she is.
-- **Finding and hailing** (`comm/Beacon`, `comm/Channel`): a station listens only while the screen is open, on the
-  first free port of 47610 to 47619 (TCP for the channel, UDP for the scan), so two stations can share a computer.
-  Establish Connection broadcasts on each local network and to this computer; By address hails an IP (with :port, or
-  each port in turn); the screen shows the port this station listens on, to forward on a router for a hail over the
-  internet (a virtual LAN needs nothing). The hailed commander must answer. One channel at a time. Stations must match
+- **Hailing frequencies:** opening the screen opens nothing to the network. **Open Hailing Frequencies** starts
+  listening, on the first free port of 47610 to 47619 (TCP for the channel, UDP for the scan; two stations can share a
+  computer), and searches; the list of stations then searches again every few seconds while the screen is showing,
+  and lists only stations with their frequencies open. Hailing by address waits for them to be open too. Leaving the
+  screen closes them, unless the commander chose **Stay Powered Up** (asked first, with the port: "available for
+  other commanders to find and hail, from any screen"); then **Power Down** closes them, and the Space Dock's Long
+  Range button shows a green lamp. Every start of the program begins powered down. The Windows Firewall note comes
+  with the first Open Hailing Frequencies.
+- **Finding and hailing** (`comm/Beacon`, `comm/Channel`): the search broadcasts on each local network and to this
+  computer; By address hails an IP (with :port, or each port in turn); the screen shows the port ("your hailing
+  frequency") to forward on a router for a hail over the internet (a virtual LAN needs nothing). The hailed commander
+  must answer: Answer, Decline (the hailer hears "... is busy. Try again shortly.") or Block. One channel at a time.
+- **A hail on another screen** (powered up): the same question pops up wherever the commander is. A window open over
+  the station (Settings, a report) is finished first: the hail waits for it to close. Answering from the Cargo Bay
+  with unsaved work asks Save first / Discard changes / Cancel before the screen changes; Cancel declines the hail. A
+  hail unanswered after 80 seconds (the hailer waits 90) is closed as not answered, listed as a missed hail on the
+  Long Range screen, and lights the Space Dock's lamp orange until the screen is opened.
+- **Blocking** (`comm/Blocks`): from the list (Block / Unblock) or the hail's question. A blocked station's hails are
+  turned away as not answered (never "blocked"), and its searches get no answer. There are no accounts, so a block
+  holds the station's id, the name it went by, and its address when that's from beyond this computer and the home
+  network (another station there would be blocked with it). Unblock in Settings, General (Blocked commanders...). A
+  search asks with its station's id, and asks the bare question too for stations older than 4B.70; a newer station
+  answers the first and ignores the bare one from the same search, so a block can't be slipped that way. Stations must match
   on the Long Range Comm. protocol (`Session.PROTOCOL`), not on the program's version: a Laser Cannon is a Laser
   Cannon in any version, and each line is checked against this station's own game data anyway. A mismatch is refused,
   saying one of them needs to update; the scan shows each station's version for information.
@@ -87,6 +105,15 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 - What already works this way: Museum honours start from her arrival (`achievementsAtStart`), and the fleet counters
   (sectors and beacons seen, the stipend, reply chains) count only changes after she was first seen.
 
+## Later
+
+- More things to do with a commander in the list, beside Hail and Block: **Send Message** (a quick message without a
+  channel: to the inbox, or with "priority" ticked, unticked by default, as a pop-up; the receiver can turn priority
+  pop-ups off, and they're limited to about one a minute from each commander), **View Offers** (offers left standing
+  for anyone who finds you, to trade without both commanders at the screen), **Return Ship** (sending a traded ship
+  home to her original owner, or lending ships).
+- Messages to a station that's powered down, held until it powers up.
+
 ## Changing Long Range Comm.
 
 Each side ignores message fields, offer kinds and package files it doesn't know, so adding one is safe. Bump
@@ -98,5 +125,7 @@ Protocol 2: custom ships' papers.
 LinkT runs station A in its own process and station B (LinkPeer) in another, over localhost: goods, supplies and crew
 both ways; a change withdrawing acceptance; a refused line; each side crashing at each step of the exchange and the
 trade settling on the next link; modes and levels refused or allowed; whole ships there and back with their marks,
-commission dates and no packages left behind; custom ships and tampered papers; boarding another ship mid-offer; the receipt and deleting it; messages (cut, flooded, and kept
+commission dates and no packages left behind; custom ships and tampered papers; boarding another ship mid-offer; the receipt and deleting it; a station with its
+frequencies closed neither found nor hailed; a declined hail told the commander is busy; blocking (search unanswered,
+hail not answered, an older station's bare search still answered, which addresses a block keeps) and unblocking; messages (cut, flooded, and kept
 from an older station); garbled messages and out-of-range crew.
