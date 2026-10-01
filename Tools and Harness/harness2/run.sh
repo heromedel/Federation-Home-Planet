@@ -40,6 +40,11 @@ echo "== ChainT"; run ChainT "$GAME" "$WORLD" "$W/chain" | grep -E "$PICK|^PASS"
 echo "== DerT"; run DerT "$GAME" "$WORLD" "$W/der" | grep -E "$PICK|^PASS|^derelicts|^locked|^rebuild"
 echo "== VicT"; run VicT "$GAME" "$WORLD" "$W/vic" $VICLOG | grep -E "$PICK|^PASS|^replay"
 echo "== LinkT"; run LinkT "$GAME" "$WORLD" "$W/link" | grep -E "$PICK|^PASS"
+# the windows themselves, driven as a player would: needs a display, so a virtual one
+echo "== GuiT"
+if command -v xvfb-run >/dev/null; then
+	(cd "$W" && xvfb-run -a java -Dhomeplanet.noGameCheck=true -cp "$CP" GuiT "$GAME" "$WORLD" "$W/gui" 2>&1) | grep -E "$PICK|^PASS|^auction"
+else echo "(GuiT skipped: no xvfb-run)"; fi
 
 # the converter, only with old Homeworld data to convert
 if [ $# -ge 3 ]; then

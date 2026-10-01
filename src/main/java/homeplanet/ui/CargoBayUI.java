@@ -294,7 +294,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		return r == 1;
 	}
 	private boolean tradeUnavailable() {
-		return currentPath == null || (currentSave != null && !SaveHelper.mayTrade(currentSave) && !Vault.get().stillAtHomePlanet(currentShip));
+		return currentPath == null || (currentSave != null && !Vault.get().mayTrade(currentShip));
 	}
 
 	// ---- loading ----
@@ -326,7 +326,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		systems.init();
 		refreshTrade();
 		if (currentPath == null) notice.setText("Board a ship at the Space Dock, then return to trade.");
-		else if (!SaveHelper.mayTrade(currentSave) && !Vault.get().stillAtHomePlanet(currentShip)) notice.setText(currentSave.getPlayerShipName() + " is not within range of a station. Take her to a beacon with a store to trade.");
+		else if (!Vault.get().mayTrade(currentShip)) notice.setText(currentSave.getPlayerShipName() + " is not within range of a station. Take her to a beacon with a store to trade.");
 		for (FtlButton b : tabButtons) b.setEnabled(!tradeUnavailable());
 		saveBtn.setEnabled(!tradeUnavailable());
 		resetBtn.setEnabled(!tradeUnavailable());
@@ -733,11 +733,11 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	void updateSupplyButtons() {
 		if (myJunkSupply == null) return;
 		boolean can = supplyIdx >= 2 && currentState != null && tradeState != null;
-		mySellSupply.setVisible(HomePlanet.sellSupplies);
+		mySellSupply.setVisible(HomePlanet.sellSupplies());
 		String share = homeplanet.core.Economy.supplyShare();
 		mySellSupply.setToolTipText("Sell that many of your ship's missiles or drone parts (" + share + ")");
 		theirSellSupply.setToolTipText("Sell that many of the partner's missiles or drone parts (" + share + ")");
-		theirSellSupply.setVisible(HomePlanet.sellSupplies);
+		theirSellSupply.setVisible(HomePlanet.sellSupplies());
 		myJunkSupply.setEnabled(can); mySellSupply.setEnabled(can);
 		theirJunkSupply.setEnabled(can); theirSellSupply.setEnabled(can);
 	}

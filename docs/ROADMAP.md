@@ -388,6 +388,12 @@ no letters, you come and check).
   Reset drops it. Selling a stored system pays the Cargo Hold.
 - The Dry Dock now mends broken system bars (5 scrap a bar, shown as Fix instead of the upgrade) and seals breaches
   (5 each), beside hull repairs.
+- Tidying (4B.67): Immersive Mode no longer writes its rules over the player's own Sandbox settings; each rule asks
+  the mode (Immersive always on, Sandbox by its setting), so leaving a career finds Sandbox as it was. New Journey,
+  Sell and Scrap use the same store check as the Cargo Bay (a ship still at The Home Planet Station's beacon may).
+  Fuel, missile and drone part prices live in one place. A derelict's listing keeps her share (25-75%), so her price
+  follows any change to the prices. The Refit bill, the auction and the Junkyard window are tested in the harness
+  (GuiT, on a virtual display).
 
 
 - **Thruster glow for designs.** FTL lights the engines of some of its own ships (the Kestrel's, when piloted and

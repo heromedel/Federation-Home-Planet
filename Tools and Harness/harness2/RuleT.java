@@ -12,10 +12,12 @@ public class RuleT { public static void main(String[] a) throws Exception {
 }
  static void immersive() {
   HomePlanet.storeRequirement = false; HomePlanet.commissionCosts = false; HomePlanet.commissionPercent = 50; HomePlanet.sellSupplies = false;
-  HomePlanet.immersiveMode = false; HomePlanet.applyImmersive();
-  Setup.chk("I: off, the rules stay as set", !HomePlanet.storeRequirement && !HomePlanet.commissionCosts && Economy.supplyPercent() == 50);
-  HomePlanet.immersiveMode = true; HomePlanet.applyImmersive();
-  Setup.chk("I: on, it sets its rules", HomePlanet.storeRequirement && HomePlanet.journeyStoreRequirement && HomePlanet.commissionCosts && HomePlanet.commissionPercent == 100 && HomePlanet.sellSupplies && HomePlanet.sellSystems);
+  HomePlanet.immersiveMode = false;
+  Setup.chk("I: off, the rules stay as set", !HomePlanet.storeRequirement() && !HomePlanet.commissionCosts() && Economy.supplyPercent() == 50 && Economy.commissionPercent() == 50);
+  HomePlanet.immersiveMode = true;
+  Setup.chk("I: on, its rules are in force", HomePlanet.storeRequirement() && HomePlanet.journeyStoreRequirement() && HomePlanet.commissionCosts() && Economy.commissionPercent() == 100
+    && HomePlanet.sellSupplies() && HomePlanet.sellSystems() && HomePlanet.unlockFreeShips() && HomePlanet.immersiveNotifications() && HomePlanet.commissionUnlockedOnly());
+  Setup.chk("I: and the player's own settings are untouched", !HomePlanet.storeRequirement && !HomePlanet.commissionCosts && HomePlanet.commissionPercent == 50 && !HomePlanet.sellSupplies);
   Setup.chk("I: missiles and drone parts sell at 25%, stored systems still at half", Economy.supplyPercent() == 25 && Economy.supplySale(4, Pricing.MISSILE) == 6
     && Economy.SYSTEM_SALE_PERCENT == 50);
   HomePlanet.journeyFee = 1000; HomePlanet.removalFee = Economy.NOT_ALLOWED;

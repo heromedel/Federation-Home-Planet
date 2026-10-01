@@ -104,7 +104,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
 		String title = "Docked Ships";
-		if (HomePlanet.immersiveNotifications) {
+		if (HomePlanet.immersiveNotifications()) {
 			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
 			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
 			inboxBtn.addActionListener(this);
@@ -696,7 +696,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		Vault v = Vault.get();
 		boolean taken = !v.docked().isEmpty() || v.boarded() != null;
 		orders.add(new OtherOrdersDialog.Order("Report for Reassignment", "Surrender the Cargo Hold and the Junkyard's hulls in exchange for a free new command.",
-				!HomePlanet.commissionCosts ? "commissioning is free (Settings, Rules): Commission a new ship instead."
+				!HomePlanet.commissionCosts() ? "commissioning is free (Settings, Rules): Commission a new ship instead."
 						: taken ? "only a captain with no ship at the Space Dock can report for reassignment."
 						: v.freeCommandOpen() ? "a free command is already waiting for you at Commission." : null,
 				new Runnable() { public void run() { reportForReassignment(); } }, true));
@@ -743,7 +743,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		init();
 		String rank = homeplanet.parser.Transmissions.rank();
-		if (HomePlanet.immersiveNotifications) {
+		if (HomePlanet.immersiveNotifications()) {
 			// the Shipyard's order says what she is and where to take it: the player commissions her from there
 			JOptionPane.showMessageDialog(null, "Your report is accepted, " + rank + ". The order for your new command is in Transmissions.", "Report for Reassignment", JOptionPane.INFORMATION_MESSAGE);
 			return;
@@ -960,7 +960,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The Home Planet Station could not read her save:\n" + ship.file() + "\n\n" + ship.readError());
 			return;
 		}
-		if (HomePlanet.journeyStoreRequirement && !SaveHelper.isAtStation(gs) && !Vault.get().stillAtHomePlanet(ship)) {
+		if (!Vault.get().mayJourney(ship)) {
 			JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is not within range of a station.\n"
 					+ "The Federation Home Planet can only approve or assist in plotting a new journey from a beacon with a station.", "New Journey", JOptionPane.INFORMATION_MESSAGE);
 			return;
@@ -1035,7 +1035,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		String name = wreckShip.name;
-		if (HomePlanet.storeRequirement && !SaveHelper.isAtStation(wreck) && !Vault.get().stillAtHomePlanet(wreckShip)) { // just set out at The Home Planet Station counts, as for trading
+		if (!Vault.get().mayTrade(wreckShip)) { // the station rule, as for trading: a store, or just set out at The Home Planet Station
 			JOptionPane.showMessageDialog(null, name + " is not within range of a station.\n"
 					+ "The Home Planet Station cannot scrap her for supplies unless you salvage her and fly her to a beacon with a station first.", "Scrap Ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
@@ -1132,7 +1132,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		String name = ship.name;
-		if (HomePlanet.storeRequirement && !SaveHelper.isAtStation(gs) && !Vault.get().stillAtHomePlanet(ship)) { // as Scrap: a store, or not yet gone from The Home Planet Station
+		if (!Vault.get().mayTrade(ship)) { // the station rule, as Scrap
 			JOptionPane.showMessageDialog(null, name + " is not within range of a station.\n"
 					+ "Buyers only come to a beacon with a store. Salvage her and fly her to one first.", auction ? "Auction" : "Trade In", JOptionPane.INFORMATION_MESSAGE);
 			return;

@@ -240,6 +240,11 @@ public final class Vault {
 		SavedGameState gs = s == null ? null : s.save();
 		return gs != null && (SaveHelper.mayTrade(gs) || stillAtHomePlanet(s));
 	}
+	/** May she set out on a New Journey (its own station rule): at a beacon with a store, or not yet gone from where she was set out. */
+	public boolean mayJourney(Ship s) {
+		SavedGameState gs = s == null ? null : s.save();
+		return gs != null && (!homeplanet.core.HomePlanet.journeyStoreRequirement() || SaveHelper.isAtStation(gs) || stillAtHomePlanet(s));
+	}
 
 	/** No ship docked, boarded or in the Junkyard (the storage hold doesn't count). */
 	public synchronized boolean shipyardEmpty() {

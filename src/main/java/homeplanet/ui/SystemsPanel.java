@@ -228,7 +228,7 @@ public class SystemsPanel {
 			SysRow r = new SysRow(DryDockShop.systemTitle(s.id), s.level, "Install", why,
 					why == null ? "Install the " + DryDockShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName() : why,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { installSystem(s); } });
-			if (homeplanet.core.HomePlanet.sellSystems) r.addSell(salePrice(s), new ActionListener() { public void actionPerformed(ActionEvent e) { sellSystem(s); } });
+			if (homeplanet.core.HomePlanet.sellSystems()) r.addSell(salePrice(s), new ActionListener() { public void actionPerformed(ActionEvent e) { sellSystem(s); } });
 			r.setBounds(0, y + j * 32, w, 28);
 			sysList.add(r);
 			j++;

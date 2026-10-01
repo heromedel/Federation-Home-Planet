@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
 class DryDockShop {
 	private static final Logger log = LoggerFactory.getLogger(DryDockShop.class);
 	// Store prices for supplies (per unit)
-	static final int FUEL_PRICE = 3, MISSILE_PRICE = 6, DRONE_PART_PRICE = 8;
+	static final int FUEL_PRICE = homeplanet.parser.Pricing.FUEL, MISSILE_PRICE = homeplanet.parser.Pricing.MISSILE, DRONE_PART_PRICE = homeplanet.parser.Pricing.DRONE_PART;
 	// Where the panel sits (top left, level with the Save panel)
 	static final int PX = 6, PY = 48; // below the Return to Dock panel
 

@@ -6,7 +6,7 @@ public class TransT { public static void main(String[] a) throws Exception {
  Vault v = Setup.open(game, saves); v.takeStock();
  texts();
  profile(saves, new String[] {"PLAYER_SHIP_HARD"}, new String[] {"ACH_SECTOR_5"});
- HomePlanet.immersiveMode = true; HomePlanet.applyImmersive();
+ HomePlanet.immersiveMode = true;
  Vault.switchFleet(true);
  UnlockGrants.returning(Unlocks.read());
  flow(saves);
@@ -182,7 +182,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   java.lang.reflect.Field f = r.getClass().getDeclaredField("immersiveBox"); f.setAccessible(true);
   ((javax.swing.JCheckBox) f.get(r)).setSelected(true);
   Vault.switchFleet(true); // as ImmersiveDialog.enter does
-  HomePlanet.immersiveMode = true; HomePlanet.applyImmersive();
+  HomePlanet.immersiveMode = true;
   UnlockGrants.returning(Unlocks.read());
   r.getClass().getMethod("apply").invoke(r); // then OK in Settings
   Setup.chk("U: back in Immersive Mode through Settings, she's still free", HomePlanet.immersiveMode && UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_MANTIS"));

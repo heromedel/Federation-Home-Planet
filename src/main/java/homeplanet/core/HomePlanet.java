@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.66";
+	public static final String APP_VERSION = "4B.67";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -72,8 +72,8 @@ public class HomePlanet {
 	/** With HR2: each ship layout unlocked in the FTL profile after this was turned on can be commissioned free, once. */
 	public static boolean unlockFreeShips = false;
 	/**
-	 * Immersive Mode: sets and locks the rules (see {@link #applyImmersive}); its fees and sale prices are in
-	 * {@link Economy}; restoring and recovering are off.
+	 * Immersive Mode: an Immersive career's fleet is in use; its rules are fixed (the methods below, and {@link Economy}
+	 * for fees and prices); restoring and recovering are off.
 	 */
 	public static boolean immersiveMode = false;
 	/** Transmissions from The Federation Home Planet (the inbox on the Space Dock). Immersive Mode turns it on. */
@@ -85,53 +85,23 @@ public class HomePlanet {
 	/** Sandbox Mode's Career messages (with Immersive Notifications): the welcome, promotions, achievement rewards, the stipend. */
 	public static boolean careerMessages = false;
 	/** Is a career running in the fleet in use: always in Immersive Mode, and in Sandbox Mode with Career messages on. */
-	public static boolean career() { return immersiveMode || (immersiveNotifications && careerMessages); }
+	public static boolean career() { return immersiveMode || (immersiveNotifications && careerMessages); } // (the Sandbox setting: Immersive Mode always has a career)
 	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
-	/** The rules Immersive Mode sets, as the player had them: kept apart, written to the cfg, and back when it's turned off. */
-	public static final class Rules {
-		public boolean store, journey, sellSupplies, sellSystems, costs, unlockFree, lockedOnly, customLockedOnly, notifications;
-		public int percent;
-		static Rules current() {
-			Rules r = new Rules();
-			r.store = HomePlanet.storeRequirement; r.journey = HomePlanet.journeyStoreRequirement; r.sellSupplies = HomePlanet.sellSupplies;
-			r.sellSystems = HomePlanet.sellSystems; r.costs = HomePlanet.commissionCosts; r.percent = HomePlanet.commissionPercent;
-			r.unlockFree = HomePlanet.unlockFreeShips;
-			r.lockedOnly = HomePlanet.commissionUnlockedOnly; r.customLockedOnly = HomePlanet.commissionCustomUnlockedOnly;
-			r.notifications = HomePlanet.immersiveNotifications;
-			return r;
-		}
-		void set() {
-			HomePlanet.storeRequirement = store; HomePlanet.journeyStoreRequirement = journey; HomePlanet.sellSupplies = sellSupplies;
-			HomePlanet.sellSystems = sellSystems; HomePlanet.commissionCosts = costs; HomePlanet.commissionPercent = percent;
-			HomePlanet.unlockFreeShips = unlockFree;
-			HomePlanet.commissionUnlockedOnly = lockedOnly; HomePlanet.commissionCustomUnlockedOnly = customLockedOnly;
-			HomePlanet.immersiveNotifications = notifications;
-		}
-	}
-	private static Rules normalRules = null;
-	/** The player's own rules (what the rules in effect would be without Immersive Mode). */
-	public static Rules normalRules() { return normalRules != null ? normalRules : Rules.current(); }
-	/** Immersive Mode is off again: the player's own rules come back. */
-	public static void leaveImmersive() {
-		immersiveMode = false;
-		if (normalRules != null) { normalRules.set(); normalRules = null; }
-	}
-	/** Immersive Mode's rules, set over the player's own (which are kept, see {@link #normalRules}). */
-	public static void applyImmersive() {
-		if (!immersiveMode) return;
-		if (normalRules == null) normalRules = Rules.current();
-		unlockFreeShips = true;
-		immersiveNotifications = true;
-		commissionUnlockedOnly = true;
-		commissionCustomUnlockedOnly = true;
-		storeRequirement = true;
-		journeyStoreRequirement = true;
-		commissionCosts = true;
-		commissionPercent = 100;
-		sellSupplies = true;
-		sellSystems = true;
-	}
+	// ---- the rules in force: Sandbox Mode's own (the fields above, as Settings has them), or an Immersive career's, fixed ----
+	// Immersive Mode never writes over the fields: each rule is read through its method, which answers for the mode in use.
+
+	public static boolean storeRequirement() { return immersiveMode || storeRequirement; }
+	public static boolean journeyStoreRequirement() { return immersiveMode || journeyStoreRequirement; }
+	public static boolean commissionCosts() { return immersiveMode || commissionCosts; }
+	public static boolean sellSupplies() { return immersiveMode || sellSupplies; }
+	public static boolean sellSystems() { return immersiveMode || sellSystems; }
+	public static boolean unlockFreeShips() { return immersiveMode || unlockFreeShips; }
+	public static boolean immersiveNotifications() { return immersiveMode || immersiveNotifications; }
+	public static boolean commissionUnlockedOnly() { return immersiveMode || commissionUnlockedOnly; }
+	public static boolean commissionCustomUnlockedOnly() { return immersiveMode || commissionCustomUnlockedOnly; }
+	/** Immersive Mode is off: the player's own rules are in force again (they were never changed). */
+	public static void leaveImmersive() { immersiveMode = false; }
 	public static boolean debugLogging = false;
 
 	/** The config file, beside the program (whatever folder it was started from), and its values (the Settings window changes and saves them). */
@@ -187,7 +157,6 @@ public class HomePlanet {
 		immersiveAnyLevel = flag("immersive_any_level", true);
 		careerMessages = flag("career_messages");
 		finalVictory = config.getProperty("final_victory", "nothing");
-		applyImmersive();
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 		log.debug("{} {} starting on Java {}", APP_NAME, APP_VERSION, System.getProperty("java.version"));
 
@@ -230,8 +199,7 @@ public class HomePlanet {
 			sellSupplies = flag("sell_supplies", false);
 			commissionUnlockedOnly = flag("commission_unlocked_only", true);
 			commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only", true);
-			applyImmersive();
-			// a first startup chooses its mode (once the folders and the fleet exist, so Immersive Mode can be entered, below);
+				// a first startup chooses its mode (once the folders and the fleet exist, so Immersive Mode can be entered, below);
 			// an older station missing only a newer rule just sees the rules again
 			if (missing == RULE_KEYS.length) chooseMode = true;
 			else onEdt(new java.util.concurrent.Callable<Void>() { public Void call() { homeplanet.ui.HouseRulesDialog.ask(); return null; } });
@@ -381,25 +349,24 @@ public class HomePlanet {
 		if (datsPath != null) config.setProperty("ftlDatsPath", datsPath.getAbsolutePath());
 		config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
 		config.setProperty("debug_logging", Boolean.toString(debugLogging));
-		Rules own = normalRules(); // Immersive Mode's rules are never written over the player's own
-		config.setProperty("store_requirement", Boolean.toString(own.store));
-		config.setProperty("new_journey_store_requirement", Boolean.toString(own.journey));
+		config.setProperty("store_requirement", Boolean.toString(storeRequirement));
+		config.setProperty("new_journey_store_requirement", Boolean.toString(journeyStoreRequirement));
 		config.setProperty("strip_when_scrapping", Boolean.toString(stripAllowed));
 		config.setProperty("refit_removal_fee", Integer.toString(removalFee));
 		config.setProperty("new_journey_fee", Integer.toString(journeyFee));
 		config.setProperty("career_messages", Boolean.toString(careerMessages));
-		config.setProperty("sell_supplies", Boolean.toString(own.sellSupplies));
-		config.setProperty("commission_unlocked_only", Boolean.toString(own.lockedOnly));
-		config.setProperty("commission_custom_unlocked_only", Boolean.toString(own.customLockedOnly));
-		config.setProperty("sell_systems", Boolean.toString(own.sellSystems));
-		config.setProperty("commission_costs_scrap", Boolean.toString(own.costs));
-		config.setProperty("commission_price_percent", Integer.toString(own.percent));
+		config.setProperty("sell_supplies", Boolean.toString(sellSupplies));
+		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));
+		config.setProperty("commission_custom_unlocked_only", Boolean.toString(commissionCustomUnlockedOnly));
+		config.setProperty("sell_systems", Boolean.toString(sellSystems));
+		config.setProperty("commission_costs_scrap", Boolean.toString(commissionCosts));
+		config.setProperty("commission_price_percent", Integer.toString(commissionPercent));
 		config.setProperty("free_ship", freeShip);
-		config.setProperty("unlock_free_ships", Boolean.toString(own.unlockFree));
+		config.setProperty("unlock_free_ships", Boolean.toString(unlockFreeShips));
 		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
 		config.setProperty("immersive_slot", Vault.immersiveSlot);
 		config.setProperty("final_victory", finalVictory);
-		config.setProperty("immersive_notifications", Boolean.toString(own.notifications));
+		config.setProperty("immersive_notifications", Boolean.toString(immersiveNotifications));
 		config.setProperty("immersive_ship_trading", Boolean.toString(immersiveShipTrading));
 		config.setProperty("immersive_any_level", Boolean.toString(immersiveAnyLevel));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));

@@ -223,7 +223,7 @@ public final class Transmissions {
 	 * Returns how many were sent.
 	 */
 	public static synchronized int check() {
-		if (!HomePlanet.immersiveNotifications || !Vault.isOpen()) return 0;
+		if (!HomePlanet.immersiveNotifications() || !Vault.isOpen()) return 0;
 		List<Message> all = load();
 		Set<String> sent = new java.util.HashSet<String>();
 		for (Message m : all) sent.add(m.key);
@@ -249,7 +249,7 @@ public final class Transmissions {
 		}
 		// one order per free command (the fleet's start, a report for reassignment), never for an empty shipyard alone
 		boolean granted = v.freeCommandOpen();
-		if (HomePlanet.commissionCosts && granted && v.shipyardEmpty()) {
+		if (HomePlanet.commissionCosts() && granted && v.shipyardEmpty()) {
 			if (!emptyOpen) {
 				String key = "empty:" + stamp();
 				for (int i = 2; sent.contains(key); i++) key = "empty:" + stamp() + "-" + i; // two in one second
@@ -267,7 +267,7 @@ public final class Transmissions {
 			emptyOpen = false; // taken: the next grant sends its own order
 		}
 		// no ship to command and no free command waiting: the Liaison says what can be done, the first time only (each fleet)
-		boolean stranded = HomePlanet.commissionCosts && !granted && v.docked().isEmpty() && v.boarded() == null;
+		boolean stranded = HomePlanet.commissionCosts() && !granted && v.docked().isEmpty() && v.boarded() == null;
 		if (stranded && !strandedOpen && v.event("stranded-letter") == null) {
 			send(all, sent, "stranded:" + stamp(), v.junked().isEmpty() ? "stranded" : "stranded:junkyard", rank, null);
 			v.recordEvent("stranded-letter", stamp());
@@ -275,7 +275,7 @@ public final class Transmissions {
 		} else if (!stranded) {
 			strandedOpen = false;
 		}
-		if (HomePlanet.commissionCosts && HomePlanet.unlockFreeShips && u != null) {
+		if (HomePlanet.commissionCosts() && HomePlanet.unlockFreeShips() && u != null) {
 			for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
 				for (int n = 0; n < 3; n++) {
 					if (HomePlanet.immersiveMode && "PLAYER_SHIP_FED".equals(base) && n != 1) continue; // the Type A and C come with a promotion
@@ -459,7 +459,7 @@ public final class Transmissions {
 	 * key, only while the inbox is on.
 	 */
 	public static synchronized void deliver(String key, String from, String subject, String body) {
-		if (!HomePlanet.immersiveNotifications || !Vault.isOpen()) return;
+		if (!HomePlanet.immersiveNotifications() || !Vault.isOpen()) return;
 		List<Message> all = load();
 		for (Message x : all) if (x.key.equals(key)) return;
 		Message m = new Message();
