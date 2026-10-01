@@ -262,7 +262,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String message = (lost.isEmpty() ? "" : lost + "\n")
 				+ "Uncommissioned ship detected.\n\n" + stranger.name + " was not commissioned by The Federation Home Planet: this save was not made in Immersive Mode.\n"
 				+ "What should be done with her?";
-		Object[] options = {"Send her to the normal Space Dock", "Decommission her", "Switch to normal mode now", "Close The Home Planet Station"};
+		Object[] options = {"Send her to the Sandbox fleet's Space Dock", "Decommission her", "Switch to Sandbox Mode now", "Close The Home Planet Station"};
 		int c = JOptionPane.showOptionDialog(null, message, "Uncommissioned ship", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
 		if (c == 3) { if (parent != null) parent.dispatchEvent(new java.awt.event.WindowEvent(parent, java.awt.event.WindowEvent.WINDOW_CLOSING)); return; }
 		if (c < 0) { deferredStrangers.add(stranger.id); init(); return; } // closed: asked again at the next start
@@ -274,18 +274,18 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			if (c == 0) {
 				v.sendToOtherFleet(stranger, false);
-				JOptionPane.showMessageDialog(null, stranger.name + " waits at the normal Space Dock.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(null, stranger.name + " waits at the Sandbox fleet's Space Dock.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
 			} else if (c == 1) {
 				Object[] how = {"Send her to the normal Junkyard", "Destroy her", "Cancel"};
 				int d = JOptionPane.showOptionDialog(null, "Decommission " + stranger.name + ":\n\n"
-						+ "Send her to the normal fleet's Junkyard, or destroy her? (A destroyed ship's last version stays in the station's records.)",
+						+ "Send her to the Sandbox fleet's Junkyard, or destroy her? (A destroyed ship's last version stays in the station's records.)",
 						"Decommission", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, how, how[2]);
 				if (d == 0) v.sendToOtherFleet(stranger, true);
 				else if (d == 1) v.remove(stranger, "DESTROY");
 				else { deferredStrangers.add(stranger.id); init(); return; }
 			} else {
 				ImmersiveDialog.leaveNow(stranger); // her fleet, rules and FTL profile: the normal ones
-				JOptionPane.showMessageDialog(null, "Immersive Mode is off. " + stranger.name + " is boarded in your normal fleet.\n"
+				JOptionPane.showMessageDialog(null, "Immersive Mode is off. " + stranger.name + " is boarded in your Sandbox fleet.\n"
 						+ "Your Immersive fleet is kept as it was.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
 			}
 		} catch (IOException e) {

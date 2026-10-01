@@ -1360,7 +1360,7 @@ public final class Vault {
 				List<String> ids = homeplanet.parser.Retrofit.blueprintIds(f);
 				if (ids != null && !ids.contains(bpId)) continue; // an unreadable one counts, as usingBlueprint does
 				String id = f.getName().substring(0, f.getName().length() - 4);
-				out.add((names.containsKey(id) ? names.get(id) : id) + (immersive ? " (normal fleet)" : " (Immersive fleet)"));
+				out.add((names.containsKey(id) ? names.get(id) : id) + (immersive ? " (Sandbox fleet)" : " (Immersive fleet)"));
 			}
 		}
 		return out;
@@ -1415,7 +1415,7 @@ public final class Vault {
 		} else if (park.isFile() && !park.delete()) {
 			log.warn("Could not remove {}", park);
 		}
-		HistoryLog.entry("SWITCH FLEET", "to the " + (toImmersive ? "Immersive" : "normal") + " fleet" + (b == null ? "" : "; " + b.name + " docked here, to be boarded again on return"));
+		HistoryLog.entry("SWITCH FLEET", "to the " + (toImmersive ? "Immersive" : "Sandbox") + " fleet" + (b == null ? "" : "; " + b.name + " docked here, to be boarded again on return"));
 		Vault to = open(from.saves, toImmersive);
 		File back = new File(to.root, PARKED);
 		if (back.isFile()) {
@@ -1424,7 +1424,7 @@ public final class Vault {
 			if (s != null && s.state == Ship.State.DOCKED && !to.continueFile().exists()) to.board(s);
 			if (!back.delete()) log.warn("Could not remove {}", back);
 		}
-		HistoryLog.entry("SWITCH FLEET", "now the " + (toImmersive ? "Immersive" : "normal") + " fleet" + (to.boarded() == null ? "" : "; " + to.boarded().name + " boarded again"));
+		HistoryLog.entry("SWITCH FLEET", "now the " + (toImmersive ? "Immersive" : "Sandbox") + " fleet" + (to.boarded() == null ? "" : "; " + to.boarded().name + " boarded again"));
 		return to;
 	}
 
@@ -1440,7 +1440,7 @@ public final class Vault {
 	 */
 	public static File endImmersiveCareer() throws IOException {
 		Vault v = get();
-		if (v.immersive) throw new IOException("Return to normal mode first");
+		if (v.immersive) throw new IOException("Return to Sandbox Mode first");
 		File im = v.otherRoot();
 		if (!im.isDirectory()) throw new IOException("There is no Immersive career to end");
 		String stamp;
@@ -1474,7 +1474,7 @@ public final class Vault {
 		ships.remove(s);
 		saveManifest();
 		HistoryLog.entry("SENT", s.name + "  " + (s.isBoarded() ? "continue.sav" : s.state.key + "/" + s.id + ".sav") + " -> the "
-				+ (immersive ? "normal" : "Immersive") + " fleet's " + (junkyard ? "Junkyard" : "Space Dock"));
+				+ (immersive ? "Sandbox" : "Immersive") + " fleet's " + (junkyard ? "Junkyard" : "Space Dock"));
 	}
 	/**
 	 * The player takes this boarded ship to the other fleet and switches to it (an uncommissioned ship in Immersive
@@ -1488,7 +1488,7 @@ public final class Vault {
 			from.ships.remove(s);
 			from.saveManifest();
 		}
-		HistoryLog.entry("HANDED OVER", s.name + " (continue.sav) to the " + (from.immersive ? "normal" : "Immersive") + " fleet, now in use");
+		HistoryLog.entry("HANDED OVER", s.name + " (continue.sav) to the " + (from.immersive ? "Sandbox" : "Immersive") + " fleet, now in use");
 		Vault to = open(from.saves, !from.immersive);
 		File park = new File(to.root, PARKED);
 		if (park.isFile() && !park.delete()) log.warn("Could not remove {}", park);

@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.55";
+	public static final String APP_VERSION = "4B.56";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -195,8 +195,9 @@ public class HomePlanet {
 			config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
 			writeConfig = true;
 		}
-		boolean rulesMissing = false;
-		for (String key : RULE_KEYS) if (config.getProperty(key) == null) rulesMissing = true;
+		boolean rulesMissing = false, chooseMode = false;
+		int missing = 0;
+		for (String key : RULE_KEYS) if (config.getProperty(key) == null) { rulesMissing = true; missing++; }
 		if (rulesMissing) {
 			storeRequirement = flag("store_requirement", true);
 			journeyStoreRequirement = flag("new_journey_store_requirement", true);
@@ -205,7 +206,10 @@ public class HomePlanet {
 			commissionUnlockedOnly = flag("commission_unlocked_only", true);
 			commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only", true);
 			applyImmersive();
-			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() { homeplanet.ui.HouseRulesDialog.ask(); return null; } });
+			// a first startup chooses its mode (once the folders and the fleet exist, so Immersive Mode can be entered, below);
+			// an older station missing only a newer rule just sees the rules again
+			if (missing == RULE_KEYS.length) chooseMode = true;
+			else onEdt(new java.util.concurrent.Callable<Void>() { public Void call() { homeplanet.ui.HouseRulesDialog.ask(); return null; } });
 			writeConfig = true; // saveConfig writes every rule, so this is asked once
 		}
 
@@ -269,6 +273,11 @@ public class HomePlanet {
 		} catch (IOException e) {
 			log.error("Could not take stock of the vault", e);
 			showErrorDialog("The Home Planet Station could not take stock of the fleet:\n" + e);
+		}
+		// First setup: Sandbox Mode or Immersive Mode, then the rules the chosen mode leaves to the player
+		if (chooseMode) {
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() { homeplanet.ui.ModeChoiceDialog.ask(); return null; } });
+			saveConfig();
 		}
 
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {

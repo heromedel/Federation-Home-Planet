@@ -124,10 +124,10 @@ public class RuleBoxes {
 	private void sync() {
 		boolean im = immersiveBox.isSelected();
 		boolean vaultOpen = homeplanet.vault.Vault.isOpen();
-		immersiveButton.setText(im ? "Return to Normal Mode..." : "Enter Immersive Mode...");
+		immersiveButton.setText(im ? "Return to Sandbox Mode..." : "Enter Immersive Mode...");
 		immersiveButton.setEnabled(vaultOpen);
 		immersiveButton.setToolTipText(!vaultOpen ? "Once The Home Planet Station is set up, enter Immersive Mode from Settings"
-				: im ? "Back to your normal fleet and rules (your Immersive career is kept)" : "The briefing: what Immersive Mode is, and your career's choices");
+				: im ? "Back to your Sandbox fleet and rules (your Immersive career is kept)" : "The briefing: what Immersive Mode is, and your career's choices");
 		immersiveLabel.setText(im ? "   Immersive Mode is on: The Federation Home Planet's rules below are locked." : "   The station runs by The Federation Home Planet's rules, and your service becomes a career.");
 		if (!im && showingImmersive) showOwn();
 		showingImmersive = im;
@@ -177,11 +177,21 @@ public class RuleBoxes {
 	}
 
 	/** Adds the boxes one per row, starting at c's row and leaving c on the row after the last. */
-	public void addTo(JPanel body, GridBagConstraints c) {
+	public void addTo(JPanel body, GridBagConstraints c) { addTo(body, c, true); }
+	/** As {@link #addTo(JPanel, GridBagConstraints)}; without the Immersive Mode row for Sandbox Mode's first setup. */
+	public void addTo(JPanel body, GridBagConstraints c, boolean withImmersive) {
+		if (!withImmersive) notifyBox.setBorder(BorderFactory.createEmptyBorder()); // nothing above it to sit under
 		for (JComponent b : new JComponent[] {immersiveRow, notifyBox, tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
+			if (b == immersiveRow && !withImmersive) continue;
 			body.add(b, (GridBagConstraints) c.clone());
 			c.gridy++;
 		}
+	}
+
+	/** The rules Immersive Mode leaves to the player (its first setup shows only these). */
+	public void addImmersiveOwn(JPanel body, GridBagConstraints c) {
+		body.add(scrapBox, (GridBagConstraints) c.clone());
+		c.gridy++;
 	}
 
 	/** What apply() would change, for the history log. */

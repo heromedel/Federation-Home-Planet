@@ -23,13 +23,18 @@ public class HouseRulesDialog extends JDialog {
 	private final RuleBoxes rules = new RuleBoxes();
 
 	/** Shows the window and waits; the choices are set on HomePlanet when it closes. */
-	public static void ask() {
-		HouseRulesDialog d = new HouseRulesDialog();
+	public static void ask() { ask(null); }
+	/**
+	 * First setup, after the mode is chosen: Sandbox Mode ({@code immersive} false) shows every rule, Immersive Mode
+	 * only those it leaves to the player. Null: every rule with the Immersive Mode row (as before the mode choice).
+	 */
+	public static void ask(Boolean immersive) {
+		HouseRulesDialog d = new HouseRulesDialog(immersive);
 		d.setVisible(true);
 	}
 
-	private HouseRulesDialog() {
-		super((java.awt.Window) null, "House Rules", ModalityType.APPLICATION_MODAL);
+	private HouseRulesDialog(Boolean immersive) {
+		super((java.awt.Window) null, immersive == null ? "House Rules" : immersive ? "Immersive Mode: your rules" : "Sandbox Mode: house rules", ModalityType.APPLICATION_MODAL);
 		JPanel body = new JPanel(new GridBagLayout());
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
 		GridBagConstraints c = new GridBagConstraints();
@@ -40,10 +45,14 @@ public class HouseRulesDialog extends JDialog {
 		c.insets = new Insets(2, 0, 2, 0);
 		c.weightx = 1;
 
-		body.add(new JLabel("Choose how strict The Home Planet Station's functionality is. You can change these any time in Settings."), (GridBagConstraints) c.clone());
+		String intro = Boolean.TRUE.equals(immersive)
+				? "The Federation Home Planet sets most of the rules now. These are yours to choose; you can change them any time in Settings."
+				: "Choose how strict The Home Planet Station's functionality is. You can change these any time in Settings.";
+		body.add(new JLabel(intro), (GridBagConstraints) c.clone());
 		c.gridy++;
 		SettingsDialog.heading(body, c, "Rules");
-		rules.addTo(body, c);
+		if (Boolean.TRUE.equals(immersive)) rules.addImmersiveOwn(body, c);
+		else rules.addTo(body, c, immersive == null);
 
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton ok = new JButton("OK");

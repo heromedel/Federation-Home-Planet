@@ -53,7 +53,7 @@ public final class ImmersiveDialog {
 			Vault.get().takeStock();
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not enter Immersive Mode:\n" + e.getMessage()
-					+ "\n\nThe fleet in use now is the " + (Vault.get().immersive ? "Immersive" : "normal") + " one.");
+					+ "\n\nThe fleet in use now is the " + (Vault.get().immersive ? "Immersive" : "Sandbox") + " one.");
 			return Vault.get().immersive;
 		}
 		return true;
@@ -64,21 +64,21 @@ public final class ImmersiveDialog {
 		Vault v = Vault.get();
 		Ship b = v.boarded();
 		boolean ownProfile = Career.ownProfile(v.root);
-		String message = "Return to normal mode?\n\nYour normal fleet and your own rules return" + (ownProfile ? ", with your own FTL profile." : ".")
+		String message = "Return to Sandbox Mode?\n\nYour Sandbox fleet and your own rules return" + (ownProfile ? ", with your own FTL profile." : ".")
 				+ (b == null ? "" : "\n" + b.name + " docks first.")
 				+ "\n\nKeep your Immersive career, and it comes back exactly as it is when you enter Immersive Mode again.\n"
 				+ "Or end it: everything in it is lost, and the next time you enter Immersive Mode a new career begins.";
 		Object[] opts = {"Return and keep my career", "Return and end my career...", "Cancel"};
-		int c = JOptionPane.showOptionDialog(owner, message, "Return to Normal Mode", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
+		int c = JOptionPane.showOptionDialog(owner, message, "Return to Sandbox Mode", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
 		if (c != 0 && c != 1) return false;
 		boolean end = c == 1;
 		if (end && !confirmEnd(owner, v, ownProfile)) return false;
-		if (!ftlClosed(owner, "Return to Normal Mode")) return false;
+		if (!ftlClosed(owner, "Return to Sandbox Mode")) return false;
 		try {
 			leaveNow(null);
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not return to normal mode:\n" + e.getMessage()
-					+ "\n\nThe fleet in use now is the " + (Vault.get().immersive ? "Immersive" : "normal") + " one."
+			HomePlanet.showErrorDialog("The Home Planet Station could not return to Sandbox Mode:\n" + e.getMessage()
+					+ "\n\nThe fleet in use now is the " + (Vault.get().immersive ? "Immersive" : "Sandbox") + " one."
 					+ (end ? " Your Immersive career was not ended." : ""));
 			return !Vault.get().immersive;
 		}
@@ -86,9 +86,9 @@ public final class ImmersiveDialog {
 			try {
 				File zip = Vault.endImmersiveCareer();
 				JOptionPane.showMessageDialog(owner, "Your Immersive career has ended. The next time you enter Immersive Mode, a new career begins.\n\n"
-						+ "A copy was kept, just in case, in:\n" + zip, "Return to Normal Mode", JOptionPane.INFORMATION_MESSAGE);
+						+ "A copy was kept, just in case, in:\n" + zip, "Return to Sandbox Mode", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
-				HomePlanet.showErrorDialog("You're back in normal mode, but The Home Planet Station could not end the Immersive career:\n" + e.getMessage());
+				HomePlanet.showErrorDialog("You're back in Sandbox Mode, but The Home Planet Station could not end the Immersive career:\n" + e.getMessage());
 			}
 		}
 		return true;
@@ -103,7 +103,7 @@ public final class ImmersiveDialog {
 				+ " and the Cargo Hold (" + v.storageScrap() + " scrap)\n"
 				+ " \u2022 Your rank (" + rank + "), transmissions and stipend record\n"
 				+ (ownProfile ? " \u2022 Immersive Mode's own FTL profile (its unlocks and achievements)\n" : "")
-				+ "\nYour normal fleet, your own FTL profile, and your designs and remodels are not touched.\n"
+				+ "\nYour Sandbox fleet, your own FTL profile, and your designs and remodels are not touched.\n"
 				+ "A copy of the career is kept in " + Vault.FOLDER + "\\" + Vault.OLD_CAREERS + ", in case of a mistake.";
 		Object[] opts = {"End my career", "Cancel"};
 		return JOptionPane.showOptionDialog(owner, message, "End your Immersive career", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, opts, opts[1]) == 0;

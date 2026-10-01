@@ -108,7 +108,7 @@ final class ImmersiveBriefing extends JDialog {
 	private JPanel whatChanges() {
 		JPanel p = page();
 		p.add(section("A fleet of its own", "Your current fleet (the Space Dock, the Junkyard, the Cargo Hold and their records) is kept exactly as it is, "
-				+ "and comes back when you return to normal mode. Your designs and remodels are shared by both."
+				+ "and comes back when you return to Sandbox Mode. Your designs and remodels are shared by both."
 				+ (begun ? "" : " Your career begins with an empty shipyard, a free Kestrel and " + Career.STARTING_SCRAP + " scrap in the Cargo Hold.")));
 		p.add(section("The rules", "Set and locked while it's on:",
 				"Trading, scrapping and New Journey need a station (a beacon with a store).",
@@ -131,9 +131,9 @@ final class ImmersiveBriefing extends JDialog {
 		for (Component c : new Component[] {own, salaryNew, salaryAll}) ((javax.swing.JComponent) c).setAlignmentX(Component.LEFT_ALIGNMENT);
 		if (!begun) {
 			p.add(heading("Choices fixed once made"));
-			own.setToolTipText("Your current profile is set aside, not deleted, and comes back when you return to normal mode");
+			own.setToolTipText("Your current profile is set aside, not deleted, and comes back when you return to Sandbox Mode");
 			p.add(own);
-			p.add(note("FTL starts a fresh profile: every ship locked but the Kestrel, no achievements. Your own comes back when you return to normal mode."));
+			p.add(note("FTL starts a fresh profile: every ship locked but the Kestrel, no achievements. Your own comes back when you return to Sandbox Mode."));
 			p.add(label("The stipend counts:"));
 			ButtonGroup g = new ButtonGroup();
 			g.add(salaryNew);

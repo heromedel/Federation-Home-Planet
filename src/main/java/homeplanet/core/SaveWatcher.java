@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Watches FTL's saves folder while the station is open (the system tells it of changes; no timed reading of files).
  * When FTL has written continue.sav and gone quiet for a moment, the final-victory watch looks at it (on the event
- * thread, like everything else that touches the vault). When FTL deletes it, the Space Dock is refreshed the next time
- * its window comes to the front.
+ * thread, like everything else that touches the vault). When FTL deletes it, the Space Dock is refreshed: at once if
+ * it's showing, otherwise the next time its window comes to the front.
  */
 public final class SaveWatcher implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(SaveWatcher.class);
@@ -26,6 +26,8 @@ public final class SaveWatcher implements Runnable {
 	private static final long QUIET_MS = 800;
 	private static Thread thread;
 	private static volatile boolean gone = false;
+	/** Told (on the Swing thread) when continue.sav is deleted: the window refreshes the Space Dock if it's showing. */
+	public static volatile Runnable onGone;
 
 	private SaveWatcher() { }
 
@@ -68,7 +70,12 @@ public final class SaveWatcher implements Runnable {
 				if (k != null) {
 					for (WatchEvent<?> e : k.pollEvents()) {
 						if (!(e.context() instanceof Path) || !"continue.sav".equalsIgnoreCase(((Path) e.context()).toString())) continue;
-						if (e.kind() == StandardWatchEventKinds.ENTRY_DELETE) { gone = true; changedAt = 0; }
+						if (e.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
+							gone = true;
+							changedAt = 0;
+							final Runnable r = onGone;
+							if (r != null) SwingUtilities.invokeLater(r);
+						}
 						else changedAt = System.currentTimeMillis();
 					}
 					k.reset();
