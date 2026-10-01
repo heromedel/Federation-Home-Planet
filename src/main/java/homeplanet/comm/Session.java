@@ -280,7 +280,7 @@ public final class Session implements Channel.Listener {
 		int k = 0;
 		for (Line l : theirs) {
 			l.refused = Exchange.refuses(l);
-			if (l.kind == Line.Kind.SHIP && l.refused == null && !ships) l.refused = "Ships can only be traded between Immersive fleets that both allow it";
+			if (l.kind == Line.Kind.SHIP && l.refused == null && !ships) l.refused = "Whole ships need \"Allow trading immersive ships\" on at both Immersive stations (Settings, Rules)";
 			if (l.refused != null) cant.put("n" + k, l.n).put("why" + k++, l.refused);
 		}
 		cant.put("count", k);

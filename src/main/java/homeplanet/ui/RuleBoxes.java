@@ -86,7 +86,7 @@ public class RuleBoxes {
 		freeRow.add(freeBox);
 		notifyBox.setToolTipText("Without Immersive Mode: orders for the free ships the rules grant. With it, also news, promotions and rewards");
 		notifyBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Mode, which turns it on
-		shipTradeBox.setToolTipText("A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
+		shipTradeBox.setToolTipText("Normal fleets always may. A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
 		shipTradeBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A Report for Reassignment doesn't reset it");
 		unlockBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));

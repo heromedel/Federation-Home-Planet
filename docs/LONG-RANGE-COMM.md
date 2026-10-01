@@ -15,7 +15,8 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 - **Finding and hailing** (`comm/Beacon`, `comm/Channel`): a station listens only while the screen is open, on the
   first free port of 47610 to 47619 (TCP for the channel, UDP for the scan), so two stations can share a computer.
   Establish Connection broadcasts on each local network and to this computer; By address hails an IP (with :port, or
-  each port in turn). The hailed commander must answer. One channel at a time. Stations must run the same version;
+  each port in turn); the screen shows the port this station listens on, to forward on a router for a hail over the
+  internet (a virtual LAN needs nothing). The hailed commander must answer. One channel at a time. Stations must run the same version;
   Immersive fleets trade only with Immersive fleets. A one-time note warns about the Windows Firewall prompt.
 - **The offer** (`comm/Session`): each side owns its lines and numbers each version of them. Accept names both
   versions, so any change withdraws every acceptance (the notice line says what changed). A line the other station
@@ -37,8 +38,9 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 
 ## Whole ships
 
-- Only between Immersive fleets, and only when both have **Allow trading immersive ships** on (Settings, Rules, off by
-  default). The ship must be docked (not boarded), at a station, with no final battle to settle. Everything aboard
+- Between two normal fleets, always (there are no commissioning rules to get around). Between Immersive fleets, only
+  when both have **Allow trading immersive ships** on (Settings, Rules, off by default). A normal fleet and an
+  Immersive one don't trade at all. The ship must be docked (not boarded), at a station, with no final battle to settle. Everything aboard
   goes with her.
 - What travels: her save, her voyage log and its summary, and her last trade mark. Her museum record, kept versions and
   fate stay with the fleet she leaves, where her history is kept as a record (fate TRANSFERRED: she can't be recovered,

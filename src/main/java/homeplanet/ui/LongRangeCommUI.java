@@ -112,6 +112,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private final JPanel right = new JPanel(rightCards);
 	private final CargoParts.RowList found = new CargoParts.RowList();
 	private final CargoParts.Label scanNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
+	/** The port this station listens on, for a hail by address. */
+	private final CargoParts.Label portNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
 	private final FtlButton establishBtn = new FtlButton("Establish Connection", FtlFont.MENU, RW - 44, 34);
 	private final FtlButton hailBtn = new FtlButton("Hail", FtlFont.MENU, 146, 30), hailAddrBtn = new FtlButton("Hail", FtlFont.MENU, 146, 30);
 	private final JTextField address = new JTextField();
@@ -382,6 +384,14 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		CargoParts.Label addrNote = new CargoParts.Label("For a station on a virtual LAN.", FtlFont.BODY, CargoParts.DIM, 1);
 		addrNote.setBounds(0, 386, RW, 16);
 		connect.add(addrNote);
+		portNote.setBounds(0, 420, RW, 16);
+		portNote.setToolTipText("To be hailed over the internet, forward this port (TCP) on your router to this computer, and give the other commander your public address. "
+				+ "On a virtual LAN (Tailscale, Hamachi, ZeroTier) nothing needs setting up.");
+		connect.add(portNote);
+		CargoParts.Label portHint = new CargoParts.Label("Online: forward it on your router.", FtlFont.BODY, CargoParts.DIM, 1);
+		portHint.setBounds(0, 438, RW, 16);
+		portHint.setToolTipText(portNote.getToolTipText());
+		connect.add(portHint);
 		right.add(connect, "connect");
 
 		JPanel partner = new JPanel(null);
@@ -497,10 +507,12 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 					return a[0];
 				}
 			});
+			portNote.setText("This station listens on port " + post.port + ".");
 		} catch (IOException e) {
 			log.warn("Long Range Comm. could not listen: {}", e.toString());
 			closePost();
 			scanNote.setText("Can't listen (ports busy): you can still hail.");
+			portNote.setText("Not listening: every port is in use.");
 		}
 	}
 	private String selfAnswer() {
@@ -648,8 +660,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		Ship b = Vault.get().boarded();
 		return Session.hello(HomePlanet.APP_VERSION, Commander.stationId(), Commander.title(), b == null ? "" : b.name, HomePlanet.immersiveMode, shipsAllowed());
 	}
-	/** Whether this station allows whole ships to change hands (Immersive fleets, by their own setting). */
-	static boolean shipsAllowed() { return HomePlanet.immersiveMode && HomePlanet.immersiveShipTrading; }
+	/** Whether this station lets whole ships change hands: a normal fleet always; an Immersive fleet by its own setting. */
+	public static boolean shipsAllowed() { return !HomePlanet.immersiveMode || HomePlanet.immersiveShipTrading; }
 
 	private void begin(Session s) {
 		session = s;
@@ -823,8 +835,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private String whyNotShip() {
 		if (session == null) return "Open a channel first.";
 		if (!session.shipsAllowed())
-			return !HomePlanet.immersiveMode ? "Whole ships change hands only between Immersive fleets."
-					: !HomePlanet.immersiveShipTrading ? "Allow trading immersive ships first (Settings, Rules)."
+			return !shipsAllowed() ? "Allow trading immersive ships first (Settings, Rules)."
 					: session.peer.title + "'s station doesn't allow trading immersive ships.";
 		if (source == null || source.isStorage()) return "Choose one of your ships under Offering From.";
 		if (source.isBoarded()) return source.name + " is the ship at your command: board another ship before offering her.";

@@ -35,7 +35,9 @@ public class LinkPeer {
   public void settled(Exchange.Record r) { settled++; }
   public void ended(String why) { ended = why; session = null; }
 
-  Wire.Msg hello() { return Session.hello(HomePlanet.APP_VERSION, id, title, "", false, true); }
+  /** Whether this station lets whole ships change hands (a normal fleet always does; "noships" plays an Immersive one that doesn't). */
+  volatile boolean ships = true;
+  Wire.Msg hello() { return Session.hello(HomePlanet.APP_VERSION, id, title, "", false, ships); }
 
   /** Runs on the event thread, returning what it returns. */
   static <T> T edt(final java.util.concurrent.Callable<T> c) throws Exception {
@@ -53,7 +55,7 @@ public class LinkPeer {
      try {
       final Session.Peer p = Session.peerOf(ch.readFirst(10000));
       ch.send(hello());
-      SwingUtilities.invokeLater(new Runnable() { public void run() { ended = null; session = new Session(ch, false, p, id, true); session.start(Station.this); } });
+      SwingUtilities.invokeLater(new Runnable() { public void run() { ended = null; session = new Session(ch, false, p, id, ships); session.start(Station.this); } });
      } catch (IOException e) { ch.close(""); }
     } });
     final int port = post.port;
@@ -66,9 +68,10 @@ public class LinkPeer {
     Wire.Msg r = ch.readFirst(10000);
     final Session.Peer p = Session.peerOf(r);
     final Channel fch = ch;
-    edt(new java.util.concurrent.Callable<Void>() { public Void call() { ended = null; session = new Session(fch, true, p, id, true); session.start(Station.this); return null; } });
+    edt(new java.util.concurrent.Callable<Void>() { public Void call() { ended = null; session = new Session(fch, true, p, id, ships); session.start(Station.this); return null; } });
     return "OK " + p.title;
    }
+   if (c.equals("noships")) { ships = w.length > 1 && w[1].equals("off"); return "OK ships=" + ships; }
    if (c.equals("crash")) { Session.crashAt = w.length > 1 ? w[1] : null; return "OK"; }
    if (c.equals("wait")) return waitFor(w[1], w.length > 2 ? w[2] : "");
    if (c.equals("state")) return edt(new java.util.concurrent.Callable<String>() { public String call() {

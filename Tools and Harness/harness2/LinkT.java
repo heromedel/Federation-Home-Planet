@@ -112,6 +112,23 @@ public class LinkT {
   Setup.chk("both called off: nothing changed hands", a("unfinished").equals("0") && b("unfinished").equals("0")
     && num(a("hold"), "scrap") == num(aHold, "scrap") && num(b("hold"), "fuel") == num(bHold, "fuel"));
 
+  // ---- who may trade whole ships ----
+  boolean im = HomePlanet.immersiveMode, st = HomePlanet.immersiveShipTrading;
+  HomePlanet.immersiveMode = false; HomePlanet.immersiveShipTrading = false;
+  boolean normal = homeplanet.ui.LongRangeCommUI.shipsAllowed();
+  HomePlanet.immersiveMode = true;
+  boolean immersiveOff = homeplanet.ui.LongRangeCommUI.shipsAllowed();
+  HomePlanet.immersiveShipTrading = true;
+  boolean immersiveOn = homeplanet.ui.LongRangeCommUI.shipsAllowed();
+  HomePlanet.immersiveMode = im; HomePlanet.immersiveShipTrading = st;
+  Setup.chk("ships: a normal fleet always may, an Immersive one by its setting", normal && !immersiveOff && immersiveOn);
+  a("close"); b("wait ended"); b("noships");
+  Setup.chk("A hails a station that doesn't allow ships", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+  a("offer ship Test_Federation");
+  Setup.chk("B refuses a whole ship; A can't accept", a("wait refused").equals("OK"));
+  a("close"); b("wait ended"); b("noships off");
+  Setup.chk("A hails again (ships allowed)", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+
   // ---- whole ships ----
   a("offer ship Test_Kestrel"); b("offer supply fuel 1");
   b("wait theirs 1"); a("wait theirs 1"); a("accept"); b("wait they"); b("accept");
