@@ -11,27 +11,24 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.Random;
 
-import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 
-import homeplanet.resource.ResourceClass;
 
 /**
  * The Space Dock's backdrop: the station art, scaled to fill the window without stretching, and slid left so the
  * station stands clear of the button column. The Space Dock itself sits on top (its ship list scrolls on its own).
- * The art is put together from the player's FTL data ({@link StationBackdrop}); the stock picture stands in if it can't be.
+ * The art is put together from the player's FTL data ({@link StationBackdrop}); if it can't be, the Space Dock is plain space.
  */
 public class SpaceDockScrollPane extends JPanel {
-	/** The stock picture's size, and the station's centre and saucer's left rim in it. */
+	/** The layout's measures when there's no picture (FTL's couldn't be read): the old picture's size, station and rim. */
 	static final int ART_W = 1480, ART_H = 794, STATION_X = 1005, SAUCER_LEFT = 789;
 	/** How far left of the window's right edge the station's centre stands. */
 	static final int STATION_FROM_RIGHT = 497;
 	/** On Refresh, the ships leaving the station change about one time in this many (and always at startup). */
 	static final int REROLL_ODDS = 15;
 
-	private static BufferedImage stock = null;
 	private static StationBackdrop built = null;
 	private static final Random rng = new Random();
 
@@ -79,13 +76,8 @@ public class SpaceDockScrollPane extends JPanel {
 		Graphics2D g = (Graphics2D) g0;
 		g.setColor(Color.black);
 		g.fillRect(0, 0, getWidth(), getHeight());
-		BufferedImage art = built != null ? built.image : null;
-		if (art == null) {
-			if (stock == null) {
-				try { stock = ImageIO.read(new ResourceClass().getClass().getResource("SpaceDockSplash.png")); } catch (Exception e) { return; }
-			}
-			art = stock;
-		}
+		if (built == null) return; // FTL's pictures couldn't be read: plain space
+		BufferedImage art = built.image;
 		double s = scale(getWidth(), getHeight());
 		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 		g.drawImage(art, offsetX(getWidth(), getHeight()), 0, (int) Math.round(artW() * s), (int) Math.round(artH() * s), null);

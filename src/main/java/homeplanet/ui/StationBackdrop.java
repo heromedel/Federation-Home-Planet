@@ -63,7 +63,7 @@ final class StationBackdrop {
 		{1640, 560, 0, 60},
 	};
 	/**
-	 * Where the boarded ship's panel ends, in the picture: well left of the station (as with the stock picture), which
+	 * Where the boarded ship's panel ends, in the picture: well left of the station, which
 	 * leaves open space beside her for ships to leave through.
 	 */
 	private static final int BERTH_EDGE = 600;
@@ -81,7 +81,7 @@ final class StationBackdrop {
 		this.saucerLeft = saucerLeft;
 	}
 
-	/** A new backdrop with a fresh roll of ships, or null if FTL's pictures can't be read (the stock picture is used then). */
+	/** A new backdrop with a fresh roll of ships, or null if FTL's pictures can't be read (plain space then). */
 	static StationBackdrop make(MainFrame frame, Random rng) {
 		try {
 			BufferedImage stars = frame.getResourceImage("img/stars/bg_dullstars.png", false);
@@ -108,7 +108,7 @@ final class StationBackdrop {
 			g.dispose();
 			return new StationBackdrop(out, Math.min(BERTH_EDGE, sx + edges[0]));
 		} catch (Exception e) {
-			log.warn("Could not build the Space Dock backdrop from FTL's pictures; using the stock one", e);
+			log.warn("Could not build the Space Dock backdrop from FTL's pictures", e);
 			return null;
 		}
 	}

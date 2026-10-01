@@ -56,7 +56,7 @@ final class CargoHoldBackdrop {
 		this.g = g; this.rng = rng; this.frame = frame;
 	}
 
-	/** A freshly rolled hold, 1920x1080; null if it can't be drawn (the stock picture is used then). */
+	/** A freshly rolled hold, 1920x1080; null if it can't be drawn (the Cargo Bay is plain then). */
 	static BufferedImage make(MainFrame frame, Random rng) {
 		try {
 			BufferedImage small = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
@@ -71,7 +71,7 @@ final class CargoHoldBackdrop {
 			o.dispose();
 			return out;
 		} catch (Exception e) {
-			log.warn("Could not draw the Cargo Hold backdrop; using the stock one", e);
+			log.warn("Could not draw the Cargo Hold backdrop", e);
 			return null;
 		}
 	}
