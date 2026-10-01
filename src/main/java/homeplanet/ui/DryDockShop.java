@@ -61,7 +61,7 @@ class DryDockShop {
 	// Where the panel sits (top left, level with the Save panel)
 	static final int PX = 6, PY = 48; // below the Return to Dock panel
 
-	enum Kind { HEADER, ITEM, SYSTEM, FUEL, MISSILES, PARTS }
+	enum Kind { HEADER, ITEM, SYSTEM, CREW, FUEL, MISSILES, PARTS }
 
 	/** One line in the shop list. Items remember which save and shelf they came from. */
 	static class Entry {
@@ -222,9 +222,10 @@ class DryDockShop {
 				l.setBounds(c * (colW + 10), y, colW, 18);
 				content.add(l);
 			}
-			List<Entry> sys = new ArrayList<Entry>(), sup = new ArrayList<Entry>();
+			List<Entry> sys = new ArrayList<Entry>(), sup = new ArrayList<Entry>(), hire = new ArrayList<Entry>();
 			for (Entry e : items) {
 				if (e.kind == Kind.SYSTEM) { sys.add(e); continue; }
+				if (e.kind == Kind.CREW) { hire.add(e); continue; }
 				if (e.kind != Kind.ITEM) { sup.add(e); continue; }
 				int c = Items.isWeapon(e.id) ? 0 : Items.isDrone(e.id) ? 1 : 2;
 				StoreRow r = new StoreRow(e, scrap);
@@ -234,10 +235,24 @@ class DryDockShop {
 			}
 			for (int c = 0; c < 3; c++) if (colY[c] == y + 20) { emptyNote(c * (colW + 10), colY[c], "Sold out"); colY[c] += 34; }
 			y = Math.max(colY[0], Math.max(colY[1], colY[2])) + 4;
+			// systems, then (when the store hires) crew, then supplies: crew takes the middle column and the supplies stack in the last
+			boolean hires = !hire.isEmpty();
 			CargoParts.Label sl = new CargoParts.Label("Systems", FtlFont.BODY, CargoParts.GOLD, -1), ul = new CargoParts.Label("Supplies", FtlFont.BODY, CargoParts.GOLD, -1);
 			sl.setBounds(0, y, colW, 18);
-			ul.setBounds(colW + 10, y, colW, 18);
+			ul.setBounds(hires ? 2 * (colW + 10) : colW + 10, y, colW, 18);
 			content.add(sl); content.add(ul);
+			int hy = y + 20;
+			if (hires) {
+				CargoParts.Label hl = new CargoParts.Label("Crew", FtlFont.BODY, CargoParts.GOLD, -1);
+				hl.setBounds(colW + 10, y, colW, 18);
+				content.add(hl);
+				for (Entry e : hire) {
+					StoreRow r = new StoreRow(e, scrap);
+					r.setBounds(colW + 10, hy, colW, 30);
+					content.add(r);
+					hy += 34;
+				}
+			}
 			int sy = y + 20;
 			if (sys.isEmpty()) { emptyNote(0, sy, "None for sale"); sy += 34; }
 			for (Entry e : sys) {
@@ -246,14 +261,17 @@ class DryDockShop {
 				content.add(r);
 				sy += 34;
 			}
-			int ux = colW + 10, uw = w - colW - 10, cw = (uw - 20) / 3, uy = y + 20;
+			int ux = colW + 10, uw = w - colW - 10, cw = (uw - 20) / 3, uy = y + 20, ubottom = uy + 34;
+			if (hires) { ux = 2 * (colW + 10); cw = colW; }
 			if (sup.isEmpty()) { emptyNote(ux, uy, "Out of supplies"); }
 			for (int k = 0; k < sup.size(); k++) {
 				StoreRow r = new StoreRow(sup.get(k), scrap);
-				r.setBounds(ux + k * (cw + 10), uy, cw, 30);
+				if (hires) r.setBounds(ux, uy + k * 34, cw, 30);
+				else r.setBounds(ux + k * (cw + 10), uy, cw, 30);
 				content.add(r);
 			}
-			y = Math.max(sy, uy + 34) + 16;
+			if (hires) ubottom = uy + Math.max(1, sup.size()) * 34;
+			y = Math.max(Math.max(sy, hy), ubottom) + 16;
 		}
 		if (stores == 0) {
 			CargoParts.Label none = new CargoParts.Label("None of your ships is docked at a station with a store.", FtlFont.MENU, CargoParts.DIM, 0);
@@ -278,7 +296,8 @@ class DryDockShop {
 		final boolean can, installed;
 		StoreRow(final Entry e, int scrap) {
 			this.e = e;
-			String why = e.kind == Kind.SYSTEM ? systemReason(e.id) : e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(bay.currentSave, e.id) : null;
+			String why = e.kind == Kind.SYSTEM ? systemReason(e.id) : e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(bay.currentSave, e.id)
+					: e.kind == Kind.CREW ? crewReason(e.id) : null;
 			can = why == null && e.price <= scrap;
 			installed = e.kind == Kind.SYSTEM && SystemsPanel.INSTALLED.equals(why);
 			setLayout(null);
@@ -298,7 +317,8 @@ class DryDockShop {
 			javax.swing.Icon ic = iconFor(e);
 			int tx = 8;
 			if (ic != null) { ic.paintIcon(this, g, 6 + (30 - ic.getIconWidth()) / 2, 15 - ic.getIconHeight() / 2); tx = 42; }
-			String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) + (installed ? "  (installed)" : "") : supplyName(e.kind) + "  x" + e.count;
+			String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) + (installed ? "  (installed)" : "")
+					: e.kind == Kind.CREW ? raceTitle(e.id) : supplyName(e.kind) + "  x" + e.count;
 			int px = getWidth() - 110;
 			CargoParts.text(g, FtlFont.BODY.fit(name, px - tx - 8), FtlFont.BODY, can ? CargoParts.TEXT : CargoParts.DIM, tx, 8);
 			javax.swing.Icon sc = IconFactory.supplyIcon("scrap");
@@ -355,6 +375,18 @@ class DryDockShop {
 		}
 	}
 
+	/** Why the buyer can't take on this crew member, or null: a ship carries 8, and a ship made without Advanced Edition can't take its races. The Cargo Hold takes anyone. */
+	private String crewReason(String race) {
+		if (toStorage) return null;
+		SavedGameState b = bay.currentSave;
+		if (b == null) return null;
+		if (SaveHelper.getOwnCrew(b.getPlayerShip()).size() >= SaveHelper.CREW_MAX) return "No room for more crew: a ship carries " + SaveHelper.CREW_MAX + " at most. Buy for the Cargo Hold instead.";
+		net.blerf.ftl.parser.SavedGameParser.CrewState probe = new net.blerf.ftl.parser.SavedGameParser.CrewState();
+		probe.setRace(SavedGameParser.CrewType.findById(race));
+		probe.setName("the crew member");
+		return homeplanet.parser.Dlc.refusesCrew(b, probe);
+	}
+
 	static final String NOT_FITTED = "The Cargo Bay is not fitted to hold ship systems";
 
 	// ---- Building the list ----
@@ -371,15 +403,14 @@ class DryDockShop {
 			for (int s = 0; s < shelves.size(); s++) {
 				StoreShelf shelf = shelves.get(s);
 				StoreItemType t = shelf.getItemType();
-				boolean sys = t == StoreItemType.SYSTEM;
-				if (t != StoreItemType.WEAPON && t != StoreItemType.DRONE && t != StoreItemType.AUGMENT && !sys) continue; // crew: not yet
+				boolean sys = t == StoreItemType.SYSTEM, crew = t == StoreItemType.CREW;
 				for (int i = 0; i < shelf.getItems().size(); i++) {
 					StoreItem it = shelf.getItems().get(i);
 					if (!it.isAvailable()) continue; // already bought
-					int price = sys ? systemPrice(it.getItemId()) : priceOf(it.getItemId());
+					int price = sys ? systemPrice(it.getItemId()) : crew ? crewPrice(it.getItemId()) : priceOf(it.getItemId());
 					if (price < 0) continue; // not in the game data (removed mod?)
-					String title = sys ? systemTitle(it.getItemId()) : Items.title(it.getItemId());
-					Entry e = new Entry(sys ? Kind.SYSTEM : Kind.ITEM, title + " · " + price);
+					String title = sys ? systemTitle(it.getItemId()) : crew ? raceTitle(it.getItemId()) : Items.title(it.getItemId());
+					Entry e = new Entry(sys ? Kind.SYSTEM : crew ? Kind.CREW : Kind.ITEM, title + " · " + price);
 					e.id = it.getItemId();
 					e.shelf = s;
 					e.slot = i;
@@ -444,7 +475,7 @@ class DryDockShop {
 		}
 		ShipState bs = buyer.getPlayerShip();
 		String buyerName = toStorage ? "The Cargo Bay" : buyer.getPlayerShipName();
-		String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) : supplyName(e.kind);
+		String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) : e.kind == Kind.CREW ? raceTitle(e.id) + " crew member" : supplyName(e.kind);
 		if (e.kind == Kind.SYSTEM && toStorage) {
 			JOptionPane.showMessageDialog(bay, "Systems can't be bought into the Cargo Hold. Buy it for your ship, then store it from the Refit tab.", "Shop", JOptionPane.INFORMATION_MESSAGE);
 			return;
@@ -452,6 +483,8 @@ class DryDockShop {
 		if (e.kind == Kind.SYSTEM && systemBlocked(buyer, e.id, name)) return; // before the scrap check: "already has" says more than "not enough scrap"
 		String refused = e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(buyer, e.id) : null;
 		if (refused != null) { JOptionPane.showMessageDialog(bay, refused, "Advanced Edition only", JOptionPane.INFORMATION_MESSAGE); return; }
+		String noCrew = e.kind == Kind.CREW ? crewReason(e.id) : null;
+		if (noCrew != null) { JOptionPane.showMessageDialog(bay, noCrew, "Shop", JOptionPane.INFORMATION_MESSAGE); return; }
 		if (bs.getScrapAmt() < e.price) {
 			JOptionPane.showMessageDialog(bay, buyerName + " has " + bs.getScrapAmt() + " scrap; " + name + " costs " + e.price + ".",
 					"Not enough scrap", JOptionPane.WARNING_MESSAGE);
@@ -459,8 +492,22 @@ class DryDockShop {
 		}
 		StoreState store = source.getBeaconList().get(source.getCurrentBeaconId()).getStore();
 		boolean toCargo = false;
+		String hired = null;
 
-		if (e.kind == Kind.SYSTEM) {
+		if (e.kind == Kind.CREW) {
+			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
+			if (!it.isAvailable() || !e.id.equals(it.getItemId())) {
+				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
+				return;
+			}
+			net.blerf.ftl.parser.SavedGameParser.CrewState c = homeplanet.parser.Commission.volunteer(e.id, new java.util.Random());
+			if (c == null) { homeplanet.core.HomePlanet.showErrorDialog("The Home Planet Station doesn't know the race " + e.id + "."); return; }
+			if (!SaveHelper.placeCrew(bs, c, toStorage)) { homeplanet.core.HomePlanet.showErrorDialog(buyerName + " has no free floor space for more crew."); return; }
+			bs.getCrewList().add(c);
+			it.setAvailable(false);
+			if (!toStorage) buyer.setTotalCrewHired(buyer.getTotalCrewHired() + 1);
+			hired = c.getName();
+		} else if (e.kind == Kind.SYSTEM) {
 			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
 			if (!it.isAvailable() || !e.id.equals(it.getItemId())) {
 				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
@@ -503,14 +550,16 @@ class DryDockShop {
 		markDirty(source);
 		note(buyer, "Scrap", -e.price);
 		if (e.kind == Kind.ITEM) note(buyer, Items.title(e.id) + (toCargo ? " (cargo)" : ""), 1);
+		else if (e.kind == Kind.CREW) note(buyer, "Crew " + hired, 1);
 		else if (e.kind != Kind.SYSTEM) note(buyer, supplyName(e.kind), 1); // systems aren't in the TRADE inventory
+		if (hired != null) name = hired + " (" + raceTitle(e.id) + ")";
 		purchases.add(name + " (" + e.price + " scrap) from the store at " + e.shipName + "'s beacon -> " + buyerName + (toCargo ? " (cargo)" : ""));
 		log.debug("Bought {} for {} from {} -> {}", name, e.price, e.ship.name, buyerName);
 
 		bay.showPurchase(buyer, e.kind == Kind.ITEM ? e.id : null, toCargo);
 		bay.systems.refresh(); // a bought system shows on the Refit tab
 		rebuild();
-		bay.help("Bought " + name + " for " + e.price + " scrap" + (toCargo ? " (into the cargo hold)" : "") + ". Save to make it official.");
+		bay.help((hired != null ? "Hired " : "Bought ") + name + " for " + e.price + " scrap" + (toCargo ? " (into the cargo hold)" : hired != null && toStorage ? " (waiting in the Cargo Hold)" : "") + ". Save to make it official.");
 	}
 
 	/**
@@ -644,6 +693,15 @@ class DryDockShop {
 		if (a != null) return a.getCost();
 		return -1;
 	}
+	static int crewPrice(String race) {
+		net.blerf.ftl.xml.CrewBlueprint b = DataManager.get().getCrews().get(race);
+		return b == null || SavedGameParser.CrewType.findById(race) == null ? -1 : b.getCost();
+	}
+	static String raceTitle(String race) {
+		net.blerf.ftl.xml.CrewBlueprint b = DataManager.get().getCrews().get(race);
+		String t = b == null || b.getTitle() == null ? null : b.getTitle().getTextValue();
+		return t == null || t.isEmpty() ? race : t;
+	}
 	static int systemPrice(String id) {
 		net.blerf.ftl.xml.SystemBlueprint s = DataManager.get().getSystem(id);
 		return s == null ? -1 : s.getCost();
@@ -656,6 +714,12 @@ class DryDockShop {
 		switch (e.kind) {
 			case ITEM: return IconFactory.itemIcon(e.id);
 			case SYSTEM: return null;
+			case CREW: {
+				net.blerf.ftl.parser.SavedGameParser.CrewState c = new net.blerf.ftl.parser.SavedGameParser.CrewState();
+				c.setRace(SavedGameParser.CrewType.findById(e.id));
+				c.setMale(true);
+				return IconFactory.crewIcon(c);
+			}
 			case FUEL: return IconFactory.supplyIcon("fuel");
 			case MISSILES: return IconFactory.supplyIcon("missiles");
 			case PARTS: return IconFactory.supplyIcon("drones");
@@ -669,6 +733,12 @@ class DryDockShop {
 			String desc = (s == null || s.getDescription() == null) ? "" : s.getDescription().getTextValue();
 			return "<html><b>" + homeplanet.parser.XmlText.text(systemTitle(e.id)) + "</b><div style='width:260px; margin-top:4px'>" + homeplanet.parser.XmlText.text(desc) + "</div>"
 					+ "<div style='margin-top:4px'>Price: " + e.price + " scrap</div><div style='margin-top:4px'><i>" + homeplanet.parser.XmlText.text(from) + "</i></div></html>";
+		}
+		if (e.kind == Kind.CREW) {
+			net.blerf.ftl.xml.CrewBlueprint b = DataManager.get().getCrews().get(e.id);
+			String desc = b == null || b.getDescription() == null ? "" : b.getDescription().getTextValue();
+			return "<html><b>" + homeplanet.parser.XmlText.text(raceTitle(e.id)) + "</b> crew member<div style='width:260px; margin-top:4px'>" + homeplanet.parser.XmlText.text(desc == null ? "" : desc) + "</div>"
+					+ "<div style='margin-top:4px'>Price: " + e.price + " scrap. Joins with a name of their own.</div><div style='margin-top:4px'><i>" + homeplanet.parser.XmlText.text(from) + "</i></div></html>";
 		}
 		if (e.kind == Kind.ITEM) {
 			String t = ItemTooltips.tooltip(e.id);

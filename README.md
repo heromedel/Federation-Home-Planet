@@ -92,3 +92,6 @@ The ship you are flying is FTL's own `continue.sav`, as always. Custom blueprint
 ## Licence and credits
 
 GPL-2.0 (the licence of Vhati's parser). See LICENSE and CREDITS.md.
+
+The Space Dock and Cargo Bay backdrops are built when the station starts, from your own copy of FTL's
+game files, so none of FTL's art is in this repository. The station's icon is original to Federation Home Planet.

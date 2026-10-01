@@ -39,6 +39,7 @@ public class RuleBoxes {
 	private final JPanel costRow = row(0);
 	private static final String[] FREE_KEYS = {"kestrel", "any", "relief"};
 	final JComboBox<String> freeBox = new JComboBox<String>(new String[] {"a Kestrel Type A", "any ship", "a Federation relief ship"});
+	private String freeTip = "";
 	private final JLabel freeLabel = new JLabel("The free command (once at the start, and with each report for reassignment):  ");
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
@@ -76,7 +77,7 @@ public class RuleBoxes {
 		costRow.add(new JLabel("  of her price"));
 		int free = java.util.Arrays.asList(FREE_KEYS).indexOf(HomePlanet.freeShip);
 		freeBox.setSelectedIndex(free < 0 ? 0 : free);
-		String freeTip = "No ship docked, boarded or in the Junkyard: this ship can be commissioned free. (Other... > Report for Reassignment empties the Junkyard.) "
+		freeTip = "No ship docked, boarded or in the Junkyard: this ship can be commissioned free. (Other... > Report for Reassignment empties the Junkyard.) "
 				+ "The relief ship is a Kestrel Type A stripped to basics: one crew, a basic laser and an ion blast, every system at its minimum";
 		freeBox.setToolTipText(freeTip);
 		freeLabel.setToolTipText(freeTip);
@@ -134,8 +135,13 @@ public class RuleBoxes {
 		}
 		boolean cost = costBox.isSelected();
 		if (!im) percentBox.setEnabled(cost);
-		freeBox.setEnabled(cost);
-		freeLabel.setEnabled(cost);
+		// Immersive Mode: the ship a report earns goes by what it surrenders, not by this choice
+		freeBox.setEnabled(cost && !im);
+		freeLabel.setEnabled(cost && !im);
+		String byValue = "Set by Immersive Mode: a new career starts with a Kestrel Type A; a Report for Reassignment earns a ship by what it surrenders ("
+				+ homeplanet.parser.FreeCommand.ANY_FROM + " scrap or more: any ship; " + homeplanet.parser.FreeCommand.KESTREL_FROM + " or more: a Kestrel Type A; less: a Federation relief ship)";
+		freeBox.setToolTipText(im ? byValue : freeTip);
+		freeLabel.setToolTipText(im ? byValue : freeTip);
 		if (!im) unlockBox.setEnabled(cost);
 		if (!im) customLockedBox.setEnabled(lockedBox.isSelected());
 	}

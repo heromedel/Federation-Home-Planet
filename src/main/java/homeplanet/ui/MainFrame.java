@@ -49,19 +49,25 @@ public class MainFrame extends JFrame {
 				// the station's own windows closes, and not in the Cargo Bay (unsaved trades)
 				if (!atSpaceDock) return;
 				boolean gone = homeplanet.core.SaveWatcher.takeGone(); // FTL ended a run meanwhile
-				if (gone || e.getOppositeWindow() == null) spaceDock.init();
+				if (gone) spaceDock.refresh(); // her save is gone: the fleet is read again, so she leaves the Space Dock (lost in action)
+				else if (e.getOppositeWindow() == null) spaceDock.init();
 			}
 		});
 		setTitle("The Home Planet Station  -  " + appName + " " + appVersion);
-		Image img = (new ImageIcon((new ResourceClass()).getClass().getResource("LogoIcon.png"))).getImage();
-		setIconImage(img);
+		// the station's icon, in every size it's drawn at, so Windows picks a sharp one for the title bar and the taskbar
+		java.util.List<Image> icons = new java.util.ArrayList<Image>();
+		for (int size : new int[] {16, 32, 48, 64, 128, 256}) {
+			java.net.URL u = (new ResourceClass()).getClass().getResource("icon/StationIcon" + size + ".png");
+			if (u != null) icons.add(new ImageIcon(u).getImage());
+		}
+		setIconImages(icons);
 		tasksPane = new JPanel(screens);
 		JPanel contentPane = new JPanel();
 		contentPane.setLayout(new BorderLayout(0, 0));
 		setContentPane(contentPane);
 		contentPane.add(tasksPane, BorderLayout.CENTER);
 		spaceDock = new SpaceDockUI(this);
-		tasksPane.add(new SpaceDockScrollPane(spaceDock), "dock");
+		tasksPane.add(new SpaceDockScrollPane(this, spaceDock), "dock");
 		cargoBay = new CargoBayUI(this);
 		JScrollPane cargoBayPane = new JScrollPane(cargoBay);
 		cargoBayPane.setBorder(javax.swing.BorderFactory.createEmptyBorder()); // the border alone could tip a just-fitting window into scroll bars

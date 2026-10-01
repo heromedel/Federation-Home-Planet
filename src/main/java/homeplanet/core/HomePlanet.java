@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.39";
+	public static final String APP_VERSION = "4B.52";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -414,6 +414,8 @@ public class HomePlanet {
 				return;
 			}
 		}
+		String empty = noOneAboard(cont);
+		if (empty != null) { showErrorDialog(empty); return; }
 		Music.stop(); // FTL has its own music
 		if (launchThroughSteam) {
 			String steamUri = "steam://rungameid/" + FTLUtilities.STEAM_APPID_FTL;
@@ -442,6 +444,22 @@ public class HomePlanet {
 		} catch (IOException ex) {
 			log.error("An exception occurred while executing FTL.", ex);
 			showErrorDialog("FTL could not be started:\n" + ex);
+		}
+	}
+
+	/**
+	 * FTL ends a game the moment no crew is alive, so a boarded ship with no one aboard (the Collective's derelict)
+	 * mustn't fly. Why not, or null if she may (or there's no boarded ship to check).
+	 */
+	public static String noOneAboard(File cont) {
+		if (cont == null || !cont.isFile()) return null;
+		try {
+			net.blerf.ftl.parser.SavedGameParser.SavedGameState g = savedGameParser.readSavedGame(cont);
+			if (!homeplanet.parser.SaveHelper.getOwnCrew(g.getPlayerShip()).isEmpty()) return null;
+			return g.getPlayerShipName() + " has no one aboard, and FTL would end her journey the moment she launched.\n\n"
+					+ "Open the Cargo Bay and move at least one crew member to her (from the Cargo Hold or another ship), then launch FTL.";
+		} catch (Exception e) {
+			return null; // unreadable: FTL will say so itself
 		}
 	}
 

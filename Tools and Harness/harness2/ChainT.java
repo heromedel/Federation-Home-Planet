@@ -44,6 +44,12 @@ public class ChainT { public static void main(String[] a) throws Exception {
  v.salvage(p);
  Setup.chk("C: salvaged, she's docked and may take on crew (set out at The Home Planet Station)", p.state == Ship.State.DOCKED && v.mayTrade(p));
 
+ // with no one aboard she may be boarded, but FTL isn't launched
+ v.board(p);
+ Setup.chk("C: boarded with no one aboard, FTL won't launch", HomePlanet.noOneAboard(v.continueFile()) != null);
+ v.dock(); v.board(k);
+ Setup.chk("C: a ship with crew launches as ever", HomePlanet.noOneAboard(v.continueFile()) == null);
+
  // the paid claim, on the other branch (a fresh fleet's own letters)
  paidClaim(game, new File(work, "tool"));
  Setup.done();

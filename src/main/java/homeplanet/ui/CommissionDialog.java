@@ -62,17 +62,16 @@ public class CommissionDialog extends JDialog {
 	private final JTextField nameField = new JTextField(18);
 	private final JComboBox<String> difficulty = new JComboBox<String>(new String[] {"Easy", "Normal", "Hard"});
 	private final Random rng = new Random();
+	/** Her starting crew as previewed (names and looks): the crew she's built with. Rolled when a ship is chosen. */
+	private List<net.blerf.ftl.parser.SavedGameParser.CrewState> crew = null;
+	private String crewFor = null;
 	/** HR2: her price, under the name and difficulty (hidden when commissioning is free). */
 	private final JLabel priceLabel = new JLabel(" ");
 	private homeplanet.vault.Ship made = null;
 	/** The relief ship's row (not a blueprint of its own: a Kestrel A, stripped). */
 	private static final String RELIEF = "RELIEF";
-	/** HR2: the free command is waiting (granted once when the fleet starts, and with each report for reassignment) and no ship is here. */
-	private final boolean emptyYard = HomePlanet.commissionCosts && homeplanet.vault.Vault.get().shipyardEmpty() && homeplanet.vault.Vault.get().freeCommandOpen();
-	/** HR2 with the unlock-once rule: standard layouts unlocked in FTL since the rule was turned on, not yet claimed. */
-	private final java.util.Set<String> unlockFree = new java.util.HashSet<String>();
-	/** Immersive Mode: the player's rank (custom ships need a Captain, artillery on them a Commodore); -1 outside it. */
-	private int rank = -1;
+	/** What the list shows, under the rules in force (the Space Dock's backdrop draws from it too). */
+	private final Listing listing = new Listing(HomePlanet.commissionCosts && homeplanet.vault.Vault.get().shipyardEmpty() && homeplanet.vault.Vault.get().freeCommandOpen());
 
 	/** Opens the window. Returns the new ship (docked in the vault), or null if nothing was commissioned. */
 	public static homeplanet.vault.Ship open(SpaceDockUI dock) {
@@ -84,7 +83,7 @@ public class CommissionDialog extends JDialog {
 	private CommissionDialog(SpaceDockUI dock) {
 		super(SwingUtilities.getWindowAncestor(dock), "Commission Ship", ModalityType.APPLICATION_MODAL);
 		this.dock = dock;
-		fill();
+		for (Entry e : listing.rows) model.addElement(e);
 
 		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		list.setCellRenderer(new DefaultListCellRenderer() {
@@ -121,7 +120,10 @@ public class CommissionDialog extends JDialog {
 		c.anchor = GridBagConstraints.WEST;
 		form.add(new JLabel("Ship name:"), c);
 		c.gridx = 1;
-		form.add(nameField, c);
+		JPanel named = new JPanel(new java.awt.BorderLayout(2, 0));
+		named.add(nameField, java.awt.BorderLayout.CENTER);
+		named.add(DiceIcon.button("A new name for her", new Runnable() { public void run() { rollShipName(); } }), java.awt.BorderLayout.EAST);
+		form.add(named, c);
 		c.gridx = 2;
 		form.add(new JLabel("  Difficulty:"), c);
 		c.gridx = 3;
@@ -146,10 +148,10 @@ public class CommissionDialog extends JDialog {
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
 		JLabel intro = new JLabel("<html>Choose a ship to commission. The Home Planet Station builds her to FTL specifications: first sector, "
 				+ "starting crew, weapons and supplies. She will wait at the Space Dock.</html>");
-		if (listNote != null) {
+		if (listing.listNote != null) {
 			JPanel top = new JPanel(new BorderLayout(0, 4));
 			top.add(intro, BorderLayout.NORTH);
-			JLabel note = new JLabel(listNote);
+			JLabel note = new JLabel(listing.listNote);
 			note.setForeground(new Color(255, 170, 90));
 			top.add(note, BorderLayout.SOUTH);
 			body.add(top, BorderLayout.NORTH);
@@ -161,10 +163,10 @@ public class CommissionDialog extends JDialog {
 
 		JPanel buttons = new JPanel(new BorderLayout());
 		JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-		if (!locked.isEmpty()) {
+		if (!listing.locked.isEmpty()) {
 			JButton lockedBtn = new JButton("Locked ships...");
 			lockedBtn.setToolTipText("The ships not yet unlocked in your FTL profile, and how FTL unlocks each");
-			lockedBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { LockedShipsDialog.open(CommissionDialog.this, locked); } });
+			lockedBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { LockedShipsDialog.open(CommissionDialog.this, listing.locked); } });
 			JPanel leftButtons = new JPanel(new FlowLayout(FlowLayout.LEFT));
 			leftButtons.add(lockedBtn);
 			buttons.add(leftButtons, BorderLayout.WEST);
@@ -186,101 +188,125 @@ public class CommissionDialog extends JDialog {
 		for (int i = 0; i < model.size(); i++) if (!model.get(i).header()) { list.setSelectedIndex(i); break; }
 	}
 
-	/** Why some ships are missing from the list (rules, or an unreadable profile), or null. */
-	private String listNote = null;
-	/** The standard layouts the profile hasn't unlocked (hidden from the list; Locked ships... shows them). */
-	private final List<LockedShipsDialog.Locked> locked = new ArrayList<LockedShipsDialog.Locked>();
+	/** The list's rows under the rules in force: what Commission offers, why some are hidden, and which are free. */
+	static final class Listing {
+		/** HR2: the free command is waiting (granted once when the fleet starts, and with each report for reassignment) and no ship is here. */
+		final boolean emptyYard;
+		/** HR2 with the unlock-once rule: standard layouts unlocked in FTL since the rule was turned on, not yet claimed. */
+		final java.util.Set<String> unlockFree = new java.util.HashSet<String>();
+		/** Immersive Mode: the player's rank (custom ships need a Captain, artillery on them a Commodore); -1 outside it. */
+		int rank = -1;
+		/** Why some ships are missing from the list (rules, or an unreadable profile), or null. */
+		String listNote = null;
+		/** The standard layouts the profile hasn't unlocked (hidden from the list; Locked ships... shows them). */
+		final List<LockedShipsDialog.Locked> locked = new ArrayList<LockedShipsDialog.Locked>();
+		/** Headers and blueprints, in order. */
+		final List<Entry> rows = new ArrayList<Entry>();
 
-	/** Vanilla ships by model (A, B, C), then the station's own blueprints flagged as starter ships; the unlock rules may hide some. */
-	private void fill() {
-		String[] letters = {"A", "B", "C"};
-		boolean lockRule = HomePlanet.commissionUnlockedOnly;
-		boolean customRule = lockRule && HomePlanet.commissionCustomUnlockedOnly;
-		homeplanet.parser.Unlocks unlocks = lockRule ? homeplanet.parser.Unlocks.read() : null;
-		if (unlocks != null && unlocks.missing() && lockRule) {
-			listNote = "FTL hasn't made its profile yet (it does the first time it starts): only the Kestrel Type A is unlocked.";
-		}
-		if (unlocks != null && unlocks.problem() != null) {
-			listNote = unlocks.problem() + " Every ship is shown.";
-			unlocks = null;
-		}
-		int hidden = 0;
-		if (HomePlanet.immersiveMode) rank = homeplanet.parser.UnlockGrants.rank(unlocks != null ? unlocks : homeplanet.parser.Unlocks.read());
-		if (HomePlanet.commissionCosts && HomePlanet.unlockFreeShips) {
-			homeplanet.parser.Unlocks u = unlocks != null ? unlocks : homeplanet.parser.Unlocks.read();
-			for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
+
+		/** Vanilla ships by model (A, B, C), then the station's own blueprints flagged as starter ships; the unlock rules may hide some. */
+		Listing(boolean emptyYard) {
+			this.emptyYard = emptyYard;
+			String[] letters = {"A", "B", "C"};
+			boolean lockRule = HomePlanet.commissionUnlockedOnly;
+			boolean customRule = lockRule && HomePlanet.commissionCustomUnlockedOnly;
+			homeplanet.parser.Unlocks unlocks = lockRule ? homeplanet.parser.Unlocks.read() : null;
+			if (unlocks != null && unlocks.missing() && lockRule) {
+				listNote = "FTL hasn't made its profile yet (it does the first time it starts): only the Kestrel Type A is unlocked.";
+			}
+			if (unlocks != null && unlocks.problem() != null) {
+				listNote = unlocks.problem() + " Every ship is shown.";
+				unlocks = null;
+			}
+			int hidden = 0;
+			if (HomePlanet.immersiveMode) rank = homeplanet.parser.UnlockGrants.rank(unlocks != null ? unlocks : homeplanet.parser.Unlocks.read());
+			if (HomePlanet.commissionCosts && HomePlanet.unlockFreeShips) {
+				homeplanet.parser.Unlocks u = unlocks != null ? unlocks : homeplanet.parser.Unlocks.read();
+				for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
+					for (int n = 0; n < 3; n++) {
+						ShipBlueprint bp;
+						try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
+						if (bp != null && homeplanet.parser.UnlockGrants.freeNow(u, bp.getId())) unlockFree.add(bp.getId());
+					}
+				}
+			}
+			if (emptyYard && homeplanet.parser.FreeCommand.RELIEF.equals(homeplanet.parser.FreeCommand.ship())) {
+				rows.add(new Entry(null, "Relief"));
+				rows.add(new Entry(RELIEF, "Federation relief ship (free)"));
+			}
+			List<String> bases = DataManager.get().getPlayerShipBaseIds(true);
+			rows.add(new Entry(null, "Standard ships"));
+			for (String base : bases) {
 				for (int n = 0; n < 3; n++) {
 					ShipBlueprint bp;
 					try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
-					if (bp != null && homeplanet.parser.UnlockGrants.freeNow(u, bp.getId())) unlockFree.add(bp.getId());
+					if (bp == null) continue;
+					if (unlocks != null && !unlocks.unlocked(base, n)) { hidden++; locked.add(new LockedShipsDialog.Locked(base, bp, n)); continue; }
+					String id = bp.getId();
+					rows.add(new Entry(id, classOf(bp) + " " + letters[n] + (free(id) ? " (free)" : "")));
 				}
 			}
-		}
-		if (emptyYard && homeplanet.parser.FreeCommand.RELIEF.equals(homeplanet.parser.FreeCommand.ship())) {
-			model.addElement(new Entry(null, "Relief"));
-			model.addElement(new Entry(RELIEF, "Federation relief ship (free)"));
-		}
-		List<String> bases = DataManager.get().getPlayerShipBaseIds(true);
-		model.addElement(new Entry(null, "Standard ships"));
-		for (String base : bases) {
-			for (int n = 0; n < 3; n++) {
-				ShipBlueprint bp;
-				try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
+			List<Entry> custom = new ArrayList<Entry>();
+			for (CompanionMod.Remodel r : CompanionMod.load()) {
+				if (!r.starter) continue; // only blueprints made starter ships can be commissioned
+				if (!CompanionMod.inGameData(r.id)) continue; // she couldn't fly yet
+				ShipBlueprint bp = DataManager.get().getShip(r.id);
 				if (bp == null) continue;
-				if (unlocks != null && !unlocks.unlocked(base, n)) { hidden++; locked.add(new LockedShipsDialog.Locked(base, bp, n)); continue; }
-				String id = bp.getId();
-				model.addElement(new Entry(id, classOf(bp) + " " + letters[n] + (free(id) ? " (free)" : "")));
+				if (customRule && unlocks != null && !unlocks.unlockedBlueprint(r.base)) { hidden++; continue; }
+				boolean named = r.loadout != null && r.loadout.className.length() > 0;
+				custom.add(new Entry(r.id, (named ? r.loadout.className : classOf(bp) + " " + CompanionMod.numberOf(r.id)) + " (" + r.ship + "'s layout)" + rankNote(r.id)));
+			}
+			for (homeplanet.parser.ShipDesign d : homeplanet.parser.DesignExport.built()) {
+				if (!d.starter || d.frozenOf != null || d.retired) continue; // kept old versions and retired designs only fly for the ships already built from them
+				String id = homeplanet.parser.DesignExport.bpId(d);
+				if (!CompanionMod.inGameData(id)) continue; // not patched in yet
+				ShipBlueprint bp = DataManager.get().getShip(id);
+				if (bp == null) continue;
+				custom.add(new Entry(id, classOf(bp) + " (designed: " + d.name + (d.version > 1 ? " v" + d.version : "") + ")" + rankNote(id)));
+			}
+			if (!custom.isEmpty()) {
+				rows.add(new Entry(null, "Your blueprints"));
+				rows.addAll(custom);
+			}
+			if (hidden > 0 && listNote == null) {
+				listNote = (hidden == 1 ? "1 ship is" : hidden + " ships are") + " not shown: locked in your FTL profile (see Settings, Rules).";
 			}
 		}
-		List<Entry> custom = new ArrayList<Entry>();
-		for (CompanionMod.Remodel r : CompanionMod.load()) {
-			if (!r.starter) continue; // only blueprints made starter ships can be commissioned
-			if (!CompanionMod.inGameData(r.id)) continue; // she couldn't fly yet
-			ShipBlueprint bp = DataManager.get().getShip(r.id);
-			if (bp == null) continue;
-			if (customRule && unlocks != null && !unlocks.unlockedBlueprint(r.base)) { hidden++; continue; }
-			boolean named = r.loadout != null && r.loadout.className.length() > 0;
-			custom.add(new Entry(r.id, (named ? r.loadout.className : classOf(bp) + " " + CompanionMod.numberOf(r.id)) + " (" + r.ship + "'s layout)" + rankNote(r.id)));
+
+		/** HR2 with an empty shipyard: is this row the free ship? (The unlock and hiding rules still apply to it.) */
+		boolean free(String id) {
+			if (unlockFree.contains(id)) return true;
+			return emptyFree(id);
 		}
-		for (homeplanet.parser.ShipDesign d : homeplanet.parser.DesignExport.built()) {
-			if (!d.starter || d.frozenOf != null || d.retired) continue; // kept old versions and retired designs only fly for the ships already built from them
-			String id = homeplanet.parser.DesignExport.bpId(d);
-			if (!CompanionMod.inGameData(id)) continue; // not patched in yet
-			ShipBlueprint bp = DataManager.get().getShip(id);
-			if (bp == null) continue;
-			custom.add(new Entry(id, classOf(bp) + " (designed: " + d.name + (d.version > 1 ? " v" + d.version : "") + ")" + rankNote(id)));
+		boolean emptyFree(String id) {
+			if (!emptyYard) return false;
+			String free = homeplanet.parser.FreeCommand.ship(); // Settings', or what an Immersive career or report earned
+			if (homeplanet.parser.FreeCommand.ANY.equals(free)) return true;
+			if (homeplanet.parser.FreeCommand.RELIEF.equals(free)) return RELIEF.equals(id);
+			return homeplanet.parser.Commission.RELIEF_BASE.equals(id); // the Kestrel A
 		}
-		if (!custom.isEmpty()) {
-			model.addElement(new Entry(null, "Your blueprints"));
-			for (Entry e : custom) model.addElement(e);
+		/** Why the player's rank doesn't clear this blueprint (Immersive Mode), or null. */
+		String rankReason(String bpId) {
+			return rank < 0 ? null : homeplanet.parser.Clearance.commissionReason(bpId);
 		}
-		if (hidden > 0 && listNote == null) {
-			listNote = (hidden == 1 ? "1 ship is" : hidden + " ships are") + " not shown: locked in your FTL profile (see Settings, Rules).";
+		String rankNote(String bpId) {
+			if (rankReason(bpId) == null) return "";
+			if (homeplanet.parser.Clearance.customReason() != null) return " (Captains only)";
+			String w = Commission.artilleryWeapon(bpId);
+			return w != null && w.startsWith("ARTILLERY_FED") ? " (Commodores only)" : " (needs Rule Ten: Greed is Eternal)";
 		}
 	}
 
-	/** HR2 with an empty shipyard: is this row the free ship? (The unlock and hiding rules still apply to it.) */
-	private boolean free(String id) {
-		if (unlockFree.contains(id)) return true;
-		return emptyFree(id);
+	/** The blueprints Commission would list right now (the unlock rules applied; no relief row), for the Space Dock's backdrop. */
+	static List<String> shownBlueprintIds() {
+		List<String> ids = new ArrayList<String>();
+		for (Entry e : new Listing(false).rows) if (!e.header() && !RELIEF.equals(e.id)) ids.add(e.id);
+		return ids;
 	}
-	private boolean emptyFree(String id) {
-		if (!emptyYard) return false;
-		String free = homeplanet.parser.FreeCommand.ship(); // Settings', or what an Immersive career or report earned
-		if (homeplanet.parser.FreeCommand.ANY.equals(free)) return true;
-		if (homeplanet.parser.FreeCommand.RELIEF.equals(free)) return RELIEF.equals(id);
-		return homeplanet.parser.Commission.RELIEF_BASE.equals(id); // the Kestrel A
-	}
-	/** Why the player's rank doesn't clear this blueprint (Immersive Mode), or null. */
-	private String rankReason(String bpId) {
-		return rank < 0 ? null : homeplanet.parser.Clearance.commissionReason(bpId);
-	}
-	private String rankNote(String bpId) {
-		if (rankReason(bpId) == null) return "";
-		if (homeplanet.parser.Clearance.customReason() != null) return " (Captains only)";
-		String w = Commission.artilleryWeapon(bpId);
-		return w != null && w.startsWith("ARTILLERY_FED") ? " (Commodores only)" : " (needs Rule Ten: Greed is Eternal)";
-	}
+
+	private boolean free(String id) { return listing.free(id); }
+	private boolean emptyFree(String id) { return listing.emptyFree(id); }
+	private String rankReason(String bpId) { return listing.rankReason(bpId); }
 
 	/** Builds the ship a row stands for. */
 	private static SavedGameState make(String id, String name, Difficulty d, Random rng) {
@@ -310,11 +336,19 @@ public class CommissionDialog extends JDialog {
 	/** The same report the Info button shows, for the ship as she'd be commissioned. */
 	private void showPreview(Entry e) {
 		ShipBlueprint bp = DataManager.get().getShip(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id);
-		nameField.setText(RELIEF.equals(e.id) ? "Federation Relief" : defaultName(bp));
+		boolean another = !e.id.equals(previewFor);
+		if (another) nameField.setText(RELIEF.equals(e.id) ? "Federation Relief" : defaultName(bp)); // a new crew roll keeps the name typed
+		previewFor = e.id;
 		preview.removeAll();
 		try {
 			SavedGameState s = make(e.id, nameField.getText(), Difficulty.EASY, new Random(0));
-			JPanel p = dock.shipSummaryPanel(s);
+			if (e.id.equals(crewFor)) Commission.sameCrew(s.getPlayerShip(), crew);
+			else { s = make(e.id, nameField.getText(), Difficulty.EASY, rng); crew = SaveHelper.getOwnCrew(s.getPlayerShip()); crewFor = e.id; }
+			final Entry shown = e;
+			final List<net.blerf.ftl.parser.SavedGameParser.CrewState> aboard = SaveHelper.getOwnCrew(s.getPlayerShip());
+			JPanel p = dock.shipSummaryPanel(s, new java.util.function.Consumer<net.blerf.ftl.parser.SavedGameParser.CrewState>() {
+				public void accept(net.blerf.ftl.parser.SavedGameParser.CrewState c) { renameCrew(shown, aboard.indexOf(c), c); }
+			}, new Runnable() { public void run() { crewFor = null; showPreview(shown); } });
 			JLabel stats = new JLabel("<html>" + classOf(bp) + ": hull " + bp.getHealth().amount + ", reactor "
 					+ s.getPlayerShip().getReservePowerCapacity() + ", " + (bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots())
 					+ " weapon slots, " + (bp.getDroneSlots() == null ? 3 : bp.getDroneSlots()) + " drone slots</html>");
@@ -331,6 +365,26 @@ public class CommissionDialog extends JDialog {
 		}
 		preview.revalidate();
 		preview.repaint();
+	}
+
+	private String previewFor = null;
+	/** The die beside the ship name: a name for her model, unlike any ship's in the fleet (or the one shown). */
+	private void rollShipName() {
+		Entry e = list.getSelectedValue();
+		if (e == null || e.header()) return;
+		List<String> taken = new ArrayList<String>();
+		for (homeplanet.vault.Ship s : homeplanet.vault.Vault.get().all()) taken.add(s.name);
+		taken.add(nameField.getText());
+		String n = homeplanet.parser.ShipNames.roll(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id, taken, rng);
+		if (n != null) nameField.setText(n);
+	}
+	/** Clicking a crew member's name in the preview: her name in the crew she'll be built with. */
+	private void renameCrew(Entry e, int i, net.blerf.ftl.parser.SavedGameParser.CrewState shown) {
+		if (crew == null || i < 0 || i >= crew.size()) return;
+		String name = SpaceDockUI.promptForName("New name for " + shown.getName() + " (" + homeplanet.model.Crew.raceTitle(shown) + "):", "Rename Crew", shown.getName());
+		if (name == null) return;
+		crew.get(i).setName(name);
+		showPreview(e);
 	}
 
 	/** HR2: her price as built, with a custom design's rooms and doors. */
@@ -357,6 +411,7 @@ public class CommissionDialog extends JDialog {
 		SavedGameState s;
 		try {
 			s = make(e.id, name, chosenDifficulty(), rng);
+			if (e.id.equals(crewFor)) Commission.sameCrew(s.getPlayerShip(), crew); // the crew in the preview, as named there
 		} catch (Exception ex) {
 			HomePlanet.showErrorDialog("The shipyard could not build her:\n" + ex);
 			return;

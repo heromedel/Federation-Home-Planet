@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -52,7 +51,6 @@ import homeplanet.parser.Dlc;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 import homeplanet.parser.SaveHelper;
-import homeplanet.resource.ResourceClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -234,17 +232,23 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	public boolean getScrollableTracksViewportWidth() { return getParent() != null && getParent().getWidth() >= W - 2 * MARGIN; }
 	public boolean getScrollableTracksViewportHeight() { return getParent() != null && getParent().getHeight() >= H; }
 
+	/** The Cargo Hold's deck plan, rolled at startup and on Ctrl+Shift+B (with the Space Dock's ships); null if it couldn't be drawn. */
+	private static BufferedImage hold = null;
+	private static final java.util.Random holdRng = new java.util.Random();
 	private BufferedImage hangar, hangarScaled;
+
+	/** A new roll of the Cargo Hold's contents. */
+	static void rerollHold(MainFrame frame) {
+		BufferedImage b = CargoHoldBackdrop.make(frame, holdRng);
+		if (b != null) hold = b;
+	}
+
 	@Override protected void paintComponent(Graphics g0) {
 		super.paintComponent(g0);
 		Graphics2D g = (Graphics2D) g0;
-		if (hangar == null) {
-			try {
-				BufferedImage art = ImageIO.read(new ResourceClass().getClass().getResource("CargoBaySplash.png"));
-				hangar = art.getSubimage(300, 0, 660, 420); // the hangar floor, without the old panels around it
-			} catch (Exception e) {
-				log.warn("No Cargo Bay art", e);
-			}
+		if (hold != null && hangar != hold) { // a new roll: scale it again
+			hangar = hold;
+			hangarScaled = null;
 		}
 		if (hangar != null) {
 			int w = getWidth(), h = getHeight();

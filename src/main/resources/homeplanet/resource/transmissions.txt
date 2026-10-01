@@ -7,7 +7,8 @@
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
 # Keys: welcome, stipend ({period} and {amount} are filled in), empty (the free command), reassigned (the free command
 # after a Report for Reassignment; in Immersive Mode reassigned:any, reassigned:kestrel or reassigned:relief, by what
-# was surrendered), promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
+# was surrendered), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
+# a hull waits in the Junkyard), promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
 # rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
 # notice when Transmissions are off).
 #
@@ -42,6 +43,36 @@ Watch this channel. The Federation will be in contact.
 
 For the Federation, and all its worlds.
 Until every beacon is free.
+~ Home Planet Liaison
+
+== stranded
+from: Home Planet Liaison
+subject: Without a ship
+
+{rank},
+
+The Home Planet Station reports that you have no ship under your command. I am sorry. She served the Federation, and so did you.
+
+This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship. If it does not, Report for Reassignment (Other... at the Space Dock): The Federation Home Planet takes the Cargo Hold and the Junkyard, and gives you a new command in return.
+
+Every commander loses a ship sooner or later. What matters is that you come back.
+
+For the Federation, and all its worlds.
+~ Home Planet Liaison
+
+== stranded:junkyard
+from: Home Planet Liaison
+subject: Without a ship
+
+{rank},
+
+The Home Planet Station reports that you have no ship under your command. I am sorry. She served the Federation, and so did you.
+
+This is not the end of your service. There is a hull in the Junkyard: Salvage her at the Space Dock and she is yours again, at no cost. If the Cargo Hold holds enough scrap, you can commission a new ship instead. If neither will do, Report for Reassignment (Other... at the Space Dock): The Federation Home Planet takes the Cargo Hold and the Junkyard, and gives you a new command in return.
+
+Every commander loses a ship sooner or later. What matters is that you come back.
+
+For the Federation, and all its worlds.
 ~ Home Planet Liaison
 
 == rescue

@@ -1259,26 +1259,6 @@ public final class Vault {
 		saveManifest();
 		return s;
 	}
-	/** The crew waiting in the storage hold (for a ship with no one aboard to take on before she can fly). */
-	public synchronized List<net.blerf.ftl.parser.SavedGameParser.CrewState> holdCrew() throws IOException {
-		SavedGameState g = storage().save();
-		return g == null ? new ArrayList<net.blerf.ftl.parser.SavedGameParser.CrewState>() : SaveHelper.getOwnCrew(g.getPlayerShip());
-	}
-	/** Moves the hold's crew member (by her place in {@link #holdCrew}) aboard a docked ship: both saves, or neither. */
-	public synchronized void crewFromHold(Ship s, int index) throws IOException {
-		Ship st = storage();
-		Copy hold = readCopy(st), ship = readCopy(s);
-		List<net.blerf.ftl.parser.SavedGameParser.CrewState> crew = SaveHelper.getOwnCrew(hold.save.getPlayerShip());
-		if (index < 0 || index >= crew.size()) throw new IOException("That crew member is no longer in the Cargo Hold");
-		net.blerf.ftl.parser.SavedGameParser.CrewState c = crew.get(index);
-		String refused = homeplanet.parser.Dlc.refusesCrew(ship.save, c);
-		if (refused != null) throw new IOException(refused);
-		hold.save.getPlayerShip().getCrewList().remove(c);
-		if (!SaveHelper.placeCrew(ship.save.getPlayerShip(), c, false)) throw new IOException(s.name + " has no free floor space for crew");
-		snapshot(s);
-		begin().put(st, hold.save, hold.hash).put(s, ship.save, ship.hash).commit();
-		HistoryLog.entry("CREW", c.getName() + "  Cargo Hold -> " + s.name);
-	}
 	/** A save file from elsewhere (a file the player dropped in, a converter's) taken into the vault: the file is moved. */
 	public synchronized Ship adoptFile(File f, Ship.State state, String cachedName) throws IOException {
 		Ship s = new Ship(newId(), cachedName, state, true);
