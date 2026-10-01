@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The Cargo Bay's backdrop: a deck plan of The Home Planet Station's hold in FTL's style (grey floor on FTL's 35-pixel
  * squares, black walls, orange doors), stacked with containers, crates, pallets and barrels (drawn here), and FTL's own
- * weapons in an armory, drones on their pads, hull pieces in a salvage bay and teleporter pads (read from the player's
+ * weapons in an armory, drones on their pads, hull pieces from the commissionable ships in a salvage bay, and teleporter pads (read from the player's
  * ftl.dat, so the repo carries none of FTL's art). What goes where is rolled, so the hold looks a little different each time.
  */
 final class CargoHoldBackdrop {
@@ -45,6 +45,7 @@ final class CargoHoldBackdrop {
 	private static final String[] WEAPONS = {"img/weapons/ion_1_strip8.png:8", "img/weapons/beam_1_strip8.png:8",
 		"img/weapons/missiles_1_strip3.png:3", "img/weapons/bomb_1_strip9.png:9"};
 	private static final String[] DRONE_ART = {"drone_combat", "drone_defense", "drone_beam", "drone_shiprepair", "drone_anti"};
+	/** The salvage bay's pieces when no commissionable ship's can be found. */
 	private static final String[] GIBS = {"fed_cruiser_gib1", "fed_cruiser_gib2", "fed_cruiser_gib3", "fed_cruiser_gib4",
 		"kestral_gib1", "kestral_gib2", "kestral_gib3", "kestral_gib4"};
 
@@ -240,8 +241,9 @@ final class CargoHoldBackdrop {
 	/** Hull pieces brought in from the Junkyard, kept inside their bay. */
 	private void salvage() {
 		int[] r = SALVAGE;
+		java.util.List<String> pieces = salvagePieces();
 		for (int k = 0; k < 10; k++) {
-			BufferedImage gib = art("img/ship/" + GIBS[rng.nextInt(GIBS.length)] + ".png");
+			BufferedImage gib = art(pieces.get(rng.nextInt(pieces.size())));
 			if (gib == null) continue;
 			double sc = 0.18 + rng.nextDouble() * 0.12, angle = rng.nextDouble() * Math.PI * 2;
 			double w = gib.getWidth() * sc, h = gib.getHeight() * sc;
@@ -258,6 +260,25 @@ final class CargoHoldBackdrop {
 			g.drawImage(gib, t, null);
 		}
 	}
+	/**
+	 * The hull pieces the salvage bay may hold: those of every ship Commission would list (so the unlock rules apply, as
+	 * they do to the Space Dock's traffic), or the Federation Cruiser's and the Kestrel's if none can be found.
+	 */
+	private static java.util.List<String> salvagePieces() {
+		java.util.List<String> pieces = new java.util.ArrayList<String>();
+		Set<String> seen = new HashSet<String>();
+		for (String id : CommissionDialog.shownBlueprintIds()) {
+			net.blerf.ftl.xml.ShipBlueprint bp = net.blerf.ftl.parser.DataManager.get().getShip(id);
+			if (bp == null || !seen.add(bp.getGraphicsBaseName())) continue;
+			for (int n = 1; n <= 6; n++) {
+				String path = "img/ship/" + bp.getGraphicsBaseName() + "_gib" + n + ".png";
+				if (net.blerf.ftl.parser.DataManager.get().hasResourceInputStream(path)) pieces.add(path);
+			}
+		}
+		if (pieces.isEmpty()) for (String g : GIBS) pieces.add("img/ship/" + g + ".png");
+		return pieces;
+	}
+
 	/** Teleporter pads, for moving goods and crew almost instantly. */
 	private void pads() {
 		BufferedImage pad = art("img/ship/interior/teleporter_off.png");
