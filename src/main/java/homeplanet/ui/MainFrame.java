@@ -62,7 +62,7 @@ public class MainFrame extends JFrame {
 		setContentPane(contentPane);
 		contentPane.add(tasksPane, BorderLayout.CENTER);
 		spaceDock = new SpaceDockUI(this);
-		tasksPane.add(new SpaceDockScrollPane(spaceDock), "dock");
+		tasksPane.add(new SpaceDockScrollPane(this, spaceDock), "dock");
 		cargoBay = new CargoBayUI(this);
 		JScrollPane cargoBayPane = new JScrollPane(cargoBay);
 		cargoBayPane.setBorder(javax.swing.BorderFactory.createEmptyBorder()); // the border alone could tip a just-fitting window into scroll bars

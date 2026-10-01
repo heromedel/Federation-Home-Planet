@@ -159,7 +159,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				if (berth != null) {
 					Dimension d = berth.getPreferredSize();
 					double sc = SpaceDockScrollPane.scale(w, h);
-					int saucerLeft = (int) Math.round(SpaceDockScrollPane.offsetX(w, h) + SpaceDockScrollPane.SAUCER_LEFT * sc);
+					int saucerLeft = (int) Math.round(SpaceDockScrollPane.offsetX(w, h) + SpaceDockScrollPane.saucerLeft() * sc);
 					int x = Math.max(14, Math.min(saucerLeft - SAUCER_CLEAR - d.width, getWidth() - d.width - 10));
 					berth.setBounds(x, 10, d.width, d.height);
 					Dimension sd = stats.getPreferredSize();
@@ -596,6 +596,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The Home Planet Station could not take stock of the fleet again:\n" + e);
 		}
 		homeplanet.core.Music.refresh();
+		SpaceDockScrollPane.reroll(parent, false); // now and then, different ships leaving the station
 		init();
 		HistoryLog.loaded("refresh");
 	}
