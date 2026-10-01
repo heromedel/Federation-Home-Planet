@@ -29,7 +29,14 @@ public class RuleBoxes {
 	private final JPanel immersiveRow = row(0);
 	final JCheckBox tradeBox = new JCheckBox("Trading and scrapping need a station (the ship must be at a beacon with a store)", HomePlanet.storeRequirement);
 	final JCheckBox journeyBox = new JCheckBox("New Journey needs a station (the boarded ship must be at a beacon with a store)", HomePlanet.journeyStoreRequirement);
-	final JCheckBox scrapBox = new JCheckBox("Scrapping a ship also moves her systems to the Cargo Bay", HomePlanet.scrapKeepsSystems);
+	final JCheckBox scrapBox = new JCheckBox("Allow stripping when scrapping: her systems can go to the Cargo Bay, at a discount on the removal fee", HomePlanet.stripAllowed);
+	final JComboBox<String> removalBox = new JComboBox<String>(new String[] {"not allowed", "free", "25 scrap", "50 scrap"});
+	private final JLabel removalLabel = new JLabel("Refit: taking a system off a ship is  ");
+	private final JPanel removalRow = row(21);
+	final JComboBox<String> journeyFeeBox = new JComboBox<String>(new String[] {"free", "200 scrap", "500 scrap", "1000 scrap"});
+	private final JLabel journeyFeeLabel = new JLabel("A New Journey costs  ");
+	private final JLabel journeyFeeAfter = new JLabel("  from the Cargo Hold");
+	private final JPanel journeyFeeRow = row(21);
 	final JCheckBox sellBox = new JCheckBox("Allow selling missiles and drone parts (house rule: FTL's stores don't buy them; half the store price)", HomePlanet.sellSupplies);
 	final JCheckBox sellSystemsBox = new JCheckBox("Allow selling stored systems (house rule: half the system's price, plus half the upgrades paid for)", HomePlanet.sellSystems);
 	final JCheckBox lockedBox = new JCheckBox("Locked ship models cannot be commissioned (as unlocked in your FTL profile)", HomePlanet.commissionUnlockedOnly);
@@ -56,7 +63,8 @@ public class RuleBoxes {
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
-	private final JComponent[] locked = {tradeBox, journeyBox, sellBox, sellSystemsBox, costBox, percentBox, unlockBox, lockedBox, customLockedBox, notifyBox};
+	private final JComponent[] locked = {tradeBox, journeyBox, sellBox, sellSystemsBox, costBox, percentBox, unlockBox, lockedBox, customLockedBox, notifyBox,
+			removalBox, removalLabel, journeyFeeBox, journeyFeeLabel};
 	private final String[] tips = new String[locked.length];
 	private static final String SET_BY_IMMERSIVE = "Set by Immersive Mode";
 
@@ -72,7 +80,19 @@ public class RuleBoxes {
 
 	public RuleBoxes() {
 		if (HomePlanet.immersiveMode) showOwn(); // the boxes start from the player's own rules; sync() sets Immersive Mode's over them
-		scrapBox.setToolTipText("Optional systems only: standard equipment and damaged systems are lost with the hull");
+		scrapBox.setToolTipText("Optional systems only, each for 10 scrap (20 when Refit charges 50; free when Refit is free). Standard equipment and damaged systems are lost with the hull. "
+				+ "Off: her systems are lost with the hull");
+		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
+		removalBox.setToolTipText("The Refit tab's Store button: what the boarded ship pays to take one of her systems off, or whether she can at all");
+		removalLabel.setToolTipText(removalBox.getToolTipText());
+		removalRow.add(removalLabel);
+		removalRow.add(removalBox);
+		journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, HomePlanet.journeyFee));
+		journeyFeeBox.setToolTipText("What The Federation Home Planet charges to plot a New Journey, paid from the Cargo Hold");
+		journeyFeeLabel.setToolTipText(journeyFeeBox.getToolTipText());
+		journeyFeeRow.add(journeyFeeLabel);
+		journeyFeeRow.add(journeyFeeBox);
+		journeyFeeRow.add(journeyFeeAfter);
 		sellBox.setToolTipText("Shows a sell button under the supplies in the Cargo Bay: 3 scrap a missile, 4 a drone part. Junking them is always possible");
 		sellSystemsBox.setToolTipText("Shows a Sell button beside each system stored in the Cargo Bay (Refit tab). The boarded ship is paid");
 		lockedBox.setToolTipText("Commission only offers the layouts (A, B, C) you have unlocked in FTL");
@@ -151,7 +171,10 @@ public class RuleBoxes {
 			lockedBox.setSelected(true);
 			customLockedBox.setSelected(true);
 			notifyBox.setSelected(true);
+			removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, 0));
+			journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, homeplanet.core.Economy.IMMERSIVE_JOURNEY_FEE));
 		}
+		journeyFeeAfter.setEnabled(!im);
 		for (int i = 0; i < locked.length; i++) {
 			locked[i].setEnabled(!im);
 			locked[i].setToolTipText(im ? SET_BY_IMMERSIVE : tips[i]);
@@ -189,14 +212,17 @@ public class RuleBoxes {
 		lockedBox.setSelected(r.lockedOnly);
 		customLockedBox.setSelected(r.customLockedOnly);
 		notifyBox.setSelected(r.notifications);
+		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
+		journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, HomePlanet.journeyFee));
 	}
+	private static int indexOf(int[] list, int v) { for (int i = 0; i < list.length; i++) if (list[i] == v) return i; return 0; }
 
 	/** Adds the boxes one per row, starting at c's row and leaving c on the row after the last. */
 	public void addTo(JPanel body, GridBagConstraints c) { addTo(body, c, true); }
 	/** As {@link #addTo(JPanel, GridBagConstraints)}; without the Immersive Mode row for Sandbox Mode's first setup. */
 	public void addTo(JPanel body, GridBagConstraints c, boolean withImmersive) {
 		if (!withImmersive) { notifyBox.setBorder(BorderFactory.createEmptyBorder()); careerBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); } // nothing above it to sit under
-		for (JComponent b : new JComponent[] {immersiveRow, notifyBox, careerBox, tradeBox, journeyBox, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
+		for (JComponent b : new JComponent[] {immersiveRow, notifyBox, careerBox, tradeBox, journeyBox, journeyFeeRow, removalRow, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
 			if (b == immersiveRow && !withImmersive) continue;
 			body.add(b, (GridBagConstraints) c.clone());
 			c.gridy++;
@@ -207,7 +233,9 @@ public class RuleBoxes {
 	public void describeChanges(java.util.List<String> changed) {
 		if (tradeBox.isSelected() != HomePlanet.storeRequirement) changed.add("Trading requires a station: " + tradeBox.isSelected());
 		if (journeyBox.isSelected() != HomePlanet.journeyStoreRequirement) changed.add("New Journey requires a station: " + journeyBox.isSelected());
-		if (scrapBox.isSelected() != HomePlanet.scrapKeepsSystems) changed.add("Scrapping keeps systems: " + scrapBox.isSelected());
+		if (scrapBox.isSelected() != HomePlanet.stripAllowed) changed.add("Stripping when scrapping: " + scrapBox.isSelected());
+		if (!HomePlanet.immersiveMode && removalFee() != HomePlanet.removalFee) changed.add("Refit removal: " + removalBox.getSelectedItem());
+		if (!HomePlanet.immersiveMode && journeyFee() != HomePlanet.journeyFee) changed.add("New Journey fee: " + journeyFeeBox.getSelectedItem());
 		if (sellBox.isSelected() != HomePlanet.sellSupplies) changed.add("Selling missiles and drone parts: " + sellBox.isSelected());
 		if (lockedBox.isSelected() != HomePlanet.commissionUnlockedOnly) changed.add("Locked models cannot be commissioned: " + lockedBox.isSelected());
 		if (customLockedBox.isSelected() != HomePlanet.commissionCustomUnlockedOnly) changed.add("Custom ships of locked models cannot be commissioned: " + customLockedBox.isSelected());
@@ -225,7 +253,7 @@ public class RuleBoxes {
 	public void apply() {
 		boolean unlockWasOn = HomePlanet.unlockFreeShips;
 		// the rules Immersive Mode leaves to the player
-		HomePlanet.scrapKeepsSystems = scrapBox.isSelected();
+		HomePlanet.stripAllowed = scrapBox.isSelected();
 		if (!HomePlanet.immersiveMode) HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()]; // (Immersive Mode shows its own, Variable)
 		if (!HomePlanet.immersiveMode) HomePlanet.careerMessages = careerBox.isSelected();
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)
@@ -239,11 +267,15 @@ public class RuleBoxes {
 			HomePlanet.commissionUnlockedOnly = lockedBox.isSelected();
 			HomePlanet.commissionCustomUnlockedOnly = customLockedBox.isSelected();
 			HomePlanet.immersiveNotifications = notifyBox.isSelected();
+			HomePlanet.removalFee = removalFee();
+			HomePlanet.journeyFee = journeyFee();
 		}
 		// unlocks from before the rule was turned on never count (in Immersive Mode its fleet keeps its own record:
 		// see UnlockGrants.returning; marking everything seen there would lose the free ships still waiting)
 		if (HomePlanet.unlockFreeShips && !unlockWasOn && !HomePlanet.immersiveMode && homeplanet.vault.Vault.isOpen())
 			homeplanet.parser.UnlockGrants.turnedOn(homeplanet.parser.Unlocks.read());
 	}
+	private int removalFee() { return homeplanet.core.Economy.REMOVAL_FEES[removalBox.getSelectedIndex()]; }
+	private int journeyFee() { return homeplanet.core.Economy.JOURNEY_FEES[journeyFeeBox.getSelectedIndex()]; }
 	private int percent() { String s = (String) percentBox.getSelectedItem(); return Integer.parseInt(s.substring(0, s.length() - 1)); }
 }

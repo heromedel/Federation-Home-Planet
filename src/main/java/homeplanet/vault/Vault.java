@@ -1149,9 +1149,13 @@ public final class Vault {
 	}
 	/** Removes a ship for good (scrapped or destroyed): her last save goes into her history, and she leaves the manifest. Logged under {@code why} unless null. */
 	public synchronized void remove(Ship s, String why) throws IOException {
+		remove(s, why, "DESTROY".equals(why) ? Fate.DESTROYED : Fate.SCRAPPED);
+	}
+	/** The same, recording this fate (a ship traded in or auctioned off is SOLD). */
+	public synchronized void remove(Ship s, String why, Fate fate) throws IOException {
 		File f = fileOf(s);
 		if (f.isFile()) moveToHistory(s, f);
-		recordFate(s, "DESTROY".equals(why) ? Fate.DESTROYED : Fate.SCRAPPED);
+		recordFate(s, fate);
 		ships.remove(s);
 		saveManifest();
 		if (why != null) HistoryLog.entry(why, s.name + "  " + s.state.key + "/" + s.id + ".sav -> history/" + s.id + "/");
@@ -1167,7 +1171,9 @@ public final class Vault {
 		/** Stripped for parts: everything aboard went into storage, so she can't come back without duplicating it. */
 		SCRAPPED,
 		/** Sold to the Federation museum after a final victory: her price was paid, so she doesn't come back. */
-		MUSEUM
+		MUSEUM,
+		/** Traded in or auctioned off from the Junkyard: she was paid for, so she doesn't come back. */
+		SOLD
 	}
 	private static final String FATE_FILE = "fate.txt";
 	private void recordFate(Ship s, Fate fate) {
@@ -1199,7 +1205,7 @@ public final class Vault {
 			try {
 				String[] lines = new String(SafeFiles.read(fate), java.nio.charset.StandardCharsets.UTF_8).split("\n");
 				Fate f = Fate.valueOf(lines[0].trim());
-				if (f == Fate.SCRAPPED || f == Fate.MUSEUM) continue;
+				if (f == Fate.SCRAPPED || f == Fate.MUSEUM || f == Fate.SOLD) continue;
 				File[] saves = d.listFiles(new java.io.FileFilter() { public boolean accept(File x) { return x.isFile() && x.getName().endsWith(".sav"); } });
 				if (saves == null || saves.length == 0) continue;
 				java.util.Arrays.sort(saves, OLDEST_FIRST);

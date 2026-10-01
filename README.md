@@ -36,7 +36,7 @@ And More.
 ## What it does
 
 - **The Space Dock:** your fleet between runs. Board any docked ship, send her on a New Journey from sector 1 with her
-  crew and cargo, or decommission her to the Junkyard (salvage her, scrap her for parts, or destroy her).
+  crew and cargo, or decommission her to the Junkyard (salvage her, scrap her for parts, trade her in, auction her off, or destroy her).
 - **The Cargo Bay:** trade crew, weapons, drones, augments, systems and supplies with the Cargo Hold (the station's
   warehouse) or another docked ship; shop at the stores your ships are docked at; repair and upgrade in the Dry Dock;
   refit, retrofit, remodel or overhaul a ship's layout.

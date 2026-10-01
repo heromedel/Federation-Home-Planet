@@ -47,7 +47,7 @@ final class ImmersiveBriefing extends JDialog {
 	final JRadioButton salaryAll = new JRadioButton("Every achievement already in your FTL profile");
 	final JRadioButton[] victory = new JRadioButton[FinalVictory.CHOICES.length];
 	/** The one house rule Immersive Mode leaves to the player, chosen here rather than on a screen of its own. */
-	final JCheckBox scrapKeeps = new JCheckBox("Scrapping a ship also moves her systems to the Cargo Bay", HomePlanet.scrapKeepsSystems);
+	final JCheckBox scrapKeeps = new JCheckBox("Allow stripping when scrapping: her systems can go to the Cargo Bay, 10 scrap each", HomePlanet.stripAllowed);
 	boolean confirmed = false;
 
 	private final boolean begun;
@@ -116,7 +116,7 @@ final class ImmersiveBriefing extends JDialog {
 				"Trading, scrapping and New Journey need a station (a beacon with a store).",
 				"Commissioning costs scrap from the Cargo Hold, at full price. With no ship left, commission one or report for reassignment (surrender the Cargo Hold and the Junkyard for a free new command).",
 				"Each ship you unlock in FTL from now on can be commissioned free, once. Locked ships can't be commissioned.",
-				"A New Journey costs " + HomePlanet.JOURNEY_FEE + " scrap. Missiles, drone parts and stored systems sell at 25%.",
+				"A New Journey costs " + homeplanet.core.Economy.IMMERSIVE_JOURNEY_FEE + " scrap. Missiles and drone parts sell at 25%, stored systems at half their price.",
 				"Lost ships stay lost: no restoring earlier versions, no recovering, and a report for reassignment is final."));
 		p.add(section("Rank", "You start as a Commander.",
 				"Captain: design ships, remodel, overhaul, commission custom ships. " + oneLine(Clearance.HOW_CAPTAIN),
@@ -221,7 +221,7 @@ final class ImmersiveBriefing extends JDialog {
 			sb.append("• Your career continues as it began<br>");
 		}
 		for (int i = 0; i < victory.length; i++) if (victory[i].isSelected()) sb.append("• After a final victory: ").append(XmlText.text(FinalVictory.label(FinalVictory.CHOICES[i]))).append("<br>");
-		sb.append("• Scrapping a ship ").append(scrapKeeps.isSelected() ? "moves her systems to the Cargo Bay" : "scraps her systems too");
+		sb.append("• Scrapping a ship ").append(scrapKeeps.isSelected() ? "may strip her systems into the Cargo Bay" : "scraps her systems too");
 		return sb.toString();
 	}
 

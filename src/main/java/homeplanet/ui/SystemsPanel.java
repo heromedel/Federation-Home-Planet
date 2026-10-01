@@ -178,9 +178,10 @@ public class SystemsPanel {
 			SystemState st = bs.getSystem(t);
 			if (st == null || st.getCapacity() <= 0) continue;
 			final SystemType type = t;
-			String why = storeReason(bs, t);
+			String why = refitReason(bs, t);
+			int fee = homeplanet.core.Economy.removalFee();
 			SysRow r = new SysRow(DryDockShop.systemTitle(t.getId()), st.getCapacity(), "Store", why,
-					why == null ? "Take the " + DryDockShop.systemTitle(t.getId()) + " off the ship; it keeps its level" : why,
+					why == null ? "Take the " + DryDockShop.systemTitle(t.getId()) + " off the ship; it keeps its level" + (fee > 0 ? " (the Dry Dock charges " + fee + " scrap)" : "") : why,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { storeSystem(type); } });
 			int up = upgradePrice(bs, t);
 			if (up > 0) {
@@ -385,13 +386,20 @@ public class SystemsPanel {
 		return null;
 	}
 
+	/** Why Refit can't take this system off her: the removal rule first, then {@link #storeReason}. */
+	static String refitReason(ShipState ship, SystemType type) {
+		if (homeplanet.core.Economy.removalFee() == homeplanet.core.Economy.NOT_ALLOWED)
+			return "The Dry Dock doesn't take systems off ships" + (homeplanet.core.HomePlanet.immersiveMode ? "" : " (Settings, Rules: Refit removal)");
+		return storeReason(ship, type);
+	}
+
 	// ---- Actions ----
 
 	private void storeSystem(SystemType type) {
 		Installed sel = new Installed(type, 0);
 		SavedGameState save = bay.currentSave;
 		ShipState bs = save.getPlayerShip();
-		String why = storeReason(bs, sel.type);
+		String why = refitReason(bs, sel.type);
 		if (why != null) {
 			JOptionPane.showMessageDialog(bay, why + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
 			return;
@@ -410,6 +418,16 @@ public class SystemsPanel {
 		if (st.getDamagedBars() > 0) { // storing must not be a free repair
 			JOptionPane.showMessageDialog(bay, name + " is damaged. Repair it before storing.", "Systems", JOptionPane.WARNING_MESSAGE);
 			return;
+		}
+		int fee = homeplanet.core.Economy.removalFee();
+		if (fee > 0) {
+			if (bs.getScrapAmt() < fee) {
+				JOptionPane.showMessageDialog(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off; " + save.getPlayerShipName() + " has " + bs.getScrapAmt() + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
+				return;
+			}
+			if (!homeplanet.core.HomePlanet.confirmNo(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName() + ".\nShe pays. Store it?", "Systems")) return;
+			bs.setScrapAmt(bs.getScrapAmt() - fee);
+			changes.add("Paid " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName());
 		}
 		int level = st.getCapacity();
 		if (sel.type == SystemType.CLONEBAY) {
@@ -557,7 +575,7 @@ public class SystemsPanel {
 	}
 
 	/** HR1: what a stored system sells for. */
-	static int salePrice(Stored s) { return homeplanet.parser.Pricing.systemSale(s.id, s.level, homeplanet.core.HomePlanet.sellPercent()); }
+	static int salePrice(Stored s) { return homeplanet.parser.Pricing.systemSale(s.id, s.level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT); }
 	private void sellSystem(Stored sel) {
 		String name = DryDockShop.systemTitle(sel.id) + (sel.level > 0 ? " (level " + sel.level + ")" : "");
 		int price = salePrice(sel);
@@ -570,7 +588,7 @@ public class SystemsPanel {
 	}
 
 	/**
-	 * Scrapping with "scrap_keeps_systems" on: moves the wreck's storable systems into the stored-systems file
+	 * Scrapping and stripping (where allowed): moves the wreck's storable systems into the stored-systems file
 	 * (standard equipment and the Medbay stay with the hull; damaged systems are lost). Returns log lines.
 	 */
 	static List<String> scrapSystems(ShipState wreck, homeplanet.vault.Vault.Transaction tx) throws java.io.IOException {
@@ -593,6 +611,15 @@ public class SystemsPanel {
 		keep.addAll(add);
 		tx.put(f, (String.join("\n", keep) + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
 		return lines;
+	}
+	/** How many of her systems stripping would move to the Cargo Bay (storable and undamaged). */
+	static int strippable(ShipState wreck) {
+		int n = 0;
+		for (SystemType t : SystemType.values()) {
+			SystemState st = wreck.getSystem(t);
+			if (st != null && st.getCapacity() > 0 && storeReason(wreck, t) == null && st.getDamagedBars() == 0) n++;
+		}
+		return n;
 	}
 	/** What scrapping would move and lose, as lines for the confirmation. */
 	static String scrapPreview(ShipState wreck) {

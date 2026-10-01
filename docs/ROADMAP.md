@@ -17,8 +17,9 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 10. After a final victory: rescue her (or the museum), or a reward of her value
 11. The museum
 12. Reply chains, and the first one: the One Point of Hull (Idea C)
-
-All built. What remains is testing in real play and bug checks.
+13. The station's economy: Trade In and Auction, Refit removal, stripping, fees (4B.58)
+14. Immersive difficulties: Easy, Normal, Hard and Custom (4B.59)
+15. Switch Game Mode: Sandbox and four careers, each with its own fleet and profile (4B.60)
 
 ---
 
@@ -294,6 +295,30 @@ comes a random number of beacons later (the fleet counts every beacon its ships 
   Cargo Hold (refused, changing nothing, when the hold is short).
 - **No one aboard:** she can be boarded empty (to take on crew in the Cargo Bay), but FTL won't launch with a boarded
   ship that has no crew (FTL would end her journey at once); the station says to move someone aboard first.
+
+## 13. The station's economy — built (4B.58; harness checks in RuleT)
+
+Every fee and sale price is read from one place (`core.Economy`): Sandbox Mode's from Settings, Immersive Mode's
+from the career.
+
+- **Trade In** (Junkyard): The Federation Home Planet's shipyard pays half her value, less 5 scrap for each point of
+  missing hull. Her value is her commission price at 100% without her crew, plus her fuel, missiles and drone parts at
+  store price.
+- **Auction** (Junkyard): the best bid is 25% to 75% of her value less 5 scrap a missing hull point, shown before it's
+  accepted. The same save always draws the same bid, so declining and asking again doesn't help.
+- Both send her scrap and crew to the Cargo Hold with the payment; everything else goes with her. She leaves the
+  fleet as **sold** (kept in her history, never recoverable). Neither needs a station: the buyer comes to the Junkyard.
+- **Refit removal** (Sandbox setting): taking a system off at Refit is not allowed, free (the default), 25 or 50
+  scrap, paid by the boarded ship (given back by Reset, as all Refit changes are).
+- **Stripping when scrapping** (allowed or not; replaces "scrapping keeps systems", carried over from the old cfg):
+  each storable, undamaged system costs a discount on removal (free for free, 10 for 25, 20 for 50, 10 where removal
+  isn't allowed), paid from the Cargo Hold and her own scrap together. The scrap window offers to strip or not.
+  Off: her systems are lost with the hull.
+- **Selling:** stored systems always sell for half their price and upgrades; missiles and drone parts follow the mode
+  (half in Sandbox Mode).
+- **New Journey fee** (Sandbox setting): free (the default), 200, 500 or 1000 scrap from the Cargo Hold.
+- **Without a ship** (the Liaison's letter): commission a ship if the hold can pay; with a hull in the Junkyard,
+  salvage her, or trade in or auction a ship that can't be repaired; Report for Reassignment as the last resort.
 
 ## Not doing
 

@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.57";
+	public static final String APP_VERSION = "4B.58";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -52,8 +52,12 @@ public class HomePlanet {
 	public static boolean storeRequirement = false;
 	/** A New Journey can only begin while the boarded ship is docked at a station. */
 	public static boolean journeyStoreRequirement = false;
-	/** Scrapping a ship also moves her (optional) systems to the Cargo Bay. Off by default. */
-	public static boolean scrapKeepsSystems = false;
+	/** Scrapping a ship may strip her (optional) systems into the Cargo Bay, at a fee each (see Economy.stripFee). */
+	public static boolean stripAllowed = false;
+	/** Sandbox Mode: what taking a system off at Refit costs (Economy.NOT_ALLOWED, 0, 25 or 50); Immersive Mode's is the career's. */
+	public static int removalFee = 0;
+	/** Sandbox Mode: what a New Journey costs (0, 200, 500 or 1000); Immersive Mode's is the career's. */
+	public static int journeyFee = 0;
 	/** House rule: missiles and drone parts can be sold at half the store price (FTL's own stores don't buy them). */
 	public static boolean sellSupplies = false;
 	/** Commission: only ship layouts the FTL profile has unlocked; and (nested) custom ships only if their base layout is unlocked. */
@@ -68,8 +72,8 @@ public class HomePlanet {
 	/** With HR2: each ship layout unlocked in the FTL profile after this was turned on can be commissioned free, once. */
 	public static boolean unlockFreeShips = false;
 	/**
-	 * Immersive Mode: sets and locks the rules (see {@link #applyImmersive}); a New Journey costs {@link #JOURNEY_FEE}
-	 * scrap from the storage hold; selling supplies and systems pays 25%; restoring and recovering are off.
+	 * Immersive Mode: sets and locks the rules (see {@link #applyImmersive}); its fees and sale prices are in
+	 * {@link Economy}; restoring and recovering are off.
 	 */
 	public static boolean immersiveMode = false;
 	/** Transmissions from The Federation Home Planet (the inbox on the Space Dock). Immersive Mode turns it on. */
@@ -80,7 +84,6 @@ public class HomePlanet {
 	public static boolean career() { return immersiveMode || (immersiveNotifications && careerMessages); }
 	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
-	public static final int JOURNEY_FEE = 200;
 	/** The rules Immersive Mode sets, as the player had them: kept apart, written to the cfg, and back when it's turned off. */
 	public static final class Rules {
 		public boolean store, journey, sellSupplies, sellSystems, costs, unlockFree, lockedOnly, customLockedOnly, notifications;
@@ -125,8 +128,6 @@ public class HomePlanet {
 		sellSupplies = true;
 		sellSystems = true;
 	}
-	/** What selling missiles, drone parts and stored systems pays, as a share of the store price: 50%, or 25% in Immersive Mode. */
-	public static int sellPercent() { return immersiveMode ? 25 : 50; }
 	public static boolean debugLogging = false;
 
 	/** The config file, beside the program (whatever folder it was started from), and its values (the Settings window changes and saves them). */
@@ -153,7 +154,9 @@ public class HomePlanet {
 		launchThroughSteam = flag("launch_through_steam");
 		storeRequirement = flag("store_requirement");
 		journeyStoreRequirement = flag("new_journey_store_requirement");
-		scrapKeepsSystems = flag("scrap_keeps_systems");
+		stripAllowed = flag("strip_when_scrapping");
+		removalFee = Economy.removalFee(config.getProperty("refit_removal_fee"));
+		journeyFee = Economy.journeyFee(config.getProperty("new_journey_fee"));
 		sellSupplies = flag("sell_supplies");
 		commissionUnlockedOnly = flag("commission_unlocked_only");
 		commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only");
@@ -206,7 +209,7 @@ public class HomePlanet {
 		if (rulesMissing) {
 			storeRequirement = flag("store_requirement", true);
 			journeyStoreRequirement = flag("new_journey_store_requirement", true);
-			scrapKeepsSystems = flag("scrap_keeps_systems", true);
+			stripAllowed = flag("strip_when_scrapping", true);
 			sellSupplies = flag("sell_supplies", false);
 			commissionUnlockedOnly = flag("commission_unlocked_only", true);
 			commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only", true);
@@ -314,7 +317,7 @@ public class HomePlanet {
 	private static boolean flag(String key, boolean dflt) { return Boolean.parseBoolean(config.getProperty(key, Boolean.toString(dflt))); }
 
 	/** The rules the first-run House Rules window sets. */
-	private static final String[] RULE_KEYS = {"store_requirement", "new_journey_store_requirement", "scrap_keeps_systems", "sell_supplies",
+	private static final String[] RULE_KEYS = {"store_requirement", "new_journey_store_requirement", "strip_when_scrapping", "sell_supplies",
 			"commission_unlocked_only", "commission_custom_unlocked_only"};
 
 	/** Reads the config; imports FTL Homeworld's old one when there's none yet. Returns true if it should be written. */
@@ -336,6 +339,10 @@ public class HomePlanet {
 		} finally {
 			try { if (in != null) in.close(); } catch (IOException e) { }
 		}
+		// before 4B.58 scrapping either kept the systems or didn't: now stripping is allowed or not
+		String old = config.getProperty("scrap_keeps_systems");
+		if (old != null && config.getProperty("strip_when_scrapping") == null) config.setProperty("strip_when_scrapping", old);
+		config.remove("scrap_keeps_systems");
 		return from != propFile; // an old config: written to its new place
 	}
 
@@ -348,7 +355,9 @@ public class HomePlanet {
 		Rules own = normalRules(); // Immersive Mode's rules are never written over the player's own
 		config.setProperty("store_requirement", Boolean.toString(own.store));
 		config.setProperty("new_journey_store_requirement", Boolean.toString(own.journey));
-		config.setProperty("scrap_keeps_systems", Boolean.toString(scrapKeepsSystems));
+		config.setProperty("strip_when_scrapping", Boolean.toString(stripAllowed));
+		config.setProperty("refit_removal_fee", Integer.toString(removalFee));
+		config.setProperty("new_journey_fee", Integer.toString(journeyFee));
 		config.setProperty("career_messages", Boolean.toString(careerMessages));
 		config.setProperty("sell_supplies", Boolean.toString(own.sellSupplies));
 		config.setProperty("commission_unlocked_only", Boolean.toString(own.lockedOnly));

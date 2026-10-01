@@ -122,7 +122,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private final CargoParts.Label partnerNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
 	private static final String[][] SUPPLIES = {{"scrap", "Scrap"}, {"fuel", "Fuel"}, {"missiles", "Missiles"}, {"drones", "Parts"}};
 	/** What FTL's stores charge for one (fuel 3, missile 6, drone part 8); selling, where allowed, pays half. */
-	private static final int[] SUPPLY_PRICE = {0, 3, 6, 8};
+	private static final int[] SUPPLY_PRICE = {0, homeplanet.parser.Pricing.FUEL, homeplanet.parser.Pricing.MISSILE, homeplanet.parser.Pricing.DRONE_PART};
 	private final SupplyCell[] mySupply = new SupplyCell[4], theirSupply = new SupplyCell[4];
 	private FtlButton myJunkSupply, mySellSupply, theirJunkSupply, theirSellSupply;
 	private int supplyIdx = 0;
@@ -732,7 +732,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (myJunkSupply == null) return;
 		boolean can = supplyIdx >= 2 && currentState != null && tradeState != null;
 		mySellSupply.setVisible(HomePlanet.sellSupplies);
-		String share = HomePlanet.sellPercent() == 50 ? "half the store price" : HomePlanet.sellPercent() + "% of the store price, set by Immersive Mode";
+		String share = homeplanet.core.Economy.supplyShare();
 		mySellSupply.setToolTipText("Sell that many of your ship's missiles or drone parts (" + share + ")");
 		theirSellSupply.setToolTipText("Sell that many of the partner's missiles or drone parts (" + share + ")");
 		theirSellSupply.setVisible(HomePlanet.sellSupplies);
@@ -749,7 +749,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (have <= 0) { help(save.getPlayerShipName() + " has no " + what + "."); return; }
 		int n = Math.min((Integer) moveAmount.getValue(), have);
 		if (n == 1) what = supplyIdx == 2 ? "missile" : "drone part";
-		int price = sell ? n * SUPPLY_PRICE[supplyIdx] * HomePlanet.sellPercent() / 100 : 0; // half the store price (a quarter in Immersive Mode)
+		int price = sell ? homeplanet.core.Economy.supplySale(n, SUPPLY_PRICE[supplyIdx]) : 0;
 		String q = sell ? "Sell " + n + " " + what + " for " + price + " scrap?" : "Junk " + n + " " + what + "?\nYou get nothing for " + (n == 1 ? "it." : "them.");
 		if (!HomePlanet.confirmNo(this, q, sell ? "Sell" : "Junk")) return;
 		setSupply(state, supplyIdx, have - n);

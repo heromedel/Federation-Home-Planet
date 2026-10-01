@@ -99,6 +99,38 @@ public final class Pricing {
 		return c == null ? 0 : Math.max(0, c.getCost());
 	}
 
+	/** FTL's store prices for one fuel, missile and drone part. */
+	public static final int FUEL = 3, MISSILE = 6, DRONE_PART = 8;
+	/** Trade In and Auction: each point of missing hull takes this much off her value. */
+	public static final int HULL_DAMAGE = 5;
+
+	/** What she's worth to a buyer, before her hull damage: as commissioned at full price (crew aside: they stay with the fleet), and her fuel, missiles and drone parts at store price. */
+	public static int saleValue(SavedGameState gs) {
+		ShipState s = gs.getPlayerShip();
+		int crew = 0;
+		for (CrewState c : SaveHelper.getOwnCrew(s)) crew += crew(c.getRace().getId());
+		return ship(gs, 100).subtotal - crew + s.getFuelAmt() * FUEL + s.getMissilesAmt() * MISSILE + s.getDronePartsAmt() * DRONE_PART;
+	}
+	/** Her missing hull points (her model's full hull, less what she has). */
+	public static int missingHull(ShipState s) {
+		net.blerf.ftl.xml.ShipBlueprint bp = DataManager.get().getShip(s.getShipBlueprintId());
+		int max = bp == null || bp.getHealth() == null ? s.getHullAmt() : bp.getHealth().amount;
+		return Math.max(0, max - s.getHullAmt());
+	}
+	/** Trade In: half her value, less 5 scrap for each point of missing hull (never below 0). */
+	public static int tradeIn(SavedGameState gs) {
+		return Math.max(0, saleValue(gs) / 2 - HULL_DAMAGE * missingHull(gs.getPlayerShip()));
+	}
+	/** Auction: what the bidding starts from, her value less 5 scrap for each point of missing hull (never below 0). */
+	public static int auctionBase(SavedGameState gs) {
+		return Math.max(0, saleValue(gs) - HULL_DAMAGE * missingHull(gs.getPlayerShip()));
+	}
+	/** The best bid at auction: 25% to 75% of {@link #auctionBase}, the same for the same save (bidders don't change their minds). */
+	public static int auction(SavedGameState gs, long seed) {
+		int pct = 25 + new java.util.Random(seed).nextInt(51);
+		return auctionBase(gs) * pct / 100;
+	}
+
 	/** A priced list: its lines (for the player) and total, before and after the multiplier. */
 	public static final class Quote {
 		public final List<String> lines = new ArrayList<String>();
