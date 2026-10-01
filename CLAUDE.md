@@ -5,8 +5,8 @@ it does and CREDITS.md for where the code came from.
 
 ## Working with heromedel
 
-- The workflow: **discuss, create a plan, ask to write, ask to commit.** When asked to "discuss" or "don't write
-  yet", don't edit. Those two asks (write, commit) are the only gates: the plan itself makes the sensible choices
+- The workflow: **discuss, create a plan, ask to write, ask to push.** When asked to "discuss" or "don't write
+  yet", don't edit. Those two asks (write, push) are the only gates: the plan itself makes the sensible choices
   (from `docs/VOICES.md`, `docs/STYLE.md`, the roadmap) rather than stopping on each one. Ask only what can't be
   worked out; never about wording, capitals or details you can decide.
 - In discussions, talk in normal paragraphs, like a conversation: start with what you think of the idea (what's good
@@ -21,8 +21,13 @@ it does and CREDITS.md for where the code came from.
 - heromedel's own text (letters, messages, names) goes in exactly as written, capitals included (they're often
   deliberate: "Lucky Duck" is a nickname). Suggested edits to it are a short list, only ones that matter, to answer
   yes or no.
-- Answer questions without writing code. Collect small fixes and requests in a list, show it when it changes, and do
-  them as one batch when heromedel asks; don't make a version or a commit for each small change.
+- Answer questions without writing code, and answer just the question: don't tack status lists onto replies. Keep the
+  list of small fixes and requests to yourself, show it only when asked, and do them as one batch; one version per
+  batch, not per small change.
+- Commit whenever the work is safe (built and tested); ask before pushing. One version on the branch at a time: once a
+  version is pushed, the branch stays frozen while heromedel tests it, so what they test is exactly what they merge.
+  Newer work stays committed locally until they say it's merged (or needs a fix), then goes up as the next version.
+  Don't bring up commits in conversation; the automatic "uncommitted changes" check is answered in a few words.
 - Never commit or push to `main`. Work only on your own session branch; heromedel decides what goes into
   `main` (a pull request or their own merge).
 - heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build The Federation Home Planet Station.bat`.

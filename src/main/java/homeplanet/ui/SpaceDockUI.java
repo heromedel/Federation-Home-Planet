@@ -167,6 +167,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					stats.setVisible(room);
 					if (room) stats.setBounds(x - 12 - sd.width, 10 + berth.getComponent(0).getPreferredSize().height + BERTH_PIC_Y, sd.width, sd.height);
 					top = 10 + d.height + 6;
+					if (room) top = Math.max(top, stats.getY() + sd.height + 6); // a tall stats column pushes the docked ships down, not under it
 				}
 				docked.setBounds(0, top, Math.min(dockedW, getWidth()), Math.max(0, getHeight() - top));
 			}

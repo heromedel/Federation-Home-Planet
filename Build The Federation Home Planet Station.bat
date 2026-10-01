@@ -26,7 +26,7 @@ echo    1: Construct Federation Home Planet Station
 echo    2: Construct Federation Home Planet Station with Quick Link
 echo       (adds a Quick Link to the Station Interface on your desktop)
 echo.
-choice /c 012 /n /m "   Choose 0, 1 or 2: "
+choice /c 012 /n /m "   Input -> "
 if errorlevel 3 ( call :construct && call :quicklink & goto :after )
 if errorlevel 2 ( call :construct & goto :after )
 exit /b 0
@@ -34,7 +34,7 @@ exit /b 0
 :after
 echo.
 pause
-goto :menu
+exit /b 0
 
 rem ---- :construct: tools if missing, then the build ----
 :construct
@@ -58,13 +58,7 @@ for /f "tokens=2 delims=<>	 " %%v in ('findstr /c:"<version>" pom.xml') do ( ech
 :shown
 echo To Establish Connection, run Federation Home Planet Interface.
 echo.
-rem a sign-off from the Federation's catch phrases (docs/STYLE.md), "The Federation endures." most often
-set /a SIGN=%RANDOM% %% 8
-if %SIGN% LEQ 3 echo The Federation endures.
-if %SIGN%==4 echo The rebellion won't stand a chance...
-if %SIGN%==5 echo Until every beacon is free.
-if %SIGN%==6 echo Not one more sector.
-if %SIGN%==7 echo Many worlds, one Federation.
+echo The rebellion won't stand a chance...
 exit /b 0
 
 rem ---- :quicklink: a desktop shortcut to the Interface, with the station's icon ----
