@@ -136,8 +136,7 @@ public class RuleBoxes {
 		immersiveRow.add(immersiveLabel);
 		immersiveButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				boolean done = HomePlanet.immersiveMode ? ImmersiveDialog.leave(immersiveButton) : ImmersiveDialog.enter(immersiveButton);
-				if (!done) return;
+				if (!SwitchModeDialog.show(immersiveButton)) return;
 				immersiveBox.setSelected(HomePlanet.immersiveMode);
 				sync();
 				if (afterFleetChange != null) afterFleetChange.run(); // Settings shows the other fleet's choices now
@@ -153,12 +152,14 @@ public class RuleBoxes {
 	private void sync() {
 		boolean im = immersiveBox.isSelected();
 		boolean vaultOpen = homeplanet.vault.Vault.isOpen();
-		immersiveButton.setText(im ? "Return to Sandbox Mode..." : "Enter Immersive Mode...");
+		immersiveButton.setText("Switch Game Mode...");
 		immersiveButton.setEnabled(vaultOpen);
-		immersiveButton.setToolTipText(!vaultOpen ? "Once The Home Planet Station is set up, enter Immersive Mode from Settings"
-				: im ? "Back to your Sandbox fleet and rules (your Immersive career is kept)" : "The briefing: what Immersive Mode is, and your career's choices");
+		immersiveButton.setToolTipText(!vaultOpen ? "Once The Home Planet Station is set up, switch modes from Settings"
+				: "Sandbox Mode, or an Immersive career (Easy, Normal, Hard, Custom): each has a fleet of its own");
 		homeplanet.parser.CareerRules career = im ? homeplanet.parser.CareerRules.current() : null;
-		immersiveLabel.setText(im ? "   Immersive Mode is on" + (career != null ? " (" + career.title() + ")" : "") + ": The Federation Home Planet's rules below are locked." : "   The station runs by The Federation Home Planet's rules, and your service becomes a career.");
+		String mode = vaultOpen ? homeplanet.vault.Vault.title(homeplanet.vault.Vault.get().slot) : "Sandbox Mode";
+		immersiveLabel.setText(im ? "   " + mode + " is in use" + (career != null && homeplanet.vault.Vault.CUSTOM.equals(homeplanet.vault.Vault.get().slot) ? " (" + career.title() + ")" : "")
+				+ ": The Federation Home Planet's rules below are locked." : "   Sandbox Mode is in use: the rules below are yours. An Immersive career runs by The Federation Home Planet's.");
 		if (!im && showingImmersive) showOwn();
 		showingImmersive = im;
 		if (im) {

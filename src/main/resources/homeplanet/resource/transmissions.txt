@@ -68,7 +68,7 @@ subject: Without a ship
 
 The Home Planet Station reports that you have no ship under your command. I am sorry. She served the Federation, and so did you.
 
-This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship. There is a hull in the Junkyard, too: Salvage her at the Space Dock and she is yours again, at no cost; if you have a ship in the junkyard that you cannot afford to repair, try trading it in or auctioning it off to raise money.
+This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship. There is a hull in the Junkyard, too: Salvage her at the Space Dock and she is yours again, at no cost; if you have a ship in the Junkyard that you cannot afford to repair, try trading it in or auctioning it off to raise money.
 
 If none of that will do, there is a last resort: Report for Reassignment (Other... at the Space Dock). The Federation Home Planet takes the Cargo Hold and the Junkyard, and gives you a new command in return.
 

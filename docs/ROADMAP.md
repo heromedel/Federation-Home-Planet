@@ -21,6 +21,8 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 14. Immersive difficulties: Easy, Normal, Hard and Custom (4B.59)
 15. Switch Game Mode: Sandbox and four careers, each with its own fleet and profile (4B.60)
 
+All built. What remains is testing in real play and bug checks.
+
 ---
 
 ## 1. Save safety — done (harness test SafeT)
@@ -346,6 +348,18 @@ A career from before difficulties becomes **Custom (from before difficulties)**,
 its final victory choice (still changeable in Settings), journeys 200, Variable, removal free, stripping as Settings
 had it (free), a quarter, every 4 sectors, full price. On Hard the museum letter ("Into the Museum") replaces the
 rescue offer.
+
+## 15. Switch Game Mode — built (4B.60; harness checks in FleetT)
+
+Settings' **Switch Game Mode...** opens a window of the five modes: Sandbox Mode, and the Immersive careers Easy,
+Normal, Hard and Custom. Each has a fleet folder of its own (`FederationHomePlanet`, `FederationHomePlanet-Immersive-Easy`,
+`-Normal`, `-Hard`, and `FederationHomePlanet-Immersive` for Custom, so the first Immersive fleet carries on as Custom),
+and each career can keep an FTL profile of its own. The window shows what each holds (in use, not begun, its ships,
+its own profile), switches to one (a career not begun is briefed first, its difficulty set by its slot; Custom picks
+each rule), and ends a career (the one in use: Sandbox Mode first). Switching from one career to another goes by way
+of Sandbox Mode, so profiles are swapped the same tested way. The first-startup choice offers the same: Sandbox
+Mode, or Easy, Normal, Hard or Custom. The Space Dock heading and Settings name the mode in use; blueprints flown by
+any other fleet stay protected. The cfg remembers the career last used (`immersive_slot`).
 
 ## Not doing
 

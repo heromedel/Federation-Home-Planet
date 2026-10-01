@@ -8,6 +8,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
  detection();
  rules();
  difficulties();
+ slots();
  endCareer();
  Setup.done();
 }
@@ -53,6 +54,36 @@ public class FleetT { public static void main(String[] a) throws Exception {
     && Career.rules(v.root).stripAllowed() && new String(SafeFiles.read(career), "UTF-8").contains("difficulty=earlier"));
   HomePlanet.leaveImmersive();
   Vault.switchFleet(false);
+ }
+ /** Five modes, five fleets: each career its own folder; switching between careers goes by way of Sandbox Mode; one can end alone. */
+ static void slots() throws Exception {
+  Vault v = Vault.get();
+  if (v.immersive) v = Vault.switchFleet(false);
+  Setup.chk("M: each mode's folder", Vault.folderOf(Vault.SANDBOX).equals(Vault.FOLDER) && Vault.folderOf(Vault.CUSTOM).equals(Vault.IMMERSIVE_FOLDER)
+    && Vault.folderOf(Vault.EASY).equals("FederationHomePlanet-Immersive-Easy") && Vault.folderOf(Vault.HARD).equals("FederationHomePlanet-Immersive-Hard")
+    && "Immersive Normal".equals(Vault.title(Vault.NORMAL)) && "Sandbox Mode".equals(Vault.title(Vault.SANDBOX)) && Vault.CUSTOM.equals(Vault.slotOf("nonsense")));
+  Vault easy = Vault.switchFleet(Vault.EASY);
+  Setup.chk("M: the Easy career opens its own, empty fleet", easy.immersive && Vault.EASY.equals(easy.slot) && easy.root.getName().equals("FederationHomePlanet-Immersive-Easy") && easy.shipyardEmpty());
+  Career.start(false, false, CareerRules.of(CareerRules.EASY));
+  Ship e = easy.adopt(Commission.build("PLAYER_SHIP_CIRCLE", "Easy Engi", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(8)));
+  Setup.chk("M: its difficulty is its own", CareerRules.EASY.equals(CareerRules.current().name));
+  Vault.switchFleet(Vault.SANDBOX);
+  Vault normal = Vault.switchFleet(Vault.NORMAL);
+  Setup.chk("M: the Normal career doesn't see the Easy one's ships", normal.byId(e.id) == null && Vault.NORMAL.equals(normal.slot));
+  File fake = new File(Vault.rootOf(normal.saves, Vault.EASY), "ships/retrofit.sav"); // a hull on the station's blueprint, as far as the scan cares
+  SafeFiles.writeText(fake, "PLAYER_SHIP_CIRCLE" + Retrofit.SUFFIX, false);
+  Setup.chk("M: but every other fleet's ships count for blueprints in use", normal.otherFleetUsing("PLAYER_SHIP_CIRCLE" + Retrofit.SUFFIX).contains("retrofit (Immersive Easy fleet)")
+    && normal.otherFleetBlueprints().contains("PLAYER_SHIP_CIRCLE" + Retrofit.SUFFIX));
+  fake.delete();
+  boolean refused = false; Vault.switchFleet(Vault.EASY);
+  try { Vault.endCareer(Vault.EASY); } catch (IOException x) { refused = true; }
+  Setup.chk("M: the career in use can't be ended", refused);
+  Vault.switchFleet(Vault.SANDBOX);
+  int sandboxShips = Vault.get().all().size();
+  File zip = Vault.endCareer(Vault.EASY);
+  Setup.chk("M: ending the Easy career zips it, named, and leaves the others", zip.getName().startsWith("Immersive Easy career ") && !Vault.rootOf(Vault.get().saves, Vault.EASY).exists()
+    && Vault.rootOf(Vault.get().saves, Vault.NORMAL).isDirectory() && Vault.get().all().size() == sandboxShips);
+  Setup.chk("M: a fleet's ships are counted without opening it", Vault.shipCount(Vault.rootOf(Vault.get().saves, Vault.CUSTOM)) >= 0);
  }
  /** Ending the Immersive career: the folder zipped into old-immersive-careers, then gone; the normal fleet untouched. */
  static void endCareer() throws Exception {

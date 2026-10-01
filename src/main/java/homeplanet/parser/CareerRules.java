@@ -63,8 +63,6 @@ public final class CareerRules {
 	public String title() {
 		return EASY.equals(name) ? "Easy" : NORMAL.equals(name) ? "Normal" : HARD.equals(name) ? "Hard" : EARLIER.equals(name) ? "Custom (from before difficulties)" : "Custom";
 	}
-	/** Easy, Normal, Hard or Custom (an earlier career's too), where room is short. */
-	public String shortTitle() { return EARLIER.equals(name) ? "Custom" : title(); }
 	/** A rule's level in words. */
 	public String words(int rule) {
 		if (rule == VICTORY && level[rule] == OWN_CHOICE) return "as chosen in Settings";

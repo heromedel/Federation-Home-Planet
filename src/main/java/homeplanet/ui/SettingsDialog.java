@@ -441,8 +441,9 @@ public class SettingsDialog extends JDialog {
 	private void refreshVictory() {
 		victoryWas = homeplanet.parser.FinalVictory.choice();
 		homeplanet.parser.CareerRules career = homeplanet.parser.FinalVictory.fixed() != null ? homeplanet.parser.CareerRules.current() : null;
-		victoryHeading.setText("After a final victory" + (career != null ? " (Immersive fleet, " + career.title() + "): " + career.words(homeplanet.parser.CareerRules.VICTORY)
-				: homeplanet.vault.Vault.get().immersive ? " (Immersive fleet)" : ""));
+		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
+		victoryHeading.setText("After a final victory" + (career != null ? " (" + homeplanet.vault.Vault.title(v.slot) + "): " + career.words(homeplanet.parser.CareerRules.VICTORY)
+				: v.immersive ? " (" + homeplanet.vault.Vault.title(v.slot) + ")" : ""));
 		victoryGroup.clearSelection();
 		for (int i = 0; i < victoryButtons.length; i++) {
 			victoryButtons[i].setSelected(homeplanet.parser.FinalVictory.CHOICES[i].equals(victoryWas));

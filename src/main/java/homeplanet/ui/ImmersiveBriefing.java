@@ -56,6 +56,8 @@ final class ImmersiveBriefing extends JDialog {
 	boolean confirmed = false;
 
 	private final boolean begun;
+	/** Which career: Vault.EASY, NORMAL, HARD (its difficulty) or CUSTOM (any level of each rule). */
+	private final String slot;
 	private final File immersiveRoot;
 	private final CardLayout cards = new CardLayout();
 	private final JPanel deck = new JPanel(cards);
@@ -64,10 +66,11 @@ final class ImmersiveBriefing extends JDialog {
 	private final JLabel summary = new JLabel();
 	private int page = 0;
 
-	ImmersiveBriefing(Component owner, boolean begun, File immersiveRoot, File profile) {
-		super(owner == null ? null : SwingUtilities.getWindowAncestor(owner), "Immersive Mode", ModalityType.APPLICATION_MODAL);
+	ImmersiveBriefing(Component owner, boolean begun, File immersiveRoot, File profile, String slot) {
+		super(owner == null ? null : SwingUtilities.getWindowAncestor(owner), Vault.title(slot), ModalityType.APPLICATION_MODAL);
 		this.begun = begun;
 		this.immersiveRoot = immersiveRoot;
+		this.slot = slot;
 		deck.add(whatChanges(), "0");
 		deck.add(career(), "1");
 		deck.add(beforeYouBegin(profile), "2");
@@ -114,8 +117,8 @@ final class ImmersiveBriefing extends JDialog {
 
 	private JPanel whatChanges() {
 		JPanel p = page();
-		p.add(section("A fleet of its own", "Your current fleet (the Space Dock, the Junkyard, the Cargo Hold and their records) is kept exactly as it is, "
-				+ "and comes back when you return to Sandbox Mode. Your designs and remodels are shared by both."
+		p.add(section("A fleet of its own", "Each Immersive career (Easy, Normal, Hard and Custom) has a fleet of its own. Your Sandbox fleet (the Space Dock, "
+				+ "the Junkyard, the Cargo Hold and their records) is kept exactly as it is, and comes back when you switch to Sandbox Mode. Your designs and remodels are shared by all."
 				+ (begun ? "" : " Your career begins with an empty shipyard, a free Kestrel and some scrap in the Cargo Hold (by its difficulty).")));
 		p.add(section("The rules", "Set and locked while it's on:",
 				"Trading, scrapping and New Journey need a station (a beacon with a store).",
@@ -162,8 +165,9 @@ final class ImmersiveBriefing extends JDialog {
 					+ ". Its choices were fixed when it began."));
 		}
 		p.add(Box.createRigidArea(new Dimension(1, 8)));
-		CareerRules was = begun ? Career.rules(immersiveRoot) : CareerRules.of(CareerRules.NORMAL);
-		p.add(heading(begun ? "Its difficulty: " + was.title() : "Difficulty (fixed once chosen)"));
+		boolean custom = Vault.CUSTOM.equals(slot);
+		CareerRules was = begun ? Career.rules(immersiveRoot) : custom ? new CareerRules(CareerRules.CUSTOM, CareerRules.of(CareerRules.NORMAL).levels()) : CareerRules.of(slot);
+		p.add(heading("Difficulty: " + was.title() + (begun ? "" : custom ? " (choose each rule; fixed once chosen)" : "")));
 		JPanel pick = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		pick.setAlignmentX(Component.LEFT_ALIGNMENT);
 		ButtonGroup dg = new ButtonGroup();
@@ -178,7 +182,7 @@ final class ImmersiveBriefing extends JDialog {
 			pick.add(Box.createHorizontalStrut(14));
 		}
 		pick.setMaximumSize(pick.getPreferredSize());
-		p.add(pick);
+		// the career's slot decides its difficulty; the buttons only keep the table in step
 		JPanel grid = new JPanel(new java.awt.GridBagLayout());
 		grid.setAlignmentX(Component.LEFT_ALIGNMENT);
 		grid.setBorder(BorderFactory.createEmptyBorder(6, 16, 6, 0));
@@ -201,7 +205,7 @@ final class ImmersiveBriefing extends JDialog {
 		}
 		grid.setMaximumSize(grid.getPreferredSize());
 		p.add(grid);
-		p.add(note(begun ? "Its rules were fixed when it began." : "Custom chooses each rule's level. Every other rule is The Federation Home Planet's, the same at every difficulty. "
+		p.add(note(begun ? "Its rules were fixed when it began." : (custom ? "Choose each rule's level. " : "") + "Every other rule is The Federation Home Planet's, the same at every difficulty. "
 				+ "A rescue brings her back as she was moments before the final engagement; The Home Planet Station must be open while you play."));
 		syncLevels();
 		return p;

@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.59";
+	public static final String APP_VERSION = "4B.60";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -167,6 +167,7 @@ public class HomePlanet {
 		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip) && !"variable".equals(freeShip)) freeShip = "relief";
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
+		Vault.immersiveSlot = Vault.slotOf(config.getProperty("immersive_slot")); // which Immersive career (a fleet from before difficulties is Custom's)
 		immersiveNotifications = flag("immersive_notifications");
 		careerMessages = flag("career_messages");
 		finalVictory = config.getProperty("final_victory", "nothing");
@@ -368,6 +369,7 @@ public class HomePlanet {
 		config.setProperty("free_ship", freeShip);
 		config.setProperty("unlock_free_ships", Boolean.toString(own.unlockFree));
 		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
+		config.setProperty("immersive_slot", Vault.immersiveSlot);
 		config.setProperty("final_victory", finalVictory);
 		config.setProperty("immersive_notifications", Boolean.toString(own.notifications));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));

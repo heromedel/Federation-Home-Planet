@@ -16,16 +16,16 @@ import javax.swing.JPanel;
  * Shown once the station's folders and fleet exist, so Immersive Mode can be entered from here.
  */
 public class ModeChoiceDialog extends JDialog {
-	private Boolean chosen = null; // true: Immersive Mode
+	private String chosen = null; // a Vault slot: SANDBOX, or an Immersive career
 
 	/** Asks, enters Immersive Mode if chosen (its briefing first), then shows that mode's rules. Waits; the caller saves the config. */
 	public static void ask() {
 		while (true) {
 			ModeChoiceDialog d = new ModeChoiceDialog();
 			d.setVisible(true);
-			boolean immersive = Boolean.TRUE.equals(d.chosen);
+			boolean immersive = d.chosen != null && !homeplanet.vault.Vault.SANDBOX.equals(d.chosen);
 			if (immersive) {
-				if (!ImmersiveDialog.enter(null)) continue; // the briefing cancelled: choose again
+				if (!ImmersiveDialog.enter(null, d.chosen)) continue; // the briefing cancelled: choose again
 				return; // the briefing asked everything Immersive Mode leaves to the player
 			}
 			HouseRulesDialog.ask(false);
@@ -42,12 +42,13 @@ public class ModeChoiceDialog extends JDialog {
 		choices.add(choice("Sandbox Mode", "Recommended for FTL as you know it",
 				"FTL with a station behind it. Your fleet, your rules: commission any ship you've unlocked, trade between your ships, "
 				+ "design your own. Nothing is locked, and every rule can be changed in Settings whenever you like.",
-				"Play in Sandbox Mode", false));
+				new String[] {"Play in Sandbox Mode"}, new String[] {homeplanet.vault.Vault.SANDBOX}));
 		choices.add(choice("Immersive Mode", "A Federation career",
 				"You start with a Kestrel Type A and rise in rank as you earn FTL's achievements. Ships cost scrap; The Federation Home "
 				+ "Planet stays in contact with you, sends rewards and a monthly stipend, and sets most of the rules. This mode has a "
-				+ "fleet of its own, and can keep an FTL profile of its own too.",
-				"Begin an Immersive career...", true));
+				+ "fleet of its own, and can keep an FTL profile of its own too.<br><br>Choose a difficulty:",
+				new String[] {"Easy", "Normal", "Hard", "Custom"},
+				new String[] {homeplanet.vault.Vault.EASY, homeplanet.vault.Vault.NORMAL, homeplanet.vault.Vault.HARD, homeplanet.vault.Vault.CUSTOM}));
 		body.add(choices, BorderLayout.CENTER);
 		getContentPane().add(body);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE); // closing it is Sandbox Mode, as before
@@ -56,7 +57,7 @@ public class ModeChoiceDialog extends JDialog {
 		setLocationRelativeTo(null);
 	}
 
-	private JPanel choice(String title, String tag, String text, String button, final boolean immersive) {
+	private JPanel choice(String title, String tag, String text, String[] buttons, final String[] slots) {
 		JPanel p = new JPanel(new BorderLayout(0, 8));
 		p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MenuTheme.GREY_GREEN), BorderFactory.createEmptyBorder(10, 12, 10, 12)));
 		JLabel head = new JLabel("<html><font size='+1' color='" + MenuTheme.HTML_GOLD + "'><b>" + title + "</b></font><br><i>" + tag + "</i></html>");
@@ -64,10 +65,15 @@ public class ModeChoiceDialog extends JDialog {
 		JLabel words = new JLabel("<html><div style='width:270px'>" + text + "</div></html>");
 		words.setVerticalAlignment(JLabel.TOP);
 		p.add(words, BorderLayout.CENTER);
-		JButton b = new JButton(button);
-		b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { chosen = immersive; dispose(); } });
-		if (!immersive) getRootPane().setDefaultButton(b);
-		p.add(b, BorderLayout.SOUTH);
+		JPanel row = new JPanel(new GridLayout(1, buttons.length, 6, 0));
+		for (int i = 0; i < buttons.length; i++) {
+			final String slot = slots[i];
+			JButton b = new JButton(buttons[i]);
+			b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { chosen = slot; dispose(); } });
+			if (homeplanet.vault.Vault.SANDBOX.equals(slot)) getRootPane().setDefaultButton(b);
+			row.add(b);
+		}
+		p.add(row, BorderLayout.SOUTH);
 		return p;
 	}
 }

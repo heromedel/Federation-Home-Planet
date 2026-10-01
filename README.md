@@ -45,9 +45,10 @@ And More.
 - **House rules** (Settings): trading and New Journey only at a store beacon, commissioning that costs scrap, locked
   ships that can't be commissioned, selling supplies and systems, a free commission for each ship you unlock, and
   what happens after a final victory (rescue the ship, a reward of her value, or nothing).
-- **Immersive Mode:** a career of its own, with its own fleet and FTL profile. The Federation Home Planet's rules are
-  locked, you rise in rank (Commander, Captain, Commodore), and transmissions bring commission orders, promotions,
-  achievement rewards and a stipend. Return to Sandbox Mode at any time, and keep the career or end it.
+- **Immersive Mode:** four careers (Easy, Normal, Hard, and Custom, which sets each rule's level), each with its own
+  fleet and FTL profile. The Federation Home Planet's rules are locked, you rise in rank (Commander, Captain,
+  Commodore), and transmissions bring commission orders, promotions, achievement rewards and a stipend. Switch Game
+  Mode (Settings) moves between Sandbox Mode and the careers at any time, and ends a career.
 - **The Federation Museum:** every ship that won in the Hall of Victors (preserved in the museum, still in service,
   honoured in memory, or lost in action later), and the ships lost in action in the Memorial: her record, honours,
   crew, voyage and loadout, an epitaph of your own, and a picture of the exhibit to save.
@@ -84,8 +85,8 @@ run puts a fresh `Federation Home Planet.jar` in `Current Build\`. Or with your 
 
 Everything the station keeps is in `FederationHomePlanet` inside FTL's saves folder: `ships/`, `junkyard/`, `history/`
 (each ship's last ten versions and her voyage log), `storage.sav` (the Cargo Hold), `manifest.xml`, `designs.xml`,
-`remodels.xml`, `art/`, `history.log`. Immersive Mode keeps its own fleet in `FederationHomePlanet-Immersive` (with its
-own FTL profile while you're in Sandbox Mode); ended careers are zipped into `FederationHomePlanet/old-immersive-careers`.
+`remodels.xml`, `art/`, `history.log`. Each Immersive career keeps its own fleet in `FederationHomePlanet-Immersive-Easy`,
+`-Normal`, `-Hard`, or `FederationHomePlanet-Immersive` for Custom (with its own FTL profile while it isn't in use); ended careers are zipped into `FederationHomePlanet/old-immersive-careers`.
 The ship you are flying is FTL's own `continue.sav`, as always. Custom blueprints reach the game through
 `Federation Home Planet Mod.ftl`, which the station rebuilds and sends to FTL via Slipstream.
 
