@@ -314,12 +314,16 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	private static void controlGroup(JPanel column, javax.swing.JComponent header, JButton... buttons) {
 		column.add(header);
-		column.add(Box.createRigidArea(new Dimension(1, 10)));
+		column.add(gap(10));
 		for (JButton b : buttons) {
 			column.add(b);
-			column.add(Box.createRigidArea(new Dimension(1, 10)));
+			column.add(gap(10));
 		}
-		column.add(Box.createRigidArea(new Dimension(1, 16)));
+		column.add(gap(16));
+	}
+	/** Space between the column's pieces that gives way first when the window is short (down to 2 pixels). */
+	private static Box.Filler gap(int h) {
+		return new Box.Filler(new Dimension(1, 2), new Dimension(1, h), new Dimension(1, h));
 	}
 
 	// ---- pictures ----

@@ -78,6 +78,7 @@ public class FtlButton extends JButton {
 			this.text = text.toUpperCase();
 			Dimension d = new Dimension(w, FtlFont.MENU.render(this.text, GOLD).getHeight() + 6);
 			setPreferredSize(d);
+			setMinimumSize(new Dimension(Math.min(w, 40), d.height)); // a tight column squeezes the gaps, never the lettering
 			setMaximumSize(new Dimension(Integer.MAX_VALUE, d.height));
 			setAlignmentX(LEFT_ALIGNMENT);
 		}
