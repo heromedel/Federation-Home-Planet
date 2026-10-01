@@ -106,7 +106,7 @@ public final class Line {
 		return new Line(n, k, id, amount, c, c != null ? c.getName() : name, cls);
 	}
 	/** Text from the other side: control characters out, cut to length. */
-	static String text(String s, int max) {
+	public static String text(String s, int max) {
 		StringBuilder b = new StringBuilder();
 		for (int i = 0; i < s.length() && b.length() < max; i++) { char c = s.charAt(i); if (c >= ' ' && c != 0x7f) b.append(c); }
 		return b.toString().trim();

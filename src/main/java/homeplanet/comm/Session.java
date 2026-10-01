@@ -33,6 +33,8 @@ public final class Session implements Channel.Listener {
 		void changed();
 		/** A line for the notice strip (an offer changed, acceptance withdrawn, a trade settled). */
 		void notice(String text);
+		/** The other commander sent a message. */
+		void said(String who, String text);
 		/** Something went wrong that the commander should read (a dialog). */
 		void problem(String text);
 		/** A trade went through, or was called off: the sources are read again. */
@@ -49,6 +51,8 @@ public final class Session implements Channel.Listener {
 		/** Its mode: the vault's slot (sandbox, easy, normal, hard, custom). */
 		public String mode = homeplanet.vault.Vault.SANDBOX;
 		public boolean ships, anyLevel;
+		/** Its station shows messages (one too old for them would drop them unseen). */
+		public boolean chat;
 		public boolean immersive() { return !homeplanet.vault.Vault.SANDBOX.equals(mode); }
 		/** "Sandbox Mode", "Immersive Hard". */
 		public String modeTitle() { return homeplanet.vault.Vault.title(mode); }
@@ -97,7 +101,7 @@ public final class Session implements Channel.Listener {
 	/** This station's hello: who it is, its mode (Sandbox, or an Immersive career's level) and what it allows. */
 	public static Wire.Msg hello(String version, String station, String title, String ship, String mode, boolean ships, boolean anyLevel) {
 		return new Wire.Msg("HELLO").put("protocol", PROTOCOL).put("version", version).put("station", station).put("title", title)
-				.put("ship", ship == null ? "" : ship).put("mode", mode).put("ships", ships).put("anyLevel", anyLevel);
+				.put("ship", ship == null ? "" : ship).put("mode", mode).put("ships", ships).put("anyLevel", anyLevel).put("chat", true);
 	}
 	/** The other station from its hello; Garbled if it isn't one. */
 	public static Peer peerOf(Wire.Msg m) throws Wire.Garbled {
@@ -113,6 +117,7 @@ public final class Session implements Channel.Listener {
 		if (!java.util.Arrays.asList(homeplanet.vault.Vault.SLOTS).contains(p.mode)) throw new Wire.Garbled("mode " + Line.text(p.mode, 16));
 		p.ships = m.flag("ships");
 		p.anyLevel = m.flag("anyLevel");
+		p.chat = m.flag("chat");
 		try { p.protocol = Integer.parseInt(m.get("protocol").trim()); } catch (NumberFormatException e) { throw new Wire.Garbled("protocol"); }
 		return p;
 	}
@@ -198,6 +203,26 @@ public final class Session implements Channel.Listener {
 		channel.trySend(m);
 	}
 
+	/** The most a message can say. */
+	public static final int SAY_MAX = 200;
+	private long[] heard = new long[8];
+	private int heardAt = 0;
+	/** Sends the other commander a message (trimmed, plain text, cut to length). False if there's nothing to send. */
+	public boolean say(String text) {
+		String t = Line.text(text == null ? "" : text, SAY_MAX);
+		if (over || t.isEmpty() || !peer.chat) return false;
+		return channel.trySend(new Wire.Msg("SAY").put("text", t));
+	}
+	/** A message from the other commander: plain text, cut to length, and no more than 8 in 4 seconds (the rest dropped). */
+	private void onSay(Wire.Msg m) {
+		long now = System.currentTimeMillis();
+		if (now - heard[heardAt] < 4000) return;
+		heard[heardAt] = now;
+		heardAt = (heardAt + 1) % heard.length;
+		String t = Line.text(m.get("text"), SAY_MAX);
+		if (!t.isEmpty()) view.said(peer.title, t);
+	}
+
 	/** Accepts the offer as it stands, or takes acceptance back. */
 	public void accept(boolean on) {
 		if (over || exchanging) return;
@@ -241,6 +266,7 @@ public final class Session implements Channel.Listener {
 			else if (t.equals("DONE")) { /* the follower has it: nothing more to do */ }
 			else if (t.equals("ASK")) onAsk(m);
 			else if (t.equals("OUTCOME")) onOutcome(m);
+			else if (t.equals("SAY")) onSay(m);
 			else log.debug("Ignored a {} message", t);
 			if (crashAt != null && crashAt.equals(m.type + "+")) crash();
 		} catch (Wire.Garbled e) {

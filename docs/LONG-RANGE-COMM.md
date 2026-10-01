@@ -35,6 +35,10 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   the Space Dock. A link lost mid-exchange leaves a record in escrow: the leader calls its own off at once (it never
   told the other to complete); the follower's is settled the next time the two stations connect (it asks the leader),
   or by hand in Other... > Unfinished trades.
+- **Messages:** a one-line box under the offer (Enter or Send), up to 200 letters a message. Each shows who sent it
+  and when; the screen keeps the last 100 and starts empty on each new channel. Nothing is logged or saved. A station
+  takes at most 8 messages in 4 seconds (a flood is dropped, not queued). The hello says whether a station shows
+  messages (`chat`); an older one doesn't, so the box stays off rather than sending what wouldn't be seen.
 - **Distrust:** sizes are checked before anything is read; item ids must be in this station's game data; crew are
   rebuilt field by field within FTL's limits; a ship's package holds only its four files, and her save must read and be
   the ship offered. A malformed message closes the channel.
@@ -88,4 +92,5 @@ Protocol 2: custom ships' papers.
 LinkT runs station A in its own process and station B (LinkPeer) in another, over localhost: goods, supplies and crew
 both ways; a change withdrawing acceptance; a refused line; each side crashing at each step of the exchange and the
 trade settling on the next link; modes and levels refused or allowed; whole ships there and back with their marks,
-commission dates and no packages left behind; garbled messages and out-of-range crew.
+commission dates and no packages left behind; custom ships and tampered papers; messages (cut, flooded, and kept
+from an older station); garbled messages and out-of-range crew.

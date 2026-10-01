@@ -31,6 +31,9 @@ public class LinkPeer {
   }
   public void changed() { }
   public void notice(String t) { notices.add(t); }
+  final List<String> heard = Collections.synchronizedList(new ArrayList<String>());
+  public void said(String who, String text) { heard.add(who + "|" + text); }
+  volatile boolean chat = true;
   public void problem(String t) { problems.add(t); }
   public void settled(Exchange.Record r) { settled++; }
   public void ended(String why) { ended = why; session = null; }
@@ -41,7 +44,7 @@ public class LinkPeer {
   volatile String mode = Vault.SANDBOX; volatile boolean anyLevel = true;
   /** The version and protocol its hello claims ("version 4B.99", "protocol 2": a newer station). */
   volatile String version = HomePlanet.APP_VERSION; volatile int protocol = Session.PROTOCOL;
-  Wire.Msg hello() { return Session.hello(version, id, title, "", mode, ships, anyLevel).put("protocol", protocol); }
+  Wire.Msg hello() { return Session.hello(version, id, title, "", mode, ships, anyLevel).put("protocol", protocol).put("chat", chat); }
   String why(Session.Peer p) { return Session.incompatible(p, HomePlanet.APP_VERSION, id, mode, anyLevel); }
 
   /** Runs on the event thread, returning what it returns. */
@@ -90,6 +93,10 @@ public class LinkPeer {
    if (c.equals("known")) return "" + (DataManager.get().getShip(w[1]) != null);
    if (c.equals("starter")) { for (ShipDesign x : ShipDesign.load()) if (DesignExport.bpId(x).equals(w[1]) && !x.isWorking()) return "starter=" + x.starter + " retired=" + x.retired; CompanionMod.Remodel r = CompanionMod.find(CompanionMod.load(), w[1]); return r == null ? "none" : "starter=" + r.starter; }
    if (c.equals("artof")) { for (ShipDesign x : ShipDesign.load()) if (!x.isWorking() && DesignExport.bpId(x).equals(w[1])) return x.art + (ShipArt.load(x.art, "") != null ? " ok" : " missing"); return "none"; }
+   if (c.equals("say")) { final String t = cmd.length() > 4 ? cmd.substring(4) : ""; return edt(new java.util.concurrent.Callable<String>() { public String call() { return "" + session.say(t); } }); }
+   if (c.equals("heard")) return heard.isEmpty() ? "none" : heard.get(heard.size() - 1);
+   if (c.equals("heardcount")) return "" + heard.size();
+   if (c.equals("nochat")) { chat = w.length > 1 && w[1].equals("off"); return "OK"; }
    if (c.equals("version")) { version = w[1]; return "OK"; }
    if (c.equals("protocol")) { protocol = Integer.parseInt(w[1]); return "OK"; }
    if (c.equals("mode")) { mode = w[1]; anyLevel = w.length < 3 || w[2].equals("on"); return "OK"; }

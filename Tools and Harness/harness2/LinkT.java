@@ -229,6 +229,24 @@ public class LinkT {
   refused = false; try { homeplanet.parser.ShipPapers.install(bad, new byte[0], aDesign); } catch (IOException e) { refused = true; }
   Setup.chk("a refused install leaves nothing behind", refused && a("blueprints").equals(before));
 
+  // ---- messages between the commanders ----
+  Setup.chk("a message reaches the other commander, with who sent it", a("say Hello Bree, fair trade?").equals("true") && waitHeard("Captain Ash|Hello Bree, fair trade?"));
+  Setup.chk("an empty message isn't sent", a("say    ").equals("false"));
+  StringBuilder longer = new StringBuilder(); for (int i = 0; i < 30; i++) longer.append("0123456789");
+  a("say " + longer);
+  Thread.sleep(500);
+  Setup.chk("a long message is cut to " + Session.SAY_MAX + " letters", b("heard").length() == "Captain Ash|".length() + Session.SAY_MAX);
+  int had = Integer.parseInt(b("heardcount"));
+  for (int i = 0; i < 20; i++) a("say flood " + i);
+  Thread.sleep(800);
+  int got = Integer.parseInt(b("heardcount")) - had;
+  Setup.chk("a flood of messages is cut down (" + got + " of 20 shown)", got > 0 && got <= 8);
+  a("close"); b("wait ended"); b("nochat");
+  Setup.chk("A hails a station too old for messages", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+  Setup.chk("A can't send it messages (they'd go unseen)", a("say anyone there?").equals("false"));
+  a("close"); b("wait ended"); b("nochat off");
+  Setup.chk("A hails again", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+
   // ---- garbled transmissions ----
   Setup.chk("an oversized frame is garbled", garbled(new byte[] {0x7f, 0, 0, 0}));
   Setup.chk("a cut-short message is garbled", garbled(new byte[] {0, 0, 0, 3, 0, 5, 'H'}));
@@ -243,6 +261,11 @@ public class LinkT {
   boolean caught = false; try { Line.readLines(crew); } catch (Wire.Garbled e) { caught = true; }
   Setup.chk("an unknown race is garbled", caught);
   a("close");
+ }
+ /** Waits for B to have heard this message. */
+ static boolean waitHeard(String what) throws Exception {
+  for (int i = 0; i < 100; i++) { if (b("heard").equals(what)) return true; Thread.sleep(50); }
+  return false;
  }
  /** Both accept (A first). */
  static void trade2() throws Exception {
