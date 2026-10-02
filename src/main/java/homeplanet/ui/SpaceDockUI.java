@@ -51,7 +51,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
 	private JButton museumBtn;
-	private JButton inboxBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn;
+	private JButton inboxBtn, repBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn;
 	final MainFrame parent;
 
 	/** Width of one docked ship's place in the list. */
@@ -112,11 +112,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else {
 			inboxBtn = null;
 		}
+		// the career's reputation, in gold beside the inbox (a career always has one): clicking opens its log
+		repBtn = inboxBtn != null && homeplanet.vault.Reputation.shown() ? new ReputationButton(homeplanet.vault.Reputation.total(vault)) : null;
+		if (repBtn != null) repBtn.addActionListener(this);
 		boolean inboxHere = inboxBtn != null && vault.boarded() == null; // with a ship at your command, it sits on her heading instead
-		int inboxW = inboxHere ? inboxBtn.getPreferredSize().width + 8 : 0;
+		int inboxW = (inboxHere ? inboxBtn.getPreferredSize().width + 8 : 0) + (repBtn == null ? 0 : repBtn.getPreferredSize().width + 12);
 		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW);
 		if (HomePlanet.immersiveMode) dockedHeader.setToolTipText("Immersive Mode: your rank. Captains may commission custom ships; Commodores, custom ships with artillery");
-		docked.add(withInbox(dockedHeader, inboxHere), java.awt.BorderLayout.NORTH);
+		docked.add(withInbox(dockedHeader, inboxHere, repBtn), java.awt.BorderLayout.NORTH); // the reputation stays here, where there's room
 		docked.add(gridScroll, java.awt.BorderLayout.CENTER);
 		final int dockedW = 14 + CELL_W * 3 + 18;
 
@@ -493,7 +496,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		head.setOpaque(false);
 		head.setAlignmentX(LEFT_ALIGNMENT);
 		int inboxW = inboxBtn == null ? 0 : inboxBtn.getPreferredSize().width + 8;
-		head.add(withInbox(new FtlButton.Header("At your command", BERTH_W - inboxW), inboxBtn != null));
+		head.add(withInbox(new FtlButton.Header("At your command", BERTH_W - inboxW), inboxBtn != null, null));
 		head.add(Box.createRigidArea(new Dimension(1, 6)));
 		head.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, BERTH_W));
 		head.add(smallLabel(beacons(ship0), MenuTheme.GREY_GREEN));
@@ -510,12 +513,19 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return p;
 	}
 	/** A heading with the transmissions light at the end of its line (where the eye goes first), if it goes here. */
-	private JPanel withInbox(FtlButton.Header header, boolean here) {
+	private JPanel withInbox(FtlButton.Header header, boolean here, JButton rep) {
 		JPanel row = new JPanel(new java.awt.BorderLayout(8, 0));
 		row.setOpaque(false);
 		row.setAlignmentX(LEFT_ALIGNMENT);
 		row.add(header, java.awt.BorderLayout.CENTER);
-		if (here) row.add(inboxBtn, java.awt.BorderLayout.EAST);
+		if (rep == null && here) row.add(inboxBtn, java.awt.BorderLayout.EAST);
+		else if (rep != null) {
+			JPanel both = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 6, 0));
+			both.setOpaque(false);
+			both.add(rep);
+			if (here) both.add(inboxBtn);
+			row.add(both, java.awt.BorderLayout.EAST);
+		}
 		row.setMaximumSize(row.getPreferredSize());
 		return row;
 	}
@@ -597,6 +607,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			parent.showMuseum();
 		} else if (o == otherBtn) {
 			otherOrders();
+		} else if (o == repBtn && repBtn != null) {
+			ReputationLogDialog.open(this);
 		} else if (o == inboxBtn) {
 			boolean go = InboxDialog.open(this);
 			init();
@@ -713,6 +725,41 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				int tw = Math.min(t.getWidth(), getWidth() - lx - 20);
 				g.drawImage(t, lx + 17, (h - 2 - t.getHeight()) / 2 + 1, tw, t.getHeight(), null);
 			}
+			g.dispose();
+		}
+	}
+
+	/**
+	 * The career's reputation with The Federation Home Planet, in gold (red below zero), as the inbox beside it is drawn;
+	 * its tooltip has the latest changes, and clicking opens the Career Reputation Log.
+	 */
+	private final class ReputationButton extends JButton {
+		private final java.awt.image.BufferedImage text;
+		ReputationButton(int total) {
+			text = FtlFont.MENU.render("REPUTATION " + (total < 0 ? "-" + (-total) : String.valueOf(total)), total < 0 ? MenuTheme.RED : FtlButton.GOLD);
+			setPreferredSize(new Dimension(text.getWidth() + 22, 38));
+			setContentAreaFilled(false);
+			setBorderPainted(false);
+			setFocusPainted(false);
+			setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+			StringBuilder tip = new StringBuilder("<html>Your standing with The Federation Home Planet: earned by your ships' service, lost by their losses."
+					+ "<br>Click for the Career Reputation Log.");
+			java.util.List<String> recent = homeplanet.vault.Reputation.recent(Vault.get(), 5);
+			if (!recent.isEmpty()) tip.append("<br><br><b>Latest:</b>");
+			for (String r : recent) tip.append("<br>").append(homeplanet.parser.XmlText.text(r.length() > 18 ? r.substring(18) : r));
+			setToolTipText(tip.append("</html>").toString());
+		}
+		@Override protected void paintComponent(Graphics g0) {
+			Graphics2D g = (Graphics2D) g0.create();
+			g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+			int h = getHeight() - 6; // as tall as the inbox's box (it keeps room above for its hop)
+			g.translate(0, 6);
+			g.setColor(new Color(20, 28, 34, 220));
+			g.fillRoundRect(1, 1, getWidth() - 3, h - 3, 8, 8);
+			g.setColor(getModel().isRollover() ? new Color(255, 230, 160) : new Color(214, 230, 222));
+			g.setStroke(new java.awt.BasicStroke(1.8f));
+			g.drawRoundRect(1, 1, getWidth() - 3, h - 3, 8, 8);
+			g.drawImage(text, 11, (h - 2 - text.getHeight()) / 2 + 1, null);
 			g.dispose();
 		}
 	}

@@ -475,6 +475,40 @@ no letters, you come and check).
 - A derelict rebuilt with two systems' rooms swapped now says "the rooms built for her X and Y have been swapped",
   true whether or not those systems are installed.
 
+## 21. Reputation — built (4B.86; harness test RepuT)
+
+A career's standing with The Federation Home Planet, earned by its ships' service in FTL and lost by their losses.
+Only careers have it (Immersive Mode, and Sandbox with Career messages). Shown in gold on the Space Dock, beside the
+Docked Ships heading (red below zero); its tooltip has the latest changes, and clicking it opens the **Career
+Reputation Log** (reputation.log in the fleet's folder, in the station log's style).
+
+| Earned | | Lost | |
+|---|---|---|---|
+| Each new sector | +6 | Each crew member killed | −10 |
+| Scrap collected (FTL's total: not sales) | a tenth | Each ship lost in action | −50 |
+| Each ship defeated | +4 | | |
+| A rebel ship defeated (REBEL_ or AUTO_) | +6 | | |
+| The Rebel Flagship defeated | +100 | | |
+
+- **Counted as FTL plays:** at each look the station takes at a save FTL wrote, against the count kept for each ship
+  (reputation.txt), so nothing counts twice. The station's own changes (a trade, a New Journey, commissioning, the
+  Cargo Bay) move the count without scoring. A death is FTL's lost-crew count going up with the crew member gone: a
+  clone that came back, or a dismissal, isn't one.
+- **The last stand:** nothing is ever lost in sector 8 (deaths, or a ship lost there); gains still count.
+- **The first count:** a career's service so far is reviewed once ("Service record reviewed"), from what the station
+  keeps: each ship's FTL totals since she joined (her commissioning, or her trade), each ship lost before the last
+  stand, and each victory in the Hall of Victors. Older records can't tell rebels apart: they count as ships. A
+  traded ship's crew losses from before her trade aren't told apart, so her losses aren't counted in the review.
+- **Traded ships** count only what they did since their trade (TradeMark), as everything else does.
+- With careers switched off, each ship's count still moves on, so nothing done meanwhile scores later.
+
+**Later:** event outcomes (+2 a good one, −1 a bad one), being caught by the rebel fleet (−5), new achievements
+(+10), a free crew member from a hiring post (−5; the posts are on another branch), and the rescue ship when no
+ship can fly: a Kestrel Type A, with 10% of what the surrendered cargo didn't cover taken from reputation (a ship
+requisitioned when one isn't needed would cost her full value).
+
+**Back burner:** spending reputation, and promotions tied to it.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

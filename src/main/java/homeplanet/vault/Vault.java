@@ -530,6 +530,7 @@ public final class Vault {
 			notes.add(b.name + " was boarded, and continue.sav is gone: lost in action (FTL ends a run by deleting the save). "
 					+ (historyOf(b).isDirectory() ? "Her last versions are in history/" + b.id : ""));
 			recordFate(b, Fate.LOST);
+			Reputation.lost(this, b);
 			ships.remove(b);
 			b = null;
 		}
@@ -872,6 +873,7 @@ public final class Vault {
 		String lostName = b.marks.split("\\|", -1)[1];
 		b.name = lostName;
 		recordFate(b, Fate.LOST);
+		Reputation.lost(this, b);
 		ships.remove(b);
 		Ship n = new Ship(newId(), gs.getPlayerShipName(), Ship.State.BOARDED, gs.isDLCEnabled());
 		n.stranger = true;

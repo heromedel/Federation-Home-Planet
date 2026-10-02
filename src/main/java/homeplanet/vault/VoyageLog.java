@@ -96,6 +96,7 @@ public final class VoyageLog {
 	/** FTL has written her save: logs what changed since the last look. Nothing on the first look (it only starts the record). */
 	static void observe(Vault v, Ship s, SavedGameState gs) {
 		if (s == null || gs == null || s.state == Ship.State.STORAGE) return;
+		Reputation.look(v, s, gs); // what she did scores for the career, if one runs
 		Properties last = last(v, s);
 		Properties now = summary(gs);
 		carry(last, now);
@@ -112,6 +113,7 @@ public final class VoyageLog {
 	/** The station changed her itself (a trade, a New Journey, her commissioning): the last look moves, nothing is logged. */
 	static void baseline(Vault v, Ship s, SavedGameState gs) {
 		if (s == null || gs == null || s.state == Ship.State.STORAGE) return;
+		Reputation.rebase(v, s, gs);
 		Properties last = last(v, s);
 		Properties now = summary(gs);
 		carry(last, now);
