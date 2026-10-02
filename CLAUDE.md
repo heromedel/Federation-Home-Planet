@@ -39,7 +39,7 @@ it does and CREDITS.md for where the code came from.
   They know how to fetch and build: don't repeat test steps after each commit. Mention what to test only when it's
   something unusual they wouldn't find on their own.
 - `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
-- The version (4B.nn) goes up by one only with a commit: `<version>` in `pom.xml` and
+- The version (4B.nn; after 4B.99 comes 5.00, then 5.01 to 5.99, then 6.00) goes up by one only with a commit: `<version>` in `pom.xml` and
   `APP_VERSION` in `HomePlanet.java`, always together.
 - The repo is public. Never commit FTL's game files (ftl.dat, its pictures or music) or a link to them.
 

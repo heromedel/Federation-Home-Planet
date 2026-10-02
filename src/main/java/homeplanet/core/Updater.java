@@ -46,8 +46,8 @@ public final class Updater {
 
 	// ---- versions ----
 
-	private static final Pattern VERSION = Pattern.compile("(\\d+)([A-Za-z]+)\\.(\\d+)");
-	/** Compares two versions like 4B.68: below 0 if a is older, 0 the same, above 0 newer. Unreadable ones count as oldest. */
+	private static final Pattern VERSION = Pattern.compile("(\\d+)([A-Za-z]*)\\.(\\d+)");
+	/** Compares two versions like 4B.68, or 5.00 (which follows 4B.99): below 0 if a is older, 0 the same, above 0 newer. Unreadable ones count as oldest. */
 	public static int compare(String a, String b) {
 		long x = rank(a), y = rank(b);
 		return x < y ? -1 : x > y ? 1 : 0;
