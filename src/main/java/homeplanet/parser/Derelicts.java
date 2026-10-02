@@ -350,7 +350,9 @@ public final class Derelicts {
 		if (oddity == null || oddity.isEmpty()) return "";
 		if (oddity.startsWith("swap:")) {
 			String[] s = oddity.substring(5).split(",");
-			return "Rebuilt strangely: her " + homeplanet.model.Items.systemTitle(s[0]) + " and " + homeplanet.model.Items.systemTitle(s[1]) + " have swapped rooms";
+			// the rooms are swapped whether or not the systems are installed: say so of the rooms
+			return "Rebuilt strangely: the rooms built for her " + homeplanet.model.Items.systemTitle(s[0]) + " and " + homeplanet.model.Items.systemTitle(s[1])
+					+ " have been swapped, so each installs where the other would";
 		}
 		if (oddity.startsWith("door:")) return "Rebuilt strangely: one of her doors has been welded shut";
 		return "";

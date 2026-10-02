@@ -1,4 +1,4 @@
-import java.io.*; import java.util.*; import java.util.List; import java.awt.*; import javax.swing.*; import net.blerf.ftl.parser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*; import homeplanet.ui.*; import homeplanet.parser.Career; import homeplanet.parser.CareerRules;
+import java.io.*; import java.util.*; import java.util.List; import net.blerf.ftl.parser.SavedGameParser.ShipState; import java.awt.*; import javax.swing.*; import net.blerf.ftl.parser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*; import homeplanet.ui.*; import homeplanet.parser.Career; import homeplanet.parser.CareerRules;
 /**
  * The station's windows, driven as a player would (needs a display: run.sh runs it under xvfb-run): the Dry Dock's bill
  * paid from the Cargo Hold on Save and dropped on Reset (the hold as the trade partner, and another ship as it); the
@@ -33,6 +33,7 @@ public class GuiT {
   junkyardInfo(v, f);
   modes();
   switched(f);
+  holdAlone(v, f);
   Setup.done();
   System.exit(0);
  }
@@ -152,6 +153,37 @@ public class GuiT {
    r[2] = Boolean.TRUE.equals(field(f, MainFrame.class, "atSpaceDock"));
   } catch (Exception e) { throw new RuntimeException(e); } } });
   Setup.chk("W: a new game mode: the open windows close and the Space Dock shows", r[0] && r[1] && r[2]);
+ }
+
+ /** No ship aboard: the Cargo Bay opens on the Cargo Hold; an item and a stored system sold from it pay the hold on Save. */
+ static void holdAlone(final Vault v, final MainFrame f) throws Exception {
+  if (v.boarded() != null) v.dock();
+  Vault.Copy c = v.readCopy(v.storage()); c.save.getPlayerShip().getWeaponList().clear(); c.save.getPlayerShip().getWeaponList().add(SaveHelper.newIdleWeapon("LASER_BURST_2"));
+  v.begin().put(v.storage(), c.save, c.hash).commit();
+  SafeFiles.writeText(v.systemsFile(), "# stored\ncloaking 1\n", false);
+  hold(v, 10);
+  final Object[] r = new Object[6];
+  presses.clear(); presses.addAll(Arrays.asList(0, 0)); // Yes to selling the weapon, Yes to selling the system
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showCargoBay();
+   CargoBayUI bay = f.cargoBay;
+   r[0] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
+   r[1] = call(bay, CargoBayUI.class, "partnerIsStorage", new Class<?>[0]);
+   Object[] cats = (Object[]) field(bay, CargoBayUI.class, "cats");
+   Object theirs = field(cats[0], cats[0].getClass(), "theirs");
+   ((JList<?>) field(theirs, theirs.getClass(), "list")).setSelectedIndex(0);
+   call(bay, CargoBayUI.class, "dispose", new Class<?>[] {boolean.class, int.class, boolean.class}, false, 0, true);
+   Object sys = field(bay, CargoBayUI.class, "systems");
+   java.util.List<?> stored = (java.util.List<?>) call(sys, sys.getClass(), "storedList", new Class<?>[0]);
+   call(sys, sys.getClass(), "sell", new Class<?>[] {stored.get(0).getClass()}, stored.get(0));
+   r[2] = bay.saveAll();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Thread.sleep(400);
+  ShipState hold = v.readCopy(v.storage()).save.getPlayerShip();
+  String file = new String(SafeFiles.read(v.systemsFile()), "UTF-8");
+  Setup.chk("H: no ship aboard: the Cargo Bay opens on the Cargo Hold", Boolean.TRUE.equals(r[0]) && Boolean.TRUE.equals(r[1]));
+  Setup.chk("H: a weapon and a stored system sold from it: Save pays the hold, both are gone (" + hold.getScrapAmt() + " scrap)", Boolean.TRUE.equals(r[2])
+    && hold.getWeaponList().isEmpty() && !file.contains("cloaking") && hold.getScrapAmt() > 10);
  }
 
  static void salvage(final MainFrame f) throws Exception {

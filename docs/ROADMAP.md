@@ -464,6 +464,15 @@ no letters, you come and check).
   Space Dock with the new mode's fleet, so nothing of the old mode is left on screen; Settings' unsaved choices for
   the old mode are dropped with it (4B.75).
 
+## 20. The Cargo Hold with no ship aboard — built (4B.76; checks in GuiT)
+
+- With no ship boarded, the Cargo Bay opens on the Trade tab with the Cargo Hold as its partner: its items and
+  supplies can be sold or junked (paying the hold), and **Stored Systems** sells the systems kept there; Save writes
+  the hold (and the stored-systems list) alone. The left side says "No ship aboard: board one at the Space Dock";
+  Send and Take, the Shop and the Refit tab wait for a ship. The stranded letters say so.
+- A derelict rebuilt with two systems' rooms swapped now says "the rooms built for her X and Y have been swapped",
+  true whether or not those systems are installed.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

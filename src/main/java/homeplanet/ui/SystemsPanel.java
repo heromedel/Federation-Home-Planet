@@ -656,6 +656,10 @@ public class SystemsPanel {
 		bay.help("Repaired " + n + " hull for " + n * each + " scrap. Save makes it official.");
 	}
 
+	/** The systems stored in the Cargo Hold, as the Cargo Bay holds them now (unsaved sales gone). */
+	java.util.List<Stored> storedList() { return new ArrayList<Stored>(stored); }
+	/** Sells a stored system (the Trade tab's Stored systems, with no ship aboard): the hold is paid on Save. */
+	void sell(Stored s) { if (stored.contains(s)) sellSystem(s); }
 	/** HR1: what a stored system sells for. */
 	static int salePrice(Stored s) { return homeplanet.parser.Pricing.systemSale(s.id, s.level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT); }
 	private void sellSystem(Stored sel) {
