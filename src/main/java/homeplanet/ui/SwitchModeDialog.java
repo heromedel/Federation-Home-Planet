@@ -105,11 +105,13 @@ final class SwitchModeDialog extends JDialog {
 
 	private void switchTo(String slot) {
 		boolean done = Vault.SANDBOX.equals(slot) ? ImmersiveDialog.toSandbox(this) : ImmersiveDialog.enter(this, slot);
-		if (done) changed = true;
+		if (done) { changed = true; dispose(); return; } // a new mode: every window closes and the Space Dock shows it (MainFrame.modeSwitched)
 		fill();
 	}
 	private void end(String slot) {
+		String was = Vault.get().slot;
 		if (ImmersiveDialog.endCareer(this, slot)) changed = true;
+		if (!Vault.get().slot.equals(was)) { dispose(); return; } // the career in use ended: the mode changed too
 		fill();
 	}
 }

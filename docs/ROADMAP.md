@@ -460,6 +460,9 @@ no letters, you come and check).
 - Where each journey began is kept in history/<id>/journey.txt (`vault.JourneyStart`, written when the station sets
   her out), with the furthest sector of her earlier journeys; a ship from before 4B.75 counts her journey from her
   next New Journey, and says so.
+- Switching game mode closes every window of the station's (Switch Game Mode, Settings, any report) and shows the
+  Space Dock with the new mode's fleet, so nothing of the old mode is left on screen; Settings' unsaved choices for
+  the old mode are dropped with it (4B.75).
 
 ## Naming decisions — settled (4B.30)
 

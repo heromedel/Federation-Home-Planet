@@ -32,6 +32,7 @@ public class GuiT {
   auction(v, f);
   junkyardInfo(v, f);
   modes();
+  switched(f);
   Setup.done();
   System.exit(0);
  }
@@ -138,6 +139,19 @@ public class GuiT {
     && texts[0].contains("Begun: 0 ships") && texts[1].contains("Begun: 0 ships"));
   Setup.chk("M: the others not begun, on both", texts[0].split("Not begun", -1).length == 4 && texts[1].split("Not begun", -1).length == 4);
   Setup.chk("M: the welcome screen offers Continue for the begun career, Begin for the rest " + buttons, Collections.frequency(buttons, "Continue...") == 1 && Collections.frequency(buttons, "Begin...") == 3);
+ }
+
+ /** After a switch of game mode: the station's open windows close, and the Space Dock shows. */
+ static void switched(final MainFrame f) throws Exception {
+  final boolean[] r = new boolean[3];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showCargoBay();
+   JDialog open = new JDialog(f, "Settings"); open.setSize(200, 100); open.setVisible(true);
+   r[0] = MainFrame.modeSwitched();
+   r[1] = !open.isDisplayable();
+   r[2] = Boolean.TRUE.equals(field(f, MainFrame.class, "atSpaceDock"));
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("W: a new game mode: the open windows close and the Space Dock shows", r[0] && r[1] && r[2]);
  }
 
  static void salvage(final MainFrame f) throws Exception {
