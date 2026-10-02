@@ -455,9 +455,11 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	/** Board another ship without leaving the Cargo Bay: the ships docked at a Station, as the partner list has them. */
 	private void pickBoard() {
 		JPopupMenu m = new JPopupMenu();
-		JMenuItem now = new JMenuItem(currentPath == null ? "No ship aboard" : currentSave.getPlayerShipName() + "   (boarded)");
-		now.setEnabled(false);
-		m.add(now);
+		if (currentPath != null) { // no ship aboard: the button says so already
+			JMenuItem now = new JMenuItem(currentSave.getPlayerShipName() + "   (boarded)");
+			now.setEnabled(false);
+			m.add(now);
+		}
 		boolean any = false;
 		for (final Ship s : boardable()) {
 			any = true;
