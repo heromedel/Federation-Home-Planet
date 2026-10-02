@@ -394,7 +394,7 @@ no letters, you come and check).
   Fuel, missile and drone part prices live in one place. A derelict's listing keeps her share (25-75%), so her price
   follows any change to the prices. The Refit bill, the auction and the Junkyard window are tested in the harness
   (GuiT, on a virtual display).
-- The repair job (4B.68): after the fleet makes three unflyable ships fly again (no working Engines or Piloting, then
+- The repair job (4B.69): after the fleet makes three unflyable ships fly again (no working Engines or Piloting, then
   both), a collector in the Civilian Sector offers 200-500 scrap over the repair cost to restore her Stealth,
   the Nightjar (on the blank copy: a teleporter, and FTL's Zoltan shield augment). Accepted, she's delivered to the
   Junkyard, marked as borrowed (history/<id>/borrowed.txt, beside TradeMark). Whole again (full hull, no breaches,
@@ -417,7 +417,7 @@ no letters, you come and check).
   only the Hyperspace mod lets custom ships have them. Designs need just their one PNG; glowing engines can be painted
   into the art. Settled with heromedel: not worth pursuing.
 
-## 17. Check for Updates — built (4B.68; harness test UpdT)
+## 17. Check for Updates — built (4B.69; harness test UpdT)
 
 - **Settings, About: Check for Updates...** reads main's `pom.xml` on GitHub and compares versions (4B.9 < 4B.10 <
   4C.1). Only when asked: nothing contacts GitHub on its own. Up to date, unreachable (with the address), or newer.
