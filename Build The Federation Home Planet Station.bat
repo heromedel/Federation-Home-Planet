@@ -32,11 +32,18 @@ echo    0: Exit
 echo    1: Construct Federation Home Planet Station
 echo    2: Construct Federation Home Planet Station with Quick Link
 echo       (adds a Quick Link to the Station Interface on your desktop)
+echo    3: Construct Federation Home Planet Station and launch it
 echo.
-choice /c 012 /n /m "   Input -> "
+choice /c 0123 /n /m "   Input -> "
+if errorlevel 4 goto :buildlaunch
 if errorlevel 3 ( call :construct && call :quicklink & goto :after )
 if errorlevel 2 ( call :construct & goto :after )
 exit /b 0
+
+:buildlaunch
+call :construct
+if defined BUILT ( call :launch & exit /b 0 )
+goto :after
 
 :after
 echo.
