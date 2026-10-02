@@ -74,8 +74,8 @@ final victories) and takes stock when you switch back to it.
 If your FTL is the Steam version, turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties,
 General): it can bring back an old copy of a docked ship, or an old FTL profile.
 
-To build from source, double-click `Build The Federation Home Planet Station.bat` and choose 1 (or 2, which also puts a
-Quick Link to the Interface on your desktop). The first run downloads a JDK and Maven into `tools\` (once); then every
+To build from source, double-click `Build The Federation Home Planet Station.bat` and choose 1 (2 also puts a Quick Link to
+the Interface on your desktop; 3 launches the station once it's built). The first run downloads a JDK and Maven into `tools\` (once); then every
 run puts a fresh `Federation Home Planet.jar` in `Current Build\`, then offers to launch it. Or with your own Maven:
 `mvn package` → `target/Federation Home Planet.jar`.
 

@@ -1,4 +1,4 @@
-import java.io.*; import java.util.*; import java.util.List; import java.awt.*; import javax.swing.*; import net.blerf.ftl.parser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*; import homeplanet.ui.*;
+import java.io.*; import java.util.*; import java.util.List; import net.blerf.ftl.parser.SavedGameParser.ShipState; import java.awt.*; import javax.swing.*; import net.blerf.ftl.parser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*; import homeplanet.ui.*; import homeplanet.parser.Career; import homeplanet.parser.CareerRules;
 /**
  * The station's windows, driven as a player would (needs a display: run.sh runs it under xvfb-run): the Dry Dock's bill
  * paid from the Cargo Hold on Save and dropped on Reset (the hold as the trade partner, and another ship as it); the
@@ -31,6 +31,9 @@ public class GuiT {
   bill(v, f, true);
   auction(v, f);
   junkyardInfo(v, f);
+  modes();
+  switched(f);
+  holdAlone(v, f);
   Setup.done();
   System.exit(0);
  }
@@ -110,6 +113,89 @@ public class GuiT {
   Object[] x = extras.isEmpty() ? null : extras.get(0);
   Setup.chk("J: an Info... button beside the list", x != null && x[0] != null);
   Setup.chk("J: the list's tooltip is her short report, with what Trade In pays", x != null && x[1] != null && String.valueOf(x[1]).contains("Trade In:") && String.valueOf(x[1]).contains("Hull "));
+ }
+
+ /** The welcome screen and Switch Game Mode describe each career alike; one already begun offers Continue, not Begin. */
+ static void modes() throws Exception {
+  Vault.switchFleet(Vault.CUSTOM); Career.start(false, false, CareerRules.earlier(false));
+  Vault.switchFleet(Vault.SANDBOX);
+  final String[] texts = new String[2]; final List<String> buttons = new ArrayList<String>();
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   java.lang.reflect.Constructor<?> k = ModeChoiceDialog.class.getDeclaredConstructor(); k.setAccessible(true);
+   JDialog welcome = (JDialog) k.newInstance();
+   Class<?> sw = Class.forName("homeplanet.ui.SwitchModeDialog");
+   java.lang.reflect.Constructor<?> k2 = sw.getDeclaredConstructor(Component.class); k2.setAccessible(true);
+   JDialog switcher = (JDialog) k2.newInstance((Component) null);
+   JDialog[] ds = {welcome, switcher};
+   for (int i = 0; i < 2; i++) {
+    StringBuilder sb = new StringBuilder();
+    for (JLabel l : all(ds[i].getContentPane(), JLabel.class)) sb.append(l.getText().replaceAll("<[^>]*>", " ")).append('\n');
+    texts[i] = sb.toString();
+   }
+   for (JButton b : all(welcome.getContentPane(), JButton.class)) buttons.add(b.getText());
+   welcome.dispose(); switcher.dispose();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  String first = "Your first Immersive career, from before difficulties, with the rules it had.";
+  Setup.chk("M: the welcome screen and Switch Game Mode both say Custom holds the first career, begun", texts[0].contains(first) && texts[1].contains(first)
+    && texts[0].contains("Begun: 0 ships") && texts[1].contains("Begun: 0 ships"));
+  Setup.chk("M: the others not begun, on both", texts[0].split("Not begun", -1).length == 4 && texts[1].split("Not begun", -1).length == 4);
+  Setup.chk("M: the welcome screen offers Continue for the begun career, Begin for the rest " + buttons, Collections.frequency(buttons, "Continue...") == 1 && Collections.frequency(buttons, "Begin...") == 3);
+ }
+
+ /** After a switch of game mode: the station's open windows close, and the Space Dock shows. */
+ static void switched(final MainFrame f) throws Exception {
+  final boolean[] r = new boolean[3];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showCargoBay();
+   JDialog open = new JDialog(f, "Settings"); open.setSize(200, 100); open.setVisible(true);
+   r[0] = MainFrame.modeSwitched();
+   r[1] = !open.isDisplayable();
+   r[2] = Boolean.TRUE.equals(field(f, MainFrame.class, "atSpaceDock"));
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("W: a new game mode: the open windows close and the Space Dock shows", r[0] && r[1] && r[2]);
+ }
+
+ /** No ship aboard: the Cargo Bay opens on the Cargo Hold; an item and a stored system sold from it pay the hold on Save. */
+ static void holdAlone(Vault stale, final MainFrame f) throws Exception {
+  final Vault v = Vault.get(); // the mode checks switched fleets: the vault in use now
+  if (v.boarded() != null) v.dock();
+  Vault.Copy c = v.readCopy(v.storage()); c.save.getPlayerShip().getWeaponList().clear(); c.save.getPlayerShip().getWeaponList().add(SaveHelper.newIdleWeapon("LASER_BURST_2"));
+  v.begin().put(v.storage(), c.save, c.hash).commit();
+  SafeFiles.writeText(v.systemsFile(), "# stored\ncloaking 1\n", false);
+  hold(v, 10);
+  final Object[] r = new Object[6];
+  presses.clear(); presses.addAll(Arrays.asList(0, 0)); // Yes to selling the weapon, Yes to selling the system
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   r[3] = call(f.spaceDock, SpaceDockUI.class, "cargoBayClosedReason", new Class<?>[0]); // the Space Dock's Cargo Bay button lets her in
+   f.showCargoBay();
+   CargoBayUI bay = f.cargoBay;
+   r[0] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
+   r[1] = call(bay, CargoBayUI.class, "partnerIsStorage", new Class<?>[0]);
+   Object[] cats = (Object[]) field(bay, CargoBayUI.class, "cats");
+   Object theirs = field(cats[0], cats[0].getClass(), "theirs");
+   ((JList<?>) field(theirs, theirs.getClass(), "list")).setSelectedIndex(0);
+   call(bay, CargoBayUI.class, "dispose", new Class<?>[] {boolean.class, int.class, boolean.class}, false, 0, true);
+   Object sys = field(bay, CargoBayUI.class, "systems");
+   java.util.List<?> stored = (java.util.List<?>) call(sys, sys.getClass(), "storedList", new Class<?>[0]);
+   call(sys, sys.getClass(), "sell", new Class<?>[] {stored.get(0).getClass()}, stored.get(0));
+   r[2] = bay.saveAll();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Thread.sleep(400);
+  ShipState hold = v.readCopy(v.storage()).save.getPlayerShip();
+  String file = new String(SafeFiles.read(v.systemsFile()), "UTF-8");
+  Setup.chk("H: no ship aboard: the Space Dock's Cargo Bay button opens it (" + r[3] + "), on the Cargo Hold", r[3] == null && Boolean.TRUE.equals(r[0]) && Boolean.TRUE.equals(r[1]));
+  Setup.chk("H: a weapon and a stored system sold from it: Save pays the hold, both are gone (" + hold.getScrapAmt() + " scrap)", Boolean.TRUE.equals(r[2])
+    && hold.getWeaponList().isEmpty() && !file.contains("cloaking") && hold.getScrapAmt() > 10);
+  // and from there, board a docked ship without going back to the Space Dock
+  final Ship next = v.docked().get(0);
+  final Object[] b = new Object[2];
+  presses.clear(); presses.add(0); shown.clear(); // Board her
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   CargoBayUI bay = f.cargoBay;
+   call(bay, CargoBayUI.class, "boardFromHere", new Class<?>[] {Ship.class}, next);
+   b[0] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("H: no ship aboard, a docked ship boarded from the Cargo Bay: she's aboard, and the Cargo Bay shows her", v.boarded() == next && Boolean.FALSE.equals(b[0]));
  }
 
  static void salvage(final MainFrame f) throws Exception {

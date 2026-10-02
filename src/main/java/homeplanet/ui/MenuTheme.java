@@ -149,6 +149,17 @@ public final class MenuTheme {
 	}
 
 	/** Recolours the component and everything inside it. */
+	/** The open tab's name in dark on its light tab, the others as the theme draws them (as Settings does). */
+	public static void markOpenTab(final javax.swing.JTabbedPane t) {
+		final Color normal = new Color(220, 228, 235), open = new Color(20, 28, 40);
+		javax.swing.event.ChangeListener mark = new javax.swing.event.ChangeListener() {
+			public void stateChanged(javax.swing.event.ChangeEvent e) {
+				for (int i = 0; i < t.getTabCount(); i++) t.setForegroundAt(i, i == t.getSelectedIndex() ? open : normal);
+			}
+		};
+		t.addChangeListener(mark);
+		mark.stateChanged(null);
+	}
 	public static void apply(Component c) {
 		if (c == null || c instanceof FtlButton) return;
 		boolean field = c instanceof JTextComponent || c instanceof JList || c instanceof JTable || c instanceof JComboBox;

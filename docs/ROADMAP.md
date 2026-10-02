@@ -432,8 +432,48 @@ no letters, you come and check).
   builds without the menu (waiting up to half a minute for the old jar to be let go) and opens the station. If the
   build fails, the old files go back (`:restore`) and the old jar is still in `Current Build\`.
 - **The Construction Yard** now offers 0: Exit / 1: Launch the Station Interface after a successful build.
+- In an update the Construction Yard says "Reconstructing Station..." and "Station Reconstructed" (4B.74).
+- A first construction (no JDK or Maven in `tools\` yet) opens with a box saying it takes a while, and that later
+  constructions are much faster (4B.77).
+- When Maven can't check a website's certificate (`PKIX`, `CertPath`, `bad_certificate` in its messages, kept in
+  `tools\last-build.log`), the Construction Yard explains the two usual causes: the computer's date or time is wrong,
+  or an antivirus scans HTTPS connections (4B.74).
 - Tested on Windows by hand: the rebuild and relaunch (UpdT covers the versions, the file replacement, bad downloads
   and the put-back).
+
+## 18. The welcome screen shows what's there — built (4B.74; checks in GuiT)
+
+- The first-startup welcome lists the four careers as Switch Game Mode does (`ui.ModeRows`, shared by both): each
+  one's name, its line and its state (Not begun / Begun: N ships, its own FTL profile), with **Begin...** or
+  **Continue...**; the Sandbox card shows the Sandbox fleet's ships, and a line says when fleets were found. The first
+  Immersive career (from before difficulties) stays in the Custom slot, described as such on both screens.
+- A begun career's briefing says how to begin it afresh: end it in Settings > Switch Game Mode (a copy is kept).
+
+## 19. Her particulars, and a Stats tab — built (4B.75; harness test StatT)
+
+- The Space Dock: when her particulars don't fit beside her picture, she moves right a little to make room (they
+  stand beside the picture itself, which is centred in her berth); hidden only if the window is too narrow for both.
+- The ship's report (Info, or her picture) has two tabs, **Report** and **Stats**. Stats, under her picture:
+  **This Journey** (sector, difficulty; beacons, ships defeated, scrap, crew hired, enemy crew killed, crew lost in
+  red, shots and missiles fired, counted from where the journey began), **Her Service** (commissioned, first
+  commissioned by for a traded ship, journeys, sectors visited, furthest sector, final victories in green, and FTL's
+  totals, which run on across journeys), and **Her Crew** (the standouts: Best Pilot, Best Gunner, Best Engineer,
+  Longest Serving, Most Skilled, with what earned it). Nothing the records lack is shown as 0.
+- Where each journey began is kept in history/<id>/journey.txt (`vault.JourneyStart`, written when the station sets
+  her out), with the furthest sector of her earlier journeys; a ship from before 4B.75 counts her journey from her
+  next New Journey, and says so.
+- Switching game mode closes every window of the station's (Switch Game Mode, Settings, any report) and shows the
+  Space Dock with the new mode's fleet, so nothing of the old mode is left on screen; Settings' unsaved choices for
+  the old mode are dropped with it (4B.75).
+
+## 20. The Cargo Hold with no ship aboard — built (4B.76; checks in GuiT)
+
+- With no ship boarded, the Cargo Bay opens on the Trade tab with the Cargo Hold as its partner: its items and
+  supplies can be sold or junked (paying the hold), and **Stored Systems** sells the systems kept there; Save writes
+  the hold (and the stored-systems list) alone. The left side says "No ship aboard: board one at the Space Dock";
+  Send and Take, the Shop and the Refit tab wait for a ship. The stranded letters say so.
+- A derelict rebuilt with two systems' rooms swapped now says "the rooms built for her X and Y have been swapped",
+  true whether or not those systems are installed.
 
 ## Naming decisions — settled (4B.30)
 

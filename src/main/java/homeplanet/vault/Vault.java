@@ -226,6 +226,7 @@ public final class Vault {
 	public synchronized void setOut(Ship s, SavedGameState gs, String note) throws IOException {
 		s.fresh = position(gs);
 		saveManifest();
+		JourneyStart.begin(this, s, gs, VoyageLog.lastSector(this, s)); // before the last look moves: it knows the journey just ended
 		VoyageLog.baseline(this, s, gs);
 		VoyageLog.note(this, s, note);
 		homeplanet.parser.Museum.setOut(this, s, note.startsWith("Commissioned")); // her command starts: honours count from here

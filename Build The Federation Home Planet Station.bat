@@ -14,6 +14,9 @@ set "MVN=%TOOLS%\maven"
 set "JDK_URL=https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk"
 set "MVN_URL=https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip"
 set "BUILT="
+rem the words for a build; an update rebuilds, so it says so
+set "DOING=Constructing"
+set "DONE=Constructed"
 
 rem "update": started by the station's Check for Updates, with the new files in place: rebuild, then open the station
 if /i "%~1"=="update" goto :update
@@ -29,11 +32,18 @@ echo    0: Exit
 echo    1: Construct Federation Home Planet Station
 echo    2: Construct Federation Home Planet Station with Quick Link
 echo       (adds a Quick Link to the Station Interface on your desktop)
+echo    3: Construct Federation Home Planet Station and establish communications. (Launch Federation Home Planet)
 echo.
-choice /c 012 /n /m "   Input -> "
+choice /c 0123 /n /m "   Input -> "
+if errorlevel 4 goto :buildlaunch
 if errorlevel 3 ( call :construct && call :quicklink & goto :after )
 if errorlevel 2 ( call :construct & goto :after )
 exit /b 0
+
+:buildlaunch
+call :construct
+if defined BUILT ( call :launch & exit /b 0 )
+goto :after
 
 :after
 echo.
@@ -47,6 +57,8 @@ exit /b 0
 
 rem ---- :update: the station closed itself for new construction plans ----
 :update
+set "DOING=Reconstructing"
+set "DONE=Reconstructed"
 cls
 echo ==========================================================
 echo    THE FEDERATION HOME PLANET STATION
@@ -78,15 +90,29 @@ exit /b 0
 rem ---- :construct: tools if missing, then the build ----
 :construct
 echo.
+rem the first construction gathers its tools: say so before the long wait
+set "FIRST="
+if not exist "%JDK%\bin\javac.exe" set "FIRST=1"
+if not exist "%MVN%\bin\mvn.cmd" set "FIRST=1"
+if defined FIRST call :firstnote
 if not exist "%JDK%\bin\javac.exe" call :fetch "a JDK" "%JDK_URL%" "%TOOLS%\jdk.zip" "%JDK%" 100000000 || exit /b 1
 if not exist "%MVN%\bin\mvn.cmd" call :fetch "Maven" "%MVN_URL%" "%TOOLS%\maven.zip" "%MVN%" 5000000 || exit /b 1
 set "JAVA_HOME=%JDK%"
 set "PATH=%JDK%\bin;%MVN%\bin;%PATH%"
 
-echo Constructing Station...
+echo %DOING% Station...
 if exist target rmdir /s /q target
-call "%MVN%\bin\mvn.cmd" -q package -DskipTests
-if errorlevel 1 ( echo. & echo Station construction failed: see the messages above. & exit /b 1 )
+rem Maven's messages go to a log first, so a refused certificate can be explained after them
+call "%MVN%\bin\mvn.cmd" -q package -DskipTests > "%TOOLS%\last-build.log" 2>&1
+set "MVNRESULT=%errorlevel%"
+type "%TOOLS%\last-build.log"
+if "%MVNRESULT%"=="0" goto :built
+findstr /i /c:"PKIX" /c:"CertPath" /c:"bad_certificate" "%TOOLS%\last-build.log" >nul
+if not errorlevel 1 call :certhint
+echo.
+echo Station construction failed: see the messages above.
+exit /b 1
+:built
 
 if not exist "Current Build" mkdir "Current Build"
 rem a station that has just closed may hold its jar for a moment: try for about half a minute
@@ -100,13 +126,43 @@ timeout /t 2 /nobreak >nul
 goto :copyjar
 :copied
 echo.
-echo Station Constructed and Ready in Current Build.
+echo Station %DONE% and Ready in Current Build.
 for /f "tokens=2 delims=<>	 " %%v in ('findstr /c:"<version>" pom.xml') do ( echo Version: %%v & goto :shown )
 :shown
 echo To Establish Connection, run Federation Home Planet Interface.
 echo.
 echo The rebellion won't stand a chance...
 set "BUILT=1"
+exit /b 0
+
+rem ---- :firstnote: the first construction is the slow one ----
+:firstnote
+echo ==========================================================
+echo  FIRST CONSTRUCTION: this one takes a while.
+echo.
+echo  The Construction Yard is gathering its tools: a JDK and Maven
+echo  (about 250 MB), then Maven's own parts. They're kept in tools\,
+echo  so every construction after this one is much faster.
+echo.
+echo  Leave this window open until it says the station is ready.
+echo ==========================================================
+echo.
+exit /b 0
+
+rem ---- :certhint: Maven couldn't check a website's security certificate ----
+:certhint
+echo.
+echo ==========================================================
+echo  The construction materials couldn't be downloaded: Java could not check the
+echo  security certificate of Maven's website. This is almost always one of these:
+echo.
+echo  1. This computer's date or time is wrong. In Windows Settings, open Time and
+echo     language, then Date and time: turn on "Set time automatically" and press
+echo     "Sync now". Then run this again.
+echo  2. An antivirus that scans secure (HTTPS) connections, such as Avast, AVG,
+echo     Kaspersky or ESET. Pause its web or HTTPS scanning for a moment, or add an
+echo     exception, then run this again.
+echo ==========================================================
 exit /b 0
 
 rem ---- :quicklink: a desktop shortcut to the Interface, with the station's icon ----

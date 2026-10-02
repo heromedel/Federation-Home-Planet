@@ -136,7 +136,9 @@ public class RuleBoxes {
 		immersiveRow.add(immersiveLabel);
 		immersiveButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				String was = homeplanet.vault.Vault.get().slot;
 				if (!SwitchModeDialog.show(immersiveButton)) return;
+				if (!homeplanet.vault.Vault.get().slot.equals(was) && MainFrame.modeSwitched()) return; // Settings closed with everything else
 				immersiveBox.setSelected(HomePlanet.immersiveMode);
 				sync();
 				if (afterFleetChange != null) afterFleetChange.run(); // Settings shows the other fleet's choices now
