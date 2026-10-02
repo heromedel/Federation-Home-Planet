@@ -48,6 +48,8 @@ it does and CREDITS.md for where the code came from.
 - `src/main/java/homeplanet/`: the program. `core` (startup, config, Slipstream, music), `ui` (windows),
   `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
   Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`).
+- **Long Range Comm.:** stations match on `Session.PROTOCOL`, not the version. Bump it only when an older station
+  would trade wrongly; new fields, kinds and package files are ignored by older stations, so adding one is safe.
 - **Traded ships:** anything that rewards or reacts to what a ship has done (events, rewards, letters, achievements)
   counts only what she did since her last trade: ask `homeplanet.vault.TradeMark`. Displays keep her whole life.
 - **Without Slipstream:** at any time that content is not available because the player is not using Slipstream, the

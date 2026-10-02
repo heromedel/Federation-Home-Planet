@@ -1335,6 +1335,14 @@ public final class Vault {
 			z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE[4]));
 			z.write(pw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
 			z.closeEntry();
+			// a custom ship's blueprint and pictures: another station can't fly her without them
+			SavedGameState gs = s.save();
+			if (gs == null) throw new IOException(s.name + "'s save can't be read");
+			for (Map.Entry<String, byte[]> e : homeplanet.parser.ShipPapers.papersOf(gs.getPlayerShipBlueprintId()).entrySet()) {
+				z.putNextEntry(new java.util.zip.ZipEntry(e.getKey()));
+				z.write(e.getValue());
+				z.closeEntry();
+			}
 		} finally {
 			z.close();
 		}
@@ -1347,7 +1355,9 @@ public final class Vault {
 		try {
 			int total = 0;
 			for (java.util.zip.ZipEntry e; (e = z.getNextEntry()) != null;) {
-				if (!java.util.Arrays.asList(PACKAGE).contains(e.getName()) || out.containsKey(e.getName())) throw new IOException("unexpected file " + e.getName() + " in a ship's package");
+				if (out.containsKey(e.getName())) throw new IOException("a ship's package names " + e.getName() + " twice");
+				boolean known = java.util.Arrays.asList(PACKAGE).contains(e.getName()) || e.getName().equals(homeplanet.parser.ShipPapers.BLUEPRINT)
+						|| e.getName().startsWith(homeplanet.parser.ShipPapers.ART);
 				java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
 				byte[] buf = new byte[8192];
 				for (int n; (n = z.read(buf)) > 0;) {
@@ -1355,7 +1365,7 @@ public final class Vault {
 					total += n;
 					if (total > PACKAGE_MAX) throw new IOException("a ship's package is too large");
 				}
-				out.put(e.getName(), b.toByteArray());
+				if (known) out.put(e.getName(), b.toByteArray()); // a newer station's extra files are counted against the limit, then left out
 			}
 		} finally {
 			z.close();
@@ -1407,7 +1417,7 @@ public final class Vault {
 	 * mark (see {@link TradeMark}) naming the sender and her original owner, and set out at The Home Planet Station as
 	 * a newly commissioned ship is. A ship already received for this trade line isn't received twice.
 	 */
-	public synchronized Ship receive(byte[] pkg, SavedGameState gs, String tradeLine, String from) throws IOException {
+	public synchronized Ship receive(byte[] pkg, byte[] save, SavedGameState gs, String tradeLine, String from) throws IOException {
 		for (Ship s : ships) {
 			TradeMark m = TradeMark.of(this, s.id);
 			if (m != null && m.trade.equals(tradeLine)) return s;
@@ -1424,7 +1434,7 @@ public final class Vault {
 			int sectors = VoyageLog.visited(this, s.id, gs);
 			SafeFiles.write(new File(dir, TradeMark.FILE), TradeMark.text(tradeLine, from, original == null ? from : original, commissioned, gs, sectors));
 			File f = fileOf(s);
-			SafeFiles.write(f, files.get(PACKAGE[0]));
+			SafeFiles.write(f, save); // her save as it arrived, or renamed onto a blueprint here (homeplanet.parser.ShipPapers)
 			s.hash = SafeFiles.hash(f);
 			ships.add(s);
 			setOut(s, gs, "Received from " + from + "'s fleet at The Home Planet Station");

@@ -112,6 +112,20 @@ public class LinkT {
   Setup.chk("both called off: nothing changed hands", a("unfinished").equals("0") && b("unfinished").equals("0")
     && num(a("hold"), "scrap") == num(aHold, "scrap") && num(b("hold"), "fuel") == num(bHold, "fuel"));
 
+  // ---- versions: the protocol decides ----
+  a("close"); b("wait ended");
+  b("version 4B.99");
+  Setup.chk("a station on another version of the program, same protocol: hailed and answered", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+  b("offer unknown");
+  Setup.chk("something a newer station offers that this one doesn't know: refused, not garbled", a("wait refused").equals("OK") && a("state").contains("theirs=1"));
+  b("clear");
+  a("close"); b("wait ended");
+  b("protocol " + (Session.PROTOCOL + 1));
+  String rp = a("hail " + port);
+  Setup.chk("a different protocol: refused, saying one of them needs to update", rp.startsWith("REFUSED") && rp.contains("update"));
+  b("protocol " + Session.PROTOCOL); b("version " + HomePlanet.APP_VERSION);
+  Setup.chk("A hails again", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+
   // ---- modes and levels ----
   a("close"); b("wait ended");
   b("mode easy on");
@@ -177,6 +191,62 @@ public class LinkT {
   Setup.chk("a new id, not her old one", !a("idof Wanderer").equals(engiA));
   Setup.chk("her commission date survives the trip back", a("commissioned Wanderer").equals("30 September 2026"));
 
+  // ---- custom ships: their papers travel, and fit in at the other station ----
+  String aDesign = a("makedesign Hawk Kite"), aRemodel = a("makeremodel Alpha Lark");
+  String bDesign = b("makedesign Owl Moth"), bRemodel = b("makeremodel Beta Gull");
+  Setup.chk("both stations drew up blueprints under the same numbers (different ships)", aDesign.equals(bDesign) && aRemodel.equals(bRemodel) && aDesign.contains("DESIGN_"));
+  String bBefore = b("blueprints");
+  a("offer ship Kite"); a("offer ship Lark"); b("offer supply fuel 1");
+  trade("a designed and a remodeled ship");
+  String kiteBp = b("bp Kite"), larkBp = b("bp Lark");
+  Setup.chk("B has both ships, readable", b("fleet").contains("Kite") && b("fleet").contains("Lark") && kiteBp.startsWith("PLAYER_SHIP_") && larkBp.startsWith("PLAYER_SHIP_"));
+  Setup.chk("renumbered at B: neither takes B's own blueprint's number", !kiteBp.equals(bDesign) && !larkBp.equals(bRemodel) && kiteBp.contains("DESIGN_") && larkBp.contains("_R"));
+  Setup.chk("B's own ships still fly their own blueprints", b("bp Moth").equals(bDesign) && b("bp Gull").equals(bRemodel));
+  Setup.chk("the new blueprints are in B's game data", b("known " + kiteBp).equals("true") && b("known " + larkBp).equals("true"));
+  Setup.chk("they arrived as ships, not plans: not commissionable", b("starter " + kiteBp).equals("starter=false retired=true") && b("starter " + larkBp).equals("starter=false"));
+  Setup.chk("B now has one more design and one more remodel", !b("blueprints").equals(bBefore));
+  Setup.chk("her hull art came with her, filed under her new number", b("artof " + kiteBp).startsWith("file:art/" + kiteBp.replace("PLAYER_SHIP_", "").replace("_HP", "")) && b("artof " + kiteBp).endsWith(" ok"));
+  String aBefore = a("blueprints");
+  b("offer ship Kite"); b("offer ship Lark"); a("offer supply fuel 1");
+  trade("both ships home again");
+  Setup.chk("home again, they fly A's own blueprints", a("bp Kite").equals(aDesign) && a("bp Lark").equals(aRemodel));
+  Setup.chk("and A made no copies of them", a("blueprints").equals(aBefore));
+  // papers that aren't right are refused before anything is installed
+  java.util.Map<String, byte[]> papers = homeplanet.parser.ShipPapers.papersOf(aDesign);
+  java.util.Map<String, byte[]> bad = new java.util.LinkedHashMap<String, byte[]>(papers);
+  bad.put("blueprint.xml", new String(papers.get("blueprint.xml"), "UTF-8").replace("id=\"DESIGN_1\"", "id=\"DESIGN_9\"").getBytes("UTF-8"));
+  boolean refused = false; try { homeplanet.parser.ShipPapers.check(bad, aDesign); } catch (IOException e) { refused = true; }
+  Setup.chk("a blueprint that isn't the one her save names is refused", refused);
+  bad = new java.util.LinkedHashMap<String, byte[]>(papers);
+  for (String k : papers.keySet()) if (k.startsWith("art/")) bad.put(k, "not a picture".getBytes("UTF-8"));
+  refused = false; try { homeplanet.parser.ShipPapers.check(bad, aDesign); } catch (IOException e) { refused = true; }
+  Setup.chk("a picture that isn't a picture is refused", refused);
+  bad = new java.util.LinkedHashMap<String, byte[]>(papers);
+  for (String k : papers.keySet()) if (k.startsWith("art/")) bad.remove(k);
+  refused = false; try { homeplanet.parser.ShipPapers.check(bad, aDesign); } catch (IOException e) { refused = true; }
+  Setup.chk("a blueprint missing its pictures is refused", refused);
+  String before = a("blueprints");
+  refused = false; try { homeplanet.parser.ShipPapers.install(bad, new byte[0], aDesign); } catch (IOException e) { refused = true; }
+  Setup.chk("a refused install leaves nothing behind", refused && a("blueprints").equals(before));
+
+  // ---- messages between the commanders ----
+  Setup.chk("a message reaches the other commander, with who sent it", a("say Hello Bree, fair trade?").equals("true") && waitHeard("Captain Ash|Hello Bree, fair trade?"));
+  Setup.chk("an empty message isn't sent", a("say    ").equals("false"));
+  StringBuilder longer = new StringBuilder(); for (int i = 0; i < 30; i++) longer.append("0123456789");
+  a("say " + longer);
+  Thread.sleep(500);
+  Setup.chk("a long message is cut to " + Session.SAY_MAX + " letters", b("heard").length() == "Captain Ash|".length() + Session.SAY_MAX);
+  int had = Integer.parseInt(b("heardcount"));
+  for (int i = 0; i < 20; i++) a("say flood " + i);
+  Thread.sleep(800);
+  int got = Integer.parseInt(b("heardcount")) - had;
+  Setup.chk("a flood of messages is cut down (" + got + " of 20 shown)", got > 0 && got <= 8);
+  a("close"); b("wait ended"); b("nochat");
+  Setup.chk("A hails a station too old for messages", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+  Setup.chk("A can't send it messages (they'd go unseen)", a("say anyone there?").equals("false"));
+  a("close"); b("wait ended"); b("nochat off");
+  Setup.chk("A hails again", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+
   // ---- garbled transmissions ----
   Setup.chk("an oversized frame is garbled", garbled(new byte[] {0x7f, 0, 0, 0}));
   Setup.chk("a cut-short message is garbled", garbled(new byte[] {0, 0, 0, 3, 0, 5, 'H'}));
@@ -191,6 +261,11 @@ public class LinkT {
   boolean caught = false; try { Line.readLines(crew); } catch (Wire.Garbled e) { caught = true; }
   Setup.chk("an unknown race is garbled", caught);
   a("close");
+ }
+ /** Waits for B to have heard this message. */
+ static boolean waitHeard(String what) throws Exception {
+  for (int i = 0; i < 100; i++) { if (b("heard").equals(what)) return true; Thread.sleep(50); }
+  return false;
  }
  /** Both accept (A first). */
  static void trade2() throws Exception {
