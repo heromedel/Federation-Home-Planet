@@ -45,6 +45,7 @@ event harvest civilian low harvest
 A farming colony's harvesters have broken down two days before a storm. The farmers are offering pay to any hands that can work a field.
 * Work the fields
   ok scrap 6-10 | Long days, sore backs, and the crop is in before the storm breaks. The farmers pay in scrap and a feast.
+  aside 20 | The farmers name a calf after {crew}. It seems to be an honour.
 * Try to repair the machines
   roll 50
   win scrap 12-16 | The harvesters roar back to life. The farmers cheer, then pay double.
@@ -64,6 +65,7 @@ The bounty's target is living as a dockworker under a false name. He looks up fr
   lose then trail | He never comes back.
 * [human] {who} works beside him for a shift first
   ok scrap 14-18 | {who} hauls crates with him for half a shift, then takes him without a fuss.
+  aside 20 | He shakes {who}'s hand as the marshal takes him away. Best shift partner he ever had, he says.
 step trail
 The hauler's flight plan says it's bound for a mining town two beacons away. The marshal says the bounty stands, but the pay for the trip won't.
 * Follow him
@@ -98,6 +100,7 @@ The colony's water reclaimer is failing, and the colonists have been rationing f
   ok scrap 4-6 | The council takes your crew's word and orders a new reclaimer. It's probably the right call.
 * [lanius] {who} goes into the drained tanks
   ok scrap 10-14 | {who} walks the empty, airless tanks and finds the leak in an hour. The colonists stare at the Lanius in their tanks with a kind of horror.
+  aside 25 | A colonist's child follows {who} around for the rest of the day, asking to see inside the tanks again.
 * [engi] {who} reads the reclaimer's error logs
   ok scrap 10-12 | The logs say it plainly: a cracked filter housing, reported every hour for a month. Nobody had read them.
 
@@ -111,5 +114,16 @@ A pickpocket lifts your crew's travel funds in a crowded market and bolts into t
   ok scrap 2-3 | The marshal can't find the thief, but the market pays your crew a small apology.
 * [zoltan] {who} lights up the market
   ok scrap 8-10 | {who} flares bright enough to stop the whole market. The thief freezes with everyone else.
+  aside 20 | Three stallholders try to hire {who} as a lamp.
 * [slug] {who} picks the thief's thoughts out of the crowd
   ok scrap 8-10 | {who} points at an old man selling fruit. He sighs, and hands the purse back.
+
+event payment_in_kind civilian moderate payment
+The colony has no scrap left to pay with. What it does have is an old Kestrel sitting in the hangar, unflown since her captain died, and the council is embarrassed to offer her.
+* Take the Kestrel
+  ok scrap 2-4 ship sector:towed | The colonists help tow her out, and seem glad to see her go somewhere useful.
+  aside 25 | The old captain's coat is still hanging in her cockpit. Nobody on your crew moves it.
+* Take whatever scrap they can scrape together
+  ok scrap 6-10 | The council pays in loose scrap, old parts and apologies.
+* [human] {who} asks for the Kestrel and her spare fuel
+  ok fuel 3 ship sector:towed | The council agrees to both, relieved to be asked for so little.

@@ -20,6 +20,7 @@ event colony_survey abandoned low survey
 The abandoned colony is quiet, and the quiet is wrong: no wind, no machines, no air.
 * Survey it in suits, carefully
   ok scrap 6-10 | The survey is slow and safe. The colony's records sell well.
+  aside 20 | In a child's bedroom, {crew} finds a drawing of a Kestrel, and leaves it where it is.
 * Search the colony's vault
   roll 45
   win scrap 12-18 item augment | The vault holds the colony's last valuables, and a piece of ship gear.
@@ -50,6 +51,7 @@ A single light burns in the window of an otherwise dark station. Inside, an auto
   ok scrap 4-6 | The station falls silent. Your crew strips its kitchen for scrap.
 * Listen to the end of the broadcast
   ok scrap 2-4 | The news is old, and the weather was fine. At the end, the voice wishes everyone a good night. Nobody aboard laughs.
+  aside 30 | The last report is the forecast for the following day. It was going to rain.
 * [engi] {who} copies the station's records
   ok scrap 8-12 | {who} saves seven years of station logs. A historian will pay for them, eventually.
 
@@ -95,3 +97,14 @@ Your crew isn't the only salvage team at the wreck. The other one has guns, and 
   lose injure 1 | The other team keeps its half and takes a shot at your crew on the way out. {who} is hit.
 * Let them have it
   ok | Your crew leaves the wreck to them. There are other wrecks.
+
+event half_eaten abandoned moderate hull
+A Lanius cruiser sits in the dead system, half of her hull eaten away by her own former crew, who have moved on to the station next door.
+* Tow what's left
+  ok ship sector:wrecked | Half a ship is still a ship. The Junkyard foreman will have opinions.
+* Strip her and go
+  ok scrap 6-10 parts 2 | There's plenty left to take, and nobody left to object.
+* [lanius] {who} asks the Lanius to leave the rest of her alone
+  roll 60
+  win ship sector:towed | The Lanius agree, grudgingly, and even return a few of her plates.
+  lose ship sector:wrecked | The Lanius have already eaten more of her than {who} hoped.

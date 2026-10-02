@@ -20,6 +20,7 @@ The Engi want to know how a non-networked mind makes decisions, and have asked y
   ok scrap 8-12 | Your crew decides things for six hours. The Engi take notes in a silence that feels a little like pity.
 * Refuse, on principle
   ok scrap 10-14 | The Engi find the refusal fascinating, and pay more for it than for the decisions.
+  aside 25 | The Engi publish a paper on the refusal. {crew} is listed as a co-author.
 * [human] {who} explains gut feeling
   ok scrap 10-14 parts 2 | The Engi cannot understand it, and are delighted by that.
 
@@ -92,6 +93,7 @@ event rock_home_archive rock_home low archive
 The Rock archive of scripture fills a mountain. The archivists want help moving it to a deeper mountain, one stone tablet at a time.
 * Carry tablets
   ok scrap 8-12 | It takes three days, and every tablet weighs as much as a person. The archivists pay fairly.
+  aside 20 | For a week afterwards {crew} can lift a great deal more than before. It doesn't last.
 * Read the tablets as you carry them
   roll 60
   win scrap 10-14 | {crew} finds a tablet filed in the wrong century. The archivists are grateful.
@@ -244,6 +246,7 @@ Every word spoken in this canyon comes back a moment later, changed: a little ol
   lose | The answer comes back as the question, repeated, forever. Your crew leaves before it gets to them.
 * Keep quiet and cross
   ok scrap 4-6 | The canyon is silent for your crew, which is somehow worse.
+  aside 30 | Halfway across, the canyon says {crew}'s name, very softly, in a voice nobody knows.
 * [crystal] {who} sings in the old language
   ok scrap 12-16 | The canyon sings back. {who} listens to the end, then leads your crew to what the song described.
 
@@ -272,3 +275,14 @@ A garden of crystal flowers grows in a sheltered valley, each one chiming softly
   lose injure 1 | The plant's roots are sharper than its petals. {who} finds out.
 * [crystal] {who} tends the garden
   ok scrap 6-10 fuel 2 | {who} spends a quiet hour among the flowers. When they come back, the valley has shown them a cache left by an older visitor.
+
+event crystal_vessel crystal high vessel
+A Crystal cruiser stands half buried in a hillside, her hull grown into the rock as if she had sprouted there.
+* Cut her free
+  roll 50
+  win ship sector:towed | She comes free all at once, ringing like a bell. The tow home is the strangest your crew has ever flown.
+  lose injure 1 ship sector:wrecked | The crystal splinters as she comes loose. {who} is cut, and the cruiser comes home cracked.
+* Leave her where she grew
+  ok scrap 6-10 | Your crew takes a few loose shards and leaves her to the hill.
+* [crystal] {who} asks her to come
+  ok ship sector:towed | {who} lays a hand on her hull. She lets go of the hill on her own.

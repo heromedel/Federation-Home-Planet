@@ -5,6 +5,7 @@ event chart nebula low chart
 The nebula is uncharted for good reason: sensors see a few hundred metres at most, and the gas eats slowly at the hull.
 * Chart it slowly, beacon by beacon
   ok scrap 8-12 | The chart is slow work and complete. The survey office pays in full.
+  aside 15 | The survey office names an unremarkable patch of gas after {crew}. It's the thought that counts.
 * Push deep to the nebula's heart
   roll 45
   win scrap 14-20 | The heart of the nebula is a rare find, and the survey office pays a bonus.
@@ -63,6 +64,7 @@ Lights drift through the gas outside the shuttle, keeping pace, never quite comi
   lose injure 1 | The lights lead into a gas pocket. {who} is hurt as the shuttle shakes itself free.
 * Ignore them
   ok | The lights follow for an hour, then fade. Nobody aboard sleeps well.
+  aside 25 | That night {crew} swears one of the lights was inside the shuttle.
 * [slug] {who} listens to them
   ok scrap 6-10 | {who} says they aren't alive, only very old reflections. Your crew follows them to salvage anyway.
 
@@ -70,6 +72,7 @@ event hermit nebula moderate hermit
 A hermit lives in the nebula on a station built from three wrecks. He doesn't want visitors, he says, but he hasn't spoken to anyone in eleven years.
 * Stay and talk
   ok scrap 6-10 | He talks for six hours, and pays for every one of them in scrap and old charts.
+  aside 30 | He gives {crew} a drawing of the nebula he made the year he arrived. It's very good.
 * Trade for his salvage
   roll 60
   win scrap 10-14 parts 2 | He trades fairly, and better than fairly.
@@ -97,3 +100,16 @@ The debris field is a battle's leftovers: two ships, neither whole, still slowly
   lose injure 1 | One of the wrecks' turrets still has power. {who} finds out.
 * Strip what's easy and leave
   ok scrap 8-12 missiles 2 | Your crew takes what floats free and gets out before anything else does.
+
+event adrift nebula high adrift
+A ship hangs in the gas without lights, her airlocks sealed, her crew gone. Her sensors are dark, and something has been nesting in her vents.
+* Board her and drive it out
+  roll 45
+  win ship sector:limping:sensors | Whatever was in the vents leaves through a hull breach. She comes home blind but whole.
+  lose injure 1 | Whatever was in the vents doesn't want to leave. {who} is hurt before your crew retreats.
+* Tow her as she is, nest and all
+  roll 60
+  win ship sector:wrecked | The nest goes quiet on the tow. She arrives with something still living somewhere aboard her.
+  lose end | Halfway home the tow line snaps, chewed through from the inside. Your crew turns for home without her.
+* Leave her to the nebula
+  ok | Your crew watches her fade into the gas, and doesn't speak of her again.

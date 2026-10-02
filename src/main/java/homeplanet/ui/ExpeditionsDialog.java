@@ -124,12 +124,28 @@ final class ExpeditionsDialog extends JDialog {
 			int c = -1;
 			while (c < 0) c = ask(run, ev, choices, title + " (" + run.number() + " of " + run.length() + ")"); // an expedition can't be walked away from halfway
 			String said = run.choose(choices.get(c));
-			JOptionPane.showMessageDialog(this, wrap(said), title, JOptionPane.PLAIN_MESSAGE);
+			if (!said.trim().isEmpty()) JOptionPane.showMessageDialog(this, wrap(said), title, JOptionPane.PLAIN_MESSAGE); // a step that only leads on has no words of its own
+		}
+		for (Expeditions.HomeShip h : run.ships()) { // each ship home: the Space Dock, or the Junkyard
+			Object[] where = {"Space Dock", "Junkyard"};
+			h.toDock = JOptionPane.showOptionDialog(this, wrap(h.stealth() ? "The cruiser is yours, if you want her. Where should she go?"
+					: "Your crew brought a ship home. Send her to the Space Dock, or to the Junkyard?"), "A ship home",
+					JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, where, where[0]) == 0;
 		}
 		try {
 			String summary = Expeditions.finish(v, run);
 			changed = true;
 			JOptionPane.showMessageDialog(this, wrap(summary), "Expedition's end", JOptionPane.INFORMATION_MESSAGE);
+			for (Expeditions.HomeShip h : run.ships()) { // a hull on the station's blank copy needs the companion mod before she flies
+				if (!h.toDock || h.ship == null) continue;
+				List<String> missing = homeplanet.parser.Retrofit.missingBlueprints(h.ship.file());
+				if (missing.isEmpty()) continue;
+				Object[] opts = {"Patch Now", "Later"};
+				int r = JOptionPane.showOptionDialog(this, h.ship.name + " waits at the Space Dock, but can't fly until The Home Planet Station sends her blueprint ("
+						+ String.join(", ", missing) + ") to FTL via Slipstream. Without it she can still be scrapped or sold in the Junkyard.", "A ship home",
+						JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[0]);
+				if (r == 0) PatchDialog.open(this);
+			}
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not record the expedition; the Cargo Hold is as it was:\n" + e.getMessage());
 		}

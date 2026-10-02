@@ -527,6 +527,22 @@ no letters, you come and check).
     are left (`recent` in the fleet's expeditions.txt).
   - Sealed postings, one in eight: "Destination undisclosed", danger "Unknown", the sector rolled when posted (now and
     then a rare one) and told only once the shuttle is under way; they pay half again.
+- Ships home and the lost expedition (4B.86):
+  - `aside <chance> | <words>` after an outcome: an extra line only that often; about 40 across the events, the
+    Mantis convoy raid's "body soldier" among them (one time in ten when the airlocks fail). The Mantis posting reads
+    "Need mercenaries for defense through Mantis territory".
+  - `ship <sector>:<condition>[:<system>]`: a ship comes home, of a model fitting the sector (Engi, Zoltan, Mantis,
+    Rock, Slug, Lanius and Crystal cruisers in their own space, a Kestrel from civilian space, a Federation Cruiser
+    from rebel space, a Stealth or Slug cruiser from the nebula, a mix from pirate space), wrecked, towed (most of her
+    hull, no breaches) or limping (the named system broken through or gone). Each sector, and the Hidden Crystal
+    Worlds, has an event that can bring one home, each a different story. The player sends her to the Space Dock or
+    the Junkyard; a docked hull on the station's blank copy says so, with Patch Now.
+  - The lost expedition (`event lost_expedition saga`): one in 300 high-danger expeditions of two or more crew goes
+    missing at its end (even one that turned for home early). Four beacons of silence, a rumour of a battle with the
+    sector's enemy, an alert as a ship decloaks off the station's bow: fire or wait (firing saves her one time in
+    four, waiting three in four, whoever is left). The survivor comes home at the helm of a Federation Stealth Cruiser
+    on her own blueprint (no companion mod), near new or, if hit, dented (some hull, a bar or two); the others are
+    lost. She goes to the Space Dock or the Junkyard as chosen, the survivor aboard.
 
 ## Naming decisions — settled (4B.30)
 

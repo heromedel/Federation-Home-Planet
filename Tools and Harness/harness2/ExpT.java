@@ -8,6 +8,9 @@ public class ExpT { public static void main(String[] a) throws Exception {
  book();
  board(v);
  runs(v);
+ asides(v);
+ ships(v);
+ lost(v);
  hiring(v);
  Setup.done();
 }
@@ -197,6 +200,128 @@ public class ExpT { public static void main(String[] a) throws Exception {
   return (List<?>) evs.get(bk.invoke(null));
  }
  static Object stepsOf(Object e) throws Exception { java.lang.reflect.Field f = Expeditions.Event.class.getDeclaredField("steps"); f.setAccessible(true); return f.get(e); }
+ /** A run made to meet this one event (the harness picks; the board's posting stays as it is). */
+ static Expeditions.Run with(Vault v, int slot, List<CrewState> party, Expeditions.Event e, long seed) throws Exception {
+  Expeditions.Run r = Expeditions.start(v, slot, party, new Random(seed));
+  java.lang.reflect.Field f = Expeditions.Run.class.getDeclaredField("events"); f.setAccessible(true);
+  List<Expeditions.Event> l = (List<Expeditions.Event>) f.get(r); l.clear(); l.add(e);
+  return r;
+ }
+ static Expeditions.Event event(String id) throws Exception { for (Object o : evsOf()) if (((Expeditions.Event) o).id.equals(id)) return (Expeditions.Event) o; return null; }
+ /** Asides: an extra line now and then, at its chance; the body soldier among them. */
+ static void asides(Vault v) throws Exception {
+  int n = 0; java.lang.reflect.Field ac = Class.forName("homeplanet.parser.Expeditions$Outcome").getDeclaredField("aside"); ac.setAccessible(true);
+  for (Object o : evsOf()) for (Object st : ((Map<?, ?>) stepsOf(o)).values()) for (Expeditions.Choice c : ((Expeditions.Step) st).choices)
+   for (String k : new String[] {"sure", "win", "lose"}) { java.lang.reflect.Field f = Expeditions.Choice.class.getDeclaredField(k); f.setAccessible(true); Object out = f.get(c); if (out != null && ac.get(out) != null) n++; }
+  Setup.chk("A: asides across the events (" + n + ")", n >= 30);
+  // the convoy raid's airlock fight, made to go wrong: the body soldier one time in ten
+  Expeditions.Event raid = event("mantis_raid");
+  List<CrewState> two = hold(v, "human", "human");
+  int lost = 0, soldier = 0;
+  for (int s = 0; s < 3000; s++) {
+   Expeditions.Run r = with(v, 0, two, raid, s);
+   Expeditions.Choice hold = null; for (Expeditions.Choice c : r.choices()) if (c.text.startsWith("Hold the airlocks")) hold = c;
+   String said = r.choose(hold);
+   if (said.contains("airlocks hold until one doesn't")) { lost++; if (said.contains("body soldier")) soldier++; }
+  }
+  Setup.chk("A: the body soldier turns up about one time in ten when the airlocks fail (" + soldier + " of " + lost + ")", lost > 500 && soldier * 100 > lost * 6 && soldier * 100 < lost * 14);
+ }
+ /** Ships home: a fitting model, in the condition her story says, to the Space Dock or the Junkyard as asked. */
+ static void ships(Vault v) throws Exception {
+  // every common sector, and the Hidden Crystal Worlds, has an event that can bring one home
+  java.lang.reflect.Field shipF = Class.forName("homeplanet.parser.Expeditions$Outcome").getDeclaredField("ship"); shipF.setAccessible(true);
+  Set<String> withShip = new HashSet<String>();
+  for (Object o : evsOf()) { Expeditions.Event e = (Expeditions.Event) o; boolean has = false;
+   for (Object st : ((Map<?, ?>) stepsOf(o)).values()) for (Expeditions.Choice c : ((Expeditions.Step) st).choices)
+    for (String k : new String[] {"sure", "win", "lose"}) { java.lang.reflect.Field f = Expeditions.Choice.class.getDeclaredField(k); f.setAccessible(true); Object out = f.get(c); if (out != null && shipF.get(out) != null && !String.valueOf(shipF.get(out)).startsWith("stealth")) has = true; }
+   if (has) { java.lang.reflect.Field kf = Expeditions.Event.class.getDeclaredField("kinds"); kf.setAccessible(true); withShip.addAll((Set<String>) kf.get(e)); } }
+  List<String> missing = new ArrayList<String>();
+  for (String k : KINDS) if (!k.endsWith("_home") && !withShip.contains(k)) missing.add(k);
+  Setup.chk("S: every sector has an event that can bring a ship home " + missing, missing.isEmpty());
+  // built to fit: the sector's models, and the condition
+  Class<?> hs = Class.forName("homeplanet.parser.Expeditions$HomeShip");
+  java.lang.reflect.Constructor<?> hc = hs.getDeclaredConstructor(String.class, String.class); hc.setAccessible(true);
+  java.lang.reflect.Method build = Expeditions.class.getDeclaredMethod("build", hs, java.util.Collection.class, Random.class); build.setAccessible(true);
+  java.lang.reflect.Method models = Expeditions.class.getDeclaredMethod("shipModels", String.class); models.setAccessible(true);
+  boolean fits = true, limping = true, towed = true; String bad = "";
+  for (String k : new String[] {"civilian", "engi", "zoltan", "mantis", "rock", "slug", "nebula", "pirate", "rebel", "abandoned", "crystal"}) for (int s = 0; s < 6; s++) {
+   String sys = new String[] {"engines", "pilot", "oxygen", "shields", "sensors", "weapons"}[s];
+   SavedGameParser.SavedGameState g = (SavedGameParser.SavedGameState) build.invoke(null, hc.newInstance(k + ":limping:" + sys, k), new ArrayList<String>(), new Random(s));
+   String bp = Retrofit.vanillaId(g.getPlayerShip().getShipBlueprintId()); boolean ok = false;
+   for (String m : (String[]) models.invoke(null, k)) if (bp.equals(m) || bp.startsWith(m + "_")) ok = true;
+   if (!ok) { fits = false; bad += k + "=" + bp + " "; }
+   SystemState st = g.getPlayerShip().getSystem(SystemType.findById(sys));
+   if (st != null && st.getCapacity() > 0 && st.getDamagedBars() < st.getCapacity()) limping = false;
+   SavedGameParser.SavedGameState t = (SavedGameParser.SavedGameState) build.invoke(null, hc.newInstance(k + ":towed", k), new ArrayList<String>(), new Random(100 + s));
+   ShipState ts = t.getPlayerShip(); int max = DataManager.get().getShip(ts.getShipBlueprintId()).getHealth().amount;
+   if (ts.getHullAmt() * 100 < max * 55 || !ts.getBreachMap().isEmpty()) towed = false;
+  }
+  Setup.chk("S: each sector's ship is one of its own models " + bad, fits);
+  Setup.chk("S: a limping ship's failed system is broken through, or gone", limping);
+  Setup.chk("S: a towed prize has most of her hull and no breaches", towed);
+  // the lost expedition's cruiser: her own blueprint, near new; dented, some hull and a bar or two
+  SavedGameParser.SavedGameState nw = (SavedGameParser.SavedGameState) build.invoke(null, hc.newInstance("stealth:new", "rebel"), new ArrayList<String>(), new Random(1));
+  SavedGameParser.SavedGameState dn = (SavedGameParser.SavedGameState) build.invoke(null, hc.newInstance("stealth:dented", "rebel"), new ArrayList<String>(), new Random(1));
+  int nb = 0, db = 0; for (SystemType t : SystemType.values()) { SystemState a1 = nw.getPlayerShip().getSystem(t), b1 = dn.getPlayerShip().getSystem(t); if (a1 != null) nb += a1.getDamagedBars(); if (b1 != null) db += b1.getDamagedBars(); }
+  int smax = DataManager.get().getShip(nw.getPlayerShip().getShipBlueprintId()).getHealth().amount;
+  Setup.chk("S: the Stealth Cruiser comes on her own blueprint (no companion mod), whole, weapons aboard (" + nw.getPlayerShip().getShipBlueprintId() + ")",
+    nw.getPlayerShip().getShipBlueprintId().startsWith("PLAYER_SHIP_STEALTH") && !nw.getPlayerShip().getShipBlueprintId().endsWith(Retrofit.SUFFIX) && nb == 0
+    && nw.getPlayerShip().getHullAmt() == smax && !nw.getPlayerShip().getWeaponList().isEmpty());
+  Setup.chk("S: dented, she has lost some hull and a bar or two (" + dn.getPlayerShip().getHullAmt() + " of " + smax + ", " + db + " bars)",
+    dn.getPlayerShip().getHullAmt() < smax && dn.getPlayerShip().getHullAmt() * 100 >= smax * 60 && db >= 1 && db <= 2);
+  // a real one home: the Space Dock or the Junkyard, as asked
+  Expeditions.Event pay = event("payment_in_kind");
+  for (boolean dock : new boolean[] {true, false}) {
+   List<CrewState> one = hold(v, "human");
+   Expeditions.Run r = with(v, 0, one, pay, 4);
+   r.choose(r.choices().get(0));
+   r.ships().get(0).toDock = dock;
+   int docked = v.docked().size(), junked = v.junked().size();
+   Expeditions.finish(v, r);
+   Ship home = r.ships().get(0).ship;
+   Setup.chk("S: a ship home goes to the " + (dock ? "Space Dock" : "Junkyard") + " when asked (" + home.name + ")",
+     home != null && (dock ? v.docked().size() == docked + 1 && home.state == Ship.State.DOCKED : v.junked().size() == junked + 1 && home.state == Ship.State.JUNKED));
+  }
+ }
+ /** The lost expedition: very rare, weeks of waiting, one survivor home in a Stealth Cruiser, fire or wait. */
+ static void lost(Vault v) throws Exception {
+  java.lang.reflect.Field al = Expeditions.class.getDeclaredField("alwaysLost"); al.setAccessible(true);
+  List<CrewState> three = hold(v, "human", "rock", "mantis");
+  int gone = 0;
+  for (int s = 0; s < 30000; s++) if (Expeditions.start(v, 0, three, new Random(s)).lostExpedition()) gone++; // slot 0: the Mantis job, High danger
+  int low = 0; for (int s = 0; s < 3000; s++) if (Expeditions.start(v, 2, three, new Random(s)).lostExpedition()) low++;
+  int alone = 0; List<CrewState> one = hold(v, "human"); for (int s = 0; s < 3000; s++) if (Expeditions.start(v, 0, one, new Random(s)).lostExpedition()) alone++;
+  Setup.chk("L: about one high-danger expedition in 300 goes missing (" + gone + " of 30000); never a low one, never one crew member alone", gone > 60 && gone < 140 && low == 0 && alone == 0);
+  al.setBoolean(null, true);
+  Expeditions.Event saga = event("lost_expedition");
+  int fireNew = 0, waitNew = 0;
+  for (int s = 0; s < 2000; s++) for (int pick = 0; pick < 2; pick++) {
+   Expeditions.Run r = with(v, 0, three, saga, s);
+   r.choose(r.choices().get(0)); r.choose(r.choices().get(0)); // waiting; the rumour
+   Expeditions.Choice c = r.choices().get(pick); // fire, or wait
+   r.choose(c);
+   if (r.ships().get(0).condition().equals("new")) { if (pick == 0) fireNew++; else waitNew++; }
+  }
+  Setup.chk("L: firing saves her one time in four, waiting three in four, whoever is aboard (" + fireNew + ", " + waitNew + " of 2000)",
+    fireNew > 420 && fireNew < 580 && waitNew > 1420 && waitNew < 1580);
+  // played through and home
+  three = hold(v, "human", "rock", "mantis");
+  int beacons = v.beaconsSeen();
+  Expeditions.Run r = null; boolean met = false;
+  for (int s = 0; s < 300 && !met; s++) { // one where someone lives to the end, and so meets the lost expedition's ending
+   r = Expeditions.start(v, 0, three, new Random(s)); Random pk = new Random(s);
+   while (!r.over()) { if (r.event() == saga) met = true; List<Expeditions.Choice> cs = r.choices(); r.choose(cs.get(pk.nextInt(cs.size()))); }
+  }
+  int alive = r.alive().size();
+  for (Expeditions.HomeShip h : r.ships()) h.toDock = true;
+  String summary = Expeditions.finish(v, r);
+  Ship cruiser = null; for (Expeditions.HomeShip h : r.ships()) if (h.stealth()) cruiser = h.ship;
+  List<CrewState> aboard = cruiser == null ? null : SaveHelper.getOwnCrew(cruiser.save().getPlayerShip());
+  Setup.chk("L: played through: one comes home, aboard her, at the Space Dock; the others are lost; weeks pass (" + (v.beaconsSeen() - beacons) + " beacons)",
+    met && alive == 1 && cruiser != null && cruiser.state == Ship.State.DOCKED && aboard.size() == 1 && Expeditions.holdCrew(v).size() == 0
+    && v.beaconsSeen() - beacons == 5 && summary.contains("Did not come back"));
+  al.setBoolean(null, false);
+ }
  static void hiring(Vault v) throws Exception {
   Setup.chk("H: 5 a crew member, at most 60", Expeditions.hireCost(0) == 0 && Expeditions.hireCost(1) == 5 && Expeditions.hireCost(2) == 10 && Expeditions.hireCost(12) == 60 && Expeditions.hireCost(20) == 60);
   List<String> races = Expeditions.hireableRaces();

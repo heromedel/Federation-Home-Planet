@@ -52,6 +52,38 @@ public final class Expeditions {
 	public static final int MANTIS_FIGHT = 8, ROCK_FIGHT = 4, ENGI_FIGHT = 5;
 	/** Events met in the last this many expeditions' worth aren't met again while others are left. */
 	public static final int RECENT = 8;
+	/** One high-danger expedition of two or more crew in this many goes missing (the lost expedition, "event lost ... saga"). */
+	public static final int LOST_ONE_IN = 300;
+	/** For the harness: every eligible expedition goes missing. */
+	static boolean alwaysLost = false;
+
+	/** A ship that comes home from each sector: models that fit it (FTL's player ships, by their base ids). */
+	static String[] shipModels(String kind) {
+		String k = kind.endsWith("_home") ? parentOf(kind) : kind;
+		if (k.equals("engi")) return new String[] {"PLAYER_SHIP_CIRCLE"};
+		if (k.equals("zoltan")) return new String[] {"PLAYER_SHIP_ENERGY"};
+		if (k.equals("mantis")) return new String[] {"PLAYER_SHIP_MANTIS"};
+		if (k.equals("rock")) return new String[] {"PLAYER_SHIP_ROCK"};
+		if (k.equals("slug")) return new String[] {"PLAYER_SHIP_JELLY"};
+		if (k.equals("nebula")) return new String[] {"PLAYER_SHIP_STEALTH", "PLAYER_SHIP_JELLY"};
+		if (k.equals("pirate")) return new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_CIRCLE"};
+		if (k.equals("rebel")) return new String[] {"PLAYER_SHIP_FED"};
+		if (k.equals("abandoned")) return new String[] {"PLAYER_SHIP_ANAEROBIC"};
+		if (k.equals("crystal")) return new String[] {"PLAYER_SHIP_CRYSTAL"};
+		return new String[] {"PLAYER_SHIP_HARD"}; // a civilian's Kestrel
+	}
+	/** The lost expedition's prize: Federation-built, for getting behind enemy lines. */
+	static final String STEALTH = "PLAYER_SHIP_STEALTH";
+	/** Who the lost expedition was last seen fighting, by sector. */
+	static String enemyOf(String kind) {
+		String k = kind.endsWith("_home") ? parentOf(kind) : kind;
+		if (k.equals("mantis")) return "Mantis raiders";
+		if (k.equals("slug") || k.equals("nebula")) return "Slug privateers";
+		if (k.equals("pirate") || k.equals("civilian")) return "pirates";
+		if (k.equals("abandoned")) return "Lanius scavengers";
+		if (k.equals("engi") || k.equals("zoltan") || k.equals("rock") || k.equals("crystal")) return "pirates";
+		return "the rebels";
+	}
 
 	/** FTL's sector types, as its own data names them; the rare ones draw on their race's events as well as their own. */
 	private static final String[][] SECTORS = {
@@ -87,6 +119,14 @@ public final class Expeditions {
 		String then; // the event's next step, or null: on to the next event
 		boolean end;
 		String text = "";
+		/** A ship home: "sector:condition[:system]" (wrecked, limping with a system broken through, towed, or new). */
+		String ship;
+		/** The lost expedition: all but one of the party stay lost; the Stealth Cruiser "new" or "dented"; beacons of waiting. */
+		boolean survivor;
+		int beacons;
+		/** Now and then, an extra line (an aside): its chance in %, and its words. */
+		int asideChance;
+		String aside;
 	}
 	/** One way through a step. */
 	public static final class Choice {
@@ -172,6 +212,7 @@ public final class Expeditions {
 		Event ev = null;
 		Step st = null;
 		Choice ch = null;
+		Outcome last = null;
 		int n = 0;
 		for (String raw : all.split("\r?\n")) {
 			n++;
@@ -192,7 +233,7 @@ public final class Expeditions {
 					ev = new Event();
 					ev.id = p[1];
 					for (String k : p[2].split(",")) {
-						if (!knownKind(k)) throw new IllegalArgumentException("unknown sector " + k);
+						if (!knownKind(k) && !"saga".equals(k)) throw new IllegalArgumentException("unknown sector " + k);
 						ev.kinds.add(k);
 					}
 					ev.risk = "low".equals(p[3]) ? 1 : "moderate".equals(p[3]) ? 2 : "high".equals(p[3]) ? 3 : 0;
@@ -205,12 +246,14 @@ public final class Expeditions {
 				} else if (ev == null) {
 					throw new IllegalArgumentException("text outside an event");
 				} else if (line.startsWith("step ")) {
+					last = null;
 					String name = line.substring(5).trim();
 					if (ev.steps.containsKey(name)) throw new IllegalArgumentException("step " + name + " twice in " + ev.id);
 					st = new Step();
 					ev.steps.put(name, st);
 					ch = null;
 				} else if (line.startsWith("*")) {
+					last = null;
 					ch = new Choice();
 					String t = line.substring(1).trim();
 					if (t.startsWith("[")) {
@@ -231,11 +274,18 @@ public final class Expeditions {
 				} else if (line.startsWith("roll ")) {
 					ch.roll = Integer.parseInt(line.substring(5).trim());
 				} else if (line.startsWith("win ")) {
-					ch.win = outcome(line.substring(4), b);
+					ch.win = last = outcome(line.substring(4), b);
 				} else if (line.startsWith("lose ")) {
-					ch.lose = outcome(line.substring(5), b);
+					ch.lose = last = outcome(line.substring(5), b);
 				} else if (line.startsWith("ok ")) {
-					ch.sure = outcome(line.substring(3), b);
+					ch.sure = last = outcome(line.substring(3), b);
+				} else if (line.startsWith("aside ")) {
+					if (last == null) throw new IllegalArgumentException("an aside needs an outcome before it");
+					int bar = line.indexOf('|');
+					if (bar < 0) throw new IllegalArgumentException("an aside needs | and its words");
+					last.asideChance = Integer.parseInt(line.substring(6, bar).trim());
+					last.aside = line.substring(bar + 1).trim();
+					b.words.add(last.aside);
 				} else {
 					throw new IllegalArgumentException("can't read: " + line);
 				}
@@ -266,7 +316,7 @@ public final class Expeditions {
 						reached.add(o.then);
 					}
 				}
-				if (open < 2) b.problems.add(where + ": fewer than two ways through without a race");
+				if (open < (e.kinds.contains("saga") ? 1 : 2)) b.problems.add(where + ": fewer than two ways through without a race");
 				if (s.text.isEmpty()) b.problems.add(where + ": no text");
 			}
 			for (String s : e.steps.keySet()) if (!reached.contains(s)) b.problems.add("event " + e.id + ": step " + s + " is never reached");
@@ -287,13 +337,13 @@ public final class Expeditions {
 		int bar = s.indexOf('|');
 		if (bar < 0) throw new IllegalArgumentException("an outcome needs | and its words");
 		o.text = s.substring(bar + 1).trim();
-		if (o.text.isEmpty()) throw new IllegalArgumentException("an outcome needs words");
 		b.words.add(o.text);
 		String[] t = s.substring(0, bar).trim().split("\\s+");
 		for (int i = 0; i < t.length; i++) {
 			String k = t[i];
 			if (k.isEmpty()) continue;
 			if (k.equals("end")) { o.end = true; continue; }
+			if (k.equals("survivor")) { o.survivor = true; continue; }
 			String v = t[++i];
 			if (k.equals("scrap")) {
 				String[] r = v.split("-");
@@ -305,6 +355,16 @@ public final class Expeditions {
 			else if (k.equals("missiles")) o.missiles = Integer.parseInt(v);
 			else if (k.equals("parts")) o.parts = Integer.parseInt(v);
 			else if (k.equals("then")) o.then = v;
+			else if (k.equals("beacons")) o.beacons = Integer.parseInt(v);
+			else if (k.equals("ship")) {
+				String[] sp = v.split(":");
+				if (sp.length < 2 || !(knownKind(sp[0]) && !"any".equals(sp[0]) || "stealth".equals(sp[0]) || "sector".equals(sp[0]))) throw new IllegalArgumentException("ship needs sector:condition, not " + v);
+				if (!sp[1].equals("wrecked") && !sp[1].equals("limping") && !sp[1].equals("towed") && !sp[1].equals("new") && !sp[1].equals("dented"))
+					throw new IllegalArgumentException("unknown ship condition " + sp[1]);
+				if (sp[1].equals("limping") && (sp.length < 3 || net.blerf.ftl.parser.SavedGameParser.SystemType.findById(sp[2]) == null))
+					throw new IllegalArgumentException("a limping ship needs the system that failed: " + v);
+				o.ship = v;
+			}
 			else if (k.equals("join")) {
 				if (!v.equals("any") && !RACES.containsKey(v)) throw new IllegalArgumentException("unknown race " + v);
 				o.join = v;
@@ -313,6 +373,7 @@ public final class Expeditions {
 				o.item = v;
 			} else throw new IllegalArgumentException("unknown effect " + k);
 		}
+		if (o.text.isEmpty() && o.then == null) throw new IllegalArgumentException("an outcome needs words (only one that leads on to another step may go without)");
 		return o;
 	}
 	/** What's wrong with the events files, if anything (the harness checks it's nothing). */
@@ -328,6 +389,8 @@ public final class Expeditions {
 			if (e.kinds.contains(kind) || e.kinds.contains("any") && !rare(kind) || !parent.isEmpty() && e.kinds.contains(parent)) out.add(e);
 		return out;
 	}
+	/** The lost expedition's event (sector "saga"), or null. */
+	static Event saga() { for (Event e : book().events) if (e.kinds.contains("saga")) return e; return null; }
 	/** Events of this sector's own (not the general ones), for the harness. */
 	public static int ownEvents(String kind) {
 		int n = 0;
@@ -454,12 +517,25 @@ public final class Expeditions {
 		final List<CrewState> joined = new ArrayList<CrewState>();
 		final Map<CrewState, Integer> hurt = new HashMap<CrewState, Integer>();
 		final List<CrewState> lost = new ArrayList<CrewState>();
+		/** Ships coming home with the crew. */
+		final List<HomeShip> ships = new ArrayList<HomeShip>();
+		/** Extra beacons of the fleet's time (the lost expedition's weeks of waiting). */
+		int waited;
+		/** The lost expedition's survivor, who comes home aboard the Stealth Cruiser rather than to the Cargo Hold. */
+		CrewState survivor;
 		private boolean ended = false;
 
 		Run(int slot, Posting posting, List<CrewState> party, List<String> recent, Random rng) {
 			this.slot = slot; this.posting = posting; this.party = new ArrayList<CrewState>(party); this.rng = rng;
 			this.events = draw(posting, recent, rng);
+			Event saga = saga();
+			// the lost expedition: very rarely, a dangerous job with two or more crew goes missing at its end
+			if (saga != null && posting.danger >= 3 && party.size() >= 2 && (alwaysLost || rng.nextInt(LOST_ONE_IN) == 0)) events.add(saga);
 		}
+		/** Has this one gone missing (the lost expedition is under way, or still to come)? */
+		public boolean lostExpedition() { Event s = saga(); return s != null && events.contains(s); }
+		/** The ships coming home, for the Space Dock or Junkyard question. */
+		public List<HomeShip> ships() { return new ArrayList<HomeShip>(ships); }
 		public boolean over() { return ended || index >= events.size() || alive().isEmpty(); }
 		public Event event() { return over() ? null : events.get(index); }
 		/** The pop-up showing now. */
@@ -496,6 +572,7 @@ public final class Expeditions {
 		/** A gamble's odds for this party: more crew help, the injured don't, and in a fight, who they are matters. */
 		public int odds(Choice c) {
 			if (c.roll < 0) return 100;
+			if (event() != null && event().kinds.contains("saga")) return c.roll; // the lost expedition's odds are its own, whoever is left
 			List<CrewState> here = alive();
 			int injured = 0;
 			for (CrewState x : here) if (hurt.containsKey(x) || Expeditions.injured(x)) injured++;
@@ -511,6 +588,7 @@ public final class Expeditions {
 			if (who == null) who = here.get(rng.nextInt(here.size()));
 			CrewState anyone = here.get(rng.nextInt(here.size()));
 			String said = fill(o.text, who, anyone);
+			if (o.aside != null && rng.nextInt(100) < o.asideChance) said += " " + fill(o.aside, who, anyone);
 			StringBuilder extra = new StringBuilder();
 			int got = o.scrapMax <= 0 ? 0 : o.scrapMin + rng.nextInt(o.scrapMax - o.scrapMin + 1);
 			scrap += got;
@@ -545,13 +623,24 @@ public final class Expeditions {
 			if (o.fuel > 0) extra.append(" Fuel: ").append(o.fuel).append(".");
 			if (o.missiles > 0) extra.append(" Missiles: ").append(o.missiles).append(".");
 			if (o.parts > 0) extra.append(" Drone parts: ").append(o.parts).append(".");
+			if (o.survivor && survivor == null && !alive().isEmpty()) {
+				List<CrewState> here2 = alive();
+				survivor = here2.get(0); // the one the story has been naming
+				for (CrewState x : here2) if (x != survivor) { lost.add(x); extra.append("\n\n").append(x.getName()).append(" did not come back."); }
+			}
+			waited += o.beacons;
+			if (o.ship != null) ships.add(new HomeShip(o.ship, posting.kind));
+			Event saga = saga();
+			if (o.end && saga != null && events.indexOf(saga) > index) { index = events.indexOf(saga); step = ""; return said + extra; } // turning for home: the lost expedition goes missing all the same
 			if (o.end) ended = true;
 			if (o.then != null && !o.end && !alive().isEmpty()) step = o.then;
 			else { index++; step = ""; }
 			return said + extra;
 		}
 		private String fill(String t, CrewState who, CrewState anyone) {
-			return t.replace("{who}", who.getName()).replace("{crew}", anyone.getName()).replace("{sector}", posting.realSector());
+			CrewState sv = survivor != null ? survivor : who;
+			return t.replace("{who}", who.getName()).replace("{crew}", anyone.getName()).replace("{sector}", posting.realSector())
+					.replace("{enemy}", enemyOf(posting.kind)).replace("{survivor}", sv.getName());
 		}
 		/** A choice's words as its button shows them: {who} is the crew member it would be about. */
 		public String label(Choice c) {
@@ -567,7 +656,94 @@ public final class Expeditions {
 			int p = lo + new Random(posting.text.hashCode() ^ party.size()).nextInt(hi - lo + 1);
 			return posting.sealed ? p * 3 / 2 : p;
 		}
-		public String fillEvent(String t) { return t.replace("{sector}", posting.realSector()).replace("{crew}", alive().isEmpty() ? "your crew" : alive().get(0).getName()); }
+		public String fillEvent(String t) {
+			String one = survivor != null ? survivor.getName() : alive().isEmpty() ? "your crew" : alive().get(0).getName();
+			return t.replace("{sector}", posting.realSector()).replace("{crew}", alive().isEmpty() ? "your crew" : alive().get(0).getName())
+					.replace("{enemy}", enemyOf(posting.kind)).replace("{survivor}", one);
+		}
+	}
+
+	/** A ship coming home from an expedition: where from, in what state, and where she's to go. */
+	public static final class HomeShip {
+		/** "sector:condition[:system]", the sector "stealth" for the lost expedition's cruiser. */
+		public final String spec;
+		final String sector;
+		/** Send her to the Space Dock (true) or the Junkyard (false, unless asked). */
+		public boolean toDock = false;
+		/** Once home: her place in the fleet. */
+		public Ship ship;
+		HomeShip(String spec, String postingKind) {
+			this.spec = spec;
+			String s = spec.split(":")[0];
+			this.sector = s.equals("sector") ? postingKind : s;
+		}
+		public String condition() { return spec.split(":")[1]; }
+		public String system() { String[] p = spec.split(":"); return p.length > 2 ? p[2] : null; }
+		public boolean stealth() { return spec.startsWith("stealth"); }
+	}
+	/** Builds a ship coming home: a derelict of a model fitting her sector, in the condition her story says; the lost expedition's cruiser near new. */
+	static net.blerf.ftl.parser.SavedGameParser.SavedGameState build(HomeShip h, java.util.Collection<String> taken, Random rng) {
+		String[] models = h.stealth() ? new String[] {STEALTH} : shipModels(h.sector);
+		String base = models[rng.nextInt(models.length)];
+		List<String> variants = new ArrayList<String>();
+		for (int n = 0; n < 3; n++) {
+			String id = n == 0 ? base : base + "_" + (n + 1);
+			if (DataManager.get().getShips().get(id) != null && (h.stealth() || CompanionMod.fileOf(id) != null)) variants.add(id);
+		}
+		String id = variants.get(rng.nextInt(variants.size()));
+		String name = ShipNames.roll(id, taken, rng);
+		if (name == null) name = "Expedition Prize";
+		net.blerf.ftl.parser.SavedGameParser.SavedGameState gs;
+		net.blerf.ftl.parser.SavedGameParser.SystemType broken = h.system() == null ? null : net.blerf.ftl.parser.SavedGameParser.SystemType.findById(h.system());
+		if (h.stealth()) {
+			// her own blueprint (no companion mod needed), everything standard aboard; "dented": some hull and a bar or two
+			gs = Commission.build(id, name, net.blerf.ftl.constants.Difficulty.NORMAL, rng);
+			gs.getPlayerShip().getCrewList().clear();
+			gs.setTotalCrewHired(0);
+			if ("dented".equals(h.condition())) {
+				ShipState s = gs.getPlayerShip();
+				s.setHullAmt(Math.max(1, s.getHullAmt() * (60 + rng.nextInt(16)) / 100));
+				dent(s, 1 + rng.nextInt(2), rng);
+			}
+			return gs;
+		}
+		gs = Derelicts.build(id, name, rng);
+		ShipState s = gs.getPlayerShip();
+		int max = Derelicts.maxHull(s);
+		if ("towed".equals(h.condition())) { // a prize, not a wreck: most of her hull, most of her systems working, no breaches
+			s.setHullAmt(Math.max(s.getHullAmt(), (max * (55 + rng.nextInt(26)) + 99) / 100));
+			for (net.blerf.ftl.parser.SavedGameParser.SystemType t : net.blerf.ftl.parser.SavedGameParser.SystemType.values()) {
+				net.blerf.ftl.parser.SavedGameParser.SystemState st = s.getSystem(t);
+				if (st == null || st.getCapacity() <= 0 || st.getDamagedBars() == 0 || rng.nextInt(3) == 0) continue;
+				st.setDamagedBars(0);
+				if (t.isSubsystem()) st.setPower(st.getCapacity());
+			}
+			s.getBreachMap().clear();
+		}
+		if (broken != null) { // she made it home just as this gave out: broken through, or gone
+			net.blerf.ftl.parser.SavedGameParser.SystemState st = s.getSystem(broken);
+			if (st == null || st.getCapacity() <= 0 || rng.nextInt(3) == 0) {
+				if (st != null) { st.setCapacity(0); st.setPower(0); st.setDamagedBars(0); }
+			} else {
+				st.setDamagedBars(st.getCapacity());
+				st.setPower(0);
+			}
+			Retrofit.syncStations(s);
+		}
+		return gs;
+	}
+	/** Breaks a bar or two of her working systems (the lost expedition's cruiser, under fire). */
+	private static void dent(ShipState s, int bars, Random rng) {
+		List<net.blerf.ftl.parser.SavedGameParser.SystemState> on = new ArrayList<net.blerf.ftl.parser.SavedGameParser.SystemState>();
+		for (net.blerf.ftl.parser.SavedGameParser.SystemType t : net.blerf.ftl.parser.SavedGameParser.SystemType.values()) {
+			net.blerf.ftl.parser.SavedGameParser.SystemState st = s.getSystem(t);
+			if (st != null && st.getCapacity() > 0) on.add(st);
+		}
+		for (int i = 0; i < bars && !on.isEmpty(); i++) {
+			net.blerf.ftl.parser.SavedGameParser.SystemState st = on.get(rng.nextInt(on.size()));
+			if (st.getDamagedBars() < st.getCapacity()) st.setDamagedBars(st.getDamagedBars() + 1);
+			if (st.getPower() > st.getCapacity() - st.getDamagedBars()) st.setPower(st.getCapacity() - st.getDamagedBars());
+		}
 	}
 
 	/** Sends these crew (from the Cargo Hold) on the posting in this place. */
@@ -613,11 +789,24 @@ public final class Expeditions {
 			else hold.getAugmentIdList().add(id);
 		}
 		List<String> lostNames = new ArrayList<String>(), hurtNames = new ArrayList<String>(), joinedNames = new ArrayList<String>();
+		CrewState aboard = null; // the lost expedition's survivor, moved from the hold to her cruiser
 		for (CrewState sent : r.party) {
 			CrewState mine = match(crew, sent);
 			if (mine == null) throw new IOException(sent.getName() + " is no longer in the Cargo Hold; nothing was changed");
-			if (r.lost.contains(sent)) { crew.remove(mine); lostNames.add(sent.getName()); }
-			else if (r.hurt.containsKey(sent)) { mine.setHealth(Math.max(1, mine.getHealth() / 2)); hurtNames.add(sent.getName()); }
+			if (r.lost.contains(sent)) { crew.remove(mine); lostNames.add(sent.getName()); continue; }
+			if (r.hurt.containsKey(sent)) { mine.setHealth(Math.max(1, mine.getHealth() / 2)); hurtNames.add(sent.getName()); }
+			if (sent == r.survivor) { crew.remove(mine); aboard = mine; }
+		}
+		// the ships coming home, built before anything is written
+		List<String> taken = new ArrayList<String>();
+		for (Ship x : v.all()) if (x.name != null) taken.add(x.name);
+		List<net.blerf.ftl.parser.SavedGameParser.SavedGameState> built = new ArrayList<net.blerf.ftl.parser.SavedGameParser.SavedGameState>();
+		Random rng = new Random();
+		for (HomeShip h : r.ships) {
+			net.blerf.ftl.parser.SavedGameParser.SavedGameState g = build(h, taken, rng);
+			taken.add(g.getPlayerShipName());
+			if (h.stealth() && aboard != null) { SaveHelper.placeCrew(g.getPlayerShip(), aboard, false); g.getPlayerShip().getCrewList().add(aboard); }
+			built.add(g);
 		}
 		for (CrewState n : r.joined) {
 			if (!SaveHelper.placeCrew(hold, n, true)) continue; // no room: they find other work
@@ -625,7 +814,17 @@ public final class Expeditions {
 			joinedNames.add(n.getName());
 		}
 		v.begin().put(st, c.save, c.hash).commit();
+		List<String> shipNames = new ArrayList<String>();
+		for (int i = 0; i < built.size(); i++) {
+			HomeShip h = r.ships.get(i);
+			net.blerf.ftl.parser.SavedGameParser.SavedGameState g = built.get(i);
+			h.ship = h.toDock ? v.adopt(g) : v.adoptJunked(g);
+			v.setOut(h.ship, g, h.stealth() ? "Came home from the " + r.posting.realSector() + " under the command of " + (aboard == null ? "her crew" : aboard.getName())
+					: "Brought home from an expedition to the " + r.posting.realSector());
+			shipNames.add(g.getPlayerShipName() + " (to the " + (h.toDock ? "Space Dock" : "Junkyard") + ")");
+		}
 		v.countBeacon();
+		for (int i = 0; i < r.waited; i++) v.countBeacon(); // weeks of waiting for word
 		StringBuilder sb = new StringBuilder();
 		String where = r.posting.realSector();
 		sb.append(r.alive().isEmpty() ? "No one came back from the expedition to the " + where + "."
@@ -633,11 +832,13 @@ public final class Expeditions {
 				+ (r.scrap > 0 ? (pay > 0 ? ", and " : "") + r.scrap + " scrap more came of it" : "") + ".");
 		if (!r.items.isEmpty()) { List<String> t = new ArrayList<String>(); for (String id : r.items) t.add(homeplanet.model.Items.title(id)); sb.append("\nBrought back: ").append(String.join(", ", t)).append("."); }
 		if (!joinedNames.isEmpty()) sb.append("\nNew crew: ").append(String.join(", ", joinedNames)).append(".");
+		if (!shipNames.isEmpty()) sb.append("\nShips home: ").append(String.join(", ", shipNames)).append(".");
 		if (!hurtNames.isEmpty()) sb.append("\nInjured: ").append(String.join(", ", hurtNames)).append(".");
 		if (!lostNames.isEmpty()) sb.append("\nDid not come back: ").append(String.join(", ", lostNames)).append(".");
-		sb.append("\n\nEverything is in the Cargo Hold.");
+		sb.append(aboard != null ? "\n\n" + aboard.getName() + " stays aboard the ship they brought home. Everything else is in the Cargo Hold." : "\n\nEverything else is in the Cargo Hold.");
 		HistoryLog.entry("EXPEDITION", where + (r.posting.sealed ? " (sealed orders)" : "") + " (\"" + r.posting.text + "\"): " + (pay + r.scrap) + " scrap"
 				+ (r.items.isEmpty() ? "" : ", " + String.join(", ", r.items)) + (joinedNames.isEmpty() ? "" : "; joined: " + String.join(", ", joinedNames))
+				+ (shipNames.isEmpty() ? "" : "; ships: " + String.join(", ", shipNames)) + (r.waited > 0 ? "; missing for " + r.waited + " beacons" : "")
 				+ (lostNames.isEmpty() ? "" : "; did not come back: " + String.join(", ", lostNames))
 				+ (hurtNames.isEmpty() ? "" : "; injured: " + String.join(", ", hurtNames)));
 		Properties p = readBoard(v);

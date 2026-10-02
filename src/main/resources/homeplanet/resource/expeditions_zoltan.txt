@@ -5,6 +5,7 @@ event zoltan_census zoltan low census
 The Zoltan observers count everything: moons, rocks, ships, and your crew. They count your crew several times.
 * Be counted patiently
   ok scrap 6-8 | The Zoltan approve of your crew's patience, and say so at length. They pay exactly what was promised.
+  aside 20 | The Zoltan's final count includes {crew} twice, as two different species.
 * Help count
   roll 60
   win scrap 8-12 | The Zoltan approve of your crew's precision.
@@ -41,6 +42,7 @@ event tribunal zoltan low law
 The Zoltan tribunal needs outside witnesses to a contract dispute between two mining families. The hearing is expected to take nine hours, and it does.
 * Sit through it all
   ok scrap 8-10 | The verdict is fair, the pay is exact, and nobody remembers the first five hours.
+  aside 25 | The tribunal's clerk gives each witness a certificate of attendance. It is nine pages long.
 * Offer an opinion
   roll 50
   win scrap 10-14 | The tribunal finds your crew's opinion useful, and pays a consultant's fee.
@@ -79,6 +81,7 @@ A Zoltan research platform is testing a new kind of shield and needs volunteers 
 * Volunteer
   roll 70
   win scrap 12-16 | The shield holds. The Zoltan are delighted, and pay a hazard rate.
+  aside 20 | The Zoltan name the shield's next version after {crew}. The version after that is named after a moon.
   lose injure 1 scrap 6-8 | The shield holds, mostly. {who} was standing near the part that didn't.
 * Offer to fire the guns instead
   ok scrap 6-8 | The Zoltan are happy to have the help, and pay a gunner's wage.
@@ -105,3 +108,14 @@ The cure needs something the Zoltan don't have: a lot of living energy, from som
   lose lose 1 | {who} gives too much. The colony glows again, and its people mourn a stranger.
 * Leave the cure to the specialist and go home
   ok scrap 4-6 | The specialist says she'll find another way. Your crew hopes she does.
+
+event impounded zoltan moderate award
+The tribunal rules for your crew's testimony, and awards the witnesses a share of the forfeit: an impounded cruiser, her shield generator held back as evidence in another case.
+* Accept the cruiser
+  ok ship sector:limping:shields | She is towed out of the impound yard with great ceremony and no shields at all.
+* Accept a cash settlement instead
+  ok scrap 10-14 | The tribunal pays the settlement exactly, down to the last scrap.
+* [zoltan] {who} petitions for the generator too
+  roll 60
+  win ship sector:towed | The tribunal debates for an hour, then agrees: the evidence is no longer needed. She comes whole.
+  lose ship sector:limping:shields | The petition is denied, politely and at length. The cruiser comes without her shields.

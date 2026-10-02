@@ -13,6 +13,7 @@ A rebel patrol stops the transport. They want to see papers, and they are lookin
   lose lose 1 | The rebels search the hold. {who} doesn't make it out.
 * [human] {who} talks their way through
   ok scrap 10-14 | {who} convinces the rebels they're traders, and even sells them some old maps.
+  aside 20 | The maps {who} sold them are eleven years out of date.
 
 event intel_contact rebel high intelligence
 The Federation contact is an old woman running a supply depot behind rebel lines. She has the intelligence, and she wants to leave with it.
@@ -74,6 +75,7 @@ A rebel automated scout drifts at the beacon, powered down. Its data banks are i
 * Download the data banks
   roll 50
   win scrap 12-16 | The data is worth a great deal to Federation intelligence.
+  aside 15 | Among the data is the scout's own log, which ends with the word: lonely.
   lose injure 1 | The self-destruct is intact. {who} is caught in the blast.
 * Strip it for parts and leave the data
   ok scrap 6-8 parts 2 | Your crew takes what it can carry and leaves the rest.
@@ -92,6 +94,7 @@ Every station in the sector is playing the same broadcast: the Federation is fin
   lose injure 1 | The relay is guarded after all. {who} is hurt getting away.
 * [human] {who} records a reply
   ok scrap 6-10 | {who}'s reply goes out on the same channel. Somewhere, someone smiles.
+  aside 25 | Three Federation outposts play it that week, and one rebel station, by mistake.
 
 event cache_raid rebel high cache
 Federation intelligence knows where the rebels store their spare parts in this sector. Nobody knows how heavily it's guarded.
@@ -105,3 +108,14 @@ Federation intelligence knows where the rebels store their spare parts in this s
   lose injure 1 | Somebody notices sooner. {who} is hurt in the getaway.
 * [crystal] {who} seals the guards in their barracks
   ok scrap 16-22 | {who} walls the barracks door in crystal. The raid is leisurely after that.
+
+event stolen_back rebel high theft
+The Federation cruiser sits in a rebel repair yard, her guns stripped out for the rebels' own ships. The yard's guards change shift at dawn.
+* Steal her at the shift change
+  roll 50
+  win ship sector:limping:weapons | She slips out of the yard with no weapons, a skeleton crew and a lot of luck.
+  lose lose 1 | The new shift arrives early. {who} buys the others time to get clear, without the ship.
+* Mark the yard for Federation intelligence and leave
+  ok scrap 8-12 | Intelligence pays well for the yard's coordinates.
+* [zoltan] {who} dims the yard's lights
+  ok ship sector:limping:weapons | The yard goes dark for ten minutes. When the lights come back, the cruiser is gone.

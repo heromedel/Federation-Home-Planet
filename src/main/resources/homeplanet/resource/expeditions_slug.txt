@@ -18,6 +18,7 @@ event contract slug low contract
 The Slug merchant's contract is fifty pages long, in very small print, and must be witnessed by outsiders.
 * Read it all before signing as witnesses
   ok scrap 6-10 | It takes a full day, but your crew finds nothing wrong. The merchant pays, looking slightly disappointed.
+  aside 20 | {crew} finds a recipe for fried fungus on page thirty. It is surprisingly good.
 * Sign without reading
   roll 50
   win scrap 8-12 | Nothing goes wrong. The merchant pays.
@@ -50,6 +51,7 @@ event mind_market slug moderate memories
 A Slug market sells memories: someone else's first kiss, a war, a sunset on a world that no longer exists. The stallholder offers to buy one of your crew's.
 * Sell a harmless memory
   ok scrap 8-12 | {crew} sells the memory of a long, boring shuttle flight. The stallholder is delighted.
+  aside 25 | Somewhere in the market, someone is enjoying a very boring shuttle flight.
 * Buy a memory instead
   roll 50
   win scrap 4-6 fuel 3 | It's a smuggler's memory, and it includes the location of a fuel cache.
@@ -93,3 +95,12 @@ A Slug family has taken a human trader hostage over an unpaid bill. They'll rele
   roll 35
   win scrap 14-18 join human | The family scatters. The trader, amazed, signs on.
   lose lose 1 | The family doesn't scatter. They keep {who} as well.
+
+event slug_bargain slug moderate bargain
+A Slug dealer offers your crew a "fine cruiser, barely used" for nothing at all, only a small favour to be named later.
+* Take the deal
+  ok ship sector:limping:pilot | She's fine in every way except one: there's no piloting system aboard. The dealer never mentioned it. The tow is long and quiet.
+* Refuse
+  ok scrap 2-4 | The dealer is disappointed, and pays your crew a little for their time, for reasons of its own.
+* [slug] {who} reads what the dealer is hiding
+  ok scrap 4-6 ship sector:towed | {who} finds both the missing helm and the favour the dealer had in mind. The helm comes back. The favour doesn't.

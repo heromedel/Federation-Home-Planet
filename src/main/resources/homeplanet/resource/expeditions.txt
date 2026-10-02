@@ -19,8 +19,16 @@
 # <its words>
 # * ...
 #
+#   aside <chance in %> | <words>          after an outcome: an extra line, shown only that often
+#
 # Effects: scrap 5-10, injure 1, lose 1, fuel 2, missiles 1, parts 1, item weapon|drone|augment, join <race|any>,
-# then <step> (on to that step, not the next event), end (the expedition turns for home).
+# then <step> (on to that step, not the next event; such an outcome may have no words of its own), end (the
+# expedition turns for home), ship <sector>:<condition>[:<system>] (a ship comes home: "sector" means the posting's;
+# wrecked, towed (light damage), or limping:<system> (that system broken through, or gone); the player chooses the
+# Space Dock or the Junkyard for her).
+# The lost expedition (sector "saga", one in 300 high-danger expeditions of two or more) also has: beacons <n> (weeks of
+# waiting), survivor (all but the one named stay lost), ship stealth:new|dented, {enemy} and {survivor} in its words;
+# its steps may have a single choice.
 # In the words: {who} is the crew member the choice is about (the race's, else someone in the party), {crew} anyone
 # in the party, {sector} the sector's name.
 # Races: human, engi, mantis, rock, slug, zoltan, crystal, lanius. Sectors: civilian, engi, zoltan, mantis, rock, slug,
@@ -55,7 +63,7 @@ posting engi 2 Engi archivists seek couriers for a data core too sensitive to tr
 posting zoltan 1 Zoltan observers request escorts for a census of the outer moons
 posting zoltan 2 Energy anomalies near a Zoltan relay; investigators wanted, discretion expected
 posting zoltan 1 Witnesses required for a Zoltan tribunal; travel and lodging provided
-posting mantis 3 Need body soldiers for defense through Mantis territory
+posting mantis 3 Need mercenaries for defense through Mantis territory
 posting mantis 2 A trading post on the Mantis border wants guards for one long night
 posting mantis 3 Recovery team wanted for a freighter that drifted into Mantis space
 posting rock 2 Rock miners hiring for a deep shaft no one else will work
@@ -94,6 +102,7 @@ A girl is found curled up behind the water tanks, clutching a stolen ration bar.
   ok scrap 2-4 | The colony takes her in. Her new guardian presses a few scrap into {crew}'s hand and won't hear a word against it.
 * Report her to the camp's overseers
   ok scrap 8-12 | The overseers pay a finder's fee without looking up from their ledgers. Nobody in your crew says much for the rest of the day.
+  aside 20 | {crew} keeps the wrapper of the ration bar she dropped, and never says why.
 * [human] Let {who} talk to her
   ok scrap 4-6 fuel 2 | She opens up to {who}: the camp keeps its fuel in an unguarded shed. She shows them the way before she goes her own.
 
@@ -102,6 +111,7 @@ The navigation beacon on the route has gone dark. Without it, the hired shuttle 
 * Suit up and repair the beacon by hand
   roll 70
   win scrap 6-10 | The beacon flickers back to life. Its owners pay a technician's rate, and seem surprised anyone bothered.
+  aside 15 | The owners' thank-you note spells {crew}'s name three different ways, all wrong.
   lose injure 1 | A loose panel opens {who}'s suit along the forearm. The patch holds, just.
 * Wait for a passing ship to tow you
   ok scrap 1-3 | A freighter tows the shuttle on after half a day, and its cook trades a meal for a little help in the galley.
@@ -118,6 +128,7 @@ A distress call leads to a gutted transport. Too gutted: the scorch marks are ol
   ok | The ambushers take a crate of rations and let your crew go. Nobody is hurt, and nothing is gained.
 * [rock] {who} walks straight at them
   ok scrap 10-14 | Shots spark off {who}'s hide. The ambushers decide this was never worth it.
+  aside 20 | {who} spends the trip home picking spent rounds out of their hide, and keeps the best ones.
 * [crystal] {who} seals the passage with crystal
   ok scrap 6-10 | A wall of crystal grows across the gap. By the time it fades, the ambushers have given up and gone.
 
@@ -142,6 +153,7 @@ Half the passengers on the transport are down with a fever, the ship's medic amo
   ok | Your crew stays healthy and keeps to itself. It is a long, quiet trip.
 * [engi] {who} can't catch it
   ok scrap 8-12 | {who} tends the sick day and night, untouched by any fever made for flesh. The captain is very grateful.
+  aside 25 | The captain's children decide {who} is a pet. {who} does not object.
 * [crystal] {who} offers to stand watch over the worst cases
   ok scrap 8-10 join human | {who} sits with the dying for three nights without sleep. One of the survivors asks to come along when the trip is done.
 
@@ -153,6 +165,7 @@ An old Federation veteran shares your crew's table at a stopover. He has stories
   lose | The map leads to a bare asteroid. The old man was probably telling the truth, a long time ago.
 * Listen to the stories and move on
   ok scrap 1-2 | He tells good stories. He even insists on paying for the round.
+  aside 30 | One of the stories is about the Rebel Flagship. He swears she's still out there, and she gets bigger every time he tells it.
 step cache
 Behind the cache's last crate is a locked locker, stencilled with a unit number nobody uses any more.
 * Force it open
@@ -174,6 +187,7 @@ A customs cutter pulls the transport aside for inspection. The officer finds not
   ok scrap 6-10 | Whatever {who} picked out of his thoughts, the officer goes pale, waves them on, and pays them to forget his name.
 * [zoltan] {who} cites the relevant shipping regulation
   ok scrap 2-4 | {who} recites the inspection code from memory, sub-clause by sub-clause. The officer gives up before the end of the first chapter.
+  aside 25 | {who} admits later that half the sub-clauses don't exist.
 
 event signal_mast any high derelict
 The transport passes a derelict signal mast still broadcasting a Federation code from before the war. Its maintenance pod is pressurised. Something inside moves when the lights come on.
@@ -193,3 +207,30 @@ The lower deck holds a stasis pod, still powered. The face behind the frost is h
   ok scrap 6-10 | The Federation pays a recovery fee for the report. Someone, somewhere, will be told.
 * [engi] {who} checks the pod's systems first
   ok join human | {who} finds the fault in the revival cycle and fixes it before anyone touches the lid. She wakes without a scratch, and signs on.
+
+# ---- the lost expedition: very rare, told in its own pop-ups ----
+
+event lost_expedition saga high lost
+The expedition was due back days ago. Days turn into weeks. No Federation ship on the {sector} routes has heard a word from them, and the comm channel stays quiet.
+* Keep waiting
+  ok beacons 4 then rumour |
+step rumour
+At last a freighter captain brings word, third-hand: the expedition was last seen in a running battle with {enemy}, their borrowed ship coming apart around them, still heading straight for the enemy's station.
+* Continue
+  ok then alert |
+step alert
+You stop listening for the comm. Then, one quiet shift, The Home Planet Station's alarms go off: a ship has dropped her cloak just off the station's bow, close enough to count her hull plates.
+* Order the station's guns to fire
+  roll 25
+  win ship stealth:new then hail | The guns fire, and a second ship tears out of cloak right behind the first, straight into the volley. It breaks away, burning. The first ship hasn't fired a shot.
+  lose ship stealth:dented then hail | The guns fire, and hit. The ship staggers, trailing debris, but doesn't fire back.
+* Hold fire and wait
+  roll 75
+  win ship stealth:new then hail | The station holds its fire. So does the ship. She sits off the bow, silent, as if waiting for something.
+  lose ship stealth:dented then hail | The station holds its fire. A second ship tears out of cloak behind the first and rakes her side before the station's guns drive it off.
+step hail
+A hail comes in, and the view screens light up. It's {survivor}: thinner, scarred, grinning, and sitting in the captain's chair of a Federation Stealth Cruiser.
+* "Where are the others?"
+  ok survivor | {survivor}'s grin fades. "They didn't make it. The ship did. They'd want you to have her."
+* Welcome {survivor} home
+  ok survivor | "It's a long story," {survivor} says. "Most of it is bad. Permission to dock?"

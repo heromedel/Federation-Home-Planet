@@ -25,6 +25,7 @@ The Rock pilgrims walk, and keep walking, across a plain of black glass. They me
 * Keep up
   roll 60
   win scrap 8-12 | Your crew makes it, exhausted. The pilgrims nod at them with respect, and pay.
+  aside 20 | {crew}'s boots don't survive the plain. The pilgrims offer a pair of Rock sandals, which are two slabs of stone.
   lose injure 1 scrap 4-6 | {who} falls behind and turns an ankle on the glass.
 * Follow at your own pace
   ok scrap 4-6 | Your crew arrives after dark. The pilgrims pay half, and don't seem to mind.
@@ -65,6 +66,7 @@ event schism rock moderate schism
 Two Rock congregations disagree about a single line of scripture, and both have hired your crew to carry their argument to the other.
 * Carry the messages faithfully
   ok scrap 8-12 | The argument goes back and forth for three days, and both sides pay for every trip.
+  aside 20 | The line of scripture, it turns out, is about the correct way to sit down.
 * Soften the messages on the way
   roll 50
   win scrap 12-16 | Both congregations find the other surprisingly reasonable. They pay your crew to stay as mediators.
@@ -93,3 +95,16 @@ Herds of small, glowing creatures graze on the cooling lava fields, and the Rock
   ok scrap 2-4 | The farmers do it themselves. They pay your crew to carry the water.
 * [rock] {who} walks among them
   ok scrap 8-12 | The creatures follow {who} across the field like puppies.
+  aside 30 | One of them follows {who} all the way to the shuttle and has to be carried home, glowing and offended.
+
+event lava_hulk rock moderate hulk
+A Rock cruiser sits half sunk in a cooling lava field, abandoned when her oxygen plant cooked. The Rock call her unlucky. The Rock call a great many things unlucky.
+* Dig her out
+  roll 60
+  win ship sector:limping:oxygen | Two days of digging, and she floats free. Her oxygen plant is slag, as promised.
+  lose injure 1 scrap 4-6 | The crust breaks under {who}. They get out, burned, and the ship stays where she is.
+* Leave her to the lava
+  ok scrap 3-5 | Your crew pries some plating off her hull and leaves the rest.
+* [rock] {who} walks across the lava to her
+  ok ship sector:limping:oxygen | {who} wades out through the heat and rigs the tow alone. The Rock are deeply impressed.
+  aside 30 | One of the Rock miners asks whether {who} is, perhaps, a prophet.

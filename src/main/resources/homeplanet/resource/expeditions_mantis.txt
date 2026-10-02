@@ -7,6 +7,7 @@ A Mantis raiding party drops onto the convoy's lead ship. Your crew is hired to 
   roll 45
   win scrap 14-20 | The raiders break against the airlocks and withdraw. The convoy's captains pay well.
   lose injure 1 scrap 6-8 then breach | The airlocks hold until one doesn't. {who} is hurt as the raiders pour through.
+  aside 10 | Long after, {who} still won't say what happened at that airlock, but they keep muttering about one of the raiders calling them a "body soldier".
 * Seal the convoy's other ships and abandon the lead
   ok scrap 6-8 | The lead ship is lost to the raiders, but the rest are safe. The pay is cut for it.
 * [mantis] {who} challenges their leader
@@ -27,6 +28,7 @@ The trading post on the Mantis border is restless tonight. One of its Mantis cus
 * Stand guard and stay calm
   roll 65
   win scrap 8-12 | The night passes with nothing worse than raised voices. The post pays in full.
+  aside 15 | One Mantis customer leaves {crew} a carved bone as a tip. It might be a compliment. It might be a threat.
   lose injure 1 scrap 6-8 | One customer loses patience. {who} stops them, and is cut doing it.
 * Lower the prices for the night
   ok scrap 4-6 | The customers calm down, and so do the post's profits. The pay is smaller.
@@ -79,6 +81,7 @@ A Mantis trader offers to sell your crew the skull of a beast he swears he kille
   lose injure 1 | He is offended a great deal. {who} is the closest thing to hit.
 * [mantis] {who} asks for the story first
   ok scrap 8-12 | It's a long story, and {who} listens to all of it. He gives them the skull for free.
+  aside 30 | {who} tells it to anyone who will listen afterwards, and it gets a little bigger every time.
 
 event mantis_prisoners mantis moderate prisoners
 A Mantis cruiser holds three human prisoners and offers them for sale. "Workers," the captain says. "Fed, mostly."
@@ -98,6 +101,20 @@ Your crew finds a Mantis curled in a cave, mid-molt, defenceless and very aware 
 * Guard the cave until it's done
   roll 75
   win scrap 8-12 | When the molt is done, the Mantis stands up, much bigger, and pays your crew with an old, heavy coin.
+  aside 25 | The coin is from a Mantis dynasty that ended four hundred years ago. A collector pays for the story as much as the coin.
   lose injure 1 | The Mantis wakes before it's done, confused, and lashes out. {who} is caught.
 * [mantis] {who} keeps watch
   ok scrap 10-14 join mantis | When the molt is done, the Mantis says it owes {who} a life. It signs on to pay it back.
+
+event limping_raider mantis high escape
+The convoy is lost and so is your crew's shuttle. The only way out is a Mantis raider whose owners are dead on her deck, and whose engines are already screaming.
+* [fight] Take her and run for the border
+  roll 55
+  win ship sector:limping:engines | She crosses the border on her last breath. The engines give out with a bang as the station's tugs take hold, and never start again.
+  lose lose 1 | The raider's owners weren't all dead. {who} holds the bridge while the others take the escape pod.
+* Abandon her and send a distress call
+  roll 70
+  win scrap 4-6 | A Federation patrol picks them up, a day later and very cold.
+  lose injure 1 | The patrol is late. {who} is half-frozen by the time it arrives.
+* [mantis] {who} knows how to nurse a Mantis engine
+  ok ship sector:towed | {who} coaxes the engines all the way home, muttering at them in their own tongue.

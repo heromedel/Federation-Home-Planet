@@ -11,6 +11,7 @@ The Engi relay's network has split into a dozen parts, each certain the others a
   lose scrap 2-4 | The patch makes things worse before the Engi undo it. They pay a little, for effort.
 * [engi] {who} joins the network
   ok scrap 14-20 parts 2 | {who} plugs in and the dozen parts become one again. The Engi are grateful, in their quiet way.
+  aside 20 | For a week afterwards, {who} sometimes answers questions before anyone has asked them.
 
 event drone_factory engi moderate factory
 The drone factory's doors open on their own as your crew arrives. Inside, the assembly lines are still running, building drones no one has ordered, for an owner who stopped answering a year ago.
@@ -77,6 +78,7 @@ An Engi repair dock offers free work to any ship that brings its own crew. The c
   ok | The dockmaster is disappointed, and says so twice.
 * [engi] {who} vouches for the crew
   ok scrap 6-8 parts 2 | {who} convinces the dock that the crew is in excellent working order. The dock pays for the referral.
+  aside 25 | The dock files {who}'s referral under: organic, reliable, unusual.
 
 event engi_protocol engi high protocol
 An Engi patrol stops the shuttle and recites a long protocol about unregistered biological cargo. By "cargo" they mean your crew.
@@ -103,3 +105,15 @@ An Engi construction frame drifts at the beacon, abandoned half-built, its arms 
   lose injure 1 | The frame's arms finally take notice. {who} is caught in one.
 * [engi] {who} tells it to stop
   ok scrap 10-14 | {who} sends a single command. The frame folds itself up neatly for transport.
+  aside 20 | On the way home, {who} admits they don't know what the command meant either.
+
+event retired_node engi low retirement
+An Engi cruiser drifts outside the relay, powered but still. Her piloting node failed, the Engi explain, and a ship that cannot think for herself is a ship they cannot bear to look at. Would your crew take her away?
+* Take her as she is
+  ok ship sector:limping:pilot | The Engi thank your crew formally, and turn away before the tow begins.
+* Strip her for parts instead
+  ok scrap 8-12 parts 3 | The Engi watch the stripping in silence, then pay for the work.
+* [engi] {who} tries to wake her node
+  roll 50
+  win ship sector:towed | {who} coaxes something out of the dead node. She isn't whole, but she answers. The Engi are very quiet.
+  lose ship sector:limping:pilot | The node stays dead. {who} spends the tow sitting beside it anyway.
