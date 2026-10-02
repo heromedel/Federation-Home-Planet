@@ -3,6 +3,8 @@
 # "== single" are whole names. "== first" and "== second" are put together ("Iron" + "Heron"). The race sections
 # (kestrel, stealth, mantis, engi, federation, slug, rock, zoltan, crystal, lanius) are whole names for that model's
 # ships: a roll for one of them picks from its own section some of the time, and from the Federation's names the rest.
+# A layout may have its own section too, as "== kestrel a" (Type A; "b" and "c" for the others): its names join the
+# model's.
 # Names longer than 20 letters are skipped (FTL may cut them off), and so are names a ship in the fleet already has.
 # The dice don't repeat a name in the same Commission window until they run out.
 
@@ -331,6 +333,9 @@ Warden
 Whisper
 Wolf
 Wren
+
+== kestrel a
+Little Kessie
 
 == kestrel
 Red-Tail
