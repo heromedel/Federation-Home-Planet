@@ -23,6 +23,15 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   other commanders to find and hail, from any screen"); then **Power Down** closes them, and the Space Dock's Long
   Range button shows a green lamp. Every start of the program begins powered down. The Windows Firewall note comes
   with the first Open Hailing Frequencies.
+- **Commanders met before** (`comm/Contacts`, the vault's `comm/contacts.txt`, per career): everyone the station has
+  found, hailed, been hailed by or had a message from stays in the list. Those in range come first; the rest are greyed,
+  "seen 2 days ago", and Send Message to them goes straight to the Outbox (Hail is off: a channel needs both stations
+  there). Right-click: Block / Unblock, and Remove from the list (asked first; they come back when met again, and what
+  waits for them in the Outbox stays). At most 100 are kept, the longest unseen dropped first.
+- **Hailing** opens a small window, "Hailing Commander Wolfy. Waiting for their answer...", with Cancel. Cancel
+  withdraws the hail: a goodbye goes to their station, which sees it while its question is open (the only thing a
+  hailing station sends before an answer), closes the question and lists a missed hail "(withdrew the hail)". The
+  window closes on an answer, a decline or no answer.
 - **Finding and hailing** (`comm/Beacon`, `comm/Channel`): the search broadcasts on each local network and to this
   computer; By address hails an IP (with :port, or each port in turn); the screen shows the port ("your hailing
   frequency") to forward on a router for a hail over the internet (a virtual LAN needs nothing). The hailed commander
@@ -59,11 +68,41 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   frequencies are open, Delete or Archive like a receipt), or, with **Priority** ticked (unticked to begin with), a
   pop-up on whatever screen they're on (it waits for an open window, never changes the screen, and offers Reply). A
   station takes priority pop-ups only when **Priority messages from other commanders pop up** is on (Settings,
-  General; on by default), and one a minute from each commander; the rest go to the inbox, marked priority. With the
-  inbox off, every message pops up, so nothing is lost. At most 5 messages a minute from one commander (20 from
+  General; on by default), and one a minute from each commander; the rest go to the inbox, marked priority.
+  **Long Range mail always reaches the inbox** (commanders' messages, the Quartermaster's receipts): the Immersive
+  messages setting is about The Federation Home Planet's own letters, not a commander's mail. The Space Dock shows the
+  inbox while Long Range Comm. is in use (hailing frequencies open or powered up, Long Range mail in it, or something in
+  the Outbox), whatever that setting says. At most 5 messages a minute from one commander (20 from
   everyone) are taken; the rest are told to try again in a minute. A station's search answer adds "notes" when it
   takes messages, so Send Message stays off for older ones; the message itself is a NOTE in place of the hello, which
   an older station would refuse as garbled.
+- **The Outbox** (`comm/Outbox`, the inbox's Outbox tab, `ui/OutboxPanel`): a message for a station that can't be reached (its frequencies
+  closed, or a Reply to a commander whose were closed when they wrote) can wait in the Outbox, asked first. It's kept in
+  the vault's `comm/outbox/` (one file an item: it survives a restart) and delivered the next time this station, its
+  hailing frequencies open, finds theirs: by the search on the Long Range screen, or, powered up on another screen, a
+  quiet search every 30 seconds while something waits. Stations are matched by id, not address. A message that waited
+  arrives saying when it was written. One their station is too busy for (too many messages this minute) waits for a
+  later search; one it turns away for another reason stops trying and says why, until Try again; a station that blocked you never answers the search, so the message just waits. Cancel
+  takes an item out. At most 20 wait, 5 for any one commander. It's the inbox's third tab (Inbox / Archive / Outbox),
+  and the Long Range screen's "Outbox (n)" opens the inbox on it.
+- **Shipments** (`comm/Shipments`, a `parcel-ID.txt` record each in the vault's `comm/`): goods sent with a message,
+  no channel needed. **Prepare Shipment** (the middle panel, with no channel open) opens the offer side with nobody on
+  the other (a draft `Session`): items, supplies and crew, not whole ships. **Package** takes them off their ships into
+  escrow, as a trade does (one packed shipment at a time); **Unpack** brings them back. The middle panel follows the
+  shipment: "SHIPMENT PACKED" (what to do next), "SHIPMENT IN THE OUTBOX" once its message waits there (Unpack then
+  takes it out of the Outbox, its message cancelled, asked first), and "Sent to ..." once delivered. A message waiting
+  with a shipment that was unpacked some other way isn't sent without it: it stops, saying so. Send Message then offers
+  **Attach shipment**, for a station whose search answer says it takes them ("shipments", 4B.81 on). The parcel
+  travels in the NOTE (its id, its lines, the sender's mode). The other station checks every line against its game
+  data (a line it can't take turns the whole parcel away), files it in its inbox as "Shipment from ...", and answers;
+  only then does the sender's escrow settle (sent). A parcel that arrives again (an answer lost) is acknowledged, not
+  filed twice. In the inbox a held parcel has **Accept** (into this fleet's Cargo Hold), **Deliver to another fleet...**
+  (another of the commander's fleets the trading rules allow, its Cargo Hold file written directly, that fleet not in
+  use) and **Return to sender** (it waits in the Outbox, addressed back, under a new id, and arrives as a shipment for
+  them to accept). The mode rules don't turn a parcel away: one from a mode this fleet doesn't trade with is held,
+  saying why (the lore line first), to deliver elsewhere or return. A held parcel can't be deleted. A message with a
+  shipment that can't reach its commander waits in the Outbox with it; Cancel there unpacks it. Every move changes the
+  parcel's state in the same transaction as the save its goods go into.
 - **The offer** (`comm/Session`): each side owns its lines and numbers each version of them. Accept names both
   versions, so any change withdraws every acceptance (the notice line says what changed). A line the other station
   can't take (an item or race its game data lacks) shows grey, and Accept stays off. Notices are short enough for
@@ -128,7 +167,8 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 - More things to do with a commander in the list, beside Hail and Send Message: **View Offers** (offers left standing
   for anyone who finds you, to trade without both commanders at the screen), **Return Ship** (sending a traded ship
   home to her original owner, or lending ships).
-- Messages to a station that's powered down, held until it powers up.
+- **Trading with your own careers:** sending a shipment, or trading, between your own fleets (Sandbox and the
+  Immersive careers), where the trading rules allow it.
 
 ## Changing Long Range Comm.
 
@@ -146,5 +186,10 @@ frequencies closed neither found nor hailed; Sandbox and Immersive, and careers 
 trading (and a station offering anyway refused); a declined hail told the commander is busy; blocking (search unanswered,
 hail not answered, an older station's bare search still answered, which addresses a block keeps) and unblocking; messages (cut, flooded, and kept
 from an older station); messages without a channel (inbox, priority pop-up and its once-a-minute rule, pop-ups turned
-off, an inbox that's off, blocked, flooded, plain text, an older station's answer, frequencies closed); garbled
+off, an inbox that's off, blocked, flooded, plain text, an older station's answer, frequencies closed); the Outbox
+(waiting while frequencies are closed, kept on disk, delivered once found and saying when it was written, Cancel, a
+busy station leaving it to go later, Try again, the limit per commander); shipments (packing and unpacking, sent and held, a duplicate arrival, accepted, held for another mode and delivered
+to another fleet's Cargo Hold, returned through the Outbox and accepted home, Cancel in the Outbox unpacking);
+commanders remembered out of range, written
+to through the Outbox, removed and found again; a hail withdrawn while the other station still asks; garbled
 messages and out-of-range crew.

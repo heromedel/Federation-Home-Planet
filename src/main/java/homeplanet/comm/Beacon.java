@@ -45,6 +45,8 @@ public final class Beacon {
 		public int protocol;
 		/** It takes messages without a channel ({@link Notes}): 4B.72 and later. */
 		public boolean notes;
+		/** It takes shipments with them ({@link Shipments}): 4B.81 and later. */
+		public boolean shipments;
 		public boolean compatible() { return protocol == Session.PROTOCOL; }
 		Found(String host, int port, String title, String ship, String version, String station, String mode) {
 			this.host = host; this.port = port; this.title = title; this.ship = ship; this.version = version; this.station = station; this.mode = mode;
@@ -108,7 +110,7 @@ public final class Beacon {
 	 * takes beyond trading, comma-separated: "notes"). Older stations read the first lines and ignore the rest.
 	 */
 	public static String answer(int tcpPort, String version, String station, String title, String ship, String mode) {
-		return tcpPort + "\n" + Session.PROTOCOL + "\n" + version + "\n" + station + "\n" + title + "\n" + (ship == null ? "" : ship) + "\n" + mode + "\nnotes";
+		return tcpPort + "\n" + Session.PROTOCOL + "\n" + version + "\n" + station + "\n" + title + "\n" + (ship == null ? "" : ship) + "\n" + mode + "\nnotes,shipments";
 	}
 
 	/** Asks every station in reach, listening for answers this long. Not on the event thread. Leaves out this station. */
@@ -157,7 +159,9 @@ public final class Beacon {
 			String mode = l.length > 7 && java.util.Arrays.asList(homeplanet.vault.Vault.SLOTS).contains(l[7].trim()) ? l[7].trim() : homeplanet.vault.Vault.SANDBOX;
 			Found f = new Found(host, port, Line.text(l[5], 48), Line.text(l[6], 64), Line.text(l[3], 16), l[4], mode);
 			try { f.protocol = Integer.parseInt(l[2].trim()); } catch (NumberFormatException e) { f.protocol = -1; }
-			f.notes = l.length > 8 && java.util.Arrays.asList(l[8].trim().split(",")).contains("notes");
+			List<String> takes = l.length > 8 ? java.util.Arrays.asList(l[8].trim().split(",")) : new ArrayList<String>();
+			f.notes = takes.contains("notes");
+			f.shipments = takes.contains("shipments");
 			return f;
 		} catch (NumberFormatException e) {
 			return null;

@@ -18,6 +18,9 @@ rem the words for a build; an update rebuilds, so it says so
 set "DOING=Constructing"
 set "DONE=Constructed"
 
+rem the version about to be built (and its branch), shown before anything is chosen
+call :plans
+
 rem "update": started by the station's Check for Updates, with the new files in place: rebuild, then open the station
 if /i "%~1"=="update" goto :update
 
@@ -26,6 +29,7 @@ cls
 echo ==========================================================
 echo    THE FEDERATION HOME PLANET STATION
 echo    Construction Yard
+if defined PLANS echo    Construction plans on hand: %PLANS%
 echo ==========================================================
 echo.
 echo    0: Exit
@@ -63,6 +67,7 @@ cls
 echo ==========================================================
 echo    THE FEDERATION HOME PLANET STATION
 echo    Construction Yard: new construction plans
+if defined PLANS echo    Construction plans on hand: %PLANS%
 echo ==========================================================
 call :construct
 if defined BUILT ( call :launch & exit /b 0 )
@@ -82,9 +87,22 @@ echo The station was not changed: the version you had is still in "Current Build
 echo Run this again later, or download the program from https://github.com/heromedel/Federation-Home-Planet
 exit /b 0
 
-rem ---- :launch: opens the Station Interface in its own window ----
+rem ---- :launch: opens the Station Interface ----
+rem through cmd /c, so its window closes once the station is up (a batch file started on its own leaves a prompt open)
 :launch
-start "Federation Home Planet Interface" /d "%HERE%Current Build" "%HERE%Current Build\Federation Home Planet Interface.bat"
+start "Federation Home Planet Interface" /d "%HERE%Current Build" cmd /c call "%HERE%Current Build\Federation Home Planet Interface.bat"
+exit /b 0
+
+rem ---- :plans: the version in pom.xml, and the branch the files come from (when this folder is a git clone) ----
+:plans
+set "PLANS="
+for /f "tokens=2 delims=<>	 " %%v in ('findstr /c:"<version>" pom.xml 2^>nul') do ( set "PLANS=%%v" & goto :planbranch )
+:planbranch
+if not defined PLANS exit /b 0
+set "HEADREF="
+if exist ".git\HEAD" set /p HEADREF=<".git\HEAD"
+if not defined HEADREF exit /b 0
+if "%HEADREF:~0,16%"=="ref: refs/heads/" set "PLANS=%PLANS% (%HEADREF:~16%)"
 exit /b 0
 
 rem ---- :construct: tools if missing, then the build ----

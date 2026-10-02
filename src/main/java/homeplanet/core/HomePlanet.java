@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.79";
+	public static final String APP_VERSION = "4B.84";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -161,24 +161,14 @@ public class HomePlanet {
 		careerMessages = flag("career_messages");
 		finalVictory = config.getProperty("final_victory", "nothing");
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
-		log.debug("{} {} starting on Java {}", APP_NAME, APP_VERSION, System.getProperty("java.version"));
 
-		// FTL's data
-		String datsPathString = config.getProperty("ftlDatsPath");
-		if (datsPathString != null && datsPathString.length() > 0) {
-			datsPath = new File(datsPathString);
-			if (!isDatsPathValid(datsPath)) datsPath = null;
-		}
-		if (datsPath == null) {
-			datsPath = FTLUtilities.findDatsDir(); // the usual Steam, GOG and Humble folders
-			if (datsPath != null && !confirm("The Home Planet Station found FTL's files in:\n" + datsPath.getPath() + "\nIs this correct?", "Confirm")) datsPath = null;
-			if (datsPath == null) datsPath = promptForFtlPath();
-			if (datsPath != null) { config.setProperty("ftlDatsPath", datsPath.getAbsolutePath()); writeConfig = true; }
-		}
+		// FTL's data and saves: the folders kept in the cfg, else the ones found and confirmed, else the ones chosen
+		datsPath = gameFolder();
 		if (datsPath == null) {
 			showErrorDialog("FTL's files were not found. The Home Planet Station can't open without them.\nIt will now close.");
 			System.exit(1);
 		}
+		writeConfig |= !datsPath.getAbsolutePath().equals(config.getProperty("ftlDatsPath"));
 		// First setup, asked once: Steam launching (for the Steam version), then the House Rules window while any rule was never set.
 		// A rule missing from the config starts ticked, except the selling and pricing house rules; rules already set keep their value.
 		if (config.getProperty("launch_through_steam") == null && datsPath.getAbsolutePath().toLowerCase().contains("steamapps")) {
@@ -209,37 +199,12 @@ public class HomePlanet {
 			writeConfig = true; // saveConfig writes every rule, so this is asked once
 		}
 
-		// FTL's saves
-		String savePathString = config.getProperty("ftlSavePath");
-		if (savePathString != null) {
-			save_location = new File(savePathString);
-			if (!save_location.isDirectory()) save_location = null;
-		}
-		if (save_location == null && secondStation) {
-			// a second station needs saves of its own: never the first station's folder
-			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
-				JOptionPane.showMessageDialog(null, "This is a second Home Planet Station, for trying Long Range Comm. on one computer.\n\n"
-						+ "Choose a saves folder for it that the first station doesn't use: a copy of your FTL saves folder works well.",
-						"Second station", JOptionPane.INFORMATION_MESSAGE);
-				return null;
-			} });
-			save_location = promptForSavePath();
-			if (save_location != null) { config.setProperty("ftlSavePath", save_location.getAbsolutePath()); writeConfig = true; }
-		}
-		if (save_location == null) {
-			// FTL 1.5.4+ keeps its profile in ae_prof.sav; older versions used prof.sav
-			for (String known : new String[] {"ae_prof.sav", "prof.sav", "continue.sav"}) {
-				for (File file : getPossibleUserDataLocations(known)) if (file.exists()) { save_location = file.getParentFile(); break; }
-				if (save_location != null) break;
-			}
-			if (save_location != null && !confirm("The Home Planet Station found FTL's saves in:\n" + save_location.getPath() + "\nIs this correct?", "Confirm")) save_location = null;
-			if (save_location == null) save_location = promptForSavePath();
-			if (save_location != null) { config.setProperty("ftlSavePath", save_location.getAbsolutePath()); writeConfig = true; }
-		}
+		save_location = savesFolder();
 		if (save_location == null) {
 			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
 			System.exit(1);
 		}
+		writeConfig |= !save_location.getAbsolutePath().equals(config.getProperty("ftlSavePath"));
 		if (writeConfig) saveConfig();
 
 		// The vault (files only so far; the ships are read once the game data is in)
@@ -492,67 +457,89 @@ public class HomePlanet {
 
 	// ---- finding FTL ----
 
-	private static boolean isDatsPathValid(File path) {
-		// FTL 1.6+: ftl.dat. Older versions: data.dat and resource.dat.
-		return path.exists() && path.isDirectory() && FTLUtilities.isDatsDirValid(path);
+	/** FTL's data folder: the one in the cfg while it still holds the game's files, else the usual places (asked to confirm), else the player's choice. */
+	private static File gameFolder() {
+		File kept = keptFolder("ftlDatsPath");
+		if (kept != null && FTLUtilities.isDatsDirValid(kept)) return kept;
+		File found = FTLUtilities.findDatsDir(); // the usual Steam, GOG and Humble folders
+		if (found != null && confirmFound("files", found)) return found;
+		return promptForFtlPath();
 	}
-	public static File promptForFtlPath() {
-		return onEdt(new java.util.concurrent.Callable<File>() { public File call() { return promptForFtlPathHere(); } });
-	}
-	private static File promptForFtlPathHere() {
-		JOptionPane.showMessageDialog(null, "The Home Planet Station's interface draws its images and data from FTL,\nbut its search could not find FTL's files on its own.\n\n"
-				+ "Select 'ftl.dat' in your FTL folder (FTL 1.6 and newer),\nor '(FTL dir)/resources/data.dat' for older versions,\nor 'FTL.app' on a Mac.",
-				"FTL Not Found", JOptionPane.INFORMATION_MESSAGE);
-		final JFileChooser fc = new JFileChooser();
-		fc.setDialogTitle("Find ftl.dat, data.dat or FTL.app");
-		fc.setFileHidingEnabled(false);
-		fc.addChoosableFileFilter(new FileFilter() {
-			@Override public String getDescription() { return "FTL Resources (ftl.dat; data.dat; FTL.app)"; }
-			@Override public boolean accept(File f) {
-				return f.isDirectory() || f.getName().equals("ftl.dat") || f.getName().equals("data.dat") || f.getName().equals("FTL.app");
-			}
-		});
-		fc.setMultiSelectionEnabled(false);
-		File ftlPath = null;
-		if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-			File f = fc.getSelectedFile();
-			if (f.getName().equals("ftl.dat") || f.getName().equals("data.dat")) ftlPath = f.getParentFile();
-			else if (f.getName().endsWith(".app") && f.isDirectory()) {
-				File contentsPath = new File(f, "Contents");
-				if (new File(contentsPath, "Resources").exists()) ftlPath = new File(contentsPath, "Resources");
-			}
+	/** FTL's saves folder: the one in the cfg, else where FTL keeps its saves (asked to confirm), else the player's choice. */
+	private static File savesFolder() {
+		File kept = keptFolder("ftlSavePath");
+		if (kept != null) return kept;
+		if (secondStation) {
+			// a second station needs saves of its own: never the first station's folder, so it's always chosen
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+				JOptionPane.showMessageDialog(null, "This is a second Home Planet Station, for trying Long Range Comm. on one computer.\n\n"
+						+ "Choose a saves folder for it that the first station doesn't use: a copy of your FTL saves folder works well.",
+						"Second station", JOptionPane.INFORMATION_MESSAGE);
+				return null;
+			} });
+			return promptForSavePath();
 		}
-		return ftlPath != null && isDatsPathValid(ftlPath) ? ftlPath : null;
+		File found = null;
+		for (File dir : savesPlaces()) if (dir.isDirectory() && hasAny(dir, SAVE_FILES)) { found = dir; break; }
+		if (found != null && confirmFound("saves", found)) return found;
+		return promptForSavePath();
 	}
-	public static File promptForSavePath() {
-		return onEdt(new java.util.concurrent.Callable<File>() { public File call() { return promptForSavePathHere(); } });
+	/** A folder named in the cfg, if it's there and still a folder. */
+	private static File keptFolder(String key) {
+		String path = config.getProperty(key, "");
+		File f = path.isEmpty() ? null : new File(path);
+		return f != null && f.isDirectory() ? f : null;
 	}
-	private static File promptForSavePathHere() {
-		JOptionPane.showMessageDialog(null, "The Home Planet Station sends ships out using FTL's saves,\nbut its search could not find FTL's saves folder on its own.\n\n"
-				+ "Select '/Documents/My Games/FasterThanLight/continue.sav' (or ae_prof.sav).", "FTL Save Not Found", JOptionPane.INFORMATION_MESSAGE);
-		final JFileChooser fc = new JFileChooser();
-		fc.setDialogTitle("Find continue.sav or ae_prof.sav");
-		fc.addChoosableFileFilter(new FileFilter() {
-			@Override public String getDescription() { return "FTL save files (continue.sav, ae_prof.sav, prof.sav)"; }
-			@Override public boolean accept(File f) {
-				return f.isDirectory() || f.getName().equals("continue.sav") || f.getName().equals("ae_prof.sav") || f.getName().equals("prof.sav");
-			}
-		});
-		fc.setMultiSelectionEnabled(false);
-		File path = null;
-		if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) path = fc.getSelectedFile().getParentFile();
-		return path != null && path.isDirectory() ? path : null;
+	private static boolean confirmFound(String what, File dir) {
+		return confirm("The Home Planet Station found FTL's " + what + " in:\n" + dir.getPath() + "\nIs this correct?", "Confirm");
 	}
-	public static File[] getPossibleUserDataLocations(String fileName) {
-		if (fileName == null) fileName = "";
-		String xdgDataHome = System.getenv("XDG_DATA_HOME");
-		if (xdgDataHome == null) xdgDataHome = System.getProperty("user.home") + "/.local/share";
-		String home = System.getProperty("user.home");
+	/** The files that mark FTL's saves folder: the profile (ae_prof.sav from FTL 1.5.4, prof.sav before) or a game in progress. */
+	private static final String[] SAVE_FILES = {"ae_prof.sav", "prof.sav", "continue.sav"};
+	private static boolean hasAny(File dir, String[] names) {
+		for (String n : names) if (new File(dir, n).isFile()) return true;
+		return false;
+	}
+	/** Where FTL keeps its saves on each system. */
+	private static File[] savesPlaces() {
+		String home = System.getProperty("user.home"), xdg = System.getenv("XDG_DATA_HOME");
 		return new File[] {
-				new File(home + "/My Documents/My Games/FasterThanLight/" + fileName), // Windows XP
-				new File(home + "/Documents/My Games/FasterThanLight/" + fileName), // Windows Vista and later
-				new File(xdgDataHome + "/FasterThanLight/" + fileName), // Linux
-				new File(home + "/Library/Application Support/FasterThanLight/" + fileName) }; // macOS
+				new File(home, "Documents/My Games/FasterThanLight"), // Windows
+				new File(home, "My Documents/My Games/FasterThanLight"), // Windows XP
+				new File(xdg != null ? xdg : home + "/.local/share", "FasterThanLight"), // Linux
+				new File(home, "Library/Application Support/FasterThanLight") }; // macOS
+	}
+
+	/** Asks for FTL's data: ftl.dat (or an older data.dat), or FTL.app on a Mac. Null if none was chosen, or it isn't FTL's. */
+	public static File promptForFtlPath() {
+		File f = choose("The Home Planet Station's interface draws its images and data from FTL,\nbut its search could not find FTL's files on its own.\n\n"
+				+ "Select 'ftl.dat' in your FTL folder (FTL 1.6 and newer),\nor '(FTL dir)/resources/data.dat' for older versions,\nor 'FTL.app' on a Mac.",
+				"FTL Not Found", "Find ftl.dat, data.dat or FTL.app", "FTL Resources (ftl.dat; data.dat; FTL.app)", "ftl.dat", "data.dat", "FTL.app");
+		if (f == null) return null;
+		File dir = f.isDirectory() ? new File(f, "Contents/Resources") : f.getParentFile(); // FTL.app keeps its data inside
+		return dir != null && FTLUtilities.isDatsDirValid(dir) ? dir : null;
+	}
+	/** Asks for FTL's saves folder, by one of its files. Null if none was chosen. */
+	public static File promptForSavePath() {
+		File f = choose("The Home Planet Station sends ships out using FTL's saves,\nbut its search could not find FTL's saves folder on its own.\n\n"
+				+ "Select '/Documents/My Games/FasterThanLight/continue.sav' (or ae_prof.sav).",
+				"FTL Save Not Found", "Find continue.sav or ae_prof.sav", "FTL save files (continue.sav, ae_prof.sav, prof.sav)", SAVE_FILES);
+		File dir = f == null ? null : f.getParentFile();
+		return dir != null && dir.isDirectory() ? dir : null;
+	}
+	/** Says why, then opens a file chooser showing only the named files (and folders to find them in). The file chosen, or null. */
+	private static File choose(final String why, final String whyTitle, final String title, final String description, final String... names) {
+		return onEdt(new java.util.concurrent.Callable<File>() { public File call() {
+			JOptionPane.showMessageDialog(null, why, whyTitle, JOptionPane.INFORMATION_MESSAGE);
+			final List<String> wanted = java.util.Arrays.asList(names);
+			JFileChooser fc = new JFileChooser();
+			fc.setDialogTitle(title);
+			fc.setFileHidingEnabled(false);
+			fc.addChoosableFileFilter(new FileFilter() {
+				@Override public String getDescription() { return description; }
+				@Override public boolean accept(File f) { return f.isDirectory() || wanted.contains(f.getName()); }
+			});
+			return fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION ? fc.getSelectedFile() : null;
+		}});
 	}
 
 	/** The folder the program runs from: the jar's, or the working directory when that can't be told. */
@@ -619,7 +606,7 @@ public class HomePlanet {
 		f.start();
 		app.addFilter(f);
 	}
-	/** Turns debug logging on or off (off by default): the console then shows everything, and so does the log file. */
+	/** Turns debug logging on or off (off by default): the log file then keeps everything (and so does a console, when started from one). */
 	public static void setDebugLogging(boolean debug) {
 		debugLogging = debug;
 		ch.qos.logback.classic.Logger root = rootLogger();

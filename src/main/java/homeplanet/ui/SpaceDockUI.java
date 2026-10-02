@@ -104,8 +104,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
 		String title = "Docked Ships";
-		if (HomePlanet.immersiveNotifications()) {
-			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
+		boolean longRange = parent != null && parent.comm != null && parent.comm.inboxWanted(); // a commander's mail needs an inbox, whatever the setting
+		if (HomePlanet.immersiveNotifications() || longRange) {
+			if (HomePlanet.immersiveNotifications()) homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
 			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
 			inboxBtn.addActionListener(this);
 		} else {

@@ -159,6 +159,8 @@ public final class Vault {
 	public File systemsFile() { return new File(root, "storage-systems.txt"); }
 	/** The storage hold's id (and file stem). Before 4B there were two holds; the old AE one's stem is kept for its file name. */
 	static final String STORAGE_ID = "storage";
+	/** The Cargo Hold's file in a fleet's folder (written directly when a shipment goes to a fleet not in use). */
+	public static final String STORAGE_FILE = STORAGE_ID + ".sav";
 
 	/** Where a ship's save is, given her state. */
 	public File fileOf(Ship s) {

@@ -45,7 +45,9 @@ And More.
   unless a career keeps to its own); any two commanders can hail and talk. Both commanders build the offer and accept it; any change withdraws acceptance.
   Goods arrive in the Cargo Hold, ships at the Space Dock. Nothing is open to the network until you open your
   hailing frequencies; stay powered up to be hailed from any screen, send a message to a commander's inbox (or, marked
-  priority, onto their screen), and block a commander you'd rather not hear from.
+  priority, onto their screen; one who's away gets it from the Outbox when they're back), send them a shipment of goods with a message, and
+  block a commander you'd
+  rather not hear from.
 - **The shipyard:** commission any unlocked ship, a remodel, or a ship you designed yourself. New blueprints are sent
   to FTL via Slipstream.
 - **House rules** (Settings): trading and New Journey only at a store beacon, commissioning that costs scrap, locked
@@ -65,7 +67,8 @@ And More.
 
 ## Running and building
 
-Java 8 or newer runs it: `Current Build\Federation Home Planet Interface.bat` (or `java -jar "Federation Home Planet.jar"`). On first start it
+Java 8 or newer runs it: `Current Build\Federation Home Planet Interface.bat` opens it without a console window, using the
+Java the Construction Yard gathered or the one on your computer (or run `java -jar "Federation Home Planet.jar"`). On first start it
 asks where FTL is (the folder with `ftl.dat`) and where the saves are. Quit FTL before boarding, docking or saving in
 the Cargo Bay. Keep the station open while you play: it notices FTL's saves as they're written (for the voyage log and
 final victories) and takes stock when you switch back to it.

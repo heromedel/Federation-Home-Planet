@@ -136,6 +136,13 @@ public final class Channel {
 		try { socket.close(); } catch (IOException e) { }
 	}
 	public boolean isClosed() { return closed; }
+	/**
+	 * Has the other end sent something not yet read? Before a channel starts, the only thing a hailing station sends
+	 * after its hello is a goodbye: the hail withdrawn. (Not for a started channel: its reader takes everything.)
+	 */
+	public boolean hasWaiting() {
+		try { return in.available() > 0; } catch (IOException e) { return true; }
+	}
 	/** Cuts the link with no goodbye and no word to the listener (the harness's crash). */
 	public void kill() {
 		closed = true;
