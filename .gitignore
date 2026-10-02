@@ -14,3 +14,7 @@ tools/
 Current Build/*.jar
 # the Quick Link icon, made by the build
 Current Build/*.ico
+# Check for Updates: the download, the old files kept until the rebuild works, and what was installed
+update-download.zip
+update-backup/
+update-manifest.txt

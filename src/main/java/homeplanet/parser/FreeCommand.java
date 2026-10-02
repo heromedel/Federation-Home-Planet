@@ -25,8 +25,6 @@ public final class FreeCommand {
 
 	public static final String KESTREL = "kestrel", ANY = "any", RELIEF = "relief", VARIABLE = "variable";
 	public static final int ANY_FROM = 1000, KESTREL_FROM = 500;
-	/** Supplies as the Cargo Bay prices them (scrap, fuel, missiles, drone parts). */
-	private static final int FUEL = 3, MISSILE = 6, DRONE_PART = 8;
 
 	/**
 	 * The free ship now. Immersive Mode: the one a report earned, and otherwise (a new career, or a fleet from before
@@ -69,7 +67,7 @@ public final class FreeCommand {
 			SavedGameState gs = v.storage().save();
 			if (gs != null) {
 				ShipState s = gs.getPlayerShip();
-				total += s.getScrapAmt() + s.getFuelAmt() * FUEL + s.getMissilesAmt() * MISSILE + s.getDronePartsAmt() * DRONE_PART;
+				total += s.getScrapAmt() + s.getFuelAmt() * Pricing.FUEL + s.getMissilesAmt() * Pricing.MISSILE + s.getDronePartsAmt() * Pricing.DRONE_PART;
 				for (WeaponState w : s.getWeaponList()) total += Pricing.item(w.getWeaponId());
 				for (DroneState d : s.getDroneList()) total += Pricing.item(d.getDroneId());
 				for (String a : s.getAugmentIdList()) total += Pricing.item(a);

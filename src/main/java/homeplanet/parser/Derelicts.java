@@ -97,7 +97,10 @@ public final class Derelicts {
 			if (!"true".equals(p.getProperty(i + ".open"))) continue;
 			try {
 				SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(saveFile(v, i));
-				out.add(new Listing(i, gs, p.getProperty(i + ".oddity", ""), intOf(p, i + ".price", 0), "true".equals(p.getProperty(i + ".locked"))));
+				// priced when shown, from her share (so a change to the prices reaches listings already in); a listing from before shares keeps its price
+				int pct = intOf(p, i + ".percent", -1);
+				int price = pct < 0 ? intOf(p, i + ".price", 0) : price(gs, pct);
+				out.add(new Listing(i, gs, p.getProperty(i + ".oddity", ""), price, "true".equals(p.getProperty(i + ".locked"))));
 			} catch (Exception e) {
 				log.warn("Could not read derelict listing {}: {}", i, e.toString());
 			}
@@ -125,16 +128,18 @@ public final class Derelicts {
 			taken.add(name);
 			SavedGameState gs = build(id, name, rng);
 			String odd = rng.nextInt(ODD_ONE_IN) == 0 ? oddity(gs, rng) : "";
-			int base = Pricing.auctionBase(gs);
-			int price = Math.max(10, base * (PRICE_MIN + rng.nextInt(PRICE_MAX - PRICE_MIN + 1)) / 100);
+			int pct = PRICE_MIN + rng.nextInt(PRICE_MAX - PRICE_MIN + 1);
 			SafeFiles.write(saveFile(v, i), SaveHelper.toBytes(gs));
 			p.setProperty(i + ".open", "true");
 			p.setProperty(i + ".oddity", odd);
-			p.setProperty(i + ".price", Integer.toString(price));
+			p.setProperty(i + ".percent", Integer.toString(pct));
 			p.setProperty(i + ".locked", Boolean.toString(locked));
 		}
 		write(v, p);
 	}
+
+	/** Her price at this share of her value as she is (her damage off), never under 10. */
+	static int price(SavedGameState gs, int percent) { return Math.max(10, Pricing.auctionBase(gs) * percent / 100); }
 
 	/** A model for a derelict: a locked one if asked and there is one, otherwise one the profile has unlocked. */
 	public static String pickModel(Random rng, Unlocks u, boolean locked) {

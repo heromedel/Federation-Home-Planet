@@ -71,7 +71,7 @@ public class CommissionDialog extends JDialog {
 	/** The relief ship's row (not a blueprint of its own: a Kestrel A, stripped). */
 	private static final String RELIEF = "RELIEF";
 	/** What the list shows, under the rules in force (the Space Dock's backdrop draws from it too). */
-	private final Listing listing = new Listing(HomePlanet.commissionCosts && homeplanet.vault.Vault.get().shipyardEmpty() && homeplanet.vault.Vault.get().freeCommandOpen());
+	private final Listing listing = new Listing(HomePlanet.commissionCosts() && homeplanet.vault.Vault.get().shipyardEmpty() && homeplanet.vault.Vault.get().freeCommandOpen());
 
 	/** Opens the window. Returns the new ship (docked in the vault), or null if nothing was commissioned. */
 	public static homeplanet.vault.Ship open(SpaceDockUI dock) {
@@ -134,7 +134,7 @@ public class CommissionDialog extends JDialog {
 		JPanel right = new JPanel(new BorderLayout(0, 6));
 		preview.setPreferredSize(new Dimension(520, 440));
 		right.add(new JScrollPane(preview), BorderLayout.CENTER);
-		if (HomePlanet.commissionCosts) {
+		if (HomePlanet.commissionCosts()) {
 			JPanel south = new JPanel(new BorderLayout(0, 4));
 			south.add(form, BorderLayout.NORTH);
 			priceLabel.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 6));
@@ -208,8 +208,8 @@ public class CommissionDialog extends JDialog {
 		Listing(boolean emptyYard) {
 			this.emptyYard = emptyYard;
 			String[] letters = {"A", "B", "C"};
-			boolean lockRule = HomePlanet.commissionUnlockedOnly;
-			boolean customRule = lockRule && HomePlanet.commissionCustomUnlockedOnly;
+			boolean lockRule = HomePlanet.commissionUnlockedOnly();
+			boolean customRule = lockRule && HomePlanet.commissionCustomUnlockedOnly();
 			homeplanet.parser.Unlocks unlocks = lockRule ? homeplanet.parser.Unlocks.read() : null;
 			if (unlocks != null && unlocks.missing() && lockRule) {
 				listNote = "FTL hasn't made its profile yet (it does the first time it starts): only the Kestrel Type A is unlocked.";
@@ -220,7 +220,7 @@ public class CommissionDialog extends JDialog {
 			}
 			int hidden = 0;
 			if (HomePlanet.immersiveMode) rank = homeplanet.parser.UnlockGrants.rank(unlocks != null ? unlocks : homeplanet.parser.Unlocks.read());
-			if (HomePlanet.commissionCosts && HomePlanet.unlockFreeShips) {
+			if (HomePlanet.commissionCosts() && HomePlanet.unlockFreeShips()) {
 				homeplanet.parser.Unlocks u = unlocks != null ? unlocks : homeplanet.parser.Unlocks.read();
 				for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
 					for (int n = 0; n < 3; n++) {
@@ -355,7 +355,7 @@ public class CommissionDialog extends JDialog {
 			stats.setBorder(BorderFactory.createEmptyBorder(4, 6, 8, 6));
 			preview.add(stats, BorderLayout.NORTH);
 			preview.add(p, BorderLayout.CENTER);
-			if (HomePlanet.commissionCosts) {
+			if (HomePlanet.commissionCosts()) {
 				if (emptyFree(e.id)) priceLabel.setText("<html><b>Free.</b> The Federation Home Planet grants you a new command at no cost (once; a report for reassignment grants another).</html>");
 				else if (free(e.id)) priceLabel.setText("<html><b>Free, once.</b> Newly unlocked in FTL: The Federation Home Planet commissions the first of her line at no cost.</html>");
 				else showPrice(quote(e.id, s));
@@ -428,7 +428,7 @@ public class CommissionDialog extends JDialog {
 		int price = 0;
 		byte[] storageBefore = null;
 		boolean isFree = free(e.id);
-		if (HomePlanet.commissionCosts && !isFree) {
+		if (HomePlanet.commissionCosts() && !isFree) {
 			homeplanet.parser.Pricing.Quote q = quote(e.id, s);
 			price = q.total();
 			int have = vault.storageScrap();

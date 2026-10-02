@@ -223,7 +223,7 @@ public final class Transmissions {
 	 * Returns how many were sent.
 	 */
 	public static synchronized int check() {
-		if (!HomePlanet.immersiveNotifications || !Vault.isOpen()) return 0;
+		if (!HomePlanet.immersiveNotifications() || !Vault.isOpen()) return 0;
 		List<Message> all = load();
 		Set<String> sent = new java.util.HashSet<String>();
 		for (Message m : all) sent.add(m.key);
@@ -249,7 +249,7 @@ public final class Transmissions {
 		}
 		// one order per free command (the fleet's start, a report for reassignment), never for an empty shipyard alone
 		boolean granted = v.freeCommandOpen();
-		if (HomePlanet.commissionCosts && granted && v.shipyardEmpty()) {
+		if (HomePlanet.commissionCosts() && granted && v.shipyardEmpty()) {
 			if (!emptyOpen) {
 				String key = "empty:" + stamp();
 				for (int i = 2; sent.contains(key); i++) key = "empty:" + stamp() + "-" + i; // two in one second
@@ -267,7 +267,7 @@ public final class Transmissions {
 			emptyOpen = false; // taken: the next grant sends its own order
 		}
 		// no ship to command and no free command waiting: the Liaison says what can be done, the first time only (each fleet)
-		boolean stranded = HomePlanet.commissionCosts && !granted && v.docked().isEmpty() && v.boarded() == null;
+		boolean stranded = HomePlanet.commissionCosts() && !granted && v.docked().isEmpty() && v.boarded() == null;
 		if (stranded && !strandedOpen && v.event("stranded-letter") == null) {
 			send(all, sent, "stranded:" + stamp(), v.junked().isEmpty() ? "stranded" : "stranded:junkyard", rank, null);
 			v.recordEvent("stranded-letter", stamp());
@@ -275,7 +275,7 @@ public final class Transmissions {
 		} else if (!stranded) {
 			strandedOpen = false;
 		}
-		if (HomePlanet.commissionCosts && HomePlanet.unlockFreeShips && u != null) {
+		if (HomePlanet.commissionCosts() && HomePlanet.unlockFreeShips() && u != null) {
 			for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
 				for (int n = 0; n < 3; n++) {
 					if (HomePlanet.immersiveMode && "PLAYER_SHIP_FED".equals(base) && n != 1) continue; // the Type A and C come with a promotion
@@ -298,6 +298,8 @@ public final class Transmissions {
 			if (p.due > v.beaconsSeen()) continue;
 			if (chain(all, sent, p.template, rank, p.name)) { pending.remove(p); chained = true; }
 		}
+		// the repair job: the collector's offer, her demand, the claims office, the foreman
+		for (String key : RepairJob.due(v, sent)) chained |= chain(all, sent, key, rank, RepairJob.NAME);
 		// the welcome last: the inbox shows the newest first, so it tops everything that arrives with it
 		if (HomePlanet.immersiveMode) send(all, sent, "welcome", "welcome", rank, null);
 		int added = all.size() - before + replaced;
@@ -319,6 +321,10 @@ public final class Transmissions {
 		if ("derelict".equals(t.action)) {
 			try { Derelict.deliver(Vault.get()); }
 			catch (Exception e) { log.warn("Could not deliver the derelict (tried again next time): {}", e.toString()); return false; }
+		}
+		if ("repair-job".equals(t.action)) {
+			try { RepairJob.deliver(Vault.get()); }
+			catch (Exception e) { log.warn("Could not deliver the Nightjar (tried again next time): {}", e.toString()); return false; }
 		}
 		send(all, sent, templateKey, templateKey, rank, null, name);
 		if (!t.then.isEmpty()) schedule(t.then, name);
@@ -354,10 +360,14 @@ public final class Transmissions {
 		if (option < 0 || option >= options.length) throw new IOException("Choose a reply first");
 		String[] parts = options[option].split("->");
 		String words = parts[0].trim();
+		// the repair job's replies act first (a reply that can't be carried out is refused, with the reason), before the
+		// inbox is read: what they do may send a letter of its own
+		if (RepairJob.isJob(m.key)) RepairJob.replied(Vault.get(), m.key, option);
 		List<Message> all = load(); // also reads the letters already due
 		String name = "";
 		for (Pending p : pending) if (p.name != null && !p.name.isEmpty()) name = p.name;
 		if (name.isEmpty() && Vault.isOpen()) { String n = Vault.get().event(Vault.EVENT_ONE_HULL); if (n != null) name = n; }
+		if (RepairJob.isJob(m.key)) name = RepairJob.NAME;
 		if (parts.length > 1 && !parts[1].trim().isEmpty()) schedule(parts[1].trim(), name);
 		for (Message x : all) if (x.key.equals(m.key)) { x.replied = words; x.read = true; }
 		save(all);
@@ -471,7 +481,7 @@ public final class Transmissions {
 	 * key, only while the inbox is on.
 	 */
 	public static synchronized void deliver(String key, String from, String subject, String body) {
-		if (!HomePlanet.immersiveNotifications || !Vault.isOpen()) return;
+		if (!HomePlanet.immersiveNotifications() || !Vault.isOpen()) return;
 		List<Message> all = load();
 		for (Message x : all) if (x.key.equals(key)) return;
 		Message m = new Message();
@@ -513,7 +523,13 @@ public final class Transmissions {
 	}
 	private static String fill(String s, String rank, String ship) {
 		if (s.contains("{start}")) s = s.replace("{start}", Integer.toString(Career.startingScrap())); // the career's sign-on bonus, by difficulty
+		if (s.contains("{") && Vault.isOpen()) s = RepairJob.fill(Vault.get(), s);
 		return s.replace("{rank}", rank).replace("{ship}", ship == null ? "" : ship);
+	}
+	/** Has a letter with this key been sent to this fleet? */
+	public static synchronized boolean wasSent(String key) {
+		for (Message m : load()) if (m.key.equals(key)) return true;
+		return false;
 	}
 
 	// ---- rewards ----

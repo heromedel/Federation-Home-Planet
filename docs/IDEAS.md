@@ -45,6 +45,7 @@ Custom triggers for letters or letter chains (ties into Idea A). Examples:
    pay 100 scrap from the Cargo Hold. Possibly a chain of letters, or just one angry one.
 
 The homework is done: `SAVE_SIGNALS.md` lists what the save records and how sure we are of each.
+Ideas for the achievements themselves, with their letters and chains: `achievement-and-events-ideas.md` (Idea E).
 
 Notes: triggers have to come from what FTL's save records. Ships defeated, crew joined and lost, sectors, scrap, what's
 aboard and the ship type are all visible; how an enemy crew died, or a surrender accepted, may not be, and would need a
@@ -55,6 +56,25 @@ Federation's own offices.
 
 An Engi writes when a ship comes out of a battle with one point of hull, and offers a derelict to restore or a repair
 tool. Built as the first reply chain, so Idea A's mechanism exists now; Ancestry is next in line for it.
+
+## Idea D: ships on loan over Long Range Comm.
+
+Players across Long Range Comm. can loan each other ships. The Return button (built for the repair job's Nightjar)
+would prep her for an automatic return on the next connection.
+
+Ships loaned to a player cannot be scrapped, sold or auctioned; they can be lost in game and decommissioned. This
+applies to human players, not NPC loans or commissions. Not sure about not being able to destroy them, but to get rid
+of a borrowed ship there are three options:
+
+1. Hit Return: she's hidden but saved, ready to be sent automatically on the next reconnect with the right player
+   (maybe each player's profile has a unique id).
+2. Lose her in game.
+3. Decommission her to the Junkyard, then open the junk folder manually and delete her outside of the program.
+
+Notes: the repair job's Return button is set up for this. It asks whether the boarded ship is borrowed and from whom
+(a mark in her history folder, beside Long Range Comm.'s TradeMark), not whether she's the Nightjar; a loan would
+use the same mark, with Long Range Comm.'s escrow as her way home. "The right player" is already possible: each
+station has its own random id (`homeplanet.comm.Commander.stationId()`), sent when two stations connect.
 
 ## When we get to them
 

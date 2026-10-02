@@ -203,17 +203,17 @@ public class RuleBoxes {
 
 	/** The player's own rules in the boxes Immersive Mode sets. */
 	private void showOwn() {
-		HomePlanet.Rules r = HomePlanet.normalRules();
-		tradeBox.setSelected(r.store);
-		journeyBox.setSelected(r.journey);
-		sellBox.setSelected(r.sellSupplies);
-		sellSystemsBox.setSelected(r.sellSystems);
-		costBox.setSelected(r.costs);
-		percentBox.setSelectedItem(r.percent + "%");
-		unlockBox.setSelected(r.unlockFree);
-		lockedBox.setSelected(r.lockedOnly);
-		customLockedBox.setSelected(r.customLockedOnly);
-		notifyBox.setSelected(r.notifications);
+		// the fields are always the player's own: Immersive Mode never writes over them
+		tradeBox.setSelected(HomePlanet.storeRequirement);
+		journeyBox.setSelected(HomePlanet.journeyStoreRequirement);
+		sellBox.setSelected(HomePlanet.sellSupplies);
+		sellSystemsBox.setSelected(HomePlanet.sellSystems);
+		costBox.setSelected(HomePlanet.commissionCosts);
+		percentBox.setSelectedItem(HomePlanet.commissionPercent + "%");
+		unlockBox.setSelected(HomePlanet.unlockFreeShips);
+		lockedBox.setSelected(HomePlanet.commissionUnlockedOnly);
+		customLockedBox.setSelected(HomePlanet.commissionCustomUnlockedOnly);
+		notifyBox.setSelected(HomePlanet.immersiveNotifications);
 		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
 		journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, HomePlanet.journeyFee));
 		scrapBox.setSelected(HomePlanet.stripAllowed);
@@ -235,22 +235,23 @@ public class RuleBoxes {
 
 	/** What apply() would change, for the history log. */
 	public void describeChanges(java.util.List<String> changed) {
-		if (tradeBox.isSelected() != HomePlanet.storeRequirement) changed.add("Trading requires a station: " + tradeBox.isSelected());
-		if (journeyBox.isSelected() != HomePlanet.journeyStoreRequirement) changed.add("New Journey requires a station: " + journeyBox.isSelected());
-		if (!HomePlanet.immersiveMode && scrapBox.isSelected() != HomePlanet.stripAllowed) changed.add("Stripping when scrapping: " + scrapBox.isSelected());
-		if (!HomePlanet.immersiveMode && removalFee() != HomePlanet.removalFee) changed.add("Refit removal: " + removalBox.getSelectedItem());
-		if (!HomePlanet.immersiveMode && journeyFee() != HomePlanet.journeyFee) changed.add("New Journey fee: " + journeyFeeBox.getSelectedItem());
-		if (sellBox.isSelected() != HomePlanet.sellSupplies) changed.add("Selling missiles and drone parts: " + sellBox.isSelected());
-		if (lockedBox.isSelected() != HomePlanet.commissionUnlockedOnly) changed.add("Locked models cannot be commissioned: " + lockedBox.isSelected());
-		if (customLockedBox.isSelected() != HomePlanet.commissionCustomUnlockedOnly) changed.add("Custom ships of locked models cannot be commissioned: " + customLockedBox.isSelected());
-		if (sellSystemsBox.isSelected() != HomePlanet.sellSystems) changed.add("Selling stored systems: " + sellSystemsBox.isSelected());
-		if (costBox.isSelected() != HomePlanet.commissionCosts) changed.add("Commissioning costs scrap: " + costBox.isSelected());
-		if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
-		if (!HomePlanet.immersiveMode && !FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Report for Reassignment grants: " + freeBox.getSelectedItem());
-		if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
-		if (!HomePlanet.immersiveMode && careerBox.isSelected() != HomePlanet.careerMessages) changed.add("Career messages: " + careerBox.isSelected());
-		if (unlockBox.isSelected() != HomePlanet.unlockFreeShips) changed.add("A free ship for each new FTL unlock: " + unlockBox.isSelected());
-		// (with Immersive Mode on, the locked rules above show its values; the player's own are kept apart)
+		if (!HomePlanet.immersiveMode) { // (in Immersive Mode the locked boxes show the career's rules; the player's own don't change)
+			if (tradeBox.isSelected() != HomePlanet.storeRequirement) changed.add("Trading requires a station: " + tradeBox.isSelected());
+			if (journeyBox.isSelected() != HomePlanet.journeyStoreRequirement) changed.add("New Journey requires a station: " + journeyBox.isSelected());
+			if (scrapBox.isSelected() != HomePlanet.stripAllowed) changed.add("Stripping when scrapping: " + scrapBox.isSelected());
+			if (removalFee() != HomePlanet.removalFee) changed.add("Refit removal: " + removalBox.getSelectedItem());
+			if (journeyFee() != HomePlanet.journeyFee) changed.add("New Journey fee: " + journeyFeeBox.getSelectedItem());
+			if (sellBox.isSelected() != HomePlanet.sellSupplies) changed.add("Selling missiles and drone parts: " + sellBox.isSelected());
+			if (lockedBox.isSelected() != HomePlanet.commissionUnlockedOnly) changed.add("Locked models cannot be commissioned: " + lockedBox.isSelected());
+			if (customLockedBox.isSelected() != HomePlanet.commissionCustomUnlockedOnly) changed.add("Custom ships of locked models cannot be commissioned: " + customLockedBox.isSelected());
+			if (sellSystemsBox.isSelected() != HomePlanet.sellSystems) changed.add("Selling stored systems: " + sellSystemsBox.isSelected());
+			if (costBox.isSelected() != HomePlanet.commissionCosts) changed.add("Commissioning costs scrap: " + costBox.isSelected());
+			if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
+			if (!FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Report for Reassignment grants: " + freeBox.getSelectedItem());
+			if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
+			if (careerBox.isSelected() != HomePlanet.careerMessages) changed.add("Career messages: " + careerBox.isSelected());
+			if (unlockBox.isSelected() != HomePlanet.unlockFreeShips) changed.add("A free ship for each new FTL unlock: " + unlockBox.isSelected());
+		}
 	}
 
 	/** Sets the rules from the boxes (the caller saves the config, and switches fleets first when Immersive Mode changes). */

@@ -38,17 +38,26 @@ public final class ShipNames {
 		for (String[] m : models) if (id.equals(m[0]) || id.startsWith(m[0] + "_")) return m[1];
 		return null;
 	}
+	/** The layout's own section, as "kestrel a" (Type A: the model's id itself; B ends _2, C _3), or null. */
+	static String layout(String blueprintId) {
+		String race = race(blueprintId);
+		if (race == null) return null;
+		String id = blueprintId.endsWith(Retrofit.SUFFIX) ? Retrofit.vanillaId(blueprintId) : blueprintId;
+		return race + " " + (id.endsWith("_2") ? "b" : id.endsWith("_3") ? "c" : "a");
+	}
 
 	/** A new name for a ship of this blueprint, unlike any in {@code taken} (ignoring case); null if none is left. */
 	public static String roll(String blueprintId, Collection<String> taken, Random rng) {
 		Map<String, List<String>> l = lists();
 		Set<String> used = new HashSet<String>();
 		if (taken != null) for (String t : taken) if (t != null) used.add(t.trim().toLowerCase());
-		List<String> own = l.get(race(blueprintId));
+		List<String> own = new java.util.ArrayList<String>();
+		if (l.get(race(blueprintId)) != null) own.addAll(l.get(race(blueprintId)));
+		if (l.get(layout(blueprintId)) != null) own.addAll(l.get(layout(blueprintId))); // a layout's own names join its model's
 		for (int tries = 0; tries < 200; tries++) {
 			String n;
 			int pick = rng.nextInt(10);
-			if (own != null && !own.isEmpty() && pick < 3) n = any(own, rng);              // the model's own, 3 in 10
+			if (!own.isEmpty() && pick < 3) n = any(own, rng);              // the model's own, 3 in 10
 			else if (pick < 7) n = any(l.get("single"), rng);                              // a whole name
 			else { String a = any(l.get("first"), rng), b = any(l.get("second"), rng); n = a == null || b == null ? null : a + " " + b; }
 			if (n == null || n.isEmpty() || n.length() > MAX || used.contains(n.toLowerCase())) continue;

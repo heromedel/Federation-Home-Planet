@@ -13,6 +13,10 @@ set "MVN=%TOOLS%\maven"
 
 set "JDK_URL=https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk"
 set "MVN_URL=https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip"
+set "BUILT="
+
+rem "update": started by the station's Check for Updates, with the new files in place: rebuild, then open the station
+if /i "%~1"=="update" goto :update
 
 :menu
 cls
@@ -33,7 +37,42 @@ exit /b 0
 
 :after
 echo.
+if not defined BUILT ( pause & exit /b 0 )
+echo    0: Exit
+echo    1: Launch the Station Interface
+echo.
+choice /c 01 /n /m "   Input -> "
+if errorlevel 2 call :launch
+exit /b 0
+
+rem ---- :update: the station closed itself for new construction plans ----
+:update
+cls
+echo ==========================================================
+echo    THE FEDERATION HOME PLANET STATION
+echo    Construction Yard: new construction plans
+echo ==========================================================
+call :construct
+if defined BUILT ( call :launch & exit /b 0 )
+call :restore
+echo.
 pause
+exit /b 1
+
+rem ---- :restore: puts back the files the update replaced, and takes away the ones it added ----
+:restore
+if not exist "update-backup" exit /b 0
+echo.
+echo Putting the old construction plans back ...
+if exist "update-backup\added.txt" for /f "usebackq delims=" %%f in ("update-backup\added.txt") do if exist "%%f" del /f /q "%%f"
+if exist "update-backup\files" xcopy "update-backup\files" "." /e /i /y /q >nul
+echo The station was not changed: the version you had is still in "Current Build".
+echo Run this again later, or download the program from https://github.com/heromedel/Federation-Home-Planet
+exit /b 0
+
+rem ---- :launch: opens the Station Interface in its own window ----
+:launch
+start "Federation Home Planet Interface" /d "%HERE%Current Build" "%HERE%Current Build\Federation Home Planet Interface.bat"
 exit /b 0
 
 rem ---- :construct: tools if missing, then the build ----
@@ -50,8 +89,16 @@ call "%MVN%\bin\mvn.cmd" -q package -DskipTests
 if errorlevel 1 ( echo. & echo Station construction failed: see the messages above. & exit /b 1 )
 
 if not exist "Current Build" mkdir "Current Build"
-copy /y "target\Federation Home Planet.jar" "Current Build\Federation Home Planet.jar" >nul
-if errorlevel 1 ( echo. & echo The new station could not be moved into "Current Build". Close Federation Home Planet if it's running, then construct again. & exit /b 1 )
+rem a station that has just closed may hold its jar for a moment: try for about half a minute
+set /a TRIES=0
+:copyjar
+copy /y "target\Federation Home Planet.jar" "Current Build\Federation Home Planet.jar" >nul 2>&1
+if not errorlevel 1 goto :copied
+set /a TRIES+=1
+if %TRIES% GEQ 15 ( echo. & echo The new station could not be moved into "Current Build". Close Federation Home Planet if it's running, then construct again. & exit /b 1 )
+timeout /t 2 /nobreak >nul
+goto :copyjar
+:copied
 echo.
 echo Station Constructed and Ready in Current Build.
 for /f "tokens=2 delims=<>	 " %%v in ('findstr /c:"<version>" pom.xml') do ( echo Version: %%v & goto :shown )
@@ -59,6 +106,7 @@ for /f "tokens=2 delims=<>	 " %%v in ('findstr /c:"<version>" pom.xml') do ( ech
 echo To Establish Connection, run Federation Home Planet Interface.
 echo.
 echo The rebellion won't stand a chance...
+set "BUILT=1"
 exit /b 0
 
 rem ---- :quicklink: a desktop shortcut to the Interface, with the station's icon ----

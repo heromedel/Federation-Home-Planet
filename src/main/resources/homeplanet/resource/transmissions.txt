@@ -18,6 +18,9 @@
 # Hold. "action: derelict" delivers the Engi Restoration Collective's derelict to the Junkyard with the letter.
 # chain:one-hull starts once per fleet, the first time the boarded ship comes out of a battle with one point of hull
 # ({name} is her name).
+# chain:repair-job starts once per fleet, after three ships that couldn't fly were made to fly again; "action:
+# repair-job" delivers the Nightjar to the Junkyard. Its letters may use {class} (her model), {extra} (the bonus),
+# {pay} (what was paid), {waiting} (what returning her pays now), {value} (her value, for the claims office), {taken} (what it took) and {paidline}.
 
 == welcome
 from: Home Planet Liaison
@@ -1122,3 +1125,147 @@ We have set aside a Repair Arm for you. It mends the hull a little each time you
 Claim it when you are ready.
 
 ~ Engi Restoration Collective
+
+== chain:repair-job
+from: A Collector, Civilian Sector
+subject: A restoration job
+replies: Send her over. I'll restore her. -> chain:repair-job:accepted 3-5 | I can't take this on. -> chain:repair-job:refused 3-5
+
+{rank},
+
+I heard you are good at repairs. I own a classic {class}, the {name}, but my idiot brother took her out and got her wrecked. If you can restore her I'll pay enough to cover the cost plus {extra} scrap.
+
+She is one of the old experimental Stealths, from before the war: there are very few left, and fewer still that anyone would know how to put back together. She has a teleporter where no teleporter should fit, and a Zoltan shield the Engi swore could not be installed. Both were working when she left my hangar. I make no promises about either now.
+
+My brother says it was not his fault. My brother says a great many things.
+
+~ A Collector, Civilian Sector
+
+== chain:repair-job:refused
+from: A Collector, Civilian Sector
+subject: Re: A restoration job
+
+{rank},
+
+A pity. I had hoped someone out there still valued the old ships for what they are.
+
+She will wait. She has waited before. If you are ever less busy, I suspect I will still be looking.
+
+~ A Collector, Civilian Sector
+
+== chain:repair-job:accepted
+from: A Collector, Civilian Sector
+subject: She's on her way
+action: repair-job
+
+{rank},
+
+Thank you. The {name} has been towed to your Junkyard. Salvage her, and put at least one of your own crew aboard if you mean to fly her: my brother has been forbidden from going near her again.
+
+Repair her completely: every hull plate, every breach sealed. When she's whole, send her back to me and I will pay you what I promised, with the cost of your work on top.
+
+Please take care of her. She is older than both of us.
+
+~ A Collector, Civilian Sector
+
+== chain:repair-job:ready
+from: The Home Planet Station
+subject: Ready to return: the {name}
+replies: Send her home. | Not yet.
+
+Automated message from The Home Planet Station.
+
+{rank},
+
+The {name} has been fully repaired: every hull point restored, every breach sealed, Engines and Piloting working. She is ready to return to her owner, who will pay {waiting} scrap into the Cargo Hold when she arrives.
+
+Reply to send her home now. Or return her later from the Cargo Bay while you are aboard her (at a station, with FTL closed).
+
+== chain:repair-job:paid
+from: A Collector, Civilian Sector
+subject: She's home
+
+{rank},
+
+She came in under her own power. I stood in the hangar and watched her dock, and for a moment she looked exactly as she did the day I bought her.
+
+Your payment has been sent to your Cargo Hold: {pay} scrap, the cost of the work and {extra} more, as agreed. I have also taken the liberty of telling a few friends where they can find someone who still does things properly.
+
+Fair flights between the stars.
+~ A Collector, Civilian Sector
+
+== chain:repair-job:overdue
+from: A Collector, Civilian Sector
+subject: Where is my ship?
+replies: Send her back now. -> chain:repair-job:returned-late 1-2 | She stays with me. -> chain:repair-job:defied 2-4
+
+{rank},
+
+It has been a long time and I have heard nothing. I would like to believe that the {name} is simply taking longer than expected. I would also like to believe my brother will grow up.
+
+Return her. Finished or unfinished, she comes back to me now. If she does not, my next letter will be written by my attorneys, and they are not as patient as I am.
+
+~ A Collector, Civilian Sector
+
+== chain:repair-job:returned-late
+from: A Collector, Civilian Sector
+subject: Received
+
+{rank},
+
+The {name} is back in my hangar.
+
+{paidline}
+
+~ A Collector, Civilian Sector
+
+== chain:repair-job:defied
+from: A Collector, Civilian Sector
+subject: Very well
+
+{rank},
+
+I see. Then this is no longer a conversation between the two of us.
+
+~ A Collector, Civilian Sector
+
+== chain:repair-job:seized
+from: Federation Office of Salvage and Claims
+subject: Notice of recovery
+
+{rank},
+
+This office acts for the lawful owner of the {name}, a registered civilian vessel.
+
+1. The vessel was placed in your care for repair and was not returned on demand.
+2. Under Federation salvage law, this office has recovered the vessel's assessed value of {value} scrap from your holdings, as follows: {taken}.
+3. Any part of the vessel still in your custody has been, or will be, recovered with it.
+4. The matter is closed. No reply is required, and none will be read.
+
+~ Federation Office of Salvage and Claims, Recovery Division
+
+== chain:repair-job:collected
+from: Federation Office of Salvage and Claims
+subject: Notice of recovery: the vessel
+
+{rank},
+
+The {name} has docked at The Home Planet Station and has been recovered for her owner, as this office's notice said she would be.
+
+No reply is required.
+
+~ Federation Office of Salvage and Claims, Recovery Division
+
+== chain:repair-job:hidden
+from: Junkyard Foreman
+subject: (no subject)
+
+{rank},
+
+I know what you did, hiding the {name} in my yard. Sneaky, but smart.
+
+Funny thing: the claims office sent two of their people through here asking after her. I told them the truth, which is that I've got a lot of junk and I don't keep records of it.
+
+You don't owe me anything. Just remember who's been minding your yard.
+
+~ Junkyard Foreman

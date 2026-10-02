@@ -291,6 +291,14 @@ public class SettingsDialog extends JDialog {
 		});
 		about.add(licenceBtn);
 		body.add(about, next(c));
+		JPanel updateRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		JButton updateBtn = new JButton("Check for Updates...");
+		updateBtn.setToolTipText("Ask The Federation Home Planet for newer construction plans (the main branch on GitHub)");
+		updateBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { checkForUpdates(); }
+		});
+		updateRow.add(updateBtn);
+		body.add(updateRow, next(c));
 
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton ok = new JButton("OK");
@@ -564,6 +572,71 @@ public class SettingsDialog extends JDialog {
 		c.weightx = 1;
 		return c;
 	}
+	/**
+	 * Check for Updates: main's version on GitHub against this one. Newer: in a git checkout, fetch it with GitHub
+	 * Desktop; otherwise Update Now puts the new files in place, and the station closes for the Construction Yard to
+	 * rebuild and reopen it.
+	 */
+	private void checkForUpdates() {
+		String title = "Check for Updates";
+		String latest;
+		setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+		try {
+			latest = homeplanet.core.Updater.latest();
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(this, "The Home Planet Station could not reach The Federation Home Planet:\n" + e.getMessage()
+					+ "\n\nCheck the connection and try again. The address it asked: " + homeplanet.core.Updater.POM_URL, title, JOptionPane.WARNING_MESSAGE);
+			return;
+		} finally {
+			setCursor(null);
+		}
+		String mine = HomePlanet.APP_VERSION;
+		if (homeplanet.core.Updater.compare(latest, mine) <= 0) {
+			JOptionPane.showMessageDialog(this, "The Home Planet Station is up to date: " + mine + " (the latest is " + latest + ").", title, JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		java.io.File root = homeplanet.core.Updater.installRoot();
+		String news = "The Federation Home Planet has newer construction plans: " + latest + " (this station is " + mine + ").";
+		if (root == null) {
+			JOptionPane.showMessageDialog(this, news + "\n\nThis copy wasn't built by the Construction Yard, so it can't update itself.\nDownload the new version from "
+					+ homeplanet.core.Updater.PAGE_URL, title, JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		if (homeplanet.core.Updater.isGitCheckout(root)) {
+			JOptionPane.showMessageDialog(this, news + "\n\nThis station's folder is a git checkout: fetch the new version (GitHub Desktop: Fetch, then Pull),\n"
+					+ "then run the Construction Yard.", title, JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		Object[] opts = {"Update Now", "Later"};
+		if (JOptionPane.showOptionDialog(this, news + "\n\nUpdate Now downloads them and rebuilds the station: it closes, the Construction Yard builds the new version,"
+				+ "\nthen opens it again. Your fleets, settings, mods and the downloaded JDK and Maven aren't touched.", title,
+				JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]) != 0) return;
+		final java.awt.Window owner = getOwner();
+		if (owner instanceof MainFrame && !((MainFrame) owner).mayClose("update the station")) return;
+		homeplanet.core.Updater.Result r;
+		setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+		try {
+			java.io.File zip = homeplanet.core.Updater.download(root);
+			r = homeplanet.core.Updater.apply(root, zip);
+			zip.delete();
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not take on the new construction plans. Nothing was changed:\n" + e.getMessage());
+			return;
+		} finally {
+			setCursor(null);
+		}
+		try {
+			homeplanet.core.Updater.startRebuild(root);
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The new construction plans (" + r.version + ") are in place, but the Construction Yard could not be started:\n" + e.getMessage()
+					+ "\n\nClose the station and run \"" + homeplanet.core.Updater.BUILD_BAT + "\" in " + root + ".");
+			return;
+		}
+		dispose();
+		if (owner instanceof MainFrame) ((MainFrame) owner).closeNow();
+		else System.exit(0);
+	}
+
 	static void heading(JPanel body, GridBagConstraints c, String text) {
 		JLabel h = new JLabel(text);
 		h.setFont(MenuTheme.HEADING_FONT);

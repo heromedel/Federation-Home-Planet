@@ -258,6 +258,8 @@ public class MuseumUI extends JPanel {
 			case PRESERVED: t = "PRESERVED IN THE MUSEUM"; c = GOLD; break;
 			case IN_SERVICE: t = "STILL IN SERVICE"; c = GREEN; break;
 			case TRANSFERRED: t = "TRANSFERRED TO ANOTHER FLEET"; c = SILVER; break;
+			case RETURNED: t = "RETURNED TO HER OWNER"; c = SILVER; break;
+			case SEIZED: t = "SEIZED BY THE CLAIMS OFFICE"; c = SILVER; break;
 			case LOST: t = "LOST IN ACTION" + (ex.lostSector > 0 ? ", SECTOR " + ex.lostSector : ""); c = SILVER; break;
 			case MEMORIAL: t = "LOST IN ACTION" + (ex.lostSector > 0 ? ", SECTOR " + ex.lostSector : ""); c = SILVER; break;
 			default: t = "HONOURED IN MEMORY"; c = SILVER;

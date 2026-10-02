@@ -16,7 +16,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
  static void difficulties() throws Exception {
   Vault v = Vault.get();
   if (!v.immersive) v = Vault.switchFleet(true);
-  HomePlanet.immersiveMode = true; HomePlanet.applyImmersive();
+  HomePlanet.immersiveMode = true;
   File career = new File(v.root, "career.txt");
   String[] names = {CareerRules.EASY, CareerRules.NORMAL, CareerRules.HARD};
   int[][] want = {{200, 0, 0, 50, 2, 75, 50}, {500, 25, 10, 25, 3, 100, 25}, {1000, 50, -1, 0, 4, 100, 10}};
@@ -126,12 +126,11 @@ public class FleetT { public static void main(String[] a) throws Exception {
  static void rules() {
   HomePlanet.immersiveMode = false;
   HomePlanet.storeRequirement = false; HomePlanet.commissionCosts = false; HomePlanet.commissionPercent = 50; HomePlanet.unlockFreeShips = false;
-  HomePlanet.immersiveMode = true; HomePlanet.applyImmersive();
-  Setup.chk("R: Immersive Mode sets its rules, the free ship per unlock too", HomePlanet.storeRequirement && HomePlanet.commissionCosts && HomePlanet.commissionPercent == 100 && HomePlanet.unlockFreeShips);
-  HomePlanet.Rules own = HomePlanet.normalRules();
-  Setup.chk("R: the player's own rules are kept apart", !own.store && !own.costs && own.percent == 50 && !own.unlockFree);
+  HomePlanet.immersiveMode = true;
+  Setup.chk("R: Immersive Mode's rules are in force, the free ship per unlock too", HomePlanet.storeRequirement() && HomePlanet.commissionCosts() && HomePlanet.unlockFreeShips());
+  Setup.chk("R: the player's own rules are never written over", !HomePlanet.storeRequirement && !HomePlanet.commissionCosts && HomePlanet.commissionPercent == 50 && !HomePlanet.unlockFreeShips);
   HomePlanet.leaveImmersive();
-  Setup.chk("R: and come back when it's turned off", !HomePlanet.immersiveMode && !HomePlanet.storeRequirement && !HomePlanet.commissionCosts && HomePlanet.commissionPercent == 50);
+  Setup.chk("R: and are in force again when it's turned off", !HomePlanet.immersiveMode && !HomePlanet.storeRequirement() && !HomePlanet.commissionCosts() && Economy.commissionPercent() == 50);
  }
  static SavedGameState read(File f) throws Exception { return HomePlanet.savedGameParser.readSavedGame(f); }
  static void detection() throws Exception {
