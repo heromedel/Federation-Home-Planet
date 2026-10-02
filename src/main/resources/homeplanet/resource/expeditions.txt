@@ -99,7 +99,7 @@ posting sealed 1 Courier run, route classified. Federation clearance not require
 event stowaway any low
 A girl is found curled up behind the water tanks, clutching a stolen ration bar. She begs your crew not to send her back to the labour camp she ran from.
 * Take her to the next colony and see her settled
-  ok scrap 2-4 | The colony takes her in. Her new guardian presses a few scrap into {crew}'s hand and won't hear a word against it.
+  ok scrap 2-4 fuel 2 | The colony takes her in. Her new guardian presses a few scrap into {crew}'s hand and won't hear a word against it.
 * Report her to the camp's overseers
   ok scrap 8-12 | The overseers pay a finder's fee without looking up from their ledgers. Nobody in your crew says much for the rest of the day.
   aside 20 | {crew} keeps the wrapper of the ration bar she dropped, and never says why.
@@ -164,7 +164,7 @@ An old Federation veteran shares your crew's table at a stopover. He has stories
   win scrap 10-16 fuel 2 then cache | The cache is real: dented, half-looted, but worth the detour.
   lose | The map leads to a bare asteroid. The old man was probably telling the truth, a long time ago.
 * Listen to the stories and move on
-  ok scrap 1-2 | He tells good stories. He even insists on paying for the round.
+  ok scrap 8-10 | He tells good stories. He even insists on paying for the round.
   aside 30 | One of the stories is about the Rebel Flagship. He swears she's still out there, and she gets bigger every time he tells it.
 step cache
 Behind the cache's last crate is a locked locker, stencilled with a unit number nobody uses any more.
@@ -204,7 +204,7 @@ The lower deck holds a stasis pod, still powered. The face behind the frost is h
   win join human | She wakes confused, then furious, then very grateful. She asks to sign on, since everyone she knew is long gone.
   lose | She doesn't wake. Your crew logs her name for the Federation and leaves her as she was.
 * Leave the pod sealed and report it
-  ok scrap 6-10 | The Federation pays a recovery fee for the report. Someone, somewhere, will be told.
+  ok scrap 14-18 | The Federation pays a recovery fee for the report. Someone, somewhere, will be told.
 * [engi] {who} checks the pod's systems first
   ok join human | {who} finds the fault in the revival cycle and fixes it before anyone touches the lid. She wakes without a scratch, and signs on.
 

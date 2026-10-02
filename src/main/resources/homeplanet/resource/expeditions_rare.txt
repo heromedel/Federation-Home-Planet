@@ -6,11 +6,11 @@
 event engi_home_fault engi_home moderate fault
 The planetary network fault is ancient, and the Engi have argued about it for generations.
 * Follow the Engi's oldest plan
-  ok scrap 10-14 | The oldest plan works after all. The Engi are delighted, and pay well.
+  ok scrap 16-20 | The oldest plan works after all. The Engi are delighted, and pay well.
 * Try something new
   roll 40
   win scrap 18-26 item drone | The new idea works. The Engi are astonished, and give a drone from their own stores.
-  lose scrap 4-6 | The new idea fails. The Engi are disappointed, but pay for the effort.
+  lose scrap 0-2 | The new idea fails. The Engi are disappointed, but pay for the effort.
 * [engi] {who} proposes a compromise between the two oldest plans
   ok scrap 16-20 | Nobody had thought to combine them. The Engi discuss it for a day, and then it works.
 
@@ -56,10 +56,10 @@ event mantis_home_court mantis_home moderate court
 A Mantis lord invites your crew to her court. The custom, a servant explains, is for guests to bring a gift. Your crew didn't.
 * Apologise
   roll 40
-  win scrap 6-10 | The lord finds the apology amusing. She lets your crew live, and leave.
+  win scrap 20-24 | The lord finds the apology amusing. She lets your crew live, and leave.
   lose injure 1 | The lord does not find it amusing. {who} carries the scar out of the court.
 * Offer the shuttle's best weapon
-  ok scrap 14-18 | The lord accepts the gift and pays for it, in her way: generously, and with a warning.
+  ok scrap 6-10 | The lord accepts the gift and pays for it, in her way: generously, and with a warning.
 * [mantis] {who} offers a story of a battle
   ok scrap 12-16 join mantis | {who}'s story is very good. One of the lord's warriors asks to serve the crew that tells it.
 
@@ -145,7 +145,7 @@ A Zoltan has been exiled from the homeworld for an offence nobody will name. He 
 * Give him passage
   ok scrap 4-6 join zoltan | He powers the shuttle all the way out, then asks to stay on.
 * Refuse
-  ok scrap 6-8 | The homeworld's wardens pay your crew for refusing him, which tells them something.
+  ok scrap 14-18 | The homeworld's wardens pay your crew for refusing him, which tells them something.
 * [slug] {who} reads his offence
   ok scrap 8-12 | {who} learns the offence: he spoke against the homeworld's isolation. {who} says nothing more.
 
@@ -196,7 +196,7 @@ The Hidden Crystal Worlds are real. The crystal hums, and the hum grows louder a
   lose injure 1 | The crystal rejects them. {who} is cut on the way out.
 * Take a sample and leave
   roll 50
-  win scrap 12-18 | The sample is worth a fortune to collectors.
+  win scrap 30-36 | The sample is worth a fortune to collectors.
   lose lose 1 | The crystal takes {who} instead.
 * [crystal] {who} goes home
   ok scrap 20-30 item augment | The crystal welcomes {who}, and your crew with them. They leave with a gift.
@@ -245,7 +245,7 @@ Every word spoken in this canyon comes back a moment later, changed: a little ol
   win scrap 8-12 fuel 2 | The answer comes back as directions to a wreck, with fuel still in her tanks.
   lose | The answer comes back as the question, repeated, forever. Your crew leaves before it gets to them.
 * Keep quiet and cross
-  ok scrap 4-6 | The canyon is silent for your crew, which is somehow worse.
+  ok scrap 8-10 | The canyon is silent for your crew, which is somehow worse.
   aside 30 | Halfway across, the canyon says {crew}'s name, very softly, in a voice nobody knows.
 * [crystal] {who} sings in the old language
   ok scrap 12-16 | The canyon sings back. {who} listens to the end, then leads your crew to what the song described.
@@ -254,8 +254,8 @@ event crystal_storm crystal high storm
 A storm of crystal dust blows across the plain. It cuts through anything it touches, and the shuttle is a long way off.
 * Run for the shuttle
   roll 45
-  win scrap 4-6 | They make it, scratched and breathless.
-  lose lose 1 | The storm catches them in the open. {who} doesn't reach the shuttle.
+  win scrap 16-20 | They make it, scratched and breathless.
+  lose injure 1 | The storm catches them in the open. {who} doesn't reach the shuttle.
 * Shelter in the ruins and wait
   roll 70
   win scrap 8-12 | The storm passes. The ruins they sheltered in held old salvage.
@@ -268,10 +268,10 @@ A garden of crystal flowers grows in a sheltered valley, each one chiming softly
 * Cut a few blooms for the collectors
   ok scrap 8-12 | The blooms keep chiming all the way home. A collector pays well for them.
 * Leave them as they are, and map the valley
-  ok scrap 4-6 | The map sells, and the garden stays.
+  ok scrap 10-12 | The map sells, and the garden stays.
 * Dig up a whole plant
   roll 50
-  win scrap 12-16 | The roots come up whole. The plant keeps chiming in its crate.
+  win scrap 24-28 | The roots come up whole. The plant keeps chiming in its crate.
   lose injure 1 | The plant's roots are sharper than its petals. {who} finds out.
 * [crystal] {who} tends the garden
   ok scrap 6-10 fuel 2 | {who} spends a quiet hour among the flowers. When they come back, the valley has shown them a cache left by an older visitor.

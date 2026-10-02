@@ -41,7 +41,7 @@ The missing mining fleet is here: nine ships, docked in a ring around a dead ast
 step log
 The log ends with the fleet's captain accepting a contract to mine here, signed by a company the insurers also cover.
 * Give the insurers everything
-  ok scrap 14-18 | The insurers pay well, and a company's lawyers will be busy for years.
+  ok scrap 20-24 | The insurers pay well, and a company's lawyers will be busy for years.
 * Sell the log to the company instead
   ok scrap 18-24 | The company pays more, and quickly. Your crew doesn't sleep well for a while.
 
@@ -83,7 +83,7 @@ At the last station, a family of colonists has been living on the tram's power f
 * Offer them a ride out
   ok scrap 4-6 join any | Most of them stay; the station is home. One comes with your crew.
 * Trade with them and leave them be
-  ok scrap 10-14 | They trade old colony scrap for news. They don't want to leave.
+  ok scrap 18-22 | They trade old colony scrap for news. They don't want to leave.
 
 event scavenger_rivals abandoned high scavengers
 Your crew isn't the only salvage team at the wreck. The other one has guns, and has already decided the wreck is theirs.
@@ -103,7 +103,7 @@ A Lanius cruiser sits in the dead system, half of her hull eaten away by her own
 * Tow what's left
   ok ship sector:wrecked | Half a ship is still a ship. The Junkyard foreman will have opinions.
 * Strip her and go
-  ok scrap 6-10 parts 2 | There's plenty left to take, and nobody left to object.
+  ok scrap 30-40 parts 2 | There's plenty left to take, and nobody left to object.
 * [lanius] {who} asks the Lanius to leave the rest of her alone
   roll 60
   win ship sector:towed | The Lanius agree, grudgingly, and even return a few of her plates.

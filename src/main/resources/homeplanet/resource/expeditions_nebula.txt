@@ -71,7 +71,7 @@ Lights drift through the gas outside the shuttle, keeping pace, never quite comi
 event hermit nebula moderate hermit
 A hermit lives in the nebula on a station built from three wrecks. He doesn't want visitors, he says, but he hasn't spoken to anyone in eleven years.
 * Stay and talk
-  ok scrap 6-10 | He talks for six hours, and pays for every one of them in scrap and old charts.
+  ok scrap 16-20 | He talks for six hours, and pays for every one of them in scrap and old charts.
   aside 30 | He gives {crew} a drawing of the nebula he made the year he arrived. It's very good.
 * Trade for his salvage
   roll 60
@@ -96,7 +96,7 @@ step debris
 The debris field is a battle's leftovers: two ships, neither whole, still slowly turning.
 * Search them for survivors
   roll 40
-  win join any | There's one, in a sealed escape pod, half-frozen and very glad to see your crew.
+  win scrap 16-20 join any | There's one, in a sealed escape pod, half-frozen and very glad to see your crew.
   lose injure 1 | One of the wrecks' turrets still has power. {who} finds out.
 * Strip what's easy and leave
   ok scrap 8-12 missiles 2 | Your crew takes what floats free and gets out before anything else does.

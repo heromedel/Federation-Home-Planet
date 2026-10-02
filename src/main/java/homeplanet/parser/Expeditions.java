@@ -54,6 +54,18 @@ public final class Expeditions {
 	public static final int RECENT = 8;
 	/** One high-danger expedition of two or more crew in this many goes missing (the lost expedition, "event lost ... saga"). */
 	public static final int LOST_ONE_IN = 300;
+	/** An injury on a moderate or high-risk event is fatal this often, in %: the walking wounded don't always walk. */
+	public static final int FATAL_MODERATE = 40, FATAL_HIGH = 65;
+	/** A gamble on a moderate or high-risk event is this much harder: dangerous jobs are dangerous. */
+	public static final int RISK_MODERATE = 5, RISK_HIGH = 10;
+	/** One posting in this many wants outfitted crew, at OUTFIT_MIN to OUTFIT_MAX scrap a head. */
+	public static final int OUTFIT_ONE_IN = 4, OUTFIT_MIN = 5, OUTFIT_MAX = 12;
+	/** Outfitted crew: this much on every gamble, this much more scrap (in %) from the events; a finished job returns 50-200% of the outfitting. */
+	public static final int OUTFIT_ODDS = 10, OUTFIT_SCRAP = 25, PAYBACK_MIN = 50, PAYBACK_MAX = 200;
+	/** One crew member lost in this many was taken, not killed: a ransom is asked a few beacons later. */
+	public static final int CAPTURED_ONE_IN = 3;
+	/** A ransom is asked RANSOM_DELAY_MIN to MAX beacons after the expedition, and stands for RANSOM_STANDS beacons. */
+	public static final int RANSOM_DELAY_MIN = 2, RANSOM_DELAY_MAX = 5, RANSOM_STANDS = 10;
 	/** For the harness: every eligible expedition goes missing. */
 	static boolean alwaysLost = false;
 
@@ -162,8 +174,12 @@ public final class Expeditions {
 		public final int danger;
 		/** Sealed: the sector isn't told until the crew are under way. */
 		public final boolean sealed;
-		Posting(String kind, int danger, String text) { this(kind, danger, text, false); }
-		Posting(String kind, int danger, String text, boolean sealed) { this.kind = kind; this.danger = danger; this.text = text; this.sealed = sealed; }
+		/** Outfitted crew wanted: scrap a head, paid for each crew member sent (0: not an outfitted job). */
+		public final int outfit;
+		Posting(String kind, int danger, String text) { this(kind, danger, text, false, 0); }
+		Posting(String kind, int danger, String text, boolean sealed) { this(kind, danger, text, sealed, 0); }
+		Posting(String kind, int danger, String text, boolean sealed, int outfit) { this.kind = kind; this.danger = danger; this.text = text; this.sealed = sealed; this.outfit = outfit; }
+		Posting outfitted(int perHead) { return new Posting(kind, danger, text, sealed, perHead); }
 		/** The sector as the board shows it: "Destination undisclosed" for a sealed posting. */
 		public String sector() { return sealed ? "Destination undisclosed" : sectorName(kind); }
 		/** Where the job really is. */
@@ -418,15 +434,20 @@ public final class Expeditions {
 	private static Posting posting(Properties p, int i) {
 		String kind = p.getProperty(i + ".kind"), text = p.getProperty(i + ".text");
 		if (kind == null || text == null || !knownKind(kind) || "any".equals(kind)) return null;
-		try { return new Posting(kind, Integer.parseInt(p.getProperty(i + ".danger", "1")), text, "true".equals(p.getProperty(i + ".sealed"))); }
+		try { return new Posting(kind, Integer.parseInt(p.getProperty(i + ".danger", "1")), text, "true".equals(p.getProperty(i + ".sealed")), Integer.parseInt(p.getProperty(i + ".outfit", "0").trim())); }
 		catch (NumberFormatException e) { return null; }
 	}
 	private static void put(Properties p, int i, Posting x) {
 		p.setProperty(i + ".kind", x.kind); p.setProperty(i + ".danger", Integer.toString(x.danger)); p.setProperty(i + ".text", x.text);
 		p.setProperty(i + ".sealed", Boolean.toString(x.sealed));
+		p.setProperty(i + ".outfit", Integer.toString(x.outfit));
 	}
 	/** A posting not already on the board: one in SEALED_ONE_IN sealed (its sector rolled now, kept hidden), one in RARE_ONE_IN somewhere rare. */
 	static Posting pick(Random rng, List<Posting> taken) {
+		Posting x = pickPlain(rng, taken);
+		return rng.nextInt(OUTFIT_ONE_IN) == 0 ? x.outfitted(OUTFIT_MIN + rng.nextInt(OUTFIT_MAX - OUTFIT_MIN + 1)) : x;
+	}
+	private static Posting pickPlain(Random rng, List<Posting> taken) {
 		Book b = book();
 		if (!b.sealed.isEmpty() && rng.nextInt(SEALED_ONE_IN) == 0) {
 			Posting s = b.sealed.get(rng.nextInt(b.sealed.size()));
@@ -524,10 +545,17 @@ public final class Expeditions {
 		/** The lost expedition's survivor, who comes home aboard the Stealth Cruiser rather than to the Cargo Hold. */
 		CrewState survivor;
 		private boolean ended = false;
+		/** Turned for home before the job was done (or no one left to finish it): no job pay, the outfitting lost. */
+		boolean turnedBack = false;
+		/** Crew sent out already injured: hurt again, they're lost. */
+		final java.util.Set<CrewState> injuredBefore = new java.util.HashSet<CrewState>();
+		/** Of the lost, those taken rather than killed. */
+		final List<CrewState> captured = new ArrayList<CrewState>();
 
 		Run(int slot, Posting posting, List<CrewState> party, List<String> recent, Random rng) {
 			this.slot = slot; this.posting = posting; this.party = new ArrayList<CrewState>(party); this.rng = rng;
 			this.events = draw(posting, recent, rng);
+			for (CrewState c : party) if (Expeditions.injured(c)) injuredBefore.add(c);
 			Event saga = saga();
 			// the lost expedition: very rarely, a dangerous job with two or more crew goes missing at its end
 			if (saga != null && posting.danger >= 3 && party.size() >= 2 && (alwaysLost || rng.nextInt(LOST_ONE_IN) == 0)) events.add(saga);
@@ -575,9 +603,12 @@ public final class Expeditions {
 			if (event() != null && event().kinds.contains("saga")) return c.roll; // the lost expedition's odds are its own, whoever is left
 			List<CrewState> here = alive();
 			int injured = 0;
-			for (CrewState x : here) if (hurt.containsKey(x) || Expeditions.injured(x)) injured++;
+			for (CrewState x : here) if (hurt.containsKey(x) || injuredBefore.contains(x)) injured++;
 			int p = c.roll + CREW_ODDS * (here.size() - 1) - INJURED_ODDS * injured;
 			if (c.fight) p += MANTIS_FIGHT * count("mantis") + ROCK_FIGHT * count("rock") - ENGI_FIGHT * count("engi");
+			if (posting.outfit > 0) p += OUTFIT_ODDS;
+			Event ev = event();
+			if (ev != null) p -= ev.risk >= 3 ? RISK_HIGH : ev.risk == 2 ? RISK_MODERATE : 0;
 			return Math.max(5, Math.min(95, p));
 		}
 		/** Takes a choice: its outcome (rolled, if it's a gamble) applied; returns its words. */
@@ -591,6 +622,7 @@ public final class Expeditions {
 			if (o.aside != null && rng.nextInt(100) < o.asideChance) said += " " + fill(o.aside, who, anyone);
 			StringBuilder extra = new StringBuilder();
 			int got = o.scrapMax <= 0 ? 0 : o.scrapMin + rng.nextInt(o.scrapMax - o.scrapMin + 1);
+			if (posting.outfit > 0) got = got * (100 + OUTFIT_SCRAP) / 100; // outfitted crew bring back more
 			scrap += got;
 			fuel += o.fuel; missiles += o.missiles; parts += o.parts;
 			if (o.item != null) {
@@ -606,14 +638,20 @@ public final class Expeditions {
 			for (int i = 0; i < o.lose && !alive().isEmpty(); i++) {
 				CrewState l = i == 0 && alive().contains(who) ? who : alive().get(rng.nextInt(alive().size()));
 				lost.add(l);
+				if (rng.nextInt(CAPTURED_ONE_IN) == 0) captured.add(l); // taken, not killed: nobody knows yet
 				extra.append("\n\n").append(l.getName()).append(" did not come back.");
 			}
 			for (int i = 0; i < o.injure && !alive().isEmpty(); i++) {
 				CrewState h = i == 0 && alive().contains(who) ? who : alive().get(rng.nextInt(alive().size()));
-				int times = hurt.containsKey(h) ? hurt.get(h) + 1 : 1;
-				if (times >= 2) { // hurt twice in one expedition: too much
+				int times = (hurt.containsKey(h) ? hurt.get(h) + 1 : 1) + (injuredBefore.contains(h) ? 1 : 0);
+				Event ev = event();
+				int fatal = ev == null || ev.kinds.contains("saga") ? 0 : ev.risk >= 3 ? FATAL_HIGH : ev.risk == 2 ? FATAL_MODERATE : 0;
+				if (times >= 2) { // hurt twice (or sent out hurt): too much
 					lost.add(h);
 					extra.append("\n\n").append(h.getName()).append(" was hurt again, and did not make it.");
+				} else if (rng.nextInt(100) < fatal) {
+					lost.add(h);
+					extra.append("\n\n").append(h.getName()).append(" was hurt worse than anyone knew, and did not make it.");
 				} else {
 					hurt.put(h, times);
 					extra.append("\n\n").append(h.getName()).append(" is injured.");
@@ -631,8 +669,8 @@ public final class Expeditions {
 			waited += o.beacons;
 			if (o.ship != null) ships.add(new HomeShip(o.ship, posting.kind));
 			Event saga = saga();
-			if (o.end && saga != null && events.indexOf(saga) > index) { index = events.indexOf(saga); step = ""; return said + extra; } // turning for home: the lost expedition goes missing all the same
-			if (o.end) ended = true;
+			if (o.end && saga != null && events.indexOf(saga) > index) { turnedBack = true; index = events.indexOf(saga); step = ""; return said + extra; } // turning for home: the lost expedition goes missing all the same
+			if (o.end) { ended = true; turnedBack = true; }
 			if (o.then != null && !o.end && !alive().isEmpty()) step = o.then;
 			else { index++; step = ""; }
 			return said + extra;
@@ -650,8 +688,12 @@ public final class Expeditions {
 			return c.label().replace("{who}", name).replace("{crew}", name).replace("{sector}", posting.realSector());
 		}
 		/** The job's own pay, for anyone who comes back: more for a dangerous one, half again for a sealed one. */
+		/** Was the job done: someone left, and nobody turned for home early? */
+		public boolean finished() { return !turnedBack && !alive().isEmpty(); }
+		/** What the outfitting cost: per head, for everyone sent. */
+		public int outfitting() { return posting.outfit * party.size(); }
 		int pay() {
-			if (alive().isEmpty()) return 0;
+			if (!finished()) return 0; // the job's pay is for the job done
 			int lo = posting.danger <= 1 ? 3 : posting.danger == 2 ? 5 : 8, hi = posting.danger <= 1 ? 6 : posting.danger == 2 ? 10 : 14;
 			int p = lo + new Random(posting.text.hashCode() ^ party.size()).nextInt(hi - lo + 1);
 			return posting.sealed ? p * 3 / 2 : p;
@@ -750,7 +792,10 @@ public final class Expeditions {
 	public static Run start(Vault v, int slot, List<CrewState> party, Random rng) throws IOException {
 		if (party.isEmpty()) throw new IOException("No one was sent");
 		if (party.size() > PARTY_MAX) throw new IOException("At most " + PARTY_MAX + " can go");
-		return new Run(slot, board(v).get(slot), party, recent(v), rng);
+		Posting x = board(v).get(slot);
+		int cost = x.outfit * party.size();
+		if (cost > 0 && v.storageScrap() < cost) throw new IOException("Outfitting " + party.size() + " costs " + cost + " scrap; the Cargo Hold holds " + v.storageScrap());
+		return new Run(slot, x, party, recent(v), rng);
 	}
 
 	/** A cheap piece of gear of this kind (weapon, drone, augment), as FTL's stores sell. */
@@ -778,8 +823,10 @@ public final class Expeditions {
 		Vault.Copy c = v.readCopy(st);
 		ShipState hold = c.save.getPlayerShip();
 		List<CrewState> crew = hold.getCrewList();
-		int pay = r.pay();
-		hold.setScrapAmt(hold.getScrapAmt() + pay + r.scrap);
+		int pay = r.pay(), outfit = r.outfitting();
+		int payback = outfit > 0 && r.finished() ? outfit * (PAYBACK_MIN + new Random().nextInt(PAYBACK_MAX - PAYBACK_MIN + 1)) / 100 : 0;
+		if (hold.getScrapAmt() + pay + r.scrap + payback < outfit) throw new IOException("The Cargo Hold can no longer pay the outfitting (" + outfit + " scrap); nothing was changed");
+		hold.setScrapAmt(hold.getScrapAmt() + pay + r.scrap + payback - outfit);
 		hold.setFuelAmt(hold.getFuelAmt() + r.fuel);
 		hold.setMissilesAmt(hold.getMissilesAmt() + r.missiles);
 		hold.setDronePartsAmt(hold.getDronePartsAmt() + r.parts);
@@ -825,11 +872,15 @@ public final class Expeditions {
 		}
 		v.countBeacon();
 		for (int i = 0; i < r.waited; i++) v.countBeacon(); // weeks of waiting for word
+		for (CrewState x : r.captured) takeCaptive(v, x, r.posting); // a ransom will be asked
 		StringBuilder sb = new StringBuilder();
 		String where = r.posting.realSector();
 		sb.append(r.alive().isEmpty() ? "No one came back from the expedition to the " + where + "."
+				: !r.finished() ? "The expedition to the " + where + " turned back before the job was done: there's no pay for it" + (r.scrap > 0 ? ", but " + r.scrap + " scrap came of it" : "") + "."
 				: "The expedition to the " + where + " is over. " + (pay > 0 ? "The job paid " + pay + " scrap" : "")
 				+ (r.scrap > 0 ? (pay > 0 ? ", and " : "") + r.scrap + " scrap more came of it" : "") + ".");
+		if (outfit > 0) sb.append(payback > 0 ? "\nThe outfitting (" + outfit + " scrap) came back as " + payback + " scrap."
+				: "\nThe outfitting (" + outfit + " scrap) is lost.");
 		if (!r.items.isEmpty()) { List<String> t = new ArrayList<String>(); for (String id : r.items) t.add(homeplanet.model.Items.title(id)); sb.append("\nBrought back: ").append(String.join(", ", t)).append("."); }
 		if (!joinedNames.isEmpty()) sb.append("\nNew crew: ").append(String.join(", ", joinedNames)).append(".");
 		if (!shipNames.isEmpty()) sb.append("\nShips home: ").append(String.join(", ", shipNames)).append(".");
@@ -839,6 +890,7 @@ public final class Expeditions {
 		HistoryLog.entry("EXPEDITION", where + (r.posting.sealed ? " (sealed orders)" : "") + " (\"" + r.posting.text + "\"): " + (pay + r.scrap) + " scrap"
 				+ (r.items.isEmpty() ? "" : ", " + String.join(", ", r.items)) + (joinedNames.isEmpty() ? "" : "; joined: " + String.join(", ", joinedNames))
 				+ (shipNames.isEmpty() ? "" : "; ships: " + String.join(", ", shipNames)) + (r.waited > 0 ? "; missing for " + r.waited + " beacons" : "")
+				+ (outfit > 0 ? "; outfitting " + outfit + " scrap, back " + payback : "") + (r.finished() ? "" : "; turned back")
 				+ (lostNames.isEmpty() ? "" : "; did not come back: " + String.join(", ", lostNames))
 				+ (hurtNames.isEmpty() ? "" : "; injured: " + String.join(", ", hurtNames)));
 		Properties p = readBoard(v);
@@ -857,6 +909,105 @@ public final class Expeditions {
 		if (crew.contains(sent)) return sent;
 		for (CrewState c : crew) if (c.getName().equals(sent.getName()) && c.getRace() == sent.getRace()) return c;
 		return null;
+	}
+
+	// ---- captives and ransoms ----
+
+	private static File captivesFile(Vault v) { return new File(v.root, "captives.txt"); }
+	/** Crew taken on an expedition: a ransom is asked a few beacons later, and stands a while. */
+	public static final class Captive {
+		public final int index;
+		public final String name, race, captors;
+		public final boolean male;
+		public final int ransom, asked, until;
+		Captive(int index, String name, String race, boolean male, String captors, int ransom, int asked, int until) {
+			this.index = index; this.name = name; this.race = race; this.male = male; this.captors = captors; this.ransom = ransom; this.asked = asked; this.until = until;
+		}
+	}
+	private static Properties readCaptives(Vault v) {
+		Properties p = new Properties();
+		File f = captivesFile(v);
+		if (!f.isFile()) return p;
+		try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
+		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
+		return p;
+	}
+	private static void writeCaptives(Vault v, Properties p) throws IOException {
+		java.io.StringWriter w = new java.io.StringWriter();
+		p.store(w, "Crew taken on expeditions, and the ransoms asked for them");
+		SafeFiles.writeText(captivesFile(v), w.toString(), false);
+	}
+	static synchronized void takeCaptive(Vault v, CrewState c, Posting from) {
+		Properties p = readCaptives(v);
+		int i = 0;
+		while (p.getProperty(i + ".name") != null) i++;
+		Random rng = new Random();
+		int asked = v.beaconsSeen() + RANSOM_DELAY_MIN + rng.nextInt(RANSOM_DELAY_MAX - RANSOM_DELAY_MIN + 1);
+		p.setProperty(i + ".name", c.getName());
+		p.setProperty(i + ".race", c.getRace() == null ? "human" : c.getRace().getId());
+		p.setProperty(i + ".male", Boolean.toString(c.isMale()));
+		p.setProperty(i + ".captors", enemyOf(from.kind));
+		p.setProperty(i + ".ransom", Integer.toString(20 + 5 * from.danger + rng.nextInt(16)));
+		p.setProperty(i + ".asked", Integer.toString(asked));
+		p.setProperty(i + ".until", Integer.toString(asked + RANSOM_STANDS));
+		p.setProperty(i + ".state", "held");
+		try { writeCaptives(v, p); } catch (IOException e) { log.warn("Could not record a captive: {}", e.toString()); }
+	}
+	/** Ransoms asked and still standing: letters sent for new ones, and the ones whose time ran out let go (for good). */
+	public static synchronized List<Captive> ransoms(Vault v) {
+		Properties p = readCaptives(v);
+		List<Captive> out = new ArrayList<Captive>();
+		boolean changed = false;
+		int now = v.beaconsSeen();
+		for (int i = 0; p.getProperty(i + ".name") != null; i++) {
+			String state = p.getProperty(i + ".state", "held");
+			if (!state.equals("held") && !state.equals("asked")) continue;
+			Captive c = new Captive(i, p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), "true".equals(p.getProperty(i + ".male")),
+					p.getProperty(i + ".captors", "pirates"), intOf(p, i + ".ransom", 30), intOf(p, i + ".asked", 0), intOf(p, i + ".until", 0));
+			if (now < c.asked) continue;
+			if (now > c.until) {
+				p.setProperty(i + ".state", "gone");
+				changed = true;
+				HistoryLog.entry("EXPEDITION", c.name + ", taken by " + c.captors + ": the ransom went unpaid, and they are lost for good");
+				continue;
+			}
+			if (state.equals("held")) {
+				p.setProperty(i + ".state", "asked");
+				changed = true;
+				homeplanet.parser.Transmissions.deliver("ransom:" + i + ":" + c.name, "Unknown sender", "Ransom: " + c.name,
+						c.name + " is alive, and in our keeping.\n\nWe ask " + c.ransom + " scrap for their return. The offer stands for " + RANSOM_STANDS
+						+ " beacons. Pay it from the Expeditions board at The Home Planet Station, and they will be put on the next transport to your Cargo Hold.\n\n"
+						+ "After that, we will assume you have no further interest in them.\n\n~ " + capitalised(c.captors));
+			}
+			out.add(c);
+		}
+		if (changed) try { writeCaptives(v, p); } catch (IOException e) { log.warn("Could not update the captives: {}", e.toString()); }
+		return out;
+	}
+	private static String capitalised(String s) { return s.isEmpty() ? s : s.substring(0, 1).toUpperCase() + s.substring(1); }
+	/** Pays a ransom from the Cargo Hold: they come back to it, shaken but whole. */
+	public static synchronized void payRansom(Vault v, Captive c) throws IOException {
+		Properties p = readCaptives(v);
+		if (!"asked".equals(p.getProperty(c.index + ".state"))) throw new IOException(c.name + "'s ransom is no longer asked");
+		if (v.beaconsSeen() > c.until) throw new IOException("The offer for " + c.name + " has run out");
+		Ship st = v.storage();
+		Vault.Copy cp = v.readCopy(st);
+		ShipState hold = cp.save.getPlayerShip();
+		if (hold.getScrapAmt() < c.ransom) throw new IOException("The Cargo Hold holds " + hold.getScrapAmt() + " scrap; the ransom is " + c.ransom);
+		CrewState back = Commission.volunteer(c.race, new Random());
+		if (back == null) throw new IOException("Unknown crew race " + c.race);
+		back.setName(c.name);
+		back.setMale(c.male);
+		if (!SaveHelper.placeCrew(hold, back, true)) throw new IOException("The Cargo Hold has no room for another crew member");
+		hold.getCrewList().add(back);
+		hold.setScrapAmt(hold.getScrapAmt() - c.ransom);
+		v.begin().put(st, cp.save, cp.hash).commit();
+		p.setProperty(c.index + ".state", "ransomed");
+		try { writeCaptives(v, p); } catch (IOException e) { log.warn("Could not mark {} ransomed: {}", c.name, e.toString()); }
+		HistoryLog.entry("EXPEDITION", c.name + " ransomed from " + c.captors + " for " + c.ransom + " scrap, back in the Cargo Hold");
+	}
+	private static int intOf(Properties p, String key, int dflt) {
+		try { return Integer.parseInt(p.getProperty(key, "").trim()); } catch (NumberFormatException e) { return dflt; }
 	}
 
 	// ---- hiring ----

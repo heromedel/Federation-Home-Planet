@@ -106,6 +106,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String title = "Docked Ships";
 		if (HomePlanet.immersiveNotifications()) {
 			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
+			homeplanet.parser.Expeditions.ransoms(vault); // a ransom asked for crew taken on an expedition: its letter
 			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
 			inboxBtn.addActionListener(this);
 		} else {

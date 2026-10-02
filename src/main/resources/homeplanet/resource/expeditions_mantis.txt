@@ -18,7 +18,7 @@ step breach
 The raiders are inside the second ship, cutting toward its crew quarters.
 * [fight] Go in after them
   roll 45
-  win scrap 12-16 | Your crew catches them in the corridor. None of the raiders leave.
+  win scrap 26-32 | Your crew catches them in the corridor. None of the raiders leave.
   lose lose 1 | It's a narrow corridor and the Mantis are faster. {who} falls holding it.
 * Vent the corridor to space
   ok scrap 8-10 | The raiders, and the corridor, are gone. The crew quarters are safe. The captain doesn't say thank you.
@@ -45,7 +45,7 @@ The freighter drifted into Mantis space three weeks ago. When your crew finds he
   lose injure 1 then hatchery | Someone was guarding them. {who} is hurt in the first moments.
 * Destroy the eggs
   roll 40
-  win scrap 12-16 | The eggs burn. Nothing comes for them, this time.
+  win scrap 26-32 | The eggs burn. Nothing comes for them, this time.
   lose lose 1 then hatchery | Something comes for them. {who} doesn't see it until it is far too late.
 * [mantis] {who} speaks to the eggs' guardian
   ok scrap 16-22 | {who} finds the guardian, and they speak for a long time. The guardian lets the freighter go, the eggs moved to a safer place.
@@ -77,7 +77,7 @@ A Mantis trader offers to sell your crew the skull of a beast he swears he kille
   ok scrap 6-10 | It sells for twice as much to a collector at the next stop.
 * Decline
   roll 70
-  win | He is offended, but only a little.
+  win scrap 6-10 | He is offended, but only a little.
   lose injure 1 | He is offended a great deal. {who} is the closest thing to hit.
 * [mantis] {who} asks for the story first
   ok scrap 8-12 | It's a long story, and {who} listens to all of it. He gives them the skull for free.
@@ -88,10 +88,10 @@ A Mantis cruiser holds three human prisoners and offers them for sale. "Workers,
 * Buy their freedom
   ok join human | Two of them go home. The third has nowhere to go, and signs on.
 * Refuse, and report the cruiser
-  ok scrap 4-6 | The Federation pays for the report, and promises to look into it.
+  ok scrap 14-18 | The Federation pays for the report, and promises to look into it.
 * [fight] Free them by force
   roll 35
-  win scrap 10-14 join human | The cruiser's crew was smaller than it looked. All three are free, and one signs on.
+  win scrap 32-38 join human | The cruiser's crew was smaller than it looked. All three are free, and one signs on.
   lose lose 1 | The cruiser's crew was exactly as large as it looked. {who} becomes the fourth prisoner.
 
 event molting mantis low molt

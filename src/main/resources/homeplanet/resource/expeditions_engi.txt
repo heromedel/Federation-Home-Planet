@@ -4,11 +4,11 @@
 event engi_network engi,engi_home low network
 The Engi relay's network has split into a dozen parts, each certain the others are wrong. The station's Engi drift between consoles, chattering in distress.
 * Carry replacement components
-  ok scrap 6-10 | Hard work, but the network begins to agree with itself again. The Engi pay in scrap and polite whirring.
+  ok scrap 12-14 | Hard work, but the network begins to agree with itself again. The Engi pay in scrap and polite whirring.
 * Offer to debug the network
   roll 40
   win scrap 12-16 parts 2 | Against every expectation, the patch holds. The Engi give spare drone parts as thanks.
-  lose scrap 2-4 | The patch makes things worse before the Engi undo it. They pay a little, for effort.
+  lose scrap 0-2 | The patch makes things worse before the Engi undo it. They pay a little, for effort.
 * [engi] {who} joins the network
   ok scrap 14-20 parts 2 | {who} plugs in and the dozen parts become one again. The Engi are grateful, in their quiet way.
   aside 20 | For a week afterwards, {who} sometimes answers questions before anyone has asked them.
@@ -53,7 +53,7 @@ step offer
 * Sell it to the stranger
   ok scrap 18-24 | The stranger pays and is gone. The archivists send a single message afterwards: "Noted."
 * Deliver it as agreed
-  ok scrap 12-14 | The archivists take it without a word, and pay exactly what they promised.
+  ok scrap 16-20 | The archivists take it without a word, and pay exactly what they promised.
 
 event hive_split engi moderate refugees
 A cluster of Engi has broken away from its network after a disagreement nobody outside it can follow. They have no ship, no protocol and no idea what to do next.
@@ -61,7 +61,7 @@ A cluster of Engi has broken away from its network after a disagreement nobody o
   ok scrap 6-10 | The Engi are polite, unhappy and silent all the way. At the station they pay you in parts.
 * Return them to their network
   roll 60
-  win scrap 10-14 | The network takes them back, and pays for the trouble.
+  win scrap 12-16 | The network takes them back, and pays for the trouble.
   lose injure 1 | The network does not want them back, and makes that clear with its turrets. {who} is hit.
 * [human] {who} offers them work on the shuttle
   ok join engi | One of them decides that a single human's protocol is better than none. It signs on.
@@ -112,7 +112,7 @@ An Engi cruiser drifts outside the relay, powered but still. Her piloting node f
 * Take her as she is
   ok ship sector:limping:pilot | The Engi thank your crew formally, and turn away before the tow begins.
 * Strip her for parts instead
-  ok scrap 8-12 parts 3 | The Engi watch the stripping in silence, then pay for the work.
+  ok scrap 30-40 parts 3 | The Engi watch the stripping in silence, then pay for the work.
 * [engi] {who} tries to wake her node
   roll 50
   win ship sector:towed | {who} coaxes something out of the dead node. She isn't whole, but she answers. The Engi are very quiet.

@@ -21,7 +21,7 @@ The Slug merchant's contract is fifty pages long, in very small print, and must 
   aside 20 | {crew} finds a recipe for fried fungus on page thirty. It is surprisingly good.
 * Sign without reading
   roll 50
-  win scrap 8-12 | Nothing goes wrong. The merchant pays.
+  win scrap 18-22 | Nothing goes wrong. The merchant pays.
   lose end | Page forty-two made the witnesses responsible for the merchant's debts. It takes the rest of the trip to get out of it.
 * [human] {who} reads the fine print
   ok scrap 12-16 | {who} finds the trap on page forty-two and negotiates a better fee for keeping quiet about it.
@@ -44,7 +44,7 @@ Over the last course, the debtor makes an offer: "Tell my creditor I paid alread
   ok scrap 18-24 | The debtor pays. The creditor finds out a week later, and your crew is never hired in the nebula again.
 * Refuse, and demand the debt
   roll 55
-  win scrap 12-16 | The debtor sighs and pays. "Honest," the Slug says, as if it were an illness.
+  win scrap 32-38 | The debtor sighs and pays. "Honest," the Slug says, as if it were an illness.
   lose injure 1 | The debtor stops smiling. {who} is the first to find out how much.
 
 event mind_market slug moderate memories
@@ -54,7 +54,7 @@ A Slug market sells memories: someone else's first kiss, a war, a sunset on a wo
   aside 25 | Somewhere in the market, someone is enjoying a very boring shuttle flight.
 * Buy a memory instead
   roll 50
-  win scrap 4-6 fuel 3 | It's a smuggler's memory, and it includes the location of a fuel cache.
+  win scrap 10-14 fuel 3 | It's a smuggler's memory, and it includes the location of a fuel cache.
   lose injure 1 | It's a memory of drowning. {who} wakes up gasping, and doesn't sleep for a week.
 * [slug] {who} haggles in thought
   ok scrap 14-18 | {who} and the stallholder trade thoughts in silence. Your crew comes out of it richer, and nobody knows how.
@@ -101,6 +101,6 @@ A Slug dealer offers your crew a "fine cruiser, barely used" for nothing at all,
 * Take the deal
   ok ship sector:limping:pilot | She's fine in every way except one: there's no piloting system aboard. The dealer never mentioned it. The tow is long and quiet.
 * Refuse
-  ok scrap 2-4 | The dealer is disappointed, and pays your crew a little for their time, for reasons of its own.
+  ok scrap 12-16 | The dealer is disappointed, and pays your crew a little for their time, for reasons of its own.
 * [slug] {who} reads what the dealer is hiding
   ok scrap 4-6 ship sector:towed | {who} finds both the missing helm and the favour the dealer had in mind. The helm comes back. The favour doesn't.

@@ -548,6 +548,21 @@ no letters, you come and check).
   expedition carries on after), and a hail is told the commander is away on an expedition and listed as missed. The
   lost expedition's choices read "Demand The Station Commander to give the order to fire" and "Wait and watch as
   The Station opens hailing frequencies".
+- Higher stakes (4B.88):
+  - Injuries on moderate and high-risk events can be fatal (never on low-risk ones), and gambles there are harder
+    (the numbers are kept in Expeditions.java, not here or in the game's text: heromedel asked not to see them).
+    Someone sent out already injured who is hurt again is lost. Across all expeditions about one in four loses
+    someone (it was one in seven).
+  - Outfitted jobs, one posting in four: "Outfitted crew wanted: N scrap a head" (5-12), paid from the Cargo Hold
+    for each crew member sent; +10 on every gamble and a quarter more scrap from the events. A finished job returns
+    50-200% of the outfitting on top of its pay; one not finished (turned back, or no one left) pays nothing and
+    returns nothing. Over many outfitted jobs the payback averages about what was spent.
+  - The job's own pay comes only for a job finished.
+  - One loss in three is a capture: a few beacons later a ransom (25-50 scrap) is asked in the inbox and on the
+    Expeditions board; paid, they come back to the Cargo Hold; unpaid for 10 beacons, they're lost for good (the
+    fleet's captives.txt).
+  - Choices reviewed so none is better than another on every count, except FTL-style moral ones (the cold choice
+    may pay more, without comment) and where a ship or a new crew member is the reward.
 
 ## Naming decisions — settled (4B.30)
 

@@ -8,6 +8,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
  book();
  board(v);
  runs(v);
+ stakes(v);
  asides(v);
  ships(v);
  lost(v);
@@ -108,12 +109,16 @@ public class ExpT { public static void main(String[] a) throws Exception {
    if (c.race == null && c.fight && rollF.getInt(c) == 50 && fight == null) fight = c;
   }
   List<CrewState> one = hold(v, "human"), three = hold(v, "human", "human", "human");
-  int o1 = Expeditions.start(v, 0, one, new Random(1)).odds(gamble), o3 = Expeditions.start(v, 0, three, new Random(1)).odds(gamble);
+  Expeditions.Event lowEv = event("harvest"); // a low-risk event: no penalty for danger
+  int o1 = with(v, 0, one, lowEv, 1).odds(gamble), o3 = with(v, 0, three, lowEv, 1).odds(gamble);
   Vault.Copy hc = v.readCopy(v.storage()); for (CrewState x : hc.save.getPlayerShip().getCrewList()) x.setHealth(x.getHealth() / 2); v.begin().put(v.storage(), hc.save, hc.hash).commit();
-  int o3hurt = Expeditions.start(v, 0, Expeditions.holdCrew(v), new Random(1)).odds(gamble);
+  int o3hurt = with(v, 0, Expeditions.holdCrew(v), lowEv, 1).odds(gamble);
   Setup.chk("R: odds: 50 alone, 60 with three, 51 with three injured (" + o1 + ", " + o3 + ", " + o3hurt + ")", o1 == 50 && o3 == 60 && o3hurt == 51);
-  int fm = Expeditions.start(v, 0, hold(v, "mantis", "mantis"), new Random(1)).odds(fight), fe = Expeditions.start(v, 0, hold(v, "engi", "engi"), new Random(1)).odds(fight);
+  int fm = with(v, 0, hold(v, "mantis", "mantis"), lowEv, 1).odds(fight), fe = with(v, 0, hold(v, "engi", "engi"), lowEv, 1).odds(fight);
   Setup.chk("R: in a fight, two Mantis help and two Engi hinder (" + fm + ", " + fe + ")", fm == 50 + 5 + 16 && fe == 50 + 5 - 10);
+  Expeditions.Event highEv = event("asteroid_criminals"), modEv = event("fugitive");
+  int oh = with(v, 0, hold(v, "human"), highEv, 1).odds(gamble), om = with(v, 0, hold(v, "human"), modEv, 1).odds(gamble);
+  Setup.chk("R: dangerous events are harder: 5 off on moderate risk, 10 off on high (" + om + ", " + oh + ")", om == 45 && oh == 40);
   // a run never meets a theme twice
   boolean themesOk = true; List<CrewState> trio = hold(v, "human", "rock", "slug");
   for (int s = 0; s < 300; s++) { Expeditions.Run r = Expeditions.start(v, s % 3, trio, new Random(s)); Set<String> th = new HashSet<String>(); for (Expeditions.Event e : r.events()) if (!th.add(e.theme)) themesOk = false; }
@@ -147,7 +152,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   Setup.chk("R: a Rock and a Mantis bring their options, blue and red", sawRock && sawRed);
   Setup.chk("R: modest pay: about 5 to 50 scrap, averaging 15 to 35, over 50 one time in ten at most (" + min + "-" + max + ", " + total / n + ", " + over50 + " over 50)",
     min >= 0 && max <= 90 && total / n >= 15 && total / n <= 35 && over50 * 10 <= n);
-  Setup.chk("R: some come back hurt, a few not at all, gear now and then", hurtSome > 20 && lostSome > 5 && lostSome < hurtSome && gear > 5 && gear < 120);
+  Setup.chk("R: some come back hurt, some not at all, gear now and then", hurtSome > 20 && lostSome > 20 && gear > 5 && gear < 120);
 
   // a real one, finished: everything to the Cargo Hold in one write, a beacon of time, a new posting
   mixed = hold(v, "rock", "mantis", "human");
@@ -203,6 +208,88 @@ public class ExpT { public static void main(String[] a) throws Exception {
   return (List<?>) evs.get(bk.invoke(null));
  }
  static Object stepsOf(Object e) throws Exception { java.lang.reflect.Field f = Expeditions.Event.class.getDeclaredField("steps"); f.setAccessible(true); return f.get(e); }
+ /** Plan W: fatal injuries, the walking wounded, outfitted jobs, pay only for a job done, captives and ransoms. */
+ static void stakes(Vault v) throws Exception {
+  pinBoard(v);
+  // an injury on a high-risk event is sometimes fatal; on a low-risk one, never
+  Expeditions.Event high = event("asteroid_criminals"), low = event("harvest");
+  Expeditions.Choice hiInj = null; for (Expeditions.Choice c : stepChoices(high, "")) if (c.text.startsWith("Slip past")) hiInj = c;
+  int deaths = 0, hurts = 0;
+  for (int s = 0; s < 2000; s++) {
+   Expeditions.Run r = with(v, 0, hold(v, "human", "human"), high, s);
+   java.lang.reflect.Field rf = Expeditions.Choice.class.getDeclaredField("roll"); rf.setAccessible(true);
+   String said = r.choose(hiInj);
+   if (said.contains("is injured")) hurts++; if (said.contains("worse than anyone knew")) deaths++;
+  }
+  Setup.chk("W: on a high-risk event, an injury is fatal more than half the time (" + deaths + " of " + (deaths + hurts) + ")", deaths > hurts && hurts > 0);
+  // someone sent out injured, hurt again, is lost
+  Vault.Copy hc = v.readCopy(v.storage()); hc.save.getPlayerShip().getCrewList().clear();
+  CrewState hurtOne = Commission.volunteer("human", new Random(1)); hurtOne.setHealth(hurtOne.getHealth() / 2); SaveHelper.placeCrew(hc.save.getPlayerShip(), hurtOne, true); hc.save.getPlayerShip().getCrewList().add(hurtOne);
+  v.begin().put(v.storage(), hc.save, hc.hash).commit();
+  Expeditions.Choice lowHurt = null; for (Expeditions.Choice c : stepChoices(low, "")) if (c.text.startsWith("Try to repair")) lowHurt = c;
+  Expeditions.Event recl = event("reclaimer"); Expeditions.Choice strip = null; for (Expeditions.Choice c : stepChoices(recl, "")) if (c.text.startsWith("Strip it down")) strip = c;
+  boolean woundedLost = false;
+  for (int s = 0; s < 500 && !woundedLost; s++) { Expeditions.Run r = with(v, 0, Expeditions.holdCrew(v), event("market_thief"), s);
+   Expeditions.Choice chase = null; for (Expeditions.Choice c : r.choices()) if (c.text.startsWith("Give chase")) chase = c;
+   String said = r.choose(chase); if (said.contains("hurt again")) woundedLost = r.alive().isEmpty(); }
+  Setup.chk("W: someone sent out injured and hurt again doesn't come back, even on a low-risk job", woundedLost);
+  // outfitted jobs: the card's price a head, paid; better odds and scrap; finish and the outfitting comes back 50-200%
+  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=civilian\n0.danger=1\n0.outfit=10\n0.text=Outfitted crew wanted\n"
+    + "1.kind=pirate\n1.danger=2\n1.text=b\n2.kind=civilian\n2.danger=1\n2.text=c\n", false);
+  List<CrewState> two = hold(v, "human", "human");
+  Vault.Copy c0 = v.readCopy(v.storage()); c0.save.getPlayerShip().setScrapAmt(15); v.begin().put(v.storage(), c0.save, c0.hash).commit();
+  boolean refused = false; try { Expeditions.start(v, 0, two, new Random(1)); } catch (IOException e) { refused = e.getMessage().contains("20 scrap"); }
+  Setup.chk("W: outfitting two at 10 a head needs 20 scrap: refused with 15 in the hold", refused);
+  c0 = v.readCopy(v.storage()); c0.save.getPlayerShip().setScrapAmt(100); v.begin().put(v.storage(), c0.save, c0.hash).commit();
+  int plain = with(v, 2, two, low, 1).odds(gamble()), kitted = with(v, 0, two, low, 1).odds(gamble());
+  Setup.chk("W: outfitted crew get 10 on every gamble (" + plain + ", " + kitted + ")", kitted == plain + 10);
+  long spent = 0, back = 0; int finished = 0, turned = 0, n = 0;
+  for (int s = 0; s < 400; s++) {
+   two = hold(v, "human", "human");
+   Vault.Copy cc = v.readCopy(v.storage()); cc.save.getPlayerShip().setScrapAmt(1000); v.begin().put(v.storage(), cc.save, cc.hash).commit();
+   SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=civilian\n0.danger=1\n0.outfit=10\n0.text=Outfitted crew wanted\n1.kind=pirate\n1.danger=2\n1.text=b\n2.kind=civilian\n2.danger=1\n2.text=c\n", false);
+   Expeditions.Run r = Expeditions.start(v, 0, two, new Random(s)); Random pk = new Random(s);
+   while (!r.over()) { List<Expeditions.Choice> cs = r.choices(); r.choose(cs.get(pk.nextInt(cs.size()))); }
+   java.lang.reflect.Field sf = r.getClass().getDeclaredField("scrap"); sf.setAccessible(true);
+   java.lang.reflect.Method pay = r.getClass().getDeclaredMethod("pay"); pay.setAccessible(true);
+   int gain = (Integer) sf.get(r) + (Integer) pay.invoke(r);
+   Expeditions.finish(v, r);
+   int got = v.storageScrap() - 1000 - gain + 20; // what the outfitting brought back
+   n++; spent += 20; back += got;
+   if (r.finished()) finished++; else { turned++; if (got != 0 || (Integer) pay.invoke(r) != 0) { Setup.chk("W: a job not finished pays nothing and returns nothing", false); return; } }
+  }
+  Setup.chk("W: finished, the outfitting comes back 50-200%; over many jobs about what was spent (" + back * 100 / spent + "%, " + finished + " finished, " + turned + " not)", back * 100 / spent >= 80 && back * 100 / spent <= 130 && turned > 0);
+  // captives: taken, a ransom asked a few beacons later, paid: home; unpaid: lost for good
+  java.lang.reflect.Method take = Expeditions.class.getDeclaredMethod("takeCaptive", Vault.class, CrewState.class, Expeditions.Posting.class); take.setAccessible(true);
+  Expeditions.Posting pst = Expeditions.board(v).get(1);
+  CrewState a = Commission.volunteer("rock", new Random(3)), b = Commission.volunteer("slug", new Random(4));
+  take.invoke(null, v, a, pst); take.invoke(null, v, b, pst);
+  Setup.chk("W: nothing is asked at once", Expeditions.ransoms(v).isEmpty());
+  ChainT.jump(v, 5);
+  List<Expeditions.Captive> asked = Expeditions.ransoms(v);
+  Setup.chk("W: a few beacons later both ransoms are asked (" + asked.size() + ")", asked.size() == 2);
+  int inHold = Expeditions.holdCrew(v).size(), scrap = v.storageScrap();
+  Expeditions.Captive first = asked.get(0);
+  Expeditions.payRansom(v, first);
+  boolean home = false; for (CrewState x : Expeditions.holdCrew(v)) if (x.getName().equals(first.name)) home = true;
+  Setup.chk("W: a ransom paid: " + first.name + " is back in the Cargo Hold, the ransom paid from it", home && Expeditions.holdCrew(v).size() == inHold + 1 && v.storageScrap() == scrap - first.ransom);
+  ChainT.jump(v, Expeditions.RANSOM_STANDS + 1);
+  String hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
+  List<Expeditions.Captive> left = Expeditions.ransoms(v); hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
+  Setup.chk("W: a ransom left unpaid runs out: lost for good, and the history log says so (" + left.size() + " left, beacons " + v.beaconsSeen() + ")", left.isEmpty() && hist.contains("ransom went unpaid"));
+  // and some losses on real runs are captures
+  java.lang.reflect.Field capF = Expeditions.Run.class.getDeclaredField("captured"); capF.setAccessible(true);
+  int lostN = 0, capN = 0;
+  for (int s = 0; s < 3000; s++) { Expeditions.Run r = with(v, 0, hold(v, "human", "human"), high, s); for (Expeditions.Choice c : r.choices()) if (c.text.startsWith("Hit the front")) { r.choose(c); break; } capN += ((List<?>) capF.get(r)).size(); lostN += 2 - r.alive().size(); }
+  Setup.chk("W: about one loss in three is a capture (" + capN + " of " + lostN + ")", lostN > 200 && capN * 4 > lostN && capN * 2 < lostN);
+  pinBoard(v);
+ }
+ static List<Expeditions.Choice> stepChoices(Expeditions.Event e, String step) throws Exception { return ((Expeditions.Step) ((Map<?, ?>) stepsOf(e)).get(step)).choices; }
+ static Expeditions.Choice gamble() throws Exception {
+  java.lang.reflect.Field rollF = Expeditions.Choice.class.getDeclaredField("roll"); rollF.setAccessible(true);
+  for (Expeditions.Choice c : stepChoices(event("harvest"), "")) if (rollF.getInt(c) >= 0 && !c.fight && c.race == null) return c;
+  return null;
+ }
  /** A run made to meet this one event (the harness picks; the board's posting stays as it is). */
  static Expeditions.Run with(Vault v, int slot, List<CrewState> party, Expeditions.Event e, long seed) throws Exception {
   Expeditions.Run r = Expeditions.start(v, slot, party, new Random(seed));

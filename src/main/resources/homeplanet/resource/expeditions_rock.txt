@@ -51,7 +51,7 @@ event forge_fire rock high fire
 The forge-town's main furnace has cracked, and molten rock is crawling toward the workers' homes. The Rock want help building a channel to turn it.
 * Dig the channel
   roll 50
-  win scrap 14-20 | The channel holds. The town is saved, and the Rock sing about it for a week.
+  win scrap 32-38 | The channel holds. The town is saved, and the Rock sing about it for a week.
   lose injure 1 scrap 6-8 | The flow outpaces them. {who} is burned at the edge of it.
 * Evacuate the homes instead
   ok scrap 6-8 join rock | Your crew carries people out while the Rock dig. One of the rescued signs on, out of gratitude.
@@ -69,7 +69,7 @@ Two Rock congregations disagree about a single line of scripture, and both have 
   aside 20 | The line of scripture, it turns out, is about the correct way to sit down.
 * Soften the messages on the way
   roll 50
-  win scrap 12-16 | Both congregations find the other surprisingly reasonable. They pay your crew to stay as mediators.
+  win scrap 22-26 | Both congregations find the other surprisingly reasonable. They pay your crew to stay as mediators.
   lose injure 1 | Both congregations find out. {who} is the one who answers for it.
 * [crystal] {who} tells them what the line originally meant
   ok scrap 10-14 | {who} remembers the original. Both congregations are horrified, then quiet, then united.
@@ -78,7 +78,7 @@ event heretic rock high heretic
 A Rock heretic is hiding on a cargo barge, wanted for saying the homeworld's priests lie. He asks your crew to take him off-world.
 * Smuggle him out
   roll 50
-  win scrap 6-10 join rock | He makes it. He has no money, but he has hands, and offers them.
+  win scrap 12-16 join rock | He makes it. He has no money, but he has hands, and offers them.
   lose injure 1 | The priests' wardens search the shuttle. {who} is hurt in the struggle, and the heretic is taken.
 * Turn him in
   ok scrap 14-20 | The wardens pay the bounty. The heretic doesn't say a word as they take him.

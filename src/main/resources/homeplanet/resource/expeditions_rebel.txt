@@ -29,7 +29,7 @@ step pursuit
 The patrol is gaining. The shuttle can outrun it, or hide in the asteroid field ahead.
 * Run for it
   roll 50
-  win scrap 6-10 | The shuttle is faster, just. The contact laughs all the way home.
+  win scrap 24-28 | The shuttle is faster, just. The contact laughs all the way home.
   lose injure 1 | A shot clips the engines. {who} is hurt keeping them running.
 * Hide in the asteroids
   roll 65
@@ -74,7 +74,7 @@ event auto_scout rebel moderate scout
 A rebel automated scout drifts at the beacon, powered down. Its data banks are intact, and its self-destruct may not be.
 * Download the data banks
   roll 50
-  win scrap 12-16 | The data is worth a great deal to Federation intelligence.
+  win scrap 34-40 | The data is worth a great deal to Federation intelligence.
   aside 15 | Among the data is the scout's own log, which ends with the word: lonely.
   lose injure 1 | The self-destruct is intact. {who} is caught in the blast.
 * Strip it for parts and leave the data
@@ -100,7 +100,7 @@ event cache_raid rebel high cache
 Federation intelligence knows where the rebels store their spare parts in this sector. Nobody knows how heavily it's guarded.
 * [fight] Raid it head on
   roll 40
-  win scrap 18-24 item weapon | The guards were few. The cache was full.
+  win scrap 36-42 item weapon | The guards were few. The cache was full.
   lose lose 1 | The guards were many. Your crew leaves {who} behind.
 * Steal what you can from the loading dock
   roll 65

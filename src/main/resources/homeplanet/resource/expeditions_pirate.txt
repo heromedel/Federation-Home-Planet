@@ -34,7 +34,7 @@ The pirate den is loud, crowded and dangerous. The ransom is in a small case, an
   lose injure 1 scrap 4-6 | A pirate tries for the case on the way out. {who} keeps it, and gets hurt.
 * [fight] Keep the ransom and free the hostages by force
   roll 35
-  win scrap 20-26 | The pirates never saw it coming. The hostages are freed, and the ransom comes home too.
+  win scrap 26-32 | The pirates never saw it coming. The hostages are freed, and the ransom comes home too.
   lose lose 1 | The pirates were ready. The hostages are freed, but {who} pays the price.
 * [mantis] {who} speaks to the pirate captain
   ok scrap 12-16 | The captain is Mantis too. After a long exchange, the ransom is halved, and your crew keeps the difference.
@@ -55,7 +55,7 @@ step source
 The supplier is the clinic's own quartermaster, living well on a pirate moon.
 * Bring him back to the clinic
   roll 55
-  win scrap 12-16 | The clinic pays for the supplies and the quartermaster. He doesn't stop talking the whole way.
+  win scrap 16-20 | The clinic pays for the supplies and the quartermaster. He doesn't stop talking the whole way.
   lose injure 1 | The quartermaster has friends. {who} is cut in the scuffle, and he escapes.
 * Sell the clinic his name and leave it to them
   ok scrap 8-10 | The clinic pays, grimly. What they do with the name is their own business.
@@ -95,13 +95,13 @@ Two pirate gangs are about to settle a dispute at the beacon, and both want to h
   lose lose 1 | The smaller gang loses. So does {who}.
 * Take both their advances and leave before it starts
   roll 50
-  win scrap 14-18 | Your crew is three beacons away when the shooting starts.
-  lose injure 2 | Both gangs notice at the same time.
+  win scrap 22-28 | Your crew is three beacons away when the shooting starts.
+  lose injure 1 | Both gangs notice at the same time.
 
 event deserter pirate low deserter
 A young pirate wants out. She says she'll trade everything she knows about her captain's route for a ride to a Federation station.
 * Give her the ride
-  ok scrap 8-12 | Her information is good. The Federation pays for it, and for her.
+  ok scrap 12-16 | Her information is good. The Federation pays for it, and for her.
   aside 20 | A month later she sends word from a Federation academy. She's top of her class in gunnery.
 * Sell her back to her captain
   ok scrap 12-16 | The captain pays well. Your crew doesn't ask what happens to her.
@@ -117,6 +117,6 @@ The raid went perfectly. Everyone is alive, the loot is shared, and {crew} has s
   win scrap 12-18 ship sector:towed | They come home grinning, every one of them, loot in their pockets and a prize on the tow line.
   lose scrap 12-18 ship sector:wrecked | The gunship takes a stray shot on the way out, but she's still worth the tow. They come home grinning anyway.
 * Leave her and keep the loot
-  ok scrap 16-22 | Nobody argues. It was a good day.
+  ok scrap 30-40 | Nobody argues. It was a good day.
 * [human] {who} wants to sell her on the spot
   ok scrap 22-28 | A scavenger at the field's edge pays well and asks no questions.
