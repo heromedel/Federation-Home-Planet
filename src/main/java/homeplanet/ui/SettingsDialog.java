@@ -37,7 +37,7 @@ public class SettingsDialog extends JDialog {
 	private final JCheckBox steamBox = new JCheckBox("Launch FTL through Steam", HomePlanet.launchThroughSteam);
 	private final RuleBoxes rules = new RuleBoxes();
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
-	private final JCheckBox debugBox = new JCheckBox("Debug logging (shown in the console window)", HomePlanet.debugLogging);
+	private final JCheckBox debugBox = new JCheckBox("Debug logging (everything goes in this run's log file)", HomePlanet.debugLogging);
 	private boolean savesChanged = false;
 	/** After a final victory: nothing, rescue her, or a reward of her value (the fleet in use has its own choice). */
 	private final javax.swing.JRadioButton[] victoryButtons = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
@@ -260,7 +260,8 @@ public class SettingsDialog extends JDialog {
 		logRow.add(openLogs);
 		body.add(logRow, next(c));
 		JLabel logNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>Each mode keeps its own history log in its folder. "
-				+ "Open history log opens the one in use; the log folder holds the program's own logs, one per run, for bug reports.</font></div></html>");
+				+ "Open history log opens the one in use; the log folder holds the program's own logs, one per run, for bug reports "
+				+ "(with Debug logging on, they keep everything the station does).</font></div></html>");
 		logNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
 		body.add(logNote, next(c));
 		heading(body, c, "Troubleshooting");

@@ -15,7 +15,7 @@ the program can download it, and hands it the mods to patch.
 Planet was inspired by and originally built on, before converting to new code. The Space Dock
 and the Cargo Bay began there, and have been heavily changed since, both in code and in
 appearance. Of FTL Homeworld 3.1's own code almost nothing is left verbatim (about one line in
-a hundred of this program).
+a thousand of this program).
 
 **heromedel**: Designer, Producer, Coordinator and Tester of Federation Home Planet. With use of
 Claude Opus 5.5 and Fable 5.1 for coding and programming.
@@ -38,14 +38,14 @@ Claude Opus 5.5 and Fable 5.1 for coding and programming.
 
 ## Where the code comes from
 
-Counted at version 4B.01 (about 37,000 lines of Java in all):
+Counted at version 4B.83 (about 55,000 lines of Java in all):
 
 | Part | Share |
 |---|---|
-| Vhati's parser, unchanged | 60% |
-| Our additions to Vhati's files (five files, notices at the top) | 1% |
-| Lines still verbatim from FTL Homeworld 3.1 | 1% |
-| New or rewritten for Federation Home Planet | 38% |
+| Vhati's parser, unchanged | 41% |
+| Our additions to Vhati's files (five files, notices at the top) | under 1% |
+| Lines still verbatim from FTL Homeworld 3.1 | under 0.1% |
+| New or rewritten for Federation Home Planet | 58% |
 
 The Java, Swing and the bundled libraries (SLF4J, Logback, JDOM 2, JAXB, java-vorbis-support)
 are their authors', under their own licences; see the pom.xml.

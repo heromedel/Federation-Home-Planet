@@ -67,7 +67,8 @@ And More.
 
 ## Running and building
 
-Java 8 or newer runs it: `Current Build\Federation Home Planet Interface.bat` (or `java -jar "Federation Home Planet.jar"`). On first start it
+Java 8 or newer runs it: `Current Build\Federation Home Planet Interface.bat` opens it without a console window, using the
+Java the Construction Yard gathered or the one on your computer (or run `java -jar "Federation Home Planet.jar"`). On first start it
 asks where FTL is (the folder with `ftl.dat`) and where the saves are. Quit FTL before boarding, docking or saving in
 the Cargo Bay. Keep the station open while you play: it notices FTL's saves as they're written (for the voyage log and
 final victories) and takes stock when you switch back to it.

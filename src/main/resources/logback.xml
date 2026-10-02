@@ -1,8 +1,9 @@
 <configuration>
 	<!--
-		Quiet by default: only warnings and errors reach the console.
-		For troubleshooting, set debug_logging=true in federation-home-planet.cfg
-		(or launch with -Dhomeplanet.debug=true) to see DEBUG output.
+		The console is only there when the station is started by hand (java -jar): the Interface opens it
+		with javaw, and HomePlanet adds a log file per run (logs/), which is where its messages are read.
+		Quiet by default: warnings and errors. Debug logging (Settings, Records, or debug_logging=true in
+		federation-home-planet.cfg, or -Dhomeplanet.debug=true) keeps everything.
 	-->
 	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
