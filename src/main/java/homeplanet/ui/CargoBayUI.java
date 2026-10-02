@@ -897,7 +897,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	void refreshTrade() {
 		if (currentState == null || tradeState == null) return;
 		updateSupplyButtons();
-		boardBtn.setText(currentPath == null ? "No ship aboard" : currentSave.getPlayerShipName());
+		boardBtn.setText(currentPath == null ? "Board a ship." : currentSave.getPlayerShipName());
 		String cls = currentPath == null ? "" : shipClass(currentState); // no ship aboard: the lists say so, and Stored Systems sits here
 		mySub.setText(cls);
 
