@@ -512,6 +512,21 @@ no letters, you come and check).
 - **Folding headings**: a click on a gold heading of the Space Dock's controls folds its buttons away or back,
   lighter under the mouse, a small arrow when folded; remembered in the cfg (`fold_station`, ...).
 - A one-sided Long Range trade's log no longer says "received ():".
+- Deeper expeditions (4B.85): about 100 events, six to eight of each sector's own (a homeworld three, besides its
+  race's; the Hidden Crystal Worlds seven), split into one file per sector (`expeditions_<sector>.txt`, included from
+  `expeditions.txt`), written after reading FTL's own events in ftl.dat: its tone, never its events or words (the
+  harness holds every line against FTL's event text and fails on any run of six words the same).
+  - Multi-part events: a choice can lead into a further pop-up (`then <step>`), chains of three or four; many pop-ups
+    have four or more choices.
+  - Every event is graded low, moderate or high risk; a posting draws events of its danger, one in five a level
+    riskier. Low risk rarely injures and never kills.
+  - Odds: each crew member beyond the first adds 5 to every gamble, each injured one (before or during) takes 3 off;
+    in a fight (`[fight]`) each Mantis adds 8, each Rock 4, each Engi takes 5 off.
+  - Outcomes vary: scrap, gear, supplies, a new crew member (`join`), a lead into the next step, or nothing.
+  - One run never meets a theme twice; events met in about the last eight expeditions aren't met again while others
+    are left (`recent` in the fleet's expeditions.txt).
+  - Sealed postings, one in eight: "Destination undisclosed", danger "Unknown", the sector rolled when posted (now and
+    then a rare one) and told only once the shuttle is under way; they pay half again.
 
 ## Naming decisions — settled (4B.30)
 

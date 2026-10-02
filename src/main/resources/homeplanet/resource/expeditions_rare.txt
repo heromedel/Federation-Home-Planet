@@ -1,0 +1,274 @@
+# Expeditions: the rare places. The homeworlds (each also meets its race's sector events) and the Hidden Crystal
+# Worlds. Fewer outsiders come here, and the stakes are higher. (Format: see expeditions.txt.)
+
+# ---- the Engi Homeworlds ----
+
+event engi_home_fault engi_home moderate fault
+The planetary network fault is ancient, and the Engi have argued about it for generations.
+* Follow the Engi's oldest plan
+  ok scrap 10-14 | The oldest plan works after all. The Engi are delighted, and pay well.
+* Try something new
+  roll 40
+  win scrap 18-26 item drone | The new idea works. The Engi are astonished, and give a drone from their own stores.
+  lose scrap 4-6 | The new idea fails. The Engi are disappointed, but pay for the effort.
+* [engi] {who} proposes a compromise between the two oldest plans
+  ok scrap 16-20 | Nobody had thought to combine them. The Engi discuss it for a day, and then it works.
+
+event engi_home_census engi_home low census
+The Engi want to know how a non-networked mind makes decisions, and have asked your crew to make some while they watch.
+* Make decisions
+  ok scrap 8-12 | Your crew decides things for six hours. The Engi take notes in a silence that feels a little like pity.
+* Refuse, on principle
+  ok scrap 10-14 | The Engi find the refusal fascinating, and pay more for it than for the decisions.
+* [human] {who} explains gut feeling
+  ok scrap 10-14 parts 2 | The Engi cannot understand it, and are delighted by that.
+
+event engi_home_core engi_home high core
+The Engi ask your crew into the heart of their planetary network, where no Engi may go: the core must be touched by hands that aren't part of it.
+* Go in and do as they ask
+  roll 55
+  win scrap 18-24 item augment | The core accepts the touch. The Engi give your crew a device from their oldest archive.
+  lose injure 1 | The core rejects the touch, violently. {who} is thrown back.
+* Decline; it isn't your crew's place
+  ok scrap 6-8 | The Engi understand, and pay for the visit.
+* [red engi] {who} insists on going too
+  roll 30
+  win scrap 22-28 | The core accepts both. The Engi have never seen it before, and don't know what it means.
+  lose lose 1 | The core takes {who} into the network, and does not let go.
+
+# ---- the Mantis Homeworlds ----
+
+event mantis_home_hunt mantis_home high hunt
+The Mantis hunting ground is alive with prey, and some of the prey hunts back.
+* [fight] Hunt in a group
+  roll 50
+  win scrap 16-22 | Your crew makes a kill the Mantis respect. The reward is generous.
+  lose injure 1 scrap 6-8 | The prey turns on them. {who} is badly mauled.
+* Watch the Mantis hunt
+  ok scrap 6-8 | The Mantis tolerate observers, and pay a little for the company.
+* [mantis] {who} hunts alone
+  roll 70
+  win scrap 22-30 | {who} returns with the greatest kill of the season. The hunting ground's keepers pay in honour and scrap.
+  lose lose 1 | {who} does not return from the hunt.
+
+event mantis_home_court mantis_home moderate court
+A Mantis lord invites your crew to her court. The custom, a servant explains, is for guests to bring a gift. Your crew didn't.
+* Apologise
+  roll 40
+  win scrap 6-10 | The lord finds the apology amusing. She lets your crew live, and leave.
+  lose injure 1 | The lord does not find it amusing. {who} carries the scar out of the court.
+* Offer the shuttle's best weapon
+  ok scrap 14-18 | The lord accepts the gift and pays for it, in her way: generously, and with a warning.
+* [mantis] {who} offers a story of a battle
+  ok scrap 12-16 join mantis | {who}'s story is very good. One of the lord's warriors asks to serve the crew that tells it.
+
+event mantis_home_arena mantis_home high arena
+The Mantis arena takes all comers. Winners are paid in scrap. Losers are paid in nothing.
+* [fight] Send your best fighter in
+  roll 40
+  win scrap 20-28 | The crowd roars. {crew} walks out with the purse.
+  lose lose 1 | The crowd roars. {who} doesn't walk out.
+* Bet on someone else
+  roll 50
+  win scrap 12-16 | Your crew's fighter wins. So does your crew.
+  lose | Your crew's fighter loses. Mantis bookmakers don't give refunds.
+* [rock] {who} enters, and just stands there
+  ok scrap 14-18 | {who} stands in the arena while three Mantis tire themselves out. The crowd doesn't know what to make of it, but the purse is paid.
+
+# ---- the Rock Homeworlds ----
+
+event rock_home_forge rock_home moderate forge
+The great casting pours molten rock as tall as a ship. The Rock call it their oldest song.
+* Work the outer channels
+  ok scrap 8-12 | Your crew keeps its distance, and its skin. The Rock pay well.
+* Help pour the casting
+  roll 50
+  win scrap 14-20 | The casting is perfect. The Rock sing for hours.
+  lose injure 1 scrap 6-8 | A splash of molten rock catches {who}.
+* [rock] {who} sings with them
+  ok scrap 16-22 | {who} knows the song. The Rock are moved, and very generous.
+
+event rock_home_archive rock_home low archive
+The Rock archive of scripture fills a mountain. The archivists want help moving it to a deeper mountain, one stone tablet at a time.
+* Carry tablets
+  ok scrap 8-12 | It takes three days, and every tablet weighs as much as a person. The archivists pay fairly.
+* Read the tablets as you carry them
+  roll 60
+  win scrap 10-14 | {crew} finds a tablet filed in the wrong century. The archivists are grateful.
+  lose | The archivists catch {crew} reading, and take the tablet away, without a word.
+* [crystal] {who} recognises the oldest tablets
+  ok scrap 14-18 | The oldest tablets are copies of something older still. {who} says nothing about that, but the archivists pay for the help.
+
+event rock_home_trial rock_home high trial
+A Rock court is trying one of your crew for an act of disrespect at a shrine. The punishment for guilt is walking through fire.
+* Plead guilty and take the punishment
+  roll 50
+  win scrap 4-6 | The fire is short. {crew} walks through it, burned but forgiven.
+  lose injure 1 | The fire is long. {who} walks through, and is a long time healing.
+* Plead innocent and argue
+  roll 35
+  win scrap 8-12 | The court accepts the argument, and pays a small compensation.
+  lose lose 1 | The court does not. The fire is the long kind.
+* [rock] {who} walks the fire in their place
+  ok scrap 10-14 | {who} walks through the fire without a mark. The court calls it a sign, and drops the charges.
+
+# ---- the Zoltan Homeworlds ----
+
+event zoltan_home_light zoltan_home low light
+The Zoltan gathering is a field of light, and the light speaks.
+* Listen respectfully
+  ok scrap 8-12 | The light grants your crew its thanks, and the Zoltan pay.
+* Ask the light a question
+  roll 50
+  win scrap 14-18 fuel 3 | The light answers. The answer is worth a great deal.
+  lose end | The light does not answer. The Zoltan ask your crew to leave, gently.
+* [zoltan] {who} joins the light
+  ok scrap 16-20 | {who} glows with the gathering. The Zoltan are honoured to have them.
+
+event zoltan_home_archive zoltan_home moderate records
+The Zoltan keep their history as light stored in crystal. A section has gone dark, and the archivists need hands to carry it to the reading halls.
+* Carry it carefully
+  roll 70
+  win scrap 10-14 | Not one crystal is dropped. The archivists are relieved.
+  lose injure 1 scrap 4-6 | One crystal shatters. {who} is cut, and the archivists mourn the lost century.
+* Offer to read the dark section first
+  roll 40
+  win scrap 14-18 | {crew} finds a crack letting the light out. The section is saved where it stands.
+  lose | Nothing can be read. The archivists send your crew home with thanks.
+* [crystal] {who} mends the crystal
+  ok scrap 16-20 | {who} fuses the cracks shut. The light comes back. The Zoltan stare at {who} as if at a legend.
+
+event zoltan_home_exile zoltan_home moderate exile
+A Zoltan has been exiled from the homeworld for an offence nobody will name. He asks your crew for passage, and offers his light as payment.
+* Give him passage
+  ok scrap 4-6 join zoltan | He powers the shuttle all the way out, then asks to stay on.
+* Refuse
+  ok scrap 6-8 | The homeworld's wardens pay your crew for refusing him, which tells them something.
+* [slug] {who} reads his offence
+  ok scrap 8-12 | {who} learns the offence: he spoke against the homeworld's isolation. {who} says nothing more.
+
+# ---- the Slug Home Nebula ----
+
+event slug_home_invite slug_home moderate elders
+The invitation leads to a gathering of Slug elders. They smile, all of them, and none of them speak.
+* Wait for them to speak
+  roll 60
+  win scrap 12-18 | The elders speak at last. They have work, and they pay well.
+  lose end | The elders never speak. Your crew leaves, puzzled.
+* Speak first
+  roll 40
+  win scrap 16-22 | The elders are amused. They pay for the entertainment.
+  lose injure 1 | The elders are offended, and the Slug have long memories and short tempers. {who} is hurt.
+* [slug] {who} speaks for the crew
+  ok scrap 18-24 item augment | {who} knows the elders' ways. The gathering ends with a gift.
+
+event slug_home_spawning slug_home low spawning
+The Slug are spawning, and need outsiders to guard the pools: no Slug may watch another's young without starting a feud.
+* Guard the pools
+  ok scrap 8-12 | Nothing happens, for two days. The Slug pay, and seem a little disappointed.
+* Guard them, and keep an eye on the guards
+  roll 60
+  win scrap 12-16 | {crew} catches a Slug trying to sneak a look, and is paid twice: once by each family.
+  lose | Nobody tries anything, and the Slug pay only once.
+* [slug] {who} offers to guard alone
+  ok scrap 6-8 | The Slug won't allow it, but they are impressed by the offer.
+
+event slug_home_lie slug_home high lie
+A Slug elder offers a deal: tell one lie to the gathering, a small one, and be paid well for it. If the gathering catches the lie, the punishment is theirs to choose.
+* Tell the lie
+  roll 40
+  win scrap 18-24 | The gathering believes it. The elder pays, and smiles a great deal.
+  lose injure 1 | The gathering catches it at once. {who} pays the price the gathering chooses.
+* Refuse the deal
+  ok scrap 6-8 | The elder pays a little for the refusal. "Honessty," the elder says. "How rare."
+* [human] {who} tells the truth, and makes it sound like a lie
+  ok scrap 14-18 | The gathering argues about it for hours. The elder pays double for the entertainment.
+
+# ---- the Hidden Crystal Worlds ----
+
+event crystal_worlds crystal moderate arrival
+The Hidden Crystal Worlds are real. The crystal hums, and the hum grows louder as your crew approaches.
+* Approach slowly, hands open
+  roll 60
+  win scrap 16-24 | The crystal accepts your crew's presence. They leave with salvage from an ancient ship.
+  lose injure 1 | The crystal rejects them. {who} is cut on the way out.
+* Take a sample and leave
+  roll 50
+  win scrap 12-18 | The sample is worth a fortune to collectors.
+  lose lose 1 | The crystal takes {who} instead.
+* [crystal] {who} goes home
+  ok scrap 20-30 item augment | The crystal welcomes {who}, and your crew with them. They leave with a gift.
+
+event crystal_guardian crystal high guardian
+A figure of living crystal stands at the mouth of the valley. It doesn't move, but every instrument your crew carries goes quiet in its presence.
+* Wait until it lets you pass
+  roll 70
+  win scrap 12-18 | After an hour, the figure steps aside. The valley beyond is littered with older visitors' salvage.
+  lose end | The figure never moves. Your crew turns back, empty-handed but unharmed.
+* Try to slip around it
+  roll 40
+  win scrap 16-22 | The figure doesn't follow. The valley pays for the risk.
+  lose injure 1 | The ground itself turns to crystal under {who}'s feet, and cuts deep.
+* [crystal] {who} stands before it
+  ok scrap 18-26 | The two of them stand silent for a long time. Then the figure bows, and the valley is open.
+
+event crystal_ruins crystal high ruins
+The ruins of a city grown rather than built: every tower a single crystal. Something old still powers the lights.
+* Map the ruins
+  ok scrap 10-14 | The maps alone are worth a good price to the right buyer.
+* Follow the light to its source
+  roll 45
+  win scrap 16-24 item augment | The light comes from a vault, and the vault holds a piece of ancient ship gear.
+  lose injure 1 scrap 4-6 | The light flares as they reach it. {who} is burned.
+* [red human] {who} wants to cut down a tower for its crystal
+  roll 40
+  win scrap 22-28 | The tower falls, and the crystal sells for a fortune. Nothing stops them, this time.
+  lose lose 1 | The tower falls the wrong way. {who} is under it.
+
+event crystal_sleeper crystal moderate sleeper
+In a chamber under the ice, a Crystal sleeps standing up, as it has for longer than anyone can say.
+* Leave it sleeping
+  ok scrap 6-10 | Your crew takes a few loose shards from the chamber's floor and leaves quietly.
+* Wake it
+  roll 45
+  win join crystal | It wakes slowly, looks at your crew for a long time, and decides to come with them.
+  lose injure 1 | It wakes all at once, alarmed. {who} is caught in the crystal that grows around them.
+* [rock] {who} kneels before it
+  ok scrap 10-14 | {who} kneels for a long time, and won't say why. When they leave, {who} is quieter than before.
+
+event crystal_echo crystal low echo
+Every word spoken in this canyon comes back a moment later, changed: a little older, a little wiser, sometimes in another voice.
+* Ask the canyon a question
+  roll 60
+  win scrap 8-12 fuel 2 | The answer comes back as directions to a wreck, with fuel still in her tanks.
+  lose | The answer comes back as the question, repeated, forever. Your crew leaves before it gets to them.
+* Keep quiet and cross
+  ok scrap 4-6 | The canyon is silent for your crew, which is somehow worse.
+* [crystal] {who} sings in the old language
+  ok scrap 12-16 | The canyon sings back. {who} listens to the end, then leads your crew to what the song described.
+
+event crystal_storm crystal high storm
+A storm of crystal dust blows across the plain. It cuts through anything it touches, and the shuttle is a long way off.
+* Run for the shuttle
+  roll 45
+  win scrap 4-6 | They make it, scratched and breathless.
+  lose lose 1 | The storm catches them in the open. {who} doesn't reach the shuttle.
+* Shelter in the ruins and wait
+  roll 70
+  win scrap 8-12 | The storm passes. The ruins they sheltered in held old salvage.
+  lose injure 1 | The ruins aren't as solid as they looked. {who} is hurt when a wall gives.
+* [crystal] {who} shields the crew
+  ok scrap 6-10 | {who} grows a dome of crystal over the crew, and the storm passes over it.
+
+event crystal_garden crystal low garden
+A garden of crystal flowers grows in a sheltered valley, each one chiming softly when the wind moves it.
+* Cut a few blooms for the collectors
+  ok scrap 8-12 | The blooms keep chiming all the way home. A collector pays well for them.
+* Leave them as they are, and map the valley
+  ok scrap 4-6 | The map sells, and the garden stays.
+* Dig up a whole plant
+  roll 50
+  win scrap 12-16 | The roots come up whole. The plant keeps chiming in its crate.
+  lose injure 1 | The plant's roots are sharper than its petals. {who} finds out.
+* [crystal] {who} tends the garden
+  ok scrap 6-10 fuel 2 | {who} spends a quiet hour among the flowers. When they come back, the valley has shown them a cache left by an older visitor.

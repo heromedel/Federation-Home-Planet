@@ -1,0 +1,97 @@
+# Expeditions: the Abandoned Sector. Dead stations, empty colonies and the Lanius who eat what's left; airless, quiet
+# and not as empty as it looks. (Format: see expeditions.txt.)
+
+event lanius_station abandoned moderate lanius
+The dead station is full of Lanius, and the Lanius are full of the dead station: they've been eating its metal for weeks.
+* Salvage the parts they haven't reached yet
+  roll 55
+  win scrap 10-16 | Your crew works fast and comes away with good salvage.
+  lose injure 1 scrap 4-6 | The Lanius notice. {who} gets out with the salvage and a bad burn from the cold.
+* Trade with the Lanius
+  roll 50
+  win scrap 8-12 parts 2 | The Lanius trade what they don't want: scrap, and old drone parts.
+  lose end | The Lanius don't trade. Your crew is escorted to the airlock, and home.
+* [lanius] {who} speaks with them
+  ok scrap 14-18 parts 2 | {who} and the Lanius understand each other. The salvage is shared fairly.
+* [engi] {who} offers the Lanius a broken drone to eat
+  ok scrap 10-14 | The Lanius accept the drone with something like delight, and let your crew take what they like.
+
+event colony_survey abandoned low survey
+The abandoned colony is quiet, and the quiet is wrong: no wind, no machines, no air.
+* Survey it in suits, carefully
+  ok scrap 6-10 | The survey is slow and safe. The colony's records sell well.
+* Search the colony's vault
+  roll 45
+  win scrap 12-18 item augment | The vault holds the colony's last valuables, and a piece of ship gear.
+  lose injure 1 | The last colonists trapped the vault. {who} is hurt.
+* [lanius] {who} goes in without a suit
+  ok scrap 12-16 | {who} works through the airless colony quickly and finds what everyone else missed.
+
+event mining_fleet abandoned moderate fleet
+The missing mining fleet is here: nine ships, docked in a ring around a dead asteroid, every hull eaten down to the frame.
+* Search the flagship for its log
+  roll 55
+  win scrap 8-12 then log | The log survived in the flagship's black box.
+  lose injure 1 | The frame gives way as {who} climbs through it.
+* Photograph the ring and report back
+  ok scrap 6-8 | The insurers pay for the pictures, and close the file.
+* [lanius] {who} asks the asteroid's Lanius what happened
+  ok scrap 10-14 then log | The Lanius were invited, {who} learns. Someone sold the fleet to them.
+step log
+The log ends with the fleet's captain accepting a contract to mine here, signed by a company the insurers also cover.
+* Give the insurers everything
+  ok scrap 14-18 | The insurers pay well, and a company's lawyers will be busy for years.
+* Sell the log to the company instead
+  ok scrap 18-24 | The company pays more, and quickly. Your crew doesn't sleep well for a while.
+
+event last_light abandoned low beacon
+A single light burns in the window of an otherwise dark station. Inside, an automated voice is still reading the evening news from seven years ago.
+* Switch it off
+  ok scrap 4-6 | The station falls silent. Your crew strips its kitchen for scrap.
+* Listen to the end of the broadcast
+  ok scrap 2-4 | The news is old, and the weather was fine. At the end, the voice wishes everyone a good night. Nobody aboard laughs.
+* [engi] {who} copies the station's records
+  ok scrap 8-12 | {who} saves seven years of station logs. A historian will pay for them, eventually.
+
+event metal_plague abandoned high plague
+The Lanius in this system aren't eating metal. They're sick: their bodies flake and crumble, and the healthy ones keep their distance.
+* Bring medical supplies from the nearest station
+  roll 55
+  win scrap 12-16 | The supplies help, a little. The Lanius pay in the only currency they have: salvage.
+  lose injure 1 | One of the sick Lanius, desperate, grabs {who} for their metal. It hurts.
+* Leave quickly
+  ok | Your crew leaves the system and the sick behind. Nobody aboard says a word for a long time.
+* [lanius] {who} helps the healthy ones care for the sick
+  roll 70
+  win scrap 10-14 join lanius | {who} stays three days. When your crew leaves, one of the recovered goes with them.
+  lose lose 1 | {who} catches it. The Lanius take {who} in, and won't give them back.
+
+event drifting_tram abandoned moderate tram
+A tram still runs on the dead colony's orbital ring, stopping at empty stations, opening its doors, closing them, moving on.
+* Ride it to the end of the line
+  roll 60
+  win scrap 8-12 then terminus | The last station is still lit.
+  lose injure 1 | The tram brakes hard at a broken section. {who} is thrown against the doors.
+* Strip the nearest station
+  ok scrap 6-8 | The station's machines sell well enough.
+* [human] {who} finds the line's control room
+  ok scrap 10-14 | {who} stops the tram, and finds its maintenance stores full of parts.
+step terminus
+At the last station, a family of colonists has been living on the tram's power for seven years. They're thin, wary, and very polite.
+* Offer them a ride out
+  ok scrap 4-6 join any | Most of them stay; the station is home. One comes with your crew.
+* Trade with them and leave them be
+  ok scrap 10-14 | They trade old colony scrap for news. They don't want to leave.
+
+event scavenger_rivals abandoned high scavengers
+Your crew isn't the only salvage team at the wreck. The other one has guns, and has already decided the wreck is theirs.
+* [fight] Fight them for it
+  roll 40
+  win scrap 16-22 item weapon | The other team leaves faster than it came, and leaves its gear.
+  lose lose 1 | The other team was better armed. {who} doesn't come back from the wreck.
+* Split the wreck with them
+  roll 70
+  win scrap 8-12 | The split is fair. Both teams leave with something.
+  lose injure 1 | The other team keeps its half and takes a shot at your crew on the way out. {who} is hit.
+* Let them have it
+  ok | Your crew leaves the wreck to them. There are other wrecks.

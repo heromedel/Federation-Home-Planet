@@ -1,0 +1,109 @@
+# Expeditions: the Pirate Controlled Sector. Greed, gangs and markets that sell anything; pirates of every race,
+# loyal to scrap and little else. (Format: see expeditions.txt.)
+
+event asteroid_criminals pirate high hideout
+The rebel criminals have dug into an asteroid riddled with tunnels. Their sentries are bored and badly placed.
+* Slip past the sentries
+  roll 50
+  win scrap 14-20 | Your crew takes the gang's leader without a shot fired. The bounty is paid in full.
+  lose injure 1 scrap 6-8 then tunnels | A sentry spots them. {who} is wounded, and the gang scatters into the tunnels.
+* [fight] Hit the front entrance hard
+  roll 40
+  win scrap 18-24 item weapon | The gang surrenders after a short, loud fight. Their armoury pays for the trip twice over.
+  lose lose 1 | The gang was ready. Your crew retreats without {who}.
+* [lanius] {who} drains the air from their tunnels
+  ok scrap 16-22 | {who} walks through the vacuum, unbothered. The gang surrenders, gasping.
+step tunnels
+The tunnels branch three ways, and every one of them is dark.
+* Split up and search
+  roll 40
+  win scrap 12-16 | {crew} finds the leader hiding in a supply locker.
+  lose lose 1 | Splitting up was a mistake. {who} is never found.
+* Seal the tunnels and wait
+  roll 65
+  win scrap 10-14 | Two days later, the gang comes out with its hands up, hungry.
+  lose end | They had another way out. The bounty goes unpaid.
+* [slug] {who} feels for their thoughts
+  ok scrap 12-16 | {who} points down the left tunnel without a word. The leader is there.
+
+event ransom pirate moderate ransom
+The pirate den is loud, crowded and dangerous. The ransom is in a small case, and every pirate here knows it.
+* Deliver the ransom and walk out
+  roll 65
+  win scrap 10-14 | The hostages are freed. Their families pay your crew for their courage.
+  lose injure 1 scrap 4-6 | A pirate tries for the case on the way out. {who} keeps it, and gets hurt.
+* [fight] Keep the ransom and free the hostages by force
+  roll 35
+  win scrap 20-26 | The pirates never saw it coming. The hostages are freed, and the ransom comes home too.
+  lose lose 1 | The pirates were ready. The hostages are freed, but {who} pays the price.
+* [mantis] {who} speaks to the pirate captain
+  ok scrap 12-16 | The captain is Mantis too. After a long exchange, the ransom is halved, and your crew keeps the difference.
+
+event medical_market pirate moderate market
+The stolen medical supplies are on a market stall, sold by a pirate with a missing eye and a very large friend.
+* Buy them back
+  ok scrap 4-6 | It costs most of the reward, but the clinic gets its supplies back and adds a little for the trouble.
+* [fight] Take them back
+  roll 45
+  win scrap 12-16 | The large friend is slower than he looks. Your crew walks out with the supplies.
+  lose injure 1 | The large friend is exactly as fast as he looks. {who} wakes up outside.
+* Find out who sold them to the stall
+  roll 50
+  win scrap 8-10 then source | The stallholder, under some pressure, names a supplier.
+  lose | The stallholder has never heard of any supplier, and has never seen your crew before either.
+step source
+The supplier is the clinic's own quartermaster, living well on a pirate moon.
+* Bring him back to the clinic
+  roll 55
+  win scrap 12-16 | The clinic pays for the supplies and the quartermaster. He doesn't stop talking the whole way.
+  lose injure 1 | The quartermaster has friends. {who} is cut in the scuffle, and he escapes.
+* Sell the clinic his name and leave it to them
+  ok scrap 8-10 | The clinic pays, grimly. What they do with the name is their own business.
+
+event pirate_dock pirate,abandoned moderate dock
+A pirate dock sits half-wrecked, its crew gone. Its stores are open, and something moves in the shadows.
+* Search the stores quickly
+  roll 55
+  win scrap 8-14 missiles 3 | The stores are full of salvage and missiles.
+  lose injure 1 | A pirate left behind fires from the shadows. {who} is hit.
+* Leave it alone
+  ok scrap 1-2 | Your crew moves on. A few scrap were lying by the airlock.
+* [engi] {who} hacks the dock's systems
+  ok scrap 10-14 fuel 3 | {who} unlocks the fuel stores and opens the doors to the scrap.
+
+event card_shark pirate low gambling
+A pirate gambling den offers a seat at its table. The dealer is a Slug, and smiles at your crew's cards before they do.
+* Play a few hands
+  roll 30
+  win scrap 12-18 | Against every law of the den, {crew} wins. The dealer looks very, very interested.
+  lose | The dealer wins every hand that matters. At least the stakes were low.
+* Watch from the bar and leave
+  ok scrap 2-3 | {crew} listens at the bar instead, and sells a rumour on the way out.
+* [slug] {who} takes the dealer's seat
+  ok scrap 14-20 | Two Slugs, one table. The other players leave. {who} and the dealer split the pot, smiling.
+
+event gang_war pirate high gangs
+Two pirate gangs are about to settle a dispute at the beacon, and both want to hire your crew. Neither wants to hear that your crew is hired by the other.
+* Side with the bigger gang
+  roll 60
+  win scrap 12-16 | The bigger gang wins. They pay, and promise not to remember your crew's faces.
+  lose injure 1 | The smaller gang had friends. {who} is caught in the crossfire.
+* Side with the smaller gang
+  roll 35
+  win scrap 20-26 item weapon | The smaller gang wins. They pay double, and throw in a captured gun.
+  lose lose 1 | The smaller gang loses. So does {who}.
+* Take both their advances and leave before it starts
+  roll 50
+  win scrap 14-18 | Your crew is three beacons away when the shooting starts.
+  lose injure 2 | Both gangs notice at the same time.
+
+event deserter pirate low deserter
+A young pirate wants out. She says she'll trade everything she knows about her captain's route for a ride to a Federation station.
+* Give her the ride
+  ok scrap 8-12 | Her information is good. The Federation pays for it, and for her.
+* Sell her back to her captain
+  ok scrap 12-16 | The captain pays well. Your crew doesn't ask what happens to her.
+* [human] {who} offers her a place on the crew
+  ok join human | She thinks about it for about a second, then shakes {who}'s hand.
+* [slug] {who} checks whether she's telling the truth
+  ok scrap 10-14 | She is. The Federation pays more for a source somebody has vouched for.

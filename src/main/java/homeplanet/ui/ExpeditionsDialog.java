@@ -91,7 +91,7 @@ final class ExpeditionsDialog extends JDialog {
 	private JPanel card(final int slot, Expeditions.Posting x) {
 		JPanel p = new JPanel(new BorderLayout(0, 8));
 		p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MenuTheme.GREY_GREEN), BorderFactory.createEmptyBorder(8, 10, 8, 10)));
-		String danger = x.danger >= 3 ? "#d86a4a" : x.danger == 2 ? MenuTheme.HTML_GOLD : MenuTheme.HTML_GREY_GREEN;
+		String danger = x.sealed ? MenuTheme.HTML_GOLD : x.danger >= 3 ? "#d86a4a" : x.danger == 2 ? MenuTheme.HTML_GOLD : MenuTheme.HTML_GREY_GREEN;
 		JLabel words = new JLabel("<html><div style='width:210px'><font color='" + MenuTheme.HTML_GOLD + "'><b>" + XmlText.text(x.sector()) + "</b></font><br><br>"
 				+ "“" + XmlText.text(x.text) + "”<br><br><font color='" + danger + "'>Danger: " + x.dangerWord() + "</font></div></html>");
 		words.setVerticalAlignment(JLabel.TOP);
@@ -115,9 +115,11 @@ final class ExpeditionsDialog extends JDialog {
 		Expeditions.Run run;
 		try { run = Expeditions.start(v, slot, party, rng); }
 		catch (IOException e) { HomePlanet.showErrorDialog("The expedition could not set out:\n" + e.getMessage()); return; }
-		String title = run.posting.sector();
+		String title = run.posting.realSector();
+		if (run.posting.sealed) // the sealed orders open once the shuttle is under way: no turning back now
+			JOptionPane.showMessageDialog(this, wrap("The shuttle clears the dock, and the sealed orders unlock. The job is in the " + title + "."), "Sealed orders", JOptionPane.PLAIN_MESSAGE);
 		while (!run.over()) {
-			Expeditions.Event ev = run.event();
+			Expeditions.Step ev = run.current();
 			List<Expeditions.Choice> choices = run.choices();
 			int c = -1;
 			while (c < 0) c = ask(run, ev, choices, title + " (" + run.number() + " of " + run.length() + ")"); // an expedition can't be walked away from halfway
@@ -134,7 +136,7 @@ final class ExpeditionsDialog extends JDialog {
 		fill();
 	}
 	/** An event: its words, and its choices one above the other, numbered, as FTL lists them. Returns the one taken, or -1. */
-	private int ask(Expeditions.Run run, Expeditions.Event ev, List<Expeditions.Choice> choices, String title) {
+	private int ask(Expeditions.Run run, Expeditions.Step ev, List<Expeditions.Choice> choices, String title) {
 		JPanel p = new JPanel(new BorderLayout(0, 12));
 		p.add(wrap(run.fillEvent(ev.text)), BorderLayout.NORTH);
 		JPanel list = new JPanel(new GridLayout(0, 1, 0, 4));

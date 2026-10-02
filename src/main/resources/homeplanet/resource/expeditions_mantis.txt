@@ -1,0 +1,103 @@
+# Expeditions: the Mantis Controlled Sector. Raiders, hunters and honour: the Mantis fight well, respect strength
+# and despise hesitation. (Format: see expeditions.txt.)
+
+event mantis_raid mantis,mantis_home high raid
+A Mantis raiding party drops onto the convoy's lead ship. Your crew is hired to keep them off the others.
+* [fight] Hold the airlocks
+  roll 45
+  win scrap 14-20 | The raiders break against the airlocks and withdraw. The convoy's captains pay well.
+  lose injure 1 scrap 6-8 then breach | The airlocks hold until one doesn't. {who} is hurt as the raiders pour through.
+* Seal the convoy's other ships and abandon the lead
+  ok scrap 6-8 | The lead ship is lost to the raiders, but the rest are safe. The pay is cut for it.
+* [mantis] {who} challenges their leader
+  roll 70
+  win scrap 18-24 | {who} wins the challenge. The raiders leave with honour, and the convoy pays a hero's wage.
+  lose lose 1 | {who} fights well and loses. The raiders leave with their prize.
+step breach
+The raiders are inside the second ship, cutting toward its crew quarters.
+* [fight] Go in after them
+  roll 45
+  win scrap 12-16 | Your crew catches them in the corridor. None of the raiders leave.
+  lose lose 1 | It's a narrow corridor and the Mantis are faster. {who} falls holding it.
+* Vent the corridor to space
+  ok scrap 8-10 | The raiders, and the corridor, are gone. The crew quarters are safe. The captain doesn't say thank you.
+
+event border_post mantis moderate guard
+The trading post on the Mantis border is restless tonight. One of its Mantis customers insists the post's prices are an insult.
+* Stand guard and stay calm
+  roll 65
+  win scrap 8-12 | The night passes with nothing worse than raised voices. The post pays in full.
+  lose injure 1 scrap 6-8 | One customer loses patience. {who} stops them, and is cut doing it.
+* Lower the prices for the night
+  ok scrap 4-6 | The customers calm down, and so do the post's profits. The pay is smaller.
+* [red mantis] {who} agrees the prices are an insult
+  roll 30
+  win scrap 12-16 | The Mantis customers approve of {who}, and pay the post's prices out of respect.
+  lose injure 2 | The argument becomes a brawl, and your crew is in the middle of it.
+
+event drifted_freighter mantis high recovery
+The freighter drifted into Mantis space three weeks ago. When your crew finds her, her airlocks are open and her cargo bay is full of Mantis eggs.
+* Leave the eggs and take the freighter
+  roll 50
+  win scrap 14-20 | Your crew tows the freighter out before anyone comes back for the eggs.
+  lose injure 1 then hatchery | Someone was guarding them. {who} is hurt in the first moments.
+* Destroy the eggs
+  roll 40
+  win scrap 12-16 | The eggs burn. Nothing comes for them, this time.
+  lose lose 1 then hatchery | Something comes for them. {who} doesn't see it until it is far too late.
+* [mantis] {who} speaks to the eggs' guardian
+  ok scrap 16-22 | {who} finds the guardian, and they speak for a long time. The guardian lets the freighter go, the eggs moved to a safer place.
+step hatchery
+A Mantis guardian stands between your crew and the airlock, very still.
+* [fight] Fight your way past
+  roll 40
+  win scrap 8-12 | The guardian falls. Your crew leaves quickly, and doesn't look back.
+  lose injure 1 end | The guardian lets them go, bleeding, without the freighter.
+* Back away slowly and leave
+  ok end | The guardian watches them go. The freighter stays with the eggs.
+
+event duel_offer mantis moderate duel
+A Mantis warrior blocks the dock and offers a duel to any of your crew. The prize, she says, is her ship's cargo. The cost is obvious.
+* Decline politely
+  ok | She spits on the dock, says something about cowards, and lets your crew pass.
+* [fight] Accept the duel
+  roll 45
+  win scrap 14-20 item weapon | {crew} wins, barely. She hands over the cargo with a deep, formal bow.
+  lose injure 1 | {crew} loses, but she spares them, and says they fought well.
+* [mantis] {who} accepts
+  roll 75
+  win scrap 18-24 item weapon | {who} wins. The two of them part as something close to friends.
+  lose lose 1 | {who} loses, and the Mantis don't spare their own.
+
+event hunting_trophy mantis low trophy
+A Mantis trader offers to sell your crew the skull of a beast he swears he killed with his bare claws. He is very proud of it.
+* Buy it
+  ok scrap 6-10 | It sells for twice as much to a collector at the next stop.
+* Decline
+  roll 70
+  win | He is offended, but only a little.
+  lose injure 1 | He is offended a great deal. {who} is the closest thing to hit.
+* [mantis] {who} asks for the story first
+  ok scrap 8-12 | It's a long story, and {who} listens to all of it. He gives them the skull for free.
+
+event mantis_prisoners mantis moderate prisoners
+A Mantis cruiser holds three human prisoners and offers them for sale. "Workers," the captain says. "Fed, mostly."
+* Buy their freedom
+  ok join human | Two of them go home. The third has nowhere to go, and signs on.
+* Refuse, and report the cruiser
+  ok scrap 4-6 | The Federation pays for the report, and promises to look into it.
+* [fight] Free them by force
+  roll 35
+  win scrap 10-14 join human | The cruiser's crew was smaller than it looked. All three are free, and one signs on.
+  lose lose 1 | The cruiser's crew was exactly as large as it looked. {who} becomes the fourth prisoner.
+
+event molting mantis low molt
+Your crew finds a Mantis curled in a cave, mid-molt, defenceless and very aware of it.
+* Leave it alone
+  ok | The Mantis watches them go with too many eyes.
+* Guard the cave until it's done
+  roll 75
+  win scrap 8-12 | When the molt is done, the Mantis stands up, much bigger, and pays your crew with an old, heavy coin.
+  lose injure 1 | The Mantis wakes before it's done, confused, and lashes out. {who} is caught.
+* [mantis] {who} keeps watch
+  ok scrap 10-14 join mantis | When the molt is done, the Mantis says it owes {who} a life. It signs on to pay it back.

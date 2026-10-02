@@ -1,0 +1,95 @@
+# Expeditions: the Rock Controlled Sector. Heat, stone and faith: the Rock are tough, slow, untroubled by fire and
+# very sure of their beliefs. (Format: see expeditions.txt.)
+
+event rock_shaft rock,rock_home moderate mine
+The Rock miners' deep shaft runs hot enough to melt a human's boots. The miners don't seem to notice.
+* Work the upper levels where it's cooler
+  ok scrap 6-10 | Slower going, but your crew earns its pay.
+* Follow the miners down
+  roll 50
+  win scrap 12-18 then seam | The heat is brutal, but the deep seam is rich, and the miners share it.
+  lose injure 1 scrap 4-6 | {who} collapses from the heat and has to be carried up.
+* [rock] {who} goes down with the miners
+  ok scrap 14-20 then seam | {who} works the deep seam like a native. The miners are impressed.
+step seam
+Deep in the seam, a pick breaks through into a hollow. The air inside is old, and the walls are carved.
+* Report it to the miners' priest
+  ok scrap 6-10 | The priest arrives, sees the carvings, and orders the hollow sealed. The miners pay your crew to forget it.
+* Look inside
+  roll 50
+  win scrap 12-16 item augment | The hollow is a shrine, older than the Rock's records, with an offering nobody claimed.
+  lose injure 1 | The hollow's roof doesn't like being disturbed. {who} is under the part that falls.
+
+event pilgrimage rock low pilgrims
+The Rock pilgrims walk, and keep walking, across a plain of black glass. They mean to reach a mountain on the horizon by nightfall.
+* Keep up
+  roll 60
+  win scrap 8-12 | Your crew makes it, exhausted. The pilgrims nod at them with respect, and pay.
+  lose injure 1 scrap 4-6 | {who} falls behind and turns an ankle on the glass.
+* Follow at your own pace
+  ok scrap 4-6 | Your crew arrives after dark. The pilgrims pay half, and don't seem to mind.
+* [crystal] {who} knows this mountain
+  ok scrap 10-14 | {who} leads the pilgrims by a path they didn't know existed. They're astonished, and grateful.
+* [rock] {who} walks at the front and prays aloud
+  ok scrap 10-12 | The pilgrims follow {who}'s prayers all the way to the mountain, and press scrap on them at the top.
+
+event missionary rock moderate faith
+The Rock missionary is bound for a colony that has asked, twice, not to be visited. She means to go anyway, and she wants witnesses.
+* Escort her and keep the peace
+  roll 55
+  win scrap 10-14 | The colony listens to her, and isn't converted. Everyone leaves alive. She calls it a good start.
+  lose injure 1 scrap 6-8 | The colony throws stones. She doesn't notice. {who} does.
+* Convince her to turn back
+  roll 35
+  win scrap 8-10 | She agrees, after a long silence. She pays, and seems almost relieved.
+  lose end | She refuses, and dismisses your crew. They go home without the rest of their pay.
+* [rock] {who} preaches beside her
+  ok scrap 12-16 | {who} and the missionary preach in turns until the colonists, worn down, agree to listen once a year.
+
+event forge_fire rock high fire
+The forge-town's main furnace has cracked, and molten rock is crawling toward the workers' homes. The Rock want help building a channel to turn it.
+* Dig the channel
+  roll 50
+  win scrap 14-20 | The channel holds. The town is saved, and the Rock sing about it for a week.
+  lose injure 1 scrap 6-8 | The flow outpaces them. {who} is burned at the edge of it.
+* Evacuate the homes instead
+  ok scrap 6-8 join rock | Your crew carries people out while the Rock dig. One of the rescued signs on, out of gratitude.
+* [rock] {who} stands in the flow and directs it
+  ok scrap 16-22 | {who} wades into the molten rock and pushes it aside with a shovel. The Rock call it a miracle.
+* [red human] {who} wants to save the furnace's ore first
+  roll 40
+  win scrap 22-28 | The ore is worth a fortune, and {who} gets it out. The town is spared anyway, just.
+  lose lose 1 | {who} is still in the furnace room when the floor gives way.
+
+event schism rock moderate schism
+Two Rock congregations disagree about a single line of scripture, and both have hired your crew to carry their argument to the other.
+* Carry the messages faithfully
+  ok scrap 8-12 | The argument goes back and forth for three days, and both sides pay for every trip.
+* Soften the messages on the way
+  roll 50
+  win scrap 12-16 | Both congregations find the other surprisingly reasonable. They pay your crew to stay as mediators.
+  lose injure 1 | Both congregations find out. {who} is the one who answers for it.
+* [crystal] {who} tells them what the line originally meant
+  ok scrap 10-14 | {who} remembers the original. Both congregations are horrified, then quiet, then united.
+
+event heretic rock high heretic
+A Rock heretic is hiding on a cargo barge, wanted for saying the homeworld's priests lie. He asks your crew to take him off-world.
+* Smuggle him out
+  roll 50
+  win scrap 6-10 join rock | He makes it. He has no money, but he has hands, and offers them.
+  lose injure 1 | The priests' wardens search the shuttle. {who} is hurt in the struggle, and the heretic is taken.
+* Turn him in
+  ok scrap 14-20 | The wardens pay the bounty. The heretic doesn't say a word as they take him.
+* [rock] {who} argues with him first
+  ok scrap 8-12 | {who} and the heretic argue for hours. Neither changes their mind, but {who} helps him off-world anyway.
+
+event cinder_beasts rock low creatures
+Herds of small, glowing creatures graze on the cooling lava fields, and the Rock farmers want the herds moved before the next eruption.
+* Drive them with lights and noise
+  roll 70
+  win scrap 6-10 | The herds move, and so do the farmers' moods. They pay.
+  lose injure 1 | One of the creatures, startled, bites {who}. It is much hotter than it looks.
+* Leave the herding to the farmers
+  ok scrap 2-4 | The farmers do it themselves. They pay your crew to carry the water.
+* [rock] {who} walks among them
+  ok scrap 8-12 | The creatures follow {who} across the field like puppies.

@@ -1,0 +1,99 @@
+# Expeditions: the Uncharted Nebula. Blind instruments, storms, and things that hide; little is known, and much is
+# guessed. (Format: see expeditions.txt.)
+
+event chart nebula low chart
+The nebula is uncharted for good reason: sensors see a few hundred metres at most, and the gas eats slowly at the hull.
+* Chart it slowly, beacon by beacon
+  ok scrap 8-12 | The chart is slow work and complete. The survey office pays in full.
+* Push deep to the nebula's heart
+  roll 45
+  win scrap 14-20 | The heart of the nebula is a rare find, and the survey office pays a bonus.
+  lose injure 1 scrap 3-5 | The gas thickens and something in it strikes the shuttle. {who} is hurt.
+* [zoltan] {who} sees through the gas
+  ok scrap 12-16 | {who} reads the nebula's light like a map. The chart is the best the survey office has seen.
+* [slug] {who} knows how nebulae drift
+  ok scrap 10-14 | {who} grew up in gas like this. The chart takes half the time, and the survey office pays the full rate.
+
+event lost_buoy nebula moderate buoy
+The lost sensor buoy is easy to find: it's still broadcasting. So is something else, on the same frequency, a little closer.
+* Retrieve the buoy quickly
+  roll 60
+  win scrap 10-14 | Buoy aboard, and away before whatever else is out there arrives.
+  lose injure 1 scrap 4-6 | A pirate scout was waiting for whoever came for the buoy. {who} is hit getting it aboard.
+* [fight] Track the second signal first
+  roll 40
+  win scrap 14-18 item weapon | A pirate scout lay in ambush. Your crew turns the ambush around and takes the scout's gun.
+  lose injure 1 | The second signal was bait. Your crew retreats with the buoy, and {who} is hurt.
+
+event silent_research nebula high research
+The research ship drifts in the gas, lights on, airlocks closed, every crew member at their station. None of them move when your crew comes aboard.
+* Search the ship for the cause
+  roll 45
+  win scrap 12-18 then log | The cause is in the air: a gas leak from the sample bay, slow and painless. The ship's log is still running.
+  lose injure 1 then log | The cause is still in the air. {who} breathes it before the alarm goes off.
+* Take the ship's records and leave her
+  ok scrap 6-8 | The institute pays for the records, and asks no questions.
+* [lanius] {who} goes in alone
+  ok scrap 12-16 then log | {who} doesn't breathe, and isn't troubled by whatever is in the air. The log is still running.
+step log
+The last entry is the captain's: "The samples are moving. Do not open the bay."
+* Leave the bay sealed
+  ok scrap 6-10 | The institute pays well for the warning, and sends a ship with no crew to tow her away.
+* Open the bay
+  roll 35
+  win scrap 18-24 item augment | The samples are long dead. Among them is a device the institute never mentioned.
+  lose lose 1 | The samples are not dead. {who} closes the bay from the inside.
+
+event ion_storm nebula moderate storm
+An ion storm rolls through the nebula, and the shuttle's systems start to fail one by one. There's a station somewhere ahead, or there was.
+* Run for the station
+  roll 55
+  win scrap 8-12 | The station is still there, and it takes the shuttle in until the storm passes.
+  lose injure 1 | The storm catches the shuttle in the open. {who} is hurt as the lights go out.
+* Shut everything down and drift
+  ok | Your crew sits in the cold and dark for a day. The storm passes. Nothing is gained, and nothing lost.
+* [zoltan] {who} keeps the shields alive
+  ok scrap 6-8 | {who} powers the shields by hand for nine hours. The shuttle comes through without a mark.
+
+event ghost_lights nebula low lights
+Lights drift through the gas outside the shuttle, keeping pace, never quite coming close.
+* Follow them
+  roll 55
+  win scrap 8-12 fuel 2 | The lights lead to a wreck, long abandoned, with fuel still in her tanks.
+  lose injure 1 | The lights lead into a gas pocket. {who} is hurt as the shuttle shakes itself free.
+* Ignore them
+  ok | The lights follow for an hour, then fade. Nobody aboard sleeps well.
+* [slug] {who} listens to them
+  ok scrap 6-10 | {who} says they aren't alive, only very old reflections. Your crew follows them to salvage anyway.
+
+event hermit nebula moderate hermit
+A hermit lives in the nebula on a station built from three wrecks. He doesn't want visitors, he says, but he hasn't spoken to anyone in eleven years.
+* Stay and talk
+  ok scrap 6-10 | He talks for six hours, and pays for every one of them in scrap and old charts.
+* Trade for his salvage
+  roll 60
+  win scrap 10-14 parts 2 | He trades fairly, and better than fairly.
+  lose scrap 2-4 | He changes his mind halfway through, and throws your crew off his station.
+* [human] {who} asks him to come home
+  roll 30
+  win join human | He thinks about it for a long time. Then he packs a bag.
+  lose | He laughs, and thanks {who}, and says no.
+
+event blind_jump nebula high blind
+The shuttle's pilot admits the nav computer is guessing. The next jump could land anywhere in a hundred kilometres of gas, including inside something.
+* Jump anyway
+  roll 55
+  win scrap 8-12 | The jump lands clean. The pilot pretends he knew it would.
+  lose injure 1 then debris | The jump lands inside a debris field. {who} is hurt in the impact.
+* Wait for the gas to thin
+  ok end | The gas doesn't thin. Your crew misses the job, and heads for home.
+* [engi] {who} recalibrates the nav computer
+  ok scrap 6-8 | {who} rebuilds the guess into a calculation. The jump lands exactly where it should.
+step debris
+The debris field is a battle's leftovers: two ships, neither whole, still slowly turning.
+* Search them for survivors
+  roll 40
+  win join any | There's one, in a sealed escape pod, half-frozen and very glad to see your crew.
+  lose injure 1 | One of the wrecks' turrets still has power. {who} finds out.
+* Strip what's easy and leave
+  ok scrap 8-12 missiles 2 | Your crew takes what floats free and gets out before anything else does.
