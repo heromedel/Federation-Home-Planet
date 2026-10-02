@@ -70,6 +70,9 @@ public final class VoyageLog {
 		return Math.max(n, now);
 	}
 
+	/** The sector (0 is the first) at her last look, or -1 if the station hasn't looked at her yet. */
+	static int lastSector(Vault v, Ship s) { return intOf(last(v, s), "sector", -1); }
+
 	/** The station's note for a New Journey (her log counts her journeys by it). */
 	public static final String NEW_JOURNEY = "A new journey plotted from sector 1";
 	/**

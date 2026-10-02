@@ -875,7 +875,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					"Ship's report", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
-		int choice = reportChoice(sgs, true);
+		int choice = reportChoice(ship, sgs, true);
 		if (choice == 2) {
 			if (ShipRecordsDialog.open(this, ship)) init();
 			return;
@@ -904,16 +904,25 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	 * drones, augments, and the retrofit/remodel status in the title. Returns true if the player pressed Rename.
 	 */
 	public boolean showReport(SavedGameState sgs) {
-		return reportChoice(sgs, false) == 1;
+		return reportChoice(null, sgs, false) == 1;
 	}
-	/** The report, with Records (her kept versions and log) when she's one of the fleet. 0 OK, 1 Rename, 2 Records. */
-	private int reportChoice(SavedGameState sgs, boolean records) {
+	/** The report, with Records (her kept versions and log) and a Stats tab when she's one of the fleet. 0 OK, 1 Rename, 2 Records. */
+	private int reportChoice(Ship ship, SavedGameState sgs, boolean records) {
 		boolean retrofitted = Retrofit.isRetrofitted(sgs.getPlayerShip());
 		String bpId = sgs.getPlayerShip().getShipBlueprintId();
 		String tag = !retrofitted ? "" : CompanionMod.isRemodelId(bpId) ? " (Remodeled " + CompanionMod.numberOf(bpId) + ")" : " (Retrofitted)";
 		if (retrofitted && !Retrofit.inGame(sgs.getPlayerShip())) tag += " - needs the mod sent to FTL via Slipstream";
 		Object[] options = records ? new Object[] {"OK", "Rename", "Records"} : new Object[] {"OK", "Rename"};
-		return JOptionPane.showOptionDialog(null, fitToScreen(shipSummaryPanel(sgs)),
+		java.awt.Component body = fitToScreen(shipSummaryPanel(sgs));
+		if (ship != null) {
+			javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
+			tabs.addTab("Report", body);
+			tabs.addTab("Stats", fitToScreen(shipStatsTab(ship, sgs)));
+			tabs.setToolTipTextAt(1, "This journey, her whole service, and her crew's best");
+			MenuTheme.markOpenTab(tabs);
+			body = tabs;
+		}
+		return JOptionPane.showOptionDialog(null, body,
 				String.format("Ship's report: %s%s", sgs.getPlayerShipName(), tag),
 				JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
 	}
@@ -1372,22 +1381,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	public JPanel shipSummaryPanel(SavedGameState sgs, final java.util.function.Consumer<CrewState> rename, Runnable reroll) {
 		ShipState state = sgs.getPlayerShip();
 		JPanel p = new JPanel(new java.awt.BorderLayout(18, 4));
-		ShipBlueprint ship = blueprintOf(sgs.getPlayerShipBlueprintId());
-		if (ship != null) {
-			BufferedImage img = parent.getResourceImage("img/ship/" + ship.getGraphicsBaseName() + "_base.png", false);
-			if (img != null) { // half the Space Dock size, and no taller than REPORT_PIC_H (the Lanius would push the lists off the screen)
-				double scale = Math.min(0.5, (double) REPORT_PIC_H / img.getHeight());
-				int w = Math.max(1, (int) Math.round(img.getWidth() * scale)), h = Math.max(1, (int) Math.round(img.getHeight() * scale));
-				BufferedImage small = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-				Graphics2D g = small.createGraphics();
-				g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-				g.drawImage(img, 0, 0, w, h, null);
-				g.dispose();
-				JLabel pic = new JLabel(new ImageIcon(small));
-				pic.setHorizontalAlignment(JLabel.LEFT);
-				p.add(pic, java.awt.BorderLayout.NORTH);
-			}
-		}
+		JLabel pic = reportPicture(sgs);
+		if (pic != null) p.add(pic, java.awt.BorderLayout.NORTH);
 		// two rows: Supplies beside the items, then Crew beside Systems, so the lower headings line up
 		JPanel left = column(), right = column(), crew = column(), systems = column();
 		reportHeading(left, "Supplies");
@@ -1444,6 +1439,98 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.add(cols, java.awt.BorderLayout.CENTER);
 		return p;
 	}
+	/** Her picture for the report: half the Space Dock size, and no taller than REPORT_PIC_H (the Lanius would push the lists off the screen). */
+	private JLabel reportPicture(SavedGameState sgs) {
+		ShipBlueprint ship = blueprintOf(sgs.getPlayerShipBlueprintId());
+		if (ship == null) return null;
+		BufferedImage img = parent.getResourceImage("img/ship/" + ship.getGraphicsBaseName() + "_base.png", false);
+		if (img == null) return null;
+		double scale = Math.min(0.5, (double) REPORT_PIC_H / img.getHeight());
+		int w = Math.max(1, (int) Math.round(img.getWidth() * scale)), h = Math.max(1, (int) Math.round(img.getHeight() * scale));
+		BufferedImage small = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g = small.createGraphics();
+		g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		g.drawImage(img, 0, 0, w, h, null);
+		g.dispose();
+		JLabel pic = new JLabel(new ImageIcon(small));
+		pic.setHorizontalAlignment(JLabel.LEFT);
+		return pic;
+	}
+
+	/** The report's Stats tab: her picture as on the Report tab, then this journey, her service and her crew's standouts, side by side. */
+	JPanel shipStatsTab(Ship ship, SavedGameState sgs) {
+		homeplanet.parser.ShipStats st = homeplanet.parser.ShipStats.of(Vault.get(), ship, sgs);
+		JPanel p = new JPanel(new java.awt.BorderLayout(18, 4));
+		JLabel pic = reportPicture(sgs);
+		if (pic != null) p.add(pic, java.awt.BorderLayout.NORTH);
+		JPanel journey = column(), service = column(), crew = column();
+		reportHeading(journey, "This Journey");
+		statLines(journey, st.journey);
+		if (!st.journeyKnown) statNote(journey, "Her journey's own counts begin with her next New Journey; until then they're in her service.");
+		reportHeading(service, "Her Service");
+		statLines(service, st.service);
+		if (st.traded != null) statNote(service, st.traded);
+		reportHeading(crew, "Her Crew");
+		if (st.crew.isEmpty()) statNote(crew, "No standouts yet: her crew's records grow as they serve.");
+		// each crew member once, with every title she holds beneath her name
+		java.util.LinkedHashMap<CrewState, StringBuilder> titles = new java.util.LinkedHashMap<CrewState, StringBuilder>();
+		for (homeplanet.parser.ShipStats.Standout o : st.crew) {
+			if (!titles.containsKey(o.crew)) titles.put(o.crew, new StringBuilder());
+			titles.get(o.crew).append("<b><font color='").append(MenuTheme.HTML_GOLD).append("'>").append(o.title).append("</font></b>&nbsp;&nbsp;<font color='")
+					.append(MenuTheme.HTML_GREY_GREEN).append("'>").append(o.earned).append("</font><br>");
+		}
+		for (java.util.Map.Entry<CrewState, StringBuilder> e : titles.entrySet()) {
+			JLabel who = reportRow(crew, IconFactory.crewIcon(e.getKey()), e.getKey().getName());
+			who.setForeground(MenuTheme.WHITE);
+			who.setFont(MenuTheme.LABEL_FONT);
+			JLabel why = new JLabel("<html>" + e.getValue() + "</html>");
+			why.setFont(MenuTheme.TEXT_FONT);
+			why.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 40, 6, 0));
+			why.setAlignmentX(LEFT_ALIGNMENT);
+			crew.add(why);
+		}
+		JPanel cols = new JPanel(new java.awt.GridBagLayout());
+		java.awt.GridBagConstraints gc = new java.awt.GridBagConstraints();
+		gc.anchor = java.awt.GridBagConstraints.NORTHWEST;
+		gc.insets = new java.awt.Insets(0, 0, 0, 28);
+		gc.gridy = 0;
+		gc.gridx = 0; cols.add(journey, gc);
+		gc.gridx = 1; cols.add(service, gc);
+		gc.gridx = 2; gc.insets = new java.awt.Insets(0, 0, 0, 0); cols.add(crew, gc);
+		p.add(cols, java.awt.BorderLayout.CENTER);
+		return p;
+	}
+	/** Stats as label and value: the label in grey-green, the value in white (a gain green, a loss red), in two neat columns. */
+	private static void statLines(JPanel p, java.util.List<homeplanet.parser.ShipStats.Line> lines) {
+		JPanel grid = new JPanel(new java.awt.GridBagLayout());
+		grid.setAlignmentX(LEFT_ALIGNMENT);
+		grid.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 12, 0, 0));
+		java.awt.GridBagConstraints c = new java.awt.GridBagConstraints();
+		c.insets = new java.awt.Insets(2, 0, 2, 14);
+		c.anchor = java.awt.GridBagConstraints.WEST;
+		for (int i = 0; i < lines.size(); i++) {
+			homeplanet.parser.ShipStats.Line l = lines.get(i);
+			JLabel k = new JLabel(l.label);
+			k.setFont(MenuTheme.LABEL_FONT);
+			k.setForeground(MenuTheme.GREY_GREEN);
+			JLabel v = new JLabel(l.value);
+			v.setFont(MenuTheme.TEXT_FONT);
+			v.setForeground(l.tone > 0 ? MenuTheme.GREEN : l.tone < 0 ? MenuTheme.RED : MenuTheme.WHITE);
+			c.gridy = i;
+			c.gridx = 0; c.anchor = java.awt.GridBagConstraints.WEST; grid.add(k, c);
+			c.gridx = 1; c.anchor = java.awt.GridBagConstraints.EAST; grid.add(v, c);
+		}
+		grid.setMaximumSize(grid.getPreferredSize());
+		p.add(grid);
+	}
+	private static void statNote(JPanel p, String text) {
+		JLabel n = new JLabel("<html><div style='width:200px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>" + homeplanet.parser.XmlText.text(text) + "</font></div></html>");
+		n.setFont(MenuTheme.TEXT_FONT);
+		n.setBorder(javax.swing.BorderFactory.createEmptyBorder(6, 12, 0, 0));
+		n.setAlignmentX(LEFT_ALIGNMENT);
+		p.add(n);
+	}
+
 	private static JPanel column() {
 		JPanel c = new JPanel();
 		c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS));

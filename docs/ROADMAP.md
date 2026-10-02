@@ -447,6 +447,20 @@ no letters, you come and check).
   Immersive career (from before difficulties) stays in the Custom slot, described as such on both screens.
 - A begun career's briefing says how to begin it afresh: end it in Settings > Switch Game Mode (a copy is kept).
 
+## 19. Her particulars, and a Stats tab — built (4B.75; harness test StatT)
+
+- The Space Dock: when her particulars don't fit beside her picture, she moves right a little to make room (they
+  stand beside the picture itself, which is centred in her berth); hidden only if the window is too narrow for both.
+- The ship's report (Info, or her picture) has two tabs, **Report** and **Stats**. Stats, under her picture:
+  **This Journey** (sector, difficulty; beacons, ships defeated, scrap, crew hired, enemy crew killed, crew lost in
+  red, shots and missiles fired, counted from where the journey began), **Her Service** (commissioned, first
+  commissioned by for a traded ship, journeys, sectors visited, furthest sector, final victories in green, and FTL's
+  totals, which run on across journeys), and **Her Crew** (the standouts: Best Pilot, Best Gunner, Best Engineer,
+  Longest Serving, Most Skilled, with what earned it). Nothing the records lack is shown as 0.
+- Where each journey began is kept in history/<id>/journey.txt (`vault.JourneyStart`, written when the station sets
+  her out), with the furthest sector of her earlier journeys; a ship from before 4B.75 counts her journey from her
+  next New Journey, and says so.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo
