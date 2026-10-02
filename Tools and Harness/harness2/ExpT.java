@@ -197,8 +197,8 @@ public class ExpT { public static void main(String[] a) throws Exception {
   int beacons = v.beaconsSeen(); String old = Expeditions.board(v).get(0).text;
   int got = fieldInt(r, "scrap");
   String end = Expeditions.finish(v, r);
-  Setup.chk("H: home: the scrap to the Cargo Hold (" + got + "), a beacon passed, the docking screen's words, a new posting in its place", v.storageScrap() == 100 + got && got > 0
-    && v.beaconsSeen() == beacons + 1 && end.contains("docks at The Home Planet Station") && !Expeditions.board(v).get(0).text.equals(old));
+  Setup.chk("H: home: the scrap to the Cargo Hold (" + got + "), a beacon passed, nothing more to say (the outcome said it), a new posting in its place", v.storageScrap() == 100 + got && got > 0
+    && v.beaconsSeen() == beacons + 1 && end.isEmpty() && !Expeditions.board(v).get(0).text.equals(old));
   Properties bp = new Properties(); bp.load(new ByteArrayInputStream(SafeFiles.read(new File(v.root, "expeditions.txt"))));
   Setup.chk("H: the event is remembered, not to be met again soon", bp.getProperty("recent", "").contains("rock_shaft"));
   // a run where one was hurt and the other killed
@@ -217,7 +217,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   end = Expeditions.finish(v, bad);
   List<String> canGo = new ArrayList<String>(); for (CrewState x : Expeditions.holdCrew(v)) canGo.add(x.getName());
   List<Expeditions.Patient> inf = Expeditions.infirmary(v);
-  Setup.chk("H: " + hurtName + " hurt: to the infirmary (" + inf.size() + "), not among those who can be sent (" + canGo + "), the docking screen says so", end.contains(hurtName + " is carried to the infirmary")
+  Setup.chk("H: " + hurtName + " hurt: to the infirmary (" + inf.size() + "), not among those who can be sent (" + canGo + "), the docking screen says so", end.equals(hurtName + " is carried to the infirmary when the shuttle docks.")
     && inf.size() == 1 && inf.get(0).name.equals(hurtName) && !canGo.contains(hurtName) && canGo.size() == before - 1);
   Setup.chk("H: the infirmary keeps them " + Expeditions.HEAL_MIN + " to " + Expeditions.HEAL_MAX + " beacons", inf.get(0).until - v.beaconsSeen() >= Expeditions.HEAL_MIN && inf.get(0).until - v.beaconsSeen() <= Expeditions.HEAL_MAX);
   ChainT.jump(v, inf.get(0).until - v.beaconsSeen() - 1);
@@ -240,7 +240,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   end = Expeditions.finish(v, death);
   boolean gone = true; for (CrewState x : Expeditions.holdCrew(v)) if (x.getName().equals(deadName)) gone = false;
   String hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
-  Setup.chk("H: " + deadName + " dead: gone from the Cargo Hold, not aboard at the docking, in the history log", gone && Expeditions.holdCrew(v).size() == before - 1 && end.contains(deadName + " is not aboard") && hist.contains("did not come back: " + deadName));
+  Setup.chk("H: " + deadName + " dead: gone from the Cargo Hold, in the history log, and no more said of it (the outcome said it)", gone && Expeditions.holdCrew(v).size() == before - 1 && !end.contains(deadName) && hist.contains("did not come back: " + deadName));
   // a party no longer in the hold is refused, nothing changed
   List<CrewState> party = hold(v, "human", "human");
   Expeditions.Run stale = Expeditions.start(v, 0, party, new Random(3)); while (!stale.over()) stale.choose(stale.choices().get(0));

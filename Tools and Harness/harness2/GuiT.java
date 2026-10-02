@@ -301,33 +301,41 @@ public class GuiT {
   for (int i = 0; i < 30; i++) presses.add(0); // Send them; then each event's first choice; Continue; the message's Close; the end
   expeditionCloseOps.clear();
   final Object[] during = new Object[1];
+  final Object[] dlg = new Object[1]; final boolean[] done = {false};
+  final java.awt.Dimension[] jobSize = new java.awt.Dimension[1]; final boolean[] boardUp = {true};
   atExpedition = new Runnable() { public void run() { try { // a priority message arrives, and a hail, while an expedition is under way
+   boardUp[0] = ((JDialog) dlg[0]).isShowing(); // the board stepped aside
+   for (Window w : Window.getWindows()) if (w instanceof JDialog && w.isShowing() && Boolean.TRUE.equals(((JDialog) w).getRootPane().getClientProperty("homeplanet.expedition"))) jobSize[0] = w.getSize();
    Class<?> ed = Class.forName("homeplanet.ui.ExpeditionsDialog");
    java.lang.reflect.Method away = ed.getDeclaredMethod("awayNotice", String.class); away.setAccessible(true);
    during[0] = away.invoke(null, "Commander Test");
    homeplanet.comm.Notes.Note n = new homeplanet.comm.Notes.Note(); n.station = "x"; n.title = "Commander Bree"; n.text = "Testing the long range set, over."; n.priority = true; n.replyPort = 0;
    call(f.comm, LongRangeCommUI.class, "showNote", new Class<?>[] {homeplanet.comm.Notes.Note.class, String.class}, n, "localhost");
   } catch (Exception e) { throw new RuntimeException(e); } } };
-  final Object[] dlg = new Object[1]; final boolean[] done = {false};
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
    java.lang.reflect.Constructor<?> ctor = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredConstructor(Component.class); ctor.setAccessible(true);
    dlg[0] = ctor.newInstance(f);
   } catch (Exception e) { throw new RuntimeException(e); } } });
   SwingUtilities.invokeLater(new Runnable() { public void run() { try {
-   call(dlg[0], dlg[0].getClass(), "send", new Class<?>[] {int.class}, 0);
-   ((JDialog) dlg[0]).dispose();
+   call(dlg[0], dlg[0].getClass(), "send", new Class<?>[] {int.class}, 0); // signs on: the board closes
+   Object run = field(dlg[0], dlg[0].getClass(), "signedOn");
+   call(null, dlg[0].getClass(), "play", new Class<?>[] {Component.class, Expeditions.Run.class, Vault.class}, f, run, v);
   } catch (Exception e) { throw new RuntimeException(e); } finally { done[0] = true; } } });
   for (int t = 0; t < 600 && !done[0]; t++) Thread.sleep(100);
   presses.clear();
   boolean picker = !shown.isEmpty() && shown.get(0).contains("Who goes");
   boolean events = false; for (Object[] o : optionsShown) if (o.length >= 2) events = true;
-  String end = shown.isEmpty() ? "" : shown.get(shown.size() - 1);
+  String end = ""; boolean docked = false; // the job's last screen (a priority message may come up after it)
+  for (String t : shown) { if (t.contains("You dig beside")) end = t; if (t.contains("docks at")) docked = true; }
   Setup.chk("X: the crew picker, then events with their choices (" + shown.size() + " pop-ups)", done[0] && picker && events);
-  Setup.chk("X: the end says what came of it, and the Cargo Hold has the scrap (" + v.storageScrap() + "); a beacon passed", end.contains("Cargo Hold") && v.storageScrap() > 0 && v.beaconsSeen() >= beacons + 1);
+  Setup.chk("X: the last outcome is the end, no docking screen after it; the Cargo Hold has the scrap (" + v.storageScrap() + "); a beacon passed", end.contains("You receive") && !docked
+    && v.storageScrap() > 0 && v.beaconsSeen() >= beacons + 1);
+  Setup.chk("X: the board steps aside during the job (" + boardUp[0] + "), and a fresh one has a new job in its place", !boardUp[0] && !Expeditions.board(v).get(0).text.startsWith("A Rock mining colony"));
+  Setup.chk("X: the job's window is FTL's shape, narrow, near square (" + jobSize[0] + ")", jobSize[0] != null && jobSize[0].width < 600 && jobSize[0].width < jobSize[0].height * 3 / 2);
   boolean noX = !expeditionCloseOps.isEmpty(); for (int op : expeditionCloseOps) if (op != JDialog.DO_NOTHING_ON_CLOSE) noX = false;
   Setup.chk("X: the expedition's pop-ups can't be closed, only answered (" + expeditionCloseOps.size() + ")", noX);
   boolean note = false; for (String t : shown) if (t.contains("Commander Bree, priority")) note = true;
-  Setup.chk("X: a priority message comes through over the expedition, and the expedition carries on after it", note && done[0] && end.contains("Cargo Hold"));
+  Setup.chk("X: a priority message comes through over the expedition, and the expedition carries on after it", note && done[0] && end.contains("You receive"));
   Object after = null; try { java.lang.reflect.Method away = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredMethod("awayNotice", String.class); away.setAccessible(true); after = away.invoke(null, "Commander Test"); } catch (Exception e) { }
   Setup.chk("X: a hail during the expedition is told the commander is away (" + during[0] + "); after it, hails are answered as usual", String.valueOf(during[0]).contains("away on an expedition") && after == null);
  }

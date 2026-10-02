@@ -570,6 +570,13 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   humans answer, as Commission has it (4B.90).
 - While an expedition is under way its pop-ups can't be closed, only answered; a priority Long Range message pops up
   over it and the expedition carries on after; a hail is told the commander is away and listed as missed (4B.87).
+- The job's windows (4B.95): FTL's shape, narrow and near square, words wrapped at the top and the numbered choices
+  stacked under them, the same size on every screen of the job. The board steps aside when the commander signs on and
+  opens again, fresh, when the job is over. The last outcome is the end of the job: no docking screen after it (it only
+  repeated the outcome); anyone hurt gets one line under that outcome ("Marek is carried to the infirmary when the
+  shuttle docks."). The asteroid belt's line is heromedel's: "you can hear a small asteroid glancing off the shuttle's
+  shields" (no sound carried through the hull from outside). The twelve events read again for sound, smell or wind
+  where there's no air: none else.
 - In the Cargo Bay's system rows, broken bars are drawn red at the end of the level bar (4B.91).
 - **Folding headings**: a click on a gold heading of the Space Dock's controls folds its buttons away or back,
   lighter under the mouse, a small arrow when folded; remembered in the cfg (`fold_station`, ...).

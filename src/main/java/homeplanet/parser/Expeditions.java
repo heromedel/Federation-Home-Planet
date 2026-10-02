@@ -650,7 +650,7 @@ public final class Expeditions {
 	/**
 	 * The expedition is over: its scrap and gear to the Cargo Hold, recruits aboard, the hurt into the infirmary, the
 	 * lost gone, all in one write; one beacon of the fleet's time; the history log; its event remembered; and a new
-	 * posting in its place. Returns the words for the last screen.
+	 * posting in its place. Returns word of anyone carried to the infirmary, or "".
 	 */
 	public static synchronized String finish(Vault v, Run r) throws IOException {
 		Ship st = v.storage();
@@ -686,11 +686,9 @@ public final class Expeditions {
 		v.countBeacon();
 		for (CrewState h : toInfirmary) admit(v, h); // their time runs from the docking
 		for (CrewState x : r.captured) takeCaptive(v, x, r.event.foe); // a ransom will be asked
-		StringBuilder sb = new StringBuilder("The shuttle docks at The Home Planet Station.");
-		if (!hurtNames.isEmpty()) sb.append(" ").append(String.join(" and ", hurtNames)).append(hurtNames.size() > 1 ? " are" : " is").append(" carried to the infirmary.");
-		if (!lostNames.isEmpty()) sb.append(" ").append(String.join(" and ", lostNames)).append(lostNames.size() > 1 ? " are" : " is").append(" not aboard.");
-		if (!joinedNames.isEmpty()) sb.append(" ").append(String.join(" and ", joinedNames)).append(" will wait in the Cargo Hold.");
-		if (r.scrap > 0 || r.fuel > 0 || r.missiles > 0 || r.parts > 0 || !r.items.isEmpty()) sb.append(" What you brought back goes to the Cargo Hold.");
+		// the last outcome has told the rest: only the infirmary is news
+		StringBuilder sb = new StringBuilder();
+		if (!hurtNames.isEmpty()) sb.append(String.join(" and ", hurtNames)).append(hurtNames.size() > 1 ? " are" : " is").append(" carried to the infirmary when the shuttle docks.");
 		HistoryLog.entry("EXPEDITION", r.posting.title() + " (\"" + r.posting.text + "\", " + r.event.id + "): " + r.scrap + " scrap"
 				+ (r.items.isEmpty() ? "" : ", " + String.join(", ", r.items)) + (joinedNames.isEmpty() ? "" : "; joined: " + String.join(", ", joinedNames))
 				+ (lostNames.isEmpty() ? "" : "; did not come back: " + String.join(", ", lostNames))

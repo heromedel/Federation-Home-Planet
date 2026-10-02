@@ -47,11 +47,25 @@ final class ExpeditionsDialog extends JDialog {
 	/** FTL's blue for an option a crew member's race opens. */
 	static final String BLUE = "#6ab8ff";
 
+	/** An event's window, as FTL's: narrow (its words wrap at TEXT_W), and at least EVENT_H tall on every screen of the job. */
+	static final int EVENT_H = 380, TEXT_W = 380;
+
+	/**
+	 * The board; when the commander signs on, it closes while the job plays (in its own windows), and opens again,
+	 * fresh, when the job is over. Did anything change in the Cargo Hold?
+	 */
 	static boolean open(java.awt.Component owner) {
-		ExpeditionsDialog d = new ExpeditionsDialog(owner);
-		d.setVisible(true);
-		return d.changed;
+		boolean changed = false;
+		while (true) {
+			ExpeditionsDialog d = new ExpeditionsDialog(owner);
+			d.setVisible(true);
+			changed |= d.changed;
+			if (d.signedOn == null) return changed;
+			changed |= play(owner, d.signedOn, Vault.get());
+		}
 	}
+	/** The job signed on for, to play once the board has closed (null: the board was just closed). */
+	Expeditions.Run signedOn;
 
 	private ExpeditionsDialog(java.awt.Component owner) {
 		super(javax.swing.SwingUtilities.getWindowAncestor(owner), "Expeditions", ModalityType.APPLICATION_MODAL);
@@ -123,73 +137,81 @@ final class ExpeditionsDialog extends JDialog {
 		}
 		List<CrewState> party = pickParty(crew);
 		if (party == null || party.isEmpty()) return;
-		Expeditions.Run run;
-		try { run = Expeditions.start(v, slot, party, rng); }
+		try { signedOn = Expeditions.start(v, slot, party, rng); }
 		catch (IOException e) { HomePlanet.showErrorDialog("The expedition could not set out:\n" + e.getMessage()); return; }
-		underWay = true;
-		try { play(run, v); } finally { underWay = false; }
-		fill();
+		dispose(); // the board steps aside while the job plays
 	}
-	/** An expedition, start to finish: the situation and its choices, each outcome, the docking. */
-	private void play(Expeditions.Run run, Vault v) {
+	/**
+	 * An expedition, start to finish: the situation and its choices, each outcome, the last with word of anyone carried
+	 * to the infirmary. Its windows can't be closed, only answered. Did it reach the Cargo Hold?
+	 */
+	static boolean play(java.awt.Component owner, Expeditions.Run run, Vault v) {
 		String title = run.posting.title();
-		while (!run.over()) {
-			List<Expeditions.Choice> choices = run.choices();
-			int c = -1;
-			while (c < 0) c = ask(run, choices, title); // an expedition can't be walked away from halfway
-			String said = run.choose(choices.get(c));
-			if (run.over()) say(wrap(said), title);
-		}
+		underWay = true;
 		try {
-			String summary = Expeditions.finish(v, run);
-			changed = true;
-			say(wrap(summary), title);
-		} catch (IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not record the expedition; the Cargo Hold is as it was:\n" + e.getMessage());
-		}
+			while (!run.over()) {
+				List<Expeditions.Choice> choices = run.choices();
+				int c = -1;
+				while (c < 0) c = ask(owner, run.text(), labels(run, choices), title); // an expedition can't be walked away from halfway
+				String said = run.choose(choices.get(c));
+				if (!run.over()) continue;
+				String home;
+				try { home = Expeditions.finish(v, run); }
+				catch (IOException e) {
+					ask(owner, said, new String[] {"1. Continue..."}, title);
+					HomePlanet.showErrorDialog("The Home Planet Station could not record the expedition; the Cargo Hold is as it was:\n" + e.getMessage());
+					return false;
+				}
+				ask(owner, home.isEmpty() ? said : said + "\n\n" + home, new String[] {"1. Continue..."}, title);
+				return true;
+			}
+			return false;
+		} finally { underWay = false; }
 	}
-	/** A pop-up of the expedition's: no closing it, only "1. Continue..." as FTL has it. */
-	private void say(java.awt.Component message, String title) {
-		must(new JOptionPane(message, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null, new Object[] {"1. Continue..."}, "1. Continue..."), title);
+	private static String[] labels(Expeditions.Run run, List<Expeditions.Choice> choices) {
+		String[] out = new String[choices.size()];
+		for (int i = 0; i < out.length; i++) out[i] = label(run, choices.get(i), i + 1);
+		return out;
 	}
-	private Object must(JOptionPane pane, String title) {
-		JDialog d = pane.createDialog(this, title);
-		d.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-		d.getRootPane().putClientProperty(EXPEDITION, Boolean.TRUE);
-		d.setVisible(true);
-		d.dispose();
-		return pane.getValue();
-	}
-	/** A screen: its words, and its choices one above the other, numbered, as FTL lists them. Returns the one taken, or -1. */
-	private int ask(Expeditions.Run run, List<Expeditions.Choice> choices, String title) {
-		JPanel p = new JPanel(new BorderLayout(0, 12));
-		p.add(wrap(run.text()), BorderLayout.NORTH);
-		JPanel list = new JPanel(new GridLayout(0, 1, 0, 4));
+	/**
+	 * A screen of the job, laid out as FTL's: the words at the top, the numbered choices one above the other under them,
+	 * in a window that's the same size every time (taller only if the words need it). No closing it, only a choice.
+	 * Returns the one taken, or -1.
+	 */
+	private static int ask(java.awt.Component owner, String text, String[] choices, String title) {
+		JPanel p = new JPanel(new BorderLayout(0, 14));
+		p.add(wrap(text), BorderLayout.NORTH);
+		JPanel list = new JPanel(new GridLayout(0, 1, 0, 6));
 		final JOptionPane op = new JOptionPane(p, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null, new Object[0]);
-		for (int i = 0; i < choices.size(); i++) {
+		for (int i = 0; i < choices.length; i++) {
 			final int n = i;
-			JButton b = new JButton(label(run, choices.get(i), i + 1));
+			JButton b = new JButton(choices[i]);
 			b.setHorizontalAlignment(JButton.LEFT);
 			b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { op.setValue(Integer.valueOf(n)); } });
 			list.add(b);
 		}
-		p.add(list, BorderLayout.CENTER);
-		JDialog d = op.createDialog(this, title);
+		JPanel under = new JPanel(new BorderLayout());
+		under.add(list, BorderLayout.NORTH); // the choices keep their own height, under the words
+		p.add(under, BorderLayout.CENTER);
+		java.awt.Dimension want = p.getPreferredSize();
+		p.setPreferredSize(new java.awt.Dimension(want.width, Math.max(EVENT_H, want.height))); // as wide as the words need, never shorter
+		JDialog d = op.createDialog(owner, title);
 		d.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE); // a choice must be made
 		d.getRootPane().putClientProperty(EXPEDITION, Boolean.TRUE);
 		d.setVisible(true);
 		d.dispose();
 		Object v = op.getValue();
-		return v instanceof Integer && (Integer) v >= 0 && (Integer) v < choices.size() ? (Integer) v : -1;
+		return v instanceof Integer && (Integer) v >= 0 && (Integer) v < choices.length ? (Integer) v : -1;
 	}
-	/** A choice as its button shows it, numbered: blue where a crew member's race opens it. */
+	/** A choice as its button shows it, numbered, wrapped to the window: blue where a crew member's race opens it. */
 	static String label(Expeditions.Run run, Expeditions.Choice c, int n) {
 		String t = n + ". " + XmlText.text(run.label(c));
-		if (c.race == null) return "<html>" + t + "</html>";
-		return "<html><font color='" + BLUE + "'>" + t + "</font></html>";
+		String div = "<div style='width:" + (TEXT_W - 40) + "px'>";
+		if (c.race == null) return "<html>" + div + t + "</div></html>";
+		return "<html>" + div + "<font color='" + BLUE + "'>" + t + "</font></div></html>";
 	}
 	private static JLabel wrap(String text) {
-		return new JLabel("<html><div style='width:440px'>" + XmlText.text(text).replace("\n", "<br>") + "</div></html>");
+		return new JLabel("<html><div style='width:" + TEXT_W + "px'>" + XmlText.text(text).replace("\n", "<br>") + "</div></html>");
 	}
 	/** Up to three crew from the Cargo Hold, ticked. */
 	private List<CrewState> pickParty(List<CrewState> crew) {

@@ -127,7 +127,7 @@ Inside the nebula the cutter's sensors go dark. The liner is a smudge of light a
 # ---- salvage ----
 
 event belt_freighter salvage
-You find the freighter wedged between two slow-turning rocks, her hull split along one side. The field is quiet, but every few minutes a small asteroid glances off her plating with a sound you can feel through the shuttle's floor.
+You find the freighter wedged between two slow-turning rocks, her hull split along one side. The field is quiet, but every few minutes you can hear a small asteroid glancing off the shuttle's shields.
 * [pilot] Hold the shuttle in the gap and load straight from her hold.
   ~ 50 scrap 8-10 xp pilot 3 | {who} keeps the shuttle in the gap while the rest of you pass crates across. You're out before the rocks close.
   ~ 25 injure 1 scrap 5-7 | The rocks shift as {who} pulls out of the gap, and one of them clips the cockpit. The shuttle limps home with what you loaded, {who} strapped down in the back.
