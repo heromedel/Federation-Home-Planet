@@ -86,6 +86,12 @@ public final class Museum {
 	}
 	private static String today() { return new SimpleDateFormat("d MMMM yyyy").format(new Date()); }
 
+	/** Her final victories, as her record and her kept victory saves tell (the greater). */
+	public static int victories(Vault v, String id) {
+		File d = new File(v.historyDir(), id);
+		File[] wins = d.listFiles(new java.io.FileFilter() { public boolean accept(File f) { return f.isFile() && f.getName().startsWith("victory-") && f.getName().endsWith(".sav"); } });
+		return Math.max(intOf(read(v, id), "victories"), wins == null ? 0 : wins.length);
+	}
 	/** When she was first commissioned ("1 October 2026"), or "" if not known. */
 	public static String commissioned(Vault v, String id) { return read(v, id).getProperty("commissioned", ""); }
 	/** Her commission date, as it came with her from another fleet (Long Range Comm.). */

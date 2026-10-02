@@ -27,13 +27,6 @@ import homeplanet.vault.Vault;
  * not yet begun is briefed first) or ends a career.
  */
 final class SwitchModeDialog extends JDialog {
-	private static final String[] TAGS = {
-		"Your fleet, your rules: every rule can be changed in Settings.",
-		"A gentler career: commissions at 75%, a Kestrel Type A on reassignment, the stipend every 2 sectors, 50 scrap to start.",
-		"The Federation's standard: full prices, a ship by what you surrender on reassignment, the stipend every 3 sectors.",
-		"No favours: 1000-scrap journeys, a relief ship on reassignment, no stripping, and the museum takes her after a final victory.",
-		"Choose the level of each rule yourself, once, when the career begins."};
-
 	/** Did the mode in use change (or a career end)? */
 	boolean changed = false;
 	private final JPanel rows = new JPanel(new GridBagLayout());
@@ -78,33 +71,16 @@ final class SwitchModeDialog extends JDialog {
 		c.gridx = 0;
 		for (int i = 0; i < Vault.SLOTS.length; i++) {
 			c.gridy = i;
-			rows.add(row(v, Vault.SLOTS[i], TAGS[i]), c);
+			rows.add(row(v, Vault.SLOTS[i]), c);
 		}
 		rows.revalidate();
 		rows.repaint();
 		pack();
 	}
-	private JPanel row(Vault v, final String slot, String tag) {
+	/** One mode's row (described as on the welcome screen: {@link ModeRows}), with Switch or Begin, and End career. */
+	private JPanel row(Vault v, final String slot) {
 		boolean inUse = v.slot.equals(slot), sandbox = Vault.SANDBOX.equals(slot);
-		File root = Vault.rootOf(v.saves, slot);
-		boolean begun = sandbox || Career.started(root);
-		JPanel p = new JPanel(new BorderLayout(12, 0));
-		p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(inUse ? MenuTheme.GOLD : MenuTheme.GREY_GREEN),
-				BorderFactory.createEmptyBorder(6, 10, 6, 10)));
-		String state;
-		int n = inUse ? v.docked().size() + v.junked().size() + (v.boarded() == null ? 0 : 1) : Vault.shipCount(root);
-		if (sandbox) state = n + (n == 1 ? " ship" : " ships");
-		else if (!begun) state = "Not begun";
-		else {
-			CareerRules r = Career.rules(root);
-			state = "Begun" + (r != null && Vault.CUSTOM.equals(slot) ? " (" + r.title() + ")" : "") + ": " + n + (n == 1 ? " ship" : " ships")
-					+ (Career.ownProfile(root) ? ", its own FTL profile" : "");
-		}
-		if (inUse) state = "In use. " + state;
-		if (Vault.CUSTOM.equals(slot) && begun && CareerRules.EARLIER.equals(Career.rules(root).name)) tag = "Your first Immersive career, from before difficulties, with the rules it had.";
-		JLabel words = new JLabel("<html><div style='width:430px'><font size='+1' color='" + MenuTheme.HTML_GOLD + "'><b>" + Vault.title(slot) + "</b></font><br>"
-				+ tag + "<br><font color='" + MenuTheme.HTML_GREY_GREEN + "'>" + state + "</font></div></html>");
-		p.add(words, BorderLayout.CENTER);
+		boolean begun = sandbox || Career.started(Vault.rootOf(v.saves, slot));
 		JPanel buttons = new JPanel(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
@@ -124,17 +100,18 @@ final class SwitchModeDialog extends JDialog {
 			c.gridy = 1;
 			buttons.add(end, c);
 		}
-		p.add(buttons, BorderLayout.EAST);
-		return p;
+		return ModeRows.row(v, slot, inUse, 430, buttons);
 	}
 
 	private void switchTo(String slot) {
 		boolean done = Vault.SANDBOX.equals(slot) ? ImmersiveDialog.toSandbox(this) : ImmersiveDialog.enter(this, slot);
-		if (done) changed = true;
+		if (done) { changed = true; dispose(); return; } // a new mode: every window closes and the Space Dock shows it (MainFrame.modeSwitched)
 		fill();
 	}
 	private void end(String slot) {
+		String was = Vault.get().slot;
 		if (ImmersiveDialog.endCareer(this, slot)) changed = true;
+		if (!Vault.get().slot.equals(was)) { dispose(); return; } // the career in use ended: the mode changed too
 		fill();
 	}
 }

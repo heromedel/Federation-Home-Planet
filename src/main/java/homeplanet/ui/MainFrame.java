@@ -34,6 +34,20 @@ public class MainFrame extends JFrame {
 	private final HashMap<String, BufferedImage> imageCache = new HashMap<String, BufferedImage>();
 	private final HashMap<String, BufferedImage> scaledCache = new HashMap<String, BufferedImage>();
 
+	/**
+	 * The game mode changed: every window of the station's closes (Settings, reports, the switch itself) and the Space
+	 * Dock shows the new mode's fleet, so nothing of the old one is left on screen. False if the station's window isn't up.
+	 */
+	public static boolean modeSwitched() {
+		for (java.awt.Frame fr : java.awt.Frame.getFrames()) {
+			if (!(fr instanceof MainFrame) || !fr.isDisplayable()) continue;
+			final MainFrame f = (MainFrame) fr;
+			for (java.awt.Window w : f.getOwnedWindows()) if (w.isShowing()) w.dispose();
+			f.showSpaceDock();
+			return true;
+		}
+		return false;
+	}
 	/** Asks first where leaving would lose something (Long Range Comm., the Cargo Bay's unsaved changes): true to go on. */
 	public boolean mayClose(String doing) {
 		if (atComm && !comm.confirmLeave(doing)) return false;
