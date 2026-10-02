@@ -417,6 +417,24 @@ no letters, you come and check).
   only the Hyperspace mod lets custom ships have them. Designs need just their one PNG; glowing engines can be painted
   into the art. Settled with heromedel: not worth pursuing.
 
+## 17. Check for Updates — built (4B.68; harness test UpdT)
+
+- **Settings, About: Check for Updates...** reads main's `pom.xml` on GitHub and compares versions (4B.9 < 4B.10 <
+  4C.1). Only when asked: nothing contacts GitHub on its own. Up to date, unreachable (with the address), or newer.
+- **Newer:** a copy not built by the Construction Yard (no source beside `Current Build\`) is pointed to GitHub; a git
+  checkout (a `.git` folder) is told to fetch in GitHub Desktop. Otherwise **Update Now** downloads main's zip,
+  checks it's whole (one top folder, the pom, the Construction Yard, the program's main class; nothing outside the
+  folder), and puts its files in place: only files the repository has, never `tools\`, `target\`, `.git`, logs, a
+  `.cfg`, `.jar` or `.ico`. Files the last update installed that main no longer has are removed
+  (`update-manifest.txt`). Every file replaced or removed is kept in `update-backup\`, with the new ones listed; a
+  failure partway puts everything back at once.
+- **Then** the station closes (asking first, as closing does) and starts the Construction Yard with `update`: it
+  builds without the menu (waiting up to half a minute for the old jar to be let go) and opens the station. If the
+  build fails, the old files go back (`:restore`) and the old jar is still in `Current Build\`.
+- **The Construction Yard** now offers 0: Exit / 1: Launch the Station Interface after a successful build.
+- Tested on Windows by hand: the rebuild and relaunch (UpdT covers the versions, the file replacement, bad downloads
+  and the put-back).
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

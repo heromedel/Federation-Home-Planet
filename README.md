@@ -73,8 +73,14 @@ General): it can bring back an old copy of a docked ship, or an old FTL profile.
 
 To build from source, double-click `Build The Federation Home Planet Station.bat` and choose 1 (or 2, which also puts a
 Quick Link to the Interface on your desktop). The first run downloads a JDK and Maven into `tools\` (once); then every
-run puts a fresh `Federation Home Planet.jar` in `Current Build\`. Or with your own Maven: `mvn package` →
-`target/Federation Home Planet.jar`.
+run puts a fresh `Federation Home Planet.jar` in `Current Build\`, then offers to launch it. Or with your own Maven:
+`mvn package` → `target/Federation Home Planet.jar`.
+
+To update, use **Check for Updates...** (Settings, About). It compares your version with the main branch on GitHub; if
+main is newer, Update Now puts the new source files in place (only the program's own: `tools\`, your settings, logs
+and fleets aren't touched), closes the station, rebuilds it and opens it again. If the build fails, the old files go
+back and the version you had stays in `Current Build\`. A git checkout (GitHub Desktop) is updated by fetching
+instead.
 
 ## Layout
 
