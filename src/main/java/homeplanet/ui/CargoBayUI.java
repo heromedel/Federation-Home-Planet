@@ -914,7 +914,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		for (int k = 0; k < 4; k++) {
 			Category c = cats[k];
 			c.myHead.setText(currentPath == null ? CAT[k] : CAT[k] + "  " + (k == 1 && droneSlots(currentState) == 0 ? "" : counts(currentState, k)));
-			c.mine.setEmptyText(currentPath == null ? "Not aboard a ship: board one above, or at the Space Dock" : k == 3 ? "No crew" : "None");
+			c.mine.setEmptyText(currentPath == null ? "Not aboard a ship" : k == 3 ? "No crew" : "None");
 			c.theirHead.setText(partnerIsStorage() ? CAT[k] : (k == 1 && droneSlots(tradeState) == 0 ? "" : counts(tradeState, k)) + "  " + CAT[k]);
 			if (k < 3) {
 				c.mine.setRows(itemRows(currentSave, currentState, k));
