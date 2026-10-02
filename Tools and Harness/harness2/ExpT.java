@@ -259,24 +259,38 @@ public class ExpT { public static void main(String[] a) throws Exception {
    if (r.finished()) finished++; else { turned++; if (got != 0 || (Integer) pay.invoke(r) != 0) { Setup.chk("W: a job not finished pays nothing and returns nothing", false); return; } }
   }
   Setup.chk("W: finished, the outfitting comes back 50-200%; over many jobs about what was spent (" + back * 100 / spent + "%, " + finished + " finished, " + turned + " not)", back * 100 / spent >= 80 && back * 100 / spent <= 130 && turned > 0);
-  // captives: taken, a ransom asked a few beacons later, paid: home; unpaid: lost for good
+  // captives: taken; a letter a few beacons later ("one month", never beacons); a reminder near the end; paid: home;
+  // refused or run out: the Ambassador's letter, presumed dead
   java.lang.reflect.Method take = Expeditions.class.getDeclaredMethod("takeCaptive", Vault.class, CrewState.class, Expeditions.Posting.class); take.setAccessible(true);
   Expeditions.Posting pst = Expeditions.board(v).get(1);
-  CrewState a = Commission.volunteer("rock", new Random(3)), b = Commission.volunteer("slug", new Random(4));
-  take.invoke(null, v, a, pst); take.invoke(null, v, b, pst);
-  Setup.chk("W: nothing is asked at once", Expeditions.ransoms(v).isEmpty());
+  CrewState a = Commission.volunteer("rock", new Random(3)), b = Commission.volunteer("slug", new Random(4)), c3 = Commission.volunteer("engi", new Random(5));
+  take.invoke(null, v, a, pst); take.invoke(null, v, b, pst); take.invoke(null, v, c3, pst);
+  Setup.chk("W: nothing is asked at once", Expeditions.checkRansoms(v).isEmpty());
   ChainT.jump(v, 5);
-  List<Expeditions.Captive> asked = Expeditions.ransoms(v);
-  Setup.chk("W: a few beacons later both ransoms are asked (" + asked.size() + ")", asked.size() == 2);
+  List<Expeditions.RansomNews> news = Expeditions.checkRansoms(v);
+  int asks = 0; String words = ""; for (Expeditions.RansomNews x : news) { if (x.kind.equals("ask")) asks++; words += x.text(); }
+  Setup.chk("W: a few beacons later all three ransoms are asked (" + asks + "), \"one month\", no beacons in the words", asks == 3 && words.contains("one month") && !words.toLowerCase().contains("beacon"));
+  Expeditions.Captive pa = Expeditions.openRansom(v, "ransom:0"), pr = Expeditions.openRansom(v, "ransom:1");
   int inHold = Expeditions.holdCrew(v).size(), scrap = v.storageScrap();
-  Expeditions.Captive first = asked.get(0);
-  Expeditions.payRansom(v, first);
-  boolean home = false; for (CrewState x : Expeditions.holdCrew(v)) if (x.getName().equals(first.name)) home = true;
-  Setup.chk("W: a ransom paid: " + first.name + " is back in the Cargo Hold, the ransom paid from it", home && Expeditions.holdCrew(v).size() == inHold + 1 && v.storageScrap() == scrap - first.ransom);
-  ChainT.jump(v, Expeditions.RANSOM_STANDS + 1);
+  Expeditions.payRansom(v, pa);
+  boolean home = false; for (CrewState x : Expeditions.holdCrew(v)) if (x.getName().equals(pa.name)) home = true;
+  Setup.chk("W: a ransom paid: " + pa.name + " is back in the Cargo Hold, the ransom paid from it, and the letter's choices gone", home
+    && Expeditions.holdCrew(v).size() == inHold + 1 && v.storageScrap() == scrap - pa.ransom && Expeditions.openRansom(v, "ransom:0") == null);
+  Expeditions.refuseRansom(v, pr);
   String hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
-  List<Expeditions.Captive> left = Expeditions.ransoms(v); hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
-  Setup.chk("W: a ransom left unpaid runs out: lost for good, and the history log says so (" + left.size() + " left, beacons " + v.beaconsSeen() + ")", left.isEmpty() && hist.contains("ransom went unpaid"));
+  Setup.chk("W: a ransom refused: presumed dead, in the history log, the choices gone", hist.contains(pr.name + ", taken by") && hist.contains("ransom was refused") && Expeditions.openRansom(v, "ransom:1") == null);
+  Expeditions.Captive held = Expeditions.openRansom(v, "ransom:2");
+  ChainT.jump(v, held.until - Expeditions.REMINDER_BEFORE - 1 - v.beaconsSeen());
+  Setup.chk("W: a beacon before the reminder is due, nothing", Expeditions.checkRansoms(v).isEmpty());
+  ChainT.jump(v, 1);
+  news = Expeditions.checkRansoms(v);
+  boolean reminded = news.size() == 1 && news.get(0).kind.equals("remind") && news.get(0).text().contains("running short") && !news.get(0).text().toLowerCase().contains("beacon");
+  Setup.chk("W: near the end, a reminder for the one still held, and only then", reminded);
+  ChainT.jump(v, Expeditions.REMINDER_BEFORE + 1);
+  news = Expeditions.checkRansoms(v);
+  hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
+  Setup.chk("W: unpaid, it runs out: the Ambassador's letter (presumed dead), the history log, the choices gone", news.size() == 1 && news.get(0).kind.equals("lost")
+    && news.get(0).text().contains("presumed dead") && news.get(0).text().contains(c3.getName()) && hist.contains("ransom went unpaid") && Expeditions.openRansom(v, "ransom:2") == null);
   // and some losses on real runs are captures
   java.lang.reflect.Field capF = Expeditions.Run.class.getDeclaredField("captured"); capF.setAccessible(true);
   int lostN = 0, capN = 0;

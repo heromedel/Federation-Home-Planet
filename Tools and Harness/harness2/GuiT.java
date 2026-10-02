@@ -40,6 +40,7 @@ public class GuiT {
   damaged(f);
   folding(f);
   expedition(f);
+  ransomPopUp(f);
   Setup.done();
   System.exit(0);
  }
@@ -325,6 +326,24 @@ public class GuiT {
   Setup.chk("X: a priority message comes through over the expedition, and the expedition carries on after it", note && done[0] && end.contains("Cargo Hold"));
   Object after = null; try { java.lang.reflect.Method away = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredMethod("awayNotice", String.class); away.setAccessible(true); after = away.invoke(null, "Commander Test"); } catch (Exception e) { }
   Setup.chk("X: a hail during the expedition is told the commander is away (" + during[0] + "); after it, hails are answered as usual", String.valueOf(during[0]).contains("away on an expedition") && after == null);
+ }
+
+ /** With the inbox off, a ransom comes up at the Space Dock: Pay brings them home. */
+ static void ransomPopUp(final MainFrame f) throws Exception {
+  final Vault v = Vault.get();
+  java.lang.reflect.Method take = Expeditions.class.getDeclaredMethod("takeCaptive", Vault.class, SavedGameParser.CrewState.class, Expeditions.Posting.class); take.setAccessible(true);
+  take.invoke(null, v, Commission.volunteer("zoltan".equals("") ? "x" : "energy", new Random(8)), Expeditions.board(v).get(0));
+  for (int i = 0; i < 6; i++) { SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile()); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock(); }
+  final List<Expeditions.RansomNews> news = Expeditions.checkRansoms(v);
+  hold(v, 200);
+  final String name = news.isEmpty() ? "?" : news.get(0).captive.name;
+  shown.clear(); optionsShown.clear(); presses.clear(); presses.addAll(Arrays.asList(0, 0)); // Pay; the note that they're home
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   call(f.spaceDock, SpaceDockUI.class, "ransomNotice", new Class<?>[] {Expeditions.RansomNews.class}, news.get(0));
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  boolean home = false; for (SavedGameParser.CrewState x : Expeditions.holdCrew(v)) if (x.getName().equals(name)) home = true;
+  Setup.chk("R: with the inbox off, the ransom comes up at the Space Dock with Pay, Refuse and Later; Pay brings " + name + " home",
+    news.size() == 1 && !optionsShown.isEmpty() && Arrays.asList(optionsShown.get(0)).contains("Refuse") && home);
  }
 
  static void salvage(final MainFrame f) throws Exception {

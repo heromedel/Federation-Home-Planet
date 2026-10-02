@@ -104,9 +104,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
 		String title = "Docked Ships";
+		// a ransom for crew taken on an expedition: its letters (in the inbox), or with the inbox off, pop-ups here
+		final List<homeplanet.parser.Expeditions.RansomNews> ransomNews = homeplanet.parser.Expeditions.checkRansoms(vault);
+		if (!HomePlanet.immersiveNotifications() && !ransomNews.isEmpty())
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { for (homeplanet.parser.Expeditions.RansomNews n : ransomNews) ransomNotice(n); } });
 		if (HomePlanet.immersiveNotifications()) {
 			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
-			homeplanet.parser.Expeditions.ransoms(vault); // a ransom asked for crew taken on an expedition: its letter
 			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
 			inboxBtn.addActionListener(this);
 		} else {
@@ -227,6 +230,32 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (over != null || (stranger != null && HomePlanet.immersiveMode)) {
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { newGameNotice(over, stranger); } });
 		}
+	}
+
+	/** With the inbox off: a ransom's ask or reminder as a pop-up (Pay, Refuse, or Later: the reminder asks again), or word of the loss. */
+	private void ransomNotice(homeplanet.parser.Expeditions.RansomNews n) {
+		javax.swing.JTextArea t = new javax.swing.JTextArea(n.text());
+		t.setEditable(false); t.setLineWrap(true); t.setWrapStyleWord(true); t.setOpaque(false); t.setColumns(52);
+		t.setFont(MenuTheme.TEXT_FONT);
+		t.setSize(new Dimension(520, 10));
+		if (n.kind.equals("lost")) { JOptionPane.showMessageDialog(null, t, n.title(), JOptionPane.INFORMATION_MESSAGE); return; }
+		Vault v = Vault.get();
+		homeplanet.parser.Expeditions.Captive c = homeplanet.parser.Expeditions.openRansom(v, "ransom:" + n.captive.index);
+		if (c == null) return; // settled meanwhile
+		Object[] opts = {"Pay " + c.ransom + " scrap", "Refuse", "Later"};
+		int r = JOptionPane.showOptionDialog(null, t, n.title(), JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[2]);
+		try {
+			if (r == 0) {
+				homeplanet.parser.Expeditions.payRansom(v, c);
+				JOptionPane.showMessageDialog(null, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
+			} else if (r == 1 && HomePlanet.confirmNo(null, "Refuse the ransom? " + c.name + " will not be coming back.", "Ransom")) {
+				homeplanet.parser.Expeditions.refuseRansom(v, c);
+				JOptionPane.showMessageDialog(null, homeplanet.parser.Expeditions.lostWord(c), "Presumed dead: " + c.name, JOptionPane.INFORMATION_MESSAGE);
+			}
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The ransom wasn't settled. Nothing was changed:\n" + e.getMessage());
+		}
+		init();
 	}
 
 	/** Rescue offers the player put off deciding: asked again at the next start (or in the inbox, with Transmissions on). */

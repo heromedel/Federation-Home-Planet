@@ -30,7 +30,6 @@ import homeplanet.vault.Vault;
  */
 final class ExpeditionsDialog extends JDialog {
 	private final JPanel cols = new JPanel(new GridLayout(1, Expeditions.POSTINGS, 12, 0));
-	private final JPanel ransoms = new JPanel(new GridLayout(0, 1, 0, 4));
 	private final JLabel foot = new JLabel();
 	private final JButton hireBtn = new JButton();
 	/** Did anything change in the Cargo Hold (the Space Dock redraws)? */
@@ -56,10 +55,7 @@ final class ExpeditionsDialog extends JDialog {
 		body.add(new JLabel("<html><div style='width:720px'>Jobs posted across the sectors for crew without a ship. Send up to "
 				+ Expeditions.PARTY_MAX + " from the Cargo Hold: they bring back scrap, now and then some gear, and sometimes injuries. "
 				+ "Not everyone comes back. Each expedition takes as long as a beacon.</div></html>"), BorderLayout.NORTH);
-		JPanel middle = new JPanel(new BorderLayout(0, 8));
-		middle.add(cols, BorderLayout.CENTER);
-		middle.add(ransoms, BorderLayout.SOUTH);
-		body.add(middle, BorderLayout.CENTER);
+		body.add(cols, BorderLayout.CENTER);
 		JPanel south = new JPanel(new BorderLayout(10, 0));
 		south.add(foot, BorderLayout.CENTER);
 		JPanel buttons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 0));
@@ -85,17 +81,6 @@ final class ExpeditionsDialog extends JDialog {
 		List<Expeditions.Posting> board = Expeditions.board(v);
 		cols.removeAll();
 		for (int i = 0; i < board.size(); i++) cols.add(card(i, board.get(i)));
-		ransoms.removeAll();
-		for (final Expeditions.Captive c : Expeditions.ransoms(v)) { // crew taken on an expedition, and what's asked for them
-			JPanel row = new JPanel(new BorderLayout(10, 0));
-			row.add(new JLabel("<html><font color='" + MenuTheme.HTML_GOLD + "'>Ransom:</font> " + XmlText.text(c.name) + ", held by " + XmlText.text(c.captors)
-					+ ". " + c.ransom + " scrap; the offer stands " + Math.max(0, c.until - v.beaconsSeen()) + " more beacons.</html>"), BorderLayout.CENTER);
-			JButton pay = new JButton("Pay " + c.ransom + " scrap");
-			pay.setEnabled(v.storageScrap() >= c.ransom);
-			pay.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(c); } });
-			row.add(pay, BorderLayout.EAST);
-			ransoms.add(row);
-		}
 		int inHold = 0;
 		try { inHold = Expeditions.holdCrew(v).size(); } catch (IOException e) { }
 		int fleet = Expeditions.fleetCrew(v), cost = Expeditions.hireCost(fleet);
@@ -241,15 +226,6 @@ final class ExpeditionsDialog extends JDialog {
 		List<CrewState> out = new ArrayList<CrewState>();
 		for (int i = 0; i < boxes.size(); i++) if (boxes.get(i).isSelected()) out.add(crew.get(i));
 		return out;
-	}
-
-	private void ransom(Expeditions.Captive c) {
-		if (!HomePlanet.confirmNo(this, "Pay " + c.ransom + " scrap from the Cargo Hold for " + c.name + "'s return?", "Ransom")) return;
-		try { Expeditions.payRansom(Vault.get(), c); }
-		catch (IOException e) { HomePlanet.showErrorDialog("The ransom wasn't paid. Nothing was changed:\n" + e.getMessage()); fill(); return; }
-		changed = true;
-		JOptionPane.showMessageDialog(this, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
-		fill();
 	}
 
 	private void hire() {

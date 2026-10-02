@@ -64,8 +64,12 @@ public final class Expeditions {
 	public static final int OUTFIT_ODDS = 10, OUTFIT_SCRAP = 25, PAYBACK_MIN = 50, PAYBACK_MAX = 200;
 	/** One crew member lost in this many was taken, not killed: a ransom is asked a few beacons later. */
 	public static final int CAPTURED_ONE_IN = 3;
-	/** A ransom is asked RANSOM_DELAY_MIN to MAX beacons after the expedition, and stands for RANSOM_STANDS beacons. */
-	public static final int RANSOM_DELAY_MIN = 2, RANSOM_DELAY_MAX = 5, RANSOM_STANDS = 10;
+	/**
+	 * A ransom is asked RANSOM_DELAY_MIN to MAX beacons after the expedition and stands for RANSOM_STANDS beacons
+	 * (the letters say "one month", never beacons: the count is the station's own); a reminder comes REMINDER_BEFORE
+	 * beacons before the end.
+	 */
+	public static final int RANSOM_DELAY_MIN = 2, RANSOM_DELAY_MAX = 5, RANSOM_STANDS = 14, REMINDER_BEFORE = 3;
 	/** For the harness: every eligible expedition goes missing. */
 	static boolean alwaysLost = false;
 
@@ -953,42 +957,107 @@ public final class Expeditions {
 		p.setProperty(i + ".state", "held");
 		try { writeCaptives(v, p); } catch (IOException e) { log.warn("Could not record a captive: {}", e.toString()); }
 	}
-	/** Ransoms asked and still standing: letters sent for new ones, and the ones whose time ran out let go (for good). */
-	public static synchronized List<Captive> ransoms(Vault v) {
+	/** What a ransom check found new, for a pop-up when the inbox is off: the ask, the reminder, or word of the loss. */
+	public static final class RansomNews {
+		public final Captive captive;
+		/** "ask", "remind" or "lost". */
+		public final String kind;
+		RansomNews(Captive captive, String kind) { this.captive = captive; this.kind = kind; }
+		public String title() { return kind.equals("lost") ? "Presumed dead: " + captive.name : "Ransom: " + captive.name; }
+		public String text() { return kind.equals("ask") ? askLetter(captive) : kind.equals("remind") ? reminderLetter(captive) : lostLetter(captive); }
+	}
+	private static Captive captive(Properties p, int i) {
+		return new Captive(i, p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), "true".equals(p.getProperty(i + ".male")),
+				p.getProperty(i + ".captors", "pirates"), intOf(p, i + ".ransom", 30), intOf(p, i + ".asked", 0), intOf(p, i + ".until", 0));
+	}
+	/**
+	 * The ransoms' clock: a letter when a ransom is asked, a reminder near the end, and the Federation Ambassador's
+	 * letter when it runs out (they're lost for good). Returns what's new, for a pop-up when the inbox is off.
+	 */
+	public static synchronized List<RansomNews> checkRansoms(Vault v) {
 		Properties p = readCaptives(v);
-		List<Captive> out = new ArrayList<Captive>();
+		List<RansomNews> out = new ArrayList<RansomNews>();
 		boolean changed = false;
 		int now = v.beaconsSeen();
 		for (int i = 0; p.getProperty(i + ".name") != null; i++) {
 			String state = p.getProperty(i + ".state", "held");
-			if (!state.equals("held") && !state.equals("asked")) continue;
-			Captive c = new Captive(i, p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), "true".equals(p.getProperty(i + ".male")),
-					p.getProperty(i + ".captors", "pirates"), intOf(p, i + ".ransom", 30), intOf(p, i + ".asked", 0), intOf(p, i + ".until", 0));
-			if (now < c.asked) continue;
-			if (now > c.until) {
+			Captive c = captive(p, i);
+			if (state.equals("held") && now >= c.asked) {
+				state = "asked";
+				p.setProperty(i + ".state", state);
+				changed = true;
+				Transmissions.deliver("ransom:" + i, capitalised(c.captors), "Ransom: " + c.name, askLetter(c));
+				out.add(new RansomNews(c, "ask"));
+			}
+			if (state.equals("asked") && now >= c.until - REMINDER_BEFORE && now <= c.until) {
+				state = "reminded";
+				p.setProperty(i + ".state", state);
+				changed = true;
+				Transmissions.deliver("ransom-reminder:" + i, capitalised(c.captors), "Ransom: " + c.name + ", time is short", reminderLetter(c));
+				out.add(new RansomNews(c, "remind"));
+			}
+			if ((state.equals("asked") || state.equals("reminded")) && now > c.until) {
 				p.setProperty(i + ".state", "gone");
 				changed = true;
-				HistoryLog.entry("EXPEDITION", c.name + ", taken by " + c.captors + ": the ransom went unpaid, and they are lost for good");
-				continue;
+				lost(c, "the ransom went unpaid");
+				out.add(new RansomNews(c, "lost"));
 			}
-			if (state.equals("held")) {
-				p.setProperty(i + ".state", "asked");
-				changed = true;
-				homeplanet.parser.Transmissions.deliver("ransom:" + i + ":" + c.name, "Unknown sender", "Ransom: " + c.name,
-						c.name + " is alive, and in our keeping.\n\nWe ask " + c.ransom + " scrap for their return. The offer stands for " + RANSOM_STANDS
-						+ " beacons. Pay it from the Expeditions board at The Home Planet Station, and they will be put on the next transport to your Cargo Hold.\n\n"
-						+ "After that, we will assume you have no further interest in them.\n\n~ " + capitalised(c.captors));
-			}
-			out.add(c);
 		}
 		if (changed) try { writeCaptives(v, p); } catch (IOException e) { log.warn("Could not update the captives: {}", e.toString()); }
 		return out;
+	}
+	/** Word of a captive lost for good: the Ambassador's letter, and the history log. */
+	private static void lost(Captive c, String why) {
+		Transmissions.deliver("presumed:" + c.index + ":" + c.name, AMBASSADOR, "Presumed dead: " + c.name, lostLetter(c));
+		HistoryLog.entry("EXPEDITION", c.name + ", taken by " + c.captors + ": " + why + "; presumed dead");
+	}
+	/** The ransom a letter is about, if it can still be paid or refused (its key: "ransom:<n>" or "ransom-reminder:<n>"), else null. */
+	public static synchronized Captive openRansom(Vault v, String key) {
+		int i;
+		try { i = Integer.parseInt(key.substring(key.indexOf(':') + 1).trim()); } catch (RuntimeException e) { return null; }
+		Properties p = readCaptives(v);
+		String state = p.getProperty(i + ".state", "");
+		if (!state.equals("asked") && !state.equals("reminded")) return null;
+		Captive c = captive(p, i);
+		return v.beaconsSeen() > c.until ? null : c;
+	}
+	public static boolean isRansom(String key) { return key.startsWith("ransom:") || key.startsWith("ransom-reminder:"); }
+	/** Refuses a ransom: they're lost for good, and the Ambassador writes. */
+	public static synchronized void refuseRansom(Vault v, Captive c) throws IOException {
+		Properties p = readCaptives(v);
+		p.setProperty(c.index + ".state", "refused");
+		writeCaptives(v, p);
+		lost(c, "the ransom was refused");
+	}
+
+	static final String AMBASSADOR = "Federation Ambassador";
+	static String askLetter(Captive c) {
+		return c.name + " is alive. For now, that is our doing, and it can stay that way.\n\n"
+				+ "We ask " + c.ransom + " scrap for their return. Pay it, and they will be on the next transport to your Cargo Hold, "
+				+ "fed and in one piece. You have one month.\n\n"
+				+ "Do not send ships. We will know, and " + c.name + " will be the one who pays for it.\n\n~ " + capitalised(c.captors);
+	}
+	static String reminderLetter(Captive c) {
+		return "Time is running short, and so is our patience.\n\n"
+				+ c.ransom + " scrap, and " + c.name + " comes home. Silence, and we will take it as your answer.\n\n~ " + capitalised(c.captors);
+	}
+	/** The Ambassador's letter, for a notice when the inbox is off. */
+	public static String lostWord(Captive c) { return lostLetter(c); }
+	static String lostLetter(Captive c) {
+		return "Commander,\n\n"
+				+ "It is my duty to tell you that the Federation's efforts on behalf of " + c.name + " have come to nothing. "
+				+ "Their captors have broken off all contact, and every channel we have tried has gone quiet. "
+				+ c.name + " is listed from today as missing, presumed dead.\n\n"
+				+ "I have written letters like this one more often than I would like, and they do not grow easier. "
+				+ c.name + " went out under the Federation's banner, and the Federation does not forget its own.\n\n"
+				+ "With deepest regret,\n\n~ " + AMBASSADOR;
 	}
 	private static String capitalised(String s) { return s.isEmpty() ? s : s.substring(0, 1).toUpperCase() + s.substring(1); }
 	/** Pays a ransom from the Cargo Hold: they come back to it, shaken but whole. */
 	public static synchronized void payRansom(Vault v, Captive c) throws IOException {
 		Properties p = readCaptives(v);
-		if (!"asked".equals(p.getProperty(c.index + ".state"))) throw new IOException(c.name + "'s ransom is no longer asked");
+		String state = p.getProperty(c.index + ".state", "");
+		if (!state.equals("asked") && !state.equals("reminded")) throw new IOException(c.name + "'s ransom is no longer asked");
 		if (v.beaconsSeen() > c.until) throw new IOException("The offer for " + c.name + " has run out");
 		Ship st = v.storage();
 		Vault.Copy cp = v.readCopy(st);

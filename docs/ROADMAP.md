@@ -558,9 +558,12 @@ no letters, you come and check).
     50-200% of the outfitting on top of its pay; one not finished (turned back, or no one left) pays nothing and
     returns nothing. Over many outfitted jobs the payback averages about what was spent.
   - The job's own pay comes only for a job finished.
-  - One loss in three is a capture: a few beacons later a ransom (25-50 scrap) is asked in the inbox and on the
-    Expeditions board; paid, they come back to the Cargo Hold; unpaid for 10 beacons, they're lost for good (the
-    fleet's captives.txt).
+  - One loss in three is a capture: a few beacons later a ransom (25-50 scrap) is asked (the fleet's captives.txt).
+    Since 4B.89 it's handled only in the inbox: the captors' letter has Pay and Refuse; it says "You have one month"
+    and never counts beacons (the real count, 14 beacons, stays hidden); a reminder ("Time is running short") comes
+    three beacons before the end. Refused or run out, the Federation Ambassador (a new voice) writes that the crew
+    member is missing, presumed dead. With the inbox off, the ask and the reminder come up at the Space Dock (Pay,
+    Refuse, Later) and the Ambassador's word as a notice.
   - Choices reviewed so none is better than another on every count, except FTL-style moral ones (the cold choice
     may pay more, without comment) and where a ship or a new crew member is the reward.
 

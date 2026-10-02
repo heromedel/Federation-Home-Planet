@@ -42,6 +42,7 @@ public class InboxDialog extends JDialog {
 	private final JButton archive = new JButton("Archive");
 	private final JButton delete = new JButton("Delete");
 	private final JButton keep = new JButton("Keep her"), museum = new JButton("Accept the museum's offer");
+	private final JButton payRansom = new JButton("Pay"), refuseRansom = new JButton("Refuse");
 	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton();
 	private java.util.List<Transmissions.Message> all;
 	private boolean openCommission;
@@ -88,6 +89,8 @@ public class InboxDialog extends JDialog {
 		act.add(commission);
 		act.add(keep);
 		act.add(museum);
+		act.add(payRansom);
+		act.add(refuseRansom);
 		act.add(archive);
 		act.add(delete);
 		act.add(rewardLabel);
@@ -104,6 +107,10 @@ public class InboxDialog extends JDialog {
 		keep.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(true); } });
 		museum.setToolTipText("Her full value goes to the Cargo Hold, and she to the Federation museum");
 		museum.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(false); } });
+		payRansom.setToolTipText("Paid from the Cargo Hold; they come back to it");
+		payRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(true); } });
+		refuseRansom.setToolTipText("They will not be coming back");
+		refuseRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(false); } });
 		javax.swing.ButtonGroup tabs = new javax.swing.ButtonGroup();
 		tabs.add(inboxTab);
 		tabs.add(archiveTab);
@@ -207,6 +214,8 @@ public class InboxDialog extends JDialog {
 			commission.setVisible(false);
 			keep.setVisible(false);
 			museum.setVisible(false);
+			payRansom.setVisible(false);
+			refuseRansom.setVisible(false);
 			archive.setVisible(false);
 			delete.setVisible(false);
 			rewardLabel.setText(" ");
@@ -228,6 +237,11 @@ public class InboxDialog extends JDialog {
 		boolean open = Transmissions.isRescue(m) && !m.claimed;
 		keep.setVisible(open);
 		museum.setVisible(open);
+		homeplanet.parser.Expeditions.Captive held = homeplanet.parser.Expeditions.isRansom(m.key) && homeplanet.vault.Vault.isOpen()
+				? homeplanet.parser.Expeditions.openRansom(homeplanet.vault.Vault.get(), m.key) : null;
+		payRansom.setVisible(held != null);
+		refuseRansom.setVisible(held != null);
+		if (held != null) payRansom.setText("Pay " + held.ransom + " scrap");
 		archive.setVisible(true);
 		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m)); // receipts and messages pile up: archive one or be rid of it
 		delete.setToolTipText(Transmissions.isNote(m) ? "Delete this message for good" : "Delete this receipt for good: the trade stays in the station's history");
@@ -240,6 +254,31 @@ public class InboxDialog extends JDialog {
 		if (Transmissions.isRescue(m)) rewardLabel.setForeground(Color.GRAY);
 		Transmissions.markRead(m);
 		list.repaint();
+	}
+
+	/** A ransom letter: pay it from the Cargo Hold (they come back), or refuse (they don't). */
+	private void ransom(boolean pay) {
+		Transmissions.Message m = list.getSelectedValue();
+		if (m == null) return;
+		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
+		homeplanet.parser.Expeditions.Captive c = homeplanet.parser.Expeditions.openRansom(v, m.key);
+		if (c == null) { show(m); return; }
+		try {
+			if (pay) {
+				if (!HomePlanet.confirmNo(this, "Pay " + c.ransom + " scrap from the Cargo Hold for " + c.name + "'s return?", "Ransom")) return;
+				homeplanet.parser.Expeditions.payRansom(v, c);
+				Transmissions.decided(m, "Paid " + c.ransom + " scrap: " + c.name + " is back in the Cargo Hold");
+				JOptionPane.showMessageDialog(this, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
+			} else {
+				if (!HomePlanet.confirmNo(this, "Refuse the ransom? " + c.name + " will not be coming back.", "Ransom")) return;
+				homeplanet.parser.Expeditions.refuseRansom(v, c);
+				Transmissions.decided(m, "Refused");
+			}
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The ransom wasn't settled. Nothing was changed:\n" + e.getMessage());
+		}
+		all = Transmissions.load(); // the Ambassador's letter, if one came
+		fill();
 	}
 
 	/** A rescued ship's offer: keep her, or the museum's price. */
