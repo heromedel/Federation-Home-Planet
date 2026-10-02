@@ -183,10 +183,14 @@ final class CargoParts {
 		final String name, note, tip;
 		final Object value;
 		final boolean dim;
+		/** A thin bar under the name (a crew member's health), 0 to 1, or -1 for none; and its colour. */
+		float bar = -1;
+		Color barColor;
 		Row(Icon icon, String name, String note, Object value) { this(icon, name, note, value, null, false); }
 		Row(Icon icon, String name, String note, Object value, String tip, boolean dim) {
 			this.icon = icon; this.name = name; this.note = note; this.value = value; this.tip = tip; this.dim = dim;
 		}
+		Row bar(float fill, Color c) { bar = fill; barColor = c; return this; }
 	}
 
 	/** A dark list of rows in a scroll pane with a dark scroll bar. */
@@ -280,6 +284,13 @@ final class CargoParts {
 			Color c = row.dim ? DIM : selected ? GOLD : TEXT;
 			text(g, FtlFont.BODY.fit(row.name, width - tx - noteW - 6), FtlFont.BODY, c, tx, 4);
 			if (row.note != null) text(g, row.note, FtlFont.BODY, DIM, width - noteW + 4, 4);
+			if (row.bar >= 0) { // a thin bar under the name: its track dark, its fill the row's colour
+				int bw = Math.max(20, Math.min(60, width - tx - noteW - 10));
+				g.setColor(new Color(0, 0, 0, 110));
+				g.fillRect(tx, 17, bw, 3);
+				g.setColor(row.barColor);
+				g.fillRect(tx, 17, Math.max(1, Math.round(bw * Math.min(1f, row.bar))), 3);
+			}
 			g.dispose();
 		}
 	}

@@ -863,15 +863,27 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		String t = ItemTooltips.tooltip(r.id);
 		JOptionPane.showMessageDialog(this, new JLabel(t != null ? t : Items.title(r.id)), Items.title(r.id), JOptionPane.PLAIN_MESSAGE, IconFactory.itemIcon(r.id));
 	}
+	/** The infirmary's purple (FTL's colour for a crew member not yours to command just now). */
+	private static final Color INFIRMARY = new Color(170, 110, 230);
+	private static final String INFIRMARY_HTML = "#aa6ee6";
 	private static final Comparator<CargoParts.Row> BY_NAME = new Comparator<CargoParts.Row>() {
 		public int compare(CargoParts.Row a, CargoParts.Row b) { return a.name.compareToIgnoreCase(b.name); }
 	};
 	private List<CargoParts.Row> crewRows(ShipState s) {
 		List<CargoParts.Row> rows = new ArrayList<CargoParts.Row>();
+		boolean hold = s == tradeState && partnerIsStorage();
 		for (CrewState c : SaveHelper.getOwnCrew(s)) {
 			boolean body = SaveHelper.hasBody(c);
-			rows.add(new CargoParts.Row(IconFactory.crewIcon(c), c.getName(), body ? Crew.raceTitle(c) : "being cloned", c,
-					Crew.tooltip(c) + "  (double-click for her report)", !body));
+			// her health: no bar when whole; red by how hurt (the station heals her when a beacon passes); purple, full, in the infirmary
+			boolean laidUp = hold && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), c);
+			int max = c.getRace() == null ? 100 : c.getRace().getMaxHealth();
+			String state = laidUp ? "<br><font color='" + INFIRMARY_HTML + "'>In the infirmary: can't be moved or sent until she's on her feet</font>"
+					: body && c.getHealth() < max ? "<br><font color='#e05a4a'>Injured (" + c.getHealth() + "/" + max + "): the station will have healed her by the next beacon</font>" : "";
+			CargoParts.Row row = new CargoParts.Row(IconFactory.crewIcon(c), c.getName(), body ? Crew.raceTitle(c) : "being cloned", c,
+					Crew.tooltip(c).replace("</html>", state + "<br><i>(double-click for her report)</i></html>"), !body);
+			if (laidUp) row.bar(1f, INFIRMARY);
+			else if (body && c.getHealth() < max) row.bar(c.getHealth() / (float) max, new Color(224, 90, 74));
+			rows.add(row);
 		}
 		if (s == tradeState && partnerIsStorage()) Collections.sort(rows, BY_NAME); // the hold's crew by name; a ship's stay in her own order
 		return rows;
@@ -1127,6 +1139,10 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		boolean destIsStorage = fromMine && partnerIsStorage();
 		if (!destIsStorage && SaveHelper.getOwnCrew(destState).size() >= 8) { HomePlanet.showErrorDialog("No room for more crew: a ship carries 8 at most."); return; }
 		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't be moved right now."); return; }
+		if (!fromMine && partnerIsStorage() && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), cs)) {
+			JOptionPane.showMessageDialog(this, cs.getName() + " is in the infirmary, and stays there until she's on her feet.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
 		String refused = destIsStorage ? null : Dlc.refusesCrew(fromMine ? tradeSave : currentSave, cs);
 		if (refused != null) { JOptionPane.showMessageDialog(this, refused, "Advanced Edition only", JOptionPane.INFORMATION_MESSAGE); return; }
 		// their room and square referred to the old ship: stand them on a free square of the new one

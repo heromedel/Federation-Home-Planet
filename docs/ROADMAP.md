@@ -523,6 +523,20 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
 - **The infirmary** (`infirmary.txt` in the vault): a crew member hurt on an expedition stays in the Cargo Hold's save
   but can't be sent again for 3 to 6 beacons (hidden; the Expeditions screen lists who is laid up). When their time is
   up, the next visit to the Space Dock says so in a pop-up (never a letter), and they are whole again.
+- **The station's care, skill and the clone bay** (4B.93, Plan GG):
+  - The Cargo Bay's crew rows carry a thin bar under the name: none when whole, red by how hurt for an injury from
+    the game, purple (FTL's "not yours to command") full width for the infirmary; the tooltip says which. A crew
+    member in the infirmary can't be moved onto a ship ("stays there until she's on her feet").
+  - A crew member in the Cargo Hold hurt in the game is healed once a beacon has passed (a station heals fast), at
+    no cost. The infirmary costs a point of skill for each beacon laid up, taken from a random skill they have points
+    in; a point that crosses a level's line takes the level with it (rusty after a long lay-up). Not whole levels:
+    heromedel judged that too harsh with a hurt one trip in three.
+  - `clone 1`: an outcome where the crew member dies and the hiring ship's clone bay brings them back, a level down in
+    every skill they held (FTL's clone bay price); used where the hiring ship could have one (the pilot's freighter, the
+    liner). Drawn as a bad outcome, rarer than death.
+  - `xp <skill> <points>`: experience for the crew member the choice is about, a few points on the choices that
+    exercise the skill, more on the risky ones; FTL's levels come when the points add up (`homeplanet.model.Skills`
+    keeps points and mastery flags together). Specialist postings are still to come (IDEAS, Idea E).
 - Each expedition counts as one beacon of the fleet's time; events met in the last twelve aren't met again while others
   of the kind are left (`recent` in the fleet's expeditions.txt). The history log keeps each job's event, scrap, the
   dead and the laid up.

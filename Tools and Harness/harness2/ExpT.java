@@ -9,6 +9,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
  board(v);
  runs(v);
  home(v);
+ care(v);
  ransoms(v);
  hiring(v);
  Setup.done();
@@ -198,6 +199,54 @@ public class ExpT { public static void main(String[] a) throws Exception {
   boolean refused = false; try { Expeditions.finish(v, stale); } catch (IOException e) { refused = e.getMessage().contains("no longer in the Cargo Hold"); }
   Setup.chk("H: crew no longer in the Cargo Hold: the expedition can't be recorded, nothing changed", refused);
  }
+ /** The station's care: in-game hurts heal after a beacon; the infirmary costs a point of skill a beacon; a clone bay a level; events give experience. */
+ static void care(Vault v) throws Exception {
+  List<CrewState> two = hold(v, "human", "human");
+  Expeditions.checkInfirmary(v); // the station's last look is now
+  Vault.Copy c = v.readCopy(v.storage()); ShipState h = c.save.getPlayerShip();
+  CrewState a = h.getCrewList().get(0), b = h.getCrewList().get(1);
+  a.setHealth(30); homeplanet.model.Skills.set(a, 0, 20); homeplanet.model.Skills.set(a, 4, 16); // a hurt pilot (level 1, 20/26) and repairer (level 1, 16/32)
+  v.begin().put(v.storage(), c.save, c.hash).commit();
+  Setup.chk("C: hurt in the game, nothing happens until a beacon passes (" + hp(v, a.getName()) + ")", Expeditions.checkInfirmary(v).isEmpty() && hp(v, a.getName()) == 30);
+  ChainT.jump(v, 1);
+  Expeditions.checkInfirmary(v);
+  Setup.chk("C: a beacon later the station has healed her, no skill lost", hp(v, a.getName()) == 100 && homeplanet.model.Skills.points(crew(v, a.getName()), 0) == 20);
+  // the infirmary: a point a beacon off a skill she has, and a level can go with it
+  pinBoard(v, "rock_shaft");
+  Expeditions.Run bad = null;
+  for (int s = 0; s < 5000 && bad == null; s++) {
+   Expeditions.Run t = Expeditions.start(v, 0, Expeditions.holdCrew(v), new Random(s));
+   Expeditions.Choice vent = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Go down the vent")) vent = x;
+   t.choose(vent);
+   if (!fieldList(t, "hurt").isEmpty() && ((CrewState) fieldList(t, "hurt").get(0)).getName().equals(a.getName())) bad = t;
+  }
+  Expeditions.finish(v, bad);
+  int stay = Expeditions.infirmary(v).get(0).until - v.beaconsSeen();
+  ChainT.jump(v, stay);
+  Expeditions.checkInfirmary(v);
+  CrewState after = crew(v, a.getName());
+  int lostPts = 36 - homeplanet.model.Skills.points(after, 0) - homeplanet.model.Skills.points(after, 4);
+  Setup.chk("C: " + stay + " beacons in the infirmary cost " + lostPts + " points of skill, from the skills she had (pilot " + homeplanet.model.Skills.points(after, 0) + ", repair " + homeplanet.model.Skills.points(after, 4) + ")",
+    lostPts == stay && homeplanet.model.Skills.points(after, 2) == 0 && (homeplanet.model.Crew.skillLevels(after)[4] == 1) == (homeplanet.model.Skills.points(after, 4) >= 16));
+  // a clone bay: a level off each skill held; experience: points on, a level when they add up
+  CrewState z = Commission.volunteer("human", new Random(9)); homeplanet.model.Skills.set(z, 5, 14); homeplanet.model.Skills.set(z, 0, 13); homeplanet.model.Skills.set(z, 3, 10);
+  homeplanet.model.Skills.cloned(z);
+  Setup.chk("C: cloned: combat 2 to 1 (points at the level's start), pilot 1 to 0, weapons stays 0 with its points", homeplanet.model.Crew.skillLevels(z)[5] == 1 && homeplanet.model.Skills.points(z, 5) == 7
+    && homeplanet.model.Crew.skillLevels(z)[0] == 0 && homeplanet.model.Skills.points(z, 0) == 0 && homeplanet.model.Skills.points(z, 3) == 10);
+  homeplanet.model.Skills.add(z, 3, 50);
+  boolean lvl = homeplanet.model.Crew.skillLevels(z)[3] == 1 && homeplanet.model.Skills.points(z, 3) == 60;
+  homeplanet.model.Skills.add(z, 3, 999);
+  Setup.chk("C: 50 points of weapons on 10: level 1 (58), and never past the top", lvl && homeplanet.model.Skills.points(z, 3) == 116 && homeplanet.model.Crew.skillLevels(z)[3] == 2);
+  // on a run: the relay's attendant choice gives repair experience to the one it's about
+  pinBoard(v, "engi_relay");
+  List<CrewState> one = hold(v, "human");
+  int before = homeplanet.model.Skills.points(one.get(0), 4);
+  Expeditions.Run r = Expeditions.start(v, 0, one, new Random(1)); r.choose(r.choices().get(0));
+  Expeditions.finish(v, r);
+  Setup.chk("C: doing as the attendant says: 2 points of repair", homeplanet.model.Skills.points(crew(v, one.get(0).getName()), 4) == before + 2);
+ }
+ static CrewState crew(Vault v, String name) throws Exception { for (CrewState x : SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip())) if (x.getName().equals(name)) return x; return null; }
+ static int hp(Vault v, String name) throws Exception { return crew(v, name).getHealth(); }
  /** Captives: taken; a letter a few beacons later ("one month", never beacons); a reminder near the end; paid: home; refused or run out: the Ambassador's letter. */
  static void ransoms(Vault v) throws Exception {
   hold(v, "human");

@@ -18,7 +18,10 @@
 # * ...
 #
 # Effects: scrap 8 or scrap 6-10, fuel 2, missiles 1, parts 2 (drone parts), item weapon|drone|augment, injure 1
-# (to the infirmary), lose 1 (dead), taken 1 (a ransom follows), join <race|any>, then <step>.
+# (to the infirmary), lose 1 (dead), taken 1 (a ransom follows), clone 1 (dead, and back from the hiring ship's clone
+# bay a level down in every skill), xp <skill> <points> (experience for the crew member the choice is about: pilot,
+# engines, shields, weapons, repair, combat; a few points for work done, FTL's levels come at 7 to 65), join
+# <race|any>, then <step>.
 # In the words: {who} is the crew member the choice is about (the race's, else someone along), {crew} anyone along.
 # The game adds "You receive 9 scrap." and the like after the words; don't write them.
 #
@@ -46,21 +49,22 @@ posting security A Slug trader is holding an auction on a station at the edge of
 
 event pilot_moon rescue foe:the_rebels
 You reach the moon where the pilot is hiding, but a rebel patrol was waiting in orbit. It breaks away and races toward you. The captain who hired you turns from the controls. "Your call. What do we do?"
-* [fight] Move in and engage.
-  ~ 50 then search | The freighter's guns are better than they look. The patrol breaks off, trailing smoke, and the captain lets out a breath.
+* [guns] Move in and engage.
+  ~ 50 xp weapons 6 then search | The freighter's guns are better than they look, with {who} on them. The patrol breaks off, trailing smoke, and the captain lets out a breath.
   ~ 25 injure 1 | The patrol outguns you. A shot tears through the cargo bay before the captain can pull away, and {who} is under what it brings down. The pilot is left behind.
-  ~ 25 lose 1 | The patrol outguns you. A shot tears through the cargo bay before the captain can pull away. {who} was in the cargo bay.
+  ~ 15 lose 1 | The patrol outguns you. A shot tears through the cargo bay before the captain can pull away. {who} was in the cargo bay.
+  ~ 10 clone 1 | The patrol outguns you. A shot tears through the cargo bay before the captain can pull away, and {who} was in the cargo bay. The freighter's clone bay has them back on their feet by morning, a little different, and a good deal less skilled. The pilot is left behind.
 * Head for the moon and broadcast to the pilot.
   = then search | You dive for the surface, broadcasting on every band. Nothing comes back. Behind you, the patrol is turning for another pass.
 * Flee the rebel ship.
   = | The freighter outruns the patrol easily. The captain watches the moon shrink behind you and says nothing the whole way back.
 * [mantis fight] {who} offers to beam over to the rebel ship and eliminate the threat.
-  ~ 60 scrap 10-14 | {who} comes back alone and in good spirits. The patrol drifts silent, and the pilot answers your first call.
+  ~ 60 scrap 10-14 xp combat 3 | {who} comes back alone and in good spirits. The patrol drifts silent, and the pilot answers your first call.
   ~ 20 injure 1 scrap 10-14 | {who} comes back, though not in one piece. The patrol is silent, and you find the pilot.
   ~ 20 lose 1 scrap 10-14 | The patrol falls silent. {who} does not come back from it. You find the pilot, and the captain pays without a word.
 step search
 * Keep searching.
-  ~ 50 scrap 8-12 | A flare goes up from a crater rim. The pilot scrambles aboard, and the captain pays you with shaking hands.
+  ~ 50 scrap 8-12 xp pilot 4 | A flare goes up from a crater rim. The pilot scrambles aboard, and the captain pays you with shaking hands.
   ~ 20 injure 1 | The patrol catches you on the ground. You get off the moon, but not cleanly: {who} is hit on the way to the hatch, and the pilot is left behind.
   ~ 15 taken 1 | The patrol catches you on the ground. You get off the moon, but {who} is not aboard when you do, and the pilot is still down there.
   ~ 15 lose 1 | The patrol catches you on the ground. {who} is hit on the way to the hatch and doesn't make it through. The pilot is left behind.
@@ -72,11 +76,11 @@ The shaft entrance is a black mouth in a plain of cooled lava, and the air comin
 * Dig with the miners at the entrance.
   = scrap 6-9 | You dig beside the Rock for a day and a night. The miners never speak, but when the trapped crew is brought up alive, one of them puts a hand on your shoulder.
 * [heat] Go down the ventilation shaft to reach them from above.
-  ~ 45 scrap 10-14 | The vent is narrow and burning hot, but it's open. You reach the trapped miners hours before the diggers would have.
+  ~ 45 scrap 10-14 xp repair 3 | The vent is narrow and burning hot, but it's open. You reach the trapped miners hours before the diggers would have.
   ~ 25 injure 1 scrap 6-9 | The vent gives way halfway down. {who} is dragged out by the others, burned to the bone.
   ~ 30 lose 1 scrap 6-9 | The vent gives way halfway down. By the time the others reach {who}, the heat has done its work.
 * [rock] {who} walks down the main shaft to find them.
-  = scrap 12-16 | {who} goes into the heat as if it were a warm afternoon, and comes back an hour later with the work crew behind. The families don't have much, but they give you all of it.
+  = scrap 12-16 xp repair 3 | {who} goes into the heat as if it were a warm afternoon, and comes back an hour later with the work crew behind. The families don't have much, but they give you all of it.
 * Tell the families the shaft is beyond you.
   = | They don't argue. They turn back to the miners, who are still digging.
 
@@ -87,21 +91,22 @@ Halfway to the beacon a battered scout drops out of jump beside the transport an
 * Pay the toll out of your own pocket.
   = | The scout takes your scrap and leaves. The merchant pays you what she promised, which is exactly what you just handed over.
 * [guns] Refuse, and move your ship between the scout and the transport.
-  ~ 40 scrap 16-20 | The scout's captain looks you over for a long moment, then jumps away. The merchant pays you double.
+  ~ 40 scrap 16-20 xp weapons 5 | The scout's captain looks you over for a long moment, then jumps away. The merchant pays you double.
   ~ 20 injure 1 scrap 8-10 | The scout fires a single shot across the transport's bow and jumps. The merchant pays, but the shot caught {who} on the hull.
   ~ 20 lose 1 scrap 8-10 | The scout fires a single shot across the transport's bow and jumps. {who} was on the hull.
   ~ 20 | The scout isn't alone. A second ship drops in and takes the cargo while you are facing the first. The merchant doesn't pay.
 * [slug talk] {who} listens to the scout's crew for a moment, then tells you they're bluffing.
-  = scrap 12-14 | {who} is right. The scout has no working weapons. You tell its captain so, and he leaves without a word.
+  = scrap 12-14 xp pilot 3 | {who} is right. The scout has no working weapons. You tell its captain so, and he leaves without a word.
 * Tell the merchant to hand over the cargo.
   = scrap 4-5 | She does, slowly, and pays you half, slowly.
 
 event dark_liner escort
 Inside the nebula your sensors go dark. The liner is a smudge of light a few hundred meters off your bow, and then, for a moment, it isn't. When it reappears it is drifting, engines cold, and nobody answers your hail.
 * [fight] Pull alongside and board her.
-  ~ 45 scrap 10-12 | The liner's crew are at their posts, awake but blank, as if they'd forgotten what the controls were for. You nudge the engines back on, and the captain comes round somewhere past the nebula's edge. She pays and asks you never to tell anyone.
+  ~ 45 scrap 10-12 xp engines 4 | The liner's crew are at their posts, awake but blank, as if they'd forgotten what the controls were for. You nudge the engines back on, and the captain comes round somewhere past the nebula's edge. She pays and asks you never to tell anyone.
   ~ 25 injure 1 scrap 10-12 | The liner's crew are awake, blank, and not alone. Something moves in the dark of the passenger deck. You get the engines on and get out, but {who} is bleeding badly from a wound nobody saw happen.
-  ~ 30 lose 1 scrap 10-12 | Something moves in the dark of the passenger deck. The engines come on. {who} does not come back aboard.
+  ~ 20 lose 1 scrap 10-12 | Something moves in the dark of the passenger deck. The engines come on. {who} does not come back aboard.
+  ~ 10 clone 1 scrap 10-12 | Something moves in the dark of the passenger deck. The engines come on. {who} does not come back aboard. The liner's captain, when she comes round, says she has a clone bay, and an hour later {who} walks out of it, pale and clumsy and alive.
 * Hold position and keep hailing.
   = scrap 8-10 | After an hour the liner's lights come up and the captain answers, confused about the time. She pays you for the jump.
 * [slug] {who} goes very quiet, then tells you to leave the nebula now.
@@ -114,20 +119,20 @@ Inside the nebula your sensors go dark. The liner is a smudge of light a few hun
 event belt_freighter salvage
 You find the freighter wedged between two slow-turning rocks, her hull split along one side. The field is quiet, but every few minutes a small asteroid glances off her plating with a sound you can feel through the floor.
 * [fly] Go in through the split hull.
-  ~ 50 scrap 8-10 | You work fast and quiet, hauling out crates until the rocks start to close.
+  ~ 50 scrap 8-10 xp pilot 3 | You work fast and quiet, hauling out crates until the rocks start to close.
   ~ 25 injure 1 scrap 5-7 | The rocks shift while you're inside. Everyone gets out, but {who}'s suit is torn on the way.
   ~ 25 lose 1 scrap 5-7 | The rocks shift while you're inside. The others get out. {who} doesn't.
 * Cut your way in from the far side, away from the rocks.
   = scrap 2-4 | The cutting takes hours and the hold on that side was already empty. You load what little is left.
 * [rock] {who} offers to brace in the gap and hold the plating while the others work.
-  = scrap 11-13 | {who} wedges into the split hull and doesn't move for two hours. You empty the hold around them.
+  = scrap 11-13 xp repair 3 | {who} wedges into the split hull and doesn't move for two hours. You empty the hold around them.
 * Decide the wreck isn't worth it and leave.
   = | The insurer will not be pleased.
 
 event mantis_raider salvage
 The raider's hull is cold and her airlock is already open. Inside, the walls are scored with claw marks, and the weapons bay is sealed from the inside.
 * [fight] Cut open the weapons bay.
-  ~ 40 scrap 13-16 missiles 2 | Behind the door is a single Mantis, half starved, who has been waiting a long time for someone to open it. It takes two of you to put him down. Nobody is hurt, and the bay is full.
+  ~ 40 scrap 13-16 missiles 2 xp combat 3 | Behind the door is a single Mantis, half starved, who has been waiting a long time for someone to open it. It takes two of you to put him down. Nobody is hurt, and the bay is full.
   ~ 25 injure 1 scrap 13-16 | Behind the door is a single Mantis, half starved and fast. {who} is on the floor before anyone sees it move. The others finish it.
   ~ 35 lose 1 scrap 13-16 | Behind the door is a single Mantis, half starved and fast. {who} is dead before anyone sees it move.
 * Leave the bay sealed and strip the rest of her.
@@ -146,7 +151,7 @@ The pole is a white plain under a black sky, and the previous team's shuttle is 
 * Check the shuttle first.
   = scrap 10-12 | The team is inside, frozen in their seats, instruments in their hands. There's nothing to do for them. You take their readings as well as your own, and the company pays for both.
 * [cold] Follow the team's tracks toward the crevasse.
-  ~ 45 scrap 13-15 | The tracks end at the crevasse edge. So does the thing they were tracking: a Lanius, half buried in the ice, long dead. You take its readings too, and the company is very interested.
+  ~ 45 scrap 13-15 xp shields 5 | The tracks end at the crevasse edge. So does the thing they were tracking: a Lanius, half buried in the ice, long dead. You take its readings too, and the company is very interested.
   ~ 25 injure 1 scrap 7-9 | The tracks end at the crevasse edge, and the edge is thinner than it looks. {who} goes through up to the waist and comes out with both legs broken.
   ~ 30 lose 1 scrap 7-9 | The tracks end at the crevasse edge, and the edge is thinner than it looks. {who} goes through. The crevasse has no bottom you can see.
 * [lanius] {who} walks out onto the ice without a suit and looks over the edge.
@@ -161,7 +166,7 @@ The station's running lights are out when you arrive. Your hail goes unanswered.
 * Leave the crate in the open bay and go.
   = | You were told no stops. Whoever ordered the crate can collect it. Nobody is there to pay you.
 * [engi] {who} offers to check the station's power from the docking ring.
-  = scrap 7-9 | {who} finds the reactor stepped down on purpose and the life support fine. You deliver the crate to a sleeping station and collect the fee from the bench.
+  = scrap 7-9 xp repair 3 | {who} finds the reactor stepped down on purpose and the life support fine. You deliver the crate to a sleeping station and collect the fee from the bench.
 step bench
 * Take the payment from the envelope on the bench.
   = scrap 7-9 | You leave the sleeping station as you found it.
@@ -174,7 +179,7 @@ step bench
 event quarantine delivery
 The colony's landing field is empty except for a line of armed farmers and a governor in a clean coat. "That's the Federation's medicine," he says. "Half of it is for the sick. Half of it is going to my warehouse, and you're going to tell them it was all delivered."
 * [fight] Deliver all of it to the clinic, past him.
-  ~ 50 scrap 9-11 | The farmers look at the governor, then at the crates, and step aside. The clinic's doctor pays you out of her own pocket.
+  ~ 50 scrap 9-11 xp combat 2 | The farmers look at the governor, then at the crates, and step aside. The clinic's doctor pays you out of her own pocket.
   ~ 20 injure 1 scrap 9-11 | The farmers look at the governor, and don't step aside. You push through. Someone's rifle goes off and {who} is on the ground. The medicine reaches the clinic.
   ~ 30 lose 1 scrap 9-11 | Someone's rifle goes off and {who} doesn't get up. The medicine reaches the clinic.
 * Do as the governor says.
@@ -189,22 +194,22 @@ The colony's landing field is empty except for a line of armed farmers and a gov
 event engi_relay repair
 The relay is a long spindle of a station, dark along its whole length except for the reactor room at one end, which is far too bright. The Engi attendant explains the fault in a single sentence you don't understand and hands you a tool.
 * Do exactly what the attendant says.
-  = scrap 8-10 | The attendant talks you through the repair one step at a time. It takes most of a day, and at the end the station's lights come up along its whole length.
+  = scrap 8-10 xp repair 2 | The attendant talks you through the repair one step at a time. It takes most of a day, and at the end the station's lights come up along its whole length.
 * [tech] Go into the reactor room and find the fault yourselves.
-  ~ 45 scrap 11-13 | The fault is a cracked coupling, obvious once you're inside. You have it replaced before the attendant has finished explaining.
+  ~ 45 scrap 11-13 xp repair 5 | The fault is a cracked coupling, obvious once you're inside. You have it replaced before the attendant has finished explaining.
   ~ 25 injure 1 scrap 5-7 | The fault is a cracked coupling, and the coupling fails while {who} has their hands on it. They're carried out, and the attendant finishes the job alone.
   ~ 30 lose 1 scrap 5-7 | The coupling fails while {who} has their hands on it. The attendant finishes the job alone, and is sorry, in the Engi way.
 * [engi] {who} and the attendant talk for thirty seconds and the lights come on.
   = scrap 11-13 | You never find out what was wrong.
 * [zoltan] {who} offers to power the station from their own body while the others work.
-  = scrap 11-13 | With {who} standing in the reactor room, the station holds enough light to work safely. The repair is slow and sure.
+  = scrap 11-13 xp engines 4 | With {who} standing in the reactor room, the station holds enough light to work safely. The repair is slow and sure.
 
 event dry_well repair
 The pump sits at the bottom of a dry well, and the colony's mechanic, an old man with one working hand, has been down there for two days. A woman from the colony council says the job is yours if you want it. The mechanic says it isn't.
 * Work with the mechanic.
-  = scrap 7-9 | He's slow, and he's right. Between his one hand and all of yours, the pump is running by nightfall. The council pays, and the mechanic gives your crew the first water.
+  = scrap 7-9 xp repair 2 | He's slow, and he's right. Between his one hand and all of yours, the pump is running by nightfall. The council pays, and the mechanic gives your crew the first water.
 * [tech] Send him up and do it yourselves.
-  ~ 50 scrap 7-9 | The pump's a simple thing. You have it running in an afternoon. The mechanic doesn't speak to you again.
+  ~ 50 scrap 7-9 xp repair 4 | The pump's a simple thing. You have it running in an afternoon. The mechanic doesn't speak to you again.
   ~ 20 injure 1 scrap 5-6 | The pump's a simple thing, and the well isn't. The wall comes down while {who} is at the bottom. They're dug out, barely. The mechanic doesn't say "I told you".
   ~ 30 lose 1 scrap 5-6 | The wall comes down while {who} is at the bottom. The mechanic helps dig, and says nothing at all.
 * [engi] {who} looks at the pump from the top of the well and tells the mechanic what's wrong.
@@ -219,10 +224,10 @@ The auction floor is a single long room full of Slugs, a few humans, and one ver
 * Stay with the crate.
   = scrap 9-11 | The fight was for your benefit. Two Slugs drift toward the crate while everyone looks the other way, find you still standing beside it, and drift away again. The trader pays, pleased.
 * [fight] Break up the fight.
-  ~ 45 scrap 7-9 | You separate the fighters, who stop at once, and turn to find the crate still where it was. The trader shrugs and pays.
+  ~ 45 scrap 7-9 xp combat 3 | You separate the fighters, who stop at once, and turn to find the crate still where it was. The trader shrugs and pays.
   ~ 25 injure 1 scrap 4-5 | You separate the fighters, and one of them has a knife. {who} takes it in the side. The crate is gone by the time anyone looks. The trader pays half.
   ~ 30 lose 1 scrap 4-5 | One of the fighters has a knife, and {who} takes it in the side, and the floor is a long way from a doctor. The trader pays half.
 * [slug] {who} watches the room instead of the fight, and nods at two Slugs by the far wall.
-  = scrap 11-13 | You step in front of the two before they take a step. The fight stops on its own. The trader pays, and asks if {who} is for hire.
+  = scrap 11-13 xp pilot 2 | You step in front of the two before they take a step. The fight stops on its own. The trader pays, and asks if {who} is for hire.
 * [mantis] {who} walks toward the fight, and the fight stops.
   = scrap 9-11 | Nobody in the room wants to find out what {who} would have done. The crate stays where it is.

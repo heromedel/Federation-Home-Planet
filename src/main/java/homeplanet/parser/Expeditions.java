@@ -23,6 +23,7 @@ import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
+import homeplanet.model.Skills;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
@@ -87,15 +88,19 @@ public final class Expeditions {
 
 	// ---- the events files ----
 
+	/** The skills as the events name them, in Crew.skillLevels' order. */
+	static final String[] SKILLS = {"pilot", "engines", "shields", "weapons", "repair", "combat"};
 	/** What a choice comes to: its words, what it gives and costs, and the choice it may lead on to. */
 	public static final class Outcome {
 		int weight = 1;
-		int scrapMin, scrapMax, injure, lose, taken, fuel, missiles, parts;
+		int scrapMin, scrapMax, injure, lose, taken, clone, fuel, missiles, parts;
 		String item; // weapon, drone or augment
 		String join; // a race, or "any": someone joins the crew
 		String then; // the event's next step, or null: the job is over
 		String text = "";
-		boolean bad() { return injure > 0 || lose > 0 || taken > 0; }
+		/** Skill experience for the crew member the choice is about: points by skill. */
+		final int[] xp = new int[SKILLS.length];
+		boolean bad() { return injure > 0 || lose > 0 || taken > 0 || clone > 0; }
 	}
 	/** One way through a step. */
 	public static final class Choice {
@@ -300,6 +305,12 @@ public final class Expeditions {
 			} else if (k.equals("injure")) o.injure = Integer.parseInt(v);
 			else if (k.equals("lose")) o.lose = Integer.parseInt(v);
 			else if (k.equals("taken")) o.taken = Integer.parseInt(v);
+			else if (k.equals("clone")) o.clone = Integer.parseInt(v);
+			else if (k.equals("xp")) {
+				int skill = java.util.Arrays.asList(SKILLS).indexOf(v);
+				if (skill < 0 || i + 1 >= t.length) throw new IllegalArgumentException("xp needs a skill (pilot, engines, shields, weapons, repair, combat) and points");
+				o.xp[skill] += Integer.parseInt(t[++i]);
+			}
 			else if (k.equals("fuel")) o.fuel = Integer.parseInt(v);
 			else if (k.equals("missiles")) o.missiles = Integer.parseInt(v);
 			else if (k.equals("parts")) o.parts = Integer.parseInt(v);
@@ -442,6 +453,10 @@ public final class Expeditions {
 		final List<CrewState> lost = new ArrayList<CrewState>();
 		/** Of the lost, those taken rather than killed. */
 		final List<CrewState> captured = new ArrayList<CrewState>();
+		/** Killed and cloned by the hiring ship's clone bay: home alive, a level off each skill. */
+		final List<CrewState> cloned = new ArrayList<CrewState>();
+		/** Skill experience earned, by crew member. */
+		final Map<CrewState, int[]> earned = new java.util.HashMap<CrewState, int[]>();
 
 		Run(int slot, Posting posting, List<CrewState> party, List<String> recent, Random rng) {
 			this.slot = slot; this.posting = posting; this.party = new ArrayList<CrewState>(party); this.rng = rng;
@@ -517,6 +532,15 @@ public final class Expeditions {
 			for (int i = 0; i < o.injure && !alive().isEmpty(); i++) {
 				CrewState h = i == 0 && alive().contains(who) ? who : alive().get(rng.nextInt(alive().size()));
 				if (!hurt.contains(h)) hurt.add(h);
+			}
+			for (int i = 0; i < o.clone && !alive().isEmpty(); i++) {
+				CrewState h = i == 0 && alive().contains(who) ? who : alive().get(rng.nextInt(alive().size()));
+				if (!cloned.contains(h)) cloned.add(h);
+			}
+			if (who != null && alive().contains(who)) {
+				int[] got = earned.get(who);
+				if (got == null) earned.put(who, got = new int[SKILLS.length]);
+				for (int i = 0; i < SKILLS.length; i++) got[i] += o.xp[i];
 			}
 			int got = o.scrapMax <= 0 ? 0 : o.scrapMin + rng.nextInt(o.scrapMax - o.scrapMin + 1);
 			scrap += got;
@@ -607,6 +631,9 @@ public final class Expeditions {
 			if (mine == null) throw new IOException(sent.getName() + " is no longer in the Cargo Hold; nothing was changed");
 			if (r.lost.contains(sent)) { crew.remove(mine); lostNames.add(sent.getName()); continue; }
 			if (r.hurt.contains(sent)) { mine.setHealth(Math.max(1, mine.getHealth() / 4)); hurtNames.add(sent.getName()); toInfirmary.add(mine); }
+			if (r.cloned.contains(sent)) Skills.cloned(mine);
+			int[] got = r.earned.get(sent);
+			if (got != null) for (int i = 0; i < SKILLS.length; i++) if (got[i] > 0) Skills.add(mine, i, got[i]);
 		}
 		for (CrewState n : r.joined) {
 			if (!SaveHelper.placeCrew(hold, n, true)) continue; // no room: they find other work
@@ -648,18 +675,26 @@ public final class Expeditions {
 	// ---- the infirmary ----
 
 	private static File infirmaryFile(Vault v) { return new File(v.root, "infirmary.txt"); }
-	/** A crew member laid up: they stay in the Cargo Hold's save, but can't be sent until their time is up. */
+	private static final String INFIRMARY_NOTE = "Crew hurt on expeditions, and when they're on their feet again";
+	/** A crew member laid up: they stay in the Cargo Hold's save, but can't be sent or moved until their time is up. */
 	public static final class Patient {
 		public final String name, race;
 		public final int until;
-		Patient(String name, String race, int until) { this.name = name; this.race = race; this.until = until; }
+		/** The last beacon their lay-up cost them a point of skill. */
+		final int drained;
+		Patient(String name, String race, int until, int drained) { this.name = name; this.race = race; this.until = until; this.drained = drained; }
 		String key() { return name + "/" + race; }
 	}
 	public static synchronized List<Patient> infirmary(Vault v) {
 		List<Patient> out = new ArrayList<Patient>();
 		Properties p = readProps(infirmaryFile(v));
-		for (int i = 0; p.getProperty(i + ".name") != null; i++) out.add(new Patient(p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), intOf(p, i + ".until", 0)));
+		for (int i = 0; p.getProperty(i + ".name") != null; i++) out.add(new Patient(p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), intOf(p, i + ".until", 0), intOf(p, i + ".drained", 0)));
 		return out;
+	}
+	/** Is this crew member laid up in the infirmary? */
+	public static boolean laidUp(Vault v, CrewState c) {
+		for (Patient x : infirmary(v)) if (x.key().equals(key(c))) return true;
+		return false;
 	}
 	private static synchronized void admit(Vault v, CrewState c) {
 		Properties p = readProps(infirmaryFile(v));
@@ -668,26 +703,46 @@ public final class Expeditions {
 		p.setProperty(i + ".name", c.getName());
 		p.setProperty(i + ".race", c.getRace() == null ? "human" : c.getRace().getId());
 		p.setProperty(i + ".until", Integer.toString(v.beaconsSeen() + HEAL_MIN + new Random().nextInt(HEAL_MAX - HEAL_MIN + 1)));
-		try { writeProps(infirmaryFile(v), p, "Crew hurt on expeditions, and when they're on their feet again"); } catch (IOException e) { log.warn("Could not admit {} to the infirmary: {}", c.getName(), e.toString()); }
+		p.setProperty(i + ".drained", Integer.toString(v.beaconsSeen()));
+		try { writeProps(infirmaryFile(v), p, INFIRMARY_NOTE); } catch (IOException e) { log.warn("Could not admit {} to the infirmary: {}", c.getName(), e.toString()); }
 	}
-	/** The infirmary's clock: whoever's time is up is on their feet, whole, and back among the crew who can be sent. Returns their names. */
+	/**
+	 * The station's care, each time a beacon has passed: crew in the Cargo Hold hurt in the game are healed (a station
+	 * heals fast); the infirmary's lose a point of skill for each beacon laid up (from a random skill they have points
+	 * in), and whoever's time is up is on their feet, whole, and back among the crew who can be sent. Returns their names.
+	 */
 	public static synchronized List<String> checkInfirmary(Vault v) {
 		List<String> out = new ArrayList<String>();
-		List<Patient> all = infirmary(v);
-		int now = v.beaconsSeen();
-		List<Patient> keep = new ArrayList<Patient>();
+		Properties p = readProps(infirmaryFile(v));
+		int now = v.beaconsSeen(), healedAt = intOf(p, "healed_at", -1);
+		List<Patient> all = infirmary(v), keep = new ArrayList<Patient>();
 		for (Patient x : all) { if (now >= x.until) out.add(x.name); else keep.add(x); }
-		if (out.isEmpty()) return out;
+		boolean drain = false;
+		for (Patient x : all) if (now > x.drained) drain = true;
+		if (healedAt < 0) { // the first look: the clock starts now, nothing heals yet
+			p.setProperty("healed_at", Integer.toString(now));
+			try { writeProps(infirmaryFile(v), p, INFIRMARY_NOTE); } catch (IOException e) { log.warn("Could not start the infirmary's clock: {}", e.toString()); }
+			healedAt = now;
+		}
+		if (out.isEmpty() && !drain && now <= healedAt) return out;
 		try {
 			Ship st = v.storage();
 			Vault.Copy c = v.readCopy(st);
-			for (CrewState x : c.save.getPlayerShip().getCrewList()) if (out.contains(x.getName()) && x.getRace() != null) x.setHealth(x.getRace().getMaxHealth());
+			Random rng = new Random();
+			for (CrewState x : c.save.getPlayerShip().getCrewList()) {
+				if (x.getRace() == null) continue;
+				Patient mine = null;
+				for (Patient y : all) if (y.key().equals(key(x))) mine = y;
+				if (mine != null) for (int b = mine.drained; b < Math.min(now, mine.until); b++) Skills.drain(x, rng);
+				if (mine == null || out.contains(mine.name)) x.setHealth(x.getRace().getMaxHealth());
+			}
 			v.begin().put(st, c.save, c.hash).commit();
-			Properties p = new Properties();
-			for (int i = 0; i < keep.size(); i++) { p.setProperty(i + ".name", keep.get(i).name); p.setProperty(i + ".race", keep.get(i).race); p.setProperty(i + ".until", Integer.toString(keep.get(i).until)); }
-			writeProps(infirmaryFile(v), p, "Crew hurt on expeditions, and when they're on their feet again");
+			Properties q = new Properties();
+			q.setProperty("healed_at", Integer.toString(now));
+			for (int i = 0; i < keep.size(); i++) { q.setProperty(i + ".name", keep.get(i).name); q.setProperty(i + ".race", keep.get(i).race); q.setProperty(i + ".until", Integer.toString(keep.get(i).until)); q.setProperty(i + ".drained", Integer.toString(now)); }
+			writeProps(infirmaryFile(v), q, INFIRMARY_NOTE);
 			for (String n : out) HistoryLog.entry("EXPEDITION", n + " is out of the infirmary");
-		} catch (IOException e) { log.warn("Could not release the infirmary's crew: {}", e.toString()); return new ArrayList<String>(); }
+		} catch (IOException e) { log.warn("Could not tend the infirmary's crew: {}", e.toString()); return new ArrayList<String>(); }
 		return out;
 	}
 	private static Properties readProps(File f) {
