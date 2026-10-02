@@ -240,6 +240,46 @@ public class LinkT {
   a("hailcancel " + port);
   Setup.chk("a withdrawn hail: the other station sees it go, while it was still asking", b("wait withdrawn 1").equals("OK"));
   b("holdhail off");
+
+  // ---- shipments ----
+  b("resetlimits"); a("resetlimits"); // the sections above sent many messages this minute
+  a("inbox on");
+  a("stock scrap 40");
+  int aScrap = num(a("hold"), "scrap");
+  Setup.chk("packing takes the goods off their ship into escrow", a("parcel pack scrap 25").equals("OK 25 scrap") && num(a("hold"), "scrap") == aScrap - 25 && a("parcel packed").equals("25 scrap"));
+  Setup.chk("one packed shipment at a time", a("parcel pack scrap 5").startsWith("FAILED"));
+  a("parcel unpack");
+  Setup.chk("unpacking brings them back", num(a("hold"), "scrap") == aScrap && a("parcel packed").equals("none"));
+  boolean takesShipments = false;
+  for (Beacon.Found f : Beacon.scan(1200, "aaaaaaaaaaaaaaaa")) if (f.station.equals("bbbbbbbbbbbbbbbb")) takesShipments = f.shipments;
+  Setup.chk("a station's search answer says it takes shipments", takesShipments);
+  a("parcel pack scrap 25");
+  int bScrap = num(b("hold"), "scrap");
+  Setup.chk("sent with a message: held in their inbox, gone from here", a("parcel send " + port + " Here's that scrap.").equals("OK")
+    && b("parcel parcels").contains("in:held:25_scrap") && num(a("hold"), "scrap") == aScrap - 25 && a("parcel parcels").contains("out:sent:25_scrap"));
+  Setup.chk("arriving again (after a lost answer) isn't filed twice", a("parcel again " + port).startsWith("OK") && b("parcel parcels").split("in:held").length == 2);
+  Setup.chk("accepted: into their Cargo Hold", b("parcel accept").equals("OK") && num(b("hold"), "scrap") == bScrap + 25 && b("parcel parcels").contains("in:accepted:25_scrap"));
+  a("parcel pack scrap 10");
+  a("parcel send " + port + " easy From my Easy career.");
+  Setup.chk("from a mode this fleet doesn't trade with: held, and not accepted here", b("parcel accept").startsWith("FAILED") && b("parcel fleets").equals("|refuses"));
+  b("parcel makefleet easy");
+  Setup.chk("their Easy fleet may take it", b("parcel fleets").equals("easy|refuses"));
+  int easyScrap = num(b("parcel holdof easy"), "scrap");
+  Setup.chk("delivered to that fleet's Cargo Hold: its file written, the fleet not in use", b("parcel deliver easy").equals("OK")
+    && num(b("parcel holdof easy"), "scrap") == easyScrap + 10 && num(b("hold"), "scrap") == bScrap + 25 && b("parcel parcels").contains("in:elsewhere:10_scrap"));
+  a("parcel pack scrap 5");
+  a("parcel send " + port + " Too much?");
+  a("listen");
+  int aBack = num(a("hold"), "scrap");
+  Setup.chk("returned: it waits in their Outbox, addressed back", b("parcel return").equals("OK") && b("outbox count").equals("1") && b("parcel parcels").contains("in:returning:5_scrap"));
+  Setup.chk("and goes home when their station finds the sender's", b("outbox deliver").startsWith("Delivered") && b("parcel parcels").contains("in:returned:5_scrap") && a("parcel parcels").contains("in:held:5_scrap"));
+  Setup.chk("the sender accepts their goods back", a("parcel accept").equals("OK") && num(a("hold"), "scrap") == aBack + 5);
+  a("parcel pack scrap 3");
+  int aPacked = num(a("hold"), "scrap");
+  a("parcel outbox bbbbbbbbbbbbbbbb Commander_Bree " + port + " Later.");
+  Setup.chk("a shipment can wait in the Outbox with its message", a("outbox count").equals("1") && a("parcel parcels").contains("out:outbox:3_scrap"));
+  Setup.chk("Cancel there unpacks it: the goods come home", a("outbox cancel").equals("OK") && num(a("hold"), "scrap") == aPacked + 3 && a("parcel parcels").contains("out:unpacked:3_scrap"));
+  a("unlisten");
   b("inbox off");
 
   // ---- versions: the protocol decides ----

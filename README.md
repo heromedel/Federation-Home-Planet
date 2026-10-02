@@ -45,7 +45,8 @@ And More.
   unless a career keeps to its own); any two commanders can hail and talk. Both commanders build the offer and accept it; any change withdraws acceptance.
   Goods arrive in the Cargo Hold, ships at the Space Dock. Nothing is open to the network until you open your
   hailing frequencies; stay powered up to be hailed from any screen, send a message to a commander's inbox (or, marked
-  priority, onto their screen; one who's away gets it from the Outbox when they're back), and block a commander you'd
+  priority, onto their screen; one who's away gets it from the Outbox when they're back), send them a shipment of goods with a message, and
+  block a commander you'd
   rather not hear from.
 - **The shipyard:** commission any unlocked ship, a remodel, or a ship you designed yourself. New blueprints are sent
   to FTL via Slipstream.

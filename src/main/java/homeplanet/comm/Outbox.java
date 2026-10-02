@@ -30,6 +30,8 @@ public final class Outbox {
 		public long written;
 		/** Why their station turned it away ("" while it's still trying). */
 		public String refused = "";
+		/** A shipment that goes with it: its parcel's id ("" for none). */
+		public String shipment = "";
 	}
 
 	static File dir() { return new File(Exchange.dir(), "outbox"); }
@@ -62,6 +64,7 @@ public final class Outbox {
 		i.text = Notes.clean(p.getProperty("text", ""));
 		i.priority = "true".equals(p.getProperty("priority"));
 		i.refused = p.getProperty("refused", "");
+		i.shipment = p.getProperty("shipment", "");
 		return i;
 	}
 	private static void write(Item i) throws IOException {
@@ -74,6 +77,7 @@ public final class Outbox {
 		p.setProperty("text", i.text);
 		p.setProperty("priority", Boolean.toString(i.priority));
 		p.setProperty("refused", i.refused == null ? "" : i.refused);
+		p.setProperty("shipment", i.shipment == null ? "" : i.shipment);
 		java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
 		p.store(b, "Long Range Comm. outbox");
 		dir().mkdirs();
@@ -82,6 +86,10 @@ public final class Outbox {
 
 	/** Puts a message in the outbox. Throws, saying why, if it's full. */
 	public static synchronized Item add(String toStation, String toTitle, String host, int port, String text, boolean priority) throws IOException {
+		return add(toStation, toTitle, host, port, text, priority, "");
+	}
+	/** As add, with a shipment (a parcel's id): a packed one is marked as waiting in the Outbox for that commander. */
+	public static synchronized Item add(String toStation, String toTitle, String host, int port, String text, boolean priority, String shipment) throws IOException {
 		List<Item> all = list();
 		int each = 0;
 		for (Item i : all) if (i.toStation.equals(toStation)) each++;
@@ -96,9 +104,18 @@ public final class Outbox {
 		i.port = port;
 		i.text = Notes.clean(text);
 		i.priority = priority;
+		i.shipment = shipment == null ? "" : shipment;
+		Shipments.Parcel parcel = i.shipment.isEmpty() ? null : Shipments.find(i.shipment);
+		if (parcel != null && !parcel.incoming) Shipments.inOutbox(parcel, toStation, i.toTitle);
 		write(i);
 		homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " waits to go");
 		return i;
+	}
+	/** Cancels an item: a shipment with it is unpacked (or, a return, goes back to waiting in the inbox). */
+	public static synchronized void cancel(Item i) throws IOException {
+		Shipments.Parcel p = i.shipment.isEmpty() ? null : Shipments.find(i.shipment);
+		if (p != null) Shipments.cancelled(p);
+		remove(i);
 	}
 	/** Takes an item out: cancelled, or delivered. */
 	public static synchronized void remove(Item i) throws IOException {
@@ -127,11 +144,24 @@ public final class Outbox {
 	 * station's own frequency, for a reply.
 	 */
 	public static List<String> deliver(String station, String host, int port, String version, String myStation, String myTitle, int replyPort) {
+		return deliver(station, host, port, version, myStation, myTitle, replyPort, true);
+	}
+	/** shipmentsOk: their station takes shipments (its search answer says so); one that doesn't is never sent one. */
+	public static List<String> deliver(String station, String host, int port, String version, String myStation, String myTitle, int replyPort, boolean shipmentsOk) {
 		List<String> said = new ArrayList<String>();
 		for (Item i : list()) {
 			if (!i.toStation.equals(station) || !i.refused.isEmpty()) continue;
+			Shipments.Parcel parcel = i.shipment.isEmpty() ? null : Shipments.sendable(i.shipment);
+			if (parcel != null && !shipmentsOk) {
+				try { refused(i, i.toTitle + "'s station can't take shipments (it needs a newer version)."); } catch (IOException x) { }
+				said.add("A shipment for " + i.toTitle + " can't go: their station needs a newer version.");
+				continue;
+			}
 			try {
-				String where = Notes.send(host, port, Notes.note(version, myStation, myTitle, i.text, i.priority, replyPort).put("written", i.written), i.toTitle);
+				Wire.Msg note = Notes.note(version, myStation, myTitle, i.text, i.priority, replyPort).put("written", i.written);
+				if (parcel != null) Shipments.attach(note, parcel);
+				String where = Notes.send(host, port, note, i.toTitle);
+				if (parcel != null) Shipments.delivered(parcel, i.toTitle);
 				remove(i);
 				said.add((Notes.POPUP.equals(where) ? "Shown to " + i.toTitle : "Delivered to " + i.toTitle + "'s inbox") + " (it waited " + waited(i.written) + ").");
 				homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " delivered, after " + waited(i.written));

@@ -85,6 +85,21 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   later search; one it turns away for another reason stops trying and says why, until Try again; a station that blocked you never answers the search, so the message just waits. Cancel
   takes an item out. At most 20 wait, 5 for any one commander. It's the inbox's third tab (Inbox / Archive / Outbox),
   and the Long Range screen's "Outbox (n)" opens the inbox on it.
+- **Shipments** (`comm/Shipments`, a `parcel-ID.txt` record each in the vault's `comm/`): goods sent with a message,
+  no channel needed. **Prepare Shipment** (the middle panel, with no channel open) opens the offer side with nobody on
+  the other (a draft `Session`): items, supplies and crew, not whole ships. **Package** takes them off their ships into
+  escrow, as a trade does (one packed shipment at a time); **Unpack** brings them back. Send Message then offers
+  **Attach shipment**, for a station whose search answer says it takes them ("shipments", 4B.81 on). The parcel
+  travels in the NOTE (its id, its lines, the sender's mode). The other station checks every line against its game
+  data (a line it can't take turns the whole parcel away), files it in its inbox as "Shipment from ...", and answers;
+  only then does the sender's escrow settle (sent). A parcel that arrives again (an answer lost) is acknowledged, not
+  filed twice. In the inbox a held parcel has **Accept** (into this fleet's Cargo Hold), **Deliver to another fleet...**
+  (another of the commander's fleets the trading rules allow, its Cargo Hold file written directly, that fleet not in
+  use) and **Return to sender** (it waits in the Outbox, addressed back, under a new id, and arrives as a shipment for
+  them to accept). The mode rules don't turn a parcel away: one from a mode this fleet doesn't trade with is held,
+  saying why (the lore line first), to deliver elsewhere or return. A held parcel can't be deleted. A message with a
+  shipment that can't reach its commander waits in the Outbox with it; Cancel there unpacks it. Every move changes the
+  parcel's state in the same transaction as the save its goods go into.
 - **The offer** (`comm/Session`): each side owns its lines and numbers each version of them. Accept names both
   versions, so any change withdraws every acceptance (the notice line says what changed). A line the other station
   can't take (an item or race its game data lacks) shows grey, and Accept stays off. Notices are short enough for
@@ -149,9 +164,8 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 - More things to do with a commander in the list, beside Hail and Send Message: **View Offers** (offers left standing
   for anyone who finds you, to trade without both commanders at the screen), **Return Ship** (sending a traded ship
   home to her original owner, or lending ships).
-- **Shipments** (Plan M, on top of the Outbox): Prepare Shipment, Package / Unpackage, attached to a message; Accept or
-  Refuse in the inbox, a refused one going home through the other station's Outbox; Cancel in the Outbox brings the
-  goods back.
+- **Trading with your own careers:** sending a shipment, or trading, between your own fleets (Sandbox and the
+  Immersive careers), where the trading rules allow it.
 
 ## Changing Long Range Comm.
 
@@ -171,6 +185,8 @@ hail not answered, an older station's bare search still answered, which addresse
 from an older station); messages without a channel (inbox, priority pop-up and its once-a-minute rule, pop-ups turned
 off, an inbox that's off, blocked, flooded, plain text, an older station's answer, frequencies closed); the Outbox
 (waiting while frequencies are closed, kept on disk, delivered once found and saying when it was written, Cancel, a
-busy station leaving it to go later, Try again, the limit per commander); commanders remembered out of range, written
+busy station leaving it to go later, Try again, the limit per commander); shipments (packing and unpacking, sent and held, a duplicate arrival, accepted, held for another mode and delivered
+to another fleet's Cargo Hold, returned through the Outbox and accepted home, Cancel in the Outbox unpacking);
+commanders remembered out of range, written
 to through the Outbox, removed and found again; a hail withdrawn while the other station still asks; garbled
 messages and out-of-range crew.

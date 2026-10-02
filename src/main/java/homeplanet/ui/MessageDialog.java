@@ -21,6 +21,7 @@ import javax.swing.SwingUtilities;
 
 import homeplanet.comm.Commander;
 import homeplanet.comm.Notes;
+import homeplanet.comm.Wire;
 import homeplanet.core.HomePlanet;
 
 /**
@@ -31,6 +32,9 @@ import homeplanet.core.HomePlanet;
 public final class MessageDialog extends JDialog {
 	private final JTextArea text = new JTextArea(7, 44);
 	private final JCheckBox priority = new JCheckBox("Priority: it pops up on their screen (unticked, it goes to their inbox)");
+	/** The packed shipment, to go with the message (shown only while one is packed). */
+	private final JCheckBox attach = new JCheckBox();
+	private final homeplanet.comm.Shipments.Parcel packed = homeplanet.vault.Vault.isOpen() ? homeplanet.comm.Shipments.packed() : null;
 	private final JButton send = new JButton("Send"), cancel = new JButton("Cancel");
 	private final JLabel count = new JLabel();
 
@@ -67,7 +71,18 @@ public final class MessageDialog extends JDialog {
 		});
 		p.add(new JScrollPane(text), BorderLayout.CENTER);
 		JPanel south = new JPanel(new BorderLayout());
-		south.add(priority, BorderLayout.NORTH);
+		JPanel ticks = new JPanel(new java.awt.GridLayout(0, 1));
+		ticks.add(priority);
+		if (packed != null) {
+			homeplanet.comm.Contacts.Entry c = homeplanet.comm.Contacts.get(toStation);
+			boolean takes = c != null && c.shipments;
+			attach.setText("Attach shipment (" + packed.words() + ")");
+			attach.setEnabled(takes);
+			attach.setToolTipText(takes ? "It goes with the message, and waits in their inbox until they accept it or send it back"
+					: toTitle + "'s station can't take shipments (it needs a newer version)");
+			ticks.add(attach);
+		}
+		south.add(ticks, BorderLayout.NORTH);
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
 		buttons.add(count);
 		buttons.add(send);
@@ -79,10 +94,13 @@ public final class MessageDialog extends JDialog {
 		cancel.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
 		send.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				final String t = Notes.clean(text.getText());
+				final homeplanet.comm.Shipments.Parcel parcel = attach.isSelected() ? packed : null;
+				String typed = Notes.clean(text.getText());
+				if (typed.isEmpty() && parcel != null) typed = "(A shipment: " + parcel.words() + ".)";
+				final String t = typed;
 				if (t.isEmpty()) { text.requestFocusInWindow(); return; }
 				final boolean pri = priority.isSelected();
-				if (port <= 0) { toOutbox(toStation, toTitle, host, port, t, pri, done, toTitle + " is out of range."); return; }
+				if (port <= 0) { toOutbox(toStation, toTitle, host, port, t, pri, parcel, done, toTitle + " is out of range."); return; }
 				send.setEnabled(false);
 				text.setEnabled(false);
 				count.setText("Sending...");
@@ -91,7 +109,10 @@ public final class MessageDialog extends JDialog {
 						String where = null, fail = null;
 						boolean away = false;
 						try {
-							where = Notes.send(host, port, Notes.note(HomePlanet.APP_VERSION, Commander.stationId(), Commander.title(), t, pri, LongRangeCommUI.listeningPort), toTitle);
+							Wire.Msg note = Notes.note(HomePlanet.APP_VERSION, Commander.stationId(), Commander.title(), t, pri, LongRangeCommUI.listeningPort);
+							if (parcel != null) homeplanet.comm.Shipments.attach(note, parcel);
+							where = Notes.send(host, port, note, toTitle);
+							if (parcel != null) homeplanet.comm.Shipments.sent(parcel, toStation, toTitle); // taken: the goods are theirs to accept
 						} catch (Notes.Refused x) {
 							fail = x.getMessage();
 						} catch (IOException x) {
@@ -106,7 +127,7 @@ public final class MessageDialog extends JDialog {
 									send.setEnabled(true);
 									text.setEnabled(true);
 									counted();
-									toOutbox(toStation, toTitle, host, port, t, pri, done, toTitle + "'s station isn't answering.");
+									toOutbox(toStation, toTitle, host, port, t, pri, parcel, done, toTitle + "'s station isn't answering.");
 									return;
 								}
 								if (f != null) {
@@ -117,7 +138,7 @@ public final class MessageDialog extends JDialog {
 									return;
 								}
 								dispose();
-								String said = Notes.POPUP.equals(w) ? "Shown to " + toTitle + "." : "Delivered to " + toTitle + "'s inbox."
+								String said = parcel != null ? "Delivered to " + toTitle + "'s inbox, with the shipment (" + parcel.words() + ")." : Notes.POPUP.equals(w) ? "Shown to " + toTitle + "." : "Delivered to " + toTitle + "'s inbox."
 										+ (pri ? " (They take priority messages in their inbox, or had one from you within the minute.)" : "");
 								if (done != null) done.accept(said);
 								else JOptionPane.showMessageDialog(getOwner(), said, "Long Range Comm.", JOptionPane.INFORMATION_MESSAGE);
@@ -132,10 +153,11 @@ public final class MessageDialog extends JDialog {
 		setLocationRelativeTo(owner);
 	}
 	/** Asks to leave the message in the Outbox, to go when this station finds theirs; done hears so. */
-	private void toOutbox(String toStation, String toTitle, String host, int port, String t, boolean pri, java.util.function.Consumer<String> done, String why) {
-		if (!HomePlanet.confirmNo(this, why + "\nLeave the message in the Outbox, to go when your station finds theirs?\n(Your hailing frequencies must be open for it to go.)", "Outbox")) return;
+	private void toOutbox(String toStation, String toTitle, String host, int port, String t, boolean pri, homeplanet.comm.Shipments.Parcel parcel,
+			java.util.function.Consumer<String> done, String why) {
+		if (!HomePlanet.confirmNo(this, why + "\nLeave the message in the Outbox" + (parcel != null ? ", with the shipment," : "") + " to go when your station finds theirs?\n(Your hailing frequencies must be open for it to go.)", "Outbox")) return;
 		try {
-			homeplanet.comm.Outbox.add(toStation, toTitle, host, port, t, pri);
+			homeplanet.comm.Outbox.add(toStation, toTitle, host, port, t, pri, parcel == null ? "" : parcel.id);
 		} catch (IOException x) {
 			JOptionPane.showMessageDialog(this, x.getMessage(), "Outbox", JOptionPane.INFORMATION_MESSAGE);
 			return;

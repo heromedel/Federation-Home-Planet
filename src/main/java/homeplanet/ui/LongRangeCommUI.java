@@ -128,6 +128,14 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private final FtlButton powerBtn = new FtlButton("Stay Powered Up", FtlFont.MENU, RW, 30);
 	private final FtlButton hailBtn = new FtlButton("Hail", FtlFont.MENU, 146, 30), hailAddrBtn = new FtlButton("Hail", FtlFont.MENU, 146, 30);
 	private final FtlButton messageBtn = new FtlButton("Send Message", FtlFont.MENU, 196, 30);
+	// ---- a shipment: prepared on the offer side with nobody on the other, then packed ----
+	private final FtlButton prepareBtn = new FtlButton("Prepare Shipment", FtlFont.MENU, 260, 34);
+	private final CargoParts.Label packedNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.TEXT, 0);
+	private final FtlButton unpackBtn = new FtlButton("Unpack", FtlFont.BODY, 120, 24);
+	private final CargoParts.RowList shipList = new CargoParts.RowList();
+	private final FtlButton shipTakeBackBtn = new FtlButton("< Take back", FtlFont.BODY, 110, 20);
+	private final FtlButton packBtn = new FtlButton("Package", FtlFont.MENU, MW - 120, 40);
+	private final FtlButton draftCancelBtn = new FtlButton("Cancel", FtlFont.BODY, 160, 22);
 	/** The port this station's hailing frequencies are open on, 0 when closed: a message sent from here says where to reply. */
 	static volatile int listeningPort = 0;
 	/** Hails nobody answered, newest last (shown on this screen; the Space Dock's button lights until they're seen). */
@@ -328,10 +336,48 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				g.dispose();
 			}
 		};
+		prepareBtn.setBounds((MW - 260) / 2, 330, 260, 34);
+		prepareBtn.setToolTipText("Pack goods to send to a commander with a message: they needn't be here, or even in range");
+		prepareBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prepareShipment(); } });
+		idle.add(prepareBtn);
+		packedNote.setBounds(10, 380, MW - 20, 16);
+		idle.add(packedNote);
+		unpackBtn.setBounds((MW - 120) / 2, 404, 120, 24);
+		unpackBtn.setToolTipText("Unpack the shipment: its goods go back into the Cargo Hold");
+		unpackBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { unpackShipment(); } });
+		idle.add(unpackBtn);
 		box.setBounds(0, 26, MW, 540);
 		idle.add(box);
 		header("The Offer", false, 0, 0, MW, idle);
 		middle.add(idle, "idle");
+
+		JPanel ship = new JPanel(null);
+		ship.setOpaque(false);
+		header("The Shipment", false, 0, 0, MW, ship);
+		CargoParts.Label inIt = new CargoParts.Label("IN THE SHIPMENT", FtlFont.BODY, CargoParts.GOLD, -1);
+		inIt.setBounds(0, 28, 200, 16);
+		ship.add(inIt);
+		shipTakeBackBtn.setBounds(MW - 110, 26, 110, 20);
+		shipTakeBackBtn.setToolTipText("Take the chosen line back out of the shipment");
+		shipTakeBackBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { takeBackFrom(shipList); } });
+		ship.add(shipTakeBackBtn);
+		shipList.setEmptyText("Choose goods on your side, then Offer >");
+		shipList.setBounds(0, 48, MW, 300);
+		shipList.onChange(new Runnable() { public void run() { updateButtons(); } });
+		shipList.onDoubleClick(new Runnable() { public void run() { takeBackFrom(shipList); } });
+		ship.add(shipList);
+		CargoParts.Label how = new CargoParts.Label("Once packaged, they leave their ships.", FtlFont.BODY, CargoParts.DIM, 0);
+		how.setBounds(0, 356, MW, 16);
+		ship.add(how);
+		packBtn.setBounds(60, 384, MW - 120, 40);
+		packBtn.setToolTipText("Package these goods: they leave their ships and wait, packed, to go with a message (Unpack brings them back)");
+		packBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { packShipment(); } });
+		ship.add(packBtn);
+		draftCancelBtn.setBounds(0, 434, 160, 22);
+		draftCancelBtn.setToolTipText("Stop preparing: nothing has left its ship yet");
+		draftCancelBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { endDraft(null); } });
+		ship.add(draftCancelBtn);
+		middle.add(ship, "shipment");
 
 		JPanel open = new JPanel(null);
 		open.setOpaque(false);
@@ -554,6 +600,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	}
 	/** Asks before closing an open channel; true to go on. Hailing frequencies close too, unless powered up. */
 	boolean confirmLeave(String doing) {
+		if (session != null && session.isDraft()) endDraft(null); // nothing has left its ship yet
 		if (session != null && !session.isOver()) {
 			if (!HomePlanet.confirmNo(this, "Close the channel with " + session.peer.title + " and " + doing + "?", "Long Range Comm.")) return false;
 			session.close(Commander.title() + " closed the channel.");
@@ -761,6 +808,54 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		CargoParts.darkPopup(m);
 		m.show(found.list, e.getX(), e.getY());
 	}
+	/** Starts preparing a shipment: the offer side, with nobody on the other. One packed shipment at a time. */
+	private void prepareShipment() {
+		if (session != null || hailing || !Vault.isOpen()) return;
+		homeplanet.comm.Shipments.Parcel p = homeplanet.comm.Shipments.packed();
+		if (p != null) { help("A shipment is already packed (" + p.words() + "): send it with a message, or Unpack it first."); return; }
+		session = homeplanet.comm.Session.draft(Commander.stationId());
+		session.start(this);
+		readSource();
+		middleCards.show(middle, "shipment");
+		refreshAll();
+		help("Choose goods on your side, then Offer >. Package takes them off their ships to wait for a message to go with.");
+	}
+	/** Packages the draft: its goods leave their ships into escrow, packed. */
+	private void packShipment() {
+		if (session == null || !session.isDraft() || session.mine().isEmpty()) return;
+		try {
+			homeplanet.comm.Shipments.Parcel p = homeplanet.comm.Shipments.pack(new ArrayList<Line>(session.mine()));
+			endDraft("Packed: " + p.words() + ". Choose a commander, then Send Message and tick Attach shipment.");
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not pack the shipment:\n" + e.getMessage());
+			readSource();
+			refreshAll();
+		}
+	}
+	/** Leaves the draft (Cancel, or once packed). */
+	private void endDraft(String said) {
+		if (session != null && session.isDraft()) session = null;
+		middleCards.show(middle, "idle");
+		readSource();
+		refreshAll();
+		help(said != null ? said : helpIdle());
+	}
+	private void unpackShipment() {
+		homeplanet.comm.Shipments.Parcel p = homeplanet.comm.Shipments.packed();
+		if (p == null) return;
+		try { homeplanet.comm.Shipments.unpack(p); help("Unpacked: " + p.words() + " back in the Cargo Hold."); }
+		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not unpack the shipment:\n" + e.getMessage()); }
+		readSource();
+		refreshAll();
+	}
+	/** The idle card's line about a packed shipment (with Unpack). */
+	private void refreshPacked() {
+		homeplanet.comm.Shipments.Parcel p = Vault.isOpen() ? homeplanet.comm.Shipments.packed() : null;
+		packedNote.setText(p == null ? "" : "Packed: " + p.words());
+		packedNote.setToolTipText(p == null ? null : "Waiting to go: choose a commander, then Send Message and tick Attach shipment");
+		unpackBtn.setVisible(p != null);
+		prepareBtn.setVisible(p == null);
+	}
 	/** The Outbox button's count. */
 	private void refreshOutbox() {
 		int n = homeplanet.vault.Vault.isOpen() ? homeplanet.comm.Outbox.list().size() : 0;
@@ -781,7 +876,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		new Thread(new Runnable() {
 			public void run() {
 				final List<String> said = new ArrayList<String>();
-				for (Beacon.Found f : those) said.addAll(homeplanet.comm.Outbox.deliver(f.station, f.host, f.port, version, me, title, reply));
+				for (Beacon.Found f : those) said.addAll(homeplanet.comm.Outbox.deliver(f.station, f.host, f.port, version, me, title, reply, f.shipments));
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run() {
 						delivering = false;
@@ -986,27 +1081,17 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private void incomingNote(final Channel ch, Wire.Msg m) {
 		final Notes.Note n;
 		try { n = Notes.read(m); } catch (Wire.Garbled e) { ch.close("The Home Planet Station received a garbled message."); return; }
-		String refused = Notes.refuse(n, ch.host, Commander.title());
-		if (refused != null) { ch.close(refused); return; }
-		homeplanet.comm.Contacts.seen(n.station, n.title, null, ch.host, n.replyPort, true);
-		final String[] where = new String[1];
-		try {
-			SwingUtilities.invokeAndWait(new Runnable() {
-				public void run() {
-					where[0] = Notes.where(n, HomePlanet.longRangePopups);
-					if (Notes.INBOX.equals(where[0])) {
-						Notes.toInbox(n, ch.host);
-						if (parent.atSpaceDock() && !otherWindowOpen()) parent.spaceDock.init(); // its inbox button counts the new one
-					} else {
-						showNote(n, ch.host);
-					}
-				}
-			});
-		} catch (Exception e) {
-			ch.close("");
-			return;
-		}
-		Notes.answer(ch, where[0], null);
+		// turned away, filed in the inbox, held as a shipment, or shown: the same rules as the harness's station
+		final String where = Notes.take(ch, n, Commander.title(), HomePlanet.longRangePopups, new java.util.function.Consumer<Notes.Note>() {
+			public void accept(Notes.Note x) { showNote(x, ch.host); }
+		});
+		if (where == null || Notes.POPUP.equals(where)) return;
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				if (Notes.SHIPMENT.equals(where) && isShowing()) help(n.title + " sent a shipment: it's held in your inbox (" + Exchange.words(n.lines) + ").");
+				if (parent.atSpaceDock() && !otherWindowOpen()) parent.spaceDock.init(); // its inbox button counts the new one
+			}
+		});
 	}
 	/** A message as a pop-up, once no window of the station's is open over it (it never changes the screen). */
 	private void showNote(final Notes.Note n, final String host) {
@@ -1325,6 +1410,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	/** forShip: asked by Offer the whole ship itself, which can dock her first. */
 	private String whyNotShip(boolean forShip) {
 		if (session == null) return "Open a channel first.";
+		if (session.isDraft()) return "A whole ship can't go as a shipment: hail her new commander to trade her.";
 		if (session.noTrade != null) return session.noTrade;
 		if (!session.shipsAllowed())
 			return !shipsAllowed() ? "Allow trading whole ships first (Settings, General)."
@@ -1393,9 +1479,10 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private void withdrawMine() {
 		if (session != null && session.iAccepted()) session.accept(false);
 	}
-	private void takeBack() {
+	private void takeBack() { takeBackFrom(myOffer); }
+	private void takeBackFrom(CargoParts.RowList from) {
 		if (session == null) return;
-		Object v = myOffer.selectedValue();
+		Object v = from.selectedValue();
 		if (!(v instanceof Line)) return;
 		session.remove(((Line) v).n);
 		help("Took back " + ((Line) v).title() + ".");
@@ -1443,7 +1530,12 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		for (SupplyBox b : mySupply) { b.value = availableSupply(b.idx); b.repaint(); }
 		for (int k = 0; k < 4; k++) myLists[k].setRows(rows(available, k));
 		// the middle
-		if (session != null) {
+		refreshPacked();
+		if (session != null && session.isDraft()) {
+			List<CargoParts.Row> in = new ArrayList<CargoParts.Row>();
+			for (Line l : session.mine()) in.add(offerRow(l, true));
+			shipList.setRows(in);
+		} else if (session != null) {
 			List<CargoParts.Row> mine = new ArrayList<CargoParts.Row>(), theirs = new ArrayList<CargoParts.Row>();
 			for (Line l : session.mine()) mine.add(offerRow(l, true));
 			for (Line l : session.theirs()) theirs.add(offerRow(l, false));
@@ -1551,7 +1643,11 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				: "Take command of " + source.name + (Vault.get().boarded() != null ? " (" + Vault.get().boarded().name + " is docked)" : ""));
 		clearBtn.setEnabled(open && session.mine().size() > 0);
 		acceptBtn.setEnabled(session != null && !session.isOver() && !session.exchanging() && (session.iAccepted() || session.whyNotAccept() == null));
-		disconnectBtn.setEnabled(session != null);
+		disconnectBtn.setEnabled(session != null && !session.isDraft());
+		boolean drafting = session != null && session.isDraft();
+		shipTakeBackBtn.setEnabled(drafting && shipList.selectedValue() != null);
+		packBtn.setEnabled(drafting && !session.mine().isEmpty());
+		prepareBtn.setEnabled(session == null && !hailing);
 		boolean chat = session != null && !session.isOver() && session.peer.chat;
 		message.setEnabled(chat);
 		sendBtn.setEnabled(chat);

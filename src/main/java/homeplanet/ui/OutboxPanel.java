@@ -98,15 +98,20 @@ final class OutboxPanel extends JPanel {
 			text.setText("Nothing waits to go.\n\nA message for a commander whose station can't be reached can wait here: it goes the next time your station, its hailing frequencies open, finds theirs.");
 			return;
 		}
+		homeplanet.comm.Shipments.Parcel p = i.shipment.isEmpty() ? null : homeplanet.comm.Shipments.find(i.shipment);
 		text.setText("To " + i.toTitle + (i.priority ? " (priority)" : "") + ", waiting " + Outbox.waited(i.written) + "\n\n" + i.text
+				+ (p == null ? "" : "\n\n" + (p.incoming ? "Returning their shipment: " : "With a shipment: ") + p.words() + ".")
 				+ (i.refused.isEmpty() ? "" : "\n\nTurned away by their station: " + i.refused));
 		text.setCaretPosition(0);
 	}
 	private void cancelSelected() {
 		Outbox.Item i = list.getSelectedValue();
-		if (i == null || !HomePlanet.confirmNo(this, "Cancel the message to " + i.toTitle + "?\nIt won't be sent.", "Outbox")) return;
+		if (i == null) return;
+		homeplanet.comm.Shipments.Parcel p = i.shipment.isEmpty() ? null : homeplanet.comm.Shipments.find(i.shipment);
+		String goods = p == null ? "" : p.incoming ? "\nThe shipment it returns goes back to your inbox, to deal with there." : "\nIts shipment is unpacked: " + p.words() + " back in the Cargo Hold.";
+		if (!HomePlanet.confirmNo(this, "Cancel the message to " + i.toTitle + "?\nIt won't be sent." + goods, "Outbox")) return;
 		try {
-			Outbox.remove(i);
+			Outbox.cancel(i);
 			homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " cancelled");
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not cancel it:\n" + e.getMessage());

@@ -28,8 +28,8 @@ public final class Contacts {
 		public String station, title, mode, host;
 		public int port;
 		public long lastSeen;
-		/** Its station takes messages without a channel (as its search answer last said). */
-		public boolean notes;
+		/** Its station takes messages without a channel, and shipments with them (as its search answer last said). */
+		public boolean notes, shipments;
 	}
 
 	static File file() { return new File(Exchange.dir(), "contacts.txt"); }
@@ -50,6 +50,7 @@ public final class Contacts {
 				e.host = p[3];
 				try { e.port = Integer.parseInt(p[4]); e.lastSeen = Long.parseLong(p[5]); } catch (NumberFormatException x) { continue; }
 				e.notes = "true".equals(p[6]);
+				e.shipments = p.length > 7 && "true".equals(p[7]);
 				out.add(e);
 			}
 		} catch (IOException e) {
@@ -63,7 +64,7 @@ public final class Contacts {
 		for (int i = 0; i < l.size() && i < MAX; i++) {
 			Entry e = l.get(i);
 			sb.append(e.station).append('|').append(plain(e.title)).append('|').append(e.mode).append('|').append(plain(e.host)).append('|')
-					.append(e.port).append('|').append(e.lastSeen).append('|').append(e.notes).append('\n');
+					.append(e.port).append('|').append(e.lastSeen).append('|').append(e.notes).append('|').append(e.shipments).append('\n');
 		}
 		Exchange.dir().mkdirs();
 		SafeFiles.write(file(), sb.toString().getBytes(StandardCharsets.UTF_8));
@@ -80,6 +81,10 @@ public final class Contacts {
 	 * notes: null when this meeting doesn't say (a hail, a message).
 	 */
 	public static synchronized void seen(String station, String title, String mode, String host, int port, Boolean notes) {
+		seen(station, title, mode, host, port, notes, null);
+	}
+	/** shipments: whether their station takes shipments, null when this meeting doesn't say. */
+	public static synchronized void seen(String station, String title, String mode, String host, int port, Boolean notes, Boolean shipments) {
 		if (station == null || !station.matches("[0-9a-f]{16}")) return;
 		List<Entry> l = list();
 		Entry e = null;
@@ -99,6 +104,7 @@ public final class Contacts {
 		if (host != null && !host.isEmpty() && !host.equals(e.host)) { e.host = host; changed = true; }
 		if (port > 0 && port != e.port) { e.port = port; changed = true; }
 		if (notes != null && notes != e.notes) { e.notes = notes; changed = true; }
+		if (shipments != null && shipments != e.shipments) { e.shipments = shipments; changed = true; }
 		if (!changed && now - e.lastSeen < QUIET) return; // nothing new to write down
 		e.lastSeen = now;
 		Collections.sort(l, new Comparator<Entry>() { public int compare(Entry a, Entry b) { return Long.compare(b.lastSeen, a.lastSeen); } });
@@ -106,7 +112,7 @@ public final class Contacts {
 	}
 	/** Remembers everyone a search found. */
 	public static void seenAll(List<Beacon.Found> found) {
-		for (Beacon.Found f : found) seen(f.station, f.title, f.mode, f.host, f.port, f.notes);
+		for (Beacon.Found f : found) seen(f.station, f.title, f.mode, f.host, f.port, f.notes, f.shipments);
 	}
 	/** Forgets a commander (what waits for them in the Outbox stays). */
 	public static synchronized void remove(String station) throws IOException {

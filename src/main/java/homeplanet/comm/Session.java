@@ -85,6 +85,22 @@ public final class Session implements Channel.Listener {
 	 */
 	public final String noTrade;
 
+	/**
+	 * A shipment being prepared (Prepare Shipment): the offer screen's own side, with no channel and nobody on the
+	 * other side. Nothing is sent; Package takes what's in it.
+	 */
+	public static Session draft(String self) {
+		Peer p = new Peer();
+		p.station = self;
+		p.title = "Shipment";
+		p.version = "";
+		p.ship = "";
+		p.protocol = PROTOCOL;
+		return new Session(null, true, p, self, false, null);
+	}
+	/** A shipment being prepared, not a channel. */
+	public boolean isDraft() { return channel == null; }
+
 	/** noTrade: from {@link #cantTrade}, worked out by each station for itself (both come to the same answer). */
 	public Session(Channel channel, boolean leader, Peer peer, String self, boolean shipsAllowedHere, String noTrade) {
 		this.channel = channel;
@@ -98,6 +114,7 @@ public final class Session implements Channel.Listener {
 	/** Starts listening, settles any trade the last link left unfinished, and sends the empty offer. */
 	public void start(View v) {
 		view = v;
+		if (channel == null) return; // a shipment being prepared: nothing to listen to or settle
 		channel.start(this);
 		resolveUnfinished();
 		sendOffer();
@@ -209,14 +226,14 @@ public final class Session implements Channel.Listener {
 	private void sendOffer() {
 		Wire.Msg m = new Wire.Msg("OFFER").put("rev", myRev);
 		Line.writeLines(m, mine);
-		channel.trySend(m);
+		if (channel != null) channel.trySend(m);
 	}
 	/** Shows the other station what the chosen ship (or the hold) has to offer. */
 	public void show(Show s) {
 		Wire.Msg m = new Wire.Msg("SHOW").put("name", s.name).put("class", s.shipClass).put("blueprint", s.blueprint).put("hold", s.hold);
 		List<Line> ls = s.lines.size() > Line.MAX_SHOWN ? s.lines.subList(0, Line.MAX_SHOWN) : s.lines;
 		Line.writeLines(m, ls);
-		channel.trySend(m);
+		if (channel != null) channel.trySend(m);
 	}
 
 	/** What a hail that wasn't answered is told (a blocked station hears only this: nothing to try again against). */
@@ -246,7 +263,7 @@ public final class Session implements Channel.Listener {
 
 	/** Accepts the offer as it stands, or takes acceptance back. */
 	public void accept(boolean on) {
-		if (over || exchanging) return;
+		if (over || exchanging || channel == null) return;
 		if (on && whyNotAccept() != null) return;
 		iAccept = on;
 		channel.trySend(new Wire.Msg("ACCEPT").put("on", on).put("mine", myRev).put("yours", theirRev));
@@ -258,7 +275,7 @@ public final class Session implements Channel.Listener {
 	public void close(String why) {
 		if (over) return;
 		over = true;
-		channel.close(why);
+		if (channel != null) channel.close(why);
 		afterLoss();
 	}
 
