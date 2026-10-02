@@ -179,11 +179,16 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					double sc = SpaceDockScrollPane.scale(w, h);
 					int saucerLeft = (int) Math.round(SpaceDockScrollPane.offsetX(w, h) + SpaceDockScrollPane.saucerLeft() * sc);
 					int x = Math.max(14, Math.min(saucerLeft - SAUCER_CLEAR - d.width, getWidth() - d.width - 10));
-					berth.setBounds(x, 10, d.width, d.height);
 					Dimension sd = stats.getPreferredSize();
-					boolean room = x - 14 - 12 >= sd.width;
+					// her particulars stand beside her picture itself (it's centred in her berth), and she moves right a little
+					// to make room for them rather than have them hidden
+					int inset = pictureInset(berth), need = 14 + sd.width + 12 - inset;
+					if (x < need) x = Math.max(x, Math.min(need, getWidth() - d.width - 10));
+					berth.setBounds(x, 10, d.width, d.height);
+					int sx = x + inset - 12 - sd.width;
+					boolean room = sx >= 14;
 					stats.setVisible(room);
-					if (room) stats.setBounds(x - 12 - sd.width, 10 + berth.getComponent(0).getPreferredSize().height + BERTH_PIC_Y, sd.width, sd.height);
+					if (room) stats.setBounds(sx, 10 + berth.getComponent(0).getPreferredSize().height + BERTH_PIC_Y, sd.width, sd.height);
 					top = 10 + d.height + 6;
 					if (room) top = Math.max(top, stats.getY() + sd.height + 6); // a tall stats column pushes the docked ships down, not under it
 				}
@@ -511,6 +516,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (here) row.add(inboxBtn, java.awt.BorderLayout.EAST);
 		row.setMaximumSize(row.getPreferredSize());
 		return row;
+	}
+	/** The empty space left of her picture inside her berth (the picture is centred in it). */
+	private static int pictureInset(JPanel berth) {
+		for (java.awt.Component c : berth.getComponents()) {
+			if (!(c instanceof JButton) || ((JButton) c).getIcon() == null) continue;
+			return Math.max(0, (c.getPreferredSize().width - ((JButton) c).getIcon().getIconWidth()) / 2);
+		}
+		return 0;
 	}
 	/** A few of her particulars, shown to the left of her picture when there's room. */
 	private JPanel statsPanel(Ship ship0) {
