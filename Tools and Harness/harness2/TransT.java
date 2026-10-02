@@ -194,23 +194,26 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("S: a career begins with 25 scrap in Spacedock Storage", Career.started(v.root) && v.storageScrap() == before + 25);
   if (v.boarded() == null) { Ship n = v.adopt(Commission.build("PLAYER_SHIP_HARD", "Stipend Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(7))); v.board(n); }
   v.takeStock();
+  Transmissions.check(); Transmissions.Message owed = find("stipend:"); if (owed != null) Transmissions.delete(owed); // anything owed already, paid first
   int sectors = v.sectorsSeen();
+  java.util.Properties cp = new java.util.Properties(); cp.load(new java.io.ByteArrayInputStream(SafeFiles.read(new File(v.root, "career.txt"))));
+  int month = Career.beaconsPerMonth(), into = (v.beaconsSeen() - Integer.parseInt(cp.getProperty("beaconsAtStart"))) % month;
+  int jump = 2 * month - into + month / 2; // two months and half another, at the career's difficulty
   SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
-  int month = Career.sectorsPerMonth(), jump = 2 * month + 1; // two months and a sector, at the career's difficulty
-  g.setSectorNumber(g.getSectorNumber() + jump); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 40);
+  g.setSectorNumber(g.getSectorNumber() + 1); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + jump);
   SaveHelper.writeSavedGame(v.continueFile(), g);
   v.takeStock();
-  Setup.chk("S: FTL's progress is counted in sectors", v.sectorsSeen() == sectors + jump);
+  Setup.chk("S: FTL's progress is counted in sectors and beacons", v.sectorsSeen() == sectors + 1);
   int scrap = v.storageScrap();
   int achievements = 5; // earned in Immersive Mode above: TOUGH_SHIP, NO_BUYING, MANTIS_SLAUGHTER, NO_UPGRADES, SCRAP
   int each = Career.stipend(UnlockGrants.rank(Unlocks.read()), achievements);
   Transmissions.check();
   Transmissions.Message m = find("stipend:");
-  Setup.chk("S: " + jump + " sectors (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last 2 months") && m.body.contains((2 * each) + " scrap") && v.storageScrap() == scrap + 2 * each);
+  Setup.chk("S: " + jump + " beacons (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last 2 months") && m.body.contains((2 * each) + " scrap") && v.storageScrap() == scrap + 2 * each);
   System.out.println("Stipend: " + each + " a month (Captain, 5 achievements): " + m.body.replace("\n", " / "));
   Transmissions.check();
   int stipends = 0; for (Transmissions.Message x : Transmissions.load()) if (Transmissions.isStipend(x)) stipends++;
-  Setup.chk("S: the odd sector waits for the next month", stipends == 1);
+  Setup.chk("S: the odd beacons wait for the next month", stipends == 1);
   Transmissions.delete(m);
   Setup.chk("S: a stipend's notice can be deleted", find("stipend:") == null);
   Setup.chk("S: the stipend's formula (20 + achievements x rank multiple)", Career.stipend(0, 51) == 71 && Career.stipend(1, 51) == 122 && Career.stipend(2, 51) == 173);

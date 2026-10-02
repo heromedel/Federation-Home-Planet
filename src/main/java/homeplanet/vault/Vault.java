@@ -812,6 +812,43 @@ public final class Vault {
 		if (enemy != null && enemy.getHullAmt() > 0 && enemy.isHostile()) return; // still in the fight
 		recordEvent(EVENT_ONE_HULL, gs.getPlayerShipName());
 	}
+	/** FTL's own running counts of work done at a store or on the ship: buying, repairs, system and reactor upgrades. */
+	static final String[] WORK = {"store_purchase", "store_repair", "system_upgrade", "reactor_upgrade"};
+	static int workDone(SavedGameState gs) {
+		int n = 0;
+		for (String k : WORK) if (gs.hasStateVar(k)) n += gs.getStateVar(k);
+		return n;
+	}
+	private File workFile() { return new File(root, "work.txt"); }
+	/**
+	 * Time spent on work in FTL counts as a beacon: when the boarded ship has bought, been repaired or upgraded since the
+	 * station last looked, with no jump in between. Once per beacon stop; crew walking about never counts.
+	 */
+	private void noteWork(Ship b, SavedGameState gs) {
+		java.util.Properties p = new java.util.Properties();
+		try { if (workFile().isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(workFile()), java.nio.charset.StandardCharsets.UTF_8))); }
+		catch (IOException e) { log.warn("Could not read {}: {}", workFile(), e.toString()); }
+		int work = workDone(gs), beacons = gs.getTotalBeaconsExplored();
+		boolean here = b.id.equals(p.getProperty("ship")) && Integer.toString(beacons).equals(p.getProperty("beacons"));
+		int before = -1;
+		try { before = Integer.parseInt(p.getProperty("work", "").trim()); } catch (NumberFormatException e) { }
+		boolean credited = here && "true".equals(p.getProperty("credited"));
+		if (here && before >= 0 && work > before && !credited) {
+			addBeacons(1);
+			VoyageLog.note(this, b, "Time spent on work at the beacon (buying, repairs or upgrades): counted as a beacon");
+			credited = true;
+		}
+		if (here && before == work && p.getProperty("credited") != null && credited == "true".equals(p.getProperty("credited"))) return; // nothing new
+		p.setProperty("ship", b.id);
+		p.setProperty("beacons", Integer.toString(beacons));
+		p.setProperty("work", Integer.toString(work));
+		p.setProperty("credited", Boolean.toString(credited));
+		try {
+			java.io.StringWriter w = new java.io.StringWriter();
+			p.store(w, "The boarded ship's work in FTL at her current beacon, as last seen (time spent on it counts as a beacon, once a stop)");
+			SafeFiles.writeText(workFile(), w.toString(), false);
+		} catch (IOException e) { log.warn("Could not record her work: {}", e.toString()); }
+	}
 	/** One of the fleet's ships came out of a battle with one point of hull (her name). */
 	public static final String EVENT_ONE_HULL = "one-hull";
 
@@ -858,7 +895,7 @@ public final class Vault {
 		if (gs == null) return false;
 		String now = marksOf(gs);
 		if (b.marks == null || b.marks.isEmpty()) { b.marks = now; VoyageLog.observe(this, b, gs); noteHull(b, gs); return true; }
-		if (sameShip(b.marks, gs)) { VoyageLog.observe(this, b, gs); noteHull(b, gs); } // her voyage log (repairs, trades at a store... change no marks)
+		if (sameShip(b.marks, gs)) { VoyageLog.observe(this, b, gs); noteHull(b, gs); noteWork(b, gs); } // her voyage log (repairs, trades at a store... change no marks)
 		if (now.equals(b.marks)) return false;
 		if (sameShip(b.marks, gs)) {
 			snapshot(b); // FTL's progress, kept: if FTL later writes over her, this is what comes back

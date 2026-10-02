@@ -125,9 +125,21 @@ public final class Pricing {
 		for (SystemType t : SystemType.values()) { SystemState st = s.getSystem(t); if (st != null && st.getCapacity() > 0) n += st.getDamagedBars(); }
 		return n;
 	}
-	/** What a buyer takes off for her damage: 5 scrap a missing hull point, 5 a broken system bar and 5 a breach, as the Dry Dock would charge. */
+	/** What a buyer takes off for her damage: 5 scrap a missing hull point, 5 a breach, and her broken bars ({@link #brokenBarValue}). */
 	public static int damage(ShipState s) {
-		return HULL_DAMAGE * missingHull(s) + SYSTEM_REPAIR * brokenBars(s) + BREACH_REPAIR * s.getBreachMap().size();
+		return HULL_DAMAGE * missingHull(s) + brokenValue(s) + BREACH_REPAIR * s.getBreachMap().size();
+	}
+	/** A broken bar takes this much off a ship's or a part's value: 5, and 10 for Piloting, Oxygen and Engines (she can't do without them). */
+	public static int brokenBarValue(String systemId) {
+		for (SystemType t : CORE) if (t.getId().equals(systemId)) return CORE_BAR_DAMAGE;
+		return SYSTEM_REPAIR;
+	}
+	public static final int CORE_BAR_DAMAGE = 10;
+	/** Her broken bars, each at {@link #brokenBarValue}. */
+	public static int brokenValue(ShipState s) {
+		int n = 0;
+		for (SystemType t : SystemType.values()) { SystemState st = s.getSystem(t); if (st != null && st.getCapacity() > 0) n += st.getDamagedBars() * brokenBarValue(t.getId()); }
+		return n;
 	}
 	/** Systems a buyer won't do without: no Engines or Piloting and she can't fly, no Oxygen and no one can live aboard. */
 	public static final SystemType[] CORE = {SystemType.ENGINES, SystemType.PILOT, SystemType.OXYGEN};

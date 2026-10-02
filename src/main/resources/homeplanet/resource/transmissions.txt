@@ -86,7 +86,7 @@ subject: On the career rolls
 
 {rank},
 
-The Federation Home Planet has added your service to its career rolls. From today your achievements will be noticed, and rewarded. Promotions will follow as they are earned, and a stipend will reach the Cargo Hold as your ships cover the sectors. To start you off, {start} scrap is already waiting there.
+The Federation Home Planet has added your service to its career rolls. From today your achievements will be noticed, and rewarded. Promotions will follow as they are earned, and a stipend will reach the Cargo Hold as your ships explore the beacons. To start you off, {start} scrap is already waiting there.
 
 Your fleet stays your own, and so do your rules. The Federation asks only that you keep fighting the rebellion.
 

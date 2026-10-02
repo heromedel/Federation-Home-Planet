@@ -44,7 +44,7 @@ import homeplanet.vault.Vault;
 
 /**
  * The Space Dock: the station's main screen. The boarded ship sits at the berth beside the saucer, the docked ships
- * wait in the grid below, and the controls (Launch, New Journey, Cargo Bay, Commission, Design, Salvage, Disband,
+ * wait in the grid below, and the controls (Launch, New Journey, Cargo Bay, Commission, Design, Junkyard, Disband,
  * Settings, Refresh) run down the right. Every ship here is a {@link Ship} in the {@link Vault}.
  */
 public class SpaceDockUI extends JPanel implements ActionListener {
@@ -127,7 +127,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		launchBtn = controlButton("Launch FTL", "Play FTL");
 		journeyBtn = controlButton("New Journey", "Set out from the first sector with the boarded ship, crew and cargo");
 		commissionBtn = controlButton("Commission", "Have a brand-new ship built, as a new game would start her");
-		salvageBtn = controlButton("Salvage", "Salvage, scrap or destroy a ship in the Junkyard");
+		salvageBtn = controlButton("Junkyard", "The Junkyard: salvage, scrap or sell a ship, or buy derelicts and parts");
 		disbandBtn = controlButton("Decommission", "Decommission the boarded ship: she goes to the Junkyard");
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
@@ -1295,9 +1295,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void salvageShip() {
 		List<Ship> junk = Vault.get().junked();
 		if (junk.isEmpty()) {
-			Object[] opts = {"Browse derelicts...", "Close"};
-			if (JOptionPane.showOptionDialog(null, "None of your ships are in the Junkyard. The foreman has some derelicts for sale, though.", "Salvage Ship",
-					JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[1]) == 0) browseDerelicts();
+			Object[] opts = {"Derelicts...", "Parts...", "Close"};
+			int r = JOptionPane.showOptionDialog(null, "None of your ships are in the Junkyard. The foreman has derelicts and parts for sale, though.", "Junkyard",
+					JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[2]);
+			if (r == 0) browseDerelicts();
+			else if (r == 1) PartsDialog.open(this);
 			return;
 		}
 		String[] names = new String[junk.size()];
@@ -1313,6 +1315,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "<b>Auction:</b> sell her to the highest bidder: a quarter to three quarters of her value, less her damage.<br>"
 				+ "&nbsp;&nbsp;&nbsp;&nbsp;(Selling her sends her scrap and crew to the Cargo Hold; all else goes with her.)<br>"
 				+ "<b>Derelicts:</b> see the hulls the foreman has for sale.<br>"
+				+ "<b>Parts:</b> see the damaged systems the foreman has pulled from wrecks.<br>"
 				+ "<b>Destroy:</b> reduce her to space debris, with everything aboard. Nothing is recovered,<br>"
 				+ "and her crew are retired from service.<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
 		// each hull's short report as the list's tooltip; Info... opens her full report
@@ -1340,10 +1343,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		pickRow.add(pick, java.awt.BorderLayout.CENTER);
 		pickRow.add(info, java.awt.BorderLayout.EAST);
 		panel.add(pickRow, java.awt.BorderLayout.CENTER);
-		Object[] options = {"Salvage", "Scrap", "Trade In", "Auction", "Destroy", "Derelicts...", "Cancel"};
-		int choice = JOptionPane.showOptionDialog(null, panel, "Salvage Ship", JOptionPane.DEFAULT_OPTION,
-				JOptionPane.QUESTION_MESSAGE, null, options, options[6]); // Cancel is the default
+		Object[] options = {"Salvage", "Scrap", "Trade In", "Auction", "Destroy", "Derelicts...", "Parts...", "Cancel"};
+		int choice = JOptionPane.showOptionDialog(null, panel, "Junkyard", JOptionPane.DEFAULT_OPTION,
+				JOptionPane.QUESTION_MESSAGE, null, options, options[7]); // Cancel is the default
 		if (choice == 5) { browseDerelicts(); return; }
+		if (choice == 6) { PartsDialog.open(this); return; }
 		if (choice < 0 || choice > 4) return;
 		Ship ship = junk.get(pick.getSelectedIndex());
 		if (choice == 1) { scrapShip(ship); return; }

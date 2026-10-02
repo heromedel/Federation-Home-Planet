@@ -375,7 +375,7 @@ public final class Transmissions {
 		m.read = true;
 		HistoryLog.entry("REPLY", m.from + ": " + words);
 	}
-	/** The stipend for whole months travelled (every 4 sectors), paid into the Cargo Hold, in one message. */
+	/** The stipend for whole months travelled (every 30 to 60 beacons, by difficulty), paid into the Cargo Hold, in one message. */
 	private static void payStipend(List<Message> all, java.util.Set<String> sent, Unlocks u, String rank) {
 		int months = Career.unpaidMonths();
 		if (months <= 0) return;

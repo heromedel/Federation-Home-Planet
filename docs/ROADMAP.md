@@ -475,6 +475,21 @@ no letters, you come and check).
 - A derelict rebuilt with two systems' rooms swapped now says "the rooms built for her X and Y have been swapped",
   true whether or not those systems are installed.
 
+## 21. The Junkyard update — built (4B.81; harness test PartT, checks in GuiT and TransT)
+
+- The Space Dock's Salvage button is now **Junkyard**.
+- Damaged systems can be stored, installed and uninstalled, keeping their broken bars (`<id> <level> <broken>` in
+  storage-systems.txt); stripping when scrapping keeps damaged systems too. A stored system sells for less its damage.
+- Ship value: each broken bar takes 5 off, 10 for Piloting, Oxygen and Engines.
+- **Parts...** in the Junkyard window (beside Derelicts...): 2 to 5 damaged systems, mostly low levels (no artillery
+  or Clone Bay), at 25-75% of their value less their damage, paid from the Cargo Hold into the stored systems. New
+  ones every 5 to 15 beacons (the fleet's parts.txt). Standard prices for now; core parts at about 150 is undecided.
+- The stipend counts beacons: 15 to each sector of the old rule (Easy 30, Normal 45, Hard 60, Sandbox careers 60).
+  A career under way carries its progress over (its sectors so far become beacons).
+- Work in FTL counts: when the boarded ship's `store_purchase`, `store_repair`, `system_upgrade` or
+  `reactor_upgrade` count has gone up with no jump since the station last looked, one beacon is counted, once a
+  beacon stop, and noted in her voyage log. Nothing else (crew walking about) counts.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

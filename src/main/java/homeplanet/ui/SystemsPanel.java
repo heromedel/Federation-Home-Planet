@@ -55,9 +55,12 @@ public class SystemsPanel {
 	static class Stored {
 		final String id;
 		final int level;
-		Stored(String id, int level) { this.id = id; this.level = level; }
+		/** Its broken bars: a damaged system keeps them in storage, and brings them aboard (the Dry Dock mends them). */
+		final int broken;
+		Stored(String id, int level) { this(id, level, 0); }
+		Stored(String id, int level, int broken) { this.id = id; this.level = level; this.broken = Math.max(0, broken); }
 		// level 0 = no level of its own (a Clone Bay takes the Medbay's level)
-		public String toString() { return DryDockShop.systemTitle(id) + (level > 0 ? " (level " + level + ")" : ""); }
+		public String toString() { return DryDockShop.systemTitle(id) + (level > 0 ? " (level " + level + ")" : "") + (broken > 0 ? " (" + broken + " broken)" : ""); }
 	}
 	/** A system installed on the boarded ship. */
 	static class Installed {
@@ -225,7 +228,7 @@ public class SystemsPanel {
 		int j = 0;
 		for (final Stored s : stored) {
 			String why = reason(s.id);
-			SysRow r = new SysRow(DryDockShop.systemTitle(s.id), s.level, "Install", why,
+			SysRow r = new SysRow(DryDockShop.systemTitle(s.id) + (s.broken > 0 ? " (" + s.broken + " broken)" : ""), s.level, "Install", why,
 					why == null ? "Install the " + DryDockShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName() : why,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { installSystem(s); } });
 			if (homeplanet.core.HomePlanet.sellSystems()) r.addSell(salePrice(s), new ActionListener() { public void actionPerformed(ActionEvent e) { sellSystem(s); } });
@@ -338,7 +341,10 @@ public class SystemsPanel {
 				int level = 1;
 				try { if (p.length > 1) level = Math.max(1, Integer.parseInt(p[1])); } catch (NumberFormatException e) { }
 				if (SystemType.findById(p[0]) == SystemType.CLONEBAY) level = 0; // the level stays with the Medbay
-				stored.add(new Stored(p[0], level));
+				int broken = 0;
+				try { if (p.length > 2) broken = Math.max(0, Integer.parseInt(p[2])); } catch (NumberFormatException e) { }
+				if (level > 0) broken = Math.min(broken, level);
+				stored.add(new Stored(p[0], level, broken));
 			}
 		} catch (Exception e) {
 			log.error("Could not read " + f, e);
@@ -387,12 +393,17 @@ public class SystemsPanel {
 		File f = file();
 		if (f == null) return;
 		StringBuilder sb = new StringBuilder(HEADER).append("\n");
-		for (Stored s : stored) sb.append(line(s.id, s.level)).append("\n");
+		for (Stored s : stored) sb.append(line(s.id, s.level, s.broken)).append("\n");
 		for (String u : unknownLines) sb.append(u).append("\n"); // lines this version can't use are kept, not dropped
 		tx.put(f, sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
 	}
-	public static final String HEADER = "# Ship systems stored in the Cargo Bay: <system id> <level> (a Clone Bay has no level: it uses the Medbay's)";
-	static String line(String id, int level) { return level > 0 ? id + " " + level : id; }
+	public static final String HEADER = "# Ship systems stored in the Cargo Bay: <system id> <level> [<broken bars>] (a Clone Bay has no level: it uses the Medbay's)";
+	static String line(String id, int level) { return line(id, level, 0); }
+	/** A stored system's line; broken bars go third (an older station reads the first two, and keeps the rest of its lines). */
+	public static String line(String id, int level, int broken) {
+		if (broken > 0) return id + " " + level + " " + broken;
+		return level > 0 ? id + " " + level : id;
+	}
 
 	/** True if a system was taken off the ship: then the file is written before the ship, so a failed save can't lose it. */
 	boolean storedSomething() { return storedSomething; }
@@ -463,10 +474,7 @@ public class SystemsPanel {
 		SystemState st = bs.getSystem(sel.type);
 		if (st == null || st.getCapacity() <= 0) return;
 		String name = DryDockShop.systemTitle(sel.type.getId());
-		if (st.getDamagedBars() > 0) { // storing must not be a free repair
-			JOptionPane.showMessageDialog(bay, name + " is damaged. Mend it (Fix, beside it) before storing.", "Systems", JOptionPane.WARNING_MESSAGE);
-			return;
-		}
+		int broken = st.getDamagedBars(); // a damaged system goes into storage damaged: storing is no free repair
 		int fee = homeplanet.core.Economy.removalFee();
 		if (fee > 0) {
 			if (hold() < fee) {
@@ -484,15 +492,15 @@ public class SystemsPanel {
 			if (mb == null) { mb = new SystemState(SystemType.MEDBAY); bs.addSystem(mb); }
 			mb.setCapacity(level);
 			mb.setPower(st.getPower());
-			mb.setDamagedBars(0);
+			mb.setDamagedBars(broken); // the room's damage stays with the room
 			mb.setIonizedBars(0);
 			clear(st);
 			stored.add(new Stored(sel.type.getId(), 0));
 			changes.add("Stored Clone Bay from " + save.getPlayerShipName() + " (a level " + level + " Medbay took its place)");
 		} else {
 			clear(st);
-			stored.add(new Stored(sel.type.getId(), level));
-			changes.add("Stored " + name + " (level " + level + ") from " + save.getPlayerShipName());
+			stored.add(new Stored(sel.type.getId(), level, broken));
+			changes.add("Stored " + name + " (level " + level + (broken > 0 ? ", " + broken + " broken" : "") + ") from " + save.getPlayerShipName());
 		}
 		storedSomething = true;
 		homeplanet.parser.Retrofit.syncStations(bs); // its room no longer has a station
@@ -531,14 +539,15 @@ public class SystemsPanel {
 			st = new SystemState(type);
 			bs.addSystem(st);
 		}
+		int broken = Math.min(sel.broken, level); // a damaged system comes aboard damaged: Fix mends it
 		st.setCapacity(level);
-		st.setPower(type.isSubsystem() ? level : 0); // unpowered; subsystems don't use reactor power
-		st.setDamagedBars(0);
+		st.setPower(type.isSubsystem() ? level - broken : 0); // unpowered; subsystems don't use reactor power
+		st.setDamagedBars(broken);
 		st.setIonizedBars(0);
 		SaveHelper.ensureAdvancedInfo(bs, save.getFileFormat()); // Clone Bay, Battery, Cloaking, Hacking, Mind Control keep extra data
 		homeplanet.parser.Retrofit.syncStations(bs); // a manned system needs its station in the save
 		stored.remove(sel);
-		changes.add("Installed " + name + " (level " + level + ") on " + save.getPlayerShipName());
+		changes.add("Installed " + name + " (level " + level + (broken > 0 ? ", " + broken + " broken" : "") + ") on " + save.getPlayerShipName());
 		log.debug("Installed {} level {} on {}", type, level, save.getPlayerShipName());
 		changed();
 	}
@@ -661,7 +670,10 @@ public class SystemsPanel {
 	/** Sells a stored system (the Trade tab's Stored systems, with no ship aboard): the hold is paid on Save. */
 	void sell(Stored s) { if (stored.contains(s)) sellSystem(s); }
 	/** HR1: what a stored system sells for. */
-	static int salePrice(Stored s) { return homeplanet.parser.Pricing.systemSale(s.id, s.level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT); }
+	static int salePrice(Stored s) {
+		int full = homeplanet.parser.Pricing.systemSale(s.id, s.level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT);
+		return Math.max(0, full - s.broken * homeplanet.parser.Pricing.brokenBarValue(s.id)); // a buyer takes off what mending it costs
+	}
 	private void sellSystem(Stored sel) {
 		String name = DryDockShop.systemTitle(sel.id) + (sel.level > 0 ? " (level " + sel.level + ")" : "");
 		int price = salePrice(sel);
@@ -683,10 +695,9 @@ public class SystemsPanel {
 			SystemState st = wreck.getSystem(t);
 			if (st == null || st.getCapacity() <= 0 || storeReason(wreck, t) != null) continue;
 			String name = DryDockShop.systemTitle(t.getId());
-			if (st.getDamagedBars() > 0) { lines.add("- " + name + " (level " + st.getCapacity() + ") (system, damaged: lost with the hull)"); continue; }
-			int level = t == SystemType.CLONEBAY ? 0 : st.getCapacity();
-			add.add(line(t.getId(), level));
-			lines.add("+ " + name + (level > 0 ? " (level " + level + ")" : "") + " (system)");
+			int level = t == SystemType.CLONEBAY ? 0 : st.getCapacity(), broken = level > 0 ? st.getDamagedBars() : 0; // damaged systems are kept, damaged
+			add.add(line(t.getId(), level, broken));
+			lines.add("+ " + name + (level > 0 ? " (level " + level + (broken > 0 ? ", " + broken + " broken" : "") + ")" : "") + " (system)");
 		}
 		if (add.isEmpty()) return lines;
 		File f = homeplanet.vault.Vault.get().systemsFile();
@@ -697,12 +708,12 @@ public class SystemsPanel {
 		tx.put(f, (String.join("\n", keep) + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
 		return lines;
 	}
-	/** How many of her systems stripping would move to the Cargo Bay (storable and undamaged). */
+	/** How many of her systems stripping would move to the Cargo Bay (storable ones: damaged ones go too, damaged). */
 	static int strippable(ShipState wreck) {
 		int n = 0;
 		for (SystemType t : SystemType.values()) {
 			SystemState st = wreck.getSystem(t);
-			if (st != null && st.getCapacity() > 0 && storeReason(wreck, t) == null && st.getDamagedBars() == 0) n++;
+			if (st != null && st.getCapacity() > 0 && storeReason(wreck, t) == null) n++;
 		}
 		return n;
 	}
@@ -712,8 +723,8 @@ public class SystemsPanel {
 		for (SystemType t : SystemType.values()) {
 			SystemState st = wreck.getSystem(t);
 			if (st == null || st.getCapacity() <= 0 || storeReason(wreck, t) != null) continue;
-			String name = DryDockShop.systemTitle(t.getId()) + (t == SystemType.CLONEBAY ? "" : " (level " + st.getCapacity() + ")");
-			(st.getDamagedBars() > 0 ? lost : moved).add(name);
+			String name = DryDockShop.systemTitle(t.getId()) + (t == SystemType.CLONEBAY ? "" : " (level " + st.getCapacity() + (st.getDamagedBars() > 0 ? ", " + st.getDamagedBars() + " broken" : "") + ")");
+			moved.add(name);
 		}
 		StringBuilder sb = new StringBuilder();
 		if (moved.isEmpty()) sb.append("She has no systems that can be stored; standard equipment stays with the hull.\n");

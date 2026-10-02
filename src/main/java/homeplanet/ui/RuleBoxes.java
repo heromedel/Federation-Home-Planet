@@ -124,7 +124,7 @@ public class RuleBoxes {
 				+ "<br>With Career messages (always, in Immersive Mode), also the welcome, promotions, achievement rewards and the stipend.</html>");
 		notifyBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Mode, which turns it on
 		careerBox.setToolTipText("Your rank rises as you unlock FTL's Federation Cruisers; achievements earned from now on are rewarded, and the stipend comes every "
-				+ homeplanet.parser.Career.SECTORS_PER_MONTH + " sectors. Your fleet and rules stay your own. (Always on in Immersive Mode, at its difficulty.)");
+				+ homeplanet.parser.Career.SECTORS_PER_MONTH * homeplanet.parser.Career.BEACONS_PER_SECTOR + " beacons your ships explore. Your fleet and rules stay your own. (Always on in Immersive Mode, at its difficulty.)");
 		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 44, 0, 0)); // under Immersive Notifications, which it needs
 		careerTip = careerBox.getToolTipText();
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A Report for Reassignment doesn't reset it");

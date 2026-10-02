@@ -34,6 +34,7 @@ public class GuiT {
   modes();
   switched(f);
   holdAlone(v, f);
+  damaged(f);
   Setup.done();
   System.exit(0);
  }
@@ -113,6 +114,54 @@ public class GuiT {
   Object[] x = extras.isEmpty() ? null : extras.get(0);
   Setup.chk("J: an Info... button beside the list", x != null && x[0] != null);
   Setup.chk("J: the list's tooltip is her short report, with what Trade In pays", x != null && x[1] != null && String.valueOf(x[1]).contains("Trade In:") && String.valueOf(x[1]).contains("Hull "));
+  Setup.chk("J: the Junkyard window offers Parts... beside Derelicts...", !optionsShown.isEmpty() && Arrays.asList(optionsShown.get(0)).contains("Parts...") && Arrays.asList(optionsShown.get(0)).contains("Derelicts..."));
+ }
+
+ /** A damaged system stored from the Cargo Bay keeps its broken bars, and comes aboard again with them. */
+ static void damaged(final MainFrame f) throws Exception {
+  final Vault v = Vault.get();
+  Vault.Copy c = v.readCopy(v.boarded());
+  ShipState bs = c.save.getPlayerShip();
+  final SavedGameParser.SystemType[] pick = new SavedGameParser.SystemType[1];
+  Class<?> sp = Class.forName("homeplanet.ui.SystemsPanel");
+  for (SavedGameParser.SystemType t : SavedGameParser.SystemType.values()) {
+   SavedGameParser.SystemState st = bs.getSystem(t);
+   if (pick[0] != null || st == null || st.getCapacity() < 2 || t == SavedGameParser.SystemType.WEAPONS || t == SavedGameParser.SystemType.DRONE_CTRL || t == SavedGameParser.SystemType.CLONEBAY || t == SavedGameParser.SystemType.MEDBAY) continue;
+   if (call(null, sp, "refitReason", new Class<?>[] {ShipState.class, SavedGameParser.SystemType.class}, bs, t) == null) pick[0] = t;
+  }
+  if (pick[0] == null) { Setup.chk("R: a system on her that can be stored", false); return; }
+  final int level = bs.getSystem(pick[0]).getCapacity();
+  bs.getSystem(pick[0]).setDamagedBars(1); bs.getSystem(pick[0]).setPower(0);
+  v.begin().put(v.boarded(), c.save, c.hash).commit();
+  SafeFiles.writeText(v.systemsFile(), "# stored\n", false);
+  hold(v, 200);
+  presses.clear(); presses.addAll(Arrays.asList(0, 0, 0, 0));
+  final Object[] r = new Object[3];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showCargoBay();
+   CargoBayUI bay = f.cargoBay; bay.init();
+   Object sys = field(bay, CargoBayUI.class, "systems");
+   call(sys, sys.getClass(), "storeSystem", new Class<?>[] {SavedGameParser.SystemType.class}, pick[0]);
+   r[0] = bay.saveAll();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Thread.sleep(400);
+  String file = new String(SafeFiles.read(v.systemsFile()), "UTF-8");
+  SavedGameParser.SystemState off = v.readCopy(v.boarded()).save.getPlayerShip().getSystem(pick[0]);
+  Setup.chk("R: a damaged " + pick[0].getId() + " stored: it keeps its broken bar (" + file.trim().replace("\n", " / ") + ")", Boolean.TRUE.equals(r[0])
+    && file.contains(pick[0].getId() + " " + level + " 1") && (off == null || off.getCapacity() == 0));
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   CargoBayUI bay = f.cargoBay; bay.init();
+   Object sys = field(bay, CargoBayUI.class, "systems");
+   java.util.List<?> stored = (java.util.List<?>) call(sys, sys.getClass(), "storedList", new Class<?>[0]);
+   Object it = null; for (Object o : stored) if (String.valueOf(o).contains("broken")) it = o;
+   r[1] = String.valueOf(it);
+   call(sys, sys.getClass(), "installSystem", new Class<?>[] {it.getClass()}, it);
+   r[2] = bay.saveAll();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Thread.sleep(400);
+  SavedGameParser.SystemState on = v.readCopy(v.boarded()).save.getPlayerShip().getSystem(pick[0]);
+  Setup.chk("R: the stored row says so (" + r[1] + "); installed again, still broken: level " + level + ", 1 bar broken", String.valueOf(r[1]).contains("1 broken") && Boolean.TRUE.equals(r[2])
+    && on != null && on.getCapacity() == level && on.getDamagedBars() == 1 && !new String(SafeFiles.read(v.systemsFile()), "UTF-8").contains(pick[0].getId()));
  }
 
  /** The welcome screen and Switch Game Mode describe each career alike; one already begun offers Continue, not Begin. */
