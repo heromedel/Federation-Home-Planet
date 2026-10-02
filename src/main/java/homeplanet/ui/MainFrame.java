@@ -106,6 +106,8 @@ public class MainFrame extends JFrame {
 
 	/** Is the Cargo Bay the screen showing (the one with work that can be left unsaved)? */
 	public boolean atCargoBay() { return !atSpaceDock && !atMuseum && !atComm; }
+	/** Is the Space Dock the screen showing? */
+	public boolean atSpaceDock() { return atSpaceDock; }
 	/** Is the Long Range Comm. screen the one showing? */
 	public boolean atLongRangeComm() { return atComm; }
 	/** Opens Long Range Comm. (asking for the commander's name the first time). */

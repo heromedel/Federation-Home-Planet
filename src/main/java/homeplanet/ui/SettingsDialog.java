@@ -46,6 +46,7 @@ public class SettingsDialog extends JDialog {
 	private final String commanderWas = homeplanet.comm.Commander.name() == null ? "" : homeplanet.comm.Commander.name();
 	private final javax.swing.JTextField commanderField = new javax.swing.JTextField(commanderWas, 18);
 	private final JCheckBox shipTradeBox = new JCheckBox("Immersive careers: allow trading whole ships (with a career that allows it too; Sandbox fleets always may)", HomePlanet.immersiveShipTrading);
+	private final JCheckBox popupBox = new JCheckBox("Priority messages from other commanders pop up (off: they go to the inbox, marked priority)", HomePlanet.longRangePopups);
 	private final JCheckBox anyLevelBox = new JCheckBox("Immersive careers: allow trading with any Immersive level: Easy, Normal, Hard, Custom (when the other allows it too)", HomePlanet.immersiveAnyLevel);
 	private final javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
 
@@ -80,6 +81,8 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Long Range Comm.");
 		body.add(shipTradeBox, next(c));
 		body.add(anyLevelBox, next(c));
+		popupBox.setToolTipText("A commander can tick Priority on a message to you; at most one pops up a minute from each, whatever this says");
+		body.add(popupBox, next(c));
 		JPanel blockRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		final JLabel blockedLabel = new JLabel();
 		final JButton unblockBtn = new JButton("Blocked commanders...");
@@ -345,6 +348,8 @@ public class SettingsDialog extends JDialog {
 		if (anyLevelBox.isSelected() != HomePlanet.immersiveAnyLevel) changed.add("Trading with any Immersive level: " + anyLevelBox.isSelected());
 		HomePlanet.immersiveShipTrading = shipTradeBox.isSelected();
 		HomePlanet.immersiveAnyLevel = anyLevelBox.isSelected();
+		if (popupBox.isSelected() != HomePlanet.longRangePopups) changed.add("Priority messages pop up: " + popupBox.isSelected());
+		HomePlanet.longRangePopups = popupBox.isSelected();
 		if (!commander.equals(commanderWas)) {
 			changed.add("Commander name: " + commander);
 			HomePlanet.config.setProperty(homeplanet.comm.Commander.CFG_NAME, commander); // written with the rest below

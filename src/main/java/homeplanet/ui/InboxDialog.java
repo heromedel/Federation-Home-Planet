@@ -160,8 +160,8 @@ public class InboxDialog extends JDialog {
 	/** Deletes a receipt for good (it asks first). */
 	private void deleteSelected() {
 		Transmissions.Message m = list.getSelectedValue();
-		if (m == null || !Transmissions.isReceipt(m)) return;
-		if (!HomePlanet.confirmNo(this, "Delete this receipt?\nThe trade stays in the station's history.", "Delete")) return;
+		if (m == null || !(Transmissions.isReceipt(m) || Transmissions.isNote(m))) return;
+		if (!HomePlanet.confirmNo(this, Transmissions.isNote(m) ? "Delete this message from " + m.from + "?" : "Delete this receipt?\nThe trade stays in the station's history.", "Delete")) return;
 		try {
 			Transmissions.delete(m);
 			all.remove(m);
@@ -214,7 +214,13 @@ public class InboxDialog extends JDialog {
 		}
 		boolean answered = m.replied != null && !m.replied.isEmpty();
 		message(m.subject, m.from + "  \u00b7  " + m.date, answered ? m.body + "\n\nYou replied: \u201c" + m.replied + "\u201d" : m.body);
-		reply.setVisible(Transmissions.canReply(m));
+		String[] from = Transmissions.noteFrom(m);
+		boolean canWriteBack = from != null && !"0".equals(from[2]);
+		reply.setVisible(Transmissions.canReply(m) || from != null);
+		reply.setEnabled(Transmissions.canReply(m) || canWriteBack);
+		reply.setToolTipText(from == null ? "Choose your answer: the reply comes in a few beacons later"
+				: canWriteBack ? "Write back to " + m.from + " over Long Range Comm. (their hailing frequencies must be open)"
+				: m.from + "'s hailing frequencies were closed when they wrote: hail them from Long Range Comm. instead");
 		boolean canClaim = m.hasReward() && !m.claimed;
 		claim.setVisible(m.hasReward());
 		claim.setEnabled(canClaim);
@@ -223,7 +229,8 @@ public class InboxDialog extends JDialog {
 		keep.setVisible(open);
 		museum.setVisible(open);
 		archive.setVisible(true);
-		delete.setVisible(Transmissions.isReceipt(m)); // receipts pile up: archive one or be rid of it
+		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m)); // receipts and messages pile up: archive one or be rid of it
+		delete.setToolTipText(Transmissions.isNote(m) ? "Delete this message for good" : "Delete this receipt for good: the trade stays in the station's history");
 		boolean stipend = Transmissions.deletable(m);
 		archive.setText(stipend ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
 		archive.setToolTipText(stipend ? (Transmissions.isStipend(m) ? "Delete this notice: the scrap is already in the Cargo Hold" : "Delete this order: its free command has been taken") : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
@@ -253,6 +260,11 @@ public class InboxDialog extends JDialog {
 	/** Answers a letter that asks for one: the choice of replies, then the answer is on its way. */
 	private void replySelected() {
 		Transmissions.Message m = list.getSelectedValue();
+		String[] from = m == null ? null : Transmissions.noteFrom(m);
+		if (from != null) { // another commander's message: written back to them over Long Range Comm.
+			if (!"0".equals(from[2])) MessageDialog.open(this, from[1], Integer.parseInt(from[2]), m.from, null);
+			return;
+		}
 		if (m == null || !Transmissions.canReply(m)) return;
 		List<String> options = Transmissions.replyTexts(m);
 		Object[] names = new Object[options.size() + 1];

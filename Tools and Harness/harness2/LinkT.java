@@ -68,6 +68,9 @@ public class LinkT {
   boolean reached = false;
   for (int i = 0; i < Channel.PORTS; i++) { try { a("hail " + (Channel.PORT0 + i)); reached = true; } catch (IOException e) { } }
   Setup.chk("nor can it be hailed", !reached);
+  boolean noted = false;
+  for (int i = 0; i < Channel.PORTS; i++) if (a("note " + (Channel.PORT0 + i) + " normal aaaaaaaaaaaaaaaa Anyone there?").startsWith("OK")) noted = true;
+  Setup.chk("nor sent a message", !noted);
   String port = b("listen").replace("PORT ", "");
   boolean seen = false;
   for (Beacon.Found f : Beacon.scan(1500, "aaaaaaaaaaaaaaaa")) if (f.station.equals("bbbbbbbbbbbbbbbb") && f.title.equals("Commander Bree") && ("" + f.port).equals(port)) seen = true;
@@ -159,6 +162,39 @@ public class LinkT {
   Blocks.unblock("cccccccccccccccc");
   Setup.chk("unblocking clears it", !Blocks.blocked(null, "203.0.113.5") && Blocks.list().isEmpty());
 
+  // ---- messages without a channel ----
+  b("inbox on");
+  boolean takes = false;
+  for (Beacon.Found f : Beacon.scan(1200, "aaaaaaaaaaaaaaaa")) if (f.station.equals("bbbbbbbbbbbbbbbb")) takes = f.notes;
+  Setup.chk("a station's search answer says it takes messages", takes);
+  b("oldanswer on");
+  boolean oldTakes = true;
+  for (Beacon.Found f : Beacon.scan(1200, "aaaaaaaaaaaaaaaa")) if (f.station.equals("bbbbbbbbbbbbbbbb")) oldTakes = f.notes;
+  Setup.chk("an older station's answer doesn't (so Send Message stays off for it)", !oldTakes);
+  b("oldanswer off");
+  int notes0 = Integer.parseInt(b("notes").split(" ")[0]);
+  Setup.chk("a message goes to the inbox", a("note " + port + " normal aaaaaaaaaaaaaaaa Fancy a trade later?").equals("OK inbox"));
+  String nb = b("notes");
+  Setup.chk("from the commander who sent it, as they wrote it", Integer.parseInt(nb.split(" ")[0]) == notes0 + 1 && nb.contains("Captain Ash|Long Range message|Fancy a trade later?"));
+  Setup.chk("and can be deleted", b("delnote").equals("OK") && Integer.parseInt(b("notes").split(" ")[0]) == notes0);
+  Setup.chk("a priority message pops up", a("note " + port + " priority aaaaaaaaaaaaaaaa Are you there?").equals("OK popup") && b("popups").equals("1 Captain Ash|Are you there?"));
+  Setup.chk("a second within the minute goes to the inbox", a("note " + port + " priority aaaaaaaaaaaaaaaa Hello?").equals("OK inbox") && b("popups").startsWith("1 ")
+    && b("notes").contains("Long Range message (priority)"));
+  b("popups off");
+  Setup.chk("with priority pop-ups off, a priority message goes to the inbox", a("note " + port + " priority cccccccccccccccc Urgent!").equals("OK inbox") && b("popups").startsWith("1 "));
+  b("popups on"); b("inbox off");
+  Setup.chk("with the inbox off, a message pops up (nothing is lost)", a("note " + port + " normal dddddddddddddddd Just saying hi").equals("OK popup") && b("popups").startsWith("2 "));
+  b("inbox on");
+  b("block eeeeeeeeeeeeeeee Captain_Pest");
+  String nr = a("note " + port + " normal eeeeeeeeeeeeeeee Let me in");
+  Setup.chk("a blocked commander's message is dropped: they hear only that nobody answered", nr.startsWith("FAILED") && nr.contains("did not answer") && !nr.contains("block"));
+  b("unblock eeeeeeeeeeeeeeee");
+  int ok = 0, busy = 0;
+  for (int i = 0; i < 8; i++) { String x = a("note " + port + " normal ffffffffffffffff Spam " + i); if (x.startsWith("OK")) ok++; else if (x.contains("too many")) busy++; }
+  Setup.chk("a flood is cut down (" + ok + " of 8 taken)", ok == 5 && busy == 3);
+  Setup.chk("a message stays plain text, cut to length", Notes.clean("a\u0007b\n\n\n\nc" + new String(new char[600]).replace('\0', 'x')).startsWith("ab\n\nc") && Notes.clean(new String(new char[600]).replace('\0', 'x')).length() == Notes.MAX);
+  b("inbox off");
+
   // ---- versions: the protocol decides ----
   a("close"); b("wait ended");
   b("version 4B.99");
@@ -181,7 +217,8 @@ public class LinkT {
   b("mode easy on");
   Setup.chk("Sandbox hails an Immersive career: the channel opens, to talk", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
   String sa = a("state"), sb = b("state");
-  Setup.chk("both know it's talk only, and why", sa.contains("talkonly=true") && sb.contains("talkonly=true") && sa.contains("Sandbox_fleets_trade_only_with_Sandbox_fleets") && sb.contains("Immersive_Easy"));
+  Setup.chk("both know it's communications only, and why (a sector too distant for trade, then the mode)", sa.contains("talkonly=true") && sb.contains("talkonly=true")
+    && sa.contains("too_distant_for_trade") && sa.contains("Sandbox_fleets_trade_only_with_Sandbox_fleets") && sb.contains("Immersive_Easy"));
   Setup.chk("messages go both ways", a("say Hello from Sandbox").equals("true") && waitHeard("Captain Ash|Hello from Sandbox")
     && b("say Hello from Easy").equals("true") && waitA("Commander Bree|Hello from Easy"));
   Setup.chk("neither can offer anything", a("offer supply scrap 5").equals("refused") && b("offer supply fuel 1").equals("refused") && a("state").contains("mine=0 theirs=0"));

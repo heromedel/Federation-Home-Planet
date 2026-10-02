@@ -146,12 +146,13 @@ public final class Session implements Channel.Listener {
 	 */
 	public static String cantTrade(Peer p, String myMode, boolean myAnyLevel) {
 		boolean meImmersive = !homeplanet.vault.Vault.SANDBOX.equals(myMode);
+		String far = p.title + " is in a sector that is too distant for trade. (";
 		if (p.immersive() != meImmersive)
-			return p.title + "'s station is in " + p.modeTitle() + "; this one is in " + homeplanet.vault.Vault.title(myMode)
-					+ ". Sandbox fleets trade only with Sandbox fleets, and Immersive careers only with Immersive careers.";
+			return far + "Sandbox fleets trade only with Sandbox fleets, and Immersive careers only with Immersive careers: they are in "
+					+ p.modeTitle() + ", you are in " + homeplanet.vault.Vault.title(myMode) + ".)";
 		if (meImmersive && !p.mode.equals(myMode) && !(myAnyLevel && p.anyLevel))
-			return p.title + "'s career is " + p.modeTitle() + "; this one is " + homeplanet.vault.Vault.title(myMode)
-					+ ". Careers of different levels trade only when both allow trading with any Immersive level (Settings, General).";
+			return far + (myAnyLevel ? "Their" : "Your") + " career keeps to its own level, so " + p.modeTitle() + " and " + homeplanet.vault.Vault.title(myMode)
+					+ " don't trade: careers of different levels trade only when both allow any Immersive level, in Settings, General.)";
 		return null;
 	}
 

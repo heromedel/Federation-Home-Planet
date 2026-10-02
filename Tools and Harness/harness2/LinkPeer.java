@@ -37,6 +37,11 @@ public class LinkPeer {
   volatile boolean chat = true;
   /** Turns every hail away as busy ("decline on"): the commander pressing Decline. */
   volatile boolean decline = false;
+  /** Priority messages pop up here ("popups off": they go to the inbox), and the ones shown. */
+  volatile boolean popupsOn = true;
+  final List<String> popups = Collections.synchronizedList(new ArrayList<String>());
+  /** Answers searches as a station older than messages does ("oldanswer on"). */
+  volatile boolean oldAnswer = false;
   public void problem(String t) { problems.add(t); }
   public void settled(Exchange.Record r) { settled++; }
   public void ended(String why) { ended = why; session = null; ends++; }
@@ -70,7 +75,17 @@ public class LinkPeer {
    if (c.equals("listen")) {
     post = new Channel.Post(new Channel.Post.Handler() { public void hailed(final Channel ch) {
      try {
-      final Session.Peer p = Session.peerOf(ch.readFirst(10000));
+      Wire.Msg first = ch.readFirst(10000);
+      if (first.type.equals("NOTE")) { // a message, as the screen takes one: filed, or "shown" (kept here for the test)
+       Notes.Note n = Notes.read(first);
+       String refused = Notes.refuse(n, ch.host, title);
+       String where = refused != null ? null : Notes.where(n, popupsOn, HomePlanet.immersiveNotifications);
+       if (Notes.INBOX.equals(where)) Notes.toInbox(n, ch.host);
+       else if (where != null) popups.add(n.title + "|" + n.text);
+       Notes.answer(ch, where, refused);
+       return;
+      }
+      final Session.Peer p = Session.peerOf(first);
       if (Blocks.blocked(p.station, ch.host)) { ch.close(Session.notAnswered(title)); return; } // as the screen does
       if (decline) { ch.close(Session.busy(title)); return; } // the commander pressed Decline
       String no = why(p);
@@ -80,7 +95,10 @@ public class LinkPeer {
      } catch (IOException e) { ch.close(""); }
     } });
     final int port = post.port;
-    responder = new Beacon.Responder(new Beacon.Self() { public String answer() { return Beacon.answer(port, HomePlanet.APP_VERSION, id, title, "Wanderer", mode); } });
+    responder = new Beacon.Responder(new Beacon.Self() { public String answer() {
+     String a = Beacon.answer(port, HomePlanet.APP_VERSION, id, title, "Wanderer", mode);
+     return oldAnswer ? a.substring(0, a.lastIndexOf('\n')) : a; // as a station before messages answers: no "notes"
+    } });
     return "PORT " + post.port;
    }
    if (c.equals("hail")) {
@@ -111,6 +129,15 @@ public class LinkPeer {
    if (c.equals("ends")) return "" + ends;
    if (c.equals("unlisten")) { if (post != null) post.close(); if (responder != null) responder.close(); post = null; responder = null; return "OK"; }
    if (c.equals("tradeanyway")) { tradeAnyway = w[1].equals("on"); return "OK"; }
+   if (c.equals("popups")) { if (w.length > 1) popupsOn = w[1].equals("on"); return popups.size() + (popups.isEmpty() ? "" : " " + popups.get(popups.size() - 1)); }
+   if (c.equals("oldanswer")) { oldAnswer = w[1].equals("on"); return "OK"; }
+   if (c.equals("notes")) { int k = 0; String last = "none"; for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m)) { if (k++ == 0) last = m.from + "|" + m.subject + "|" + m.body.replace('\n', ' '); } return k + " " + last; }
+   if (c.equals("delnote")) { for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m)) { Transmissions.delete(m); return "OK"; } return "none"; }
+   if (c.equals("note")) { // note PORT normal|priority STATIONID TEXT...: a message to that port, as that station
+    String text = cmd.substring(cmd.indexOf(w[3]) + w[3].length()).trim();
+    try { return "OK " + Notes.send("127.0.0.1", Integer.parseInt(w[1]), Notes.note(HomePlanet.APP_VERSION, w[3], title, text, w[2].equals("priority"), 0), "B"); }
+    catch (IOException e) { return "FAILED " + e.getMessage(); }
+   }
    if (c.equals("decline")) { decline = w[1].equals("on"); return "OK"; }
    if (c.equals("block")) { Blocks.block(w[1], w[2].replace('_', ' '), w.length > 3 ? w[3] : ""); return "OK"; }
    if (c.equals("unblock")) { Blocks.unblock(w[1]); return "OK"; }

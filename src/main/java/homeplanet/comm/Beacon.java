@@ -43,6 +43,8 @@ public final class Beacon {
 		public final int port;
 		/** Its Long Range Comm. protocol: stations trade when theirs match. */
 		public int protocol;
+		/** It takes messages without a channel ({@link Notes}): 4B.72 and later. */
+		public boolean notes;
 		public boolean compatible() { return protocol == Session.PROTOCOL; }
 		Found(String host, int port, String title, String ship, String version, String station, String mode) {
 			this.host = host; this.port = port; this.title = title; this.ship = ship; this.version = version; this.station = station; this.mode = mode;
@@ -101,9 +103,12 @@ public final class Beacon {
 		public void close() { open = false; socket.close(); }
 	}
 
-	/** The answer's text: one field a line (tcp port, protocol, version, station id, title, ship, mode). */
+	/**
+	 * The answer's text: one field a line (tcp port, protocol, version, station id, title, ship, mode, then what it
+	 * takes beyond trading, comma-separated: "notes"). Older stations read the first lines and ignore the rest.
+	 */
 	public static String answer(int tcpPort, String version, String station, String title, String ship, String mode) {
-		return tcpPort + "\n" + Session.PROTOCOL + "\n" + version + "\n" + station + "\n" + title + "\n" + (ship == null ? "" : ship) + "\n" + mode;
+		return tcpPort + "\n" + Session.PROTOCOL + "\n" + version + "\n" + station + "\n" + title + "\n" + (ship == null ? "" : ship) + "\n" + mode + "\nnotes";
 	}
 
 	/** Asks every station in reach, listening for answers this long. Not on the event thread. Leaves out this station. */
@@ -152,6 +157,7 @@ public final class Beacon {
 			String mode = l.length > 7 && java.util.Arrays.asList(homeplanet.vault.Vault.SLOTS).contains(l[7].trim()) ? l[7].trim() : homeplanet.vault.Vault.SANDBOX;
 			Found f = new Found(host, port, Line.text(l[5], 48), Line.text(l[6], 64), Line.text(l[3], 16), l[4], mode);
 			try { f.protocol = Integer.parseInt(l[2].trim()); } catch (NumberFormatException e) { f.protocol = -1; }
+			f.notes = l.length > 8 && java.util.Arrays.asList(l[8].trim().split(",")).contains("notes");
 			return f;
 		} catch (NumberFormatException e) {
 			return null;

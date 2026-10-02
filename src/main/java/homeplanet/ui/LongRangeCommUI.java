@@ -46,6 +46,7 @@ import homeplanet.comm.Channel;
 import homeplanet.comm.Commander;
 import homeplanet.comm.Exchange;
 import homeplanet.comm.Line;
+import homeplanet.comm.Notes;
 import homeplanet.comm.Session;
 import homeplanet.comm.Wire;
 import homeplanet.core.HomePlanet;
@@ -126,7 +127,9 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private final FtlButton establishBtn = new FtlButton("Open Hailing Frequencies", FtlFont.MENU, RW, 34);
 	private final FtlButton powerBtn = new FtlButton("Stay Powered Up", FtlFont.MENU, RW, 30);
 	private final FtlButton hailBtn = new FtlButton("Hail", FtlFont.MENU, 146, 30), hailAddrBtn = new FtlButton("Hail", FtlFont.MENU, 146, 30);
-	private final FtlButton blockBtn = new FtlButton("Block", FtlFont.MENU, 146, 30);
+	private final FtlButton messageBtn = new FtlButton("Send Message", FtlFont.MENU, 196, 30);
+	/** The port this station's hailing frequencies are open on, 0 when closed: a message sent from here says where to reply. */
+	static volatile int listeningPort = 0;
 	/** Hails nobody answered, newest last (shown on this screen; the Space Dock's button lights until they're seen). */
 	private final CargoParts.Label missedNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.ORANGE, 1);
 	private final List<String> missed = new ArrayList<String>();
@@ -410,10 +413,14 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		connect.add(found);
 		scanNote.setBounds(0, 258, RW, 16);
 		connect.add(scanNote);
-		// what can be done with the chosen commander: more of these may come (a message, offers left open)
-		blockBtn.setBounds(0, 280, 146, 30);
-		blockBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { blockFound(); } });
-		connect.add(blockBtn);
+		// what can be done with the chosen commander (more may come: offers left open); Block is on the right-click menu
+		messageBtn.setBounds(0, 280, 196, 30);
+		messageBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { messageFound(); } });
+		connect.add(messageBtn);
+		found.list.addMouseListener(new MouseAdapter() {
+			@Override public void mousePressed(MouseEvent e) { if (e.isPopupTrigger()) foundMenu(e); }
+			@Override public void mouseReleased(MouseEvent e) { if (e.isPopupTrigger()) foundMenu(e); }
+		});
 		hailBtn.setBounds(RW - 146, 280, 146, 30);
 		hailBtn.setToolTipText("Open a channel to the chosen commander's station: they must answer");
 		hailBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { hailFound(); } });
@@ -605,6 +612,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				}
 			});
 			portNote.setText("Your hailing frequency: port " + post.port + ".");
+			listeningPort = post.port;
 		} catch (IOException e) {
 			log.warn("Long Range Comm. could not listen: {}", e.toString());
 			closePost();
@@ -621,6 +629,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (responder != null) responder.close();
 		post = null;
 		responder = null;
+		listeningPort = 0;
 		rescan.stop();
 		portNote.setText("");
 		repaintDock();
@@ -666,12 +675,12 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 			boolean same = x.compatible(), blocked = Blocks.blocked(x.station, null), talk = talkOnly(x);
 			String mode = Vault.title(x.mode);
 			if (x.station.equals(keep)) sel = rows.size();
-			rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), blocked ? "blocked" : !same ? "needs an update" : talk ? "talk only" : mode, x,
-					blocked ? "You blocked " + x.title + ": their hails go unanswered. Unblock to hail them."
-							: same && talk ? x.title + "'s Home Planet Station is in " + mode + ": you can hail and talk, but your stations don't trade ("
+			rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), blocked ? "blocked" : !same ? "needs an update" : talk ? "comms only" : mode, x,
+					blocked ? "You blocked " + x.title + ": their hails and messages go unanswered. Right-click to unblock."
+							: same && talk ? "Communications only: " + x.title + " is in a sector that is too distant for trade. You can hail and message them ("
 									+ (Vault.SANDBOX.equals(x.mode) != Vault.SANDBOX.equals(Vault.get().slot) ? "Sandbox fleets trade only with Sandbox fleets, Immersive careers with Immersive careers"
 											: "your career trades only within its own level: Settings, General") + ")"
-							: same ? x.title + "'s Home Planet Station (" + mode + ", Federation Home Planet " + x.version + "), at " + x.host + ":" + x.port
+							: same ? x.title + "'s Home Planet Station (" + mode + ", Federation Home Planet " + x.version + "), at " + x.host + ":" + x.port + ". Right-click for more."
 							: "Federation Home Planet " + x.version + ": its Long Range Comm. is " + (x.protocol < homeplanet.comm.Session.PROTOCOL ? "older" : "newer") + " than this station's. One of you needs to update to trade.",
 					blocked || !same));
 		}
@@ -688,6 +697,29 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (meSandbox != theySandbox) return true;
 		return !meSandbox && !x.mode.equals(me) && !HomePlanet.immersiveAnyLevel;
 	}
+	/** The chosen commander's right-click menu: Block (or Unblock), out of the way of the everyday buttons. */
+	private void foundMenu(MouseEvent e) {
+		int i = found.list.locationToIndex(e.getPoint());
+		if (i < 0 || !found.list.getCellBounds(i, i).contains(e.getPoint())) return;
+		found.list.setSelectedIndex(i);
+		Object v = found.selectedValue();
+		if (!(v instanceof Beacon.Found)) return;
+		Beacon.Found f = (Beacon.Found) v;
+		JPopupMenu m = new JPopupMenu();
+		JMenuItem it = new JMenuItem(Blocks.blocked(f.station, null) ? "Unblock " + f.title : "Block " + f.title + "...");
+		it.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent x) { blockFound(); } });
+		m.add(it);
+		CargoParts.darkPopup(m);
+		m.show(found.list, e.getX(), e.getY());
+	}
+	/** A message to the chosen commander, without a channel. */
+	private void messageFound() {
+		Object v = found.selectedValue();
+		if (!(v instanceof Beacon.Found)) return;
+		Beacon.Found f = (Beacon.Found) v;
+		if (!f.compatible() || !f.notes || Blocks.blocked(f.station, null)) return;
+		MessageDialog.open(this, f.host, f.port, f.title, new java.util.function.Consumer<String>() { public void accept(String said) { help(said); } });
+	}
 	/** Blocks the chosen commander (asked first), or unblocks them. */
 	private void blockFound() {
 		Object v = found.selectedValue();
@@ -697,7 +729,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 			Blocks.unblock(f.station);
 			help("Unblocked " + f.title + ".");
 		} else {
-			if (!HomePlanet.confirmNo(this, "Block " + f.title + "?\nTheir hails will go unanswered, and your station won't answer their searches.\nUnblock them here, or in Settings.", "Block")) return;
+			if (!HomePlanet.confirmNo(this, "Block " + f.title + "?\nTheir hails and messages will go unanswered, and your station won't answer their searches.\nUnblock them here (right-click), or in Settings.", "Block")) return;
 			Blocks.block(f.station, f.title, f.host);
 			help("Blocked " + f.title + ".");
 		}
@@ -788,11 +820,65 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private void incoming(final Channel ch) {
 		Wire.Msg m;
 		try { m = ch.readFirst(10000); } catch (IOException e) { ch.close(""); return; }
+		if (m.type.equals("NOTE")) { incomingNote(ch, m); return; }
 		final Session.Peer p;
 		try { p = Session.peerOf(m); } catch (Wire.Garbled e) { ch.close("The other station's hail was garbled."); return; }
 		if (Blocks.blocked(p.station, ch.host)) { ch.close(Session.notAnswered(Commander.title())); return; } // as if nobody were listening
 		final long until = System.currentTimeMillis() + ANSWER_MS;
 		SwingUtilities.invokeLater(new Runnable() { public void run() { answer(ch, p, until); } });
+	}
+	/**
+	 * A message from another commander (off the event thread): turned away if they're blocked or sending too many;
+	 * otherwise filed in the inbox or shown, and the sender told which.
+	 */
+	private void incomingNote(final Channel ch, Wire.Msg m) {
+		final Notes.Note n;
+		try { n = Notes.read(m); } catch (Wire.Garbled e) { ch.close("The Home Planet Station received a garbled message."); return; }
+		String refused = Notes.refuse(n, ch.host, Commander.title());
+		if (refused != null) { ch.close(refused); return; }
+		final String[] where = new String[1];
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {
+				public void run() {
+					where[0] = Notes.where(n, HomePlanet.longRangePopups, HomePlanet.immersiveNotifications && Vault.isOpen());
+					if (Notes.INBOX.equals(where[0])) {
+						Notes.toInbox(n, ch.host);
+						if (parent.atSpaceDock() && !otherWindowOpen()) parent.spaceDock.init(); // its inbox button counts the new one
+					} else {
+						showNote(n, ch.host);
+					}
+				}
+			});
+		} catch (Exception e) {
+			ch.close("");
+			return;
+		}
+		Notes.answer(ch, where[0], null);
+	}
+	/** A message as a pop-up, once no window of the station's is open over it (it never changes the screen). */
+	private void showNote(final Notes.Note n, final String host) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				if (otherWindowOpen()) {
+					javax.swing.Timer later = new javax.swing.Timer(500, new ActionListener() { public void actionPerformed(ActionEvent e) { showNote(n, host); } });
+					later.setRepeats(false);
+					later.start();
+					return;
+				}
+				javax.swing.JTextArea t = new javax.swing.JTextArea(n.text, Math.min(8, 2 + n.text.length() / 50), 42);
+				t.setLineWrap(true);
+				t.setWrapStyleWord(true);
+				t.setEditable(false);
+				t.setOpaque(false);
+				javax.swing.JPanel p = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
+				p.add(new JLabel(n.title + (n.priority ? ", priority:" : ":")), java.awt.BorderLayout.NORTH);
+				p.add(new javax.swing.JScrollPane(t), java.awt.BorderLayout.CENTER);
+				java.awt.Component owner = isShowing() ? LongRangeCommUI.this : parent;
+				Object[] opts = n.replyPort > 0 ? new Object[] {"Reply", "Close"} : new Object[] {"Close"};
+				int r = JOptionPane.showOptionDialog(owner, p, "Message from " + n.title, JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[opts.length - 1]);
+				if (n.replyPort > 0 && r == 0) MessageDialog.open(owner, host, n.replyPort, n.title, null);
+			}
+		});
 	}
 	/** How long a hail waits for an answer here: less than a hailing station waits (90 seconds), so it's told why. */
 	private static final int ANSWER_MS = 80000;
@@ -887,10 +973,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		s.start(this);
 		readSource();
 		refreshAll();
-		notice.set(s.noTrade == null ? "Channel open with " + s.peer.title + "." : "Talk only with " + s.peer.title + ".");
-		help(s.noTrade == null ? helpOpen() : (s.peer.immersive() != !Vault.SANDBOX.equals(Vault.get().slot)
-				? "Sandbox fleets and Immersive careers don't trade, but you can talk." : "Careers of different levels: one keeps to its own, so you can talk but not trade.")
-				+ " (Accept says more.)");
+		notice.set(s.noTrade == null ? "Channel open with " + s.peer.title + "." : "Communications Only with " + shortName(s.peer.title) + ".");
+		help(s.noTrade == null ? helpOpen() : "Communications Only: their sector is too distant for trade. Hover over Offer or Accept for why.");
 	}
 	private static String shortName(String title) {
 		for (String r : homeplanet.parser.UnlockGrants.RANKS) if (title.startsWith(r + " ")) return title.substring(r.length() + 1);
@@ -1212,7 +1296,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 			theirLamp.set(shortName(session.peer.title).toUpperCase() + ": " + (session.theyAccepted() ? "ACCEPTED" : "NOT YET"), session.theyAccepted());
 			acceptBtn.setText(session.iAccepted() ? "Withdraw acceptance" : "Accept");
 			acceptBtn.setLit(!session.iAccepted() && session.theyAccepted());
-			acceptBtn.setToolTipText(session.whyNotAccept() != null ? session.whyNotAccept() : session.iAccepted() ? "Take your acceptance back" : "Accept the offer as it stands: when both stations accept, the trade goes through");
+			acceptBtn.setToolTipText(session.whyNotAccept() != null ? wrapTip(session.whyNotAccept()) : session.iAccepted() ? "Take your acceptance back" : "Accept the offer as it stands: when both stations accept, the trade goes through");
 			// their side
 			theirPic.setIcon(sh.hold ? null : shipIcon(sh.blueprint));
 			theirNote.setText(sh.hold ? "Their Cargo Hold" : (sh.name + (sh.shipClass.isEmpty() ? "" : "  -  " + sh.shipClass) + (theirWhole ? "  -  offered whole" : "")));
@@ -1283,13 +1367,17 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		return img == null ? null : new ImageIcon(SpaceDockUI.fitImage(img, 110, 62));
 	}
 	private void updateButtons() {
-		boolean open = session != null && !session.isOver() && !session.exchanging() && session.noTrade == null; // talk only: the offer stays shut
+		boolean open = session != null && !session.isOver() && !session.exchanging() && session.noTrade == null; // communications only: the offer stays shut
 		offerSupplyBtn.setEnabled(open && availableSupply(supplyIdx) > 0);
 		for (int k = 0; k < 4; k++) offerBtns[k].setEnabled(open && myLists[k].selectedValue() != null);
 		takeBackBtn.setEnabled(open && myOffer.selectedValue() != null);
+		// communications only: every Offer button says why, as Accept does
+		String comms = session != null && session.noTrade != null ? wrapTip(session.noTrade) : null;
+		offerSupplyBtn.setToolTipText(comms != null ? comms : "Put that much of the chosen supply in your offer");
+		for (int k = 0; k < 4; k++) offerBtns[k].setToolTipText(comms != null ? comms : k == 3 ? "Put the chosen crew member in your offer" : "Put the chosen item in your offer");
 		String noShip = whyNotShip(true);
 		offerShipBtn.setEnabled(open && noShip == null);
-		offerShipBtn.setToolTipText(noShip != null ? noShip : "Offer " + (source == null ? "her" : source.name) + " whole: her crew, weapons, systems and cargo go with her"
+		offerShipBtn.setToolTipText(noShip != null ? wrapTip(noShip) : "Offer " + (source == null ? "her" : source.name) + " whole: her crew, weapons, systems and cargo go with her"
 				+ (source != null && source.isBoarded() ? " (she's docked first)" : ""));
 		String noBoard = whyNotBoardOrDock();
 		boolean ship = source != null && !source.isStorage();
@@ -1323,11 +1411,15 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		hailBtn.setEnabled(idle && freq && ff != null && ff.compatible() && !blocked);
 		hailAddrBtn.setEnabled(idle && freq);
 		hailAddrBtn.setToolTipText(freq ? "Open a channel to the station at that address: they must answer" : "Open Hailing Frequencies first");
-		blockBtn.setText(blocked ? "Unblock" : "Block");
-		blockBtn.setEnabled(ff != null);
-		blockBtn.setToolTipText(ff == null ? "Choose a commander in the list" : blocked ? "Hear from " + ff.title + " again" : "Their hails go unanswered, and your station won't answer their searches");
+		messageBtn.setEnabled(idle && ff != null && ff.compatible() && ff.notes && !blocked);
+		messageBtn.setToolTipText(ff == null ? "Choose a commander in the list"
+				: !ff.compatible() || !ff.notes ? ff.title + "'s station needs a newer version to take messages"
+				: blocked ? "You blocked " + ff.title + " (right-click to unblock)"
+				: "A message to " + ff.title + ", without a channel: to their inbox, or as a pop-up if you tick Priority");
 		sourceBtn.setEnabled(session == null || !session.exchanging());
 	}
+	/** A long reason as a tooltip a few lines tall, not one line across the screen. */
+	private static String wrapTip(String s) { return s.length() < 70 ? s : "<html><div style='width:320px'>" + htmlText(s) + "</div></html>"; }
 	private void help(String s) { help.setText(s == null ? "" : s); }
 
 	// ============================================================== unfinished trades (Other...)

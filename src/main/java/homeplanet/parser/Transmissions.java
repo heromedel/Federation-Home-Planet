@@ -404,6 +404,16 @@ public final class Transmissions {
 	}
 	/** A Long Range Comm. receipt from the Quartermaster: archived or deleted, as the commander likes. */
 	public static boolean isReceipt(Message m) { return m.key.startsWith("trade:"); }
+	/** A message from another commander (Long Range Comm.): archived or deleted, as the commander likes, and answered. */
+	public static boolean isNote(Message m) { return m.key.startsWith("note:"); }
+	/** Where to reply to a commander's message: their station, host and port (0: their frequencies were closed); null if it isn't one. */
+	public static String[] noteFrom(Message m) {
+		if (!isNote(m)) return null;
+		String[] f = m.key.substring(5).split("\\|", -1);
+		if (f.length < 3 || !f[0].matches("[0-9a-f]{16}")) return null;
+		try { Integer.parseInt(f[2]); } catch (NumberFormatException e) { return null; }
+		return new String[] {f[0], f[1], f[2]};
+	}
 	/** Deletes a message for good. */
 	public static synchronized void delete(Message m) throws IOException {
 		List<Message> all = load();

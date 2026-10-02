@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.71";
+	public static final String APP_VERSION = "4B.72";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -82,6 +82,8 @@ public class HomePlanet {
 	public static boolean immersiveShipTrading = false;
 	/** Long Range Comm.: an Immersive career may trade with one of another difficulty (when the other allows it too). */
 	public static boolean immersiveAnyLevel = true;
+	/** Long Range Comm.: a priority message from another commander pops up (off: it goes to the inbox, marked priority). */
+	public static boolean longRangePopups = true;
 	/** Sandbox Mode's Career messages (with Immersive Notifications): the welcome, promotions, achievement rewards, the stipend. */
 	public static boolean careerMessages = false;
 	/** Is a career running in the fleet in use: always in Immersive Mode, and in Sandbox Mode with Career messages on. */
@@ -185,6 +187,7 @@ public class HomePlanet {
 		immersiveNotifications = flag("immersive_notifications");
 		immersiveShipTrading = flag("immersive_ship_trading");
 		immersiveAnyLevel = flag("immersive_any_level", true);
+		longRangePopups = flag("long_range_popups", true);
 		careerMessages = flag("career_messages");
 		finalVictory = config.getProperty("final_victory", "nothing");
 		applyImmersive();
@@ -402,6 +405,7 @@ public class HomePlanet {
 		config.setProperty("immersive_notifications", Boolean.toString(own.notifications));
 		config.setProperty("immersive_ship_trading", Boolean.toString(immersiveShipTrading));
 		config.setProperty("immersive_any_level", Boolean.toString(immersiveAnyLevel));
+		config.setProperty("long_range_popups", Boolean.toString(longRangePopups));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
 		try {
 			ByteArrayOutputStream buf = new ByteArrayOutputStream();
