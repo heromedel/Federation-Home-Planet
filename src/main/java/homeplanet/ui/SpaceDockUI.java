@@ -317,10 +317,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		init();
 	}
 
-	/** Why the Cargo Bay can't open now (no ship boarded, or she's away from a station), or null if it can. */
+	/** Why the Cargo Bay can't open now (her save unreadable, or she's away from a station), or null if it can. With no ship aboard it opens on the Cargo Hold. */
 	private String cargoBayClosedReason() {
 		Ship ship = Vault.get().boarded();
-		if (ship == null || ship.save() == null) return "No ship is at your command.\nBoard a ship before returning to the Cargo Bay to trade.";
+		if (ship == null) return null; // the Cargo Hold alone: its goods can be sold (CargoBayUI.holdOnly)
+		if (ship.save() == null) return ship.name + "'s save can't be read.\nBoard another ship, or check her Records, before returning to the Cargo Bay to trade.";
 		if (!Vault.get().mayTrade(ship))
 			return ship.name + " is not within range of a station.\nFind a beacon with a station, then return to trade.";
 		return null;

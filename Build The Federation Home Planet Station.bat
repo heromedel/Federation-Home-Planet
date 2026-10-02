@@ -32,11 +32,18 @@ echo    0: Exit
 echo    1: Construct Federation Home Planet Station
 echo    2: Construct Federation Home Planet Station with Quick Link
 echo       (adds a Quick Link to the Station Interface on your desktop)
+echo    3: Construct Federation Home Planet Station and establish communications. (Launch Federation Home Planet)
 echo.
-choice /c 012 /n /m "   Input -> "
+choice /c 0123 /n /m "   Input -> "
+if errorlevel 4 goto :buildlaunch
 if errorlevel 3 ( call :construct && call :quicklink & goto :after )
 if errorlevel 2 ( call :construct & goto :after )
 exit /b 0
+
+:buildlaunch
+call :construct
+if defined BUILT ( call :launch & exit /b 0 )
+goto :after
 
 :after
 echo.
@@ -83,6 +90,11 @@ exit /b 0
 rem ---- :construct: tools if missing, then the build ----
 :construct
 echo.
+rem the first construction gathers its tools: say so before the long wait
+set "FIRST="
+if not exist "%JDK%\bin\javac.exe" set "FIRST=1"
+if not exist "%MVN%\bin\mvn.cmd" set "FIRST=1"
+if defined FIRST call :firstnote
 if not exist "%JDK%\bin\javac.exe" call :fetch "a JDK" "%JDK_URL%" "%TOOLS%\jdk.zip" "%JDK%" 100000000 || exit /b 1
 if not exist "%MVN%\bin\mvn.cmd" call :fetch "Maven" "%MVN_URL%" "%TOOLS%\maven.zip" "%MVN%" 5000000 || exit /b 1
 set "JAVA_HOME=%JDK%"
@@ -121,6 +133,20 @@ echo To Establish Connection, run Federation Home Planet Interface.
 echo.
 echo The rebellion won't stand a chance...
 set "BUILT=1"
+exit /b 0
+
+rem ---- :firstnote: the first construction is the slow one ----
+:firstnote
+echo ==========================================================
+echo  FIRST CONSTRUCTION: this one takes a while.
+echo.
+echo  The Construction Yard is gathering its tools: a JDK and Maven
+echo  (about 250 MB), then Maven's own parts. They're kept in tools\,
+echo  so every construction after this one is much faster.
+echo.
+echo  Leave this window open until it says the station is ready.
+echo ==========================================================
+echo.
 exit /b 0
 
 rem ---- :certhint: Maven couldn't check a website's security certificate ----

@@ -433,6 +433,8 @@ no letters, you come and check).
   build fails, the old files go back (`:restore`) and the old jar is still in `Current Build\`.
 - **The Construction Yard** now offers 0: Exit / 1: Launch the Station Interface after a successful build.
 - In an update the Construction Yard says "Reconstructing Station..." and "Station Reconstructed" (4B.74).
+- A first construction (no JDK or Maven in `tools\` yet) opens with a box saying it takes a while, and that later
+  constructions are much faster (4B.77).
 - When Maven can't check a website's certificate (`PKIX`, `CertPath`, `bad_certificate` in its messages, kept in
   `tools\last-build.log`), the Construction Yard explains the two usual causes: the computer's date or time is wrong,
   or an antivirus scans HTTPS connections (4B.74).
