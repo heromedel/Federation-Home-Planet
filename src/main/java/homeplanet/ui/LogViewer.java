@@ -16,7 +16,6 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import homeplanet.core.SafeFiles;
@@ -25,18 +24,17 @@ import homeplanet.vault.Vault;
 
 /**
  * The Records page's log viewer: the station log (a fleet's history.log; Sandbox Mode and each career keep their own)
- * or one ship's voyage log, in the Records style, inside the page itself. Logs are only ever shown here, read-only:
- * nothing opens them in a text editor. The search box keeps the entries (or voyage lines) that mention what's typed.
+ * or one ship's voyage log, in the Records style, inside the page itself, or this run's debug log as plain text. Logs
+ * are only ever shown here, read-only: nothing opens them in a text editor.
  */
 final class LogViewer extends JPanel {
 	private final JComboBox<String> fleet = new JComboBox<String>();
 	private final List<String> slots = new ArrayList<String>();
 	private final JComboBox<String> shipBox = new JComboBox<String>();
 	private final List<Ship> ships = new ArrayList<Ship>();
-	private final JTextField search = new JTextField(14);
 	private final JScrollPane scroll = new JScrollPane();
 	private final JLabel showing = new JLabel(), count = new JLabel();
-	/** What's in view: the station log (null) or this ship's voyage log. */
+	/** What's in view: the station log (null) or this ship's voyage log (the debug log is shown by {@link #showDebug}). */
 	private Ship ship;
 
 	LogViewer() {
@@ -79,37 +77,34 @@ final class LogViewer extends JPanel {
 		viewShip.addActionListener(toShip);
 		shipBox.addActionListener(toShip);
 
-		JPanel stationRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		stationRow.add(viewStation);
-		stationRow.add(javax.swing.Box.createHorizontalStrut(8));
-		stationRow.add(fleet);
-		JPanel shipRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		shipRow.add(viewShip);
-		shipRow.add(javax.swing.Box.createHorizontalStrut(8));
-		shipRow.add(shipBox);
-		if (ships.isEmpty()) { shipRow.add(javax.swing.Box.createHorizontalStrut(8)); shipRow.add(new JLabel("(no ships in this fleet yet)")); }
-		JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		searchRow.add(showing);
-		searchRow.add(javax.swing.Box.createHorizontalStrut(16));
-		searchRow.add(new JLabel("Search:  "));
-		searchRow.add(search);
-		searchRow.add(javax.swing.Box.createHorizontalStrut(10));
-		searchRow.add(count);
-		showing.setFont(MenuTheme.LABEL_FONT);
-		search.setToolTipText("Only what mentions this (a ship's name, a tag such as COMMISSION, a word), in any case");
-		search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-			public void insertUpdate(javax.swing.event.DocumentEvent e) { fill(); }
-			public void removeUpdate(javax.swing.event.DocumentEvent e) { fill(); }
-			public void changedUpdate(javax.swing.event.DocumentEvent e) { fill(); }
+		// the options in one row across the top: the station log, a ship's log, the debug log
+		JButton viewDebug = new JButton("View Debug Log");
+		viewDebug.setToolTipText("This run's log: what the program did, and any errors");
+		viewDebug.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { showDebug(); }
 		});
+		JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		top.add(viewStation);
+		top.add(javax.swing.Box.createHorizontalStrut(6));
+		top.add(fleet);
+		top.add(javax.swing.Box.createHorizontalStrut(18));
+		top.add(viewShip);
+		top.add(javax.swing.Box.createHorizontalStrut(6));
+		top.add(shipBox);
+		top.add(javax.swing.Box.createHorizontalStrut(18));
+		top.add(viewDebug);
+		JPanel titleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		titleRow.add(showing);
+		titleRow.add(javax.swing.Box.createHorizontalStrut(12));
+		titleRow.add(count);
+		showing.setFont(MenuTheme.LABEL_FONT);
 		JPanel controls = new JPanel(new java.awt.GridLayout(0, 1, 0, 4));
-		controls.add(stationRow);
-		controls.add(shipRow);
-		controls.add(searchRow);
+		controls.add(top);
+		controls.add(titleRow);
 
 		scroll.getViewport().setBackground(RecordsLog.BG);
 		scroll.setBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, MenuTheme.GOLD));
-		scroll.setPreferredSize(new Dimension(640, 300));
+		scroll.setPreferredSize(new Dimension(640, 380));
 		scroll.getVerticalScrollBar().setUnitIncrement(22);
 		add(controls, BorderLayout.NORTH);
 		add(scroll, BorderLayout.CENTER);
@@ -121,23 +116,16 @@ final class LogViewer extends JPanel {
 		return name + (s.isBoarded() ? "  (boarded)" : s.state == Ship.State.JUNKED ? "  (Junkyard)" : "");
 	}
 
-	/** Shows what's chosen, kept to what matches the search, the latest in view. */
+	/** Shows what's chosen, the latest in view. */
 	private void fill() {
-		String q = search.getText().trim().toLowerCase();
-		String none = "No entries mention \"" + search.getText().trim() + "\".";
 		if (ship != null) {
 			showing.setText(ship.name + "'s voyage log");
 			String text = homeplanet.vault.VoyageLog.read(Vault.get(), ship);
-			int all = 0, shown = 0;
-			StringBuilder out = new StringBuilder();
-			for (String line : text.split("\r?\n")) {
-				if (line.trim().isEmpty()) continue;
-				all++;
-				if (q.isEmpty() || line.toLowerCase().contains(q)) { out.append(line).append('\n'); shown++; }
-			}
-			count.setText(q.isEmpty() ? all + " lines" : shown + " of " + all + " lines");
-			show(RecordsLog.voyage(out.toString(), q.isEmpty() ? "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
-					+ "while the station is open (and on Refresh)." : none));
+			int all = 0;
+			for (String line : text.split("\r?\n")) if (!line.trim().isEmpty()) all++;
+			count.setText(all + " lines");
+			show(RecordsLog.voyage(text, "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
+					+ "while the station is open (and on Refresh)."));
 			return;
 		}
 		if (slots.isEmpty()) return;
@@ -147,19 +135,38 @@ final class LogViewer extends JPanel {
 		String text = "";
 		try { if (f.isFile()) text = new String(SafeFiles.read(f), StandardCharsets.UTF_8); }
 		catch (Exception e) { text = "The Home Planet Station could not read " + f + ": " + e.getMessage(); }
-		int entries = 0, shown = 0;
-		StringBuilder out = new StringBuilder(), entry = new StringBuilder();
-		for (String line : text.split("\r?\n")) {
-			if (!line.startsWith("  ")) { // a new entry: the last one goes in if it matched
-				if (entry.length() > 0 && (q.isEmpty() || entry.toString().toLowerCase().contains(q))) { out.append(entry); shown++; }
-				if (entry.length() > 0) entries++;
-				entry.setLength(0);
-			}
-			if (!line.trim().isEmpty()) entry.append(line).append('\n');
+		int entries = 0;
+		for (String line : text.split("\r?\n")) if (!line.isEmpty() && !line.startsWith("  ")) entries++;
+		count.setText(entries + " entries");
+		show(RecordsLog.station(text, "Nothing logged yet."));
+	}
+
+	/** This run's debug log (the newest in the program's log folder), as plain text: what to read before a bug report. */
+	void showDebug() {
+		File dir = homeplanet.core.HomePlanet.logDir();
+		File newest = null;
+		File[] fs = dir == null ? null : dir.listFiles();
+		if (fs != null) for (File f : fs) if (f.getName().startsWith("home-planet-") && f.getName().endsWith(".log") && (newest == null || f.lastModified() > newest.lastModified())) newest = f;
+		String text;
+		if (newest == null) text = "No debug log has been written yet (the program's log folder beside Federation Home Planet.jar is empty or missing).";
+		else {
+			try { text = new String(SafeFiles.read(newest), StandardCharsets.UTF_8); }
+			catch (Exception e) { text = "The Home Planet Station could not read " + newest + ": " + e.getMessage(); }
 		}
-		if (entry.length() > 0) { entries++; if (q.isEmpty() || entry.toString().toLowerCase().contains(q)) { out.append(entry); shown++; } }
-		count.setText(q.isEmpty() ? entries + " entries" : shown + " of " + entries + " entries");
-		show(RecordsLog.station(out.toString(), q.isEmpty() ? "Nothing logged yet." : none));
+		showing.setText(newest == null ? "Debug log" : "Debug log, " + newest.getName());
+		int lines = 0;
+		for (String line : text.split("\r?\n")) if (!line.isEmpty()) lines++;
+		count.setText(newest == null ? "" : lines + " lines");
+		javax.swing.JTextArea a = new javax.swing.JTextArea(text);
+		a.setEditable(false);
+		a.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.PLAIN, 12));
+		a.setBackground(RecordsLog.BG);
+		a.setForeground(MenuTheme.GREY_GREEN);
+		a.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+		scroll.setViewportView(a);
+		SwingUtilities.invokeLater(new Runnable() { // the latest in view
+			public void run() { javax.swing.JScrollBar b = scroll.getVerticalScrollBar(); b.setValue(b.getMaximum()); }
+		});
 	}
 
 	private void show(RecordsLog log) {

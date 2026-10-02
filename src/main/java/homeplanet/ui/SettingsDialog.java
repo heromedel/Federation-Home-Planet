@@ -231,7 +231,9 @@ public class SettingsDialog extends JDialog {
 		body = recordsPage;
 		c = constraints();
 		heading(body, c, "Records");
-		body.add(new LogViewer(), next(c)); // the station log and the ships' logs, shown here (never in a text editor)
+		final LogViewer logViewer = new LogViewer();
+		body.add(logViewer, next(c)); // the station log, the ships' logs and the debug log, shown here (never in a text editor)
+		// under the viewer, one row: the folders and the debug toggle
 		JPanel folderRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JButton recordsStation = new JButton("Open Station Folder");
 		recordsStation.setToolTipText("The fleet in use's own folder: its station log, and a folder for each ship's records");
@@ -239,13 +241,11 @@ public class SettingsDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().root); }
 		});
 		folderRow.add(recordsStation);
+		folderRow.add(javax.swing.Box.createHorizontalStrut(8));
+		folderRow.add(openLogs);
+		folderRow.add(javax.swing.Box.createHorizontalStrut(14));
+		folderRow.add(debugBox);
 		body.add(folderRow, next(c));
-		heading(body, c, "Troubleshooting");
-		JPanel debugRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		debugRow.add(openLogs);
-		debugRow.add(javax.swing.Box.createHorizontalStrut(12));
-		debugRow.add(debugBox);
-		body.add(debugRow, next(c));
 		JLabel debugNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>The program's own logs, one per run: "
 				+ "send them along with a bug report. Debug logging adds detail to them.</font></div></html>");
 		debugNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
