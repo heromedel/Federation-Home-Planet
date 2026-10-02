@@ -91,10 +91,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   return Expeditions.holdCrew(v);
  }
  static void runs(Vault v) throws Exception {
-  // a fixed board, so the runs don't depend on what was posted: a dangerous job, a moderate one, a safe one
-  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=mantis\n0.danger=3\n0.text=Need body soldiers for defense through Mantis territory\n"
-    + "1.kind=pirate\n1.danger=2\n1.text=Ransom to be delivered to a pirate den; steady nerves required\n"
-    + "2.kind=civilian\n2.danger=1\n2.text=Hands wanted to escort a grain convoy between two farming colonies\n", false);
+  pinBoard(v); // a fixed board, so the runs don't depend on what was posted
   // what race options a party sees: a Rock's only with a Rock
   boolean rockOnly = true, sawRock = false, sawRed = false;
   List<CrewState> humans = hold(v, "human", "human");
@@ -194,6 +191,12 @@ public class ExpT { public static void main(String[] a) throws Exception {
   try { Expeditions.finish(v, gone); } catch (IOException e) { refused = e.getMessage().contains("no longer in the Cargo Hold"); }
   Setup.chk("F: crew who left the hold meanwhile: refused, nothing changed", refused && v.storageScrap() == scrap);
  }
+ /** A fixed board: a dangerous job, a moderate one, a safe one. */
+ static void pinBoard(Vault v) throws Exception {
+  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=mantis\n0.danger=3\n0.text=Need mercenaries for defense through Mantis territory\n"
+    + "1.kind=pirate\n1.danger=2\n1.text=Ransom to be delivered to a pirate den; steady nerves required\n"
+    + "2.kind=civilian\n2.danger=1\n2.text=Hands wanted to escort a grain convoy between two farming colonies\n", false);
+ }
  static List<?> evsOf() throws Exception {
   java.lang.reflect.Field evs = Class.forName("homeplanet.parser.Expeditions$Book").getDeclaredField("events"); evs.setAccessible(true);
   java.lang.reflect.Method bk = Expeditions.class.getDeclaredMethod("book"); bk.setAccessible(true);
@@ -286,6 +289,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
  /** The lost expedition: very rare, weeks of waiting, one survivor home in a Stealth Cruiser, fire or wait. */
  static void lost(Vault v) throws Exception {
   java.lang.reflect.Field al = Expeditions.class.getDeclaredField("alwaysLost"); al.setAccessible(true);
+  pinBoard(v); // finished expeditions above replaced postings: the Mantis job (High) back in the first place
   List<CrewState> three = hold(v, "human", "rock", "mantis");
   int gone = 0;
   for (int s = 0; s < 30000; s++) if (Expeditions.start(v, 0, three, new Random(s)).lostExpedition()) gone++; // slot 0: the Mantis job, High danger

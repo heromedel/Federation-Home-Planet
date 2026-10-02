@@ -36,6 +36,11 @@ final class ExpeditionsDialog extends JDialog {
 	boolean changed = false;
 	/** For the harness: the random rolls. */
 	static Random rng = new Random();
+	/** An expedition is under way: Long Range messages pop up over it, and hails are turned away (it can't be left halfway). */
+	private static volatile boolean underWay = false;
+	static boolean underWay() { return underWay; }
+	/** What a hailing commander is told while an expedition is under way, or null. */
+	static String awayNotice(String commander) { return underWay ? commander + " is away on an expedition. Hail again shortly." : null; }
 
 	static boolean open(java.awt.Component owner) {
 		ExpeditionsDialog d = new ExpeditionsDialog(owner);
@@ -115,22 +120,27 @@ final class ExpeditionsDialog extends JDialog {
 		Expeditions.Run run;
 		try { run = Expeditions.start(v, slot, party, rng); }
 		catch (IOException e) { HomePlanet.showErrorDialog("The expedition could not set out:\n" + e.getMessage()); return; }
+		underWay = true;
+		try { play(run, v); } finally { underWay = false; }
+		fill();
+	}
+	/** An expedition, start to finish: its pop-ups, the ships home, the end. */
+	private void play(Expeditions.Run run, Vault v) {
 		String title = run.posting.realSector();
 		if (run.posting.sealed) // the sealed orders open once the shuttle is under way: no turning back now
-			JOptionPane.showMessageDialog(this, wrap("The shuttle clears the dock, and the sealed orders unlock. The job is in the " + title + "."), "Sealed orders", JOptionPane.PLAIN_MESSAGE);
+			say(wrap("The shuttle clears the dock, and the sealed orders unlock. The job is in the " + title + "."), "Sealed orders");
 		while (!run.over()) {
 			Expeditions.Step ev = run.current();
 			List<Expeditions.Choice> choices = run.choices();
 			int c = -1;
 			while (c < 0) c = ask(run, ev, choices, title + " (" + run.number() + " of " + run.length() + ")"); // an expedition can't be walked away from halfway
 			String said = run.choose(choices.get(c));
-			if (!said.trim().isEmpty()) JOptionPane.showMessageDialog(this, wrap(said), title, JOptionPane.PLAIN_MESSAGE); // a step that only leads on has no words of its own
+			if (!said.trim().isEmpty()) say(wrap(said), title); // a step that only leads on has no words of its own
 		}
 		for (Expeditions.HomeShip h : run.ships()) { // each ship home: the Space Dock, or the Junkyard
 			Object[] where = {"Space Dock", "Junkyard"};
-			h.toDock = JOptionPane.showOptionDialog(this, wrap(h.stealth() ? "The cruiser is yours, if you want her. Where should she go?"
-					: "Your crew brought a ship home. Send her to the Space Dock, or to the Junkyard?"), "A ship home",
-					JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, where, where[0]) == 0;
+			h.toDock = "Space Dock".equals(must(new JOptionPane(wrap(h.stealth() ? "The cruiser is yours, if you want her. Where should she go?"
+					: "Your crew brought a ship home. Send her to the Space Dock, or to the Junkyard?"), JOptionPane.QUESTION_MESSAGE, JOptionPane.DEFAULT_OPTION, null, where, where[0]), "A ship home"));
 		}
 		try {
 			String summary = Expeditions.finish(v, run);
@@ -149,7 +159,17 @@ final class ExpeditionsDialog extends JDialog {
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not record the expedition; the Cargo Hold is as it was:\n" + e.getMessage());
 		}
-		fill();
+	}
+	/** A pop-up of the expedition's: no closing it, only its button. */
+	private void say(java.awt.Component message, String title) {
+		must(new JOptionPane(message, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null, new Object[] {"Continue"}, "Continue"), title);
+	}
+	private Object must(JOptionPane pane, String title) {
+		JDialog d = pane.createDialog(this, title);
+		d.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		d.setVisible(true);
+		d.dispose();
+		return pane.getValue();
 	}
 	/** An event: its words, and its choices one above the other, numbered, as FTL lists them. Returns the one taken, or -1. */
 	private int ask(Expeditions.Run run, Expeditions.Step ev, List<Expeditions.Choice> choices, String title) {
@@ -166,6 +186,7 @@ final class ExpeditionsDialog extends JDialog {
 		}
 		p.add(list, BorderLayout.CENTER);
 		JDialog d = op.createDialog(this, title);
+		d.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE); // a choice must be made
 		d.setVisible(true);
 		d.dispose();
 		Object v = op.getValue();

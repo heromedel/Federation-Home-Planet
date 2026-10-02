@@ -220,11 +220,11 @@ At last a freighter captain brings word, third-hand: the expedition was last see
   ok then alert |
 step alert
 You stop listening for the comm. Then, one quiet shift, The Home Planet Station's alarms go off: a ship has dropped her cloak just off the station's bow, close enough to count her hull plates.
-* Order the station's guns to fire
+* Demand The Station Commander to give the order to fire
   roll 25
   win ship stealth:new then hail | The guns fire, and a second ship tears out of cloak right behind the first, straight into the volley. It breaks away, burning. The first ship hasn't fired a shot.
   lose ship stealth:dented then hail | The guns fire, and hit. The ship staggers, trailing debris, but doesn't fire back.
-* Hold fire and wait
+* Wait and watch as The Station opens hailing frequencies
   roll 75
   win ship stealth:new then hail | The station holds its fire. So does the ship. She sits off the bow, silent, as if waiting for something.
   lose ship stealth:dented then hail | The station holds its fire. A second ship tears out of cloak behind the first and rakes her side before the station's guns drive it off.

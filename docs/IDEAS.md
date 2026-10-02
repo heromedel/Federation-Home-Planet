@@ -76,6 +76,21 @@ Notes: the repair job's Return button is set up for this. It asks whether the bo
 use the same mark, with Long Range Comm.'s escrow as her way home. "The right player" is already possible: each
 station has its own random id (`homeplanet.comm.Commander.stationId()`), sent when two stations connect.
 
+## Idea E: crew skills and specialist expeditions
+
+From heromedel, for later (after testing 4B.83 onwards):
+
+- **Skill levels matter, for the right events.** FTL keeps each crew member's skills (piloting, engines, shields,
+  weapons, repair, combat), and an expedition's odds could use them where the event calls for one: a pilot's skill
+  in a blind jump, a repair skill on a broken construct, combat in a fight.
+- **New kinds of posting, seeking a specialist:** a pilot, an engineer, a repair hand, a tactical officer, a
+  hand-to-hand expert, and so on. Skills and race both count: Mantis are trained in melee, Engi in repair. These
+  would be new categories of events, still set in sectors where they make lore sense. Example: a pilot needed for the
+  Uncharted Nebula, the best result going to a Slug with level 2 piloting.
+
+Notes: the crew's skill levels are in the save (`CrewState`), so the engine could read them the way it reads race;
+an event choice might be tagged with the skill it tests, the way `[fight]` is now.
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just

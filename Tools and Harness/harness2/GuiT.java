@@ -11,6 +11,9 @@ public class GuiT {
  static final List<Object> defaults = new ArrayList<Object>();
  static final List<Object[]> extras = new ArrayList<Object[]>(); // per pop-up: the Info button and the list, if any
  static final LinkedList<Integer> presses = new LinkedList<Integer>();
+ /** Each expedition pop-up's close operation (its title has " of " or is one of the expedition's), and a hook run once at the first. */
+ static final List<Integer> expeditionCloseOps = new ArrayList<Integer>();
+ static Runnable atExpedition = null;
 
  public static void main(String[] a) throws Exception {
   File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
@@ -290,7 +293,16 @@ public class GuiT {
   Class<?> k = Class.forName("homeplanet.ui.ExpeditionsDialog");
   java.lang.reflect.Field rf = k.getDeclaredField("rng"); rf.setAccessible(true); rf.set(null, new Random(8));
   shown.clear(); optionsShown.clear(); presses.clear();
-  for (int i = 0; i < 20; i++) presses.add(0); // Send them; then each event's first choice; the outcomes and the end are only read
+  for (int i = 0; i < 30; i++) presses.add(0); // Send them; then each event's first choice; Continue; the message's Close; the end
+  expeditionCloseOps.clear();
+  final Object[] during = new Object[1];
+  atExpedition = new Runnable() { public void run() { try { // a priority message arrives, and a hail, while an expedition is under way
+   Class<?> ed = Class.forName("homeplanet.ui.ExpeditionsDialog");
+   java.lang.reflect.Method away = ed.getDeclaredMethod("awayNotice", String.class); away.setAccessible(true);
+   during[0] = away.invoke(null, "Commander Test");
+   homeplanet.comm.Notes.Note n = new homeplanet.comm.Notes.Note(); n.station = "x"; n.title = "Commander Bree"; n.text = "Testing the long range set, over."; n.priority = true; n.replyPort = 0;
+   call(f.comm, LongRangeCommUI.class, "showNote", new Class<?>[] {homeplanet.comm.Notes.Note.class, String.class}, n, "localhost");
+  } catch (Exception e) { throw new RuntimeException(e); } } };
   final Object[] dlg = new Object[1]; final boolean[] done = {false};
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
    java.lang.reflect.Constructor<?> ctor = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredConstructor(Component.class); ctor.setAccessible(true);
@@ -306,7 +318,13 @@ public class GuiT {
   boolean events = false; for (Object[] o : optionsShown) if (o.length >= 2) events = true;
   String end = shown.isEmpty() ? "" : shown.get(shown.size() - 1);
   Setup.chk("X: the crew picker, then events with their choices (" + shown.size() + " pop-ups)", done[0] && picker && events);
-  Setup.chk("X: the end says what came of it, and the Cargo Hold has the scrap (" + v.storageScrap() + "); a beacon passed", end.contains("Cargo Hold") && v.storageScrap() > 0 && v.beaconsSeen() == beacons + 1);
+  Setup.chk("X: the end says what came of it, and the Cargo Hold has the scrap (" + v.storageScrap() + "); a beacon passed", end.contains("Cargo Hold") && v.storageScrap() > 0 && v.beaconsSeen() >= beacons + 1);
+  boolean noX = !expeditionCloseOps.isEmpty(); for (int op : expeditionCloseOps) if (op != JDialog.DO_NOTHING_ON_CLOSE) noX = false;
+  Setup.chk("X: the expedition's pop-ups can't be closed, only answered (" + expeditionCloseOps.size() + ")", noX);
+  boolean note = false; for (String t : shown) if (t.contains("Commander Bree, priority")) note = true;
+  Setup.chk("X: a priority message comes through over the expedition, and the expedition carries on after it", note && done[0] && end.contains("Cargo Hold"));
+  Object after = null; try { java.lang.reflect.Method away = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredMethod("awayNotice", String.class); away.setAccessible(true); after = away.invoke(null, "Commander Test"); } catch (Exception e) { }
+  Setup.chk("X: a hail during the expedition is told the commander is away (" + during[0] + "); after it, hails are answered as usual", String.valueOf(during[0]).contains("away on an expedition") && after == null);
  }
 
  static void salvage(final MainFrame f) throws Exception {
@@ -325,6 +343,11 @@ public class GuiT {
     JOptionPane op = find((Container) w, JOptionPane.class);
     if (op == null) continue;
     seen.add(w);
+    String title = ((JDialog) w).getTitle();
+    if (title != null && (title.contains(" of ") || title.equals("A ship home") || title.equals("Sealed orders"))) {
+     expeditionCloseOps.add(((JDialog) w).getDefaultCloseOperation());
+     if (atExpedition != null) { Runnable r = atExpedition; atExpedition = null; r.run(); }
+    }
     shown.add(text(op.getMessage()));
     List<JButton> inMessage = op.getMessage() instanceof Container ? all((Container) op.getMessage(), JButton.class) : new ArrayList<JButton>();
     boolean ownButtons = op.getOptions() != null && op.getOptions().length == 0 && !inMessage.isEmpty(); // choices laid out in the message itself

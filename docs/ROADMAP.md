@@ -543,6 +543,11 @@ no letters, you come and check).
     four, waiting three in four, whoever is left). The survivor comes home at the helm of a Federation Stealth Cruiser
     on her own blueprint (no companion mod), near new or, if hit, dented (some hull, a bar or two); the others are
     lost. She goes to the Space Dock or the Junkyard as chosen, the survivor aboard.
+- Expeditions and the Long Range (4B.87): an expedition's pop-ups (events, outcomes, sealed orders, the ship
+  question) can't be closed, only answered. While one is under way a priority message pops up over it (and the
+  expedition carries on after), and a hail is told the commander is away on an expedition and listed as missed. The
+  lost expedition's choices read "Demand The Station Commander to give the order to fire" and "Wait and watch as
+  The Station opens hailing frequencies".
 
 ## Naming decisions — settled (4B.30)
 

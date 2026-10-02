@@ -803,6 +803,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (fail == null && reply != null) {
 			try {
 				Session.Peer p = Session.peerOf(reply);
+				String away = ExpeditionsDialog.awayNotice(Commander.title());
+				if (away != null) { ch.close(away); missedHail(p); return; } // the hail can't wait out an expedition: they're told, and it's listed as missed
 				String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId());
 				if (why != null) { ch.close(why); fail = why; }
 				else { begin(new Session(ch, true, p, Commander.stationId(), shipsAllowed(), cantTrade(p))); return; }
@@ -859,7 +861,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private void showNote(final Notes.Note n, final String host) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				if (otherWindowOpen()) {
+				if (otherWindowOpen() && !ExpeditionsDialog.underWay()) { // an expedition can't be left halfway: its messages come over it
 					javax.swing.Timer later = new javax.swing.Timer(500, new ActionListener() { public void actionPerformed(ActionEvent e) { showNote(n, host); } });
 					later.setRepeats(false);
 					later.start();
@@ -873,7 +875,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				javax.swing.JPanel p = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
 				p.add(new JLabel(n.title + (n.priority ? ", priority:" : ":")), java.awt.BorderLayout.NORTH);
 				p.add(new javax.swing.JScrollPane(t), java.awt.BorderLayout.CENTER);
-				java.awt.Component owner = isShowing() ? LongRangeCommUI.this : parent;
+				java.awt.Window active = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
+				java.awt.Component owner = ExpeditionsDialog.underWay() && active != null ? active : isShowing() ? LongRangeCommUI.this : parent;
 				Object[] opts = n.replyPort > 0 ? new Object[] {"Reply", "Close"} : new Object[] {"Close"};
 				int r = JOptionPane.showOptionDialog(owner, p, "Message from " + n.title, JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[opts.length - 1]);
 				if (n.replyPort > 0 && r == 0) MessageDialog.open(owner, host, n.replyPort, n.title, null);
