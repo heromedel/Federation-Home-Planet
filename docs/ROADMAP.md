@@ -482,8 +482,10 @@ no letters, you come and check).
   storage-systems.txt); stripping when scrapping keeps damaged systems too. A stored system sells for less its damage.
 - Ship value: each broken bar takes 5 off, 10 for Piloting, Oxygen and Engines.
 - **Parts...** in the Junkyard window (beside Derelicts...): 2 to 5 damaged systems, mostly low levels (no artillery
-  or Clone Bay), at 25-75% of their value less their damage, paid from the Cargo Hold into the stored systems. New
-  ones every 5 to 15 beacons (the fleet's parts.txt). Standard prices for now; core parts at about 150 is undecided.
+  or Clone Bay), paid from the Cargo Hold into the stored systems. New ones every 5 to 15 beacons (the fleet's
+  parts.txt). Standard prices for now; core parts at about 150 is undecided.
+- Parts are priced by how broken they are (4B.82): of its worth less its damage, one bar of five broken sells for
+  about 66-86%, half broken about 52-72%, broken through 30-50%. One in 12 is a clearance, 10% off, and says so.
 - The stipend counts beacons: 15 to each sector of the old rule (Easy 30, Normal 45, Hard 60, Sandbox careers 60).
   A career under way carries its progress over (its sectors so far become beacons).
 - Work in FTL counts: when the boarded ship's `store_purchase`, `store_repair`, `system_upgrade` or

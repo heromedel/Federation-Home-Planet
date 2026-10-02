@@ -33,12 +33,21 @@ public class PartT { public static void main(String[] a) throws Exception {
   for (Parts.Listing x : l) {
    int worth = Math.max(0, Pricing.system(x.id, x.level) - x.broken * Pricing.brokenBarValue(x.id));
    if (x.broken < 1 || x.broken > x.level || "artillery".equals(x.id) || "clonebay".equals(x.id)) ok = false;
-   if (x.price < Math.max(5, worth / 4 - 1) || x.price > Math.max(5, worth * 3 / 4 + 1)) ok = false;
+   double f = (double) x.broken / x.level; int lo = (int) Math.round(75 - 45 * f), hi = (int) Math.round(95 - 45 * f), off = x.clearance ? 90 : 100;
+   if (x.price < Math.max(5, worth * lo / 100 * off / 100 - 1) || x.price > Math.max(5, worth * hi / 100 * off / 100 + 1)) ok = false;
   }
-  Setup.chk("P: each damaged (1 to all bars broken), no artillery or Clone Bay, at 25-75% of its value less its damage", ok);
+  Setup.chk("P: each damaged (1 to all bars broken), no artillery or Clone Bay, priced by how broken it is (75-45f to 95-45f% of its value less its damage, 10% off a clearance)", ok);
   int low = 0, n = 0; Random rng = new Random(5);
   for (int i = 0; i < 200; i++) { Parts.roll(v, rng); for (Parts.Listing x : Parts.current(v)) { n++; if (x.level <= 2) low++; } }
+  int low2 = 0, n2 = 0, clear = 0, nearly = 0, nearlyCheap = 0; Random rng2 = new Random(9);
+  for (int i = 0; i < 300; i++) { Parts.roll(v, rng2); for (Parts.Listing x : Parts.current(v)) {
+   n2++; if (x.clearance) clear++;
+   int worth = Math.max(0, Pricing.system(x.id, x.level) - x.broken * Pricing.brokenBarValue(x.id));
+   if (x.level >= 4 && x.broken == 1 && worth >= 100) { nearly++; if (x.price * 2 < worth) nearlyCheap++; }
+  } }
   Setup.chk("P: mostly low levels (" + low + " of " + n + " at 1 or 2)", low * 3 > n * 2);
+  Setup.chk("P: about 1 in 12 a clearance (" + clear + " of " + n2 + ")", clear * 20 > n2 && clear * 7 < n2);
+  Setup.chk("P: a part with one bar broken of 4 or more never sells under half its worth (" + nearlyCheap + " of " + nearly + ")", nearly > 0 && nearlyCheap == 0);
   java.util.Set<Integer> waits = new java.util.TreeSet<Integer>(); Random wr = new Random(3);
   java.lang.reflect.Method m = Parts.class.getDeclaredMethod("interval", Random.class); m.setAccessible(true);
   for (int i = 0; i < 300; i++) waits.add((Integer) m.invoke(null, wr));

@@ -21,8 +21,9 @@ import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
 /**
- * The Junkyard's parts for sale: two to five damaged systems pulled from wrecks, mostly low levels, each at a quarter
- * to three quarters of what it's worth with its broken bars taken off. Bought with scrap from the Cargo Hold, a part
+ * The Junkyard's parts for sale: two to five damaged systems pulled from wrecks, mostly low levels, priced by how
+ * broken they are: a part with one bar of five broken sells near its worth (its broken bars off), a part broken through
+ * for a third to a half of it. One in CLEARANCE_ONE_IN is a clearance, 10% off. Bought with scrap from the Cargo Hold, a part
  * goes to the stored systems, broken bars and all. New ones come in after 5 to 15 beacons the fleet travels.
  * Kept in the fleet's parts.txt.
  */
@@ -34,15 +35,21 @@ public final class Parts {
 	public static final int MIN = 2, MAX = 5;
 	/** Beacons until new ones come in: 5 to 15, rolled with each set. */
 	static int interval(Random rng) { return 5 + rng.nextInt(11); }
-	/** The price: this share of the part's value, its broken bars off. */
-	public static final int PRICE_MIN = 25, PRICE_MAX = 75;
+	/** The share of its worth a part sells for, by how much of it is broken (0 to 1): from 75 - 45f to 95 - 45f percent. */
+	static int shareMin(double broken) { return (int) Math.round(75 - 45 * broken); }
+	static int shareMax(double broken) { return (int) Math.round(95 - 45 * broken); }
+	/** One part in this many is a clearance (the foreman wants it gone): this much off its price. */
+	public static final int CLEARANCE_ONE_IN = 12, CLEARANCE_OFF = 10;
 
 	/** One part for sale. */
 	public static final class Listing {
 		public final int index;
 		public final String id;
 		public final int level, broken, price;
-		Listing(int index, String id, int level, int broken, int price) { this.index = index; this.id = id; this.level = level; this.broken = broken; this.price = price; }
+		public final boolean clearance;
+		Listing(int index, String id, int level, int broken, int price, boolean clearance) {
+			this.index = index; this.id = id; this.level = level; this.broken = broken; this.price = price; this.clearance = clearance;
+		}
 	}
 
 	private static File file(Vault v) { return new File(v.root, "parts.txt"); }
@@ -61,7 +68,9 @@ public final class Parts {
 			String id = p.getProperty(i + ".id", "");
 			if (SystemType.findById(id) == null) continue;
 			int level = Math.max(1, intOf(p, i + ".level", 1)), broken = Math.max(1, Math.min(level, intOf(p, i + ".broken", 1)));
-			out.add(new Listing(i, id, level, broken, price(id, level, broken, intOf(p, i + ".percent", PRICE_MAX))));
+			boolean clearance = "true".equals(p.getProperty(i + ".clearance"));
+			int pct = intOf(p, i + ".percent", shareMax((double) broken / level));
+			out.add(new Listing(i, id, level, broken, price(id, level, broken, pct, clearance), clearance));
 		}
 		return out;
 	}
@@ -85,8 +94,11 @@ public final class Parts {
 			p.setProperty(i + ".open", "true");
 			p.setProperty(i + ".id", t.getId());
 			p.setProperty(i + ".level", Integer.toString(level));
-			p.setProperty(i + ".broken", Integer.toString(1 + rng.nextInt(level)));
-			p.setProperty(i + ".percent", Integer.toString(PRICE_MIN + rng.nextInt(PRICE_MAX - PRICE_MIN + 1)));
+			int broken = 1 + rng.nextInt(level);
+			double f = (double) broken / level;
+			p.setProperty(i + ".broken", Integer.toString(broken));
+			p.setProperty(i + ".percent", Integer.toString(shareMin(f) + rng.nextInt(shareMax(f) - shareMin(f) + 1)));
+			p.setProperty(i + ".clearance", Boolean.toString(rng.nextInt(CLEARANCE_ONE_IN) == 0));
 		}
 		write(v, p);
 	}
@@ -95,9 +107,11 @@ public final class Parts {
 		return b == null || b.getMaxPower() <= 0 ? 2 : b.getMaxPower();
 	}
 
-	/** Its value with its broken bars off, at this share; never under 5. */
-	public static int price(String id, int level, int broken, int percent) {
-		return Math.max(5, Math.max(0, Pricing.system(id, level) - broken * Pricing.brokenBarValue(id)) * percent / 100);
+	/** Its worth with its broken bars off, at this share, 10% less for a clearance; never under 5. */
+	public static int price(String id, int level, int broken, int percent, boolean clearance) {
+		int p = Math.max(0, Pricing.system(id, level) - broken * Pricing.brokenBarValue(id)) * percent / 100;
+		if (clearance) p = p * (100 - CLEARANCE_OFF) / 100;
+		return Math.max(5, p);
 	}
 
 	/** Buys a part: the price from the Cargo Hold and the part into the stored systems, together or not at all. */
@@ -118,7 +132,7 @@ public final class Parts {
 		p.setProperty(l.index + ".open", "false");
 		try { write(v, p); }
 		catch (IOException e) { log.warn("Could not mark part {} sold: {}", l.index, e.toString()); } // bought all the same: at worst it's offered again
-		HistoryLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard, for " + l.price + " scrap from the Cargo Hold");
+		HistoryLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard" + (l.clearance ? " on clearance" : "") + ", for " + l.price + " scrap from the Cargo Hold");
 	}
 
 	// ---- parts.txt ----

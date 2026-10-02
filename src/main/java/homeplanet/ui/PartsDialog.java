@@ -93,7 +93,8 @@ final class PartsDialog extends JDialog {
 		int whole = Pricing.system(l.id, l.level);
 		JLabel words = new JLabel("<html><div style='width:110px'><font color='" + gold + "'><b>" + Items.systemTitle(l.id) + "</b></font><br>"
 				+ "Level " + l.level + "<br><font color='#d86a4a'>" + l.broken + " of " + l.level + " broken</font><br>"
-				+ "<font color='" + dim + "'>New: " + whole + " scrap</font></div></html>");
+				+ "<font color='" + dim + "'>New: " + whole + " scrap</font>"
+				+ (l.clearance ? "<br><font color='" + gold + "'>Clearance: the foreman wants it gone</font>" : "") + "</div></html>");
 		words.setVerticalAlignment(JLabel.TOP);
 		p.add(words, BorderLayout.CENTER);
 		JButton buy = new JButton("Buy: " + l.price + " scrap");
