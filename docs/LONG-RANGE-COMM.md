@@ -45,7 +45,10 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   level (Easy, Normal, Hard, Custom), shown beside the commander's name. Sandbox trades only with Sandbox, Immersive
   only with Immersive. Two careers of different levels trade when both have **Allow trading with any Immersive level**
   on (Settings, General; on by default): one player on Hard and another on Easy can trade, and a purist can keep a
-  career to its own level. A refused hail says why.
+  career to its own level. These rules stop trading, not talking: any two stations on the same protocol hail and
+  message each other (`Session.incompatible` refuses a channel, `Session.cantTrade` only the offer). On a talk-only
+  channel the list says "talk only", the offer side stays shut on both stations (Offer and Accept off, the reason on
+  Accept), and lines that arrive anyway are refused. Stations older than 4B.71 still refuse such a hail outright.
 - **The offer** (`comm/Session`): each side owns its lines and numbers each version of them. Accept names both
   versions, so any change withdraws every acceptance (the notice line says what changed). A line the other station
   can't take (an item or race its game data lacks) shows grey, and Accept stays off. Notices are short enough for
@@ -126,6 +129,7 @@ LinkT runs station A in its own process and station B (LinkPeer) in another, ove
 both ways; a change withdrawing acceptance; a refused line; each side crashing at each step of the exchange and the
 trade settling on the next link; modes and levels refused or allowed; whole ships there and back with their marks,
 commission dates and no packages left behind; custom ships and tampered papers; boarding another ship mid-offer; the receipt and deleting it; a station with its
-frequencies closed neither found nor hailed; a declined hail told the commander is busy; blocking (search unanswered,
+frequencies closed neither found nor hailed; Sandbox and Immersive, and careers of different levels, talking but not
+trading (and a station offering anyway refused); a declined hail told the commander is busy; blocking (search unanswered,
 hail not answered, an older station's bare search still answered, which addresses a block keeps) and unblocking; messages (cut, flooded, and kept
 from an older station); garbled messages and out-of-range crew.

@@ -50,7 +50,11 @@ public class LinkPeer {
   /** The version and protocol its hello claims ("version 4B.99", "protocol 2": a newer station). */
   volatile String version = HomePlanet.APP_VERSION; volatile int protocol = Session.PROTOCOL;
   Wire.Msg hello() { return Session.hello(version, id, title, "", mode, ships, anyLevel).put("protocol", protocol).put("chat", chat); }
-  String why(Session.Peer p) { return Session.incompatible(p, HomePlanet.APP_VERSION, id, mode, anyLevel); }
+  String why(Session.Peer p) { return Session.incompatible(p, HomePlanet.APP_VERSION, id); }
+  /** Talk only (another mode or level), as the screen works it out: null if the two trade. */
+  String noTrade(Session.Peer p) { return tradeAnyway ? null : Session.cantTrade(p, mode, anyLevel); }
+  /** Plays a station that offers where it shouldn't ("tradeanyway on"): the other station has to refuse it itself. */
+  volatile boolean tradeAnyway = false;
 
   /** Runs on the event thread, returning what it returns. */
   static <T> T edt(final java.util.concurrent.Callable<T> c) throws Exception {
@@ -72,7 +76,7 @@ public class LinkPeer {
       String no = why(p);
       if (no != null) { ch.close(no); return; } // as the screen does: refused, with the reason
       ch.send(hello());
-      SwingUtilities.invokeLater(new Runnable() { public void run() { ended = null; session = new Session(ch, false, p, id, ships); session.start(Station.this); } });
+      SwingUtilities.invokeLater(new Runnable() { public void run() { ended = null; session = new Session(ch, false, p, id, ships, noTrade(p)); session.start(Station.this); } });
      } catch (IOException e) { ch.close(""); }
     } });
     final int port = post.port;
@@ -88,7 +92,7 @@ public class LinkPeer {
     String no = why(p);
     if (no != null) { ch.close(no); return "REFUSED " + no; }
     final Channel fch = ch;
-    edt(new java.util.concurrent.Callable<Void>() { public Void call() { ended = null; session = new Session(fch, true, p, id, ships); session.start(Station.this); return null; } });
+    edt(new java.util.concurrent.Callable<Void>() { public Void call() { ended = null; session = new Session(fch, true, p, id, ships, noTrade(p)); session.start(Station.this); return null; } });
     return "OK " + p.title;
    }
    if (c.equals("packages")) { int n = 0; File[] fs = Exchange.dir().listFiles(); if (fs != null) for (File f : fs) if (f.isDirectory()) n++; return "" + n; }
@@ -106,6 +110,7 @@ public class LinkPeer {
    if (c.equals("nochat")) { chat = w.length > 1 && w[1].equals("off"); return "OK"; }
    if (c.equals("ends")) return "" + ends;
    if (c.equals("unlisten")) { if (post != null) post.close(); if (responder != null) responder.close(); post = null; responder = null; return "OK"; }
+   if (c.equals("tradeanyway")) { tradeAnyway = w[1].equals("on"); return "OK"; }
    if (c.equals("decline")) { decline = w[1].equals("on"); return "OK"; }
    if (c.equals("block")) { Blocks.block(w[1], w[2].replace('_', ' '), w.length > 3 ? w[3] : ""); return "OK"; }
    if (c.equals("unblock")) { Blocks.unblock(w[1]); return "OK"; }
@@ -127,7 +132,7 @@ public class LinkPeer {
     Session s = session;
     if (s == null) return "none ended=" + ended + " settled=" + settled;
     return "accept=" + s.iAccepted() + " they=" + s.theyAccepted() + " mine=" + s.mine().size() + " theirs=" + s.theirs().size() + " exch=" + s.exchanging()
-      + " why=" + (s.whyNotAccept() == null ? "-" : s.whyNotAccept().replace(' ', '_')) + " settled=" + settled;
+      + " why=" + (s.whyNotAccept() == null ? "-" : s.whyNotAccept().replace(' ', '_')) + " settled=" + settled + " talkonly=" + (s.noTrade != null);
    } });
    if (c.equals("hold")) { Ship st = v.storage(); st.invalidate(); return holdText(st.save()); }
    if (c.equals("ship")) { Ship sh = shipNamed(w[1]); if (sh == null) return "none"; sh.invalidate(); return holdText(sh.save()); }

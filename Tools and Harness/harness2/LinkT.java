@@ -175,19 +175,35 @@ public class LinkT {
   b("protocol " + Session.PROTOCOL); b("version " + HomePlanet.APP_VERSION);
   Setup.chk("A hails again", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
 
-  // ---- modes and levels ----
+  String bRecords0 = b("records");
+  // ---- modes and levels: any two stations talk; only matching ones trade ----
   a("close"); b("wait ended");
   b("mode easy on");
-  String r = a("hail " + port);
-  Setup.chk("Sandbox and Immersive don't trade: refused, with the reason", r.startsWith("REFUSED") && r.contains("Sandbox Mode") && r.contains("Immersive Easy"));
+  Setup.chk("Sandbox hails an Immersive career: the channel opens, to talk", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+  String sa = a("state"), sb = b("state");
+  Setup.chk("both know it's talk only, and why", sa.contains("talkonly=true") && sb.contains("talkonly=true") && sa.contains("Sandbox_fleets_trade_only_with_Sandbox_fleets") && sb.contains("Immersive_Easy"));
+  Setup.chk("messages go both ways", a("say Hello from Sandbox").equals("true") && waitHeard("Captain Ash|Hello from Sandbox")
+    && b("say Hello from Easy").equals("true") && waitA("Commander Bree|Hello from Easy"));
+  Setup.chk("neither can offer anything", a("offer supply scrap 5").equals("refused") && b("offer supply fuel 1").equals("refused") && a("state").contains("mine=0 theirs=0"));
+  a("accept");
+  Setup.chk("nor accept", a("state").contains("accept=false"));
+  a("close"); b("wait ended");
+  b("tradeanyway on");
+  a("hail " + port); b("wait open");
+  Setup.chk("a station that offers anyway: its lines are refused, and nothing can be accepted", b("offer supply fuel 1").startsWith("OK") && a("wait theirs 1").equals("OK")
+    && b("wait refused").equals("OK") && a("state").contains("talkonly=true"));
+  b("accept"); a("accept"); Thread.sleep(800);
+  Setup.chk("so nothing changes hands", b("records").equals(bRecords0) && a("state").contains("accept=false"));
+  a("close"); b("wait ended"); b("tradeanyway off");
   a("mode hard on");
-  Setup.chk("an Immersive Hard career hails an Easy one (both allow any level)", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+  Setup.chk("an Immersive Hard career hails an Easy one (both allow any level): they trade", a("hail " + port).startsWith("OK") && b("wait open").equals("OK") && a("state").contains("talkonly=false"));
   a("close"); b("wait ended");
   b("mode easy off");
-  r = a("hail " + port);
-  Setup.chk("an Easy career that trades only within its level refuses Hard", r.startsWith("REFUSED") && r.contains("different levels"));
+  Setup.chk("an Easy career that trades only within its level: Hard can still hail it, to talk", a("hail " + port).startsWith("OK") && b("wait open").equals("OK")
+    && a("state").contains("different_levels") && b("state").contains("talkonly=true"));
+  a("close"); b("wait ended");
   b("mode easy on"); a("mode easy off");
-  Setup.chk("two Easy careers trade whatever the setting", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
+  Setup.chk("two Easy careers trade whatever the setting", a("hail " + port).startsWith("OK") && b("wait open").equals("OK") && a("state").contains("talkonly=false"));
   a("close"); b("wait ended");
   a("mode sandbox"); b("mode sandbox");
   Setup.chk("back to Sandbox: A hails B", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
@@ -330,6 +346,10 @@ public class LinkT {
   a("close");
  }
  /** Waits for B to have heard this message. */
+ static boolean waitA(String what) throws Exception {
+  for (int i = 0; i < 100; i++) { if (!A.heard.isEmpty() && A.heard.get(A.heard.size() - 1).equals(what)) return true; Thread.sleep(50); }
+  return false;
+ }
  static boolean waitHeard(String what) throws Exception {
   for (int i = 0; i < 100; i++) { if (b("heard").equals(what)) return true; Thread.sleep(50); }
   return false;

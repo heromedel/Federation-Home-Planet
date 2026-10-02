@@ -79,13 +79,20 @@ public final class Session implements Channel.Listener {
 	private Exchange.Record pending;
 	private boolean exchanging, over;
 	private boolean ships;
+	/**
+	 * Why these two stations can talk but not trade (their modes or levels), or null if they can trade: the offer stays
+	 * shut on both sides, and messages still go.
+	 */
+	public final String noTrade;
 
-	public Session(Channel channel, boolean leader, Peer peer, String self, boolean shipsAllowedHere) {
+	/** noTrade: from {@link #cantTrade}, worked out by each station for itself (both come to the same answer). */
+	public Session(Channel channel, boolean leader, Peer peer, String self, boolean shipsAllowedHere, String noTrade) {
 		this.channel = channel;
 		this.leader = leader;
 		this.peer = peer;
 		this.self = self;
 		this.ships = shipsAllowedHere && peer.ships;
+		this.noTrade = noTrade;
 	}
 
 	/** Starts listening, settles any trade the last link left unfinished, and sends the empty offer. */
@@ -122,15 +129,22 @@ public final class Session implements Channel.Listener {
 		return p;
 	}
 	/**
-	 * Why these two stations can't trade (shown to both), or null if they can. Sandbox trades with Sandbox, Immersive
-	 * with Immersive; two careers of different levels when both allow trading with any level.
+	 * Why these two stations can't talk at all (the hail is refused, saying so), or null if they can: its own signal, or
+	 * a different Long Range Comm. protocol. Modes and levels don't stop a channel: see {@link #cantTrade}.
 	 */
-	public static String incompatible(Peer p, String myVersion, String myStation, String myMode, boolean myAnyLevel) {
+	public static String incompatible(Peer p, String myVersion, String myStation) {
 		if (p.station.equals(myStation)) return "That is this station's own signal.";
 		if (p.protocol != PROTOCOL)
 			return (p.protocol < PROTOCOL ? p.title + "'s station uses an older Long Range Comm. (Federation Home Planet " + p.version + "; this one is " + myVersion + "). "
 					: "This station uses an older Long Range Comm. than " + p.title + "'s (Federation Home Planet " + myVersion + "; theirs is " + p.version + "). ")
 					+ "One of you needs to update to trade.";
+		return null;
+	}
+	/**
+	 * Why these two stations can talk but not trade, or null if they can trade. Sandbox trades with Sandbox, Immersive
+	 * with Immersive; two careers of different levels when both allow trading with any level.
+	 */
+	public static String cantTrade(Peer p, String myMode, boolean myAnyLevel) {
 		boolean meImmersive = !homeplanet.vault.Vault.SANDBOX.equals(myMode);
 		if (p.immersive() != meImmersive)
 			return p.title + "'s station is in " + p.modeTitle() + "; this one is in " + homeplanet.vault.Vault.title(myMode)
@@ -154,6 +168,7 @@ public final class Session implements Channel.Listener {
 	/** Why Accept can't be pressed now, or null. */
 	public String whyNotAccept() {
 		if (over) return "The channel is closed.";
+		if (noTrade != null) return noTrade;
 		if (exchanging) return "The exchange is under way.";
 		if (mine.isEmpty() && theirs.isEmpty()) return "Nothing is on offer yet.";
 		for (Line l : theirs) if (l.refused != null) return "The Home Planet Station can't take " + l.title() + ": " + l.refused;
@@ -165,7 +180,7 @@ public final class Session implements Channel.Listener {
 
 	/** Adds a line (numbered here) to my offer. */
 	public Line add(Line l) {
-		if (over || exchanging || mine.size() >= Line.MAX_LINES) return null;
+		if (over || exchanging || noTrade != null || mine.size() >= Line.MAX_LINES) return null;
 		Line n = new Line(nextN++, l.kind, l.id, l.amount, l.crew, l.name, l.shipClass);
 		n.from = l.from; n.fromName = l.fromName; n.inCargo = l.inCargo;
 		mine.add(n);
@@ -332,7 +347,7 @@ public final class Session implements Channel.Listener {
 		Wire.Msg cant = new Wire.Msg("CANT").put("rev", rev);
 		int k = 0;
 		for (Line l : theirs) {
-			l.refused = Exchange.refuses(l);
+			l.refused = noTrade != null ? noTrade : Exchange.refuses(l); // lines from a station this one doesn't trade with: refused, whatever they are
 			if (l.kind == Line.Kind.SHIP && l.refused == null && !ships) l.refused = "Whole ships need \"allow trading whole ships\" on at both Immersive careers (Settings, General)";
 			if (l.refused != null) cant.put("n" + k, l.n).put("why" + k++, l.refused);
 		}
@@ -433,6 +448,10 @@ public final class Session implements Channel.Listener {
 		String id = m.get("trade");
 		if (leader || !id.startsWith(peer.station + "-") || !id.matches("[0-9a-z-]{1,64}")) throw new Wire.Garbled("prepare");
 		int theirs = m.num("mine", 0, Integer.MAX_VALUE), mineSeen = m.num("yours", 0, Integer.MAX_VALUE);
+		if (noTrade != null) {
+			channel.trySend(new Wire.Msg("REFUSE").put("trade", id).put("why", noTrade));
+			return;
+		}
 		if (exchanging || theirs != theirRev || mineSeen != myRev || !bothAccept()) {
 			channel.trySend(new Wire.Msg("REFUSE").put("trade", id).put("why", "The offer changed before the exchange."));
 			return;

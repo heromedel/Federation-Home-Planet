@@ -663,17 +663,30 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		List<CargoParts.Row> rows = new ArrayList<CargoParts.Row>();
 		int sel = -1;
 		for (Beacon.Found x : foundList) {
-			boolean same = x.compatible(), blocked = Blocks.blocked(x.station, null);
+			boolean same = x.compatible(), blocked = Blocks.blocked(x.station, null), talk = talkOnly(x);
 			String mode = Vault.title(x.mode);
 			if (x.station.equals(keep)) sel = rows.size();
-			rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), blocked ? "blocked" : same ? mode : "needs an update", x,
+			rows.add(new CargoParts.Row(null, x.title + (x.ship.isEmpty() ? "" : ", aboard " + x.ship), blocked ? "blocked" : !same ? "needs an update" : talk ? "talk only" : mode, x,
 					blocked ? "You blocked " + x.title + ": their hails go unanswered. Unblock to hail them."
+							: same && talk ? x.title + "'s Home Planet Station is in " + mode + ": you can hail and talk, but your stations don't trade ("
+									+ (Vault.SANDBOX.equals(x.mode) != Vault.SANDBOX.equals(Vault.get().slot) ? "Sandbox fleets trade only with Sandbox fleets, Immersive careers with Immersive careers"
+											: "your career trades only within its own level: Settings, General") + ")"
 							: same ? x.title + "'s Home Planet Station (" + mode + ", Federation Home Planet " + x.version + "), at " + x.host + ":" + x.port
 							: "Federation Home Planet " + x.version + ": its Long Range Comm. is " + (x.protocol < homeplanet.comm.Session.PROTOCOL ? "older" : "newer") + " than this station's. One of you needs to update to trade.",
 					blocked || !same));
 		}
 		found.setRows(rows);
 		if (!rows.isEmpty()) found.list.setSelectedIndex(sel >= 0 ? sel : 0);
+	}
+	/**
+	 * Is that station one to talk to but not trade with, as far as its search answer tells? Sandbox and Immersive, or
+	 * another level when this career keeps to its own (whether theirs allows any level only its hello says).
+	 */
+	private static boolean talkOnly(Beacon.Found x) {
+		String me = Vault.get().slot;
+		boolean meSandbox = Vault.SANDBOX.equals(me), theySandbox = Vault.SANDBOX.equals(x.mode);
+		if (meSandbox != theySandbox) return true;
+		return !meSandbox && !x.mode.equals(me) && !HomePlanet.immersiveAnyLevel;
 	}
 	/** Blocks the chosen commander (asked first), or unblocks them. */
 	private void blockFound() {
@@ -758,9 +771,9 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (fail == null && reply != null) {
 			try {
 				Session.Peer p = Session.peerOf(reply);
-				String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId(), Vault.get().slot, HomePlanet.immersiveAnyLevel);
+				String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId());
 				if (why != null) { ch.close(why); fail = why; }
-				else { begin(new Session(ch, true, p, Commander.stationId(), shipsAllowed())); return; }
+				else { begin(new Session(ch, true, p, Commander.stationId(), shipsAllowed(), cantTrade(p))); return; }
 			} catch (Wire.Garbled e) {
 				fail = "The Home Planet Station received a garbled transmission and closed the channel.";
 			}
@@ -790,7 +803,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	 */
 	private void answer(final Channel ch, final Session.Peer p, final long until) {
 		if (session != null || hailing) { ch.close(Commander.title() + " is busy with another channel."); return; }
-		String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId(), Vault.get().slot, HomePlanet.immersiveAnyLevel);
+		String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId());
 		if (why != null) { ch.close(why); notice.set(p.title + " hailed this station, but: " + why); return; }
 		if (otherWindowOpen()) {
 			if (System.currentTimeMillis() > until) { ch.close(Session.notAnswered(Commander.title())); missedHail(p); return; }
@@ -831,7 +844,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (System.currentTimeMillis() > until) { ch.close(Session.notAnswered(Commander.title())); missedHail(p); return; }
 		try { ch.send(myHello()); }
 		catch (IOException e) { JOptionPane.showMessageDialog(this, "The link to " + p.title + " was lost.", "Long Range Comm.", JOptionPane.INFORMATION_MESSAGE); return; }
-		begin(new Session(ch, false, p, Commander.stationId(), shipsAllowed()));
+		begin(new Session(ch, false, p, Commander.stationId(), shipsAllowed(), cantTrade(p)));
 	}
 	/** A window of the station's own open over it (a dialog, or a second frame): a hail waits for it. */
 	private boolean otherWindowOpen() {
@@ -854,6 +867,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		Ship b = Vault.get().boarded();
 		return Session.hello(HomePlanet.APP_VERSION, Commander.stationId(), Commander.title(), b == null ? "" : b.name, Vault.get().slot, shipsAllowed(), HomePlanet.immersiveAnyLevel);
 	}
+	/** Why this station won't trade with that one (its mode or level), or null: the channel opens all the same, to talk. */
+	private static String cantTrade(Session.Peer p) { return Session.cantTrade(p, Vault.get().slot, HomePlanet.immersiveAnyLevel); }
 	/** Whether this station lets whole ships change hands: a Sandbox fleet always; an Immersive career by its own setting. */
 	public static boolean shipsAllowed() { return !HomePlanet.immersiveMode || HomePlanet.immersiveShipTrading; }
 
@@ -872,8 +887,10 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		s.start(this);
 		readSource();
 		refreshAll();
-		notice.set("Channel open with " + s.peer.title + ".");
-		help(helpOpen());
+		notice.set(s.noTrade == null ? "Channel open with " + s.peer.title + "." : "Talk only with " + s.peer.title + ".");
+		help(s.noTrade == null ? helpOpen() : (s.peer.immersive() != !Vault.SANDBOX.equals(Vault.get().slot)
+				? "Sandbox fleets and Immersive careers don't trade, but you can talk." : "Careers of different levels: one keeps to its own, so you can talk but not trade.")
+				+ " (Accept says more.)");
 	}
 	private static String shortName(String title) {
 		for (String r : homeplanet.parser.UnlockGrants.RANKS) if (title.startsWith(r + " ")) return title.substring(r.length() + 1);
@@ -1062,6 +1079,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	/** forShip: asked by Offer the whole ship itself, which can dock her first. */
 	private String whyNotShip(boolean forShip) {
 		if (session == null) return "Open a channel first.";
+		if (session.noTrade != null) return session.noTrade;
 		if (!session.shipsAllowed())
 			return !shipsAllowed() ? "Allow trading whole ships first (Settings, General)."
 					: session.peer.title + "'s career doesn't allow trading whole ships.";
@@ -1265,7 +1283,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		return img == null ? null : new ImageIcon(SpaceDockUI.fitImage(img, 110, 62));
 	}
 	private void updateButtons() {
-		boolean open = session != null && !session.isOver() && !session.exchanging();
+		boolean open = session != null && !session.isOver() && !session.exchanging() && session.noTrade == null; // talk only: the offer stays shut
 		offerSupplyBtn.setEnabled(open && availableSupply(supplyIdx) > 0);
 		for (int k = 0; k < 4; k++) offerBtns[k].setEnabled(open && myLists[k].selectedValue() != null);
 		takeBackBtn.setEnabled(open && myOffer.selectedValue() != null);
