@@ -459,23 +459,27 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		now.setEnabled(false);
 		m.add(now);
 		boolean any = false;
-		// no ship aboard: the partner list holds the Cargo Hold alone, so the docked ships at a station come from the fleet
-		List<Ship> boardable = new ArrayList<Ship>(shipSelect);
-		if (currentPath == null) for (Ship s : tradeableShips()) if (!boardable.contains(s) && Vault.get().mayTrade(s)) boardable.add(s);
-		for (final Ship s : boardable) {
-			if (s == homeSave || s.save() == null) continue;
+		for (final Ship s : boardable()) {
 			any = true;
 			JMenuItem it = new JMenuItem(s.name);
 			it.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { boardFromHere(s); } });
 			m.add(it);
 		}
 		if (!any) {
-			JMenuItem none = new JMenuItem("No other ships are docked at a station");
+			JMenuItem none = new JMenuItem(currentPath == null ? "No ships are docked at a station: commission or salvage one at the Space Dock" : "No other ships are docked at a station");
 			none.setEnabled(false);
 			m.add(none);
 		}
 		CargoParts.darkPopup(m);
 		m.show(boardBtn, 0, boardBtn.getHeight());
+	}
+	/** The ships that may be boarded from here: docked at a station, readable (with no ship aboard the partner list holds the Cargo Hold alone, so they come from the fleet). */
+	private List<Ship> boardable() {
+		List<Ship> out = new ArrayList<Ship>();
+		List<Ship> from = new ArrayList<Ship>(shipSelect);
+		if (currentPath == null) for (Ship s : tradeableShips()) if (!from.contains(s) && Vault.get().mayTrade(s)) from.add(s);
+		for (Ship s : from) if (s != homeSave && s != currentShip && s.save() != null) out.add(s);
+		return out;
 	}
 	/**
 	 * Shows her report and asks; then boards her with the Space Dock's own Board button (the ship left behind is docked),
@@ -910,7 +914,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		for (int k = 0; k < 4; k++) {
 			Category c = cats[k];
 			c.myHead.setText(currentPath == null ? CAT[k] : CAT[k] + "  " + (k == 1 && droneSlots(currentState) == 0 ? "" : counts(currentState, k)));
-			c.mine.setEmptyText(currentPath == null ? "Not aboard a ship: board one above, or at the Space Dock" : k == 3 ? "No crew" : "None");
+			c.mine.setEmptyText(currentPath == null ? (boardable().isEmpty() ? "Not aboard a ship: commission or salvage one at the Space Dock" : "Not aboard a ship: board one above, or at the Space Dock")
+					: k == 3 ? "No crew" : "None");
 			c.theirHead.setText(partnerIsStorage() ? CAT[k] : (k == 1 && droneSlots(tradeState) == 0 ? "" : counts(tradeState, k)) + "  " + CAT[k]);
 			if (k < 3) {
 				c.mine.setRows(itemRows(currentSave, currentState, k));
