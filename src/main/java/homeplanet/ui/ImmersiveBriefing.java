@@ -205,7 +205,7 @@ final class ImmersiveBriefing extends JDialog {
 		}
 		grid.setMaximumSize(grid.getPreferredSize());
 		p.add(grid);
-		p.add(note(begun ? "Its rules were fixed when it began." : (custom ? "Choose each rule's level. " : "") + "Every other rule is The Federation Home Planet's, the same at every difficulty. "
+		p.add(note(begun ? "Its rules were fixed when it began. To begin " + Vault.title(slot) + " afresh (and, for Custom, choose its rules again), end this career in Settings > Switch Game Mode: a copy is kept." : (custom ? "Choose each rule's level. " : "") + "Every other rule is The Federation Home Planet's, the same at every difficulty. "
 				+ "A rescue brings her back as she was moments before the final engagement; The Home Planet Station must be open while you play."));
 		syncLevels();
 		return p;
