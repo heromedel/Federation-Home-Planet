@@ -454,13 +454,15 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	}
 	/** Board another ship without leaving the Cargo Bay: the ships docked at a Station, as the partner list has them. */
 	private void pickBoard() {
-		if (currentPath == null) return;
 		JPopupMenu m = new JPopupMenu();
-		JMenuItem now = new JMenuItem(currentSave.getPlayerShipName() + "   (boarded)");
+		JMenuItem now = new JMenuItem(currentPath == null ? "No ship aboard" : currentSave.getPlayerShipName() + "   (boarded)");
 		now.setEnabled(false);
 		m.add(now);
 		boolean any = false;
-		for (final Ship s : shipSelect) {
+		// no ship aboard: the partner list holds the Cargo Hold alone, so the docked ships at a station come from the fleet
+		List<Ship> boardable = new ArrayList<Ship>(shipSelect);
+		if (currentPath == null) for (Ship s : tradeableShips()) if (!boardable.contains(s) && Vault.get().mayTrade(s)) boardable.add(s);
+		for (final Ship s : boardable) {
 			if (s == homeSave || s.save() == null) continue;
 			any = true;
 			JMenuItem it = new JMenuItem(s.name);
@@ -491,12 +493,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (r != 0) return;
 		if (!confirmLeave("board " + the(name))) return;
 		Ship left = currentShip;
-		String leftName = currentSave.getPlayerShipName();
+		String leftName = left == null ? null : currentSave.getPlayerShipName();
 		boolean wasPartner = s == tradeShip;
 		if (!parent.spaceDock.board(s)) { init(); return; } // docks the boarded ship, boards this one, redraws the Space Dock
 		if (wasPartner) tradeShip = left; // init() finds her again by her new file name
 		init();
-		help("Boarded " + the(name) + ". " + leftName + " is docked" + (wasPartner ? ", and is now your trading partner." : "."));
+		help("Boarded " + the(name) + "." + (leftName == null ? "" : " " + leftName + " is docked" + (wasPartner ? ", and is now your trading partner." : ".")));
 	}
 	/** "the Kestrel", but "The Theseus" as she is (no "the The"). */
 	private static String the(String name) { return name.toLowerCase().startsWith("the ") ? name : "the " + name; }
@@ -908,7 +910,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		for (int k = 0; k < 4; k++) {
 			Category c = cats[k];
 			c.myHead.setText(currentPath == null ? CAT[k] : CAT[k] + "  " + (k == 1 && droneSlots(currentState) == 0 ? "" : counts(currentState, k)));
-			c.mine.setEmptyText(currentPath == null ? "No ship aboard: board one at the Space Dock" : k == 3 ? "No crew" : "None");
+			c.mine.setEmptyText(currentPath == null ? "Not aboard a ship: board one above, or at the Space Dock" : k == 3 ? "No crew" : "None");
 			c.theirHead.setText(partnerIsStorage() ? CAT[k] : (k == 1 && droneSlots(tradeState) == 0 ? "" : counts(tradeState, k)) + "  " + CAT[k]);
 			if (k < 3) {
 				c.mine.setRows(itemRows(currentSave, currentState, k));

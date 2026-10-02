@@ -156,7 +156,8 @@ public class GuiT {
  }
 
  /** No ship aboard: the Cargo Bay opens on the Cargo Hold; an item and a stored system sold from it pay the hold on Save. */
- static void holdAlone(final Vault v, final MainFrame f) throws Exception {
+ static void holdAlone(Vault stale, final MainFrame f) throws Exception {
+  final Vault v = Vault.get(); // the mode checks switched fleets: the vault in use now
   if (v.boarded() != null) v.dock();
   Vault.Copy c = v.readCopy(v.storage()); c.save.getPlayerShip().getWeaponList().clear(); c.save.getPlayerShip().getWeaponList().add(SaveHelper.newIdleWeapon("LASER_BURST_2"));
   v.begin().put(v.storage(), c.save, c.hash).commit();
@@ -185,6 +186,16 @@ public class GuiT {
   Setup.chk("H: no ship aboard: the Space Dock's Cargo Bay button opens it (" + r[3] + "), on the Cargo Hold", r[3] == null && Boolean.TRUE.equals(r[0]) && Boolean.TRUE.equals(r[1]));
   Setup.chk("H: a weapon and a stored system sold from it: Save pays the hold, both are gone (" + hold.getScrapAmt() + " scrap)", Boolean.TRUE.equals(r[2])
     && hold.getWeaponList().isEmpty() && !file.contains("cloaking") && hold.getScrapAmt() > 10);
+  // and from there, board a docked ship without going back to the Space Dock
+  final Ship next = v.docked().get(0);
+  final Object[] b = new Object[2];
+  presses.clear(); presses.add(0); shown.clear(); // Board her
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   CargoBayUI bay = f.cargoBay;
+   call(bay, CargoBayUI.class, "boardFromHere", new Class<?>[] {Ship.class}, next);
+   b[0] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("H: no ship aboard, a docked ship boarded from the Cargo Bay: she's aboard, and the Cargo Bay shows her", v.boarded() == next && Boolean.FALSE.equals(b[0]));
  }
 
  static void salvage(final MainFrame f) throws Exception {
