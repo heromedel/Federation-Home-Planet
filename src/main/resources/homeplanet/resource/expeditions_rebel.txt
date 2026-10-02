@@ -118,4 +118,6 @@ The Federation cruiser sits in a rebel repair yard, her guns stripped out for th
 * Mark the yard for Federation intelligence and leave
   ok scrap 8-12 | Intelligence pays well for the yard's coordinates.
 * [zoltan] {who} dims the yard's lights
-  ok ship sector:limping:weapons | The yard goes dark for ten minutes. When the lights come back, the cruiser is gone.
+  roll 70
+  win ship sector:limping:weapons | The yard goes dark for ten minutes. When the lights come back, the cruiser is gone.
+  lose injure 1 end | The lights come back too soon. {who} is hit getting the others out, without her.

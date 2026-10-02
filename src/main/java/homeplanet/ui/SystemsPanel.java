@@ -196,6 +196,7 @@ public class SystemsPanel {
 					why == null ? "Take the " + DryDockShop.systemTitle(t.getId()) + " off the ship; it keeps its level" + (fee > 0 ? " (the Dry Dock charges " + fee + " scrap)" : "") : why,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { storeSystem(type); } });
 			int up = upgradePrice(bs, t), broken = st.getDamagedBars();
+			r.broken = broken;
 			if (broken > 0) { // mended first: then she can be upgraded
 				int scrap = hold(), fix = broken * homeplanet.parser.Pricing.SYSTEM_REPAIR;
 				r.addButton("Fix: " + fix, 78, ROW_W - 66 - 82, scrap >= fix,
@@ -228,9 +229,11 @@ public class SystemsPanel {
 		int j = 0;
 		for (final Stored s : stored) {
 			String why = reason(s.id);
-			SysRow r = new SysRow(DryDockShop.systemTitle(s.id) + (s.broken > 0 ? " (" + s.broken + " broken)" : ""), s.level, "Install", why,
-					why == null ? "Install the " + DryDockShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName() : why,
+			String damage = s.broken > 0 ? " (" + s.broken + " of its " + s.level + (s.level == 1 ? " bar" : " bars") + " broken, in red: the Dry Dock mends them once it's aboard)" : "";
+			SysRow r = new SysRow(DryDockShop.systemTitle(s.id), s.level, "Install", why,
+					(why == null ? "Install the " + DryDockShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName() : why) + damage,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { installSystem(s); } });
+			r.broken = s.broken;
 			if (homeplanet.core.HomePlanet.sellSystems()) r.addSell(salePrice(s), new ActionListener() { public void actionPerformed(ActionEvent e) { sellSystem(s); } });
 			r.setBounds(0, y + j * 32, w, 28);
 			sysList.add(r);
@@ -283,6 +286,8 @@ public class SystemsPanel {
 	/** A system line: name, level bars, and its Store or Install button (greyed out with the reason on hover). */
 	private static class SysRow extends JComponent {
 		final String title; final int level; final boolean ok;
+		/** Broken bars, drawn red at the end of the level bar (as FTL draws damage). */
+		int broken = 0;
 		SysRow(String title, int level, String action, String why, String tip, ActionListener a) {
 			this.title = title; this.level = level; this.ok = why == null;
 			setLayout(null);
@@ -313,8 +318,10 @@ public class SystemsPanel {
 			CargoParts.paintBox(g, 0, 0, getWidth(), getHeight(), CargoParts.BOX_LINE);
 			CargoParts.text(g, FtlFont.BODY.fit(title, 230), FtlFont.BODY, ok ? CargoParts.TEXT : CargoParts.DIM, 10, 7);
 			CargoParts.text(g, level > 0 ? "level " + level : "", FtlFont.BODY, CargoParts.DIM, 250, 7);
-			for (int k = 0; k < Math.min(level, 8); k++) {
-				g.setColor(ok ? new Color(120, 230, 120) : new Color(90, 130, 95));
+			int bars = Math.min(level, 8), red = Math.min(broken, bars);
+			for (int k = 0; k < bars; k++) {
+				boolean bad = k >= bars - red; // the broken ones last, red
+				g.setColor(bad ? (ok ? new Color(225, 70, 55) : new Color(140, 70, 60)) : ok ? new Color(120, 230, 120) : new Color(90, 130, 95));
 				g.fillRect(310 + k * 8, 9, 6, 11);
 			}
 			if (level == 0) CargoParts.text(g, "uses the Medbay's level", FtlFont.BODY, CargoParts.DIM, 250, 7); // (below 0: a Dry Dock row, no level)

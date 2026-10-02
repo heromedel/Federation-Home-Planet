@@ -70,6 +70,14 @@ public final class Expeditions {
 	 * beacons before the end.
 	 */
 	public static final int RANSOM_DELAY_MIN = 2, RANSOM_DELAY_MAX = 5, RANSOM_STANDS = 14, REMINDER_BEFORE = 3;
+	/**
+	 * Ship events (any with a ship outcome) are kept out of the ordinary draw: an expedition meets one this often, in
+	 * tenths of a percent, twice as often with an Engi along (they see what a dead hull could still do). Tuned so about
+	 * one expedition in 20 brings a ship home (one in ten with an Engi); the pools will grow, and the weight can ease.
+	 */
+	public static final int SHIP_EVENT_PERMILLE = 120;
+	/** An untaken posting comes down after POSTING_MIN to POSTING_MAX beacons (rolled for each, never shown). */
+	public static final int POSTING_MIN = 1, POSTING_MAX = 7;
 	/** For the harness: every eligible expedition goes missing. */
 	static boolean alwaysLost = false;
 
@@ -140,6 +148,8 @@ public final class Expeditions {
 		/** The lost expedition: all but one of the party stay lost; the Stealth Cruiser "new" or "dented"; beacons of waiting. */
 		boolean survivor;
 		int beacons;
+		/** The job's pay is given up for what this brings (a ship in place of payment). */
+		boolean nopay;
 		/** Now and then, an extra line (an aside): its chance in %, and its words. */
 		int asideChance;
 		String aside;
@@ -172,6 +182,12 @@ public final class Expeditions {
 		public String theme = "";
 		final Map<String, Step> steps = new LinkedHashMap<String, Step>();
 		Step first() { return steps.get(""); }
+		/** Can it bring a ship home (an outcome with "ship")? Drawn rarely. */
+		boolean shipEvent() {
+			for (Step st : steps.values()) for (Choice c : st.choices) for (Outcome o : new Outcome[] {c.sure, c.win, c.lose})
+				if (o != null && o.ship != null && !o.ship.startsWith("stealth")) return true;
+			return false;
+		}
 	}
 	public static final class Posting {
 		public final String kind, text;
@@ -337,6 +353,9 @@ public final class Expeditions {
 					}
 				}
 				if (open < (e.kinds.contains("saga") ? 1 : 2)) b.problems.add(where + ": fewer than two ways through without a race");
+				for (Choice c : s.choices) // a ship is never a sure thing: a gamble, or bought with the job's pay
+					if (c.roll < 0 && c.sure != null && c.sure.ship != null && !c.sure.ship.startsWith("stealth") && !c.sure.nopay)
+						b.problems.add(where + ": \"" + c.text + "\" brings a ship home for nothing (make it a gamble, or nopay)");
 				if (s.text.isEmpty()) b.problems.add(where + ": no text");
 			}
 			for (String s : e.steps.keySet()) if (!reached.contains(s)) b.problems.add("event " + e.id + ": step " + s + " is never reached");
@@ -364,6 +383,7 @@ public final class Expeditions {
 			if (k.isEmpty()) continue;
 			if (k.equals("end")) { o.end = true; continue; }
 			if (k.equals("survivor")) { o.survivor = true; continue; }
+			if (k.equals("nopay")) { o.nopay = true; continue; }
 			String v = t[++i];
 			if (k.equals("scrap")) {
 				String[] r = v.split("-");
@@ -379,7 +399,7 @@ public final class Expeditions {
 			else if (k.equals("ship")) {
 				String[] sp = v.split(":");
 				if (sp.length < 2 || !(knownKind(sp[0]) && !"any".equals(sp[0]) || "stealth".equals(sp[0]) || "sector".equals(sp[0]))) throw new IllegalArgumentException("ship needs sector:condition, not " + v);
-				if (!sp[1].equals("wrecked") && !sp[1].equals("limping") && !sp[1].equals("towed") && !sp[1].equals("new") && !sp[1].equals("dented"))
+				if (!sp[1].equals("wrecked") && !sp[1].equals("limping") && !sp[1].equals("new") && !sp[1].equals("dented"))
 					throw new IllegalArgumentException("unknown ship condition " + sp[1]);
 				if (sp[1].equals("limping") && (sp.length < 3 || net.blerf.ftl.parser.SavedGameParser.SystemType.findById(sp[2]) == null))
 					throw new IllegalArgumentException("a limping ship needs the system that failed: " + v);
@@ -427,13 +447,27 @@ public final class Expeditions {
 		boolean changed = false;
 		List<Posting> out = new ArrayList<Posting>();
 		Random rng = new Random();
+		int now = v.beaconsSeen();
 		for (int i = 0; i < POSTINGS; i++) {
 			Posting x = posting(p, i);
-			if (x == null) { x = pick(rng, out); put(p, i, x); changed = true; }
+			if (x != null && until(p, i) < 0) { p.setProperty(i + ".until", Integer.toString(now + POSTING_MIN + rng.nextInt(POSTING_MAX - POSTING_MIN + 1))); changed = true; }
+			if (x != null && now >= until(p, i)) x = null; // its time is up: the job went to someone else
+			if (x == null) {
+				List<Posting> others = new ArrayList<Posting>(out);
+				for (int k = i + 1; k < POSTINGS; k++) if (posting(p, k) != null) others.add(posting(p, k));
+				x = pick(rng, others);
+				put(p, i, x);
+				p.setProperty(i + ".until", Integer.toString(now + POSTING_MIN + rng.nextInt(POSTING_MAX - POSTING_MIN + 1)));
+				changed = true;
+			}
 			out.add(x);
 		}
 		if (changed) try { writeBoard(v, p); } catch (IOException e) { log.warn("Could not write the expeditions board: {}", e.toString()); }
 		return out;
+	}
+	/** When an untaken posting comes down (a beacon count, never shown). */
+	private static int until(Properties p, int i) {
+		try { return Integer.parseInt(p.getProperty(i + ".until", "").trim()); } catch (NumberFormatException e) { return -1; }
 	}
 	private static Posting posting(Properties p, int i) {
 		String kind = p.getProperty(i + ".kind"), text = p.getProperty(i + ".text");
@@ -501,8 +535,10 @@ public final class Expeditions {
 	static boolean injured(CrewState c) { return c.getRace() != null && c.getHealth() < c.getRace().getMaxHealth(); }
 
 	/** The events for a run: of the posting's danger (one in SURPRISE_ONE_IN a level riskier), none met lately, no theme twice. */
-	static List<Event> draw(Posting posting, List<String> recent, Random rng) {
-		List<Event> pool = pool(posting.kind);
+	static List<Event> draw(Posting posting, List<String> recent, Random rng) { return draw(posting, recent, rng, false); }
+	static List<Event> draw(Posting posting, List<String> recent, Random rng, boolean engi) {
+		List<Event> pool = pool(posting.kind), ships = new ArrayList<Event>();
+		for (Event x : new ArrayList<Event>(pool)) if (x.shipEvent()) { pool.remove(x); ships.add(x); }
 		int n = posting.danger <= 1 ? 2 : posting.danger == 2 ? 2 + rng.nextInt(2) : 3;
 		List<Event> out = new ArrayList<Event>();
 		Set<String> themes = new HashSet<String>();
@@ -524,6 +560,11 @@ public final class Expeditions {
 			if (e == null) break;
 			out.add(e);
 			themes.add(e.theme);
+		}
+		// now and then, one of them is the sector's ship event instead
+		if (!ships.isEmpty() && !out.isEmpty() && rng.nextInt(1000) < SHIP_EVENT_PERMILLE * (engi ? 2 : 1)) {
+			Event sh = ships.get(rng.nextInt(ships.size()));
+			if (!themes.contains(sh.theme)) out.set(rng.nextInt(out.size()), sh);
 		}
 		return out;
 	}
@@ -551,6 +592,8 @@ public final class Expeditions {
 		private boolean ended = false;
 		/** Turned for home before the job was done (or no one left to finish it): no job pay, the outfitting lost. */
 		boolean turnedBack = false;
+		/** The job's pay was given up for something else (a ship in place of payment). */
+		boolean payGivenUp = false;
 		/** Crew sent out already injured: hurt again, they're lost. */
 		final java.util.Set<CrewState> injuredBefore = new java.util.HashSet<CrewState>();
 		/** Of the lost, those taken rather than killed. */
@@ -558,7 +601,9 @@ public final class Expeditions {
 
 		Run(int slot, Posting posting, List<CrewState> party, List<String> recent, Random rng) {
 			this.slot = slot; this.posting = posting; this.party = new ArrayList<CrewState>(party); this.rng = rng;
-			this.events = draw(posting, recent, rng);
+			boolean engi = false;
+			for (CrewState c : party) if (c.getRace() != null && c.getRace().getId().equals("engi")) engi = true;
+			this.events = draw(posting, recent, rng, engi);
 			for (CrewState c : party) if (Expeditions.injured(c)) injuredBefore.add(c);
 			Event saga = saga();
 			// the lost expedition: very rarely, a dangerous job with two or more crew goes missing at its end
@@ -671,6 +716,7 @@ public final class Expeditions {
 				for (CrewState x : here2) if (x != survivor) { lost.add(x); extra.append("\n\n").append(x.getName()).append(" did not come back."); }
 			}
 			waited += o.beacons;
+			if (o.nopay) payGivenUp = true;
 			if (o.ship != null) ships.add(new HomeShip(o.ship, posting.kind));
 			Event saga = saga();
 			if (o.end && saga != null && events.indexOf(saga) > index) { turnedBack = true; index = events.indexOf(saga); step = ""; return said + extra; } // turning for home: the lost expedition goes missing all the same
@@ -697,7 +743,7 @@ public final class Expeditions {
 		/** What the outfitting cost: per head, for everyone sent. */
 		public int outfitting() { return posting.outfit * party.size(); }
 		int pay() {
-			if (!finished()) return 0; // the job's pay is for the job done
+			if (!finished() || payGivenUp) return 0; // the job's pay is for the job done, and not if it was taken in kind
 			int lo = posting.danger <= 1 ? 3 : posting.danger == 2 ? 5 : 8, hi = posting.danger <= 1 ? 6 : posting.danger == 2 ? 10 : 14;
 			int p = lo + new Random(posting.text.hashCode() ^ party.size()).nextInt(hi - lo + 1);
 			return posting.sealed ? p * 3 / 2 : p;
@@ -756,16 +802,6 @@ public final class Expeditions {
 		gs = Derelicts.build(id, name, rng);
 		ShipState s = gs.getPlayerShip();
 		int max = Derelicts.maxHull(s);
-		if ("towed".equals(h.condition())) { // a prize, not a wreck: most of her hull, most of her systems working, no breaches
-			s.setHullAmt(Math.max(s.getHullAmt(), (max * (55 + rng.nextInt(26)) + 99) / 100));
-			for (net.blerf.ftl.parser.SavedGameParser.SystemType t : net.blerf.ftl.parser.SavedGameParser.SystemType.values()) {
-				net.blerf.ftl.parser.SavedGameParser.SystemState st = s.getSystem(t);
-				if (st == null || st.getCapacity() <= 0 || st.getDamagedBars() == 0 || rng.nextInt(3) == 0) continue;
-				st.setDamagedBars(0);
-				if (t.isSubsystem()) st.setPower(st.getCapacity());
-			}
-			s.getBreachMap().clear();
-		}
 		if (broken != null) { // she made it home just as this gave out: broken through, or gone
 			net.blerf.ftl.parser.SavedGameParser.SystemState st = s.getSystem(broken);
 			if (st == null || st.getCapacity() <= 0 || rng.nextInt(3) == 0) {
@@ -902,6 +938,7 @@ public final class Expeditions {
 		for (int i = 0; i < POSTINGS; i++) if (i != r.slot && posting(p, i) != null) others.add(posting(p, i));
 		others.add(r.posting); // not the same job again at once
 		put(p, r.slot, pick(new Random(), others));
+		p.setProperty(r.slot + ".until", Integer.toString(v.beaconsSeen() + POSTING_MIN + new Random().nextInt(POSTING_MAX - POSTING_MIN + 1)));
 		List<String> recent = recent(v);
 		for (Event e : r.events) { recent.remove(e.id); recent.add(e.id); }
 		while (recent.size() > RECENT * 2) recent.remove(0); // about the last RECENT expeditions' worth

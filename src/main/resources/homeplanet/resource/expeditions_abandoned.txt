@@ -101,10 +101,12 @@ Your crew isn't the only salvage team at the wreck. The other one has guns, and 
 event half_eaten abandoned moderate hull
 A Lanius cruiser sits in the dead system, half of her hull eaten away by her own former crew, who have moved on to the station next door.
 * Tow what's left
-  ok ship sector:wrecked | Half a ship is still a ship. The Junkyard foreman will have opinions.
+  roll 65
+  win ship sector:wrecked | Half a ship is still a ship. The Junkyard foreman will have opinions.
+  lose scrap 4-6 | She comes apart on the tow line. Your crew salvages what drifts free.
 * Strip her and go
   ok scrap 30-40 parts 2 | There's plenty left to take, and nobody left to object.
 * [lanius] {who} asks the Lanius to leave the rest of her alone
   roll 60
-  win ship sector:towed | The Lanius agree, grudgingly, and even return a few of her plates.
+  win ship sector:wrecked | The Lanius agree, grudgingly, and even return a few of her plates.
   lose ship sector:wrecked | The Lanius have already eaten more of her than {who} hoped.

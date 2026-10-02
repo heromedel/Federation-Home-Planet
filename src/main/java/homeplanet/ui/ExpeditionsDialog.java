@@ -34,6 +34,8 @@ final class ExpeditionsDialog extends JDialog {
 	private final JButton hireBtn = new JButton();
 	/** Did anything change in the Cargo Hold (the Space Dock redraws)? */
 	boolean changed = false;
+	/** Marks an expedition's own pop-ups (for the harness, which can't go by their titles). */
+	static final String EXPEDITION = "homeplanet.expedition";
 	/** For the harness: the random rolls. */
 	static Random rng = new Random();
 	/** An expedition is under way: Long Range messages pop up over it, and hails are turned away (it can't be left halfway). */
@@ -135,7 +137,7 @@ final class ExpeditionsDialog extends JDialog {
 			Expeditions.Step ev = run.current();
 			List<Expeditions.Choice> choices = run.choices();
 			int c = -1;
-			while (c < 0) c = ask(run, ev, choices, title + " (" + run.number() + " of " + run.length() + ")"); // an expedition can't be walked away from halfway
+			while (c < 0) c = ask(run, ev, choices, title); // an expedition can't be walked away from halfway
 			String said = run.choose(choices.get(c));
 			if (!said.trim().isEmpty()) say(wrap(said), title); // a step that only leads on has no words of its own
 		}
@@ -169,6 +171,7 @@ final class ExpeditionsDialog extends JDialog {
 	private Object must(JOptionPane pane, String title) {
 		JDialog d = pane.createDialog(this, title);
 		d.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		d.getRootPane().putClientProperty(EXPEDITION, Boolean.TRUE);
 		d.setVisible(true);
 		d.dispose();
 		return pane.getValue();
@@ -189,6 +192,7 @@ final class ExpeditionsDialog extends JDialog {
 		p.add(list, BorderLayout.CENTER);
 		JDialog d = op.createDialog(this, title);
 		d.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE); // a choice must be made
+		d.getRootPane().putClientProperty(EXPEDITION, Boolean.TRUE);
 		d.setVisible(true);
 		d.dispose();
 		Object v = op.getValue();

@@ -510,6 +510,15 @@ no letters, you come and check).
   the Cargo Hold), at most 60, spent either way, answered three times in four. The race is one of the unlocked
   ships' crews; new crew wait in the Cargo Hold. With no FTL profile yet (a fresh Immersive one), only the Kestrel's
   humans answer, as Commission has it (4B.90; before, every race could).
+- Ships home, rarer and rougher (4B.91): a ship home is built exactly as a Junkyard derelict (same damage, stripping,
+  missing systems, odd rebuilds), with a name rolled for her model; the event picks a model fitting the sector and
+  adds the one failure its story names ("towed", which repaired her, is gone). Ship events are kept out of the
+  ordinary draw and come up so that roughly one expedition in 20 brings a ship home, one in ten with an Engi along
+  (approximate: common enough to help a scrapper, not something to count on). A ship is never a sure thing: a
+  gamble, or taken in place of the job's pay (`nopay`); the harness refuses a ship for nothing. Untaken postings come
+  down after 1 to 7 beacons each (hidden) and are replaced. In the Cargo Bay's system rows, broken bars are drawn red
+  at the end of the level bar (installed and stored alike), the words in the tooltip. An expedition's pop-ups are titled with the
+  sector alone: the "(2 of 3)" counted events, not pop-ups, and read wrong.
 - **Folding headings**: a click on a gold heading of the Space Dock's controls folds its buttons away or back,
   lighter under the mouse, a small arrow when folded; remembered in the cfg (`fold_station`, ...).
 - A one-sided Long Range trade's log no longer says "received ():".

@@ -106,5 +106,7 @@ A Rock cruiser sits half sunk in a cooling lava field, abandoned when her oxygen
 * Leave her to the lava
   ok scrap 3-5 | Your crew pries some plating off her hull and leaves the rest.
 * [rock] {who} walks across the lava to her
-  ok ship sector:limping:oxygen | {who} wades out through the heat and rigs the tow alone. The Rock are deeply impressed.
+  roll 75
+  win ship sector:limping:oxygen | {who} wades out through the heat and rigs the tow alone. The Rock are deeply impressed.
   aside 30 | One of the Rock miners asks whether {who} is, perhaps, a prophet.
+  lose scrap 4-6 | The crust cracks under even {who}. She stays in the lava; your crew pries off what plating it can reach.

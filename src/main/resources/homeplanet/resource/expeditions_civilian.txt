@@ -121,9 +121,9 @@ A pickpocket lifts your crew's travel funds in a crowded market and bolts into t
 event payment_in_kind civilian moderate payment
 The colony has no scrap left to pay with. What it does have is an old Kestrel sitting in the hangar, unflown since her captain died, and the council is embarrassed to offer her.
 * Take the Kestrel
-  ok scrap 2-4 ship sector:towed | The colonists help tow her out, and seem glad to see her go somewhere useful.
+  ok nopay ship sector:wrecked | The colonists help tow her out in place of your fee, and seem glad to see her go somewhere useful.
   aside 25 | The old captain's coat is still hanging in her cockpit. Nobody on your crew moves it.
 * Take whatever scrap they can scrape together
   ok scrap 30-40 | The council pays in loose scrap, old parts and apologies.
 * [human] {who} asks for the Kestrel and her spare fuel
-  ok fuel 3 ship sector:towed | The council agrees to both, relieved to be asked for so little.
+  ok nopay fuel 3 ship sector:wrecked | The council agrees to both in place of your fee, relieved to be asked for so little.

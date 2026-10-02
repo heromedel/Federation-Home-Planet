@@ -72,7 +72,21 @@ public class ExpT { public static void main(String[] a) throws Exception {
   List<Expeditions.Posting> b = Expeditions.board(v);
   Setup.chk("P: three postings, all different", b.size() == 3 && !b.get(0).text.equals(b.get(1).text) && !b.get(1).text.equals(b.get(2).text) && !b.get(0).text.equals(b.get(2).text));
   List<Expeditions.Posting> again = Expeditions.board(v);
-  Setup.chk("P: the board stays as it is until a job is done", again.get(0).text.equals(b.get(0).text) && again.get(2).text.equals(b.get(2).text));
+  Setup.chk("P: looking again, the board is the same", again.get(0).text.equals(b.get(0).text) && again.get(2).text.equals(b.get(2).text));
+  // untaken postings come down after 1-7 beacons each (hidden), and others take their place
+  Properties bp0 = new Properties(); bp0.load(new ByteArrayInputStream(SafeFiles.read(new File(v.root, "expeditions.txt"))));
+  int now = v.beaconsSeen(); boolean ranged = true; int soonest = 999;
+  for (int i = 0; i < 3; i++) { int u = Integer.parseInt(bp0.getProperty(i + ".until")); if (u - now < 1 || u - now > 7) ranged = false; soonest = Math.min(soonest, u); }
+  Setup.chk("P: each posting stays 1 to 7 beacons", ranged);
+  ChainT.jump(v, soonest - now - 1);
+  List<Expeditions.Posting> before = Expeditions.board(v);
+  ChainT.jump(v, 1);
+  List<Expeditions.Posting> after = Expeditions.board(v);
+  Properties bp1 = new Properties(); bp1.load(new ByteArrayInputStream(SafeFiles.read(new File(v.root, "expeditions.txt"))));
+  int changed = 0, kept = 0;
+  for (int i = 0; i < 3; i++) { int u0 = Integer.parseInt(bp0.getProperty(i + ".until")); if (u0 == soonest) { if (!after.get(i).text.equals(before.get(i).text) || Integer.parseInt(bp1.getProperty(i + ".until")) > soonest) changed++; } else if (after.get(i).text.equals(before.get(i).text)) kept++; }
+  int due = 0; for (int i = 0; i < 3; i++) if (Integer.parseInt(bp0.getProperty(i + ".until")) == soonest) due++;
+  Setup.chk("P: when its time comes a posting is replaced (" + changed + " of " + due + "); the others stay (" + kept + " of " + (3 - due) + ")", changed == due && kept == 3 - due);
   java.lang.reflect.Method pick = Expeditions.class.getDeclaredMethod("pick", Random.class, List.class); pick.setAccessible(true);
   int rare = 0; Random rng = new Random(4);
   for (int i = 0; i < 2000; i++) { Expeditions.Posting x = (Expeditions.Posting) pick.invoke(null, rng, new ArrayList<Expeditions.Posting>()); if (x.kind.endsWith("_home") || x.kind.equals("crystal")) rare++; }
@@ -150,8 +164,8 @@ public class ExpT { public static void main(String[] a) throws Exception {
   System.out.println("expeditions: " + n + " runs, scrap " + min + "-" + max + " (average " + total / n + "), " + hurtSome + " with injuries, " + lostSome + " with losses, " + gear + " with gear");
   Setup.chk("R: two or three events each, every placeholder filled", lengths);
   Setup.chk("R: a Rock and a Mantis bring their options, blue and red", sawRock && sawRed);
-  Setup.chk("R: modest pay: about 5 to 50 scrap, averaging 15 to 35, over 50 one time in ten at most (" + min + "-" + max + ", " + total / n + ", " + over50 + " over 50)",
-    min >= 0 && max <= 90 && total / n >= 15 && total / n <= 35 && over50 * 10 <= n);
+  Setup.chk("R: modest pay: about 5 to 50 scrap, averaging 15 to 35, over 50 one time in eight at most (" + min + "-" + max + ", " + total / n + ", " + over50 + " over 50)",
+    min >= 0 && max <= 100 && total / n >= 15 && total / n <= 35 && over50 * 8 <= n);
   Setup.chk("R: some come back hurt, some not at all, gear now and then", hurtSome > 20 && lostSome > 20 && gear > 5 && gear < 120);
 
   // a real one, finished: everything to the Cargo Hold in one write, a beacon of time, a new posting
@@ -198,9 +212,9 @@ public class ExpT { public static void main(String[] a) throws Exception {
  }
  /** A fixed board: a dangerous job, a moderate one, a safe one. */
  static void pinBoard(Vault v) throws Exception {
-  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=mantis\n0.danger=3\n0.text=Need mercenaries for defense through Mantis territory\n"
-    + "1.kind=pirate\n1.danger=2\n1.text=Ransom to be delivered to a pirate den; steady nerves required\n"
-    + "2.kind=civilian\n2.danger=1\n2.text=Hands wanted to escort a grain convoy between two farming colonies\n", false);
+  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=mantis\n0.danger=3\n0.until=999999\n0.text=Need mercenaries for defense through Mantis territory\n"
+    + "1.kind=pirate\n1.danger=2\n1.until=999999\n1.text=Ransom to be delivered to a pirate den; steady nerves required\n"
+    + "2.kind=civilian\n2.danger=1\n2.until=999999\n2.text=Hands wanted to escort a grain convoy between two farming colonies\n", false);
  }
  static List<?> evsOf() throws Exception {
   java.lang.reflect.Field evs = Class.forName("homeplanet.parser.Expeditions$Book").getDeclaredField("events"); evs.setAccessible(true);
@@ -347,7 +361,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   java.lang.reflect.Constructor<?> hc = hs.getDeclaredConstructor(String.class, String.class); hc.setAccessible(true);
   java.lang.reflect.Method build = Expeditions.class.getDeclaredMethod("build", hs, java.util.Collection.class, Random.class); build.setAccessible(true);
   java.lang.reflect.Method models = Expeditions.class.getDeclaredMethod("shipModels", String.class); models.setAccessible(true);
-  boolean fits = true, limping = true, towed = true; String bad = "";
+  boolean fits = true, limping = true, wreck = true; String bad = "";
   for (String k : new String[] {"civilian", "engi", "zoltan", "mantis", "rock", "slug", "nebula", "pirate", "rebel", "abandoned", "crystal"}) for (int s = 0; s < 6; s++) {
    String sys = new String[] {"engines", "pilot", "oxygen", "shields", "sensors", "weapons"}[s];
    SavedGameParser.SavedGameState g = (SavedGameParser.SavedGameState) build.invoke(null, hc.newInstance(k + ":limping:" + sys, k), new ArrayList<String>(), new Random(s));
@@ -356,13 +370,37 @@ public class ExpT { public static void main(String[] a) throws Exception {
    if (!ok) { fits = false; bad += k + "=" + bp + " "; }
    SystemState st = g.getPlayerShip().getSystem(SystemType.findById(sys));
    if (st != null && st.getCapacity() > 0 && st.getDamagedBars() < st.getCapacity()) limping = false;
-   SavedGameParser.SavedGameState t = (SavedGameParser.SavedGameState) build.invoke(null, hc.newInstance(k + ":towed", k), new ArrayList<String>(), new Random(100 + s));
+   SavedGameParser.SavedGameState t = (SavedGameParser.SavedGameState) build.invoke(null, hc.newInstance(k + ":wrecked", k), new ArrayList<String>(), new Random(100 + s));
    ShipState ts = t.getPlayerShip(); int max = DataManager.get().getShip(ts.getShipBlueprintId()).getHealth().amount;
-   if (ts.getHullAmt() * 100 < max * 55 || !ts.getBreachMap().isEmpty()) towed = false;
+   if (ts.getHullAmt() * 100 > max * 50 || !ts.getCrewList().isEmpty() || ts.getScrapAmt() != 0 || !ts.getShipBlueprintId().endsWith(Retrofit.SUFFIX)) wreck = false;
   }
   Setup.chk("S: each sector's ship is one of its own models " + bad, fits);
   Setup.chk("S: a limping ship's failed system is broken through, or gone", limping);
-  Setup.chk("S: a towed prize has most of her hull and no breaches", towed);
+  Setup.chk("S: a ship home is a Junkyard derelict: half her hull or less, no crew, no scrap, on the station's blank copy", wreck);
+  // the files: no ship for nothing (each a gamble, or taken in place of the job's pay)
+  Object bk = construct("homeplanet.parser.Expeditions$Book");
+  java.lang.reflect.Method parse = Expeditions.class.getDeclaredMethod("parse", String.class, bk.getClass(), String.class); parse.setAccessible(true);
+  java.lang.reflect.Method check = Expeditions.class.getDeclaredMethod("check", bk.getClass()); check.setAccessible(true);
+  parse.invoke(null, "event y civilian low\nWords.\n* Take her\n  ok ship sector:wrecked | free\n* Leave her\n  ok | no\n", bk, "test"); check.invoke(null, bk);
+  java.lang.reflect.Field pf = bk.getClass().getDeclaredField("problems"); pf.setAccessible(true);
+  Setup.chk("S: a ship for nothing is caught in the files " + pf.get(bk), String.valueOf(pf.get(bk)).contains("for nothing") && Expeditions.problems().isEmpty());
+  // how often: about one expedition in 20, one in ten with an Engi along
+  java.lang.reflect.Method pickM = Expeditions.class.getDeclaredMethod("pick", Random.class, List.class); pickM.setAccessible(true);
+  String[] races = {"human", "mantis", "rock", "slug", "energy", "crystal", "anaerobic"};
+  int[] homeShips = new int[2]; int runs = 3000;
+  for (int withEngi = 0; withEngi < 2; withEngi++) { Random rng = new Random(11 + withEngi);
+   for (int i = 0; i < runs; i++) {
+    Expeditions.Posting p = (Expeditions.Posting) pickM.invoke(null, rng, new ArrayList<Expeditions.Posting>());
+    SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=" + p.kind + "\n0.danger=" + p.danger + "\n0.until=999999\n0.text=" + p.text + "\n1.kind=civilian\n1.danger=1\n1.until=999999\n1.text=a\n2.kind=civilian\n2.danger=1\n2.until=999999\n2.text=b\n", false);
+    List<CrewState> party = new ArrayList<CrewState>(); int n = 1 + rng.nextInt(3);
+    for (int k = 0; k < n; k++) party.add(Commission.volunteer(k == 0 && withEngi == 1 ? "engi" : races[rng.nextInt(races.length)], rng));
+    Expeditions.Run r = Expeditions.start(v, 0, party, new Random(rng.nextLong()));
+    while (!r.over()) { List<Expeditions.Choice> cs = r.choices(); r.choose(cs.get(rng.nextInt(cs.size()))); }
+    for (Expeditions.HomeShip h : r.ships()) if (!h.stealth()) { homeShips[withEngi]++; break; }
+   } }
+  Setup.chk("S: a ship comes home about one expedition in 20 (" + homeShips[0] + " of " + runs + "), one in ten with an Engi (" + homeShips[1] + ")",
+    homeShips[0] * 100 >= runs * 3 && homeShips[0] * 100 <= runs * 8 && homeShips[1] * 100 >= runs * 7 && homeShips[1] * 100 <= runs * 14);
+  pinBoard(v);
   // the lost expedition's cruiser: her own blueprint, near new; dented, some hull and a bar or two
   SavedGameParser.SavedGameState nw = (SavedGameParser.SavedGameState) build.invoke(null, hc.newInstance("stealth:new", "rebel"), new ArrayList<String>(), new Random(1));
   SavedGameParser.SavedGameState dn = (SavedGameParser.SavedGameState) build.invoke(null, hc.newInstance("stealth:dented", "rebel"), new ArrayList<String>(), new Random(1));
@@ -379,6 +417,8 @@ public class ExpT { public static void main(String[] a) throws Exception {
    List<CrewState> one = hold(v, "human");
    Expeditions.Run r = with(v, 0, one, pay, 4);
    r.choose(r.choices().get(0));
+   java.lang.reflect.Method payM = r.getClass().getDeclaredMethod("pay"); payM.setAccessible(true);
+   if (dock) Setup.chk("S: the colony's Kestrel comes in place of the job's pay (" + payM.invoke(r) + ")", (Integer) payM.invoke(r) == 0);
    r.ships().get(0).toDock = dock;
    int docked = v.docked().size(), junked = v.junked().size();
    Expeditions.finish(v, r);

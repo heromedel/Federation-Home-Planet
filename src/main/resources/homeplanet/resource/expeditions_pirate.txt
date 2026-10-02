@@ -114,7 +114,7 @@ event triumph pirate high triumph
 The raid went perfectly. Everyone is alive, the loot is shared, and {crew} has spotted a pirate gunship dead in the water at the edge of the field.
 * Tow the gunship home too
   roll 70
-  win scrap 12-18 ship sector:towed | They come home grinning, every one of them, loot in their pockets and a prize on the tow line.
+  win scrap 12-18 ship sector:wrecked | They come home grinning, every one of them, loot in their pockets and a prize on the tow line.
   lose scrap 12-18 ship sector:wrecked | The gunship takes a stray shot on the way out, but she's still worth the tow. They come home grinning anyway.
 * Leave her and keep the loot
   ok scrap 30-40 | Nobody argues. It was a good day.

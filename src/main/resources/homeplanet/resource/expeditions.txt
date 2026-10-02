@@ -24,8 +24,9 @@
 # Effects: scrap 5-10, injure 1, lose 1, fuel 2, missiles 1, parts 1, item weapon|drone|augment, join <race|any>,
 # then <step> (on to that step, not the next event; such an outcome may have no words of its own), end (the
 # expedition turns for home), ship <sector>:<condition>[:<system>] (a ship comes home: "sector" means the posting's;
-# wrecked, towed (light damage), or limping:<system> (that system broken through, or gone); the player chooses the
-# Space Dock or the Junkyard for her).
+# wrecked (a Junkyard derelict, exactly as the foreman's), or limping:<system> (the same, with that system broken
+# through or gone); the player chooses the Space Dock or the Junkyard for her). Ship events are drawn rarely, and a
+# ship is never a sure thing: a gamble, or "nopay" (taken in place of the job's pay).
 # The lost expedition (sector "saga", one in 300 high-danger expeditions of two or more) also has: beacons <n> (weeks of
 # waiting), survivor (all but the one named stay lost), ship stealth:new|dented, {enemy} and {survivor} in its words;
 # its steps may have a single choice.

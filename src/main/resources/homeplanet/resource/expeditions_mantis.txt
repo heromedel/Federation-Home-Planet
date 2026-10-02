@@ -117,4 +117,6 @@ The convoy is lost and so is your crew's shuttle. The only way out is a Mantis r
   win scrap 4-6 | A Federation patrol picks them up, a day later and very cold.
   lose injure 1 | The patrol is late. {who} is half-frozen by the time it arrives.
 * [mantis] {who} knows how to nurse a Mantis engine
-  ok ship sector:towed | {who} coaxes the engines all the way home, muttering at them in their own tongue.
+  roll 75
+  win ship sector:wrecked | {who} coaxes the engines all the way home, muttering at them in their own tongue.
+  lose injure 1 | The engines answer {who} with a burst of flame. Your crew abandons her at the border.

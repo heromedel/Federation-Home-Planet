@@ -11,7 +11,7 @@ public class GuiT {
  static final List<Object> defaults = new ArrayList<Object>();
  static final List<Object[]> extras = new ArrayList<Object[]>(); // per pop-up: the Info button and the list, if any
  static final LinkedList<Integer> presses = new LinkedList<Integer>();
- /** Each expedition pop-up's close operation (its title has " of " or is one of the expedition's), and a hook run once at the first. */
+ /** Each expedition pop-up's close operation (they carry the "homeplanet.expedition" mark), and a hook run once at the first. */
  static final List<Integer> expeditionCloseOps = new ArrayList<Integer>();
  static Runnable atExpedition = null;
 
@@ -291,6 +291,9 @@ public class GuiT {
   h.setScrapAmt(0);
   v.begin().put(v.storage(), c.save, c.hash).commit();
   final int beacons = v.beaconsSeen();
+  // a plain job in the first place (an outfitted one would need scrap the test leaves out)
+  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=civilian\n0.danger=2\n0.until=999999\n0.text=Dangerous fugitive tracked down to an alias in a civilian sector; bounty hunters needed\n"
+    + "1.kind=pirate\n1.danger=2\n1.until=999999\n1.text=b\n2.kind=civilian\n2.danger=1\n2.until=999999\n2.text=c\n", false);
   Class<?> k = Class.forName("homeplanet.ui.ExpeditionsDialog");
   java.lang.reflect.Field rf = k.getDeclaredField("rng"); rf.setAccessible(true); rf.set(null, new Random(8));
   shown.clear(); optionsShown.clear(); presses.clear();
@@ -363,7 +366,7 @@ public class GuiT {
     if (op == null) continue;
     seen.add(w);
     String title = ((JDialog) w).getTitle();
-    if (title != null && (title.contains(" of ") || title.equals("A ship home") || title.equals("Sealed orders"))) {
+    if (Boolean.TRUE.equals(((JDialog) w).getRootPane().getClientProperty("homeplanet.expedition"))) {
      expeditionCloseOps.add(((JDialog) w).getDefaultCloseOperation());
      if (atExpedition != null) { Runnable r = atExpedition; atExpedition = null; r.run(); }
     }

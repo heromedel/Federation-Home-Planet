@@ -99,8 +99,8 @@ A Slug family has taken a human trader hostage over an unpaid bill. They'll rele
 event slug_bargain slug moderate bargain
 A Slug dealer offers your crew a "fine cruiser, barely used" for nothing at all, only a small favour to be named later.
 * Take the deal
-  ok ship sector:limping:pilot | She's fine in every way except one: there's no piloting system aboard. The dealer never mentioned it. The tow is long and quiet.
+  ok nopay ship sector:limping:pilot | She's fine in every way except one: there's no piloting system aboard. The dealer never mentioned it, and named the favour: your crew's fee. The tow is long and quiet.
 * Refuse
   ok scrap 12-16 | The dealer is disappointed, and pays your crew a little for their time, for reasons of its own.
 * [slug] {who} reads what the dealer is hiding
-  ok scrap 4-6 ship sector:towed | {who} finds both the missing helm and the favour the dealer had in mind. The helm comes back. The favour doesn't.
+  ok nopay ship sector:wrecked | {who} finds both the missing helm and the favour the dealer had in mind: your crew's fee. The helm comes back with her. The fee doesn't.

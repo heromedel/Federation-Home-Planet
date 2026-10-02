@@ -280,9 +280,11 @@ event crystal_vessel crystal high vessel
 A Crystal cruiser stands half buried in a hillside, her hull grown into the rock as if she had sprouted there.
 * Cut her free
   roll 50
-  win ship sector:towed | She comes free all at once, ringing like a bell. The tow home is the strangest your crew has ever flown.
+  win ship sector:wrecked | She comes free all at once, ringing like a bell. The tow home is the strangest your crew has ever flown.
   lose injure 1 ship sector:wrecked | The crystal splinters as she comes loose. {who} is cut, and the cruiser comes home cracked.
 * Leave her where she grew
   ok scrap 6-10 | Your crew takes a few loose shards and leaves her to the hill.
 * [crystal] {who} asks her to come
-  ok ship sector:towed | {who} lays a hand on her hull. She lets go of the hill on her own.
+  roll 75
+  win ship sector:wrecked | {who} lays a hand on her hull. She lets go of the hill on her own.
+  lose scrap 6-10 | She won't come. {who} stays with her a long while, then takes a single shard home.

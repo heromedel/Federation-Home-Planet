@@ -112,10 +112,10 @@ The cure needs something the Zoltan don't have: a lot of living energy, from som
 event impounded zoltan moderate award
 The tribunal rules for your crew's testimony, and awards the witnesses a share of the forfeit: an impounded cruiser, her shield generator held back as evidence in another case.
 * Accept the cruiser
-  ok ship sector:limping:shields | She is towed out of the impound yard with great ceremony and no shields at all.
+  ok nopay ship sector:limping:shields | She is towed out of the impound yard with great ceremony and no shields at all. The witness fees go to the court.
 * Accept a cash settlement instead
   ok scrap 30-40 | The tribunal pays the settlement exactly, down to the last scrap.
 * [zoltan] {who} petitions for the generator too
   roll 60
-  win ship sector:towed | The tribunal debates for an hour, then agrees: the evidence is no longer needed. She comes whole.
+  win ship sector:wrecked | The tribunal debates for an hour, then agrees: the evidence is no longer needed. She comes whole.
   lose ship sector:limping:shields | The petition is denied, politely and at length. The cruiser comes without her shields.

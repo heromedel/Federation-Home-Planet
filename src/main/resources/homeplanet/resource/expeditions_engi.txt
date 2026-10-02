@@ -110,10 +110,10 @@ An Engi construction frame drifts at the beacon, abandoned half-built, its arms 
 event retired_node engi low retirement
 An Engi cruiser drifts outside the relay, powered but still. Her piloting node failed, the Engi explain, and a ship that cannot think for herself is a ship they cannot bear to look at. Would your crew take her away?
 * Take her as she is
-  ok ship sector:limping:pilot | The Engi thank your crew formally, and turn away before the tow begins.
+  ok nopay ship sector:limping:pilot | The Engi thank your crew formally, keep the fee for the tow, and turn away before it begins.
 * Strip her for parts instead
   ok scrap 30-40 parts 3 | The Engi watch the stripping in silence, then pay for the work.
 * [engi] {who} tries to wake her node
   roll 50
-  win ship sector:towed | {who} coaxes something out of the dead node. She isn't whole, but she answers. The Engi are very quiet.
+  win ship sector:wrecked | {who} coaxes something out of the dead node. She isn't whole, but she answers. The Engi are very quiet.
   lose ship sector:limping:pilot | The node stays dead. {who} spends the tow sitting beside it anyway.
