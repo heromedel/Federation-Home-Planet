@@ -69,5 +69,11 @@ public class CommT { public static void main(String[] a) throws Exception {
   }
   Setup.chk("N: rolled ship names are never blank, too long, or the fleet's", ok);
   Setup.chk("N: a Mantis cruiser rolls Mantis names too", own);
+  boolean kessieA = false, kessieB = false;
+  for (int i = 0; i < 3000; i++) {
+   if ("Little Kessie".equals(ShipNames.roll("PLAYER_SHIP_HARD", taken, rng))) kessieA = true;
+   if ("Little Kessie".equals(ShipNames.roll("PLAYER_SHIP_HARD_2", taken, rng))) kessieB = true;
+  }
+  Setup.chk("N: a Kestrel Type A may roll Little Kessie (her layout's own name); a Type B never does", kessieA && !kessieB);
  }
 }
