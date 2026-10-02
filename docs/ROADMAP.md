@@ -478,8 +478,8 @@ no letters, you come and check).
 ## 21. Reputation — built (4B.86; harness test RepuT)
 
 A career's standing with The Federation Home Planet, earned by its ships' service in FTL and lost by their losses.
-Only careers have it (Immersive Mode, and Sandbox with Career messages). Shown in gold on the Space Dock, beside the
-Docked Ships heading (red below zero); its tooltip has the latest changes, and clicking it opens the **Career
+Only careers have it (Immersive Mode, and Sandbox with Career messages). Shown in gold on the Space Dock, to the right of
+the inbox (red below zero), as plain text: "REP: 179"; its tooltip has the latest changes, and clicking it opens the **Career
 Reputation Log** (reputation.log in the fleet's folder, in the station log's style).
 
 | Earned | | Lost | |

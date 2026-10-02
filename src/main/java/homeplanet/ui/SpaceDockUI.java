@@ -103,7 +103,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final JPanel docked = new JPanel(new java.awt.BorderLayout(0, 6));
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
-		String title = "Docked Ships";
+		String title = "Docked";
 		boolean longRange = parent != null && parent.comm != null && parent.comm.inboxWanted(); // a commander's mail needs an inbox, whatever the setting
 		if (HomePlanet.immersiveNotifications() || longRange) {
 			if (HomePlanet.immersiveNotifications()) homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
@@ -117,7 +117,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (repBtn != null) repBtn.addActionListener(this);
 		boolean inboxHere = inboxBtn != null && vault.boarded() == null; // with a ship at your command, it sits on her heading instead
 		int inboxW = inboxHere ? inboxWidth() : 0;
-		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW);
+		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW, true);
 		if (HomePlanet.immersiveMode) dockedHeader.setToolTipText("Immersive Mode: your rank. Captains may commission custom ships; Commodores, custom ships with artillery");
 		docked.add(withInbox(dockedHeader, inboxHere), java.awt.BorderLayout.NORTH);
 		docked.add(gridScroll, java.awt.BorderLayout.CENTER);
@@ -173,6 +173,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final Ship boarded = vault.boarded();
 		final JPanel berth = boarded == null ? null : berthPanel(boarded);
 		final JPanel stats = boarded == null ? null : statsPanel(boarded);
+		final JPanel aboard = boarded == null ? null : aboardRow;
 		JPanel main = new JPanel(null) {
 			@Override
 			public void doLayout() {
@@ -188,19 +189,22 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					// to make room for them rather than have them hidden
 					int inset = pictureInset(berth), need = 14 + sd.width + 12 - inset;
 					if (x < need) x = Math.max(x, Math.min(need, getWidth() - d.width - 10));
-					berth.setBounds(x, 10, d.width, d.height);
+					Dimension ad = aboard.getPreferredSize();
+					int ah = ad.height + 6, y0 = 10 + ah; // her heading, then her berth below it
+					aboard.setBounds(14, 10, x + ad.width - 14, ad.height); // from the left margin to where it ends over her berth
+					berth.setBounds(x, y0, d.width, d.height);
 					int sx = x + inset - 12 - sd.width;
 					boolean room = sx >= 14;
 					stats.setVisible(room);
-					if (room) stats.setBounds(sx, 10 + berth.getComponent(0).getPreferredSize().height + BERTH_PIC_Y, sd.width, sd.height);
-					top = 10 + d.height + 6;
+					if (room) stats.setBounds(sx, y0 + berth.getComponent(0).getPreferredSize().height + BERTH_PIC_Y, sd.width, sd.height);
+					top = y0 + d.height + 6;
 					if (room) top = Math.max(top, stats.getY() + sd.height + 6); // a tall stats column pushes the docked ships down, not under it
 				}
 				docked.setBounds(0, top, Math.min(dockedW, getWidth()), Math.max(0, getHeight() - top));
 			}
 		};
 		main.setOpaque(false);
-		if (berth != null) { main.add(berth); main.add(stats); }
+		if (berth != null) { main.add(aboard); main.add(berth); main.add(stats); }
 		main.add(docked);
 
 		add(main, java.awt.BorderLayout.CENTER);
@@ -487,6 +491,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return p;
 	}
 	/** The boarded ship: header and name above, a large picture, Dock and Info below. */
+	/** The Aboard heading (with the inbox and reputation when they go there), above the boarded ship's berth. */
+	private JPanel aboardRow;
 	private JPanel berthPanel(Ship ship0) {
 		JPanel p = new JPanel();
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
@@ -496,8 +502,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		head.setOpaque(false);
 		head.setAlignmentX(LEFT_ALIGNMENT);
 		int inboxW = inboxBtn == null ? 0 : inboxWidth();
-		head.add(withInbox(new FtlButton.Header("At your command", BERTH_W - inboxW), inboxBtn != null));
-		head.add(Box.createRigidArea(new Dimension(1, 6)));
+		// her heading stands apart, from the left margin as the Docked one does (the Space Dock lays it out above her)
+		aboardRow = withInbox(new FtlButton.Header("Aboard", BERTH_W - inboxW, true), inboxBtn != null); // aboard her: the ship you're on
 		head.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, BERTH_W));
 		head.add(smallLabel(beacons(ship0), MenuTheme.GREY_GREEN));
 		boolean off = offStation(ship0);
@@ -658,7 +664,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 
 	/** The transmissions icon: an antenna, and a green light with the unread count. */
 	/**
-	 * The transmissions light, at the end of the Docked Ships heading: a mast and dish, and with anything unread a green
+	 * The transmissions light, at the end of the Docked heading (or the Aboard heading, with a ship boarded): a mast and dish, and with anything unread a green
 	 * light and "N NEW" in gold, and a small hop every few seconds until the inbox is opened.
 	 */
 	private static final class TransmissionButton extends JButton {
