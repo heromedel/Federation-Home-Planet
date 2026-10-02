@@ -475,10 +475,11 @@ no letters, you come and check).
 - A derelict rebuilt with two systems' rooms swapped now says "the rooms built for her X and Y have been swapped",
   true whether or not those systems are installed.
 
-## 21. Reputation — built (4B.86; harness test RepuT)
+## 21. Reputation — built (4B.86, its own setting 4B.88; harness test RepuT)
 
 A career's standing with The Federation Home Planet, earned by its ships' service in FTL and lost by their losses.
-Only careers have it (Immersive Mode, and Sandbox with Career messages). Shown in gold on the Space Dock, to the right of
+Every Immersive career has it (Settings' Reputation rule, locked on); in Sandbox Mode it's the player's choice
+(the rule, off to begin with), with or without Career messages or the inbox. Shown in gold on the Space Dock, to the right of
 the inbox (red below zero), as plain text: "REP: 179"; its tooltip has the latest changes, and clicking it opens the **Career
 Reputation Log** (reputation.log in the fleet's folder, in the station log's style).
 
@@ -500,7 +501,8 @@ Reputation Log** (reputation.log in the fleet's folder, in the station log's sty
   stand, and each victory in the Hall of Victors. Older records can't tell rebels apart: they count as ships. A
   traded ship's crew losses from before her trade aren't told apart, so her losses aren't counted in the review.
 - **Traded ships** count only what they did since their trade (TradeMark), as everything else does.
-- With careers switched off, each ship's count still moves on, so nothing done meanwhile scores later.
+- With the rule switched off, the total and the log are kept and each ship's count still moves on, so nothing done
+  meanwhile scores later.
 
 **Later:** event outcomes (+2 a good one, −1 a bad one), being caught by the rebel fleet (−5), new achievements
 (+10), a free crew member from a hiring post (−5; the posts are on another branch), and the rescue ship when no

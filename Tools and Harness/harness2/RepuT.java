@@ -1,15 +1,18 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
-/** A career's reputation: the service so far reviewed once, then counted as FTL writes saves (sectors, scrap, ships, rebels, deaths), nothing lost in sector 8, the station's own changes not scored, ships lost, the Rebel Flagship, no career no counting. args: gamedir, world saves (from WorldT), work */
+/** A career's reputation: the service so far reviewed once, then counted as FTL writes saves (sectors, scrap, ships, rebels, deaths), nothing lost in sector 8, the station's own changes not scored, ships lost, the Rebel Flagship, the Reputation rule (Immersive Mode always), nothing counted while it is off. args: gamedir, world saves (from WorldT), work */
 public class RepuT {
  public static void main(String[] a) throws Exception {
   File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
   File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
   HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
-  HomePlanet.immersiveNotifications = true; HomePlanet.careerMessages = false;
+  HomePlanet.immersiveNotifications = false; HomePlanet.careerMessages = false; HomePlanet.reputationOn = false;
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
-  Setup.chk("R: no career, no reputation", !Reputation.shown());
-  HomePlanet.careerMessages = true; // a Sandbox career
-  Setup.chk("R: a career has one", Reputation.shown());
+  Setup.chk("R: Sandbox Mode without its Reputation rule: none", !Reputation.shown());
+  HomePlanet.reputationOn = true; // Settings' Reputation rule
+  Setup.chk("R: with the rule, a reputation (no career or inbox needed)", Reputation.shown());
+  HomePlanet.immersiveMode = true; HomePlanet.reputationOn = false;
+  Setup.chk("R: Immersive Mode always has one", Reputation.shown());
+  HomePlanet.immersiveMode = false; HomePlanet.reputationOn = true;
 
   // the service so far: a ship with a record, a traded ship (only since her trade), two lost ships (one in the last stand)
   Ship engi = named(v, "Test Engi");
@@ -74,14 +77,14 @@ public class RepuT {
   // the Rebel Flagship
   Reputation.flagship(v, "Test Kestrel");
   Setup.chk("R: the Rebel Flagship defeated: +100", Reputation.total(v) == expect + 50 && Reputation.recent(v, 1).get(0).contains("  +100  Test Kestrel defeated the Rebel Flagship (+100)"));
-  // no career: nothing counts
-  HomePlanet.careerMessages = false;
+  // the rule off: nothing counts
+  HomePlanet.reputationOn = false;
   Ship lan = named(v, "Test Lanius"); v.board(lan);
   g = cont(v); g.setTotalShipsDefeated(g.getTotalShipsDefeated() + 3); ftl(v, g);
-  HomePlanet.careerMessages = true;
-  Setup.chk("R: without a career nothing was counted", Reputation.total(v) == expect + 50);
-  g = cont(v); ftl(v, g); // the next look, a career again: what was done meanwhile isn't scored now either
-  Setup.chk("R: nor later, when the career is back", Reputation.total(v) == expect + 50);
+  HomePlanet.reputationOn = true;
+  Setup.chk("R: with the rule off nothing was counted", Reputation.total(v) == expect + 50);
+  g = cont(v); ftl(v, g); // the next look, the rule on again: what was done meanwhile isn't scored now either
+  Setup.chk("R: nor later, when the rule is back on", Reputation.total(v) == expect + 50);
   Setup.chk("R: signs: +5, −50, 0", "+5".equals(Reputation.signed(5)) && "−50".equals(Reputation.signed(-50)) && "0".equals(Reputation.signed(0)));
   Setup.done();
  }

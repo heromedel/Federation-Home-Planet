@@ -45,8 +45,8 @@ public final class Reputation {
 	/** FTL's sector 8 (0 is the first): nothing is lost there. */
 	static final int LAST_STAND = 7;
 
-	/** Does the fleet in use have a reputation (a career runs in it)? */
-	public static boolean shown() { return Vault.isOpen() && HomePlanet.career(); }
+	/** Does the fleet in use have a reputation (Settings' Reputation rule, always on in Immersive Mode)? */
+	public static boolean shown() { return Vault.isOpen() && HomePlanet.reputation(); }
 
 	/** The fleet's reputation, its service reviewed first if it never was. */
 	public static synchronized int total(Vault v) {

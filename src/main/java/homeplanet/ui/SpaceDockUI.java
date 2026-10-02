@@ -112,10 +112,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else {
 			inboxBtn = null;
 		}
-		// the career's reputation, in gold beside the inbox (a career always has one): clicking opens its log
-		repBtn = inboxBtn != null && homeplanet.vault.Reputation.shown() ? new ReputationButton(homeplanet.vault.Reputation.total(vault)) : null;
+		// the reputation (Settings' Reputation rule; always in Immersive Mode), in gold to the inbox's right: clicking opens its log
+		repBtn = homeplanet.vault.Reputation.shown() ? new ReputationButton(homeplanet.vault.Reputation.total(vault)) : null;
 		if (repBtn != null) repBtn.addActionListener(this);
-		boolean inboxHere = inboxBtn != null && vault.boarded() == null; // with a ship at your command, it sits on her heading instead
+		boolean inboxHere = vault.boarded() == null; // with a ship aboard, the inbox and reputation sit on her heading instead
 		int inboxW = inboxHere ? inboxWidth() : 0;
 		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW, true);
 		if (HomePlanet.immersiveMode) dockedHeader.setToolTipText("Immersive Mode: your rank. Captains may commission custom ships; Commodores, custom ships with artillery");
@@ -501,9 +501,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		head.setLayout(new BoxLayout(head, BoxLayout.Y_AXIS));
 		head.setOpaque(false);
 		head.setAlignmentX(LEFT_ALIGNMENT);
-		int inboxW = inboxBtn == null ? 0 : inboxWidth();
+		int inboxW = inboxWidth();
 		// her heading stands apart, from the left margin as the Docked one does (the Space Dock lays it out above her)
-		aboardRow = withInbox(new FtlButton.Header("Aboard", BERTH_W - inboxW, true), inboxBtn != null); // aboard her: the ship you're on
+		aboardRow = withInbox(new FtlButton.Header("Aboard", BERTH_W - inboxW, true), true); // aboard her: the ship you're on
 		head.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, BERTH_W));
 		head.add(smallLabel(beacons(ship0), MenuTheme.GREY_GREEN));
 		boolean off = offStation(ship0);
@@ -518,26 +518,29 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.setToolTipText("The ship at your command, berthed at The Home Planet Station");
 		return p;
 	}
-	/** A heading with the transmissions light at the end of its line (where the eye goes first), if it goes here. */
+	/**
+	 * A heading with the transmissions light at the end of its line (where the eye goes first) and the reputation to its
+	 * right, if they go here (either may be off).
+	 */
 	private JPanel withInbox(FtlButton.Header header, boolean here) {
 		JPanel row = new JPanel(new java.awt.BorderLayout(8, 0));
 		row.setOpaque(false);
 		row.setAlignmentX(LEFT_ALIGNMENT);
 		row.add(header, java.awt.BorderLayout.CENTER);
-		if (here && repBtn == null) row.add(inboxBtn, java.awt.BorderLayout.EAST);
-		else if (here) { // the reputation, to the inbox's right
+		if (here && repBtn == null && inboxBtn != null) row.add(inboxBtn, java.awt.BorderLayout.EAST);
+		else if (here && repBtn != null) { // the reputation, to the inbox's right
 			JPanel both = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
 			both.setOpaque(false);
-			both.add(inboxBtn);
+			if (inboxBtn != null) both.add(inboxBtn);
 			both.add(repBtn);
 			row.add(both, java.awt.BorderLayout.EAST);
 		}
 		row.setMaximumSize(row.getPreferredSize());
 		return row;
 	}
-	/** The inbox's room in a heading (the reputation to its right reaches past the heading's end, so the title keeps its room). */
+	/** The inbox's room in a heading, if there's an inbox (the reputation to its right reaches past the heading's end, so the title keeps its room). */
 	private int inboxWidth() {
-		return inboxBtn.getPreferredSize().width + 8;
+		return inboxBtn == null ? 0 : inboxBtn.getPreferredSize().width + 8;
 	}
 	/** The empty space left of her picture inside her berth (the picture is centred in it). */
 	private static int pictureInset(JPanel berth) {

@@ -29,7 +29,7 @@ public class RuleBoxes {
 	private final JPanel immersiveRow = row(0);
 	final JCheckBox tradeBox = new JCheckBox("Trading and scrapping need a station (the ship must be at a beacon with a store)", HomePlanet.storeRequirement);
 	final JCheckBox journeyBox = new JCheckBox("New Journey needs a station (the boarded ship must be at a beacon with a store)", HomePlanet.journeyStoreRequirement);
-	final JCheckBox scrapBox = new JCheckBox("Allow stripping when scrapping: her systems can go to the Cargo Bay, at a discount on the removal fee", HomePlanet.stripAllowed);
+	final JCheckBox scrapBox = new JCheckBox("Allow stripping when scrapping: her systems can go to the Cargo Hold, at a discount on the removal fee", HomePlanet.stripAllowed);
 	final JComboBox<String> removalBox = new JComboBox<String>(new String[] {"not allowed", "free", "25 scrap", "50 scrap"});
 	private final JLabel removalLabel = new JLabel("Refit: taking a system off a ship is  ");
 	private final JPanel removalRow = row(21);
@@ -60,10 +60,11 @@ public class RuleBoxes {
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
 	final JCheckBox careerBox = new JCheckBox("Career messages: a welcome, promotions, rewards for FTL achievements and a monthly stipend, in Sandbox Mode too", HomePlanet.careerMessages);
+	final JCheckBox repBox = new JCheckBox("Reputation: earn and lose reputation points for your ships' service, shown on the Space Dock", HomePlanet.reputationOn);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
-	private final JComponent[] locked = {tradeBox, journeyBox, sellBox, sellSystemsBox, costBox, percentBox, unlockBox, lockedBox, customLockedBox, notifyBox,
+	private final JComponent[] locked = {tradeBox, journeyBox, sellBox, sellSystemsBox, costBox, percentBox, unlockBox, lockedBox, customLockedBox, notifyBox, repBox,
 			removalBox, removalLabel, journeyFeeBox, journeyFeeLabel, scrapBox};
 	private final String[] tips = new String[locked.length];
 	private static final String SET_BY_IMMERSIVE = "Set by Immersive Mode";
@@ -122,11 +123,12 @@ public class RuleBoxes {
 		freeRow.add(freeBox);
 		notifyBox.setToolTipText("<html>Orders for the free ships the rules grant, the Liaison's word when you're left without a ship, and letters you can reply to."
 				+ "<br>With Career messages (always, in Immersive Mode), also the welcome, promotions, achievement rewards and the stipend.</html>");
-		notifyBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Mode, which turns it on
 		careerBox.setToolTipText("Your rank rises as you unlock FTL's Federation Cruisers; achievements earned from now on are rewarded, and the stipend comes every "
 				+ homeplanet.parser.Career.SECTORS_PER_MONTH + " sectors. Your fleet and rules stay your own. (Always on in Immersive Mode, at its difficulty.)");
 		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 44, 0, 0)); // under Immersive Notifications, which it needs
 		careerTip = careerBox.getToolTipText();
+		repBox.setToolTipText("<html>Your standing with The Federation Home Planet: earned by sectors, scrap, ships defeated and the Rebel Flagship,"
+				+ "<br>lost by crew killed and ships lost in action (never in sector 8). Click it on the Space Dock for the Career Reputation Log.</html>");
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A Report for Reassignment doesn't reset it");
 		unlockBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		for (int i = 0; i < locked.length; i++) tips[i] = locked[i].getToolTipText();
@@ -175,6 +177,7 @@ public class RuleBoxes {
 			lockedBox.setSelected(true);
 			customLockedBox.setSelected(true);
 			notifyBox.setSelected(true);
+			repBox.setSelected(true);
 			removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, homeplanet.core.Economy.removalFee()));
 			scrapBox.setSelected(homeplanet.core.Economy.stripAllowed());
 			journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, homeplanet.core.Economy.journeyFee()));
@@ -216,6 +219,7 @@ public class RuleBoxes {
 		lockedBox.setSelected(HomePlanet.commissionUnlockedOnly);
 		customLockedBox.setSelected(HomePlanet.commissionCustomUnlockedOnly);
 		notifyBox.setSelected(HomePlanet.immersiveNotifications);
+		repBox.setSelected(HomePlanet.reputationOn);
 		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
 		journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, HomePlanet.journeyFee));
 		scrapBox.setSelected(HomePlanet.stripAllowed);
@@ -227,12 +231,27 @@ public class RuleBoxes {
 	public void addTo(JPanel body, GridBagConstraints c) { addTo(body, c, true); }
 	/** As {@link #addTo(JPanel, GridBagConstraints)}; without the Immersive Mode row for Sandbox Mode's first setup. */
 	public void addTo(JPanel body, GridBagConstraints c, boolean withImmersive) {
-		if (!withImmersive) { notifyBox.setBorder(BorderFactory.createEmptyBorder()); careerBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); } // nothing above it to sit under
-		for (JComponent b : new JComponent[] {immersiveRow, notifyBox, careerBox, tradeBox, journeyBox, journeyFeeRow, removalRow, scrapBox, sellBox, sellSystemsBox, lockedBox, customLockedBox, costRow, freeRow, unlockBox}) {
-			if (b == immersiveRow && !withImmersive) continue;
+		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Notifications, which it needs
+		// the game mode, then the rules in groups, each under a small heading
+		Object[] rows = {immersiveRow,
+				"The Federation Home Planet", notifyBox, careerBox, repBox,
+				"Journeys and trading", tradeBox, journeyBox, journeyFeeRow,
+				"Refit, scrapping and selling", removalRow, scrapBox, sellBox, sellSystemsBox,
+				"Shipyard", lockedBox, customLockedBox, costRow, freeRow, unlockBox};
+		for (Object r : rows) {
+			if (r == immersiveRow && !withImmersive) continue;
+			JComponent b = r instanceof String ? group((String) r, c.gridy > 0) : (JComponent) r;
 			body.add(b, (GridBagConstraints) c.clone());
 			c.gridy++;
 		}
+	}
+	/** A group's heading, as the Settings window's own (gold), with room above it unless it's the first row. */
+	private static JLabel group(String title, boolean roomAbove) {
+		JLabel h = new JLabel(title);
+		h.setFont(MenuTheme.HEADING_FONT);
+		h.setForeground(MenuTheme.GOLD);
+		h.setBorder(BorderFactory.createEmptyBorder(roomAbove ? 8 : 0, 0, 2, 0));
+		return h;
 	}
 
 	/** What apply() would change, for the history log. */
@@ -252,6 +271,7 @@ public class RuleBoxes {
 			if (!FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Report for Reassignment grants: " + freeBox.getSelectedItem());
 			if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
 			if (careerBox.isSelected() != HomePlanet.careerMessages) changed.add("Career messages: " + careerBox.isSelected());
+			if (repBox.isSelected() != HomePlanet.reputationOn) changed.add("Reputation: " + repBox.isSelected());
 			if (unlockBox.isSelected() != HomePlanet.unlockFreeShips) changed.add("A free ship for each new FTL unlock: " + unlockBox.isSelected());
 		}
 	}
@@ -261,6 +281,7 @@ public class RuleBoxes {
 		boolean unlockWasOn = HomePlanet.unlockFreeShips;
 		if (!HomePlanet.immersiveMode) HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()]; // (Immersive Mode shows its own, Variable)
 		if (!HomePlanet.immersiveMode) HomePlanet.careerMessages = careerBox.isSelected();
+		if (!HomePlanet.immersiveMode) HomePlanet.reputationOn = repBox.isSelected();
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)
 			HomePlanet.storeRequirement = tradeBox.isSelected();
 			HomePlanet.journeyStoreRequirement = journeyBox.isSelected();

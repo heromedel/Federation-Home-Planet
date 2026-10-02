@@ -57,7 +57,8 @@ And More.
   fleet and FTL profile. The Federation Home Planet's rules are locked, you rise in rank (Commander, Captain,
   Commodore), and transmissions bring commission orders, promotions, achievement rewards and a stipend. Switch Game
   Mode (Settings) moves between Sandbox Mode and the careers at any time, and ends a career.
-- **Reputation:** a career's standing with The Federation Home Planet, in gold on the Space Dock: earned by sectors,
+- **Reputation:** your standing with The Federation Home Planet (always in Immersive Mode; a Settings rule in Sandbox
+  Mode), in gold on the Space Dock: earned by sectors,
   scrap, ships defeated (rebels more) and the Rebel Flagship, lost by crew killed and ships lost in action (never in
   the last stand of sector 8). Click it for the Career Reputation Log.
 - **The Federation Museum:** every ship that won in the Hall of Victors (preserved in the museum, still in service,
