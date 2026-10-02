@@ -82,7 +82,7 @@ public final class MessageDialog extends JDialog {
 				final String t = Notes.clean(text.getText());
 				if (t.isEmpty()) { text.requestFocusInWindow(); return; }
 				final boolean pri = priority.isSelected();
-				if (port <= 0) { toOutbox(toStation, toTitle, host, port, t, pri, done, toTitle + "'s hailing frequencies were closed when they wrote."); return; }
+				if (port <= 0) { toOutbox(toStation, toTitle, host, port, t, pri, done, toTitle + " is out of range."); return; }
 				send.setEnabled(false);
 				text.setEnabled(false);
 				count.setText("Sending...");

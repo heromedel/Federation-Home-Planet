@@ -136,6 +136,10 @@ public final class Outbox {
 				said.add((Notes.POPUP.equals(where) ? "Shown to " + i.toTitle : "Delivered to " + i.toTitle + "'s inbox") + " (it waited " + waited(i.written) + ").");
 				homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " delivered, after " + waited(i.written));
 			} catch (Notes.Refused e) {
+				if (e.getMessage().contains(Notes.TOO_MANY)) { // busy for a minute: it stays waiting, and goes on a later search
+					said.add(i.toTitle + "'s station is busy: the Outbox tries again shortly.");
+					break;
+				}
 				try { refused(i, e.getMessage()); } catch (IOException x) { /* it stays trying */ }
 				said.add("A message for " + i.toTitle + " was turned away: " + e.getMessage());
 			} catch (IOException e) {

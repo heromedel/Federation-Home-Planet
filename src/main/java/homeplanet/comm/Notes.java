@@ -79,6 +79,8 @@ public final class Notes {
 	/** At most this many messages a minute from one commander, and from everyone together. */
 	static final int PER_MINUTE = 5, ALL_PER_MINUTE = 20;
 	static final long POPUP_GAP = 60000;
+	/** Said by a station taking too many messages: a sender's Outbox tries again later rather than giving up. */
+	public static final String TOO_MANY = "is receiving too many messages";
 
 	/**
 	 * Why this message is turned away, or null to take it: a blocked commander hears only that nobody answered; one
@@ -91,7 +93,7 @@ public final class Notes {
 		for (List<Long> l : arrived.values()) { while (!l.isEmpty() && now - l.get(0) > 60000) l.remove(0); all += l.size(); }
 		List<Long> mine = arrived.get(n.station);
 		if (mine == null) arrived.put(n.station, mine = new ArrayList<Long>());
-		if (mine.size() >= PER_MINUTE || all >= ALL_PER_MINUTE) return myTitle + "'s station is receiving too many messages. Try again in a minute.";
+		if (mine.size() >= PER_MINUTE || all >= ALL_PER_MINUTE) return myTitle + "'s station " + TOO_MANY + ". Try again in a minute.";
 		mine.add(now);
 		return null;
 	}

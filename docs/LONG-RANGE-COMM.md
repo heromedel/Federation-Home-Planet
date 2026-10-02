@@ -23,6 +23,15 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   other commanders to find and hail, from any screen"); then **Power Down** closes them, and the Space Dock's Long
   Range button shows a green lamp. Every start of the program begins powered down. The Windows Firewall note comes
   with the first Open Hailing Frequencies.
+- **Commanders met before** (`comm/Contacts`, the vault's `comm/contacts.txt`, per career): everyone the station has
+  found, hailed, been hailed by or had a message from stays in the list. Those in range come first; the rest are greyed,
+  "seen 2 days ago", and Send Message to them goes straight to the Outbox (Hail is off: a channel needs both stations
+  there). Right-click: Block / Unblock, and Remove from the list (asked first; they come back when met again, and what
+  waits for them in the Outbox stays). At most 100 are kept, the longest unseen dropped first.
+- **Hailing** opens a small window, "Hailing Commander Wolfy. Waiting for their answer...", with Cancel. Cancel
+  withdraws the hail: a goodbye goes to their station, which sees it while its question is open (the only thing a
+  hailing station sends before an answer), closes the question and lists a missed hail "(withdrew the hail)". The
+  window closes on an answer, a decline or no answer.
 - **Finding and hailing** (`comm/Beacon`, `comm/Channel`): the search broadcasts on each local network and to this
   computer; By address hails an IP (with :port, or each port in turn); the screen shows the port ("your hailing
   frequency") to forward on a router for a hail over the internet (a virtual LAN needs nothing). The hailed commander
@@ -72,8 +81,8 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   the vault's `comm/outbox/` (one file an item: it survives a restart) and delivered the next time this station, its
   hailing frequencies open, finds theirs: by the search on the Long Range screen, or, powered up on another screen, a
   quiet search every 30 seconds while something waits. Stations are matched by id, not address. A message that waited
-  arrives saying when it was written. One their station answers and turns away (too many messages) stops trying and
-  says why, until Try again; a station that blocked you never answers the search, so the message just waits. Cancel
+  arrives saying when it was written. One their station is too busy for (too many messages this minute) waits for a
+  later search; one it turns away for another reason stops trying and says why, until Try again; a station that blocked you never answers the search, so the message just waits. Cancel
   takes an item out. At most 20 wait, 5 for any one commander. It's the inbox's third tab (Inbox / Archive / Outbox),
   and the Long Range screen's "Outbox (n)" opens the inbox on it.
 - **The offer** (`comm/Session`): each side owns its lines and numbers each version of them. Accept names both
@@ -162,5 +171,6 @@ hail not answered, an older station's bare search still answered, which addresse
 from an older station); messages without a channel (inbox, priority pop-up and its once-a-minute rule, pop-ups turned
 off, an inbox that's off, blocked, flooded, plain text, an older station's answer, frequencies closed); the Outbox
 (waiting while frequencies are closed, kept on disk, delivered once found and saying when it was written, Cancel, a
-refusal that stops it and Try again, the limit per commander); garbled
+busy station leaving it to go later, Try again, the limit per commander); commanders remembered out of range, written
+to through the Outbox, removed and found again; a hail withdrawn while the other station still asks; garbled
 messages and out-of-range crew.

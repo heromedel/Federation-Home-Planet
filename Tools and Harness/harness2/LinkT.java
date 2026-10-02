@@ -210,19 +210,36 @@ public class LinkT {
   Setup.chk("it arrives saying when it was written", Integer.parseInt(b("notes").split(" ")[0]) == notesBefore + 1 && arrived.contains("Back later? I've got that laser.") && arrived.contains("it waited in their Outbox"));
   a("outbox add bbbbbbbbbbbbbbbb Commander_Bree " + port + " Never mind.");
   Setup.chk("Cancel takes it out, and nothing is sent", a("outbox cancel").equals("OK") && a("outbox count").equals("0") && a("outbox deliver").equals("nothing"));
-  // a station that blocked you doesn't answer your search: the message just waits. One that answers and turns it away
-  // (here, too many messages from that commander this minute) stops it trying
+  // a station that blocked you doesn't answer your search: the message just waits. One busy with too many messages
+  // from that commander this minute leaves it waiting too, to go on a later search
   for (int i = 0; i < 6; i++) a("note " + port + " normal abababababababab Hi " + i);
   a("outbox add bbbbbbbbbbbbbbbb Commander_Bree " + port + " Are you there?");
   String ta = a("outbox deliver as abababababababab");
-  Setup.chk("a message their station turns away stops trying, and says why", ta.contains("turned away") && ta.contains("too many") && a("outbox refused").equals("1")
-    && a("outbox count").equals("1") && a("outbox deliver").equals("nothing"));
-  a("outbox again");
-  Setup.chk("Try again sends it once more", a("outbox deliver").startsWith("Delivered") && a("outbox count").equals("0"));
+  Setup.chk("a station busy with too many messages: it waits, to go later (not given up)", ta.contains("busy") && a("outbox refused").equals("0") && a("outbox count").equals("1"));
+  Setup.chk("and goes on a later search", a("outbox deliver as cdcdcdcdcdcdcdcd").startsWith("Delivered") && a("outbox count").equals("0"));
   String full = "";
   for (int i = 0; i < 6; i++) full = a("outbox add cccccccccccccccc Captain_Pest " + port + " number " + i);
   Setup.chk("at most 5 wait for one commander", full.startsWith("FULL") && a("outbox count").equals("5"));
   for (int i = 0; i < 5; i++) a("outbox cancel");
+
+  // ---- commanders met before, and a withdrawn hail ----
+  a("contactscan");
+  Setup.chk("a commander found is remembered", a("contacts").contains("bbbbbbbbbbbbbbbb|Commander Bree|true"));
+  b("unlisten");
+  a("contactscan");
+  Setup.chk("and stays in the list once out of range (kept on disk)", a("contacts").contains("bbbbbbbbbbbbbbbb|Commander Bree") && Contacts.get("bbbbbbbbbbbbbbbb") != null);
+  Setup.chk("a message to them out of range waits in the Outbox", a("outbox add bbbbbbbbbbbbbbbb Commander_Bree 0 For when you're back.").equals("OK"));
+  port = b("listen").replace("PORT ", "");
+  String back = a("outbox deliver as efefefefefefefef"); // as a station Bree hasn't heard from this minute
+  Setup.chk("and is delivered when they're back in range", back.startsWith("Delivered to Commander Bree's inbox") && b("notewith For_when").contains("For when you're back."));
+  a("forget bbbbbbbbbbbbbbbb");
+  Setup.chk("Remove takes them off the list", !a("contacts").contains("bbbbbbbbbbbbbbbb"));
+  a("contactscan");
+  Setup.chk("and they come back when found again", a("contacts").contains("bbbbbbbbbbbbbbbb"));
+  b("holdhail on");
+  a("hailcancel " + port);
+  Setup.chk("a withdrawn hail: the other station sees it go, while it was still asking", b("wait withdrawn 1").equals("OK"));
+  b("holdhail off");
   b("inbox off");
 
   // ---- versions: the protocol decides ----

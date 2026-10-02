@@ -37,6 +37,9 @@ public class LinkPeer {
   volatile boolean chat = true;
   /** Turns every hail away as busy ("decline on"): the commander pressing Decline. */
   volatile boolean decline = false;
+  /** Leaves a hail unanswered ("holdhail on"), counting those withdrawn while it waited. */
+  volatile boolean holdHail = false;
+  volatile int withdrawn = 0;
   /** Priority messages pop up here ("popups off": they go to the inbox), and the ones shown. */
   volatile boolean popupsOn = true;
   final List<String> popups = Collections.synchronizedList(new ArrayList<String>());
@@ -88,6 +91,12 @@ public class LinkPeer {
       final Session.Peer p = Session.peerOf(first);
       if (Blocks.blocked(p.station, ch.host)) { ch.close(Session.notAnswered(title)); return; } // as the screen does
       if (decline) { ch.close(Session.busy(title)); return; } // the commander pressed Decline
+      if (holdHail) { // the question stays open, as the screen's does, until the hail is withdrawn (or 5 seconds)
+       for (int i = 0; i < 50 && !ch.hasWaiting(); i++) { try { Thread.sleep(100); } catch (InterruptedException x) { break; } }
+       if (ch.hasWaiting()) withdrawn++;
+       ch.close(Session.busy(title));
+       return;
+      }
       String no = why(p);
       if (no != null) { ch.close(no); return; } // as the screen does: refused, with the reason
       ch.send(hello());
@@ -131,6 +140,17 @@ public class LinkPeer {
    if (c.equals("tradeanyway")) { tradeAnyway = w[1].equals("on"); return "OK"; }
    if (c.equals("popups")) { if (w.length > 1) popupsOn = w[1].equals("on"); return popups.size() + (popups.isEmpty() ? "" : " " + popups.get(popups.size() - 1)); }
    if (c.equals("outbox")) return outbox(w, cmd);
+   if (c.equals("holdhail")) { holdHail = w[1].equals("on"); return "OK"; }
+   if (c.equals("hailcancel")) { // hails, then withdraws the hail before any answer, as the hail window's Cancel does
+    Channel ch = Channel.connect("127.0.0.1", Integer.parseInt(w[1]));
+    ch.send(hello());
+    Thread.sleep(700);
+    ch.close(title + " withdrew the hail.");
+    return "OK";
+   }
+   if (c.equals("contactscan")) { Contacts.seenAll(Beacon.scan(1200, id)); return "OK"; }
+   if (c.equals("contacts")) { List<String> n = new ArrayList<String>(); for (Contacts.Entry e : Contacts.list()) n.add(e.station + "|" + e.title + "|" + e.notes); return n.isEmpty() ? "none" : String.join(";", n); }
+   if (c.equals("forget")) { Contacts.remove(w[1]); return "OK"; }
    if (c.equals("oldanswer")) { oldAnswer = w[1].equals("on"); return "OK"; }
    if (c.equals("notewith")) { for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m) && m.body.contains(w[1].replace('_', ' '))) return m.body.replace('\n', ' '); return "none"; }
    if (c.equals("notes")) { int k = 0; String last = "none"; for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m)) { if (k++ == 0) last = m.from + "|" + m.subject + "|" + m.body.replace('\n', ' '); } return k + " " + last; }
@@ -292,7 +312,9 @@ public class LinkPeer {
    if (k.equals("deliver")) { // outbox deliver [as STATION]: as another station would (its own rate limit at theirs)
     String me = w.length > 3 && w[2].equals("as") ? w[3] : id;
     List<String> said = new ArrayList<String>();
-    for (Beacon.Found f : Beacon.scan(1200, id)) if (f.notes && Outbox.waitingFor(f.station)) said.addAll(Outbox.deliver(f.station, f.host, f.port, HomePlanet.APP_VERSION, me, title, 0));
+    List<Beacon.Found> found = Beacon.scan(1200, id);
+    Contacts.seenAll(found);
+    for (Beacon.Found f : found) if (f.notes && Outbox.waitingFor(f.station)) said.addAll(Outbox.deliver(f.station, f.host, f.port, HomePlanet.APP_VERSION, me, title, 0));
     return said.isEmpty() ? "nothing" : String.join(" / ", said);
    }
    if (k.equals("cancel")) { List<Outbox.Item> l = Outbox.list(); if (l.isEmpty()) return "none"; Outbox.remove(l.get(0)); return "OK"; }
@@ -310,6 +332,7 @@ public class LinkPeer {
      if (w.equals("ended")) return s == null && ended != null;
      if (w.equals("settled")) return settled >= Integer.parseInt(a);
      if (w.equals("ends")) return ends >= Integer.parseInt(a);
+     if (w.equals("withdrawn")) return withdrawn >= Integer.parseInt(a);
      if (s == null) return false;
      if (w.equals("theirs")) return s.theirs().size() == Integer.parseInt(a);
      if (w.equals("they")) return s.theyAccepted();
