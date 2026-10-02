@@ -25,7 +25,7 @@ import homeplanet.core.HomePlanet;
 
 /**
  * Settings, in four tabs: General (folders, launching, mods, audio), Rules (the game mode, the rules, after a final
- * victory), Records (the station log, log files, debug logging) and About.
+ * victory), Records (the station and ship logs, shown in the page; the debug log folder and debug logging) and About.
  * Nothing changes until OK; OK writes the cfg file.
  */
 public class SettingsDialog extends JDialog {
@@ -37,7 +37,7 @@ public class SettingsDialog extends JDialog {
 	private final JCheckBox steamBox = new JCheckBox("Launch FTL through Steam", HomePlanet.launchThroughSteam);
 	private final RuleBoxes rules = new RuleBoxes();
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
-	private final JCheckBox debugBox = new JCheckBox("Debug logging (everything goes in this run's log file)", HomePlanet.debugLogging);
+	private final JCheckBox debugBox = new JCheckBox("Debug logging", HomePlanet.debugLogging);
 	private boolean savesChanged = false;
 	/** After a final victory: nothing, rescue her, or a reward of her value (the fleet in use has its own choice). */
 	private final javax.swing.JRadioButton[] victoryButtons = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
@@ -138,23 +138,7 @@ public class SettingsDialog extends JDialog {
 				openFolder(junk);
 			}
 		});
-		JButton openLog = new JButton("Open history log");
-		openLog.setToolTipText("Open history.log: what The Home Planet Station loaded and did");
-		openLog.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (!homeplanet.core.HistoryLog.file().exists()) {
-					JOptionPane.showMessageDialog(SettingsDialog.this, "Nothing has been logged yet.", "History log", JOptionPane.INFORMATION_MESSAGE);
-					return;
-				}
-				try {
-					Desktop.getDesktop().open(homeplanet.core.HistoryLog.file().getAbsoluteFile());
-				} catch (Exception ex) {
-					JOptionPane.showMessageDialog(SettingsDialog.this, "The Home Planet Station could not open its history log:\n" + homeplanet.core.HistoryLog.file().getAbsolutePath(),
-							"History log", JOptionPane.WARNING_MESSAGE);
-				}
-			}
-		});
-		JButton openLogs = new JButton("Open log folder");
+		JButton openLogs = new JButton("Debug Log Folder");
 		openLogs.setToolTipText("The program's own logs (one file per run): what to send along with a bug report");
 		openLogs.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -247,25 +231,25 @@ public class SettingsDialog extends JDialog {
 		body = recordsPage;
 		c = constraints();
 		heading(body, c, "Records");
-		JPanel logRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		JButton viewLog = new JButton("View the station log...");
-		viewLog.setToolTipText("Everything The Home Planet Station has done, fleet by fleet: commissions, boardings, trades, switches, what it found when taking stock");
-		viewLog.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { StationLogDialog.open(SettingsDialog.this); }
+		body.add(new LogViewer(), next(c)); // the station log and the ships' logs, shown here (never in a text editor)
+		JPanel folderRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		JButton recordsStation = new JButton("Open Station Folder");
+		recordsStation.setToolTipText("The fleet in use's own folder: its station log, and a folder for each ship's records");
+		recordsStation.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().root); }
 		});
-		logRow.add(viewLog);
-		logRow.add(javax.swing.Box.createHorizontalStrut(8));
-		logRow.add(openLog);
-		logRow.add(javax.swing.Box.createHorizontalStrut(8));
-		logRow.add(openLogs);
-		body.add(logRow, next(c));
-		JLabel logNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>Each mode keeps its own history log in its folder. "
-				+ "Open history log opens the one in use; the log folder holds the program's own logs, one per run, for bug reports "
-				+ "(with Debug logging on, they keep everything the station does).</font></div></html>");
-		logNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
-		body.add(logNote, next(c));
+		folderRow.add(recordsStation);
+		body.add(folderRow, next(c));
 		heading(body, c, "Troubleshooting");
-		body.add(debugBox, next(c));
+		JPanel debugRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		debugRow.add(openLogs);
+		debugRow.add(javax.swing.Box.createHorizontalStrut(12));
+		debugRow.add(debugBox);
+		body.add(debugRow, next(c));
+		JLabel debugNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>The program's own logs, one per run: "
+				+ "send them along with a bug report. Debug logging adds detail to them.</font></div></html>");
+		debugNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
+		body.add(debugNote, next(c));
 
 		body = aboutPage;
 		c = constraints();

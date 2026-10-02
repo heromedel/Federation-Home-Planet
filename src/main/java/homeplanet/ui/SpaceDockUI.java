@@ -1396,6 +1396,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		reportRow(left, IconFactory.supplyIcon("missiles"), "Missiles: " + state.getMissilesAmt());
 		reportRow(left, IconFactory.supplyIcon("drones"), "Drone Parts: " + state.getDronePartsAmt());
 		reportRow(left, IconFactory.supplyIcon("scrap"), "Scrap: " + state.getScrapAmt());
+		if (reroll == null) reportRow(left, null, "Content: " + (sgs.isDLCEnabled() ? "Advanced Edition" : "Original")); // (Commission shows its own switch)
 		if (reroll == null) reportHeading(crew, "Crew");
 		else {
 			crew.add(Box.createRigidArea(new Dimension(0, 6)));
