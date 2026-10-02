@@ -30,7 +30,7 @@ import homeplanet.parser.Transmissions;
 
 /** The transmissions inbox: messages from The Federation Home Planet, newest first, with Claim for their rewards. */
 public class InboxDialog extends JDialog {
-	private final SpaceDockUI dock;
+	private final java.awt.Component dock;
 	private final DefaultListModel<Transmissions.Message> model = new DefaultListModel<Transmissions.Message>();
 	private final JList<Transmissions.Message> list = new JList<Transmissions.Message>(model);
 	/** The transmission: its subject as a gold title, who sent it and when, then the message, with a little air between lines. */
@@ -42,18 +42,25 @@ public class InboxDialog extends JDialog {
 	private final JButton archive = new JButton("Archive");
 	private final JButton delete = new JButton("Delete");
 	private final JButton keep = new JButton("Keep her"), museum = new JButton("Accept the museum's offer");
-	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton();
+	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton(), outboxTab = new javax.swing.JToggleButton();
+	/** The Inbox and Archive share one view; the Outbox has its own. */
+	private final java.awt.CardLayout cards = new java.awt.CardLayout();
+	private final JPanel cardPanel = new JPanel(cards);
+	private final OutboxPanel outbox = new OutboxPanel(new Runnable() { public void run() { outboxTab.setText("Outbox (" + OutboxPanel.count() + ")"); } });
 	private java.util.List<Transmissions.Message> all;
 	private boolean openCommission;
 
 	/** Opens the inbox. True if the player asked to go to Commission (a commission order). */
-	public static boolean open(SpaceDockUI dock) {
+	public static boolean open(SpaceDockUI dock) { return open(dock, false); }
+	/** Opens the inbox, on its Outbox tab if asked (the Long Range screen's Outbox button). */
+	public static boolean open(java.awt.Component dock, boolean atOutbox) {
 		InboxDialog d = new InboxDialog(dock);
+		if (atOutbox) { d.outboxTab.setSelected(true); d.fill(); }
 		d.setVisible(true);
 		return d.openCommission;
 	}
 
-	private InboxDialog(SpaceDockUI dock) {
+	private InboxDialog(java.awt.Component dock) {
 		super(SwingUtilities.getWindowAncestor(dock), "Transmissions", ModalityType.APPLICATION_MODAL);
 		this.dock = dock;
 		all = Transmissions.load();
@@ -107,18 +114,26 @@ public class InboxDialog extends JDialog {
 		javax.swing.ButtonGroup tabs = new javax.swing.ButtonGroup();
 		tabs.add(inboxTab);
 		tabs.add(archiveTab);
+		tabs.add(outboxTab);
+		outboxTab.setToolTipText("Long Range Comm. messages waiting to go to commanders whose stations couldn't be reached");
 		inboxTab.setSelected(true);
 		ActionListener refill = new ActionListener() { public void actionPerformed(ActionEvent e) { fill(); } };
 		inboxTab.addActionListener(refill);
 		archiveTab.addActionListener(refill);
+		outboxTab.addActionListener(refill);
 		JPanel tabRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
 		tabRow.add(inboxTab);
 		tabRow.add(archiveTab);
+		tabRow.add(outboxTab);
 
 		JPanel body = new JPanel(new BorderLayout(10, 8));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
-		body.add(ls, BorderLayout.WEST);
-		body.add(right, BorderLayout.CENTER);
+		JPanel mail = new JPanel(new BorderLayout(10, 8));
+		mail.add(ls, BorderLayout.WEST);
+		mail.add(right, BorderLayout.CENTER);
+		cardPanel.add(mail, "mail");
+		cardPanel.add(outbox, "outbox");
+		body.add(cardPanel, BorderLayout.CENTER);
 		body.add(tabRow, BorderLayout.NORTH);
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton close = new JButton("Close");
@@ -134,6 +149,9 @@ public class InboxDialog extends JDialog {
 
 	/** The list for the tab shown: the inbox, or the Archive. */
 	private void fill() {
+		outboxTab.setText("Outbox (" + OutboxPanel.count() + ")");
+		if (outboxTab.isSelected()) { cards.show(cardPanel, "outbox"); outbox.fill(); return; }
+		cards.show(cardPanel, "mail");
 		boolean arch = archiveTab.isSelected();
 		int in = 0, out = 0;
 		for (Transmissions.Message m : all) { if (m.archived) out++; else in++; }
@@ -215,12 +233,10 @@ public class InboxDialog extends JDialog {
 		boolean answered = m.replied != null && !m.replied.isEmpty();
 		message(m.subject, m.from + "  \u00b7  " + m.date, answered ? m.body + "\n\nYou replied: \u201c" + m.replied + "\u201d" : m.body);
 		String[] from = Transmissions.noteFrom(m);
-		boolean canWriteBack = from != null && !"0".equals(from[2]);
 		reply.setVisible(Transmissions.canReply(m) || from != null);
-		reply.setEnabled(Transmissions.canReply(m) || canWriteBack);
+		reply.setEnabled(true);
 		reply.setToolTipText(from == null ? "Choose your answer: the reply comes in a few beacons later"
-				: canWriteBack ? "Write back to " + m.from + " over Long Range Comm. (their hailing frequencies must be open)"
-				: m.from + "'s hailing frequencies were closed when they wrote: hail them from Long Range Comm. instead");
+				: "Write back to " + m.from + " over Long Range Comm. (if their station can't be reached, it can wait in the Outbox)");
 		boolean canClaim = m.hasReward() && !m.claimed;
 		claim.setVisible(m.hasReward());
 		claim.setEnabled(canClaim);
@@ -262,7 +278,7 @@ public class InboxDialog extends JDialog {
 		Transmissions.Message m = list.getSelectedValue();
 		String[] from = m == null ? null : Transmissions.noteFrom(m);
 		if (from != null) { // another commander's message: written back to them over Long Range Comm.
-			if (!"0".equals(from[2])) MessageDialog.open(this, from[1], Integer.parseInt(from[2]), m.from, null);
+			MessageDialog.open(this, from[0], from[1], Integer.parseInt(from[2]), m.from, null);
 			return;
 		}
 		if (m == null || !Transmissions.canReply(m)) return;

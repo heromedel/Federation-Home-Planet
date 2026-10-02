@@ -414,6 +414,12 @@ public final class Transmissions {
 	}
 	/** A Long Range Comm. receipt from the Quartermaster: archived or deleted, as the commander likes. */
 	public static boolean isReceipt(Message m) { return m.key.startsWith("trade:"); }
+	/** Is there any Long Range Comm. mail (a commander's message, a receipt) in the inbox? It keeps the inbox in view. */
+	public static boolean anyLongRangeMail() {
+		if (!Vault.isOpen()) return false;
+		for (Message m : load()) if (isNote(m) || isReceipt(m)) return true;
+		return false;
+	}
 	/** A message from another commander (Long Range Comm.): archived or deleted, as the commander likes, and answered. */
 	public static boolean isNote(Message m) { return m.key.startsWith("note:"); }
 	/** Where to reply to a commander's message: their station, host and port (0: their frequencies were closed); null if it isn't one. */
@@ -477,11 +483,11 @@ public final class Transmissions {
 	}
 
 	/**
-	 * A letter written by the station itself rather than from a template (a Long Range Comm. receipt): sent once per
-	 * key, only while the inbox is on.
+	 * Long Range Comm. mail (another commander's message, a trade's receipt): sent once per key. It always reaches
+	 * the inbox: the Immersive messages setting is about The Federation Home Planet's own letters, not a commander's mail.
 	 */
 	public static synchronized void deliver(String key, String from, String subject, String body) {
-		if (!HomePlanet.immersiveNotifications() || !Vault.isOpen()) return;
+		if (!Vault.isOpen()) return;
 		List<Message> all = load();
 		for (Message x : all) if (x.key.equals(key)) return;
 		Message m = new Message();

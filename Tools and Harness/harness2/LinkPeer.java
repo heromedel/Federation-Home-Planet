@@ -79,7 +79,7 @@ public class LinkPeer {
       if (first.type.equals("NOTE")) { // a message, as the screen takes one: filed, or "shown" (kept here for the test)
        Notes.Note n = Notes.read(first);
        String refused = Notes.refuse(n, ch.host, title);
-       String where = refused != null ? null : Notes.where(n, popupsOn, HomePlanet.immersiveNotifications);
+       String where = refused != null ? null : Notes.where(n, popupsOn);
        if (Notes.INBOX.equals(where)) Notes.toInbox(n, ch.host);
        else if (where != null) popups.add(n.title + "|" + n.text);
        Notes.answer(ch, where, refused);
@@ -113,7 +113,7 @@ public class LinkPeer {
     edt(new java.util.concurrent.Callable<Void>() { public Void call() { ended = null; session = new Session(fch, true, p, id, ships, noTrade(p)); session.start(Station.this); return null; } });
     return "OK " + p.title;
    }
-   if (c.equals("packages")) { int n = 0; File[] fs = Exchange.dir().listFiles(); if (fs != null) for (File f : fs) if (f.isDirectory()) n++; return "" + n; }
+   if (c.equals("packages")) { int n = 0; File[] fs = Exchange.dir().listFiles(); if (fs != null) for (File f : fs) if (f.isDirectory() && f.getName().startsWith("trade-")) n++; return "" + n; }
    if (c.equals("commissioned")) { Ship sh = shipNamed(w[1]); if (w.length > 2) Museum.setCommissioned(v, sh.id, cmd.substring(cmd.indexOf(w[2]))); return Museum.commissioned(v, sh.id); }
    if (c.equals("makedesign")) return makeDesign(w[1], w[2]);
    if (c.equals("makeremodel")) return makeRemodel(w[1], w[2]);
@@ -130,7 +130,9 @@ public class LinkPeer {
    if (c.equals("unlisten")) { if (post != null) post.close(); if (responder != null) responder.close(); post = null; responder = null; return "OK"; }
    if (c.equals("tradeanyway")) { tradeAnyway = w[1].equals("on"); return "OK"; }
    if (c.equals("popups")) { if (w.length > 1) popupsOn = w[1].equals("on"); return popups.size() + (popups.isEmpty() ? "" : " " + popups.get(popups.size() - 1)); }
+   if (c.equals("outbox")) return outbox(w, cmd);
    if (c.equals("oldanswer")) { oldAnswer = w[1].equals("on"); return "OK"; }
+   if (c.equals("notewith")) { for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m) && m.body.contains(w[1].replace('_', ' '))) return m.body.replace('\n', ' '); return "none"; }
    if (c.equals("notes")) { int k = 0; String last = "none"; for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m)) { if (k++ == 0) last = m.from + "|" + m.subject + "|" + m.body.replace('\n', ' '); } return k + " " + last; }
    if (c.equals("delnote")) { for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m)) { Transmissions.delete(m); return "OK"; } return "none"; }
    if (c.equals("note")) { // note PORT normal|priority STATIONID TEXT...: a message to that port, as that station
@@ -272,6 +274,31 @@ public class LinkPeer {
    l.from = src.id; l.fromName = src.name;
    final Line fl = l;
    return edt(new java.util.concurrent.Callable<String>() { public String call() { Line added = session.add(fl); return added == null ? "refused" : "OK " + added.n; } });
+  }
+  /**
+   * outbox add STATION TITLE PORT TEXT... | outbox count | outbox deliver (search, then deliver what waits for those
+   * found) | outbox cancel (the oldest) | outbox again (clears every refusal) | outbox refused | outbox age MINUTES
+   * (makes every item that much older, as if it had waited)
+   */
+  String outbox(String[] w, String cmd) throws Exception {
+   String k = w[1];
+   if (k.equals("add")) {
+    String text = cmd.substring(cmd.indexOf(" " + w[4] + " ") + w[4].length() + 2).trim();
+    try { Outbox.add(w[2], w[3].replace('_', ' '), "127.0.0.1", Integer.parseInt(w[4]), text, false); return "OK"; }
+    catch (IOException e) { return "FULL " + e.getMessage(); }
+   }
+   if (k.equals("count")) return "" + Outbox.list().size();
+   if (k.equals("refused")) { int n = 0; for (Outbox.Item i : Outbox.list()) if (!i.refused.isEmpty()) n++; return "" + n; }
+   if (k.equals("deliver")) { // outbox deliver [as STATION]: as another station would (its own rate limit at theirs)
+    String me = w.length > 3 && w[2].equals("as") ? w[3] : id;
+    List<String> said = new ArrayList<String>();
+    for (Beacon.Found f : Beacon.scan(1200, id)) if (f.notes && Outbox.waitingFor(f.station)) said.addAll(Outbox.deliver(f.station, f.host, f.port, HomePlanet.APP_VERSION, me, title, 0));
+    return said.isEmpty() ? "nothing" : String.join(" / ", said);
+   }
+   if (k.equals("cancel")) { List<Outbox.Item> l = Outbox.list(); if (l.isEmpty()) return "none"; Outbox.remove(l.get(0)); return "OK"; }
+   if (k.equals("again")) { for (Outbox.Item i : Outbox.list()) Outbox.refused(i, ""); return "OK"; }
+   if (k.equals("age")) { for (Outbox.Item i : Outbox.list()) { i.written -= Long.parseLong(w[2]) * 60000; Outbox.refused(i, i.refused); } return "OK"; }
+   return "unknown";
   }
   String waitFor(String what, String arg) throws Exception {
    long end = System.currentTimeMillis() + 15000;

@@ -183,7 +183,9 @@ public class LinkT {
   b("popups off");
   Setup.chk("with priority pop-ups off, a priority message goes to the inbox", a("note " + port + " priority cccccccccccccccc Urgent!").equals("OK inbox") && b("popups").startsWith("1 "));
   b("popups on"); b("inbox off");
-  Setup.chk("with the inbox off, a message pops up (nothing is lost)", a("note " + port + " normal dddddddddddddddd Just saying hi").equals("OK popup") && b("popups").startsWith("2 "));
+  int inboxed = Integer.parseInt(b("notes").split(" ")[0]);
+  Setup.chk("with Immersive messages off, a commander's message still lands in the inbox", a("note " + port + " normal dddddddddddddddd Just saying hi").equals("OK inbox")
+    && Integer.parseInt(b("notes").split(" ")[0]) == inboxed + 1 && b("popups").startsWith("1 "));
   b("inbox on");
   b("block eeeeeeeeeeeeeeee Captain_Pest");
   String nr = a("note " + port + " normal eeeeeeeeeeeeeeee Let me in");
@@ -193,6 +195,34 @@ public class LinkT {
   for (int i = 0; i < 8; i++) { String x = a("note " + port + " normal ffffffffffffffff Spam " + i); if (x.startsWith("OK")) ok++; else if (x.contains("too many")) busy++; }
   Setup.chk("a flood is cut down (" + ok + " of 8 taken)", ok == 5 && busy == 3);
   Setup.chk("a message stays plain text, cut to length", Notes.clean("a\u0007b\n\n\n\nc" + new String(new char[600]).replace('\0', 'x')).startsWith("ab\n\nc") && Notes.clean(new String(new char[600]).replace('\0', 'x')).length() == Notes.MAX);
+
+  // ---- the Outbox: messages wait for a station that can't be reached ----
+  b("unlisten");
+  Setup.chk("a message for a station with its frequencies closed can wait in the Outbox", a("outbox add bbbbbbbbbbbbbbbb Commander_Bree " + port + " Back later? I've got that laser.").equals("OK") && a("outbox count").equals("1"));
+  Setup.chk("nothing goes while their frequencies stay closed", a("outbox deliver").equals("nothing") && a("outbox count").equals("1"));
+  Setup.chk("it's kept on disk (a restart finds it)", Outbox.list().size() == 1 && Outbox.list().get(0).text.equals("Back later? I've got that laser."));
+  a("outbox age 180");
+  port = b("listen").replace("PORT ", "");
+  int notesBefore = Integer.parseInt(b("notes").split(" ")[0]);
+  String dl = a("outbox deliver");
+  Setup.chk("once they open their frequencies, it's delivered and leaves the Outbox", dl.startsWith("Delivered to Commander Bree's inbox") && dl.contains("waited 3 hours") && a("outbox count").equals("0"));
+  String arrived = b("notewith Back_later?");
+  Setup.chk("it arrives saying when it was written", Integer.parseInt(b("notes").split(" ")[0]) == notesBefore + 1 && arrived.contains("Back later? I've got that laser.") && arrived.contains("it waited in their Outbox"));
+  a("outbox add bbbbbbbbbbbbbbbb Commander_Bree " + port + " Never mind.");
+  Setup.chk("Cancel takes it out, and nothing is sent", a("outbox cancel").equals("OK") && a("outbox count").equals("0") && a("outbox deliver").equals("nothing"));
+  // a station that blocked you doesn't answer your search: the message just waits. One that answers and turns it away
+  // (here, too many messages from that commander this minute) stops it trying
+  for (int i = 0; i < 6; i++) a("note " + port + " normal abababababababab Hi " + i);
+  a("outbox add bbbbbbbbbbbbbbbb Commander_Bree " + port + " Are you there?");
+  String ta = a("outbox deliver as abababababababab");
+  Setup.chk("a message their station turns away stops trying, and says why", ta.contains("turned away") && ta.contains("too many") && a("outbox refused").equals("1")
+    && a("outbox count").equals("1") && a("outbox deliver").equals("nothing"));
+  a("outbox again");
+  Setup.chk("Try again sends it once more", a("outbox deliver").startsWith("Delivered") && a("outbox count").equals("0"));
+  String full = "";
+  for (int i = 0; i < 6; i++) full = a("outbox add cccccccccccccccc Captain_Pest " + port + " number " + i);
+  Setup.chk("at most 5 wait for one commander", full.startsWith("FULL") && a("outbox count").equals("5"));
+  for (int i = 0; i < 5; i++) a("outbox cancel");
   b("inbox off");
 
   // ---- versions: the protocol decides ----

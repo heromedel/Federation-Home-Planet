@@ -36,15 +36,16 @@ public final class MessageDialog extends JDialog {
 
 	/**
 	 * Opens the window for a message to that station. done (may be null) hears where it went ("Delivered to ..."),
-	 * once it's sent; a failure is shown here, and the message stays to try again.
+	 * once it's sent. A station that can't be reached is offered the Outbox (port 0: its frequencies were closed when
+	 * it last wrote, so it goes there straight away); one that turns it away says why, and the message stays to try again.
 	 */
-	public static void open(Component owner, String host, int port, String toTitle, java.util.function.Consumer<String> done) {
+	public static void open(Component owner, String toStation, String host, int port, String toTitle, java.util.function.Consumer<String> done) {
 		if (!Commander.ensure(owner)) return;
 		Window w = owner instanceof Window ? (Window) owner : SwingUtilities.getWindowAncestor(owner);
-		new MessageDialog(w, host, port, toTitle, done).setVisible(true);
+		new MessageDialog(w, toStation, host, port, toTitle, done).setVisible(true);
 	}
 
-	private MessageDialog(Window owner, final String host, final int port, final String toTitle, final java.util.function.Consumer<String> done) {
+	private MessageDialog(Window owner, final String toStation, final String host, final int port, final String toTitle, final java.util.function.Consumer<String> done) {
 		super(owner, "Message to " + toTitle, ModalityType.APPLICATION_MODAL);
 		JPanel p = new JPanel(new BorderLayout(0, 8));
 		p.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
@@ -81,20 +82,33 @@ public final class MessageDialog extends JDialog {
 				final String t = Notes.clean(text.getText());
 				if (t.isEmpty()) { text.requestFocusInWindow(); return; }
 				final boolean pri = priority.isSelected();
+				if (port <= 0) { toOutbox(toStation, toTitle, host, port, t, pri, done, toTitle + "'s hailing frequencies were closed when they wrote."); return; }
 				send.setEnabled(false);
 				text.setEnabled(false);
 				count.setText("Sending...");
 				new Thread(new Runnable() {
 					public void run() {
 						String where = null, fail = null;
+						boolean away = false;
 						try {
 							where = Notes.send(host, port, Notes.note(HomePlanet.APP_VERSION, Commander.stationId(), Commander.title(), t, pri, LongRangeCommUI.listeningPort), toTitle);
+						} catch (Notes.Refused x) {
+							fail = x.getMessage();
 						} catch (IOException x) {
 							fail = x.getMessage();
+							away = true; // not reachable: the Outbox can wait for them
 						}
 						final String w = where, f = fail;
+						final boolean unreachable = away;
 						SwingUtilities.invokeLater(new Runnable() {
 							public void run() {
+								if (f != null && unreachable) {
+									send.setEnabled(true);
+									text.setEnabled(true);
+									counted();
+									toOutbox(toStation, toTitle, host, port, t, pri, done, toTitle + "'s station isn't answering.");
+									return;
+								}
 								if (f != null) {
 									send.setEnabled(true);
 									text.setEnabled(true);
@@ -116,6 +130,20 @@ public final class MessageDialog extends JDialog {
 		getRootPane().setDefaultButton(send);
 		pack();
 		setLocationRelativeTo(owner);
+	}
+	/** Asks to leave the message in the Outbox, to go when this station finds theirs; done hears so. */
+	private void toOutbox(String toStation, String toTitle, String host, int port, String t, boolean pri, java.util.function.Consumer<String> done, String why) {
+		if (!HomePlanet.confirmNo(this, why + "\nLeave the message in the Outbox, to go when your station finds theirs?\n(Your hailing frequencies must be open for it to go.)", "Outbox")) return;
+		try {
+			homeplanet.comm.Outbox.add(toStation, toTitle, host, port, t, pri);
+		} catch (IOException x) {
+			JOptionPane.showMessageDialog(this, x.getMessage(), "Outbox", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		dispose();
+		String said = "Left in the Outbox for " + toTitle + ": it goes when your station finds theirs.";
+		if (done != null) done.accept(said);
+		else JOptionPane.showMessageDialog(getOwner(), said, "Long Range Comm.", JOptionPane.INFORMATION_MESSAGE);
 	}
 	private void counted() { count.setText(text.getDocument().getLength() + " / " + Notes.MAX + "   "); }
 }

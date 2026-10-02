@@ -59,11 +59,23 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   frequencies are open, Delete or Archive like a receipt), or, with **Priority** ticked (unticked to begin with), a
   pop-up on whatever screen they're on (it waits for an open window, never changes the screen, and offers Reply). A
   station takes priority pop-ups only when **Priority messages from other commanders pop up** is on (Settings,
-  General; on by default), and one a minute from each commander; the rest go to the inbox, marked priority. With the
-  inbox off, every message pops up, so nothing is lost. At most 5 messages a minute from one commander (20 from
+  General; on by default), and one a minute from each commander; the rest go to the inbox, marked priority.
+  **Long Range mail always reaches the inbox** (commanders' messages, the Quartermaster's receipts): the Immersive
+  messages setting is about The Federation Home Planet's own letters, not a commander's mail. The Space Dock shows the
+  inbox while Long Range Comm. is in use (hailing frequencies open or powered up, Long Range mail in it, or something in
+  the Outbox), whatever that setting says. At most 5 messages a minute from one commander (20 from
   everyone) are taken; the rest are told to try again in a minute. A station's search answer adds "notes" when it
   takes messages, so Send Message stays off for older ones; the message itself is a NOTE in place of the hello, which
   an older station would refuse as garbled.
+- **The Outbox** (`comm/Outbox`, the inbox's Outbox tab, `ui/OutboxPanel`): a message for a station that can't be reached (its frequencies
+  closed, or a Reply to a commander whose were closed when they wrote) can wait in the Outbox, asked first. It's kept in
+  the vault's `comm/outbox/` (one file an item: it survives a restart) and delivered the next time this station, its
+  hailing frequencies open, finds theirs: by the search on the Long Range screen, or, powered up on another screen, a
+  quiet search every 30 seconds while something waits. Stations are matched by id, not address. A message that waited
+  arrives saying when it was written. One their station answers and turns away (too many messages) stops trying and
+  says why, until Try again; a station that blocked you never answers the search, so the message just waits. Cancel
+  takes an item out. At most 20 wait, 5 for any one commander. It's the inbox's third tab (Inbox / Archive / Outbox),
+  and the Long Range screen's "Outbox (n)" opens the inbox on it.
 - **The offer** (`comm/Session`): each side owns its lines and numbers each version of them. Accept names both
   versions, so any change withdraws every acceptance (the notice line says what changed). A line the other station
   can't take (an item or race its game data lacks) shows grey, and Accept stays off. Notices are short enough for
@@ -128,7 +140,9 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 - More things to do with a commander in the list, beside Hail and Send Message: **View Offers** (offers left standing
   for anyone who finds you, to trade without both commanders at the screen), **Return Ship** (sending a traded ship
   home to her original owner, or lending ships).
-- Messages to a station that's powered down, held until it powers up.
+- **Shipments** (Plan M, on top of the Outbox): Prepare Shipment, Package / Unpackage, attached to a message; Accept or
+  Refuse in the inbox, a refused one going home through the other station's Outbox; Cancel in the Outbox brings the
+  goods back.
 
 ## Changing Long Range Comm.
 
@@ -146,5 +160,7 @@ frequencies closed neither found nor hailed; Sandbox and Immersive, and careers 
 trading (and a station offering anyway refused); a declined hail told the commander is busy; blocking (search unanswered,
 hail not answered, an older station's bare search still answered, which addresses a block keeps) and unblocking; messages (cut, flooded, and kept
 from an older station); messages without a channel (inbox, priority pop-up and its once-a-minute rule, pop-ups turned
-off, an inbox that's off, blocked, flooded, plain text, an older station's answer, frequencies closed); garbled
+off, an inbox that's off, blocked, flooded, plain text, an older station's answer, frequencies closed); the Outbox
+(waiting while frequencies are closed, kept on disk, delivered once found and saying when it was written, Cancel, a
+refusal that stops it and Try again, the limit per commander); garbled
 messages and out-of-range crew.

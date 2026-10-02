@@ -139,6 +139,10 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	/** The list of stations, searched again every few seconds while frequencies are open and this screen is showing. */
 	private final javax.swing.Timer rescan = new javax.swing.Timer(5000, new ActionListener() { public void actionPerformed(ActionEvent e) { autoScan(); } });
 	private boolean scanning;
+	/** The Outbox: its button here, and the quiet search that delivers it while powered up on another screen. */
+	private final FtlButton outboxBtn = new FtlButton("Outbox", FtlFont.BODY, 146, 24);
+	private final javax.swing.Timer outboxTimer = new javax.swing.Timer(30000, new ActionListener() { public void actionPerformed(ActionEvent e) { outboxSearch(); } });
+	private volatile boolean delivering;
 	private final JTextField address = new JTextField();
 	private final JLabel theirPic = new JLabel();
 	/** "CONNECTED TO", with the other station's mode. */
@@ -454,6 +458,11 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		connect.add(portHint);
 		missedNote.setBounds(0, 472, RW, 16);
 		connect.add(missedNote);
+		outboxBtn.setBounds(RW - 146, 498, 146, 24);
+		outboxBtn.setToolTipText("Messages waiting to go to commanders who couldn't be reached: they go when your station finds theirs");
+		outboxBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { InboxDialog.open(LongRangeCommUI.this, true); refreshOutbox(); } });
+		connect.add(outboxBtn);
+		outboxTimer.start();
 		right.add(connect, "connect");
 
 		JPanel partner = new JPanel(null);
@@ -528,6 +537,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	public boolean init() {
 		if (!Commander.ensure(this)) return false;
 		missedUnseen = false;
+		refreshOutbox();
 		if (post != null && session == null) { rescan.start(); SwingUtilities.invokeLater(new Runnable() { public void run() { autoScan(); } }); }
 		if (source == null || Vault.get().byId(source.id) == null) source = null;
 		readSource();
@@ -594,6 +604,13 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		repaintDock();
 		help("Long Range Comm. stays powered up: a hail reaches you on any screen. Power Down closes your hailing frequencies.");
 	}
+	/**
+	 * Should the Space Dock show the inbox even with Immersive messages off? Yes while Long Range Comm. is in use:
+	 * hailing frequencies open (powered up), mail from it in the inbox, or something in the Outbox.
+	 */
+	public boolean inboxWanted() {
+		return post != null || homeplanet.parser.Transmissions.anyLongRangeMail() || (homeplanet.vault.Vault.isOpen() && !homeplanet.comm.Outbox.list().isEmpty());
+	}
 	/** For the Space Dock's Long Range button: 2 a missed hail not yet seen, 1 powered up, 0 neither. */
 	public int lamp() { return missedUnseen ? 2 : post != null && poweredUp ? 1 : 0; }
 	private void openPost() {
@@ -659,6 +676,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 						String keep = was instanceof Beacon.Found ? ((Beacon.Found) was).station : null;
 						foundList = f;
 						showFound(keep);
+						deliverTo(f);
 						found.setEmptyText("No stations with hailing frequencies open");
 						scanNote.setText(f.isEmpty() ? "None yet: the list keeps searching." : f.size() == 1 ? "1 station in range." : f.size() + " stations in range.");
 						updateButtons();
@@ -712,13 +730,56 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		CargoParts.darkPopup(m);
 		m.show(found.list, e.getX(), e.getY());
 	}
+	/** The Outbox button's count. */
+	private void refreshOutbox() {
+		int n = homeplanet.vault.Vault.isOpen() ? homeplanet.comm.Outbox.list().size() : 0;
+		outboxBtn.setText("Outbox (" + n + ")");
+	}
+	/**
+	 * Delivers what waits in the Outbox for any of these stations (found just now), off the event thread; what went
+	 * shows on the status line, while this screen is open.
+	 */
+	private void deliverTo(final List<Beacon.Found> found) {
+		if (delivering || post == null || !homeplanet.vault.Vault.isOpen() || !homeplanet.comm.Outbox.anyWaiting()) return;
+		final List<Beacon.Found> those = new ArrayList<Beacon.Found>();
+		for (Beacon.Found f : found) if (f.compatible() && f.notes && !Blocks.blocked(f.station, null) && homeplanet.comm.Outbox.waitingFor(f.station)) those.add(f);
+		if (those.isEmpty()) return;
+		delivering = true;
+		final String version = HomePlanet.APP_VERSION, me = Commander.stationId(), title = Commander.title();
+		final int reply = listeningPort;
+		new Thread(new Runnable() {
+			public void run() {
+				final List<String> said = new ArrayList<String>();
+				for (Beacon.Found f : those) said.addAll(homeplanet.comm.Outbox.deliver(f.station, f.host, f.port, version, me, title, reply));
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run() {
+						delivering = false;
+						refreshOutbox();
+						if (!said.isEmpty() && isShowing()) help(said.get(said.size() - 1));
+					}
+				});
+			}
+		}, "Long Range Comm. outbox").start();
+	}
+	/** Powered up on another screen: a quiet search now and then, only while something waits to go. */
+	private void outboxSearch() {
+		if (post == null || isShowing() || delivering || scanning || !homeplanet.vault.Vault.isOpen() || !homeplanet.comm.Outbox.anyWaiting()) return;
+		scanning = true;
+		final String self = Commander.stationId();
+		new Thread(new Runnable() {
+			public void run() {
+				final List<Beacon.Found> f = Beacon.scan(1500, self);
+				SwingUtilities.invokeLater(new Runnable() { public void run() { scanning = false; deliverTo(f); } });
+			}
+		}, "Long Range Comm. outbox search").start();
+	}
 	/** A message to the chosen commander, without a channel. */
 	private void messageFound() {
 		Object v = found.selectedValue();
 		if (!(v instanceof Beacon.Found)) return;
 		Beacon.Found f = (Beacon.Found) v;
 		if (!f.compatible() || !f.notes || Blocks.blocked(f.station, null)) return;
-		MessageDialog.open(this, f.host, f.port, f.title, new java.util.function.Consumer<String>() { public void accept(String said) { help(said); } });
+		MessageDialog.open(this, f.station, f.host, f.port, f.title, new java.util.function.Consumer<String>() { public void accept(String said) { help(said); refreshOutbox(); } });
 	}
 	/** Blocks the chosen commander (asked first), or unblocks them. */
 	private void blockFound() {
@@ -840,7 +901,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		try {
 			SwingUtilities.invokeAndWait(new Runnable() {
 				public void run() {
-					where[0] = Notes.where(n, HomePlanet.longRangePopups, HomePlanet.immersiveNotifications && Vault.isOpen());
+					where[0] = Notes.where(n, HomePlanet.longRangePopups);
 					if (Notes.INBOX.equals(where[0])) {
 						Notes.toInbox(n, ch.host);
 						if (parent.atSpaceDock() && !otherWindowOpen()) parent.spaceDock.init(); // its inbox button counts the new one
@@ -865,7 +926,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 					later.start();
 					return;
 				}
-				javax.swing.JTextArea t = new javax.swing.JTextArea(n.text, Math.min(8, 2 + n.text.length() / 50), 42);
+				String shown = n.text + Notes.waitedNote(n);
+				javax.swing.JTextArea t = new javax.swing.JTextArea(shown, Math.min(8, 2 + shown.length() / 50), 42);
 				t.setLineWrap(true);
 				t.setWrapStyleWord(true);
 				t.setEditable(false);
@@ -874,9 +936,9 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				p.add(new JLabel(n.title + (n.priority ? ", priority:" : ":")), java.awt.BorderLayout.NORTH);
 				p.add(new javax.swing.JScrollPane(t), java.awt.BorderLayout.CENTER);
 				java.awt.Component owner = isShowing() ? LongRangeCommUI.this : parent;
-				Object[] opts = n.replyPort > 0 ? new Object[] {"Reply", "Close"} : new Object[] {"Close"};
-				int r = JOptionPane.showOptionDialog(owner, p, "Message from " + n.title, JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[opts.length - 1]);
-				if (n.replyPort > 0 && r == 0) MessageDialog.open(owner, host, n.replyPort, n.title, null);
+				Object[] opts = {"Reply", "Close"};
+				int r = JOptionPane.showOptionDialog(owner, p, "Message from " + n.title, JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[1]);
+				if (r == 0) MessageDialog.open(owner, n.station, host, n.replyPort, n.title, null); // port 0: their frequencies are closed, so it waits in the Outbox
 			}
 		});
 	}

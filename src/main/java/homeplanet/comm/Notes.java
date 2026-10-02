@@ -25,6 +25,12 @@ public final class Notes {
 		public String station, title, text;
 		public boolean priority;
 		public int replyPort;
+		/** When it was written, if it waited in the sender's Outbox (0: just now). */
+		public long written;
+	}
+	/** The other station answered, and turned the message away (blocked, or too many): said in its own words. */
+	public static final class Refused extends IOException {
+		public Refused(String why) { super(why); }
 	}
 
 	/** Plain text: letters and line breaks, no more than two breaks in a row, cut to length. */
@@ -60,6 +66,7 @@ public final class Notes {
 		if (n.text.isEmpty()) throw new Wire.Garbled("an empty message");
 		n.priority = m.flag("priority");
 		n.replyPort = m.has("replyPort") ? m.num("replyPort", 0, 65535) : 0;
+		try { n.written = m.has("written") ? m.longNum("written") : 0; } catch (Wire.Garbled e) { n.written = 0; }
 		if (n.replyPort != 0 && (n.replyPort < Channel.PORT0 || n.replyPort >= Channel.PORT0 + Channel.PORTS)) n.replyPort = 0;
 		return n;
 	}
@@ -90,20 +97,25 @@ public final class Notes {
 	}
 	/**
 	 * Where a taken message goes. A priority one pops up, if this station lets them (popups) and that commander's
-	 * last pop-up was a minute ago or more; otherwise the inbox. With the inbox off (inbox false), it pops up all the
-	 * same, so nothing is lost.
+	 * last pop-up was a minute ago or more; otherwise the inbox (always there for a commander's mail).
 	 */
-	public static synchronized String where(Note n, boolean popups, boolean inbox) {
+	public static synchronized String where(Note n, boolean popups) {
 		long now = System.currentTimeMillis();
 		Long last = lastPopup.get(n.station);
-		boolean pop = !inbox || (n.priority && popups && (last == null || now - last >= POPUP_GAP));
-		if (pop && n.priority) lastPopup.put(n.station, now);
+		boolean pop = n.priority && popups && (last == null || now - last >= POPUP_GAP);
+		if (pop) lastPopup.put(n.station, now);
 		return pop ? POPUP : INBOX;
 	}
 	/** Files a message in the inbox: from its commander, with where to reply kept in its key. */
 	public static void toInbox(Note n, String host) {
 		String key = "note:" + n.station + "|" + host + "|" + n.replyPort + "|" + System.currentTimeMillis();
-		homeplanet.parser.Transmissions.deliver(key, n.title, n.priority ? "Long Range message (priority)" : "Long Range message", n.text + "\n~ " + n.title);
+		homeplanet.parser.Transmissions.deliver(key, n.title, n.priority ? "Long Range message (priority)" : "Long Range message", n.text + "\n~ " + n.title + waitedNote(n));
+	}
+	/** For a message that waited in its sender's Outbox: when it was written. */
+	public static String waitedNote(Note n) {
+		if (n.written <= 0 || System.currentTimeMillis() - n.written < 120000) return "";
+		return "\n\n(Written " + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date(n.written))
+				+ ", while your station was out of range: it waited in their Outbox.)";
 	}
 	/** Answers the sender: where the message went (or why it didn't), and closes the link. */
 	public static void answer(Channel ch, String where, String refused) {
@@ -130,7 +142,7 @@ public final class Notes {
 			Wire.Msg r = ch.readFirst(15000);
 			if (r.type.equals("BYE")) {
 				String why = r.get("why").trim();
-				throw new IOException(why.isEmpty() ? whom + "'s station did not take the message." : why);
+				throw new Refused(why.isEmpty() ? whom + "'s station did not take the message." : why);
 			}
 			if (!r.type.equals("NOTED")) throw new IOException(whom + "'s station gave an answer this one doesn't understand.");
 			return POPUP.equals(r.get("where")) ? POPUP : INBOX;
