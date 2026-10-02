@@ -508,7 +508,8 @@ no letters, you come and check).
 - **Hiring** on the same screen: with no crew anywhere, "Post a promise of adventure" is free and answered half the
   time; otherwise "Post for volunteers" costs 5 scrap a crew member in the fleet (every ship, the Junkyard's hulls and
   the Cargo Hold), at most 60, spent either way, answered three times in four. The race is one of the unlocked
-  ships' crews; new crew wait in the Cargo Hold.
+  ships' crews; new crew wait in the Cargo Hold. With no FTL profile yet (a fresh Immersive one), only the Kestrel's
+  humans answer, as Commission has it (4B.90; before, every race could).
 - **Folding headings**: a click on a gold heading of the Space Dock's controls folds its buttons away or back,
   lighter under the mouse, a small arrow when folded; remembered in the cfg (`fold_station`, ...).
 - A one-sided Long Range trade's log no longer says "received ():".

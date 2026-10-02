@@ -1100,7 +1100,8 @@ public final class Expeditions {
 	public static List<String> hireableRaces() {
 		Set<String> out = new java.util.TreeSet<String>();
 		Unlocks u = Unlocks.read();
-		boolean all = u == null || u.problem() != null || u.missing();
+		if (u != null && u.missing()) return new ArrayList<String>(java.util.Collections.singletonList("human")); // FTL hasn't made the profile yet: only the Kestrel A, as Commission has it
+		boolean all = u == null || u.problem() != null;
 		for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
 			for (int n = 0; n < 3; n++) {
 				ShipBlueprint bp;

@@ -431,6 +431,12 @@ public class ExpT { public static void main(String[] a) throws Exception {
   Setup.chk("H: 5 a crew member, at most 60", Expeditions.hireCost(0) == 0 && Expeditions.hireCost(1) == 5 && Expeditions.hireCost(2) == 10 && Expeditions.hireCost(12) == 60 && Expeditions.hireCost(20) == 60);
   List<String> races = Expeditions.hireableRaces();
   Setup.chk("H: races from the unlocked ships, the Kestrel's among them " + races, races.contains("human"));
+  // no FTL profile yet (a fresh Immersive one): only the Kestrel's crew, as Commission has it
+  File[] profs = {new File(HomePlanet.save_location, "ae_prof.sav"), new File(HomePlanet.save_location, "prof.sav")};
+  for (File pf : profs) if (pf.isFile()) pf.renameTo(new File(pf.getPath() + ".away"));
+  List<String> fresh = Expeditions.hireableRaces();
+  for (File pf : profs) if (new File(pf.getPath() + ".away").isFile()) new File(pf.getPath() + ".away").renameTo(pf);
+  Setup.chk("H: no FTL profile yet: only humans answer " + fresh, fresh.equals(Arrays.asList("human")));
   int crew = Expeditions.fleetCrew(v);
   // crew in a Junkyard hull still count
   Ship d = v.docked().get(0); int aboard = SaveHelper.getOwnCrew(d.save().getPlayerShip()).size();
