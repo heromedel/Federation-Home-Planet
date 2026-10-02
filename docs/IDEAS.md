@@ -91,6 +91,9 @@ From heromedel, for later (after testing 4B.83 onwards):
 Notes: the crew's skill levels are in the save (`CrewState`), so the engine could read them the way it reads race;
 an event choice might be tagged with the skill it tests, the way `[fight]` is now.
 
+Done in part at 4B.92: a choice's tag (fight, tech, heat, power, cold, talk, fly, guns) names the race and the skill
+that make its bad outcomes rarer. Specialist postings (a pilot wanted, an engineer wanted) are still to come.
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just

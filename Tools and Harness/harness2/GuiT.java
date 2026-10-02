@@ -291,9 +291,9 @@ public class GuiT {
   h.setScrapAmt(0);
   v.begin().put(v.storage(), c.save, c.hash).commit();
   final int beacons = v.beaconsSeen();
-  // a plain job in the first place (an outfitted one would need scrap the test leaves out)
-  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=civilian\n0.danger=2\n0.until=999999\n0.text=Dangerous fugitive tracked down to an alias in a civilian sector; bounty hunters needed\n"
-    + "1.kind=pirate\n1.danger=2\n1.until=999999\n1.text=b\n2.kind=civilian\n2.danger=1\n2.until=999999\n2.text=c\n", false);
+  // a known job in the first place: the Rock shaft, whose first choice always pays
+  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=rescue\n0.event=rock_shaft\n0.until=999999\n0.text=A Rock mining colony has lost a work crew in a shaft collapse.\n"
+    + "1.kind=escort\n1.until=999999\n1.text=b\n2.kind=delivery\n2.until=999999\n2.text=c\n", false);
   Class<?> k = Class.forName("homeplanet.ui.ExpeditionsDialog");
   java.lang.reflect.Field rf = k.getDeclaredField("rng"); rf.setAccessible(true); rf.set(null, new Random(8));
   shown.clear(); optionsShown.clear(); presses.clear();
@@ -318,7 +318,7 @@ public class GuiT {
   } catch (Exception e) { throw new RuntimeException(e); } finally { done[0] = true; } } });
   for (int t = 0; t < 600 && !done[0]; t++) Thread.sleep(100);
   presses.clear();
-  boolean picker = !shown.isEmpty() && shown.get(0).contains("Who goes?");
+  boolean picker = !shown.isEmpty() && shown.get(0).contains("Who goes");
   boolean events = false; for (Object[] o : optionsShown) if (o.length >= 2) events = true;
   String end = shown.isEmpty() ? "" : shown.get(shown.size() - 1);
   Setup.chk("X: the crew picker, then events with their choices (" + shown.size() + " pop-ups)", done[0] && picker && events);
@@ -334,8 +334,8 @@ public class GuiT {
  /** With the inbox off, a ransom comes up at the Space Dock: Pay brings them home. */
  static void ransomPopUp(final MainFrame f) throws Exception {
   final Vault v = Vault.get();
-  java.lang.reflect.Method take = Expeditions.class.getDeclaredMethod("takeCaptive", Vault.class, SavedGameParser.CrewState.class, Expeditions.Posting.class); take.setAccessible(true);
-  take.invoke(null, v, Commission.volunteer("zoltan".equals("") ? "x" : "energy", new Random(8)), Expeditions.board(v).get(0));
+  java.lang.reflect.Method take = Expeditions.class.getDeclaredMethod("takeCaptive", Vault.class, SavedGameParser.CrewState.class, String.class); take.setAccessible(true);
+  take.invoke(null, v, Commission.volunteer("energy", new Random(8)), "pirates");
   for (int i = 0; i < 6; i++) { SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile()); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock(); }
   final List<Expeditions.RansomNews> news = Expeditions.checkRansoms(v);
   hold(v, 200);

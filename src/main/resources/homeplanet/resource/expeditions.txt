@@ -1,237 +1,228 @@
-# Expeditions: the postings on the board, and the events crew meet on them. This file holds the postings and the
-# general events; each sector's own events are in the files it includes.
+# Expeditions: the postings on the board, and the events the commander and crew meet on them.
 #
-# posting <sector> <danger 1-3> <the posting's words>
-# posting sealed <danger 1-3> <words>      a sealed posting: its sector is rolled when posted and told only once under way
+# posting <kind> <the posting's words>       kinds: rescue, escort, salvage, survey, delivery, repair, security
 #
-# event <id> <sector>[,<sector>...] <low|moderate|high> [<theme>]
-#   (any = every common sector; a homeworld also meets its race's events. One run meets a theme once.)
-# <the event's words, as many lines as needed>
+# event <id> <kind> [foe:<who>]              (foe: who takes crew on this job, for the ransom letters; "pirates" if
+#                                             not said; underscores for spaces: foe:the_rebels)
+# <the situation, as many lines as needed>
 # * <a choice anyone can take>
-# * [<race>] <a choice open with that race in the party: blue>
-# * [red <race>] <a choice that race brings, and makes worse: red>
-# * [fight] <a fight: each Mantis in the party helps, each Rock a little, each Engi hinders>   (tags combine: [mantis fight])
-#   ok <effects> | <words>                 a sure outcome, or a gamble:
-#   roll <chance of the first, in %>       (each crew member beyond the first adds 5, each injured one takes 3 off)
-#   win <effects> | <words>
-#   lose <effects> | <words>
-# step <name>                               a further pop-up of the same event, reached with "then <name>"
-# <its words>
+# * [<race>] <a choice open with that race along: blue>
+# * [fight] <a choice a Mantis, or combat skill, makes safer>   tags: fight (Mantis, combat), tech (Engi, repair),
+#                                              heat (Rock, repair), power (Zoltan, engines), cold (Lanius, shields),
+#                                              talk (Slug, piloting), fly (piloting), guns (weapons); [rock heat] combine
+#   = <effects> | <words>                     the one outcome
+#   ~ <weight> <effects> | <words>            one of several, drawn by weight (a bad one, hurting or losing crew, is
+#                                             drawn less with a crew member whose race or skill fits the choice)
+# step <name>                                 one more choice of the same moment, reached with "then <name>": its
+# <its words, or none>                        choices follow the outcome's words on the same screen
 # * ...
 #
-#   aside <chance in %> | <words>          after an outcome: an extra line, shown only that often
+# Effects: scrap 8 or scrap 6-10, fuel 2, missiles 1, parts 2 (drone parts), item weapon|drone|augment, injure 1
+# (to the infirmary), lose 1 (dead), taken 1 (a ransom follows), join <race|any>, then <step>.
+# In the words: {who} is the crew member the choice is about (the race's, else someone along), {crew} anyone along.
+# The game adds "You receive 9 scrap." and the like after the words; don't write them.
 #
-# Effects: scrap 5-10, injure 1, lose 1, fuel 2, missiles 1, parts 1, item weapon|drone|augment, join <race|any>,
-# then <step> (on to that step, not the next event; such an outcome may have no words of its own), end (the
-# expedition turns for home), ship <sector>:<condition>[:<system>] (a ship comes home: "sector" means the posting's;
-# wrecked (a Junkyard derelict, exactly as the foreman's), or limping:<system> (the same, with that system broken
-# through or gone); the player chooses the Space Dock or the Junkyard for her). Ship events are drawn rarely, and a
-# ship is never a sure thing: a gamble, or "nopay" (taken in place of the job's pay).
-# The lost expedition (sector "saga", one in 300 high-danger expeditions of two or more) also has: beacons <n> (weeks of
-# waiting), survivor (all but the one named stay lost), ship stealth:new|dented, {enemy} and {survivor} in its words;
-# its steps may have a single choice.
-# In the words: {who} is the crew member the choice is about (the race's, else someone in the party), {crew} anyone
-# in the party, {sector} the sector's name.
-# Races: human, engi, mantis, rock, slug, zoltan, crystal, lanius. Sectors: civilian, engi, zoltan, mantis, rock, slug,
-# nebula, pirate, rebel, abandoned; rare: engi_home, mantis_home, rock_home, zoltan_home, slug_home, crystal.
-#
-# Writing them: FTL's tone (second person, short, dry, grim more often than funny), never FTL's events or words; a
-# familiar thing seen from a new side. Every step has a hook, something at stake and a turn; every choice is a real
-# decision. Low risk rarely injures and never kills; high risk can kill, and pays for it. Voice: "the rebels"
-# lowercase; the Rebel Flagship is never said to be destroyed. The harness holds every line against FTL's own text.
-
-include expeditions_civilian.txt
-include expeditions_engi.txt
-include expeditions_zoltan.txt
-include expeditions_mantis.txt
-include expeditions_rock.txt
-include expeditions_slug.txt
-include expeditions_nebula.txt
-include expeditions_pirate.txt
-include expeditions_rebel.txt
-include expeditions_abandoned.txt
-include expeditions_rare.txt
+# Writing them: FTL's beacons, as if the crew were hired and ran into one. One place, one situation; second person,
+# short, dry; a few scrap at the end of some branches, nothing at the end of many; a choice that risks crew can
+# kill them, and does more often than not. Never FTL's own events or words (the harness holds every line against
+# FTL's text). "the rebels" lowercase; the Rebel Flagship is never said to be destroyed.
 
 # ---- postings ----
 
-posting civilian 1 Hands wanted to escort a grain convoy between two farming colonies
-posting civilian 2 Dangerous fugitive tracked down to an alias in a civilian sector; bounty hunters needed
-posting civilian 1 Colony council seeks a survey team for a failing water reclaimer
-posting civilian 2 Mining town requests guards while its payroll is moved
-posting engi 1 Engi relay station needs extra hands while its network is rebuilt
-posting engi 2 Salvage rights offered on a drone factory gone quiet
-posting engi 2 Engi archivists seek couriers for a data core too sensitive to transmit
-posting zoltan 1 Zoltan observers request escorts for a census of the outer moons
-posting zoltan 2 Energy anomalies near a Zoltan relay; investigators wanted, discretion expected
-posting zoltan 1 Witnesses required for a Zoltan tribunal; travel and lodging provided
-posting mantis 3 Need mercenaries for defense through Mantis territory
-posting mantis 2 A trading post on the Mantis border wants guards for one long night
-posting mantis 3 Recovery team wanted for a freighter that drifted into Mantis space
-posting rock 2 Rock miners hiring for a deep shaft no one else will work
-posting rock 1 A Rock pilgrimage needs guides who can keep up
-posting rock 2 Escort wanted for a Rock missionary bound for a world that doesn't want her
-posting slug 2 Courier wanted to carry a sealed package through Slug space, no questions asked
-posting slug 1 A Slug merchant seeks witnesses for a contract signing
-posting slug 3 Debt collectors wanted; the debtor is a Slug, and so is the creditor
-posting nebula 1 Looking for crew to chart an unexplored nebula
-posting nebula 2 Sensor buoy lost in the nebula; retrieval team wanted
-posting nebula 3 A research ship went silent in the nebula; rescuers wanted, pay on return
-posting pirate 3 Rebel criminals hiding in a known asteroid field
-posting pirate 2 Ransom to be delivered to a pirate den; steady nerves required
-posting pirate 2 Stolen medical supplies traced to a pirate market; recovery team wanted
-posting rebel 3 Federation intelligence needs a small team behind rebel lines
-posting rebel 2 Refugees stranded near a rebel checkpoint need an escort out
-posting rebel 3 A downed Federation pilot is hiding on a rebel-held moon
-posting abandoned 2 Lanius scavengers spotted on a dead station; salvage teams wanted
-posting abandoned 1 Survey of an abandoned colony, before the Lanius strip it bare
-posting abandoned 2 Insurers want proof of what became of a missing mining fleet
-posting engi_home 2 The Engi Homeworlds request technicians for a planetary network fault
-posting mantis_home 3 Mantis Homeworlds: a hunting ground opened to outsiders, for those who dare
-posting rock_home 2 The Rock Homeworlds' forges need hands for the great casting
-posting zoltan_home 1 The Zoltan Homeworlds invite observers to a gathering of the light
-posting slug_home 2 An invitation into the Slug Home Nebula, sealed and unsigned
-posting crystal 3 Coordinates to the Hidden Crystal Worlds, sold by a dying trader
-posting sealed 2 Discreet crew wanted. Destination disclosed after departure
-posting sealed 3 Well-paid work for those who don't ask where. Orders sealed until launch
-posting sealed 1 Courier run, route classified. Federation clearance not required
+posting rescue A freighter captain lost their pilot in a rebel raid. The pilot went to ground on a moon in this system, and the captain is going back for them. They need hands, and someone who has seen trouble before.
+posting rescue A Rock mining colony has lost a work crew in a shaft collapse. The miners dig slowly and don't ask for help. Their families do.
+posting escort A Zoltan merchant's transport needs company for one jump. She has lost two ships this month and says she will not lose a third.
+posting escort A small liner wants a second ship beside her through the nebula. The captain says she has had trouble there and won't say what kind.
+posting salvage An insurer wants a wrecked freighter in the asteroid belt stripped before the scavengers get to her. Pay on return, by the crate.
+posting salvage A dead Mantis raider is drifting around a gas giant. Whoever strips her keeps what they find. Whoever is hiring wants her weapons first.
+posting survey A survey company wants readings from an ice moon's southern pole. Simple work, they say. Their last team didn't say anything at all.
+posting delivery A sealed crate for a research station on the edge of the system. No questions, no stops. Pay on delivery.
+posting delivery Medicine for a farming colony under quarantine. The Federation has cleared the delivery. The colony's governor has not been told.
+posting repair An Engi relay station has lost its reactor. The Engi are precise about what they need: four hands, no fear of heat, and no opinions.
+posting repair A farming colony's only water pump has stopped. They can pay a little. They can also feed you, which, this far out, is worth more.
+posting security A Slug trader is holding an auction on a station at the edge of the nebula and wants a few sturdy people standing near the goods. He says he trusts his customers completely.
 
-# ---- anywhere ----
+# ---- rescue ----
 
-event stowaway any low
-A girl is found curled up behind the water tanks, clutching a stolen ration bar. She begs your crew not to send her back to the labour camp she ran from.
-* Take her to the next colony and see her settled
-  ok scrap 2-4 fuel 2 | The colony takes her in. Her new guardian presses a few scrap into {crew}'s hand and won't hear a word against it.
-* Report her to the camp's overseers
-  ok scrap 8-12 | The overseers pay a finder's fee without looking up from their ledgers. Nobody in your crew says much for the rest of the day.
-  aside 20 | {crew} keeps the wrapper of the ration bar she dropped, and never says why.
-* [human] Let {who} talk to her
-  ok scrap 4-6 fuel 2 | She opens up to {who}: the camp keeps its fuel in an unguarded shed. She shows them the way before she goes her own.
+event pilot_moon rescue foe:the_rebels
+You reach the moon where the pilot is hiding, but a rebel patrol was waiting in orbit. It breaks away and races toward you. The captain who hired you turns from the controls. "Your call. What do we do?"
+* [fight] Move in and engage.
+  ~ 50 then search | The freighter's guns are better than they look. The patrol breaks off, trailing smoke, and the captain lets out a breath.
+  ~ 25 injure 1 | The patrol outguns you. A shot tears through the cargo bay before the captain can pull away, and {who} is under what it brings down. The pilot is left behind.
+  ~ 25 lose 1 | The patrol outguns you. A shot tears through the cargo bay before the captain can pull away. {who} was in the cargo bay.
+* Head for the moon and broadcast to the pilot.
+  = then search | You dive for the surface, broadcasting on every band. Nothing comes back. Behind you, the patrol is turning for another pass.
+* Flee the rebel ship.
+  = | The freighter outruns the patrol easily. The captain watches the moon shrink behind you and says nothing the whole way back.
+* [mantis fight] {who} offers to beam over to the rebel ship and eliminate the threat.
+  ~ 60 scrap 10-14 | {who} comes back alone and in good spirits. The patrol drifts silent, and the pilot answers your first call.
+  ~ 20 injure 1 scrap 10-14 | {who} comes back, though not in one piece. The patrol is silent, and you find the pilot.
+  ~ 20 lose 1 scrap 10-14 | The patrol falls silent. {who} does not come back from it. You find the pilot, and the captain pays without a word.
+step search
+* Keep searching.
+  ~ 50 scrap 8-12 | A flare goes up from a crater rim. The pilot scrambles aboard, and the captain pays you with shaking hands.
+  ~ 20 injure 1 | The patrol catches you on the ground. You get off the moon, but not cleanly: {who} is hit on the way to the hatch, and the pilot is left behind.
+  ~ 15 taken 1 | The patrol catches you on the ground. You get off the moon, but {who} is not aboard when you do, and the pilot is still down there.
+  ~ 15 lose 1 | The patrol catches you on the ground. {who} is hit on the way to the hatch and doesn't make it through. The pilot is left behind.
+* Give up and flee.
+  = | The captain doesn't say a word the whole way back.
 
-event dark_beacon any low navigation
-The navigation beacon on the route has gone dark. Without it, the hired shuttle drifts while its pilot works through the manual one page at a time.
-* Suit up and repair the beacon by hand
-  roll 70
-  win scrap 6-10 | The beacon flickers back to life. Its owners pay a technician's rate, and seem surprised anyone bothered.
-  aside 15 | The owners' thank-you note spells {crew}'s name three different ways, all wrong.
-  lose injure 1 | A loose panel opens {who}'s suit along the forearm. The patch holds, just.
-* Wait for a passing ship to tow you
-  ok scrap 1-3 | A freighter tows the shuttle on after half a day, and its cook trades a meal for a little help in the galley.
-* [engi] Let {who} speak to the beacon directly
-  ok scrap 10-14 | {who} plugs into the service port and hums at it for a while. The beacon answers. So does its owner, with a reward.
+event rock_shaft rescue
+The shaft entrance is a black mouth in a plain of cooled lava, and the air coming out of it is hot enough to bend the light. Two Rock miners are already digging at the mouth, in no hurry. The families stand behind them, watching you.
+* Dig with the miners at the entrance.
+  = scrap 6-9 | You dig beside the Rock for a day and a night. The miners never speak, but when the trapped crew is brought up alive, one of them puts a hand on your shoulder.
+* [heat] Go down the ventilation shaft to reach them from above.
+  ~ 45 scrap 10-14 | The vent is narrow and burning hot, but it's open. You reach the trapped miners hours before the diggers would have.
+  ~ 25 injure 1 scrap 6-9 | The vent gives way halfway down. {who} is dragged out by the others, burned to the bone.
+  ~ 30 lose 1 scrap 6-9 | The vent gives way halfway down. By the time the others reach {who}, the heat has done its work.
+* [rock] {who} walks down the main shaft to find them.
+  = scrap 12-16 | {who} goes into the heat as if it were a warm afternoon, and comes back an hour later with the work crew behind. The families don't have much, but they give you all of it.
+* Tell the families the shaft is beyond you.
+  = | They don't argue. They turn back to the miners, who are still digging.
 
-event bait any moderate ambush
-A distress call leads to a gutted transport. Too gutted: the scorch marks are old, and the airlock was opened from outside. Then three armed figures step out from behind the wreck.
-* [fight] Fight them
-  roll 50
-  win scrap 8-15 item weapon | The ambushers break and run, leaving a weapon behind in their hurry.
-  lose injure 1 scrap 2-4 | They drive the ambushers off, but {who} takes a hit doing it.
-* Hand over the rations and back away
-  ok | The ambushers take a crate of rations and let your crew go. Nobody is hurt, and nothing is gained.
-* [rock] {who} walks straight at them
-  ok scrap 10-14 | Shots spark off {who}'s hide. The ambushers decide this was never worth it.
-  aside 20 | {who} spends the trip home picking spent rounds out of their hide, and keeps the best ones.
-* [crystal] {who} seals the passage with crystal
-  ok scrap 6-10 | A wall of crystal grows across the gap. By the time it fades, the ambushers have given up and gone.
+# ---- escort ----
 
-event cargo_pod any moderate salvage
-A cargo pod tumbles across the shuttle's path, its markings burned away and its lock still sealed.
-* Haul it aboard and crack it open
-  roll 60
-  win scrap 6-12 missiles 2 | Inside: salvage, and two missiles still in their cradles.
-  lose injure 1 | The pod was rigged. The blast throws {who} across the cabin.
-* Scan it from a distance and move on
-  ok scrap 1-3 | Nothing worth the risk, but the scan data sells at the next stop.
-* [zoltan] {who} reads its power signature
-  ok scrap 8-12 parts 2 | {who} finds the trap and drains it. The pod holds scrap and spare drone parts.
+event lane_toll escort
+Halfway to the beacon a battered scout drops out of jump beside the transport and hails you both. "Toll for the lane. Ten scrap, or the transport's cargo. Your choice." The merchant's voice comes over the comm, tight: "I am not paying them again."
+* Pay the toll out of your own pocket.
+  = | The scout takes your scrap and leaves. The merchant pays you what she promised, which is exactly what you just handed over.
+* [guns] Refuse, and move your ship between the scout and the transport.
+  ~ 40 scrap 16-20 | The scout's captain looks you over for a long moment, then jumps away. The merchant pays you double.
+  ~ 20 injure 1 scrap 8-10 | The scout fires a single shot across the transport's bow and jumps. The merchant pays, but the shot caught {who} on the hull.
+  ~ 20 lose 1 scrap 8-10 | The scout fires a single shot across the transport's bow and jumps. {who} was on the hull.
+  ~ 20 | The scout isn't alone. A second ship drops in and takes the cargo while you are facing the first. The merchant doesn't pay.
+* [slug talk] {who} listens to the scout's crew for a moment, then tells you they're bluffing.
+  = scrap 12-14 | {who} is right. The scout has no working weapons. You tell its captain so, and he leaves without a word.
+* Tell the merchant to hand over the cargo.
+  = scrap 4-5 | She does, slowly, and pays you half, slowly.
 
-event fever any moderate plague
-Half the passengers on the transport are down with a fever, the ship's medic among them. The captain asks your crew to help, and doesn't ask very hopefully.
-* Help nurse them through it
-  roll 65
-  win scrap 6-10 | The fever breaks in two days. The captain refuses your crew's fare and pays them instead.
-  lose injure 1 scrap 4-6 | Everyone pulls through, but {who} catches it and is still weak at journey's end.
-* Keep to your own cabin
-  ok | Your crew stays healthy and keeps to itself. It is a long, quiet trip.
-* [engi] {who} can't catch it
-  ok scrap 8-12 | {who} tends the sick day and night, untouched by any fever made for flesh. The captain is very grateful.
-  aside 25 | The captain's children decide {who} is a pet. {who} does not object.
-* [crystal] {who} offers to stand watch over the worst cases
-  ok scrap 8-10 join human | {who} sits with the dying for three nights without sleep. One of the survivors asks to come along when the trip is done.
+event dark_liner escort
+Inside the nebula your sensors go dark. The liner is a smudge of light a few hundred meters off your bow, and then, for a moment, it isn't. When it reappears it is drifting, engines cold, and nobody answers your hail.
+* [fight] Pull alongside and board her.
+  ~ 45 scrap 10-12 | The liner's crew are at their posts, awake but blank, as if they'd forgotten what the controls were for. You nudge the engines back on, and the captain comes round somewhere past the nebula's edge. She pays and asks you never to tell anyone.
+  ~ 25 injure 1 scrap 10-12 | The liner's crew are awake, blank, and not alone. Something moves in the dark of the passenger deck. You get the engines on and get out, but {who} is bleeding badly from a wound nobody saw happen.
+  ~ 30 lose 1 scrap 10-12 | Something moves in the dark of the passenger deck. The engines come on. {who} does not come back aboard.
+* Hold position and keep hailing.
+  = scrap 8-10 | After an hour the liner's lights come up and the captain answers, confused about the time. She pays you for the jump.
+* [slug] {who} goes very quiet, then tells you to leave the nebula now.
+  = scrap 8-10 | You do. The liner follows a minute later, fully lit, as if nothing had happened. The captain doesn't mention it and neither does {who}.
+* Jump out and leave her.
+  = | Whatever the trouble was, it wasn't yours. Nobody pays.
 
-event old_soldier any low lead
-An old Federation veteran shares your crew's table at a stopover. He has stories, a missing hand, and a map he swears leads to a supply cache the fleet left behind.
-* Buy him a drink and the map
-  roll 50
-  win scrap 10-16 fuel 2 then cache | The cache is real: dented, half-looted, but worth the detour.
-  lose | The map leads to a bare asteroid. The old man was probably telling the truth, a long time ago.
-* Listen to the stories and move on
-  ok scrap 8-10 | He tells good stories. He even insists on paying for the round.
-  aside 30 | One of the stories is about the Rebel Flagship. He swears she's still out there, and she gets bigger every time he tells it.
-step cache
-Behind the cache's last crate is a locked locker, stencilled with a unit number nobody uses any more.
-* Force it open
-  roll 60
-  win item weapon | Inside is a weapon, oiled and wrapped as if its owner meant to come back for it.
-  lose injure 1 | The lock was wired to a charge. {who} takes the worst of it.
-* Leave it for whoever it was meant for
-  ok | Your crew closes the cache behind them. Some things are owed to the dead.
+# ---- salvage ----
 
-event inspection any moderate customs
-A customs cutter pulls the transport aside for inspection. The officer finds nothing wrong, then finds it again, slower, and mentions that inspections can take days.
-* Offer him something for his trouble
-  ok | He accepts a crate of your crew's rations, and the inspection is suddenly complete.
-* Wait it out
-  roll 55
-  win scrap 2-4 | After a day his superior arrives, apologises for the delay, and pays a little for it.
-  lose end | The inspection finds a reason to turn the transport back. The expedition is over.
-* [slug] {who} has a quiet word with the officer
-  ok scrap 6-10 | Whatever {who} picked out of his thoughts, the officer goes pale, waves them on, and pays them to forget his name.
-* [zoltan] {who} cites the relevant shipping regulation
-  ok scrap 2-4 | {who} recites the inspection code from memory, sub-clause by sub-clause. The officer gives up before the end of the first chapter.
-  aside 25 | {who} admits later that half the sub-clauses don't exist.
+event belt_freighter salvage
+You find the freighter wedged between two slow-turning rocks, her hull split along one side. The field is quiet, but every few minutes a small asteroid glances off her plating with a sound you can feel through the floor.
+* [fly] Go in through the split hull.
+  ~ 50 scrap 8-10 | You work fast and quiet, hauling out crates until the rocks start to close.
+  ~ 25 injure 1 scrap 5-7 | The rocks shift while you're inside. Everyone gets out, but {who}'s suit is torn on the way.
+  ~ 25 lose 1 scrap 5-7 | The rocks shift while you're inside. The others get out. {who} doesn't.
+* Cut your way in from the far side, away from the rocks.
+  = scrap 2-4 | The cutting takes hours and the hold on that side was already empty. You load what little is left.
+* [rock] {who} offers to brace in the gap and hold the plating while the others work.
+  = scrap 11-13 | {who} wedges into the split hull and doesn't move for two hours. You empty the hold around them.
+* Decide the wreck isn't worth it and leave.
+  = | The insurer will not be pleased.
 
-event signal_mast any high derelict
-The transport passes a derelict signal mast still broadcasting a Federation code from before the war. Its maintenance pod is pressurised. Something inside moves when the lights come on.
-* Board the mast
-  roll 45
-  win scrap 12-18 then deeper | A family of station rats, and the mast's old stores. But there's a lower deck, and the hatch is warm.
-  lose injure 1 | A pressure seal fails as they open it. {who} is caught in the blast of escaping air.
-* Log the code and keep going
-  ok scrap 2-4 | Federation intelligence pays a little for the location.
-step deeper
-The lower deck holds a stasis pod, still powered. The face behind the frost is human, and the readout says she has been asleep for nine years.
-* Wake her
-  roll 60
-  win join human | She wakes confused, then furious, then very grateful. She asks to sign on, since everyone she knew is long gone.
-  lose | She doesn't wake. Your crew logs her name for the Federation and leaves her as she was.
-* Leave the pod sealed and report it
-  ok scrap 14-18 | The Federation pays a recovery fee for the report. Someone, somewhere, will be told.
-* [engi] {who} checks the pod's systems first
-  ok join human | {who} finds the fault in the revival cycle and fixes it before anyone touches the lid. She wakes without a scratch, and signs on.
+event mantis_raider salvage
+The raider's hull is cold and her airlock is already open. Inside, the walls are scored with claw marks, and the weapons bay is sealed from the inside.
+* [fight] Cut open the weapons bay.
+  ~ 40 scrap 13-16 missiles 2 | Behind the door is a single Mantis, half starved, who has been waiting a long time for someone to open it. It takes two of you to put him down. Nobody is hurt, and the bay is full.
+  ~ 25 injure 1 scrap 13-16 | Behind the door is a single Mantis, half starved and fast. {who} is on the floor before anyone sees it move. The others finish it.
+  ~ 35 lose 1 scrap 13-16 | Behind the door is a single Mantis, half starved and fast. {who} is dead before anyone sees it move.
+* Leave the bay sealed and strip the rest of her.
+  = scrap 5-7 | The rest of her is plating and wiring. It's an honest day.
+* [mantis] {who} listens at the door, then asks you to let them go in alone.
+  = scrap 13-16 missiles 2 | Whatever {who} says through the door, the thing behind it answers, and after a long silence the door opens from inside. A starved Mantis walks past you to the airlock and is gone. The bay is yours.
+* [engi] {who} reads the bay's seal and tells you something is still alive in there.
+  = scrap 5-7 | You believe {who}, and strip the rest of the ship instead.
 
-# ---- the lost expedition: very rare, told in its own pop-ups ----
+# ---- survey ----
 
-event lost_expedition saga high lost
-The expedition was due back days ago. Days turn into weeks. No Federation ship on the {sector} routes has heard a word from them, and the comm channel stays quiet.
-* Keep waiting
-  ok beacons 4 then rumour |
-step rumour
-At last a freighter captain brings word, third-hand: the expedition was last seen in a running battle with {enemy}, their borrowed ship coming apart around them, still heading straight for the enemy's station.
-* Continue
-  ok then alert |
-step alert
-You stop listening for the comm. Then, one quiet shift, The Home Planet Station's alarms go off: a ship has dropped her cloak just off the station's bow, close enough to count her hull plates.
-* Demand The Station Commander to give the order to fire
-  roll 25
-  win ship stealth:new then hail | The guns fire, and a second ship tears out of cloak right behind the first, straight into the volley. It breaks away, burning. The first ship hasn't fired a shot.
-  lose ship stealth:dented then hail | The guns fire, and hit. The ship staggers, trailing debris, but doesn't fire back.
-* Wait and watch as The Station opens hailing frequencies
-  roll 75
-  win ship stealth:new then hail | The station holds its fire. So does the ship. She sits off the bow, silent, as if waiting for something.
-  lose ship stealth:dented then hail | The station holds its fire. A second ship tears out of cloak behind the first and rakes her side before the station's guns drive it off.
-step hail
-A hail comes in, and the view screens light up. It's {survivor}: thinner, scarred, grinning, and sitting in the captain's chair of a Federation Stealth Cruiser.
-* "Where are the others?"
-  ok survivor | {survivor}'s grin fades. "They didn't make it. The ship did. They'd want you to have her."
-* Welcome {survivor} home
-  ok survivor | "It's a long story," {survivor} says. "Most of it is bad. Permission to dock?"
+event ice_moon survey
+The pole is a white plain under a black sky, and the previous team's shuttle is sitting on it, hatch open, lights still on. The readings you were sent for are halfway between here and a crevasse the size of a city.
+* Take the readings and leave.
+  = scrap 7-9 | You get what the company asked for and don't look in the shuttle.
+* Check the shuttle first.
+  = scrap 10-12 | The team is inside, frozen in their seats, instruments in their hands. There's nothing to do for them. You take their readings as well as your own, and the company pays for both.
+* [cold] Follow the team's tracks toward the crevasse.
+  ~ 45 scrap 13-15 | The tracks end at the crevasse edge. So does the thing they were tracking: a Lanius, half buried in the ice, long dead. You take its readings too, and the company is very interested.
+  ~ 25 injure 1 scrap 7-9 | The tracks end at the crevasse edge, and the edge is thinner than it looks. {who} goes through up to the waist and comes out with both legs broken.
+  ~ 30 lose 1 scrap 7-9 | The tracks end at the crevasse edge, and the edge is thinner than it looks. {who} goes through. The crevasse has no bottom you can see.
+* [lanius] {who} walks out onto the ice without a suit and looks over the edge.
+  = scrap 16-18 | {who} comes back with the readings, the team's readings, and a piece of something from the crevasse that the company pays a great deal for.
+
+# ---- delivery ----
+
+event dark_station delivery
+The station's running lights are out when you arrive. Your hail goes unanswered. Through the viewport you can see the docking bay doors, open, and nothing moving inside.
+* Dock and carry the crate in.
+  = then bench | The bay is cold and the lights come on one by one as you walk. In the control room you find the staff asleep at their posts, breathing, and a note on the console: "Power cut for the experiment. Back at 0600. Leave deliveries on the bench." You leave the crate.
+* Leave the crate in the open bay and go.
+  = | You were told no stops. Whoever ordered the crate can collect it. Nobody is there to pay you.
+* [engi] {who} offers to check the station's power from the docking ring.
+  = scrap 7-9 | {who} finds the reactor stepped down on purpose and the life support fine. You deliver the crate to a sleeping station and collect the fee from the bench.
+step bench
+* Take the payment from the envelope on the bench.
+  = scrap 7-9 | You leave the sleeping station as you found it.
+* Take the envelope, and a few things from the stores while nobody is awake.
+  ~ 50 scrap 7-9 fuel 2 | Nobody wakes.
+  ~ 50 fuel 2 | A technician wakes while you are in the stores. She says nothing, writes something down, and when you go back for the envelope it is gone.
+* Leave the crate and go without the pay.
+  = | The crate was the job.
+
+event quarantine delivery
+The colony's landing field is empty except for a line of armed farmers and a governor in a clean coat. "That's the Federation's medicine," he says. "Half of it is for the sick. Half of it is going to my warehouse, and you're going to tell them it was all delivered."
+* [fight] Deliver all of it to the clinic, past him.
+  ~ 50 scrap 9-11 | The farmers look at the governor, then at the crates, and step aside. The clinic's doctor pays you out of her own pocket.
+  ~ 20 injure 1 scrap 9-11 | The farmers look at the governor, and don't step aside. You push through. Someone's rifle goes off and {who} is on the ground. The medicine reaches the clinic.
+  ~ 30 lose 1 scrap 9-11 | Someone's rifle goes off and {who} doesn't get up. The medicine reaches the clinic.
+* Do as the governor says.
+  = scrap 14-16 | Half to the clinic, half to the warehouse. The governor pays well and reminds you what you'll be telling the Federation.
+* Leave all of it on the field and go.
+  = scrap 5-6 | The governor can fight the doctor for it. You're paid for the delivery, not the argument.
+* [zoltan] {who} asks the farmers, quietly, which of them has someone in the clinic.
+  = scrap 9-11 | Most of them do. The line breaks up without a word, and the governor walks back to his office alone. The doctor pays you.
+
+# ---- repair ----
+
+event engi_relay repair
+The relay is a long spindle of a station, dark along its whole length except for the reactor room at one end, which is far too bright. The Engi attendant explains the fault in a single sentence you don't understand and hands you a tool.
+* Do exactly what the attendant says.
+  = scrap 8-10 | The attendant talks you through the repair one step at a time. It takes most of a day, and at the end the station's lights come up along its whole length.
+* [tech] Go into the reactor room and find the fault yourselves.
+  ~ 45 scrap 11-13 | The fault is a cracked coupling, obvious once you're inside. You have it replaced before the attendant has finished explaining.
+  ~ 25 injure 1 scrap 5-7 | The fault is a cracked coupling, and the coupling fails while {who} has their hands on it. They're carried out, and the attendant finishes the job alone.
+  ~ 30 lose 1 scrap 5-7 | The coupling fails while {who} has their hands on it. The attendant finishes the job alone, and is sorry, in the Engi way.
+* [engi] {who} and the attendant talk for thirty seconds and the lights come on.
+  = scrap 11-13 | You never find out what was wrong.
+* [zoltan] {who} offers to power the station from their own body while the others work.
+  = scrap 11-13 | With {who} standing in the reactor room, the station holds enough light to work safely. The repair is slow and sure.
+
+event dry_well repair
+The pump sits at the bottom of a dry well, and the colony's mechanic, an old man with one working hand, has been down there for two days. A woman from the colony council says the job is yours if you want it. The mechanic says it isn't.
+* Work with the mechanic.
+  = scrap 7-9 | He's slow, and he's right. Between his one hand and all of yours, the pump is running by nightfall. The council pays, and the mechanic gives your crew the first water.
+* [tech] Send him up and do it yourselves.
+  ~ 50 scrap 7-9 | The pump's a simple thing. You have it running in an afternoon. The mechanic doesn't speak to you again.
+  ~ 20 injure 1 scrap 5-6 | The pump's a simple thing, and the well isn't. The wall comes down while {who} is at the bottom. They're dug out, barely. The mechanic doesn't say "I told you".
+  ~ 30 lose 1 scrap 5-6 | The wall comes down while {who} is at the bottom. The mechanic helps dig, and says nothing at all.
+* [engi] {who} looks at the pump from the top of the well and tells the mechanic what's wrong.
+  = scrap 9-11 | The mechanic looks at {who} for a long moment, then fixes it with one hand. The council pays, and he insists on paying a little more.
+* Tell the council the pump's beyond saving.
+  = | They'll have to buy another. They can't.
+
+# ---- security ----
+
+event slug_auction security
+The auction floor is a single long room full of Slugs, a few humans, and one very nervous Engi. The trader points to a crate at the end of the room and tells you nobody touches it. Then a fight breaks out at the other end.
+* Stay with the crate.
+  = scrap 9-11 | The fight was for your benefit. Two Slugs drift toward the crate while everyone looks the other way, find you still standing beside it, and drift away again. The trader pays, pleased.
+* [fight] Break up the fight.
+  ~ 45 scrap 7-9 | You separate the fighters, who stop at once, and turn to find the crate still where it was. The trader shrugs and pays.
+  ~ 25 injure 1 scrap 4-5 | You separate the fighters, and one of them has a knife. {who} takes it in the side. The crate is gone by the time anyone looks. The trader pays half.
+  ~ 30 lose 1 scrap 4-5 | One of the fighters has a knife, and {who} takes it in the side, and the floor is a long way from a doctor. The trader pays half.
+* [slug] {who} watches the room instead of the fight, and nods at two Slugs by the far wall.
+  = scrap 11-13 | You step in front of the two before they take a step. The fight stops on its own. The trader pays, and asks if {who} is for hire.
+* [mantis] {who} walks toward the fight, and the fight stops.
+  = scrap 9-11 | Nobody in the room wants to find out what {who} would have done. The crate stays where it is.

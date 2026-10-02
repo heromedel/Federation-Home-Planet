@@ -108,6 +108,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final List<homeplanet.parser.Expeditions.RansomNews> ransomNews = homeplanet.parser.Expeditions.checkRansoms(vault);
 		if (!HomePlanet.immersiveNotifications() && !ransomNews.isEmpty())
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { for (homeplanet.parser.Expeditions.RansomNews n : ransomNews) ransomNotice(n); } });
+		// crew hurt on an expedition, out of the infirmary: a word here, never a letter
+		final List<String> upAgain = homeplanet.parser.Expeditions.checkInfirmary(vault);
+		if (!upAgain.isEmpty())
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() {
+				JOptionPane.showMessageDialog(null, String.join(" and ", upAgain) + (upAgain.size() > 1 ? " are" : " is") + " out of the infirmary, on their feet and waiting in the Cargo Hold.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
+			} });
 		if (HomePlanet.immersiveNotifications()) {
 			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
 			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());

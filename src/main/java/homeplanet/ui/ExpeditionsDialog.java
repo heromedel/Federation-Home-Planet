@@ -25,8 +25,9 @@ import homeplanet.parser.XmlText;
 import homeplanet.vault.Vault;
 
 /**
- * The expeditions board: three postings, each sent crew from the Cargo Hold, and hiring at the foot. An expedition
- * plays out as a few pop-ups, each with its choices (blue where a crew member's race helps, red where it may not).
+ * The expeditions board: three postings the commander can sign on to with crew from the Cargo Hold, and hiring at the
+ * foot. An expedition plays out as FTL plays a beacon: the situation, numbered choices (blue where a crew member's
+ * race opens one), the outcome, "Continue...".
  */
 final class ExpeditionsDialog extends JDialog {
 	private final JPanel cols = new JPanel(new GridLayout(1, Expeditions.POSTINGS, 12, 0));
@@ -43,6 +44,8 @@ final class ExpeditionsDialog extends JDialog {
 	static boolean underWay() { return underWay; }
 	/** What a hailing commander is told while an expedition is under way, or null. */
 	static String awayNotice(String commander) { return underWay ? commander + " is away on an expedition. Hail again shortly." : null; }
+	/** FTL's blue for an option a crew member's race opens. */
+	static final String BLUE = "#6ab8ff";
 
 	static boolean open(java.awt.Component owner) {
 		ExpeditionsDialog d = new ExpeditionsDialog(owner);
@@ -54,9 +57,8 @@ final class ExpeditionsDialog extends JDialog {
 		super(javax.swing.SwingUtilities.getWindowAncestor(owner), "Expeditions", ModalityType.APPLICATION_MODAL);
 		JPanel body = new JPanel(new BorderLayout(0, 10));
 		body.setBorder(BorderFactory.createEmptyBorder(12, 16, 10, 16));
-		body.add(new JLabel("<html><div style='width:720px'>Jobs posted across the sectors for crew without a ship. Send up to "
-				+ Expeditions.PARTY_MAX + " from the Cargo Hold: they bring back scrap, now and then some gear, and sometimes injuries. "
-				+ "Not everyone comes back. Each expedition takes as long as a beacon.</div></html>"), BorderLayout.NORTH);
+		body.add(new JLabel("<html><div style='width:720px'>Jobs posted for crews without a ship of their own. Sign on, and take up to "
+				+ Expeditions.PARTY_MAX + " from the Cargo Hold with you. The pay is what the job pays, if it pays. Not everyone comes back.</div></html>"), BorderLayout.NORTH);
 		body.add(cols, BorderLayout.CENTER);
 		JPanel south = new JPanel(new BorderLayout(10, 0));
 		south.add(foot, BorderLayout.CENTER);
@@ -85,8 +87,11 @@ final class ExpeditionsDialog extends JDialog {
 		for (int i = 0; i < board.size(); i++) cols.add(card(i, board.get(i)));
 		int inHold = 0;
 		try { inHold = Expeditions.holdCrew(v).size(); } catch (IOException e) { }
+		List<String> laidUp = new ArrayList<String>();
+		for (Expeditions.Patient x : Expeditions.infirmary(v)) laidUp.add(x.name);
 		int fleet = Expeditions.fleetCrew(v), cost = Expeditions.hireCost(fleet);
-		foot.setText("<html>Crew in the Cargo Hold: " + inHold + ".&nbsp;&nbsp; The Cargo Hold holds " + v.storageScrap() + " scrap.</html>");
+		foot.setText("<html>Crew in the Cargo Hold: " + inHold + ".&nbsp;&nbsp; The Cargo Hold holds " + v.storageScrap() + " scrap."
+				+ (laidUp.isEmpty() ? "" : "<br>In the infirmary: " + XmlText.text(String.join(", ", laidUp)) + ".") + "</html>");
 		hireBtn.setText(fleet == 0 ? "Post a promise of adventure" : "Post for volunteers: " + cost + " scrap");
 		hireBtn.setToolTipText(fleet == 0 ? "Free: with no crew anywhere, a promise of adventure is all you can offer. Someone may answer."
 				: "5 scrap for each crew member in your fleet (" + fleet + "), at most 60: paid whether or not anyone answers. New crew wait in the Cargo Hold.");
@@ -98,13 +103,11 @@ final class ExpeditionsDialog extends JDialog {
 	private JPanel card(final int slot, Expeditions.Posting x) {
 		JPanel p = new JPanel(new BorderLayout(0, 8));
 		p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MenuTheme.GREY_GREEN), BorderFactory.createEmptyBorder(8, 10, 8, 10)));
-		String danger = x.sealed ? MenuTheme.HTML_GOLD : x.danger >= 3 ? "#d86a4a" : x.danger == 2 ? MenuTheme.HTML_GOLD : MenuTheme.HTML_GREY_GREEN;
-		JLabel words = new JLabel("<html><div style='width:210px'><font color='" + MenuTheme.HTML_GOLD + "'><b>" + XmlText.text(x.sector()) + "</b></font><br><br>"
-				+ "“" + XmlText.text(x.text) + "”<br><br><font color='" + danger + "'>Danger: " + x.dangerWord() + "</font>"
-				+ (x.outfit > 0 ? "<br><font color='" + MenuTheme.HTML_GOLD + "'>Outfitted crew wanted: " + x.outfit + " scrap a head</font>" : "") + "</div></html>");
+		JLabel words = new JLabel("<html><div style='width:210px'><font color='" + MenuTheme.HTML_GOLD + "'><b>" + XmlText.text(x.title()) + "</b></font><br><br>"
+				+ XmlText.text(x.text) + "</div></html>");
 		words.setVerticalAlignment(JLabel.TOP);
 		p.add(words, BorderLayout.CENTER);
-		JButton send = new JButton("Send crew...");
+		JButton send = new JButton("Sign on...");
 		send.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { send(slot); } });
 		p.add(send, BorderLayout.SOUTH);
 		return p;
@@ -115,10 +118,9 @@ final class ExpeditionsDialog extends JDialog {
 		List<CrewState> crew;
 		try { crew = Expeditions.holdCrew(v); } catch (IOException e) { HomePlanet.showErrorDialog("The Cargo Hold can't be read:\n" + e.getMessage()); return; }
 		if (crew.isEmpty()) {
-			JOptionPane.showMessageDialog(this, "There is no crew in the Cargo Hold to send.\nMove crew there in the Cargo Bay, or post for volunteers.", "Expeditions", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, "There is no crew in the Cargo Hold to take along.\nMove crew there in the Cargo Bay, or post for volunteers.", "Expeditions", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
-		outfitPerHead = Expeditions.board(v).get(slot).outfit;
 		List<CrewState> party = pickParty(crew);
 		if (party == null || party.isEmpty()) return;
 		Expeditions.Run run;
@@ -128,45 +130,27 @@ final class ExpeditionsDialog extends JDialog {
 		try { play(run, v); } finally { underWay = false; }
 		fill();
 	}
-	/** An expedition, start to finish: its pop-ups, the ships home, the end. */
+	/** An expedition, start to finish: the situation and its choices, each outcome, the docking. */
 	private void play(Expeditions.Run run, Vault v) {
-		String title = run.posting.realSector();
-		if (run.posting.sealed) // the sealed orders open once the shuttle is under way: no turning back now
-			say(wrap("The shuttle clears the dock, and the sealed orders unlock. The job is in the " + title + "."), "Sealed orders");
+		String title = run.posting.title();
 		while (!run.over()) {
-			Expeditions.Step ev = run.current();
 			List<Expeditions.Choice> choices = run.choices();
 			int c = -1;
-			while (c < 0) c = ask(run, ev, choices, title); // an expedition can't be walked away from halfway
+			while (c < 0) c = ask(run, choices, title); // an expedition can't be walked away from halfway
 			String said = run.choose(choices.get(c));
-			if (!said.trim().isEmpty()) say(wrap(said), title); // a step that only leads on has no words of its own
-		}
-		for (Expeditions.HomeShip h : run.ships()) { // each ship home: the Space Dock, or the Junkyard
-			Object[] where = {"Space Dock", "Junkyard"};
-			h.toDock = "Space Dock".equals(must(new JOptionPane(wrap(h.stealth() ? "The cruiser is yours, if you want her. Where should she go?"
-					: "Your crew brought a ship home. Send her to the Space Dock, or to the Junkyard?"), JOptionPane.QUESTION_MESSAGE, JOptionPane.DEFAULT_OPTION, null, where, where[0]), "A ship home"));
+			if (run.over()) say(wrap(said), title);
 		}
 		try {
 			String summary = Expeditions.finish(v, run);
 			changed = true;
-			JOptionPane.showMessageDialog(this, wrap(summary), "Expedition's end", JOptionPane.INFORMATION_MESSAGE);
-			for (Expeditions.HomeShip h : run.ships()) { // a hull on the station's blank copy needs the companion mod before she flies
-				if (!h.toDock || h.ship == null) continue;
-				List<String> missing = homeplanet.parser.Retrofit.missingBlueprints(h.ship.file());
-				if (missing.isEmpty()) continue;
-				Object[] opts = {"Patch Now", "Later"};
-				int r = JOptionPane.showOptionDialog(this, h.ship.name + " waits at the Space Dock, but can't fly until The Home Planet Station sends her blueprint ("
-						+ String.join(", ", missing) + ") to FTL via Slipstream. Without it she can still be scrapped or sold in the Junkyard.", "A ship home",
-						JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[0]);
-				if (r == 0) PatchDialog.open(this);
-			}
+			say(wrap(summary), title);
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not record the expedition; the Cargo Hold is as it was:\n" + e.getMessage());
 		}
 	}
-	/** A pop-up of the expedition's: no closing it, only its button. */
+	/** A pop-up of the expedition's: no closing it, only "1. Continue..." as FTL has it. */
 	private void say(java.awt.Component message, String title) {
-		must(new JOptionPane(message, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null, new Object[] {"Continue"}, "Continue"), title);
+		must(new JOptionPane(message, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null, new Object[] {"1. Continue..."}, "1. Continue..."), title);
 	}
 	private Object must(JOptionPane pane, String title) {
 		JDialog d = pane.createDialog(this, title);
@@ -176,10 +160,10 @@ final class ExpeditionsDialog extends JDialog {
 		d.dispose();
 		return pane.getValue();
 	}
-	/** An event: its words, and its choices one above the other, numbered, as FTL lists them. Returns the one taken, or -1. */
-	private int ask(Expeditions.Run run, Expeditions.Step ev, List<Expeditions.Choice> choices, String title) {
+	/** A screen: its words, and its choices one above the other, numbered, as FTL lists them. Returns the one taken, or -1. */
+	private int ask(Expeditions.Run run, List<Expeditions.Choice> choices, String title) {
 		JPanel p = new JPanel(new BorderLayout(0, 12));
-		p.add(wrap(run.fillEvent(ev.text)), BorderLayout.NORTH);
+		p.add(wrap(run.text()), BorderLayout.NORTH);
 		JPanel list = new JPanel(new GridLayout(0, 1, 0, 4));
 		final JOptionPane op = new JOptionPane(p, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null, new Object[0]);
 		for (int i = 0; i < choices.size(); i++) {
@@ -198,24 +182,22 @@ final class ExpeditionsDialog extends JDialog {
 		Object v = op.getValue();
 		return v instanceof Integer && (Integer) v >= 0 && (Integer) v < choices.size() ? (Integer) v : -1;
 	}
-	/** A choice as its button shows it, numbered: blue for a race's help, red for its trouble. */
+	/** A choice as its button shows it, numbered: blue where a crew member's race opens it. */
 	static String label(Expeditions.Run run, Expeditions.Choice c, int n) {
 		String t = n + ". " + XmlText.text(run.label(c));
 		if (c.race == null) return "<html>" + t + "</html>";
-		return "<html><font color='" + (c.red ? "#e05a4a" : "#6ab8ff") + "'>" + t + "</font></html>";
+		return "<html><font color='" + BLUE + "'>" + t + "</font></html>";
 	}
 	private static JLabel wrap(String text) {
-		return new JLabel("<html><div style='width:420px'>" + XmlText.text(text).replace("\n", "<br>") + "</div></html>");
+		return new JLabel("<html><div style='width:440px'>" + XmlText.text(text).replace("\n", "<br>") + "</div></html>");
 	}
 	/** Up to three crew from the Cargo Hold, ticked. */
-	private int outfitPerHead = 0;
 	private List<CrewState> pickParty(List<CrewState> crew) {
 		JPanel p = new JPanel(new GridLayout(0, 1, 0, 2));
-		p.add(new JLabel("Who goes? (up to " + Expeditions.PARTY_MAX + ")" + (outfitPerHead > 0 ? " Outfitting: " + outfitPerHead + " scrap a head, from the Cargo Hold." : "")));
+		p.add(new JLabel("Who goes with you? (up to " + Expeditions.PARTY_MAX + ")"));
 		final List<JCheckBox> boxes = new ArrayList<JCheckBox>();
 		for (CrewState c : crew) {
-			int max = c.getRace() == null ? 100 : c.getRace().getMaxHealth();
-			final JCheckBox b = new JCheckBox(c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")" + (c.getHealth() < max ? ", injured" : ""));
+			final JCheckBox b = new JCheckBox(c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")");
 			b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) {
 				int n = 0; for (JCheckBox x : boxes) if (x.isSelected()) n++;
 				if (n > Expeditions.PARTY_MAX) b.setSelected(false);
@@ -225,7 +207,7 @@ final class ExpeditionsDialog extends JDialog {
 		}
 		if (boxes.size() <= Expeditions.PARTY_MAX) for (JCheckBox b : boxes) b.setSelected(true);
 		else for (int i = 0; i < Expeditions.PARTY_MAX; i++) boxes.get(i).setSelected(true);
-		Object[] opts = {"Send them", "Cancel"};
+		Object[] opts = {"Set out", "Cancel"};
 		if (JOptionPane.showOptionDialog(this, p, "Expeditions", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]) != 0) return null;
 		List<CrewState> out = new ArrayList<CrewState>();
 		for (int i = 0; i < boxes.size(); i++) if (boxes.get(i).isSelected()) out.add(crew.get(i));

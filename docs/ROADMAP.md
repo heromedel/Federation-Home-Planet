@@ -495,87 +495,58 @@ no letters, you come and check).
   `reactor_upgrade` count has gone up with no jump since the station last looked, one beacon is counted, once a
   beacon stop, and noted in her voyage log. Nothing else (crew walking about) counts.
 
-## 22. Expeditions, hiring, folding headings — built (4B.83; harness test ExpT, checks in GuiT)
+## 22. Expeditions, hiring, folding headings — rebuilt (4B.92; harness test ExpT, checks in GuiT)
 
-- **Expeditions** (under Station): a board of three postings, each in one of FTL's sector types (one in ten somewhere
-  rare: a homeworld, the Hidden Crystal Worlds); a finished one is replaced at once. Up to 3 crew from the Cargo Hold
-  go; two or three events from the sector's pool, each with several ways through, some open only with a race in the
-  party (blue where it helps, red where it makes things worse). Pay about 5 to 50 scrap, now and then cheap gear,
-  missiles, fuel or drone parts; crew can come back injured (half their health; hurt twice, lost) or not at all,
-  recorded in the history log. Each finished expedition counts as one beacon. Events live in
-  `resource/expeditions.txt` (its header gives the format); the harness checks every event has two ways through
-  without a race and every sector has at least three events.
+Expeditions were built at 4B.83 and grown to 4B.91 (sectors, risk grades, chains of events, outfitting, ships home,
+the lost Stealth Cruiser). heromedel found the result incoherent, un-FTL and over-paid, and asked for a rebuild from
+the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old events survives.
+
+- **The idea**: the commander signs on to a posted job with up to 3 crew from the Cargo Hold, and the job plays as FTL
+  plays a beacon: a situation at one place, numbered choices (blue where a crew member's race opens one), the outcome,
+  "1. Continue...". One posting is one event. Crews without a ship can earn a little toward a Junkyard derelict,
+  then a little more toward its parts and repairs: several expeditions for one system is the intended pace.
+- **Postings**: three on the board, each a kind of job (Rescue, Escort, Salvage, Survey, Delivery, Repair,
+  Security), its words a job advert, no sector, no danger grade, no pay named. An untaken posting comes down after 1 to
+  7 beacons (hidden); a finished one is replaced at once, never by the same job.
+- **Events** (`resource/expeditions.txt`, the header gives the format): one place and one situation, in FTL's tone
+  (second person, short, dry); a choice is one sure outcome or a hidden roll between several, by weight; an outcome
+  may lead on to one more choice of the same moment (`then <step>`), never a new scene. Rewards come only at the end
+  of a branch and on FTL's first-sector scale: 5 to 15 scrap, a dangerous choice up to 20, fuel, missiles or drone
+  parts in twos, a weapon, drone or augment rarely; many branches pay nothing. The game adds "You receive 9 scrap."
+  after the words, as FTL does, and nothing about odds or arithmetic: the screens show nothing the crew wouldn't know.
+- **Danger**: the only thing at risk is crew, so a risky choice can kill. Every outcome that hurts someone has a sister
+  that kills them, usually the heavier; a few take them instead (`taken`: a ransom follows, signed by the event's
+  `foe`). The commander always comes home. Who is along changes the odds, unseen: a crew member whose race fits the
+  choice (its own blue option, or the tag's race: fight Mantis, tech Engi, heat Rock, power Zoltan, cold Lanius, talk
+  Slug) halves the bad outcomes' weight, and the skill it takes (combat, repair, engines, shields, piloting, weapons)
+  cuts it again. Nothing else: a bigger party is not a safer one.
+- **The infirmary** (`infirmary.txt` in the vault): a crew member hurt on an expedition stays in the Cargo Hold's save
+  but can't be sent again for 3 to 6 beacons (hidden; the Expeditions screen lists who is laid up). When their time is
+  up, the next visit to the Space Dock says so in a pop-up (never a letter), and they are whole again.
+- Each expedition counts as one beacon of the fleet's time; events met in the last twelve aren't met again while others
+  of the kind are left (`recent` in the fleet's expeditions.txt). The history log keeps each job's event, scrap, the
+  dead and the laid up.
+- Gone with the rebuild: sectors and risk grades, chains of several events, sealed and outfitted postings, the job's
+  own pay, asides, ships home from expeditions and the lost Stealth Cruiser expedition (to be rewritten later as its own
+  special event, once the ordinary ones feel right).
+- **Ransoms** (4B.88, kept): a crew member taken is asked for a few beacons later (the fleet's captives.txt), handled in
+  the inbox: the captors' letter has Pay and Refuse, says "You have one month" and never counts beacons (14, hidden);
+  a reminder comes three beacons before the end. Refused or run out, the Federation Ambassador writes that they are
+  missing, presumed dead. With the inbox off, the ask and reminder come up at the Space Dock (Pay, Refuse, Later).
 - **Hiring** on the same screen: with no crew anywhere, "Post a promise of adventure" is free and answered half the
   time; otherwise "Post for volunteers" costs 5 scrap a crew member in the fleet (every ship, the Junkyard's hulls and
   the Cargo Hold), at most 60, spent either way, answered three times in four. The race is one of the unlocked
   ships' crews; new crew wait in the Cargo Hold. With no FTL profile yet (a fresh Immersive one), only the Kestrel's
-  humans answer, as Commission has it (4B.90; before, every race could).
-- Ships home, rarer and rougher (4B.91): a ship home is built exactly as a Junkyard derelict (same damage, stripping,
-  missing systems, odd rebuilds), with a name rolled for her model; the event picks a model fitting the sector and
-  adds the one failure its story names ("towed", which repaired her, is gone). Ship events are kept out of the
-  ordinary draw and come up so that roughly one expedition in 20 brings a ship home, one in ten with an Engi along
-  (approximate: common enough to help a scrapper, not something to count on). A ship is never a sure thing: a
-  gamble, or taken in place of the job's pay (`nopay`); the harness refuses a ship for nothing. Untaken postings come
-  down after 1 to 7 beacons each (hidden) and are replaced. In the Cargo Bay's system rows, broken bars are drawn red
-  at the end of the level bar (installed and stored alike), the words in the tooltip. An expedition's pop-ups are titled with the
-  sector alone: the "(2 of 3)" counted events, not pop-ups, and read wrong.
+  humans answer, as Commission has it (4B.90).
+- While an expedition is under way its pop-ups can't be closed, only answered; a priority Long Range message pops up
+  over it and the expedition carries on after; a hail is told the commander is away and listed as missed (4B.87).
+- In the Cargo Bay's system rows, broken bars are drawn red at the end of the level bar (4B.91).
 - **Folding headings**: a click on a gold heading of the Space Dock's controls folds its buttons away or back,
   lighter under the mouse, a small arrow when folded; remembered in the cfg (`fold_station`, ...).
 - A one-sided Long Range trade's log no longer says "received ():".
-- Deeper expeditions (4B.85): about 100 events, six to eight of each sector's own (a homeworld three, besides its
-  race's; the Hidden Crystal Worlds seven), split into one file per sector (`expeditions_<sector>.txt`, included from
-  `expeditions.txt`), written after reading FTL's own events in ftl.dat: its tone, never its events or words (the
-  harness holds every line against FTL's event text and fails on any run of six words the same).
-  - Multi-part events: a choice can lead into a further pop-up (`then <step>`), chains of three or four; many pop-ups
-    have four or more choices.
-  - Every event is graded low, moderate or high risk; a posting draws events of its danger, one in five a level
-    riskier. Low risk rarely injures and never kills.
-  - Odds: each crew member beyond the first adds 5 to every gamble, each injured one (before or during) takes 3 off;
-    in a fight (`[fight]`) each Mantis adds 8, each Rock 4, each Engi takes 5 off.
-  - Outcomes vary: scrap, gear, supplies, a new crew member (`join`), a lead into the next step, or nothing.
-  - One run never meets a theme twice; events met in about the last eight expeditions aren't met again while others
-    are left (`recent` in the fleet's expeditions.txt).
-  - Sealed postings, one in eight: "Destination undisclosed", danger "Unknown", the sector rolled when posted (now and
-    then a rare one) and told only once the shuttle is under way; they pay half again.
-- Ships home and the lost expedition (4B.86):
-  - `aside <chance> | <words>` after an outcome: an extra line only that often; about 40 across the events, the
-    Mantis convoy raid's "body soldier" among them (one time in ten when the airlocks fail). The Mantis posting reads
-    "Need mercenaries for defense through Mantis territory".
-  - `ship <sector>:<condition>[:<system>]`: a ship comes home, of a model fitting the sector (Engi, Zoltan, Mantis,
-    Rock, Slug, Lanius and Crystal cruisers in their own space, a Kestrel from civilian space, a Federation Cruiser
-    from rebel space, a Stealth or Slug cruiser from the nebula, a mix from pirate space), wrecked, towed (most of her
-    hull, no breaches) or limping (the named system broken through or gone). Each sector, and the Hidden Crystal
-    Worlds, has an event that can bring one home, each a different story. The player sends her to the Space Dock or
-    the Junkyard; a docked hull on the station's blank copy says so, with Patch Now.
-  - The lost expedition (`event lost_expedition saga`): one in 300 high-danger expeditions of two or more crew goes
-    missing at its end (even one that turned for home early). Four beacons of silence, a rumour of a battle with the
-    sector's enemy, an alert as a ship decloaks off the station's bow: fire or wait (firing saves her one time in
-    four, waiting three in four, whoever is left). The survivor comes home at the helm of a Federation Stealth Cruiser
-    on her own blueprint (no companion mod), near new or, if hit, dented (some hull, a bar or two); the others are
-    lost. She goes to the Space Dock or the Junkyard as chosen, the survivor aboard.
-- Expeditions and the Long Range (4B.87): an expedition's pop-ups (events, outcomes, sealed orders, the ship
-  question) can't be closed, only answered. While one is under way a priority message pops up over it (and the
-  expedition carries on after), and a hail is told the commander is away on an expedition and listed as missed. The
-  lost expedition's choices read "Demand The Station Commander to give the order to fire" and "Wait and watch as
-  The Station opens hailing frequencies".
-- Higher stakes (4B.88):
-  - Injuries on moderate and high-risk events can be fatal (never on low-risk ones), and gambles there are harder
-    (the numbers are kept in Expeditions.java, not here or in the game's text: heromedel asked not to see them).
-    Someone sent out already injured who is hurt again is lost. Across all expeditions about one in four loses
-    someone (it was one in seven).
-  - Outfitted jobs, one posting in four: "Outfitted crew wanted: N scrap a head" (5-12), paid from the Cargo Hold
-    for each crew member sent; +10 on every gamble and a quarter more scrap from the events. A finished job returns
-    50-200% of the outfitting on top of its pay; one not finished (turned back, or no one left) pays nothing and
-    returns nothing. Over many outfitted jobs the payback averages about what was spent.
-  - The job's own pay comes only for a job finished.
-  - One loss in three is a capture: a few beacons later a ransom (25-50 scrap) is asked (the fleet's captives.txt).
-    Since 4B.89 it's handled only in the inbox: the captors' letter has Pay and Refuse; it says "You have one month"
-    and never counts beacons (the real count, 14 beacons, stays hidden); a reminder ("Time is running short") comes
-    three beacons before the end. Refused or run out, the Federation Ambassador (a new voice) writes that the crew
-    member is missing, presumed dead. With the inbox off, the ask and the reminder come up at the Space Dock (Pay,
-    Refuse, Later) and the Ambassador's word as a notice.
-  - Choices reviewed so none is better than another on every count, except FTL-style moral ones (the cold choice
-    may pay more, without comment) and where a ship or a new crew member is the reward.
+- The harness (ExpT) reads the events file clean, plays every event through every choice, checks every hurt has a
+  death beside it, holds every line against FTL's own event text (no run of six words the same), and walks the
+  infirmary and the ransoms through their clocks.
 
 ## Naming decisions — settled (4B.30)
 
