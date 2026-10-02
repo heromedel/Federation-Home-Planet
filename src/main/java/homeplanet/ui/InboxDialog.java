@@ -242,7 +242,8 @@ public class InboxDialog extends JDialog {
 		if (choice < 0 || choice >= options.size()) return;
 		try {
 			Transmissions.reply(m, choice);
-			JOptionPane.showMessageDialog(this, "Reply sent. Expect an answer within a few beacons.", "Reply", JOptionPane.INFORMATION_MESSAGE);
+			String note = homeplanet.parser.RepairJob.OFFER.equals(m.key) && choice == 0 ? homeplanet.parser.RepairJob.patchNote() : null;
+			JOptionPane.showMessageDialog(this, "Reply sent. Expect an answer within a few beacons." + (note == null ? "" : "\n\n" + note), "Reply", JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not send the reply. Nothing was changed:\n" + e.getMessage());
 		}

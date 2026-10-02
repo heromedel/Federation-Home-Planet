@@ -61,7 +61,6 @@ public final class ImmersiveDialog {
 			}
 			Vault.immersiveSlot = slot;
 			HomePlanet.immersiveMode = true;
-			HomePlanet.applyImmersive();
 			HomePlanet.saveConfig();
 			if (!begun) Career.start(brief.salaryAll.isSelected() && !ownProfile, ownProfile, brief.rules());
 			UnlockGrants.returning(Unlocks.read()); // a new career starts its record here

@@ -110,7 +110,7 @@ public final class FinalVictory {
 				fills.put("worth", worth());
 				if ("offered".equals(f.outcome)) {
 					fills.put("value", Integer.toString(museumPrice(value)));
-					if (HomePlanet.immersiveNotifications) Transmissions.post("rescue:" + f.id, "rescue", fills); // nothing if it's there already
+					if (HomePlanet.immersiveNotifications()) Transmissions.post("rescue:" + f.id, "rescue", fills); // nothing if it's there already
 					else out.add(notice("rescue", fills, f, museumPrice(value)));
 					continue;
 				}
@@ -132,12 +132,12 @@ public final class FinalVictory {
 				if (MUSEUM.equals(c)) { // Hard: no keeping her; the museum takes her at its price
 					fills.put("value", Integer.toString(museumPrice(value)));
 					museum(f);
-					if (HomePlanet.immersiveNotifications) Transmissions.post("museum:" + f.id, "museum", fills);
+					if (HomePlanet.immersiveNotifications()) Transmissions.post("museum:" + f.id, "museum", fills);
 					else out.add(notice("museum", fills, null, museumPrice(value)));
 				} else if (RESCUE.equals(c)) {
 					fills.put("value", Integer.toString(museumPrice(value)));
 					v.finalOffered(f);
-					if (HomePlanet.immersiveNotifications) Transmissions.post("rescue:" + f.id, "rescue", fills);
+					if (HomePlanet.immersiveNotifications()) Transmissions.post("rescue:" + f.id, "rescue", fills);
 					else out.add(notice("rescue", fills, v.finalBattle(f.id), museumPrice(value)));
 				} else {
 					v.finalRewarded(f); // noted before paying: a payment whose note was lost would be paid again
@@ -149,7 +149,7 @@ public final class FinalVictory {
 					}
 					v.closeFinal(f, true);
 					HistoryLog.entry("REWARD", value + " scrap to the Cargo Hold for " + f.name);
-					if (HomePlanet.immersiveNotifications) Transmissions.post("reward:" + f.id, "reward", fills);
+					if (HomePlanet.immersiveNotifications()) Transmissions.post("reward:" + f.id, "reward", fills);
 					else out.add(notice("reward", fills, null, value));
 				}
 			} catch (Exception e) {

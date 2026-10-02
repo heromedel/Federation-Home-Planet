@@ -72,6 +72,16 @@ public class DerT { public static void main(String[] a) throws Exception {
    int base = Pricing.auctionBase(x.save);
    Setup.chk("L: priced at 25-75% of her value as she is, missing systems or not (" + x.price + " of " + base + ")", x.price >= Math.max(10, base / 4) - 1 && x.price <= Math.max(10, base * 3 / 4) + 1);
   }
+  // the list keeps each one's share, not a price, so a change to the prices reaches listings already in; one from before shares keeps its price
+  File idx = new File(Derelicts.dir(v), "listings.txt"); byte[] kept = SafeFiles.read(idx);
+  Properties lp = new Properties(); lp.load(new ByteArrayInputStream(kept));
+  int i0 = again.get(0).index;
+  Setup.chk("L: the list keeps her share of the price, not a price", lp.getProperty(i0 + ".percent") != null && lp.getProperty(i0 + ".price") == null);
+  lp.remove(i0 + ".percent"); lp.setProperty(i0 + ".price", "7");
+  ByteArrayOutputStream lb = new ByteArrayOutputStream(); lp.store(lb, null); SafeFiles.write(idx, lb.toByteArray());
+  int oldPrice = -1; for (Derelicts.Listing x : Derelicts.current(v)) if (x.index == i0) oldPrice = x.price;
+  Setup.chk("L: a listing from before shares keeps the price it had (" + oldPrice + ")", oldPrice == 7);
+  SafeFiles.write(idx, kept);
   Derelicts.Listing pick = again.get(1);
   int scrap = v.storageScrap();
   if (scrap < pick.price) v.depositToStorage(pick.price - scrap);

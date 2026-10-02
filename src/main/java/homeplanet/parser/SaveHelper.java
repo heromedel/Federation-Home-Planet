@@ -616,6 +616,6 @@ public final class SaveHelper {
 	}
 	/** True unless the station rule is on and this ship isn't at a station. */
 	public static boolean mayTrade(SavedGameState gs) {
-		return !homeplanet.core.HomePlanet.storeRequirement || isAtStation(gs);
+		return !homeplanet.core.HomePlanet.storeRequirement() || isAtStation(gs);
 	}
 }

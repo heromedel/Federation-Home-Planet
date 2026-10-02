@@ -99,7 +99,7 @@ public final class Derelict {
 	}
 
 	/** A breach on the room's first square. */
-	private static void breach(ShipState ship, ShipLayout lay, int roomId) {
+	static void breach(ShipState ship, ShipLayout lay, int roomId) {
 		if (roomId < 0 || roomId >= lay.getRoomCount()) return;
 		ShipLayoutRoom r = lay.getRoom(roomId);
 		ship.setBreach(r.locationX, r.locationY, 100);

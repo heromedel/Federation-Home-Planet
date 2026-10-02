@@ -388,12 +388,52 @@ no letters, you come and check).
   Reset drops it. Selling a stored system pays the Cargo Hold.
 - The Dry Dock now mends broken system bars (5 scrap a bar, shown as Fix instead of the upgrade) and seals breaches
   (5 each), beside hull repairs.
+- Tidying (4B.67): Immersive Mode no longer writes its rules over the player's own Sandbox settings; each rule asks
+  the mode (Immersive always on, Sandbox by its setting), so leaving a career finds Sandbox as it was. New Journey,
+  Sell and Scrap use the same store check as the Cargo Bay (a ship still at The Home Planet Station's beacon may).
+  Fuel, missile and drone part prices live in one place. A derelict's listing keeps her share (25-75%), so her price
+  follows any change to the prices. The Refit bill, the auction and the Junkyard window are tested in the harness
+  (GuiT, on a virtual display).
+- The repair job (4B.69): after the fleet makes three unflyable ships fly again (no working Engines or Piloting, then
+  both), a collector in the Civilian Sector offers 200-500 scrap over the repair cost to restore her Stealth,
+  the Nightjar (on the blank copy: a teleporter, and FTL's Zoltan shield augment). Accepted, she's delivered to the
+  Junkyard, marked as borrowed (history/<id>/borrowed.txt, beside TradeMark). Whole again (full hull, no breaches,
+  flyable), The Home Planet Station writes that she's ready, with two replies: Send her home (at once, from the Space
+  Dock or aboard her with FTL closed and at a station; refused with the reason otherwise, and the letter stays
+  answerable) or Not yet. Aboard her, the Cargo Bay shows Return (her name) beside her: it returns the borrowed ship
+  you're aboard, as decommissioning does (FTL closed), so a ship on loan over Long Range Comm. could use it later
+  (IDEAS.md, Idea D). Either way she goes home for the cost (assessed at delivery at Dry Dock prices) plus the bonus. Not returned 200 beacons after she came, for any reason,
+  her owner demands her: sent back then, she pays the cost only if she's whole; refused, 7-14 beacons later the
+  Federation Office of Salvage and Claims takes her value from the Cargo Hold's scrap, else a docked ship, else
+  everything in the Cargo Hold but its crew, and her too if docked (boarded: when she next docks). Hidden in the
+  Junkyard she isn't found; salvaged later, the Junkyard Foreman writes. New fates: RETURNED, SEIZED. Without
+  Slipstream the whole job still works at The Home Planet Station; only flying her in FTL needs the patch (a note
+  says so when the offer is taken). To test: whether FTL takes the Zoltan shield as a fourth augment beyond the
+  three slots; if it does, the shield could stop counting as a slot.
 
 
 - **Thruster glow for designs.** FTL lights the engines of some of its own ships (the Kestrel's, when piloted and
   ready to jump) from positions written into the game itself; nothing in a blueprint, layout or art file sets them, and
   only the Hyperspace mod lets custom ships have them. Designs need just their one PNG; glowing engines can be painted
   into the art. Settled with heromedel: not worth pursuing.
+
+## 17. Check for Updates — built (4B.69; harness test UpdT)
+
+- **Settings, About: Check for Updates...** reads main's `pom.xml` on GitHub and compares versions (4B.9 < 4B.10 <
+  4C.1). Only when asked: nothing contacts GitHub on its own. Up to date, unreachable (with the address), or newer.
+- **Newer:** a copy not built by the Construction Yard (no source beside `Current Build\`) is pointed to GitHub; a git
+  checkout (a `.git` folder) is told to fetch in GitHub Desktop. Otherwise **Update Now** downloads main's zip,
+  checks it's whole (one top folder, the pom, the Construction Yard, the program's main class; nothing outside the
+  folder), and puts its files in place: only files the repository has, never `tools\`, `target\`, `.git`, logs, a
+  `.cfg`, `.jar` or `.ico`. Files the last update installed that main no longer has are removed
+  (`update-manifest.txt`). Every file replaced or removed is kept in `update-backup\`, with the new ones listed; a
+  failure partway puts everything back at once.
+- **Then** the station closes (asking first, as closing does) and starts the Construction Yard with `update`: it
+  builds without the menu (waiting up to half a minute for the old jar to be let go) and opens the station. If the
+  build fails, the old files go back (`:restore`) and the old jar is still in `Current Build\`.
+- **The Construction Yard** now offers 0: Exit / 1: Launch the Station Interface after a successful build.
+- Tested on Windows by hand: the rebuild and relaunch (UpdT covers the versions, the file replacement, bad downloads
+  and the put-back).
 
 ## Naming decisions — settled (4B.30)
 

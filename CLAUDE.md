@@ -52,6 +52,10 @@ it does and CREDITS.md for where the code came from.
   would trade wrongly; new fields, kinds and package files are ignored by older stations, so adding one is safe.
 - **Traded ships:** anything that rewards or reacts to what a ship has done (events, rewards, letters, achievements)
   counts only what she did since her last trade: ask `homeplanet.vault.TradeMark`. Displays keep her whole life.
+- **Without Slipstream:** at any time that content is not available because the player is not using Slipstream, the
+  game should still work otherwise. A reward could (not must) come in a version that needs patching and one that doesn't; whichever
+  is accepted, the content that isn't patched still works as normal. Players can accept a reward they won't patch in,
+  with a message explaining that without the patch it may not be usable.
 - `src/main/java/net/blerf/ftl`, `net/vhati`: Vhati's save parser and ftl.dat reader (GPL, lightly extended;
   each changed file says so at the top).
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).

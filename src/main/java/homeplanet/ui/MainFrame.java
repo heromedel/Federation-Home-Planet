@@ -34,15 +34,25 @@ public class MainFrame extends JFrame {
 	private final HashMap<String, BufferedImage> imageCache = new HashMap<String, BufferedImage>();
 	private final HashMap<String, BufferedImage> scaledCache = new HashMap<String, BufferedImage>();
 
+	/** Asks first where leaving would lose something (Long Range Comm., the Cargo Bay's unsaved changes): true to go on. */
+	public boolean mayClose(String doing) {
+		if (atComm && !comm.confirmLeave(doing)) return false;
+		if (!atSpaceDock && !atMuseum && !atComm && !cargoBay.confirmLeave(doing)) return false;
+		return true;
+	}
+	/** Closes the station (after {@link #mayClose}): the window remembered, then the program ends. */
+	public void closeNow() {
+		rememberWindow(); // its size, position and maximized state
+		System.exit(0);
+	}
+
 	public MainFrame(String appName, String appVersion) {
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // closing asks first when the Cargo Bay has unsaved changes
 		addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
 			public void windowClosing(java.awt.event.WindowEvent e) {
-				if (atComm && !comm.confirmLeave("close The Home Planet Station interface")) return;
-				if (!atSpaceDock && !atMuseum && !atComm && !cargoBay.confirmLeave("close The Home Planet Station interface")) return;
-				rememberWindow(); // its size, position and maximized state
-				System.exit(0);
+				if (!mayClose("close The Home Planet Station interface")) return;
+				closeNow();
 			}
 			@Override
 			public void windowActivated(java.awt.event.WindowEvent e) {

@@ -65,7 +65,7 @@ public final class Economy {
 	/** Commissioning costs this share of her price (Settings', or the career's). */
 	public static int commissionPercent() {
 		homeplanet.parser.CareerRules c = career();
-		return c != null ? c.commissionPercent() : HomePlanet.commissionPercent;
+		return c != null ? c.commissionPercent() : HomePlanet.immersiveMode ? 100 : HomePlanet.commissionPercent; // (a career from before difficulties: full price)
 	}
 
 	/** A removal fee as Settings words it. */
