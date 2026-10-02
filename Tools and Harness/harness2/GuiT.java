@@ -165,6 +165,7 @@ public class GuiT {
   final Object[] r = new Object[6];
   presses.clear(); presses.addAll(Arrays.asList(0, 0)); // Yes to selling the weapon, Yes to selling the system
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   r[3] = call(f.spaceDock, SpaceDockUI.class, "cargoBayClosedReason", new Class<?>[0]); // the Space Dock's Cargo Bay button lets her in
    f.showCargoBay();
    CargoBayUI bay = f.cargoBay;
    r[0] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
@@ -181,7 +182,7 @@ public class GuiT {
   Thread.sleep(400);
   ShipState hold = v.readCopy(v.storage()).save.getPlayerShip();
   String file = new String(SafeFiles.read(v.systemsFile()), "UTF-8");
-  Setup.chk("H: no ship aboard: the Cargo Bay opens on the Cargo Hold", Boolean.TRUE.equals(r[0]) && Boolean.TRUE.equals(r[1]));
+  Setup.chk("H: no ship aboard: the Space Dock's Cargo Bay button opens it (" + r[3] + "), on the Cargo Hold", r[3] == null && Boolean.TRUE.equals(r[0]) && Boolean.TRUE.equals(r[1]));
   Setup.chk("H: a weapon and a stored system sold from it: Save pays the hold, both are gone (" + hold.getScrapAmt() + " scrap)", Boolean.TRUE.equals(r[2])
     && hold.getWeaponList().isEmpty() && !file.contains("cloaking") && hold.getScrapAmt() > 10);
  }
