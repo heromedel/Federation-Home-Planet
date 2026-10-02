@@ -492,6 +492,24 @@ no letters, you come and check).
   `reactor_upgrade` count has gone up with no jump since the station last looked, one beacon is counted, once a
   beacon stop, and noted in her voyage log. Nothing else (crew walking about) counts.
 
+## 22. Expeditions, hiring, folding headings — built (4B.83; harness test ExpT, checks in GuiT)
+
+- **Expeditions** (under Station): a board of three postings, each in one of FTL's sector types (one in ten somewhere
+  rare: a homeworld, the Hidden Crystal Worlds); a finished one is replaced at once. Up to 3 crew from the Cargo Hold
+  go; two or three events from the sector's pool, each with several ways through, some open only with a race in the
+  party (blue where it helps, red where it makes things worse). Pay about 5 to 50 scrap, now and then cheap gear,
+  missiles, fuel or drone parts; crew can come back injured (half their health; hurt twice, lost) or not at all,
+  recorded in the history log. Each finished expedition counts as one beacon. Events live in
+  `resource/expeditions.txt` (its header gives the format); the harness checks every event has two ways through
+  without a race and every sector has at least three events.
+- **Hiring** on the same screen: with no crew anywhere, "Post a promise of adventure" is free and answered half the
+  time; otherwise "Post for volunteers" costs 5 scrap a crew member in the fleet (every ship, the Junkyard's hulls and
+  the Cargo Hold), at most 60, spent either way, answered three times in four. The race is one of the unlocked
+  ships' crews; new crew wait in the Cargo Hold.
+- **Folding headings**: a click on a gold heading of the Space Dock's controls folds its buttons away or back,
+  lighter under the mouse, a small arrow when folded; remembered in the cfg (`fold_station`, ...).
+- A one-sided Long Range trade's log no longer says "received ():".
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

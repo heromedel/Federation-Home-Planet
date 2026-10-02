@@ -1,0 +1,564 @@
+# Expeditions: the postings on the board, and the events crew meet on them.
+#
+# posting <sector> <danger 1-3> <the posting's words>
+#
+# event <id> <sector>[,<sector>...]       (any = every common sector; a homeworld also meets its race's events)
+# <the event's words, as many lines as needed>
+# * <a choice anyone can take>
+# * [<race>] <a choice open with that race in the party: blue>
+# * [red <race>] <a choice that race brings, and makes worse: red>
+#   ok <effects> | <words>                 a sure outcome, or:
+#   roll <chance of the first, in %>
+#   win <effects> | <words>
+#   lose <effects> | <words>
+#
+# Effects: scrap 5-10, injure 1, lose 1, fuel 2, missiles 1, parts 1, item weapon|drone|augment, end (the expedition
+# turns for home). In the words: {who} is the crew member the choice is about (the race's, else someone in the party),
+# {crew} anyone in the party, {sector} the sector's name.
+# Races: human, engi, mantis, rock, slug, zoltan, crystal, lanius. Sectors: civilian, engi, zoltan, mantis, rock, slug,
+# nebula, pirate, rebel, abandoned; rare: engi_home, mantis_home, rock_home, zoltan_home, slug_home, crystal.
+# Every event needs at least two ways through without a race. Write fresh: FTL's tone, never FTL's text.
+# Voice: "the rebels" lowercase; the Rebel Flagship is never said to be destroyed.
+
+# ---- postings ----
+
+posting civilian 1 Hands wanted to escort a grain convoy between two farming colonies
+posting civilian 2 Dangerous fugitive tracked down to an alias in a civilian sector; bounty hunters needed
+posting civilian 1 Colony council seeks a survey team for a failing water reclaimer
+posting engi 1 Engi relay station needs extra hands while its network is rebuilt
+posting engi 2 Salvage rights offered on a drone factory gone quiet
+posting zoltan 1 Zoltan observers request escorts for a census of the outer moons
+posting zoltan 2 Energy anomalies near a Zoltan relay; investigators wanted, discretion expected
+posting mantis 3 Need body soldiers for defense through Mantis territory
+posting mantis 2 A trading post on the Mantis border wants guards for one long night
+posting rock 2 Rock miners hiring for a deep shaft no one else will work
+posting rock 1 A Rock pilgrimage needs guides who can keep up
+posting slug 2 Courier wanted to carry a sealed package through Slug space, no questions asked
+posting slug 1 A Slug merchant seeks witnesses for a contract signing
+posting nebula 1 Looking for crew to chart an unexplored nebula
+posting nebula 2 Sensor buoy lost in the nebula; retrieval team wanted
+posting pirate 3 Rebel criminals hiding in a known asteroid field
+posting pirate 2 Ransom to be delivered to a pirate den; steady nerves required
+posting rebel 3 Federation intelligence needs a small team behind rebel lines
+posting rebel 2 Refugees stranded near a rebel checkpoint need an escort out
+posting abandoned 2 Lanius scavengers spotted on a dead station; salvage teams wanted
+posting abandoned 1 Survey of an abandoned colony, before the Lanius strip it bare
+posting engi_home 2 The Engi Homeworlds request technicians for a planetary network fault
+posting mantis_home 3 Mantis Homeworlds: a hunting ground opened to outsiders, for those who dare
+posting rock_home 2 The Rock Homeworlds' forges need hands for the great casting
+posting zoltan_home 1 The Zoltan Homeworlds invite observers to a gathering of the light
+posting slug_home 2 An invitation into the Slug Home Nebula, sealed and unsigned
+posting crystal 3 Coordinates to the Hidden Crystal Worlds, sold by a dying trader
+
+# ---- anywhere ----
+
+event stowaway any
+A child is found hiding among the supplies, clutching a stolen ration bar. She begs not to be sent back to the work camp she ran from.
+* Take her to the next colony and see her settled
+  ok scrap 2-4 | The colony takes her in. A grateful aunt presses a few scrap into {crew}'s hand.
+* Report her to the camp's overseers
+  ok scrap 8-12 | The overseers pay a finder's fee. Nobody on the team says much for the rest of the day.
+* [human] Let {who} talk to her
+  ok scrap 4-6 fuel 1 | {who} learns she knows where the camp keeps its spare fuel. She leads them to it before they part ways.
+
+event broken_beacon any
+The navigation beacon on the route is dark. Without it, the team's hired shuttle drifts while its pilot curses at the controls.
+* Climb out and repair the beacon by hand
+  roll 70
+  win scrap 6-10 | The beacon flickers back to life, and the next ship through pays the toll to the team instead of the owners.
+  lose injure 1 | A loose panel slices open {who}'s suit. They patch it in time, but it's a near thing.
+* Wait for a passing ship
+  ok scrap 1-3 | A freighter tows them on after half a day, and shares a meal for a few scrap.
+* [engi] {who} talks to the beacon directly
+  ok scrap 10-14 | {who} trills at the beacon's port for a while. It answers, and so does the beacon's owner, with a reward.
+
+event card_game any
+The shuttle's pilot offers a game of cards to pass the time. The stakes are scrap, and the pilot shuffles a little too well.
+* Play a few hands
+  roll 45
+  win scrap 8-14 | {crew} catches the pilot's sleeve full of cards. The pot is theirs, and the pilot doesn't argue.
+  lose scrap 0 | The pilot wins every hand that matters. The team keeps their scrap in their pockets after that.
+* Decline politely
+  ok | The pilot shrugs and plays alone. The journey is quiet.
+* [red mantis] {who} accuses the pilot of cheating
+  roll 50
+  win scrap 12-16 | The pilot confesses at once and hands back everything, plus a little more to keep {who} calm.
+  lose injure 1 | The pilot draws a pistol before {who} draws anything. The game ends badly.
+
+event ambush any
+A distress call leads the team to a wrecked transport. The wreck is bait: three armed figures step out from behind it.
+* Fight
+  roll 55
+  win scrap 8-15 item weapon | The attackers break and run, leaving their gear behind.
+  lose injure 1 scrap 2-4 | They drive the attackers off, but {who} takes a hit doing it.
+* Hand over some supplies and back away
+  ok | The attackers take a crate of rations and let the team go. Nobody is hurt, and nothing is gained.
+* [rock] {who} walks straight at them
+  ok scrap 10-14 | Shots spark off {who}'s hide. The attackers drop their weapons and flee before {who} is halfway there.
+* [crystal] {who} seals the gap with crystal
+  ok scrap 8-12 | A wall of crystal rises between the team and the guns. By the time it fades, the ambushers have given up.
+
+event cargo_drift any
+A cargo pod drifts across the team's path, its markings scorched away.
+* Haul it aboard and open it
+  roll 65
+  win scrap 6-12 missiles 1 | Inside: salvage and a missile still in its cradle.
+  lose injure 1 | The pod was rigged. The blast throws {who} across the hold.
+* Scan it from a distance and leave it
+  ok scrap 1-3 | Nothing worth the risk, but {crew} sells the scan data at the next stop.
+* [zoltan] {who} reads its power signature
+  ok scrap 8-12 parts 1 | {who} finds the trap and switches it off. The pod holds scrap and spare drone parts.
+
+event fever any
+Half the passengers on the transport are down with a fever. The ship's medic is one of them.
+* Help nurse them through it
+  roll 70
+  win scrap 6-10 | The fever breaks in two days. The captain refuses the team's fare and pays them instead.
+  lose injure 1 scrap 4-6 | They pull everyone through, but {who} catches it and is still weak at journey's end.
+* Keep to the team's own cabin
+  ok | The team stays healthy and keeps to itself. It is a long, quiet trip.
+* [engi] {who} can't catch it
+  ok scrap 8-12 | {who} tends the sick day and night, untouched by the fever. The captain is very grateful.
+
+event old_soldier any
+An old Federation veteran shares the team's table at a stopover. He has stories, and a map he swears leads to an abandoned supply cache.
+* Buy him a drink and the map
+  roll 50
+  win scrap 10-16 fuel 1 | The cache is real: dented, half-looted, but worth the detour.
+  lose scrap 0 | The map leads to an empty asteroid. The old man was probably telling the truth, years ago.
+* Listen to the stories and move on
+  ok scrap 1-2 | He tells good stories. He even insists on paying for the round.
+
+event checkpoint any
+A customs checkpoint holds the team's transport for inspection. The officer hints that the inspection could go faster.
+* Pay the "fast inspection fee"
+  ok scrap 0 | It costs nothing they were carrying, only a promise, and the officer waves them on.
+* Wait it out
+  roll 60
+  win scrap 2-4 | After a day, they're cleared, with an apology and a voucher for the trouble.
+  lose end | The inspection finds a reason to turn the transport back. The team heads home early.
+* [slug] {who} has a quiet word with the officer
+  ok scrap 6-10 | Whatever {who} says, the officer goes pale, waves them through, and pays them to forget his name.
+
+# ---- civilian ----
+
+event spiders civilian,engi
+The colony's lower storage tunnels went silent three days ago. Something has been nesting there: the walls are thick with webbing, and the webbing moves.
+* Clear the tunnels room by room
+  roll 55
+  win scrap 10-18 | The last nest burns. The colonists pay what they can, and it is more than expected.
+  lose injure 1 scrap 4-8 | The tunnels are cleared, but not before {who} is badly bitten.
+* Seal the tunnels and leave them be
+  ok scrap 3-5 | The colonists are disappointed, but pay for the welding.
+* [rock] Send {who} in first
+  ok scrap 12-18 | The creatures' fangs slide off {who}'s hide. {who} walks out an hour later, covered in webbing and very pleased.
+* [red mantis] Let {who} loose in the dark
+  roll 60
+  win scrap 15-22 | {who} comes back hours later, alone and humming. There are no more creatures in the tunnels.
+  lose lose 1 | Something in the dark was bigger than {who}. They find only the claw marks.
+
+event market_thief civilian
+A pickpocket lifts the team's travel funds in a crowded market and bolts into the crowd.
+* Chase them
+  roll 60
+  win scrap 6-10 | {crew} corners the thief in an alley and gets the funds back, with interest.
+  lose injure 1 | The thief has friends. {who} limps back empty-handed.
+* Let it go and report it to the marshal
+  ok scrap 2-3 | The marshal can't find the thief, but the market pays the team a small apology.
+* [zoltan] {who} lights up the crowd
+  ok scrap 8-10 | {who} glows bright enough to make the whole market stop and stare. The thief freezes with everyone else.
+
+event harvest civilian
+A farming colony's harvest machines have broken down two days before a storm. The farmers offer pay for any hands that can work.
+* Work the fields
+  ok scrap 6-10 | Long days, sore backs, and the crop is in before the storm. The farmers pay in scrap and a feast.
+* Try to repair the machines
+  roll 50
+  win scrap 12-16 | The harvesters roar back to life. The farmers cheer, then pay double.
+  lose scrap 3-5 | The machines are beyond saving, so the team picks by hand after all, and earns less for it.
+* [engi] {who} rewires the harvesters
+  ok scrap 12-18 | {who} has the machines running in an hour, and better than they ran before.
+
+event fugitive civilian
+The bounty's target is living as a dockworker under a false name. He sees the team coming before they reach him.
+* Chase him through the docks
+  roll 55
+  win scrap 14-20 | They catch him at the last airlock. The marshal pays the bounty in full.
+  lose injure 1 scrap 2-4 | He gets away on a cargo hauler. {who} took a crate to the shoulder trying to stop him.
+* Wait for him at his rented room
+  roll 70
+  win scrap 10-14 | He comes home that night. He goes quietly.
+  lose end | He never comes back. The trail is cold, and the team heads home.
+* [human] {who} poses as a dockworker
+  ok scrap 14-18 | {who} works beside him for half a shift, then takes him without a fuss.
+
+# ---- engi ----
+
+event engi_network engi,engi_home
+The Engi relay's network has fractured into a dozen arguing parts. The station's Engi drift between consoles, chattering in distress.
+* Help carry replacement components
+  ok scrap 6-10 | Hard work, but the network begins to agree with itself again. The Engi pay in scrap and polite whirring.
+* Offer to debug the network
+  roll 40
+  win scrap 12-16 parts 1 | Against every expectation, the patch holds. The Engi give spare drone parts as thanks.
+  lose scrap 2-4 | The patch makes things worse before the Engi undo it. They pay a little, for effort.
+* [engi] {who} joins the network
+  ok scrap 14-20 parts 1 | {who} plugs in and the dozen parts become one again. The Engi are grateful, in their quiet way.
+
+event drone_factory engi
+The drone factory's doors open on their own as the team arrives. Inside, the assembly lines are still running, making drones no one has ordered.
+* Shut down the main power
+  roll 60
+  win scrap 10-14 item drone | The lines stop. A finished drone sits at the end of one, waiting for its owner.
+  lose injure 1 scrap 4-6 | A guard drone wakes as the lights go down. {who} is hurt before they get it switched off.
+* Salvage what's near the door and leave
+  ok scrap 5-8 | They take what they can carry and leave the factory to its work.
+* [red human] {who} wants to sell the factory's location
+  roll 40
+  win scrap 18-24 | A broker pays well for the coordinates. The Engi may not be pleased, if they ever find out.
+  lose end | The Engi find out before the team leaves. They're escorted home, politely, with nothing.
+
+# ---- zoltan ----
+
+event zoltan_census zoltan
+The Zoltan observers count everything: moons, rocks, ships, and the team. They count the team several times.
+* Be counted patiently
+  ok scrap 6-8 | The Zoltan are pleased with the team's patience, and say so at length. They pay exactly what was promised.
+* Help count
+  roll 60
+  win scrap 8-12 | The Zoltan approve of the team's precision.
+  lose scrap 3-4 | {crew} loses count twice. The Zoltan are too polite to comment, but the pay is less.
+* [zoltan] {who} speaks with the observers
+  ok scrap 10-12 fuel 1 | {who} and the observers glow at each other for an hour. The Zoltan pay more, and add fuel.
+
+event anomaly zoltan,zoltan_home
+The energy readings near the relay don't match anything the Zoltan know. Neither does the light coming from the empty patch of space ahead.
+* Fly closer and take readings
+  roll 50
+  win scrap 12-16 | The readings are worth a great deal to the Zoltan, who pay without haggling.
+  lose injure 1 | A pulse from the light burns through the shuttle's shielding. {who} is hurt by it.
+* Report it and keep away
+  ok scrap 3-5 | The Zoltan take the report seriously, and pay for it.
+* [red rock] {who} wants to throw a rock at it
+  roll 50
+  win scrap 10-12 | The rock passes through, and the light goes out. The Zoltan don't know whether to be grateful.
+  lose injure 1 | The light sends the rock straight back, faster. {who} is the one it hits.
+
+# ---- mantis ----
+
+event mantis_raid mantis,mantis_home
+A Mantis raiding party drops onto the convoy's lead ship. The team is hired to keep them off the others.
+* Hold the airlocks
+  roll 50
+  win scrap 14-20 | The raiders break against the airlocks and withdraw. The convoy's captains pay well.
+  lose injure 1 scrap 6-8 | The airlocks hold, barely. {who} won't forget the Mantis that nearly got through.
+* Pull back and seal the convoy's other ships
+  ok scrap 6-8 | The lead ship is lost to the raiders, but the rest are safe. The pay is cut for it.
+* [mantis] {who} challenges their leader
+  roll 75
+  win scrap 18-24 | {who} wins the challenge. The raiders leave with honour, and the convoy pays a hero's wage.
+  lose lose 1 | {who} fights well and loses. The raiders leave with their prize.
+* [rock] {who} plugs the main airlock
+  ok scrap 12-16 | The raiders can't get past {who}. After a while, they stop trying.
+
+event mantis_trade mantis
+The trading post's Mantis customers are restless tonight. One of them insists the post's prices are an insult.
+* Stand guard and stay calm
+  roll 70
+  win scrap 8-12 | The night passes with nothing worse than raised voices. The post pays in full.
+  lose injure 1 scrap 6-8 | One customer loses patience. {who} stops them, and is cut doing it.
+* Help the post lower its prices for the night
+  ok scrap 4-6 | The customers calm down, and so do the post's profits. The pay is smaller.
+* [red mantis] {who} agrees the prices are an insult
+  roll 30
+  win scrap 12-16 | The Mantis customers approve of {who}, and pay the post's prices out of respect.
+  lose injure 2 | The argument becomes a brawl, and the team is caught in the middle of it.
+
+# ---- rock ----
+
+event rock_shaft rock,rock_home
+The Rock miners' deep shaft runs hot enough to melt a human's boots. The miners don't seem to notice.
+* Work the upper levels where it's cooler
+  ok scrap 6-10 | Slower going, but the team earns its pay.
+* Follow the miners down
+  roll 50
+  win scrap 12-18 | The heat is brutal, but the deep seam is rich, and the miners share it.
+  lose injure 1 scrap 4-6 | {who} collapses from the heat and has to be carried up.
+* [rock] {who} goes down with the miners
+  ok scrap 14-20 | {who} works the deep seam like a native. The miners are impressed, and generous.
+
+event rock_pilgrimage rock
+The Rock pilgrims walk, and keep walking, across a plain of black glass. They mean to reach a mountain on the horizon by nightfall.
+* Keep up
+  roll 60
+  win scrap 8-12 | The team makes it, exhausted. The pilgrims nod at them with respect, and pay.
+  lose injure 1 scrap 4-6 | {who} falls behind and turns an ankle on the glass.
+* Follow at your own pace
+  ok scrap 4-6 | The team arrives after dark. The pilgrims pay half, and don't seem to mind.
+* [crystal] {who} knows this mountain
+  ok scrap 10-14 | {who} leads the pilgrims by a path they didn't know existed. They're astonished, and very grateful.
+
+# ---- slug ----
+
+event slug_package slug,slug_home
+The sealed package hums faintly. The Slug who handed it over said not to open it, which is exactly what the Slug would say.
+* Deliver it unopened
+  roll 70
+  win scrap 12-16 | The package is delivered. The recipient pays, and smiles too much.
+  lose injure 1 | The package opens itself on the way. Whatever was inside bites {who} and escapes.
+* Open it and see
+  roll 40
+  win scrap 6-8 item augment | Inside is a piece of ship gear, worth more than the delivery. The Slug never ask about it.
+  lose scrap 0 end | The package holds nothing at all. The delivery was a test, and the team has failed it.
+* [slug] {who} reads the sender's intent
+  ok scrap 14-18 | {who} reads the truth: the delivery is legitimate, and the pay can be raised. It is.
+
+event slug_trick slug,nebula
+The nebula's static plays tricks on the team's instruments. A voice on the comm claims to be the shuttle's own pilot, calling from outside.
+* Ignore the voice and keep course
+  roll 70
+  win scrap 6-8 | The voice fades. The team reaches its destination unharmed.
+  lose injure 1 | The shuttle runs into something the instruments didn't show. {who} is thrown against a bulkhead.
+* Answer the voice
+  roll 40
+  win scrap 10-14 fuel 1 | The voice is a stranded freighter crew, playing games out of boredom. They pay for rescue in fuel and scrap.
+  lose scrap 0 end | It was a Slug trick. By the time the team realizes, they've been led far off course and must turn home.
+* [slug] {who} recognizes a Slug trick
+  ok scrap 10-14 | {who} plays the trick back on the trickster, and the Slug pay to be left alone.
+
+event slug_contract slug
+The Slug merchant's contract is fifty pages long, written in very small print.
+* Read it all before signing as witnesses
+  ok scrap 6-10 | It takes a full day, but the team finds nothing wrong. The merchant pays, looking slightly disappointed.
+* Sign without reading
+  roll 50
+  win scrap 8-12 | Nothing goes wrong. The merchant pays.
+  lose scrap 0 end | Page forty-two made the team responsible for the merchant's debts. It takes the rest of the trip to get out of it.
+* [human] {who} reads the fine print
+  ok scrap 12-16 | {who} finds the trap on page forty-two and quietly negotiates a better fee to keep silent about it.
+
+# ---- nebula ----
+
+event chart_nebula nebula
+The nebula is uncharted for good reason: sensors see only a few hundred metres, and the gas eats at the hull.
+* Chart it slowly, beacon by beacon
+  ok scrap 8-12 | The chart is slow work and complete. The survey office pays in full.
+* Push deep to the nebula's heart
+  roll 45
+  win scrap 14-20 | The heart of the nebula is a rare find, and the survey office pays a bonus.
+  lose injure 1 scrap 3-5 | The gas thickens and something in it hits the shuttle. {who} is hurt by the impact.
+* [zoltan] {who} sees through the gas
+  ok scrap 12-16 | {who} reads the nebula's light like a map. The chart is the best the survey office has seen.
+
+event lost_buoy nebula
+The lost sensor buoy is easy to find: it's still broadcasting. So is something else, on the same frequency.
+* Retrieve the buoy quickly
+  roll 60
+  win scrap 10-14 | Buoy aboard, and away before whatever else was out there arrives.
+  lose injure 1 scrap 4-6 | A pirate scout was waiting for whoever came for the buoy. {who} is hit getting it aboard.
+* Track the second signal first
+  roll 40
+  win scrap 14-18 item weapon | A pirate scout was waiting in ambush. The team turns the ambush around and takes the scout's gun.
+  lose injure 1 | The second signal was bait. The team retreats with the buoy, and {who} is hurt.
+
+# ---- pirate ----
+
+event asteroid_criminals pirate
+The rebel criminals have dug into an asteroid riddled with tunnels. Their sentries are bored and badly placed.
+* Slip past the sentries
+  roll 55
+  win scrap 14-20 | The team takes the criminals' leader without a shot fired. The bounty is paid in full.
+  lose injure 1 scrap 6-8 | A sentry spots them. They win the fight, but {who} is wounded.
+* Hit the front entrance hard
+  roll 40
+  win scrap 18-24 item weapon | The criminals surrender after a short, loud fight. Their armoury pays for the trip twice over.
+  lose lose 1 | The criminals were ready. The team retreats, without {who}.
+* [lanius] {who} drains the air from their tunnels
+  ok scrap 16-22 | {who} walks through the vacuum, unbothered. The criminals surrender gasping.
+
+event pirate_ransom pirate
+The pirate den is loud, crowded and dangerous. The ransom is in a small case, and every pirate here knows it.
+* Deliver the ransom and walk out
+  roll 70
+  win scrap 10-14 | The hostages are freed. Their families pay the team for their courage.
+  lose injure 1 scrap 4-6 | A pirate tries for the case on the way out. {who} keeps it, and gets hurt.
+* Keep the ransom and free the hostages by force
+  roll 35
+  win scrap 20-26 | The pirates never saw it coming. The hostages are freed, and the ransom comes home too.
+  lose lose 1 | The pirates were ready. The hostages are freed, but {who} pays the price.
+* [mantis] {who} speaks to the pirate captain
+  ok scrap 12-16 | The pirate captain is Mantis too. After a long exchange, the ransom is halved, and the team keeps the difference.
+
+event pirate_dock pirate,abandoned
+A pirate dock sits half-wrecked, its crew gone. Its stores are open, and so is something in the shadows.
+* Search the stores quickly
+  roll 60
+  win scrap 8-14 missiles 2 | The stores are full of salvage and missiles.
+  lose injure 1 | A pirate left behind fires from the shadows. {who} is hit.
+* Leave it alone
+  ok scrap 1-2 | The team moves on. A few scrap were lying by the airlock.
+* [engi] {who} hacks the dock's systems
+  ok scrap 10-14 fuel 2 | {who} unlocks the fuel stores and opens the doors to the scrap.
+
+# ---- rebel ----
+
+event rebel_patrol rebel
+A rebel patrol stops the team's transport. They want to see papers, and they look for an excuse not to believe them.
+* Show forged papers
+  roll 60
+  win scrap 6-10 | The papers pass. The team reaches the Federation's contact on time.
+  lose injure 1 end | The papers fail. The team escapes, and {who} is hurt in the attempt.
+* Hide in the cargo hold
+  roll 70
+  win scrap 6-8 | The rebels search the passenger deck and leave. The team waits until they're gone.
+  lose lose 1 | The rebels search the hold. {who} doesn't make it out.
+* [human] {who} talks their way through
+  ok scrap 10-14 | {who} convinces the rebels they're traders, and even sells them some old maps.
+
+event rebel_intel rebel
+The Federation contact is an old woman running a supply depot. She has the intelligence, and she wants to leave with it.
+* Take her with you
+  roll 60
+  win scrap 14-20 | She makes it out, and the intelligence is worth more than anyone hoped.
+  lose injure 1 scrap 8-10 | A rebel patrol spots them on the way out. {who} is wounded covering her escape.
+* Take only the intelligence
+  ok scrap 8-12 | She stays behind, and wishes the team well. The intelligence is good.
+* [zoltan] {who} masks the escape
+  ok scrap 14-18 | {who} bends the depot's lights to hide them. The rebels never see them leave.
+
+event refugee_escort rebel
+The refugees are hungry and frightened. The rebel checkpoint is between them and the Federation's lines.
+* Lead them around the checkpoint
+  roll 65
+  win scrap 10-14 | The long way is safer. Everyone makes it.
+  lose injure 1 scrap 6-8 | A patrol finds them on the long way. {who} holds it off until the refugees are clear.
+* Bribe the checkpoint's guards
+  ok scrap 4-6 | The guards take the bribe and look away. The pay is smaller, but everyone lives.
+* [red mantis] {who} wants to clear the checkpoint
+  roll 50
+  win scrap 14-20 | {who} clears the checkpoint. The refugees pass, terrified but safe.
+  lose injure 2 | The checkpoint calls for help. The refugees escape in the chaos, but the team is badly hurt.
+
+# ---- abandoned ----
+
+event lanius_station abandoned
+The dead station is full of Lanius, and the Lanius are full of the dead station: they've been eating its metal for weeks.
+* Salvage the parts they haven't reached yet
+  roll 60
+  win scrap 10-16 | The team works fast and comes away with good salvage.
+  lose injure 1 scrap 4-6 | The Lanius notice. {who} gets out with the salvage and a bad burn from the cold.
+* Trade with the Lanius
+  roll 50
+  win scrap 8-12 parts 1 | The Lanius trade what they don't want: scrap, and some old drone parts.
+  lose end | The Lanius don't trade. The team is escorted to the airlock, and home.
+* [lanius] {who} speaks with them
+  ok scrap 14-18 parts 1 | {who} and the Lanius understand each other. The salvage is shared fairly.
+
+event colony_survey abandoned
+The abandoned colony is quiet, and the quiet is wrong: no wind, no machines, no air.
+* Survey it in suits, carefully
+  ok scrap 6-10 | The survey is slow and safe. The colony's records sell well.
+* Search the colony's vault
+  roll 45
+  win scrap 12-18 item augment | The vault holds the colony's last valuables, and a piece of ship gear.
+  lose injure 1 | The vault was trapped by the last colonists. {who} is hurt.
+* [lanius] {who} goes in without a suit
+  ok scrap 12-16 | {who} works through the airless colony quickly and finds what everyone else missed.
+
+# ---- rare ----
+
+event engi_home_fault engi_home
+The planetary network fault is ancient, and the Engi have argued about it for generations.
+* Follow the Engi's oldest plan
+  ok scrap 10-14 | The oldest plan works, after all. The Engi are delighted, and pay well.
+* Try something new
+  roll 40
+  win scrap 18-26 item drone | The new idea works. The Engi are astonished, and give a drone from their own stores.
+  lose scrap 4-6 | The new idea fails. The Engi are disappointed, but pay for the effort.
+
+event mantis_home_hunt mantis_home
+The Mantis hunting ground is alive with prey, and some of the prey hunts back.
+* Hunt in a group
+  roll 55
+  win scrap 16-22 | The team makes a kill the Mantis respect. The reward is generous.
+  lose injure 1 scrap 6-8 | The prey turns on them. {who} is badly mauled.
+* Watch the Mantis hunt
+  ok scrap 6-8 | The Mantis tolerate observers. They pay a little for the company.
+* [mantis] {who} hunts alone
+  roll 70
+  win scrap 22-30 | {who} returns with the greatest kill of the season. The hunting ground's keepers pay in honour and scrap.
+  lose lose 1 | {who} does not return from the hunt.
+
+event rock_home_forge rock_home
+The great casting pours molten rock as tall as a ship. The Rock call it their oldest song.
+* Work the outer channels
+  ok scrap 8-12 | The team keeps its distance, and its skin. The Rock pay well.
+* Help pour the casting
+  roll 50
+  win scrap 14-20 | The casting is perfect. The Rock sing for hours.
+  lose injure 1 scrap 6-8 | A splash of molten rock catches {who}.
+* [rock] {who} sings with them
+  ok scrap 16-22 | {who} knows the song. The Rock are moved, and very generous.
+
+event zoltan_home_light zoltan_home
+The Zoltan gathering is a field of light, and the light speaks.
+* Listen respectfully
+  ok scrap 8-12 | The light grants the team its thanks, and the Zoltan pay.
+* Ask the light a question
+  roll 50
+  win scrap 14-18 fuel 2 | The light answers. The answer is worth a great deal.
+  lose end | The light does not answer. The Zoltan ask the team to leave, gently.
+* [zoltan] {who} joins the light
+  ok scrap 16-20 | {who} glows with the gathering. The Zoltan are honoured to have them.
+
+event slug_home_invite slug_home
+The invitation leads to a gathering of Slug elders. They smile, all of them, and none of them speak.
+* Wait for them to speak
+  roll 60
+  win scrap 12-18 | The elders speak at last. They have work, and they pay well.
+  lose end | The elders never speak. The team leaves, puzzled.
+* Speak first
+  roll 40
+  win scrap 16-22 | The elders are amused. They pay for the entertainment.
+  lose injure 1 | The elders are offended, and the Slug have long memories and short tempers. {who} is hurt.
+* [slug] {who} speaks for the team
+  ok scrap 18-24 item augment | {who} knows the elders' ways. The gathering ends with a gift.
+
+event crystal_worlds crystal
+The Hidden Crystal Worlds are real. The crystal hums, and the hum grows louder as the team approaches.
+* Approach slowly, hands open
+  roll 60
+  win scrap 16-24 | The crystal accepts the team's presence. They leave with salvage from an ancient ship.
+  lose injure 1 | The crystal rejects them. {who} is cut on the way out.
+* Take a sample and leave
+  roll 50
+  win scrap 12-18 | The sample is worth a fortune to collectors.
+  lose lose 1 | The crystal takes {who} instead.
+* [crystal] {who} goes home
+  ok scrap 20-30 item augment | The crystal welcomes {who}, and the team with them. They leave with a gift.
+
+event crystal_guardian crystal
+A figure of living crystal stands at the mouth of the valley. It doesn't move, but every instrument the team carries goes quiet in its presence.
+* Wait until it lets you pass
+  roll 70
+  win scrap 12-18 | After an hour, the figure steps aside. The valley beyond is littered with salvage from older visitors.
+  lose end | The figure never moves. The team turns back, empty-handed but unharmed.
+* Try to slip around it
+  roll 40
+  win scrap 16-22 | The figure doesn't follow. The valley pays for the risk.
+  lose injure 1 | The ground itself turns to crystal under {who}'s feet, and cuts deep.
+* [crystal] {who} stands before it
+  ok scrap 18-26 | The two of them stand silent for a long time. Then the figure bows, and the valley is open.
+
+event crystal_ruins crystal
+Ruins of a city grown rather than built, every tower a single crystal. Something old still powers the lights.
+* Map the ruins
+  ok scrap 10-14 | The maps alone are worth a good price to the right buyer.
+* Follow the light to its source
+  roll 45
+  win scrap 16-24 item augment | The light comes from a vault, and the vault holds a piece of ancient ship gear.
+  lose injure 1 scrap 4-6 | The light flares as they reach it. {who} is burned by it.
+* [red human] {who} wants to cut a tower down for its crystal
+  roll 40
+  win scrap 22-28 | The tower falls, and the crystal sells for a fortune. Nothing stops them, this time.
+  lose lose 1 | The tower falls the wrong way. {who} is under it.

@@ -51,7 +51,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
 	private JButton museumBtn;
-	private JButton inboxBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn;
+	private JButton inboxBtn, expeditionsBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn;
 	final MainFrame parent;
 
 	/** Width of one docked ship's place in the list. */
@@ -132,6 +132,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
+		expeditionsBtn = controlButton("Expeditions", "Jobs for crew without a ship: send crew from the Cargo Hold, or post for volunteers");
 		commBtn = new FtlButton("Long Range", FtlFont.MENU, 180, 40) {
 			@Override protected void paintComponent(Graphics g) {
 				super.paintComponent(g);
@@ -154,10 +155,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		if (homeplanet.parser.Museum.anything(vault)) { // once a ship has won, or been lost in action
 			museumBtn = controlButton("Museum", "The Federation Museum: the Hall of Victors, and the Memorial to ships lost in action");
-			controlGroup(controls, "Station", cargoBtn, commBtn, settingsBtn, refreshBtn, museumBtn);
+			controlGroup(controls, "Station", cargoBtn, commBtn, expeditionsBtn, settingsBtn, refreshBtn, museumBtn);
 		} else {
 			museumBtn = null;
-			controlGroup(controls, "Station", cargoBtn, commBtn, settingsBtn, refreshBtn);
+			controlGroup(controls, "Station", cargoBtn, commBtn, expeditionsBtn, settingsBtn, refreshBtn);
 		}
 		String designLock = homeplanet.parser.Clearance.customReason();
 		designBtn = controlButton("Design Ship", designLock == null ? "Lay out a new ship of your own on a blank grid"
@@ -333,16 +334,30 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		b.setAlignmentX(LEFT_ALIGNMENT);
 		return b;
 	}
-	private static void controlGroup(JPanel column, String title, JButton... buttons) {
-		controlGroup(column, new FtlButton.Header(title, 186), buttons);
-	}
-	private static void controlGroup(JPanel column, javax.swing.JComponent header, JButton... buttons) {
-		column.add(header);
-		column.add(gap(10));
+	/** A gold heading and its buttons; a click on the heading folds them away or back (remembered between runs). */
+	private static void controlGroup(final JPanel column, String title, JButton... buttons) {
+		final String key = "fold_" + title.toLowerCase().replace(' ', '_');
+		final JPanel body = new JPanel();
+		body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+		body.setOpaque(false);
+		body.setAlignmentX(LEFT_ALIGNMENT);
+		body.add(gap(10));
 		for (JButton b : buttons) {
-			column.add(b);
-			column.add(gap(10));
+			body.add(b);
+			body.add(gap(10));
 		}
+		boolean folded = "true".equals(HomePlanet.config.getProperty(key));
+		body.setVisible(!folded);
+		column.add(new FtlButton.Header(title, 186).foldable(folded, new java.util.function.Consumer<Boolean>() {
+			public void accept(Boolean f) {
+				body.setVisible(!f);
+				HomePlanet.config.setProperty(key, Boolean.toString(f));
+				HomePlanet.saveConfig();
+				column.revalidate();
+				column.repaint();
+			}
+		}));
+		column.add(body);
 		column.add(gap(16));
 	}
 	/** Space between the column's pieces that gives way first when the window is short (down to 2 pixels). */
@@ -604,6 +619,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			newJourney();
 		} else if (o == commissionBtn) {
 			commissionShip();
+		} else if (o == expeditionsBtn) {
+			if (ExpeditionsDialog.open(this)) init();
 		} else if (o == salvageBtn) {
 			salvageShip();
 		} else if (o == disbandBtn) {

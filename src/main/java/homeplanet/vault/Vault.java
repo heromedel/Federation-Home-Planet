@@ -777,6 +777,8 @@ public final class Vault {
 		try { return Integer.parseInt(new String(SafeFiles.read(beaconsFile()), java.nio.charset.StandardCharsets.UTF_8).trim()); }
 		catch (Exception e) { return 0; }
 	}
+	/** One beacon of the fleet's time passes away from FTL (a finished expedition): everything timed counts it. */
+	public synchronized void countBeacon() { addBeacons(1); }
 	private void addBeacons(int n) {
 		if (n <= 0) return;
 		try { SafeFiles.writeText(beaconsFile(), (beaconsSeen() + n) + "\n", false); }

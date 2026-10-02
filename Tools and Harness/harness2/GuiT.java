@@ -35,6 +35,8 @@ public class GuiT {
   switched(f);
   holdAlone(v, f);
   damaged(f);
+  folding(f);
+  expedition(f);
   Setup.done();
   System.exit(0);
  }
@@ -247,6 +249,66 @@ public class GuiT {
   Setup.chk("H: no ship aboard, a docked ship boarded from the Cargo Bay: she's aboard, and the Cargo Bay shows her", v.boarded() == next && Boolean.FALSE.equals(b[0]));
  }
 
+ /** The Space Dock's gold headings fold their buttons away on a click, and stay folded after a redraw. */
+ static void folding(final MainFrame f) throws Exception {
+  final Object[] r = new Object[5];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showSpaceDock();
+   JButton cargo = (JButton) field(f.spaceDock, SpaceDockUI.class, "cargoBtn"), exp = (JButton) field(f.spaceDock, SpaceDockUI.class, "expeditionsBtn");
+   r[4] = exp != null && exp.getParent() == cargo.getParent();
+   FtlButton.Header station = heading(cargo);
+   station.dispatchEvent(new java.awt.event.MouseEvent(station, java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 5, 5, 1, false));
+   r[0] = cargo.isShowing();
+   r[1] = HomePlanet.config.getProperty("fold_station");
+   f.spaceDock.init();
+   JButton cargo2 = (JButton) field(f.spaceDock, SpaceDockUI.class, "cargoBtn");
+   r[2] = cargo2.getParent().isVisible();
+   FtlButton.Header again = heading(cargo2);
+   again.dispatchEvent(new java.awt.event.MouseEvent(again, java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 5, 5, 1, false));
+   r[3] = cargo2.getParent().isVisible();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("F: Expeditions sits under Station, beside the Cargo Bay", Boolean.TRUE.equals(r[4]));
+  Setup.chk("F: a click on Station folds its buttons away, remembered (" + r[1] + ")", Boolean.FALSE.equals(r[0]) && "true".equals(r[1]));
+  Setup.chk("F: still folded after the Space Dock redraws; a second click opens it", Boolean.FALSE.equals(r[2]) && Boolean.TRUE.equals(r[3]) && "false".equals(HomePlanet.config.getProperty("fold_station")));
+ }
+ /** The heading just above this button's group. */
+ static FtlButton.Header heading(JComponent b) {
+  Container body = b.getParent(), column = body.getParent();
+  Component last = null;
+  for (Component c : column.getComponents()) { if (c == body) return (FtlButton.Header) last; if (c instanceof FtlButton.Header) last = c; }
+  return null;
+ }
+
+ /** An expedition played through its pop-ups: crew picked, each event's choice, its outcome, the end; the Cargo Hold paid. */
+ static void expedition(final MainFrame f) throws Exception {
+  final Vault v = Vault.get();
+  Vault.Copy c = v.readCopy(v.storage()); ShipState h = c.save.getPlayerShip(); h.getCrewList().clear();
+  for (String race : new String[] {"rock", "human"}) { SavedGameParser.CrewState x = Commission.volunteer(race, new Random(2)); SaveHelper.placeCrew(h, x, true); h.getCrewList().add(x); }
+  h.setScrapAmt(0);
+  v.begin().put(v.storage(), c.save, c.hash).commit();
+  final int beacons = v.beaconsSeen();
+  Class<?> k = Class.forName("homeplanet.ui.ExpeditionsDialog");
+  java.lang.reflect.Field rf = k.getDeclaredField("rng"); rf.setAccessible(true); rf.set(null, new Random(8));
+  shown.clear(); optionsShown.clear(); presses.clear();
+  for (int i = 0; i < 20; i++) presses.add(0); // Send them; then each event's first choice; the outcomes and the end are only read
+  final Object[] dlg = new Object[1]; final boolean[] done = {false};
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   java.lang.reflect.Constructor<?> ctor = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredConstructor(Component.class); ctor.setAccessible(true);
+   dlg[0] = ctor.newInstance(f);
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  SwingUtilities.invokeLater(new Runnable() { public void run() { try {
+   call(dlg[0], dlg[0].getClass(), "send", new Class<?>[] {int.class}, 0);
+   ((JDialog) dlg[0]).dispose();
+  } catch (Exception e) { throw new RuntimeException(e); } finally { done[0] = true; } } });
+  for (int t = 0; t < 600 && !done[0]; t++) Thread.sleep(100);
+  presses.clear();
+  boolean picker = !shown.isEmpty() && shown.get(0).contains("Who goes?");
+  boolean events = false; for (Object[] o : optionsShown) if (o.length >= 2) events = true;
+  String end = shown.isEmpty() ? "" : shown.get(shown.size() - 1);
+  Setup.chk("X: the crew picker, then events with their choices (" + shown.size() + " pop-ups)", done[0] && picker && events);
+  Setup.chk("X: the end says what came of it, and the Cargo Hold has the scrap (" + v.storageScrap() + "); a beacon passed", end.contains("Cargo Hold") && v.storageScrap() > 0 && v.beaconsSeen() == beacons + 1);
+ }
+
  static void salvage(final MainFrame f) throws Exception {
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
    Object dock = field(f, MainFrame.class, "spaceDock");
@@ -264,12 +326,15 @@ public class GuiT {
     if (op == null) continue;
     seen.add(w);
     shown.add(text(op.getMessage()));
-    optionsShown.add(op.getOptions() == null ? new Object[0] : op.getOptions());
+    List<JButton> inMessage = op.getMessage() instanceof Container ? all((Container) op.getMessage(), JButton.class) : new ArrayList<JButton>();
+    boolean ownButtons = op.getOptions() != null && op.getOptions().length == 0 && !inMessage.isEmpty(); // choices laid out in the message itself
+    optionsShown.add(ownButtons ? inMessage.toArray() : op.getOptions() == null ? new Object[0] : op.getOptions());
     defaults.add(op.getInitialValue());
     JButton info = null; JComboBox<?> list = find((Container) w, JComboBox.class);
     for (JButton bt : all((Container) w, JButton.class)) if ("Info...".equals(bt.getText())) info = bt;
     extras.add(new Object[] {info, list == null ? null : list.getToolTipText()});
     Integer p = presses.isEmpty() ? -1 : presses.removeFirst();
+    if (ownButtons && p >= 0) { inMessage.get(p).doClick(); return; }
     op.setValue(p < 0 || op.getOptions() == null ? Integer.valueOf(JOptionPane.CLOSED_OPTION) : op.getOptions()[p]);
     w.dispose();
     return;
@@ -278,6 +343,7 @@ public class GuiT {
  }
  static String text(Object m) {
   if (m instanceof String) return (String) m;
+  if (m instanceof JLabel) return ((JLabel) m).getText();
   if (m instanceof Container) { StringBuilder sb = new StringBuilder(); for (JLabel l : all((Container) m, JLabel.class)) sb.append(l.getText()).append('\n'); return sb.toString(); }
   return String.valueOf(m);
  }
