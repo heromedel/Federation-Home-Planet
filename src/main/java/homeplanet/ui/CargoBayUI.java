@@ -466,7 +466,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			m.add(it);
 		}
 		if (!any) {
-			JMenuItem none = new JMenuItem(currentPath == null ? "No ships are docked at a station: commission or salvage one at the Space Dock" : "No other ships are docked at a station");
+			JMenuItem none = new JMenuItem(currentPath == null ? "No ships are docked at a station" : "No other ships are docked at a station");
 			none.setEnabled(false);
 			m.add(none);
 		}
@@ -914,8 +914,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		for (int k = 0; k < 4; k++) {
 			Category c = cats[k];
 			c.myHead.setText(currentPath == null ? CAT[k] : CAT[k] + "  " + (k == 1 && droneSlots(currentState) == 0 ? "" : counts(currentState, k)));
-			c.mine.setEmptyText(currentPath == null ? (boardable().isEmpty() ? "Not aboard a ship: commission or salvage one at the Space Dock" : "Not aboard a ship: board one above, or at the Space Dock")
-					: k == 3 ? "No crew" : "None");
+			c.mine.setEmptyText(currentPath == null ? "Not aboard a ship: board one above, or at the Space Dock" : k == 3 ? "No crew" : "None");
 			c.theirHead.setText(partnerIsStorage() ? CAT[k] : (k == 1 && droneSlots(tradeState) == 0 ? "" : counts(tradeState, k)) + "  " + CAT[k]);
 			if (k < 3) {
 				c.mine.setRows(itemRows(currentSave, currentState, k));
