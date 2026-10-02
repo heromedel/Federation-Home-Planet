@@ -866,23 +866,28 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	/** The infirmary's purple (FTL's colour for a crew member not yours to command just now). */
 	private static final Color INFIRMARY = new Color(170, 110, 230);
 	private static final String INFIRMARY_HTML = "#aa6ee6";
+	/** A crew member's health, and what they've lost of it: the green and red of the station's system bars. */
+	private static final Color HEALTH = new Color(120, 230, 120), HURT = new Color(225, 70, 55);
 	private static final Comparator<CargoParts.Row> BY_NAME = new Comparator<CargoParts.Row>() {
 		public int compare(CargoParts.Row a, CargoParts.Row b) { return a.name.compareToIgnoreCase(b.name); }
 	};
 	private List<CargoParts.Row> crewRows(ShipState s) {
 		List<CargoParts.Row> rows = new ArrayList<CargoParts.Row>();
 		boolean hold = s == tradeState && partnerIsStorage();
+		java.util.Set<String> laidUp = hold && Vault.isOpen() ? homeplanet.parser.Expeditions.laidUpKeys(Vault.get()) : java.util.Collections.<String>emptySet();
 		for (CrewState c : SaveHelper.getOwnCrew(s)) {
 			boolean body = SaveHelper.hasBody(c);
-			// her health: no bar when whole; red by how hurt (the station heals her when a beacon passes); purple, full, in the infirmary
-			boolean laidUp = hold && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), c);
+			// health, as FTL draws it: no bar when whole; green with the rest red when hurt in the game (a station heals
+			// that by the next beacon); purple, full, in the infirmary (laid up, not to be moved or sent)
+			boolean resting = laidUp.contains(homeplanet.parser.Expeditions.crewKey(c));
 			int max = c.getRace() == null ? 100 : c.getRace().getMaxHealth();
-			String state = laidUp ? "<br><font color='" + INFIRMARY_HTML + "'>In the infirmary: can't be moved or sent until she's on her feet</font>"
-					: body && c.getHealth() < max ? "<br><font color='#e05a4a'>Injured (" + c.getHealth() + "/" + max + "): the station will have healed her by the next beacon</font>" : "";
+			boolean hurt = body && !resting && c.getHealth() < max;
+			String state = resting ? "<br><font color='" + INFIRMARY_HTML + "'>In the infirmary: can't be moved, traded or sent until they're on their feet</font>"
+					: hurt ? "<br><font color='#e1463c'>Injured: the station will have them on their feet by the next beacon</font>" : "";
 			CargoParts.Row row = new CargoParts.Row(IconFactory.crewIcon(c), c.getName(), body ? Crew.raceTitle(c) : "being cloned", c,
 					Crew.tooltip(c).replace("</html>", state + "<br><i>(double-click for her report)</i></html>"), !body);
-			if (laidUp) row.bar(1f, INFIRMARY);
-			else if (body && c.getHealth() < max) row.bar(c.getHealth() / (float) max, new Color(224, 90, 74));
+			if (resting) row.bar(1f, INFIRMARY, null);
+			else if (hurt) row.bar(c.getHealth() / (float) max, HEALTH, HURT);
 			rows.add(row);
 		}
 		if (s == tradeState && partnerIsStorage()) Collections.sort(rows, BY_NAME); // the hold's crew by name; a ship's stay in her own order
@@ -1140,7 +1145,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (!destIsStorage && SaveHelper.getOwnCrew(destState).size() >= 8) { HomePlanet.showErrorDialog("No room for more crew: a ship carries 8 at most."); return; }
 		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't be moved right now."); return; }
 		if (!fromMine && partnerIsStorage() && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), cs)) {
-			JOptionPane.showMessageDialog(this, cs.getName() + " is in the infirmary, and stays there until she's on her feet.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, cs.getName() + " is in the infirmary, and stays there until they're on their feet.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		String refused = destIsStorage ? null : Dlc.refusesCrew(fromMine ? tradeSave : currentSave, cs);
@@ -1158,7 +1163,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		Category c = cats[3];
 		CrewState cs = (CrewState) (mine ? c.mine : c.theirs).selectedValue();
 		if (cs == null) return;
-		Object[] options = {"OK", "Rename"};
+		// the infirmary knows them by name: no new one until they're out
+		boolean resting = !mine && partnerIsStorage() && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), cs);
+		Object[] options = resting ? new Object[] {"OK"} : new Object[] {"OK", "Rename"};
 		int choice = JOptionPane.showOptionDialog(this, Crew.summary(cs), "Report for crewman " + cs.getName(),
 				JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, IconFactory.crewPortrait(cs, 48), options, options[0]);
 		if (choice != 1) return;

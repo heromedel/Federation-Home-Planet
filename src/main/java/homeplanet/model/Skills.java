@@ -56,13 +56,14 @@ public final class Skills {
 		}
 	}
 	public static void add(CrewState c, int skill, int points) { set(c, skill, points(c, skill) + points); }
-	/** A point off one skill they have points in, at random (the infirmary's price for a beacon); none to lose, nothing. */
-	public static void drain(CrewState c, Random rng) {
+	/** A point off one skill they have points in, at random (the infirmary's price for a beacon); none to lose, nothing. Did it take one? */
+	public static boolean drain(CrewState c, Random rng) {
 		List<Integer> have = new ArrayList<Integer>();
 		for (int i = 0; i < 6; i++) if (points(c, i) > 0) have.add(i);
-		if (have.isEmpty()) return;
+		if (have.isEmpty()) return false;
 		int s = have.get(rng.nextInt(have.size()));
 		set(c, s, points(c, s) - 1);
+		return true;
 	}
 	/** Back from a clone bay: a level off each skill they held, their points at the start of what's left. */
 	public static void cloned(CrewState c) {

@@ -1089,7 +1089,11 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				if (k != null) out.add(mark(Line.item(0, k, id), true));
 			}
 		}
-		for (CrewState c : SaveHelper.getOwnCrew(s)) if (SaveHelper.hasBody(c)) out.add(mark(Line.crew(0, c), false));
+		for (CrewState c : SaveHelper.getOwnCrew(s)) {
+			if (!SaveHelper.hasBody(c)) continue;
+			if (source.isStorage() && homeplanet.parser.Expeditions.laidUp(Vault.get(), c)) continue; // in the infirmary: not to be traded away
+			out.add(mark(Line.crew(0, c), false));
+		}
 		return out;
 	}
 	private Line mark(Line l, boolean inCargo) {

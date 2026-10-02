@@ -17,30 +17,41 @@ public class ExpT { public static void main(String[] a) throws Exception {
  static void book() throws Exception {
   Setup.chk("B: the events file reads clean " + Expeditions.problems(), Expeditions.problems().isEmpty());
   Setup.chk("B: events for every kind of job (" + Expeditions.eventCount() + ")", Expeditions.eventCount() >= 12);
-  // every choice has an outcome; a hurt outcome has a dead sister (a hurt is a coin flip with death)
-  int rolled = 0, hurtOnly = 0, chained = 0;
+  // every choice has an outcome; a choice that can hurt can kill at least as often (a clone bay's return counts as a hurt:
+  // its share comes out of the hurt's, never the death's)
+  int rolled = 0, chained = 0, clones = 0; List<String> soft = new ArrayList<String>();
   java.lang.reflect.Field outs = Expeditions.Choice.class.getDeclaredField("outcomes"); outs.setAccessible(true);
   java.lang.reflect.Field steps = Expeditions.Event.class.getDeclaredField("steps"); steps.setAccessible(true);
   for (Expeditions.Event e : Expeditions.events()) {
    Map<?, ?> st = (Map<?, ?>) steps.get(e); if (st.size() > 1) chained++;
    for (Object x : st.values()) for (Expeditions.Choice c : ((Expeditions.Step) x).choices) {
     List<?> os = (List<?>) outs.get(c); if (os.size() > 1) rolled++;
-    boolean hurt = false, dead = false;
-    for (Object o : os) { if (fieldInt(o, "injure") > 0) hurt = true; if (fieldInt(o, "lose") > 0 || fieldInt(o, "taken") > 0) dead = true; }
-    if (hurt && !dead) hurtOnly++;
+    int hurt = 0, dead = 0;
+    for (Object o : os) {
+     int w = fieldInt(o, "weight");
+     if (fieldInt(o, "injure") > 0 || fieldInt(o, "clone") > 0) hurt += w;
+     if (fieldInt(o, "lose") > 0 || fieldInt(o, "taken") > 0) dead += w;
+     if (fieldInt(o, "clone") > 0) clones++;
+    }
+    if (dead < hurt) soft.add(e.id + ": " + c.text);
    }
   }
-  Setup.chk("B: rolled choices (" + rolled + "), small chains (" + chained + "), and every hurt has a death beside it (" + hurtOnly + " without)", rolled >= 10 && chained >= 2 && hurtOnly == 0);
+  Setup.chk("B: rolled choices (" + rolled + "), small chains (" + chained + "), clone bays (" + clones + "); every choice that can hurt kills at least as often " + soft,
+    rolled >= 10 && chained >= 2 && clones >= 3 && soft.isEmpty());
   // a broken event is caught
   Object b = construct("homeplanet.parser.Expeditions$Book");
   java.lang.reflect.Method parse = Expeditions.class.getDeclaredMethod("parse", String.class, b.getClass(), String.class); parse.setAccessible(true);
   java.lang.reflect.Method check = Expeditions.class.getDeclaredMethod("check", b.getClass()); check.setAccessible(true);
-  parse.invoke(null, "event x rescue\nWords.\n* [rock] Only the Rock\n  = then nowhere | fine\n* Anyone\nstep lonely\n* A\n  = | a\n", b, "test");
+  parse.invoke(null, "event x rescue\nWords.\n* [rock] Only the Rock\n  = then nowhere | fine\n* Anyone\nstep lonely\n* A\n  = | a\n"
+    + "event y rescue\nMore words.\n* {who} does it\n  = | done\n* [fight] Fight it\n  = xp pilot 3 | fought\n* [pilot] Fly it\n  = xp pilot 3 | flown\n", b, "test");
   check.invoke(null, b);
   java.lang.reflect.Field pf = b.getClass().getDeclaredField("problems"); pf.setAccessible(true);
   List<?> probs = (List<?>) pf.get(b);
-  boolean caught = false; for (Object p : probs) if (p.toString().contains("no outcome")) caught = true;
-  Setup.chk("B: a broken event is caught: a choice with no outcome, a step that isn't there, one never reached, and the kinds with nothing " + probs, caught && probs.size() >= 3);
+  String all = probs.toString();
+  Setup.chk("B: a broken event is caught: a choice with no outcome, a step that isn't there, one never reached " + probs,
+    all.contains("has no outcome") && all.contains("no step nowhere") && all.contains("step lonely is never reached"));
+  Setup.chk("B: and an anyone's button that names someone, and experience in a skill the choice doesn't take (but not the one that does)",
+    all.contains("\"{who} does it\" names someone") && all.contains("\"Fight it\" gives pilot experience") && !all.contains("\"Fly it\""));
   // the words, held against FTL's own event text: no run of six words the same
   String ftl = new String(readAll(DataManager.get().getResourceInputStream("data/text_events.xml")), "UTF-8").replaceAll("<[^>]*>", " ");
   Set<String> shingles = new HashSet<String>(); List<String> w = words(ftl);
@@ -84,6 +95,14 @@ public class ExpT { public static void main(String[] a) throws Exception {
   v.begin().put(v.storage(), c.save, c.hash).commit();
   return Expeditions.holdCrew(v);
  }
+ /** These crew, in the Cargo Hold (any there before are moved out of the way first). */
+ static List<CrewState> holdOf(Vault v, CrewState... crew) throws Exception {
+  Vault.Copy c = v.readCopy(v.storage()); ShipState h = c.save.getPlayerShip();
+  h.getCrewList().clear();
+  for (CrewState x : crew) { SaveHelper.placeCrew(h, x, true); h.getCrewList().add(x); }
+  v.begin().put(v.storage(), c.save, c.hash).commit();
+  return Expeditions.holdCrew(v);
+ }
  /** A fixed board, so the runs don't depend on what was posted. */
  static void pinBoard(Vault v, String... events) throws Exception {
   StringBuilder sb = new StringBuilder();
@@ -115,16 +134,46 @@ public class ExpT { public static void main(String[] a) throws Exception {
   for (Expeditions.Choice c : Expeditions.start(v, 0, humans, new Random(1)).choices()) if (c.race != null) humanOnly = false;
   for (Expeditions.Choice c : Expeditions.start(v, 0, hold(v, "rock"), new Random(1)).choices()) if ("rock".equals(c.race)) sawRock = true;
   Setup.chk("R: a party of humans sees no race's options; a Rock's open with a Rock along", humanOnly && sawRock);
-  // the odds: a bad outcome is rarer with the race the choice fits, and with the skill; the commander never dies
+  // who takes a choice on, and how much safer they make it: the relay's "find the fault yourselves" wants an Engi (tech)
+  // and repair; the best suited does it, takes its risk first, and earns its experience
+  pinBoard(v, "engi_relay");
   java.lang.reflect.Method fit = Expeditions.Run.class.getDeclaredMethod("fit", Expeditions.Choice.class); fit.setAccessible(true);
-  Expeditions.Run plain = Expeditions.start(v, 0, hold(v, "human"), new Random(1)), rock = Expeditions.start(v, 0, hold(v, "rock"), new Random(1));
-  Expeditions.Choice vent = null; for (Expeditions.Choice c : plain.choices()) if (c.text.startsWith("Go down the vent")) vent = c;
-  int fp = (Integer) fit.invoke(plain, vent), fr = (Integer) fit.invoke(rock, vent);
-  CrewState skilled = Commission.volunteer("human", new Random(2)); skilled.setRepairMasteryOne(true); skilled.setRepairMasteryTwo(true);
-  Vault.Copy cp = v.readCopy(v.storage()); cp.save.getPlayerShip().getCrewList().clear(); SaveHelper.placeCrew(cp.save.getPlayerShip(), skilled, true); cp.save.getPlayerShip().getCrewList().add(skilled); v.begin().put(v.storage(), cp.save, cp.hash).commit();
-  int fs = (Integer) fit.invoke(Expeditions.start(v, 0, Expeditions.holdCrew(v), new Random(1)), vent);
-  Setup.chk("R: the vent is safer for a Rock (" + fr + "% of the risk) and for a skilled repairer (" + fs + "%) than for anyone (" + fp + "%)", fp == 100 && fr < fp && fs < fp);
+  java.lang.reflect.Method doer = Expeditions.Run.class.getDeclaredMethod("doer", Expeditions.Choice.class); doer.setAccessible(true);
+  CrewState plain = Commission.volunteer("human", new Random(11)), fixer = Commission.volunteer("human", new Random(12)), engi = Commission.volunteer("engi", new Random(13)), ace = Commission.volunteer("engi", new Random(14));
+  plain.setName("Ada Plain"); fixer.setName("Bo Fixer"); engi.setName("Cog"); ace.setName("Dial"); // names apart, whatever the dice gave
+  homeplanet.model.Skills.set(fixer, 4, 20); homeplanet.model.Skills.set(ace, 4, 36); // repair: a human at level 1, an Engi at level 2
+  Expeditions.Run r0 = Expeditions.start(v, 0, holdOf(v, plain), new Random(1));
+  Expeditions.Choice tech = null, told = null; for (Expeditions.Choice c : r0.choices()) { if (c.text.startsWith("Go into the reactor room")) tech = c; if (c.text.startsWith("Do exactly")) told = c; }
+  int fPlain = (Integer) fit.invoke(r0, tech);
+  Expeditions.Run r1 = Expeditions.start(v, 0, holdOf(v, plain, fixer), new Random(1));
+  int fFixer = (Integer) fit.invoke(r1, tech); String d1 = ((CrewState) doer.invoke(r1, tech)).getName();
+  Expeditions.Run r2 = Expeditions.start(v, 0, holdOf(v, fixer, engi), new Random(1));
+  int fEngi = (Integer) fit.invoke(r2, tech); String d2 = ((CrewState) doer.invoke(r2, tech)).getName();
+  Expeditions.Run r3 = Expeditions.start(v, 0, holdOf(v, engi, ace, plain), new Random(1));
+  int fAce = (Integer) fit.invoke(r3, tech); String d3 = ((CrewState) doer.invoke(r3, tech)).getName();
+  Setup.chk("R: the reactor room's risk: anyone " + fPlain + "%, a level 1 repairer " + fFixer + "%, an Engi " + fEngi + "%, an Engi at level 2 " + fAce + "%",
+    fPlain == 100 && fFixer == 80 && fEngi == 50 && fAce == 30);
+  Setup.chk("R: the best suited takes it on: the repairer over a beginner (" + d1 + "), an Engi over a level 1 human (" + d2 + "), the skilled Engi over the other (" + d3 + ")",
+    d1.equals(fixer.getName()) && d2.equals(engi.getName()) && d3.equals(ace.getName()));
+  // the experience is theirs: doing as the attendant says, the level 1 repairer does it, not the beginner
+  Expeditions.Run r4 = Expeditions.start(v, 0, holdOf(v, plain, fixer), new Random(2));
+  r4.choose(told); Expeditions.finish(v, r4);
+  Setup.chk("R: the repairer earns the repair experience (" + homeplanet.model.Skills.points(crew(v, fixer.getName()), 4) + "), the beginner none (" + homeplanet.model.Skills.points(crew(v, plain.getName()), 4) + ")",
+    homeplanet.model.Skills.points(crew(v, fixer.getName()), 4) == 22 && homeplanet.model.Skills.points(crew(v, plain.getName()), 4) == 0);
+  // a race's option names on its button the one who takes it on, and the outcome is about the same one
+  pinBoard(v, "mantis_raider");
+  CrewState m1 = Commission.volunteer("mantis", new Random(21)), m2 = Commission.volunteer("mantis", new Random(22));
+  m1.setName("Kriss"); m2.setName("Vetch");
+  boolean same = true;
+  for (int s = 0; s < 30; s++) {
+   Expeditions.Run r = Expeditions.start(v, 0, holdOf(v, m1, m2), new Random(s));
+   Expeditions.Choice mc = null; for (Expeditions.Choice c : r.choices()) if ("mantis".equals(c.race)) mc = c;
+   String named = r.label(mc).replace("(Mantis) ", "").split(" says")[0];
+   if (!r.choose(mc).contains(named)) same = false;
+  }
+  Setup.chk("R: a race's option: the button and the outcome name the same crew member", same);
   // over many runs of a risky choice: deaths outnumber injuries, and a lone crew member can be lost (the commander goes on alone)
+  pinBoard(v, "rock_shaft");
   int dead = 0, hurt = 0, fine = 0, alone = 0;
   for (int s = 0; s < 600; s++) {
    Expeditions.Run r = Expeditions.start(v, 0, hold(v, "human"), new Random(s));
@@ -211,6 +260,10 @@ public class ExpT { public static void main(String[] a) throws Exception {
   ChainT.jump(v, 1);
   Expeditions.checkInfirmary(v);
   Setup.chk("C: a beacon later the station has healed her, no skill lost", hp(v, a.getName()) == 100 && homeplanet.model.Skills.points(crew(v, a.getName()), 0) == 20);
+  ChainT.jump(v, 1);
+  byte[] was = SafeFiles.read(v.storage().file());
+  Expeditions.checkInfirmary(v);
+  Setup.chk("C: a beacon with nobody hurt and nobody laid up: the Cargo Hold's file is left as it was", Arrays.equals(was, SafeFiles.read(v.storage().file())));
   // the infirmary: a point a beacon off a skill she has, and a level can go with it
   pinBoard(v, "rock_shaft");
   Expeditions.Run bad = null;
@@ -228,6 +281,39 @@ public class ExpT { public static void main(String[] a) throws Exception {
   int lostPts = 36 - homeplanet.model.Skills.points(after, 0) - homeplanet.model.Skills.points(after, 4);
   Setup.chk("C: " + stay + " beacons in the infirmary cost " + lostPts + " points of skill, from the skills she had (pilot " + homeplanet.model.Skills.points(after, 0) + ", repair " + homeplanet.model.Skills.points(after, 4) + ")",
     lostPts == stay && homeplanet.model.Skills.points(after, 2) == 0 && (homeplanet.model.Crew.skillLevels(after)[4] == 1) == (homeplanet.model.Skills.points(after, 4) >= 16));
+  // someone laid up who leaves the Cargo Hold (retired, say) is let go quietly when their time is up: no word of them
+  pinBoard(v, "rock_shaft");
+  List<CrewState> pair = hold(v, "human", "human");
+  Expeditions.Run gone = null;
+  for (int s = 0; s < 5000 && gone == null; s++) {
+   Expeditions.Run t = Expeditions.start(v, 0, Expeditions.holdCrew(v), new Random(s));
+   Expeditions.Choice vent = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Go down the vent")) vent = x;
+   t.choose(vent);
+   if (fieldList(t, "hurt").size() == 1 && fieldList(t, "lost").isEmpty()) gone = t;
+  }
+  String leaver = ((CrewState) fieldList(gone, "hurt").get(0)).getName();
+  Expeditions.finish(v, gone);
+  Vault.Copy lc = v.readCopy(v.storage()); for (Iterator<CrewState> it = lc.save.getPlayerShip().getCrewList().iterator(); it.hasNext(); ) if (it.next().getName().equals(leaver)) it.remove();
+  v.begin().put(v.storage(), lc.save, lc.hash).commit();
+  ChainT.jump(v, Expeditions.HEAL_MAX + 1);
+  Setup.chk("C: " + leaver + " left the Cargo Hold while laid up: when their time is up, no word of them, and the infirmary is empty", Expeditions.checkInfirmary(v).isEmpty() && Expeditions.infirmary(v).isEmpty());
+  // a clone bay on a real run: home alive and whole, not to the infirmary, a level down in every skill (the experience
+  // of the run goes too)
+  pinBoard(v, "pilot_moon");
+  CrewState gunner = Commission.volunteer("human", new Random(31)); gunner.setName("Gunner Ames");
+  homeplanet.model.Skills.set(gunner, 3, 60); homeplanet.model.Skills.set(gunner, 5, 14); // weapons level 1, combat level 2
+  Expeditions.Run cl = null;
+  for (int s = 0; s < 5000 && cl == null; s++) {
+   Expeditions.Run t = Expeditions.start(v, 0, holdOf(v, gunner), new Random(s));
+   Expeditions.Choice eng = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Move in and engage")) eng = x;
+   t.choose(eng);
+   if (!fieldList(t, "cloned").isEmpty()) cl = t;
+  }
+  String clEnd = Expeditions.finish(v, cl);
+  CrewState back = crew(v, gunner.getName());
+  int[] lv = homeplanet.model.Crew.skillLevels(back);
+  Setup.chk("C: cloned on the moon: home alive (" + clEnd + "), weapons 1 to 0, combat 2 to 1, not laid up", back != null && lv[3] == 0 && homeplanet.model.Skills.points(back, 3) == 0
+    && lv[5] == 1 && !clEnd.contains("infirmary") && !Expeditions.laidUp(v, back) && Expeditions.holdCrew(v).size() == 1);
   // a clone bay: a level off each skill held; experience: points on, a level when they add up
   CrewState z = Commission.volunteer("human", new Random(9)); homeplanet.model.Skills.set(z, 5, 14); homeplanet.model.Skills.set(z, 0, 13); homeplanet.model.Skills.set(z, 3, 10);
   homeplanet.model.Skills.cloned(z);

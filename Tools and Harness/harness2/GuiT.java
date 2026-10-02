@@ -41,6 +41,7 @@ public class GuiT {
   folding(f);
   expedition(f);
   ransomPopUp(f);
+  infirmaryBay(f);
   Setup.done();
   System.exit(0);
  }
@@ -329,6 +330,66 @@ public class GuiT {
   Setup.chk("X: a priority message comes through over the expedition, and the expedition carries on after it", note && done[0] && end.contains("Cargo Hold"));
   Object after = null; try { java.lang.reflect.Method away = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredMethod("awayNotice", String.class); away.setAccessible(true); after = away.invoke(null, "Commander Test"); } catch (Exception e) { }
   Setup.chk("X: a hail during the expedition is told the commander is away (" + during[0] + "); after it, hails are answered as usual", String.valueOf(during[0]).contains("away on an expedition") && after == null);
+ }
+
+ /**
+  * The infirmary in the Cargo Bay: no bar for the whole, green with the rest red for a hurt from the game, purple and full
+  * for the laid up; the laid up can't be moved onto a ship, and aren't offered over the Long Range.
+  */
+ static void infirmaryBay(final MainFrame f) throws Exception {
+  final Vault v = Vault.get();
+  if (v.boarded() == null) v.board(v.docked().get(0));
+  Vault.Copy c = v.readCopy(v.storage()); ShipState h = c.save.getPlayerShip(); h.getCrewList().clear();
+  final String[] names = {"Whole Wren", "Hurt Hale", "Laid Ulm"};
+  for (int i = 0; i < 3; i++) {
+   SavedGameParser.CrewState x = Commission.volunteer("human", new Random(40 + i)); x.setName(names[i]);
+   if (i == 1) x.setHealth(40); if (i == 2) x.setHealth(25);
+   SaveHelper.placeCrew(h, x, true); h.getCrewList().add(x);
+  }
+  v.begin().put(v.storage(), c.save, c.hash).commit();
+  final File inf = new File(v.root, "infirmary.txt");
+  SafeFiles.writeText(inf, "healed_at=" + v.beaconsSeen() + "\n0.name=Laid Ulm\n0.race=human\n0.until=" + (v.beaconsSeen() + 4) + "\n0.drained=" + v.beaconsSeen() + "\n", false);
+  final Map<String, Object[]> bars = new HashMap<String, Object[]>();
+  final Object[] r = new Object[3];
+  presses.clear(); presses.add(0); shown.clear(); // OK, to the infirmary's word
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showCargoBay();
+   CargoBayUI bay = f.cargoBay;
+   List<?> ships = (List<?>) field(bay, CargoBayUI.class, "shipSelect"); Object home = field(bay, CargoBayUI.class, "homeSave");
+   java.lang.reflect.Field pi = CargoBayUI.class.getDeclaredField("partnerIndex"); pi.setAccessible(true); pi.setInt(bay, ships.indexOf(home));
+   call(bay, CargoBayUI.class, "loadPartner", new Class<?>[0]);
+   call(bay, CargoBayUI.class, "refreshTrade", new Class<?>[0]);
+   ShipState hold = (ShipState) field(bay, CargoBayUI.class, "tradeState");
+   for (Object row : (List<?>) call(bay, CargoBayUI.class, "crewRows", new Class<?>[] {ShipState.class}, hold)) {
+    Class<?> rc = row.getClass();
+    bars.put((String) field(row, rc, "name"), new Object[] {field(row, rc, "bar"), field(row, rc, "barColor"), field(row, rc, "barRest"), field(row, rc, "tip")});
+   }
+   // the laid up one, sent aboard: refused, still in the Cargo Hold
+   Object[] cats = (Object[]) field(bay, CargoBayUI.class, "cats");
+   Object theirs = field(cats[3], cats[3].getClass(), "theirs");
+   JList<?> list = (JList<?>) field(theirs, theirs.getClass(), "list");
+   for (int i = 0; i < list.getModel().getSize(); i++) { Object row = list.getModel().getElementAt(i); if ("Laid Ulm".equals(field(row, row.getClass(), "name"))) list.setSelectedIndex(i); }
+   call(bay, CargoBayUI.class, "sendCrew", new Class<?>[] {boolean.class}, false);
+   boolean still = false; for (SavedGameParser.CrewState x : hold.getCrewList()) if (x.getName().equals("Laid Ulm")) still = true;
+   r[0] = still;
+   // the Long Range's offer from the Cargo Hold leaves them out
+   LongRangeCommUI comm = f.comm;
+   java.lang.reflect.Field src = LongRangeCommUI.class.getDeclaredField("source"); src.setAccessible(true); src.set(comm, v.storage());
+   java.lang.reflect.Field ss = LongRangeCommUI.class.getDeclaredField("sourceSave"); ss.setAccessible(true); ss.set(comm, v.readCopy(v.storage()).save);
+   StringBuilder offered = new StringBuilder();
+   for (Object l : (List<?>) call(comm, LongRangeCommUI.class, "contents", new Class<?>[0])) offered.append(((homeplanet.comm.Line) l).title()).append("; ");
+   r[1] = offered.toString();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Object[] whole = bars.get("Whole Wren"), hurt = bars.get("Hurt Hale"), laid = bars.get("Laid Ulm");
+  Setup.chk("I: in the Cargo Bay, the whole have no bar (" + whole[0] + ")", ((Float) whole[0]) < 0);
+  Setup.chk("I: a hurt from the game: green for what's left (" + hurt[0] + "), red for the rest, and the tooltip says the station heals it", Math.abs((Float) hurt[0] - 0.4f) < 0.01f
+    && ((Color) hurt[1]).getGreen() > 200 && ((Color) hurt[2]).getRed() > 200 && String.valueOf(hurt[3]).contains("Injured"));
+  Setup.chk("I: the laid up: purple and full (" + laid[0] + "), and the tooltip says the infirmary", ((Float) laid[0]) == 1f && ((Color) laid[1]).getBlue() > 200 && ((Color) laid[1]).getRed() > 150
+    && String.valueOf(laid[3]).contains("In the infirmary"));
+  boolean said = false; for (String t : shown) if (t.contains("Laid Ulm is in the infirmary")) said = true;
+  Setup.chk("I: sent aboard, the laid up are refused with a word, and stay in the Cargo Hold", Boolean.TRUE.equals(r[0]) && said);
+  Setup.chk("I: the Long Range offers the Cargo Hold's crew but not the laid up (" + r[1] + ")", String.valueOf(r[1]).contains("Whole Wren") && !String.valueOf(r[1]).contains("Laid Ulm"));
+  inf.delete();
  }
 
  /** With the inbox off, a ransom comes up at the Space Dock: Pay brings them home. */

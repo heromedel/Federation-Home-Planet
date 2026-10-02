@@ -514,29 +514,45 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   of a branch and on FTL's first-sector scale: 5 to 15 scrap, a dangerous choice up to 20, fuel, missiles or drone
   parts in twos, a weapon, drone or augment rarely; many branches pay nothing. The game adds "You receive 9 scrap."
   after the words, as FTL does, and nothing about odds or arithmetic: the screens show nothing the crew wouldn't know.
-- **Danger**: the only thing at risk is crew, so a risky choice can kill. Every outcome that hurts someone has a sister
-  that kills them, usually the heavier; a few take them instead (`taken`: a ransom follows, signed by the event's
-  `foe`). The commander always comes home. Who is along changes the odds, unseen: a crew member whose race fits the
-  choice (its own blue option, or the tag's race: fight Mantis, tech Engi, heat Rock, power Zoltan, cold Lanius, talk
-  Slug) halves the bad outcomes' weight, and the skill it takes (combat, repair, engines, shields, piloting, weapons)
-  cuts it again. Nothing else: a bigger party is not a safer one.
+- **Danger**: the only thing at risk is crew, so a risky choice can kill. Every choice that can hurt someone kills at
+  least as often (the harness checks the weights); a few take them instead (`taken`: a ransom follows, signed by the
+  event's `foe`). The commander always comes home. Who is along changes the odds, unseen (4B.94): a choice says what it
+  takes, a race that's good at it (fight Mantis, tech Engi, heat Rock, power Zoltan, airless Lanius, mind Slug) and a
+  skill (pilot, engines, shields, weapons, repair, combat), and the crew member best suited takes it on. Its risk
+  falls on them first, its experience is theirs, and its bad outcomes are rarer for them: half for the race, a fifth
+  or two fifths less for the skill at level 1 or 2. A race's own option is taken by the best of that race, and the
+  button names them. A choice nothing picks for falls to anyone. A bigger party is not a safer one.
 - **The infirmary** (`infirmary.txt` in the vault): a crew member hurt on an expedition stays in the Cargo Hold's save
   but can't be sent again for 3 to 6 beacons (hidden; the Expeditions screen lists who is laid up). When their time is
   up, the next visit to the Space Dock says so in a pop-up (never a letter), and they are whole again.
 - **The station's care, skill and the clone bay** (4B.93, Plan GG):
-  - The Cargo Bay's crew rows carry a thin bar under the name: none when whole, red by how hurt for an injury from
-    the game, purple (FTL's "not yours to command") full width for the infirmary; the tooltip says which. A crew
-    member in the infirmary can't be moved onto a ship ("stays there until she's on her feet").
+  - The Cargo Bay's crew rows carry a thin bar under the crew icon, as FTL draws health under a portrait (4B.94; it
+    sat under the name at 4B.93 and read as an underline): none when whole, green with the rest red for a hurt from
+    the game, purple (FTL's "not yours to command") and full for the infirmary; the tooltip says which. A crew member
+    in the infirmary can't be moved onto a ship, offered over the Long Range, or renamed (the infirmary knows them by
+    name) until they're out; one who leaves the Cargo Hold anyway (retired) is let go quietly when their time is up.
   - A crew member in the Cargo Hold hurt in the game is healed once a beacon has passed (a station heals fast), at
     no cost. The infirmary costs a point of skill for each beacon laid up, taken from a random skill they have points
     in; a point that crosses a level's line takes the level with it (rusty after a long lay-up). Not whole levels:
     heromedel judged that too harsh with a hurt one trip in three.
   - `clone 1`: an outcome where the crew member dies and the hiring ship's clone bay brings them back, a level down in
-    every skill they held (FTL's clone bay price); used where the hiring ship could have one (the pilot's freighter, the
-    liner). Drawn as a bad outcome, rarer than death.
-  - `xp <skill> <points>`: experience for the crew member the choice is about, a few points on the choices that
-    exercise the skill, more on the risky ones; FTL's levels come when the points add up (`homeplanet.model.Skills`
-    keeps points and mastery flags together). Specialist postings are still to come (IDEAS, Idea E).
+    every skill they held (FTL's clone bay price), the run's experience gone with it; used where the hiring ship could
+    have one (the pilot's freighter, the liner). It counts as a hurt: its weight comes out of the hurt's share, never
+    the death's (4B.94; at 4B.93 it had come out of the death's, making the clone bay a reprieve).
+  - `xp <skill> <points>`: experience for whoever took the choice on, a few points on the choices that exercise the
+    skill, more on the risky ones; FTL's levels come when the points add up (`homeplanet.model.Skills` keeps points and
+    mastery flags together). A choice anyone can take must take the skill it teaches, so the right person earns it
+    (the harness refuses one that doesn't). Specialist postings are still to come (IDEAS, Idea E).
+  - The station's daily round writes the Cargo Hold's save only when someone's health or skill changed.
+- **The events, reviewed against FTL** (4B.94, no new events): each read beside FTL's own for tone, lore and copied
+  ideas. Escort jobs said "your ship" though the commander has none: their postings now lend a cutter. A Rock in the
+  hot vent was "burned to the bone" (the Rock don't burn): the vent now collapses. The Mantis raider's Mantis option
+  (two Mantis talking behind a locked door, one leaving) was too close to FTL's captured-commando scene: the Mantis now
+  offers to be what the starving Mantis goes for. The Engi option there, which only led to the same as leaving the bay
+  sealed, now vents the bay. Experience moved to the person doing the work (no more piloting for a Slug's telepathy or
+  shields for walking on ice), a Slug can find the moon's pilot by mind, the freighter's clone bay also reaches the
+  Mantis's raid and the search on the ground, and the sleeping station's do-nothing choice is gone. Ships are "she"
+  throughout.
 - Each expedition counts as one beacon of the fleet's time; events met in the last twelve aren't met again while others
   of the kind are left (`recent` in the fleet's expeditions.txt). The history log keeps each job's event, scrap, the
   dead and the laid up.

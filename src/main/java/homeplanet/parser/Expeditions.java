@@ -74,14 +74,17 @@ public final class Expeditions {
 		RACES.put("zoltan", "energy"); RACES.put("crystal", "crystal"); RACES.put("lanius", "anaerobic");
 	}
 	/**
-	 * What a choice takes: the race that's good at it, and the skill (an index into Crew.skillLevels: 0 pilot, 1 engines,
-	 * 2 shields, 3 weapons, 4 repair, 5 combat), either of which makes its bad outcomes rarer.
+	 * What a choice takes, besides a race's own option: a word for the race that's good at it, with the skill that goes
+	 * with it if any (fight: Mantis, combat; tech: Engi, repair; heat: Rock; power: Zoltan; airless: Lanius; mind: Slug),
+	 * and a skill by name (pilot, engines, shields, weapons, repair, combat), which overrides the word's. The crew member
+	 * best suited takes the choice on: its risk falls on them first, they earn its experience, and its bad outcomes are
+	 * rarer for them.
 	 */
-	private static final Map<String, String[]> TAGS = new LinkedHashMap<String, String[]>();
+	private static final Map<String, String[]> FITS = new LinkedHashMap<String, String[]>();
 	static {
-		TAGS.put("fight", new String[] {"mantis", "5"}); TAGS.put("tech", new String[] {"engi", "4"}); TAGS.put("heat", new String[] {"rock", "4"});
-		TAGS.put("power", new String[] {"zoltan", "1"}); TAGS.put("cold", new String[] {"lanius", "2"}); TAGS.put("talk", new String[] {"slug", "0"});
-		TAGS.put("fly", new String[] {null, "0"}); TAGS.put("guns", new String[] {null, "3"});
+		FITS.put("fight", new String[] {"mantis", "combat"}); FITS.put("tech", new String[] {"engi", "repair"});
+		FITS.put("heat", new String[] {"rock", null}); FITS.put("power", new String[] {"zoltan", null});
+		FITS.put("airless", new String[] {"lanius", null}); FITS.put("mind", new String[] {"slug", null});
 	}
 	/** A race as the option tags show it: "Rock", "Zoltan". */
 	static String raceWord(String name) { return name.substring(0, 1).toUpperCase() + name.substring(1); }
@@ -90,6 +93,7 @@ public final class Expeditions {
 
 	/** The skills as the events name them, in Crew.skillLevels' order. */
 	static final String[] SKILLS = {"pilot", "engines", "shields", "weapons", "repair", "combat"};
+	static int skillIndex(String name) { return name == null ? -1 : java.util.Arrays.asList(SKILLS).indexOf(name); }
 	/** What a choice comes to: its words, what it gives and costs, and the choice it may lead on to. */
 	public static final class Outcome {
 		int weight = 1;
@@ -107,9 +111,13 @@ public final class Expeditions {
 		public String text = "";
 		/** The race it needs aboard (an events-file name), or null. */
 		public String race;
-		/** What it takes ("fight", "tech"...), or null. */
-		String tag;
+		/** The race that's good at it without being needed (an events-file name), or null. */
+		String fitRace;
+		/** The skill it takes (an index into SKILLS), or -1. */
+		int skill = -1;
 		final List<Outcome> outcomes = new ArrayList<Outcome>();
+		/** Does anything about it pick who takes it on (a race, a race that's good at it, a skill)? */
+		boolean picksWho() { return race != null || fitRace != null || skill >= 0; }
 		/** As the button shows it: the race in brackets first. */
 		public String label() { return race == null ? text : "(" + raceWord(race) + ") " + text; }
 	}
@@ -214,11 +222,21 @@ public final class Expeditions {
 					ch = new Choice();
 					String t = line.substring(1).trim();
 					if (t.startsWith("[")) {
+						String fitSkill = null;
 						for (String tag : t.substring(1, t.indexOf(']')).trim().split("\\s+")) {
-							if (RACES.containsKey(tag)) ch.race = tag;
-							else if (TAGS.containsKey(tag)) ch.tag = tag;
-							else throw new IllegalArgumentException("unknown tag " + tag);
+							if (RACES.containsKey(tag)) {
+								if (ch.race != null) throw new IllegalArgumentException("a choice needs one race at most");
+								ch.race = tag;
+							} else if (FITS.containsKey(tag)) {
+								if (ch.fitRace != null) throw new IllegalArgumentException("a choice takes one race word at most");
+								ch.fitRace = FITS.get(tag)[0];
+								fitSkill = FITS.get(tag)[1];
+							} else if (skillIndex(tag) >= 0) {
+								if (ch.skill >= 0) throw new IllegalArgumentException("a choice takes one skill at most");
+								ch.skill = skillIndex(tag);
+							} else throw new IllegalArgumentException("unknown tag " + tag);
 						}
+						if (ch.skill < 0) ch.skill = skillIndex(fitSkill);
 						t = t.substring(t.indexOf(']') + 1).trim();
 					}
 					ch.text = t;
@@ -255,7 +273,12 @@ public final class Expeditions {
 				for (Choice c : s.choices) {
 					if (c.race == null) open++;
 					if (c.outcomes.isEmpty()) { b.problems.add(where + ": \"" + c.text + "\" has no outcome"); continue; }
+					// the button names someone only where a race's option says who it will be
+					if (c.race == null && (c.text.contains("{who}") || c.text.contains("{crew}"))) b.problems.add(where + ": \"" + c.text + "\" names someone, but only a race's option knows who");
 					for (Outcome o : c.outcomes) {
+						// experience goes to whoever took the choice on: anyone's choice must say which skill picks them
+						for (int k = 0; k < SKILLS.length; k++)
+							if (o.xp[k] > 0 && c.race == null && c.skill != k) b.problems.add(where + ": \"" + c.text + "\" gives " + SKILLS[k] + " experience but doesn't take " + SKILLS[k]);
 						if (o.then == null) continue;
 						if (!e.steps.containsKey(o.then) || o.then.isEmpty()) b.problems.add(where + ": no step " + o.then);
 						reached.add(o.then);
@@ -307,7 +330,7 @@ public final class Expeditions {
 			else if (k.equals("taken")) o.taken = Integer.parseInt(v);
 			else if (k.equals("clone")) o.clone = Integer.parseInt(v);
 			else if (k.equals("xp")) {
-				int skill = java.util.Arrays.asList(SKILLS).indexOf(v);
+				int skill = skillIndex(v);
 				if (skill < 0 || i + 1 >= t.length) throw new IllegalArgumentException("xp needs a skill (pilot, engines, shields, weapons, repair, combat) and points");
 				o.xp[skill] += Integer.parseInt(t[++i]);
 			}
@@ -481,29 +504,51 @@ public final class Expeditions {
 			return out;
 		}
 		private CrewState of(String race) {
-			String id = RACES.get(race);
-			for (CrewState c : alive()) if (c.getRace() != null && c.getRace().getId().equals(id)) return c;
+			for (CrewState c : alive()) if (isRace(c, race)) return c;
 			return null;
 		}
+		private boolean isRace(CrewState c, String race) { return c.getRace() != null && c.getRace().getId().equals(RACES.get(race)); }
 		/**
-		 * How much of itself a bad outcome's weight keeps, in %: less with a crew member whose race fits the choice (its
-		 * own race, or the one its tag names), less again with the skill it takes.
+		 * How much of itself a bad outcome's weight keeps, in %, with this crew member taking the choice on: half for the
+		 * race that's good at it (a race's own option always is), less again for the skill it takes.
 		 */
-		int fit(Choice c) {
+		int fitOf(Choice c, CrewState x) {
 			int f = 100;
-			String race = c.race, skill = null;
-			if (c.tag != null) { String[] t = TAGS.get(c.tag); if (race == null) race = t[0]; skill = t[1]; }
-			if (race != null && of(race) != null) f = f * FIT_RACE / 100;
-			if (skill != null) {
-				int best = 0;
-				for (CrewState x : alive()) best = Math.max(best, homeplanet.model.Crew.skillLevels(x)[Integer.parseInt(skill)]);
-				if (best > 0) f = f * (best >= 2 ? FIT_SKILL_TWO : FIT_SKILL_ONE) / 100;
+			String race = c.race != null ? c.race : c.fitRace;
+			if (race != null && isRace(x, race)) f = f * FIT_RACE / 100;
+			if (c.skill >= 0) {
+				int level = homeplanet.model.Crew.skillLevels(x)[c.skill];
+				if (level > 0) f = f * (level >= 2 ? FIT_SKILL_TWO : FIT_SKILL_ONE) / 100;
 			}
 			return f;
 		}
-		/** Rolls one of a choice's outcomes by weight, the bad ones weighed down by who's along (and out, with no crew left to lose). */
-		Outcome roll(Choice c) {
-			int fit = fit(c), total = 0;
+		/** The best a choice's bad outcomes can be weighed down, by whoever is best suited to it (100: no one is). */
+		int fit(Choice c) {
+			CrewState x = doer(c);
+			return x == null ? 100 : fitOf(c, x);
+		}
+		/**
+		 * Who takes a choice on: for a race's option, the best suited of that race (the first, if they're alike, so the
+		 * button and the outcome name the same one); for one that takes a race or a skill, the best suited of everyone
+		 * (one of them, if they're alike); otherwise anyone.
+		 */
+		CrewState doer(Choice c) {
+			List<CrewState> from = new ArrayList<CrewState>();
+			for (CrewState x : alive()) if (c.race == null || isRace(x, c.race)) from.add(x);
+			if (from.isEmpty()) return null;
+			if (!c.picksWho()) return from.get(rng.nextInt(from.size()));
+			List<CrewState> best = new ArrayList<CrewState>();
+			int least = Integer.MAX_VALUE;
+			for (CrewState x : from) {
+				int f = fitOf(c, x);
+				if (f < least) { least = f; best.clear(); }
+				if (f == least) best.add(x);
+			}
+			return c.race != null ? best.get(0) : best.get(rng.nextInt(best.size()));
+		}
+		/** Rolls one of a choice's outcomes by weight, the bad ones weighed down by who takes it on (and out, with no crew left to lose). */
+		Outcome roll(Choice c, CrewState who) {
+			int fit = who == null ? 100 : fitOf(c, who), total = 0;
 			boolean anyone = !alive().isEmpty();
 			int[] w = new int[c.outcomes.size()];
 			for (int i = 0; i < w.length; i++) {
@@ -518,10 +563,8 @@ public final class Expeditions {
 		}
 		/** Takes a choice: its outcome rolled and applied; the screen moves on. Returns the outcome's words, with what it gave. */
 		public String choose(Choice c) {
-			Outcome o = c.outcomes.size() == 1 ? c.outcomes.get(0) : roll(c);
-			CrewState who = c.race != null ? of(c.race) : null;
-			List<CrewState> here = alive();
-			if (who == null && !here.isEmpty()) who = here.get(rng.nextInt(here.size()));
+			CrewState who = doer(c);
+			Outcome o = c.outcomes.size() == 1 ? c.outcomes.get(0) : roll(c, who);
 			String said = fill(o.text, who);
 			StringBuilder extra = new StringBuilder();
 			for (int i = 0; i < o.lose + o.taken && !alive().isEmpty(); i++) {
@@ -571,10 +614,9 @@ public final class Expeditions {
 			String w = who != null ? who.getName() : any != null ? any.getName() : "your crew";
 			return t.replace("{who}", w).replace("{crew}", any == null ? w : any.getName());
 		}
-		/** A choice's words as its button shows them: {who} is the crew member it would be about. */
+		/** A choice's words as its button shows them: {who} is the crew member of its race who would take it on. */
 		public String label(Choice c) {
-			CrewState who = c.race != null ? of(c.race) : null;
-			if (who == null && !alive().isEmpty()) who = alive().get(0);
+			CrewState who = c.race != null ? doer(c) : null;
 			String name = who == null ? "someone" : who.getName();
 			return c.label().replace("{who}", name).replace("{crew}", name);
 		}
@@ -631,9 +673,9 @@ public final class Expeditions {
 			if (mine == null) throw new IOException(sent.getName() + " is no longer in the Cargo Hold; nothing was changed");
 			if (r.lost.contains(sent)) { crew.remove(mine); lostNames.add(sent.getName()); continue; }
 			if (r.hurt.contains(sent)) { mine.setHealth(Math.max(1, mine.getHealth() / 4)); hurtNames.add(sent.getName()); toInfirmary.add(mine); }
-			if (r.cloned.contains(sent)) Skills.cloned(mine);
 			int[] got = r.earned.get(sent);
 			if (got != null) for (int i = 0; i < SKILLS.length; i++) if (got[i] > 0) Skills.add(mine, i, got[i]);
+			if (r.cloned.contains(sent)) Skills.cloned(mine); // after the experience: the clone bay takes that too
 		}
 		for (CrewState n : r.joined) {
 			if (!SaveHelper.placeCrew(hold, n, true)) continue; // no room: they find other work
@@ -692,10 +734,14 @@ public final class Expeditions {
 		return out;
 	}
 	/** Is this crew member laid up in the infirmary? */
-	public static boolean laidUp(Vault v, CrewState c) {
-		for (Patient x : infirmary(v)) if (x.key().equals(key(c))) return true;
-		return false;
+	public static boolean laidUp(Vault v, CrewState c) { return laidUpKeys(v).contains(key(c)); }
+	/** Everyone laid up, for a list of crew to check against with {@link #crewKey} (one read of the infirmary). */
+	public static Set<String> laidUpKeys(Vault v) {
+		Set<String> out = new HashSet<String>();
+		for (Patient x : infirmary(v)) out.add(x.key());
+		return out;
 	}
+	public static String crewKey(CrewState c) { return key(c); }
 	private static synchronized void admit(Vault v, CrewState c) {
 		Properties p = readProps(infirmaryFile(v));
 		int i = 0;
@@ -712,38 +758,51 @@ public final class Expeditions {
 	 * in), and whoever's time is up is on their feet, whole, and back among the crew who can be sent. Returns their names.
 	 */
 	public static synchronized List<String> checkInfirmary(Vault v) {
-		List<String> out = new ArrayList<String>();
+		List<String> back = new ArrayList<String>();
 		Properties p = readProps(infirmaryFile(v));
 		int now = v.beaconsSeen(), healedAt = intOf(p, "healed_at", -1);
-		List<Patient> all = infirmary(v), keep = new ArrayList<Patient>();
-		for (Patient x : all) { if (now >= x.until) out.add(x.name); else keep.add(x); }
-		boolean drain = false;
-		for (Patient x : all) if (now > x.drained) drain = true;
 		if (healedAt < 0) { // the first look: the clock starts now, nothing heals yet
 			p.setProperty("healed_at", Integer.toString(now));
 			try { writeProps(infirmaryFile(v), p, INFIRMARY_NOTE); } catch (IOException e) { log.warn("Could not start the infirmary's clock: {}", e.toString()); }
 			healedAt = now;
 		}
-		if (out.isEmpty() && !drain && now <= healedAt) return out;
+		List<Patient> all = infirmary(v), keep = new ArrayList<Patient>();
+		boolean heal = now > healedAt, due = false;
+		for (Patient x : all) {
+			if (now > x.drained) due = true; // a point of skill owed, or their time up
+			if (now < x.until) keep.add(x);
+		}
+		if (!heal && !due) return back;
 		try {
 			Ship st = v.storage();
 			Vault.Copy c = v.readCopy(st);
 			Random rng = new Random();
+			boolean changed = false;
 			for (CrewState x : c.save.getPlayerShip().getCrewList()) {
-				if (x.getRace() == null) continue;
+				if (x.getRace() == null || !SaveHelper.hasBody(x)) continue;
+				int max = x.getRace().getMaxHealth();
 				Patient mine = null;
 				for (Patient y : all) if (y.key().equals(key(x))) mine = y;
-				if (mine != null) for (int b = mine.drained; b < Math.min(now, mine.until); b++) Skills.drain(x, rng);
-				if (mine == null || out.contains(mine.name)) x.setHealth(x.getRace().getMaxHealth());
+				if (mine != null) {
+					for (int b = mine.drained; b < Math.min(now, mine.until); b++) changed |= Skills.drain(x, rng);
+					if (now >= mine.until) { // on their feet: whole again, and free to go
+						if (x.getHealth() != max) { x.setHealth(max); changed = true; }
+						back.add(x.getName());
+					}
+				} else if (heal && x.getHealth() < max) { // hurt in the game: a station heals fast
+					x.setHealth(max);
+					changed = true;
+				}
 			}
-			v.begin().put(st, c.save, c.hash).commit();
+			if (changed) v.begin().put(st, c.save, c.hash).commit();
+			// those whose time is up are let go (any no longer in the Cargo Hold, retired or moved, quietly)
 			Properties q = new Properties();
 			q.setProperty("healed_at", Integer.toString(now));
 			for (int i = 0; i < keep.size(); i++) { q.setProperty(i + ".name", keep.get(i).name); q.setProperty(i + ".race", keep.get(i).race); q.setProperty(i + ".until", Integer.toString(keep.get(i).until)); q.setProperty(i + ".drained", Integer.toString(now)); }
 			writeProps(infirmaryFile(v), q, INFIRMARY_NOTE);
-			for (String n : out) HistoryLog.entry("EXPEDITION", n + " is out of the infirmary");
+			for (String n : back) HistoryLog.entry("EXPEDITION", n + " is out of the infirmary");
 		} catch (IOException e) { log.warn("Could not tend the infirmary's crew: {}", e.toString()); return new ArrayList<String>(); }
-		return out;
+		return back;
 	}
 	private static Properties readProps(File f) {
 		Properties p = new Properties();
