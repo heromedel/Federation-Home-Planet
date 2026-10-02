@@ -47,6 +47,7 @@ import homeplanet.parser.SaveHelper;
  */
 public class CommissionDialog extends JDialog {
 
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CommissionDialog.class);
 	/** A row in the list: a header, or a blueprint. */
 	private static class Entry {
 		final String id, label;
@@ -440,6 +441,7 @@ public class CommissionDialog extends JDialog {
 		if (HomePlanet.commissionCosts() && !isFree) {
 			homeplanet.parser.Pricing.Quote q = quote(e.id, s);
 			price = q.total();
+			log.debug("Commission quote for {}: {} scrap ({})", e.id, price, q.lines);
 			int have = vault.storageScrap();
 			if (have < price) {
 				JOptionPane.showMessageDialog(this, "The shipyard asks " + price + " scrap for her, and the Cargo Hold has " + have + ".\n"
@@ -468,6 +470,8 @@ public class CommissionDialog extends JDialog {
 			HomePlanet.showErrorDialog("The new ship could not be docked; her save could not be written:\n" + ex + refund);
 			return;
 		}
+		log.debug("Commissioned {} ({}): {}, difficulty {}, AE {}, crew {}, paid {}", name, ship.id, e.id, difficulty.getSelectedItem(), s.isDLCEnabled(),
+				s.getPlayerShip().getCrewList().size(), price);
 		List<String> lines = new ArrayList<String>();
 		lines.add(e.label + " (" + e.id + "), difficulty " + difficulty.getSelectedItem() + (s.isDLCEnabled() ? "" : ", Original (Advanced Edition content off)"));
 		if (price > 0) lines.add("Paid " + price + " scrap from the Cargo Hold");

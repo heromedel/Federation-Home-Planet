@@ -30,6 +30,7 @@ import homeplanet.core.HomePlanet;
  */
 public class SettingsDialog extends JDialog {
 
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SettingsDialog.class);
 	private File saves = HomePlanet.save_location;
 	private File game = HomePlanet.datsPath;
 	private final JLabel savesLabel = new JLabel();
@@ -354,6 +355,7 @@ public class SettingsDialog extends JDialog {
 		if (!victoryChoice().equals(victoryWas)) changed.add("After a final victory: " + victoryChoice());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
+		log.debug("Settings saved: {}", changed.isEmpty() ? "nothing changed" : changed);
 		if (!changed.isEmpty()) homeplanet.core.HistoryLog.entry("SETTINGS", "", changed);
 		savesChanged = !saves.equals(HomePlanet.save_location);
 		HomePlanet.save_location = saves;

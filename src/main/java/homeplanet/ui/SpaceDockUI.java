@@ -48,6 +48,7 @@ import homeplanet.vault.Vault;
  * Settings, Refresh) run down the right. Every ship here is a {@link Ship} in the {@link Vault}.
  */
 public class SpaceDockUI extends JPanel implements ActionListener {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SpaceDockUI.class);
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
 	private JButton museumBtn;
@@ -629,6 +630,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 
 	/** Reads the vault and every changed file again (after playing FTL, or changing files by hand). */
 	void refresh() {
+		log.debug("Space Dock: Refresh");
 		try {
 			Vault.get().reload();
 		} catch (IOException e) {
@@ -991,6 +993,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 
 	void newJourney() {
 		Ship ship = Vault.get().boarded();
+		log.debug("Space Dock: New Journey for {}", ship == null ? "(no ship aboard)" : ship.name);
 		if (ship == null || !ship.file().exists()) {
 			JOptionPane.showMessageDialog(null, "No ship is at your command.\nBoard a ship before setting out on a new journey.", "New Journey", JOptionPane.INFORMATION_MESSAGE);
 			return;
@@ -1070,6 +1073,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 
 	/** Strips a junked ship: everything aboard goes to the Cargo Hold, then her save goes into her history. */
 	void scrapShip(Ship wreckShip) {
+		log.debug("Junkyard: Scrap {} ({})", wreckShip.name, wreckShip.id);
 		SavedGameState wreck = wreckShip.save();
 		if (wreck == null) {
 			HomePlanet.showErrorDialog("The Home Planet Station can't read " + wreckShip.name + "'s save, so she can't be stripped:\n" + wreckShip.readError());

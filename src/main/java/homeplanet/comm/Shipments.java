@@ -27,6 +27,7 @@ import homeplanet.vault.Vault;
  * transaction as the save the goods go into, so they're never in two places or none.
  */
 public final class Shipments {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Shipments.class);
 	private Shipments() { }
 
 	/** Outgoing: packed (goods in escrow), in the Outbox, sent (gone), unpacked (back in the Cargo Hold). */
@@ -164,12 +165,14 @@ public final class Shipments {
 	}
 	/** Unpacks an outgoing parcel (packed, or waiting in the Outbox): its goods back in the Cargo Hold. */
 	public static void unpack(Parcel p) throws IOException {
+		log.debug("Shipment {}: unpacked into the Cargo Hold ({})", p.id, p.words());
 		if (p.incoming || !(PACKED.equals(p.state) || OUTBOX.equals(p.state))) throw new IOException("This shipment isn't waiting to be sent (" + p.state + ")");
 		intoHold(p, UNPACKED);
 		HistoryLog.entry("SHIPMENT UNPACKED", p.words() + ": back in the Cargo Hold");
 	}
 	/** Marks a parcel waiting in the Outbox for that commander. */
 	static void inOutbox(Parcel p, String toStation, String toTitle) throws IOException {
+		log.debug("Shipment {}: in the outbox for {}", p.id, toTitle);
 		p.state = OUTBOX;
 		p.peerStation = toStation;
 		p.peerTitle = toTitle;
@@ -177,6 +180,7 @@ public final class Shipments {
 	}
 	/** Sent and taken by the other station: an outgoing one is gone; a returned one has gone home. */
 	static void delivered(Parcel p, String toTitle) throws IOException {
+		log.debug("Shipment {}: delivered to {}", p.id, toTitle);
 		p.state = p.incoming ? RETURNED : SENT;
 		if (!p.incoming) p.peerTitle = toTitle;
 		SafeFiles.write(fileOf(p.id), bytes(p));
@@ -184,6 +188,7 @@ public final class Shipments {
 	}
 	/** Taken out of the Outbox: an outgoing one is unpacked; a return goes back to waiting in the inbox. */
 	static void cancelled(Parcel p) throws IOException {
+		log.debug("Shipment {}: cancelled", p.id);
 		if (p.incoming) {
 			p.state = HELD;
 			SafeFiles.write(fileOf(p.id), bytes(p));

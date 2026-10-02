@@ -19,6 +19,7 @@ import net.blerf.ftl.xml.ShipBlueprint;
  * won't rebuild systems the station removes.
  */
 public class Retrofit {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Retrofit.class);
 	public static final String SUFFIX = "_HP";
 	public static final String MOD_NAME = CompanionMod.TITLE;
 	private static final Pattern BLANK_ID = Pattern.compile("[A-Z0-9_]+" + SUFFIX);
@@ -129,7 +130,7 @@ public class Retrofit {
 		if (bp == null) return;
 		String layoutId = bp.getLayoutId();
 		net.blerf.ftl.model.shiplayout.ShipLayout oldLay = null;
-		try { oldLay = DataManager.get().getShipLayout(ship.getShipLayoutId()); } catch (Exception e) { }
+		try { oldLay = DataManager.get().getShipLayout(ship.getShipLayoutId()); } catch (Exception e) { log.debug("Retrofit: her old layout {} could not be read: {}", ship.getShipLayoutId(), e.toString()); }
 		ship.setShipLayoutId(layoutId);
 		net.blerf.ftl.model.shiplayout.ShipLayout lay = DataManager.get().getShipLayout(layoutId);
 		if (lay == null) return;

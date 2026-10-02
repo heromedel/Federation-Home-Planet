@@ -21,6 +21,7 @@ import homeplanet.vault.Vault;
  * a relief ship.
  */
 public final class FreeCommand {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FreeCommand.class);
 	private FreeCommand() { }
 
 	public static final String KESTREL = "kestrel", ANY = "any", RELIEF = "relief", VARIABLE = "variable";
@@ -74,7 +75,7 @@ public final class FreeCommand {
 				for (String c : gs.getCargoIdList()) total += Pricing.item(c);
 				for (CrewState c : SaveHelper.getOwnCrew(s)) total += Pricing.crew(c.getRace().getId());
 			}
-		} catch (Exception e) { } // an unreadable hold counts as empty
+		} catch (Exception e) { log.debug("Free command: the Cargo Hold could not be read, counted as empty: {}", e.toString()); } // an unreadable hold counts as empty
 		File sys = v.systemsFile();
 		if (sys.isFile()) {
 			try {
@@ -86,10 +87,10 @@ public final class FreeCommand {
 					try { if (p.length > 1) level = Math.max(1, Integer.parseInt(p[1])); } catch (NumberFormatException e) { }
 					total += Pricing.system(p[0], level);
 				}
-			} catch (Exception e) { }
+			} catch (Exception e) { log.debug("Free command: the stored systems could not be read: {}", e.toString()); }
 		}
 		for (Ship j : v.junked()) {
-			try { SavedGameState g = j.save(); if (g != null) total += Pricing.ship(g, 100).total(); } catch (Exception e) { }
+			try { SavedGameState g = j.save(); if (g != null) total += Pricing.ship(g, 100).total(); } catch (Exception e) { log.debug("Free command: {} could not be priced: {}", j.name, e.toString()); }
 		}
 		return total;
 	}

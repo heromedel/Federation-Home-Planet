@@ -19,6 +19,7 @@ import java.util.zip.ZipOutputStream;
  * Whoever asks can also keep the previous version as "<name>.bak".
  */
 public final class SafeFiles {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SafeFiles.class);
 	private SafeFiles() { }
 
 	/** Writes the bytes to a temporary file beside {@code target}, then moves it into place (replacing any old file). */
@@ -59,6 +60,7 @@ public final class SafeFiles {
 			Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
 		} catch (IOException e) {
 			// Not every file system can do the atomic form (a network drive, say): fall back to a plain replace
+			log.debug("Atomic replace of {} failed ({}): a plain replace instead", to, e.toString());
 			Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		}
 	}

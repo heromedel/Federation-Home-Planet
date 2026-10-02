@@ -220,7 +220,7 @@ public class Slipstream {
 				+ "You can download it yourself from SourceForge, unzip it anywhere, and use Browse.",
 				"Slipstream", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[1]);
 		if (r == 0) {
-			try { java.awt.Desktop.getDesktop().browse(new java.net.URI(DOWNLOAD_PAGE)); } catch (Exception e) { }
+			try { java.awt.Desktop.getDesktop().browse(new java.net.URI(DOWNLOAD_PAGE)); } catch (Exception e) { log.debug("Slipstream: the download page could not be opened: {}", e.toString()); }
 		}
 		return null;
 	}
