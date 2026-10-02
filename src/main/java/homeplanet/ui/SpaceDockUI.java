@@ -116,10 +116,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		repBtn = inboxBtn != null && homeplanet.vault.Reputation.shown() ? new ReputationButton(homeplanet.vault.Reputation.total(vault)) : null;
 		if (repBtn != null) repBtn.addActionListener(this);
 		boolean inboxHere = inboxBtn != null && vault.boarded() == null; // with a ship at your command, it sits on her heading instead
-		int inboxW = (inboxHere ? inboxBtn.getPreferredSize().width + 8 : 0) + (repBtn == null ? 0 : repBtn.getPreferredSize().width + 12);
+		int inboxW = inboxHere ? inboxWidth() : 0;
 		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW);
 		if (HomePlanet.immersiveMode) dockedHeader.setToolTipText("Immersive Mode: your rank. Captains may commission custom ships; Commodores, custom ships with artillery");
-		docked.add(withInbox(dockedHeader, inboxHere, repBtn), java.awt.BorderLayout.NORTH); // the reputation stays here, where there's room
+		docked.add(withInbox(dockedHeader, inboxHere), java.awt.BorderLayout.NORTH);
 		docked.add(gridScroll, java.awt.BorderLayout.CENTER);
 		final int dockedW = 14 + CELL_W * 3 + 18;
 
@@ -495,8 +495,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		head.setLayout(new BoxLayout(head, BoxLayout.Y_AXIS));
 		head.setOpaque(false);
 		head.setAlignmentX(LEFT_ALIGNMENT);
-		int inboxW = inboxBtn == null ? 0 : inboxBtn.getPreferredSize().width + 8;
-		head.add(withInbox(new FtlButton.Header("At your command", BERTH_W - inboxW), inboxBtn != null, null));
+		int inboxW = inboxBtn == null ? 0 : inboxWidth();
+		head.add(withInbox(new FtlButton.Header("At your command", BERTH_W - inboxW), inboxBtn != null));
 		head.add(Box.createRigidArea(new Dimension(1, 6)));
 		head.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, BERTH_W));
 		head.add(smallLabel(beacons(ship0), MenuTheme.GREY_GREEN));
@@ -513,21 +513,25 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return p;
 	}
 	/** A heading with the transmissions light at the end of its line (where the eye goes first), if it goes here. */
-	private JPanel withInbox(FtlButton.Header header, boolean here, JButton rep) {
+	private JPanel withInbox(FtlButton.Header header, boolean here) {
 		JPanel row = new JPanel(new java.awt.BorderLayout(8, 0));
 		row.setOpaque(false);
 		row.setAlignmentX(LEFT_ALIGNMENT);
 		row.add(header, java.awt.BorderLayout.CENTER);
-		if (rep == null && here) row.add(inboxBtn, java.awt.BorderLayout.EAST);
-		else if (rep != null) {
-			JPanel both = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 6, 0));
+		if (here && repBtn == null) row.add(inboxBtn, java.awt.BorderLayout.EAST);
+		else if (here) { // the reputation, to the inbox's right
+			JPanel both = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
 			both.setOpaque(false);
-			both.add(rep);
-			if (here) both.add(inboxBtn);
+			both.add(inboxBtn);
+			both.add(repBtn);
 			row.add(both, java.awt.BorderLayout.EAST);
 		}
 		row.setMaximumSize(row.getPreferredSize());
 		return row;
+	}
+	/** The inbox's room in a heading (the reputation to its right reaches past the heading's end, so the title keeps its room). */
+	private int inboxWidth() {
+		return inboxBtn.getPreferredSize().width + 8;
 	}
 	/** The empty space left of her picture inside her berth (the picture is centred in it). */
 	private static int pictureInset(JPanel berth) {
@@ -730,14 +734,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 
 	/**
-	 * The career's reputation with The Federation Home Planet, in gold (red below zero), as the inbox beside it is drawn;
-	 * its tooltip has the latest changes, and clicking opens the Career Reputation Log.
+	 * The career's reputation with The Federation Home Planet, as plain text in gold (red below zero) to the inbox's
+	 * right: "REP: 179". Its tooltip has the latest changes, and clicking opens the Career Reputation Log.
 	 */
 	private final class ReputationButton extends JButton {
 		private final java.awt.image.BufferedImage text;
 		ReputationButton(int total) {
-			text = FtlFont.MENU.render("REPUTATION " + (total < 0 ? "-" + (-total) : String.valueOf(total)), total < 0 ? MenuTheme.RED : FtlButton.GOLD);
-			setPreferredSize(new Dimension(text.getWidth() + 22, 38));
+			text = FtlFont.MENU.render("REP: " + (total < 0 ? "-" + (-total) : String.valueOf(total)), total < 0 ? MenuTheme.RED : FtlButton.GOLD);
+			setPreferredSize(new Dimension(text.getWidth() + 4, 38));
 			setContentAreaFilled(false);
 			setBorderPainted(false);
 			setFocusPainted(false);
@@ -751,15 +755,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		@Override protected void paintComponent(Graphics g0) {
 			Graphics2D g = (Graphics2D) g0.create();
-			g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-			int h = getHeight() - 6; // as tall as the inbox's box (it keeps room above for its hop)
-			g.translate(0, 6);
-			g.setColor(new Color(20, 28, 34, 220));
-			g.fillRoundRect(1, 1, getWidth() - 3, h - 3, 8, 8);
-			g.setColor(getModel().isRollover() ? new Color(255, 230, 160) : new Color(214, 230, 222));
-			g.setStroke(new java.awt.BasicStroke(1.8f));
-			g.drawRoundRect(1, 1, getWidth() - 3, h - 3, 8, 8);
-			g.drawImage(text, 11, (h - 2 - text.getHeight()) / 2 + 1, null);
+			int h = getHeight() - 6; // level with the inbox's box (it keeps room above for its hop)
+			if (getModel().isRollover()) g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.8f));
+			g.drawImage(text, 2, 6 + (h - 2 - text.getHeight()) / 2 + 1, null);
 			g.dispose();
 		}
 	}
