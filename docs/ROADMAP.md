@@ -486,6 +486,9 @@ no letters, you come and check).
   parts.txt). Standard prices for now; core parts at about 150 is undecided.
 - Parts are priced by how broken they are (4B.82): of its worth less its damage, one bar of five broken sells for
   about 66-86%, half broken about 52-72%, broken through 30-50%. One in 12 is a clearance, 10% off, and says so.
+- Piloting, Oxygen and Engines parts are worth 150 at level 1, FTL's upgrade costs on top (4B.84): FTL prices them as
+  next to nothing. One set in five also lists a piece of salvage for the Cargo Hold: mostly missiles, fuel or drone
+  parts, one time in four a weapon, drone or augment, at 40-70% of FTL's store price.
 - The stipend counts beacons: 15 to each sector of the old rule (Easy 30, Normal 45, Hard 60, Sandbox careers 60).
   A career under way carries its progress over (its sectors so far become beacons).
 - Work in FTL counts: when the boarded ship's `store_purchase`, `store_repair`, `system_upgrade` or

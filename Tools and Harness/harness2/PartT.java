@@ -28,24 +28,47 @@ public class PartT { public static void main(String[] a) throws Exception {
  }
  static void parts(Vault v) throws Exception {
   List<Parts.Listing> l = Parts.current(v);
-  Setup.chk("P: 2 to 5 parts for sale (" + l.size() + ")", l.size() >= 2 && l.size() <= 5 && Parts.count(v) == l.size());
+  int sys = 0; for (Parts.Listing x : l) if (!x.salvage()) sys++;
+  Setup.chk("P: 2 to 5 parts for sale (" + sys + "), and at most one piece of salvage", sys >= 2 && sys <= 5 && l.size() - sys <= 1 && Parts.count(v) == l.size());
+  Setup.chk("P: Piloting, Oxygen and Engines parts are worth 150 at level 1, FTL's upgrades on top", Parts.worth("pilot", 1) == 150 && Parts.worth("oxygen", 1) == 150
+    && Parts.worth("engines", 3) == 150 + Pricing.system("engines", 3) - Pricing.system("engines", 1) && Parts.worth("shields", 2) == Pricing.system("shields", 2)
+    && Parts.worth("oxygen", 3) == 150 + DataManager.get().getSystem("oxygen").getUpgradeCosts().get(0) + DataManager.get().getSystem("oxygen").getUpgradeCosts().get(1));
   boolean ok = true;
   for (Parts.Listing x : l) {
-   int worth = Math.max(0, Pricing.system(x.id, x.level) - x.broken * Pricing.brokenBarValue(x.id));
+   if (x.salvage()) continue;
+   int worth = Math.max(0, Parts.worth(x.id, x.level) - x.broken * Pricing.brokenBarValue(x.id));
    if (x.broken < 1 || x.broken > x.level || "artillery".equals(x.id) || "clonebay".equals(x.id)) ok = false;
    double f = (double) x.broken / x.level; int lo = (int) Math.round(75 - 45 * f), hi = (int) Math.round(95 - 45 * f), off = x.clearance ? 90 : 100;
    if (x.price < Math.max(5, worth * lo / 100 * off / 100 - 1) || x.price > Math.max(5, worth * hi / 100 * off / 100 + 1)) ok = false;
   }
   Setup.chk("P: each damaged (1 to all bars broken), no artillery or Clone Bay, priced by how broken it is (75-45f to 95-45f% of its value less its damage, 10% off a clearance)", ok);
   int low = 0, n = 0; Random rng = new Random(5);
-  for (int i = 0; i < 200; i++) { Parts.roll(v, rng); for (Parts.Listing x : Parts.current(v)) { n++; if (x.level <= 2) low++; } }
-  int low2 = 0, n2 = 0, clear = 0, nearly = 0, nearlyCheap = 0; Random rng2 = new Random(9);
-  for (int i = 0; i < 300; i++) { Parts.roll(v, rng2); for (Parts.Listing x : Parts.current(v)) {
+  for (int i = 0; i < 200; i++) { Parts.roll(v, rng); for (Parts.Listing x : Parts.current(v)) { if (x.salvage()) continue; n++; if (x.level <= 2) low++; } }
+  int low2 = 0, n2 = 0, clear = 0, nearly = 0, nearlyCheap = 0, sets = 0, salvage = 0, gear = 0; boolean salvagePriced = true; Random rng2 = new Random(9);
+  for (int i = 0; i < 300; i++) { Parts.roll(v, rng2); sets++; for (Parts.Listing x : Parts.current(v)) {
+   if (x.salvage()) {
+    salvage++; if (Parts.ITEM.equals(x.kind)) gear++;
+    if (x.price < Math.max(3, x.storePrice() * 40 / 100) || x.price > Math.max(3, x.storePrice() * 70 / 100)) salvagePriced = false;
+    continue;
+   }
    n2++; if (x.clearance) clear++;
-   int worth = Math.max(0, Pricing.system(x.id, x.level) - x.broken * Pricing.brokenBarValue(x.id));
+   int worth = Math.max(0, Parts.worth(x.id, x.level) - x.broken * Pricing.brokenBarValue(x.id));
    if (x.level >= 4 && x.broken == 1 && worth >= 100) { nearly++; if (x.price * 2 < worth) nearlyCheap++; }
   } }
   Setup.chk("P: mostly low levels (" + low + " of " + n + " at 1 or 2)", low * 3 > n * 2);
+  Setup.chk("P: about one set in five has salvage (" + salvage + " of " + sets + "), a weapon, drone or augment about one time in four (" + gear + ")",
+    salvage * 8 > sets && salvage * 3 < sets && gear > 0 && gear * 2 < salvage);
+  Setup.chk("P: salvage at 40-70% of FTL's store price", salvagePriced);
+  // buying salvage: to the Cargo Hold
+  Parts.Listing sv = null;
+  for (int i = 0; sv == null && i < 100; i++) { Parts.roll(v, rng2); for (Parts.Listing x : Parts.current(v)) if (x.salvage() && !Parts.ITEM.equals(x.kind)) sv = x; }
+  SavedGameState hh = v.readCopy(v.storage()).save; hh.getPlayerShip().setScrapAmt(sv.price + 1); v.write(v.storage(), hh);
+  ShipState hb = v.readCopy(v.storage()).save.getPlayerShip();
+  int had = Parts.FUEL.equals(sv.kind) ? hb.getFuelAmt() : Parts.MISSILES.equals(sv.kind) ? hb.getMissilesAmt() : hb.getDronePartsAmt();
+  Parts.buy(v, sv);
+  ShipState ha = v.readCopy(v.storage()).save.getPlayerShip();
+  int has = Parts.FUEL.equals(sv.kind) ? ha.getFuelAmt() : Parts.MISSILES.equals(sv.kind) ? ha.getMissilesAmt() : ha.getDronePartsAmt();
+  Setup.chk("P: salvage bought: " + sv.title() + " in the Cargo Hold, paid from it", has == had + sv.count && v.storageScrap() == 1);
   Setup.chk("P: about 1 in 12 a clearance (" + clear + " of " + n2 + ")", clear * 20 > n2 && clear * 7 < n2);
   Setup.chk("P: a part with one bar broken of 4 or more never sells under half its worth (" + nearlyCheap + " of " + nearly + ")", nearly > 0 && nearlyCheap == 0);
   java.util.Set<Integer> waits = new java.util.TreeSet<Integer>(); Random wr = new Random(3);
@@ -57,6 +80,7 @@ public class PartT { public static void main(String[] a) throws Exception {
   ChainT.jump(v, 16);
   List<Parts.Listing> again = Parts.current(v);
   Setup.chk("P: after the wait, a new set comes in", again.size() >= 2 && Parts.count(v) == again.size());
+  if (again.get(0).salvage()) throw new IllegalStateException("salvage comes after the systems");
 
   // buying: the hold pays, the part goes to the stored systems with its broken bars
   Parts.Listing pick = again.get(0);

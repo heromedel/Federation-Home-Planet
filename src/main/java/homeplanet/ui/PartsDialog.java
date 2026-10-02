@@ -19,12 +19,11 @@ import javax.swing.JPanel;
 import homeplanet.core.HomePlanet;
 import homeplanet.model.Items;
 import homeplanet.parser.Parts;
-import homeplanet.parser.Pricing;
 import homeplanet.vault.Vault;
 
 /**
  * The Junkyard's parts for sale: damaged systems pulled from wrecks, each with its level, its broken bars and its price,
- * and Buy. Bought parts go to the stored systems; the Dry Dock mends them once installed.
+ * and Buy; now and then a piece of salvage for the Cargo Hold. Bought parts go to the stored systems; the Dry Dock mends them once installed.
  */
 final class PartsDialog extends JDialog {
 	private final JPanel cols = new JPanel();
@@ -83,6 +82,7 @@ final class PartsDialog extends JDialog {
 		return p;
 	}
 	private JPanel card(final Parts.Listing l, int hold) {
+		if (l.salvage()) return salvageCard(l, hold);
 		JPanel p = new JPanel(new BorderLayout(0, 8));
 		p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MenuTheme.GREY_GREEN), BorderFactory.createEmptyBorder(8, 10, 8, 10)));
 		BufferedImage img = LayoutEditor.image("img/icons/s_" + l.id + "_overlay.png");
@@ -90,7 +90,7 @@ final class PartsDialog extends JDialog {
 		pic.setPreferredSize(new java.awt.Dimension(110, 40));
 		p.add(pic, BorderLayout.NORTH);
 		String gold = MenuTheme.HTML_GOLD, dim = MenuTheme.HTML_GREY_GREEN;
-		int whole = Pricing.system(l.id, l.level);
+		int whole = Parts.worth(l.id, l.level);
 		JLabel words = new JLabel("<html><div style='width:110px'><font color='" + gold + "'><b>" + Items.systemTitle(l.id) + "</b></font><br>"
 				+ "Level " + l.level + "<br><font color='#d86a4a'>" + l.broken + " of " + l.level + " broken</font><br>"
 				+ "<font color='" + dim + "'>New: " + whole + " scrap</font>"
@@ -105,9 +105,32 @@ final class PartsDialog extends JDialog {
 		return p;
 	}
 
+	/** Salvage: an item or a bundle of supplies, its store price, and Buy. */
+	private JPanel salvageCard(final Parts.Listing l, int hold) {
+		JPanel p = new JPanel(new BorderLayout(0, 8));
+		p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MenuTheme.GOLD), BorderFactory.createEmptyBorder(8, 10, 8, 10)));
+		javax.swing.Icon icon = Parts.ITEM.equals(l.kind) ? IconFactory.itemIcon(l.id)
+				: IconFactory.supplyIcon(Parts.FUEL.equals(l.kind) ? "fuel" : Parts.MISSILES.equals(l.kind) ? "missiles" : "drones");
+		JLabel pic = new JLabel(icon, JLabel.CENTER);
+		pic.setPreferredSize(new java.awt.Dimension(110, 40));
+		p.add(pic, BorderLayout.NORTH);
+		String gold = MenuTheme.HTML_GOLD, dim = MenuTheme.HTML_GREY_GREEN;
+		JLabel words = new JLabel("<html><div style='width:110px'><font color='" + gold + "'><b>" + homeplanet.parser.XmlText.text(l.title()) + "</b></font><br>"
+				+ "Salvage<br><font color='" + dim + "'>In a store: " + l.storePrice() + " scrap</font></div></html>");
+		words.setVerticalAlignment(JLabel.TOP);
+		p.add(words, BorderLayout.CENTER);
+		JButton buy = new JButton("Buy: " + l.price + " scrap");
+		buy.setEnabled(hold >= l.price);
+		buy.setToolTipText(hold >= l.price ? "Paid from the Cargo Hold; it goes to the Cargo Hold" : "It costs " + l.price + " scrap; the Cargo Hold holds " + hold);
+		buy.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { buy(l); } });
+		p.add(buy, BorderLayout.SOUTH);
+		return p;
+	}
+
 	private void buy(Parts.Listing l) {
-		String what = Items.systemTitle(l.id) + " (level " + l.level + ", " + l.broken + " broken)";
-		if (!HomePlanet.confirmNo(this, "Buy the " + what + " for " + l.price + " scrap from the Cargo Hold?\nIt goes to the stored systems as it is.", "Parts for sale")) return;
+		String what = l.salvage() ? l.title() : Items.systemTitle(l.id) + " (level " + l.level + ", " + l.broken + " broken)";
+		if (!HomePlanet.confirmNo(this, "Buy the " + what + " for " + l.price + " scrap from the Cargo Hold?\n"
+				+ (l.salvage() ? "It goes to the Cargo Hold." : "It goes to the stored systems as it is."), "Parts for sale")) return;
 		try {
 			Parts.buy(Vault.get(), l);
 		} catch (IOException e) {
@@ -116,6 +139,6 @@ final class PartsDialog extends JDialog {
 			return;
 		}
 		fill();
-		JOptionPane.showMessageDialog(this, "The " + what + " is in the Cargo Bay's stored systems.", "Parts for sale", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(this, "The " + what + (l.salvage() ? " is in the Cargo Hold." : " is in the Cargo Bay's stored systems."), "Parts for sale", JOptionPane.INFORMATION_MESSAGE);
 	}
 }
