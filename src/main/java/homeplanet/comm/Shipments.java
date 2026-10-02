@@ -97,6 +97,24 @@ public final class Shipments {
 		File f = fileOf(id);
 		try { return f.isFile() ? read(f) : null; } catch (IOException e) { return null; }
 	}
+	/**
+	 * The outgoing shipment the Long Range screen shows: packed, or waiting in the Outbox with its message (the newest,
+	 * if more than one waits), or null.
+	 */
+	public static Parcel showing() {
+		Parcel best = null;
+		File[] fs = Exchange.dir().listFiles();
+		if (fs != null) for (File f : fs) {
+			if (!f.getName().startsWith("parcel-") || !f.getName().endsWith(".txt")) continue;
+			try {
+				Parcel p = read(f);
+				if (p.incoming) continue;
+				if (PACKED.equals(p.state)) return p;
+				if (OUTBOX.equals(p.state) && (best == null || p.date.compareTo(best.date) > 0)) best = p;
+			} catch (IOException e) { /* not one to show */ }
+		}
+		return best;
+	}
 	/** The one packed shipment waiting to be sent, or null. */
 	public static Parcel packed() {
 		File[] fs = Exchange.dir().listFiles();

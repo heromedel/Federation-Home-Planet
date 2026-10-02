@@ -136,6 +136,10 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private final FtlButton shipTakeBackBtn = new FtlButton("< Take back", FtlFont.BODY, 110, 20);
 	private final FtlButton packBtn = new FtlButton("Package", FtlFont.MENU, MW - 120, 40);
 	private final FtlButton draftCancelBtn = new FtlButton("Cancel", FtlFont.BODY, 160, 22);
+	/** The middle panel's words with no channel open: how to trade, or what to do with a shipment. */
+	private String[] idleLines = {"NO CHANNEL OPEN", "", "Open hailing frequencies, then hail another", "commander's Home Planet Station to trade."};
+	/** The shipment last sent, for the middle panel ("" once a new one is prepared). */
+	private String lastSent = "";
 	/** The port this station's hailing frequencies are open on, 0 when closed: a message sent from here says where to reply. */
 	static volatile int listeningPort = 0;
 	/** Hails nobody answered, newest last (shown on this screen; the Space Dock's button lights until they're seen). */
@@ -328,7 +332,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 			@Override protected void paintComponent(Graphics g0) {
 				Graphics2D g = (Graphics2D) g0.create();
 				CargoParts.paintBox(g, 0, 0, getWidth(), getHeight(), CargoParts.BOX_LINE);
-				String[] l = {"NO CHANNEL OPEN", "", "Open hailing frequencies, then hail another", "commander's Home Planet Station to trade."};
+				String[] l = idleLines;
 				for (int i = 0; i < l.length; i++) {
 					FtlFont f = i == 0 ? FtlFont.MENU : FtlFont.BODY;
 					CargoParts.text(g, l[i], f, i == 0 ? CargoParts.GOLD : CargoParts.DIM, (getWidth() - CargoParts.width(l[i], f)) / 2, 200 + i * 20);
@@ -813,6 +817,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (session != null || hailing || !Vault.isOpen()) return;
 		homeplanet.comm.Shipments.Parcel p = homeplanet.comm.Shipments.packed();
 		if (p != null) { help("A shipment is already packed (" + p.words() + "): send it with a message, or Unpack it first."); return; }
+		lastSent = "";
 		session = homeplanet.comm.Session.draft(Commander.stationId());
 		session.start(this);
 		readSource();
@@ -840,21 +845,38 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		refreshAll();
 		help(said != null ? said : helpIdle());
 	}
+	/** Unpacks the shipment shown: packed, or waiting in the Outbox (its message is cancelled with it, asked first). */
 	private void unpackShipment() {
-		homeplanet.comm.Shipments.Parcel p = homeplanet.comm.Shipments.packed();
-		if (p == null) return;
-		try { homeplanet.comm.Shipments.unpack(p); help("Unpacked: " + p.words() + " back in the Cargo Hold."); }
-		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not unpack the shipment:\n" + e.getMessage()); }
+		homeplanet.comm.Shipments.Parcel p = Vault.isOpen() ? homeplanet.comm.Shipments.showing() : null;
+		if (p == null) { help("Nothing is packed: the shipment has gone, or was unpacked already."); refreshAll(); return; }
+		try {
+			if (homeplanet.comm.Shipments.OUTBOX.equals(p.state)) {
+				if (!HomePlanet.confirmNo(this, "Take the shipment out of the Outbox?\nThe message to " + p.peerTitle + " won't go, and " + p.words() + " come back to the Cargo Hold.", "Unpack")) return;
+				if (!homeplanet.comm.Outbox.cancelShipment(p.id)) homeplanet.comm.Shipments.unpack(p); // no message carries it: unpacked all the same
+			} else {
+				homeplanet.comm.Shipments.unpack(p);
+			}
+			help("Unpacked: " + p.words() + " back in the Cargo Hold.");
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not unpack the shipment:\n" + e.getMessage());
+		}
 		readSource();
+		refreshOutbox();
 		refreshAll();
 	}
-	/** The idle card's line about a packed shipment (with Unpack). */
+	/** The middle panel's words and line about the shipment: packed, waiting in the Outbox, or just sent. */
 	private void refreshPacked() {
-		homeplanet.comm.Shipments.Parcel p = Vault.isOpen() ? homeplanet.comm.Shipments.packed() : null;
-		packedNote.setText(p == null ? "" : "Packed: " + p.words());
-		packedNote.setToolTipText(p == null ? null : "Waiting to go: choose a commander, then Send Message and tick Attach shipment");
+		homeplanet.comm.Shipments.Parcel p = Vault.isOpen() ? homeplanet.comm.Shipments.showing() : null;
+		boolean inOutbox = p != null && homeplanet.comm.Shipments.OUTBOX.equals(p.state);
+		if (p == null) idleLines = new String[] {"NO CHANNEL OPEN", "", "Open hailing frequencies, then hail another", "commander's Home Planet Station to trade."};
+		else if (inOutbox) idleLines = new String[] {"SHIPMENT IN THE OUTBOX", "", "It goes with your message to " + shortName(p.peerTitle), "when your station finds theirs."};
+		else idleLines = new String[] {"SHIPMENT PACKED", "", "Choose a commander on the right, then", "Send Message and tick Attach shipment."};
+		packedNote.setText(p == null ? lastSent : inOutbox ? "In the Outbox for " + shortName(p.peerTitle) + ": " + p.words() : "Packed: " + p.words());
+		packedNote.setToolTipText(p == null ? null : inOutbox ? "Unpack takes it out of the Outbox (its message won't go), and the goods come back"
+				: "Waiting to go: choose a commander, then Send Message and tick Attach shipment");
 		unpackBtn.setVisible(p != null);
 		prepareBtn.setVisible(p == null);
+		middle.repaint();
 	}
 	/** The Outbox button's count. */
 	private void refreshOutbox() {
@@ -881,6 +903,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 					public void run() {
 						delivering = false;
 						refreshOutbox();
+						for (String x : said) if (x.contains("with the shipment") && x.startsWith("Delivered to ")) lastSent = sentLine(x);
+						refreshAll(); // a shipment that went: the middle panel follows it
 						if (!said.isEmpty() && isShowing()) help(said.get(said.size() - 1));
 					}
 				});
@@ -900,6 +924,20 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		}, "Long Range Comm. outbox search").start();
 	}
 	/** A message to the chosen commander, without a channel. */
+	/** "Sent to Wolfy: 50 scrap", from "Delivered to Commander Wolfy's inbox ..., with the shipment (50 scrap)." */
+	private static String sentLine(String said) {
+		int inbox = said.indexOf("'s inbox"), open = said.lastIndexOf('('), close = said.lastIndexOf(')');
+		if (inbox < 13 || open < 0 || close < open) return "";
+		return "Sent to " + shortName(said.substring(13, inbox)) + ": " + said.substring(open + 1, close);
+	}
+	/** A message went (or waits in the Outbox): the status line says where, and the shipment panel follows it. */
+	private void messageSent(String said) {
+		help(said);
+		if (said.contains("with the shipment") && said.startsWith("Delivered to ")) lastSent = sentLine(said);
+		refreshOutbox();
+		readSource();
+		refreshAll();
+	}
 	/** Takes a commander off the list (asked first): they come back the next time they're met. */
 	private void forgetChosen(String[] c) {
 		if (!HomePlanet.confirmNo(this, "Remove " + c[1] + " from the list?\nThey come back the next time your station meets theirs. Anything waiting for them in the Outbox stays.", "Long Range Comm.")) return;
@@ -913,13 +951,13 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (v instanceof homeplanet.comm.Contacts.Entry) { // out of range: the message goes to the Outbox
 			homeplanet.comm.Contacts.Entry c = (homeplanet.comm.Contacts.Entry) v;
 			if (!c.notes || Blocks.blocked(c.station, null)) return;
-			MessageDialog.open(this, c.station, c.host, 0, c.title, new java.util.function.Consumer<String>() { public void accept(String said) { help(said); refreshOutbox(); showFound(null); } });
+			MessageDialog.open(this, c.station, c.host, 0, c.title, new java.util.function.Consumer<String>() { public void accept(String said) { messageSent(said); showFound(null); } });
 			return;
 		}
 		if (!(v instanceof Beacon.Found)) return;
 		Beacon.Found f = (Beacon.Found) v;
 		if (!f.compatible() || !f.notes || Blocks.blocked(f.station, null)) return;
-		MessageDialog.open(this, f.station, f.host, f.port, f.title, new java.util.function.Consumer<String>() { public void accept(String said) { help(said); refreshOutbox(); } });
+		MessageDialog.open(this, f.station, f.host, f.port, f.title, new java.util.function.Consumer<String>() { public void accept(String said) { messageSent(said); } });
 	}
 	/** Blocks the chosen commander (asked first), or unblocks them. */
 	private void blockFound() {

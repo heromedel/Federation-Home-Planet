@@ -88,7 +88,10 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 - **Shipments** (`comm/Shipments`, a `parcel-ID.txt` record each in the vault's `comm/`): goods sent with a message,
   no channel needed. **Prepare Shipment** (the middle panel, with no channel open) opens the offer side with nobody on
   the other (a draft `Session`): items, supplies and crew, not whole ships. **Package** takes them off their ships into
-  escrow, as a trade does (one packed shipment at a time); **Unpack** brings them back. Send Message then offers
+  escrow, as a trade does (one packed shipment at a time); **Unpack** brings them back. The middle panel follows the
+  shipment: "SHIPMENT PACKED" (what to do next), "SHIPMENT IN THE OUTBOX" once its message waits there (Unpack then
+  takes it out of the Outbox, its message cancelled, asked first), and "Sent to ..." once delivered. A message waiting
+  with a shipment that was unpacked some other way isn't sent without it: it stops, saying so. Send Message then offers
   **Attach shipment**, for a station whose search answer says it takes them ("shipments", 4B.81 on). The parcel
   travels in the NOTE (its id, its lines, the sender's mode). The other station checks every line against its game
   data (a line it can't take turns the whole parcel away), files it in its inbox as "Shipment from ...", and answers;

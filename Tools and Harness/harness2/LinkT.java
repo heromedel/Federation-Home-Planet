@@ -279,6 +279,19 @@ public class LinkT {
   a("parcel outbox bbbbbbbbbbbbbbbb Commander_Bree " + port + " Later.");
   Setup.chk("a shipment can wait in the Outbox with its message", a("outbox count").equals("1") && a("parcel parcels").contains("out:outbox:3_scrap"));
   Setup.chk("Cancel there unpacks it: the goods come home", a("outbox cancel").equals("OK") && num(a("hold"), "scrap") == aPacked + 3 && a("parcel parcels").contains("out:unpacked:3_scrap"));
+  a("parcel pack scrap 4");
+  Setup.chk("the screen shows a packed shipment", a("parcel showing").equals("packed:4_scrap"));
+  a("parcel outbox bbbbbbbbbbbbbbbb Commander_Bree " + port + " Soon.");
+  Setup.chk("and follows it into the Outbox", a("parcel showing").equals("outbox:4_scrap"));
+  int aOut = num(a("hold"), "scrap");
+  Setup.chk("Unpack from there cancels its message and brings the goods home", a("parcel unpackshown").equals("OK") && a("outbox count").equals("0")
+    && num(a("hold"), "scrap") == aOut + 4 && a("parcel showing").equals("none"));
+  a("parcel pack scrap 2");
+  a("parcel outbox bbbbbbbbbbbbbbbb Commander_Bree " + port + " With two scrap.");
+  a("parcel unpackonly"); // unpacked some other way: the message would promise what isn't there
+  String gone = a("outbox deliver");
+  Setup.chk("a message whose shipment was unpacked meanwhile isn't sent without it", !gone.startsWith("Delivered") && a("outbox refused").equals("1"));
+  a("outbox cancel");
   a("unlisten");
   b("inbox off");
 

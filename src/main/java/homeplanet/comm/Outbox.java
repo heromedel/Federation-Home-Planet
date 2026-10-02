@@ -117,6 +117,11 @@ public final class Outbox {
 		if (p != null) Shipments.cancelled(p);
 		remove(i);
 	}
+	/** Cancels the Outbox item a shipment waits with (its goods come back). False if none carries it. */
+	public static synchronized boolean cancelShipment(String parcelId) throws IOException {
+		for (Item i : list()) if (parcelId.equals(i.shipment)) { cancel(i); return true; }
+		return false;
+	}
 	/** Takes an item out: cancelled, or delivered. */
 	public static synchronized void remove(Item i) throws IOException {
 		File f = fileOf(i.id);
@@ -152,6 +157,10 @@ public final class Outbox {
 		for (Item i : list()) {
 			if (!i.toStation.equals(station) || !i.refused.isEmpty()) continue;
 			Shipments.Parcel parcel = i.shipment.isEmpty() ? null : Shipments.sendable(i.shipment);
+			if (!i.shipment.isEmpty() && parcel == null) { // its shipment was unpacked meanwhile: the message would promise what isn't there
+				try { refused(i, "Its shipment was unpacked: cancel this message."); } catch (IOException x) { }
+				continue;
+			}
 			if (parcel != null && !shipmentsOk) {
 				try { refused(i, i.toTitle + "'s station can't take shipments (it needs a newer version)."); } catch (IOException x) { }
 				said.add("A shipment for " + i.toTitle + " can't go: their station needs a newer version.");
@@ -163,7 +172,8 @@ public final class Outbox {
 				String where = Notes.send(host, port, note, i.toTitle);
 				if (parcel != null) Shipments.delivered(parcel, i.toTitle);
 				remove(i);
-				said.add((Notes.POPUP.equals(where) ? "Shown to " + i.toTitle : "Delivered to " + i.toTitle + "'s inbox") + " (it waited " + waited(i.written) + ").");
+				said.add((Notes.POPUP.equals(where) ? "Shown to " + i.toTitle : "Delivered to " + i.toTitle + "'s inbox") + " (it waited " + waited(i.written) + ")"
+						+ (parcel != null ? ", with the shipment (" + parcel.words() + ")." : "."));
 				homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " delivered, after " + waited(i.written));
 			} catch (Notes.Refused e) {
 				if (e.getMessage().contains(Notes.TOO_MANY)) { // busy for a minute: it stays waiting, and goes on a later search

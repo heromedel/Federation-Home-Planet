@@ -337,6 +337,13 @@ public class LinkPeer {
     l.from = st.id; l.fromName = "Cargo Hold";
     try { return "OK " + Shipments.pack(Collections.singletonList(l)).words(); } catch (IOException e) { return "FAILED " + e.getMessage(); }
    }
+   if (k.equals("showing")) { Shipments.Parcel p = Shipments.showing(); return p == null ? "none" : p.state + ":" + p.words().replace(' ', '_'); }
+   if (k.equals("unpackshown")) { // as the screen's Unpack does: out of the Outbox (its message cancelled), or just unpacked
+    Shipments.Parcel p = Shipments.showing(); if (p == null) return "none";
+    if (Shipments.OUTBOX.equals(p.state)) { if (!Outbox.cancelShipment(p.id)) Shipments.unpack(p); } else Shipments.unpack(p);
+    return "OK";
+   }
+   if (k.equals("unpackonly")) { Shipments.Parcel p = Shipments.showing(); if (p == null) return "none"; Shipments.unpack(p); return "OK"; }
    if (k.equals("packed")) { Shipments.Parcel p = Shipments.packed(); return p == null ? "none" : p.words(); }
    if (k.equals("unpack")) { Shipments.Parcel p = Shipments.packed(); if (p == null) return "none"; Shipments.unpack(p); return "OK"; }
    if (k.equals("send")) {

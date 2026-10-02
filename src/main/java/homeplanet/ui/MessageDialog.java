@@ -163,7 +163,7 @@ public final class MessageDialog extends JDialog {
 			return;
 		}
 		dispose();
-		String said = "Left in the Outbox for " + toTitle + ": it goes when your station finds theirs.";
+		String said = "Left in the Outbox for " + toTitle + (parcel != null ? ", with the shipment (" + parcel.words() + ")" : "") + ": it goes when your station finds theirs.";
 		if (done != null) done.accept(said);
 		else JOptionPane.showMessageDialog(getOwner(), said, "Long Range Comm.", JOptionPane.INFORMATION_MESSAGE);
 	}
