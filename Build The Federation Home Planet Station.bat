@@ -14,6 +14,9 @@ set "MVN=%TOOLS%\maven"
 set "JDK_URL=https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk"
 set "MVN_URL=https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip"
 set "BUILT="
+rem the words for a build; an update rebuilds, so it says so
+set "DOING=Constructing"
+set "DONE=Constructed"
 
 rem "update": started by the station's Check for Updates, with the new files in place: rebuild, then open the station
 if /i "%~1"=="update" goto :update
@@ -47,6 +50,8 @@ exit /b 0
 
 rem ---- :update: the station closed itself for new construction plans ----
 :update
+set "DOING=Reconstructing"
+set "DONE=Reconstructed"
 cls
 echo ==========================================================
 echo    THE FEDERATION HOME PLANET STATION
@@ -83,7 +88,7 @@ if not exist "%MVN%\bin\mvn.cmd" call :fetch "Maven" "%MVN_URL%" "%TOOLS%\maven.
 set "JAVA_HOME=%JDK%"
 set "PATH=%JDK%\bin;%MVN%\bin;%PATH%"
 
-echo Constructing Station...
+echo %DOING% Station...
 if exist target rmdir /s /q target
 call "%MVN%\bin\mvn.cmd" -q package -DskipTests
 if errorlevel 1 ( echo. & echo Station construction failed: see the messages above. & exit /b 1 )
@@ -100,7 +105,7 @@ timeout /t 2 /nobreak >nul
 goto :copyjar
 :copied
 echo.
-echo Station Constructed and Ready in Current Build.
+echo Station %DONE% and Ready in Current Build.
 for /f "tokens=2 delims=<>	 " %%v in ('findstr /c:"<version>" pom.xml') do ( echo Version: %%v & goto :shown )
 :shown
 echo To Establish Connection, run Federation Home Planet Interface.

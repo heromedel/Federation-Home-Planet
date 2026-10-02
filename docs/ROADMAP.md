@@ -432,6 +432,7 @@ no letters, you come and check).
   builds without the menu (waiting up to half a minute for the old jar to be let go) and opens the station. If the
   build fails, the old files go back (`:restore`) and the old jar is still in `Current Build\`.
 - **The Construction Yard** now offers 0: Exit / 1: Launch the Station Interface after a successful build.
+- In an update the Construction Yard says "Reconstructing Station..." and "Station Reconstructed" (4B.74).
 - Tested on Windows by hand: the rebuild and relaunch (UpdT covers the versions, the file replacement, bad downloads
   and the put-back).
 
