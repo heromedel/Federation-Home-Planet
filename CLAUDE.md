@@ -87,6 +87,16 @@ folder are passed as the 2nd and 3rd arguments.
 To see a window without a display, run it under `xvfb-run -a java ...` and paint the dialog's root pane into
 a BufferedImage.
 
+## Hard rules
+
+Two rules with no exceptions, in anything the player sees:
+
+1. Never imply the Rebel Flagship has been destroyed: the war goes on.
+2. Never say to the player that time is measured in beacons. The station's clock counts them, hidden; the player hears
+   "some time", "a while", "one month" (as the ransom letters say), never a number of beacons or "a beacon later".
+   A beacon is about two days: 14 beacons is about a month (the ransom's month), and the stipend's 30, 45 or 60 beacons
+   are two, three or four months.
+
 ## Voice (player-facing text)
 
 - Immersion and understandability matter more than identical phrasing: messages may vary their wording for flavour.

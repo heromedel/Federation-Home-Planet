@@ -95,7 +95,7 @@ public class InboxDialog extends JDialog {
 		act.add(delete);
 		act.add(rewardLabel);
 		right.add(act, BorderLayout.SOUTH);
-		reply.setToolTipText("Choose your answer: the reply comes in a few beacons later");
+		reply.setToolTipText("Choose your answer: the reply comes in a few days");
 		reply.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { replySelected(); } });
 		claim.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { claimSelected(); } });
 		commission.setToolTipText("Go to Commission: the ship this order grants is marked free there");
@@ -227,7 +227,7 @@ public class InboxDialog extends JDialog {
 		boolean canWriteBack = from != null && !"0".equals(from[2]);
 		reply.setVisible(Transmissions.canReply(m) || from != null);
 		reply.setEnabled(Transmissions.canReply(m) || canWriteBack);
-		reply.setToolTipText(from == null ? "Choose your answer: the reply comes in a few beacons later"
+		reply.setToolTipText(from == null ? "Choose your answer: the reply comes in a few days"
 				: canWriteBack ? "Write back to " + m.from + " over Long Range Comm. (their hailing frequencies must be open)"
 				: m.from + "'s hailing frequencies were closed when they wrote: hail them from Long Range Comm. instead");
 		boolean canClaim = m.hasReward() && !m.claimed;
@@ -314,7 +314,7 @@ public class InboxDialog extends JDialog {
 		try {
 			Transmissions.reply(m, choice);
 			String note = homeplanet.parser.RepairJob.OFFER.equals(m.key) && choice == 0 ? homeplanet.parser.RepairJob.patchNote() : null;
-			JOptionPane.showMessageDialog(this, "Reply sent. Expect an answer within a few beacons." + (note == null ? "" : "\n\n" + note), "Reply", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, "Reply sent. Expect an answer within a few days." + (note == null ? "" : "\n\n" + note), "Reply", JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not send the reply. Nothing was changed:\n" + e.getMessage());
 		}

@@ -260,6 +260,29 @@ public class ExpT { public static void main(String[] a) throws Exception {
   ChainT.jump(v, 1);
   Expeditions.checkInfirmary(v);
   Setup.chk("C: a beacon later the station has healed her, no skill lost", hp(v, a.getName()) == 100 && homeplanet.model.Skills.points(crew(v, a.getName()), 0) == 20);
+  String hist0 = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
+  Setup.chk("C: and says so in the history log, in heromedel's words", hist0.contains(a.getName() + "'s visited The Station's Medbay"));
+  // heromedel's case: beacons pass while she's away, then she arrives hurt: the station sees her, and heals her only a beacon later
+  ChainT.jump(v, 2);
+  Vault.Copy c2 = v.readCopy(v.storage()); for (CrewState x : c2.save.getPlayerShip().getCrewList()) if (x.getName().equals(b.getName())) x.setHealth(25);
+  v.begin().put(v.storage(), c2.save, c2.hash).commit();
+  Expeditions.checkInfirmary(v);
+  boolean waits = hp(v, b.getName()) == 25;
+  ChainT.jump(v, 1);
+  Expeditions.checkInfirmary(v);
+  Setup.chk("C: arriving hurt after beacons away: not healed at once (" + waits + "), healed a beacon after arriving (" + hp(v, b.getName()) + ")", waits && hp(v, b.getName()) == 100);
+  // docked ships' crew too, a beacon after they're first seen; the boarded ship is never touched
+  if (v.boarded() == null) v.board(v.docked().get(0));
+  Ship dock = v.docked().get(0), aboard = v.boarded();
+  Vault.Copy dc = v.readCopy(dock); CrewState dh = SaveHelper.getOwnCrew(dc.save.getPlayerShip()).get(0); dh.setHealth(20); v.write(dock, dc.save);
+  Vault.Copy bc = v.readCopy(aboard); CrewState bh = SaveHelper.getOwnCrew(bc.save.getPlayerShip()).get(0); bh.setHealth(20); v.write(aboard, bc.save);
+  v.takeStock();
+  Expeditions.checkInfirmary(v);
+  boolean dockWaits = shipHp(v, dock, dh.getName()) == 20;
+  ChainT.jump(v, 1);
+  Expeditions.checkInfirmary(v);
+  Setup.chk("C: a docked ship's hurt crew: seen, then healed a beacon later (" + dockWaits + ", " + shipHp(v, dock, dh.getName()) + "); the boarded ship's left alone (" + shipHp(v, v.boarded(), bh.getName()) + ")",
+    dockWaits && shipHp(v, dock, dh.getName()) == 100 && shipHp(v, v.boarded(), bh.getName()) == 20);
   ChainT.jump(v, 1);
   byte[] was = SafeFiles.read(v.storage().file());
   Expeditions.checkInfirmary(v);
@@ -333,6 +356,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
  }
  static CrewState crew(Vault v, String name) throws Exception { for (CrewState x : SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip())) if (x.getName().equals(name)) return x; return null; }
  static int hp(Vault v, String name) throws Exception { return crew(v, name).getHealth(); }
+ static int shipHp(Vault v, Ship s, String name) throws Exception { for (CrewState x : SaveHelper.getOwnCrew(v.readCopy(s).save.getPlayerShip())) if (x.getName().equals(name)) return x.getHealth(); return -1; }
  /** Captives: taken; a letter a few beacons later ("one month", never beacons); a reminder near the end; paid: home; refused or run out: the Ambassador's letter. */
  static void ransoms(Vault v) throws Exception {
   hold(v, "human");

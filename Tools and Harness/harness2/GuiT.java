@@ -380,6 +380,12 @@ public class GuiT {
    call(bay, CargoBayUI.class, "sendCrew", new Class<?>[] {boolean.class}, false);
    boolean still = false; for (SavedGameParser.CrewState x : hold.getCrewList()) if (x.getName().equals("Laid Ulm")) still = true;
    r[0] = still;
+   // the whole one taken aboard and saved: "Whole Wren assigned to the <her name>."
+   for (int i = 0; i < list.getModel().getSize(); i++) { Object row = list.getModel().getElementAt(i); if ("Whole Wren".equals(field(row, row.getClass(), "name"))) list.setSelectedIndex(i); }
+   call(bay, CargoBayUI.class, "sendCrew", new Class<?>[] {boolean.class}, false);
+   bay.saveAll();
+   String ship = ((SavedGameParser.SavedGameState) field(bay, CargoBayUI.class, "currentSave")).getPlayerShipName();
+   r[2] = "Whole Wren assigned to " + (ship.startsWith("The ") ? ship : "the " + ship) + ".";
    // the Long Range's offer from the Cargo Hold leaves them out
    LongRangeCommUI comm = f.comm;
    java.lang.reflect.Field src = LongRangeCommUI.class.getDeclaredField("source"); src.setAccessible(true); src.set(comm, v.storage());
@@ -396,7 +402,8 @@ public class GuiT {
     && String.valueOf(laid[3]).contains("In the infirmary"));
   boolean said = false; for (String t : shown) if (t.contains("Laid Ulm is in the infirmary")) said = true;
   Setup.chk("I: sent aboard, the laid up are refused with a word, and stay in the Cargo Hold", Boolean.TRUE.equals(r[0]) && said);
-  Setup.chk("I: the Long Range offers the Cargo Hold's crew but not the laid up (" + r[1] + ")", String.valueOf(r[1]).contains("Whole Wren") && !String.valueOf(r[1]).contains("Laid Ulm"));
+  Setup.chk("I: the Long Range offers the Cargo Hold's crew but not the laid up (" + r[1] + ")", String.valueOf(r[1]).contains("Hurt Hale") && !String.valueOf(r[1]).contains("Laid Ulm"));
+  Setup.chk("I: taken aboard and saved, the history log says so (" + r[2] + ")", new String(SafeFiles.read(HistoryLog.file()), "UTF-8").contains(String.valueOf(r[2])));
   inf.delete();
   // the ship report: each crew member's name opens their report; a hurt one has a bar under the icon
   final Object[] rep = new Object[3];

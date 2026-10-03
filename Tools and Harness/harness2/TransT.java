@@ -209,7 +209,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   int each = Career.stipend(UnlockGrants.rank(Unlocks.read()), achievements);
   Transmissions.check();
   Transmissions.Message m = find("stipend:");
-  Setup.chk("S: " + jump + " beacons (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last 2 months") && m.body.contains((2 * each) + " scrap") && v.storageScrap() == scrap + 2 * each);
+  Setup.chk("S: " + jump + " beacons (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last " + 2 * Career.sectorsPerMonth() + " months") && m.body.contains((2 * each) + " scrap") && v.storageScrap() == scrap + 2 * each);
   System.out.println("Stipend: " + each + " a month (Captain, 5 achievements): " + m.body.replace("\n", " / "));
   Transmissions.check();
   int stipends = 0; for (Transmissions.Message x : Transmissions.load()) if (Transmissions.isStipend(x)) stipends++;

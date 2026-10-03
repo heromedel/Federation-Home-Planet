@@ -544,6 +544,14 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
     mastery flags together). A choice anyone can take must take the skill it teaches, so the right person earns it
     (the harness refuses one that doesn't). Specialist postings are still to come (IDEAS, Idea E).
   - The station's daily round writes the Cargo Hold's save only when someone's health or skill changed.
+  - The station's medbay (4B.98, Plan LL): crew hurt in the game, in the Cargo Hold or aboard a docked ship (never the
+    boarded one, which may be in FTL), are healed a full beacon after the station first sees them hurt there; a move to
+    another place starts the beacon again. Before, the station healed anyone hurt whenever the clock had moved since its
+    last look, which could be at once. Each heal writes heromedel's line in the history log: "<name>'s visited The
+    Station's Medbay". Each crew member a Cargo Bay save brings aboard a ship or into the Cargo Hold writes "<name>
+    assigned to the Cargo Hold." or "<name> assigned to the <ship>." The tooltip on a hurt crew member says they'll
+    heal "after some time here" (on the boarded ship: once she's docked), never in beacons (CLAUDE.md's second hard
+    rule).
 - **The events, reviewed against FTL** (4B.94, no new events): each read beside FTL's own for tone, lore and copied
   ideas. Escort jobs said "your ship" though the commander has none: their postings now lend a cutter. A Rock in the
   hot vent was "burned to the bone" (the Rock don't burn): the vent now collapses. The Mantis raider's Mantis option

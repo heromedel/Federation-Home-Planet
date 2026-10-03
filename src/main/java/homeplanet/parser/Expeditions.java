@@ -751,30 +751,25 @@ public final class Expeditions {
 		try { writeProps(infirmaryFile(v), p, INFIRMARY_NOTE); } catch (IOException e) { log.warn("Could not admit {} to the infirmary: {}", c.getName(), e.toString()); }
 	}
 	/**
-	 * The station's care, each time a beacon has passed: crew in the Cargo Hold hurt in the game are healed (a station
-	 * heals fast); the infirmary's lose a point of skill for each beacon laid up (from a random skill they have points
-	 * in), and whoever's time is up is on their feet, whole, and back among the crew who can be sent. Returns their names.
+	 * The station's care, at each look: crew hurt in the game, in the Cargo Hold or aboard a docked ship (never the
+	 * boarded one: she may be in FTL), are healed a full beacon after the station first sees them there (a move to another
+	 * place starts the beacon again), each with a line in the history log; the infirmary's laid up lose a point of skill
+	 * for each beacon laid up (from a random skill they have points in), and whoever's time is up is on their feet,
+	 * whole, and back among the crew who can be sent. Returns the names out of the infirmary.
 	 */
 	public static synchronized List<String> checkInfirmary(Vault v) {
 		List<String> back = new ArrayList<String>();
 		Properties p = readProps(infirmaryFile(v));
-		int now = v.beaconsSeen(), healedAt = intOf(p, "healed_at", -1);
-		if (healedAt < 0) { // the first look: the clock starts now, nothing heals yet
-			p.setProperty("healed_at", Integer.toString(now));
-			try { writeProps(infirmaryFile(v), p, INFIRMARY_NOTE); } catch (IOException e) { log.warn("Could not start the infirmary's clock: {}", e.toString()); }
-			healedAt = now;
-		}
+		int now = v.beaconsSeen();
 		List<Patient> all = infirmary(v), keep = new ArrayList<Patient>();
-		boolean heal = now > healedAt, due = false;
-		for (Patient x : all) {
-			if (now > x.drained) due = true; // a point of skill owed, or their time up
-			if (now < x.until) keep.add(x);
-		}
-		if (!heal && !due) return back;
+		for (Patient x : all) if (now < x.until) keep.add(x);
+		Properties q = new Properties();
+		q.setProperty("healed_at", Integer.toString(now));
+		Random rng = new Random();
 		try {
+			// the Cargo Hold: the infirmary, and the station's medbay
 			Ship st = v.storage();
 			Vault.Copy c = v.readCopy(st);
-			Random rng = new Random();
 			boolean changed = false;
 			for (CrewState x : c.save.getPlayerShip().getCrewList()) {
 				if (x.getRace() == null || !SaveHelper.hasBody(x)) continue;
@@ -787,20 +782,43 @@ public final class Expeditions {
 						if (x.getHealth() != max) { x.setHealth(max); changed = true; }
 						back.add(x.getName());
 					}
-				} else if (heal && x.getHealth() < max) { // hurt in the game: a station heals fast
-					x.setHealth(max);
-					changed = true;
-				}
+				} else changed |= tend(x, "hold", now, p, q);
 			}
 			if (changed) v.begin().put(st, c.save, c.hash).commit();
-			// those whose time is up are let go (any no longer in the Cargo Hold, retired or moved, quietly)
-			Properties q = new Properties();
-			q.setProperty("healed_at", Integer.toString(now));
-			for (int i = 0; i < keep.size(); i++) { q.setProperty(i + ".name", keep.get(i).name); q.setProperty(i + ".race", keep.get(i).race); q.setProperty(i + ".until", Integer.toString(keep.get(i).until)); q.setProperty(i + ".drained", Integer.toString(now)); }
-			writeProps(infirmaryFile(v), q, INFIRMARY_NOTE);
-			for (String n : back) HistoryLog.entry("EXPEDITION", n + " is out of the infirmary");
-		} catch (IOException e) { log.warn("Could not tend the infirmary's crew: {}", e.toString()); return new ArrayList<String>(); }
+			// the docked ships: the medbay alone
+			for (Ship d : v.docked()) {
+				net.blerf.ftl.parser.SavedGameParser.SavedGameState seen = d.save();
+				boolean anyHurt = false;
+				if (seen != null) for (CrewState x : SaveHelper.getOwnCrew(seen.getPlayerShip())) if (x.getRace() != null && x.getHealth() < x.getRace().getMaxHealth()) anyHurt = true;
+				if (!anyHurt) continue; // nobody to tend: her file isn't opened
+				Vault.Copy dc = v.readCopy(d);
+				boolean dChanged = false;
+				for (CrewState x : SaveHelper.getOwnCrew(dc.save.getPlayerShip())) if (x.getRace() != null && SaveHelper.hasBody(x)) dChanged |= tend(x, d.id, now, p, q);
+				if (dChanged) v.begin().put(d, dc.save, dc.hash).commit();
+			}
+		} catch (IOException e) { log.warn("Could not tend the station's crew: {}", e.toString()); return new ArrayList<String>(); }
+		// those whose time is up are let go (any no longer in the Cargo Hold, retired or moved, quietly)
+		for (int i = 0; i < keep.size(); i++) { q.setProperty(i + ".name", keep.get(i).name); q.setProperty(i + ".race", keep.get(i).race); q.setProperty(i + ".until", Integer.toString(keep.get(i).until)); q.setProperty(i + ".drained", Integer.toString(now)); }
+		try { writeProps(infirmaryFile(v), q, INFIRMARY_NOTE); } catch (IOException e) { log.warn("Could not write the infirmary: {}", e.toString()); }
+		for (String n : back) HistoryLog.entry("EXPEDITION", n + " is out of the infirmary");
 		return back;
+	}
+	/**
+	 * One crew member hurt in the game, at one place: noted the first time the station sees them hurt there, healed a
+	 * full beacon after (heromedel's line in the history log). Keeps the note in {@code q} while they wait. Healed?
+	 */
+	private static boolean tend(CrewState x, String place, int now, Properties was, Properties q) {
+		int max = x.getRace().getMaxHealth();
+		if (x.getHealth() >= max) return false;
+		String k = "seen." + place + "." + key(x).replace(' ', '_');
+		int seen = intOf(was, k, now);
+		if (now > seen) {
+			x.setHealth(max);
+			HistoryLog.entry("MEDBAY", x.getName() + "'s visited The Station's Medbay");
+			return true;
+		}
+		q.setProperty(k, Integer.toString(seen));
+		return false;
 	}
 	private static Properties readProps(File f) {
 		Properties p = new Properties();

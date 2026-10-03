@@ -57,7 +57,7 @@ public class ModeChoiceDialog extends JDialog {
 		}
 		JPanel immersive = card("Immersive Mode", "A Federation career",
 				"You start with a Kestrel Type A and rise in rank as you earn FTL's achievements. Ships cost scrap; The Federation Home "
-				+ "Planet stays in contact with you, sends rewards and a monthly stipend, and sets most of the rules. Each career has a "
+				+ "Planet stays in contact with you, sends rewards and a stipend, and sets most of the rules. Each career has a "
 				+ "fleet of its own, and can keep an FTL profile of its own too.", careers);
 		choices.add(immersive, BorderLayout.CENTER);
 		body.add(choices, BorderLayout.CENTER);

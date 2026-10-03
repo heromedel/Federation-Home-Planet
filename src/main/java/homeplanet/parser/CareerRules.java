@@ -27,7 +27,7 @@ public final class CareerRules {
 		{"free", "25 scrap", "50 scrap"},
 		{"allowed, free", "allowed, 10 scrap a system", "not allowed"},
 		{"half the store price", "a quarter of the store price", "1 scrap each"},
-		{"30 beacons", "45 beacons", "60 beacons"},
+		{"two months", "three months", "four months"},
 		{"75% of her price", "her full price", "her full price"},
 		{"50 scrap", "25 scrap", "10 scrap"}};
 	private static final int[] JOURNEY_FEES = {200, 500, 1000}, REMOVAL_FEES = {0, 25, 50}, STRIP_FEES = {0, 10, -1}, SUPPLY_PERCENT = {50, 25, 0},

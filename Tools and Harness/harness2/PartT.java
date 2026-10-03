@@ -117,7 +117,7 @@ public class PartT { public static void main(String[] a) throws Exception {
   Setup.chk("S: and 45 make the next month", (Integer) unpaid.invoke(null) == 2);
   Setup.chk("S: the difficulties' stipends: 30, 45, 60 beacons", CareerRules.of(CareerRules.EASY).stipendBeacons() == 30
     && CareerRules.of(CareerRules.NORMAL).stipendBeacons() == 45 && CareerRules.of(CareerRules.HARD).stipendBeacons() == 60
-    && CareerRules.LEVELS[CareerRules.STIPEND][1].equals("45 beacons"));
+    && CareerRules.LEVELS[CareerRules.STIPEND][1].equals("three months"));
  }
  /** Buying, repairs or upgrades in FTL, with no jump, count as one beacon a stop; nothing else does. */
  static void work(Vault v) throws Exception {

@@ -883,7 +883,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			int max = c.getRace() == null ? 100 : c.getRace().getMaxHealth();
 			boolean hurt = body && !resting && c.getHealth() < max;
 			String state = resting ? "<br><font color='" + INFIRMARY_HTML + "'>In the infirmary: can't be moved, traded or sent until they're on their feet</font>"
-					: hurt ? "<br><font color='#e1463c'>Injured: the station will have them on their feet by the next beacon</font>" : "";
+					: hurt ? "<br><font color='#e1463c'>" + (s == currentState ? "Injured: the station's medbay will see to them once she's docked"
+							: "Injured: the station's medbay will have them on their feet after some time here") + "</font>" : "";
 			CargoParts.Row row = new CargoParts.Row(IconFactory.crewIcon(c), c.getName(), body ? Crew.raceTitle(c) : "being cloned", c,
 					Crew.tooltip(c).replace("</html>", state + "<br><i>(double-click for her report)</i></html>"), !body);
 			if (resting) row.bar(1f, INFIRMARY, null);
@@ -1159,6 +1160,20 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		refreshTrade();
 		help(cs.getName() + (fromMine ? " went to " + partnerName() + "." : " came aboard your ship."));
 	}
+	/** One history line for each crew member on this side now who wasn't before the save. */
+	private static void assigned(ShipState now, Map<String, Integer> before, SavedGameState save, boolean hold) {
+		if (now == null || before == null) return;
+		Map<String, Integer> seen = new HashMap<String, Integer>();
+		for (CrewState c : SaveHelper.getOwnCrew(now)) {
+			int n = seen.containsKey(c.getName()) ? seen.get(c.getName()) + 1 : 1;
+			seen.put(c.getName(), n);
+			Integer had = before.get("Crew " + c.getName());
+			if (had != null && n <= had) continue;
+			String ship = save.getPlayerShipName();
+			String place = hold ? "the Cargo Hold" : ship.startsWith("The ") ? ship : "the " + ship;
+			homeplanet.core.HistoryLog.entry("CREW", c.getName() + " assigned to " + place + ".");
+		}
+	}
 	private void crewInfo(boolean mine) {
 		Category c = cats[3];
 		CrewState cs = (CrewState) (mine ? c.mine : c.theirs).selectedValue();
@@ -1267,6 +1282,10 @@ public class CargoBayUI extends JPanel implements Scrollable {
 				}
 				homeplanet.core.HistoryLog.entry("RENAME CREW", oldN + " -> " + newN + "  (" + ship + ")");
 			}
+			// crew who came aboard a ship or into the Cargo Hold: "Lisandra assigned to the Kestrel." (their arrival at the
+			// station's medbay counts from here)
+			assigned(currentShip != null ? currentState : null, curBefore, currentSave, false);
+			if (tradeShip != null && tradePath != null) assigned(tradeState, tradeBefore, tradeSave, partnerIsStorage());
 			// junked, sold and retired get entries of their own, not lines in the trade
 			Map<String, List<String>> byKind = new LinkedHashMap<String, List<String>>();
 			Map<String, Integer> countByKind = new LinkedHashMap<String, Integer>();

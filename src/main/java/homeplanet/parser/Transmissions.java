@@ -392,7 +392,7 @@ public final class Transmissions {
 			log.warn("Could not pay the stipend (tried again next time): {}", e.toString());
 			return;
 		}
-		String period = months == 1 ? "monthly stipend" : "stipend for the last " + months + " months";
+		String period = "stipend for the last " + months * Career.sectorsPerMonth() + " months"; // a payment every sectorsPerMonth months, as the rules say
 		Template t = templates().get("stipend");
 		if (t == null) return;
 		Message m = new Message();
