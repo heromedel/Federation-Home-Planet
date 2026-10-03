@@ -140,7 +140,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   Transmissions.check();
   Transmissions.Message zoltanA = find("order:PLAYER_SHIP_ENERGY 0"), zoltanB = find("order:PLAYER_SHIP_ENERGY 1");
   Setup.chk("T: the Zoltan Cruiser A's order tells the Council's story; her Type B's is the shared letter, naming her", zoltanA != null && zoltanA.body.contains("Zoltan Council")
-    && zoltanB != null && zoltanB.body.contains("next model") && zoltanB.body.contains("Zoltan Cruiser, Type B") && !zoltanB.body.contains("Council") && zoltanB.subject.contains("Type B"));
+    && zoltanB != null && zoltanB.body.contains("The Zoltan have contacted") && zoltanB.body.contains("achieve with Zoltan Cruiser") && !zoltanB.body.contains("Council") && !zoltanB.body.contains("{") && zoltanB.subject.contains("Type B"));
   Transmissions.Message tough = find("ach:ACH_TOUGH_SHIP");
   Setup.chk("T: a new achievement brings its reward, addressed to the new rank", tough != null && tough.hasReward() && tough.body.startsWith("Captain,"));
   Vault v = Vault.get();

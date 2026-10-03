@@ -236,31 +236,21 @@ I know, I know. "Just another Kestrel." But there's a reason the Federation keep
 Try not to scratch the paint.
 ~ Home Planet Shipyard Comm. Officer
 
-== order:typeB
+== order:nextModel
 from: Home Planet Shipyard
 subject: Commission order: {ship}
 
 {rank},
 
-Her makers have been watching what you've done with their cruiser. They're impressed, and they said so to the Admiralty, which is rarer. The upshot: they have opened their next model to you, the {ship}, at no cost.
+The {race} have contacted Federation Command. They are impressed with what you have managed to achieve with {cruiser}. During negotiations they have agreed to share blueprints of a different model with The Federation.
 
-Take this order to Commission and she's yours. Different guns, different rooms, same good bones. You'll see.
+In recognition of your contribution The Federation Home World has approved commissioning your fleet one ship of the this class for free.
 
-Try not to compare them where the first one can hear.
-~ Home Planet Shipyard Comm. Officer
+I don't know about how all the politics work but the ship looks interesting.
 
-== order:typeC
-from: Home Planet Shipyard
-subject: Commission order: {ship}
-
-{rank},
-
-There's a third pattern of that cruiser, and her makers don't show it to just anyone. They've seen what you've done with the other two, and they've agreed: the {ship} is yours, at no cost to you.
-
-Take this order to Commission. The engineers tell me she "does things differently." They said it like a warning. I'm taking it as a promise.
-
-Come home and show me.
-~ Home Planet Shipyard Comm. Officer
+Let me know it feels to fly one of these, and come home safe.
+~ Comm. Officer.
+Home Planet Station Shipyard.
 
 == order:PLAYER_SHIP_CIRCLE
 from: Office of Alien Affairs

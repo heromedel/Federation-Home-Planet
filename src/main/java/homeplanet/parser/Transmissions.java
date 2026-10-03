@@ -207,12 +207,32 @@ public final class Transmissions {
 	/** A layout's name for messages: "Engi Cruiser, Type A". */
 	/**
 	 * The letter for a commission order: a ship's own tells the story of her Type A's unlock (the Zoltan Council's
-	 * offer, the Mantis raider), so her Type B and C get the shared letters (her makers, impressed, open the next
-	 * model); the Kestrel's and the Federation Cruiser's read right for any type, so they keep their own.
+	 * offer, the Mantis raider), so her Type B and C get heromedel's shared letter (her people, impressed, share
+	 * another model's blueprints); the Kestrel's and the Federation Cruiser's read right for any type, so they keep
+	 * their own.
 	 */
 	static String orderTemplate(String base, int n) {
 		if (n == 0 || base.equals("PLAYER_SHIP_HARD") || base.equals("PLAYER_SHIP_FED")) return "order:" + base;
-		return n == 1 ? "order:typeB" : "order:typeC";
+		return "order:nextModel";
+	}
+	/** The people a cruiser comes from, for the shared order letter ("The Zoltan have contacted Federation Command"). */
+	static String raceOf(String base) {
+		if (base.contains("CIRCLE") || base.contains("STEALTH")) return "Engi";
+		if (base.contains("ENERGY")) return "Zoltan";
+		if (base.contains("MANTIS")) return "Mantis";
+		if (base.contains("JELLY")) return "Slug";
+		if (base.contains("ROCK")) return "Rock";
+		if (base.contains("CRYSTAL")) return "Crystal";
+		if (base.contains("ANAEROBIC")) return "Lanius";
+		return "Federation";
+	}
+	/** Her class alone ("Zoltan Cruiser"), as {cruiser} in the shared order letter. */
+	static String className(String base) {
+		try {
+			ShipBlueprint bp = DataManager.get().getPlayerShipVariant(base, 0, true);
+			if (bp != null && bp.getShipClass() != null && bp.getShipClass().getTextValue() != null) return bp.getShipClass().getTextValue();
+		} catch (Exception e) { }
+		return base;
 	}
 	static String layoutName(String base, int n) {
 		String cls = base;
@@ -292,7 +312,7 @@ public final class Transmissions {
 					ShipBlueprint bp;
 					try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
 					if (bp == null || !UnlockGrants.freeNow(u, bp.getId())) continue;
-					send(all, sent, "order:" + base + " " + n, orderTemplate(base, n), rank, layoutName(base, n));
+					send(all, sent, "order:" + base + " " + n, orderTemplate(base, n), rank, layoutName(base, n), null, base);
 				}
 			}
 		}
@@ -541,6 +561,10 @@ public final class Transmissions {
 	}
 	/** As above, with {name}: a ship's own name (the one a chain is about). */
 	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship, String name) {
+		send(all, sent, key, templateKey, rank, ship, name, null);
+	}
+	/** As above, for a commission order: {race} and {class} from the ship's base id. */
+	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship, String name, String base) {
 		if (sent.contains(key)) return;
 		Template t = templates().get(templateKey);
 		if (t == null) return; // no message written for it
@@ -550,6 +574,7 @@ public final class Transmissions {
 		m.from = t.from;
 		m.subject = fill(t.subject, rank, ship).replace("{name}", name == null ? "" : name);
 		m.body = fill(t.body.toString().trim(), rank, ship).replace("{name}", name == null ? "" : name);
+		if (base != null) m.body = m.body.replace("{race}", raceOf(base)).replace("{cruiser}", className(base));
 		m.reward = t.reward;
 		m.replies = t.replies;
 		m.cost = t.cost;
