@@ -44,19 +44,17 @@ public class RuleBoxes {
 	final JCheckBox costBox = new JCheckBox("Commissioning a ship costs scrap, paid from the Cargo Hold, at", HomePlanet.commissionCosts);
 	final JComboBox<String> percentBox = new JComboBox<String>(new String[] {"100%", "75%", "50%"});
 	private final JPanel costRow = row(0);
-	private static final String[] FREE_KEYS = {"kestrel", "relief", "any", "variable"};
-	final JComboBox<String> freeBox = new JComboBox<String>(new String[] {"Kestrel Type A", "Relief Ship", "Any", "Variable (Depending on how much you gave up)"});
+	private static final String[] FREE_KEYS = {"kestrel", "relief", "any"};
+	final JComboBox<String> freeBox = new JComboBox<String>(new String[] {"Kestrel Type A or the Relief Ship", "Relief Ship Type A", "Any"});
 	/** Each choice's explanation, shown as the list is open. */
 	private static final String[] FREE_TIPS = {
-		"A standard Kestrel Type A, as a new FTL game starts",
-		"The Federation relief ship: a Kestrel Type A stripped to basics (one crew, a Basic Laser and an Ion Blast, every system at its minimum, a reactor of 7)",
-		"Any ship you choose at Commission",
-		"By what the report surrenders (the Cargo Hold and the Junkyard, at full value): " + homeplanet.parser.FreeCommand.ANY_FROM
-				+ " scrap or more, any ship; " + homeplanet.parser.FreeCommand.KESTREL_FROM + " or more, a Kestrel Type A; less, the relief ship"};
+		"A standard Kestrel Type A, as a new FTL game starts, or the Relief Ship Type A",
+		"The Relief Ship Type A: a Kestrel Type A stripped to basics (one crew, a Burst Laser I and an Ion Blast, every system at its minimum, a reactor of 6)",
+		"Any ship you choose at Commission, the Relief Ship Type A among them"};
 	private String freeTip = "";
 	private String careerTip = null;
 	private boolean showingCareerOwn = !HomePlanet.immersiveMode;
-	private final JLabel freeLabel = new JLabel("Report for Reassignment grants:  ");
+	private final JLabel freeLabel = new JLabel("Plead for New Ship grants:  ");
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
 	final JCheckBox careerBox = new JCheckBox("Career messages: a welcome, promotions, rewards for FTL achievements and a monthly stipend, in Sandbox Mode too", HomePlanet.careerMessages);
@@ -106,9 +104,9 @@ public class RuleBoxes {
 		costRow.add(javax.swing.Box.createHorizontalStrut(6));
 		costRow.add(percentBox);
 		costRow.add(new JLabel("  of her price"));
-		int free = java.util.Arrays.asList(FREE_KEYS).indexOf(HomePlanet.freeShip);
+		int free = java.util.Arrays.asList(FREE_KEYS).indexOf(homeplanet.parser.FreeCommand.norm(HomePlanet.freeShip));
 		freeBox.setSelectedIndex(free < 0 ? 0 : free);
-		freeTip = "The free ship a Report for Reassignment (Other... at the Space Dock) earns, in exchange for the Cargo Hold and the Junkyard. "
+		freeTip = "The ship Plead for New Ship (Other... at the Space Dock) offers. The Relief Ship Type A is always offered too. "
 				+ "A new fleet always starts with a Kestrel Type A";
 		freeBox.setRenderer(new javax.swing.DefaultListCellRenderer() {
 			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
@@ -129,7 +127,7 @@ public class RuleBoxes {
 		careerTip = careerBox.getToolTipText();
 		repBox.setToolTipText("<html>Your standing with The Federation Home Planet: earned by sectors, scrap, ships defeated and the Rebel Flagship,"
 				+ "<br>lost by crew killed and ships lost in action (never in sector 8). Click it on the Space Dock for the Career Reputation Log.</html>");
-		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A Report for Reassignment doesn't reset it");
+		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A plea for a new ship doesn't reset it");
 		unlockBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		for (int i = 0; i < locked.length; i++) tips[i] = locked[i].getToolTipText();
 		ActionListener sync = new ActionListener() { public void actionPerformed(ActionEvent e) { sync(); } };
@@ -199,7 +197,7 @@ public class RuleBoxes {
 		freeBox.setEnabled(cost && !im);
 		freeLabel.setEnabled(cost && !im);
 		if (im) freeBox.setSelectedIndex(Math.max(0, java.util.Arrays.asList(FREE_KEYS).indexOf(homeplanet.core.Economy.reassignment()))); // the career's
-		String byValue = "Set by Immersive Mode: " + freeBox.getSelectedItem() + (freeBox.getSelectedIndex() == 3 ? ". " + FREE_TIPS[3] : "");
+		String byValue = "Set by Immersive Mode: " + freeBox.getSelectedItem();
 		freeBox.setToolTipText(im ? byValue : freeTip);
 		freeLabel.setToolTipText(im ? byValue : freeTip);
 		if (!im) unlockBox.setEnabled(cost);
@@ -223,7 +221,7 @@ public class RuleBoxes {
 		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
 		journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, HomePlanet.journeyFee));
 		scrapBox.setSelected(HomePlanet.stripAllowed);
-		freeBox.setSelectedIndex(Math.max(0, java.util.Arrays.asList(FREE_KEYS).indexOf(HomePlanet.freeShip)));
+		freeBox.setSelectedIndex(Math.max(0, java.util.Arrays.asList(FREE_KEYS).indexOf(homeplanet.parser.FreeCommand.norm(HomePlanet.freeShip))));
 	}
 	private static int indexOf(int[] list, int v) { for (int i = 0; i < list.length; i++) if (list[i] == v) return i; return 0; }
 
@@ -268,7 +266,7 @@ public class RuleBoxes {
 			if (sellSystemsBox.isSelected() != HomePlanet.sellSystems) changed.add("Selling stored systems: " + sellSystemsBox.isSelected());
 			if (costBox.isSelected() != HomePlanet.commissionCosts) changed.add("Commissioning costs scrap: " + costBox.isSelected());
 			if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
-			if (!FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Report for Reassignment grants: " + freeBox.getSelectedItem());
+			if (!FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Plead for New Ship grants: " + freeBox.getSelectedItem());
 			if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
 			if (careerBox.isSelected() != HomePlanet.careerMessages) changed.add("Career messages: " + careerBox.isSelected());
 			if (repBox.isSelected() != HomePlanet.reputationOn) changed.add("Reputation: " + repBox.isSelected());

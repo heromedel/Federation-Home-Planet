@@ -199,6 +199,14 @@ public final class Reputation {
 		p.setProperty("total", Integer.toString(num(p, "total") + SHIP_LOST));
 		if (write(v, p)) entry(v, SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null);
 	}
+	/** A plea's new ship, answered for with the career's reputation: what it costs, and why. */
+	public static synchronized void plea(Vault v, int cost, String why) {
+		if (!shown() || cost <= 0) return;
+		Properties p = read(v);
+		if (!counted(p)) { review(v); p = read(v); }
+		p.setProperty("total", Integer.toString(num(p, "total") - cost));
+		if (write(v, p)) entry(v, -cost, why + " (" + signed(-cost) + ")", null);
+	}
 	/** She won the last battle: the Rebel Flagship defeated. */
 	public static synchronized void flagship(Vault v, String name) {
 		if (!shown()) return;

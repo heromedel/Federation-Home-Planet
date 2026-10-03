@@ -20,7 +20,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
   File career = new File(v.root, "career.txt");
   String[] names = {CareerRules.EASY, CareerRules.NORMAL, CareerRules.HARD};
   int[][] want = {{200, 0, 0, 50, 2, 75, 50}, {500, 25, 10, 25, 3, 100, 25}, {1000, 50, -1, 0, 4, 100, 10}};
-  String[] reassign = {FreeCommand.KESTREL, FreeCommand.VARIABLE, FreeCommand.RELIEF};
+  String[] reassign = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF}; // Easy any ship, Normal a Kestrel (or the Relief Ship), Hard the Relief Ship
   String[] victory = {FinalVictory.RESCUE, FinalVictory.RESCUE, FinalVictory.MUSEUM};
   int[] museum = {100, 50, 50};
   for (int d = 0; d < 3; d++) {
@@ -46,8 +46,8 @@ public class FleetT { public static void main(String[] a) throws Exception {
   Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
   HomePlanet.stripAllowed = true;
   CareerRules e = Career.rules(v.root);
-  Setup.chk("D: a career from before difficulties keeps its rules: journeys 200, Variable, free removal and stripping, 25%, every 4 sectors, full price",
-    CareerRules.EARLIER.equals(e.name) && e.journeyFee() == 200 && FreeCommand.VARIABLE.equals(e.reassignment()) && e.removalFee() == 0 && e.stripAllowed() && e.stripFee() == 0
+  Setup.chk("D: a career from before difficulties keeps its rules: journeys 200, a Kestrel or the Relief Ship on a plea, free removal and stripping, 25%, every 4 sectors, full price",
+    CareerRules.EARLIER.equals(e.name) && e.journeyFee() == 200 && FreeCommand.KESTREL.equals(e.reassignment()) && e.removalFee() == 0 && e.stripAllowed() && e.stripFee() == 0
     && e.supplyPercent() == 25 && e.stipendSectors() == 4 && e.commissionPercent() == 100);
   HomePlanet.stripAllowed = false;
   Setup.chk("D: and its own final victory choice, written down once", FinalVictory.choice().equals(FinalVictory.REWARD) && FinalVictory.fixed() == null

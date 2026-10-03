@@ -49,7 +49,8 @@ And More.
   block a commander you'd
   rather not hear from.
 - **The shipyard:** commission any unlocked ship, a remodel, or a ship you designed yourself. New blueprints are sent
-  to FTL via Slipstream.
+  to FTL via Slipstream. **Plead for New Ship** (Other...) asks The Federation Home Planet for one, paid for with the
+  Cargo Hold or answered for with your reputation; the Relief Ship Type A is always on offer.
 - **House rules** (Settings): trading and New Journey only at a store beacon, commissioning that costs scrap, locked
   ships that can't be commissioned, selling supplies and systems, a free commission for each ship you unlock, and
   what happens after a final victory (rescue the ship, a reward of her value, or nothing).

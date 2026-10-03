@@ -337,7 +337,7 @@ Settings (the rules it sets are locked there). Custom picks any level of each ru
 |---|---|---|---|
 | After a final victory | save her, or the museum at full value | save her, or the museum at half value | the museum takes her, at half value |
 | New Journey | 200 | 500 | 1000 |
-| Report for Reassignment grants | Kestrel Type A | Variable | relief ship |
+| Plead for New Ship grants (4B.90) | any ship | Kestrel Type A or the Relief Ship | the Relief Ship Type A |
 | Refit removal | free | 25 | 50 |
 | Stripping when scrapping | allowed, free | allowed, 10 a system | not allowed |
 | Missiles and drone parts sell for | half | a quarter | 1 scrap each |
@@ -346,8 +346,8 @@ Settings (the rules it sets are locked there). Custom picks any level of each ru
 | Starting scrap | 50 | 25 | 10 |
 
 The same at every difficulty: stored systems sell at half, hull repairs 4 a point, the stipend's 20 plus rank,
-commissions cost scrap, station requirements, locked models, free unlock ships, rank clearances, a final
-reassignment, a Kestrel Type A to start.
+commissions cost scrap, station requirements, locked models, free unlock ships, rank clearances, the Relief Ship Type
+A on every plea, a Kestrel Type A to start.
 
 A career from before difficulties becomes **Custom (from before difficulties)**, written down once with what it had:
 its final victory choice (still changeable in Settings), journeys 200, Variable, removal free, stripping as Settings
@@ -520,6 +520,29 @@ ship can fly: a Kestrel Type A, with 10% of what the surrendered cargo didn't co
 requisitioned when one isn't needed would cost her full value).
 
 **Back burner:** spending reputation, and promotions tied to it.
+
+## 22. Plead for New Ship — built (4B.90; harness checks in PriceT, TransT, FleetT)
+
+Report for Reassignment is replaced (its sections above are history):
+
+- **Plead for New Ship** (Other... at the Space Dock): whatever is docked, The Federation Home Planet agrees to send a
+  ship; nothing is taken yet. Her order waits at Commission (the Shipyard's letter, "Your plea was heard"); **Withdraw
+  Plea** cancels it until she's built. One order at a time; only while commissioning costs scrap.
+- **What it offers:** Settings' choice in Sandbox Mode (Kestrel Type A, Relief Ship Type A, or Any), the difficulty's in
+  a career: Easy any ship, Normal a Kestrel Type A, Hard the Relief Ship. **The Relief Ship Type A is always offered.**
+  Variable is gone (read as the Kestrel Type A).
+- **Paying, at Commission**, once she's chosen: give up the Cargo Hold (everything but the crew, who stay, at what the
+  Cargo Bay would pay: scrap, gear at half, missiles and drone parts and stored systems only where they can be sold;
+  the Junkyard is untouched), or, with Reputation on, keep it. With Reputation on, a tenth of what the hold doesn't cover
+  of her value comes off reputation (keeping it: a tenth of her whole value). A hold worth more than her asks "Are you
+  sure?": give up the extra, or refund the difference to the emptied hold.
+- **Relief Ship Type A** ("Hinata" by default): a Kestrel A with one human, a Burst Laser I and an Ion Blast, no missiles,
+  drones or augments, every system at its minimum, reactor 6. Listed in Commission at all times; the shipyard and a plea
+  price her at a fixed 600; everywhere else she's valued by what's on her.
+- **Ship values count fuel, missiles and drone parts** at store price (3, 6, 8) everywhere (commission, rewards, the
+  museum, sales): a Kestrel A comes to 997.
+- **Later:** with the companion mod, a blueprint of her own so FTL names her class (her id needs its own place in the
+  mod's naming of _HP and remodel ids).
 
 ## Naming decisions — settled (4B.30)
 

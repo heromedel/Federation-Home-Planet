@@ -214,7 +214,8 @@ public final class Transmissions {
 		return cls + ", Type " + "ABC".charAt(Math.max(0, Math.min(n, 2)));
 	}
 	private static String freeShipWords() {
-		return FreeCommand.words(FreeCommand.ship());
+		Vault v = Vault.get();
+		return v.freeCommandReassigned() ? FreeCommand.offered(FreeCommand.ship()) : FreeCommand.words(FreeCommand.ship());
 	}
 
 	/**
@@ -247,14 +248,14 @@ public final class Transmissions {
 			int r = UnlockGrants.rank(u);
 			for (int i = 1; i <= r; i++) send(all, sent, "promo:" + i, "promo:" + i, rank, null);
 		}
-		// one order per free command (the fleet's start, a report for reassignment), never for an empty shipyard alone
+		// one order per free command (the fleet's start, a plea for a new ship), never for an empty shipyard alone
 		boolean granted = v.freeCommandOpen();
-		if (HomePlanet.commissionCosts() && granted && v.shipyardEmpty()) {
+		if (HomePlanet.commissionCosts() && granted && (v.shipyardEmpty() || v.freeCommandReassigned())) { // a plea's order comes whatever is docked
 			if (!emptyOpen) {
 				String key = "empty:" + stamp();
 				for (int i = 2; sent.contains(key); i++) key = "empty:" + stamp() + "-" + i; // two in one second
-				// after a Report for Reassignment, the Shipyard's other letter (in Immersive Mode, the one for the ship it earned)
-				String letter = !v.freeCommandReassigned() ? "empty" : v.immersive ? "reassigned:" + FreeCommand.ship() : "reassigned";
+				// after a plea, the Shipyard's answer to it
+				String letter = !v.freeCommandReassigned() ? "empty" : "pleaded";
 				// the new order replaces the last one still in the inbox (it's done with: one order per free command)
 				for (java.util.Iterator<Message> it = all.iterator(); it.hasNext();) {
 					Message old = it.next();

@@ -780,18 +780,19 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		orders.add(new OtherOrdersDialog.Order("Clean up blueprints", "Remove old blueprints no ship uses any more from the Federation Home Planet Mod. Rarely needed.",
 				null, new Runnable() { public void run() { BlueprintCleanup.run(SpaceDockUI.this); } }, false));
 		Vault v = Vault.get();
-		boolean taken = !v.docked().isEmpty() || v.boarded() != null;
-		orders.add(new OtherOrdersDialog.Order("Report for Reassignment", "Surrender the Cargo Hold and the Junkyard's hulls in exchange for a free new command.",
+		boolean waiting = v.freeCommandOpen();
+		orders.add(new OtherOrdersDialog.Order("Plead for New Ship", "Ask The Federation Home Planet for a new ship, paid for with the Cargo Hold or against your reputation.",
 				!HomePlanet.commissionCosts() ? "commissioning is free (Settings, Rules): Commission a new ship instead."
-						: taken ? "only a captain with no ship at the Space Dock can report for reassignment."
-						: v.freeCommandOpen() ? "a free command is already waiting for you at Commission." : null,
-				new Runnable() { public void run() { reportForReassignment(); } }, true));
-		final File last = v.lastSurrender();
-		if (last != null) {
+						: waiting ? "a ship's order is already waiting for you at Commission." : null,
+				new Runnable() { public void run() { plead(); } }, true));
+		final File last = v.freeCommandForfeit() ? v.lastSurrender() : null;
+		if (last != null) { // an old Report for Reassignment, its ship not yet taken
 			orders.add(new OtherOrdersDialog.Order("Undo Reassignment", "Take back the Cargo Hold and hulls surrendered in the last report for reassignment.",
-					HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final."
-							: taken ? "only before a new command is taken: no ship may be at the Space Dock." : null,
+					HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final." : null,
 					new Runnable() { public void run() { undoReassignment(last); } }, false));
+		} else if (waiting && v.freeCommandReassigned()) {
+			orders.add(new OtherOrdersDialog.Order("Withdraw Plea", "Cancel the new ship's order waiting at Commission. Nothing was taken for it yet.",
+					null, new Runnable() { public void run() { withdrawPlea(); } }, false));
 		}
 		if (!homeplanet.comm.Exchange.unfinished().isEmpty()) {
 			orders.add(new OtherOrdersDialog.Order("Unfinished trades", "Long Range Comm. trades a lost link left unsettled: what you gave is held until they're settled.",
@@ -804,38 +805,41 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return homeplanet.parser.FreeCommand.words(homeplanet.parser.FreeCommand.ship());
 	}
 	/** HR2: surrender the storage hold and the Junkyard for a free new command, then open Commission. */
-	void reportForReassignment() {
+	/**
+	 * Plead for New Ship: The Federation Home Planet agrees to send one, whatever is at the Space Dock. Nothing is taken
+	 * now: at Commission the captain picks her from what the plea offers, and pays with the Cargo Hold or (with
+	 * Reputation on) against the career's reputation.
+	 */
+	void plead() {
 		Vault v = Vault.get();
-		List<Ship> junk = v.junked();
-		StringBuilder hulls = new StringBuilder();
-		for (int i = 0; i < junk.size(); i++) hulls.append(i == 0 ? "" : ", ").append(junk.get(i).name);
-		String message = "Report for reassignment?\n\n"
-				+ "You surrender to The Federation Home Planet:\n"
-				+ "  - The Cargo Hold: its " + v.storageScrap() + " scrap, supplies, weapons, drones, augments, crew and stored systems\n"
-				+ (junk.isEmpty() ? "  - (the Junkyard is empty)\n" : "  - every hull in the Junkyard: " + hulls + "\n")
-				+ "\nIn exchange, The Federation Home Planet grants you a new command: " + homeplanet.parser.FreeCommand.words(homeplanet.parser.FreeCommand.onReport(v)) + ", free."
-				+ (homeplanet.parser.FreeCommand.byValue(v) ? " (What you surrender is worth " + homeplanet.parser.FreeCommand.surrenderValue(v) + " scrap: " + homeplanet.parser.FreeCommand.KESTREL_FROM
-						+ " earns a Kestrel Type A, " + homeplanet.parser.FreeCommand.ANY_FROM + " any ship.)" : "") + "\n\n"
-				+ (HomePlanet.immersiveMode ? "This is final (Immersive Mode)."
-				: "The Home Planet Station keeps a record of what was surrendered. Until you take your new command,\n"
-				+ "this can be undone (Other... > Undo Reassignment).");
-		if (!confirmIrreversible("Report for Reassignment", message, "Report")) return;
-		try {
-			v.surrender();
-		} catch (IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not complete the report for reassignment. Nothing was surrendered:\n" + e.getMessage());
-			init();
-			return;
-		}
+		String offered = homeplanet.parser.FreeCommand.offered(homeplanet.core.Economy.reassignment());
+		boolean rep = homeplanet.vault.Reputation.shown();
+		String message = "Plead for a new ship?\n\n"
+				+ "You put your case to The Federation Home Planet: one more ship, and you'll bring her home. They listen.\n"
+				+ "They will send " + offered + ". Her order will wait for you at Commission.\n\n"
+				+ "Nothing is taken now. When you commission her, you choose how to pay:\n"
+				+ "  - Give up the Cargo Hold: everything in it but the crew, at what it would sell for (the Junkyard isn't touched).\n"
+				+ (rep ? "  - Keep the Cargo Hold, and answer for her with your reputation.\n"
+						+ "Whatever the hold doesn't cover of her value, a tenth of it comes off your reputation.\n"
+						: "  (With the Reputation rule on, you could keep the Cargo Hold and answer for her with your reputation.)\n")
+				+ "\nUntil she's commissioned, the plea can be withdrawn (Other... > Withdraw Plea).";
+		Object[] options = {"Plead", "Cancel"};
+		if (JOptionPane.showOptionDialog(this, message, "Plead for New Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) != 0) return;
+		v.plead();
 		init();
 		String rank = homeplanet.parser.Transmissions.rank();
 		if (HomePlanet.immersiveNotifications()) {
-			// the Shipyard's order says what she is and where to take it: the player commissions her from there
-			JOptionPane.showMessageDialog(null, "Your report is accepted, " + rank + ". The order for your new command is in Transmissions.", "Report for Reassignment", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(null, "Your plea is heard, " + rank + ". The order for your new ship is in Transmissions.", "Plead for New Ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
-		JOptionPane.showMessageDialog(null, "Your report is accepted, " + rank + ". The shipyard stands ready to build your new command.", "Report for Reassignment", JOptionPane.INFORMATION_MESSAGE);
-		commissionShip();
+		JOptionPane.showMessageDialog(null, "Your plea is heard, " + rank + ". The shipyard stands ready to build your new ship.", "Plead for New Ship", JOptionPane.INFORMATION_MESSAGE);
+	}
+	/** Withdraw Plea: the order waiting at Commission is cancelled (nothing was taken for it). */
+	void withdrawPlea() {
+		if (!HomePlanet.confirmNo(this, "Withdraw your plea for a new ship?\n\nHer order at Commission is cancelled. Nothing was taken for it.", "Withdraw Plea")) return;
+		try { Vault.get().withdrawPlea(); }
+		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not withdraw the plea:\n" + e.getMessage()); }
+		init();
 	}
 	void undoReassignment(File dir) {
 		String hulls;

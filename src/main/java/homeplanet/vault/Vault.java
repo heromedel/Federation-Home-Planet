@@ -254,12 +254,12 @@ public final class Vault {
 		return docked().isEmpty() && boarded() == null && junked().isEmpty();
 	}
 
-	// ---- the free command (HR2): once when the fleet starts, and again with each Report for Reassignment ----
+	// ---- the free command (HR2): once when the fleet starts, and again with each plea for a new ship ----
 
 	private File freeCommandFile() { return new File(root, "free-command.txt"); }
 	/**
 	 * Is a free command granted and not yet taken? An empty shipyard alone never grants one: the captain commissions a
-	 * ship with scrap, or reports for reassignment. (A fleet from before this was recorded: granted if its shipyard is
+	 * ship with scrap, or pleads for a new one. (A fleet from before this was recorded: granted if its shipyard is
 	 * empty now, once.)
 	 */
 	public synchronized boolean freeCommandOpen() {
@@ -272,14 +272,28 @@ public final class Vault {
 		try { return new String(SafeFiles.read(f), java.nio.charset.StandardCharsets.UTF_8).trim().startsWith("open"); }
 		catch (IOException e) { return false; }
 	}
-	/** Grants the free command (a new fleet or career, a report for reassignment); its ship is Settings'. */
+	/** Grants the free command (a new fleet or career); its ship is Settings' or the career's. */
 	public synchronized void grantFreeCommand(String why) { setFreeCommand(true, why, null); }
-	/** Grants the free command with the ship it brings ({@link homeplanet.parser.FreeCommand}: an Immersive career or report). */
+	/** Grants the free command with the ship it brings ({@link homeplanet.parser.FreeCommand}: an Immersive career). */
 	public synchronized void grantFreeCommand(String why, String ship) { setFreeCommand(true, why, ship); }
-	/** The ship the open free command earned (Immersive Mode), or null: Settings' free ship. */
-	public synchronized String freeCommandShip() { String[] l = freeCommandLines(); return l.length > 2 && l[0].startsWith("open") && l[2].startsWith("ship ") ? l[2].substring(5).trim() : null; }
-	/** Was the open free command granted by a Report for Reassignment (rather than a new fleet or career)? */
-	public synchronized boolean freeCommandReassigned() { String[] l = freeCommandLines(); return l.length > 1 && l[0].startsWith("open") && l[1].startsWith("reported for reassignment"); }
+	/** The ship the open free command names, or null: the plea's or Settings' (see FreeCommand). */
+	public synchronized String freeCommandShip() { return freeCommandValue("ship "); }
+	/** Why the open free command was granted. */
+	private static final String PLEA = "pleaded for a new ship", OLD_PLEA = "reported for reassignment";
+	/** Was the open free command granted by a plea for a new ship (rather than a new fleet or career)? */
+	public synchronized boolean freeCommandReassigned() { String[] l = freeCommandLines(); return l.length > 1 && l[0].startsWith("open") && (l[1].startsWith(PLEA) || l[1].startsWith(OLD_PLEA)); }
+	/** Is the open free command an old Report for Reassignment's, which took the Cargo Hold and the Junkyard (and can give them back)? */
+	public synchronized boolean freeCommandForfeit() {
+		String[] l = freeCommandLines();
+		return freeCommandReassigned() && l[1].startsWith(OLD_PLEA);
+	}
+	/** A line of the open free command that starts with this, the rest of it; or null. */
+	private String freeCommandValue(String key) {
+		String[] l = freeCommandLines();
+		if (l.length == 0 || !l[0].startsWith("open")) return null;
+		for (int i = 2; i < l.length; i++) if (l[i].startsWith(key)) return l[i].substring(key.length()).trim();
+		return null;
+	}
 	private String[] freeCommandLines() {
 		try { return new String(SafeFiles.read(freeCommandFile()), java.nio.charset.StandardCharsets.UTF_8).trim().split("\\r?\\n"); }
 		catch (IOException e) { return new String[0]; }
@@ -287,8 +301,9 @@ public final class Vault {
 	/** The free command is taken (her commission), or taken back (an undone report). */
 	public synchronized void useFreeCommand(String why) { setFreeCommand(false, why, null); }
 	private void setFreeCommand(boolean open, String why) { setFreeCommand(open, why, null); }
-	private void setFreeCommand(boolean open, String why, String ship) {
-		try { SafeFiles.writeText(freeCommandFile(), (open ? "open" : "used") + "\n" + why + "\n" + (ship == null ? "" : "ship " + ship + "\n"), false); }
+	private void setFreeCommand(boolean open, String why, String ship) { setFreeCommand(open, why, ship, null); }
+	private void setFreeCommand(boolean open, String why, String ship, String more) {
+		try { SafeFiles.writeText(freeCommandFile(), (open ? "open" : "used") + "\n" + why + "\n" + (ship == null ? "" : "ship " + ship + "\n") + (more == null ? "" : more + "\n"), false); }
 		catch (IOException e) { log.warn("Could not record the free command: {}", e.toString()); }
 	}
 	/** The scrap in the storage hold (0 if it can't be read). */
@@ -324,16 +339,16 @@ public final class Vault {
 		saveManifest();
 	}
 
-	// ---- Report for Reassignment ----
+	// ---- Plead for New Ship ----
 
-	/** Where each Report for Reassignment keeps what was surrendered (one folder each), so it can be undone. */
+	/** Where each old Report for Reassignment kept what was surrendered (one folder each), so it can be undone. */
 	public File surrenderedDir() { return new File(root, "surrendered"); }
 	private static final String SURRENDER_SHIPS = "ships.txt", SURRENDER_HOLD = "storage.sav", SURRENDER_SYSTEMS = "storage-systems.txt", SURRENDER_AFTER = "after.txt";
 
 	/**
-	 * Report for Reassignment: the storage hold (scrap, supplies, items, crew, stored systems) and every hull in the
-	 * Junkyard are surrendered to The Federation Home Planet. The hold starts again empty. All of it is kept in a new
-	 * folder under surrendered/, for {@link #undoSurrender}. Returns that folder.
+	 * The old Report for Reassignment: the storage hold (scrap, supplies, items, crew, stored systems) and every hull in
+	 * the Junkyard surrendered; kept in a new folder under surrendered/, for {@link #undoSurrender}. Returns that folder.
+	 * (Plead for New Ship replaced it: see {@link #plead} and {@link #forfeitHold}; kept for the harness and old fleets.)
 	 */
 	public synchronized File surrender() throws IOException {
 		File dir;
@@ -378,11 +393,8 @@ public final class Vault {
 		saveManifest();
 		List<String> lines = new ArrayList<String>();
 		for (Ship s : junk) lines.add("hull: " + s.name);
-		// the ship it earns goes by what was surrendered in Immersive Mode or with Variable chosen; otherwise Settings' free ship
-		String earned = homeplanet.parser.FreeCommand.byValue(this) ? homeplanet.parser.FreeCommand.earned(value) : null;
-		HistoryLog.entry("REASSIGN", "the Cargo Hold and " + junk.size() + " hull(s) from the Junkyard surrendered (worth " + value + " scrap"
-				+ (earned == null ? "" : ": " + homeplanet.parser.FreeCommand.words(earned)) + "); kept in surrendered/" + dir.getName(), lines);
-		grantFreeCommand("reported for reassignment", earned);
+		HistoryLog.entry("REASSIGN", "the Cargo Hold and " + junk.size() + " hull(s) from the Junkyard surrendered (worth " + value + " scrap); kept in surrendered/" + dir.getName(), lines);
+		grantFreeCommand(OLD_PLEA);
 		return dir;
 	}
 	/** A hull couldn't be put back after a failed surrender: the folder keeps it, and the error says where. */
@@ -401,6 +413,50 @@ public final class Vault {
 		}
 		return best;
 	}
+	/**
+	 * Plead for New Ship: The Federation Home Planet agrees to send a new ship. Nothing is taken yet: at Commission the
+	 * captain chooses her, and whether the Cargo Hold pays for her ({@link #forfeitHold}) or the career's reputation does.
+	 */
+	public synchronized void plead() {
+		HistoryLog.entry("PLEAD", "The Federation Home Planet agreed to send a new ship: her order waits at Commission");
+		grantFreeCommand(PLEA);
+	}
+	/**
+	 * The plea's ship is paid for with the Cargo Hold: everything in it (scrap, supplies, items, stored systems) goes to
+	 * The Federation Home Planet, and the hold starts again with the refund (the difference, if the captain asked for it).
+	 * The crew in it stay (they aren't counted, and aren't given up); the Junkyard is untouched. Returns the hold's file and stored systems as they were, for {@link #unforfeitHold}.
+	 */
+	public synchronized byte[][] forfeitHold(int saleValue, int refund) throws IOException {
+		Ship st = storage();
+		File hold = fileOf(st), systems = systemsFile();
+		byte[][] before = {SafeFiles.read(hold), systems.isFile() ? SafeFiles.read(systems) : null};
+		snapshot(st);
+		SavedGameState was = readCopy(st).save;
+		SavedGameState fresh = SaveHelper.createStorageSave(st.name, true);
+		fresh.getPlayerShip().setScrapAmt(Math.max(0, refund));
+		fresh.getPlayerShip().getCrewList().addAll(was.getPlayerShip().getCrewList()); // the crew stay
+		writeQuietly(st, fresh);
+		if (systems.isFile() && !systems.delete()) log.warn("Could not remove {}", systems);
+		saveManifest();
+		HistoryLog.entry("PLEAD", "the Cargo Hold given for the new ship (worth " + saleValue + " scrap at sale)" + (refund > 0 ? "; " + refund + " scrap refunded to it" : ""));
+		return before;
+	}
+	/** Puts the Cargo Hold back as {@link #forfeitHold} found it (her commission failed). */
+	public synchronized void unforfeitHold(byte[][] before) throws IOException {
+		Ship st = storage();
+		File hold = fileOf(st);
+		SafeFiles.write(hold, before[0]);
+		st.invalidate();
+		st.hash = SafeFiles.hash(hold);
+		if (before[1] != null) SafeFiles.write(systemsFile(), before[1]);
+		saveManifest();
+	}
+	/** Withdraws a waiting plea (nothing was taken: her order is simply cancelled). */
+	public synchronized void withdrawPlea() throws IOException {
+		if (!freeCommandOpen() || !freeCommandReassigned()) throw new IOException("There is no plea waiting: the new ship has been commissioned since");
+		HistoryLog.entry("UNDO PLEA", "the plea for a new ship was withdrawn");
+		useFreeCommand("the plea was withdrawn");
+	}
 	/** The hull names a surrender holds. */
 	public List<String> surrenderedNames(File dir) throws IOException {
 		List<String> out = new ArrayList<String>();
@@ -411,13 +467,13 @@ public final class Vault {
 		return out;
 	}
 	/**
-	 * Undoes a Report for Reassignment: the hold as it was and the hulls back in the Junkyard. Refused once a ship is
-	 * docked or boarded again (the new command was taken: undoing then would keep both), or if the hold has changed
-	 * since (what it holds now would be lost).
+	 * Undoes an old Report for Reassignment: the hold as it was and the hulls back in the Junkyard. Refused once the new
+	 * ship is commissioned (undoing then would keep both), or if the hold has changed since (what it holds now would be
+	 * lost).
 	 */
 	public synchronized void undoSurrender(File dir) throws IOException {
-		if (!docked().isEmpty() || boarded() != null)
-			throw new IOException("A new command has been taken since the report for reassignment: it can only be undone while no ship is at the Space Dock");
+		if (!freeCommandOpen() || !freeCommandForfeit())
+			throw new IOException("The new ship has been commissioned since the report for reassignment: it can only be undone while her order waits at Commission");
 		Ship st = storage();
 		File hold = fileOf(st);
 		String after = new String(SafeFiles.read(new File(dir, SURRENDER_AFTER)), java.nio.charset.StandardCharsets.UTF_8).trim();

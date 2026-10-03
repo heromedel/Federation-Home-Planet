@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.89";
+	public static final String APP_VERSION = "4B.90";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -154,7 +154,8 @@ public class HomePlanet {
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
 		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
-		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip) && !"variable".equals(freeShip)) freeShip = "relief";
+		if ("variable".equals(freeShip)) freeShip = "kestrel"; // Variable (a ship by what a report surrendered) is no more
+		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
 		Vault.immersiveSlot = Vault.slotOf(config.getProperty("immersive_slot")); // which Immersive career (a fleet from before difficulties is Custom's)

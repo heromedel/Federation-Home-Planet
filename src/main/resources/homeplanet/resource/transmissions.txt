@@ -5,9 +5,8 @@
 # Rewards, comma separated (they go to the Cargo Hold): scrap N, fuel N, missiles N, parts N (drone parts),
 # item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
-# Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), reassigned (the free command
-# after a Report for Reassignment; in Immersive Mode reassigned:any, reassigned:kestrel or reassigned:relief, by what
-# was surrendered), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
+# Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), pleaded (the order after a
+# plea for a new ship; {ship} is what it offers), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
 # a hull waits in the Junkyard), promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
 # rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
 # notice when Transmissions are off).
@@ -56,7 +55,7 @@ subject: Without a ship
 
 The Home Planet Station reports that you have no ship under your command. I am sorry. She served the Federation, and so did you.
 
-This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship. If it does not, what it holds can be sold from the Cargo Bay, ship or no ship. Failing that, there is a last resort: Report for Reassignment (Other... at the Space Dock). The Federation Home Planet takes the Cargo Hold and the Junkyard, and gives you a new command in return.
+This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship. If it does not, what it holds can be sold from the Cargo Bay, ship or no ship. Failing that, there is a last resort: Plead for New Ship (Other... at the Space Dock). The Federation Home Planet will send you a new ship, paid for with the Cargo Hold or set against your good name.
 
 Every commander loses a ship sooner or later. What matters is that you come back.
 
@@ -73,7 +72,7 @@ The Home Planet Station reports that you have no ship under your command. I am s
 
 This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship; what it holds can be sold from the Cargo Bay, ship or no ship. There is a hull in the Junkyard, too: Salvage her at the Space Dock and she is yours again, at no cost; if you have a ship in the Junkyard that you cannot afford to repair, try trading it in or auctioning it off to raise money.
 
-If none of that will do, there is a last resort: Report for Reassignment (Other... at the Space Dock). The Federation Home Planet takes the Cargo Hold and the Junkyard, and gives you a new command in return.
+If none of that will do, there is a last resort: Plead for New Ship (Other... at the Space Dock). The Federation Home Planet will send you a new ship, paid for with the Cargo Hold or set against your good name.
 
 Every commander loses a ship sooner or later. What matters is that you come back.
 
@@ -168,71 +167,19 @@ Last guy I knew who needed a new ship, they demanded he hand over his entire car
 Godspeed and come home.
 ~ Home Planet Shipyard Comm. Officer
 
-== reassigned
+== pleaded
 from: Home Planet Shipyard
-subject: Back from nothing
+subject: Your plea was heard
 
 {rank},
 
-Well, you're back. Guess you're an unlucky duck..
-Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
+Heard you've been asking around for a new ship. Well, good news: word came down from The Federation Home Planet. Your plea was heard, and they're sending you one. Not every captain gets that, Lucky Duck.
 
-The order is for {ship}. Take this order to Commission and she's yours.
+The order is for {ship}. Bring it to Commission and pick her out. When you sign for her, you settle up: hand over the Cargo Hold, or put her on your good name. The shipyard doesn't mind which. The Federation Home Planet keeps count of both.
 
-And maybe don't lose this one?
+Change your mind before she's built? Withdraw the plea (Other... at the Space Dock) and nobody owes anything.
 
-Godspeed and come home.
-~ Home Planet Shipyard Comm. Officer
-
-== reassigned:any
-from: Home Planet Shipyard
-subject: Back from nothing
-
-{rank},
-
-Well, you're back. Guess you're an unlucky duck..
-Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
-They must've liked what you turned in. You get your pick of the shipyard.
-
-The order is for {ship}. Take this order to Commission and she's yours.
-
-And maybe don't lose this one?
-
-Godspeed and come home.
-~ Home Planet Shipyard Comm. Officer
-
-== reassigned:kestrel
-from: Home Planet Shipyard
-subject: Back from nothing
-
-{rank},
-
-Well, you're back. Guess you're an unlucky duck..
-Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
-What you turned in was enough for a proper Kestrel. Not bad.
-
-The order is for {ship}. Take this order to Commission and she's yours.
-
-And maybe don't lose this one?
-
-Godspeed and come home.
-~ Home Planet Shipyard Comm. Officer
-
-== reassigned:relief
-from: Home Planet Shipyard
-subject: Back from nothing
-
-{rank},
-
-Well, you're back. Guess you're an unlucky duck..
-Well, good news: they approved you getting a new ship. Sorry to hear you had to turn in your cargo hold.
-I won't lie, what you turned in didn't buy much.
-
-The order is for {ship}. Take this order to Commission and she's yours.
-
-And maybe don't lose this one?
-
-Godspeed and come home.
+Try not to scratch the paint.
 ~ Home Planet Shipyard Comm. Officer
 
 == promo:1

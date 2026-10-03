@@ -57,10 +57,10 @@ public final class Economy {
 		if (!HomePlanet.immersiveMode) return "half the store price";
 		return (p <= 0 ? "1 scrap each" : p == 50 ? "half the store price" : p + "% of the store price") + ", set by your career";
 	}
-	/** What a Report for Reassignment grants: FreeCommand's kestrel, relief, any or variable (Settings', or the career's). */
+	/** What Plead for New Ship grants: FreeCommand's any, kestrel or relief (Settings', or the career's; the Relief Ship always too). */
 	public static String reassignment() {
 		homeplanet.parser.CareerRules c = career();
-		return c != null ? c.reassignment() : HomePlanet.immersiveMode ? homeplanet.parser.FreeCommand.VARIABLE : HomePlanet.freeShip;
+		return homeplanet.parser.FreeCommand.norm(c != null ? c.reassignment() : HomePlanet.immersiveMode ? homeplanet.parser.FreeCommand.KESTREL : HomePlanet.freeShip);
 	}
 	/** Commissioning costs this share of her price (Settings', or the career's). */
 	public static int commissionPercent() {
