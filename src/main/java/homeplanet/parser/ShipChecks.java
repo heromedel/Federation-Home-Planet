@@ -131,7 +131,7 @@ public final class ShipChecks {
 		return r;
 	}
 
-	/** The systems she starts with, as FTL's System Limit counts them (subsystems aside; a Medbay and Clone Bay are one, as only one is ever installed). */
+	/** The systems she starts with, as FTL's System Limit counts them (subsystems aside; a Medbay and Clone Bay are one: with both ticked, Commission builds the Clone Bay alone). */
 	static int startingSystems(ShipDesign d) {
 		int n = 0;
 		for (String id : d.systems.keySet()) {

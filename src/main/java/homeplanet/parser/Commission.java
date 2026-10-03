@@ -195,13 +195,18 @@ public class Commission {
 			ShipBlueprint v = DataManager.get().getShips().get(Retrofit.vanillaId(bp.getId())); // (a designed ship has no model)
 			if (v != null) model = v;
 		}
+		// a Medbay and a Clone Bay take each other's place, as FTL's stores swap them: a design ticked to start with both
+		// starts with the Clone Bay alone
+		ShipBlueprint.SystemList.SystemRoom[] cm = bp.getSystemList().getSystemRoom(SystemType.CLONEBAY), cr = model.getSystemList().getSystemRoom(SystemType.CLONEBAY);
+		boolean cloneBay = ship.getSystem(SystemType.CLONEBAY) != null && cm != null && cm.length > 0 && cr != null && cr.length > 0
+				&& (cr[0].getStart() == null || cr[0].getStart());
 		for (SystemType t : SystemType.values()) {
 			SystemState st = ship.getSystem(t);
 			if (st == null) continue;
 			ShipBlueprint.SystemList.SystemRoom[] mine = bp.getSystemList().getSystemRoom(t);
 			if (mine == null || mine.length == 0) { st.setCapacity(0); st.setPower(0); st.setDeionizationTicks(0); continue; }
 			ShipBlueprint.SystemList.SystemRoom[] r = model.getSystemList().getSystemRoom(t);
-			boolean present = r != null && r.length > 0 && (r[0].getStart() == null || r[0].getStart());
+			boolean present = r != null && r.length > 0 && (r[0].getStart() == null || r[0].getStart()) && !(t == SystemType.MEDBAY && cloneBay);
 			st.setCapacity(present ? Math.max(1, r[0].getPower()) : 0);
 			st.setPower(present && t.isSubsystem() ? st.getCapacity() : 0);
 			st.setDeionizationTicks(0);
