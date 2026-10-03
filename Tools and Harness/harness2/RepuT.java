@@ -59,11 +59,33 @@ public class RepuT {
   g = v.readCopy(b).save; g.setTotalScrapCollected(g.getTotalScrapCollected() + 1000); v.write(b, g);
   g = cont(v); ftl(v, g);
   Setup.chk("R: the station's own change isn't scored", Reputation.total(v) == 93);
+  // events: a jump within the sector to a quiet beacon (no fight, no ship, no store)
+  g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.setTotalScrapCollected(g.getTotalScrapCollected() + 20); g.getPlayerShip().setScrapAmt(g.getPlayerShip().getScrapAmt() + 20);
+  ftl(v, g);
+  Setup.chk("R: a good outcome +2 (with its 20 scrap +2): 97 (got " + Reputation.total(v) + ")", Reputation.total(v) == 97 && Reputation.recent(v, 1).get(0).contains("a good outcome (+2)"));
+  g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.getPlayerShip().setHullAmt(g.getPlayerShip().getHullAmt() - 3);
+  ftl(v, g);
+  Setup.chk("R: a bad outcome -1 (hull lost): 96", Reputation.total(v) == 96 && Reputation.recent(v, 1).get(0).contains("a bad outcome (\u22121)"));
+  g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.getPlayerShip().setHullAmt(g.getPlayerShip().getHullAmt() - 2); g.getPlayerShip().setMissilesAmt(g.getPlayerShip().getMissilesAmt() + 2);
+  ftl(v, g);
+  Setup.chk("R: gains and losses both: no outcome", Reputation.total(v) == 96);
+  // caught: the rebel fleet holds the beacon she jumps to
+  g = cont(v); int at = g.getCurrentBeaconId() + 1; g.setCurrentBeaconId(at);
+  while (g.getBeaconList().size() <= at) g.getBeaconList().add(new BeaconState());
+  g.getBeaconList().get(at).setFleetPresence(FleetPresence.REBEL);
+  ftl(v, g);
+  Setup.chk("R: caught by the rebel fleet -5: 91 (got " + Reputation.total(v) + ")", Reputation.total(v) == 91 && Reputation.recent(v, 1).get(0).contains("caught by the rebel fleet (\u22125)"));
+  g = cont(v); g.getPlayerShip().setHullAmt(g.getPlayerShip().getHullAmt() + 1); ftl(v, g); // still there, a repair
+  Setup.chk("R: caught once, not again while she stays", Reputation.total(v) == 91);
+  // an FTL achievement earned in the fleet's service: +10, once
+  TransT.profile(saves, new String[] {"PLAYER_SHIP_HARD"}, new String[] {"ACH_SECTOR_5"});
+  Setup.chk("R: a new achievement +10: 101 (got " + Reputation.total(v) + ")", Reputation.total(v) == 101 && Reputation.recent(v, 1).get(0).contains("An achievement: "));
+  Setup.chk("R: counted once", Reputation.total(v) == 101);
   // the last stand: sector 8 reached (+6 a sector), a death there costs nothing
   g = cont(v); int from = g.getSectorNumber(); g.setSectorNumber(7);
   g.getPlayerShip().getCrewList().remove(SaveHelper.getOwnCrew(g.getPlayerShip()).get(0)); g.setStateVar("lost_crew", g.getStateVar("lost_crew") + 1);
   ftl(v, g);
-  int expect = 93 + (7 - from) * 6;
+  int expect = 101 + (7 - from) * 6;
   Setup.chk("R: sector 8 reached, a death there costs nothing: " + expect + " (got " + Reputation.total(v) + ")", Reputation.total(v) == expect);
   // lost in the last stand: no loss; lost before it: -50
   v.continueFile().delete(); v.reload();

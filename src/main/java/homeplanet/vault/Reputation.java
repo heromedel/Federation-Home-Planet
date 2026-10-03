@@ -16,8 +16,13 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.blerf.ftl.parser.SavedGameParser.BeaconState;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
+import net.blerf.ftl.parser.SavedGameParser.DroneState;
+import net.blerf.ftl.parser.SavedGameParser.FleetPresence;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
+import net.blerf.ftl.parser.SavedGameParser.ShipState;
+import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
@@ -42,17 +47,57 @@ public final class Reputation {
 	/** Scrap collected counts a tenth (FTL's own total: sales at stores and the Scrap Recovery Arm don't add to it). */
 	public static final int SCRAP_PER_POINT = 10;
 	public static final int CREW_DIED = -10, SHIP_LOST = -50;
+	/** An event's outcome at a beacon with no fight and no store: gains only +2, losses only -1. */
+	public static final int EVENT_GOOD = 2, EVENT_BAD = -1;
+	/** Caught by the rebel fleet: at a beacon it holds (arrived at one, or overtaken while waiting). */
+	public static final int CAUGHT = -5;
+	/** Each FTL achievement earned in the fleet's service (FTL's real ones, not its hidden markers). */
+	public static final int ACHIEVEMENT = 10;
 	/** FTL's sector 8 (0 is the first): nothing is lost there. */
 	static final int LAST_STAND = 7;
 
 	/** Does the fleet in use have a reputation (Settings' Reputation rule, always on in Immersive Mode)? */
 	public static boolean shown() { return Vault.isOpen() && HomePlanet.reputation(); }
 
-	/** The fleet's reputation, its service reviewed first if it never was. */
+	/** The fleet's reputation, its service reviewed first if it never was, and any new FTL achievements counted. */
 	public static synchronized int total(Vault v) {
 		Properties p = read(v);
 		if (!counted(p)) { review(v); p = read(v); }
+		else if (shown()) { achievements(v, p); p = read(v); }
 		return num(p, "total");
+	}
+	/** New FTL achievements (the profile, as the career's rewards count them: earned in this fleet's service) score. */
+	private static void achievements(Vault v, Properties p) {
+		List<String> fresh = new ArrayList<String>();
+		java.util.Set<String> had = new java.util.HashSet<String>(java.util.Arrays.asList(p.getProperty("achievements", "").split("\\|")));
+		for (String id : newAchievements()) if (!had.contains(id)) fresh.add(id);
+		if (fresh.isEmpty()) return;
+		List<String> names = new ArrayList<String>();
+		for (String id : fresh) names.add(achievementName(id));
+		had.addAll(fresh);
+		had.remove("");
+		p.setProperty("achievements", String.join("|", had));
+		int pts = fresh.size() * ACHIEVEMENT;
+		p.setProperty("total", Integer.toString(num(p, "total") + pts));
+		if (write(v, p)) entry(v, pts, (fresh.size() == 1 ? "An achievement: " : fresh.size() + " achievements: ") + String.join(", ", names) + " (+" + pts + ")", null);
+	}
+	/** FTL's real achievements earned since the fleet's record began (empty if the profile can't be read). */
+	private static List<String> newAchievements() {
+		List<String> out = new ArrayList<String>();
+		try {
+			homeplanet.parser.Unlocks u = homeplanet.parser.Unlocks.read();
+			if (u.problem() != null) return out;
+			for (String id : homeplanet.parser.UnlockGrants.newAchievements(u)) {
+				net.blerf.ftl.xml.Achievement a = net.blerf.ftl.parser.DataManager.get().getAchievement(id);
+				if (a != null && !a.isVictory() && !a.isQuest()) out.add(id);
+			}
+		} catch (Exception e) {
+			log.warn("Could not read the FTL profile's achievements: {}", e.toString());
+		}
+		return out;
+	}
+	private static String achievementName(String id) {
+		try { return net.blerf.ftl.parser.DataManager.get().getAchievement(id).getName().getTextValue(); } catch (Exception e) { return id; }
 	}
 	/** The newest entries (headline lines), newest first, at most n. */
 	public static List<String> recent(Vault v, int n) {
@@ -104,6 +149,18 @@ public final class Reputation {
 			List<String> names = gone(was.crew, now.crew);
 			why.add((died == 1 ? names.get(0) + " died" : died + " crew died") + " (" + signed(died * CREW_DIED) + ")");
 		}
+		// caught by the rebel fleet: at a beacon it holds that she wasn't caught at already (never in the last stand)
+		boolean moved = now.beacon != was.beacon || now.sector != was.sector;
+		if (now.rebel && (moved || !was.rebel) && !lastStand) {
+			points += CAUGHT;
+			why.add("caught by the rebel fleet (" + signed(CAUGHT) + ")");
+		}
+		// an event's outcome: a jump within the sector to a beacon with no fight, no ship and no store, nor a store left behind
+		if (moved && now.sector == was.sector && defeated == 0 && now.enemy.isEmpty() && !now.store && !was.store) {
+			int outcome = outcome(was, now, died);
+			if (outcome > 0) { points += EVENT_GOOD; why.add("a good outcome (+" + EVENT_GOOD + ")"); }
+			else if (outcome < 0 && !lastStand) { points += EVENT_BAD; why.add("a bad outcome (" + signed(EVENT_BAD) + ")"); }
+		}
 		now.put(p, s.id, scrap % SCRAP_PER_POINT);
 		if (points != 0 || !why.isEmpty()) {
 			p.setProperty("total", Integer.toString(num(p, "total") + points));
@@ -111,6 +168,16 @@ public final class Reputation {
 		} else {
 			write(v, p);
 		}
+	}
+	/**
+	 * What a beacon's event did (FTL keeps no record of the choice, only of its results): 1 if she only gained (scrap, crew,
+	 * gear, missiles or drone parts), -1 if she only lost (hull, crew, gear, scrap, missiles or drone parts), 0 if both or
+	 * neither. The jump's own fuel isn't counted.
+	 */
+	private static int outcome(Props was, Props now, int died) {
+		boolean gained = now.collected > was.collected || !gone(now.crew, was.crew).isEmpty() || !gone(now.items, was.items).isEmpty() || now.ammo > was.ammo;
+		boolean lost = now.hull < was.hull || died > 0 || !gone(was.items, now.items).isEmpty() || (now.scrapNow < was.scrapNow && now.collected == was.collected) || now.ammo < was.ammo;
+		return gained == lost ? 0 : gained ? 1 : -1;
 	}
 	/** The station changed her itself (a trade, a New Journey, commissioning): her count moves, nothing scores. */
 	static synchronized void rebase(Vault v, Ship s, SavedGameState gs) {
@@ -146,7 +213,8 @@ public final class Reputation {
 	/**
 	 * Reviews the career's service once: every ship the fleet has kept a record of (in the fleet, or gone from it),
 	 * her FTL totals since she joined (her trade, or her commissioning), her loss if she was lost before the last stand,
-	 * and her victories over the Rebel Flagship. Rebel ships can't be told apart in older records: they count as ships.
+	 * her victories over the Rebel Flagship, and the FTL achievements earned in the fleet's service. Older records can't tell
+	 * rebel ships apart (they count as ships), nor events or the rebel fleet catching her (not counted).
 	 */
 	static synchronized void review(Vault v) {
 		Properties p = read(v);
@@ -189,6 +257,14 @@ public final class Reputation {
 			if (why.isEmpty()) continue;
 			total += pts;
 			details.add(name + ": " + String.join(", ", why) + "  = " + signed(pts));
+		}
+		List<String> earned = newAchievements(); // FTL's achievements earned in the fleet's service so far
+		if (!earned.isEmpty()) {
+			List<String> names = new ArrayList<String>();
+			for (String id : earned) names.add(achievementName(id));
+			total += earned.size() * ACHIEVEMENT;
+			details.add("Achievements: " + String.join(", ", names) + "  = " + signed(earned.size() * ACHIEVEMENT));
+			p.setProperty("achievements", String.join("|", earned));
 		}
 		p.setProperty("counted", new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()));
 		p.setProperty("total", Integer.toString(total));
@@ -238,8 +314,10 @@ public final class Reputation {
 
 	/** What the count keeps of a ship: FTL's totals at her last count, where she was, who was aboard, who she fought. */
 	private static final class Props {
-		int sector = -1, collected, defeated, lost, rest;
-		String crew = "", enemy = "";
+		int sector = -1, collected, defeated, lost, rest, beacon = -1, hull, scrapNow, ammo;
+		String crew = "", enemy = "", items = "";
+		/** At her beacon: a store; the rebel fleet. */
+		boolean store, rebel;
 		private Props() { }
 		Props(Properties p, String id) {
 			sector = num(p, id + ".sector", -1);
@@ -249,6 +327,13 @@ public final class Reputation {
 			rest = num(p, id + ".rest");
 			crew = p.getProperty(id + ".crew", "");
 			enemy = p.getProperty(id + ".enemy", "");
+			beacon = num(p, id + ".beacon", -1);
+			hull = num(p, id + ".hull");
+			scrapNow = num(p, id + ".scrapNow");
+			ammo = num(p, id + ".ammo");
+			items = p.getProperty(id + ".items", "");
+			store = "true".equals(p.getProperty(id + ".store"));
+			rebel = "true".equals(p.getProperty(id + ".rebel"));
 		}
 		boolean known() { return sector >= 0; }
 		static Props of(SavedGameState gs) {
@@ -261,6 +346,21 @@ public final class Reputation {
 			for (CrewState c : SaveHelper.getOwnCrew(gs.getPlayerShip())) names.add(c.getName());
 			x.crew = String.join("|", names);
 			x.enemy = gs.getNearbyShip() == null ? "" : gs.getNearbyShip().getShipBlueprintId();
+			ShipState ship = gs.getPlayerShip();
+			x.beacon = gs.getCurrentBeaconId();
+			x.hull = ship.getHullAmt();
+			x.scrapNow = ship.getScrapAmt();
+			x.ammo = ship.getMissilesAmt() + ship.getDronePartsAmt();
+			List<String> gear = new ArrayList<String>();
+			for (WeaponState w : ship.getWeaponList()) gear.add(w.getWeaponId());
+			for (DroneState d : ship.getDroneList()) gear.add(d.getDroneId());
+			gear.addAll(ship.getAugmentIdList());
+			gear.addAll(gs.getCargoIdList());
+			x.items = String.join("|", gear);
+			List<BeaconState> beacons = gs.getBeaconList();
+			BeaconState here = beacons != null && x.beacon >= 0 && x.beacon < beacons.size() ? beacons.get(x.beacon) : null;
+			x.store = here != null && here.getStore() != null;
+			x.rebel = here != null && (here.getFleetPresence() == FleetPresence.REBEL || here.getFleetPresence() == FleetPresence.BOTH);
 			return x;
 		}
 		void put(Properties p, String id, int rest) {
@@ -271,9 +371,16 @@ public final class Reputation {
 			p.setProperty(id + ".rest", Integer.toString(rest));
 			p.setProperty(id + ".crew", crew);
 			p.setProperty(id + ".enemy", enemy == null ? "" : enemy);
+			p.setProperty(id + ".beacon", Integer.toString(beacon));
+			p.setProperty(id + ".hull", Integer.toString(hull));
+			p.setProperty(id + ".scrapNow", Integer.toString(scrapNow));
+			p.setProperty(id + ".ammo", Integer.toString(ammo));
+			p.setProperty(id + ".items", items);
+			p.setProperty(id + ".store", Boolean.toString(store));
+			p.setProperty(id + ".rebel", Boolean.toString(rebel));
 		}
 		static void forget(Properties p, String id) {
-			for (String k : new String[] {"sector", "collected", "defeated", "lost", "rest", "crew", "enemy"}) p.remove(id + "." + k);
+			for (String k : new String[] {"sector", "collected", "defeated", "lost", "rest", "crew", "enemy", "beacon", "hull", "scrapNow", "ammo", "items", "store", "rebel"}) p.remove(id + "." + k);
 		}
 	}
 	/** FTL's rebel ships: the rebellion's crewed ships and its automated scouts. */

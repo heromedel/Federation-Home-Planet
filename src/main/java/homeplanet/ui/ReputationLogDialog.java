@@ -58,8 +58,10 @@ final class ReputationLogDialog extends JDialog {
 		scroll.getVerticalScrollBar().setUnitIncrement(22);
 		JPanel south = new JPanel(new BorderLayout());
 		JLabel how = new JLabel("<html><font color='" + MenuTheme.HTML_GREY_GREEN + "'>Earned: each sector +" + Reputation.SECTOR + ", a tenth of the scrap collected, each ship defeated +"
-				+ Reputation.DEFEATED + " (a rebel +" + Reputation.REBEL_DEFEATED + "), the Rebel Flagship +" + Reputation.FLAGSHIP + ".<br>Lost: each crew member killed "
-				+ Reputation.signed(Reputation.CREW_DIED) + ", each ship lost in action " + Reputation.signed(Reputation.SHIP_LOST) + ". Nothing is lost in the last stand of sector 8.</font></html>");
+				+ Reputation.DEFEATED + " (a rebel +" + Reputation.REBEL_DEFEATED + "), a good outcome +" + Reputation.EVENT_GOOD + ", each FTL achievement +" + Reputation.ACHIEVEMENT
+				+ ", the Rebel Flagship +" + Reputation.FLAGSHIP + ".<br>Lost: each crew member killed " + Reputation.signed(Reputation.CREW_DIED) + ", each ship lost in action "
+				+ Reputation.signed(Reputation.SHIP_LOST) + ", caught by the rebel fleet " + Reputation.signed(Reputation.CAUGHT) + ", a bad outcome " + Reputation.signed(Reputation.EVENT_BAD)
+				+ ". Nothing is lost in the last stand of sector 8.</font></html>");
 		south.add(how, BorderLayout.CENTER);
 		JButton close = new JButton("Close");
 		close.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
