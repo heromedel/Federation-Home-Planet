@@ -467,12 +467,22 @@ public final class Expeditions {
 	/** The crew in the Cargo Hold who can be sent: not those laid up in the infirmary. */
 	public static List<CrewState> holdCrew(Vault v) throws IOException {
 		List<CrewState> out = new ArrayList<CrewState>();
-		Set<String> laidUp = new HashSet<String>();
-		for (Patient x : infirmary(v)) laidUp.add(x.key());
-		for (CrewState c : SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip())) if (!laidUp.contains(key(c))) out.add(c);
+		Set<String> laidUp = laidUpKeys(v);
+		for (CrewState c : SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip())) if (!isLaidUp(laidUp, c)) out.add(c);
 		return out;
 	}
 	private static String key(CrewState c) { return c.getName() + "/" + (c.getRace() == null ? "human" : c.getRace().getId()); }
+	/**
+	 * BAND-AID (docs/CONCERNS.md, 2): the station's records know a crew member by name and race, so two of a name and race
+	 * get mixed up. Until crew who are away leave the Cargo Hold's save (the real fix), this mark tells namesakes apart:
+	 * sex, colouring and the service record, none of which change while they sit in the hold. Records keep it beside the
+	 * name; a record without one (from before) matches any namesake, as it always did.
+	 */
+	static String mark(CrewState c) {
+		StringBuilder t = new StringBuilder();
+		for (Integer i : c.getSpriteTintIndeces()) t.append(i).append('.');
+		return (c.isMale() ? "m" : "f") + "/" + t + "/" + c.getRepairs() + "," + c.getCombatKills() + "," + c.getPilotedEvasions() + "," + c.getJumpsSurvived() + "," + c.getSkillMasteriesEarned();
+	}
 
 	/** The event for a job: the one its posting was written for (or, failing that, one of its kind not met lately). */
 	static Event draw(Posting posting, List<String> recent, Random rng) {
@@ -738,8 +748,13 @@ public final class Expeditions {
 	}
 	private static CrewState match(List<CrewState> crew, CrewState sent) {
 		if (crew.contains(sent)) return sent;
-		for (CrewState c : crew) if (c.getName().equals(sent.getName()) && c.getRace() == sent.getRace()) return c;
-		return null;
+		CrewState namesake = null;
+		for (CrewState c : crew) {
+			if (!c.getName().equals(sent.getName()) || c.getRace() != sent.getRace()) continue;
+			if (mark(c).equals(mark(sent))) return c; // the band-aid: the namesake who is them
+			if (namesake == null) namesake = c;
+		}
+		return namesake;
 	}
 
 	// ---- the infirmary ----
@@ -752,24 +767,29 @@ public final class Expeditions {
 		public final int until;
 		/** The last beacon their lay-up cost them a point of skill. */
 		final int drained;
-		Patient(String name, String race, int until, int drained) { this.name = name; this.race = race; this.until = until; this.drained = drained; }
+		/** Their {@link #mark}, or null for a record from before marks (it matches any namesake). */
+		final String mark;
+		Patient(String name, String race, int until, int drained, String mark) { this.name = name; this.race = race; this.until = until; this.drained = drained; this.mark = mark; }
 		String key() { return name + "/" + race; }
+		/** Is this crew member the one laid up: a namesake with the mark, or any namesake for a record without one. */
+		boolean is(CrewState c) { return key().equals(Expeditions.key(c)) && (mark == null || mark.equals(Expeditions.mark(c))); }
 	}
 	public static synchronized List<Patient> infirmary(Vault v) {
 		List<Patient> out = new ArrayList<Patient>();
 		Properties p = readProps(infirmaryFile(v));
-		for (int i = 0; p.getProperty(i + ".name") != null; i++) out.add(new Patient(p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), intOf(p, i + ".until", 0), intOf(p, i + ".drained", 0)));
+		for (int i = 0; p.getProperty(i + ".name") != null; i++) out.add(new Patient(p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), intOf(p, i + ".until", 0), intOf(p, i + ".drained", 0), p.getProperty(i + ".mark")));
 		return out;
 	}
 	/** Is this crew member laid up in the infirmary? */
-	public static boolean laidUp(Vault v, CrewState c) { return laidUpKeys(v).contains(key(c)); }
-	/** Everyone laid up, for a list of crew to check against with {@link #crewKey} (one read of the infirmary). */
+	public static boolean laidUp(Vault v, CrewState c) { return isLaidUp(laidUpKeys(v), c); }
+	/** Everyone laid up, for a list of crew to check against with {@link #isLaidUp} (one read of the infirmary): name/race|mark, or |* for a record without a mark. */
 	public static Set<String> laidUpKeys(Vault v) {
 		Set<String> out = new HashSet<String>();
-		for (Patient x : infirmary(v)) out.add(x.key());
+		for (Patient x : infirmary(v)) out.add(x.key() + "|" + (x.mark == null ? "*" : x.mark));
 		return out;
 	}
-	public static String crewKey(CrewState c) { return key(c); }
+	/** Is this crew member among those laid up ({@link #laidUpKeys})? */
+	public static boolean isLaidUp(Set<String> laidUp, CrewState c) { return laidUp.contains(key(c) + "|" + mark(c)) || laidUp.contains(key(c) + "|*"); }
 	/** Lays a crew member up in the infirmary (into its file's properties, written with the Cargo Hold). */
 	private static void admit(Properties p, CrewState c, int now, Random rng) {
 		int i = 0;
@@ -778,6 +798,7 @@ public final class Expeditions {
 		p.setProperty(i + ".race", c.getRace() == null ? "human" : c.getRace().getId());
 		p.setProperty(i + ".until", Integer.toString(now + HEAL_MIN + rng.nextInt(HEAL_MAX - HEAL_MIN + 1)));
 		p.setProperty(i + ".drained", Integer.toString(now));
+		p.setProperty(i + ".mark", mark(c));
 	}
 	/**
 	 * The station's care, at each look: crew hurt in the game, in the Cargo Hold or aboard a docked ship (never the
@@ -805,7 +826,7 @@ public final class Expeditions {
 				if (x.getRace() == null || !SaveHelper.hasBody(x)) continue;
 				int max = x.getRace().getMaxHealth();
 				Patient mine = null;
-				for (Patient y : all) if (y.key().equals(key(x))) mine = y;
+				for (Patient y : all) if (y.is(x) && (mine == null || y.mark != null)) mine = y; // a marked record over one without
 				if (mine != null) {
 					for (int b = mine.drained; b < Math.min(now, mine.until); b++) changed |= Skills.drain(x, rng);
 					if (now >= mine.until) { // on their feet: whole again, and free to go
@@ -828,7 +849,7 @@ public final class Expeditions {
 			}
 		} catch (IOException e) { log.warn("Could not tend the station's crew: {}", e.toString()); return new ArrayList<String>(); }
 		// those whose time is up are let go (any no longer in the Cargo Hold, retired or moved, quietly)
-		for (int i = 0; i < keep.size(); i++) { q.setProperty(i + ".name", keep.get(i).name); q.setProperty(i + ".race", keep.get(i).race); q.setProperty(i + ".until", Integer.toString(keep.get(i).until)); q.setProperty(i + ".drained", Integer.toString(now)); }
+		for (int i = 0; i < keep.size(); i++) { q.setProperty(i + ".name", keep.get(i).name); q.setProperty(i + ".race", keep.get(i).race); q.setProperty(i + ".until", Integer.toString(keep.get(i).until)); q.setProperty(i + ".drained", Integer.toString(now)); if (keep.get(i).mark != null) q.setProperty(i + ".mark", keep.get(i).mark); }
 		try { writeProps(infirmaryFile(v), q, INFIRMARY_NOTE); } catch (IOException e) { log.warn("Could not write the infirmary: {}", e.toString()); }
 		for (String n : back) HistoryLog.entry("EXPEDITION", n + " is out of the infirmary");
 		return back;

@@ -739,6 +739,15 @@ From a review of 4B.95 and 4B.96 in main, and heromedel's answers (Plan U).
   write, so it can't be paid twice. The expedition's end writes the Cargo Hold, the infirmary and the captives
   together; a side file that can't be read is an error, never written back empty.
 
+## 27. Bug squashing — in progress (4B.98)
+
+Fixes only, from heromedel's testing and the review; no new features. Design debts found on the way go to
+`docs/CONCERNS.md`, not here.
+
+- Two crew of one name and race no longer get mixed up in the infirmary or at an expedition's end: a mark (sex,
+  colouring, service record) kept beside the name tells them apart. A band-aid until crew who are away leave the hold's
+  save (CONCERNS.md, 2).
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

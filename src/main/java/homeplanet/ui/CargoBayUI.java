@@ -879,7 +879,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			boolean body = SaveHelper.hasBody(c);
 			// health, as FTL draws it: no bar when whole; green with the rest red when hurt in the game (a station heals
 			// that by the next beacon); purple, full, in the infirmary (laid up, not to be moved or sent)
-			boolean resting = laidUp.contains(homeplanet.parser.Expeditions.crewKey(c));
+			boolean resting = homeplanet.parser.Expeditions.isLaidUp(laidUp, c);
 			int max = c.getRace() == null ? 100 : c.getRace().getMaxHealth();
 			boolean hurt = body && !resting && c.getHealth() < max;
 			String state = resting ? "<br><font color='" + INFIRMARY_HTML + "'>In the infirmary: can't be moved, traded or sent until they're on their feet</font>"

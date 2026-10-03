@@ -37,7 +37,7 @@ for every existing fleet; every reader of the hold (the Cargo Bay, trading, rewa
 commissioning, the plea, their tests). Best done in one go, after the current features settle, not half and half. The
 player sees no difference on the day it lands.
 
-## 2. Crew are identified by name and race in the station's records (noted 4B.97)
+## 2. Crew are identified by name and race in the station's records (noted 4B.97; band-aid 4B.98)
 
 **What it is.** The records that remember a crew member between looks key them by name and race: the infirmary
 (`infirmary.txt`), the captives (`captives.txt`), an expedition party when the job ends (matched back into the hold),
@@ -53,6 +53,11 @@ random names.
 
 **What it costs.** With two of a name and race, the wrong one can count as laid up, be hurt or removed at an
 expedition's end, or have a hurt applied twice.
+
+**The band-aid (4B.98).** `Expeditions.mark`: sex, colouring and the service record (repairs, kills, evasions, jumps),
+none of which change while a crew member sits in the hold, kept beside the name in the infirmary's records and used to
+pick between namesakes when an expedition's party is matched back into the hold. A record without a mark (from before)
+matches any namesake, as before. Marked BAND-AID in the code; it goes when either way out below is built.
 
 **Two ways out.**
 

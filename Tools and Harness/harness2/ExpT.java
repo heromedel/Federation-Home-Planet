@@ -12,6 +12,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
  care(v);
  ransoms(v);
  lateLook(v);
+ namesakes(v);
  hiring(v);
  Setup.done();
 }
@@ -434,6 +435,39 @@ public class ExpT { public static void main(String[] a) throws Exception {
   hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
   Setup.chk("W: unpaid, it runs out: the Ambassador's letter (presumed dead), the history log, the choices gone", news.size() == 1 && news.get(0).kind.equals("lost")
     && news.get(0).text().contains("presumed dead") && news.get(0).text().contains(c3.getName()) && hist.contains("ransom went unpaid") && Expeditions.openRansom(v, "ransom:2") == null);
+ }
+ /** Two crew of one name and race (the band-aid of CONCERNS.md 2): the one hurt is the one laid up; the one lost is the one gone. */
+ static void namesakes(Vault v) throws Exception {
+  new File(v.root, "infirmary.txt").delete();
+  List<CrewState> two = hold(v, "human", "human");
+  Vault.Copy c = v.readCopy(v.storage()); List<CrewState> crew = c.save.getPlayerShip().getCrewList();
+  crew.get(0).setName("Bob"); crew.get(0).setRepairs(7); crew.get(1).setName("Bob"); crew.get(1).setRepairs(8);
+  v.begin().put(v.storage(), c.save, c.hash).commit();
+  pinBoard(v, "rock_shaft");
+  Expeditions.Run hurtRun = null;
+  for (int s = 0; s < 5000 && hurtRun == null; s++) {
+   Expeditions.Run t = start(v, Expeditions.holdCrew(v), new Random(s));
+   Expeditions.Choice vent = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Go down the vent")) vent = x;
+   t.choose(vent);
+   if (fieldList(t, "hurt").size() == 1 && fieldList(t, "lost").isEmpty()) hurtRun = t;
+  }
+  int hurtRepairs = ((CrewState) fieldList(hurtRun, "hurt").get(0)).getRepairs();
+  Expeditions.finish(v, hurtRun);
+  List<CrewState> free = Expeditions.holdCrew(v);
+  Setup.chk("N: two Bobs, one hurt: the other Bob (repairs " + (free.isEmpty() ? "?" : free.get(0).getRepairs()) + ") is free to send, the hurt one (" + hurtRepairs + ") laid up",
+    free.size() == 1 && free.get(0).getRepairs() != hurtRepairs);
+  new File(v.root, "infirmary.txt").delete();
+  Expeditions.Run lostRun = null;
+  for (int s = 0; s < 5000 && lostRun == null; s++) {
+   Expeditions.Run t = start(v, Expeditions.holdCrew(v), new Random(s));
+   Expeditions.Choice vent = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Go down the vent")) vent = x;
+   t.choose(vent);
+   if (fieldList(t, "lost").size() == 1) lostRun = t;
+  }
+  int lostRepairs = ((CrewState) fieldList(lostRun, "lost").get(0)).getRepairs();
+  Expeditions.finish(v, lostRun);
+  List<CrewState> left = SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip());
+  Setup.chk("N: two Bobs, one lost (repairs " + lostRepairs + "): the other one is the one still in the Cargo Hold", left.size() == 1 && left.get(0).getRepairs() != lostRepairs);
  }
  /** A station that isn't looked at for a long while: the ransom's month still runs from its letter. */
  static void lateLook(Vault v) throws Exception {
