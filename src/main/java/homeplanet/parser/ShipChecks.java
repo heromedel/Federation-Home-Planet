@@ -109,6 +109,10 @@ public final class ShipChecks {
 		if (!d.systems.containsKey("oxygen")) w.add("No Oxygen: her crew will suffocate.");
 		if (!d.systems.containsKey("shields")) w.add("No Shields.");
 		if (!d.systems.containsKey("weapons") && !d.systems.containsKey("drones")) w.add("No Weapons or Drone Control: she can't fight.");
+		int starting = startingSystems(d);
+		if (ctx == Context.DESIGN && starting > SaveHelper.SYSTEMS_MAX)
+			w.add("She starts with " + starting + " systems; FTL's System Limit is " + SaveHelper.SYSTEMS_MAX + " (subsystems aside). Each one past it is a custom work order ("
+					+ Pricing.WORK_ORDER + " scrap) when commissioning costs scrap.");
 		boolean airlock = false;
 		for (CompanionMod.Door door : d.doors) if (door.b < 0) airlock = true;
 		if (!airlock) w.add("No airlocks: she can't vent fires or boarders.");
@@ -125,6 +129,17 @@ public final class ShipChecks {
 			if (power != null) w.add(power);
 		}
 		return r;
+	}
+
+	/** The systems she starts with, as FTL's System Limit counts them (subsystems aside; a Medbay and Clone Bay are one, as only one is ever installed). */
+	static int startingSystems(ShipDesign d) {
+		int n = 0;
+		for (String id : d.systems.keySet()) {
+			net.blerf.ftl.parser.SavedGameParser.SystemType t = net.blerf.ftl.parser.SavedGameParser.SystemType.findById(id);
+			if (t != null && !t.isSubsystem() && !d.notAtStart.contains(id)) n++;
+		}
+		if (d.systems.containsKey("medbay") && d.systems.containsKey("clonebay") && !d.notAtStart.contains("medbay") && !d.notAtStart.contains("clonebay")) n--;
+		return n;
 	}
 
 	/** When her reactor can't power Oxygen, Shields and her starting weapons and drones together: the note, else null. */

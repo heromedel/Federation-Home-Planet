@@ -1,8 +1,8 @@
 import java.io.*; import java.util.*; import java.util.List; import net.blerf.ftl.parser.SavedGameParser.ShipState; import java.awt.*; import javax.swing.*; import net.blerf.ftl.parser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*; import homeplanet.ui.*; import homeplanet.parser.Career; import homeplanet.parser.CareerRules;
 /**
  * The station's windows, driven as a player would (needs a display: run.sh runs it under xvfb-run): the Dry Dock's bill
- * paid from the Cargo Hold on Save and dropped on Reset (the hold as the trade partner, and another ship as it); the
- * auction's three steps; the Junkyard's Info button and list tooltips. args: gamedir, world saves (from WorldT), work
+ * paid from the Cargo Hold on Save and dropped on Reset (the hold as the trade partner, and another ship as it); FTL's
+ * System Limit in the shop and the Cargo Bay (the custom work order); the auction's three steps; the Junkyard's Info button and list tooltips. args: gamedir, world saves (from WorldT), work
  */
 public class GuiT {
  /** What each pop-up showed, and the button pressed on it (an index into its options; -1 closes it). */
@@ -29,6 +29,7 @@ public class GuiT {
   final MainFrame f = (MainFrame) frame[0];
   bill(v, f, false);
   bill(v, f, true);
+  systemLimit(v, f);
   auction(v, f);
   junkyardInfo(v, f);
   modes();
@@ -82,6 +83,134 @@ public class GuiT {
   } catch (Exception e) { throw new RuntimeException(e); } } });
   Setup.chk("B: a repair, then Reset: nothing taken" + tag, Integer.valueOf(64).equals(q[0]) && Integer.valueOf(64).equals(q[1]));
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { f.showSpaceDock(); } catch (Exception e) { throw new RuntimeException(e); } } });
+ }
+
+ /**
+  * FTL's System Limit on a Kestrel at 8 systems. The shop's Hacking shows the custom work order on hover, and Buy asks first
+  * (heromedel's words; Install or Cancel, Cancel the default): Cancel changes nothing, Install takes the store's price and 100.
+  * Install from the Cargo Bay asks the same and puts 100 on the Dry Dock's bill (paid from the Cargo Hold on Save, dropped on
+  * Reset); a Clone Bay for her Medbay, or any system at 7, asks nothing and costs nothing.
+  */
+ static void systemLimit(final Vault v, final MainFrame f) throws Exception {
+  final String ask = "This ship is at maximum capacity for systems.\nHome Planet Station can fit it in as a custom work order.\nBut it will cost 100 scrap.\n\n(This would excede the Vanilla FTL system Limit)";
+  final String tip = "You've reached the System Limit. Home Planet Station can fit it in as a custom work order. But it will cost 100 scrap.";
+  final SavedGameParser.SystemType HACK = SavedGameParser.SystemType.HACKING, MIND = SavedGameParser.SystemType.MIND, CLOAK = SavedGameParser.SystemType.CLOAKING;
+  final Ship b = v.boarded();
+  SavedGameParser.SavedGameState g = v.readCopy(b).save;
+  ShipState s = g.getPlayerShip();
+  for (SavedGameParser.SystemType t : new SavedGameParser.SystemType[] {SavedGameParser.SystemType.DRONE_CTRL, SavedGameParser.SystemType.TELEPORTER, CLOAK}) PriceT.fit(s, t, 1);
+  SaveHelper.ensureAdvancedInfo(s, g.getFileFormat()); Retrofit.syncStations(s);
+  int at = g.getCurrentBeaconId();
+  while (g.getBeaconList().size() <= at) g.getBeaconList().add(new SavedGameParser.BeaconState());
+  SavedGameParser.StoreState store = new SavedGameParser.StoreState(); SavedGameParser.StoreShelf shelf = new SavedGameParser.StoreShelf();
+  SavedGameParser.StoreItem item = new SavedGameParser.StoreItem("hacking"); item.setAvailable(true);
+  shelf.setItemType(SavedGameParser.StoreItemType.SYSTEM); shelf.addItem(item); store.addShelf(shelf);
+  g.getBeaconList().get(at).setStore(store);
+  final int price = DataManager.get().getSystem("hacking").getCost();
+  s.setScrapAmt(price + Pricing.WORK_ORDER + 7);
+  v.write(b, g);
+  hold(v, 150);
+  shown.clear(); optionsShown.clear(); defaults.clear(); presses.clear();
+  presses.addAll(Arrays.asList(1, 0)); // Cancel, then Install
+  final Object[] r = new Object[8];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showCargoBay();
+   CargoBayUI bay = f.cargoBay;
+   bay.init();
+   Object shop = field(bay, CargoBayUI.class, "shop");
+   Object hack = null;
+   for (Object e : (List<?>) call(shop, shop.getClass(), "buildEntries", new Class<?>[0])) if ("hacking".equals(field(e, e.getClass(), "id"))) hack = e;
+   r[0] = hack != null && SaveHelper.systemCount(mine(bay)) == 8;
+   if (hack == null) return; // (the checks below then fail, rather than leave the window open)
+   for (Component c : ((JComponent) field(shop, shop.getClass(), "content")).getComponents()) {
+    if (!c.getClass().getSimpleName().equals("StoreRow")) continue;
+    Object e = field(c, c.getClass(), "e");
+    if ("hacking".equals(field(e, e.getClass(), "id"))) r[1] = ((JComponent) c).getToolTipText();
+   }
+   call(shop, shop.getClass(), "buy", new Class<?>[] {hack.getClass()}, hack); // Cancel
+   r[2] = mine(bay).getScrapAmt(); r[3] = level(mine(bay), HACK);
+   call(shop, shop.getClass(), "buy", new Class<?>[] {hack.getClass()}, hack); // Install
+   r[4] = mine(bay).getScrapAmt(); r[5] = level(mine(bay), HACK);
+   r[6] = bay.saveAll();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  ShipState saved = HomePlanet.savedGameParser.readSavedGame(v.continueFile()).getPlayerShip();
+  Setup.chk("X: at 8 systems the shop sells her Hacking, the custom work order on hover", Boolean.TRUE.equals(r[0]) && tip.equals(r[1]));
+  Setup.chk("X: Buy asks first, in heromedel's words, Install or Cancel (Cancel the default)", shown.size() >= 1 && ask.equals(shown.get(0))
+    && Arrays.asList(optionsShown.get(0)).equals(Arrays.asList("Install", "Cancel")) && "Cancel".equals(String.valueOf(defaults.get(0))));
+  Setup.chk("X: Cancel changes nothing", Integer.valueOf(price + Pricing.WORK_ORDER + 7).equals(r[2]) && Integer.valueOf(0).equals(r[3]));
+  Setup.chk("X: Install fits it for the store's price and 100", shown.size() == 2 && Integer.valueOf(7).equals(r[4]) && Integer.valueOf(1).equals(r[5]));
+  Setup.chk("X: Save writes her so", Boolean.TRUE.equals(r[6]) && saved.getScrapAmt() == 7 && level(saved, HACK) == 1 && SaveHelper.systemCount(saved) == 9);
+
+  // from the Cargo Bay: a Mind Control past the limit, then a Clone Bay for her Medbay
+  SafeFiles.writeText(v.systemsFile(), "# stored\nmind 2\nclonebay\n", false);
+  hold(v, 150);
+  shown.clear(); optionsShown.clear(); defaults.clear(); presses.clear();
+  presses.addAll(Arrays.asList(1, 0, 0)); // Cancel, Install; after Reset, Install again
+  final Object[] q = new Object[16];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   CargoBayUI bay = f.cargoBay;
+   bay.init();
+   Object sys = field(bay, CargoBayUI.class, "systems");
+   Object mind = stored(sys, "mind"), clone = stored(sys, "clonebay");
+   q[0] = call(sys, sys.getClass(), "installReason", new Class<?>[] {String.class}, "mind");
+   if (mind == null || clone == null) { q[0] = "not stored"; return; }
+   call(sys, sys.getClass(), "installSystem", new Class<?>[] {mind.getClass()}, mind); // Cancel
+   q[1] = level(mine(bay), MIND); q[2] = call(sys, sys.getClass(), "hold", new Class<?>[0]);
+   call(sys, sys.getClass(), "installSystem", new Class<?>[] {mind.getClass()}, mind); // Install
+   q[3] = level(mine(bay), MIND); q[4] = call(sys, sys.getClass(), "hold", new Class<?>[0]);
+   int asked = shown.size();
+   call(sys, sys.getClass(), "installSystem", new Class<?>[] {clone.getClass()}, clone);
+   q[5] = shown.size() - asked; q[6] = level(mine(bay), SavedGameParser.SystemType.CLONEBAY); q[7] = level(mine(bay), SavedGameParser.SystemType.MEDBAY);
+   q[8] = call(sys, sys.getClass(), "hold", new Class<?>[0]);
+   bay.init(); // Reset
+   q[9] = call(sys, sys.getClass(), "hold", new Class<?>[0]); q[10] = level(mine(bay), MIND);
+   mind = stored(sys, "mind");
+   call(sys, sys.getClass(), "installSystem", new Class<?>[] {mind.getClass()}, mind); // Install, and Save
+   q[11] = bay.saveAll();
+   q[13] = Vault.get().storageScrap();
+   bay.init();
+   q[12] = call(sys, sys.getClass(), "installReason", new Class<?>[] {String.class}, "clonebay"); // a swap: the hold's 50 doesn't matter
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  saved = HomePlanet.savedGameParser.readSavedGame(v.continueFile()).getPlayerShip();
+  String file = new String(SafeFiles.read(v.systemsFile()), "UTF-8");
+  Setup.chk("X: the Cargo Bay's Install: the hold can pay, so it may", q[0] == null);
+  Setup.chk("X: Install from the Cargo Bay asks the same, Cancel the default", shown.size() >= 1 && ask.equals(shown.get(0)) && "Cancel".equals(String.valueOf(defaults.get(0))));
+  Setup.chk("X: Cancel changes nothing", Integer.valueOf(0).equals(q[1]) && Integer.valueOf(150).equals(q[2]));
+  Setup.chk("X: Install fits it at its level, 100 on the Dry Dock's bill", Integer.valueOf(2).equals(q[3]) && Integer.valueOf(50).equals(q[4]));
+  Setup.chk("X: a Clone Bay for her Medbay asks nothing and costs nothing", Integer.valueOf(0).equals(q[5]) && Integer.valueOf(1).equals(q[6]) && Integer.valueOf(0).equals(q[7]) && Integer.valueOf(50).equals(q[8]));
+  Setup.chk("X: Reset drops the bill", Integer.valueOf(150).equals(q[9]) && Integer.valueOf(0).equals(q[10]));
+  Setup.chk("X: Save pays it from the Cargo Hold", Boolean.TRUE.equals(q[11]) && Integer.valueOf(50).equals(q[13]) && level(saved, MIND) == 2 && !file.contains("mind") && shown.size() == 3);
+  Setup.chk("X: a swap needs no work order, whatever the hold has (50 now)", q[12] == null);
+
+  // short of 100, the Install waits; at 7 systems nothing asks
+  final Object[] w = new Object[6];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   GuiT.hold(Vault.get(), 60);
+   SafeFiles.writeText(Vault.get().systemsFile(), "# stored\ncloaking 1\nclonebay\n", false);
+   CargoBayUI bay = f.cargoBay;
+   ShipState now = v.readCopy(b).save.getPlayerShip();
+   w[0] = SaveHelper.systemCount(now);
+   bay.init();
+   Object sys = field(bay, CargoBayUI.class, "systems");
+   PriceT.fit(mine(bay), CLOAK, 0); // she's carrying 9 then: Cloaking makes it 10, past the limit
+   w[1] = call(sys, sys.getClass(), "installReason", new Class<?>[] {String.class}, "cloaking");
+   PriceT.fit(mine(bay), HACK, 0); PriceT.fit(mine(bay), MIND, 0); // down to 7
+   int asked = shown.size();
+   Object cloak = stored(sys, "cloaking");
+   if (cloak != null) call(sys, sys.getClass(), "installSystem", new Class<?>[] {cloak.getClass()}, cloak);
+   w[2] = shown.size() - asked; w[3] = level(mine(bay), CLOAK); w[4] = call(sys, sys.getClass(), "hold", new Class<?>[0]);
+   bay.init(); // Reset: nothing of this is kept
+   f.showSpaceDock();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("X: past the limit with 60 in the Cargo Hold, the Install waits, saying why (" + w[1] + ")", Integer.valueOf(10).equals(w[0]) && String.valueOf(w[1]).contains("custom work order costs 100") && String.valueOf(w[1]).contains("has 60"));
+  Setup.chk("X: at 7, a stored system goes in without asking, for nothing", Integer.valueOf(0).equals(w[2]) && Integer.valueOf(1).equals(w[3]) && Integer.valueOf(60).equals(w[4]));
+  v.systemsFile().delete();
+ }
+ static ShipState mine(CargoBayUI bay) throws Exception { return ((SavedGameParser.SavedGameState) field(bay, CargoBayUI.class, "currentSave")).getPlayerShip(); }
+ static int level(ShipState s, SavedGameParser.SystemType t) { SavedGameParser.SystemState st = s.getSystem(t); return st == null ? 0 : st.getCapacity(); }
+ static Object stored(Object sys, String id) throws Exception {
+  for (Object x : (List<?>) call(sys, sys.getClass(), "storedList", new Class<?>[0])) if (id.equals(field(x, x.getClass(), "id"))) return x;
+  return null;
  }
 
  /** The auction: explained first (Cancel the default), Hold Auction sells her, the result offers only Accept Bid. */

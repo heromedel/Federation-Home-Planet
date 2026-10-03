@@ -50,6 +50,17 @@ public class SystemsPanel {
 	static final String INSTALLED = "This system is already installed";
 	static final String STARTING = "Standard equipment on this ship model. FTL rebuilds it if removed";
 	static final String MEDBAY = "The Medbay is standard equipment. Install a Clone Bay to replace it";
+	/** A system past FTL's System Limit, on hover: FTL's own sentence, then the custom work order (heromedel's words). */
+	static final String WORK_ORDER_TIP = "You've reached the System Limit. Home Planet Station can fit it in as a custom work order. But it will cost "
+			+ homeplanet.parser.Pricing.WORK_ORDER + " scrap.";
+
+	/** Asked before a system goes past FTL's System Limit (heromedel's words, as written): true for Install. Cancel is the default, and closing it cancels. */
+	static boolean confirmWorkOrder(Component owner) {
+		Object[] options = {"Install", "Cancel"};
+		String msg = "This ship is at maximum capacity for systems.\nHome Planet Station can fit it in as a custom work order.\nBut it will cost "
+				+ homeplanet.parser.Pricing.WORK_ORDER + " scrap.\n\n(This would excede the Vanilla FTL system Limit)";
+		return JOptionPane.showOptionDialog(owner, msg, "System Limit", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[1]) == 0;
+	}
 
 	/** A system in the Cargo Bay. */
 	static class Stored {
@@ -224,9 +235,10 @@ public class SystemsPanel {
 		}
 		int j = 0;
 		for (final Stored s : stored) {
-			String why = reason(s.id);
+			String why = installReason(s.id);
+			boolean order = why == null && pastLimit(s.id);
 			SysRow r = new SysRow(DryDockShop.systemTitle(s.id), s.level, "Install", why,
-					why == null ? "Install the " + DryDockShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName() : why,
+					why != null ? why : order ? WORK_ORDER_TIP : "Install the " + DryDockShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName(),
 					new ActionListener() { public void actionPerformed(ActionEvent e) { installSystem(s); } });
 			if (homeplanet.core.HomePlanet.sellSystems()) r.addSell(salePrice(s), new ActionListener() { public void actionPerformed(ActionEvent e) { sellSystem(s); } });
 			r.setBounds(0, y + j * 32, w, 28);
@@ -411,6 +423,17 @@ public class SystemsPanel {
 		if (st != null && st.getCapacity() > 0) return INSTALLED;
 		return null;
 	}
+	/** True if this system would take the boarded ship past FTL's System Limit (then it's a custom work order). */
+	boolean pastLimit(String sysId) {
+		return bay.currentSave != null && SaveHelper.pastSystemLimit(bay.currentSave.getPlayerShip(), SystemType.findById(sysId));
+	}
+	/** Why Refit can't install this stored system: {@link #reason}, or a custom work order the Cargo Hold can't pay for. */
+	private String installReason(String sysId) {
+		String why = reason(sysId);
+		if (why == null && pastLimit(sysId) && hold() < homeplanet.parser.Pricing.WORK_ORDER)
+			why = "A custom work order costs " + homeplanet.parser.Pricing.WORK_ORDER + " scrap; the Cargo Hold has " + hold();
+		return why;
+	}
 
 	/** Is this system standard equipment on the ship's model (FTL rebuilds it if its room is left empty)? */
 	static boolean isStarting(ShipState ship, SystemType type) {
@@ -510,6 +533,16 @@ public class SystemsPanel {
 		ShipState bs = save.getPlayerShip();
 		SystemType type = SystemType.findById(sel.id);
 		String name = DryDockShop.systemTitle(sel.id);
+		if (SaveHelper.pastSystemLimit(bs, type)) { // past FTL's System Limit: a custom work order, on the Dry Dock's bill
+			int fee = homeplanet.parser.Pricing.WORK_ORDER;
+			if (hold() < fee) {
+				JOptionPane.showMessageDialog(bay, "A custom work order costs " + fee + " scrap; the Cargo Hold has " + hold() + ".", "System Limit", JOptionPane.INFORMATION_MESSAGE);
+				return;
+			}
+			if (!confirmWorkOrder(bay)) return;
+			charge(fee);
+			changes.add("Custom work order: the " + name + " fitted past FTL's System Limit for " + fee + " scrap");
+		}
 		int level = sel.level;
 		// Medbay and Clone Bay share a room, and the level belongs to the room
 		SystemType other = type == SystemType.CLONEBAY ? SystemType.MEDBAY : type == SystemType.MEDBAY ? SystemType.CLONEBAY : null;

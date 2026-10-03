@@ -178,7 +178,7 @@ public final class Derelicts {
 			kept++;
 		}
 		if (kept == 0) { SystemState pil = ship.getSystem(SystemType.PILOT); if (pil != null) pil.setCapacity(1); } // never an empty shell
-		if (rng.nextInt(100) < 35) { // a system she didn't come with, where she has a room for it
+		if (rng.nextInt(100) < 35 && SaveHelper.systemCount(ship) < SaveHelper.SYSTEMS_MAX) { // a system she didn't come with, where she has a room for it (never past FTL's System Limit)
 			List<SystemType> could = new ArrayList<SystemType>();
 			for (SystemType t : SystemType.values()) {
 				if (FIXED.contains(t) || bp == null || bp.getSystemList() == null || bp.getSystemList().getSystemRoom(t) == null) continue;

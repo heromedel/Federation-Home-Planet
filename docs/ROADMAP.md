@@ -544,6 +544,34 @@ Report for Reassignment is replaced (its sections above are history):
 - **Later:** with the companion mod, a blueprint of her own so FTL names her class (her id needs its own place in the
   mod's naming of _HP and remodel ids).
 
+## 23. FTL's System Limit — built (4B.93; harness checks in PriceT, GuiT, DerT, DesT)
+
+Found by heromedel in play: FTL's store greys out a system once a ship is full, but The Home Planet Station's shop
+fitted one anyway; FTL then runs her, but her system bar slides along and its icons risk overlapping.
+
+- **The limit** (`SaveHelper.SYSTEMS_MAX`): 8 systems, the game's own and the same for every ship; no blueprint in
+  ftl.dat sets one (its store's tooltip: "You've reached the System Limit"). Piloting, Sensors, Doors and the Backup
+  Battery are subsystems and don't count; Artillery does (it has its place on the system bar); a Medbay and a Clone Bay
+  take each other's place. Every player ship has a room for every system and none starts with more than 7, so the limit
+  is reached by buying.
+- **A custom work order** (heromedel): past the limit, a system is fitted for a flat 100 scrap (`Pricing.WORK_ORDER`),
+  after this pop-up, heromedel's text exactly as written (Install or Cancel, Cancel the default):
+
+      This ship is at maximum capacity for systems.
+      Home Planet Station can fit it in as a custom work order.
+      But it will cost 100 scrap.
+
+      (This would excede the Vanilla FTL system Limit)
+
+  - **The Dry Dock shop:** the store's price and the 100, both from her scrap; greyed only when she can't pay both.
+  - **Install from the Cargo Bay:** the 100 on the Dry Dock's bill (the Cargo Hold pays on Save; Reset drops it).
+  - **On hover:** "You've reached the System Limit. Home Planet Station can fit it in as a custom work order. But it
+    will cost 100 scrap."
+  - Nothing comes back when the system comes off, and the work order is never part of a ship's value.
+- **Elsewhere:** derelicts get their extra system only while under the limit; Design Ship warns when a design would start
+  past it; with commissioning costs on, Commission charges 100 for each system past it, outside the commission rate (a
+  plea values her the same way).
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

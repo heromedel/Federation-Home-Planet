@@ -1,10 +1,11 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.SavedGameState; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
-/** Prices from FTL's blueprints (HR1, HR2) and paying from the storage hold. args: gamedir, world saves (from WorldT), work */
+/** Prices from FTL's blueprints (HR1, HR2), FTL's System Limit and its custom work order, and paying from the storage hold. args: gamedir, world saves (from WorldT), work */
 public class PriceT { public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  Vault v = Setup.open(game, saves); v.takeStock();
  prices();
+ limit();
  paying(v);
  relief();
  reassign(v);
@@ -27,6 +28,36 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("P: a Kestrel A costs about 1,000 (885 and her supplies)", full.total() > 900 && full.total() < 1100);
   Setup.chk("P: the multiplier scales the total", half.total() == (full.subtotal * 50 + 50) / 100);
   Setup.chk("P: a custom hull adds rooms and doors", custom.total() == full.total() + 5 * Pricing.PER_ROOM + 4 * Pricing.PER_DOOR);
+ }
+ /** FTL's System Limit: 8 systems, subsystems aside; each one past it is a custom work order, 100 scrap, never part of her value. */
+ static void limit() throws Exception {
+  SavedGameState k = Commission.build("PLAYER_SHIP_HARD", "Limit Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
+  SavedGameParser.ShipState s = k.getPlayerShip();
+  Setup.chk("L: a Kestrel A counts 5 systems (her Piloting, Sensors and Doors aside)", SaveHelper.systemCount(s) == 5);
+  SavedGameState fed = Commission.build("PLAYER_SHIP_FED", "Limit Fed", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
+  Setup.chk("L: a Federation Cruiser A counts her Artillery (6)", SaveHelper.systemCount(fed.getPlayerShip()) == 6);
+  fit(s, SavedGameParser.SystemType.DRONE_CTRL, 1); fit(s, SavedGameParser.SystemType.TELEPORTER, 1);
+  Setup.chk("L: at 7, an eighth isn't past the limit", SaveHelper.systemCount(s) == 7 && !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.CLOAKING));
+  fit(s, SavedGameParser.SystemType.CLOAKING, 1);
+  Setup.chk("L: at 8, a ninth is", SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.HACKING) && SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.MIND));
+  Setup.chk("L: never a subsystem, or one she has", !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.BATTERY) && !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.PILOT)
+    && !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.SHIELDS));
+  Setup.chk("L: a Clone Bay for her Medbay takes its place", !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.CLONEBAY));
+  fit(s, SavedGameParser.SystemType.MEDBAY, 0); fit(s, SavedGameParser.SystemType.CLONEBAY, 1);
+  Setup.chk("L: and a Medbay for her Clone Bay", SaveHelper.systemCount(s) == 8 && !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.MEDBAY));
+  Setup.chk("L: a custom work order is 100 scrap", Pricing.WORK_ORDER == 100);
+  Pricing.Quote at8 = Pricing.commission(k, 75);
+  Setup.chk("L: at 8, Commission's price has no work order", Pricing.workOrders(s) == 0 && at8.fixed == 0 && at8.total() == Pricing.ship(k, 75).total());
+  fit(s, SavedGameParser.SystemType.HACKING, 1); fit(s, SavedGameParser.SystemType.MIND, 1);
+  Pricing.Quote q = Pricing.commission(k, 75), base = Pricing.ship(k, 75);
+  System.out.println("Kestrel A at 10 systems, 75%: " + q.total() + " " + q.lines);
+  Setup.chk("L: at 10, Commission adds 100 for each past the limit, outside the rate", Pricing.workOrders(s) == 2 && q.total() == base.total() + 200 && q.lines.toString().contains("2 custom work orders"));
+  Setup.chk("L: never part of her value (her full price leaves the work orders out)", Pricing.ship(k, 100).fixed == 0 && Pricing.ship(k, 100).total() + 200 == Pricing.commission(k, 100).total());
+ }
+ static void fit(SavedGameParser.ShipState s, SavedGameParser.SystemType t, int level) {
+  SavedGameParser.SystemState st = s.getSystem(t);
+  if (st == null) { st = new SavedGameParser.SystemState(t); s.addSystem(st); }
+  st.setCapacity(level); st.setPower(0); st.setDamagedBars(0);
  }
  static void paying(Vault v) throws Exception {
   Ship st = v.storage();

@@ -14,7 +14,7 @@ public class DerT { public static void main(String[] a) throws Exception {
  static void wrecks() throws Exception {
   Random rng = new Random(11);
   int missiles = 0, parts = 0;
-  int n = 0, roundTrip = 0, wrecked = 0, stripped = 0, armed = 0, odd = 0, levels = 0, missing = 0, added = 0, breaches = 0;
+  int n = 0, roundTrip = 0, wrecked = 0, stripped = 0, armed = 0, odd = 0, levels = 0, missing = 0, added = 0, breaches = 0, pastLimit = 0, most = 0;
   for (String base : DataManager.get().getPlayerShipBaseIds(true)) for (int k = 0; k < 3; k++) {
    String id = k == 0 ? base : base + "_" + (k + 1);
    if (DataManager.get().getShips().get(id) == null || CompanionMod.fileOf(id) == null) continue;
@@ -36,6 +36,8 @@ public class DerT { public static void main(String[] a) throws Exception {
     if (s.getDronePartsAmt() > 0) parts++;
     if (!s.getWeaponList().isEmpty() || !s.getDroneList().isEmpty()) armed++;
     if (!s.getBreachMap().isEmpty()) breaches++;
+    if (SaveHelper.systemCount(s) > SaveHelper.SYSTEMS_MAX) pastLimit++;
+    most = Math.max(most, SaveHelper.systemCount(s));
     SavedGameState fresh = Commission.build(id, "x", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
     for (SystemType t : SystemType.values()) {
      SystemState was = fresh.getPlayerShip().getSystem(t), now = s.getSystem(t);
@@ -52,6 +54,9 @@ public class DerT { public static void main(String[] a) throws Exception {
   Setup.chk("W: weapons and drones only now and then (each of hers 1 in 12, another 1 in 12)", armed > 0 && armed * 2 < n);
   Setup.chk("W: oddities: systems missing, added and re-levelled; breaches", missing > 0 && added > 0 && levels > 0 && breaches == n);
   Setup.chk("W: no broken bar carries power", odd == 0);
+  Setup.chk("W: never past FTL's System Limit (the most: " + most + ")", pastLimit == 0 && most <= SaveHelper.SYSTEMS_MAX);
+  int patience = SaveHelper.systemCount(Derelict.build(new Random(1)).getPlayerShip()), nightjar = SaveHelper.systemCount(RepairJob.build(new Random(1)).getPlayerShip());
+  Setup.chk("W: Patience (" + patience + ") and the Nightjar (" + nightjar + ") within it", patience <= SaveHelper.SYSTEMS_MAX && nightjar <= SaveHelper.SYSTEMS_MAX);
  }
  static void listings(Vault v) throws Exception {
   List<Derelicts.Listing> l = Derelicts.current(v);
