@@ -759,6 +759,9 @@ Fixes only, from heromedel's testing and the review; no new features. Design deb
   ignored; when another screen is showing, the return rebuilds it as before. Every return from a window (Expeditions,
   Derelicts, Ship Records) rebuilds it, whatever the window reports. Pop-ups a rebuild can raise (New Game noticed, a
   final victory, a ransom, the infirmary) now come while another window is open, rather than waiting for it to close.
+- The ship report's "Content: Advanced Edition / Original" line is gone (heromedel; Commission has its own switch).
+- Locked ships: the descriptions wrap at a width the screen can show (the picture, the words, the scrollbar and the
+  frame within the usable screen), the window no wider than that, and no taller than the screen less a margin.
 
 ## Naming decisions — settled (4B.30)
 
