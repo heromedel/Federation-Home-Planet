@@ -409,10 +409,10 @@ public class CommissionDialog extends JDialog {
 		showPreview(e);
 	}
 
-	/** HR2: her price as built, with a custom design's rooms and doors. */
+	/** HR2: her price as built, with a custom design's rooms and doors, and a custom work order for each system past FTL's System Limit. */
 	static homeplanet.parser.Pricing.Quote quote(String bpId, SavedGameState s) {
 		if (RELIEF.equals(bpId)) return reliefQuote();
-		return homeplanet.parser.Pricing.ship(s, homeplanet.core.Economy.commissionPercent());
+		return homeplanet.parser.Pricing.commission(s, homeplanet.core.Economy.commissionPercent());
 	}
 	/** The Relief Ship Type A at the Federation's price: always the same, whatever the commission rate. */
 	static homeplanet.parser.Pricing.Quote reliefQuote() {
@@ -421,14 +421,14 @@ public class CommissionDialog extends JDialog {
 		q.subtotal = homeplanet.parser.FreeCommand.RELIEF_PRICE;
 		return q;
 	}
-	/** Her value for a plea: the Relief Ship at the Federation's price, any other ship at her full price. */
+	/** Her value for a plea: the Relief Ship at the Federation's price, any other ship at her full price (custom work orders too). */
 	private static int pleaValue(String id, SavedGameState s) {
-		return RELIEF.equals(id) ? homeplanet.parser.FreeCommand.RELIEF_PRICE : homeplanet.parser.Pricing.ship(s, 100).total();
+		return RELIEF.equals(id) ? homeplanet.parser.FreeCommand.RELIEF_PRICE : homeplanet.parser.Pricing.commission(s, 100).total();
 	}
 	private void showPrice(homeplanet.parser.Pricing.Quote q) {
 		int have = homeplanet.vault.Vault.get().storageScrap();
 		StringBuilder sb = new StringBuilder("<html><b>Price: " + q.total() + " scrap</b>");
-		if (q.percent != 100) sb.append(" (" + q.percent + "% of " + q.subtotal + ")");
+		if (q.percent != 100) sb.append(" (" + q.percent + "% of " + q.subtotal + (q.fixed > 0 ? ", and " + q.fixed + " in custom work orders" : "") + ")");
 		sb.append(", paid from the Cargo Hold, which has " + have + ".");
 		if (have < q.total()) sb.append(" <font color='" + MenuTheme.HTML_ORANGE + "'>Not enough scrap.</font>");
 		sb.append("<br><font size='-2'>").append(String.join(" · ", q.lines)).append("</font></html>");

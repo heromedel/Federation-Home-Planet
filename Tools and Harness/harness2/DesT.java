@@ -112,5 +112,18 @@ public class DesT { public static void main(String[] a) throws Exception {
    Setup.chk("flipping twice gives the rooms, doors and systems back", twice[7].equals(once[7]) && twice[8].equals(once[8]) && twice[9].equals(once[9]));
    Setup.chk("preview has the three files", DesignExport.preview(g).contains("== data/") && DesignExport.preview(g).contains("<shipBlueprint"));
  }
+ // F: FTL's System Limit: a design set to start with more than 8 systems is warned, not refused
+ { ShipDesign c = ShipDesign.create(back);
+   c.name = "Crowded copy";
+   ShipDesign.fromGameShip(c, "PLAYER_SHIP_HARD");
+   for (String id : new String[] {"drones", "teleporter", "cloaking", "hacking"}) c.notAtStart.remove(id);
+   ShipChecks.Report r = ShipChecks.check(c, ShipChecks.Context.DESIGN, null, null);
+   Setup.chk("starting with 9 systems: a warning of FTL's System Limit, not a problem: " + r.warnings, r.warnings.toString().contains("starts with 9 systems") && r.problems.isEmpty());
+   c.notAtStart.add("hacking");
+   Setup.chk("with 8: no such warning", !ShipChecks.check(c, ShipChecks.Context.DESIGN, null, null).warnings.toString().contains("System Limit"));
+   c.notAtStart.remove("hacking"); c.notAtStart.remove("clonebay");
+   Setup.chk("a Medbay and Clone Bay both ticked count once (9, not 10)", ShipChecks.check(c, ShipChecks.Context.DESIGN, null, null).warnings.toString().contains("starts with 9 systems"));
+   Setup.chk("a remodel isn't warned (her systems are already aboard)", !ShipChecks.check(c, ShipChecks.Context.REMODEL, null, null).warnings.toString().contains("System Limit"));
+ }
  Setup.done();
 }}
