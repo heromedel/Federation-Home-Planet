@@ -44,7 +44,7 @@ import homeplanet.vault.Vault;
 
 /**
  * The Space Dock: the station's main screen. The boarded ship sits at the berth beside the saucer, the docked ships
- * wait in the grid below, and the controls (Launch, New Journey, Cargo Bay, Commission, Design, Salvage, Disband,
+ * wait in the grid below, and the controls (Launch, New Journey, Cargo Bay, Commission, Design, Junkyard, Disband,
  * Settings, Refresh) run down the right. Every ship here is a {@link Ship} in the {@link Vault}.
  */
 public class SpaceDockUI extends JPanel implements ActionListener {
@@ -52,7 +52,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
 	private JButton museumBtn;
-	private JButton inboxBtn, repBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn;
+	private JButton inboxBtn, repBtn, expeditionsBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn;
 	final MainFrame parent;
 
 	/** Width of one docked ship's place in the list. */
@@ -105,6 +105,16 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
 		String title = "Docked";
+		// a ransom for crew taken on an expedition: its letters (in the inbox), or with the inbox off, pop-ups here
+		final List<homeplanet.parser.Expeditions.RansomNews> ransomNews = homeplanet.parser.Expeditions.checkRansoms(vault);
+		if (!HomePlanet.immersiveNotifications() && !ransomNews.isEmpty())
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { for (homeplanet.parser.Expeditions.RansomNews n : ransomNews) ransomNotice(n); } });
+		// crew hurt on an expedition, out of the infirmary: a word here, never a letter
+		final List<String> upAgain = homeplanet.parser.Expeditions.checkInfirmary(vault);
+		if (!upAgain.isEmpty())
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() {
+				JOptionPane.showMessageDialog(null, String.join(" and ", upAgain) + (upAgain.size() > 1 ? " are" : " is") + " out of the infirmary, on their feet and waiting in the Cargo Hold.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
+			} });
 		boolean longRange = parent != null && parent.comm != null && parent.comm.inboxWanted(); // a commander's mail needs an inbox, whatever the setting
 		if (HomePlanet.immersiveNotifications() || longRange) {
 			if (HomePlanet.immersiveNotifications()) homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
@@ -132,11 +142,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		launchBtn = controlButton("Launch FTL", "Play FTL");
 		journeyBtn = controlButton("New Journey", "Set out from the first sector with the boarded ship, crew and cargo");
 		commissionBtn = controlButton("Commission", "Have a brand-new ship built, as a new game would start her");
-		salvageBtn = controlButton("Salvage", "Salvage, scrap or destroy a ship in the Junkyard");
+		salvageBtn = controlButton("Junkyard", "The Junkyard: salvage, scrap or sell a ship, or buy derelicts and parts");
 		disbandBtn = controlButton("Decommission", "Decommission the boarded ship: she goes to the Junkyard");
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
+		expeditionsBtn = controlButton("Expeditions", "Jobs for crew without a ship: send crew from the Cargo Hold, or post for volunteers");
 		commBtn = new FtlButton("Long Range", FtlFont.MENU, 180, 40) {
 			@Override protected void paintComponent(Graphics g) {
 				super.paintComponent(g);
@@ -159,10 +170,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		if (homeplanet.parser.Museum.anything(vault)) { // once a ship has won, or been lost in action
 			museumBtn = controlButton("Museum", "The Federation Museum: the Hall of Victors, and the Memorial to ships lost in action");
-			controlGroup(controls, "Station", cargoBtn, commBtn, settingsBtn, refreshBtn, museumBtn);
+			controlGroup(controls, "Station", cargoBtn, commBtn, expeditionsBtn, settingsBtn, refreshBtn, museumBtn);
 		} else {
 			museumBtn = null;
-			controlGroup(controls, "Station", cargoBtn, commBtn, settingsBtn, refreshBtn);
+			controlGroup(controls, "Station", cargoBtn, commBtn, expeditionsBtn, settingsBtn, refreshBtn);
 		}
 		String designLock = homeplanet.parser.Clearance.customReason();
 		designBtn = controlButton("Design Ship", designLock == null ? "Lay out a new ship of your own on a blank grid"
@@ -234,6 +245,32 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (over != null || (stranger != null && HomePlanet.immersiveMode)) {
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { newGameNotice(over, stranger); } });
 		}
+	}
+
+	/** With the inbox off: a ransom's ask or reminder as a pop-up (Pay, Refuse, or Later: the reminder asks again), or word of the loss. */
+	private void ransomNotice(homeplanet.parser.Expeditions.RansomNews n) {
+		javax.swing.JTextArea t = new javax.swing.JTextArea(n.text());
+		t.setEditable(false); t.setLineWrap(true); t.setWrapStyleWord(true); t.setOpaque(false); t.setColumns(52);
+		t.setFont(MenuTheme.TEXT_FONT);
+		t.setSize(new Dimension(520, 10));
+		if (n.kind.equals("lost")) { JOptionPane.showMessageDialog(null, t, n.title(), JOptionPane.INFORMATION_MESSAGE); return; }
+		Vault v = Vault.get();
+		homeplanet.parser.Expeditions.Captive c = homeplanet.parser.Expeditions.openRansom(v, "ransom:" + n.captive.index);
+		if (c == null) return; // settled meanwhile
+		Object[] opts = {"Pay " + c.ransom + " scrap", "Refuse", "Later"};
+		int r = JOptionPane.showOptionDialog(null, t, n.title(), JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[2]);
+		try {
+			if (r == 0) {
+				homeplanet.parser.Expeditions.payRansom(v, c);
+				JOptionPane.showMessageDialog(null, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
+			} else if (r == 1 && HomePlanet.confirmNo(null, "Refuse the ransom? " + c.name + " will not be coming back.", "Ransom")) {
+				homeplanet.parser.Expeditions.refuseRansom(v, c);
+				JOptionPane.showMessageDialog(null, homeplanet.parser.Expeditions.lostWord(c), "Presumed dead: " + c.name, JOptionPane.INFORMATION_MESSAGE);
+			}
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The ransom wasn't settled. Nothing was changed:\n" + e.getMessage());
+		}
+		init();
 	}
 
 	/** Rescue offers the player put off deciding: asked again at the next start (or in the inbox, with Transmissions on). */
@@ -342,16 +379,30 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		b.setAlignmentX(LEFT_ALIGNMENT);
 		return b;
 	}
-	private static void controlGroup(JPanel column, String title, JButton... buttons) {
-		controlGroup(column, new FtlButton.Header(title, 186), buttons);
-	}
-	private static void controlGroup(JPanel column, javax.swing.JComponent header, JButton... buttons) {
-		column.add(header);
-		column.add(gap(10));
+	/** A gold heading and its buttons; a click on the heading folds them away or back (remembered between runs). */
+	private static void controlGroup(final JPanel column, String title, JButton... buttons) {
+		final String key = "fold_" + title.toLowerCase().replace(' ', '_');
+		final JPanel body = new JPanel();
+		body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+		body.setOpaque(false);
+		body.setAlignmentX(LEFT_ALIGNMENT);
+		body.add(gap(10));
 		for (JButton b : buttons) {
-			column.add(b);
-			column.add(gap(10));
+			body.add(b);
+			body.add(gap(10));
 		}
+		boolean folded = "true".equals(HomePlanet.config.getProperty(key));
+		body.setVisible(!folded);
+		column.add(new FtlButton.Header(title, 186).foldable(folded, new java.util.function.Consumer<Boolean>() {
+			public void accept(Boolean f) {
+				body.setVisible(!f);
+				HomePlanet.config.setProperty(key, Boolean.toString(f));
+				HomePlanet.saveConfig();
+				column.revalidate();
+				column.repaint();
+			}
+		}));
+		column.add(body);
 		column.add(gap(16));
 	}
 	/** Space between the column's pieces that gives way first when the window is short (down to 2 pixels). */
@@ -631,6 +682,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			newJourney();
 		} else if (o == commissionBtn) {
 			commissionShip();
+		} else if (o == expeditionsBtn) {
+			if (ExpeditionsDialog.open(this)) init();
 		} else if (o == salvageBtn) {
 			salvageShip();
 		} else if (o == disbandBtn) {
@@ -1362,9 +1415,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void salvageShip() {
 		List<Ship> junk = Vault.get().junked();
 		if (junk.isEmpty()) {
-			Object[] opts = {"Browse derelicts...", "Close"};
-			if (JOptionPane.showOptionDialog(null, "None of your ships are in the Junkyard. The foreman has some derelicts for sale, though.", "Salvage Ship",
-					JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[1]) == 0) browseDerelicts();
+			Object[] opts = {"Derelicts...", "Parts...", "Close"};
+			int r = JOptionPane.showOptionDialog(null, "None of your ships are in the Junkyard. The foreman has derelicts and parts for sale, though.", "Junkyard",
+					JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[2]);
+			if (r == 0) browseDerelicts();
+			else if (r == 1) PartsDialog.open(this);
 			return;
 		}
 		String[] names = new String[junk.size()];
@@ -1380,6 +1435,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "<b>Auction:</b> sell her to the highest bidder: a quarter to three quarters of her value, less her damage.<br>"
 				+ "&nbsp;&nbsp;&nbsp;&nbsp;(Selling her sends her scrap and crew to the Cargo Hold; all else goes with her.)<br>"
 				+ "<b>Derelicts:</b> see the hulls the foreman has for sale.<br>"
+				+ "<b>Parts:</b> see the damaged systems the foreman has pulled from wrecks.<br>"
 				+ "<b>Destroy:</b> reduce her to space debris, with everything aboard. Nothing is recovered,<br>"
 				+ "and her crew are retired from service.<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
 		// each hull's short report as the list's tooltip; Info... opens her full report
@@ -1407,10 +1463,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		pickRow.add(pick, java.awt.BorderLayout.CENTER);
 		pickRow.add(info, java.awt.BorderLayout.EAST);
 		panel.add(pickRow, java.awt.BorderLayout.CENTER);
-		Object[] options = {"Salvage", "Scrap", "Trade In", "Auction", "Destroy", "Derelicts...", "Cancel"};
-		int choice = JOptionPane.showOptionDialog(null, panel, "Salvage Ship", JOptionPane.DEFAULT_OPTION,
-				JOptionPane.QUESTION_MESSAGE, null, options, options[6]); // Cancel is the default
+		Object[] options = {"Salvage", "Scrap", "Trade In", "Auction", "Destroy", "Derelicts...", "Parts...", "Cancel"};
+		int choice = JOptionPane.showOptionDialog(null, panel, "Junkyard", JOptionPane.DEFAULT_OPTION,
+				JOptionPane.QUESTION_MESSAGE, null, options, options[7]); // Cancel is the default
 		if (choice == 5) { browseDerelicts(); return; }
+		if (choice == 6) { PartsDialog.open(this); return; }
 		if (choice < 0 || choice > 4) return;
 		Ship ship = junk.get(pick.getSelectedIndex());
 		if (choice == 1) { scrapShip(ship); return; }
@@ -1475,9 +1532,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			crew.add(head);
 		}
 		for (final CrewState c : SaveHelper.getOwnCrew(state)) {
-			JLabel row = reportRow(crew, IconFactory.crewIcon(c), c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")");
-			if (rename == null) continue;
+			final JLabel row = reportRow(crew, CrewReport.withHealth(IconFactory.crewIcon(c), c), c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")");
 			row.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+			if (rename == null) { // a click opens their report
+				row.setToolTipText("Click for " + c.getName() + "'s report");
+				row.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { CrewReport.show(row, c, false, new Object[] {"OK"}); } });
+				continue;
+			}
 			row.setToolTipText("Click to rename " + c.getName());
 			row.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { rename.accept(c); } });
 		}

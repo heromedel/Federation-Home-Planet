@@ -74,6 +74,9 @@ public class FtlButton extends JButton {
 	/** A section header: gold FTL text with a rule running to the right. */
 	public static class Header extends JComponent {
 		private final String text;
+		/** A heading that folds its group of buttons away: lighter under the mouse, a small arrow when folded. */
+		private boolean foldable = false, folded = false, hover = false;
+		static final Color HOVER_GOLD = new Color(255, 236, 180);
 		/** The title centred, with a line on each side (---- ABOARD ----); otherwise at the left, the line after it. */
 		private final boolean centred;
 		public Header(String text, int w) { this(text, w, false); }
@@ -86,17 +89,37 @@ public class FtlButton extends JButton {
 			setMaximumSize(new Dimension(Integer.MAX_VALUE, d.height));
 			setAlignmentX(LEFT_ALIGNMENT);
 		}
+		/** Makes it fold: a click toggles, calling back with the new state (true: folded). */
+		public Header foldable(boolean startFolded, final java.util.function.Consumer<Boolean> toggled) {
+			foldable = true;
+			folded = startFolded;
+			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			setToolTipText("Click to fold or unfold");
+			addMouseListener(new java.awt.event.MouseAdapter() {
+				@Override public void mouseEntered(java.awt.event.MouseEvent e) { hover = true; repaint(); }
+				@Override public void mouseExited(java.awt.event.MouseEvent e) { hover = false; repaint(); }
+				@Override public void mouseClicked(java.awt.event.MouseEvent e) { folded = !folded; repaint(); toggled.accept(folded); }
+			});
+			return this;
+		}
+		public boolean folded() { return folded; }
 		@Override
 		protected void paintComponent(Graphics g0) {
 			Graphics2D g = (Graphics2D) g0.create();
-			BufferedImage t = FtlFont.MENU.render(text, GOLD);
+			Color c = hover ? HOVER_GOLD : GOLD;
+			BufferedImage t = FtlFont.MENU.render(text, c);
 			int x = centred ? Math.max(0, (getWidth() - t.getWidth()) / 2) : 0;
 			g.drawImage(t, x, 2, null);
-			g.setColor(GOLD);
+			g.setColor(c);
 			g.setStroke(new BasicStroke(2f));
-			int y = 2 + t.getHeight() / 2;
+			int y = 2 + t.getHeight() / 2, end = getWidth() - 2;
+			if (foldable && folded) { // a small arrow at the line's end: there's more under this heading
+				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g.fillPolygon(new Polygon(new int[] {end - 8, end, end - 8}, new int[] {y - 5, y, y + 5}, 3));
+				end -= 12;
+			}
 			if (x - 10 > 1) g.drawLine(1, y, x - 10, y);
-			if (x + t.getWidth() + 10 < getWidth() - 2) g.drawLine(x + t.getWidth() + 10, y, getWidth() - 2, y);
+			if (x + t.getWidth() + 10 < end) g.drawLine(x + t.getWidth() + 10, y, end, y);
 			g.dispose();
 		}
 	}

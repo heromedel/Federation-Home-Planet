@@ -44,6 +44,7 @@ public class InboxDialog extends JDialog {
 	/** A shipment held in the inbox: into this fleet's Cargo Hold, another fleet's, or back to its sender. */
 	private final JButton takeIt = new JButton("Accept"), elsewhere = new JButton("Deliver to another fleet..."), sendBack = new JButton("Return to sender");
 	private final JButton keep = new JButton("Keep her"), museum = new JButton("Accept the museum's offer");
+	private final JButton payRansom = new JButton("Pay"), refuseRansom = new JButton("Refuse");
 	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton(), outboxTab = new javax.swing.JToggleButton();
 	/** The Inbox and Archive share one view; the Outbox has its own. */
 	private final java.awt.CardLayout cards = new java.awt.CardLayout();
@@ -97,6 +98,8 @@ public class InboxDialog extends JDialog {
 		act.add(commission);
 		act.add(keep);
 		act.add(museum);
+		act.add(payRansom);
+		act.add(refuseRansom);
 		act.add(archive);
 		act.add(delete);
 		act.add(takeIt);
@@ -109,7 +112,7 @@ public class InboxDialog extends JDialog {
 		sendBack.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { parcelAction(2); } });
 		act.add(rewardLabel);
 		right.add(act, BorderLayout.SOUTH);
-		reply.setToolTipText("Choose your answer: the reply comes in a few beacons later");
+		reply.setToolTipText("Choose your answer: the reply comes in a few days");
 		reply.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { replySelected(); } });
 		claim.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { claimSelected(); } });
 		commission.setToolTipText("Go to Commission: the ship this order grants is marked free there");
@@ -121,6 +124,10 @@ public class InboxDialog extends JDialog {
 		keep.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(true); } });
 		museum.setToolTipText("Her full value goes to the Cargo Hold, and she to the Federation museum");
 		museum.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(false); } });
+		payRansom.setToolTipText("Paid from the Cargo Hold; they come back to it");
+		payRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(true); } });
+		refuseRansom.setToolTipText("They will not be coming back");
+		refuseRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(false); } });
 		javax.swing.ButtonGroup tabs = new javax.swing.ButtonGroup();
 		tabs.add(inboxTab);
 		tabs.add(archiveTab);
@@ -175,7 +182,7 @@ public class InboxDialog extends JDialog {
 	}
 	private void archiveSelected() {
 		Transmissions.Message m = list.getSelectedValue();
-		if (m == null) return;
+		if (m == null || Transmissions.unclaimedStipend(m) && !m.archived) return; // claimed first: the pay can't be lost
 		try {
 			if (Transmissions.deletable(m)) { Transmissions.delete(m); all.remove(m); fill(); return; } // a paid stipend, a used order: nothing to keep
 			Transmissions.setArchived(m, !m.archived);
@@ -284,6 +291,8 @@ public class InboxDialog extends JDialog {
 			commission.setVisible(false);
 			keep.setVisible(false);
 			museum.setVisible(false);
+			payRansom.setVisible(false);
+			refuseRansom.setVisible(false);
 			archive.setVisible(false);
 			delete.setVisible(false);
 			takeIt.setVisible(false);
@@ -298,7 +307,7 @@ public class InboxDialog extends JDialog {
 		String[] from = replyTo(m);
 		reply.setVisible(Transmissions.canReply(m) || from != null);
 		reply.setEnabled(true);
-		reply.setToolTipText(from == null ? "Choose your answer: the reply comes in a few beacons later"
+		reply.setToolTipText(from == null ? "Choose your answer: the reply comes in a few days"
 				: "Write back to " + m.from + " over Long Range Comm. (if their station can't be reached, it can wait in the Outbox)");
 		boolean canClaim = m.hasReward() && !m.claimed;
 		claim.setVisible(m.hasReward());
@@ -307,6 +316,11 @@ public class InboxDialog extends JDialog {
 		boolean open = Transmissions.isRescue(m) && !m.claimed;
 		keep.setVisible(open);
 		museum.setVisible(open);
+		homeplanet.parser.Expeditions.Captive captive = homeplanet.parser.Expeditions.isRansom(m.key) && homeplanet.vault.Vault.isOpen()
+				? homeplanet.parser.Expeditions.openRansom(homeplanet.vault.Vault.get(), m.key) : null;
+		payRansom.setVisible(captive != null);
+		refuseRansom.setVisible(captive != null);
+		if (captive != null) payRansom.setText("Pay " + captive.ransom + " scrap");
 		archive.setVisible(true);
 		boolean held = parcel != null && (homeplanet.comm.Shipments.HELD.equals(parcel.state) || homeplanet.comm.Shipments.RETURNING.equals(parcel.state));
 		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m) || (m.key.startsWith("parcel:") && !held)); // they pile up: archive one or be rid of it (not a shipment still to deal with)
@@ -323,14 +337,42 @@ public class InboxDialog extends JDialog {
 		sendBack.setVisible(waiting);
 		delete.setToolTipText(Transmissions.isNote(m) ? "Delete this message for good" : "Delete this receipt for good: the trade stays in the station's history");
 		boolean stipend = Transmissions.deletable(m);
-		archive.setText(stipend ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
-		archive.setToolTipText(stipend ? (Transmissions.isStipend(m) ? "Delete this notice: the scrap is already in the Cargo Hold" : "Delete this order: its free command has been taken") : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
+		boolean unclaimed = Transmissions.unclaimedStipend(m) && !m.archived;
+		archive.setText(stipend || unclaimed ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
+		archive.setEnabled(!unclaimed);
+		archive.setToolTipText(unclaimed ? "Claim the stipend first: it stays in the inbox until its scrap is in the Cargo Hold"
+				: stipend ? (Transmissions.isStipend(m) ? "Delete this notice: the scrap is already in the Cargo Hold" : "Delete this order: its free command has been taken") : m.archived ? "Back to the inbox" : "Store it in the Archive tab, out of the inbox");
 		rewardLabel.setForeground(canClaim ? new Color(40, 150, 60) : Color.GRAY);
 		rewardLabel.setText(Transmissions.isRescue(m) ? (m.claimed ? m.claimedWhat : " ") : !m.hasReward() ? " " : m.claimed ? "Claimed: " + m.claimedWhat : "Reward: " + Transmissions.describeReward(m)
 				+ (Transmissions.price(m) > 0 ? ", for " + Transmissions.price(m) + " scrap" : ""));
 		if (Transmissions.isRescue(m)) rewardLabel.setForeground(Color.GRAY);
 		Transmissions.markRead(m);
 		list.repaint();
+	}
+
+	/** A ransom letter: pay it from the Cargo Hold (they come back), or refuse (they don't). */
+	private void ransom(boolean pay) {
+		Transmissions.Message m = list.getSelectedValue();
+		if (m == null) return;
+		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
+		homeplanet.parser.Expeditions.Captive c = homeplanet.parser.Expeditions.openRansom(v, m.key);
+		if (c == null) { show(m); return; }
+		try {
+			if (pay) {
+				if (!HomePlanet.confirmNo(this, "Pay " + c.ransom + " scrap from the Cargo Hold for " + c.name + "'s return?", "Ransom")) return;
+				homeplanet.parser.Expeditions.payRansom(v, c);
+				Transmissions.decided(m, "Paid " + c.ransom + " scrap: " + c.name + " is back in the Cargo Hold");
+				JOptionPane.showMessageDialog(this, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
+			} else {
+				if (!HomePlanet.confirmNo(this, "Refuse the ransom? " + c.name + " will not be coming back.", "Ransom")) return;
+				homeplanet.parser.Expeditions.refuseRansom(v, c);
+				Transmissions.decided(m, "Refused");
+			}
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The ransom wasn't settled. Nothing was changed:\n" + e.getMessage());
+		}
+		all = Transmissions.load(); // the Ambassador's letter, if one came
+		fill();
 	}
 
 	/** A rescued ship's offer: keep her, or the museum's price. */
@@ -366,7 +408,7 @@ public class InboxDialog extends JDialog {
 		try {
 			Transmissions.reply(m, choice);
 			String note = homeplanet.parser.RepairJob.OFFER.equals(m.key) && choice == 0 ? homeplanet.parser.RepairJob.patchNote() : null;
-			JOptionPane.showMessageDialog(this, "Reply sent. Expect an answer within a few beacons." + (note == null ? "" : "\n\n" + note), "Reply", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, "Reply sent. Expect an answer within a few days." + (note == null ? "" : "\n\n" + note), "Reply", JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not send the reply. Nothing was changed:\n" + e.getMessage());
 		}

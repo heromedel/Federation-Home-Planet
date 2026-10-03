@@ -863,15 +863,33 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		String t = ItemTooltips.tooltip(r.id);
 		JOptionPane.showMessageDialog(this, new JLabel(t != null ? t : Items.title(r.id)), Items.title(r.id), JOptionPane.PLAIN_MESSAGE, IconFactory.itemIcon(r.id));
 	}
+	/** The infirmary's purple (FTL's colour for a crew member not yours to command just now). */
+	private static final Color INFIRMARY = new Color(170, 110, 230);
+	private static final String INFIRMARY_HTML = "#aa6ee6";
+	/** A crew member's health, and what they've lost of it: the green and red of the station's system bars. */
+	private static final Color HEALTH = CrewReport.HEALTH, HURT = CrewReport.HURT;
 	private static final Comparator<CargoParts.Row> BY_NAME = new Comparator<CargoParts.Row>() {
 		public int compare(CargoParts.Row a, CargoParts.Row b) { return a.name.compareToIgnoreCase(b.name); }
 	};
 	private List<CargoParts.Row> crewRows(ShipState s) {
 		List<CargoParts.Row> rows = new ArrayList<CargoParts.Row>();
+		boolean hold = s == tradeState && partnerIsStorage();
+		java.util.Set<String> laidUp = hold && Vault.isOpen() ? homeplanet.parser.Expeditions.laidUpKeys(Vault.get()) : java.util.Collections.<String>emptySet();
 		for (CrewState c : SaveHelper.getOwnCrew(s)) {
 			boolean body = SaveHelper.hasBody(c);
-			rows.add(new CargoParts.Row(IconFactory.crewIcon(c), c.getName(), body ? Crew.raceTitle(c) : "being cloned", c,
-					Crew.tooltip(c) + "  (double-click for her report)", !body));
+			// health, as FTL draws it: no bar when whole; green with the rest red when hurt in the game (a station heals
+			// that by the next beacon); purple, full, in the infirmary (laid up, not to be moved or sent)
+			boolean resting = laidUp.contains(homeplanet.parser.Expeditions.crewKey(c));
+			int max = c.getRace() == null ? 100 : c.getRace().getMaxHealth();
+			boolean hurt = body && !resting && c.getHealth() < max;
+			String state = resting ? "<br><font color='" + INFIRMARY_HTML + "'>In the infirmary: can't be moved, traded or sent until they're on their feet</font>"
+					: hurt ? "<br><font color='#e1463c'>" + (s == currentState ? "Injured: the station's medbay will see to them once she's docked"
+							: "Injured: the station's medbay will have them on their feet after some time here") + "</font>" : "";
+			CargoParts.Row row = new CargoParts.Row(IconFactory.crewIcon(c), c.getName(), body ? Crew.raceTitle(c) : "being cloned", c,
+					Crew.tooltip(c).replace("</html>", state + "<br><i>(double-click for her report)</i></html>"), !body);
+			if (resting) row.bar(1f, INFIRMARY, null);
+			else if (hurt) row.bar(c.getHealth() / (float) max, HEALTH, HURT);
+			rows.add(row);
 		}
 		if (s == tradeState && partnerIsStorage()) Collections.sort(rows, BY_NAME); // the hold's crew by name; a ship's stay in her own order
 		return rows;
@@ -1127,6 +1145,10 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		boolean destIsStorage = fromMine && partnerIsStorage();
 		if (!destIsStorage && SaveHelper.getOwnCrew(destState).size() >= 8) { HomePlanet.showErrorDialog("No room for more crew: a ship carries 8 at most."); return; }
 		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't be moved right now."); return; }
+		if (!fromMine && partnerIsStorage() && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), cs)) {
+			JOptionPane.showMessageDialog(this, cs.getName() + " is in the infirmary, and stays there until they're on their feet.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
 		String refused = destIsStorage ? null : Dlc.refusesCrew(fromMine ? tradeSave : currentSave, cs);
 		if (refused != null) { JOptionPane.showMessageDialog(this, refused, "Advanced Edition only", JOptionPane.INFORMATION_MESSAGE); return; }
 		// their room and square referred to the old ship: stand them on a free square of the new one
@@ -1138,13 +1160,28 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		refreshTrade();
 		help(cs.getName() + (fromMine ? " went to " + partnerName() + "." : " came aboard your ship."));
 	}
+	/** One history line for each crew member on this side now who wasn't before the save. */
+	private static void assigned(ShipState now, Map<String, Integer> before, SavedGameState save, boolean hold) {
+		if (now == null || before == null) return;
+		Map<String, Integer> seen = new HashMap<String, Integer>();
+		for (CrewState c : SaveHelper.getOwnCrew(now)) {
+			int n = seen.containsKey(c.getName()) ? seen.get(c.getName()) + 1 : 1;
+			seen.put(c.getName(), n);
+			Integer had = before.get("Crew " + c.getName());
+			if (had != null && n <= had) continue;
+			String ship = save.getPlayerShipName();
+			String place = hold ? "the Cargo Hold" : ship.startsWith("The ") ? ship : "the " + ship;
+			homeplanet.core.HistoryLog.entry("CREW", c.getName() + " assigned to " + place + ".");
+		}
+	}
 	private void crewInfo(boolean mine) {
 		Category c = cats[3];
 		CrewState cs = (CrewState) (mine ? c.mine : c.theirs).selectedValue();
 		if (cs == null) return;
-		Object[] options = {"OK", "Rename"};
-		int choice = JOptionPane.showOptionDialog(this, Crew.summary(cs), "Report for crewman " + cs.getName(),
-				JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, IconFactory.crewPortrait(cs, 48), options, options[0]);
+		// the infirmary knows them by name: no new one until they're out
+		boolean resting = !mine && partnerIsStorage() && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), cs);
+		Object[] options = resting ? new Object[] {"OK"} : new Object[] {"OK", "Rename"};
+		int choice = CrewReport.show(this, cs, resting, options);
 		if (choice != 1) return;
 		String newName = SpaceDockUI.promptForName("Enter a new name for " + cs.getName() + ":", "Rename Crew", cs.getName());
 		if (newName == null || newName.equals(cs.getName())) return;
@@ -1245,6 +1282,10 @@ public class CargoBayUI extends JPanel implements Scrollable {
 				}
 				homeplanet.core.HistoryLog.entry("RENAME CREW", oldN + " -> " + newN + "  (" + ship + ")");
 			}
+			// crew who came aboard a ship or into the Cargo Hold: "Lisandra assigned to the Kestrel." (their arrival at the
+			// station's medbay counts from here)
+			assigned(currentShip != null ? currentState : null, curBefore, currentSave, false);
+			if (tradeShip != null && tradePath != null) assigned(tradeState, tradeBefore, tradeSave, partnerIsStorage());
 			// junked, sold and retired get entries of their own, not lines in the trade
 			Map<String, List<String>> byKind = new LinkedHashMap<String, List<String>>();
 			Map<String, Integer> countByKind = new LinkedHashMap<String, Integer>();

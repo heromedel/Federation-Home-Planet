@@ -212,8 +212,9 @@ Draft of every message and reward: `docs/TRANSMISSIONS.md` (rewards approved by 
   `FederationHomePlanet/profile-backups`.
 - **A career** begins with 25 scrap in Spacedock Storage (`career.txt` in the Immersive fleet's folder).
 - **The stipend:** every 4 sectors the fleet's ships travel (FTL's own progress, counted in `sectors.txt`), 20 scrap
-  plus, per achievement counted, 1 (Commander), 2 (Captain), 3 (Commodore): 71 / 122 / 173 with all 51. Paid into
-  Spacedock Storage; one message for all the months due ("your stipend for the last 2 months"), with **Delete**.
+  plus, per achievement counted, 1 (Commander), 2 (Captain), 3 (Commodore): 71 / 122 / 173 with all 51. One message
+  for all the months due ("your stipend for the last 2 months"), its scrap issued as a reward: **Claim** puts it in
+  Spacedock Storage (4B.96). Until claimed it can't be deleted or archived; after, **Delete**.
 - **Unlock hints:** Design Ship, Remodel, Commission rows and the artillery picker say what they need and how to earn
   it (the promotion conditions are from the FTL wiki, since FTL keeps them in the game itself).
 - **Hull repairs:** a flat 4 scrap a point (The Federation charges a premium), in both modes.
@@ -573,6 +574,141 @@ fitted one anyway; FTL then runs her, but her system bar slides along and its ic
   plea values her the same way).
 - **A Medbay and a Clone Bay** take each other's place (4B.94, heromedel): in Design Ship, ticking one to start unticks
   the other, and a design ticked with both (from before) is commissioned with the Clone Bay alone.
+## 24. The Junkyard update — built (4B.81; harness test PartT, checks in GuiT and TransT)
+
+- The Space Dock's Salvage button is now **Junkyard**.
+- Damaged systems can be stored, installed and uninstalled, keeping their broken bars (`<id> <level> <broken>` in
+  storage-systems.txt); stripping when scrapping keeps damaged systems too. A stored system sells for less its damage.
+- Ship value: each broken bar takes 5 off, 10 for Piloting, Oxygen and Engines.
+- **Parts...** in the Junkyard window (beside Derelicts...): 2 to 5 damaged systems, mostly low levels (no artillery
+  or Clone Bay), paid from the Cargo Hold into the stored systems. New ones every 5 to 15 beacons (the fleet's
+  parts.txt). Standard prices for now; core parts at about 150 is undecided.
+- Parts are priced by how broken they are (4B.82): of its worth less its damage, one bar of five broken sells for
+  about 66-86%, half broken about 52-72%, broken through 30-50%. One in 12 is a clearance, 10% off, and says so.
+- Piloting, Oxygen and Engines parts are worth 150 at level 1, FTL's upgrade costs on top (4B.84): FTL prices them as
+  next to nothing. One set in five also lists a piece of salvage for the Cargo Hold: mostly missiles, fuel or drone
+  parts, one time in four a weapon, drone or augment, at 40-70% of FTL's store price.
+- The stipend counts beacons: 15 to each sector of the old rule (Easy 30, Normal 45, Hard 60, Sandbox careers 60).
+  A career under way carries its progress over (its sectors so far become beacons).
+- The stipend is claimed (4B.96): its letter carries the scrap as a reward, and **Claim** moves it to the Cargo Hold.
+  An unclaimed stipend stays in the inbox: no Delete, no Archive. Stipends paid in before 4B.96 delete as before.
+- Work in FTL counts: when the boarded ship's `store_purchase`, `store_repair`, `system_upgrade` or
+  `reactor_upgrade` count has gone up with no jump since the station last looked, one beacon is counted, once a
+  beacon stop, and noted in her voyage log. Nothing else (crew walking about) counts.
+
+## 25. Expeditions, hiring, folding headings — rebuilt (4B.92; harness test ExpT, checks in GuiT)
+
+Expeditions were built at 4B.83 and grown to 4B.91 (sectors, risk grades, chains of events, outfitting, ships home,
+the lost Stealth Cruiser). heromedel found the result incoherent, un-FTL and over-paid, and asked for a rebuild from
+the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old events survives.
+
+- **The idea**: the commander signs on to a posted job with up to 3 crew from the Cargo Hold, and the job plays as FTL
+  plays a beacon: a situation at one place, numbered choices (blue where a crew member's race opens one), the outcome,
+  "1. Continue...". One posting is one event. Crews without a ship can earn a little toward a Junkyard derelict,
+  then a little more toward its parts and repairs: several expeditions for one system is the intended pace.
+- **Postings**: three on the board, each a kind of job (Rescue, Escort, Salvage, Survey, Delivery, Repair,
+  Security), its words a job advert, no sector, no danger grade, no pay named. An untaken posting comes down after 1 to
+  7 beacons (hidden); a finished one is replaced at once, never by the same job.
+- **Events** (`resource/expeditions.txt`, the header gives the format): one place and one situation, in FTL's tone
+  (second person, short, dry); a choice is one sure outcome or a hidden roll between several, by weight; an outcome
+  may lead on to one more choice of the same moment (`then <step>`), never a new scene. Rewards come only at the end
+  of a branch and on FTL's first-sector scale: 5 to 15 scrap, a dangerous choice up to 20, fuel, missiles or drone
+  parts in twos, a weapon, drone or augment rarely; many branches pay nothing. The game adds "You receive 9 scrap."
+  after the words, as FTL does, and nothing about odds or arithmetic: the screens show nothing the crew wouldn't know.
+- **Danger**: the only thing at risk is crew, so a risky choice can kill. Every choice that can hurt someone kills at
+  least as often (the harness checks the weights); a few take them instead (`taken`: a ransom follows, signed by the
+  event's `foe`). The commander always comes home. Who is along changes the odds, unseen (4B.94): a choice says what it
+  takes, a race that's good at it (fight Mantis, tech Engi, heat Rock, power Zoltan, airless Lanius, mind Slug) and a
+  skill (pilot, engines, shields, weapons, repair, combat), and the crew member best suited takes it on. Its risk
+  falls on them first, its experience is theirs, and its bad outcomes are rarer for them: half for the race, a fifth
+  or two fifths less for the skill at level 1 or 2. A race's own option is taken by the best of that race, and the
+  button names them. A choice nothing picks for falls to anyone. A bigger party is not a safer one.
+- **The infirmary** (`infirmary.txt` in the vault): a crew member hurt on an expedition stays in the Cargo Hold's save
+  but can't be sent again for 3 to 6 beacons (hidden; the Expeditions screen lists who is laid up). When their time is
+  up, the next visit to the Space Dock says so in a pop-up (never a letter), and they are whole again.
+- **The station's care, skill and the clone bay** (4B.93, Plan GG):
+  - The Cargo Bay's crew rows carry a thin bar under the crew icon, as FTL draws health under a portrait (4B.94; it
+    sat under the name at 4B.93 and read as an underline): none when whole, green with the rest red for a hurt from
+    the game, purple (FTL's "not yours to command") and full for the infirmary; the tooltip says which. A crew member
+    in the infirmary can't be moved onto a ship, offered over the Long Range, or renamed (the infirmary knows them by
+    name) until they're out; one who leaves the Cargo Hold anyway (retired) is let go quietly when their time is up.
+  - A crew member in the Cargo Hold hurt in the game is healed once a beacon has passed (a station heals fast), at
+    no cost. The infirmary costs a point of skill for each beacon laid up, taken from a random skill they have points
+    in; a point that crosses a level's line takes the level with it (rusty after a long lay-up). Not whole levels:
+    heromedel judged that too harsh with a hurt one trip in three.
+  - `clone 1`: an outcome where the crew member dies and the hiring ship's clone bay brings them back, a level down in
+    every skill they held (FTL's clone bay price), the run's experience gone with it; used where the hiring ship could
+    have one (the pilot's freighter, the liner). It counts as a hurt: its weight comes out of the hurt's share, never
+    the death's (4B.94; at 4B.93 it had come out of the death's, making the clone bay a reprieve).
+  - `xp <skill> <points>`: experience for whoever took the choice on, a few points on the choices that exercise the
+    skill, more on the risky ones; FTL's levels come when the points add up (`homeplanet.model.Skills` keeps points and
+    mastery flags together). A choice anyone can take must take the skill it teaches, so the right person earns it
+    (the harness refuses one that doesn't). Specialist postings are still to come (IDEAS, Idea E).
+  - The station's daily round writes the Cargo Hold's save only when someone's health or skill changed.
+  - The station's medbay (4B.98, Plan LL): crew hurt in the game, in the Cargo Hold or aboard a docked ship (never the
+    boarded one, which may be in FTL), are healed a full beacon after the station first sees them hurt there; a move to
+    another place starts the beacon again. Before, the station healed anyone hurt whenever the clock had moved since its
+    last look, which could be at once. Each heal writes heromedel's line in the history log: "<name>'s visited The
+    Station's Medbay". Each crew member a Cargo Bay save brings aboard a ship or into the Cargo Hold writes "<name>
+    assigned to the Cargo Hold." or "<name> assigned to the <ship>." The tooltip on a hurt crew member says they'll
+    heal "after some time here" (on the boarded ship: once she's docked), never in beacons (CLAUDE.md's second hard
+    rule).
+- **The events, reviewed against FTL** (4B.94, no new events): each read beside FTL's own for tone, lore and copied
+  ideas. Escort jobs said "your ship" though the commander has none: their postings now lend a cutter. A Rock in the
+  hot vent was "burned to the bone" (the Rock don't burn): the vent now collapses. The Mantis raider's Mantis option
+  (two Mantis talking behind a locked door, one leaving) was too close to FTL's captured-commando scene: the Mantis now
+  offers to be what the starving Mantis goes for. The Engi option there, which only led to the same as leaving the bay
+  sealed, now vents the bay. Experience moved to the person doing the work (no more piloting for a Slug's telepathy or
+  shields for walking on ice), a Slug can find the moon's pilot by mind, the freighter's clone bay also reaches the
+  Mantis's raid and the search on the ground, and the sleeping station's do-nothing choice is gone. Ships are "she"
+  throughout.
+- Each expedition counts as one beacon of the fleet's time; events met in the last twelve aren't met again while others
+  of the kind are left (`recent` in the fleet's expeditions.txt). The history log keeps each job's event, scrap, the
+  dead and the laid up.
+- Gone with the rebuild: sectors and risk grades, chains of several events, sealed and outfitted postings, the job's
+  own pay, asides, ships home from expeditions and the lost Stealth Cruiser expedition (to be rewritten later as its own
+  special event, once the ordinary ones feel right).
+- **Ransoms** (4B.88, kept): a crew member taken is asked for a few beacons later (the fleet's captives.txt), handled in
+  the inbox: the captors' letter has Pay and Refuse, says "You have one month" and never counts beacons (14, hidden);
+  a reminder comes three beacons before the end. Refused or run out, the Federation Ambassador writes that they are
+  missing, presumed dead. With the inbox off, the ask and reminder come up at the Space Dock (Pay, Refuse, Later).
+- **Hiring** on the same screen: with no crew anywhere, "Post a promise of adventure" is free and answered half the
+  time; otherwise "Post for volunteers" costs 5 scrap a crew member in the fleet (every ship, the Junkyard's hulls and
+  the Cargo Hold), at most 60, spent either way, answered three times in four. The race is one of the unlocked
+  ships' crews; new crew wait in the Cargo Hold. With no FTL profile yet (a fresh Immersive one), only the Kestrel's
+  humans answer, as Commission has it (4B.90).
+- While an expedition is under way its pop-ups can't be closed, only answered; a priority Long Range message pops up
+  over it and the expedition carries on after; a hail is told the commander is away and listed as missed (4B.87).
+- The job's windows (4B.95, redrawn at 4B.96 from heromedel's FTL screenshots): FTL's event layout on the station's
+  own dark panel and pale rim (not FTL's mauve), in FTL's own type (JustinFont from ftl.dat, chosen over the style
+  guide's Sans Serif from a side-by-side; where ftl.dat's font can't be read, or lacks a letter on the screen, the
+  whole screen falls back to the style guide's Sans Serif 12), the words wrapped with room between the lines, and
+  two lines under them the numbered choices as plain lines of words (gold under the pointer, blue for a race's
+  option), picked by a click or by their number key. The box is as tall as what's in it. The board steps aside when the commander signs on and
+  opens again, fresh, when the job is over. The last outcome is the end of the job: no docking screen after it (it only
+  repeated the outcome); anyone hurt gets one line under that outcome ("Marek is carried to the infirmary when the
+  shuttle docks."). The asteroid belt's line is heromedel's: "you can hear a small asteroid glancing off the shuttle's
+  shields" (no sound carried through the hull from outside). The twelve events read again for sound, smell or wind
+  where there's no air: none else.
+- 4B.97: the event box loses its rim (the words sit straight on the dark panel). Picking who goes: three seats side by
+  side, each a drop-down of the Cargo Hold's crew (or no one), and under each a card of the one picked: portrait, name,
+  race, a health bar if hurt, and the six skills (a pip a level, green then gold as FTL marks them, and a thin bar toward
+  the next). Picking someone for one seat takes them out of another; the first three are picked to begin with.
+  The crew report (Plan KK) is drawn the same way wherever it opens (the Cargo Bay, with Rename; a Long Range offer;
+  a click on a name in the ship report, from the Space Dock or the Cargo Bay): portrait, name, race and sex, health or
+  the infirmary, the six skills with pips, a bar and the points, and the service record. Health bars also show on the
+  ship report's crew and the Long Range trade lists; not the Museum (finished runs) or the Dry Dock's crew for hire.
+- In the Cargo Bay's system rows, broken bars are drawn red at the end of the level bar (4B.91).
+- **Folding headings**: a click on a gold heading of the Space Dock's controls folds its buttons away or back,
+  lighter under the mouse, a small arrow when folded; remembered in the cfg (`fold_station`, ...).
+- 4B.95: main merged in (Reputation, Plead for New Ship, the Relief Ship Type A, the System Limit, Medbay or Clone Bay).
+  The Space Dock is main's (the centred Docked and Aboard headings, REP to the inbox's right), with Expeditions under
+  Station and the control headings folding as before; the centred headings don't fold. The stipend reads in months
+  everywhere (two, three or four), never sectors or beacons.
+- A one-sided Long Range trade's log no longer says "received ():".
+- The harness (ExpT) reads the events file clean, plays every event through every choice, checks every hurt has a
+  death beside it, holds every line against FTL's own event text (no run of six words the same), and walks the
+  infirmary and the ransoms through their clocks.
 
 ## Naming decisions — settled (4B.30)
 

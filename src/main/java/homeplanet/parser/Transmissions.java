@@ -376,24 +376,18 @@ public final class Transmissions {
 		m.read = true;
 		HistoryLog.entry("REPLY", m.from + ": " + words);
 	}
-	/** The stipend for whole months travelled (every 4 sectors), paid into the Cargo Hold, in one message. */
+	/** The stipend for whole months travelled (every 30 to 60 beacons, by difficulty), in one message: its scrap is claimed into the Cargo Hold. */
 	private static void payStipend(List<Message> all, java.util.Set<String> sent, Unlocks u, String rank) {
 		int months = Career.unpaidMonths();
 		if (months <= 0) return;
 		int amount = months * Career.stipend(UnlockGrants.rank(u), Career.achievementsCounted(u));
 		try {
-			Career.markPaid(months); // marked first: a payment whose mark was lost would be paid again
-			try {
-				Vault.get().depositToStorage(amount);
-			} catch (IOException e) {
-				Career.markPaid(-months);
-				throw e;
-			}
+			Career.markPaid(months); // the months are paid by this message: issued once, claimed from it
 		} catch (IOException e) {
-			log.warn("Could not pay the stipend (tried again next time): {}", e.toString());
+			log.warn("Could not issue the stipend (tried again next time): {}", e.toString());
 			return;
 		}
-		String period = months == 1 ? "monthly stipend" : "stipend for the last " + months + " months";
+		String period = "stipend for the last " + months * Career.sectorsPerMonth() + " months"; // a payment every sectorsPerMonth months, as the rules say
 		Template t = templates().get("stipend");
 		if (t == null) return;
 		Message m = new Message();
@@ -402,15 +396,18 @@ public final class Transmissions {
 		m.from = t.from;
 		m.subject = Character.toUpperCase(period.charAt(0)) + period.substring(1) + ": " + amount + " scrap";
 		m.body = fill(t.body.toString().trim(), rank, null).replace("{period}", period).replace("{amount}", Integer.toString(amount));
+		m.reward = "scrap " + amount;
 		all.add(0, m);
 		sent.add(m.key);
-		HistoryLog.entry("STIPEND", amount + " scrap to the Cargo Hold (" + months + " month" + (months == 1 ? "" : "s") + ")");
+		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + months + " month" + (months == 1 ? "" : "s") + ")");
 	}
-	/** A stipend's notice: deleted rather than archived, so they don't pile up. */
+	/** A stipend's notice: deleted rather than archived once claimed, so they don't pile up. */
 	public static boolean isStipend(Message m) { return m.key.startsWith("stipend:"); }
-	/** A notice with nothing left to keep, deleted rather than archived: a stipend (paid already), an order for a free command since taken. */
+	/** A stipend not yet claimed: it stays in the inbox (no Delete, no Archive) until its scrap is in the Cargo Hold. */
+	public static boolean unclaimedStipend(Message m) { return isStipend(m) && m.hasReward() && !m.claimed; }
+	/** A notice with nothing left to keep, deleted rather than archived: a stipend claimed (or paid in, before claims), an order for a free command since taken. */
 	public static boolean deletable(Message m) {
-		if (isStipend(m)) return true;
+		if (isStipend(m)) return !unclaimedStipend(m);
 		return m.key.startsWith("empty:") && Vault.isOpen() && !Vault.get().freeCommandOpen();
 	}
 	/** A Long Range Comm. receipt from the Quartermaster: archived or deleted, as the commander likes. */
@@ -686,6 +683,7 @@ public final class Transmissions {
 	}
 	/** Moves a message to the Archive (read), or back to the inbox. */
 	public static synchronized void setArchived(Message m, boolean archived) throws IOException {
+		if (archived && unclaimedStipend(m)) throw new IOException("Claim the stipend first: it stays in the inbox until its scrap is in the Cargo Hold");
 		m.archived = archived;
 		if (archived) m.read = true;
 		List<Message> all = load();

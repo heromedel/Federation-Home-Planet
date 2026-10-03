@@ -1082,6 +1082,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (fail == null && reply != null) {
 			try {
 				Session.Peer p = Session.peerOf(reply);
+				String away = ExpeditionsDialog.awayNotice(Commander.title());
+				if (away != null) { ch.close(away); missedHail(p); return; } // the hail can't wait out an expedition: they're told, and it's listed as missed
 				String why = Session.incompatible(p, HomePlanet.APP_VERSION, Commander.stationId());
 				if (why != null) { ch.close(why); fail = why; }
 				else {
@@ -1135,7 +1137,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private void showNote(final Notes.Note n, final String host) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				if (otherWindowOpen()) {
+				if (otherWindowOpen() && !ExpeditionsDialog.underWay()) { // an expedition can't be left halfway: its messages come over it
 					javax.swing.Timer later = new javax.swing.Timer(500, new ActionListener() { public void actionPerformed(ActionEvent e) { showNote(n, host); } });
 					later.setRepeats(false);
 					later.start();
@@ -1150,7 +1152,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				javax.swing.JPanel p = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
 				p.add(new JLabel(n.title + (n.priority ? ", priority:" : ":")), java.awt.BorderLayout.NORTH);
 				p.add(new javax.swing.JScrollPane(t), java.awt.BorderLayout.CENTER);
-				java.awt.Component owner = isShowing() ? LongRangeCommUI.this : parent;
+				java.awt.Window active = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
+				java.awt.Component owner = ExpeditionsDialog.underWay() && active != null ? active : isShowing() ? LongRangeCommUI.this : parent;
 				Object[] opts = {"Reply", "Close"};
 				int r = JOptionPane.showOptionDialog(owner, p, "Message from " + n.title, JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[1]);
 				if (r == 0) MessageDialog.open(owner, n.station, host, n.replyPort, n.title, null); // port 0: their frequencies are closed, so it waits in the Outbox
@@ -1371,7 +1374,11 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				if (k != null) out.add(mark(Line.item(0, k, id), true));
 			}
 		}
-		for (CrewState c : SaveHelper.getOwnCrew(s)) if (SaveHelper.hasBody(c)) out.add(mark(Line.crew(0, c), false));
+		for (CrewState c : SaveHelper.getOwnCrew(s)) {
+			if (!SaveHelper.hasBody(c)) continue;
+			if (source.isStorage() && homeplanet.parser.Expeditions.laidUp(Vault.get(), c)) continue; // in the infirmary: not to be traded away
+			out.add(mark(Line.crew(0, c), false));
+		}
 		return out;
 	}
 	private Line mark(Line l, boolean inCargo) {
@@ -1540,7 +1547,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private void info(Line l) {
 		if (l == null) return;
 		if (l.kind == Line.Kind.CREW) {
-			JOptionPane.showMessageDialog(this, Crew.summary(l.crew), "Report for crewman " + l.crew.getName(), JOptionPane.PLAIN_MESSAGE, IconFactory.crewPortrait(l.crew, 48));
+			CrewReport.show(this, l.crew, false, new Object[] {"OK"});
 		} else if (l.kind.isItem()) {
 			String t = ItemTooltips.tooltip(l.id);
 			JOptionPane.showMessageDialog(this, new JLabel(t != null ? t : Items.title(l.id)), Items.title(l.id), JOptionPane.PLAIN_MESSAGE, IconFactory.itemIcon(l.id));
@@ -1625,7 +1632,10 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 			int c = l.kind == Line.Kind.WEAPON ? 0 : l.kind == Line.Kind.DRONE ? 1 : l.kind == Line.Kind.AUGMENT ? 2 : l.kind == Line.Kind.CREW ? 3 : -1;
 			if (c != cat) continue;
 			if (c == 3) {
-				out.add(new CargoParts.Row(IconFactory.crewIcon(l.crew), l.crew.getName(), Crew.raceTitle(l.crew), l, Crew.tooltip(l.crew), false));
+				CargoParts.Row row = new CargoParts.Row(IconFactory.crewIcon(l.crew), l.crew.getName(), Crew.raceTitle(l.crew), l, Crew.tooltip(l.crew), false);
+				int max = l.crew.getRace() == null ? 100 : l.crew.getRace().getMaxHealth();
+				if (l.crew.getHealth() < max) row.bar(l.crew.getHealth() / (float) max, CrewReport.HEALTH, CrewReport.HURT); // hurt, as the Cargo Bay shows it
+				out.add(row);
 				continue;
 			}
 			String k = l.id + (l.inCargo ? "|cargo" : "");

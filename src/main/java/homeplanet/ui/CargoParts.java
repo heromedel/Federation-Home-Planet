@@ -183,10 +183,14 @@ final class CargoParts {
 		final String name, note, tip;
 		final Object value;
 		final boolean dim;
+		/** A thin bar under the icon (a crew member's health), 0 to 1, or -1 for none; its colour, and the colour of the rest (null: dark). */
+		float bar = -1;
+		Color barColor, barRest;
 		Row(Icon icon, String name, String note, Object value) { this(icon, name, note, value, null, false); }
 		Row(Icon icon, String name, String note, Object value, String tip, boolean dim) {
 			this.icon = icon; this.name = name; this.note = note; this.value = value; this.tip = tip; this.dim = dim;
 		}
+		Row bar(float fill, Color c, Color rest) { bar = fill; barColor = c; barRest = rest; return this; }
 	}
 
 	/** A dark list of rows in a scroll pane with a dark scroll bar. */
@@ -250,6 +254,8 @@ final class CargoParts {
 		}
 	}
 
+	/** Where a row's bar sits: under the icon, clear of the selection's outline. */
+	static final int BAR_Y = 17, BAR_H = 2, BAR_W = 24;
 	static class RowRenderer extends JComponent implements ListCellRenderer<Row> {
 		private Row row;
 		private boolean selected;
@@ -280,6 +286,13 @@ final class CargoParts {
 			Color c = row.dim ? DIM : selected ? GOLD : TEXT;
 			text(g, FtlFont.BODY.fit(row.name, width - tx - noteW - 6), FtlFont.BODY, c, tx, 4);
 			if (row.note != null) text(g, row.note, FtlFont.BODY, DIM, width - noteW + 4, 4);
+			if (row.bar >= 0) { // under the icon, as FTL draws a crew member's health under the portrait: the fill, then the rest
+				int bx = 5 + (30 - BAR_W) / 2, fill = Math.max(1, Math.round(BAR_W * Math.min(1f, row.bar)));
+				g.setColor(row.barRest != null ? row.barRest : new Color(0, 0, 0, 110));
+				g.fillRect(bx, BAR_Y, BAR_W, BAR_H);
+				g.setColor(row.barColor);
+				g.fillRect(bx, BAR_Y, fill, BAR_H);
+			}
 			g.dispose();
 		}
 	}

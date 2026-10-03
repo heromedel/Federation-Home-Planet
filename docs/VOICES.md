@@ -65,6 +65,18 @@ threatens; states what will happen, then does it. Signs "~ Federation Office of 
 The man who minds the Junkyard (the Derelicts window names him). A small-time fixer who admires a good dodge, knows
 what's hidden in his own yard, and never asks for anything, which is more unsettling than a threat.
 
+## Federation Ambassador
+
+A diplomat who has written too many letters of loss: formal, never cold, never hopeful past the point of honesty.
+Names the crew member, says plainly what the Federation tried and that it failed, and closes with a line about their
+service. Writes when a ransom runs out or is refused: "missing, presumed dead". Signs "With deepest regret, ~
+Federation Ambassador".
+
+## Captors (expedition ransoms)
+
+Whoever took the crew (pirates, Mantis raiders, Slug privateers, the rebels): short, businesslike, menacing by
+implication. Never gives a count of beacons: "You have one month", then "Time is running short". Signs as themselves.
+
 ## The Federation Home Planet
 
 The institution itself: automated and bureaucratic ("Automated message from The Federation Home Planet"). Stipends and

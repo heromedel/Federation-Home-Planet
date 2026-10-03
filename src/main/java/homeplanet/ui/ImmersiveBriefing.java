@@ -131,7 +131,7 @@ final class ImmersiveBriefing extends JDialog {
 				"Commodore: the Federation's artillery. " + oneLine(Clearance.HOW_COMMODORE),
 				"The plans for the Rebel Flagship's weapons: earn Rule Ten: Greed is Eternal."));
 		p.add(section("Transmissions and the stipend", "An inbox on the Space Dock brings commission orders, promotions and a reward for each FTL achievement "
-				+ "earned from now on. Every few sectors your ships travel (by difficulty), a stipend of " + Career.STIPEND_BASE
+				+ "earned from now on. Every two to four months (by difficulty), a stipend of " + Career.STIPEND_BASE
 				+ " scrap, plus 1 to 3 more for each achievement counted (by rank), is paid into the Cargo Hold."));
 		return p;
 	}

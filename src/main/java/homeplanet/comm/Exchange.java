@@ -381,7 +381,8 @@ public final class Exchange {
 		cleanUp(r);
 		List<String> lines = new ArrayList<String>();
 		lines.add("gave: " + r.outWords());
-		lines.add("received (" + whereTheyGo(r.in) + "): " + r.inWords());
+		String where = whereTheyGo(r.in);
+		lines.add("received" + (where.isEmpty() ? "" : " (" + where + ")") + ": " + r.inWords()); // a one-sided trade receives nothing, and goes nowhere
 		HistoryLog.entry("LONG RANGE TRADE", "with " + r.peerTitle + "  (trade " + r.id + ")", lines);
 		homeplanet.parser.Transmissions.deliver("trade:" + r.id, "Home Planet Quartermaster", RECEIPT_SUBJECT, receipt(r));
 	}

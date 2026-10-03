@@ -25,8 +25,10 @@ public final class Career {
 
 	/** Scrap in the Cargo Hold when a Sandbox career begins (an Immersive one's is its difficulty's). */
 	public static final int STARTING_SCRAP = 25;
-	/** The stipend: this much, plus the rank's multiple for each achievement counted, every SECTORS_PER_MONTH sectors (an Immersive career's: its difficulty's). */
+	/** The stipend: this much, plus the rank's multiple for each achievement counted, every SECTORS_PER_MONTH sectors' worth of beacons (an Immersive career's: its difficulty's). */
 	public static final int STIPEND_BASE = 20, SECTORS_PER_MONTH = 4;
+	/** The stipend counts beacons, this many to a sector of the old rule (a fleet idling between sectors still gets paid). */
+	public static final int BEACONS_PER_SECTOR = 15;
 	/** Scrap a career in the fleet in use began with: its difficulty's, or a Sandbox career's STARTING_SCRAP. */
 	public static int startingScrap() {
 		CareerRules r = CareerRules.current();
@@ -37,6 +39,8 @@ public final class Career {
 		CareerRules r = CareerRules.current();
 		return r != null ? r.stipendSectors() : SECTORS_PER_MONTH;
 	}
+	/** Beacons between stipends in the fleet in use. */
+	public static int beaconsPerMonth() { return sectorsPerMonth() * BEACONS_PER_SECTOR; }
 
 	static File file(File fleetRoot) { return new File(fleetRoot, "career.txt"); }
 	private static Properties read(File fleetRoot) {
@@ -97,6 +101,7 @@ public final class Career {
 		p.setProperty("ownProfile", Boolean.toString(ownProfile));
 		p.setProperty("paidMonths", "0");
 		p.setProperty("sectorsAtStart", Integer.toString(v.sectorsSeen()));
+		p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen()));
 		if (rules != null) rules.write(p);
 		write(v.root, p);
 		CareerRules.forget();
@@ -122,12 +127,19 @@ public final class Career {
 	public static int stipend(int rank, int achievements) {
 		return STIPEND_BASE + achievements * (rank + 1);
 	}
-	/** Whole months of travel not yet paid for (every SECTORS_PER_MONTH sectors since the career began). */
+	/** Whole months of travel not yet paid for (every beaconsPerMonth beacons since the career began). */
 	static int unpaidMonths() {
 		Vault v = Vault.get();
 		Properties p = read(v.root);
-		int start = Integer.parseInt(p.getProperty("sectorsAtStart", "0")), paid = Integer.parseInt(p.getProperty("paidMonths", "0"));
-		return Math.max(0, (v.sectorsSeen() - start) / sectorsPerMonth() - paid);
+		int paid = Integer.parseInt(p.getProperty("paidMonths", "0"));
+		if (p.getProperty("beaconsAtStart") == null) {
+			// a career from when the stipend counted sectors: its sectors so far become beacons, so nothing paid or owed changes
+			int sectors = v.sectorsSeen() - Integer.parseInt(p.getProperty("sectorsAtStart", "0"));
+			p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen() - sectors * BEACONS_PER_SECTOR));
+			try { write(v.root, p); } catch (IOException e) { log.warn("Could not record the stipend's beacons: {}", e.toString()); }
+		}
+		int start = Integer.parseInt(p.getProperty("beaconsAtStart", "0"));
+		return Math.max(0, (v.beaconsSeen() - start) / beaconsPerMonth() - paid);
 	}
 	/** Records months as paid (or, with a negative count, takes them back after a failed payment). */
 	static void markPaid(int months) throws IOException {

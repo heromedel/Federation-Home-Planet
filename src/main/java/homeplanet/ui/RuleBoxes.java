@@ -57,7 +57,7 @@ public class RuleBoxes {
 	private final JLabel freeLabel = new JLabel("Plead for New Ship grants:  ");
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
-	final JCheckBox careerBox = new JCheckBox("Career messages: a welcome, promotions, rewards for FTL achievements and a monthly stipend, in Sandbox Mode too", HomePlanet.careerMessages);
+	final JCheckBox careerBox = new JCheckBox("Career messages: a welcome, promotions, rewards for FTL achievements and a stipend, in Sandbox Mode too", HomePlanet.careerMessages);
 	final JCheckBox repBox = new JCheckBox("Reputation: earn and lose reputation points for your ships' service, shown on the Space Dock", HomePlanet.reputationOn);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
@@ -122,7 +122,7 @@ public class RuleBoxes {
 		notifyBox.setToolTipText("<html>Orders for the free ships the rules grant, the Liaison's word when you're left without a ship, and letters you can reply to."
 				+ "<br>With Career messages (always, in Immersive Mode), also the welcome, promotions, achievement rewards and the stipend.</html>");
 		careerBox.setToolTipText("Your rank rises as you unlock FTL's Federation Cruisers; achievements earned from now on are rewarded, and the stipend comes every "
-				+ homeplanet.parser.Career.SECTORS_PER_MONTH + " sectors. Your fleet and rules stay your own. (Always on in Immersive Mode, at its difficulty.)");
+				+ homeplanet.parser.Career.SECTORS_PER_MONTH + " months. Your fleet and rules stay your own. (Always on in Immersive Mode, at its difficulty.)");
 		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 44, 0, 0)); // under Immersive Notifications, which it needs
 		careerTip = careerBox.getToolTipText();
 		repBox.setToolTipText("<html>Your standing with The Federation Home Planet: earned by sectors, scrap, ships defeated and the Rebel Flagship,"
