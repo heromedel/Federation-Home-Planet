@@ -6,7 +6,7 @@
 # item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
 # Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), pleaded (the order after a
-# plea for a new ship; {ship} is what it offers), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
+# plea for a new ship; {ship} is what it offers), withdrawn (that plea withdrawn: its order leaves the inbox), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
 # a hull waits in the Junkyard), promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
 # rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
 # notice when Transmissions are off).
@@ -180,6 +180,19 @@ The order is for {ship}. Bring it to Commission and pick her out. When you sign 
 Change your mind before she's built? Withdraw the plea (Other... at the Space Dock) and nobody owes anything.
 
 Try not to scratch the paint.
+~ Home Planet Shipyard Comm. Officer
+
+== withdrawn
+from: Home Planet Shipyard
+subject: Order cancelled
+
+{rank},
+
+Got word you withdrew your plea, so I've torn up the order. Nothing owed, nothing built.
+
+Shame. I'd already picked out a paint colour. If you change your mind again, you know where to find us: Plead for New Ship, under Other... at the Space Dock.
+
+Godspeed and come home.
 ~ Home Planet Shipyard Comm. Officer
 
 == promo:1

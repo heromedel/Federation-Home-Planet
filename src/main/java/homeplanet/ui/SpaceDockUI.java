@@ -837,8 +837,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Withdraw Plea: the order waiting at Commission is cancelled (nothing was taken for it). */
 	void withdrawPlea() {
 		if (!HomePlanet.confirmNo(this, "Withdraw your plea for a new ship?\n\nHer order at Commission is cancelled. Nothing was taken for it.", "Withdraw Plea")) return;
-		try { Vault.get().withdrawPlea(); }
-		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not withdraw the plea:\n" + e.getMessage()); }
+		try {
+			Vault.get().withdrawPlea();
+			homeplanet.parser.Transmissions.pleaWithdrawn(); // her order leaves the inbox, and the Shipyard says so
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not withdraw the plea:\n" + e.getMessage());
+		}
 		init();
 	}
 	void undoReassignment(File dir) {

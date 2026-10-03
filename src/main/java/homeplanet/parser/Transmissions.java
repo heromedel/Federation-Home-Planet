@@ -437,6 +437,20 @@ public final class Transmissions {
 		for (java.util.Iterator<Message> it = all.iterator(); it.hasNext();) if (it.next().key.equals(m.key)) it.remove();
 		save(all);
 	}
+	/**
+	 * A plea for a new ship was withdrawn: her order (still in the inbox, not archived) is taken out, and the Shipyard
+	 * says so (Immersive Notifications on), so the inbox doesn't look as if a ship were still waiting.
+	 */
+	public static synchronized void pleaWithdrawn() throws IOException {
+		List<Message> all = load();
+		boolean removed = false;
+		for (java.util.Iterator<Message> it = all.iterator(); it.hasNext();) {
+			Message m = it.next();
+			if (m.key.startsWith("empty:") && !m.archived) { it.remove(); removed = true; }
+		}
+		if (removed) save(all);
+		if (HomePlanet.immersiveNotifications()) post("withdrawn:" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()), "withdrawn", new LinkedHashMap<String, String>());
+	}
 	// ---- a final victory's messages ----
 
 	/** A message's from, subject and text from its template, with {rank} and the other {placeholders} filled. */

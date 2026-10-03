@@ -54,7 +54,7 @@ final class ReputationLogDialog extends JDialog {
 		});
 		scroll.getViewport().setBackground(RecordsLog.BG);
 		scroll.setBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, MenuTheme.GOLD));
-		scroll.setPreferredSize(new Dimension(900, 520));
+		scroll.setPreferredSize(new Dimension(900, 400)); // room for the summary below it on a scaled screen
 		scroll.getVerticalScrollBar().setUnitIncrement(22);
 		JPanel south = new JPanel(new BorderLayout());
 		JLabel how = new JLabel("<html><div style='width:620px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>Earned: each sector +" + Reputation.SECTOR + ", a tenth of the scrap collected, each ship defeated +"

@@ -35,7 +35,8 @@ promotion, the stipend, "Master of Patience" and the Zoltan commission order.
 
 - **welcome**: Immersive Mode turned on (sent last, so it's on top of the inbox).
 - **empty**: the free command, when the fleet or an Immersive career starts. **pleaded**: the order after a plea for a
-  new ship ({ship} is what it offers). (The old **reassigned** letters, after a Report for Reassignment, are gone.)
+  new ship ({ship} is what it offers); **withdrawn** when that plea is withdrawn (its order leaves the inbox). (The old
+  **reassigned** letters, after a Report for Reassignment, are gone.)
 - **order:<ship>**: a ship unlocked in FTL (with free unlock ships on), one per ship type.
 - **promo:1 / promo:2**: promoted to Captain (the Federation Cruiser A unlocks) and to Commodore (the C).
 - **stipend**: every 4 sectors travelled.

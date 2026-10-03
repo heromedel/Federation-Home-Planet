@@ -58,8 +58,9 @@ public class TransT { public static void main(String[] a) throws Exception {
     && orders() == 1 && !Transmissions.deletable(find("empty")) && v.storageScrap() == scrapBefore && v.byId(docked.id) != null);
   Setup.chk("F: and it's the Shipyard's answer to the plea, naming what it offers", "Your plea was heard".equals(find("empty").subject)
     && find("empty").body.contains(FreeCommand.offered(Economy.reassignment())));
-  v.withdrawPlea();
-  Setup.chk("F: withdrawing the plea takes the order back", !v.freeCommandOpen());
+  v.withdrawPlea(); Transmissions.pleaWithdrawn();
+  Setup.chk("F: withdrawing the plea takes the order back, out of the inbox too, and the Shipyard says so", !v.freeCommandOpen() && orders() == 0
+    && find("withdrawn") != null && "Order cancelled".equals(find("withdrawn").subject));
   v.remove(docked, "DESTROY");
   // Career messages in Sandbox Mode: the career begins once, with its letter and scrap, and no free ship
   int scrap = v.storageScrap(), ordersBefore = orders();
