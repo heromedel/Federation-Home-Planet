@@ -109,6 +109,7 @@ public final class Channel {
 				return;
 			}
 			if (m.type.equals("PING")) continue;
+			log.debug("Long Range Comm.: received {} from {}", m.type, address);
 			if (m.type.equals("BYE")) { fail(Line.text(m.get("why"), 200)); return; }
 			SwingUtilities.invokeLater(new Runnable() { public void run() { if (listener != null) listener.received(m); } });
 		}
@@ -116,6 +117,7 @@ public final class Channel {
 
 	public void send(Wire.Msg m) throws IOException {
 		if (closed) throw new IOException("The channel is closed");
+		if (!"PING".equals(m.type)) log.debug("Long Range Comm.: sending {} to {}", m.type, address);
 		synchronized (out) {
 			Wire.write(out, m);
 			lastSent = System.currentTimeMillis();
@@ -130,7 +132,7 @@ public final class Channel {
 	/** Closes, telling the other station why (shown to its commander). The listener isn't called. */
 	public void close(String why) {
 		if (closed) return;
-		try { send(new Wire.Msg("BYE").put("why", why)); } catch (IOException e) { }
+		try { send(new Wire.Msg("BYE").put("why", why)); } catch (IOException e) { log.debug("Long Range Comm.: the goodbye to {} could not be sent: {}", address, e.toString()); }
 		closed = true;
 		listener = null;
 		try { socket.close(); } catch (IOException e) { }
@@ -153,6 +155,7 @@ public final class Channel {
 	private void fail(final String why) {
 		if (closed) return;
 		closed = true;
+		log.debug("Long Range Comm.: the channel with {} closed: {}", address, why);
 		try { socket.close(); } catch (IOException e) { }
 		final Listener l = listener;
 		listener = null;

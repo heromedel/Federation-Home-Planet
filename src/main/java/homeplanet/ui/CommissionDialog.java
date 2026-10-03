@@ -47,6 +47,7 @@ import homeplanet.parser.SaveHelper;
  */
 public class CommissionDialog extends JDialog {
 
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CommissionDialog.class);
 	/** A row in the list: a header, or a blueprint. */
 	private static class Entry {
 		final String id, label;
@@ -61,6 +62,8 @@ public class CommissionDialog extends JDialog {
 	private final JPanel preview = new JPanel(new BorderLayout());
 	private final JTextField nameField = new JTextField(18);
 	private final JComboBox<String> difficulty = new JComboBox<String>(new String[] {"Easy", "Normal", "Hard"});
+	/** Advanced Edition content on (the default, as the station has always made ships) or off: an Original run. */
+	private final AeSwitch aeSwitch = new AeSwitch();
 	private final Random rng = new Random();
 	/** Her starting crew as previewed (names and looks): the crew she's built with. Rolled when a ship is chosen. */
 	private List<net.blerf.ftl.parser.SavedGameParser.CrewState> crew = null;
@@ -130,6 +133,10 @@ public class CommissionDialog extends JDialog {
 		difficulty.setToolTipText("How dangerous her first journey will be");
 		difficulty.setSelectedIndex(1); // Normal, as FTL starts
 		form.add(difficulty, c);
+		c.gridx = 4;
+		form.add(new JLabel("  Content:"), c);
+		c.gridx = 5;
+		form.add(aeSwitch, c);
 
 		JPanel right = new JPanel(new BorderLayout(0, 6));
 		preview.setPreferredSize(new Dimension(520, 440));
@@ -348,6 +355,7 @@ public class CommissionDialog extends JDialog {
 			SavedGameState s = make(e.id, nameField.getText(), Difficulty.EASY, new Random(0));
 			if (e.id.equals(crewFor)) Commission.sameCrew(s.getPlayerShip(), crew);
 			else { s = make(e.id, nameField.getText(), Difficulty.EASY, rng); crew = SaveHelper.getOwnCrew(s.getPlayerShip()); crewFor = e.id; }
+			aeSwitch.lock(homeplanet.parser.Dlc.needsAE(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id, s));
 			final Entry shown = e;
 			final List<net.blerf.ftl.parser.SavedGameParser.CrewState> aboard = SaveHelper.getOwnCrew(s.getPlayerShip());
 			JPanel p = dock.shipSummaryPanel(s, new java.util.function.Consumer<net.blerf.ftl.parser.SavedGameParser.CrewState>() {
@@ -438,6 +446,8 @@ public class CommissionDialog extends JDialog {
 		try {
 			s = make(e.id, name, chosenDifficulty(), rng);
 			if (e.id.equals(crewFor)) Commission.sameCrew(s.getPlayerShip(), crew); // the crew in the preview, as named there
+			// Original: Advanced Edition content off for her runs, unless she needs it (then the switch was locked on)
+			if (!aeSwitch.ae() && homeplanet.parser.Dlc.needsAE(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id, s) == null) s.setDLCEnabled(false);
 		} catch (Exception ex) {
 			HomePlanet.showErrorDialog("The shipyard could not build her:\n" + ex);
 			return;
@@ -488,6 +498,7 @@ public class CommissionDialog extends JDialog {
 		if (HomePlanet.commissionCosts() && !isFree) {
 			homeplanet.parser.Pricing.Quote q = quote(e.id, s);
 			price = q.total();
+			log.debug("Commission quote for {}: {} scrap ({})", e.id, price, q.lines);
 			int have = vault.storageScrap();
 			if (have < price) {
 				JOptionPane.showMessageDialog(this, "The shipyard asks " + price + " scrap for her, and the Cargo Hold has " + have + ".\n"
@@ -520,8 +531,10 @@ public class CommissionDialog extends JDialog {
 			HomePlanet.showErrorDialog("The new ship could not be docked; her save could not be written:\n" + ex + refund);
 			return;
 		}
+		log.debug("Commissioned {} ({}): {}, difficulty {}, AE {}, crew {}, paid {}", name, ship.id, e.id, difficulty.getSelectedItem(), s.isDLCEnabled(),
+				s.getPlayerShip().getCrewList().size(), price);
 		List<String> lines = new ArrayList<String>();
-		lines.add(e.label + " (" + e.id + "), difficulty " + difficulty.getSelectedItem());
+		lines.add(e.label + " (" + e.id + "), difficulty " + difficulty.getSelectedItem() + (s.isDLCEnabled() ? "" : ", Original (Advanced Edition content off)"));
 		if (price > 0) lines.add("Paid " + price + " scrap from the Cargo Hold");
 		if (plea) {
 			lines.add("On a plea: " + howPaid + (repCost > 0 ? "; " + repCost + " reputation" : ""));

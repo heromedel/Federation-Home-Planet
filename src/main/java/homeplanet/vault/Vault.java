@@ -320,6 +320,7 @@ public final class Vault {
 	 * Returns the hold's file as it was, for {@link #refundStorage} if what was paid for then fails.
 	 */
 	public synchronized byte[] payFromStorage(int scrap) throws IOException {
+		log.debug("Cargo Hold pays {} scrap", scrap);
 		Ship st = storage();
 		Copy c = readCopy(st);
 		int have = c.save.getPlayerShip().getScrapAmt();
@@ -712,7 +713,7 @@ public final class Vault {
 			File copy = new File(d, FINAL), note = new File(d, FINAL_NOTE);
 			if (!d.isDirectory() || byId(d.getName()) != null || !copy.isFile()) continue;
 			java.util.Properties p = new java.util.Properties();
-			try { p.load(new java.io.StringReader(new String(SafeFiles.read(note), java.nio.charset.StandardCharsets.UTF_8))); } catch (IOException e) { }
+			try { p.load(new java.io.StringReader(new String(SafeFiles.read(note), java.nio.charset.StandardCharsets.UTF_8))); } catch (IOException e) { log.debug("Final battle note {} could not be read: {}", note, e.toString()); }
 			String name = d.getName();
 			try {
 				String[] lines = new String(SafeFiles.read(new File(d, FATE_FILE)), java.nio.charset.StandardCharsets.UTF_8).split("\n");
@@ -876,6 +877,7 @@ public final class Vault {
 
 	/** Adds scrap to the storage hold (a stipend). */
 	public synchronized void depositToStorage(int scrap) throws IOException {
+		log.debug("Cargo Hold receives {} scrap", scrap);
 		Ship st = storage();
 		Copy c = readCopy(st);
 		c.save.getPlayerShip().setScrapAmt(c.save.getPlayerShip().getScrapAmt() + scrap);
@@ -1188,6 +1190,7 @@ public final class Vault {
 
 	/** Takes command of a docked ship: her save becomes continue.sav. Any ship already boarded is docked first. */
 	public synchronized void board(Ship s) throws IOException {
+		log.debug("Board {} ({})", s.name, s.id);
 		if (s.state != Ship.State.DOCKED) throw new IOException(s.name + " isn't docked");
 		Ship b = boarded();
 		if (b != null) dock();
@@ -1213,6 +1216,7 @@ public final class Vault {
 	public synchronized void dock() throws IOException {
 		Ship b = boarded();
 		if (b == null) return;
+		log.debug("Dock {} ({})", b.name, b.id);
 		File from = continueFile();
 		if (!from.isFile()) throw new IOException("continue.sav is missing: " + b.name + " may have been lost in FTL. Refresh to take stock.");
 		File to = new File(shipsDir(), b.id + ".sav"); // where a docked ship's save lives (fileOf, once she's docked)
@@ -1232,6 +1236,7 @@ public final class Vault {
 	public synchronized void disband() throws IOException {
 		Ship b = boarded();
 		if (b == null) return;
+		log.debug("Decommission {} ({})", b.name, b.id);
 		File from = continueFile();
 		b.state = Ship.State.JUNKED;
 		File to = fileOf(b);
@@ -1524,6 +1529,7 @@ public final class Vault {
 	/** A ship just built (commissioned): written into the ships folder, docked. */
 	public synchronized Ship adopt(SavedGameState state) throws IOException {
 		Ship s = new Ship(newId(), state.getPlayerShipName(), Ship.State.DOCKED, state.isDLCEnabled());
+		log.debug("New ship docked: {} ({}), {}, AE {}", s.name, s.id, state.getPlayerShipBlueprintId(), state.isDLCEnabled());
 		writeQuietly(s, state); // her file first: a failed write leaves no entry without one
 		ships.add(s);
 		saveManifest();

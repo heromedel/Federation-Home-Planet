@@ -337,7 +337,7 @@ Settings (the rules it sets are locked there). Custom picks any level of each ru
 |---|---|---|---|
 | After a final victory | save her, or the museum at full value | save her, or the museum at half value | the museum takes her, at half value |
 | New Journey | 200 | 500 | 1000 |
-| Plead for New Ship grants (4B.90) | any ship | Kestrel Type A or the Relief Ship | the Relief Ship Type A |
+| Plead for New Ship grants (4B.92) | any ship | Kestrel Type A or the Relief Ship | the Relief Ship Type A |
 | Refit removal | free | 25 | 50 |
 | Stripping when scrapping | allowed, free | allowed, 10 a system | not allowed |
 | Missiles and drone parts sell for | half | a quarter | 1 scrap each |
@@ -475,7 +475,7 @@ no letters, you come and check).
 - A derelict rebuilt with two systems' rooms swapped now says "the rooms built for her X and Y have been swapped",
   true whether or not those systems are installed.
 
-## 21. Reputation — built (4B.86, its own setting 4B.88, events, the rebel fleet and achievements 4B.89; harness test RepuT)
+## 21. Reputation — built (4B.92, from the long-range-comm branch's 4B.86–4B.91; harness test RepuT)
 
 A career's standing with The Federation Home Planet, earned by its ships' service in FTL and lost by their losses.
 Every Immersive career has it (Settings' Reputation rule, locked on); in Sandbox Mode it's the player's choice
@@ -521,7 +521,7 @@ requisitioned when one isn't needed would cost her full value).
 
 **Back burner:** spending reputation, and promotions tied to it.
 
-## 22. Plead for New Ship — built (4B.90; harness checks in PriceT, TransT, FleetT)
+## 22. Plead for New Ship — built (4B.92, from the long-range-comm branch; harness checks in PriceT, TransT, FleetT)
 
 Report for Reassignment is replaced (its sections above are history):
 

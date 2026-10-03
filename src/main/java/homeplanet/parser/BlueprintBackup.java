@@ -97,7 +97,7 @@ public final class BlueprintBackup {
 			// set off the scan of every save below each time designs are read
 			try {
 				if (new String(SafeFiles.read(f), StandardCharsets.UTF_8).startsWith(kind)) candidates.add(f);
-			} catch (Exception e) { }
+			} catch (Exception e) { log.debug("Blueprint backup {} could not be read: {}", f, e.toString()); }
 		}
 		if (candidates.isEmpty()) return out;
 		Set<String> needed = Vault.get().blueprintsInUseOrHistory();

@@ -17,6 +17,7 @@ import homeplanet.core.SafeFiles;
  * away (it answered, but wouldn't take it) stops trying, saying why, until the commander tries again or cancels it.
  */
 public final class Outbox {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Outbox.class);
 	private Outbox() { }
 
 	/** At most this many items wait, and this many for any one commander. */
@@ -158,11 +159,11 @@ public final class Outbox {
 			if (!i.toStation.equals(station) || !i.refused.isEmpty()) continue;
 			Shipments.Parcel parcel = i.shipment.isEmpty() ? null : Shipments.sendable(i.shipment);
 			if (!i.shipment.isEmpty() && parcel == null) { // its shipment was unpacked meanwhile: the message would promise what isn't there
-				try { refused(i, "Its shipment was unpacked: cancel this message."); } catch (IOException x) { }
+				try { refused(i, "Its shipment was unpacked: cancel this message."); } catch (IOException x) { log.debug("Outbox: a message could not be marked refused: {}", x.toString()); }
 				continue;
 			}
 			if (parcel != null && !shipmentsOk) {
-				try { refused(i, i.toTitle + "'s station can't take shipments (it needs a newer version)."); } catch (IOException x) { }
+				try { refused(i, i.toTitle + "'s station can't take shipments (it needs a newer version)."); } catch (IOException x) { log.debug("Outbox: a message could not be marked refused: {}", x.toString()); }
 				said.add("A shipment for " + i.toTitle + " can't go: their station needs a newer version.");
 				continue;
 			}

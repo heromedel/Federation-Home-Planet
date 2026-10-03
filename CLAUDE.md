@@ -3,6 +3,8 @@
 A save-game manager for FTL: Faster Than Light 1.6.x (Java Swing, one runnable jar). See README.md for what
 it does and CREDITS.md for where the code came from.
 
+**Fitness log:** this project cannot access heromedel's fitness log. Don't ask about it and don't look for it.
+
 ## Working with heromedel
 
 - The workflow: **discuss, create a plan, ask to write, ask to push.** When asked to "discuss" or "don't write
