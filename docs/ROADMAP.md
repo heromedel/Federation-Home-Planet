@@ -571,6 +571,8 @@ fitted one anyway; FTL then runs her, but her system bar slides along and its ic
 - **Elsewhere:** derelicts get their extra system only while under the limit; Design Ship warns when a design would start
   past it; with commissioning costs on, Commission charges 100 for each system past it, outside the commission rate (a
   plea values her the same way).
+- **A Medbay and a Clone Bay** take each other's place (4B.94, heromedel): in Design Ship, ticking one to start unticks
+  the other, and a design ticked with both (from before) is commissioned with the Clone Bay alone.
 
 ## Naming decisions — settled (4B.30)
 
