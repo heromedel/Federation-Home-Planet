@@ -581,6 +581,14 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   shuttle docks."). The asteroid belt's line is heromedel's: "you can hear a small asteroid glancing off the shuttle's
   shields" (no sound carried through the hull from outside). The twelve events read again for sound, smell or wind
   where there's no air: none else.
+- 4B.97: the event box loses its rim (the words sit straight on the dark panel). Picking who goes: three seats side by
+  side, each a drop-down of the Cargo Hold's crew (or no one), and under each a card of the one picked: portrait, name,
+  race, a health bar if hurt, and the six skills (a pip a level, green then gold as FTL marks them, and a thin bar toward
+  the next). Picking someone for one seat takes them out of another; the first three are picked to begin with.
+  The crew report (Plan KK) is drawn the same way wherever it opens (the Cargo Bay, with Rename; a Long Range offer;
+  a click on a name in the ship report, from the Space Dock or the Cargo Bay): portrait, name, race and sex, health or
+  the infirmary, the six skills with pips, a bar and the points, and the service record. Health bars also show on the
+  ship report's crew and the Long Range trade lists; not the Museum (finished runs) or the Dry Dock's crew for hire.
 - In the Cargo Bay's system rows, broken bars are drawn red at the end of the level bar (4B.91).
 - **Folding headings**: a click on a gold heading of the Space Dock's controls folds its buttons away or back,
   lighter under the mouse, a small arrow when folded; remembered in the cfg (`fold_station`, ...).

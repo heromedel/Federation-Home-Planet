@@ -867,7 +867,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private static final Color INFIRMARY = new Color(170, 110, 230);
 	private static final String INFIRMARY_HTML = "#aa6ee6";
 	/** A crew member's health, and what they've lost of it: the green and red of the station's system bars. */
-	private static final Color HEALTH = new Color(120, 230, 120), HURT = new Color(225, 70, 55);
+	private static final Color HEALTH = CrewReport.HEALTH, HURT = CrewReport.HURT;
 	private static final Comparator<CargoParts.Row> BY_NAME = new Comparator<CargoParts.Row>() {
 		public int compare(CargoParts.Row a, CargoParts.Row b) { return a.name.compareToIgnoreCase(b.name); }
 	};
@@ -1166,8 +1166,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		// the infirmary knows them by name: no new one until they're out
 		boolean resting = !mine && partnerIsStorage() && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), cs);
 		Object[] options = resting ? new Object[] {"OK"} : new Object[] {"OK", "Rename"};
-		int choice = JOptionPane.showOptionDialog(this, Crew.summary(cs), "Report for crewman " + cs.getName(),
-				JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, IconFactory.crewPortrait(cs, 48), options, options[0]);
+		int choice = CrewReport.show(this, cs, resting, options);
 		if (choice != 1) return;
 		String newName = SpaceDockUI.promptForName("Enter a new name for " + cs.getName() + ":", "Rename Crew", cs.getName());
 		if (newName == null || newName.equals(cs.getName())) return;

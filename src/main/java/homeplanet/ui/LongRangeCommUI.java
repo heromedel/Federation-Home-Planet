@@ -1260,7 +1260,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private void info(Line l) {
 		if (l == null) return;
 		if (l.kind == Line.Kind.CREW) {
-			JOptionPane.showMessageDialog(this, Crew.summary(l.crew), "Report for crewman " + l.crew.getName(), JOptionPane.PLAIN_MESSAGE, IconFactory.crewPortrait(l.crew, 48));
+			CrewReport.show(this, l.crew, false, new Object[] {"OK"});
 		} else if (l.kind.isItem()) {
 			String t = ItemTooltips.tooltip(l.id);
 			JOptionPane.showMessageDialog(this, new JLabel(t != null ? t : Items.title(l.id)), Items.title(l.id), JOptionPane.PLAIN_MESSAGE, IconFactory.itemIcon(l.id));
@@ -1340,7 +1340,10 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 			int c = l.kind == Line.Kind.WEAPON ? 0 : l.kind == Line.Kind.DRONE ? 1 : l.kind == Line.Kind.AUGMENT ? 2 : l.kind == Line.Kind.CREW ? 3 : -1;
 			if (c != cat) continue;
 			if (c == 3) {
-				out.add(new CargoParts.Row(IconFactory.crewIcon(l.crew), l.crew.getName(), Crew.raceTitle(l.crew), l, Crew.tooltip(l.crew), false));
+				CargoParts.Row row = new CargoParts.Row(IconFactory.crewIcon(l.crew), l.crew.getName(), Crew.raceTitle(l.crew), l, Crew.tooltip(l.crew), false);
+				int max = l.crew.getRace() == null ? 100 : l.crew.getRace().getMaxHealth();
+				if (l.crew.getHealth() < max) row.bar(l.crew.getHealth() / (float) max, CrewReport.HEALTH, CrewReport.HURT); // hurt, as the Cargo Bay shows it
+				out.add(row);
 				continue;
 			}
 			String k = l.id + (l.inCargo ? "|cargo" : "");

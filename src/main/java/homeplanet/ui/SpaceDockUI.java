@@ -1464,9 +1464,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			crew.add(head);
 		}
 		for (final CrewState c : SaveHelper.getOwnCrew(state)) {
-			JLabel row = reportRow(crew, IconFactory.crewIcon(c), c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")");
-			if (rename == null) continue;
+			final JLabel row = reportRow(crew, CrewReport.withHealth(IconFactory.crewIcon(c), c), c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")");
 			row.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+			if (rename == null) { // a click opens their report
+				row.setToolTipText("Click for " + c.getName() + "'s report");
+				row.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { CrewReport.show(row, c, false, new Object[] {"OK"}); } });
+				continue;
+			}
 			row.setToolTipText("Click to rename " + c.getName());
 			row.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { rename.accept(c); } });
 		}

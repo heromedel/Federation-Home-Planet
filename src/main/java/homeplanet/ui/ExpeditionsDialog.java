@@ -12,7 +12,6 @@ import java.util.Random;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -49,11 +48,11 @@ final class ExpeditionsDialog extends JDialog {
 	static final String BLUE = "#6ab8ff";
 
 	/**
-	 * The event box: the station's own dark panel and pale rim, FTL's type (JustinFont, from ftl.dat), words wrapped at TEXT_W, a line
+	 * The event box: the station's own dark panel, FTL's type (JustinFont, from ftl.dat), words wrapped at TEXT_W, a line
 	 * every LINE, the choices two lines under the words and CHOICE_GAP apart, the box as tall as what's in it.
 	 */
 	static final int TEXT_W = 540, PAD = 18, LINE = 17, CHOICE_GAP = 9, MIN_H = 200;
-	static final Color BOX_BG = MenuTheme.BG, BOX_RIM = new Color(214, 230, 222, 150), WORDS = MenuTheme.TEXT,
+	static final Color BOX_BG = MenuTheme.BG, WORDS = MenuTheme.TEXT,
 			HOVER = new Color(255, 214, 90), RACE = new Color(106, 184, 255);
 
 	/**
@@ -222,7 +221,7 @@ final class ExpeditionsDialog extends JDialog {
 	/** A choice as it reads, numbered: "2. (Mantis) Krik offers to..." */
 	static String label(Expeditions.Run run, Expeditions.Choice c, int n) { return n + ". " + run.label(c); }
 
-	/** The event box: the station's dark panel with a pale rim, its contents one under the other. */
+	/** The event box: the station's dark panel, no rim, its contents one under the other. */
 	static final class Box extends JPanel {
 		Box() {
 			setLayout(new javax.swing.BoxLayout(this, javax.swing.BoxLayout.Y_AXIS));
@@ -236,8 +235,6 @@ final class ExpeditionsDialog extends JDialog {
 		@Override protected void paintComponent(java.awt.Graphics g) {
 			g.setColor(BOX_BG);
 			g.fillRect(0, 0, getWidth(), getHeight());
-			g.setColor(BOX_RIM);
-			g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
 		}
 	}
 	/** Words in FTL's type, wrapped to the box (blank lines kept). Its text is the words, for whoever asks. */
@@ -313,26 +310,117 @@ final class ExpeditionsDialog extends JDialog {
 		return out;
 	}
 	/** Up to three crew from the Cargo Hold, ticked. */
-	private List<CrewState> pickParty(List<CrewState> crew) {
-		JPanel p = new JPanel(new GridLayout(0, 1, 0, 2));
-		p.add(new JLabel("Who goes with you? (up to " + Expeditions.PARTY_MAX + ")"));
-		final List<JCheckBox> boxes = new ArrayList<JCheckBox>();
-		for (CrewState c : crew) {
-			final JCheckBox b = new JCheckBox(c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")");
-			b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) {
-				int n = 0; for (JCheckBox x : boxes) if (x.isSelected()) n++;
-				if (n > Expeditions.PARTY_MAX) b.setSelected(false);
-			} });
-			boxes.add(b);
-			p.add(b);
+	/**
+	 * Who goes: three seats side by side, each a drop-down of the Cargo Hold's crew (or no one), and under it the one
+	 * chosen: portrait, race, health if hurt, and the six skills (a pip a level, a thin bar toward the next). Someone
+	 * picked for a place leaves the other places. The first three are picked to begin with.
+	 */
+	private List<CrewState> pickParty(final List<CrewState> crew) {
+		JPanel p = new JPanel(new BorderLayout(0, 12));
+		JLabel head = new JLabel("Who goes with you? Up to " + Expeditions.PARTY_MAX + " from the Cargo Hold.");
+		head.setForeground(MenuTheme.GOLD);
+		head.setFont(head.getFont().deriveFont(java.awt.Font.BOLD, 14f));
+		p.add(head, BorderLayout.NORTH);
+		JPanel slots = new JPanel(new GridLayout(1, Expeditions.PARTY_MAX, 12, 0));
+		final List<javax.swing.JComboBox<Object>> picks = new ArrayList<javax.swing.JComboBox<Object>>();
+		final List<CrewCard> cards = new ArrayList<CrewCard>();
+		final String nobody = "No one";
+		for (int i = 0; i < Expeditions.PARTY_MAX; i++) {
+			Object[] items = new Object[crew.size() + 1];
+			items[0] = nobody;
+			for (int k = 0; k < crew.size(); k++) items[k + 1] = crew.get(k);
+			final javax.swing.JComboBox<Object> box = new javax.swing.JComboBox<Object>(items);
+			box.setRenderer(new javax.swing.DefaultListCellRenderer() {
+				@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> l, Object v, int idx, boolean sel, boolean foc) {
+					super.getListCellRendererComponent(l, v, idx, sel, foc);
+					if (v instanceof CrewState) { CrewState c = (CrewState) v; setText(c.getName() + "  (" + homeplanet.model.Crew.raceTitle(c) + ")"); setIcon(IconFactory.crewIcon(c)); }
+					else { setText(String.valueOf(v)); setIcon(null); }
+					return this;
+				}
+			});
+			if (i < crew.size()) box.setSelectedIndex(i + 1);
+			final CrewCard card = new CrewCard();
+			card.show(box.getSelectedItem() instanceof CrewState ? (CrewState) box.getSelectedItem() : null);
+			picks.add(box); cards.add(card);
+			JPanel col = new JPanel(new BorderLayout(0, 8));
+			JLabel n = new JLabel("Seat " + (i + 1));
+			n.setForeground(MenuTheme.GREY_GREEN);
+			col.add(n, BorderLayout.NORTH);
+			JPanel inner = new JPanel(new BorderLayout(0, 8));
+			inner.add(box, BorderLayout.NORTH);
+			inner.add(card, BorderLayout.CENTER);
+			col.add(inner, BorderLayout.CENTER);
+			slots.add(col);
 		}
-		if (boxes.size() <= Expeditions.PARTY_MAX) for (JCheckBox b : boxes) b.setSelected(true);
-		else for (int i = 0; i < Expeditions.PARTY_MAX; i++) boxes.get(i).setSelected(true);
+		for (int i = 0; i < picks.size(); i++) {
+			final int me = i;
+			picks.get(i).addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) {
+				Object chosen = picks.get(me).getSelectedItem();
+				if (chosen instanceof CrewState) // one person, one place: they leave any other
+					for (int k = 0; k < picks.size(); k++) if (k != me && picks.get(k).getSelectedItem() == chosen) { picks.get(k).setSelectedIndex(0); cards.get(k).show(null); }
+				cards.get(me).show(chosen instanceof CrewState ? (CrewState) chosen : null);
+			} });
+		}
+		p.add(slots, BorderLayout.CENTER);
 		Object[] opts = {"Set out", "Cancel"};
-		if (JOptionPane.showOptionDialog(this, p, "Expeditions", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]) != 0) return null;
-		List<CrewState> out = new ArrayList<CrewState>();
-		for (int i = 0; i < boxes.size(); i++) if (boxes.get(i).isSelected()) out.add(crew.get(i));
-		return out;
+		while (true) {
+			if (JOptionPane.showOptionDialog(this, p, "Expeditions", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[0]) != 0) return null;
+			List<CrewState> out = new ArrayList<CrewState>();
+			for (javax.swing.JComboBox<Object> b : picks) if (b.getSelectedItem() instanceof CrewState && !out.contains(b.getSelectedItem())) out.add((CrewState) b.getSelectedItem());
+			if (!out.isEmpty()) return out;
+			JOptionPane.showMessageDialog(this, "Choose at least one crew member to go with you.", "Expeditions", JOptionPane.INFORMATION_MESSAGE);
+		}
+	}
+
+	/** A crew member as the picker shows them: portrait, name and race, health if hurt, and the six skills. */
+	static final class CrewCard extends JPanel {
+		private static final String[] SKILL_NAMES = {"Piloting", "Engines", "Shields", "Weapons", "Repair", "Combat"};
+		private CrewState c;
+		CrewCard() { setOpaque(true); setBackground(MenuTheme.BG); setBorder(BorderFactory.createLineBorder(new Color(214, 230, 222, 90))); }
+		void show(CrewState who) { c = who; revalidate(); repaint(); }
+		@Override public java.awt.Dimension getPreferredSize() { return new java.awt.Dimension(200, 196); }
+		@Override protected void paintComponent(java.awt.Graphics g0) {
+			super.paintComponent(g0);
+			java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
+			g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+			if (c == null) {
+				g.setColor(MenuTheme.DIM);
+				g.setFont(getFont());
+				String s = "No one";
+				g.drawString(s, (getWidth() - g.getFontMetrics().stringWidth(s)) / 2, getHeight() / 2);
+				g.dispose();
+				return;
+			}
+			javax.swing.Icon face = IconFactory.crewPortrait(c, 40);
+			face.paintIcon(this, g, 10, 10);
+			g.setFont(getFont().deriveFont(java.awt.Font.BOLD, 13f));
+			g.setColor(MenuTheme.WHITE);
+			g.drawString(c.getName(), 58, 26);
+			g.setFont(getFont().deriveFont(java.awt.Font.PLAIN, 12f));
+			g.setColor(MenuTheme.GREY_GREEN);
+			g.drawString(homeplanet.model.Crew.raceTitle(c), 58, 43);
+			int max = c.getRace() == null ? 100 : c.getRace().getMaxHealth();
+			if (c.getHealth() < max) { // hurt in the game: as the Cargo Bay shows it
+				g.setColor(new Color(225, 70, 55)); g.fillRect(58, 49, 60, 3);
+				g.setColor(new Color(120, 230, 120)); g.fillRect(58, 49, Math.max(1, 60 * c.getHealth() / max), 3);
+			}
+			int[] levels = homeplanet.model.Crew.skillLevels(c);
+			int y = 70;
+			for (int i = 0; i < 6; i++) {
+				g.setColor(MenuTheme.TEXT);
+				g.drawString(SKILL_NAMES[i], 12, y + 10);
+				for (int k = 0; k < 2; k++) { // a pip a level: green for the first, gold for the second, as FTL marks them
+					g.setColor(k < levels[i] ? (k == 0 ? new Color(120, 230, 120) : MenuTheme.GOLD) : new Color(70, 82, 92));
+					g.fillRect(100 + k * 14, y + 2, 10, 9);
+				}
+				int iv = homeplanet.model.Skills.interval(c, i), pts = homeplanet.model.Skills.points(c, i);
+				float toNext = levels[i] >= 2 ? 1f : Math.max(0f, Math.min(1f, (pts - levels[i] * iv) / (float) iv));
+				g.setColor(new Color(70, 82, 92)); g.fillRect(132, y + 5, 56, 3);
+				g.setColor(levels[i] >= 2 ? MenuTheme.GOLD : new Color(160, 190, 175)); g.fillRect(132, y + 5, Math.round(56 * toNext), 3);
+				y += 20;
+			}
+			g.dispose();
+		}
 	}
 
 	private void hire() {
