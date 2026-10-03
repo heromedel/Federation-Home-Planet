@@ -128,6 +128,18 @@ public final class Line {
 
 	// ---- a crew member, field by field ----
 
+	/** A crew member as fields, as the Long Range sends them (for a record kept on disk: a captive's). */
+	public static java.util.Map<String, String> crewFields(CrewState c) {
+		Wire.Msg m = new Wire.Msg("crew");
+		writeCrew(m, "", c);
+		return new java.util.LinkedHashMap<String, String>(m.fields());
+	}
+	/** A crew member rebuilt from {@link #crewFields}, checked as one from the Long Range is. */
+	public static CrewState crewFrom(java.util.Map<String, String> fields) throws Wire.Garbled {
+		Wire.Msg m = new Wire.Msg("crew");
+		for (java.util.Map.Entry<String, String> e : fields.entrySet()) m.put(e.getKey(), e.getValue());
+		return readCrew(m, "");
+	}
 	private static void writeCrew(Wire.Msg m, String p, CrewState c) {
 		m.put(p + "name", c.getName()).put(p + "race", c.getRace().getId()).put(p + "male", c.isMale()).put(p + "health", c.getHealth());
 		int[] skills = skills(c);

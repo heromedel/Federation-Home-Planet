@@ -555,8 +555,7 @@ public class GuiT {
  /** With the inbox off, a ransom comes up at the Space Dock: Pay brings them home. */
  static void ransomPopUp(final MainFrame f) throws Exception {
   final Vault v = Vault.get();
-  java.lang.reflect.Method take = Expeditions.class.getDeclaredMethod("takeCaptive", Vault.class, SavedGameParser.CrewState.class, String.class); take.setAccessible(true);
-  take.invoke(null, v, Commission.volunteer("energy", new Random(8)), "pirates");
+  ExpT.take(v, Commission.volunteer("energy", new Random(8)));
   for (int i = 0; i < 6; i++) { SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile()); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock(); }
   final List<Expeditions.RansomNews> news = Expeditions.checkRansoms(v);
   hold(v, 200);

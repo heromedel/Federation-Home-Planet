@@ -1,6 +1,7 @@
 # Expeditions: the postings on the board, and the events the commander and crew meet on them.
 #
-# posting <kind> <the posting's words>       kinds: rescue, escort, salvage, survey, delivery, repair, security
+# posting <kind>:<event> <the posting's words>   kinds: rescue, escort, salvage, survey, delivery, repair, security;
+#                                             each event has one posting, written for it, and plays when it's taken
 #
 # event <id> <kind> [foe:<who>]              (foe: who takes crew on this job, for the ransom letters; "pirates" if
 #                                             not said; underscores for spaces: foe:the_rebels)
@@ -38,18 +39,18 @@
 
 # ---- postings ----
 
-posting rescue A freighter captain lost their pilot in a rebel raid. The pilot went to ground on a moon a few jumps out, and the captain is going back for them. They need hands, and someone who has seen trouble before.
-posting rescue A Rock mining colony has lost a work crew in a shaft collapse. The miners dig slowly and don't ask for help. Their families do.
-posting escort A Zoltan merchant needs an escort for one jump, and has an armed cutter for whoever takes the job. She has lost two escorts this month. She says she will not lose a third.
-posting escort A small liner wants an escort through the nebula. Her owners will lend a cutter to anyone who'll fly it. The captain says she has had trouble in there, and won't say what kind.
-posting salvage An insurer wants a wrecked freighter in the asteroid belt stripped before the scavengers get to her. Pay on return, by the crate.
-posting salvage A dead Mantis raider is drifting around a gas giant. A salvage broker wants what's in her weapons bay, and says anything else aboard is yours to keep.
-posting survey A survey company wants readings from an ice moon's southern pole. Simple work, they say. Their last team didn't say anything at all.
-posting delivery A sealed crate for a research station two jumps out. No questions, no stops. Pay on delivery.
-posting delivery Medicine for a farming colony under quarantine. The Federation has cleared the delivery. The colony's governor has not been told.
-posting repair An Engi relay station has lost its reactor. The Engi are precise about what they need: four hands, no fear of heat, and no opinions.
-posting repair A farming colony's only water pump has stopped. They can pay a little. They can also feed you, which, this far out, is worth more.
-posting security A Slug trader is holding an auction on a station at the edge of the nebula and wants a few sturdy people standing near the goods. He says he trusts his customers completely.
+posting rescue:pilot_moon A freighter captain lost their pilot in a rebel raid. The pilot went to ground on a moon a few jumps out, and the captain is going back for them. They need hands, and someone who has seen trouble before.
+posting rescue:rock_shaft A Rock mining colony has lost a work crew in a shaft collapse. The miners dig slowly and don't ask for help. Their families do.
+posting escort:lane_toll A Zoltan merchant needs an escort for one jump, and has an armed cutter for whoever takes the job. She has lost two escorts this month. She says she will not lose a third.
+posting escort:dark_liner A small liner wants an escort through the nebula. Her owners will lend a cutter to anyone who'll fly it. The captain says she has had trouble in there, and won't say what kind.
+posting salvage:belt_freighter An insurer wants a wrecked freighter in the asteroid belt stripped before the scavengers get to her. Pay on return, by the crate.
+posting salvage:mantis_raider A dead Mantis raider is drifting around a gas giant. A salvage broker wants what's in her weapons bay, and says anything else aboard is yours to keep.
+posting survey:ice_moon A survey company wants readings from an ice moon's southern pole. Simple work, they say. Their last team didn't say anything at all.
+posting delivery:dark_station A sealed crate for a research station two jumps out. No questions, no stops. Pay on delivery.
+posting delivery:quarantine Medicine for a farming colony under quarantine. The Federation has cleared the delivery. The colony's governor has not been told.
+posting repair:engi_relay An Engi relay station has lost its reactor. The Engi are precise about what they need: four hands, no fear of heat, and no opinions.
+posting repair:dry_well A farming colony's only water pump has stopped. They can pay a little. They can also feed you, which, this far out, is worth more.
+posting security:slug_auction A Slug trader is holding an auction on a station at the edge of the nebula and wants a few sturdy people standing near the goods. He says he trusts his customers completely.
 
 # ---- rescue ----
 

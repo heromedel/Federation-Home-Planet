@@ -11,6 +11,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
  home(v);
  care(v);
  ransoms(v);
+ lateLook(v);
  hiring(v);
  Setup.done();
 }
@@ -85,6 +86,24 @@ public class ExpT { public static void main(String[] a) throws Exception {
   for (int i = 0; i < 3; i++) { int u0 = Integer.parseInt(bp0.getProperty(i + ".until")); if (u0 == soonest) { if (!after.get(i).text.equals(before.get(i).text) || Integer.parseInt(bp1.getProperty(i + ".until")) > soonest) changed++; } else if (after.get(i).text.equals(before.get(i).text)) kept++; }
   int due = 0; for (int i = 0; i < 3; i++) if (Integer.parseInt(bp0.getProperty(i + ".until")) == soonest) due++;
   Setup.chk("P: when its time comes a posting is replaced (" + changed + " of " + due + "); the others stay (" + kept + " of " + (3 - due) + ")", changed == due && kept == 3 - due);
+  // each posting plays the event it was written for, and signing on takes it off the board
+  java.lang.reflect.Field ef = Expeditions.Posting.class.getDeclaredField("event"); ef.setAccessible(true);
+  List<CrewState> one = hold(v, "human");
+  boolean matched = true, offBoard = true; int tried = 0;
+  for (int k = 0; k < 30; k++) {
+   new File(v.root, "expeditions.txt").delete();
+   List<Expeditions.Posting> fresh = Expeditions.board(v);
+   for (int i = 0; i < 3; i++) {
+    Expeditions.Posting x = Expeditions.board(v).get(i);
+    Expeditions.Run r = Expeditions.start(v, i, one, new Random(k));
+    tried++;
+    if (ef.get(x) == null || !r.event().id.equals(ef.get(x))) matched = false;
+    Expeditions.Posting now2 = Expeditions.board(v).get(i);
+    if (now2.text.equals(x.text) || !Expeditions.recentEvents(v).contains(r.event().id)) offBoard = false;
+   }
+  }
+  Setup.chk("P: every posting plays the event written for it (" + tried + " sign-ons)", matched);
+  Setup.chk("P: signing on takes the job off the board at once, its event remembered: closing the station mid-job can't play it again", offBoard);
  }
  /** Crew of these races, in the Cargo Hold (any there before are moved out of the way first). */
  static List<CrewState> hold(Vault v, String... races) throws Exception {
@@ -104,7 +123,14 @@ public class ExpT { public static void main(String[] a) throws Exception {
   return Expeditions.holdCrew(v);
  }
  /** A fixed board, so the runs don't depend on what was posted. */
+ static String[] pinned;
+ /** Signs on to the pinned board's first job (signing on takes it off the board: pinned again first, for the next try). */
+ static Expeditions.Run start(Vault v, List<CrewState> crew, Random rng) throws Exception {
+  if (pinned != null) pinBoard(v, pinned);
+  return Expeditions.start(v, 0, crew, rng);
+ }
  static void pinBoard(Vault v, String... events) throws Exception {
+  pinned = events;
   StringBuilder sb = new StringBuilder();
   for (int i = 0; i < 3; i++) sb.append(i).append(".kind=").append(Expeditions.events().get(0).kind).append("\n").append(i).append(".until=999999\n").append(i).append(".text=job ").append(i).append("\n").append(i).append(".event=").append(events[i % events.length]).append("\n");
   SafeFiles.writeText(new File(v.root, "expeditions.txt"), sb.toString(), false);
@@ -116,7 +142,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   for (Expeditions.Event e : Expeditions.events()) {
    pinBoard(v, e.id);
    for (int s = 0; s < 40; s++) {
-    Expeditions.Run r = Expeditions.start(v, 0, mixed, new Random(s)); Random pk = new Random(s);
+    Expeditions.Run r = start(v, mixed, new Random(s)); Random pk = new Random(s);
     while (!r.over()) {
      List<Expeditions.Choice> cs = r.choices(); screens++;
      if (r.text().trim().isEmpty() || cs.isEmpty()) words = false;
@@ -131,8 +157,8 @@ public class ExpT { public static void main(String[] a) throws Exception {
   List<CrewState> humans = hold(v, "human", "human");
   boolean humanOnly = true, sawRock = false;
   pinBoard(v, "rock_shaft");
-  for (Expeditions.Choice c : Expeditions.start(v, 0, humans, new Random(1)).choices()) if (c.race != null) humanOnly = false;
-  for (Expeditions.Choice c : Expeditions.start(v, 0, hold(v, "rock"), new Random(1)).choices()) if ("rock".equals(c.race)) sawRock = true;
+  for (Expeditions.Choice c : start(v, humans, new Random(1)).choices()) if (c.race != null) humanOnly = false;
+  for (Expeditions.Choice c : start(v, hold(v, "rock"), new Random(1)).choices()) if ("rock".equals(c.race)) sawRock = true;
   Setup.chk("R: a party of humans sees no race's options; a Rock's open with a Rock along", humanOnly && sawRock);
   // who takes a choice on, and how much safer they make it: the relay's "find the fault yourselves" wants an Engi (tech)
   // and repair; the best suited does it, takes its risk first, and earns its experience
@@ -142,21 +168,21 @@ public class ExpT { public static void main(String[] a) throws Exception {
   CrewState plain = Commission.volunteer("human", new Random(11)), fixer = Commission.volunteer("human", new Random(12)), engi = Commission.volunteer("engi", new Random(13)), ace = Commission.volunteer("engi", new Random(14));
   plain.setName("Ada Plain"); fixer.setName("Bo Fixer"); engi.setName("Cog"); ace.setName("Dial"); // names apart, whatever the dice gave
   homeplanet.model.Skills.set(fixer, 4, 20); homeplanet.model.Skills.set(ace, 4, 36); // repair: a human at level 1, an Engi at level 2
-  Expeditions.Run r0 = Expeditions.start(v, 0, holdOf(v, plain), new Random(1));
+  Expeditions.Run r0 = start(v, holdOf(v, plain), new Random(1));
   Expeditions.Choice tech = null, told = null; for (Expeditions.Choice c : r0.choices()) { if (c.text.startsWith("Go into the reactor room")) tech = c; if (c.text.startsWith("Do exactly")) told = c; }
   int fPlain = (Integer) fit.invoke(r0, tech);
-  Expeditions.Run r1 = Expeditions.start(v, 0, holdOf(v, plain, fixer), new Random(1));
+  Expeditions.Run r1 = start(v, holdOf(v, plain, fixer), new Random(1));
   int fFixer = (Integer) fit.invoke(r1, tech); String d1 = ((CrewState) doer.invoke(r1, tech)).getName();
-  Expeditions.Run r2 = Expeditions.start(v, 0, holdOf(v, fixer, engi), new Random(1));
+  Expeditions.Run r2 = start(v, holdOf(v, fixer, engi), new Random(1));
   int fEngi = (Integer) fit.invoke(r2, tech); String d2 = ((CrewState) doer.invoke(r2, tech)).getName();
-  Expeditions.Run r3 = Expeditions.start(v, 0, holdOf(v, engi, ace, plain), new Random(1));
+  Expeditions.Run r3 = start(v, holdOf(v, engi, ace, plain), new Random(1));
   int fAce = (Integer) fit.invoke(r3, tech); String d3 = ((CrewState) doer.invoke(r3, tech)).getName();
   Setup.chk("R: the reactor room's risk: anyone " + fPlain + "%, a level 1 repairer " + fFixer + "%, an Engi " + fEngi + "%, an Engi at level 2 " + fAce + "%",
     fPlain == 100 && fFixer == 80 && fEngi == 50 && fAce == 30);
   Setup.chk("R: the best suited takes it on: the repairer over a beginner (" + d1 + "), an Engi over a level 1 human (" + d2 + "), the skilled Engi over the other (" + d3 + ")",
     d1.equals(fixer.getName()) && d2.equals(engi.getName()) && d3.equals(ace.getName()));
   // the experience is theirs: doing as the attendant says, the level 1 repairer does it, not the beginner
-  Expeditions.Run r4 = Expeditions.start(v, 0, holdOf(v, plain, fixer), new Random(2));
+  Expeditions.Run r4 = start(v, holdOf(v, plain, fixer), new Random(2));
   r4.choose(told); Expeditions.finish(v, r4);
   Setup.chk("R: the repairer earns the repair experience (" + homeplanet.model.Skills.points(crew(v, fixer.getName()), 4) + "), the beginner none (" + homeplanet.model.Skills.points(crew(v, plain.getName()), 4) + ")",
     homeplanet.model.Skills.points(crew(v, fixer.getName()), 4) == 22 && homeplanet.model.Skills.points(crew(v, plain.getName()), 4) == 0);
@@ -166,7 +192,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   m1.setName("Kriss"); m2.setName("Vetch");
   boolean same = true;
   for (int s = 0; s < 30; s++) {
-   Expeditions.Run r = Expeditions.start(v, 0, holdOf(v, m1, m2), new Random(s));
+   Expeditions.Run r = start(v, holdOf(v, m1, m2), new Random(s));
    Expeditions.Choice mc = null; for (Expeditions.Choice c : r.choices()) if ("mantis".equals(c.race)) mc = c;
    String named = r.label(mc).replace("(Mantis) ", "").split(" says")[0];
    if (!r.choose(mc).contains(named)) same = false;
@@ -176,7 +202,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   pinBoard(v, "rock_shaft");
   int dead = 0, hurt = 0, fine = 0, alone = 0;
   for (int s = 0; s < 600; s++) {
-   Expeditions.Run r = Expeditions.start(v, 0, hold(v, "human"), new Random(s));
+   Expeditions.Run r = start(v, hold(v, "human"), new Random(s));
    Expeditions.Choice c = null; for (Expeditions.Choice x : r.choices()) if (x.text.startsWith("Go down the vent")) c = x;
    r.choose(c);
    if (r.alive().isEmpty()) { dead++; alone++; } else if (!fieldList(r, "hurt").isEmpty()) hurt++; else fine++;
@@ -193,8 +219,8 @@ public class ExpT { public static void main(String[] a) throws Exception {
   String name0 = two.get(0).getName(), name1 = two.get(1).getName();
   // a run where the first choice paid and nobody was hurt
   Expeditions.Run r = null;
-  for (int s = 0; s < 200 && r == null; s++) { Expeditions.Run t = Expeditions.start(v, 0, Expeditions.holdCrew(v), new Random(s)); t.choose(t.choices().get(0)); if (t.over() && t.alive().size() == 2) r = t; }
-  int beacons = v.beaconsSeen(); String old = Expeditions.board(v).get(0).text;
+  for (int s = 0; s < 200 && r == null; s++) { Expeditions.Run t = start(v, Expeditions.holdCrew(v), new Random(s)); t.choose(t.choices().get(0)); if (t.over() && t.alive().size() == 2) r = t; }
+  int beacons = v.beaconsSeen(); String old = "job 0"; // signing on took it off the board
   int got = fieldInt(r, "scrap");
   String end = Expeditions.finish(v, r);
   Setup.chk("H: home: the scrap to the Cargo Hold (" + got + "), a beacon passed, nothing more to say (the outcome said it), a new posting in its place", v.storageScrap() == 100 + got && got > 0
@@ -205,7 +231,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   pinBoard(v, "rock_shaft");
   Expeditions.Run bad = null;
   for (int s = 0; s < 5000 && bad == null; s++) {
-   Expeditions.Run t = Expeditions.start(v, 0, Expeditions.holdCrew(v), new Random(s));
+   Expeditions.Run t = start(v, Expeditions.holdCrew(v), new Random(s));
    Expeditions.Choice vent = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Go down the vent")) vent = x;
    t.choose(vent);
    if (!fieldList(t, "hurt").isEmpty()) { // one hurt: send the other down the vent of a second run? no: one run, one choice; take a hurt one and kill the other by a lost outcome elsewhere
@@ -230,7 +256,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   pinBoard(v, "rock_shaft");
   Expeditions.Run death = null;
   for (int s = 0; s < 5000 && death == null; s++) {
-   Expeditions.Run t = Expeditions.start(v, 0, Expeditions.holdCrew(v), new Random(s));
+   Expeditions.Run t = start(v, Expeditions.holdCrew(v), new Random(s));
    Expeditions.Choice vent = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Go down the vent")) vent = x;
    t.choose(vent);
    if (!fieldList(t, "lost").isEmpty()) death = t;
@@ -243,7 +269,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   Setup.chk("H: " + deadName + " dead: gone from the Cargo Hold, in the history log, and no more said of it (the outcome said it)", gone && Expeditions.holdCrew(v).size() == before - 1 && !end.contains(deadName) && hist.contains("did not come back: " + deadName));
   // a party no longer in the hold is refused, nothing changed
   List<CrewState> party = hold(v, "human", "human");
-  Expeditions.Run stale = Expeditions.start(v, 0, party, new Random(3)); while (!stale.over()) stale.choose(stale.choices().get(0));
+  Expeditions.Run stale = start(v, party, new Random(3)); while (!stale.over()) stale.choose(stale.choices().get(0));
   hold(v, "engi");
   boolean refused = false; try { Expeditions.finish(v, stale); } catch (IOException e) { refused = e.getMessage().contains("no longer in the Cargo Hold"); }
   Setup.chk("H: crew no longer in the Cargo Hold: the expedition can't be recorded, nothing changed", refused);
@@ -291,7 +317,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   pinBoard(v, "rock_shaft");
   Expeditions.Run bad = null;
   for (int s = 0; s < 5000 && bad == null; s++) {
-   Expeditions.Run t = Expeditions.start(v, 0, Expeditions.holdCrew(v), new Random(s));
+   Expeditions.Run t = start(v, Expeditions.holdCrew(v), new Random(s));
    Expeditions.Choice vent = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Go down the vent")) vent = x;
    t.choose(vent);
    if (!fieldList(t, "hurt").isEmpty() && ((CrewState) fieldList(t, "hurt").get(0)).getName().equals(a.getName())) bad = t;
@@ -309,7 +335,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   List<CrewState> pair = hold(v, "human", "human");
   Expeditions.Run gone = null;
   for (int s = 0; s < 5000 && gone == null; s++) {
-   Expeditions.Run t = Expeditions.start(v, 0, Expeditions.holdCrew(v), new Random(s));
+   Expeditions.Run t = start(v, Expeditions.holdCrew(v), new Random(s));
    Expeditions.Choice vent = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Go down the vent")) vent = x;
    t.choose(vent);
    if (fieldList(t, "hurt").size() == 1 && fieldList(t, "lost").isEmpty()) gone = t;
@@ -327,7 +353,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   homeplanet.model.Skills.set(gunner, 3, 60); homeplanet.model.Skills.set(gunner, 5, 14); // weapons level 1, combat level 2
   Expeditions.Run cl = null;
   for (int s = 0; s < 5000 && cl == null; s++) {
-   Expeditions.Run t = Expeditions.start(v, 0, holdOf(v, gunner), new Random(s));
+   Expeditions.Run t = start(v, holdOf(v, gunner), new Random(s));
    Expeditions.Choice eng = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Move in and engage")) eng = x;
    t.choose(eng);
    if (!fieldList(t, "cloned").isEmpty()) cl = t;
@@ -350,7 +376,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   pinBoard(v, "engi_relay");
   List<CrewState> one = hold(v, "human");
   int before = homeplanet.model.Skills.points(one.get(0), 4);
-  Expeditions.Run r = Expeditions.start(v, 0, one, new Random(1)); r.choose(r.choices().get(0));
+  Expeditions.Run r = start(v, one, new Random(1)); r.choose(r.choices().get(0));
   Expeditions.finish(v, r);
   Setup.chk("C: doing as the attendant says: 2 points of repair", homeplanet.model.Skills.points(crew(v, one.get(0).getName()), 4) == before + 2);
  }
@@ -365,7 +391,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   pinBoard(v, "pilot_moon");
   Expeditions.Run taken = null;
   for (int s = 0; s < 5000 && taken == null; s++) {
-   Expeditions.Run t = Expeditions.start(v, 0, Expeditions.holdCrew(v), new Random(s));
+   Expeditions.Run t = start(v, Expeditions.holdCrew(v), new Random(s));
    Expeditions.Choice c = null; for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Head for the moon")) c = x;
    t.choose(c);
    for (Expeditions.Choice x : t.choices()) if (x.text.startsWith("Keep searching")) c = x;
@@ -375,22 +401,27 @@ public class ExpT { public static void main(String[] a) throws Exception {
   String name = ((CrewState) fieldList(taken, "captured").get(0)).getName();
   Expeditions.finish(v, taken);
   Setup.chk("W: " + name + " taken on the moon: nothing is asked at once", Expeditions.checkRansoms(v).isEmpty());
-  java.lang.reflect.Method take = Expeditions.class.getDeclaredMethod("takeCaptive", Vault.class, CrewState.class, String.class); take.setAccessible(true);
   CrewState b = Commission.volunteer("slug", new Random(4)), c3 = Commission.volunteer("engi", new Random(5));
-  take.invoke(null, v, b, "pirates"); take.invoke(null, v, c3, "pirates");
+  b.setPilotSkill(15); b.setPilotMasteryOne(true); b.setRepairs(42); // a record to come back with
+  take(v, b); take(v, c3);
   ChainT.jump(v, 5);
   List<Expeditions.RansomNews> news = Expeditions.checkRansoms(v);
   int asks = 0; String words = ""; for (Expeditions.RansomNews x : news) { if (x.kind.equals("ask")) asks++; words += x.text(); }
   Setup.chk("W: a few beacons later all three ransoms are asked (" + asks + "), \"one month\", no beacons in the words, the rebels signing the moon's", asks == 3 && words.contains("one month") && !words.toLowerCase().contains("beacon") && words.contains("~ The rebels"));
-  Expeditions.Captive pa = Expeditions.openRansom(v, "ransom:0"), pr = Expeditions.openRansom(v, "ransom:1");
+  Expeditions.Captive pa = Expeditions.openRansom(v, "ransom:1"), pr = Expeditions.openRansom(v, "ransom:0"); // the slug, with a record, is paid for
   int inHold = Expeditions.holdCrew(v).size(), scrap = v.storageScrap();
   Expeditions.payRansom(v, pa);
   boolean home = false; for (CrewState x : Expeditions.holdCrew(v)) if (x.getName().equals(pa.name)) home = true;
   Setup.chk("W: a ransom paid: " + pa.name + " is back in the Cargo Hold, the ransom paid from it, and the letter's choices gone", home
-    && Expeditions.holdCrew(v).size() == inHold + 1 && v.storageScrap() == scrap - pa.ransom && Expeditions.openRansom(v, "ransom:0") == null);
+    && Expeditions.holdCrew(v).size() == inHold + 1 && v.storageScrap() == scrap - pa.ransom && Expeditions.openRansom(v, "ransom:1") == null);
+  CrewState backAgain = null; for (CrewState x : Expeditions.holdCrew(v)) if (x.getName().equals(pa.name)) backAgain = x;
+  Setup.chk("W: " + pa.name + " comes back as they were taken: their skill, its mastery, their service record, whole", backAgain != null && backAgain.getPilotSkill() == 15 && backAgain.getPilotMasteryOne()
+    && backAgain.getRepairs() == 42 && backAgain.getHealth() == backAgain.getRace().getMaxHealth());
+  boolean twice = false; try { Expeditions.payRansom(v, pa); twice = true; } catch (IOException e) { }
+  Setup.chk("W: a ransom paid can't be paid again", !twice);
   Expeditions.refuseRansom(v, pr);
   String hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
-  Setup.chk("W: a ransom refused: presumed dead, in the history log, the choices gone", hist.contains(pr.name + ", taken by") && hist.contains("ransom was refused") && Expeditions.openRansom(v, "ransom:1") == null);
+  Setup.chk("W: a ransom refused: presumed dead, in the history log, the choices gone", hist.contains(pr.name + ", taken by") && hist.contains("ransom was refused") && Expeditions.openRansom(v, "ransom:0") == null);
   Expeditions.Captive held = Expeditions.openRansom(v, "ransom:2");
   ChainT.jump(v, held.until - Expeditions.REMINDER_BEFORE - 1 - v.beaconsSeen());
   Setup.chk("W: a beacon before the reminder is due, nothing", Expeditions.checkRansoms(v).isEmpty());
@@ -403,6 +434,24 @@ public class ExpT { public static void main(String[] a) throws Exception {
   hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
   Setup.chk("W: unpaid, it runs out: the Ambassador's letter (presumed dead), the history log, the choices gone", news.size() == 1 && news.get(0).kind.equals("lost")
     && news.get(0).text().contains("presumed dead") && news.get(0).text().contains(c3.getName()) && hist.contains("ransom went unpaid") && Expeditions.openRansom(v, "ransom:2") == null);
+ }
+ /** A station that isn't looked at for a long while: the ransom's month still runs from its letter. */
+ static void lateLook(Vault v) throws Exception {
+  CrewState late = Commission.volunteer("human", new Random(11));
+  take(v, late);
+  ChainT.jump(v, 40); // a long voyage without a look at the Space Dock
+  List<Expeditions.RansomNews> news = Expeditions.checkRansoms(v);
+  boolean asked = false, lost = false; for (Expeditions.RansomNews x : news) { if (x.captive.name.equals(late.getName()) && x.kind.equals("ask")) asked = true; if (x.captive.name.equals(late.getName()) && x.kind.equals("lost")) lost = true; }
+  Expeditions.Captive open = null;
+  for (int i = 0; i < 10 && open == null; i++) { Expeditions.Captive c = Expeditions.openRansom(v, "ransom:" + i); if (c != null && c.name.equals(late.getName())) open = c; }
+  Setup.chk("W: seen late, the ransom is asked, not lost: its month runs from the letter", asked && !lost && open != null && open.until == v.beaconsSeen() + Expeditions.RANSOM_STANDS);
+ }
+ /** Holds a crew member as an expedition's foes would, a ransom to follow. */
+ static void take(Vault v, CrewState c) throws Exception {
+  File f = new File(v.root, "captives.txt"); Properties p = new Properties(); if (f.isFile()) p.load(new ByteArrayInputStream(SafeFiles.read(f)));
+  java.lang.reflect.Method take = Expeditions.class.getDeclaredMethod("takeCaptive", Properties.class, CrewState.class, String.class, int.class, Random.class); take.setAccessible(true);
+  take.invoke(null, p, c, "pirates", v.beaconsSeen(), new Random(9));
+  StringWriter w = new StringWriter(); p.store(w, null); SafeFiles.writeText(f, w.toString(), false);
  }
  static void hiring(Vault v) throws Exception {
   hold(v);

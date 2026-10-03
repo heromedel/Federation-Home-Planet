@@ -145,6 +145,9 @@ public class PriceT { public static void main(String[] a) throws Exception {
   int withAll = FreeCommand.holdSaleValue(v);
   Setup.chk("F: with selling allowed, missiles and stored systems count at their sale price", withAll == 400 + laser + Economy.supplySale(10, Pricing.MISSILE)
     + Pricing.systemSale("teleporter", 2, Economy.SYSTEM_SALE_PERCENT));
+  SafeFiles.writeText(v.systemsFile(), SystemsPanelHeader.H + "\nteleporter 2 1\n", false);
+  Setup.chk("F: a damaged stored system counts as the Cargo Bay would sell it, its broken bar off", FreeCommand.holdSaleValue(v) == withAll - Pricing.brokenBarValue("teleporter"));
+  SafeFiles.writeText(v.systemsFile(), SystemsPanelHeader.H + "\nteleporter 2\n", false);
   HomePlanet.sellSupplies = false; HomePlanet.sellSystems = false;
   v.plead();
   Setup.chk("F: a plea takes nothing", v.storageScrap() == 400 && v.freeCommandOpen() && v.freeCommandReassigned());

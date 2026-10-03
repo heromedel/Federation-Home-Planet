@@ -845,6 +845,51 @@ public final class Vault {
 		catch (IOException e) { log.warn("Could not count the beacons travelled: {}", e.toString()); }
 	}
 
+	// ---- the fleet's clock: every beacon and sector the boarded ship flies, counted once ----
+
+	private File clockFile() { return new File(root, "clock.txt"); }
+	/** Where the boarded ship's progress was last counted: her sector and beacons, or null if never (she's counted from her next look). */
+	private int[] lastCounted(Ship b) {
+		java.util.Properties p = new java.util.Properties();
+		try { if (clockFile().isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(clockFile()), java.nio.charset.StandardCharsets.UTF_8))); }
+		catch (IOException e) { log.warn("Could not read {}: {}", clockFile(), e.toString()); }
+		try {
+			if (b.id.equals(p.getProperty("ship"))) return new int[] {Integer.parseInt(p.getProperty("sector").trim()), Integer.parseInt(p.getProperty("beacons").trim())};
+			String[] m = b.marks == null ? new String[0] : b.marks.split("\\|", -1);
+			if (m.length == 6) return new int[] {Integer.parseInt(m[2]), Integer.parseInt(m[3])}; // a fleet from before the clock: her marks are where it stopped
+		} catch (RuntimeException e) { }
+		return null;
+	}
+	/** Sets where the boarded ship's progress was last counted (after the station writes her, or boards her: nothing to count). */
+	private void setClock(Ship b, int sector, int beacons) {
+		try { SafeFiles.writeText(clockFile(), "# The boarded ship's progress, as last counted into sectors.txt and beacons.txt\nship=" + b.id + "\nsector=" + sector + "\nbeacons=" + beacons + "\n", false); }
+		catch (IOException e) { log.warn("Could not record the fleet's clock: {}", e.toString()); }
+	}
+	/**
+	 * Counts the boarded ship's progress since it was last counted: the beacons and sectors she has gained, each once.
+	 * FTL's saves, a dock, the station's own writes and a look at the Space Dock all call it, so none of her voyage is
+	 * missed. A total gone down (a New Journey, an earlier save put back) counts nothing.
+	 */
+	private void countProgress(Ship b, SavedGameState gs) {
+		if (b == null || gs == null) return;
+		int sector = gs.getSectorNumber(), beacons = gs.getTotalBeaconsExplored();
+		int[] last = lastCounted(b);
+		if (last != null) {
+			addSectors(sector - last[0]);
+			addBeacons(beacons - last[1]);
+			if (last[0] == sector && last[1] == beacons) return;
+		}
+		setClock(b, sector, beacons);
+	}
+	/** Before the station writes the boarded ship (or docks her): FTL's progress in continue.sav is counted first. */
+	private void countBefore(Ship s) {
+		if (s == null || s.state != Ship.State.BOARDED || !continueFile().isFile()) return;
+		SavedGameState gs;
+		try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(continueFile()); } catch (Exception e) { return; }
+		if (s.marks != null && !s.marks.isEmpty() && !sameShip(s.marks, gs)) return; // not her: the next look records her lost
+		countProgress(s, gs);
+	}
+
 	// ---- one-time events (what the fleet has been through, for the transmissions that answer it) ----
 
 	private File eventsFile() { return new File(root, "events.txt"); }
@@ -889,25 +934,26 @@ public final class Vault {
 	private void noteWork(Ship b, SavedGameState gs) {
 		java.util.Properties p = new java.util.Properties();
 		try { if (workFile().isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(workFile()), java.nio.charset.StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", workFile(), e.toString()); }
+		catch (IOException e) { log.warn("Could not read {}: {}", workFile(), e.toString()); return; } // never written back from a failed read
+		String k = b.id + "."; // each ship's own stop: switching ships at a beacon doesn't count her work again
 		int work = workDone(gs), beacons = gs.getTotalBeaconsExplored();
-		boolean here = b.id.equals(p.getProperty("ship")) && Integer.toString(beacons).equals(p.getProperty("beacons"));
+		boolean here = Integer.toString(beacons).equals(p.getProperty(k + "beacons"));
 		int before = -1;
-		try { before = Integer.parseInt(p.getProperty("work", "").trim()); } catch (NumberFormatException e) { }
-		boolean credited = here && "true".equals(p.getProperty("credited"));
+		try { before = Integer.parseInt(p.getProperty(k + "work", "").trim()); } catch (NumberFormatException e) { }
+		boolean wasCredited = here && "true".equals(p.getProperty(k + "credited")), credited = wasCredited;
 		if (here && before >= 0 && work > before && !credited) {
 			addBeacons(1);
-			VoyageLog.note(this, b, "Time spent on work at the beacon (buying, repairs or upgrades): counted as a beacon");
+			VoyageLog.note(this, b, "Time spent on work at the beacon (buying, repairs or upgrades)");
 			credited = true;
 		}
-		if (here && before == work && p.getProperty("credited") != null && credited == "true".equals(p.getProperty("credited"))) return; // nothing new
-		p.setProperty("ship", b.id);
-		p.setProperty("beacons", Integer.toString(beacons));
-		p.setProperty("work", Integer.toString(work));
-		p.setProperty("credited", Boolean.toString(credited));
+		if (here && before == work && credited == wasCredited) return; // nothing new
+		p.remove("ship"); p.remove("beacons"); p.remove("work"); p.remove("credited"); // the one-ship form, from before
+		p.setProperty(k + "beacons", Integer.toString(beacons));
+		p.setProperty(k + "work", Integer.toString(work));
+		p.setProperty(k + "credited", Boolean.toString(credited));
 		try {
 			java.io.StringWriter w = new java.io.StringWriter();
-			p.store(w, "The boarded ship's work in FTL at her current beacon, as last seen (time spent on it counts as a beacon, once a stop)");
+			p.store(w, "Each boarded ship's work in FTL at her current beacon, as last seen (time spent on it counts as a beacon, once a stop)");
 			SafeFiles.writeText(workFile(), w.toString(), false);
 		} catch (IOException e) { log.warn("Could not record her work: {}", e.toString()); }
 	}
@@ -957,13 +1003,11 @@ public final class Vault {
 		SavedGameState gs = b.save();
 		if (gs == null) return false;
 		String now = marksOf(gs);
-		if (b.marks == null || b.marks.isEmpty()) { b.marks = now; VoyageLog.observe(this, b, gs); noteHull(b, gs); return true; }
-		if (sameShip(b.marks, gs)) { VoyageLog.observe(this, b, gs); noteHull(b, gs); noteWork(b, gs); } // her voyage log (repairs, trades at a store... change no marks)
+		if (b.marks == null || b.marks.isEmpty()) { countProgress(b, gs); b.marks = now; VoyageLog.observe(this, b, gs); noteHull(b, gs); return true; }
+		if (sameShip(b.marks, gs)) { countProgress(b, gs); VoyageLog.observe(this, b, gs); noteHull(b, gs); noteWork(b, gs); } // her voyage log (repairs, trades at a store... change no marks)
 		if (now.equals(b.marks)) return false;
 		if (sameShip(b.marks, gs)) {
 			snapshot(b); // FTL's progress, kept: if FTL later writes over her, this is what comes back
-			try { addSectors(gs.getSectorNumber() - Integer.parseInt(b.marks.split("\\|", -1)[2])); } catch (NumberFormatException e) { }
-			try { addBeacons(gs.getTotalBeaconsExplored() - Integer.parseInt(b.marks.split("\\|", -1)[3])); } catch (NumberFormatException e) { }
 			b.marks = now;
 			return true;
 		}
@@ -977,6 +1021,8 @@ public final class Vault {
 		n.hash = SafeFiles.hash(continueFile());
 		n.marks = now;
 		ships.add(n);
+		setClock(n, 0, 0); // FTL's New Game: her run so far was flown in the fleet's time
+		countProgress(n, gs);
 		overwritten = lostName;
 		HistoryLog.entry("OVERWRITTEN", lostName + " (" + b.id + ") was boarded, and continue.sav is now another ship: " + n.name
 				+ " (FTL's New Game, most likely). Her last seen version is in history/" + b.id);
@@ -984,7 +1030,10 @@ public final class Vault {
 	}
 	/** After the station writes the boarded ship: her marks follow (a rename, a New Journey, a retrofit are the station's own). */
 	private void marked(Ship s, SavedGameState state) {
-		if (s.state == Ship.State.BOARDED && state != null) s.marks = marksOf(state);
+		if (s.state == Ship.State.BOARDED && state != null) {
+			s.marks = marksOf(state);
+			setClock(s, state.getSectorNumber(), state.getTotalBeaconsExplored()); // her progress was counted before the write (countBefore)
+		}
 		VoyageLog.baseline(this, s, state); // the station's own change: not in her voyage log
 	}
 	/** FTL has written continue.sav (the save watcher): the boarded ship's voyage log takes note, if it's her. */
@@ -994,6 +1043,7 @@ public final class Vault {
 		SavedGameState gs;
 		try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(continueFile()); } catch (Exception e) { return; } // mid-write: Refresh catches up
 		if (b.marks != null && !b.marks.isEmpty() && !sameShip(b.marks, gs)) return;
+		countProgress(b, gs); // the fleet's clock moves as she flies
 		VoyageLog.observe(this, b, gs);
 		noteHull(b, gs);
 	}
@@ -1116,6 +1166,7 @@ public final class Vault {
 
 	/** Writes a ship's save: her history gets the old version first, then the file is replaced in one move. */
 	public synchronized void write(Ship s, SavedGameState state) throws IOException {
+		countBefore(s);
 		snapshot(s);
 		writeQuietly(s, state);
 		marked(s, state);
@@ -1202,7 +1253,7 @@ public final class Vault {
 				// what each file holds now, to put back if a later replacement fails
 				Map<File, byte[]> before = new LinkedHashMap<File, byte[]>();
 				for (File f : bytes.keySet()) before.put(f, f.isFile() ? SafeFiles.read(f) : null);
-				for (Ship s : pending.keySet()) snapshot(s);
+				for (Ship s : pending.keySet()) { countBefore(s); snapshot(s); }
 				int i = 0;
 				List<File> done = new ArrayList<File>();
 				try {
@@ -1248,6 +1299,8 @@ public final class Vault {
 		s.state = Ship.State.BOARDED;
 		s.hash = hash;
 		s.marks = ""; // seen afresh at the next look
+		try { SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(to); setClock(s, gs.getSectorNumber(), gs.getTotalBeaconsExplored()); }
+		catch (Exception e) { log.warn("Could not read her progress as boarded: {}", e.toString()); } // she's counted from her next look instead
 		saveManifest();
 		HistoryLog.entry("BOARD", s.name + "  ships/" + s.id + ".sav -> continue.sav");
 	}
@@ -1258,6 +1311,7 @@ public final class Vault {
 		log.debug("Dock {} ({})", b.name, b.id);
 		File from = continueFile();
 		if (!from.isFile()) throw new IOException("continue.sav is missing: " + b.name + " may have been lost in FTL. Refresh to take stock.");
+		countBefore(b); // her voyage since the last look counts before she leaves continue.sav
 		File to = new File(shipsDir(), b.id + ".sav"); // where a docked ship's save lives (fileOf, once she's docked)
 		SafeFiles.write(to, SafeFiles.read(from)); // a temporary file, then one move: a failure leaves her boarded, as she was
 		b.state = Ship.State.DOCKED;
@@ -1401,6 +1455,7 @@ public final class Vault {
 	public synchronized void restore(Ship s, File version) throws IOException {
 		if (s.state == Ship.State.STORAGE) throw new IOException("The Cargo Hold has no earlier versions to go back to");
 		byte[] bytes = SafeFiles.read(version); // before the snapshot below, which may prune it
+		countBefore(s);
 		snapshot(s);
 		File f = fileOf(s);
 		SafeFiles.write(f, bytes);

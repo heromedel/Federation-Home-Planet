@@ -11,6 +11,7 @@ public class PartT { public static void main(String[] a) throws Exception {
  parts(v);
  stipend(v);
  work(v);
+ clock(v);
  Setup.done();
 }
  /** Broken bars: 5 each, 10 for Piloting, Oxygen and Engines; stored lines keep them. */
@@ -120,6 +121,35 @@ public class PartT { public static void main(String[] a) throws Exception {
     && CareerRules.LEVELS[CareerRules.STIPEND][1].equals("three months"));
  }
  /** Buying, repairs or upgrades in FTL, with no jump, count as one beacon a stop; nothing else does. */
+ /** Every beacon the boarded ship flies counts, once: seen by FTL's saves, a dock, the station's writes, a look. */
+ static void clock(Vault v) throws Exception {
+  if (v.boarded() == null) v.board(v.docked().get(0));
+  v.takeStock();
+  int b0 = v.beaconsSeen(), s0 = v.sectorsSeen();
+  fly(v, 20, 1); Ship b = v.boarded(); Vault.Copy c = v.readCopy(b); v.begin().put(b, c.save, c.hash).commit(); v.takeStock();
+  Setup.chk("K: flown 20 beacons and a sector, then the station writes her before a look: counted (" + (v.beaconsSeen() - b0) + ", " + (v.sectorsSeen() - s0) + ")", v.beaconsSeen() == b0 + 20 && v.sectorsSeen() == s0 + 1);
+  fly(v, 20, 1); v.dock(); v.takeStock();
+  Setup.chk("K: flown 20 more, then docked before a look: counted (" + (v.beaconsSeen() - b0) + ")", v.beaconsSeen() == b0 + 40 && v.sectorsSeen() == s0 + 2);
+  v.board(v.docked().get(0)); v.takeStock();
+  Setup.chk("K: boarding a ship counts nothing (her own past is hers)", v.beaconsSeen() == b0 + 40);
+  fly(v, 5, 0); v.observeBoarded();
+  Setup.chk("K: FTL's own save moves the clock as she flies", v.beaconsSeen() == b0 + 45);
+  v.takeStock(); v.observeBoarded(); v.takeStock();
+  Setup.chk("K: and nothing counts twice", v.beaconsSeen() == b0 + 45);
+  Parts.current(v);
+  Properties pp = new Properties(); pp.load(new ByteArrayInputStream(SafeFiles.read(new File(v.root, "parts.txt"))));
+  Setup.chk("K: the Junkyard's Parts restock as the fleet flies", Integer.parseInt(pp.getProperty("rolledAt")) > b0);
+  // FTL's New Game writes over her: the new ship's run so far was flown in the fleet's time
+  SavedGameState n = Commission.build("PLAYER_SHIP_HARD", "Newcomer", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3));
+  n.setTotalBeaconsExplored(6); n.setSectorNumber(1);
+  SaveHelper.writeSavedGame(v.continueFile(), n); v.takeStock();
+  Setup.chk("K: New Game in FTL: the new ship's 6 beacons count (" + (v.beaconsSeen() - b0 - 45) + ")", v.beaconsSeen() == b0 + 51 && v.sectorsSeen() == s0 + 3);
+ }
+ static void fly(Vault v, int beacons, int sectors) throws Exception {
+  SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
+  g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + beacons); g.setSectorNumber(g.getSectorNumber() + sectors);
+  SaveHelper.writeSavedGame(v.continueFile(), g);
+ }
  static void work(Vault v) throws Exception {
   Ship s = v.boarded();
   v.takeStock();
@@ -136,7 +166,14 @@ public class PartT { public static void main(String[] a) throws Exception {
   g.setStateVar("system_upgrade", (g.hasStateVar("system_upgrade") ? g.getStateVar("system_upgrade") : 0) + 2);
   SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock();
   Setup.chk("W: more work at the same stop: no more", v.beaconsSeen() == seen + 1);
-  Setup.chk("W: noted in her voyage log", VoyageLog.read(v, s).contains("counted as a beacon"));
+  String vl = VoyageLog.read(v, s);
+  Setup.chk("W: noted in her voyage log, never as a beacon (the second hard rule)", vl.contains("Time spent on work at the beacon") && !vl.contains("counted as a beacon"));
+  Ship other = v.docked().get(0);
+  v.board(other); v.takeStock(); v.board(s); v.takeStock();
+  g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
+  g.setStateVar("store_repair", (g.hasStateVar("store_repair") ? g.getStateVar("store_repair") : 0) + 1);
+  SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock();
+  Setup.chk("W: switching ships at the stop and back, more work counts nothing more", v.beaconsSeen() == seen + 1);
   ChainT.jump(v, 1);
   g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
   g.setStateVar("store_repair", (g.hasStateVar("store_repair") ? g.getStateVar("store_repair") : 0) + 1);

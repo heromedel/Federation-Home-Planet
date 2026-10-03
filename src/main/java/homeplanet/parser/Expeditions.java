@@ -135,7 +135,7 @@ public final class Expeditions {
 	}
 	public static final class Posting {
 		public final String kind, text;
-		/** For the harness: the event this posting plays, or null (drawn). */
+		/** The event this posting plays: its words were written for it. */
 		final String event;
 		Posting(String kind, String text) { this(kind, text, null); }
 		Posting(String kind, String text, String event) { this.kind = kind; this.text = text; this.event = event; }
@@ -193,8 +193,9 @@ public final class Expeditions {
 					includes.add(line.substring(8).trim());
 				} else if (line.startsWith("posting ")) {
 					String[] p = line.split("\\s+", 3);
-					if (p.length < 3 || !knownKind(p[1])) throw new IllegalArgumentException("a posting needs: posting <kind> <words>");
-					b.postings.add(new Posting(p[1], p[2]));
+					String[] ke = p.length < 3 ? new String[0] : p[1].split(":", 2);
+					if (ke.length != 2 || !knownKind(ke[0]) || ke[1].isEmpty()) throw new IllegalArgumentException("a posting needs: posting <kind>:<event> <words>");
+					b.postings.add(new Posting(ke[0], p[2], ke[1]));
 					ev = null; st = null; ch = null;
 				} else if (line.startsWith("event ")) {
 					String[] p = line.split("\\s+");
@@ -290,6 +291,16 @@ public final class Expeditions {
 			for (String s : e.steps.keySet()) if (!reached.contains(s)) b.problems.add("event " + e.id + ": step " + s + " is never reached");
 			if (loops(e, "", new HashSet<String>())) b.problems.add("event " + e.id + ": its steps go round in a circle");
 		}
+		// each posting's words were written for one event: it must be there, and of the posting's kind
+		Set<String> posted = new HashSet<String>();
+		for (Posting p : b.postings) {
+			Event e = null;
+			for (Event x : b.events) if (x.id.equals(p.event)) e = x;
+			if (e == null) b.problems.add("posting for " + p.event + ": no such event");
+			else if (!e.kind.equals(p.kind)) b.problems.add("posting for " + p.event + ": a " + p.kind + " posting for a " + e.kind + " event");
+			if (!posted.add(p.event)) b.problems.add("event " + p.event + " has two postings");
+		}
+		for (Event e : b.events) if (!posted.contains(e.id)) b.problems.add("event " + e.id + " has no posting");
 		for (String[] k : KINDS) {
 			int ev = 0, po = 0;
 			for (Event e : b.events) if (e.kind.equals(k[0])) ev++;
@@ -374,6 +385,7 @@ public final class Expeditions {
 		List<Posting> out = new ArrayList<Posting>();
 		Random rng = new Random();
 		int now = v.beaconsSeen();
+		List<String> recent = recent(p);
 		for (int i = 0; i < POSTINGS; i++) {
 			Posting x = posting(p, i);
 			if (x != null && until(p, i) < 0) { p.setProperty(i + ".until", Integer.toString(now + POSTING_MIN + rng.nextInt(POSTING_MAX - POSTING_MIN + 1))); changed = true; }
@@ -381,7 +393,7 @@ public final class Expeditions {
 			if (x == null) {
 				List<Posting> others = new ArrayList<Posting>(out);
 				for (int k = i + 1; k < POSTINGS; k++) if (posting(p, k) != null) others.add(posting(p, k));
-				x = pick(rng, others);
+				x = pick(rng, others, recent);
 				put(p, i, x);
 				p.setProperty(i + ".until", Integer.toString(now + POSTING_MIN + rng.nextInt(POSTING_MAX - POSTING_MIN + 1)));
 				changed = true;
@@ -396,27 +408,34 @@ public final class Expeditions {
 		try { return Integer.parseInt(p.getProperty(i + ".until", "").trim()); } catch (NumberFormatException e) { return -1; }
 	}
 	private static Posting posting(Properties p, int i) {
-		String kind = p.getProperty(i + ".kind"), text = p.getProperty(i + ".text");
+		String kind = p.getProperty(i + ".kind"), text = p.getProperty(i + ".text"), event = p.getProperty(i + ".event");
 		if (kind == null || text == null || !knownKind(kind)) return null;
-		return new Posting(kind, text, p.getProperty(i + ".event"));
+		if (event == null) for (Posting x : book().postings) if (x.text.equals(text)) event = x.event; // a board from before postings named their events
+		return new Posting(kind, text, event);
 	}
 	private static void put(Properties p, int i, Posting x) {
 		p.setProperty(i + ".kind", x.kind); p.setProperty(i + ".text", x.text);
-		p.remove(i + ".event");
+		if (x.event != null) p.setProperty(i + ".event", x.event); else p.remove(i + ".event");
 	}
-	/** A posting not already on the board, of a kind not already on it where there's a choice. */
-	static Posting pick(Random rng, List<Posting> taken) {
+	/**
+	 * A posting not already on the board: where there's a choice, of a kind not already on it and for an event not met
+	 * lately.
+	 */
+	static Posting pick(Random rng, List<Posting> taken, List<String> recent) {
 		Book b = book();
-		List<Posting> fresh = new ArrayList<Posting>(), freshKind = new ArrayList<Posting>();
+		List<Posting> fresh = new ArrayList<Posting>(), freshKind = new ArrayList<Posting>(), unmet = new ArrayList<Posting>(), unmetKind = new ArrayList<Posting>();
 		for (Posting x : b.postings) {
 			boolean on = false, kindOn = false;
-			for (Posting t : taken) { if (t.text.equals(x.text)) on = true; if (t.kind.equals(x.kind)) kindOn = true; }
+			for (Posting t : taken) { if (t.text.equals(x.text) || (t.event != null && t.event.equals(x.event))) on = true; if (t.kind.equals(x.kind)) kindOn = true; }
 			if (on) continue;
+			boolean met = recent.contains(x.event);
 			fresh.add(x);
 			if (!kindOn) freshKind.add(x);
+			if (!met) unmet.add(x);
+			if (!met && !kindOn) unmetKind.add(x);
 		}
-		List<Posting> from = !freshKind.isEmpty() ? freshKind : fresh;
-		return from.isEmpty() ? new Posting("delivery", "Hands wanted for a supply run.") : from.get(rng.nextInt(from.size()));
+		List<Posting> from = !unmetKind.isEmpty() ? unmetKind : !unmet.isEmpty() ? unmet : !freshKind.isEmpty() ? freshKind : fresh;
+		return from.isEmpty() ? b.postings.get(rng.nextInt(b.postings.size())) : from.get(rng.nextInt(from.size()));
 	}
 	private static Properties readBoard(Vault v) {
 		Properties p = new Properties();
@@ -426,15 +445,20 @@ public final class Expeditions {
 		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
 		return p;
 	}
+	/** The board for a change: a file that can't be read is an error, never written back empty. */
+	private static Properties readBoardStrict(Vault v) throws IOException { return readPropsStrict(boardFile(v)); }
 	private static void writeBoard(Vault v, Properties p) throws IOException {
 		java.io.StringWriter w = new java.io.StringWriter();
 		p.store(w, "The expeditions board: three postings, and the events met lately");
 		SafeFiles.writeText(boardFile(v), w.toString(), false);
 	}
 	/** Events met lately, not to be met again while others are left. */
-	static List<String> recent(Vault v) {
+	static List<String> recent(Vault v) { return recent(readBoard(v)); }
+	/** For the harness: the events met lately. */
+	public static List<String> recentEvents(Vault v) { return recent(v); }
+	private static List<String> recent(Properties p) {
 		List<String> out = new ArrayList<String>();
-		for (String s : readBoard(v).getProperty("recent", "").split(",")) if (!s.trim().isEmpty()) out.add(s.trim());
+		for (String s : p.getProperty("recent", "").split(",")) if (!s.trim().isEmpty()) out.add(s.trim());
 		return out;
 	}
 
@@ -450,7 +474,7 @@ public final class Expeditions {
 	}
 	private static String key(CrewState c) { return c.getName() + "/" + (c.getRace() == null ? "human" : c.getRace().getId()); }
 
-	/** The event for a job: one of its kind not met lately (any of its kind, if all have been). */
+	/** The event for a job: the one its posting was written for (or, failing that, one of its kind not met lately). */
 	static Event draw(Posting posting, List<String> recent, Random rng) {
 		if (posting.event != null && event(posting.event) != null) return event(posting.event);
 		List<Event> pool = pool(posting.kind), fresh = new ArrayList<Event>();
@@ -629,6 +653,18 @@ public final class Expeditions {
 		Posting x = board(v).get(slot);
 		Run r = new Run(slot, x, party, recent(v), rng);
 		if (r.event == null) throw new IOException("There are no events for a " + x.kind + " job");
+		// signed on: the job comes off the board now, so closing the station mid-job can't play it again
+		Properties p = readBoardStrict(v);
+		List<Posting> others = new ArrayList<Posting>();
+		for (int i = 0; i < POSTINGS; i++) if (i != slot && posting(p, i) != null) others.add(posting(p, i));
+		others.add(x); // not the same job again at once
+		List<String> recent = recent(p);
+		recent.remove(r.event.id); recent.add(r.event.id);
+		while (recent.size() > RECENT) recent.remove(0);
+		p.setProperty("recent", String.join(",", recent));
+		put(p, slot, pick(new Random(), others, recent));
+		p.setProperty(slot + ".until", Integer.toString(v.beaconsSeen() + 1 + POSTING_MIN + new Random().nextInt(POSTING_MAX - POSTING_MIN + 1)));
+		writeBoard(v, p);
 		return r;
 	}
 
@@ -649,12 +685,13 @@ public final class Expeditions {
 
 	/**
 	 * The expedition is over: its scrap and gear to the Cargo Hold, recruits aboard, the hurt into the infirmary, the
-	 * lost gone, all in one write; one beacon of the fleet's time; the history log; its event remembered; and a new
-	 * posting in its place. Returns word of anyone carried to the infirmary, or "".
+	 * taken held for a ransom, the lost gone, all in one write; one beacon of the fleet's time; and the history log.
+	 * (The job came off the board when the commander signed on.) Returns word of anyone carried to the infirmary, or "".
 	 */
 	public static synchronized String finish(Vault v, Run r) throws IOException {
 		Ship st = v.storage();
 		Vault.Copy c = v.readCopy(st);
+		Properties inf = readPropsStrict(infirmaryFile(v)), cap = readPropsStrict(captivesFile(v)); // unreadable: nothing changes
 		ShipState hold = c.save.getPlayerShip();
 		List<CrewState> crew = hold.getCrewList();
 		hold.setScrapAmt(hold.getScrapAmt() + r.scrap);
@@ -667,25 +704,29 @@ public final class Expeditions {
 			else hold.getAugmentIdList().add(id);
 		}
 		List<String> lostNames = new ArrayList<String>(), hurtNames = new ArrayList<String>(), joinedNames = new ArrayList<String>();
-		List<CrewState> toInfirmary = new ArrayList<CrewState>();
+		int now = v.beaconsSeen() + 1; // the beacon this expedition takes
+		Random rng = new Random();
 		for (CrewState sent : r.party) {
 			CrewState mine = match(crew, sent);
 			if (mine == null) throw new IOException(sent.getName() + " is no longer in the Cargo Hold; nothing was changed");
-			if (r.lost.contains(sent)) { crew.remove(mine); lostNames.add(sent.getName()); continue; }
-			if (r.hurt.contains(sent)) { mine.setHealth(Math.max(1, mine.getHealth() / 4)); hurtNames.add(sent.getName()); toInfirmary.add(mine); }
+			if (r.lost.contains(sent)) {
+				crew.remove(mine);
+				lostNames.add(sent.getName());
+				if (r.captured.contains(sent)) takeCaptive(cap, mine, r.event.foe, now, rng); // a ransom will be asked
+				continue;
+			}
+			if (r.hurt.contains(sent)) { mine.setHealth(Math.max(1, mine.getHealth() / 4)); hurtNames.add(sent.getName()); admit(inf, mine, now, rng); }
+			if (r.cloned.contains(sent)) { Skills.cloned(mine); continue; } // the clone bay: a level down from before the job, and the job's experience gone with the body
 			int[] got = r.earned.get(sent);
 			if (got != null) for (int i = 0; i < SKILLS.length; i++) if (got[i] > 0) Skills.add(mine, i, got[i]);
-			if (r.cloned.contains(sent)) Skills.cloned(mine); // after the experience: the clone bay takes that too
 		}
 		for (CrewState n : r.joined) {
 			if (!SaveHelper.placeCrew(hold, n, true)) continue; // no room: they find other work
 			crew.add(n);
 			joinedNames.add(n.getName());
 		}
-		v.begin().put(st, c.save, c.hash).commit();
+		v.begin().put(st, c.save, c.hash).put(infirmaryFile(v), propsBytes(inf, INFIRMARY_NOTE)).put(captivesFile(v), propsBytes(cap, CAPTIVES_NOTE)).commit();
 		v.countBeacon();
-		for (CrewState h : toInfirmary) admit(v, h); // their time runs from the docking
-		for (CrewState x : r.captured) takeCaptive(v, x, r.event.foe); // a ransom will be asked
 		// the last outcome has told the rest: only the infirmary is news
 		StringBuilder sb = new StringBuilder();
 		if (!hurtNames.isEmpty()) sb.append(String.join(" and ", hurtNames)).append(hurtNames.size() > 1 ? " are" : " is").append(" carried to the infirmary when the shuttle docks.");
@@ -693,17 +734,6 @@ public final class Expeditions {
 				+ (r.items.isEmpty() ? "" : ", " + String.join(", ", r.items)) + (joinedNames.isEmpty() ? "" : "; joined: " + String.join(", ", joinedNames))
 				+ (lostNames.isEmpty() ? "" : "; did not come back: " + String.join(", ", lostNames))
 				+ (hurtNames.isEmpty() ? "" : "; to the infirmary: " + String.join(", ", hurtNames)));
-		Properties p = readBoard(v);
-		List<Posting> others = new ArrayList<Posting>();
-		for (int i = 0; i < POSTINGS; i++) if (i != r.slot && posting(p, i) != null) others.add(posting(p, i));
-		others.add(r.posting); // not the same job again at once
-		put(p, r.slot, pick(new Random(), others));
-		p.setProperty(r.slot + ".until", Integer.toString(v.beaconsSeen() + POSTING_MIN + new Random().nextInt(POSTING_MAX - POSTING_MIN + 1)));
-		List<String> recent = recent(v);
-		recent.remove(r.event.id); recent.add(r.event.id);
-		while (recent.size() > RECENT) recent.remove(0);
-		p.setProperty("recent", String.join(",", recent));
-		try { writeBoard(v, p); } catch (IOException e) { log.warn("Could not post a new expedition: {}", e.toString()); }
 		return sb.toString();
 	}
 	private static CrewState match(List<CrewState> crew, CrewState sent) {
@@ -740,15 +770,14 @@ public final class Expeditions {
 		return out;
 	}
 	public static String crewKey(CrewState c) { return key(c); }
-	private static synchronized void admit(Vault v, CrewState c) {
-		Properties p = readProps(infirmaryFile(v));
+	/** Lays a crew member up in the infirmary (into its file's properties, written with the Cargo Hold). */
+	private static void admit(Properties p, CrewState c, int now, Random rng) {
 		int i = 0;
 		while (p.getProperty(i + ".name") != null) i++;
 		p.setProperty(i + ".name", c.getName());
 		p.setProperty(i + ".race", c.getRace() == null ? "human" : c.getRace().getId());
-		p.setProperty(i + ".until", Integer.toString(v.beaconsSeen() + HEAL_MIN + new Random().nextInt(HEAL_MAX - HEAL_MIN + 1)));
-		p.setProperty(i + ".drained", Integer.toString(v.beaconsSeen()));
-		try { writeProps(infirmaryFile(v), p, INFIRMARY_NOTE); } catch (IOException e) { log.warn("Could not admit {} to the infirmary: {}", c.getName(), e.toString()); }
+		p.setProperty(i + ".until", Integer.toString(now + HEAL_MIN + rng.nextInt(HEAL_MAX - HEAL_MIN + 1)));
+		p.setProperty(i + ".drained", Integer.toString(now));
 	}
 	/**
 	 * The station's care, at each look: crew hurt in the game, in the Cargo Hold or aboard a docked ship (never the
@@ -759,7 +788,8 @@ public final class Expeditions {
 	 */
 	public static synchronized List<String> checkInfirmary(Vault v) {
 		List<String> back = new ArrayList<String>();
-		Properties p = readProps(infirmaryFile(v));
+		Properties p;
+		try { p = readPropsStrict(infirmaryFile(v)); } catch (IOException e) { log.warn("Could not read the infirmary: {}", e.toString()); return back; } // never written back empty
 		int now = v.beaconsSeen();
 		List<Patient> all = infirmary(v), keep = new ArrayList<Patient>();
 		for (Patient x : all) if (now < x.until) keep.add(x);
@@ -827,6 +857,17 @@ public final class Expeditions {
 		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
 		return p;
 	}
+	/** For a change: a file that can't be read is an error, so it's never written back empty. */
+	private static Properties readPropsStrict(File f) throws IOException {
+		Properties p = new Properties();
+		if (f.isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8)));
+		return p;
+	}
+	private static byte[] propsBytes(Properties p, String comment) throws IOException {
+		java.io.StringWriter w = new java.io.StringWriter();
+		p.store(w, comment);
+		return w.toString().getBytes(StandardCharsets.UTF_8);
+	}
 	private static void writeProps(File f, Properties p, String comment) throws IOException {
 		java.io.StringWriter w = new java.io.StringWriter();
 		p.store(w, comment);
@@ -846,23 +887,24 @@ public final class Expeditions {
 			this.index = index; this.name = name; this.race = race; this.male = male; this.captors = captors; this.ransom = ransom; this.asked = asked; this.until = until;
 		}
 	}
+	private static final String CAPTIVES_NOTE = "Crew taken on expeditions, and the ransoms asked for them";
 	private static Properties readCaptives(Vault v) { return readProps(captivesFile(v)); }
-	private static void writeCaptives(Vault v, Properties p) throws IOException { writeProps(captivesFile(v), p, "Crew taken on expeditions, and the ransoms asked for them"); }
-	static synchronized void takeCaptive(Vault v, CrewState c, String captors) {
-		Properties p = readCaptives(v);
+	private static void writeCaptives(Vault v, Properties p) throws IOException { writeProps(captivesFile(v), p, CAPTIVES_NOTE); }
+	/**
+	 * Holds a crew member taken (into the captives file's properties, written with the Cargo Hold): their whole record
+	 * kept, to come back as they were; the ransom is asked a few beacons on, and its month runs from the asking.
+	 */
+	static void takeCaptive(Properties p, CrewState c, String captors, int now, Random rng) {
 		int i = 0;
 		while (p.getProperty(i + ".name") != null) i++;
-		Random rng = new Random();
-		int asked = v.beaconsSeen() + RANSOM_DELAY_MIN + rng.nextInt(RANSOM_DELAY_MAX - RANSOM_DELAY_MIN + 1);
 		p.setProperty(i + ".name", c.getName());
 		p.setProperty(i + ".race", c.getRace() == null ? "human" : c.getRace().getId());
 		p.setProperty(i + ".male", Boolean.toString(c.isMale()));
 		p.setProperty(i + ".captors", captors);
 		p.setProperty(i + ".ransom", Integer.toString(20 + rng.nextInt(21)));
-		p.setProperty(i + ".asked", Integer.toString(asked));
-		p.setProperty(i + ".until", Integer.toString(asked + RANSOM_STANDS));
+		p.setProperty(i + ".asked", Integer.toString(now + RANSOM_DELAY_MIN + rng.nextInt(RANSOM_DELAY_MAX - RANSOM_DELAY_MIN + 1)));
 		p.setProperty(i + ".state", "held");
-		try { writeCaptives(v, p); } catch (IOException e) { log.warn("Could not record a captive: {}", e.toString()); }
+		if (c.getRace() != null) for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(c).entrySet()) p.setProperty(i + ".crew." + e.getKey(), e.getValue());
 	}
 	/** What a ransom check found new, for a pop-up when the inbox is off: the ask, the reminder, or word of the loss. */
 	public static final class RansomNews {
@@ -875,15 +917,16 @@ public final class Expeditions {
 	}
 	private static Captive captive(Properties p, int i) {
 		return new Captive(i, p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), "true".equals(p.getProperty(i + ".male")),
-				p.getProperty(i + ".captors", "pirates"), intOf(p, i + ".ransom", 30), intOf(p, i + ".asked", 0), intOf(p, i + ".until", 0));
+				p.getProperty(i + ".captors", "pirates"), intOf(p, i + ".ransom", 30), intOf(p, i + ".asked", 0), intOf(p, i + ".until", intOf(p, i + ".asked", 0) + RANSOM_STANDS));
 	}
 	/**
 	 * The ransoms' clock: a letter when a ransom is asked, a reminder near the end, and the Federation Ambassador's
 	 * letter when it runs out (they're lost for good). Returns what's new, for a pop-up when the inbox is off.
 	 */
 	public static synchronized List<RansomNews> checkRansoms(Vault v) {
-		Properties p = readCaptives(v);
 		List<RansomNews> out = new ArrayList<RansomNews>();
+		Properties p;
+		try { p = readPropsStrict(captivesFile(v)); } catch (IOException e) { log.warn("Could not read the captives: {}", e.toString()); return out; } // never written back empty
 		boolean changed = false;
 		int now = v.beaconsSeen();
 		for (int i = 0; p.getProperty(i + ".name") != null; i++) {
@@ -892,6 +935,8 @@ public final class Expeditions {
 			if (state.equals("held") && now >= c.asked) {
 				state = "asked";
 				p.setProperty(i + ".state", state);
+				p.setProperty(i + ".until", Integer.toString(now + RANSOM_STANDS)); // the month runs from the letter, however late the station sees it
+				c = captive(p, i);
 				changed = true;
 				Transmissions.deliver("ransom:" + i, capitalised(c.captors), "Ransom: " + c.name, askLetter(c));
 				out.add(new RansomNews(c, "ask"));
@@ -931,7 +976,7 @@ public final class Expeditions {
 	public static boolean isRansom(String key) { return key.startsWith("ransom:") || key.startsWith("ransom-reminder:"); }
 	/** Refuses a ransom: they're lost for good, and the Ambassador writes. */
 	public static synchronized void refuseRansom(Vault v, Captive c) throws IOException {
-		Properties p = readCaptives(v);
+		Properties p = readPropsStrict(captivesFile(v));
 		p.setProperty(c.index + ".state", "refused");
 		writeCaptives(v, p);
 		lost(c, "the ransom was refused");
@@ -962,7 +1007,7 @@ public final class Expeditions {
 	private static String capitalised(String s) { return s.isEmpty() ? s : s.substring(0, 1).toUpperCase() + s.substring(1); }
 	/** Pays a ransom from the Cargo Hold: they come back to it, shaken but whole. */
 	public static synchronized void payRansom(Vault v, Captive c) throws IOException {
-		Properties p = readCaptives(v);
+		Properties p = readPropsStrict(captivesFile(v));
 		String state = p.getProperty(c.index + ".state", "");
 		if (!state.equals("asked") && !state.equals("reminded")) throw new IOException(c.name + "'s ransom is no longer asked");
 		if (v.beaconsSeen() > c.until) throw new IOException("The offer for " + c.name + " has run out");
@@ -970,17 +1015,29 @@ public final class Expeditions {
 		Vault.Copy cp = v.readCopy(st);
 		ShipState hold = cp.save.getPlayerShip();
 		if (hold.getScrapAmt() < c.ransom) throw new IOException("The Cargo Hold holds " + hold.getScrapAmt() + " scrap; the ransom is " + c.ransom);
-		CrewState back = Commission.volunteer(c.race, new Random());
-		if (back == null) throw new IOException("Unknown crew race " + c.race);
-		back.setName(c.name);
-		back.setMale(c.male);
+		CrewState back = kept(p, c.index);
+		if (back == null) { // a captive from before their record was kept
+			back = Commission.volunteer(c.race, new Random());
+			if (back == null) throw new IOException("Unknown crew race " + c.race);
+			back.setName(c.name);
+			back.setMale(c.male);
+		}
+		back.setHealth(back.getRace().getMaxHealth()); // shaken, but whole
 		if (!SaveHelper.placeCrew(hold, back, true)) throw new IOException("The Cargo Hold has no room for another crew member");
 		hold.getCrewList().add(back);
 		hold.setScrapAmt(hold.getScrapAmt() - c.ransom);
-		v.begin().put(st, cp.save, cp.hash).commit();
 		p.setProperty(c.index + ".state", "ransomed");
-		try { writeCaptives(v, p); } catch (IOException e) { log.warn("Could not mark {} ransomed: {}", c.name, e.toString()); }
+		v.begin().put(st, cp.save, cp.hash).put(captivesFile(v), propsBytes(p, CAPTIVES_NOTE)).commit(); // paid and marked together: never twice
 		HistoryLog.entry("EXPEDITION", c.name + " ransomed from " + c.captors + " for " + c.ransom + " scrap, back in the Cargo Hold");
+	}
+	/** A captive's kept record (skills, service, looks), or null for one taken before records were kept. */
+	private static CrewState kept(Properties p, int i) {
+		String pre = i + ".crew.";
+		Map<String, String> f = new LinkedHashMap<String, String>();
+		for (String k : p.stringPropertyNames()) if (k.startsWith(pre)) f.put(k.substring(pre.length()), p.getProperty(k));
+		if (f.isEmpty()) return null;
+		try { return homeplanet.comm.Line.crewFrom(f); }
+		catch (Exception e) { log.warn("Could not read {}'s record: {}", p.getProperty(i + ".name"), e.toString()); return null; }
 	}
 	private static int intOf(Properties p, String key, int dflt) {
 		try { return Integer.parseInt(p.getProperty(key, "").trim()); } catch (NumberFormatException e) { return dflt; }

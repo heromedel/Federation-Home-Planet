@@ -94,13 +94,17 @@ public final class FreeCommand {
 					String[] p = line.split("\\s+");
 					int level = 1;
 					try { if (p.length > 1) level = Math.max(1, Integer.parseInt(p[1])); } catch (NumberFormatException e) { }
-					total += Pricing.systemSale(p[0], level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT);
+					total += Math.max(0, Pricing.systemSale(p[0], level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT) - broken(p) * Pricing.brokenBarValue(p[0])); // as the Cargo Bay sells it
 				}
 			} catch (Exception e) { }
 		}
 		return total;
 	}
 
+	/** A stored system line's broken bars (its third field), or 0. */
+	private static int broken(String[] p) {
+		try { return p.length > 2 ? Math.max(0, Integer.parseInt(p[2])) : 0; } catch (NumberFormatException e) { return 0; }
+	}
 	/**
 	 * Everything of value a plea would forfeit, in scrap: the Cargo Hold (scrap, supplies, items,
 	 * crew, stored systems) and the Junkyard's hulls at their full price.
@@ -128,7 +132,7 @@ public final class FreeCommand {
 					String[] p = line.split("\\s+");
 					int level = 1;
 					try { if (p.length > 1) level = Math.max(1, Integer.parseInt(p[1])); } catch (NumberFormatException e) { }
-					total += Pricing.system(p[0], level);
+					total += Math.max(0, Pricing.system(p[0], level) - broken(p) * Pricing.brokenBarValue(p[0]));
 				}
 			} catch (Exception e) { log.debug("Free command: the stored systems could not be read: {}", e.toString()); }
 		}

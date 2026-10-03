@@ -645,7 +645,7 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
     mastery flags together). A choice anyone can take must take the skill it teaches, so the right person earns it
     (the harness refuses one that doesn't). Specialist postings are still to come (IDEAS, Idea E).
   - The station's daily round writes the Cargo Hold's save only when someone's health or skill changed.
-  - The station's medbay (4B.98, Plan LL): crew hurt in the game, in the Cargo Hold or aboard a docked ship (never the
+  - The station's medbay (4B.95, Plan LL): crew hurt in the game, in the Cargo Hold or aboard a docked ship (never the
     boarded one, which may be in FTL), are healed a full beacon after the station first sees them hurt there; a move to
     another place starts the beacon again. Before, the station healed anyone hurt whenever the clock had moved since its
     last look, which could be at once. Each heal writes heromedel's line in the history log: "<name>'s visited The
@@ -679,7 +679,7 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   humans answer, as Commission has it (4B.90).
 - While an expedition is under way its pop-ups can't be closed, only answered; a priority Long Range message pops up
   over it and the expedition carries on after; a hail is told the commander is away and listed as missed (4B.87).
-- The job's windows (4B.95, redrawn at 4B.96 from heromedel's FTL screenshots): FTL's event layout on the station's
+- The job's windows (4B.95, redrawn before the merge from heromedel's FTL screenshots): FTL's event layout on the station's
   own dark panel and pale rim (not FTL's mauve), in FTL's own type (JustinFont from ftl.dat, chosen over the style
   guide's Sans Serif from a side-by-side; where ftl.dat's font can't be read, or lacks a letter on the screen, the
   whole screen falls back to the style guide's Sans Serif 12), the words wrapped with room between the lines, and
@@ -690,7 +690,7 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   shuttle docks."). The asteroid belt's line is heromedel's: "you can hear a small asteroid glancing off the shuttle's
   shields" (no sound carried through the hull from outside). The twelve events read again for sound, smell or wind
   where there's no air: none else.
-- 4B.97: the event box loses its rim (the words sit straight on the dark panel). Picking who goes: three seats side by
+- 4B.95: the event box loses its rim (the words sit straight on the dark panel). Picking who goes: three seats side by
   side, each a drop-down of the Cargo Hold's crew (or no one), and under each a card of the one picked: portrait, name,
   race, a health bar if hurt, and the six skills (a pip a level, green then gold as FTL marks them, and a thin bar toward
   the next). Picking someone for one seat takes them out of another; the first three are picked to begin with.
@@ -709,6 +709,35 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
 - The harness (ExpT) reads the events file clean, plays every event through every choice, checks every hurt has a
   death beside it, holds every line against FTL's own event text (no run of six words the same), and walks the
   infirmary and the ransoms through their clocks.
+- (McCarthy's branch numbered its last steps 4B.96 to 4B.98; they reached main together as 4B.95.)
+
+## 26. Every beacon counts, and the review's fixes — built (4B.97; harness checks in PartT, ExpT, PriceT, TransT)
+
+From a review of 4B.95 and 4B.96 in main, and heromedel's answers (Plan U).
+
+- **The fleet's clock** (`clock.txt` in the fleet's folder): every beacon and sector the boarded ship flies counts,
+  once. Before, the station counted only when the Space Dock was rebuilt, so a voyage flown with the station open and
+  then docked (or written by the Cargo Bay) was never counted, and the Junkyard's Parts, the stipend, ransoms and the
+  infirmary barely moved. Now FTL's own saves move it as she flies, and a dock or any station write counts her
+  progress first. Boarding counts nothing (her past is her own; a traded ship counts from her trade). FTL's New Game
+  counts the new ship's run so far. A fleet from before carries on from her last marks.
+- Work at a beacon is remembered for each ship, so switching ships at a stop doesn't count it again; the voyage log
+  says "Time spent on work at the beacon", never that it counted as a beacon.
+- Parts prices stay as they are (heromedel: occasional flips are fine). An expedition stays one beacon: one event,
+  one passage of time.
+- Plead for New Ship values a damaged stored system as the Cargo Bay would sell it, its broken bars off.
+- The stipend's letter is saved before its months are marked paid (taken back if the save fails): a failed save can't
+  lose it. The station log says one stipend or two, as the letter's months do. (One stipend a pay period; the letter's
+  months are how long the period was: two, three or four by difficulty.)
+- **Postings**: each is written for one event (`posting <kind>:<event>` in expeditions.txt) and plays it; the
+  harness refuses an event without its posting. A new posting avoids events met lately.
+- **Signing on** takes the job off the board at once (a new posting in its place, the event remembered), so closing
+  the station mid-job can't play it again.
+- **The clone bay** takes a level from the skills held before the job, and the job's experience goes with the body.
+- **Ransoms**: the month runs from the letter, however late the station sees it; the captive's whole record (skills,
+  mastery, service record, looks) is kept and comes back, whole, when the ransom is paid; payment and its mark are one
+  write, so it can't be paid twice. The expedition's end writes the Cargo Hold, the infirmary and the captives
+  together; a side file that can't be read is an error, never written back empty.
 
 ## Naming decisions — settled (4B.30)
 

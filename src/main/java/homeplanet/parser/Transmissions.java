@@ -381,15 +381,9 @@ public final class Transmissions {
 		int months = Career.unpaidMonths();
 		if (months <= 0) return;
 		int amount = months * Career.stipend(UnlockGrants.rank(u), Career.achievementsCounted(u));
-		try {
-			Career.markPaid(months); // the months are paid by this message: issued once, claimed from it
-		} catch (IOException e) {
-			log.warn("Could not issue the stipend (tried again next time): {}", e.toString());
-			return;
-		}
-		String period = "stipend for the last " + months * Career.sectorsPerMonth() + " months"; // a payment every sectorsPerMonth months, as the rules say
 		Template t = templates().get("stipend");
-		if (t == null) return;
+		if (t == null) return; // nothing marked paid: it comes when the letter can
+		String period = "stipend for the last " + months * Career.sectorsPerMonth() + " months"; // a payment every sectorsPerMonth months, as the rules say
 		Message m = new Message();
 		m.key = "stipend:" + stamp();
 		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
@@ -397,9 +391,24 @@ public final class Transmissions {
 		m.subject = Character.toUpperCase(period.charAt(0)) + period.substring(1) + ": " + amount + " scrap";
 		m.body = fill(t.body.toString().trim(), rank, null).replace("{period}", period).replace("{amount}", Integer.toString(amount));
 		m.reward = "scrap " + amount;
+		// the letter is the only claim on the scrap: marked paid and saved together, or neither (tried again next time)
+		try {
+			Career.markPaid(months);
+		} catch (IOException e) {
+			log.warn("Could not issue the stipend (tried again next time): {}", e.toString());
+			return;
+		}
 		all.add(0, m);
+		try {
+			save(all);
+		} catch (IOException e) {
+			all.remove(m);
+			try { Career.markPaid(-months); } catch (IOException again) { log.error("Could not take back the stipend's months after its letter failed to save", again); }
+			log.warn("Could not issue the stipend (tried again next time): {}", e.toString());
+			return;
+		}
 		sent.add(m.key);
-		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + months + " month" + (months == 1 ? "" : "s") + ")");
+		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + (months == 1 ? "one stipend" : months + " stipends") + ")");
 	}
 	/** A stipend's notice: deleted rather than archived once claimed, so they don't pile up. */
 	public static boolean isStipend(Message m) { return m.key.startsWith("stipend:"); }
