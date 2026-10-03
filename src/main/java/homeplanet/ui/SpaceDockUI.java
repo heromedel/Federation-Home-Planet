@@ -105,16 +105,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
 		String title = "Docked";
-		// a ransom for crew taken on an expedition: its letters (in the inbox), or with the inbox off, pop-ups here
-		final List<homeplanet.parser.Expeditions.RansomNews> ransomNews = homeplanet.parser.Expeditions.checkRansoms(vault);
-		if (!HomePlanet.immersiveNotifications() && !ransomNews.isEmpty())
-			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { for (homeplanet.parser.Expeditions.RansomNews n : ransomNews) ransomNotice(n); } });
-		// crew hurt on an expedition, out of the infirmary: a word here, never a letter
-		final List<String> upAgain = homeplanet.parser.Expeditions.checkInfirmary(vault);
-		if (!upAgain.isEmpty())
-			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() {
-				JOptionPane.showMessageDialog(null, String.join(" and ", upAgain) + (upAgain.size() > 1 ? " are" : " is") + " out of the infirmary, on their feet and waiting in the Cargo Hold.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
-			} });
+		timeRound(true); // ransoms and the infirmary, once the screen is up
 		boolean longRange = parent != null && parent.comm != null && parent.comm.inboxWanted(); // a commander's mail needs an inbox, whatever the setting
 		if (HomePlanet.immersiveNotifications() || longRange) {
 			if (HomePlanet.immersiveNotifications()) homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
@@ -247,6 +238,24 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 	}
 
+	/**
+	 * The station's round after time has passed: ransoms asked, reminded or run out (letters in the inbox, or with the
+	 * inbox off, pop-ups here), and crew out of the infirmary (a word here, never a letter). At each look at the Space
+	 * Dock, and after each expedition, since jobs follow one another without a look (the board reopens by itself).
+	 * Deferred while the screen is being built.
+	 */
+	void timeRound(boolean later) {
+		Vault vault = Vault.get();
+		final List<homeplanet.parser.Expeditions.RansomNews> ransomNews = homeplanet.parser.Expeditions.checkRansoms(vault);
+		final List<String> upAgain = homeplanet.parser.Expeditions.checkInfirmary(vault);
+		if ((HomePlanet.immersiveNotifications() || ransomNews.isEmpty()) && upAgain.isEmpty()) return;
+		Runnable word = new Runnable() { public void run() {
+			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Expeditions.RansomNews n : ransomNews) ransomNotice(n);
+			if (!upAgain.isEmpty())
+				JOptionPane.showMessageDialog(null, String.join(" and ", upAgain) + (upAgain.size() > 1 ? " are" : " is") + " out of the infirmary, on their feet and waiting in the Cargo Hold.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
+		} };
+		if (later) javax.swing.SwingUtilities.invokeLater(word); else word.run();
+	}
 	/** With the inbox off: a ransom's ask or reminder as a pop-up (Pay, Refuse, or Later: the reminder asks again), or word of the loss. */
 	private void ransomNotice(homeplanet.parser.Expeditions.RansomNews n) {
 		javax.swing.JTextArea t = new javax.swing.JTextArea(n.text());

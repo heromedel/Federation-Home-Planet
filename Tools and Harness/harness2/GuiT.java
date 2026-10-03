@@ -41,6 +41,7 @@ public class GuiT {
   damaged(f);
   folding(f);
   expedition(f);
+  infirmaryBetweenJobs(f);
   ransomPopUp(f);
   infirmaryBay(f);
   Setup.done();
@@ -552,6 +553,22 @@ public class GuiT {
     rep[0].equals(rep[1]) && Integer.valueOf(1).equals(rep[2]));
  }
 
+ /** Jobs follow one another without a look at the Space Dock: whoever's time is up leaves the infirmary between them, with the pop-up. */
+ static void infirmaryBetweenJobs(final MainFrame f) throws Exception {
+  final Vault v = Vault.get();
+  SavedGameParser.CrewState hurt = Expeditions.holdCrew(v).get(0);
+  Properties inf = new Properties();
+  inf.setProperty("0.name", hurt.getName()); inf.setProperty("0.race", hurt.getRace().getId()); inf.setProperty("0.until", Integer.toString(v.beaconsSeen())); inf.setProperty("0.drained", Integer.toString(v.beaconsSeen()));
+  StringWriter w = new StringWriter(); inf.store(w, null); SafeFiles.writeText(new File(v.root, "infirmary.txt"), w.toString(), false);
+  int free = Expeditions.holdCrew(v).size();
+  shown.clear(); presses.clear(); presses.add(0);
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   call(null, Class.forName("homeplanet.ui.ExpeditionsDialog"), "afterJob", new Class<?>[] {Component.class}, f.spaceDock);
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  boolean word = false; for (String t : shown) if (t.contains(hurt.getName()) && t.contains("out of the infirmary")) word = true;
+  Setup.chk("X: between jobs, " + hurt.getName() + "'s time up: out of the infirmary with the pop-up, free to send again (" + free + " -> " + Expeditions.holdCrew(v).size() + ")",
+    word && Expeditions.holdCrew(v).size() == free + 1 && Expeditions.infirmary(v).isEmpty());
+ }
  /** With the inbox off, a ransom comes up at the Space Dock: Pay brings them home. */
  static void ransomPopUp(final MainFrame f) throws Exception {
   final Vault v = Vault.get();

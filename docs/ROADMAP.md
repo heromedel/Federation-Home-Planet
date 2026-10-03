@@ -747,6 +747,11 @@ Fixes only, from heromedel's testing and the review; no new features. Design deb
 - Two crew of one name and race no longer get mixed up in the infirmary or at an expedition's end: a mark (sex,
   colouring, service record) kept beside the name tells them apart. A band-aid until crew who are away leave the hold's
   save (CONCERNS.md, 2).
+- A ransom's two steps (the payment or refusal, then the note on the letter) report separately: "Nothing was changed"
+  only when the ransom itself failed; a note that couldn't be saved after a payment says the payment stands.
+- Jobs taken one after another without closing the board: the station's round now runs after each job (whoever's time
+  is up leaves the infirmary, with the pop-up; a ransom asked or run out), not only at a look at the Space Dock. Before,
+  a laid-up crew member stayed laid up, and the pop-up waited, until the board was closed.
 
 ## Naming decisions — settled (4B.30)
 

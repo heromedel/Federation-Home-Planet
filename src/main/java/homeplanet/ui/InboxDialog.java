@@ -357,20 +357,30 @@ public class InboxDialog extends JDialog {
 		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
 		homeplanet.parser.Expeditions.Captive c = homeplanet.parser.Expeditions.openRansom(v, m.key);
 		if (c == null) { show(m); return; }
+		String settled; // the ransom first: if that fails, nothing has changed; the letter's note after, and a failure there says only what it is
 		try {
 			if (pay) {
 				if (!HomePlanet.confirmNo(this, "Pay " + c.ransom + " scrap from the Cargo Hold for " + c.name + "'s return?", "Ransom")) return;
 				homeplanet.parser.Expeditions.payRansom(v, c);
-				Transmissions.decided(m, "Paid " + c.ransom + " scrap: " + c.name + " is back in the Cargo Hold");
-				JOptionPane.showMessageDialog(this, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
+				settled = "Paid " + c.ransom + " scrap: " + c.name + " is back in the Cargo Hold";
 			} else {
 				if (!HomePlanet.confirmNo(this, "Refuse the ransom? " + c.name + " will not be coming back.", "Ransom")) return;
 				homeplanet.parser.Expeditions.refuseRansom(v, c);
-				Transmissions.decided(m, "Refused");
+				settled = "Refused";
 			}
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The ransom wasn't settled. Nothing was changed:\n" + e.getMessage());
+			all = Transmissions.load();
+			fill();
+			return;
 		}
+		try {
+			Transmissions.decided(m, settled);
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog((pay ? "The ransom is paid and " + c.name + " is back in the Cargo Hold" : "The ransom was refused")
+					+ ", but the letter could not be marked as settled (it will show no note of it):\n" + e.getMessage());
+		}
+		if (pay) JOptionPane.showMessageDialog(this, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
 		all = Transmissions.load(); // the Ambassador's letter, if one came
 		fill();
 	}

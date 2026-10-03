@@ -67,7 +67,15 @@ final class ExpeditionsDialog extends JDialog {
 			changed |= d.changed;
 			if (d.signedOn == null) return changed;
 			changed |= play(owner, d.signedOn, Vault.get());
+			afterJob(owner);
 		}
+	}
+	/**
+	 * A beacon has passed with the job: the station's round (who's out of the infirmary, a ransom asked or run out)
+	 * before the board reopens, as it would at a look at the Space Dock. Jobs follow one another without that look.
+	 */
+	static void afterJob(java.awt.Component owner) {
+		if (owner instanceof SpaceDockUI) ((SpaceDockUI) owner).timeRound(false);
 	}
 	/** The job signed on for, to play once the board has closed (null: the board was just closed). */
 	Expeditions.Run signedOn;
