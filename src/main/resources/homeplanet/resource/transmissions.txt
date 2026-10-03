@@ -147,7 +147,7 @@ subject: Stipend
 
 Automated message from The Federation Home Planet
 
-Your {period} of {amount} scrap has been transferred to The Home Planet Station. It is waiting for you in the Station's Cargo Hold.
+Your {period} of {amount} scrap has been issued. Claim it to have it transferred to the Station's Cargo Hold.
 
 Thank you for your service, {rank}.
 

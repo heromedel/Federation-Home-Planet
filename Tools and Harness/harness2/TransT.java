@@ -215,11 +215,21 @@ public class TransT { public static void main(String[] a) throws Exception {
   int each = Career.stipend(UnlockGrants.rank(Unlocks.read()), achievements);
   Transmissions.check();
   Transmissions.Message m = find("stipend:");
-  Setup.chk("S: " + jump + " beacons (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last " + 2 * Career.sectorsPerMonth() + " months") && m.body.contains((2 * each) + " scrap") && v.storageScrap() == scrap + 2 * each);
+  Setup.chk("S: " + jump + " beacons (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last " + 2 * Career.sectorsPerMonth() + " months") && m.body.contains((2 * each) + " scrap") && ("scrap " + 2 * each).equals(m.reward));
   System.out.println("Stipend: " + each + " a month (Captain, 5 achievements): " + m.body.replace("\n", " / "));
+  Setup.chk("S: the stipend waits to be claimed: the Cargo Hold is untouched", v.storageScrap() == scrap && Transmissions.unclaimedStipend(m));
+  Setup.chk("S: an unclaimed stipend can't be deleted", !Transmissions.deletable(m));
+  boolean refused = false;
+  try { Transmissions.setArchived(m, true); } catch (java.io.IOException e) { refused = e.getMessage().contains("Claim the stipend first"); }
+  Setup.chk("S: an unclaimed stipend can't be archived", refused && !m.archived);
   Transmissions.check();
   int stipends = 0; for (Transmissions.Message x : Transmissions.load()) if (Transmissions.isStipend(x)) stipends++;
   Setup.chk("S: the odd beacons wait for the next month", stipends == 1);
+  Transmissions.claim(m, -1);
+  Setup.chk("S: Claim puts the stipend in the Cargo Hold", v.storageScrap() == scrap + 2 * each && m.claimed);
+  Setup.chk("S: a claimed stipend can be deleted", Transmissions.deletable(m));
+  Transmissions.Message old = new Transmissions.Message(); old.key = "stipend:old";
+  Setup.chk("S: a stipend paid in before claims (no reward) can be deleted", Transmissions.deletable(old));
   Transmissions.delete(m);
   Setup.chk("S: a stipend's notice can be deleted", find("stipend:") == null);
   Setup.chk("S: the stipend's formula (20 + achievements x rank multiple)", Career.stipend(0, 51) == 71 && Career.stipend(1, 51) == 122 && Career.stipend(2, 51) == 173);

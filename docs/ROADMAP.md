@@ -212,8 +212,9 @@ Draft of every message and reward: `docs/TRANSMISSIONS.md` (rewards approved by 
   `FederationHomePlanet/profile-backups`.
 - **A career** begins with 25 scrap in Spacedock Storage (`career.txt` in the Immersive fleet's folder).
 - **The stipend:** every 4 sectors the fleet's ships travel (FTL's own progress, counted in `sectors.txt`), 20 scrap
-  plus, per achievement counted, 1 (Commander), 2 (Captain), 3 (Commodore): 71 / 122 / 173 with all 51. Paid into
-  Spacedock Storage; one message for all the months due ("your stipend for the last 2 months"), with **Delete**.
+  plus, per achievement counted, 1 (Commander), 2 (Captain), 3 (Commodore): 71 / 122 / 173 with all 51. One message
+  for all the months due ("your stipend for the last 2 months"), its scrap issued as a reward: **Claim** puts it in
+  Spacedock Storage (4B.96). Until claimed it can't be deleted or archived; after, **Delete**.
 - **Unlock hints:** Design Ship, Remodel, Commission rows and the artillery picker say what they need and how to earn
   it (the promotion conditions are from the FTL wiki, since FTL keeps them in the game itself).
 - **Hull repairs:** a flat 4 scrap a point (The Federation charges a premium), in both modes.
@@ -589,6 +590,8 @@ fitted one anyway; FTL then runs her, but her system bar slides along and its ic
   parts, one time in four a weapon, drone or augment, at 40-70% of FTL's store price.
 - The stipend counts beacons: 15 to each sector of the old rule (Easy 30, Normal 45, Hard 60, Sandbox careers 60).
   A career under way carries its progress over (its sectors so far become beacons).
+- The stipend is claimed (4B.96): its letter carries the scrap as a reward, and **Claim** moves it to the Cargo Hold.
+  An unclaimed stipend stays in the inbox: no Delete, no Archive. Stipends paid in before 4B.96 delete as before.
 - Work in FTL counts: when the boarded ship's `store_purchase`, `store_repair`, `system_upgrade` or
   `reactor_upgrade` count has gone up with no jump since the station last looked, one beacon is counted, once a
   beacon stop, and noted in her voyage log. Nothing else (crew walking about) counts.
