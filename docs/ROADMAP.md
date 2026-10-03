@@ -762,6 +762,14 @@ Fixes only, from heromedel's testing and the review; no new features. Design deb
 - The ship report's "Content: Advanced Edition / Original" line is gone (heromedel; Commission has its own switch).
 - Locked ships: the descriptions wrap at a width the screen can show (the picture, the words, the scrollbar and the
   frame within the usable screen), the window no wider than that, and no taller than the screen less a margin.
+- The "FTL is running" question (boarding, docking, a save to the boarded ship...) no longer reads as a warning that
+  something is wrong: it says why the station would rather not, that FTL at its main menu is safe, and its first
+  answer is heromedel's "Nevermind, save her in the Space Dock" for boarding, "Nevermind" elsewhere; the other is
+  "Go ahead, FTL is at its menu".
+- Commission orders for a Type B or C: shared letters (her makers, impressed, open the next model; nothing about
+  achievements) in place of the ship's own, which told her Type A's unlock story (the Zoltan Council's offer for a
+  Zoltan B, say). The Kestrel's and the Federation Cruiser's letters read right for any type and stay. To be given
+  more of each race's character later.
 
 ## Naming decisions — settled (4B.30)
 

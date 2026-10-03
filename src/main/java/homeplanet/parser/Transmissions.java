@@ -205,6 +205,15 @@ public final class Transmissions {
 		return HomePlanet.career() ? UnlockGrants.rankName(UnlockGrants.rank(u)) : UnlockGrants.RANKS[0];
 	}
 	/** A layout's name for messages: "Engi Cruiser, Type A". */
+	/**
+	 * The letter for a commission order: a ship's own tells the story of her Type A's unlock (the Zoltan Council's
+	 * offer, the Mantis raider), so her Type B and C get the shared letters (her makers, impressed, open the next
+	 * model); the Kestrel's and the Federation Cruiser's read right for any type, so they keep their own.
+	 */
+	static String orderTemplate(String base, int n) {
+		if (n == 0 || base.equals("PLAYER_SHIP_HARD") || base.equals("PLAYER_SHIP_FED")) return "order:" + base;
+		return n == 1 ? "order:typeB" : "order:typeC";
+	}
 	static String layoutName(String base, int n) {
 		String cls = base;
 		try {
@@ -283,7 +292,7 @@ public final class Transmissions {
 					ShipBlueprint bp;
 					try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
 					if (bp == null || !UnlockGrants.freeNow(u, bp.getId())) continue;
-					send(all, sent, "order:" + base + " " + n, "order:" + base, rank, layoutName(base, n));
+					send(all, sent, "order:" + base + " " + n, orderTemplate(base, n), rank, layoutName(base, n));
 				}
 			}
 		}

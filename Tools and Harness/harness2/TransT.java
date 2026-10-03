@@ -135,6 +135,12 @@ public class TransT { public static void main(String[] a) throws Exception {
   Transmissions.Message order = find("order:PLAYER_SHIP_MANTIS 0"), promo = find("promo:1");
   Setup.chk("T: a new unlock brings a commission order", order != null && order.body.contains("Mantis") && order.isOrder());
   Setup.chk("T: the Federation Cruiser A brings a promotion, not an order", promo != null && find("order:PLAYER_SHIP_FED 0") == null && UnlockGrants.rank(Unlocks.read()) == 1);
+  // a Type B (two of her achievements): the shared letter (her makers open the next model), not her Type A's story
+  profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_FED", "PLAYER_SHIP_ENERGY"}, new String[] {"ACH_SECTOR_5", "ACH_TOUGH_SHIP", "ACH_NO_BUYING", "ACH_MANTIS_SLAUGHTER", "ACH_NO_UPGRADES", "ACH_ENERGY_SHIELDS", "ACH_ENERGY_POWER"});
+  Transmissions.check();
+  Transmissions.Message zoltanA = find("order:PLAYER_SHIP_ENERGY 0"), zoltanB = find("order:PLAYER_SHIP_ENERGY 1");
+  Setup.chk("T: the Zoltan Cruiser A's order tells the Council's story; her Type B's is the shared letter, naming her", zoltanA != null && zoltanA.body.contains("Zoltan Council")
+    && zoltanB != null && zoltanB.body.contains("next model") && zoltanB.body.contains("Zoltan Cruiser, Type B") && !zoltanB.body.contains("Council") && zoltanB.subject.contains("Type B"));
   Transmissions.Message tough = find("ach:ACH_TOUGH_SHIP");
   Setup.chk("T: a new achievement brings its reward, addressed to the new rank", tough != null && tough.hasReward() && tough.body.startsWith("Captain,"));
   Vault v = Vault.get();

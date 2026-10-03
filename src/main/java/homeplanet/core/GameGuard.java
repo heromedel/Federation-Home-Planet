@@ -62,16 +62,19 @@ public final class GameGuard {
 	}
 
 	/**
-	 * True if it's safe to go ahead with {@code action} ("board a ship", say). When FTL is running, warns the player
-	 * and lets them choose; the safe answer (wait) is the default. It's a warning rather than a wall because FTL at
-	 * its main menu hasn't loaded the save yet, and a player who knows that may want to carry on.
+	 * True if it's safe to go ahead with {@code action} ("board a ship", say). When FTL is running, says why the station
+	 * would rather not and lets the player choose; the first answer is a plain "nevermind" (the default), never a
+	 * warning that something is wrong. It's a question rather than a wall because FTL at its main menu hasn't loaded
+	 * the save yet, and a player who knows that may want to carry on.
 	 */
 	public static boolean allows(Component owner, String action) {
 		if (!isFtlRunning()) return true;
-		Object[] opts = {"Wait, I'll quit FTL", "Go ahead anyway"};
-		int r = JOptionPane.showOptionDialog(owner, "FTL is running. While it is, it can rewrite the ship you're flying at any moment,\n"
-				+ "and a save changed under it can be lost. It's safest to quit FTL before you " + action + ".",
-				"FTL is running", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, opts, opts[0]);
+		String nevermind = action.equals("board a ship") ? "Nevermind, save her in the Space Dock" : "Nevermind"; // heromedel's words for boarding
+		Object[] opts = {nevermind, "Go ahead, FTL is at its menu"};
+		int r = JOptionPane.showOptionDialog(owner, "FTL is running. While it is, it may write over the ship you're flying at any moment,\n"
+				+ "and a change The Home Planet Station makes to her then is lost.\n\n"
+				+ "If FTL is only at its main menu, she isn't loaded, and it's safe to " + action + ". Otherwise quit FTL first.",
+				"FTL is running", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
 		return r == 1;
 	}
 }
