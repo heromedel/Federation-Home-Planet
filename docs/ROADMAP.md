@@ -752,6 +752,13 @@ Fixes only, from heromedel's testing and the review; no new features. Design deb
 - Jobs taken one after another without closing the board: the station's round now runs after each job (whoever's time
   is up leaves the infirmary, with the pop-up; a ransom asked or run out), not only at a look at the Space Dock. Before,
   a laid-up crew member stayed laid up, and the pop-up waited, until the board was closed.
+- The Space Dock keeps itself current (Plan V): every file the station writes passes one place (`SafeFiles`), which
+  tells the Space Dock; a write in the fleet's folder (a letter read, a job finished, a parcel landed over the Long
+  Range, a ransom settled) rebuilds it a moment later, behind whatever window is open, so the inbox's count and the rest
+  are live without the window being closed. Several writes in a row make one rebuild; its own rebuild's writes are
+  ignored; when another screen is showing, the return rebuilds it as before. Every return from a window (Expeditions,
+  Derelicts, Ship Records) rebuilds it, whatever the window reports. Pop-ups a rebuild can raise (New Game noticed, a
+  final victory, a ransom, the infirmary) now come while another window is open, rather than waiting for it to close.
 
 ## Naming decisions — settled (4B.30)
 

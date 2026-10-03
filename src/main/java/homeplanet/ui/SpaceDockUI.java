@@ -65,12 +65,43 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	public SpaceDockUI(MainFrame p) {
 		this.parent = p;
 		init();
+		homeplanet.core.SafeFiles.setListener(new homeplanet.core.SafeFiles.Listener() { public void written(File f) { fleetChanged(f); } });
+	}
+
+	// ---- keeping itself current: a rebuild a moment after anything in the fleet's folder is written ----
+
+	/** How long after the last write the rebuild comes: several writes in a row (one action) make one rebuild. */
+	private static final int SETTLE_MS = 250;
+	private final javax.swing.Timer settle = new javax.swing.Timer(SETTLE_MS, new ActionListener() { public void actionPerformed(ActionEvent e) {
+		if (rebuilding || !isShowing()) return; // not showing: the return to the Space Dock rebuilds it (MainFrame.showSpaceDock)
+		log.debug("Space Dock: the fleet's files changed, rebuilding");
+		init();
+	} });
+	{ settle.setRepeats(false); }
+	private boolean rebuilding;
+	/**
+	 * Something in the fleet's folder was written (a letter read, a job finished, a parcel landed over the Long Range, a
+	 * ransom settled), from whatever thread: the Space Dock rebuilds itself a moment later, behind whatever window is
+	 * open, so its counts and lists are current without the window being closed. Writes of its own rebuild are ignored.
+	 */
+	private void fleetChanged(File f) {
+		if (rebuilding || !Vault.isOpen()) return;
+		try {
+			String root = Vault.get().root.getCanonicalPath() + File.separator;
+			if (!f.getCanonicalPath().startsWith(root)) return;
+		} catch (IOException e) { return; }
+		settle.restart(); // safe from any thread: the rebuild runs on the Swing thread
 	}
 
 	private static boolean loggedStartup = false;
 
 	/** Rebuilds the screen from the vault (after taking stock of the files, since FTL may have changed them). */
 	public void init() {
+		if (rebuilding) return;
+		rebuilding = true;
+		try { build(); } finally { rebuilding = false; }
+	}
+	private void build() {
 		removeAll();
 		Vault vault = Vault.get();
 		try {
@@ -692,7 +723,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else if (o == commissionBtn) {
 			commissionShip();
 		} else if (o == expeditionsBtn) {
-			if (ExpeditionsDialog.open(this)) init();
+			ExpeditionsDialog.open(this);
+			init(); // every return rebuilds, whatever the window reports
 		} else if (o == salvageBtn) {
 			salvageShip();
 		} else if (o == disbandBtn) {
@@ -1005,7 +1037,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		int choice = reportChoice(ship, sgs, true);
 		if (choice == 2) {
-			if (ShipRecordsDialog.open(this, ship)) init();
+			ShipRecordsDialog.open(this, ship);
+			init();
 			return;
 		}
 		if (choice != 1) return;
@@ -1405,7 +1438,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	/** The foreman's derelicts for sale. */
 	void browseDerelicts() {
-		if (DerelictsDialog.open(this)) init();
+		DerelictsDialog.open(this);
+		init();
 	}
 	/** Removes a junked ship for good (her last save stays in her history folder). */
 	void destroyShip(Ship ship) {

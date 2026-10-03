@@ -42,6 +42,7 @@ public class GuiT {
   folding(f);
   expedition(f);
   infirmaryBetweenJobs(f);
+  liveDock(f);
   ransomPopUp(f);
   infirmaryBay(f);
   Setup.done();
@@ -553,6 +554,33 @@ public class GuiT {
     rep[0].equals(rep[1]) && Integer.valueOf(1).equals(rep[2]));
  }
 
+ /** The Space Dock keeps itself current: a letter delivered or read (a write in the fleet's folder) changes the inbox's count behind any window, with no rebuild asked for. */
+ static void liveDock(final MainFrame f) throws Exception {
+  HomePlanet.immersiveNotifications = true;
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { f.showSpaceDock(); } });
+  int before = inboxCount(f);
+  Transmissions.deliver("live:test", "Home Planet Liaison", "A test of the live dock", "Just checking the dock keeps up.");
+  int after = waitCount(f, before + 1);
+  Transmissions.Message m = null; for (Transmissions.Message x : Transmissions.load()) if (x.key.equals("live:test")) m = x;
+  Transmissions.markRead(m);
+  int read = waitCount(f, before);
+  Transmissions.delete(m);
+  Setup.chk("L: a letter delivered: the inbox's count behind the window goes " + before + " -> " + after + " by itself; read: -> " + read, after == before + 1 && read == before);
+ }
+ static int inboxCount(final MainFrame f) throws Exception {
+  final int[] n = {-1};
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   Object btn = field(f.spaceDock, SpaceDockUI.class, "inboxBtn");
+   n[0] = btn == null ? -1 : ((Integer) field(btn, btn.getClass(), "unread")).intValue();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  return n[0];
+ }
+ /** The count once the Space Dock has rebuilt itself (within a few seconds), or whatever it shows then. */
+ static int waitCount(MainFrame f, int want) throws Exception {
+  int n = -1;
+  for (int t = 0; t < 40; t++) { n = inboxCount(f); if (n == want) return n; Thread.sleep(100); }
+  return n;
+ }
  /** Jobs follow one another without a look at the Space Dock: whoever's time is up leaves the infirmary between them, with the pop-up. */
  static void infirmaryBetweenJobs(final MainFrame f) throws Exception {
   final Vault v = Vault.get();

@@ -95,6 +95,13 @@ Done in part at 4B.93/94: a choice says what it takes (a race that's good at it:
 mind; and a skill by name), the crew member best suited takes it on, earns its experience, and makes its bad outcomes
 rarer. Specialist postings (a pilot wanted, an engineer wanted) are still to come.
 
+## Idea F: the Refresh button as a small icon (noted 4B.98)
+
+From heromedel: now that the Space Dock keeps itself current (ROADMAP 27, Plan V), the full labelled **Refresh** button
+under the Station heading is rarely needed. Make it a little refresh icon beside the word "Station" in the heading
+instead, out of the way but there for the odd time (a file changed by hand, a doubt). The heading folds on a click
+(ROADMAP 25), so the icon has to be its own target, not part of the fold.
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just
