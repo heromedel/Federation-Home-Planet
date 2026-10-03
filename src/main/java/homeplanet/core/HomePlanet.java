@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.88";
+	public static final String APP_VERSION = "4B.92";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -88,6 +88,10 @@ public class HomePlanet {
 	public static boolean careerMessages = false;
 	/** Is a career running in the fleet in use: always in Immersive Mode, and in Sandbox Mode with Career messages on. */
 	public static boolean career() { return immersiveMode || (immersiveNotifications && careerMessages); } // (the Sandbox setting: Immersive Mode always has a career)
+	/** Sandbox Mode's Reputation rule: the fleet earns and loses reputation for its ships' service (homeplanet.vault.Reputation). */
+	public static boolean reputationOn = false;
+	/** Does the fleet in use earn and lose reputation: always in Immersive Mode, and in Sandbox Mode with its Reputation rule. */
+	public static boolean reputation() { return immersiveMode || reputationOn; }
 	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
 	// ---- the rules in force: Sandbox Mode's own (the fields above, as Settings has them), or an Immersive career's, fixed ----
@@ -150,7 +154,8 @@ public class HomePlanet {
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
 		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
-		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip) && !"variable".equals(freeShip)) freeShip = "relief";
+		if ("variable".equals(freeShip)) freeShip = "kestrel"; // Variable (a ship by what a report surrendered) is no more
+		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
 		Vault.immersiveSlot = Vault.slotOf(config.getProperty("immersive_slot")); // which Immersive career (a fleet from before difficulties is Custom's)
@@ -159,6 +164,7 @@ public class HomePlanet {
 		immersiveAnyLevel = flag("immersive_any_level", true);
 		longRangePopups = flag("long_range_popups", true);
 		careerMessages = flag("career_messages");
+		reputationOn = flag("reputation");
 		finalVictory = config.getProperty("final_victory", "nothing");
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 
@@ -323,6 +329,7 @@ public class HomePlanet {
 		config.setProperty("refit_removal_fee", Integer.toString(removalFee));
 		config.setProperty("new_journey_fee", Integer.toString(journeyFee));
 		config.setProperty("career_messages", Boolean.toString(careerMessages));
+		config.setProperty("reputation", Boolean.toString(reputationOn));
 		config.setProperty("sell_supplies", Boolean.toString(sellSupplies));
 		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));
 		config.setProperty("commission_custom_unlocked_only", Boolean.toString(commissionCustomUnlockedOnly));

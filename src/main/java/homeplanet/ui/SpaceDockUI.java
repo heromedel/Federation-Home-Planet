@@ -52,7 +52,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
 	private JButton museumBtn;
-	private JButton inboxBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn;
+	private JButton inboxBtn, repBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn;
 	final MainFrame parent;
 
 	/** Width of one docked ship's place in the list. */
@@ -104,7 +104,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final JPanel docked = new JPanel(new java.awt.BorderLayout(0, 6));
 		docked.setOpaque(false);
 		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
-		String title = "Docked Ships";
+		String title = "Docked";
 		boolean longRange = parent != null && parent.comm != null && parent.comm.inboxWanted(); // a commander's mail needs an inbox, whatever the setting
 		if (HomePlanet.immersiveNotifications() || longRange) {
 			if (HomePlanet.immersiveNotifications()) homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
@@ -113,9 +113,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else {
 			inboxBtn = null;
 		}
-		boolean inboxHere = inboxBtn != null && vault.boarded() == null; // with a ship at your command, it sits on her heading instead
-		int inboxW = inboxHere ? inboxBtn.getPreferredSize().width + 8 : 0;
-		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW);
+		// the reputation (Settings' Reputation rule; always in Immersive Mode), in gold to the inbox's right: clicking opens its log
+		repBtn = homeplanet.vault.Reputation.shown() ? new ReputationButton(homeplanet.vault.Reputation.total(vault)) : null;
+		if (repBtn != null) repBtn.addActionListener(this);
+		boolean inboxHere = vault.boarded() == null; // with a ship aboard, the inbox and reputation sit on her heading instead
+		int inboxW = inboxHere ? inboxWidth() : 0;
+		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW, true);
 		if (HomePlanet.immersiveMode) dockedHeader.setToolTipText("Immersive Mode: your rank. Captains may commission custom ships; Commodores, custom ships with artillery");
 		docked.add(withInbox(dockedHeader, inboxHere), java.awt.BorderLayout.NORTH);
 		docked.add(gridScroll, java.awt.BorderLayout.CENTER);
@@ -171,6 +174,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final Ship boarded = vault.boarded();
 		final JPanel berth = boarded == null ? null : berthPanel(boarded);
 		final JPanel stats = boarded == null ? null : statsPanel(boarded);
+		final JPanel aboard = boarded == null ? null : aboardRow;
 		JPanel main = new JPanel(null) {
 			@Override
 			public void doLayout() {
@@ -186,19 +190,22 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					// to make room for them rather than have them hidden
 					int inset = pictureInset(berth), need = 14 + sd.width + 12 - inset;
 					if (x < need) x = Math.max(x, Math.min(need, getWidth() - d.width - 10));
-					berth.setBounds(x, 10, d.width, d.height);
+					Dimension ad = aboard.getPreferredSize();
+					int ah = ad.height + 6, y0 = 10 + ah; // her heading, then her berth below it
+					aboard.setBounds(14, 10, x + ad.width - 14, ad.height); // from the left margin to where it ends over her berth
+					berth.setBounds(x, y0, d.width, d.height);
 					int sx = x + inset - 12 - sd.width;
 					boolean room = sx >= 14;
 					stats.setVisible(room);
-					if (room) stats.setBounds(sx, 10 + berth.getComponent(0).getPreferredSize().height + BERTH_PIC_Y, sd.width, sd.height);
-					top = 10 + d.height + 6;
+					if (room) stats.setBounds(sx, y0 + berth.getComponent(0).getPreferredSize().height + BERTH_PIC_Y, sd.width, sd.height);
+					top = y0 + d.height + 6;
 					if (room) top = Math.max(top, stats.getY() + sd.height + 6); // a tall stats column pushes the docked ships down, not under it
 				}
 				docked.setBounds(0, top, Math.min(dockedW, getWidth()), Math.max(0, getHeight() - top));
 			}
 		};
 		main.setOpaque(false);
-		if (berth != null) { main.add(berth); main.add(stats); }
+		if (berth != null) { main.add(aboard); main.add(berth); main.add(stats); }
 		main.add(docked);
 
 		add(main, java.awt.BorderLayout.CENTER);
@@ -485,6 +492,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return p;
 	}
 	/** The boarded ship: header and name above, a large picture, Dock and Info below. */
+	/** The Aboard heading (with the inbox and reputation when they go there), above the boarded ship's berth. */
+	private JPanel aboardRow;
 	private JPanel berthPanel(Ship ship0) {
 		JPanel p = new JPanel();
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
@@ -493,9 +502,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		head.setLayout(new BoxLayout(head, BoxLayout.Y_AXIS));
 		head.setOpaque(false);
 		head.setAlignmentX(LEFT_ALIGNMENT);
-		int inboxW = inboxBtn == null ? 0 : inboxBtn.getPreferredSize().width + 8;
-		head.add(withInbox(new FtlButton.Header("At your command", BERTH_W - inboxW), inboxBtn != null));
-		head.add(Box.createRigidArea(new Dimension(1, 6)));
+		int inboxW = inboxWidth();
+		// her heading stands apart, from the left margin as the Docked one does (the Space Dock lays it out above her)
+		aboardRow = withInbox(new FtlButton.Header("Aboard", BERTH_W - inboxW, true), true); // aboard her: the ship you're on
 		head.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, BERTH_W));
 		head.add(smallLabel(beacons(ship0), MenuTheme.GREY_GREEN));
 		boolean off = offStation(ship0);
@@ -510,15 +519,29 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.setToolTipText("The ship at your command, berthed at The Home Planet Station");
 		return p;
 	}
-	/** A heading with the transmissions light at the end of its line (where the eye goes first), if it goes here. */
+	/**
+	 * A heading with the transmissions light at the end of its line (where the eye goes first) and the reputation to its
+	 * right, if they go here (either may be off).
+	 */
 	private JPanel withInbox(FtlButton.Header header, boolean here) {
 		JPanel row = new JPanel(new java.awt.BorderLayout(8, 0));
 		row.setOpaque(false);
 		row.setAlignmentX(LEFT_ALIGNMENT);
 		row.add(header, java.awt.BorderLayout.CENTER);
-		if (here) row.add(inboxBtn, java.awt.BorderLayout.EAST);
+		if (here && repBtn == null && inboxBtn != null) row.add(inboxBtn, java.awt.BorderLayout.EAST);
+		else if (here && repBtn != null) { // the reputation, to the inbox's right
+			JPanel both = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
+			both.setOpaque(false);
+			if (inboxBtn != null) both.add(inboxBtn);
+			both.add(repBtn);
+			row.add(both, java.awt.BorderLayout.EAST);
+		}
 		row.setMaximumSize(row.getPreferredSize());
 		return row;
+	}
+	/** The inbox's room in a heading, if there's an inbox (the reputation to its right reaches past the heading's end, so the title keeps its room). */
+	private int inboxWidth() {
+		return inboxBtn == null ? 0 : inboxBtn.getPreferredSize().width + 8;
 	}
 	/** The empty space left of her picture inside her berth (the picture is centred in it). */
 	private static int pictureInset(JPanel berth) {
@@ -598,6 +621,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			parent.showMuseum();
 		} else if (o == otherBtn) {
 			otherOrders();
+		} else if (o == repBtn && repBtn != null) {
+			ReputationLogDialog.open(this);
 		} else if (o == inboxBtn) {
 			boolean go = InboxDialog.open(this);
 			init();
@@ -644,7 +669,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 
 	/** The transmissions icon: an antenna, and a green light with the unread count. */
 	/**
-	 * The transmissions light, at the end of the Docked Ships heading: a mast and dish, and with anything unread a green
+	 * The transmissions light, at the end of the Docked heading (or the Aboard heading, with a ship boarded): a mast and dish, and with anything unread a green
 	 * light and "N NEW" in gold, and a small hop every few seconds until the inbox is opened.
 	 */
 	private static final class TransmissionButton extends JButton {
@@ -719,6 +744,35 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 	}
 
+	/**
+	 * The career's reputation with The Federation Home Planet, as plain text in gold (red below zero) to the inbox's
+	 * right: "REP: 179". Its tooltip has the latest changes, and clicking opens the Career Reputation Log.
+	 */
+	private final class ReputationButton extends JButton {
+		private final java.awt.image.BufferedImage text;
+		ReputationButton(int total) {
+			text = FtlFont.MENU.render("REP: " + (total < 0 ? "-" + (-total) : String.valueOf(total)), total < 0 ? MenuTheme.RED : FtlButton.GOLD);
+			setPreferredSize(new Dimension(text.getWidth() + 4, 38));
+			setContentAreaFilled(false);
+			setBorderPainted(false);
+			setFocusPainted(false);
+			setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+			StringBuilder tip = new StringBuilder("<html>Your standing with The Federation Home Planet: earned by your ships' service, lost by their losses."
+					+ "<br>Click for the Career Reputation Log.");
+			java.util.List<String> recent = homeplanet.vault.Reputation.recent(Vault.get(), 5);
+			if (!recent.isEmpty()) tip.append("<br><br><b>Latest:</b>");
+			for (String r : recent) tip.append("<br>").append(homeplanet.parser.XmlText.text(r.length() > 18 ? r.substring(18) : r));
+			setToolTipText(tip.append("</html>").toString());
+		}
+		@Override protected void paintComponent(Graphics g0) {
+			Graphics2D g = (Graphics2D) g0.create();
+			int h = getHeight() - 6; // level with the inbox's box (it keeps room above for its hop)
+			if (getModel().isRollover()) g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.8f));
+			g.drawImage(text, 2, 6 + (h - 2 - text.getHeight()) / 2 + 1, null);
+			g.dispose();
+		}
+	}
+
 	/** Other...: the station's rarely used orders, in a window of their own. */
 	private void otherOrders() {
 		java.util.List<OtherOrdersDialog.Order> orders = new java.util.ArrayList<OtherOrdersDialog.Order>();
@@ -728,18 +782,19 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		orders.add(new OtherOrdersDialog.Order("Clean up blueprints", "Remove old blueprints no ship uses any more from the Federation Home Planet Mod. Rarely needed.",
 				null, new Runnable() { public void run() { BlueprintCleanup.run(SpaceDockUI.this); } }, false));
 		Vault v = Vault.get();
-		boolean taken = !v.docked().isEmpty() || v.boarded() != null;
-		orders.add(new OtherOrdersDialog.Order("Report for Reassignment", "Surrender the Cargo Hold and the Junkyard's hulls in exchange for a free new command.",
+		boolean waiting = v.freeCommandOpen();
+		orders.add(new OtherOrdersDialog.Order("Plead for New Ship", "Ask The Federation Home Planet for a new ship, paid for with the Cargo Hold or against your reputation.",
 				!HomePlanet.commissionCosts() ? "commissioning is free (Settings, Rules): Commission a new ship instead."
-						: taken ? "only a captain with no ship at the Space Dock can report for reassignment."
-						: v.freeCommandOpen() ? "a free command is already waiting for you at Commission." : null,
-				new Runnable() { public void run() { reportForReassignment(); } }, true));
-		final File last = v.lastSurrender();
-		if (last != null) {
+						: waiting ? "a ship's order is already waiting for you at Commission." : null,
+				new Runnable() { public void run() { plead(); } }, true));
+		final File last = v.freeCommandForfeit() ? v.lastSurrender() : null;
+		if (last != null) { // an old Report for Reassignment, its ship not yet taken
 			orders.add(new OtherOrdersDialog.Order("Undo Reassignment", "Take back the Cargo Hold and hulls surrendered in the last report for reassignment.",
-					HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final."
-							: taken ? "only before a new command is taken: no ship may be at the Space Dock." : null,
+					HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final." : null,
 					new Runnable() { public void run() { undoReassignment(last); } }, false));
+		} else if (waiting && v.freeCommandReassigned()) {
+			orders.add(new OtherOrdersDialog.Order("Withdraw Plea", "Cancel the new ship's order waiting at Commission. Nothing was taken for it yet.",
+					null, new Runnable() { public void run() { withdrawPlea(); } }, false));
 		}
 		if (!homeplanet.comm.Exchange.unfinished().isEmpty()) {
 			orders.add(new OtherOrdersDialog.Order("Unfinished trades", "Long Range Comm. trades a lost link left unsettled: what you gave is held until they're settled.",
@@ -752,38 +807,45 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return homeplanet.parser.FreeCommand.words(homeplanet.parser.FreeCommand.ship());
 	}
 	/** HR2: surrender the storage hold and the Junkyard for a free new command, then open Commission. */
-	void reportForReassignment() {
+	/**
+	 * Plead for New Ship: The Federation Home Planet agrees to send one, whatever is at the Space Dock. Nothing is taken
+	 * now: at Commission the captain picks her from what the plea offers, and pays with the Cargo Hold or (with
+	 * Reputation on) against the career's reputation.
+	 */
+	void plead() {
 		Vault v = Vault.get();
-		List<Ship> junk = v.junked();
-		StringBuilder hulls = new StringBuilder();
-		for (int i = 0; i < junk.size(); i++) hulls.append(i == 0 ? "" : ", ").append(junk.get(i).name);
-		String message = "Report for reassignment?\n\n"
-				+ "You surrender to The Federation Home Planet:\n"
-				+ "  - The Cargo Hold: its " + v.storageScrap() + " scrap, supplies, weapons, drones, augments, crew and stored systems\n"
-				+ (junk.isEmpty() ? "  - (the Junkyard is empty)\n" : "  - every hull in the Junkyard: " + hulls + "\n")
-				+ "\nIn exchange, The Federation Home Planet grants you a new command: " + homeplanet.parser.FreeCommand.words(homeplanet.parser.FreeCommand.onReport(v)) + ", free."
-				+ (homeplanet.parser.FreeCommand.byValue(v) ? " (What you surrender is worth " + homeplanet.parser.FreeCommand.surrenderValue(v) + " scrap: " + homeplanet.parser.FreeCommand.KESTREL_FROM
-						+ " earns a Kestrel Type A, " + homeplanet.parser.FreeCommand.ANY_FROM + " any ship.)" : "") + "\n\n"
-				+ (HomePlanet.immersiveMode ? "This is final (Immersive Mode)."
-				: "The Home Planet Station keeps a record of what was surrendered. Until you take your new command,\n"
-				+ "this can be undone (Other... > Undo Reassignment).");
-		if (!confirmIrreversible("Report for Reassignment", message, "Report")) return;
-		try {
-			v.surrender();
-		} catch (IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not complete the report for reassignment. Nothing was surrendered:\n" + e.getMessage());
-			init();
-			return;
-		}
+		String offered = homeplanet.parser.FreeCommand.offered(homeplanet.core.Economy.reassignment());
+		boolean rep = homeplanet.vault.Reputation.shown();
+		String message = "Plead for a new ship?\n\n"
+				+ "You put your case to The Federation Home Planet: one more ship, and you'll bring her home. They listen.\n"
+				+ "They will send " + offered + ". Her order will wait for you at Commission.\n\n"
+				+ "Nothing is taken now. When you commission her, you choose how to pay:\n"
+				+ "  - Give up the Cargo Hold: everything in it but the crew, at what it would sell for (the Junkyard isn't touched).\n"
+				+ (rep ? "  - Keep the Cargo Hold, and answer for her with your reputation.\n"
+						+ "Whatever the hold doesn't cover of her value, a tenth of it comes off your reputation.\n"
+						: "  (With the Reputation rule on, you could keep the Cargo Hold and answer for her with your reputation.)\n")
+				+ "\nUntil she's commissioned, the plea can be withdrawn (Other... > Withdraw Plea).";
+		Object[] options = {"Plead", "Cancel"};
+		if (JOptionPane.showOptionDialog(this, message, "Plead for New Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) != 0) return;
+		v.plead();
 		init();
 		String rank = homeplanet.parser.Transmissions.rank();
 		if (HomePlanet.immersiveNotifications()) {
-			// the Shipyard's order says what she is and where to take it: the player commissions her from there
-			JOptionPane.showMessageDialog(null, "Your report is accepted, " + rank + ". The order for your new command is in Transmissions.", "Report for Reassignment", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(null, "Your plea is heard, " + rank + ". The order for your new ship is in Transmissions.", "Plead for New Ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
-		JOptionPane.showMessageDialog(null, "Your report is accepted, " + rank + ". The shipyard stands ready to build your new command.", "Report for Reassignment", JOptionPane.INFORMATION_MESSAGE);
-		commissionShip();
+		JOptionPane.showMessageDialog(null, "Your plea is heard, " + rank + ". The shipyard stands ready to build your new ship.", "Plead for New Ship", JOptionPane.INFORMATION_MESSAGE);
+	}
+	/** Withdraw Plea: the order waiting at Commission is cancelled (nothing was taken for it). */
+	void withdrawPlea() {
+		if (!HomePlanet.confirmNo(this, "Withdraw your plea for a new ship?\n\nHer order at Commission is cancelled. Nothing was taken for it.", "Withdraw Plea")) return;
+		try {
+			Vault.get().withdrawPlea();
+			homeplanet.parser.Transmissions.pleaWithdrawn(); // her order leaves the inbox, and the Shipyard says so
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not withdraw the plea:\n" + e.getMessage());
+		}
+		init();
 	}
 	void undoReassignment(File dir) {
 		String hulls;

@@ -17,13 +17,13 @@ public final class CareerRules {
 
 	/** The rules a difficulty sets, in this order (the rows of the briefing's table). */
 	public static final int VICTORY = 0, JOURNEY = 1, REASSIGNMENT = 2, REMOVAL = 3, STRIPPING = 4, SUPPLIES = 5, STIPEND = 6, COMMISSION = 7, STARTING_SCRAP = 8;
-	public static final String[] RULES = {"After a final victory", "A New Journey costs", "Report for Reassignment grants", "Refit: taking a system off",
+	public static final String[] RULES = {"After a final victory", "A New Journey costs", "Plead for New Ship grants", "Refit: taking a system off",
 			"Stripping when scrapping", "Missiles and drone parts sell for", "The stipend comes every", "Commissioning a ship costs", "Scrap to start with"};
 	/** Each rule's Easy, Normal and Hard, in words. */
 	public static final String[][] LEVELS = {
 		{"Save her, or the museum buys her at full value", "Save her, or the museum buys her at half value", "The museum takes her, at half value"},
 		{"200 scrap", "500 scrap", "1000 scrap"},
-		{"a Kestrel Type A", "Variable (by what you surrender)", "a Federation relief ship"},
+		{"any ship (or the Relief Ship Type A)", "a Kestrel Type A or the Relief Ship Type A", "the Relief Ship Type A"},
 		{"free", "25 scrap", "50 scrap"},
 		{"allowed, free", "allowed, 10 scrap a system", "not allowed"},
 		{"half the store price", "a quarter of the store price", "1 scrap each"},
@@ -32,7 +32,7 @@ public final class CareerRules {
 		{"50 scrap", "25 scrap", "10 scrap"}};
 	private static final int[] JOURNEY_FEES = {200, 500, 1000}, REMOVAL_FEES = {0, 25, 50}, STRIP_FEES = {0, 10, -1}, SUPPLY_PERCENT = {50, 25, 0},
 			STIPEND_SECTORS = {2, 3, 4}, COMMISSION_PERCENT = {75, 100, 100}, START_SCRAP = {50, 25, 10};
-	private static final String[] REASSIGN = {FreeCommand.KESTREL, FreeCommand.VARIABLE, FreeCommand.RELIEF};
+	private static final String[] REASSIGN = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF};
 	/** A career from before difficulties: its final victory stays the choice made in Settings (nothing, rescue or reward). */
 	public static final int OWN_CHOICE = -1;
 
@@ -51,7 +51,7 @@ public final class CareerRules {
 		Arrays.fill(lv, l);
 		return new CareerRules(HARD.equals(name) || NORMAL.equals(name) ? name : EASY, lv);
 	}
-	/** A career from before difficulties, as it was: final victory as chosen, journeys 200, Variable, removal free, stripping as Settings had it (free), 25%, every 4 sectors, full price. */
+	/** A career from before difficulties, as it was: final victory as chosen, journeys 200, a Kestrel or the Relief Ship on a plea, removal free, stripping as Settings had it (free), 25%, every 4 sectors, full price. */
 	public static CareerRules earlier(boolean stripped) {
 		return new CareerRules(EARLIER, new int[] {OWN_CHOICE, 0, 1, 0, stripped ? 0 : 2, 1, 2, 1, 1});
 	}

@@ -71,10 +71,10 @@ public class CommissionDialog extends JDialog {
 	/** HR2: her price, under the name and difficulty (hidden when commissioning is free). */
 	private final JLabel priceLabel = new JLabel(" ");
 	private homeplanet.vault.Ship made = null;
-	/** The relief ship's row (not a blueprint of its own: a Kestrel A, stripped). */
+	/** The Relief Ship Type A's row (not a blueprint of her own: a Kestrel A, stripped). */
 	private static final String RELIEF = "RELIEF";
 	/** What the list shows, under the rules in force (the Space Dock's backdrop draws from it too). */
-	private final Listing listing = new Listing(HomePlanet.commissionCosts() && homeplanet.vault.Vault.get().shipyardEmpty() && homeplanet.vault.Vault.get().freeCommandOpen());
+	private final Listing listing = new Listing(HomePlanet.commissionCosts() && homeplanet.vault.Vault.get().freeCommandOpen()); // a ship's order waits (a new fleet's, or a plea's), whatever is docked
 
 	/** Opens the window. Returns the new ship (docked in the vault), or null if nothing was commissioned. */
 	public static homeplanet.vault.Ship open(SpaceDockUI dock) {
@@ -197,7 +197,7 @@ public class CommissionDialog extends JDialog {
 
 	/** The list's rows under the rules in force: what Commission offers, why some are hidden, and which are free. */
 	static final class Listing {
-		/** HR2: the free command is waiting (granted once when the fleet starts, and with each report for reassignment) and no ship is here. */
+		/** HR2: a ship's order is waiting (granted once when the fleet starts, and with each plea for a new ship). */
 		final boolean emptyYard;
 		/** HR2 with the unlock-once rule: standard layouts unlocked in FTL since the rule was turned on, not yet claimed. */
 		final java.util.Set<String> unlockFree = new java.util.HashSet<String>();
@@ -237,10 +237,8 @@ public class CommissionDialog extends JDialog {
 					}
 				}
 			}
-			if (emptyYard && homeplanet.parser.FreeCommand.RELIEF.equals(homeplanet.parser.FreeCommand.ship())) {
-				rows.add(new Entry(null, "Relief"));
-				rows.add(new Entry(RELIEF, "Federation relief ship (free)"));
-			}
+			rows.add(new Entry(null, "Relief"));
+			rows.add(new Entry(RELIEF, homeplanet.parser.FreeCommand.RELIEF_CLASS + freeNote(RELIEF))); // always offered, at the Federation's price
 			List<String> bases = DataManager.get().getPlayerShipBaseIds(true);
 			rows.add(new Entry(null, "Standard ships"));
 			for (String base : bases) {
@@ -250,7 +248,7 @@ public class CommissionDialog extends JDialog {
 					if (bp == null) continue;
 					if (unlocks != null && !unlocks.unlocked(base, n)) { hidden++; locked.add(new LockedShipsDialog.Locked(base, bp, n)); continue; }
 					String id = bp.getId();
-					rows.add(new Entry(id, classOf(bp) + " " + letters[n] + (free(id) ? " (free)" : "")));
+					rows.add(new Entry(id, classOf(bp) + " " + letters[n] + freeNote(id)));
 				}
 			}
 			List<Entry> custom = new ArrayList<Entry>();
@@ -285,11 +283,17 @@ public class CommissionDialog extends JDialog {
 			if (unlockFree.contains(id)) return true;
 			return emptyFree(id);
 		}
+		/** Her row's note: " (on your plea)" for a plea's ship, " (free)" for a free one, or nothing. */
+		String freeNote(String id) {
+			if (!free(id)) return "";
+			return !unlockFree.contains(id) && emptyFree(id) && homeplanet.vault.Vault.get().freeCommandReassigned() && !homeplanet.vault.Vault.get().freeCommandForfeit() ? " (on your plea)" : " (free)";
+		}
 		boolean emptyFree(String id) {
 			if (!emptyYard) return false;
-			String free = homeplanet.parser.FreeCommand.ship(); // Settings', or what an Immersive career or report earned
+			if (RELIEF.equals(id)) return true; // the Relief Ship is always among what an order offers
+			String free = homeplanet.parser.FreeCommand.ship(); // Settings', or the career's, or a new fleet's Kestrel
 			if (homeplanet.parser.FreeCommand.ANY.equals(free)) return true;
-			if (homeplanet.parser.FreeCommand.RELIEF.equals(free)) return RELIEF.equals(id);
+			if (homeplanet.parser.FreeCommand.RELIEF.equals(free)) return false;
 			return homeplanet.parser.Commission.RELIEF_BASE.equals(id); // the Kestrel A
 		}
 		/** Why the player's rank doesn't clear this blueprint (Immersive Mode), or null. */
@@ -344,7 +348,7 @@ public class CommissionDialog extends JDialog {
 	private void showPreview(Entry e) {
 		ShipBlueprint bp = DataManager.get().getShip(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id);
 		boolean another = !e.id.equals(previewFor);
-		if (another) nameField.setText(RELIEF.equals(e.id) ? "Federation Relief" : defaultName(bp)); // a new crew roll keeps the name typed
+		if (another) nameField.setText(RELIEF.equals(e.id) ? homeplanet.parser.FreeCommand.RELIEF_NAME : defaultName(bp)); // a new crew roll keeps the name typed
 		previewFor = e.id;
 		preview.removeAll();
 		try {
@@ -357,14 +361,16 @@ public class CommissionDialog extends JDialog {
 			JPanel p = dock.shipSummaryPanel(s, new java.util.function.Consumer<net.blerf.ftl.parser.SavedGameParser.CrewState>() {
 				public void accept(net.blerf.ftl.parser.SavedGameParser.CrewState c) { renameCrew(shown, aboard.indexOf(c), c); }
 			}, new Runnable() { public void run() { crewFor = null; showPreview(shown); } });
-			JLabel stats = new JLabel("<html>" + classOf(bp) + ": hull " + bp.getHealth().amount + ", reactor "
+			JLabel stats = new JLabel("<html>" + (RELIEF.equals(e.id) ? homeplanet.parser.FreeCommand.RELIEF_CLASS : classOf(bp)) + ": hull " + bp.getHealth().amount + ", reactor "
 					+ s.getPlayerShip().getReservePowerCapacity() + ", " + (bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots())
 					+ " weapon slots, " + (bp.getDroneSlots() == null ? 3 : bp.getDroneSlots()) + " drone slots</html>");
 			stats.setBorder(BorderFactory.createEmptyBorder(4, 6, 8, 6));
 			preview.add(stats, BorderLayout.NORTH);
 			preview.add(p, BorderLayout.CENTER);
 			if (HomePlanet.commissionCosts()) {
-				if (emptyFree(e.id)) priceLabel.setText("<html><b>Free.</b> The Federation Home Planet grants you a new command at no cost (once; a report for reassignment grants another).</html>");
+				if (emptyFree(e.id) && homeplanet.vault.Vault.get().freeCommandReassigned() && !homeplanet.vault.Vault.get().freeCommandForfeit())
+					priceLabel.setText("<html><b>On your plea.</b> When you commission her, give up the Cargo Hold for her" + (homeplanet.vault.Reputation.shown() ? ", or keep it and answer for her with your reputation" : "") + ".</html>");
+				else if (emptyFree(e.id)) priceLabel.setText("<html><b>Free.</b> The Federation Home Planet grants you your first command at no cost.</html>");
 				else if (free(e.id)) priceLabel.setText("<html><b>Free, once.</b> Newly unlocked in FTL: The Federation Home Planet commissions the first of her line at no cost.</html>");
 				else showPrice(quote(e.id, s));
 			}
@@ -405,7 +411,19 @@ public class CommissionDialog extends JDialog {
 
 	/** HR2: her price as built, with a custom design's rooms and doors. */
 	static homeplanet.parser.Pricing.Quote quote(String bpId, SavedGameState s) {
+		if (RELIEF.equals(bpId)) return reliefQuote();
 		return homeplanet.parser.Pricing.ship(s, homeplanet.core.Economy.commissionPercent());
+	}
+	/** The Relief Ship Type A at the Federation's price: always the same, whatever the commission rate. */
+	static homeplanet.parser.Pricing.Quote reliefQuote() {
+		homeplanet.parser.Pricing.Quote q = new homeplanet.parser.Pricing.Quote();
+		q.lines.add(homeplanet.parser.FreeCommand.RELIEF_CLASS + ", at the Federation's price: " + homeplanet.parser.FreeCommand.RELIEF_PRICE);
+		q.subtotal = homeplanet.parser.FreeCommand.RELIEF_PRICE;
+		return q;
+	}
+	/** Her value for a plea: the Relief Ship at the Federation's price, any other ship at her full price. */
+	private static int pleaValue(String id, SavedGameState s) {
+		return RELIEF.equals(id) ? homeplanet.parser.FreeCommand.RELIEF_PRICE : homeplanet.parser.Pricing.ship(s, 100).total();
 	}
 	private void showPrice(homeplanet.parser.Pricing.Quote q) {
 		int have = homeplanet.vault.Vault.get().storageScrap();
@@ -438,6 +456,45 @@ public class CommissionDialog extends JDialog {
 		int price = 0;
 		byte[] storageBefore = null;
 		boolean isFree = free(e.id);
+		// a plea's ship: paid with the Cargo Hold (at what it would sell for), or against the career's reputation
+		boolean plea = isFree && emptyFree(e.id) && vault.freeCommandReassigned() && !vault.freeCommandForfeit(); // (an old report's ship was paid for already)
+		byte[][] holdBefore = null;
+		int repCost = 0;
+		String howPaid = null;
+		if (plea) {
+			int value = pleaValue(e.id, s), hold = homeplanet.parser.FreeCommand.holdSaleValue(vault);
+			boolean rep = homeplanet.vault.Reputation.shown();
+			int costGiving = homeplanet.parser.FreeCommand.reputationCost(value, hold), costKeeping = homeplanet.parser.FreeCommand.reputationCost(value, 0);
+			StringBuilder msg = new StringBuilder(name + " is worth " + value + " scrap. Your Cargo Hold would sell for " + hold + " scrap.\n\n");
+			if (rep && hold <= 0) {
+				msg.append("The hold has nothing to sell, so either way a tenth of her value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").\n"
+						+ "Giving it up still takes everything in it but the crew, who stay.");
+			} else if (rep) {
+				msg.append("Give it up (everything in it but the crew, who stay): ").append(costGiving == 0 ? "she costs your reputation nothing.\n"
+						: "a tenth of the " + (value - hold) + " it doesn't cover comes off your reputation (" + homeplanet.vault.Reputation.signed(-costGiving) + ").\n");
+				msg.append("Keep it: a tenth of her whole value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").");
+			} else {
+				msg.append("The Federation Home Planet takes the Cargo Hold for her (everything in it but the crew, who stay), whatever it's worth.");
+			}
+			Object[] options = rep ? new Object[] {"Give up the Cargo Hold", "Keep the Cargo Hold", "Cancel"} : new Object[] {"Give up the Cargo Hold", "Cancel"};
+			int pick = JOptionPane.showOptionDialog(this, msg.toString(), "Plead for New Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[options.length - 1]);
+			if (pick < 0 || pick == options.length - 1) return;
+			boolean giving = pick == 0;
+			int refund = 0;
+			if (giving && hold > value) {
+				Object[] sure = {"Cancel", "Yes (give up the extra scrap)", "Yes (refund the difference)"};
+				int s2 = JOptionPane.showOptionDialog(this, "Are you sure?\n\nYour Cargo Hold is worth " + hold + " scrap at sale,\nwhich is enough to purchase " + name + " plus " + (hold - value) + " more.",
+						"Plead for New Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, sure, sure[0]);
+				if (s2 != 1 && s2 != 2) return;
+				if (s2 == 2) refund = hold - value;
+			}
+			repCost = rep ? (giving ? costGiving : costKeeping) : 0;
+			howPaid = giving ? "the Cargo Hold given up (worth " + hold + " scrap at sale)" + (refund > 0 ? ", " + refund + " scrap refunded" : "") : "the Cargo Hold kept";
+			if (giving) {
+				try { holdBefore = vault.forfeitHold(hold, refund); }
+				catch (Exception ex) { HomePlanet.showErrorDialog("The Home Planet Station could not take the Cargo Hold. Nothing was changed:\n" + ex.getMessage()); return; }
+			}
+		}
 		if (HomePlanet.commissionCosts() && !isFree) {
 			homeplanet.parser.Pricing.Quote q = quote(e.id, s);
 			price = q.total();
@@ -467,6 +524,10 @@ public class CommissionDialog extends JDialog {
 				try { vault.refundStorage(storageBefore); refund = "\nThe " + price + " scrap was returned to the Cargo Hold."; }
 				catch (Exception again) { refund = "\nThe " + price + " scrap could not be returned to the Cargo Hold: " + again.getMessage(); }
 			}
+			if (holdBefore != null) {
+				try { vault.unforfeitHold(holdBefore); refund += "\nThe Cargo Hold was given back as it was."; }
+				catch (Exception again) { refund += "\nThe Cargo Hold could not be given back: " + again.getMessage() + " (its last version is in its history)."; }
+			}
 			HomePlanet.showErrorDialog("The new ship could not be docked; her save could not be written:\n" + ex + refund);
 			return;
 		}
@@ -475,7 +536,11 @@ public class CommissionDialog extends JDialog {
 		List<String> lines = new ArrayList<String>();
 		lines.add(e.label + " (" + e.id + "), difficulty " + difficulty.getSelectedItem() + (s.isDLCEnabled() ? "" : ", Original (Advanced Edition content off)"));
 		if (price > 0) lines.add("Paid " + price + " scrap from the Cargo Hold");
-		if (isFree && emptyFree(e.id)) {
+		if (plea) {
+			lines.add("On a plea: " + howPaid + (repCost > 0 ? "; " + repCost + " reputation" : ""));
+			homeplanet.vault.Vault.get().useFreeCommand("commissioned " + name);
+			homeplanet.vault.Reputation.plea(vault, repCost, "A new ship on your plea: " + name + ", " + e.label.replace(" (on your plea)", "") + "; " + howPaid);
+		} else if (isFree && emptyFree(e.id)) {
 			lines.add("Free: the free command");
 			homeplanet.vault.Vault.get().useFreeCommand("commissioned " + name);
 		}

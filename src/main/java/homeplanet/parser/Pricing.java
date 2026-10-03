@@ -106,12 +106,16 @@ public final class Pricing {
 	/** Trade In and Auction: each point of missing hull takes this much off her value. */
 	public static final int HULL_DAMAGE = 5;
 
-	/** What she's worth to a buyer, before her hull damage: as commissioned at full price (crew aside: they stay with the fleet), and her fuel, missiles and drone parts at store price. */
+	/** Her fuel, missiles and drone parts at store price (part of every ship's value). */
+	public static int supplies(ShipState s) {
+		return s.getFuelAmt() * FUEL + s.getMissilesAmt() * MISSILE + s.getDronePartsAmt() * DRONE_PART;
+	}
+	/** What she's worth to a buyer, before her hull damage: her full price (with her fuel, missiles and drone parts), crew aside (they stay with the fleet). */
 	public static int saleValue(SavedGameState gs) {
 		ShipState s = gs.getPlayerShip();
 		int crew = 0;
 		for (CrewState c : SaveHelper.getOwnCrew(s)) crew += crew(c.getRace().getId());
-		return ship(gs, 100).subtotal - crew + s.getFuelAmt() * FUEL + s.getMissilesAmt() * MISSILE + s.getDronePartsAmt() * DRONE_PART;
+		return ship(gs, 100).subtotal - crew;
 	}
 	/** Her missing hull points (her model's full hull, less what she has). */
 	public static int missingHull(ShipState s) {
@@ -171,7 +175,7 @@ public final class Pricing {
 
 	/**
 	 * HR2: what the shipyard charges for a new ship, as commissioned: her systems and their levels, reactor, weapons,
-	 * drones, augments (her cargo too) and crew. A custom design also pays for each room and door
+	 * drones, augments (her cargo too), crew, and her fuel, missiles and drone parts. A custom design also pays for each room and door
 	 * ({@code rooms}, {@code doors}; 0 for FTL's own ships and remodels of them).
 	 */
 	/** The same, with the rooms and doors of the custom design she was built from, if she was (none for FTL's own ships). */
@@ -208,6 +212,7 @@ public final class Pricing {
 		int crew = 0, n = 0;
 		for (CrewState c : SaveHelper.getOwnCrew(s)) { crew += crew(c.getRace().getId()); n++; }
 		q.add("Crew (" + n + ")", crew);
+		q.add("Fuel, missiles and drone parts", supplies(s));
 		if (rooms > 0) q.add("Custom hull (" + rooms + " rooms, " + doors + " doors)", rooms * PER_ROOM + doors * PER_DOOR);
 		return q;
 	}

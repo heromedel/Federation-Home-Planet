@@ -80,11 +80,12 @@ public class Commission {
 		return gs;
 	}
 
-	/** The Federation relief ship: a Kestrel A stripped to basics, the free ship of an empty shipyard. */
+	/** The Relief Ship Type A: a Kestrel A stripped to basics, always among what a plea offers. */
 	public static final String RELIEF_BASE = "PLAYER_SHIP_HARD";
 	/**
-	 * Builds the relief ship: a Kestrel A with one human crew, a basic laser and an ion blast, her missiles, no drones
-	 * or augments, every system at its minimum (a shield layer, two bars of weapons for her two guns) and a reactor of 7.
+	 * Builds the Relief Ship Type A: a Kestrel A with one human crew, a Burst Laser I and an Ion Blast, no missiles, no
+	 * drones or augments, every system at its minimum (a shield layer, two bars of weapons for her two guns) and a
+	 * reactor of 6.
 	 */
 	public static SavedGameState buildRelief(String shipName, Difficulty difficulty, Random rng) {
 		SavedGameState gs = build(RELIEF_BASE, shipName, difficulty, rng);
@@ -95,6 +96,7 @@ public class Commission {
 		ship.addWeapon(SaveHelper.newIdleWeapon("ION_1"));
 		ship.getDroneList().clear();
 		ship.setDronePartsAmt(0);
+		ship.setMissilesAmt(0);
 		ship.getAugmentIdList().clear();
 		for (SystemType t : SystemType.values()) {
 			SystemState st = ship.getSystem(t);
@@ -102,7 +104,7 @@ public class Commission {
 			st.setCapacity(t == SystemType.SHIELDS || t == SystemType.WEAPONS ? 2 : 1);
 			if (t.isSubsystem()) st.setPower(st.getCapacity());
 		}
-		ship.setReservePowerCapacity(7);
+		ship.setReservePowerCapacity(6);
 		fillPower(ship);
 		net.blerf.ftl.parser.SavedGameParser.ShieldsInfo sh = ship.getExtendedSystemInfo(net.blerf.ftl.parser.SavedGameParser.ShieldsInfo.class);
 		SystemState shields = ship.getSystem(SystemType.SHIELDS);

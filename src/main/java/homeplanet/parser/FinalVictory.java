@@ -121,6 +121,7 @@ public final class FinalVictory {
 						: u.victoriousScores(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId()) > Math.max(0, f.scoresThen);
 				String c = choice();
 				if (won) Museum.recordVictory(v, f, gs, u); // every victor has a place in the Hall of Victors
+				if (won) homeplanet.vault.Reputation.flagship(v, f.name); // the career's standing, if one runs
 				if (!won || NOTHING.equals(c)) {
 					v.closeFinal(f, won);
 					if (won) HistoryLog.entry("VICTORY", f.name + " won the last battle and was lost with the run (after a final victory: nothing)");

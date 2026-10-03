@@ -49,7 +49,8 @@ And More.
   block a commander you'd
   rather not hear from.
 - **The shipyard:** commission any unlocked ship, a remodel, or a ship you designed yourself. New blueprints are sent
-  to FTL via Slipstream.
+  to FTL via Slipstream. **Plead for New Ship** (Other...) asks The Federation Home Planet for one, paid for with the
+  Cargo Hold or answered for with your reputation; the Relief Ship Type A is always on offer.
 - **House rules** (Settings): trading and New Journey only at a store beacon, commissioning that costs scrap, locked
   ships that can't be commissioned, selling supplies and systems, a free commission for each ship you unlock, and
   what happens after a final victory (rescue the ship, a reward of her value, or nothing).
@@ -57,6 +58,11 @@ And More.
   fleet and FTL profile. The Federation Home Planet's rules are locked, you rise in rank (Commander, Captain,
   Commodore), and transmissions bring commission orders, promotions, achievement rewards and a stipend. Switch Game
   Mode (Settings) moves between Sandbox Mode and the careers at any time, and ends a career.
+- **Reputation:** your standing with The Federation Home Planet (always in Immersive Mode; a Settings rule in Sandbox
+  Mode), in gold on the Space Dock: earned by sectors,
+  scrap, ships defeated (rebels more), good outcomes, FTL achievements and the Rebel Flagship; lost by crew killed,
+  ships lost in action, being caught by the rebel fleet and bad outcomes (never in the last stand of sector 8).
+  Click it for the Career Reputation Log.
 - **The Federation Museum:** every ship that won in the Hall of Victors (preserved in the museum, still in service,
   honoured in memory, or lost in action later), and the ships lost in action in the Memorial: her record, honours,
   crew, voyage and loadout, an epitaph of your own, and a picture of the exhibit to save.

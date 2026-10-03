@@ -137,7 +137,7 @@ final class LogViewer extends JPanel {
 		catch (Exception e) { text = "The Home Planet Station could not read " + f + ": " + e.getMessage(); }
 		int entries = 0;
 		for (String line : text.split("\r?\n")) if (!line.isEmpty() && !line.startsWith("  ")) entries++;
-		count.setText(entries + " entries");
+		count.setText(entries + (entries == 1 ? " entry" : " entries"));
 		show(RecordsLog.station(text, "Nothing logged yet."));
 	}
 

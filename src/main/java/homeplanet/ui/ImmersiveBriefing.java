@@ -122,10 +122,10 @@ final class ImmersiveBriefing extends JDialog {
 				+ (begun ? "" : " Your career begins with an empty shipyard, a free Kestrel and some scrap in the Cargo Hold (by its difficulty).")));
 		p.add(section("The rules", "Set and locked while it's on:",
 				"Trading, scrapping and New Journey need a station (a beacon with a store).",
-				"Commissioning costs scrap from the Cargo Hold. With no ship left, commission one, sell a hull from the Junkyard, or report for reassignment (surrender the Cargo Hold and the Junkyard for a free new command).",
+				"Commissioning costs scrap from the Cargo Hold. With no ship left, commission one, sell a hull from the Junkyard, or plead for a new ship (Other...: paid for with the Cargo Hold, or answered for with your reputation).",
 				"Each ship you unlock in FTL from now on can be commissioned free, once. Locked ships can't be commissioned.",
 				"Fees and prices are set by the career's difficulty, chosen on the next page: a New Journey, taking systems off, missiles and drone parts sold. Stored systems sell at half their price.",
-				"Lost ships stay lost: no restoring earlier versions, no recovering, and a report for reassignment is final."));
+				"Lost ships stay lost: no restoring earlier versions, and no recovering."));
 		p.add(section("Rank", "You start as a Commander.",
 				"Captain: design ships, remodel, overhaul, commission custom ships. " + oneLine(Clearance.HOW_CAPTAIN),
 				"Commodore: the Federation's artillery. " + oneLine(Clearance.HOW_COMMODORE),
