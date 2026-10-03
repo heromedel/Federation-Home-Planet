@@ -244,11 +244,11 @@ subject: Commission order: {ship}
 
 The {race} have contacted Federation Command. They are impressed with what you have managed to achieve with {cruiser}. During negotiations they have agreed to share blueprints of a different model with The Federation.
 
-In recognition of your contribution The Federation Home World has approved commissioning your fleet one ship of the this class for free.
+In recognition of your contribution The Federation Home Planet has approved commissioning your fleet one ship of this class for free.
 
 I don't know about how all the politics work but the ship looks interesting.
 
-Let me know it feels to fly one of these, and come home safe.
+Let me know how it feels to fly one of these, and come home safe.
 ~ Comm. Officer.
 Home Planet Station Shipyard.
 
