@@ -106,7 +106,7 @@ final class StationLogDialog extends JDialog {
 			if (!line.trim().isEmpty()) entry.append(line).append('\n');
 		}
 		if (entry.length() > 0) { entries++; if (q.isEmpty() || entry.toString().toLowerCase().contains(q)) { out.append(entry); shown++; } }
-		count.setText(q.isEmpty() ? entries + " entries" : shown + " of " + entries + " entries");
+		count.setText(q.isEmpty() ? entries + (entries == 1 ? " entry" : " entries") : shown + " of " + entries + (entries == 1 ? " entry" : " entries"));
 		scroll.setViewportView(RecordsLog.station(out.toString(), q.isEmpty() ? "Nothing logged yet." : "No entries mention \"" + search.getText().trim() + "\"."));
 		SwingUtilities.invokeLater(new Runnable() { // the latest entries in view
 			public void run() { scroll.getViewport().revalidate(); javax.swing.JScrollBar b = scroll.getVerticalScrollBar(); b.setValue(b.getMaximum()); }

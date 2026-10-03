@@ -57,11 +57,11 @@ final class ReputationLogDialog extends JDialog {
 		scroll.setPreferredSize(new Dimension(900, 520));
 		scroll.getVerticalScrollBar().setUnitIncrement(22);
 		JPanel south = new JPanel(new BorderLayout());
-		JLabel how = new JLabel("<html><font color='" + MenuTheme.HTML_GREY_GREEN + "'>Earned: each sector +" + Reputation.SECTOR + ", a tenth of the scrap collected, each ship defeated +"
+		JLabel how = new JLabel("<html><div style='width:620px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>Earned: each sector +" + Reputation.SECTOR + ", a tenth of the scrap collected, each ship defeated +"
 				+ Reputation.DEFEATED + " (a rebel +" + Reputation.REBEL_DEFEATED + "), a good outcome +" + Reputation.EVENT_GOOD + ", each FTL achievement +" + Reputation.ACHIEVEMENT
 				+ ", the Rebel Flagship +" + Reputation.FLAGSHIP + ".<br>Lost: each crew member killed " + Reputation.signed(Reputation.CREW_DIED) + ", each ship lost in action "
 				+ Reputation.signed(Reputation.SHIP_LOST) + ", caught by the rebel fleet " + Reputation.signed(Reputation.CAUGHT) + ", a bad outcome " + Reputation.signed(Reputation.EVENT_BAD)
-				+ ". Nothing is lost in the last stand of sector 8.</font></html>");
+				+ ". Nothing is lost in the last stand of sector 8.</font></div></html>"); // wraps, so the Close button keeps its room
 		south.add(how, BorderLayout.CENTER);
 		JButton close = new JButton("Close");
 		close.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
@@ -95,7 +95,7 @@ final class ReputationLogDialog extends JDialog {
 			if (!line.trim().isEmpty()) entry.append(line).append('\n');
 		}
 		if (entry.length() > 0) { entries++; if (q.isEmpty() || entry.toString().toLowerCase().contains(q)) { out.append(entry); shown++; } }
-		count.setText(q.isEmpty() ? entries + " entries" : shown + " of " + entries + " entries");
+		count.setText(q.isEmpty() ? entries + (entries == 1 ? " entry" : " entries") : shown + " of " + entries + (entries == 1 ? " entry" : " entries"));
 		scroll.setViewportView(RecordsLog.station(out.toString(), q.isEmpty() ? "Nothing yet: your ships' service will be noted here." : "No entries mention \"" + search.getText().trim() + "\"."));
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() { scroll.getViewport().revalidate(); javax.swing.JScrollBar b = scroll.getVerticalScrollBar(); b.setValue(b.getMaximum()); }
