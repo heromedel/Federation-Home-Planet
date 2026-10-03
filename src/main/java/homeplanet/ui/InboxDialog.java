@@ -30,7 +30,7 @@ import homeplanet.parser.Transmissions;
 
 /** The transmissions inbox: messages from The Federation Home Planet, newest first, with Claim for their rewards. */
 public class InboxDialog extends JDialog {
-	private final SpaceDockUI dock;
+	private final java.awt.Component dock;
 	private final DefaultListModel<Transmissions.Message> model = new DefaultListModel<Transmissions.Message>();
 	private final JList<Transmissions.Message> list = new JList<Transmissions.Message>(model);
 	/** The transmission: its subject as a gold title, who sent it and when, then the message, with a little air between lines. */
@@ -41,20 +41,29 @@ public class InboxDialog extends JDialog {
 	private final JButton commission = new JButton("Commission...");
 	private final JButton archive = new JButton("Archive");
 	private final JButton delete = new JButton("Delete");
+	/** A shipment held in the inbox: into this fleet's Cargo Hold, another fleet's, or back to its sender. */
+	private final JButton takeIt = new JButton("Accept"), elsewhere = new JButton("Deliver to another fleet..."), sendBack = new JButton("Return to sender");
 	private final JButton keep = new JButton("Keep her"), museum = new JButton("Accept the museum's offer");
 	private final JButton payRansom = new JButton("Pay"), refuseRansom = new JButton("Refuse");
-	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton();
+	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton(), outboxTab = new javax.swing.JToggleButton();
+	/** The Inbox and Archive share one view; the Outbox has its own. */
+	private final java.awt.CardLayout cards = new java.awt.CardLayout();
+	private final JPanel cardPanel = new JPanel(cards);
+	private final OutboxPanel outbox = new OutboxPanel(new Runnable() { public void run() { outboxTab.setText("Outbox (" + OutboxPanel.count() + ")"); } });
 	private java.util.List<Transmissions.Message> all;
 	private boolean openCommission;
 
 	/** Opens the inbox. True if the player asked to go to Commission (a commission order). */
-	public static boolean open(SpaceDockUI dock) {
+	public static boolean open(SpaceDockUI dock) { return open(dock, false); }
+	/** Opens the inbox, on its Outbox tab if asked (the Long Range screen's Outbox button). */
+	public static boolean open(java.awt.Component dock, boolean atOutbox) {
 		InboxDialog d = new InboxDialog(dock);
+		if (atOutbox) { d.outboxTab.setSelected(true); d.fill(); }
 		d.setVisible(true);
 		return d.openCommission;
 	}
 
-	private InboxDialog(SpaceDockUI dock) {
+	private InboxDialog(java.awt.Component dock) {
 		super(SwingUtilities.getWindowAncestor(dock), "Transmissions", ModalityType.APPLICATION_MODAL);
 		this.dock = dock;
 		all = Transmissions.load();
@@ -93,6 +102,14 @@ public class InboxDialog extends JDialog {
 		act.add(refuseRansom);
 		act.add(archive);
 		act.add(delete);
+		act.add(takeIt);
+		act.add(elsewhere);
+		act.add(sendBack);
+		takeIt.setToolTipText("Into this fleet's Cargo Hold");
+		sendBack.setToolTipText("It waits in your Outbox, addressed back to them, and goes when your station finds theirs");
+		takeIt.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { parcelAction(0); } });
+		elsewhere.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { parcelAction(1); } });
+		sendBack.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { parcelAction(2); } });
 		act.add(rewardLabel);
 		right.add(act, BorderLayout.SOUTH);
 		reply.setToolTipText("Choose your answer: the reply comes in a few days");
@@ -114,18 +131,26 @@ public class InboxDialog extends JDialog {
 		javax.swing.ButtonGroup tabs = new javax.swing.ButtonGroup();
 		tabs.add(inboxTab);
 		tabs.add(archiveTab);
+		tabs.add(outboxTab);
+		outboxTab.setToolTipText("Long Range Comm. messages waiting to go to commanders whose stations couldn't be reached");
 		inboxTab.setSelected(true);
 		ActionListener refill = new ActionListener() { public void actionPerformed(ActionEvent e) { fill(); } };
 		inboxTab.addActionListener(refill);
 		archiveTab.addActionListener(refill);
+		outboxTab.addActionListener(refill);
 		JPanel tabRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
 		tabRow.add(inboxTab);
 		tabRow.add(archiveTab);
+		tabRow.add(outboxTab);
 
 		JPanel body = new JPanel(new BorderLayout(10, 8));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
-		body.add(ls, BorderLayout.WEST);
-		body.add(right, BorderLayout.CENTER);
+		JPanel mail = new JPanel(new BorderLayout(10, 8));
+		mail.add(ls, BorderLayout.WEST);
+		mail.add(right, BorderLayout.CENTER);
+		cardPanel.add(mail, "mail");
+		cardPanel.add(outbox, "outbox");
+		body.add(cardPanel, BorderLayout.CENTER);
 		body.add(tabRow, BorderLayout.NORTH);
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton close = new JButton("Close");
@@ -141,6 +166,9 @@ public class InboxDialog extends JDialog {
 
 	/** The list for the tab shown: the inbox, or the Archive. */
 	private void fill() {
+		outboxTab.setText("Outbox (" + OutboxPanel.count() + ")");
+		if (outboxTab.isSelected()) { cards.show(cardPanel, "outbox"); outbox.fill(); return; }
+		cards.show(cardPanel, "mail");
 		boolean arch = archiveTab.isSelected();
 		int in = 0, out = 0;
 		for (Transmissions.Message m : all) { if (m.archived) out++; else in++; }
@@ -165,9 +193,58 @@ public class InboxDialog extends JDialog {
 	}
 
 	/** Deletes a receipt for good (it asks first). */
+	/** A shipment's transmission's parcel, or null if it isn't one. */
+	private static homeplanet.comm.Shipments.Parcel parcelOf(Transmissions.Message m) {
+		return m != null && m.key.startsWith("parcel:") && homeplanet.vault.Vault.isOpen() ? homeplanet.comm.Shipments.find(m.key.substring(7)) : null;
+	}
+	/** Where a commander's message (or shipment) can be answered: their station, host and port; null if it can't. */
+	private static String[] replyTo(Transmissions.Message m) {
+		homeplanet.comm.Shipments.Parcel p = parcelOf(m);
+		if (p != null) return new String[] {p.peerStation, p.host, Integer.toString(p.port)};
+		return Transmissions.noteFrom(m);
+	}
+	/** A shipment's state, under its message. */
+	private static String parcelState(homeplanet.comm.Shipments.Parcel p) {
+		if (p == null) return "";
+		if (homeplanet.comm.Shipments.HELD.equals(p.state)) {
+			String why = homeplanet.comm.Shipments.whyNot(p);
+			return "\n\nWaiting for you: accept it, deliver it to another of your fleets, or return it." + (why == null ? "" : "\n\nThis fleet can't accept it: " + why);
+		}
+		if (homeplanet.comm.Shipments.ACCEPTED.equals(p.state)) return "\n\nAccepted: it's in the Cargo Hold.";
+		if (homeplanet.comm.Shipments.ELSEWHERE.equals(p.state)) return "\n\nDelivered to another of your fleets' Cargo Hold.";
+		if (homeplanet.comm.Shipments.RETURNING.equals(p.state)) return "\n\nReturning: it waits in your Outbox, and goes when your station finds " + p.peerTitle + "'s.";
+		if (homeplanet.comm.Shipments.RETURNED.equals(p.state)) return "\n\nReturned to " + p.peerTitle + ".";
+		return "";
+	}
+	/** 0 accept, 1 deliver to another fleet, 2 return to sender. */
+	private void parcelAction(int what) {
+		Transmissions.Message m = list.getSelectedValue();
+		homeplanet.comm.Shipments.Parcel p = parcelOf(m);
+		if (p == null) return;
+		try {
+			if (what == 0) {
+				homeplanet.comm.Shipments.accept(p);
+			} else if (what == 1) {
+				java.util.List<String> fleets = homeplanet.comm.Shipments.otherFleets(p);
+				if (fleets.isEmpty()) return;
+				Object[] names = new Object[fleets.size()];
+				for (int i = 0; i < names.length; i++) names[i] = homeplanet.vault.Vault.title(fleets.get(i)) + " fleet";
+				Object pick = JOptionPane.showInputDialog(this, "Deliver " + p.words() + " to which fleet's Cargo Hold?", "Deliver to another fleet", JOptionPane.QUESTION_MESSAGE, null, names, names[0]);
+				if (pick == null) return;
+				for (int i = 0; i < names.length; i++) if (names[i].equals(pick)) homeplanet.comm.Shipments.deliverTo(p, fleets.get(i));
+			} else {
+				if (!HomePlanet.confirmNo(this, "Return " + p.words() + " to " + p.peerTitle + "?\nIt waits in your Outbox, and goes when your station finds theirs.", "Return to sender")) return;
+				homeplanet.comm.Shipments.returnIt(p);
+			}
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not do that:\n" + e.getMessage());
+		}
+		show(m);
+		outboxTab.setText("Outbox (" + OutboxPanel.count() + ")");
+	}
 	private void deleteSelected() {
 		Transmissions.Message m = list.getSelectedValue();
-		if (m == null || !(Transmissions.isReceipt(m) || Transmissions.isNote(m))) return;
+		if (m == null || !(Transmissions.isReceipt(m) || Transmissions.isNote(m) || m.key.startsWith("parcel:"))) return;
 		if (!HomePlanet.confirmNo(this, Transmissions.isNote(m) ? "Delete this message from " + m.from + "?" : "Delete this receipt?\nThe trade stays in the station's history.", "Delete")) return;
 		try {
 			Transmissions.delete(m);
@@ -218,18 +295,20 @@ public class InboxDialog extends JDialog {
 			refuseRansom.setVisible(false);
 			archive.setVisible(false);
 			delete.setVisible(false);
+			takeIt.setVisible(false);
+			elsewhere.setVisible(false);
+			sendBack.setVisible(false);
 			rewardLabel.setText(" ");
 			return;
 		}
 		boolean answered = m.replied != null && !m.replied.isEmpty();
-		message(m.subject, m.from + "  \u00b7  " + m.date, answered ? m.body + "\n\nYou replied: \u201c" + m.replied + "\u201d" : m.body);
-		String[] from = Transmissions.noteFrom(m);
-		boolean canWriteBack = from != null && !"0".equals(from[2]);
+		homeplanet.comm.Shipments.Parcel parcel = parcelOf(m);
+		message(m.subject, m.from + "  \u00b7  " + m.date, (answered ? m.body + "\n\nYou replied: \u201c" + m.replied + "\u201d" : m.body) + parcelState(parcel));
+		String[] from = replyTo(m);
 		reply.setVisible(Transmissions.canReply(m) || from != null);
-		reply.setEnabled(Transmissions.canReply(m) || canWriteBack);
+		reply.setEnabled(true);
 		reply.setToolTipText(from == null ? "Choose your answer: the reply comes in a few days"
-				: canWriteBack ? "Write back to " + m.from + " over Long Range Comm. (their hailing frequencies must be open)"
-				: m.from + "'s hailing frequencies were closed when they wrote: hail them from Long Range Comm. instead");
+				: "Write back to " + m.from + " over Long Range Comm. (if their station can't be reached, it can wait in the Outbox)");
 		boolean canClaim = m.hasReward() && !m.claimed;
 		claim.setVisible(m.hasReward());
 		claim.setEnabled(canClaim);
@@ -237,13 +316,25 @@ public class InboxDialog extends JDialog {
 		boolean open = Transmissions.isRescue(m) && !m.claimed;
 		keep.setVisible(open);
 		museum.setVisible(open);
-		homeplanet.parser.Expeditions.Captive held = homeplanet.parser.Expeditions.isRansom(m.key) && homeplanet.vault.Vault.isOpen()
+		homeplanet.parser.Expeditions.Captive captive = homeplanet.parser.Expeditions.isRansom(m.key) && homeplanet.vault.Vault.isOpen()
 				? homeplanet.parser.Expeditions.openRansom(homeplanet.vault.Vault.get(), m.key) : null;
-		payRansom.setVisible(held != null);
-		refuseRansom.setVisible(held != null);
-		if (held != null) payRansom.setText("Pay " + held.ransom + " scrap");
+		payRansom.setVisible(captive != null);
+		refuseRansom.setVisible(captive != null);
+		if (captive != null) payRansom.setText("Pay " + captive.ransom + " scrap");
 		archive.setVisible(true);
-		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m)); // receipts and messages pile up: archive one or be rid of it
+		boolean held = parcel != null && (homeplanet.comm.Shipments.HELD.equals(parcel.state) || homeplanet.comm.Shipments.RETURNING.equals(parcel.state));
+		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m) || (m.key.startsWith("parcel:") && !held)); // they pile up: archive one or be rid of it (not a shipment still to deal with)
+		boolean waiting = parcel != null && homeplanet.comm.Shipments.HELD.equals(parcel.state);
+		String whyNot = waiting ? homeplanet.comm.Shipments.whyNot(parcel) : null;
+		takeIt.setVisible(waiting);
+		takeIt.setEnabled(whyNot == null);
+		takeIt.setToolTipText(whyNot == null ? "Into this fleet's Cargo Hold" : "<html><div style='width:320px'>" + homeplanet.parser.XmlText.text(whyNot) + "</div></html>");
+		java.util.List<String> fleets = waiting ? homeplanet.comm.Shipments.otherFleets(parcel) : new java.util.ArrayList<String>();
+		elsewhere.setVisible(waiting);
+		elsewhere.setEnabled(!fleets.isEmpty());
+		elsewhere.setToolTipText(fleets.isEmpty() ? "None of your other fleets may take it (the trading rules), or they have no Cargo Hold yet"
+				: "Into the Cargo Hold of another of your fleets that may trade with them (it needn't be the one in use)");
+		sendBack.setVisible(waiting);
 		delete.setToolTipText(Transmissions.isNote(m) ? "Delete this message for good" : "Delete this receipt for good: the trade stays in the station's history");
 		boolean stipend = Transmissions.deletable(m);
 		archive.setText(stipend ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
@@ -299,9 +390,9 @@ public class InboxDialog extends JDialog {
 	/** Answers a letter that asks for one: the choice of replies, then the answer is on its way. */
 	private void replySelected() {
 		Transmissions.Message m = list.getSelectedValue();
-		String[] from = m == null ? null : Transmissions.noteFrom(m);
+		String[] from = m == null ? null : replyTo(m);
 		if (from != null) { // another commander's message: written back to them over Long Range Comm.
-			if (!"0".equals(from[2])) MessageDialog.open(this, from[1], Integer.parseInt(from[2]), m.from, null);
+			MessageDialog.open(this, from[0], from[1], Integer.parseInt(from[2]), m.from, null);
 			return;
 		}
 		if (m == null || !Transmissions.canReply(m)) return;

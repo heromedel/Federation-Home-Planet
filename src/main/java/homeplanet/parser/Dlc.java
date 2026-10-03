@@ -2,7 +2,12 @@ package homeplanet.parser;
 
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
+import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
+import net.blerf.ftl.parser.SavedGameParser.ShipState;
+import net.blerf.ftl.parser.SavedGameParser.SystemState;
+import net.blerf.ftl.parser.SavedGameParser.SystemType;
+import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 /**
  * Advanced Edition rules for trading. A save made with AE content off can't hold items or crew that only exist in
@@ -22,6 +27,31 @@ public final class Dlc {
 	public static boolean aeOnlyCrew(CrewState c) {
 		if (c == null || c.getRace() == null) return false;
 		return !DataManager.get().getCrews(false).containsKey(c.getRace().getId());
+	}
+	/** The Advanced Edition's own systems: a ship that starts with one needs AE content on. */
+	private static final SystemType[] AE_SYSTEMS = {SystemType.HACKING, SystemType.MIND, SystemType.CLONEBAY, SystemType.BATTERY};
+
+	/**
+	 * Why a new ship must be made with Advanced Edition content on, or null if she may go without it. FTL keeps the
+	 * Type C layouts and the Lanius ships for AE content alone; any ship (a remodel or a design too) that starts with
+	 * AE-only crew, gear or systems needs it as well.
+	 */
+	public static String needsAE(String blueprintId, SavedGameState built) {
+		DataManager dm = DataManager.get();
+		String base = blueprintId == null ? "" : blueprintId.endsWith(Retrofit.SUFFIX) ? blueprintId.substring(0, blueprintId.length() - Retrofit.SUFFIX.length()) : blueprintId;
+		if (!base.isEmpty() && !dm.getShips(false).containsKey(base) && dm.getShips(true).containsKey(base))
+			return "This layout exists only in the Advanced Edition.";
+		if (built == null || built.getPlayerShip() == null) return null;
+		ShipState ship = built.getPlayerShip();
+		for (CrewState c : ship.getCrewList()) if (aeOnlyCrew(c)) return "Her crew includes an Advanced Edition race.";
+		for (WeaponState w : ship.getWeaponList()) if (aeOnlyItem(w.getWeaponId())) return homeplanet.model.Items.title(w.getWeaponId()) + " is Advanced Edition only.";
+		for (DroneState d : ship.getDroneList()) if (aeOnlyItem(d.getDroneId())) return homeplanet.model.Items.title(d.getDroneId()) + " is Advanced Edition only.";
+		for (String a : ship.getAugmentIdList()) if (aeOnlyItem(a)) return homeplanet.model.Items.title(a) + " is Advanced Edition only.";
+		for (SystemType t : AE_SYSTEMS) {
+			SystemState sys = ship.getSystem(t);
+			if (sys != null && sys.getCapacity() > 0) return "She starts with an Advanced Edition system.";
+		}
+		return null;
 	}
 	/** Why this ship can't take the item, or null if she can. */
 	public static String refusesItem(SavedGameState receiver, String id) {

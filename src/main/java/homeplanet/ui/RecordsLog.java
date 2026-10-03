@@ -165,11 +165,13 @@ class RecordsLog extends JComponent implements Scrollable {
 	}
 	/** A station log tag's colour, by its kind. */
 	private static Color tagColour(String kind) {
+		if (kind.startsWith("+")) return GOOD; // the reputation log: its change is its tag
+		if (kind.startsWith("\u2212")) return BAD;
 		String k = "," + kind + ",";
 		if (",VICTORY,REWARD,STIPEND,CLAIM,SALVAGE,".contains(k)) return GOOD;
 		if (",MUSEUM,COMMISSION,TRADE,BUY,SELL,SCRAP,".contains(k)) return GOLD;
 		if (",LOST,OVERWRITTEN,DISBAND,DECOMMISSION,JUNK,RETIRE,DESTROY,".contains(k)) return BAD;
-		if (",BOARD,DOCK,NEW JOURNEY,TRANSMISSION,SENT,REASSIGN,RESTORE,RECOVER,CAREER,".contains(k)) return BLUE;
+		if (",BOARD,DOCK,NEW JOURNEY,TRANSMISSION,SENT,REASSIGN,PLEAD,RESTORE,RECOVER,CAREER,".contains(k)) return BLUE;
 		if (",DESIGN,REMODEL,RENAME,SYSTEMS,BLUEPRINT,BLUEPRINTS,".contains(k)) return PURPLE;
 		return DIM;
 	}

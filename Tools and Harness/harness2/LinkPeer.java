@@ -37,6 +37,9 @@ public class LinkPeer {
   volatile boolean chat = true;
   /** Turns every hail away as busy ("decline on"): the commander pressing Decline. */
   volatile boolean decline = false;
+  /** Leaves a hail unanswered ("holdhail on"), counting those withdrawn while it waited. */
+  volatile boolean holdHail = false;
+  volatile int withdrawn = 0;
   /** Priority messages pop up here ("popups off": they go to the inbox), and the ones shown. */
   volatile boolean popupsOn = true;
   final List<String> popups = Collections.synchronizedList(new ArrayList<String>());
@@ -78,16 +81,20 @@ public class LinkPeer {
       Wire.Msg first = ch.readFirst(10000);
       if (first.type.equals("NOTE")) { // a message, as the screen takes one: filed, or "shown" (kept here for the test)
        Notes.Note n = Notes.read(first);
-       String refused = Notes.refuse(n, ch.host, title);
-       String where = refused != null ? null : Notes.where(n, popupsOn, HomePlanet.immersiveNotifications);
-       if (Notes.INBOX.equals(where)) Notes.toInbox(n, ch.host);
-       else if (where != null) popups.add(n.title + "|" + n.text);
-       Notes.answer(ch, where, refused);
+       Notes.take(ch, n, title, popupsOn, new java.util.function.Consumer<Notes.Note>() { // as the screen does: it shows the pop-up
+        public void accept(Notes.Note x) { popups.add(x.title + "|" + x.text); }
+       });
        return;
       }
       final Session.Peer p = Session.peerOf(first);
       if (Blocks.blocked(p.station, ch.host)) { ch.close(Session.notAnswered(title)); return; } // as the screen does
       if (decline) { ch.close(Session.busy(title)); return; } // the commander pressed Decline
+      if (holdHail) { // the question stays open, as the screen's does, until the hail is withdrawn (or 5 seconds)
+       for (int i = 0; i < 50 && !ch.hasWaiting(); i++) { try { Thread.sleep(100); } catch (InterruptedException x) { break; } }
+       if (ch.hasWaiting()) withdrawn++;
+       ch.close(Session.busy(title));
+       return;
+      }
       String no = why(p);
       if (no != null) { ch.close(no); return; } // as the screen does: refused, with the reason
       ch.send(hello());
@@ -113,7 +120,7 @@ public class LinkPeer {
     edt(new java.util.concurrent.Callable<Void>() { public Void call() { ended = null; session = new Session(fch, true, p, id, ships, noTrade(p)); session.start(Station.this); return null; } });
     return "OK " + p.title;
    }
-   if (c.equals("packages")) { int n = 0; File[] fs = Exchange.dir().listFiles(); if (fs != null) for (File f : fs) if (f.isDirectory()) n++; return "" + n; }
+   if (c.equals("packages")) { int n = 0; File[] fs = Exchange.dir().listFiles(); if (fs != null) for (File f : fs) if (f.isDirectory() && f.getName().startsWith("trade-")) n++; return "" + n; }
    if (c.equals("commissioned")) { Ship sh = shipNamed(w[1]); if (w.length > 2) Museum.setCommissioned(v, sh.id, cmd.substring(cmd.indexOf(w[2]))); return Museum.commissioned(v, sh.id); }
    if (c.equals("makedesign")) return makeDesign(w[1], w[2]);
    if (c.equals("makeremodel")) return makeRemodel(w[1], w[2]);
@@ -130,7 +137,22 @@ public class LinkPeer {
    if (c.equals("unlisten")) { if (post != null) post.close(); if (responder != null) responder.close(); post = null; responder = null; return "OK"; }
    if (c.equals("tradeanyway")) { tradeAnyway = w[1].equals("on"); return "OK"; }
    if (c.equals("popups")) { if (w.length > 1) popupsOn = w[1].equals("on"); return popups.size() + (popups.isEmpty() ? "" : " " + popups.get(popups.size() - 1)); }
+   if (c.equals("outbox")) return outbox(w, cmd);
+   if (c.equals("parcel")) return shipment(w, cmd);
+   if (c.equals("resetlimits")) { Notes.resetLimits(); return "OK"; }
+   if (c.equals("holdhail")) { holdHail = w[1].equals("on"); return "OK"; }
+   if (c.equals("hailcancel")) { // hails, then withdraws the hail before any answer, as the hail window's Cancel does
+    Channel ch = Channel.connect("127.0.0.1", Integer.parseInt(w[1]));
+    ch.send(hello());
+    Thread.sleep(700);
+    ch.close(title + " withdrew the hail.");
+    return "OK";
+   }
+   if (c.equals("contactscan")) { Contacts.seenAll(Beacon.scan(1200, id)); return "OK"; }
+   if (c.equals("contacts")) { List<String> n = new ArrayList<String>(); for (Contacts.Entry e : Contacts.list()) n.add(e.station + "|" + e.title + "|" + e.notes); return n.isEmpty() ? "none" : String.join(";", n); }
+   if (c.equals("forget")) { Contacts.remove(w[1]); return "OK"; }
    if (c.equals("oldanswer")) { oldAnswer = w[1].equals("on"); return "OK"; }
+   if (c.equals("notewith")) { for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m) && m.body.contains(w[1].replace('_', ' '))) return m.body.replace('\n', ' '); return "none"; }
    if (c.equals("notes")) { int k = 0; String last = "none"; for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m)) { if (k++ == 0) last = m.from + "|" + m.subject + "|" + m.body.replace('\n', ' '); } return k + " " + last; }
    if (c.equals("delnote")) { for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m)) { Transmissions.delete(m); return "OK"; } return "none"; }
    if (c.equals("note")) { // note PORT normal|priority STATIONID TEXT...: a message to that port, as that station
@@ -273,6 +295,100 @@ public class LinkPeer {
    final Line fl = l;
    return edt(new java.util.concurrent.Callable<String>() { public String call() { Line added = session.add(fl); return added == null ? "refused" : "OK " + added.n; } });
   }
+  /**
+   * outbox add STATION TITLE PORT TEXT... | outbox count | outbox deliver (search, then deliver what waits for those
+   * found) | outbox cancel (the oldest) | outbox again (clears every refusal) | outbox refused | outbox age MINUTES
+   * (makes every item that much older, as if it had waited)
+   */
+  String outbox(String[] w, String cmd) throws Exception {
+   String k = w[1];
+   if (k.equals("add")) {
+    String text = cmd.substring(cmd.indexOf(" " + w[4] + " ") + w[4].length() + 2).trim();
+    try { Outbox.add(w[2], w[3].replace('_', ' '), "127.0.0.1", Integer.parseInt(w[4]), text, false); return "OK"; }
+    catch (IOException e) { return "FULL " + e.getMessage(); }
+   }
+   if (k.equals("count")) return "" + Outbox.list().size();
+   if (k.equals("refused")) { int n = 0; for (Outbox.Item i : Outbox.list()) if (!i.refused.isEmpty()) n++; return "" + n; }
+   if (k.equals("deliver")) { // outbox deliver [as STATION]: as another station would (its own rate limit at theirs)
+    String me = w.length > 3 && w[2].equals("as") ? w[3] : id;
+    List<String> said = new ArrayList<String>();
+    List<Beacon.Found> found = Beacon.scan(1200, id);
+    Contacts.seenAll(found);
+    for (Beacon.Found f : found) if (f.notes && Outbox.waitingFor(f.station)) said.addAll(Outbox.deliver(f.station, f.host, f.port, HomePlanet.APP_VERSION, me, title, 0, f.shipments));
+    return said.isEmpty() ? "nothing" : String.join(" / ", said);
+   }
+   if (k.equals("cancel")) { List<Outbox.Item> l = Outbox.list(); if (l.isEmpty()) return "none"; Outbox.cancel(l.get(0)); return "OK"; }
+   if (k.equals("again")) { for (Outbox.Item i : Outbox.list()) Outbox.refused(i, ""); return "OK"; }
+   if (k.equals("age")) { for (Outbox.Item i : Outbox.list()) { i.written -= Long.parseLong(w[2]) * 60000; Outbox.refused(i, i.refused); } return "OK"; }
+   return "unknown";
+  }
+  /**
+   * parcel pack scrap N | parcel pack weapon ID (from the Cargo Hold) | parcel packed | parcel unpack | parcel send PORT [MODE] TEXT...
+   * (the packed one, straight away; MODE plays a sender of that mode) | ship again PORT (sends the last one again, as after a
+   * lost answer) | ship outbox STATION TITLE PORT TEXT... | ship parcels | ship accept | ship return | ship deliver SLOT |
+   * ship fleets | ship makefleet SLOT (an empty Cargo Hold for that fleet) | ship holdof SLOT
+   */
+  Wire.Msg lastShipNote;
+  String shipment(String[] w, String cmd) throws Exception {
+   String k = w[1];
+   if (k.equals("pack")) {
+    Ship st = v.storage(); st.invalidate();
+    Line l = w[2].equals("weapon") ? Line.item(0, Line.Kind.WEAPON, w[3]) : Line.supply(0, Line.Kind.valueOf(w[2].toUpperCase()), Integer.parseInt(w[3]));
+    l.from = st.id; l.fromName = "Cargo Hold";
+    try { return "OK " + Shipments.pack(Collections.singletonList(l)).words(); } catch (IOException e) { return "FAILED " + e.getMessage(); }
+   }
+   if (k.equals("showing")) { Shipments.Parcel p = Shipments.showing(); return p == null ? "none" : p.state + ":" + p.words().replace(' ', '_'); }
+   if (k.equals("unpackshown")) { // as the screen's Unpack does: out of the Outbox (its message cancelled), or just unpacked
+    Shipments.Parcel p = Shipments.showing(); if (p == null) return "none";
+    if (Shipments.OUTBOX.equals(p.state)) { if (!Outbox.cancelShipment(p.id)) Shipments.unpack(p); } else Shipments.unpack(p);
+    return "OK";
+   }
+   if (k.equals("unpackonly")) { Shipments.Parcel p = Shipments.showing(); if (p == null) return "none"; Shipments.unpack(p); return "OK"; }
+   if (k.equals("packed")) { Shipments.Parcel p = Shipments.packed(); return p == null ? "none" : p.words(); }
+   if (k.equals("unpack")) { Shipments.Parcel p = Shipments.packed(); if (p == null) return "none"; Shipments.unpack(p); return "OK"; }
+   if (k.equals("send")) {
+    Shipments.Parcel p = Shipments.packed();
+    if (p == null) return "none";
+    boolean mode = java.util.Arrays.asList(Vault.SLOTS).contains(w[3]);
+    String text = String.join(" ", Arrays.copyOfRange(w, mode ? 4 : 3, w.length));
+    Wire.Msg note = Shipments.attach(Notes.note(HomePlanet.APP_VERSION, id, title, text, false, 0), p);
+    if (mode) note.put("mode", w[3]).put("anyLevel", false);
+    lastShipNote = note;
+    try { Notes.send("127.0.0.1", Integer.parseInt(w[2]), note, "B"); Shipments.sent(p, "x", "B"); return "OK"; }
+    catch (IOException e) { return "FAILED " + e.getMessage(); }
+   }
+   if (k.equals("again")) { try { return "OK " + Notes.send("127.0.0.1", Integer.parseInt(w[2]), lastShipNote, "B"); } catch (IOException e) { return "FAILED " + e.getMessage(); } }
+   if (k.equals("outbox")) {
+    Shipments.Parcel p = Shipments.packed();
+    String text = String.join(" ", Arrays.copyOfRange(w, 5, w.length));
+    Outbox.add(w[2], w[3].replace('_', ' '), "127.0.0.1", Integer.parseInt(w[4]), text, false, p == null ? "" : p.id);
+    return "OK";
+   }
+   if (k.equals("parcels")) {
+    List<String> n = new ArrayList<String>();
+    File[] fs = Exchange.dir().listFiles();
+    if (fs != null) for (File f : fs) if (f.getName().startsWith("parcel-")) { Shipments.Parcel p = Shipments.find(f.getName().substring(7, f.getName().length() - 4)); if (p != null) n.add((p.incoming ? "in" : "out") + ":" + p.state + ":" + p.words().replace(' ', '_')); }
+    Collections.sort(n);
+    return n.isEmpty() ? "none" : String.join(" ", n);
+   }
+   Shipments.Parcel held = null;
+   File[] fs = Exchange.dir().listFiles();
+   if (fs != null) for (File f : fs) if (f.getName().startsWith("parcel-")) { Shipments.Parcel p = Shipments.find(f.getName().substring(7, f.getName().length() - 4)); if (p != null && p.incoming && Shipments.HELD.equals(p.state)) held = p; }
+   if (k.equals("fleets")) return held == null ? "none" : String.join(",", Shipments.otherFleets(held)) + "|" + (Shipments.whyNot(held) == null ? "accepts" : "refuses");
+   if (k.equals("accept")) { if (held == null) return "none"; try { Shipments.accept(held); return "OK"; } catch (IOException e) { return "FAILED " + e.getMessage(); } }
+   if (k.equals("return")) { if (held == null) return "none"; Shipments.returnIt(held); return "OK"; }
+   if (k.equals("deliver")) { if (held == null) return "none"; try { Shipments.deliverTo(held, w[2]); return "OK"; } catch (IOException e) { return "FAILED " + e.getMessage(); } }
+   if (k.equals("makefleet")) {
+    File root = Vault.rootOf(v.saves, w[2]); root.mkdirs();
+    SafeFiles.write(new File(root, Vault.STORAGE_FILE), SaveHelper.toBytes(SaveHelper.createStorageSave("Spacedock Storage", true)));
+    return "OK";
+   }
+   if (k.equals("holdof")) {
+    SavedGameState gs = new SavedGameParser().readSavedGame(new File(Vault.rootOf(v.saves, w[2]), Vault.STORAGE_FILE));
+    return holdText(gs);
+   }
+   return "unknown";
+  }
   String waitFor(String what, String arg) throws Exception {
    long end = System.currentTimeMillis() + 15000;
    while (System.currentTimeMillis() < end) {
@@ -283,6 +399,7 @@ public class LinkPeer {
      if (w.equals("ended")) return s == null && ended != null;
      if (w.equals("settled")) return settled >= Integer.parseInt(a);
      if (w.equals("ends")) return ends >= Integer.parseInt(a);
+     if (w.equals("withdrawn")) return withdrawn >= Integer.parseInt(a);
      if (s == null) return false;
      if (w.equals("theirs")) return s.theirs().size() == Integer.parseInt(a);
      if (w.equals("they")) return s.theyAccepted();

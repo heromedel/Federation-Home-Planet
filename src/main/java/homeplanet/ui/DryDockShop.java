@@ -298,13 +298,16 @@ class DryDockShop {
 			this.e = e;
 			String why = e.kind == Kind.SYSTEM ? systemReason(e.id) : e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(bay.currentSave, e.id)
 					: e.kind == Kind.CREW ? crewReason(e.id) : null;
-			can = why == null && e.price <= scrap;
+			boolean order = e.kind == Kind.SYSTEM && why == null && bay.systems.pastLimit(e.id); // past FTL's System Limit: a custom work order too
+			int cost = e.price + (order ? homeplanet.parser.Pricing.WORK_ORDER : 0);
+			can = why == null && cost <= scrap;
 			installed = e.kind == Kind.SYSTEM && SystemsPanel.INSTALLED.equals(why);
 			setLayout(null);
-			setToolTipText(why != null ? why : tipFor(e));
+			setToolTipText(why != null ? why : order ? SystemsPanel.WORK_ORDER_TIP : tipFor(e));
 			FtlButton buy = new FtlButton("Buy", FtlFont.BODY, 54, 22);
 			buy.setEnabled(can);
-			buy.setToolTipText(why != null ? why : e.price > scrap ? "Not enough scrap" : "Buy one (Save makes it official)");
+			buy.setToolTipText(why != null ? why : cost > scrap ? (order ? "Not enough scrap: with the custom work order, " + cost : "Not enough scrap")
+					: order ? SystemsPanel.WORK_ORDER_TIP : "Buy one (Save makes it official)");
 			buy.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent ae) { buy(e); } });
 			add(buy);
 			this.buy = buy;
@@ -485,9 +488,12 @@ class DryDockShop {
 		if (refused != null) { JOptionPane.showMessageDialog(bay, refused, "Advanced Edition only", JOptionPane.INFORMATION_MESSAGE); return; }
 		String noCrew = e.kind == Kind.CREW ? crewReason(e.id) : null;
 		if (noCrew != null) { JOptionPane.showMessageDialog(bay, noCrew, "Shop", JOptionPane.INFORMATION_MESSAGE); return; }
-		if (bs.getScrapAmt() < e.price) {
-			JOptionPane.showMessageDialog(bay, buyerName + " has " + bs.getScrapAmt() + " scrap; " + name + " costs " + e.price + ".",
-					"Not enough scrap", JOptionPane.WARNING_MESSAGE);
+		// past FTL's System Limit a system takes a custom work order to fit, paid with it
+		boolean order = e.kind == Kind.SYSTEM && SaveHelper.pastSystemLimit(bs, SystemType.findById(e.id));
+		int fee = order ? homeplanet.parser.Pricing.WORK_ORDER : 0, cost = e.price + fee;
+		if (bs.getScrapAmt() < cost) {
+			JOptionPane.showMessageDialog(bay, buyerName + " has " + bs.getScrapAmt() + " scrap; " + name + " costs " + e.price
+					+ (order ? ", and the custom work order to fit it " + fee + " more" : "") + ".", "Not enough scrap", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		StoreState store = source.getBeaconList().get(source.getCurrentBeaconId()).getStore();
@@ -513,6 +519,7 @@ class DryDockShop {
 				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
 				return;
 			}
+			if (order && !SystemsPanel.confirmWorkOrder(bay)) return;
 			if (!installSystem(buyer, e.id, name)) return; // refused or cancelled
 			it.setAvailable(false);
 		} else if (e.kind == Kind.ITEM) {
@@ -543,23 +550,25 @@ class DryDockShop {
 			else { left = store.getDroneParts() - 1; if (left < 0) return; store.setDroneParts(left); bs.setDronePartsAmt(bs.getDronePartsAmt() + 1); }
 			e.count = left;
 		}
-		bs.setScrapAmt(bs.getScrapAmt() - e.price);
+		bs.setScrapAmt(bs.getScrapAmt() - cost);
 
 		// Anything not already written by the Cargo Bay's Save gets written by us
 		markDirty(buyer);
 		markDirty(source);
-		note(buyer, "Scrap", -e.price);
+		note(buyer, "Scrap", -cost);
 		if (e.kind == Kind.ITEM) note(buyer, Items.title(e.id) + (toCargo ? " (cargo)" : ""), 1);
 		else if (e.kind == Kind.CREW) note(buyer, "Crew " + hired, 1);
 		else if (e.kind != Kind.SYSTEM) note(buyer, supplyName(e.kind), 1); // systems aren't in the TRADE inventory
 		if (hired != null) name = hired + " (" + raceTitle(e.id) + ")";
-		purchases.add(name + " (" + e.price + " scrap) from the store at " + e.shipName + "'s beacon -> " + buyerName + (toCargo ? " (cargo)" : ""));
-		log.debug("Bought {} for {} from {} -> {}", name, e.price, e.ship.name, buyerName);
+		purchases.add(name + " (" + e.price + " scrap) from the store at " + e.shipName + "'s beacon -> " + buyerName + (toCargo ? " (cargo)" : "")
+				+ (order ? ", fitted past FTL's System Limit by a custom work order (" + fee + " scrap)" : ""));
+		log.debug("Bought {} for {} (work order {}) from {} -> {}", name, e.price, fee, e.ship.name, buyerName);
 
 		bay.showPurchase(buyer, e.kind == Kind.ITEM ? e.id : null, toCargo);
 		bay.systems.refresh(); // a bought system shows on the Refit tab
 		rebuild();
-		bay.help((hired != null ? "Hired " : "Bought ") + name + " for " + e.price + " scrap" + (toCargo ? " (into the cargo hold)" : hired != null && toStorage ? " (waiting in the Cargo Hold)" : "") + ". Save to make it official.");
+		bay.help((hired != null ? "Hired " : "Bought ") + name + " for " + e.price + " scrap" + (order ? ", and " + fee + " for the custom work order to fit it" : "")
+				+ (toCargo ? " (into the cargo hold)" : hired != null && toStorage ? " (waiting in the Cargo Hold)" : "") + ". Save to make it official.");
 	}
 
 	/**

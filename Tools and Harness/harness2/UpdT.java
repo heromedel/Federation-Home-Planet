@@ -15,6 +15,8 @@ public class UpdT {
   Setup.chk("V: 4B.67 is older than 4B.68", Updater.compare("4B.67", "4B.68") < 0 && Updater.compare("4B.68", "4B.67") > 0);
   Setup.chk("V: 4B.9 is older than 4B.10 (numbers, not text)", Updater.compare("4B.9", "4B.10") < 0);
   Setup.chk("V: 4C.1 is newer than 4B.99, 5A.1 newer than 4C.99", Updater.compare("4C.1", "4B.99") > 0 && Updater.compare("5A.1", "4C.99") > 0);
+  Setup.chk("V: 4B.99 < 5.00 < 5.01 < 5.99 < 6.00", Updater.compare("4B.99", "5.00") < 0 && Updater.compare("5.00", "5.01") < 0
+    && Updater.compare("5.01", "5.99") < 0 && Updater.compare("5.99", "6.00") < 0 && Updater.compare("6.00", "4B.99") > 0);
   Setup.chk("V: the same version is the same", Updater.compare("4B.68", "4B.68") == 0);
   Setup.chk("V: an unreadable version counts as oldest", Updater.compare("nonsense", "4B.1") < 0);
   Setup.chk("V: the pom's own version is read", "4B.70".equals(Updater.pomVersion("<project><modelVersion>4.0.0</modelVersion><version>4B.70</version><dependency><version>1.2</version></dependency></project>")));

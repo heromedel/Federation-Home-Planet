@@ -112,5 +112,39 @@ public class DesT { public static void main(String[] a) throws Exception {
    Setup.chk("flipping twice gives the rooms, doors and systems back", twice[7].equals(once[7]) && twice[8].equals(once[8]) && twice[9].equals(once[9]));
    Setup.chk("preview has the three files", DesignExport.preview(g).contains("== data/") && DesignExport.preview(g).contains("<shipBlueprint"));
  }
+ // F: FTL's System Limit: a design set to start with more than 8 systems is warned, not refused
+ { ShipDesign c = ShipDesign.create(back);
+   c.name = "Crowded copy";
+   ShipDesign.fromGameShip(c, "PLAYER_SHIP_HARD");
+   for (String id : new String[] {"drones", "teleporter", "cloaking", "hacking"}) c.notAtStart.remove(id);
+   ShipChecks.Report r = ShipChecks.check(c, ShipChecks.Context.DESIGN, null, null);
+   Setup.chk("starting with 9 systems: a warning of FTL's System Limit, not a problem: " + r.warnings, r.warnings.toString().contains("starts with 9 systems") && r.problems.isEmpty());
+   c.notAtStart.add("hacking");
+   Setup.chk("with 8: no such warning", !ShipChecks.check(c, ShipChecks.Context.DESIGN, null, null).warnings.toString().contains("System Limit"));
+   c.notAtStart.remove("hacking"); c.notAtStart.remove("clonebay");
+   Setup.chk("a Medbay and Clone Bay both ticked count once (9, not 10)", ShipChecks.check(c, ShipChecks.Context.DESIGN, null, null).warnings.toString().contains("starts with 9 systems"));
+   Setup.chk("a remodel isn't warned (her systems are already aboard)", !ShipChecks.check(c, ShipChecks.Context.REMODEL, null, null).warnings.toString().contains("System Limit"));
+ }
+ // G: a Medbay and a Clone Bay take each other's place: Commission builds the Clone Bay alone, and Design Ship ticks one or the other
+ { net.blerf.ftl.xml.ShipBlueprint.SystemList.SystemRoom cb = DataManager.get().getShip("PLAYER_SHIP_HARD").getSystemList().getSystemRoom(SystemType.CLONEBAY)[0];
+   Boolean was = cb.getStart();
+   cb.setStart(true); // the Kestrel A as a design ticked with both
+   try {
+     ShipState both = Commission.build("PLAYER_SHIP_HARD", "Both Bays", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)).getPlayerShip();
+     SystemState mb = both.getSystem(SystemType.MEDBAY), cl = both.getSystem(SystemType.CLONEBAY);
+     Setup.chk("both bays ticked: she's commissioned with the Clone Bay alone", (mb == null || mb.getCapacity() == 0) && cl != null && cl.getCapacity() > 0 && SaveHelper.systemCount(both) == 5);
+   } finally { cb.setStart(was); }
+   ShipState kestrel = Commission.build("PLAYER_SHIP_HARD", "Medbay Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)).getPlayerShip();
+   Setup.chk("a Kestrel A still starts with her Medbay", kestrel.getSystem(SystemType.MEDBAY).getCapacity() > 0 && kestrel.getSystem(SystemType.CLONEBAY).getCapacity() == 0);
+   java.lang.reflect.Method either = Class.forName("homeplanet.ui.DesignDialog").getDeclaredMethod("eitherBay", javax.swing.JCheckBox.class, javax.swing.JCheckBox.class);
+   either.setAccessible(true);
+   javax.swing.JCheckBox med = new javax.swing.JCheckBox("Medbay", true), clo = new javax.swing.JCheckBox("Clone Bay", true);
+   either.invoke(null, med, clo);
+   boolean opened = !med.isSelected() && clo.isSelected();
+   med.doClick(); boolean onlyMed = med.isSelected() && !clo.isSelected();
+   clo.doClick(); boolean onlyClone = clo.isSelected() && !med.isSelected();
+   clo.doClick(); boolean neither = !clo.isSelected() && !med.isSelected();
+   Setup.chk("Design Ship: a design with both ticked opens with the Clone Bay alone; ticking one unticks the other; neither is fine", opened && onlyMed && onlyClone && neither);
+ }
  Setup.done();
 }}

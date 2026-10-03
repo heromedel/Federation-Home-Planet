@@ -214,7 +214,8 @@ public final class Transmissions {
 		return cls + ", Type " + "ABC".charAt(Math.max(0, Math.min(n, 2)));
 	}
 	private static String freeShipWords() {
-		return FreeCommand.words(FreeCommand.ship());
+		Vault v = Vault.get();
+		return v.freeCommandReassigned() ? FreeCommand.offered(FreeCommand.ship()) : FreeCommand.words(FreeCommand.ship());
 	}
 
 	/**
@@ -247,14 +248,14 @@ public final class Transmissions {
 			int r = UnlockGrants.rank(u);
 			for (int i = 1; i <= r; i++) send(all, sent, "promo:" + i, "promo:" + i, rank, null);
 		}
-		// one order per free command (the fleet's start, a report for reassignment), never for an empty shipyard alone
+		// one order per free command (the fleet's start, a plea for a new ship), never for an empty shipyard alone
 		boolean granted = v.freeCommandOpen();
-		if (HomePlanet.commissionCosts() && granted && v.shipyardEmpty()) {
+		if (HomePlanet.commissionCosts() && granted && (v.shipyardEmpty() || v.freeCommandReassigned())) { // a plea's order comes whatever is docked
 			if (!emptyOpen) {
 				String key = "empty:" + stamp();
 				for (int i = 2; sent.contains(key); i++) key = "empty:" + stamp() + "-" + i; // two in one second
-				// after a Report for Reassignment, the Shipyard's other letter (in Immersive Mode, the one for the ship it earned)
-				String letter = !v.freeCommandReassigned() ? "empty" : v.immersive ? "reassigned:" + FreeCommand.ship() : "reassigned";
+				// after a plea, the Shipyard's answer to it
+				String letter = !v.freeCommandReassigned() ? "empty" : "pleaded";
 				// the new order replaces the last one still in the inbox (it's done with: one order per free command)
 				for (java.util.Iterator<Message> it = all.iterator(); it.hasNext();) {
 					Message old = it.next();
@@ -414,6 +415,12 @@ public final class Transmissions {
 	}
 	/** A Long Range Comm. receipt from the Quartermaster: archived or deleted, as the commander likes. */
 	public static boolean isReceipt(Message m) { return m.key.startsWith("trade:"); }
+	/** Is there any Long Range Comm. mail (a commander's message, a receipt) in the inbox? It keeps the inbox in view. */
+	public static boolean anyLongRangeMail() {
+		if (!Vault.isOpen()) return false;
+		for (Message m : load()) if (isNote(m) || isReceipt(m)) return true;
+		return false;
+	}
 	/** A message from another commander (Long Range Comm.): archived or deleted, as the commander likes, and answered. */
 	public static boolean isNote(Message m) { return m.key.startsWith("note:"); }
 	/** Where to reply to a commander's message: their station, host and port (0: their frequencies were closed); null if it isn't one. */
@@ -429,6 +436,20 @@ public final class Transmissions {
 		List<Message> all = load();
 		for (java.util.Iterator<Message> it = all.iterator(); it.hasNext();) if (it.next().key.equals(m.key)) it.remove();
 		save(all);
+	}
+	/**
+	 * A plea for a new ship was withdrawn: her order (still in the inbox, not archived) is taken out, and the Shipyard
+	 * says so (Immersive Notifications on), so the inbox doesn't look as if a ship were still waiting.
+	 */
+	public static synchronized void pleaWithdrawn() throws IOException {
+		List<Message> all = load();
+		boolean removed = false;
+		for (java.util.Iterator<Message> it = all.iterator(); it.hasNext();) {
+			Message m = it.next();
+			if (m.key.startsWith("empty:") && !m.archived) { it.remove(); removed = true; }
+		}
+		if (removed) save(all);
+		if (HomePlanet.immersiveNotifications()) post("withdrawn:" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()), "withdrawn", new LinkedHashMap<String, String>());
 	}
 	// ---- a final victory's messages ----
 
@@ -477,11 +498,11 @@ public final class Transmissions {
 	}
 
 	/**
-	 * A letter written by the station itself rather than from a template (a Long Range Comm. receipt): sent once per
-	 * key, only while the inbox is on.
+	 * Long Range Comm. mail (another commander's message, a trade's receipt): sent once per key. It always reaches
+	 * the inbox: the Immersive messages setting is about The Federation Home Planet's own letters, not a commander's mail.
 	 */
 	public static synchronized void deliver(String key, String from, String subject, String body) {
-		if (!HomePlanet.immersiveNotifications() || !Vault.isOpen()) return;
+		if (!Vault.isOpen()) return;
 		List<Message> all = load();
 		for (Message x : all) if (x.key.equals(key)) return;
 		Message m = new Message();

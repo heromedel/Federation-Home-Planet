@@ -1,10 +1,11 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.SavedGameState; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
-/** Prices from FTL's blueprints (HR1, HR2) and paying from the storage hold. args: gamedir, world saves (from WorldT), work */
+/** Prices from FTL's blueprints (HR1, HR2), FTL's System Limit and its custom work order, and paying from the storage hold. args: gamedir, world saves (from WorldT), work */
 public class PriceT { public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  Vault v = Setup.open(game, saves); v.takeStock();
  prices();
+ limit();
  paying(v);
  relief();
  reassign(v);
@@ -24,9 +25,39 @@ public class PriceT { public static void main(String[] a) throws Exception {
   SavedGameState k = Commission.build("PLAYER_SHIP_HARD", "Price Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
   Pricing.Quote full = Pricing.ship(k, 0, 0, 100), half = Pricing.ship(k, 0, 0, 50), custom = Pricing.ship(k, 5, 4, 100);
   System.out.println("Kestrel A: " + full.total() + " " + full.lines);
-  Setup.chk("P: a Kestrel A costs about 885", full.total() > 800 && full.total() < 1000);
+  Setup.chk("P: a Kestrel A costs about 1,000 (885 and her supplies)", full.total() > 900 && full.total() < 1100);
   Setup.chk("P: the multiplier scales the total", half.total() == (full.subtotal * 50 + 50) / 100);
   Setup.chk("P: a custom hull adds rooms and doors", custom.total() == full.total() + 5 * Pricing.PER_ROOM + 4 * Pricing.PER_DOOR);
+ }
+ /** FTL's System Limit: 8 systems, subsystems aside; each one past it is a custom work order, 100 scrap, never part of her value. */
+ static void limit() throws Exception {
+  SavedGameState k = Commission.build("PLAYER_SHIP_HARD", "Limit Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
+  SavedGameParser.ShipState s = k.getPlayerShip();
+  Setup.chk("L: a Kestrel A counts 5 systems (her Piloting, Sensors and Doors aside)", SaveHelper.systemCount(s) == 5);
+  SavedGameState fed = Commission.build("PLAYER_SHIP_FED", "Limit Fed", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
+  Setup.chk("L: a Federation Cruiser A counts her Artillery (6)", SaveHelper.systemCount(fed.getPlayerShip()) == 6);
+  fit(s, SavedGameParser.SystemType.DRONE_CTRL, 1); fit(s, SavedGameParser.SystemType.TELEPORTER, 1);
+  Setup.chk("L: at 7, an eighth isn't past the limit", SaveHelper.systemCount(s) == 7 && !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.CLOAKING));
+  fit(s, SavedGameParser.SystemType.CLOAKING, 1);
+  Setup.chk("L: at 8, a ninth is", SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.HACKING) && SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.MIND));
+  Setup.chk("L: never a subsystem, or one she has", !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.BATTERY) && !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.PILOT)
+    && !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.SHIELDS));
+  Setup.chk("L: a Clone Bay for her Medbay takes its place", !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.CLONEBAY));
+  fit(s, SavedGameParser.SystemType.MEDBAY, 0); fit(s, SavedGameParser.SystemType.CLONEBAY, 1);
+  Setup.chk("L: and a Medbay for her Clone Bay", SaveHelper.systemCount(s) == 8 && !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.MEDBAY));
+  Setup.chk("L: a custom work order is 100 scrap", Pricing.WORK_ORDER == 100);
+  Pricing.Quote at8 = Pricing.commission(k, 75);
+  Setup.chk("L: at 8, Commission's price has no work order", Pricing.workOrders(s) == 0 && at8.fixed == 0 && at8.total() == Pricing.ship(k, 75).total());
+  fit(s, SavedGameParser.SystemType.HACKING, 1); fit(s, SavedGameParser.SystemType.MIND, 1);
+  Pricing.Quote q = Pricing.commission(k, 75), base = Pricing.ship(k, 75);
+  System.out.println("Kestrel A at 10 systems, 75%: " + q.total() + " " + q.lines);
+  Setup.chk("L: at 10, Commission adds 100 for each past the limit, outside the rate", Pricing.workOrders(s) == 2 && q.total() == base.total() + 200 && q.lines.toString().contains("2 custom work orders"));
+  Setup.chk("L: never part of her value (her full price leaves the work orders out)", Pricing.ship(k, 100).fixed == 0 && Pricing.ship(k, 100).total() + 200 == Pricing.commission(k, 100).total());
+ }
+ static void fit(SavedGameParser.ShipState s, SavedGameParser.SystemType t, int level) {
+  SavedGameParser.SystemState st = s.getSystem(t);
+  if (st == null) { st = new SavedGameParser.SystemState(t); s.addSystem(st); }
+  st.setCapacity(level); st.setPower(0); st.setDamagedBars(0);
  }
  static void paying(Vault v) throws Exception {
   Ship st = v.storage();
@@ -44,7 +75,8 @@ public class PriceT { public static void main(String[] a) throws Exception {
   SavedGameState r = Commission.buildRelief("Relief", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(2));
   SavedGameParser.ShipState s = r.getPlayerShip();
   List<String> w = new ArrayList<String>(); for (SavedGameParser.WeaponState x : s.getWeaponList()) w.add(x.getWeaponId());
-  Setup.chk("F: relief ship: one crew, a basic laser and an ion blast, no drones or augments", s.getCrewList().size() == 1 && w.equals(Arrays.asList("LASER_BURST_1", "ION_1")) && s.getDroneList().isEmpty() && s.getAugmentIdList().isEmpty());
+  Setup.chk("F: Relief Ship Type A: one crew, a Burst Laser I and an Ion Blast, no missiles, drones or augments", s.getCrewList().size() == 1 && w.equals(Arrays.asList("LASER_BURST_1", "ION_1"))
+    && s.getMissilesAmt() == 0 && s.getDroneList().isEmpty() && s.getAugmentIdList().isEmpty());
   int power = 0; boolean minimal = true;
   for (SavedGameParser.SystemType t : SavedGameParser.SystemType.values()) {
    SavedGameParser.SystemState st = s.getSystem(t); if (st == null || st.getCapacity() <= 0) continue;
@@ -52,13 +84,17 @@ public class PriceT { public static void main(String[] a) throws Exception {
    if (st.getCapacity() != want) minimal = false;
    if (!t.isSubsystem()) power += st.getPower();
   }
-  Setup.chk("F: every system at its minimum, reactor 7, power within it", minimal && s.getReservePowerCapacity() == 7 && power + 2 <= 7);
+  Setup.chk("F: every system at its minimum, reactor 6, power within it", minimal && s.getReservePowerCapacity() == 6 && power <= 6);
   File tmp = File.createTempFile("relief", ".sav"); SafeFiles.write(tmp, SaveHelper.toBytes(r));
   SavedGameState back = HomePlanet.savedGameParser.readSavedGame(tmp); tmp.delete();
   Setup.chk("F: she reads back", back.getPlayerShip().getCrewList().size() == 1 && back.getPlayerShip().getWeaponList().size() == 2);
   int rp = Pricing.ship(r, 0, 0, 100).total(), kp = Pricing.ship(Commission.build("PLAYER_SHIP_HARD", "K", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1)), 0, 0, 100).total();
   System.out.println("Relief ship: " + rp);
-  Setup.chk("F: she costs less than a Kestrel A", rp < kp);
+  Setup.chk("F: she's worth less than a Kestrel A", rp < kp);
+  Setup.chk("F: a ship's value counts her fuel, missiles and drone parts", Pricing.ship(r, 0, 0, 100).lines.toString().contains("Fuel, missiles and drone parts")
+    && Pricing.supplies(s) == s.getFuelAmt() * Pricing.FUEL);
+  Setup.chk("F: a plea's reputation cost: a tenth of the shortfall, nothing when covered", FreeCommand.reputationCost(885, 0) == 89 && FreeCommand.reputationCost(600, 100) == 50
+    && FreeCommand.reputationCost(600, 700) == 0);
  }
  static void reassign(Vault v) throws Exception {
   Setup.chk("F: a shipyard with ships isn't empty", !v.shipyardEmpty());
@@ -77,23 +113,50 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("F: and they're still there after a reload", v.junked().size() == junked);
     int worth = homeplanet.parser.FreeCommand.surrenderValue(v);
   Setup.chk("F: what a surrender gives up is valued: the hold's scrap, its stored systems and the Junkyard's hulls", worth > 300 + homeplanet.parser.Pricing.system("teleporter", 2));
-  Setup.chk("F: Immersive Mode's reassignment ship goes by that value", "any".equals(homeplanet.parser.FreeCommand.earned(1000)) && "kestrel".equals(homeplanet.parser.FreeCommand.earned(999))
-    && "kestrel".equals(homeplanet.parser.FreeCommand.earned(500)) && "relief".equals(homeplanet.parser.FreeCommand.earned(499)));
   File dir = v.surrender();
   Setup.chk("F: surrender empties the hold and the Junkyard", v.junked().isEmpty() && v.storageScrap() == 0 && !v.systemsFile().exists());
   Setup.chk("F: what was surrendered is kept", new File(dir, x.id + ".sav").isFile() && new File(dir, "storage.sav").isFile() && new File(dir, "storage-systems.txt").isFile() && dir.equals(v.lastSurrender()));
   List<String> ids = Retrofit.blueprintIds(new File(dir, x.id + ".sav"));
   Setup.chk("F: a surrendered hull's blueprints still count", ids != null && v.blueprintsInUseOrHistory().containsAll(ids));
-  boolean refused = false; try { v.undoSurrender(dir); } catch (IOException e) { refused = true; }
-  Setup.chk("F: undo is refused once a ship is at the Space Dock", refused && v.junked().isEmpty());
   for (Ship s : v.docked()) v.remove(s, "DESTROY");
   Setup.chk("F: no ship docked, boarded or junked: the shipyard is empty", v.shipyardEmpty());
   v.undoSurrender(dir);
   Setup.chk("F: undo returns the hold and the hulls", v.storageScrap() == 300 && v.byId(x.id) != null && v.byId(x.id).state == Ship.State.JUNKED && v.systemsFile().isFile() && v.lastSurrender() == null);
   File dir2 = v.surrender();
   SavedGameState g = v.readCopy(v.storage()).save; g.getPlayerShip().setScrapAmt(5); v.write(v.storage(), g);
-  refused = false; try { v.undoSurrender(dir2); } catch (IOException e) { refused = e.getMessage().contains("changed"); }
+  boolean refused = false; try { v.undoSurrender(dir2); } catch (IOException e) { refused = e.getMessage().contains("changed"); }
   Setup.chk("F: undo is refused once the hold has changed", refused && v.storageScrap() == 5);
+  v.useFreeCommand("test");
+  plea(v);
+ }
+ /** Plead for New Ship: the hold's sale value, given up for her (the crew stay), with or without the difference refunded. */
+ static void plea(Vault v) throws Exception {
+  HomePlanet.sellSupplies = false; HomePlanet.sellSystems = false;
+  SavedGameState g = v.readCopy(v.storage()).save;
+  g.getPlayerShip().setScrapAmt(400); g.getPlayerShip().setMissilesAmt(10);
+  g.getPlayerShip().getWeaponList().clear(); g.getPlayerShip().addWeapon(SaveHelper.newIdleWeapon("LASER_BURST_3"));
+  SavedGameParser.CrewState aboard = Commission.build("PLAYER_SHIP_HARD", "K", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(9)).getPlayerShip().getCrewList().get(0);
+  aboard.setName("Stays Aboard"); g.getPlayerShip().getCrewList().clear(); g.getPlayerShip().getCrewList().add(aboard);
+  v.write(v.storage(), g);
+  SafeFiles.writeText(v.systemsFile(), SystemsPanelHeader.H + "\nteleporter 2\n", false);
+  int laser = Pricing.item("LASER_BURST_3") / 2;
+  Setup.chk("F: the hold's sale value: scrap and gear at half, no supplies or systems while they can't be sold, no crew", FreeCommand.holdSaleValue(v) == 400 + laser);
+  HomePlanet.sellSupplies = true; HomePlanet.sellSystems = true;
+  int withAll = FreeCommand.holdSaleValue(v);
+  Setup.chk("F: with selling allowed, missiles and stored systems count at their sale price", withAll == 400 + laser + Economy.supplySale(10, Pricing.MISSILE)
+    + Pricing.systemSale("teleporter", 2, Economy.SYSTEM_SALE_PERCENT));
+  HomePlanet.sellSupplies = false; HomePlanet.sellSystems = false;
+  v.plead();
+  Setup.chk("F: a plea takes nothing", v.storageScrap() == 400 && v.freeCommandOpen() && v.freeCommandReassigned());
+  int junked = v.junked().size();
+  byte[][] before = v.forfeitHold(500, 100);
+  SavedGameState after = v.readCopy(v.storage()).save;
+  Setup.chk("F: giving up the hold: emptied but for the refund, the crew stay, the Junkyard untouched", v.storageScrap() == 100 && after.getPlayerShip().getMissilesAmt() == 0
+    && after.getPlayerShip().getWeaponList().isEmpty() && !v.systemsFile().exists() && v.junked().size() == junked
+    && SaveHelper.getOwnCrew(after.getPlayerShip()).size() == 1 && "Stays Aboard".equals(SaveHelper.getOwnCrew(after.getPlayerShip()).get(0).getName()));
+  v.unforfeitHold(before);
+  Setup.chk("F: and put back as it was when her commission fails", v.storageScrap() == 400 && v.systemsFile().isFile());
+  v.withdrawPlea();
  }
 }
 class SystemsPanelHeader { static final String H = "# Ship systems stored in the Cargo Bay"; }

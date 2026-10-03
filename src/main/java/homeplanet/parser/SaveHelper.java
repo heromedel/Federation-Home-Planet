@@ -65,6 +65,8 @@ import org.slf4j.LoggerFactory;
 public final class SaveHelper {
 	/** FTL's fixed limits for a player ship (the game's own numbers; blueprints set the weapon and drone slots). */
 	public static final int CARGO_SLOTS = 4, AUGMENT_SLOTS = 3, CREW_MAX = 8, WEAPON_SLOTS_MAX = 4, DRONE_SLOTS_MAX = 3;
+	/** FTL's System Limit: 8 systems, the subsystems (Piloting, Sensors, Doors, the Backup Battery) aside. The game's own, the same for every ship. */
+	public static final int SYSTEMS_MAX = 8;
 	/** One layout square, in pixels of the ship pictures. */
 	public static final int SQUARE = 35;
 
@@ -460,6 +462,26 @@ public final class SaveHelper {
 	private static boolean hasCapacity( ShipState shipState, SystemType systemType ) {
 		SystemState system = shipState.getSystem( systemType );
 		return ( system != null && system.getCapacity() > 0 );
+	}
+
+	/** Her systems as FTL's System Limit counts them: every one installed but the subsystems (Artillery too: it has its place on the system bar). */
+	public static int systemCount( ShipState shipState ) {
+		int n = 0;
+		for ( SystemType t : SystemType.values() ) {
+			if ( !t.isSubsystem() && hasCapacity( shipState, t ) ) n++;
+		}
+		return n;
+	}
+
+	/**
+	 * True if installing this system takes her past FTL's System Limit: she has SYSTEMS_MAX already and it would be one
+	 * more (never a subsystem, one she has, or a Medbay and Clone Bay taking each other's place).
+	 */
+	public static boolean pastSystemLimit( ShipState shipState, SystemType systemType ) {
+		if ( systemType == null || systemType.isSubsystem() || hasCapacity( shipState, systemType ) ) return false;
+		SystemType other = systemType == SystemType.MEDBAY ? SystemType.CLONEBAY : systemType == SystemType.CLONEBAY ? SystemType.MEDBAY : null;
+		if ( other != null && hasCapacity( shipState, other ) ) return false;
+		return systemCount( shipState ) >= SYSTEMS_MAX;
 	}
 
 	/**

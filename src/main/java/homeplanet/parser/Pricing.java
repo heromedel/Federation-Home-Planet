@@ -73,6 +73,12 @@ public final class Pricing {
 	public static int hullRepair() { return HULL_REPAIR; }
 	/** Mending one broken bar of a system, and sealing one hull breach, in the Dry Dock. */
 	public static final int SYSTEM_REPAIR = 5, BREACH_REPAIR = 5;
+	/** A custom work order: The Home Planet Station fits a system past FTL's System Limit (heromedel: always 100, whatever the system). */
+	public static final int WORK_ORDER = 100;
+	/** Her systems past FTL's System Limit, each a custom work order (a design can start with more than FTL allows). */
+	public static int workOrders(ShipState s) {
+		return Math.max(0, SaveHelper.systemCount(s) - SaveHelper.SYSTEMS_MAX);
+	}
 
 	/** The price of the reactor's nth bar (1-based), as FTL's upgrade screen charges: 15 for bars 1-5, then 5 more every 5 bars (35 for 21-25). */
 	public static int reactorBar(int n) {
@@ -106,12 +112,16 @@ public final class Pricing {
 	/** Trade In and Auction: each point of missing hull takes this much off her value. */
 	public static final int HULL_DAMAGE = 5;
 
-	/** What she's worth to a buyer, before her hull damage: as commissioned at full price (crew aside: they stay with the fleet), and her fuel, missiles and drone parts at store price. */
+	/** Her fuel, missiles and drone parts at store price (part of every ship's value). */
+	public static int supplies(ShipState s) {
+		return s.getFuelAmt() * FUEL + s.getMissilesAmt() * MISSILE + s.getDronePartsAmt() * DRONE_PART;
+	}
+	/** What she's worth to a buyer, before her hull damage: her full price (with her fuel, missiles and drone parts), crew aside (they stay with the fleet). */
 	public static int saleValue(SavedGameState gs) {
 		ShipState s = gs.getPlayerShip();
 		int crew = 0;
 		for (CrewState c : SaveHelper.getOwnCrew(s)) crew += crew(c.getRace().getId());
-		return ship(gs, 100).subtotal - crew + s.getFuelAmt() * FUEL + s.getMissilesAmt() * MISSILE + s.getDronePartsAmt() * DRONE_PART;
+		return ship(gs, 100).subtotal - crew;
 	}
 	/** Her missing hull points (her model's full hull, less what she has). */
 	public static int missingHull(ShipState s) {
@@ -177,13 +187,15 @@ public final class Pricing {
 		public final List<String> lines = new ArrayList<String>();
 		public int subtotal;
 		public int percent = 100;
-		public int total() { return (subtotal * percent + 50) / 100; }
+		/** Added after the multiplier: custom work orders, always their own price. */
+		public int fixed;
+		public int total() { return (subtotal * percent + 50) / 100 + fixed; }
 		void add(String what, int price) { if (price <= 0) return; lines.add(what + ": " + price); subtotal += price; }
 	}
 
 	/**
 	 * HR2: what the shipyard charges for a new ship, as commissioned: her systems and their levels, reactor, weapons,
-	 * drones, augments (her cargo too) and crew. A custom design also pays for each room and door
+	 * drones, augments (her cargo too), crew, and her fuel, missiles and drone parts. A custom design also pays for each room and door
 	 * ({@code rooms}, {@code doors}; 0 for FTL's own ships and remodels of them).
 	 */
 	/** The same, with the rooms and doors of the custom design she was built from, if she was (none for FTL's own ships). */
@@ -220,7 +232,21 @@ public final class Pricing {
 		int crew = 0, n = 0;
 		for (CrewState c : SaveHelper.getOwnCrew(s)) { crew += crew(c.getRace().getId()); n++; }
 		q.add("Crew (" + n + ")", crew);
+		q.add("Fuel, missiles and drone parts", supplies(s));
 		if (rooms > 0) q.add("Custom hull (" + rooms + " rooms, " + doors + " doors)", rooms * PER_ROOM + doors * PER_DOOR);
+		return q;
+	}
+	/**
+	 * What Commission charges for her: her price at this rate, and a custom work order for each system she starts with
+	 * past FTL's System Limit (outside the rate: always WORK_ORDER). Never part of her value, so nothing of it comes back.
+	 */
+	public static Quote commission(SavedGameState gs, int percent) {
+		Quote q = ship(gs, percent);
+		int n = workOrders(gs.getPlayerShip());
+		if (n > 0) {
+			q.fixed = n * WORK_ORDER;
+			q.lines.add((n == 1 ? "A custom work order (1 system" : n + " custom work orders (" + n + " systems") + " past FTL's System Limit): " + q.fixed);
+		}
 		return q;
 	}
 }

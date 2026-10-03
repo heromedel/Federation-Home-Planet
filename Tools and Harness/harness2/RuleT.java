@@ -37,7 +37,8 @@ public class RuleT { public static void main(String[] a) throws Exception {
   int crew = 0; for (SavedGameParser.CrewState c : SaveHelper.getOwnCrew(s)) crew += Pricing.crew(c.getRace().getId());
   int value = Pricing.saleValue(g);
   Setup.chk("S: her value is her price less her crew, with fuel, missiles and drone parts at store price",
-    value == Pricing.ship(g, 100).subtotal - crew + s.getFuelAmt() * 3 + s.getMissilesAmt() * 6 + s.getDronePartsAmt() * 8 && crew > 0);
+    value == Pricing.ship(g, 100).subtotal - crew && Pricing.supplies(s) == s.getFuelAmt() * 3 + s.getMissilesAmt() * 6 + s.getDronePartsAmt() * 8
+    && Pricing.ship(g, 100).lines.toString().contains("Fuel, missiles and drone parts: " + Pricing.supplies(s)) && crew > 0); // her price counts her supplies
   Setup.chk("S: whole hull: Trade In is half her value", Pricing.missingHull(s) == 0 && Pricing.tradeIn(g) == value / 2);
   s.setHullAmt(s.getHullAmt() - 6);
   Setup.chk("S: 6 hull missing: 30 scrap off", Pricing.missingHull(s) == 6 && Pricing.tradeIn(g) == value / 2 - 30 && Pricing.auctionBase(g) == value - 30);

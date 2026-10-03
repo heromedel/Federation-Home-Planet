@@ -195,6 +195,7 @@ public class DesignDialog extends ShipEditorDialog {
 			}
 			sys.add(cell);
 		}
+		eitherBay(starts.get("medbay"), starts.get("clonebay"));
 		JPanel sysWrap = new JPanel(new BorderLayout());
 		sysWrap.add(new JLabel("Systems (ticked: installed at the start):"), BorderLayout.NORTH);
 		sysWrap.add(sys, BorderLayout.CENTER);
@@ -223,6 +224,25 @@ public class DesignDialog extends ShipEditorDialog {
 		changed();
 		refreshChecks();
 		return r.andThen ? After.BUILD : After.OK;
+	}
+	/**
+	 * A Medbay and a Clone Bay take each other's place (heromedel): ticking one unticks the other. A design from before
+	 * with both ticked shows the Clone Bay alone, as Commission builds her. Either may be null (not placed).
+	 */
+	static void eitherBay(final JCheckBox medbay, final JCheckBox clonebay) {
+		if (medbay == null || clonebay == null) return;
+		ActionListener either = new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				JCheckBox on = (JCheckBox) e.getSource();
+				if (on.isSelected()) (on == medbay ? clonebay : medbay).setSelected(false);
+			}
+		};
+		medbay.addActionListener(either);
+		clonebay.addActionListener(either);
+		if (medbay.isSelected() && clonebay.isSelected()) medbay.setSelected(false);
+		String tip = "Ticked: she starts with it installed. Unticked: its room is ready, to buy or install later. A Medbay and a Clone Bay take each other's place: ticking one unticks the other";
+		medbay.setToolTipText(tip);
+		clonebay.setToolTipText(tip);
 	}
 	/** Loadout... : the loadout dialog, and on to the build screen if its Build... was pressed. */
 	private void loadoutThenMaybeBuild() {

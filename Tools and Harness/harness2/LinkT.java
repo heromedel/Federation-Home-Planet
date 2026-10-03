@@ -183,7 +183,9 @@ public class LinkT {
   b("popups off");
   Setup.chk("with priority pop-ups off, a priority message goes to the inbox", a("note " + port + " priority cccccccccccccccc Urgent!").equals("OK inbox") && b("popups").startsWith("1 "));
   b("popups on"); b("inbox off");
-  Setup.chk("with the inbox off, a message pops up (nothing is lost)", a("note " + port + " normal dddddddddddddddd Just saying hi").equals("OK popup") && b("popups").startsWith("2 "));
+  int inboxed = Integer.parseInt(b("notes").split(" ")[0]);
+  Setup.chk("with Immersive messages off, a commander's message still lands in the inbox", a("note " + port + " normal dddddddddddddddd Just saying hi").equals("OK inbox")
+    && Integer.parseInt(b("notes").split(" ")[0]) == inboxed + 1 && b("popups").startsWith("1 "));
   b("inbox on");
   b("block eeeeeeeeeeeeeeee Captain_Pest");
   String nr = a("note " + port + " normal eeeeeeeeeeeeeeee Let me in");
@@ -193,6 +195,104 @@ public class LinkT {
   for (int i = 0; i < 8; i++) { String x = a("note " + port + " normal ffffffffffffffff Spam " + i); if (x.startsWith("OK")) ok++; else if (x.contains("too many")) busy++; }
   Setup.chk("a flood is cut down (" + ok + " of 8 taken)", ok == 5 && busy == 3);
   Setup.chk("a message stays plain text, cut to length", Notes.clean("a\u0007b\n\n\n\nc" + new String(new char[600]).replace('\0', 'x')).startsWith("ab\n\nc") && Notes.clean(new String(new char[600]).replace('\0', 'x')).length() == Notes.MAX);
+
+  // ---- the Outbox: messages wait for a station that can't be reached ----
+  b("unlisten");
+  Setup.chk("a message for a station with its frequencies closed can wait in the Outbox", a("outbox add bbbbbbbbbbbbbbbb Commander_Bree " + port + " Back later? I've got that laser.").equals("OK") && a("outbox count").equals("1"));
+  Setup.chk("nothing goes while their frequencies stay closed", a("outbox deliver").equals("nothing") && a("outbox count").equals("1"));
+  Setup.chk("it's kept on disk (a restart finds it)", Outbox.list().size() == 1 && Outbox.list().get(0).text.equals("Back later? I've got that laser."));
+  a("outbox age 180");
+  port = b("listen").replace("PORT ", "");
+  int notesBefore = Integer.parseInt(b("notes").split(" ")[0]);
+  String dl = a("outbox deliver");
+  Setup.chk("once they open their frequencies, it's delivered and leaves the Outbox", dl.startsWith("Delivered to Commander Bree's inbox") && dl.contains("waited 3 hours") && a("outbox count").equals("0"));
+  String arrived = b("notewith Back_later?");
+  Setup.chk("it arrives saying when it was written", Integer.parseInt(b("notes").split(" ")[0]) == notesBefore + 1 && arrived.contains("Back later? I've got that laser.") && arrived.contains("it waited in their Outbox"));
+  a("outbox add bbbbbbbbbbbbbbbb Commander_Bree " + port + " Never mind.");
+  Setup.chk("Cancel takes it out, and nothing is sent", a("outbox cancel").equals("OK") && a("outbox count").equals("0") && a("outbox deliver").equals("nothing"));
+  // a station that blocked you doesn't answer your search: the message just waits. One busy with too many messages
+  // from that commander this minute leaves it waiting too, to go on a later search
+  for (int i = 0; i < 6; i++) a("note " + port + " normal abababababababab Hi " + i);
+  a("outbox add bbbbbbbbbbbbbbbb Commander_Bree " + port + " Are you there?");
+  String ta = a("outbox deliver as abababababababab");
+  Setup.chk("a station busy with too many messages: it waits, to go later (not given up)", ta.contains("busy") && a("outbox refused").equals("0") && a("outbox count").equals("1"));
+  Setup.chk("and goes on a later search", a("outbox deliver as cdcdcdcdcdcdcdcd").startsWith("Delivered") && a("outbox count").equals("0"));
+  String full = "";
+  for (int i = 0; i < 6; i++) full = a("outbox add cccccccccccccccc Captain_Pest " + port + " number " + i);
+  Setup.chk("at most 5 wait for one commander", full.startsWith("FULL") && a("outbox count").equals("5"));
+  for (int i = 0; i < 5; i++) a("outbox cancel");
+
+  // ---- commanders met before, and a withdrawn hail ----
+  a("contactscan");
+  Setup.chk("a commander found is remembered", a("contacts").contains("bbbbbbbbbbbbbbbb|Commander Bree|true"));
+  b("unlisten");
+  a("contactscan");
+  Setup.chk("and stays in the list once out of range (kept on disk)", a("contacts").contains("bbbbbbbbbbbbbbbb|Commander Bree") && Contacts.get("bbbbbbbbbbbbbbbb") != null);
+  Setup.chk("a message to them out of range waits in the Outbox", a("outbox add bbbbbbbbbbbbbbbb Commander_Bree 0 For when you're back.").equals("OK"));
+  port = b("listen").replace("PORT ", "");
+  String back = a("outbox deliver as efefefefefefefef"); // as a station Bree hasn't heard from this minute
+  Setup.chk("and is delivered when they're back in range", back.startsWith("Delivered to Commander Bree's inbox") && b("notewith For_when").contains("For when you're back."));
+  a("forget bbbbbbbbbbbbbbbb");
+  Setup.chk("Remove takes them off the list", !a("contacts").contains("bbbbbbbbbbbbbbbb"));
+  a("contactscan");
+  Setup.chk("and they come back when found again", a("contacts").contains("bbbbbbbbbbbbbbbb"));
+  b("holdhail on");
+  a("hailcancel " + port);
+  Setup.chk("a withdrawn hail: the other station sees it go, while it was still asking", b("wait withdrawn 1").equals("OK"));
+  b("holdhail off");
+
+  // ---- shipments ----
+  b("resetlimits"); a("resetlimits"); // the sections above sent many messages this minute
+  a("inbox on");
+  a("stock scrap 40");
+  int aScrap = num(a("hold"), "scrap");
+  Setup.chk("packing takes the goods off their ship into escrow", a("parcel pack scrap 25").equals("OK 25 scrap") && num(a("hold"), "scrap") == aScrap - 25 && a("parcel packed").equals("25 scrap"));
+  Setup.chk("one packed shipment at a time", a("parcel pack scrap 5").startsWith("FAILED"));
+  a("parcel unpack");
+  Setup.chk("unpacking brings them back", num(a("hold"), "scrap") == aScrap && a("parcel packed").equals("none"));
+  boolean takesShipments = false;
+  for (Beacon.Found f : Beacon.scan(1200, "aaaaaaaaaaaaaaaa")) if (f.station.equals("bbbbbbbbbbbbbbbb")) takesShipments = f.shipments;
+  Setup.chk("a station's search answer says it takes shipments", takesShipments);
+  a("parcel pack scrap 25");
+  int bScrap = num(b("hold"), "scrap");
+  Setup.chk("sent with a message: held in their inbox, gone from here", a("parcel send " + port + " Here's that scrap.").equals("OK")
+    && b("parcel parcels").contains("in:held:25_scrap") && num(a("hold"), "scrap") == aScrap - 25 && a("parcel parcels").contains("out:sent:25_scrap"));
+  Setup.chk("arriving again (after a lost answer) isn't filed twice", a("parcel again " + port).startsWith("OK") && b("parcel parcels").split("in:held").length == 2);
+  Setup.chk("accepted: into their Cargo Hold", b("parcel accept").equals("OK") && num(b("hold"), "scrap") == bScrap + 25 && b("parcel parcels").contains("in:accepted:25_scrap"));
+  a("parcel pack scrap 10");
+  a("parcel send " + port + " easy From my Easy career.");
+  Setup.chk("from a mode this fleet doesn't trade with: held, and not accepted here", b("parcel accept").startsWith("FAILED") && b("parcel fleets").equals("|refuses"));
+  b("parcel makefleet easy");
+  Setup.chk("their Easy fleet may take it", b("parcel fleets").equals("easy|refuses"));
+  int easyScrap = num(b("parcel holdof easy"), "scrap");
+  Setup.chk("delivered to that fleet's Cargo Hold: its file written, the fleet not in use", b("parcel deliver easy").equals("OK")
+    && num(b("parcel holdof easy"), "scrap") == easyScrap + 10 && num(b("hold"), "scrap") == bScrap + 25 && b("parcel parcels").contains("in:elsewhere:10_scrap"));
+  a("parcel pack scrap 5");
+  a("parcel send " + port + " Too much?");
+  a("listen");
+  int aBack = num(a("hold"), "scrap");
+  Setup.chk("returned: it waits in their Outbox, addressed back", b("parcel return").equals("OK") && b("outbox count").equals("1") && b("parcel parcels").contains("in:returning:5_scrap"));
+  Setup.chk("and goes home when their station finds the sender's", b("outbox deliver").startsWith("Delivered") && b("parcel parcels").contains("in:returned:5_scrap") && a("parcel parcels").contains("in:held:5_scrap"));
+  Setup.chk("the sender accepts their goods back", a("parcel accept").equals("OK") && num(a("hold"), "scrap") == aBack + 5);
+  a("parcel pack scrap 3");
+  int aPacked = num(a("hold"), "scrap");
+  a("parcel outbox bbbbbbbbbbbbbbbb Commander_Bree " + port + " Later.");
+  Setup.chk("a shipment can wait in the Outbox with its message", a("outbox count").equals("1") && a("parcel parcels").contains("out:outbox:3_scrap"));
+  Setup.chk("Cancel there unpacks it: the goods come home", a("outbox cancel").equals("OK") && num(a("hold"), "scrap") == aPacked + 3 && a("parcel parcels").contains("out:unpacked:3_scrap"));
+  a("parcel pack scrap 4");
+  Setup.chk("the screen shows a packed shipment", a("parcel showing").equals("packed:4_scrap"));
+  a("parcel outbox bbbbbbbbbbbbbbbb Commander_Bree " + port + " Soon.");
+  Setup.chk("and follows it into the Outbox", a("parcel showing").equals("outbox:4_scrap"));
+  int aOut = num(a("hold"), "scrap");
+  Setup.chk("Unpack from there cancels its message and brings the goods home", a("parcel unpackshown").equals("OK") && a("outbox count").equals("0")
+    && num(a("hold"), "scrap") == aOut + 4 && a("parcel showing").equals("none"));
+  a("parcel pack scrap 2");
+  a("parcel outbox bbbbbbbbbbbbbbbb Commander_Bree " + port + " With two scrap.");
+  a("parcel unpackonly"); // unpacked some other way: the message would promise what isn't there
+  String gone = a("outbox deliver");
+  Setup.chk("a message whose shipment was unpacked meanwhile isn't sent without it", !gone.startsWith("Delivered") && a("outbox refused").equals("1"));
+  a("outbox cancel");
+  a("unlisten");
   b("inbox off");
 
   // ---- versions: the protocol decides ----

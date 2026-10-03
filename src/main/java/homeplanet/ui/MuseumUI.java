@@ -68,6 +68,7 @@ import homeplanet.vault.VoyageLog;
  * Loadout.
  */
 public class MuseumUI extends JPanel {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MuseumUI.class);
 	static final Color GOLD = FtlButton.GOLD, TXT = new Color(228, 237, 232), DIMC = MenuTheme.GREY_GREEN, SILVER = new Color(200, 210, 215),
 			GREEN = MenuTheme.GREEN, PANEL = new Color(20, 28, 36, 215), LINEC = new Color(214, 230, 222, 120);
 	private static final int INFO_W = 470;
@@ -631,7 +632,7 @@ public class MuseumUI extends JPanel {
 				g2.getGraphics().drawImage(gi, 0, 0, null);
 				out = g2;
 			}
-		} catch (Exception e) { }
+		} catch (Exception e) { log.debug("Museum: an exhibit's picture could not be drawn: {}", e.toString()); }
 		pictures.put(key, out);
 		return out;
 	}

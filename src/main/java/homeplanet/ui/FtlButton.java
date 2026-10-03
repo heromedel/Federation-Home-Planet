@@ -77,7 +77,11 @@ public class FtlButton extends JButton {
 		/** A heading that folds its group of buttons away: lighter under the mouse, a small arrow when folded. */
 		private boolean foldable = false, folded = false, hover = false;
 		static final Color HOVER_GOLD = new Color(255, 236, 180);
-		public Header(String text, int w) {
+		/** The title centred, with a line on each side (---- ABOARD ----); otherwise at the left, the line after it. */
+		private final boolean centred;
+		public Header(String text, int w) { this(text, w, false); }
+		public Header(String text, int w, boolean centred) {
+			this.centred = centred;
 			this.text = text.toUpperCase();
 			Dimension d = new Dimension(w, FtlFont.MENU.render(this.text, GOLD).getHeight() + 6);
 			setPreferredSize(d);
@@ -104,7 +108,8 @@ public class FtlButton extends JButton {
 			Graphics2D g = (Graphics2D) g0.create();
 			Color c = hover ? HOVER_GOLD : GOLD;
 			BufferedImage t = FtlFont.MENU.render(text, c);
-			g.drawImage(t, 0, 2, null);
+			int x = centred ? Math.max(0, (getWidth() - t.getWidth()) / 2) : 0;
+			g.drawImage(t, x, 2, null);
 			g.setColor(c);
 			g.setStroke(new BasicStroke(2f));
 			int y = 2 + t.getHeight() / 2, end = getWidth() - 2;
@@ -113,7 +118,8 @@ public class FtlButton extends JButton {
 				g.fillPolygon(new Polygon(new int[] {end - 8, end, end - 8}, new int[] {y - 5, y, y + 5}, 3));
 				end -= 12;
 			}
-			if (t.getWidth() + 10 < end) g.drawLine(t.getWidth() + 10, y, end, y);
+			if (x - 10 > 1) g.drawLine(1, y, x - 10, y);
+			if (x + t.getWidth() + 10 < end) g.drawLine(x + t.getWidth() + 10, y, end, y);
 			g.dispose();
 		}
 	}

@@ -153,7 +153,7 @@ public final class Exchange {
 	// ---- escrow ----
 
 	/** What every source ship looks like as read now, and what to write back. */
-	private static final class Sources {
+	static final class Sources {
 		final Map<String, Ship> ships = new LinkedHashMap<String, Ship>();
 		final Map<String, Vault.Copy> copies = new LinkedHashMap<String, Vault.Copy>();
 		Vault.Copy of(String shipId) throws IOException {
@@ -295,7 +295,7 @@ public final class Exchange {
 		}
 	}
 	/** Takes one line off its ship (in the copy, written by escrow). */
-	private static void take(Sources src, Line l) throws IOException {
+	static void take(Sources src, Line l) throws IOException {
 		Vault.Copy c = src.of(l.from);
 		Ship ship = src.ships.get(l.from);
 		SavedGameState gs = c.save;
@@ -440,7 +440,7 @@ public final class Exchange {
 		v.begin().put(st, c.save, c.hash).put(r.file, bytes(r)).commit();
 	}
 	/** Puts one line into the Cargo Hold (in the copy). */
-	private static void give(ShipState s, Line l) throws IOException {
+	static void give(ShipState s, Line l) throws IOException {
 		if (l.kind.isSupply()) setSupply(s, l.kind, supply(s, l.kind) + l.amount);
 		else if (l.kind == Line.Kind.WEAPON) s.getWeaponList().add(SaveHelper.newIdleWeapon(l.id));
 		else if (l.kind == Line.Kind.DRONE) s.getDroneList().add(SaveHelper.newIdleDrone(l.id));

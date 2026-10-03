@@ -18,7 +18,7 @@ public class TransT { public static void main(String[] a) throws Exception {
  Setup.done();
 }
  static int orders() { int n = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.startsWith("empty:")) n++; return n; }
- /** The free command: once when a fleet starts, again with each report for reassignment; an empty shipyard alone never sends one. */
+ /** The free command: once when a fleet starts, again with each plea for a new ship; an empty shipyard alone never sends one. */
  static void freeCommand(File game, File work) throws Exception {
   File saves = new File(work, "saves"); saves.mkdirs();
   HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
@@ -30,8 +30,8 @@ public class TransT { public static void main(String[] a) throws Exception {
   HomePlanet.freeShip = FreeCommand.ANY;
   Setup.chk("F: a new fleet starts with a Kestrel Type A, whatever a report would grant", FreeCommand.KESTREL.equals(FreeCommand.ship()));
   HomePlanet.freeShip = FreeCommand.VARIABLE;
-  Setup.chk("F: Variable outside Immersive Mode: a report earns by what it surrenders", FreeCommand.byValue(v)
-    && FreeCommand.earned(FreeCommand.surrenderValue(v)).equals(FreeCommand.onReport(v)));
+  Setup.chk("F: the old Variable reads as a Kestrel Type A (or the Relief Ship)", FreeCommand.KESTREL.equals(Economy.reassignment())
+    && FreeCommand.offered(Economy.reassignment()).contains("Relief Ship Type A"));
   HomePlanet.freeShip = setting;
   Ship stranger = v.adopt(Commission.build("PLAYER_SHIP_HARD", "New Game Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)));
   v.board(stranger); Transmissions.check();
@@ -45,17 +45,23 @@ public class TransT { public static void main(String[] a) throws Exception {
   Transmissions.check(); Transmissions.check();
   int stranded = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.startsWith("stranded:")) stranded++;
   Setup.chk("F: no ship and no free command: the Liaison's letter, once", stranded == 1 && "Without a ship".equals(find("stranded").subject)
-    && find("stranded").body.contains("Report for Reassignment") && !find("stranded").body.contains("Junkyard: Salvage"));
+    && find("stranded").body.contains("Plead for New Ship") && !find("stranded").body.contains("Junkyard: Salvage"));
   Ship again = v.adopt(Commission.build("PLAYER_SHIP_HARD", "Short Lived", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(5)));
   Transmissions.check(); v.remove(again, "DESTROY"); Transmissions.check(); Transmissions.check();
   int stranded2 = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.startsWith("stranded:")) stranded2++;
   Setup.chk("F: a ship again, then none again: no second letter (only the first time)", stranded2 == 1);
-  Setup.chk("F: a report's free ship outside Immersive Mode is Settings'", HomePlanet.freeShip.equals(FreeCommand.onReport(v)));
-  File dir = v.surrender(); Transmissions.check();
-  Setup.chk("F: a report for reassignment grants another, and its order replaces the old one", v.freeCommandOpen() && orders() == 1 && !Transmissions.deletable(find("empty")));
-  Setup.chk("F: and it's the Shipyard's letter for after a reassignment", "Back from nothing".equals(find("empty").subject) && v.freeCommandReassigned());
-  v.undoSurrender(dir);
-  Setup.chk("F: undoing the report takes the grant back", !v.freeCommandOpen());
+  Setup.chk("F: a plea's ship outside Immersive Mode is Settings'", FreeCommand.norm(HomePlanet.freeShip).equals(Economy.reassignment()));
+  Ship docked = v.adopt(Commission.build("PLAYER_SHIP_HARD", "Still Here", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(6)));
+  int scrapBefore = v.storageScrap();
+  v.plead(); Transmissions.check();
+  Setup.chk("F: a plea grants an order with a ship docked, its order replaces the old one, nothing taken yet", v.freeCommandOpen() && v.freeCommandReassigned()
+    && orders() == 1 && !Transmissions.deletable(find("empty")) && v.storageScrap() == scrapBefore && v.byId(docked.id) != null);
+  Setup.chk("F: and it's the Shipyard's answer to the plea, naming what it offers", "Your plea was heard".equals(find("empty").subject)
+    && find("empty").body.contains(FreeCommand.offered(Economy.reassignment())));
+  v.withdrawPlea(); Transmissions.pleaWithdrawn();
+  Setup.chk("F: withdrawing the plea takes the order back, out of the inbox too, and the Shipyard says so", !v.freeCommandOpen() && orders() == 0
+    && find("withdrawn") != null && "Order cancelled".equals(find("withdrawn").subject));
+  v.remove(docked, "DESTROY");
   // Career messages in Sandbox Mode: the career begins once, with its letter and scrap, and no free ship
   int scrap = v.storageScrap(), ordersBefore = orders();
   HomePlanet.careerMessages = true;

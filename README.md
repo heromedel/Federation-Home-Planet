@@ -39,15 +39,19 @@ And More.
   crew and cargo, or decommission her to the Junkyard (salvage her, scrap her for parts, trade her in, auction her off, or destroy her).
 - **The Cargo Bay:** trade crew, weapons, drones, augments, systems and supplies with the Cargo Hold (the station's
   warehouse) or another docked ship; shop at the stores your ships are docked at; repair and upgrade in the Dry Dock;
-  refit, retrofit, remodel or overhaul a ship's layout.
+  refit, retrofit, remodel or overhaul a ship's layout. A ship at FTL's System Limit (8 systems) can still have one
+  fitted, as a custom work order for 100 scrap.
 - **Long Range Comm.:** trade with another commander's Home Planet Station over the local network, a virtual LAN or
   the internet: items, supplies, crew and whole ships, Sandbox with Sandbox and Immersive with Immersive (any level,
   unless a career keeps to its own); any two commanders can hail and talk. Both commanders build the offer and accept it; any change withdraws acceptance.
   Goods arrive in the Cargo Hold, ships at the Space Dock. Nothing is open to the network until you open your
   hailing frequencies; stay powered up to be hailed from any screen, send a message to a commander's inbox (or, marked
-  priority, onto their screen), and block a commander you'd rather not hear from.
+  priority, onto their screen; one who's away gets it from the Outbox when they're back), send them a shipment of goods with a message, and
+  block a commander you'd
+  rather not hear from.
 - **The shipyard:** commission any unlocked ship, a remodel, or a ship you designed yourself. New blueprints are sent
-  to FTL via Slipstream.
+  to FTL via Slipstream. **Plead for New Ship** (Other...) asks The Federation Home Planet for one, paid for with the
+  Cargo Hold or answered for with your reputation; the Relief Ship Type A is always on offer.
 - **House rules** (Settings): trading and New Journey only at a store beacon, commissioning that costs scrap, locked
   ships that can't be commissioned, selling supplies and systems, a free commission for each ship you unlock, and
   what happens after a final victory (rescue the ship, a reward of her value, or nothing).
@@ -55,6 +59,11 @@ And More.
   fleet and FTL profile. The Federation Home Planet's rules are locked, you rise in rank (Commander, Captain,
   Commodore), and transmissions bring commission orders, promotions, achievement rewards and a stipend. Switch Game
   Mode (Settings) moves between Sandbox Mode and the careers at any time, and ends a career.
+- **Reputation:** your standing with The Federation Home Planet (always in Immersive Mode; a Settings rule in Sandbox
+  Mode), in gold on the Space Dock: earned by sectors,
+  scrap, ships defeated (rebels more), good outcomes, FTL achievements and the Rebel Flagship; lost by crew killed,
+  ships lost in action, being caught by the rebel fleet and bad outcomes (never in the last stand of sector 8).
+  Click it for the Career Reputation Log.
 - **The Federation Museum:** every ship that won in the Hall of Victors (preserved in the museum, still in service,
   honoured in memory, or lost in action later), and the ships lost in action in the Memorial: her record, honours,
   crew, voyage and loadout, an epitaph of your own, and a picture of the exhibit to save.
@@ -65,7 +74,8 @@ And More.
 
 ## Running and building
 
-Java 8 or newer runs it: `Current Build\Federation Home Planet Interface.bat` (or `java -jar "Federation Home Planet.jar"`). On first start it
+Java 8 or newer runs it: `Current Build\Federation Home Planet Interface.bat` opens it without a console window, using the
+Java the Construction Yard gathered or the one on your computer (or run `java -jar "Federation Home Planet.jar"`). On first start it
 asks where FTL is (the folder with `ftl.dat`) and where the saves are. Quit FTL before boarding, docking or saving in
 the Cargo Bay. Keep the station open while you play: it notices FTL's saves as they're written (for the voyage log and
 final victories) and takes stock when you switch back to it.

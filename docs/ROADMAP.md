@@ -337,7 +337,7 @@ Settings (the rules it sets are locked there). Custom picks any level of each ru
 |---|---|---|---|
 | After a final victory | save her, or the museum at full value | save her, or the museum at half value | the museum takes her, at half value |
 | New Journey | 200 | 500 | 1000 |
-| Report for Reassignment grants | Kestrel Type A | Variable | relief ship |
+| Plead for New Ship grants (4B.92) | any ship | Kestrel Type A or the Relief Ship | the Relief Ship Type A |
 | Refit removal | free | 25 | 50 |
 | Stripping when scrapping | allowed, free | allowed, 10 a system | not allowed |
 | Missiles and drone parts sell for | half | a quarter | 1 scrap each |
@@ -346,8 +346,8 @@ Settings (the rules it sets are locked there). Custom picks any level of each ru
 | Starting scrap | 50 | 25 | 10 |
 
 The same at every difficulty: stored systems sell at half, hull repairs 4 a point, the stipend's 20 plus rank,
-commissions cost scrap, station requirements, locked models, free unlock ships, rank clearances, a final
-reassignment, a Kestrel Type A to start.
+commissions cost scrap, station requirements, locked models, free unlock ships, rank clearances, the Relief Ship Type
+A on every plea, a Kestrel Type A to start.
 
 A career from before difficulties becomes **Custom (from before difficulties)**, written down once with what it had:
 its final victory choice (still changeable in Settings), journeys 200, Variable, removal free, stripping as Settings
@@ -475,7 +475,105 @@ no letters, you come and check).
 - A derelict rebuilt with two systems' rooms swapped now says "the rooms built for her X and Y have been swapped",
   true whether or not those systems are installed.
 
-## 21. The Junkyard update — built (4B.81; harness test PartT, checks in GuiT and TransT)
+## 21. Reputation — built (4B.92, from the long-range-comm branch's 4B.86–4B.91; harness test RepuT)
+
+A career's standing with The Federation Home Planet, earned by its ships' service in FTL and lost by their losses.
+Every Immersive career has it (Settings' Reputation rule, locked on); in Sandbox Mode it's the player's choice
+(the rule, off to begin with), with or without Career messages or the inbox. Shown in gold on the Space Dock, to the right of
+the inbox (red below zero), as plain text: "REP: 179"; its tooltip has the latest changes, and clicking it opens the **Career
+Reputation Log** (reputation.log in the fleet's folder, in the station log's style).
+
+| Earned | | Lost | |
+|---|---|---|---|
+| Each new sector | +6 | Each crew member killed | −10 |
+| Scrap collected (FTL's total: not sales) | a tenth | Each ship lost in action | −50 |
+| Each ship defeated | +4 | Caught by the rebel fleet | −5 |
+| A rebel ship defeated (REBEL_ or AUTO_) | +6 | A bad outcome | −1 |
+| A good outcome | +2 | | |
+| Each FTL achievement (real ones, earned in the fleet's service) | +10 | | |
+| The Rebel Flagship defeated | +100 | | |
+
+- **Counted as FTL plays:** at each look the station takes at a save FTL wrote, against the count kept for each ship
+  (reputation.txt), so nothing counts twice. The station's own changes (a trade, a New Journey, commissioning, the
+  Cargo Bay) move the count without scoring. A death is FTL's lost-crew count going up with the crew member gone: a
+  clone that came back, or a dismissal, isn't one.
+- **Outcomes:** FTL keeps no record of an event's choice, only its results, so an outcome is read from a jump within
+  the sector to a beacon with no fight, no ship and no store (nor a store left behind): only gains (scrap, crew, gear,
+  missiles or drone parts) is good; only losses (hull, crew, gear, scrap, missiles or drone parts) is bad; both or
+  neither, nothing. The jump's own fuel doesn't count.
+- **Caught:** the rebel fleet holds the beacon she's at (arrived at one, or overtaken while waiting), once a beacon.
+- **Achievements:** counted as the career's rewards count them (earned since the fleet's record began), when the Space
+  Dock takes stock.
+- **The last stand:** nothing is ever lost in sector 8 (deaths, a ship lost, being caught, a bad outcome); gains still
+  count.
+- **The first count:** a career's service so far is reviewed once ("Service record reviewed"), from what the station
+  keeps: each ship's FTL totals since she joined (her commissioning, or her trade), each ship lost before the last
+  stand, each victory in the Hall of Victors, and the achievements earned in the fleet's service. Older records can't
+  tell rebels apart (they count as ships), nor events or being caught (not counted). A
+  traded ship's crew losses from before her trade aren't told apart, so her losses aren't counted in the review.
+- **Traded ships** count only what they did since their trade (TradeMark), as everything else does.
+- With the rule switched off, the total and the log are kept and each ship's count still moves on, so nothing done
+  meanwhile scores later.
+
+**Later:** a free crew member from a hiring post (−5; the posts are on another branch), and the rescue ship when no
+ship can fly: a Kestrel Type A, with 10% of what the surrendered cargo didn't cover taken from reputation (a ship
+requisitioned when one isn't needed would cost her full value).
+
+**Back burner:** spending reputation, and promotions tied to it.
+
+## 22. Plead for New Ship — built (4B.92, from the long-range-comm branch; harness checks in PriceT, TransT, FleetT)
+
+Report for Reassignment is replaced (its sections above are history):
+
+- **Plead for New Ship** (Other... at the Space Dock): whatever is docked, The Federation Home Planet agrees to send a
+  ship; nothing is taken yet. Her order waits at Commission (the Shipyard's letter, "Your plea was heard"); **Withdraw
+  Plea** cancels it until she's built. One order at a time; only while commissioning costs scrap.
+- **What it offers:** Settings' choice in Sandbox Mode (Kestrel Type A, Relief Ship Type A, or Any), the difficulty's in
+  a career: Easy any ship, Normal a Kestrel Type A, Hard the Relief Ship. **The Relief Ship Type A is always offered.**
+  Variable is gone (read as the Kestrel Type A).
+- **Paying, at Commission**, once she's chosen: give up the Cargo Hold (everything but the crew, who stay, at what the
+  Cargo Bay would pay: scrap, gear at half, missiles and drone parts and stored systems only where they can be sold;
+  the Junkyard is untouched), or, with Reputation on, keep it. With Reputation on, a tenth of what the hold doesn't cover
+  of her value comes off reputation (keeping it: a tenth of her whole value). A hold worth more than her asks "Are you
+  sure?": give up the extra, or refund the difference to the emptied hold.
+- **Relief Ship Type A** ("Hinata" by default): a Kestrel A with one human, a Burst Laser I and an Ion Blast, no missiles,
+  drones or augments, every system at its minimum, reactor 6. Listed in Commission at all times; the shipyard and a plea
+  price her at a fixed 600; everywhere else she's valued by what's on her.
+- **Ship values count fuel, missiles and drone parts** at store price (3, 6, 8) everywhere (commission, rewards, the
+  museum, sales): a Kestrel A comes to 997.
+- **Later:** with the companion mod, a blueprint of her own so FTL names her class (her id needs its own place in the
+  mod's naming of _HP and remodel ids).
+
+## 23. FTL's System Limit — built (4B.93; harness checks in PriceT, GuiT, DerT, DesT)
+
+Found by heromedel in play: FTL's store greys out a system once a ship is full, but The Home Planet Station's shop
+fitted one anyway; FTL then runs her, but her system bar slides along and its icons risk overlapping.
+
+- **The limit** (`SaveHelper.SYSTEMS_MAX`): 8 systems, the game's own and the same for every ship; no blueprint in
+  ftl.dat sets one (its store's tooltip: "You've reached the System Limit"). Piloting, Sensors, Doors and the Backup
+  Battery are subsystems and don't count; Artillery does (it has its place on the system bar); a Medbay and a Clone Bay
+  take each other's place. Every player ship has a room for every system and none starts with more than 7, so the limit
+  is reached by buying.
+- **A custom work order** (heromedel): past the limit, a system is fitted for a flat 100 scrap (`Pricing.WORK_ORDER`),
+  after this pop-up, heromedel's text exactly as written (Install or Cancel, Cancel the default):
+
+      This ship is at maximum capacity for systems.
+      Home Planet Station can fit it in as a custom work order.
+      But it will cost 100 scrap.
+
+      (This would excede the Vanilla FTL system Limit)
+
+  - **The Dry Dock shop:** the store's price and the 100, both from her scrap; greyed only when she can't pay both.
+  - **Install from the Cargo Bay:** the 100 on the Dry Dock's bill (the Cargo Hold pays on Save; Reset drops it).
+  - **On hover:** "You've reached the System Limit. Home Planet Station can fit it in as a custom work order. But it
+    will cost 100 scrap."
+  - Nothing comes back when the system comes off, and the work order is never part of a ship's value.
+- **Elsewhere:** derelicts get their extra system only while under the limit; Design Ship warns when a design would start
+  past it; with commissioning costs on, Commission charges 100 for each system past it, outside the commission rate (a
+  plea values her the same way).
+- **A Medbay and a Clone Bay** take each other's place (4B.94, heromedel): in Design Ship, ticking one to start unticks
+  the other, and a design ticked with both (from before) is commissioned with the Clone Bay alone.
+## 24. The Junkyard update — built (4B.81; harness test PartT, checks in GuiT and TransT)
 
 - The Space Dock's Salvage button is now **Junkyard**.
 - Damaged systems can be stored, installed and uninstalled, keeping their broken bars (`<id> <level> <broken>` in
@@ -495,7 +593,7 @@ no letters, you come and check).
   `reactor_upgrade` count has gone up with no jump since the station last looked, one beacon is counted, once a
   beacon stop, and noted in her voyage log. Nothing else (crew walking about) counts.
 
-## 22. Expeditions, hiring, folding headings — rebuilt (4B.92; harness test ExpT, checks in GuiT)
+## 25. Expeditions, hiring, folding headings — rebuilt (4B.92; harness test ExpT, checks in GuiT)
 
 Expeditions were built at 4B.83 and grown to 4B.91 (sectors, risk grades, chains of events, outfitting, ships home,
 the lost Stealth Cruiser). heromedel found the result incoherent, un-FTL and over-paid, and asked for a rebuild from
@@ -600,6 +698,10 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
 - In the Cargo Bay's system rows, broken bars are drawn red at the end of the level bar (4B.91).
 - **Folding headings**: a click on a gold heading of the Space Dock's controls folds its buttons away or back,
   lighter under the mouse, a small arrow when folded; remembered in the cfg (`fold_station`, ...).
+- 4B.95: main merged in (Reputation, Plead for New Ship, the Relief Ship Type A, the System Limit, Medbay or Clone Bay).
+  The Space Dock is main's (the centred Docked and Aboard headings, REP to the inbox's right), with Expeditions under
+  Station and the control headings folding as before; the centred headings don't fold. The stipend reads in months
+  everywhere (two, three or four), never sectors or beacons.
 - A one-sided Long Range trade's log no longer says "received ():".
 - The harness (ExpT) reads the events file clean, plays every event through every choice, checks every hurt has a
   death beside it, holds every line against FTL's own event text (no run of six words the same), and walks the
