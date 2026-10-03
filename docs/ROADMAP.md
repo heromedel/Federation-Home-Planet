@@ -570,8 +570,12 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   humans answer, as Commission has it (4B.90).
 - While an expedition is under way its pop-ups can't be closed, only answered; a priority Long Range message pops up
   over it and the expedition carries on after; a hail is told the commander is away and listed as missed (4B.87).
-- The job's windows (4B.95): FTL's shape, narrow and near square, words wrapped at the top and the numbered choices
-  stacked under them, the same size on every screen of the job. The board steps aside when the commander signs on and
+- The job's windows (4B.95, redrawn at 4B.96 from heromedel's FTL screenshots): FTL's event layout on the station's
+  own dark panel and pale rim (not FTL's mauve), in FTL's own type (JustinFont from ftl.dat, chosen over the style
+  guide's Sans Serif from a side-by-side; where ftl.dat's font can't be read, or lacks a letter on the screen, the
+  whole screen falls back to the style guide's Sans Serif 12), the words wrapped with room between the lines, and
+  two lines under them the numbered choices as plain lines of words (gold under the pointer, blue for a race's
+  option), picked by a click or by their number key. The box is as tall as what's in it. The board steps aside when the commander signs on and
   opens again, fresh, when the job is over. The last outcome is the end of the job: no docking screen after it (it only
   repeated the outcome); anyone hurt gets one line under that outcome ("Marek is carried to the infirmary when the
   shuttle docks."). The asteroid belt's line is heromedel's: "you can hear a small asteroid glancing off the shuttle's

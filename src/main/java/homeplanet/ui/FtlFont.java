@@ -91,7 +91,7 @@ public class FtlFont {
 	}
 
 	/** True if FTL's font has every character (otherwise the Java font is used for that text). */
-	private boolean covers(String s) {
+	public boolean covers(String s) {
 		load();
 		if (tex == null) return false;
 		for (int i = 0; i < s.length(); i++) if (!glyphs.containsKey(s.charAt(i))) return false;

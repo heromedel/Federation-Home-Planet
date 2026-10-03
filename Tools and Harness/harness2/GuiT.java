@@ -331,7 +331,7 @@ public class GuiT {
   Setup.chk("X: the last outcome is the end, no docking screen after it; the Cargo Hold has the scrap (" + v.storageScrap() + "); a beacon passed", end.contains("You receive") && !docked
     && v.storageScrap() > 0 && v.beaconsSeen() >= beacons + 1);
   Setup.chk("X: the board steps aside during the job (" + boardUp[0] + "), and a fresh one has a new job in its place", !boardUp[0] && !Expeditions.board(v).get(0).text.startsWith("A Rock mining colony"));
-  Setup.chk("X: the job's window is FTL's shape, narrow, near square (" + jobSize[0] + ")", jobSize[0] != null && jobSize[0].width < 600 && jobSize[0].width < jobSize[0].height * 3 / 2);
+  Setup.chk("X: the job's window is FTL's event box, sized to its words, not the whole screen (" + jobSize[0] + ")", jobSize[0] != null && jobSize[0].width < 700 && jobSize[0].height < 600);
   boolean noX = !expeditionCloseOps.isEmpty(); for (int op : expeditionCloseOps) if (op != JDialog.DO_NOTHING_ON_CLOSE) noX = false;
   Setup.chk("X: the expedition's pop-ups can't be closed, only answered (" + expeditionCloseOps.size() + ")", noX);
   boolean note = false; for (String t : shown) if (t.contains("Commander Bree, priority")) note = true;

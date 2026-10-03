@@ -1,6 +1,7 @@
 package homeplanet.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -47,8 +48,13 @@ final class ExpeditionsDialog extends JDialog {
 	/** FTL's blue for an option a crew member's race opens. */
 	static final String BLUE = "#6ab8ff";
 
-	/** An event's window, as FTL's: narrow (its words wrap at TEXT_W), and at least EVENT_H tall on every screen of the job. */
-	static final int EVENT_H = 380, TEXT_W = 380;
+	/**
+	 * The event box: the station's own dark panel and pale rim, FTL's type (JustinFont, from ftl.dat), words wrapped at TEXT_W, a line
+	 * every LINE, the choices two lines under the words and CHOICE_GAP apart, the box as tall as what's in it.
+	 */
+	static final int TEXT_W = 540, PAD = 18, LINE = 17, CHOICE_GAP = 9, MIN_H = 200;
+	static final Color BOX_BG = MenuTheme.BG, BOX_RIM = new Color(214, 230, 222, 150), WORDS = MenuTheme.TEXT,
+			HOVER = new Color(255, 214, 90), RACE = new Color(106, 184, 255);
 
 	/**
 	 * The board; when the commander signs on, it closes while the job plays (in its own windows), and opens again,
@@ -152,17 +158,17 @@ final class ExpeditionsDialog extends JDialog {
 			while (!run.over()) {
 				List<Expeditions.Choice> choices = run.choices();
 				int c = -1;
-				while (c < 0) c = ask(owner, run.text(), labels(run, choices), title); // an expedition can't be walked away from halfway
+				while (c < 0) c = ask(owner, run.text(), labels(run, choices), blue(choices), title); // an expedition can't be walked away from halfway
 				String said = run.choose(choices.get(c));
 				if (!run.over()) continue;
 				String home;
 				try { home = Expeditions.finish(v, run); }
 				catch (IOException e) {
-					ask(owner, said, new String[] {"1. Continue..."}, title);
+					ask(owner, said, new String[] {"1. Continue..."}, new boolean[1], title);
 					HomePlanet.showErrorDialog("The Home Planet Station could not record the expedition; the Cargo Hold is as it was:\n" + e.getMessage());
 					return false;
 				}
-				ask(owner, home.isEmpty() ? said : said + "\n\n" + home, new String[] {"1. Continue..."}, title);
+				ask(owner, home.isEmpty() ? said : said + "\n\n" + home, new String[] {"1. Continue..."}, new boolean[1], title);
 				return true;
 			}
 			return false;
@@ -173,28 +179,38 @@ final class ExpeditionsDialog extends JDialog {
 		for (int i = 0; i < out.length; i++) out[i] = label(run, choices.get(i), i + 1);
 		return out;
 	}
+	private static boolean[] blue(List<Expeditions.Choice> choices) {
+		boolean[] out = new boolean[choices.size()];
+		for (int i = 0; i < out.length; i++) out[i] = choices.get(i).race != null;
+		return out;
+	}
 	/**
-	 * A screen of the job, laid out as FTL's: the words at the top, the numbered choices one above the other under them,
-	 * in a window that's the same size every time (taller only if the words need it). No closing it, only a choice.
-	 * Returns the one taken, or -1.
+	 * A screen of the job, laid out as FTL's: the words, two lines down the numbered choices, each a line of words that
+	 * lights up under the pointer (blue where a crew member's race opens it), picked by a click or its number key. No
+	 * closing it, only a choice. Returns the one taken, or -1.
 	 */
-	private static int ask(java.awt.Component owner, String text, String[] choices, String title) {
-		JPanel p = new JPanel(new BorderLayout(0, 14));
-		p.add(wrap(text), BorderLayout.NORTH);
-		JPanel list = new JPanel(new GridLayout(0, 1, 0, 6));
-		final JOptionPane op = new JOptionPane(p, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null, new Object[0]);
+	private static int ask(java.awt.Component owner, String text, String[] choices, boolean[] blue, String title) {
+		final JOptionPane op = new JOptionPane(null, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null, new Object[0]);
+		// FTL's type where ftl.dat has it for every letter on the screen; the style guide's Sans Serif 12 otherwise
+		StringBuilder all = new StringBuilder(text);
+		for (String c : choices) all.append(c);
+		boolean ftl = FtlFont.BODY.covers(all.toString().replace("\n", ""));
+		Box box = new Box();
+		box.add(new Words(text, WORDS, ftl));
+		box.add(javax.swing.Box.createVerticalStrut(LINE * 2));
 		for (int i = 0; i < choices.length; i++) {
 			final int n = i;
-			JButton b = new JButton(choices[i]);
-			b.setHorizontalAlignment(JButton.LEFT);
+			Pick b = new Pick(choices[i], blue[i] ? RACE : WORDS, ftl);
 			b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { op.setValue(Integer.valueOf(n)); } });
-			list.add(b);
+			if (i > 0) box.add(javax.swing.Box.createVerticalStrut(CHOICE_GAP));
+			box.add(b);
+			if (i < 9) { // FTL's number keys
+				String key = "pick" + (i + 1);
+				box.getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke((char) ('1' + i)), key);
+				box.getActionMap().put(key, new javax.swing.AbstractAction() { public void actionPerformed(ActionEvent e) { op.setValue(Integer.valueOf(n)); } });
+			}
 		}
-		JPanel under = new JPanel(new BorderLayout());
-		under.add(list, BorderLayout.NORTH); // the choices keep their own height, under the words
-		p.add(under, BorderLayout.CENTER);
-		java.awt.Dimension want = p.getPreferredSize();
-		p.setPreferredSize(new java.awt.Dimension(want.width, Math.max(EVENT_H, want.height))); // as wide as the words need, never shorter
+		op.setMessage(box);
 		JDialog d = op.createDialog(owner, title);
 		d.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE); // a choice must be made
 		d.getRootPane().putClientProperty(EXPEDITION, Boolean.TRUE);
@@ -203,15 +219,98 @@ final class ExpeditionsDialog extends JDialog {
 		Object v = op.getValue();
 		return v instanceof Integer && (Integer) v >= 0 && (Integer) v < choices.length ? (Integer) v : -1;
 	}
-	/** A choice as its button shows it, numbered, wrapped to the window: blue where a crew member's race opens it. */
-	static String label(Expeditions.Run run, Expeditions.Choice c, int n) {
-		String t = n + ". " + XmlText.text(run.label(c));
-		String div = "<div style='width:" + (TEXT_W - 40) + "px'>";
-		if (c.race == null) return "<html>" + div + t + "</div></html>";
-		return "<html>" + div + "<font color='" + BLUE + "'>" + t + "</font></div></html>";
+	/** A choice as it reads, numbered: "2. (Mantis) Krik offers to..." */
+	static String label(Expeditions.Run run, Expeditions.Choice c, int n) { return n + ". " + run.label(c); }
+
+	/** The event box: the station's dark panel with a pale rim, its contents one under the other. */
+	static final class Box extends JPanel {
+		Box() {
+			setLayout(new javax.swing.BoxLayout(this, javax.swing.BoxLayout.Y_AXIS));
+			setOpaque(false);
+			setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD + 4, PAD));
+		}
+		@Override public java.awt.Dimension getPreferredSize() {
+			java.awt.Dimension d = super.getPreferredSize();
+			return new java.awt.Dimension(TEXT_W + 2 * PAD, Math.max(MIN_H, d.height));
+		}
+		@Override protected void paintComponent(java.awt.Graphics g) {
+			g.setColor(BOX_BG);
+			g.fillRect(0, 0, getWidth(), getHeight());
+			g.setColor(BOX_RIM);
+			g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
+		}
 	}
-	private static JLabel wrap(String text) {
-		return new JLabel("<html><div style='width:" + TEXT_W + "px'>" + XmlText.text(text).replace("\n", "<br>") + "</div></html>");
+	/** Words in FTL's type, wrapped to the box (blank lines kept). Its text is the words, for whoever asks. */
+	static final class Words extends JLabel {
+		final List<String> lines;
+		final Color color;
+		final boolean ftl;
+		Words(String text, Color color, boolean ftl) {
+			super(text);
+			this.color = color; this.ftl = ftl;
+			lines = wrapLines(text, TEXT_W, ftl);
+			setAlignmentX(LEFT_ALIGNMENT);
+		}
+		@Override public java.awt.Dimension getPreferredSize() { return new java.awt.Dimension(TEXT_W, lines.size() * LINE); }
+		@Override public java.awt.Dimension getMaximumSize() { return getPreferredSize(); }
+		@Override protected void paintComponent(java.awt.Graphics g) {
+			for (int i = 0; i < lines.size(); i++) if (!lines.get(i).isEmpty()) draw(g, lines.get(i), color, 0, i * LINE, ftl);
+		}
+	}
+	/** A choice: a line (or two) of words, white, or blue for a race's; gold under the pointer, as FTL's. */
+	static final class Pick extends JButton {
+		final List<String> lines;
+		final Color color;
+		final boolean ftl;
+		Pick(String text, Color color, boolean ftl) {
+			super(text);
+			this.color = color; this.ftl = ftl;
+			lines = wrapLines(text, TEXT_W - 16, ftl);
+			setAlignmentX(LEFT_ALIGNMENT);
+			setBorderPainted(false); setContentAreaFilled(false); setFocusPainted(false); setOpaque(false);
+			setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+			setRolloverEnabled(true);
+		}
+		@Override public java.awt.Dimension getPreferredSize() { return new java.awt.Dimension(TEXT_W, lines.size() * LINE); }
+		@Override public java.awt.Dimension getMaximumSize() { return getPreferredSize(); }
+		@Override protected void paintComponent(java.awt.Graphics g) {
+			Color c = getModel().isRollover() || getModel().isArmed() ? HOVER : color;
+			for (int i = 0; i < lines.size(); i++) draw(g, lines.get(i), c, i == 0 ? 0 : 16, i * LINE, ftl); // a wrapped choice's second line sits under its words, not its number
+		}
+	}
+	/** The style guide's normal text, where FTL's type can't be had. */
+	static final java.awt.Font SANS = new java.awt.Font(java.awt.Font.SANS_SERIF, java.awt.Font.PLAIN, 12);
+	private static final java.awt.FontMetrics SANS_METRICS = new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB).createGraphics().getFontMetrics(SANS);
+	/** A line of words at (x, y), in FTL's type or the fallback, centred in its LINE. */
+	static void draw(java.awt.Graphics g0, String s, Color c, int x, int y, boolean ftl) {
+		if (ftl) {
+			java.awt.image.BufferedImage img = FtlFont.BODY.render(s, c);
+			g0.drawImage(img, x, y + (LINE - img.getHeight()) / 2, null);
+			return;
+		}
+		java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
+		g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		g.setFont(SANS);
+		g.setColor(c);
+		g.drawString(s, x, y + (LINE + SANS_METRICS.getAscent() - SANS_METRICS.getDescent()) / 2);
+		g.dispose();
+	}
+	static int width(String s, boolean ftl) { return ftl ? FtlFont.BODY.width(s) : SANS_METRICS.stringWidth(s); }
+	static List<String> wrapLines(String text, int width) { return wrapLines(text, width, true); }
+	/** Text cut into lines no wider than this in the type given, at spaces; a line break kept, a blank line between paragraphs. */
+	static List<String> wrapLines(String text, int width, boolean ftl) {
+		List<String> out = new ArrayList<String>();
+		for (String para : text.split("\n", -1)) {
+			StringBuilder line = new StringBuilder();
+			for (String word : para.split(" ")) {
+				if (word.isEmpty()) continue;
+				String next = line.length() == 0 ? word : line + " " + word;
+				if (line.length() > 0 && width(next, ftl) > width) { out.add(line.toString()); line = new StringBuilder(word); }
+				else line = new StringBuilder(next);
+			}
+			out.add(line.toString());
+		}
+		return out;
 	}
 	/** Up to three crew from the Cargo Hold, ticked. */
 	private List<CrewState> pickParty(List<CrewState> crew) {
