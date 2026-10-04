@@ -211,13 +211,13 @@ public class SystemsPanel {
 			r.broken = broken;
 			if (broken > 0) { // mended first: then she can be upgraded
 				int scrap = hold(), fix = broken * homeplanet.parser.Pricing.SYSTEM_REPAIR;
-				r.addButton("Fix: " + fix, 78, ROW_W - 96 - 82, scrap >= fix,
+				r.addButton("Fix: " + fix, 78, ROW_W - 108 - 82, scrap >= fix,
 						scrap >= fix ? "Mend the " + DryDockShop.systemTitle(t.getId()) + "'s " + broken + (broken == 1 ? " broken bar" : " broken bars") + " for " + fix + " scrap ("
 								+ homeplanet.parser.Pricing.SYSTEM_REPAIR + " a bar)" : "Mending " + broken + (broken == 1 ? " bar" : " bars") + " costs " + fix + " scrap; the Cargo Hold has " + scrap,
 						new ActionListener() { public void actionPerformed(ActionEvent e) { repairSystem(type); } });
 			} else if (up > 0) {
 				int scrap = hold();
-				r.addButton("Up: " + up, 78, ROW_W - 96 - 82, scrap >= up,
+				r.addButton("Up: " + up, 78, ROW_W - 108 - 82, scrap >= up,
 						scrap >= up ? "Upgrade the " + DryDockShop.systemTitle(t.getId()) + " to level " + (st.getCapacity() + 1) + " for " + up + " scrap"
 						: "Upgrading to level " + (st.getCapacity() + 1) + " costs " + up + " scrap; the Cargo Hold has " + scrap,
 						new ActionListener() { public void actionPerformed(ActionEvent e) { upgradeSystem(type); } });
@@ -307,7 +307,7 @@ public class SystemsPanel {
 			this.title = title; this.level = level; this.ok = why == null;
 			setLayout(null);
 			setToolTipText(tip);
-			int bw = action.length() > 7 ? 92 : action.length() > 5 ? 78 : 62;
+			int bw = action.length() > 7 ? 104 : action.length() > 5 ? 78 : 62;
 			FtlButton b = new FtlButton(action, FtlFont.BODY, bw, 22);
 			b.setEnabled(ok);
 			if (action.isEmpty()) b.setVisible(false); // a row with only its own extra buttons
