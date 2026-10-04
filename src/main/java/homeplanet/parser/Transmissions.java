@@ -331,6 +331,12 @@ public final class Transmissions {
 		}
 		// the repair job: the collector's offer, her demand, the claims office, the foreman
 		for (String key : RepairJob.due(v, sent)) chained |= chain(all, sent, key, rank, RepairJob.NAME);
+		// the Third Fleet Commander (with the inbox off his letters come as pop-ups at the Space Dock)
+		if (HomePlanet.immersiveNotifications()) for (String key : ThirdFleet.due(v)) {
+			String name;
+			try { name = ThirdFleet.fill(v, key); } catch (IOException e) { log.warn("Could not ready the Third Fleet Commander's letter (tried again next time): {}", e.toString()); continue; }
+			if (chain(all, sent, key, rank, name)) { ThirdFleet.markSent(v, key); chained = true; }
+		}
 		// the welcome last: the inbox shows the newest first, so it tops everything that arrives with it
 		if (HomePlanet.immersiveMode) send(all, sent, "welcome", "welcome", rank, null);
 		int added = all.size() - before + replaced;
@@ -394,6 +400,7 @@ public final class Transmissions {
 		// the repair job's replies act first (a reply that can't be carried out is refused, with the reason), before the
 		// inbox is read: what they do may send a letter of its own
 		if (RepairJob.isJob(m.key)) RepairJob.replied(Vault.get(), m.key, option);
+		if (ThirdFleet.isHello(m.key) && Vault.isOpen()) ThirdFleet.replied(Vault.get(), option);
 		List<Message> all = load(); // also reads the letters already due
 		String name = "";
 		for (Pending p : pending) if (p.name != null && !p.name.isEmpty()) name = p.name;

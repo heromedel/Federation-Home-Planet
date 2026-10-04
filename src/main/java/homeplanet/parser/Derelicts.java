@@ -424,6 +424,7 @@ public final class Derelicts {
 			saveFile(v, l.index).delete();
 			HistoryLog.entry("BUY", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), a derelict, for " + l.price + " scrap from the Cargo Hold"
 					+ (l.oddity.isEmpty() ? "" : "; " + words(l.oddity)));
+			ThirdFleet.derelictBought(v, s); // the Third Fleet Commander's project ship, the first time
 			return s;
 		} catch (IOException e) {
 			if (storageBefore != null) try { v.refundStorage(storageBefore); } catch (IOException again) { e.addSuppressed(again); }

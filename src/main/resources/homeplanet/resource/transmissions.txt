@@ -7,7 +7,7 @@
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
 # Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), pleaded (the order after a
 # plea for a new ship; {ship} is what it offers), withdrawn (that plea withdrawn: its order leaves the inbox), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
-# a hull waits in the Junkyard), promo:1, promo:2, order:<base ship id>, ach:<achievement id> (ach:ACH_NO_DEATH:dna and ach:ACH_INVADE_SHIP:dna when the boarded ship has a Clone Bay already),
+# a hull waits in the Junkyard), fleet3:* (the Third Fleet Commander, ThirdFleet.java: {name} is the ship class or the part), promo:1, promo:2, order:<base ship id>, ach:<achievement id> (ach:ACH_NO_DEATH:dna and ach:ACH_INVADE_SHIP:dna when the boarded ship has a Clone Bay already),
 # rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
 # notice when Transmissions are off).
 #
@@ -1165,6 +1165,73 @@ Sector 8 with the air nearly gone. The Lanius manage without it; the rest of us 
 A Breach Bomb Mark II, so your enemies can find out what breathing space feels like.
 
 ~ Office of Alien Affairs
+
+== fleet3:hello
+from: Third Fleet Commander
+subject: Rebuilding ships
+replies: Not interested -> fleet3:no 1-2 | Interested -> fleet3:yes 1-2
+
+Hey {rank}, this is The Station's Third Fleet Commander.
+
+I saw you've been flying that {name}. It's not a bad vessel, but it got me thinking: did you know you can rebuild ships from the junkyard?
+
+Sometimes you can even find rare models, or some with weapons left on board.
+
+Tell you what, if you pick up a derelict from the Ship Yard's junk, I'll see if I got an extra part she needs and have it sent to you to get her up and running.
+
+Might be fun rebuilding ships together.
+
+~ Federation Home Planet Station: Third Fleet Commander.
+
+== fleet3:no
+from: Third Fleet Commander
+subject: Re: Rebuilding ships
+
+{rank},
+
+No problem. If you change your mind, I'll still see about sending you an extra part.
+
+~ Federation Home Planet Station: Third Fleet Commander.
+
+== fleet3:yes
+from: Third Fleet Commander
+subject: Re: Rebuilding ships
+
+{rank},
+
+Good to hear. I'll keep an eye out for spare parts.
+
+~ Federation Home Planet Station: Third Fleet Commander.
+
+== fleet3:part
+from: Third Fleet Commander
+subject: Your project ship
+
+{rank},
+
+Glad to see you decided to try picking out your own project ship and fixing her up. Here, I saw she was missing {name}. Go ahead and have this one I had laying around. Head to your Cargo Bay, and it should be easy to Refit your ship with the system.
+
+~ Federation Home Planet Station: Third Fleet Commander.
+
+== fleet3:part:no
+from: Third Fleet Commander
+subject: Your project ship
+
+{rank},
+
+Glad to see you decided to try picking out your own project ship and fixing her up, even though you said you didn't want to. Here, I saw she was missing {name}. Go ahead and have this one I had laying around. Head to your Cargo Bay, and it should be easy to Refit your ship with the system.
+
+~ Federation Home Planet Station: Third Fleet Commander.
+
+== fleet3:parts
+from: Third Fleet Commander
+subject: Parts from the Junkyard
+
+{rank},
+
+I heard from the technicians down in refitting you got some work done with one of those parts. Just wanted to make sure you knew you can get cheap parts at the junkyard too, not just ships. Gotta repair them yourself though, or pay the refitting technicians to repair it.
+
+~ Federation Home Planet Station: Third Fleet Commander.
 
 == chain:one-hull
 from: Engi Restoration Collective

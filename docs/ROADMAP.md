@@ -1057,6 +1057,23 @@ first draft, for McCarthy's session (lore) to look over.
 written in the words file, and the Clone Bay or Backup DNA Bank achievement letters, beside the report's faces and the
 races' second commission letters.)
 
+## 34. The Third Fleet Commander — built (5.11, Plan RR, heromedel's chain; harness test ThirdT)
+
+heromedel's letters, with the agreed edits only (`fleet3:*` in transmissions.txt, `parser/ThirdFleet.java`); the
+first character at the station beyond the offices, set up to come back ("Might be fun rebuilding ships together").
+
+- **His first word**, 7 to 21 days after the station first looks at the fleet: the boarded ship's class (else a random
+  docked ship's; with neither it waits), and did you know you can rebuild ships from the junkyard. Replies Not
+  interested / Interested, each with his short answer a day or two later; neither ends the chain.
+- **The project ship:** the first derelict *bought* from the Junkyard (only a purchase counts) brings his part, with
+  the Not interested version "even though you said you didn't want to": a system her rooms allow that she lacks, the
+  ones she can't fly without first (Piloting, Engines, Oxygen), at level 1 and in working order, into the stored
+  systems ("Head to your Cargo Bay"). Bought before his first word, he skips it and sends the part.
+- **The parts word:** the first stored part installed after that (at the Cargo Bay's Save), if no part has been bought
+  from the Junkyard: cheap parts there too, "Gotta repair them yourself though".
+- Each letter once (the vault's events: `fleet3-*`). With the inbox off they come as pop-ups at the Space Dock, the
+  first with its two buttons and his answer straight after.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

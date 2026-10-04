@@ -289,16 +289,45 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final List<homeplanet.parser.Expeditions.RansomNews> ransomNews = homeplanet.parser.Expeditions.checkRansoms(vault);
 		final List<String> upAgain = homeplanet.parser.Expeditions.checkInfirmary(vault);
 		final boolean prizes = HomePlanet.expeditionType == 2 && !homeplanet.parser.Assignments.pendingToAsk(vault).isEmpty();
-		if ((HomePlanet.immersiveNotifications() || (ransomNews.isEmpty() && back.isEmpty())) && upAgain.isEmpty() && !prizes) return;
+		final List<String> fleet3 = HomePlanet.immersiveNotifications() ? new java.util.ArrayList<String>() : homeplanet.parser.ThirdFleet.due(vault); // with the inbox on, his letters go there
+		if ((HomePlanet.immersiveNotifications() || (ransomNews.isEmpty() && back.isEmpty())) && upAgain.isEmpty() && !prizes && fleet3.isEmpty()) return;
 		Runnable word = new Runnable() { public void run() {
 			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Assignments.Report r : back) AssignmentsDialog.showReport(null, r);
 			if (prizes) AssignmentsDialog.askPending(null); // a recruit to take on, a ship to keep: asked whatever the inbox setting
 			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Expeditions.RansomNews n : ransomNews) ransomNotice(n);
+			for (String key : fleet3) thirdFleetNotice(key);
 			if (!upAgain.isEmpty())
 				JOptionPane.showMessageDialog(null, String.join(" and ", upAgain) + (upAgain.size() > 1 ? " are" : " is") + " out of the infirmary, on their feet and waiting in the Cargo Hold.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
 		} };
 		if (later) javax.swing.SwingUtilities.invokeLater(word); else word.run();
 	}
+	/** With the inbox off: one of the Third Fleet Commander's letters as a pop-up (the first asks, and his answer follows at once). */
+	private void thirdFleetNotice(String key) {
+		Vault v = Vault.get();
+		java.util.Map<String, String> fill = new java.util.HashMap<String, String>();
+		try { fill.put("name", homeplanet.parser.ThirdFleet.fill(v, key)); }
+		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not ready a letter from the Third Fleet Commander (it comes next time):\n" + e.getMessage()); return; }
+		String[] t = homeplanet.parser.Transmissions.text(key, fill);
+		if (t == null) return;
+		homeplanet.parser.ThirdFleet.markSent(v, key);
+		if (!homeplanet.parser.ThirdFleet.isHello(key)) { JOptionPane.showMessageDialog(null, letterArea(t[2]), t[1], JOptionPane.PLAIN_MESSAGE); return; }
+		Object[] opts = {"Not interested", "Interested"};
+		int r = JOptionPane.showOptionDialog(null, letterArea(t[2]), t[1], JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[1]);
+		if (r < 0) return; // closed: no reply, as a letter left unanswered (the chain goes on)
+		homeplanet.parser.ThirdFleet.replied(v, r);
+		String answer = r == 0 ? homeplanet.parser.ThirdFleet.NO : homeplanet.parser.ThirdFleet.YES;
+		String[] a = homeplanet.parser.Transmissions.text(answer, new java.util.HashMap<String, String>());
+		homeplanet.parser.ThirdFleet.markSent(v, answer);
+		if (a != null) JOptionPane.showMessageDialog(null, letterArea(a[2]), a[1], JOptionPane.PLAIN_MESSAGE);
+	}
+	private static javax.swing.JTextArea letterArea(String text) {
+		javax.swing.JTextArea t = new javax.swing.JTextArea(text);
+		t.setEditable(false); t.setLineWrap(true); t.setWrapStyleWord(true); t.setOpaque(false); t.setColumns(52);
+		t.setFont(MenuTheme.TEXT_FONT);
+		t.setSize(new Dimension(520, 10));
+		return t;
+	}
+
 	/** With the inbox off: a ransom's ask or reminder as a pop-up (Pay, Refuse, or Later: the reminder asks again), or word of the loss. */
 	private void ransomNotice(homeplanet.parser.Expeditions.RansomNews n) {
 		javax.swing.JTextArea t = new javax.swing.JTextArea(n.text());
