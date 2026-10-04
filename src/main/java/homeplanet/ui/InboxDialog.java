@@ -270,7 +270,9 @@ public class InboxDialog extends JDialog {
 	}
 
 	/** Shows a transmission (a title and a line of who and when, if given, then the text). */
-	private void message(String title, String meta, String body) {
+	private void message(String title, String meta, String body) { message(title, meta, body, null); }
+	/** The same, with an expedition report's faces beside its crew's lines. */
+	private void message(String title, String meta, String body, java.util.List<homeplanet.parser.Assignments.Face> faces) {
 		javax.swing.text.StyledDocument doc = text.getStyledDocument();
 		try {
 			doc.remove(0, doc.getLength());
@@ -287,7 +289,8 @@ public class InboxDialog extends JDialog {
 				javax.swing.text.StyleConstants.setForeground(a, MenuTheme.GREY_GREEN);
 				doc.insertString(doc.getLength(), meta + "\n\n", a);
 			}
-			doc.insertString(doc.getLength(), body, null);
+			if (faces != null && !faces.isEmpty()) ReportFaces.insert(doc, body, faces, null);
+			else doc.insertString(doc.getLength(), body, null);
 			javax.swing.text.SimpleAttributeSet p = new javax.swing.text.SimpleAttributeSet();
 			javax.swing.text.StyleConstants.setLineSpacing(p, 0.2f);
 			doc.setParagraphAttributes(0, doc.getLength(), p, false);
@@ -318,7 +321,9 @@ public class InboxDialog extends JDialog {
 		}
 		boolean answered = m.replied != null && !m.replied.isEmpty();
 		homeplanet.comm.Shipments.Parcel parcel = parcelOf(m);
-		message(m.subject, m.from + "  \u00b7  " + m.date, (answered ? m.body + "\n\nYou replied: \u201c" + m.replied + "\u201d" : m.body) + parcelState(parcel));
+		java.util.List<homeplanet.parser.Assignments.Face> faces = m.key.startsWith("expedition:") && homeplanet.vault.Vault.isOpen()
+				? homeplanet.parser.Assignments.facesFor(homeplanet.vault.Vault.get(), m.key) : null; // an expedition report's crew, as they came home
+		message(m.subject, m.from + "  \u00b7  " + m.date, (answered ? m.body + "\n\nYou replied: \u201c" + m.replied + "\u201d" : m.body) + parcelState(parcel), faces);
 		String[] from = replyTo(m);
 		reply.setVisible(Transmissions.canReply(m) || from != null);
 		reply.setEnabled(true);

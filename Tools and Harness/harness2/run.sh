@@ -37,6 +37,7 @@ echo "== RuleT"; run RuleT "$GAME" "$WORLD" "$W/rule" | grep -E "$PICK|^PASS"
 echo "== FleetT"; run FleetT "$GAME" "$WORLD" "$W/fleet" | grep -E "$PICK|^PASS"
 echo "== TransT"; run TransT "$GAME" "$WORLD" "$W/trans" | grep -E "$PICK|^PASS"
 echo "== ChainT"; run ChainT "$GAME" "$WORLD" "$W/chain" | grep -E "$PICK|^PASS"
+for P in yes no early off; do echo "== ThirdT $P"; run ThirdT "$GAME" "$WORLD" "$W/third-$P" "$P" | grep -E "$PICK|^PASS"; done
 echo "== DerT"; run DerT "$GAME" "$WORLD" "$W/der" | grep -E "$PICK|^PASS|^derelicts|^locked|^rebuild"
 echo "== PatchT"; run PatchT "$GAME" "$WORLD" "$W/patch" | grep -E "$PICK|^PASS"
 echo "== PartT"; run PartT "$GAME" "$WORLD" "$W/part" | grep -E "$PICK|^PASS"

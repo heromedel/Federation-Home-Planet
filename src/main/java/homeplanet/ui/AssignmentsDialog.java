@@ -137,13 +137,21 @@ public final class AssignmentsDialog extends JDialog {
 			catch (IOException e) { HomePlanet.showErrorDialog("That could not be done:\n" + e.getMessage()); }
 		}
 	}
-	/** A report, read in the station's event box (the words as the crew gave them, no rolls). */
+	/** A report, read in the station's event box (the words as the crew gave them, no rolls), each crew member's face beside their line. */
 	public static void showReport(java.awt.Component owner, Assignments.Report r) {
-		javax.swing.JTextArea t = new javax.swing.JTextArea(r.text);
-		t.setEditable(false); t.setLineWrap(true); t.setWrapStyleWord(true); t.setOpaque(false);
-		t.setFont(MenuTheme.TEXT_FONT);
-		t.setColumns(52);
-		t.setSize(new Dimension(520, 10));
-		JOptionPane.showMessageDialog(owner, t, r.title(), JOptionPane.PLAIN_MESSAGE);
+		JOptionPane.showMessageDialog(owner, reportPane(r.text, r.faces), r.title(), JOptionPane.PLAIN_MESSAGE);
+	}
+	/** The report's words with the crew's faces, wrapped to the event box's width. */
+	static javax.swing.JTextPane reportPane(String text, java.util.List<Assignments.Face> faces) {
+		javax.swing.JTextPane t = new javax.swing.JTextPane();
+		t.setEditable(false); t.setOpaque(false);
+		javax.swing.text.SimpleAttributeSet base = new javax.swing.text.SimpleAttributeSet();
+		javax.swing.text.StyleConstants.setFontFamily(base, MenuTheme.TEXT_FONT.getFamily());
+		javax.swing.text.StyleConstants.setFontSize(base, MenuTheme.TEXT_FONT.getSize());
+		try { ReportFaces.insert(t.getStyledDocument(), text, faces, base); }
+		catch (javax.swing.text.BadLocationException e) { t.setText(text); } // not expected: the words, at least
+		t.setSize(new Dimension(520, Short.MAX_VALUE));
+		t.setPreferredSize(new Dimension(520, t.getPreferredSize().height));
+		return t;
 	}
 }

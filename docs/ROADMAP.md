@@ -768,8 +768,12 @@ Fixes only, from heromedel's testing and the review; no new features. Design deb
 - Commission orders for a Type B or C: heromedel's shared letter (the ship's people have contacted Federation
   Command, impressed, and shared another model's blueprints; `{race}` and `{cruiser}` filled from the ship) in place of
   the ship's own, which told her Type A's unlock story (the Zoltan Council's offer for a Zoltan B, say). The
-  Kestrel's and the Federation Cruiser's letters read right for any type and stay. To be given more of each race's
-  character later.
+  Kestrel's and the Federation Cruiser's letters read right for any type and stay. 5.09: each race has its own second
+  letter (`order:nextModel:<base>`, eight, every one approved by heromedel), following on from its first: the Engi's
+  "within acceptable deviation", the Zoltan Council speaking of you again, a Mantis clan's "a better hunter should
+  have it", the Slug consortium's invoice arriving first, the Rock's thanks with no message, Intelligence's reports
+  nobody lets the Comm. Officer read, the Lanius logs, the Crystal watching. heromedel's shared letter stays as the
+  fallback ("with the {cruiser}" now).
 - Custom designs in FTL (Plan W, tested in FTL itself): the station's own ships draw where the editor shows them (hull
   and rooms together; the editor's cyan crosshair marks the rooms' centre, and Center art centres the picture's visible
   part, not its canvas). A re-finalized remodel keeps the layout the ship was finalized against. The Loadout's top line
@@ -985,6 +989,13 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   under 1): "send an already injured person and 2/3rds chance they live another injury". Someone sent whole is
   unchanged: an injury is half health.
 
+- **Faces in the report** (5.08, Plan PP, heromedel): each crew member's line starts with their icon and, as the
+  Cargo Bay draws it, a health bar at the health they came home with (none when whole, purple and full for the
+  infirmary); the dead and the taken greyed, with no bar. In the pop-up and in the inbox's letter alike: the fleet's
+  assignments.txt keeps the faces of the last 40 reports under their letters' keys (`face.N.*`). heromedel's setup is
+  now one of the six general ones, no more likely than the others (about one report in twelve). The harness checks the
+  experience: the job's skill, 1 point for injured or failed, 4, 6 or 8 for the successes, none on Negotiate or Rescue.
+
 ## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
 
 heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every
@@ -1042,6 +1053,10 @@ where a Clone Bay would be no use. The station picks the letter when it is sent 
 so the words and the reward always agree; no ship aboard, or one unreadable, gets the Clone Bay. The letters are a
 first draft, for McCarthy's session (lore) to look over.
 
+(5.10: Cloud-C-Primary-Edit's 5.08 and 5.09 merged in with this branch's 5.08 and 5.09: the report's line breaks
+written in the words file, and the Clone Bay or Backup DNA Bank achievement letters, beside the report's faces and the
+races' second commission letters.)
+
 ## 37. Augments with no room aboard come home — built (5.10; harness test OverT)
 
 heromedel: when FTL gives a fourth augment it asks which to throw away, and the save already holds all four while it
@@ -1054,6 +1069,25 @@ letter (as the one-point-of-hull letter does), and without the inbox the augment
 A career rule, "An augment with no room aboard": shipped home on Easy and Normal, lost on Hard (Custom picks; a career
 from before it, Normal); Sandbox's House Rules box under Journeys and trading, on by default. Weapons, drones and crew
 wait until this has been tried in play. The letter's words are a first draft for McCarthy's session.
+
+## 38. The Third Fleet Commander — built (5.11, Plan RR, heromedel's chain; harness test ThirdT)
+
+heromedel's letters, with the agreed edits only (`fleet3:*` in transmissions.txt, `parser/ThirdFleet.java`); the
+first character at the station beyond the offices, set up to come back ("Might be fun rebuilding ships together").
+
+- **His first word**, 7 to 21 days after the station first looks at the fleet: the boarded ship's class (else a random
+  docked ship's; with neither it waits), and did you know you can rebuild ships from the junkyard. Replies Not
+  interested / Interested, each with his short answer a day or two later; neither ends the chain.
+- **The project ship:** the first derelict *bought* from the Junkyard (only a purchase counts) brings his part, with
+  the Not interested version "even though you said you didn't want to": a system her rooms allow that she lacks, the
+  ones she can't fly without first (Piloting, Engines, Oxygen), at level 1 and in working order, into the stored
+  systems ("Head to your Cargo Bay"). Bought before his first word, he skips it and sends the part.
+- **The parts word:** the first stored part installed after that (at the Cargo Bay's Save), if no part has been bought
+  from the Junkyard: cheap parts there too, "Gotta repair them yourself though".
+- Each letter once (the vault's events: `fleet3-*`). With the inbox off they come as pop-ups at the Space Dock, the
+  first with its two buttons and his answer straight after.
+
+(5.12: the two branches merged again: this one's 5.10, the augments shipped home, and McCarthy's 5.08 to 5.11.)
 
 ## Naming decisions — settled (4B.30)
 

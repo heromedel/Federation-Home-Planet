@@ -8,7 +8,7 @@
 # Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), pleaded (the order after a
 # plea for a new ship; {ship} is what it offers), withdrawn (that plea withdrawn: its order leaves the inbox), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
 # a hull waits in the Junkyard), shipped (an augment a ship had no room for, sent home by her crew: {name} is her name,
-# {item} the augment, which is the reward), promo:1, promo:2, order:<base ship id>, ach:<achievement id> (ach:ACH_NO_DEATH:dna and ach:ACH_INVADE_SHIP:dna when the boarded ship has a Clone Bay already),
+# {item} the augment, which is the reward), fleet3:* (the Third Fleet Commander, ThirdFleet.java: {name} is the ship class or the part), promo:1, promo:2, order:<base ship id>, ach:<achievement id> (ach:ACH_NO_DEATH:dna and ach:ACH_INVADE_SHIP:dna when the boarded ship has a Clone Bay already),
 # rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
 # notice when Transmissions are off).
 #
@@ -243,7 +243,7 @@ subject: Commission order: {ship}
 
 {rank},
 
-The {race} have contacted Federation Command. They are impressed with what you have managed to achieve with {cruiser}. During negotiations they have agreed to share blueprints of a different model with The Federation.
+The {race} have contacted Federation Command. They are impressed with what you have managed to achieve with the {cruiser}. During negotiations they have agreed to share blueprints of a different model with The Federation.
 
 In recognition of your contribution The Federation Home Planet has approved commissioning your fleet one ship of this class for free.
 
@@ -252,6 +252,102 @@ I don't know about how all the politics work but the ship looks interesting.
 Let me know how it feels to fly one of these, and come home safe.
 ~ Comm. Officer.
 Home Planet Station Shipyard.
+
+== order:nextModel:PLAYER_SHIP_CIRCLE
+from: Office of Alien Affairs
+subject: Commission order: {ship}
+
+{rank},
+
+The Engi have reviewed the logs from your {cruiser}. They describe your use of her as "within acceptable deviation", which, we are told, is the highest praise their language allows.
+
+In return they have shared the plans for a second design, the {ship}. Take this order to Commission. The Engi have already asked for weekly reports. This office has told them monthly. Negotiations continue.
+
+~ Office of Alien Affairs
+
+== order:nextModel:PLAYER_SHIP_ENERGY
+from: Office of Alien Affairs
+subject: Commission order: {ship}
+
+{rank},
+
+The Zoltan Council has spoken of you again. What you have done with the {cruiser} has kept the peace they offered her for, and they have chosen to offer more: the plans for a {ship}.
+
+Take this order to Commission. The Council asks nothing in return, which in this office's experience means they trust you to know what is owed.
+
+~ Office of Alien Affairs
+
+== order:nextModel:PLAYER_SHIP_MANTIS
+from: Home Planet Shipyard
+subject: Commission order: {ship}
+
+{rank},
+
+Another Mantis ship has come our way. Word of what you did with the {cruiser} has spread among the clans, and one of them sent us a {ship} with a message our translators rendered as "a better hunter should have it." We think it was a compliment.
+
+Take this order to Commission. Engineering says this one is safe to fly. Not "mostly" this time. I checked.
+
+~ Home Planet Shipyard Comm. Officer
+
+== order:nextModel:PLAYER_SHIP_JELLY
+from: Office of Alien Affairs
+subject: Commission order: {ship}
+
+{rank},
+
+The same Slug consortium is back. Your record with the {cruiser} has made them, in their words, "enthusiastic partners", and they are offering the plans for a {ship}.
+
+This time the second invoice arrived first, and The Federation Home Planet has already paid it. The ship is yours: take this order to Commission. Engineering checked the plans three times and found nothing, which worries them more than finding something would have.
+
+~ Office of Alien Affairs
+
+== order:nextModel:PLAYER_SHIP_ROCK
+from: Office of Alien Affairs
+subject: Commission order: {ship}
+
+{rank},
+
+The Rock clan that sent us the {cruiser} has heard how you flew her. They have sent a {ship} after her, with no message at all. Among the Rock, we are told, that is how you thank someone you respect.
+
+Take this order to Commission. They will still ask about her.
+
+~ Office of Alien Affairs
+
+== order:nextModel:PLAYER_SHIP_STEALTH
+from: Home Planet Shipyard
+subject: Commission order: {ship}
+
+{rank},
+
+Federation Intelligence has read the reports on your {cruiser}, or so I'm told, since nobody lets me read them. Whatever they said, Intelligence has cleared you for a {ship}.
+
+Take this order to Commission. Same rules as last time: she doesn't exist, and you didn't get this from me.
+
+~ Home Planet Shipyard Comm. Officer
+
+== order:nextModel:PLAYER_SHIP_ANAEROBIC
+from: Home Planet Shipyard
+subject: Commission order: {ship}
+
+{rank},
+
+Engineering has been taking the {cruiser}'s logs apart since you brought her home, and they have learned enough to build a {ship}. Still no air aboard. I've stopped asking.
+
+Take this order to Commission and she's yours. Same advice as before: count the spare metal, and count it again in the morning.
+
+~ Home Planet Shipyard Comm. Officer
+
+== order:nextModel:PLAYER_SHIP_CRYSTAL
+from: Office of Alien Affairs
+subject: Commission order: {ship}
+
+{rank},
+
+The Crystal have been watching how you flew the {cruiser}. They do not say what they saw. They have, however, allowed our engineers a second vessel to study, and this {ship} is the result.
+
+Take this order to Commission. As before: the Crystal remember everything.
+
+~ Office of Alien Affairs
 
 == order:PLAYER_SHIP_CIRCLE
 from: Office of Alien Affairs
@@ -564,7 +660,7 @@ reward: item BACKUP_DNA
 
 Every crew member who set out with you reached sector 8. Every one.
 
-You would be surprised how rare that is. Some captains spend lives like scrap out there; the good ones don't. The Federation Home Planet has awarded you a Backup DNA Bank for the Clone Bay you already carry, so it stays that way.
+You would be surprised how rare that is. Some captains spend lives like scrap out there; the good ones don't. The Federation Home Planet has awarded you a Backup DNA Bank, so it stays that way. Your Clone Bay already has your crew's backs; now it will even when it's down.
 
 Loyalty runs both ways. Your crew will remember this.
 
@@ -634,7 +730,7 @@ reward: system clonebay
 
 Your whole crew aboard the enemy ship, and your own ship left flying herself. I've read the report. Bold. Reckless. It worked.
 
-Next time it might not. The Federation Home Planet is sending a Clone Bay, so the people who follow you that far get to come home.
+Next time it might not. The Federation Home Planet is sending a Clone Bay, so the people who follow you that far get to come home. Fit it where the Medbay was; it does that job too, between jumps.
 
 ~ Home Planet Liaison
 
@@ -1070,6 +1166,73 @@ Sector 8 with the air nearly gone. The Lanius manage without it; the rest of us 
 A Breach Bomb Mark II, so your enemies can find out what breathing space feels like.
 
 ~ Office of Alien Affairs
+
+== fleet3:hello
+from: Third Fleet Commander
+subject: Rebuilding ships
+replies: Not interested -> fleet3:no 1-2 | Interested -> fleet3:yes 1-2
+
+Hey {rank}, this is The Station's Third Fleet Commander.
+
+I saw you've been flying that {name}. It's not a bad vessel, but it got me thinking: did you know you can rebuild ships from the junkyard?
+
+Sometimes you can even find rare models, or some with weapons left on board.
+
+Tell you what, if you pick up a derelict from the Ship Yard's junk, I'll see if I got an extra part she needs and have it sent to you to get her up and running.
+
+Might be fun rebuilding ships together.
+
+~ Federation Home Planet Station: Third Fleet Commander.
+
+== fleet3:no
+from: Third Fleet Commander
+subject: Re: Rebuilding ships
+
+{rank},
+
+No problem. If you change your mind, I'll still see about sending you an extra part.
+
+~ Federation Home Planet Station: Third Fleet Commander.
+
+== fleet3:yes
+from: Third Fleet Commander
+subject: Re: Rebuilding ships
+
+{rank},
+
+Good to hear. I'll keep an eye out for spare parts.
+
+~ Federation Home Planet Station: Third Fleet Commander.
+
+== fleet3:part
+from: Third Fleet Commander
+subject: Your project ship
+
+{rank},
+
+Glad to see you decided to try picking out your own project ship and fixing her up. Here, I saw she was missing {name}. Go ahead and have this one I had laying around. Head to your Cargo Bay, and it should be easy to Refit your ship with the system.
+
+~ Federation Home Planet Station: Third Fleet Commander.
+
+== fleet3:part:no
+from: Third Fleet Commander
+subject: Your project ship
+
+{rank},
+
+Glad to see you decided to try picking out your own project ship and fixing her up, even though you said you didn't want to. Here, I saw she was missing {name}. Go ahead and have this one I had laying around. Head to your Cargo Bay, and it should be easy to Refit your ship with the system.
+
+~ Federation Home Planet Station: Third Fleet Commander.
+
+== fleet3:parts
+from: Third Fleet Commander
+subject: Parts from the Junkyard
+
+{rank},
+
+I heard from the technicians down in refitting you got some work done with one of those parts. Just wanted to make sure you knew you can get cheap parts at the junkyard too, not just ships. Gotta repair them yourself though, or pay the refitting technicians to repair it.
+
+~ Federation Home Planet Station: Third Fleet Commander.
 
 == chain:one-hull
 from: Engi Restoration Collective

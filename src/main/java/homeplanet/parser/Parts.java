@@ -219,6 +219,7 @@ public final class Parts {
 		p.setProperty(l.index + ".open", "false");
 		try { write(v, p); }
 		catch (IOException e) { log.warn("Could not mark part {} sold: {}", l.index, e.toString()); } // bought all the same: at worst it's offered again
+		ThirdFleet.partBought(v); // the Third Fleet Commander needn't point the way to them
 		HistoryLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard" + (l.clearance ? " on clearance" : "") + ", for " + l.price + " scrap from the Cargo Hold");
 	}
 
