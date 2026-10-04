@@ -152,7 +152,7 @@ public class LoadoutPanel extends JPanel {
 		return l;
 	}
 	private static JLabel hint(String t) {
-		JLabel l = new JLabel("<html><div style='width:424px'>" + t + "</div></html>");
+		JLabel l = new JLabel("<html><div style='width:318pt'>" + t + "</div></html>"); // pt: Swing's HTML draws a px a third too big
 		l.setFont(MenuTheme.TEXT_FONT);
 		l.setForeground(MenuTheme.GREY_GREEN);
 		l.setAlignmentX(LEFT_ALIGNMENT);
@@ -235,6 +235,8 @@ public class LoadoutPanel extends JPanel {
 				if (s == null) continue;
 				r.set(s.power, false);
 				r.tick().setSelected(!d.notAtStart.contains(s.id));
+				JButton weapon = (JButton) r.getClientProperty("weapon");
+				if (weapon != null) weaponLabel(weapon, s.weapon);
 			}
 			return;
 		}
@@ -252,19 +254,21 @@ public class LoadoutPanel extends JPanel {
 			r.setTip("Starting level");
 			r.onChange(new ActionListener() { public void actionPerformed(ActionEvent e) { if (!filling) systemChanged(s.id, r, rows); } });
 			if (s.id.equals("artillery")) {
-				final JButton weapon = new JButton(s.weapon == null ? "Choose weapon..." : ArtilleryPicker.label(s.weapon));
+				final JButton weapon = new JButton();
 				weapon.setMargin(new java.awt.Insets(0, 6, 0, 6));
-				weapon.setToolTipText(s.weapon == null ? "Which weapon her artillery fires" : ArtilleryPicker.tip(s.weapon));
+				weaponLabel(weapon, s.weapon);
 				weapon.addActionListener(new ActionListener() {
 					public void actionPerformed(ActionEvent e) {
-						String w = ArtilleryPicker.choose(LoadoutPanel.this, s.weapon);
+						CompanionMod.Sys now = d.systems.get("artillery"); // the design's own (an undo replaces the systems)
+						if (now == null) return;
+						String w = ArtilleryPicker.choose(LoadoutPanel.this, now.weapon);
 						if (w == null) return;
-						s.weapon = w;
-						weapon.setText(ArtilleryPicker.label(w));
-						weapon.setToolTipText(ArtilleryPicker.tip(w));
+						now.weapon = w;
+						weaponLabel(weapon, w);
 						host.changed();
 					}
 				});
+				r.putClientProperty("weapon", weapon);
 				r.addExtra(weapon);
 			}
 			rows.put(s.id, r);
@@ -272,6 +276,11 @@ public class LoadoutPanel extends JPanel {
 		}
 		systems.revalidate();
 		systems.repaint();
+	}
+
+	private static void weaponLabel(JButton b, String weapon) {
+		b.setText(weapon == null ? "Choose weapon..." : ArtilleryPicker.label(weapon));
+		b.setToolTipText(weapon == null ? "Which weapon her artillery fires" : ArtilleryPicker.tip(weapon));
 	}
 
 	// ---- the fields into the design ----

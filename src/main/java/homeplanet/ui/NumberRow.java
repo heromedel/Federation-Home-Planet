@@ -89,11 +89,13 @@ public class NumberRow extends JPanel {
 		JButton b = new JButton(t);
 		b.setMargin(new java.awt.Insets(0, 4, 0, 4));
 		b.setFocusable(false);
-		b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { set(value + by, true); } });
+		b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { set(typedValue() + by, true); } }); // from what's typed: the buttons take no focus, so the field hasn't committed
 		return b;
 	}
-	private void typed() {
-		try { set(Integer.parseInt(field.getText().trim()), true); } catch (NumberFormatException e) { showValue(); }
+	private void typed() { set(typedValue(), true); }
+	/** What the field says, or the value when it isn't a number. */
+	private int typedValue() {
+		try { return Integer.parseInt(field.getText().trim()); } catch (NumberFormatException e) { return value; }
 	}
 	private void showValue() {
 		fraction.setText(value + "/" + max);

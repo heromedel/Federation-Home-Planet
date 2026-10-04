@@ -76,15 +76,19 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 				refreshHelp();
 			}
 		});
+		MenuTheme.markOpenTab(steps); // the open step's name readable on its light tab
 		body.add(steps, BorderLayout.EAST);
 		for (java.awt.Component c : sideButtons.getComponents()) editor.addSideButton((JButton) c);
 		sideButtons.removeAll();
 
 		JPanel bottom = new JPanel(new BorderLayout());
-		JPanel msgs = new JPanel(new GridLayout(0, 1));
+		JPanel msgs = new JPanel(new BorderLayout(0, 2));
 		msgs.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
-		msgs.add(status);
-		msgs.add(checks);
+		msgs.add(status, BorderLayout.NORTH);
+		msgs.add(checks, BorderLayout.CENTER);
+		addComponentListener(new java.awt.event.ComponentAdapter() {
+			public void componentResized(java.awt.event.ComponentEvent e) { if (built) refreshChecks(); } // the line wraps to the new width
+		});
 		bottom.add(msgs, BorderLayout.CENTER);
 		helpRow.add(button("Help", "How the editor works: the tools, the mouse and the keys (F1)", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { showHelp(); }
@@ -277,11 +281,13 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 			checks.setForeground(new Color(255, 170, 90));
 		}
 		checks.revalidate();
+		getContentPane().revalidate();
 	}
 
-	/** The checks line as HTML, so a long one wraps under the ship rather than running off the window. */
-	private static String wrapped(String s) {
-		return "<html>" + s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") + "</html>";
+	/** The checks line as HTML at the window's width, so a long one wraps under the ship (and the bottom grows to hold it) rather than running off. */
+	private String wrapped(String s) {
+		int w = Math.max(400, (getWidth() > 0 ? getWidth() : 1100) - 64) * 3 / 4; // in pt: Swing's HTML draws a px a third too big
+		return "<html><div style='width:" + w + "pt'>" + s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") + "</div></html>";
 	}
 
 	// ---- leaving ----
