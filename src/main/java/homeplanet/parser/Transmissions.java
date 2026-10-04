@@ -318,7 +318,7 @@ public final class Transmissions {
 			}
 		}
 		if (HomePlanet.career() && u != null) {
-			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, "ach:" + a, rank, null);
+			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, achTemplate(a, CREW_CARE.contains(a) ? boardedShip(v) : null), rank, null);
 		}
 		if (HomePlanet.career() && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
 		// reply chains: a letter for what the fleet has been through, and the letters now due
@@ -556,6 +556,19 @@ public final class Transmissions {
 		} catch (IOException e) {
 			log.warn("Could not deliver {}: {}", key, e.toString());
 		}
+	}
+	/** The achievements that look after a crew: a Clone Bay, or a Backup DNA Bank for a ship that has one already (heromedel). */
+	private static final List<String> CREW_CARE = java.util.Arrays.asList("ACH_NO_DEATH", "ACH_INVADE_SHIP");
+	/** The letter for this achievement: its ":dna" version when the boarded ship already has a Clone Bay. */
+	static String achTemplate(String ach, ShipState boarded) {
+		boolean clone = boarded != null && boarded.getSystem(SystemType.CLONEBAY) != null && boarded.getSystem(SystemType.CLONEBAY).getCapacity() > 0;
+		return clone && CREW_CARE.contains(ach) ? "ach:" + ach + ":dna" : "ach:" + ach;
+	}
+	/** The boarded ship's state, or null (none boarded, or unreadable: the letter then sends the Clone Bay). */
+	private static ShipState boardedShip(Vault v) {
+		Ship b = v.boarded();
+		if (b == null) return null;
+		try { return v.readCopy(b).save.getPlayerShip(); } catch (IOException e) { return null; }
 	}
 	private static String stamp() { return new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()); }
 	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship) {

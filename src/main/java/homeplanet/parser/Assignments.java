@@ -196,10 +196,10 @@ public final class Assignments {
 	static String fresh(Random rng, String fallback, java.util.Set<String> used, String... keys) {
 		List<String> all = new ArrayList<String>();
 		for (String k : keys) if (words().get(k) != null) all.addAll(words().get(k));
-		List<String> left = new ArrayList<String>(all);
-		left.removeAll(used);
+		List<String> left = new ArrayList<String>();
+		for (String s : all) if (!used.contains(s.replace("\\n", "\n"))) left.add(s); // used holds lines as told, line breaks made
 		List<String> l = left.isEmpty() ? all : left;
-		return l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()));
+		return l.isEmpty() ? fallback : l.get(rng.nextInt(l.size())).replace("\\n", "\n");
 	}
 	/** One of the lines under any of these keys together, or the fallback. */
 	static String pick(Random rng, String fallback, String... keys) {

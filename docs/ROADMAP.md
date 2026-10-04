@@ -1045,6 +1045,18 @@ a system she doesn't have shows its icon faintly). The row under the pointer lig
 system's row the room it would go into. Nothing on the plan is clickable; the buttons stay on the right. "Store" is
 "Uninstall" on the buttons, the help line, the confirm and the hold's heading ("Uninstalled systems in the Cargo Bay").
 
+## 36. A Clone Bay, or a Backup DNA Bank — built (5.09; harness checks in TransT)
+
+heromedel: the two achievements that look after a crew, No Redshirts Here and Trustworthy Auto-Pilot, send a Clone Bay
+(to the stored systems; it takes the Medbay's place), or a Backup DNA Bank when the boarded ship already has a Clone Bay,
+where a Clone Bay would be no use. The station picks the letter when it is sent (`ach:<id>:dna` in transmissions.txt),
+so the words and the reward always agree; no ship aboard, or one unreadable, gets the Clone Bay. The letters are a
+first draft, for McCarthy's session (lore) to look over.
+
+(5.10: Cloud-C-Primary-Edit's 5.08 and 5.09 merged in with this branch's 5.08 and 5.09: the report's line breaks
+written in the words file, and the Clone Bay or Backup DNA Bank achievement letters, beside the report's faces and the
+races' second commission letters.)
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

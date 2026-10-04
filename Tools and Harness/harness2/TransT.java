@@ -156,6 +156,21 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("T: a crew volunteer joins Spacedock Storage", v.storage().save().getPlayerShip().getCrewList().size() == crew + 1);
   Transmissions.claim(find("ach:ACH_NO_UPGRADES"), -1);
   Setup.chk("T: a system goes to the stored systems", new String(SafeFiles.read(v.systemsFile()), "UTF-8").contains("cloaking 1"));
+  // the crew-care achievements: a Clone Bay, or a Backup DNA Bank for a ship that has one already
+  SavedGameParser.ShipState medbay = v.readCopy(v.storage()).save.getPlayerShip(), cloned = v.readCopy(v.storage()).save.getPlayerShip();
+  medbay.getSystems(SavedGameParser.SystemType.CLONEBAY).clear();
+  SavedGameParser.SystemState cb = new SavedGameParser.SystemState(SavedGameParser.SystemType.CLONEBAY); cb.setCapacity(1);
+  cloned.getSystems(SavedGameParser.SystemType.CLONEBAY).clear(); cloned.getSystems(SavedGameParser.SystemType.CLONEBAY).add(cb);
+  java.lang.reflect.Method at = Transmissions.class.getDeclaredMethod("achTemplate", String.class, SavedGameParser.ShipState.class); at.setAccessible(true);
+  java.lang.reflect.Method tm = Transmissions.class.getDeclaredMethod("templates"); tm.setAccessible(true);
+  Map<?, ?> tpl = (Map<?, ?>) tm.invoke(null);
+  boolean care = true;
+  for (String a : new String[] {"ACH_NO_DEATH", "ACH_INVADE_SHIP"}) {
+   String plain = (String) at.invoke(null, a, medbay), none = (String) at.invoke(null, a, null), dna = (String) at.invoke(null, a, cloned);
+   care &= plain.equals("ach:" + a) && none.equals(plain) && dna.equals("ach:" + a + ":dna") && tpl.containsKey(dna)
+     && "system clonebay".equals(field(tpl.get(plain), "reward")) && "item BACKUP_DNA".equals(field(tpl.get(dna), "reward"));
+  }
+  Setup.chk("T: No Redshirts and Trustworthy Auto-Pilot send a Clone Bay, or a Backup DNA Bank to a ship with one", care && at.invoke(null, "ACH_TOUGH_SHIP", cloned).equals("ach:ACH_TOUGH_SHIP"));
  }
  static void clearance(File saves) throws Exception {
   // archive
