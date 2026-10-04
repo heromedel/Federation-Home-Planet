@@ -49,6 +49,22 @@ public class Retrofit {
 	}
 
 	/** The standard systems of the ship's original model that aren't installed (empty = Undo Retrofit is safe). */
+	/**
+	 * Her installed systems that her original model has no room for (artillery on anything but a Federation Cruiser: a
+	 * remodel can add it, the vanilla blueprint can't hold it). An Undo Retrofit takes these off her into the stored
+	 * systems, or FTL would be handed a system with nowhere to be.
+	 */
+	public static List<SystemType> homeless(ShipState ship) {
+		List<SystemType> out = new ArrayList<SystemType>();
+		ShipBlueprint bp = ship(vanillaId(ship.getShipBlueprintId()));
+		if (bp == null || bp.getSystemList() == null) return out;
+		for (SystemType t : SystemType.values()) {
+			if (!installed(ship, t)) continue;
+			ShipBlueprint.SystemList.SystemRoom[] r = bp.getSystemList().getSystemRoom(t);
+			if (r == null || r.length == 0) out.add(t);
+		}
+		return out;
+	}
 	public static List<String> missingStandard(ShipState ship) {
 		List<String> missing = new ArrayList<String>();
 		ShipBlueprint bp = ship(vanillaId(ship.getShipBlueprintId()));

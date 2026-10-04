@@ -242,5 +242,17 @@ public class DesT {
    Setup.chk("Y: mirrored: the mount's x reflected", ShipArt.flipHorizontally(t) && t.mounts.get(0).x == tw - m0x && t.ellipseX == -10);
    Setup.chk("Y: mirrored again: back", ShipArt.flipHorizontally(t) && t.mounts.get(0).x == m0x && t.ellipseX == 10);
  }
+ homeless();
  Setup.done();
-}}
+} /** An Undo Retrofit takes off a system her original model has no room for: artillery on a remodelled Kestrel. */
+ static void homeless() throws Exception {
+  SavedGameState g = Commission.build("PLAYER_SHIP_HARD", "Gunboat", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
+  Retrofit.apply(g, false);
+  ShipState s = g.getPlayerShip();
+  Setup.chk("U: a retrofitted Kestrel has nothing her model can't hold", Retrofit.homeless(s).isEmpty());
+  SystemState art = s.getSystem(SystemType.ARTILLERY); if (art == null) { art = new SystemState(SystemType.ARTILLERY); s.addSystem(art); } art.setCapacity(1); art.setPower(1); // (a built ship carries every system's state, at 0)
+  Setup.chk("U: with artillery installed, the artillery is what her original model can't hold", Retrofit.homeless(s).size() == 1 && Retrofit.homeless(s).get(0) == SystemType.ARTILLERY);
+  SystemState cl = s.getSystem(SystemType.CLOAKING); if (cl == null) { cl = new SystemState(SystemType.CLOAKING); s.addSystem(cl); } cl.setCapacity(1); cl.setPower(1);
+  Setup.chk("U: cloaking has a room on every model: not taken off", Retrofit.homeless(s).size() == 1);
+ }
+}

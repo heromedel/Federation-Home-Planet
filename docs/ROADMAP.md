@@ -971,6 +971,11 @@ the game's events do (`Reputation.expedition`): the pot a tenth, each crew membe
 +2, nobody successful -1, nothing for items, prizes or captures (a refused or lost ransom already counts as a death).
 Also from the notes, found done already: the Undo Retrofit confirm lists what moves back; the From the game art
 picker has a preview; the Content line is gone from the ship report; the Locked ships panel wraps to the screen.
+A hole found looking at it (heromedel): a remodel can add artillery, which no vanilla model but the Federation
+Cruisers has a room for, so an Undo Retrofit left it in her save with nowhere to be. Now `Retrofit.homeless` names
+every installed system her original model has no room for, the confirm lists them ("Artillery: no room on her
+original model, to the stored systems") and the undo takes them off her into the stored systems, level and broken
+bars kept (DesT checks it).
 
 ## Naming decisions — settled (4B.30)
 

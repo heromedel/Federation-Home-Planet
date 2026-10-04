@@ -821,8 +821,23 @@ public class SystemsPanel {
 				if (mine != null && mine.doors != null) sb.append("\n  Doors: back to the model's own");
 				if (sb.length() > 0) moves = "\nHer remodel is set aside (kept on file) and these move back:" + sb + "\n";
 			}
+			// a system her original model has no room for (artillery, on anything but a Federation Cruiser) comes off her into the stored systems
+			List<SystemType> homeless = homeplanet.parser.Retrofit.homeless(ship);
+			if (!homeless.isEmpty()) {
+				StringBuilder sb = new StringBuilder();
+				for (SystemType t : homeless) sb.append("\n  ").append(DryDockShop.systemTitle(t.getId())).append(": no room on her original model, to the stored systems");
+				moves += "\nTaken off her:" + sb + "\n";
+			}
 			if (JOptionPane.showConfirmDialog(bay, "Return " + name + " to her original ship model?\nHer standard equipment can no longer be stored afterwards.\n" + moves,
 					"Undo Retrofit", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
+			for (SystemType t : homeless) {
+				SystemState st = ship.getSystem(t);
+				int level = st.getCapacity(), broken = st.getDamagedBars();
+				clear(st);
+				stored.add(new Stored(t.getId(), level, broken));
+				storedSomething = true;
+				changes.add("Stored " + DryDockShop.systemTitle(t.getId()) + " (level " + level + (broken > 0 ? ", " + broken + " broken" : "") + ") from " + name + ": no room on her original model");
+			}
 		} else {
 			if (JOptionPane.showConfirmDialog(bay, "Prepare " + name + " so any of her systems can be removed, including standard equipment.\n\n"
 					+ "Warning: FTL may no longer count her as the original ship model for achievements.\n"
