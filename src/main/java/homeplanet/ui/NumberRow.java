@@ -81,7 +81,7 @@ public class NumberRow extends JPanel {
 		try { return Integer.parseInt(field.getText().trim()); } catch (NumberFormatException e) { return value; }
 	}
 	private void showValue() {
-		fraction.setText(value + "/" + max);
+		fraction.setText(value + "/" + max); // (past the bar's reach the bar stands down: the fraction says it)
 		fraction.setForeground(value > max ? OVER : MenuTheme.DIM);
 		field.setText(String.valueOf(value));
 		over.setVisible(value > max);

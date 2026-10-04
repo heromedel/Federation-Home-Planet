@@ -1622,13 +1622,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		l.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, icon == null ? 40 : 34 - icon.getIconWidth(), 1, 0));
 		l.setPreferredSize(new Dimension(150, l.getPreferredSize().height));
 		row.add(l);
-		JLabel n = new JLabel(String.valueOf(level), JLabel.RIGHT);
-		n.setPreferredSize(new Dimension(18, n.getPreferredSize().height));
+		// the level and its bar; past the bar's reach, the level in words ("12 / 2 broken") and no bar
+		boolean words = LevelBar.asWords(level, max);
+		JLabel n = new JLabel(words ? LevelBar.words(level, broken) : String.valueOf(level), words ? JLabel.LEFT : JLabel.RIGHT);
+		if (!words) n.setPreferredSize(new Dimension(18, n.getPreferredSize().height));
 		n.setForeground(level > max ? LevelBar.AMBER : MenuTheme.WHITE);
 		n.setToolTipText(level > max ? "Past the vanilla max of " + max : "Of a vanilla max of " + max);
 		row.add(n);
-		row.add(Box.createRigidArea(new Dimension(8, 1)));
-		row.add(new LevelBar(level, max, broken, LevelBar.WIDTH, 12));
+		if (!words) { row.add(Box.createRigidArea(new Dimension(8, 1))); row.add(new LevelBar(level, max, broken, LevelBar.WIDTH, 12)); }
 		row.setMaximumSize(row.getPreferredSize());
 		p.add(row);
 	}

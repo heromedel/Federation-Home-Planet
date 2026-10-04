@@ -883,7 +883,9 @@ start again, count everything on her, one price everywhere, and let the difficul
   drones, augments, cargo and systems on the right, so nothing sits beside an empty half and nothing scrolls off.
   Each system has FTL's icon, its level and a bar of it to the vanilla max (`LevelBar`, the design screen's bar moved
   out of `NumberRow` so both screens draw the same: green, amber past the max, red for broken bars); the reactor too.
-  Commission's price breakdown is three columns of name and price instead of one wrapped line.
+  Commission's price breakdown is three columns of name and price instead of one wrapped line. Past ten segments
+  (a big reactor, a design past the max) the bar stands down and the row says it in words, "12 / 2 broken", so nothing
+  runs off the screen; every vanilla max is 8 or under, so a stock ship always has bars.
 
 ## Naming decisions — settled (4B.30)
 
