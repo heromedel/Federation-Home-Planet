@@ -15,6 +15,8 @@ import javax.swing.JPanel;
 public class LevelBar extends JPanel {
 	/** The bar's width: the segments share it, however many (a 30-point hull as long as a 3-level system). */
 	public static final int WIDTH = 92;
+	/** A segment's width: the same for every bar. */
+	public static final int SEGMENT = 8;
 	static final Color GREEN = new Color(67, 192, 74), AMBER = new Color(224, 176, 32), EMPTY = new Color(70, 84, 94), BROKEN = new Color(214, 76, 60);
 
 	private int value, max, broken;
@@ -32,7 +34,8 @@ public class LevelBar extends JPanel {
 	protected void paintComponent(Graphics g0) {
 		super.paintComponent(g0);
 		Graphics2D g = (Graphics2D) g0.create();
-		int segs = Math.max(1, Math.max(max, value)), gap = segs > 12 ? 1 : 2, w = Math.max(2, (width - (segs - 1) * gap) / segs), h = getHeight() - 2;
+		// every segment the same small size, whatever the max (a 3-level system's as wide as a reactor's); only a long bar (a 30-point hull) shrinks them to fit
+		int segs = Math.max(1, Math.max(max, value)), gap = segs > 12 ? 1 : 2, w = Math.max(2, Math.min(SEGMENT, (width - (segs - 1) * gap) / segs)), h = getHeight() - 2;
 		for (int i = 0; i < segs; i++) {
 			Color c = i >= value ? EMPTY : i >= value - broken ? BROKEN : i >= max ? AMBER : GREEN;
 			g.setColor(c);
