@@ -47,6 +47,22 @@ public class AsgT { public static void main(String[] a) throws Exception {
    if ("pirate".equals(sector) && t.contains("taken by slavers")) slaver++;
    if (t.contains("she's all right out there") || t.contains("never see her again")) she++;
   }
+  // a race that shrugs off the hazard says so; nobody else does
+  rng = new Random(32); int rockSaid = 0, rockFlares = 0, humanSaid = 0, rockHurt = 0, hurtSaid = 0;
+  for (int i = 0; i < 40000 && (rockFlares < 30 || rockHurt < 10); i++) {
+   Assignments.Result rr = Assignments.roll("civilian", party("rock"), rng);
+   Assignments.Result hr = Assignments.roll("civilian", party("human"), rng);
+   if ("flare".equals(hr.hazard) && (hr.report.contains("Rock doesn't burn") || hr.report.contains("straight through it"))) humanSaid++;
+   if (!"flare".equals(rr.hazard)) continue;
+   Assignments.Fate f = rr.fates.get(0);
+   if (f.died || f.captured || f.infirmary) continue;
+   boolean said = rr.report.contains("Rock doesn't burn") || rr.report.contains("straight through it");
+   if (f.band == 1) { rockHurt++; if (said || rr.report.contains("through a fire")) hurtSaid++; continue; } // an injury trumps it, and names another cause
+   rockFlares++;
+   if (said) rockSaid++;
+  }
+  Setup.chk("W: a Rock in a solar flare's job says the fire didn't touch them (" + rockSaid + " of " + rockFlares + "); a human never does (" + humanSaid + ")", rockFlares > 0 && rockSaid == rockFlares && humanSaid == 0);
+  Setup.chk("W: an injured Rock in a flare says nothing of the fire, and isn't hurt by one (" + hurtSaid + " of " + rockHurt + ")", rockHurt > 0 && hurtSaid == 0);
   Setup.chk("W: a capture in pirate space can say pirates (" + pirate + "), never slavers (" + slaver + "); a woman taken is she (" + she + "); no token left unfilled (" + stray + ")", pirate > 0 && slaver == 0 && she > 0 && stray == 0);
  }
  static void board(Vault v) throws Exception {

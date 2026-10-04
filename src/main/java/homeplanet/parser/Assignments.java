@@ -186,10 +186,17 @@ public final class Assignments {
 		if (mark != null && words().get(k + " " + mark) != null) l.addAll(words().get(k + " " + mark));
 		return (l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n"); // ("\n" in the file is a line break)
 	}
-	/** He or she for a crew member: {he}, {him}, {his} in a line after their name. */
+	/** One of the lines under any of these keys together, or the fallback. */
+	static String pick(Random rng, String fallback, String... keys) {
+		List<String> l = new ArrayList<String>();
+		for (String k : keys) if (words().get(k) != null) l.addAll(words().get(k));
+		return (l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n"); // ("\n" in the file is a line break)
+	}
+	/** He or she for a crew member: {he}, {him}, {his} in a line after their name ({He}, {His} to begin a sentence). */
 	static String pronouns(String line, CrewState c) {
 		boolean m = c == null || c.isMale();
-		return line.replace("{he}", m ? "he" : "she").replace("{him}", m ? "him" : "her").replace("{his}", m ? "his" : "her");
+		return line.replace("{he}", m ? "he" : "she").replace("{him}", m ? "him" : "her").replace("{his}", m ? "his" : "her")
+				.replace("{He}", m ? "He" : "She").replace("{His}", m ? "His" : "Her");
 	}
 	/** The keys that stand alone, besides each job's, hazard's and sector's. */
 	private static final String[] OTHER_KEYS = {"captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit"};
@@ -205,6 +212,8 @@ public final class Assignments {
 		for (Object[] j : JOBS) { base.add("event " + j[0]); for (String b : BANDS) base.add("band " + j[0] + " " + b); }
 		for (Object[] h : HAZARDS) base.add("hazard " + h[0]);
 		for (String[] x : SECTORS) { base.add("offer " + x[0]); sectors.add(x[0]); }
+		for (Object[] h : HAZARDS) for (String race : (String[]) h[3]) base.add("shrug " + h[0] + " " + race);
+		for (Object[] j : JOBS) base.add("band " + j[0] + " injured cause");
 		List<String> out = new ArrayList<String>();
 		for (String k : words().keySet()) {
 			if (base.contains(k)) continue;
@@ -231,6 +240,8 @@ public final class Assignments {
 		for (Object[] h : HAZARDS) if (!words().containsKey("hazard " + h[0])) out.add("hazard " + h[0]);
 		for (String[] s : SECTORS) if (!words().containsKey("offer " + s[0])) out.add("offer " + s[0]);
 		for (String k : OTHER_KEYS) if (!words().containsKey(k)) out.add(k);
+		for (Object[] h : HAZARDS) for (String race : (String[]) h[3]) if (!words().containsKey("shrug " + h[0] + " " + race)) out.add("shrug " + h[0] + " " + race);
+		for (Object[] j : JOBS) if (!"spiders".equals(j[0]) && !words().containsKey("band " + j[0] + " injured cause")) out.add("band " + j[0] + " injured cause"); // on Giant Spiders an injury is a death
 		return out;
 	}
 
@@ -616,14 +627,23 @@ public final class Assignments {
 		sb.append("\n");
 		for (Fate f : r.fates) {
 			String line;
+			String race = f.crew.getRace() == null ? null : f.crew.getRace().getId();
+			boolean shrugged = r.hazard != null && race != null && !f.died && !f.captured && !f.infirmary && cancels(r.hazard, race);
+			boolean hurt = !f.died && BANDS[f.band].equals("injured");
 			if (f.captured) line = sayAt(rng, "was taken by the boarders.", captorsMark(r.sector), "captured");
 			else if (f.infirmary) line = sayAt(rng, "was badly hurt and is in the infirmary.", r.sector, "infirmary");
 			else {
-				line = sayAt(rng, f.died ? "was killed" : BANDS[f.band].equals("top") ? "was extremely successful" : "was " + BANDS[f.band], r.sector, "band", r.job, BANDS[f.band]);
+				String fallback = f.died ? "was killed" : BANDS[f.band].equals("top") ? "was extremely successful" : "was " + BANDS[f.band];
+				// an injury trumps a hazard shrugged off: its line names a cause that isn't the hazard, and nothing follows it
+				if (hurt && shrugged) line = say(rng, fallback, "band", r.job, "injured", "cause");
+				else if (hurt) line = pick(rng, fallback, "band " + r.job + " injured", "band " + r.job + " injured cause", "band " + r.job + " injured " + r.sector);
+				else line = sayAt(rng, fallback, r.sector, "band", r.job, BANDS[f.band]);
 				if (f.item != null) line += (line.contains("brought back") ? ", " : " and brought back ") + (f.item.indexOf(':') < 0 ? aOrAn(itemWords(f.item)) : itemWords(f.item));
 				line += ".";
 			}
-			sb.append(f.name()).append(" ").append(pronouns(line, f.crew)).append("\n");
+			// a race that shrugged off the hazard says so, a sentence of its own (never for the dead, the taken, the infirmary or the injured)
+			if (shrugged && !hurt) line += " " + sayAt(rng, "", r.sector, "shrug", r.hazard, race);
+			sb.append(f.name()).append(" ").append(pronouns(line, f.crew).trim()).append("\n");
 		}
 		if (r.prize != null) sb.append("\n").append(sayAt(rng, "They brought something back.", r.sector, "prize", r.job, r.prize).replace("{name}", r.prizeDetail == null ? "" : r.prizeDetail)).append("\n"); // the prize stands apart
 		sb.append("\nTotal Reward: ").append(r.scrap).append(" scrap");
