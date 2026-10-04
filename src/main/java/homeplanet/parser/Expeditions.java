@@ -757,6 +757,20 @@ public final class Expeditions {
 		return namesake;
 	}
 
+	/**
+	 * For the crew expeditions ({@link Assignments}, expedition_type 2): hurt crew into the infirmary and taken ones among
+	 * the captives (a ransom follows), in the station's own files, written with the transaction given. The two systems
+	 * share these files and nothing else.
+	 */
+	static void admitAndTake(Vault.Transaction tx, Vault v, List<CrewState> hurt, List<CrewState> taken, String captors, int now, Random rng) throws IOException {
+		if (hurt.isEmpty() && taken.isEmpty()) return;
+		Properties inf = readPropsStrict(infirmaryFile(v)), cap = readPropsStrict(captivesFile(v));
+		for (CrewState c : hurt) admit(inf, c, now, rng);
+		for (CrewState c : taken) takeCaptive(cap, c, captors, now, rng);
+		if (!hurt.isEmpty()) tx.put(infirmaryFile(v), propsBytes(inf, INFIRMARY_NOTE));
+		if (!taken.isEmpty()) tx.put(captivesFile(v), propsBytes(cap, CAPTIVES_NOTE));
+	}
+
 	// ---- the infirmary ----
 
 	private static File infirmaryFile(Vault v) { return new File(v.root, "infirmary.txt"); }

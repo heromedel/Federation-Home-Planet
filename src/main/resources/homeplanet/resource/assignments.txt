@@ -1,0 +1,209 @@
+# The words of an expedition report (expedition_type 2 in the cfg): the frame is fixed, these fill it in. Edit freely;
+# no build is needed, the station reads this file as it is. A line is "<kind> <job> [<band>] | <words>". Where a job
+# has several lines of a kind, one is picked at random, so the same job doesn't read the same twice.
+#
+#   event <job> | <what the crew did>          after "Due to events during the assignment the crew"; several per job
+#   band <job> <band> | <phrase>               after a name: "Bob <phrase>." Bands: died, injured, failed, success, high, top
+#                                              (top: "and brought back <item>" is added when a 20 found something)
+#   hazard <hazard> | <sentence>               flare, asteroids, pulsar, storm
+#   prize <job> <kind> | <sentence>            hijack ship, hijack part, salvage part, rescue recruit
+#   captured | <phrase>                        after a name, taken on Get Boarded (a ransom letter follows)
+#   infirmary | <phrase>                       after a name, badly hurt: in the infirmary a while
+#   offer <sector> | <words>                   the card on the board for a sector; several per sector
+#
+# Jobs: defend attack negotiate boarded rescue salvage scout repair transport lost escort capture board hijack infection spiders
+# Sectors: civilian engi zoltan mantis pirate rebel rock nebula abandoned crystal
+
+offer civilian | A trading post is short of hands.
+offer civilian | A colony has put out word for help.
+offer civilian | Work on offer along the trade lanes.
+offer engi | An Engi outpost is taking on crew.
+offer engi | The Engi have work, for those who can follow instructions.
+offer zoltan | A Zoltan envoy is hiring an escort.
+offer zoltan | The Zoltan Monks have posted for help.
+offer mantis | Someone is paying well for crew willing to go into Mantis space.
+offer mantis | A convoy needs hands before it crosses Mantis territory.
+offer pirate | A merchant wants crew for a run through pirate space. No questions asked.
+offer pirate | Pay offered for a job near the pirates' haunts.
+offer rebel | The Federation is hiring for work in a sector the rebels hold.
+offer rebel | A Federation contact needs crew in rebel space.
+offer rock | A Rock clan has work for outsiders, for once.
+offer rock | Crew wanted for a job in Rock territory.
+offer nebula | A freighter line wants hands in a nebula.
+offer nebula | Work in a nebula, for crew who don't mind the dark.
+offer abandoned | A salvager is taking on crew for an abandoned sector.
+offer abandoned | Someone wants a look at a sector the Lanius have been through.
+offer crystal | Word has come, by a roundabout way, of work in Crystal space.
+
+event defend | were hired to hold a station against raiders
+event defend | stood guard over a convoy under attack
+event defend | held a colony's landing pad through a long night
+band defend died | was killed holding the line
+band defend injured | was injured holding the line
+band defend failed | fell back when the raiders pushed
+band defend success | was successful holding the line
+band defend high | was very successful: the raiders broke on their position
+band defend top | was extremely successful and turned the raiders back alone
+
+event attack | were sent against a raider base
+event attack | joined a strike on a smugglers' den
+event attack | went in with a boarding party against an enemy ship
+band attack died | was killed in the attack
+band attack injured | was injured in the attack
+band attack failed | lost their nerve in the attack
+band attack success | was successful in the attack
+band attack high | was very successful: first through the breach
+band attack top | was extremely successful and led the attack home
+
+event negotiate | sat in on a tense negotiation
+event negotiate | were sent to talk a standoff down
+event negotiate | carried terms between two captains who wouldn't meet
+band negotiate died | was killed when the talks turned violent
+band negotiate injured | was injured when the talks turned violent
+band negotiate failed | said the wrong thing at the table
+band negotiate success | was successful at the table
+band negotiate high | was very successful: both sides shook on it
+band negotiate top | was extremely successful and brought both sides to terms
+
+event boarded | were aboard a freighter when she was boarded
+event boarded | were on watch when boarders came through the hull
+event boarded | were caught aboard a ship the rebels boarded
+band boarded died | was killed by the boarders
+band boarded injured | was injured by the boarders
+band boarded failed | was driven back by the boarders
+band boarded success | was successful against the boarders
+band boarded high | was very successful: the boarders never got past them
+band boarded top | was extremely successful and threw the boarders off the ship
+
+event rescue | answered a distress call
+event rescue | went down to a crashed ship for survivors
+event rescue | pulled a crew out of a dying station
+band rescue died | was killed in the rescue
+band rescue injured | was injured in the rescue
+band rescue failed | got lost in the wreck
+band rescue success | was successful in the rescue
+band rescue high | was very successful: everyone was brought out
+band rescue top | was extremely successful and carried the last one out
+
+event salvage | stripped a wreck for what it still had
+event salvage | picked over a derelict in a debris field
+event salvage | cut their way into an old hulk
+band salvage died | was killed when a bulkhead gave
+band salvage injured | was injured when a bulkhead gave
+band salvage failed | came back with nothing worth keeping
+band salvage success | was successful in the salvage
+band salvage high | was very successful: a good haul
+band salvage top | was extremely successful and found the best of the wreck
+
+event scout | scouted a beacon ahead of a convoy
+event scout | went out in a shuttle to chart a nebula's edge
+event scout | ran a reconnaissance past an enemy picket
+band scout died | was killed when the shuttle was spotted
+band scout injured | was injured when the shuttle was spotted
+band scout failed | brought back a chart nobody could read
+band scout success | was successful in the reconnaissance
+band scout high | was very successful: a chart worth paying for
+band scout top | was extremely successful and brought back the whole sector's lanes
+
+event repair | patched up a station's failing systems
+event repair | were called to a freighter dead in space
+event repair | spent the job up to the elbows in an old reactor
+band repair died | was killed when the reactor flared
+band repair injured | was injured when the reactor flared
+band repair failed | made it worse before they made it better
+band repair success | was successful in the repairs
+band repair high | was very successful: she ran better than new
+band repair top | was extremely successful and had her running in half the time
+
+event transport | shipped a cargo across the sector
+event transport | rode escort on a load of medical supplies
+event transport | ferried passengers who wouldn't say where they were going
+band transport died | was killed on the run
+band transport injured | was injured on the run
+band transport failed | lost part of the cargo on the way
+band transport success | was successful on the run
+band transport high | was very successful: the cargo came in early
+band transport top | was extremely successful and brought the cargo in untouched
+
+event lost | took a wrong jump and spent days finding the way back
+event lost | got turned around in the dark and ran low on everything
+event lost | lost the beacon and drifted a long while
+band lost died | was lost and never found
+band lost injured | was injured finding the way back
+band lost failed | made the wrong call at every turn
+band lost success | was successful in finding the way back
+band lost high | was very successful: it was their chart that got everyone home
+band lost top | was extremely successful and found a beacon no one knew of
+
+event escort | escorted a merchant through a bad stretch
+event escort | rode shotgun on a slow freighter
+event escort | saw an envoy's ship through hostile space
+band escort died | was killed in the escort
+band escort injured | was injured in the escort
+band escort failed | lost sight of the ship they were guarding
+band escort success | was successful in the escort
+band escort high | was very successful: not a scratch on her
+band escort top | was extremely successful and brought her through a running fight
+
+event capture | were sent to take a wanted captain alive
+event capture | laid an ambush for a smuggler
+event capture | hunted a deserter across three beacons
+band capture died | was killed in the capture
+band capture injured | was injured in the capture
+band capture failed | let the quarry slip
+band capture success | was successful in the capture
+band capture high | was very successful: the quarry gave up without a fight
+band capture top | was extremely successful and brought the quarry in alone
+
+event board | boarded a ship that wouldn't answer hails
+event board | went through an airlock into an enemy vessel
+event board | were put aboard a pirate ship to take her bridge
+band board died | was killed in the boarding
+band board injured | was injured in the boarding
+band board failed | was pushed back to the airlock
+band board success | was successful in the boarding
+band board high | was very successful: the bridge was theirs
+band board top | was extremely successful and took the ship nearly single-handed
+
+event hijack | were hired to steal a ship from her moorings
+event hijack | went after a ship someone wanted very badly
+event hijack | slipped aboard a ship at anchor to take her
+band hijack died | was killed before the ship was clear
+band hijack injured | was injured before the ship was clear
+band hijack failed | tripped every alarm aboard
+band hijack success | was successful in the hijack
+band hijack high | was very successful: she was away before anyone noticed
+band hijack top | was extremely successful and had her out of dock in minutes
+
+event infection | were sent into a station under quarantine
+event infection | dealt with something that had got loose in a ship's vents
+event infection | cleared a colony of a sickness nobody would name
+band infection died | was killed by the infection
+band infection injured | was injured by the infection
+band infection failed | came out of it weak and useless
+band infection success | was successful against the infection
+band infection high | was very successful: the station is clear
+band infection top | was extremely successful and found where it had come from
+
+event spiders | dropped down to a planet and were attacked by Giant Spiders
+event spiders | went into a derelict and found it full of Giant Spiders
+event spiders | were cornered by Giant Spiders in a station's lower decks
+band spiders died | was killed by the spiders
+band spiders injured | was killed by the spiders
+band spiders failed | ran, and nobody blames them
+band spiders success | was successful fighting them back
+band spiders high | was very successful: the spiders went back down the hole
+band spiders top | was extremely successful and burned the nest out
+
+hazard flare | A solar flare caught them halfway through.
+hazard asteroids | The job ran through an asteroid field the whole way.
+hazard pulsar | A pulsar's ion bursts had their systems down again and again.
+hazard storm | A plasma storm had their power down the whole time.
+
+captured | was taken by the boarders. Word may come.
+infirmary | was badly hurt and is in the infirmary.
+
+prize hijack ship | They brought the ship home. She's in the Junkyard, such as she is.
+prize hijack part | They couldn't keep the ship, but pulled a system out of her before they left it.
+prize salvage part | They pulled a whole system out of the wreck.
+prize rescue recruit | One of those they rescued asked to sign on, and waits in the Cargo Hold.

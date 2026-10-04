@@ -54,6 +54,10 @@ random names.
 **What it costs.** With two of a name and race, the wrong one can count as laid up, be hurt or removed at an
 expedition's end, or have a hurt applied twice.
 
+**The second system does it right (5.00).** The crew expeditions of `expedition_type` 2 (`Assignments`) take a detail
+out of the Cargo Hold's save when it sets out and keep it in `assignments.txt` until it's back, so nothing is matched
+by name there; the old board still matches, with the band-aid below.
+
 **The band-aid (4B.98).** `Expeditions.mark`: sex, colouring and the service record (repairs, kills, evasions, jumps),
 none of which change while a crew member sits in the hold, kept beside the name in the infirmary's records and used to
 pick between namesakes when an expedition's party is matched back into the hold. A record without a mark (from before)

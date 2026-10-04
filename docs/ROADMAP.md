@@ -887,6 +887,45 @@ start again, count everything on her, one price everywhere, and let the difficul
   (a big reactor, a design past the max) the bar stands down and the row says it in words, "12 / 2 broken", so nothing
   runs off the screen; every vanilla max is 8 or under, so a stock ship always has bars.
 
+## 31. Crew expeditions, a second system behind a hidden switch — built (5.00; harness test AsgT)
+
+heromedel's design, tried beside the old board rather than in its place: `expedition_type` in the cfg (never in
+Settings), 0 hides expeditions (the Space Dock's button becomes Hire Crew, the volunteer board alone), 1 is the board
+of jobs of section 25 (the default), 2 is this. The old system's infirmary and ransoms settle under any value; the two
+share those files, the crew-card picker and the hire button, and nothing else (`parser/Assignments.java`,
+`ui/AssignmentsDialog.java`, the fleet's `assignments.txt`, the words in `resource/assignments.txt`).
+
+- **The board** offers three sectors of the ten (Civilian, Engi, Zoltan, Mantis, Pirate, Rebel, Rock, Nebula,
+  Abandoned with Advanced Edition only, Crystal rarely), each with a line of words that says nothing of the odds; an
+  offer not taken comes down after a few beacons (hidden). Pick one and one to three crew from the Cargo Hold; they
+  leave the hold's save for the assignments file (so nothing is matched back by name: CONCERNS 2's real fix, for this
+  system), setting out counts a beacon, and they're due in 1 to 3 more (hidden). No ratings, warnings or hints
+  anywhere: what suits whom, the player learns from the reports.
+- **The roll**, heromedel's tables as given: the job from the sector's weights (sixteen jobs, 136 a sector, each
+  sector +5 to two and -5 to two); one hazard in ten (a solar flare, an asteroid field, a pulsar, a plasma storm in a
+  nebula only; shrugged off by a race each); a d20 a head for the band (1 died, 2-5 injured, 6-9 failed, 10-15
+  successful, 16-19 very, 20 extremely), one reroll of a 9 or under when the sector or the job suits the race (one in
+  four each, two in four both, one good and one bad cancel). The pot is 2d10 times 100% + 10% a head + each one's band
+  (-30 to +30), race by sector (±10, Lanius +20 in Engi and Mantis space, Abandoned -10 to all but Crystal and Lanius,
+  a race's own bonus winning), race by job (±10), the job's skill (+10 a level: Attack weapons, Defend shields,
+  Repair, Salvage and Infection repair, Scout, Got Lost and Hijack piloting, Escort and Transport engines, the fights
+  combat, Negotiate and Rescue none) and a hazard not shrugged off (-10); a crew member sent hurt counts half their
+  own bonuses; never under 1. Three Slugs in a nebula average about 18 and top out near 50; three Lanius in Mantis
+  space out-earn three Slugs there two to one.
+- **What comes of it:** a 1 is a death; an injury halves health (resting in the hold heals, as always); an injury on
+  Get Boarded is a coin toss for capture (a ransom follows, the old letters); an injury on a job and in a sector both
+  bad for the race is the infirmary at a quarter health; an injury on Giant Spiders is a death. Each natural 20 rolls
+  again, and a 10 or more finds an item worth up to double the pot (a weapon, drone or augment the stores sell, else
+  supplies). A Hijack, Salvage or Rescue that went well (no deaths, someone at 16 or better) rolls one more d20 for
+  the mission: a 20 brings a ship to the Junkyard (listed as a derelict until the next batch), a part to the stored
+  systems (level 1, a bar broken) or a rescued one who signs on; a Hijack's 15 to 19 brings a part. The job's skill
+  pays points by band, so a long campaign levels people up.
+- **The report**, when the Space Dock next sees them due (a pop-up; a letter in the inbox with Immersive
+  Notifications on), in heromedel's frame: the heading, the sector, "Due to events during the assignment the crew"
+  and a line for the job, a hazard's line, a line a crew member ("was injured in the attack", "was extremely
+  successful and brought back an Artemis Missile"), the prize's line, Total Reward. Never a roll, a die or a
+  percentage. The lines are in `resource/assignments.txt` (several per job, one picked), editable without a build.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

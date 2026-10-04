@@ -169,7 +169,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
 		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
-		expeditionsBtn = controlButton("Expeditions", "Jobs for crew without a ship: send crew from the Cargo Hold, or post for volunteers");
+		expeditionsBtn = HomePlanet.expeditionType == 0 ? controlButton("Hire Crew", "Post for volunteers: new crew wait in the Cargo Hold")
+				: controlButton("Expeditions", "Jobs for crew without a ship: send crew from the Cargo Hold, or post for volunteers");
 		commBtn = new FtlButton("Long Range", FtlFont.MENU, 180, 40) {
 			@Override protected void paintComponent(Graphics g) {
 				super.paintComponent(g);
@@ -277,10 +278,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	 */
 	void timeRound(boolean later) {
 		Vault vault = Vault.get();
+		final List<homeplanet.parser.Assignments.Report> back = HomePlanet.expeditionType == 2 ? homeplanet.parser.Assignments.checkReturns(vault) : new java.util.ArrayList<homeplanet.parser.Assignments.Report>();
 		final List<homeplanet.parser.Expeditions.RansomNews> ransomNews = homeplanet.parser.Expeditions.checkRansoms(vault);
 		final List<String> upAgain = homeplanet.parser.Expeditions.checkInfirmary(vault);
-		if ((HomePlanet.immersiveNotifications() || ransomNews.isEmpty()) && upAgain.isEmpty()) return;
+		if ((HomePlanet.immersiveNotifications() || (ransomNews.isEmpty() && back.isEmpty())) && upAgain.isEmpty()) return;
 		Runnable word = new Runnable() { public void run() {
+			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Assignments.Report r : back) AssignmentsDialog.showReport(null, r);
 			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Expeditions.RansomNews n : ransomNews) ransomNotice(n);
 			if (!upAgain.isEmpty())
 				JOptionPane.showMessageDialog(null, String.join(" and ", upAgain) + (upAgain.size() > 1 ? " are" : " is") + " out of the infirmary, on their feet and waiting in the Cargo Hold.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
@@ -723,7 +726,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else if (o == commissionBtn) {
 			commissionShip();
 		} else if (o == expeditionsBtn) {
-			ExpeditionsDialog.open(this);
+			if (HomePlanet.expeditionType == 0) ExpeditionsDialog.hire(this);
+			else if (HomePlanet.expeditionType == 2) AssignmentsDialog.open(this);
+			else ExpeditionsDialog.open(this);
 			init(); // every return rebuilds, whatever the window reports
 		} else if (o == salvageBtn) {
 			salvageShip();

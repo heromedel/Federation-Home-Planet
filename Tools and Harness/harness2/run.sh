@@ -41,6 +41,7 @@ echo "== DerT"; run DerT "$GAME" "$WORLD" "$W/der" | grep -E "$PICK|^PASS|^derel
 echo "== PatchT"; run PatchT "$GAME" "$WORLD" "$W/patch" | grep -E "$PICK|^PASS"
 echo "== PartT"; run PartT "$GAME" "$WORLD" "$W/part" | grep -E "$PICK|^PASS"
 echo "== ExpT"; run ExpT "$GAME" "$WORLD" "$W/exp" | grep -E "$PICK|^PASS|^expeditions"
+echo "== AsgT"; run AsgT "$GAME" "$WORLD" "$W/asg" | grep -E "$PICK|^PASS|^three"
 echo "== RepT"; run RepT "$GAME" "$WORLD" "$W/rep" | grep -E "$PICK|^PASS"
 echo "== StatT"; run StatT "$GAME" "$WORLD" "$W/stat" | grep -E "$PICK|^PASS"
 echo "== RepuT"; run RepuT "$GAME" "$WORLD" "$W/repu" | grep -E "$PICK|^PASS"
