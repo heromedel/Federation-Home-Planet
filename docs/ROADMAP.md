@@ -946,6 +946,14 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   (`event defend zoltan | ...` joins the general lines there), and {he} {him} {his} follow the crew member's sex. The
   harness holds every line against FTL's event text (no six words the same) and refuses a mark that isn't a sector.
 
+- **The words, all of them** (5.02, Plan MM): the file went from 174 lines to 360, every one shown to heromedel by
+  number first. Each job has three or four general event lines and two or three marked for the sectors FTL gives
+  something to draw on (a Mantis raider at an Engi supply station, a Zoltan monastery, a Lanius stripping a research
+  station, Slugs in the nebula); two lines for each outcome, written to follow the event lines; four or five offers a
+  sector. Fragments after a colon became whole sentences, "she" for a ship became "the ship" where the crew member's
+  own pronoun could be mistaken for it, and top lines leave room for "and brought back" an item. Sending crew now
+  says "They will return in a few days, or longer, when their journey is over." (heromedel's words).
+
 ## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
 
 heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every
