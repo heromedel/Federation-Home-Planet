@@ -192,6 +192,15 @@ public final class Assignments {
 		if (mark != null && words().get(k + " " + mark) != null) l.addAll(words().get(k + " " + mark));
 		return (l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n"); // ("\n" in the file is a line break)
 	}
+	/** One of the lines under any of these keys together not used yet in this report (any of them, once all are), or the fallback. */
+	static String fresh(Random rng, String fallback, java.util.Set<String> used, String... keys) {
+		List<String> all = new ArrayList<String>();
+		for (String k : keys) if (words().get(k) != null) all.addAll(words().get(k));
+		List<String> left = new ArrayList<String>(all);
+		left.removeAll(used);
+		List<String> l = left.isEmpty() ? all : left;
+		return l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()));
+	}
 	/** One of the lines under any of these keys together, or the fallback. */
 	static String pick(Random rng, String fallback, String... keys) {
 		List<String> l = new ArrayList<String>();
@@ -205,7 +214,7 @@ public final class Assignments {
 				.replace("{He}", m ? "He" : "She").replace("{His}", m ? "His" : "Her");
 	}
 	/** The keys that stand alone, besides each job's, hazard's and sector's. */
-	private static final String[] OTHER_KEYS = {"hacked", "captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit"};
+	private static final String[] OTHER_KEYS = {"frame", "hacked", "captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit"};
 	/** Who holds a captive, as the captured lines are marked: slavers, pirates, rebels or mantis. */
 	public static final String[] CAPTORS = {"slavers", "pirates", "rebels", "mantis"};
 	static String captorsMark(String sector) {
@@ -219,7 +228,7 @@ public final class Assignments {
 		for (Object[] h : HAZARDS) base.add("hazard " + h[0]);
 		for (String[] x : SECTORS) { base.add("offer " + x[0]); sectors.add(x[0]); }
 		for (Object[] h : HAZARDS) for (String race : (String[]) h[3]) base.add("shrug " + h[0] + " " + race);
-		for (Object[] j : JOBS) base.add("band " + j[0] + " injured cause");
+		for (Object[] j : JOBS) { base.add("band " + j[0] + " injured cause"); base.add("frame " + j[0]); }
 		List<String> out = new ArrayList<String>();
 		for (String k : words().keySet()) {
 			if (base.contains(k)) continue;
@@ -247,6 +256,7 @@ public final class Assignments {
 		for (String[] s : SECTORS) if (!words().containsKey("offer " + s[0])) out.add("offer " + s[0]);
 		for (String k : OTHER_KEYS) if (!words().containsKey(k)) out.add(k);
 		for (Object[] h : HAZARDS) for (String race : (String[]) h[3]) if (!words().containsKey("shrug " + h[0] + " " + race)) out.add("shrug " + h[0] + " " + race);
+		for (Object[] j : JOBS) if (!words().containsKey("frame " + j[0])) out.add("frame " + j[0]);
 		for (Object[] j : JOBS) if (!"spiders".equals(j[0]) && !words().containsKey("band " + j[0] + " injured cause")) out.add("band " + j[0] + " injured cause"); // on Giant Spiders an injury is a death
 		return out;
 	}
@@ -511,6 +521,8 @@ public final class Assignments {
 		public final CrewState crew;
 		public int roll, band;
 		public boolean rerolled, died, captured, infirmary;
+		/** Sent hurt and hurt again, and it wasn't worse: half of what they had. */
+		public boolean worn;
 		/** The item a 20 found (an id, or "fuel:3", "missiles:2", "parts:2"), or null. */
 		public String item;
 		public Fate(CrewState c) { crew = c; }
@@ -593,6 +605,12 @@ public final class Assignments {
 				if ("spiders".equals(r.job)) f.died = true;
 				else if ("boarded".equals(r.job) && rng.nextBoolean()) f.captured = true;
 				else if (sec < 0 && job < 0) f.infirmary = true;
+				if (!f.died && !f.captured && hurt(c)) { // hurt twice (heromedel): sent wounded and wounded again, a third each: dead, the infirmary, or half what they had
+					int d = rng.nextInt(3); // a third each
+					if (d == 0) { f.died = true; f.infirmary = false; }
+					else if (d == 1) f.infirmary = true;
+					else if (!f.infirmary) f.worn = true;
+				}
 			}
 		}
 		r.base = 0;
@@ -633,13 +651,18 @@ public final class Assignments {
 	private static String aOrAn(String s) { return (s.isEmpty() ? "" : "aeiouAEIOU".indexOf(s.charAt(0)) >= 0 ? "an " : "a ") + s; }
 
 	/** The report, as heromedel laid it out: the frame, the job line, a hazard, a line per crew member, the prize, the total. Never a roll. */
+	/** heromedel's frame: the setup line before what the crew did, and the fallback for every other. */
+	static final String FRAME = "Due to events during the assignment the crew";
 	static String report(Result r, Random rng) {
 		StringBuilder sb = new StringBuilder("-- Expedition Report --\n");
-		sb.append("Sector: ").append(sectorTitle(r.sector)).append("\n");
-		sb.append("Due to events during the assignment the crew\n").append(sayAt(rng, "took on a job", r.sector, "event", r.job)).append(".\n");
+		sb.append("Sector: ").append(sectorTitle(r.sector)).append("\n\n");
+		// the setup: half the time one of the job's own (and its sector's), else heromedel's frame or one of the general ones
+		String frame = rng.nextBoolean() ? sayAt(rng, FRAME, r.sector, "frame", r.job) : rng.nextBoolean() ? FRAME : say(rng, FRAME, "frame");
+		sb.append(frame).append("\n").append(sayAt(rng, "took on a job", r.sector, "event", r.job)).append(".\n");
 		if (r.hazard != null) sb.append(sayAt(rng, "The weather was against them.", r.sector, "hazard", r.hazard)).append("\n");
 		if (r.hacker != null) sb.append(sayAt(rng, "{name} hacked it.", r.sector, "hacked").replace("{name}", r.hacker.getName())).append("\n");
 		sb.append("\n");
+		java.util.Set<String> used = new java.util.HashSet<String>(); // two crew members with the same outcome get different lines where there are any
 		for (Fate f : r.fates) {
 			String line;
 			String race = f.crew.getRace() == null ? null : f.crew.getRace().getId();
@@ -650,9 +673,10 @@ public final class Assignments {
 			else {
 				String fallback = f.died ? "was killed" : BANDS[f.band].equals("top") ? "was extremely successful" : "was " + BANDS[f.band];
 				// an injury trumps a hazard shrugged off: its line names a cause that isn't the hazard, and nothing follows it
-				if (hurt && shrugged) line = say(rng, fallback, "band", r.job, "injured", "cause");
-				else if (hurt) line = pick(rng, fallback, "band " + r.job + " injured", "band " + r.job + " injured cause", "band " + r.job + " injured " + r.sector);
-				else line = sayAt(rng, fallback, r.sector, "band", r.job, BANDS[f.band]);
+				if (hurt && shrugged) line = fresh(rng, fallback, used, "band " + r.job + " injured cause");
+				else if (hurt) line = fresh(rng, fallback, used, "band " + r.job + " injured", "band " + r.job + " injured cause", "band " + r.job + " injured " + r.sector);
+				else { String b = f.died ? "died" : BANDS[f.band]; line = fresh(rng, fallback, used, "band " + r.job + " " + b, "band " + r.job + " " + b + " " + r.sector); } // a wound that killed reads as a death
+				used.add(line);
 				if (f.item != null) line += (line.contains("brought back") ? ", " : " and brought back ") + (f.item.indexOf(':') < 0 ? aOrAn(itemWords(f.item)) : itemWords(f.item));
 				line += ".";
 			}
@@ -703,6 +727,7 @@ public final class Assignments {
 			if (f.captured) { taken.add(m); continue; }
 			int max = m.getRace() == null ? 100 : m.getRace().getMaxHealth();
 			if (f.infirmary) { m.setHealth(Math.max(1, Math.min(m.getHealth(), max / 4))); hurt.add(m); }
+			else if (f.worn) m.setHealth(Math.max(1, m.getHealth() / 2));
 			else if (f.band == 1) m.setHealth(Math.max(1, Math.min(m.getHealth(), max / 2)));
 			if (skill >= 0 && BAND_XP[f.band] > 0) Skills.add(m, skill, BAND_XP[f.band]);
 			if (!SaveHelper.placeCrew(hold, m, true)) throw new IOException("The Cargo Hold has no room for " + m.getName() + "; the detail waits");

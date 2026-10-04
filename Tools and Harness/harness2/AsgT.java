@@ -125,6 +125,19 @@ public class AsgT { public static void main(String[] a) throws Exception {
    skilled += Assignments.roll("rock", q, rng).scrap;
   }
   Setup.chk("R: skill in the job's skill pays (" + skilled / n + " to " + raw / n + ")", skilled > raw * 11 / 10);
+  // hurt twice: sent wounded and wounded again, a third each: die, the infirmary, half what they had; never for the unhurt
+  Random tw = new Random(14); int twice = 0, twDied = 0, twInf = 0, twWorn = 0, freshOdd = 0;
+  for (int i = 0; i < 40000 && twice < 2000; i++) {
+   List<CrewState> wounded = party("human"); wounded.get(0).setHealth(30);
+   Assignments.Result x = Assignments.roll("civilian", wounded, tw);
+   Assignments.Fate f = x.fates.get(0);
+   if (f.band == 1 && !"spiders".equals(x.job) && !f.captured) { twice++; if (f.died) twDied++; else if (f.infirmary) twInf++; else if (f.worn) twWorn++; }
+   Assignments.Result y = Assignments.roll("civilian", party("human"), tw);
+   Assignments.Fate g = y.fates.get(0);
+   if (g.worn || (g.band == 1 && g.died && !"spiders".equals(y.job))) freshOdd++;
+  }
+  Setup.chk("R: hurt twice, a third each: " + twDied + " died, " + twInf + " to the infirmary, " + twWorn + " worn down, of " + twice + "; never for someone sent whole (" + freshOdd + ")",
+    twice > 0 && twDied > twice / 4 && twDied < twice * 4 / 10 && twInf > twice / 4 && twInf < twice * 45 / 100 && twWorn > twice / 4 && twWorn < twice * 4 / 10 && freshOdd == 0);
   // sent hurt: half their own bonuses
   List<CrewState> h = party("slug"); h.get(0).setHealth(30);
   Setup.chk("R: a crew member sent hurt counts as hurt", Assignments.roll("nebula", h, new Random(2)).fates.get(0).crew.getHealth() == 30);
@@ -134,8 +147,23 @@ public class AsgT { public static void main(String[] a) throws Exception {
   for (int i = 0; i < 500 && (r == null || r.hazard == null || !r.dead().isEmpty()); i++) r = Assignments.roll("nebula", party("slug", "human", "mantis"), rng);
   String t = r.report;
   System.out.println(t);
-  Setup.chk("P: the frame: the heading, the sector, the crew line, a line a crew member, the total", t.startsWith("-- Expedition Report --\nSector: Nebula\nDue to events during the assignment the crew\n")
+  Setup.chk("P: the frame: the heading, the sector, a blank line, a setup ending on the crew, a line a crew member, the total", t.startsWith("-- Expedition Report --\nSector: Nebula\n\n")
+    && t.split("\n")[3].endsWith(" the crew")
     && t.contains("\n" + r.fates.get(0).name() + " ") && t.contains("\n" + r.fates.get(2).name() + " ") && t.endsWith("Total Reward: " + r.scrap + " scrap"));
+  // the setups: heromedel's, the general ones and the job's own all come up; two of a detail never share an outcome line
+  Random fr = new Random(41); int his = 0, other = 0, same = 0, pairs = 0;
+  for (int i = 0; i < 3000; i++) {
+   Assignments.Result x = Assignments.roll("civilian", party("human", "human"), fr);
+   String setup = x.report.split("\n")[3];
+   if (setup.equals("Due to events during the assignment the crew")) his++; else other++;
+   if (x.fates.get(0).band == x.fates.get(1).band && !x.fates.get(0).died && !x.fates.get(0).captured && !x.fates.get(0).infirmary && !x.fates.get(1).captured && !x.fates.get(1).infirmary) {
+    pairs++;
+    String[] ls = x.report.split("\n"); String a1 = null, b1 = null;
+    for (String l : ls) { if (l.startsWith(x.fates.get(0).name() + " ")) a1 = l.substring(x.fates.get(0).name().length()); else if (l.startsWith(x.fates.get(1).name() + " ")) b1 = l.substring(x.fates.get(1).name().length()); }
+    if (a1 != null && a1.equals(b1)) same++;
+   }
+  }
+  Setup.chk("P: heromedel's setup comes up most (" + his + " of 3000), the others the rest; two with the same outcome never read the same (" + same + " of " + pairs + ")", his > 600 && his < 1000 && other > 0 && pairs > 0 && same == 0);
   Setup.chk("P: never a roll, a die or a percentage", !t.contains("%") && !t.toLowerCase().contains("d20") && !t.toLowerCase().matches("(?s).*\\b(rolls?|rolled (a|an|\\d))\\b.*") && !t.contains("+1") && !t.contains("-1"));
   Setup.chk("P: a hazard gets its line", r.hazard != null && (t.toLowerCase().contains("flare") || t.toLowerCase().contains("asteroid") || t.contains("pulsar") || t.contains("plasma storm")));
  }
@@ -228,8 +256,9 @@ public class AsgT { public static void main(String[] a) throws Exception {
   int missilesNow = v.readCopy(v.storage()).save.getPlayerShip().getMissilesAmt(), listingsNow = Derelicts.current(v).size();
   boolean shipOk = pend.size() == 1 && "ship".equals(pend.get(0).kind) && pend.get(0).save.isFile()
     && r.prizeDetail != null && shipRep.text.contains(r.prizeDetail) && listingsNow == listingsBefore && missilesNow == missiles + 4;
-  if (!shipOk) System.out.println(shipRep.text + "\n[" + r.prizeDetail + "] pending " + pend.size() + ", missiles " + missiles + " -> " + missilesNow + ", listings " + listingsNow + " was " + listingsBefore); // to see why, should it fail again
-  Setup.chk("Z: a Hijack's prize ship waits on the commander's word, named in the report; the items came home", shipOk);
+  String why = shipOk ? "" : " [" + r.prizeDetail + " named: " + (r.prizeDetail != null && shipRep.text.contains(r.prizeDetail)) + "; pending " + pend.size() + (pend.isEmpty() ? "" : " " + pend.get(0).kind + " file " + pend.get(0).save.isFile())
+    + "; missiles " + missiles + " -> " + missilesNow + "; listings " + listingsBefore + " -> " + listingsNow + "]"; // said in the FAIL line itself (the harness keeps only PASS and FAIL lines)
+  Setup.chk("Z: a Hijack's prize ship waits on the commander's word, named in the report; the items came home" + why, shipOk);
   Assignments.accept(v, pend.get(0), true);
   Setup.chk("Z: taken to the Space Dock, she's docked and the question is gone", v.docked().size() == docked + 1 && v.junked().size() == junked && Assignments.pending(v).isEmpty() && !pend.get(0).save.isFile());
   crew = ExpT.hold(v, "rock", "engi");

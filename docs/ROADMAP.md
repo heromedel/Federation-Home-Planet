@@ -970,6 +970,21 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   check read the Cargo Hold's save, which the station always makes with it on, and the Cargo Hold won't always be a
   ship); a detail sent before 5.05 still rolls without the battery, as it was rolled (`away.N.ae` marks one after).
 
+- **The setup** (5.07, Frame Ideas A and B, heromedel): the report's "Due to events during the assignment the crew"
+  became the first of several setups (`frame | ...`), with a blank line above it. Half the time a setup of the job's
+  own (`frame <job> | ...`, seven a job, a few sector-marked), else heromedel's line or one of five general ones; his
+  comes up most. A setup is the setup, never the news: it ends on "the crew", reads well before every event line of
+  its job (all 688 pairings read by Claude before writing), and says nothing the event line says. Two crew members
+  with the same outcome never get the same line when there's another. Rescue's "pulled a crew out" became "pulled the
+  survivors out" ("the crew pulled a crew out").
+  A setup mentions nothing it hasn't introduced itself ("the enemy", "the quarry", "her owners"), beyond what any hired
+  crew has (a client, the job, the route): Board's seven, four of Hijack's, two of Capture's and one of Got Lost's
+  rewritten (heromedel: "it doesn't explain why they were knocking out anyone's engines or who the enemy is").
+- **Hurt twice** (5.07, Plan QQ, heromedel): someone sent below full health who is injured again has a third each of
+  dying of it (the job's death line), the infirmary (a quarter health, laid up) and half of what they had (never
+  under 1): "send an already injured person and 2/3rds chance they live another injury". Someone sent whole is
+  unchanged: an injury is half health.
+
 ## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
 
 heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every
