@@ -60,7 +60,7 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("L: a Clone Bay for her Medbay takes its place", !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.CLONEBAY));
   fit(s, SavedGameParser.SystemType.MEDBAY, 0); fit(s, SavedGameParser.SystemType.CLONEBAY, 1);
   Setup.chk("L: and a Medbay for her Clone Bay", SaveHelper.systemCount(s) == 8 && !SaveHelper.pastSystemLimit(s, SavedGameParser.SystemType.MEDBAY));
-  Setup.chk("L: a custom work order is 100 scrap", Pricing.WORK_ORDER == 100);
+  Setup.chk("L: a custom work order in Commission is 100 scrap in Sandbox Mode", homeplanet.core.Economy.commissionWorkOrder() == 100);
   Pricing.Quote at8 = Pricing.commission(k, 75);
   Setup.chk("L: at 8, Commission's price has no work order", Pricing.workOrders(s) == 0 && at8.fixed == 0 && at8.total() == Pricing.ship(k, 75).total());
   fit(s, SavedGameParser.SystemType.HACKING, 1); fit(s, SavedGameParser.SystemType.MIND, 1);

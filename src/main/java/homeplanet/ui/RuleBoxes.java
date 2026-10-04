@@ -30,7 +30,7 @@ public class RuleBoxes {
 	final JCheckBox tradeBox = new JCheckBox("Trading and scrapping need a station (the ship must be at a beacon with a store)", HomePlanet.storeRequirement);
 	final JCheckBox journeyBox = new JCheckBox("New Journey needs a station (the boarded ship must be at a beacon with a store)", HomePlanet.journeyStoreRequirement);
 	final JCheckBox scrapBox = new JCheckBox("Allow stripping when scrapping: her systems can go to the Cargo Hold, at a discount on the removal fee", HomePlanet.stripAllowed);
-	final JComboBox<String> removalBox = new JComboBox<String>(new String[] {"not allowed", "free", "25 scrap", "50 scrap"});
+	final JComboBox<String> removalBox = new JComboBox<String>(new String[] {"not allowed", "free", "25 scrap", "50 scrap", "75 scrap"});
 	private final JLabel removalLabel = new JLabel("Refit: taking a system off a ship is  ");
 	private final JPanel removalRow = row(21);
 	final JComboBox<String> journeyFeeBox = new JComboBox<String>(new String[] {"free", "200 scrap", "500 scrap", "1000 scrap"});
@@ -80,7 +80,7 @@ public class RuleBoxes {
 
 	public RuleBoxes() {
 		if (HomePlanet.immersiveMode) showOwn(); // the boxes start from the player's own rules; sync() sets Immersive Mode's over them
-		scrapBox.setToolTipText("Optional systems only, each for 10 scrap (20 when Refit charges 50; free when Refit is free). Standard equipment and damaged systems are lost with the hull. "
+		scrapBox.setToolTipText("Optional systems only, each for 10 scrap (20 when Refit charges 50, 30 when it charges 75; free when Refit is free). Standard equipment and damaged systems are lost with the hull. "
 				+ "Off: her systems are lost with the hull");
 		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
 		removalBox.setToolTipText("The Refit tab's Uninstall button: what the boarded ship pays to take one of her systems off, or whether she can at all");

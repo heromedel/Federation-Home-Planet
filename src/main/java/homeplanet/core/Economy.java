@@ -10,7 +10,7 @@ public final class Economy {
 	/** Refit: taking a system off a ship isn't allowed at all. */
 	public static final int NOT_ALLOWED = -1;
 	/** Refit removal fees Sandbox Mode can choose. */
-	public static final int[] REMOVAL_FEES = {NOT_ALLOWED, 0, 25, 50};
+	public static final int[] REMOVAL_FEES = {NOT_ALLOWED, 0, 25, 50, 75};
 	/** New Journey fees Sandbox Mode can choose. */
 	public static final int[] JOURNEY_FEES = {0, 200, 500, 1000};
 	/** Stored systems sell for half their price and upgrades, in every mode. */
@@ -29,12 +29,12 @@ public final class Economy {
 		homeplanet.parser.CareerRules c = career();
 		return c != null ? c.stripAllowed() : HomePlanet.stripAllowed;
 	}
-	/** Stripping one system when scrapping: in Sandbox Mode a discount on Refit's removal fee (10 for 25, 20 for 50; 10 where Refit doesn't allow it). */
+	/** Stripping one system when scrapping: in Sandbox Mode a discount on Refit's removal fee (10 for 25, 20 for 50, 30 for 75; 10 where Refit doesn't allow it). */
 	public static int stripFee() {
 		homeplanet.parser.CareerRules c = career();
 		if (c != null) return c.stripFee();
 		int r = removalFee();
-		return r == 0 ? 0 : r == 50 ? 20 : 10;
+		return r == 0 ? 0 : r == 75 ? 30 : r == 50 ? 20 : 10;
 	}
 	/** What plotting a New Journey costs, paid from the Cargo Hold. */
 	public static int journeyFee() {
@@ -73,6 +73,29 @@ public final class Economy {
 		homeplanet.parser.CareerRules c = career();
 		return c != null ? c.augmentsHome() : HomePlanet.immersiveMode || HomePlanet.augmentsHome;
 	}
+
+	/**
+	 * A custom work order past FTL's System Limit (heromedel, 5.13): this much scrap and as much reputation (Easy 25,
+	 * Normal 50, Hard 75 of each; Sandbox 50 of each). With Reputation off, the reputation's share is paid in scrap too.
+	 */
+	public static int workOrderScrap() { int b = workOrderBase(); return homeplanet.vault.Reputation.shown() ? b : 2 * b; }
+	/** The reputation a custom work order costs beside its scrap (0 with Reputation off). */
+	public static int workOrderRep() { return homeplanet.vault.Reputation.shown() ? workOrderBase() : 0; }
+	private static int workOrderBase() {
+		homeplanet.parser.CareerRules c = career();
+		return c != null ? c.workOrder() : 50;
+	}
+	/** A custom work order in a commissioned ship's price: scrap only, both shares (heromedel: Easy 50, Normal 100 as it was, Hard 150; Sandbox 100). */
+	public static int commissionWorkOrder() { return 2 * workOrderBase(); }
+	/** A custom work order's price in words: "50 scrap and 50 reputation", or "100 scrap". */
+	public static String workOrderWords() { return workOrderScrap() + " scrap" + (workOrderRep() > 0 ? " and " + workOrderRep() + " reputation" : ""); }
+	/** A plea answered with reputation: this share of what the Cargo Hold doesn't cover of her value (Easy 10, Normal 25, Hard 50; Sandbox 10). */
+	public static int pleaPercent() {
+		homeplanet.parser.CareerRules c = career();
+		return c != null ? c.pleaPercent() : 10;
+	}
+	/** A share in words: "a tenth", "a quarter", "half", or "N%". */
+	public static String share(int percent) { return percent == 10 ? "a tenth" : percent == 25 ? "a quarter" : percent == 50 ? "half" : percent + "%"; }
 
 	/** A removal fee as Settings words it. */
 	public static String removalTitle(int fee) { return fee == NOT_ALLOWED ? "not allowed" : fee == 0 ? "free" : fee + " scrap"; }

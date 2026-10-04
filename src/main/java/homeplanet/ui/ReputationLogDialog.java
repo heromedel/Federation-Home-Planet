@@ -38,14 +38,11 @@ final class ReputationLogDialog extends JDialog {
 		JLabel standing = new JLabel("Your reputation with The Federation Home Planet: " + Reputation.signed(total));
 		standing.setFont(MenuTheme.LABEL_FONT);
 		standing.setForeground(total < 0 ? MenuTheme.RED : MenuTheme.GOLD);
-		JPanel top = new JPanel(new BorderLayout(0, 6));
-		top.add(standing, BorderLayout.NORTH);
 		JPanel find = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		find.add(new JLabel("Search:  "));
 		find.add(search);
 		find.add(javax.swing.Box.createHorizontalStrut(12));
 		find.add(count);
-		top.add(find, BorderLayout.SOUTH);
 		search.setToolTipText("Only the entries that mention this (a ship's name, a word), in any case");
 		search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
 			public void insertUpdate(javax.swing.event.DocumentEvent e) { fill(); }
@@ -57,19 +54,34 @@ final class ReputationLogDialog extends JDialog {
 		scroll.setPreferredSize(new Dimension(900, 400)); // room for the summary below it on a scaled screen
 		scroll.getVerticalScrollBar().setUnitIncrement(22);
 		JPanel south = new JPanel(new BorderLayout());
-		JLabel how = new JLabel("<html><div style='width:620px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>Earned: each sector +" + Reputation.SECTOR + ", a tenth of the scrap collected, each ship defeated +"
-				+ Reputation.DEFEATED + " (a rebel +" + Reputation.REBEL_DEFEATED + "), a good outcome +" + Reputation.EVENT_GOOD + ", each FTL achievement +" + Reputation.ACHIEVEMENT
-				+ ", the Rebel Flagship +" + Reputation.FLAGSHIP + ".<br>Lost: each crew member killed " + Reputation.signed(Reputation.CREW_DIED) + ", each ship lost in action "
-				+ Reputation.signed(Reputation.SHIP_LOST) + ", caught by the rebel fleet " + Reputation.signed(Reputation.CAUGHT) + ", a bad outcome " + Reputation.signed(Reputation.EVENT_BAD)
-				+ ". Nothing is lost in the last stand of sector 8.</font></div></html>"); // wraps, so the Close button keeps its room
-		south.add(how, BorderLayout.CENTER);
 		JButton close = new JButton("Close");
 		close.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
 		south.add(close, BorderLayout.EAST);
 		JPanel body = new JPanel(new BorderLayout(0, 8));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
-		body.add(top, BorderLayout.NORTH);
-		body.add(scroll, BorderLayout.CENTER);
+		// two tabs across the top, as Settings has them (heromedel): the log, and how reputation works
+		JPanel logPage = new JPanel(new BorderLayout(0, 6));
+		logPage.add(find, BorderLayout.NORTH);
+		logPage.add(scroll, BorderLayout.CENTER);
+		JScrollPane howScroll = new JScrollPane(howPage());
+		howScroll.setBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, MenuTheme.GOLD));
+		howScroll.getViewport().setBackground(RecordsLog.BG);
+		howScroll.setPreferredSize(scroll.getPreferredSize());
+		howScroll.getVerticalScrollBar().setUnitIncrement(22);
+		howScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // the page wraps to the window
+		final javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
+		tabs.addTab("Log", logPage);
+		tabs.addTab("How Rep Works", howScroll);
+		final java.awt.Color normal = new java.awt.Color(220, 228, 235); // as the theme draws the others
+		javax.swing.event.ChangeListener mark = new javax.swing.event.ChangeListener() { // the open tab's name in dark on its light tab
+			public void stateChanged(javax.swing.event.ChangeEvent e) {
+				for (int i = 0; i < tabs.getTabCount(); i++) tabs.setForegroundAt(i, i == tabs.getSelectedIndex() ? new java.awt.Color(20, 28, 40) : normal);
+			}
+		};
+		tabs.addChangeListener(mark);
+		mark.stateChanged(null);
+		body.add(standing, BorderLayout.NORTH);
+		body.add(tabs, BorderLayout.CENTER);
 		body.add(south, BorderLayout.SOUTH);
 		getContentPane().add(body);
 		getRootPane().setDefaultButton(close);
@@ -78,6 +90,63 @@ final class ReputationLogDialog extends JDialog {
 		pack();
 		setLocationRelativeTo(getOwner());
 		ScreenFit.keepOnScreen(this);
+	}
+
+	/**
+	 * How Rep Works: what earns reputation, what loses it, what it pays for (at this career's prices) and what may take
+	 * it below zero, in short sections. The numbers come from the rules themselves, so the page can't disagree with them.
+	 */
+	private static javax.swing.JEditorPane howPage() {
+		String gold = MenuTheme.HTML_GOLD, dim = MenuTheme.HTML_GREY_GREEN;
+		StringBuilder h = new StringBuilder("<html><body style='color:#dce4eb'>");
+		h.append("<p>Your reputation is your standing with The Federation Home Planet. Good service earns it; losses cost it. "
+				+ "It can also be spent, where The Federation Home Planet is willing to bend for a commander it trusts.</p>");
+		section(h, gold, "Earned");
+		item(h, "Each sector reached", "+" + Reputation.SECTOR);
+		item(h, "Scrap collected", "a tenth of it");
+		item(h, "Each ship defeated", "+" + Reputation.DEFEATED + " (a rebel ship +" + Reputation.REBEL_DEFEATED + ")");
+		item(h, "A good outcome at a beacon, or on an expedition", "+" + Reputation.EVENT_GOOD);
+		item(h, "Each FTL achievement", "+" + Reputation.ACHIEVEMENT);
+		item(h, "A final victory", "+" + Reputation.FLAGSHIP);
+		item(h, "A captive brought home by paying the ransom", "+" + Reputation.RANSOMED);
+		section(h, gold, "Lost");
+		item(h, "Each crew member killed", Reputation.signed(Reputation.CREW_DIED));
+		item(h, "Each ship lost in action", Reputation.signed(Reputation.SHIP_LOST));
+		item(h, "Each crew member taken captive", Reputation.signed(Reputation.CAPTURED));
+		item(h, "Caught by the rebel fleet", Reputation.signed(Reputation.CAUGHT));
+		item(h, "A bad outcome at a beacon, or on an expedition", Reputation.signed(Reputation.EVENT_BAD));
+		h.append("<p><font color='" + dim + "'>Nothing is lost in the last stand of sector 8.</font></p>");
+		section(h, gold, "Spent");
+		int journey = homeplanet.core.Economy.journeyFee(), removal = homeplanet.core.Economy.removalFee();
+		item(h, "A New Journey", journey > 0 ? journey + " scrap or reputation, or the scrap there is and reputation for the rest" : "free");
+		item(h, "Refit: taking a system off a ship", removal == homeplanet.core.Economy.NOT_ALLOWED ? "not allowed" : removal == 0 ? "free"
+				: removal + " scrap or reputation, or the scrap there is and reputation for the rest");
+		item(h, "Stripping a ship's systems when she's scrapped", !homeplanet.core.Economy.stripAllowed() ? "not allowed" : homeplanet.core.Economy.stripFee() == 0 ? "free"
+				: homeplanet.core.Economy.stripFee() + " scrap or reputation a system");
+		item(h, "A custom work order, fitting a system past FTL's System Limit in the Cargo Bay", homeplanet.core.Economy.workOrderWords());
+		item(h, "A plea for a new ship, if you keep the Cargo Hold", homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent())
+				+ " of her value (giving up the hold, " + homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent()) + " of what it doesn't cover)");
+		item(h, "A promise of adventure, with no crew anywhere", Integer.toString(homeplanet.parser.Expeditions.PROMISE_REP));
+		item(h, "Resting in your quarters", "the first day free, then 1 more for each day in a row, up to " + homeplanet.parser.Rest.MAX_COST);
+		section(h, gold, "Below zero");
+		h.append("<p>A plea for a new ship, a promise of adventure and resting in your quarters are never refused: they may take your reputation below zero.</p>");
+		h.append("<p>Everything else stops at zero. If paying in reputation would take it below, pay in scrap, or earn more first.</p>");
+		h.append("</body></html>");
+		javax.swing.JEditorPane l = new javax.swing.JEditorPane("text/html", h.toString()); // wraps to the window's width
+		l.putClientProperty(javax.swing.JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+		l.setEditable(false);
+		l.setOpaque(true);
+		l.setBackground(RecordsLog.BG);
+		l.setFont(MenuTheme.TEXT_FONT);
+		l.setBorder(BorderFactory.createEmptyBorder(10, 14, 14, 14));
+		l.setCaretPosition(0);
+		return l;
+	}
+	private static void section(StringBuilder h, String color, String title) {
+		h.append("<p style='margin-top:12px'><font color='").append(color).append("'><b>").append(title).append("</b></font></p>");
+	}
+	private static void item(StringBuilder h, String what, String value) {
+		h.append("<div style='margin-left:12px'>").append(what).append(": <b>").append(value).append("</b></div>");
 	}
 
 	/** The log, kept to the entries that match the search, the latest in view. */

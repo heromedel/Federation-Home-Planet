@@ -19,7 +19,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
   HomePlanet.immersiveMode = true;
   File career = new File(v.root, "career.txt");
   String[] names = {CareerRules.EASY, CareerRules.NORMAL, CareerRules.HARD};
-  int[][] want = {{200, 0, 0, 50, 1, 50, 50}, {500, 25, 10, 25, 2, 75, 25}, {1000, 50, -1, 0, 3, 100, 10}};
+  int[][] want = {{200, 25, 15, 50, 1, 50, 50, 25, 10}, {500, 50, 30, 25, 2, 75, 25, 50, 25}, {1000, 75, 60, 0, 3, 100, 10, 75, 50}}; // (5.13: removal 25/50/75, stripping 15/30/60, work orders, the plea's share)
   String[] reassign = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF}; // Easy any ship, Normal a Kestrel (or the Relief Ship), Hard the Relief Ship
   String[] victory = {FinalVictory.RESCUE, FinalVictory.RESCUE, FinalVictory.MUSEUM};
   int[] museum = {100, 50, 50};
@@ -30,14 +30,15 @@ public class FleetT { public static void main(String[] a) throws Exception {
    int[] w = want[d];
    boolean ok = Economy.journeyFee() == w[0] && Economy.removalFee() == w[1] && (w[2] < 0 ? !Economy.stripAllowed() : Economy.stripAllowed() && Economy.stripFee() == w[2])
      && Economy.supplyPercent() == w[3] && Career.monthsPerStipend() == w[4] && Economy.commissionPercent() == w[5] && v.storageScrap() - before == w[6]
-     && Economy.reassignment().equals(reassign[d]) && FinalVictory.choice().equals(victory[d]) && FinalVictory.museumPercent() == museum[d];
+     && Economy.reassignment().equals(reassign[d]) && FinalVictory.choice().equals(victory[d]) && FinalVictory.museumPercent() == museum[d]
+     && CareerRules.current().workOrder() == w[7] && Economy.commissionWorkOrder() == 2 * w[7] && Economy.pleaPercent() == w[8];
    Setup.chk("D: " + names[d] + ": its fees, prices, stipend, starting scrap, reassignment and final victory", ok);
   }
   Setup.chk("D: Hard: missiles and drone parts sell for 1 scrap each", Economy.supplySale(5, Pricing.MISSILE) == 5);
   career.delete();
   Career.start(false, false, new CareerRules(CareerRules.CUSTOM, new int[] {2, 0, 2, 1, 0, 2, 0, 0, 1}));
   Setup.chk("D: Custom: each rule at its own level", "Custom".equals(CareerRules.current().title()) && FinalVictory.choice().equals(FinalVictory.MUSEUM)
-    && Economy.journeyFee() == 200 && Economy.reassignment().equals(FreeCommand.RELIEF) && Economy.removalFee() == 25 && Economy.stripFee() == 0
+    && Economy.journeyFee() == 200 && Economy.reassignment().equals(FreeCommand.RELIEF) && Economy.removalFee() == 50 && Economy.stripFee() == 15
     && Economy.supplySale(5, Pricing.MISSILE) == 5 && Career.monthsPerStipend() == 1 && Economy.commissionPercent() == 50);
   // a career from before difficulties: no difficulty in its career.txt
   Properties p = new Properties(); p.setProperty("salaryAll", "false"); p.setProperty("ownProfile", "false"); p.setProperty("finalVictory", FinalVictory.REWARD);

@@ -40,7 +40,7 @@ And More.
 - **The Cargo Bay:** trade crew, weapons, drones, augments, systems and supplies with the Cargo Hold (the station's
   warehouse) or another docked ship; shop at the stores your ships are docked at; repair and upgrade in the Dry Dock;
   refit, retrofit, remodel or overhaul a ship's layout. A ship at FTL's System Limit (8 systems) can still have one
-  fitted, as a custom work order for 100 scrap.
+  fitted, as a custom work order (scrap, and reputation as well).
 - **Long Range Comm.:** trade with another commander's Home Planet Station over the local network, a virtual LAN or
   the internet: items, supplies, crew and whole ships, Sandbox with Sandbox and Immersive with Immersive (any level,
   unless a career keeps to its own); any two commanders can hail and talk. Both commanders build the offer and accept it; any change withdraws acceptance.

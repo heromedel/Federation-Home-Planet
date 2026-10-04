@@ -1271,6 +1271,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			systems.addTo(tx);
 			billed = systems.payBill(tx); // the Dry Dock's work, from the Cargo Hold, in the same save
 			tx.commit();
+			systems.spendRepBill(); // and the reputation it took, once the save stands
 			if (!systems.changes().isEmpty())
 				homeplanet.core.HistoryLog.entry("SYSTEMS", currentSave.getPlayerShipName(), new ArrayList<String>(systems.changes()));
 			for (String c : systems.changes()) if (c.startsWith("Installed ")) { homeplanet.parser.ThirdFleet.partInstalled(Vault.get()); break; } // the technicians tell the Third Fleet Commander

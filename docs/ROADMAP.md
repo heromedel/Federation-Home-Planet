@@ -1089,6 +1089,35 @@ first character at the station beyond the offices, set up to come back ("Might b
 
 (5.12: the two branches merged again: this one's 5.10, the augments shipped home, and McCarthy's 5.08 to 5.11.)
 
+## 39. Reputation as a currency, and How Rep Works — built (5.13; harness checks in RepuT, FleetT, PriceT)
+
+heromedel's list (Ideas A to I). Reputation pays where The Federation Home Planet is willing to bend; repairs and the
+Junkyard stay scrap only. One question for each fee (`ui/RepPay`): all in scrap, all in reputation, or the scrap there is
+and reputation for the rest; with Reputation off, scrap only, as before.
+
+- **A New Journey:** the full fee (200 / 500 / 1000), scrap or reputation one for one.
+- **Refit removal:** Easy 25, Normal 50, Hard 75, scrap or reputation (vanilla can't take systems off; it lets you rebuild
+  other systems). Sandbox keeps its own setting, reputation offered beside it. Paid on the Cargo Bay's Save, with the
+  Dry Dock's bill (a reputation bill beside the scrap one, spent once the save stands).
+- **Stripping when scrapping:** 15 / 30 / 60 a system, scrap or reputation; Hard allows it now. Cheaper than taking them
+  off one by one at Refit, because the hull is lost.
+- **A custom work order** fitting a system past FTL's System Limit in the Cargo Bay (Refit or the Dry Dock's shop):
+  25 / 50 / 75 scrap and as much reputation (Sandbox 50 and 50; with Reputation off, both in scrap). In Commission it's
+  part of her price, scrap only, both shares (50 / 100 / 150; Sandbox 100, as it was).
+- **Plead for New Ship:** as it was (give up the Cargo Hold or keep it), the share by difficulty: Easy a tenth, Normal a
+  quarter, Hard half (Sandbox a tenth).
+- **Captured crew:** -4 each when taken (in the crew expeditions' entry, or an entry of its own on the board of jobs),
+  +2 when the ransom is paid.
+- **Below zero:** a plea, a promise of adventure and rest in quarters are never refused and may take reputation below
+  zero (otherwise a fleet with no ship would be finished). Every other fee stops at zero.
+- New career rules: "A custom work order (past the System Limit) costs" and "A plea answered with reputation costs";
+  a career from before difficulties keeps its free removal and stripping.
+- **How Rep Works:** the Career Reputation Log has tabs across the top, as Settings does: Log, and How Rep Works (what
+  earns, loses and spends reputation at this career's prices, and what may go below zero; the numbers from the rules).
+
+**Ideas, back burner:** the Custom Part Order (heromedel): any weapon, drone or augment in the game without a store, for
+double its price in scrap and an equal amount of reputation; very expensive, as it should be to bypass the game.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

@@ -713,7 +713,7 @@ public final class Expeditions {
 			else if (homeplanet.model.Items.isDrone(id)) hold.getDroneList().add(SaveHelper.newIdleDrone(id));
 			else hold.getAugmentIdList().add(id);
 		}
-		List<String> lostNames = new ArrayList<String>(), hurtNames = new ArrayList<String>(), joinedNames = new ArrayList<String>();
+		List<String> lostNames = new ArrayList<String>(), hurtNames = new ArrayList<String>(), joinedNames = new ArrayList<String>(), takenNames = new ArrayList<String>();
 		int now = v.beaconsSeen() + 1; // the beacon this expedition takes
 		Random rng = new Random();
 		for (CrewState sent : r.party) {
@@ -722,7 +722,7 @@ public final class Expeditions {
 			if (r.lost.contains(sent)) {
 				crew.remove(mine);
 				lostNames.add(sent.getName());
-				if (r.captured.contains(sent)) takeCaptive(cap, mine, r.event.foe, now, rng); // a ransom will be asked
+				if (r.captured.contains(sent)) { takeCaptive(cap, mine, r.event.foe, now, rng); takenNames.add(sent.getName()); } // a ransom will be asked
 				continue;
 			}
 			if (r.hurt.contains(sent)) { mine.setHealth(Math.max(1, mine.getHealth() / 4)); hurtNames.add(sent.getName()); admit(inf, mine, now, rng); }
@@ -736,6 +736,7 @@ public final class Expeditions {
 			joinedNames.add(n.getName());
 		}
 		v.begin().put(st, c.save, c.hash).put(infirmaryFile(v), propsBytes(inf, INFIRMARY_NOTE)).put(captivesFile(v), propsBytes(cap, CAPTIVES_NOTE)).commit();
+		homeplanet.vault.Reputation.captured(v, takenNames); // -4 each (heromedel)
 		v.countBeacon();
 		// the last outcome has told the rest: only the infirmary is news
 		StringBuilder sb = new StringBuilder();
@@ -1064,6 +1065,7 @@ public final class Expeditions {
 		p.setProperty(c.index + ".state", "ransomed");
 		v.begin().put(st, cp.save, cp.hash).put(captivesFile(v), propsBytes(p, CAPTIVES_NOTE)).commit(); // paid and marked together: never twice
 		HistoryLog.entry("EXPEDITION", c.name + " ransomed from " + c.captors + " for " + c.ransom + " scrap, back in the Cargo Hold");
+		homeplanet.vault.Reputation.ransomed(v, c.name); // +2: brought home
 	}
 	/** A captive's kept record (skills, service, looks), or null for one taken before records were kept. */
 	private static CrewState kept(Properties p, int i) {

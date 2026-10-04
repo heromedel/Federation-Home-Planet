@@ -477,13 +477,14 @@ public class CommissionDialog extends JDialog {
 			boolean rep = homeplanet.vault.Reputation.shown();
 			int costGiving = homeplanet.parser.FreeCommand.reputationCost(value, hold), costKeeping = homeplanet.parser.FreeCommand.reputationCost(value, 0);
 			StringBuilder msg = new StringBuilder(name + " is worth " + value + " scrap. Your Cargo Hold would sell for " + hold + " scrap.\n\n");
+			String share = homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent());
 			if (rep && hold <= 0) {
-				msg.append("The hold has nothing to sell, so either way a tenth of her value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").\n"
+				msg.append("The hold has nothing to sell, so either way " + share + " of her value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").\n"
 						+ "Giving it up still takes everything in it but the crew, who stay.");
 			} else if (rep) {
 				msg.append("Give it up (everything in it but the crew, who stay): ").append(costGiving == 0 ? "she costs your reputation nothing.\n"
-						: "a tenth of the " + (value - hold) + " it doesn't cover comes off your reputation (" + homeplanet.vault.Reputation.signed(-costGiving) + ").\n");
-				msg.append("Keep it: a tenth of her whole value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").");
+						: share + " of the " + (value - hold) + " it doesn't cover comes off your reputation (" + homeplanet.vault.Reputation.signed(-costGiving) + ").\n");
+				msg.append("Keep it: " + share + " of her whole value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").");
 			} else {
 				msg.append("The Federation Home Planet takes the Cargo Hold for her (everything in it but the crew, who stay), whatever it's worth.");
 			}
@@ -516,7 +517,7 @@ public class CommissionDialog extends JDialog {
 						+ "Store more scrap in the Cargo Bay, or choose a smaller ship.", "Commission Ship", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
-			if (JOptionPane.showConfirmDialog(this, "Commission " + name + " for " + price + " scrap from the Cargo Hold?",
+			if (JOptionPane.showConfirmDialog(this, "Commission " + name + " for " + price + " scrap from the Cargo Hold" + "?",
 					"Commission Ship", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
 			try {
 				storageBefore = vault.payFromStorage(price);

@@ -53,6 +53,8 @@ public final class Reputation {
 	public static final int CAUGHT = -5;
 	/** Each FTL achievement earned in the fleet's service (FTL's real ones, not its hidden markers). */
 	public static final int ACHIEVEMENT = 10;
+	/** A crew member taken captive (heromedel): -4; brought home by paying the ransom: +2. */
+	public static final int CAPTURED = -4, RANSOMED = 2;
 	/** FTL's sector 8 (0 is the first): nothing is lost there. */
 	static final int LAST_STAND = 7;
 
@@ -204,12 +206,15 @@ public final class Reputation {
 	 * outcome (everyone successful or better) EVENT_GOOD, a bad one (nobody successful) EVENT_BAD. Nothing for items or prizes.
 	 * {@code outcome}: 1 good, -1 bad, 0 neither.
 	 */
-	public static synchronized void expedition(Vault v, String what, int scrap, int died, int outcome) {
+	public static synchronized void expedition(Vault v, String what, int scrap, int died, int outcome) { expedition(v, what, scrap, died, 0, outcome); }
+	/** As above, with the crew taken captive. */
+	public static synchronized void expedition(Vault v, String what, int scrap, int died, int taken, int outcome) {
 		if (!shown()) return;
-		int points = scrap / SCRAP_PER_POINT + died * CREW_DIED + (outcome > 0 ? EVENT_GOOD : outcome < 0 ? EVENT_BAD : 0);
+		int points = scrap / SCRAP_PER_POINT + died * CREW_DIED + taken * CAPTURED + (outcome > 0 ? EVENT_GOOD : outcome < 0 ? EVENT_BAD : 0);
 		List<String> why = new ArrayList<String>();
 		if (scrap / SCRAP_PER_POINT > 0) why.add(scrap + " scrap (+" + scrap / SCRAP_PER_POINT + ")");
 		if (died > 0) why.add((died == 1 ? "a crew member killed" : died + " crew killed") + " (" + signed(died * CREW_DIED) + ")");
+		if (taken > 0) why.add((taken == 1 ? "a crew member taken captive" : taken + " crew taken captive") + " (" + signed(taken * CAPTURED) + ")");
 		if (outcome > 0) why.add("a good outcome (+" + EVENT_GOOD + ")");
 		if (outcome < 0) why.add("a bad outcome (" + EVENT_BAD + ")");
 		if (points == 0 && why.isEmpty()) return;
@@ -218,6 +223,25 @@ public final class Reputation {
 		p.setProperty("total", Integer.toString(num(p, "total") + points));
 		if (write(v, p)) entry(v, points, "Expedition: " + what + " (" + signed(points) + ")", why);
 	}
+	/** Crew taken captive on the board of jobs (the crew expeditions count them in their report's entry). */
+	public static synchronized void captured(Vault v, List<String> names) {
+		if (!shown() || names.isEmpty()) return;
+		int points = names.size() * CAPTURED;
+		Properties p = read(v);
+		if (!counted(p)) { review(v); p = read(v); }
+		p.setProperty("total", Integer.toString(num(p, "total") + points));
+		if (write(v, p)) entry(v, points, "Taken captive: " + String.join(", ", names) + " (" + signed(points) + ")", null);
+	}
+	/** A captive brought home: the ransom paid. */
+	public static synchronized void ransomed(Vault v, String name) {
+		if (!shown()) return;
+		Properties p = read(v);
+		if (!counted(p)) { review(v); p = read(v); }
+		p.setProperty("total", Integer.toString(num(p, "total") + RANSOMED));
+		if (write(v, p)) entry(v, RANSOMED, "Ransomed: " + name + " brought home (" + signed(RANSOMED) + ")", null);
+	}
+	/** Can this much be spent without going below zero (the fees reputation may pay; a plea, a promise and rest may go below)? */
+	public static synchronized boolean canSpend(Vault v, int cost) { return shown() && (cost <= 0 || total(v) >= cost); }
 	/** A plea's new ship, answered for with the career's reputation: what it costs, and why. */
 	public static synchronized void plea(Vault v, int cost, String why) { spend(v, cost, why); }
 	/** Reputation spent on anything the career pays for with it (a plea's ship, a promise of adventure): what it costs, and why. */
