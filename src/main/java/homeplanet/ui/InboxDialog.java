@@ -45,6 +45,8 @@ public class InboxDialog extends JDialog {
 	private final JButton takeIt = new JButton("Accept"), elsewhere = new JButton("Deliver to another fleet..."), sendBack = new JButton("Return to sender");
 	private final JButton keep = new JButton("Keep her"), museum = new JButton("Accept the museum's offer");
 	private final JButton payRansom = new JButton("Pay"), refuseRansom = new JButton("Refuse");
+	/** An expedition's prize: a recruit to sign on or send on their way; a ship to the Space Dock, the Junkyard, or not taken. */
+	private final JButton prizeYes = new JButton("Sign them on"), prizeDock = new JButton("Space Dock"), prizeJunk = new JButton("Junkyard"), prizeNo = new JButton("Send them on their way");
 	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton(), outboxTab = new javax.swing.JToggleButton();
 	/** The Inbox and Archive share one view; the Outbox has its own. */
 	private final java.awt.CardLayout cards = new java.awt.CardLayout();
@@ -100,6 +102,10 @@ public class InboxDialog extends JDialog {
 		act.add(museum);
 		act.add(payRansom);
 		act.add(refuseRansom);
+		act.add(prizeYes);
+		act.add(prizeDock);
+		act.add(prizeJunk);
+		act.add(prizeNo);
 		act.add(archive);
 		act.add(delete);
 		act.add(takeIt);
@@ -128,6 +134,14 @@ public class InboxDialog extends JDialog {
 		payRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(true); } });
 		refuseRansom.setToolTipText("They will not be coming back");
 		refuseRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(false); } });
+		prizeYes.setToolTipText("Into the Cargo Hold");
+		prizeYes.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(0); } });
+		prizeDock.setToolTipText("Docked at the Space Dock, as she is");
+		prizeDock.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(1); } });
+		prizeJunk.setToolTipText("To the Junkyard, as she is, to be set right or scrapped");
+		prizeJunk.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(2); } });
+		prizeNo.setToolTipText("Gone for good");
+		prizeNo.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(3); } });
 		javax.swing.ButtonGroup tabs = new javax.swing.ButtonGroup();
 		tabs.add(inboxTab);
 		tabs.add(archiveTab);
@@ -293,6 +307,7 @@ public class InboxDialog extends JDialog {
 			museum.setVisible(false);
 			payRansom.setVisible(false);
 			refuseRansom.setVisible(false);
+			prizeYes.setVisible(false); prizeDock.setVisible(false); prizeJunk.setVisible(false); prizeNo.setVisible(false);
 			archive.setVisible(false);
 			delete.setVisible(false);
 			takeIt.setVisible(false);
@@ -321,6 +336,10 @@ public class InboxDialog extends JDialog {
 		payRansom.setVisible(captive != null);
 		refuseRansom.setVisible(captive != null);
 		if (captive != null) payRansom.setText("Pay " + captive.ransom + " scrap");
+		homeplanet.parser.Assignments.Pending prize = m.key.startsWith("expedition:") && homeplanet.vault.Vault.isOpen() ? homeplanet.parser.Assignments.pendingFor(homeplanet.vault.Vault.get(), m.key) : null;
+		boolean recruit = prize != null && "recruit".equals(prize.kind), ship = prize != null && "ship".equals(prize.kind);
+		prizeYes.setVisible(recruit); prizeDock.setVisible(ship); prizeJunk.setVisible(ship); prizeNo.setVisible(prize != null);
+		prizeNo.setText(ship ? "Don't take her" : "Send them on their way");
 		archive.setVisible(true);
 		boolean held = parcel != null && (homeplanet.comm.Shipments.HELD.equals(parcel.state) || homeplanet.comm.Shipments.RETURNING.equals(parcel.state));
 		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m) || (m.key.startsWith("parcel:") && !held)); // they pile up: archive one or be rid of it (not a shipment still to deal with)
@@ -350,6 +369,32 @@ public class InboxDialog extends JDialog {
 		list.repaint();
 	}
 
+	/** An expedition letter's prize: 0 the recruit signed on, 1 the ship to the Space Dock, 2 to the Junkyard, 3 not taken. */
+	private void prize(int choice) {
+		Transmissions.Message m = list.getSelectedValue();
+		if (m == null) return;
+		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
+		homeplanet.parser.Assignments.Pending x = homeplanet.parser.Assignments.pendingFor(v, m.key);
+		if (x == null) { show(m); return; }
+		String settled;
+		try {
+			if (choice == 3) {
+				if (!HomePlanet.confirmNo(this, ("ship".equals(x.kind) ? x.name + " will be left where she lies." : x.name + " will go their own way.") + " Gone for good?", "Expeditions")) return;
+				homeplanet.parser.Assignments.decline(v, x);
+				settled = "ship".equals(x.kind) ? "Not taken" : "Sent on their way";
+			} else {
+				homeplanet.parser.Assignments.accept(v, x, choice == 1);
+				settled = choice == 0 ? x.name + " signed on: in the Cargo Hold" : x.name + (choice == 1 ? " docked at the Space Dock" : " to the Junkyard");
+			}
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("That could not be done. Nothing was changed:\n" + e.getMessage());
+			return;
+		}
+		try { Transmissions.decided(m, settled); }
+		catch (Exception e) { HomePlanet.showErrorDialog("Done, but the letter could not be marked as settled (it will show no note of it):\n" + e.getMessage()); }
+		all = Transmissions.load();
+		fill();
+	}
 	/** A ransom letter: pay it from the Cargo Hold (they come back), or refuse (they don't). */
 	private void ransom(boolean pay) {
 		Transmissions.Message m = list.getSelectedValue();

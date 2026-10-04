@@ -203,7 +203,7 @@ hazard storm | A plasma storm had their power down the whole time.
 captured | was taken by the boarders. Word may come.
 infirmary | was badly hurt and is in the infirmary.
 
-prize hijack ship | They brought the ship home: {name}. She's yours if you want her.
+prize hijack ship | They brought the ship home: {name}. She's moored at the station until you decide.
 prize hijack part | They couldn't keep the ship, but pulled a system out of her before they left it.
 prize salvage part | They pulled a whole system out of the wreck.
-prize rescue recruit | One of those they rescued, {name}, asked to sign on.
+prize rescue recruit | One of those they rescued, {name}, asked to sign on, and waits in The Home Planet Station's lounge for your word.

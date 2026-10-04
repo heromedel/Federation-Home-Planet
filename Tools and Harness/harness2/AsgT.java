@@ -204,6 +204,25 @@ public class AsgT { public static void main(String[] a) throws Exception {
     && rep.text.contains(r.recruit.getName()) && Assignments.holdCrew(v).size() == 1 && pend.get(0).question().contains("sign on"));
   Assignments.decline(v, pend.get(0));
   Setup.chk("Z: sent on their way: not in the hold, no question left", Assignments.holdCrew(v).size() == 1 && Assignments.pending(v).isEmpty());
+  // with Immersive Notifications on, the letter carries the question: the Space Dock doesn't ask
+  HomePlanet.immersiveNotifications = true;
+  crew = ExpT.hold(v, "human");
+  Assignments.send(v, Assignments.board(v).get(0).slot, crew, new Random(4));
+  a = Assignments.away(v).get(0);
+  while (v.beaconsSeen() < a.until) v.countBeacon();
+  r = Assignments.roll("civilian", a.crew, new Random(1));
+  for (Assignments.Fate f : r.fates) { f.died = false; f.captured = false; f.infirmary = false; f.band = 5; f.item = null; }
+  r.job = "rescue"; r.prize = "recruit";
+  rep = Assignments.bringHome(v, a, r);
+  pend = Assignments.pending(v);
+  String letterKey = "expedition:" + a.sentAt + ":" + a.index + ":" + String.join(",", a.names());
+  Setup.chk("Z: the letter carries the question: the prize names it, the Space Dock leaves it be, the words say they wait in the lounge", pend.size() == 1 && letterKey.equals(pend.get(0).letter)
+    && Assignments.pendingToAsk(v).isEmpty() && Assignments.pendingFor(v, letterKey) != null && rep.text.contains("lounge"));
+  boolean delivered = false; for (Transmissions.Message m : Transmissions.load()) if (m.key.equals(letterKey)) delivered = true;
+  Setup.chk("Z: and the letter is in the inbox", delivered);
+  Assignments.accept(v, pend.get(0), false);
+  Setup.chk("Z: answered from the letter, they're in the hold", Assignments.holdCrew(v).size() == 2 && Assignments.pendingFor(v, letterKey) == null);
+  HomePlanet.immersiveNotifications = false;
   Random rr = new Random(7); int skilled = 0;
   for (int i = 0; i < 400; i++) { CrewState c = Assignments.recruit(rr); int lv = 0; for (int x : homeplanet.model.Crew.skillLevels(c)) lv += x; if (lv > 0) skilled++; }
   Setup.chk("Z: about one recruit in twenty comes with a skill (" + skilled + " of 400)", skilled >= 8 && skilled <= 40);

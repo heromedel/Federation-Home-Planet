@@ -125,7 +125,7 @@ public final class AssignmentsDialog extends JDialog {
 	/** The prizes waiting on the commander's word: a recruit to take on, a ship to the Space Dock, the Junkyard or not at all. */
 	public static void askPending(java.awt.Component owner) {
 		Vault v = Vault.get();
-		for (Assignments.Pending x : Assignments.pending(v)) {
+		for (Assignments.Pending x : Assignments.pendingToAsk(v)) { // a letter's own question is answered in the inbox
 			boolean ship = "ship".equals(x.kind);
 			Object[] opts = ship ? new Object[] {"Space Dock", "Junkyard", "Don't take her"} : new Object[] {"Sign them on", "Send them on their way"};
 			int pick = JOptionPane.showOptionDialog(owner, x.question(), "Expeditions", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);

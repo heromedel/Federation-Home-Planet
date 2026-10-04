@@ -288,7 +288,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final List<homeplanet.parser.Assignments.Report> back = HomePlanet.expeditionType == 2 ? homeplanet.parser.Assignments.checkReturns(vault) : new java.util.ArrayList<homeplanet.parser.Assignments.Report>();
 		final List<homeplanet.parser.Expeditions.RansomNews> ransomNews = homeplanet.parser.Expeditions.checkRansoms(vault);
 		final List<String> upAgain = homeplanet.parser.Expeditions.checkInfirmary(vault);
-		final boolean prizes = HomePlanet.expeditionType == 2 && !homeplanet.parser.Assignments.pending(vault).isEmpty();
+		final boolean prizes = HomePlanet.expeditionType == 2 && !homeplanet.parser.Assignments.pendingToAsk(vault).isEmpty();
 		if ((HomePlanet.immersiveNotifications() || (ransomNews.isEmpty() && back.isEmpty())) && upAgain.isEmpty() && !prizes) return;
 		Runnable word = new Runnable() { public void run() {
 			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Assignments.Report r : back) AssignmentsDialog.showReport(null, r);

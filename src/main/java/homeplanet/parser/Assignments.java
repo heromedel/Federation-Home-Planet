@@ -291,7 +291,9 @@ public final class Assignments {
 		public final String kind, name;
 		public final CrewState crew;
 		public final File save;
-		Pending(int index, String kind, String name, CrewState crew, File save) { this.index = index; this.kind = kind; this.name = name; this.crew = crew; this.save = save; }
+		/** The letter that carries the question (Immersive Notifications on), or null: then the Space Dock asks. */
+		public final String letter;
+		Pending(int index, String kind, String name, CrewState crew, File save, String letter) { this.index = index; this.kind = kind; this.name = name; this.crew = crew; this.save = save; this.letter = letter; }
 		public String question() {
 			return "recruit".equals(kind) ? name + " (" + homeplanet.model.Crew.raceTitle(crew) + "), rescued on an expedition, asks to sign on with your fleet.\nTake them into the Cargo Hold?"
 					: "Your crew brought a ship home from an expedition: " + name + ".\nTake her in as she is? To the Space Dock to fly, to the Junkyard to be set right or scrapped, or not at all.";
@@ -311,9 +313,20 @@ public final class Assignments {
 				for (String key : p.stringPropertyNames()) if (key.startsWith(pre)) f.put(key.substring(pre.length()), p.getProperty(key));
 				try { c = homeplanet.comm.Line.crewFrom(f); } catch (IOException e) { log.warn("A recruit waiting on an answer can't be read: {}", e.toString()); continue; }
 			}
-			out.add(new Pending(i, kind, p.getProperty("pending." + i + ".name", ""), c, "ship".equals(kind) ? new File(v.root, p.getProperty("pending." + i + ".file", "")) : null));
+			out.add(new Pending(i, kind, p.getProperty("pending." + i + ".name", ""), c, "ship".equals(kind) ? new File(v.root, p.getProperty("pending." + i + ".file", "")) : null, p.getProperty("pending." + i + ".letter")));
 		}
 		return out;
+	}
+	/** The prizes the Space Dock asks about itself: those no letter carries. */
+	public static List<Pending> pendingToAsk(Vault v) {
+		List<Pending> out = new ArrayList<Pending>();
+		for (Pending x : pending(v)) if (x.letter == null) out.add(x);
+		return out;
+	}
+	/** The prize a letter carries, or null (answered, or none). */
+	public static Pending pendingFor(Vault v, String letterKey) {
+		for (Pending x : pending(v)) if (letterKey.equals(x.letter)) return x;
+		return null;
 	}
 	/** Yes: the recruit into the Cargo Hold, or the ship to the Space Dock ({@code dock}) or the Junkyard, set out at the station as she is. */
 	public static synchronized void accept(Vault v, Pending x, boolean dock) throws IOException {
@@ -618,6 +631,7 @@ public final class Assignments {
 		List<String> stored = new ArrayList<String>();
 		File prizeFile = null;
 		byte[] prizeBytes = null;
+		int pendingIndex = -1; // the prize's question, if one waits
 		if ("ship".equals(r.prize)) { // built now, kept for the commander's answer; if she can't be, a part comes home instead
 			try {
 				SavedGameState gs = Derelicts.prizeShip(v, new Random());
@@ -627,8 +641,8 @@ public final class Assignments {
 				prizeFile = new File(dir, "prize-" + a.sentAt + "-" + a.index + ".sav");
 				net.blerf.ftl.xml.ShipBlueprint bp = DataManager.get().getShip(gs.getPlayerShip().getShipBlueprintId());
 				r.prizeDetail = gs.getPlayerShipName() + (bp == null ? "" : " (" + bp.getName() + ")");
-				int i = keep(p, "ship", r.prizeDetail);
-				p.setProperty("pending." + i + ".file", "assignments/" + prizeFile.getName());
+				pendingIndex = keep(p, "ship", r.prizeDetail);
+				p.setProperty("pending." + pendingIndex + ".file", "assignments/" + prizeFile.getName());
 			} catch (Exception e) { log.warn("The hijacked ship could not be built: {}", e.toString()); r.prize = "part"; }
 		}
 		if ("part".equals(r.prize)) { r.prizeDetail = part(stored, v); }
@@ -637,10 +651,12 @@ public final class Assignments {
 			if (n == null) r.prize = null;
 			else {
 				r.recruit = n; r.prizeDetail = n.getName() + " (" + homeplanet.model.Crew.raceTitle(n) + ")";
-				int i = keep(p, "recruit", n.getName());
-				for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(n).entrySet()) p.setProperty("pending." + i + ".crew." + e.getKey(), e.getValue());
+				pendingIndex = keep(p, "recruit", n.getName());
+				for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(n).entrySet()) p.setProperty("pending." + pendingIndex + ".crew." + e.getKey(), e.getValue());
 			}
 		}
+		String letter = "expedition:" + a.sentAt + ":" + a.index + ":" + String.join(",", a.names());
+		if (HomePlanet.immersiveNotifications() && pendingIndex >= 0) p.setProperty("pending." + pendingIndex + ".letter", letter); // the letter asks, with buttons
 		Vault.Transaction tx = v.begin().put(st, c.save, c.hash);
 		if (prizeFile != null) tx.put(prizeFile, prizeBytes);
 		Expeditions.admitAndTake(tx, v, hurt, taken, sectorCaptors(r.sector), v.beaconsSeen(), new Random());
@@ -660,8 +676,7 @@ public final class Assignments {
 		for (Fate f : r.dead()) dead.add(f.name());
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
 				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead)));
-		if (HomePlanet.immersiveNotifications())
-			Transmissions.deliver("expedition:" + a.sentAt + ":" + a.index + ":" + String.join(",", a.names()), "Expedition Command", "Back from " + sectorTitle(r.sector), text);
+		if (HomePlanet.immersiveNotifications()) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text);
 		return new Report(r.sector, text, a.names());
 	}
 	/** Who holds a captive taken in this sector. */

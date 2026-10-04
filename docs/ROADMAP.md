@@ -920,8 +920,10 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   the mission: a 20 brings a ship home (kept in `assignments/` until the commander answers: to the Space Dock, to
   the Junkyard, or not taken; set out at the station as she is), a part to the stored systems (level 1, a bar broken) or a
   rescued one who asks to sign on (one in twenty with a skill already; take them into the Cargo Hold or send them on
-  their way); a Hijack's 15 to 19 brings a part. The questions are asked at the Space Dock whatever the inbox setting,
-  and again at the next look if left unanswered. The job's skill pays points by band, so a long campaign levels people
+  their way); a Hijack's 15 to 19 brings a part. With Immersive Notifications on the report's letter carries the
+  question with its own buttons (the recruit waits in the station's lounge, the ship is moored at the station, until
+  you answer); otherwise the Space Dock asks, and asks again at the next look if the box was closed. A chosen No is
+  for good. The job's skill pays points by band, so a long campaign levels people
   up.
 - **How long they're away** (`Assignments.days`): 1 to 3 days, then a day more for a nebula (half the time), Abandoned
   or Crystal space (always), a Mantis sector (half the time); Got Lost a day and a day for every failed roll on it;
