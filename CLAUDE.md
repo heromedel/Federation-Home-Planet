@@ -64,8 +64,8 @@ it does and CREDITS.md for where the code came from.
 - `src/main/java/net/blerf/ftl`, `net/vhati`: Vhati's save parser and ftl.dat reader (GPL, lightly extended;
   each changed file says so at the top).
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
-- Expeditions come in two systems behind `expedition_type` in the cfg (hidden): 1 the board of jobs (`Expeditions`), 2
-  the crew expeditions (`Assignments`, `docs/ROADMAP.md` 31), 0 hiring alone. They share the infirmary, the captives,
+- Expeditions come in two systems behind `expedition_type` in the cfg (hidden): 2 the crew expeditions (`Assignments`,
+  `docs/ROADMAP.md` 31; the default), 1 the board of jobs (`Expeditions`), 0 hiring alone. They share the infirmary, the captives,
   the crew picker and the hire button, nothing else: keep them apart.
 - `Tools and Harness/harness2/`: the regression harness (Claude's test bench, not a user tool).
 - `Tools and Harness/hw2fhp-converter/`: the FTL Homeworld to FHP converter (a separate jar) and its tests.

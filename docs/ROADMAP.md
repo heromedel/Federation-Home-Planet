@@ -891,7 +891,7 @@ start again, count everything on her, one price everywhere, and let the difficul
 
 heromedel's design, tried beside the old board rather than in its place: `expedition_type` in the cfg (never in
 Settings), 0 hides expeditions (the Space Dock's button becomes Hire Crew, the volunteer board alone), 1 is the board
-of jobs of section 25 (the default), 2 is this. The old system's infirmary and ransoms settle under any value; the two
+of jobs of section 25, 2 is this (the default since heromedel's go-ahead). The old system's infirmary and ransoms settle under any value; the two
 share those files, the crew-card picker and the hire button, and nothing else (`parser/Assignments.java`,
 `ui/AssignmentsDialog.java`, the fleet's `assignments.txt`, the words in `resource/assignments.txt`).
 
@@ -944,6 +944,21 @@ stipends paid; only the next one's length changes. The ransom's month is 28 beac
 the end; the infirmary keeps the hurt 6 to 12 days (the same stretch as before). The Junkyard's intervals stand and
 their footers say what they are in days ("a week or two", "two weeks to six"). The old board's postings and the crew
 expeditions' days were days already. The words everywhere say months, never beacons.
+
+## 33. Captain's Quarters, and Refresh as a button beside Helm — built (5.00; harness test RestT)
+
+heromedel's idea: a way for time to pass without flying, now that details come back and ransoms run on the station's
+clock. Under Station, above Settings, "Quarters" ("Click here to head to quarters for a quick rest."): the question
+"Would you like to spend the rest of today in your quarters." with No to begin with; Yes passes one beacon of the
+fleet's time (`Rest.rest`), runs the station's round (reports, the prizes' questions, ransoms, the infirmary) and
+rebuilds the screen; "Rested in quarters" in the history. Resting on and on isn't honourable (heromedel): the first
+day is free, then each day in a row costs reputation, 1, 2, 3, 4, 5 and 5 from there, with Reputation shown;
+anything else that moves the clock ends the run. From the second day the question reads "...as you did yesterday.
+What will people think.", from the third "...as you have for the last N days. What will people think.", with
+"-N reputation." under it on its own line when there's a cost and nothing when there's none. A day to get a detail
+back costs nothing; sleeping to a stipend costs about 125. The Refresh button left the column: a small square with
+the big buttons' rim and two chasing arrows sits at the top right beside Helm, past the column's edge, with the old
+tooltip and the same action.
 
 ## Naming decisions — settled (4B.30)
 

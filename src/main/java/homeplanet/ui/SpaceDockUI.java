@@ -1,9 +1,11 @@
 package homeplanet.ui;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -52,7 +54,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
 	private JButton museumBtn;
-	private JButton inboxBtn, repBtn, expeditionsBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn;
+	private JButton inboxBtn, repBtn, expeditionsBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn, quartersBtn;
 	final MainFrame parent;
 
 	/** Width of one docked ship's place in the list. */
@@ -167,7 +169,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		salvageBtn = controlButton("Junkyard", "The Junkyard: salvage, scrap or sell a ship, or buy derelicts and parts");
 		disbandBtn = controlButton("Decommission", "Decommission the boarded ship: she goes to the Junkyard");
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
-		refreshBtn = controlButton("Refresh", "Take stock of the Space Dock again (after playing FTL, or changing save files)");
+		quartersBtn = controlButton("Quarters", "Click here to head to quarters for a quick rest.");
+		refreshBtn = new RefreshButton(); // a small square beside Helm, over the main panel's edge
+		refreshBtn.setToolTipText("Take stock of the Space Dock again (after playing FTL, or changing save files)");
+		refreshBtn.addActionListener(this);
 		cargoBtn = controlButton("Cargo Bay", "Trade, store and shop: the boarded ship's cargo, crew, weapons and systems");
 		expeditionsBtn = HomePlanet.expeditionType == 0 ? controlButton("Hire Crew", "Post for volunteers: new crew wait in the Cargo Hold")
 				: controlButton("Expeditions", "Jobs for crew without a ship: send crew from the Cargo Hold, or post for volunteers");
@@ -193,10 +198,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		if (homeplanet.parser.Museum.anything(vault)) { // once a ship has won, or been lost in action
 			museumBtn = controlButton("Museum", "The Federation Museum: the Hall of Victors, and the Memorial to ships lost in action");
-			controlGroup(controls, "Station", cargoBtn, commBtn, expeditionsBtn, settingsBtn, refreshBtn, museumBtn);
+			controlGroup(controls, "Station", cargoBtn, commBtn, expeditionsBtn, quartersBtn, settingsBtn, museumBtn);
 		} else {
 			museumBtn = null;
-			controlGroup(controls, "Station", cargoBtn, commBtn, expeditionsBtn, settingsBtn, refreshBtn);
+			controlGroup(controls, "Station", cargoBtn, commBtn, expeditionsBtn, quartersBtn, settingsBtn);
 		}
 		String designLock = homeplanet.parser.Clearance.customReason();
 		designBtn = controlButton("Design Ship", designLock == null ? "Lay out a new ship of your own on a blank grid"
@@ -236,9 +241,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					if (room) top = Math.max(top, stats.getY() + sd.height + 6); // a tall stats column pushes the docked ships down, not under it
 				}
 				docked.setBounds(0, top, Math.min(dockedW, getWidth()), Math.max(0, getHeight() - top));
+				refreshBtn.setBounds(getWidth() - RefreshButton.SIZE - 2, 14, RefreshButton.SIZE, RefreshButton.SIZE); // at the top right, left of Helm, past the column's edge
 			}
 		};
 		main.setOpaque(false);
+		main.add(refreshBtn);
 		if (berth != null) { main.add(aboard); main.add(berth); main.add(stats); }
 		main.add(docked);
 
@@ -713,6 +720,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			init(); // rules or the saves folder may have changed
 		} else if (o == refreshBtn) {
 			refresh();
+		} else if (o == quartersBtn) {
+			quarters();
 		} else if (o == museumBtn && museumBtn != null) {
 			parent.showMuseum();
 		} else if (o == otherBtn) {
@@ -755,6 +764,48 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 
 	/** Reads the vault and every changed file again (after playing FTL, or changing files by hand). */
+	/** Captain's Quarters: a day's rest, asked first (No to begin with), then the station's round and the screen rebuilt. */
+	private void quarters() {
+		Vault v = Vault.get();
+		Object[] options = {"No", "Yes"};
+		javax.swing.JTextArea t = new javax.swing.JTextArea(homeplanet.parser.Rest.question(v));
+		t.setEditable(false); t.setOpaque(false); t.setFont(MenuTheme.TEXT_FONT);
+		if (JOptionPane.showOptionDialog(this, t, "Captain's Quarters", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]) != 1) return;
+		try { homeplanet.parser.Rest.rest(v); }
+		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not record the day's rest:\n" + e.getMessage()); return; }
+		init();
+		timeRound(false);
+	}
+	/** The refresh button: a small square with the big buttons' rim and two chasing arrows, lit under the pointer like them. */
+	static final class RefreshButton extends FtlButton {
+		static final int SIZE = 30;
+		RefreshButton() { super("", FtlFont.MENU, SIZE, SIZE); }
+		@Override protected void paintComponent(Graphics g0) {
+			Graphics2D g = (Graphics2D) g0.create();
+			int w = getWidth() - 2, h = getHeight() - 2, c = 5;
+			java.awt.Polygon p = new java.awt.Polygon(new int[] {c, w - c, w, w, w - c, c, 0, 0}, new int[] {0, 0, c, h - c, h, h, h - c, c}, 8);
+			p.translate(1, 1);
+			javax.swing.ButtonModel m = getModel();
+			boolean hot = isEnabled() && m.isRollover() && !m.isPressed();
+			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+			g.setColor(hot ? HOT : (m.isPressed() ? FILL_DOWN : FILL));
+			g.fillPolygon(p);
+			g.setStroke(new BasicStroke(2f));
+			g.setColor(LINE);
+			g.drawPolygon(p);
+			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g.setColor(hot ? TEXT_HOT : TEXT);
+			g.setStroke(new BasicStroke(2.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			int cx = getWidth() / 2, cy = getHeight() / 2, r = 8;
+			g.draw(new java.awt.geom.Arc2D.Double(cx - r, cy - r, 2 * r, 2 * r, 30, 130, java.awt.geom.Arc2D.OPEN));
+			g.draw(new java.awt.geom.Arc2D.Double(cx - r, cy - r, 2 * r, 2 * r, 210, 130, java.awt.geom.Arc2D.OPEN));
+			double a1 = Math.toRadians(30), x1 = cx + r * Math.cos(a1), y1 = cy - r * Math.sin(a1);
+			java.awt.geom.Path2D q = new java.awt.geom.Path2D.Double(); q.moveTo(x1 + 1, y1 - 6); q.lineTo(x1 + 2, y1 + 1); q.lineTo(x1 - 5, y1 - 1); q.closePath(); g.fill(q);
+			double a2 = Math.toRadians(210), x2 = cx + r * Math.cos(a2), y2 = cy - r * Math.sin(a2);
+			q = new java.awt.geom.Path2D.Double(); q.moveTo(x2 - 1, y2 + 6); q.lineTo(x2 - 2, y2 - 1); q.lineTo(x2 + 5, y2 + 1); q.closePath(); g.fill(q);
+			g.dispose();
+		}
+	}
 	void refresh() {
 		log.debug("Space Dock: Refresh");
 		try {

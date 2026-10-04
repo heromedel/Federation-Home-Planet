@@ -119,7 +119,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
     && Assignments.holdCrew(v).size() == 2 && away.get(0).until >= v.beaconsSeen() + 1 && away.get(0).until <= v.beaconsSeen() + Assignments.AWAY_CAP && v.beaconsSeen() == beforeBeacons + 1);
   Assignments.Result first = away.get(0).result(), same = away.get(0).result();
   Setup.chk("A: the result was rolled at setting out and rolls the same every time (the seed)", first.report.equals(same.report) && first.scrap == same.scrap && away.get(0).seed != 0);
-  Setup.chk("A: the offer taken is replaced", Assignments.board(v).size() == 3 && Assignments.board(v).get(1).sector != null);
+  Setup.chk("A: the offer taken is replaced, by another sector", Assignments.board(v).size() == 3 && Assignments.board(v).get(1).sector != null && !Assignments.board(v).get(1).sector.equals(b.get(1).sector));
   Setup.chk("A: not back before their time", Assignments.checkReturns(v).isEmpty() && Assignments.away(v).size() == 1);
   while (v.beaconsSeen() < away.get(0).until) v.countBeacon();
   // a known result: both successful, no items

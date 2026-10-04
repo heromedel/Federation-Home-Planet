@@ -226,6 +226,7 @@ public final class Assignments {
 			if (s != null && now < intOf(p, "offer." + i + ".until", 0) && (ae || !"abandoned".equals(s))) continue;
 			List<String> taken = new ArrayList<String>();
 			for (int k = 0; k < OFFERS; k++) if (k != i && p.getProperty("offer." + k) != null) taken.add(p.getProperty("offer." + k));
+			if (s != null) taken.add(s); // not the one that just came down or was taken
 			String pick = drawSector(rng, taken, ae);
 			p.setProperty("offer." + i, pick);
 			p.setProperty("offer." + i + ".words", say(rng, "Work on offer.", "offer", pick));
@@ -396,7 +397,7 @@ public final class Assignments {
 		p.setProperty("away." + i + ".sentAt", Integer.toString(now));
 		p.setProperty("away." + i + ".seed", Long.toString(seed));
 		p.setProperty("away." + i + ".until", Integer.toString(now + days(r, asLeft, rng)));
-		p.remove("offer." + slot); p.remove("offer." + slot + ".words"); p.remove("offer." + slot + ".until");
+		p.setProperty("offer." + slot + ".until", "0"); p.remove("offer." + slot + ".words"); // comes down now: redrawn, not the same sector, at the next look
 		v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
 		v.countBeacon();
 		List<String> names = new ArrayList<String>();

@@ -67,8 +67,8 @@ public class HomePlanet {
 	/** HR2: commissioning a ship costs scrap from the storage hold, at this percent of her price (50, 75 or 100). */
 	public static boolean commissionCosts = false;
 	public static int commissionPercent = 100;
-	/** Hidden (the cfg only, never Settings): which expeditions the Space Dock offers. 0 none (hiring alone), 1 the board of jobs, 2 the crew expeditions (heromedel's second system, 5.00). */
-	public static int expeditionType = 1;
+	/** Hidden (the cfg only, never Settings): which expeditions the Space Dock offers. 2 the crew expeditions (heromedel's second system, 5.00; the default), 1 the board of jobs, 0 none (hiring alone). */
+	public static int expeditionType = 2;
 	/** With HR2: the free ship an empty shipyard (no ship docked, boarded or in the Junkyard) offers: "kestrel", "any" or "relief". */
 	public static String freeShip = "relief";
 	/** With HR2: each ship layout unlocked in the FTL profile after this was turned on can be commissioned free, once. */
@@ -154,7 +154,7 @@ public class HomePlanet {
 		sellSystems = flag("sell_systems");
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
-		try { expeditionType = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("expedition_type", "1").trim()))); } catch (NumberFormatException e) { expeditionType = 1; }
+		try { expeditionType = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("expedition_type", "2").trim()))); } catch (NumberFormatException e) { expeditionType = 2; }
 		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
 		if ("variable".equals(freeShip)) freeShip = "kestrel"; // Variable (a ship by what a report surrendered) is no more
 		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
