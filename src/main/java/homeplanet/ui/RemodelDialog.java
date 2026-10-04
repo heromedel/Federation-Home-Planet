@@ -345,8 +345,10 @@ public class RemodelDialog extends ShipEditorDialog {
 				HomePlanet.showErrorDialog("The Home Planet Station couldn't save her remodel to " + CompanionMod.remodelsFile().getAbsolutePath() + ":\n" + e + "\n\nHer blueprint is unchanged.");
 				return;
 			}
+			net.blerf.ftl.model.shiplayout.ShipLayout oldLay = null; // her rooms as they are now: read before register renames them under the same id
+			try { oldLay = net.blerf.ftl.parser.DataManager.get().getShipLayout(save.getPlayerShip().getShipLayoutId()); } catch (Exception e) { }
 			CompanionMod.register(all); // she can be drawn right away
-			Retrofit.switchTo(save, mine.id, dx, dy); // blueprint, layout, rooms, crew and doors together
+			Retrofit.switchTo(save, mine.id, dx, dy, oldLay); // blueprint, layout, rooms, crew and doors together
 		}
 		List<String> lines = new ArrayList<String>();
 		for (Sys s : moved.values()) lines.add(Items.systemTitle(s.id) + (s.room < 0 ? ": off the blueprint" : ": room " + s.room + (s.square != null ? ", square " + s.square + (s.dir != null ? " facing " + s.dir : "") : "")));

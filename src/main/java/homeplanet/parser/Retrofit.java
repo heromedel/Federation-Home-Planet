@@ -123,14 +123,22 @@ public class Retrofit {
 	public static void switchTo(SavedGameState save, String bpId) { switchTo(save, bpId, 0, 0); }
 	/** As above; dx, dy: how far (in squares) the old rooms moved in the new layout's coordinates (an overhaul can shift them). */
 	public static void switchTo(SavedGameState save, String bpId, int dx, int dy) {
+		net.blerf.ftl.model.shiplayout.ShipLayout oldLay = null;
+		try { oldLay = DataManager.get().getShipLayout(save.getPlayerShip().getShipLayoutId()); } catch (Exception e) { log.debug("Retrofit: her old layout {} could not be read: {}", save.getPlayerShip().getShipLayoutId(), e.toString()); }
+		switchTo(save, bpId, dx, dy, oldLay);
+	}
+	/**
+	 * As above, with her old layout as it was before the new blueprint was registered: a re-finalized remodel keeps
+	 * its layout id, so once registered the id names the new rooms, and reading "her old layout" by id would compare
+	 * the new rooms with themselves and leave her room states at the old shape. The caller reads it first.
+	 */
+	public static void switchTo(SavedGameState save, String bpId, int dx, int dy, net.blerf.ftl.model.shiplayout.ShipLayout oldLay) {
 		ShipState ship = save.getPlayerShip();
 		ship.setShipBlueprintId(bpId);
 		save.setPlayerShipBlueprintId(bpId);
 		ShipBlueprint bp = ship(bpId);
 		if (bp == null) return;
 		String layoutId = bp.getLayoutId();
-		net.blerf.ftl.model.shiplayout.ShipLayout oldLay = null;
-		try { oldLay = DataManager.get().getShipLayout(ship.getShipLayoutId()); } catch (Exception e) { log.debug("Retrofit: her old layout {} could not be read: {}", ship.getShipLayoutId(), e.toString()); }
 		ship.setShipLayoutId(layoutId);
 		net.blerf.ftl.model.shiplayout.ShipLayout lay = DataManager.get().getShipLayout(layoutId);
 		if (lay == null) return;
