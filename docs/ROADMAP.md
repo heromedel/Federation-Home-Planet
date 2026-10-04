@@ -953,8 +953,8 @@ clock. Under Station, above Settings, "Quarters" ("Click here to head to quarter
 fleet's time (`Rest.rest`), runs the station's round (reports, the prizes' questions, ransoms, the infirmary) and
 rebuilds the screen; "Rested in quarters" in the history. Resting on and on isn't honourable (heromedel): the first
 day is free, then each day in a row costs reputation, 1, 2, 3, 4, 5 and 5 from there, with Reputation shown;
-anything else that moves the clock ends the run. From the second day the question reads "...as you did yesterday.
-What will people think.", from the third "...as you have for the last N days. What will people think.", with
+anything else that moves the clock ends the run. From the second day the question reads "...as you did yesterday."
+and, on a line of its own, "What will people think.", from the third "...as you have for the last N days.", with
 "-N reputation." under it on its own line when there's a cost and nothing when there's none. A day to get a detail
 back costs nothing; sleeping to a stipend costs about 125. The Refresh button left the column: a small square with
 the big buttons' rim and two chasing arrows sits at the top right beside Helm, past the column's edge, with the old

@@ -47,11 +47,11 @@ public final class Rest {
 	}
 	/** What another day would cost now: nothing the first day or without Reputation, else the run, up to MAX_COST. */
 	public static int cost(Vault v) { return Reputation.shown() ? Math.min(MAX_COST, run(v)) : 0; }
-	/** The question, as heromedel wrote it: plain the first day, then the days so far, and the cost on its own line when there is one. */
+	/** The question, as heromedel wrote it: plain the first day, then the days so far with "What will people think." on a line of its own, and the cost on another when there is one. */
 	public static String question(Vault v) {
 		int run = run(v), cost = cost(v);
 		String q = "Would you like to spend the rest of today in your quarters"
-				+ (run == 0 ? "." : run == 1 ? " as you did yesterday. What will people think." : " as you have for the last " + run + " days. What will people think.");
+				+ (run == 0 ? "." : run == 1 ? " as you did yesterday.\nWhat will people think." : " as you have for the last " + run + " days.\nWhat will people think.");
 		return cost > 0 ? q + "\n\n-" + cost + " reputation." : q;
 	}
 	/** A day in quarters: the cost (if any) off the reputation, the run kept, and one beacon of the fleet's time passed. */
