@@ -82,7 +82,7 @@ public class RuleBoxes {
 		scrapBox.setToolTipText("Optional systems only, each for 10 scrap (20 when Refit charges 50; free when Refit is free). Standard equipment and damaged systems are lost with the hull. "
 				+ "Off: her systems are lost with the hull");
 		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
-		removalBox.setToolTipText("The Refit tab's Store button: what the boarded ship pays to take one of her systems off, or whether she can at all");
+		removalBox.setToolTipText("The Refit tab's Uninstall button: what the boarded ship pays to take one of her systems off, or whether she can at all");
 		removalLabel.setToolTipText(removalBox.getToolTipText());
 		removalRow.add(removalLabel);
 		removalRow.add(removalBox);

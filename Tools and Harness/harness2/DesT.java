@@ -243,6 +243,7 @@ public class DesT {
    Setup.chk("Y: mirrored again: back", ShipArt.flipHorizontally(t) && t.mounts.get(0).x == m0x && t.ellipseX == 10);
  }
  homeless();
+ plan();
  Setup.done();
 } /** An Undo Retrofit takes off a system her original model has no room for: artillery on a remodelled Kestrel. */
  static void homeless() throws Exception {
@@ -254,5 +255,17 @@ public class DesT {
   Setup.chk("U: with artillery installed, the artillery is what her original model can't hold", Retrofit.homeless(s).size() == 1 && Retrofit.homeless(s).get(0) == SystemType.ARTILLERY);
   SystemState cl = s.getSystem(SystemType.CLOAKING); if (cl == null) { cl = new SystemState(SystemType.CLOAKING); s.addSystem(cl); } cl.setCapacity(1); cl.setPower(1);
   Setup.chk("U: cloaking has a room on every model: not taken off", Retrofit.homeless(s).size() == 1);
+ }
+ /** The Refit tab's floor plan: a ship's rooms and system rooms from her blueprint, for a game ship and a design. */
+ static void plan() throws Exception {
+  homeplanet.ui.ShipPlanView v = new homeplanet.ui.ShipPlanView();
+  List<String> have = new ArrayList<String>(); have.add("shields"); have.add("pilot");
+  v.show("PLAYER_SHIP_HARD", have);
+  Setup.chk("V: a Kestrel's plan knows her rooms: shields yes, artillery no", v.hasRoom("shields") && v.hasRoom("cloaking") && !v.hasRoom("artillery"));
+  v.show("PLAYER_SHIP_FED", have);
+  Setup.chk("V: a Federation Cruiser's plan has an artillery room", v.hasRoom("artillery"));
+  v.show("NO_SUCH_SHIP", have);
+  Setup.chk("V: an unknown blueprint shows nothing, quietly", !v.hasRoom("shields"));
+  v.light("shields"); v.light(null);
  }
 }

@@ -994,6 +994,15 @@ every installed system her original model has no room for, the confirm lists the
 original model, to the stored systems") and the undo takes them off her into the stored systems, level and broken
 bars kept (DesT checks it).
 
+## 35. The Refit tab shows her — built (5.03; harness checks in DesT)
+
+heromedel's note: show the ship's layout while looking at what can go on or come off, and call Store what it is. The
+Refit tab's picture is now her floor plan (`ui/ShipPlanView`): her rooms, doors and the icons of the systems she has,
+drawn over her hull at the picture's scale from her blueprint the way the design screen draws a ship (a room kept for
+a system she doesn't have shows its icon faintly). The row under the pointer lights its room, an uninstalled
+system's row the room it would go into. Nothing on the plan is clickable; the buttons stay on the right. "Store" is
+"Uninstall" on the buttons, the help line, the confirm and the hold's heading ("Uninstalled systems in the Cargo Bay").
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo
