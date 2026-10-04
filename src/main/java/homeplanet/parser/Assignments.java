@@ -672,6 +672,10 @@ public final class Assignments {
 		for (String key : p.stringPropertyNames()) if (!key.startsWith("away.")) q.setProperty(key, p.getProperty(key));
 		tx.put(file(v), bytes(q)).commit();
 		String text = r.report = report(r, new Random(r.seed)); // told again now everything is settled (the prize, the recruit's name), in the same words
+		// the reputation, scored as the game's events are: the scrap, the dead, how it went
+		int good = 0, bad = 0;
+		for (Fate f : r.fates) { if (f.band >= 3) good++; else bad++; }
+		homeplanet.vault.Reputation.expedition(v, sectorTitle(r.sector) + ", " + jobTitle(r.job), r.scrap, r.dead().size(), bad == 0 ? 1 : good == 0 ? -1 : 0);
 		List<String> dead = new ArrayList<String>();
 		for (Fate f : r.dead()) dead.add(f.name());
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"

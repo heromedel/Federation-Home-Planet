@@ -962,6 +962,16 @@ back costs nothing; sleeping to a stipend costs about 125. The Refresh button le
 the big buttons' rim and two chasing arrows sits at the top right beside Helm, past the column's edge, with the old
 tooltip and the same action.
 
+## 34. The quick-fix batch — built (5.00; harness checks in AsgT)
+
+From heromedel's notes: the Long Range offer's amount starts at 1 as the Cargo Bay's does, with Offer all beside it;
+the Cargo Bay's arrows get "< all" and "all >" under them; an Info button beside every list on the Long Range screen,
+both sides, opening the crew report or the item's card (the tooltips stay); and crew expeditions score reputation as
+the game's events do (`Reputation.expedition`): the pot a tenth, each crew member killed -10, everyone successful
++2, nobody successful -1, nothing for items, prizes or captures (a refused or lost ransom already counts as a death).
+Also from the notes, found done already: the Undo Retrofit confirm lists what moves back; the From the game art
+picker has a preview; the Content line is gone from the ship report; the Locked ships panel wraps to the screen.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

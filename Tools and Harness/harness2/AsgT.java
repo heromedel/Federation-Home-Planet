@@ -223,6 +223,29 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Assignments.accept(v, pend.get(0), false);
   Setup.chk("Z: answered from the letter, they're in the hold", Assignments.holdCrew(v).size() == 2 && Assignments.pendingFor(v, letterKey) == null);
   HomePlanet.immersiveNotifications = false;
+  // the reputation, as the game scores it: the scrap a tenth, a death -10, everyone successful +2, nobody -1
+  HomePlanet.reputationOn = true;
+  int total = Reputation.total(v);
+  crew = ExpT.hold(v, "slug", "slug");
+  Assignments.send(v, Assignments.board(v).get(0).slot, crew, new Random(4));
+  a = Assignments.away(v).get(0);
+  while (v.beaconsSeen() < a.until) v.countBeacon();
+  r = Assignments.roll("nebula", a.crew, new Random(1));
+  for (Assignments.Fate f : r.fates) { f.died = false; f.captured = false; f.infirmary = false; f.band = 4; f.item = null; }
+  r.job = "attack"; r.prize = null; r.scrap = 24;
+  Assignments.bringHome(v, a, r);
+  Setup.chk("Z: 24 scrap and everyone successful: +4 reputation, logged", Reputation.total(v) == total + 4 && Reputation.log(v).contains("Expedition: Nebula, Attack (+4)"));
+  total = Reputation.total(v);
+  crew = ExpT.hold(v, "slug", "slug");
+  Assignments.send(v, Assignments.board(v).get(0).slot, crew, new Random(4));
+  a = Assignments.away(v).get(0);
+  while (v.beaconsSeen() < a.until) v.countBeacon();
+  r = Assignments.roll("rock", a.crew, new Random(1));
+  for (Assignments.Fate f : r.fates) { f.died = false; f.captured = false; f.infirmary = false; f.band = 2; f.item = null; }
+  r.fates.get(0).died = true; r.fates.get(0).band = 0; r.job = "spiders"; r.prize = null; r.scrap = 3;
+  Assignments.bringHome(v, a, r);
+  Setup.chk("Z: a death and nobody successful: -11", Reputation.total(v) == total - 11);
+  HomePlanet.reputationOn = false;
   Random rr = new Random(7); int skilled = 0;
   for (int i = 0; i < 400; i++) { CrewState c = Assignments.recruit(rr); int lv = 0; for (int x : homeplanet.model.Crew.skillLevels(c)) lv += x; if (lv > 0) skilled++; }
   Setup.chk("Z: about one recruit in twenty comes with a skill (" + skilled + " of 400)", skilled >= 8 && skilled <= 40);

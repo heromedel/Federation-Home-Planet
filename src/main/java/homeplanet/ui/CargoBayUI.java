@@ -708,6 +708,15 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		moveAmount.setToolTipText("How much each arrow moves");
 		styleSpinner(moveAmount);
 		trade.add(moveAmount);
+		// everything at once, either way (heromedel: the arrows start at 1; these move the lot)
+		FtlButton allLeft = new FtlButton("< all", FtlFont.BODY, 84, 22), allRight = new FtlButton("all >", FtlFont.BODY, 84, 22);
+		allLeft.setBounds(GX + 8, y + 70, 84, 22);
+		allRight.setBounds(GX + GW - 92, y + 70, 84, 22);
+		allLeft.setToolTipText("Take all of it from the partner");
+		allRight.setToolTipText("Send all of it to the partner");
+		allLeft.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { moveAllSupply(false); } });
+		allRight.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { moveAllSupply(true); } });
+		trade.add(allLeft); trade.add(allRight);
 		// missiles and drone parts can be junked (and sold, when the house rule allows): that many, from the side chosen
 		myJunkSupply = icon(CargoParts.trashIcon(), 8, y + 68, "Junk that many of your ship's missiles or drone parts", new ActionListener() { public void actionPerformed(ActionEvent e) { disposeSupply(true, false); } });
 		mySellSupply = icon(IconFactory.supplyIcon("scrap"), 34, y + 68, "Sell that many of your ship's missiles or drone parts (half the store price)", new ActionListener() { public void actionPerformed(ActionEvent e) { disposeSupply(true, true); } });
@@ -795,9 +804,14 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		for (int k = 0; k < 4; k++) { mySupply[k].repaint(); theirSupply[k].repaint(); }
 		help((sell ? "Sold " : "Junked ") + n + " " + what + (sell ? " for " + price + " scrap." : "."));
 	}
-	private void moveSupply(boolean send) {
+	/** All of the chosen supply, one way or the other. */
+	private void moveAllSupply(boolean send) {
 		if (currentPath == null) { help(NO_SHIP); return; }
-		int n = (Integer) moveAmount.getValue();
+		moveSupply(send, Integer.MAX_VALUE);
+	}
+	private void moveSupply(boolean send) { moveSupply(send, (Integer) moveAmount.getValue()); }
+	private void moveSupply(boolean send, int n) {
+		if (currentPath == null) { help(NO_SHIP); return; }
 		ShipState from = send ? currentState : tradeState, to = send ? tradeState : currentState;
 		int have = supply(from, supplyIdx);
 		if (have <= 0) { help((send ? "Your ship has" : partnerName() + " has") + " no " + SUPPLIES[supplyIdx][1].toLowerCase() + " to move."); return; }

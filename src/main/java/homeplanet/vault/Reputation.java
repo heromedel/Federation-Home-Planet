@@ -199,6 +199,25 @@ public final class Reputation {
 		p.setProperty("total", Integer.toString(num(p, "total") + SHIP_LOST));
 		if (write(v, p)) entry(v, SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null);
 	}
+	/**
+	 * A crew expedition, scored as the game is (heromedel, 5.00): the pot a tenth, each crew member killed CREW_DIED, a good
+	 * outcome (everyone successful or better) EVENT_GOOD, a bad one (nobody successful) EVENT_BAD. Nothing for items or prizes.
+	 * {@code outcome}: 1 good, -1 bad, 0 neither.
+	 */
+	public static synchronized void expedition(Vault v, String what, int scrap, int died, int outcome) {
+		if (!shown()) return;
+		int points = scrap / SCRAP_PER_POINT + died * CREW_DIED + (outcome > 0 ? EVENT_GOOD : outcome < 0 ? EVENT_BAD : 0);
+		List<String> why = new ArrayList<String>();
+		if (scrap / SCRAP_PER_POINT > 0) why.add(scrap + " scrap (+" + scrap / SCRAP_PER_POINT + ")");
+		if (died > 0) why.add((died == 1 ? "a crew member killed" : died + " crew killed") + " (" + signed(died * CREW_DIED) + ")");
+		if (outcome > 0) why.add("a good outcome (+" + EVENT_GOOD + ")");
+		if (outcome < 0) why.add("a bad outcome (" + EVENT_BAD + ")");
+		if (points == 0 && why.isEmpty()) return;
+		Properties p = read(v);
+		if (!counted(p)) { review(v); p = read(v); }
+		p.setProperty("total", Integer.toString(num(p, "total") + points));
+		if (write(v, p)) entry(v, points, "Expedition: " + what + " (" + signed(points) + ")", why);
+	}
 	/** A plea's new ship, answered for with the career's reputation: what it costs, and why. */
 	public static synchronized void plea(Vault v, int cost, String why) { spend(v, cost, why); }
 	/** Reputation spent on anything the career pays for with it (a plea's ship, a promise of adventure): what it costs, and why. */
