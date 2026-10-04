@@ -23,11 +23,18 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("D: no upgrade past FTL's limit", Pricing.upgrade("shields", sh.getMaxPower()) == -1);
   Setup.chk("D: hull repairs are a flat 4 a point", Pricing.hullRepair() == 4);
   SavedGameState k = Commission.build("PLAYER_SHIP_HARD", "Price Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
-  Pricing.Quote full = Pricing.ship(k, 0, 0, 100), half = Pricing.ship(k, 0, 0, 50), custom = Pricing.ship(k, 5, 4, 100);
-  System.out.println("Kestrel A: " + full.total() + " " + full.lines);
-  Setup.chk("P: a Kestrel A costs about 1,000 (885 and her supplies)", full.total() > 900 && full.total() < 1100);
+  Pricing.Quote full = Pricing.ship(k, 0, 0, 100), half = Pricing.ship(k, 0, 0, 50), custom = Pricing.ship(k, 5, 4, 100), hers = Pricing.ship(k, 100);
+  System.out.println("Kestrel A: " + hers.total() + " " + hers.lines);
+  Setup.chk("P: a Kestrel A's fit costs about 1,000 (885 and her supplies)", full.total() > 900 && full.total() < 1100);
   Setup.chk("P: the multiplier scales the total", half.total() == (full.subtotal * 50 + 50) / 100);
-  Setup.chk("P: a custom hull adds rooms and doors", custom.total() == full.total() + 5 * Pricing.PER_ROOM + 4 * Pricing.PER_DOOR);
+  Setup.chk("P: a hull adds rooms and doors, 5 and 2", custom.total() == full.total() + 5 * Pricing.PER_ROOM + 4 * Pricing.PER_DOOR && Pricing.PER_ROOM == 5 && Pricing.PER_DOOR == 2);
+  Setup.chk("Z: every ship pays for her hull, the Kestrel's 17 rooms and 26 doors: " + hers.total(), hers.total() == full.total() + 17 * Pricing.PER_ROOM + 26 * Pricing.PER_DOOR);
+  SavedGameState relief = Commission.buildRelief("Hinata", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
+  SavedGameParser.ShipState rs = relief.getPlayerShip();
+  Setup.chk("Z: the Relief Ship: no sensors, 10 fuel, no scrap, reactor 6, weapons at 2, one human", (rs.getSystem(SavedGameParser.SystemType.SENSORS) == null || rs.getSystem(SavedGameParser.SystemType.SENSORS).getCapacity() == 0)
+    && rs.getFuelAmt() == 10 && rs.getScrapAmt() == 0 && rs.getReservePowerCapacity() == 6 && rs.getSystem(SavedGameParser.SystemType.WEAPONS).getCapacity() == 2 && rs.getCrewList().size() == 1);
+  int rp = Pricing.commission(relief, 100).total();
+  Setup.chk("Z: priced by the formula, about 780 (no written-in 600): " + rp, rp > 740 && rp < 820);
  }
  /** FTL's System Limit: 8 systems, subsystems aside; each one past it is a custom work order, 100 scrap, never part of her value. */
  static void limit() throws Exception {

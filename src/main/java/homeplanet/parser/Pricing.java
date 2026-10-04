@@ -26,8 +26,8 @@ public final class Pricing {
 
 	/** A system with no price of its own (FTL's subsystems in some designs, a system a mod adds): what the station charges. */
 	public static final int UNPRICED_SYSTEM = 25;
-	/** Custom designs: each room and door the shipyard builds. */
-	public static final int PER_ROOM = 10, PER_DOOR = 5;
+	/** Every ship's hull: each room and door (heromedel: the game's hulls pay as a design's does, for fairness; 5.00). */
+	public static final int PER_ROOM = 5, PER_DOOR = 2;
 	/** An artillery weapon with no price (the Federation cruiser's): what the station charges for it. */
 	public static final int UNPRICED_ARTILLERY = 100;
 	/** Artillery guns are a luxury (heromedel's prices): the Artillery Beam, the Type C's Flak Artillery, and each of the Rebel Flagship's weapons. */
@@ -200,14 +200,8 @@ public final class Pricing {
 	 */
 	/** The same, with the rooms and doors of the custom design she was built from, if she was (none for FTL's own ships). */
 	public static Quote ship(SavedGameState gs, int percent) {
-		int rooms = 0, doors = 0;
-		String bpId = gs.getPlayerShipBlueprintId();
-		for (ShipDesign d : DesignExport.built()) {
-			if (!bpId.equals(DesignExport.bpId(d))) continue;
-			rooms = d.rooms.size();
-			doors = d.doors.size();
-		}
-		return ship(gs, rooms, doors, percent);
+		ShipState s = gs.getPlayerShip(); // her hull as the save has it: every ship's rooms and doors, a design's or a game hull's alike
+		return ship(gs, s.getRoomList().size(), s.getDoorMap().size(), percent);
 	}
 	public static Quote ship(SavedGameState gs, int rooms, int doors, int percent) {
 		Quote q = new Quote();
@@ -233,7 +227,7 @@ public final class Pricing {
 		for (CrewState c : SaveHelper.getOwnCrew(s)) { crew += crew(c.getRace().getId()); n++; }
 		q.add("Crew (" + n + ")", crew);
 		q.add("Fuel, missiles and drone parts", supplies(s));
-		if (rooms > 0) q.add("Custom hull (" + rooms + " rooms, " + doors + " doors)", rooms * PER_ROOM + doors * PER_DOOR);
+		if (rooms > 0) q.add("Hull (" + rooms + " rooms, " + doors + " doors)", rooms * PER_ROOM + doors * PER_DOOR);
 		return q;
 	}
 	/**

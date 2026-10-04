@@ -845,6 +845,16 @@ From heromedel's notes after 4B.99. The version after 4B.99 is 5.00 (the numberi
   difficulty or plea, so a new Hard fleet was offered her and the Kestrel both free. Now a new fleet's free ship is the
   Kestrel; the Relief Ship is free when the free command names her (a plea under Hard, or Settings) or any ship is
   free (Easy), otherwise at the Federation's price. Her heading reads "Special Federation Ships".
+- **The Relief Ship at her minimum, priced like any ship (Plan Z).** No sensors (the Junkyard sells them; FTL's stores
+  don't), 10 fuel, no scrap on any difficulty; medbay, doors, the two guns and a reactor of 6 for her seven bars kept,
+  so the medbay runs at something's cost. The written-in 600 is gone: she's priced by the formula at the full rate
+  whatever the commission rate, and the plea's reputation cost follows. Priced step by step with heromedel: as she
+  was 700; her strippings 682, 642; a single gun was ruled out (the Ion Blast drops the shield, the laser gets
+  through), the cheapest crew is already the human.
+- **Every hull pays for its rooms and doors**, 5 a room and 2 a door, read off the save: a game hull as a design's
+  (designs alone paid before, 10 and 5). The Kestrel A rises by 137 to about 1,134, the Relief Ship to about 779. The
+  three core systems stay at 150: a core is 15 percent of a Kestrel, so a hull missing one is worth that much less,
+  which the Junkyard's derelicts rest on.
 
 ## Naming decisions — settled (4B.30)
 

@@ -18,8 +18,8 @@ import homeplanet.vault.Vault;
  * Which ship the free command brings. A new fleet or career starts with a Kestrel Type A, as a new FTL game does. A plea
  * for a new ship (Plead for New Ship) offers what Settings or the career's difficulty grant: any ship (Easy), a Kestrel
  * Type A (Normal), or the Relief Ship Type A (Hard); the Relief Ship is always offered too. With Reputation on, the ship
- * chosen costs reputation: a tenth of what the plea's forfeit doesn't cover of her value (the Relief Ship at the
- * Federation's price, 600).
+ * chosen costs reputation: a tenth of what the plea's forfeit doesn't cover of her value (the Relief Ship by the same
+ * formula as any ship).
  */
 public final class FreeCommand {
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FreeCommand.class);
@@ -28,7 +28,6 @@ public final class FreeCommand {
 	/** "variable" was a fourth choice once (a ship by what was surrendered): read as the Kestrel Type A. */
 	public static final String KESTREL = "kestrel", ANY = "any", RELIEF = "relief", VARIABLE = "variable";
 	/** The Relief Ship Type A: what the shipyard charges for her, and her class and default name. */
-	public static final int RELIEF_PRICE = 600;
 	public static final String RELIEF_CLASS = "Relief Ship Type A", RELIEF_NAME = "Hinata";
 	/** A plea costs reputation: a tenth of the shortfall. */
 	public static final int SHORTFALL_PER_POINT = 10;
