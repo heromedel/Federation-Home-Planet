@@ -489,7 +489,8 @@ public class ExpT { public static void main(String[] a) throws Exception {
  }
  static void hiring(Vault v) throws Exception {
   hold(v);
-  Setup.chk("I: 5 scrap a crew member, at most 60, free with none", Expeditions.hireCost(0) == 0 && Expeditions.hireCost(3) == 15 && Expeditions.hireCost(40) == 60);
+  Setup.chk("I: 5 scrap a crew member, at most 60, no scrap with none", Expeditions.hireCost(0) == 0 && Expeditions.hireCost(3) == 15 && Expeditions.hireCost(40) == 60);
+  Setup.chk("Y: a promise of adventure costs 15 reputation with no crew anywhere, nothing with crew (" + Expeditions.fleetCrew(v) + " now)", Expeditions.PROMISE_REP == 15 && (Expeditions.fleetCrew(v) == 0 || Expeditions.promiseRep(v) == 0));
   int crew = Expeditions.fleetCrew(v), cost = Expeditions.hireCost(crew);
   Vault.Copy c0 = v.readCopy(v.storage()); c0.save.getPlayerShip().setScrapAmt(500); v.begin().put(v.storage(), c0.save, c0.hash).commit();
   int answered = 0, tries = 0; for (int s = 0; s < 40 && answered == 0; s++) { tries++; if (Expeditions.hire(v, new Random(s)) != null) answered++; }

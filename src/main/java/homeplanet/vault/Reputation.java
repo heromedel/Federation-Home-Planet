@@ -200,7 +200,9 @@ public final class Reputation {
 		if (write(v, p)) entry(v, SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null);
 	}
 	/** A plea's new ship, answered for with the career's reputation: what it costs, and why. */
-	public static synchronized void plea(Vault v, int cost, String why) {
+	public static synchronized void plea(Vault v, int cost, String why) { spend(v, cost, why); }
+	/** Reputation spent on anything the career pays for with it (a plea's ship, a promise of adventure): what it costs, and why. */
+	public static synchronized void spend(Vault v, int cost, String why) {
 		if (!shown() || cost <= 0) return;
 		Properties p = read(v);
 		if (!counted(p)) { review(v); p = read(v); }

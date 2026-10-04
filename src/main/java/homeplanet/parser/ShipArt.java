@@ -137,6 +137,77 @@ public class ShipArt {
 		return true;
 	}
 
+	/** A picture turned a quarter turn clockwise. */
+	public static BufferedImage rotated(BufferedImage img) {
+		BufferedImage out = new BufferedImage(img.getHeight(), img.getWidth(), BufferedImage.TYPE_INT_ARGB);
+		for (int y = 0; y < img.getHeight(); y++) for (int x = 0; x < img.getWidth(); x++) out.setRGB(img.getHeight() - 1 - y, x, img.getRGB(x, y));
+		return out;
+	}
+	/** A picture mirrored left to right. */
+	public static BufferedImage mirrored(BufferedImage img) {
+		BufferedImage out = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		java.awt.Graphics2D g = out.createGraphics();
+		g.drawImage(img, img.getWidth(), 0, 0, img.getHeight(), 0, 0, img.getWidth(), img.getHeight(), null);
+		g.dispose();
+		return out;
+	}
+	/**
+	 * Turns her pictures a quarter turn clockwise (as copies of her own in the art folder): the hull, a floor picture, her
+	 * gib pictures; the mounts and the shield ellipse turn with the picture so they keep their spots on it (a mount's
+	 * facing is left as set). The rooms don't move: this is for a picture drawn facing the wrong way. The picture's middle
+	 * stays where it is. False if she has no hull art.
+	 */
+	public static boolean rotate(ShipDesign d) throws java.io.IOException {
+		BufferedImage base = load(d.art, d.art.startsWith("game:") ? "_base" : "");
+		if (base == null) return false;
+		BufferedImage shown = scaled(base, d.artScale);
+		int ws = shown.getWidth(), hs = shown.getHeight();
+		BufferedImage floor = d.floorFromRooms() ? null : load(d.floor, d.floor.startsWith("game:") ? "_floor" : "");
+		turnGibs(d, true);
+		d.art = importImage(rotated(base), d.id, "base");
+		if (floor != null) {
+			int fh = scaled(floor, d.artScale).getHeight();
+			d.floor = importImage(rotated(floor), d.id, "floor");
+			int fx = d.floorX, fy = d.floorY;
+			d.floorX = hs - (fy + fh); d.floorY = fx;
+		}
+		for (ShipDesign.Mount m : d.mounts) { int x = m.x, y = m.y; m.x = hs - y; m.y = x; }
+		int ew = d.ellipseW, eh = d.ellipseH, ex = d.ellipseX, ey = d.ellipseY;
+		d.ellipseW = eh; d.ellipseH = ew; d.ellipseX = -ey; d.ellipseY = ex;
+		double cx = d.artX + ws / 2.0, cy = d.artY + hs / 2.0; // the middle stays: the picture is now hs wide and ws tall
+		d.artX = (int) Math.round(cx - hs / 2.0); d.artY = (int) Math.round(cy - ws / 2.0);
+		return true;
+	}
+	/** Mirrors her pictures left to right (copies of her own), the mounts, the floor's offset and the shield with them; the rooms stay. False with no hull art. */
+	public static boolean flipHorizontally(ShipDesign d) throws java.io.IOException {
+		BufferedImage base = load(d.art, d.art.startsWith("game:") ? "_base" : "");
+		if (base == null) return false;
+		int ws = scaled(base, d.artScale).getWidth();
+		BufferedImage floor = d.floorFromRooms() ? null : load(d.floor, d.floor.startsWith("game:") ? "_floor" : "");
+		turnGibs(d, false);
+		d.art = importImage(mirrored(base), d.id, "base");
+		if (floor != null) {
+			int fw = scaled(floor, d.artScale).getWidth();
+			d.floor = importImage(mirrored(floor), d.id, "floor");
+			d.floorX = ws - (d.floorX + fw);
+		}
+		for (ShipDesign.Mount m : d.mounts) m.x = ws - m.x;
+		d.ellipseX = -d.ellipseX;
+		return true;
+	}
+	/** Her gib pictures turned or mirrored with the hull; the game ship's own gibs no longer fit, so she's cut from the hull art instead. */
+	private static void turnGibs(ShipDesign d, boolean rotate) throws java.io.IOException {
+		if ("files".equals(d.gibs)) {
+			List<String> gibs = new ArrayList<String>();
+			for (int i = 0; i < d.gibFiles.size(); i++) {
+				BufferedImage g = load(d.gibFiles.get(i), "");
+				if (g != null) gibs.add(importImage(rotate ? rotated(g) : mirrored(g), d.id, "gib" + (i + 1)));
+			}
+			d.gibFiles.clear(); d.gibFiles.addAll(gibs);
+			if (gibs.isEmpty()) d.gibs = "cut";
+		} else d.gibs = "cut";
+	}
+
 	/** The pictures a design refers to, as source names. */
 	public static List<String> filesOf(ShipDesign d) {
 		List<String> out = new ArrayList<String>();

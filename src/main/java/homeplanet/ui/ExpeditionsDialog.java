@@ -116,13 +116,13 @@ final class ExpeditionsDialog extends JDialog {
 		try { inHold = Expeditions.holdCrew(v).size(); } catch (IOException e) { }
 		List<String> laidUp = new ArrayList<String>();
 		for (Expeditions.Patient x : Expeditions.infirmary(v)) laidUp.add(x.name);
-		int fleet = Expeditions.fleetCrew(v), cost = Expeditions.hireCost(fleet);
+		int fleet = Expeditions.fleetCrew(v), cost = Expeditions.hireCost(fleet), rep = Expeditions.promiseRep(v);
 		foot.setText("<html>Crew in the Cargo Hold: " + inHold + ".&nbsp;&nbsp; The Cargo Hold holds " + v.storageScrap() + " scrap."
 				+ (laidUp.isEmpty() ? "" : "<br>In the infirmary: " + XmlText.text(String.join(", ", laidUp)) + ".") + "</html>");
-		hireBtn.setText(fleet == 0 ? "Post a promise of adventure" : "Post for volunteers: " + cost + " scrap");
-		hireBtn.setToolTipText(fleet == 0 ? "Free: with no crew anywhere, a promise of adventure is all you can offer. Someone may answer."
+		hireBtn.setText(fleet == 0 ? "Post a promise of adventure" + (rep > 0 ? ": " + rep + " reputation" : "") : "Post for volunteers: " + cost + " scrap");
+		hireBtn.setToolTipText(fleet == 0 ? (rep > 0 ? rep + " reputation, spent whether or not anyone answers: " : "Free: ") + "with no crew anywhere, a promise of adventure is all you can offer. Someone may answer."
 				: "5 scrap for each crew member in your fleet (" + fleet + "), at most 60: paid whether or not anyone answers. New crew wait in the Cargo Hold.");
-		hireBtn.setEnabled(cost <= v.storageScrap());
+		hireBtn.setEnabled(cost <= v.storageScrap() && rep <= homeplanet.vault.Reputation.total(v));
 		cols.revalidate();
 		cols.repaint();
 		pack();
@@ -433,13 +433,14 @@ final class ExpeditionsDialog extends JDialog {
 
 	private void hire() {
 		Vault v = Vault.get();
-		int fleet = Expeditions.fleetCrew(v), cost = Expeditions.hireCost(fleet);
+		int fleet = Expeditions.fleetCrew(v), cost = Expeditions.hireCost(fleet), rep = Expeditions.promiseRep(v);
 		if (cost > 0 && !HomePlanet.confirmNo(this, "Post for volunteers for " + cost + " scrap from the Cargo Hold?\nThe scrap is spent whether or not anyone answers.", "Expeditions")) return;
+		if (rep > 0 && !HomePlanet.confirmNo(this, "Post a promise of adventure for " + rep + " reputation?\nIt is spent whether or not anyone answers.", "Expeditions")) return;
 		CrewState c;
 		try { c = Expeditions.hire(v, rng); }
 		catch (IOException e) { HomePlanet.showErrorDialog("The posting was called off. Nothing was changed:\n" + e.getMessage()); fill(); return; }
 		changed = true;
-		JOptionPane.showMessageDialog(this, c == null ? (cost == 0 ? "No one answered the promise of adventure. It costs nothing to try again." : "No one answered this time.")
+		JOptionPane.showMessageDialog(this, c == null ? (cost == 0 ? "No one answered the promise of adventure." + (rep > 0 ? "" : " It costs nothing to try again.") : "No one answered this time.")
 				: c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ") answered, and is waiting in the Cargo Hold.", "Expeditions", JOptionPane.INFORMATION_MESSAGE);
 		fill();
 	}

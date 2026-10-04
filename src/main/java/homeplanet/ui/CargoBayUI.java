@@ -77,6 +77,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	ShipState currentState;
 	ShipState tradeState;
 	File currentPath;
+	private static final String NO_SHIP = "No ship picked: pick one with the button above (or board one at the Space Dock) to move things onto her. The Cargo Hold's goods can be sold or junked here.";
+	/** The ship the Cargo Bay works on, picked here (heromedel: everything on the screen follows the pick, nothing the boarded ship); null: the boarded ship. */
+	private Ship picked;
 	File tradePath;
 	/** Fingerprints of the two files as they were read: Save refuses if FTL changed either since (see Vault.Transaction). */
 	String currentHash, tradeHash;
@@ -278,7 +281,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	void showTab(String name) {
 		if (tradeUnavailable()) name = "notice";
-		else if (holdOnly()) name = "trade"; // the Shop and the Refit tab work on the ship aboard
+		else if (holdOnly()) name = "trade"; // the Shop and the Refit tab work on the picked ship
 		currentTab = name;
 		cards.show(tabs, name);
 		for (int i = 0; i < 3; i++) tabButtons[i].setLit(tabNames[i].equals(name));
@@ -310,7 +313,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	// ---- loading ----
 
-	/** Reads the boarded ship, the storage and the chosen partner from disk (throwing away unsaved changes) and rebuilds every tab. */
+	/** Opens on the boarded ship (the Cargo Hold alone with none aboard), as the Long Range does: the pick is made afresh. */
+	public void openOnBoarded() { picked = null; init(); }
+	/** Reads the picked ship, the storage and the chosen partner from disk (throwing away unsaved changes) and rebuilds every tab. */
 	public void init() {
 		crewRenames.clear();
 		disposals.clear();
@@ -336,12 +341,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		shop.init();
 		systems.init();
 		refreshTrade();
-		if (currentPath == null) notice.setText("Board a ship at the Space Dock, then return to trade.");
+		if (currentPath == null) notice.setText("No ship picked: pick one above, or board one at the Space Dock.");
 		else if (!Vault.get().mayTrade(currentShip)) notice.setText(currentSave.getPlayerShipName() + " is not within range of a station. Take her to a beacon with a store to trade.");
 		for (int i = 0; i < tabButtons.length; i++) {
 			boolean shipTab = i > 0; // the Shop and the Refit tab
 			tabButtons[i].setEnabled(!tradeUnavailable() && !(shipTab && holdOnly()));
-			tabButtons[i].setToolTipText(shipTab && holdOnly() ? "Board a ship at the Space Dock first: the " + (i == 1 ? "Shop sells to" : "Refit tab works on") + " the ship aboard" : TAB_TIPS[i]);
+			tabButtons[i].setToolTipText(shipTab && holdOnly() ? "Pick a ship first (the button above): the " + (i == 1 ? "Shop sells to" : "Refit tab works on") + " the picked ship" : TAB_TIPS[i]);
 		}
 		storedBtn.setVisible(holdOnly() && !systems.storedList().isEmpty());
 		saveBtn.setEnabled(!tradeUnavailable());
@@ -355,7 +360,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	public void tradeShipInit() { }
 
 	private void loadCurrent() {
-		currentShip = Vault.get().boarded();
+		currentShip = picked != null && Vault.get().fleet().contains(picked) ? picked : Vault.get().boarded();
+		if (currentShip != picked) picked = null; // she's gone (boarded elsewhere, decommissioned): back to the boarded ship
 		if (currentShip == null || !currentShip.file().exists()) {
 			currentShip = null;
 			currentPath = null;
@@ -452,19 +458,20 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		b.reserveRight = 26;
 		return b;
 	}
-	/** Board another ship without leaving the Cargo Bay: the ships docked at a Station, as the partner list has them. */
+	/** Pick another ship to work on, without boarding anyone: the ships at the Space Dock, aboard or docked, as the partner list has them. */
 	private void pickBoard() {
 		JPopupMenu m = new JPopupMenu();
-		if (currentPath != null) { // no ship aboard: the button says so already
-			JMenuItem now = new JMenuItem(currentSave.getPlayerShipName() + "   (boarded)");
+		Ship aboard = Vault.get().boarded();
+		if (currentPath != null) {
+			JMenuItem now = new JMenuItem(currentSave.getPlayerShipName() + (currentShip == aboard ? "   (aboard, shown)" : "   (shown)"));
 			now.setEnabled(false);
 			m.add(now);
 		}
 		boolean any = false;
 		for (final Ship s : boardable()) {
 			any = true;
-			JMenuItem it = new JMenuItem(s.name);
-			it.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { boardFromHere(s); } });
+			JMenuItem it = new JMenuItem(s.name + (s == aboard ? "   (aboard)" : ""));
+			it.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pick(s); } });
 			m.add(it);
 		}
 		if (!any) {
@@ -475,7 +482,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		CargoParts.darkPopup(m);
 		m.show(boardBtn, 0, boardBtn.getHeight());
 	}
-	/** The ships that may be boarded from here: docked at a station, readable (with no ship aboard the partner list holds the Cargo Hold alone, so they come from the fleet). */
+	/** The ships that may be picked from here: at the Space Dock, readable (with no ship picked the partner list holds the Cargo Hold alone, so they come from the fleet). */
 	private List<Ship> boardable() {
 		List<Ship> out = new ArrayList<Ship>();
 		List<Ship> from = new ArrayList<Ship>(shipSelect);
@@ -484,27 +491,17 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		return out;
 	}
 	/**
-	 * Shows her report and asks; then boards her with the Space Dock's own Board button (the ship left behind is docked),
-	 * and reloads the Cargo Bay. The trading partner stays, unless she's the ship boarded: then the ship left behind takes her place.
+	 * Works on her from now on: the screen switches at once, nobody is boarded or docked. The trading partner stays,
+	 * unless she's the ship picked: then the ship shown before takes her place.
 	 */
-	private void boardFromHere(Ship s) {
-		if (parent.spaceDock == null || s.save() == null) return;
-		String name = s.name;
-		Object[] opts = {"Board her", "Cancel"};
-		JPanel ask = new JPanel(new java.awt.BorderLayout(0, 8));
-		ask.setOpaque(false);
-		ask.add(new JLabel("Board " + the(name) + " and return to the Cargo Bay?"), java.awt.BorderLayout.NORTH);
-		ask.add(parent.spaceDock.shipSummaryPanel(s.save()), java.awt.BorderLayout.CENTER);
-		int r = JOptionPane.showOptionDialog(this, SpaceDockUI.fitToScreen(ask), "Board Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[0]);
-		if (r != 0) return;
-		if (!confirmLeave("board " + the(name))) return;
+	void pick(Ship s) {
+		if (s == null || s.save() == null || s == currentShip) return;
+		if (!confirmLeave("switch to " + the(s.name))) return;
 		Ship left = currentShip;
-		String leftName = left == null ? null : currentSave.getPlayerShipName();
-		boolean wasPartner = s == tradeShip;
-		if (!parent.spaceDock.board(s)) { init(); return; } // docks the boarded ship, boards this one, redraws the Space Dock
-		if (wasPartner) tradeShip = left; // init() finds her again by her new file name
+		if (s == tradeShip) tradeShip = left;
+		picked = s;
 		init();
-		help("Boarded " + the(name) + "." + (leftName == null ? "" : " " + leftName + " is docked" + (wasPartner ? ", and is now your trading partner." : ".")));
+		help("The Cargo Bay now works on " + the(s.name) + "." + (left != null && left == tradeShip ? " " + left.name + " is your trading partner." : ""));
 	}
 	/** "the Kestrel", but "The Theseus" as she is (no "the The"). */
 	private static String the(String name) { return name.toLowerCase().startsWith("the ") ? name : "the " + name; }
@@ -799,7 +796,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		help((sell ? "Sold " : "Junked ") + n + " " + what + (sell ? " for " + price + " scrap." : "."));
 	}
 	private void moveSupply(boolean send) {
-		if (currentPath == null) { help("No ship is aboard: board one at the Space Dock to move things onto her. The Cargo Hold's goods can be sold or junked here."); return; }
+		if (currentPath == null) { help(NO_SHIP); return; }
 		int n = (Integer) moveAmount.getValue();
 		ShipState from = send ? currentState : tradeState, to = send ? tradeState : currentState;
 		int have = supply(from, supplyIdx);
@@ -915,7 +912,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	void refreshTrade() {
 		if (currentState == null || tradeState == null) return;
 		updateSupplyButtons();
-		boardBtn.setText(currentPath == null ? "Board a ship." : currentSave.getPlayerShipName());
+		boardBtn.setText(currentPath == null ? "Pick a ship" : currentSave.getPlayerShipName());
 		String cls = currentPath == null ? "" : shipClass(currentState); // no ship aboard: the lists say so, and Stored Systems sits here
 		mySub.setText(cls);
 
@@ -934,7 +931,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		for (int k = 0; k < 4; k++) {
 			Category c = cats[k];
 			c.myHead.setText(currentPath == null ? CAT[k] : CAT[k] + "  " + (k == 1 && droneSlots(currentState) == 0 ? "" : counts(currentState, k)));
-			c.mine.setEmptyText(currentPath == null ? "Not aboard a ship" : k == 3 ? "No crew" : "None");
+			c.mine.setEmptyText(currentPath == null ? "No ship picked" : k == 3 ? "No crew" : "None");
 			c.theirHead.setText(partnerIsStorage() ? CAT[k] : (k == 1 && droneSlots(tradeState) == 0 ? "" : counts(tradeState, k)) + "  " + CAT[k]);
 			if (k < 3) {
 				c.mine.setRows(itemRows(currentSave, currentState, k));
@@ -1028,7 +1025,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	/** Moves the selected item across (fromMine: your ship to the partner). The same rules as FTL: slots, Drone Control, the cargo hold. */
 	private void sendItem(boolean fromMine, int kind) {
-		if (currentPath == null) { help("No ship is aboard: board one at the Space Dock to move things onto her. The Cargo Hold's goods can be sold or junked here."); return; }
+		if (currentPath == null) { help(NO_SHIP); return; }
 		Category c = cats[kind];
 		ItemRef r = (ItemRef) (fromMine ? c.mine : c.theirs).selectedValue();
 		if (r == null) return;
@@ -1136,7 +1133,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	// ---- crew ----
 
 	private void sendCrew(boolean fromMine) {
-		if (currentPath == null) { help("No ship is aboard: board one at the Space Dock to move things onto her. The Cargo Hold's goods can be sold or junked here."); return; }
+		if (currentPath == null) { help(NO_SHIP); return; }
 		Category c = cats[3];
 		CrewState cs = (CrewState) (fromMine ? c.mine : c.theirs).selectedValue();
 		if (cs == null) return;
@@ -1231,9 +1228,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	/** Writes every pending change (ship, trade partner, shop, systems, and the history log entries); true if all of it was written (false after telling the player why not). */
 	public boolean saveAll() {
-		boolean holdAlone = currentShip == null && holdOnly(); // no ship aboard: only the Cargo Hold (and the stored systems) change
+		boolean holdAlone = currentShip == null && holdOnly(); // no ship picked: only the Cargo Hold (and the stored systems) change
 		if ((currentPath == null || currentShip == null) && !holdAlone) {
-			HomePlanet.showErrorDialog("Nothing to save: no ship is boarded. Board one at the Space Dock first.");
+			HomePlanet.showErrorDialog("Nothing to save: no ship is picked. Pick one with the button above, or board one at the Space Dock.");
 			return false;
 		}
 		if (currentShip != null && currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return false;

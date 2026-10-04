@@ -156,7 +156,7 @@ public class MainFrame extends JFrame {
 
 	/** Opens the Cargo Bay, fresh from the saves. */
 	public void showCargoBay() {
-		cargoBay.init();
+		cargoBay.openOnBoarded();
 		atSpaceDock = false;
 		atMuseum = false;
 		atComm = false;

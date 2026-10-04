@@ -97,7 +97,7 @@ class DryDockShop {
 	private final JLabel shipPic = new JLabel();
 	private final CargoParts.Label classLbl = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, -1);
 	private final Aboard aboard = new Aboard();
-	private boolean toStorage = false; // buying for the Cargo Bay rather than the boarded ship
+	private boolean toStorage = false; // buying for the Cargo Bay rather than the picked ship
 
 	/** The Shop tab (built once; its contents are rebuilt from the saves). */
 	JPanel panel() {
@@ -122,7 +122,7 @@ class DryDockShop {
 		panel.add(info);
 		classLbl.setBounds(dx + 30, 58, CargoBayUI.DROP_W - 30, 16);
 		panel.add(classLbl);
-		buyerBtn.setToolTipText("Buy for the boarded ship, or for the Cargo Bay's storage");
+		buyerBtn.setToolTipText("Buy for the ship picked in the Cargo Bay, or for the Cargo Hold");
 		buyerBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				javax.swing.JPopupMenu m = new javax.swing.JPopupMenu();

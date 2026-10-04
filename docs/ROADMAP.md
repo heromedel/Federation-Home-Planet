@@ -825,6 +825,27 @@ the right is three steps in build order.
   each system's top level from its blueprint, so the column is literally what it says and a modded game shows its own.
 - Later: the Retrofit tab taking the same row shape, so the two screens match.
 
+## 29. The Cargo Bay without boarding, art turned, and two rules — built (5.00; harness checks in GuiT, DesT, ExpT)
+
+From heromedel's notes after 4B.99. The version after 4B.99 is 5.00 (the numbering's rule).
+
+- **Aboard means the launch pad only.** Boarding stays a Space Dock act and decides which ship FTL loads. The Cargo
+  Bay works on whichever ship is picked on it: it opens on the boarded ship (the Cargo Hold alone with none aboard, as
+  before), as the Long Range does, and from then on everything on the screen, the Trade, the Shop and the Refit, follows
+  the pick and nothing follows the boarded ship. Picking switches at once: no report, no Board question, nobody boarded
+  or docked. The pick is made afresh each time the screen opens.
+- **Art: Rotate and Flip left / right**, on the Art step beside the hull art: for a picture drawn facing the wrong way.
+  Her pictures turn (the hull, a floor picture, her gib pictures, as copies of her own); the mounts and the shield
+  ellipse turn with the picture so they keep their spots on it; the rooms stay, and the picture's middle stays where it
+  is. A game ship's own gibs no longer fit a turned hull, so she's cut from the hull art instead. Size stays as it was.
+- **A promise of adventure costs reputation.** With no crew anywhere, posting cost nothing; now it costs 15 reputation
+  (with Reputation on; free as before with it off), spent whether or not anyone answers, in the Reputation log. The
+  scrap ladder for paid postings (5 a crew member, at most 60) is unchanged.
+- **The Relief Ship is free only when the rules say so.** With an empty shipyard she was marked free whatever the
+  difficulty or plea, so a new Hard fleet was offered her and the Kestrel both free. Now a new fleet's free ship is the
+  Kestrel; the Relief Ship is free when the free command names her (a plea under Hard, or Settings) or any ship is
+  free (Easy), otherwise at the Federation's price. Her heading reads "Special Federation Ships".
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

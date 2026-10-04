@@ -237,7 +237,7 @@ public class CommissionDialog extends JDialog {
 					}
 				}
 			}
-			rows.add(new Entry(null, "Relief"));
+			rows.add(new Entry(null, "Special Federation Ships"));
 			rows.add(new Entry(RELIEF, homeplanet.parser.FreeCommand.RELIEF_CLASS + freeNote(RELIEF))); // always offered, at the Federation's price
 			List<String> bases = DataManager.get().getPlayerShipBaseIds(true);
 			rows.add(new Entry(null, "Standard ships"));
@@ -290,9 +290,9 @@ public class CommissionDialog extends JDialog {
 		}
 		boolean emptyFree(String id) {
 			if (!emptyYard) return false;
-			if (RELIEF.equals(id)) return true; // the Relief Ship is always among what an order offers
 			String free = homeplanet.parser.FreeCommand.ship(); // Settings', or the career's, or a new fleet's Kestrel
 			if (homeplanet.parser.FreeCommand.ANY.equals(free)) return true;
+			if (RELIEF.equals(id)) return homeplanet.parser.FreeCommand.RELIEF.equals(free); // offered always, free only when the rules name her (a plea under Hard)
 			if (homeplanet.parser.FreeCommand.RELIEF.equals(free)) return false;
 			return homeplanet.parser.Commission.RELIEF_BASE.equals(id); // the Kestrel A
 		}

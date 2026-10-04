@@ -230,6 +230,17 @@ public class DesT {
    Setup.chk("X: her rooms moved two squares right: offset 2 (she sits further right in the game)", DesignExport.offsets(k)[0] == 2);
    for (ShipDesign.Room r : k.rooms) r.x -= 5;
    Setup.chk("X: moved past the game's edge: offset 0, never negative", DesignExport.offsets(k)[0] == 0);
+   // Y: her pictures turned and mirrored: the mounts keep their spots on the picture, the middle stays, the rooms don't move
+   ShipDesign t = ShipDesign.copy(made[1]); t.ellipseW = 300; t.ellipseH = 200; t.ellipseX = 10; t.ellipseY = -4;
+   java.awt.image.BufferedImage th = ShipArt.load(t.art, ""); int tw = th.getWidth(), tth = th.getHeight();
+   double cx = t.artX + tw / 2.0, cy = t.artY + tth / 2.0; int r0x = t.rooms.get(0).x, m0x = t.mounts.get(0).x, m0y = t.mounts.get(0).y;
+   Setup.chk("Y: rotated: the picture is turned (" + tw + "x" + tth + " to " + ShipArt.load(t.art, "").getHeight() + "x" + ShipArt.load(t.art, "").getWidth() + ")", ShipArt.rotate(t) && ShipArt.load(t.art, "").getWidth() == tth && ShipArt.load(t.art, "").getHeight() == tw);
+   Setup.chk("Y: the mount turned with it (" + m0x + "," + m0y + " to " + t.mounts.get(0).x + "," + t.mounts.get(0).y + "), the shield's axes swapped, the middle kept, the rooms untouched",
+     t.mounts.get(0).x == tth - m0y && t.mounts.get(0).y == m0x && t.ellipseW == 200 && t.ellipseH == 300 && Math.abs(t.artX + tth / 2.0 - cx) <= 1 && Math.abs(t.artY + tw / 2.0 - cy) <= 1 && t.rooms.get(0).x == r0x);
+   for (int i = 0; i < 3; i++) ShipArt.rotate(t);
+   Setup.chk("Y: four turns bring the mount round (" + t.mounts.get(0).x + "," + t.mounts.get(0).y + ")", t.mounts.get(0).x == m0x && t.mounts.get(0).y == m0y && ShipArt.load(t.art, "").getWidth() == tw);
+   Setup.chk("Y: mirrored: the mount's x reflected", ShipArt.flipHorizontally(t) && t.mounts.get(0).x == tw - m0x && t.ellipseX == -10);
+   Setup.chk("Y: mirrored again: back", ShipArt.flipHorizontally(t) && t.mounts.get(0).x == m0x && t.ellipseX == 10);
  }
  Setup.done();
 }}

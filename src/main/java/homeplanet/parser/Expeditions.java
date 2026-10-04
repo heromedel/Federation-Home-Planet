@@ -1076,8 +1076,12 @@ public final class Expeditions {
 		try { if (!v.all().contains(v.storage())) n += SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip()).size(); } catch (IOException e) { }
 		return n;
 	}
-	/** What posting for volunteers costs: 5 for each crew member the commander has, at most 60 (FTL's dearest crew); free with none. */
+	/** What posting for volunteers costs: 5 for each crew member the commander has, at most 60 (FTL's dearest crew); no scrap with none (the promise of adventure, which costs reputation). */
 	public static int hireCost(int crew) { return Math.min(60, 5 * crew); }
+	/** What a promise of adventure costs in reputation, with Reputation on (heromedel: nothing was too little; a battle's worth). */
+	public static final int PROMISE_REP = 15;
+	/** The promise's cost right now: PROMISE_REP with Reputation on and no crew anywhere, else 0. */
+	public static int promiseRep(Vault v) { return Vault.isOpen() && homeplanet.vault.Reputation.shown() && fleetCrew(v) == 0 ? PROMISE_REP : 0; }
 	/** The chance someone answers: a free promise of adventure, or a paid posting. */
 	public static final int FREE_CHANCE = 50, PAID_CHANCE = 75;
 
@@ -1102,11 +1106,12 @@ public final class Expeditions {
 
 	/** Posts for crew: pays (if it costs), rolls whether anyone answers, and brings them to the Cargo Hold. Returns them, or null. */
 	public static synchronized CrewState hire(Vault v, Random rng) throws IOException {
-		int have = fleetCrew(v), cost = hireCost(have);
+		int have = fleetCrew(v), cost = hireCost(have), rep = promiseRep(v);
 		Ship st = v.storage();
 		Vault.Copy c = v.readCopy(st);
 		ShipState hold = c.save.getPlayerShip();
 		if (hold.getScrapAmt() < cost) throw new IOException("The Cargo Hold holds " + hold.getScrapAmt() + " scrap; posting costs " + cost);
+		if (rep > 0 && homeplanet.vault.Reputation.total(v) < rep) throw new IOException("A promise of adventure costs " + rep + " reputation; the career has " + homeplanet.vault.Reputation.total(v));
 		hold.setScrapAmt(hold.getScrapAmt() - cost);
 		CrewState hired = null;
 		if (rng.nextInt(100) < (cost == 0 ? FREE_CHANCE : PAID_CHANCE)) {
@@ -1116,7 +1121,8 @@ public final class Expeditions {
 			if (hired != null) hold.getCrewList().add(hired);
 		}
 		if (cost > 0 || hired != null) v.begin().put(st, c.save, c.hash).commit();
-		HistoryLog.entry("HIRE", (cost == 0 ? "A promise of adventure" : "Posted for volunteers, " + cost + " scrap") + ": "
+		if (rep > 0) homeplanet.vault.Reputation.spend(v, rep, "A promise of adventure posted" + (hired == null ? ", unanswered" : ": " + hired.getName() + " answered"));
+		HistoryLog.entry("HIRE", (cost == 0 ? "A promise of adventure" + (rep > 0 ? ", " + rep + " reputation" : "") : "Posted for volunteers, " + cost + " scrap") + ": "
 				+ (hired == null ? "no one answered" : hired.getName() + " (" + hired.getRace().getId() + ") joined, in the Cargo Hold"));
 		return hired;
 	}

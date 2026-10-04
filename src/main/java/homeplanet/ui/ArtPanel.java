@@ -110,6 +110,11 @@ public class ArtPanel extends JPanel {
 		}), button("From the game...", "Use one of the game's ship pictures", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { pickGameArt(); }
 		})));
+		p.add(row(button("Rotate", "Turn her pictures a quarter turn clockwise (four make a full turn): for a picture drawn facing the wrong way. The mounts and shield turn with it; the rooms stay.", new ActionListener() {
+			public void actionPerformed(ActionEvent e) { turnArt(true); }
+		}), button("Flip left / right", "Mirror her pictures left to right (the mounts and shield with them; the rooms stay)", new ActionListener() {
+			public void actionPerformed(ActionEvent e) { turnArt(false); }
+		})));
 		JPanel size = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 2));
 		size.add(new JLabel("Size: "));
 		artSize.setToolTipText("The art's size in percent; the floor, weapon mounts, shield and gibs follow it. Sizes between 100% steps soften the pixels a little.");
@@ -246,6 +251,19 @@ public class ArtPanel extends JPanel {
 		return r;
 	}
 
+	/** Rotate or Flip left / right: her pictures turned, as copies of her own; the editor's undo takes it back. */
+	private void turnArt(boolean rotate) {
+		if (baseArt == null) { host.say("Choose her hull art first."); return; }
+		try {
+			if (rotate) ShipArt.rotate(d); else ShipArt.flipHorizontally(d);
+		} catch (Exception ex) {
+			JOptionPane.showMessageDialog(this, "The Home Planet Station couldn't turn her pictures:\n" + ex.getMessage(), rotate ? "Rotate" : "Flip left / right", JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+		loadArt(false);
+		host.changed();
+		host.say(rotate ? "Her pictures turned a quarter turn clockwise; the mounts and shield with them." : "Her pictures mirrored left to right; the mounts and shield with them.");
+	}
 	/** No floor, or one drawn from her rooms (a picture of her own comes through importArt). */
 	private void setFloor(String floor) {
 		if (floor.equals(d.floor)) return;

@@ -421,16 +421,21 @@ public class GuiT {
   Setup.chk("H: no ship aboard: the Space Dock's Cargo Bay button opens it (" + r[3] + "), on the Cargo Hold", r[3] == null && Boolean.TRUE.equals(r[0]) && Boolean.TRUE.equals(r[1]));
   Setup.chk("H: a weapon and a stored system sold from it: Save pays the hold, both are gone (" + hold.getScrapAmt() + " scrap)", Boolean.TRUE.equals(r[2])
     && hold.getWeaponList().isEmpty() && !file.contains("cloaking") && hold.getScrapAmt() > 10);
-  // and from there, board a docked ship without going back to the Space Dock
+  // and from there, pick a docked ship to work on: the Cargo Bay follows the pick, nobody is boarded (Plan Y)
   final Ship next = v.docked().get(0);
-  final Object[] b = new Object[2];
-  presses.clear(); presses.add(0); shown.clear(); // Board her
+  final Object[] b = new Object[4];
+  shown.clear(); presses.clear(); presses.addAll(Arrays.asList(1, 1, 1)); // nothing should ask; if something does, its second button, and the check says what it was
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
    CargoBayUI bay = f.cargoBay;
-   call(bay, CargoBayUI.class, "boardFromHere", new Class<?>[] {Ship.class}, next);
+   call(bay, CargoBayUI.class, "pick", new Class<?>[] {Ship.class}, next);
    b[0] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
+   b[1] = field(bay, CargoBayUI.class, "currentShip");
+   f.showCargoBay(); // opened again: back to the boarded ship (none), the Cargo Hold alone
+   b[2] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
   } catch (Exception e) { throw new RuntimeException(e); } } });
-  Setup.chk("H: no ship aboard, a docked ship boarded from the Cargo Bay: she's aboard, and the Cargo Bay shows her", v.boarded() == next && Boolean.FALSE.equals(b[0]));
+  Setup.chk("Y: a docked ship picked in the Cargo Bay: the screen works on her, nobody is boarded, no pop-up " + shown, v.boarded() == null && Boolean.FALSE.equals(b[0]) && b[1] == next && shown.isEmpty());
+  Setup.chk("Y: opened again, the pick is fresh: the boarded ship (none), so the Cargo Hold alone", Boolean.TRUE.equals(b[2]));
+  v.board(next); // the tests after this one work on a boarded ship, as before
  }
 
  /** The Space Dock's gold headings fold their buttons away on a click, and stay folded after a redraw. */
