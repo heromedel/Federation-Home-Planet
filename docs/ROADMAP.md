@@ -937,6 +937,23 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   successful and brought back an Artemis Missile"), the prize's line, Total Reward. Never a roll, a die or a
   percentage. The lines are in `resource/assignments.txt` (several per job, one picked), editable without a build.
 
+- **The words, first batch** (5.01, Plan MM; every line shown to heromedel by number first): hazards three or four
+  lines each, written to FTL's own tooltips (a star's flares set fires, a pulsar's waves knock systems out, a plasma
+  storm holds the reactor at half); the captured lines no longer promise word (the ransom letter always comes), and four
+  are marked by who took them (slavers sell to whoever pays most, pirates, the rebels, the Mantis); four infirmary lines;
+  the ship prize says what the decision is (join the fleet, the Junkyard, or let go); a hijack's part says why the ship
+  couldn't be kept; parts name their system; the recruit waits in The Station Lounge. Lines can be marked for a sector
+  (`event defend zoltan | ...` joins the general lines there), and {he} {him} {his} follow the crew member's sex. The
+  harness holds every line against FTL's event text (no six words the same) and refuses a mark that isn't a sector.
+
+- **The words, all of them** (5.02, Plan MM): the file went from 174 lines to 360, every one shown to heromedel by
+  number first. Each job has three or four general event lines and two or three marked for the sectors FTL gives
+  something to draw on (a Mantis raider at an Engi supply station, a Zoltan monastery, a Lanius stripping a research
+  station, Slugs in the nebula); two lines for each outcome, written to follow the event lines; four or five offers a
+  sector. Fragments after a colon became whole sentences, "she" for a ship became "the ship" where the crew member's
+  own pronoun could be mistaken for it, and top lines leave room for "and brought back" an item. Sending crew now
+  says "They will return in a few days, or longer, when their journey is over." (heromedel's words).
+
 ## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
 
 heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every

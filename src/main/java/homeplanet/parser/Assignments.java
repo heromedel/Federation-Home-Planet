@@ -175,6 +175,52 @@ public final class Assignments {
 		List<String> l = words().get(String.join(" ", key));
 		return (l == null || l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n");
 	}
+	/**
+	 * One of the lines for this key, the lines marked for this place joining them ("event defend zoltan | ..." is drawn
+	 * with "event defend | ..." in Zoltan space), or the fallback.
+	 */
+	static String sayAt(Random rng, String fallback, String mark, String... key) {
+		String k = String.join(" ", key);
+		List<String> l = new ArrayList<String>();
+		if (words().get(k) != null) l.addAll(words().get(k));
+		if (mark != null && words().get(k + " " + mark) != null) l.addAll(words().get(k + " " + mark));
+		return (l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n"); // ("\n" in the file is a line break)
+	}
+	/** He or she for a crew member: {he}, {him}, {his} in a line after their name. */
+	static String pronouns(String line, CrewState c) {
+		boolean m = c == null || c.isMale();
+		return line.replace("{he}", m ? "he" : "she").replace("{him}", m ? "him" : "her").replace("{his}", m ? "his" : "her");
+	}
+	/** The keys that stand alone, besides each job's, hazard's and sector's. */
+	private static final String[] OTHER_KEYS = {"captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit"};
+	/** Who holds a captive, as the captured lines are marked: slavers, pirates, rebels or mantis. */
+	public static final String[] CAPTORS = {"slavers", "pirates", "rebels", "mantis"};
+	static String captorsMark(String sector) {
+		return "rebel".equals(sector) ? "rebels" : "mantis".equals(sector) ? "mantis" : "pirate".equals(sector) ? "pirates" : "slavers";
+	}
+	/** Lines whose key isn't one the report asks for, nor one marked for a real sector (or, captured, real captors) (for tests). */
+	public static List<String> strayWords() {
+		java.util.Set<String> base = new java.util.HashSet<String>(java.util.Arrays.asList(OTHER_KEYS));
+		java.util.Set<String> sectors = new java.util.HashSet<String>();
+		for (Object[] j : JOBS) { base.add("event " + j[0]); for (String b : BANDS) base.add("band " + j[0] + " " + b); }
+		for (Object[] h : HAZARDS) base.add("hazard " + h[0]);
+		for (String[] x : SECTORS) { base.add("offer " + x[0]); sectors.add(x[0]); }
+		List<String> out = new ArrayList<String>();
+		for (String k : words().keySet()) {
+			if (base.contains(k)) continue;
+			int sp = k.lastIndexOf(' ');
+			String b = sp < 0 ? "" : k.substring(0, sp), m = sp < 0 ? "" : k.substring(sp + 1);
+			boolean ok = base.contains(b) && !b.startsWith("offer ") && ("captured".equals(b) ? java.util.Arrays.asList(CAPTORS).contains(m) : sectors.contains(m));
+			if (!ok) out.add(k);
+		}
+		return out;
+	}
+	/** Every line in the words file (for tests). */
+	public static List<String> allWords() {
+		List<String> out = new ArrayList<String>();
+		for (List<String> l : words().values()) out.addAll(l);
+		return out;
+	}
 	/** What's missing from the words file (for tests): every job's event and six bands, every hazard, the prizes. */
 	public static List<String> missingWords() {
 		List<String> out = new ArrayList<String>();
@@ -184,7 +230,7 @@ public final class Assignments {
 		}
 		for (Object[] h : HAZARDS) if (!words().containsKey("hazard " + h[0])) out.add("hazard " + h[0]);
 		for (String[] s : SECTORS) if (!words().containsKey("offer " + s[0])) out.add("offer " + s[0]);
-		for (String k : new String[] {"captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit"}) if (!words().containsKey(k)) out.add(k);
+		for (String k : OTHER_KEYS) if (!words().containsKey(k)) out.add(k);
 		return out;
 	}
 
@@ -565,21 +611,21 @@ public final class Assignments {
 	static String report(Result r, Random rng) {
 		StringBuilder sb = new StringBuilder("-- Expedition Report --\n");
 		sb.append("Sector: ").append(sectorTitle(r.sector)).append("\n");
-		sb.append("Due to events during the assignment the crew\n").append(say(rng, "took on a job", "event", r.job)).append(".\n");
-		if (r.hazard != null) sb.append(say(rng, "The weather was against them.", "hazard", r.hazard)).append("\n");
+		sb.append("Due to events during the assignment the crew\n").append(sayAt(rng, "took on a job", r.sector, "event", r.job)).append(".\n");
+		if (r.hazard != null) sb.append(sayAt(rng, "The weather was against them.", r.sector, "hazard", r.hazard)).append("\n");
 		sb.append("\n");
 		for (Fate f : r.fates) {
 			String line;
-			if (f.captured) line = say(rng, "was taken by the boarders. Word may come.", "captured");
-			else if (f.infirmary) line = say(rng, "was badly hurt and is in the infirmary.", "infirmary");
+			if (f.captured) line = sayAt(rng, "was taken by the boarders.", captorsMark(r.sector), "captured");
+			else if (f.infirmary) line = sayAt(rng, "was badly hurt and is in the infirmary.", r.sector, "infirmary");
 			else {
-				line = say(rng, f.died ? "was killed" : BANDS[f.band].equals("top") ? "was extremely successful" : "was " + BANDS[f.band], "band", r.job, BANDS[f.band]);
+				line = sayAt(rng, f.died ? "was killed" : BANDS[f.band].equals("top") ? "was extremely successful" : "was " + BANDS[f.band], r.sector, "band", r.job, BANDS[f.band]);
 				if (f.item != null) line += (line.contains("brought back") ? ", " : " and brought back ") + (f.item.indexOf(':') < 0 ? aOrAn(itemWords(f.item)) : itemWords(f.item));
 				line += ".";
 			}
-			sb.append(f.name()).append(" ").append(line).append("\n");
+			sb.append(f.name()).append(" ").append(pronouns(line, f.crew)).append("\n");
 		}
-		if (r.prize != null) sb.append("\n").append(say(rng, "They brought something back.", "prize", r.job, r.prize).replace("{name}", r.prizeDetail == null ? "" : r.prizeDetail)).append("\n"); // the prize stands apart
+		if (r.prize != null) sb.append("\n").append(sayAt(rng, "They brought something back.", r.sector, "prize", r.job, r.prize).replace("{name}", r.prizeDetail == null ? "" : r.prizeDetail)).append("\n"); // the prize stands apart
 		sb.append("\nTotal Reward: ").append(r.scrap).append(" scrap");
 		return sb.toString();
 	}
