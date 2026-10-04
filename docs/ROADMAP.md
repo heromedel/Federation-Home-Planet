@@ -768,8 +768,12 @@ Fixes only, from heromedel's testing and the review; no new features. Design deb
 - Commission orders for a Type B or C: heromedel's shared letter (the ship's people have contacted Federation
   Command, impressed, and shared another model's blueprints; `{race}` and `{cruiser}` filled from the ship) in place of
   the ship's own, which told her Type A's unlock story (the Zoltan Council's offer for a Zoltan B, say). The
-  Kestrel's and the Federation Cruiser's letters read right for any type and stay. To be given more of each race's
-  character later.
+  Kestrel's and the Federation Cruiser's letters read right for any type and stay. 5.09: each race has its own second
+  letter (`order:nextModel:<base>`, eight, every one approved by heromedel), following on from its first: the Engi's
+  "within acceptable deviation", the Zoltan Council speaking of you again, a Mantis clan's "a better hunter should
+  have it", the Slug consortium's invoice arriving first, the Rock's thanks with no message, Intelligence's reports
+  nobody lets the Comm. Officer read, the Lanius logs, the Crystal watching. heromedel's shared letter stays as the
+  fallback ("with the {cruiser}" now).
 - Custom designs in FTL (Plan W, tested in FTL itself): the station's own ships draw where the editor shows them (hull
   and rooms together; the editor's cyan crosshair marks the rooms' centre, and Center art centres the picture's visible
   part, not its canvas). A re-finalized remodel keeps the layout the ship was finalized against. The Loadout's top line

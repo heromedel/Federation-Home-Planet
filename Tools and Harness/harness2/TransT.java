@@ -139,8 +139,8 @@ public class TransT { public static void main(String[] a) throws Exception {
   profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_FED", "PLAYER_SHIP_ENERGY"}, new String[] {"ACH_SECTOR_5", "ACH_TOUGH_SHIP", "ACH_NO_BUYING", "ACH_MANTIS_SLAUGHTER", "ACH_NO_UPGRADES", "ACH_ENERGY_SHIELDS", "ACH_ENERGY_POWER"});
   Transmissions.check();
   Transmissions.Message zoltanA = find("order:PLAYER_SHIP_ENERGY 0"), zoltanB = find("order:PLAYER_SHIP_ENERGY 1");
-  Setup.chk("T: the Zoltan Cruiser A's order tells the Council's story; her Type B's is the shared letter, naming her", zoltanA != null && zoltanA.body.contains("Zoltan Council")
-    && zoltanB != null && zoltanB.body.contains("The Zoltan have contacted") && zoltanB.body.contains("achieve with Zoltan Cruiser") && !zoltanB.body.contains("Council") && !zoltanB.body.contains("{") && zoltanB.subject.contains("Type B"));
+  Setup.chk("T: the Zoltan Cruiser A's order tells the Council's story; her Type B's is the Zoltan's second letter, following on and naming her", zoltanA != null && zoltanA.body.contains("Your restraint among the Zoltan")
+    && zoltanB != null && zoltanB.body.contains("has spoken of you again") && zoltanB.body.contains("with the Zoltan Cruiser") && !zoltanB.body.contains("Your restraint") && !zoltanB.body.contains("{") && zoltanB.subject.contains("Type B"));
   Transmissions.Message tough = find("ach:ACH_TOUGH_SHIP");
   Setup.chk("T: a new achievement brings its reward, addressed to the new rank", tough != null && tough.hasReward() && tough.body.startsWith("Captain,"));
   Vault v = Vault.get();

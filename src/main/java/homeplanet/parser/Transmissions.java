@@ -207,13 +207,14 @@ public final class Transmissions {
 	/** A layout's name for messages: "Engi Cruiser, Type A". */
 	/**
 	 * The letter for a commission order: a ship's own tells the story of her Type A's unlock (the Zoltan Council's
-	 * offer, the Mantis raider), so her Type B and C get heromedel's shared letter (her people, impressed, share
+	 * offer, the Mantis raider), so her Type B and C get her people's second letter (`order:nextModel:<base>`, which
+	 * follows on from the first), or, for a ship without one, heromedel's shared letter (her people, impressed, share
 	 * another model's blueprints); the Kestrel's and the Federation Cruiser's read right for any type, so they keep
 	 * their own.
 	 */
 	static String orderTemplate(String base, int n) {
 		if (n == 0 || base.equals("PLAYER_SHIP_HARD") || base.equals("PLAYER_SHIP_FED")) return "order:" + base;
-		return "order:nextModel";
+		return templates().containsKey("order:nextModel:" + base) ? "order:nextModel:" + base : "order:nextModel";
 	}
 	/** The people a cruiser comes from, for the shared order letter ("The Zoltan have contacted Federation Command"). */
 	static String raceOf(String base) {
