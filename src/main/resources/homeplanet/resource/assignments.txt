@@ -7,7 +7,7 @@
 #   band <job> <band> | <phrase>               after a name: "Bob <phrase>." Bands: died, injured, failed, success, high, top
 #                                              (top: "and brought back <item>" is added when a 20 found something)
 #   hazard <hazard> | <sentence>               flare, asteroids, pulsar, storm (nebula only), battery (rebel space
-#                                              with Advanced Edition only)
+#                                              only)
 #   hacked | <sentence>                        after the battery's line when an Engi hacked it ({name}: the Engi)
 #   prize <job> <kind> | <sentence>            hijack ship, hijack part, salvage part, rescue recruit ({name}: the ship's
 #                                              name and class, the part's system, or the recruit's name and race)

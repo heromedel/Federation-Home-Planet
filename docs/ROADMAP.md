@@ -896,7 +896,7 @@ share those files, the crew-card picker and the hire button, and nothing else (`
 `ui/AssignmentsDialog.java`, the fleet's `assignments.txt`, the words in `resource/assignments.txt`).
 
 - **The board** offers three sectors of the ten (Civilian, Engi, Zoltan, Mantis, Pirate, Rebel, Rock, Nebula,
-  Abandoned with Advanced Edition only, Crystal rarely), each with a line of words that says nothing of the odds; an
+  Crystal rarely), each with a line of words that says nothing of the odds; an
   offer not taken comes down after a few beacons (hidden). Pick one and one to three crew from the Cargo Hold; they
   leave the hold's save for the assignments file (so nothing is matched back by name: CONCERNS 2's real fix, for this
   system), setting out counts a beacon, and they're due in 1 to 3 more (hidden). No ratings, warnings or hints
@@ -963,11 +963,12 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   that isn't the hazard (`band <job> injured cause`, every job but Giant Spiders, where an injury is a death; Rescue's
   "carrying survivors through a fire" became a falling bulkhead).
 
-- **The Anti-Ship Battery** (5.05, Plan OO, heromedel): a fifth hazard, rebel space only and only with Advanced
-  Edition (FTL's planetary guns). Nobody shrugs it off, but each Engi sent is a one in three chance of hacking it for
-  the whole detail (three Engi, always); hacked, nobody pays its -10, and the report names who did it under the
-  battery's line. A detail keeps whether Advanced Edition was on when it set out (`away.N.ae`), so it rolls the same
-  when it's back; one sent before 5.05 rolls as it did. Hazards cost reward only: the d20 stays as it is (heromedel).
+- **The Anti-Ship Battery** (5.05, Plan OO, heromedel): a fifth hazard, rebel space only (FTL's planetary guns).
+  Nobody shrugs it off, but each Engi sent is a one in three chance of hacking it for the whole detail (three Engi,
+  always); hacked, nobody pays its -10, and the report names who did it under the battery's line. Hazards cost reward
+  only: the d20 stays as it is (heromedel). 5.06: no longer tied to Advanced Edition, nor is the Abandoned sector (the
+  check read the Cargo Hold's save, which the station always makes with it on, and the Cargo Hold won't always be a
+  ship); a detail sent before 5.05 still rolls without the battery, as it was rolled (`away.N.ae` marks one after).
 
 ## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
 

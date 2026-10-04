@@ -73,7 +73,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
    Assignments.Result three = Assignments.roll("rebel", party("engi", "engi", "engi"), rng, true);
    if ("battery".equals(three.hazard)) { batt3++; if (three.hacker != null) hack3++; }
   }
-  Setup.chk("W: the Anti-Ship Battery never without Advanced Edition (" + battOff + ") nor outside rebel space (" + battElsewhere + "); one Engi hacks it about a third of the time (" + hack1 + " of " + batt1 + "), and the report names them (" + saidHack + "); three always (" + hack3 + " of " + batt3 + ")",
+  Setup.chk("W: the Anti-Ship Battery never for a detail sent before it existed (" + battOff + ") nor outside rebel space (" + battElsewhere + "); one Engi hacks it about a third of the time (" + hack1 + " of " + batt1 + "), and the report names them (" + saidHack + "); three always (" + hack3 + " of " + batt3 + ")",
     battOff == 0 && battElsewhere == 0 && batt1 > 0 && hack1 > batt1 / 5 && hack1 < batt1 / 2 && saidHack == hack1 && batt3 > 0 && hack3 == batt3);
   // the reward: hacked, nobody pays the battery's 10; not hacked, both do: about 20 points of the pot between them, on average
   Random same = new Random(34); long hackedSum = 0, plainSum = 0; int hackedN = 0, plainN = 0;
@@ -92,10 +92,10 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Setup.chk("B: three sectors on offer, all different, each with its words", b.size() == 3 && ids.size() == 3 && !b.get(0).words.isEmpty() && !b.get(0).title().isEmpty());
   List<Assignments.Offer> again = Assignments.board(v);
   Setup.chk("B: the same board until an offer comes down", again.get(0).sector.equals(b.get(0).sector) && again.get(2).sector.equals(b.get(2).sector));
-  // Abandoned only with Advanced Edition
-  Random rng = new Random(3); boolean abandoned = false, crystalRare = true; int crystal = 0;
-  for (int i = 0; i < 400; i++) { String s = Assignments.drawSector(rng, new ArrayList<String>(), false); if ("abandoned".equals(s)) abandoned = true; if ("crystal".equals(s)) crystal++; }
-  Setup.chk("B: Abandoned is never drawn without Advanced Edition; Crystal rarely (" + crystal + " of 400)", !abandoned && crystal > 0 && crystal < 40);
+  // every sector can come up, Crystal rarely
+  Random rng = new Random(3); boolean abandoned = false; int crystal = 0;
+  for (int i = 0; i < 400; i++) { String s = Assignments.drawSector(rng, new ArrayList<String>()); if ("abandoned".equals(s)) abandoned = true; if ("crystal".equals(s)) crystal++; }
+  Setup.chk("B: Abandoned comes up; Crystal rarely (" + crystal + " of 400)", abandoned && crystal > 0 && crystal < 40);
  }
  static List<CrewState> party(String... races) { List<CrewState> l = new ArrayList<CrewState>(); Random r = new Random(5); for (String x : races) l.add(Commission.volunteer(x, r)); return l; }
  static void rolls() {
