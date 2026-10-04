@@ -1042,6 +1042,19 @@ where a Clone Bay would be no use. The station picks the letter when it is sent 
 so the words and the reward always agree; no ship aboard, or one unreadable, gets the Clone Bay. The letters are a
 first draft, for McCarthy's session (lore) to look over.
 
+## 37. Augments with no room aboard come home — built (5.10; harness test OverT)
+
+heromedel: when FTL gives a fourth augment it asks which to throw away, and the save already holds all four while it
+asks. The station (`vault/Overflow`, the fleet's `overflow.txt`) writes the four down when the boarded ship's save shows
+more than three away from a store; at the next save after a jump, whichever is gone (the new one or an old one, a copy
+of two counted once) is crated up by her crew and shipped home: the `shipped` letter, from the crew of her name, with
+the augment to claim into the Cargo Hold. At a store nothing is noted (she could have sold one there); three aboard
+and one gone is a sale or an event, never shipped. The save watcher only notes it; the inbox's next check sends the
+letter (as the one-point-of-hull letter does), and without the inbox the augment goes straight to the Cargo Hold.
+A career rule, "An augment with no room aboard": shipped home on Easy and Normal, lost on Hard (Custom picks; a career
+from before it, Normal); Sandbox's House Rules box under Journeys and trading, on by default. Weapons, drones and crew
+wait until this has been tried in play. The letter's words are a first draft for McCarthy's session.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

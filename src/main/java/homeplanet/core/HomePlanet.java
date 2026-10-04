@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.09";
+	public static final String APP_VERSION = "5.10";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -64,6 +64,8 @@ public class HomePlanet {
 	public static boolean commissionUnlockedOnly = false, commissionCustomUnlockedOnly = false;
 	/** HR1: stored systems can be sold, for half their price and half the upgrades paid for. */
 	public static boolean sellSystems = false;
+	/** Sandbox Mode: an augment thrown away for want of room is shipped home by her crew (Economy.augmentsHome). */
+	public static boolean augmentsHome = true;
 	/** HR2: commissioning a ship costs scrap from the storage hold, at this percent of her price (50, 75 or 100). */
 	public static boolean commissionCosts = false;
 	public static int commissionPercent = 100;
@@ -152,6 +154,7 @@ public class HomePlanet {
 		commissionUnlockedOnly = flag("commission_unlocked_only");
 		commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only");
 		sellSystems = flag("sell_systems");
+		augmentsHome = flag("augments_home", true);
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
 		try { expeditionType = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("expedition_type", "2").trim()))); } catch (NumberFormatException e) { expeditionType = 2; }
@@ -336,6 +339,7 @@ public class HomePlanet {
 		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));
 		config.setProperty("commission_custom_unlocked_only", Boolean.toString(commissionCustomUnlockedOnly));
 		config.setProperty("sell_systems", Boolean.toString(sellSystems));
+		config.setProperty("augments_home", Boolean.toString(augmentsHome));
 		config.setProperty("commission_costs_scrap", Boolean.toString(commissionCosts));
 		config.setProperty("commission_price_percent", Integer.toString(commissionPercent));
 		config.setProperty("expedition_type", Integer.toString(expeditionType));

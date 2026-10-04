@@ -141,7 +141,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		timeRound(true); // ransoms and the infirmary, once the screen is up
 		boolean longRange = parent != null && parent.comm != null && parent.comm.inboxWanted(); // a commander's mail needs an inbox, whatever the setting
 		if (HomePlanet.immersiveNotifications() || longRange) {
-			if (HomePlanet.immersiveNotifications()) homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet
+			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet (without the inbox, only augments shipped home)
 			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
 			inboxBtn.addActionListener(this);
 		} else {

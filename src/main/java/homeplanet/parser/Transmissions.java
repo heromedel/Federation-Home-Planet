@@ -253,6 +253,7 @@ public final class Transmissions {
 	 * Returns how many were sent.
 	 */
 	public static synchronized int check() {
+		if (Vault.isOpen() && !HomePlanet.immersiveNotifications()) shipHome(Vault.get()); // no inbox: an augment shipped home goes straight to the Cargo Hold
 		if (!HomePlanet.immersiveNotifications() || !Vault.isOpen()) return 0;
 		List<Message> all = load();
 		Set<String> sent = new java.util.HashSet<String>();
@@ -318,6 +319,10 @@ public final class Transmissions {
 		}
 		if (HomePlanet.career() && u != null) {
 			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, achTemplate(a, CREW_CARE.contains(a) ? boardedShip(v) : null), rank, null);
+		}
+		for (homeplanet.vault.Overflow.Parcel x : homeplanet.vault.Overflow.take(v)) { // augments she had no room for, crated up by her crew
+			if (homeplanet.core.Economy.augmentsHome()) shipped(all, sent, x, rank);
+			else HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career");
 		}
 		if (HomePlanet.career() && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
 		// reply chains: a letter for what the fleet has been through, and the letters now due
@@ -554,6 +559,34 @@ public final class Transmissions {
 			HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
 		} catch (IOException e) {
 			log.warn("Could not deliver {}: {}", key, e.toString());
+		}
+	}
+	/** An augment her crew shipped home: the "shipped" letter, with the augment to claim. */
+	private static void shipped(List<Message> all, Set<String> sent, homeplanet.vault.Overflow.Parcel x, String rank) {
+		send(all, sent, x.key, "shipped", rank, null, x.ship);
+		if (all.isEmpty() || !all.get(0).key.equals(x.key)) return; // no letter written for it
+		Message m = all.get(0);
+		String item = Items.title(x.augment);
+		m.from = m.from.replace("{name}", x.ship);
+		m.subject = m.subject.replace("{item}", item);
+		m.body = m.body.replace("{item}", item);
+		m.reward = "item " + x.augment;
+	}
+	/** Without the inbox: augments shipped home go straight to the Cargo Hold (or are lost, as the career has it). */
+	private static void shipHome(Vault v) {
+		List<homeplanet.vault.Overflow.Parcel> ps = homeplanet.vault.Overflow.take(v);
+		if (ps.isEmpty()) return;
+		try {
+			Ship st = v.storage();
+			Vault.Copy c = v.readCopy(st);
+			for (homeplanet.vault.Overflow.Parcel x : ps) {
+				if (!homeplanet.core.Economy.augmentsHome()) { HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home"); continue; }
+				c.save.getPlayerShip().getAugmentIdList().add(x.augment);
+				HistoryLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of the " + x.ship + ", is in the Cargo Hold");
+			}
+			v.begin().put(st, c.save, c.hash).commit();
+		} catch (IOException e) {
+			log.error("Augments shipped home could not be put in the Cargo Hold", e);
 		}
 	}
 	/** The achievements that look after a crew: a Clone Bay, or a Backup DNA Bank for a ship that has one already (heromedel). */

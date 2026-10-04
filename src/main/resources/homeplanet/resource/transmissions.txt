@@ -7,7 +7,8 @@
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
 # Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), pleaded (the order after a
 # plea for a new ship; {ship} is what it offers), withdrawn (that plea withdrawn: its order leaves the inbox), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
-# a hull waits in the Junkyard), promo:1, promo:2, order:<base ship id>, ach:<achievement id> (ach:ACH_NO_DEATH:dna and ach:ACH_INVADE_SHIP:dna when the boarded ship has a Clone Bay already),
+# a hull waits in the Junkyard), shipped (an augment a ship had no room for, sent home by her crew: {name} is her name,
+# {item} the augment, which is the reward), promo:1, promo:2, order:<base ship id>, ach:<achievement id> (ach:ACH_NO_DEATH:dna and ach:ACH_INVADE_SHIP:dna when the boarded ship has a Clone Bay already),
 # rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
 # notice when Transmissions are off).
 #
@@ -1274,3 +1275,15 @@ Funny thing: the claims office sent two of their people through here asking afte
 You don't owe me anything. Just remember who's been minding your yard.
 
 ~ Junkyard Foreman
+
+== shipped
+from: The crew of the {name}
+subject: Shipped home: {item}
+
+{rank},
+
+The {name} had no room aboard for another augment, and without a way to store one, we crated up the {item} and shipped it back to The Home Planet Station.
+
+It's yours to claim. It will wait in the Cargo Hold until a ship has room for it.
+
+~ The crew of the {name}

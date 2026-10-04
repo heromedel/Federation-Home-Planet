@@ -68,6 +68,12 @@ public final class Economy {
 		return c != null ? c.commissionPercent() : HomePlanet.immersiveMode ? 100 : HomePlanet.commissionPercent; // (a career from before difficulties: full price)
 	}
 
+	/** An augment a ship had no room for is shipped home: Settings', or the career's (Easy and Normal yes, Hard no). */
+	public static boolean augmentsHome() {
+		homeplanet.parser.CareerRules c = career();
+		return c != null ? c.augmentsHome() : HomePlanet.immersiveMode || HomePlanet.augmentsHome;
+	}
+
 	/** A removal fee as Settings words it. */
 	public static String removalTitle(int fee) { return fee == NOT_ALLOWED ? "not allowed" : fee == 0 ? "free" : fee + " scrap"; }
 	/** A Sandbox removal fee from the cfg (anything unknown is free). */

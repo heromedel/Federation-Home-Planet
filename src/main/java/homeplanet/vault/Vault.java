@@ -1004,7 +1004,7 @@ public final class Vault {
 		if (gs == null) return false;
 		String now = marksOf(gs);
 		if (b.marks == null || b.marks.isEmpty()) { countProgress(b, gs); b.marks = now; VoyageLog.observe(this, b, gs); noteHull(b, gs); return true; }
-		if (sameShip(b.marks, gs)) { countProgress(b, gs); VoyageLog.observe(this, b, gs); noteHull(b, gs); noteWork(b, gs); } // her voyage log (repairs, trades at a store... change no marks)
+		if (sameShip(b.marks, gs)) { countProgress(b, gs); VoyageLog.observe(this, b, gs); noteHull(b, gs); noteWork(b, gs); Overflow.note(this, b, gs); } // her voyage log (repairs, trades at a store... change no marks)
 		if (now.equals(b.marks)) return false;
 		if (sameShip(b.marks, gs)) {
 			snapshot(b); // FTL's progress, kept: if FTL later writes over her, this is what comes back
@@ -1046,6 +1046,7 @@ public final class Vault {
 		countProgress(b, gs); // the fleet's clock moves as she flies
 		VoyageLog.observe(this, b, gs);
 		noteHull(b, gs);
+		Overflow.note(this, b, gs); // an augment she had no room for
 	}
 	private void adoptStrays(File dir, Ship.State state, List<String> notes) {
 		File[] files = dir.listFiles();

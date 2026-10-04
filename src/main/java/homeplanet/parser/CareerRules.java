@@ -16,9 +16,10 @@ public final class CareerRules {
 	public static final String[] NAMES = {EASY, NORMAL, HARD, CUSTOM};
 
 	/** The rules a difficulty sets, in this order (the rows of the briefing's table). */
-	public static final int VICTORY = 0, JOURNEY = 1, REASSIGNMENT = 2, REMOVAL = 3, STRIPPING = 4, SUPPLIES = 5, STIPEND = 6, COMMISSION = 7, STARTING_SCRAP = 8;
+	public static final int VICTORY = 0, JOURNEY = 1, REASSIGNMENT = 2, REMOVAL = 3, STRIPPING = 4, SUPPLIES = 5, STIPEND = 6, COMMISSION = 7, STARTING_SCRAP = 8, AUGMENTS = 9;
 	public static final String[] RULES = {"After a final victory", "A New Journey costs", "Plead for New Ship grants", "Refit: taking a system off",
-			"Stripping when scrapping", "Missiles and drone parts sell for", "The stipend comes every", "Commissioning a ship costs", "Scrap to start with"};
+			"Stripping when scrapping", "Missiles and drone parts sell for", "The stipend comes every", "Commissioning a ship costs", "Scrap to start with",
+			"An augment with no room aboard"};
 	/** Each rule's Easy, Normal and Hard, in words. */
 	public static final String[][] LEVELS = {
 		{"Save her, or the museum buys her at full value", "Save her, or the museum buys her at half value", "The museum takes her, at half value"},
@@ -29,7 +30,8 @@ public final class CareerRules {
 		{"half the store price", "a quarter of the store price", "1 scrap each"},
 		{"one month", "two months", "three months"},
 		{"half her price", "75% of her price", "her full price"},
-		{"50 scrap", "25 scrap", "10 scrap"}};
+		{"50 scrap", "25 scrap", "10 scrap"},
+		{"is shipped home by her crew", "is shipped home by her crew", "is lost"}};
 	private static final int[] JOURNEY_FEES = {200, 500, 1000}, REMOVAL_FEES = {0, 25, 50}, STRIP_FEES = {0, 10, -1}, SUPPLY_PERCENT = {50, 25, 0},
 			STIPEND_MONTHS = {1, 2, 3}, COMMISSION_PERCENT = {50, 75, 100}, START_SCRAP = {50, 25, 10};
 	private static final String[] REASSIGN = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF};
@@ -42,7 +44,8 @@ public final class CareerRules {
 
 	public CareerRules(String name, int[] level) {
 		this.name = name;
-		this.level = level.clone();
+		this.level = Arrays.copyOf(level, Math.max(level.length, RULES.length));
+		for (int i = level.length; i < this.level.length; i++) this.level[i] = 1; // a rule added since: Normal
 	}
 	/** Easy, Normal or Hard: one level for every rule. */
 	public static CareerRules of(String name) {
@@ -53,7 +56,7 @@ public final class CareerRules {
 	}
 	/** A career from before difficulties, as it was: final victory as chosen, journeys 200, a Kestrel or the Relief Ship on a plea, removal free, stripping as Settings had it (free), 25%, the stipend every two months (the nearest to its 60 beacons), full price. */
 	public static CareerRules earlier(boolean stripped) {
-		return new CareerRules(EARLIER, new int[] {OWN_CHOICE, 0, 1, 0, stripped ? 0 : 2, 1, 1, 2, 1}); // (commission: full price, as it was)
+		return new CareerRules(EARLIER, new int[] {OWN_CHOICE, 0, 1, 0, stripped ? 0 : 2, 1, 1, 2, 1, 1}); // (commission: full price, as it was)
 	}
 
 	/** This rule's level: 0 (Easy), 1 (Normal) or 2 (Hard); OWN_CHOICE for an earlier career's final victory. */
@@ -81,6 +84,8 @@ public final class CareerRules {
 	public int stipendBeacons() { return stipendMonths() * Career.BEACONS_PER_MONTH; }
 	public int commissionPercent() { return COMMISSION_PERCENT[level[COMMISSION]]; }
 	public int startingScrap() { return START_SCRAP[level[STARTING_SCRAP]]; }
+	/** An augment thrown away for want of room comes home (Easy and Normal), or is lost (Hard). */
+	public boolean augmentsHome() { return level[AUGMENTS] < 2; }
 	/** After a final victory: FinalVictory.RESCUE or MUSEUM, or null for an earlier career's own choice. */
 	public String victory() {
 		int l = level[VICTORY];

@@ -37,6 +37,7 @@ public class RuleBoxes {
 	private final JLabel journeyFeeLabel = new JLabel("A New Journey costs  ");
 	private final JLabel journeyFeeAfter = new JLabel("  from the Cargo Hold");
 	private final JPanel journeyFeeRow = row(21);
+	final JCheckBox augmentBox = new JCheckBox("An augment thrown away for want of room is shipped home by her crew, to the inbox (or the Cargo Hold)", HomePlanet.augmentsHome);
 	final JCheckBox sellBox = new JCheckBox("Allow selling missiles and drone parts (house rule: FTL's stores don't buy them; half the store price)", HomePlanet.sellSupplies);
 	final JCheckBox sellSystemsBox = new JCheckBox("Allow selling stored systems (house rule: half the system's price, plus half the upgrades paid for)", HomePlanet.sellSystems);
 	final JCheckBox lockedBox = new JCheckBox("Locked ship models cannot be commissioned (as unlocked in your FTL profile)", HomePlanet.commissionUnlockedOnly);
@@ -63,7 +64,7 @@ public class RuleBoxes {
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
 	private final JComponent[] locked = {tradeBox, journeyBox, sellBox, sellSystemsBox, costBox, percentBox, unlockBox, lockedBox, customLockedBox, notifyBox, repBox,
-			removalBox, removalLabel, journeyFeeBox, journeyFeeLabel, scrapBox};
+			removalBox, removalLabel, journeyFeeBox, journeyFeeLabel, scrapBox, augmentBox};
 	private final String[] tips = new String[locked.length];
 	private static final String SET_BY_IMMERSIVE = "Set by Immersive Mode";
 
@@ -93,6 +94,7 @@ public class RuleBoxes {
 		journeyFeeRow.add(journeyFeeBox);
 		journeyFeeRow.add(journeyFeeAfter);
 		sellBox.setToolTipText("Shows a sell button under the supplies in the Cargo Bay: 3 scrap a missile, 4 a drone part. Junking them is always possible");
+		augmentBox.setToolTipText("FTL asks which augment to throw away when a fourth comes aboard away from a store: the one thrown away comes home after her next jump. Off: it's lost, as in FTL");
 		sellSystemsBox.setToolTipText("Shows a Sell button beside each system stored in the Cargo Bay (Refit tab). The boarded ship is paid");
 		lockedBox.setToolTipText("Commission only offers the layouts (A, B, C) you have unlocked in FTL");
 		customLockedBox.setToolTipText("A starter blueprint is offered only once the layout she was remodeled from is unlocked");
@@ -178,6 +180,7 @@ public class RuleBoxes {
 			repBox.setSelected(true);
 			removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, homeplanet.core.Economy.removalFee()));
 			scrapBox.setSelected(homeplanet.core.Economy.stripAllowed());
+			augmentBox.setSelected(homeplanet.core.Economy.augmentsHome());
 			journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, homeplanet.core.Economy.journeyFee()));
 		}
 		journeyFeeAfter.setEnabled(!im);
@@ -221,6 +224,7 @@ public class RuleBoxes {
 		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
 		journeyFeeBox.setSelectedIndex(indexOf(homeplanet.core.Economy.JOURNEY_FEES, HomePlanet.journeyFee));
 		scrapBox.setSelected(HomePlanet.stripAllowed);
+		augmentBox.setSelected(HomePlanet.augmentsHome);
 		freeBox.setSelectedIndex(Math.max(0, java.util.Arrays.asList(FREE_KEYS).indexOf(homeplanet.parser.FreeCommand.norm(HomePlanet.freeShip))));
 	}
 	private static int indexOf(int[] list, int v) { for (int i = 0; i < list.length; i++) if (list[i] == v) return i; return 0; }
@@ -233,7 +237,7 @@ public class RuleBoxes {
 		// the game mode, then the rules in groups, each under a small heading
 		Object[] rows = {immersiveRow,
 				"The Federation Home Planet", notifyBox, careerBox, repBox,
-				"Journeys and trading", tradeBox, journeyBox, journeyFeeRow,
+				"Journeys and trading", tradeBox, journeyBox, journeyFeeRow, augmentBox,
 				"Refit, scrapping and selling", removalRow, scrapBox, sellBox, sellSystemsBox,
 				"Shipyard", lockedBox, customLockedBox, costRow, freeRow, unlockBox};
 		for (Object r : rows) {
@@ -258,6 +262,7 @@ public class RuleBoxes {
 			if (tradeBox.isSelected() != HomePlanet.storeRequirement) changed.add("Trading requires a station: " + tradeBox.isSelected());
 			if (journeyBox.isSelected() != HomePlanet.journeyStoreRequirement) changed.add("New Journey requires a station: " + journeyBox.isSelected());
 			if (scrapBox.isSelected() != HomePlanet.stripAllowed) changed.add("Stripping when scrapping: " + scrapBox.isSelected());
+			if (augmentBox.isSelected() != HomePlanet.augmentsHome) changed.add("Augments with no room aboard shipped home: " + augmentBox.isSelected());
 			if (removalFee() != HomePlanet.removalFee) changed.add("Refit removal: " + removalBox.getSelectedItem());
 			if (journeyFee() != HomePlanet.journeyFee) changed.add("New Journey fee: " + journeyFeeBox.getSelectedItem());
 			if (sellBox.isSelected() != HomePlanet.sellSupplies) changed.add("Selling missiles and drone parts: " + sellBox.isSelected());
@@ -292,6 +297,7 @@ public class RuleBoxes {
 			HomePlanet.commissionCustomUnlockedOnly = customLockedBox.isSelected();
 			HomePlanet.immersiveNotifications = notifyBox.isSelected();
 			HomePlanet.stripAllowed = scrapBox.isSelected();
+			HomePlanet.augmentsHome = augmentBox.isSelected();
 			HomePlanet.removalFee = removalFee();
 			HomePlanet.journeyFee = journeyFee();
 		}
