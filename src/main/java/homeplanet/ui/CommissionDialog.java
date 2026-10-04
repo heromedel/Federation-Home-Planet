@@ -409,20 +409,13 @@ public class CommissionDialog extends JDialog {
 		showPreview(e);
 	}
 
-	/** HR2: her price as built, with a custom design's rooms and doors, and a custom work order for each system past FTL's System Limit. */
+	/** HR2: her price as built, strictly counted, at the difficulty's rate, and a custom work order for each system past FTL's System Limit (the Relief Ship like any other). */
 	static homeplanet.parser.Pricing.Quote quote(String bpId, SavedGameState s) {
-		if (RELIEF.equals(bpId)) return reliefQuote(s);
-		return homeplanet.parser.Pricing.commission(s, homeplanet.core.Economy.commissionPercent());
+		return homeplanet.parser.Pricing.commission(s, homeplanet.parser.Pricing.rate());
 	}
-	/** The Relief Ship Type A at the Federation's price: what's on her, at full rate whatever the commission rate (no written-in price since 5.00). */
-	static homeplanet.parser.Pricing.Quote reliefQuote(SavedGameState s) {
-		homeplanet.parser.Pricing.Quote q = homeplanet.parser.Pricing.commission(s, 100);
-		q.lines.add(0, homeplanet.parser.FreeCommand.RELIEF_CLASS + ", at the Federation's price (the full rate, whatever the commission rate)");
-		return q;
-	}
-	/** Her value for a plea: her full price (custom work orders too), the Relief Ship like any other. */
+	/** Her value for a plea: her price at the rate (custom work orders too), the Relief Ship like any other. */
 	private static int pleaValue(String id, SavedGameState s) {
-		return homeplanet.parser.Pricing.commission(s, 100).total();
+		return homeplanet.parser.Pricing.commission(s, homeplanet.parser.Pricing.rate()).total();
 	}
 	private void showPrice(homeplanet.parser.Pricing.Quote q) {
 		int have = homeplanet.vault.Vault.get().storageScrap();

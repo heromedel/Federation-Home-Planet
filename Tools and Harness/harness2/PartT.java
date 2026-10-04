@@ -31,9 +31,15 @@ public class PartT { public static void main(String[] a) throws Exception {
   List<Parts.Listing> l = Parts.current(v);
   int sys = 0; for (Parts.Listing x : l) if (!x.salvage()) sys++;
   Setup.chk("P: 2 to 5 parts for sale (" + sys + "), and at most one piece of salvage", sys >= 2 && sys <= 5 && l.size() - sys <= 1 && Parts.count(v) == l.size());
+  int was = HomePlanet.commissionPercent; boolean im = HomePlanet.immersiveMode;
+  HomePlanet.immersiveMode = false; HomePlanet.commissionPercent = 100;
   Setup.chk("P: Piloting, Oxygen and Engines parts are worth 150 at level 1, FTL's upgrades on top", Parts.worth("pilot", 1) == 150 && Parts.worth("oxygen", 1) == 150
     && Parts.worth("engines", 3) == 150 + Pricing.system("engines", 3) - Pricing.system("engines", 1) && Parts.worth("shields", 2) == Pricing.system("shields", 2)
     && Parts.worth("oxygen", 3) == 150 + DataManager.get().getSystem("oxygen").getUpgradeCosts().get(0) + DataManager.get().getSystem("oxygen").getUpgradeCosts().get(1));
+  HomePlanet.commissionPercent = 50;
+  Setup.chk("S: a part's worth is at the difficulty's rate, before the rolls", Parts.worth("pilot", 1) == 75 && Parts.worth("shields", 2) == Pricing.rated(Pricing.system("shields", 2))
+    && Parts.price("shields", 2, 1, 80, false) == (Parts.worth("shields", 2) - 5) * 80 / 100);
+  HomePlanet.commissionPercent = was; HomePlanet.immersiveMode = im;
   boolean ok = true;
   for (Parts.Listing x : l) {
    if (x.salvage()) continue;

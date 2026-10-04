@@ -19,7 +19,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
   HomePlanet.immersiveMode = true;
   File career = new File(v.root, "career.txt");
   String[] names = {CareerRules.EASY, CareerRules.NORMAL, CareerRules.HARD};
-  int[][] want = {{200, 0, 0, 50, 2, 75, 50}, {500, 25, 10, 25, 3, 100, 25}, {1000, 50, -1, 0, 4, 100, 10}};
+  int[][] want = {{200, 0, 0, 50, 2, 50, 50}, {500, 25, 10, 25, 3, 75, 25}, {1000, 50, -1, 0, 4, 100, 10}};
   String[] reassign = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF}; // Easy any ship, Normal a Kestrel (or the Relief Ship), Hard the Relief Ship
   String[] victory = {FinalVictory.RESCUE, FinalVictory.RESCUE, FinalVictory.MUSEUM};
   int[] museum = {100, 50, 50};
@@ -38,7 +38,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
   Career.start(false, false, new CareerRules(CareerRules.CUSTOM, new int[] {2, 0, 2, 1, 0, 2, 0, 0, 1}));
   Setup.chk("D: Custom: each rule at its own level", "Custom".equals(CareerRules.current().title()) && FinalVictory.choice().equals(FinalVictory.MUSEUM)
     && Economy.journeyFee() == 200 && Economy.reassignment().equals(FreeCommand.RELIEF) && Economy.removalFee() == 25 && Economy.stripFee() == 0
-    && Economy.supplySale(5, Pricing.MISSILE) == 5 && Career.sectorsPerMonth() == 2 && Economy.commissionPercent() == 75);
+    && Economy.supplySale(5, Pricing.MISSILE) == 5 && Career.sectorsPerMonth() == 2 && Economy.commissionPercent() == 50);
   // a career from before difficulties: no difficulty in its career.txt
   Properties p = new Properties(); p.setProperty("salaryAll", "false"); p.setProperty("ownProfile", "false"); p.setProperty("finalVictory", FinalVictory.REWARD);
   p.setProperty("paidMonths", "0"); p.setProperty("sectorsAtStart", "0");

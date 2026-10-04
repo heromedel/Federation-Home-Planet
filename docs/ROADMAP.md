@@ -238,8 +238,7 @@ A setting (Settings, and the Immersive briefing), each fleet its own choice, def
   she can't be recovered).
 - **Receive a reward equal to her value**: her full value to Spacedock Storage, and she stays lost.
 
-Her value is the full commission price (systems and levels, reactor, weapons, drones, augments, cargo, crew, a custom
-hull's rooms and doors), always 100%. The messages come by Transmissions (the rescue offer waits in the inbox), or as a
+Her value is the full commission price (her price strictly counted, section 30), always 100%. The messages come by Transmissions (the rescue offer waits in the inbox), or as a
 notice on the Space Dock when Transmissions are off. The lore holds: the Rebel Flagship withdraws, never destroyed.
 
 How it works (confirmed with heromedel's run of the Shrapnel R.U. and a save logger's record of the last two battles):
@@ -852,9 +851,32 @@ From heromedel's notes after 4B.99. The version after 4B.99 is 5.00 (the numberi
   was 700; her strippings 682, 642; a single gun was ruled out (the Ion Blast drops the shield, the laser gets
   through), the cheapest crew is already the human.
 - **Every hull pays for its rooms and doors**, 5 a room and 2 a door, read off the save: a game hull as a design's
-  (designs alone paid before, 10 and 5). The Kestrel A rises by 137 to about 1,134, the Relief Ship to about 779. The
-  three core systems stay at 150: a core is 15 percent of a Kestrel, so a hull missing one is worth that much less,
-  which the Junkyard's derelicts rest on.
+  (designs alone paid before, 10 and 5). Superseded the same version by section 30, the price strictly counted.
+
+## 30. The price of a ship, strictly counted, at the difficulty's rate — built (5.00; harness checks in PriceT, PartT, DerT, FleetT)
+
+heromedel's decision, after the Relief Ship's pricing went round in circles (the ship price used FTL's 1 scrap for
+Piloting and Engines and nothing for Oxygen, while the Junkyard's parts had them at 150: two prices for one thing):
+start again, count everything on her, one price everywhere, and let the difficulty set the rate.
+
+- **The formula** (`Pricing.ship`): her model's hull at 10 a point; the reactor as FTL's upgrade screen charges it
+  (15 a bar to 5, then 5 more every 5); her systems and their levels at FTL's prices and upgrade costs, with Piloting,
+  Oxygen and Engines at 150 for level 1 (`Pricing.CORE_SYSTEM`; FTL's upgrade steps on top) everywhere; weapons,
+  drones and augments (her cargo too) at store price; crew at hiring price (a crew member never comes with skill);
+  fuel, missiles and drone parts at store price; the scrap aboard at face value; each room her blueprint reserves for a
+  system she has at a tenth of that system's level-1 price; each other room 2; each door 2. The Kestrel A: hull 300,
+  reactor 135, systems 920, gear 118, crew 135, supplies 112, scrap 10, 8 system rooms 74, 9 other rooms 18, 26 doors
+  52: 1,874. The Relief Ship Type A: 1,507. Damage stays a separate deduction (Trade In, Auction, derelicts).
+- **The rate** (`Pricing.rate`, the commission percent): an Immersive career's difficulty sets it, Easy 50%, Normal
+  75%, Hard 100% (the old 75/100/100); Custom picks one of the three; Sandbox chooses in Settings (100, 75, 50). A
+  career from before difficulties keeps its full price. The Kestrel A costs 937, 1,406 or 1,874; the Relief Ship 754,
+  1,130 or 1,507, and she's no longer at a rate of her own.
+- **Where it applies:** Commission (the Relief Ship like any ship), the plea's value of her, and the Junkyard: a part's
+  worth is its price at the rate before the Junkyard's own rolls (the share by how broken it is, the clearance, the
+  broken bars off), and a derelict's value is at the rate before her 25 to 75 percent and her damage. The Junkyard's
+  tweaks themselves are unchanged (15 points off per missing core system, the clearance, the damage). Never the Cargo
+  Bay's prices or the stores', and never what a ship sells for: Trade In, Auction, a final victory's reward and the
+  museum pay her full value, whatever the difficulty.
 
 ## Naming decisions — settled (4B.30)
 

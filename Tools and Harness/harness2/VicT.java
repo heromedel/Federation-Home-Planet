@@ -117,7 +117,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   Setup.chk("R: a reward: her full value to storage, a notice to read, and she stays lost", n.size() == 1 && n.get(0).offer == null && v.storageScrap() == before + value && v.byId(id) == null && n.get(0).text.contains(value + " scrap"));
   Setup.chk("R: paid once", FinalVictory.settle().isEmpty() && v.storageScrap() == before + value);
   SavedGameState g = read(new File(v.historyDir(), id).listFiles(new FilenameFilter() { public boolean accept(File d, String f) { return f.startsWith("victory-"); } })[0]);
-  Setup.chk("R: her value is the full commission price (100%, not the HR2 multiplier)", value == Pricing.ship(g, 0, 0, 100).total() && value > Pricing.ship(g, 0, 0, 50).total());
+  Setup.chk("R: her value is the full commission price (100%, not the HR2 multiplier)", value == Pricing.ship(g, 100).total() && value > Pricing.ship(g, 50).total());
  }
  static void inbox(Vault v) throws Exception {
   HomePlanet.immersiveNotifications = true;

@@ -23,18 +23,26 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("D: no upgrade past FTL's limit", Pricing.upgrade("shields", sh.getMaxPower()) == -1);
   Setup.chk("D: hull repairs are a flat 4 a point", Pricing.hullRepair() == 4);
   SavedGameState k = Commission.build("PLAYER_SHIP_HARD", "Price Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
-  Pricing.Quote full = Pricing.ship(k, 0, 0, 100), half = Pricing.ship(k, 0, 0, 50), custom = Pricing.ship(k, 5, 4, 100), hers = Pricing.ship(k, 100);
-  System.out.println("Kestrel A: " + hers.total() + " " + hers.lines);
-  Setup.chk("P: a Kestrel A's fit costs about 1,000 (885 and her supplies)", full.total() > 900 && full.total() < 1100);
+  Pricing.Quote full = Pricing.ship(k, 100), half = Pricing.ship(k, 50);
+  System.out.println("Kestrel A: " + full.total() + " " + full.lines);
+  String fl = full.lines.toString();
+  Setup.chk("S: a Kestrel A, strictly counted: 1874 at the full rate, 937 at half", full.total() == 1874 && half.total() == 937);
+  Setup.chk("S: her hull, 10 a point; her reactor as FTL charges", fl.contains("Hull (30 points): 300") && fl.contains("Reactor (8 power): 135"));
+  Setup.chk("S: her systems with the three core ones at 150", fl.contains("Systems and their levels: 920") && Pricing.system("pilot", 1) == 150 && Pricing.system("oxygen", 1) == 150
+    && Pricing.system("engines", 2) == 150 + DataManager.get().getSystem("engines").getUpgradeCosts().get(0) && Pricing.systemSale("engines", 1) == 75);
+  Setup.chk("S: her scrap at face value, her rooms (a tenth of the system's price, 2 without one) and doors (2)", fl.contains("Scrap aboard: 10")
+    && fl.contains("Rooms with a system (8): 74") && fl.contains("Rooms without (9): 18") && fl.contains("Doors (26): 52"));
   Setup.chk("P: the multiplier scales the total", half.total() == (full.subtotal * 50 + 50) / 100);
-  Setup.chk("P: a hull adds rooms and doors, 5 and 2", custom.total() == full.total() + 5 * Pricing.PER_ROOM + 4 * Pricing.PER_DOOR && Pricing.PER_ROOM == 5 && Pricing.PER_DOOR == 2);
-  Setup.chk("Z: every ship pays for her hull, the Kestrel's 17 rooms and 26 doors: " + hers.total(), hers.total() == full.total() + 17 * Pricing.PER_ROOM + 26 * Pricing.PER_DOOR);
+  int was = HomePlanet.commissionPercent; boolean im = HomePlanet.immersiveMode;
+  HomePlanet.immersiveMode = false; HomePlanet.commissionPercent = 50;
+  Setup.chk("S: the rate is the commission percent, and prices it to the nearest scrap", Pricing.rate() == 50 && Pricing.rated(1874) == 937 && Pricing.rated(1) == 1 && Pricing.rated(0) == 0);
+  HomePlanet.commissionPercent = was; HomePlanet.immersiveMode = im;
   SavedGameState relief = Commission.buildRelief("Hinata", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
   SavedGameParser.ShipState rs = relief.getPlayerShip();
   Setup.chk("Z: the Relief Ship: no sensors, 10 fuel, no scrap, reactor 6, weapons at 2, one human", (rs.getSystem(SavedGameParser.SystemType.SENSORS) == null || rs.getSystem(SavedGameParser.SystemType.SENSORS).getCapacity() == 0)
     && rs.getFuelAmt() == 10 && rs.getScrapAmt() == 0 && rs.getReservePowerCapacity() == 6 && rs.getSystem(SavedGameParser.SystemType.WEAPONS).getCapacity() == 2 && rs.getCrewList().size() == 1);
   int rp = Pricing.commission(relief, 100).total();
-  Setup.chk("Z: priced by the formula, about 780 (no written-in 600): " + rp, rp > 740 && rp < 820);
+  Setup.chk("Z: priced by the formula, no written-in price: 1507 at the full rate, 1130 at 75, 754 at half: " + rp, rp == 1507 && Pricing.commission(relief, 75).total() == 1130 && Pricing.commission(relief, 50).total() == 754);
  }
  /** FTL's System Limit: 8 systems, subsystems aside; each one past it is a custom work order, 100 scrap, never part of her value. */
  static void limit() throws Exception {
@@ -95,10 +103,10 @@ public class PriceT { public static void main(String[] a) throws Exception {
   File tmp = File.createTempFile("relief", ".sav"); SafeFiles.write(tmp, SaveHelper.toBytes(r));
   SavedGameState back = HomePlanet.savedGameParser.readSavedGame(tmp); tmp.delete();
   Setup.chk("F: she reads back", back.getPlayerShip().getCrewList().size() == 1 && back.getPlayerShip().getWeaponList().size() == 2);
-  int rp = Pricing.ship(r, 0, 0, 100).total(), kp = Pricing.ship(Commission.build("PLAYER_SHIP_HARD", "K", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1)), 0, 0, 100).total();
+  int rp = Pricing.ship(r, 100).total(), kp = Pricing.ship(Commission.build("PLAYER_SHIP_HARD", "K", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1)), 100).total();
   System.out.println("Relief ship: " + rp);
-  Setup.chk("F: she's worth less than a Kestrel A", rp < kp);
-  Setup.chk("F: a ship's value counts her fuel, missiles and drone parts", Pricing.ship(r, 0, 0, 100).lines.toString().contains("Fuel, missiles and drone parts")
+  Setup.chk("F: she's worth less than a Kestrel A (1507 to 1874 at the full rate)", rp < kp && rp == 1507);
+  Setup.chk("F: a ship's value counts her fuel, missiles and drone parts", Pricing.ship(r, 100).lines.toString().contains("Fuel, missiles and drone parts")
     && Pricing.supplies(s) == s.getFuelAmt() * Pricing.FUEL);
   Setup.chk("F: a plea's reputation cost: a tenth of the shortfall, nothing when covered", FreeCommand.reputationCost(885, 0) == 89 && FreeCommand.reputationCost(600, 100) == 50
     && FreeCommand.reputationCost(600, 700) == 0);

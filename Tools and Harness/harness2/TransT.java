@@ -179,7 +179,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("P: the Artillery Beam has a price", Pricing.artillery("ARTILLERY_FED") == 200 && Pricing.artillery("ARTILLERY_FED_C") == 150 && Pricing.artillery("ARTILLERY_BOSS_2") == 100);
   SavedGameParser.SavedGameState fed = Commission.build("PLAYER_SHIP_FED", "Fed", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
   SavedGameParser.SavedGameState kes = Commission.build("PLAYER_SHIP_HARD", "Kes", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
-  Pricing.Quote q = Pricing.ship(fed, 0, 0, 100);
+  Pricing.Quote q = Pricing.ship(fed, 100);
   System.out.println("Federation Cruiser A: " + q.total() + " " + q.lines);
   Setup.chk("P: a Federation Cruiser pays for her artillery's gun", String.join(" ", q.lines).contains("Weapons") && Commission.artilleryWeapon("PLAYER_SHIP_FED") != null);
  }
