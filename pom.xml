@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>homeplanet</groupId>
 	<artifactId>federation-home-planet</artifactId>
-	<version>5.04</version>
+	<version>5.05</version>
 	<name>Federation Home Planet</name>
 
 	<!--

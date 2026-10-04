@@ -134,10 +134,16 @@ public final class Assignments {
 		if ("energy".equals(race)) return "abandoned".equals(sector) ? -10 : 0;
 		return "abandoned".equals(sector) ? -10 : 0;
 	}
-	/** The hazards: id, title, where (null: any sector), the races that shrug it off. */
+	/**
+	 * The hazards: id, title, where (null: any sector), the races that shrug it off. The rebels' Anti-Ship Battery
+	 * (Advanced Edition's planetary guns) is shrugged off by nobody, but each Engi sent is a one in BATTERY_HACK chance
+	 * of hacking it for the whole detail (three Engi, always).
+	 */
 	static final Object[][] HAZARDS = {
 		{"flare", "a solar flare", null, new String[] {"rock", "anaerobic"}}, {"asteroids", "an asteroid field", null, new String[] {"energy"}},
-		{"pulsar", "a pulsar", null, new String[] {"engi"}}, {"storm", "a plasma storm", "nebula", new String[] {"slug"}}};
+		{"pulsar", "a pulsar", null, new String[] {"engi"}}, {"storm", "a plasma storm", "nebula", new String[] {"slug"}},
+		{"battery", "an Anti-Ship Battery", "rebel", new String[0]}};
+	public static final int BATTERY_HACK = 3;
 	static boolean cancels(String hazard, String race) {
 		for (Object[] h : HAZARDS) if (h[0].equals(hazard)) for (String r : (String[]) h[3]) if (r.equals(race)) return true;
 		return false;
@@ -199,7 +205,7 @@ public final class Assignments {
 				.replace("{He}", m ? "He" : "She").replace("{His}", m ? "His" : "Her");
 	}
 	/** The keys that stand alone, besides each job's, hazard's and sector's. */
-	private static final String[] OTHER_KEYS = {"captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit"};
+	private static final String[] OTHER_KEYS = {"hacked", "captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit"};
 	/** Who holds a captive, as the captured lines are marked: slavers, pirates, rebels or mantis. */
 	public static final String[] CAPTORS = {"slavers", "pirates", "rebels", "mantis"};
 	static String captorsMark(String sector) {
@@ -265,9 +271,11 @@ public final class Assignments {
 		/** The roll's seed: the result was rolled at setting out, and is rolled again, the same, when they're back. */
 		public final long seed;
 		public final List<CrewState> crew;
-		Away(int index, String sector, int sentAt, int until, long seed, List<CrewState> crew) { this.index = index; this.sector = sector; this.sentAt = sentAt; this.until = until; this.seed = seed; this.crew = crew; }
+		/** Whether Advanced Edition was on when they set out (a detail from before kept none: off, as it was rolled). */
+		public final boolean ae;
+		Away(int index, String sector, int sentAt, int until, long seed, List<CrewState> crew, boolean ae) { this.index = index; this.sector = sector; this.sentAt = sentAt; this.until = until; this.seed = seed; this.crew = crew; this.ae = ae; }
 		/** What came of it (the same every time: the seed). */
-		public Result result() { return roll(sector, crew, new Random(seed)); }
+		public Result result() { return roll(sector, crew, new Random(seed), ae); }
 		public List<String> names() { List<String> n = new ArrayList<String>(); for (CrewState c : crew) n.add(c.getName()); return n; }
 	}
 
@@ -326,7 +334,8 @@ public final class Assignments {
 			}
 			long seed = 0;
 			try { seed = Long.parseLong(p.getProperty("away." + i + ".seed", "0")); } catch (NumberFormatException e) { }
-			out.add(new Away(i, p.getProperty("away." + i + ".sector"), intOf(p, "away." + i + ".sentAt", 0), intOf(p, "away." + i + ".until", 0), seed, crew));
+			out.add(new Away(i, p.getProperty("away." + i + ".sector"), intOf(p, "away." + i + ".sentAt", 0), intOf(p, "away." + i + ".until", 0), seed, crew,
+					"true".equals(p.getProperty("away." + i + ".ae"))));
 		}
 		return out;
 	}
@@ -462,8 +471,10 @@ public final class Assignments {
 			asLeft.add(homeplanet.comm.Line.crewFrom(f));
 			k++;
 		}
-		Result r = roll(sector, asLeft, new Random(seed));
+		boolean ae = advancedEdition(v);
+		Result r = roll(sector, asLeft, new Random(seed), ae);
 		p.setProperty("away." + i + ".sector", sector);
+		p.setProperty("away." + i + ".ae", Boolean.toString(ae));
 		p.setProperty("away." + i + ".sentAt", Integer.toString(now));
 		p.setProperty("away." + i + ".seed", Long.toString(seed));
 		p.setProperty("away." + i + ".until", Integer.toString(now + days(r, asLeft, rng)));
@@ -514,6 +525,8 @@ public final class Assignments {
 	/** What came of an expedition. */
 	public static final class Result {
 		public String sector, job, hazard;
+		/** The Engi who hacked the Anti-Ship Battery (its hazard then costs nobody anything), or null. */
+		public CrewState hacker;
 		public final List<Fate> fates = new ArrayList<Fate>();
 		public int base, multiplier, scrap;
 		/** "ship", "part" or "recruit", or null. */
@@ -534,11 +547,11 @@ public final class Assignments {
 		for (Object[] j : JOBS) { r -= jobWeight(sector, (String) j[0]); if (r < 0) return (String) j[0]; }
 		return (String) JOBS[0][0];
 	}
-	/** A hazard, one time in HAZARD_ONE_IN (a plasma storm only in a nebula), or null. */
-	static String drawHazard(String sector, Random rng) {
+	/** A hazard, one time in HAZARD_ONE_IN (a plasma storm only in a nebula, the Anti-Ship Battery only in rebel space with Advanced Edition), or null. */
+	static String drawHazard(String sector, boolean ae, Random rng) {
 		if (rng.nextInt(HAZARD_ONE_IN) != 0) return null;
 		List<String> fit = new ArrayList<String>();
-		for (Object[] h : HAZARDS) if (h[2] == null || h[2].equals(sector)) fit.add((String) h[0]);
+		for (Object[] h : HAZARDS) if ((h[2] == null || h[2].equals(sector)) && (ae || !"battery".equals(h[0]))) fit.add((String) h[0]);
 		return fit.get(rng.nextInt(fit.size()));
 	}
 	static String race(CrewState c) { return c.getRace() == null ? "human" : c.getRace().getId(); }
@@ -549,12 +562,19 @@ public final class Assignments {
 	 * Rolls an expedition for this detail in this sector (nothing is written): the job, a hazard, each one's d20 with
 	 * its reroll, the pot, the items and the prize, and the report in words.
 	 */
-	public static Result roll(String sector, List<CrewState> party, Random rng) {
+	public static Result roll(String sector, List<CrewState> party, Random rng) { return roll(sector, party, rng, false); }
+	/** The same, with or without Advanced Edition's content (the Anti-Ship Battery). */
+	public static Result roll(String sector, List<CrewState> party, Random rng, boolean ae) {
 		Result r = new Result();
 		r.seed = rng.nextLong();
 		r.sector = sector;
 		r.job = drawJob(sector, rng);
-		r.hazard = drawHazard(sector, rng);
+		r.hazard = drawHazard(sector, ae, rng);
+		if ("battery".equals(r.hazard)) { // each Engi a chance in BATTERY_HACK of hacking it, for everyone
+			int engi = 0;
+			for (CrewState c : party) if ("engi".equals(race(c))) { engi++; if (r.hacker == null) r.hacker = c; }
+			if (engi == 0 || rng.nextInt(BATTERY_HACK) >= engi) r.hacker = null;
+		}
 		int skill = jobSkill(r.job);
 		int mods = PER_HEAD * party.size(), best = 0;
 		for (CrewState c : party) {
@@ -572,7 +592,7 @@ public final class Assignments {
 			int own = sec + job + (skill < 0 ? 0 : 10 * homeplanet.model.Crew.skillLevels(c)[skill]);
 			if (hurt(c) && own > 0) own /= 2;
 			int m = BAND_MOD[f.band] + own;
-			if (r.hazard != null && !cancels(r.hazard, race)) m -= 10;
+			if (r.hazard != null && r.hacker == null && !cancels(r.hazard, race)) m -= 10;
 			mods += m;
 			if (f.band == 0) f.died = true;
 			else if (f.band == 1) {
@@ -624,6 +644,7 @@ public final class Assignments {
 		sb.append("Sector: ").append(sectorTitle(r.sector)).append("\n");
 		sb.append("Due to events during the assignment the crew\n").append(sayAt(rng, "took on a job", r.sector, "event", r.job)).append(".\n");
 		if (r.hazard != null) sb.append(sayAt(rng, "The weather was against them.", r.sector, "hazard", r.hazard)).append("\n");
+		if (r.hacker != null) sb.append(sayAt(rng, "{name} hacked it.", r.sector, "hacked").replace("{name}", r.hacker.getName())).append("\n");
 		sb.append("\n");
 		for (Fate f : r.fates) {
 			String line;

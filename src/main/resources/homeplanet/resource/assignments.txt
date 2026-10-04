@@ -6,7 +6,9 @@
 #   event <job> | <what the crew did>          after "Due to events during the assignment the crew"; several per job
 #   band <job> <band> | <phrase>               after a name: "Bob <phrase>." Bands: died, injured, failed, success, high, top
 #                                              (top: "and brought back <item>" is added when a 20 found something)
-#   hazard <hazard> | <sentence>               flare, asteroids, pulsar, storm
+#   hazard <hazard> | <sentence>               flare, asteroids, pulsar, storm (nebula only), battery (rebel space
+#                                              with Advanced Edition only)
+#   hacked | <sentence>                        after the battery's line when an Engi hacked it ({name}: the Engi)
 #   prize <job> <kind> | <sentence>            hijack ship, hijack part, salvage part, rescue recruit ({name}: the ship's
 #                                              name and class, the part's system, or the recruit's name and race)
 #   captured | <phrase>                        after a name, taken on Get Boarded (a ransom letter always follows)
@@ -386,6 +388,11 @@ hazard pulsar | Their work was slowed by each wave of energy from the pulsar.
 hazard storm | A plasma storm held their reactor at half power for most of the job.
 hazard storm | A plasma storm rolled in on the first day, and their reactor never ran above half until it passed.
 
+hazard battery | A rebel Anti-Ship Battery on the planet below kept them under fire from start to finish.
+hazard battery | Every few hours the planet's Anti-Ship Battery locked on, and everyone aboard braced for the hit.
+hazard battery | The rebels' planetary guns found their range on the first day and never lost it.
+hacked | Then {name} hacked the battery's targeting, and it never found them again.
+hacked | {name} spent an hour inside the battery's targeting system, and after that it fired at empty space.
 shrug flare rock | The fires never bothered {him}; Rock doesn't burn.
 shrug flare rock | {His} part of the ship was on fire twice, and {he} worked straight through it both times.
 shrug flare anaerobic | Every fire that reached {his} room went out on its own.

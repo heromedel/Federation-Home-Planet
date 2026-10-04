@@ -63,6 +63,27 @@ public class AsgT { public static void main(String[] a) throws Exception {
   }
   Setup.chk("W: a Rock in a solar flare's job says the fire didn't touch them (" + rockSaid + " of " + rockFlares + "); a human never does (" + humanSaid + ")", rockFlares > 0 && rockSaid == rockFlares && humanSaid == 0);
   Setup.chk("W: an injured Rock in a flare says nothing of the fire, and isn't hurt by one (" + hurtSaid + " of " + rockHurt + ")", rockHurt > 0 && hurtSaid == 0);
+  // the rebels' Anti-Ship Battery: rebel space with Advanced Edition only; each Engi a chance in three of hacking it for everyone
+  rng = new Random(33); int battOff = 0, battElsewhere = 0, batt1 = 0, hack1 = 0, batt3 = 0, hack3 = 0, wrongPay = 0, saidHack = 0;
+  for (int i = 0; i < 60000 && (batt1 < 300 || batt3 < 30); i++) {
+   if ("battery".equals(Assignments.roll("rebel", party("human"), rng, false).hazard)) battOff++;
+   if ("battery".equals(Assignments.roll("pirate", party("human"), rng, true).hazard)) battElsewhere++;
+   Assignments.Result one = Assignments.roll("rebel", party("engi", "human"), rng, true);
+   if ("battery".equals(one.hazard)) { batt1++; if (one.hacker != null) { hack1++; if (one.report.contains(one.hacker.getName() + " hacked") || one.report.contains(one.hacker.getName() + " spent an hour")) saidHack++; } }
+   Assignments.Result three = Assignments.roll("rebel", party("engi", "engi", "engi"), rng, true);
+   if ("battery".equals(three.hazard)) { batt3++; if (three.hacker != null) hack3++; }
+  }
+  Setup.chk("W: the Anti-Ship Battery never without Advanced Edition (" + battOff + ") nor outside rebel space (" + battElsewhere + "); one Engi hacks it about a third of the time (" + hack1 + " of " + batt1 + "), and the report names them (" + saidHack + "); three always (" + hack3 + " of " + batt3 + ")",
+    battOff == 0 && battElsewhere == 0 && batt1 > 0 && hack1 > batt1 / 5 && hack1 < batt1 / 2 && saidHack == hack1 && batt3 > 0 && hack3 == batt3);
+  // the reward: hacked, nobody pays the battery's 10; not hacked, both do: about 20 points of the pot between them, on average
+  Random same = new Random(34); long hackedSum = 0, plainSum = 0; int hackedN = 0, plainN = 0;
+  for (int i = 0; i < 200000 && (hackedN < 400 || plainN < 400); i++) {
+   Assignments.Result a1 = Assignments.roll("rebel", party("engi", "human"), same, true);
+   if (!"battery".equals(a1.hazard)) continue;
+   if (a1.hacker != null) { hackedSum += a1.multiplier; hackedN++; } else { plainSum += a1.multiplier; plainN++; }
+  }
+  double gap = hackedSum / (double) Math.max(1, hackedN) - plainSum / (double) Math.max(1, plainN);
+  Setup.chk("W: hacked, nobody pays the battery; not hacked, both do (on average " + Math.round(gap) + " points of the pot between them)", hackedN > 0 && plainN > 0 && gap > 12 && gap < 28);
   Setup.chk("W: a capture in pirate space can say pirates (" + pirate + "), never slavers (" + slaver + "); a woman taken is she (" + she + "); no token left unfilled (" + stray + ")", pirate > 0 && slaver == 0 && she > 0 && stray == 0);
  }
  static void board(Vault v) throws Exception {

@@ -963,6 +963,12 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   that isn't the hazard (`band <job> injured cause`, every job but Giant Spiders, where an injury is a death; Rescue's
   "carrying survivors through a fire" became a falling bulkhead).
 
+- **The Anti-Ship Battery** (5.05, Plan OO, heromedel): a fifth hazard, rebel space only and only with Advanced
+  Edition (FTL's planetary guns). Nobody shrugs it off, but each Engi sent is a one in three chance of hacking it for
+  the whole detail (three Engi, always); hacked, nobody pays its -10, and the report names who did it under the
+  battery's line. A detail keeps whether Advanced Edition was on when it set out (`away.N.ae`), so it rolls the same
+  when it's back; one sent before 5.05 rolls as it did. Hazards cost reward only: the d20 stays as it is (heromedel).
+
 ## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
 
 heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every
