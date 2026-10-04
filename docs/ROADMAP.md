@@ -923,6 +923,12 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   their way); a Hijack's 15 to 19 brings a part. The questions are asked at the Space Dock whatever the inbox setting,
   and again at the next look if left unanswered. The job's skill pays points by band, so a long campaign levels people
   up.
+- **How long they're away** (`Assignments.days`): 1 to 3 days, then a day more for a nebula (half the time), Abandoned
+  or Crystal space (always), a Mantis sector (half the time); Got Lost a day and a day for every failed roll on it;
+  on any other job a failed roll a day half the time; each item found a day, a part or a recruit one more, a ship
+  two; each Rock sent one time in three; a Scout a day less; never under 1 nor over 10. So the result is rolled when
+  they set out (the record keeps the seed and the crew as they left; it rolls the same when they're back) and told
+  only then: a detail that's late is a tell that something happened, which the report never says.
 - **The report**, when the Space Dock next sees them due (a pop-up; a letter in the inbox with Immersive
   Notifications on), in heromedel's frame: the heading, the sector, "Due to events during the assignment the crew"
   and a line for the job, a hazard's line, a line a crew member ("was injured in the attack", "was extremely

@@ -81,14 +81,44 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Setup.chk("P: never a roll, a die or a percentage", !t.contains("%") && !t.toLowerCase().contains("d20") && !t.toLowerCase().contains("roll") && !t.contains("+1") && !t.contains("-1"));
   Setup.chk("P: a hazard gets its line", r.hazard != null && (t.contains("solar flare") || t.contains("asteroid") || t.contains("pulsar") || t.contains("plasma storm")));
  }
+ static void days() {
+  // a quiet run: 1 to 3; the table on top
+  Assignments.Result r = new Assignments.Result(); r.sector = "civilian"; r.job = "repair";
+  for (int i = 0; i < 3; i++) r.fates.add(new Assignments.Fate(party("human").get(0)));
+  for (Assignments.Fate f : r.fates) f.band = 3;
+  int lo = 99, hi = 0; Random rng = new Random(5);
+  for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
+  Setup.chk("D: a quiet job in a quiet sector takes 1 to 3 days (" + lo + " to " + hi + ")", lo == 1 && hi == 3);
+  r.sector = "abandoned"; lo = 99; hi = 0;
+  for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
+  Setup.chk("D: Abandoned always adds a day (" + lo + " to " + hi + ")", lo == 2 && hi == 4);
+  r.sector = "civilian"; r.job = "lost"; for (Assignments.Fate f : r.fates) f.band = 2; lo = 99; hi = 0;
+  for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
+  Setup.chk("D: Got Lost with three failures is four days late, always (" + lo + " to " + hi + ")", lo == 5 && hi == 7);
+  r.job = "repair"; lo = 99; hi = 0;
+  for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
+  Setup.chk("D: on another job a failure adds a day only sometimes (" + lo + " to " + hi + ")", lo == 1 && hi == 6);
+  for (Assignments.Fate f : r.fates) f.band = 3; r.job = "scout"; lo = 99; hi = 0;
+  for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
+  Setup.chk("D: a Scout is a day quicker, never under one (" + lo + " to " + hi + ")", lo == 1 && hi == 2);
+  r.job = "hijack"; r.prize = "ship"; r.fates.get(0).item = "fuel:3"; lo = 99; hi = 0;
+  for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
+  Setup.chk("D: a ship towed home and an item carried: three days more (" + lo + " to " + hi + ")", lo == 4 && hi == 6);
+  r.prize = null; r.fates.get(0).item = null; int rocks = 0, humans = 0;
+  for (int i = 0; i < 600; i++) { rocks += Assignments.days(r, party("rock", "rock", "rock"), rng); humans += Assignments.days(r, party("human", "human", "human"), rng); }
+  Setup.chk("D: three Rocks are a day slower on average, one in three each (" + rocks / 600.0 + " to " + humans / 600.0 + " days)", rocks - humans > 400 && rocks - humans < 800);
+  Setup.chk("D: never past the cap", Assignments.AWAY_CAP == 10);
+ }
  static void awayAndBack(Vault v) throws Exception {
   List<CrewState> crew = ExpT.hold(v, "slug", "human", "engi", "rock");
   List<Assignments.Offer> b = Assignments.board(v);
   int beforeScrap = v.storageScrap(), beforeBeacons = v.beaconsSeen();
   Assignments.send(v, b.get(1).slot, crew.subList(0, 2), new Random(4));
   List<Assignments.Away> away = Assignments.away(v);
-  Setup.chk("A: a detail away: out of the Cargo Hold, named in the file, due in 1 to 3 beacons; setting out took a beacon", away.size() == 1 && away.get(0).crew.size() == 2 && away.get(0).names().contains(crew.get(0).getName())
-    && Assignments.holdCrew(v).size() == 2 && away.get(0).until >= v.beaconsSeen() + 1 && away.get(0).until <= v.beaconsSeen() + 3 && v.beaconsSeen() == beforeBeacons + 1);
+  Setup.chk("A: a detail away: out of the Cargo Hold, named in the file, due in 1 to 10 beacons; setting out took a beacon", away.size() == 1 && away.get(0).crew.size() == 2 && away.get(0).names().contains(crew.get(0).getName())
+    && Assignments.holdCrew(v).size() == 2 && away.get(0).until >= v.beaconsSeen() + 1 && away.get(0).until <= v.beaconsSeen() + Assignments.AWAY_CAP && v.beaconsSeen() == beforeBeacons + 1);
+  Assignments.Result first = away.get(0).result(), same = away.get(0).result();
+  Setup.chk("A: the result was rolled at setting out and rolls the same every time (the seed)", first.report.equals(same.report) && first.scrap == same.scrap && away.get(0).seed != 0);
   Setup.chk("A: the offer taken is replaced", Assignments.board(v).size() == 3 && Assignments.board(v).get(1).sector != null);
   Setup.chk("A: not back before their time", Assignments.checkReturns(v).isEmpty() && Assignments.away(v).size() == 1);
   while (v.beaconsSeen() < away.get(0).until) v.countBeacon();
@@ -101,6 +131,15 @@ public class AsgT { public static void main(String[] a) throws Exception {
     && rep.text.equals(r.report) && rep.title().startsWith("Back from "));
   int skill = 0; for (CrewState c : Assignments.holdCrew(v)) for (int lv : homeplanet.model.Crew.skillLevels(c)) skill += lv;
   Setup.chk("A: the station's round brings a due detail home by itself", Assignments.checkReturns(v).isEmpty());
+  // the round's own report is the one rolled at setting out
+  crew = ExpT.hold(v, "human", "engi");
+  Assignments.send(v, Assignments.board(v).get(2).slot, crew, new Random(8));
+  Assignments.Away due = Assignments.away(v).get(0); String expected = due.result().report;
+  while (v.beaconsSeen() < due.until) v.countBeacon();
+  List<Assignments.Report> reps = Assignments.checkReturns(v);
+  Setup.chk("A: the round tells the report rolled at setting out", reps.size() == 1 && reps.get(0).text.equals(expected));
+  for (Assignments.Pending x : Assignments.pending(v)) Assignments.decline(v, x);
+  days();
   // an injury, a death and a capture written home
   crew = ExpT.hold(v, "slug", "human", "engi");
   Assignments.send(v, Assignments.board(v).get(0).slot, crew, new Random(4));

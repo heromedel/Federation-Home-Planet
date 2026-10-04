@@ -44,8 +44,13 @@ public final class Assignments {
 	private Assignments() { }
 
 	public static final int OFFERS = 3, PARTY_MAX = 3;
-	/** A detail is away AWAY_MIN to AWAY_MAX beacons (rolled, never shown); setting out counts a beacon of the fleet's time. */
-	public static final int AWAY_MIN = 1, AWAY_MAX = 3;
+	/**
+	 * A detail is away AWAY_MIN to AWAY_MAX beacons, and longer as the job went ({@link #days}: a nebula, Abandoned or
+	 * Crystal space, Got Lost, failures, things to carry home, Rock crew; a Scout is quicker), never past AWAY_CAP and
+	 * never shown; setting out counts a beacon of the fleet's time. The result is rolled when they set out (so the delay
+	 * can know it) and told only when they're back.
+	 */
+	public static final int AWAY_MIN = 1, AWAY_MAX = 3, AWAY_CAP = 10;
 	/** An offer not taken comes down after OFFER_MIN to OFFER_MAX beacons (rolled, never shown). */
 	public static final int OFFER_MIN = 3, OFFER_MAX = 8;
 	/** The pot: 2d10, times 1 + 10% a head + everyone's modifiers; never under 1. */
@@ -200,8 +205,12 @@ public final class Assignments {
 		public final int index;
 		public final String sector;
 		public final int sentAt, until;
+		/** The roll's seed: the result was rolled at setting out, and is rolled again, the same, when they're back. */
+		public final long seed;
 		public final List<CrewState> crew;
-		Away(int index, String sector, int sentAt, int until, List<CrewState> crew) { this.index = index; this.sector = sector; this.sentAt = sentAt; this.until = until; this.crew = crew; }
+		Away(int index, String sector, int sentAt, int until, long seed, List<CrewState> crew) { this.index = index; this.sector = sector; this.sentAt = sentAt; this.until = until; this.seed = seed; this.crew = crew; }
+		/** What came of it (the same every time: the seed). */
+		public Result result() { return roll(sector, crew, new Random(seed)); }
 		public List<String> names() { List<String> n = new ArrayList<String>(); for (CrewState c : crew) n.add(c.getName()); return n; }
 	}
 
@@ -257,7 +266,9 @@ public final class Assignments {
 				for (String key : p.stringPropertyNames()) if (key.startsWith(pre)) f.put(key.substring(pre.length()), p.getProperty(key));
 				try { crew.add(homeplanet.comm.Line.crewFrom(f)); } catch (IOException e) { log.warn("A crew member away on an expedition can't be read: {}", e.toString()); }
 			}
-			out.add(new Away(i, p.getProperty("away." + i + ".sector"), intOf(p, "away." + i + ".sentAt", 0), intOf(p, "away." + i + ".until", 0), crew));
+			long seed = 0;
+			try { seed = Long.parseLong(p.getProperty("away." + i + ".seed", "0")); } catch (NumberFormatException e) { }
+			out.add(new Away(i, p.getProperty("away." + i + ".sector"), intOf(p, "away." + i + ".sentAt", 0), intOf(p, "away." + i + ".until", 0), seed, crew));
 		}
 		return out;
 	}
@@ -362,24 +373,59 @@ public final class Assignments {
 		int i = 0;
 		while (p.getProperty("away." + i + ".sector") != null) i++;
 		int now = v.beaconsSeen() + 1; // the beacon the setting out takes
-		p.setProperty("away." + i + ".sector", sector);
-		p.setProperty("away." + i + ".sentAt", Integer.toString(now));
-		p.setProperty("away." + i + ".until", Integer.toString(now + AWAY_MIN + rng.nextInt(AWAY_MAX - AWAY_MIN + 1)));
-		int k = 0;
+		List<CrewState> going = new ArrayList<CrewState>();
 		for (CrewState sent : party) {
 			CrewState mine = null;
 			for (CrewState x : hold.getCrewList()) if (x == sent || (mine == null && x.getName().equals(sent.getName()) && x.getRace() == sent.getRace())) mine = x;
 			if (mine == null) throw new IOException(sent.getName() + " is not in the Cargo Hold; nothing was changed");
+			going.add(mine);
+		}
+		// rolled now, so the delay knows how it went; the record keeps the seed and the crew as they left, so it rolls the same when they're back
+		long seed = rng.nextLong();
+		List<CrewState> asLeft = new ArrayList<CrewState>();
+		int k = 0;
+		for (CrewState mine : going) {
 			hold.getCrewList().remove(mine);
-			for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(mine).entrySet()) p.setProperty("away." + i + ".crew." + k + "." + e.getKey(), e.getValue());
+			Map<String, String> f = homeplanet.comm.Line.crewFields(mine);
+			for (Map.Entry<String, String> e : f.entrySet()) p.setProperty("away." + i + ".crew." + k + "." + e.getKey(), e.getValue());
+			asLeft.add(homeplanet.comm.Line.crewFrom(f));
 			k++;
 		}
+		Result r = roll(sector, asLeft, new Random(seed));
+		p.setProperty("away." + i + ".sector", sector);
+		p.setProperty("away." + i + ".sentAt", Integer.toString(now));
+		p.setProperty("away." + i + ".seed", Long.toString(seed));
+		p.setProperty("away." + i + ".until", Integer.toString(now + days(r, asLeft, rng)));
 		p.remove("offer." + slot); p.remove("offer." + slot + ".words"); p.remove("offer." + slot + ".until");
 		v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
 		v.countBeacon();
 		List<String> names = new ArrayList<String>();
 		for (CrewState x : party) names.add(x.getName());
 		HistoryLog.entry("EXPEDITION", String.join(", ", names) + " sent to " + sectorTitle(sector));
+	}
+
+	/**
+	 * How long they're away: AWAY_MIN to AWAY_MAX days, then a day more for a nebula (half the time), Abandoned or Crystal
+	 * space (always), a Mantis sector (half the time); Got Lost a day, and a day for every failed roll on it; on any other
+	 * job a failed roll a day half the time; each item found a day, a part or a recruit one more, a ship two; each Rock
+	 * one time in three; a Scout a day less; never under 1 nor over AWAY_CAP. Nothing the report says.
+	 */
+	public static int days(Result r, List<CrewState> party, Random rng) {
+		int d = AWAY_MIN + rng.nextInt(AWAY_MAX - AWAY_MIN + 1);
+		if ("nebula".equals(r.sector) && rng.nextBoolean()) d++;
+		if ("abandoned".equals(r.sector) || "crystal".equals(r.sector)) d++;
+		if ("mantis".equals(r.sector) && rng.nextBoolean()) d++;
+		boolean lost = "lost".equals(r.job);
+		if (lost) d++;
+		for (Fate f : r.fates) {
+			if (f.band == 2 && (lost || rng.nextBoolean())) d++;
+			if (f.item != null) d++;
+		}
+		if ("ship".equals(r.prize)) d += 2;
+		else if (r.prize != null) d++;
+		for (CrewState c : party) if ("rock".equals(race(c)) && rng.nextInt(3) == 0) d++;
+		if ("scout".equals(r.job)) d--;
+		return Math.max(1, Math.min(AWAY_CAP, d));
 	}
 
 	// ---- the roll ----
@@ -391,7 +437,7 @@ public final class Assignments {
 		public boolean rerolled, died, captured, infirmary;
 		/** The item a 20 found (an id, or "fuel:3", "missiles:2", "parts:2"), or null. */
 		public String item;
-		Fate(CrewState c) { crew = c; }
+		public Fate(CrewState c) { crew = c; }
 		public String name() { return crew.getName(); }
 	}
 	/** What came of an expedition. */
@@ -404,6 +450,8 @@ public final class Assignments {
 		public String prizeDetail;
 		public CrewState recruit;
 		public String report;
+		/** The words' own seed: the report reads the same whenever it's told again. */
+		public long seed;
 		public List<Fate> dead() { List<Fate> l = new ArrayList<Fate>(); for (Fate f : fates) if (f.died) l.add(f); return l; }
 	}
 
@@ -432,6 +480,7 @@ public final class Assignments {
 	 */
 	public static Result roll(String sector, List<CrewState> party, Random rng) {
 		Result r = new Result();
+		r.seed = rng.nextLong();
 		r.sector = sector;
 		r.job = drawJob(sector, rng);
 		r.hazard = drawHazard(sector, rng);
@@ -472,7 +521,7 @@ public final class Assignments {
 			if (d == 20) r.prize = "hijack".equals(r.job) ? "ship" : "salvage".equals(r.job) ? "part" : "recruit";
 			else if (d >= 15 && "hijack".equals(r.job)) r.prize = "part";
 		}
-		r.report = report(r, rng);
+		r.report = report(r, new Random(r.seed));
 		return r;
 	}
 	/** An item worth up to this much: the dearest kind that fits (a weapon, drone or augment FTL's stores sell; else supplies), or null. */
@@ -539,7 +588,7 @@ public final class Assignments {
 		int now = v.beaconsSeen();
 		for (Away a : away(p)) {
 			if (now < a.until) continue;
-			try { out.add(bringHome(v, a, roll(a.sector, a.crew, new Random()))); }
+			try { out.add(bringHome(v, a, a.result())); }
 			catch (Exception e) { log.warn("A detail could not be brought home: {}", e.toString()); }
 		}
 		return out;
@@ -605,7 +654,7 @@ public final class Assignments {
 		}
 		for (String key : p.stringPropertyNames()) if (!key.startsWith("away.")) q.setProperty(key, p.getProperty(key));
 		tx.put(file(v), bytes(q)).commit();
-		String text = r.report = report(r, new Random()); // told again now everything is settled (the prize, the recruit's name)
+		String text = r.report = report(r, new Random(r.seed)); // told again now everything is settled (the prize, the recruit's name), in the same words
 		List<String> dead = new ArrayList<String>();
 		for (Fate f : r.dead()) dead.add(f.name());
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
