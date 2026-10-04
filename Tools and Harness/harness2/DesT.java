@@ -91,12 +91,12 @@ public class DesT {
    g.name = "Kestrel copy";
    Setup.chk("copied the Kestrel", ShipDesign.fromGameShip(g, "PLAYER_SHIP_HARD") && g.rooms.size() == 17 && g.systems.containsKey("pilot") && g.art.equals("game:kestral") && g.doors.size() > 10);
    int[] gb = g.bounds();
-   Setup.chk("placed two squares in", gb[0] == 2 && gb[1] == 2);
+   Setup.chk("placed where the game has her: the grid's middle is the game's centre, so her offsets (0, 2) put her at column 4, row 4: " + gb[0] + ", " + gb[1], gb[0] == DesignExport.ORIGIN_COL && gb[1] == DesignExport.ORIGIN_ROW + 2);
    Setup.chk("loadout and numbers taken", g.loadout != null && g.loadout.weapons.size() == 2 && g.hull == 30 && g.reactor == 8);
    ShipChecks.Report r = ShipChecks.check(g, ShipChecks.Context.DESIGN, null, null);
    Setup.chk("the copy is sound: " + r.problems, r.problems.isEmpty());
    int ax = g.artX, doors = g.doors.size();
-   Setup.chk("shift left twice then a third fails at the edge", g.shift(-1, 0) && g.shift(-1, 0) && !g.shift(-1, 0) && g.bounds()[0] == 0 && g.artX == ax - 70);
+   Setup.chk("shift left four times then a fifth fails at the edge", g.shift(-1, 0) && g.shift(-1, 0) && g.shift(-1, 0) && g.shift(-1, 0) && !g.shift(-1, 0) && g.bounds()[0] == 0 && g.artX == ax - 140);
    // flipping keeps every door on a wall and every station in its room
    String before = ShipDesign.editKey(g);
    ShipDesign f = ShipDesign.copy(g);
@@ -219,6 +219,17 @@ public class DesT {
    SafeFiles.writeText(ShipDesign.file(), xml, true);
    back2 = null; for (ShipDesign s : ShipDesign.load()) if (s.id.equals(y.id) && s.snapshotOf == null) back2 = s;
    Setup.chk("X: an older file without the attribute: one slot per mount, as it was counted then", back2 != null && back2.weaponSlots == back2.slotsFromMounts());
+   // the grid's middle is the game's centre: where the rooms sit round it is her screen offset
+   ShipDesign k = ShipDesign.create(all); ShipDesign.fromGameShip(k, "PLAYER_SHIP_HARD");
+   int[] ko = DesignExport.offsets(k);
+   Setup.chk("X: a Kestrel copied onto the grid lands where the game has her and gets the game's own offsets back (0, 2): " + ko[0] + ", " + ko[1], ko[0] == 0 && ko[1] == 2);
+   ShipDesign m = ShipDesign.create(all); ShipDesign.fromGameShip(m, "PLAYER_SHIP_MANTIS");
+   int[] mo = DesignExport.offsets(m);
+   Setup.chk("X: the Mantis too (3, 0): " + mo[0] + ", " + mo[1], mo[0] == 3 && mo[1] == 0);
+   for (ShipDesign.Room r : k.rooms) r.x += 2;
+   Setup.chk("X: her rooms moved two squares right: offset 2 (she sits further right in the game)", DesignExport.offsets(k)[0] == 2);
+   for (ShipDesign.Room r : k.rooms) r.x -= 5;
+   Setup.chk("X: moved past the game's edge: offset 0, never negative", DesignExport.offsets(k)[0] == 0);
  }
  Setup.done();
 }}

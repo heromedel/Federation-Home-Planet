@@ -146,7 +146,7 @@ public class ArtPanel extends JPanel {
 		}), artilleryBtn = button("Artillery mount", "Place the mount for the artillery gun (ships with an artillery system need one)", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { editor.startArtilleryMount(); }
 		})));
-		JLabel tips = new JLabel("<html><div style='width:230px'>The cyan cross is where FTL puts her: art centred on it looks centred in the game. Middle-drag moves the view; Alt + middle-drag moves the art in any tool. The wheel zooms; with a mount selected it turns the mount (Ctrl+wheel still zooms).</div></html>");
+		JLabel tips = new JLabel("<html><div style='width:230px'>The cyan cross in the grid's middle is where FTL puts her: the rooms and the art sit in the game as they sit round it here. The faint strip at the top and left is past the game's edge. Middle-drag moves the view; Alt + middle-drag moves the art in any tool. The wheel zooms; with a mount selected it turns the mount (Ctrl+wheel still zooms).</div></html>");
 		tips.setFont(tips.getFont().deriveFont(11f));
 		tips.setAlignmentX(LEFT_ALIGNMENT);
 		p.add(tips);

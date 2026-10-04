@@ -212,8 +212,8 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 				+ "Right-click a system to take it off the ship.</p>");
 		sb.append("<h3>Doors</h3><p><b>Add door</b>, then click walls: between two rooms for a door, on an outer wall for an airlock. "
 				+ "Click a door, then a wall, to move it; right-click or Delete removes it. Esc stops.</p>");
-		if (art) sb.append("<h3>Art</h3><p><b>Move art</b> drags the hull picture over the rooms (arrow keys nudge it a pixel; Shift: ten). The cyan cross is the anchor: where FTL puts her. "
-				+ "Art centred on it looks centred in the game; art pushed off it sits that way in the game too. "
+		if (art) sb.append("<h3>Art</h3><p><b>Move art</b> drags the hull picture over the rooms (arrow keys nudge it a pixel; Shift: ten). The cyan cross in the grid's middle is where FTL puts her: "
+				+ "the rooms and the art sit in the game as they sit round it here, and nothing moves anything else. The faint strip at the top and left is past the game's edge: rooms there sit at its edge in the game. "
 				+ "<b>Weapon mounts</b>: click the hull to place a mount, drag to move it, right-click to remove it. R turns the selected mount and S changes which way its weapon slides; the wheel turns it too. "
 				+ "FTL draws weapon slot n on mount n, so give her as many mounts as slots. Alt + middle-drag moves the art whatever tool is on.</p>");
 		if (loadout) sb.append("<h3>Loadout</h3><p>Who she is, her numbers, her starting crew, what she carries and which systems are installed at the start. "

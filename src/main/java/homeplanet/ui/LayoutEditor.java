@@ -96,6 +96,8 @@ public class LayoutEditor {
 	private ShipDesign.Mount selMount = null;
 	private int artGrabX, artGrabY;
 	static final int MARGIN = 4 * SQ;
+	/** The design canvas's border round the grid: room for a big hull picture hanging over the grid's edge. */
+	static final int PAD = 10 * SQ;
 
 	// art under the rooms (optional): pictures and where they sit relative to the grid origin, in pixels
 	BufferedImage baseImg, floorImg;
@@ -257,38 +259,14 @@ public class LayoutEditor {
 	}
 	/** Sizes the design canvas around the rooms and the art (art hanging off the top or left moves the grid over). */
 	/**
-	 * Lays the design canvas out round the anchor (the rooms' centre, where FTL puts her): the anchor is always the
-	 * canvas's middle (heromedel: the one place a person expects it), the canvas wide enough either side for the grid,
-	 * the rooms and the art, and the view is kept centred on it. So placing a room shifts the whole drawing a little
-	 * rather than the anchor.
+	 * The design canvas: the grid with a fixed border of {@link #PAD} all round for art that hangs over its edge. Nothing
+	 * here moves when something is edited (heromedel): the anchor, the grid's middle, is where FTL puts the ship, and the
+	 * rooms and the art sit where the player left them.
 	 */
 	private void relayoutDesign() {
-		// the anchor, in pixels from the grid origin
-		double ax = cols * SQ / 2.0, ay = rows * SQ / 2.0;
-		if (!d.rooms.isEmpty()) {
-			int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-			for (ShipDesign.Room r : d.rooms) { minX = Math.min(minX, r.x); minY = Math.min(minY, r.y); maxX = Math.max(maxX, r.x + r.w); maxY = Math.max(maxY, r.y + r.h); }
-			ax = (minX + maxX) * SQ / 2.0; ay = (minY + maxY) * SQ / 2.0;
-		}
-		// how far anything reaches from it, either way
-		double left = ax, right = cols * SQ - ax, up = ay, down = rows * SQ - ay;
-		if (baseImg != null) {
-			left = Math.max(left, ax - d.artX); right = Math.max(right, d.artX + baseImg.getWidth() - ax);
-			up = Math.max(up, ay - d.artY); down = Math.max(down, d.artY + baseImg.getHeight() - ay);
-		}
-		int halfW = (int) Math.ceil(Math.max(left, right)) + MARGIN, halfH = (int) Math.ceil(Math.max(up, down)) + MARGIN;
-		originX = (int) Math.round(halfW - ax);
-		originY = (int) Math.round(halfH - ay);
-		baseW = 2 * halfW; baseH = 2 * halfH;
+		originX = PAD; originY = PAD;
+		baseW = cols * SQ + 2 * PAD; baseH = rows * SQ + 2 * PAD;
 		updateSize();
-		centreView();
-	}
-	/** Scrolls so the canvas's middle (the anchor) is in the middle of the view. */
-	private void centreView() {
-		javax.swing.JViewport vp = viewport();
-		if (vp == null || vp.getExtentSize().width <= 0) return;
-		java.awt.Dimension ext = vp.getExtentSize();
-		scrollTo((int) (baseW * eff() / 2) - ext.width / 2, (int) (baseH * eff() / 2) - ext.height / 2);
 	}
 
 	// ---- view: zoom, fit, centring ----
@@ -357,21 +335,15 @@ public class LayoutEditor {
 		}
 		host.say("Zoom " + Math.round(zoom * 100) + "%.");
 	}
-	/** Puts the middle of the art over the middle of the rooms. */
+	/** Puts the picture's visible middle on the anchor (the grid's middle, where FTL puts her). Nothing else moves. */
 	public boolean centerArt() {
 		if (!designArt || baseImg == null) return false;
-		double cx, cy;
-		if (d.rooms.isEmpty()) { cx = cols * SQ / 2.0; cy = rows * SQ / 2.0; }
-		else {
-			int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-			for (ShipDesign.Room r : d.rooms) { minX = Math.min(minX, r.x); minY = Math.min(minY, r.y); maxX = Math.max(maxX, r.x + r.w); maxY = Math.max(maxY, r.y + r.h); }
-			cx = (minX + maxX) * SQ / 2.0; cy = (minY + maxY) * SQ / 2.0;
-		}
+		double cx = cols * SQ / 2.0, cy = rows * SQ / 2.0;
 		// the picture's visible part, not its box: a long nose or big engines leave the box's middle nowhere near the hull's
 		Rectangle vis = homeplanet.parser.ShipArt.opaqueBounds(baseImg);
 		d.artX = (int) Math.round(cx - (vis.x + vis.width / 2.0));
 		d.artY = (int) Math.round(cy - (vis.y + vis.height / 2.0));
-		relayoutDesign();
+		canvas.repaint();
 		host.changed();
 		return true;
 	}
@@ -1110,10 +1082,12 @@ public class LayoutEditor {
 			}
 			g.setStroke(new BasicStroke(1f));
 			if (designArt) paintArtExtras(g);
-			if (designArt && !d.rooms.isEmpty()) { // the rooms' centre: the one centre FTL knows (the ship sits on the screen by its rooms)
-				int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-				for (ShipDesign.Room r : d.rooms) { minX = Math.min(minX, r.x); minY = Math.min(minY, r.y); maxX = Math.max(maxX, r.x + r.w); maxY = Math.max(maxY, r.y + r.h); }
-				int cx = originX + (minX + maxX) * SQ / 2, cy = originY + (minY + maxY) * SQ / 2;
+			if (designArt) { // the anchor: the grid's middle is where FTL puts the ship (DesignExport.SHIP_X / SHIP_Y)
+				int cx = originX + cols * SQ / 2, cy = originY + rows * SQ / 2;
+				// FTL has no further left or up than offset 0: rooms in this strip sit at the strip's edge in the game
+				g.setColor(new Color(255, 120, 80, 42));
+				g.fillRect(originX, originY, homeplanet.parser.DesignExport.ORIGIN_COL * SQ, rows * SQ);
+				g.fillRect(originX, originY, cols * SQ, homeplanet.parser.DesignExport.ORIGIN_ROW * SQ);
 				g.setColor(new Color(90, 220, 255, 230));
 				g.setStroke(new BasicStroke(2f));
 				g.drawLine(cx - 9, cy, cx + 9, cy); g.drawLine(cx, cy - 9, cx, cy + 9);
@@ -1123,12 +1097,12 @@ public class LayoutEditor {
 				g.drawString("where FTL puts her", cx + 12, cy - 4);
 			}
 			// what to do first, written on the empty grid
-			String hint = roomsEditable && d.rooms.isEmpty() ? "Place her first room: Place 2 x 2, then click the grid."
+			String hint = roomsEditable && d.rooms.isEmpty() ? "Place her first room: Place 2 x 2, then click the grid. The cross is where FTL puts her."
 					: designArt && baseImg == null && !d.rooms.isEmpty() ? "She needs hull art: the Art step, Import PNG or From the game." : null;
 			if (hint != null) {
 				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
 				int tw = g.getFontMetrics().stringWidth(hint);
-				int hx = originX + gridCols() * SQ / 2 - tw / 2, hy = originY + (d.rooms.isEmpty() ? gridRows() * SQ / 2 : -SQ / 2);
+				int hx = originX + cols * SQ / 2 - tw / 2, hy = originY + (d.rooms.isEmpty() ? rows * SQ / 2 + 2 * SQ : -SQ / 2);
 				g.setColor(new Color(0, 0, 0, 150));
 				g.fillRoundRect(hx - 10, hy - 16, tw + 20, 24, 8, 8);
 				g.setColor(new Color(230, 236, 232));

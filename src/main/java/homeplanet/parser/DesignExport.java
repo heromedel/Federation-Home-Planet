@@ -87,15 +87,25 @@ public class DesignExport {
 		int[] s = shift(d);
 		return new int[] {d.artX - s[0] * SQ, d.artY - s[1] * SQ};
 	}
+	/** The design grid: the squares a design is drawn on. Its middle is the game's centre (below). */
+	public static final int COLS = 24, ROWS = 14;
 	/**
-	 * Where she sits on screen, in squares. Unless set by hand: chosen so the picture lands about where the game's own
-	 * ships' pictures do (their img position plus the offset averages roughly -45, -40 pixels). Unverified; check in game.
+	 * Where the game puts a ship: in FTL's own frame (squares from its ship origin, the layout's X_OFFSET/Y_OFFSET plus
+	 * the rooms' own position), every one of the game's player ships has the middle of its room block at about 8 across
+	 * and 5 down (measured over all 28: 8.0, 5.2). The middle of the design grid stands for that point, so where the
+	 * player puts the rooms relative to it is where FTL puts her: rooms left of the middle sit left in the game.
+	 */
+	public static final int SHIP_X = 8, SHIP_Y = 5;
+	/** The grid column and row that FTL's offset 0 falls on: a ship can't be put further left or up than these. */
+	public static final int ORIGIN_COL = COLS / 2 - SHIP_X, ORIGIN_ROW = ROWS / 2 - SHIP_Y;
+	/**
+	 * Her screen offsets (X_OFFSET, Y_OFFSET), in squares: how far right and down of FTL's ship origin her rooms start,
+	 * read off her place on the grid. Never negative: FTL has no further left or up than offset 0, so rooms drawn past
+	 * {@link #ORIGIN_COL} / {@link #ORIGIN_ROW} sit at 0 in the game (the editor shades that strip).
 	 */
 	public static int[] offsets(ShipDesign d) {
-		int[] xy = imgXY(d);
-		int ox = d.offX >= 0 ? d.offX : Math.max(0, Math.min(6, Math.round((-45f - xy[0]) / SQ)));
-		int oy = d.offY >= 0 ? d.offY : Math.max(0, Math.min(3, Math.round((-40f - xy[1]) / SQ)));
-		return new int[] {ox, oy};
+		int[] s = shift(d);
+		return new int[] {Math.max(0, s[0] - ORIGIN_COL), Math.max(0, s[1] - ORIGIN_ROW)};
 	}
 
 	// ---- the layout (.txt) ----

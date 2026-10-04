@@ -28,7 +28,7 @@ import homeplanet.parser.ShipDesign;
  */
 public class DesignDialog extends ShipEditorDialog {
 
-	static final int COLS = 24, ROWS = 14;
+	static final int COLS = DesignExport.COLS, ROWS = DesignExport.ROWS;
 
 	private final ShipDesign original;
 	/** Her built copy, if she has been built: what the mod holds now, and what a rebuild is compared against. */
