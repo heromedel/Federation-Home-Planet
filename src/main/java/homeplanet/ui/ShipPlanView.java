@@ -76,9 +76,9 @@ public class ShipPlanView extends JComponent {
 			ShipDesign.Room r = d.rooms.get(i);
 			int x = r.x * SQ, y = r.y * SQ, w = r.w * SQ, h = r.h * SQ;
 			boolean on = i == litRoom;
-			g.setColor(on ? new Color(230, 200, 90, 150) : new Color(150, 154, 160, 150)); // FTL paints room floors flat grey
+			g.setColor(on ? new Color(210, 186, 100) : new Color(150, 154, 160)); // FTL paints room floors flat grey, solid over the hull
 			g.fillRect(x, y, w, h);
-			g.setColor(new Color(128, 132, 138, 160));
+			g.setColor(new Color(128, 132, 138));
 			for (int sx = 1; sx < r.w; sx++) g.drawLine(x + sx * SQ, y, x + sx * SQ, y + h);
 			for (int sy = 1; sy < r.h; sy++) g.drawLine(x, y + sy * SQ, x + w, y + sy * SQ);
 			g.setColor(on ? new Color(255, 220, 90) : new Color(200, 210, 220));
