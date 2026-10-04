@@ -6,10 +6,16 @@
 #   band <job> <band> | <phrase>               after a name: "Bob <phrase>." Bands: died, injured, failed, success, high, top
 #                                              (top: "and brought back <item>" is added when a 20 found something)
 #   hazard <hazard> | <sentence>               flare, asteroids, pulsar, storm
-#   prize <job> <kind> | <sentence>            hijack ship, hijack part, salvage part, rescue recruit ({name}: the ship's or the recruit's)
-#   captured | <phrase>                        after a name, taken on Get Boarded (a ransom letter follows)
+#   prize <job> <kind> | <sentence>            hijack ship, hijack part, salvage part, rescue recruit ({name}: the ship's
+#                                              name and class, the part's system, or the recruit's name and race)
+#   captured | <phrase>                        after a name, taken on Get Boarded (a ransom letter always follows)
 #   infirmary | <phrase>                       after a name, badly hurt: in the infirmary a while
 #   offer <sector> | <words>                   the card on the board for a sector; several per sector
+#
+# Marked lines: any key but an offer can end in a sector ("event defend zoltan | ..."), and that line joins the
+# unmarked ones only in that sector. Captured lines are marked by who took them instead: slavers, pirates, rebels or
+# mantis (the same captors who sign the ransom letter). In a line after a name, {he} {him} {his} become she, her, her
+# for a woman. Every line finishes its thought: a reader should never be left asking "decide what?".
 #
 # Jobs: defend attack negotiate boarded rescue salvage scout repair transport lost escort capture board hijack infection spiders
 # Sectors: civilian engi zoltan mantis pirate rebel rock nebula abandoned crystal
@@ -42,7 +48,7 @@ band defend died | was killed holding the line
 band defend injured | was injured holding the line
 band defend failed | fell back when the raiders pushed
 band defend success | was successful holding the line
-band defend high | was very successful: the raiders broke on their position
+band defend high | was very successful: the raiders broke on {his} position
 band defend top | was extremely successful and turned the raiders back alone
 
 event attack | were sent against a raider base
@@ -50,7 +56,7 @@ event attack | joined a strike on a smugglers' den
 event attack | went in with a boarding party against an enemy ship
 band attack died | was killed in the attack
 band attack injured | was injured in the attack
-band attack failed | lost their nerve in the attack
+band attack failed | lost {his} nerve in the attack
 band attack success | was successful in the attack
 band attack high | was very successful: first through the breach
 band attack top | was extremely successful and led the attack home
@@ -72,7 +78,7 @@ band boarded died | was killed by the boarders
 band boarded injured | was injured by the boarders
 band boarded failed | was driven back by the boarders
 band boarded success | was successful against the boarders
-band boarded high | was very successful: the boarders never got past them
+band boarded high | was very successful: the boarders never got past {him}
 band boarded top | was extremely successful and threw the boarders off the ship
 
 event rescue | answered a distress call
@@ -110,7 +116,7 @@ event repair | were called to a freighter dead in space
 event repair | spent the job up to the elbows in an old reactor
 band repair died | was killed when the reactor flared
 band repair injured | was injured when the reactor flared
-band repair failed | made it worse before they made it better
+band repair failed | made it worse before {he} made it better
 band repair success | was successful in the repairs
 band repair high | was very successful: she ran better than new
 band repair top | was extremely successful and had her running in half the time
@@ -132,7 +138,7 @@ band lost died | was lost and never found
 band lost injured | was injured finding the way back
 band lost failed | made the wrong call at every turn
 band lost success | was successful in finding the way back
-band lost high | was very successful: it was their chart that got everyone home
+band lost high | was very successful: it was {his} chart that got everyone home
 band lost top | was extremely successful and found a beacon no one knew of
 
 event escort | escorted a merchant through a bad stretch
@@ -140,7 +146,7 @@ event escort | rode shotgun on a slow freighter
 event escort | saw an envoy's ship through hostile space
 band escort died | was killed in the escort
 band escort injured | was injured in the escort
-band escort failed | lost sight of the ship they were guarding
+band escort failed | lost sight of the ship {he} was guarding
 band escort success | was successful in the escort
 band escort high | was very successful: not a scratch on her
 band escort top | was extremely successful and brought her through a running fight
@@ -162,7 +168,7 @@ band board died | was killed in the boarding
 band board injured | was injured in the boarding
 band board failed | was pushed back to the airlock
 band board success | was successful in the boarding
-band board high | was very successful: the bridge was theirs
+band board high | was very successful: {he} took the bridge
 band board top | was extremely successful and took the ship nearly single-handed
 
 event hijack | were hired to steal a ship from her moorings
@@ -190,20 +196,44 @@ event spiders | went into a derelict and found it full of Giant Spiders
 event spiders | were cornered by Giant Spiders in a station's lower decks
 band spiders died | was killed by the spiders
 band spiders injured | was killed by the spiders
-band spiders failed | ran, and nobody blames them
+band spiders failed | ran, and nobody blames {him}
 band spiders success | was successful fighting them back
 band spiders high | was very successful: the spiders went back down the hole
 band spiders top | was extremely successful and burned the nest out
 
 hazard flare | A solar flare caught them halfway through.
-hazard asteroids | The job ran through an asteroid field the whole way.
+hazard flare | They worked too close to a star, and the flares set fires faster than they could put them out.
+hazard flare | The star flared twice while they were at it, and everything that could burn did.
+hazard flare | A solar flare scorched the hull and lit fires on three decks.
+hazard asteroids | Asteroids kept striking the shields from the moment they arrived until the moment they left.
+hazard asteroids | Asteroids hammered the shields from start to finish.
+hazard asteroids | They spent as much time dodging asteroids as working.
 hazard pulsar | A pulsar's ion bursts had their systems down again and again.
-hazard storm | A plasma storm had their power down the whole time.
+hazard pulsar | A nearby pulsar knocked the power out with every pulse.
+hazard pulsar | Their work was slowed by each wave of energy from the pulsar.
+hazard storm | A plasma storm held their reactor at half power for most of the job.
+hazard storm | A plasma storm rolled in on the first day, and their reactor never ran above half until it passed.
 
-captured | was taken by the boarders. Word may come.
+captured | was last seen being carried through the boarders' airlock.
+captured | was taken by the boarders. The crew hope {he}'s all right out there.
+captured | was taken by the boarders. You may never see {him} again.
+captured slavers | was taken by slavers, to be sold to whoever pays the most.
+captured pirates | was dragged aboard the pirate ship before it broke away.
+captured rebels | was taken by the rebels for questioning.
+captured mantis | was taken by Mantis instead of being killed immediately.
+
 infirmary | was badly hurt and is in the infirmary.
+infirmary | was carried to the infirmary when they docked.
+infirmary | came home on a stretcher and went straight to the infirmary.
+infirmary | is in the infirmary, and will be for a while.
 
-prize hijack ship | They brought the ship home: {name}. She's moored at the station until you decide.
-prize hijack part | They couldn't keep the ship, but pulled a system out of her before they left it.
+prize hijack ship | They brought the ship home: {name}. She's moored at the station until you decide whether she joins the fleet, goes to the Junkyard, or is let go.
+prize hijack ship | They didn't come home on the shuttle. They came home in {name}, moored at the station until you decide whether she joins the fleet, goes to the Junkyard, or is let go.
+prize hijack part | The alarms went before she cleared her moorings, but they pulled her {name} system out before they ran.
+prize hijack part | She was too badly shot up to fly home, so they took her {name} system and left the rest.
+prize hijack part | Her owners came back sooner than expected. The crew left with her {name} system and nothing else.
 prize salvage part | They pulled a whole system out of the wreck.
-prize rescue recruit | One of those they rescued, {name}, asked to sign on, and waits in The Home Planet Station's lounge for your word.
+prize salvage part | They cut the wreck's {name} system free and brought it home. It's seen some damage.
+prize salvage part | The wreck's {name} system came home with them, damaged but worth fitting.
+prize rescue recruit | One of those they rescued, {name}, asked to sign on, and waits in The Station Lounge for your word.
+prize rescue recruit | They came back with one more than they left with: {name}, who asks to sign on and waits in The Station Lounge.

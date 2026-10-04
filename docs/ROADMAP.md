@@ -937,6 +937,15 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   successful and brought back an Artemis Missile"), the prize's line, Total Reward. Never a roll, a die or a
   percentage. The lines are in `resource/assignments.txt` (several per job, one picked), editable without a build.
 
+- **The words, first batch** (5.01, Plan MM; every line shown to heromedel by number first): hazards three or four
+  lines each, written to FTL's own tooltips (a star's flares set fires, a pulsar's waves knock systems out, a plasma
+  storm holds the reactor at half); the captured lines no longer promise word (the ransom letter always comes), and four
+  are marked by who took them (slavers sell to whoever pays most, pirates, the rebels, the Mantis); four infirmary lines;
+  the ship prize says what the decision is (join the fleet, the Junkyard, or let go); a hijack's part says why the ship
+  couldn't be kept; parts name their system; the recruit waits in The Station Lounge. Lines can be marked for a sector
+  (`event defend zoltan | ...` joins the general lines there), and {he} {him} {his} follow the crew member's sex. The
+  harness holds every line against FTL's event text (no six words the same) and refuses a mark that isn't a sector.
+
 ## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
 
 heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every

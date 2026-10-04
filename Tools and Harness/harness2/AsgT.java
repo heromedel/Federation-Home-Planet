@@ -25,8 +25,29 @@ public class AsgT { public static void main(String[] a) throws Exception {
     && Assignments.raceSector("anaerobic", "abandoned") == 0 && Assignments.raceSector("rock", "abandoned") == 10 && Assignments.raceSector("mantis", "rebel") == 0 && Assignments.raceSector("slug", "crystal") == 0);
   Setup.chk("T: the d20's bands", Assignments.band(1) == 0 && Assignments.band(5) == 1 && Assignments.band(9) == 2 && Assignments.band(15) == 3 && Assignments.band(19) == 4 && Assignments.band(20) == 5);
  }
- static void words() {
+ static void words() throws Exception {
   Setup.chk("W: the words file has an event and six bands for every job, every hazard, every sector's offer and the prizes " + Assignments.missingWords(), Assignments.missingWords().isEmpty());
+  Setup.chk("W: every marked line is marked for a real sector (captured: real captors) " + Assignments.strayWords(), Assignments.strayWords().isEmpty());
+  // held against FTL's own event text: no run of six words the same
+  String ftl = new String(ExpT.readAll(net.blerf.ftl.parser.DataManager.get().getResourceInputStream("data/text_events.xml")), "UTF-8").replaceAll("<[^>]*>", " ");
+  Set<String> shingles = new HashSet<String>(); List<String> w = ExpT.words(ftl);
+  for (int i = 0; i + 6 <= w.size(); i++) shingles.add(String.join(" ", w.subList(i, i + 6)));
+  List<String> copied = new ArrayList<String>();
+  for (String line : Assignments.allWords()) { List<String> m = ExpT.words(line); for (int i = 0; i + 6 <= m.size(); i++) if (shingles.contains(String.join(" ", m.subList(i, i + 6)))) { copied.add(String.join(" ", m.subList(i, i + 6))); break; } }
+  Setup.chk("W: no run of six words copied from FTL's events (" + Assignments.allWords().size() + " lines) " + copied, copied.isEmpty());
+  // captured lines know who took them, and say she for a woman
+  Random rng = new Random(31); int pirate = 0, slaver = 0, she = 0, stray = 0;
+  for (int i = 0; i < 40000 && (pirate == 0 || she == 0); i++) {
+   String sector = i % 2 == 0 ? "pirate" : "mantis";
+   List<CrewState> p = party("human", "human", "human"); for (CrewState c : p) c.setMale(false);
+   Assignments.Result r = Assignments.roll(sector, p, rng);
+   String t = r.report;
+   if (t.contains("{")) stray++;
+   if (t.contains("pirate ship before it broke away")) pirate++;
+   if ("pirate".equals(sector) && t.contains("taken by slavers")) slaver++;
+   if (t.contains("she's all right out there") || t.contains("never see her again")) she++;
+  }
+  Setup.chk("W: a capture in pirate space can say pirates (" + pirate + "), never slavers (" + slaver + "); a woman taken is she (" + she + "); no token left unfilled (" + stray + ")", pirate > 0 && slaver == 0 && she > 0 && stray == 0);
  }
  static void board(Vault v) throws Exception {
   List<Assignments.Offer> b = Assignments.board(v);
@@ -78,8 +99,8 @@ public class AsgT { public static void main(String[] a) throws Exception {
   System.out.println(t);
   Setup.chk("P: the frame: the heading, the sector, the crew line, a line a crew member, the total", t.startsWith("-- Expedition Report --\nSector: Nebula\nDue to events during the assignment the crew\n")
     && t.contains("\n" + r.fates.get(0).name() + " ") && t.contains("\n" + r.fates.get(2).name() + " ") && t.endsWith("Total Reward: " + r.scrap + " scrap"));
-  Setup.chk("P: never a roll, a die or a percentage", !t.contains("%") && !t.toLowerCase().contains("d20") && !t.toLowerCase().contains("roll") && !t.contains("+1") && !t.contains("-1"));
-  Setup.chk("P: a hazard gets its line", r.hazard != null && (t.contains("solar flare") || t.contains("asteroid") || t.contains("pulsar") || t.contains("plasma storm")));
+  Setup.chk("P: never a roll, a die or a percentage", !t.contains("%") && !t.toLowerCase().contains("d20") && !t.toLowerCase().matches("(?s).*\\b(rolls?|rolled (a|an|\\d))\\b.*") && !t.contains("+1") && !t.contains("-1"));
+  Setup.chk("P: a hazard gets its line", r.hazard != null && (t.toLowerCase().contains("flare") || t.toLowerCase().contains("asteroid") || t.contains("pulsar") || t.contains("plasma storm")));
  }
  static void days() {
   // a quiet run: 1 to 3; the table on top
@@ -167,8 +188,11 @@ public class AsgT { public static void main(String[] a) throws Exception {
   int missiles = v.readCopy(v.storage()).save.getPlayerShip().getMissilesAmt(), junked = v.junked().size(), docked = v.docked().size();
   Assignments.Report shipRep = Assignments.bringHome(v, a, r);
   List<Assignments.Pending> pend = Assignments.pending(v);
-  Setup.chk("Z: a Hijack's prize ship waits on the commander's word, named in the report; the items came home", pend.size() == 1 && "ship".equals(pend.get(0).kind) && pend.get(0).save.isFile()
-    && r.prizeDetail != null && shipRep.text.contains(r.prizeDetail) && Derelicts.current(v).size() == listingsBefore && v.readCopy(v.storage()).save.getPlayerShip().getMissilesAmt() == missiles + 4);
+  int missilesNow = v.readCopy(v.storage()).save.getPlayerShip().getMissilesAmt(), listingsNow = Derelicts.current(v).size();
+  boolean shipOk = pend.size() == 1 && "ship".equals(pend.get(0).kind) && pend.get(0).save.isFile()
+    && r.prizeDetail != null && shipRep.text.contains(r.prizeDetail) && listingsNow == listingsBefore && missilesNow == missiles + 4;
+  if (!shipOk) System.out.println(shipRep.text + "\n[" + r.prizeDetail + "] pending " + pend.size() + ", missiles " + missiles + " -> " + missilesNow + ", listings " + listingsNow + " was " + listingsBefore); // to see why, should it fail again
+  Setup.chk("Z: a Hijack's prize ship waits on the commander's word, named in the report; the items came home", shipOk);
   Assignments.accept(v, pend.get(0), true);
   Setup.chk("Z: taken to the Space Dock, she's docked and the question is gone", v.docked().size() == docked + 1 && v.junked().size() == junked && Assignments.pending(v).isEmpty() && !pend.get(0).save.isFile());
   crew = ExpT.hold(v, "rock", "engi");
@@ -217,7 +241,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   pend = Assignments.pending(v);
   String letterKey = "expedition:" + a.sentAt + ":" + a.index + ":" + String.join(",", a.names());
   Setup.chk("Z: the letter carries the question: the prize names it, the Space Dock leaves it be, the words say they wait in the lounge", pend.size() == 1 && letterKey.equals(pend.get(0).letter)
-    && Assignments.pendingToAsk(v).isEmpty() && Assignments.pendingFor(v, letterKey) != null && rep.text.contains("lounge"));
+    && Assignments.pendingToAsk(v).isEmpty() && Assignments.pendingFor(v, letterKey) != null && rep.text.contains("The Station Lounge"));
   boolean delivered = false; for (Transmissions.Message m : Transmissions.load()) if (m.key.equals(letterKey)) delivered = true;
   Setup.chk("Z: and the letter is in the inbox", delivered);
   Assignments.accept(v, pend.get(0), false);
