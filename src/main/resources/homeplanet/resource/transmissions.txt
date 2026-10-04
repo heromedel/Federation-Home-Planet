@@ -7,7 +7,7 @@
 # anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
 # Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), pleaded (the order after a
 # plea for a new ship; {ship} is what it offers), withdrawn (that plea withdrawn: its order leaves the inbox), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
-# a hull waits in the Junkyard), promo:1, promo:2, order:<base ship id>, ach:<achievement id>,
+# a hull waits in the Junkyard), promo:1, promo:2, order:<base ship id>, ach:<achievement id> (ach:ACH_NO_DEATH:dna and ach:ACH_INVADE_SHIP:dna when the boarded ship has a Clone Bay already),
 # rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
 # notice when Transmissions are off).
 #
@@ -541,13 +541,29 @@ A ship that lives off the land should fix herself too. Pick one: a Repair Arm, w
 == ach:ACH_NO_DEATH
 from: Home Planet Liaison
 subject: No Redshirts Here
+reward: system clonebay
+
+{rank},
+
+Every crew member who set out with you reached sector 8. Every one.
+
+You would be surprised how rare that is. Some captains spend lives like scrap out there; the good ones don't. The Federation Home Planet has awarded you a Clone Bay, so it stays that way. It takes the Medbay's place aboard.
+
+Loyalty runs both ways. Your crew will remember this.
+
+For the Federation, and all its worlds.
+~ Home Planet Liaison
+
+== ach:ACH_NO_DEATH:dna
+from: Home Planet Liaison
+subject: No Redshirts Here
 reward: item BACKUP_DNA
 
 {rank},
 
 Every crew member who set out with you reached sector 8. Every one.
 
-You would be surprised how rare that is. Some captains spend lives like scrap out there; the good ones don't. The Federation Home Planet has awarded you a Backup DNA Bank, so it stays that way.
+You would be surprised how rare that is. Some captains spend lives like scrap out there; the good ones don't. The Federation Home Planet has awarded you a Backup DNA Bank for the Clone Bay you already carry, so it stays that way.
 
 Loyalty runs both ways. Your crew will remember this.
 
@@ -618,6 +634,19 @@ reward: system clonebay
 Your whole crew aboard the enemy ship, and your own ship left flying herself. I've read the report. Bold. Reckless. It worked.
 
 Next time it might not. The Federation Home Planet is sending a Clone Bay, so the people who follow you that far get to come home.
+
+~ Home Planet Liaison
+
+== ach:ACH_INVADE_SHIP:dna
+from: Home Planet Liaison
+subject: Trustworthy Auto-Pilot
+reward: item BACKUP_DNA
+
+{rank},
+
+Your whole crew aboard the enemy ship, and your own ship left flying herself. I've read the report. Bold. Reckless. It worked.
+
+Next time it might not. You already carry a Clone Bay, so The Federation Home Planet is sending a Backup DNA Bank. If the bay goes dark while they're away, the people who follow you that far still get to come home.
 
 ~ Home Planet Liaison
 
