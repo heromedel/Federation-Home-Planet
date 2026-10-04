@@ -48,7 +48,9 @@ public class ArtPanel extends JPanel {
 	private final JLabel artName = new JLabel("none yet"), floorName = new JLabel("none");
 	private final JLabel mountFacing = new JLabel(" ");
 	private final JButton mountTurn = new JButton("Turn (R)");
-	private JButton floorRemove, centerBtn, artilleryBtn, mountEarlier, mountLater;
+	private JButton centerBtn, artilleryBtn, mountEarlier, mountLater;
+	private final JRadioButton floorNone = new JRadioButton("No floor"), floorRooms = new JRadioButton("Drawn from her rooms"),
+			floorFile = new JRadioButton("A picture of my own...");
 	private final JComboBox<String> mountSlide = new JComboBox<String>(new String[] {"up", "down", "left", "right", "no"});
 	private final JLabel mountLabel = new JLabel("No mount selected");
 	private final JSpinner ellW = new JSpinner(new SpinnerNumberModel(0, 0, 2000, 2)), ellH = new JSpinner(new SpinnerNumberModel(0, 0, 2000, 2)),
@@ -119,14 +121,21 @@ public class ArtPanel extends JPanel {
 		artSize.addChangeListener(new javax.swing.event.ChangeListener() {
 			public void stateChanged(javax.swing.event.ChangeEvent e) { if (!refreshing) resize((Integer) artSize.getValue()); }
 		});
-		p.add(heading("Floor art (optional)"));
+		p.add(heading("Floor"));
+		ButtonGroup fg = new ButtonGroup();
+		fg.add(floorNone); fg.add(floorRooms); fg.add(floorFile);
+		floorNone.setAlignmentX(LEFT_ALIGNMENT); floorRooms.setAlignmentX(LEFT_ALIGNMENT); floorFile.setAlignmentX(LEFT_ALIGNMENT);
+		floorNone.setToolTipText("FTL tiles the rooms plain, with no walls drawn round them");
+		floorRooms.setToolTipText("Walls round each room, open at the doors, the way the game's own ships look; drawn again whenever the rooms or the art move");
+		floorFile.setToolTipText("A floor picture of your own (decorated floors, say), the hull picture's size, drawn over the hull at its corner");
+		p.add(floorNone);
+		p.add(floorRooms);
+		p.add(floorFile);
 		floorName.setAlignmentX(LEFT_ALIGNMENT);
 		p.add(floorName);
-		p.add(row(button("Import PNG...", "The walls-and-floor picture drawn over the hull", new ActionListener() {
-			public void actionPerformed(ActionEvent e) { importArt(true); }
-		}), floorRemove = button("Remove floor", "No floor picture (FTL doesn't need one)", new ActionListener() {
-			public void actionPerformed(ActionEvent e) { d.floor = ""; d.floorX = d.floorY = 0; loadArt(false); host.changed(); host.say("Floor art removed."); }
-		})));
+		floorNone.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { if (!refreshing) setFloor(""); } });
+		floorRooms.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { if (!refreshing) setFloor(ShipDesign.FLOOR_ROOMS); } });
+		floorFile.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { if (!refreshing) importArt(true); } });
 		p.add(heading("Line up"));
 		ButtonGroup none = new ButtonGroup();
 		JToggleButton move = editor.artToolButton("Move art", false, "Drag the hull art into place over the rooms. Arrow keys nudge it a pixel.");
@@ -237,14 +246,23 @@ public class ArtPanel extends JPanel {
 		return r;
 	}
 
+	/** No floor, or one drawn from her rooms (a picture of her own comes through importArt). */
+	private void setFloor(String floor) {
+		if (floor.equals(d.floor)) return;
+		d.floor = floor; d.floorX = 0; d.floorY = 0;
+		loadArt(false);
+		host.changed();
+		host.say(floor.isEmpty() ? "No floor: FTL tiles her rooms plain." : "Her floor is drawn from her rooms, and follows them.");
+	}
 	/** Reads the design's pictures and hands them to the editor. */
 	void loadArt() { loadArt(true); }
 	void loadArt(boolean fit) {
 		baseArt = ShipArt.scaled(ShipArt.load(d.art, d.art.startsWith("game:") ? "_base" : ""), d.artScale);
-		floorArt = ShipArt.scaled(ShipArt.load(d.floor, d.floor.startsWith("game:") ? "_floor" : ""), d.artScale);
+		floorArt = ShipArt.floorOf(d);
 		editor.setDesignArt(baseArt, floorArt);
 		artName.setText(d.art.isEmpty() ? "none yet" : baseArt == null ? "missing: " + d.art : describe(d.art) + "  (" + baseArt.getWidth() + " x " + baseArt.getHeight() + ")");
-		floorName.setText(d.floor.isEmpty() ? "none" : floorArt == null ? "missing: " + d.floor : describe(d.floor));
+		floorName.setText(d.floor.isEmpty() ? " " : d.floorFromRooms() ? (baseArt == null ? "drawn once she has hull art" : "walls round the rooms, open at the doors")
+				: floorArt == null ? "missing: " + d.floor : describe(d.floor) + "  (" + floorArt.getWidth() + " x " + floorArt.getHeight() + ")");
 		if (fit) fitEllipse(); else refreshArtControls();
 	}
 	private static String describe(String src) {
@@ -271,7 +289,9 @@ public class ArtPanel extends JPanel {
 			ellW.setValue(d.ellipseW); ellH.setValue(d.ellipseH); ellX.setValue(d.ellipseX); ellY.setValue(d.ellipseY);
 			artSize.setValue(d.artScale);
 			artSize.setEnabled(baseArt != null);
-			floorRemove.setEnabled(!d.floor.isEmpty());
+			floorNone.setSelected(d.floor.isEmpty());
+			floorRooms.setSelected(d.floorFromRooms());
+			floorFile.setSelected(!d.floor.isEmpty() && !d.floorFromRooms());
 			centerBtn.setEnabled(baseArt != null);
 			boolean game = d.art.startsWith("game:") && ShipArt.gameExtras(d.art.substring(5))[2];
 			gibGame.setVisible(game);
@@ -295,20 +315,32 @@ public class ArtPanel extends JPanel {
 		return fc.getSelectedFile();
 	}
 	private void importArt(boolean floor) {
-		java.io.File f = choosePng(floor ? "Floor art" : "Hull art", false, null);
-		if (f == null) return;
+		java.io.File f = choosePng(floor ? "Floor picture" : "Hull art", false, null);
+		if (f == null) { if (floor) refreshArtControls(); return; } // the choice stays what it was
 		try {
+			if (floor) {
+				// FTL draws the floor over the hull at the hull's corner plus the floor's offset (the game's floors are smaller than
+				// their hulls); it lands at the corner here, so a hull-sized picture is simplest
+				java.awt.image.BufferedImage fl = javax.imageio.ImageIO.read(f);
+				if (fl == null) throw new java.io.IOException(f.getName() + " isn't a picture the station can read.");
+			}
 			String src = ShipArt.importFile(f, d.id, floor ? "floor" : "base");
 			if (floor) { d.floor = src; d.floorX = 0; d.floorY = 0; }
-			else { d.art = src; d.ellipseW = d.ellipseH = 0; d.artScale = 100; }
+			else {
+				boolean hadPicture = !d.floor.isEmpty() && !d.floorFromRooms();
+				d.art = src; d.ellipseW = d.ellipseH = 0; d.artScale = 100;
+				if (hadPicture) { d.floor = ""; d.floorX = d.floorY = 0; } // a floor picture was made for the old hull: it goes with it (one drawn from the rooms follows)
+				if (hadPicture) host.say("Her floor picture went with the old hull: choose one for this hull, or a floor drawn from the rooms.");
+			}
 		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(this, "The Home Planet Station couldn't use that picture:\n" + ex.getMessage(), "Hull art", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, "The Home Planet Station couldn't use that picture:\n" + ex.getMessage(), floor ? "Floor picture" : "Hull art", JOptionPane.WARNING_MESSAGE);
+			if (floor) refreshArtControls(); // the choice stays what it was
 			return;
 		}
 		loadArt();
 		if (!floor) editor.centerArt();
 		host.changed();
-		host.say((floor ? "Floor" : "Hull") + " art imported." + (floor ? "" : " It's centred over the rooms; Move art (or Alt + middle-drag) lines it up."));
+		host.say(floor ? "Floor picture imported." : "Hull art imported. It's centred over the rooms; Move art (or Alt + middle-drag) lines it up.");
 	}
 	private void pickGameArt() {
 		final java.util.List<String> names = ShipArt.gameArt();

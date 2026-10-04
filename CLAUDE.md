@@ -96,7 +96,7 @@ a BufferedImage.
 runs under 32-bit Wine on an Xvfb display: `apt-get install wine wine32:i386 xdotool imagemagick`, a `win32` prefix in
 the scratchpad, `settings.ini` (fullscreen 0, 1280x720) in the prefix's `Documents/My Games/FasterThanLight`. Slipstream
 can't be downloaded here, so patch a *copy* of `ftl.dat` with a plain PKG rewriter (header, 20-byte entries, paths,
-data; `.xml.append` files spliced before `</FTL>`; the station's `PkgPack` writer is not to be trusted for this).
+data, the entry table sorted by path hash: FTL searches it that way, and an entry out of order is simply not found; `.xml.append` files spliced before `</FTL>`; the station's `PkgPack` writer is not to be trusted for this).
 Build a save with `Commission.build` against the patched copy, drop it in as `continue.sav`, start `wine FTLGame.exe`
 with `LIBGL_ALWAYS_SOFTWARE=1`, drive the menus with `xdotool` (press and release with a short hold) and screenshot
 with `import -window root`. The Steam build runs without Steam; sound fails harmlessly.

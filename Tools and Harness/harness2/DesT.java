@@ -146,5 +146,45 @@ public class DesT { public static void main(String[] a) throws Exception {
    clo.doClick(); boolean neither = !clo.isSelected() && !med.isSelected();
    Setup.chk("Design Ship: a design with both ticked opens with the Clone Bay alone; ticking one unticks the other; neither is fine", opened && onlyMed && onlyClone && neither);
  }
+ // W: the floor and the art (Plan W): a floor the wrong size, a floor drawn from the rooms, missing art, the visible centre
+ { ShipDesign f = ShipDesign.copy(made[1]);
+   java.awt.image.BufferedImage hull = ShipArt.load(f.art, "");
+   java.awt.image.BufferedImage small = new java.awt.image.BufferedImage(hull.getWidth() / 2, hull.getHeight() / 2, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+   f.floor = ShipArt.importImage(small, f.id, "floor"); f.floorX = 0; f.floorY = 0;
+   List<String> p = ShipChecks.check(f, ShipChecks.Context.DESIGN, null, null).warnings;
+   Setup.chk("W: a smaller floor inside the hull is fine (the game's floors are): " + p, !p.toString().contains("sticks out"));
+   f.floorX = hull.getWidth() - 10;
+   p = ShipChecks.check(f, ShipChecks.Context.DESIGN, null, null).warnings;
+   Setup.chk("W: a floor sticking out of the hull is a warning: " + p, p.toString().contains("sticks out"));
+   f.floorX = 0;
+   p = ShipChecks.check(f, ShipChecks.Context.DESIGN, null, null).problems;
+   java.awt.image.BufferedImage drawn = ShipArt.floorFromRooms(f, hull);
+   f.floor = ShipArt.importImage(drawn, f.id, "floor");
+   p = ShipChecks.check(f, ShipChecks.Context.DESIGN, null, null).problems;
+   int grey = 0, clear = 0; for (int y = 0; y < drawn.getHeight(); y += 3) for (int x = 0; x < drawn.getWidth(); x += 3) { if (((drawn.getRGB(x, y) >>> 24) & 0xFF) > 0) grey++; else clear++; }
+   ShipDesign.Room r0 = f.rooms.get(0); int rx = r0.x * SaveHelper.SQUARE_SIZE - f.artX + 5, ry = r0.y * SaveHelper.SQUARE_SIZE - f.artY + 5;
+   boolean roomClear = rx >= 0 && ry >= 0 && rx < drawn.getWidth() && ry < drawn.getHeight() && ((drawn.getRGB(rx, ry) >>> 24) & 0xFF) == 0;
+   boolean wallGrey = rx - 9 >= 0 && ((drawn.getRGB(rx - 9, ry) >>> 24) & 0xFF) > 0;
+   Setup.chk("W: a floor drawn from the rooms is the hull's size, walls round the rooms (" + grey + " drawn, " + clear + " clear), the rooms left clear, and passes the checks: " + p,
+     drawn.getWidth() == hull.getWidth() && drawn.getHeight() == hull.getHeight() && grey > 0 && clear > grey && roomClear && wallGrey && p.isEmpty());
+   Setup.chk("W: the visible box of a picture with a clear margin is smaller than the picture", ShipArt.opaqueBounds(hull).width < hull.getWidth() || ShipArt.opaqueBounds(hull).height < hull.getHeight());
+   // her hull picture gone: a warning, not a problem, and the Kestrel's picture stands in so the mod still has her
+   ShipDesign m = ShipDesign.copy(made[1]); m.floor = ""; m.art = "file:art/nowhere-" + m.id + ".png";
+   ShipChecks.Report rep = ShipChecks.check(m, ShipChecks.Context.DESIGN, null, null);
+   Setup.chk("W: missing hull art is a warning (" + rep.warnings + "), not a problem (" + rep.problems + ")", rep.warnings.toString().contains("stands in") && !rep.problems.toString().contains("missing"));
+   Map<String, byte[]> imgs = DesignExport.images(m);
+   Setup.chk("W: her pictures are still written, the Kestrel's standing in", imgs.keySet().toString().contains("_base.png"));
+   // a floor drawn from the rooms as a standing choice: drawn fresh each time, so it follows the rooms; exported; kept through a flip
+   ShipDesign q = ShipDesign.copy(made[1]); q.floor = ShipDesign.FLOOR_ROOMS; q.floorX = 7; q.floorY = 7;
+   java.awt.image.BufferedImage f1 = ShipArt.floorOf(q);
+   p = ShipChecks.check(q, ShipChecks.Context.DESIGN, null, null).warnings;
+   Setup.chk("W: 'rooms' as the floor: a hull-sized floor drawn now, no warning about it: " + p, f1 != null && f1.getWidth() == hull.getWidth() && f1.getHeight() == hull.getHeight() && !p.toString().contains("floor"));
+   q.rooms.get(0).x += 1;
+   java.awt.image.BufferedImage f2 = ShipArt.floorOf(q);
+   boolean differs = false; for (int y = 0; y < f1.getHeight() && !differs; y += 2) for (int x = 0; x < f1.getWidth(); x += 2) if (f1.getRGB(x, y) != f2.getRGB(x, y)) { differs = true; break; }
+   Setup.chk("W: a room moved: the floor follows (drawn again, not a stored picture)", differs && q.floorFromRooms());
+   Setup.chk("W: the mod carries her drawn floor", DesignExport.images(q).keySet().toString().contains("_floor.png"));
+   Setup.chk("W: a flip keeps the floor drawn from the rooms", ShipArt.flipVertically(q) && q.floorFromRooms());
+ }
  Setup.done();
 }}

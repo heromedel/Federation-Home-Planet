@@ -401,6 +401,7 @@ public final class Derelicts {
 			all.add(r);
 			CompanionMod.save(all);
 			CompanionMod.register(all);
+			homeplanet.core.Slipstream.writeMod(); // her blueprint goes into the mod's file, to be sent to FTL
 			Retrofit.switchTo(gs, r.id);
 			Retrofit.syncStations(gs.getPlayerShip());
 		}

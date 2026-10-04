@@ -73,8 +73,15 @@ public final class ShipChecks {
 		if (art) {
 			int weaponMounts = d.mounts.size() - artilleryMounts;
 			if (d.art.isEmpty()) w.add("No hull art yet.");
-			else if (!ShipArt.available(d.art, d.art.startsWith("game:") ? "_base" : "")) p.add("Her hull art is missing (" + d.art + ").");
+			else if (!ShipArt.available(d.art, d.art.startsWith("game:") ? "_base" : "")) w.add("Her hull art is missing (" + d.art + "): the Kestrel's stands in until it's back, so ships built from her still fly.");
 			else if (weaponMounts == 0) p.add("She needs at least one weapon mount.");
+			if (!d.floor.isEmpty() && !d.floorFromRooms() && ShipArt.available(d.art, d.art.startsWith("game:") ? "_base" : "") && ShipArt.available(d.floor, d.floor.startsWith("game:") ? "_floor" : "")) {
+				// FTL draws the floor at the hull's corner plus its offset: one that sticks out of the hull was most likely drawn for another hull
+				java.awt.image.BufferedImage hull = ShipArt.scaled(ShipArt.load(d.art, d.art.startsWith("game:") ? "_base" : ""), d.artScale), fl = ShipArt.scaled(ShipArt.load(d.floor, d.floor.startsWith("game:") ? "_floor" : ""), d.artScale);
+				if (hull != null && fl != null && (d.floorX < 0 || d.floorY < 0 || d.floorX + fl.getWidth() > hull.getWidth() || d.floorY + fl.getHeight() > hull.getHeight()))
+					w.add("Her floor picture (" + fl.getWidth() + " x " + fl.getHeight() + " at " + d.floorX + ", " + d.floorY + ") sticks out of her hull picture (" + hull.getWidth() + " x " + hull.getHeight()
+							+ "): it may have been drawn for another hull. Choose no floor, or one drawn from the rooms.");
+			}
 			// the game's own ships carry spare mounts too (the Kestrel has 8 for 4 slots): only the first ones are used
 			if (weaponMounts > SaveHelper.WEAPON_SLOTS_MAX) w.add("She has " + weaponMounts + " weapon mounts; FTL uses the first " + SaveHelper.WEAPON_SLOTS_MAX + " (its most weapon slots).");
 			if (requiredWeaponSlots != null && weaponMounts < requiredWeaponSlots)

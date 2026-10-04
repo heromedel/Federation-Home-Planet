@@ -53,8 +53,14 @@ public class ShipDesign {
 	}
 
 	public String id = "";   // DESIGN_1...
-	/** Hull art: "" (none yet), "game:<gfx>" (a ship's art from the game) or "file:<path>" (a PNG the station keeps a copy of, in the vault's art folder). */
+	/**
+	 * Hull art: "" (none yet), "game:<gfx>" (a ship's art from the game) or "file:<path>" (a PNG the station keeps a copy of, in the vault's art folder).
+	 * The floor: the same, "" for none, or {@link #FLOOR_ROOMS}: drawn from her rooms whenever it's wanted (never a stale picture).
+	 */
 	public String art = "", floor = "";
+	/** A floor drawn from the rooms: grey walls round each room, open at the doors, the hull's size at its corner (offset 0, 0). */
+	public static final String FLOOR_ROOMS = "rooms";
+	public boolean floorFromRooms() { return FLOOR_ROOMS.equals(floor); }
 	/** Where the hull art's top-left sits, in pixels from the room grid's origin; the floor art's, from the hull art's. */
 	public int artX, artY, floorX, floorY;
 	/** The hull art's size, in percent (the floor, gibs and the cloak glow follow it). */

@@ -121,7 +121,6 @@ public class HomePlanet {
 	 * True once the companion mod, as last built, was patched in this session. The game data was read before that
 	 * patch, so the in-game check would still think the mod is missing until a restart.
 	 */
-	public static boolean modPatchedThisSession = false;
 
 	public static void main(String[] args) {
 		for (int i = 0; i + 1 < args.length; i++) {
@@ -405,8 +404,8 @@ public class HomePlanet {
 	public static void launchFTL() {
 		// a retrofitted ship can't load without the companion mod: don't let FTL try
 		File cont = new File(save_location, "continue.sav");
-		if (cont.exists() && !modPatchedThisSession) {
-			List<String> missing = Retrofit.missingBlueprints(cont);
+		if (cont.exists()) {
+			List<String> missing = Retrofit.missingBlueprints(cont); // against ftl.dat as it is now (PatchState)
 			if (!missing.isEmpty()) {
 				showErrorDialog("The boarded ship flies on blueprints from the " + Retrofit.MOD_NAME + ", which isn't in FTL yet ("
 						+ String.join(", ", missing) + ").\n\nSend it to FTL via Slipstream first (Settings > Patch mods), or board a different ship.");

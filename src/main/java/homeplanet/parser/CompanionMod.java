@@ -421,6 +421,7 @@ public class CompanionMod {
 
 	/** Registers the plain copies and all remodels in the station's game data, so their ships can be read and drawn. */
 	public static void register(List<Remodel> remodels) {
+		PatchState.changed();
 		DataManager dm = DataManager.get();
 		if (!(dm instanceof DefaultDataManager)) return;
 		DesignExport.register(DesignExport.built()); // designed ships' layouts and pictures (their blueprints come with the text below)
@@ -444,26 +445,12 @@ public class CompanionMod {
 		}
 	}
 
-	/** True if the game data (ftl.dat as patched) has this blueprint, not just the station. */
+	/** True if the game data (ftl.dat as patched) has this blueprint as the station would write it now ({@link PatchState}). */
 	public static boolean inGameData(String id) {
-		DataManager dm = DataManager.get();
-		if (!(dm instanceof DefaultDataManager)) return false;
-		DefaultDataManager ddm = (DefaultDataManager) dm;
-		if (!ddm.shipInGameData(id)) return false;
-		ShipBlueprint game = ddm.gameShip(id), ours = dm.getShip(id);
-		if (game == null || ours == null || game == ours) return game != null;
-		// the station's version is newer than the last patch if the systems, the layout name or the doors differ
-		if (!game.getLayoutId().equals(ours.getLayoutId())) return false;
-		if (!sameLayout(layoutOf(game), layoutOf(ours))) return false;
-		net.blerf.ftl.model.shiplayout.ShipLayout gl = ddm.gameLayout(ours.getLayoutId());
-		if (gl == null) return false;
-		net.blerf.ftl.model.shiplayout.ShipLayout ol = dm.getShipLayout(ours.getLayoutId());
-		if (gl.getRoomCount() != ol.getRoomCount()) return false;
-		for (int i = 0; i < gl.getRoomCount(); i++) {
-			net.blerf.ftl.model.shiplayout.ShipLayoutRoom x = gl.getRoom(i), y = ol.getRoom(i);
-			if (x.locationX != y.locationX || x.locationY != y.locationY || x.squaresH != y.squaresH || x.squaresV != y.squaresV) return false;
-		}
-		return new java.util.HashSet<Door>(doorsOf(gl)).equals(new java.util.HashSet<Door>(doorsOf(dm.getShipLayout(ours.getLayoutId()))));
+		return PatchState.inGame(id, loadQuietly());
+	}
+	private static List<Remodel> loadQuietly() {
+		try { return load(); } catch (RuntimeException e) { log.warn("Could not read the remodels: {}", e.toString()); return new ArrayList<Remodel>(); }
 	}
 	static boolean sameLayout(Map<String, Sys> a, Map<String, Sys> b) {
 		if (!a.keySet().equals(b.keySet())) return false;

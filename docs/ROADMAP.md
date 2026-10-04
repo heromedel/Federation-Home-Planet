@@ -771,6 +771,21 @@ Fixes only, from heromedel's testing and the review; no new features. Design deb
   the ship's own, which told her Type A's unlock story (the Zoltan Council's offer for a Zoltan B, say). The
   Kestrel's and the Federation Cruiser's letters read right for any type and stay. To be given more of each race's
   character later.
+- Custom designs in FTL (Plan W, tested in FTL itself): the station's own ships draw where the editor shows them (hull
+  and rooms together; the editor's cyan crosshair marks the rooms' centre, and Center art centres the picture's visible
+  part, not its canvas). A re-finalized remodel keeps the layout the ship was finalized against. The Loadout's top line
+  says what it is: her place on FTL's screen.
+- One answer to "is she in FTL's data?" (`PatchState`): her blueprint, layout, chassis and pictures compared with
+  `ftl.dat` as patched, read fresh after a patch, in place of a "patched this session" flag and a rooms-and-doors
+  compare that disagreed with each other. Launch FTL always checks the boarded ship's blueprints; Commission lists a
+  remodel or design that isn't in FTL yet with " - not in FTL yet" and asks before commissioning her; a bought derelict
+  with a layout of her own goes into the mod at once.
+- The floor is a choice of three (heromedel): no floor (FTL tiles the rooms plain), drawn from her rooms (grey walls
+  round each room, open at the doors, the way the game's ships look; drawn again whenever the rooms, the doors or the
+  art move, so it can't go stale, and sent to FTL with her pictures), or a picture of her own, for decorated floors. A
+  new hull picture drops a floor picture made for the old one, never a drawn floor. A floor that sticks out of the
+  hull is a warning, not a refusal (the game's own floors are smaller than their hulls). Missing hull art is a warning,
+  the Kestrel's standing in. An older station reading `floor="rooms"` over the Long Range shows her with no floor.
 
 ## Naming decisions — settled (4B.30)
 

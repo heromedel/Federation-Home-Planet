@@ -153,11 +153,12 @@ public class DesignDialog extends ShipEditorDialog {
 		// her screen position, and which systems she starts with at what level
 		JPanel extra = new JPanel(new BorderLayout(0, 6));
 		int[] auto = DesignExport.offsets(d);
-		final JCheckBox autoPos = new JCheckBox("worked out from the art", d.offX < 0 && d.offY < 0);
+		final JCheckBox autoPos = new JCheckBox("let the station choose from the art", d.offX < 0 && d.offY < 0);
+		autoPos.setToolTipText("Where FTL puts the whole ship on its screen, rooms and art together, in squares from the screen's corner. It doesn't move the art on the rooms.");
 		final JSpinner ox = new JSpinner(new SpinnerNumberModel(auto[0], 0, 10, 1)), oy = new JSpinner(new SpinnerNumberModel(auto[1], 0, 10, 1));
 		JPanel pos = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
-		pos.add(new JLabel("Weapon slots: " + DesignExport.weaponSlots(d) + " (one per mount).   Place on screen, in squares (check in game):  across")); pos.add(ox);
-		pos.add(new JLabel("down")); pos.add(oy); pos.add(autoPos);
+		pos.add(new JLabel("Weapon slots: " + DesignExport.weaponSlots(d) + " (one per mount).   Her place on FTL's screen (the whole ship, rooms and art together):")); pos.add(ox);
+		pos.add(new JLabel("squares across,")); pos.add(oy); pos.add(new JLabel("down")); pos.add(autoPos);
 		ox.setEnabled(!autoPos.isSelected()); oy.setEnabled(!autoPos.isSelected());
 		autoPos.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { ox.setEnabled(!autoPos.isSelected()); oy.setEnabled(!autoPos.isSelected()); }

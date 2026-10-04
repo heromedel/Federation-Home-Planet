@@ -254,20 +254,18 @@ public class CommissionDialog extends JDialog {
 			List<Entry> custom = new ArrayList<Entry>();
 			for (CompanionMod.Remodel r : CompanionMod.load()) {
 				if (!r.starter) continue; // only blueprints made starter ships can be commissioned
-				if (!CompanionMod.inGameData(r.id)) continue; // she couldn't fly yet
 				ShipBlueprint bp = DataManager.get().getShip(r.id);
 				if (bp == null) continue;
 				if (customRule && unlocks != null && !unlocks.unlockedBlueprint(r.base)) { hidden++; continue; }
 				boolean named = r.loadout != null && r.loadout.className.length() > 0;
-				custom.add(new Entry(r.id, (named ? r.loadout.className : classOf(bp) + " " + CompanionMod.numberOf(r.id)) + " (" + r.ship + "'s layout)" + rankNote(r.id)));
+				custom.add(new Entry(r.id, (named ? r.loadout.className : classOf(bp) + " " + CompanionMod.numberOf(r.id)) + " (" + r.ship + "'s layout)" + rankNote(r.id) + patchNote(r.id)));
 			}
 			for (homeplanet.parser.ShipDesign d : homeplanet.parser.DesignExport.built()) {
 				if (!d.starter || d.frozenOf != null || d.retired) continue; // kept old versions and retired designs only fly for the ships already built from them
 				String id = homeplanet.parser.DesignExport.bpId(d);
-				if (!CompanionMod.inGameData(id)) continue; // not patched in yet
 				ShipBlueprint bp = DataManager.get().getShip(id);
 				if (bp == null) continue;
-				custom.add(new Entry(id, classOf(bp) + " (designed: " + d.name + (d.version > 1 ? " v" + d.version : "") + ")" + rankNote(id)));
+				custom.add(new Entry(id, classOf(bp) + " (designed: " + d.name + (d.version > 1 ? " v" + d.version : "") + ")" + rankNote(id) + patchNote(id)));
 			}
 			if (!custom.isEmpty()) {
 				rows.add(new Entry(null, "Your blueprints"));
@@ -283,6 +281,8 @@ public class CommissionDialog extends JDialog {
 			if (unlockFree.contains(id)) return true;
 			return emptyFree(id);
 		}
+		/** Her row's note when FTL doesn't have her blueprint as it is now: she can be commissioned, and waits for the mod to be sent. */
+		String patchNote(String id) { return CompanionMod.inGameData(id) ? "" : " - not in FTL yet"; }
 		/** Her row's note: " (on your plea)" for a plea's ship, " (free)" for a free one, or nothing. */
 		String freeNote(String id) {
 			if (!free(id)) return "";
@@ -442,6 +442,11 @@ public class CommissionDialog extends JDialog {
 		if (why != null) { JOptionPane.showMessageDialog(this, why, "Commission Ship", JOptionPane.INFORMATION_MESSAGE); return; }
 		String name = nameField.getText().trim();
 		if (name.isEmpty()) { JOptionPane.showMessageDialog(this, "She needs a name.", "Commission Ship", JOptionPane.INFORMATION_MESSAGE); return; }
+		// a blueprint FTL doesn't have yet (or not as it is now): she can still be commissioned, and waits for the mod
+		if (!RELIEF.equals(e.id) && (CompanionMod.isRemodelId(e.id) || e.id.startsWith("PLAYER_SHIP_DESIGN_")) && !CompanionMod.inGameData(e.id)
+				&& !HomePlanet.confirmNo(this, "FTL doesn't have " + e.label.replace(" - not in FTL yet", "") + "'s blueprint yet, as it is now.\n\n"
+				+ "You can commission her all the same: she waits at the Space Dock, and can't fly until The Home Planet Station sends the "
+				+ homeplanet.parser.Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Patch mods).\n\nCommission her anyway?", "Commission Ship")) return;
 		SavedGameState s;
 		try {
 			s = make(e.id, name, chosenDifficulty(), rng);

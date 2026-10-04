@@ -113,7 +113,7 @@ public class ShipArt {
 		BufferedImage base = load(d.art, d.art.startsWith("game:") ? "_base" : "");
 		if (base == null) return false;
 		int hs = scaled(base, d.artScale).getHeight(); // the mounts and offsets are at the art's current size
-		BufferedImage floor = load(d.floor, d.floor.startsWith("game:") ? "_floor" : "");
+		BufferedImage floor = d.floorFromRooms() ? null : load(d.floor, d.floor.startsWith("game:") ? "_floor" : ""); // one drawn from the rooms follows them
 		if ("files".equals(d.gibs)) {
 			List<String> gibs = new ArrayList<String>();
 			for (int i = 0; i < d.gibFiles.size(); i++) {
@@ -264,6 +264,60 @@ public class ShipArt {
 	}
 
 	/** A shield ellipse from the art's size when none has been set (a little larger than the hull; unverified in game). */
+	/** The box of a picture's visible pixels (alpha above a whisker), or the whole picture if it has none. */
+	public static java.awt.Rectangle opaqueBounds(BufferedImage img) {
+		int minX = img.getWidth(), minY = img.getHeight(), maxX = -1, maxY = -1;
+		for (int y = 0; y < img.getHeight(); y++) for (int x = 0; x < img.getWidth(); x++) {
+			if (((img.getRGB(x, y) >>> 24) & 0xFF) < 16) continue;
+			if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+		}
+		if (maxX < 0) return new java.awt.Rectangle(0, 0, img.getWidth(), img.getHeight());
+		return new java.awt.Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
+	}
+	/** FTL's floor colour: the grey walls its own floor pictures draw round each room. */
+	private static final java.awt.Color FLOOR_WALL = new java.awt.Color(0x5e, 0x66, 0x6e);
+	/**
+	 * A floor picture drawn from her rooms, the size of her hull picture as shown (resized as the art is, since the rooms
+	 * sit on it at that size; FTL wants the floor at the hull's corner): a grey wall round each room, open at the doors,
+	 * the rooms themselves left clear for FTL to tile. At offset 0, 0.
+	 */
+	public static BufferedImage floorFromRooms(ShipDesign d, BufferedImage base) {
+		BufferedImage s = scaled(base, d.artScale);
+		return floorFromRooms(d, s.getWidth(), s.getHeight());
+	}
+	/** The same, for a hull picture of this size (the art's size as shown). */
+	public static BufferedImage floorFromRooms(ShipDesign d, int w, int h) {
+		BufferedImage out = new BufferedImage(Math.max(1, w), Math.max(1, h), BufferedImage.TYPE_INT_ARGB);
+		java.awt.Graphics2D g = out.createGraphics();
+		int sq = DesignExport.SQ, wall = 7;
+		java.util.List<java.awt.Rectangle> rooms = new java.util.ArrayList<java.awt.Rectangle>();
+		for (ShipDesign.Room r : d.rooms) rooms.add(new java.awt.Rectangle(r.x * sq - d.artX, r.y * sq - d.artY, r.w * sq, r.h * sq));
+		g.setColor(FLOOR_WALL);
+		for (java.awt.Rectangle r : rooms) g.fillRect(r.x - wall, r.y - wall, r.width + 2 * wall, r.height + 2 * wall);
+		g.setComposite(java.awt.AlphaComposite.Clear);
+		for (java.awt.Rectangle r : rooms) g.fillRect(r.x, r.y, r.width, r.height);
+		// the doors: a gap through the wall where each one stands
+		int gap = 14;
+		for (CompanionMod.Door x : d.doors) {
+			int cx = x.x * sq - d.artX, cy = x.y * sq - d.artY;
+			if (x.v == 1) g.fillRect(cx - wall - 1, cy + sq / 2 - gap / 2, 2 * wall + 2, gap); // a door in a vertical wall
+			else g.fillRect(cx + sq / 2 - gap / 2, cy - wall - 1, gap, 2 * wall + 2);
+		}
+		g.dispose();
+		return out;
+	}
+	/**
+	 * Her floor as shown and as sent to FTL (at the art's size), or null for none: a floor drawn from her rooms is drawn
+	 * now, from the rooms and the hull as they are; a picture (hers or the game's) is read and resized with the art.
+	 */
+	public static BufferedImage floorOf(ShipDesign d) {
+		if (d.floor.isEmpty()) return null;
+		if (d.floorFromRooms()) {
+			BufferedImage hull = load(d.art, d.art.startsWith("game:") ? "_base" : "");
+			return hull == null ? null : floorFromRooms(d, hull);
+		}
+		return scaled(load(d.floor, d.floor.startsWith("game:") ? "_floor" : ""), d.artScale);
+	}
 	public static int[] ellipseOf(ShipDesign d, BufferedImage base) {
 		if (d.ellipseW > 0 && d.ellipseH > 0) return new int[] {d.ellipseW, d.ellipseH, d.ellipseX, d.ellipseY};
 		if (base == null) return null;

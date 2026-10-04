@@ -219,9 +219,23 @@ public class LayoutEditor {
 		designArt = true;
 		baseImg = base;
 		floorImg = floor;
+		drawnFloorKey = null;
 		scale = 1.0;
 		relayoutDesign();
 		rebuildOffList();
+	}
+	/** What the floor drawn from the rooms was last drawn for; it's drawn again when the rooms, the doors or the art move. */
+	private String drawnFloorKey;
+	private void drawnFloor() {
+		if (baseImg == null) { floorImg = null; return; }
+		StringBuilder k = new StringBuilder();
+		k.append(d.artX).append(',').append(d.artY).append(',').append(baseImg.getWidth()).append('x').append(baseImg.getHeight());
+		for (ShipDesign.Room r : d.rooms) k.append('|').append(r.x).append(',').append(r.y).append(',').append(r.w).append(',').append(r.h);
+		for (homeplanet.parser.CompanionMod.Door x : d.doors) k.append('/').append(x.x).append(',').append(x.y).append(',').append(x.v);
+		String key = k.toString();
+		if (key.equals(drawnFloorKey)) return;
+		floorImg = homeplanet.parser.ShipArt.floorFromRooms(d, baseImg.getWidth(), baseImg.getHeight());
+		drawnFloorKey = key;
 	}
 	/** Sizes the design canvas around the rooms and the art (art hanging off the top or left moves the grid over). */
 	private void relayoutDesign() {
@@ -317,8 +331,10 @@ public class LayoutEditor {
 			for (ShipDesign.Room r : d.rooms) { minX = Math.min(minX, r.x); minY = Math.min(minY, r.y); maxX = Math.max(maxX, r.x + r.w); maxY = Math.max(maxY, r.y + r.h); }
 			cx = (minX + maxX) * SQ / 2.0; cy = (minY + maxY) * SQ / 2.0;
 		}
-		d.artX = (int) Math.round(cx - baseImg.getWidth() / 2.0);
-		d.artY = (int) Math.round(cy - baseImg.getHeight() / 2.0);
+		// the picture's visible part, not its box: a long nose or big engines leave the box's middle nowhere near the hull's
+		Rectangle vis = homeplanet.parser.ShipArt.opaqueBounds(baseImg);
+		d.artX = (int) Math.round(cx - (vis.x + vis.width / 2.0));
+		d.artY = (int) Math.round(cy - (vis.y + vis.height / 2.0));
 		relayoutDesign();
 		host.changed();
 		return true;
@@ -1031,6 +1047,7 @@ public class LayoutEditor {
 			g.scale(eff(), eff());
 			if (designArt) {
 				if (baseImg != null) g.drawImage(baseImg, originX + d.artX, originY + d.artY, null);
+				if (d.floorFromRooms()) drawnFloor();
 				if (floorImg != null) g.drawImage(floorImg, originX + d.artX + d.floorX, originY + d.artY + d.floorY, null);
 			} else {
 				if (baseImg != null) g.drawImage(baseImg, originX + baseX, originY + baseY, null);
@@ -1057,6 +1074,18 @@ public class LayoutEditor {
 			}
 			g.setStroke(new BasicStroke(1f));
 			if (designArt) paintArtExtras(g);
+			if (designArt && !d.rooms.isEmpty()) { // the rooms' centre: the one centre FTL knows (the ship sits on the screen by its rooms)
+				int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+				for (ShipDesign.Room r : d.rooms) { minX = Math.min(minX, r.x); minY = Math.min(minY, r.y); maxX = Math.max(maxX, r.x + r.w); maxY = Math.max(maxY, r.y + r.h); }
+				int cx = originX + (minX + maxX) * SQ / 2, cy = originY + (minY + maxY) * SQ / 2;
+				g.setColor(new Color(90, 220, 255, 230));
+				g.setStroke(new BasicStroke(2f));
+				g.drawLine(cx - 9, cy, cx + 9, cy); g.drawLine(cx, cy - 9, cx, cy + 9);
+				g.drawOval(cx - 5, cy - 5, 10, 10);
+				g.setStroke(new BasicStroke(1f));
+				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+				g.drawString("rooms' centre", cx + 12, cy - 4);
+			}
 			int[] size = sizeOf(roomTool);
 			if (size != null && hoverX != -1) {
 				boolean ok = d.fits(hoverX, hoverY, size[0], size[1], gridCols(), gridRows(), -1);
