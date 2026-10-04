@@ -878,6 +878,12 @@ start again, count everything on her, one price everywhere, and let the difficul
   damage. The Junkyard's tweaks themselves are unchanged (15 points off per missing core system, the clearance, the
   damage). Never the stores: buying and repairing in the Cargo Bay cost the same on every difficulty. On Easy a ship
   sells for less at a victory, and her replacement costs less: heromedel's call, fair both ways.
+- **The ship report, tidied (Plan AA).** The panel Commission, Build Ship and the Ship's report share
+  (`SpaceDockUI.shipSummaryPanel`) is two columns from the top: her picture, supplies and crew on the left; weapons,
+  drones, augments, cargo and systems on the right, so nothing sits beside an empty half and nothing scrolls off.
+  Each system has FTL's icon, its level and a bar of it to the vanilla max (`LevelBar`, the design screen's bar moved
+  out of `NumberRow` so both screens draw the same: green, amber past the max, red for broken bars); the reactor too.
+  Commission's price breakdown is three columns of name and price instead of one wrapped line.
 
 ## Naming decisions — settled (4B.30)
 

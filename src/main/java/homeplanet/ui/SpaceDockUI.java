@@ -1539,7 +1539,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 
 	/** The ship report: a picture of the ship, then supplies, crew, weapons, drones and augments, with FTL's icons. */
 	/** The tallest a ship's picture is drawn in her report. */
-	private static final int REPORT_PIC_H = 200;
+	private static final int REPORT_PIC_H = 170;
 
 	public JPanel shipSummaryPanel(SavedGameState sgs) { return shipSummaryPanel(sgs, null, null); }
 	/**
@@ -1550,9 +1550,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		ShipState state = sgs.getPlayerShip();
 		JPanel p = new JPanel(new java.awt.BorderLayout(18, 4));
 		JLabel pic = reportPicture(sgs);
-		if (pic != null) p.add(pic, java.awt.BorderLayout.NORTH);
-		// two rows: Supplies beside the items, then Crew beside Systems, so the lower headings line up
-		JPanel left = column(), right = column(), crew = column(), systems = column();
+		// two columns from the top: her picture, supplies and crew on the left; weapons, drones, augments, cargo and systems on the right
+		JPanel left = column(), right = column();
+		if (pic != null) { pic.setAlignmentX(LEFT_ALIGNMENT); left.add(pic); }
+		JPanel crew = left, systems = right;
 		reportHeading(left, "Supplies");
 		int maxHull = 0;
 		ShipBlueprint bp = DataManager.get().getShips().get(sgs.getPlayerShipBlueprintId());
@@ -1593,23 +1594,61 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		reportHeading(right, "Cargo (" + sgs.getCargoIdList().size() + " of " + SaveHelper.CARGO_SLOTS + ")");
 		for (String id : sgs.getCargoIdList()) reportRow(right, IconFactory.itemIcon(id), Items.title(id));
 		reportHeading(systems, "Systems");
-		reportRow(systems, null, "Reactor: " + state.getReservePowerCapacity());
+		systemRow(systems, null, "Reactor", state.getReservePowerCapacity(), homeplanet.parser.VanillaMax.reactor(), 0);
 		for (Object[] sys : SYSTEM_NAMES) {
-			net.blerf.ftl.parser.SavedGameParser.SystemState st = state.getSystem((net.blerf.ftl.parser.SavedGameParser.SystemType) sys[0]);
-			if (st != null && st.getCapacity() > 0) reportRow(systems, null, sys[1] + ": " + st.getCapacity());
+			net.blerf.ftl.parser.SavedGameParser.SystemType t = (net.blerf.ftl.parser.SavedGameParser.SystemType) sys[0];
+			net.blerf.ftl.parser.SavedGameParser.SystemState st = state.getSystem(t);
+			if (st != null && st.getCapacity() > 0) systemRow(systems, t.getId(), (String) sys[1], st.getCapacity(), homeplanet.parser.VanillaMax.system(t.getId()), st.getDamagedBars());
 		}
 		JPanel cols = new JPanel(new java.awt.GridBagLayout());
 		java.awt.GridBagConstraints gc = new java.awt.GridBagConstraints();
 		gc.anchor = java.awt.GridBagConstraints.NORTHWEST;
 		gc.fill = java.awt.GridBagConstraints.HORIZONTAL;
-		gc.weightx = 1;
+		gc.weightx = 1; gc.weighty = 1; // from the top, whatever room the window gives
 		gc.insets = new java.awt.Insets(0, 0, 0, 18);
 		gc.gridx = 0; gc.gridy = 0; cols.add(left, gc);
 		gc.gridx = 1; cols.add(right, gc);
-		gc.gridx = 0; gc.gridy = 1; cols.add(crew, gc);
-		gc.gridx = 1; cols.add(systems, gc);
 		p.add(cols, java.awt.BorderLayout.CENTER);
 		return p;
+	}
+	/** A system in the report: FTL's icon for it, the name, its level and a bar of it to the vanilla max (broken bars in red). */
+	private static void systemRow(JPanel p, String systemId, String name, int level, int max, int broken) {
+		JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+		row.setOpaque(false);
+		row.setAlignmentX(LEFT_ALIGNMENT);
+		javax.swing.Icon icon = systemId == null ? null : systemIcon(systemId);
+		JLabel l = new JLabel(name, icon, JLabel.LEFT);
+		l.setIconTextGap(6);
+		l.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, icon == null ? 40 : 34 - icon.getIconWidth(), 1, 0));
+		l.setPreferredSize(new Dimension(150, l.getPreferredSize().height));
+		row.add(l);
+		JLabel n = new JLabel(String.valueOf(level), JLabel.RIGHT);
+		n.setPreferredSize(new Dimension(18, n.getPreferredSize().height));
+		n.setForeground(level > max ? LevelBar.AMBER : MenuTheme.WHITE);
+		n.setToolTipText(level > max ? "Past the vanilla max of " + max : "Of a vanilla max of " + max);
+		row.add(n);
+		row.add(Box.createRigidArea(new Dimension(8, 1)));
+		row.add(new LevelBar(level, max, broken, LevelBar.WIDTH, 12));
+		row.setMaximumSize(row.getPreferredSize());
+		p.add(row);
+	}
+	private static final java.util.Map<String, javax.swing.Icon> SYSTEM_ICONS = new java.util.HashMap<String, javax.swing.Icon>();
+	/** FTL's icon for a system (its room overlay, scaled to the report's rows), or null without one. */
+	static synchronized javax.swing.Icon systemIcon(String id) {
+		if (SYSTEM_ICONS.containsKey(id)) return SYSTEM_ICONS.get(id);
+		javax.swing.Icon icon = null;
+		BufferedImage img = LayoutEditor.image("img/icons/s_" + id + "_overlay.png");
+		if (img != null) {
+			int h = 16, w = Math.max(1, img.getWidth() * h / Math.max(1, img.getHeight()));
+			BufferedImage small = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+			Graphics2D g = small.createGraphics();
+			g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+			g.drawImage(img, 0, 0, w, h, null);
+			g.dispose();
+			icon = new ImageIcon(small);
+		}
+		SYSTEM_ICONS.put(id, icon);
+		return icon;
 	}
 	/** Her picture for the report: half the Space Dock size, and no taller than REPORT_PIC_H (the Lanius would push the lists off the screen). */
 	private JLabel reportPicture(SavedGameState sgs) {

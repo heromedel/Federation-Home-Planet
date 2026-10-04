@@ -139,7 +139,7 @@ public class CommissionDialog extends JDialog {
 		form.add(aeSwitch, c);
 
 		JPanel right = new JPanel(new BorderLayout(0, 6));
-		preview.setPreferredSize(new Dimension(520, 440));
+		preview.setPreferredSize(new Dimension(560, 470));
 		right.add(new JScrollPane(preview), BorderLayout.CENTER);
 		if (HomePlanet.commissionCosts()) {
 			JPanel south = new JPanel(new BorderLayout(0, 4));
@@ -423,7 +423,21 @@ public class CommissionDialog extends JDialog {
 		if (q.percent != 100) sb.append(" (" + q.percent + "% of " + q.subtotal + (q.fixed > 0 ? ", and " + q.fixed + " in custom work orders" : "") + ")");
 		sb.append(", paid from the Cargo Hold, which has " + have + ".");
 		if (have < q.total()) sb.append(" <font color='" + MenuTheme.HTML_ORANGE + "'>Not enough scrap.</font>");
-		sb.append("<br><font size='-2'>").append(String.join(" · ", q.lines)).append("</font></html>");
+		// the breakdown in three columns, each line's price right-aligned beside its name
+		int cols = 3, rows = (q.lines.size() + cols - 1) / cols;
+		sb.append("<table cellspacing='0' cellpadding='0'>");
+		for (int r = 0; r < rows; r++) {
+			sb.append("<tr>");
+			for (int c = 0; c < cols; c++) {
+				int i = c * rows + r;
+				String what = "", price = "";
+				if (i < q.lines.size()) { String line = q.lines.get(i); int k = line.lastIndexOf(": "); what = k < 0 ? line : line.substring(0, k); price = k < 0 ? "" : line.substring(k + 2); }
+				sb.append("<td style='padding-right:4px'><font size='-2' color='" + MenuTheme.HTML_GREY_GREEN + "'>").append(what).append("</font></td>")
+				  .append("<td align='right' style='padding-right:18px'><font size='-2'>").append(price).append("</font></td>");
+			}
+			sb.append("</tr>");
+		}
+		sb.append("</table></html>");
 		priceLabel.setText(sb.toString());
 	}
 

@@ -3,8 +3,6 @@ package homeplanet.ui;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -22,9 +20,7 @@ import javax.swing.JTextField;
  * Nothing is capped: past the ceiling is the player's call. An optional tick in front (a system installed at the start).
  */
 public class NumberRow extends JPanel {
-	/** The bar's width: the segments share it, however many (a 30-point hull as long as a 3-level system). */
-	private static final int BAR_W = 92;
-	private static final Color GREEN = new Color(67, 192, 74), AMBER = new Color(224, 176, 32), EMPTY = new Color(70, 84, 94), OVER = new Color(214, 160, 40);
+	private static final Color OVER = new Color(214, 160, 40);
 
 	private final String name;
 	private final int max, floor;
@@ -32,19 +28,7 @@ public class NumberRow extends JPanel {
 	private final JLabel fraction = new JLabel(), over = new JLabel("Over vanilla max");
 	private final JTextField field = new JTextField(3);
 	private final JCheckBox tick;
-	private final JPanel bar = new JPanel() {
-		protected void paintComponent(Graphics g0) {
-			super.paintComponent(g0);
-			Graphics2D g = (Graphics2D) g0.create();
-			int segs = Math.max(max, value), gap = segs > 12 ? 1 : 2, w = Math.max(2, (BAR_W - (segs - 1) * gap) / segs), h = getHeight() - 2;
-			for (int i = 0; i < segs; i++) {
-				g.setColor(i >= max ? (i < value ? AMBER : EMPTY) : i < value ? GREEN : EMPTY);
-				g.fillRect(i * (w + gap), 1, w, h);
-			}
-			g.dispose();
-		}
-		public Dimension getPreferredSize() { return new Dimension(BAR_W, 14); }
-	};
+	private final LevelBar bar;
 	private final JPanel extras = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
 	private ActionListener onChange;
 
@@ -58,6 +42,7 @@ public class NumberRow extends JPanel {
 	public NumberRow(String name, int value, int max, int floor, boolean tickable) {
 		super(new FlowLayout(FlowLayout.LEFT, 3, 1));
 		this.name = name; this.max = max; this.floor = floor; this.value = Math.max(floor, value);
+		bar = new LevelBar(this.value, max);
 		tick = tickable ? new JCheckBox() : null;
 		fraction.setFont(MenuTheme.TEXT_FONT);
 		fraction.setText("00/00");
@@ -74,11 +59,9 @@ public class NumberRow extends JPanel {
 		field.addFocusListener(new java.awt.event.FocusAdapter() { public void focusLost(java.awt.event.FocusEvent e) { typed(); } });
 		add(field);
 		add(small("+", 1));
-		bar.setOpaque(false);
 		add(bar);
 		over.setFont(MenuTheme.TEXT_FONT.deriveFont(11f));
 		over.setForeground(OVER);
-		bar.setToolTipText("Green to the vanilla max; amber past it");
 		add(over);
 		add(extras);
 		setOpaque(false);
@@ -102,8 +85,7 @@ public class NumberRow extends JPanel {
 		fraction.setForeground(value > max ? OVER : MenuTheme.DIM);
 		field.setText(String.valueOf(value));
 		over.setVisible(value > max);
-		bar.revalidate();
-		bar.repaint();
+		bar.set(value, max);
 		revalidate();
 	}
 	/** Sets the value (never below the floor); {@code tell} runs the change listener. */
