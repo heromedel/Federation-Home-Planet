@@ -68,7 +68,7 @@ final class PartsDialog extends JDialog {
 			for (Parts.Listing x : all) if (x.index == i) l = x;
 			cols.add(l == null ? sold() : card(l, hold));
 		}
-		foot.setText("More parts come in as the fleet travels: check back in a few days.   The Cargo Hold holds " + hold + " scrap.");
+		foot.setText("More parts come in as the fleet travels: check back in a week or two.   The Cargo Hold holds " + hold + " scrap.");
 		cols.revalidate();
 		cols.repaint();
 		pack();

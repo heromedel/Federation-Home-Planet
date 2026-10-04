@@ -85,7 +85,7 @@ final class DerelictsDialog extends JDialog {
 			cols.add(l == null ? sold() : column(l, hold));
 		}
 		// never a count: the foreman doesn't know either
-		foot.setText("More hulls come in from time to time: check back in a week to a month, after some time spent exploring the stars.   The Cargo Hold holds " + hold + " scrap.");
+		foot.setText("More hulls come in from time to time: check back in two weeks to six, after some time spent exploring the stars.   The Cargo Hold holds " + hold + " scrap.");
 		cols.revalidate();
 		cols.repaint();
 		pack();

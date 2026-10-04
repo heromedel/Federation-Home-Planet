@@ -111,20 +111,20 @@ public class PartT { public static void main(String[] a) throws Exception {
   File cf = new File(v.root, "career.txt");
   Properties p = new Properties(); p.load(new ByteArrayInputStream(SafeFiles.read(cf)));
   Setup.chk("S: a career begun now counts beacons from its start", Integer.toString(v.beaconsSeen()).equals(p.getProperty("beaconsAtStart")));
-  Setup.chk("S: Sandbox careers: every 60 beacons", Career.beaconsPerMonth() == 60);
+  Setup.chk("S: Sandbox careers: every two months, 56 beacons", Career.beaconsPerStipend() == 56);
   // a career from before: 9 sectors travelled at 4 a month, 1 month paid: 1 month owed, a sector on to the next
   p.remove("beaconsAtStart"); p.setProperty("sectorsAtStart", "0"); p.setProperty("paidMonths", "1");
   SafeFiles.writeText(new File(v.root, "sectors.txt"), "9\n", false);
   ByteArrayOutputStream b = new ByteArrayOutputStream(); p.store(b, null); SafeFiles.write(cf, b.toByteArray());
   int owed = (Integer) unpaid.invoke(null);
   Setup.chk("S: a career from sectors: still 1 month owed after the switch (" + owed + ")", owed == 1);
-  ChainT.jump(v, 44);
-  Setup.chk("S: its odd sector carried over as 15 beacons: 44 more is a beacon short", (Integer) unpaid.invoke(null) == 1);
+  ChainT.jump(v, 32);
+  Setup.chk("S: its 9 sectors carried over as 135 beacons: 32 more is a beacon short of the third 56", (Integer) unpaid.invoke(null) == 1);
   ChainT.jump(v, 1);
-  Setup.chk("S: and 45 make the next month", (Integer) unpaid.invoke(null) == 2);
-  Setup.chk("S: the difficulties' stipends: 30, 45, 60 beacons", CareerRules.of(CareerRules.EASY).stipendBeacons() == 30
-    && CareerRules.of(CareerRules.NORMAL).stipendBeacons() == 45 && CareerRules.of(CareerRules.HARD).stipendBeacons() == 60
-    && CareerRules.LEVELS[CareerRules.STIPEND][1].equals("three months"));
+  Setup.chk("S: and 33 make the next stipend", (Integer) unpaid.invoke(null) == 2);
+  Setup.chk("S: the difficulties' stipends: 28, 56, 84 beacons (one, two, three months)", CareerRules.of(CareerRules.EASY).stipendBeacons() == 28
+    && CareerRules.of(CareerRules.NORMAL).stipendBeacons() == 56 && CareerRules.of(CareerRules.HARD).stipendBeacons() == 84
+    && CareerRules.LEVELS[CareerRules.STIPEND][1].equals("two months") && Career.BEACONS_PER_MONTH == 28);
  }
  /** Buying, repairs or upgrades in FTL, with no jump, count as one beacon a stop; nothing else does. */
  /** Every beacon the boarded ship flies counts, once: seen by FTL's saves, a dock, the station's writes, a look. */

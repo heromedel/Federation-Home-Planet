@@ -27,11 +27,11 @@ public final class CareerRules {
 		{"free", "25 scrap", "50 scrap"},
 		{"allowed, free", "allowed, 10 scrap a system", "not allowed"},
 		{"half the store price", "a quarter of the store price", "1 scrap each"},
-		{"two months", "three months", "four months"},
+		{"one month", "two months", "three months"},
 		{"half her price", "75% of her price", "her full price"},
 		{"50 scrap", "25 scrap", "10 scrap"}};
 	private static final int[] JOURNEY_FEES = {200, 500, 1000}, REMOVAL_FEES = {0, 25, 50}, STRIP_FEES = {0, 10, -1}, SUPPLY_PERCENT = {50, 25, 0},
-			STIPEND_SECTORS = {2, 3, 4}, COMMISSION_PERCENT = {50, 75, 100}, START_SCRAP = {50, 25, 10};
+			STIPEND_MONTHS = {1, 2, 3}, COMMISSION_PERCENT = {50, 75, 100}, START_SCRAP = {50, 25, 10};
 	private static final String[] REASSIGN = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF};
 	/** A career from before difficulties: its final victory stays the choice made in Settings (nothing, rescue or reward). */
 	public static final int OWN_CHOICE = -1;
@@ -51,9 +51,9 @@ public final class CareerRules {
 		Arrays.fill(lv, l);
 		return new CareerRules(HARD.equals(name) || NORMAL.equals(name) ? name : EASY, lv);
 	}
-	/** A career from before difficulties, as it was: final victory as chosen, journeys 200, a Kestrel or the Relief Ship on a plea, removal free, stripping as Settings had it (free), 25%, every 4 sectors, full price. */
+	/** A career from before difficulties, as it was: final victory as chosen, journeys 200, a Kestrel or the Relief Ship on a plea, removal free, stripping as Settings had it (free), 25%, the stipend every two months (the nearest to its 60 beacons), full price. */
 	public static CareerRules earlier(boolean stripped) {
-		return new CareerRules(EARLIER, new int[] {OWN_CHOICE, 0, 1, 0, stripped ? 0 : 2, 1, 2, 2, 1}); // (commission: full price, as it was)
+		return new CareerRules(EARLIER, new int[] {OWN_CHOICE, 0, 1, 0, stripped ? 0 : 2, 1, 1, 2, 1}); // (commission: full price, as it was)
 	}
 
 	/** This rule's level: 0 (Easy), 1 (Normal) or 2 (Hard); OWN_CHOICE for an earlier career's final victory. */
@@ -76,9 +76,9 @@ public final class CareerRules {
 	public int stripFee() { return Math.max(0, STRIP_FEES[level[STRIPPING]]); }
 	/** Missiles and drone parts sell at this share of the store price; 0 means 1 scrap each. */
 	public int supplyPercent() { return SUPPLY_PERCENT[level[SUPPLIES]]; }
-	/** The old rule's sectors between stipends; the stipend counts Career.BEACONS_PER_SECTOR beacons to each. */
-	public int stipendSectors() { return STIPEND_SECTORS[level[STIPEND]]; }
-	public int stipendBeacons() { return stipendSectors() * Career.BEACONS_PER_SECTOR; }
+	/** Months between stipends (a month is Career.BEACONS_PER_MONTH beacons). */
+	public int stipendMonths() { return STIPEND_MONTHS[level[STIPEND]]; }
+	public int stipendBeacons() { return stipendMonths() * Career.BEACONS_PER_MONTH; }
 	public int commissionPercent() { return COMMISSION_PERCENT[level[COMMISSION]]; }
 	public int startingScrap() { return START_SCRAP[level[STARTING_SCRAP]]; }
 	/** After a final victory: FinalVictory.RESCUE or MUSEUM, or null for an earlier career's own choice. */

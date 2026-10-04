@@ -47,14 +47,14 @@ public final class Expeditions {
 	public static final int RECENT = 12;
 	/** An untaken posting comes down after POSTING_MIN to POSTING_MAX beacons (rolled for each, never shown). */
 	public static final int POSTING_MIN = 1, POSTING_MAX = 7;
-	/** The infirmary keeps a hurt crew member HEAL_MIN to HEAL_MAX beacons (rolled, never shown). */
-	public static final int HEAL_MIN = 3, HEAL_MAX = 6;
+	/** The infirmary keeps a hurt crew member HEAL_MIN to HEAL_MAX beacons, a day each (rolled, never shown). */
+	public static final int HEAL_MIN = 6, HEAL_MAX = 12;
 	/**
 	 * A ransom is asked RANSOM_DELAY_MIN to MAX beacons after the expedition and stands for RANSOM_STANDS beacons
 	 * (the letters say "one month", never beacons: the count is the station's own); a reminder comes REMINDER_BEFORE
 	 * beacons before the end.
 	 */
-	public static final int RANSOM_DELAY_MIN = 2, RANSOM_DELAY_MAX = 5, RANSOM_STANDS = 14, REMINDER_BEFORE = 3;
+	public static final int RANSOM_DELAY_MIN = 2, RANSOM_DELAY_MAX = 5, RANSOM_STANDS = 28, REMINDER_BEFORE = 6;
 	/** A bad outcome's weight (hurt, taken, dead) is this much of itself, in %, with a crew member whose race or skill fits the choice. */
 	static final int FIT_RACE = 50, FIT_SKILL_ONE = 80, FIT_SKILL_TWO = 60;
 

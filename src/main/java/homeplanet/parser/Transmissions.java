@@ -412,7 +412,8 @@ public final class Transmissions {
 		int amount = months * Career.stipend(UnlockGrants.rank(u), Career.achievementsCounted(u));
 		Template t = templates().get("stipend");
 		if (t == null) return; // nothing marked paid: it comes when the letter can
-		String period = "stipend for the last " + months * Career.sectorsPerMonth() + " months"; // a payment every sectorsPerMonth months, as the rules say
+		int monthsPaid = months * Career.monthsPerStipend();
+		String period = "stipend for the last " + (monthsPaid == 1 ? "month" : monthsPaid + " months"); // a payment every monthsPerStipend months, as the rules say
 		Message m = new Message();
 		m.key = "stipend:" + stamp();
 		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());

@@ -111,8 +111,8 @@ Two rules with no exceptions, in anything the player sees:
 1. Never imply the Rebel Flagship has been destroyed: the war goes on.
 2. Never say to the player that time is measured in beacons. The station's clock counts them, hidden; the player hears
    "some time", "a while", "one month" (as the ransom letters say), never a number of beacons or "a beacon later".
-   A beacon is about two days: 14 beacons is about a month (the ransom's month), and the stipend's 30, 45 or 60 beacons
-   are two, three or four months.
+   A beacon is a day (5.00): 28 beacons are a month (the ransom's month; `Career.BEACONS_PER_MONTH`), and the stipend
+   comes every one, two or three months by difficulty (28, 56, 84). A day in Captain's Quarters is one beacon.
 
 ## Voice (player-facing text)
 

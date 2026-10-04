@@ -668,8 +668,8 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   own pay, asides, ships home from expeditions and the lost Stealth Cruiser expedition (to be rewritten later as its own
   special event, once the ordinary ones feel right).
 - **Ransoms** (4B.88, kept): a crew member taken is asked for a few beacons later (the fleet's captives.txt), handled in
-  the inbox: the captors' letter has Pay and Refuse, says "You have one month" and never counts beacons (14, hidden);
-  a reminder comes three beacons before the end. Refused or run out, the Federation Ambassador writes that they are
+  the inbox: the captors' letter has Pay and Refuse, says "You have one month" and never counts beacons (28 since
+  5.00, hidden); a reminder comes six beacons before the end. Refused or run out, the Federation Ambassador writes that they are
   missing, presumed dead. With the inbox off, the ask and reminder come up at the Space Dock (Pay, Refuse, Later).
 - **Hiring** on the same screen: with no crew anywhere, "Post a promise of adventure" is free and answered half the
   time; otherwise "Post for volunteers" costs 5 scrap a crew member in the fleet (every ship, the Junkyard's hulls and
@@ -703,7 +703,7 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
 - 4B.95: main merged in (Reputation, Plead for New Ship, the Relief Ship Type A, the System Limit, Medbay or Clone Bay).
   The Space Dock is main's (the centred Docked and Aboard headings, REP to the inbox's right), with Expeditions under
   Station and the control headings folding as before; the centred headings don't fold. The stipend reads in months
-  everywhere (two, three or four), never sectors or beacons.
+  everywhere (one, two or three since 5.00), never sectors or beacons.
 - A one-sided Long Range trade's log no longer says "received ():".
 - The harness (ExpT) reads the events file clean, plays every event through every choice, checks every hurt has a
   death beside it, holds every line against FTL's own event text (no run of six words the same), and walks the
@@ -934,6 +934,16 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   and a line for the job, a hazard's line, a line a crew member ("was injured in the attack", "was extremely
   successful and brought back an Artemis Missile"), the prize's line, Total Reward. Never a roll, a die or a
   percentage. The lines are in `resource/assignments.txt` (several per job, one picked), editable without a build.
+
+## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
+
+heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every
+month on Easy, two on Normal, three on Hard (28, 56, 84 beacons; `Career.BEACONS_PER_MONTH`), Sandbox every two
+months, a career from before difficulties every two (the nearest to its old 60). Careers already running keep their
+stipends paid; only the next one's length changes. The ransom's month is 28 beacons and the reminder comes six before
+the end; the infirmary keeps the hurt 6 to 12 days (the same stretch as before). The Junkyard's intervals stand and
+their footers say what they are in days ("a week or two", "two weeks to six"). The old board's postings and the crew
+expeditions' days were days already. The words everywhere say months, never beacons.
 
 ## Naming decisions — settled (4B.30)
 

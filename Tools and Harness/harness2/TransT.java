@@ -209,7 +209,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   Transmissions.check(); Transmissions.Message owed = find("stipend:"); if (owed != null) Transmissions.delete(owed); // anything owed already, paid first
   int sectors = v.sectorsSeen();
   java.util.Properties cp = new java.util.Properties(); cp.load(new java.io.ByteArrayInputStream(SafeFiles.read(new File(v.root, "career.txt"))));
-  int month = Career.beaconsPerMonth(), into = (v.beaconsSeen() - Integer.parseInt(cp.getProperty("beaconsAtStart"))) % month;
+  int month = Career.beaconsPerStipend(), into = (v.beaconsSeen() - Integer.parseInt(cp.getProperty("beaconsAtStart"))) % month;
   int jump = 2 * month - into + month / 2; // two months and half another, at the career's difficulty
   SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
   g.setSectorNumber(g.getSectorNumber() + 1); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + jump);
@@ -221,7 +221,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   int each = Career.stipend(UnlockGrants.rank(Unlocks.read()), achievements);
   Transmissions.check();
   Transmissions.Message m = find("stipend:");
-  Setup.chk("S: " + jump + " beacons (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last " + 2 * Career.sectorsPerMonth() + " months") && m.body.contains((2 * each) + " scrap") && ("scrap " + 2 * each).equals(m.reward));
+  Setup.chk("S: " + jump + " beacons (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last " + 2 * Career.monthsPerStipend() + " months") && m.body.contains((2 * each) + " scrap") && ("scrap " + 2 * each).equals(m.reward));
   System.out.println("Stipend: " + each + " a month (Captain, 5 achievements): " + m.body.replace("\n", " / "));
   Setup.chk("S: the stipend waits to be claimed: the Cargo Hold is untouched", v.storageScrap() == scrap && Transmissions.unclaimedStipend(m));
   Setup.chk("S: an unclaimed stipend can't be deleted", !Transmissions.deletable(m));
