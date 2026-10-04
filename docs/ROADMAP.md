@@ -917,8 +917,8 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   bad for the race is the infirmary at a quarter health; an injury on Giant Spiders is a death. Each natural 20 rolls
   again, and a 10 or more finds an item worth up to double the pot (a weapon, drone or augment the stores sell, else
   supplies). A Hijack, Salvage or Rescue that went well (no deaths, someone at 16 or better) rolls one more d20 for
-  the mission: a 20 brings a ship home (kept in `assignments/` until the commander answers: keep her, and she's in
-  the Junkyard set out at the station, or let her go), a part to the stored systems (level 1, a bar broken) or a
+  the mission: a 20 brings a ship home (kept in `assignments/` until the commander answers: to the Space Dock, to
+  the Junkyard, or not taken; set out at the station as she is), a part to the stored systems (level 1, a bar broken) or a
   rescued one who asks to sign on (one in twenty with a skill already; take them into the Cargo Hold or send them on
   their way); a Hijack's 15 to 19 brings a part. The questions are asked at the Space Dock whatever the inbox setting,
   and again at the next look if left unanswered. The job's skill pays points by band, so a long campaign levels people

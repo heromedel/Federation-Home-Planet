@@ -125,10 +125,23 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Assignments.Result r = Assignments.roll("pirate", a.crew, new Random(1));
   for (Assignments.Fate f : r.fates) { f.died = false; f.captured = false; f.infirmary = false; f.band = 3; f.item = "missiles:2"; }
   r.job = "hijack"; r.prize = "ship";
-  int missiles = v.readCopy(v.storage()).save.getPlayerShip().getMissilesAmt();
+  int missiles = v.readCopy(v.storage()).save.getPlayerShip().getMissilesAmt(), junked = v.junked().size(), docked = v.docked().size();
+  Assignments.Report shipRep = Assignments.bringHome(v, a, r);
+  List<Assignments.Pending> pend = Assignments.pending(v);
+  Setup.chk("Z: a Hijack's prize ship waits on the commander's word, named in the report; the items came home", pend.size() == 1 && "ship".equals(pend.get(0).kind) && pend.get(0).save.isFile()
+    && r.prizeDetail != null && shipRep.text.contains(r.prizeDetail) && Derelicts.current(v).size() == listingsBefore && v.readCopy(v.storage()).save.getPlayerShip().getMissilesAmt() == missiles + 4);
+  Assignments.accept(v, pend.get(0), true);
+  Setup.chk("Z: taken to the Space Dock, she's docked and the question is gone", v.docked().size() == docked + 1 && v.junked().size() == junked && Assignments.pending(v).isEmpty() && !pend.get(0).save.isFile());
+  crew = ExpT.hold(v, "rock", "engi");
+  Assignments.send(v, Assignments.board(v).get(0).slot, crew, new Random(4));
+  a = Assignments.away(v).get(0);
+  while (v.beaconsSeen() < a.until) v.countBeacon();
+  r = Assignments.roll("pirate", a.crew, new Random(1));
+  for (Assignments.Fate f : r.fates) { f.died = false; f.captured = false; f.infirmary = false; f.band = 3; f.item = null; }
+  r.job = "hijack"; r.prize = "ship";
   Assignments.bringHome(v, a, r);
-  Setup.chk("Z: a Hijack's prize ship is in the Junkyard; the items came home", Derelicts.current(v).size() == listingsBefore + 1 && r.prizeDetail != null
-    && v.readCopy(v.storage()).save.getPlayerShip().getMissilesAmt() == missiles + 4);
+  Assignments.accept(v, Assignments.pending(v).get(0), false);
+  Setup.chk("Z: or to the Junkyard", v.junked().size() == junked + 1 && v.docked().size() == docked + 1 && Assignments.pending(v).isEmpty());
   crew = ExpT.hold(v, "rock", "engi");
   Assignments.send(v, Assignments.board(v).get(0).slot, crew, new Random(4));
   a = Assignments.away(v).get(0);
@@ -147,6 +160,13 @@ public class AsgT { public static void main(String[] a) throws Exception {
   for (Assignments.Fate f : r.fates) { f.died = false; f.captured = false; f.infirmary = false; f.band = 5; f.item = null; }
   r.job = "rescue"; r.prize = "recruit";
   Assignments.Report rep = Assignments.bringHome(v, a, r);
-  Setup.chk("Z: a Rescue's recruit waits in the Cargo Hold, named in the report", r.recruit != null && Assignments.holdCrew(v).size() == 2 && rep.text.contains(r.recruit.getName()));
+  pend = Assignments.pending(v);
+  Setup.chk("Z: a Rescue's recruit asks, named in the report, and isn't in the hold yet", r.recruit != null && pend.size() == 1 && "recruit".equals(pend.get(0).kind) && pend.get(0).crew.getName().equals(r.recruit.getName())
+    && rep.text.contains(r.recruit.getName()) && Assignments.holdCrew(v).size() == 1 && pend.get(0).question().contains("sign on"));
+  Assignments.decline(v, pend.get(0));
+  Setup.chk("Z: sent on their way: not in the hold, no question left", Assignments.holdCrew(v).size() == 1 && Assignments.pending(v).isEmpty());
+  Random rr = new Random(7); int skilled = 0;
+  for (int i = 0; i < 400; i++) { CrewState c = Assignments.recruit(rr); int lv = 0; for (int x : homeplanet.model.Crew.skillLevels(c)) lv += x; if (lv > 0) skilled++; }
+  Setup.chk("Z: about one recruit in twenty comes with a skill (" + skilled + " of 400)", skilled >= 8 && skilled <= 40);
  }
 }

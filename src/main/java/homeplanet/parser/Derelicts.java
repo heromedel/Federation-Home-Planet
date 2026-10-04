@@ -93,7 +93,7 @@ public final class Derelicts {
 			catch (Exception e) { log.warn("Could not bring in new derelicts: {}", e.toString()); }
 		}
 		List<Listing> out = new ArrayList<Listing>();
-		for (int i = 0; i < LISTINGS || p.getProperty(i + ".open") != null; i++) { // (past LISTINGS: a hijacked ship brought home by an expedition)
+		for (int i = 0; i < LISTINGS; i++) {
 			if (!"true".equals(p.getProperty(i + ".open"))) continue;
 			try {
 				SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(saveFile(v, i));
@@ -138,33 +138,14 @@ public final class Derelicts {
 		write(v, p);
 	}
 
-	/**
-	 * A ship an expedition brought home (a Hijack that went well): listed in the Junkyard as a derelict, in a free place or
-	 * past the usual three, priced as derelicts are; she stays until the next batch comes in. Returns her name and class.
-	 */
-	public static synchronized String addPrize(Vault v, Random rng) throws Exception {
-		File d = dir(v);
-		if (!d.isDirectory() && !d.mkdirs()) throw new IOException("Could not create " + d);
-		Properties p = read(v);
-		if (intOf(p, "rolledAt", -1) < 0) { p.setProperty("rolledAt", Integer.toString(v.beaconsSeen())); p.setProperty("interval", Integer.toString(interval(rng))); }
-		Unlocks u = Unlocks.read();
+	/** A ship an expedition brought home (a Hijack that went well): built as a derelict is, named, for the commander to keep or not. */
+	public static SavedGameState prizeShip(Vault v, Random rng) throws IOException {
 		Set<String> taken = new HashSet<String>();
 		for (Ship s : v.all()) if (s.name != null) taken.add(s.name);
-		String id = pickModel(rng, u, false);
+		String id = pickModel(rng, Unlocks.read(), false);
 		if (id == null) throw new IOException("No model for her");
 		String name = ShipNames.roll(id, taken, rng);
-		if (name == null) name = "Prize";
-		SavedGameState gs = build(id, name, rng);
-		int i = 0;
-		while ("true".equals(p.getProperty(i + ".open"))) i++;
-		SafeFiles.write(saveFile(v, i), SaveHelper.toBytes(gs));
-		p.setProperty(i + ".open", "true");
-		p.setProperty(i + ".oddity", "");
-		p.setProperty(i + ".percent", Integer.toString(PRICE_MIN + rng.nextInt(PRICE_MAX - PRICE_MIN + 1)));
-		p.setProperty(i + ".locked", Boolean.toString(u != null && u.problem() == null && !u.unlockedBlueprint(id)));
-		write(v, p);
-		net.blerf.ftl.xml.ShipBlueprint bp = DataManager.get().getShip(id);
-		return name + (bp == null ? "" : " (" + bp.getName() + ")");
+		return build(id, name == null ? "Prize" : name, rng);
 	}
 	/** Her price at this share of her value as she is (her damage off; at the difficulty's rate), never under 10. */
 	static int price(SavedGameState gs, int percent) { return Math.max(10, Pricing.auctionBase(gs) * percent / 100); }

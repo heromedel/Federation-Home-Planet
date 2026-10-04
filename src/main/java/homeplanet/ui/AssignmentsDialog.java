@@ -118,9 +118,22 @@ public final class AssignmentsDialog extends JDialog {
 		for (CrewState c : party) names.add(c.getName());
 		JOptionPane.showMessageDialog(this, String.join(", ", names) + (names.size() > 1 ? " have" : " has") + " set out for " + where + ". Word comes when they're back.", "Expeditions", JOptionPane.INFORMATION_MESSAGE);
 		if (owner instanceof SpaceDockUI) ((SpaceDockUI) owner).timeRound(false); // setting out takes a beacon: an earlier detail may be back
+		askPending(this);
 		fill();
 	}
 
+	/** The prizes waiting on the commander's word: a recruit to take on, a ship to the Space Dock, the Junkyard or not at all. */
+	public static void askPending(java.awt.Component owner) {
+		Vault v = Vault.get();
+		for (Assignments.Pending x : Assignments.pending(v)) {
+			boolean ship = "ship".equals(x.kind);
+			Object[] opts = ship ? new Object[] {"Space Dock", "Junkyard", "Don't take her"} : new Object[] {"Sign them on", "Send them on their way"};
+			int pick = JOptionPane.showOptionDialog(owner, x.question(), "Expeditions", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
+			if (pick < 0) continue; // asked again at the next look
+			try { if (pick == opts.length - 1) Assignments.decline(v, x); else Assignments.accept(v, x, ship && pick == 0); }
+			catch (IOException e) { HomePlanet.showErrorDialog("That could not be done:\n" + e.getMessage()); }
+		}
+	}
 	/** A report, read in the station's event box (the words as the crew gave them, no rolls). */
 	public static void showReport(java.awt.Component owner, Assignments.Report r) {
 		javax.swing.JTextArea t = new javax.swing.JTextArea(r.text);

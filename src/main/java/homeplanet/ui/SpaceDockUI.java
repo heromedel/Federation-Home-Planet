@@ -281,9 +281,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final List<homeplanet.parser.Assignments.Report> back = HomePlanet.expeditionType == 2 ? homeplanet.parser.Assignments.checkReturns(vault) : new java.util.ArrayList<homeplanet.parser.Assignments.Report>();
 		final List<homeplanet.parser.Expeditions.RansomNews> ransomNews = homeplanet.parser.Expeditions.checkRansoms(vault);
 		final List<String> upAgain = homeplanet.parser.Expeditions.checkInfirmary(vault);
-		if ((HomePlanet.immersiveNotifications() || (ransomNews.isEmpty() && back.isEmpty())) && upAgain.isEmpty()) return;
+		final boolean prizes = HomePlanet.expeditionType == 2 && !homeplanet.parser.Assignments.pending(vault).isEmpty();
+		if ((HomePlanet.immersiveNotifications() || (ransomNews.isEmpty() && back.isEmpty())) && upAgain.isEmpty() && !prizes) return;
 		Runnable word = new Runnable() { public void run() {
 			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Assignments.Report r : back) AssignmentsDialog.showReport(null, r);
+			if (prizes) AssignmentsDialog.askPending(null); // a recruit to take on, a ship to keep: asked whatever the inbox setting
 			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Expeditions.RansomNews n : ransomNews) ransomNotice(n);
 			if (!upAgain.isEmpty())
 				JOptionPane.showMessageDialog(null, String.join(" and ", upAgain) + (upAgain.size() > 1 ? " are" : " is") + " out of the infirmary, on their feet and waiting in the Cargo Hold.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);

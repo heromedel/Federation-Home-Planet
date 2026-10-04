@@ -262,6 +262,88 @@ public final class Assignments {
 		return out;
 	}
 
+	/** One in this many rescued recruits comes with a skill already (one, at level 1). */
+	public static final int SKILLED_ONE_IN = 20;
+	/** A rescued one who asks to sign on: a volunteer of a race the commander has unlocked, one in SKILLED_ONE_IN with a skill. */
+	public static CrewState recruit(Random rng) {
+		List<String> races = Expeditions.hireableRaces();
+		CrewState c = Commission.volunteer(races.get(rng.nextInt(races.size())), rng);
+		if (c != null && rng.nextInt(SKILLED_ONE_IN) == 0) { int k = rng.nextInt(6); Skills.set(c, k, Skills.interval(c, k)); }
+		return c;
+	}
+
+	/** A prize waiting on the commander's word: a ship brought home (the Space Dock, the Junkyard, or not taken) or a rescued one asking to sign on. */
+	public static final class Pending {
+		public final int index;
+		/** "ship" or "recruit". */
+		public final String kind, name;
+		public final CrewState crew;
+		public final File save;
+		Pending(int index, String kind, String name, CrewState crew, File save) { this.index = index; this.kind = kind; this.name = name; this.crew = crew; this.save = save; }
+		public String question() {
+			return "recruit".equals(kind) ? name + " (" + homeplanet.model.Crew.raceTitle(crew) + "), rescued on an expedition, asks to sign on with your fleet.\nTake them into the Cargo Hold?"
+					: "Your crew brought a ship home from an expedition: " + name + ".\nTake her in as she is? To the Space Dock to fly, to the Junkyard to be set right or scrapped, or not at all.";
+		}
+	}
+	/** The prizes waiting on an answer. */
+	public static synchronized List<Pending> pending(Vault v) { return pending(v, read(v)); }
+	private static List<Pending> pending(Vault v, Properties p) {
+		List<Pending> out = new ArrayList<Pending>();
+		for (int i = 0; i < 100; i++) {
+			String kind = p.getProperty("pending." + i + ".kind");
+			if (kind == null) continue;
+			CrewState c = null;
+			if ("recruit".equals(kind)) {
+				Map<String, String> f = new LinkedHashMap<String, String>();
+				String pre = "pending." + i + ".crew.";
+				for (String key : p.stringPropertyNames()) if (key.startsWith(pre)) f.put(key.substring(pre.length()), p.getProperty(key));
+				try { c = homeplanet.comm.Line.crewFrom(f); } catch (IOException e) { log.warn("A recruit waiting on an answer can't be read: {}", e.toString()); continue; }
+			}
+			out.add(new Pending(i, kind, p.getProperty("pending." + i + ".name", ""), c, "ship".equals(kind) ? new File(v.root, p.getProperty("pending." + i + ".file", "")) : null));
+		}
+		return out;
+	}
+	/** Yes: the recruit into the Cargo Hold, or the ship to the Space Dock ({@code dock}) or the Junkyard, set out at the station as she is. */
+	public static synchronized void accept(Vault v, Pending x, boolean dock) throws IOException {
+		Properties p = readStrict(v);
+		if (p.getProperty("pending." + x.index + ".kind") == null) throw new IOException("That was answered already");
+		if ("recruit".equals(x.kind)) {
+			Ship st = v.storage();
+			Vault.Copy c = v.readCopy(st);
+			if (!SaveHelper.placeCrew(c.save.getPlayerShip(), x.crew, true)) throw new IOException("The Cargo Hold has no room for " + x.name + "; make room and look again");
+			c.save.getPlayerShip().getCrewList().add(x.crew);
+			forget(p, x.index);
+			v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
+			HistoryLog.entry("HIRE", x.name + " (" + race(x.crew) + "), rescued on an expedition, signed on: in the Cargo Hold");
+			return;
+		}
+		SavedGameState gs = HomePlanet.savedGameParser.readSavedGame(x.save);
+		Ship s = dock ? v.adopt(gs) : v.adoptJunked(gs);
+		v.setOut(s, gs, "Brought home by an expedition");
+		forget(p, x.index);
+		write(v, p);
+		x.save.delete();
+		HistoryLog.entry("EXPEDITION", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), brought home by an expedition, kept: " + (dock ? "at the Space Dock" : "in the Junkyard"));
+	}
+	/** No: the recruit goes their way, the ship is left where she lies. */
+	public static synchronized void decline(Vault v, Pending x) throws IOException {
+		Properties p = readStrict(v);
+		forget(p, x.index);
+		write(v, p);
+		if (x.save != null) x.save.delete();
+		HistoryLog.entry("EXPEDITION", "recruit".equals(x.kind) ? x.name + ", rescued on an expedition, was sent on their way" : x.name + ", brought home by an expedition, was not taken");
+	}
+	private static void forget(Properties p, int index) {
+		for (String key : new ArrayList<String>(p.stringPropertyNames())) if (key.startsWith("pending." + index + ".")) p.remove(key);
+	}
+	private static int keep(Properties p, String kind, String name) {
+		int i = 0;
+		while (p.getProperty("pending." + i + ".kind") != null) i++;
+		p.setProperty("pending." + i + ".kind", kind);
+		p.setProperty("pending." + i + ".name", name);
+		return i;
+	}
+
 	/** The crew in the Cargo Hold who can be sent: not those in the infirmary. */
 	public static List<CrewState> holdCrew(Vault v) throws IOException { return Expeditions.holdCrew(v); }
 
@@ -434,11 +516,7 @@ public final class Assignments {
 			}
 			sb.append(f.name()).append(" ").append(line).append("\n");
 		}
-		if (r.prize != null) {
-			String prize = say(rng, "They brought something back.", "prize", r.job, r.prize);
-			if (r.recruit != null) prize = prize.replace("waits in the Cargo Hold.", "waits in the Cargo Hold: " + r.recruit.getName() + " (" + homeplanet.model.Crew.raceTitle(r.recruit) + ").");
-			sb.append(prize).append("\n");
-		}
+		if (r.prize != null) sb.append(say(rng, "They brought something back.", "prize", r.job, r.prize).replace("{name}", r.prizeDetail == null ? "" : r.prizeDetail)).append("\n");
 		sb.append("\nTotal Reward: ").append(r.scrap).append(" scrap");
 		return sb.toString();
 	}
@@ -488,18 +566,33 @@ public final class Assignments {
 			if (f.item != null) give(hold, f.item);
 		}
 		List<String> stored = new ArrayList<String>();
-		if ("ship".equals(r.prize)) { // listed first: if she can't be, a part comes home instead
-			try { r.prizeDetail = Derelicts.addPrize(v, new Random()); }
-			catch (Exception e) { log.warn("The hijacked ship could not be listed: {}", e.toString()); r.prize = "part"; }
+		File prizeFile = null;
+		byte[] prizeBytes = null;
+		if ("ship".equals(r.prize)) { // built now, kept for the commander's answer; if she can't be, a part comes home instead
+			try {
+				SavedGameState gs = Derelicts.prizeShip(v, new Random());
+				prizeBytes = SaveHelper.toBytes(gs);
+				File dir = new File(v.root, "assignments");
+				if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
+				prizeFile = new File(dir, "prize-" + a.sentAt + "-" + a.index + ".sav");
+				net.blerf.ftl.xml.ShipBlueprint bp = DataManager.get().getShip(gs.getPlayerShip().getShipBlueprintId());
+				r.prizeDetail = gs.getPlayerShipName() + (bp == null ? "" : " (" + bp.getName() + ")");
+				int i = keep(p, "ship", r.prizeDetail);
+				p.setProperty("pending." + i + ".file", "assignments/" + prizeFile.getName());
+			} catch (Exception e) { log.warn("The hijacked ship could not be built: {}", e.toString()); r.prize = "part"; }
 		}
 		if ("part".equals(r.prize)) { r.prizeDetail = part(stored, v); }
 		if ("recruit".equals(r.prize)) {
-			List<String> races = Expeditions.hireableRaces();
-			CrewState n = Commission.volunteer(races.get(new Random().nextInt(races.size())), new Random());
-			if (n != null && SaveHelper.placeCrew(hold, n, true)) { hold.getCrewList().add(n); r.recruit = n; r.prizeDetail = n.getName(); }
-			else r.prize = null;
+			CrewState n = recruit(new Random());
+			if (n == null) r.prize = null;
+			else {
+				r.recruit = n; r.prizeDetail = n.getName() + " (" + homeplanet.model.Crew.raceTitle(n) + ")";
+				int i = keep(p, "recruit", n.getName());
+				for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(n).entrySet()) p.setProperty("pending." + i + ".crew." + e.getKey(), e.getValue());
+			}
 		}
 		Vault.Transaction tx = v.begin().put(st, c.save, c.hash);
+		if (prizeFile != null) tx.put(prizeFile, prizeBytes);
 		Expeditions.admitAndTake(tx, v, hurt, taken, sectorCaptors(r.sector), v.beaconsSeen(), new Random());
 		if (!stored.isEmpty()) tx.put(v.systemsFile(), (String.join("\n", stored) + "\n").getBytes(StandardCharsets.UTF_8));
 		// the away record goes, and the rest are renumbered without a gap
