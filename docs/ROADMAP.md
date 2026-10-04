@@ -954,6 +954,15 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   own pronoun could be mistaken for it, and top lines leave room for "and brought back" an item. Sending crew now
   says "They will return in a few days, or longer, when their journey is over." (heromedel's words).
 
+- **Who shrugged it off** (5.03): when a hazard came up, a crew member whose race shrugs it off gets a sentence of
+  their own after their line (`shrug <hazard> <race>` in the words file; never for the dead, the taken or the
+  infirmary): a Rock walks through the fire ("Rock doesn't burn", heromedel), a Lanius's room is the one that doesn't
+  burn, a Zoltan powers the shields through the asteroids, an Engi's nanobots restart what the pulsar knocks out, a
+  Slug is at home in a plasma storm. It's how the report teaches who to send where. {He} and {His} begin a sentence.
+  An injury trumps it (Plan NN, heromedel): someone hurt gets no such sentence, and their injury line names a cause
+  that isn't the hazard (`band <job> injured cause`, every job but Giant Spiders, where an injury is a death; Rescue's
+  "carrying survivors through a fire" became a falling bulkhead).
+
 ## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
 
 heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every

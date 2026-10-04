@@ -11,11 +11,16 @@
 #   captured | <phrase>                        after a name, taken on Get Boarded (a ransom letter always follows)
 #   infirmary | <phrase>                       after a name, badly hurt: in the infirmary a while
 #   offer <sector> | <words>                   the card on the board for a sector; several per sector
+#   shrug <hazard> <race> | <sentence>         after a crew member's line when their race shrugged the hazard off
+#                                              (not for the dead, the taken, the infirmary or the injured)
+#   band <job> injured cause | <phrase>        an injury that names a cause other than any hazard: drawn with the
+#                                              others, and alone for someone hurt whose race shrugged the hazard off
 #
 # Marked lines: any key but an offer can end in a sector ("event defend zoltan | ..."), and that line joins the
 # unmarked ones only in that sector. Captured lines are marked by who took them instead: slavers, pirates, rebels or
 # mantis (the same captors who sign the ransom letter). In a line after a name, {he} {him} {his} become she, her, her
-# for a woman. Every line finishes its thought: a reader should never be left asking "decide what?".
+# for a woman ({He} {His} to begin a sentence). Every line finishes its thought: a reader should never be left
+# asking "decide what?".
 #
 # Jobs: defend attack negotiate boarded rescue salvage scout repair transport lost escort capture board hijack infection spiders
 # Sectors: civilian engi zoltan mantis pirate rebel rock nebula abandoned crystal
@@ -71,6 +76,7 @@ band defend died | was killed holding the line
 band defend died | was killed when the raiders broke through {his} section
 band defend injured | was injured holding the line
 band defend injured | was injured, and stayed at {his} post until it was over
+band defend injured cause | was injured when a raider got close enough to use a knife
 band defend failed | fell back when the raiders pushed
 band defend failed | left {his} post when the raiders pushed, and the others had to cover the gap
 band defend success | was successful holding the line
@@ -89,6 +95,7 @@ band attack died | was killed in the attack
 band attack died | was killed in the first rush
 band attack injured | was injured in the attack
 band attack injured | was injured going in, and kept going anyway
+band attack injured cause | was injured by a mine at the base's outer door
 band attack failed | lost {his} nerve in the attack
 band attack failed | hung back when the shooting started
 band attack success | was successful in the attack
@@ -107,7 +114,7 @@ event negotiate rebel | were sent to talk a rebel garrison into letting a refuge
 band negotiate died | was killed when the talks turned violent
 band negotiate died | was killed when someone at the table decided the talking was over
 band negotiate injured | was injured when the talks turned violent
-band negotiate injured | was injured in the scuffle that ended the first round of talks
+band negotiate injured cause | was injured in the scuffle that ended the first round of talks
 band negotiate failed | said the wrong thing at the table
 band negotiate failed | lost {his} temper at the table, and the talks went backwards from there
 band negotiate success | was successful at the table
@@ -126,7 +133,7 @@ event boarded pirate | were crewing an ore hauler when pirates cut through her a
 band boarded died | was killed by the boarders
 band boarded died | was killed defending the corridor to the bridge
 band boarded injured | was injured by the boarders
-band boarded injured | was injured holding a door until the boarders gave up on it
+band boarded injured cause | was injured holding a door until the boarders gave up on it
 band boarded failed | was driven back by the boarders
 band boarded failed | lost {his} section of the ship to the boarders
 band boarded success | was successful against the boarders
@@ -145,7 +152,7 @@ event rescue abandoned | searched an abandoned colony for the few who had refuse
 band rescue died | was killed in the rescue
 band rescue died | was killed going in for one more
 band rescue injured | was injured in the rescue
-band rescue injured | was injured carrying survivors through a fire
+band rescue injured cause | was injured when a damaged bulkhead came down across the corridor
 band rescue failed | got lost in the wreck
 band rescue failed | could not reach the survivors in time
 band rescue success | was successful in the rescue
@@ -164,7 +171,7 @@ event salvage rebel | picked through the wreckage of a battle the Federation had
 band salvage died | was killed when a bulkhead gave
 band salvage died | was killed when the wreck's reactor woke up
 band salvage injured | was injured when a bulkhead gave
-band salvage injured | was injured cutting into a compartment that still had pressure in it
+band salvage injured cause | was injured cutting into a compartment that still had pressure in it
 band salvage failed | came back with nothing worth keeping
 band salvage failed | spent the whole job cutting into compartments that were already empty
 band salvage success | was successful in the salvage
@@ -183,7 +190,7 @@ event scout crystal | went looking for the Crystal worlds on directions that mad
 band scout died | was killed when the shuttle was spotted
 band scout died | was killed when an enemy patrol caught the shuttle in the open
 band scout injured | was injured when the shuttle was spotted
-band scout injured | was injured bringing a damaged shuttle home
+band scout injured cause | was injured bringing a damaged shuttle home
 band scout failed | brought back a chart nobody could read
 band scout failed | came home with nothing anyone could use
 band scout success | was successful in the reconnaissance
@@ -202,7 +209,7 @@ event repair zoltan | rewired a Zoltan ship whose crew could power her but no lo
 band repair died | was killed when the reactor flared
 band repair died | was killed when a conduit {he} was working on went live
 band repair injured | was injured when the reactor flared
-band repair injured | was injured by a burst coolant line
+band repair injured cause | was injured by a burst coolant line
 band repair failed | made things worse, and someone else had to finish the job
 band repair failed | spent the whole job chasing a fault that was never found
 band repair success | was successful in the repairs
@@ -221,7 +228,7 @@ event transport rock | hauled ore for a Rock clan that counted every piece at bo
 band transport died | was killed on the run
 band transport died | was killed when raiders caught the transport between beacons
 band transport injured | was injured on the run
-band transport injured | was injured when the cargo shifted in a hard turn
+band transport injured cause | was injured when the cargo shifted in a hard turn
 band transport failed | lost part of the cargo on the way
 band transport failed | signed for the wrong cargo, and nobody noticed until delivery
 band transport success | was successful on the run
@@ -240,7 +247,7 @@ event lost crystal | chased a signal into Crystal space and could not find the w
 band lost died | was lost and never found
 band lost died | was killed before the way home was found
 band lost injured | was injured finding the way back
-band lost injured | was injured scavenging parts to keep the ship going
+band lost injured cause | was injured scavenging parts to keep the ship going
 band lost failed | made the wrong call at every turn
 band lost failed | was sure of the way home, and was wrong every time
 band lost success | was successful in finding the way back
@@ -259,7 +266,7 @@ event escort pirate | escorted a merchant who was sure the pirates had been paid
 band escort died | was killed in the escort
 band escort died | was killed drawing fire away from the ship {he} was guarding
 band escort injured | was injured in the escort
-band escort injured | was injured when the raiders turned on the escort instead
+band escort injured cause | was injured when the raiders turned on the escort instead
 band escort failed | lost sight of the ship {he} was guarding
 band escort failed | was too slow to stop the raiders reaching the ship {he} was guarding
 band escort success | was successful in the escort
@@ -278,7 +285,7 @@ event capture rebel | went after a rebel officer who knew where the fleet would 
 band capture died | was killed in the capture
 band capture died | was killed when the quarry turned and fought
 band capture injured | was injured in the capture
-band capture injured | was injured wrestling the quarry to the deck
+band capture injured cause | was injured wrestling the quarry to the deck
 band capture failed | let the quarry slip
 band capture failed | followed the wrong ship for two days
 band capture success | was successful in the capture
@@ -297,7 +304,7 @@ event board mantis | went aboard a Mantis raider while her crew were away on a r
 band board died | was killed in the boarding
 band board died | was killed in the fighting for the engine room
 band board injured | was injured in the boarding
-band board injured | was injured clearing the ship one room at a time
+band board injured cause | was injured clearing the ship one room at a time
 band board failed | was pushed back to the airlock
 band board failed | was cut off from the others and had to fall back
 band board success | was successful in the boarding
@@ -316,7 +323,7 @@ event hijack rebel | were sent to steal a ship out from under a rebel garrison
 band hijack died | was killed before the ship was clear
 band hijack died | was killed by a security drone in the docking bay
 band hijack injured | was injured before the ship was clear
-band hijack injured | was injured getting through the ship's locks
+band hijack injured cause | was injured getting through the ship's locks
 band hijack failed | tripped every alarm aboard
 band hijack failed | was spotted at the airlock, and the job fell apart from there
 band hijack success | was successful in the hijack
@@ -335,7 +342,7 @@ event infection abandoned | went into a sealed colony to find out why nobody had
 band infection died | was killed by the infection
 band infection died | was killed by the sickness before a cure could be found
 band infection injured | was injured by the infection
-band infection injured | was injured by the infected, who no longer knew what they were doing
+band infection injured cause | was injured by the infected, who no longer knew what they were doing
 band infection failed | came out of it too weak to be of use
 band infection failed | spent the job sealing doors that would not stay sealed
 band infection success | was successful against the infection
@@ -376,6 +383,17 @@ hazard pulsar | A nearby pulsar knocked the power out with every pulse.
 hazard pulsar | Their work was slowed by each wave of energy from the pulsar.
 hazard storm | A plasma storm held their reactor at half power for most of the job.
 hazard storm | A plasma storm rolled in on the first day, and their reactor never ran above half until it passed.
+
+shrug flare rock | The fires never bothered {him}; Rock doesn't burn.
+shrug flare rock | {His} part of the ship was on fire twice, and {he} worked straight through it both times.
+shrug flare anaerobic | Every fire that reached {his} room went out on its own.
+shrug flare anaerobic | The one room aboard where nothing burned was {his}.
+shrug asteroids energy | With {him} feeding power to the shields, the asteroids never got through.
+shrug asteroids energy | {His} own power kept the shields up whenever the reactor faltered.
+shrug pulsar engi | Each time the pulsar knocked the systems out, {his} nanobots had them running again.
+shrug pulsar engi | The pulsar's waves slowed everyone but {him}.
+shrug storm slug | The storm meant nothing to {him}; Slugs grow up in weather like this.
+shrug storm slug | {His} feel for the nebula kept them clear of the worst of the storm.
 
 captured | was last seen being carried through the boarders' airlock.
 captured | was taken by the boarders. The crew hope {he}'s all right out there.
