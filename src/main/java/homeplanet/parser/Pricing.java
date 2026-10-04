@@ -37,9 +37,10 @@ public final class Pricing {
 	 */
 	public static final int HULL_POINT = 10, SYSTEM_ROOM_PERCENT = 10, EMPTY_ROOM = 2, DOOR = 2;
 	/**
-	 * The rate the difficulty sets on what the station sells: Commission's ships and the Junkyard's parts and derelicts
-	 * (before the Junkyard's own discounts). Easy 50, Normal 75, Hard 100; Custom and Sandbox choose. Never the Cargo Bay's
-	 * prices, nor what a ship sells for.
+	 * The rate the difficulty sets on a ship's price, wherever one is counted: Commission, the plea, what she's worth at
+	 * Trade In, Auction, the museum and a final victory, and the Junkyard's parts and derelicts (before the Junkyard's own
+	 * discounts). Easy 50, Normal 75, Hard 100; Custom and Sandbox choose. Never the stores' prices: buying and repairing
+	 * in the Cargo Bay cost the same on every difficulty.
 	 */
 	public static int rate() { return homeplanet.core.Economy.commissionPercent(); }
 	/** A price at the rate, to the nearest scrap. */
@@ -133,12 +134,12 @@ public final class Pricing {
 	public static int supplies(ShipState s) {
 		return s.getFuelAmt() * FUEL + s.getMissilesAmt() * MISSILE + s.getDronePartsAmt() * DRONE_PART;
 	}
-	/** What she's worth to a buyer, before her hull damage: her full price (with her fuel, missiles and drone parts), crew aside (they stay with the fleet). Never at the rate: a sale is a sale. */
+	/** What she's worth to a buyer, before her hull damage: her price at the rate (with her fuel, missiles and drone parts), crew aside (they stay with the fleet). */
 	public static int saleValue(SavedGameState gs) {
 		ShipState s = gs.getPlayerShip();
 		int crew = 0;
 		for (CrewState c : SaveHelper.getOwnCrew(s)) crew += crew(c.getRace().getId());
-		return ship(gs, 100).subtotal - crew;
+		return rated(ship(gs, 100).subtotal - crew);
 	}
 	/** Her model's full hull (what she has, when her blueprint isn't in FTL's data). */
 	public static int maxHull(ShipState s) {

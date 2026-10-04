@@ -62,7 +62,7 @@ public final class Economy {
 		homeplanet.parser.CareerRules c = career();
 		return homeplanet.parser.FreeCommand.norm(c != null ? c.reassignment() : HomePlanet.immersiveMode ? homeplanet.parser.FreeCommand.KESTREL : HomePlanet.freeShip);
 	}
-	/** Commissioning costs this share of her price, and the Junkyard's parts and derelicts too (Settings', or the career's: Easy 50, Normal 75, Hard 100). */
+	/** The share of a ship's price that counts wherever one is priced (Commission, sales, the Junkyard; never the stores): Settings', or the career's (Easy 50, Normal 75, Hard 100). */
 	public static int commissionPercent() {
 		homeplanet.parser.CareerRules c = career();
 		return c != null ? c.commissionPercent() : HomePlanet.immersiveMode ? 100 : HomePlanet.commissionPercent; // (a career from before difficulties: full price)

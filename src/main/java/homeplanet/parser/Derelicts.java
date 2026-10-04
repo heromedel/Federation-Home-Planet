@@ -138,8 +138,8 @@ public final class Derelicts {
 		write(v, p);
 	}
 
-	/** Her price at this share of her value as she is (her damage off) at the difficulty's rate, never under 10. */
-	static int price(SavedGameState gs, int percent) { return Math.max(10, Pricing.rated(Pricing.auctionBase(gs)) * percent / 100); }
+	/** Her price at this share of her value as she is (her damage off; at the difficulty's rate), never under 10. */
+	static int price(SavedGameState gs, int percent) { return Math.max(10, Pricing.auctionBase(gs) * percent / 100); }
 
 	/** A model for a derelict: a locked one if asked and there is one, otherwise one the profile has unlocked. */
 	public static String pickModel(Random rng, Unlocks u, boolean locked) {

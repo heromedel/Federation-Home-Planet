@@ -98,7 +98,7 @@ public class RuleBoxes {
 		customLockedBox.setToolTipText("A starter blueprint is offered only once the layout she was remodeled from is unlocked");
 		customLockedBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		costBox.setToolTipText("Her hull, reactor, systems and levels, weapons, drones, augments, crew, supplies, scrap, rooms and doors, strictly counted. The Commission window shows the price");
-		percentBox.setToolTipText("The share of her price the shipyard charges: the Junkyard's parts and derelicts too, before its own discounts (an Immersive career: Easy 50%, Normal 75%, Hard 100%)");
+		percentBox.setToolTipText("The share of her price that counts, wherever a ship is priced: Commission, Trade In, Auction, the Junkyard's parts and derelicts, a final victory. Never the stores' prices (an Immersive career: Easy 50%, Normal 75%, Hard 100%)");
 		percentBox.setSelectedItem(HomePlanet.commissionPercent + "%");
 		costRow.add(costBox);
 		costRow.add(javax.swing.Box.createHorizontalStrut(6));

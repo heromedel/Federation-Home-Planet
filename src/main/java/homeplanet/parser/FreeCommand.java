@@ -136,7 +136,7 @@ public final class FreeCommand {
 			} catch (Exception e) { log.debug("Free command: the stored systems could not be read: {}", e.toString()); }
 		}
 		for (Ship j : v.junked()) {
-			try { SavedGameState g = j.save(); if (g != null) total += Pricing.ship(g, 100).total(); } catch (Exception e) { log.debug("Free command: {} could not be priced: {}", j.name, e.toString()); }
+			try { SavedGameState g = j.save(); if (g != null) total += Pricing.ship(g, Pricing.rate()).total(); } catch (Exception e) { log.debug("Free command: {} could not be priced: {}", j.name, e.toString()); }
 		}
 		return total;
 	}

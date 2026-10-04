@@ -238,7 +238,7 @@ A setting (Settings, and the Immersive briefing), each fleet its own choice, def
   she can't be recovered).
 - **Receive a reward equal to her value**: her full value to Spacedock Storage, and she stays lost.
 
-Her value is the full commission price (her price strictly counted, section 30), always 100%. The messages come by Transmissions (the rescue offer waits in the inbox), or as a
+Her value is her price strictly counted, at the difficulty's rate (section 30). The messages come by Transmissions (the rescue offer waits in the inbox), or as a
 notice on the Space Dock when Transmissions are off. The lore holds: the Rebel Flagship withdraws, never destroyed.
 
 How it works (confirmed with heromedel's run of the Shrapnel R.U. and a save logger's record of the last two battles):
@@ -871,12 +871,13 @@ start again, count everything on her, one price everywhere, and let the difficul
   75%, Hard 100% (the old 75/100/100); Custom picks one of the three; Sandbox chooses in Settings (100, 75, 50). A
   career from before difficulties keeps its full price. The Kestrel A costs 937, 1,406 or 1,874; the Relief Ship 754,
   1,130 or 1,507, and she's no longer at a rate of her own.
-- **Where it applies:** Commission (the Relief Ship like any ship), the plea's value of her, and the Junkyard: a part's
-  worth is its price at the rate before the Junkyard's own rolls (the share by how broken it is, the clearance, the
-  broken bars off), and a derelict's value is at the rate before her 25 to 75 percent and her damage. The Junkyard's
-  tweaks themselves are unchanged (15 points off per missing core system, the clearance, the damage). Never the Cargo
-  Bay's prices or the stores', and never what a ship sells for: Trade In, Auction, a final victory's reward and the
-  museum pay her full value, whatever the difficulty.
+- **Where it applies:** wherever a ship is priced. Commission (the Relief Ship like any ship), the plea's value of her,
+  what she's worth at Trade In and Auction (`Pricing.saleValue`), a final victory's reward and the museum, and the
+  Junkyard: a part's worth is its price at the rate before the Junkyard's own rolls (the share by how broken it is,
+  the clearance, the broken bars off), and a derelict's value is at the rate before her 25 to 75 percent and her
+  damage. The Junkyard's tweaks themselves are unchanged (15 points off per missing core system, the clearance, the
+  damage). Never the stores: buying and repairing in the Cargo Bay cost the same on every difficulty. On Easy a ship
+  sells for less at a victory, and her replacement costs less: heromedel's call, fair both ways.
 
 ## Naming decisions — settled (4B.30)
 

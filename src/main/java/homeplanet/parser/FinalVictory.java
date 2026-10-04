@@ -74,9 +74,9 @@ public final class FinalVictory {
 		});
 	}
 
-	/** Her full value: the commission price of her as she was kept (systems, reactor, gear, crew, a custom hull), at 100%. */
+	/** Her value: her price as she was kept, strictly counted, at the difficulty's rate (custom work orders aside). */
 	public static int value(SavedGameState gs) {
-		return Pricing.ship(gs, 100).total();
+		return Pricing.ship(gs, Pricing.rate()).total();
 	}
 
 	/** What settling found, for the Space Dock to tell the player when Transmissions are off. */

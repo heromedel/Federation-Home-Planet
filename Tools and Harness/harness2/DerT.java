@@ -115,8 +115,8 @@ public class DerT { public static void main(String[] a) throws Exception {
   for (int i = 0; i < 500; i++) { java.lang.reflect.Method m = Derelicts.class.getDeclaredMethod("interval", Random.class); m.setAccessible(true); waits.add((Integer) m.invoke(null, wr)); }
   Setup.chk("L: the waits run 15, 20 ... 45 " + waits, waits.equals(new java.util.TreeSet<Integer>(Arrays.asList(15, 20, 25, 30, 35, 40, 45))));
   for (Derelicts.Listing x : again) {
-   int base = Pricing.rated(Pricing.auctionBase(x.save));
-   Setup.chk("L: priced at 25-75% of her value as she is at the rate, missing systems or not (" + x.price + " of " + base + ")", x.price >= Math.max(10, base / 4) - 1 && x.price <= Math.max(10, base * 3 / 4) + 1);
+   int base = Pricing.auctionBase(x.save);
+   Setup.chk("L: priced at 25-75% of her value as she is (at the rate), missing systems or not (" + x.price + " of " + base + ")", x.price >= Math.max(10, base / 4) - 1 && x.price <= Math.max(10, base * 3 / 4) + 1);
   }
   // the list keeps each one's share, not a price, so a change to the prices reaches listings already in; one from before shares keeps its price
   File idx = new File(Derelicts.dir(v), "listings.txt"); byte[] kept = SafeFiles.read(idx);
