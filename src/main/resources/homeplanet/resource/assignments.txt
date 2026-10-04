@@ -1,6 +1,7 @@
 # The words of an expedition report (expedition_type 2 in the cfg): the frame is fixed, these fill it in. Edit freely;
 # no build is needed, the station reads this file as it is. A line is "<kind> <job> [<band>] | <words>". Where a job
-# has several lines of a kind, one is picked at random, so the same job doesn't read the same twice.
+# has several lines of a kind, one is picked at random, so the same job doesn't read the same twice. "\n" in a line is a
+# line break: break a long line where the sense breaks (the style guide's layout rule).
 #
 #   event <job> | <what the crew did>          after "Due to events during the assignment the crew"; several per job
 #   band <job> <band> | <phrase>               after a name: "Bob <phrase>." Bands: died, injured, failed, success, high, top
@@ -203,7 +204,7 @@ hazard storm | A plasma storm had their power down the whole time.
 captured | was taken by the boarders. Word may come.
 infirmary | was badly hurt and is in the infirmary.
 
-prize hijack ship | They brought the ship home: {name}. She's moored at the station until you decide.
-prize hijack part | They couldn't keep the ship, but pulled a system out of her before they left it.
+prize hijack ship | They brought the ship home: {name}.\nShe's moored at the station until you decide.
+prize hijack part | They couldn't keep the ship,\nbut pulled a system out of her before they left it.
 prize salvage part | They pulled a whole system out of the wreck.
-prize rescue recruit | One of those they rescued, {name}, asked to sign on, and waits in The Home Planet Station's lounge for your word.
+prize rescue recruit | One of those they rescued, {name}, asked to sign on.\nThey wait in The Home Planet Station's lounge for your word.

@@ -170,10 +170,10 @@ public final class Assignments {
 		}
 		return words = out;
 	}
-	/** One of the lines for this key, or the fallback. */
+	/** One of the lines for this key, or the fallback ("\n" in the file is a line break: a long line broken where the sense breaks). */
 	static String say(Random rng, String fallback, String... key) {
 		List<String> l = words().get(String.join(" ", key));
-		return l == null || l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()));
+		return (l == null || l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n");
 	}
 	/** What's missing from the words file (for tests): every job's event and six bands, every hazard, the prizes. */
 	public static List<String> missingWords() {
@@ -579,7 +579,7 @@ public final class Assignments {
 			}
 			sb.append(f.name()).append(" ").append(line).append("\n");
 		}
-		if (r.prize != null) sb.append(say(rng, "They brought something back.", "prize", r.job, r.prize).replace("{name}", r.prizeDetail == null ? "" : r.prizeDetail)).append("\n");
+		if (r.prize != null) sb.append("\n").append(say(rng, "They brought something back.", "prize", r.job, r.prize).replace("{name}", r.prizeDetail == null ? "" : r.prizeDetail)).append("\n"); // the prize stands apart
 		sb.append("\nTotal Reward: ").append(r.scrap).append(" scrap");
 		return sb.toString();
 	}

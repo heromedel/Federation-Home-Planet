@@ -36,6 +36,12 @@ One of each, in `MenuTheme`:
 
 `MenuTheme.DIM` (140,152,150) stays for disabled text, which should look dimmer than a note.
 
+## Layout of text
+
+Messages, letters, events and other text based screens should have sentences, lines, spaces and content organized in
+an aesthetic way, not just lumped together or running on continuously. (heromedel, 5.00.) A long line is broken where
+the sense breaks; a thing that stands apart (a prize, a question, a cost) gets a line or a blank line of its own.
+
 ## The Federation's voice
 
 The rebellion and the rebels are never capitalised (the Federation won't dignify them with a title); only the Rebel
