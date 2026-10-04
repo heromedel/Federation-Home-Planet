@@ -256,21 +256,39 @@ public class LayoutEditor {
 		drawnFloorKey = key;
 	}
 	/** Sizes the design canvas around the rooms and the art (art hanging off the top or left moves the grid over). */
+	/**
+	 * Lays the design canvas out round the anchor (the rooms' centre, where FTL puts her): the anchor is always the
+	 * canvas's middle (heromedel: the one place a person expects it), the canvas wide enough either side for the grid,
+	 * the rooms and the art, and the view is kept centred on it. So placing a room shifts the whole drawing a little
+	 * rather than the anchor.
+	 */
 	private void relayoutDesign() {
-		int ox = originX, oy = originY;
-		originX = MARGIN + (baseImg == null ? 0 : Math.max(0, -d.artX));
-		originY = MARGIN + (baseImg == null ? 0 : Math.max(0, -d.artY));
-		int w = originX + cols * SQ + MARGIN, h = originY + rows * SQ + MARGIN;
-		for (ShipDesign.Room r : d.rooms) { w = Math.max(w, originX + (r.x + r.w) * SQ + MARGIN); h = Math.max(h, originY + (r.y + r.h) * SQ + MARGIN); }
-		if (baseImg != null) { w = Math.max(w, originX + d.artX + baseImg.getWidth() + SQ); h = Math.max(h, originY + d.artY + baseImg.getHeight() + SQ); }
-		baseW = w; baseH = h;
-		updateSize();
-		// keep the view on the same spot when the grid moves over
-		javax.swing.JViewport vp = viewport();
-		if (vp != null && (ox != originX || oy != originY) && ox != 0) {
-			java.awt.Point p = vp.getViewPosition();
-			scrollTo(p.x + (int) ((originX - ox) * eff()), p.y + (int) ((originY - oy) * eff()));
+		// the anchor, in pixels from the grid origin
+		double ax = cols * SQ / 2.0, ay = rows * SQ / 2.0;
+		if (!d.rooms.isEmpty()) {
+			int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+			for (ShipDesign.Room r : d.rooms) { minX = Math.min(minX, r.x); minY = Math.min(minY, r.y); maxX = Math.max(maxX, r.x + r.w); maxY = Math.max(maxY, r.y + r.h); }
+			ax = (minX + maxX) * SQ / 2.0; ay = (minY + maxY) * SQ / 2.0;
 		}
+		// how far anything reaches from it, either way
+		double left = ax, right = cols * SQ - ax, up = ay, down = rows * SQ - ay;
+		if (baseImg != null) {
+			left = Math.max(left, ax - d.artX); right = Math.max(right, d.artX + baseImg.getWidth() - ax);
+			up = Math.max(up, ay - d.artY); down = Math.max(down, d.artY + baseImg.getHeight() - ay);
+		}
+		int halfW = (int) Math.ceil(Math.max(left, right)) + MARGIN, halfH = (int) Math.ceil(Math.max(up, down)) + MARGIN;
+		originX = (int) Math.round(halfW - ax);
+		originY = (int) Math.round(halfH - ay);
+		baseW = 2 * halfW; baseH = 2 * halfH;
+		updateSize();
+		centreView();
+	}
+	/** Scrolls so the canvas's middle (the anchor) is in the middle of the view. */
+	private void centreView() {
+		javax.swing.JViewport vp = viewport();
+		if (vp == null || vp.getExtentSize().width <= 0) return;
+		java.awt.Dimension ext = vp.getExtentSize();
+		scrollTo((int) (baseW * eff() / 2) - ext.width / 2, (int) (baseH * eff() / 2) - ext.height / 2);
 	}
 
 	// ---- view: zoom, fit, centring ----
