@@ -787,6 +787,39 @@ Fixes only, from heromedel's testing and the review; no new features. Design deb
   hull is a warning, not a refusal (the game's own floors are smaller than their hulls). Missing hull art is a warning,
   the Kestrel's standing in. An older station reading `floor="rooms"` over the Long Range shows her with no floor.
 
+## 28. The design screen as three steps — built (4B.99; harness checks in DesT and GuiT)
+
+heromedel's ask: a design screen that's more intuitive, looks nicer, and explains the Loadout (whose top line, her place
+on FTL's screen, nobody could use). The mockup it was built to: the ship stays on the left the whole time; the work on
+the right is three steps in build order.
+
+- **The steps.** The right column is a tabbed panel: 1. Rooms, 2. Art, 3. Loadout. Remodel keeps Rooms, and Art once
+  the overhaul is on, unnumbered. The separate Loadout window is gone: its contents are the Loadout step, and Build
+  blueprint opens the build screen directly (its Loadout... comes back here with the step in front). Hull, Reactor and
+  Drone slots left the title bar for the Loadout step.
+- **Rooms.** Place and Move, then Systems (the old "Not on this ship", with a line saying what to do with it), Doors,
+  Whole ship, the window's own buttons, and the zoom last. An empty grid says what to do first ("Place her first room:
+  Place 2 x 2, then click the grid"); a ship with rooms but no art says to import or pick one. The checks line gains a
+  "Next:" hint when nothing needs fixing, and wraps rather than running off the window.
+- **Art.** Hull art, the floor's three choices, Move art and "Center on the anchor", the mounts; the shield ellipse and
+  gibs under "Fine adjustment". The cyan cross is the anchor, labelled "where FTL puts her": art centred on it looks
+  centred in the game, art pushed off it sits that way in the game. The screen-place spinners are gone; the station
+  always places her (the offsets stay in the file for designs taken from a game ship, which keep the game's).
+- **Loadout, one row shape for every number** (heromedel's sketch): hers/max, the name, minus, a typed field, plus, a
+  bar of green segments to the vanilla max and amber ones past it, "Over vanilla max" beside. Hull, reactor, weapon
+  slots, drone slots, missiles and drone parts under "Her numbers"; each placed system under "Systems at the start" with
+  the installed tick in front (a Medbay and a Clone Bay still take each other's place; the artillery's weapon button
+  stays on its row). Nothing is capped. The crew stays a grid of race counts with "of 8" fixed, the one ceiling FTL
+  itself sets (no blueprint or save can move it). Then what she carries, in as many boxes as she has slots.
+- **Weapon slots are hers to set** (`ShipDesign.weaponSlots`, saved with the design; a design from before counts her
+  mounts as it did). The export writes it; the one-to-four clamp is gone. Two notes, never refusals: more slots than
+  mounts ("a weapon in a slot past her mounts has nowhere to draw"), and anything past vanilla ("FTL's weapon bar is
+  drawn for 4, the rest sit off its edge"; a system past its top level: the upgrade screen won't show it). More than 8
+  crew is a problem; no crew set is a note.
+- **Vanilla max read from the game** (`VanillaMax`): the highest any of the game's player ships has of each number, and
+  each system's top level from its blueprint, so the column is literally what it says and a modded game shows its own.
+- Later: the Retrofit tab taking the same row shape, so the two screens match.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

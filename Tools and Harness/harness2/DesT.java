@@ -1,6 +1,8 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
 /** Design Ship's back end on the test world: checks, export, art files, commissioning. args: gamedir, world saves (from WorldT), work */
-public class DesT { public static void main(String[] a) throws Exception {
+public class DesT {
+ static List<homeplanet.ui.NumberRow> rows(java.awt.Container c) { List<homeplanet.ui.NumberRow> out = new ArrayList<homeplanet.ui.NumberRow>(); for (java.awt.Component x : c.getComponents()) { if (x instanceof homeplanet.ui.NumberRow) out.add((homeplanet.ui.NumberRow) x); if (x instanceof java.awt.Container) out.addAll(rows((java.awt.Container) x)); } return out; }
+ public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  Vault v = Setup.open(game, saves); v.takeStock();
@@ -136,15 +138,19 @@ public class DesT { public static void main(String[] a) throws Exception {
    } finally { cb.setStart(was); }
    ShipState kestrel = Commission.build("PLAYER_SHIP_HARD", "Medbay Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)).getPlayerShip();
    Setup.chk("a Kestrel A still starts with her Medbay", kestrel.getSystem(SystemType.MEDBAY).getCapacity() > 0 && kestrel.getSystem(SystemType.CLONEBAY).getCapacity() == 0);
-   java.lang.reflect.Method either = Class.forName("homeplanet.ui.DesignDialog").getDeclaredMethod("eitherBay", javax.swing.JCheckBox.class, javax.swing.JCheckBox.class);
-   either.setAccessible(true);
-   javax.swing.JCheckBox med = new javax.swing.JCheckBox("Medbay", true), clo = new javax.swing.JCheckBox("Clone Bay", true);
-   either.invoke(null, med, clo);
-   boolean opened = !med.isSelected() && clo.isSelected();
-   med.doClick(); boolean onlyMed = med.isSelected() && !clo.isSelected();
-   clo.doClick(); boolean onlyClone = clo.isSelected() && !med.isSelected();
-   clo.doClick(); boolean neither = !clo.isSelected() && !med.isSelected();
-   Setup.chk("Design Ship: a design with both ticked opens with the Clone Bay alone; ticking one unticks the other; neither is fine", opened && onlyMed && onlyClone && neither);
+   // the Loadout step (headless: the panel alone, no window) on a design with both bays placed and ticked
+   ShipDesign bays = ShipDesign.copy(made[0]);
+   for (String id : new String[] {"medbay", "clonebay"}) { CompanionMod.Sys s = new CompanionMod.Sys(id); s.room = id.equals("medbay") ? 3 : 4; s.power = 1; bays.systems.put(id, s); }
+   bays.notAtStart.remove("medbay"); bays.notAtStart.remove("clonebay");
+   homeplanet.ui.LayoutEditor.Host quiet = new homeplanet.ui.LayoutEditor.Host() { public void say(String m) { } public void changed() { } public String cannotTakeOff(String id) { return null; } public CompanionMod.Sys original(String id) { return null; } };
+   homeplanet.ui.LoadoutPanel lp = new homeplanet.ui.LoadoutPanel(bays, quiet);
+   homeplanet.ui.NumberRow med = null, clo = null;
+   for (homeplanet.ui.NumberRow n : rows(lp)) { if (n.name().equals("Medbay")) med = n; if (n.name().equals("Clone Bay")) clo = n; }
+   boolean opened = med != null && clo != null && !med.tick().isSelected() && clo.tick().isSelected() && bays.notAtStart.contains("medbay") && !bays.notAtStart.contains("clonebay");
+   med.tick().doClick(); boolean onlyMed = med.tick().isSelected() && !clo.tick().isSelected() && !bays.notAtStart.contains("medbay") && bays.notAtStart.contains("clonebay");
+   clo.tick().doClick(); boolean onlyClone = clo.tick().isSelected() && !med.tick().isSelected() && bays.notAtStart.contains("medbay") && !bays.notAtStart.contains("clonebay");
+   clo.tick().doClick(); boolean neither = !clo.tick().isSelected() && !med.tick().isSelected() && bays.notAtStart.contains("medbay") && bays.notAtStart.contains("clonebay");
+   Setup.chk("Design Ship's Loadout step: a design with both ticked opens with the Clone Bay alone; ticking one unticks the other; neither is fine", opened && onlyMed && onlyClone && neither);
  }
  // W: the floor and the art (Plan W): a floor the wrong size, a floor drawn from the rooms, missing art, the visible centre
  { ShipDesign f = ShipDesign.copy(made[1]);
@@ -185,6 +191,34 @@ public class DesT { public static void main(String[] a) throws Exception {
    Setup.chk("W: a room moved: the floor follows (drawn again, not a stored picture)", differs && q.floorFromRooms());
    Setup.chk("W: the mod carries her drawn floor", DesignExport.images(q).keySet().toString().contains("_floor.png"));
    Setup.chk("W: a flip keeps the floor drawn from the rooms", ShipArt.flipVertically(q) && q.floorFromRooms());
+ }
+ // X: the weapon slots are hers (Plan X); the vanilla maxes come from the game; past them is a note, never a refusal
+ { ShipDesign x = ShipDesign.copy(made[1]);
+   Setup.chk("X: vanilla max read from the game's ships: 4 weapon slots, 3 drone slots, 30 hull, reactor 11 (the Mantis B's), 28 missiles, 25 drone parts; Shields to 8, Piloting to 3: "
+     + VanillaMax.weaponSlots() + "/" + VanillaMax.droneSlots() + "/" + VanillaMax.hull() + "/" + VanillaMax.reactor() + "/" + VanillaMax.missiles() + "/" + VanillaMax.droneParts(),
+     VanillaMax.weaponSlots() == 4 && VanillaMax.droneSlots() == 3 && VanillaMax.hull() == 30 && VanillaMax.reactor() == 11 && VanillaMax.missiles() == 28 && VanillaMax.droneParts() == 25
+     && VanillaMax.system("shields") == 8 && VanillaMax.system("pilot") == 3);
+   Setup.chk("X: a design from before (no weaponSlots on file) counts her mounts: " + x.slotsFromMounts(), x.slotsFromMounts() == 2);
+   x.weaponSlots = 6; x.droneSlots = 4; x.systems.get("shields").power = 9;
+   Setup.chk("X: her blueprint carries the slots she set", DesignExport.blueprintText(x).contains("<weaponSlots>6</weaponSlots>") && DesignExport.blueprintText(x).contains("<droneSlots>4</droneSlots>"));
+   ShipChecks.Report xr = ShipChecks.check(x, ShipChecks.Context.DESIGN, null, null);
+   Setup.chk("X: 6 slots on 2 mounts is a note (nowhere to draw), past vanilla is a note, nothing stops her: " + xr.problems + " / " + xr.warnings,
+     xr.problems.isEmpty() && xr.warnings.toString().contains("nowhere to draw") && xr.warnings.toString().contains("Past vanilla") && xr.warnings.toString().contains("6 weapon slots") && xr.warnings.toString().contains("Shields at level 9"));
+   x.weaponSlots = 2; x.droneSlots = 2; x.systems.get("shields").power = 2;
+   xr = ShipChecks.check(x, ShipChecks.Context.DESIGN, null, null);
+   Setup.chk("X: within vanilla: no such notes: " + xr.warnings, !xr.warnings.toString().contains("Past vanilla") && !xr.warnings.toString().contains("nowhere to draw"));
+   x.loadout.crew.put("human", 9);
+   Setup.chk("X: 9 crew is a problem (FTL's ships hold 8)", ShipChecks.check(x, ShipChecks.Context.DESIGN, null, null).problems.toString().contains("hold 8"));
+   x.loadout.crew.clear();
+   Setup.chk("X: no crew set is a note (she'd start with one human)", ShipChecks.check(x, ShipChecks.Context.DESIGN, null, null).warnings.toString().contains("one human"));
+   // on file and back, with the attribute; and an older file without it
+   ShipDesign y = ShipDesign.copy(made[1]); y.weaponSlots = 3; List<ShipDesign> keep = ShipDesign.load(); keep.add(y); ShipDesign.save(keep);
+   ShipDesign back2 = null; for (ShipDesign s : ShipDesign.load()) if (s.id.equals(y.id) && s.snapshotOf == null && s.weaponSlots == 3) back2 = s;
+   Setup.chk("X: the slots are saved with the design and read back", back2 != null);
+   String xml = new String(java.nio.file.Files.readAllBytes(ShipDesign.file().toPath()), "UTF-8").replaceAll(" weaponSlots=\"\\d+\"", "");
+   SafeFiles.writeText(ShipDesign.file(), xml, true);
+   back2 = null; for (ShipDesign s : ShipDesign.load()) if (s.id.equals(y.id) && s.snapshotOf == null) back2 = s;
+   Setup.chk("X: an older file without the attribute: one slot per mount, as it was counted then", back2 != null && back2.weaponSlots == back2.slotsFromMounts());
  }
  Setup.done();
 }}

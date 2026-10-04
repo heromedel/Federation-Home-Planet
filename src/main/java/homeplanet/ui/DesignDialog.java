@@ -1,9 +1,7 @@
 package homeplanet.ui;
 
-import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
-import java.awt.GridLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -11,17 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JSpinner;
 import javax.swing.JTextField;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 
 import homeplanet.core.HistoryLog;
-import homeplanet.model.Items;
 import homeplanet.parser.CompanionMod;
 import homeplanet.parser.DesignExport;
 import homeplanet.parser.ShipChecks;
@@ -29,8 +23,8 @@ import homeplanet.parser.ShipDesign;
 
 /**
  * Design Ship: lay out a new ship on a blank grid (rooms, doors, systems), give her art and weapon mounts, and build
- * her blueprint. The window is the shared {@link ShipEditorDialog}; what's hers is the name and the blueprint's
- * numbers above the help, Clear all, and Build blueprint.
+ * her blueprint. The window is the shared {@link ShipEditorDialog}; what's hers is the name above the ship, the Loadout
+ * step, Clear all, and Build blueprint.
  */
 public class DesignDialog extends ShipEditorDialog {
 
@@ -42,7 +36,6 @@ public class DesignDialog extends ShipEditorDialog {
 	private final List<String> otherNames;
 	private boolean saved = false;
 	private final JTextField nameField = new JTextField(20);
-	private final JSpinner hull, reactor, droneSlots;
 
 	/**
 	 * Opens the editor on a copy of the design; {@code otherNames} are the other designs' names (a duplicate is refused).
@@ -61,7 +54,7 @@ public class DesignDialog extends ShipEditorDialog {
 		this.otherNames = otherNames;
 		editor = new LayoutEditor(d, this, true, COLS, ROWS);
 
-		// her name and the blueprint's numbers, above the help
+		// her name, above the ship
 		JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
 		row.add(new JLabel("Design name:"));
 		nameField.setText(d.name);
@@ -71,12 +64,7 @@ public class DesignDialog extends ShipEditorDialog {
 			public void changedUpdate(javax.swing.event.DocumentEvent e) { changed(); }
 		});
 		row.add(nameField);
-		hull = spinner(d.hull, 1, 60, "Hull points (the game's ships have 30)");
-		reactor = spinner(d.reactor, 1, 30, "Reactor power at the start (the game's ships have 8)");
-		droneSlots = spinner(d.droneSlots, 0, 3, "Drone slots (weapon slots are one per mount)");
-		row.add(new JLabel("   Hull:")); row.add(hull);
-		row.add(new JLabel(" Reactor:")); row.add(reactor);
-		row.add(new JLabel(" Drone slots:")); row.add(droneSlots);
+		setLoadoutStep(new LoadoutPanel(d, this));
 
 		addSideButton(button("Clear all", "Remove every room, door and system", new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -86,9 +74,6 @@ public class DesignDialog extends ShipEditorDialog {
 				editor.reset();
 				changed();
 			}
-		}));
-		addBottomButton(button("Loadout...", "Her class, default name, crew, weapons, drones, augments, missiles and drone parts, and which systems she starts with", new ActionListener() {
-			public void actionPerformed(ActionEvent e) { loadoutThenMaybeBuild(); }
 		}));
 		addBottomButton(button("Build blueprint...", "Her report as she'd be commissioned, what's wrong or worth knowing, then into the Federation Home Planet Mod", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { buildBlueprint(); }
@@ -103,26 +88,20 @@ public class DesignDialog extends ShipEditorDialog {
 			public void actionPerformed(ActionEvent e) { sync(); showText("Files for " + (d.name.isEmpty() ? d.id : d.name), DesignExport.preview(d)); }
 		}));
 		buildUi(row, true);
-		if (d.rooms.isEmpty()) { editor.startPlacing(); say("Click the grid to place a 2 x 2 room."); }
+		if (d.rooms.isEmpty()) { editor.startPlacing(); say("Place her first room: click the grid for a 2 x 2 room."); }
 		changed();
 		editor.resetHistory();
 		fitToScreen();
 	}
-	private JSpinner spinner(int value, int min, int max, String tip) {
-		final JSpinner s = new JSpinner(new SpinnerNumberModel(value, min, max, 1));
-		s.setToolTipText(tip);
-		((JSpinner.DefaultEditor) s.getEditor()).getTextField().setColumns(2);
-		s.addChangeListener(new javax.swing.event.ChangeListener() {
-			public void stateChanged(javax.swing.event.ChangeEvent e) { changed(); }
-		});
-		return s;
-	}
-	/** The fields into the design. */
+	/** The name field into the design (the Loadout step writes its own fields as they're edited). */
 	private void sync() {
 		d.name = nameField.getText().trim();
-		d.hull = (Integer) hull.getValue();
-		d.reactor = (Integer) reactor.getValue();
-		d.droneSlots = (Integer) droneSlots.getValue();
+	}
+	protected String nextHint() {
+		if (d.rooms.isEmpty()) return null;
+		if (d.art.isEmpty()) return "Next: the Art step, her hull picture.";
+		if (d.loadout == null) return "Next: the Loadout step.";
+		return "Ready to build.";
 	}
 
 	// ---- ShipEditorDialog ----
@@ -143,127 +122,12 @@ public class DesignDialog extends ShipEditorDialog {
 
 	// ---- her blueprint ----
 
-	/**
-	 * The dialog Build blueprint uses, on its own: her loadout, screen position, and which systems she starts with at
-	 * what level (Loadout... opens it any time; Build opens it as the last look). True when accepted and applied.
-	 */
-	private enum After { CANCEL, OK, BUILD }
-	private After loadoutDialog(String title, String verb, String andThen) {
-		sync();
-		// her screen position, and which systems she starts with at what level
-		JPanel extra = new JPanel(new BorderLayout(0, 6));
-		int[] auto = DesignExport.offsets(d);
-		final JCheckBox autoPos = new JCheckBox("let the station choose from the art", d.offX < 0 && d.offY < 0);
-		autoPos.setToolTipText("Where FTL puts the whole ship on its screen, rooms and art together, in squares from the screen's corner. It doesn't move the art on the rooms.");
-		final JSpinner ox = new JSpinner(new SpinnerNumberModel(auto[0], 0, 10, 1)), oy = new JSpinner(new SpinnerNumberModel(auto[1], 0, 10, 1));
-		JPanel pos = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
-		pos.add(new JLabel("Weapon slots: " + DesignExport.weaponSlots(d) + " (one per mount).   Her place on FTL's screen (the whole ship, rooms and art together):")); pos.add(ox);
-		pos.add(new JLabel("squares across,")); pos.add(oy); pos.add(new JLabel("down")); pos.add(autoPos);
-		ox.setEnabled(!autoPos.isSelected()); oy.setEnabled(!autoPos.isSelected());
-		autoPos.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { ox.setEnabled(!autoPos.isSelected()); oy.setEnabled(!autoPos.isSelected()); }
-		});
-		extra.add(pos, BorderLayout.NORTH);
-		JPanel sys = new JPanel(new GridLayout(0, 3, 10, 2));
-		final java.util.Map<String, JCheckBox> starts = new java.util.LinkedHashMap<String, JCheckBox>();
-		final java.util.Map<String, JSpinner> levels = new java.util.LinkedHashMap<String, JSpinner>();
-		final String[] artilleryWeapon = {null};
-		for (CompanionMod.Sys s : d.systems.values()) {
-			net.blerf.ftl.xml.SystemBlueprint sb = net.blerf.ftl.parser.DataManager.get().getSystem(s.id);
-			int max = sb != null && sb.getMaxPower() > 0 ? sb.getMaxPower() : 8;
-			JCheckBox cb = new JCheckBox(Items.systemTitle(s.id), !d.notAtStart.contains(s.id));
-			cb.setToolTipText("Ticked: she starts with it installed. Unticked: its room is ready, to buy or install later");
-			JSpinner lv = new JSpinner(new SpinnerNumberModel(Math.max(1, Math.min(max, s.power)), 1, max, 1));
-			lv.setToolTipText("Starting level");
-			starts.put(s.id, cb);
-			levels.put(s.id, lv);
-			JPanel cell = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-			cell.add(cb); cell.add(new JLabel("level")); cell.add(lv);
-			if (s.id.equals("artillery")) {
-				final JButton weapon = new JButton(s.weapon == null ? "Choose weapon..." : ArtilleryPicker.label(s.weapon));
-				weapon.setToolTipText(s.weapon == null ? "Which weapon her artillery fires" : ArtilleryPicker.tip(s.weapon));
-				weapon.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent e) {
-						String w = ArtilleryPicker.choose(DesignDialog.this, artilleryWeapon[0]);
-						if (w == null) return;
-						artilleryWeapon[0] = w;
-						weapon.setText(ArtilleryPicker.label(w));
-						weapon.setToolTipText(ArtilleryPicker.tip(w));
-					}
-				});
-				artilleryWeapon[0] = s.weapon;
-				cell.add(weapon);
-			}
-			sys.add(cell);
-		}
-		eitherBay(starts.get("medbay"), starts.get("clonebay"));
-		JPanel sysWrap = new JPanel(new BorderLayout());
-		sysWrap.add(new JLabel("Systems (ticked: installed at the start):"), BorderLayout.NORTH);
-		sysWrap.add(sys, BorderLayout.CENTER);
-		extra.add(sysWrap, BorderLayout.CENTER);
-
-		CompanionMod.Loadout start = d.loadout != null ? CompanionMod.copy(d.loadout) : new CompanionMod.Loadout();
-		if (d.loadout == null) {
-			start.className = d.name;
-			start.shipName = "The " + d.name;
-			start.crew.put("human", 3);
-			start.missiles = 8;
-			start.droneParts = 2;
-		}
-		BlueprintDialog.Result r = BlueprintDialog.open(this, title, null, start, null,
-				DesignExport.weaponSlots(d), Math.max(1, d.droneSlots), d.systems.containsKey("drones"), extra, true, d.starter, verb, andThen);
-		if (r == null) return After.CANCEL;
-		if (autoPos.isSelected()) { d.offX = -1; d.offY = -1; } else { d.offX = (Integer) ox.getValue(); d.offY = (Integer) oy.getValue(); }
-		if (d.systems.containsKey("artillery") && artilleryWeapon[0] != null) d.systems.get("artillery").weapon = artilleryWeapon[0];
-		d.notAtStart.clear();
-		for (java.util.Map.Entry<String, JCheckBox> e : starts.entrySet()) {
-			if (!e.getValue().isSelected()) d.notAtStart.add(e.getKey());
-			d.systems.get(e.getKey()).power = (Integer) levels.get(e.getKey()).getValue();
-		}
-		d.loadout = r.loadout;
-		d.starter = r.starter;
-		changed();
-		refreshChecks();
-		return r.andThen ? After.BUILD : After.OK;
-	}
-	/**
-	 * A Medbay and a Clone Bay take each other's place (heromedel): ticking one unticks the other. A design from before
-	 * with both ticked shows the Clone Bay alone, as Commission builds her. Either may be null (not placed).
-	 */
-	static void eitherBay(final JCheckBox medbay, final JCheckBox clonebay) {
-		if (medbay == null || clonebay == null) return;
-		ActionListener either = new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				JCheckBox on = (JCheckBox) e.getSource();
-				if (on.isSelected()) (on == medbay ? clonebay : medbay).setSelected(false);
-			}
-		};
-		medbay.addActionListener(either);
-		clonebay.addActionListener(either);
-		if (medbay.isSelected() && clonebay.isSelected()) medbay.setSelected(false);
-		String tip = "Ticked: she starts with it installed. Unticked: its room is ready, to buy or install later. A Medbay and a Clone Bay take each other's place: ticking one unticks the other";
-		medbay.setToolTipText(tip);
-		clonebay.setToolTipText(tip);
-	}
-	/** Loadout... : the loadout dialog, and on to the build screen if its Build... was pressed. */
-	private void loadoutThenMaybeBuild() {
-		After a = loadoutDialog("Loadout: " + d.name, "OK", "Build...");
-		if (a == After.OK) say("Loadout set.");
-		else if (a == After.BUILD) buildBlueprint();
-	}
-
-	/** Build blueprint... : the build screen; Loadout... on it goes to the loadout dialog and, from there, back here. */
+	/** Build blueprint... : the build screen; Loadout... on it comes back here with the Loadout step in front. */
 	private void buildBlueprint() {
 		sync();
-		while (true) {
-			BuildDialog.Choice c = BuildDialog.open(this, d, snapshot, otherNames);
-			if (c == BuildDialog.Choice.CANCEL) return;
-			if (c == BuildDialog.Choice.LOADOUT) {
-				if (loadoutDialog("Loadout: " + d.name, "OK", "Build...") != After.BUILD) return;
-				continue;
-			}
-			break;
-		}
+		BuildDialog.Choice c = BuildDialog.open(this, d, snapshot, otherNames);
+		if (c == BuildDialog.Choice.CANCEL) return;
+		if (c == BuildDialog.Choice.LOADOUT) { showStep("Loadout"); say("The Loadout step: set it, then Build blueprint again."); return; }
 		if (!confirmVersion()) return;
 		d.pendingBuild = true;
 		saved = true;

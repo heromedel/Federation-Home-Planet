@@ -17,14 +17,15 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 
 import homeplanet.parser.ShipChecks;
 import homeplanet.parser.ShipDesign;
 
 /**
- * The window both Design Ship and Remodel are built on: the layout editor in the middle, its tools on the right (and
- * the art tools beside them when the art is editable), the status and live checks along the bottom, and a help window
- * (Help, or F1) that describes exactly the tools in use. The keys, the window's size, the unsaved-changes guard and
+ * The window both Design Ship and Remodel are built on: the layout editor in the middle, the work on the right as
+ * steps in build order (Rooms; Art when the art is editable; Loadout for a design), the status and live checks along
+ * the bottom, and a help window (Help, or F1) that describes exactly the tools in use. The keys, the window's size, the unsaved-changes guard and
  * the checks line are all here, so the two windows can't drift apart.
  */
 public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.Host {
@@ -32,7 +33,9 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 	protected final ShipDesign d;
 	protected LayoutEditor editor;
 	protected ArtPanel artPanel;
-	private JPanel east;
+	protected LoadoutPanel loadoutPanel;
+	/** The steps on the right: Rooms, Art, Loadout, each a tab, in build order. */
+	private JTabbedPane steps;
 	private JScrollPane canvasScroll;
 	private JDialog helpWindow;
 	private javax.swing.JEditorPane helpPane;
@@ -64,9 +67,16 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 		body.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
 		canvasScroll = new JScrollPane(editor.canvas());
 		body.add(canvasScroll, BorderLayout.CENTER);
-		east = new JPanel(new BorderLayout(8, 0));
-		east.add(editor.side(), BorderLayout.WEST);
-		body.add(east, BorderLayout.EAST);
+		steps = new JTabbedPane();
+		steps.addTab(stepTitle(1, "Rooms"), null, editor.side(), "Her rooms, doors and systems");
+		if (loadoutPanel != null) steps.addTab(stepTitle(3, "Loadout"), null, loadoutPanel, "Who she is, her numbers, her crew, what she carries, what's installed at the start");
+		steps.addChangeListener(new javax.swing.event.ChangeListener() {
+			public void stateChanged(javax.swing.event.ChangeEvent e) {
+				if (loadoutPanel != null && steps.getSelectedComponent() == loadoutPanel) loadoutPanel.fill(); // as the design is now, after the other steps
+				refreshHelp();
+			}
+		});
+		body.add(steps, BorderLayout.EAST);
 		for (java.awt.Component c : sideButtons.getComponents()) editor.addSideButton((JButton) c);
 		sideButtons.removeAll();
 
@@ -107,6 +117,16 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 	}
 	/** A button under the editor's tools (Clear all, Overhaul...). Add before {@link #buildUi}. */
 	protected void addSideButton(JButton b) { sideButtons.add(b); }
+	/** Design Ship's Loadout step. Set before {@link #buildUi}. */
+	protected void setLoadoutStep(LoadoutPanel p) { loadoutPanel = p; }
+	/** "1. Rooms" when the window has all three steps (a design); the bare name when it hasn't (Remodel). */
+	private String stepTitle(int n, String name) { return loadoutPanel != null ? n + ". " + name : name; }
+	/** Brings a step to the front: "Rooms", "Art" or "Loadout". */
+	public void showStep(String name) {
+		for (int i = 0; i < steps.getTabCount(); i++) if (steps.getTitleAt(i).endsWith(name)) { steps.setSelectedIndex(i); return; }
+	}
+	/** The step in front. */
+	public String stepShown() { String t = steps.getTitleAt(steps.getSelectedIndex()); return t.substring(t.lastIndexOf(' ') + 1); }
 	/** A button along the bottom (Save, Finalize, Close). Add before {@link #buildUi}. */
 	protected void addBottomButton(JButton b) { bottomButtons.add(b); }
 	/** A button at the bottom left, after Help (Preview files). Add before {@link #buildUi}. */
@@ -148,14 +168,14 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 	protected void showArtPanel(boolean on) {
 		if (on && artPanel == null) {
 			artPanel = new ArtPanel(d, editor, this);
-			east.add(artPanel, BorderLayout.EAST);
+			steps.insertTab(stepTitle(2, "Art"), null, artPanel, "Her hull picture, floor, weapon mounts and shield", 1);
 			artPanel.loadArt(false);
 		} else if (!on && artPanel != null) {
-			east.remove(artPanel);
+			steps.remove(artPanel);
 			artPanel = null;
 			editor.onRestore = null;
 		}
-		east.revalidate();
+		steps.revalidate();
 		refreshHelp();
 	}
 
@@ -177,22 +197,28 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 	protected abstract String primaryVerb();
 	/** The help for the tools in use now. */
 	protected String helpText() {
-		boolean rooms = editor.roomsEditable(), art = artPanel != null;
+		boolean rooms = editor.roomsEditable(), art = artPanel != null, loadout = loadoutPanel != null;
 		StringBuilder sb = new StringBuilder("<html><body style='margin:10px 14px'>");
+		if (loadout) sb.append("<h3>The steps</h3><p>The tabs on the right are the steps, in build order: <b>Rooms</b>, <b>Art</b>, <b>Loadout</b>. The ship stays in view through all three; "
+				+ "the line under her says what's left to fix and what comes next.</p>");
 		if (rooms) sb.append("<h3>Rooms</h3><p>Pick a size on the right, then click the grid to place a room. <b>Move rooms</b> drags a room; right-click (or Delete) removes it. "
 				+ "A room's own airlocks move with it; a door to another room stays where the wall is, and is lost if the wall goes.</p>");
-		sb.append("<h3>Systems</h3><p>Click a system (in a room, or in the <i>Not on this ship</i> list), then an empty room to put it there. "
+		sb.append("<h3>Systems</h3><p>Click a system (in a room, or in the <i>Systems</i> list), then an empty room to put it there. "
 				+ "Click a square in its own room for its station; click the station to turn it. Alt+click another system's room swaps the two. "
 				+ "Right-click a system to take it off the ship.</p>");
 		sb.append("<h3>Doors</h3><p><b>Add door</b>, then click walls: between two rooms for a door, on an outer wall for an airlock. "
 				+ "Click a door, then a wall, to move it; right-click or Delete removes it. Esc stops.</p>");
-		if (art) sb.append("<h3>Art</h3><p><b>Move art</b> drags the hull picture over the rooms (arrow keys nudge it a pixel; Shift: ten). "
+		if (art) sb.append("<h3>Art</h3><p><b>Move art</b> drags the hull picture over the rooms (arrow keys nudge it a pixel; Shift: ten). The cyan cross is the anchor: where FTL puts her. "
+				+ "Art centred on it looks centred in the game; art pushed off it sits that way in the game too. "
 				+ "<b>Weapon mounts</b>: click the hull to place a mount, drag to move it, right-click to remove it. R turns the selected mount and S changes which way its weapon slides; the wheel turns it too. "
-				+ "FTL uses the mounts in order: the first ones are her weapon slots. Alt + middle-drag moves the art whatever tool is on.</p>");
+				+ "FTL draws weapon slot n on mount n, so give her as many mounts as slots. Alt + middle-drag moves the art whatever tool is on.</p>");
+		if (loadout) sb.append("<h3>Loadout</h3><p>Who she is, her numbers, her starting crew, what she carries and which systems are installed at the start. "
+				+ "Each number shows hers over the vanilla max (the most any of the game's ships has) with a bar to that ceiling; type what you like, the bar turns amber past it. "
+				+ "Past the vanilla numbers FTL still takes her, but its bars and upgrade screen are drawn for the vanilla ones.</p>");
 		sb.append("<h3>Keys</h3><p>Ctrl+Z and Ctrl+Y undo and redo. Esc deselects. Delete removes the selected door, mount or room. Ctrl+S " + primaryVerb() + ". F1 opens this help.</p>");
 		sb.append("<h3>View</h3><p>The wheel zooms (Ctrl+plus, Ctrl+minus); middle-drag moves the view; Shift+wheel scrolls; Ctrl+0 (or Fit) shows the whole ship.</p>");
 		sb.append("<h3>Checks</h3><p>The line under the editor says what would stop her working (<i>To fix</i>) and what's worth knowing (<i>Note</i>); it updates as you edit."
-				+ (rooms ? " Notes about her loadout (drone parts, reactor power) are set right under <b>Loadout...</b>." : "") + "</p>");
+				+ (loadout ? " Notes about her loadout (drone parts, reactor power) are set right on the <b>Loadout</b> step." : "") + "</p>");
 		return sb.append("</body></html>").toString();
 	}
 	/** Opens the help window (or refreshes it). */
@@ -229,23 +255,33 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 		if (editor == null) return;
 		editor.commit();
 		if (artPanel != null) artPanel.refreshArtControls();
+		if (loadoutPanel != null) loadoutPanel.systemsChanged();
 		refreshChecks();
 	}
 	/** The checks for this window's kind of editing. */
 	protected abstract ShipChecks.Report check();
+	/** What comes next when nothing needs fixing ("Next: the Art step"), or null. */
+	protected String nextHint() { return null; }
 	protected void refreshChecks() {
 		ShipChecks.Report r = check();
 		String counts = "Rooms " + d.rooms.size() + ", doors " + d.doors.size() + ".  ";
+		String next = r.problems.isEmpty() && nextHint() != null ? "  " + nextHint() : "";
 		if (r.problems.isEmpty() && r.warnings.isEmpty()) {
-			checks.setText(counts + "All good.");
+			checks.setText(wrapped(counts + "All good." + next));
 			checks.setForeground(new Color(140, 220, 150));
 		} else if (r.problems.isEmpty()) {
-			checks.setText(counts + "Note: " + String.join("  ", r.warnings));
+			checks.setText(wrapped(counts + "Note: " + String.join("  ", r.warnings) + next));
 			checks.setForeground(new Color(230, 210, 120));
 		} else {
-			checks.setText(counts + "To fix: " + String.join("  ", r.problems));
+			checks.setText(wrapped(counts + "To fix: " + String.join("  ", r.problems)));
 			checks.setForeground(new Color(255, 170, 90));
 		}
+		checks.revalidate();
+	}
+
+	/** The checks line as HTML, so a long one wraps under the ship rather than running off the window. */
+	private static String wrapped(String s) {
+		return "<html>" + s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") + "</html>";
 	}
 
 	// ---- leaving ----

@@ -141,12 +141,12 @@ public class ArtPanel extends JPanel {
 		JToggleButton move = editor.artToolButton("Move art", false, "Drag the hull art into place over the rooms. Arrow keys nudge it a pixel.");
 		JToggleButton mounts = editor.artToolButton("Weapon mounts", true, "Click the hull to place a mount, drag to move it, right-click to remove it. Arrow keys nudge.");
 		p.add(row(move, mounts));
-		p.add(row(centerBtn = button("Center art", "Put the middle of the art over the middle of the rooms", new ActionListener() {
-			public void actionPerformed(ActionEvent e) { if (editor.centerArt()) host.say("Art centred over the rooms."); else host.say("Choose her hull art first."); }
+		p.add(row(centerBtn = button("Center on the anchor", "Put the picture's visible middle on the anchor (the cyan cross: where FTL puts her)", new ActionListener() {
+			public void actionPerformed(ActionEvent e) { if (editor.centerArt()) host.say("Art centred on the anchor: where FTL puts her."); else host.say("Choose her hull art first."); }
 		}), artilleryBtn = button("Artillery mount", "Place the mount for the artillery gun (ships with an artillery system need one)", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { editor.startArtilleryMount(); }
 		})));
-		JLabel tips = new JLabel("<html><div style='width:230px'>Middle-drag moves the view; Alt + middle-drag moves the art in any tool. The wheel zooms; with a mount selected it turns the mount (Ctrl+wheel still zooms).</div></html>");
+		JLabel tips = new JLabel("<html><div style='width:230px'>The cyan cross is where FTL puts her: art centred on it looks centred in the game. Middle-drag moves the view; Alt + middle-drag moves the art in any tool. The wheel zooms; with a mount selected it turns the mount (Ctrl+wheel still zooms).</div></html>");
 		tips.setFont(tips.getFont().deriveFont(11f));
 		tips.setAlignmentX(LEFT_ALIGNMENT);
 		p.add(tips);
@@ -179,7 +179,7 @@ public class ArtPanel extends JPanel {
 			}
 		};
 		mountSlide.addActionListener(mountEdit);
-		p.add(heading("Shield ellipse (check in game)"));
+		p.add(heading("Fine adjustment: shield ellipse (check in game)"));
 		JPanel ell = new JPanel(new GridLayout(2, 4, 4, 2));
 		ell.add(new JLabel("Width")); ell.add(ellW); ell.add(new JLabel("Height")); ell.add(ellH);
 		ell.add(new JLabel("Across")); ell.add(ellX); ell.add(new JLabel("Down")); ell.add(ellY);
@@ -199,7 +199,7 @@ public class ArtPanel extends JPanel {
 		p.add(row(button("Fit to the art", "Size the ellipse from the hull art again", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { d.ellipseW = d.ellipseH = d.ellipseX = d.ellipseY = 0; fitEllipse(); editor.repaint(); host.changed(); }
 		})));
-		p.add(heading("Gibs (the pieces she breaks into)"));
+		p.add(heading("Fine adjustment: gibs (the pieces she breaks into)"));
 		ButtonGroup gg = new ButtonGroup();
 		gg.add(gibGame); gg.add(gibAuto); gg.add(gibFiles);
 		gibGame.setAlignmentX(LEFT_ALIGNMENT);
@@ -340,7 +340,7 @@ public class ArtPanel extends JPanel {
 		loadArt();
 		if (!floor) editor.centerArt();
 		host.changed();
-		host.say(floor ? "Floor picture imported." : "Hull art imported. It's centred over the rooms; Move art (or Alt + middle-drag) lines it up.");
+		host.say(floor ? "Floor picture imported." : "Hull art imported, centred on the anchor; Move art (or Alt + middle-drag) lines it up.");
 	}
 	private void pickGameArt() {
 		final java.util.List<String> names = ShipArt.gameArt();
@@ -390,7 +390,7 @@ public class ArtPanel extends JPanel {
 		loadArt();
 		editor.centerArt();
 		host.changed();
-		host.say("Hull art: the game's " + gfx + ", centred over the rooms. Move art (or Alt + middle-drag) lines it up.");
+		host.say("Hull art: the game's " + gfx + ", centred on the anchor. Move art (or Alt + middle-drag) lines it up.");
 	}
 	private void chooseGibs() {
 		java.util.List<java.io.File> files = new java.util.ArrayList<java.io.File>();

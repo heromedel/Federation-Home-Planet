@@ -247,12 +247,8 @@ public class DesignExport {
 		while (l.drones.size() > d.droneSlots) l.drones.remove(l.drones.size() - 1);
 		return CompanionMod.applyLoadout(block, l);
 	}
-	/** One weapon slot per mount, up to FTL's four. */
-	public static int weaponSlots(ShipDesign d) {
-		int n = 0;
-		for (ShipDesign.Mount m : d.mounts) if (!m.artillery) n++;
-		return Math.max(1, Math.min(4, n));
-	}
+	/** Her weapon slots as she sets them (at least one). Past the game's own numbers FTL still takes her: the bar is simply drawn for fewer. */
+	public static int weaponSlots(ShipDesign d) { return Math.max(1, d.weaponSlots); }
 	/** The chassis' mounts: the weapon mounts, then the artillery's (as the Federation Cruiser has hers; unverified that FTL requires it). */
 	static List<ShipDesign.Mount> mountsInOrder(ShipDesign d) {
 		List<ShipDesign.Mount> out = new ArrayList<ShipDesign.Mount>();

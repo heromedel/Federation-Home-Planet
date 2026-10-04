@@ -53,12 +53,7 @@ public class BlueprintDialog extends JDialog {
 	public static class Result {
 		public Loadout loadout;
 		public boolean starter;
-		/** The second button (Build..., when offered) was pressed rather than OK. */
-		public boolean andThen;
 	}
-	/** A second accepting button's label (Design Ship's "Build..."); null for none. */
-	private String andThenText;
-	private boolean andThen;
 
 	static final int MAX_CREW = 8, MAX_AUGS = 3;
 	private static final String[] RACE_NAMES = {"Human", "Engi", "Mantis", "Rock", "Slug", "Zoltan", "Crystal", "Lanius"};
@@ -94,25 +89,19 @@ public class BlueprintDialog extends JDialog {
 		int weaponSlots = model != null && model.getWeaponSlots() != null ? model.getWeaponSlots() : 4;
 		int droneSlots = model != null && model.getDroneSlots() != null ? model.getDroneSlots() : 3;
 		boolean hasDrones = model != null && model.getSystemList() != null && model.getSystemList().getDroneRoom() != null;
-		return open(owner, title, intro, start, current, weaponSlots, droneSlots, hasDrones, null, showStarter, starter, okText);
+		return open(owner, title, intro, start, current, weaponSlots, droneSlots, hasDrones, showStarter, starter, okText);
 	}
-	/** As above, for a ship with no blueprint yet (Design Ship): her slot counts given, and an extra section at the top. */
+	/** As above, with her slot counts given (a ship with no blueprint of her own yet). */
 	public static Result open(Component owner, String title, String intro, Loadout start, Loadout current, int weaponSlots, int droneSlots,
-			boolean hasDrones, javax.swing.JComponent extra, boolean showStarter, boolean starter, String okText) {
-		return open(owner, title, intro, start, current, weaponSlots, droneSlots, hasDrones, extra, showStarter, starter, okText, null);
-	}
-	/** As above, with a second accepting button (its label in {@code andThenText}), reported in the result's andThen. */
-	public static Result open(Component owner, String title, String intro, Loadout start, Loadout current, int weaponSlots, int droneSlots,
-			boolean hasDrones, javax.swing.JComponent extra, boolean showStarter, boolean starter, String okText, String andThenText) {
-		BlueprintDialog d = new BlueprintDialog(owner, title, intro, start, current, weaponSlots, droneSlots, hasDrones, extra, showStarter, starter, okText, andThenText);
+			boolean hasDrones, boolean showStarter, boolean starter, String okText) {
+		BlueprintDialog d = new BlueprintDialog(owner, title, intro, start, current, weaponSlots, droneSlots, hasDrones, showStarter, starter, okText);
 		d.setVisible(true);
 		return d.result;
 	}
 
 	private BlueprintDialog(Component owner, String title, String intro, Loadout start, final Loadout current, int weaponSlots, int droneSlots,
-			boolean hasDrones, javax.swing.JComponent extra, boolean showStarter, boolean starter, String okText, String andThenText) {
+			boolean hasDrones, boolean showStarter, boolean starter, String okText) {
 		super(SwingUtilities.getWindowAncestor(owner), title, ModalityType.APPLICATION_MODAL);
-		this.andThenText = andThenText;
 
 		JPanel body = new JPanel(new GridBagLayout());
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
@@ -122,8 +111,6 @@ public class BlueprintDialog extends JDialog {
 		if (intro != null) {
 			body.add(new JLabel("<html>" + intro + "</html>"), next(c));
 		}
-		if (extra != null) body.add(extra, next(c));
-
 		heading(body, c, "Name");
 		JPanel names = new JPanel(new GridBagLayout());
 		GridBagConstraints n = new GridBagConstraints();
@@ -219,12 +206,6 @@ public class BlueprintDialog extends JDialog {
 		ok.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { accept(); } });
 		cancel.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
 		right.add(ok);
-		if (andThenText != null) {
-			JButton more = new JButton(andThenText);
-			more.setToolTipText("Keep these and go on to the build screen");
-			more.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { andThen = true; accept(); } });
-			right.add(more);
-		}
 		right.add(cancel);
 		buttons.add(left, BorderLayout.WEST);
 		buttons.add(right, BorderLayout.EAST);
@@ -253,7 +234,7 @@ public class BlueprintDialog extends JDialog {
 	}
 
 	/** Puts the ids in the boxes in order; the rest are left empty. An id the lists don't have is added so nothing is lost. */
-	private static void setBoxes(List<JComboBox<Item>> boxes, List<String> ids) {
+	static void setBoxes(List<JComboBox<Item>> boxes, List<String> ids) {
 		for (int i = 0; i < boxes.size(); i++) {
 			JComboBox<Item> b = boxes.get(i);
 			String id = i < ids.size() ? ids.get(i) : null;
@@ -303,7 +284,6 @@ public class BlueprintDialog extends JDialog {
 		result = new Result();
 		result.loadout = l;
 		result.starter = starterBox.isSelected();
-		result.andThen = andThen;
 		dispose();
 	}
 
@@ -356,7 +336,7 @@ public class BlueprintDialog extends JDialog {
 		return (s == null || s.isEmpty() ? id : s) + (power > 0 ? "  \u00b7  " + power + " power" : "");
 	}
 	/** A list of items whose rows (and the box itself) show the item's stats on hover, as the Cargo Bay's do. */
-	private static JComboBox<Item> itemBox(List<Item> items) {
+	static JComboBox<Item> itemBox(List<Item> items) {
 		final JComboBox<Item> b = new WideComboBox(new javax.swing.DefaultComboBoxModel<Item>(items.toArray(new Item[0])));
 		b.setRenderer(new javax.swing.DefaultListCellRenderer() {
 			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean sel, boolean focus) {

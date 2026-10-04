@@ -45,6 +45,7 @@ public class GuiT {
   liveDock(f);
   ransomPopUp(f);
   infirmaryBay(f);
+  designSteps(f);
   Setup.done();
   System.exit(0);
  }
@@ -52,6 +53,53 @@ public class GuiT {
  static void hold(Vault v, int scrap) throws Exception { int s = v.storageScrap(); if (s < scrap) v.depositToStorage(scrap - s); else if (s > scrap) v.payFromStorage(s - scrap); }
  static Object field(Object o, Class<?> c, String name) throws Exception { java.lang.reflect.Field fd = c.getDeclaredField(name); fd.setAccessible(true); return fd.get(o); }
  static Object call(Object o, Class<?> c, String name, Class<?>[] types, Object... args) throws Exception { java.lang.reflect.Method m = c.getDeclaredMethod(name, types); m.setAccessible(true); return m.invoke(o, args); }
+
+ /** Design Ship as three steps (Plan X): the tabs, the Loadout step's rows writing into the design, the notes past vanilla, the anchor's label. */
+ static void designSteps(final MainFrame f) throws Exception {
+  List<ShipDesign> all = ShipDesign.load();
+  final ShipDesign d = ShipDesign.create(all); d.name = "Steps Test";
+  int[][] rooms = {{4,5,2,2},{6,5,2,2},{8,5,2,2},{6,4,2,1},{10,5,1,2}};
+  for (int[] r : rooms) d.rooms.add(new ShipDesign.Room(r[0], r[1], r[2], r[3]));
+  d.doors.add(d.doorFor(6,5,1)); d.doors.add(d.doorFor(8,5,1)); d.doors.add(d.doorFor(10,5,1)); d.doors.add(d.doorFor(6,5,0)); d.doors.add(d.doorFor(4,5,1));
+  String[][] sys = {{"pilot","4"},{"engines","0"},{"oxygen","3"},{"shields","1"},{"weapons","2"}};
+  for (String[] s : sys) { CompanionMod.Sys x = new CompanionMod.Sys(s[0]); x.room = Integer.parseInt(s[1]); x.power = CompanionMod.usualPower(s[0]); if (ShipDesign.manned(s[0])) { x.square = 0; x.dir = ShipDesign.defaultDir(s[0]); } d.systems.put(s[0], x); }
+  ShipArt.adoptGameShip(d, "kestral");
+  new Thread(new Runnable() { public void run() { DesignDialog.open(f, d, new ArrayList<String>()); } }).start();
+  ShipEditorDialog dlg = null;
+  for (int i = 0; i < 100 && dlg == null; i++) { Thread.sleep(100); for (Window w : Window.getWindows()) if (w instanceof ShipEditorDialog && w.isShowing()) dlg = (ShipEditorDialog) w; }
+  Setup.chk("Steps: Design Ship opens", dlg != null);
+  if (dlg == null) return;
+  final ShipEditorDialog ed = dlg;
+  final Object[] r = new Object[8];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   JTabbedPane steps = (JTabbedPane) field(ed, ShipEditorDialog.class, "steps");
+   ShipDesign d = (ShipDesign) field(ed, ShipEditorDialog.class, "d"); // the editor works on a copy
+   r[0] = steps.getTitleAt(0) + "|" + steps.getTitleAt(1) + "|" + steps.getTitleAt(2);
+   r[1] = ed.stepShown();
+   ed.showStep("Loadout");
+   r[2] = ed.stepShown();
+   NumberRow slots = null, shields = null;
+   for (NumberRow n : rows(ed)) { if (n.name().equals("Weapon slots")) slots = n; if (n.name().equals("Shields")) shields = n; }
+   r[3] = slots != null && shields != null && shields.tick() != null && slots.tick() == null;
+   if (slots != null) slots.set(6, true);
+   if (shields != null) shields.set(9, true);
+   r[4] = ((JLabel) field(ed, ShipEditorDialog.class, "checks")).getText();
+   r[5] = d.weaponSlots + "/" + d.systems.get("shields").power + "/" + (slots != null && slots.overMax());
+   if (shields != null) { shields.tick().setSelected(false); for (java.awt.event.ActionListener al : shields.tick().getActionListeners()) al.actionPerformed(new java.awt.event.ActionEvent(shields.tick(), 0, "")); }
+   r[6] = d.notAtStart.contains("shields");
+   ed.showStep("Art");
+   r[7] = ed.stepShown();
+   ed.dispose();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("Steps: three steps in build order, Rooms in front: " + r[0] + ", " + r[1], "1. Rooms|2. Art|3. Loadout".equals(r[0]) && "Rooms".equals(r[1]));
+  Setup.chk("Steps: the Loadout step comes to the front", "Loadout".equals(r[2]));
+  Setup.chk("Steps: her numbers and her systems are rows; a system's has the tick, a number's hasn't", Boolean.TRUE.equals(r[3]));
+  Setup.chk("Steps: 6 weapon slots and Shields at 9 typed in go straight into the design, the row marked over the max: " + r[5], "6/9/true".equals(r[5]));
+  Setup.chk("Steps: the checks line says so, a note not a stop: " + r[4], String.valueOf(r[4]).contains("Past vanilla") && String.valueOf(r[4]).contains("nowhere to draw") && !String.valueOf(r[4]).contains("To fix"));
+  Setup.chk("Steps: unticking a system's row takes it off the starting set", Boolean.TRUE.equals(r[6]));
+  Setup.chk("Steps: the Art step comes to the front", "Art".equals(r[7]));
+ }
+ static List<NumberRow> rows(java.awt.Container c) { List<NumberRow> out = new ArrayList<NumberRow>(); for (java.awt.Component x : c.getComponents()) { if (x instanceof NumberRow) out.add((NumberRow) x); if (x instanceof java.awt.Container) out.addAll(rows((java.awt.Container) x)); } return out; }
 
  /** Repairs on the Refit tab: paid from the Cargo Hold on Save, nothing on Reset; the hold as the partner or another ship. */
  static void bill(final Vault v, final MainFrame f, final boolean otherPartner) throws Exception {

@@ -81,6 +81,10 @@ public class ShipDesign {
 	 */
 	public boolean retired = false;
 	public int hull = 30, reactor = 8, droneSlots = 2;
+	/** Her weapon slots, hers to set (FTL draws a slot's weapon on the mount of the same number; a design from before had one slot per mount). */
+	public int weaponSlots = 2;
+	/** One slot per weapon mount (not the artillery's), at least one: what a design from before the slots were hers had. */
+	public int slotsFromMounts() { int n = 0; for (Mount m : mounts) if (!m.artillery) n++; return Math.max(1, n); }
 	/** Where she sits on screen, in squares (FTL's X_OFFSET / Y_OFFSET); -1 = worked out from the art. */
 	public int offX = -1, offY = -1;
 	/** Placed systems she doesn't start with (they can be bought or installed later). */
@@ -250,6 +254,7 @@ public class ShipDesign {
 		if (bp.getHealth() != null) d.hull = bp.getHealth().amount;
 		if (bp.getMaxPower() != null) d.reactor = bp.getMaxPower().amount;
 		if (bp.getDroneSlots() != null) d.droneSlots = bp.getDroneSlots();
+		if (bp.getWeaponSlots() != null) d.weaponSlots = bp.getWeaponSlots();
 		d.loadout = CompanionMod.loadoutOf(bpId);
 		d.offX = lay.getOffsetX(); d.offY = lay.getOffsetY();
 		d.artScale = 100;
@@ -324,6 +329,8 @@ public class ShipDesign {
 			mt.artillery = "true".equals(m.getAttribute("artillery"));
 			d.mounts.add(mt);
 		}
+		d.weaponSlots = numOr(e, "weaponSlots", -1);
+		if (d.weaponSlots < 0) d.weaponSlots = d.slotsFromMounts(); // from before the slots were hers: as they were counted then
 		NodeList gs = e.getElementsByTagName("gib");
 		for (int j = 0; j < gs.getLength(); j++) d.gibFiles.add(((Element) gs.item(j)).getAttribute("file"));
 		NodeList rs = e.getElementsByTagName("room");
@@ -438,7 +445,7 @@ public class ShipDesign {
 					.append("\" artX=\"").append(d.artX).append("\" artY=\"").append(d.artY).append("\" floorX=\"").append(d.floorX).append("\" floorY=\"").append(d.floorY)
 					.append("\" ellipseW=\"").append(d.ellipseW).append("\" ellipseH=\"").append(d.ellipseH).append("\" ellipseX=\"").append(d.ellipseX).append("\" ellipseY=\"").append(d.ellipseY)
 					.append("\" gibs=\"").append(d.gibs).append("\" built=\"").append(d.built).append("\" starter=\"").append(d.starter)
-					.append("\" hull=\"").append(d.hull).append("\" reactor=\"").append(d.reactor).append("\" droneSlots=\"").append(d.droneSlots)
+					.append("\" hull=\"").append(d.hull).append("\" reactor=\"").append(d.reactor).append("\" droneSlots=\"").append(d.droneSlots).append("\" weaponSlots=\"").append(d.weaponSlots)
 					.append("\" offX=\"").append(d.offX).append("\" offY=\"").append(d.offY).append("\" version=\"").append(d.version).append("\" artScale=\"").append(d.artScale)
 					.append(d.frozenOf != null ? "\" frozenOf=\"" + d.frozenOf : "").append(d.snapshotOf != null ? "\" snapshotOf=\"" + d.snapshotOf : "").append(d.retired ? "\" retired=\"true" : "").append("\">").append(CRLF);
 			for (String n : d.notAtStart) sb.append("\t\t<nostart id=\"").append(n).append("\"/>").append(CRLF);
@@ -504,7 +511,7 @@ public class ShipDesign {
 		d.ellipseW = o.ellipseW; d.ellipseH = o.ellipseH; d.ellipseX = o.ellipseX; d.ellipseY = o.ellipseY;
 		d.gibs = o.gibs; d.gibFiles.addAll(o.gibFiles);
 		for (Mount m : o.mounts) d.mounts.add(m.copy());
-		d.built = o.built; d.starter = o.starter; d.hull = o.hull; d.reactor = o.reactor; d.droneSlots = o.droneSlots;
+		d.built = o.built; d.starter = o.starter; d.hull = o.hull; d.reactor = o.reactor; d.droneSlots = o.droneSlots; d.weaponSlots = o.weaponSlots;
 		d.offX = o.offX; d.offY = o.offY; d.notAtStart.addAll(o.notAtStart);
 		d.version = o.version; d.frozenOf = o.frozenOf; d.snapshotOf = o.snapshotOf; d.artScale = o.artScale; d.retired = o.retired;
 		d.loadout = o.loadout == null ? null : CompanionMod.copy(o.loadout);
