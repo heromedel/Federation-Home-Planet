@@ -13,6 +13,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
  report();
  awayAndBack(v);
  prizes(v);
+ experience(v);
  Setup.done();
 }
  static void tables() {
@@ -163,7 +164,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
     if (a1 != null && a1.equals(b1)) same++;
    }
   }
-  Setup.chk("P: heromedel's setup comes up most (" + his + " of 3000), the others the rest; two with the same outcome never read the same (" + same + " of " + pairs + ")", his > 600 && his < 1000 && other > 0 && pairs > 0 && same == 0);
+  Setup.chk("P: heromedel's setup is one of the general ones (" + his + " of 3000, about one in twelve), the others the rest; two with the same outcome never read the same (" + same + " of " + pairs + ")", his > 150 && his < 400 && other > 0 && pairs > 0 && same == 0);
   Setup.chk("P: never a roll, a die or a percentage", !t.contains("%") && !t.toLowerCase().contains("d20") && !t.toLowerCase().matches("(?s).*\\b(rolls?|rolled (a|an|\\d))\\b.*") && !t.contains("+1") && !t.contains("-1"));
   Setup.chk("P: a hazard gets its line", r.hazard != null && (t.toLowerCase().contains("flare") || t.toLowerCase().contains("asteroid") || t.contains("pulsar") || t.contains("plasma storm")));
  }
@@ -339,5 +340,36 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Random rr = new Random(7); int skilled = 0;
   for (int i = 0; i < 400; i++) { CrewState c = Assignments.recruit(rr); int lv = 0; for (int x : homeplanet.model.Crew.skillLevels(c)) lv += x; if (lv > 0) skilled++; }
   Setup.chk("Z: about one recruit in twenty comes with a skill (" + skilled + " of 400)", skilled >= 8 && skilled <= 40);
+ }
+
+ /** Experience and the report's faces: the job's skill gains by outcome (none on Negotiate or Rescue); each face as they came home. */
+ static void experience(Vault v) throws Exception {
+  List<CrewState> crew = ExpT.hold(v, "human", "human", "human");
+  Assignments.send(v, Assignments.board(v).get(0).slot, crew, new Random(9));
+  List<Assignments.Away> aways = Assignments.away(v); Assignments.Away aw = aways.get(aways.size() - 1);
+  Assignments.Result r = aw.result(); r.job = "repair"; r.prize = null; r.hazard = null; r.hacker = null;
+  int[] bands = {1, 3, 5};
+  for (int i = 0; i < 3; i++) { Assignments.Fate f = r.fates.get(i); f.band = bands[i]; f.died = f.captured = f.infirmary = f.worn = false; f.item = null; f.crew.setHealth(100); }
+  int[] before = new int[3]; for (int i = 0; i < 3; i++) before[i] = homeplanet.model.Skills.points(r.fates.get(i).crew, 4);
+  Assignments.Report rep = Assignments.bringHome(v, aw, r);
+  int[] gain = new int[3]; for (int i = 0; i < 3; i++) gain[i] = homeplanet.model.Skills.points(r.fates.get(i).crew, 4) - before[i];
+  Setup.chk("X: repair experience by outcome: injured " + gain[0] + ", successful " + gain[1] + ", extremely " + gain[2] + "; the injured at half health (" + r.fates.get(0).crew.getHealth() + ")",
+    gain[0] == 1 && gain[1] == 4 && gain[2] == 8 && r.fates.get(0).crew.getHealth() == 50);
+  Setup.chk("X: the report's faces, as they came home", rep.faces.size() == 3 && "".equals(rep.faces.get(0).state) && rep.faces.get(0).crew.getHealth() == 50);
+  // Negotiate teaches nothing; the dead and the infirmary are faces too, and the letter keeps them
+  crew = ExpT.hold(v, "human", "human", "human");
+  Assignments.send(v, Assignments.board(v).get(0).slot, crew, new Random(10));
+  aways = Assignments.away(v); aw = aways.get(aways.size() - 1);
+  r = aw.result(); r.job = "negotiate"; r.prize = null; r.hazard = null; r.hacker = null;
+  for (int i = 0; i < 3; i++) { Assignments.Fate f = r.fates.get(i); f.band = 5; f.died = f.captured = f.infirmary = f.worn = false; f.item = null; f.crew.setHealth(100); }
+  r.fates.get(0).band = 0; r.fates.get(0).died = true; r.fates.get(1).band = 1; r.fates.get(1).infirmary = true;
+  int pts = 0; for (int k = 0; k < 6; k++) pts += homeplanet.model.Skills.points(r.fates.get(2).crew, k);
+  String letter = "expedition:" + aw.sentAt + ":" + aw.index + ":" + String.join(",", aw.names());
+  rep = Assignments.bringHome(v, aw, r);
+  int ptsAfter = 0; for (int k = 0; k < 6; k++) ptsAfter += homeplanet.model.Skills.points(r.fates.get(2).crew, k);
+  List<Assignments.Face> kept = Assignments.facesFor(v, letter);
+  Setup.chk("X: Negotiate teaches no skill (" + pts + " -> " + ptsAfter + "); the dead, the infirmary and the well each a face, kept for the letter (" + kept.size() + ")",
+    pts == ptsAfter && rep.faces.size() == 3 && "dead".equals(rep.faces.get(0).state) && "infirmary".equals(rep.faces.get(1).state) && "".equals(rep.faces.get(2).state)
+    && kept.size() == 3 && "dead".equals(kept.get(0).state) && kept.get(1).crew.getName().equals(rep.faces.get(1).crew.getName()));
  }
 }

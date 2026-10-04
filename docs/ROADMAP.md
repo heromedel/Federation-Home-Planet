@@ -985,6 +985,13 @@ share those files, the crew-card picker and the hire button, and nothing else (`
   under 1): "send an already injured person and 2/3rds chance they live another injury". Someone sent whole is
   unchanged: an injury is half health.
 
+- **Faces in the report** (5.08, Plan PP, heromedel): each crew member's line starts with their icon and, as the
+  Cargo Bay draws it, a health bar at the health they came home with (none when whole, purple and full for the
+  infirmary); the dead and the taken greyed, with no bar. In the pop-up and in the inbox's letter alike: the fleet's
+  assignments.txt keeps the faces of the last 40 reports under their letters' keys (`face.N.*`). heromedel's setup is
+  now one of the six general ones, no more likely than the others (about one report in twelve). The harness checks the
+  experience: the job's skill, 1 point for injured or failed, 4, 6 or 8 for the successes, none on Negotiate or Rescue.
+
 ## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
 
 heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every

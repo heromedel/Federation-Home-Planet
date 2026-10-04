@@ -651,13 +651,13 @@ public final class Assignments {
 	private static String aOrAn(String s) { return (s.isEmpty() ? "" : "aeiouAEIOU".indexOf(s.charAt(0)) >= 0 ? "an " : "a ") + s; }
 
 	/** The report, as heromedel laid it out: the frame, the job line, a hazard, a line per crew member, the prize, the total. Never a roll. */
-	/** heromedel's frame: the setup line before what the crew did, and the fallback for every other. */
+	/** heromedel's frame, the first setup line: one of the general ones, and the fallback for every other. */
 	static final String FRAME = "Due to events during the assignment the crew";
 	static String report(Result r, Random rng) {
 		StringBuilder sb = new StringBuilder("-- Expedition Report --\n");
 		sb.append("Sector: ").append(sectorTitle(r.sector)).append("\n\n");
-		// the setup: half the time one of the job's own (and its sector's), else heromedel's frame or one of the general ones
-		String frame = rng.nextBoolean() ? sayAt(rng, FRAME, r.sector, "frame", r.job) : rng.nextBoolean() ? FRAME : say(rng, FRAME, "frame");
+		// the setup: half the time one of the job's own (and its sector's), else one of the general ones (heromedel's among them)
+		String frame = rng.nextBoolean() ? sayAt(rng, FRAME, r.sector, "frame", r.job) : say(rng, FRAME, "frame");
 		sb.append(frame).append("\n").append(sayAt(rng, "took on a job", r.sector, "event", r.job)).append(".\n");
 		if (r.hazard != null) sb.append(sayAt(rng, "The weather was against them.", r.sector, "hazard", r.hazard)).append("\n");
 		if (r.hacker != null) sb.append(sayAt(rng, "{name} hacked it.", r.sector, "hacked").replace("{name}", r.hacker.getName())).append("\n");
@@ -695,8 +695,53 @@ public final class Assignments {
 	public static final class Report {
 		public final String sector, text;
 		public final List<String> names;
-		public Report(String sector, String text, List<String> names) { this.sector = sector; this.text = text; this.names = names; }
+		/** Each crew member as they came home, for the report's faces. */
+		public final List<Face> faces;
+		public Report(String sector, String text, List<String> names) { this(sector, text, names, new ArrayList<Face>()); }
+		public Report(String sector, String text, List<String> names, List<Face> faces) { this.sector = sector; this.text = text; this.names = names; this.faces = faces; }
 		public String title() { return "Back from " + ("nebula".equals(sector) ? "the nebula" : "the " + sectorTitle(sector)); }
+	}
+
+	/** A crew member as they came home, drawn beside their line in the report: "dead", "taken", "infirmary", or "" (back in the Cargo Hold, at their health now). */
+	public static final class Face {
+		public final CrewState crew;
+		public final String state;
+		public Face(CrewState crew, String state) { this.crew = crew; this.state = state; }
+	}
+	/** How many reports keep their faces for the inbox's letters (the oldest go first). */
+	static final int FACES_KEPT = 40;
+	/** Keeps a report's faces under its letter's key, newest first, at most FACES_KEPT. */
+	private static void keepFaces(Properties q, String letter, List<Face> faces) {
+		Properties old = new Properties();
+		for (String k : q.stringPropertyNames()) if (k.startsWith("face.")) old.setProperty(k, q.getProperty(k));
+		for (String k : old.stringPropertyNames()) q.remove(k);
+		q.setProperty("face.0.letter", letter);
+		for (int i = 0; i < faces.size(); i++) {
+			Face f = faces.get(i);
+			q.setProperty("face.0." + i + ".state", f.state);
+			for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(f.crew).entrySet()) q.setProperty("face.0." + i + ".crew." + e.getKey(), e.getValue());
+		}
+		for (int n = 0; n + 1 < FACES_KEPT && old.getProperty("face." + n + ".letter") != null; n++) {
+			String pre = "face." + n + ".";
+			for (String k : old.stringPropertyNames()) if (k.startsWith(pre)) q.setProperty("face." + (n + 1) + "." + k.substring(pre.length()), old.getProperty(k));
+		}
+	}
+	/** The faces kept for this letter (an expedition report's), or none. */
+	public static synchronized List<Face> facesFor(Vault v, String letter) {
+		List<Face> out = new ArrayList<Face>();
+		Properties p = read(v);
+		for (int n = 0; p.getProperty("face." + n + ".letter") != null; n++) {
+			if (!letter.equals(p.getProperty("face." + n + ".letter"))) continue;
+			for (int i = 0; p.getProperty("face." + n + "." + i + ".state") != null; i++) {
+				Map<String, String> fields = new LinkedHashMap<String, String>();
+				String pre = "face." + n + "." + i + ".crew.";
+				for (String k : p.stringPropertyNames()) if (k.startsWith(pre)) fields.put(k.substring(pre.length()), p.getProperty(k));
+				try { out.add(new Face(homeplanet.comm.Line.crewFrom(fields), p.getProperty("face." + n + "." + i + ".state"))); }
+				catch (Exception e) { log.debug("A face in an expedition report can't be read: {}", e.toString()); }
+			}
+			break;
+		}
+		return out;
 	}
 
 	/** The details whose time is up, each rolled and brought home: the hold, the infirmary, the captives, the Junkyard and the stored systems written. */
@@ -762,6 +807,8 @@ public final class Assignments {
 			}
 		}
 		String letter = "expedition:" + a.sentAt + ":" + a.index + ":" + String.join(",", a.names());
+		List<Face> faces = new ArrayList<Face>(); // as they came home: the health they're at now
+		for (Fate f : r.fates) faces.add(new Face(f.crew, f.died ? "dead" : f.captured ? "taken" : f.infirmary ? "infirmary" : ""));
 		if (HomePlanet.immersiveNotifications() && pendingIndex >= 0) p.setProperty("pending." + pendingIndex + ".letter", letter); // the letter asks, with buttons
 		Vault.Transaction tx = v.begin().put(st, c.save, c.hash);
 		if (prizeFile != null) tx.put(prizeFile, prizeBytes);
@@ -776,6 +823,7 @@ public final class Assignments {
 			n++;
 		}
 		for (String key : p.stringPropertyNames()) if (!key.startsWith("away.")) q.setProperty(key, p.getProperty(key));
+		keepFaces(q, letter, faces);
 		tx.put(file(v), bytes(q)).commit();
 		String text = r.report = report(r, new Random(r.seed)); // told again now everything is settled (the prize, the recruit's name), in the same words
 		// the reputation, scored as the game's events are: the scrap, the dead, how it went
@@ -787,7 +835,7 @@ public final class Assignments {
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
 				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead)));
 		if (HomePlanet.immersiveNotifications()) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text);
-		return new Report(r.sector, text, a.names());
+		return new Report(r.sector, text, a.names(), faces);
 	}
 	/** Who holds a captive taken in this sector. */
 	static String sectorCaptors(String sector) {
