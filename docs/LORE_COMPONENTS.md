@@ -82,3 +82,51 @@ hard rule). It is edited only with heromedel's permission: new components are of
 
 37. A jump is chosen by the captain and goes to a beacon on the map; a ship doesn't arrive somewhere it didn't choose.
     *(heromedel)*
+
+## Slugs and their nebulas
+
+38. Every Slug ship carries Slug Repair Gel, which automatically repairs hull breaches. No Slug ship starts with a
+    Backup Battery. *(FTL: "Slug ships excrete a thick gel that automatically repairs any hull breaches."; FTL
+    blueprints: no Slug ship starts with a battery, and the enemy Slug ships have no room for one)*
+39. Slugs navigate the nebulas they live in by telepathy, and are reluctant to go beyond nebulas. *(FTL event text:
+    "Today they use this ability to navigate unfettered the depths of the nebulas they inhabit.", "The Slugs rely
+    heavily on their telepathic powers and are reluctant to give up that advantage by extending beyond nebulas.")*
+40. The Slugs developed on an ocean planet, where sensing other organisms mattered more than sight. *(FTL event text:
+    "The Slugs developed on an ocean planet where the ability to telepathically sense another organism was more
+    important than sight.")*
+41. The Slug ships players can fly have a sensors room. They start without Sensors installed, but Sensors can be
+    bought. *(FTL blueprints: each of the three Slug cruisers lists sensors, not started; Type A: "Designed for use
+    inside nebulas, this cruiser lacks sensors")*
+42. Slug ships and storms: FTL contradicts itself, so neither is used as fact. *(FTL event text: "the largely unaffected
+    Slug ships" in one, "Slugs generally avoid these storms" in another)*
+43. FTL calls the nebula storm both a plasma storm and an ion storm. *(FTL event text: "a plasma storm" in most storm
+    events, "the ion storm" in the Slug ones)*
+44. The Mantis hunt Slugs in their own nebulas as a rare test of honour for their mightiest crews. *(FTL event text:
+    "The Mantis attack ship here looks to have been hunting Slugs on their home turf - a rare test of honor for the
+    mightiest Mantis crews.")*
+45. The Slug Cruiser Type B is named The Stormwalker; nothing in its blueprint handles storms. *(FTL:
+    "The Stormwalker")*
+
+46. The Slugs are a leisure-centred civilisation that chases currency, which leads to treachery. *(FTL event text:
+    "Everything in Slug life is done in the pursuit of more currency and more time in which to spend it on extravagant
+    ventures. This, inevitably, leads to much treachery in open space.")*
+
+## More from FTL's events
+
+47. Rock mining vessels harvest mineral-rich asteroids. *(FTL event text: "A Rock mining vessel is harvesting the
+    mineral-rich asteroids in this locality")*
+48. The Zoltan glow. *(FTL event text: "hundreds of glowing Zoltan performing delicate exterior work")*
+49. A Lanius ship worked beside a pulsar "totally oblivious to the threat of EM pulses". *(FTL event text; one event,
+    not a stated trait)*
+
+## heromedel's extrapolations
+
+Not vanilla FTL: heromedel's own reading of the game, kept as he wrote it. The station's lore follows it like the
+facts above.
+
+50. Not a vanilla fact and is more than one point but will be kept together. Hero's extrapolation: Slugs sense other
+    lifeforms and thus when ships are near by and possibly ion storms in nebulas but they cannot sense far away enough
+    to tell if adjacent beacons have ships or ion storms. When they send Ship Models to The Federation, they have room
+    for Sensors to be installed for use by other races. The Slug Ships ability to survive based in nebulas has to do
+    with Slug Repair gel not resistance to the storms that they avoid. Mantis like hunting in nebulas as a challenge and
+    because they hate how slugs see them coming but they still are not good at it.

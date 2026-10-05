@@ -389,7 +389,7 @@ band transport high | was very successful: {he} found a shorter route and took i
 band transport top | was extremely successful and brought the cargo in untouched
 band transport top | was extremely successful and talked the buyer into paying extra
 
-event lost | jumped, but the jump went wrong, and they spent days finding the beacon
+event lost | explored around the beacon after the jump, lost their bearings, and spent days finding their way back to it
 event lost | got turned around in the dark and ran low on everything
 event lost | lost the beacon and drifted a long while
 event lost nebula | lost every sensor reading in the nebula and flew on guesswork
@@ -529,7 +529,7 @@ hazard flare | A solar flare scorched the hull and lit fires on three decks.
 hazard asteroids | Asteroids kept striking the shields from the moment they arrived until the moment they left.
 hazard asteroids | Asteroids hammered the shields from start to finish.
 hazard asteroids | They spent as much time dodging asteroids as working.
-hazard pulsar | A pulsar's ion bursts had their systems down again and again.
+hazard pulsar | A pulsar's electromagnetic pulses had their systems down again and again.
 hazard pulsar | A nearby pulsar knocked the power out with every pulse.
 hazard pulsar | Their work was slowed by each wave of energy from the pulsar.
 hazard storm | A plasma storm held their reactor at half power for most of the job.
@@ -538,18 +538,17 @@ hazard storm | A plasma storm rolled in on the first day, and their reactor neve
 hazard battery | A rebel Anti-Ship Battery on the planet below kept them under fire from start to finish.
 hazard battery | Every few hours the planet's Anti-Ship Battery locked on, and everyone aboard braced for the hit.
 hazard battery | The rebels' planetary guns found their range on the first day and never lost it.
-hacked | Then {name} hacked the battery's targeting, and it never found them again.
-hacked | {name} spent an hour inside the battery's targeting system, and after that it fired at empty space.
+hacked | Then {name} turned the ship's Hacking system on the battery's targeting, and it never found them again.
+hacked | {name} turned the ship's Hacking system on the battery, and it stopped firing entirely.
 shrug flare rock | The fires never bothered {him}; Rock doesn't burn.
 shrug flare rock | {His} part of the ship was on fire twice, and {he} worked straight through it both times.
 shrug flare anaerobic | Every fire that reached {his} room went out on its own.
 shrug flare anaerobic | The one room aboard where nothing burned was {his}.
 shrug asteroids energy | With {him} feeding power to the shields, the asteroids never got through.
 shrug asteroids energy | {His} own power kept the shields up whenever the reactor faltered.
-shrug pulsar engi | Each time the pulsar knocked the systems out, {his} nanobots had them running again.
-shrug pulsar engi | The pulsar's waves slowed everyone but {him}.
-shrug storm slug | The storm meant nothing to {him}; Slugs grow up in weather like this.
-shrug storm slug | {His} feel for the nebula kept them clear of the worst of the storm.
+shrug pulsar engi | Each time the pulsar knocked a system out, {he} got it back online as fast as {he} could.
+shrug storm slug | With the reactor at half, {he} could feel every ship moving in the clouds, so they kept out of the way of anyone who might notice how weak they were.
+shrug storm slug | The storm left their sensors blind, but {he} never needed them; {he} knew where every crew in the nebula was and steered them around the lot.
 
 captured | was last seen being carried through the boarders' airlock.
 captured | was taken by the boarders. The crew hope {he}'s all right out there.
