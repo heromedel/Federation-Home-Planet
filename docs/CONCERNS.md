@@ -84,3 +84,11 @@ them leaves them disagreeing. `Vault.Transaction` can write side files together 
 4B.97 used it for the expedition's end and a ransom's payment. The others (the stipend's `career.txt` and the inbox,
 `parts.txt` and the hold, the clock files) still go one by one. Small to fix where it matters; goes away with
 concern 1.
+
+## 4. The master log only grows (noted 5.17 by Claude, not yet talked over)
+
+`master.log` (each career's copy of every log entry, and every day counted) is appended to and never trimmed, and the
+Captain's Log and the Cargo Bay's day read it whole. A week of heromedel's testing wrote about 300 KB of station log,
+so a long career could reach several megabytes: still quick to read, but each Cargo Bay Save reads it to find the last
+day line. If it ever matters: keep the last day line's reason in a small file of its own, and let the Captain's Log
+read the file a page at a time (or split it by year). Claude's concern, raised while building it; heromedel hasn't weighed in.

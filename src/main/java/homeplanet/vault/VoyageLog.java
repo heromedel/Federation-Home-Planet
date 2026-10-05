@@ -283,6 +283,7 @@ public final class VoyageLog {
 		} catch (IOException e) {
 			log.warn("Could not write {}'s voyage log: {}", s, e.toString());
 		}
+		for (String l : lines) MasterLog.entry(v, "voyage: " + s.name, l);
 	}
 	private static int intOf(Properties p, String k, int dflt) {
 		try { return Integer.parseInt(p.getProperty(k, "").trim()); } catch (NumberFormatException e) { return dflt; }

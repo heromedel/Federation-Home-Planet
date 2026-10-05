@@ -45,6 +45,7 @@ echo "== ExpT"; run ExpT "$GAME" "$WORLD" "$W/exp" | grep -E "$PICK|^PASS|^exped
 echo "== AsgT"; run AsgT "$GAME" "$WORLD" "$W/asg" | grep -E "$PICK|^PASS|^three"
 echo "== RestT"; run RestT "$GAME" "$WORLD" "$W/rest" | grep -E "$PICK|^PASS"
 echo "== OverT"; run OverT "$GAME" "$WORLD" "$W/over" | grep -E "$PICK|^PASS"
+echo "== LogT"; run LogT "$GAME" "$WORLD" "$W/log" | grep -E "$PICK|^PASS"
 echo "== RepT"; run RepT "$GAME" "$WORLD" "$W/rep" | grep -E "$PICK|^PASS"
 echo "== StatT"; run StatT "$GAME" "$WORLD" "$W/stat" | grep -E "$PICK|^PASS"
 echo "== RepuT"; run RepuT "$GAME" "$WORLD" "$W/repu" | grep -E "$PICK|^PASS"

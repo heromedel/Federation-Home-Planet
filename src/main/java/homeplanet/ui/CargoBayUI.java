@@ -1272,6 +1272,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			billed = systems.payBill(tx); // the Dry Dock's work, from the Cargo Hold, in the same save
 			tx.commit();
 			systems.spendRepBill(); // and the reputation it took, once the save stands
+			// real business at the station passes a day (heromedel, 5.17): buying, selling, the Dry Dock's work, a system in
+			// or out; never moving your own things about. Not twice running: a Save after a Cargo Bay day, with nothing else
+			// moving the clock between, passes none (selling one missile at a time can't run the clock)
+			boolean business = !systems.changes().isEmpty() || !shop.purchases().isEmpty();
+			for (Disposal dp : disposals) if ("SELL".equals(dp.kind) && (dp.save == currentSave || dp.save == tradeSave)) business = true;
+			if (business) homeplanet.vault.MasterLog.businessDay(Vault.get());
 			if (!systems.changes().isEmpty())
 				homeplanet.core.HistoryLog.entry("SYSTEMS", currentSave.getPlayerShipName(), new ArrayList<String>(systems.changes()));
 			for (String c : systems.changes()) if (c.startsWith("Installed ")) { homeplanet.parser.ThirdFleet.partInstalled(Vault.get()); break; } // the technicians tell the Third Fleet Commander

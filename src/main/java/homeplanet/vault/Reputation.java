@@ -538,6 +538,9 @@ public final class Reputation {
 		if (details != null) for (String d : details) sb.append("  ").append(d).append('\n');
 		try { SafeFiles.writeText(new File(v.root, LOG), sb.toString(), false); }
 		catch (IOException e) { log.warn("Could not write the reputation log: {}", e.toString()); }
+		StringBuilder t = new StringBuilder(signed(points) + "  " + why);
+		if (details != null) for (String d : details) t.append("\n").append(d);
+		MasterLog.entry(v, "reputation", t.toString());
 	}
 	public static String signed(int n) { return n > 0 ? "+" + n : n < 0 ? "−" + (-n) : "0"; }
 	private static int num(Properties p, String k) { return num(p, k, 0); }

@@ -796,10 +796,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Captain's Quarters: a day's rest, asked first (No to begin with), then the station's round and the screen rebuilt. */
 	private void quarters() {
 		Vault v = Vault.get();
-		Object[] options = {"No", "Yes"};
+		Object[] options = {"Cancel", "Rest", "Captain's Log"}; // heromedel: Cancel, Rest, Captain's Log
 		javax.swing.JTextArea t = new javax.swing.JTextArea(homeplanet.parser.Rest.question(v));
 		t.setEditable(false); t.setOpaque(false); t.setFont(MenuTheme.TEXT_FONT);
-		if (JOptionPane.showOptionDialog(this, t, "Captain's Quarters", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]) != 1) return;
+		int pick = JOptionPane.showOptionDialog(this, t, "Captain's Quarters", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+		if (pick == 2) { CaptainsLogDialog.open(this); quarters(); return; } // read, then back to the question
+		if (pick != 1) return; // Cancel, or closed
 		try { homeplanet.parser.Rest.rest(v); }
 		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not record the day's rest:\n" + e.getMessage()); return; }
 		init();

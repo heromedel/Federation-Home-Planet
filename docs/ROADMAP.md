@@ -1142,6 +1142,23 @@ rolled. Also from that test: setting out passes no time (arranging a second deta
 away 7 to 14 days and the job's extras (cap 21), not 1 to 3, and expedition reports have Delete (a question still
 waiting is answered No with it). Their save was repaired by hand; its history.log says what was changed and why.
 
+
+## 42. The Cargo Bay's day, the master log and the Captain's Log — built (5.17; harness test LogT)
+
+heromedel's ideas. **The Cargo Bay's day:** a Save with real business at the station (buying, selling, the Dry Dock's
+work, a system installed or uninstalled; never moving your own things about) passes a day, but not twice running: if
+the last day counted was already a Cargo Bay day, with nothing else moving the clock between, it passes none, so
+selling one missile at a time can't run the clock. **The master log** (`master.log`, hidden, each career's own; never a
+replacement for the other logs, which keep their own files, shapes and safeguards): D lines for each day the clock
+counts and why (a jump, work at a store in FTL, rest, a job from the board, business in the Cargo Bay), and E lines
+copying every entry the station log, the reputation log and the voyage logs get, with the real time and the career's
+day. A career's day 1 (`stardate.txt`) is its first moment, or its first look on 5.17; entries with no day, 0 or less
+are Prior to 1.1.1.1. Days are stored as plain numbers and shown as stardates, year.month.week.day (7-day weeks,
+28-day months, 13-month years). **The Captain's Log** (Captain's Quarters: Cancel, Rest, Captain's Log): "-- Captain's Log --",
+the first day as "Captains Log: Stardate Today" (heromedel's words), every later one as "StarDate TD x.x.x.x" (TD:
+Today), each with what happened on it; the station's housekeeping (loads, profiles, settings, patches) and the reasons
+days pass are left out, so it never tells what a day is counted in. Nothing in the other logs changed.
+
 **Ideas, back burner:** the Custom Part Order (heromedel): any weapon, drone or augment in the game without a store, for
 double its price in scrap and an equal amount of reputation; very expensive, as it should be to bypass the game.
 Crew records (heromedel): a place to look up any crew member, present or past: where they came from if known, every

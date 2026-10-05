@@ -58,7 +58,7 @@ public final class Rest {
 	public static synchronized void rest(Vault v) throws IOException {
 		int run = run(v), cost = cost(v);
 		if (cost > 0) Reputation.spend(v, cost, "Rested in quarters again, " + (run == 1 ? "a second day" : "day " + (run + 1) + " in a row"));
-		v.countBeacon();
+		v.countBeacon("a day of rest in your quarters");
 		Properties p = new Properties();
 		p.setProperty("last", Integer.toString(v.beaconsSeen()));
 		p.setProperty("run", Integer.toString(run + 1));

@@ -101,6 +101,7 @@ public final class Vault {
 	public static Vault open(File savesFolder, String slot) throws IOException {
 		Vault v = new Vault(savesFolder, slot);
 		instance = v; // before load(), so what load() logs goes into the vault's own log
+		MasterLog.start(v); // the career's day 1, the first time it's opened on 5.17 (a new one: its first moment)
 		v.load();
 		return v;
 	}
@@ -838,11 +839,15 @@ public final class Vault {
 		catch (Exception e) { return 0; }
 	}
 	/** One beacon of the fleet's time passes away from FTL (a finished expedition): everything timed counts it. */
-	public synchronized void countBeacon() { addBeacons(1); }
-	private void addBeacons(int n) {
+	public synchronized void countBeacon() { countBeacon("time passed"); }
+	/** As above, with why (the master log's day line: rest, a job, business in the Cargo Bay). */
+	public synchronized void countBeacon(String why) { addBeacons(1, why); }
+	private void addBeacons(int n, String why) {
 		if (n <= 0) return;
-		try { SafeFiles.writeText(beaconsFile(), (beaconsSeen() + n) + "\n", false); }
-		catch (IOException e) { log.warn("Could not count the beacons travelled: {}", e.toString()); }
+		int was = beaconsSeen();
+		try { SafeFiles.writeText(beaconsFile(), (was + n) + "\n", false); }
+		catch (IOException e) { log.warn("Could not count the beacons travelled: {}", e.toString()); return; }
+		for (int i = 1; i <= n; i++) MasterLog.day(this, was + i, why); // each day, and why it passed
 	}
 
 	// ---- the fleet's clock: every beacon and sector the boarded ship flies, counted once ----
@@ -876,7 +881,7 @@ public final class Vault {
 		int[] last = lastCounted(b);
 		if (last != null) {
 			addSectors(sector - last[0]);
-			addBeacons(beacons - last[1]);
+			addBeacons(beacons - last[1], beacons - last[1] == 1 ? "a jump" : "a jump (" + (beacons - last[1]) + " counted together)");
 			if (last[0] == sector && last[1] == beacons) return;
 		}
 		setClock(b, sector, beacons);
@@ -942,7 +947,7 @@ public final class Vault {
 		try { before = Integer.parseInt(p.getProperty(k + "work", "").trim()); } catch (NumberFormatException e) { }
 		boolean wasCredited = here && "true".equals(p.getProperty(k + "credited")), credited = wasCredited;
 		if (here && before >= 0 && work > before && !credited) {
-			addBeacons(1);
+			addBeacons(1, "work at a store in FTL");
 			VoyageLog.note(this, b, "Time spent on work at the beacon (buying, repairs or upgrades)");
 			credited = true;
 		}
