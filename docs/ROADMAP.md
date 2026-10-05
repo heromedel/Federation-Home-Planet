@@ -1130,8 +1130,22 @@ and reputation for the rest; with Reputation off, scrap only, as before.
   (`Reputation.tally`): each bracketed piece of an entry goes to its pool by its words, so a jump that did three things
   counts in three pools; spending entries are Spent whole. The pools add up to the total.
 
+
+## 41. Expeditions come home once, and take a week or two — built (5.16; harness checks in AsgT)
+
+From heromedel's first real test (their save): crew were being duplicated. When two details were due on the same look,
+`checkReturns` read the list once and brought them home in turn; bringing one home renumbers the rest, so the second
+came home under a stale number: its own record stayed (it came home again at the next look, a second copy of everyone)
+and another detail's record was struck off (those crew lost while away). Now each detail is brought home by its lasting
+name (when it set out, its seed, who went), the list read afresh each time, and a detail no longer listed is never
+rolled. Also from that test: setting out passes no time (arranging a second detail brought the first home), details are
+away 7 to 14 days and the job's extras (cap 21), not 1 to 3, and expedition reports have Delete (a question still
+waiting is answered No with it). Their save was repaired by hand; its history.log says what was changed and why.
+
 **Ideas, back burner:** the Custom Part Order (heromedel): any weapon, drone or augment in the game without a store, for
 double its price in scrap and an equal amount of reputation; very expensive, as it should be to bypass the game.
+Crew records (heromedel): a place to look up any crew member, present or past: where they came from if known, every
+ship they served on, and their expeditions one line each (sector, job, how it went).
 
 ## Naming decisions — settled (4B.30)
 

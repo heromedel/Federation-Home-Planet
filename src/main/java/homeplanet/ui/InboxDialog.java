@@ -258,9 +258,15 @@ public class InboxDialog extends JDialog {
 	}
 	private void deleteSelected() {
 		Transmissions.Message m = list.getSelectedValue();
-		if (m == null || !(Transmissions.isReceipt(m) || Transmissions.isNote(m) || m.key.startsWith("parcel:"))) return;
-		if (!HomePlanet.confirmNo(this, Transmissions.isNote(m) ? "Delete this message from " + m.from + "?" : "Delete this receipt?\nThe trade stays in the station's history.", "Delete")) return;
+		boolean report = m != null && m.key.startsWith("expedition:"); // an expedition report (heromedel, 5.16)
+		if (m == null || !(Transmissions.isReceipt(m) || Transmissions.isNote(m) || m.key.startsWith("parcel:") || report)) return;
+		homeplanet.parser.Assignments.Pending prize = report && homeplanet.vault.Vault.isOpen() ? homeplanet.parser.Assignments.pendingFor(homeplanet.vault.Vault.get(), m.key) : null;
+		String ask = report ? "Delete this expedition report?" + (prize == null ? "" : "ship".equals(prize.kind)
+				? "\n\nThe ship waiting on your answer is turned away with it." : "\n\nThe recruit waiting on your answer goes on their way with it.")
+				: Transmissions.isNote(m) ? "Delete this message from " + m.from + "?" : "Delete this receipt?\nThe trade stays in the station's history.";
+		if (!HomePlanet.confirmNo(this, ask, "Delete")) return;
 		try {
+			if (prize != null) homeplanet.parser.Assignments.decline(homeplanet.vault.Vault.get(), prize); // a deleted question is answered No
 			Transmissions.delete(m);
 			all.remove(m);
 		} catch (Exception e) {
@@ -347,7 +353,7 @@ public class InboxDialog extends JDialog {
 		prizeNo.setText(ship ? "Don't take her" : "Send them on their way");
 		archive.setVisible(true);
 		boolean held = parcel != null && (homeplanet.comm.Shipments.HELD.equals(parcel.state) || homeplanet.comm.Shipments.RETURNING.equals(parcel.state));
-		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m) || (m.key.startsWith("parcel:") && !held)); // they pile up: archive one or be rid of it (not a shipment still to deal with)
+		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m) || (m.key.startsWith("parcel:") && !held) || m.key.startsWith("expedition:")); // they pile up: archive one or be rid of it (not a shipment still to deal with)
 		boolean waiting = parcel != null && homeplanet.comm.Shipments.HELD.equals(parcel.state);
 		String whyNot = waiting ? homeplanet.comm.Shipments.whyNot(parcel) : null;
 		takeIt.setVisible(waiting);
@@ -359,7 +365,8 @@ public class InboxDialog extends JDialog {
 		elsewhere.setToolTipText(fleets.isEmpty() ? "None of your other fleets may take it (the trading rules), or they have no Cargo Hold yet"
 				: "Into the Cargo Hold of another of your fleets that may trade with them (it needn't be the one in use)");
 		sendBack.setVisible(waiting);
-		delete.setToolTipText(Transmissions.isNote(m) ? "Delete this message for good" : "Delete this receipt for good: the trade stays in the station's history");
+		delete.setToolTipText(m.key.startsWith("expedition:") ? "Delete this report for good: the expedition stays in the station's history"
+				: Transmissions.isNote(m) ? "Delete this message for good" : "Delete this receipt for good: the trade stays in the station's history");
 		boolean stipend = Transmissions.deletable(m);
 		boolean unclaimed = Transmissions.unclaimedStipend(m) && !m.archived;
 		archive.setText(stipend || unclaimed ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
