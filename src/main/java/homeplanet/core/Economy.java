@@ -74,13 +74,20 @@ public final class Economy {
 		return c != null ? c.augmentsHome() : HomePlanet.immersiveMode || HomePlanet.augmentsHome;
 	}
 
+	/** Reputation may pay a New Journey's fee and a plea's ship (How Reputation Can be Used: 1 or 2). */
+	public static boolean repForJourneysAndPleas() { return homeplanet.vault.Reputation.shown() && HomePlanet.reputationUse <= 2; }
+	/** Reputation may pay for what vanilla FTL can't do: Refit removal, stripping, a custom work order's share (2). */
+	public static boolean repForVanillaBreaking() { return homeplanet.vault.Reputation.shown() && HomePlanet.reputationUse == 2; }
+	/** Reputation is spent at all: a promise of adventure and rest in quarters cost it (1 or 2); 3 keeps it only as a score, and they're free. */
+	public static boolean repSpends() { return homeplanet.vault.Reputation.shown() && HomePlanet.reputationUse <= 2; }
+
 	/**
 	 * A custom work order past FTL's System Limit (heromedel, 5.13): this much scrap and as much reputation (Easy 25,
-	 * Normal 50, Hard 75 of each; Sandbox 50 of each). With Reputation off, the reputation's share is paid in scrap too.
+	 * Normal 50, Hard 75 of each; Sandbox 50 of each). Where reputation can't pay for it, its share is paid in scrap too.
 	 */
-	public static int workOrderScrap() { int b = workOrderBase(); return homeplanet.vault.Reputation.shown() ? b : 2 * b; }
-	/** The reputation a custom work order costs beside its scrap (0 with Reputation off). */
-	public static int workOrderRep() { return homeplanet.vault.Reputation.shown() ? workOrderBase() : 0; }
+	public static int workOrderScrap() { int b = workOrderBase(); return repForVanillaBreaking() ? b : 2 * b; }
+	/** The reputation a custom work order costs beside its scrap (0 where reputation can't pay for it: then it's scrap). */
+	public static int workOrderRep() { return repForVanillaBreaking() ? workOrderBase() : 0; }
 	private static int workOrderBase() {
 		homeplanet.parser.CareerRules c = career();
 		return c != null ? c.workOrder() : 50;

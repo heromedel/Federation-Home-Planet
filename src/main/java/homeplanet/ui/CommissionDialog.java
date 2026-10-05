@@ -369,7 +369,7 @@ public class CommissionDialog extends JDialog {
 			preview.add(p, BorderLayout.CENTER);
 			if (HomePlanet.commissionCosts()) {
 				if (emptyFree(e.id) && homeplanet.vault.Vault.get().freeCommandReassigned() && !homeplanet.vault.Vault.get().freeCommandForfeit())
-					priceLabel.setText("<html><b>On your plea.</b> When you commission her, give up the Cargo Hold for her" + (homeplanet.vault.Reputation.shown() ? ", or keep it and answer for her with your reputation" : "") + ".</html>");
+					priceLabel.setText("<html><b>On your plea.</b> When you commission her, give up the Cargo Hold for her" + (homeplanet.core.Economy.repForJourneysAndPleas() ? ", or keep it and answer for her with your reputation" : "") + ".</html>");
 				else if (emptyFree(e.id)) priceLabel.setText("<html><b>Free.</b> The Federation Home Planet grants you your first command at no cost.</html>");
 				else if (free(e.id)) priceLabel.setText("<html><b>Free, once.</b> Newly unlocked in FTL: The Federation Home Planet commissions the first of her line at no cost.</html>");
 				else showPrice(quote(e.id, s));
@@ -474,7 +474,7 @@ public class CommissionDialog extends JDialog {
 		String howPaid = null;
 		if (plea) {
 			int value = pleaValue(e.id, s), hold = homeplanet.parser.FreeCommand.holdSaleValue(vault);
-			boolean rep = homeplanet.vault.Reputation.shown();
+			boolean rep = homeplanet.core.Economy.repForJourneysAndPleas(); // How Reputation Can be Used: Only as a score offers the hold alone
 			int costGiving = homeplanet.parser.FreeCommand.reputationCost(value, hold), costKeeping = homeplanet.parser.FreeCommand.reputationCost(value, 0);
 			StringBuilder msg = new StringBuilder(name + " is worth " + value + " scrap. Your Cargo Hold would sell for " + hold + " scrap.\n\n");
 			String share = homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent());

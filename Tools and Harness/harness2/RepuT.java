@@ -121,6 +121,21 @@ public class RepuT {
   Reputation.spend(v, Reputation.total(v) + 7, "A plea, more than there is");
   Setup.chk("R: a plea may go below zero", Reputation.total(v) == -7 && !Reputation.canSpend(v, 1));
   Setup.chk("R: a plea in Sandbox Mode costs a tenth of what the hold doesn't cover", FreeCommand.reputationCost(1000, 400) == 60 && Economy.pleaPercent() == 10);
+  // 5.15: How Reputation Can be Used (heromedel): 1 New Journeys and Pleads (the default), 2 Vanillas Breaking Actions, 3 Only as a score
+  Setup.chk("U: the default is 1: journeys and pleas, not vanilla-breaking; the work order all in scrap; promise and rest cost reputation",
+    HomePlanet.reputationUse == 1 && Economy.repForJourneysAndPleas() && !Economy.repForVanillaBreaking() && Economy.workOrderRep() == 0 && Economy.workOrderScrap() == 100 && Economy.repSpends());
+  HomePlanet.reputationUse = 2;
+  Setup.chk("U: 2: vanilla-breaking too; the work order half scrap, half reputation", Economy.repForJourneysAndPleas() && Economy.repForVanillaBreaking() && Economy.workOrderScrap() == 50 && Economy.workOrderRep() == 50);
+  HomePlanet.reputationUse = 3;
+  Setup.chk("U: 3: only a score: nothing spends it, the promise and rest are free", !Economy.repForJourneysAndPleas() && !Economy.repForVanillaBreaking() && !Economy.repSpends()
+    && Economy.workOrderScrap() == 100 && Expeditions.promiseRep(v) == 0 && Rest.cost(v) == 0);
+  HomePlanet.reputationUse = 1;
+  // 5.15: the tally under the log: each piece in its pool, the pools adding up to the total
+  Map<String, Integer> t = Reputation.tally(v);
+  int sum = 0; for (int x : t.values()) sum += x;
+  Setup.chk("T: the pools add up to the total " + t, sum == Reputation.total(v) && !t.containsKey("Other"));
+  Setup.chk("T: the plea is Spent, captives and the ransom are Crew, sectors Travel, ships Combat, achievements their own",
+    t.get("Spent") == -184 && t.containsKey("Crew") && t.get("Travel") > 0 && t.containsKey("Combat") && t.get("Achievements") > 0 && t.containsKey("Scrap") && t.containsKey("Events"));
   Setup.done();
  }
  static Ship named(Vault v, String n) { for (Ship s : v.all()) if (n.equals(s.name)) return s; throw new IllegalStateException(n); }

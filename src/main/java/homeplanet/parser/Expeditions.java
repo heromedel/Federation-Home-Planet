@@ -1097,7 +1097,7 @@ public final class Expeditions {
 	/** What a promise of adventure costs in reputation, with Reputation on (heromedel: nothing was too little; a battle's worth). */
 	public static final int PROMISE_REP = 15;
 	/** The promise's cost right now: PROMISE_REP with Reputation on and no crew anywhere, else 0. */
-	public static int promiseRep(Vault v) { return Vault.isOpen() && homeplanet.vault.Reputation.shown() && fleetCrew(v) == 0 ? PROMISE_REP : 0; }
+	public static int promiseRep(Vault v) { return Vault.isOpen() && homeplanet.core.Economy.repSpends() && fleetCrew(v) == 0 ? PROMISE_REP : 0; }
 	/** The chance someone answers: a free promise of adventure, or a paid posting. */
 	public static final int FREE_CHANCE = 50, PAID_CHANCE = 75;
 

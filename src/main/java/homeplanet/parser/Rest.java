@@ -46,7 +46,7 @@ public final class Rest {
 		return p.getProperty("last") != null && intOf(p, "last") == v.beaconsSeen() ? intOf(p, "run") : 0;
 	}
 	/** What another day would cost now: nothing the first day or without Reputation, else the run, up to MAX_COST. */
-	public static int cost(Vault v) { return Reputation.shown() ? Math.min(MAX_COST, run(v)) : 0; }
+	public static int cost(Vault v) { return homeplanet.core.Economy.repSpends() ? Math.min(MAX_COST, run(v)) : 0; }
 	/** The question, as heromedel wrote it: plain the first day, then the days so far with "What will people think." on a line of its own, and the cost on another when there is one. */
 	public static String question(Vault v) {
 		int run = run(v), cost = cost(v);

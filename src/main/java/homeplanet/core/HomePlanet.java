@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.14";
+	public static final String APP_VERSION = "5.15";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -96,6 +96,11 @@ public class HomePlanet {
 	public static boolean reputationOn = false;
 	/** Does the fleet in use earn and lose reputation: always in Immersive Mode, and in Sandbox Mode with its Reputation rule. */
 	public static boolean reputation() { return immersiveMode || reputationOn; }
+	/**
+	 * How Reputation Can be Used (heromedel, 5.15; any mode, never locked): 1 New Journeys and Pleads, 2 Vanillas Breaking
+	 * Actions (and 1), 3 Only as a score. Wherever it can't be used, scrap pays. Default 1.
+	 */
+	public static int reputationUse = 1;
 	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
 	// ---- the rules in force: Sandbox Mode's own (the fields above, as Settings has them), or an Immersive career's, fixed ----
@@ -170,6 +175,7 @@ public class HomePlanet {
 		longRangePopups = flag("long_range_popups", true);
 		careerMessages = flag("career_messages");
 		reputationOn = flag("reputation");
+		try { reputationUse = Math.max(1, Math.min(3, Integer.parseInt(config.getProperty("reputation_use", "1").trim()))); } catch (NumberFormatException e) { reputationUse = 1; }
 		finalVictory = config.getProperty("final_victory", "nothing");
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 
@@ -335,6 +341,7 @@ public class HomePlanet {
 		config.setProperty("new_journey_fee", Integer.toString(journeyFee));
 		config.setProperty("career_messages", Boolean.toString(careerMessages));
 		config.setProperty("reputation", Boolean.toString(reputationOn));
+		config.setProperty("reputation_use", Integer.toString(reputationUse));
 		config.setProperty("sell_supplies", Boolean.toString(sellSupplies));
 		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));
 		config.setProperty("commission_custom_unlocked_only", Boolean.toString(commissionCustomUnlockedOnly));

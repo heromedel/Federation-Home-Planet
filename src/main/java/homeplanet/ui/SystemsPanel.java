@@ -548,7 +548,7 @@ public class SystemsPanel {
 		String name = DryDockShop.systemTitle(sel.type.getId());
 		int broken = st.getDamagedBars(); // a damaged system goes into storage damaged: storing is no free repair
 		int fee = homeplanet.core.Economy.removalFee();
-		if (fee > 0 && homeplanet.vault.Reputation.shown()) { // scrap or reputation (heromedel, 5.13)
+		if (fee > 0 && homeplanet.core.Economy.repForVanillaBreaking()) { // scrap or reputation (heromedel, 5.13)
 			int[] pay = RepPay.choose(bay, "Systems", "Taking the " + name + " off " + save.getPlayerShipName() + " costs", fee, hold(), repHave(), "The Cargo Hold");
 			if (pay == null) return;
 			if (pay[0] > 0) charge(pay[0]);

@@ -996,7 +996,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void plead() {
 		Vault v = Vault.get();
 		String offered = homeplanet.parser.FreeCommand.offered(homeplanet.core.Economy.reassignment());
-		boolean rep = homeplanet.vault.Reputation.shown();
+		boolean rep = homeplanet.core.Economy.repForJourneysAndPleas();
 		String message = "Plead for a new ship?\n\n"
 				+ "You put your case to The Federation Home Planet: one more ship, and you'll bring her home. They listen.\n"
 				+ "They will send " + offered + ". Her order will wait for you at Commission.\n\n"
@@ -1004,6 +1004,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "  - Give up the Cargo Hold: everything in it but the crew, at what it would sell for (the Junkyard isn't touched).\n"
 				+ (rep ? "  - Keep the Cargo Hold, and answer for her with your reputation.\n"
 						+ "Whatever the hold doesn't cover of her value, " + homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent()) + " of it comes off your reputation.\n"
+						: homeplanet.vault.Reputation.shown() ? "" // How Reputation Can be Used: Only as a score
 						: "  (With the Reputation rule on, you could keep the Cargo Hold and answer for her with your reputation.)\n")
 				+ "\nUntil she's commissioned, the plea can be withdrawn (Other... > Withdraw Plea).";
 		Object[] options = {"Plead", "Cancel"};
@@ -1263,7 +1264,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (choice < 0 || choice > 2) return;
 		int fee = homeplanet.core.Economy.journeyFee();
 		int[] pay = {fee, 0}; // scrap, reputation
-		if (fee > 0 && homeplanet.vault.Reputation.shown()) { // scrap or reputation, never below zero (heromedel, 5.13)
+		if (fee > 0 && homeplanet.core.Economy.repForJourneysAndPleas()) { // scrap or reputation, never below zero (heromedel, 5.13)
 			pay = RepPay.choose(this, "New Journey", "The Federation Home Planet charges to plot a new journey:", fee, Vault.get().storageScrap(),
 					homeplanet.vault.Reputation.total(Vault.get()), "The Cargo Hold");
 			if (pay == null) return;
@@ -1340,7 +1341,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final int stripCost = systems * homeplanet.core.Economy.stripFee();
 		final boolean strip;
 		int[] pay = {stripCost, 0}; // scrap, reputation (heromedel, 5.13: either, never below zero)
-		boolean repOn = homeplanet.vault.Reputation.shown();
+		boolean repOn = homeplanet.core.Economy.repForVanillaBreaking();
 		if (systems > 0) {
 			int have = Vault.get().storageScrap() + wreck.getPlayerShip().getScrapAmt(), repHave = repOn ? homeplanet.vault.Reputation.total(Vault.get()) : 0;
 			boolean can = stripCost <= have || repOn && repHave >= stripCost - Math.max(0, have);

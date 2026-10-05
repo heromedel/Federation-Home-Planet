@@ -53,7 +53,8 @@ final class ReputationLogDialog extends JDialog {
 		scroll.setBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, MenuTheme.GOLD));
 		scroll.setPreferredSize(new Dimension(900, 400)); // room for the summary below it on a scaled screen
 		scroll.getVerticalScrollBar().setUnitIncrement(22);
-		JPanel south = new JPanel(new BorderLayout());
+		JPanel south = new JPanel(new BorderLayout(12, 0));
+		south.add(tallyLine(), BorderLayout.CENTER); // where it came from, a running tally (heromedel, 5.15)
 		JButton close = new JButton("Close");
 		close.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
 		south.add(close, BorderLayout.EAST);
@@ -73,6 +74,21 @@ final class ReputationLogDialog extends JDialog {
 		pack();
 		setLocationRelativeTo(getOwner());
 		ScreenFit.keepOnScreen(this);
+	}
+
+	/** "Total Reputation From:" and each pool's net, green or red; pools at zero left out. */
+	private static JLabel tallyLine() {
+		java.util.Map<String, Integer> t = Reputation.tally(Vault.get());
+		StringBuilder h = new StringBuilder("<html><div style='width:700px'><font color='" + MenuTheme.HTML_GOLD + "'><b>Total Reputation From:</b></font>&nbsp;&nbsp;");
+		if (t.isEmpty()) h.append("<font color='" + MenuTheme.HTML_GREY_GREEN + "'>nothing yet</font>");
+		boolean first = true;
+		for (java.util.Map.Entry<String, Integer> e : t.entrySet()) {
+			if (!first) h.append("&nbsp;&nbsp;<font color='" + MenuTheme.HTML_GREY_GREEN + "'>&middot;</font>&nbsp;&nbsp;");
+			first = false;
+			h.append(e.getKey()).append("&nbsp;<font color='").append(e.getValue() < 0 ? MenuTheme.HTML_RED : "#78d78c").append("'><b>")
+					.append(Reputation.signed(e.getValue())).append("</b></font>");
+		}
+		return new JLabel(h.append("</div></html>").toString());
 	}
 
 	/**

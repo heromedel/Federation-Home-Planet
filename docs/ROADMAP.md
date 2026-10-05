@@ -1116,6 +1116,20 @@ and reputation for the rest; with Reputation off, scrap only, as before.
   off in 5.14 (heromedel: a page of how to earn and lose it invites min-maxing; heromedel may write it later). The first
   draft stays in `ReputationLogDialog.howPage()`, unused.
 
+
+## 40. How Reputation Can be Used, and where it came from — built (5.15; harness checks in RepuT)
+
+- **How Reputation Can be Used** (heromedel; Settings, Rules, under Reputation; any mode, never locked by Immersive
+  Mode; `reputation_use` in the cfg): 1 New Journeys and Pleads (the default, until the rest is tried in play),
+  2 Vanillas Breaking Actions (1, and Refit removal, stripping, a custom work order's share), 3 Only as a score.
+  Wherever reputation can't be used, scrap pays: a work order's share in scrap too, a plea with 3 offers giving up the
+  Cargo Hold alone. A promise of adventure and rest in quarters cost reputation with 1 and 2 (nobody is locked out of
+  them) and are free with 3. Captives and ransoms count with all three: that's score.
+- **Total Reputation From:** a line under the Career Reputation Log, a running tally by pool (Travel, Combat, Crew,
+  Scrap, Events, Achievements, Spent), each net, green or red, pools at zero left out. Read from the log itself
+  (`Reputation.tally`): each bracketed piece of an entry goes to its pool by its words, so a jump that did three things
+  counts in three pools; spending entries are Spent whole. The pools add up to the total.
+
 **Ideas, back burner:** the Custom Part Order (heromedel): any weapon, drone or augment in the game without a store, for
 double its price in scrap and an equal amount of reputation; very expensive, as it should be to bypass the game.
 
