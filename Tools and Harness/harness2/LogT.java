@@ -34,6 +34,7 @@ public class LogT { public static void main(String[] a) throws Exception {
  storyDays(game, new File(work, "story"));
  voyageDays(game, new File(work, "voyage"));
  beaconDays(game, new File(work, "beacon"));
+ System.setProperty("game", game.getPath()); fixes520(v);
  Setup.done();
 }
  static int count(String s, String w) { int n = 0, i = 0; while ((i = s.indexOf(w, i)) >= 0) { n++; i += w.length(); } return n; }
@@ -77,7 +78,7 @@ public class LogT { public static void main(String[] a) throws Exception {
   out.clear(); ch.invoke(null, a, look("2", 3, 2, "", ""), 1, out);
   Setup.chk("B: a jump into danger the save names none of: an ion storm, not a nebula " + out, out.contains("Beacon: an ion storm") && !out.toString().contains("nebula"));
   out.clear(); ch.invoke(null, a, look("2", 2, 2, "sun|pds", "a Rock pirate"), 1, out);
-  Setup.chk("B: the save's own hazards, and the ship met " + out, out.contains("Beacon: a red giant, a planetary defence system") && out.contains("Ship met: a Rock pirate"));
+  Setup.chk("B: the save's own hazards, and the ship met " + out, out.contains("Beacon: a star, an Anti-Ship Battery") && out.contains("Ship met: a Rock pirate"));
   Properties old = look("1", 0, 0, "", ""); old.remove("nebulaJumps"); old.remove("dangerJumps"); old.remove("met");
   out.clear(); ch.invoke(null, old, look("2", 9, 9, "", ""), 1, out);
   Setup.chk("B: a last look from before 5.19 (no counts kept) reads no nebula or storm " + out, !out.toString().contains("Beacon"));
@@ -100,9 +101,28 @@ public class LogT { public static void main(String[] a) throws Exception {
   Setup.chk("B: On board the Kestrel: with a colon", p.contains("On board the Kestrel:") && !p.contains("On board the Kestrel."));
   Setup.chk("B: Then we jumped into a nebula", p.contains("Then we jumped into a nebula."));
   Setup.chk("B: the next day's news goes to the jump before it: into an ion storm and met a Rock pirate", p.contains("Then we jumped into an ion storm and met a Rock pirate."));
-  Setup.chk("B: a sector and a hazard: to sector 3, to a beacon near a red giant", p.contains("Then we jumped to sector 3, to a beacon near a red giant."));
+  Setup.chk("B: a sector and a hazard: to sector 3, to a beacon near a star (5.19's \"a red giant\" read as FTL names it)", p.contains("Then we jumped to sector 3, to a beacon near a star."));
   Setup.chk("B: a station: in an asteroid field, and met a Mantis ship", p.contains("Then we jumped to a station in an asteroid field and met a Mantis ship."));
   Setup.chk("B: the beacon lines themselves never shown", !p.contains("Beacon:") && !p.contains("Ship met:"));
+ }
+ /** 5.20: work at a store told on the stop's own day; a sale from a ship's cargo reads cleanly. */
+ static void fixes520(Vault v) throws Exception {
+  Ship b = v.docked().get(0);
+  net.blerf.ftl.parser.SavedGameParser.SavedGameState gs = v.readCopy(b).save;
+  java.lang.reflect.Method nw = Vault.class.getDeclaredMethod("noteWork", Ship.class, net.blerf.ftl.parser.SavedGameParser.SavedGameState.class); nw.setAccessible(true);
+  nw.invoke(v, b, gs); // the stop, first seen
+  gs.setStateVar("store_purchase", (gs.hasStateVar("store_purchase") ? gs.getStateVar("store_purchase") : 0) + 1);
+  int before = MasterLog.today(v);
+  nw.invoke(v, b, gs); // work done there: a day passes
+  int workDay = 0;
+  for (Map.Entry<Integer, List<MasterLog.Entry>> e : MasterLog.byDay(v).entrySet()) for (MasterLog.Entry x : e.getValue()) if (x.text.startsWith("Time spent on work")) workDay = e.getKey();
+  Setup.chk("F: work at a store is told on the stop's own day, then the day passes (" + workDay + ", " + before + " -> " + MasterLog.today(v) + ")", workDay == before && MasterLog.today(v) == before + 1);
+  File saves = new File(v.root.getParentFile().getParentFile(), "sale/saves"); saves.mkdirs(); // the station log writes to the fleet opened last: a fresh one of its own
+  v = Setup.open(new File(System.getProperty("game")), saves); v.storage(); v.takeStock();
+  HistoryLog.entry("SELL", "2 items for 36 scrap", Arrays.asList("Burst Laser II for 30 scrap  (Kestrel (cargo))", "Ion Blast for 6 scrap  (The (Odd) Ship)"));
+  MasterLog.businessDay(v);
+  String p = page(v, false);
+  Setup.chk("F: a sale from a ship's cargo, or a ship with brackets in her name, reads cleanly", p.contains("Sold a Burst Laser II and an Ion Blast.") && !p.contains("(cargo)"));
  }
  static Properties look(String beacon, int nebula, int danger, String hazards, String met) {
   Properties p = new Properties();
@@ -130,7 +150,7 @@ public class LogT { public static void main(String[] a) throws Exception {
   Rest.rest(v); Rest.rest(v);
   String p = page(v, false), d = page(v, true);
   Setup.chk("L: day one heads 'Stardate Today', later days 'Stardate 1.1.1.2'", p.contains("-- Captain's Log --") && p.contains("Stardate Today") && p.contains("Stardate 1.1.1.2") && !p.contains("StarDate TD"));
-  Setup.chk("L: things that happened, as the captain tells them", p.contains("Bob and Joe came back from their expedition; Fred did not.") && p.contains("Got a letter from the Home Planet Shipyard: I can now commission a new Kestrel Cruiser, Type B."));
+  Setup.chk("L: things that happened, as the captain tells them", p.contains("Bob and Joe came back from the expedition; Fred did not.") && p.contains("Got a letter from the Home Planet Shipyard: I can now commission a new Kestrel Cruiser, Type B."));
   Setup.chk("L: the action that moved the day on comes last, with Then", p.indexOf("Got a letter") < p.indexOf("Then I rested in my quarters.") && p.contains("Then I sold five missiles."));
   Setup.chk("L: repeats merged: five missiles over two Saves are one line; two boardings are one", count(p.toLowerCase(), "sold") == 1 && p.contains("Took command of the Hinata.") && !p.contains("Kestrel."));
   Setup.chk("L: a rest is one line on the day rested, nothing of it on the next", count(p, "rested in my quarters") + count(p, "Rested in my quarters") == 3 && p.indexOf("Then I rested") < p.indexOf("Stardate 1.1.1.2"));

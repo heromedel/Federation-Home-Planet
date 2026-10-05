@@ -14,6 +14,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
  awayAndBack(v);
  twoDueAtOnce(v);
  prizes(v);
+ twoPrizesOneDay(v);
  experience(v);
  Setup.done();
 }
@@ -262,6 +263,26 @@ public class AsgT { public static void main(String[] a) throws Exception {
     Assignments.holdCrew(v).size() == 0 && SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip()).size() == 1 && inf.size() == 1 && inf.get(0).name.equals(crew.get(2).getName())
     && cp.getProperty("0.name", "").equals(crew.get(1).getName()) && v.readCopy(v.storage()).save.getPlayerShip().getCrewList().get(0).getHealth() <= 25);
  }
+ /** Two hijacked ships won by details sent on the same day: two prizes, two files (5.20: the renumbered one wrote over the first's). */
+ static void twoPrizesOneDay(Vault v) throws Exception {
+  int junked = v.junked().size();
+  for (int i = 0; i < 2; i++) Assignments.send(v, Assignments.board(v).get(0).slot, ExpT.hold(v, "rock", "engi"), new Random(10 + i));
+  List<Assignments.Away> aw = Assignments.away(v);
+  Setup.chk("Z: two details sent on one day", aw.size() == 2 && aw.get(0).sentAt == aw.get(1).sentAt);
+  while (v.beaconsSeen() < Math.max(aw.get(0).until, aw.get(1).until)) v.countBeacon();
+  for (int i = 0; i < 2; i++) {
+   Assignments.Away a = Assignments.away(v).get(0); // the second is renumbered to 0 once the first is home
+   Assignments.Result r = Assignments.roll("pirate", a.crew, new Random(1));
+   for (Assignments.Fate f : r.fates) { f.died = false; f.captured = false; f.infirmary = false; f.band = 3; f.item = null; }
+   r.job = "hijack"; r.prize = "ship";
+   Assignments.bringHome(v, a, r);
+  }
+  List<Assignments.Pending> pend = Assignments.pending(v);
+  boolean apart = pend.size() == 2 && pend.get(0).save.isFile() && pend.get(1).save.isFile() && !pend.get(0).save.equals(pend.get(1).save);
+  Setup.chk("Z: two prize ships wait, each in her own file " + (pend.size() == 2 ? pend.get(0).save.getName() + " " + pend.get(1).save.getName() : "" + pend.size()), apart);
+  for (Assignments.Pending p : pend) Assignments.accept(v, p, false);
+  Setup.chk("Z: and both reach the Junkyard, two ships", v.junked().size() == junked + 2 && Assignments.pending(v).isEmpty());
+ }
  static void prizes(Vault v) throws Exception {
   List<CrewState> crew = ExpT.hold(v, "rock", "engi");
   int listingsBefore = Derelicts.current(v).size();
@@ -326,7 +347,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   r.job = "rescue"; r.prize = "recruit";
   rep = Assignments.bringHome(v, a, r);
   pend = Assignments.pending(v);
-  String letterKey = "expedition:" + a.sentAt + ":" + a.index + ":" + String.join(",", a.names());
+  String letterKey = Assignments.letterKey(a);
   Setup.chk("Z: the letter carries the question: the prize names it, the Space Dock leaves it be, the words say they wait in the lounge", pend.size() == 1 && letterKey.equals(pend.get(0).letter)
     && Assignments.pendingToAsk(v).isEmpty() && Assignments.pendingFor(v, letterKey) != null && rep.text.contains("The Station Lounge"));
   boolean delivered = false; for (Transmissions.Message m : Transmissions.load()) if (m.key.equals(letterKey)) delivered = true;
@@ -384,7 +405,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   for (int i = 0; i < 3; i++) { Assignments.Fate f = r.fates.get(i); f.band = 5; f.died = f.captured = f.infirmary = f.worn = false; f.item = null; f.crew.setHealth(100); }
   r.fates.get(0).band = 0; r.fates.get(0).died = true; r.fates.get(1).band = 1; r.fates.get(1).infirmary = true;
   int pts = 0; for (int k = 0; k < 6; k++) pts += homeplanet.model.Skills.points(r.fates.get(2).crew, k);
-  String letter = "expedition:" + aw.sentAt + ":" + aw.index + ":" + String.join(",", aw.names());
+  String letter = Assignments.letterKey(aw);
   rep = Assignments.bringHome(v, aw, r);
   int ptsAfter = 0; for (int k = 0; k < 6; k++) ptsAfter += homeplanet.model.Skills.points(r.fates.get(2).crew, k);
   List<Assignments.Face> kept = Assignments.facesFor(v, letter);

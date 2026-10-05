@@ -36,7 +36,7 @@ public final class CaptainsLog {
 		/** For a ship's jumps: the sector she reached (0: none), and whether she came to a station. */
 		int sector;
 		boolean station;
-		/** For a ship's jumps: what her beacon held ("a nebula", "a red giant") and the ships met there ("a Rock pirate"). */
+		/** For a ship's jumps: what her beacon held ("a nebula", "a star") and the ships met there ("a Rock pirate"). */
 		final List<String> hazards = new ArrayList<String>(), met = new ArrayList<String>();
 		// what's merged into it
 		final Map<String, Integer> things = new LinkedHashMap<String, Integer>();
@@ -211,7 +211,7 @@ public final class CaptainsLog {
 			boolean sell = kind.equals("SELL");
 			Line l = line(m, sell ? "sell" : "junk", sell ? "sell" : "junk", true, "");
 			for (String d : det) {
-				String what = d.replaceAll("\\s+\\([^)]*\\)\\s*$", "").trim(); // the ship's name in brackets at the end
+				String what = unowned(d).trim(); // the ship's name in brackets at the end
 				String price = null;
 				int f = what.lastIndexOf(" for ");
 				if (f > 0 && what.endsWith(" scrap")) { price = what.substring(f + 5); what = what.substring(0, f); }
@@ -223,7 +223,7 @@ public final class CaptainsLog {
 			}
 		} else if (kind.equals("RETIRE")) {
 			Line l = line(m, "retire", "retire", true, "");
-			for (String d : det) add(l, d.replaceAll("\\s+\\([^)]*\\)\\s*$", "").replaceAll("\\s*\\([^)]*\\)$", "").trim(), 1);
+			for (String d : det) add(l, unowned(d).replaceAll("\\s*\\([^)]*\\)$", "").trim(), 1);
 		} else if (kind.equals("SYSTEMS")) {
 			systems(head, det, m);
 		} else if (kind.equals("BOARD")) {
@@ -248,10 +248,10 @@ public final class CaptainsLog {
 			String name = shipName(head);
 			once(m, "ships", true, name.contains("/") || name.endsWith(".sav") ? "Salvaged a ship from the Junkyard." : "Salvaged the " + name + " from the Junkyard.");
 		} else if (kind.equals("RENAME")) {
-			String[] w = head.replaceAll("\\s+\\([^)]*\\)\\s*$", "").split(" -> ", 2);
+			String[] w = unowned(head).split(" -> ", 2);
 			if (w.length == 2) once(m, "ships", true, "Renamed the " + w[0].trim() + " the " + w[1].trim() + ".");
 		} else if (kind.equals("RENAME CREW")) {
-			String[] w = head.replaceAll("\\s+\\([^)]*\\)\\s*$", "").split(" -> ", 2);
+			String[] w = unowned(head).split(" -> ", 2);
 			if (w.length == 2) once(m, "crew", false, w[0].trim() + " is now " + w[1].trim() + ".");
 		} else if (kind.equals("REMODEL")) {
 			once(m, "ships", true, "Had the " + head.split(" -> ")[0].trim() + " remodeled.");
@@ -280,7 +280,7 @@ public final class CaptainsLog {
 		} else if (kind.equals("VICTORY")) {
 			String name = head.split(" won | was rescued ")[0].trim();
 			if (head.contains(" was rescued after")) once(m, "ships", false, "The " + name + " was brought home after the final battle.");
-			else once(m, "ships", false, "The " + name + " won the final battle.");
+			else once(m, "ships", false, "The " + name + " drove the Rebel Flagship off."); // hard rule 1: never that she destroyed it
 		} else if (kind.equals("FINAL BATTLE")) {
 			once(m, "ships", false, "The " + head.split(":")[0].trim() + " went into the final battle.");
 		} else if (kind.equals("MUSEUM")) {
@@ -343,7 +343,8 @@ public final class CaptainsLog {
 	private static void expedition(String head, Map<String, Line> m) {
 		if (head.contains(" sent to ")) {
 			String[] w = head.split(" sent to ", 2);
-			Line l = once(m, "expedition", true, "Sent " + names(w[0]) + " to " + the(w[1]) + ".");
+			String sector = w[1].trim(); // one of many such sectors: "a Rebel Controlled Sector"; the Crystal worlds are the only ones
+			Line l = once(m, "expedition", true, "Sent " + names(w[0]) + " to " + (sector.endsWith("Worlds") || sector.toLowerCase().startsWith("the ") ? the(sector) : article(sector)) + ".");
 			return;
 		}
 		int back = head.indexOf(" back from ");
@@ -355,8 +356,8 @@ public final class CaptainsLog {
 			for (String k : killed) came.remove(k);
 			for (String k : taken) came.remove(k);
 			StringBuilder s = new StringBuilder();
-			s.append(came.isEmpty() ? "No one came back from the expedition" : join(came) + " came back from their expedition");
-			if (!killed.isEmpty()) s.append("; ").append(join(killed)).append(" did not");
+			s.append(came.isEmpty() ? "No one came back from the expedition" : join(came) + " came back from the expedition");
+			if (!killed.isEmpty()) s.append("; ").append(join(killed)).append(!came.isEmpty() ? " did not" : killed.size() == 1 ? " was killed" : " were killed");
 			if (!taken.isEmpty()) s.append("; ").append(join(taken)).append(taken.size() == 1 ? " was" : " were").append(" taken captive");
 			if (!laid.isEmpty()) s.append("; ").append(join(laid)).append(" went to the infirmary");
 			Line l = once(m, "expedition", false, s.append(".").toString());
@@ -459,14 +460,15 @@ public final class CaptainsLog {
 	}
 	/**
 	 * A jump in words (heromedel, 5.19): where to, what was there, who she met. "We jumped into a nebula and met a Rock
-	 * pirate.", "We jumped to sector 3, to a beacon near a red giant.", "We jumped to a station in an asteroid field."
+	 * pirate.", "We jumped to sector 3, to a beacon near a star.", "We jumped to a station in an asteroid field."
 	 */
 	static String jumpText(Line l) {
 		String into = null;
 		List<String> near = new ArrayList<String>();
 		for (String h : l.hazards) {
+			h = h.equals("a red giant") ? "a star" : h.equals("a planetary defence system") ? "an Anti-Ship Battery" : h; // as 5.19 to 5.21 logged them
 			if (h.equals("a nebula") || h.equals("an ion storm") || h.equals("an asteroid field")) { if (into == null) into = h; }
-			else near.add(h.equals("a planetary defence system") ? "within range of " + h : "near " + h);
+			else near.add(h.equals("an Anti-Ship Battery") ? "within range of " + h : "near " + h);
 		}
 		String nearby = near.isEmpty() ? "" : join(near);
 		String where;
@@ -537,6 +539,12 @@ public final class CaptainsLog {
 		List<String> out = new ArrayList<String>();
 		for (String x : list.split(", ")) out.add(x.replaceAll("\\s*\\([^)]*\\)$", "").trim());
 		return out;
+	}
+	/** A line without the ship's name in brackets at its end ("  (Kestrel (cargo))"): cut at its double space, so brackets inside it don't matter. */
+	static String unowned(String s) {
+		int i = s.lastIndexOf("  (");
+		if (i > 0 && s.trim().endsWith(")")) return s.substring(0, i).trim();
+		return s.replaceAll("\\s+\\([^)]*\\)\\s*$", "");
 	}
 	private static String shipName(String head) { return head.split("  ")[0].replaceAll("\\s*\\([0-9a-f]{16}\\)", "").trim(); }
 	private static String race(String id) {

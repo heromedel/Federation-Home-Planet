@@ -737,7 +737,6 @@ public final class Expeditions {
 		}
 		v.begin().put(st, c.save, c.hash).put(infirmaryFile(v), propsBytes(inf, INFIRMARY_NOTE)).put(captivesFile(v), propsBytes(cap, CAPTIVES_NOTE)).commit();
 		homeplanet.vault.Reputation.captured(v, takenNames); // -4 each (heromedel)
-		v.countBeacon("a job from the board");
 		// the last outcome has told the rest: only the infirmary is news
 		StringBuilder sb = new StringBuilder();
 		if (!hurtNames.isEmpty()) sb.append(String.join(" and ", hurtNames)).append(hurtNames.size() > 1 ? " are" : " is").append(" carried to the infirmary when the shuttle docks.");
@@ -745,6 +744,7 @@ public final class Expeditions {
 				+ (r.items.isEmpty() ? "" : ", " + String.join(", ", r.items)) + (joinedNames.isEmpty() ? "" : "; joined: " + String.join(", ", joinedNames))
 				+ (lostNames.isEmpty() ? "" : "; did not come back: " + String.join(", ", lostNames))
 				+ (hurtNames.isEmpty() ? "" : "; to the infirmary: " + String.join(", ", hurtNames)));
+		v.countBeacon("a job from the board"); // after its entry (5.20): the job is told on the day it was taken, closing it
 		return sb.toString();
 	}
 	private static CrewState match(List<CrewState> crew, CrewState sent) {

@@ -119,7 +119,7 @@ public final class AssignmentsDialog extends JDialog {
 		String who = names.size() == 1 ? names.get(0) : String.join(", ", names.subList(0, names.size() - 1)) + " and " + names.get(names.size() - 1);
 		boolean one = names.size() == 1, male = party.get(0).isMale();
 		JOptionPane.showMessageDialog(this, who + (one ? " has" : " have") + " set out for " + where + ".\n" + (one ? male ? "He" : "She" : "They")
-				+ " will return in a week or two, or longer, when " + (one ? male ? "his" : "her" : "their") + " journey is over.", "Expeditions", JOptionPane.INFORMATION_MESSAGE);
+				+ " should be back in a week or two.", "Expeditions", JOptionPane.INFORMATION_MESSAGE);
 		askPending(this);
 		fill();
 	}
