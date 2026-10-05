@@ -708,10 +708,11 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		moveAmount.setToolTipText("How much each arrow moves");
 		styleSpinner(moveAmount);
 		trade.add(moveAmount);
-		// everything at once, either way (heromedel: the arrows start at 1; these move the lot)
-		FtlButton allLeft = new FtlButton("< all", FtlFont.BODY, 84, 22), allRight = new FtlButton("all >", FtlFont.BODY, 84, 22);
-		allLeft.setBounds(GX + 8, y + 70, 84, 22);
-		allRight.setBounds(GX + GW - 92, y + 70, 84, 22);
+		// everything at once, either way (heromedel: the arrows start at 1; these move the lot): double arrows between the
+		// junk and sell icons, never over them (5.21)
+		FtlButton allLeft = new FtlButton("<<", FtlFont.BODY, 32, 22), allRight = new FtlButton(">>", FtlFont.BODY, 32, 22);
+		allLeft.setBounds(GX + 62, y + 68, 32, 22);
+		allRight.setBounds(GX + 96, y + 68, 32, 22);
 		allLeft.setToolTipText("Take all of it from the partner");
 		allRight.setToolTipText("Send all of it to the partner");
 		allLeft.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { moveAllSupply(false); } });

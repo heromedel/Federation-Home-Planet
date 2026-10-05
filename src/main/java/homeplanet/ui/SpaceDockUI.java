@@ -285,9 +285,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	 */
 	void timeRound(boolean later) {
 		Vault vault = Vault.get();
-		final List<homeplanet.parser.Assignments.Report> back = HomePlanet.expeditionType == 2 ? homeplanet.parser.Assignments.checkReturns(vault) : new java.util.ArrayList<homeplanet.parser.Assignments.Report>();
-		final List<homeplanet.parser.Expeditions.RansomNews> ransomNews = homeplanet.parser.Expeditions.checkRansoms(vault);
-		final List<String> upAgain = homeplanet.parser.Expeditions.checkInfirmary(vault);
+		tell(HomePlanet.expeditionType == 2 ? homeplanet.parser.Assignments.checkReturns(vault) : new java.util.ArrayList<homeplanet.parser.Assignments.Report>(),
+				homeplanet.parser.Expeditions.checkRansoms(vault), homeplanet.parser.Expeditions.checkInfirmary(vault), later);
+	}
+	/** What a round brought, told (the console's /passtime gathers several days' worth and tells them once, 5.22). */
+	void tell(final List<homeplanet.parser.Assignments.Report> back, final List<homeplanet.parser.Expeditions.RansomNews> ransomNews, final List<String> upAgain, boolean later) {
+		Vault vault = Vault.get();
 		final boolean prizes = HomePlanet.expeditionType == 2 && !homeplanet.parser.Assignments.pendingToAsk(vault).isEmpty();
 		final List<String> fleet3 = HomePlanet.immersiveNotifications() ? new java.util.ArrayList<String>() : homeplanet.parser.ThirdFleet.due(vault); // with the inbox on, his letters go there
 		if ((HomePlanet.immersiveNotifications() || (ransomNews.isEmpty() && back.isEmpty())) && upAgain.isEmpty() && !prizes && fleet3.isEmpty()) return;

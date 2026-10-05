@@ -1184,6 +1184,18 @@ double its price in scrap and an equal amount of reputation; very expensive, as 
 Crew records (heromedel): a place to look up any crew member, present or past: where they came from if known, every
 ship they served on, and their expeditions one line each (sector, job, how it went).
 
+## 44. The console — built (5.22; harness test ConT)
+
+heromedel: ~ opens a console over the station (never while typing in a box). Admin commands start locked: /admin answers
+"No admin commands available"; /admin dc on unlocks the dev commands and /admin dc off locks them again (hidden in the
+cfg as dev_commands). A locked command answers "Unknown command", so it stays hidden. The first dev command,
+/passtime N (1 to 365), passes N days one at a time with no added pause, each with the station's round (expeditions
+home, the infirmary, ransoms), so whatever falls due lands on its own day; the console is modal and its input and close
+stay locked until the run is done, half a second at least, then the Space Dock is rebuilt and what the days brought is
+told. The master log notes each day as passed by a dev command, so the Captain's Log tells them as quiet days; the
+debug log and the station's history log note "Dev command used: passing N days". `core/StationConsole` answers the
+commands, `ui/ConsoleDialog` is the window. Only at the Space Dock: time can't pass with the Cargo Bay's trades open.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

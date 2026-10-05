@@ -112,6 +112,18 @@ public class MainFrame extends JFrame {
 		setSize(Math.min(screen.width, Math.max(900, want.width + 20)), Math.min(screen.height, Math.max(720, want.height + 50)));
 		setLocationRelativeTo(null);
 		restoreWindow();
+		// ~ opens the console (heromedel, 5.22), on any screen of this window, never while typing in a box (a ship's name)
+		java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new java.awt.KeyEventDispatcher() {
+			public boolean dispatchKeyEvent(java.awt.event.KeyEvent e) {
+				if (e.getID() != java.awt.event.KeyEvent.KEY_TYPED || (e.getKeyChar() != '~' && e.getKeyChar() != '`')) return false;
+				java.awt.Component c = e.getComponent();
+				if (c instanceof javax.swing.text.JTextComponent) return false;
+				java.awt.Window w = c instanceof java.awt.Window ? (java.awt.Window) c : javax.swing.SwingUtilities.getWindowAncestor(c);
+				if (w != MainFrame.this) return false; // the station's own window only, with no dialog over it
+				ConsoleDialog.open(MainFrame.this);
+				return true;
+			}
+		});
 		// Esc at the Space Dock, with nothing else open, asks before quitting (a dialog on top takes the key itself)
 		getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "quitPrompt");
 		getRootPane().getActionMap().put("quitPrompt", new javax.swing.AbstractAction() {
