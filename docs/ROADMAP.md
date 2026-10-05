@@ -1112,8 +1112,9 @@ and reputation for the rest; with Reputation off, scrap only, as before.
   zero (otherwise a fleet with no ship would be finished). Every other fee stops at zero.
 - New career rules: "A custom work order (past the System Limit) costs" and "A plea answered with reputation costs";
   a career from before difficulties keeps its free removal and stripping.
-- **How Rep Works:** the Career Reputation Log has tabs across the top, as Settings does: Log, and How Rep Works (what
-  earns, loses and spends reputation at this career's prices, and what may go below zero; the numbers from the rules).
+- **How Rep Works:** the Career Reputation Log had tabs across the top, as Settings does: Log, and How Rep Works. Turned
+  off in 5.14 (heromedel: a page of how to earn and lose it invites min-maxing; heromedel may write it later). The first
+  draft stays in `ReputationLogDialog.howPage()`, unused.
 
 **Ideas, back burner:** the Custom Part Order (heromedel): any weapon, drone or augment in the game without a store, for
 double its price in scrap and an equal amount of reputation; very expensive, as it should be to bypass the game.

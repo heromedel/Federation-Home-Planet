@@ -59,29 +59,12 @@ final class ReputationLogDialog extends JDialog {
 		south.add(close, BorderLayout.EAST);
 		JPanel body = new JPanel(new BorderLayout(0, 8));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
-		// two tabs across the top, as Settings has them (heromedel): the log, and how reputation works
 		JPanel logPage = new JPanel(new BorderLayout(0, 6));
 		logPage.add(find, BorderLayout.NORTH);
 		logPage.add(scroll, BorderLayout.CENTER);
-		JScrollPane howScroll = new JScrollPane(howPage());
-		howScroll.setBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, MenuTheme.GOLD));
-		howScroll.getViewport().setBackground(RecordsLog.BG);
-		howScroll.setPreferredSize(scroll.getPreferredSize());
-		howScroll.getVerticalScrollBar().setUnitIncrement(22);
-		howScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // the page wraps to the window
-		final javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
-		tabs.addTab("Log", logPage);
-		tabs.addTab("How Rep Works", howScroll);
-		final java.awt.Color normal = new java.awt.Color(220, 228, 235); // as the theme draws the others
-		javax.swing.event.ChangeListener mark = new javax.swing.event.ChangeListener() { // the open tab's name in dark on its light tab
-			public void stateChanged(javax.swing.event.ChangeEvent e) {
-				for (int i = 0; i < tabs.getTabCount(); i++) tabs.setForegroundAt(i, i == tabs.getSelectedIndex() ? new java.awt.Color(20, 28, 40) : normal);
-			}
-		};
-		tabs.addChangeListener(mark);
-		mark.stateChanged(null);
+		// How Rep Works (a tab beside the log, 5.13) is off for now: heromedel may write its words (howPage() keeps the first draft)
 		body.add(standing, BorderLayout.NORTH);
-		body.add(tabs, BorderLayout.CENTER);
+		body.add(logPage, BorderLayout.CENTER);
 		body.add(south, BorderLayout.SOUTH);
 		getContentPane().add(body);
 		getRootPane().setDefaultButton(close);
