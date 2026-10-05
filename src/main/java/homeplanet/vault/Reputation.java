@@ -53,6 +53,8 @@ public final class Reputation {
 	public static final int CAUGHT = -5;
 	/** Each FTL achievement earned in the fleet's service (FTL's real ones, not its hidden markers). */
 	public static final int ACHIEVEMENT = 10;
+	/** A crew member taken captive (heromedel): -4; brought home by paying the ransom: +2. */
+	public static final int CAPTURED = -4, RANSOMED = 2;
 	/** FTL's sector 8 (0 is the first): nothing is lost there. */
 	static final int LAST_STAND = 7;
 
@@ -204,12 +206,15 @@ public final class Reputation {
 	 * outcome (everyone successful or better) EVENT_GOOD, a bad one (nobody successful) EVENT_BAD. Nothing for items or prizes.
 	 * {@code outcome}: 1 good, -1 bad, 0 neither.
 	 */
-	public static synchronized void expedition(Vault v, String what, int scrap, int died, int outcome) {
+	public static synchronized void expedition(Vault v, String what, int scrap, int died, int outcome) { expedition(v, what, scrap, died, 0, outcome); }
+	/** As above, with the crew taken captive. */
+	public static synchronized void expedition(Vault v, String what, int scrap, int died, int taken, int outcome) {
 		if (!shown()) return;
-		int points = scrap / SCRAP_PER_POINT + died * CREW_DIED + (outcome > 0 ? EVENT_GOOD : outcome < 0 ? EVENT_BAD : 0);
+		int points = scrap / SCRAP_PER_POINT + died * CREW_DIED + taken * CAPTURED + (outcome > 0 ? EVENT_GOOD : outcome < 0 ? EVENT_BAD : 0);
 		List<String> why = new ArrayList<String>();
 		if (scrap / SCRAP_PER_POINT > 0) why.add(scrap + " scrap (+" + scrap / SCRAP_PER_POINT + ")");
 		if (died > 0) why.add((died == 1 ? "a crew member killed" : died + " crew killed") + " (" + signed(died * CREW_DIED) + ")");
+		if (taken > 0) why.add((taken == 1 ? "a crew member taken captive" : taken + " crew taken captive") + " (" + signed(taken * CAPTURED) + ")");
 		if (outcome > 0) why.add("a good outcome (+" + EVENT_GOOD + ")");
 		if (outcome < 0) why.add("a bad outcome (" + EVENT_BAD + ")");
 		if (points == 0 && why.isEmpty()) return;
@@ -218,6 +223,25 @@ public final class Reputation {
 		p.setProperty("total", Integer.toString(num(p, "total") + points));
 		if (write(v, p)) entry(v, points, "Expedition: " + what + " (" + signed(points) + ")", why);
 	}
+	/** Crew taken captive on the board of jobs (the crew expeditions count them in their report's entry). */
+	public static synchronized void captured(Vault v, List<String> names) {
+		if (!shown() || names.isEmpty()) return;
+		int points = names.size() * CAPTURED;
+		Properties p = read(v);
+		if (!counted(p)) { review(v); p = read(v); }
+		p.setProperty("total", Integer.toString(num(p, "total") + points));
+		if (write(v, p)) entry(v, points, "Taken captive: " + String.join(", ", names) + " (" + signed(points) + ")", null);
+	}
+	/** A captive brought home: the ransom paid. */
+	public static synchronized void ransomed(Vault v, String name) {
+		if (!shown()) return;
+		Properties p = read(v);
+		if (!counted(p)) { review(v); p = read(v); }
+		p.setProperty("total", Integer.toString(num(p, "total") + RANSOMED));
+		if (write(v, p)) entry(v, RANSOMED, "Ransomed: " + name + " brought home (" + signed(RANSOMED) + ")", null);
+	}
+	/** Can this much be spent without going below zero (the fees reputation may pay; a plea, a promise and rest may go below)? */
+	public static synchronized boolean canSpend(Vault v, int cost) { return shown() && (cost <= 0 || total(v) >= cost); }
 	/** A plea's new ship, answered for with the career's reputation: what it costs, and why. */
 	public static synchronized void plea(Vault v, int cost, String why) { spend(v, cost, why); }
 	/** Reputation spent on anything the career pays for with it (a plea's ship, a promise of adventure): what it costs, and why. */
@@ -446,6 +470,67 @@ public final class Reputation {
 			return false;
 		}
 	}
+	// ---- where it came from: the log's pieces, pooled (heromedel, 5.15: a running tally under the log) ----
+
+	/** The pools, in the order the tally shows them. */
+	public static final String[] POOLS = {"Travel", "Combat", "Crew", "Scrap", "Events", "Achievements", "Spent", "Other"};
+	/** How the log's spending entries begin (what reputation paid for): the whole entry is Spent. */
+	private static final String[] SPENT_STARTS = {"A new ship on your plea", "A promise of adventure", "Rested in quarters", "A new journey plotted",
+			"Stripping ", "The Dry Dock:", "A plea"};
+	private static final java.util.regex.Pattern PIECE = java.util.regex.Pattern.compile("([^,:;(]*)\\(([+\u2212-])(\\d+)\\)");
+	/**
+	 * The reputation by pool, read from the log: each entry's pieces ("sector 3 reached (+6)", "a crew member killed
+	 * (-10)") sorted by what they say, so a jump that did three things counts in three pools. The pools add up to the
+	 * log's own changes; pools at zero are left out.
+	 */
+	public static synchronized Map<String, Integer> tally(Vault v) {
+		Map<String, Integer> pools = new LinkedHashMap<String, Integer>();
+		for (String k : POOLS) pools.put(k, 0);
+		String header = null; int points = 0; List<String> details = new ArrayList<String>();
+		for (String line : log(v).split("\r?\n")) {
+			if (line.startsWith("  ")) { if (header != null) details.add(line.trim()); continue; }
+			if (header != null) pool(pools, header, points, details);
+			header = null; details.clear();
+			String[] w = line.split("  ", 3); // date time, the change, why
+			if (w.length < 3) continue;
+			try { points = Integer.parseInt(w[1].trim().replace('\u2212', '-').replace("+", "")); } catch (NumberFormatException e) { continue; }
+			header = w[2];
+		}
+		if (header != null) pool(pools, header, points, details); // the last entry
+		Map<String, Integer> out = new LinkedHashMap<String, Integer>();
+		for (Map.Entry<String, Integer> e : pools.entrySet()) if (e.getValue() != 0) out.put(e.getKey(), e.getValue());
+		return out;
+	}
+	private static void pool(Map<String, Integer> pools, String header, int points, List<String> details) {
+		for (String s : SPENT_STARTS) if (header.startsWith(s)) { add(pools, "Spent", points); return; }
+		if (header.startsWith("An achievement") || header.matches("\\d+ achievements:.*")) { add(pools, "Achievements", points); return; }
+		if (header.startsWith("Taken captive:") || header.startsWith("Ransomed:")) { add(pools, "Crew", points); return; }
+		List<String[]> pieces = new ArrayList<String[]>();
+		for (String d : details) pieces.addAll(pieces(d));
+		if (pieces.isEmpty()) pieces = pieces(header); // the details carry the pieces when they have them (the header then shows the sum)
+		int counted = 0;
+		for (String[] pc : pieces) {
+			int n = Integer.parseInt(pc[1]);
+			String t = pc[0].toLowerCase();
+			String k = t.contains("caught by the rebel fleet") || t.contains("sector") ? "Travel"
+					: t.contains("defeated") || t.contains("lost in action") || t.contains("flagship") ? "Combat"
+					: t.contains("died") || t.contains("crew lost") || t.contains("killed") || t.contains("captive") ? "Crew"
+					: t.contains("scrap") ? "Scrap"
+					: t.contains("outcome") ? "Events"
+					: n < 0 ? "Spent" : "Other";
+			add(pools, k, n);
+			counted += n;
+		}
+		if (counted != points) add(pools, points < 0 && pieces.isEmpty() ? "Spent" : "Other", points - counted); // whatever the pieces don't explain
+	}
+	private static List<String[]> pieces(String s) {
+		List<String[]> out = new ArrayList<String[]>();
+		java.util.regex.Matcher m = PIECE.matcher(s);
+		while (m.find()) out.add(new String[] {m.group(1).trim(), (m.group(2).equals("+") ? "" : "-") + m.group(3)});
+		return out;
+	}
+	private static void add(Map<String, Integer> pools, String k, int n) { pools.put(k, pools.get(k) + n); }
+
 	/** One entry in the reputation log, in the station log's form: its time, the change as its tag, why, and details under it. */
 	private static void entry(Vault v, int points, String why, List<String> details) {
 		StringBuilder sb = new StringBuilder(log(v));
@@ -453,6 +538,9 @@ public final class Reputation {
 		if (details != null) for (String d : details) sb.append("  ").append(d).append('\n');
 		try { SafeFiles.writeText(new File(v.root, LOG), sb.toString(), false); }
 		catch (IOException e) { log.warn("Could not write the reputation log: {}", e.toString()); }
+		StringBuilder t = new StringBuilder(signed(points) + "  " + why);
+		if (details != null) for (String d : details) t.append("\n").append(d);
+		MasterLog.entry(v, "reputation", t.toString());
 	}
 	public static String signed(int n) { return n > 0 ? "+" + n : n < 0 ? "−" + (-n) : "0"; }
 	private static int num(Properties p, String k) { return num(p, k, 0); }

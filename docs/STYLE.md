@@ -55,3 +55,34 @@ Catch phrases. The most common of all: **"The Federation endures."**
 | For the Federation, and all its worlds. | Fair flights between the stars. | Not one more sector. |
 | Many worlds, one Federation. | The Home Planet stands with you. | Stand fast. The Federation endures. |
 | Until every beacon is free. | Safe jumps, Captain. | |
+
+## The Captain's Log
+
+The Captain's Log (Captain's Quarters) is a story told from the master log, not a list of it (heromedel, 5.18;
+`vault/CaptainsLog`). Its rules:
+
+- **Voice:** the captain's own, first person and past tense, short: "Rested in my quarters for the third day in a
+  row." "Sold five missiles." Things that simply happened go in too, from the captain's side: "Bob and Joe came back
+  from their expedition; Fred did not." "Got a letter from the Home Planet Shipyard: I can now commission a new
+  Kestrel Cruiser, Type B."
+- **Headings:** the first day is "Stardate Today", every later one "Stardate 1.1.1.2" (year.month.week.day: 7-day
+  weeks, 28-day months, 13-month years, year 1 first). Quiet days fold together: "Stardates 1.1.1.4 – 1.1.1.5",
+  "Nothing to report."
+- **"Then":** on a day of more than one line, the action that moved the day on comes last and begins "Then" ("Then I
+  rested in my quarters."). Several things done in one visit to the Cargo Bay are one sentence ("Then I had a Cloaking
+  system fitted to the Hinata and sold five missiles."). A jump in FTL is the crew's: "Then we jumped to a new beacon",
+  "…to a station", "…to sector 3".
+- **Where the captain is:** a day aboard opens "On board the Kestrel:"; time at the station after time aboard opens "I
+  returned to The Home Planet Station."; time aboard after the station opens "Set out on the Kestrel:". Gear that comes
+  aboard is "Bought a Burst Laser II at a station." (at a store, scrap spent) or "We picked up a Burst Laser II.".
+- **The beacon (5.19):** a jump tells what was there and who she met: "Then we jumped into a nebula", "…into an ion
+  storm", "…into an asteroid field", "…to a beacon near a red giant (a pulsar)", "…within range of a planetary defence
+  system", "…and met a Rock pirate" (a Mantis ship, a rebel ship, an automated ship). What's learned of a beacon later,
+  even on a later day, goes into that jump's line, never a line of its own.
+- **Merging:** the same action on the same day is one line ("Sold five missiles", not five sales); boarding several
+  times is one "Took command of the …"; an event and its letter or receipt are one line.
+- **Numbers:** up to ten in words, then digits. No prices, scrap or reputation in the story: they're the details,
+  shown only with "Detailed Log Entries" ticked.
+- **Never told:** how a day is counted (no jumps as time, no beacons), reputation as its own lines (it has its log and
+  tally), the station's housekeeping (loads, profiles, settings, patches, fleet switches, Medbay visits, moving one's own
+  things about), and letters that only repeat an event already told.

@@ -91,8 +91,6 @@ public final class Pricing {
 	public static int hullRepair() { return HULL_REPAIR; }
 	/** Mending one broken bar of a system, and sealing one hull breach, in the Dry Dock. */
 	public static final int SYSTEM_REPAIR = 5, BREACH_REPAIR = 5;
-	/** A custom work order: The Home Planet Station fits a system past FTL's System Limit (heromedel: always 100, whatever the system). */
-	public static final int WORK_ORDER = 100;
 	/** Her systems past FTL's System Limit, each a custom work order (a design can start with more than FTL allows). */
 	public static int workOrders(ShipState s) {
 		return Math.max(0, SaveHelper.systemCount(s) - SaveHelper.SYSTEMS_MAX);
@@ -268,13 +266,13 @@ public final class Pricing {
 	}
 	/**
 	 * What Commission charges for her: her price at this rate, and a custom work order for each system she starts with
-	 * past FTL's System Limit (outside the rate: always WORK_ORDER). Never part of her value, so nothing of it comes back.
+	 * past FTL's System Limit (outside the rate: Economy.commissionWorkOrder, scrap only). Never part of her value, so nothing of it comes back.
 	 */
 	public static Quote commission(SavedGameState gs, int percent) {
 		Quote q = ship(gs, percent);
 		int n = workOrders(gs.getPlayerShip());
 		if (n > 0) {
-			q.fixed = n * WORK_ORDER;
+			q.fixed = n * homeplanet.core.Economy.commissionWorkOrder();
 			q.lines.add((n == 1 ? "A custom work order (1 system" : n + " custom work orders (" + n + " systems") + " past FTL's System Limit): " + q.fixed);
 		}
 		return q;

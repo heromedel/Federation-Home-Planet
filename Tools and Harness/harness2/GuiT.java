@@ -165,7 +165,7 @@ public class GuiT {
   shelf.setItemType(SavedGameParser.StoreItemType.SYSTEM); shelf.addItem(item); store.addShelf(shelf);
   g.getBeaconList().get(at).setStore(store);
   final int price = DataManager.get().getSystem("hacking").getCost();
-  s.setScrapAmt(price + Pricing.WORK_ORDER + 7);
+  s.setScrapAmt(price + homeplanet.core.Economy.commissionWorkOrder() + 7);
   v.write(b, g);
   hold(v, 150);
   shown.clear(); optionsShown.clear(); defaults.clear(); presses.clear();
@@ -195,7 +195,7 @@ public class GuiT {
   Setup.chk("X: at 8 systems the shop sells her Hacking, the custom work order on hover", Boolean.TRUE.equals(r[0]) && tip.equals(r[1]));
   Setup.chk("X: Buy asks first, in heromedel's words, Install or Cancel (Cancel the default)", shown.size() >= 1 && ask.equals(shown.get(0))
     && Arrays.asList(optionsShown.get(0)).equals(Arrays.asList("Install", "Cancel")) && "Cancel".equals(String.valueOf(defaults.get(0))));
-  Setup.chk("X: Cancel changes nothing", Integer.valueOf(price + Pricing.WORK_ORDER + 7).equals(r[2]) && Integer.valueOf(0).equals(r[3]));
+  Setup.chk("X: Cancel changes nothing", Integer.valueOf(price + homeplanet.core.Economy.commissionWorkOrder() + 7).equals(r[2]) && Integer.valueOf(0).equals(r[3]));
   Setup.chk("X: Install fits it for the store's price and 100", shown.size() == 2 && Integer.valueOf(7).equals(r[4]) && Integer.valueOf(1).equals(r[5]));
   Setup.chk("X: Save writes her so", Boolean.TRUE.equals(r[6]) && saved.getScrapAmt() == 7 && level(saved, HACK) == 1 && SaveHelper.systemCount(saved) == 9);
 

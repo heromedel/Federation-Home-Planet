@@ -12,6 +12,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
  rolls();
  report();
  awayAndBack(v);
+ twoDueAtOnce(v);
  prizes(v);
  experience(v);
  Setup.done();
@@ -175,26 +176,45 @@ public class AsgT { public static void main(String[] a) throws Exception {
   for (Assignments.Fate f : r.fates) f.band = 3;
   int lo = 99, hi = 0; Random rng = new Random(5);
   for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
-  Setup.chk("D: a quiet job in a quiet sector takes 1 to 3 days (" + lo + " to " + hi + ")", lo == 1 && hi == 3);
+  Setup.chk("D: a quiet job in a quiet sector takes a week or two, 7 to 14 days (" + lo + " to " + hi + ")", lo == 7 && hi == 14);
   r.sector = "abandoned"; lo = 99; hi = 0;
   for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
-  Setup.chk("D: Abandoned always adds a day (" + lo + " to " + hi + ")", lo == 2 && hi == 4);
+  Setup.chk("D: Abandoned always adds a day (" + lo + " to " + hi + ")", lo == 8 && hi == 15);
   r.sector = "civilian"; r.job = "lost"; for (Assignments.Fate f : r.fates) f.band = 2; lo = 99; hi = 0;
   for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
-  Setup.chk("D: Got Lost with three failures is four days late, always (" + lo + " to " + hi + ")", lo == 5 && hi == 7);
+  Setup.chk("D: Got Lost with three failures is four days late, always (" + lo + " to " + hi + ")", lo == 11 && hi == 18);
   r.job = "repair"; lo = 99; hi = 0;
   for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
-  Setup.chk("D: on another job a failure adds a day only sometimes (" + lo + " to " + hi + ")", lo == 1 && hi == 6);
+  Setup.chk("D: on another job a failure adds a day only sometimes (" + lo + " to " + hi + ")", lo == 7 && hi == 17);
   for (Assignments.Fate f : r.fates) f.band = 3; r.job = "scout"; lo = 99; hi = 0;
   for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
-  Setup.chk("D: a Scout is a day quicker, never under one (" + lo + " to " + hi + ")", lo == 1 && hi == 2);
+  Setup.chk("D: a Scout is a day quicker (" + lo + " to " + hi + ")", lo == 6 && hi == 13);
   r.job = "hijack"; r.prize = "ship"; r.fates.get(0).item = "fuel:3"; lo = 99; hi = 0;
   for (int i = 0; i < 300; i++) { int d = Assignments.days(r, party("human", "human", "human"), rng); lo = Math.min(lo, d); hi = Math.max(hi, d); }
-  Setup.chk("D: a ship towed home and an item carried: three days more (" + lo + " to " + hi + ")", lo == 4 && hi == 6);
+  Setup.chk("D: a ship towed home and an item carried: three days more (" + lo + " to " + hi + ")", lo == 10 && hi == 17);
   r.prize = null; r.fates.get(0).item = null; int rocks = 0, humans = 0;
   for (int i = 0; i < 600; i++) { rocks += Assignments.days(r, party("rock", "rock", "rock"), rng); humans += Assignments.days(r, party("human", "human", "human"), rng); }
   Setup.chk("D: three Rocks are a day slower on average, one in three each (" + rocks / 600.0 + " to " + humans / 600.0 + " days)", rocks - humans > 400 && rocks - humans < 800);
-  Setup.chk("D: never past the cap", Assignments.AWAY_CAP == 10);
+  Setup.chk("D: never past the cap", Assignments.AWAY_CAP == 21);
+ }
+ /** 5.16 (heromedel's save): two details due on the same look each come home once; a third, not yet due, stays away. */
+ static void twoDueAtOnce(Vault v) throws Exception {
+  List<CrewState> crew = ExpT.hold(v, "human", "engi", "mantis", "slug", "rock", "human");
+  for (int i = 0; i < 3; i++) Assignments.send(v, Assignments.board(v).get(0).slot, crew.subList(i * 2, i * 2 + 2), new Random(i));
+  List<Assignments.Away> aw = Assignments.away(v);
+  int[] u = new int[aw.size()]; for (int i = 0; i < u.length; i++) u[i] = aw.get(i).until; Arrays.sort(u);
+  Setup.chk("M: three details away", aw.size() == 3 && u[1] < u[2]);
+  while (v.beaconsSeen() < u[1]) v.countBeacon();
+  List<Assignments.Report> back = Assignments.checkReturns(v);
+  List<Assignments.Away> still = Assignments.away(v);
+  Setup.chk("M: the two due come home on one look, the third stays away", back.size() == 2 && still.size() == 1 && still.get(0).until == u[2]);
+  Setup.chk("M: and nothing comes home twice", Assignments.checkReturns(v).isEmpty());
+  while (v.beaconsSeen() < u[2]) v.countBeacon();
+  Setup.chk("M: the third comes home in its time", Assignments.checkReturns(v).size() == 1 && Assignments.away(v).isEmpty());
+  Map<String, Integer> seen = new HashMap<String, Integer>();
+  boolean twice = false;
+  for (CrewState c : Assignments.holdCrew(v)) { String k = c.getName() + "/" + c.getRace(); if (seen.containsKey(k)) twice = true; seen.put(k, 1); }
+  Setup.chk("M: nobody in the Cargo Hold twice", !twice);
  }
  static void awayAndBack(Vault v) throws Exception {
   List<CrewState> crew = ExpT.hold(v, "slug", "human", "engi", "rock");
@@ -202,8 +222,8 @@ public class AsgT { public static void main(String[] a) throws Exception {
   int beforeScrap = v.storageScrap(), beforeBeacons = v.beaconsSeen();
   Assignments.send(v, b.get(1).slot, crew.subList(0, 2), new Random(4));
   List<Assignments.Away> away = Assignments.away(v);
-  Setup.chk("A: a detail away: out of the Cargo Hold, named in the file, due in 1 to 10 beacons; setting out took a beacon", away.size() == 1 && away.get(0).crew.size() == 2 && away.get(0).names().contains(crew.get(0).getName())
-    && Assignments.holdCrew(v).size() == 2 && away.get(0).until >= v.beaconsSeen() + 1 && away.get(0).until <= v.beaconsSeen() + Assignments.AWAY_CAP && v.beaconsSeen() == beforeBeacons + 1);
+  Setup.chk("A: a detail away: out of the Cargo Hold, named in the file, due in a week to three; setting out passes no time (5.16)", away.size() == 1 && away.get(0).crew.size() == 2 && away.get(0).names().contains(crew.get(0).getName())
+    && Assignments.holdCrew(v).size() == 2 && away.get(0).until >= v.beaconsSeen() + 6 && away.get(0).until <= v.beaconsSeen() + Assignments.AWAY_CAP && v.beaconsSeen() == beforeBeacons);
   Assignments.Result first = away.get(0).result(), same = away.get(0).result();
   Setup.chk("A: the result was rolled at setting out and rolls the same every time (the seed)", first.report.equals(same.report) && first.scrap == same.scrap && away.get(0).seed != 0);
   Setup.chk("A: the offer taken is replaced, by another sector", Assignments.board(v).size() == 3 && Assignments.board(v).get(1).sector != null && !Assignments.board(v).get(1).sector.equals(b.get(1).sector));

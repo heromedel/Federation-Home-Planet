@@ -20,6 +20,9 @@ it does and CREDITS.md for where the code came from.
       1. ...            1. ...
       2. ...            2. ...
 
+- Bug fixing takes precedence over feature creep. When a major bug turns up (game-breaking, or a hidden one that
+  quietly damages a fleet, like crew being cloned), you may ask heromedel to hold off on the next plan so it can be
+  fixed first: occasionally, not in a pushy way.
 - heromedel's own text (letters, messages, names) goes in exactly as written, capitals included (they're often
   deliberate: "Lucky Duck" is a nickname). Suggested edits to it are a short list, only ones that matter, to answer
   yes or no.
@@ -113,6 +116,7 @@ Three rules with no exceptions, in anything the player sees:
    "some time", "a while", "one month" (as the ransom letters say), never a number of beacons or "a beacon later".
    A beacon is a day (5.00): 28 beacons are a month (the ransom's month; `Career.BEACONS_PER_MONTH`), and the stipend
    comes every one, two or three months by difficulty (28, 56, 84). A day in Captain's Quarters is one beacon.
+   Days are real now: a player may work out that a jump passes a day; never say time is only beacons underneath.
 3. Check any system, outcome or message against `docs/LORE_COMPONENTS.md` (real FTL lore, each fact with its source):
    report any inconsistency to heromedel, and add no new ones. Don't edit that file without his permission; when new
    real FTL lore turns up, offer it to him as a numbered list and ask whether it should be added.

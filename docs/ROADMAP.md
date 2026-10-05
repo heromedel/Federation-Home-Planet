@@ -1089,6 +1089,101 @@ first character at the station beyond the offices, set up to come back ("Might b
 
 (5.12: the two branches merged again: this one's 5.10, the augments shipped home, and McCarthy's 5.08 to 5.11.)
 
+## 39. Reputation as a currency, and How Rep Works — built (5.13; harness checks in RepuT, FleetT, PriceT)
+
+heromedel's list (Ideas A to I). Reputation pays where The Federation Home Planet is willing to bend; repairs and the
+Junkyard stay scrap only. One question for each fee (`ui/RepPay`): all in scrap, all in reputation, or the scrap there is
+and reputation for the rest; with Reputation off, scrap only, as before.
+
+- **A New Journey:** the full fee (200 / 500 / 1000), scrap or reputation one for one.
+- **Refit removal:** Easy 25, Normal 50, Hard 75, scrap or reputation (vanilla can't take systems off; it lets you rebuild
+  other systems). Sandbox keeps its own setting, reputation offered beside it. Paid on the Cargo Bay's Save, with the
+  Dry Dock's bill (a reputation bill beside the scrap one, spent once the save stands).
+- **Stripping when scrapping:** 15 / 30 / 60 a system, scrap or reputation; Hard allows it now. Cheaper than taking them
+  off one by one at Refit, because the hull is lost.
+- **A custom work order** fitting a system past FTL's System Limit in the Cargo Bay (Refit or the Dry Dock's shop):
+  25 / 50 / 75 scrap and as much reputation (Sandbox 50 and 50; with Reputation off, both in scrap). In Commission it's
+  part of her price, scrap only, both shares (50 / 100 / 150; Sandbox 100, as it was).
+- **Plead for New Ship:** as it was (give up the Cargo Hold or keep it), the share by difficulty: Easy a tenth, Normal a
+  quarter, Hard half (Sandbox a tenth).
+- **Captured crew:** -4 each when taken (in the crew expeditions' entry, or an entry of its own on the board of jobs),
+  +2 when the ransom is paid.
+- **Below zero:** a plea, a promise of adventure and rest in quarters are never refused and may take reputation below
+  zero (otherwise a fleet with no ship would be finished). Every other fee stops at zero.
+- New career rules: "A custom work order (past the System Limit) costs" and "A plea answered with reputation costs";
+  a career from before difficulties keeps its free removal and stripping.
+- **How Rep Works:** the Career Reputation Log had tabs across the top, as Settings does: Log, and How Rep Works. Turned
+  off in 5.14 (heromedel: a page of how to earn and lose it invites min-maxing; heromedel may write it later). The first
+  draft stays in `ReputationLogDialog.howPage()`, unused.
+
+
+## 40. How Reputation Can be Used, and where it came from — built (5.15; harness checks in RepuT)
+
+- **How Reputation Can be Used** (heromedel; Settings, Rules, under Reputation; any mode, never locked by Immersive
+  Mode; `reputation_use` in the cfg): 1 New Journeys and Pleads (the default, until the rest is tried in play),
+  2 Vanillas Breaking Actions (1, and Refit removal, stripping, a custom work order's share), 3 Only as a score.
+  Wherever reputation can't be used, scrap pays: a work order's share in scrap too, a plea with 3 offers giving up the
+  Cargo Hold alone. A promise of adventure and rest in quarters cost reputation with 1 and 2 (nobody is locked out of
+  them) and are free with 3. Captives and ransoms count with all three: that's score.
+- **Total Reputation From:** a line under the Career Reputation Log, a running tally by pool (Travel, Combat, Crew,
+  Scrap, Events, Achievements, Spent), each net, green or red, pools at zero left out. Read from the log itself
+  (`Reputation.tally`): each bracketed piece of an entry goes to its pool by its words, so a jump that did three things
+  counts in three pools; spending entries are Spent whole. The pools add up to the total.
+
+
+## 41. Expeditions come home once, and take a week or two — built (5.16; harness checks in AsgT)
+
+From heromedel's first real test (their save): crew were being duplicated. When two details were due on the same look,
+`checkReturns` read the list once and brought them home in turn; bringing one home renumbers the rest, so the second
+came home under a stale number: its own record stayed (it came home again at the next look, a second copy of everyone)
+and another detail's record was struck off (those crew lost while away). Now each detail is brought home by its lasting
+name (when it set out, its seed, who went), the list read afresh each time, and a detail no longer listed is never
+rolled. Also from that test: setting out passes no time (arranging a second detail brought the first home), details are
+away 7 to 14 days and the job's extras (cap 21), not 1 to 3, and expedition reports have Delete (a question still
+waiting is answered No with it). Their save was repaired by hand; its history.log says what was changed and why.
+
+
+## 42. The Cargo Bay's day, the master log and the Captain's Log — built (5.17; harness test LogT)
+
+heromedel's ideas. **The Cargo Bay's day:** a Save with real business at the station (buying, selling, the Dry Dock's
+work, a system installed or uninstalled; never moving your own things about) passes a day, but not twice running: if
+the last day counted was already a Cargo Bay day, with nothing else moving the clock between, it passes none, so
+selling one missile at a time can't run the clock. **The master log** (`master.log`, hidden, each career's own; never a
+replacement for the other logs, which keep their own files, shapes and safeguards): D lines for each day the clock
+counts and why (a jump, work at a store in FTL, rest, a job from the board, business in the Cargo Bay), and E lines
+copying every entry the station log, the reputation log and the voyage logs get, with the real time and the career's
+day. A career's day 1 (`stardate.txt`) is its first moment, or its first look on 5.17; entries with no day, 0 or less
+are Prior to 1.1.1.1. Days are stored as plain numbers and shown as stardates, year.month.week.day (7-day weeks,
+28-day months, 13-month years). **The Captain's Log** (Captain's Quarters: Cancel, Rest, Captain's Log): "-- Captain's Log --",
+the first day as "Captains Log: Stardate Today" (heromedel's words), every later one as "StarDate TD x.x.x.x" (TD:
+Today), each with what happened on it; the station's housekeeping (loads, profiles, settings, patches) and the reasons
+days pass are left out, so it never tells what a day is counted in. Nothing in the other logs changed.
+
+
+## 43. The Captain's Log as a story — rebuilt (5.18; harness test LogT)
+
+heromedel, on seeing 5.17's: the master list is every entry; the Captain's Log is a curated, stylized story made from
+it, by day. Its rules are in docs/STYLE.md ("The Captain's Log"); `vault/CaptainsLog` reads each day's entries, sorts
+them into kinds, merges repeats, writes them in the captain's voice, puts the action that moved the day last with
+"Then", and folds quiet days; "Detailed Log Entries" shows the specifics. To put each thing on its own day: a rest is
+logged before the clock moves; the Cargo Bay's entries before its day passes; a ship's voyage log (what she did at a
+stop) before the clock counts her jump; and the expedition's station line names who was taken and who went to the
+infirmary. Days aboard (heromedel): "On board the Kestrel.", what happened, "Then we jumped to a new beacon" (or "to a
+station", "to sector 3"); "I returned to The Home Planet Station." and "Set out on the Kestrel." where the captain
+moves between the two; gear bought at a store or picked up. The voyage log gains "Arrived at a store", "Bought at a
+store: …" and "Picked up: …" for it. Hard rule 2 now says days are real: a player may work out that a jump passes a day.
+
+**The beacon (5.19, heromedel):** a jump's line tells what the beacon held and who she met ("Then we jumped into an ion
+storm and met a Rock pirate"), even when it's learned on a later look, on a later day. The voyage log gains "Beacon: …"
+(the save's red giant, pulsar, planetary defence system and asteroid field; a nebula from FTL's count of nebula jumps;
+an ion storm as a jump into danger that names none of the others) and "Ship met: …" (the ship alongside, by her ship
+event's list of ships and her crew). "On board the Kestrel:" takes a colon.
+
+**Ideas, back burner:** the Custom Part Order (heromedel): any weapon, drone or augment in the game without a store, for
+double its price in scrap and an equal amount of reputation; very expensive, as it should be to bypass the game.
+Crew records (heromedel): a place to look up any crew member, present or past: where they came from if known, every
+ship they served on, and their expeditions one line each (sector, job, how it went).
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

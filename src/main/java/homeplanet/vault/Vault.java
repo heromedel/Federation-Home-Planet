@@ -101,6 +101,7 @@ public final class Vault {
 	public static Vault open(File savesFolder, String slot) throws IOException {
 		Vault v = new Vault(savesFolder, slot);
 		instance = v; // before load(), so what load() logs goes into the vault's own log
+		MasterLog.start(v); // the career's day 1, the first time it's opened on 5.17 (a new one: its first moment)
 		v.load();
 		return v;
 	}
@@ -838,11 +839,15 @@ public final class Vault {
 		catch (Exception e) { return 0; }
 	}
 	/** One beacon of the fleet's time passes away from FTL (a finished expedition): everything timed counts it. */
-	public synchronized void countBeacon() { addBeacons(1); }
-	private void addBeacons(int n) {
+	public synchronized void countBeacon() { countBeacon("time passed"); }
+	/** As above, with why (the master log's day line: rest, a job, business in the Cargo Bay). */
+	public synchronized void countBeacon(String why) { addBeacons(1, why); }
+	private void addBeacons(int n, String why) {
 		if (n <= 0) return;
-		try { SafeFiles.writeText(beaconsFile(), (beaconsSeen() + n) + "\n", false); }
-		catch (IOException e) { log.warn("Could not count the beacons travelled: {}", e.toString()); }
+		int was = beaconsSeen();
+		try { SafeFiles.writeText(beaconsFile(), (was + n) + "\n", false); }
+		catch (IOException e) { log.warn("Could not count the beacons travelled: {}", e.toString()); return; }
+		for (int i = 1; i <= n; i++) MasterLog.day(this, was + i, why); // each day, and why it passed
 	}
 
 	// ---- the fleet's clock: every beacon and sector the boarded ship flies, counted once ----
@@ -876,7 +881,7 @@ public final class Vault {
 		int[] last = lastCounted(b);
 		if (last != null) {
 			addSectors(sector - last[0]);
-			addBeacons(beacons - last[1]);
+			addBeacons(beacons - last[1], beacons - last[1] == 1 ? "a jump" : "a jump (" + (beacons - last[1]) + " counted together)");
 			if (last[0] == sector && last[1] == beacons) return;
 		}
 		setClock(b, sector, beacons);
@@ -942,7 +947,7 @@ public final class Vault {
 		try { before = Integer.parseInt(p.getProperty(k + "work", "").trim()); } catch (NumberFormatException e) { }
 		boolean wasCredited = here && "true".equals(p.getProperty(k + "credited")), credited = wasCredited;
 		if (here && before >= 0 && work > before && !credited) {
-			addBeacons(1);
+			addBeacons(1, "work at a store in FTL");
 			VoyageLog.note(this, b, "Time spent on work at the beacon (buying, repairs or upgrades)");
 			credited = true;
 		}
@@ -1003,8 +1008,9 @@ public final class Vault {
 		SavedGameState gs = b.save();
 		if (gs == null) return false;
 		String now = marksOf(gs);
-		if (b.marks == null || b.marks.isEmpty()) { countProgress(b, gs); b.marks = now; VoyageLog.observe(this, b, gs); noteHull(b, gs); return true; }
-		if (sameShip(b.marks, gs)) { countProgress(b, gs); VoyageLog.observe(this, b, gs); noteHull(b, gs); noteWork(b, gs); Overflow.note(this, b, gs); } // her voyage log (repairs, trades at a store... change no marks)
+		// her voyage log first, then the clock: what she did at a stop belongs to that stop's day (5.18, the Captain's Log)
+		if (b.marks == null || b.marks.isEmpty()) { VoyageLog.observe(this, b, gs); countProgress(b, gs); b.marks = now; noteHull(b, gs); return true; }
+		if (sameShip(b.marks, gs)) { VoyageLog.observe(this, b, gs); noteWork(b, gs); countProgress(b, gs); noteHull(b, gs); Overflow.note(this, b, gs); } // her voyage log (repairs, trades at a store... change no marks)
 		if (now.equals(b.marks)) return false;
 		if (sameShip(b.marks, gs)) {
 			snapshot(b); // FTL's progress, kept: if FTL later writes over her, this is what comes back
@@ -1043,8 +1049,8 @@ public final class Vault {
 		SavedGameState gs;
 		try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(continueFile()); } catch (Exception e) { return; } // mid-write: Refresh catches up
 		if (b.marks != null && !b.marks.isEmpty() && !sameShip(b.marks, gs)) return;
+		VoyageLog.observe(this, b, gs); // her voyage log first: what she did at a stop belongs to that stop's day
 		countProgress(b, gs); // the fleet's clock moves as she flies
-		VoyageLog.observe(this, b, gs);
 		noteHull(b, gs);
 		Overflow.note(this, b, gs); // an augment she had no room for
 	}

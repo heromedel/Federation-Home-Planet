@@ -120,7 +120,7 @@ public final class ShipChecks {
 		int starting = startingSystems(d);
 		if (ctx == Context.DESIGN && starting > SaveHelper.SYSTEMS_MAX)
 			w.add("She starts with " + starting + " systems; FTL's System Limit is " + SaveHelper.SYSTEMS_MAX + " (subsystems aside). Each one past it is a custom work order ("
-					+ Pricing.WORK_ORDER + " scrap) when commissioning costs scrap.");
+					+ homeplanet.core.Economy.commissionWorkOrder() + " scrap) when commissioning costs scrap.");
 		boolean airlock = false;
 		for (CompanionMod.Door door : d.doors) if (door.b < 0) airlock = true;
 		if (!airlock) w.add("No airlocks: she can't vent fires or boarders.");

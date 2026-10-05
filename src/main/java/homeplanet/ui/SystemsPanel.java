@@ -51,14 +51,15 @@ public class SystemsPanel {
 	static final String STARTING = "Standard equipment on this ship model. FTL rebuilds it if removed";
 	static final String MEDBAY = "The Medbay is standard equipment. Install a Clone Bay to replace it";
 	/** A system past FTL's System Limit, on hover: FTL's own sentence, then the custom work order (heromedel's words). */
-	static final String WORK_ORDER_TIP = "You've reached the System Limit. Home Planet Station can fit it in as a custom work order. But it will cost "
-			+ homeplanet.parser.Pricing.WORK_ORDER + " scrap.";
+	static String workOrderTip() {
+		return "You've reached the System Limit. Home Planet Station can fit it in as a custom work order. But it will cost " + homeplanet.core.Economy.workOrderWords() + ".";
+	}
 
 	/** Asked before a system goes past FTL's System Limit (heromedel's words, as written): true for Install. Cancel is the default, and closing it cancels. */
 	static boolean confirmWorkOrder(Component owner) {
 		Object[] options = {"Install", "Cancel"};
 		String msg = "This ship is at maximum capacity for systems.\nHome Planet Station can fit it in as a custom work order.\nBut it will cost "
-				+ homeplanet.parser.Pricing.WORK_ORDER + " scrap.\n\n(This would excede the Vanilla FTL system Limit)";
+				+ homeplanet.core.Economy.workOrderWords() + ".\n\n(This would excede the Vanilla FTL system Limit)";
 		return JOptionPane.showOptionDialog(owner, msg, "System Limit", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[1]) == 0;
 	}
 
@@ -88,6 +89,9 @@ public class SystemsPanel {
 	private boolean storedSomething = false;
 	/** What the Dry Dock's work since the last save costs the Cargo Hold (less what selling stored systems paid in): paid on Save, dropped on Reset. */
 	private int bill = 0;
+	/** The reputation the Dry Dock's work since the last save costs (a removal paid in reputation, custom work orders), spent on Save, with why. */
+	private int repBill = 0;
+	private final List<String> repWhy = new ArrayList<String>();
 
 	SystemsPanel(CargoBayUI bay) { this.bay = bay; }
 
@@ -166,6 +170,8 @@ public class SystemsPanel {
 	void init() {
 		changes.clear();
 		bill = 0;
+		repBill = 0;
+		repWhy.clear();
 		storedSomething = false;
 		load();
 		refresh();
@@ -190,7 +196,8 @@ public class SystemsPanel {
 		int tw = CargoParts.width(cls, FtlFont.BODY), gx = 16 + (640 - tw - 30) / 2;
 		info.setBounds(gx, 517, 24, 22);
 		sub.setBounds(gx + 30, 520, tw + 4, 16);
-		holdLbl.setText("Cargo Hold: " + hold() + " scrap" + (bill > 0 ? " (" + bill + " spent here, paid on Save)" : bill < 0 ? " (" + (-bill) + " to come from sales, on Save)" : ""));
+		holdLbl.setText("Cargo Hold: " + hold() + " scrap" + (bill > 0 ? " (" + bill + " spent here, paid on Save)" : bill < 0 ? " (" + (-bill) + " to come from sales, on Save)" : "")
+				+ (repBill > 0 ? ", and " + repBill + " reputation on Save" : ""));
 		int w = ROW_W, y = 0;
 		sysList.removeAll();
 		CargoParts.Header h1 = new CargoParts.Header("Installed systems", false);
@@ -245,7 +252,7 @@ public class SystemsPanel {
 			boolean order = why == null && pastLimit(s.id);
 			String damage = s.broken > 0 ? " (" + s.broken + " of its " + s.level + (s.level == 1 ? " bar" : " bars") + " broken, in red: the Dry Dock mends them once it's aboard)" : "";
 			SysRow r = new SysRow(DryDockShop.systemTitle(s.id), s.level, "Install", why,
-					(why != null ? why : order ? WORK_ORDER_TIP : "Install the " + DryDockShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName()) + damage,
+					(why != null ? why : order ? workOrderTip() : "Install the " + DryDockShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName()) + damage,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { installSystem(s); } });
 			r.broken = s.broken;
 			if (homeplanet.core.HomePlanet.sellSystems()) r.addSell(salePrice(s), new ActionListener() { public void actionPerformed(ActionEvent e) { sellSystem(s); } });
@@ -394,6 +401,26 @@ public class SystemsPanel {
 		else { try { have = homeplanet.vault.Vault.get().storageScrap(); } catch (Exception e) { have = 0; } }
 		return have - bill;
 	}
+	/** The reputation the Dry Dock can still spend: the career's, less what's on the bill (0 with Reputation off). */
+	int repHave() {
+		if (!homeplanet.vault.Reputation.shown()) return 0;
+		return homeplanet.vault.Reputation.total(homeplanet.vault.Vault.get()) - repBill;
+	}
+	/** Puts reputation on the bill, if it stays at zero or above. */
+	boolean chargeRep(int n, String why) {
+		if (n <= 0) return true;
+		if (n > repHave()) return false;
+		repBill += n;
+		repWhy.add(why);
+		return true;
+	}
+	/** After the save: the reputation on the bill is spent (logged with what it bought). */
+	void spendRepBill() {
+		if (repBill <= 0) return;
+		homeplanet.vault.Reputation.spend(homeplanet.vault.Vault.get(), repBill, "The Dry Dock: " + String.join("; ", repWhy));
+		repBill = 0;
+		repWhy.clear();
+	}
 	/** Puts a price on the bill, if the Cargo Hold can pay it. */
 	private boolean charge(int price) {
 		if (price > hold()) return false;
@@ -461,8 +488,10 @@ public class SystemsPanel {
 	/** Why Refit can't install this stored system: {@link #reason}, or a custom work order the Cargo Hold can't pay for. */
 	private String installReason(String sysId) {
 		String why = reason(sysId);
-		if (why == null && pastLimit(sysId) && hold() < homeplanet.parser.Pricing.WORK_ORDER)
-			why = "A custom work order costs " + homeplanet.parser.Pricing.WORK_ORDER + " scrap; the Cargo Hold has " + hold();
+		if (why == null && pastLimit(sysId) && hold() < homeplanet.core.Economy.workOrderScrap())
+			why = "A custom work order costs " + homeplanet.core.Economy.workOrderWords() + "; the Cargo Hold has " + hold() + " scrap";
+		else if (why == null && pastLimit(sysId) && repHave() < homeplanet.core.Economy.workOrderRep())
+			why = "A custom work order costs " + homeplanet.core.Economy.workOrderWords() + "; your reputation is " + homeplanet.vault.Reputation.signed(repHave());
 		return why;
 	}
 
@@ -519,7 +548,13 @@ public class SystemsPanel {
 		String name = DryDockShop.systemTitle(sel.type.getId());
 		int broken = st.getDamagedBars(); // a damaged system goes into storage damaged: storing is no free repair
 		int fee = homeplanet.core.Economy.removalFee();
-		if (fee > 0) {
+		if (fee > 0 && homeplanet.core.Economy.repForVanillaBreaking()) { // scrap or reputation (heromedel, 5.13)
+			int[] pay = RepPay.choose(bay, "Systems", "Taking the " + name + " off " + save.getPlayerShipName() + " costs", fee, hold(), repHave(), "The Cargo Hold");
+			if (pay == null) return;
+			if (pay[0] > 0) charge(pay[0]);
+			chargeRep(pay[1], "the " + name + " taken off " + save.getPlayerShipName());
+			changes.add("Paid " + RepPay.words(pay) + " to take the " + name + " off " + save.getPlayerShipName());
+		} else if (fee > 0) {
 			if (hold() < fee) {
 				JOptionPane.showMessageDialog(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off; the Cargo Hold has " + hold() + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
 				return;
@@ -562,14 +597,16 @@ public class SystemsPanel {
 		SystemType type = SystemType.findById(sel.id);
 		String name = DryDockShop.systemTitle(sel.id);
 		if (SaveHelper.pastSystemLimit(bs, type)) { // past FTL's System Limit: a custom work order, on the Dry Dock's bill
-			int fee = homeplanet.parser.Pricing.WORK_ORDER;
-			if (hold() < fee) {
-				JOptionPane.showMessageDialog(bay, "A custom work order costs " + fee + " scrap; the Cargo Hold has " + hold() + ".", "System Limit", JOptionPane.INFORMATION_MESSAGE);
+			int fee = homeplanet.core.Economy.workOrderScrap(), rep = homeplanet.core.Economy.workOrderRep();
+			if (hold() < fee || repHave() < rep) {
+				JOptionPane.showMessageDialog(bay, "A custom work order costs " + homeplanet.core.Economy.workOrderWords() + "; the Cargo Hold has " + hold() + " scrap"
+						+ (rep > 0 ? " and your reputation is " + homeplanet.vault.Reputation.signed(repHave()) : "") + ".", "System Limit", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
 			if (!confirmWorkOrder(bay)) return;
 			charge(fee);
-			changes.add("Custom work order: the " + name + " fitted past FTL's System Limit for " + fee + " scrap");
+			chargeRep(rep, "a custom work order for the " + name);
+			changes.add("Custom work order: the " + name + " fitted past FTL's System Limit for " + homeplanet.core.Economy.workOrderWords());
 		}
 		int level = sel.level;
 		// Medbay and Clone Bay share a room, and the level belongs to the room

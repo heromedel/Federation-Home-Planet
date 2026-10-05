@@ -47,10 +47,11 @@ public final class Assignments {
 	/**
 	 * A detail is away AWAY_MIN to AWAY_MAX beacons, and longer as the job went ({@link #days}: a nebula, Abandoned or
 	 * Crystal space, Got Lost, failures, things to carry home, Rock crew; a Scout is quicker), never past AWAY_CAP and
-	 * never shown; setting out counts a beacon of the fleet's time. The result is rolled when they set out (so the delay
-	 * can know it) and told only when they're back.
+	 * never shown (heromedel, 5.16: a week or two, not a day or three). Setting out passes no time: arranging a second
+	 * detail must not bring the first home. The result is rolled when they set out (so the delay can know it) and told
+	 * only when they're back.
 	 */
-	public static final int AWAY_MIN = 1, AWAY_MAX = 3, AWAY_CAP = 10;
+	public static final int AWAY_MIN = 7, AWAY_MAX = 14, AWAY_CAP = 21;
 	/** An offer not taken comes down after OFFER_MIN to OFFER_MAX beacons (rolled, never shown). */
 	public static final int OFFER_MIN = 3, OFFER_MAX = 8;
 	/** The pot: 2d10, times 1 + 10% a head + everyone's modifiers; never under 1. */
@@ -445,7 +446,7 @@ public final class Assignments {
 
 	/**
 	 * Sends a detail to the sector on offer in this slot: they leave the Cargo Hold's save for the fleet's assignments
-	 * file, due back in AWAY_MIN to AWAY_MAX beacons; setting out counts a beacon; the offer is replaced.
+	 * file, due back in AWAY_MIN to AWAY_MAX beacons (and the job's extras); setting out passes no time; the offer is replaced.
 	 */
 	public static synchronized void send(Vault v, int slot, List<CrewState> party, Random rng) throws IOException {
 		if (party.isEmpty() || party.size() > PARTY_MAX) throw new IOException("A detail is one to " + PARTY_MAX + " crew");
@@ -484,7 +485,6 @@ public final class Assignments {
 		p.setProperty("away." + i + ".until", Integer.toString(now + days(r, asLeft, rng)));
 		p.setProperty("offer." + slot + ".until", "0"); p.remove("offer." + slot + ".words"); // comes down now: redrawn, not the same sector, at the next look
 		v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
-		v.countBeacon();
 		List<String> names = new ArrayList<String>();
 		for (CrewState x : party) names.add(x.getName());
 		HistoryLog.entry("EXPEDITION", String.join(", ", names) + " sent to " + sectorTitle(sector));
@@ -748,18 +748,29 @@ public final class Assignments {
 	public static synchronized List<Report> checkReturns(Vault v) {
 		List<Report> out = new ArrayList<Report>();
 		if (!Vault.isOpen()) return out;
-		Properties p = read(v);
 		int now = v.beaconsSeen();
-		for (Away a : away(p)) {
-			if (now < a.until) continue;
-			try { out.add(bringHome(v, a, a.result())); }
+		// one at a time, the list read afresh each time: bringing one home renumbers the rest (5.16: with the numbers
+		// read once, a second detail due on the same look came home twice and another's record was struck off)
+		java.util.Set<String> tried = new java.util.HashSet<String>();
+		while (true) {
+			Away due = null;
+			for (Away a : away(read(v))) if (now >= a.until && !tried.contains(key(a))) { due = a; break; }
+			if (due == null) break;
+			tried.add(key(due));
+			try { out.add(bringHome(v, due, due.result())); }
 			catch (Exception e) { log.warn("A detail could not be brought home: {}", e.toString()); }
 		}
 		return out;
 	}
+	/** A detail's lasting name (its number changes as others come home): when it set out, its seed, and who went. */
+	static String key(Away a) { return a.sentAt + ":" + a.seed + ":" + String.join(",", a.names()); }
 	/** Brings a detail home with this result (for the station's round, and tests). */
 	public static synchronized Report bringHome(Vault v, Away a, Result r) throws IOException {
 		Properties p = readStrict(v);
+		Away here = null; // the record as the file has it now, found by its lasting name, never by a number read earlier
+		for (Away x : away(p)) if (key(x).equals(key(a))) { here = x; break; }
+		if (here == null) throw new IOException(String.join(", ", a.names()) + " are no longer away; nothing was changed");
+		a = here;
 		Ship st = v.storage();
 		Vault.Copy c = v.readCopy(st);
 		ShipState hold = c.save.getPlayerShip();
@@ -828,14 +839,22 @@ public final class Assignments {
 		String text = r.report = report(r, new Random(r.seed)); // told again now everything is settled (the prize, the recruit's name), in the same words
 		// the reputation, scored as the game's events are: the scrap, the dead, how it went
 		int good = 0, bad = 0;
-		for (Fate f : r.fates) { if (f.band >= 3) good++; else bad++; }
-		homeplanet.vault.Reputation.expedition(v, sectorTitle(r.sector) + ", " + jobTitle(r.job), r.scrap, r.dead().size(), bad == 0 ? 1 : good == 0 ? -1 : 0);
+		int takenCount = 0;
+		for (Fate f : r.fates) { if (f.band >= 3) good++; else bad++; if (f.captured) takenCount++; }
+		homeplanet.vault.Reputation.expedition(v, sectorTitle(r.sector) + ", " + jobTitle(r.job), r.scrap, r.dead().size(), takenCount, bad == 0 ? 1 : good == 0 ? -1 : 0);
 		List<String> dead = new ArrayList<String>();
 		for (Fate f : r.dead()) dead.add(f.name());
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
-				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead)));
+				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead))
+				+ fatesNamed(r, true) + fatesNamed(r, false));
 		if (HomePlanet.immersiveNotifications()) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text);
 		return new Report(r.sector, text, a.names(), faces);
+	}
+	/** "; taken: …" (captive) or "; to the infirmary: …" for the station log, or nothing. */
+	private static String fatesNamed(Result r, boolean taken) {
+		List<String> n = new ArrayList<String>();
+		for (Fate f : r.fates) if (taken ? f.captured : f.infirmary && !f.died) n.add(f.name());
+		return n.isEmpty() ? "" : (taken ? "; taken: " : "; to the infirmary: ") + String.join(", ", n);
 	}
 	/** Who holds a captive taken in this sector. */
 	static String sectorCaptors(String sector) {

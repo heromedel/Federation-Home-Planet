@@ -299,15 +299,17 @@ class DryDockShop {
 			String why = e.kind == Kind.SYSTEM ? systemReason(e.id) : e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(bay.currentSave, e.id)
 					: e.kind == Kind.CREW ? crewReason(e.id) : null;
 			boolean order = e.kind == Kind.SYSTEM && why == null && bay.systems.pastLimit(e.id); // past FTL's System Limit: a custom work order too
-			int cost = e.price + (order ? homeplanet.parser.Pricing.WORK_ORDER : 0);
-			can = why == null && cost <= scrap;
+			int cost = e.price + (order ? homeplanet.core.Economy.workOrderScrap() : 0);
+			boolean repShort = order && bay.systems.repHave() < homeplanet.core.Economy.workOrderRep();
+			can = why == null && cost <= scrap && !repShort;
 			installed = e.kind == Kind.SYSTEM && SystemsPanel.INSTALLED.equals(why);
 			setLayout(null);
-			setToolTipText(why != null ? why : order ? SystemsPanel.WORK_ORDER_TIP : tipFor(e));
+			setToolTipText(why != null ? why : order ? SystemsPanel.workOrderTip() : tipFor(e));
 			FtlButton buy = new FtlButton("Buy", FtlFont.BODY, 54, 22);
 			buy.setEnabled(can);
 			buy.setToolTipText(why != null ? why : cost > scrap ? (order ? "Not enough scrap: with the custom work order, " + cost : "Not enough scrap")
-					: order ? SystemsPanel.WORK_ORDER_TIP : "Buy one (Save makes it official)");
+					: repShort ? "Not enough reputation for the custom work order: it costs " + homeplanet.core.Economy.workOrderWords()
+					: order ? SystemsPanel.workOrderTip() : "Buy one (Save makes it official)");
 			buy.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent ae) { buy(e); } });
 			add(buy);
 			this.buy = buy;
@@ -490,10 +492,15 @@ class DryDockShop {
 		if (noCrew != null) { JOptionPane.showMessageDialog(bay, noCrew, "Shop", JOptionPane.INFORMATION_MESSAGE); return; }
 		// past FTL's System Limit a system takes a custom work order to fit, paid with it
 		boolean order = e.kind == Kind.SYSTEM && SaveHelper.pastSystemLimit(bs, SystemType.findById(e.id));
-		int fee = order ? homeplanet.parser.Pricing.WORK_ORDER : 0, cost = e.price + fee;
+		int fee = order ? homeplanet.core.Economy.workOrderScrap() : 0, cost = e.price + fee, rep = order ? homeplanet.core.Economy.workOrderRep() : 0;
 		if (bs.getScrapAmt() < cost) {
 			JOptionPane.showMessageDialog(bay, buyerName + " has " + bs.getScrapAmt() + " scrap; " + name + " costs " + e.price
 					+ (order ? ", and the custom work order to fit it " + fee + " more" : "") + ".", "Not enough scrap", JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+		if (rep > bay.systems.repHave()) {
+			JOptionPane.showMessageDialog(bay, "The custom work order to fit " + name + " costs " + rep + " reputation as well as its scrap; your reputation is "
+					+ homeplanet.vault.Reputation.signed(bay.systems.repHave()) + ".", "Not enough reputation", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		StoreState store = source.getBeaconList().get(source.getCurrentBeaconId()).getStore();
@@ -551,6 +558,7 @@ class DryDockShop {
 			e.count = left;
 		}
 		bs.setScrapAmt(bs.getScrapAmt() - cost);
+		bay.systems.chargeRep(rep, "a custom work order for the " + name); // spent on Save, with the Dry Dock's bill
 
 		// Anything not already written by the Cargo Bay's Save gets written by us
 		markDirty(buyer);
@@ -561,13 +569,13 @@ class DryDockShop {
 		else if (e.kind != Kind.SYSTEM) note(buyer, supplyName(e.kind), 1); // systems aren't in the TRADE inventory
 		if (hired != null) name = hired + " (" + raceTitle(e.id) + ")";
 		purchases.add(name + " (" + e.price + " scrap) from the store at " + e.shipName + "'s beacon -> " + buyerName + (toCargo ? " (cargo)" : "")
-				+ (order ? ", fitted past FTL's System Limit by a custom work order (" + fee + " scrap)" : ""));
+				+ (order ? ", fitted past FTL's System Limit by a custom work order (" + fee + " scrap" + (rep > 0 ? " and " + rep + " reputation" : "") + ")" : ""));
 		log.debug("Bought {} for {} (work order {}) from {} -> {}", name, e.price, fee, e.ship.name, buyerName);
 
 		bay.showPurchase(buyer, e.kind == Kind.ITEM ? e.id : null, toCargo);
 		bay.systems.refresh(); // a bought system shows on the Refit tab
 		rebuild();
-		bay.help((hired != null ? "Hired " : "Bought ") + name + " for " + e.price + " scrap" + (order ? ", and " + fee + " for the custom work order to fit it" : "")
+		bay.help((hired != null ? "Hired " : "Bought ") + name + " for " + e.price + " scrap" + (order ? ", and " + fee + (rep > 0 ? " scrap and " + rep + " reputation" : "") + " for the custom work order to fit it" : "")
 				+ (toCargo ? " (into the cargo hold)" : hired != null && toStorage ? " (waiting in the Cargo Hold)" : "") + ". Save to make it official.");
 	}
 

@@ -796,10 +796,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Captain's Quarters: a day's rest, asked first (No to begin with), then the station's round and the screen rebuilt. */
 	private void quarters() {
 		Vault v = Vault.get();
-		Object[] options = {"No", "Yes"};
+		Object[] options = {"Cancel", "Rest", "Captain's Log"}; // heromedel: Cancel, Rest, Captain's Log
 		javax.swing.JTextArea t = new javax.swing.JTextArea(homeplanet.parser.Rest.question(v));
 		t.setEditable(false); t.setOpaque(false); t.setFont(MenuTheme.TEXT_FONT);
-		if (JOptionPane.showOptionDialog(this, t, "Captain's Quarters", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]) != 1) return;
+		int pick = JOptionPane.showOptionDialog(this, t, "Captain's Quarters", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+		if (pick == 2) { CaptainsLogDialog.open(this); quarters(); return; } // read, then back to the question
+		if (pick != 1) return; // Cancel, or closed
 		try { homeplanet.parser.Rest.rest(v); }
 		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not record the day's rest:\n" + e.getMessage()); return; }
 		init();
@@ -996,14 +998,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void plead() {
 		Vault v = Vault.get();
 		String offered = homeplanet.parser.FreeCommand.offered(homeplanet.core.Economy.reassignment());
-		boolean rep = homeplanet.vault.Reputation.shown();
+		boolean rep = homeplanet.core.Economy.repForJourneysAndPleas();
 		String message = "Plead for a new ship?\n\n"
 				+ "You put your case to The Federation Home Planet: one more ship, and you'll bring her home. They listen.\n"
 				+ "They will send " + offered + ". Her order will wait for you at Commission.\n\n"
 				+ "Nothing is taken now. When you commission her, you choose how to pay:\n"
 				+ "  - Give up the Cargo Hold: everything in it but the crew, at what it would sell for (the Junkyard isn't touched).\n"
 				+ (rep ? "  - Keep the Cargo Hold, and answer for her with your reputation.\n"
-						+ "Whatever the hold doesn't cover of her value, a tenth of it comes off your reputation.\n"
+						+ "Whatever the hold doesn't cover of her value, " + homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent()) + " of it comes off your reputation.\n"
+						: homeplanet.vault.Reputation.shown() ? "" // How Reputation Can be Used: Only as a score
 						: "  (With the Reputation rule on, you could keep the Cargo Hold and answer for her with your reputation.)\n")
 				+ "\nUntil she's commissioned, the plea can be withdrawn (Other... > Withdraw Plea).";
 		Object[] options = {"Plead", "Cancel"};
@@ -1262,7 +1265,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				JOptionPane.WARNING_MESSAGE, null, options, options[3]); // Cancel is the default
 		if (choice < 0 || choice > 2) return;
 		int fee = homeplanet.core.Economy.journeyFee();
-		if (fee > 0) {
+		int[] pay = {fee, 0}; // scrap, reputation
+		if (fee > 0 && homeplanet.core.Economy.repForJourneysAndPleas()) { // scrap or reputation, never below zero (heromedel, 5.13)
+			pay = RepPay.choose(this, "New Journey", "The Federation Home Planet charges to plot a new journey:", fee, Vault.get().storageScrap(),
+					homeplanet.vault.Reputation.total(Vault.get()), "The Cargo Hold");
+			if (pay == null) return;
+		} else if (fee > 0) {
 			int have = Vault.get().storageScrap();
 			if (have < fee) {
 				JOptionPane.showMessageDialog(null, "The Federation Home Planet charges " + fee + " scrap to plot a new journey, paid from the Cargo Hold,\n"
@@ -1273,9 +1281,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		if (!GameGuard.allows(this, "start her new journey")) return;
 		byte[] storageBefore = null;
-		if (fee > 0) {
+		if (pay[0] > 0) {
 			try {
-				storageBefore = Vault.get().payFromStorage(fee);
+				storageBefore = Vault.get().payFromStorage(pay[0]);
 			} catch (IOException e) {
 				HomePlanet.showErrorDialog("The Home Planet Station could not take the fee from the Cargo Hold. Nothing was changed:\n" + e.getMessage());
 				return;
@@ -1293,7 +1301,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault.get().write(ship, gs);
 			Vault.get().setOut(ship, gs, homeplanet.vault.VoyageLog.NEW_JOURNEY); // at The Home Planet Station until she jumps
-			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + fee + " scrap from the Cargo Hold" : ""));
+			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + RepPay.words(pay) + (pay[0] > 0 ? " (the scrap from the Cargo Hold)" : "") : ""));
 		} catch (Exception e) {
 			ship.invalidate();
 			String refund = "";
@@ -1304,6 +1312,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The Home Planet Station could not save her new journey:\n" + e + refund);
 			return;
 		}
+		if (pay[1] > 0) homeplanet.vault.Reputation.spend(Vault.get(), pay[1], "A new journey plotted for " + gs.getPlayerShipName()); // once her journey is saved
 		JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is ready to depart: a new journey is plotted, Captain.",
 				"New Journey", JOptionPane.INFORMATION_MESSAGE);
 		init();
@@ -1333,18 +1342,27 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		int systems = homeplanet.core.Economy.stripAllowed() ? SystemsPanel.strippable(wreck.getPlayerShip()) : 0;
 		final int stripCost = systems * homeplanet.core.Economy.stripFee();
 		final boolean strip;
+		int[] pay = {stripCost, 0}; // scrap, reputation (heromedel, 5.13: either, never below zero)
+		boolean repOn = homeplanet.core.Economy.repForVanillaBreaking();
 		if (systems > 0) {
-			int have = Vault.get().storageScrap() + wreck.getPlayerShip().getScrapAmt();
-			String fee = stripCost == 0 ? "free of charge" : "for " + stripCost + " scrap (" + homeplanet.core.Economy.stripFee() + " a system), paid from the Cargo Hold";
+			int have = Vault.get().storageScrap() + wreck.getPlayerShip().getScrapAmt(), repHave = repOn ? homeplanet.vault.Reputation.total(Vault.get()) : 0;
+			boolean can = stripCost <= have || repOn && repHave >= stripCost - Math.max(0, have);
+			String fee = stripCost == 0 ? "free of charge" : "for " + stripCost + (repOn ? " scrap or reputation (" : " scrap (") + homeplanet.core.Economy.stripFee() + " a system)"
+					+ (repOn ? "" : ", paid from the Cargo Hold");
 			String message = "Strip " + name + " for parts?\n\nWeapons, drones, augments, cargo, supplies and crew will be moved to the Cargo Hold.\n"
 					+ "Her systems can be stripped too, " + fee + ":\n" + SystemsPanel.scrapPreview(wreck.getPlayerShip())
-					+ (stripCost > have ? "The Cargo Hold and her own scrap come to " + have + ": not enough to strip her systems.\n" : "")
+					+ (can ? "" : "The Cargo Hold and her own scrap come to " + have + (repOn ? ", your reputation " + homeplanet.vault.Reputation.signed(repHave) : "")
+							+ ": not enough to strip her systems.\n")
 					+ "\nThe hull will be broken up and can never be recovered.";
-			Object[] options = stripCost > have ? new Object[] {"Scrap, systems lost", "Cancel"}
+			Object[] options = !can ? new Object[] {"Scrap, systems lost", "Cancel"}
 					: new Object[] {stripCost == 0 ? "Scrap and strip" : "Scrap and strip (" + stripCost + ")", "Scrap, systems lost", "Cancel"};
 			int c = JOptionPane.showOptionDialog(null, message, "Scrap Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[options.length - 1]);
 			if (c < 0 || c == options.length - 1) return;
 			strip = options.length == 3 && c == 0;
+			if (strip && stripCost > 0 && repOn) {
+				pay = RepPay.choose(null, "Scrap Ship", "Stripping " + name + "'s systems costs", stripCost, have, repHave, "The Cargo Hold, with her own scrap,");
+				if (pay == null) return;
+			}
 		} else {
 			String aboard = "Everything aboard will be moved to the Cargo Hold. Her systems are lost with the hull"
 					+ (homeplanet.core.Economy.stripAllowed() ? " (none of them can be stored).\n" : ".\n");
@@ -1386,11 +1404,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			Vault.Transaction tx = vault.begin().put(storageShip, storage, storageCopy.hash);
 			if (strip) {
 				scrapped.addAll(SystemsPanel.scrapSystems(from, tx));
-				if (stripCost > 0) {
-					if (to.getScrapAmt() < stripCost) throw new IOException("the Cargo Hold holds " + to.getScrapAmt() + " scrap, short of the " + stripCost + " stripping costs");
-					to.setScrapAmt(to.getScrapAmt() - stripCost);
-					scrapped.add("- " + stripCost + " scrap (stripping her systems)");
+				if (pay[0] > 0) {
+					if (to.getScrapAmt() < pay[0]) throw new IOException("the Cargo Hold holds " + to.getScrapAmt() + " scrap, short of the " + pay[0] + " stripping costs");
+					to.setScrapAmt(to.getScrapAmt() - pay[0]);
+					scrapped.add("- " + pay[0] + " scrap (stripping her systems)");
 				}
+				if (pay[1] > 0) scrapped.add("- " + pay[1] + " reputation (stripping her systems)");
 			}
 			tx.commit();
 			try {
@@ -1407,6 +1426,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		HistoryLog.entry("SCRAP", name + " stripped into storage, hull broken up", scrapped);
+		if (strip && pay[1] > 0) homeplanet.vault.Reputation.spend(Vault.get(), pay[1], "Stripping " + name + "'s systems when she was scrapped");
 		init();
 	}
 	/**

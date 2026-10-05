@@ -30,7 +30,7 @@ public class RuleBoxes {
 	final JCheckBox tradeBox = new JCheckBox("Trading and scrapping need a station (the ship must be at a beacon with a store)", HomePlanet.storeRequirement);
 	final JCheckBox journeyBox = new JCheckBox("New Journey needs a station (the boarded ship must be at a beacon with a store)", HomePlanet.journeyStoreRequirement);
 	final JCheckBox scrapBox = new JCheckBox("Allow stripping when scrapping: her systems can go to the Cargo Hold, at a discount on the removal fee", HomePlanet.stripAllowed);
-	final JComboBox<String> removalBox = new JComboBox<String>(new String[] {"not allowed", "free", "25 scrap", "50 scrap"});
+	final JComboBox<String> removalBox = new JComboBox<String>(new String[] {"not allowed", "free", "25 scrap", "50 scrap", "75 scrap"});
 	private final JLabel removalLabel = new JLabel("Refit: taking a system off a ship is  ");
 	private final JPanel removalRow = row(21);
 	final JComboBox<String> journeyFeeBox = new JComboBox<String>(new String[] {"free", "200 scrap", "500 scrap", "1000 scrap"});
@@ -60,6 +60,10 @@ public class RuleBoxes {
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
 	final JCheckBox careerBox = new JCheckBox("Career messages: a welcome, promotions, rewards for FTL achievements and a stipend, in Sandbox Mode too", HomePlanet.careerMessages);
 	final JCheckBox repBox = new JCheckBox("Reputation: earn and lose reputation points for your ships' service, shown on the Space Dock", HomePlanet.reputationOn);
+	/** How Reputation Can be Used (heromedel's words): any mode, never locked by Immersive Mode. */
+	final JComboBox<String> repUseBox = new JComboBox<String>(new String[] {"New Journeys and Pleads", "Vanillas Breaking Actions", "Only as a score"});
+	private final JLabel repUseLabel = new JLabel("How Reputation Can be Used:  ");
+	private final JPanel repUseRow = row(22);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
@@ -80,7 +84,7 @@ public class RuleBoxes {
 
 	public RuleBoxes() {
 		if (HomePlanet.immersiveMode) showOwn(); // the boxes start from the player's own rules; sync() sets Immersive Mode's over them
-		scrapBox.setToolTipText("Optional systems only, each for 10 scrap (20 when Refit charges 50; free when Refit is free). Standard equipment and damaged systems are lost with the hull. "
+		scrapBox.setToolTipText("Optional systems only, each for 10 scrap (20 when Refit charges 50, 30 when it charges 75; free when Refit is free). Standard equipment and damaged systems are lost with the hull. "
 				+ "Off: her systems are lost with the hull");
 		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
 		removalBox.setToolTipText("The Refit tab's Uninstall button: what the boarded ship pays to take one of her systems off, or whether she can at all");
@@ -129,6 +133,16 @@ public class RuleBoxes {
 		careerTip = careerBox.getToolTipText();
 		repBox.setToolTipText("<html>Your standing with The Federation Home Planet: earned by sectors, scrap, ships defeated and the Rebel Flagship,"
 				+ "<br>lost by crew killed and ships lost in action (never in sector 8). Click it on the Space Dock for the Career Reputation Log.</html>");
+		repUseBox.setSelectedIndex(Math.max(0, Math.min(2, HomePlanet.reputationUse - 1)));
+		String repUseTip = "<html>New Journeys and Pleads: reputation can pay a New Journey's fee, and a plea can keep the Cargo Hold."
+				+ "<br>Vanillas Breaking Actions: those, and Refit removal, stripping when scrapping and a custom work order's share."
+				+ "<br>Only as a score: reputation is never spent; the plea gives up the Cargo Hold, and a promise of adventure and rest are free."
+				+ "<br>Wherever reputation can't be used, scrap pays. Any mode can change it.</html>";
+		repUseBox.setToolTipText(repUseTip);
+		repUseLabel.setToolTipText(repUseTip);
+		repUseRow.add(repUseLabel);
+		repUseRow.add(repUseBox);
+		repBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { sync(); } });
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A plea for a new ship doesn't reset it");
 		unlockBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		for (int i = 0; i < locked.length; i++) tips[i] = locked[i].getToolTipText();
@@ -204,6 +218,8 @@ public class RuleBoxes {
 		freeBox.setToolTipText(im ? byValue : freeTip);
 		freeLabel.setToolTipText(im ? byValue : freeTip);
 		if (!im) unlockBox.setEnabled(cost);
+		repUseBox.setEnabled(repBox.isSelected()); // never locked: only the Reputation rule itself
+		repUseLabel.setEnabled(repBox.isSelected());
 		if (!im) customLockedBox.setEnabled(lockedBox.isSelected());
 	}
 
@@ -236,7 +252,7 @@ public class RuleBoxes {
 		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Notifications, which it needs
 		// the game mode, then the rules in groups, each under a small heading
 		Object[] rows = {immersiveRow,
-				"The Federation Home Planet", notifyBox, careerBox, repBox,
+				"The Federation Home Planet", notifyBox, careerBox, repBox, repUseRow,
 				"Journeys and trading", tradeBox, journeyBox, journeyFeeRow, augmentBox,
 				"Refit, scrapping and selling", removalRow, scrapBox, sellBox, sellSystemsBox,
 				"Shipyard", lockedBox, customLockedBox, costRow, freeRow, unlockBox};
@@ -258,6 +274,7 @@ public class RuleBoxes {
 
 	/** What apply() would change, for the history log. */
 	public void describeChanges(java.util.List<String> changed) {
+		if (repUseBox.getSelectedIndex() + 1 != HomePlanet.reputationUse) changed.add("How Reputation Can be Used: " + repUseBox.getSelectedItem());
 		if (!HomePlanet.immersiveMode) { // (in Immersive Mode the locked boxes show the career's rules; the player's own don't change)
 			if (tradeBox.isSelected() != HomePlanet.storeRequirement) changed.add("Trading requires a station: " + tradeBox.isSelected());
 			if (journeyBox.isSelected() != HomePlanet.journeyStoreRequirement) changed.add("New Journey requires a station: " + journeyBox.isSelected());
@@ -285,6 +302,7 @@ public class RuleBoxes {
 		if (!HomePlanet.immersiveMode) HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()]; // (Immersive Mode shows its own, Variable)
 		if (!HomePlanet.immersiveMode) HomePlanet.careerMessages = careerBox.isSelected();
 		if (!HomePlanet.immersiveMode) HomePlanet.reputationOn = repBox.isSelected();
+		HomePlanet.reputationUse = repUseBox.getSelectedIndex() + 1; // any mode
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)
 			HomePlanet.storeRequirement = tradeBox.isSelected();
 			HomePlanet.journeyStoreRequirement = journeyBox.isSelected();

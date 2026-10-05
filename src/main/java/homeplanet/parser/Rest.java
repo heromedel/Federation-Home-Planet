@@ -46,7 +46,7 @@ public final class Rest {
 		return p.getProperty("last") != null && intOf(p, "last") == v.beaconsSeen() ? intOf(p, "run") : 0;
 	}
 	/** What another day would cost now: nothing the first day or without Reputation, else the run, up to MAX_COST. */
-	public static int cost(Vault v) { return Reputation.shown() ? Math.min(MAX_COST, run(v)) : 0; }
+	public static int cost(Vault v) { return homeplanet.core.Economy.repSpends() ? Math.min(MAX_COST, run(v)) : 0; }
 	/** The question, as heromedel wrote it: plain the first day, then the days so far with "What will people think." on a line of its own, and the cost on another when there is one. */
 	public static String question(Vault v) {
 		int run = run(v), cost = cost(v);
@@ -58,13 +58,14 @@ public final class Rest {
 	public static synchronized void rest(Vault v) throws IOException {
 		int run = run(v), cost = cost(v);
 		if (cost > 0) Reputation.spend(v, cost, "Rested in quarters again, " + (run == 1 ? "a second day" : "day " + (run + 1) + " in a row"));
-		v.countBeacon();
+		// logged before the clock moves: the rest belongs to the day spent resting (5.18)
+		HistoryLog.entry("REST", "Rested in quarters" + (run > 0 ? " (" + (run + 1) + " days in a row" + (cost > 0 ? ", \u2212" + cost + " reputation" : "") + ")" : ""));
+		v.countBeacon("a day of rest in your quarters");
 		Properties p = new Properties();
 		p.setProperty("last", Integer.toString(v.beaconsSeen()));
 		p.setProperty("run", Integer.toString(run + 1));
 		java.io.StringWriter w = new java.io.StringWriter();
 		p.store(w, "Captain's Quarters: the last day rested, and the days in a row");
 		SafeFiles.writeText(file(v), w.toString(), false);
-		HistoryLog.entry("REST", "Rested in quarters" + (run > 0 ? " (" + (run + 1) + " days in a row" + (cost > 0 ? ", " + cost + " reputation" : "") + ")" : ""));
 	}
 }
