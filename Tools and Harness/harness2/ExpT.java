@@ -226,6 +226,9 @@ public class ExpT { public static void main(String[] a) throws Exception {
   String end = Expeditions.finish(v, r);
   Setup.chk("H: home: the scrap to the Cargo Hold (" + got + "), a beacon passed, nothing more to say (the outcome said it), a new posting in its place", v.storageScrap() == 100 + got && got > 0
     && v.beaconsSeen() == beacons + 1 && end.isEmpty() && !Expeditions.board(v).get(0).text.equals(old));
+  int jobDay = 0;
+  for (Map.Entry<Integer, List<MasterLog.Entry>> e : MasterLog.byDay(v).entrySet()) for (MasterLog.Entry x : e.getValue()) if (x.text.startsWith("EXPEDITION") && x.text.contains("(\"")) jobDay = e.getKey();
+  Setup.chk("H: the job is logged on the day it was taken, before its day passes (5.20: day " + jobDay + ", now " + MasterLog.today(v) + ")", jobDay == MasterLog.today(v) - 1);
   Properties bp = new Properties(); bp.load(new ByteArrayInputStream(SafeFiles.read(new File(v.root, "expeditions.txt"))));
   Setup.chk("H: the event is remembered, not to be met again soon", bp.getProperty("recent", "").contains("rock_shaft"));
   // a run where one was hurt and the other killed

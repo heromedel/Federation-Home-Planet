@@ -34,6 +34,7 @@ public class LogT { public static void main(String[] a) throws Exception {
  storyDays(game, new File(work, "story"));
  voyageDays(game, new File(work, "voyage"));
  beaconDays(game, new File(work, "beacon"));
+ System.setProperty("game", game.getPath()); fixes520(v);
  Setup.done();
 }
  static int count(String s, String w) { int n = 0, i = 0; while ((i = s.indexOf(w, i)) >= 0) { n++; i += w.length(); } return n; }
@@ -103,6 +104,25 @@ public class LogT { public static void main(String[] a) throws Exception {
   Setup.chk("B: a sector and a hazard: to sector 3, to a beacon near a red giant", p.contains("Then we jumped to sector 3, to a beacon near a red giant."));
   Setup.chk("B: a station: in an asteroid field, and met a Mantis ship", p.contains("Then we jumped to a station in an asteroid field and met a Mantis ship."));
   Setup.chk("B: the beacon lines themselves never shown", !p.contains("Beacon:") && !p.contains("Ship met:"));
+ }
+ /** 5.20: work at a store told on the stop's own day; a sale from a ship's cargo reads cleanly. */
+ static void fixes520(Vault v) throws Exception {
+  Ship b = v.docked().get(0);
+  net.blerf.ftl.parser.SavedGameParser.SavedGameState gs = v.readCopy(b).save;
+  java.lang.reflect.Method nw = Vault.class.getDeclaredMethod("noteWork", Ship.class, net.blerf.ftl.parser.SavedGameParser.SavedGameState.class); nw.setAccessible(true);
+  nw.invoke(v, b, gs); // the stop, first seen
+  gs.setStateVar("store_purchase", (gs.hasStateVar("store_purchase") ? gs.getStateVar("store_purchase") : 0) + 1);
+  int before = MasterLog.today(v);
+  nw.invoke(v, b, gs); // work done there: a day passes
+  int workDay = 0;
+  for (Map.Entry<Integer, List<MasterLog.Entry>> e : MasterLog.byDay(v).entrySet()) for (MasterLog.Entry x : e.getValue()) if (x.text.startsWith("Time spent on work")) workDay = e.getKey();
+  Setup.chk("F: work at a store is told on the stop's own day, then the day passes (" + workDay + ", " + before + " -> " + MasterLog.today(v) + ")", workDay == before && MasterLog.today(v) == before + 1);
+  File saves = new File(v.root.getParentFile().getParentFile(), "sale/saves"); saves.mkdirs(); // the station log writes to the fleet opened last: a fresh one of its own
+  v = Setup.open(new File(System.getProperty("game")), saves); v.storage(); v.takeStock();
+  HistoryLog.entry("SELL", "2 items for 36 scrap", Arrays.asList("Burst Laser II for 30 scrap  (Kestrel (cargo))", "Ion Blast for 6 scrap  (The (Odd) Ship)"));
+  MasterLog.businessDay(v);
+  String p = page(v, false);
+  Setup.chk("F: a sale from a ship's cargo, or a ship with brackets in her name, reads cleanly", p.contains("Sold a Burst Laser II and an Ion Blast.") && !p.contains("(cargo)"));
  }
  static Properties look(String beacon, int nebula, int danger, String hazards, String met) {
   Properties p = new Properties();

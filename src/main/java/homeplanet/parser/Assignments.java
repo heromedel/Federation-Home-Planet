@@ -762,6 +762,8 @@ public final class Assignments {
 		}
 		return out;
 	}
+	/** Its report's key: by its lasting name (5.20), never its number, which two details sent on one day could share in turn. */
+	public static String letterKey(Away a) { return "expedition:" + key(a); }
 	/** A detail's lasting name (its number changes as others come home): when it set out, its seed, and who went. */
 	static String key(Away a) { return a.sentAt + ":" + a.seed + ":" + String.join(",", a.names()); }
 	/** Brings a detail home with this result (for the station's round, and tests). */
@@ -800,7 +802,10 @@ public final class Assignments {
 				prizeBytes = SaveHelper.toBytes(gs);
 				File dir = new File(v.root, "assignments");
 				if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
-				prizeFile = new File(dir, "prize-" + a.sentAt + "-" + a.index + ".sav");
+				// by the detail's lasting name, never its number (5.20): two sent on one day, one renumbered, shared a file; and never over another prize
+				String base = "prize-" + a.sentAt + "-" + Integer.toHexString(key(a).hashCode());
+				prizeFile = new File(dir, base + ".sav");
+				for (int n = 2; prizeFile.exists(); n++) prizeFile = new File(dir, base + "-" + n + ".sav");
 				net.blerf.ftl.xml.ShipBlueprint bp = DataManager.get().getShip(gs.getPlayerShip().getShipBlueprintId());
 				r.prizeDetail = gs.getPlayerShipName() + (bp == null ? "" : " (" + bp.getName() + ")");
 				pendingIndex = keep(p, "ship", r.prizeDetail);
@@ -817,7 +822,7 @@ public final class Assignments {
 				for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(n).entrySet()) p.setProperty("pending." + pendingIndex + ".crew." + e.getKey(), e.getValue());
 			}
 		}
-		String letter = "expedition:" + a.sentAt + ":" + a.index + ":" + String.join(",", a.names());
+		String letter = letterKey(a);
 		List<Face> faces = new ArrayList<Face>(); // as they came home: the health they're at now
 		for (Fate f : r.fates) faces.add(new Face(f.crew, f.died ? "dead" : f.captured ? "taken" : f.infirmary ? "infirmary" : ""));
 		if (HomePlanet.immersiveNotifications() && pendingIndex >= 0) p.setProperty("pending." + pendingIndex + ".letter", letter); // the letter asks, with buttons

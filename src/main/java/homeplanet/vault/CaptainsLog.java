@@ -211,7 +211,7 @@ public final class CaptainsLog {
 			boolean sell = kind.equals("SELL");
 			Line l = line(m, sell ? "sell" : "junk", sell ? "sell" : "junk", true, "");
 			for (String d : det) {
-				String what = d.replaceAll("\\s+\\([^)]*\\)\\s*$", "").trim(); // the ship's name in brackets at the end
+				String what = unowned(d).trim(); // the ship's name in brackets at the end
 				String price = null;
 				int f = what.lastIndexOf(" for ");
 				if (f > 0 && what.endsWith(" scrap")) { price = what.substring(f + 5); what = what.substring(0, f); }
@@ -223,7 +223,7 @@ public final class CaptainsLog {
 			}
 		} else if (kind.equals("RETIRE")) {
 			Line l = line(m, "retire", "retire", true, "");
-			for (String d : det) add(l, d.replaceAll("\\s+\\([^)]*\\)\\s*$", "").replaceAll("\\s*\\([^)]*\\)$", "").trim(), 1);
+			for (String d : det) add(l, unowned(d).replaceAll("\\s*\\([^)]*\\)$", "").trim(), 1);
 		} else if (kind.equals("SYSTEMS")) {
 			systems(head, det, m);
 		} else if (kind.equals("BOARD")) {
@@ -248,10 +248,10 @@ public final class CaptainsLog {
 			String name = shipName(head);
 			once(m, "ships", true, name.contains("/") || name.endsWith(".sav") ? "Salvaged a ship from the Junkyard." : "Salvaged the " + name + " from the Junkyard.");
 		} else if (kind.equals("RENAME")) {
-			String[] w = head.replaceAll("\\s+\\([^)]*\\)\\s*$", "").split(" -> ", 2);
+			String[] w = unowned(head).split(" -> ", 2);
 			if (w.length == 2) once(m, "ships", true, "Renamed the " + w[0].trim() + " the " + w[1].trim() + ".");
 		} else if (kind.equals("RENAME CREW")) {
-			String[] w = head.replaceAll("\\s+\\([^)]*\\)\\s*$", "").split(" -> ", 2);
+			String[] w = unowned(head).split(" -> ", 2);
 			if (w.length == 2) once(m, "crew", false, w[0].trim() + " is now " + w[1].trim() + ".");
 		} else if (kind.equals("REMODEL")) {
 			once(m, "ships", true, "Had the " + head.split(" -> ")[0].trim() + " remodeled.");
@@ -537,6 +537,12 @@ public final class CaptainsLog {
 		List<String> out = new ArrayList<String>();
 		for (String x : list.split(", ")) out.add(x.replaceAll("\\s*\\([^)]*\\)$", "").trim());
 		return out;
+	}
+	/** A line without the ship's name in brackets at its end ("  (Kestrel (cargo))"): cut at its double space, so brackets inside it don't matter. */
+	static String unowned(String s) {
+		int i = s.lastIndexOf("  (");
+		if (i > 0 && s.trim().endsWith(")")) return s.substring(0, i).trim();
+		return s.replaceAll("\\s+\\([^)]*\\)\\s*$", "");
 	}
 	private static String shipName(String head) { return head.split("  ")[0].replaceAll("\\s*\\([0-9a-f]{16}\\)", "").trim(); }
 	private static String race(String id) {

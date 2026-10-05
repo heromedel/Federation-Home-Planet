@@ -947,8 +947,8 @@ public final class Vault {
 		try { before = Integer.parseInt(p.getProperty(k + "work", "").trim()); } catch (NumberFormatException e) { }
 		boolean wasCredited = here && "true".equals(p.getProperty(k + "credited")), credited = wasCredited;
 		if (here && before >= 0 && work > before && !credited) {
+			VoyageLog.note(this, b, "Time spent on work at the beacon (buying, repairs or upgrades)"); // before the day moves (5.20): told on the stop's own day
 			addBeacons(1, "work at a store in FTL");
-			VoyageLog.note(this, b, "Time spent on work at the beacon (buying, repairs or upgrades)");
 			credited = true;
 		}
 		if (here && before == work && credited == wasCredited) return; // nothing new
