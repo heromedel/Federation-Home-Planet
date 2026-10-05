@@ -1159,6 +1159,20 @@ the first day as "Captains Log: Stardate Today" (heromedel's words), every later
 Today), each with what happened on it; the station's housekeeping (loads, profiles, settings, patches) and the reasons
 days pass are left out, so it never tells what a day is counted in. Nothing in the other logs changed.
 
+
+## 43. The Captain's Log as a story — rebuilt (5.18; harness test LogT)
+
+heromedel, on seeing 5.17's: the master list is every entry; the Captain's Log is a curated, stylized story made from
+it, by day. Its rules are in docs/STYLE.md ("The Captain's Log"); `vault/CaptainsLog` reads each day's entries, sorts
+them into kinds, merges repeats, writes them in the captain's voice, puts the action that moved the day last with
+"Then", and folds quiet days; "Detailed Log Entries" shows the specifics. To put each thing on its own day: a rest is
+logged before the clock moves; the Cargo Bay's entries before its day passes; a ship's voyage log (what she did at a
+stop) before the clock counts her jump; and the expedition's station line names who was taken and who went to the
+infirmary. Days aboard (heromedel): "On board the Kestrel.", what happened, "Then we jumped to a new beacon" (or "to a
+station", "to sector 3"); "I returned to The Home Planet Station." and "Set out on the Kestrel." where the captain
+moves between the two; gear bought at a store or picked up. The voyage log gains "Arrived at a store", "Bought at a
+store: …" and "Picked up: …" for it. Hard rule 2 now says days are real: a player may work out that a jump passes a day.
+
 **Ideas, back burner:** the Custom Part Order (heromedel): any weapon, drone or augment in the game without a store, for
 double its price in scrap and an equal amount of reputation; very expensive, as it should be to bypass the game.
 Crew records (heromedel): a place to look up any crew member, present or past: where they came from if known, every

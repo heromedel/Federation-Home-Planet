@@ -845,9 +845,16 @@ public final class Assignments {
 		List<String> dead = new ArrayList<String>();
 		for (Fate f : r.dead()) dead.add(f.name());
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
-				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead)));
+				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead))
+				+ fatesNamed(r, true) + fatesNamed(r, false));
 		if (HomePlanet.immersiveNotifications()) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text);
 		return new Report(r.sector, text, a.names(), faces);
+	}
+	/** "; taken: …" (captive) or "; to the infirmary: …" for the station log, or nothing. */
+	private static String fatesNamed(Result r, boolean taken) {
+		List<String> n = new ArrayList<String>();
+		for (Fate f : r.fates) if (taken ? f.captured : f.infirmary && !f.died) n.add(f.name());
+		return n.isEmpty() ? "" : (taken ? "; taken: " : "; to the infirmary: ") + String.join(", ", n);
 	}
 	/** Who holds a captive taken in this sector. */
 	static String sectorCaptors(String sector) {

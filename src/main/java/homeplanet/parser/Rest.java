@@ -58,6 +58,8 @@ public final class Rest {
 	public static synchronized void rest(Vault v) throws IOException {
 		int run = run(v), cost = cost(v);
 		if (cost > 0) Reputation.spend(v, cost, "Rested in quarters again, " + (run == 1 ? "a second day" : "day " + (run + 1) + " in a row"));
+		// logged before the clock moves: the rest belongs to the day spent resting (5.18)
+		HistoryLog.entry("REST", "Rested in quarters" + (run > 0 ? " (" + (run + 1) + " days in a row" + (cost > 0 ? ", \u2212" + cost + " reputation" : "") + ")" : ""));
 		v.countBeacon("a day of rest in your quarters");
 		Properties p = new Properties();
 		p.setProperty("last", Integer.toString(v.beaconsSeen()));
@@ -65,6 +67,5 @@ public final class Rest {
 		java.io.StringWriter w = new java.io.StringWriter();
 		p.store(w, "Captain's Quarters: the last day rested, and the days in a row");
 		SafeFiles.writeText(file(v), w.toString(), false);
-		HistoryLog.entry("REST", "Rested in quarters" + (run > 0 ? " (" + (run + 1) + " days in a row" + (cost > 0 ? ", " + cost + " reputation" : "") + ")" : ""));
 	}
 }

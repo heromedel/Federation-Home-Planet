@@ -1277,7 +1277,6 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			// moving the clock between, passes none (selling one missile at a time can't run the clock)
 			boolean business = !systems.changes().isEmpty() || !shop.purchases().isEmpty();
 			for (Disposal dp : disposals) if ("SELL".equals(dp.kind) && (dp.save == currentSave || dp.save == tradeSave)) business = true;
-			if (business) homeplanet.vault.MasterLog.businessDay(Vault.get());
 			if (!systems.changes().isEmpty())
 				homeplanet.core.HistoryLog.entry("SYSTEMS", currentSave.getPlayerShipName(), new ArrayList<String>(systems.changes()));
 			for (String c : systems.changes()) if (c.startsWith("Installed ")) { homeplanet.parser.ThirdFleet.partInstalled(Vault.get()); break; } // the technicians tell the Third Fleet Commander
@@ -1339,6 +1338,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			}
 			if (!lines.isEmpty())
 				homeplanet.core.HistoryLog.entry("TRADE", currentShip == null ? tradeSave.getPlayerShipName() : currentSave.getPlayerShipName() + (tradeSave != null ? " <-> " + tradeSave.getPlayerShipName() : ""), lines);
+			if (business) homeplanet.vault.MasterLog.businessDay(Vault.get()); // after its entries: they belong to the day the business ended
 		} catch (Vault.StaleException e) {
 			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
 			log.warn("Save refused: {}", e.getMessage());

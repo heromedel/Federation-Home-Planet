@@ -86,6 +86,17 @@ public final class MasterLog {
 		return why;
 	}
 
+	/** Why each day began (its D line: what moved the clock onto it), by day. */
+	public static synchronized Map<Integer, String> dayReasons(Vault v) {
+		Map<Integer, String> out = new LinkedHashMap<Integer, String>();
+		for (String l : lines(v)) {
+			if (!l.startsWith("D\t")) continue;
+			String[] w = l.split("\t", 4);
+			if (w.length < 4) continue;
+			try { out.put(Integer.parseInt(w[2].trim()), w[3]); } catch (NumberFormatException e) { }
+		}
+		return out;
+	}
 	/** An entry, read back. */
 	public static final class Entry {
 		public final String real, log, text;

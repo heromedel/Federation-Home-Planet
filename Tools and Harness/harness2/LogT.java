@@ -30,10 +30,73 @@ public class LogT { public static void main(String[] a) throws Exception {
  Setup.chk("C: business in the Cargo Bay passes a day; a second Save right after passes none", first && !second && v.beaconsSeen() == c0 + 1);
  Rest.rest(v);
  Setup.chk("C: after something else moves the clock, it counts again", MasterLog.businessDay(v) && v.beaconsSeen() == c0 + 3);
- // the page
- java.lang.reflect.Method page = Class.forName("homeplanet.ui.CaptainsLogDialog").getDeclaredMethod("page", Vault.class); page.setAccessible(true);
- String p = (String) page.invoke(null, v);
- Setup.chk("L: the Captain's Log opens on 'Captains Log: Stardate Today', then 'StarDate TD 1.1.1.2'", p.contains("-- Captain's Log --") && p.contains("Captains Log: Stardate Today") && p.contains("StarDate TD 1.1.1.2") && p.indexOf("Stardate Today") < p.indexOf("TD 1.1.1.2"));
- Setup.chk("L: the story, not the housekeeping, nor why a day passed", p.contains("Ash signed on") && !p.contains("a ship line") && !p.contains("(refresh)") && !p.contains("day of rest in your quarters") && !p.contains(MasterLog.CARGO_BAY) && !p.toLowerCase().contains("beacon"));
+ // 5.18: the Captain's Log as a story, on a fresh fleet of its own
+ storyDays(game, new File(work, "story"));
+ voyageDays(game, new File(work, "voyage"));
  Setup.done();
-}}
+}
+ static int count(String s, String w) { int n = 0, i = 0; while ((i = s.indexOf(w, i)) >= 0) { n++; i += w.length(); } return n; }
+ static String page(Vault v, boolean details) throws Exception {
+  java.lang.reflect.Method page = Class.forName("homeplanet.ui.CaptainsLogDialog").getDeclaredMethod("page", Vault.class, boolean.class); page.setAccessible(true);
+  return (String) page.invoke(null, v, details);
+ }
+ /** Days aboard: On board, what happened, Then we jumped; back to the station; Set out (heromedel, 5.18). */
+ static void voyageDays(File game, File dir) throws Exception {
+  File saves = new File(dir, "saves"); saves.mkdirs();
+  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
+  String jump = "Jumped, hull 30/30, scrap 40 (+20), fuel 10 (-1), missiles 8, drone parts 2";
+  MasterLog.entry(v, "voyage: Kestrel", "1 ship defeated (1 in all)");
+  MasterLog.entry(v, "voyage: Kestrel", jump);
+  v.countBeacon("a jump");
+  MasterLog.entry(v, "voyage: Kestrel", "Bought at a store: Burst Laser II");
+  MasterLog.entry(v, "voyage: Kestrel", jump);
+  MasterLog.entry(v, "voyage: Kestrel", "Arrived at a store");
+  v.countBeacon("a jump");
+  HistoryLog.entry("SELL", "1 item for 6 scrap", Arrays.asList("2 Missiles for 6 scrap  (Spacedock Storage)"));
+  MasterLog.businessDay(v);
+  MasterLog.entry(v, "voyage: Kestrel", "Sector 3 reached (sectors visited: 3)");
+  MasterLog.entry(v, "voyage: Kestrel", jump);
+  v.countBeacon("a jump");
+  String p = page(v, false);
+  int a1 = p.indexOf("On board the Kestrel."), a2 = p.indexOf("The Kestrel defeated a ship."), a3 = p.indexOf("Then we jumped to a new beacon.");
+  Setup.chk("V: a day aboard: On board, what happened, Then we jumped (" + a1 + " " + a2 + " " + a3 + ")", a1 >= 0 && a1 < a2 && a2 < a3);
+  int b1 = p.indexOf("Bought a Burst Laser II at a station."), b2 = p.indexOf("Then we jumped to a station.");
+  Setup.chk("V: gear bought at a store, and a jump that came to a station", b1 > a3 && b2 > b1);
+  int c1 = p.indexOf("I returned to The Home Planet Station."), c2 = p.indexOf("Then I sold two missiles.");
+  Setup.chk("V: back at the station after time aboard: I returned, Then I sold", c1 > b2 && c2 > c1);
+  int d1 = p.indexOf("Set out on the Kestrel."), d2 = p.indexOf("Then we jumped to sector 3.");
+  Setup.chk("V: aboard again after the station: Set out, Then we jumped to sector 3", d1 > c2 && d2 > d1 && !p.contains("pressed on"));
+ }
+ static void storyDays(File game, File dir) throws Exception {
+  File saves = new File(dir, "saves"); saves.mkdirs();
+  HomePlanet.reputationOn = true;
+  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
+  // day 1: a crew back, a letter, then rest
+  HistoryLog.entry("EXPEDITION", "Bob, Joe, Fred back from Nebula (Salvage): 20 scrap; killed: Fred");
+  HistoryLog.entry("TRANSMISSION", "Expedition Command: Back from Nebula");
+  HistoryLog.entry("TRANSMISSION", "Home Planet Shipyard: Commission order: Kestrel Cruiser, Type B");
+  Rest.rest(v);
+  // day 2: four missiles sold over two Saves, a ship boarded twice, then business moved the day
+  HistoryLog.entry("BOARD", "Kestrel  ships/a.sav -> continue.sav");
+  HistoryLog.entry("BOARD", "Hinata  ships/b.sav -> continue.sav");
+  HistoryLog.entry("SELL", "1 item for 9 scrap", Arrays.asList("3 Missiles for 9 scrap  (Spacedock Storage)"));
+  HistoryLog.entry("SELL", "1 item for 6 scrap", Arrays.asList("2 Missiles for 6 scrap  (Spacedock Storage)"));
+  MasterLog.businessDay(v);
+  // days 3 to 5 quiet, then day 6 a second rest in a row
+  v.countBeacon(); v.countBeacon(); v.countBeacon();
+  Rest.rest(v); Rest.rest(v);
+  String p = page(v, false), d = page(v, true);
+  Setup.chk("L: day one heads 'Stardate Today', later days 'Stardate 1.1.1.2'", p.contains("-- Captain's Log --") && p.contains("Stardate Today") && p.contains("Stardate 1.1.1.2") && !p.contains("StarDate TD"));
+  Setup.chk("L: things that happened, as the captain tells them", p.contains("Bob and Joe came back from their expedition; Fred did not.") && p.contains("Got a letter from the Home Planet Shipyard: I can now commission a new Kestrel Cruiser, Type B."));
+  Setup.chk("L: the action that moved the day on comes last, with Then", p.indexOf("Got a letter") < p.indexOf("Then I rested in my quarters.") && p.contains("Then I sold five missiles."));
+  Setup.chk("L: repeats merged: five missiles over two Saves are one line; two boardings are one", count(p.toLowerCase(), "sold") == 1 && p.contains("Took command of the Hinata.") && !p.contains("Kestrel."));
+  Setup.chk("L: a rest is one line on the day rested, nothing of it on the next", count(p, "rested in my quarters") + count(p, "Rested in my quarters") == 3 && p.indexOf("Then I rested") < p.indexOf("Stardate 1.1.1.2"));
+  Setup.chk("L: quiet days fold into one 'Nothing to report'", p.contains("Stardates 1.1.1.3 \u2013 1.1.1.5") && p.contains("Nothing to report."));
+  Setup.chk("L: the second rest in a row says so, and a lone line has no Then", p.contains("Rested in my quarters for the second day in a row.") && !p.contains("Then I rested in my quarters for"));
+  Setup.chk("L: details only when asked: the costs and the reputation", !p.contains("reputation") && !p.contains("scrap") && d.contains("\u22121 reputation") && d.contains("Missiles, 9 scrap"));
+  Setup.chk("L: never the letter that tells an expedition again, reputation as its own line, housekeeping, why a day passed, or beacons",
+    !p.contains("Expedition Command") && !p.contains("Reputation") && !p.contains(MasterLog.CARGO_BAY) && !p.contains("day of rest") && !p.toLowerCase().contains("beacon"));
+  String raw = new String(SafeFiles.read(new File(v.root, "master.log")), "UTF-8");
+  Setup.chk("L: the master list keeps every raw line", count(raw, "SELL") == 2 && count(raw, "BOARD") == 2 && raw.contains("Expedition Command: Back from Nebula"));
+ }
+}

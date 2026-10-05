@@ -158,6 +158,8 @@ public final class VoyageLog {
 		if (defeated > 0) out.add(defeated + (defeated == 1 ? " ship" : " ships") + " defeated (" + b.getProperty("defeated") + " in all)");
 		diff(a.getProperty("crew", ""), b.getProperty("crew", ""), "Crew joined: ", "Crew lost: ", out);
 		diff(a.getProperty("items", ""), b.getProperty("items", ""), "Aboard now: ", "Gone: ", out);
+		gear(a, b, scrap < lastScrap, out);
+		if (moved && "true".equals(b.getProperty("store"))) out.add("Arrived at a store");
 		systems(a.getProperty("systems", ""), b.getProperty("systems", ""), out);
 		int reactor = intOf(b, "reactor", 0), lastReactor = intOf(a, "reactor", 0);
 		if (reactor != lastReactor) out.add("Reactor " + (reactor > lastReactor ? "upgraded" : "reduced") + " to " + reactor);
@@ -165,6 +167,20 @@ public final class VoyageLog {
 		boolean near = "true".equals(b.getProperty("flagshipNear")), wasNear = "true".equals(a.getProperty("flagshipNear"));
 		if (near && !wasNear) out.add("The Rebel Flagship is alongside (battle " + Math.max(1, stage) + ")");
 		if (stage > lastStage && lastStage > 0) out.add("The Rebel Flagship withdrew after battle " + lastStage);
+	}
+	/**
+	 * Gear new to her (moved between cargo and fittings doesn't count): bought, if she was at a store and spent scrap
+	 * there, else picked up (an event's gift, a salvage). For the Captain's Log (5.18); the Aboard now / Gone lines stay.
+	 */
+	private static void gear(Properties a, Properties b, boolean spent, List<String> out) {
+		Map<String, Integer> count = new LinkedHashMap<String, Integer>();
+		for (String x : split(b.getProperty("items", ""))) { String k = x.replace(" (cargo)", ""); count.put(k, (count.containsKey(k) ? count.get(k) : 0) + 1); }
+		for (String x : split(a.getProperty("items", ""))) { String k = x.replace(" (cargo)", ""); count.put(k, (count.containsKey(k) ? count.get(k) : 0) - 1); }
+		List<String> plus = new ArrayList<String>();
+		for (Map.Entry<String, Integer> e : count.entrySet()) for (int i = 0; i < e.getValue(); i++) plus.add(e.getKey());
+		if (plus.isEmpty()) return;
+		boolean bought = spent && "true".equals(a.getProperty("store")); // where she was when she had it: the stop before the jump
+		out.add((bought ? "Bought at a store: " : "Picked up: ") + String.join(", ", plus));
 	}
 	private static String delta(int d) { return d == 0 ? "" : " (" + (d > 0 ? "+" : "") + d + ")"; }
 	/** Two lists of names ("a|b|b"): what's new, and what's gone, counting repeats. */
@@ -212,6 +228,7 @@ public final class VoyageLog {
 		p.setProperty("sector", Integer.toString(gs.getSectorNumber()));
 		p.setProperty("beacon", Integer.toString(gs.getCurrentBeaconId()));
 		p.setProperty("beacons", Integer.toString(gs.getTotalBeaconsExplored()));
+		p.setProperty("store", Boolean.toString(SaveHelper.isAtStation(gs))); // a store at her beacon (5.18: arriving at a station, buying there)
 		p.setProperty("defeated", Integer.toString(gs.getTotalShipsDefeated()));
 		p.setProperty("hull", Integer.toString(s.getHullAmt()));
 		int maxHull = s.getHullAmt();
