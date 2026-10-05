@@ -50,7 +50,7 @@ final class ConsoleDialog extends JDialog {
 		out.setBackground(RecordsLog.BG);
 		out.setForeground(new java.awt.Color(0xdc, 0xe4, 0xeb));
 		out.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
-		out.setText("Type a command and press Enter.");
+		out.setText("Nothing to see here."); // heromedel, 5.23: no invitation to go looking
 		JScrollPane scroll = new JScrollPane(out);
 		scroll.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, MenuTheme.GOLD));
 		in.setFont(MenuTheme.TEXT_FONT);

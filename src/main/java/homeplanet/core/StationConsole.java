@@ -41,15 +41,16 @@ public final class StationConsole {
 	public static Reply answer(String line) {
 		String s = line == null ? "" : line.trim().replaceAll("\\s+", " "), low = s.toLowerCase();
 		if (low.isEmpty()) return new Reply("", 0);
-		if (low.equals("/admin")) return new Reply(devOn() ? LIST : "No admin commands available.", 0);
 		if (low.matches("/admin (dc|dev commands) (on|off)")) {
 			boolean on = low.endsWith(" on");
 			setDev(on);
 			log.info("Dev commands {}", on ? "on" : "off");
-			return new Reply(on ? "Dev commands on.\n" + LIST : "Dev commands off.", 0);
+			return new Reply(on ? "Dev commands on." : "Dev commands off.", 0); // no list: /admin ? shows it (heromedel, 5.23)
 		}
-		if (low.equals("/admin dc") || low.equals("/admin dev commands"))
-			return new Reply(devOn() ? "Dev commands are on. /admin dc off locks them." : "Dev commands are off. /admin dc on unlocks them.", 0);
+		// while locked, everything else under /admin is an unknown command: nothing says there is anything to unlock
+		if (devOn() && low.equals("/admin ?")) return new Reply(LIST, 0);
+		if (devOn() && low.equals("/admin")) return new Reply("Dev commands are on. /admin ? lists them.", 0);
+		if (devOn() && (low.equals("/admin dc") || low.equals("/admin dev commands"))) return new Reply("Dev commands are on. /admin dc off locks them.", 0);
 		if (devOn() && (low.equals("/passtime") || low.startsWith("/passtime "))) {
 			int n;
 			try { n = Integer.parseInt(low.substring(9).trim()); } catch (NumberFormatException e) { n = 0; }

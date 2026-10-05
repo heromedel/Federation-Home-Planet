@@ -7,13 +7,14 @@ public class ConT { public static void main(String[] a) throws Exception {
  HomePlanet.propFile = new File(work, "test.cfg"); HomePlanet.config.remove(StationConsole.DEV);
  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
  StationConsole.Reply r = StationConsole.answer("/admin");
- Setup.chk("A: locked, /admin answers 'No admin commands available.'", r.text.equals("No admin commands available.") && r.days == 0);
+ Setup.chk("A: locked, /admin, /admin ? and /admin dc are unknown commands: nothing says there is anything to unlock", r.text.equals("Unknown command: /admin") && r.days == 0
+   && StationConsole.answer("/admin ?").text.startsWith("Unknown command") && StationConsole.answer("/admin dc").text.startsWith("Unknown command"));
  r = StationConsole.answer("/passtime 3");
  Setup.chk("A: a locked command stays hidden: unknown, nothing passes", r.text.startsWith("Unknown command") && r.days == 0);
  r = StationConsole.answer("  /ADMIN  dc   on ");
  String cfg = new String(SafeFiles.read(HomePlanet.propFile), "UTF-8");
- Setup.chk("A: /admin dc on unlocks them, kept in the cfg, and lists them", StationConsole.devOn() && r.text.contains("/passtime") && cfg.contains("dev_commands=true"));
- Setup.chk("A: /admin lists them now", StationConsole.answer("/admin").text.contains("/passtime"));
+ Setup.chk("A: /admin dc on unlocks them, kept in the cfg, without listing them", StationConsole.devOn() && r.text.equals("Dev commands on.") && cfg.contains("dev_commands=true"));
+ Setup.chk("A: /admin ? lists them now, /admin points to it", StationConsole.answer("/admin ?").text.contains("/passtime") && StationConsole.answer("/admin").text.contains("/admin ?"));
  Setup.chk("P: /passtime with no number, 0, too many or words: how to use it, nothing passes",
    StationConsole.answer("/passtime").days == 0 && StationConsole.answer("/passtime 0").days == 0 && StationConsole.answer("/passtime 366").days == 0 && StationConsole.answer("/passtime ten").text.startsWith("Usage"));
  // an expedition due in the span comes home on its own day
@@ -35,10 +36,10 @@ public class ConT { public static void main(String[] a) throws Exception {
  Setup.chk("P: the history log never mentions the dev command (5.23: the debug log only)", !hist.contains("Dev command") && !hist.contains("DEV  "));
  java.lang.reflect.Method page = Class.forName("homeplanet.ui.CaptainsLogDialog").getDeclaredMethod("page", Vault.class, boolean.class); page.setAccessible(true);
  String p = (String) page.invoke(null, v, false);
- Setup.chk("P: the Captain's Log tells the quiet days as quiet, the homecoming on its day, and never the command", p.contains("Nothing to report.") && p.contains("came back from their expedition") && !p.toLowerCase().contains("dev command"));
+ Setup.chk("P: the Captain's Log tells the quiet days as quiet, the homecoming on its day, and never the command", p.contains("Nothing to report.") && p.contains("came back from the expedition") && !p.toLowerCase().contains("dev command"));
  stipend(saves);
  r = StationConsole.answer("/admin dc off");
- Setup.chk("A: /admin dc off locks them again", !StationConsole.devOn() && StationConsole.answer("/admin").text.equals("No admin commands available.") && StationConsole.answer("/passtime 2").days == 0);
+ Setup.chk("A: /admin dc off locks them again", !StationConsole.devOn() && StationConsole.answer("/admin ?").text.startsWith("Unknown command") && StationConsole.answer("/passtime 2").days == 0);
  Setup.done();
 }
  /** A stipend due partway through a run is issued on its own day, once (5.23: it came only when the run was over). */

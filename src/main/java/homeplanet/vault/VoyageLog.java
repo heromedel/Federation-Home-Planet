@@ -186,7 +186,7 @@ public final class VoyageLog {
 	}
 	/**
 	 * What her new beacon held (heromedel, 5.19, for the Captain's Log): the hazards there, and a ship met. The save keeps
-	 * a red giant, a pulsar, a planetary defence system and an asteroid field; a nebula shows only in FTL's own count of
+	 * a star (FTL's flare star), a pulsar, an Anti-Ship Battery and an asteroid field; a nebula shows only in FTL's own count of
 	 * nebula jumps, and an ion storm as a jump into danger that names none of those. A ship can turn up after the jump
 	 * (her next look): "Ship met" then, on its own.
 	 */
@@ -206,9 +206,9 @@ public final class VoyageLog {
 	private static final Map<String, String> HAZARDS = new LinkedHashMap<String, String>();
 	static {
 		HAZARDS.put("asteroids", "an asteroid field");
-		HAZARDS.put("sun", "a red giant");
+		HAZARDS.put("sun", "a star"); // FTL: "dangerously close to a star"
 		HAZARDS.put("pulsar", "a pulsar");
-		HAZARDS.put("pds", "a planetary defence system");
+		HAZARDS.put("pds", "an Anti-Ship Battery"); // FTL's name for it (docs/LORE_COMPONENTS.md 22)
 	}
 	private static String delta(int d) { return d == 0 ? "" : " (" + (d > 0 ? "+" : "") + d + ")"; }
 	/** Two lists of names ("a|b|b"): what's new, and what's gone, counting repeats. */

@@ -63,7 +63,7 @@ The Captain's Log (Captain's Quarters) is a story told from the master log, not 
 
 - **Voice:** the captain's own, first person and past tense, short: "Rested in my quarters for the third day in a
   row." "Sold five missiles." Things that simply happened go in too, from the captain's side: "Bob and Joe came back
-  from their expedition; Fred did not." "Got a letter from the Home Planet Shipyard: I can now commission a new
+  from the expedition; Fred did not." "Got a letter from the Home Planet Shipyard: I can now commission a new
   Kestrel Cruiser, Type B."
 - **Headings:** the first day is "Stardate Today", every later one "Stardate 1.1.1.2" (year.month.week.day: 7-day
   weeks, 28-day months, 13-month years, year 1 first). Quiet days fold together: "Stardates 1.1.1.4 – 1.1.1.5",
@@ -76,8 +76,8 @@ The Captain's Log (Captain's Quarters) is a story told from the master log, not 
   returned to The Home Planet Station."; time aboard after the station opens "Set out on the Kestrel:". Gear that comes
   aboard is "Bought a Burst Laser II at a station." (at a store, scrap spent) or "We picked up a Burst Laser II.".
 - **The beacon (5.19):** a jump tells what was there and who she met: "Then we jumped into a nebula", "…into an ion
-  storm", "…into an asteroid field", "…to a beacon near a red giant (a pulsar)", "…within range of a planetary defence
-  system", "…and met a Rock pirate" (a Mantis ship, a rebel ship, an automated ship). What's learned of a beacon later,
+  storm", "…into an asteroid field", "…to a beacon near a star (a pulsar)", "…within range of an Anti-Ship
+  Battery", "…and met a Rock pirate" (a Mantis ship, a rebel ship, an automated ship). What's learned of a beacon later,
   even on a later day, goes into that jump's line, never a line of its own.
 - **Merging:** the same action on the same day is one line ("Sold five missiles", not five sales); boarding several
   times is one "Took command of the …"; an event and its letter or receipt are one line.

@@ -1195,6 +1195,9 @@ stay locked until the run is done, half a second at least, then the Space Dock i
 told. The master log notes each day as passed by a dev command, so the Captain's Log tells them as quiet days; the
 debug log (only, from 5.23: heromedel) notes "Dev command used: passing N days". `core/StationConsole` answers the
 commands, `ui/ConsoleDialog` is the window. Only at the Space Dock: time can't pass with the Cargo Bay's trades open.
+From 5.23 on McCarthy's branch (heromedel): the console opens "Nothing to see here."; while locked, /admin and all under
+it are unknown commands, so nothing says there is anything to unlock; /admin dc on answers only "Dev commands on.", and
+/admin ? lists the dev commands.
 
 ## Naming decisions — settled (4B.30)
 

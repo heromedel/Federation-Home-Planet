@@ -72,7 +72,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
    if ("battery".equals(Assignments.roll("rebel", party("human"), rng, false).hazard)) battOff++;
    if ("battery".equals(Assignments.roll("pirate", party("human"), rng, true).hazard)) battElsewhere++;
    Assignments.Result one = Assignments.roll("rebel", party("engi", "human"), rng, true);
-   if ("battery".equals(one.hazard)) { batt1++; if (one.hacker != null) { hack1++; if (one.report.contains(one.hacker.getName() + " hacked") || one.report.contains(one.hacker.getName() + " spent an hour")) saidHack++; } }
+   if ("battery".equals(one.hazard)) { batt1++; if (one.hacker != null) { hack1++; if (one.report.contains(one.hacker.getName() + " turned the ship's Hacking system")) saidHack++; } }
    Assignments.Result three = Assignments.roll("rebel", party("engi", "engi", "engi"), rng, true);
    if ("battery".equals(three.hazard)) { batt3++; if (three.hacker != null) hack3++; }
   }

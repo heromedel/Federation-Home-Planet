@@ -78,7 +78,7 @@ public class LogT { public static void main(String[] a) throws Exception {
   out.clear(); ch.invoke(null, a, look("2", 3, 2, "", ""), 1, out);
   Setup.chk("B: a jump into danger the save names none of: an ion storm, not a nebula " + out, out.contains("Beacon: an ion storm") && !out.toString().contains("nebula"));
   out.clear(); ch.invoke(null, a, look("2", 2, 2, "sun|pds", "a Rock pirate"), 1, out);
-  Setup.chk("B: the save's own hazards, and the ship met " + out, out.contains("Beacon: a red giant, a planetary defence system") && out.contains("Ship met: a Rock pirate"));
+  Setup.chk("B: the save's own hazards, and the ship met " + out, out.contains("Beacon: a star, an Anti-Ship Battery") && out.contains("Ship met: a Rock pirate"));
   Properties old = look("1", 0, 0, "", ""); old.remove("nebulaJumps"); old.remove("dangerJumps"); old.remove("met");
   out.clear(); ch.invoke(null, old, look("2", 9, 9, "", ""), 1, out);
   Setup.chk("B: a last look from before 5.19 (no counts kept) reads no nebula or storm " + out, !out.toString().contains("Beacon"));
@@ -101,7 +101,7 @@ public class LogT { public static void main(String[] a) throws Exception {
   Setup.chk("B: On board the Kestrel: with a colon", p.contains("On board the Kestrel:") && !p.contains("On board the Kestrel."));
   Setup.chk("B: Then we jumped into a nebula", p.contains("Then we jumped into a nebula."));
   Setup.chk("B: the next day's news goes to the jump before it: into an ion storm and met a Rock pirate", p.contains("Then we jumped into an ion storm and met a Rock pirate."));
-  Setup.chk("B: a sector and a hazard: to sector 3, to a beacon near a red giant", p.contains("Then we jumped to sector 3, to a beacon near a red giant."));
+  Setup.chk("B: a sector and a hazard: to sector 3, to a beacon near a star (5.19's \"a red giant\" read as FTL names it)", p.contains("Then we jumped to sector 3, to a beacon near a star."));
   Setup.chk("B: a station: in an asteroid field, and met a Mantis ship", p.contains("Then we jumped to a station in an asteroid field and met a Mantis ship."));
   Setup.chk("B: the beacon lines themselves never shown", !p.contains("Beacon:") && !p.contains("Ship met:"));
  }
@@ -150,7 +150,7 @@ public class LogT { public static void main(String[] a) throws Exception {
   Rest.rest(v); Rest.rest(v);
   String p = page(v, false), d = page(v, true);
   Setup.chk("L: day one heads 'Stardate Today', later days 'Stardate 1.1.1.2'", p.contains("-- Captain's Log --") && p.contains("Stardate Today") && p.contains("Stardate 1.1.1.2") && !p.contains("StarDate TD"));
-  Setup.chk("L: things that happened, as the captain tells them", p.contains("Bob and Joe came back from their expedition; Fred did not.") && p.contains("Got a letter from the Home Planet Shipyard: I can now commission a new Kestrel Cruiser, Type B."));
+  Setup.chk("L: things that happened, as the captain tells them", p.contains("Bob and Joe came back from the expedition; Fred did not.") && p.contains("Got a letter from the Home Planet Shipyard: I can now commission a new Kestrel Cruiser, Type B."));
   Setup.chk("L: the action that moved the day on comes last, with Then", p.indexOf("Got a letter") < p.indexOf("Then I rested in my quarters.") && p.contains("Then I sold five missiles."));
   Setup.chk("L: repeats merged: five missiles over two Saves are one line; two boardings are one", count(p.toLowerCase(), "sold") == 1 && p.contains("Took command of the Hinata.") && !p.contains("Kestrel."));
   Setup.chk("L: a rest is one line on the day rested, nothing of it on the next", count(p, "rested in my quarters") + count(p, "Rested in my quarters") == 3 && p.indexOf("Then I rested") < p.indexOf("Stardate 1.1.1.2"));
