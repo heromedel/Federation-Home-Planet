@@ -106,13 +106,16 @@ with `import -window root`. The Steam build runs without Steam; sound fails harm
 
 ## Hard rules
 
-Two rules with no exceptions, in anything the player sees:
+Three rules with no exceptions, in anything the player sees:
 
 1. Never imply the Rebel Flagship has been destroyed: the war goes on.
 2. Never say to the player that time is measured in beacons. The station's clock counts them, hidden; the player hears
    "some time", "a while", "one month" (as the ransom letters say), never a number of beacons or "a beacon later".
    A beacon is a day (5.00): 28 beacons are a month (the ransom's month; `Career.BEACONS_PER_MONTH`), and the stipend
    comes every one, two or three months by difficulty (28, 56, 84). A day in Captain's Quarters is one beacon.
+3. Check any system, outcome or message against `docs/LORE_COMPONENTS.md` (real FTL lore, each fact with its source):
+   report any inconsistency to heromedel, and add no new ones. Don't edit that file without his permission; when new
+   real FTL lore turns up, offer it to him as a numbered list and ask whether it should be added.
 
 ## Voice (player-facing text)
 
