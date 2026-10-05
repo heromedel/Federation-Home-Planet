@@ -1190,10 +1190,10 @@ heromedel: ~ opens a console over the station (never while typing in a box). Adm
 "No admin commands available"; /admin dc on unlocks the dev commands and /admin dc off locks them again (hidden in the
 cfg as dev_commands). A locked command answers "Unknown command", so it stays hidden. The first dev command,
 /passtime N (1 to 365), passes N days one at a time with no added pause, each with the station's round (expeditions
-home, the infirmary, ransoms), so whatever falls due lands on its own day; the console is modal and its input and close
+home, the infirmary, ransoms, and from 5.23 the inbox: the stipend and letters due), so whatever falls due lands on its own day; the console is modal and its input and close
 stay locked until the run is done, half a second at least, then the Space Dock is rebuilt and what the days brought is
 told. The master log notes each day as passed by a dev command, so the Captain's Log tells them as quiet days; the
-debug log and the station's history log note "Dev command used: passing N days". `core/StationConsole` answers the
+debug log (only, from 5.23: heromedel) notes "Dev command used: passing N days". `core/StationConsole` answers the
 commands, `ui/ConsoleDialog` is the window. Only at the Space Dock: time can't pass with the Cargo Bay's trades open.
 
 ## Naming decisions — settled (4B.30)

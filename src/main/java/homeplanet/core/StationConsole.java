@@ -72,11 +72,10 @@ public final class StationConsole {
 		if (HomePlanet.expeditionType == 2) into.back.addAll(Assignments.checkReturns(v));
 		into.ransomNews.addAll(Expeditions.checkRansoms(v));
 		into.upAgain.addAll(Expeditions.checkInfirmary(v));
+		homeplanet.parser.Transmissions.check(); // the inbox, as the Space Dock reads it: a stipend or letter due lands on its own day (5.23)
 	}
-	/** The debug log and the station's history log note it (never the Captain's Log: its days just read as quiet). */
+	/** The debug log notes it, and only the debug log (5.23): the master log's hidden day lines mark each day passed. */
 	public static void noted(int days) {
-		String what = "Dev command used: passing " + days + (days == 1 ? " day" : " days");
-		log.info(what);
-		HistoryLog.entry("DEV", what);
+		log.info("Dev command used: passing {}", days + (days == 1 ? " day" : " days"));
 	}
 }
