@@ -72,9 +72,13 @@ The Captain's Log (Captain's Quarters) is a story told from the master log, not 
   rested in my quarters."). Several things done in one visit to the Cargo Bay are one sentence ("Then I had a Cloaking
   system fitted to the Hinata and sold five missiles."). A jump in FTL is the crew's: "Then we jumped to a new beacon",
   "…to a station", "…to sector 3".
-- **Where the captain is:** a day aboard opens "On board the Kestrel."; time at the station after time aboard opens "I
-  returned to The Home Planet Station."; time aboard after the station opens "Set out on the Kestrel.". Gear that comes
+- **Where the captain is:** a day aboard opens "On board the Kestrel:"; time at the station after time aboard opens "I
+  returned to The Home Planet Station."; time aboard after the station opens "Set out on the Kestrel:". Gear that comes
   aboard is "Bought a Burst Laser II at a station." (at a store, scrap spent) or "We picked up a Burst Laser II.".
+- **The beacon (5.19):** a jump tells what was there and who she met: "Then we jumped into a nebula", "…into an ion
+  storm", "…into an asteroid field", "…to a beacon near a red giant (a pulsar)", "…within range of a planetary defence
+  system", "…and met a Rock pirate" (a Mantis ship, a rebel ship, an automated ship). What's learned of a beacon later,
+  even on a later day, goes into that jump's line, never a line of its own.
 - **Merging:** the same action on the same day is one line ("Sold five missiles", not five sales); boarding several
   times is one "Took command of the …"; an event and its letter or receipt are one line.
 - **Numbers:** up to ten in words, then digits. No prices, scrap or reputation in the story: they're the details,

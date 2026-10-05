@@ -36,6 +36,8 @@ public final class CaptainsLog {
 		/** For a ship's jumps: the sector she reached (0: none), and whether she came to a station. */
 		int sector;
 		boolean station;
+		/** For a ship's jumps: what her beacon held ("a nebula", "a red giant") and the ships met there ("a Rock pirate"). */
+		final List<String> hazards = new ArrayList<String>(), met = new ArrayList<String>();
 		// what's merged into it
 		final Map<String, Integer> things = new LinkedHashMap<String, Integer>();
 		int count;
@@ -62,9 +64,20 @@ public final class CaptainsLog {
 		List<Day> out = new ArrayList<Day>();
 		int quiet = 0;
 		Boolean wasAboard = null; // where the last day with lines left the captain
+		Map<String, Line> lastJump = new LinkedHashMap<String, Line>(); // each ship's latest jump line, for what's learned of her beacon later
 		for (int d = 1; d <= today; d++) {
 			List<MasterLog.Entry> es = byDay.get(d);
-			List<Line> lines = es == null ? new ArrayList<Line>() : day(es, began.get(d + 1), wasAboard);
+			List<Line> later = new ArrayList<Line>();
+			List<Line> lines = es == null ? new ArrayList<Line>() : day(es, began.get(d + 1), wasAboard, later);
+			for (Line b : later) { // a ship met after the jump: it goes with that jump, on whatever day it was
+				Line j = lastJump.get(b.ship);
+				if (j == null) continue;
+				for (String x : b.hazards) if (!j.hazards.contains(x)) j.hazards.add(x);
+				for (String x : b.met) if (!j.met.contains(x)) j.met.add(x);
+				boolean then = j.text.startsWith("Then ");
+				j.text = then ? "Then " + lower(jumpText(j)) : jumpText(j);
+			}
+			for (Line l : lines) if (l.kind.equals("move")) lastJump.put(l.ship, l);
 			if (lines.isEmpty()) { if (quiet == 0) quiet = d; continue; }
 			wasAboard = lines.get(lines.size() - 1).aboard;
 			if (quiet > 0) { out.add(new Day(quiet, d - 1, lines(0))); quiet = 0; }
@@ -78,13 +91,16 @@ public final class CaptainsLog {
 	/** One day's lines: each entry read, the repeats merged, and the action that moved the day on (why the next began) last, with "Then". */
 	static List<Line> day(List<MasterLog.Entry> entries, String endedBy) { return day(entries, endedBy, null); }
 	/** As above, knowing where the day before left the captain (aboard, at the station, or not known). */
-	static List<Line> day(List<MasterLog.Entry> entries, String endedBy, Boolean wasAboard) {
+	static List<Line> day(List<MasterLog.Entry> entries, String endedBy, Boolean wasAboard) { return day(entries, endedBy, wasAboard, new ArrayList<Line>()); }
+	/** As above; what was learned of a beacon reached on an earlier day goes into {@code later}, for that day's jump. */
+	static List<Line> day(List<MasterLog.Entry> entries, String endedBy, Boolean wasAboard, List<Line> later) {
 		Map<String, Line> merged = new LinkedHashMap<String, Line>();
 		for (MasterLog.Entry e : entries) read(e, merged);
 		List<Line> lines = new ArrayList<Line>();
 		boolean boughtAboard = false;
 		for (Line l : merged.values()) if (l.kind.equals("ftlbuy")) boughtAboard = true;
 		for (Line l : merged.values()) {
+			if (l.kind.equals("beacon")) { later.add(l); continue; }
 			if (boughtAboard && l.kind.equals("work")) continue; // the purchase tells it
 			finish(l);
 			if (l.text != null && !l.text.isEmpty()) lines.add(l);
@@ -125,11 +141,11 @@ public final class CaptainsLog {
 		for (int i = 0; i < lines.size(); i++) {
 			Line l = lines.get(i);
 			if (i == 0 && l.aboard) {
-				Line on = new Line("where", "where", false, (Boolean.FALSE.equals(at) ? "Set out on the " : "On board the ") + l.ship + ".");
+				Line on = new Line("where", "where", false, (Boolean.FALSE.equals(at) ? "Set out on the " : "On board the ") + l.ship + ":");
 				on.aboard = true;
 				lines.add(0, on); i++;
 			} else if (at != null && l.aboard != at) {
-				Line w = new Line("where", "where", true, l.aboard ? "Set out on the " + l.ship + "." : "I returned to The Home Planet Station.");
+				Line w = new Line("where", "where", true, l.aboard ? "Set out on the " + l.ship + ":" : "I returned to The Home Planet Station.");
 				w.aboard = l.aboard;
 				lines.add(i, w); i++;
 			}
@@ -396,6 +412,8 @@ public final class CaptainsLog {
 			return;
 		}
 		if (text.equals("Arrived at a store")) { jump(ship, m).station = true; return; }
+		if (text.startsWith("Beacon: ")) { beacon(ship, m).hazards.addAll(Arrays.asList(text.substring(8).split(", "))); return; }
+		if (text.startsWith("Ship met: ")) { Line l = beacon(ship, m); String x = text.substring(10); if (!l.met.contains(x)) l.met.add(x); return; }
 		if (text.startsWith("Bought at a store: ")) { Line l = line(m, "ftlbuy", "ftlbuy:" + ship, true, ""); for (String x : text.substring(19).split(", ")) add(l, x, 1); return; }
 		if (text.startsWith("Picked up: ")) { Line l = line(m, "found", "found:" + ship, false, ""); l.byWe = true; for (String x : text.substring(11).split(", ")) add(l, x, 1); return; }
 		if (text.startsWith("Hull damaged")) { beating(ship, text, m); return; }
@@ -413,6 +431,11 @@ public final class CaptainsLog {
 		l.byWe = true;
 		return l;
 	}
+	/** Where a beacon's news goes: the day's jump of hers, or, with none yet today, a note for her last jump (an earlier day's). */
+	private static Line beacon(String ship, Map<String, Line> m) {
+		Line j = m.get("move:" + ship);
+		return j != null ? j : line(m, "beacon", "beacon:" + ship, false, "");
+	}
 	/** A hard knock (a quarter of her hull or more at once): she took a beating. */
 	private static void beating(String ship, String text, Map<String, Line> m) {
 		Matcher h = Pattern.compile("hull (\\d+)/(\\d+) \\((-\\d+)\\)|Hull damaged to (\\d+)/(\\d+) \\((-\\d+)\\)").matcher(text);
@@ -428,11 +451,29 @@ public final class CaptainsLog {
 		else if (l.kind.equals("junk")) l.text = l.things.isEmpty() ? null : "Threw out " + things(l.things) + ".";
 		else if (l.kind.equals("retire")) l.text = l.things.isEmpty() ? null : "Let " + join(new ArrayList<String>(l.things.keySet())) + " go.";
 		else if (l.kind.equals("board")) l.text = "Took command of the " + l.ship + ".";
-		else if (l.kind.equals("move")) l.text = "We jumped to " + (l.sector > 0 ? "sector " + l.sector : l.station ? "a station" : "a new beacon") + ".";
+		else if (l.kind.equals("move")) l.text = jumpText(l);
 		else if (l.kind.equals("ftlbuy")) l.text = l.things.isEmpty() ? null : "Bought " + things(l.things) + " at a station.";
 		else if (l.kind.equals("found")) l.text = l.things.isEmpty() ? null : "We picked up " + things(l.things) + ".";
 		else if (l.kind.equals("fight") && l.text.isEmpty()) l.text = l.count <= 0 ? null : "The " + l.ship + " defeated " + (l.count == 1 ? "a ship" : number(l.count) + " ships") + ".";
 		else if (l.kind.equals("systems")) l.text = systemsText(l);
+	}
+	/**
+	 * A jump in words (heromedel, 5.19): where to, what was there, who she met. "We jumped into a nebula and met a Rock
+	 * pirate.", "We jumped to sector 3, to a beacon near a red giant.", "We jumped to a station in an asteroid field."
+	 */
+	static String jumpText(Line l) {
+		String into = null;
+		List<String> near = new ArrayList<String>();
+		for (String h : l.hazards) {
+			if (h.equals("a nebula") || h.equals("an ion storm") || h.equals("an asteroid field")) { if (into == null) into = h; }
+			else near.add(h.equals("a planetary defence system") ? "within range of " + h : "near " + h);
+		}
+		String nearby = near.isEmpty() ? "" : join(near);
+		String where;
+		if (l.sector > 0) where = "to sector " + l.sector + (into != null ? ", into " + into + (near.isEmpty() ? "" : " " + nearby) : near.isEmpty() ? "" : ", to a beacon " + nearby);
+		else if (l.station) where = "to a station" + (into != null ? " in " + into : "") + (near.isEmpty() ? "" : " " + nearby);
+		else where = into != null ? "into " + into + (near.isEmpty() ? "" : " " + nearby) : near.isEmpty() ? "to a new beacon" : "to a beacon " + nearby;
+		return "We jumped " + where + (l.met.isEmpty() ? "" : " and met " + join(l.met)) + ".";
 	}
 	private static String systemsText(Line l) {
 		if (l.things.isEmpty()) return l.details.isEmpty() ? null : "Had the Dry Dock work on the " + l.ship + ".";

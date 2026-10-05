@@ -33,6 +33,7 @@ public class LogT { public static void main(String[] a) throws Exception {
  // 5.18: the Captain's Log as a story, on a fresh fleet of its own
  storyDays(game, new File(work, "story"));
  voyageDays(game, new File(work, "voyage"));
+ beaconDays(game, new File(work, "beacon"));
  Setup.done();
 }
  static int count(String s, String w) { int n = 0, i = 0; while ((i = s.indexOf(w, i)) >= 0) { n++; i += w.length(); } return n; }
@@ -58,14 +59,56 @@ public class LogT { public static void main(String[] a) throws Exception {
   MasterLog.entry(v, "voyage: Kestrel", jump);
   v.countBeacon("a jump");
   String p = page(v, false);
-  int a1 = p.indexOf("On board the Kestrel."), a2 = p.indexOf("The Kestrel defeated a ship."), a3 = p.indexOf("Then we jumped to a new beacon.");
+  int a1 = p.indexOf("On board the Kestrel:"), a2 = p.indexOf("The Kestrel defeated a ship."), a3 = p.indexOf("Then we jumped to a new beacon.");
   Setup.chk("V: a day aboard: On board, what happened, Then we jumped (" + a1 + " " + a2 + " " + a3 + ")", a1 >= 0 && a1 < a2 && a2 < a3);
   int b1 = p.indexOf("Bought a Burst Laser II at a station."), b2 = p.indexOf("Then we jumped to a station.");
   Setup.chk("V: gear bought at a store, and a jump that came to a station", b1 > a3 && b2 > b1);
   int c1 = p.indexOf("I returned to The Home Planet Station."), c2 = p.indexOf("Then I sold two missiles.");
   Setup.chk("V: back at the station after time aboard: I returned, Then I sold", c1 > b2 && c2 > c1);
-  int d1 = p.indexOf("Set out on the Kestrel."), d2 = p.indexOf("Then we jumped to sector 3.");
+  int d1 = p.indexOf("Set out on the Kestrel:"), d2 = p.indexOf("Then we jumped to sector 3.");
   Setup.chk("V: aboard again after the station: Set out, Then we jumped to sector 3", d1 > c2 && d2 > d1 && !p.contains("pressed on"));
+ }
+ /** What a beacon held (5.19): nebulas, storms, hazards, a ship met, the next day's news going to the jump before it. */
+ static void beaconDays(File game, File dir) throws Exception {
+  java.lang.reflect.Method ch = VoyageLog.class.getDeclaredMethod("changes", Properties.class, Properties.class, int.class, List.class); ch.setAccessible(true);
+  Properties a = look("1", 2, 1, "", ""); List<String> out = new ArrayList<String>();
+  ch.invoke(null, a, look("2", 3, 1, "", ""), 1, out);
+  Setup.chk("B: FTL's nebula count rose with the jump: a nebula " + out, out.contains("Beacon: a nebula"));
+  out.clear(); ch.invoke(null, a, look("2", 3, 2, "", ""), 1, out);
+  Setup.chk("B: a jump into danger the save names none of: an ion storm, not a nebula " + out, out.contains("Beacon: an ion storm") && !out.toString().contains("nebula"));
+  out.clear(); ch.invoke(null, a, look("2", 2, 2, "sun|pds", "a Rock pirate"), 1, out);
+  Setup.chk("B: the save's own hazards, and the ship met " + out, out.contains("Beacon: a red giant, a planetary defence system") && out.contains("Ship met: a Rock pirate"));
+  Properties old = look("1", 0, 0, "", ""); old.remove("nebulaJumps"); old.remove("dangerJumps"); old.remove("met");
+  out.clear(); ch.invoke(null, old, look("2", 9, 9, "", ""), 1, out);
+  Setup.chk("B: a last look from before 5.19 (no counts kept) reads no nebula or storm " + out, !out.toString().contains("Beacon"));
+  out.clear(); ch.invoke(null, old, look("1", 0, 0, "", "a Mantis ship"), 1, out);
+  Setup.chk("B: and no ship 'met' without a jump on that first look " + out, out.isEmpty());
+  out.clear(); ch.invoke(null, a, look("1", 2, 1, "", "a Mantis ship"), 1, out);
+  Setup.chk("B: a ship turning up after the jump: met, on its own " + out, out.size() == 1 && out.contains("Ship met: a Mantis ship"));
+  Setup.chk("B: ships in words", VoyageLog.shipWords("ROCK_PIRATE", "SHIPS_ROCK_PIRATE", "rock").equals("a Rock pirate") && VoyageLog.shipWords("PIRATE", "SHIPS_PIRATE", "mantis").equals("a Mantis pirate")
+    && VoyageLog.shipWords("REBEL", "SHIPS_REBEL", "human").equals("a rebel ship") && VoyageLog.shipWords("REBEL_AUTO", "SHIPS_AUTO", "").equals("an automated ship")
+    && VoyageLog.shipWords("ENGI_SHIP", "SHIPS_CIRCLE", "engi").equals("an Engi ship") && VoyageLog.shipWords(null, null, "").equals("a ship") && VoyageLog.shipWords("MOD_EVENT", null, "energy").equals("a Zoltan ship"));
+  File saves = new File(dir, "saves"); saves.mkdirs();
+  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
+  String jump = "Jumped, hull 30/30, scrap 40, fuel 10 (-1), missiles 8, drone parts 2";
+  MasterLog.entry(v, "voyage: Kestrel", jump); MasterLog.entry(v, "voyage: Kestrel", "Beacon: a nebula"); v.countBeacon("a jump");
+  MasterLog.entry(v, "voyage: Kestrel", "1 ship defeated (1 in all)"); MasterLog.entry(v, "voyage: Kestrel", jump); MasterLog.entry(v, "voyage: Kestrel", "Beacon: an ion storm"); v.countBeacon("a jump");
+  MasterLog.entry(v, "voyage: Kestrel", "Ship met: a Rock pirate"); // learned a day after the jump
+  MasterLog.entry(v, "voyage: Kestrel", "Sector 3 reached (sectors visited: 3)"); MasterLog.entry(v, "voyage: Kestrel", jump); MasterLog.entry(v, "voyage: Kestrel", "Beacon: a red giant"); v.countBeacon("a jump");
+  MasterLog.entry(v, "voyage: Kestrel", jump); MasterLog.entry(v, "voyage: Kestrel", "Arrived at a store"); MasterLog.entry(v, "voyage: Kestrel", "Beacon: an asteroid field"); MasterLog.entry(v, "voyage: Kestrel", "Ship met: a Mantis ship"); v.countBeacon("a jump");
+  String p = page(v, false);
+  Setup.chk("B: On board the Kestrel: with a colon", p.contains("On board the Kestrel:") && !p.contains("On board the Kestrel."));
+  Setup.chk("B: Then we jumped into a nebula", p.contains("Then we jumped into a nebula."));
+  Setup.chk("B: the next day's news goes to the jump before it: into an ion storm and met a Rock pirate", p.contains("Then we jumped into an ion storm and met a Rock pirate."));
+  Setup.chk("B: a sector and a hazard: to sector 3, to a beacon near a red giant", p.contains("Then we jumped to sector 3, to a beacon near a red giant."));
+  Setup.chk("B: a station: in an asteroid field, and met a Mantis ship", p.contains("Then we jumped to a station in an asteroid field and met a Mantis ship."));
+  Setup.chk("B: the beacon lines themselves never shown", !p.contains("Beacon:") && !p.contains("Ship met:"));
+ }
+ static Properties look(String beacon, int nebula, int danger, String hazards, String met) {
+  Properties p = new Properties();
+  p.setProperty("sector", "0"); p.setProperty("beacon", beacon); p.setProperty("beacons", beacon);
+  p.setProperty("nebulaJumps", "" + nebula); p.setProperty("dangerJumps", "" + danger); p.setProperty("hazards", hazards); p.setProperty("met", met);
+  return p;
  }
  static void storyDays(File game, File dir) throws Exception {
   File saves = new File(dir, "saves"); saves.mkdirs();
