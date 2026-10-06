@@ -561,7 +561,13 @@ public class CommissionDialog extends JDialog {
 			try { homeplanet.parser.UnlockGrants.claim(e.id); }
 			catch (Exception ex) { HomePlanet.showErrorDialog("The Home Planet Station could not record that this free ship was claimed:\n" + ex.getMessage()); }
 		}
-		lines.add("Crew: " + s.getPlayerShip().getCrewList().size());
+		StringBuilder crew = new StringBuilder(); // her starting crew by name, for the crew register (5.51; "Crew: 3" before)
+		for (net.blerf.ftl.parser.SavedGameParser.CrewState c : homeplanet.parser.SaveHelper.getOwnCrew(s.getPlayerShip())) {
+			String race;
+			try { race = homeplanet.model.Crew.raceTitle(c); } catch (RuntimeException x) { race = c.getRace() == null ? "Human" : c.getRace().getId(); }
+			crew.append(crew.length() == 0 ? "" : ", ").append(c.getName()).append(" (").append(race).append(")");
+		}
+		lines.add("Crew: " + (crew.length() == 0 ? "none" : crew.toString()));
 		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines);
 		made = ship;
 		dispose();
