@@ -76,24 +76,23 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} }, java.awt.AWTEvent.MOUSE_EVENT_MASK);
 		// a station popup opens: a docked FTL steps aside till the last one closes, as for other screens (heromedel, 5.35)
 		java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(new java.awt.event.AWTEventListener() { public void eventDispatched(java.awt.AWTEvent e) {
-			if (homeplanet.core.FtlDock.active() || hiddenForPopup) javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { popupsChanged(); } });
+			if (homeplanet.core.FtlDock.active() || overForPopup) javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { popupsChanged(); } });
 		} }, java.awt.AWTEvent.WINDOW_EVENT_MASK);
 	}
-	private boolean hiddenForPopup;
-	/** Windows keeps popups just over the station's window, which sits under FTL's: so FTL is hidden while one is open (still running, paused). */
+	private boolean overForPopup;
+	/** Windows keeps popups just over the station's window, which sits under FTL's: while one is open, the station comes over FTL instead (5.39). */
 	private void popupsChanged() {
 		boolean popup = false;
 		for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof java.awt.Dialog && w.isShowing()) { popup = true; break; }
-		if (popup && !hiddenForPopup && homeplanet.core.FtlDock.active() && !homeplanet.core.FtlDock.aside() && !homeplanet.core.FtlDock.attached() && parent != null && parent.atSpaceDock()) { // attached, popups come over FTL by themselves
-			hiddenForPopup = true;
-			log.debug("FTL docked: hidden for a popup");
-			homeplanet.core.FtlDock.show(false);
-			if (viewportPanel != null) viewportPanel.repaint();
-		} else if (!popup && hiddenForPopup) {
-			hiddenForPopup = false;
-			log.debug("FTL docked: back after the popups");
+		if (popup && !overForPopup && homeplanet.core.FtlDock.active() && !homeplanet.core.FtlDock.aside() && !homeplanet.core.FtlDock.attached() && parent != null && parent.atSpaceDock()) { // attached, popups come over FTL by themselves
+			// the station's window over FTL's, its popups over both; FTL still shows through the viewport's hole (heromedel, 5.39)
+			overForPopup = true;
+			log.debug("FTL docked: the station over FTL for a popup, FTL seen through its viewport");
+			homeplanet.core.FtlDock.stationOnTop(javax.swing.SwingUtilities.getWindowAncestor(this));
+		} else if (!popup && overForPopup) {
+			overForPopup = false;
+			log.debug("FTL docked: back over the station after the popups");
 			if (homeplanet.core.FtlDock.active() && parent != null && parent.atSpaceDock()) {
-				homeplanet.core.FtlDock.backAtDock();
 				placeViewport();
 				liftSoon();
 			}
@@ -102,6 +101,16 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private final javax.swing.Timer lift = new javax.swing.Timer(200, new ActionListener() { public void actionPerformed(ActionEvent e) { liftFtl(); } });
 	{ lift.setRepeats(false); }
 	/** A docked FTL lifted back over its viewport a moment from now (after a click, a rebuild, the station brought forward). */
+	/** The station's window closed and opened again (borderless full screen switched): a docked FTL put back. */
+	void windowReopened() {
+		homeplanet.core.FtlDock.stationReopened(javax.swing.SwingUtilities.getWindowAncestor(this));
+		revalidate();
+		javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() {
+			if (homeplanet.core.FtlDock.active() && viewportPanel != null) fitWindow(); // out of full screen while docked: room for FTL again
+			placeViewport();
+			liftSoon();
+		} });
+	}
 	void liftSoon() { if (homeplanet.core.FtlDock.found()) lift.restart(); }
 	/** Lifted now, without taking the keyboard: not while the docked ships are shown, nor over a station popup. */
 	private void liftFtl() {
@@ -281,11 +290,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					int ah = aboard == null ? 0 : aboard.getPreferredSize().height;
 					if (aboard != null) y0 = 10 + ah + 6;
 					// smaller than chosen when the window can't hold it (FTL's window resizes), keeping its 16:9
-					int vw = Math.min(vs.width, getWidth() - 28 - RefreshButton.SIZE), vh = Math.min(vs.height, getHeight() - y0 - DOCK_BELOW);
+					int vw = Math.min(vs.width, getWidth() - 30 - RefreshButton.SIZE), vh = Math.min(vs.height, getHeight() - y0 - DOCK_BELOW - 2); // FTL's own size inside the frame
 					if (vw * vs.height > vh * vs.width) vw = vh * vs.width / vs.height; else vh = vw * vs.height / vs.width;
 					vw = Math.max(160, vw); vh = Math.max(90, vh);
 					if (aboard != null) aboard.setBounds(14, 10, Math.min(aboard.getPreferredSize().width, vw), ah); // her heading its usual length, the inbox and reputation after it
-					view.setBounds(14, y0, vw, vh);
+					view.setBounds(14, y0, vw + 2, vh + 2); // the gold frame a pixel outside FTL all round (5.39: FTL covered its bottom and right)
 					docked.setVisible(false); // nothing below FTL: the flip shows the Space Dock as usual instead (5.34)
 					javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { placeViewport(); } });
 				} else if (berth != null) {
@@ -918,7 +927,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					g.setColor(new Color(c, c, Math.min(255, c + 25)));
 					g.fillRect(1 + r.nextInt(Math.max(1, getWidth() - 2)), 1 + r.nextInt(Math.max(1, getHeight() - 2)), 1 + r.nextInt(2), 1);
 				}
-				if (hiddenForPopup) return; // FTL stepped aside for a popup: no words behind it (5.35)
 				java.awt.image.BufferedImage word = FtlFont.MENU.render("UNPAUSE", Color.white);
 				int sc = 3, ww = word.getWidth() * sc, wh = word.getHeight() * sc;
 				g.drawImage(word, (getWidth() - ww) / 2, getHeight() / 2 - wh, ww, wh, null);
@@ -960,13 +968,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	/** The station's window grown to hold the viewport, if the screen has room (put back afterwards). */
 	private void fitWindow() {
+		if (parent != null && parent.isBorderless()) return; // full screen already: the viewport has the room there is
 		JPanel v = viewportPanel;
 		java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(this);
 		if (v == null || w == null) return;
 		java.awt.Point at = javax.swing.SwingUtilities.convertPoint(v, 0, 0, this);
 		Dimension want = homeplanet.core.FtlDock.size(); // the size chosen, not what fits now
 		int controlsW = getComponentCount() > 1 ? getComponent(1).getPreferredSize().width : 220;
-		int needW = want.width + 28 + RefreshButton.SIZE + controlsW, needH = at.y + want.height + DOCK_BELOW; // as the layout wants it, so FTL fits exactly; nothing below it (5.32)
+		int needW = want.width + 30 + RefreshButton.SIZE + controlsW, needH = at.y + want.height + 2 + DOCK_BELOW; // as the layout wants it, so FTL fits exactly; nothing below it (5.32)
 		int dw = Math.max(0, needW - getWidth()), dh = Math.max(0, needH - getHeight());
 		if (dw == 0 && dh == 0) return;
 		java.awt.Rectangle screen = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
@@ -1030,7 +1039,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		homeplanet.core.FtlDock.end();
 		dockWatch.stop();
 		java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(this);
-		if (w != null && sizeBeforeDock != null) w.setSize(sizeBeforeDock);
+		if (w != null && sizeBeforeDock != null && (parent == null || !parent.isBorderless())) w.setSize(sizeBeforeDock);
 		sizeBeforeDock = null;
 		dockedSize = null;
 		init();

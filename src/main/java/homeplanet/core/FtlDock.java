@@ -134,6 +134,13 @@ public final class FtlDock {
 	private static java.awt.Window station;
 	private static boolean attachedRun;
 	private static long started;
+	/** The station's window was closed and opened again (a new window to Windows): attached again, if attached. */
+	public static void stationReopened(java.awt.Window stationWindow) {
+		station = stationWindow;
+		if (!attachedRun || window == null) return;
+		try { log.info("FTL docked, attached again: {}", Win.own(window, station)); }
+		catch (Throwable t) { log.info("FTL docked: could not attach it again ({})", t.toString()); }
+	}
 	/** This docked run has FTL's window owned by the station's: it stays over it, and popups over both, by themselves. */
 	public static boolean attached() { return attachedRun && window != null; }
 	/** Ends it: FTL closed, or its window never turned up. */
@@ -186,6 +193,11 @@ public final class FtlDock {
 			boolean ok = Win.under(station, window);
 			log.debug("FTL docked: the station's window put under FTL's: {}", ok ? "done" : "refused by Windows");
 		} catch (Throwable t) { log.debug("FTL docked: could not put the station's window under FTL's: {}", t.toString()); }
+	}
+	/** The station's own window over FTL's (a popup is open, 5.39): FTL still shows through the viewport's hole. */
+	public static void stationOnTop(java.awt.Window station) {
+		if (window == null || !shown || station == null || !station.isDisplayable()) return;
+		try { Win.top(station); } catch (Throwable t) { log.debug("FTL docked: could not bring the station's window over FTL's: {}", t.toString()); }
 	}
 	/** FTL to the front with the keyboard (the Unpause screen clicked, 5.33): the station has the keyboard to give. */
 	public static void focus() {
@@ -329,6 +341,10 @@ public final class FtlDock {
 			Gdi32.I.CombineRgn(all, all, gap, RGN_DIFF);
 			Gdi32.I.DeleteObject(gap);
 			User32.I.SetWindowRgn(hwnd, all, true); // Windows keeps the region from here on
+		}
+		static void top(java.awt.Window station) {
+			com.sun.jna.Pointer mine = com.sun.jna.Native.getComponentPointer(station);
+			if (mine != null) User32.I.SetWindowPos(mine, null, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // HWND_TOP: its popups come with it
 		}
 		static boolean under(java.awt.Window station, Object w) {
 			com.sun.jna.Pointer mine = com.sun.jna.Native.getComponentPointer(station);
