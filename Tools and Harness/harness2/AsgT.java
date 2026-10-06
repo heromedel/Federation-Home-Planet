@@ -16,8 +16,27 @@ public class AsgT { public static void main(String[] a) throws Exception {
  prizes(v);
  twoPrizesOneDay(v);
  experience(v);
+ skillOnRoll();
  Setup.done();
 }
+ /** The job's skill on the d20 (5.43): +2 a level, +3 with a suited race; naturals 1 and 20 untouched; 2 to 19 otherwise. */
+ static void skillOnRoll() {
+  Setup.chk("K: a natural 1 and a natural 20 stay; untrained changes nothing", Assignments.skilled(1, 2, true) == 1 && Assignments.skilled(20, 2, true) == 20 && Assignments.skilled(9, 0, true) == 9);
+  Setup.chk("K: +2 a level, +3 a level when the race suits the job", Assignments.skilled(9, 1, false) == 11 && Assignments.skilled(9, 2, false) == 13 && Assignments.skilled(9, 1, true) == 12 && Assignments.skilled(9, 2, true) == 15);
+  Setup.chk("K: a changed roll stays between 2 and 19: only a natural 20 is the top", Assignments.skilled(18, 2, true) == 19 && Assignments.skilled(19, 1, false) == 19 && Assignments.skilled(2, 1, false) == 4);
+  CrewState ace = Commission.volunteer("human", new Random(5));
+  ace.setPilotMasteryOne(true); ace.setPilotMasteryTwo(true); ace.setEngineMasteryOne(true); ace.setEngineMasteryTwo(true); ace.setShieldMasteryOne(true); ace.setShieldMasteryTwo(true);
+  ace.setWeaponMasteryOne(true); ace.setWeaponMasteryTwo(true); ace.setRepairMasteryOne(true); ace.setRepairMasteryTwo(true); ace.setCombatMasteryOne(true); ace.setCombatMasteryTwo(true);
+  boolean all = true; int seen = 0, raised = 0;
+  for (int seed = 0; seed < 200; seed++) {
+   Assignments.Result r = Assignments.roll("civilian", Collections.singletonList(ace), new Random(seed), true);
+   Assignments.Fate f = r.fates.get(0);
+   int want = Assignments.jobSkill(r.job) < 0 ? f.natural : Assignments.skilled(f.natural, 2, Assignments.raceJob("human", r.job) > 0);
+   if (f.roll != want || f.band != Assignments.band(f.roll)) all = false;
+   seen++; if (f.roll > f.natural) raised++;
+  }
+  Setup.chk("K: a master's rolls take the job's skill (" + raised + " of " + seen + " raised), none for Negotiate or Rescue, the band from the changed roll", all && raised > 0);
+ }
  static void tables() {
   boolean same = true;
   for (String s : Assignments.sectors()) if (Assignments.weightTotal(s) != 136) same = false;

@@ -77,7 +77,7 @@ public final class Assignments {
 		{"transport", "Transport", 8, "engines"}, {"lost", "Got Lost", 8, "pilot"}, {"escort", "Escort", 8, "engines"}, {"capture", "Capture", 8, "combat"},
 		{"board", "Board", 7, "combat"}, {"hijack", "Hijack", 7, "pilot"}, {"infection", "Infection", 7, "repair"}, {"spiders", "Giant Spiders", 6, "combat"}};
 	public static String jobTitle(String id) { for (Object[] j : JOBS) if (j[0].equals(id)) return (String) j[1]; return id; }
-	static int jobSkill(String id) { for (Object[] j : JOBS) if (j[0].equals(id)) return Expeditions.skillIndex((String) j[3]); return -1; }
+	public static int jobSkill(String id) { for (Object[] j : JOBS) if (j[0].equals(id)) return Expeditions.skillIndex((String) j[3]); return -1; }
 	/** Each sector adds 5 to two jobs and takes 5 from two, so every sector still totals 136. */
 	static final Map<String, String[][]> SECTOR_JOBS = new LinkedHashMap<String, String[][]>();
 	static {
@@ -520,6 +520,8 @@ public final class Assignments {
 	public static final class Fate {
 		public final CrewState crew;
 		public int roll, band;
+		/** The d20 as it fell (after the race's reroll), before the job's skill (5.43). */
+		public int natural;
 		public boolean rerolled, died, captured, infirmary;
 		/** Sent hurt and hurt again, and it wasn't worse: half of what they had. */
 		public boolean worn;
@@ -570,6 +572,15 @@ public final class Assignments {
 	 */
 	public static Result roll(String sector, List<CrewState> party, Random rng) { return roll(sector, party, rng, true); }
 	/** The same, with or without the Anti-Ship Battery (a detail sent before 5.05 was rolled without it). */
+	/**
+	 * The job's skill on the d20 (heromedel, 5.43): +2 a level over none, +3 a level when their race suits the job too;
+	 * a natural 1 or 20 stays as it fell, and anything else stays between 2 and 19, so only a natural 1 is death and only
+	 * a natural 20 the top (and its find). The skill's +10% of the pot a level stays as well.
+	 */
+	public static int skilled(int natural, int level, boolean raceSuits) {
+		if (natural <= 1 || natural >= 20 || level <= 0) return natural;
+		return Math.max(2, Math.min(19, natural + level * (raceSuits ? 3 : 2)));
+	}
 	public static Result roll(String sector, List<CrewState> party, Random rng, boolean battery) {
 		Result r = new Result();
 		r.seed = rng.nextLong();
@@ -593,6 +604,8 @@ public final class Assignments {
 				int good = (sec > 0 ? 1 : 0) + (job > 0 ? 1 : 0), bad = (sec < 0 ? 1 : 0) + (job < 0 ? 1 : 0), chance = Math.max(0, good - bad);
 				if (chance > 0 && rng.nextInt(4) < chance) { f.roll = 1 + rng.nextInt(20); f.rerolled = true; }
 			}
+			f.natural = f.roll;
+			f.roll = skilled(f.natural, skill < 0 ? 0 : homeplanet.model.Crew.skillLevels(c)[skill], job > 0);
 			f.band = band(f.roll);
 			best = Math.max(best, f.roll);
 			int own = sec + job + (skill < 0 ? 0 : 10 * homeplanet.model.Crew.skillLevels(c)[skill]);
