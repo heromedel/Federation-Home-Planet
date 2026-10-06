@@ -33,11 +33,12 @@ public final class Overflow {
 		Parcel(String key, String augment, String ship) { this.key = key; this.augment = augment; this.ship = ship; }
 	}
 
+	private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(Overflow.class);
 	private static java.io.File file(Vault v) { return new java.io.File(v.root, "overflow.txt"); }
 	private static Properties read(Vault v) {
 		Properties p = new Properties();
 		try { if (file(v).isFile()) p.load(new StringReader(new String(SafeFiles.read(file(v)), StandardCharsets.UTF_8))); }
-		catch (IOException e) { HistoryLog.entry("OVERFLOW", "overflow.txt could not be read: " + e); }
+		catch (IOException e) { LOG.warn("overflow.txt could not be read: {}", e.toString()); } // the debug log's (heromedel, 5.53)
 		return p;
 	}
 	private static void write(Vault v, Properties p) {
@@ -45,13 +46,18 @@ public final class Overflow {
 			StringWriter w = new StringWriter();
 			p.store(w, "Augments the boarded ship had no room for: the four seen away from a store, and those shipped home (the inbox delivers them)");
 			SafeFiles.writeText(file(v), w.toString(), false);
-		} catch (IOException e) { HistoryLog.entry("OVERFLOW", "overflow.txt could not be written: " + e); }
+		} catch (IOException e) { LOG.warn("overflow.txt could not be written: {}", e.toString()); }
 	}
-	/** Her augments, the ones FTL counts in its slots. */
+	/**
+	 * Her augments, the ones FTL counts in its slots, and the one it's over capacity on. That one isn't in her augment
+	 * list but in the save's cargo list, written there twice, and FTL keeps only one (seen in FTL 1.6.14, heromedel's
+	 * 5.51 report: no letter came): an augment in the cargo list is counted once.
+	 */
 	static List<String> augments(SavedGameState gs) {
 		List<String> out = new ArrayList<String>();
 		if (gs.getPlayerShip() == null) return out;
 		for (String a : gs.getPlayerShip().getAugmentIdList()) if (a != null && !a.startsWith("HIDDEN")) out.add(a);
+		for (String c : gs.getCargoIdList()) if (SaveHelper.overCapacity(c) && !out.contains(c)) out.add(c); // the one FTL is asking about, once
 		return out;
 	}
 

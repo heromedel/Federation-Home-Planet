@@ -113,6 +113,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private final FtlButton saveBtn, resetBtn;
 	private final CargoParts.Label help = new CargoParts.Label("", FtlFont.BODY, CargoParts.TEXT, -1);
 	private final CargoParts.Label notice = new CargoParts.Label("", FtlFont.MENU, CargoParts.TEXT, 0);
+	/** The notice's second line, and a ship picker under it: a ship out of range can't trade, another may (5.52). */
+	private final CargoParts.Label notice2 = new CargoParts.Label("", FtlFont.BODY, CargoParts.TEXT, 0);
+	private FtlButton noticePick;
 	private final JPanel noticePanel = new JPanel(null);
 
 	// ---- the Trade tab ----
@@ -213,8 +216,16 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 		// the notice shown instead of the tabs (no boarded ship, or not at a station)
 		noticePanel.setOpaque(false);
-		notice.setBounds(290, 250, 700, 120);
+		notice.setBounds(190, 270, 900, 34);
 		noticePanel.add(notice);
+		notice2.setBounds(190, 306, 900, 22);
+		noticePanel.add(notice2);
+		noticePick = dropButton();
+		noticePick.setText("Pick another ship");
+		noticePick.setBounds(640 - DROP_W / 2, 344, DROP_W, 30);
+		noticePick.setToolTipText("Work on another of your ships docked at a station, without leaving the Cargo Bay");
+		noticePick.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pickBoard(noticePick); } });
+		noticePanel.add(noticePick);
 
 		partnerBtn = dropButton();
 		boardBtn = dropButton();
@@ -341,8 +352,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		shop.init();
 		systems.init();
 		refreshTrade();
-		if (currentPath == null) notice.setText("No ship picked: pick one above, or board one at the Space Dock.");
-		else if (!Vault.get().mayTrade(currentShip)) notice.setText(currentSave.getPlayerShipName() + " is not within range of a station. Take her to a beacon with a store to trade.");
+		notice2.setText("");
+		if (currentPath == null) notice.setText("No ship picked: pick one below, or board one at the Space Dock.");
+		else if (!Vault.get().mayTrade(currentShip)) {
+			notice.setText(currentSave.getPlayerShipName() + " is not within range of a station.");
+			notice2.setText("Take her to a beacon with a store to trade, or pick another ship:");
+		}
 		for (int i = 0; i < tabButtons.length; i++) {
 			boolean shipTab = i > 0; // the Shop and the Refit tab
 			tabButtons[i].setEnabled(!tradeUnavailable() && !(shipTab && holdOnly()));
@@ -461,7 +476,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		return b;
 	}
 	/** Pick another ship to work on, without boarding anyone: the ships at the Space Dock, aboard or docked, as the partner list has them. */
-	private void pickBoard() {
+	private void pickBoard() { pickBoard(boardBtn); }
+	/** The same, from this button (the Trade tab's, or the notice's when she can't trade where she is). */
+	private void pickBoard(java.awt.Component anchor) {
 		JPopupMenu m = new JPopupMenu();
 		Ship aboard = Vault.get().boarded();
 		if (currentPath != null) {
@@ -482,7 +499,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			m.add(none);
 		}
 		CargoParts.darkPopup(m);
-		m.show(boardBtn, 0, boardBtn.getHeight());
+		m.show(anchor, 0, anchor.getHeight());
 	}
 	/** The ships that may be picked from here: at the Space Dock, readable (with no ship picked the partner list holds the Cargo Hold alone, so they come from the fleet). */
 	private List<Ship> boardable() {
@@ -846,7 +863,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		else for (String a : s.getAugmentIdList()) ids.add(a);
 		for (String id : ids) { ItemRef r = new ItemRef(id, false); n.put(r, n.containsKey(r) ? n.get(r) + 1 : 1); }
 		if (save.getCargoIdList() != null) {
-			for (String id : save.getCargoIdList()) {
+			for (String id : SaveHelper.cargo(save)) { // not the augment FTL is asking about (heromedel, 5.52)
 				if (kindOf(id) != kind) continue;
 				ItemRef r = new ItemRef(id, true);
 				n.put(r, n.containsKey(r) ? n.get(r) + 1 : 1);
@@ -1063,7 +1080,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			if (used >= room) {
 				String who = destSave.getPlayerShipName();
 				if (kind == 2) { HomePlanet.showErrorDialog(who + "'s augment slots are full (3). Send one of hers away first."); return; }
-				if (destSave.getCargoIdList().size() >= 4) { HomePlanet.showErrorDialog(who + " has no room for the " + title + ", and her cargo hold is full too."); return; }
+				if (SaveHelper.cargo(destSave).size() >= 4) { HomePlanet.showErrorDialog(who + " has no room for the " + title + ", and her cargo hold is full too."); return; }
 				String q = kind == 1 && room == 0 ? who + " has no Drone Control system. Put the drone in her cargo hold?" : who + " has no free " + (kind == 0 ? "weapon" : "drone") + " slot. Put the " + title + " in her cargo hold?";
 				if (JOptionPane.showConfirmDialog(this, q, "Send to cargo?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
 				toCargo = true;
@@ -1083,7 +1100,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			SaveHelper.removeDrone(startState, srcDrone);
 		} else if (!startState.getAugmentIdList().remove(id)) { HomePlanet.showErrorDialog("That augment is no longer aboard."); return; }
 		// give it to the receiver, unpowered
-		if (toCargo) destSave.getCargoIdList().add(id);
+		if (toCargo) SaveHelper.addCargo(destSave, id);
 		else if (kind == 0) destState.getWeaponList().add(SaveHelper.newIdleWeapon(id));
 		else if (kind == 1) destState.getDroneList().add(srcDrone != null ? SaveHelper.copyDroneForTransfer(srcDrone) : SaveHelper.newIdleDrone(id));
 		else destState.getAugmentIdList().add(id);
@@ -1196,7 +1213,18 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		// the infirmary knows them by name: no new one until they're out
 		boolean resting = !mine && partnerIsStorage() && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), cs);
 		Object[] options = resting ? new Object[] {"OK"} : new Object[] {"OK", "Rename"};
-		int choice = CrewReport.show(this, cs, resting, options);
+		int choice = CrewReport.show(this, cs, resting, options, resting ? "Not while laid up in the infirmary." : "");
+		if (choice == CrewReport.PROMOTE) { // a rank put on their name, as Rename does it: official on Save (heromedel, 5.52)
+			int rank = homeplanet.model.Rank.due(cs);
+			if (rank < 0) return;
+			if (!crewRenames.containsKey(cs)) crewRenames.put(cs, cs.getName());
+			String was = cs.getName();
+			cs.setName(homeplanet.model.Rank.promoted(was, rank));
+			markDirty();
+			refreshTrade();
+			help(homeplanet.model.Rank.bare(was) + " is promoted to " + homeplanet.model.Rank.TITLE[rank] + ": the roster now lists " + cs.getName() + ". Save to make it official.");
+			return;
+		}
 		if (choice != 1) return;
 		String newName = SpaceDockUI.promptForName("Enter a new name for " + cs.getName() + ":", "Rename Crew", cs.getName());
 		if (newName == null || newName.equals(cs.getName())) return;

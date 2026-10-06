@@ -629,6 +629,26 @@ public final class SaveHelper {
 		log.debug( "Wrote {} ({} bytes)", saveFile, bytes.length );
 	}
 
+	/**
+	 * Her cargo as the station shows, trades, counts and prices it: the weapons and drones there. An augment in the cargo
+	 * list is the one FTL is over capacity on, asking which to leave behind at the jump (written there twice; seen in
+	 * FTL 1.6.14): it's FTL's question, so the station never shows it (heromedel, 5.52), and leaves it in her save.
+	 */
+	public static List<String> cargo(SavedGameState gs) {
+		List<String> out = new ArrayList<String>();
+		if (gs == null || gs.getCargoIdList() == null) return out;
+		for (String c : gs.getCargoIdList()) if (!overCapacity(c)) out.add(c);
+		return out;
+	}
+	/** Is this cargo entry the augment she's over capacity on (an augment: weapons and drones are the cargo hold's)? */
+	public static boolean overCapacity(String cargoId) { return cargoId != null && homeplanet.model.Items.isAugment(cargoId); }
+	/** An item into her cargo, ahead of the augment FTL is asking about: that stays at the end, where FTL put it. */
+	public static void addCargo(SavedGameState gs, String id) {
+		List<String> l = gs.getCargoIdList();
+		int at = l.size();
+		while (at > 0 && overCapacity(l.get(at - 1))) at--;
+		l.add(at, id);
+	}
 	/** True if the ship is at a beacon with a store (a "station"). */
 	public static boolean isAtStation(SavedGameState gs) {
 		if (gs == null || gs.getBeaconList() == null) return false;

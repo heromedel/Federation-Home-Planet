@@ -68,7 +68,7 @@ public class HistoryLog {
 		entry(kind, headline, null);
 	}
 
-	/** LOADED: every ship in the vault, the storage holds and the junkyard. */
+	/** Every ship in the vault, the storage holds and the junkyard: to the debug log, not the station log (heromedel, 5.53). */
 	public static void loaded(String reason) {
 		List<String> lines = new ArrayList<String>();
 		Vault v = Vault.get();
@@ -76,7 +76,9 @@ public class HistoryLog {
 		for (Ship s : v.all()) if (s.isStorage()) lines.add(pad(s.file().getName()) + s.name);
 		for (Ship s : v.junked()) lines.add(shipLine(s));
 		if (lines.isEmpty()) lines.add("(no ships found)");
-		entry("LOADED", "(" + reason + ")", lines);
+		StringBuilder sb = new StringBuilder("Loaded (").append(reason).append("):");
+		for (String l : lines) sb.append(NL).append("  ").append(l);
+		log.info(sb.toString());
 	}
 
 	public static String shipLine(Ship ship) {
@@ -107,7 +109,7 @@ public class HistoryLog {
 		for (WeaponState w : s.getWeaponList()) add(m, Items.weaponTitle(w.getWeaponId()), 1);
 		for (DroneState d : s.getDroneList()) add(m, Items.droneTitle(d.getDroneId()), 1);
 		for (String a : s.getAugmentIdList()) add(m, Items.augmentTitle(a), 1);
-		for (String c : gs.getCargoIdList()) add(m, Items.title(c) + " (cargo)", 1);
+		for (String c : homeplanet.parser.SaveHelper.cargo(gs)) add(m, Items.title(c) + " (cargo)", 1); // not the augment FTL is asking about (5.52)
 		for (CrewState c : SaveHelper.getOwnCrew(s)) add(m, "Crew " + c.getName(), 1);
 		return m;
 	}

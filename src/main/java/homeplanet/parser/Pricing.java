@@ -241,7 +241,7 @@ public final class Pricing {
 		for (WeaponState w : s.getWeaponList()) gear += item(w.getWeaponId());
 		for (DroneState d : s.getDroneList()) gear += item(d.getDroneId());
 		for (String a : s.getAugmentIdList()) gear += item(a);
-		for (String c : gs.getCargoIdList()) gear += item(c);
+		for (String c : SaveHelper.cargo(gs)) gear += item(c); // not the augment FTL is asking about (5.52)
 		SystemState art = s.getSystem(SystemType.ARTILLERY);
 		if (art != null && art.getCapacity() > 0) gear += artillery(Commission.artilleryWeapon(gs.getPlayerShipBlueprintId())); // the gun her artillery fires
 		q.add("Weapons, drones and augments", gear);

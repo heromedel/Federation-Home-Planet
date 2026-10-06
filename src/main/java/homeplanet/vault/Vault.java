@@ -677,6 +677,7 @@ public final class Vault {
 			SavedGameState gs;
 			try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(tmp); } catch (Exception e) { return false; } // mid-write
 			if (b.marks != null && !b.marks.isEmpty() && !sameShip(b.marks, gs)) return false; // not her: the next look sorts that out
+			if (ignoring(b)) return false; // not the career's ship (5.54)
 			if (!flagshipOnHerWay(gs)) return false;
 			boolean first = !new File(dir, FINAL).isFile();
 			SafeFiles.move(tmp, new File(dir, FINAL));
@@ -896,6 +897,7 @@ public final class Vault {
 		SavedGameState gs;
 		try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(continueFile()); } catch (Exception e) { return; }
 		if (s.marks != null && !s.marks.isEmpty() && !sameShip(s.marks, gs)) return; // not her: the next look records her lost
+		if (ignoring(s)) return; // not the career's ship: nothing of hers counts (5.54)
 		countProgress(s, gs);
 	}
 
@@ -1008,13 +1010,21 @@ public final class Vault {
 	 */
 	private boolean checkBoarded() throws IOException {
 		Ship b = boarded();
-		if (b == null) return false;
+		if (b == null) return adoptContinue();
 		SavedGameState gs = b.save();
 		if (gs == null) return false;
 		String now = marksOf(gs);
 		// her voyage log first, then the clock: what she did at a stop belongs to that stop's day (5.18, the Captain's Log)
-		if (b.marks == null || b.marks.isEmpty()) { VoyageLog.observe(this, b, gs); countProgress(b, gs); b.marks = now; noteHull(b, gs); return true; }
-		if (sameShip(b.marks, gs)) { VoyageLog.observe(this, b, gs); noteWork(b, gs); countProgress(b, gs); noteHull(b, gs); Overflow.note(this, b, gs); } // her voyage log (repairs, trades at a store... change no marks)
+		if (b.marks == null || b.marks.isEmpty()) {
+			if (ignoring(b)) quietly(b, gs, true);
+			else { VoyageLog.observe(this, b, gs); countProgress(b, gs); noteHull(b, gs); }
+			b.marks = now;
+			return true;
+		}
+		if (sameShip(b.marks, gs)) {
+			if (ignoring(b)) quietly(b, gs);
+			else { VoyageLog.observe(this, b, gs); noteWork(b, gs); countProgress(b, gs); noteHull(b, gs); Overflow.note(this, b, gs); } // her voyage log (repairs, trades at a store... change no marks)
+		}
 		if (now.equals(b.marks)) return false;
 		if (sameShip(b.marks, gs)) {
 			snapshot(b); // FTL's progress, kept: if FTL later writes over her, this is what comes back
@@ -1024,20 +1034,126 @@ public final class Vault {
 		String lostName = b.marks.split("\\|", -1)[1];
 		b.name = lostName;
 		recordFate(b, Fate.LOST);
-		Reputation.lost(this, b);
+		int took = Reputation.lost(this, b);
+		if (immersive) offerBack(b, took); // by accident, perhaps: she may be offered back (5.55)
 		ships.remove(b);
 		Ship n = new Ship(newId(), gs.getPlayerShipName(), Ship.State.BOARDED, gs.isDLCEnabled());
 		n.stranger = true;
 		n.hash = SafeFiles.hash(continueFile());
 		n.marks = now;
 		ships.add(n);
-		setClock(n, 0, 0); // FTL's New Game: her run so far was flown in the fleet's time
-		countProgress(n, gs);
+		if (ignoring(n)) quietly(n, gs, true); // Immersive Mode: none of her run is the career's (heromedel, 5.54)
+		else { setClock(n, 0, 0); countProgress(n, gs); } // FTL's New Game: her run so far was flown in the fleet's time
 		overwritten = lostName;
 		HistoryLog.entry("OVERWRITTEN", lostName + " (" + b.id + ") was boarded, and continue.sav is now another ship: " + n.name
 				+ " (FTL's New Game, most likely). Her last seen version is in history/" + b.id);
 		return true;
 	}
+	/**
+	 * A ship the station didn't commission, boarded in Immersive Mode (heromedel, 5.54): the station doesn't watch FTL for
+	 * her (no voyage log, reputation, clock, stipend time, parcels, crew, final battle) until the player decides what
+	 * becomes of her. In Sandbox Mode any ship is the fleet's.
+	 */
+	public boolean ignoring(Ship b) { return immersive && b != null && b.stranger && b.state == Ship.State.BOARDED; }
+	/**
+	 * What an ignored ship's look does: keeps up with where she is, so nothing she did is counted later either; FTL's
+	 * unlocks and achievements since are seen, never the career's. Not on her first look: what's new in FTL's profile
+	 * then is most likely the ship before her, her run ending.
+	 */
+	private void quietly(Ship b, SavedGameState gs) { quietly(b, gs, false); }
+	private void quietly(Ship b, SavedGameState gs, boolean first) {
+		VoyageLog.baseline(this, b, gs);
+		setClock(b, gs.getSectorNumber(), gs.getTotalBeaconsExplored());
+		if (first) return;
+		try { homeplanet.parser.UnlockGrants.strangerSeen(homeplanet.parser.Unlocks.read()); } // noted as hers too: the player may have them taken back out (5.55)
+		catch (RuntimeException e) { log.warn("Could not note FTL's unlocks while an uncommissioned ship is boarded: {}", e.toString()); }
+	}
+	/** Nothing boarded, and continue.sav there: FTL started a New Game. She's an uncommissioned ship, boarded (as on opening the fleet). */
+	private boolean adoptContinue() throws IOException {
+		File cont = continueFile();
+		if (!cont.isFile()) return false;
+		Ship n = new Ship(newId(), "Unknown ship", Ship.State.BOARDED, true);
+		n.stranger = true;
+		ships.add(n);
+		SavedGameState gs = n.save();
+		if (gs == null) { ships.remove(n); return false; } // FTL still writing it: the next look
+		n.name = gs.getPlayerShipName();
+		n.hash = SafeFiles.hash(cont);
+		n.marks = marksOf(gs);
+		if (ignoring(n)) quietly(n, gs, true);
+		else setClock(n, gs.getSectorNumber(), gs.getTotalBeaconsExplored()); // counted from now, as one found on opening the fleet
+		HistoryLog.entry("VAULT", "taking stock", java.util.Collections.singletonList("continue.sav is a ship the station didn't know (a new game started in FTL, most likely): she is now boarded"));
+		return true;
+	}
+	// ---- a career ship FTL's New Game wrote over by accident (heromedel, 5.55) ----
+
+	private static final String BACK_NOTE = "overwritten.txt";
+	/** Notes her as one to offer back, if her last kept version can be: out of battle, or in one she can go back into. */
+	private void offerBack(Ship b, int repTaken) {
+		List<File> kept = history(b);
+		if (kept.isEmpty()) return;
+		SavedGameState gs;
+		try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(kept.get(kept.size() - 1)); } catch (Exception e) { return; }
+		if (!restorable(gs)) return;
+		try { SafeFiles.writeText(new File(historyOf(b), BACK_NOTE), "reputation=" + repTaken + "\n", false); }
+		catch (IOException e) { log.warn("Could not note {} as one to offer back: {}", b, e.toString()); }
+	}
+	/**
+	 * Can this version of her be put back? With no hostile ship alongside, yes. In a battle, only outside sector 8 and
+	 * with her hull above 5: she goes back into that same battle.
+	 */
+	public static boolean restorable(SavedGameState gs) {
+		net.blerf.ftl.parser.SavedGameParser.ShipState s = gs.getPlayerShip(), enemy = gs.getNearbyShip();
+		if (s == null) return false;
+		boolean fight = enemy != null && enemy.isHostile() && enemy.getHullAmt() > 0;
+		return !fight || (gs.getSectorNumber() != 7 && s.getHullAmt() > 5);
+	}
+	/** Career ships FTL's New Game wrote over that are to be offered back, newest first. */
+	public synchronized List<Departed> offeredBack() {
+		List<Departed> out = new ArrayList<Departed>();
+		for (Departed d : recoverable()) if (d.fate == Fate.LOST && new File(d.last.getParentFile(), BACK_NOTE).isFile()) out.add(d);
+		return out;
+	}
+	/** The player said no: she stays lost, and isn't asked about again. */
+	public synchronized void declineBack(Departed d) { new File(d.last.getParentFile(), BACK_NOTE).delete(); }
+	/**
+	 * Brings her back as the boarded ship from her last kept version (into the same battle, if she was in one): an
+	 * uncommissioned ship in continue.sav goes to the Sandbox fleet's Space Dock first; a ship of the fleet's own there
+	 * is left boarded, and she comes back docked. Her fate is cleared and what her loss cost in reputation given back.
+	 * FTL must be closed. Then {@link CrewRegister#shipBack} for her crew (outside the fleet's lock).
+	 */
+	public synchronized Ship restoreBack(Departed d) throws IOException {
+		if (byId(d.id) != null) throw new IOException(d.name + " is already in the fleet");
+		File note = new File(d.last.getParentFile(), BACK_NOTE);
+		int taken = 0;
+		try { taken = Integer.parseInt(new String(SafeFiles.read(note), java.nio.charset.StandardCharsets.UTF_8).trim().replace("reputation=", "")); } catch (Exception e) { }
+		Ship now = boarded();
+		if (now != null && now.stranger) { sendToOtherFleet(now, false); now = boarded(); }
+		Ship s;
+		if (now != null) {
+			s = recover(d); // the fleet's own ship is boarded: she comes back to the Space Dock
+		} else {
+			s = new Ship(d.id, d.name, Ship.State.BOARDED, true);
+			SafeFiles.write(continueFile(), SafeFiles.read(d.last));
+			s.hash = SafeFiles.hash(continueFile());
+			ships.add(s);
+			new File(d.last.getParentFile(), FATE_FILE).delete();
+			SavedGameState gs = s.save();
+			if (gs != null) {
+				s.name = gs.getPlayerShipName();
+				s.marks = marksOf(gs);
+				setClock(s, gs.getSectorNumber(), gs.getTotalBeaconsExplored()); // the clock carries on from her restored point
+				VoyageLog.baseline(this, s, gs);
+			}
+			saveManifest();
+		}
+		note.delete();
+		Reputation.restored(this, s, taken);
+		log.info("Restored {} after FTL's New Game: history/{}/{} -> {}", s.name, s.id, d.last.getName(), s.isBoarded() ? "continue.sav" : "ships/" + s.id + ".sav");
+		HistoryLog.entry("RESTORE", "Restored " + homeplanet.parser.ShipNames.the(s.name) + " after FTL's New Game wrote over her");
+		return s;
+	}
+
 	/** After the station writes the boarded ship: her marks follow (a rename, a New Journey, a retrofit are the station's own). */
 	private void marked(Ship s, SavedGameState state) {
 		if (s.state == Ship.State.BOARDED && state != null) {
@@ -1053,6 +1169,7 @@ public final class Vault {
 		SavedGameState gs;
 		try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(continueFile()); } catch (Exception e) { return; } // mid-write: Refresh catches up
 		if (b.marks != null && !b.marks.isEmpty() && !sameShip(b.marks, gs)) return;
+		if (ignoring(b)) { quietly(b, gs); return; } // not the career's ship (5.54)
 		VoyageLog.observe(this, b, gs); // her voyage log first: what she did at a stop belongs to that stop's day
 		countProgress(b, gs); // the fleet's clock moves as she flies
 		noteHull(b, gs);
@@ -1475,7 +1592,8 @@ public final class Vault {
 		marked(s, s.save());
 		keepBoarded(s);
 		saveManifest();
-		HistoryLog.entry("RESTORE", s.name + "  history/" + s.id + "/" + version.getName() + " -> " + (s.isBoarded() ? "continue.sav" : s.state.key + "/" + s.id + ".sav"));
+		log.info("Restored {}: history/{}/{} -> {}", s.name, s.id, version.getName(), s.isBoarded() ? "continue.sav" : s.state.key + "/" + s.id + ".sav");
+		HistoryLog.entry("RESTORE", "Restored " + homeplanet.parser.ShipNames.the(s.name) + " to an earlier version"); // in words; the files in the debug log (heromedel, 5.53)
 	}
 
 	// ---- Long Range Comm.: ships that change hands ----

@@ -274,7 +274,7 @@ public final class VoyageLog {
 		for (WeaponState w : s.getWeaponList()) items.add(title(w.getWeaponId()));
 		for (DroneState d : s.getDroneList()) items.add(title(d.getDroneId()));
 		for (String a : s.getAugmentIdList()) items.add(title(a));
-		for (String c : gs.getCargoIdList()) items.add(title(c) + " (cargo)");
+		for (String c : SaveHelper.cargo(gs)) items.add(title(c) + " (cargo)"); // not the augment FTL is asking about (5.52)
 		p.setProperty("items", String.join("|", items));
 		List<String> systems = new ArrayList<String>();
 		for (SystemType t : SystemType.values()) {

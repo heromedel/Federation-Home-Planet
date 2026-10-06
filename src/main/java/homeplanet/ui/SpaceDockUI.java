@@ -358,8 +358,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		final String over = vault.takeOverwritten();
 		final Ship stranger = vault.boarded() != null && vault.boarded().stranger && !deferredStrangers.contains(vault.boarded().id) ? vault.boarded() : null;
-		if (over != null || (stranger != null && HomePlanet.immersiveMode)) {
-			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { newGameNotice(over, stranger); } });
+		final List<Vault.Departed> back = new java.util.ArrayList<Vault.Departed>(); // career ships FTL's New Game may have written over by accident (5.55)
+		if (HomePlanet.immersiveMode) for (Vault.Departed d : vault.offeredBack()) if (!deferredStrangers.contains(d.id)) back.add(d);
+		if (over != null || (stranger != null && HomePlanet.immersiveMode) || !back.isEmpty()) {
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { newGameNotice(over, stranger, back); } });
+		}
+		// what came into FTL's profile while an uncommissioned ship was boarded (5.55): asked with FTL closed, once
+		if (HomePlanet.immersiveMode && !profileAsked && !homeplanet.parser.UnlockGrants.strangers().isEmpty() && !GameGuard.isFtlRunning()) {
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { strangerUnlocks(); } });
 		}
 	}
 
@@ -478,11 +484,73 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 
 	private boolean askingAboutStranger = false;
+	private static String cap(String s) { return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
+	/** The offer about a stranger's achievements and unlocks was put off (closed): asked again at the next start. */
+	private boolean profileAsked = false;
+	/** What came into FTL's profile while an uncommissioned ship was boarded: heromedel's offer to take it back out (5.55). */
+	private void strangerUnlocks() {
+		if (profileAsked || askingAboutStranger || GameGuard.isFtlRunning()) return;
+		java.util.Set<String> keys = homeplanet.parser.UnlockGrants.strangers();
+		if (keys.isEmpty()) return;
+		profileAsked = true;
+		StringBuilder list = new StringBuilder();
+		List<String> names = new java.util.ArrayList<String>();
+		for (String k : keys) { String n = homeplanet.parser.UnlockGrants.describe(k); names.add(n); list.append("\n  \u2022 ").append(n); }
+		Object[] options = {"Remove them", "Keep them"};
+		int c = JOptionPane.showOptionDialog(null, "Achievements and unlocks were found that may not have come from an Immersive Commissioned ship, so you may not receive their bonuses and unlocks in this mode.\n"
+				+ "Would you like them removed from the FTL profile this career uses?\n" + list,
+				"Achievements and unlocks", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+		if (c < 0) return; // closed: asked again at the next start
+		if (c == 1) { homeplanet.parser.UnlockGrants.strangersAnswered(java.util.Collections.<String>emptySet()); return; }
+		if (GameGuard.isFtlRunning()) {
+			JOptionPane.showMessageDialog(null, "FTL is running. " + GameGuard.CLOSE_FTL + " The Home Planet Station will ask again.", "Achievements and unlocks", JOptionPane.INFORMATION_MESSAGE);
+			profileAsked = false;
+			return;
+		}
+		try {
+			File backup = homeplanet.parser.UnlockGrants.removeFromProfile(keys);
+			homeplanet.parser.UnlockGrants.strangersAnswered(keys);
+			log.info("FTL profile backed up before the removal: {}", backup);
+			HistoryLog.entry("PROFILE", "Removed from FTL's profile: " + String.join(", ", names));
+			JOptionPane.showMessageDialog(null, "Removed from FTL's profile. A backup was made first: " + backup.getName(), "Achievements and unlocks", JOptionPane.INFORMATION_MESSAGE);
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not change FTL's profile:\n" + e.getMessage() + "\nNothing was removed.");
+		}
+	}
 	/** Uncommissioned ships the player put off deciding about: asked again at the next start. */
 	private final java.util.Set<String> deferredStrangers = new java.util.HashSet<String>();
-	/** Tells the player a boarded ship was overwritten; in Immersive Mode, asks what's to become of an uncommissioned ship. */
-	private void newGameNotice(String over, Ship stranger) {
+	/** Tells the player a boarded ship was overwritten; in Immersive Mode, offers back a career ship overwritten by accident, and asks what's to become of an uncommissioned ship. */
+	private void newGameNotice(String over, Ship stranger, List<Vault.Departed> back) {
 		if (askingAboutStranger) return;
+		for (Vault.Departed d : back) { // heromedel's words (5.55)
+			askingAboutStranger = true;
+			int c;
+			try {
+				c = JOptionPane.showConfirmDialog(null, "An Immersive Ship from this career, " + homeplanet.parser.ShipNames.the(d.name) + ", is suspected to have been overwritten by accident.\n"
+						+ "If this is the case, would you like it restored from its last known point?\n\nDo not select yes if she was destroyed in battle.",
+						"Overwritten by accident?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			} finally {
+				askingAboutStranger = false;
+			}
+			if (c == JOptionPane.CLOSED_OPTION) { deferredStrangers.add(d.id); return; } // asked again at the next start
+			if (c == JOptionPane.NO_OPTION) { Vault.get().declineBack(d); if (d.name.equals(over)) over = null; continue; }
+			if (GameGuard.isFtlRunning()) {
+				JOptionPane.showMessageDialog(null, "FTL is running. " + GameGuard.CLOSE_FTL + " The Home Planet Station will ask again.", "Overwritten by accident?", JOptionPane.INFORMATION_MESSAGE);
+				return;
+			}
+			try {
+				Ship s = Vault.get().restoreBack(d);
+				homeplanet.vault.CrewRegister.shipBack(Vault.get(), s);
+				JOptionPane.showMessageDialog(null, cap(homeplanet.parser.ShipNames.the(s.name)) + (s.isBoarded() ? " is boarded again" : " waits at the Space Dock")
+						+ ", as she was at her last known point." + (stranger != null && s.isBoarded() ? "\n" + stranger.name + " waits at the Sandbox fleet's Space Dock." : ""),
+						"Restored", JOptionPane.INFORMATION_MESSAGE);
+			} catch (IOException e) {
+				HomePlanet.showErrorDialog("The Home Planet Station could not restore " + d.name + ":\n" + e.getMessage());
+			}
+			init();
+			return;
+		}
+		if (over == null && (stranger == null || !HomePlanet.immersiveMode)) return;
 		String lost = over == null ? "" : over + " was boarded, and FTL started a new game over her.\n"
 				+ (HomePlanet.immersiveMode ? "She is lost. Her last version is in the station's records.\n"
 						: "Her last version is in the station's records: Other... > Recover a ship brings her back.\n");
@@ -533,13 +601,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		init();
 	}
 
-	/** Why the Cargo Bay can't open now (her save unreadable, or she's away from a station), or null if it can. With no ship aboard it opens on the Cargo Hold. */
+	/**
+	 * Why the Cargo Bay can't open now (her save unreadable), or null if it can. With no ship aboard it opens on the Cargo
+	 * Hold. Away from a store it opens all the same (heromedel, 5.52; the Cargo Bay follows the ship picked on it since
+	 * 5.00): she can't trade there and it says so, and another ship can be picked.
+	 */
 	private String cargoBayClosedReason() {
 		Ship ship = Vault.get().boarded();
 		if (ship == null) return null; // the Cargo Hold alone: its goods can be sold (CargoBayUI.holdOnly)
 		if (ship.save() == null) return ship.name + "'s save can't be read.\nBoard another ship, or check her Records, before returning to the Cargo Bay to trade.";
-		if (!Vault.get().mayTrade(ship))
-			return ship.name + " is not within range of a station.\nFind a beacon with a station, then return to trade.";
 		return null;
 	}
 	private FtlButton controlButton(String text, String tip) {
@@ -1748,7 +1818,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			for (DroneState d : from.getDroneList()) to.getDroneList().add(SaveHelper.copyDroneForTransfer(d));
 			to.getAugmentIdList().addAll(from.getAugmentIdList());
 			// Storage keeps cargo sorted by kind
-			for (String id : wreck.getCargoIdList()) {
+			for (String id : SaveHelper.cargo(wreck)) { // not the augment FTL was asking about: left behind (5.52)
 				if (Items.isWeapon(id)) to.getWeaponList().add(SaveHelper.newIdleWeapon(id));
 				else if (Items.isDrone(id)) to.getDroneList().add(SaveHelper.newIdleDrone(id));
 				else if (Items.isAugment(id)) to.getAugmentIdList().add(id);
@@ -2054,8 +2124,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		for (DroneState d : state.getDroneList()) reportRow(right, IconFactory.itemIcon(d.getDroneId()), Items.droneTitle(d.getDroneId()));
 		reportHeading(right, "Augments");
 		for (String augmentId : state.getAugmentIdList()) reportRow(right, null, Items.augmentTitle(augmentId));
-		reportHeading(right, "Cargo (" + sgs.getCargoIdList().size() + " of " + SaveHelper.CARGO_SLOTS + ")");
-		for (String id : sgs.getCargoIdList()) reportRow(right, IconFactory.itemIcon(id), Items.title(id));
+		List<String> cargo = SaveHelper.cargo(sgs); // not the augment FTL is asking about (5.52)
+		reportHeading(right, "Cargo (" + cargo.size() + " of " + SaveHelper.CARGO_SLOTS + ")");
+		for (String id : cargo) reportRow(right, IconFactory.itemIcon(id), Items.title(id));
 		reportHeading(systems, "Systems");
 		systemRow(systems, null, "Reactor", state.getReservePowerCapacity(), homeplanet.parser.VanillaMax.reactor(), 0);
 		for (Object[] sys : SYSTEM_NAMES) {
