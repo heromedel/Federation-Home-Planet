@@ -31,6 +31,11 @@ public final class ImmersiveDialog {
 	public static boolean enter(Component owner, String slot) {
 		Vault v = Vault.get();
 		if (v.slot.equals(slot)) return true;
+		// before the briefing, so its pages aren't filled in only to be told to close FTL (heromedel, 5.29)
+		if (GameGuard.isFtlRunning()) {
+			JOptionPane.showMessageDialog(owner, "FTL detected open. Please close the game and come back.", Vault.title(slot), JOptionPane.INFORMATION_MESSAGE);
+			return false;
+		}
 		File immersiveRoot = Vault.rootOf(v.saves, slot);
 		boolean begun = Career.started(immersiveRoot);
 		File profile = ProfileSwap.current(v.saves);
@@ -38,7 +43,7 @@ public final class ImmersiveDialog {
 		ImmersiveBriefing brief = new ImmersiveBriefing(owner, begun, immersiveRoot, profile, slot);
 		brief.setVisible(true);
 		if (!brief.confirmed) return false;
-		if (!ftlClosed(owner, Vault.title(slot))) return false;
+		if (!ftlClosed(owner, Vault.title(slot))) return false; // started while the briefing was open
 		if (v.immersive) {
 			try {
 				leaveNow(null); // to Sandbox Mode first: its fleet and profile are the way between careers
@@ -69,8 +74,9 @@ public final class ImmersiveDialog {
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not begin " + Vault.title(slot) + ":\n" + e.getMessage()
 					+ "\n\nThe fleet in use now is " + Vault.title(Vault.get().slot) + "'s.");
-			return Vault.get().slot.equals(slot);
+			if (!Vault.get().slot.equals(slot)) return false;
 		}
+		brief.keepChoices(); // only once the career is in use: a switch that stops changes nothing (5.29)
 		return true;
 	}
 
