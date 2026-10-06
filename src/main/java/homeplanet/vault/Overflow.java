@@ -56,9 +56,7 @@ public final class Overflow {
 		List<String> out = new ArrayList<String>();
 		if (gs.getPlayerShip() == null) return out;
 		for (String a : gs.getPlayerShip().getAugmentIdList()) if (a != null && !a.startsWith("HIDDEN")) out.add(a);
-		List<String> over = new ArrayList<String>();
-		for (String c : gs.getCargoIdList()) if (c != null && !over.contains(c) && homeplanet.model.Items.isAugment(c)) over.add(c);
-		out.addAll(over);
+		for (String c : gs.getCargoIdList()) if (SaveHelper.overCapacity(c) && !out.contains(c)) out.add(c); // the one FTL is asking about, once
 		return out;
 	}
 

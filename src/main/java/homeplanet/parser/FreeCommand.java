@@ -77,7 +77,7 @@ public final class FreeCommand {
 				for (WeaponState w : s.getWeaponList()) total += Pricing.item(w.getWeaponId()) / 2;
 				for (DroneState d : s.getDroneList()) total += Pricing.item(d.getDroneId()) / 2;
 				for (String a : s.getAugmentIdList()) total += Pricing.item(a) / 2;
-				for (String c : gs.getCargoIdList()) total += Pricing.item(c) / 2;
+				for (String c : SaveHelper.cargo(gs)) total += Pricing.item(c) / 2;
 				if (HomePlanet.sellSupplies())
 					total += homeplanet.core.Economy.supplySale(s.getMissilesAmt(), Pricing.MISSILE) + homeplanet.core.Economy.supplySale(s.getDronePartsAmt(), Pricing.DRONE_PART);
 			}
@@ -116,7 +116,7 @@ public final class FreeCommand {
 				for (WeaponState w : s.getWeaponList()) total += Pricing.item(w.getWeaponId());
 				for (DroneState d : s.getDroneList()) total += Pricing.item(d.getDroneId());
 				for (String a : s.getAugmentIdList()) total += Pricing.item(a);
-				for (String c : gs.getCargoIdList()) total += Pricing.item(c);
+				for (String c : SaveHelper.cargo(gs)) total += Pricing.item(c);
 				for (CrewState c : SaveHelper.getOwnCrew(s)) total += Pricing.crew(c.getRace().getId());
 			}
 		} catch (Exception e) { log.debug("Free command: the Cargo Hold could not be read, counted as empty: {}", e.toString()); } // an unreadable hold counts as empty

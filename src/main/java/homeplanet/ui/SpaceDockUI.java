@@ -1750,7 +1750,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			for (DroneState d : from.getDroneList()) to.getDroneList().add(SaveHelper.copyDroneForTransfer(d));
 			to.getAugmentIdList().addAll(from.getAugmentIdList());
 			// Storage keeps cargo sorted by kind
-			for (String id : wreck.getCargoIdList()) {
+			for (String id : SaveHelper.cargo(wreck)) { // not the augment FTL was asking about: left behind (5.52)
 				if (Items.isWeapon(id)) to.getWeaponList().add(SaveHelper.newIdleWeapon(id));
 				else if (Items.isDrone(id)) to.getDroneList().add(SaveHelper.newIdleDrone(id));
 				else if (Items.isAugment(id)) to.getAugmentIdList().add(id);
@@ -2056,8 +2056,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		for (DroneState d : state.getDroneList()) reportRow(right, IconFactory.itemIcon(d.getDroneId()), Items.droneTitle(d.getDroneId()));
 		reportHeading(right, "Augments");
 		for (String augmentId : state.getAugmentIdList()) reportRow(right, null, Items.augmentTitle(augmentId));
-		reportHeading(right, "Cargo (" + sgs.getCargoIdList().size() + " of " + SaveHelper.CARGO_SLOTS + ")");
-		for (String id : sgs.getCargoIdList()) reportRow(right, IconFactory.itemIcon(id), Items.title(id));
+		List<String> cargo = SaveHelper.cargo(sgs); // not the augment FTL is asking about (5.52)
+		reportHeading(right, "Cargo (" + cargo.size() + " of " + SaveHelper.CARGO_SLOTS + ")");
+		for (String id : cargo) reportRow(right, IconFactory.itemIcon(id), Items.title(id));
 		reportHeading(systems, "Systems");
 		systemRow(systems, null, "Reactor", state.getReservePowerCapacity(), homeplanet.parser.VanillaMax.reactor(), 0);
 		for (Object[] sys : SYSTEM_NAMES) {

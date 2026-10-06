@@ -408,7 +408,7 @@ public final class Reputation {
 			for (WeaponState w : ship.getWeaponList()) gear.add(w.getWeaponId());
 			for (DroneState d : ship.getDroneList()) gear.add(d.getDroneId());
 			gear.addAll(ship.getAugmentIdList());
-			gear.addAll(gs.getCargoIdList());
+			gear.addAll(homeplanet.parser.SaveHelper.cargo(gs));
 			x.items = String.join("|", gear);
 			List<BeaconState> beacons = gs.getBeaconList();
 			BeaconState here = beacons != null && x.beacon >= 0 && x.beacon < beacons.size() ? beacons.get(x.beacon) : null;

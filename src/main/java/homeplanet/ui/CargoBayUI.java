@@ -863,7 +863,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		else for (String a : s.getAugmentIdList()) ids.add(a);
 		for (String id : ids) { ItemRef r = new ItemRef(id, false); n.put(r, n.containsKey(r) ? n.get(r) + 1 : 1); }
 		if (save.getCargoIdList() != null) {
-			for (String id : save.getCargoIdList()) {
+			for (String id : SaveHelper.cargo(save)) { // not the augment FTL is asking about (heromedel, 5.52)
 				if (kindOf(id) != kind) continue;
 				ItemRef r = new ItemRef(id, true);
 				n.put(r, n.containsKey(r) ? n.get(r) + 1 : 1);
@@ -1080,7 +1080,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			if (used >= room) {
 				String who = destSave.getPlayerShipName();
 				if (kind == 2) { HomePlanet.showErrorDialog(who + "'s augment slots are full (3). Send one of hers away first."); return; }
-				if (destSave.getCargoIdList().size() >= 4) { HomePlanet.showErrorDialog(who + " has no room for the " + title + ", and her cargo hold is full too."); return; }
+				if (SaveHelper.cargo(destSave).size() >= 4) { HomePlanet.showErrorDialog(who + " has no room for the " + title + ", and her cargo hold is full too."); return; }
 				String q = kind == 1 && room == 0 ? who + " has no Drone Control system. Put the drone in her cargo hold?" : who + " has no free " + (kind == 0 ? "weapon" : "drone") + " slot. Put the " + title + " in her cargo hold?";
 				if (JOptionPane.showConfirmDialog(this, q, "Send to cargo?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
 				toCargo = true;
@@ -1100,7 +1100,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			SaveHelper.removeDrone(startState, srcDrone);
 		} else if (!startState.getAugmentIdList().remove(id)) { HomePlanet.showErrorDialog("That augment is no longer aboard."); return; }
 		// give it to the receiver, unpowered
-		if (toCargo) destSave.getCargoIdList().add(id);
+		if (toCargo) SaveHelper.addCargo(destSave, id);
 		else if (kind == 0) destState.getWeaponList().add(SaveHelper.newIdleWeapon(id));
 		else if (kind == 1) destState.getDroneList().add(srcDrone != null ? SaveHelper.copyDroneForTransfer(srcDrone) : SaveHelper.newIdleDrone(id));
 		else destState.getAugmentIdList().add(id);

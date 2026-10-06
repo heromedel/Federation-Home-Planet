@@ -107,7 +107,7 @@ public class HistoryLog {
 		for (WeaponState w : s.getWeaponList()) add(m, Items.weaponTitle(w.getWeaponId()), 1);
 		for (DroneState d : s.getDroneList()) add(m, Items.droneTitle(d.getDroneId()), 1);
 		for (String a : s.getAugmentIdList()) add(m, Items.augmentTitle(a), 1);
-		for (String c : gs.getCargoIdList()) add(m, Items.title(c) + " (cargo)", 1);
+		for (String c : homeplanet.parser.SaveHelper.cargo(gs)) add(m, Items.title(c) + " (cargo)", 1); // not the augment FTL is asking about (5.52)
 		for (CrewState c : SaveHelper.getOwnCrew(s)) add(m, "Crew " + c.getName(), 1);
 		return m;
 	}
