@@ -282,7 +282,10 @@ public final class Transmissions {
 		if (HomePlanet.career() && PlayerRank.mode() == PlayerRank.FROM_REP && Career.started(v.root)) { // the reputation ladder (heromedel, 5.56)
 			PlayerRank.Climb c = PlayerRank.climb(v, homeplanet.vault.Reputation.total(v), u);
 			rank = rankName(u);
-			if (c.first) send(all, sent, "rank:ladder", "rank:ladder", rank, null); // a career from before: the new ranks, and where it stands, once
+			if (c.first) { // a career from before: its rank's own letter, once, with up to three accolades (heromedel, 5.57; a Major has none)
+					int at = java.util.Arrays.asList(PlayerRank.REP_RANKS).indexOf(rank);
+					if (at >= 1) send(all, sent, "rank:ladder", "rank:" + at, rank, null);
+				}
 			for (int r : c.promoted) send(all, sent, "rank:" + r, "rank:" + r, rank, null);
 		}
 		// one order per free command (the fleet's start, a plea for a new ship), never for an empty shipyard alone
@@ -637,6 +640,10 @@ public final class Transmissions {
 		m.subject = ShipNames.fill(fill(t.subject, rank, ship), "name", name);
 		m.body = ShipNames.fill(fill(t.body.toString().trim(), rank, ship), "name", name);
 		if (base != null) m.body = m.body.replace("{race}", raceOf(base)).replace("{cruiser}", className(base));
+		if (m.body.contains(Accolades.TOKEN)) { // what the career did, once each (5.57); an old career confirmed three ranks up or more gets three
+			int up = key.equals("rank:ladder") ? java.util.Arrays.asList(PlayerRank.REP_RANKS).indexOf(rank) : 0;
+			m.body = Accolades.fill(Vault.isOpen() ? Vault.get() : null, key, m.body, up >= 3 ? 3 : 1);
+		}
 		m.reward = t.reward;
 		m.replies = t.replies;
 		m.cost = t.cost;

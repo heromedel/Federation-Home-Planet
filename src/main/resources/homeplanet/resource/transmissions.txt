@@ -8,7 +8,7 @@
 # Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), pleaded (the order after a
 # plea for a new ship; {ship} is what it offers), withdrawn (that plea withdrawn: its order leaves the inbox), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
 # a hull waits in the Junkyard), shipped (an augment a ship had no room for, sent home by her crew: {name} is her name,
-# {item} the augment, which is the reward), fleet3:* (the Third Fleet Commander, ThirdFleet.java: {name} is the ship class or the part), promo:1, promo:2 (Ranks From Cruiser), rank:1 to rank:5 (Ranks From Rep: Colonel to Admiral) and rank:ladder (once, to a career from before 5.56), order:<base ship id>, ach:<achievement id> (ach:ACH_NO_DEATH:dna and ach:ACH_INVADE_SHIP:dna when the boarded ship has a Clone Bay already),
+# {item} the augment, which is the reward), fleet3:* (the Third Fleet Commander, ThirdFleet.java: {name} is the ship class or the part), promo:1, promo:2 (Ranks From Cruiser), rank:1 to rank:5 (Ranks From Rep: Colonel to Admiral; a career from before 5.56 gets its rank's letter once, with up to three accolades; heromedel's words, 5.57), order:<base ship id>, ach:<achievement id> (ach:ACH_NO_DEATH:dna and ach:ACH_INVADE_SHIP:dna when the boarded ship has a Clone Bay already),
 # rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
 # notice when Transmissions are off).
 #
@@ -224,34 +224,21 @@ A Commodore's flag needs a ship to fly from. Home Planet Shipyard has a Federati
 Hold the line, Commodore.
 Your Fleet Admiral
 
-== rank:ladder
-from: The Federation Home Planet Fleet Admiralty
-subject: Priority: officers promoted by standing
-
-Priority message from The Federation Home Planet Fleet Admiralty:
-
-{rank},
-
-The Admiralty has reviewed how its officers rise. From today, rank follows standing: every officer climbs by the reputation earned in the Federation's service, from Major to Admiral, and no rank once earned is taken away.
-
-Your record has been reviewed under the new rules, and you hold the rank of {rank}. Any clearance you held before stands.
-
-Each promotion from here brings a letter of its own, and with it a larger stipend or new clearances: remodels for Commanders, custom ships for Commodores, and the Federation's artillery for Admirals.
-
-The war goes on. Serve it well.
-The Fleet Admiralty
-
 == rank:1
 from: The Federation Home Planet Fleet Admiralty
 subject: Priority: promoted to Colonel
 
-Priority message from The Federation Home Planet Fleet Admiralty:
+The Federation Home Planet Admiralty is writing to inform you
+of your recommendation for promotion to Colonel for your outstanding service
 
-Colonel,
+Of particular note in the discussions was:
+{accolade}
 
-Your standing with The Federation Home Planet has carried you past 250 reputation, and the Admiralty has approved your promotion to Colonel, effective immediately.
+After careful consideration your promotion has been, <u>Approved</u>.
 
-Your stipend rises with your rank: twice as much for each achievement counted.
+Our Sincerest Congratulations Colonel.
+
+With this promotion your stipend will be increased based on your achievements.
 
 The Fleet Admiralty
 
@@ -259,13 +246,17 @@ The Fleet Admiralty
 from: The Federation Home Planet Fleet Admiralty
 subject: Priority: promoted to Commander
 
-Priority message from The Federation Home Planet Fleet Admiralty:
+The Federation Home Planet Admiralty is pleased to inform you
+of your recommendation for promotion to Commander for your outstanding service
 
-Commander,
+Of particular note in the discussions was:
+{accolade}
 
-500 reputation. The Admiralty has approved your promotion to Commander, effective immediately.
+After careful consideration your promotion has been, <u>Approved</u>.
 
-A Commander answers for every ship in the fleet, inside and out: you are cleared to remodel them. Move their systems and doors as the fight demands.
+Our Sincerest Congratulations Commander.
+
+With this promotion you are cleared to remodel the ships under your command.
 
 The Fleet Admiralty
 
@@ -273,13 +264,17 @@ The Fleet Admiralty
 from: The Federation Home Planet Fleet Admiralty
 subject: Priority: promoted to Captain
 
-Priority message from The Federation Home Planet Fleet Admiralty:
+The Federation Home Planet Admiralty is happy to inform you
+of your recommendation for promotion to Captain for your outstanding service
 
-Captain,
+Of particular note in the discussions was:
+{accolade}
 
-1,000 reputation, and a record the Admiralty is proud to sign. Your promotion to Captain is approved, effective immediately.
+After careful consideration your promotion has been, <u>Approved</u>.
 
-Your stipend rises with your rank: three times as much for each achievement counted.
+Our Sincerest Congratulations Captain.
+
+With this promotion your stipend will be increased further based on your achievements.
 
 The Fleet Admiralty
 
@@ -287,13 +282,17 @@ The Fleet Admiralty
 from: The Federation Home Planet Fleet Admiralty
 subject: Priority: promoted to Commodore
 
-Priority message from The Federation Home Planet Fleet Admiralty:
+The Federation Home Planet Admiralty is thrilled to inform you
+of your recommendation for promotion to Commodore for your outstanding service
 
-Commodore,
+Of particular note in the discussions was:
+{accolade}
 
-2,500 reputation. Few officers hold the line long enough to read a letter like this one. The Admiralty has approved your promotion to Commodore, effective immediately.
+After careful consideration your promotion has been, <u>Approved</u>.
 
-You are cleared to design ships, to overhaul their deck plans, and to commission ships of your own design. The Federation Home Planet will draw up the blueprints.
+Our Sincerest Congratulations Commodore.
+
+With this promotion you are cleared to design your own ships, and The Federation Home Planet will draw up their blueprints.
 
 The Fleet Admiralty
 
@@ -301,15 +300,18 @@ The Fleet Admiralty
 from: The Federation Home Planet Fleet Admiralty
 subject: Priority: promoted to Admiral
 
-Priority message from The Federation Home Planet Fleet Admiralty:
+The Federation Home Planet Admiralty is overwhelmed to inform you
+of your recommendation for promotion to Admiralty for your outstanding service
 
-Admiral,
+Of particular note in the discussions was:
+{accolade}
 
-10,000 reputation. The Admiralty has the honor of welcoming you to its own number: your promotion to Admiral is approved, effective immediately.
+After careful consideration your promotion has been, <u>Approved</u>.
 
-You are cleared to fit the Federation's own artillery, the Artillery Beam and Flak Artillery, and your stipend rises to four times as much for each achievement counted.
+Our Sincerest Congratulations Admiral.
 
-The rebellion is not finished, and neither are we. Lead the way, Admiral.
+With this promotion your stipend will be increased even further based on your achievements.
+
 The Fleet Admiralty
 
 == order:PLAYER_SHIP_HARD

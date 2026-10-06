@@ -296,7 +296,7 @@ public class InboxDialog extends JDialog {
 				doc.insertString(doc.getLength(), meta + "\n\n", a);
 			}
 			if (faces != null && !faces.isEmpty()) ReportFaces.insert(doc, body, faces, null);
-			else doc.insertString(doc.getLength(), body, null);
+			else underlined(doc, body);
 			javax.swing.text.SimpleAttributeSet p = new javax.swing.text.SimpleAttributeSet();
 			javax.swing.text.StyleConstants.setLineSpacing(p, 0.2f);
 			doc.setParagraphAttributes(0, doc.getLength(), p, false);
@@ -304,6 +304,20 @@ public class InboxDialog extends JDialog {
 			text.setText(body); // not expected: the plain text, at least
 		}
 		text.setCaretPosition(0);
+	}
+
+	/** A letter's words, with &lt;u&gt;…&lt;/u&gt; underlined (heromedel's "Approved", 5.57); everything else as it is. */
+	private static void underlined(javax.swing.text.StyledDocument doc, String body) throws javax.swing.text.BadLocationException {
+		javax.swing.text.SimpleAttributeSet u = new javax.swing.text.SimpleAttributeSet();
+		javax.swing.text.StyleConstants.setUnderline(u, true);
+		int at = 0;
+		while (true) {
+			int s = body.indexOf("<u>", at), e = s < 0 ? -1 : body.indexOf("</u>", s);
+			if (s < 0 || e < 0) { doc.insertString(doc.getLength(), body.substring(at), null); return; }
+			doc.insertString(doc.getLength(), body.substring(at, s), null);
+			doc.insertString(doc.getLength(), body.substring(s + 3, e), u);
+			at = e + 4;
+		}
 	}
 
 	private void show(Transmissions.Message m) {
