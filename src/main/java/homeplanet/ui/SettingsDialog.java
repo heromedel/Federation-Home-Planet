@@ -169,7 +169,7 @@ public class SettingsDialog extends JDialog {
 		body.add(cloud, next(c));
 		if (homeplanet.core.FtlDock.supported()) {
 			JPanel dockRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-			dockBox.setToolTipText("<html>Adds an icon beside Launch FTL on the Space Dock: FTL plays in a frame in the station's window,"
+			dockBox.setToolTipText("<html><font color='" + MenuTheme.HTML_ORANGE + "'>(Experimental)</font> Adds an icon beside Launch FTL on the Space Dock: FTL plays in a frame in the station's window,"
 					+ "<br>with the inbox, the reputation and the station's buttons beside it. FTL is set to windowed for it.</html>");
 			dockSize.setSelectedItem(HomePlanet.config.getProperty(homeplanet.core.FtlDock.CFG_SIZE, homeplanet.core.FtlDock.SIZES[0]));
 			dockSize.setToolTipText("FTL's size in the frame (the station's window grows to hold it, if the screen has room)");
@@ -181,6 +181,11 @@ public class SettingsDialog extends JDialog {
 			dockHow.setToolTipText("<html>As its own window: FTL kept over the station's window by the station.<br>"
 					+ "Attached (testing): FTL's window belongs to the station's, so it stays over it and the station's popups come over both.</html>");
 			dockRow.add(dockHow);
+			dockRow.add(javax.swing.Box.createHorizontalStrut(8));
+			JLabel experimental = new JLabel("(Experimental)"); // heromedel, 5.38
+			experimental.setForeground(MenuTheme.ORANGE);
+			experimental.setToolTipText(dockBox.getToolTipText());
+			dockRow.add(experimental);
 			body.add(dockRow, next(c));
 		}
 
