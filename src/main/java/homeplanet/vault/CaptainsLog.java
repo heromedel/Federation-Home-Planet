@@ -250,6 +250,9 @@ public final class CaptainsLog {
 		} else if (kind.equals("RENAME")) {
 			String[] w = unowned(head).split(" -> ", 2);
 			if (w.length == 2) once(m, "ships", true, "Renamed " + theShip(w[0].trim()) + " " + theShip(w[1].trim()) + ".");
+		} else if (kind.equals("CREW")) { // the Cargo Bay's crew moves, one destination a line (heromedel, 5.40)
+			Matcher a = Pattern.compile("^(.+?) assigned to (.+?)\\.?$").matcher(head.trim());
+			if (a.find()) { Line l = line(m, "assign", "assign:" + a.group(2), true, ""); l.ship = a.group(2); add(l, a.group(1), 1); }
 		} else if (kind.equals("RENAME CREW")) {
 			String[] w = unowned(head).split(" -> ", 2);
 			if (w.length == 2) once(m, "crew", false, w[0].trim() + " is now " + w[1].trim() + ".");
@@ -451,6 +454,7 @@ public final class CaptainsLog {
 		if (l.kind.equals("buy") && l.text.isEmpty()) l.text = l.things.isEmpty() ? null : "Bought " + things(l.things) + ".";
 		else if (l.kind.equals("sell") && l.text.isEmpty()) l.text = l.things.isEmpty() ? null : "Sold " + things(l.things) + ".";
 		else if (l.kind.equals("junk")) l.text = l.things.isEmpty() ? null : "Threw out " + things(l.things) + ".";
+		else if (l.kind.equals("assign")) l.text = l.things.isEmpty() ? null : (l.ship.endsWith("Cargo Hold") ? "Moved " : "Assigned ") + join(each(l)) + " to " + l.ship + ".";
 		else if (l.kind.equals("retire")) l.text = l.things.isEmpty() ? null : "Let " + join(new ArrayList<String>(l.things.keySet())) + " go.";
 		else if (l.kind.equals("board")) l.text = "Took command of " + theShip(l.ship) + ".";
 		else if (l.kind.equals("move")) l.text = jumpText(l);
@@ -493,6 +497,12 @@ public final class CaptainsLog {
 
 	// ---- words ----
 
+	/** A merged line's names, a namesake as often as they came. */
+	private static List<String> each(Line l) {
+		List<String> out = new ArrayList<String>();
+		for (Map.Entry<String, Integer> e : l.things.entrySet()) for (int i = 0; i < e.getValue(); i++) out.add(e.getKey());
+		return out;
+	}
 	private static void add(Line l, String thing, int n) { l.things.put(thing, (l.things.containsKey(thing) ? l.things.get(thing) : 0) + n); }
 	/** "five missiles and a Burst Laser II"; past three kinds, "supplies and gear" (the list in the details). */
 	static String things(Map<String, Integer> t) {
