@@ -247,13 +247,10 @@ public class SettingsDialog extends JDialog {
 		folderRow.add(javax.swing.Box.createHorizontalStrut(14));
 		folderRow.add(debugBox);
 		folderRow.add(javax.swing.Box.createHorizontalStrut(14));
-		JButton feedback = new JButton("Send Feedback...");
-		feedback.setToolTipText("Report a bug or share an idea: opens the feedback form in your web browser");
-		feedback.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { Feedback.send(SettingsDialog.this); } });
-		folderRow.add(feedback);
+		folderRow.add(feedbackButton());
 		body.add(folderRow, next(c));
 		JLabel debugNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>The program's own logs, one per run: "
-				+ "send them along with a bug report. Debug logging adds detail to them. Found a bug or have an idea? Send Feedback... opens the form.</font></div></html>");
+				+ "send them along with a bug report. Debug logging adds detail to them. " + FEEDBACK_LINE + "</font></div></html>");
 		debugNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
 		body.add(debugNote, next(c));
 
@@ -289,7 +286,12 @@ public class SettingsDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) { checkForUpdates(); }
 		});
 		updateRow.add(updateBtn);
+		updateRow.add(javax.swing.Box.createHorizontalStrut(8));
+		updateRow.add(feedbackButton()); // the Records tab's own, here too: wherever a player looks (heromedel, 5.30)
 		body.add(updateRow, next(c));
+		JLabel feedbackNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>" + FEEDBACK_LINE + "</font></div></html>");
+		feedbackNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
+		body.add(feedbackNote, next(c));
 
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton ok = new JButton("OK");
@@ -329,6 +331,16 @@ public class SettingsDialog extends JDialog {
 		setResizable(false);
 		setLocationRelativeTo(owner);
 		ScreenFit.keepOnScreen(this); // all of it on its screen, never under the taskbar
+	}
+
+	/** The words under each Send Feedback... button, the same on both tabs. */
+	private static final String FEEDBACK_LINE = "Found a bug or have an idea? Send Feedback... opens the form.";
+	/** Send Feedback..., one and the same on the Records tab and the About tab (heromedel, 5.30). */
+	private JButton feedbackButton() {
+		JButton b = new JButton("Send Feedback...");
+		b.setToolTipText("Report a bug or share an idea: opens the feedback form in your web browser");
+		b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { Feedback.send(SettingsDialog.this); } });
+		return b;
 	}
 
 	private void apply() {
