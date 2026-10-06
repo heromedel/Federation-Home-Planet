@@ -127,6 +127,13 @@ public class LogT { public static void main(String[] a) throws Exception {
   MasterLog.businessDay(v);
   String q = page(v, false);
   Setup.chk("F: a system bought into the Cargo Hold: Bought a Cloaking system, and no Dry Dock work told for it (5.30)", q.contains("Bought a Cloaking system.") && !q.contains("Had the Dry Dock work on the Test Kestrel"));
+  HistoryLog.entry("CREW", "Joel assigned to the Test Kestrel.");
+  HistoryLog.entry("CREW", "Ferry assigned to the Test Kestrel.");
+  HistoryLog.entry("CREW", "Kirkner assigned to the Cargo Hold.");
+  HistoryLog.entry("CREW", "Ash signed on"); // another CREW entry: not a move, not told as one
+  MasterLog.businessDay(v);
+  String r = page(v, false);
+  Setup.chk("F: crew moved in the Cargo Bay: one line a destination (5.40)", r.contains("Assigned Joel and Ferry to the Test Kestrel.") && r.contains("Moved Kirkner to the Cargo Hold.") && !r.contains("Ash"));
   Setup.chk("F: a sale from a ship's cargo, or a ship with brackets in her name, reads cleanly", p.contains("Sold a Burst Laser II and an Ion Blast.") && !p.contains("(cargo)"));
  }
  static Properties look(String beacon, int nebula, int danger, String hazards, String met) {
