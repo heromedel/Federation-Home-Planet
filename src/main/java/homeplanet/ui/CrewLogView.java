@@ -35,6 +35,7 @@ import net.blerf.ftl.parser.SavedGameParser.CrewState;
  * record as last seen, the ships they served on, and what happened to them, a stardate a line.
  */
 final class CrewLogView extends JPanel {
+	private final Vault vault;
 	private final List<Member> members;
 	private final JComboBox<Object> pick = new JComboBox<Object>();
 	private final JPanel career = new JPanel();
@@ -49,6 +50,7 @@ final class CrewLogView extends JPanel {
 	CrewLogView(Vault v, int select) {
 		super(new BorderLayout(0, 0));
 		setBackground(RecordsLog.BG);
+		vault = v;
 		CrewRegister.sweep(v); // as they are now
 		members = CrewRegister.members(v);
 		java.util.Set<String> laidUp = new java.util.HashSet<String>();
@@ -170,6 +172,23 @@ final class CrewLogView extends JPanel {
 			name.setFont(MenuTheme.LABEL_FONT.deriveFont(Font.BOLD, 18f));
 			side.add(name);
 		}
+		final int rank = CrewRegister.rankToGive(vault, m);
+		if (rank >= 0) { // a rank they've earned, above where they stand (heromedel, 5.52): anyone, the KIA posthumously
+			final Member who = m;
+			String off = CrewRegister.cannotPromote(vault, m);
+			javax.swing.JButton promote = new javax.swing.JButton("Promote");
+			promote.setToolTipText(off == null ? homeplanet.model.Rank.TOOLTIP : "<html>" + off + "<br>" + homeplanet.model.Rank.TOOLTIP + "</html>");
+			promote.setEnabled(off == null);
+			promote.setAlignmentX(LEFT_ALIGNMENT);
+			promote.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { promote(who, rank); } });
+			JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+			row.setOpaque(false);
+			row.setAlignmentX(LEFT_ALIGNMENT);
+			row.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
+			row.add(promote);
+			row.setMaximumSize(row.getPreferredSize());
+			side.add(row);
+		}
 		side.add(line(status(m), m.status == Status.PRESENT ? RecordsLog.GOOD : m.status == Status.KILLED ? RecordsLog.BAD : MenuTheme.GOLD));
 		if (m.status != Status.PRESENT && c != null) side.add(line("The card shows them as last seen.", RecordsLog.DIM));
 		if (!m.events.isEmpty()) {
@@ -192,6 +211,7 @@ final class CrewLogView extends JPanel {
 				for (int i = 0; i < was.size(); i++) side.add(indented(was.get(i) + (i == was.size() - 1 ? ")" : ""), 38));
 			}
 		}
+		servedWith(side, m);
 		side.add(Box.createVerticalGlue());
 		top.add(side, BorderLayout.CENTER);
 		top.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, top.getPreferredSize().height));
@@ -215,6 +235,49 @@ final class CrewLogView extends JPanel {
 		career.revalidate();
 		career.repaint();
 	}
+	/** Promotes them, and shows their page again under their new name. */
+	private void promote(Member m, int rank) {
+		try {
+			CrewRegister.promote(vault, m.id);
+		} catch (java.io.IOException e) {
+			homeplanet.core.HomePlanet.showErrorDialog("The Home Planet Station could not promote " + m.name + ":\n" + e.getMessage());
+			return;
+		}
+		LogViewer lv = (LogViewer) javax.swing.SwingUtilities.getAncestorOfClass(LogViewer.class, this);
+		if (lv != null) lv.showCrew(m.id);
+	}
+	/**
+	 * Served With (heromedel, 5.52): each crew member they served with, a link to their page with their portrait before
+	 * it; under it the ships they shared ("On Board:"), and "During Expeditions" if they went out together.
+	 */
+	private void servedWith(JPanel side, Member m) {
+		if (m.with.isEmpty()) return;
+		side.add(heading("Served With:"));
+		for (Map.Entry<Integer, List<String>> e : m.with.entrySet()) {
+			Member o = null;
+			for (Member x : members) if (x.id == e.getKey()) o = x;
+			if (o == null) continue;
+			final Member to = o;
+			JLabel name = line("<html><u>" + esc(o.name) + "</u></html>", new Color(150, 200, 255));
+			CrewState oc = o.crew();
+			if (oc != null) name.setIcon(IconFactory.crewIcon(oc));
+			name.setIconTextGap(6);
+			name.setToolTipText(o.name + " (" + o.raceTitle() + "): their Crew Log");
+			name.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+			name.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent ev) { pick.setSelectedItem(to); } });
+			side.add(name);
+			List<String> ships = new ArrayList<String>();
+			boolean away = false;
+			for (String w : e.getValue()) { if (w.equals(CrewRegister.WITH_EXPEDITION)) away = true; else ships.add(w); }
+			if (!ships.isEmpty()) {
+				side.add(indented("On Board:", 26));
+				for (String sh : ships) { JLabel l = dotted(cap(the(sh)), MenuTheme.TEXT, MenuTheme.GOLD); l.setBorder(BorderFactory.createEmptyBorder(1, 38, 1, 0)); side.add(l); }
+			}
+			if (away) side.add(indented("During Expeditions", 26));
+		}
+	}
+	private static String cap(String s) { return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
+	private static String esc(String s) { return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"); }
 	/** An event's mark: green for joining and coming back, gold for moves and assignments, purple the infirmary, orange taken or missing, red killed. */
 	private static Color mark(String t) {
 		if (t.startsWith("Killed") || t.startsWith("Lost") || t.contains("presumed dead") || t.startsWith("Did not come back")) return RecordsLog.BAD;

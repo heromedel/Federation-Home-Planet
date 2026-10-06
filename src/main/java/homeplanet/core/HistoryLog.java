@@ -68,7 +68,7 @@ public class HistoryLog {
 		entry(kind, headline, null);
 	}
 
-	/** LOADED: every ship in the vault, the storage holds and the junkyard. */
+	/** Every ship in the vault, the storage holds and the junkyard: to the debug log, not the station log (heromedel, 5.53). */
 	public static void loaded(String reason) {
 		List<String> lines = new ArrayList<String>();
 		Vault v = Vault.get();
@@ -76,7 +76,9 @@ public class HistoryLog {
 		for (Ship s : v.all()) if (s.isStorage()) lines.add(pad(s.file().getName()) + s.name);
 		for (Ship s : v.junked()) lines.add(shipLine(s));
 		if (lines.isEmpty()) lines.add("(no ships found)");
-		entry("LOADED", "(" + reason + ")", lines);
+		StringBuilder sb = new StringBuilder("Loaded (").append(reason).append("):");
+		for (String l : lines) sb.append(NL).append("  ").append(l);
+		log.info(sb.toString());
 	}
 
 	public static String shipLine(Ship ship) {

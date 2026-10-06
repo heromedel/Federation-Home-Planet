@@ -104,6 +104,8 @@ class RecordsLog extends JComponent implements Scrollable {
 	 * The station log; with each entry's stardate (in order, one an entry), it's told by stardate, with no clock times
 	 * (heromedel, 5.41: real dates stay in the file, for bug reports, and out of view).
 	 */
+	/** An entry left out of view: its detail lines go with it. */
+	private static final Item SKIPPED = new Item();
 	static RecordsLog station(String text, String empty, int[] stardays) {
 		RecordsLog r = new RecordsLog(empty);
 		r.noClock = stardays != null;
@@ -112,13 +114,14 @@ class RecordsLog extends JComponent implements Scrollable {
 		int entry = 0;
 		for (String line : text.split("\r?\n")) {
 			if (line.trim().isEmpty()) continue;
-			if (line.startsWith("  ") && last != null) { last.details.add(line.trim()); continue; }
+			if (line.startsWith("  ") && last != null) { if (last != SKIPPED) last.details.add(line.trim()); continue; }
 			Matcher m = STAMP.matcher(line);
 			Item it = new Item();
 			if (m.matches()) {
 				String heading = stardays == null ? m.group(1)
 						: "Stardate " + homeplanet.vault.MasterLog.stardate(Math.max(1, entry < stardays.length ? stardays[entry] : 1));
-				entry++;
+				entry++; // counted even when not shown: the stardates go entry by entry
+				if (m.group(3).startsWith("LOADED")) { last = SKIPPED; continue; } // the fleet's listing: the debug log's now (heromedel, 5.53)
 				if (!heading.equals(day)) {
 					day = heading;
 					Item h = new Item();

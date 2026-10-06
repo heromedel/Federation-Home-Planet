@@ -35,6 +35,22 @@ public class LogT { public static void main(String[] a) throws Exception {
  voyageDays(game, new File(work, "voyage"));
  beaconDays(game, new File(work, "beacon"));
  System.setProperty("game", game.getPath()); fixes520(v);
+ // 5.53 (heromedel): the fleet's listing is the debug log's; old LOADED entries stay in the file, out of view, the stardates still in line
+ HistoryLog.loaded("refresh");
+ Setup.chk("L: a refresh's listing no longer goes in the station log", count(new String(SafeFiles.read(v.historyLog()), "UTF-8"), "LOADED") == 1);
+ Class<?> rl = Class.forName("homeplanet.ui.RecordsLog");
+ java.lang.reflect.Method st = rl.getDeclaredMethod("station", String.class, String.class, int[].class); st.setAccessible(true);
+ Object view = st.invoke(null, "2026-01-01 00:00  CREW  Ash signed on\n2026-01-01 00:01  LOADED  (startup)\n  a ship line\n2026-01-01 00:02  CREW  Bree signed on\n", "", new int[] {1, 2, 3});
+ java.lang.reflect.Field items = rl.getDeclaredField("items"); items.setAccessible(true);
+ List<String> seen = new ArrayList<String>();
+ for (Object it : (List<?>) items.get(view)) {
+  Class<?> ic = it.getClass();
+  java.lang.reflect.Field hf = ic.getDeclaredField("heading"), tf = ic.getDeclaredField("title"), gf = ic.getDeclaredField("tag"), df = ic.getDeclaredField("details");
+  hf.setAccessible(true); tf.setAccessible(true); gf.setAccessible(true); df.setAccessible(true);
+  seen.add((Boolean) hf.get(it) ? (String) tf.get(it) : gf.get(it) + "/" + ((List<?>) df.get(it)).size());
+ }
+ Setup.chk("L: an old LOADED entry is out of view, its lines with it; the next entry keeps its own stardate " + seen,
+   seen.equals(Arrays.asList("Stardate " + MasterLog.stardate(1), "CREW/0", "Stardate " + MasterLog.stardate(3), "CREW/0")));
  Setup.done();
 }
  static int count(String s, String w) { int n = 0, i = 0; while ((i = s.indexOf(w, i)) >= 0) { n++; i += w.length(); } return n; }

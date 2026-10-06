@@ -123,7 +123,7 @@ public class Slipstream {
 				prepareConfig(d);
 				HomePlanet.config.setProperty(CFG_DIR, d.getAbsolutePath());
 				HomePlanet.saveConfig();
-				HistoryLog.entry("SLIPSTREAM", "Using Slipstream at " + d.getAbsolutePath());
+				log.info("Using Slipstream at {}", d.getAbsolutePath()); // machinery: the debug log's, not the station log's (heromedel, 5.53)
 				return d;
 			}
 		}

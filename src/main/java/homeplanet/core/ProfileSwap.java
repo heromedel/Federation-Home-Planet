@@ -63,7 +63,7 @@ public final class ProfileSwap {
 			try { bringBack(saves, from); } catch (IOException again) { e.addSuppressed(again); }
 			throw e;
 		}
-		HistoryLog.entry("PROFILE", "FTL profile set aside in " + from.getName() + "/" + STASH + (kept ? "; " + to.getName() + "'s brought back" : "; FTL will start a fresh one"));
+		log.info("FTL profile set aside in {}/{}{}", from.getName(), STASH, kept ? "; " + to.getName() + "'s brought back" : "; FTL will start a fresh one"); // the debug log's (heromedel, 5.53)
 	}
 	/** Copies FTL's profile to a dated backup in this folder's profile-backups. Returns the copy. */
 	public static File backup(File saves, File folder) throws IOException {
@@ -72,7 +72,7 @@ public final class ProfileSwap {
 		String stamp = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date());
 		File to = new File(new File(folder, "profile-backups"), f.getName().replace(".sav", "") + " " + stamp + ".sav");
 		SafeFiles.copy(f, to);
-		HistoryLog.entry("PROFILE", "FTL profile backed up: " + to);
+		log.info("FTL profile backed up: {}", to);
 		return to;
 	}
 }
