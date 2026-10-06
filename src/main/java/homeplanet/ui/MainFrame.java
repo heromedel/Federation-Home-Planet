@@ -73,7 +73,7 @@ public class MainFrame extends JFrame {
 			@Override
 			public void windowDeiconified(java.awt.event.WindowEvent e) {
 				if (!atSpaceDock) return;
-				homeplanet.core.FtlDock.show(true);
+				homeplanet.core.FtlDock.backAtDock();
 				javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { spaceDock.placeViewport(); homeplanet.core.FtlDock.raise(); } });
 			}
 			@Override
@@ -81,7 +81,7 @@ public class MainFrame extends JFrame {
 				// back from another program (FTL, most likely): the Space Dock takes stock, as Refresh does. Not when one of
 				// the station's own windows closes, and not in the Cargo Bay (unsaved trades)
 				if (!atSpaceDock) return;
-				if (homeplanet.core.FtlDock.active()) { homeplanet.core.FtlDock.raise(); return; } // docked FTL back over its viewport; FTL's saves rebuild the dock as they're written (5.31)
+				if (homeplanet.core.FtlDock.active()) { homeplanet.core.FtlDock.raise(); spaceDock.liftSoon(); return; } // docked FTL back over its viewport, again once Windows has finished bringing the station forward (5.33); FTL's saves rebuild the dock as they're written (5.31)
 				if (homeplanet.core.GameGuard.isFtlRunning() && !homeplanet.vault.Vault.get().continueFile().exists()) return; // FTL is saving or still on its game-over screen: judged once it's closed
 				boolean gone = homeplanet.core.SaveWatcher.takeGone(); // FTL ended a run meanwhile
 				if (gone) spaceDock.refresh(); // her save is gone: the fleet is read again, so she leaves the Space Dock (lost in action)
@@ -197,7 +197,7 @@ public class MainFrame extends JFrame {
 		screens.show(tasksPane, "dock");
 		spaceDock.revalidate();
 		spaceDock.repaint();
-		homeplanet.core.FtlDock.show(true); // back in its viewport
+		homeplanet.core.FtlDock.backAtDock(); // back in its viewport (or the docked ships there, 5.32)
 		javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { spaceDock.placeViewport(); homeplanet.core.FtlDock.raise(); } });
 	}
 
