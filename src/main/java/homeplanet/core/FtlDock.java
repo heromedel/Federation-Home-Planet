@@ -25,7 +25,9 @@ public final class FtlDock {
 	private static final Logger log = LoggerFactory.getLogger(FtlDock.class);
 	private FtlDock() { }
 
-	public static final String CFG_ON = "ftl_docked", CFG_SIZE = "ftl_docked_size", CFG_WAS = "ftl_docked_fullscreen_was";
+	public static final String CFG_ON = "ftl_docked", CFG_SIZE = "ftl_docked_size", CFG_WAS = "ftl_docked_fullscreen_was", CFG_ATTACHED = "ftl_docked_attached";
+	/** How FTL docks (heromedel, 5.36): its own window kept over the station, or owned by the station's window (testing). */
+	public static final String[] HOW = {"as its own window", "attached to the station (testing)"};
 	/** The sizes offered: FTL's own 16:9 steps (1280x720 is the smallest it draws at). */
 	public static final String[] SIZES = {"1280x720", "1600x900", "1920x1080"};
 	/** FTL's window title: how its window is found. */
@@ -39,6 +41,8 @@ public final class FtlDock {
 	}
 	/** The option is on (Settings > Launching). */
 	public static boolean optionOn() { return supported() && Boolean.parseBoolean(HomePlanet.config.getProperty(CFG_ON, "false")); }
+	/** FTL's window is to be owned by the station's (the attached way, 5.36), its input kept apart. */
+	public static boolean attachedChosen() { return Boolean.parseBoolean(HomePlanet.config.getProperty(CFG_ATTACHED, "false")); }
 	/** The docked size chosen. */
 	public static Dimension size() {
 		String s = HomePlanet.config.getProperty(CFG_SIZE, SIZES[0]);
@@ -119,9 +123,21 @@ public final class FtlDock {
 	/** A docked run is on: from the docked launch until FTL's window closes (or isn't found). */
 	public static boolean active() { return active; }
 	/** Starts a docked run (FTL being launched): the Space Dock lays out its viewport. */
-	public static void begin() { active = true; window = null; shown = true; aside = false; where = null; }
+	public static void begin() { begin(null); }
+	/** The same, with the station's window to attach FTL's to if the attached way is chosen (5.36). */
+	public static void begin(java.awt.Window stationWindow) {
+		active = true; window = null; shown = true; aside = false; where = null;
+		station = stationWindow;
+		attachedRun = stationWindow != null && attachedChosen();
+		started = System.currentTimeMillis();
+	}
+	private static java.awt.Window station;
+	private static boolean attachedRun;
+	private static long started;
+	/** This docked run has FTL's window owned by the station's: it stays over it, and popups over both, by themselves. */
+	public static boolean attached() { return attachedRun && window != null; }
 	/** Ends it: FTL closed, or its window never turned up. */
-	public static void end() { active = false; window = null; where = null; aside = false; }
+	public static void end() { cut(false); active = false; window = null; where = null; aside = false; }
 	/** The Space Dock shows the docked ships in FTL's place (heromedel, 5.32): FTL hidden, still running. */
 	public static boolean aside() { return aside; }
 	public static void setAside(boolean ships) { aside = ships; show(!ships); }
@@ -143,7 +159,11 @@ public final class FtlDock {
 			Win.adopt(w);
 			window = w;
 			if (!shown) Win.show(w, false); // found while the station shows something else: hidden till it's back
-			log.info("FTL docked: its window was found");
+			log.info("FTL docked: its window was found, {} s after the launch", (System.currentTimeMillis() - started) / 1000);
+			if (attachedRun) {
+				try { log.info("FTL docked, attached: {}", Win.own(w, station)); }
+				catch (Throwable t) { attachedRun = false; log.info("FTL docked: could not attach it to the station's window ({}); docked as its own window", t.toString()); }
+			}
 			if (where != null) place(where);
 			return Found.DOCKED;
 		} catch (Throwable t) { // no JNA, a refused call: FTL just runs as a normal window
@@ -155,6 +175,17 @@ public final class FtlDock {
 	public static void raise() {
 		if (window == null || !shown) return;
 		try { Win.raise(window); } catch (Throwable t) { log.debug("FTL docked: could not lift its window: {}", t.toString()); }
+	}
+	/**
+	 * The station's own window put just under FTL's (5.34): Windows may refuse to lift another program's window over the
+	 * one in use, but a program may always arrange its own. Logged, so a debug log shows whether Windows took it.
+	 */
+	public static void tuckUnder(java.awt.Window station) {
+		if (window == null || !shown || station == null || !station.isDisplayable()) return;
+		try {
+			boolean ok = Win.under(station, window);
+			log.debug("FTL docked: the station's window put under FTL's: {}", ok ? "done" : "refused by Windows");
+		} catch (Throwable t) { log.debug("FTL docked: could not put the station's window under FTL's: {}", t.toString()); }
 	}
 	/** FTL to the front with the keyboard (the Unpause screen clicked, 5.33): the station has the keyboard to give. */
 	public static void focus() {
@@ -172,6 +203,18 @@ public final class FtlDock {
 		where = screen;
 		if (window == null || !shown) return;
 		try { Win.place(window, screen); } catch (Throwable t) { log.debug("FTL docked: could not place its window: {}", t.toString()); }
+		cut(true);
+	}
+	/**
+	 * The viewport cut out of the station's window while FTL sits in it (heromedel, 5.37): if FTL slips behind the
+	 * station, it shows through, and clicks there reach it. Closed whenever FTL isn't shown there, so the desktop never
+	 * shows through. Not in the attached way, where FTL stays over the station by itself.
+	 */
+	private static void cut(boolean open) {
+		if (station == null || attachedRun) return;
+		boolean want = open && window != null && shown && where != null;
+		try { Win.cut(station, want ? where : null); }
+		catch (Throwable t) { log.debug("FTL docked: could not {} the station's window: {}", want ? "cut the viewport out of" : "close the viewport in", t.toString()); }
 	}
 	/** Shows it in its viewport (back at the Space Dock) or hides it (another screen); FTL keeps running either way. */
 	public static void show(boolean visible) {
@@ -182,6 +225,7 @@ public final class FtlDock {
 			if (visible) { Win.show(window, true); if (where != null) Win.place(window, where); }
 			else Win.show(window, false);
 		} catch (Throwable t) { log.debug("FTL docked: could not {} its window: {}", visible ? "show" : "hide", t.toString()); }
+		cut(visible);
 	}
 
 	/** Windows' own calls, through JNA: loaded only when docking runs on Windows. */
@@ -198,11 +242,19 @@ public final class FtlDock {
 			boolean SetWindowPos(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer after, int x, int y, int w, int h, int flags);
 			boolean ShowWindow(com.sun.jna.Pointer hwnd, int cmd);
 			boolean SetForegroundWindow(com.sun.jna.Pointer hwnd);
+			int SetWindowRgn(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer region, boolean redraw);
+			int GetWindowThreadProcessId(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer pid);
+			boolean AttachThreadInput(int attach, int to, boolean on);
 			boolean GetWindowRect(com.sun.jna.Pointer hwnd, int[] rect); // left, top, right, bottom
 			com.sun.jna.Pointer MonitorFromWindow(com.sun.jna.Pointer hwnd, int flags);
 			boolean GetMonitorInfoW(com.sun.jna.Pointer monitor, int[] info); // cbSize, monitor rect (4), work rect (4), flags
 		}
-		static final int GWL_STYLE = -16;
+		static final int GWL_STYLE = -16, GWLP_HWNDPARENT = -8;
+		/** SetWindowLongPtrW exists only in 64-bit user32 (in 32-bit, SetWindowLongW does the same). */
+		interface User32x64 extends com.sun.jna.win32.StdCallLibrary {
+			User32x64 I = com.sun.jna.Native.POINTER_SIZE == 8 ? com.sun.jna.Native.load("user32", User32x64.class) : null;
+			com.sun.jna.Pointer SetWindowLongPtrW(com.sun.jna.Pointer hwnd, int index, com.sun.jna.Pointer value);
+		}
 		static final int WS_CAPTION = 0x00C00000, WS_THICKFRAME = 0x00040000, WS_SYSMENU = 0x00080000, WS_MINIMIZEBOX = 0x00020000, WS_MAXIMIZEBOX = 0x00010000;
 		static final int SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOACTIVATE = 0x0010, SWP_FRAMECHANGED = 0x0020, SWP_SHOWWINDOW = 0x0040, SWP_NOZORDER = 0x0004;
 		static final int SW_HIDE = 0, SW_SHOWNOACTIVATE = 4, SW_SHOW = 5;
@@ -241,6 +293,46 @@ public final class FtlDock {
 		}
 		static void raise(Object w) {
 			User32.I.SetWindowPos((com.sun.jna.Pointer) w, null, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // HWND_TOP
+		}
+		/**
+		 * FTL's window owned by the station's (it stays over it; the station's popups come over both), then the two
+		 * programs' input taken apart again: owning links their input (one cursor, one queue), which hid the pointer
+		 * and slowed FTL's loading in 5.29. What Windows did is returned, for the log.
+		 */
+		static String own(Object w, java.awt.Window station) {
+			com.sun.jna.Pointer hwnd = (com.sun.jna.Pointer) w, owner = com.sun.jna.Native.getComponentPointer(station);
+			if (owner == null) return "the station's window has no handle yet: not attached";
+			if (User32x64.I != null) User32x64.I.SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, owner);
+			else User32.I.SetWindowLongW(hwnd, GWLP_HWNDPARENT, (int) com.sun.jna.Pointer.nativeValue(owner));
+			int ftlThread = User32.I.GetWindowThreadProcessId(hwnd, null), stationThread = User32.I.GetWindowThreadProcessId(owner, null);
+			boolean apart = User32.I.AttachThreadInput(ftlThread, stationThread, false);
+			return "owned by the station's window; input kept apart: " + (apart ? "yes" : "no (Windows refused, or they weren't linked)");
+		}
+		interface Gdi32 extends com.sun.jna.win32.StdCallLibrary {
+			Gdi32 I = com.sun.jna.Native.load("gdi32", Gdi32.class);
+			com.sun.jna.Pointer CreateRectRgn(int left, int top, int right, int bottom);
+			int CombineRgn(com.sun.jna.Pointer dest, com.sun.jna.Pointer a, com.sun.jna.Pointer b, int mode);
+			boolean DeleteObject(com.sun.jna.Pointer object);
+		}
+		static final int RGN_DIFF = 4;
+		/** The station's window with a screen rectangle cut out of it, or whole again (null). */
+		static void cut(java.awt.Window station, Rectangle hole) {
+			com.sun.jna.Pointer hwnd = com.sun.jna.Native.getComponentPointer(station);
+			if (hwnd == null) return;
+			if (hole == null) { User32.I.SetWindowRgn(hwnd, null, true); return; }
+			double scale = 1;
+			try { scale = station.getGraphicsConfiguration().getDefaultTransform().getScaleX(); } catch (Exception e) { }
+			java.awt.Point at = station.getLocationOnScreen();
+			com.sun.jna.Pointer all = Gdi32.I.CreateRectRgn(0, 0, (int) Math.round(station.getWidth() * scale), (int) Math.round(station.getHeight() * scale));
+			com.sun.jna.Pointer gap = Gdi32.I.CreateRectRgn((int) Math.round((hole.x - at.x) * scale), (int) Math.round((hole.y - at.y) * scale),
+					(int) Math.round((hole.x + hole.width - at.x) * scale), (int) Math.round((hole.y + hole.height - at.y) * scale));
+			Gdi32.I.CombineRgn(all, all, gap, RGN_DIFF);
+			Gdi32.I.DeleteObject(gap);
+			User32.I.SetWindowRgn(hwnd, all, true); // Windows keeps the region from here on
+		}
+		static boolean under(java.awt.Window station, Object w) {
+			com.sun.jna.Pointer mine = com.sun.jna.Native.getComponentPointer(station);
+			return mine != null && User32.I.SetWindowPos(mine, (com.sun.jna.Pointer) w, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // just after FTL's in the order: under it
 		}
 		static void focus(Object w) {
 			com.sun.jna.Pointer h = (com.sun.jna.Pointer) w;

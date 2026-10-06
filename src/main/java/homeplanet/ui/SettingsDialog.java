@@ -39,6 +39,7 @@ public class SettingsDialog extends JDialog {
 	/** heromedel's words (5.29): FTL docked in the station window, Windows only. */
 	private final JCheckBox dockBox = new JCheckBox("Option to Play FTL, docked in the station window, at", homeplanet.core.FtlDock.optionOn());
 	private final javax.swing.JComboBox<String> dockSize = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.SIZES);
+	private final javax.swing.JComboBox<String> dockHow = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.HOW);
 	private final RuleBoxes rules = new RuleBoxes();
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging", HomePlanet.debugLogging);
@@ -168,13 +169,23 @@ public class SettingsDialog extends JDialog {
 		body.add(cloud, next(c));
 		if (homeplanet.core.FtlDock.supported()) {
 			JPanel dockRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-			dockBox.setToolTipText("<html>Adds an icon beside Launch FTL on the Space Dock: FTL plays in a frame in the station's window,"
+			dockBox.setToolTipText("<html><font color='" + MenuTheme.HTML_ORANGE + "'>(Experimental)</font> Adds an icon beside Launch FTL on the Space Dock: FTL plays in a frame in the station's window,"
 					+ "<br>with the inbox, the reputation and the station's buttons beside it. FTL is set to windowed for it.</html>");
 			dockSize.setSelectedItem(HomePlanet.config.getProperty(homeplanet.core.FtlDock.CFG_SIZE, homeplanet.core.FtlDock.SIZES[0]));
 			dockSize.setToolTipText("FTL's size in the frame (the station's window grows to hold it, if the screen has room)");
 			dockRow.add(dockBox);
 			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
 			dockRow.add(dockSize);
+			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
+			dockHow.setSelectedIndex(homeplanet.core.FtlDock.attachedChosen() ? 1 : 0);
+			dockHow.setToolTipText("<html>As its own window: FTL kept over the station's window by the station.<br>"
+					+ "Attached (testing): FTL's window belongs to the station's, so it stays over it and the station's popups come over both.</html>");
+			dockRow.add(dockHow);
+			dockRow.add(javax.swing.Box.createHorizontalStrut(8));
+			JLabel experimental = new JLabel("(Experimental)"); // heromedel, 5.38
+			experimental.setForeground(MenuTheme.ORANGE);
+			experimental.setToolTipText(dockBox.getToolTipText());
+			dockRow.add(experimental);
 			body.add(dockRow, next(c));
 		}
 
@@ -389,6 +400,7 @@ public class SettingsDialog extends JDialog {
 		if (steamBox.isSelected() != HomePlanet.launchThroughSteam) changed.add("Launch through Steam: " + steamBox.isSelected());
 		boolean dockWas = homeplanet.core.FtlDock.optionOn();
 		if (homeplanet.core.FtlDock.supported() && dockBox.isSelected() != dockWas) changed.add("Option to Play FTL, docked: " + dockBox.isSelected());
+		if (homeplanet.core.FtlDock.supported() && (dockHow.getSelectedIndex() == 1) != homeplanet.core.FtlDock.attachedChosen()) changed.add("FTL docked " + dockHow.getSelectedItem());
 		rules.describeChanges(changed);
 		if (!victoryChoice().equals(victoryWas)) changed.add("After a final victory: " + victoryChoice());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
@@ -412,6 +424,7 @@ public class SettingsDialog extends JDialog {
 		if (homeplanet.core.FtlDock.supported()) {
 			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_ON, Boolean.toString(dockBox.isSelected()));
 			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_SIZE, (String) dockSize.getSelectedItem());
+			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_ATTACHED, Boolean.toString(dockHow.getSelectedIndex() == 1));
 			if (dockWas && !dockBox.isSelected()) { // FTL's own fullscreen setting back, unless the player has changed it since
 				try { homeplanet.core.FtlDock.restoreSettings(); }
 				catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not put FTL's fullscreen setting back in its settings.ini:\n" + e.getMessage()); }
