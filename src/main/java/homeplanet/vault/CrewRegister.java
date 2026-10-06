@@ -52,7 +52,7 @@ public final class CrewRegister {
 		public final List<Event> events = new ArrayList<Event>();
 		/** Their whole record as last seen (skills, masteries, service, looks): to draw and describe them, gone or not. */
 		final Map<String, String> rec = new LinkedHashMap<String, String>();
-		/** The ships they served on, in order. */
+		/** The ships they served on, in order: each her name now, then the names she had before, oldest first, tab-separated (5.51; see {@link #shipOf}, {@link #formerNames}). */
 		public final List<String> served = new ArrayList<String>();
 		Member(int id) { this.id = id; }
 		/** Them as last seen, as FTL's crew record (for their portrait and skills), or null if none is known. */
@@ -86,6 +86,18 @@ public final class CrewRegister {
 	// ---- reading and writing crew.txt ----
 
 	static File file(Vault v) { return new File(v.root, FILE); }
+
+	/** A ship in a member's {@link Member#served} list: her name now. */
+	public static String shipOf(String entry) { int t = entry.indexOf('\t'); return t < 0 ? entry : entry.substring(0, t); }
+	/** The names she had before, oldest first (empty if never renamed). */
+	public static List<String> formerNames(String entry) {
+		List<String> out = new ArrayList<String>();
+		String[] w = entry.split("\t");
+		for (int i = 1; i < w.length; i++) if (!w[i].isEmpty()) out.add(w[i]);
+		return out;
+	}
+	/** The ships served on, as kept: 2 since 5.51 (voyage logs and trades read, a renamed ship once); older lists are rebuilt once. */
+	private static final int SERVED_VERSION = 2;
 
 	/** The register as it stands (empty if there's none yet). */
 	public static synchronized List<Member> members(Vault v) {
@@ -134,11 +146,11 @@ public final class CrewRegister {
 		Properties p = new Properties();
 		File f = file(v);
 		if (f.isFile()) { try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); } catch (IOException e) { /* none: from the start */ } }
-		return new int[] {intOf(p, "seen.hist", 0), intOf(p, "seen.master", 0)};
+		return new int[] {intOf(p, "seen.hist", 0), intOf(p, "seen.master", 0), intOf(p, "served.v", 1)};
 	}
 	private static void write(Vault v, List<Member> members, int histLen, int masterLen) throws IOException {
 		StringBuilder sb = new StringBuilder("# ").append(NOTE).append("\n");
-		sb.append("seen.hist=").append(histLen).append("\nseen.master=").append(masterLen).append("\n");
+		sb.append("seen.hist=").append(histLen).append("\nseen.master=").append(masterLen).append("\nserved.v=").append(SERVED_VERSION).append("\n");
 		int next = 1;
 		for (Member m : members) next = Math.max(next, m.id + 1);
 		sb.append("next=").append(next).append("\n");
@@ -222,7 +234,7 @@ public final class CrewRegister {
 			m.name = x.name; m.status = now; m.place = x.place; m.where = x.where; m.tints = x.tints; m.record = x.record;
 			if (!x.title.isEmpty()) m.title = x.title;
 			if (x.fields != null && !x.fields.equals(m.rec)) { m.rec.clear(); m.rec.putAll(x.fields); changed = true; }
-			if (x.place.startsWith("ship:") && !x.ship.isEmpty() && (m.served.isEmpty() || !m.served.get(m.served.size() - 1).equals(x.ship))) { m.served.add(x.ship); changed = true; }
+			if (x.place.startsWith("ship:") && !x.ship.isEmpty() && (m.served.isEmpty() || !shipOf(m.served.get(m.served.size() - 1)).equals(x.ship))) { m.served.add(x.ship); changed = true; }
 			m.histPos = histLen; m.masterPos = masterLen;
 		}
 
@@ -241,9 +253,16 @@ public final class CrewRegister {
 		}
 
 		if (fresh) {
+			Map<Member, List<String>> now = new LinkedHashMap<Member, List<String>>(); // the ship they're aboard comes after those the logs tell of
+			for (Member m : members) { now.put(m, new ArrayList<String>(m.served)); m.served.clear(); }
 			backfill(v, members);
+			for (Map.Entry<Member, List<String>> e : now.entrySet()) for (String sh : e.getValue()) servedOn(e.getKey(), sh);
 			for (Member m : members) if (m.events.isEmpty() && m.status == Status.PRESENT) m.events.add(new Event(today, "On the station's records from this day, " + m.where + "."));
+		} else if (seen[2] < SERVED_VERSION) {
+			rebuildServed(v, hist, members);
+			changed = true;
 		}
+		if (renamedShips(v, hist, members)) changed = true;
 		for (Member m : members) if (m.rec.isEmpty() && invent(m)) changed = true;
 		if (changed || seen[0] != histLen || seen[1] != masterLen) write(v, members, histLen, masterLen);
 	}
@@ -507,18 +526,46 @@ public final class CrewRegister {
 			out.add(new String[] {Integer.toString(day), w[3], whole.split("\n", 2)[0], whole});
 		}
 		// the station log from before the master log began (its lines are stamped to the minute; the master's to the second)
-		List<String[]> older = new ArrayList<String[]>();
-		String kindLine = null; StringBuilder whole = null;
+		final String before = firstReal == null ? null : firstReal.substring(0, Math.min(16, firstReal.length()));
+		List<Object[]> older = new ArrayList<Object[]>(); // {stamp, entry}
+		String kindLine = null, stamp = null; StringBuilder whole = null;
 		for (String l : (text(v.historyLog()) + "\n").split("\r?\n")) {
 			boolean detail = l.startsWith("  ");
-			if (!detail && kindLine != null) { older.add(new String[] {"0", "station", kindLine, whole.toString()}); kindLine = null; }
+			if (!detail && kindLine != null) { older.add(new Object[] {stamp, new String[] {"0", "station", kindLine, whole.toString()}}); kindLine = null; }
 			if (detail) { if (whole != null) whole.append("\n").append(l); continue; }
-			if (l.length() < 18 || (firstReal != null && l.substring(0, 16).compareTo(firstReal.substring(0, Math.min(16, firstReal.length()))) >= 0)) continue;
+			whole = null;
+			if (l.length() < 18 || (before != null && l.substring(0, 16).compareTo(before) >= 0)) continue;
+			stamp = l.substring(0, 16);
 			kindLine = l.substring(16).trim();
 			whole = new StringBuilder(kindLine);
 		}
-		older.addAll(out);
-		return older;
+		// and each ship's voyage log from before it began: who joined her and who was lost; the master log has the rest (5.51)
+		File[] dirs = v.historyDir().listFiles();
+		if (dirs != null) for (File d : dirs) {
+			File f = new File(d, "voyage.log");
+			if (!f.isFile()) continue;
+			String ship = shipNamed(v, d);
+			if (ship == null) continue;
+			for (String l : text(f).split("\r?\n")) {
+				if (l.length() < 18 || (before != null && l.substring(0, 16).compareTo(before) >= 0)) continue;
+				String line = l.substring(16).trim();
+				if (line.startsWith("Crew joined: ") || line.startsWith("Crew lost: ")) older.add(new Object[] {l.substring(0, 16), new String[] {"0", "voyage: " + ship, line, line}});
+			}
+		}
+		Collections.sort(older, new Comparator<Object[]>() { public int compare(Object[] a, Object[] b) { return ((String) a[0]).compareTo((String) b[0]); } }); // stable: a minute's lines keep their order
+		List<String[]> all = new ArrayList<String[]>();
+		for (Object[] o : older) all.add((String[]) o[1]);
+		all.addAll(out);
+		return all;
+	}
+	/** A ship's name from her history folder: hers in the fleet now, else the one her fate was written under; null if neither. */
+	private static String shipNamed(Vault v, File dir) {
+		Ship s = v.byId(dir.getName());
+		if (s != null) return s.name;
+		File fate = new File(dir, "fate.txt");
+		if (!fate.isFile()) return null;
+		String[] w = text(fate).split("\r?\n");
+		return w.length > 1 && !w[1].trim().isEmpty() ? w[1].trim() : null;
 	}
 	private static List<Member> whoever(String name, String race, Map<String, List<Member>> byName, Map<String, String> renamedFrom, List<Member> members, Status ifNew) {
 		String now = name;
@@ -565,6 +612,36 @@ public final class CrewRegister {
 		} else if (head.startsWith("RENAME CREW")) {
 			String[] w = head.substring(11).trim().replaceAll("\\s+\\(.*$", "").split(" -> ", 2);
 			if (w.length == 2) for (Member m : whoever(w[1].trim(), null, byName, renamedFrom, members, null)) m.events.add(new Event(day, "Now known as " + w[1].trim() + " (was " + w[0].trim() + ")."));
+		} else if (head.startsWith("TRADE  ")) { // a Cargo Bay trade: who left a ship, then who came aboard one (5.51)
+			List<String[]> off = new ArrayList<String[]>(), on = new ArrayList<String[]>();
+			String ship = null;
+			String[] lines = whole.split("\n");
+			for (int i = 1; i < lines.length; i++) {
+				String l = lines[i].trim();
+				if (l.endsWith(":") && !l.startsWith("- ") && !l.startsWith("+ ")) { ship = l.substring(0, l.length() - 1).trim(); continue; }
+				if (ship == null || ship.equals(HOLD_NAME)) continue; // the Cargo Hold is no ship
+				if (l.startsWith("- Crew ")) off.add(new String[] {ship, l.substring(7)});
+				else if (l.startsWith("+ Crew ")) on.add(new String[] {ship, l.substring(7)});
+			}
+			off.addAll(on);
+			for (String[] w : off) { // a trade names no race: only a name one member alone has
+				List<Member> l = whoever(w[1], null, byName, renamedFrom, members, null);
+				if (l.size() == 1) servedOn(l.get(0), w[0]);
+			}
+		} else if (head.startsWith("COMMISSION  ")) { // her starting crew, named since 5.51
+			String ship = head.substring(12).replaceAll("\\s+\\([0-9a-f]+\\)\\s*$", "").trim();
+			for (String l : whole.split("\n")) {
+				l = l.trim();
+				if (!l.startsWith("Crew: ")) continue;
+				for (String one : l.substring(6).split(", ")) {
+					java.util.regex.Matcher r = java.util.regex.Pattern.compile("^\\s*(.+?) \\((\\w[\\w ]*)\\)").matcher(one);
+					if (!r.find()) continue;
+					List<Member> l2 = ofRace(whoever(r.group(1), r.group(2), byName, renamedFrom, members, null), r.group(2));
+					if (l2.size() != 1) continue;
+					l2.get(0).events.add(new Event(day, "Came aboard " + the(ship) + ", newly commissioned."));
+					servedOn(l2.get(0), ship);
+				}
+			}
 		} else if (head.startsWith("RETIRE")) {
 			String[] lines = whole.split("\n");
 			for (int i = 1; i < lines.length; i++) { // its detail lines (indented in the station log, not in the master log's copy)
@@ -581,7 +658,9 @@ public final class CrewRegister {
 				java.util.regex.Matcher r = java.util.regex.Pattern.compile("^\\s*(.+?) \\((\\w[\\w ]*)\\)").matcher(one);
 				if (!r.find()) continue;
 				boolean lost = kind[0].startsWith("Crew lost");
-				for (Member m : whoever(r.group(1), r.group(2), byName, renamedFrom, members, lost ? Status.KILLED : null)) {
+				List<Member> who = whoever(r.group(1), r.group(2), byName, renamedFrom, members, lost ? Status.KILLED : null);
+				if (!lost && !ofRace(who, r.group(2)).isEmpty()) who = ofRace(who, r.group(2)); // a namesake of another race never joined her
+				for (Member m : who) {
 					m.events.add(new Event(day, kind[1]));
 					servedOn(m, ship);
 					if (lost && m.status != Status.PRESENT && m.status != Status.CAPTIVE) m.where = "lost aboard " + the(ship);
@@ -591,7 +670,95 @@ public final class CrewRegister {
 	}
 
 	/** A ship to the end of their list of ships, once in a row. */
-	private static void servedOn(Member m, String ship) { if (m.served.isEmpty() || !m.served.get(m.served.size() - 1).equals(ship)) m.served.add(ship); }
+	private static void servedOn(Member m, String ship) { if (m.served.isEmpty() || !shipOf(m.served.get(m.served.size() - 1)).equals(shipOf(ship))) m.served.add(ship); }
+	/** Those of this race, by FTL's title for it or its id. */
+	private static List<Member> ofRace(List<Member> l, String race) {
+		List<Member> out = new ArrayList<Member>();
+		for (Member m : l) if (race.equalsIgnoreCase(m.raceTitle()) || race.equalsIgnoreCase(m.race)) out.add(m);
+		return out;
+	}
+	private static final String HOLD_NAME = "Spacedock Storage";
+
+	/**
+	 * A register from before 5.51: everyone's ships read again from the logs (the voyage logs and trades too), then any
+	 * ship only the register knew, then the one they're aboard now. Only the ships: their careers stay as written.
+	 */
+	private static void rebuildServed(Vault v, String hist, List<Member> members) {
+		List<Member> copies = new ArrayList<Member>();
+		for (Member m : members) {
+			Member c = new Member(m.id);
+			c.name = m.name; c.race = m.race; c.title = m.title; c.male = m.male; c.status = m.status;
+			copies.add(c);
+		}
+		backfill(v, copies); // on copies: their events, and anyone the logs alone know of, are let go
+		renamedShips(v, hist, copies);
+		for (int i = 0; i < members.size(); i++) {
+			Member m = members.get(i);
+			List<String> was = new ArrayList<String>(m.served);
+			m.served.clear();
+			for (String sh : copies.get(i).served) servedOn(m, sh);
+			Ship s = m.status == Status.PRESENT && m.place.startsWith("ship:") ? v.byId(m.place.substring(5)) : null;
+			if (s != null && !m.served.isEmpty() && shipOf(m.served.get(m.served.size() - 1)).equals(s.name)) m.served.remove(m.served.size() - 1); // hers comes last
+			for (String sh : was) {
+				boolean known = s != null && shipOf(sh).equals(s.name);
+				for (String k : m.served) if (shipOf(k).equals(shipOf(sh)) || formerNames(k).contains(shipOf(sh))) known = true;
+				if (!known) servedOn(m, sh);
+			}
+			if (s != null) servedOn(m, s.name);
+		}
+	}
+
+	/**
+	 * A ship renamed (the station log's RENAME, with her id) is one ship: in every list she's kept once, under her name
+	 * now, with the names she had before. A name another ship has now, or more than one renamed ship had, is left alone.
+	 */
+	private static boolean renamedShips(Vault v, String hist, List<Member> members) {
+		Map<String, List<String>> names = new LinkedHashMap<String, List<String>>(); // id -> her names, oldest first
+		java.util.regex.Pattern p = java.util.regex.Pattern.compile("^\\S+ \\S+  RENAME  (.+?) -> (.+?)  \\(([0-9a-f]+)\\)\\s*$");
+		for (String l : hist.split("\r?\n")) {
+			java.util.regex.Matcher x = p.matcher(l);
+			if (!x.find()) continue;
+			List<String> n = names.get(x.group(3));
+			if (n == null) names.put(x.group(3), n = new ArrayList<String>());
+			if (n.isEmpty()) n.add(x.group(1).trim());
+			n.remove(x.group(2).trim()); // renamed back: her latest use of a name counts
+			n.add(x.group(2).trim());
+		}
+		if (names.isEmpty()) return false;
+		Map<String, String> shipOfName = new LinkedHashMap<String, String>(); // a name -> the one ship that had it
+		java.util.Set<String> shared = new java.util.HashSet<String>();
+		for (Map.Entry<String, List<String>> e : names.entrySet()) for (String n : e.getValue()) { if (shipOfName.containsKey(n) && !shipOfName.get(n).equals(e.getKey())) shared.add(n); shipOfName.put(n, e.getKey()); }
+		for (Ship s : v.all()) if (shipOfName.containsKey(s.name) && !shipOfName.get(s.name).equals(s.id)) shared.add(s.name);
+		boolean changed = false;
+		for (Member m : members) {
+			List<String> now = new ArrayList<String>();
+			for (String entry : m.served) {
+				String id = shared.contains(shipOf(entry)) ? null : shipOfName.get(shipOf(entry));
+				if (id != null) {
+					List<String> n = names.get(id);
+					String latest = n.get(n.size() - 1);
+					java.util.LinkedHashSet<String> before = new java.util.LinkedHashSet<String>();
+					for (String f : formerNames(entry)) if (!n.contains(f)) before.add(f);
+					before.addAll(n.subList(0, n.size() - 1));
+					before.remove(latest);
+					entry = joinNames(latest, before);
+				}
+				if (!now.isEmpty() && shipOf(now.get(now.size() - 1)).equals(shipOf(entry))) { // the same ship twice in a row: once, with all her names
+					java.util.LinkedHashSet<String> f = new java.util.LinkedHashSet<String>(formerNames(now.remove(now.size() - 1)));
+					f.addAll(formerNames(entry));
+					entry = joinNames(shipOf(entry), f);
+				}
+				now.add(entry);
+			}
+			if (!now.equals(m.served)) { m.served.clear(); m.served.addAll(now); changed = true; }
+		}
+		return changed;
+	}
+	private static String joinNames(String now, java.util.Collection<String> before) {
+		StringBuilder sb = new StringBuilder(now);
+		for (String f : before) sb.append('\t').append(f);
+		return sb.toString();
+	}
 	/**
 	 * Crew known only from the old logs get a look as a new volunteer of their race would (heromedel, 5.41), rolled from
 	 * their id so it's always the same, and kept: their name, their race, no skills known.
