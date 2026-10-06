@@ -226,7 +226,7 @@ public class CommissionDialog extends JDialog {
 				unlocks = null;
 			}
 			int hidden = 0;
-			if (HomePlanet.immersiveMode) rank = homeplanet.parser.UnlockGrants.rank(unlocks != null ? unlocks : homeplanet.parser.Unlocks.read());
+			if (HomePlanet.immersiveMode) rank = homeplanet.parser.Clearance.rank();
 			if (HomePlanet.commissionCosts() && HomePlanet.unlockFreeShips()) {
 				homeplanet.parser.Unlocks u = unlocks != null ? unlocks : homeplanet.parser.Unlocks.read();
 				for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
@@ -302,9 +302,9 @@ public class CommissionDialog extends JDialog {
 		}
 		String rankNote(String bpId) {
 			if (rankReason(bpId) == null) return "";
-			if (homeplanet.parser.Clearance.customReason() != null) return " (Captains only)";
+			if (homeplanet.parser.Clearance.customReason() != null) return " (Commodores only)";
 			String w = Commission.artilleryWeapon(bpId);
-			return w != null && w.startsWith("ARTILLERY_FED") ? " (Commodores only)" : " (needs Rule Ten: Greed is Eternal)";
+			return w != null && w.startsWith("ARTILLERY_FED") ? " (Admirals only)" : " (needs Rule Ten: Greed is Eternal)";
 		}
 	}
 

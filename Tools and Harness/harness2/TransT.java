@@ -134,7 +134,10 @@ public class TransT { public static void main(String[] a) throws Exception {
   Transmissions.check();
   Transmissions.Message order = find("order:PLAYER_SHIP_MANTIS 0"), promo = find("promo:1");
   Setup.chk("T: a new unlock brings a commission order", order != null && order.body.contains("Mantis") && order.isOrder());
-  Setup.chk("T: the Federation Cruiser A brings a promotion, not an order", promo != null && find("order:PLAYER_SHIP_FED 0") == null && UnlockGrants.rank(Unlocks.read()) == 1);
+  Setup.chk("T: Ranks From Rep (5.56): the Federation Cruiser A brings an order like any ship's, and no promotion", promo == null && find("order:PLAYER_SHIP_FED 0") != null && PlayerRank.rank(Unlocks.read()) == 0);
+  Reputation.total(Vault.get()); int repNow = Reputation.total(Vault.get()); // (the first look reviews the service)
+  int cruiserRep = 0; for (String l : Reputation.recent(Vault.get(), 30)) if (l.contains("Federation Cruiser, Type A unlocked (+100)")) cruiserRep++;
+  Setup.chk("T: and +100 reputation, once", cruiserRep == 1 && Reputation.total(Vault.get()) == repNow);
   // a Type B (two of her achievements): the shared letter (her makers open the next model), not her Type A's story
   profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_FED", "PLAYER_SHIP_ENERGY"}, new String[] {"ACH_SECTOR_5", "ACH_TOUGH_SHIP", "ACH_NO_BUYING", "ACH_MANTIS_SLAUGHTER", "ACH_NO_UPGRADES", "ACH_ENERGY_SHIELDS", "ACH_ENERGY_POWER"});
   Transmissions.check();
@@ -142,7 +145,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("T: the Zoltan Cruiser A's order tells the Council's story; her Type B's is the Zoltan's second letter, following on and naming her", zoltanA != null && zoltanA.body.contains("Your restraint among the Zoltan")
     && zoltanB != null && zoltanB.body.contains("has spoken of you again") && zoltanB.body.contains("with the Zoltan Cruiser") && !zoltanB.body.contains("Your restraint") && !zoltanB.body.contains("{") && zoltanB.subject.contains("Type B"));
   Transmissions.Message tough = find("ach:ACH_TOUGH_SHIP");
-  Setup.chk("T: a new achievement brings its reward, addressed to the new rank", tough != null && tough.hasReward() && tough.body.startsWith("Captain,"));
+  Setup.chk("T: a new achievement brings its reward, addressed by rank", tough != null && tough.hasReward() && tough.body.startsWith(Transmissions.rank() + ","));
   Vault v = Vault.get();
   Transmissions.claim(tough, -1);
   Setup.chk("T: claimed: Rock Plating in Spacedock Storage", v.storage().save().getPlayerShip().getAugmentIdList().contains("ROCK_ARMOR"));
@@ -180,9 +183,9 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("A: an archived transmission leaves the inbox, and is kept", find("welcome").archived && Transmissions.unread() <= unread);
   Transmissions.setArchived(find("welcome"), false);
   Setup.chk("A: and can come back", !find("welcome").archived);
-  // rank 1 (Captain) from the test above: custom ships yes, the Federation's artillery not yet
-  Setup.chk("C: a Captain may build custom ships", Clearance.customReason() == null);
-  Setup.chk("C: the Federation's artillery waits for a Commodore", Clearance.artilleryReason("ARTILLERY_FED") != null && Clearance.artilleryReason("ARTILLERY_FED_C") != null);
+  // the reputation ladder (heromedel, 5.56): a Major to start
+  Setup.chk("C: a Major: no remodels, custom ships or the Federation's artillery yet", PlayerRank.rank(Unlocks.read()) < PlayerRank.COMMANDER && Clearance.remodelReason() != null
+    && Clearance.customReason() != null && Clearance.customReason().contains("Commodores") && Clearance.artilleryReason("ARTILLERY_FED") != null);
   Setup.chk("C: the Flagship's weapons wait for Rule Ten", Clearance.artilleryReason("ARTILLERY_BOSS_1") != null);
   profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_FED"}, new String[] {"ACH_SECTOR_5", "ACH_TOUGH_SHIP", "ACH_NO_BUYING", "ACH_MANTIS_SLAUGHTER", "ACH_NO_UPGRADES", "ACH_SCRAP"});
   Transmissions.check();
@@ -219,6 +222,14 @@ public class TransT { public static void main(String[] a) throws Exception {
   int before = v.storageScrap();
   if (!Career.started(v.root)) Career.start(false, false);
   Setup.chk("S: a career begins with 25 scrap in Spacedock Storage", Career.started(v.root) && v.storageScrap() == before + 25);
+ // the reputation ladder climbed (heromedel, 5.56), now the career has begun
+   Reputation.expedition(v, "test standing", 10 * (PlayerRank.REP_STEPS[PlayerRank.COMMODORE] - Reputation.total(v)), 0, 0);
+  Transmissions.check();
+  Setup.chk("C: 2,500 reputation: Commodore, a letter for each step from the Fleet Admiralty [rank " + PlayerRank.rank(Unlocks.read()) + ", mode " + PlayerRank.mode() + ", rep " + Reputation.total(v) + ", from " + (find("rank:4") == null ? null : find("rank:4").from) + ", ladder " + (find("rank:ladder") != null) + ", 5 " + (find("rank:5") != null) + "]", PlayerRank.rank(Unlocks.read()) == PlayerRank.COMMODORE && find("rank:1") != null && find("rank:4") != null
+    && find("rank:5") == null && find("rank:4").from.equals("The Federation Home Planet Fleet Admiralty") && find("rank:ladder") == null);
+  Setup.chk("C: a Commodore may remodel and build custom ships", Clearance.remodelReason() == null && Clearance.customReason() == null);
+  Setup.chk("C: the Federation's artillery waits for an Admiral", Clearance.artilleryReason("ARTILLERY_FED") != null && Clearance.artilleryReason("ARTILLERY_FED_C") != null
+    && Clearance.artilleryReason("ARTILLERY_FED").contains("Admirals"));
   if (v.boarded() == null) { Ship n = v.adopt(Commission.build("PLAYER_SHIP_HARD", "Stipend Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(7))); v.board(n); }
   v.takeStock();
   Transmissions.check(); Transmissions.Message owed = find("stipend:"); if (owed != null) Transmissions.delete(owed); // anything owed already, paid first
@@ -233,7 +244,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("S: FTL's progress is counted in sectors and beacons", v.sectorsSeen() == sectors + 1);
   int scrap = v.storageScrap();
   int achievements = 5; // earned in Immersive Mode above: TOUGH_SHIP, NO_BUYING, MANTIS_SLAUGHTER, NO_UPGRADES, SCRAP
-  int each = Career.stipend(UnlockGrants.rank(Unlocks.read()), achievements);
+  int each = Career.stipend(PlayerRank.multiple(PlayerRank.rank(Unlocks.read())), achievements);
   Transmissions.check();
   Transmissions.Message m = find("stipend:");
   Setup.chk("S: " + jump + " beacons (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last " + 2 * Career.monthsPerStipend() + " months") && m.body.contains((2 * each) + " scrap") && ("scrap " + 2 * each).equals(m.reward));
@@ -253,7 +264,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("S: a stipend paid in before claims (no reward) can be deleted", Transmissions.deletable(old));
   Transmissions.delete(m);
   Setup.chk("S: a stipend's notice can be deleted", find("stipend:") == null);
-  Setup.chk("S: the stipend's formula (20 + achievements x rank multiple)", Career.stipend(0, 51) == 71 && Career.stipend(1, 51) == 122 && Career.stipend(2, 51) == 173);
+  Setup.chk("S: the stipend's formula (20 + achievements x rank multiple)", Career.stipend(1, 51) == 71 && Career.stipend(2, 51) == 122 && Career.stipend(3, 51) == 173 && Career.stipend(4, 51) == 224);
  }
  static void profiles(File saves) throws Exception {
   File normal = new File(saves, Vault.FOLDER), immersive = new File(saves, Vault.IMMERSIVE_FOLDER);

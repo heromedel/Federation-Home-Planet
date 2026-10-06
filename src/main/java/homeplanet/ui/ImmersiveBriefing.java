@@ -138,14 +138,18 @@ final class ImmersiveBriefing extends JDialog {
 				"Commissioning costs scrap from the Cargo Hold. With no ship left, commission one, sell a hull from the Junkyard, or plead for a new ship (Other...: paid for with the Cargo Hold, or answered for with your reputation).",
 				"Each ship you unlock in FTL from now on can be commissioned free, once. Locked ships can't be commissioned.",
 				"Fees and prices are set by the career's difficulty, chosen on the next page: a New Journey, taking systems off, missiles and drone parts sold. Stored systems sell at half their price.",
-				"Lost ships stay lost: no restoring earlier versions, and no recovering."));
-		p.add(section("Rank", "You start as a Commander.",
-				"Captain: design ships, remodel, overhaul, commission custom ships. " + oneLine(Clearance.HOW_CAPTAIN),
-				"Commodore: the Federation's artillery. " + oneLine(Clearance.HOW_COMMODORE),
+				"Lost ships stay lost: no restoring earlier versions, and no recovering (a ship FTL's New Game wrote over by accident may be offered back once)."));
+		p.add(section("Rank", "You start as a Major. Your rank rises with your reputation, and is never taken away.",
+				"Colonel, 250 reputation: a larger stipend.",
+				"Commander, 500: remodel your ships.",
+				"Captain, 1,000: a larger stipend.",
+				"Commodore, 2,500: design ships, overhaul deck plans, commission custom ships.",
+				"Admiral, 10,000: the Federation's artillery, and the largest stipend.",
+				"Each Federation Cruiser layout you unlock in FTL: +100 reputation.",
 				"The plans for the Rebel Flagship's weapons: earn Rule Ten: Greed is Eternal."));
 		p.add(section("Transmissions and the stipend", "An inbox on the Space Dock brings commission orders, promotions and a reward for each FTL achievement "
 				+ "earned from now on. Every one to three months (by difficulty), a stipend of " + Career.STIPEND_BASE
-				+ " scrap, plus 1 to 3 more for each achievement counted (by rank), is paid into the Cargo Hold."));
+				+ " scrap, plus 1 to 4 more for each achievement counted (by rank), is paid into the Cargo Hold."));
 		return p;
 	}
 

@@ -106,6 +106,7 @@ public final class Career {
 		p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen()));
 		if (rules != null) rules.write(p);
 		write(v.root, p);
+		PlayerRank.begin(v); // on the reputation ladder from the start: no letter about the ranks changing (5.56)
 		CareerRules.forget();
 		int scrap = rules != null ? rules.startingScrap() : STARTING_SCRAP;
 		v.depositToStorage(scrap);
@@ -125,9 +126,9 @@ public final class Career {
 		}
 		return n;
 	}
-	/** One month's stipend at this rank (0 Commander, 1 Captain, 2 Commodore): 20, plus (rank + 1) for each achievement counted. */
-	public static int stipend(int rank, int achievements) {
-		return STIPEND_BASE + achievements * (rank + 1);
+	/** One month's stipend: 20, plus the rank's multiple for each achievement counted ({@link PlayerRank#multiple}). */
+	public static int stipend(int multiple, int achievements) {
+		return STIPEND_BASE + achievements * multiple;
 	}
 	/** Stipends not yet paid (one every beaconsPerStipend beacons since the career began; "months" in the file, as the first rule counted them). */
 	static int unpaidMonths() {

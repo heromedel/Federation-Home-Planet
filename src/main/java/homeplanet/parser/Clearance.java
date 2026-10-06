@@ -3,29 +3,38 @@ package homeplanet.parser;
 import homeplanet.core.HomePlanet;
 
 /**
- * What the player's rank clears them for in Immersive Mode (outside it, everything is cleared): custom ships, remodels
- * and overhauls for Captains; the Federation's artillery for Commodores; the Rebel Flagship's weapons once "Rule Ten:
- * Greed is Eternal" is earned in Immersive Mode.
+ * What the player's rank clears them for in Immersive Mode (outside it, everything is cleared), on the reputation ladder
+ * (heromedel, 5.56): remodels for Commanders; designing, deck plan overhauls and custom ships for Commodores; the
+ * Federation's artillery for Admirals. The Rebel Flagship's weapons once "Rule Ten: Greed is Eternal" is earned in
+ * Immersive Mode (on a custom ship, so a Commodore's too). A career from before 5.56 keeps what its cruiser rank cleared.
  */
 public final class Clearance {
 	private Clearance() { }
 
-	/** The player's rank in Immersive Mode, or -1 outside it. */
+	/** The player's rank in Immersive Mode (always Ranks From Rep), or -1 outside it. */
 	public static int rank() {
-		return HomePlanet.immersiveMode ? UnlockGrants.rank(Unlocks.read()) : -1;
+		return HomePlanet.immersiveMode ? PlayerRank.rank(Unlocks.read()) : -1;
 	}
-	/** Why custom ships (commissioning, designing, remodels, overhauls) aren't cleared, or null if they are. */
+	private static boolean kept(String what) { return homeplanet.vault.Vault.isOpen() && PlayerRank.kept(homeplanet.vault.Vault.get(), what); }
+	/** How to reach a rank, with the reputation the player has now. */
+	public static String howTo(int r) {
+		String have = "";
+		try { if (homeplanet.vault.Vault.isOpen()) have = " You have " + homeplanet.vault.Reputation.total(homeplanet.vault.Vault.get()) + "."; } catch (RuntimeException e) { }
+		return "Promotion to " + PlayerRank.REP_RANKS[r] + ": reach " + String.format("%,d", PlayerRank.REP_STEPS[r]) + " reputation." + have;
+	}
+	/** Why remodels aren't cleared (Commanders and above), or null if they are. */
+	public static String remodelReason() {
+		int r = rank();
+		if (r < 0 || r >= PlayerRank.COMMANDER || kept("custom")) return null;
+		return "The Federation Home Planet clears remodels for Commanders and above. You are a " + PlayerRank.name(r) + ".\n\n" + howTo(PlayerRank.COMMANDER);
+	}
+	/** Why custom ships (designing, deck plan overhauls, commissioning them) aren't cleared (Commodores and above), or null if they are. */
 	public static String customReason() {
 		int r = rank();
-		if (r < 0 || r >= 1) return null;
-		return "The Federation Home Planet clears custom ships, remodels and overhauls for Captains and above. You are a " + UnlockGrants.rankName(r) + ".\n\n"
-				+ HOW_CAPTAIN;
+		if (r < 0 || r >= PlayerRank.COMMODORE || kept("custom")) return null;
+		return "The Federation Home Planet clears custom ships, designs and deck plan overhauls for Commodores and above. You are a " + PlayerRank.name(r) + ".\n\n"
+				+ howTo(PlayerRank.COMMODORE);
 	}
-	/** How to be promoted, as FTL unlocks the Federation Cruiser (from the FTL wiki; FTL keeps these conditions in the game itself). */
-	public static final String HOW_CAPTAIN = "Promotion to Captain: unlock the Federation Cruiser (Type A) in FTL. Win the fight at the Huge Rebel Shipyard\n"
-			+ "in a Rebel Stronghold sector, or win a game with the Engi Cruiser.";
-	public static final String HOW_COMMODORE = "Promotion to Commodore: unlock the Federation Cruiser Type C in FTL. Reach sector 8 with a Federation Cruiser,\n"
-			+ "with Advanced Edition content on.";
 
 	/** The Rebel Flagship's weapons: cleared by "Rule Ten: Greed is Eternal", earned in Immersive Mode. */
 	public static boolean flagshipCleared() {
@@ -37,7 +46,7 @@ public final class Clearance {
 		int r = rank();
 		if (r < 0 || weaponId == null) return null;
 		if (weaponId.startsWith("ARTILLERY_FED")) {
-			return r >= 2 ? null : "The Federation's artillery is cleared for Commodores. You are a " + UnlockGrants.rankName(r) + ".\n\n" + (r < 1 ? HOW_CAPTAIN + "\n" : "") + HOW_COMMODORE;
+			return r >= PlayerRank.ADMIRAL || kept("artillery") ? null : "The Federation's artillery is cleared for Admirals. You are a " + PlayerRank.name(r) + ".\n\n" + howTo(PlayerRank.ADMIRAL);
 		}
 		return flagshipCleared() ? null : "The plans for the Rebel Flagship's weapons are released once you earn the achievement \"Rule Ten: Greed is Eternal\" in Immersive Mode:\n"
 				+ "collect 10,000 scrap across all your FTL games.";

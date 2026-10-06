@@ -177,13 +177,20 @@ ship pays, and Save makes it official (Reset undoes it).
   - Immersive Mode asks: **Send her to the normal Space Dock** / **Decommission her** (then: send to the normal
     Junkyard, or Destroy, which keeps a copy in her records) / **Switch to normal mode now** / **Close The Home
     Planet Station**.
-- **Rank** (Immersive vault only): Commander at the start; Captain when the Federation Cruiser A unlocks; Commodore
-  when the Federation Cruiser C unlocks. Each unlock raises one rank, whatever the order. Only unlocks after
-  Immersive Mode is on count.
-- **Locks by rank** (Immersive Mode): locked standard ships are hidden (as the lock rule does); **Captains** may
-  design ships, remodel and overhaul, and commission custom ships; **Commodores** may fit the Federation's artillery
-  (Artillery Beam, Flak Artillery); the **Rebel Flagship's weapons** as artillery are cleared by "Rule Ten: Greed is
-  Eternal" earned in Immersive Mode. Marked in Commission and the artillery picker with the reason.
+- **Rank** (heromedel, 5.56; before it, Commander, Captain and Commodore by the Federation Cruiser A and C unlocks): a
+  setting, **Ranks From Rep** (the default; Immersive Mode is locked to it; tooltip "Requires Reputation to be turned on.")
+  / **Ranks From Cruiser** (the old rule) / **No Ranks** (everything cleared, the stipend at x1). The reputation ladder: Major
+  at the start; Colonel 250 (stipend x2); Commander 500 (remodels); Captain 1,000 (x3); Commodore 2,500 (designs, deck plan
+  overhauls, custom ships); Admiral 10,000 (the Federation's artillery, x4); Major x1, Commander x2, Commodore x3. A rank is
+  never lost. Each promotion is a letter from The Federation Home Planet Fleet Admiralty. Each Federation Cruiser layout
+  (A, B, C) unlocked in the career's service gives +100 reputation, once. A career from before 5.56 is checked once: the
+  higher of its reputation's rank and its cruiser rank (Captain or Commodore), any clearance it held kept, and one letter
+  (rank:ladder). `parser/PlayerRank`, `Clearance`; harness RankT, TransT.
+- **Locks by rank** (Immersive Mode): locked standard ships are hidden (as the lock rule does); **Commanders** may
+  remodel; **Commodores** may design ships, overhaul deck plans and commission custom ships (and so fit the Rebel
+  Flagship's weapons as artillery, cleared by "Rule Ten: Greed is Eternal" earned in Immersive Mode); **Admirals** may fit
+  the Federation's artillery (Artillery Beam, Flak Artillery). Marked in Commission, Remodel and the artillery picker with
+  the reason and the reputation needed.
 - **Artillery prices (HR2), a luxury:** the Artillery Beam 200 scrap, Flak Artillery 150, each Rebel Flagship weapon 100.
 - **Unlock-once free ships:** Immersive Mode turns this rule on and locks it, with the two "locked ships" rules.
 - As built: the rank shows in the Space Dock's "Docked Ships" header; the rank record lives with the unlock record

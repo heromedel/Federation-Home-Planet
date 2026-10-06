@@ -650,7 +650,7 @@ public final class Session implements Channel.Listener {
 
 	/** "Vex" from "Captain Vex": the name alone reads better in a running notice. */
 	static String shortName(String title) {
-		for (String r : homeplanet.parser.UnlockGrants.RANKS) if (title.startsWith(r + " ")) return title.substring(r.length() + 1);
+		for (String r : homeplanet.parser.PlayerRank.allNames()) if (title.startsWith(r + " ")) return title.substring(r.length() + 1);
 		return title;
 	}
 }
