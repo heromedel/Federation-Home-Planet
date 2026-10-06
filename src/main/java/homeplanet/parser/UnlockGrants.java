@@ -66,6 +66,10 @@ public final class UnlockGrants {
 		for (String k : unlockedNow(u)) if (!seen.contains(k)) add.add(k);
 		try { append("seen", add); append("stranger", add); } catch (Exception e) { log.warn("Could not record the unlocks seen: {}", e.toString()); }
 	}
+	/** Is the record begun (what was unlocked before is known)? */
+	public static boolean recorded() { return Vault.isOpen() && file().isFile(); }
+	/** Was this unlocked before the record began, or while an uncommissioned ship was boarded (never the career's)? */
+	public static boolean seen(String key) { return read("seen").contains(key); }
 	/** What came into FTL's profile while an uncommissioned ship was boarded, not yet answered ("ACH:" and an id, or a base ship and a layout). */
 	public static Set<String> strangers() { return Vault.isOpen() ? read("stranger") : new LinkedHashSet<String>(); }
 	/** One of them in words: the achievement's name, or the layout's ("Engi Cruiser, Type A"). */

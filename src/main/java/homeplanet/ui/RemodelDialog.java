@@ -100,6 +100,11 @@ public class RemodelDialog extends ShipEditorDialog {
 			public void actionPerformed(ActionEvent e) { askOverhaul(); }
 		});
 		addSideButton(overhaulBtn);
+		String overhaulLock = homeplanet.parser.Clearance.customReason(); // Immersive Mode: a Commodore's work, as designing is (heromedel, 5.56)
+		if (overhaulLock != null) {
+			overhaulBtn.setEnabled(false);
+			overhaulBtn.setToolTipText("<html>" + homeplanet.parser.XmlText.text(overhaulLock).replace("\n", "<br>") + "</html>");
+		}
 		addSideButton(button("Restore original layout", "Put every room, system and door back where this ship model has them", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { restoreOriginal(); }
 		}));
@@ -171,7 +176,7 @@ public class RemodelDialog extends ShipEditorDialog {
 			overhaul = false;
 			editor.setRoomsEditable(false);
 			showArtPanel(false);
-			overhaulBtn.setEnabled(true);
+			overhaulBtn.setEnabled(homeplanet.parser.Clearance.customReason() == null);
 			d.mounts.clear();
 		}
 		showModelArt(plainBp);

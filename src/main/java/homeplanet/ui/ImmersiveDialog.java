@@ -134,7 +134,7 @@ public final class ImmersiveDialog {
 		if (v != null) { // the career in use: its numbers
 			int docked = v.docked().size(), junked = v.junked().size(), boarded = v.boarded() == null ? 0 : 1, n = docked + junked + boarded;
 			Unlocks u = Unlocks.read();
-			rank = " (" + UnlockGrants.rankName(UnlockGrants.rank(u.problem() == null ? u : null)) + ")";
+			rank = " (" + homeplanet.parser.PlayerRank.name(homeplanet.parser.PlayerRank.rank(u.problem() == null ? u : null)) + ")";
 			ships = n + (n == 1 ? " ship" : " ships") + (n == 0 ? "" : " (" + (docked + boarded) + " at the Space Dock, " + junked + " in the Junkyard)")
 					+ " and the Cargo Hold (" + v.storageScrap() + " scrap)";
 		} else {

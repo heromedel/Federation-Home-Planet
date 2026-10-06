@@ -1280,7 +1280,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		help(s.noTrade == null ? helpOpen() : "Communications Only: their sector is too distant for trade. Hover over Offer or Accept for why.");
 	}
 	private static String shortName(String title) {
-		for (String r : homeplanet.parser.UnlockGrants.RANKS) if (title.startsWith(r + " ")) return title.substring(r.length() + 1);
+		for (String r : homeplanet.parser.PlayerRank.allNames()) if (title.startsWith(r + " ")) return title.substring(r.length() + 1);
 		return title;
 	}
 	private String helpOpen() {

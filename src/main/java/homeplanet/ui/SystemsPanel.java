@@ -156,7 +156,7 @@ public class SystemsPanel {
 		remodelBtn.setToolTipText("Move her systems and doors, or overhaul her deck plan (a retrofitted ship only)");
 		remodelBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String why = homeplanet.parser.Clearance.customReason(); // Immersive Mode: a Captain's work
+				String why = homeplanet.parser.Clearance.remodelReason(); // Immersive Mode: a Commander's work (5.56)
 				if (why != null) { JOptionPane.showMessageDialog(bay, why, "Remodel", JOptionPane.INFORMATION_MESSAGE); return; }
 				if (RemodelDialog.open(bay)) { load(); refresh(); bay.refreshTrade(); } // the remodel saved the Cargo Bay: nothing left unsaved
 			}
@@ -286,7 +286,7 @@ public class SystemsPanel {
 		lists.add(layoutLbl);
 		y += 24;
 		remodelBtn.setEnabled(retro);
-		String remodelLock = homeplanet.parser.Clearance.customReason(); // Immersive Mode: a Captain's work
+		String remodelLock = homeplanet.parser.Clearance.remodelReason(); // Immersive Mode: a Commander's work (5.56)
 		remodelBtn.setToolTipText(remodelLock == null ? "Move her systems and doors, or overhaul her deck plan (a retrofitted ship only)"
 				: "<html>" + homeplanet.parser.XmlText.text(remodelLock).replace("\n", "<br>") + "</html>");
 		remodelBtn.setBounds(0, y, 180, 34);

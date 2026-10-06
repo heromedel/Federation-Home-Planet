@@ -202,7 +202,7 @@ public final class Transmissions {
 		return rankName(u.problem() != null ? null : u);
 	}
 	private static String rankName(Unlocks u) {
-		return HomePlanet.career() ? UnlockGrants.rankName(UnlockGrants.rank(u)) : UnlockGrants.RANKS[0];
+		return HomePlanet.career() ? PlayerRank.name(PlayerRank.rank(u)) : UnlockGrants.RANKS[0];
 	}
 	/** A layout's name for messages: "Engi Cruiser, Type A". */
 	/**
@@ -275,9 +275,15 @@ public final class Transmissions {
 				send(all, sent, "welcome:career", "welcome:career", rank, null);
 			} catch (IOException e) { log.warn("Could not begin the Sandbox career: {}", e.toString()); }
 		}
-		if (HomePlanet.career()) {
+		if (HomePlanet.career() && PlayerRank.mode() == PlayerRank.FROM_CRUISER) {
 			int r = UnlockGrants.rank(u);
 			for (int i = 1; i <= r; i++) send(all, sent, "promo:" + i, "promo:" + i, rank, null);
+		}
+		if (HomePlanet.career() && PlayerRank.mode() == PlayerRank.FROM_REP && Career.started(v.root)) { // the reputation ladder (heromedel, 5.56)
+			PlayerRank.Climb c = PlayerRank.climb(v, homeplanet.vault.Reputation.total(v), u);
+			rank = rankName(u);
+			if (c.first) send(all, sent, "rank:ladder", "rank:ladder", rank, null); // a career from before: the new ranks, and where it stands, once
+			for (int r : c.promoted) send(all, sent, "rank:" + r, "rank:" + r, rank, null);
 		}
 		// one order per free command (the fleet's start, a plea for a new ship), never for an empty shipyard alone
 		boolean granted = v.freeCommandOpen();
@@ -310,7 +316,8 @@ public final class Transmissions {
 		if (HomePlanet.commissionCosts() && HomePlanet.unlockFreeShips() && u != null) {
 			for (String base : DataManager.get().getPlayerShipBaseIds(true)) {
 				for (int n = 0; n < 3; n++) {
-					if (HomePlanet.immersiveMode && "PLAYER_SHIP_FED".equals(base) && n != 1) continue; // the Type A and C come with a promotion
+					if ("PLAYER_SHIP_FED".equals(base) && (n == 0 && sent.contains("promo:1") || n == 2 && sent.contains("promo:2"))) continue; // came with a cruiser promotion (before 5.56, or Ranks From Cruiser)
+					if (HomePlanet.immersiveMode && PlayerRank.mode() == PlayerRank.FROM_CRUISER && "PLAYER_SHIP_FED".equals(base) && n != 1) continue; // the Type A and C come with a promotion
 					ShipBlueprint bp;
 					try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
 					if (bp == null || !UnlockGrants.freeNow(u, bp.getId())) continue;
@@ -422,7 +429,7 @@ public final class Transmissions {
 	private static void payStipend(List<Message> all, java.util.Set<String> sent, Unlocks u, String rank) {
 		int months = Career.unpaidMonths();
 		if (months <= 0) return;
-		int amount = months * Career.stipend(UnlockGrants.rank(u), Career.achievementsCounted(u));
+		int amount = months * Career.stipend(PlayerRank.multiple(PlayerRank.rank(u)), Career.achievementsCounted(u));
 		Template t = templates().get("stipend");
 		if (t == null) return; // nothing marked paid: it comes when the letter can
 		int monthsPaid = months * Career.monthsPerStipend();

@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.55";
+	public static final String APP_VERSION = "5.56";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -176,6 +176,7 @@ public class HomePlanet {
 		careerMessages = flag("career_messages");
 		reputationOn = flag("reputation");
 		try { reputationUse = Math.max(1, Math.min(3, Integer.parseInt(config.getProperty("reputation_use", "1").trim()))); } catch (NumberFormatException e) { reputationUse = 1; }
+		try { homeplanet.parser.PlayerRank.setting = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty(homeplanet.parser.PlayerRank.CFG, "0").trim()))); } catch (NumberFormatException e) { homeplanet.parser.PlayerRank.setting = 0; }
 		finalVictory = config.getProperty("final_victory", "nothing");
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 
@@ -350,6 +351,7 @@ public class HomePlanet {
 		config.setProperty("career_messages", Boolean.toString(careerMessages));
 		config.setProperty("reputation", Boolean.toString(reputationOn));
 		config.setProperty("reputation_use", Integer.toString(reputationUse));
+		config.setProperty(homeplanet.parser.PlayerRank.CFG, Integer.toString(homeplanet.parser.PlayerRank.setting));
 		config.setProperty("sell_supplies", Boolean.toString(sellSupplies));
 		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));
 		config.setProperty("commission_custom_unlocked_only", Boolean.toString(commissionCustomUnlockedOnly));

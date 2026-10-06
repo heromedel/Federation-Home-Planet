@@ -71,6 +71,13 @@ public class RuleBoxes {
 	private final CargoParts.IconButton repUseInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "What each option does", new ActionListener() {
 		public void actionPerformed(ActionEvent e) { repUseInfo(repUseBox); }
 	});
+	/** Ranks (heromedel, 5.56): from reputation, from the Federation Cruiser, or none; Immersive Mode is locked to Ranks From Rep. */
+	final JComboBox<String> ranksBox = new JComboBox<String>(homeplanet.parser.PlayerRank.OPTIONS);
+	private final JLabel ranksLabel = new JLabel("Ranks:  ");
+	private final JPanel ranksRow = row(22); // under Reputation, which Ranks From Rep needs
+	private boolean showingRanksOwn = !HomePlanet.immersiveMode;
+	private static final String RANKS_TIP = "<html>Your rank as a career climbs: by reputation (Major to Admiral), by the Federation Cruiser layouts you unlock<br>"
+			+ "(Commander, Captain, Commodore), or none. It sets the stipend's share for each achievement.</html>";
 	/** The three options, in heromedel's words (the setting's own list, and the Immersive briefing's). */
 	static final String[] REP_USE_OPTIONS = {"New Journeys and Pleads", "Vanilla-Breaking Actions", "Only as a score"};
 	/** A list whose open options say what each does (Settings, and the Immersive briefing, 5.27). */
@@ -228,6 +235,24 @@ public class RuleBoxes {
 		repUseRow.add(javax.swing.Box.createHorizontalStrut(6));
 		repUseRow.add(repUseInfo);
 		repBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { sync(); } });
+		ranksRow.setOpaque(false);
+		ranksRow.add(ranksLabel);
+		ranksRow.add(ranksBox);
+		ranksBox.setSelectedIndex(homeplanet.parser.PlayerRank.setting);
+		ranksBox.setToolTipText(RANKS_TIP);
+		ranksLabel.setToolTipText(RANKS_TIP);
+		ranksBox.setRenderer(new javax.swing.DefaultListCellRenderer() { // Ranks From Rep greyed out without Reputation, with heromedel's tooltip
+			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean sel, boolean focus) {
+				java.awt.Component c = super.getListCellRendererComponent(list, value, index, sel, focus);
+				boolean rep = index == 0 || (index < 0 && ranksBox.getSelectedIndex() == 0);
+				if (rep && !repBox.isSelected()) c.setForeground(java.awt.Color.GRAY);
+				list.setToolTipText(index == 0 ? homeplanet.parser.PlayerRank.REP_TIP : null);
+				return c;
+			}
+		});
+		ranksBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) {
+			if (ranksBox.isEnabled() && ranksBox.getSelectedIndex() == 0 && !repBox.isSelected()) ranksBox.setSelectedIndex(1); // needs Reputation
+		} });
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A plea for a new ship doesn't reset it");
 		unlockBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		for (int i = 0; i < locked.length; i++) tips[i] = locked[i].getToolTipText();
@@ -303,6 +328,14 @@ public class RuleBoxes {
 		freeBox.setToolTipText(im ? byValue : freeTip);
 		freeLabel.setToolTipText(im ? byValue : freeTip);
 		if (!im) unlockBox.setEnabled(cost);
+		// Ranks: Immersive Mode is locked to Ranks From Rep; in Sandbox Mode, Ranks From Rep needs Reputation (5.56)
+		if (im) { ranksBox.setSelectedIndex(homeplanet.parser.PlayerRank.FROM_REP); }
+		else if (!showingRanksOwn) ranksBox.setSelectedIndex(homeplanet.parser.PlayerRank.setting);
+		showingRanksOwn = !im;
+		if (!im && ranksBox.getSelectedIndex() == homeplanet.parser.PlayerRank.FROM_REP && !repBox.isSelected()) ranksBox.setSelectedIndex(homeplanet.parser.PlayerRank.FROM_CRUISER);
+		ranksBox.setEnabled(!im);
+		ranksLabel.setEnabled(!im);
+		ranksBox.setToolTipText(im ? SET_BY_IMMERSIVE : RANKS_TIP);
 		repUseBox.setEnabled(repBox.isSelected()); // never locked: only the Reputation rule itself
 		repUseLabel.setEnabled(repBox.isSelected());
 		repUseInfo.setEnabled(repBox.isSelected());
@@ -338,7 +371,7 @@ public class RuleBoxes {
 		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Notifications, which it needs
 		// the game mode, then the rules in groups, each under a small heading
 		Object[] rows = {immersiveRow,
-				"The Federation Home Planet", notifyBox, careerBox, repBox, repUseRow,
+				"The Federation Home Planet", notifyBox, careerBox, repBox, repUseRow, ranksRow,
 				"Journeys and trading", tradeBox, journeyBox, journeyFeeRow, augmentBox,
 				"Refit, scrapping and selling", removalRow, scrapBox, sellBox, sellSystemsBox,
 				"Shipyard", lockedBox, customLockedBox, costRow, freeRow, unlockBox};
@@ -361,6 +394,7 @@ public class RuleBoxes {
 	/** What apply() would change, for the history log. */
 	public void describeChanges(java.util.List<String> changed) {
 		if (repUseBox.getSelectedIndex() + 1 != HomePlanet.reputationUse) changed.add("How Reputation Can be Used: " + repUseBox.getSelectedItem());
+		if (!HomePlanet.immersiveMode && ranksBox.getSelectedIndex() != homeplanet.parser.PlayerRank.setting) changed.add("Ranks: " + ranksBox.getSelectedItem());
 		if (!HomePlanet.immersiveMode) { // (in Immersive Mode the locked boxes show the career's rules; the player's own don't change)
 			if (tradeBox.isSelected() != HomePlanet.storeRequirement) changed.add("Trading requires a station: " + tradeBox.isSelected());
 			if (journeyBox.isSelected() != HomePlanet.journeyStoreRequirement) changed.add("New Journey requires a station: " + journeyBox.isSelected());
@@ -389,6 +423,7 @@ public class RuleBoxes {
 		if (!HomePlanet.immersiveMode) HomePlanet.careerMessages = careerBox.isSelected();
 		if (!HomePlanet.immersiveMode) HomePlanet.reputationOn = repBox.isSelected();
 		HomePlanet.reputationUse = repUseBox.getSelectedIndex() + 1; // any mode
+		if (!HomePlanet.immersiveMode) homeplanet.parser.PlayerRank.setting = ranksBox.getSelectedIndex(); // (Immersive Mode is always Ranks From Rep)
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)
 			HomePlanet.storeRequirement = tradeBox.isSelected();
 			HomePlanet.journeyStoreRequirement = journeyBox.isSelected();

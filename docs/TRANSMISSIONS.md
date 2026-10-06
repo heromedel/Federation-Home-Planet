@@ -38,7 +38,11 @@ promotion, the stipend, "Master of Patience" and the Zoltan commission order.
   new ship ({ship} is what it offers); **withdrawn** when that plea is withdrawn (its order leaves the inbox). (The old
   **reassigned** letters, after a Report for Reassignment, are gone.)
 - **order:<ship>**: a ship unlocked in FTL (with free unlock ships on), one per ship type.
-- **promo:1 / promo:2**: promoted to Captain (the Federation Cruiser A unlocks) and to Commodore (the C).
+- **promo:1 / promo:2**: promoted to Captain (the Federation Cruiser A unlocks) and to Commodore (the C), under Ranks From Cruiser.
+- **rank:1 to rank:5** (heromedel, 5.56): Ranks From Rep, from **The Federation Home Planet Fleet Admiralty**: promoted to
+  Colonel (250 reputation), Commander (500: remodels), Captain (1,000), Commodore (2,500: designs, deck plan overhauls,
+  custom ships) and Admiral (10,000: the Federation's artillery), each naming what the rank brings. **rank:ladder**: once, to a
+  career from before 5.56, telling the new ranks and the rank it holds (the higher of its reputation's and its old cruiser rank).
 - **stipend**: every 4 sectors travelled.
 - **ach:<achievement>**: an FTL achievement earned after Immersive Mode began.
 - **rescue / reward**: after a final victory, when the fleet's choice is a rescue or a reward (shown as a notice on

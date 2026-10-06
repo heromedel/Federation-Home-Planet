@@ -65,7 +65,7 @@ public final class Reputation {
 	public static synchronized int total(Vault v) {
 		Properties p = read(v);
 		if (!counted(p)) { review(v); p = read(v); }
-		else if (shown()) { achievements(v, p); p = read(v); }
+		else if (shown()) { achievements(v, p); cruisers(v, read(v)); p = read(v); }
 		return num(p, "total");
 	}
 	/** New FTL achievements (the profile, as the career's rewards count them: earned in this fleet's service) score. */
@@ -82,6 +82,35 @@ public final class Reputation {
 		int pts = fresh.size() * ACHIEVEMENT;
 		p.setProperty("total", Integer.toString(num(p, "total") + pts));
 		if (write(v, p)) entry(v, pts, (fresh.size() == 1 ? "An achievement: " : fresh.size() + " achievements: ") + String.join(", ", names) + " (+" + pts + ")", null);
+	}
+	/**
+	 * Each Federation Cruiser layout unlocked in the career's service (Ranks From Rep, heromedel, 5.56): +100, once. Not
+	 * those unlocked before the record began, or while an uncommissioned ship was boarded.
+	 */
+	private static void cruisers(Vault v, Properties p) {
+		if (homeplanet.parser.PlayerRank.mode() != homeplanet.parser.PlayerRank.FROM_REP) return;
+		homeplanet.parser.Unlocks u = homeplanet.parser.Unlocks.read();
+		if (u.problem() != null) return;
+		java.util.Set<String> had = new java.util.LinkedHashSet<String>(java.util.Arrays.asList(p.getProperty("cruisers", "").split("\\|")));
+		had.remove("");
+		int before = had.size();
+		boolean known = homeplanet.parser.UnlockGrants.recorded();
+		List<String> fresh = new ArrayList<String>();
+		for (int n = 0; n < 3; n++) {
+			String k = "PLAYER_SHIP_FED " + n;
+			if (had.contains(k) || !u.unlocked("PLAYER_SHIP_FED", n)) continue;
+			had.add(k);
+			if (known && !homeplanet.parser.UnlockGrants.seen(k)) fresh.add(k); // with no record of what came before, a baseline only
+		}
+		if (had.size() == before) return;
+		p.setProperty("cruisers", String.join("|", had));
+		int pts = fresh.size() * homeplanet.parser.PlayerRank.CRUISER_BONUS;
+		if (pts > 0) p.setProperty("total", Integer.toString(num(p, "total") + pts));
+		if (write(v, p) && pts > 0) {
+			List<String> names = new ArrayList<String>();
+			for (String k : fresh) names.add(homeplanet.parser.UnlockGrants.describe(k));
+			entry(v, pts, String.join(", ", names) + " unlocked (+" + pts + ")", null);
+		}
 	}
 	/** FTL's real achievements earned since the fleet's record began (empty if the profile can't be read). */
 	private static List<String> newAchievements() {
