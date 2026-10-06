@@ -199,8 +199,102 @@ public class CrewT { public static void main(String[] a) throws Exception {
  m = CrewRegister.members(v);
  Setup.chk("U: an older register: the ships read again from the logs, one only it knew kept " + byId(m, g.id).served,
    byId(m, g.id).served.equals(Arrays.asList(x0.name, "The Adjudicator", y0.name + "\tOld Glory")) && new String(SafeFiles.read(cf), "UTF-8").contains("served.v=2"));
+ // ranks (heromedel, 5.52): a prefix on the name, worn with or without the dot
+ Setup.chk("K: ranks read from a name: Lt Gracie, sgt. gracie, none", homeplanet.model.Rank.worn("Lt Gracie") == 1 && homeplanet.model.Rank.worn("sgt. gracie") == 0 && homeplanet.model.Rank.worn("Gracie") == -1 && homeplanet.model.Rank.worn("Lt.") == -1);
+ Setup.chk("K: a promotion swaps the rank, never stacks it", homeplanet.model.Rank.promoted("Sgt. Gracie", 1).equals("Lt. Gracie") && "Lieutenant".equals(homeplanet.model.Rank.promotion("Sgt Gracie", "Lt. Gracie")) && homeplanet.model.Rank.promotion("Gracie", "Grace") == null);
+
+ // served with: everyone aboard together has each other, by id
+ m = CrewRegister.members(v);
+ g = find(m, "Gracie", CrewRegister.Status.PRESENT); n = find(m, "Norwyn Schultze", CrewRegister.Status.PRESENT);
+ Setup.chk("W: aboard together: each has the other, on that ship", g.with.containsKey(n.id) && g.with.get(n.id).contains(y0.name) && n.with.containsKey(g.id));
+ c = v.readCopy(x0);
+ for (int k = 0; k < 2; k++) { CrewState t = Commission.volunteer("human", new Random(60 + k)); t.setName("Pair"); t.setJumpsSurvived(k * 3); SaveHelper.placeCrew(c.save.getPlayerShip(), t, true); c.save.getPlayerShip().getCrewList().add(t); }
+ v.begin().put(x0, c.save, c.hash).commit();
+ v.takeStock();
+ m = CrewRegister.members(v);
+ List<CrewRegister.Member> pairs = all(m, "Pair");
+ Setup.chk("W: two namesakes aboard together: two ids, each with the other, not themselves", pairs.size() == 2 && pairs.get(0).with.containsKey(pairs.get(1).id) && pairs.get(1).with.containsKey(pairs.get(0).id)
+   && !pairs.get(0).with.containsKey(pairs.get(0).id));
+ List<CrewState> party = new ArrayList<CrewState>();
+ for (CrewState x : Expeditions.holdCrew(v)) if (party.size() < 2 && !x.getName().equals("Twin")) party.add(x);
+ int pa = idIn(m, party.get(0).getName(), "in the Cargo Hold"), pb = idIn(m, party.get(1).getName(), "in the Cargo Hold");
+ List<Assignments.Offer> board = Assignments.board(v);
+ Assignments.send(v, board.get(board.size() - 1).slot, party, new Random(5));
+ v.takeStock();
+ m = CrewRegister.members(v);
+ Setup.chk("W: sent out together: During Expeditions, both ways", pa > 0 && pb > 0 && byId(m, pa).with.containsKey(pb) && byId(m, pa).with.get(pb).contains(CrewRegister.WITH_EXPEDITION) && byId(m, pb).with.get(pa).contains(CrewRegister.WITH_EXPEDITION));
+
+ // milestones: a mastery, the first kill, sector 5; each once
+ c = v.readCopy(y0);
+ CrewState gs0 = null; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Gracie")) gs0 = x;
+ gs0.setCombatKills(2); homeplanet.model.Skills.set(gs0, 3, 2 * homeplanet.model.Skills.interval(gs0, 3)); c.save.setSectorNumber(2);
+ v.begin().put(y0, c.save, c.hash).commit();
+ v.takeStock();
+ c = v.readCopy(y0); c.save.setSectorNumber(4);
+ v.begin().put(y0, c.save, c.hash).commit();
+ v.takeStock(); v.takeStock();
+ g = byId(CrewRegister.members(v), g.id);
+ Setup.chk("H: a mastery, the first kill, sector 5 for the first time: each written once", count(g, "Mastered Weapons.") == 1 && count(g, "Earned the first Weapons mastery.") == 1 && count(g, "First kill, aboard") == 1
+   && count(g, "Reached sector 5 for the first time, aboard " + homeplanet.parser.ShipNames.the(y0.name)) == 1 && count(g, "Reached sector 8") == 0);
+
+ // promotions: one skill fully mastered is Sgt.; promoted in her save, the same id
+ Setup.chk("K: Weapons fully mastered: Sergeant due", CrewRegister.rankDue(g) == 0);
+ String gName = CrewRegister.promote(v, g.id);
+ m = CrewRegister.members(v);
+ c = v.readCopy(y0);
+ boolean inSave = false; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Sgt. Gracie")) inSave = true;
+ Setup.chk("K: promoted: Sgt. Gracie in her ship's save, the same id, Promoted to Sergeant, nothing more due", gName.equals("Sgt. Gracie") && inSave && byId(m, g.id).name.equals("Sgt. Gracie")
+   && said(byId(m, g.id), "Promoted to Sergeant.") && !said(byId(m, g.id), "Now known as") && CrewRegister.rankDue(byId(m, g.id)) == -1);
+ // the KIA: posthumously, on the record alone
+ c = v.readCopy(y0);
+ CrewState nw = null; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Norwyn Schultze")) nw = x;
+ homeplanet.model.Skills.set(nw, 0, 2 * homeplanet.model.Skills.interval(nw, 0)); homeplanet.model.Skills.set(nw, 1, 2 * homeplanet.model.Skills.interval(nw, 1));
+ v.begin().put(y0, c.save, c.hash).commit();
+ v.takeStock();
+ c = v.readCopy(y0);
+ for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Norwyn Schultze")) nw = x;
+ c.save.getPlayerShip().getCrewList().remove(nw);
+ v.begin().put(y0, c.save, c.hash).commit();
+ MasterLog.entry(v, "voyage: " + y0.name, "Crew lost: Norwyn Schultze (" + homeplanet.model.Crew.raceTitle(nw) + ")");
+ v.takeStock();
+ n = byId(CrewRegister.members(v), n.id);
+ Setup.chk("K: two skills mastered, killed: Lieutenant due posthumously", n.status == CrewRegister.Status.KILLED && CrewRegister.rankDue(n) == 1 && CrewRegister.cannotPromote(v, n) == null);
+ CrewRegister.promote(v, n.id);
+ n = byId(CrewRegister.members(v), n.id);
+ Setup.chk("K: promoted posthumously: Lt. Norwyn Schultze on the record, still KIA", n.name.equals("Lt. Norwyn Schultze") && n.status == CrewRegister.Status.KILLED && said(n, "Promoted posthumously to Lieutenant."));
+ Setup.chk("K: still known to those they served with", byId(CrewRegister.members(v), g.id).with.containsKey(n.id));
+ // MIA (heromedel: no one is left out): on the record; found again under their old name, the record keeps it, and Promote puts it in their save
+ Ship dk = v.docked().get(0);
+ c = v.readCopy(dk);
+ CrewState mia = Commission.volunteer("engi", new Random(71)); mia.setName("Wanderer");
+ homeplanet.model.Skills.set(mia, 4, 2 * homeplanet.model.Skills.interval(mia, 4));
+ SaveHelper.placeCrew(c.save.getPlayerShip(), mia, true); c.save.getPlayerShip().getCrewList().add(mia);
+ v.begin().put(dk, c.save, c.hash).commit();
+ v.takeStock();
+ int wid = idOf(CrewRegister.members(v), "Wanderer");
+ c = v.readCopy(dk);
+ for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Wanderer")) mia = x;
+ c.save.getPlayerShip().getCrewList().remove(mia);
+ v.begin().put(dk, c.save, c.hash).commit();
+ v.takeStock();
+ CrewRegister.Member wm = byId(CrewRegister.members(v), wid);
+ Setup.chk("K: MIA, a skill mastered: Sergeant due, nothing in the way", wm.status == CrewRegister.Status.MISSING && CrewRegister.rankToGive(v, wm) == 0 && CrewRegister.cannotPromote(v, wm) == null);
+ CrewRegister.promote(v, wid);
+ c = v.readCopy(dk);
+ SaveHelper.placeCrew(c.save.getPlayerShip(), mia, true); c.save.getPlayerShip().getCrewList().add(mia);
+ v.begin().put(dk, c.save, c.hash).commit();
+ v.takeStock();
+ wm = byId(CrewRegister.members(v), wid);
+ Setup.chk("K: promoted on the record, found again as Wanderer: still Sgt. Wanderer, no new name in the career, Promote offers to put it in FTL",
+   wm.status == CrewRegister.Status.PRESENT && wm.name.equals("Sgt. Wanderer") && count(wm, "Promoted to Sergeant.") == 1 && !said(wm, "Now known as") && CrewRegister.rankToGive(v, wm) == 0);
+ CrewRegister.promote(v, wid);
+ c = v.readCopy(dk);
+ boolean worn = false; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Sgt. Wanderer")) worn = true;
+ wm = byId(CrewRegister.members(v), wid);
+ Setup.chk("K: and in her save now, the career unchanged, nothing more to give", worn && count(wm, "Promoted to Sergeant.") == 1 && CrewRegister.rankToGive(v, wm) == -1);
  Setup.done();
 }
+ static int count(CrewRegister.Member x, String text) { int k = 0; for (CrewRegister.Event e : x.events) if (e.text.contains(text)) k++; return k; }
  static String Line_name(CrewRegister.Member x) { return x.crew().getName(); }
  static int count(List<CrewRegister.Member> m, CrewRegister.Status s) { int n = 0; for (CrewRegister.Member x : m) if (x.status == s) n++; return n; }
  static CrewRegister.Member find(List<CrewRegister.Member> m, String name, CrewRegister.Status s) { for (CrewRegister.Member x : m) if (x.name.equals(name) && x.status == s) return x; return null; }

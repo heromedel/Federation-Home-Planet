@@ -54,6 +54,10 @@ public final class CrewRegister {
 		final Map<String, String> rec = new LinkedHashMap<String, String>();
 		/** The ships they served on, in order: each her name now, then the names she had before, oldest first, tab-separated (5.51; see {@link #shipOf}, {@link #formerNames}). */
 		public final List<String> served = new ArrayList<String>();
+		/** Who they served with (heromedel, 5.52): each one's id, and where (the ships by name, {@link #WITH_EXPEDITION} for an expedition). */
+		public final Map<Integer, List<String>> with = new LinkedHashMap<Integer, List<String>>();
+		/** The furthest sector they've been in aboard a ship in flight; -1 not known yet (counted from the next look, not made up). */
+		int sector = -1;
 		Member(int id) { this.id = id; }
 		/** Them as last seen, as FTL's crew record (for their portrait and skills), or null if none is known. */
 		public CrewState crew() {
@@ -73,7 +77,9 @@ public final class CrewRegister {
 	/** A crew member found on this look, and where. */
 	private static final class Found {
 		final String name, race, tints, record, place, where;
-		String title = "", ship = "";
+		String title = "", ship = "", party = "";
+		/** Her sector (from 1) when aboard the ship FTL flies, else 0. */
+		int sector;
 		Map<String, String> fields;
 		final boolean male;
 		final int[] counts;
@@ -87,6 +93,8 @@ public final class CrewRegister {
 
 	static File file(Vault v) { return new File(v.root, FILE); }
 
+	/** In a member's {@link Member#with}: they went on an expedition together. */
+	public static final String WITH_EXPEDITION = "@expedition";
 	/** A ship in a member's {@link Member#served} list: her name now. */
 	public static String shipOf(String entry) { int t = entry.indexOf('\t'); return t < 0 ? entry : entry.substring(0, t); }
 	/** The names she had before, oldest first (empty if never renamed). */
@@ -132,6 +140,12 @@ public final class CrewRegister {
 			String served = p.getProperty(k + "served", "");
 			if (!served.isEmpty()) for (String sh : served.split("\\|")) m.served.add(sh);
 			m.masterPos = intOf(p, k + "master", 0);
+			m.sector = intOf(p, k + "sector", -1);
+			for (String key : p.stringPropertyNames()) {
+				if (!key.startsWith(k + "with.")) continue;
+				try { m.with.put(Integer.parseInt(key.substring((k + "with.").length())), new ArrayList<String>(java.util.Arrays.asList(p.getProperty(key).split("\\|")))); }
+				catch (NumberFormatException e) { /* not one of ours */ }
+			}
 			for (int i = 0; p.getProperty(k + "e." + i) != null; i++) {
 				String e = p.getProperty(k + "e." + i);
 				int bar = e.indexOf('|');
@@ -161,6 +175,8 @@ public final class CrewRegister {
 			line(sb, k + "place", m.place); line(sb, k + "where", m.where); line(sb, k + "status", m.status.name());
 			line(sb, k + "hist", Integer.toString(m.histPos)); line(sb, k + "master", Integer.toString(m.masterPos));
 			if (!m.served.isEmpty()) line(sb, k + "served", String.join("|", m.served));
+			if (m.sector >= 0) line(sb, k + "sector", Integer.toString(m.sector));
+			for (Map.Entry<Integer, List<String>> w : m.with.entrySet()) line(sb, k + "with." + w.getKey(), String.join("|", w.getValue()));
 			for (Map.Entry<String, String> r : m.rec.entrySet()) line(sb, k + "rec." + r.getKey(), r.getValue());
 			for (int i = 0; i < m.events.size(); i++) line(sb, k + "e." + i, m.events.get(i).day + "|" + m.events.get(i).text);
 		}
@@ -215,9 +231,11 @@ public final class CrewRegister {
 		}
 
 		// those found: moved, renamed, back, ransomed, found again
+		Member[] memberOf = new Member[found.size()];
 		for (int i = 0; i < found.size(); i++) {
 			Found x = found.get(i);
 			Member m = matchOf[i];
+			boolean known = m != null;
 			if (m == null) {
 				m = new Member(nextId(members));
 				m.name = x.name; m.race = x.race; m.male = x.male;
@@ -225,17 +243,45 @@ public final class CrewRegister {
 				if (!fresh) m.events.add(new Event(today, joined(x, hist, seen[0])));
 				members.add(m);
 			} else {
-				if (!m.name.equals(x.name)) m.events.add(new Event(today, "Now known as " + x.name + " (was " + m.name + ")."));
+				if (!m.name.equals(x.name) && !onRecord(m.name, x.name)) {
+					String rank = homeplanet.model.Rank.promotion(m.name, x.name); // a rank put on their name (heromedel, 5.52)
+					m.events.add(new Event(today, rank != null ? "Promoted to " + rank + "." : "Now known as " + x.name + " (was " + m.name + ")."));
+				}
+				for (String e : milestones(m, x)) m.events.add(new Event(today, e));
 				if (m.status == Status.MISSING) m.events.add(new Event(today, "Found again, " + x.where + "."));
 				else if (!m.place.equals(x.place)) m.events.add(new Event(today, moved(m, x)));
 			}
+			if (x.sector > 0) { // the first time ever in sector 5, and in sector 8, aboard a ship in flight; arriving where she already is counts for nothing
+				if (known && m.sector >= 0 && m.place.equals(x.place))
+					for (int at : new int[] {5, 8}) if (m.sector < at && x.sector >= at) m.events.add(new Event(today, "Reached sector " + at + " for the first time, aboard " + the(x.ship) + "."));
+				if (x.sector > m.sector) { m.sector = x.sector; changed = true; }
+			}
+			memberOf[i] = m;
 			Status now = x.place.equals("captive") ? Status.CAPTIVE : Status.PRESENT;
-			if (!m.name.equals(x.name) || m.status != now || !m.place.equals(x.place) || !m.where.equals(x.where) || !m.record.equals(x.record) || !m.tints.equals(x.tints)) changed = true;
-			m.name = x.name; m.status = now; m.place = x.place; m.where = x.where; m.tints = x.tints; m.record = x.record;
+			String name = onRecord(m.name, x.name) ? m.name : x.name; // a rank given on the record alone stays there
+			if (!m.name.equals(name) || m.status != now || !m.place.equals(x.place) || !m.where.equals(x.where) || !m.record.equals(x.record) || !m.tints.equals(x.tints)) changed = true;
+			m.name = name; m.status = now; m.place = x.place; m.where = x.where; m.tints = x.tints; m.record = x.record;
 			if (!x.title.isEmpty()) m.title = x.title;
 			if (x.fields != null && !x.fields.equals(m.rec)) { m.rec.clear(); m.rec.putAll(x.fields); changed = true; }
 			if (x.place.startsWith("ship:") && !x.ship.isEmpty() && (m.served.isEmpty() || !shipOf(m.served.get(m.served.size() - 1)).equals(x.ship))) { m.served.add(x.ship); changed = true; }
 			m.histPos = histLen; m.masterPos = masterLen;
+		}
+
+		// who served with whom: everyone aboard the same ship, or out on the same expedition, has each other (heromedel, 5.52)
+		Map<String, List<Integer>> together = new LinkedHashMap<String, List<Integer>>();
+		for (int i = 0; i < found.size(); i++) {
+			Found x = found.get(i);
+			String k = x.place.startsWith("ship:") ? x.place : !x.party.isEmpty() ? x.party : null;
+			if (k == null) continue;
+			if (!together.containsKey(k)) together.put(k, new ArrayList<Integer>());
+			together.get(k).add(i);
+		}
+		for (List<Integer> group : together.values()) {
+			for (int a : group) for (int b : group) {
+				if (a == b || memberOf[a] == memberOf[b]) continue;
+				Found x = found.get(a);
+				if (servedWith(memberOf[a], memberOf[b].id, x.place.startsWith("ship:") ? x.ship : WITH_EXPEDITION)) changed = true;
+			}
 		}
 
 		// those not found: what became of them, on solid evidence only
@@ -281,7 +327,8 @@ public final class CrewRegister {
 			SavedGameState gs = s.save();
 			if (gs == null || gs.getPlayerShip() == null) return null;
 			String where = s.state == Ship.State.JUNKED ? "aboard " + the(s.name) + ", in the Junkyard" : "aboard " + the(s.name);
-			for (CrewState c : homeplanet.parser.SaveHelper.getOwnCrew(gs.getPlayerShip())) { Found x = found(c, "ship:" + s.id, where); x.ship = s.name; out.add(x); }
+			int sector = s == b ? gs.getSectorNumber() + 1 : 0;
+			for (CrewState c : homeplanet.parser.SaveHelper.getOwnCrew(gs.getPlayerShip())) { Found x = found(c, "ship:" + s.id, where); x.ship = s.name; x.sector = sector; out.add(x); }
 		}
 		Ship hold = v.storageEntry();
 		if (hold != null && v.fileOf(hold).isFile()) {
@@ -303,7 +350,9 @@ public final class CrewRegister {
 					for (String key : p.stringPropertyNames()) if (key.startsWith(pre)) fields.put(key.substring(pre.length()), p.getProperty(key));
 					CrewState c;
 					try { c = homeplanet.comm.Line.crewFrom(fields); } catch (Exception e) { return null; }
-					out.add(found(c, "away:" + sector, "on an expedition " + sectorPhrase(sector)));
+					Found x = found(c, "away:" + sector, "on an expedition " + sectorPhrase(sector));
+						x.party = "away." + i; // those sent out together
+						out.add(x);
 				}
 			}
 		}
@@ -352,7 +401,7 @@ public final class CrewRegister {
 			if (x.record.equals(m.record)) s += 4;
 		}
 		if (!x.tints.isEmpty() && x.tints.equals(m.tints)) s += 2;
-		if (x.name.equals(m.name)) s += 8;
+		if (x.name.equals(m.name) || homeplanet.model.Rank.bare(x.name).equals(homeplanet.model.Rank.bare(m.name))) s += 8; // a rank on one name and not the other: the same name
 		else { // a new name (renamed in the Cargo Bay): only on the whole service record, and the colouring or the place besides
 			boolean record = x.counts != null && !m.record.isEmpty() && x.record.equals(m.record);
 			boolean looks = !x.tints.isEmpty() && x.tints.equals(m.tints);
@@ -360,6 +409,113 @@ public final class CrewRegister {
 		}
 		if (x.place.equals(m.place)) s += 2;
 		return s;
+	}
+
+	/** One met another, there: true if it's new. */
+	private static boolean servedWith(Member m, int other, String where) {
+		List<String> l = m.with.get(other);
+		if (l == null) m.with.put(other, l = new ArrayList<String>());
+		if (l.contains(where)) return false;
+		l.add(where);
+		return true;
+	}
+	private static final String[] SKILL = {"Piloting", "Engines", "Shields", "Weapons", "Repair", "Combat"};
+	/**
+	 * What they did since the last look worth a line in their career (heromedel, 5.52): a skill mastery earned, the first
+	 * kill, a hundred jumps survived. Only against a look before: nothing is made up for a record first seen now.
+	 */
+	private static List<String> milestones(Member m, Found x) {
+		List<String> out = new ArrayList<String>();
+		if (x.fields == null || m.rec.isEmpty()) return out;
+		String was = m.rec.get("mastery"), now = x.fields.get("mastery");
+		if (was != null && now != null && was.length() == 12 && now.length() == 12) {
+			for (int i = 0; i < 12; i++) {
+				if (was.charAt(i) == '1' || now.charAt(i) != '1') continue;
+				out.add(i % 2 == 0 ? "Earned the first " + SKILL[i / 2] + " mastery." : "Mastered " + SKILL[i / 2] + ".");
+			}
+		}
+		int kills0 = intOr(m.rec.get("kills")), kills = intOr(x.fields.get("kills")), jumps0 = intOr(m.rec.get("jumps")), jumps = intOr(x.fields.get("jumps"));
+		String aboard = x.place.startsWith("ship:") ? ", aboard " + the(x.ship) : "";
+		if (kills0 == 0 && kills > 0) out.add("First kill" + aboard + ".");
+		if (jumps0 >= 0 && jumps0 < 100 && jumps >= 100) out.add("Survived a hundred jumps" + aboard + ".");
+		return out;
+	}
+	private static int intOr(String s) { try { return Integer.parseInt(s.trim()); } catch (RuntimeException e) { return -1; } }
+
+	// ---- promotions (heromedel, 5.52) ----
+
+	/** Their record wears a higher rank than the name found in a save: promoted where no save could be changed. */
+	private static boolean onRecord(String record, String found) {
+		return homeplanet.model.Rank.bare(record).equals(homeplanet.model.Rank.bare(found)) && homeplanet.model.Rank.worn(record) > homeplanet.model.Rank.worn(found);
+	}
+	/** The rank they're due ({@link homeplanet.model.Rank}), or -1: by their skills as they stand, or as last seen for those gone. */
+	public static int rankDue(Member m) {
+		CrewState c = m.crew();
+		if (c == null) return -1;
+		c.setName(m.name);
+		return homeplanet.model.Rank.due(c);
+	}
+	/** The name their save has (their record can wear a rank it doesn't). */
+	private static String savedName(Member m) { String n = m.rec.get("name"); return n == null ? m.name : n; }
+	/** The save they're in that the station may change: the Cargo Hold, a ship of the fleet; null for anyone else (the rank goes on their record alone). */
+	private static Ship saveOf(Vault v, Member m) {
+		if (m.status != Status.PRESENT) return null;
+		if (m.place.equals("hold")) return v.storageEntry();
+		return m.place.startsWith("ship:") ? v.byId(m.place.substring(5)) : null;
+	}
+	/**
+	 * The rank Promote gives them now, or -1: the rank they're due; else one their record wears and their save doesn't
+	 * (promoted while away, back with their old name), to put on their name in FTL too.
+	 */
+	public static int rankToGive(Vault v, Member m) {
+		int r = rankDue(m);
+		if (r >= 0) return r;
+		int worn = homeplanet.model.Rank.worn(m.name);
+		return worn >= 0 && worn > homeplanet.model.Rank.worn(savedName(m)) && saveOf(v, m) != null ? worn : -1;
+	}
+	/** Why they can't be promoted just now, or null if they can: only while FTL is flying their ship. */
+	public static String cannotPromote(Vault v, Member m) {
+		Ship s = saveOf(v, m);
+		if (s != null && s.isBoarded() && homeplanet.core.GameGuard.isFtlRunning()) return "Not while FTL is flying their ship: close FTL first, or promote them in the Cargo Bay.";
+		return null;
+	}
+	/**
+	 * Promotes them: the rank put on their name in their save (FTL shows it), logged as a crew rename; anyone the
+	 * station has no save of to change (MIA, captive, away, gone, the KIA posthumously) on their record alone. Returns
+	 * their name on the record.
+	 */
+	public static synchronized String promote(Vault v, int id) throws IOException {
+		List<Member> members = members(v);
+		Member m = null;
+		for (Member x : members) if (x.id == id) m = x;
+		int r = m == null ? -1 : rankToGive(v, m);
+		if (r < 0) throw new IOException("No promotion is due.");
+		String why = cannotPromote(v, m);
+		if (why != null) throw new IOException(why);
+		Ship s = saveOf(v, m);
+		if (s == null) {
+			String was = m.name;
+			m.name = homeplanet.model.Rank.promoted(was, r);
+			boolean dead = m.status == Status.KILLED;
+			m.events.add(new Event(MasterLog.today(v), (dead ? "Promoted posthumously to " : "Promoted to ") + homeplanet.model.Rank.TITLE[r] + "."));
+			int[] seen = seen(v);
+			write(v, members, seen[0], seen[1]);
+			homeplanet.core.HistoryLog.entry("RENAME CREW", was + " -> " + m.name + "  (" + (dead ? "posthumously" : "on the record") + ")");
+			return m.name;
+		}
+		String was = savedName(m), now = homeplanet.model.Rank.promoted(was, r);
+		Vault.Copy c = v.readCopy(s);
+		CrewState who = null; // the one the register knows: name, looks and service record
+		for (CrewState x : homeplanet.parser.SaveHelper.getOwnCrew(c.save.getPlayerShip())) {
+			Found f = found(x, m.place, m.where);
+			if (x.getName().equals(was) && score(f, m) > 0 && (m.record.isEmpty() || f.record.equals(m.record))) { who = x; break; }
+		}
+		if (who == null) throw new IOException(was + " could not be found " + m.where + " just now; nothing was changed.");
+		who.setName(now);
+		v.begin().put(s, c.save, c.hash).commit();
+		homeplanet.core.HistoryLog.entry("RENAME CREW", was + " -> " + now + "  (" + (m.place.equals("hold") ? HOLD_NAME : s.name) + ")");
+		sweep(v); // the register sees the new name: "Promoted to ..." (none if their record already wore it)
+		return now;
 	}
 
 	/** Words for a move between looks. */
@@ -611,7 +767,8 @@ public final class CrewRegister {
 				for (Member m : whoever(n.trim(), null, byName, renamedFrom, members, Status.KILLED)) m.events.add(new Event(day, "Did not come back from an expedition."));
 		} else if (head.startsWith("RENAME CREW")) {
 			String[] w = head.substring(11).trim().replaceAll("\\s+\\(.*$", "").split(" -> ", 2);
-			if (w.length == 2) for (Member m : whoever(w[1].trim(), null, byName, renamedFrom, members, null)) m.events.add(new Event(day, "Now known as " + w[1].trim() + " (was " + w[0].trim() + ")."));
+			String rank = w.length == 2 ? homeplanet.model.Rank.promotion(w[0].trim(), w[1].trim()) : null;
+			if (w.length == 2) for (Member m : whoever(w[1].trim(), null, byName, renamedFrom, members, null)) m.events.add(new Event(day, rank != null ? "Promoted to " + rank + "." : "Now known as " + w[1].trim() + " (was " + w[0].trim() + ")."));
 		} else if (head.startsWith("TRADE  ")) { // a Cargo Bay trade: who left a ship, then who came aboard one (5.51)
 			List<String[]> off = new ArrayList<String[]>(), on = new ArrayList<String[]>();
 			String ship = null;
@@ -751,6 +908,15 @@ public final class CrewRegister {
 				now.add(entry);
 			}
 			if (!now.equals(m.served)) { m.served.clear(); m.served.addAll(now); changed = true; }
+			for (List<String> where : m.with.values()) { // who they served with: the ship under her name now
+				List<String> named = new ArrayList<String>();
+				for (String sh : where) {
+					String id = shared.contains(sh) ? null : shipOfName.get(sh);
+					String to = id == null ? sh : names.get(id).get(names.get(id).size() - 1);
+					if (!named.contains(to)) named.add(to);
+				}
+				if (!named.equals(where)) { where.clear(); where.addAll(named); changed = true; }
+			}
 		}
 		return changed;
 	}

@@ -40,14 +40,60 @@ final class CrewReport extends JPanel {
 	}
 
 	/** Shows the report with these buttons; returns the one pressed (JOptionPane's numbering). */
-	static int show(Component parent, CrewState c, boolean laidUp, Object[] options) {
+	static int show(Component parent, CrewState c, boolean laidUp, Object[] options) { return show(parent, c, laidUp, options, null); }
+	/** Promote pressed where the caller promotes them itself ({@link #show(Component, CrewState, boolean, Object[], String)}). */
+	static final int PROMOTE = -3;
+	/**
+	 * The same; with a rank due, a Promote button (heromedel, 5.52). {@code inCaller} null: the station promotes them in
+	 * their save (where it may; otherwise the button is off and says why). "" : the caller does it (the Cargo Bay, with
+	 * its saves in hand), and gets {@link #PROMOTE}; any other text: the button is off, and that says why.
+	 */
+	static int show(Component parent, CrewState c, boolean laidUp, Object[] options, String inCaller) {
 		// one of the fleet's own: Crew Log... opens their whole career (heromedel, 5.41); the caller's own buttons keep their numbers
-		int id = homeplanet.vault.Vault.isOpen() ? homeplanet.vault.CrewRegister.identify(homeplanet.vault.Vault.get(), c) : -1;
-		Object[] all = options;
-		if (id > 0) { all = java.util.Arrays.copyOf(options, options.length + 1); all[options.length] = "Crew Log..."; }
-		int r = JOptionPane.showOptionDialog(parent, new CrewReport(c, laidUp), "Report for crewman " + c.getName(),
-				JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, all, all[0]);
+		homeplanet.vault.Vault v = homeplanet.vault.Vault.isOpen() ? homeplanet.vault.Vault.get() : null;
+		int id = v != null ? homeplanet.vault.CrewRegister.identify(v, c) : -1;
+		int rank = id > 0 || "".equals(inCaller) ? homeplanet.model.Rank.due(c) : -1;
+		String off = null;
+		if (rank >= 0 && inCaller == null) {
+			homeplanet.vault.CrewRegister.Member m = null;
+			for (homeplanet.vault.CrewRegister.Member x : homeplanet.vault.CrewRegister.members(v)) if (x.id == id) m = x;
+			off = m == null ? "Not on the station's records yet." : homeplanet.vault.CrewRegister.cannotPromote(v, m);
+		} else if (rank >= 0 && !inCaller.isEmpty()) off = inCaller;
+		final java.util.List<Object> labels = new java.util.ArrayList<Object>(java.util.Arrays.asList(options));
+		if (id > 0) labels.add("Crew Log...");
+		if (rank >= 0) labels.add("Promote");
+		final JOptionPane pane = new JOptionPane(new CrewReport(c, laidUp), JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION);
+		Object[] buttons = new Object[labels.size()];
+		for (int i = 0; i < buttons.length; i++) {
+			final javax.swing.JButton btn = new javax.swing.JButton(String.valueOf(labels.get(i)));
+			final int n = i;
+			btn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { pane.setValue(Integer.valueOf(n)); } });
+			if (labels.get(i).equals("Promote")) {
+				btn.setToolTipText(off == null ? homeplanet.model.Rank.TOOLTIP : "<html>" + off + "<br>" + homeplanet.model.Rank.TOOLTIP + "</html>");
+				btn.setEnabled(off == null);
+			}
+			buttons[i] = btn;
+		}
+		pane.setOptions(buttons);
+		pane.setInitialValue(buttons[0]);
+		javax.swing.JDialog d = pane.createDialog(parent, "Report for crewman " + c.getName());
+		d.setVisible(true);
+		d.dispose();
+		Object v0 = pane.getValue();
+		int r = v0 instanceof Integer ? (Integer) v0 : JOptionPane.CLOSED_OPTION;
 		if (id > 0 && r == options.length) { SettingsDialog.openCrewLog(parent, id); return JOptionPane.CLOSED_OPTION; }
+		if (rank >= 0 && r == labels.size() - 1) {
+			if (inCaller != null) return PROMOTE;
+			try {
+				String now = homeplanet.vault.CrewRegister.promote(v, id);
+				JOptionPane.showMessageDialog(parent, c.getName() + " is promoted to " + homeplanet.model.Rank.TITLE[rank] + ": the roster now lists " + now + ".", "Promoted", JOptionPane.INFORMATION_MESSAGE);
+				SpaceDockUI dock = (SpaceDockUI) javax.swing.SwingUtilities.getAncestorOfClass(SpaceDockUI.class, parent);
+				if (dock != null) dock.init(); // the new name in her crew list
+			} catch (java.io.IOException e) {
+				homeplanet.core.HomePlanet.showErrorDialog("The Home Planet Station could not promote " + c.getName() + ":\n" + e.getMessage());
+			}
+			return JOptionPane.CLOSED_OPTION;
+		}
 		return r;
 	}
 

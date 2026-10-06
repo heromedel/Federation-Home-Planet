@@ -1196,7 +1196,18 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		// the infirmary knows them by name: no new one until they're out
 		boolean resting = !mine && partnerIsStorage() && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), cs);
 		Object[] options = resting ? new Object[] {"OK"} : new Object[] {"OK", "Rename"};
-		int choice = CrewReport.show(this, cs, resting, options);
+		int choice = CrewReport.show(this, cs, resting, options, resting ? "Not while laid up in the infirmary." : "");
+		if (choice == CrewReport.PROMOTE) { // a rank put on their name, as Rename does it: official on Save (heromedel, 5.52)
+			int rank = homeplanet.model.Rank.due(cs);
+			if (rank < 0) return;
+			if (!crewRenames.containsKey(cs)) crewRenames.put(cs, cs.getName());
+			String was = cs.getName();
+			cs.setName(homeplanet.model.Rank.promoted(was, rank));
+			markDirty();
+			refreshTrade();
+			help(homeplanet.model.Rank.bare(was) + " is promoted to " + homeplanet.model.Rank.TITLE[rank] + ": the roster now lists " + cs.getName() + ". Save to make it official.");
+			return;
+		}
 		if (choice != 1) return;
 		String newName = SpaceDockUI.promptForName("Enter a new name for " + cs.getName() + ":", "Rename Crew", cs.getName());
 		if (newName == null || newName.equals(cs.getName())) return;
