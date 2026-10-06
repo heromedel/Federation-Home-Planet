@@ -47,5 +47,5 @@ Counted at version 4B.83 (about 55,000 lines of Java in all):
 | Lines still verbatim from FTL Homeworld 3.1 | under 0.1% |
 | New or rewritten for Federation Home Planet | 58% |
 
-The Java, Swing and the bundled libraries (SLF4J, Logback, JDOM 2, JAXB, java-vorbis-support)
+The Java, Swing and the bundled libraries (SLF4J, Logback, JDOM 2, JAXB, java-vorbis-support, JNA)
 are their authors', under their own licences; see the pom.xml.

@@ -99,7 +99,7 @@ public class PatchDialog extends JDialog {
 		JTextArea intro = note("Tick the mods to install in FTL. They load top to bottom.\n"
 				+ "Slipstream starts from a clean copy of FTL every time, so unticked mods are removed.\n"
 				+ "The " + Retrofit.MOD_NAME + " is always installed, last, so retrofitted ships keep working.\n"
-				+ "Close FTL before patching.");
+				+ homeplanet.core.GameGuard.CLOSE_FTL);
 		body.add(intro, BorderLayout.NORTH);
 		JScrollPane scroll = new JScrollPane(list);
 		scroll.setPreferredSize(new Dimension(420, 220));

@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.26";
+	public static final String APP_VERSION = "5.47";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -97,7 +97,7 @@ public class HomePlanet {
 	/** Does the fleet in use earn and lose reputation: always in Immersive Mode, and in Sandbox Mode with its Reputation rule. */
 	public static boolean reputation() { return immersiveMode || reputationOn; }
 	/**
-	 * How Reputation Can be Used (heromedel, 5.15; any mode, never locked): 1 New Journeys and Pleads, 2 Vanillas Breaking
+	 * How Reputation Can be Used (heromedel, 5.15; any mode, never locked): 1 New Journeys and Pleads, 2 Vanilla-Breaking
 	 * Actions (and 1), 3 Only as a score. Wherever it can't be used, scrap pays. Default 1.
 	 */
 	public static int reputationUse = 1;
@@ -220,6 +220,14 @@ public class HomePlanet {
 		if (save_location == null) {
 			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
 			System.exit(1);
+		}
+		if (!StationLock.claim(save_location)) { // another copy is open on these saves (5.45)
+			final String says = StationLock.inUseMessage(save_location);
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+				JOptionPane.showMessageDialog(null, says, "Already open", JOptionPane.WARNING_MESSAGE);
+				return null;
+			} });
+			System.exit(0);
 		}
 		writeConfig |= !save_location.getAbsolutePath().equals(config.getProperty("ftlSavePath"));
 		if (writeConfig) saveConfig();
@@ -409,14 +417,30 @@ public class HomePlanet {
 	}
 	public static void showErrorDialog(final String message) {
 		onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
-			JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, wrap(message, 100), "Error", JOptionPane.ERROR_MESSAGE);
 			return null;
 		}});
+	}
+	/** Long lines broken after a space or a path's separator: a long path ran off the screen, the reason after it unseen (heromedel, 5.44). */
+	static String wrap(String text, int width) {
+		if (text == null || text.startsWith("<html>")) return text;
+		StringBuilder out = new StringBuilder();
+		for (String line : text.split("\n", -1)) {
+			while (line.length() > width) {
+				int cut = Math.max(line.lastIndexOf(' ', width - 1), Math.max(line.lastIndexOf('\\', width - 1), line.lastIndexOf('/', width - 1))) + 1;
+				if (cut < width / 2) cut = width; // nowhere to break near the end: broken at the width
+				out.append(line, 0, cut).append('\n');
+				line = line.substring(cut);
+			}
+			out.append(line).append('\n');
+		}
+		return out.substring(0, out.length() - 1);
 	}
 
 	// ---- FTL itself ----
 
-	public static void launchFTL() {
+	/** Starts FTL (true if it was started: the docked view waits for its window then). */
+	public static boolean launchFTL() {
 		// a retrofitted ship can't load without the companion mod: don't let FTL try
 		File cont = new File(save_location, "continue.sav");
 		if (cont.exists()) {
@@ -424,11 +448,11 @@ public class HomePlanet {
 			if (!missing.isEmpty()) {
 				showErrorDialog("The boarded ship flies on blueprints from the " + Retrofit.MOD_NAME + ", which isn't in FTL yet ("
 						+ String.join(", ", missing) + ").\n\nSend it to FTL via Slipstream first (Settings > Patch mods), or board a different ship.");
-				return;
+				return false;
 			}
 		}
 		String empty = noOneAboard(cont);
-		if (empty != null) { showErrorDialog(empty); return; }
+		if (empty != null) { showErrorDialog(empty); return false; }
 		Music.stop(); // FTL has its own music
 		if (launchThroughSteam) {
 			String steamUri = "steam://rungameid/" + FTLUtilities.STEAM_APPID_FTL;
@@ -439,24 +463,27 @@ public class HomePlanet {
 			} catch (Exception ex) {
 				log.error("Could not launch FTL through Steam.", ex);
 				showErrorDialog("The Home Planet Station could not launch FTL through Steam:\n" + ex);
+				return false;
 			}
-			return;
+			return true;
 		}
 		// FTL 1.6+ keeps FTLGame.exe beside ftl.dat; older versions had it one folder up from resources/
 		File ftl = FTLUtilities.findGameExe(datsPath);
 		if (ftl == null) {
 			log.warn("Could not find the FTL executable near {}", datsPath);
 			showErrorDialog("The Home Planet Station could not find FTL's executable near:\n" + datsPath + "\n\nCheck the game folder in Settings.");
-			return;
+			return false;
 		}
 		log.debug("Running FTL: {}", ftl.getAbsolutePath());
 		try {
 			ProcessBuilder builder = new ProcessBuilder(ftl.getAbsolutePath());
 			builder.directory(ftl.getParentFile()); // the exe expects its own folder as the working directory
 			builder.start();
+			return true;
 		} catch (IOException ex) {
 			log.error("An exception occurred while executing FTL.", ex);
 			showErrorDialog("FTL could not be started:\n" + ex);
+			return false;
 		}
 	}
 

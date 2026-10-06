@@ -54,6 +54,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private final Map<JButton, Ship> boardButtons = new HashMap<JButton, Ship>();
 	private final Map<JButton, Ship> infoButtons = new HashMap<JButton, Ship>();
 	private JButton museumBtn;
+	private JButton dockLaunchBtn, flipBtn;
 	private JButton inboxBtn, repBtn, expeditionsBtn, otherBtn, settingsBtn, disbandBtn, salvageBtn, journeyBtn, commissionBtn, refreshBtn, launchBtn, cargoBtn, designBtn, commBtn, quartersBtn;
 	final MainFrame parent;
 
@@ -68,6 +69,57 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		this.parent = p;
 		init();
 		homeplanet.core.SafeFiles.setListener(new homeplanet.core.SafeFiles.Listener() { public void written(File f) { fleetChanged(f); } });
+		// a click on the station's window brings it over a docked FTL: FTL is lifted back a moment later (heromedel, 5.33)
+		java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(new java.awt.event.AWTEventListener() { public void eventDispatched(java.awt.AWTEvent e) {
+			if (e.getID() != java.awt.event.MouseEvent.MOUSE_RELEASED || !homeplanet.core.FtlDock.found() || !(e.getSource() instanceof java.awt.Component)) return;
+			if (javax.swing.SwingUtilities.getWindowAncestor(SpaceDockUI.this) == javax.swing.SwingUtilities.getWindowAncestor((java.awt.Component) e.getSource())) liftSoon();
+		} }, java.awt.AWTEvent.MOUSE_EVENT_MASK);
+		// a station popup opens: a docked FTL steps aside till the last one closes, as for other screens (heromedel, 5.35)
+		java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(new java.awt.event.AWTEventListener() { public void eventDispatched(java.awt.AWTEvent e) {
+			if (homeplanet.core.FtlDock.active() || overForPopup) javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { popupsChanged(); } });
+		} }, java.awt.AWTEvent.WINDOW_EVENT_MASK);
+	}
+	private boolean overForPopup;
+	/** Windows keeps popups just over the station's window, which sits under FTL's: while one is open, the station comes over FTL instead (5.39). */
+	private void popupsChanged() {
+		boolean popup = false;
+		for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof java.awt.Dialog && w.isShowing()) { popup = true; break; }
+		if (popup && !overForPopup && homeplanet.core.FtlDock.active() && !homeplanet.core.FtlDock.aside() && !homeplanet.core.FtlDock.attached() && parent != null && parent.atSpaceDock()) { // attached, popups come over FTL by themselves
+			// the station's window over FTL's, its popups over both; FTL still shows through the viewport's hole (heromedel, 5.39)
+			overForPopup = true;
+			log.debug("FTL docked: the station over FTL for a popup, FTL seen through its viewport");
+			homeplanet.core.FtlDock.stationOnTop(javax.swing.SwingUtilities.getWindowAncestor(this));
+		} else if (!popup && overForPopup) {
+			overForPopup = false;
+			log.debug("FTL docked: back over the station after the popups");
+			if (homeplanet.core.FtlDock.active() && parent != null && parent.atSpaceDock()) {
+				placeViewport();
+				liftSoon();
+			}
+		}
+	}
+	private final javax.swing.Timer lift = new javax.swing.Timer(200, new ActionListener() { public void actionPerformed(ActionEvent e) { liftFtl(); } });
+	{ lift.setRepeats(false); }
+	/** A docked FTL lifted back over its viewport a moment from now (after a click, a rebuild, the station brought forward). */
+	/** The station's window closed and opened again (borderless full screen switched): a docked FTL put back. */
+	void windowReopened() {
+		homeplanet.core.FtlDock.stationReopened(javax.swing.SwingUtilities.getWindowAncestor(this));
+		revalidate();
+		javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() {
+			if (homeplanet.core.FtlDock.active() && viewportPanel != null) fitWindow(); // out of full screen while docked: room for FTL again
+			placeViewport();
+			liftSoon();
+		} });
+	}
+	void liftSoon() { if (homeplanet.core.FtlDock.found()) lift.restart(); }
+	/** Lifted now, without taking the keyboard: not while the docked ships are shown, nor over a station popup. */
+	void liftFtl() {
+		if (!homeplanet.core.FtlDock.found() || homeplanet.core.FtlDock.aside() || homeplanet.core.FtlDock.attached() || !isShowing() || overForPopup) return; // attached, it stays over the station by itself
+		java.awt.Window active = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
+		java.awt.Window station = javax.swing.SwingUtilities.getWindowAncestor(this);
+		if (active != null && active != station && active.isShowing()) return; // a popup is up: FTL stays under it (one just closed may still count as active a moment)
+		if (active == station) homeplanet.core.FtlDock.raise(station); // the station in use: FTL over it, and over a program left between them by an Alt+Tab (heromedel, 5.43)
+		homeplanet.core.FtlDock.tuckUnder(station); // the station's own window under FTL's: Windows refuses lifting another program's window (5.34)
 	}
 
 	// ---- keeping itself current: a rebuild a moment after anything in the fleet's folder is written ----
@@ -142,8 +194,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		boolean longRange = parent != null && parent.comm != null && parent.comm.inboxWanted(); // a commander's mail needs an inbox, whatever the setting
 		if (HomePlanet.immersiveNotifications() || longRange) {
 			homeplanet.parser.Transmissions.check(); // anything new from The Federation Home Planet (without the inbox, only augments shipped home)
-			inboxBtn = new TransmissionButton(homeplanet.parser.Transmissions.unread());
+			int unread = homeplanet.parser.Transmissions.unread();
+			inboxBtn = new TransmissionButton(unread);
 			inboxBtn.addActionListener(this);
+			if (homeplanet.core.FtlDock.found() && lastUnread >= 0 && unread > lastUnread) noticeOverFtl(); // a letter while FTL is docked (5.29)
+			lastUnread = unread;
 		} else {
 			inboxBtn = null;
 		}
@@ -162,7 +217,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		JPanel controls = new JPanel();
 		controls.setLayout(new BoxLayout(controls, BoxLayout.Y_AXIS));
 		controls.setOpaque(false);
-		controls.setBorder(javax.swing.BorderFactory.createEmptyBorder(14, 10, 10, 16));
+		controls.setBorder(javax.swing.BorderFactory.createEmptyBorder(14, 10, 10, homeplanet.core.FtlDock.active() ? 0 : 16)); // flush right while FTL is docked: more room for it (5.31)
 		launchBtn = controlButton("Launch FTL", "Play FTL");
 		journeyBtn = controlButton("New Journey", "Set out from the first sector with the boarded ship, crew and cargo");
 		commissionBtn = controlButton("Commission", "Have a brand-new ship built, as a new game would start her");
@@ -195,6 +250,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		commBtn.addActionListener(this);
 		commBtn.setAlignmentX(LEFT_ALIGNMENT);
 		controlGroup(controls, "Helm", launchBtn, journeyBtn);
+		if (homeplanet.core.FtlDock.optionOn()) { // heromedel, 5.29: the docked launch, a small icon under Refresh
+			dockLaunchBtn = new DockLaunchButton();
+			dockLaunchBtn.setToolTipText(homeplanet.core.FtlDock.active() ? "FTL is docked in the station window" : "Launch FTL docked in the station window");
+			dockLaunchBtn.setEnabled(!homeplanet.core.FtlDock.active());
+			dockLaunchBtn.addActionListener(this);
+			launchBtn.addComponentListener(new java.awt.event.ComponentAdapter() { @Override public void componentMoved(java.awt.event.ComponentEvent e) { alignDockLaunch(); } });
+		} else {
+			dockLaunchBtn = null;
+		}
 		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
 		if (homeplanet.parser.Museum.anything(vault)) { // once a ship has won, or been lost in action
 			museumBtn = controlButton("Museum", "The Federation Museum: the Hall of Victors, and the Memorial to ships lost in action");
@@ -214,12 +278,27 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final JPanel berth = boarded == null ? null : berthPanel(boarded);
 		final JPanel stats = boarded == null ? null : statsPanel(boarded);
 		final JPanel aboard = boarded == null ? null : aboardRow;
+		final JPanel view = homeplanet.core.FtlDock.active() && !homeplanet.core.FtlDock.aside() ? viewport() : null; // FTL docked in her place (5.29); flipped, the Space Dock as without FTL (5.34)
+		viewportPanel = view;
 		JPanel main = new JPanel(null) {
 			@Override
 			public void doLayout() {
 				int w = SpaceDockUI.this.getWidth(), h = SpaceDockUI.this.getHeight();
 				int top = 0;
-				if (berth != null) {
+				if (view != null) { // her heading (inbox, reputation) on top, then FTL's viewport; the docked ships below
+					int y0 = 10;
+					Dimension vs = homeplanet.core.FtlDock.size();
+					int ah = aboard == null ? 0 : aboard.getPreferredSize().height;
+					if (aboard != null) y0 = 10 + ah + 6;
+					// smaller than chosen when the window can't hold it (FTL's window resizes), keeping its 16:9
+					int vw = Math.min(vs.width, getWidth() - 30 - RefreshButton.SIZE), vh = Math.min(vs.height, getHeight() - y0 - DOCK_BELOW - 2); // FTL's own size inside the frame
+					if (vw * vs.height > vh * vs.width) vw = vh * vs.width / vs.height; else vh = vw * vs.height / vs.width;
+					vw = Math.max(160, vw); vh = Math.max(90, vh);
+					if (aboard != null) aboard.setBounds(14, 10, Math.min(aboard.getPreferredSize().width, vw), ah); // her heading its usual length, the inbox and reputation after it
+					view.setBounds(14, y0, vw + 2, vh + 2); // the gold frame a pixel outside FTL all round (5.39: FTL covered its bottom and right)
+					docked.setVisible(false); // nothing below FTL: the flip shows the Space Dock as usual instead (5.34)
+					javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { placeViewport(); } });
+				} else if (berth != null) {
 					Dimension d = berth.getPreferredSize();
 					double sc = SpaceDockScrollPane.scale(w, h);
 					int saucerLeft = (int) Math.round(SpaceDockScrollPane.offsetX(w, h) + SpaceDockScrollPane.saucerLeft() * sc);
@@ -240,19 +319,26 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					top = y0 + d.height + 6;
 					if (room) top = Math.max(top, stats.getY() + sd.height + 6); // a tall stats column pushes the docked ships down, not under it
 				}
-				docked.setBounds(0, top, Math.min(dockedW, getWidth()), Math.max(0, getHeight() - top));
+				if (view == null) docked.setBounds(0, top, Math.min(dockedW, getWidth()), Math.max(0, getHeight() - top)); // while docked, nothing below FTL (5.32)
 				refreshBtn.setBounds(getWidth() - RefreshButton.SIZE - 2, 14, RefreshButton.SIZE, RefreshButton.SIZE); // at the top right, left of Helm, past the column's edge
+				if (dockLaunchBtn != null) { // the docked launch, under it, level with Launch FTL's middle
+					dockLaunchBtn.setBounds(getWidth() - RefreshButton.SIZE - 2, 14 + RefreshButton.SIZE + 6, RefreshButton.SIZE, RefreshButton.SIZE);
+					javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { alignDockLaunch(); } });
+				}
 			}
 		};
 		main.setOpaque(false);
 		main.add(refreshBtn);
-		if (berth != null) { main.add(aboard); main.add(berth); main.add(stats); }
+		if (dockLaunchBtn != null) main.add(dockLaunchBtn);
+		if (view != null) { if (aboard != null) main.add(aboard); main.add(view); }
+		else if (berth != null) { main.add(aboard); main.add(berth); main.add(stats); }
 		main.add(docked);
 
 		add(main, java.awt.BorderLayout.CENTER);
 		add(controls, java.awt.BorderLayout.EAST);
 		revalidate(); // lay out and redraw the new contents at once (Refresh, Settings...)
 		repaint();
+		liftSoon(); // a docked FTL back over its rebuilt viewport (5.33)
 		if (!loggedStartup) {
 			HistoryLog.loaded("startup");
 			loggedStartup = true;
@@ -420,7 +506,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (c == 3) { if (parent != null) parent.dispatchEvent(new java.awt.event.WindowEvent(parent, java.awt.event.WindowEvent.WINDOW_CLOSING)); return; }
 		if (c < 0) { deferredStrangers.add(stranger.id); init(); return; } // closed: asked again at the next start
 		if (GameGuard.isFtlRunning()) {
-			JOptionPane.showMessageDialog(null, "FTL is running. Quit FTL first; The Home Planet Station will ask again.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(null, "FTL is running. " + GameGuard.CLOSE_FTL + " The Home Planet Station will ask again.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		Vault v = Vault.get();
@@ -464,14 +550,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return b;
 	}
 	/** A gold heading and its buttons; a click on the heading folds them away or back (remembered between runs). */
-	private static void controlGroup(final JPanel column, String title, JButton... buttons) {
+	private static void controlGroup(final JPanel column, String title, javax.swing.JComponent... buttons) {
 		final String key = "fold_" + title.toLowerCase().replace(' ', '_');
 		final JPanel body = new JPanel();
 		body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
 		body.setOpaque(false);
 		body.setAlignmentX(LEFT_ALIGNMENT);
 		body.add(gap(10));
-		for (JButton b : buttons) {
+		for (javax.swing.JComponent b : buttons) {
 			body.add(b);
 			body.add(gap(10));
 		}
@@ -587,6 +673,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		board.setToolTipText(ship0.isBoarded() ? "Dock her here until she's needed again" : "Take command: she becomes the ship you fly in FTL");
 		boardButtons.put(board, ship0);
 		board.addActionListener(this);
+		if (homeplanet.core.FtlDock.active()) { board.setEnabled(false); board.setToolTipText(GameGuard.CLOSE_FTL); } // she can't change ships mid-flight (5.29)
 		FtlButton infobtn = new FtlButton("Info", FtlFont.BODY, w, h);
 		infobtn.setToolTipText("Ship's report, and rename her");
 		infobtn.addActionListener(this);
@@ -639,7 +726,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		head.setAlignmentX(LEFT_ALIGNMENT);
 		int inboxW = inboxWidth();
 		// her heading stands apart, from the left margin as the Docked one does (the Space Dock lays it out above her)
-		aboardRow = withInbox(new FtlButton.Header("Aboard", BERTH_W - inboxW, true), true); // aboard her: the ship you're on
+		flipBtn = null;
+		if (homeplanet.core.FtlDock.active()) { // FTL docked: the icon that flips its place to the docked ships and back (heromedel, 5.32)
+			flipBtn = new FlipButton();
+			flipBtn.setToolTipText(homeplanet.core.FtlDock.aside() ? "Back to FTL" : "Show the Space Dock (FTL waits behind it)");
+			flipBtn.addActionListener(this);
+		}
+		int flipW = flipBtn == null ? 0 : FlipButton.SIZE + 8;
+		aboardRow = withInbox(new FtlButton.Header("Aboard", BERTH_W - inboxW - flipW, true), true, flipBtn); // aboard her: the ship you're on
 		head.add(new FtlButton.Text(ship0.name, FtlFont.BODY, Color.white, BERTH_W));
 		head.add(smallLabel(beacons(ship0), MenuTheme.GREY_GREEN));
 		boolean off = offStation(ship0);
@@ -658,17 +752,20 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	 * A heading with the transmissions light at the end of its line (where the eye goes first) and the reputation to its
 	 * right, if they go here (either may be off).
 	 */
-	private JPanel withInbox(FtlButton.Header header, boolean here) {
+	private JPanel withInbox(FtlButton.Header header, boolean here) { return withInbox(header, here, null); }
+	/** The same, with a small icon first (the docked flip, 5.32) before the inbox. */
+	private JPanel withInbox(FtlButton.Header header, boolean here, JButton first) {
 		JPanel row = new JPanel(new java.awt.BorderLayout(8, 0));
 		row.setOpaque(false);
 		row.setAlignmentX(LEFT_ALIGNMENT);
 		row.add(header, java.awt.BorderLayout.CENTER);
-		if (here && repBtn == null && inboxBtn != null) row.add(inboxBtn, java.awt.BorderLayout.EAST);
-		else if (here && repBtn != null) { // the reputation, to the inbox's right
+		if (here && repBtn == null && inboxBtn != null && first == null) row.add(inboxBtn, java.awt.BorderLayout.EAST);
+		else if (here && (repBtn != null || inboxBtn != null || first != null)) { // the flip, the inbox, the reputation to its right
 			JPanel both = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
 			both.setOpaque(false);
+			if (first != null) both.add(first);
 			if (inboxBtn != null) both.add(inboxBtn);
-			both.add(repBtn);
+			if (repBtn != null) both.add(repBtn);
 			row.add(both, java.awt.BorderLayout.EAST);
 		}
 		row.setMaximumSize(row.getPreferredSize());
@@ -789,9 +886,258 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			parent.showLongRangeComm();
 		} else if (o == launchBtn) {
 			HomePlanet.launchFTL();
+		} else if (o == dockLaunchBtn) {
+			launchDocked();
+		} else if (o == flipBtn) {
+			flip();
 		} else if (infoButtons.containsKey(o)) {
 			o.setFocusPainted(false);
 			showShipInfo(infoButtons.get(o));
+		}
+	}
+
+	// ---- FTL docked in the station window (heromedel, 5.29) ----
+
+	private JPanel viewportPanel;
+	private long dockStarted;
+	private Dimension sizeBeforeDock, dockedSize;
+	/** The room kept under FTL's viewport: the docked ships flip into its place instead (5.32). */
+	private static final int DOCK_BELOW = 16;
+	private final javax.swing.Timer dockWatch = new javax.swing.Timer(500, new ActionListener() { public void actionPerformed(ActionEvent e) { watchDock(); } });
+
+	/** Where FTL sits: a dark screen in a gold frame, with a word while FTL's window is on its way. */
+	private JPanel viewport() {
+		final JPanel p = new JPanel() {
+			@Override protected void paintComponent(Graphics g) {
+				g.setColor(new Color(8, 10, 14));
+				g.fillRect(0, 0, getWidth(), getHeight());
+				g.setColor(MenuTheme.GOLD);
+				g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
+				g.setFont(MenuTheme.TEXT_FONT);
+				java.awt.FontMetrics fm = g.getFontMetrics();
+				if (!homeplanet.core.FtlDock.found()) {
+					String s = "FTL is starting...";
+					g.setColor(MenuTheme.GREY_GREEN);
+					g.drawString(s, (getWidth() - fm.stringWidth(s)) / 2, getHeight() / 2);
+					return;
+				}
+				// seen only when FTL has fallen behind the station (heromedel, 5.33): FTL's paused look, a click brings it back
+				java.util.Random r = new java.util.Random(7);
+				for (int i = 0; i < getWidth() * getHeight() / 2500; i++) {
+					int c = 90 + r.nextInt(120);
+					g.setColor(new Color(c, c, Math.min(255, c + 25)));
+					g.fillRect(1 + r.nextInt(Math.max(1, getWidth() - 2)), 1 + r.nextInt(Math.max(1, getHeight() - 2)), 1 + r.nextInt(2), 1);
+				}
+				java.awt.image.BufferedImage word = FtlFont.MENU.render("UNPAUSE", Color.white);
+				int sc = 3, ww = word.getWidth() * sc, wh = word.getHeight() * sc;
+				g.drawImage(word, (getWidth() - ww) / 2, getHeight() / 2 - wh, ww, wh, null);
+				String s = "Click to return to FTL";
+				g.setColor(MenuTheme.GREY_GREEN);
+				g.drawString(s, (getWidth() - fm.stringWidth(s)) / 2, getHeight() / 2 + fm.getHeight() + 6);
+			}
+		};
+		p.setOpaque(true);
+		p.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mousePressed(java.awt.event.MouseEvent e) {
+			if (!homeplanet.core.FtlDock.found()) return;
+			log.debug("FTL docked: Unpause clicked, FTL to the front");
+			homeplanet.core.FtlDock.focus();
+		} });
+		p.addHierarchyBoundsListener(new java.awt.event.HierarchyBoundsAdapter() {
+			@Override public void ancestorMoved(java.awt.event.HierarchyEvent e) { placeViewport(); }
+			@Override public void ancestorResized(java.awt.event.HierarchyEvent e) { placeViewport(); }
+		});
+		return p;
+	}
+	/** FTL's window over the viewport, wherever the station's window is. */
+	void placeViewport() {
+		JPanel v = viewportPanel;
+		if (v == null || !v.isShowing() || !homeplanet.core.FtlDock.active()) return;
+		if (v.getWidth() <= 2 || v.getHeight() <= 2) return; // a rebuild's new viewport, not laid out yet: FTL shrank to nothing there a moment, every save (heromedel, 5.42)
+		java.awt.Point at = v.getLocationOnScreen();
+		homeplanet.core.FtlDock.place(new java.awt.Rectangle(at.x + 1, at.y + 1, v.getWidth() - 2, v.getHeight() - 2)); // inside the gold frame
+	}
+	/** The docked launch: FTL windowed, launched, and the Space Dock laid out around its viewport. */
+	private void launchDocked() {
+		try { homeplanet.core.FtlDock.prepareSettings(); }
+		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not set FTL to windowed in its settings.ini:\n" + e.getMessage() + "\n\nFTL may start full screen; it will still be docked if it can be."); }
+		if (!HomePlanet.launchFTL()) return;
+		homeplanet.core.FtlDock.begin(javax.swing.SwingUtilities.getWindowAncestor(this));
+		dockStarted = System.currentTimeMillis();
+		ftlSeen = false;
+		init();
+		javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { fitWindow(); } });
+		dockWatch.start();
+	}
+	/** The station's window grown to hold the viewport, if the screen has room (put back afterwards). */
+	private void fitWindow() {
+		if (parent != null && parent.isBorderless()) return; // full screen already: the viewport has the room there is
+		JPanel v = viewportPanel;
+		java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(this);
+		if (v == null || w == null) return;
+		java.awt.Point at = javax.swing.SwingUtilities.convertPoint(v, 0, 0, this);
+		Dimension want = homeplanet.core.FtlDock.size(); // the size chosen, not what fits now
+		int controlsW = getComponentCount() > 1 ? getComponent(1).getPreferredSize().width : 220;
+		int needW = want.width + 30 + RefreshButton.SIZE + controlsW, needH = at.y + want.height + 2 + DOCK_BELOW; // as the layout wants it, so FTL fits exactly; nothing below it (5.32)
+		int dw = Math.max(0, needW - getWidth()), dh = Math.max(0, needH - getHeight());
+		if (dw == 0 && dh == 0) return;
+		java.awt.Rectangle screen = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+		if (sizeBeforeDock == null) sizeBeforeDock = w.getSize();
+		w.setSize(Math.min(screen.width, w.getWidth() + dw), Math.min(screen.height, w.getHeight() + dh));
+		dockedSize = w.getSize();
+		if (w.getX() + w.getWidth() > screen.x + screen.width || w.getY() + w.getHeight() > screen.y + screen.height) w.setLocation(screen.x + (screen.width - w.getWidth()) / 2, screen.y + (screen.height - w.getHeight()) / 2);
+	}
+	/** Every half second while docked: find FTL's window, keep it placed, and notice when it's gone. */
+	private void watchDock() {
+		if (!homeplanet.core.FtlDock.active()) { dockWatch.stop(); return; }
+		keepDockedSize();
+		if (!homeplanet.core.FtlDock.found()) {
+			checkFtlRunning(); // closed before its window turned up; once it's found, its window going says FTL closed (5.32: tasklist can misread)
+			homeplanet.core.FtlDock.Found f = homeplanet.core.FtlDock.find();
+			if (f == homeplanet.core.FtlDock.Found.DOCKED) { placeViewport(); liftFtl(); if (viewportPanel != null) viewportPanel.repaint(); return; }
+			if (f == homeplanet.core.FtlDock.Found.FULLSCREEN) { // left as it is: say what to change in FTL, once
+				endDock();
+				JOptionPane.showMessageDialog(this, "FTL is set to full screen. To play it docked, set Options > Fullscreen to Off in FTL, then launch docked again.",
+						"Play FTL, docked", JOptionPane.INFORMATION_MESSAGE);
+				return;
+			}
+			long wait = HomePlanet.launchThroughSteam ? 300000 : 180000; // Steam may start, update or sync first
+			if (System.currentTimeMillis() - dockStarted > wait) { log.info("FTL docked: no FTL window after {} minutes; it runs as a normal window", wait / 60000); endDock(); }
+			return;
+		}
+		if (!homeplanet.core.FtlDock.alive()) { endDock(); return; } // FTL closed
+		if (homeplanet.core.FtlDock.inFront()) liftFtl(); // Alt+Tab straight to FTL: the station comes up under it, no other program round it (heromedel, 5.43)
+	}
+	/**
+	 * FTL starting up can put the station's window back to its old size (seen under Wine, 5.32): for its first 45 seconds
+	 * the docked size is kept. After that, a window the player resizes stays as they leave it.
+	 */
+	private void keepDockedSize() {
+		java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(this);
+		if (dockedSize == null || w == null || System.currentTimeMillis() - dockStarted > 45000) return;
+		if (w.getWidth() >= dockedSize.width && w.getHeight() >= dockedSize.height) return;
+		log.debug("FTL docked: the station's window was shrunk while FTL started; its docked size again");
+		w.setSize(Math.max(w.getWidth(), dockedSize.width), Math.max(w.getHeight(), dockedSize.height));
+	}
+	private long lastRunCheck;
+	/** FTL has been seen running since this docked launch (Cloud-C-BugsandFeedback's handoff, 5.33). */
+	private volatile boolean ftlSeen;
+	private volatile boolean checkingRun;
+	/** Every few seconds, off the Swing thread, until FTL's window turns up: FTL seen running, then gone, ends the docked view (it closed first). */
+	private void checkFtlRunning() {
+		long now = System.currentTimeMillis();
+		if (checkingRun || now - lastRunCheck < 3000) return;
+		lastRunCheck = now;
+		checkingRun = true;
+		new Thread(new Runnable() { public void run() {
+			boolean running = GameGuard.isFtlRunning();
+			checkingRun = false;
+			if (running) { ftlSeen = true; return; }
+			// "not running" counts only once FTL has been seen: through Steam, starting, updating or syncing can take a while (5.33)
+			if (ftlSeen) javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { if (homeplanet.core.FtlDock.active()) endDock(); } });
+		} }, "ftl-dock-check").start();
+	}
+	/** FTL closed (or never turned up): the Space Dock as usual, at its old size, taking stock. */
+	private void endDock() {
+		log.info("FTL docked: the docked view ends (FTL closed, or its window not found)");
+		homeplanet.core.FtlDock.end();
+		dockWatch.stop();
+		java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(this);
+		if (w != null && sizeBeforeDock != null && (parent == null || !parent.isBorderless())) w.setSize(sizeBeforeDock);
+		sizeBeforeDock = null;
+		dockedSize = null;
+		init();
+	}
+	private static int lastUnread = -1;
+	/**
+	 * A new letter while FTL is docked: a small notice in the viewport's top right that doesn't take the keyboard, so
+	 * FTL keeps it. A click opens the inbox; left alone, it goes after a few seconds.
+	 */
+	private void noticeOverFtl() {
+		JPanel v = viewportPanel;
+		if (v == null || !v.isShowing()) return;
+		homeplanet.parser.Transmissions.Message newest = null;
+		for (homeplanet.parser.Transmissions.Message m : homeplanet.parser.Transmissions.load()) if (!m.read && !m.archived) newest = m;
+		String what = newest == null ? "A new message" : "From " + newest.from + ": " + newest.subject;
+		final javax.swing.JWindow w = new javax.swing.JWindow(javax.swing.SwingUtilities.getWindowAncestor(this));
+		w.setFocusableWindowState(false); // FTL keeps the keyboard
+		w.setAlwaysOnTop(true);
+		JLabel l = new JLabel("<html><font color='" + MenuTheme.HTML_GOLD + "'><b>Incoming transmission</b></font><br>" + homeplanet.parser.XmlText.text(what) + "<br><font color='"
+				+ MenuTheme.HTML_GREY_GREEN + "'>Click to open the inbox</font></html>");
+		l.setFont(MenuTheme.TEXT_FONT);
+		l.setForeground(new Color(0xdc, 0xe4, 0xeb));
+		l.setBorder(javax.swing.BorderFactory.createCompoundBorder(javax.swing.BorderFactory.createLineBorder(MenuTheme.GOLD, 2), javax.swing.BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+		l.setOpaque(true);
+		l.setBackground(new Color(16, 20, 26));
+		l.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+		l.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mousePressed(java.awt.event.MouseEvent e) {
+			w.dispose();
+			if (inboxBtn != null) inboxBtn.doClick();
+		} });
+		w.getContentPane().add(l);
+		w.pack();
+		w.setSize(Math.min(w.getWidth(), 420), w.getHeight());
+		java.awt.Point at = v.getLocationOnScreen();
+		w.setLocation(at.x + v.getWidth() - w.getWidth() - 12, at.y + 12);
+		w.setVisible(true);
+		javax.swing.Timer t = new javax.swing.Timer(8000, new ActionListener() { public void actionPerformed(ActionEvent e) { w.dispose(); } });
+		t.setRepeats(false);
+		t.start();
+	}
+	/** The docked launch's icon centred on Launch FTL's height (they sit in different panels). */
+	private void alignDockLaunch() {
+		JButton d = dockLaunchBtn;
+		if (d == null || d.getParent() == null || !launchBtn.isShowing()) return;
+		java.awt.Point p = javax.swing.SwingUtilities.convertPoint(launchBtn, 0, 0, d.getParent());
+		d.setLocation(d.getX(), p.y + (launchBtn.getHeight() - d.getHeight()) / 2);
+	}
+	/** The docked launch's icon: a small screen, beside Launch FTL. */
+	static final class DockLaunchButton extends FtlButton {
+		DockLaunchButton() { super("", FtlFont.MENU, RefreshButton.SIZE, RefreshButton.SIZE); }
+		@Override protected void paintComponent(Graphics g0) {
+			super.paintComponent(g0);
+			Graphics2D g = (Graphics2D) g0.create();
+			g.setColor(isEnabled() ? (getModel().isRollover() ? TEXT_HOT : TEXT) : Color.gray);
+			g.setStroke(new BasicStroke(2f));
+			int w = getWidth(), h = getHeight();
+			g.drawRect(w / 2 - 9, h / 2 - 8, 18, 12); // the screen
+			g.fillRect(w / 2 - 6, h / 2 - 5, 12, 6);
+			g.drawLine(w / 2, h / 2 + 4, w / 2, h / 2 + 7); // its stand
+			g.drawLine(w / 2 - 5, h / 2 + 8, w / 2 + 5, h / 2 + 8);
+			g.dispose();
+		}
+	}
+
+	/** The flip (5.32): the docked ships in FTL's place, FTL hidden but running; again, FTL back where it was. */
+	private void flip() {
+		boolean ships = !homeplanet.core.FtlDock.aside();
+		log.debug("FTL docked: {}", ships ? "the Space Dock shown as without FTL" : "back to FTL");
+		homeplanet.core.FtlDock.setAside(ships);
+		init(); // the Space Dock as usual (her berth, the saucer, the docked ships), or FTL's viewport again; the rebuild lifts FTL back
+	}
+	/** The flip's icon: a small ship (to show the Space Dock as without FTL), or a small screen (back to FTL). */
+	static final class FlipButton extends FtlButton {
+		static final int SIZE = 26;
+		FlipButton() { super("", FtlFont.MENU, SIZE, SIZE); }
+		@Override protected void paintComponent(Graphics g0) {
+			super.paintComponent(g0);
+			Graphics2D g = (Graphics2D) g0.create();
+			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g.setColor(getModel().isRollover() ? TEXT_HOT : TEXT);
+			g.setStroke(new BasicStroke(2f));
+			int w = getWidth(), h = getHeight();
+			if (homeplanet.core.FtlDock.aside()) { // back to FTL: the docked launch's screen
+				g.drawRect(w / 2 - 8, h / 2 - 7, 16, 10);
+				g.fillRect(w / 2 - 5, h / 2 - 4, 10, 4);
+				g.drawLine(w / 2, h / 2 + 3, w / 2, h / 2 + 6);
+				g.drawLine(w / 2 - 4, h / 2 + 7, w / 2 + 4, h / 2 + 7);
+			} else { // the docked ships: a hull, nose to the right
+				java.awt.Polygon hull = new java.awt.Polygon(new int[] {w / 2 - 8, w / 2 + 3, w / 2 + 9, w / 2 + 3, w / 2 - 8, w / 2 - 6},
+						new int[] {h / 2 - 5, h / 2 - 5, h / 2, h / 2 + 5, h / 2 + 5, h / 2}, 6);
+				g.fill(hull);
+				g.fillRect(w / 2 - 10, h / 2 - 7, 6, 3); // engines
+				g.fillRect(w / 2 - 10, h / 2 + 5, 6, 3);
+			}
+			g.dispose();
 		}
 	}
 
@@ -799,6 +1145,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Captain's Quarters: a day's rest, asked first (No to begin with), then the station's round and the screen rebuilt. */
 	private void quarters() {
 		Vault v = Vault.get();
+		if (homeplanet.core.FtlDock.active()) { // aboard a ship, not at the station: the log only (5.29)
+			Object[] only = {"Cancel", "Captain's Log"};
+			int pick = JOptionPane.showOptionDialog(this, "You're aboard a ship, not at the station: no rest until you're back.\n" + GameGuard.CLOSE_FTL, "Captain's Quarters",
+					JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, only, only[0]);
+			if (pick == 1) CaptainsLogDialog.open(this);
+			return;
+		}
 		Object[] options = {"Cancel", "Rest", "Captain's Log"}; // heromedel: Cancel, Rest, Captain's Log
 		javax.swing.JTextArea t = new javax.swing.JTextArea(homeplanet.parser.Rest.question(v));
 		t.setEditable(false); t.setOpaque(false); t.setFont(MenuTheme.TEXT_FONT);

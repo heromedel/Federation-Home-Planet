@@ -37,45 +37,29 @@ for every existing fleet; every reader of the hold (the Cargo Bay, trading, rewa
 commissioning, the plea, their tests). Best done in one go, after the current features settle, not half and half. The
 player sees no difference on the day it lands.
 
-## 2. Crew are identified by name and race in the station's records (noted 4B.97; band-aid 4B.98)
+## 2. Crew identity (noted 4B.97; band-aid 4B.98; the crew register, 5.41)
 
-**What it is.** The records that remember a crew member between looks key them by name and race: the infirmary
-(`infirmary.txt`), the captives (`captives.txt`), an expedition party when the job ends (matched back into the hold),
-and the medbay's "first seen hurt" notes. The Cargo Bay numbers duplicate names on its own screen, for display only.
+**Where it stands (5.41): solved for the records.** Every crew member has an id of the station's own in the fleet's
+`crew.txt` (`vault/CrewRegister`). FTL's saves carry no id, so each time the station takes stock it finds everyone where
+they are (the ships, the Junkyard's hulls, the Cargo Hold, away on assignment, held captive) and matches them to the
+register on what never changes or only grows: race, sex and colouring must agree, the service record (repairs, kills,
+evasions, jumps, masteries) may only have grown; the same name and the same place then decide between the rest. A
+rename keeps the id (the same record, and the same colouring or place). Two of a name and race are two ids, each with
+their own history, and the Crew Log shows them apart. Someone no longer found anywhere is killed or let go only on solid
+evidence (a ship's fate, the captives file, the station's own log since they were last seen), otherwise missing until
+found again. The harness test CrewT holds it: namesakes sent apart, a rename, a capture, a loss in FTL, a let go.
 
-**Why.** FTL's save format has a fixed set of fields per crew member and no spare one for an id, and FTL rewrites the
-whole save every time a ship flies, so any id the station invented would be gone the first time they left the hold.
-Names were the fallback.
+**What still goes by name, and why it's fine.**
 
-**How duplicates happen.** Hiring and expedition recruits (a volunteer's name is only checked against itself), Rename
-in the Cargo Bay, a trade over the Long Range, a commissioned ship whose crew share a name with the hold's, FTL's own
-random names.
-
-**What it costs.** With two of a name and race, the wrong one can count as laid up, be hurt or removed at an
-expedition's end, or have a hurt applied twice.
-
-**The second system does it right (5.00).** The crew expeditions of `expedition_type` 2 (`Assignments`) take a detail
-out of the Cargo Hold's save when it sets out and keep it in `assignments.txt` until it's back, so nothing is matched
-by name there; the old board still matches, with the band-aid below.
-
-**The band-aid (4B.98).** `Expeditions.mark`: sex, colouring and the service record (repairs, kills, evasions, jumps),
-none of which change while a crew member sits in the hold, kept beside the name in the infirmary's records and used to
-pick between namesakes when an expedition's party is matched back into the hold. A record without a mark (from before)
-matches any namesake, as before. Marked BAND-AID in the code; it goes when either way out below is built.
-
-**Two ways out.**
-
-- *The smaller one:* crew who are away aren't in the hold's save at all. A laid-up crew member is taken out of the hold
-  and kept, whole record and all, in the infirmary file (as captives are kept since 4B.97), and put back when their
-  time is up; an expedition party leaves the hold at sign-on and comes back at the end. Then nothing is matched by
-  name: the hold holds who's there, the infirmary who's laid up, the captives who's taken, and the party is the run's
-  own list. The Cargo Bay still shows the laid-up, read from the infirmary, greyed as now. The medbay note stays by
-  name (a clash there only heals someone a beacon early or late). Medium: the expedition code, the Cargo Bay's crew
-  list, the tests. Also closes the last gap of 4B.97's sign-on fix (a closed station can't bring a party member back).
-- *The records one (part of concern 1):* a crew manifest with a station id and a location for each crew member ("Bob
-  the human, id 4, in the Cargo Hold"; then "boarded: continue.sav, slot 3"). When a ship docks, the station reconciles
-  her crew against the manifest (who came back, who didn't), so identity holds across a flight even though the save
-  carries no id.
+- The crew expeditions (`expedition_type` 2, the default) never did: a detail leaves the Cargo Hold's save whole and
+  comes back whole (5.00), and the one picked from a list is matched on the whole record (5.33).
+- The old board of jobs (`expedition_type` 1) still keeps the infirmary and an expedition's party by name and race, with
+  the band-aid (`Expeditions.mark`: sex, colouring and service record beside the name, used to pick between namesakes;
+  marked BAND-AID in the code). A real clash there needs two of the same name, race, sex, colouring and record in the
+  hold at once, which in practice means none. Its way out, when that board is next worked on: the laid-up kept out of
+  the hold's save in the infirmary file, as the captives are, so nothing there is matched at all.
+- The one-time reading of the old logs when a fleet's register is new (the past only, by name): an old loss is never
+  pinned on someone alive now; it gets an entry of its own.
 
 ## 3. Side files are written one at a time (noted 4B.97)
 

@@ -575,7 +575,7 @@ public final class Transmissions {
 		if (all.isEmpty() || !all.get(0).key.equals(x.key)) return; // no letter written for it
 		Message m = all.get(0);
 		String item = Items.title(x.augment);
-		m.from = m.from.replace("{name}", x.ship);
+		m.from = ShipNames.fill(m.from, "name", x.ship); // "The crew of the {name}": never "the The" (5.31)
 		m.subject = m.subject.replace("{item}", item);
 		m.body = m.body.replace("{item}", item);
 		m.reward = "item " + x.augment;
@@ -590,7 +590,7 @@ public final class Transmissions {
 			for (homeplanet.vault.Overflow.Parcel x : ps) {
 				if (!homeplanet.core.Economy.augmentsHome()) { HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home"); continue; }
 				c.save.getPlayerShip().getAugmentIdList().add(x.augment);
-				HistoryLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of the " + x.ship + ", is in the Cargo Hold");
+				HistoryLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of " + ShipNames.the(x.ship) + ", is in the Cargo Hold");
 			}
 			v.begin().put(st, c.save, c.hash).commit();
 		} catch (IOException e) {
@@ -627,8 +627,8 @@ public final class Transmissions {
 		m.key = key;
 		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
 		m.from = t.from;
-		m.subject = fill(t.subject, rank, ship).replace("{name}", name == null ? "" : name);
-		m.body = fill(t.body.toString().trim(), rank, ship).replace("{name}", name == null ? "" : name);
+		m.subject = ShipNames.fill(fill(t.subject, rank, ship), "name", name);
+		m.body = ShipNames.fill(fill(t.body.toString().trim(), rank, ship), "name", name);
 		if (base != null) m.body = m.body.replace("{race}", raceOf(base)).replace("{cruiser}", className(base));
 		m.reward = t.reward;
 		m.replies = t.replies;
@@ -640,7 +640,7 @@ public final class Transmissions {
 	private static String fill(String s, String rank, String ship) {
 		if (s.contains("{start}")) s = s.replace("{start}", Integer.toString(Career.startingScrap())); // the career's sign-on bonus, by difficulty
 		if (s.contains("{") && Vault.isOpen()) s = RepairJob.fill(Vault.get(), s);
-		return s.replace("{rank}", rank).replace("{ship}", ship == null ? "" : ship);
+		return ShipNames.fill(s.replace("{rank}", rank), "ship", ship); // "the {ship}" fitted to her name (5.31)
 	}
 	/** Has a letter with this key been sent to this fleet? */
 	public static synchronized boolean wasSent(String key) {

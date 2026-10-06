@@ -448,6 +448,21 @@ public final class Assignments {
 	 * Sends a detail to the sector on offer in this slot: they leave the Cargo Hold's save for the fleet's assignments
 	 * file, due back in AWAY_MIN to AWAY_MAX beacons (and the job's extras); setting out passes no time; the offer is replaced.
 	 */
+	/**
+	 * The hold's own record of a crew member picked from a list read on its own (never the same objects): the same object,
+	 * else the same whole record (name, race, skills, service, looks, health), else the same name and race; never one
+	 * already picked. Namesakes can't be avoided: by name alone two picked were one person sent twice, the other left
+	 * behind, and the fleet a crew member richer when they came home (5.33).
+	 */
+	static CrewState picked(List<CrewState> hold, CrewState sent, List<CrewState> taken) {
+		for (CrewState x : hold) if (x == sent && !among(taken, x)) return x;
+		Map<String, String> whole = sent.getRace() == null ? null : homeplanet.comm.Line.crewFields(sent);
+		if (whole != null) for (CrewState x : hold) if (!among(taken, x) && x.getRace() != null && homeplanet.comm.Line.crewFields(x).equals(whole)) return x;
+		for (CrewState x : hold) if (!among(taken, x) && x.getName().equals(sent.getName()) && x.getRace() == sent.getRace()) return x;
+		return null;
+	}
+	private static boolean among(List<CrewState> l, CrewState c) { for (CrewState x : l) if (x == c) return true; return false; }
+
 	public static synchronized void send(Vault v, int slot, List<CrewState> party, Random rng) throws IOException {
 		if (party.isEmpty() || party.size() > PARTY_MAX) throw new IOException("A detail is one to " + PARTY_MAX + " crew");
 		Properties p = readStrict(v);
@@ -461,8 +476,7 @@ public final class Assignments {
 		int now = v.beaconsSeen() + 1; // the beacon the setting out takes
 		List<CrewState> going = new ArrayList<CrewState>();
 		for (CrewState sent : party) {
-			CrewState mine = null;
-			for (CrewState x : hold.getCrewList()) if (x == sent || (mine == null && x.getName().equals(sent.getName()) && x.getRace() == sent.getRace())) mine = x;
+			CrewState mine = picked(hold.getCrewList(), sent, going);
 			if (mine == null) throw new IOException(sent.getName() + " is not in the Cargo Hold; nothing was changed");
 			going.add(mine);
 		}

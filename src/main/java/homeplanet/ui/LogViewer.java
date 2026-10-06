@@ -83,6 +83,11 @@ final class LogViewer extends JPanel {
 		viewDebug.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { showDebug(); }
 		});
+		JButton viewCrew = new JButton("View Crew Log");
+		viewCrew.setToolTipText("Every crew member of the fleet in use, past and present: pick one to see their whole career");
+		viewCrew.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { showCrew(); }
+		});
 		JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		top.add(viewStation);
 		top.add(javax.swing.Box.createHorizontalStrut(6));
@@ -93,6 +98,8 @@ final class LogViewer extends JPanel {
 		top.add(shipBox);
 		top.add(javax.swing.Box.createHorizontalStrut(18));
 		top.add(viewDebug);
+		top.add(javax.swing.Box.createHorizontalStrut(18));
+		top.add(viewCrew);
 		JPanel titleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		titleRow.add(showing);
 		titleRow.add(javax.swing.Box.createHorizontalStrut(12));
@@ -138,7 +145,7 @@ final class LogViewer extends JPanel {
 		int entries = 0;
 		for (String line : text.split("\r?\n")) if (!line.isEmpty() && !line.startsWith("  ")) entries++;
 		count.setText(entries + (entries == 1 ? " entry" : " entries"));
-		show(RecordsLog.station(text, "Nothing logged yet."));
+		show(RecordsLog.station(text, "Nothing logged yet.", homeplanet.vault.MasterLog.stationDays(Vault.rootOf(Vault.get().saves, slot), text)));
 	}
 
 	/** This run's debug log (the newest in the program's log folder), as plain text: what to read before a bug report. */
@@ -164,6 +171,17 @@ final class LogViewer extends JPanel {
 		SwingUtilities.invokeLater(new Runnable() { // the latest in view
 			public void run() { javax.swing.JScrollBar b = scroll.getVerticalScrollBar(); b.setValue(b.getMaximum()); }
 		});
+	}
+
+	/** The Crew Log (5.41): the crew register of the fleet in use, from the top. */
+	void showCrew() { showCrew(-1); }
+	/** The same, with this crew member's career open (a crew popup's Crew Log..., 5.41). */
+	void showCrew(int id) {
+		CrewLogView view = new CrewLogView(Vault.get(), id);
+		showing.setText("Crew Log, " + Vault.title(Vault.get().slot));
+		count.setText(view.count() + (view.count() == 1 ? " crew member" : " crew members"));
+		scroll.setViewportView(view);
+		SwingUtilities.invokeLater(new Runnable() { public void run() { scroll.getVerticalScrollBar().setValue(0); } });
 	}
 
 	private void show(RecordsLog log) {

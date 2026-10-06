@@ -70,6 +70,9 @@ it does and CREDITS.md for where the code came from.
 - Expeditions come in two systems behind `expedition_type` in the cfg (hidden): 2 the crew expeditions (`Assignments`,
   `docs/ROADMAP.md` 31; the default), 1 the board of jobs (`Expeditions`), 0 hiring alone. They share the infirmary, the captives,
   the crew picker and the hire button, nothing else: keep them apart.
+- **Crew names:** avoiding duplicate names is impossible (heromedel): trades, Rename, FTL's own crew, hiring and
+  recruits all make namesakes, down to the same looks. Never plan or test a fix that prevents them; anything that
+  tracks crew has to work with namesakes (`docs/CONCERNS.md` 2).
 - `Tools and Harness/harness2/`: the regression harness (Claude's test bench, not a user tool).
 - `Tools and Harness/hw2fhp-converter/`: the FTL Homeworld to FHP converter (a separate jar) and its tests.
 - `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to

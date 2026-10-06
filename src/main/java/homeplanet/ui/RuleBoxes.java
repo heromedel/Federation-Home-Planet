@@ -61,29 +61,42 @@ public class RuleBoxes {
 	final JCheckBox careerBox = new JCheckBox("Career messages: a welcome, promotions, rewards for FTL achievements and a stipend, in Sandbox Mode too", HomePlanet.careerMessages);
 	final JCheckBox repBox = new JCheckBox("Reputation: earn and lose reputation points for your ships' service, shown on the Space Dock", HomePlanet.reputationOn);
 	/** How Reputation Can be Used (heromedel's words): any mode, never locked by Immersive Mode. */
-	final JComboBox<String> repUseBox = new JComboBox<String>(new String[] {"New Journeys and Pleads", "Vanillas Breaking Actions", "Only as a score"});
+	final JComboBox<String> repUseBox = new JComboBox<String>(REP_USE_OPTIONS);
 	private final JLabel repUseLabel = new JLabel("How Reputation Can be Used:  ");
 	/** What each option does, one per option (heromedel, 5.26): the open list's tooltips, and the info window's paragraphs. */
 	static final String[] REP_USE_TIPS = {
 		"<html>Reputation can pay a New Journey's fee, and a plea for a new ship can keep the Cargo Hold.<br>A promise of adventure and a day's rest cost reputation. Everything else is paid in scrap.</html>",
-		"<html>All of New Journeys and Pleads, plus what vanilla FTL can't do:<br>taking a system off at Refit, stripping systems when scrapping, and a custom work order's reputation share.</html>",
+		"<html>Everything in New Journeys and Pleads, plus what vanilla FTL can't do:<br>taking a system off at Refit, stripping systems when scrapping, and a custom work order's reputation share.</html>",
 		"<html>Reputation is never spent. A plea gives up the Cargo Hold;<br>a promise of adventure and rest are free. Everything is paid in scrap.</html>"};
 	private final CargoParts.IconButton repUseInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "What each option does", new ActionListener() {
-		public void actionPerformed(ActionEvent e) { repUseInfo(); }
+		public void actionPerformed(ActionEvent e) { repUseInfo(repUseBox); }
 	});
+	/** The three options, in heromedel's words (the setting's own list, and the Immersive briefing's). */
+	static final String[] REP_USE_OPTIONS = {"New Journeys and Pleads", "Vanilla-Breaking Actions", "Only as a score"};
+	/** A list whose open options say what each does (Settings, and the Immersive briefing, 5.27). */
+	static void explainOptions(final JComboBox<String> box) {
+		box.setRenderer(new javax.swing.DefaultListCellRenderer() {
+			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
+				java.awt.Component c = super.getListCellRendererComponent(list, value, index, selected, focus);
+				int i = index >= 0 ? index : box.getSelectedIndex();
+				if (c instanceof JComponent && i >= 0 && i < REP_USE_TIPS.length) ((JComponent) c).setToolTipText(REP_USE_TIPS[i]);
+				return c;
+			}
+		});
+	}
 	/** The info window: each option and what it changes, then what holds in all of them. */
-	private void repUseInfo() {
+	static void repUseInfo(java.awt.Component near) {
 		String gold = MenuTheme.HTML_GOLD;
-		String[] names = {"New Journeys and Pleads", "Vanillas Breaking Actions", "Only as a score"};
+		String[] names = REP_USE_OPTIONS;
 		String[][] effects = {
-			{"A New Journey's fee can be paid in reputation, or in the scrap there is and reputation for the rest.",
+			{"A New Journey's fee can be paid in reputation, or in whatever scrap the Cargo Hold has, with reputation for the rest.",
 				"A plea for a new ship can keep the Cargo Hold, at a share of reputation set by the difficulty.",
 				"A promise of adventure (hiring with no crew left) and a day's rest in quarters cost reputation.",
 				"Refit removal, stripping when scrapping and custom work orders are paid in scrap."},
 			{"Everything New Journeys and Pleads allows.",
 				"Taking a system off at Refit, at the fee your rules set, in scrap or reputation.",
-				"Stripping systems when scrapping a ship, at the fee a system, in scrap or reputation.",
-				"A custom work order past FTL's System Limit takes its reputation share (with only scrap allowed, both halves are scrap)."},
+				"Stripping systems when scrapping a ship, at the fee for each system, in scrap or reputation.",
+				"A custom work order past FTL's System Limit is paid half in scrap, half in reputation."},
 			{"Reputation is a score only: nothing ever spends it.",
 				"A plea for a new ship gives up the Cargo Hold.",
 				"A promise of adventure and a day's rest are free.",
@@ -94,9 +107,44 @@ public class RuleBoxes {
 			for (String x : effects[i]) h.append("<li>").append(x).append("</li>");
 			h.append("</ul>");
 		}
-		h.append("<p style='margin-top:10px'><font color='").append(MenuTheme.HTML_GREY_GREEN).append("'>Where reputation is spent, a plea, a promise of adventure and rest may take it below zero; "
-				+ "everything else stops at zero. In every option, captives cost reputation and paid ransoms earn some back. Any mode can change this setting.</font></p></body></html>");
-		javax.swing.JOptionPane.showMessageDialog(javax.swing.SwingUtilities.getWindowAncestor(repUseBox), new JLabel(h.toString()), "How Reputation Can be Used", javax.swing.JOptionPane.PLAIN_MESSAGE);
+		h.append(costTable());
+		h.append("<p style='margin-top:10px'><font color='").append(MenuTheme.HTML_GREY_GREEN).append("'>A plea, a promise of adventure and a day's rest can take reputation below zero; nothing else can.</font></p></body></html>");
+		javax.swing.JOptionPane.showMessageDialog(javax.swing.SwingUtilities.getWindowAncestor(near), new JLabel(h.toString()), "How Reputation Can be Used", javax.swing.JOptionPane.PLAIN_MESSAGE);
+	}
+	/**
+	 * What things cost by difficulty (heromedel, 5.42), from the difficulties' own rules: Easy, Normal and Hard, the
+	 * career's own column too when it's Custom; the difficulty in use in gold. Sandbox Mode's come from its house rules.
+	 */
+	private static String costTable() {
+		homeplanet.parser.CareerRules[] d = {homeplanet.parser.CareerRules.of("easy"), homeplanet.parser.CareerRules.of("normal"), homeplanet.parser.CareerRules.of("hard")};
+		String[] heads = {"Easy", "Normal", "Hard"};
+		homeplanet.parser.CareerRules now = HomePlanet.immersiveMode ? homeplanet.parser.CareerRules.current() : null;
+		java.util.List<homeplanet.parser.CareerRules> cols = new java.util.ArrayList<homeplanet.parser.CareerRules>(java.util.Arrays.asList(d));
+		java.util.List<String> names = new java.util.ArrayList<String>(java.util.Arrays.asList(heads));
+		if (now != null && "custom".equals(now.name)) { cols.add(now); names.add("Custom"); }
+		String gold = MenuTheme.HTML_GOLD, dim = MenuTheme.HTML_GREY_GREEN;
+		StringBuilder t = new StringBuilder("<p style='margin-top:10px'><font color='").append(gold).append("'><b>What they cost, by difficulty</b></font></p>");
+		t.append("<table cellspacing='0' cellpadding='2'><tr><td></td>");
+		for (int i = 0; i < cols.size(); i++) {
+			boolean inUse = now != null && now.name.equals(cols.get(i).name);
+			t.append("<td align='right'><font color='").append(inUse ? gold : dim).append("'>").append(inUse ? "<b>" + names.get(i) + "</b>" : names.get(i)).append("</font></td>");
+		}
+		t.append("</tr>");
+		String[] rows = {"New Journey fee", "A plea that keeps the Cargo Hold (% of the shortfall)", "Refit, each system taken off", "Stripping, each system", "Custom work order (scrap and reputation, each)"};
+		for (int r = 0; r < rows.length; r++) {
+			t.append("<tr><td>").append(rows[r]).append("&nbsp;&nbsp;</td>");
+			for (int i = 0; i < cols.size(); i++) {
+				homeplanet.parser.CareerRules c = cols.get(i);
+				int n = r == 0 ? c.journeyFee() : r == 1 ? c.pleaPercent() : r == 2 ? c.removalFee() : r == 3 ? c.stripFee() : c.workOrder();
+				boolean inUse = now != null && now.name.equals(c.name);
+				String v = r == 1 ? n + "%" : Integer.toString(n);
+				t.append("<td align='right'>").append(inUse ? "<font color='" + gold + "'><b>" + v + "</b></font>" : v).append("</td>");
+			}
+			t.append("</tr>");
+		}
+		t.append("</table>");
+		if (!HomePlanet.immersiveMode) t.append("<p style='margin-top:4px'><font color='").append(dim).append("'>In Sandbox Mode, your house rules set the New Journey and Refit fees.</font></p>");
+		return t.toString();
 	}
 	private final JPanel repUseRow = row(22);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
@@ -173,14 +221,7 @@ public class RuleBoxes {
 		repUseBox.setToolTipText(repUseTip);
 		repUseLabel.setToolTipText(repUseTip);
 		// each option says what it does while the list is open (heromedel, 5.26)
-		repUseBox.setRenderer(new javax.swing.DefaultListCellRenderer() {
-			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
-				java.awt.Component c = super.getListCellRendererComponent(list, value, index, selected, focus);
-				int i = index >= 0 ? index : repUseBox.getSelectedIndex();
-				if (c instanceof JComponent && i >= 0 && i < REP_USE_TIPS.length) ((JComponent) c).setToolTipText(REP_USE_TIPS[i]);
-				return c;
-			}
-		});
+		explainOptions(repUseBox);
 		repUseInfo.setEnabled(false);
 		repUseRow.add(repUseLabel);
 		repUseRow.add(repUseBox);

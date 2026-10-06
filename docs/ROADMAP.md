@@ -1181,8 +1181,14 @@ event's list of ships and her crew). "On board the Kestrel:" takes a colon.
 
 **Ideas, back burner:** the Custom Part Order (heromedel): any weapon, drone or augment in the game without a store, for
 double its price in scrap and an equal amount of reputation; very expensive, as it should be to bypass the game.
-Crew records (heromedel): a place to look up any crew member, present or past: where they came from if known, every
-ship they served on, and their expeditions one line each (sector, job, how it went).
+Crew records, as a Crew Log (heromedel; built 5.41: the crew register, `vault/CrewRegister`, and View Crew Log on the Records page): a place to look up any crew member, present or past: where they came from if
+known, every ship they served on, and their expeditions one line each (sector, job, how it went); two tabs, Present
+(the living) and MIA-KIA (the missing and the dead), any one's whole history a click away. Crew assignments in the
+Captain's Log (heromedel): crew sent on assignment, and back, told there like the rest of the day. Skills on the assignment roll (heromedel): the job's skill (each job already has one, `Assignments.JOBS`; Negotiate and Rescue none; until now it only grows the scrap, +10% a level) adds +2 per level over zero to a crew member's d20 (+3 a
+level when their race also suits the job); a natural 1 and a natural 20 stay as they are; a changed roll stays between 2 and 19, so
+only a natural 1 is death and only a natural 20 the top; after the race's reroll. Open: keep the skill's +10% scrap a level too, or not. Reputation by FTL's difficulty
+(heromedel): reputation earned in FTL itself (a ship's service in a run, not anything done at the station) grows with
+FTL's own difficulty: Normal +10%, Hard +20%, and/or at least +1 more per event.
 
 ## 44. The console — built (5.22; harness test ConT)
 
@@ -1198,6 +1204,19 @@ commands, `ui/ConsoleDialog` is the window. Only at the Space Dock: time can't p
 From 5.23 on McCarthy's branch (heromedel): the console opens "Nothing to see here."; while locked, /admin and all under
 it are unknown commands, so nothing says there is anything to unlock; /admin dc on answers only "Dev commands on.", and
 /admin ? lists the dev commands.
+
+## 45. Playing FTL docked in the station window — built (5.29; harness test DockT; Windows only)
+
+heromedel: "Option to Play FTL, docked..." (Settings, Launching, with a size) puts an icon beside Launch FTL. A docked
+launch sets FTL's settings.ini to windowed, editing that one key in place (its old value kept in the cfg, and put back
+when the option is turned off unless the player has changed it since), launches FTL, and places FTL's window (through
+JNA: borderless, owned by the station's window) in a viewport where the boarded ship's card goes, under her heading
+with the inbox and reputation; the right panel and the docked ships stay. The viewport shrinks, 16:9, when the window
+can't hold the size chosen. Other screens (Cargo Bay, Long Range Comm., the museum) hide FTL, still running; the Space
+Dock shows it again. While docked: Board and Dock are greyed, the ship in flight is out of the Cargo Bay's pickers,
+Quarters offers the Captain's Log only ("You're aboard a ship, not at the station"), and a new letter shows as a notice
+over FTL's corner that doesn't take the keyboard. Wherever the station says to close FTL first, it says heromedel's
+"Return to The Station to do this. (Close FTL)". Untested in FTL itself: only Windows can dock it.
 
 ## Naming decisions — settled (4B.30)
 

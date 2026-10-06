@@ -46,6 +46,9 @@ final class ImmersiveBriefing extends JDialog {
 	final JCheckBox own = new JCheckBox("Give Immersive Mode its own FTL profile (recommended)", true);
 	final JRadioButton salaryNew = new JRadioButton("Only achievements earned from now on", true);
 	final JRadioButton salaryAll = new JRadioButton("Every achievement already in your FTL profile");
+	/** What a career leaves to the player (Settings has them too): kept once the career is in use ({@link #keepChoices}). */
+	final JComboBox<String> repUse = new JComboBox<String>(RuleBoxes.REP_USE_OPTIONS);
+	final JCheckBox anyLevel = new JCheckBox("Allow trading with any Immersive level: Easy, Normal, Hard, Custom (when the other station allows it too)");
 	/** The difficulty: Easy, Normal, Hard or Custom (CareerRules.NAMES). */
 	private final JRadioButton[] difficulty = new JRadioButton[CareerRules.NAMES.length];
 	/** Each rule's level, chosen freely for Custom; the difficulty's otherwise. */
@@ -99,6 +102,16 @@ final class ImmersiveBriefing extends JDialog {
 		setResizable(false);
 		setLocationRelativeTo(getOwner());
 		ScreenFit.keepOnScreen(this);
+	}
+
+	/**
+	 * The player's choices, kept as Settings keeps them: called by ImmersiveDialog once the career is in use, never on
+	 * Confirm alone, since a switch can still stop (FTL running) with "Nothing was changed" (5.29).
+	 */
+	void keepChoices() {
+		HomePlanet.reputationUse = repUse.getSelectedIndex() + 1;
+		HomePlanet.immersiveAnyLevel = anyLevel.isSelected();
+		HomePlanet.saveConfig();
 	}
 
 	private void show(int p) {
@@ -164,6 +177,26 @@ final class ImmersiveBriefing extends JDialog {
 			p.add(note("Your Immersive career continues where you left it" + (Career.ownProfile(immersiveRoot) ? ", with its own FTL profile" : "")
 					+ ". Its choices were fixed when it began."));
 		}
+		// what a career leaves to the player, as Settings has it (heromedel, 5.27)
+		p.add(heading("Your choices (you can change these any time in Settings)"));
+		JPanel useRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		useRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+		useRow.setBorder(BorderFactory.createEmptyBorder(2, 16, 2, 0));
+		repUse.setSelectedIndex(Math.max(0, Math.min(2, HomePlanet.reputationUse - 1)));
+		repUse.setToolTipText("Hover an option for what it does, or click the info icon");
+		RuleBoxes.explainOptions(repUse);
+		useRow.add(new JLabel("How Reputation Can be Used:  "));
+		useRow.add(repUse);
+		useRow.add(Box.createHorizontalStrut(6));
+		useRow.add(new CargoParts.IconButton(CargoParts.infoIcon(), "What each option does", new ActionListener() {
+			public void actionPerformed(ActionEvent e) { RuleBoxes.repUseInfo(repUse); }
+		}));
+		useRow.setMaximumSize(useRow.getPreferredSize());
+		p.add(useRow);
+		anyLevel.setSelected(HomePlanet.immersiveAnyLevel);
+		anyLevel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		anyLevel.setBorder(BorderFactory.createEmptyBorder(2, 12, 2, 0));
+		p.add(anyLevel);
 		p.add(Box.createRigidArea(new Dimension(1, 8)));
 		boolean custom = Vault.CUSTOM.equals(slot);
 		CareerRules was = begun ? Career.rules(immersiveRoot) : custom ? new CareerRules(CareerRules.CUSTOM, CareerRules.of(CareerRules.NORMAL).levels()) : CareerRules.of(slot);
@@ -267,7 +300,7 @@ final class ImmersiveBriefing extends JDialog {
 		summary.setFont(summary.getFont().deriveFont(Font.PLAIN));
 		summary.setBorder(BorderFactory.createEmptyBorder(2, 16, 8, 0));
 		p.add(summary);
-		p.add(note("Confirm to enter Immersive Mode. FTL must be closed."));
+		p.add(note("Confirm to enter Immersive Mode. " + homeplanet.core.GameGuard.CLOSE_FTL));
 		return p;
 	}
 	private String summaryText() {
@@ -278,7 +311,10 @@ final class ImmersiveBriefing extends JDialog {
 		} else {
 			sb.append("• Your career continues as it began (").append(Career.rules(immersiveRoot).title()).append(")");
 		}
+		sb.append(begun ? "<br>" : "").append("• How Reputation Can be Used: ").append(repUse.getSelectedItem());
+		sb.append("<br>• Trading with any Immersive level: ").append(anyLevel.isSelected() ? "allowed" : "your own level only");
 		if (begun) return sb.toString();
+		sb.append("<br>");
 		CareerRules r = rules();
 		sb.append("• Difficulty: ").append(r.title());
 		for (int i = 0; i < CareerRules.RULES.length; i++) sb.append("<br>&nbsp;&nbsp;&nbsp;").append(XmlText.text(CareerRules.RULES[i])).append(": ").append(XmlText.text(r.words(i)));

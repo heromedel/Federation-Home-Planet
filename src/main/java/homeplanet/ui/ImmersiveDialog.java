@@ -31,6 +31,9 @@ public final class ImmersiveDialog {
 	public static boolean enter(Component owner, String slot) {
 		Vault v = Vault.get();
 		if (v.slot.equals(slot)) return true;
+		// before the briefing, so its pages aren't filled in only to be told to close FTL (heromedel, 5.29); the station's one
+		// close-FTL message, as at Confirm (5.33)
+		if (!ftlClosed(owner, Vault.title(slot))) return false;
 		File immersiveRoot = Vault.rootOf(v.saves, slot);
 		boolean begun = Career.started(immersiveRoot);
 		File profile = ProfileSwap.current(v.saves);
@@ -38,7 +41,7 @@ public final class ImmersiveDialog {
 		ImmersiveBriefing brief = new ImmersiveBriefing(owner, begun, immersiveRoot, profile, slot);
 		brief.setVisible(true);
 		if (!brief.confirmed) return false;
-		if (!ftlClosed(owner, Vault.title(slot))) return false;
+		if (!ftlClosed(owner, Vault.title(slot))) return false; // started while the briefing was open
 		if (v.immersive) {
 			try {
 				leaveNow(null); // to Sandbox Mode first: its fleet and profile are the way between careers
@@ -69,8 +72,9 @@ public final class ImmersiveDialog {
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not begin " + Vault.title(slot) + ":\n" + e.getMessage()
 					+ "\n\nThe fleet in use now is " + Vault.title(Vault.get().slot) + "'s.");
-			return Vault.get().slot.equals(slot);
+			if (!Vault.get().slot.equals(slot)) return false;
 		}
+		brief.keepChoices(); // only once the career is in use: a switch that stops changes nothing (5.29)
 		return true;
 	}
 
@@ -169,7 +173,7 @@ public final class ImmersiveDialog {
 
 	private static boolean ftlClosed(Component owner, String title) {
 		if (!GameGuard.isFtlRunning()) return true;
-		JOptionPane.showMessageDialog(owner, "FTL is running. Quit FTL first: the fleets and FTL's profile change over.\nNothing was changed.", title, JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(owner, "FTL is running, and the fleets and FTL's profile change over.\n" + homeplanet.core.GameGuard.CLOSE_FTL + "\nNothing was changed.", title, JOptionPane.INFORMATION_MESSAGE);
 		return false;
 	}
 }

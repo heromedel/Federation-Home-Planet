@@ -360,7 +360,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	public void tradeShipInit() { }
 
 	private void loadCurrent() {
-		currentShip = picked != null && Vault.get().fleet().contains(picked) ? picked : Vault.get().boarded();
+		Ship flying = homeplanet.core.FtlDock.active() ? Vault.get().boarded() : null; // FTL docked: the ship in flight stays out of the Cargo Bay (5.29)
+		currentShip = picked != null && picked != flying && Vault.get().fleet().contains(picked) ? picked : flying != null ? null : Vault.get().boarded();
 		if (currentShip != picked) picked = null; // she's gone (boarded elsewhere, decommissioned): back to the boarded ship
 		if (currentShip == null || !currentShip.file().exists()) {
 			currentShip = null;
@@ -415,7 +416,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	/** The ships at the Space Dock (boarded and docked) whose saves can be read: any of them can trade (see {@link Dlc} for what may move). */
 	ArrayList<Ship> tradeableShips() {
 		ArrayList<Ship> list = new ArrayList<Ship>();
-		for (Ship s : Vault.get().fleet()) if (s.save() != null) list.add(s);
+		Ship flying = homeplanet.core.FtlDock.active() ? Vault.get().boarded() : null; // in flight, docked: not tradeable till FTL closes (5.29)
+		for (Ship s : Vault.get().fleet()) if (s != flying && s.save() != null) list.add(s);
 		return list;
 	}
 
@@ -503,8 +505,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		init();
 		help("The Cargo Bay now works on " + the(s.name) + "." + (left != null && left == tradeShip ? " " + left.name + " is your trading partner." : ""));
 	}
-	/** "the Kestrel", but "The Theseus" as she is (no "the The"). */
-	private static String the(String name) { return name.toLowerCase().startsWith("the ") ? name : "the " + name; }
+	/** "the Kestrel", but "The Theseus" as she is (no "the The"): the station's one rule for it (5.31). */
+	private static String the(String name) { return homeplanet.parser.ShipNames.the(name); }
 	/** What the storage is, for its info button. */
 	void storageInfo() {
 		JOptionPane.showMessageDialog(this, "<html><div style='width:360px'><b>The Cargo Hold</b><br><br>"
@@ -711,8 +713,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		// everything at once, either way (heromedel: the arrows start at 1; these move the lot): double arrows between the
 		// junk and sell icons, never over them (5.21)
 		FtlButton allLeft = new FtlButton("<<", FtlFont.BODY, 32, 22), allRight = new FtlButton(">>", FtlFont.BODY, 32, 22);
-		allLeft.setBounds(GX + 62, y + 68, 32, 22);
-		allRight.setBounds(GX + 96, y + 68, 32, 22);
+		allLeft.setBounds(GX + 61, y + 68, 32, 22); // the pair centered on the number box, 3 pixels to each sell icon (5.27)
+		allRight.setBounds(GX + 95, y + 68, 32, 22);
 		allLeft.setToolTipText("Take all of it from the partner");
 		allRight.setToolTipText("Send all of it to the partner");
 		allLeft.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { moveAllSupply(false); } });
@@ -737,8 +739,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		tf.setForeground(CargoParts.GOLD);
 		tf.setBackground(new Color(16, 20, 26));
 		tf.setCaretColor(CargoParts.GOLD);
-		tf.setBorder(javax.swing.BorderFactory.createEmptyBorder());
-		for (Component c : sp.getComponents()) if (c instanceof javax.swing.JButton) c.setBackground(new Color(28, 36, 44));
+		int arrows = 0;
+		for (Component c : sp.getComponents()) if (c instanceof javax.swing.JButton) { c.setBackground(new Color(28, 36, 44)); arrows = Math.max(arrows, c.getPreferredSize().width); }
+		tf.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, arrows, 0, 0)); // as wide as the arrows: the number centered on the whole box (heromedel, 5.27)
 	}
 
 	/** A supply box: icon, name, amount. Click one to move that supply. */
@@ -1025,11 +1028,11 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		Ship s = currentShip;
 		String title = "Return " + s.name;
 		int pay = homeplanet.parser.RepairJob.payment(Vault.get(), homeplanet.parser.RepairJob.late(Vault.get()));
-		if (!HomePlanet.confirmNo(this, "Return the " + s.name + " to her owner?\nShe leaves the fleet, and " + pay + " scrap is paid into the Cargo Hold.\n"
+		if (!HomePlanet.confirmNo(this, "Return " + the(s.name) + " to her owner?\nShe leaves the fleet, and " + pay + " scrap is paid into the Cargo Hold.\n"
 				+ "You'll have no ship boarded: board another at the Space Dock.", title)) return;
 		try {
 			int paid = homeplanet.parser.RepairJob.returnHer(Vault.get(), s);
-			JOptionPane.showMessageDialog(this, "The " + s.name + " is on her way home. " + paid + " scrap has been paid into the Cargo Hold.", title, JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, homeplanet.parser.ShipNames.theStart(s.name) + " is on her way home. " + paid + " scrap has been paid into the Cargo Hold.", title, JOptionPane.INFORMATION_MESSAGE);
 		} catch (java.io.IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not return her:\n" + e.getMessage());
 		}
@@ -1182,7 +1185,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			Integer had = before.get("Crew " + c.getName());
 			if (had != null && n <= had) continue;
 			String ship = save.getPlayerShipName();
-			String place = hold ? "the Cargo Hold" : ship.startsWith("The ") ? ship : "the " + ship;
+			String place = hold ? "the Cargo Hold" : the(ship);
 			homeplanet.core.HistoryLog.entry("CREW", c.getName() + " assigned to " + place + ".");
 		}
 	}

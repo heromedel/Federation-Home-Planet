@@ -26,6 +26,24 @@ public final class ShipNames {
 
 	/** As SpaceDockUI's long-name warning: FTL may cut off longer names. */
 	public static final int MAX = 20;
+
+	/**
+	 * A ship's name after "the", mid-sentence: "the Kestrel", but a name that begins with "The" as she is, never
+	 * "the The Adjudicator" (a built ship's name starts with "The" by default; heromedel's screenshot, 5.31).
+	 */
+	public static String the(String name) { return startsWithThe(name) ? name : "the " + name; }
+	/** As {@link #the}, starting a sentence: "The Kestrel", "The Adjudicator". */
+	public static String theStart(String name) {
+		return startsWithThe(name) ? Character.toUpperCase(name.charAt(0)) + name.substring(1) : "The " + name;
+	}
+	private static boolean startsWithThe(String name) { return name != null && name.regionMatches(true, 0, "the ", 0, 4); }
+	/** A letter's "the {key}" and "The {key}" filled with a ship's name by those rules, then any bare {key}. */
+	public static String fill(String text, String key, String name) {
+		String n = name == null ? "" : name, k = java.util.regex.Pattern.quote("{" + key + "}");
+		text = text.replaceAll("(?<![A-Za-z])the " + k, java.util.regex.Matcher.quoteReplacement(n.isEmpty() ? "the " : the(n)));
+		text = text.replaceAll("(?<![A-Za-z])The " + k, java.util.regex.Matcher.quoteReplacement(n.isEmpty() ? "The " : theStart(n)));
+		return text.replace("{" + key + "}", n);
+	}
 	private static Map<String, List<String>> lists;
 
 	/** The model's section in shipnames.txt for a blueprint id (PLAYER_SHIP_MANTIS_2, PLAYER_SHIP_JELLY_HP...), or null. */

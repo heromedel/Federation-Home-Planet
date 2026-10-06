@@ -197,6 +197,30 @@ public class IconFactory {
 		return fit(flat, WEAPON_W, ROW_H);
 	}
 
+	private static final String[] SKILL_ART = {"pilot", "engines", "shields", "weapons", "repair", "combat"};
+	private static final Map<String, Icon> skillIcons = new java.util.HashMap<String, Icon>();
+	/**
+	 * FTL's own skill icon (img/people/skill_*_white.png), tinted as FTL tints a skill: grey untrained, green at the
+	 * first level, gold mastered (the Crew Log, 5.41). Null if the game's art can't be read.
+	 */
+	public static synchronized Icon skillIcon(int skill, int level, int size) {
+		String key = skill + "/" + level + "/" + size;
+		if (skillIcons.containsKey(key)) return skillIcons.get(key);
+		BufferedImage src = load("img/people/skill_" + SKILL_ART[skill] + "_white.png");
+		Icon out = null;
+		if (src != null) {
+			java.awt.Color tint = level >= 2 ? new java.awt.Color(250, 210, 120) : level == 1 ? new java.awt.Color(120, 230, 120) : new java.awt.Color(110, 122, 130);
+			BufferedImage t = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
+			for (int y = 0; y < src.getHeight(); y++) for (int x = 0; x < src.getWidth(); x++) {
+				int argb = src.getRGB(x, y), alpha = argb >>> 24, lum = ((argb >> 16 & 255) + (argb >> 8 & 255) + (argb & 255)) / 3;
+				t.setRGB(x, y, alpha << 24 | (tint.getRed() * lum / 255) << 16 | (tint.getGreen() * lum / 255) << 8 | (tint.getBlue() * lum / 255));
+			}
+			out = new javax.swing.ImageIcon(t.getScaledInstance(size, size * t.getHeight() / Math.max(1, t.getWidth()), java.awt.Image.SCALE_SMOOTH));
+		}
+		skillIcons.put(key, out);
+		return out;
+	}
+
 	private static BufferedImage load(String innerPath) {
 		InputStream in = null;
 		try {

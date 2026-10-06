@@ -104,6 +104,41 @@ public final class MasterLog {
 		Entry(String real, int day, String log, String text) { this.real = real; this.day = day; this.log = log; this.text = text; }
 	}
 	/** The entries by day, oldest first; entries with no proper day (Prior) are left out. */
+	/**
+	 * The stardate of each entry of a station log (its history.log text), in order, from the master log's copies of
+	 * them (5.41). An entry from before the master log (5.17), or before the first stardate, is day 1.
+	 */
+	public static int[] stationDays(File fleetRoot, String historyText) {
+		List<String[]> copies = new ArrayList<String[]>(); // {text, day}
+		File f = new File(fleetRoot, FILE);
+		if (f.isFile()) {
+			try {
+				for (String l : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) {
+					if (!l.startsWith("E\t")) continue;
+					String[] w = l.split("\t", 5);
+					if (w.length == 5 && w[3].equals("station")) copies.add(new String[] {w[4], w[2].trim()});
+				}
+			} catch (IOException e) { /* none: every entry day 1 */ }
+		}
+		List<Integer> out = new ArrayList<Integer>();
+		int at = 0;
+		for (String line : historyText.split("\r?\n")) {
+			if (line.length() < 18 || line.startsWith("  ") || !Character.isDigit(line.charAt(0))) continue;
+			String entry = line.substring(16).trim(); // past "yyyy-MM-dd HH:mm  "
+			int day = 1;
+			for (int i = at; i < copies.size(); i++) {
+				if (!copies.get(i)[0].startsWith(entry)) continue;
+				try { day = Math.max(1, Integer.parseInt(copies.get(i)[1])); } catch (NumberFormatException e) { day = 1; }
+				at = i + 1;
+				break;
+			}
+			out.add(day);
+		}
+		int[] days = new int[out.size()];
+		for (int i = 0; i < days.length; i++) days[i] = out.get(i);
+		return days;
+	}
+
 	public static synchronized Map<Integer, List<Entry>> byDay(Vault v) {
 		Map<Integer, List<Entry>> out = new LinkedHashMap<Integer, List<Entry>>();
 		for (String l : lines(v)) {
