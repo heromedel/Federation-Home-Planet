@@ -74,6 +74,30 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			if (e.getID() != java.awt.event.MouseEvent.MOUSE_RELEASED || !homeplanet.core.FtlDock.found() || !(e.getSource() instanceof java.awt.Component)) return;
 			if (javax.swing.SwingUtilities.getWindowAncestor(SpaceDockUI.this) == javax.swing.SwingUtilities.getWindowAncestor((java.awt.Component) e.getSource())) liftSoon();
 		} }, java.awt.AWTEvent.MOUSE_EVENT_MASK);
+		// a station popup opens: a docked FTL steps aside till the last one closes, as for other screens (heromedel, 5.35)
+		java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(new java.awt.event.AWTEventListener() { public void eventDispatched(java.awt.AWTEvent e) {
+			if (homeplanet.core.FtlDock.active() || hiddenForPopup) javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { popupsChanged(); } });
+		} }, java.awt.AWTEvent.WINDOW_EVENT_MASK);
+	}
+	private boolean hiddenForPopup;
+	/** Windows keeps popups just over the station's window, which sits under FTL's: so FTL is hidden while one is open (still running, paused). */
+	private void popupsChanged() {
+		boolean popup = false;
+		for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof java.awt.Dialog && w.isShowing()) { popup = true; break; }
+		if (popup && !hiddenForPopup && homeplanet.core.FtlDock.active() && !homeplanet.core.FtlDock.aside() && parent != null && parent.atSpaceDock()) {
+			hiddenForPopup = true;
+			log.debug("FTL docked: hidden for a popup");
+			homeplanet.core.FtlDock.show(false);
+			if (viewportPanel != null) viewportPanel.repaint();
+		} else if (!popup && hiddenForPopup) {
+			hiddenForPopup = false;
+			log.debug("FTL docked: back after the popups");
+			if (homeplanet.core.FtlDock.active() && parent != null && parent.atSpaceDock()) {
+				homeplanet.core.FtlDock.backAtDock();
+				placeViewport();
+				liftSoon();
+			}
+		}
 	}
 	private final javax.swing.Timer lift = new javax.swing.Timer(200, new ActionListener() { public void actionPerformed(ActionEvent e) { liftFtl(); } });
 	{ lift.setRepeats(false); }
@@ -894,6 +918,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					g.setColor(new Color(c, c, Math.min(255, c + 25)));
 					g.fillRect(1 + r.nextInt(Math.max(1, getWidth() - 2)), 1 + r.nextInt(Math.max(1, getHeight() - 2)), 1 + r.nextInt(2), 1);
 				}
+				if (hiddenForPopup) return; // FTL stepped aside for a popup: no words behind it (5.35)
 				java.awt.image.BufferedImage word = FtlFont.MENU.render("UNPAUSE", Color.white);
 				int sc = 3, ww = word.getWidth() * sc, wh = word.getHeight() * sc;
 				g.drawImage(word, (getWidth() - ww) / 2, getHeight() / 2 - wh, ww, wh, null);
