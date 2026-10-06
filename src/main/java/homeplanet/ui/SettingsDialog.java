@@ -257,8 +257,12 @@ public class SettingsDialog extends JDialog {
 		body = aboutPage;
 		c = constraints();
 		heading(body, c, "About");
+		JLabel credit = new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; after ManApart's FTL Homeworld.");
+		credit.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+		body.add(credit, next(c));
+		// heromedel's line with the buttons beside it: the old single row was wider than a 1366 screen (5.31)
 		JPanel about = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		about.add(new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; after ManApart's FTL Homeworld; made by heromedel with Claude.  "));
+		about.add(new JLabel("Made by heromedel with Claude.  "));
 		JButton loreBtn = new JButton("Lore...");
 		loreBtn.setToolTipText("A transmission from the Federation Home Planet");
 		loreBtn.addActionListener(new ActionListener() {
@@ -278,6 +282,7 @@ public class SettingsDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) { showBundledText("LICENSE", "Licence (GPL-2.0)"); }
 		});
 		about.add(licenceBtn);
+		about.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(about, next(c));
 		JPanel updateRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JButton updateBtn = new JButton("Check for Updates...");
