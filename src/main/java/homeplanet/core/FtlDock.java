@@ -156,6 +156,11 @@ public final class FtlDock {
 		if (window == null || !shown) return;
 		try { Win.raise(window); } catch (Throwable t) { log.debug("FTL docked: could not lift its window: {}", t.toString()); }
 	}
+	/** FTL to the front with the keyboard (the Unpause screen clicked, 5.33): the station has the keyboard to give. */
+	public static void focus() {
+		if (window == null || !shown) return;
+		try { Win.focus(window); } catch (Throwable t) { log.debug("FTL docked: could not bring it to the front: {}", t.toString()); }
+	}
 	/** FTL's window has been found and docked. */
 	public static boolean found() { return window != null; }
 	/** FTL's window is still there. */
@@ -192,6 +197,7 @@ public final class FtlDock {
 			int SetWindowLongW(com.sun.jna.Pointer hwnd, int index, int value);
 			boolean SetWindowPos(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer after, int x, int y, int w, int h, int flags);
 			boolean ShowWindow(com.sun.jna.Pointer hwnd, int cmd);
+			boolean SetForegroundWindow(com.sun.jna.Pointer hwnd);
 			boolean GetWindowRect(com.sun.jna.Pointer hwnd, int[] rect); // left, top, right, bottom
 			com.sun.jna.Pointer MonitorFromWindow(com.sun.jna.Pointer hwnd, int flags);
 			boolean GetMonitorInfoW(com.sun.jna.Pointer monitor, int[] info); // cbSize, monitor rect (4), work rect (4), flags
@@ -199,7 +205,7 @@ public final class FtlDock {
 		static final int GWL_STYLE = -16;
 		static final int WS_CAPTION = 0x00C00000, WS_THICKFRAME = 0x00040000, WS_SYSMENU = 0x00080000, WS_MINIMIZEBOX = 0x00020000, WS_MAXIMIZEBOX = 0x00010000;
 		static final int SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOACTIVATE = 0x0010, SWP_FRAMECHANGED = 0x0020, SWP_SHOWWINDOW = 0x0040, SWP_NOZORDER = 0x0004;
-		static final int SW_HIDE = 0, SW_SHOWNOACTIVATE = 4;
+		static final int SW_HIDE = 0, SW_SHOWNOACTIVATE = 4, SW_SHOW = 5;
 
 		static Object find(final String title) {
 			final com.sun.jna.Pointer[] found = new com.sun.jna.Pointer[1];
@@ -235,6 +241,12 @@ public final class FtlDock {
 		}
 		static void raise(Object w) {
 			User32.I.SetWindowPos((com.sun.jna.Pointer) w, null, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // HWND_TOP
+		}
+		static void focus(Object w) {
+			com.sun.jna.Pointer h = (com.sun.jna.Pointer) w;
+			User32.I.ShowWindow(h, SW_SHOW);
+			User32.I.SetWindowPos(h, null, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE); // HWND_TOP
+			User32.I.SetForegroundWindow(h);
 		}
 		static boolean alive(Object w) { return User32.I.IsWindow((com.sun.jna.Pointer) w); }
 		static void place(Object w, Rectangle r) {
