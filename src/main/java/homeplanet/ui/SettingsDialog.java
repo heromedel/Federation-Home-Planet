@@ -111,6 +111,10 @@ public class SettingsDialog extends JDialog {
 		body.add(folderRow("Saves folder:", savesLabel, new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				File f = HomePlanet.promptForSavePath();
+				if (f != null && homeplanet.core.StationLock.inUse(f)) { // another copy of the station works on those saves (5.45)
+					JOptionPane.showMessageDialog(SettingsDialog.this, homeplanet.core.StationLock.inUseMessage(f), "Already open", JOptionPane.WARNING_MESSAGE);
+					return;
+				}
 				if (f != null) { saves = f; refreshLabels(); }
 			}
 		}), next(c));
@@ -419,6 +423,7 @@ public class SettingsDialog extends JDialog {
 		savesChanged = !saves.equals(HomePlanet.save_location);
 		HomePlanet.save_location = saves;
 		if (savesChanged) {
+			homeplanet.core.StationLock.claim(saves); // this station's now (looked at when chosen), the old folder let go
 			// another saves folder is another vault (its own ships, designs and remodels)
 			try {
 				homeplanet.vault.Vault.open(saves, HomePlanet.immersiveMode);

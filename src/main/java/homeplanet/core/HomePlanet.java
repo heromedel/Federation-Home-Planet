@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.44";
+	public static final String APP_VERSION = "5.45";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -220,6 +220,14 @@ public class HomePlanet {
 		if (save_location == null) {
 			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
 			System.exit(1);
+		}
+		if (!StationLock.claim(save_location)) { // another copy is open on these saves (5.45)
+			final String says = StationLock.inUseMessage(save_location);
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+				JOptionPane.showMessageDialog(null, says, "Already open", JOptionPane.WARNING_MESSAGE);
+				return null;
+			} });
+			System.exit(0);
 		}
 		writeConfig |= !save_location.getAbsolutePath().equals(config.getProperty("ftlSavePath"));
 		if (writeConfig) saveConfig();
