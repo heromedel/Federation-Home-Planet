@@ -137,7 +137,7 @@ public final class FtlDock {
 	/** This docked run has FTL's window owned by the station's: it stays over it, and popups over both, by themselves. */
 	public static boolean attached() { return attachedRun && window != null; }
 	/** Ends it: FTL closed, or its window never turned up. */
-	public static void end() { active = false; window = null; where = null; aside = false; }
+	public static void end() { cut(false); active = false; window = null; where = null; aside = false; }
 	/** The Space Dock shows the docked ships in FTL's place (heromedel, 5.32): FTL hidden, still running. */
 	public static boolean aside() { return aside; }
 	public static void setAside(boolean ships) { aside = ships; show(!ships); }
@@ -203,6 +203,18 @@ public final class FtlDock {
 		where = screen;
 		if (window == null || !shown) return;
 		try { Win.place(window, screen); } catch (Throwable t) { log.debug("FTL docked: could not place its window: {}", t.toString()); }
+		cut(true);
+	}
+	/**
+	 * The viewport cut out of the station's window while FTL sits in it (heromedel, 5.37): if FTL slips behind the
+	 * station, it shows through, and clicks there reach it. Closed whenever FTL isn't shown there, so the desktop never
+	 * shows through. Not in the attached way, where FTL stays over the station by itself.
+	 */
+	private static void cut(boolean open) {
+		if (station == null || attachedRun) return;
+		boolean want = open && window != null && shown && where != null;
+		try { Win.cut(station, want ? where : null); }
+		catch (Throwable t) { log.debug("FTL docked: could not {} the station's window: {}", want ? "cut the viewport out of" : "close the viewport in", t.toString()); }
 	}
 	/** Shows it in its viewport (back at the Space Dock) or hides it (another screen); FTL keeps running either way. */
 	public static void show(boolean visible) {
@@ -213,6 +225,7 @@ public final class FtlDock {
 			if (visible) { Win.show(window, true); if (where != null) Win.place(window, where); }
 			else Win.show(window, false);
 		} catch (Throwable t) { log.debug("FTL docked: could not {} its window: {}", visible ? "show" : "hide", t.toString()); }
+		cut(visible);
 	}
 
 	/** Windows' own calls, through JNA: loaded only when docking runs on Windows. */
@@ -229,6 +242,7 @@ public final class FtlDock {
 			boolean SetWindowPos(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer after, int x, int y, int w, int h, int flags);
 			boolean ShowWindow(com.sun.jna.Pointer hwnd, int cmd);
 			boolean SetForegroundWindow(com.sun.jna.Pointer hwnd);
+			int SetWindowRgn(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer region, boolean redraw);
 			int GetWindowThreadProcessId(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer pid);
 			boolean AttachThreadInput(int attach, int to, boolean on);
 			boolean GetWindowRect(com.sun.jna.Pointer hwnd, int[] rect); // left, top, right, bottom
@@ -293,6 +307,28 @@ public final class FtlDock {
 			int ftlThread = User32.I.GetWindowThreadProcessId(hwnd, null), stationThread = User32.I.GetWindowThreadProcessId(owner, null);
 			boolean apart = User32.I.AttachThreadInput(ftlThread, stationThread, false);
 			return "owned by the station's window; input kept apart: " + (apart ? "yes" : "no (Windows refused, or they weren't linked)");
+		}
+		interface Gdi32 extends com.sun.jna.win32.StdCallLibrary {
+			Gdi32 I = com.sun.jna.Native.load("gdi32", Gdi32.class);
+			com.sun.jna.Pointer CreateRectRgn(int left, int top, int right, int bottom);
+			int CombineRgn(com.sun.jna.Pointer dest, com.sun.jna.Pointer a, com.sun.jna.Pointer b, int mode);
+			boolean DeleteObject(com.sun.jna.Pointer object);
+		}
+		static final int RGN_DIFF = 4;
+		/** The station's window with a screen rectangle cut out of it, or whole again (null). */
+		static void cut(java.awt.Window station, Rectangle hole) {
+			com.sun.jna.Pointer hwnd = com.sun.jna.Native.getComponentPointer(station);
+			if (hwnd == null) return;
+			if (hole == null) { User32.I.SetWindowRgn(hwnd, null, true); return; }
+			double scale = 1;
+			try { scale = station.getGraphicsConfiguration().getDefaultTransform().getScaleX(); } catch (Exception e) { }
+			java.awt.Point at = station.getLocationOnScreen();
+			com.sun.jna.Pointer all = Gdi32.I.CreateRectRgn(0, 0, (int) Math.round(station.getWidth() * scale), (int) Math.round(station.getHeight() * scale));
+			com.sun.jna.Pointer gap = Gdi32.I.CreateRectRgn((int) Math.round((hole.x - at.x) * scale), (int) Math.round((hole.y - at.y) * scale),
+					(int) Math.round((hole.x + hole.width - at.x) * scale), (int) Math.round((hole.y + hole.height - at.y) * scale));
+			Gdi32.I.CombineRgn(all, all, gap, RGN_DIFF);
+			Gdi32.I.DeleteObject(gap);
+			User32.I.SetWindowRgn(hwnd, all, true); // Windows keeps the region from here on
 		}
 		static boolean under(java.awt.Window station, Object w) {
 			com.sun.jna.Pointer mine = com.sun.jna.Native.getComponentPointer(station);
