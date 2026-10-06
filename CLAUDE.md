@@ -47,6 +47,8 @@ it does and CREDITS.md for where the code came from.
   `docs/CONCERNS.md` lists the design debts talked over (how the station is built, what it costs, what a change would
   take): add to it when one comes up, with the version; read it before planning anything that touches the vault's files
   or how crew are tracked.
+- **Handoffs:** before fixing a bug, ask heromedel "Would you like me to work on this or prepare a handoff?". A handoff
+  is written as `docs/HANDOFF.md` says (the parts in order, and a page template to publish).
 - The version (4B.nn; after 4B.99 comes 5.00, then 5.01 to 5.99, then 6.00) goes up by one only with a commit: `<version>` in `pom.xml` and
   `APP_VERSION` in `HomePlanet.java`, always together.
 - The repo is public. Never commit FTL's game files (ftl.dat, its pictures or music) or a link to them.
