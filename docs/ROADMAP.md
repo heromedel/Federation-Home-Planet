@@ -1234,6 +1234,13 @@ Quarters offers the Captain's Log only ("You're aboard a ship, not at the statio
 over FTL's corner that doesn't take the keyboard. Wherever the station says to close FTL first, it says heromedel's
 "Return to The Station to do this. (Close FTL)". Untested in FTL itself: only Windows can dock it.
 
+5.57 (heromedel): while FTL is docked, the icon that launched it is an X. Clicking it asks **Cancel** / **Remove from
+Dock** / **Close**. Remove from Dock gives FTL its title bar and border back, lets go of it and puts it in the middle of its
+screen, still running, and the Space Dock is as usual again. Close asks to confirm ("Anything FTL did not or does not save
+on its own may be lost."), then sends FTL the close request its own X sends. A safety check: on every rebuild (and on
+Refresh, before FTL's window is found), the docked view with FTL's window gone, or FTL not running, is the normal Space
+Dock again. Tested under Wine (undocktest).
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

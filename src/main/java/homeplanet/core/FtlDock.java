@@ -149,6 +149,27 @@ public final class FtlDock {
 	public static void end() { cut(false); active = false; window = null; where = null; aside = false; asked = null; placedAt = null; framed = false; cutAs = null; behind = false; }
 	/** The Space Dock shows the docked ships in FTL's place (heromedel, 5.32): FTL hidden, still running. */
 	public static boolean aside() { return aside; }
+	/**
+	 * Remove from Dock (heromedel, 5.57): FTL's title bar and border back, the station no longer owning it, the hole in the
+	 * station's window closed, and FTL out in the middle of its screen, still running. The docked view ends. False if
+	 * FTL's window wasn't there to give back.
+	 */
+	public static boolean release() {
+		Object w = window;
+		boolean attached = attachedRun;
+		cut(false);
+		end();
+		if (w == null || !supported()) return false;
+		try { log.info("FTL undocked: {}", Win.release(w, attached)); return true; }
+		catch (Throwable t) { log.warn("Could not give FTL's window back: {}", t.toString()); return false; }
+	}
+	/** Close (heromedel, 5.57): FTL is asked to close, as the X on its own window does; it closes as FTL does. False if there's no window to ask. */
+	public static boolean close() {
+		Object w = window;
+		if (w == null || !supported()) return false;
+		try { Win.close(w); log.info("FTL docked: asked to close"); return true; }
+		catch (Throwable t) { log.warn("Could not ask FTL to close: {}", t.toString()); return false; }
+	}
 	public static void setAside(boolean ships) { aside = ships; show(!ships); }
 	/** Back at the Space Dock: FTL shown in its viewport, unless the docked ships are shown there instead. */
 	public static void backAtDock() { show(!aside); }
@@ -312,6 +333,8 @@ public final class FtlDock {
 			com.sun.jna.Pointer GetWindow(com.sun.jna.Pointer hwnd, int cmd);
 			com.sun.jna.Pointer GetForegroundWindow();
 			com.sun.jna.Pointer MonitorFromWindow(com.sun.jna.Pointer hwnd, int flags);
+			boolean PostMessageW(com.sun.jna.Pointer hwnd, int msg, com.sun.jna.Pointer wParam, com.sun.jna.Pointer lParam);
+			boolean AdjustWindowRect(int[] rect, int style, boolean menu); // left, top, right, bottom
 			boolean GetMonitorInfoW(com.sun.jna.Pointer monitor, int[] info); // cbSize, monitor rect (4), work rect (4), flags
 		}
 		static final int GWL_STYLE = -16, GWLP_HWNDPARENT = -8, GW_HWNDNEXT = 2;
@@ -381,6 +404,30 @@ public final class FtlDock {
 			boolean apart = User32.I.AttachThreadInput(ftlThread, stationThread, false);
 			return "owned by the station's window; input kept apart: " + (apart ? "yes" : "no (Windows refused, or they weren't linked)");
 		}
+		/** FTL's window as it was before docking: its frame back, owned by nobody, shown, centred on its screen at its own size. */
+		static String release(Object w, boolean attached) {
+			com.sun.jna.Pointer hwnd = (com.sun.jna.Pointer) w;
+			if (!User32.I.IsWindow(hwnd)) return "FTL's window is gone";
+			if (attached) {
+				if (User32x64.I != null) User32x64.I.SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, null);
+				else User32.I.SetWindowLongW(hwnd, GWLP_HWNDPARENT, 0);
+			}
+			java.awt.Rectangle inside = bounds(w); // borderless: the window is all game
+			int style = User32.I.GetWindowLongW(hwnd, GWL_STYLE) | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+			User32.I.SetWindowLongW(hwnd, GWL_STYLE, style);
+			int[] r = {0, 0, inside.width, inside.height};
+			User32.I.AdjustWindowRect(r, style, false); // the frame around the same game area
+			int fw = r[2] - r[0], fh = r[3] - r[1];
+			java.awt.Rectangle screen = screenOf(w);
+			int x = screen == null ? inside.x : screen.x + Math.max(0, (screen.width - fw) / 2), y = screen == null ? inside.y : screen.y + Math.max(0, (screen.height - fh) / 2);
+			User32.I.SetWindowPos(hwnd, null, x, y, fw, fh, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+			User32.I.ShowWindow(hwnd, SW_SHOW);
+			User32.I.SetForegroundWindow(hwnd);
+			return "its frame back, " + fw + "x" + fh + " at " + x + "," + y + (attached ? ", no longer owned" : "");
+		}
+		static final int WM_CLOSE = 0x0010;
+		/** The close request a window's own X sends. */
+		static void close(Object w) { User32.I.PostMessageW((com.sun.jna.Pointer) w, WM_CLOSE, null, null); }
 		interface Gdi32 extends com.sun.jna.win32.StdCallLibrary {
 			Gdi32 I = com.sun.jna.Native.load("gdi32", Gdi32.class);
 			com.sun.jna.Pointer CreateRectRgn(int left, int top, int right, int bottom);
