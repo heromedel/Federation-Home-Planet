@@ -127,7 +127,7 @@ class DryDockShop {
 			public void actionPerformed(ActionEvent e) {
 				javax.swing.JPopupMenu m = new javax.swing.JPopupMenu();
 				javax.swing.JMenuItem a = new javax.swing.JMenuItem(bay.currentSave.getPlayerShipName() + " (your ship)");
-				javax.swing.JMenuItem b = new javax.swing.JMenuItem("Cargo Hold (items and supplies, not systems)");
+				javax.swing.JMenuItem b = new javax.swing.JMenuItem("Cargo Hold (items, supplies and systems)");
 				a.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toStorage = false; rebuild(); } });
 				b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toStorage = true; rebuild(); } });
 				m.add(a); m.add(b);
@@ -171,7 +171,7 @@ class DryDockShop {
 
 	/** Why this store system can't be bought for the chosen buyer, or null. */
 	String systemReason(String sysId) {
-		if (toStorage) return NOT_FITTED;
+		if (toStorage) return null; // into the stored systems, to fit at Refit (5.30: the hold keeps systems now)
 		return bay.systems.reason(sysId);
 	}
 	/** The boarded ship's systems changed (Refit): the greying may have too. */
@@ -192,7 +192,7 @@ class DryDockShop {
 		buyerBtn.setText(toStorage ? "Cargo Hold" : bay.currentSave.getPlayerShipName());
 		shipPic.setIcon(toStorage ? null : bay.shipIcon(bay.currentSave));
 		shipPic.setToolTipText(toStorage ? null : "Click for her report, and to rename her");
-		classLbl.setText(toStorage ? "Items and supplies only, no systems" : CargoBayUI.shipClass(bay.currentState));
+		classLbl.setText(toStorage ? "Items, supplies, and systems to fit at Refit" : CargoBayUI.shipClass(bay.currentState));
 		info.setToolTipText(toStorage ? "What the Cargo Hold is" : "Her report, and to rename her");
 		scrapLbl.setText(scrap + " scrap to spend");
 		aboard.show(buyer, toStorage);
@@ -392,7 +392,6 @@ class DryDockShop {
 		return homeplanet.parser.Dlc.refusesCrew(b, probe);
 	}
 
-	static final String NOT_FITTED = "The Cargo Bay is not fitted to hold ship systems";
 
 	// ---- Building the list ----
 
@@ -481,17 +480,13 @@ class DryDockShop {
 		ShipState bs = buyer.getPlayerShip();
 		String buyerName = toStorage ? "The Cargo Bay" : buyer.getPlayerShipName();
 		String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) : e.kind == Kind.CREW ? raceTitle(e.id) + " crew member" : supplyName(e.kind);
-		if (e.kind == Kind.SYSTEM && toStorage) {
-			JOptionPane.showMessageDialog(bay, "Systems can't be bought into the Cargo Hold. Buy it for your ship, then store it from the Refit tab.", "Shop", JOptionPane.INFORMATION_MESSAGE);
-			return;
-		}
-		if (e.kind == Kind.SYSTEM && systemBlocked(buyer, e.id, name)) return; // before the scrap check: "already has" says more than "not enough scrap"
+		if (e.kind == Kind.SYSTEM && !toStorage && systemBlocked(buyer, e.id, name)) return; // before the scrap check: "already has" says more than "not enough scrap"
 		String refused = e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(buyer, e.id) : null;
 		if (refused != null) { JOptionPane.showMessageDialog(bay, refused, "Advanced Edition only", JOptionPane.INFORMATION_MESSAGE); return; }
 		String noCrew = e.kind == Kind.CREW ? crewReason(e.id) : null;
 		if (noCrew != null) { JOptionPane.showMessageDialog(bay, noCrew, "Shop", JOptionPane.INFORMATION_MESSAGE); return; }
 		// past FTL's System Limit a system takes a custom work order to fit, paid with it
-		boolean order = e.kind == Kind.SYSTEM && SaveHelper.pastSystemLimit(bs, SystemType.findById(e.id));
+		boolean order = e.kind == Kind.SYSTEM && !toStorage && SaveHelper.pastSystemLimit(bs, SystemType.findById(e.id)); // the hold has no System Limit
 		int fee = order ? homeplanet.core.Economy.workOrderScrap() : 0, cost = e.price + fee, rep = order ? homeplanet.core.Economy.workOrderRep() : 0;
 		if (bs.getScrapAmt() < cost) {
 			JOptionPane.showMessageDialog(bay, buyerName + " has " + bs.getScrapAmt() + " scrap; " + name + " costs " + e.price
@@ -527,7 +522,8 @@ class DryDockShop {
 				return;
 			}
 			if (order && !SystemsPanel.confirmWorkOrder(bay)) return;
-			if (!installSystem(buyer, e.id, name)) return; // refused or cancelled
+			if (toStorage) bay.systems.storeBought(e.id); // into the stored systems, to fit at Refit (5.30)
+			else if (!installSystem(buyer, e.id, name)) return; // refused or cancelled
 			it.setAvailable(false);
 		} else if (e.kind == Kind.ITEM) {
 			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
@@ -568,6 +564,7 @@ class DryDockShop {
 		else if (e.kind == Kind.CREW) note(buyer, "Crew " + hired, 1);
 		else if (e.kind != Kind.SYSTEM) note(buyer, supplyName(e.kind), 1); // systems aren't in the TRADE inventory
 		if (hired != null) name = hired + " (" + raceTitle(e.id) + ")";
+		if (e.kind == Kind.SYSTEM && !name.toLowerCase().endsWith("system")) name = name + " system"; // "a Cloaking system", in the receipt and the Captain's Log
 		purchases.add(name + " (" + e.price + " scrap) from the store at " + e.shipName + "'s beacon -> " + buyerName + (toCargo ? " (cargo)" : "")
 				+ (order ? ", fitted past FTL's System Limit by a custom work order (" + fee + " scrap" + (rep > 0 ? " and " + rep + " reputation" : "") + ")" : ""));
 		log.debug("Bought {} for {} (work order {}) from {} -> {}", name, e.price, fee, e.ship.name, buyerName);
@@ -576,7 +573,7 @@ class DryDockShop {
 		bay.systems.refresh(); // a bought system shows on the Refit tab
 		rebuild();
 		bay.help((hired != null ? "Hired " : "Bought ") + name + " for " + e.price + " scrap" + (order ? ", and " + fee + (rep > 0 ? " scrap and " + rep + " reputation" : "") + " for the custom work order to fit it" : "")
-				+ (toCargo ? " (into the cargo hold)" : hired != null && toStorage ? " (waiting in the Cargo Hold)" : "") + ". Save to make it official.");
+				+ (toCargo ? " (into the cargo hold)" : hired != null && toStorage ? " (waiting in the Cargo Hold)" : e.kind == Kind.SYSTEM && toStorage ? " (stored in the Cargo Hold, to fit at Refit)" : "") + ". Save to make it official.");
 	}
 
 	/**

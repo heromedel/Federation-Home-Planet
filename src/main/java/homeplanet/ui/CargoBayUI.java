@@ -360,7 +360,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	public void tradeShipInit() { }
 
 	private void loadCurrent() {
-		currentShip = picked != null && Vault.get().fleet().contains(picked) ? picked : Vault.get().boarded();
+		Ship flying = homeplanet.core.FtlDock.active() ? Vault.get().boarded() : null; // FTL docked: the ship in flight stays out of the Cargo Bay (5.29)
+		currentShip = picked != null && picked != flying && Vault.get().fleet().contains(picked) ? picked : flying != null ? null : Vault.get().boarded();
 		if (currentShip != picked) picked = null; // she's gone (boarded elsewhere, decommissioned): back to the boarded ship
 		if (currentShip == null || !currentShip.file().exists()) {
 			currentShip = null;
@@ -415,7 +416,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	/** The ships at the Space Dock (boarded and docked) whose saves can be read: any of them can trade (see {@link Dlc} for what may move). */
 	ArrayList<Ship> tradeableShips() {
 		ArrayList<Ship> list = new ArrayList<Ship>();
-		for (Ship s : Vault.get().fleet()) if (s.save() != null) list.add(s);
+		Ship flying = homeplanet.core.FtlDock.active() ? Vault.get().boarded() : null; // in flight, docked: not tradeable till FTL closes (5.29)
+		for (Ship s : Vault.get().fleet()) if (s != flying && s.save() != null) list.add(s);
 		return list;
 	}
 

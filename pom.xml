@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>homeplanet</groupId>
 	<artifactId>federation-home-planet</artifactId>
-	<version>5.31</version>
+	<version>5.32</version>
 	<name>Federation Home Planet</name>
 
 	<!--
@@ -46,6 +46,12 @@
 			<groupId>org.glassfish.jaxb</groupId>
 			<artifactId>jaxb-runtime</artifactId>
 			<version>2.3.9</version>
+		</dependency>
+		<dependency>
+			<!-- JNA (Apache-2.0 / LGPL): Windows' own calls for playing FTL docked in the station window (5.29) -->
+			<groupId>net.java.dev.jna</groupId>
+			<artifactId>jna</artifactId>
+			<version>5.14.0</version>
 		</dependency>
 	</dependencies>
 
@@ -98,6 +104,18 @@
 										<exclude>META-INF/*.DSA</exclude>
 										<exclude>META-INF/*.RSA</exclude>
 										<exclude>META-INF/MANIFEST.MF</exclude>
+									</excludes>
+								</filter>
+								<filter>
+									<!-- docking FTL is Windows-only: JNA's natives for other systems stay out of the jar -->
+									<artifact>net.java.dev.jna:jna</artifact>
+									<excludes>
+										<exclude>com/sun/jna/aix-*/**</exclude>
+										<exclude>com/sun/jna/darwin-*/**</exclude>
+										<exclude>com/sun/jna/freebsd-*/**</exclude>
+										<exclude>com/sun/jna/linux-*/**</exclude>
+										<exclude>com/sun/jna/openbsd-*/**</exclude>
+										<exclude>com/sun/jna/sunos-*/**</exclude>
 									</excludes>
 								</filter>
 							</filters>

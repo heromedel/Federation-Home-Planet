@@ -69,10 +69,19 @@ public class MainFrame extends JFrame {
 				closeNow();
 			}
 			@Override
+			public void windowIconified(java.awt.event.WindowEvent e) { homeplanet.core.FtlDock.show(false); } // a docked FTL goes with the station (5.31)
+			@Override
+			public void windowDeiconified(java.awt.event.WindowEvent e) {
+				if (!atSpaceDock) return;
+				homeplanet.core.FtlDock.show(true);
+				javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { spaceDock.placeViewport(); homeplanet.core.FtlDock.raise(); } });
+			}
+			@Override
 			public void windowActivated(java.awt.event.WindowEvent e) {
 				// back from another program (FTL, most likely): the Space Dock takes stock, as Refresh does. Not when one of
 				// the station's own windows closes, and not in the Cargo Bay (unsaved trades)
 				if (!atSpaceDock) return;
+				if (homeplanet.core.FtlDock.active()) { homeplanet.core.FtlDock.raise(); return; } // docked FTL back over its viewport; FTL's saves rebuild the dock as they're written (5.31)
 				if (homeplanet.core.GameGuard.isFtlRunning() && !homeplanet.vault.Vault.get().continueFile().exists()) return; // FTL is saving or still on its game-over screen: judged once it's closed
 				boolean gone = homeplanet.core.SaveWatcher.takeGone(); // FTL ended a run meanwhile
 				if (gone) spaceDock.refresh(); // her save is gone: the fleet is read again, so she leaves the Space Dock (lost in action)
@@ -148,6 +157,7 @@ public class MainFrame extends JFrame {
 	public boolean atLongRangeComm() { return atComm; }
 	/** Opens Long Range Comm. (asking for the commander's name the first time). */
 	public void showLongRangeComm() {
+		homeplanet.core.FtlDock.show(false); // a docked FTL steps behind other screens, still running (5.29)
 		screens.show(tasksPane, "comm");
 		atSpaceDock = false;
 		atMuseum = false;
@@ -159,6 +169,7 @@ public class MainFrame extends JFrame {
 
 	/** Opens the Federation Museum. */
 	public void showMuseum() {
+		homeplanet.core.FtlDock.show(false);
 		atSpaceDock = false;
 		atMuseum = true;
 		atComm = false;
@@ -168,6 +179,7 @@ public class MainFrame extends JFrame {
 
 	/** Opens the Cargo Bay, fresh from the saves. */
 	public void showCargoBay() {
+		homeplanet.core.FtlDock.show(false);
 		cargoBay.openOnBoarded();
 		atSpaceDock = false;
 		atMuseum = false;
@@ -185,6 +197,8 @@ public class MainFrame extends JFrame {
 		screens.show(tasksPane, "dock");
 		spaceDock.revalidate();
 		spaceDock.repaint();
+		homeplanet.core.FtlDock.show(true); // back in its viewport
+		javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { spaceDock.placeViewport(); homeplanet.core.FtlDock.raise(); } });
 	}
 
 	/** Drops cached pictures whose path starts like this (a design's pictures change between previews). */

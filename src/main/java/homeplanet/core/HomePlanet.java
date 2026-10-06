@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.31";
+	public static final String APP_VERSION = "5.32";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -416,7 +416,8 @@ public class HomePlanet {
 
 	// ---- FTL itself ----
 
-	public static void launchFTL() {
+	/** Starts FTL (true if it was started: the docked view waits for its window then). */
+	public static boolean launchFTL() {
 		// a retrofitted ship can't load without the companion mod: don't let FTL try
 		File cont = new File(save_location, "continue.sav");
 		if (cont.exists()) {
@@ -424,11 +425,11 @@ public class HomePlanet {
 			if (!missing.isEmpty()) {
 				showErrorDialog("The boarded ship flies on blueprints from the " + Retrofit.MOD_NAME + ", which isn't in FTL yet ("
 						+ String.join(", ", missing) + ").\n\nSend it to FTL via Slipstream first (Settings > Patch mods), or board a different ship.");
-				return;
+				return false;
 			}
 		}
 		String empty = noOneAboard(cont);
-		if (empty != null) { showErrorDialog(empty); return; }
+		if (empty != null) { showErrorDialog(empty); return false; }
 		Music.stop(); // FTL has its own music
 		if (launchThroughSteam) {
 			String steamUri = "steam://rungameid/" + FTLUtilities.STEAM_APPID_FTL;
@@ -439,24 +440,27 @@ public class HomePlanet {
 			} catch (Exception ex) {
 				log.error("Could not launch FTL through Steam.", ex);
 				showErrorDialog("The Home Planet Station could not launch FTL through Steam:\n" + ex);
+				return false;
 			}
-			return;
+			return true;
 		}
 		// FTL 1.6+ keeps FTLGame.exe beside ftl.dat; older versions had it one folder up from resources/
 		File ftl = FTLUtilities.findGameExe(datsPath);
 		if (ftl == null) {
 			log.warn("Could not find the FTL executable near {}", datsPath);
 			showErrorDialog("The Home Planet Station could not find FTL's executable near:\n" + datsPath + "\n\nCheck the game folder in Settings.");
-			return;
+			return false;
 		}
 		log.debug("Running FTL: {}", ftl.getAbsolutePath());
 		try {
 			ProcessBuilder builder = new ProcessBuilder(ftl.getAbsolutePath());
 			builder.directory(ftl.getParentFile()); // the exe expects its own folder as the working directory
 			builder.start();
+			return true;
 		} catch (IOException ex) {
 			log.error("An exception occurred while executing FTL.", ex);
 			showErrorDialog("FTL could not be started:\n" + ex);
+			return false;
 		}
 	}
 
