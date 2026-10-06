@@ -31,11 +31,9 @@ public final class ImmersiveDialog {
 	public static boolean enter(Component owner, String slot) {
 		Vault v = Vault.get();
 		if (v.slot.equals(slot)) return true;
-		// before the briefing, so its pages aren't filled in only to be told to close FTL (heromedel, 5.29)
-		if (GameGuard.isFtlRunning()) {
-			JOptionPane.showMessageDialog(owner, "FTL detected open. Please close the game and come back.", Vault.title(slot), JOptionPane.INFORMATION_MESSAGE);
-			return false;
-		}
+		// before the briefing, so its pages aren't filled in only to be told to close FTL (heromedel, 5.29); the station's one
+		// close-FTL message, as at Confirm (5.33)
+		if (!ftlClosed(owner, Vault.title(slot))) return false;
 		File immersiveRoot = Vault.rootOf(v.saves, slot);
 		boolean begun = Career.started(immersiveRoot);
 		File profile = ProfileSwap.current(v.saves);
