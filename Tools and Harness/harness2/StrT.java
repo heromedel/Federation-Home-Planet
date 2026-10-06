@@ -44,6 +44,65 @@ public class StrT { public static void main(String[] a) throws Exception {
  g = read(im.continueFile()); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 5);
  SaveHelper.writeSavedGame(im.continueFile(), g); im.observeBoarded(); im.takeStock();
  Setup.chk("B: and her flying counts for nothing", im.beaconsSeen() == b0);
+ // Plan G (5.55): what came into FTL's profile while she was boarded, noted as hers; taken out on request, a backup first
+ File prof = new File(HomePlanet.save_location, "ae_prof.sav");
+ net.blerf.ftl.model.Profile p0 = net.blerf.ftl.model.Profile.createEmptyProfile(); p0.setFileFormat(9);
+ p0.getShipUnlockMap().put("PLAYER_SHIP_MANTIS", new net.blerf.ftl.model.ShipAvailability("PLAYER_SHIP_MANTIS", true, false)); // the career's own, from before
+ writeProfile(prof, p0);
+ UnlockGrants.turnedOn(Unlocks.read());
+ String ach = DataManager_firstAchievement();
+ p0.getShipUnlockMap().put("PLAYER_SHIP_CIRCLE", new net.blerf.ftl.model.ShipAvailability("PLAYER_SHIP_CIRCLE", true, false));
+ p0.getAchievements().add(new net.blerf.ftl.model.AchievementRecord(ach, Difficulty.NORMAL));
+ writeProfile(prof, p0);
+ g = read(im.continueFile()); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1);
+ SaveHelper.writeSavedGame(im.continueFile(), g); im.observeBoarded();
+ Set<String> hers = UnlockGrants.strangers();
+ Setup.chk("G: a layout and an achievement earned while she was boarded are noted as hers, the career's own not " + hers,
+   hers.contains("PLAYER_SHIP_CIRCLE 0") && hers.contains("ACH:" + ach) && !hers.contains("PLAYER_SHIP_MANTIS 0") && hers.size() == 2);
+ File backup = UnlockGrants.removeFromProfile(hers);
+ UnlockGrants.strangersAnswered(hers);
+ Unlocks after = Unlocks.read();
+ Setup.chk("G: Remove: exactly those out of FTL's profile, the career's own kept, a backup made first",
+   !after.unlocked("PLAYER_SHIP_CIRCLE", 0) && !after.achievements().contains(ach) && after.unlocked("PLAYER_SHIP_MANTIS", 0) && backup.isFile());
+ Setup.chk("G: answered: not asked again; earned again by the career, they'd count", UnlockGrants.strangers().isEmpty() && UnlockGrants.newAchievements(Unlocks.read()).isEmpty() && !new String(SafeFiles.read(new File(im.root, "unlock-grants.txt")), "UTF-8").contains("seen PLAYER_SHIP_CIRCLE 0"));
+
+ // Plan H (5.55): a career ship FTL's New Game wrote over, out of battle: offered back
+ im.sendToOtherFleet(im.boarded(), false);
+ Ship lucky = im.adopt(Commission.build("PLAYER_SHIP_HARD", "Lucky Kestrel", Difficulty.NORMAL, new Random(5)));
+ im.board(lucky); im.takeStock();
+ g = read(im.continueFile()); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 3);
+ SaveHelper.writeSavedGame(im.continueFile(), g); im.observeBoarded(); im.takeStock();
+ int repBefore = Reputation.total(im), kb = im.beaconsSeen(), crewOn = aboard(im, "Lucky Kestrel");
+ SaveHelper.writeSavedGame(im.continueFile(), Commission.build("PLAYER_SHIP_STEALTH", "Stray Stealth", Difficulty.NORMAL, new Random(6)));
+ im.takeStock();
+ Vault.Departed luckyBack = offered(im, lucky.id);
+ Setup.chk("H: written over out of battle: offered back; the career ship written over earlier too", luckyBack != null && offered(im, ours.id) != null);
+ Setup.chk("H: meanwhile she's lost, her crew with her", Reputation.total(im) < repBefore && aboard(im, "Lucky Kestrel") == 0 && crewOn > 0);
+ Ship back = im.restoreBack(luckyBack);
+ CrewRegister.shipBack(im, back);
+ Setup.chk("H: Yes: she's boarded again, the New Game's ship gone to the Sandbox", im.boarded() != null && im.boarded().id.equals(lucky.id) && !im.boarded().stranger
+   && "Lucky Kestrel".equals(read(im.continueFile()).getPlayerShipName()));
+ boolean listed = false; for (Vault.Departed d : im.recoverable()) if (d.id.equals(lucky.id)) listed = true;
+ Setup.chk("H: her loss undone: reputation as before, no longer lost, not offered again", Reputation.total(im) == repBefore && !listed && offered(im, lucky.id) == null);
+ boolean lostLine = false; for (CrewRegister.Member m : CrewRegister.members(im)) for (CrewRegister.Event e : m.events) if (e.text.startsWith("Lost with the Lucky Kestrel")) lostLine = true;
+ Setup.chk("H: her crew back aboard, the loss out of their careers", aboard(im, "Lucky Kestrel") == crewOn && !lostLine);
+ Setup.chk("H: the clock untouched by it all", im.beaconsSeen() == kb);
+ SaveHelper.writeSavedGame(im.continueFile(), Commission.build("PLAYER_SHIP_STEALTH", "Stray Stealth", Difficulty.NORMAL, new Random(7)));
+ im.takeStock();
+ im.declineBack(offered(im, lucky.id));
+ listed = false; for (Vault.Departed d : im.recoverable()) if (d.id.equals(lucky.id) && d.fate == Vault.Fate.LOST) listed = true;
+ Setup.chk("H: No: she stays lost, and isn't asked about again", offered(im, lucky.id) == null && listed);
+ // the check, on the version that would be restored
+ SavedGameState t = Commission.build("PLAYER_SHIP_HARD", "Test", Difficulty.NORMAL, new Random(8));
+ ShipState enemy = Commission.build("PLAYER_SHIP_MANTIS", "Raider", Difficulty.NORMAL, new Random(9)).getPlayerShip(); enemy.setHostile(true);
+ t.getPlayerShip().setHullAmt(4);
+ Setup.chk("H: no enemy alongside: offered, whatever her hull", Vault.restorable(t));
+ t.setNearbyShip(enemy); t.setSectorNumber(2); t.getPlayerShip().setHullAmt(12);
+ Setup.chk("H: in a battle in sector 3 at hull 12: offered, back into that battle", Vault.restorable(t));
+ t.setSectorNumber(7);
+ Setup.chk("H: the same battle in sector 8: not offered", !Vault.restorable(t));
+ t.setSectorNumber(2); t.getPlayerShip().setHullAmt(5);
+ Setup.chk("H: in a battle at hull 5: not offered", !Vault.restorable(t));
  // Sandbox Mode: any ship is the fleet's, as before
  im.sendToOtherFleet(im.boarded(), false);
  HomePlanet.leaveImmersive();
@@ -58,4 +117,8 @@ public class StrT { public static void main(String[] a) throws Exception {
  Setup.done();
 }
  static SavedGameState read(File f) throws Exception { return HomePlanet.savedGameParser.readSavedGame(f); }
+ static void writeProfile(File f, net.blerf.ftl.model.Profile p) throws Exception { ByteArrayOutputStream o = new ByteArrayOutputStream(); new net.blerf.ftl.parser.ProfileParser().writeProfile(o, p); SafeFiles.write(f, o.toByteArray()); }
+ static String DataManager_firstAchievement() { for (String id : net.blerf.ftl.parser.DataManager.get().getAchievements().keySet()) return id; return "ACH_SECTOR_5"; }
+ static Vault.Departed offered(Vault v, String id) { for (Vault.Departed d : v.offeredBack()) if (d.id.equals(id)) return d; return null; }
+ static int aboard(Vault v, String ship) { int n = 0; for (CrewRegister.Member m : CrewRegister.members(v)) if (m.status == CrewRegister.Status.PRESENT && m.where.equals("aboard the " + ship)) n++; return n; }
 }

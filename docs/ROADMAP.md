@@ -169,6 +169,11 @@ ship pays, and Save makes it official (Reset undoes it).
     for her: no voyage log, reputation, clock or stipend time, crew, parcels or final battle, and FTL's unlocks and
     achievements meanwhile are seen, never the career's. FTL's New Game with nothing boarded is noticed on the next look
     (harness test StrT).
+  - 5.55 (heromedel): what came into FTL's profile while she was boarded (achievements, layouts A and C) is noted as
+    hers; with FTL closed, the player is asked once whether to take it back out of the career's profile (a backup first).
+    A career ship FTL's New Game wrote over is offered back if her last kept version was out of battle, or in a battle
+    outside sector 8 with hull above 5 (she goes back into it): the new ship to the Sandbox's Space Dock, her fate,
+    reputation and crew restored. "No" leaves her lost.
   - Immersive Mode asks: **Send her to the normal Space Dock** / **Decommission her** (then: send to the normal
     Junkyard, or Destroy, which keeps a copy in her records) / **Switch to normal mode now** / **Close The Home
     Planet Station**.

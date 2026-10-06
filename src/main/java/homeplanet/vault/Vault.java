@@ -1034,7 +1034,8 @@ public final class Vault {
 		String lostName = b.marks.split("\\|", -1)[1];
 		b.name = lostName;
 		recordFate(b, Fate.LOST);
-		Reputation.lost(this, b);
+		int took = Reputation.lost(this, b);
+		if (immersive) offerBack(b, took); // by accident, perhaps: she may be offered back (5.55)
 		ships.remove(b);
 		Ship n = new Ship(newId(), gs.getPlayerShipName(), Ship.State.BOARDED, gs.isDLCEnabled());
 		n.stranger = true;
@@ -1064,7 +1065,7 @@ public final class Vault {
 		VoyageLog.baseline(this, b, gs);
 		setClock(b, gs.getSectorNumber(), gs.getTotalBeaconsExplored());
 		if (first) return;
-		try { homeplanet.parser.UnlockGrants.turnedOn(homeplanet.parser.Unlocks.read()); }
+		try { homeplanet.parser.UnlockGrants.strangerSeen(homeplanet.parser.Unlocks.read()); } // noted as hers too: the player may have them taken back out (5.55)
 		catch (RuntimeException e) { log.warn("Could not note FTL's unlocks while an uncommissioned ship is boarded: {}", e.toString()); }
 	}
 	/** Nothing boarded, and continue.sav there: FTL started a New Game. She's an uncommissioned ship, boarded (as on opening the fleet). */
@@ -1084,6 +1085,75 @@ public final class Vault {
 		HistoryLog.entry("VAULT", "taking stock", java.util.Collections.singletonList("continue.sav is a ship the station didn't know (a new game started in FTL, most likely): she is now boarded"));
 		return true;
 	}
+	// ---- a career ship FTL's New Game wrote over by accident (heromedel, 5.55) ----
+
+	private static final String BACK_NOTE = "overwritten.txt";
+	/** Notes her as one to offer back, if her last kept version can be: out of battle, or in one she can go back into. */
+	private void offerBack(Ship b, int repTaken) {
+		List<File> kept = history(b);
+		if (kept.isEmpty()) return;
+		SavedGameState gs;
+		try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(kept.get(kept.size() - 1)); } catch (Exception e) { return; }
+		if (!restorable(gs)) return;
+		try { SafeFiles.writeText(new File(historyOf(b), BACK_NOTE), "reputation=" + repTaken + "\n", false); }
+		catch (IOException e) { log.warn("Could not note {} as one to offer back: {}", b, e.toString()); }
+	}
+	/**
+	 * Can this version of her be put back? With no hostile ship alongside, yes. In a battle, only outside sector 8 and
+	 * with her hull above 5: she goes back into that same battle.
+	 */
+	public static boolean restorable(SavedGameState gs) {
+		net.blerf.ftl.parser.SavedGameParser.ShipState s = gs.getPlayerShip(), enemy = gs.getNearbyShip();
+		if (s == null) return false;
+		boolean fight = enemy != null && enemy.isHostile() && enemy.getHullAmt() > 0;
+		return !fight || (gs.getSectorNumber() != 7 && s.getHullAmt() > 5);
+	}
+	/** Career ships FTL's New Game wrote over that are to be offered back, newest first. */
+	public synchronized List<Departed> offeredBack() {
+		List<Departed> out = new ArrayList<Departed>();
+		for (Departed d : recoverable()) if (d.fate == Fate.LOST && new File(d.last.getParentFile(), BACK_NOTE).isFile()) out.add(d);
+		return out;
+	}
+	/** The player said no: she stays lost, and isn't asked about again. */
+	public synchronized void declineBack(Departed d) { new File(d.last.getParentFile(), BACK_NOTE).delete(); }
+	/**
+	 * Brings her back as the boarded ship from her last kept version (into the same battle, if she was in one): an
+	 * uncommissioned ship in continue.sav goes to the Sandbox fleet's Space Dock first; a ship of the fleet's own there
+	 * is left boarded, and she comes back docked. Her fate is cleared and what her loss cost in reputation given back.
+	 * FTL must be closed. Then {@link CrewRegister#shipBack} for her crew (outside the fleet's lock).
+	 */
+	public synchronized Ship restoreBack(Departed d) throws IOException {
+		if (byId(d.id) != null) throw new IOException(d.name + " is already in the fleet");
+		File note = new File(d.last.getParentFile(), BACK_NOTE);
+		int taken = 0;
+		try { taken = Integer.parseInt(new String(SafeFiles.read(note), java.nio.charset.StandardCharsets.UTF_8).trim().replace("reputation=", "")); } catch (Exception e) { }
+		Ship now = boarded();
+		if (now != null && now.stranger) { sendToOtherFleet(now, false); now = boarded(); }
+		Ship s;
+		if (now != null) {
+			s = recover(d); // the fleet's own ship is boarded: she comes back to the Space Dock
+		} else {
+			s = new Ship(d.id, d.name, Ship.State.BOARDED, true);
+			SafeFiles.write(continueFile(), SafeFiles.read(d.last));
+			s.hash = SafeFiles.hash(continueFile());
+			ships.add(s);
+			new File(d.last.getParentFile(), FATE_FILE).delete();
+			SavedGameState gs = s.save();
+			if (gs != null) {
+				s.name = gs.getPlayerShipName();
+				s.marks = marksOf(gs);
+				setClock(s, gs.getSectorNumber(), gs.getTotalBeaconsExplored()); // the clock carries on from her restored point
+				VoyageLog.baseline(this, s, gs);
+			}
+			saveManifest();
+		}
+		note.delete();
+		Reputation.restored(this, s, taken);
+		log.info("Restored {} after FTL's New Game: history/{}/{} -> {}", s.name, s.id, d.last.getName(), s.isBoarded() ? "continue.sav" : "ships/" + s.id + ".sav");
+		HistoryLog.entry("RESTORE", "Restored " + homeplanet.parser.ShipNames.the(s.name) + " after FTL's New Game wrote over her");
+		return s;
+	}
+
 	/** After the station writes the boarded ship: her marks follow (a rename, a New Journey, a retrofit are the station's own). */
 	private void marked(Ship s, SavedGameState state) {
 		if (s.state == Ship.State.BOARDED && state != null) {

@@ -190,16 +190,24 @@ public final class Reputation {
 		write(v, p);
 	}
 	/** She was lost in action: the fleet's loss, unless it was the last stand (sector 8). */
-	static synchronized void lost(Vault v, Ship s) {
-		if (s == null) return;
+	static synchronized int lost(Vault v, Ship s) {
+		if (s == null) return 0;
 		Properties p = read(v);
-		if (!counted(p)) return; // the review counts her loss from her fate
+		if (!counted(p)) return 0; // the review counts her loss from her fate
 		Props was = new Props(p, s.id);
 		int sector = was.known() ? was.sector : VoyageLog.lastSector(v, s);
 		Props.forget(p, s.id);
-		if (sector >= LAST_STAND || !shown()) { write(v, p); return; }
+		if (sector >= LAST_STAND || !shown()) { write(v, p); return 0; }
 		p.setProperty("total", Integer.toString(num(p, "total") + SHIP_LOST));
-		if (write(v, p)) entry(v, SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null);
+		if (write(v, p)) { entry(v, SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null); return SHIP_LOST; }
+		return 0;
+	}
+	/** She was restored after FTL's New Game wrote over her (heromedel, 5.55): what her loss took is given back. */
+	static synchronized void restored(Vault v, Ship s, int taken) {
+		if (taken == 0) return;
+		Properties p = read(v);
+		p.setProperty("total", Integer.toString(num(p, "total") - taken));
+		if (write(v, p)) entry(v, -taken, s.name + " was restored after FTL's New Game wrote over her (" + signed(-taken) + ")", null);
 	}
 	/**
 	 * A crew expedition, scored as the game is (heromedel, 5.00): the pot a tenth, each crew member killed CREW_DIED, a good

@@ -443,6 +443,27 @@ public final class CrewRegister {
 	}
 	private static int intOr(String s) { try { return Integer.parseInt(s.trim()); } catch (RuntimeException e) { return -1; } }
 
+	/**
+	 * Her crew, lost with her when FTL's New Game wrote over her, are back aboard (heromedel, 5.55): restored to the
+	 * register as they were, the loss taken out of their careers.
+	 */
+	public static synchronized void shipBack(Vault v, Ship s) {
+		try {
+			List<Member> members = members(v);
+			boolean changed = false;
+			for (Member m : members) {
+				if (m.status != Status.KILLED || !m.place.equals("ship:" + s.id)) continue;
+				for (int i = m.events.size() - 1; i >= 0; i--) if (m.events.get(i).text.startsWith("Lost with ")) { m.events.remove(i); break; }
+				m.status = Status.PRESENT;
+				m.where = "aboard " + the(s.name);
+				m.events.add(new Event(MasterLog.today(v), "Back aboard " + the(s.name) + ": she was restored after FTL's New Game wrote over her."));
+				changed = true;
+			}
+			if (changed) { int[] seen = seen(v); write(v, members, seen[0], seen[1]); }
+			sweep(v);
+		} catch (IOException e) { log.warn("Could not bring {}'s crew back to the register: {}", s, e.toString()); }
+	}
+
 	// ---- promotions (heromedel, 5.52) ----
 
 	/** Their record wears a higher rank than the name found in a save: promoted where no save could be changed. */
