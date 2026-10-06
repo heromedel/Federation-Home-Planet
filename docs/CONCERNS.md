@@ -45,9 +45,9 @@ they are (the ships, the Junkyard's hulls, the Cargo Hold, away on assignment, h
 register on what never changes or only grows: race, sex and colouring must agree, the service record (repairs, kills,
 evasions, jumps, masteries) may only have grown; the same name and the same place then decide between the rest. A
 rename keeps the id (the same record, and the same colouring or place). Two of a name and race are two ids, each with
-their own history, and the Crew Log shows them apart. Someone no longer found anywhere is killed or let go only on solid
+their own history, and the Crew Log shows them apart. Someone no longer found anywhere is killed, retired or transferred only on solid
 evidence (a ship's fate, the captives file, the station's own log since they were last seen), otherwise missing until
-found again. The harness test CrewT holds it: namesakes sent apart, a rename, a capture, a loss in FTL, a let go.
+found again. The harness test CrewT holds it: namesakes sent apart, a rename, a capture, a loss in FTL, a retirement, a transfer over the Long Range (5.47).
 
 **What still goes by name, and why it's fine.**
 

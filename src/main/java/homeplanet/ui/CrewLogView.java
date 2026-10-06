@@ -62,10 +62,10 @@ final class CrewLogView extends JPanel {
 		ships.addAll(v.docked());
 		ships.addAll(v.junked());
 		for (Ship s : ships) sections.put("ship:" + s.id, new ArrayList<Member>());
-		String[] rest = {"hold", "away", "DISCHARGED", "KILLED", "MIA"};
+		String[] rest = {"hold", "away", "TRANSFERRED", "RETIRED", "KILLED", "MIA"};
 		for (String k : rest) sections.put(k, new ArrayList<Member>());
 		for (Member m : members) {
-			String k = m.status == Status.KILLED ? "KILLED" : m.status == Status.DISCHARGED ? "DISCHARGED" : m.status != Status.PRESENT ? "MIA"
+			String k = m.status == Status.KILLED ? "KILLED" : m.status == Status.RETIRED ? "RETIRED" : m.status == Status.TRANSFERRED ? "TRANSFERRED" : m.status != Status.PRESENT ? "MIA"
 					: m.where.startsWith("on assignment") ? "away" : m.where.equals("in the Cargo Hold") ? "hold" : shipKey(ships, m);
 			if (!sections.containsKey(k)) sections.put(k, new ArrayList<Member>());
 			sections.get(k).add(m);
@@ -135,7 +135,8 @@ final class CrewLogView extends JPanel {
 		}
 		if (key.equals("hold")) return "The Cargo Hold";
 		if (key.equals("away")) return "On assignment";
-		if (key.equals("DISCHARGED")) return "Discharged";
+		if (key.equals("TRANSFERRED")) return "Transferred";
+		if (key.equals("RETIRED")) return "Retired";
 		if (key.equals("KILLED")) return "KIA";
 		return "MIA";
 	}
@@ -213,8 +214,8 @@ final class CrewLogView extends JPanel {
 		if (t.startsWith("Killed") || t.startsWith("Lost") || t.contains("presumed dead") || t.startsWith("Did not come back")) return RecordsLog.BAD;
 		if (t.startsWith("Taken captive") || t.startsWith("Not found")) return new Color(240, 150, 70);
 		if (t.contains("infirmary")) return new Color(170, 110, 230);
-		if (t.startsWith("Let go") || t.startsWith("Left the fleet")) return RecordsLog.DIM;
-		if (t.startsWith("Hired") || t.startsWith("Rescued") || t.startsWith("Joined") || t.startsWith("Came aboard") || t.startsWith("Back from")
+		if (t.startsWith("Let go") || t.startsWith("Retired") || t.startsWith("Left the fleet") || t.startsWith("Transferred to") || t.startsWith("Transferred with")) return RecordsLog.DIM;
+		if (t.startsWith("Hired") || t.startsWith("Rescued") || t.startsWith("Transferred from") || t.startsWith("Joined") || t.startsWith("Came aboard") || t.startsWith("Back from")
 				|| t.startsWith("Ransomed") || t.startsWith("Found again") || t.startsWith("On the station's records")) return RecordsLog.GOOD;
 		return MenuTheme.GOLD;
 	}
@@ -242,7 +243,8 @@ final class CrewLogView extends JPanel {
 			case CAPTIVE: return "MIA: " + m.where + ".";
 			case MISSING: return "MIA: whereabouts unknown.";
 			case KILLED: return "KIA: " + (m.where.isEmpty() ? "lost" : m.where) + ".";
-			default: return "Discharged: " + (m.where.isEmpty() ? "let go" : m.where) + ".";
+			case TRANSFERRED: return "Transferred: " + m.where.replaceFirst("^transferred ", "") + ".";
+			default: return "Retired from the station's service.";
 		}
 	}
 	private static JLabel heading(String text) {
