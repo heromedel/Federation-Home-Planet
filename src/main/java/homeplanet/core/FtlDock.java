@@ -13,12 +13,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Playing FTL docked in the station window (heromedel, 5.29; Windows only): FTL in windowed mode, borderless, placed
- * over a viewport on the Space Dock and kept there, owned by the station's window so it stays just above it and below
- * the station's own windows. FTL stays its own program: if anything here fails, it simply runs as a normal window.
+ * over a viewport on the Space Dock and kept there, lifted just above the station's window whenever that's activated.
+ * Never owned by it (5.31): a window owned across programs shares their input, and FTL's hidden cursor with it. FTL
+ * stays its own program: if anything here fails, it simply runs as a normal window.
  *
- * Its settings.ini is edited in place, one key only (fullscreen, to windowed), never copied over: the player's other
- * settings are theirs. The key's old value is kept in the cfg and put back when the option is turned off, unless the
- * player has changed it since.
+ * Its settings.ini (%APPDATA%\FasterThanLight on Windows, 5.31; not beside the saves) is edited in place, one key only
+ * (fullscreen, to 0: windowed), never copied over: the player's other settings are theirs. The key's old value is kept in
+ * the cfg and put back when the option is turned off, unless the player has changed it since.
  */
 public final class FtlDock {
 	private static final Logger log = LoggerFactory.getLogger(FtlDock.class);
@@ -50,13 +51,34 @@ public final class FtlDock {
 
 	private static final Pattern FULLSCREEN = Pattern.compile("(?m)^([ \\t]*fullscreen[ \\t]*=[ \\t]*)([^\\r\\n]*)$");
 
-	/** FTL's settings.ini, beside its saves. */
-	static File settingsFile() { return HomePlanet.save_location == null ? null : new File(HomePlanet.save_location, "settings.ini"); }
+	/** FTL's settings.ini: %APPDATA%\FasterThanLight on Windows (the harness names its own). */
+	static File settingsFile() {
+		String test = System.getProperty("homeplanet.ftlSettings");
+		if (test != null) return new File(test);
+		String appData = System.getenv("APPDATA");
+		return appData == null ? null : new File(new File(appData, "FasterThanLight"), "settings.ini");
+	}
+	/**
+	 * 5.29 wrote its fullscreen line beside the saves, where FTL never reads it, and often made the file to do so: that
+	 * file goes if the line is still all it holds, with the old value kept for it (which wasn't the player's).
+	 */
+	public static void cleanUpStray() {
+		File saves = HomePlanet.save_location;
+		File stray = saves == null ? null : new File(saves, "settings.ini");
+		try {
+			if (stray == null || !stray.isFile() || stray.equals(settingsFile())) return;
+			if (!new String(SafeFiles.read(stray), StandardCharsets.UTF_8).trim().equals("fullscreen=0")) return;
+			if (stray.delete()) log.info("FTL docked: removed the station's stray settings.ini beside the saves");
+			if (HomePlanet.config.remove(CFG_WAS) != null) HomePlanet.saveConfig();
+		} catch (IOException e) { log.debug("FTL docked: could not read {}: {}", stray, e.toString()); }
+	}
 
 	/** Before a docked launch: fullscreen to windowed (0), keeping the old value the first time. */
 	public static void prepareSettings() throws IOException {
+		cleanUpStray();
 		File f = settingsFile();
 		if (f == null) return;
+		if (!f.isFile() && (f.getParentFile() == null || !f.getParentFile().isDirectory())) return; // no FTL settings yet: it starts windowed or as it likes
 		String text = f.isFile() ? new String(SafeFiles.read(f), StandardCharsets.UTF_8) : "";
 		Matcher m = FULLSCREEN.matcher(text);
 		String was = m.find() ? m.group(2).trim() : null;
@@ -100,22 +122,32 @@ public final class FtlDock {
 	/** Ends it: FTL closed, or its window never turned up. */
 	public static void end() { active = false; window = null; where = null; }
 
-	/** Looks for FTL's window (true once found and made borderless, owned by the station's window). Windows only. */
-	public static boolean find(java.awt.Window station) {
-		if (window != null) return true;
-		if (!System.getProperty("os.name", "").startsWith("Windows")) return false;
+	/** What a look for FTL's window found. */
+	public enum Found { NOT_YET, DOCKED, FULLSCREEN }
+	/** Looks for FTL's window: docked once found (made borderless), unless it's full screen (then left alone). Windows only. */
+	public static Found find() {
+		if (window != null) return Found.DOCKED;
+		if (!System.getProperty("os.name", "").startsWith("Windows")) return Found.NOT_YET;
 		try {
 			Object w = Win.find(TITLE);
-			if (w == null) return false;
-			Win.adopt(w, station);
+			if (w == null) return Found.NOT_YET;
+			java.awt.Rectangle r = Win.bounds(w);
+			java.awt.Rectangle screen = Win.screenOf(w);
+			if (screen != null && r.width >= screen.width && r.height >= screen.height) { log.info("FTL docked: FTL is full screen; left as it is"); return Found.FULLSCREEN; }
+			Win.adopt(w);
 			window = w;
 			log.info("FTL docked: its window was found");
 			if (where != null) place(where);
-			return true;
+			return Found.DOCKED;
 		} catch (Throwable t) { // no JNA, a refused call: FTL just runs as a normal window
 			log.debug("FTL docked: its window could not be docked: {}", t.toString());
-			return false;
+			return Found.NOT_YET;
 		}
+	}
+	/** FTL's window just above the station's (when the station is activated), without taking the keyboard. */
+	public static void raise() {
+		if (window == null || !shown) return;
+		try { Win.raise(window); } catch (Throwable t) { log.debug("FTL docked: could not lift its window: {}", t.toString()); }
 	}
 	/** FTL's window has been found and docked. */
 	public static boolean found() { return window != null; }
@@ -153,15 +185,13 @@ public final class FtlDock {
 			int SetWindowLongW(com.sun.jna.Pointer hwnd, int index, int value);
 			boolean SetWindowPos(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer after, int x, int y, int w, int h, int flags);
 			boolean ShowWindow(com.sun.jna.Pointer hwnd, int cmd);
+			boolean GetWindowRect(com.sun.jna.Pointer hwnd, int[] rect); // left, top, right, bottom
+			com.sun.jna.Pointer MonitorFromWindow(com.sun.jna.Pointer hwnd, int flags);
+			boolean GetMonitorInfoW(com.sun.jna.Pointer monitor, int[] info); // cbSize, monitor rect (4), work rect (4), flags
 		}
-		/** SetWindowLongPtrW exists only in 64-bit user32 (in 32-bit it's SetWindowLongW). */
-		interface User32x64 extends com.sun.jna.win32.StdCallLibrary {
-			User32x64 I = com.sun.jna.Native.POINTER_SIZE == 8 ? com.sun.jna.Native.load("user32", User32x64.class) : null;
-			com.sun.jna.Pointer SetWindowLongPtrW(com.sun.jna.Pointer hwnd, int index, com.sun.jna.Pointer value);
-		}
-		static final int GWL_STYLE = -16, GWLP_HWNDPARENT = -8;
+		static final int GWL_STYLE = -16;
 		static final int WS_CAPTION = 0x00C00000, WS_THICKFRAME = 0x00040000, WS_SYSMENU = 0x00080000, WS_MINIMIZEBOX = 0x00020000, WS_MAXIMIZEBOX = 0x00010000;
-		static final int SWP_NOACTIVATE = 0x0010, SWP_FRAMECHANGED = 0x0020, SWP_SHOWWINDOW = 0x0040, SWP_NOZORDER = 0x0004;
+		static final int SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOACTIVATE = 0x0010, SWP_FRAMECHANGED = 0x0020, SWP_SHOWWINDOW = 0x0040, SWP_NOZORDER = 0x0004;
 		static final int SW_HIDE = 0, SW_SHOWNOACTIVATE = 4;
 
 		static Object find(final String title) {
@@ -176,14 +206,28 @@ public final class FtlDock {
 			}, null);
 			return found[0];
 		}
-		/** Borderless, and owned by the station's window: above it, below its dialogs, minimized with it. */
-		static void adopt(Object w, java.awt.Window station) {
+		/** Borderless; never owned by the station's window (that would share the two programs' input). */
+		static void adopt(Object w) {
 			com.sun.jna.Pointer hwnd = (com.sun.jna.Pointer) w;
 			int style = User32.I.GetWindowLongW(hwnd, GWL_STYLE);
 			User32.I.SetWindowLongW(hwnd, GWL_STYLE, style & ~(WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX));
-			com.sun.jna.Pointer owner = com.sun.jna.Native.getComponentPointer(station);
-			if (User32x64.I != null) User32x64.I.SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, owner);
-			else User32.I.SetWindowLongW(hwnd, GWLP_HWNDPARENT, (int) com.sun.jna.Pointer.nativeValue(owner));
+		}
+		static java.awt.Rectangle bounds(Object w) {
+			int[] r = new int[4];
+			User32.I.GetWindowRect((com.sun.jna.Pointer) w, r);
+			return new java.awt.Rectangle(r[0], r[1], r[2] - r[0], r[3] - r[1]);
+		}
+		/** The screen it's on, in the same (device) units as its bounds. */
+		static java.awt.Rectangle screenOf(Object w) {
+			com.sun.jna.Pointer m = User32.I.MonitorFromWindow((com.sun.jna.Pointer) w, 2); // the nearest
+			if (m == null) return null;
+			int[] info = new int[10];
+			info[0] = 40;
+			if (!User32.I.GetMonitorInfoW(m, info)) return null;
+			return new java.awt.Rectangle(info[1], info[2], info[3] - info[1], info[4] - info[2]);
+		}
+		static void raise(Object w) {
+			User32.I.SetWindowPos((com.sun.jna.Pointer) w, null, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // HWND_TOP
 		}
 		static boolean alive(Object w) { return User32.I.IsWindow((com.sun.jna.Pointer) w); }
 		static void place(Object w, Rectangle r) {

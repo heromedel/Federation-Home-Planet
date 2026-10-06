@@ -166,7 +166,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		JPanel controls = new JPanel();
 		controls.setLayout(new BoxLayout(controls, BoxLayout.Y_AXIS));
 		controls.setOpaque(false);
-		controls.setBorder(javax.swing.BorderFactory.createEmptyBorder(14, 10, 10, 16));
+		controls.setBorder(javax.swing.BorderFactory.createEmptyBorder(14, 10, 10, homeplanet.core.FtlDock.active() ? 0 : 16)); // flush right while FTL is docked: more room for it (5.31)
 		launchBtn = controlButton("Launch FTL", "Play FTL");
 		journeyBtn = controlButton("New Journey", "Set out from the first sector with the boarded ship, crew and cargo");
 		commissionBtn = controlButton("Commission", "Have a brand-new ship built, as a new game would start her");
@@ -243,7 +243,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					int vw = Math.min(vs.width, getWidth() - 28 - RefreshButton.SIZE), vh = Math.min(vs.height, getHeight() - y0 - 60);
 					if (vw * vs.height > vh * vs.width) vw = vh * vs.width / vs.height; else vh = vw * vs.height / vs.width;
 					vw = Math.max(160, vw); vh = Math.max(90, vh);
-					if (aboard != null) aboard.setBounds(14, 10, vw, ah); // her heading as wide as FTL, the inbox and reputation at its end
+					if (aboard != null) aboard.setBounds(14, 10, Math.min(aboard.getPreferredSize().width, vw), ah); // her heading its usual length, the inbox and reputation after it
 					view.setBounds(14, y0, vw, vh);
 					top = y0 + view.getHeight() + 6;
 					javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { placeViewport(); } });
@@ -898,13 +898,34 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Every half second while docked: find FTL's window, keep it placed, and notice when it's gone. */
 	private void watchDock() {
 		if (!homeplanet.core.FtlDock.active()) { dockWatch.stop(); return; }
+		checkFtlRunning();
 		if (!homeplanet.core.FtlDock.found()) {
-			java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(this);
-			if (w != null && homeplanet.core.FtlDock.find(w)) { placeViewport(); if (viewportPanel != null) viewportPanel.repaint(); return; }
+			homeplanet.core.FtlDock.Found f = homeplanet.core.FtlDock.find();
+			if (f == homeplanet.core.FtlDock.Found.DOCKED) { placeViewport(); homeplanet.core.FtlDock.raise(); if (viewportPanel != null) viewportPanel.repaint(); return; }
+			if (f == homeplanet.core.FtlDock.Found.FULLSCREEN) { // left as it is: say what to change in FTL, once
+				endDock();
+				JOptionPane.showMessageDialog(this, "FTL is set to full screen. To play it docked, set Options > Fullscreen to Off in FTL, then launch docked again.",
+						"Play FTL, docked", JOptionPane.INFORMATION_MESSAGE);
+				return;
+			}
 			if (System.currentTimeMillis() - dockStarted > 180000) { log.info("FTL docked: no FTL window after three minutes; it runs as a normal window"); endDock(); }
 			return;
 		}
 		if (!homeplanet.core.FtlDock.alive()) endDock(); // FTL closed
+	}
+	private long lastRunCheck;
+	private volatile boolean checkingRun;
+	/** Every few seconds, off the Swing thread: FTL's process gone ends the docked view too, whatever its window seems. */
+	private void checkFtlRunning() {
+		long now = System.currentTimeMillis();
+		if (checkingRun || now - lastRunCheck < 3000 || now - dockStarted < 20000) return; // FTL gets a while to start
+		lastRunCheck = now;
+		checkingRun = true;
+		new Thread(new Runnable() { public void run() {
+			boolean running = GameGuard.isFtlRunning();
+			checkingRun = false;
+			if (!running) javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { if (homeplanet.core.FtlDock.active()) endDock(); } });
+		} }, "ftl-dock-check").start();
 	}
 	/** FTL closed (or never turned up): the Space Dock as usual, at its old size, taking stock. */
 	private void endDock() {
