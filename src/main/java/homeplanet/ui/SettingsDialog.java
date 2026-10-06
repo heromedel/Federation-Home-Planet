@@ -41,6 +41,7 @@ public class SettingsDialog extends JDialog {
 	private final javax.swing.JComboBox<String> dockSize = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.SIZES);
 	private final javax.swing.JComboBox<String> dockHow = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.HOW);
 	private final RuleBoxes rules = new RuleBoxes();
+	private final JCheckBox borderlessBox = new JCheckBox("Borderless full screen: the station fills the screen, with no title bar (F11 or Alt+Enter switches it any time)", Boolean.parseBoolean(HomePlanet.config.getProperty(MainFrame.CFG_BORDERLESS, "false")));
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging", HomePlanet.debugLogging);
 	private boolean savesChanged = false;
@@ -227,6 +228,8 @@ public class SettingsDialog extends JDialog {
 		modRow.add(starterBtn);
 		body.add(modRow, next(c));
 
+		heading(body, c, "Window");
+		body.add(borderlessBox, next(c));
 		heading(body, c, "Audio");
 		body.add(musicBox, next(c));
 
@@ -388,6 +391,12 @@ public class SettingsDialog extends JDialog {
 		if (!victoryChoice().equals(victoryWas)) changed.add("After a final victory: " + victoryChoice());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
+		final java.awt.Window frame = getOwner();
+		if (frame instanceof MainFrame && borderlessBox.isSelected() != ((MainFrame) frame).isBorderless()) {
+			changed.add("Borderless full screen: " + borderlessBox.isSelected());
+			final boolean on = borderlessBox.isSelected();
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { ((MainFrame) frame).setBorderless(on); } }); // once Settings has closed (it closes with the window)
+		}
 		log.debug("Settings saved: {}", changed.isEmpty() ? "nothing changed" : changed);
 		if (!changed.isEmpty()) homeplanet.core.HistoryLog.entry("SETTINGS", "", changed);
 		savesChanged = !saves.equals(HomePlanet.save_location);

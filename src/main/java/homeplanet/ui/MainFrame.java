@@ -121,6 +121,27 @@ public class MainFrame extends JFrame {
 		setSize(Math.min(screen.width, Math.max(900, want.width + 20)), Math.min(screen.height, Math.max(720, want.height + 50)));
 		setLocationRelativeTo(null);
 		restoreWindow();
+		if (Boolean.parseBoolean(HomePlanet.config.getProperty(CFG_BORDERLESS, "false"))) { // before it's first shown: no frame to take off yet
+			windowedMax = (getExtendedState() & MAXIMIZED_BOTH) == MAXIMIZED_BOTH;
+			windowedBounds = getBounds();
+			setExtendedState(NORMAL);
+			setUndecorated(true);
+			setBounds(screenBounds());
+			borderless = true;
+		}
+		// F11 or Alt-Enter switches borderless full screen, from any screen of this window (heromedel, 5.39)
+		java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new java.awt.KeyEventDispatcher() {
+			public boolean dispatchKeyEvent(java.awt.event.KeyEvent e) {
+				if (e.getID() != java.awt.event.KeyEvent.KEY_PRESSED) return false;
+				boolean altEnter = e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER && e.isAltDown() && !e.isControlDown() && !e.isShiftDown();
+				if (e.getKeyCode() != java.awt.event.KeyEvent.VK_F11 && !altEnter) return false;
+				java.awt.Component c = e.getComponent();
+				java.awt.Window w = c instanceof java.awt.Window ? (java.awt.Window) c : javax.swing.SwingUtilities.getWindowAncestor(c);
+				if (w != MainFrame.this) return false; // not with a dialog over it: taking the frame off closes and reopens the window
+				setBorderless(!borderless);
+				return true;
+			}
+		});
 		// ~ opens the console (heromedel, 5.22), on any screen of this window, never while typing in a box (a ship's name)
 		java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new java.awt.KeyEventDispatcher() {
 			public boolean dispatchKeyEvent(java.awt.event.KeyEvent e) {
@@ -260,14 +281,53 @@ public class MainFrame extends JFrame {
 		}
 	}
 	private void rememberWindow() {
-		boolean max = (getExtendedState() & MAXIMIZED_BOTH) == MAXIMIZED_BOTH;
+		boolean max = borderless ? windowedMax : (getExtendedState() & MAXIMIZED_BOTH) == MAXIMIZED_BOTH;
 		java.util.Properties cfg = HomePlanet.config;
 		cfg.setProperty("window_maximized", Boolean.toString(max));
 		if (!max) { // when maximized, keep the last normal size for un-maximizing
-			java.awt.Rectangle r = getBounds();
+			java.awt.Rectangle r = borderless && windowedBounds != null ? windowedBounds : getBounds(); // full screen: the window it came from
 			cfg.setProperty("window_bounds", r.x + "," + r.y + "," + r.width + "," + r.height);
 		}
 		HomePlanet.saveConfig();
+	}
+	// ---- borderless full screen (heromedel, 5.39): no frame, no title bar, the whole monitor ----
+
+	public static final String CFG_BORDERLESS = "window_borderless";
+	private boolean borderless, windowedMax;
+	private java.awt.Rectangle windowedBounds;
+	/** The station fills its monitor, with no frame or title bar. */
+	public boolean isBorderless() { return borderless; }
+	/** The whole monitor the station is on, taskbar included. */
+	private java.awt.Rectangle screenBounds() {
+		java.awt.GraphicsConfiguration gc = getGraphicsConfiguration();
+		return gc != null ? gc.getBounds() : new java.awt.Rectangle(java.awt.Toolkit.getDefaultToolkit().getScreenSize());
+	}
+	/**
+	 * Borderless full screen on or off, remembered. Java takes a window's frame off only while it's closed, so the
+	 * window closes and opens again (a blink); a docked FTL is put back in its viewport after.
+	 */
+	public void setBorderless(boolean on) {
+		HomePlanet.config.setProperty(CFG_BORDERLESS, Boolean.toString(on));
+		HomePlanet.saveConfig();
+		if (on == borderless) return;
+		java.awt.Rectangle screen = screenBounds();
+		if (on) {
+			windowedMax = (getExtendedState() & MAXIMIZED_BOTH) == MAXIMIZED_BOTH;
+			if (!windowedMax) windowedBounds = getBounds();
+		}
+		dispose();
+		setUndecorated(on);
+		if (on) {
+			setExtendedState(NORMAL);
+			setBounds(screen);
+		} else {
+			if (windowedBounds != null) setBounds(windowedBounds);
+			if (windowedMax) setExtendedState(MAXIMIZED_BOTH);
+		}
+		borderless = on;
+		log.debug("Borderless full screen: {}", on);
+		setVisible(true);
+		spaceDock.windowReopened();
 	}
 	/** True if at least a good chunk of the title bar area is on some screen. */
 	private static boolean isOnScreen(java.awt.Rectangle r) {
