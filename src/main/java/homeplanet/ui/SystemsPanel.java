@@ -755,6 +755,15 @@ public class SystemsPanel {
 		bay.help("Repaired " + n + " hull for " + n * each + " scrap. Save makes it official.");
 	}
 
+	/** A system bought from a store for the Cargo Hold (5.30): stored at its starting level, to fit at Refit; kept on Save. */
+	void storeBought(String id) {
+		SystemType t = SystemType.findById(id);
+		net.blerf.ftl.xml.SystemBlueprint sbp = net.blerf.ftl.parser.DataManager.get().getSystem(id);
+		int level = t == SystemType.CLONEBAY ? 0 : sbp != null ? Math.max(1, sbp.getStartPower()) : 1; // a Clone Bay takes the Medbay's level
+		stored.add(new Stored(id, level));
+		changes.add("Bought " + DryDockShop.systemTitle(id) + (level > 0 ? " (level " + level + ")" : "") + " into the Cargo Hold");
+		changed();
+	}
 	/** The systems stored in the Cargo Hold, as the Cargo Bay holds them now (unsaved sales gone). */
 	java.util.List<Stored> storedList() { return new ArrayList<Stored>(stored); }
 	/** Sells a stored system (the Trade tab's Stored systems, with no ship aboard): the hold is paid on Save. */

@@ -327,6 +327,7 @@ public final class CaptainsLog {
 				s.details.add(d.replaceAll(" \\(the Cargo Hold was paid\\)", ""));
 				continue;
 			}
+			if (d.startsWith("Bought ")) continue; // a system bought into the Cargo Hold: its BUY line tells it (5.30)
 			if (d.startsWith("Paid ") || d.startsWith("Custom work order")) { l.details.add(d); continue; }
 			String act;
 			if (d.startsWith("Installed ")) act = "fit:" + d.substring(10).replaceAll(" \\(level.*$", "");
