@@ -503,8 +503,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		init();
 		help("The Cargo Bay now works on " + the(s.name) + "." + (left != null && left == tradeShip ? " " + left.name + " is your trading partner." : ""));
 	}
-	/** "the Kestrel", but "The Theseus" as she is (no "the The"). */
-	private static String the(String name) { return name.toLowerCase().startsWith("the ") ? name : "the " + name; }
+	/** "the Kestrel", but "The Theseus" as she is (no "the The"): the station's one rule for it (5.31). */
+	private static String the(String name) { return homeplanet.parser.ShipNames.the(name); }
 	/** What the storage is, for its info button. */
 	void storageInfo() {
 		JOptionPane.showMessageDialog(this, "<html><div style='width:360px'><b>The Cargo Hold</b><br><br>"
@@ -1026,11 +1026,11 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		Ship s = currentShip;
 		String title = "Return " + s.name;
 		int pay = homeplanet.parser.RepairJob.payment(Vault.get(), homeplanet.parser.RepairJob.late(Vault.get()));
-		if (!HomePlanet.confirmNo(this, "Return the " + s.name + " to her owner?\nShe leaves the fleet, and " + pay + " scrap is paid into the Cargo Hold.\n"
+		if (!HomePlanet.confirmNo(this, "Return " + the(s.name) + " to her owner?\nShe leaves the fleet, and " + pay + " scrap is paid into the Cargo Hold.\n"
 				+ "You'll have no ship boarded: board another at the Space Dock.", title)) return;
 		try {
 			int paid = homeplanet.parser.RepairJob.returnHer(Vault.get(), s);
-			JOptionPane.showMessageDialog(this, "The " + s.name + " is on her way home. " + paid + " scrap has been paid into the Cargo Hold.", title, JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, homeplanet.parser.ShipNames.theStart(s.name) + " is on her way home. " + paid + " scrap has been paid into the Cargo Hold.", title, JOptionPane.INFORMATION_MESSAGE);
 		} catch (java.io.IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not return her:\n" + e.getMessage());
 		}
@@ -1183,7 +1183,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			Integer had = before.get("Crew " + c.getName());
 			if (had != null && n <= had) continue;
 			String ship = save.getPlayerShipName();
-			String place = hold ? "the Cargo Hold" : ship.startsWith("The ") ? ship : "the " + ship;
+			String place = hold ? "the Cargo Hold" : the(ship);
 			homeplanet.core.HistoryLog.entry("CREW", c.getName() + " assigned to " + place + ".");
 		}
 	}

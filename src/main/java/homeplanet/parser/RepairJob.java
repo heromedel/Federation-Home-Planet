@@ -395,7 +395,7 @@ public final class RepairJob {
 			if (!docked.isEmpty()) {
 				Ship pick = docked.get(new Random().nextInt(docked.size()));
 				v.remove(pick, null, Vault.Fate.SEIZED);
-				taken.add("the " + pick.name + ", in its place");
+				taken.add(ShipNames.the(pick.name) + ", in its place");
 			} else {
 				taken.add(emptyHold(v));
 			}

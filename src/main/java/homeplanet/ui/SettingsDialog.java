@@ -257,7 +257,7 @@ public class SettingsDialog extends JDialog {
 		body = aboutPage;
 		c = constraints();
 		heading(body, c, "About");
-		JLabel credit = new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; after ManApart's FTL Homeworld.");
+		JLabel credit = new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; Inspired By ManApart's FTL Homeworld.");
 		credit.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(credit, next(c));
 		// heromedel's line with the buttons beside it: the old single row was wider than a 1366 screen (5.31)
