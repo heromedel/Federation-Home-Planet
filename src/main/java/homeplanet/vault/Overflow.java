@@ -48,11 +48,16 @@ public final class Overflow {
 			SafeFiles.writeText(file(v), w.toString(), false);
 		} catch (IOException e) { LOG.warn("overflow.txt could not be written: {}", e.toString()); }
 	}
-	/** Her augments, the ones FTL counts in its slots. */
+	/**
+	 * Her augments, the ones FTL counts in its slots, and the one it's over capacity on. That one isn't in her augment
+	 * list but in the save's cargo list, written there twice, and FTL keeps only one (seen in FTL 1.6.14, heromedel's
+	 * 5.51 report: no letter came): an augment in the cargo list is counted once.
+	 */
 	static List<String> augments(SavedGameState gs) {
 		List<String> out = new ArrayList<String>();
 		if (gs.getPlayerShip() == null) return out;
 		for (String a : gs.getPlayerShip().getAugmentIdList()) if (a != null && !a.startsWith("HIDDEN")) out.add(a);
+		for (String c : gs.getCargoIdList()) if (SaveHelper.overCapacity(c) && !out.contains(c)) out.add(c); // the one FTL is asking about, once
 		return out;
 	}
 

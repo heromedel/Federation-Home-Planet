@@ -248,7 +248,7 @@ final class CrewLogView extends JPanel {
 	}
 	/**
 	 * Served With (heromedel, 5.52): each crew member they served with, a link to their page with their portrait before
-	 * it; under it the ships they shared ("Onboard:"), and "During Expeditions" if they went out together.
+	 * it; under it the ships they shared ("On Board:"), and "During Expeditions" if they went out together.
 	 */
 	private void servedWith(JPanel side, Member m) {
 		if (m.with.isEmpty()) return;
@@ -270,7 +270,7 @@ final class CrewLogView extends JPanel {
 			boolean away = false;
 			for (String w : e.getValue()) { if (w.equals(CrewRegister.WITH_EXPEDITION)) away = true; else ships.add(w); }
 			if (!ships.isEmpty()) {
-				side.add(indented("Onboard:", 26));
+				side.add(indented("On Board:", 26));
 				for (String sh : ships) { JLabel l = dotted(cap(the(sh)), MenuTheme.TEXT, MenuTheme.GOLD); l.setBorder(BorderFactory.createEmptyBorder(1, 38, 1, 0)); side.add(l); }
 			}
 			if (away) side.add(indented("During Expeditions", 26));

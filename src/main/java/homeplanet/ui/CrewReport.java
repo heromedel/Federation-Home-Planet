@@ -76,7 +76,7 @@ final class CrewReport extends JPanel {
 		}
 		pane.setOptions(buttons);
 		pane.setInitialValue(buttons[0]);
-		javax.swing.JDialog d = pane.createDialog(parent, "Report for crewman " + c.getName());
+		javax.swing.JDialog d = pane.createDialog(parent, "Report for " + c.getName());
 		d.setVisible(true);
 		d.dispose();
 		Object v0 = pane.getValue();

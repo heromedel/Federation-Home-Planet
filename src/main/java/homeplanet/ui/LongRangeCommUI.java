@@ -1384,7 +1384,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		for (DroneState d : s.getDroneList()) out.add(mark(Line.item(0, Line.Kind.DRONE, d.getDroneId()), false));
 		for (String a : s.getAugmentIdList()) out.add(mark(Line.item(0, Line.Kind.AUGMENT, a), false));
 		if (!source.isStorage() && sourceSave.getCargoIdList() != null) {
-			for (String id : sourceSave.getCargoIdList()) {
+			for (String id : SaveHelper.cargo(sourceSave)) { // not the augment FTL is asking about (5.52)
 				Line.Kind k = Items.isWeapon(id) ? Line.Kind.WEAPON : Items.isDrone(id) ? Line.Kind.DRONE : Items.isAugment(id) ? Line.Kind.AUGMENT : null;
 				if (k != null) out.add(mark(Line.item(0, k, id), true));
 			}

@@ -497,8 +497,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		List<String> names = new java.util.ArrayList<String>();
 		for (String k : keys) { String n = homeplanet.parser.UnlockGrants.describe(k); names.add(n); list.append("\n  \u2022 ").append(n); }
 		Object[] options = {"Remove them", "Keep them"};
-		int c = JOptionPane.showOptionDialog(null, "Achievements and unlocks detected that may not have come from an Immersive Commissioned ship, you may not receive the bonuses and unlocks for them in this mode,\n"
-				+ "would you like them removed from your FTL profile that this career mode uses?\n" + list,
+		int c = JOptionPane.showOptionDialog(null, "Achievements and unlocks were found that may not have come from an Immersive Commissioned ship, so you may not receive their bonuses and unlocks in this mode.\n"
+				+ "Would you like them removed from the FTL profile this career uses?\n" + list,
 				"Achievements and unlocks", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 		if (c < 0) return; // closed: asked again at the next start
 		if (c == 1) { homeplanet.parser.UnlockGrants.strangersAnswered(java.util.Collections.<String>emptySet()); return; }
@@ -527,7 +527,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			int c;
 			try {
 				c = JOptionPane.showConfirmDialog(null, "An Immersive Ship from this career, " + homeplanet.parser.ShipNames.the(d.name) + ", is suspected to have been overwritten by accident.\n"
-						+ "If this is the case, would you like it restored from its last known point?\n\nDo not select yes if it died in a battle.",
+						+ "If this is the case, would you like it restored from its last known point?\n\nDo not select yes if she was destroyed in battle.",
 						"Overwritten by accident?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			} finally {
 				askingAboutStranger = false;
@@ -601,13 +601,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		init();
 	}
 
-	/** Why the Cargo Bay can't open now (her save unreadable, or she's away from a station), or null if it can. With no ship aboard it opens on the Cargo Hold. */
+	/**
+	 * Why the Cargo Bay can't open now (her save unreadable), or null if it can. With no ship aboard it opens on the Cargo
+	 * Hold. Away from a store it opens all the same (heromedel, 5.52; the Cargo Bay follows the ship picked on it since
+	 * 5.00): she can't trade there and it says so, and another ship can be picked.
+	 */
 	private String cargoBayClosedReason() {
 		Ship ship = Vault.get().boarded();
 		if (ship == null) return null; // the Cargo Hold alone: its goods can be sold (CargoBayUI.holdOnly)
 		if (ship.save() == null) return ship.name + "'s save can't be read.\nBoard another ship, or check her Records, before returning to the Cargo Bay to trade.";
-		if (!Vault.get().mayTrade(ship))
-			return ship.name + " is not within range of a station.\nFind a beacon with a station, then return to trade.";
 		return null;
 	}
 	private FtlButton controlButton(String text, String tip) {
@@ -1816,7 +1818,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			for (DroneState d : from.getDroneList()) to.getDroneList().add(SaveHelper.copyDroneForTransfer(d));
 			to.getAugmentIdList().addAll(from.getAugmentIdList());
 			// Storage keeps cargo sorted by kind
-			for (String id : wreck.getCargoIdList()) {
+			for (String id : SaveHelper.cargo(wreck)) { // not the augment FTL was asking about: left behind (5.52)
 				if (Items.isWeapon(id)) to.getWeaponList().add(SaveHelper.newIdleWeapon(id));
 				else if (Items.isDrone(id)) to.getDroneList().add(SaveHelper.newIdleDrone(id));
 				else if (Items.isAugment(id)) to.getAugmentIdList().add(id);
@@ -2122,8 +2124,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		for (DroneState d : state.getDroneList()) reportRow(right, IconFactory.itemIcon(d.getDroneId()), Items.droneTitle(d.getDroneId()));
 		reportHeading(right, "Augments");
 		for (String augmentId : state.getAugmentIdList()) reportRow(right, null, Items.augmentTitle(augmentId));
-		reportHeading(right, "Cargo (" + sgs.getCargoIdList().size() + " of " + SaveHelper.CARGO_SLOTS + ")");
-		for (String id : sgs.getCargoIdList()) reportRow(right, IconFactory.itemIcon(id), Items.title(id));
+		List<String> cargo = SaveHelper.cargo(sgs); // not the augment FTL is asking about (5.52)
+		reportHeading(right, "Cargo (" + cargo.size() + " of " + SaveHelper.CARGO_SLOTS + ")");
+		for (String id : cargo) reportRow(right, IconFactory.itemIcon(id), Items.title(id));
 		reportHeading(systems, "Systems");
 		systemRow(systems, null, "Reactor", state.getReservePowerCapacity(), homeplanet.parser.VanillaMax.reactor(), 0);
 		for (Object[] sys : SYSTEM_NAMES) {

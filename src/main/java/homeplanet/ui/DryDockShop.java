@@ -351,7 +351,7 @@ class DryDockShop {
 			List<String> w = new ArrayList<String>(), d = new ArrayList<String>(), c = new ArrayList<String>();
 			for (net.blerf.ftl.parser.SavedGameParser.WeaponState x : s.getWeaponList()) w.add(Items.title(x.getWeaponId()));
 			for (net.blerf.ftl.parser.SavedGameParser.DroneState x : s.getDroneList()) d.add(Items.title(x.getDroneId()));
-			if (g.getCargoIdList() != null) for (String id : g.getCargoIdList()) c.add(Items.title(id));
+			for (String id : SaveHelper.cargo(g)) c.add(Items.title(id)); // not the augment FTL is asking about (5.52)
 			return "<html>Weapons: " + (w.isEmpty() ? "none" : String.join(", ", w)) + "<br>Drones: " + (d.isEmpty() ? "none" : String.join(", ", d))
 					+ "<br>Cargo: " + (c.isEmpty() ? "empty" : String.join(", ", c)) + "</html>";
 		}
@@ -373,7 +373,7 @@ class DryDockShop {
 				int ds = CargoBayUI.droneSlots(s);
 				String slots = "Weapons " + s.getWeaponList().size() + "/" + CargoBayUI.weaponSlots(s)
 						+ "  \u00b7  Drones " + (ds == 0 ? "none" : s.getDroneList().size() + "/" + ds)
-						+ "  \u00b7  Cargo " + (g.getCargoIdList() == null ? 0 : g.getCargoIdList().size()) + "/" + SaveHelper.CARGO_SLOTS;
+						+ "  \u00b7  Cargo " + SaveHelper.cargo(g).size() + "/" + SaveHelper.CARGO_SLOTS;
 				CargoParts.text(gr, FtlFont.BODY.fit(slots, getWidth() - x - 12), FtlFont.BODY, CargoParts.TEXT, x + 12, 3);
 			}
 			gr.dispose();
@@ -538,7 +538,7 @@ class DryDockShop {
 			}
 			it.setAvailable(false);
 			if (toCargo) {
-				buyer.getCargoIdList().add(e.id);
+				SaveHelper.addCargo(buyer, e.id);
 			} else if (Items.isWeapon(e.id)) {
 				bs.getWeaponList().add(SaveHelper.newIdleWeapon(e.id));
 			} else if (Items.isDrone(e.id)) {
@@ -658,7 +658,7 @@ class DryDockShop {
 					: "No free drone slot. Put the drone in the cargo hold?";
 		}
 		if (used < slots) return Boolean.FALSE;
-		if (buyer.getCargoIdList().size() >= 4) {
+		if (SaveHelper.cargo(buyer).size() >= 4) {
 			JOptionPane.showMessageDialog(bay, "No room for the " + what + ", and the cargo hold is full too.", "No room", JOptionPane.WARNING_MESSAGE);
 			return null;
 		}
