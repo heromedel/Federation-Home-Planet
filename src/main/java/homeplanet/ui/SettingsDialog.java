@@ -246,9 +246,14 @@ public class SettingsDialog extends JDialog {
 		folderRow.add(openLogs);
 		folderRow.add(javax.swing.Box.createHorizontalStrut(14));
 		folderRow.add(debugBox);
+		folderRow.add(javax.swing.Box.createHorizontalStrut(14));
+		JButton feedback = new JButton("Send Feedback...");
+		feedback.setToolTipText("Report a bug or share an idea: opens the feedback form in your web browser");
+		feedback.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { Feedback.send(SettingsDialog.this); } });
+		folderRow.add(feedback);
 		body.add(folderRow, next(c));
 		JLabel debugNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>The program's own logs, one per run: "
-				+ "send them along with a bug report. Debug logging adds detail to them.</font></div></html>");
+				+ "send them along with a bug report. Debug logging adds detail to them. Found a bug or have an idea? Send Feedback... opens the form.</font></div></html>");
 		debugNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
 		body.add(debugNote, next(c));
 

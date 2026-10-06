@@ -143,10 +143,7 @@ final class LogViewer extends JPanel {
 
 	/** This run's debug log (the newest in the program's log folder), as plain text: what to read before a bug report. */
 	void showDebug() {
-		File dir = homeplanet.core.HomePlanet.logDir();
-		File newest = null;
-		File[] fs = dir == null ? null : dir.listFiles();
-		if (fs != null) for (File f : fs) if (f.getName().startsWith("home-planet-") && f.getName().endsWith(".log") && (newest == null || f.lastModified() > newest.lastModified())) newest = f;
+		File newest = Feedback.newestLog();
 		String text;
 		if (newest == null) text = "No debug log has been written yet (the program's log folder beside Federation Home Planet.jar is empty or missing).";
 		else {

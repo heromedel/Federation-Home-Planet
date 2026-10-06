@@ -22,6 +22,16 @@ public final class SafeFiles {
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SafeFiles.class);
 	private SafeFiles() { }
 
+	/** Told of every file the station writes, once it's in place (from whatever thread wrote it): the Space Dock keeps itself current by it. */
+	public interface Listener { void written(File f); }
+	private static volatile Listener listener;
+	public static void setListener(Listener l) { listener = l; }
+	private static void written(File f) {
+		Listener l = listener;
+		if (l == null) return;
+		try { l.written(f); } catch (RuntimeException e) { log.debug("A write listener failed on {}: {}", f, e.toString()); }
+	}
+
 	/** Writes the bytes to a temporary file beside {@code target}, then moves it into place (replacing any old file). */
 	public static void write(File target, byte[] bytes) throws IOException {
 		write(target, bytes, false);
@@ -63,12 +73,14 @@ public final class SafeFiles {
 			log.debug("Atomic replace of {} failed ({}): a plain replace instead", to, e.toString());
 			Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		}
+		written(to);
 	}
 	/** Copies a file, replacing any file already at {@code to}. The parent folder is created if needed. */
 	public static void copy(File from, File to) throws IOException {
 		File dir = to.getAbsoluteFile().getParentFile();
 		if (dir != null && !dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
 		Files.copy(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		written(to);
 	}
 	/** Moves a file, creating the target's folder and replacing any file already there. */
 	public static void move(File from, File to) throws IOException {

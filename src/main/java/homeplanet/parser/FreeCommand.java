@@ -18,8 +18,8 @@ import homeplanet.vault.Vault;
  * Which ship the free command brings. A new fleet or career starts with a Kestrel Type A, as a new FTL game does. A plea
  * for a new ship (Plead for New Ship) offers what Settings or the career's difficulty grant: any ship (Easy), a Kestrel
  * Type A (Normal), or the Relief Ship Type A (Hard); the Relief Ship is always offered too. With Reputation on, the ship
- * chosen costs reputation: a tenth of what the plea's forfeit doesn't cover of her value (the Relief Ship at the
- * Federation's price, 600).
+ * chosen costs reputation: the difficulty's share (a tenth, a quarter or half; a tenth in Sandbox) of what the plea's
+ * forfeit doesn't cover of her value (the Relief Ship by the same formula as any ship).
  */
 public final class FreeCommand {
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FreeCommand.class);
@@ -28,10 +28,7 @@ public final class FreeCommand {
 	/** "variable" was a fourth choice once (a ship by what was surrendered): read as the Kestrel Type A. */
 	public static final String KESTREL = "kestrel", ANY = "any", RELIEF = "relief", VARIABLE = "variable";
 	/** The Relief Ship Type A: what the shipyard charges for her, and her class and default name. */
-	public static final int RELIEF_PRICE = 600;
 	public static final String RELIEF_CLASS = "Relief Ship Type A", RELIEF_NAME = "Hinata";
-	/** A plea costs reputation: a tenth of the shortfall. */
-	public static final int SHORTFALL_PER_POINT = 10;
 
 	/** A free-ship choice as kept (Settings', a career's), with the old Variable read as the Kestrel Type A. */
 	public static String norm(String kind) {
@@ -58,10 +55,10 @@ public final class FreeCommand {
 		return ANY.equals(kind) ? "any ship you choose (the " + RELIEF_CLASS + " among them)" : RELIEF.equals(kind) ? "the " + RELIEF_CLASS
 				: "a Kestrel Type A or the " + RELIEF_CLASS;
 	}
-	/** The reputation a plea's ship costs: a tenth of what the forfeit doesn't cover of her value (0 if it covers it). */
+	/** The reputation a plea's ship costs: the difficulty's share (a tenth on Easy and in Sandbox) of what the forfeit doesn't cover of her value (0 if it covers it). */
 	public static int reputationCost(int value, int forfeited) {
 		int shortfall = Math.max(0, value - forfeited);
-		return (shortfall + SHORTFALL_PER_POINT / 2) / SHORTFALL_PER_POINT;
+		return (shortfall * homeplanet.core.Economy.pleaPercent() + 50) / 100;
 	}
 
 	/**
@@ -94,13 +91,17 @@ public final class FreeCommand {
 					String[] p = line.split("\\s+");
 					int level = 1;
 					try { if (p.length > 1) level = Math.max(1, Integer.parseInt(p[1])); } catch (NumberFormatException e) { }
-					total += Pricing.systemSale(p[0], level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT);
+					total += Math.max(0, Pricing.systemSale(p[0], level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT) - broken(p) * Pricing.brokenBarValue(p[0])); // as the Cargo Bay sells it
 				}
 			} catch (Exception e) { }
 		}
 		return total;
 	}
 
+	/** A stored system line's broken bars (its third field), or 0. */
+	private static int broken(String[] p) {
+		try { return p.length > 2 ? Math.max(0, Integer.parseInt(p[2])) : 0; } catch (NumberFormatException e) { return 0; }
+	}
 	/**
 	 * Everything of value a plea would forfeit, in scrap: the Cargo Hold (scrap, supplies, items,
 	 * crew, stored systems) and the Junkyard's hulls at their full price.
@@ -128,12 +129,12 @@ public final class FreeCommand {
 					String[] p = line.split("\\s+");
 					int level = 1;
 					try { if (p.length > 1) level = Math.max(1, Integer.parseInt(p[1])); } catch (NumberFormatException e) { }
-					total += Pricing.system(p[0], level);
+					total += Math.max(0, Pricing.system(p[0], level) - broken(p) * Pricing.brokenBarValue(p[0]));
 				}
 			} catch (Exception e) { log.debug("Free command: the stored systems could not be read: {}", e.toString()); }
 		}
 		for (Ship j : v.junked()) {
-			try { SavedGameState g = j.save(); if (g != null) total += Pricing.ship(g, 100).total(); } catch (Exception e) { log.debug("Free command: {} could not be priced: {}", j.name, e.toString()); }
+			try { SavedGameState g = j.save(); if (g != null) total += Pricing.ship(g, Pricing.rate()).total(); } catch (Exception e) { log.debug("Free command: {} could not be priced: {}", j.name, e.toString()); }
 		}
 		return total;
 	}

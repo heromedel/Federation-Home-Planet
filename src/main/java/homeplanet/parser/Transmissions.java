@@ -205,6 +205,36 @@ public final class Transmissions {
 		return HomePlanet.career() ? UnlockGrants.rankName(UnlockGrants.rank(u)) : UnlockGrants.RANKS[0];
 	}
 	/** A layout's name for messages: "Engi Cruiser, Type A". */
+	/**
+	 * The letter for a commission order: a ship's own tells the story of her Type A's unlock (the Zoltan Council's
+	 * offer, the Mantis raider), so her Type B and C get her people's second letter (`order:nextModel:<base>`, which
+	 * follows on from the first), or, for a ship without one, heromedel's shared letter (her people, impressed, share
+	 * another model's blueprints); the Kestrel's and the Federation Cruiser's read right for any type, so they keep
+	 * their own.
+	 */
+	static String orderTemplate(String base, int n) {
+		if (n == 0 || base.equals("PLAYER_SHIP_HARD") || base.equals("PLAYER_SHIP_FED")) return "order:" + base;
+		return templates().containsKey("order:nextModel:" + base) ? "order:nextModel:" + base : "order:nextModel";
+	}
+	/** The people a cruiser comes from, for the shared order letter ("The Zoltan have contacted Federation Command"). */
+	static String raceOf(String base) {
+		if (base.contains("CIRCLE") || base.contains("STEALTH")) return "Engi";
+		if (base.contains("ENERGY")) return "Zoltan";
+		if (base.contains("MANTIS")) return "Mantis";
+		if (base.contains("JELLY")) return "Slug";
+		if (base.contains("ROCK")) return "Rock";
+		if (base.contains("CRYSTAL")) return "Crystal";
+		if (base.contains("ANAEROBIC")) return "Lanius";
+		return "Federation";
+	}
+	/** Her class alone ("Zoltan Cruiser"), as {cruiser} in the shared order letter. */
+	static String className(String base) {
+		try {
+			ShipBlueprint bp = DataManager.get().getPlayerShipVariant(base, 0, true);
+			if (bp != null && bp.getShipClass() != null && bp.getShipClass().getTextValue() != null) return bp.getShipClass().getTextValue();
+		} catch (Exception e) { }
+		return base;
+	}
 	static String layoutName(String base, int n) {
 		String cls = base;
 		try {
@@ -224,6 +254,7 @@ public final class Transmissions {
 	 * Returns how many were sent.
 	 */
 	public static synchronized int check() {
+		if (Vault.isOpen() && !HomePlanet.immersiveNotifications()) shipHome(Vault.get()); // no inbox: an augment shipped home goes straight to the Cargo Hold
 		if (!HomePlanet.immersiveNotifications() || !Vault.isOpen()) return 0;
 		List<Message> all = load();
 		Set<String> sent = new java.util.HashSet<String>();
@@ -283,12 +314,16 @@ public final class Transmissions {
 					ShipBlueprint bp;
 					try { bp = DataManager.get().getPlayerShipVariant(base, n, true); } catch (Exception e) { bp = null; }
 					if (bp == null || !UnlockGrants.freeNow(u, bp.getId())) continue;
-					send(all, sent, "order:" + base + " " + n, "order:" + base, rank, layoutName(base, n));
+					send(all, sent, "order:" + base + " " + n, orderTemplate(base, n), rank, layoutName(base, n), null, base);
 				}
 			}
 		}
 		if (HomePlanet.career() && u != null) {
-			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, "ach:" + a, rank, null);
+			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, achTemplate(a, CREW_CARE.contains(a) ? boardedShip(v) : null), rank, null);
+		}
+		for (homeplanet.vault.Overflow.Parcel x : homeplanet.vault.Overflow.take(v)) { // augments she had no room for, crated up by her crew
+			if (homeplanet.core.Economy.augmentsHome()) shipped(all, sent, x, rank);
+			else HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career");
 		}
 		if (HomePlanet.career() && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
 		// reply chains: a letter for what the fleet has been through, and the letters now due
@@ -301,6 +336,12 @@ public final class Transmissions {
 		}
 		// the repair job: the collector's offer, her demand, the claims office, the foreman
 		for (String key : RepairJob.due(v, sent)) chained |= chain(all, sent, key, rank, RepairJob.NAME);
+		// the Third Fleet Commander (with the inbox off his letters come as pop-ups at the Space Dock)
+		if (HomePlanet.immersiveNotifications()) for (String key : ThirdFleet.due(v)) {
+			String name;
+			try { name = ThirdFleet.fill(v, key); } catch (IOException e) { log.warn("Could not ready the Third Fleet Commander's letter (tried again next time): {}", e.toString()); continue; }
+			if (chain(all, sent, key, rank, name)) { ThirdFleet.markSent(v, key); chained = true; }
+		}
 		// the welcome last: the inbox shows the newest first, so it tops everything that arrives with it
 		if (HomePlanet.immersiveMode) send(all, sent, "welcome", "welcome", rank, null);
 		int added = all.size() - before + replaced;
@@ -364,6 +405,7 @@ public final class Transmissions {
 		// the repair job's replies act first (a reply that can't be carried out is refused, with the reason), before the
 		// inbox is read: what they do may send a letter of its own
 		if (RepairJob.isJob(m.key)) RepairJob.replied(Vault.get(), m.key, option);
+		if (ThirdFleet.isHello(m.key) && Vault.isOpen()) ThirdFleet.replied(Vault.get(), option);
 		List<Message> all = load(); // also reads the letters already due
 		String name = "";
 		for (Pending p : pending) if (p.name != null && !p.name.isEmpty()) name = p.name;
@@ -381,15 +423,10 @@ public final class Transmissions {
 		int months = Career.unpaidMonths();
 		if (months <= 0) return;
 		int amount = months * Career.stipend(UnlockGrants.rank(u), Career.achievementsCounted(u));
-		try {
-			Career.markPaid(months); // the months are paid by this message: issued once, claimed from it
-		} catch (IOException e) {
-			log.warn("Could not issue the stipend (tried again next time): {}", e.toString());
-			return;
-		}
-		String period = "stipend for the last " + months * Career.sectorsPerMonth() + " months"; // a payment every sectorsPerMonth months, as the rules say
 		Template t = templates().get("stipend");
-		if (t == null) return;
+		if (t == null) return; // nothing marked paid: it comes when the letter can
+		int monthsPaid = months * Career.monthsPerStipend();
+		String period = "stipend for the last " + (monthsPaid == 1 ? "month" : monthsPaid + " months"); // a payment every monthsPerStipend months, as the rules say
 		Message m = new Message();
 		m.key = "stipend:" + stamp();
 		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
@@ -397,9 +434,24 @@ public final class Transmissions {
 		m.subject = Character.toUpperCase(period.charAt(0)) + period.substring(1) + ": " + amount + " scrap";
 		m.body = fill(t.body.toString().trim(), rank, null).replace("{period}", period).replace("{amount}", Integer.toString(amount));
 		m.reward = "scrap " + amount;
+		// the letter is the only claim on the scrap: marked paid and saved together, or neither (tried again next time)
+		try {
+			Career.markPaid(months);
+		} catch (IOException e) {
+			log.warn("Could not issue the stipend (tried again next time): {}", e.toString());
+			return;
+		}
 		all.add(0, m);
+		try {
+			save(all);
+		} catch (IOException e) {
+			all.remove(m);
+			try { Career.markPaid(-months); } catch (IOException again) { log.error("Could not take back the stipend's months after its letter failed to save", again); }
+			log.warn("Could not issue the stipend (tried again next time): {}", e.toString());
+			return;
+		}
 		sent.add(m.key);
-		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + months + " month" + (months == 1 ? "" : "s") + ")");
+		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + (months == 1 ? "one stipend" : months + " stipends") + ")");
 	}
 	/** A stipend's notice: deleted rather than archived once claimed, so they don't pile up. */
 	public static boolean isStipend(Message m) { return m.key.startsWith("stipend:"); }
@@ -517,12 +569,57 @@ public final class Transmissions {
 			log.warn("Could not deliver {}: {}", key, e.toString());
 		}
 	}
+	/** An augment her crew shipped home: the "shipped" letter, with the augment to claim. */
+	private static void shipped(List<Message> all, Set<String> sent, homeplanet.vault.Overflow.Parcel x, String rank) {
+		send(all, sent, x.key, "shipped", rank, null, x.ship);
+		if (all.isEmpty() || !all.get(0).key.equals(x.key)) return; // no letter written for it
+		Message m = all.get(0);
+		String item = Items.title(x.augment);
+		m.from = m.from.replace("{name}", x.ship);
+		m.subject = m.subject.replace("{item}", item);
+		m.body = m.body.replace("{item}", item);
+		m.reward = "item " + x.augment;
+	}
+	/** Without the inbox: augments shipped home go straight to the Cargo Hold (or are lost, as the career has it). */
+	private static void shipHome(Vault v) {
+		List<homeplanet.vault.Overflow.Parcel> ps = homeplanet.vault.Overflow.take(v);
+		if (ps.isEmpty()) return;
+		try {
+			Ship st = v.storage();
+			Vault.Copy c = v.readCopy(st);
+			for (homeplanet.vault.Overflow.Parcel x : ps) {
+				if (!homeplanet.core.Economy.augmentsHome()) { HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home"); continue; }
+				c.save.getPlayerShip().getAugmentIdList().add(x.augment);
+				HistoryLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of the " + x.ship + ", is in the Cargo Hold");
+			}
+			v.begin().put(st, c.save, c.hash).commit();
+		} catch (IOException e) {
+			log.error("Augments shipped home could not be put in the Cargo Hold", e);
+		}
+	}
+	/** The achievements that look after a crew: a Clone Bay, or a Backup DNA Bank for a ship that has one already (heromedel). */
+	private static final List<String> CREW_CARE = java.util.Arrays.asList("ACH_NO_DEATH", "ACH_INVADE_SHIP");
+	/** The letter for this achievement: its ":dna" version when the boarded ship already has a Clone Bay. */
+	static String achTemplate(String ach, ShipState boarded) {
+		boolean clone = boarded != null && boarded.getSystem(SystemType.CLONEBAY) != null && boarded.getSystem(SystemType.CLONEBAY).getCapacity() > 0;
+		return clone && CREW_CARE.contains(ach) ? "ach:" + ach + ":dna" : "ach:" + ach;
+	}
+	/** The boarded ship's state, or null (none boarded, or unreadable: the letter then sends the Clone Bay). */
+	private static ShipState boardedShip(Vault v) {
+		Ship b = v.boarded();
+		if (b == null) return null;
+		try { return v.readCopy(b).save.getPlayerShip(); } catch (IOException e) { return null; }
+	}
 	private static String stamp() { return new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()); }
 	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship) {
 		send(all, sent, key, templateKey, rank, ship, null);
 	}
 	/** As above, with {name}: a ship's own name (the one a chain is about). */
 	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship, String name) {
+		send(all, sent, key, templateKey, rank, ship, name, null);
+	}
+	/** As above, for a commission order: {race} and {class} from the ship's base id. */
+	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship, String name, String base) {
 		if (sent.contains(key)) return;
 		Template t = templates().get(templateKey);
 		if (t == null) return; // no message written for it
@@ -532,6 +629,7 @@ public final class Transmissions {
 		m.from = t.from;
 		m.subject = fill(t.subject, rank, ship).replace("{name}", name == null ? "" : name);
 		m.body = fill(t.body.toString().trim(), rank, ship).replace("{name}", name == null ? "" : name);
+		if (base != null) m.body = m.body.replace("{race}", raceOf(base)).replace("{cruiser}", className(base));
 		m.reward = t.reward;
 		m.replies = t.replies;
 		m.cost = t.cost;

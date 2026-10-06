@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.DroneState;
+import net.blerf.ftl.parser.SavedGameParser.EnvironmentState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.SystemState;
@@ -158,6 +159,9 @@ public final class VoyageLog {
 		if (defeated > 0) out.add(defeated + (defeated == 1 ? " ship" : " ships") + " defeated (" + b.getProperty("defeated") + " in all)");
 		diff(a.getProperty("crew", ""), b.getProperty("crew", ""), "Crew joined: ", "Crew lost: ", out);
 		diff(a.getProperty("items", ""), b.getProperty("items", ""), "Aboard now: ", "Gone: ", out);
+		gear(a, b, scrap < lastScrap, out);
+		if (moved && "true".equals(b.getProperty("store"))) out.add("Arrived at a store");
+		beacon(a, b, moved, out);
 		systems(a.getProperty("systems", ""), b.getProperty("systems", ""), out);
 		int reactor = intOf(b, "reactor", 0), lastReactor = intOf(a, "reactor", 0);
 		if (reactor != lastReactor) out.add("Reactor " + (reactor > lastReactor ? "upgraded" : "reduced") + " to " + reactor);
@@ -165,6 +169,46 @@ public final class VoyageLog {
 		boolean near = "true".equals(b.getProperty("flagshipNear")), wasNear = "true".equals(a.getProperty("flagshipNear"));
 		if (near && !wasNear) out.add("The Rebel Flagship is alongside (battle " + Math.max(1, stage) + ")");
 		if (stage > lastStage && lastStage > 0) out.add("The Rebel Flagship withdrew after battle " + lastStage);
+	}
+	/**
+	 * Gear new to her (moved between cargo and fittings doesn't count): bought, if she was at a store and spent scrap
+	 * there, else picked up (an event's gift, a salvage). For the Captain's Log (5.18); the Aboard now / Gone lines stay.
+	 */
+	private static void gear(Properties a, Properties b, boolean spent, List<String> out) {
+		Map<String, Integer> count = new LinkedHashMap<String, Integer>();
+		for (String x : split(b.getProperty("items", ""))) { String k = x.replace(" (cargo)", ""); count.put(k, (count.containsKey(k) ? count.get(k) : 0) + 1); }
+		for (String x : split(a.getProperty("items", ""))) { String k = x.replace(" (cargo)", ""); count.put(k, (count.containsKey(k) ? count.get(k) : 0) - 1); }
+		List<String> plus = new ArrayList<String>();
+		for (Map.Entry<String, Integer> e : count.entrySet()) for (int i = 0; i < e.getValue(); i++) plus.add(e.getKey());
+		if (plus.isEmpty()) return;
+		boolean bought = spent && "true".equals(a.getProperty("store")); // where she was when she had it: the stop before the jump
+		out.add((bought ? "Bought at a store: " : "Picked up: ") + String.join(", ", plus));
+	}
+	/**
+	 * What her new beacon held (heromedel, 5.19, for the Captain's Log): the hazards there, and a ship met. The save keeps
+	 * a star (FTL's flare star), a pulsar, an Anti-Ship Battery and an asteroid field; a nebula shows only in FTL's own count of
+	 * nebula jumps, and an ion storm as a jump into danger that names none of those. A ship can turn up after the jump
+	 * (her next look): "Ship met" then, on its own.
+	 */
+	private static void beacon(Properties a, Properties b, boolean moved, List<String> out) {
+		if (moved) {
+			List<String> there = new ArrayList<String>(), hazards = split(b.getProperty("hazards", ""));
+			int nebula = intOf(b, "nebulaJumps", 0) - intOf(a, "nebulaJumps", intOf(b, "nebulaJumps", 0)); // no count kept before 5.19: no change
+			int danger = intOf(b, "dangerJumps", 0) - intOf(a, "dangerJumps", intOf(b, "dangerJumps", 0));
+			if (danger > 0 && hazards.isEmpty()) there.add("an ion storm");
+			else if (nebula > 0) there.add("a nebula");
+			for (String h : hazards) there.add(HAZARDS.containsKey(h) ? HAZARDS.get(h) : h);
+			if (!there.isEmpty()) out.add("Beacon: " + String.join(", ", there));
+		}
+		String met = b.getProperty("met", ""), was = a.getProperty("met");
+		if (!met.isEmpty() && (moved || (was != null && !met.equals(was)))) out.add("Ship met: " + met);
+	}
+	private static final Map<String, String> HAZARDS = new LinkedHashMap<String, String>();
+	static {
+		HAZARDS.put("asteroids", "an asteroid field");
+		HAZARDS.put("sun", "a star"); // FTL: "dangerously close to a star"
+		HAZARDS.put("pulsar", "a pulsar");
+		HAZARDS.put("pds", "an Anti-Ship Battery"); // FTL's name for it (docs/LORE_COMPONENTS.md 22)
 	}
 	private static String delta(int d) { return d == 0 ? "" : " (" + (d > 0 ? "+" : "") + d + ")"; }
 	/** Two lists of names ("a|b|b"): what's new, and what's gone, counting repeats. */
@@ -212,6 +256,7 @@ public final class VoyageLog {
 		p.setProperty("sector", Integer.toString(gs.getSectorNumber()));
 		p.setProperty("beacon", Integer.toString(gs.getCurrentBeaconId()));
 		p.setProperty("beacons", Integer.toString(gs.getTotalBeaconsExplored()));
+		p.setProperty("store", Boolean.toString(SaveHelper.isAtStation(gs))); // a store at her beacon (5.18: arriving at a station, buying there)
 		p.setProperty("defeated", Integer.toString(gs.getTotalShipsDefeated()));
 		p.setProperty("hull", Integer.toString(s.getHullAmt()));
 		int maxHull = s.getHullAmt();
@@ -239,7 +284,56 @@ public final class VoyageLog {
 		p.setProperty("systems", String.join("|", systems));
 		if (gs.getRebelFlagshipState() != null) p.setProperty("flagship", Integer.toString(gs.getRebelFlagshipState().getPendingStage()));
 		p.setProperty("flagshipNear", Boolean.toString(gs.isRebelFlagshipNearby()));
+		List<String> hazards = new ArrayList<String>(); // her beacon's (5.19)
+		EnvironmentState env = gs.getEnvironment();
+		if (env != null) {
+			if (env.getAsteroidField() != null) hazards.add("asteroids");
+			if (env.isRedGiantPresent()) hazards.add("sun");
+			if (env.isPulsarPresent()) hazards.add("pulsar");
+			if (env.isPDSPresent()) hazards.add("pds");
+		}
+		p.setProperty("hazards", String.join("|", hazards));
+		p.setProperty("nebulaJumps", Integer.toString(gs.hasStateVar("nebula") ? gs.getStateVar("nebula") : 0));
+		p.setProperty("dangerJumps", Integer.toString(gs.hasStateVar("env_danger") ? gs.getStateVar("env_danger") : 0));
+		p.setProperty("met", met(gs));
 		return p;
+	}
+	/** The ship alongside her, in words ("a Rock pirate", "a rebel ship"), or "" (none, or the Rebel Flagship: told on its own). */
+	private static String met(SavedGameState gs) {
+		ShipState n = gs.getNearbyShip();
+		if (n == null || gs.isRebelFlagshipNearby()) return "";
+		String event = null, list = null;
+		try { event = gs.getBeaconList().get(gs.getCurrentBeaconId()).getShipEventId(); } catch (Exception e) { }
+		try { if (event != null) { net.blerf.ftl.xml.ShipEvent se = net.blerf.ftl.parser.DataManager.get().getShipEventById(event); if (se != null) list = se.getAutoBlueprintId(); } }
+		catch (Exception e) { } // a mod's event, or no ftl.dat: her crew tell
+		Map<String, Integer> races = new LinkedHashMap<String, Integer>();
+		String crew = "";
+		for (CrewState c : n.getCrewList()) {
+			String r = c.getRace() == null ? "" : c.getRace().getId();
+			if (r.isEmpty() || r.equals("battle")) continue; // a boarding drone
+			races.put(r, (races.containsKey(r) ? races.get(r) : 0) + 1);
+			if (crew.isEmpty() || races.get(r) > races.get(crew)) crew = r;
+		}
+		return shipWords(event, list, crew);
+	}
+	/**
+	 * A ship in words, from her ship event, its list of ships (SHIPS_ROCK_PIRATE…) and her crew's commonest race: "a Rock
+	 * pirate", "a Mantis ship", "a rebel ship", "an automated ship", "a Federation ship", "a civilian ship", "a ship".
+	 */
+	public static String shipWords(String event, String list, String crew) {
+		String l = list == null ? "" : list.toUpperCase(), e = event == null ? "" : event.toUpperCase();
+		boolean pirate = l.contains("PIRATE") || e.contains("PIRATE");
+		String race = l.contains("ROCK") ? "Rock" : l.contains("ZOLTAN") ? "Zoltan" : l.contains("MANTIS") ? "Mantis" : l.contains("CIRCLE") || l.contains("ENGI") ? "Engi"
+				: l.contains("JELLY") || l.contains("SLUG") ? "Slug" : l.contains("LANIUS") || l.contains("ANAEROBIC") ? "Lanius" : l.contains("CRYSTAL") ? "Crystal" : null;
+		if (race == null && crew != null && !crew.isEmpty()) race = race(crew);
+		String what;
+		if (pirate) what = race == null ? "pirate ship" : race + " pirate";
+		else if (l.contains("AUTO")) what = "automated ship";
+		else if (l.contains("REBEL")) what = "rebel ship";
+		else if (l.contains("FED")) what = "Federation ship";
+		else if (l.contains("CIVILIAN")) what = "civilian ship";
+		else what = race == null ? "ship" : race + " ship";
+		return ("AEIOU".indexOf(Character.toUpperCase(what.charAt(0))) >= 0 ? "an " : "a ") + what;
 	}
 	private static String title(String id) {
 		try { return homeplanet.model.Items.title(id); } catch (Exception e) { return id; }
@@ -283,6 +377,7 @@ public final class VoyageLog {
 		} catch (IOException e) {
 			log.warn("Could not write {}'s voyage log: {}", s, e.toString());
 		}
+		for (String l : lines) MasterLog.entry(v, "voyage: " + s.name, l);
 	}
 	private static int intOf(Properties p, String k, int dflt) {
 		try { return Integer.parseInt(p.getProperty(k, "").trim()); } catch (NumberFormatException e) { return dflt; }

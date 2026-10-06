@@ -20,6 +20,9 @@ it does and CREDITS.md for where the code came from.
       1. ...            1. ...
       2. ...            2. ...
 
+- Bug fixing takes precedence over feature creep. When a major bug turns up (game-breaking, or a hidden one that
+  quietly damages a fleet, like crew being cloned), you may ask heromedel to hold off on the next plan so it can be
+  fixed first: occasionally, not in a pushy way.
 - heromedel's own text (letters, messages, names) goes in exactly as written, capitals included (they're often
   deliberate: "Lucky Duck" is a nickname). Suggested edits to it are a short list, only ones that matter, to answer
   yes or no.
@@ -41,6 +44,9 @@ it does and CREDITS.md for where the code came from.
   They know how to fetch and build: don't repeat test steps after each commit. Mention what to test only when it's
   something unusual they wouldn't find on their own.
 - `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
+  `docs/CONCERNS.md` lists the design debts talked over (how the station is built, what it costs, what a change would
+  take): add to it when one comes up, with the version; read it before planning anything that touches the vault's files
+  or how crew are tracked.
 - The version (4B.nn; after 4B.99 comes 5.00, then 5.01 to 5.99, then 6.00) goes up by one only with a commit: `<version>` in `pom.xml` and
   `APP_VERSION` in `HomePlanet.java`, always together.
 - The repo is public. Never commit FTL's game files (ftl.dat, its pictures or music) or a link to them.
@@ -61,6 +67,9 @@ it does and CREDITS.md for where the code came from.
 - `src/main/java/net/blerf/ftl`, `net/vhati`: Vhati's save parser and ftl.dat reader (GPL, lightly extended;
   each changed file says so at the top).
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
+- Expeditions come in two systems behind `expedition_type` in the cfg (hidden): 2 the crew expeditions (`Assignments`,
+  `docs/ROADMAP.md` 31; the default), 1 the board of jobs (`Expeditions`), 0 hiring alone. They share the infirmary, the captives,
+  the crew picker and the hire button, nothing else: keep them apart.
 - `Tools and Harness/harness2/`: the regression harness (Claude's test bench, not a user tool).
 - `Tools and Harness/hw2fhp-converter/`: the FTL Homeworld to FHP converter (a separate jar) and its tests.
 - `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
@@ -86,18 +95,34 @@ copies of it (LinkT runs a second station in its own process, over localhost). E
 `harness2/work/` (ignored). The converter tests (ConvT, StoT) run only when old Homeworld saves and program
 folder are passed as the 2nd and 3rd arguments.
 
+The one exception to running the full harness: small UI or text changes (a button, a message, a tooltip) need only the
+build, plus a screenshot or the one test that covers it.
+
 To see a window without a display, run it under `xvfb-run -a java ...` and paint the dialog's root pane into
 a BufferedImage.
 
+**Testing in FTL itself:** heromedel's Windows copy of FTL (ask for it; keep it in the scratchpad, never in the repo)
+runs under 32-bit Wine on an Xvfb display: `apt-get install wine wine32:i386 xdotool imagemagick`, a `win32` prefix in
+the scratchpad, `settings.ini` (fullscreen 0, 1280x720) in the prefix's `Documents/My Games/FasterThanLight`. Slipstream
+can't be downloaded here, so patch a *copy* of `ftl.dat` with a plain PKG rewriter (header, 20-byte entries, paths,
+data, the entry table sorted by path hash: FTL searches it that way, and an entry out of order is simply not found; `.xml.append` files spliced before `</FTL>`; the station's `PkgPack` writer is not to be trusted for this).
+Build a save with `Commission.build` against the patched copy, drop it in as `continue.sav`, start `wine FTLGame.exe`
+with `LIBGL_ALWAYS_SOFTWARE=1`, drive the menus with `xdotool` (press and release with a short hold) and screenshot
+with `import -window root`. The Steam build runs without Steam; sound fails harmlessly.
+
 ## Hard rules
 
-Two rules with no exceptions, in anything the player sees:
+Three rules with no exceptions, in anything the player sees:
 
 1. Never imply the Rebel Flagship has been destroyed: the war goes on.
 2. Never say to the player that time is measured in beacons. The station's clock counts them, hidden; the player hears
    "some time", "a while", "one month" (as the ransom letters say), never a number of beacons or "a beacon later".
-   A beacon is about two days: 14 beacons is about a month (the ransom's month), and the stipend's 30, 45 or 60 beacons
-   are two, three or four months.
+   A beacon is a day (5.00): 28 beacons are a month (the ransom's month; `Career.BEACONS_PER_MONTH`), and the stipend
+   comes every one, two or three months by difficulty (28, 56, 84). A day in Captain's Quarters is one beacon.
+   Days are real now: a player may work out that a jump passes a day; never say time is only beacons underneath.
+3. Check any system, outcome or message against `docs/LORE_COMPONENTS.md` (real FTL lore, each fact with its source):
+   report any inconsistency to heromedel, and add no new ones. Don't edit that file without his permission; when new
+   real FTL lore turns up, offer it to him as a numbered list and ask whether it should be added.
 
 ## Voice (player-facing text)
 

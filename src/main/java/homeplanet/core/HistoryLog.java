@@ -57,6 +57,12 @@ public class HistoryLog {
 		} finally {
 			try { if (w != null) w.close(); } catch (Exception e) { }
 		}
+		if (Vault.isOpen()) { // the career's master log keeps a copy, with the real time and the stardate (5.17)
+			StringBuilder t = new StringBuilder(kind);
+			if (headline != null && headline.length() > 0) t.append("  ").append(headline);
+			if (details != null) for (String d : details) t.append("\n").append(d);
+			homeplanet.vault.MasterLog.entry(Vault.get(), "station", t.toString());
+		}
 	}
 	public static void entry(String kind, String headline) {
 		entry(kind, headline, null);

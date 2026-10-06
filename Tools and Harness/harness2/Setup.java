@@ -5,6 +5,7 @@ public class Setup {
   System.setProperty("homeplanet.noGameCheck", "true");
   HomePlanet.savedGameParser = new SavedGameParser();
   HomePlanet.save_location = saves;
+  HomePlanet.datsPath = gamedir;
   // a stand-in Slipstream folder beside the saves, so the companion mod is written there and not into the current folder
   File slip = new File(saves.getAbsoluteFile().getParentFile(), "slipstream");
   new File(slip, "mods").mkdirs(); new File(slip, "modman.jar").createNewFile();

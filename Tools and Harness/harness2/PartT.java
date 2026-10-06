@@ -11,6 +11,7 @@ public class PartT { public static void main(String[] a) throws Exception {
  parts(v);
  stipend(v);
  work(v);
+ clock(v);
  Setup.done();
 }
  /** Broken bars: 5 each, 10 for Piloting, Oxygen and Engines; stored lines keep them. */
@@ -30,9 +31,15 @@ public class PartT { public static void main(String[] a) throws Exception {
   List<Parts.Listing> l = Parts.current(v);
   int sys = 0; for (Parts.Listing x : l) if (!x.salvage()) sys++;
   Setup.chk("P: 2 to 5 parts for sale (" + sys + "), and at most one piece of salvage", sys >= 2 && sys <= 5 && l.size() - sys <= 1 && Parts.count(v) == l.size());
+  int was = HomePlanet.commissionPercent; boolean im = HomePlanet.immersiveMode;
+  HomePlanet.immersiveMode = false; HomePlanet.commissionPercent = 100;
   Setup.chk("P: Piloting, Oxygen and Engines parts are worth 150 at level 1, FTL's upgrades on top", Parts.worth("pilot", 1) == 150 && Parts.worth("oxygen", 1) == 150
     && Parts.worth("engines", 3) == 150 + Pricing.system("engines", 3) - Pricing.system("engines", 1) && Parts.worth("shields", 2) == Pricing.system("shields", 2)
     && Parts.worth("oxygen", 3) == 150 + DataManager.get().getSystem("oxygen").getUpgradeCosts().get(0) + DataManager.get().getSystem("oxygen").getUpgradeCosts().get(1));
+  HomePlanet.commissionPercent = 50;
+  Setup.chk("S: a part's worth is at the difficulty's rate, before the rolls", Parts.worth("pilot", 1) == 75 && Parts.worth("shields", 2) == Pricing.rated(Pricing.system("shields", 2))
+    && Parts.price("shields", 2, 1, 80, false) == (Parts.worth("shields", 2) - 5) * 80 / 100);
+  HomePlanet.commissionPercent = was; HomePlanet.immersiveMode = im;
   boolean ok = true;
   for (Parts.Listing x : l) {
    if (x.salvage()) continue;
@@ -104,22 +111,51 @@ public class PartT { public static void main(String[] a) throws Exception {
   File cf = new File(v.root, "career.txt");
   Properties p = new Properties(); p.load(new ByteArrayInputStream(SafeFiles.read(cf)));
   Setup.chk("S: a career begun now counts beacons from its start", Integer.toString(v.beaconsSeen()).equals(p.getProperty("beaconsAtStart")));
-  Setup.chk("S: Sandbox careers: every 60 beacons", Career.beaconsPerMonth() == 60);
+  Setup.chk("S: Sandbox careers: every two months, 56 beacons", Career.beaconsPerStipend() == 56);
   // a career from before: 9 sectors travelled at 4 a month, 1 month paid: 1 month owed, a sector on to the next
   p.remove("beaconsAtStart"); p.setProperty("sectorsAtStart", "0"); p.setProperty("paidMonths", "1");
   SafeFiles.writeText(new File(v.root, "sectors.txt"), "9\n", false);
   ByteArrayOutputStream b = new ByteArrayOutputStream(); p.store(b, null); SafeFiles.write(cf, b.toByteArray());
   int owed = (Integer) unpaid.invoke(null);
   Setup.chk("S: a career from sectors: still 1 month owed after the switch (" + owed + ")", owed == 1);
-  ChainT.jump(v, 44);
-  Setup.chk("S: its odd sector carried over as 15 beacons: 44 more is a beacon short", (Integer) unpaid.invoke(null) == 1);
+  ChainT.jump(v, 32);
+  Setup.chk("S: its 9 sectors carried over as 135 beacons: 32 more is a beacon short of the third 56", (Integer) unpaid.invoke(null) == 1);
   ChainT.jump(v, 1);
-  Setup.chk("S: and 45 make the next month", (Integer) unpaid.invoke(null) == 2);
-  Setup.chk("S: the difficulties' stipends: 30, 45, 60 beacons", CareerRules.of(CareerRules.EASY).stipendBeacons() == 30
-    && CareerRules.of(CareerRules.NORMAL).stipendBeacons() == 45 && CareerRules.of(CareerRules.HARD).stipendBeacons() == 60
-    && CareerRules.LEVELS[CareerRules.STIPEND][1].equals("three months"));
+  Setup.chk("S: and 33 make the next stipend", (Integer) unpaid.invoke(null) == 2);
+  Setup.chk("S: the difficulties' stipends: 28, 56, 84 beacons (one, two, three months)", CareerRules.of(CareerRules.EASY).stipendBeacons() == 28
+    && CareerRules.of(CareerRules.NORMAL).stipendBeacons() == 56 && CareerRules.of(CareerRules.HARD).stipendBeacons() == 84
+    && CareerRules.LEVELS[CareerRules.STIPEND][1].equals("two months") && Career.BEACONS_PER_MONTH == 28);
  }
  /** Buying, repairs or upgrades in FTL, with no jump, count as one beacon a stop; nothing else does. */
+ /** Every beacon the boarded ship flies counts, once: seen by FTL's saves, a dock, the station's writes, a look. */
+ static void clock(Vault v) throws Exception {
+  if (v.boarded() == null) v.board(v.docked().get(0));
+  v.takeStock();
+  int b0 = v.beaconsSeen(), s0 = v.sectorsSeen();
+  fly(v, 20, 1); Ship b = v.boarded(); Vault.Copy c = v.readCopy(b); v.begin().put(b, c.save, c.hash).commit(); v.takeStock();
+  Setup.chk("K: flown 20 beacons and a sector, then the station writes her before a look: counted (" + (v.beaconsSeen() - b0) + ", " + (v.sectorsSeen() - s0) + ")", v.beaconsSeen() == b0 + 20 && v.sectorsSeen() == s0 + 1);
+  fly(v, 20, 1); v.dock(); v.takeStock();
+  Setup.chk("K: flown 20 more, then docked before a look: counted (" + (v.beaconsSeen() - b0) + ")", v.beaconsSeen() == b0 + 40 && v.sectorsSeen() == s0 + 2);
+  v.board(v.docked().get(0)); v.takeStock();
+  Setup.chk("K: boarding a ship counts nothing (her own past is hers)", v.beaconsSeen() == b0 + 40);
+  fly(v, 5, 0); v.observeBoarded();
+  Setup.chk("K: FTL's own save moves the clock as she flies", v.beaconsSeen() == b0 + 45);
+  v.takeStock(); v.observeBoarded(); v.takeStock();
+  Setup.chk("K: and nothing counts twice", v.beaconsSeen() == b0 + 45);
+  Parts.current(v);
+  Properties pp = new Properties(); pp.load(new ByteArrayInputStream(SafeFiles.read(new File(v.root, "parts.txt"))));
+  Setup.chk("K: the Junkyard's Parts restock as the fleet flies", Integer.parseInt(pp.getProperty("rolledAt")) > b0);
+  // FTL's New Game writes over her: the new ship's run so far was flown in the fleet's time
+  SavedGameState n = Commission.build("PLAYER_SHIP_HARD", "Newcomer", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3));
+  n.setTotalBeaconsExplored(6); n.setSectorNumber(1);
+  SaveHelper.writeSavedGame(v.continueFile(), n); v.takeStock();
+  Setup.chk("K: New Game in FTL: the new ship's 6 beacons count (" + (v.beaconsSeen() - b0 - 45) + ")", v.beaconsSeen() == b0 + 51 && v.sectorsSeen() == s0 + 3);
+ }
+ static void fly(Vault v, int beacons, int sectors) throws Exception {
+  SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
+  g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + beacons); g.setSectorNumber(g.getSectorNumber() + sectors);
+  SaveHelper.writeSavedGame(v.continueFile(), g);
+ }
  static void work(Vault v) throws Exception {
   Ship s = v.boarded();
   v.takeStock();
@@ -136,7 +172,14 @@ public class PartT { public static void main(String[] a) throws Exception {
   g.setStateVar("system_upgrade", (g.hasStateVar("system_upgrade") ? g.getStateVar("system_upgrade") : 0) + 2);
   SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock();
   Setup.chk("W: more work at the same stop: no more", v.beaconsSeen() == seen + 1);
-  Setup.chk("W: noted in her voyage log", VoyageLog.read(v, s).contains("counted as a beacon"));
+  String vl = VoyageLog.read(v, s);
+  Setup.chk("W: noted in her voyage log, never as a beacon (the second hard rule)", vl.contains("Time spent on work at the beacon") && !vl.contains("counted as a beacon"));
+  Ship other = v.docked().get(0);
+  v.board(other); v.takeStock(); v.board(s); v.takeStock();
+  g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
+  g.setStateVar("store_repair", (g.hasStateVar("store_repair") ? g.getStateVar("store_repair") : 0) + 1);
+  SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock();
+  Setup.chk("W: switching ships at the stop and back, more work counts nothing more", v.beaconsSeen() == seen + 1);
   ChainT.jump(v, 1);
   g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
   g.setStateVar("store_repair", (g.hasStateVar("store_repair") ? g.getStateVar("store_repair") : 0) + 1);

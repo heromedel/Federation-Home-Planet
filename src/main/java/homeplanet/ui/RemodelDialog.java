@@ -329,9 +329,12 @@ public class RemodelDialog extends ShipEditorDialog {
 				int nx = Integer.MAX_VALUE, ny = Integer.MAX_VALUE;
 				for (ShipDesign.Room r : d.rooms) { nx = Math.min(nx, r.x); ny = Math.min(ny, r.y); }
 				dx = startMinX - nx; dy = startMinY - ny; // how far her old rooms sit from where they were, in the new file's squares
-				// she stays where she was on screen: the file's origin moved by dx, dy squares
-				mine.geometry.offX = Math.max(0, layout.getOffsetX() - dx);
-				mine.geometry.offY = Math.max(0, layout.getOffsetY() - dy);
+				// she stays where she was on screen: her screen offsets are read off the geometry's place on the design grid (the
+				// grid's middle is the game's centre), so the geometry is moved onto that grid where the game has her, less dx, dy
+				int gx = Math.max(-nx, homeplanet.parser.DesignExport.ORIGIN_COL + layout.getOffsetX() - startMinX), gy = Math.max(-ny, homeplanet.parser.DesignExport.ORIGIN_ROW + layout.getOffsetY() - startMinY);
+				for (ShipDesign.Room r : mine.geometry.rooms) { r.x += gx; r.y += gy; }
+				for (CompanionMod.Door x : mine.geometry.doors) { x.x += gx; x.y += gy; }
+				mine.geometry.artX += gx * LayoutEditor.SQ; mine.geometry.artY += gy * LayoutEditor.SQ;
 				// the layout file starts at square (0, 0): her own doors as the file has them
 				mine.doors = new ArrayList<CompanionMod.Door>();
 				for (CompanionMod.Door x : d.doors) mine.doors.add(new CompanionMod.Door(x.x - nx, x.y - ny, x.a, x.b, x.v));
@@ -345,8 +348,10 @@ public class RemodelDialog extends ShipEditorDialog {
 				HomePlanet.showErrorDialog("The Home Planet Station couldn't save her remodel to " + CompanionMod.remodelsFile().getAbsolutePath() + ":\n" + e + "\n\nHer blueprint is unchanged.");
 				return;
 			}
+			net.blerf.ftl.model.shiplayout.ShipLayout oldLay = null; // her rooms as they are now: read before register renames them under the same id
+			try { oldLay = net.blerf.ftl.parser.DataManager.get().getShipLayout(save.getPlayerShip().getShipLayoutId()); } catch (Exception e) { }
 			CompanionMod.register(all); // she can be drawn right away
-			Retrofit.switchTo(save, mine.id, dx, dy); // blueprint, layout, rooms, crew and doors together
+			Retrofit.switchTo(save, mine.id, dx, dy, oldLay); // blueprint, layout, rooms, crew and doors together
 		}
 		List<String> lines = new ArrayList<String>();
 		for (Sys s : moved.values()) lines.add(Items.systemTitle(s.id) + (s.room < 0 ? ": off the blueprint" : ": room " + s.room + (s.square != null ? ", square " + s.square + (s.dir != null ? " facing " + s.dir : "") : "")));

@@ -238,7 +238,7 @@ public class PatchDialog extends JDialog {
 		if (res != null && res.ok()) {
 			HistoryLog.entry("PATCH", "Patched " + count(names.size()) + " with Slipstream" + (runFtl ? ", then launched FTL" : ""), details);
 			patched = true;
-			if (hasCompanionMod) HomePlanet.modPatchedThisSession = true; // the game now has the mod the station just built
+			homeplanet.parser.PatchState.refresh(); // ftl.dat changed: what's in the game is read again from it
 			if (runFtl) HomePlanet.launchFTL();
 			Object[] options = {"Restart now", "Later"};
 			int r = JOptionPane.showOptionDialog(this,

@@ -389,7 +389,6 @@ public class Slipstream {
 	/** Builds the companion mod (plain copies plus every remodel) into Slipstream's mods folder. Returns the file, or null. */
 	public static File installMod(File dir) {
 		File dst = new File(modsDir(dir), MOD_FILE);
-		HomePlanet.modPatchedThisSession = false; // a new build isn't in the game until it's patched
 		try {
 			modsDir(dir).mkdirs();
 			homeplanet.parser.CompanionMod.build(dst, homeplanet.parser.CompanionMod.load(), HomePlanet.version());
@@ -402,7 +401,6 @@ public class Slipstream {
 
 	/** Builds the companion mod where it belongs: Slipstream's mods folder if known, else beside the station. Returns the file, or null. */
 	public static File writeMod() {
-		HomePlanet.modPatchedThisSession = false;
 		File d = dir();
 		if (d != null) return installMod(d);
 		File dst = new File(MOD_FILE).getAbsoluteFile();

@@ -73,10 +73,18 @@ public final class ShipChecks {
 		if (art) {
 			int weaponMounts = d.mounts.size() - artilleryMounts;
 			if (d.art.isEmpty()) w.add("No hull art yet.");
-			else if (!ShipArt.available(d.art, d.art.startsWith("game:") ? "_base" : "")) p.add("Her hull art is missing (" + d.art + ").");
+			else if (!ShipArt.available(d.art, d.art.startsWith("game:") ? "_base" : "")) w.add("Her hull art is missing (" + d.art + "): the Kestrel's stands in until it's back, so ships built from her still fly.");
 			else if (weaponMounts == 0) p.add("She needs at least one weapon mount.");
-			// the game's own ships carry spare mounts too (the Kestrel has 8 for 4 slots): only the first ones are used
-			if (weaponMounts > SaveHelper.WEAPON_SLOTS_MAX) w.add("She has " + weaponMounts + " weapon mounts; FTL uses the first " + SaveHelper.WEAPON_SLOTS_MAX + " (its most weapon slots).");
+			if (!d.floor.isEmpty() && !d.floorFromRooms() && ShipArt.available(d.art, d.art.startsWith("game:") ? "_base" : "") && ShipArt.available(d.floor, d.floor.startsWith("game:") ? "_floor" : "")) {
+				// FTL draws the floor at the hull's corner plus its offset: one that sticks out of the hull was most likely drawn for another hull
+				java.awt.image.BufferedImage hull = ShipArt.scaled(ShipArt.load(d.art, d.art.startsWith("game:") ? "_base" : ""), d.artScale), fl = ShipArt.scaled(ShipArt.load(d.floor, d.floor.startsWith("game:") ? "_floor" : ""), d.artScale);
+				if (hull != null && fl != null && (d.floorX < 0 || d.floorY < 0 || d.floorX + fl.getWidth() > hull.getWidth() || d.floorY + fl.getHeight() > hull.getHeight()))
+					w.add("Her floor picture (" + fl.getWidth() + " x " + fl.getHeight() + " at " + d.floorX + ", " + d.floorY + ") sticks out of her hull picture (" + hull.getWidth() + " x " + hull.getHeight()
+							+ "): it may have been drawn for another hull. Choose no floor, or one drawn from the rooms.");
+			}
+			// FTL draws slot n's weapon on mount n: a slot past her mounts has nowhere to draw (the game's own ships carry spare mounts, the Kestrel 8 for 4 slots)
+			if (ctx == Context.DESIGN && !d.art.isEmpty() && weaponMounts < DesignExport.weaponSlots(d))
+				w.add("She has " + DesignExport.weaponSlots(d) + " weapon slots but " + weaponMounts + " weapon mount" + (weaponMounts == 1 ? "" : "s") + ": a weapon in a slot past her mounts has nowhere to draw. Add mounts, or fewer slots.");
 			if (requiredWeaponSlots != null && weaponMounts < requiredWeaponSlots)
 				p.add("She has " + requiredWeaponSlots + " weapon slots but " + weaponMounts + " weapon mount" + (weaponMounts == 1 ? "" : "s") + ": each slot needs a mount.");
 		}
@@ -112,10 +120,21 @@ public final class ShipChecks {
 		int starting = startingSystems(d);
 		if (ctx == Context.DESIGN && starting > SaveHelper.SYSTEMS_MAX)
 			w.add("She starts with " + starting + " systems; FTL's System Limit is " + SaveHelper.SYSTEMS_MAX + " (subsystems aside). Each one past it is a custom work order ("
-					+ Pricing.WORK_ORDER + " scrap) when commissioning costs scrap.");
+					+ homeplanet.core.Economy.commissionWorkOrder() + " scrap) when commissioning costs scrap.");
 		boolean airlock = false;
 		for (CompanionMod.Door door : d.doors) if (door.b < 0) airlock = true;
 		if (!airlock) w.add("No airlocks: she can't vent fires or boarders.");
+		// past the game's own numbers: FTL takes her, but its bars and upgrade screen are drawn for the vanilla ones
+		if (ctx == Context.DESIGN) {
+			List<String> past = new ArrayList<String>();
+			if (d.weaponSlots > VanillaMax.weaponSlots()) past.add(d.weaponSlots + " weapon slots (the game's ships have up to " + VanillaMax.weaponSlots() + "; its weapon bar is drawn for that many, the rest sit off its edge)");
+			if (d.droneSlots > VanillaMax.droneSlots()) past.add(d.droneSlots + " drone slots (up to " + VanillaMax.droneSlots() + " in the game; its drone bar is drawn for that many)");
+			for (CompanionMod.Sys s : d.systems.values())
+				if (s.power > VanillaMax.system(s.id)) past.add(title(s.id) + " at level " + s.power + " (the game's top is " + VanillaMax.system(s.id) + "; its upgrade screen won't show past that)");
+			if (!past.isEmpty()) w.add("Past vanilla: " + String.join("; ", past) + ".");
+			if (d.loadout != null && d.loadout.crewTotal() > VanillaMax.CREW) p.add("She starts with " + d.loadout.crewTotal() + " crew: FTL's ships hold " + VanillaMax.CREW + ".");
+			if (d.loadout != null && d.loadout.crewTotal() == 0) w.add("No starting crew set: she'd start with one human.");
+		}
 		// the loadout, against the ship
 		if (d.loadout != null) {
 			int slots = DesignExport.weaponSlots(d);

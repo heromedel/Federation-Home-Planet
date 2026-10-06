@@ -1,6 +1,8 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
 /** Design Ship's back end on the test world: checks, export, art files, commissioning. args: gamedir, world saves (from WorldT), work */
-public class DesT { public static void main(String[] a) throws Exception {
+public class DesT {
+ static List<homeplanet.ui.NumberRow> rows(java.awt.Container c) { List<homeplanet.ui.NumberRow> out = new ArrayList<homeplanet.ui.NumberRow>(); for (java.awt.Component x : c.getComponents()) { if (x instanceof homeplanet.ui.NumberRow) out.add((homeplanet.ui.NumberRow) x); if (x instanceof java.awt.Container) out.addAll(rows((java.awt.Container) x)); } return out; }
+ public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  Vault v = Setup.open(game, saves); v.takeStock();
@@ -89,12 +91,12 @@ public class DesT { public static void main(String[] a) throws Exception {
    g.name = "Kestrel copy";
    Setup.chk("copied the Kestrel", ShipDesign.fromGameShip(g, "PLAYER_SHIP_HARD") && g.rooms.size() == 17 && g.systems.containsKey("pilot") && g.art.equals("game:kestral") && g.doors.size() > 10);
    int[] gb = g.bounds();
-   Setup.chk("placed two squares in", gb[0] == 2 && gb[1] == 2);
+   Setup.chk("placed where the game has her: the grid's middle is the game's centre, so her offsets (0, 2) put her at column 4, row 4: " + gb[0] + ", " + gb[1], gb[0] == DesignExport.ORIGIN_COL && gb[1] == DesignExport.ORIGIN_ROW + 2);
    Setup.chk("loadout and numbers taken", g.loadout != null && g.loadout.weapons.size() == 2 && g.hull == 30 && g.reactor == 8);
    ShipChecks.Report r = ShipChecks.check(g, ShipChecks.Context.DESIGN, null, null);
    Setup.chk("the copy is sound: " + r.problems, r.problems.isEmpty());
    int ax = g.artX, doors = g.doors.size();
-   Setup.chk("shift left twice then a third fails at the edge", g.shift(-1, 0) && g.shift(-1, 0) && !g.shift(-1, 0) && g.bounds()[0] == 0 && g.artX == ax - 70);
+   Setup.chk("shift left four times then a fifth fails at the edge", g.shift(-1, 0) && g.shift(-1, 0) && g.shift(-1, 0) && g.shift(-1, 0) && !g.shift(-1, 0) && g.bounds()[0] == 0 && g.artX == ax - 140);
    // flipping keeps every door on a wall and every station in its room
    String before = ShipDesign.editKey(g);
    ShipDesign f = ShipDesign.copy(g);
@@ -136,15 +138,134 @@ public class DesT { public static void main(String[] a) throws Exception {
    } finally { cb.setStart(was); }
    ShipState kestrel = Commission.build("PLAYER_SHIP_HARD", "Medbay Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)).getPlayerShip();
    Setup.chk("a Kestrel A still starts with her Medbay", kestrel.getSystem(SystemType.MEDBAY).getCapacity() > 0 && kestrel.getSystem(SystemType.CLONEBAY).getCapacity() == 0);
-   java.lang.reflect.Method either = Class.forName("homeplanet.ui.DesignDialog").getDeclaredMethod("eitherBay", javax.swing.JCheckBox.class, javax.swing.JCheckBox.class);
-   either.setAccessible(true);
-   javax.swing.JCheckBox med = new javax.swing.JCheckBox("Medbay", true), clo = new javax.swing.JCheckBox("Clone Bay", true);
-   either.invoke(null, med, clo);
-   boolean opened = !med.isSelected() && clo.isSelected();
-   med.doClick(); boolean onlyMed = med.isSelected() && !clo.isSelected();
-   clo.doClick(); boolean onlyClone = clo.isSelected() && !med.isSelected();
-   clo.doClick(); boolean neither = !clo.isSelected() && !med.isSelected();
-   Setup.chk("Design Ship: a design with both ticked opens with the Clone Bay alone; ticking one unticks the other; neither is fine", opened && onlyMed && onlyClone && neither);
+   // the Loadout step (headless: the panel alone, no window) on a design with both bays placed and ticked
+   ShipDesign bays = ShipDesign.copy(made[0]);
+   for (String id : new String[] {"medbay", "clonebay"}) { CompanionMod.Sys s = new CompanionMod.Sys(id); s.room = id.equals("medbay") ? 3 : 4; s.power = 1; bays.systems.put(id, s); }
+   bays.notAtStart.remove("medbay"); bays.notAtStart.remove("clonebay");
+   homeplanet.ui.LayoutEditor.Host quiet = new homeplanet.ui.LayoutEditor.Host() { public void say(String m) { } public void changed() { } public String cannotTakeOff(String id) { return null; } public CompanionMod.Sys original(String id) { return null; } };
+   homeplanet.ui.LoadoutPanel lp = new homeplanet.ui.LoadoutPanel(bays, quiet);
+   homeplanet.ui.NumberRow med = null, clo = null;
+   for (homeplanet.ui.NumberRow n : rows(lp)) { if (n.name().equals("Medbay")) med = n; if (n.name().equals("Clone Bay")) clo = n; }
+   boolean opened = med != null && clo != null && !med.tick().isSelected() && clo.tick().isSelected() && bays.notAtStart.contains("medbay") && !bays.notAtStart.contains("clonebay");
+   med.tick().doClick(); boolean onlyMed = med.tick().isSelected() && !clo.tick().isSelected() && !bays.notAtStart.contains("medbay") && bays.notAtStart.contains("clonebay");
+   clo.tick().doClick(); boolean onlyClone = clo.tick().isSelected() && !med.tick().isSelected() && bays.notAtStart.contains("medbay") && !bays.notAtStart.contains("clonebay");
+   clo.tick().doClick(); boolean neither = !clo.tick().isSelected() && !med.tick().isSelected() && bays.notAtStart.contains("medbay") && bays.notAtStart.contains("clonebay");
+   Setup.chk("Design Ship's Loadout step: a design with both ticked opens with the Clone Bay alone; ticking one unticks the other; neither is fine", opened && onlyMed && onlyClone && neither);
  }
+ // W: the floor and the art (Plan W): a floor the wrong size, a floor drawn from the rooms, missing art, the visible centre
+ { ShipDesign f = ShipDesign.copy(made[1]);
+   java.awt.image.BufferedImage hull = ShipArt.load(f.art, "");
+   java.awt.image.BufferedImage small = new java.awt.image.BufferedImage(hull.getWidth() / 2, hull.getHeight() / 2, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+   f.floor = ShipArt.importImage(small, f.id, "floor"); f.floorX = 0; f.floorY = 0;
+   List<String> p = ShipChecks.check(f, ShipChecks.Context.DESIGN, null, null).warnings;
+   Setup.chk("W: a smaller floor inside the hull is fine (the game's floors are): " + p, !p.toString().contains("sticks out"));
+   f.floorX = hull.getWidth() - 10;
+   p = ShipChecks.check(f, ShipChecks.Context.DESIGN, null, null).warnings;
+   Setup.chk("W: a floor sticking out of the hull is a warning: " + p, p.toString().contains("sticks out"));
+   f.floorX = 0;
+   p = ShipChecks.check(f, ShipChecks.Context.DESIGN, null, null).problems;
+   java.awt.image.BufferedImage drawn = ShipArt.floorFromRooms(f, hull);
+   f.floor = ShipArt.importImage(drawn, f.id, "floor");
+   p = ShipChecks.check(f, ShipChecks.Context.DESIGN, null, null).problems;
+   int grey = 0, clear = 0; for (int y = 0; y < drawn.getHeight(); y += 3) for (int x = 0; x < drawn.getWidth(); x += 3) { if (((drawn.getRGB(x, y) >>> 24) & 0xFF) > 0) grey++; else clear++; }
+   ShipDesign.Room r0 = f.rooms.get(0); int rx = r0.x * SaveHelper.SQUARE_SIZE - f.artX + 5, ry = r0.y * SaveHelper.SQUARE_SIZE - f.artY + 5;
+   boolean roomClear = rx >= 0 && ry >= 0 && rx < drawn.getWidth() && ry < drawn.getHeight() && ((drawn.getRGB(rx, ry) >>> 24) & 0xFF) == 0;
+   boolean wallGrey = rx - 9 >= 0 && ((drawn.getRGB(rx - 9, ry) >>> 24) & 0xFF) > 0;
+   Setup.chk("W: a floor drawn from the rooms is the hull's size, walls round the rooms (" + grey + " drawn, " + clear + " clear), the rooms left clear, and passes the checks: " + p,
+     drawn.getWidth() == hull.getWidth() && drawn.getHeight() == hull.getHeight() && grey > 0 && clear > grey && roomClear && wallGrey && p.isEmpty());
+   Setup.chk("W: the visible box of a picture with a clear margin is smaller than the picture", ShipArt.opaqueBounds(hull).width < hull.getWidth() || ShipArt.opaqueBounds(hull).height < hull.getHeight());
+   // her hull picture gone: a warning, not a problem, and the Kestrel's picture stands in so the mod still has her
+   ShipDesign m = ShipDesign.copy(made[1]); m.floor = ""; m.art = "file:art/nowhere-" + m.id + ".png";
+   ShipChecks.Report rep = ShipChecks.check(m, ShipChecks.Context.DESIGN, null, null);
+   Setup.chk("W: missing hull art is a warning (" + rep.warnings + "), not a problem (" + rep.problems + ")", rep.warnings.toString().contains("stands in") && !rep.problems.toString().contains("missing"));
+   Map<String, byte[]> imgs = DesignExport.images(m);
+   Setup.chk("W: her pictures are still written, the Kestrel's standing in", imgs.keySet().toString().contains("_base.png"));
+   // a floor drawn from the rooms as a standing choice: drawn fresh each time, so it follows the rooms; exported; kept through a flip
+   ShipDesign q = ShipDesign.copy(made[1]); q.floor = ShipDesign.FLOOR_ROOMS; q.floorX = 7; q.floorY = 7;
+   java.awt.image.BufferedImage f1 = ShipArt.floorOf(q);
+   p = ShipChecks.check(q, ShipChecks.Context.DESIGN, null, null).warnings;
+   Setup.chk("W: 'rooms' as the floor: a hull-sized floor drawn now, no warning about it: " + p, f1 != null && f1.getWidth() == hull.getWidth() && f1.getHeight() == hull.getHeight() && !p.toString().contains("floor"));
+   q.rooms.get(0).x += 1;
+   java.awt.image.BufferedImage f2 = ShipArt.floorOf(q);
+   boolean differs = false; for (int y = 0; y < f1.getHeight() && !differs; y += 2) for (int x = 0; x < f1.getWidth(); x += 2) if (f1.getRGB(x, y) != f2.getRGB(x, y)) { differs = true; break; }
+   Setup.chk("W: a room moved: the floor follows (drawn again, not a stored picture)", differs && q.floorFromRooms());
+   Setup.chk("W: the mod carries her drawn floor", DesignExport.images(q).keySet().toString().contains("_floor.png"));
+   Setup.chk("W: a flip keeps the floor drawn from the rooms", ShipArt.flipVertically(q) && q.floorFromRooms());
+ }
+ // X: the weapon slots are hers (Plan X); the vanilla maxes come from the game; past them is a note, never a refusal
+ { ShipDesign x = ShipDesign.copy(made[1]);
+   Setup.chk("X: vanilla max read from the game's ships: 4 weapon slots, 3 drone slots, 30 hull, reactor 11 (the Mantis B's), 28 missiles, 25 drone parts; Shields to 8, Piloting to 3: "
+     + VanillaMax.weaponSlots() + "/" + VanillaMax.droneSlots() + "/" + VanillaMax.hull() + "/" + VanillaMax.reactor() + "/" + VanillaMax.missiles() + "/" + VanillaMax.droneParts(),
+     VanillaMax.weaponSlots() == 4 && VanillaMax.droneSlots() == 3 && VanillaMax.hull() == 30 && VanillaMax.reactor() == 11 && VanillaMax.missiles() == 28 && VanillaMax.droneParts() == 25
+     && VanillaMax.system("shields") == 8 && VanillaMax.system("pilot") == 3);
+   Setup.chk("X: a design from before (no weaponSlots on file) counts her mounts: " + x.slotsFromMounts(), x.slotsFromMounts() == 2);
+   x.weaponSlots = 6; x.droneSlots = 4; x.systems.get("shields").power = 9;
+   Setup.chk("X: her blueprint carries the slots she set", DesignExport.blueprintText(x).contains("<weaponSlots>6</weaponSlots>") && DesignExport.blueprintText(x).contains("<droneSlots>4</droneSlots>"));
+   ShipChecks.Report xr = ShipChecks.check(x, ShipChecks.Context.DESIGN, null, null);
+   Setup.chk("X: 6 slots on 2 mounts is a note (nowhere to draw), past vanilla is a note, nothing stops her: " + xr.problems + " / " + xr.warnings,
+     xr.problems.isEmpty() && xr.warnings.toString().contains("nowhere to draw") && xr.warnings.toString().contains("Past vanilla") && xr.warnings.toString().contains("6 weapon slots") && xr.warnings.toString().contains("Shields at level 9"));
+   x.weaponSlots = 2; x.droneSlots = 2; x.systems.get("shields").power = 2;
+   xr = ShipChecks.check(x, ShipChecks.Context.DESIGN, null, null);
+   Setup.chk("X: within vanilla: no such notes: " + xr.warnings, !xr.warnings.toString().contains("Past vanilla") && !xr.warnings.toString().contains("nowhere to draw"));
+   x.loadout.crew.put("human", 9);
+   Setup.chk("X: 9 crew is a problem (FTL's ships hold 8)", ShipChecks.check(x, ShipChecks.Context.DESIGN, null, null).problems.toString().contains("hold 8"));
+   x.loadout.crew.clear();
+   Setup.chk("X: no crew set is a note (she'd start with one human)", ShipChecks.check(x, ShipChecks.Context.DESIGN, null, null).warnings.toString().contains("one human"));
+   // on file and back, with the attribute; and an older file without it
+   ShipDesign y = ShipDesign.copy(made[1]); y.weaponSlots = 3; List<ShipDesign> keep = ShipDesign.load(); keep.add(y); ShipDesign.save(keep);
+   ShipDesign back2 = null; for (ShipDesign s : ShipDesign.load()) if (s.id.equals(y.id) && s.snapshotOf == null && s.weaponSlots == 3) back2 = s;
+   Setup.chk("X: the slots are saved with the design and read back", back2 != null);
+   String xml = new String(java.nio.file.Files.readAllBytes(ShipDesign.file().toPath()), "UTF-8").replaceAll(" weaponSlots=\"\\d+\"", "");
+   SafeFiles.writeText(ShipDesign.file(), xml, true);
+   back2 = null; for (ShipDesign s : ShipDesign.load()) if (s.id.equals(y.id) && s.snapshotOf == null) back2 = s;
+   Setup.chk("X: an older file without the attribute: one slot per mount, as it was counted then", back2 != null && back2.weaponSlots == back2.slotsFromMounts());
+   // the grid's middle is the game's centre: where the rooms sit round it is her screen offset
+   ShipDesign k = ShipDesign.create(all); ShipDesign.fromGameShip(k, "PLAYER_SHIP_HARD");
+   int[] ko = DesignExport.offsets(k);
+   Setup.chk("X: a Kestrel copied onto the grid lands where the game has her and gets the game's own offsets back (0, 2): " + ko[0] + ", " + ko[1], ko[0] == 0 && ko[1] == 2);
+   ShipDesign m = ShipDesign.create(all); ShipDesign.fromGameShip(m, "PLAYER_SHIP_MANTIS");
+   int[] mo = DesignExport.offsets(m);
+   Setup.chk("X: the Mantis too (3, 0): " + mo[0] + ", " + mo[1], mo[0] == 3 && mo[1] == 0);
+   for (ShipDesign.Room r : k.rooms) r.x += 2;
+   Setup.chk("X: her rooms moved two squares right: offset 2 (she sits further right in the game)", DesignExport.offsets(k)[0] == 2);
+   for (ShipDesign.Room r : k.rooms) r.x -= 5;
+   Setup.chk("X: moved past the game's edge: offset 0, never negative", DesignExport.offsets(k)[0] == 0);
+   // Y: her pictures turned and mirrored: the mounts keep their spots on the picture, the middle stays, the rooms don't move
+   ShipDesign t = ShipDesign.copy(made[1]); t.ellipseW = 300; t.ellipseH = 200; t.ellipseX = 10; t.ellipseY = -4;
+   java.awt.image.BufferedImage th = ShipArt.load(t.art, ""); int tw = th.getWidth(), tth = th.getHeight();
+   double cx = t.artX + tw / 2.0, cy = t.artY + tth / 2.0; int r0x = t.rooms.get(0).x, m0x = t.mounts.get(0).x, m0y = t.mounts.get(0).y;
+   Setup.chk("Y: rotated: the picture is turned (" + tw + "x" + tth + " to " + ShipArt.load(t.art, "").getHeight() + "x" + ShipArt.load(t.art, "").getWidth() + ")", ShipArt.rotate(t) && ShipArt.load(t.art, "").getWidth() == tth && ShipArt.load(t.art, "").getHeight() == tw);
+   Setup.chk("Y: the mount turned with it (" + m0x + "," + m0y + " to " + t.mounts.get(0).x + "," + t.mounts.get(0).y + "), the shield's axes swapped, the middle kept, the rooms untouched",
+     t.mounts.get(0).x == tth - m0y && t.mounts.get(0).y == m0x && t.ellipseW == 200 && t.ellipseH == 300 && Math.abs(t.artX + tth / 2.0 - cx) <= 1 && Math.abs(t.artY + tw / 2.0 - cy) <= 1 && t.rooms.get(0).x == r0x);
+   for (int i = 0; i < 3; i++) ShipArt.rotate(t);
+   Setup.chk("Y: four turns bring the mount round (" + t.mounts.get(0).x + "," + t.mounts.get(0).y + ")", t.mounts.get(0).x == m0x && t.mounts.get(0).y == m0y && ShipArt.load(t.art, "").getWidth() == tw);
+   Setup.chk("Y: mirrored: the mount's x reflected", ShipArt.flipHorizontally(t) && t.mounts.get(0).x == tw - m0x && t.ellipseX == -10);
+   Setup.chk("Y: mirrored again: back", ShipArt.flipHorizontally(t) && t.mounts.get(0).x == m0x && t.ellipseX == 10);
+ }
+ homeless();
+ plan();
  Setup.done();
-}}
+} /** An Undo Retrofit takes off a system her original model has no room for: artillery on a remodelled Kestrel. */
+ static void homeless() throws Exception {
+  SavedGameState g = Commission.build("PLAYER_SHIP_HARD", "Gunboat", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
+  Retrofit.apply(g, false);
+  ShipState s = g.getPlayerShip();
+  Setup.chk("U: a retrofitted Kestrel has nothing her model can't hold", Retrofit.homeless(s).isEmpty());
+  SystemState art = s.getSystem(SystemType.ARTILLERY); if (art == null) { art = new SystemState(SystemType.ARTILLERY); s.addSystem(art); } art.setCapacity(1); art.setPower(1); // (a built ship carries every system's state, at 0)
+  Setup.chk("U: with artillery installed, the artillery is what her original model can't hold", Retrofit.homeless(s).size() == 1 && Retrofit.homeless(s).get(0) == SystemType.ARTILLERY);
+  SystemState cl = s.getSystem(SystemType.CLOAKING); if (cl == null) { cl = new SystemState(SystemType.CLOAKING); s.addSystem(cl); } cl.setCapacity(1); cl.setPower(1);
+  Setup.chk("U: cloaking has a room on every model: not taken off", Retrofit.homeless(s).size() == 1);
+ }
+ /** The Refit tab's floor plan: a ship's rooms and system rooms from her blueprint, for a game ship and a design. */
+ static void plan() throws Exception {
+  homeplanet.ui.ShipPlanView v = new homeplanet.ui.ShipPlanView();
+  List<String> have = new ArrayList<String>(); have.add("shields"); have.add("pilot");
+  v.show("PLAYER_SHIP_HARD", have);
+  Setup.chk("V: a Kestrel's plan knows her rooms: shields yes, artillery no", v.hasRoom("shields") && v.hasRoom("cloaking") && !v.hasRoom("artillery"));
+  v.show("PLAYER_SHIP_FED", have);
+  Setup.chk("V: a Federation Cruiser's plan has an artillery room", v.hasRoom("artillery"));
+  v.show("NO_SUCH_SHIP", have);
+  Setup.chk("V: an unknown blueprint shows nothing, quietly", !v.hasRoom("shields"));
+  v.light("shields"); v.light(null);
+ }
+}

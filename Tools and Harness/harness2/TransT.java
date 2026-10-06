@@ -135,6 +135,12 @@ public class TransT { public static void main(String[] a) throws Exception {
   Transmissions.Message order = find("order:PLAYER_SHIP_MANTIS 0"), promo = find("promo:1");
   Setup.chk("T: a new unlock brings a commission order", order != null && order.body.contains("Mantis") && order.isOrder());
   Setup.chk("T: the Federation Cruiser A brings a promotion, not an order", promo != null && find("order:PLAYER_SHIP_FED 0") == null && UnlockGrants.rank(Unlocks.read()) == 1);
+  // a Type B (two of her achievements): the shared letter (her makers open the next model), not her Type A's story
+  profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_FED", "PLAYER_SHIP_ENERGY"}, new String[] {"ACH_SECTOR_5", "ACH_TOUGH_SHIP", "ACH_NO_BUYING", "ACH_MANTIS_SLAUGHTER", "ACH_NO_UPGRADES", "ACH_ENERGY_SHIELDS", "ACH_ENERGY_POWER"});
+  Transmissions.check();
+  Transmissions.Message zoltanA = find("order:PLAYER_SHIP_ENERGY 0"), zoltanB = find("order:PLAYER_SHIP_ENERGY 1");
+  Setup.chk("T: the Zoltan Cruiser A's order tells the Council's story; her Type B's is the Zoltan's second letter, following on and naming her", zoltanA != null && zoltanA.body.contains("Your restraint among the Zoltan")
+    && zoltanB != null && zoltanB.body.contains("has spoken of you again") && zoltanB.body.contains("with the Zoltan Cruiser") && !zoltanB.body.contains("Your restraint") && !zoltanB.body.contains("{") && zoltanB.subject.contains("Type B"));
   Transmissions.Message tough = find("ach:ACH_TOUGH_SHIP");
   Setup.chk("T: a new achievement brings its reward, addressed to the new rank", tough != null && tough.hasReward() && tough.body.startsWith("Captain,"));
   Vault v = Vault.get();
@@ -150,6 +156,21 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("T: a crew volunteer joins Spacedock Storage", v.storage().save().getPlayerShip().getCrewList().size() == crew + 1);
   Transmissions.claim(find("ach:ACH_NO_UPGRADES"), -1);
   Setup.chk("T: a system goes to the stored systems", new String(SafeFiles.read(v.systemsFile()), "UTF-8").contains("cloaking 1"));
+  // the crew-care achievements: a Clone Bay, or a Backup DNA Bank for a ship that has one already
+  SavedGameParser.ShipState medbay = v.readCopy(v.storage()).save.getPlayerShip(), cloned = v.readCopy(v.storage()).save.getPlayerShip();
+  medbay.getSystems(SavedGameParser.SystemType.CLONEBAY).clear();
+  SavedGameParser.SystemState cb = new SavedGameParser.SystemState(SavedGameParser.SystemType.CLONEBAY); cb.setCapacity(1);
+  cloned.getSystems(SavedGameParser.SystemType.CLONEBAY).clear(); cloned.getSystems(SavedGameParser.SystemType.CLONEBAY).add(cb);
+  java.lang.reflect.Method at = Transmissions.class.getDeclaredMethod("achTemplate", String.class, SavedGameParser.ShipState.class); at.setAccessible(true);
+  java.lang.reflect.Method tm = Transmissions.class.getDeclaredMethod("templates"); tm.setAccessible(true);
+  Map<?, ?> tpl = (Map<?, ?>) tm.invoke(null);
+  boolean care = true;
+  for (String a : new String[] {"ACH_NO_DEATH", "ACH_INVADE_SHIP"}) {
+   String plain = (String) at.invoke(null, a, medbay), none = (String) at.invoke(null, a, null), dna = (String) at.invoke(null, a, cloned);
+   care &= plain.equals("ach:" + a) && none.equals(plain) && dna.equals("ach:" + a + ":dna") && tpl.containsKey(dna)
+     && "system clonebay".equals(field(tpl.get(plain), "reward")) && "item BACKUP_DNA".equals(field(tpl.get(dna), "reward"));
+  }
+  Setup.chk("T: No Redshirts and Trustworthy Auto-Pilot send a Clone Bay, or a Backup DNA Bank to a ship with one", care && at.invoke(null, "ACH_TOUGH_SHIP", cloned).equals("ach:ACH_TOUGH_SHIP"));
  }
  static void clearance(File saves) throws Exception {
   // archive
@@ -173,7 +194,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("P: the Artillery Beam has a price", Pricing.artillery("ARTILLERY_FED") == 200 && Pricing.artillery("ARTILLERY_FED_C") == 150 && Pricing.artillery("ARTILLERY_BOSS_2") == 100);
   SavedGameParser.SavedGameState fed = Commission.build("PLAYER_SHIP_FED", "Fed", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
   SavedGameParser.SavedGameState kes = Commission.build("PLAYER_SHIP_HARD", "Kes", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1));
-  Pricing.Quote q = Pricing.ship(fed, 0, 0, 100);
+  Pricing.Quote q = Pricing.ship(fed, 100);
   System.out.println("Federation Cruiser A: " + q.total() + " " + q.lines);
   Setup.chk("P: a Federation Cruiser pays for her artillery's gun", String.join(" ", q.lines).contains("Weapons") && Commission.artilleryWeapon("PLAYER_SHIP_FED") != null);
  }
@@ -203,7 +224,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   Transmissions.check(); Transmissions.Message owed = find("stipend:"); if (owed != null) Transmissions.delete(owed); // anything owed already, paid first
   int sectors = v.sectorsSeen();
   java.util.Properties cp = new java.util.Properties(); cp.load(new java.io.ByteArrayInputStream(SafeFiles.read(new File(v.root, "career.txt"))));
-  int month = Career.beaconsPerMonth(), into = (v.beaconsSeen() - Integer.parseInt(cp.getProperty("beaconsAtStart"))) % month;
+  int month = Career.beaconsPerStipend(), into = (v.beaconsSeen() - Integer.parseInt(cp.getProperty("beaconsAtStart"))) % month;
   int jump = 2 * month - into + month / 2; // two months and half another, at the career's difficulty
   SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
   g.setSectorNumber(g.getSectorNumber() + 1); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + jump);
@@ -215,7 +236,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   int each = Career.stipend(UnlockGrants.rank(Unlocks.read()), achievements);
   Transmissions.check();
   Transmissions.Message m = find("stipend:");
-  Setup.chk("S: " + jump + " beacons (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last " + 2 * Career.sectorsPerMonth() + " months") && m.body.contains((2 * each) + " scrap") && ("scrap " + 2 * each).equals(m.reward));
+  Setup.chk("S: " + jump + " beacons (" + month + " a month) pay 2 months in one message", m != null && m.body.contains("stipend for the last " + 2 * Career.monthsPerStipend() + " months") && m.body.contains((2 * each) + " scrap") && ("scrap " + 2 * each).equals(m.reward));
   System.out.println("Stipend: " + each + " a month (Captain, 5 achievements): " + m.body.replace("\n", " / "));
   Setup.chk("S: the stipend waits to be claimed: the Cargo Hold is untouched", v.storageScrap() == scrap && Transmissions.unclaimedStipend(m));
   Setup.chk("S: an unclaimed stipend can't be deleted", !Transmissions.deletable(m));

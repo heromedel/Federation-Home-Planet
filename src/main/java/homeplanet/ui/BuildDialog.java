@@ -56,7 +56,7 @@ public final class BuildDialog extends JDialog {
 		List<String> fix = new ArrayList<String>(r.problems), notes = new ArrayList<String>(r.warnings);
 		// the checker's own loadout/art problems that Build can't do without
 		if (d.art.isEmpty()) fix.add("She needs hull art.");
-		if (d.loadout == null) notes.add("No loadout set: she'd start with three humans, 8 missiles, 2 drone parts and nothing fitted (Loadout... sets it).");
+		if (d.loadout == null) notes.add("No loadout set: she'd start with three humans, 8 missiles, 2 drone parts and nothing fitted (the Loadout step sets it).");
 
 		// the trial ship: her report, and the proof that she loads
 		JComponent report;
@@ -90,7 +90,7 @@ public final class BuildDialog extends JDialog {
 					+ ": " + String.join(", ", ships) + ". This build becomes v" + DesignDialog.nextVersion(d.id) + "; they keep v" + snapshot.version + ".");
 			else does.add("She was built before (v" + snapshot.version + ") and no ship flies it: you'll be asked whether to replace it or make v" + DesignDialog.nextVersion(d.id) + ".");
 		} else if (snapshot != null) does.add("Nothing the game sees has changed since her last build; building again changes nothing in the mod.");
-		does.add(d.starter ? "She's a starter ship: she'll be listed in Commission once the mod is sent to FTL via Slipstream." : "Not a starter ship: she won't be listed in Commission (the Loadout... tick box).");
+		does.add(d.starter ? "She's a starter ship: she'll be listed in Commission once the mod is sent to FTL via Slipstream." : "Not a starter ship: she won't be listed in Commission (the Loadout step's tick box).");
 
 		JPanel top = new JPanel(new BorderLayout(0, 4));
 		JLabel sl = new JLabel(stats);
@@ -118,7 +118,7 @@ public final class BuildDialog extends JDialog {
 		preview.setToolTipText("The layout, chassis and blueprint text the game would get for her");
 		preview.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ShipEditorDialog.showTextWindow(BuildDialog.this, "Files for " + d.name, DesignExport.preview(d)); } });
 		JButton loadout = new JButton("Loadout...");
-		loadout.setToolTipText("Her class, name, crew, weapons, drones, augments, missiles, drone parts and starting systems (closes this screen)");
+		loadout.setToolTipText("Back to the editor with the Loadout step in front: her class, name, numbers, crew, weapons, drones, augments and starting systems (closes this screen)");
 		loadout.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { choice = Choice.LOADOUT; dispose(); } });
 		JButton build = new JButton(notes.isEmpty() ? "Build blueprint" : "Build anyway");
 		build.setEnabled(fix.isEmpty());

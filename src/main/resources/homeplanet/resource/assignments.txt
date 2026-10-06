@@ -1,0 +1,575 @@
+# The words of an expedition report (expedition_type 2 in the cfg): the frame is fixed, these fill it in. Edit freely;
+# no build is needed, the station reads this file as it is. A line is "<kind> <job> [<band>] | <words>". Where a job
+# has several lines of a kind, one is picked at random, so the same job doesn't read the same twice. "\n" in a line is a
+# line break: break a long line where the sense breaks (the style guide's layout rule).
+#
+#   frame | <setup, ending "the crew">         the line before what the crew did: heromedel's ("Due to events during
+#                                              the assignment the crew") half the time, else one of these general ones
+#   frame <job> | <setup, ending "the crew">   the job's own setups (and sector-marked ones), used half the time: the
+#                                              setup, never the news; every one has to read well before every event line
+#                                              of its job, say nothing an event line says, and mention nothing it
+#                                              hasn't introduced itself ("the enemy", "the quarry") beyond what any
+#                                              hired crew has (a client, the job, the route)
+#   event <job> | <what the crew did>          after the frame; several per job
+#   band <job> <band> | <phrase>               after a name: "Bob <phrase>." Bands: died, injured, failed, success, high, top
+#                                              (top: "and brought back <item>" is added when a 20 found something)
+#   hazard <hazard> | <sentence>               flare, asteroids, pulsar, storm (nebula only), battery (rebel space
+#                                              only)
+#   hacked | <sentence>                        after the battery's line when an Engi hacked it ({name}: the Engi)
+#   prize <job> <kind> | <sentence>            hijack ship, hijack part, salvage part, rescue recruit ({name}: the ship's
+#                                              name and class, the part's system, or the recruit's name and race)
+#   captured | <phrase>                        after a name, taken on Get Boarded (a ransom letter always follows)
+#   infirmary | <phrase>                       after a name, badly hurt: in the infirmary a while
+#   offer <sector> | <words>                   the card on the board for a sector; several per sector
+#   shrug <hazard> <race> | <sentence>         after a crew member's line when their race shrugged the hazard off
+#                                              (not for the dead, the taken, the infirmary or the injured)
+#   band <job> injured cause | <phrase>        an injury that names a cause other than any hazard: drawn with the
+#                                              others, and alone for someone hurt whose race shrugged the hazard off
+#
+# Marked lines: any key but an offer can end in a sector ("event defend zoltan | ..."), and that line joins the
+# unmarked ones only in that sector. Captured lines are marked by who took them instead: slavers, pirates, rebels or
+# mantis (the same captors who sign the ransom letter). In a line after a name, {he} {him} {his} become she, her, her
+# for a woman ({He} {His} to begin a sentence). Every line finishes its thought: a reader should never be left
+# asking "decide what?".
+# "\n" in a line is a line break: break a long line where the sense breaks (the style guide's layout rule).
+#
+# Jobs: defend attack negotiate boarded rescue salvage scout repair transport lost escort capture board hijack infection spiders
+# Sectors: civilian engi zoltan mantis pirate rebel rock nebula abandoned crystal
+
+frame | Due to events during the assignment the crew
+frame | Over the course of the assignment the crew
+frame | From what the station could piece together, the crew
+frame | As far as anyone at the station can tell, the crew
+frame | According to the detail's own account, the crew
+frame | The detail's log, once it was decoded, says the crew
+
+frame defend | After unknown ships were sighted at the next beacon, the crew
+frame defend | With the nearest Federation patrol days away, the crew
+frame defend rock | Since the Rock trust outsiders with nothing but the dangerous work, the crew
+frame defend | With nothing but a borrowed turret and their own sidearms, the crew
+frame defend | Once the local militia had run out of people willing to stand watch, the crew
+frame defend | When a prisoner boasted that his friends would return, the crew
+frame defend | Paid in advance, which should have been a warning, the crew
+frame defend | With the rebel fleet's advance drawing every armed ship away, the crew
+frame defend | After a day of distress calls from across the system, the crew
+
+frame attack | Once Federation intelligence had a location, the crew
+frame attack | After one raid too many, the crew
+frame attack rebel | Under orders that came straight from The Federation Home Planet, the crew
+frame attack | After a raid took a hospital ship and everyone aboard, the crew
+frame attack | When a prisoner traded a location for his freedom, the crew
+frame attack | With the assault already planned and short of hands, the crew
+frame attack | Because a Federation convoy was due through in two days and the way had to be clear, the crew
+frame attack | Once the scrap on offer was enough to make everyone forget the risk, the crew
+
+frame negotiate | With both sides' guns already warm, the crew
+frame negotiate | Because nobody else in the sector was trusted by both sides, the crew
+frame negotiate zoltan | Since the Zoltan will only deal with those who come unarmed, the crew
+frame negotiate | After the last mediator went home with a broken jaw, the crew
+frame negotiate | Since talking costs less than missiles, the crew
+frame negotiate | With a whole colony waiting on the outcome, the crew
+frame negotiate | Because a single shot would have started a war nobody could afford, the crew
+frame negotiate | When both sides agreed on exactly one thing, that outsiders should do the talking, the crew
+
+frame boarded | When an unmarked ship matched course and stopped answering hails, the crew
+frame boarded | Halfway through what had been a quiet run, the crew
+frame boarded | Shortly after the sensors picked up a ship running dark, the crew
+frame boarded | Two days into a run that had been sold to them as safe, the crew
+frame boarded | With the freighter's own weapons removed to make room for cargo, the crew
+frame boarded | When the captain decided to save fuel by skipping the patrolled beacons, the crew
+frame boarded | Shortly after a stranger asked a few too many questions at the last store, the crew
+frame boarded | Though the owner swore nobody knew what the ship carried, the crew
+
+frame rescue | Although cries for help out here are often traps, the crew
+frame rescue | Because they were the only ship within a day's jump, the crew
+frame rescue | With a family offering everything they owned, the crew
+frame rescue | Because the Federation still remembers who came when it was called, the crew
+frame rescue | Hearing that whoever was left had perhaps a day of air, the crew
+frame rescue | Since the official rescue ship had been called away to the front, the crew
+frame rescue | Though the odds were poor and the pay was poorer, the crew
+
+frame salvage | Following a salvage claim bought cheap from a trader who seemed glad to be rid of it, the crew
+frame salvage | With The Home Planet Station's Junkyard short of parts, the crew
+frame salvage | After a long-range scan turned up something metal where the charts showed nothing, the crew
+frame salvage | With scrap prices up across the sector, the crew
+frame salvage | Because whoever got there second would get nothing, the crew
+frame salvage | Acting on a tip from a Slug who wanted a cut, the crew
+frame salvage | Needing scrap more than they needed caution, the crew
+
+frame scout | Because the old charts of the sector could no longer be trusted, the crew
+frame scout | With the war changing the map every week, the crew
+frame scout | With the sector's beacons going quiet one after another, the crew
+frame scout | Since one small ship is easier to lose than a fleet, the crew
+frame scout | When a trader's map showed systems nobody else had heard of, the crew
+frame scout | Because Federation command wanted eyes on the sector before committing a ship, the crew
+frame scout | With a borrowed ship and very little fuel, the crew
+
+frame repair | Since no shipyard would come out this far, the crew
+frame repair | With supplies scarce and the nearest store sold out, the crew
+frame repair | After the local mechanics walked out over unpaid wages, the crew
+frame repair | With nobody qualified within three jumps, the crew
+frame repair | Working from a manual written in three languages, none of them complete, the crew
+frame repair | Brought in after two other crews had made things worse, the crew
+frame repair | Since everything out here runs on salvage and hope, the crew
+
+frame transport | With every regular freighter in the sector already booked, the crew
+frame transport | Because the job could not wait for a proper convoy, the crew
+frame transport | With the route running past three known pirate haunts, the crew
+frame transport | Because the client wanted people who asked no questions, the crew
+frame transport | After the last ship on the same route disappeared, the crew
+frame transport | With a delivery date that left no room for detours, the crew
+frame transport | Once the client had offered a bonus for speed, the crew
+
+frame lost | Somewhere past the edge of the known lanes, the crew
+frame lost | On what should have been the simplest leg of the trip, the crew
+frame lost | After the navigation computer took a hit it never quite recovered from, the crew
+frame lost | Trusting directions from a trader they had only just met, the crew
+frame lost | With the local beacon flickering in and out, the crew
+frame lost | Short of fuel and too proud to turn back, the crew
+frame lost | Taking a shortcut that looked fine on paper, the crew
+
+frame escort | Because the rebel fleet's advance had pulled the regular patrols away, the crew
+frame escort | For a fee that seemed generous until they saw the route, the crew
+frame escort | Because the last guards on the route had come home without their charge, the crew
+frame escort | After the regular guards turned back at the sector border, the crew
+frame escort | Since nobody would make the trip unguarded, the crew
+frame escort | Hired at the last minute when the usual guards failed to show, the crew
+frame escort | With rumours of raiders at every stop along the route, the crew
+
+frame capture | With a bounty posted at every store in the sector, the crew
+frame capture | Because a dead quarry would pay nothing, the crew
+frame capture | When a dock worker sold them the quarry's next stop, the crew
+frame capture | Because the one they were hunting had made enemies faster than friends, the crew
+frame capture | With the Federation's own hunters busy elsewhere, the crew
+frame capture | After two crews before them had come back empty-handed, the crew
+frame capture | Following a trail of rumours from store to store, the crew
+
+frame board | Hired by a convoy that had been shadowed for three days by the same silent ship, the crew
+frame board | Sent by a colony that wanted back what had been taken from it, the crew
+frame board | After a merchant's cargo was stolen in the night and the thieves were traced, the crew
+frame board | With a Federation warrant to seize any vessel running dark, the crew
+frame board | Rather than fight a battle between ships they could not win, the crew
+frame board | Because a ship blown apart tells no one what she was carrying, the crew
+frame board | With a bounty offered for a ship and her captain together, the crew
+
+frame hijack | With forged docking papers and a story they had rehearsed twice, the crew
+frame hijack | Timing it for when the dockyard was emptiest, the crew
+frame hijack | With a buyer already waiting at the next beacon, the crew
+frame hijack | With the dock's guards changing shift every few hours, the crew
+frame hijack | Working for someone with a grudge and a good price, the crew
+frame hijack | Armed with security codes bought from a dock worker, the crew
+frame hijack | Since the Federation needed a ship whose owners would not sell, the crew
+
+frame infection | With the local medics already sick themselves, the crew
+frame infection | Because every medbay in the sector was full, the crew
+frame infection | After the first supply ship to visit came back with half its crew sick, the crew
+frame infection | Wearing suits that had not been tested in years, the crew
+frame infection | Because nobody else would go near the place, the crew
+frame infection | With the Federation threatening to seal the place off for good, the crew
+frame infection | Following a medic who had already lost her own crew to it, the crew
+
+frame spiders | Having been told the job was quiet and the pay was good, the crew
+frame spiders | Against the advice of everyone who had been there before, the crew
+frame spiders | After the last team sent in stopped reporting, the crew
+frame spiders | Laughing off the stories they had heard at the last store, the crew
+frame spiders | Promised a bonus for every nest they destroyed, the crew
+frame spiders | Following tracks far too large for anything they had seen before, the crew
+frame spiders | With people going missing one by one, the crew
+
+offer civilian | A trading post is short of hands.
+offer civilian | A colony has put out word for help.
+offer civilian | Work on offer along the trade lanes.
+offer civilian | A merchant guild is hiring crews by the job, and paying on their return.
+offer civilian | A mining colony wants extra hands until its own crews come home.
+offer engi | An Engi outpost is taking on crew.
+offer engi | The Engi have work, for those who can follow instructions.
+offer engi | An Engi trade station needs crew for work its own drones can't do.
+offer engi | The Engi have posted a job in exact detail, with nothing about why.
+offer zoltan | A Zoltan envoy is hiring an escort.
+offer zoltan | The Zoltan Monks have posted for help.
+offer zoltan | A Zoltan colony is asking for outsiders, politely, and only once.
+offer zoltan | The Zoltan want crew for a task they will explain on arrival.
+offer mantis | Someone is paying well for crew willing to go into Mantis space.
+offer mantis | A convoy needs hands before it crosses Mantis territory.
+offer mantis | A Mantis captain who trades instead of raiding is hiring outsiders.
+offer mantis | Good money is on offer for anyone who can stand Mantis space for a few days.
+offer pirate | A merchant wants crew for a run through pirate space. No questions asked.
+offer pirate | Pay offered for a job near the pirates' haunts.
+offer pirate | A pirate captain is hiring through a go-between, and promises nobody will be shot at.
+offer pirate | A smuggler needs a crew who can keep their mouths shut.
+offer rebel | The Federation is hiring for work in a sector the rebels hold.
+offer rebel | A Federation contact needs crew in rebel space.
+offer rebel | Federation intelligence needs a crew that can pass for traders in rebel space.
+offer rebel | A resistance cell behind rebel lines has asked for help.
+offer rock | A Rock clan has work for outsiders, for once.
+offer rock | Crew wanted for a job in Rock territory.
+offer rock | A Rock mining clan is short of hands small enough for its narrower tunnels.
+offer rock | The Rock want outsiders for a job they won't do themselves, which says something.
+offer nebula | A freighter line wants hands in a nebula.
+offer nebula | Work in a nebula, for crew who don't mind the dark.
+offer nebula | A Slug trader is hiring, and says the work is simple. Slugs always say that.
+offer nebula | A research team inside the nebula needs crew to keep their station running.
+offer abandoned | A salvager is taking on crew for an abandoned sector.
+offer abandoned | Someone wants a look at a sector the Lanius have been through.
+offer abandoned | The last few families of an old colony want an escort out.
+offer abandoned | Someone is paying for news of what is left in a sector the Lanius have stripped.
+offer crystal | Word has come, by a roundabout way, of work in Crystal space.
+offer crystal | A message reached the station in no language anyone uses, with coordinates and a promise of pay.
+offer crystal | Someone in Crystal space is hiring, and the station still can't tell who.
+
+event defend | were hired to hold a trading station against raiders who wanted everything in her stores
+event defend | stood guard over a convoy under attack
+event defend | held a colony's landing pad through a long night
+event defend engi | were posted to an Engi supply station that a Mantis raider kept coming back to
+event defend zoltan | stood guard over a Zoltan monastery whose monks would not lift a hand to save it
+event defend rock | helped a Rock outpost hold its mine against raiders who wanted the ore
+band defend died | was killed holding the line
+band defend died | was killed when the raiders broke through {his} section
+band defend injured | was injured holding the line
+band defend injured | was injured, and stayed at {his} post until it was over
+band defend injured cause | was injured when a raider got close enough to use a knife
+band defend failed | fell back when the raiders pushed
+band defend failed | left {his} post when the raiders pushed, and the others had to cover the gap
+band defend success | was successful holding the line
+band defend success | was successful, and {his} part of the line held
+band defend high | was very successful: the raiders broke on {his} position
+band defend high | was very successful: no raider got within reach of what {he} was guarding
+band defend top | was extremely successful and turned the raiders around single-handed
+band defend top | was extremely successful and is the reason there was anything left to defend
+
+event attack | were sent with a strike team against a raider base that had been bleeding the trade lanes dry
+event attack | joined a strike on a smugglers' den
+event attack rebel | joined a Federation strike on a rebel listening post
+event attack pirate | went in with a mercenary crew to burn out a pirate refuelling station
+event attack mantis | were sent to break up a Mantis hunting camp before the hunters came home
+band attack died | was killed in the attack
+band attack died | was killed in the first rush
+band attack injured | was injured in the attack
+band attack injured | was injured going in, and kept going anyway
+band attack injured cause | was injured by a mine at the base's outer door
+band attack failed | lost {his} nerve in the attack
+band attack failed | hung back when the shooting started
+band attack success | was successful in the attack
+band attack success | was successful, and was there when the base fell
+band attack high | was very successful: {he} was first through the breach
+band attack high | was very successful: the defenders fell back wherever {he} went
+band attack top | was extremely successful and led the attack home
+band attack top | was extremely successful and took the enemy's command post alone
+
+event negotiate | sat at the table while two clans argued over a mining claim
+event negotiate | were sent to talk a standoff down
+event negotiate | carried terms between two captains who wouldn't meet
+event negotiate engi | settled a trade dispute with Engi who answered every offer with a counter-offer, to the decimal
+event negotiate zoltan | spoke for a freighter crew who had parked on the doorstep of a Zoltan monastery
+event negotiate rebel | were sent to talk a rebel garrison into letting a refugee ship pass
+band negotiate died | was killed when the talks turned violent
+band negotiate died | was killed when someone at the table decided the talking was over
+band negotiate injured | was injured when the talks turned violent
+band negotiate injured cause | was injured in the scuffle that ended the first round of talks
+band negotiate failed | said the wrong thing at the table
+band negotiate failed | lost {his} temper at the table, and the talks went backwards from there
+band negotiate success | was successful at the table
+band negotiate success | was successful, and both sides walked away with something
+band negotiate high | was very successful: both sides shook on it
+band negotiate high | was very successful: {he} found the deal nobody else had seen
+band negotiate top | was extremely successful and brought both sides to terms
+band negotiate top | was extremely successful and turned old enemies into trading partners
+
+event boarded | were aboard a freighter when she was boarded
+event boarded | were on watch when boarders came through the hull
+event boarded | were asleep in their bunks when the alarms went, and the boarders were already inside
+event boarded rebel | were caught aboard a ship the rebels boarded
+event boarded mantis | were working a cargo run when a Mantis boarding party appeared in the hold
+event boarded pirate | were crewing an ore hauler when pirates cut through her airlock
+band boarded died | was killed by the boarders
+band boarded died | was killed defending the corridor to the bridge
+band boarded injured | was injured by the boarders
+band boarded injured cause | was injured holding a door until the boarders gave up on it
+band boarded failed | was driven back by the boarders
+band boarded failed | lost {his} section of the ship to the boarders
+band boarded success | was successful against the boarders
+band boarded success | was successful, and cleared the boarders from {his} deck
+band boarded high | was very successful: the boarders never got past {him}
+band boarded high | was very successful: every boarder who reached {him} regretted it
+band boarded top | was extremely successful and threw the boarders off the ship
+band boarded top | was extremely successful and had the boarders running for their own airlock
+
+event rescue | answered a distress call from a ship whose life support was failing
+event rescue | went down to a crashed ship for survivors
+event rescue | pulled the survivors out of a dying station
+event rescue nebula | went into the dark after a Slug crew who had lost power somewhere in the nebula
+event rescue rock | dug a mining crew out of a collapsed Rock tunnel
+event rescue abandoned | searched an abandoned colony for the few who had refused to leave
+band rescue died | was killed in the rescue
+band rescue died | was killed going in for one more
+band rescue injured | was injured in the rescue
+band rescue injured cause | was injured when a damaged bulkhead came down across the corridor
+band rescue failed | got lost in the wreck
+band rescue failed | could not reach the survivors in time
+band rescue success | was successful in the rescue
+band rescue success | was successful, and brought out everyone {he} could reach
+band rescue high | was very successful: everyone was brought out
+band rescue high | was very successful: {he} found survivors the others had given up on
+band rescue top | was extremely successful and carried the last one out
+band rescue top | was extremely successful and talked a trapped crew through the dark to safety
+
+event salvage | stripped a wreck for what it still had
+event salvage | picked over a derelict in a debris field
+event salvage | cut their way into an old hulk nobody had opened in years
+event salvage | salvaged a freighter that had drifted so long her name had worn off the hull
+event salvage abandoned | raced a Lanius ship to the last good parts of a gutted research station
+event salvage rebel | picked through the wreckage of a battle the Federation had lost
+band salvage died | was killed when a bulkhead gave
+band salvage died | was killed when the wreck's reactor woke up
+band salvage injured | was injured when a bulkhead gave
+band salvage injured cause | was injured cutting into a compartment that still had pressure in it
+band salvage failed | came back with nothing worth keeping
+band salvage failed | spent the whole job cutting into compartments that were already empty
+band salvage success | was successful in the salvage
+band salvage success | was successful, and filled {his} share of the hold
+band salvage high | was very successful: {he} came home with a good haul
+band salvage high | was very successful: {he} knew which panels were worth pulling
+band salvage top | was extremely successful and found the best of the wreck
+band salvage top | was extremely successful and found the one compartment nobody else had opened
+
+event scout | scouted a beacon ahead of a convoy
+event scout | ran a reconnaissance past an enemy picket
+event scout nebula | went out in a shuttle to chart a nebula's edge
+event scout rebel | flew a shuttle past the rebel fleet's outriders to count their ships
+event scout pirate | mapped the beacons a pirate gang had been using to hide
+event scout crystal | went looking for the Crystal worlds on directions that made no sense until they did
+band scout died | was killed when the shuttle was spotted
+band scout died | was killed when an enemy patrol caught the shuttle in the open
+band scout injured | was injured when the shuttle was spotted
+band scout injured cause | was injured bringing a damaged shuttle home
+band scout failed | brought back a chart nobody could read
+band scout failed | came home with nothing anyone could use
+band scout success | was successful in the reconnaissance
+band scout success | was successful, and the convoy took the route {he} charted
+band scout high | was very successful: {he} made a chart worth paying for
+band scout high | was very successful: {he} found a safe route nobody else had seen
+band scout top | was extremely successful and charted every lane in the sector
+band scout top | was extremely successful and mapped the enemy's positions without being seen
+
+event repair | patched up a station's failing systems
+event repair | were called to a freighter dead in space
+event repair | spent the job up to the elbows in an old reactor
+event repair | kept a colony's failing life support running until the parts arrived
+event repair engi | were hired by Engi engineers who needed hands, not advice, to rebuild a reactor
+event repair zoltan | rewired a Zoltan ship whose crew could power her but no longer fix her
+band repair died | was killed when the reactor flared
+band repair died | was killed when a conduit {he} was working on went live
+band repair injured | was injured when the reactor flared
+band repair injured cause | was injured by a burst coolant line
+band repair failed | made things worse, and someone else had to finish the job
+band repair failed | spent the whole job chasing a fault that was never found
+band repair success | was successful in the repairs
+band repair success | was successful, and the lights came back on
+band repair high | was very successful: what {he} fixed ran better than new
+band repair high | was very successful: {he} found the fault the last three crews had missed
+band repair top | was extremely successful and had everything running in half the time
+band repair top | was extremely successful and rebuilt the reactor better than it was first built
+
+event transport | hauled a hold full of machine parts across the sector for a buyer who had paid half up front
+event transport | flew a load of medical supplies to a colony that had run out of almost everything
+event transport | ferried passengers who wouldn't say where they were going
+event transport engi | carried a sealed Engi cargo that the Engi would weigh but never describe
+event transport rebel | ran supplies through rebel space to a Federation outpost that was still holding out
+event transport rock | hauled ore for a Rock clan that counted every piece at both ends
+band transport died | was killed on the run
+band transport died | was killed when raiders caught the transport between beacons
+band transport injured | was injured on the run
+band transport injured cause | was injured when the cargo shifted in a hard turn
+band transport failed | lost part of the cargo on the way
+band transport failed | signed for the wrong cargo, and nobody noticed until delivery
+band transport success | was successful on the run
+band transport success | was successful, and the cargo arrived as promised
+band transport high | was very successful: the cargo came in early
+band transport high | was very successful: {he} found a shorter route and took it
+band transport top | was extremely successful and brought the cargo in untouched
+band transport top | was extremely successful and talked the buyer into paying extra
+
+event lost | explored around the beacon after the jump, lost their bearings, and spent days finding their way back to it
+event lost | got turned around in the dark and ran low on everything
+event lost | lost the beacon and drifted a long while
+event lost nebula | lost every sensor reading in the nebula and flew on guesswork
+event lost abandoned | followed an old chart through abandoned space to beacons that weren't there any more
+event lost crystal | chased a signal into Crystal space and could not find the way out again
+band lost died | was lost and never found
+band lost died | was killed before the way home was found
+band lost injured | was injured finding the way back
+band lost injured cause | was injured scavenging parts to keep the ship going
+band lost failed | made the wrong call at every turn
+band lost failed | was sure of the way home, and was wrong every time
+band lost success | was successful in finding the way back
+band lost success | was successful, and kept everyone calm until the beacon was found
+band lost high | was very successful: it was {his} chart that got everyone home
+band lost high | was very successful: {he} spotted the beacon before the sensors did
+band lost top | was extremely successful and found a beacon no one knew of
+band lost top | was extremely successful and found a faster route than the one they had lost
+
+event escort | escorted a merchant through a stretch of space where ships kept going missing
+event escort | rode shotgun on a slow freighter
+event escort | saw an envoy's ship through hostile space
+event escort zoltan | flew escort for a Zoltan peace envoy whose crew insisted they needed no escort
+event escort mantis | took a refugee convoy through Mantis hunting grounds
+event escort pirate | escorted a merchant who was sure the pirates had been paid off, and was wrong
+band escort died | was killed in the escort
+band escort died | was killed drawing fire away from the ship {he} was guarding
+band escort injured | was injured in the escort
+band escort injured cause | was injured when the raiders turned on the escort instead
+band escort failed | lost sight of the ship {he} was guarding
+band escort failed | was too slow to stop the raiders reaching the ship {he} was guarding
+band escort success | was successful in the escort
+band escort success | was successful, and the ship arrived safely
+band escort high | was very successful: the ship {he} guarded came through without a scratch
+band escort high | was very successful: the raiders took one look at {him} and went elsewhere
+band escort top | was extremely successful and saw the ship through a running fight
+band escort top | was extremely successful and turned a convoy's worst day into an uneventful one
+
+event capture | were sent to take a wanted captain alive
+event capture | laid an ambush for a smuggler who had been running guns to the rebels
+event capture | hunted a deserter across three beacons
+event capture rock | were hired by a Rock clan to bring back one of its own, who had run off with the clan's ship
+event capture zoltan | were sent to bring in a Zoltan who had stolen from a monastery and would not say why
+event capture rebel | went after a rebel officer who knew where the fleet would move next
+band capture died | was killed in the capture
+band capture died | was killed when the quarry turned and fought
+band capture injured | was injured in the capture
+band capture injured cause | was injured wrestling the quarry to the deck
+band capture failed | let the quarry slip
+band capture failed | followed the wrong ship for two days
+band capture success | was successful in the capture
+band capture success | was successful, and the quarry is in custody
+band capture high | was very successful: the quarry gave up without a fight
+band capture high | was very successful: {he} was waiting where the quarry ran
+band capture top | was extremely successful and brought the quarry in alone
+band capture top | was extremely successful and took the quarry without firing a shot
+
+event board | boarded a ship that wouldn't answer hails
+event board | forced an airlock on an enemy vessel and fought their way along her corridors
+event board | were put aboard a pirate ship to take her bridge
+event board rebel | boarded a rebel supply ship to take her before she could call for help
+event board rock | boarded a Rock pirate ship and found out why so few crews try
+event board mantis | went aboard a Mantis raider while her crew were away on a raid of their own
+band board died | was killed in the boarding
+band board died | was killed in the fighting for the engine room
+band board injured | was injured in the boarding
+band board injured cause | was injured clearing the ship one room at a time
+band board failed | was pushed back to the airlock
+band board failed | was cut off from the others and had to fall back
+band board success | was successful in the boarding
+band board success | was successful, and {his} half of the ship was taken
+band board high | was very successful: {he} took the bridge
+band board high | was very successful: the enemy crew surrendered to {him}
+band board top | was extremely successful and took the ship nearly single-handed
+band board top | was extremely successful and had the enemy crew locked in their own brig
+
+event hijack | were hired to steal a ship from her moorings
+event hijack | went after a ship someone wanted very badly, and would not say why
+event hijack | slipped aboard a ship at anchor to take her
+event hijack pirate | were hired to take back a ship the pirates had taken first
+event hijack engi | were hired to take an Engi ship whose crew trusted her locks a little too much
+event hijack rebel | were sent to steal a ship out from under a rebel garrison
+band hijack died | was killed before the ship was clear
+band hijack died | was killed by a security drone in the docking bay
+band hijack injured | was injured before the ship was clear
+band hijack injured cause | was injured getting through the ship's locks
+band hijack failed | tripped every alarm aboard
+band hijack failed | was spotted at the airlock, and the job fell apart from there
+band hijack success | was successful in the hijack
+band hijack success | was successful, and the ship was taken
+band hijack high | was very successful: the ship was away before anyone noticed
+band hijack high | was very successful: {he} had the locks open before the guards changed
+band hijack top | was extremely successful and had the ship out of dock in minutes
+band hijack top | was extremely successful and left the owners thinking the ship had never been there
+
+event infection | were sent into a station under quarantine
+event infection | dealt with something that had got loose in a ship's vents
+event infection | cleared a colony of a sickness nobody would name
+event infection engi | chased a virus through an Engi station's nanobots before it could rewrite anyone else
+event infection zoltan | helped Zoltan healers hold back a sickness that was draining their people's light
+event infection abandoned | went into a sealed colony to find out why nobody had come out
+band infection died | was killed by the infection
+band infection died | was killed by the sickness before a cure could be found
+band infection injured | was injured by the infection
+band infection injured cause | was injured by the infected, who no longer knew what they were doing
+band infection failed | came out of it too weak to be of use
+band infection failed | spent the job sealing doors that would not stay sealed
+band infection success | was successful against the infection
+band infection success | was successful, and the quarantine held
+band infection high | was very successful: the outbreak was declared over
+band infection high | was very successful: {he} kept the sickness from spreading past the first deck
+band infection top | was extremely successful and found where it had come from
+band infection top | was extremely successful and found a cure the local doctors had missed
+
+event spiders | dropped down to a planet and were attacked by Giant Spiders
+event spiders | went into a derelict and found it full of Giant Spiders
+event spiders | were cornered by Giant Spiders in a station's lower decks
+event spiders | answered a mining colony's call for help against Giant Spiders coming up out of the shafts
+event spiders rock | went down a Rock mine where the miners had broken into a nest of Giant Spiders
+event spiders engi | cleared Giant Spiders out of an Engi greenhouse dome before they ate their way to the crew quarters
+band spiders died | was killed by the spiders
+band spiders died | was killed when the spiders came out of the walls
+band spiders injured | was killed by the spiders
+band spiders injured | was bitten, and the venom did the rest
+band spiders failed | ran, and nobody blames {him}
+band spiders failed | refused to go any further into the dark, and nobody blames {him}
+band spiders success | was successful fighting them back
+band spiders success | was successful, and kept the spiders off the others
+band spiders high | was very successful: the spiders went back down the hole
+band spiders high | was very successful: {he} killed the biggest of them
+band spiders top | was extremely successful and burned the nest out
+band spiders top | was extremely successful and burned out every nest {he} found
+
+hazard flare | A solar flare caught them halfway through.
+hazard flare | They worked too close to a star, and the flares set fires faster than they could put them out.
+hazard flare | The star flared twice while they were at it, and everything that could burn did.
+hazard flare | A solar flare scorched the hull and lit fires on three decks.
+hazard asteroids | Asteroids kept striking the shields from the moment they arrived until the moment they left.
+hazard asteroids | Asteroids hammered the shields from start to finish.
+hazard asteroids | They spent as much time dodging asteroids as working.
+hazard pulsar | A pulsar's electromagnetic pulses had their systems down again and again.
+hazard pulsar | A nearby pulsar knocked the power out with every pulse.
+hazard pulsar | Their work was slowed by each wave of energy from the pulsar.
+hazard storm | A plasma storm held their reactor at half power for most of the job.
+hazard storm | A plasma storm rolled in on the first day, and their reactor never ran above half until it passed.
+
+hazard battery | A rebel Anti-Ship Battery on the planet below kept them under fire from start to finish.
+hazard battery | Every few hours the planet's Anti-Ship Battery locked on, and everyone aboard braced for the hit.
+hazard battery | The rebels' planetary guns found their range on the first day and never lost it.
+hacked | Then {name} turned the ship's Hacking system on the battery's targeting, and it never found them again.
+hacked | {name} turned the ship's Hacking system on the battery, and it stopped firing entirely.
+shrug flare rock | The fires never bothered {him}; Rock doesn't burn.
+shrug flare rock | {His} part of the ship was on fire twice, and {he} worked straight through it both times.
+shrug flare anaerobic | Every fire that reached {his} room went out on its own.
+shrug flare anaerobic | The one room aboard where nothing burned was {his}.
+shrug asteroids energy | With {him} feeding power to the shields, the asteroids never got through.
+shrug asteroids energy | {His} own power kept the shields up whenever the reactor faltered.
+shrug pulsar engi | Each time the pulsar knocked a system out, {he} got it back online as fast as {he} could.
+shrug storm slug | With the reactor at half, {he} could feel every ship moving in the clouds, so they kept out of the way of anyone who might notice how weak they were.
+shrug storm slug | The storm left their sensors blind, but {he} never needed them; {he} knew where every crew in the nebula was and steered them around the lot.
+
+captured | was last seen being carried through the boarders' airlock.
+captured | was taken by the boarders. The crew hope {he}'s all right out there.
+captured | was taken by the boarders. You may never see {him} again.
+captured slavers | was taken by slavers, to be sold to whoever pays the most.
+captured pirates | was dragged aboard the pirate ship before it broke away.
+captured rebels | was taken by the rebels for questioning.
+captured mantis | was taken by Mantis instead of being killed immediately.
+
+infirmary | was badly hurt and is in the infirmary.
+infirmary | was carried to the infirmary when they docked.
+infirmary | came home on a stretcher and went straight to the infirmary.
+infirmary | is in the infirmary, and will be for a while.
+
+prize hijack ship | They brought the ship home: {name}.\nShe's moored at the station until you decide whether she joins the fleet, goes to the Junkyard, or is let go.
+prize hijack ship | They didn't come home on the shuttle. They came home in {name},\nmoored at the station until you decide whether she joins the fleet, goes to the Junkyard, or is let go.
+prize hijack part | The alarms went before she cleared her moorings,\nbut they pulled her {name} system out before they ran.
+prize hijack part | She was too badly shot up to fly home, so they took her {name} system and left the rest.
+prize hijack part | Her owners came back sooner than expected.\nThe crew left with her {name} system and nothing else.
+prize salvage part | They pulled a whole system out of the wreck.
+prize salvage part | They cut the wreck's {name} system free and brought it home. It's seen some damage.
+prize salvage part | The wreck's {name} system came home with them, damaged but worth fitting.
+prize rescue recruit | One of those they rescued, {name}, asked to sign on.\nThey wait in The Station Lounge for your word.
+prize rescue recruit | They came back with one more than they left with: {name},\nwho asks to sign on and waits in The Station Lounge.

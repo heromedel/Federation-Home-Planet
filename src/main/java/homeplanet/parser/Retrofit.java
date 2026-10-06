@@ -49,6 +49,22 @@ public class Retrofit {
 	}
 
 	/** The standard systems of the ship's original model that aren't installed (empty = Undo Retrofit is safe). */
+	/**
+	 * Her installed systems that her original model has no room for (artillery on anything but a Federation Cruiser: a
+	 * remodel can add it, the vanilla blueprint can't hold it). An Undo Retrofit takes these off her into the stored
+	 * systems, or FTL would be handed a system with nowhere to be.
+	 */
+	public static List<SystemType> homeless(ShipState ship) {
+		List<SystemType> out = new ArrayList<SystemType>();
+		ShipBlueprint bp = ship(vanillaId(ship.getShipBlueprintId()));
+		if (bp == null || bp.getSystemList() == null) return out;
+		for (SystemType t : SystemType.values()) {
+			if (!installed(ship, t)) continue;
+			ShipBlueprint.SystemList.SystemRoom[] r = bp.getSystemList().getSystemRoom(t);
+			if (r == null || r.length == 0) out.add(t);
+		}
+		return out;
+	}
 	public static List<String> missingStandard(ShipState ship) {
 		List<String> missing = new ArrayList<String>();
 		ShipBlueprint bp = ship(vanillaId(ship.getShipBlueprintId()));
@@ -123,14 +139,22 @@ public class Retrofit {
 	public static void switchTo(SavedGameState save, String bpId) { switchTo(save, bpId, 0, 0); }
 	/** As above; dx, dy: how far (in squares) the old rooms moved in the new layout's coordinates (an overhaul can shift them). */
 	public static void switchTo(SavedGameState save, String bpId, int dx, int dy) {
+		net.blerf.ftl.model.shiplayout.ShipLayout oldLay = null;
+		try { oldLay = DataManager.get().getShipLayout(save.getPlayerShip().getShipLayoutId()); } catch (Exception e) { log.debug("Retrofit: her old layout {} could not be read: {}", save.getPlayerShip().getShipLayoutId(), e.toString()); }
+		switchTo(save, bpId, dx, dy, oldLay);
+	}
+	/**
+	 * As above, with her old layout as it was before the new blueprint was registered: a re-finalized remodel keeps
+	 * its layout id, so once registered the id names the new rooms, and reading "her old layout" by id would compare
+	 * the new rooms with themselves and leave her room states at the old shape. The caller reads it first.
+	 */
+	public static void switchTo(SavedGameState save, String bpId, int dx, int dy, net.blerf.ftl.model.shiplayout.ShipLayout oldLay) {
 		ShipState ship = save.getPlayerShip();
 		ship.setShipBlueprintId(bpId);
 		save.setPlayerShipBlueprintId(bpId);
 		ShipBlueprint bp = ship(bpId);
 		if (bp == null) return;
 		String layoutId = bp.getLayoutId();
-		net.blerf.ftl.model.shiplayout.ShipLayout oldLay = null;
-		try { oldLay = DataManager.get().getShipLayout(ship.getShipLayoutId()); } catch (Exception e) { log.debug("Retrofit: her old layout {} could not be read: {}", ship.getShipLayoutId(), e.toString()); }
 		ship.setShipLayoutId(layoutId);
 		net.blerf.ftl.model.shiplayout.ShipLayout lay = DataManager.get().getShipLayout(layoutId);
 		if (lay == null) return;

@@ -24,8 +24,8 @@ import homeplanet.vault.Vault;
  * The Junkyard's parts for sale: two to five damaged systems pulled from wrecks, mostly low levels, priced by how
  * broken they are: a part with one bar of five broken sells near its worth (its broken bars off), a part broken through
  * for a third to a half of it. One in CLEARANCE_ONE_IN is a clearance, 10% off. Bought with scrap from the Cargo Hold, a part
- * goes to the stored systems, broken bars and all. Piloting, Oxygen and Engines parts are worth CORE_PART at level 1
- * (FTL prices them as next to nothing, being standard). One set in SALVAGE_ONE_IN also has a piece of salvage: most
+ * goes to the stored systems, broken bars and all. A part's worth is its price as Commission counts it, at the difficulty's
+ * rate (Pricing.rate; the rolls and the clearance come off that). One set in SALVAGE_ONE_IN also has a piece of salvage: most
  * often missiles, fuel or drone parts, sometimes a weapon, drone or augment, at 40-70% of FTL's store price, to the
  * Cargo Hold. New ones come in after 5 to 15 beacons the fleet travels.
  * Kept in the fleet's parts.txt.
@@ -43,8 +43,8 @@ public final class Parts {
 	static int shareMax(double broken) { return (int) Math.round(95 - 45 * broken); }
 	/** One part in this many is a clearance (the foreman wants it gone): this much off its price. */
 	public static final int CLEARANCE_ONE_IN = 12, CLEARANCE_OFF = 10;
-	/** A Piloting, Oxygen or Engines part at level 1 (FTL's upgrade costs on top). */
-	public static final int CORE_PART = 150;
+	/** A Piloting, Oxygen or Engines part at level 1 (FTL's upgrade costs on top): the same price everywhere. */
+	public static final int CORE_PART = Pricing.CORE_SYSTEM;
 	/** One set in this many has a piece of salvage; one piece in GEAR_ONE_IN is a weapon, drone or augment. */
 	public static final int SALVAGE_ONE_IN = 5, GEAR_ONE_IN = 4;
 	/** Salvage sells at this share of FTL's store price. */
@@ -175,17 +175,9 @@ public final class Parts {
 		if (ITEM.equals(kind)) return Pricing.item(id);
 		return count * (FUEL.equals(kind) ? Pricing.FUEL : MISSILES.equals(kind) ? Pricing.MISSILE : Pricing.DRONE_PART);
 	}
-	/** What a part is worth whole: FTL's price and upgrades, or CORE_PART and upgrades for Piloting, Oxygen and Engines. */
+	/** What a part is worth whole and new: its price as Commission counts it (CORE_PART and upgrades for Piloting, Oxygen and Engines), at the difficulty's rate. */
 	public static int worth(String id, int level) {
-		for (SystemType t : Pricing.CORE) if (t.getId().equals(id)) {
-			// FTL's upgrade costs read directly: Oxygen has no price of its own, so Pricing.system gives it a flat one without them
-			int p = CORE_PART;
-			SystemBlueprint b = DataManager.get().getSystem(id);
-			List<Integer> up = b == null ? null : b.getUpgradeCosts();
-			for (int l = 2; l <= level && up != null && l - 2 < up.size(); l++) p += up.get(l - 2);
-			return p;
-		}
-		return Pricing.system(id, level);
+		return Pricing.rated(Pricing.system(id, level));
 	}
 
 	/** Its worth with its broken bars off, at this share, 10% less for a clearance; never under 5. */
@@ -227,6 +219,7 @@ public final class Parts {
 		p.setProperty(l.index + ".open", "false");
 		try { write(v, p); }
 		catch (IOException e) { log.warn("Could not mark part {} sold: {}", l.index, e.toString()); } // bought all the same: at worst it's offered again
+		ThirdFleet.partBought(v); // the Third Fleet Commander needn't point the way to them
 		HistoryLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard" + (l.clearance ? " on clearance" : "") + ", for " + l.price + " scrap from the Cargo Hold");
 	}
 

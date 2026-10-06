@@ -26,8 +26,25 @@ public final class Pricing {
 
 	/** A system with no price of its own (FTL's subsystems in some designs, a system a mod adds): what the station charges. */
 	public static final int UNPRICED_SYSTEM = 25;
-	/** Custom designs: each room and door the shipyard builds. */
-	public static final int PER_ROOM = 10, PER_DOOR = 5;
+	/**
+	 * Piloting, Oxygen and Engines at level 1 (heromedel's price, everywhere; FTL prices them as next to nothing, being
+	 * standard): what Commission charges and what a Junkyard part is worth, FTL's upgrade costs on top.
+	 */
+	public static final int CORE_SYSTEM = 150;
+	/**
+	 * Her hull, strictly counted (heromedel, 5.00): each point of her model's hull, each room her blueprint reserves for a
+	 * system (a tenth of that system's level-1 price), each room without one, and each door.
+	 */
+	public static final int HULL_POINT = 10, SYSTEM_ROOM_PERCENT = 10, EMPTY_ROOM = 2, DOOR = 2;
+	/**
+	 * The rate the difficulty sets on a ship's price, wherever one is counted: Commission, the plea, what she's worth at
+	 * Trade In, Auction, the museum and a final victory, and the Junkyard's parts and derelicts (before the Junkyard's own
+	 * discounts). Easy 50, Normal 75, Hard 100; Custom and Sandbox choose. Never the stores' prices: buying and repairing
+	 * in the Cargo Bay cost the same on every difficulty.
+	 */
+	public static int rate() { return homeplanet.core.Economy.commissionPercent(); }
+	/** A price at the rate, to the nearest scrap. */
+	public static int rated(int price) { return (price * rate() + 50) / 100; }
 	/** An artillery weapon with no price (the Federation cruiser's): what the station charges for it. */
 	public static final int UNPRICED_ARTILLERY = 100;
 	/** Artillery guns are a luxury (heromedel's prices): the Artillery Beam, the Type C's Flak Artillery, and each of the Rebel Flagship's weapons. */
@@ -41,11 +58,12 @@ public final class Pricing {
 		return w != null && w.getCost() > 0 ? w.getCost() : UNPRICED_ARTILLERY;
 	}
 
-	/** A system at a level: its price plus each upgrade to that level. UNPRICED_SYSTEM if FTL gives it no price. */
+	/** A system at a level: its price plus each upgrade to that level; CORE_SYSTEM for Piloting, Oxygen and Engines; UNPRICED_SYSTEM if FTL gives it no price. */
 	public static int system(String id, int level) {
 		SystemBlueprint b = DataManager.get().getSystem(id);
-		if (b == null || b.getCost() <= 0) return UNPRICED_SYSTEM;
-		int p = b.getCost();
+		boolean core = isCore(id);
+		if (b == null || (b.getCost() <= 0 && !core)) return UNPRICED_SYSTEM;
+		int p = core ? CORE_SYSTEM : b.getCost();
 		List<Integer> up = b.getUpgradeCosts();
 		for (int l = 2; l <= level && up != null && l - 2 < up.size(); l++) p += up.get(l - 2);
 		return p;
@@ -73,8 +91,6 @@ public final class Pricing {
 	public static int hullRepair() { return HULL_REPAIR; }
 	/** Mending one broken bar of a system, and sealing one hull breach, in the Dry Dock. */
 	public static final int SYSTEM_REPAIR = 5, BREACH_REPAIR = 5;
-	/** A custom work order: The Home Planet Station fits a system past FTL's System Limit (heromedel: always 100, whatever the system). */
-	public static final int WORK_ORDER = 100;
 	/** Her systems past FTL's System Limit, each a custom work order (a design can start with more than FTL allows). */
 	public static int workOrders(ShipState s) {
 		return Math.max(0, SaveHelper.systemCount(s) - SaveHelper.SYSTEMS_MAX);
@@ -116,18 +132,21 @@ public final class Pricing {
 	public static int supplies(ShipState s) {
 		return s.getFuelAmt() * FUEL + s.getMissilesAmt() * MISSILE + s.getDronePartsAmt() * DRONE_PART;
 	}
-	/** What she's worth to a buyer, before her hull damage: her full price (with her fuel, missiles and drone parts), crew aside (they stay with the fleet). */
+	/** What she's worth to a buyer, before her hull damage: her price at the rate (with her fuel, missiles and drone parts), crew aside (they stay with the fleet). */
 	public static int saleValue(SavedGameState gs) {
 		ShipState s = gs.getPlayerShip();
 		int crew = 0;
 		for (CrewState c : SaveHelper.getOwnCrew(s)) crew += crew(c.getRace().getId());
-		return ship(gs, 100).subtotal - crew;
+		return rated(ship(gs, 100).subtotal - crew);
+	}
+	/** Her model's full hull (what she has, when her blueprint isn't in FTL's data). */
+	public static int maxHull(ShipState s) {
+		net.blerf.ftl.xml.ShipBlueprint bp = DataManager.get().getShip(s.getShipBlueprintId());
+		return bp == null || bp.getHealth() == null ? s.getHullAmt() : bp.getHealth().amount;
 	}
 	/** Her missing hull points (her model's full hull, less what she has). */
 	public static int missingHull(ShipState s) {
-		net.blerf.ftl.xml.ShipBlueprint bp = DataManager.get().getShip(s.getShipBlueprintId());
-		int max = bp == null || bp.getHealth() == null ? s.getHullAmt() : bp.getHealth().amount;
-		return Math.max(0, max - s.getHullAmt());
+		return Math.max(0, maxHull(s) - s.getHullAmt());
 	}
 	/** Her broken system bars (each one mended in the Dry Dock for SYSTEM_REPAIR). */
 	public static int brokenBars(ShipState s) {
@@ -141,8 +160,12 @@ public final class Pricing {
 	}
 	/** A broken bar takes this much off a ship's or a part's value: 5, and 10 for Piloting, Oxygen and Engines (she can't do without them). */
 	public static int brokenBarValue(String systemId) {
-		for (SystemType t : CORE) if (t.getId().equals(systemId)) return CORE_BAR_DAMAGE;
-		return SYSTEM_REPAIR;
+		return isCore(systemId) ? CORE_BAR_DAMAGE : SYSTEM_REPAIR;
+	}
+	/** Whether this is one of the three core systems. */
+	public static boolean isCore(String systemId) {
+		for (SystemType t : CORE) if (t.getId().equals(systemId)) return true;
+		return false;
 	}
 	public static final int CORE_BAR_DAMAGE = 10;
 	/** Her broken bars, each at {@link #brokenBarValue}. */
@@ -194,25 +217,19 @@ public final class Pricing {
 	}
 
 	/**
-	 * HR2: what the shipyard charges for a new ship, as commissioned: her systems and their levels, reactor, weapons,
-	 * drones, augments (her cargo too), crew, and her fuel, missiles and drone parts. A custom design also pays for each room and door
-	 * ({@code rooms}, {@code doors}; 0 for FTL's own ships and remodels of them).
+	 * Her price, strictly counted (heromedel, 5.00): her hull (each point of it), reactor, systems and their levels,
+	 * weapons, drones and augments (her cargo too), crew at hiring price, fuel, missiles and drone parts, the scrap aboard at
+	 * face value, and her rooms and doors (each room her blueprint reserves for a system she has at a tenth of that system's
+	 * level-1 price, each other room and each door at a flat rate). The same for FTL's own ships, remodels and custom designs; the
+	 * rate ({@code percent}) is what the station charges of it.
 	 */
-	/** The same, with the rooms and doors of the custom design she was built from, if she was (none for FTL's own ships). */
 	public static Quote ship(SavedGameState gs, int percent) {
-		int rooms = 0, doors = 0;
-		String bpId = gs.getPlayerShipBlueprintId();
-		for (ShipDesign d : DesignExport.built()) {
-			if (!bpId.equals(DesignExport.bpId(d))) continue;
-			rooms = d.rooms.size();
-			doors = d.doors.size();
-		}
-		return ship(gs, rooms, doors, percent);
-	}
-	public static Quote ship(SavedGameState gs, int rooms, int doors, int percent) {
 		Quote q = new Quote();
 		q.percent = percent;
 		ShipState s = gs.getPlayerShip();
+		int hull = maxHull(s);
+		q.add("Hull (" + hull + " points)", hull * HULL_POINT);
+		q.add("Reactor (" + s.getReservePowerCapacity() + " power)", reactor(s.getReservePowerCapacity()));
 		int sys = 0;
 		for (SystemType t : SystemType.values()) {
 			SystemState st = s.getSystem(t);
@@ -220,7 +237,6 @@ public final class Pricing {
 			sys += system(t.getId(), st.getCapacity());
 		}
 		q.add("Systems and their levels", sys);
-		q.add("Reactor (" + s.getReservePowerCapacity() + " power)", reactor(s.getReservePowerCapacity()));
 		int gear = 0;
 		for (WeaponState w : s.getWeaponList()) gear += item(w.getWeaponId());
 		for (DroneState d : s.getDroneList()) gear += item(d.getDroneId());
@@ -233,18 +249,30 @@ public final class Pricing {
 		for (CrewState c : SaveHelper.getOwnCrew(s)) { crew += crew(c.getRace().getId()); n++; }
 		q.add("Crew (" + n + ")", crew);
 		q.add("Fuel, missiles and drone parts", supplies(s));
-		if (rooms > 0) q.add("Custom hull (" + rooms + " rooms, " + doors + " doors)", rooms * PER_ROOM + doors * PER_DOOR);
+		q.add("Scrap aboard", s.getScrapAmt());
+		// her rooms: the ones her blueprint reserves for a system she has (one she starts without is just a room), then the rest, then her doors
+		java.util.Set<Integer> reserved = new java.util.HashSet<Integer>();
+		int roomPrice = 0;
+		for (CompanionMod.Sys y : CompanionMod.layoutOf(DataManager.get().getShip(s.getShipBlueprintId())).values()) {
+			SystemState st = s.getSystem(SystemType.findById(y.id));
+			if (st == null || st.getCapacity() <= 0 || y.room < 0 || !reserved.add(y.room)) continue;
+			roomPrice += system(y.id, 1) * SYSTEM_ROOM_PERCENT / 100;
+		}
+		int rooms = s.getRoomList().size(), empty = Math.max(0, rooms - reserved.size());
+		q.add("Rooms with a system (" + reserved.size() + ")", roomPrice);
+		q.add("Rooms without (" + empty + ")", empty * EMPTY_ROOM);
+		q.add("Doors (" + s.getDoorMap().size() + ")", s.getDoorMap().size() * DOOR);
 		return q;
 	}
 	/**
 	 * What Commission charges for her: her price at this rate, and a custom work order for each system she starts with
-	 * past FTL's System Limit (outside the rate: always WORK_ORDER). Never part of her value, so nothing of it comes back.
+	 * past FTL's System Limit (outside the rate: Economy.commissionWorkOrder, scrap only). Never part of her value, so nothing of it comes back.
 	 */
 	public static Quote commission(SavedGameState gs, int percent) {
 		Quote q = ship(gs, percent);
 		int n = workOrders(gs.getPlayerShip());
 		if (n > 0) {
-			q.fixed = n * WORK_ORDER;
+			q.fixed = n * homeplanet.core.Economy.commissionWorkOrder();
 			q.lines.add((n == 1 ? "A custom work order (1 system" : n + " custom work orders (" + n + " systems") + " past FTL's System Limit): " + q.fixed);
 		}
 		return q;

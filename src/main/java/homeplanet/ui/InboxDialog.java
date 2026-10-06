@@ -45,6 +45,8 @@ public class InboxDialog extends JDialog {
 	private final JButton takeIt = new JButton("Accept"), elsewhere = new JButton("Deliver to another fleet..."), sendBack = new JButton("Return to sender");
 	private final JButton keep = new JButton("Keep her"), museum = new JButton("Accept the museum's offer");
 	private final JButton payRansom = new JButton("Pay"), refuseRansom = new JButton("Refuse");
+	/** An expedition's prize: a recruit to sign on or send on their way; a ship to the Space Dock, the Junkyard, or not taken. */
+	private final JButton prizeYes = new JButton("Sign them on"), prizeDock = new JButton("Space Dock"), prizeJunk = new JButton("Junkyard"), prizeNo = new JButton("Send them on their way");
 	private final javax.swing.JToggleButton inboxTab = new javax.swing.JToggleButton(), archiveTab = new javax.swing.JToggleButton(), outboxTab = new javax.swing.JToggleButton();
 	/** The Inbox and Archive share one view; the Outbox has its own. */
 	private final java.awt.CardLayout cards = new java.awt.CardLayout();
@@ -100,6 +102,10 @@ public class InboxDialog extends JDialog {
 		act.add(museum);
 		act.add(payRansom);
 		act.add(refuseRansom);
+		act.add(prizeYes);
+		act.add(prizeDock);
+		act.add(prizeJunk);
+		act.add(prizeNo);
 		act.add(archive);
 		act.add(delete);
 		act.add(takeIt);
@@ -128,6 +134,14 @@ public class InboxDialog extends JDialog {
 		payRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(true); } });
 		refuseRansom.setToolTipText("They will not be coming back");
 		refuseRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(false); } });
+		prizeYes.setToolTipText("Into the Cargo Hold");
+		prizeYes.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(0); } });
+		prizeDock.setToolTipText("Docked at the Space Dock, as she is");
+		prizeDock.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(1); } });
+		prizeJunk.setToolTipText("To the Junkyard, as she is, to be set right or scrapped");
+		prizeJunk.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(2); } });
+		prizeNo.setToolTipText("Gone for good");
+		prizeNo.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(3); } });
 		javax.swing.ButtonGroup tabs = new javax.swing.ButtonGroup();
 		tabs.add(inboxTab);
 		tabs.add(archiveTab);
@@ -244,9 +258,15 @@ public class InboxDialog extends JDialog {
 	}
 	private void deleteSelected() {
 		Transmissions.Message m = list.getSelectedValue();
-		if (m == null || !(Transmissions.isReceipt(m) || Transmissions.isNote(m) || m.key.startsWith("parcel:"))) return;
-		if (!HomePlanet.confirmNo(this, Transmissions.isNote(m) ? "Delete this message from " + m.from + "?" : "Delete this receipt?\nThe trade stays in the station's history.", "Delete")) return;
+		boolean report = m != null && m.key.startsWith("expedition:"); // an expedition report (heromedel, 5.16)
+		if (m == null || !(Transmissions.isReceipt(m) || Transmissions.isNote(m) || m.key.startsWith("parcel:") || report)) return;
+		homeplanet.parser.Assignments.Pending prize = report && homeplanet.vault.Vault.isOpen() ? homeplanet.parser.Assignments.pendingFor(homeplanet.vault.Vault.get(), m.key) : null;
+		String ask = report ? "Delete this expedition report?" + (prize == null ? "" : "ship".equals(prize.kind)
+				? "\n\nThe ship waiting on your answer is turned away with it." : "\n\nThe recruit waiting on your answer goes on their way with it.")
+				: Transmissions.isNote(m) ? "Delete this message from " + m.from + "?" : "Delete this receipt?\nThe trade stays in the station's history.";
+		if (!HomePlanet.confirmNo(this, ask, "Delete")) return;
 		try {
+			if (prize != null) homeplanet.parser.Assignments.decline(homeplanet.vault.Vault.get(), prize); // a deleted question is answered No
 			Transmissions.delete(m);
 			all.remove(m);
 		} catch (Exception e) {
@@ -256,7 +276,9 @@ public class InboxDialog extends JDialog {
 	}
 
 	/** Shows a transmission (a title and a line of who and when, if given, then the text). */
-	private void message(String title, String meta, String body) {
+	private void message(String title, String meta, String body) { message(title, meta, body, null); }
+	/** The same, with an expedition report's faces beside its crew's lines. */
+	private void message(String title, String meta, String body, java.util.List<homeplanet.parser.Assignments.Face> faces) {
 		javax.swing.text.StyledDocument doc = text.getStyledDocument();
 		try {
 			doc.remove(0, doc.getLength());
@@ -273,7 +295,8 @@ public class InboxDialog extends JDialog {
 				javax.swing.text.StyleConstants.setForeground(a, MenuTheme.GREY_GREEN);
 				doc.insertString(doc.getLength(), meta + "\n\n", a);
 			}
-			doc.insertString(doc.getLength(), body, null);
+			if (faces != null && !faces.isEmpty()) ReportFaces.insert(doc, body, faces, null);
+			else doc.insertString(doc.getLength(), body, null);
 			javax.swing.text.SimpleAttributeSet p = new javax.swing.text.SimpleAttributeSet();
 			javax.swing.text.StyleConstants.setLineSpacing(p, 0.2f);
 			doc.setParagraphAttributes(0, doc.getLength(), p, false);
@@ -293,6 +316,7 @@ public class InboxDialog extends JDialog {
 			museum.setVisible(false);
 			payRansom.setVisible(false);
 			refuseRansom.setVisible(false);
+			prizeYes.setVisible(false); prizeDock.setVisible(false); prizeJunk.setVisible(false); prizeNo.setVisible(false);
 			archive.setVisible(false);
 			delete.setVisible(false);
 			takeIt.setVisible(false);
@@ -303,7 +327,9 @@ public class InboxDialog extends JDialog {
 		}
 		boolean answered = m.replied != null && !m.replied.isEmpty();
 		homeplanet.comm.Shipments.Parcel parcel = parcelOf(m);
-		message(m.subject, m.from + "  \u00b7  " + m.date, (answered ? m.body + "\n\nYou replied: \u201c" + m.replied + "\u201d" : m.body) + parcelState(parcel));
+		java.util.List<homeplanet.parser.Assignments.Face> faces = m.key.startsWith("expedition:") && homeplanet.vault.Vault.isOpen()
+				? homeplanet.parser.Assignments.facesFor(homeplanet.vault.Vault.get(), m.key) : null; // an expedition report's crew, as they came home
+		message(m.subject, m.from + "  \u00b7  " + m.date, (answered ? m.body + "\n\nYou replied: \u201c" + m.replied + "\u201d" : m.body) + parcelState(parcel), faces);
 		String[] from = replyTo(m);
 		reply.setVisible(Transmissions.canReply(m) || from != null);
 		reply.setEnabled(true);
@@ -321,9 +347,13 @@ public class InboxDialog extends JDialog {
 		payRansom.setVisible(captive != null);
 		refuseRansom.setVisible(captive != null);
 		if (captive != null) payRansom.setText("Pay " + captive.ransom + " scrap");
+		homeplanet.parser.Assignments.Pending prize = m.key.startsWith("expedition:") && homeplanet.vault.Vault.isOpen() ? homeplanet.parser.Assignments.pendingFor(homeplanet.vault.Vault.get(), m.key) : null;
+		boolean recruit = prize != null && "recruit".equals(prize.kind), ship = prize != null && "ship".equals(prize.kind);
+		prizeYes.setVisible(recruit); prizeDock.setVisible(ship); prizeJunk.setVisible(ship); prizeNo.setVisible(prize != null);
+		prizeNo.setText(ship ? "Don't take her" : "Send them on their way");
 		archive.setVisible(true);
 		boolean held = parcel != null && (homeplanet.comm.Shipments.HELD.equals(parcel.state) || homeplanet.comm.Shipments.RETURNING.equals(parcel.state));
-		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m) || (m.key.startsWith("parcel:") && !held)); // they pile up: archive one or be rid of it (not a shipment still to deal with)
+		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m) || (m.key.startsWith("parcel:") && !held) || m.key.startsWith("expedition:")); // they pile up: archive one or be rid of it (not a shipment still to deal with)
 		boolean waiting = parcel != null && homeplanet.comm.Shipments.HELD.equals(parcel.state);
 		String whyNot = waiting ? homeplanet.comm.Shipments.whyNot(parcel) : null;
 		takeIt.setVisible(waiting);
@@ -335,7 +365,8 @@ public class InboxDialog extends JDialog {
 		elsewhere.setToolTipText(fleets.isEmpty() ? "None of your other fleets may take it (the trading rules), or they have no Cargo Hold yet"
 				: "Into the Cargo Hold of another of your fleets that may trade with them (it needn't be the one in use)");
 		sendBack.setVisible(waiting);
-		delete.setToolTipText(Transmissions.isNote(m) ? "Delete this message for good" : "Delete this receipt for good: the trade stays in the station's history");
+		delete.setToolTipText(m.key.startsWith("expedition:") ? "Delete this report for good: the expedition stays in the station's history"
+				: Transmissions.isNote(m) ? "Delete this message for good" : "Delete this receipt for good: the trade stays in the station's history");
 		boolean stipend = Transmissions.deletable(m);
 		boolean unclaimed = Transmissions.unclaimedStipend(m) && !m.archived;
 		archive.setText(stipend || unclaimed ? "Delete" : m.archived ? "Move to Inbox" : "Archive");
@@ -350,6 +381,32 @@ public class InboxDialog extends JDialog {
 		list.repaint();
 	}
 
+	/** An expedition letter's prize: 0 the recruit signed on, 1 the ship to the Space Dock, 2 to the Junkyard, 3 not taken. */
+	private void prize(int choice) {
+		Transmissions.Message m = list.getSelectedValue();
+		if (m == null) return;
+		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
+		homeplanet.parser.Assignments.Pending x = homeplanet.parser.Assignments.pendingFor(v, m.key);
+		if (x == null) { show(m); return; }
+		String settled;
+		try {
+			if (choice == 3) {
+				if (!HomePlanet.confirmNo(this, ("ship".equals(x.kind) ? x.name + " will be left where she lies." : x.name + " will go their own way.") + " Gone for good?", "Expeditions")) return;
+				homeplanet.parser.Assignments.decline(v, x);
+				settled = "ship".equals(x.kind) ? "Not taken" : "Sent on their way";
+			} else {
+				homeplanet.parser.Assignments.accept(v, x, choice == 1);
+				settled = choice == 0 ? x.name + " signed on: in the Cargo Hold" : x.name + (choice == 1 ? " docked at the Space Dock" : " to the Junkyard");
+			}
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog("That could not be done. Nothing was changed:\n" + e.getMessage());
+			return;
+		}
+		try { Transmissions.decided(m, settled); }
+		catch (Exception e) { HomePlanet.showErrorDialog("Done, but the letter could not be marked as settled (it will show no note of it):\n" + e.getMessage()); }
+		all = Transmissions.load();
+		fill();
+	}
 	/** A ransom letter: pay it from the Cargo Hold (they come back), or refuse (they don't). */
 	private void ransom(boolean pay) {
 		Transmissions.Message m = list.getSelectedValue();
@@ -357,20 +414,30 @@ public class InboxDialog extends JDialog {
 		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
 		homeplanet.parser.Expeditions.Captive c = homeplanet.parser.Expeditions.openRansom(v, m.key);
 		if (c == null) { show(m); return; }
+		String settled; // the ransom first: if that fails, nothing has changed; the letter's note after, and a failure there says only what it is
 		try {
 			if (pay) {
 				if (!HomePlanet.confirmNo(this, "Pay " + c.ransom + " scrap from the Cargo Hold for " + c.name + "'s return?", "Ransom")) return;
 				homeplanet.parser.Expeditions.payRansom(v, c);
-				Transmissions.decided(m, "Paid " + c.ransom + " scrap: " + c.name + " is back in the Cargo Hold");
-				JOptionPane.showMessageDialog(this, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
+				settled = "Paid " + c.ransom + " scrap: " + c.name + " is back in the Cargo Hold";
 			} else {
 				if (!HomePlanet.confirmNo(this, "Refuse the ransom? " + c.name + " will not be coming back.", "Ransom")) return;
 				homeplanet.parser.Expeditions.refuseRansom(v, c);
-				Transmissions.decided(m, "Refused");
+				settled = "Refused";
 			}
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The ransom wasn't settled. Nothing was changed:\n" + e.getMessage());
+			all = Transmissions.load();
+			fill();
+			return;
 		}
+		try {
+			Transmissions.decided(m, settled);
+		} catch (Exception e) {
+			HomePlanet.showErrorDialog((pay ? "The ransom is paid and " + c.name + " is back in the Cargo Hold" : "The ransom was refused")
+					+ ", but the letter could not be marked as settled (it will show no note of it):\n" + e.getMessage());
+		}
+		if (pay) JOptionPane.showMessageDialog(this, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
 		all = Transmissions.load(); // the Ambassador's letter, if one came
 		fill();
 	}

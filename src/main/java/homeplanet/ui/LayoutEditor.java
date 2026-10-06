@@ -79,6 +79,7 @@ public class LayoutEditor {
 	private final DefaultListModel<String> offShip = new DefaultListModel<String>();
 	private final JList<String> offList = new JList<String>(offShip);
 	private final JPanel side = new JPanel(new BorderLayout(0, 4));
+	private final JPanel extraButtons = new JPanel(new GridLayout(0, 1, 0, 4)); // the window's own buttons (Clear all, Overhaul...)
 	private final Map<String, BufferedImage> icons = new HashMap<String, BufferedImage>();
 
 	private String selected = null;             // system being placed / edited
@@ -95,6 +96,8 @@ public class LayoutEditor {
 	private ShipDesign.Mount selMount = null;
 	private int artGrabX, artGrabY;
 	static final int MARGIN = 4 * SQ;
+	/** The design canvas's border round the grid: room for a big hull picture hanging over the grid's edge. */
+	static final int PAD = 10 * SQ;
 
 	// art under the rooms (optional): pictures and where they sit relative to the grid origin, in pixels
 	BufferedImage baseImg, floorImg;
@@ -150,13 +153,11 @@ public class LayoutEditor {
 			}
 		});
 		JPanel buttons = new JPanel(new GridLayout(0, 1, 0, 4));
+		JPanel view = new JPanel(new GridLayout(1, 3, 2, 0));
 		{
-			JPanel view = new JPanel(new GridLayout(1, 3, 2, 0));
 			view.add(smallButton("\u2212", "Zoom out (Ctrl+minus, or the mouse wheel)", new ActionListener() { public void actionPerformed(ActionEvent e) { zoomBy(1 / 1.25, null); } }));
 			view.add(smallButton("+", "Zoom in (Ctrl+plus, or the mouse wheel)", new ActionListener() { public void actionPerformed(ActionEvent e) { zoomBy(1.25, null); } }));
 			view.add(smallButton("Fit", "Zoom to show the whole ship (Ctrl+0)", new ActionListener() { public void actionPerformed(ActionEvent e) { fitView(); } }));
-			buttons.add(new JLabel("View"));
-			buttons.add(view);
 
 			ButtonGroup g = toolGroup;
 			roomToolParts.add(new JLabel("Rooms"));
@@ -187,18 +188,37 @@ public class LayoutEditor {
 			}
 		});
 		buttons.add(addDoor);
-		side.add(new JLabel("Not on this ship:"), BorderLayout.NORTH);
+		JPanel top = new JPanel(new BorderLayout(0, 2));
+		JLabel systemsHead = new JLabel("Systems");
+		systemsHead.setFont(MenuTheme.HEADING_FONT);
+		systemsHead.setForeground(MenuTheme.GOLD);
+		top.add(systemsHead, BorderLayout.NORTH);
+		JLabel systemsHint = new JLabel("<html>Not on her yet. Click one, then an empty room to put it there.</html>");
+		systemsHint.setFont(MenuTheme.TEXT_FONT);
+		systemsHint.setForeground(MenuTheme.GREY_GREEN);
+		top.add(systemsHint, BorderLayout.CENTER);
+		side.add(top, BorderLayout.NORTH);
 		JScrollPane sp = new JScrollPane(offList);
 		sp.setPreferredSize(new Dimension(170, 150));
 		side.add(sp, BorderLayout.CENTER);
-		side.add(buttons, BorderLayout.SOUTH);
+		// the tools in the order they're used, the window's own buttons under them, and the view last as fine adjustment
+		JPanel south = new JPanel(new BorderLayout(0, 4));
+		south.add(buttons, BorderLayout.NORTH);
+		south.add(extraButtons, BorderLayout.CENTER);
+		JPanel fine = new JPanel(new GridLayout(0, 1, 0, 4));
+		JLabel fineHead = new JLabel("View");
+		fineHead.setForeground(MenuTheme.DIM);
+		fine.add(fineHead);
+		fine.add(view);
+		south.add(fine, BorderLayout.SOUTH);
+		side.add(south, BorderLayout.SOUTH);
 		rebuildOffList();
 	}
 
 	/** The side column: the systems not on the ship, the room tools and Add door. Extra buttons go under it. */
 	public JPanel side() { return side; }
 	public void addSideButton(JButton b) {
-		((JPanel) ((BorderLayout) side.getLayout()).getLayoutComponent(BorderLayout.SOUTH)).add(b);
+		extraButtons.add(b);
 	}
 	public JComponent canvas() { return canvas; }
 
@@ -219,26 +239,34 @@ public class LayoutEditor {
 		designArt = true;
 		baseImg = base;
 		floorImg = floor;
+		drawnFloorKey = null;
 		scale = 1.0;
 		relayoutDesign();
 		rebuildOffList();
 	}
+	/** What the floor drawn from the rooms was last drawn for; it's drawn again when the rooms, the doors or the art move. */
+	private String drawnFloorKey;
+	private void drawnFloor() {
+		if (baseImg == null) { floorImg = null; return; }
+		StringBuilder k = new StringBuilder();
+		k.append(d.artX).append(',').append(d.artY).append(',').append(baseImg.getWidth()).append('x').append(baseImg.getHeight());
+		for (ShipDesign.Room r : d.rooms) k.append('|').append(r.x).append(',').append(r.y).append(',').append(r.w).append(',').append(r.h);
+		for (homeplanet.parser.CompanionMod.Door x : d.doors) k.append('/').append(x.x).append(',').append(x.y).append(',').append(x.v);
+		String key = k.toString();
+		if (key.equals(drawnFloorKey)) return;
+		floorImg = homeplanet.parser.ShipArt.floorFromRooms(d, baseImg.getWidth(), baseImg.getHeight());
+		drawnFloorKey = key;
+	}
 	/** Sizes the design canvas around the rooms and the art (art hanging off the top or left moves the grid over). */
+	/**
+	 * The design canvas: the grid with a fixed border of {@link #PAD} all round for art that hangs over its edge. Nothing
+	 * here moves when something is edited (heromedel): the anchor, the grid's middle, is where FTL puts the ship, and the
+	 * rooms and the art sit where the player left them.
+	 */
 	private void relayoutDesign() {
-		int ox = originX, oy = originY;
-		originX = MARGIN + (baseImg == null ? 0 : Math.max(0, -d.artX));
-		originY = MARGIN + (baseImg == null ? 0 : Math.max(0, -d.artY));
-		int w = originX + cols * SQ + MARGIN, h = originY + rows * SQ + MARGIN;
-		for (ShipDesign.Room r : d.rooms) { w = Math.max(w, originX + (r.x + r.w) * SQ + MARGIN); h = Math.max(h, originY + (r.y + r.h) * SQ + MARGIN); }
-		if (baseImg != null) { w = Math.max(w, originX + d.artX + baseImg.getWidth() + SQ); h = Math.max(h, originY + d.artY + baseImg.getHeight() + SQ); }
-		baseW = w; baseH = h;
+		originX = PAD; originY = PAD;
+		baseW = cols * SQ + 2 * PAD; baseH = rows * SQ + 2 * PAD;
 		updateSize();
-		// keep the view on the same spot when the grid moves over
-		javax.swing.JViewport vp = viewport();
-		if (vp != null && (ox != originX || oy != originY) && ox != 0) {
-			java.awt.Point p = vp.getViewPosition();
-			scrollTo(p.x + (int) ((originX - ox) * eff()), p.y + (int) ((originY - oy) * eff()));
-		}
 	}
 
 	// ---- view: zoom, fit, centring ----
@@ -307,19 +335,15 @@ public class LayoutEditor {
 		}
 		host.say("Zoom " + Math.round(zoom * 100) + "%.");
 	}
-	/** Puts the middle of the art over the middle of the rooms. */
+	/** Puts the picture's visible middle on the anchor (the grid's middle, where FTL puts her). Nothing else moves. */
 	public boolean centerArt() {
 		if (!designArt || baseImg == null) return false;
-		double cx, cy;
-		if (d.rooms.isEmpty()) { cx = cols * SQ / 2.0; cy = rows * SQ / 2.0; }
-		else {
-			int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-			for (ShipDesign.Room r : d.rooms) { minX = Math.min(minX, r.x); minY = Math.min(minY, r.y); maxX = Math.max(maxX, r.x + r.w); maxY = Math.max(maxY, r.y + r.h); }
-			cx = (minX + maxX) * SQ / 2.0; cy = (minY + maxY) * SQ / 2.0;
-		}
-		d.artX = (int) Math.round(cx - baseImg.getWidth() / 2.0);
-		d.artY = (int) Math.round(cy - baseImg.getHeight() / 2.0);
-		relayoutDesign();
+		double cx = cols * SQ / 2.0, cy = rows * SQ / 2.0;
+		// the picture's visible part, not its box: a long nose or big engines leave the box's middle nowhere near the hull's
+		Rectangle vis = homeplanet.parser.ShipArt.opaqueBounds(baseImg);
+		d.artX = (int) Math.round(cx - (vis.x + vis.width / 2.0));
+		d.artY = (int) Math.round(cy - (vis.y + vis.height / 2.0));
+		canvas.repaint();
 		host.changed();
 		return true;
 	}
@@ -1031,6 +1055,7 @@ public class LayoutEditor {
 			g.scale(eff(), eff());
 			if (designArt) {
 				if (baseImg != null) g.drawImage(baseImg, originX + d.artX, originY + d.artY, null);
+				if (d.floorFromRooms()) drawnFloor();
 				if (floorImg != null) g.drawImage(floorImg, originX + d.artX + d.floorX, originY + d.artY + d.floorY, null);
 			} else {
 				if (baseImg != null) g.drawImage(baseImg, originX + baseX, originY + baseY, null);
@@ -1057,6 +1082,32 @@ public class LayoutEditor {
 			}
 			g.setStroke(new BasicStroke(1f));
 			if (designArt) paintArtExtras(g);
+			if (designArt) { // the anchor: the grid's middle is where FTL puts the ship (DesignExport.SHIP_X / SHIP_Y)
+				int cx = originX + cols * SQ / 2, cy = originY + rows * SQ / 2;
+				// FTL has no further left or up than offset 0: rooms in this strip sit at the strip's edge in the game
+				g.setColor(new Color(255, 120, 80, 42));
+				g.fillRect(originX, originY, homeplanet.parser.DesignExport.ORIGIN_COL * SQ, rows * SQ);
+				g.fillRect(originX, originY, cols * SQ, homeplanet.parser.DesignExport.ORIGIN_ROW * SQ);
+				g.setColor(new Color(90, 220, 255, 230));
+				g.setStroke(new BasicStroke(2f));
+				g.drawLine(cx - 9, cy, cx + 9, cy); g.drawLine(cx, cy - 9, cx, cy + 9);
+				g.drawOval(cx - 5, cy - 5, 10, 10);
+				g.setStroke(new BasicStroke(1f));
+				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+				g.drawString("where FTL puts her", cx + 12, cy - 4);
+			}
+			// what to do first, written on the empty grid
+			String hint = roomsEditable && d.rooms.isEmpty() ? "Place her first room: Place 2 x 2, then click the grid. The cross is where FTL puts her."
+					: designArt && baseImg == null && !d.rooms.isEmpty() ? "She needs hull art: the Art step, Import PNG or From the game." : null;
+			if (hint != null) {
+				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+				int tw = g.getFontMetrics().stringWidth(hint);
+				int hx = originX + cols * SQ / 2 - tw / 2, hy = originY + (d.rooms.isEmpty() ? rows * SQ / 2 + 2 * SQ : -SQ / 2);
+				g.setColor(new Color(0, 0, 0, 150));
+				g.fillRoundRect(hx - 10, hy - 16, tw + 20, 24, 8, 8);
+				g.setColor(new Color(230, 236, 232));
+				g.drawString(hint, hx, hy);
+			}
 			int[] size = sizeOf(roomTool);
 			if (size != null && hoverX != -1) {
 				boolean ok = d.fits(hoverX, hoverY, size[0], size[1], gridCols(), gridRows(), -1);

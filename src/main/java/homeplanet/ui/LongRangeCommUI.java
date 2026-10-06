@@ -92,7 +92,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private final CargoParts.Label sourceNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, -1);
 	private final SupplyBox[] mySupply = new SupplyBox[4];
 	private int supplyIdx = 0;
-	private final JSpinner amount = new JSpinner(new SpinnerNumberModel(10, 1, Line.MAX_AMOUNT, 1));
+	private final JSpinner amount = new JSpinner(new SpinnerNumberModel(1, 1, Line.MAX_AMOUNT, 1)); // starts at 1, as the Cargo Bay's does (heromedel)
+	private final FtlButton offerAllBtn = new FtlButton("Offer all", FtlFont.BODY, 98, 22);
 	private final FtlButton offerSupplyBtn = new FtlButton("Offer >", FtlFont.BODY, 98, 22);
 	private final CargoParts.RowList[] myLists = new CargoParts.RowList[4];
 	private final FtlButton[] offerBtns = new FtlButton[4];
@@ -298,11 +299,20 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		offerSupplyBtn.setToolTipText("Put that much of the chosen supply in your offer");
 		offerSupplyBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { offerSupply(); } });
 		stage.add(offerSupplyBtn);
+		offerAllBtn.setBounds(LX + 200, 214, 98, 22);
+		offerAllBtn.setToolTipText("Put all of the chosen supply in your offer");
+		offerAllBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { int have = availableSupply(supplyIdx); if (have > 0) amount.setValue(Math.min(Line.MAX_AMOUNT, have)); offerSupply(); } });
+		stage.add(offerAllBtn);
 
 		int y = 246;
 		for (int k = 0; k < 4; k++) {
 			final int kind = k;
-			header(CAT[k], false, LX, y, LW - 106);
+			header(CAT[k], false, LX, y, LW - 180);
+			FtlButton infoBtn = new FtlButton("Info", FtlFont.BODY, 66, 22); // the report at a click, not a tooltip's wait (heromedel)
+			infoBtn.setBounds(LX + LW - 98 - 72, y, 66, 22);
+			infoBtn.setToolTipText(k == 3 ? "The chosen crew member's report" : "About the chosen item");
+			infoBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { info((Line) myLists[kind].selectedValue()); } });
+			stage.add(infoBtn);
 			offerBtns[k] = new FtlButton("Offer >", FtlFont.BODY, 98, 22);
 			offerBtns[k].setBounds(LX + LW - 98, y, 98, 22);
 			offerBtns[k].setToolTipText(k == 3 ? "Put the chosen crew member in your offer" : "Put the chosen item in your offer");
@@ -541,7 +551,12 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		int y = 188;
 		for (int k = 0; k < 4; k++) {
 			final int kind = k;
-			theirHeads[k] = header(CAT[k], true, 0, y, RW, partner);
+			theirHeads[k] = header(CAT[k], true, 0, y, RW - 72, partner);
+			FtlButton theirInfo = new FtlButton("Info", FtlFont.BODY, 66, 22);
+			theirInfo.setBounds(RW - 66, y, 66, 22);
+			theirInfo.setToolTipText(k == 3 ? "The chosen crew member's report" : "About the chosen item");
+			theirInfo.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { info((Line) theirLists[kind].selectedValue()); } });
+			partner.add(theirInfo);
 			theirLists[k] = new CargoParts.RowList();
 			theirLists[k].setEmptyText(k == 3 ? "No crew" : "None");
 			theirLists[k].setBounds(0, y + 24, RW, 62);

@@ -80,12 +80,13 @@ public class Commission {
 		return gs;
 	}
 
-	/** The Relief Ship Type A: a Kestrel A stripped to basics, always among what a plea offers. */
+	/** The Relief Ship Type A: a Kestrel A stripped to basics (no sensors, 10 fuel, no scrap), always among what a plea offers. */
 	public static final String RELIEF_BASE = "PLAYER_SHIP_HARD";
 	/**
 	 * Builds the Relief Ship Type A: a Kestrel A with one human crew, a Burst Laser I and an Ion Blast, no missiles, no
-	 * drones or augments, every system at its minimum (a shield layer, two bars of weapons for her two guns) and a
-	 * reactor of 6.
+	 * drones or augments, no sensors, 10 fuel and no scrap, every system at its minimum (a shield layer, two bars of
+	 * weapons for her two guns) and a reactor of 6: one bar short of her seven, so the medbay runs at something's cost.
+	 * Priced by the formula like any ship (5.00; a written-in 600 before).
 	 */
 	public static SavedGameState buildRelief(String shipName, Difficulty difficulty, Random rng) {
 		SavedGameState gs = build(RELIEF_BASE, shipName, difficulty, rng);
@@ -98,6 +99,10 @@ public class Commission {
 		ship.setDronePartsAmt(0);
 		ship.setMissilesAmt(0);
 		ship.getAugmentIdList().clear();
+		ship.setFuelAmt(10);
+		ship.setScrapAmt(0);
+		SystemState sensors = ship.getSystem(SystemType.SENSORS);
+		if (sensors != null) { sensors.setCapacity(0); sensors.setPower(0); }
 		for (SystemType t : SystemType.values()) {
 			SystemState st = ship.getSystem(t);
 			if (st == null || st.getCapacity() <= 0) continue;

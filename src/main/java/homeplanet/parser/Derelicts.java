@@ -138,7 +138,16 @@ public final class Derelicts {
 		write(v, p);
 	}
 
-	/** Her price at this share of her value as she is (her damage off), never under 10. */
+	/** A ship an expedition brought home (a Hijack that went well): built as a derelict is, named, for the commander to keep or not. */
+	public static SavedGameState prizeShip(Vault v, Random rng) throws IOException {
+		Set<String> taken = new HashSet<String>();
+		for (Ship s : v.all()) if (s.name != null) taken.add(s.name);
+		String id = pickModel(rng, Unlocks.read(), false);
+		if (id == null) throw new IOException("No model for her");
+		String name = ShipNames.roll(id, taken, rng);
+		return build(id, name == null ? "Prize" : name, rng);
+	}
+	/** Her price at this share of her value as she is (her damage off; at the difficulty's rate), never under 10. */
 	static int price(SavedGameState gs, int percent) { return Math.max(10, Pricing.auctionBase(gs) * percent / 100); }
 
 	/** A model for a derelict: a locked one if asked and there is one, otherwise one the profile has unlocked. */
@@ -401,6 +410,7 @@ public final class Derelicts {
 			all.add(r);
 			CompanionMod.save(all);
 			CompanionMod.register(all);
+			homeplanet.core.Slipstream.writeMod(); // her blueprint goes into the mod's file, to be sent to FTL
 			Retrofit.switchTo(gs, r.id);
 			Retrofit.syncStations(gs.getPlayerShip());
 		}
@@ -414,6 +424,7 @@ public final class Derelicts {
 			saveFile(v, l.index).delete();
 			HistoryLog.entry("BUY", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), a derelict, for " + l.price + " scrap from the Cargo Hold"
 					+ (l.oddity.isEmpty() ? "" : "; " + words(l.oddity)));
+			ThirdFleet.derelictBought(v, s); // the Third Fleet Commander's project ship, the first time
 			return s;
 		} catch (IOException e) {
 			if (storageBefore != null) try { v.refundStorage(storageBefore); } catch (IOException again) { e.addSuppressed(again); }

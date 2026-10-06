@@ -238,8 +238,7 @@ A setting (Settings, and the Immersive briefing), each fleet its own choice, def
   she can't be recovered).
 - **Receive a reward equal to her value**: her full value to Spacedock Storage, and she stays lost.
 
-Her value is the full commission price (systems and levels, reactor, weapons, drones, augments, cargo, crew, a custom
-hull's rooms and doors), always 100%. The messages come by Transmissions (the rescue offer waits in the inbox), or as a
+Her value is her price strictly counted, at the difficulty's rate (section 30). The messages come by Transmissions (the rescue offer waits in the inbox), or as a
 notice on the Space Dock when Transmissions are off. The lore holds: the Rebel Flagship withdraws, never destroyed.
 
 How it works (confirmed with heromedel's run of the Shrapnel R.U. and a save logger's record of the last two battles):
@@ -645,7 +644,7 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
     mastery flags together). A choice anyone can take must take the skill it teaches, so the right person earns it
     (the harness refuses one that doesn't). Specialist postings are still to come (IDEAS, Idea E).
   - The station's daily round writes the Cargo Hold's save only when someone's health or skill changed.
-  - The station's medbay (4B.98, Plan LL): crew hurt in the game, in the Cargo Hold or aboard a docked ship (never the
+  - The station's medbay (4B.95, Plan LL): crew hurt in the game, in the Cargo Hold or aboard a docked ship (never the
     boarded one, which may be in FTL), are healed a full beacon after the station first sees them hurt there; a move to
     another place starts the beacon again. Before, the station healed anyone hurt whenever the clock had moved since its
     last look, which could be at once. Each heal writes heromedel's line in the history log: "<name>'s visited The
@@ -669,8 +668,8 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   own pay, asides, ships home from expeditions and the lost Stealth Cruiser expedition (to be rewritten later as its own
   special event, once the ordinary ones feel right).
 - **Ransoms** (4B.88, kept): a crew member taken is asked for a few beacons later (the fleet's captives.txt), handled in
-  the inbox: the captors' letter has Pay and Refuse, says "You have one month" and never counts beacons (14, hidden);
-  a reminder comes three beacons before the end. Refused or run out, the Federation Ambassador writes that they are
+  the inbox: the captors' letter has Pay and Refuse, says "You have one month" and never counts beacons (28 since
+  5.00, hidden); a reminder comes six beacons before the end. Refused or run out, the Federation Ambassador writes that they are
   missing, presumed dead. With the inbox off, the ask and reminder come up at the Space Dock (Pay, Refuse, Later).
 - **Hiring** on the same screen: with no crew anywhere, "Post a promise of adventure" is free and answered half the
   time; otherwise "Post for volunteers" costs 5 scrap a crew member in the fleet (every ship, the Junkyard's hulls and
@@ -679,7 +678,7 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   humans answer, as Commission has it (4B.90).
 - While an expedition is under way its pop-ups can't be closed, only answered; a priority Long Range message pops up
   over it and the expedition carries on after; a hail is told the commander is away and listed as missed (4B.87).
-- The job's windows (4B.95, redrawn at 4B.96 from heromedel's FTL screenshots): FTL's event layout on the station's
+- The job's windows (4B.95, redrawn before the merge from heromedel's FTL screenshots): FTL's event layout on the station's
   own dark panel and pale rim (not FTL's mauve), in FTL's own type (JustinFont from ftl.dat, chosen over the style
   guide's Sans Serif from a side-by-side; where ftl.dat's font can't be read, or lacks a letter on the screen, the
   whole screen falls back to the style guide's Sans Serif 12), the words wrapped with room between the lines, and
@@ -690,7 +689,7 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   shuttle docks."). The asteroid belt's line is heromedel's: "you can hear a small asteroid glancing off the shuttle's
   shields" (no sound carried through the hull from outside). The twelve events read again for sound, smell or wind
   where there's no air: none else.
-- 4B.97: the event box loses its rim (the words sit straight on the dark panel). Picking who goes: three seats side by
+- 4B.95: the event box loses its rim (the words sit straight on the dark panel). Picking who goes: three seats side by
   side, each a drop-down of the Cargo Hold's crew (or no one), and under each a card of the one picked: portrait, name,
   race, a health bar if hurt, and the six skills (a pip a level, green then gold as FTL marks them, and a thin bar toward
   the next). Picking someone for one seat takes them out of another; the first three are picked to begin with.
@@ -704,11 +703,501 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
 - 4B.95: main merged in (Reputation, Plead for New Ship, the Relief Ship Type A, the System Limit, Medbay or Clone Bay).
   The Space Dock is main's (the centred Docked and Aboard headings, REP to the inbox's right), with Expeditions under
   Station and the control headings folding as before; the centred headings don't fold. The stipend reads in months
-  everywhere (two, three or four), never sectors or beacons.
+  everywhere (one, two or three since 5.00), never sectors or beacons.
 - A one-sided Long Range trade's log no longer says "received ():".
 - The harness (ExpT) reads the events file clean, plays every event through every choice, checks every hurt has a
   death beside it, holds every line against FTL's own event text (no run of six words the same), and walks the
   infirmary and the ransoms through their clocks.
+- (McCarthy's branch numbered its last steps 4B.96 to 4B.98; they reached main together as 4B.95.)
+
+## 26. Every beacon counts, and the review's fixes — built (4B.97; harness checks in PartT, ExpT, PriceT, TransT)
+
+From a review of 4B.95 and 4B.96 in main, and heromedel's answers (Plan U).
+
+- **The fleet's clock** (`clock.txt` in the fleet's folder): every beacon and sector the boarded ship flies counts,
+  once. Before, the station counted only when the Space Dock was rebuilt, so a voyage flown with the station open and
+  then docked (or written by the Cargo Bay) was never counted, and the Junkyard's Parts, the stipend, ransoms and the
+  infirmary barely moved. Now FTL's own saves move it as she flies, and a dock or any station write counts her
+  progress first. Boarding counts nothing (her past is her own; a traded ship counts from her trade). FTL's New Game
+  counts the new ship's run so far. A fleet from before carries on from her last marks.
+- Work at a beacon is remembered for each ship, so switching ships at a stop doesn't count it again; the voyage log
+  says "Time spent on work at the beacon", never that it counted as a beacon.
+- Parts prices stay as they are (heromedel: occasional flips are fine). An expedition stays one beacon: one event,
+  one passage of time.
+- Plead for New Ship values a damaged stored system as the Cargo Bay would sell it, its broken bars off.
+- The stipend's letter is saved before its months are marked paid (taken back if the save fails): a failed save can't
+  lose it. The station log says one stipend or two, as the letter's months do. (One stipend a pay period; the letter's
+  months are how long the period was: two, three or four by difficulty.)
+- **Postings**: each is written for one event (`posting <kind>:<event>` in expeditions.txt) and plays it; the
+  harness refuses an event without its posting. A new posting avoids events met lately.
+- **Signing on** takes the job off the board at once (a new posting in its place, the event remembered), so closing
+  the station mid-job can't play it again.
+- **The clone bay** takes a level from the skills held before the job, and the job's experience goes with the body.
+- **Ransoms**: the month runs from the letter, however late the station sees it; the captive's whole record (skills,
+  mastery, service record, looks) is kept and comes back, whole, when the ransom is paid; payment and its mark are one
+  write, so it can't be paid twice. The expedition's end writes the Cargo Hold, the infirmary and the captives
+  together; a side file that can't be read is an error, never written back empty.
+
+## 27. Bug squashing — in progress (4B.98)
+
+Fixes only, from heromedel's testing and the review; no new features. Design debts found on the way go to
+`docs/CONCERNS.md`, not here.
+
+- Two crew of one name and race no longer get mixed up in the infirmary or at an expedition's end: a mark (sex,
+  colouring, service record) kept beside the name tells them apart. A band-aid until crew who are away leave the hold's
+  save (CONCERNS.md, 2).
+- A ransom's two steps (the payment or refusal, then the note on the letter) report separately: "Nothing was changed"
+  only when the ransom itself failed; a note that couldn't be saved after a payment says the payment stands.
+- Jobs taken one after another without closing the board: the station's round now runs after each job (whoever's time
+  is up leaves the infirmary, with the pop-up; a ransom asked or run out), not only at a look at the Space Dock. Before,
+  a laid-up crew member stayed laid up, and the pop-up waited, until the board was closed.
+- The Space Dock keeps itself current (Plan V): every file the station writes passes one place (`SafeFiles`), which
+  tells the Space Dock; a write in the fleet's folder (a letter read, a job finished, a parcel landed over the Long
+  Range, a ransom settled) rebuilds it a moment later, behind whatever window is open, so the inbox's count and the rest
+  are live without the window being closed. Several writes in a row make one rebuild; its own rebuild's writes are
+  ignored; when another screen is showing, the return rebuilds it as before. Every return from a window (Expeditions,
+  Derelicts, Ship Records) rebuilds it, whatever the window reports. Pop-ups a rebuild can raise (New Game noticed, a
+  final victory, a ransom, the infirmary) now come while another window is open, rather than waiting for it to close.
+- The ship report's "Content: Advanced Edition / Original" line is gone (heromedel; Commission has its own switch).
+- Locked ships: the descriptions wrap at a width the screen can show (the picture, the words, the scrollbar and the
+  frame within the usable screen), the window no wider than that, and no taller than the screen less a margin.
+- The "FTL is running" question (boarding, docking, a save to the boarded ship...) no longer reads as a warning that
+  something is wrong: it says why the station would rather not, that FTL at its main menu is safe, and its first
+  answer is heromedel's "Nevermind, save her in the Space Dock" for boarding, "Nevermind" elsewhere; the other is
+  "Go ahead, FTL is at its menu".
+- Commission orders for a Type B or C: heromedel's shared letter (the ship's people have contacted Federation
+  Command, impressed, and shared another model's blueprints; `{race}` and `{cruiser}` filled from the ship) in place of
+  the ship's own, which told her Type A's unlock story (the Zoltan Council's offer for a Zoltan B, say). The
+  Kestrel's and the Federation Cruiser's letters read right for any type and stay. 5.09: each race has its own second
+  letter (`order:nextModel:<base>`, eight, every one approved by heromedel), following on from its first: the Engi's
+  "within acceptable deviation", the Zoltan Council speaking of you again, a Mantis clan's "a better hunter should
+  have it", the Slug consortium's invoice arriving first, the Rock's thanks with no message, Intelligence's reports
+  nobody lets the Comm. Officer read, the Lanius logs, the Crystal watching. heromedel's shared letter stays as the
+  fallback ("with the {cruiser}" now).
+- Custom designs in FTL (Plan W, tested in FTL itself): the station's own ships draw where the editor shows them (hull
+  and rooms together; the editor's cyan crosshair marks the rooms' centre, and Center art centres the picture's visible
+  part, not its canvas). A re-finalized remodel keeps the layout the ship was finalized against. The Loadout's top line
+  says what it is: her place on FTL's screen.
+- One answer to "is she in FTL's data?" (`PatchState`): her blueprint, layout, chassis and pictures compared with
+  `ftl.dat` as patched, read fresh after a patch, in place of a "patched this session" flag and a rooms-and-doors
+  compare that disagreed with each other. Launch FTL always checks the boarded ship's blueprints; Commission lists a
+  remodel or design that isn't in FTL yet with " - not in FTL yet" and asks before commissioning her; a bought derelict
+  with a layout of her own goes into the mod at once.
+- The floor is a choice of three (heromedel): no floor (FTL tiles the rooms plain), drawn from her rooms (grey walls
+  round each room, open at the doors, the way the game's ships look; drawn again whenever the rooms, the doors or the
+  art move, so it can't go stale, and sent to FTL with her pictures), or a picture of her own, for decorated floors. A
+  new hull picture drops a floor picture made for the old one, never a drawn floor. A floor that sticks out of the
+  hull is a warning, not a refusal (the game's own floors are smaller than their hulls). Missing hull art is a warning,
+  the Kestrel's standing in. An older station reading `floor="rooms"` over the Long Range shows her with no floor.
+
+## 28. The design screen as three steps — built (4B.99; harness checks in DesT and GuiT)
+
+heromedel's ask: a design screen that's more intuitive, looks nicer, and explains the Loadout (whose top line, her place
+on FTL's screen, nobody could use). The mockup it was built to: the ship stays on the left the whole time; the work on
+the right is three steps in build order.
+
+- **The steps.** The right column is a tabbed panel: 1. Rooms, 2. Art, 3. Loadout. Remodel keeps Rooms, and Art once
+  the overhaul is on, unnumbered. The separate Loadout window is gone: its contents are the Loadout step, and Build
+  blueprint opens the build screen directly (its Loadout... comes back here with the step in front). Hull, Reactor and
+  Drone slots left the title bar for the Loadout step.
+- **Rooms.** Place and Move, then Systems (the old "Not on this ship", with a line saying what to do with it), Doors,
+  Whole ship, the window's own buttons, and the zoom last. An empty grid says what to do first ("Place her first room:
+  Place 2 x 2, then click the grid"); a ship with rooms but no art says to import or pick one. The checks line gains a
+  "Next:" hint when nothing needs fixing, and wraps rather than running off the window.
+- **Art, and the grid's middle as the game's centre** (heromedel: the one place a person expects it). Measured over
+  all 28 of the game's player ships, the middle of the room block sits at the same spot in FTL's frame, 8 squares
+  across and 5 down (`DesignExport.SHIP_X/SHIP_Y`); the design grid's middle stands for that point, marked by the cyan
+  cross "where FTL puts her", which never moves. Where the rooms sit round it is her screen offset (`offsets(d)`, read
+  off the rooms; the stored offsets and the art-based guess are gone), so rooms left of the middle sit left in the game,
+  and a game ship copied in lands where the game has her and gets the game's own offsets back. FTL has no further left
+  or up than offset 0, so the strip past it is shaded faintly. The canvas is fixed (the grid with a wide border for art
+  hanging over): editing one thing never slides another. "Center on the anchor" puts the picture's visible middle on
+  the cross and moves nothing else. The shield ellipse and gibs sit under "Fine adjustment".
+- **Loadout, one row shape for every number** (heromedel's sketch): hers/max, the name, minus, a typed field, plus, a
+  bar of green segments to the vanilla max and amber ones past it, "Over vanilla max" beside. Hull, reactor, weapon
+  slots, drone slots, missiles and drone parts under "Her numbers"; each placed system under "Systems at the start" with
+  the installed tick in front (a Medbay and a Clone Bay still take each other's place; the artillery's weapon button
+  stays on its row). Nothing is capped. The crew stays a grid of race counts with "of 8" fixed, the one ceiling FTL
+  itself sets (no blueprint or save can move it). Then what she carries, in as many boxes as she has slots.
+- **Weapon slots are hers to set** (`ShipDesign.weaponSlots`, saved with the design; a design from before counts her
+  mounts as it did). The export writes it; the one-to-four clamp is gone. Two notes, never refusals: more slots than
+  mounts ("a weapon in a slot past her mounts has nowhere to draw"), and anything past vanilla ("FTL's weapon bar is
+  drawn for 4, the rest sit off its edge"; a system past its top level: the upgrade screen won't show it). More than 8
+  crew is a problem; no crew set is a note.
+- **Vanilla max read from the game** (`VanillaMax`): the highest any of the game's player ships has of each number, and
+  each system's top level from its blueprint, so the column is literally what it says and a modded game shows its own.
+- Later: the Retrofit tab taking the same row shape, so the two screens match.
+
+## 29. The Cargo Bay without boarding, art turned, and two rules — built (5.00; harness checks in GuiT, DesT, ExpT)
+
+From heromedel's notes after 4B.99. The version after 4B.99 is 5.00 (the numbering's rule).
+
+- **Aboard means the launch pad only.** Boarding stays a Space Dock act and decides which ship FTL loads. The Cargo
+  Bay works on whichever ship is picked on it: it opens on the boarded ship (the Cargo Hold alone with none aboard, as
+  before), as the Long Range does, and from then on everything on the screen, the Trade, the Shop and the Refit, follows
+  the pick and nothing follows the boarded ship. Picking switches at once: no report, no Board question, nobody boarded
+  or docked. The pick is made afresh each time the screen opens.
+- **Art: Rotate and Flip left / right**, on the Art step beside the hull art: for a picture drawn facing the wrong way.
+  Her pictures turn (the hull, a floor picture, her gib pictures, as copies of her own); the mounts and the shield
+  ellipse turn with the picture so they keep their spots on it; the rooms stay, and the picture's middle stays where it
+  is. A game ship's own gibs no longer fit a turned hull, so she's cut from the hull art instead. Size stays as it was.
+- **A promise of adventure costs reputation.** With no crew anywhere, posting cost nothing; now it costs 15 reputation
+  (with Reputation on; free as before with it off), spent whether or not anyone answers, in the Reputation log. The
+  scrap ladder for paid postings (5 a crew member, at most 60) is unchanged.
+- **The Relief Ship is free only when the rules say so.** With an empty shipyard she was marked free whatever the
+  difficulty or plea, so a new Hard fleet was offered her and the Kestrel both free. Now a new fleet's free ship is the
+  Kestrel; the Relief Ship is free when the free command names her (a plea under Hard, or Settings) or any ship is
+  free (Easy), otherwise at the Federation's price. Her heading reads "Special Federation Ships".
+- **The Relief Ship at her minimum, priced like any ship (Plan Z).** No sensors (the Junkyard sells them; FTL's stores
+  don't), 10 fuel, no scrap on any difficulty; medbay, doors, the two guns and a reactor of 6 for her seven bars kept,
+  so the medbay runs at something's cost. The written-in 600 is gone: she's priced by the formula at the full rate
+  whatever the commission rate, and the plea's reputation cost follows. Priced step by step with heromedel: as she
+  was 700; her strippings 682, 642; a single gun was ruled out (the Ion Blast drops the shield, the laser gets
+  through), the cheapest crew is already the human.
+- **Every hull pays for its rooms and doors**, 5 a room and 2 a door, read off the save: a game hull as a design's
+  (designs alone paid before, 10 and 5). Superseded the same version by section 30, the price strictly counted.
+
+## 30. The price of a ship, strictly counted, at the difficulty's rate — built (5.00; harness checks in PriceT, PartT, DerT, FleetT)
+
+heromedel's decision, after the Relief Ship's pricing went round in circles (the ship price used FTL's 1 scrap for
+Piloting and Engines and nothing for Oxygen, while the Junkyard's parts had them at 150: two prices for one thing):
+start again, count everything on her, one price everywhere, and let the difficulty set the rate.
+
+- **The formula** (`Pricing.ship`): her model's hull at 10 a point; the reactor as FTL's upgrade screen charges it
+  (15 a bar to 5, then 5 more every 5); her systems and their levels at FTL's prices and upgrade costs, with Piloting,
+  Oxygen and Engines at 150 for level 1 (`Pricing.CORE_SYSTEM`; FTL's upgrade steps on top) everywhere; weapons,
+  drones and augments (her cargo too) at store price; crew at hiring price (a crew member never comes with skill);
+  fuel, missiles and drone parts at store price; the scrap aboard at face value; each room her blueprint reserves for a
+  system she has at a tenth of that system's level-1 price; each other room 2; each door 2. The Kestrel A: hull 300,
+  reactor 135, systems 920, gear 118, crew 135, supplies 112, scrap 10, 8 system rooms 74, 9 other rooms 18, 26 doors
+  52: 1,874. The Relief Ship Type A: 1,507. Damage stays a separate deduction (Trade In, Auction, derelicts).
+- **The rate** (`Pricing.rate`, the commission percent): an Immersive career's difficulty sets it, Easy 50%, Normal
+  75%, Hard 100% (the old 75/100/100); Custom picks one of the three; Sandbox chooses in Settings (100, 75, 50). A
+  career from before difficulties keeps its full price. The Kestrel A costs 937, 1,406 or 1,874; the Relief Ship 754,
+  1,130 or 1,507, and she's no longer at a rate of her own.
+- **Where it applies:** wherever a ship is priced. Commission (the Relief Ship like any ship), the plea's value of her,
+  what she's worth at Trade In and Auction (`Pricing.saleValue`), a final victory's reward and the museum, and the
+  Junkyard: a part's worth is its price at the rate before the Junkyard's own rolls (the share by how broken it is,
+  the clearance, the broken bars off), and a derelict's value is at the rate before her 25 to 75 percent and her
+  damage. The Junkyard's tweaks themselves are unchanged (15 points off per missing core system, the clearance, the
+  damage). Never the stores: buying and repairing in the Cargo Bay cost the same on every difficulty. On Easy a ship
+  sells for less at a victory, and her replacement costs less: heromedel's call, fair both ways.
+- **The ship report, tidied (Plan AA).** The panel Commission, Build Ship and the Ship's report share
+  (`SpaceDockUI.shipSummaryPanel`) is two columns from the top: her picture, supplies and crew on the left; weapons,
+  drones, augments, cargo and systems on the right, so nothing sits beside an empty half and nothing scrolls off.
+  Each system has FTL's icon, its level and a bar of it to the vanilla max (`LevelBar`, the design screen's bar moved
+  out of `NumberRow` so both screens draw the same: green, amber past the max, red for broken bars); the reactor too.
+  Commission's price breakdown is three columns of name and price instead of one wrapped line. Past ten segments
+  (a big reactor, a design past the max) the bar stands down and the row says it in words, "12 / 2 broken", so nothing
+  runs off the screen; every vanilla max is 8 or under, so a stock ship always has bars.
+
+## 31. Crew expeditions, a second system behind a hidden switch — built (5.00; harness test AsgT)
+
+heromedel's design, tried beside the old board rather than in its place: `expedition_type` in the cfg (never in
+Settings), 0 hides expeditions (the Space Dock's button becomes Hire Crew, the volunteer board alone), 1 is the board
+of jobs of section 25, 2 is this (the default since heromedel's go-ahead). The old system's infirmary and ransoms settle under any value; the two
+share those files, the crew-card picker and the hire button, and nothing else (`parser/Assignments.java`,
+`ui/AssignmentsDialog.java`, the fleet's `assignments.txt`, the words in `resource/assignments.txt`).
+
+- **The board** offers three sectors of the ten (Civilian, Engi, Zoltan, Mantis, Pirate, Rebel, Rock, Nebula,
+  Crystal rarely), each with a line of words that says nothing of the odds; an
+  offer not taken comes down after a few beacons (hidden). Pick one and one to three crew from the Cargo Hold; they
+  leave the hold's save for the assignments file (so nothing is matched back by name: CONCERNS 2's real fix, for this
+  system), setting out counts a beacon, and they're due in 1 to 3 more (hidden). No ratings, warnings or hints
+  anywhere: what suits whom, the player learns from the reports.
+- **The roll**, heromedel's tables as given: the job from the sector's weights (sixteen jobs, 136 a sector, each
+  sector +5 to two and -5 to two); one hazard in ten (a solar flare, an asteroid field, a pulsar, a plasma storm in a
+  nebula only; shrugged off by a race each); a d20 a head for the band (1 died, 2-5 injured, 6-9 failed, 10-15
+  successful, 16-19 very, 20 extremely), one reroll of a 9 or under when the sector or the job suits the race (one in
+  four each, two in four both, one good and one bad cancel). The pot is 2d10 times 100% + 10% a head + each one's band
+  (-30 to +30), race by sector (±10, Lanius +20 in Engi and Mantis space, Abandoned -10 to all but Crystal and Lanius,
+  a race's own bonus winning), race by job (±10), the job's skill (+10 a level: Attack weapons, Defend shields,
+  Repair, Salvage and Infection repair, Scout, Got Lost and Hijack piloting, Escort and Transport engines, the fights
+  combat, Negotiate and Rescue none) and a hazard not shrugged off (-10); a crew member sent hurt counts half their
+  own bonuses; never under 1. Three Slugs in a nebula average about 18 and top out near 50; three Lanius in Mantis
+  space out-earn three Slugs there two to one.
+- **What comes of it:** a 1 is a death; an injury halves health (resting in the hold heals, as always); an injury on
+  Get Boarded is a coin toss for capture (a ransom follows, the old letters); an injury on a job and in a sector both
+  bad for the race is the infirmary at a quarter health; an injury on Giant Spiders is a death. Each natural 20 rolls
+  again, and a 10 or more finds an item worth up to double the pot (a weapon, drone or augment the stores sell, else
+  supplies). A Hijack, Salvage or Rescue that went well (no deaths, someone at 16 or better) rolls one more d20 for
+  the mission: a 20 brings a ship home (kept in `assignments/` until the commander answers: to the Space Dock, to
+  the Junkyard, or not taken; set out at the station as she is), a part to the stored systems (level 1, a bar broken) or a
+  rescued one who asks to sign on (one in twenty with a skill already; take them into the Cargo Hold or send them on
+  their way); a Hijack's 15 to 19 brings a part. With Immersive Notifications on the report's letter carries the
+  question with its own buttons (the recruit waits in the station's lounge, the ship is moored at the station, until
+  you answer); otherwise the Space Dock asks, and asks again at the next look if the box was closed. A chosen No is
+  for good. The job's skill pays points by band, so a long campaign levels people
+  up.
+- **How long they're away** (`Assignments.days`): 1 to 3 days, then a day more for a nebula (half the time), Abandoned
+  or Crystal space (always), a Mantis sector (half the time); Got Lost a day and a day for every failed roll on it;
+  on any other job a failed roll a day half the time; each item found a day, a part or a recruit one more, a ship
+  two; each Rock sent one time in three; a Scout a day less; never under 1 nor over 10. So the result is rolled when
+  they set out (the record keeps the seed and the crew as they left; it rolls the same when they're back) and told
+  only then: a detail that's late is a tell that something happened, which the report never says.
+- **The report**, when the Space Dock next sees them due (a pop-up; a letter in the inbox with Immersive
+  Notifications on), in heromedel's frame: the heading, the sector, "Due to events during the assignment the crew"
+  and a line for the job, a hazard's line, a line a crew member ("was injured in the attack", "was extremely
+  successful and brought back an Artemis Missile"), the prize's line, Total Reward. Never a roll, a die or a
+  percentage. The lines are in `resource/assignments.txt` (several per job, one picked), editable without a build.
+
+- **The words, first batch** (5.01, Plan MM; every line shown to heromedel by number first): hazards three or four
+  lines each, written to FTL's own tooltips (a star's flares set fires, a pulsar's waves knock systems out, a plasma
+  storm holds the reactor at half); the captured lines no longer promise word (the ransom letter always comes), and four
+  are marked by who took them (slavers sell to whoever pays most, pirates, the rebels, the Mantis); four infirmary lines;
+  the ship prize says what the decision is (join the fleet, the Junkyard, or let go); a hijack's part says why the ship
+  couldn't be kept; parts name their system; the recruit waits in The Station Lounge. Lines can be marked for a sector
+  (`event defend zoltan | ...` joins the general lines there), and {he} {him} {his} follow the crew member's sex. The
+  harness holds every line against FTL's event text (no six words the same) and refuses a mark that isn't a sector.
+
+- **The words, all of them** (5.02, Plan MM): the file went from 174 lines to 360, every one shown to heromedel by
+  number first. Each job has three or four general event lines and two or three marked for the sectors FTL gives
+  something to draw on (a Mantis raider at an Engi supply station, a Zoltan monastery, a Lanius stripping a research
+  station, Slugs in the nebula); two lines for each outcome, written to follow the event lines; four or five offers a
+  sector. Fragments after a colon became whole sentences, "she" for a ship became "the ship" where the crew member's
+  own pronoun could be mistaken for it, and top lines leave room for "and brought back" an item. Sending crew now
+  says "They will return in a few days, or longer, when their journey is over." (heromedel's words).
+
+- **Who shrugged it off** (5.03): when a hazard came up, a crew member whose race shrugs it off gets a sentence of
+  their own after their line (`shrug <hazard> <race>` in the words file; never for the dead, the taken or the
+  infirmary): a Rock walks through the fire ("Rock doesn't burn", heromedel), a Lanius's room is the one that doesn't
+  burn, a Zoltan powers the shields through the asteroids, an Engi's nanobots restart what the pulsar knocks out, a
+  Slug is at home in a plasma storm. It's how the report teaches who to send where. {He} and {His} begin a sentence.
+  An injury trumps it (Plan NN, heromedel): someone hurt gets no such sentence, and their injury line names a cause
+  that isn't the hazard (`band <job> injured cause`, every job but Giant Spiders, where an injury is a death; Rescue's
+  "carrying survivors through a fire" became a falling bulkhead).
+
+- **The Anti-Ship Battery** (5.05, Plan OO, heromedel): a fifth hazard, rebel space only (FTL's planetary guns).
+  Nobody shrugs it off, but each Engi sent is a one in three chance of hacking it for the whole detail (three Engi,
+  always); hacked, nobody pays its -10, and the report names who did it under the battery's line. Hazards cost reward
+  only: the d20 stays as it is (heromedel). 5.06: no longer tied to Advanced Edition, nor is the Abandoned sector (the
+  check read the Cargo Hold's save, which the station always makes with it on, and the Cargo Hold won't always be a
+  ship); a detail sent before 5.05 still rolls without the battery, as it was rolled (`away.N.ae` marks one after).
+
+- **The setup** (5.07, Frame Ideas A and B, heromedel): the report's "Due to events during the assignment the crew"
+  became the first of several setups (`frame | ...`), with a blank line above it. Half the time a setup of the job's
+  own (`frame <job> | ...`, seven a job, a few sector-marked), else heromedel's line or one of five general ones; his
+  comes up most. A setup is the setup, never the news: it ends on "the crew", reads well before every event line of
+  its job (all 688 pairings read by Claude before writing), and says nothing the event line says. Two crew members
+  with the same outcome never get the same line when there's another. Rescue's "pulled a crew out" became "pulled the
+  survivors out" ("the crew pulled a crew out").
+  A setup mentions nothing it hasn't introduced itself ("the enemy", "the quarry", "her owners"), beyond what any hired
+  crew has (a client, the job, the route): Board's seven, four of Hijack's, two of Capture's and one of Got Lost's
+  rewritten (heromedel: "it doesn't explain why they were knocking out anyone's engines or who the enemy is").
+- **Hurt twice** (5.07, Plan QQ, heromedel): someone sent below full health who is injured again has a third each of
+  dying of it (the job's death line), the infirmary (a quarter health, laid up) and half of what they had (never
+  under 1): "send an already injured person and 2/3rds chance they live another injury". Someone sent whole is
+  unchanged: an injury is half health.
+
+- **Faces in the report** (5.08, Plan PP, heromedel): each crew member's line starts with their icon and, as the
+  Cargo Bay draws it, a health bar at the health they came home with (none when whole, purple and full for the
+  infirmary); the dead and the taken greyed, with no bar. In the pop-up and in the inbox's letter alike: the fleet's
+  assignments.txt keeps the faces of the last 40 reports under their letters' keys (`face.N.*`). heromedel's setup is
+  now one of the six general ones, no more likely than the others (about one report in twelve). The harness checks the
+  experience: the job's skill, 1 point for injured or failed, 4, 6 or 8 for the successes, none on Negotiate or Rescue.
+
+## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
+
+heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every
+month on Easy, two on Normal, three on Hard (28, 56, 84 beacons; `Career.BEACONS_PER_MONTH`), Sandbox every two
+months, a career from before difficulties every two (the nearest to its old 60). Careers already running keep their
+stipends paid; only the next one's length changes. The ransom's month is 28 beacons and the reminder comes six before
+the end; the infirmary keeps the hurt 6 to 12 days (the same stretch as before). The Junkyard's intervals stand and
+their footers say what they are in days ("a week or two", "two weeks to six"). The old board's postings and the crew
+expeditions' days were days already. The words everywhere say months, never beacons.
+
+## 33. Captain's Quarters, and Refresh as a button beside Helm — built (5.00; harness test RestT)
+
+heromedel's idea: a way for time to pass without flying, now that details come back and ransoms run on the station's
+clock. Under Station, above Settings, "Quarters" ("Click here to head to quarters for a quick rest."): the question
+"Would you like to spend the rest of today in your quarters." with No to begin with; Yes passes one beacon of the
+fleet's time (`Rest.rest`), runs the station's round (reports, the prizes' questions, ransoms, the infirmary) and
+rebuilds the screen; "Rested in quarters" in the history. Resting on and on isn't honourable (heromedel): the first
+day is free, then each day in a row costs reputation, 1, 2, 3, 4, 5 and 5 from there, with Reputation shown;
+anything else that moves the clock ends the run. From the second day the question reads "...as you did yesterday."
+and, on a line of its own, "What will people think.", from the third "...as you have for the last N days.", with
+"-N reputation." under it on its own line when there's a cost and nothing when there's none. A day to get a detail
+back costs nothing; sleeping to a stipend costs about 125. The Refresh button left the column: a small square with
+the big buttons' rim and two chasing arrows sits at the top right beside Helm, past the column's edge, with the old
+tooltip and the same action.
+
+## 34. The quick-fix batch — built (5.00; harness checks in AsgT)
+
+From heromedel's notes: the Long Range offer's amount starts at 1 as the Cargo Bay's does, with Offer all beside it;
+the Cargo Bay's arrows get "< all" and "all >" under them; an Info button beside every list on the Long Range screen,
+both sides, opening the crew report or the item's card (the tooltips stay); and crew expeditions score reputation as
+the game's events do (`Reputation.expedition`): the pot a tenth, each crew member killed -10, everyone successful
++2, nobody successful -1, nothing for items, prizes or captures (a refused or lost ransom already counts as a death).
+Also from the notes, found done already: the Undo Retrofit confirm lists what moves back; the From the game art
+picker has a preview; the Content line is gone from the ship report; the Locked ships panel wraps to the screen.
+A hole found looking at it (heromedel): a remodel can add artillery, which no vanilla model but the Federation
+Cruisers has a room for, so an Undo Retrofit left it in her save with nowhere to be. Now `Retrofit.homeless` names
+every installed system her original model has no room for, the confirm lists them ("Artillery: no room on her
+original model, to the stored systems") and the undo takes them off her into the stored systems, level and broken
+bars kept (DesT checks it).
+
+## 35. The Refit tab shows her — built (5.03; harness checks in DesT)
+
+heromedel's note: show the ship's layout while looking at what can go on or come off, and call Store what it is. The
+Refit tab's picture is now her floor plan (`ui/ShipPlanView`): her rooms, doors and the icons of the systems she has,
+drawn over her hull at the picture's scale from her blueprint the way the design screen draws a ship (a room kept for
+a system she doesn't have shows its icon faintly). The row under the pointer lights its room, an uninstalled
+system's row the room it would go into. Nothing on the plan is clickable; the buttons stay on the right. "Store" is
+"Uninstall" on the buttons, the help line, the confirm and the hold's heading ("Uninstalled systems in the Cargo Bay").
+
+## 36. A Clone Bay, or a Backup DNA Bank — built (5.09; harness checks in TransT)
+
+heromedel: the two achievements that look after a crew, No Redshirts Here and Trustworthy Auto-Pilot, send a Clone Bay
+(to the stored systems; it takes the Medbay's place), or a Backup DNA Bank when the boarded ship already has a Clone Bay,
+where a Clone Bay would be no use. The station picks the letter when it is sent (`ach:<id>:dna` in transmissions.txt),
+so the words and the reward always agree; no ship aboard, or one unreadable, gets the Clone Bay. The letters are a
+first draft, for McCarthy's session (lore) to look over.
+
+(5.10: Cloud-C-Primary-Edit's 5.08 and 5.09 merged in with this branch's 5.08 and 5.09: the report's line breaks
+written in the words file, and the Clone Bay or Backup DNA Bank achievement letters, beside the report's faces and the
+races' second commission letters.)
+
+## 37. Augments with no room aboard come home — built (5.10; harness test OverT)
+
+heromedel: when FTL gives a fourth augment it asks which to throw away, and the save already holds all four while it
+asks. The station (`vault/Overflow`, the fleet's `overflow.txt`) writes the four down when the boarded ship's save shows
+more than three away from a store; at the next save after a jump, whichever is gone (the new one or an old one, a copy
+of two counted once) is crated up by her crew and shipped home: the `shipped` letter, from the crew of her name, with
+the augment to claim into the Cargo Hold. At a store nothing is noted (she could have sold one there); three aboard
+and one gone is a sale or an event, never shipped. The save watcher only notes it; the inbox's next check sends the
+letter (as the one-point-of-hull letter does), and without the inbox the augment goes straight to the Cargo Hold.
+A career rule, "An augment with no room aboard": shipped home on Easy and Normal, lost on Hard (Custom picks; a career
+from before it, Normal); Sandbox's House Rules box under Journeys and trading, on by default. Weapons, drones and crew
+wait until this has been tried in play. The letter's words are a first draft for McCarthy's session.
+
+## 38. The Third Fleet Commander — built (5.11, Plan RR, heromedel's chain; harness test ThirdT)
+
+heromedel's letters, with the agreed edits only (`fleet3:*` in transmissions.txt, `parser/ThirdFleet.java`); the
+first character at the station beyond the offices, set up to come back ("Might be fun rebuilding ships together").
+
+- **His first word**, 7 to 21 days after the station first looks at the fleet: the boarded ship's class (else a random
+  docked ship's; with neither it waits), and did you know you can rebuild ships from the junkyard. Replies Not
+  interested / Interested, each with his short answer a day or two later; neither ends the chain.
+- **The project ship:** the first derelict *bought* from the Junkyard (only a purchase counts) brings his part, with
+  the Not interested version "even though you said you didn't want to": a system her rooms allow that she lacks, the
+  ones she can't fly without first (Piloting, Engines, Oxygen), at level 1 and in working order, into the stored
+  systems ("Head to your Cargo Bay"). Bought before his first word, he skips it and sends the part.
+- **The parts word:** the first stored part installed after that (at the Cargo Bay's Save), if no part has been bought
+  from the Junkyard: cheap parts there too, "Gotta repair them yourself though".
+- Each letter once (the vault's events: `fleet3-*`). With the inbox off they come as pop-ups at the Space Dock, the
+  first with its two buttons and his answer straight after.
+
+(5.12: the two branches merged again: this one's 5.10, the augments shipped home, and McCarthy's 5.08 to 5.11.)
+
+## 39. Reputation as a currency, and How Rep Works — built (5.13; harness checks in RepuT, FleetT, PriceT)
+
+heromedel's list (Ideas A to I). Reputation pays where The Federation Home Planet is willing to bend; repairs and the
+Junkyard stay scrap only. One question for each fee (`ui/RepPay`): all in scrap, all in reputation, or the scrap there is
+and reputation for the rest; with Reputation off, scrap only, as before.
+
+- **A New Journey:** the full fee (200 / 500 / 1000), scrap or reputation one for one.
+- **Refit removal:** Easy 25, Normal 50, Hard 75, scrap or reputation (vanilla can't take systems off; it lets you rebuild
+  other systems). Sandbox keeps its own setting, reputation offered beside it. Paid on the Cargo Bay's Save, with the
+  Dry Dock's bill (a reputation bill beside the scrap one, spent once the save stands).
+- **Stripping when scrapping:** 15 / 30 / 60 a system, scrap or reputation; Hard allows it now. Cheaper than taking them
+  off one by one at Refit, because the hull is lost.
+- **A custom work order** fitting a system past FTL's System Limit in the Cargo Bay (Refit or the Dry Dock's shop):
+  25 / 50 / 75 scrap and as much reputation (Sandbox 50 and 50; with Reputation off, both in scrap). In Commission it's
+  part of her price, scrap only, both shares (50 / 100 / 150; Sandbox 100, as it was).
+- **Plead for New Ship:** as it was (give up the Cargo Hold or keep it), the share by difficulty: Easy a tenth, Normal a
+  quarter, Hard half (Sandbox a tenth).
+- **Captured crew:** -4 each when taken (in the crew expeditions' entry, or an entry of its own on the board of jobs),
+  +2 when the ransom is paid.
+- **Below zero:** a plea, a promise of adventure and rest in quarters are never refused and may take reputation below
+  zero (otherwise a fleet with no ship would be finished). Every other fee stops at zero.
+- New career rules: "A custom work order (past the System Limit) costs" and "A plea answered with reputation costs";
+  a career from before difficulties keeps its free removal and stripping.
+- **How Rep Works:** the Career Reputation Log had tabs across the top, as Settings does: Log, and How Rep Works. Turned
+  off in 5.14 (heromedel: a page of how to earn and lose it invites min-maxing; heromedel may write it later). The first
+  draft stays in `ReputationLogDialog.howPage()`, unused.
+
+
+## 40. How Reputation Can be Used, and where it came from — built (5.15; harness checks in RepuT)
+
+- **How Reputation Can be Used** (heromedel; Settings, Rules, under Reputation; any mode, never locked by Immersive
+  Mode; `reputation_use` in the cfg): 1 New Journeys and Pleads (the default, until the rest is tried in play),
+  2 Vanillas Breaking Actions (1, and Refit removal, stripping, a custom work order's share), 3 Only as a score.
+  Wherever reputation can't be used, scrap pays: a work order's share in scrap too, a plea with 3 offers giving up the
+  Cargo Hold alone. A promise of adventure and rest in quarters cost reputation with 1 and 2 (nobody is locked out of
+  them) and are free with 3. Captives and ransoms count with all three: that's score.
+- **Total Reputation From:** a line under the Career Reputation Log, a running tally by pool (Travel, Combat, Crew,
+  Scrap, Events, Achievements, Spent), each net, green or red, pools at zero left out. Read from the log itself
+  (`Reputation.tally`): each bracketed piece of an entry goes to its pool by its words, so a jump that did three things
+  counts in three pools; spending entries are Spent whole. The pools add up to the total.
+
+
+## 41. Expeditions come home once, and take a week or two — built (5.16; harness checks in AsgT)
+
+From heromedel's first real test (their save): crew were being duplicated. When two details were due on the same look,
+`checkReturns` read the list once and brought them home in turn; bringing one home renumbers the rest, so the second
+came home under a stale number: its own record stayed (it came home again at the next look, a second copy of everyone)
+and another detail's record was struck off (those crew lost while away). Now each detail is brought home by its lasting
+name (when it set out, its seed, who went), the list read afresh each time, and a detail no longer listed is never
+rolled. Also from that test: setting out passes no time (arranging a second detail brought the first home), details are
+away 7 to 14 days and the job's extras (cap 21), not 1 to 3, and expedition reports have Delete (a question still
+waiting is answered No with it). Their save was repaired by hand; its history.log says what was changed and why.
+
+
+## 42. The Cargo Bay's day, the master log and the Captain's Log — built (5.17; harness test LogT)
+
+heromedel's ideas. **The Cargo Bay's day:** a Save with real business at the station (buying, selling, the Dry Dock's
+work, a system installed or uninstalled; never moving your own things about) passes a day, but not twice running: if
+the last day counted was already a Cargo Bay day, with nothing else moving the clock between, it passes none, so
+selling one missile at a time can't run the clock. **The master log** (`master.log`, hidden, each career's own; never a
+replacement for the other logs, which keep their own files, shapes and safeguards): D lines for each day the clock
+counts and why (a jump, work at a store in FTL, rest, a job from the board, business in the Cargo Bay), and E lines
+copying every entry the station log, the reputation log and the voyage logs get, with the real time and the career's
+day. A career's day 1 (`stardate.txt`) is its first moment, or its first look on 5.17; entries with no day, 0 or less
+are Prior to 1.1.1.1. Days are stored as plain numbers and shown as stardates, year.month.week.day (7-day weeks,
+28-day months, 13-month years). **The Captain's Log** (Captain's Quarters: Cancel, Rest, Captain's Log): "-- Captain's Log --",
+the first day as "Captains Log: Stardate Today" (heromedel's words), every later one as "StarDate TD x.x.x.x" (TD:
+Today), each with what happened on it; the station's housekeeping (loads, profiles, settings, patches) and the reasons
+days pass are left out, so it never tells what a day is counted in. Nothing in the other logs changed.
+
+
+## 43. The Captain's Log as a story — rebuilt (5.18; harness test LogT)
+
+heromedel, on seeing 5.17's: the master list is every entry; the Captain's Log is a curated, stylized story made from
+it, by day. Its rules are in docs/STYLE.md ("The Captain's Log"); `vault/CaptainsLog` reads each day's entries, sorts
+them into kinds, merges repeats, writes them in the captain's voice, puts the action that moved the day last with
+"Then", and folds quiet days; "Detailed Log Entries" shows the specifics. To put each thing on its own day: a rest is
+logged before the clock moves; the Cargo Bay's entries before its day passes; a ship's voyage log (what she did at a
+stop) before the clock counts her jump; and the expedition's station line names who was taken and who went to the
+infirmary. Days aboard (heromedel): "On board the Kestrel.", what happened, "Then we jumped to a new beacon" (or "to a
+station", "to sector 3"); "I returned to The Home Planet Station." and "Set out on the Kestrel." where the captain
+moves between the two; gear bought at a store or picked up. The voyage log gains "Arrived at a store", "Bought at a
+store: …" and "Picked up: …" for it. Hard rule 2 now says days are real: a player may work out that a jump passes a day.
+
+**The beacon (5.19, heromedel):** a jump's line tells what the beacon held and who she met ("Then we jumped into an ion
+storm and met a Rock pirate"), even when it's learned on a later look, on a later day. The voyage log gains "Beacon: …"
+(the save's red giant, pulsar, planetary defence system and asteroid field; a nebula from FTL's count of nebula jumps;
+an ion storm as a jump into danger that names none of the others) and "Ship met: …" (the ship alongside, by her ship
+event's list of ships and her crew). "On board the Kestrel:" takes a colon.
+
+**Ideas, back burner:** the Custom Part Order (heromedel): any weapon, drone or augment in the game without a store, for
+double its price in scrap and an equal amount of reputation; very expensive, as it should be to bypass the game.
+Crew records (heromedel): a place to look up any crew member, present or past: where they came from if known, every
+ship they served on, and their expeditions one line each (sector, job, how it went).
+
+## 44. The console — built (5.22; harness test ConT)
+
+heromedel: ~ opens a console over the station (never while typing in a box). Admin commands start locked: /admin answers
+"No admin commands available"; /admin dc on unlocks the dev commands and /admin dc off locks them again (hidden in the
+cfg as dev_commands). A locked command answers "Unknown command", so it stays hidden. The first dev command,
+/passtime N (1 to 365), passes N days one at a time with no added pause, each with the station's round (expeditions
+home, the infirmary, ransoms, and from 5.23 the inbox: the stipend and letters due), so whatever falls due lands on its own day; the console is modal and its input and close
+stay locked until the run is done, half a second at least, then the Space Dock is rebuilt and what the days brought is
+told. The master log notes each day as passed by a dev command, so the Captain's Log tells them as quiet days; the
+debug log (only, from 5.23: heromedel) notes "Dev command used: passing N days". `core/StationConsole` answers the
+commands, `ui/ConsoleDialog` is the window. Only at the Space Dock: time can't pass with the Cargo Bay's trades open.
+From 5.23 on McCarthy's branch (heromedel): the console opens "Nothing to see here."; while locked, /admin and all under
+it are unknown commands, so nothing says there is anything to unlock; /admin dc on answers only "Dev commands on.", and
+/admin ? lists the dev commands.
 
 ## Naming decisions — settled (4B.30)
 

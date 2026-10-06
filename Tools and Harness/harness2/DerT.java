@@ -8,8 +8,49 @@ public class DerT { public static void main(String[] a) throws Exception {
  wrecks();
  listings(v);
  rebuilds(v);
+ refinalize(v);
  Setup.done();
 }
+ /** An overhaul re-finalized under the same remodel id: her room states follow the new shape (the old layout is read before the new one takes its id). */
+ static void refinalize(Vault v) throws Exception {
+  SavedGameState save = Commission.build("PLAYER_SHIP_HARD", "Reshaped", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(5));
+  ShipDesign g = ShipDesign.create(new ArrayList<ShipDesign>()); g.name = "Reshape";
+  Setup.chk("R: a design from the Kestrel", ShipDesign.fromGameShip(g, "PLAYER_SHIP_HARD"));
+  List<CompanionMod.Remodel> all = CompanionMod.load();
+  CompanionMod.Remodel r = CompanionMod.create("PLAYER_SHIP_HARD", "Reshaped", all);
+  r.ship = "Reshaped"; r.geometry = ShipDesign.copy(g); r.geometry.id = r.id;
+  for (CompanionMod.Sys x : g.systems.values()) r.systems.put(x.id, x.copy());
+  int nx = Integer.MAX_VALUE, ny = Integer.MAX_VALUE; for (ShipDesign.Room rm : g.rooms) { nx = Math.min(nx, rm.x); ny = Math.min(ny, rm.y); }
+  r.doors = new ArrayList<CompanionMod.Door>(); for (CompanionMod.Door x : g.doors) r.doors.add(new CompanionMod.Door(x.x - nx, x.y - ny, x.a, x.b, x.v));
+  all.add(r); CompanionMod.save(all);
+  net.blerf.ftl.model.shiplayout.ShipLayout oldLay = DataManager.get().getShipLayout(save.getPlayerShip().getShipLayoutId());
+  CompanionMod.register(all);
+  Retrofit.switchTo(save, r.id, 0, 0, oldLay);
+  net.blerf.ftl.model.shiplayout.ShipLayout lay1 = DataManager.get().getShipLayout(save.getPlayerShip().getShipLayoutId());
+  boolean fit1 = true; for (int i = 0; i < lay1.getRoomCount(); i++) if (save.getPlayerShip().getRoomList().get(i).getSquareList().size() != lay1.getRoom(i).squaresH * lay1.getRoom(i).squaresV) fit1 = false;
+  Setup.chk("R: finalized as an overhaul of the Kestrel's own shape: every room state fits its room", fit1 && save.getPlayerShip().getRoomList().size() == lay1.getRoomCount());
+  // re-finalize under the same id: one 2x2 room becomes 2x1 (the doors and stations of the lost row go)
+  int pick = -1; for (int i = 0; i < r.geometry.rooms.size(); i++) { ShipDesign.Room rm = r.geometry.rooms.get(i); if (rm.w == 2 && rm.h == 2) pick = i; }
+  ShipDesign.Room rm = r.geometry.rooms.get(pick); int lostRow = rm.y + 1; rm.h = 1;
+  List<CompanionMod.Door> keep = new ArrayList<CompanionMod.Door>();
+  for (CompanionMod.Door x : r.geometry.doors) { boolean mine = x.a == pick || x.b == pick; boolean onLost = (x.v == 0 && x.y == rm.y + 2) || (x.v == 1 && x.y == lostRow); if (!(mine && onLost)) keep.add(x); }
+  r.geometry.doors.clear(); r.geometry.doors.addAll(keep);
+  for (CompanionMod.Sys x : r.geometry.systems.values()) if (x.room == pick && x.square != null && x.square >= 2) { x.square = null; x.dir = null; }
+  r.systems.clear(); for (CompanionMod.Sys x : r.geometry.systems.values()) r.systems.put(x.id, x.copy());
+  nx = Integer.MAX_VALUE; ny = Integer.MAX_VALUE; for (ShipDesign.Room q : r.geometry.rooms) { nx = Math.min(nx, q.x); ny = Math.min(ny, q.y); }
+  r.doors = new ArrayList<CompanionMod.Door>(); for (CompanionMod.Door x : r.geometry.doors) r.doors.add(new CompanionMod.Door(x.x - nx, x.y - ny, x.a, x.b, x.v));
+  CompanionMod.save(all);
+  oldLay = DataManager.get().getShipLayout(save.getPlayerShip().getShipLayoutId()); // as the dialog does: before the id names the new rooms
+  CompanionMod.register(all);
+  Retrofit.switchTo(save, r.id, 0, 0, oldLay);
+  net.blerf.ftl.model.shiplayout.ShipLayout lay2 = DataManager.get().getShipLayout(save.getPlayerShip().getShipLayoutId());
+  boolean fit2 = true; for (int i = 0; i < lay2.getRoomCount(); i++) if (save.getPlayerShip().getRoomList().get(i).getSquareList().size() != lay2.getRoom(i).squaresH * lay2.getRoom(i).squaresV) fit2 = false;
+  Setup.chk("R: re-finalized with room " + pick + " shrunk to 2x1: its room state has 2 squares, every room fits (" + save.getPlayerShip().getRoomList().get(pick).getSquareList().size() + ")", fit2 && lay2.getRoom(pick).squaresV == 1);
+  File t = File.createTempFile("reshape", ".sav"); SafeFiles.write(t, SaveHelper.toBytes(save));
+  SavedGameState back = HomePlanet.savedGameParser.readSavedGame(t); t.delete();
+  Setup.chk("R: she reads back whole", back.getPlayerShip().getRoomList().size() == lay2.getRoomCount() && back.getPlayerShip().getCrewList().size() == save.getPlayerShip().getCrewList().size());
+  all.remove(r); CompanionMod.save(all); CompanionMod.register(all);
+ }
  /** Many derelicts of every model: wrecked as promised, and each save the same when read back and written again. */
  static void wrecks() throws Exception {
   Random rng = new Random(11);
@@ -75,7 +116,7 @@ public class DerT { public static void main(String[] a) throws Exception {
   Setup.chk("L: the waits run 15, 20 ... 45 " + waits, waits.equals(new java.util.TreeSet<Integer>(Arrays.asList(15, 20, 25, 30, 35, 40, 45))));
   for (Derelicts.Listing x : again) {
    int base = Pricing.auctionBase(x.save);
-   Setup.chk("L: priced at 25-75% of her value as she is, missing systems or not (" + x.price + " of " + base + ")", x.price >= Math.max(10, base / 4) - 1 && x.price <= Math.max(10, base * 3 / 4) + 1);
+   Setup.chk("L: priced at 25-75% of her value as she is (at the rate), missing systems or not (" + x.price + " of " + base + ")", x.price >= Math.max(10, base / 4) - 1 && x.price <= Math.max(10, base * 3 / 4) + 1);
   }
   // the list keeps each one's share, not a price, so a change to the prices reaches listings already in; one from before shares keeps its price
   File idx = new File(Derelicts.dir(v), "listings.txt"); byte[] kept = SafeFiles.read(idx);

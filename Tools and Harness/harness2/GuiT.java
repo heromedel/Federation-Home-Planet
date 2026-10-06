@@ -41,8 +41,11 @@ public class GuiT {
   damaged(f);
   folding(f);
   expedition(f);
+  infirmaryBetweenJobs(f);
+  liveDock(f);
   ransomPopUp(f);
   infirmaryBay(f);
+  designSteps(f);
   Setup.done();
   System.exit(0);
  }
@@ -50,6 +53,53 @@ public class GuiT {
  static void hold(Vault v, int scrap) throws Exception { int s = v.storageScrap(); if (s < scrap) v.depositToStorage(scrap - s); else if (s > scrap) v.payFromStorage(s - scrap); }
  static Object field(Object o, Class<?> c, String name) throws Exception { java.lang.reflect.Field fd = c.getDeclaredField(name); fd.setAccessible(true); return fd.get(o); }
  static Object call(Object o, Class<?> c, String name, Class<?>[] types, Object... args) throws Exception { java.lang.reflect.Method m = c.getDeclaredMethod(name, types); m.setAccessible(true); return m.invoke(o, args); }
+
+ /** Design Ship as three steps (Plan X): the tabs, the Loadout step's rows writing into the design, the notes past vanilla, the anchor's label. */
+ static void designSteps(final MainFrame f) throws Exception {
+  List<ShipDesign> all = ShipDesign.load();
+  final ShipDesign d = ShipDesign.create(all); d.name = "Steps Test";
+  int[][] rooms = {{4,5,2,2},{6,5,2,2},{8,5,2,2},{6,4,2,1},{10,5,1,2}};
+  for (int[] r : rooms) d.rooms.add(new ShipDesign.Room(r[0], r[1], r[2], r[3]));
+  d.doors.add(d.doorFor(6,5,1)); d.doors.add(d.doorFor(8,5,1)); d.doors.add(d.doorFor(10,5,1)); d.doors.add(d.doorFor(6,5,0)); d.doors.add(d.doorFor(4,5,1));
+  String[][] sys = {{"pilot","4"},{"engines","0"},{"oxygen","3"},{"shields","1"},{"weapons","2"}};
+  for (String[] s : sys) { CompanionMod.Sys x = new CompanionMod.Sys(s[0]); x.room = Integer.parseInt(s[1]); x.power = CompanionMod.usualPower(s[0]); if (ShipDesign.manned(s[0])) { x.square = 0; x.dir = ShipDesign.defaultDir(s[0]); } d.systems.put(s[0], x); }
+  ShipArt.adoptGameShip(d, "kestral");
+  new Thread(new Runnable() { public void run() { DesignDialog.open(f, d, new ArrayList<String>()); } }).start();
+  ShipEditorDialog dlg = null;
+  for (int i = 0; i < 100 && dlg == null; i++) { Thread.sleep(100); for (Window w : Window.getWindows()) if (w instanceof ShipEditorDialog && w.isShowing()) dlg = (ShipEditorDialog) w; }
+  Setup.chk("Steps: Design Ship opens", dlg != null);
+  if (dlg == null) return;
+  final ShipEditorDialog ed = dlg;
+  final Object[] r = new Object[8];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   JTabbedPane steps = (JTabbedPane) field(ed, ShipEditorDialog.class, "steps");
+   ShipDesign d = (ShipDesign) field(ed, ShipEditorDialog.class, "d"); // the editor works on a copy
+   r[0] = steps.getTitleAt(0) + "|" + steps.getTitleAt(1) + "|" + steps.getTitleAt(2);
+   r[1] = ed.stepShown();
+   ed.showStep("Loadout");
+   r[2] = ed.stepShown();
+   NumberRow slots = null, shields = null;
+   for (NumberRow n : rows(ed)) { if (n.name().equals("Weapon slots")) slots = n; if (n.name().equals("Shields")) shields = n; }
+   r[3] = slots != null && shields != null && shields.tick() != null && slots.tick() == null;
+   if (slots != null) slots.set(6, true);
+   if (shields != null) shields.set(9, true);
+   r[4] = ((JLabel) field(ed, ShipEditorDialog.class, "checks")).getText();
+   r[5] = d.weaponSlots + "/" + d.systems.get("shields").power + "/" + (slots != null && slots.overMax());
+   if (shields != null) { shields.tick().setSelected(false); for (java.awt.event.ActionListener al : shields.tick().getActionListeners()) al.actionPerformed(new java.awt.event.ActionEvent(shields.tick(), 0, "")); }
+   r[6] = d.notAtStart.contains("shields");
+   ed.showStep("Art");
+   r[7] = ed.stepShown();
+   ed.dispose();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("Steps: three steps in build order, Rooms in front: " + r[0] + ", " + r[1], "1. Rooms|2. Art|3. Loadout".equals(r[0]) && "Rooms".equals(r[1]));
+  Setup.chk("Steps: the Loadout step comes to the front", "Loadout".equals(r[2]));
+  Setup.chk("Steps: her numbers and her systems are rows; a system's has the tick, a number's hasn't", Boolean.TRUE.equals(r[3]));
+  Setup.chk("Steps: 6 weapon slots and Shields at 9 typed in go straight into the design, the row marked over the max: " + r[5], "6/9/true".equals(r[5]));
+  Setup.chk("Steps: the checks line says so, a note not a stop: " + r[4], String.valueOf(r[4]).contains("Past vanilla") && String.valueOf(r[4]).contains("nowhere to draw") && !String.valueOf(r[4]).contains("To fix"));
+  Setup.chk("Steps: unticking a system's row takes it off the starting set", Boolean.TRUE.equals(r[6]));
+  Setup.chk("Steps: the Art step comes to the front", "Art".equals(r[7]));
+ }
+ static List<NumberRow> rows(java.awt.Container c) { List<NumberRow> out = new ArrayList<NumberRow>(); for (java.awt.Component x : c.getComponents()) { if (x instanceof NumberRow) out.add((NumberRow) x); if (x instanceof java.awt.Container) out.addAll(rows((java.awt.Container) x)); } return out; }
 
  /** Repairs on the Refit tab: paid from the Cargo Hold on Save, nothing on Reset; the hold as the partner or another ship. */
  static void bill(final Vault v, final MainFrame f, final boolean otherPartner) throws Exception {
@@ -115,7 +165,7 @@ public class GuiT {
   shelf.setItemType(SavedGameParser.StoreItemType.SYSTEM); shelf.addItem(item); store.addShelf(shelf);
   g.getBeaconList().get(at).setStore(store);
   final int price = DataManager.get().getSystem("hacking").getCost();
-  s.setScrapAmt(price + Pricing.WORK_ORDER + 7);
+  s.setScrapAmt(price + homeplanet.core.Economy.commissionWorkOrder() + 7);
   v.write(b, g);
   hold(v, 150);
   shown.clear(); optionsShown.clear(); defaults.clear(); presses.clear();
@@ -145,7 +195,7 @@ public class GuiT {
   Setup.chk("X: at 8 systems the shop sells her Hacking, the custom work order on hover", Boolean.TRUE.equals(r[0]) && tip.equals(r[1]));
   Setup.chk("X: Buy asks first, in heromedel's words, Install or Cancel (Cancel the default)", shown.size() >= 1 && ask.equals(shown.get(0))
     && Arrays.asList(optionsShown.get(0)).equals(Arrays.asList("Install", "Cancel")) && "Cancel".equals(String.valueOf(defaults.get(0))));
-  Setup.chk("X: Cancel changes nothing", Integer.valueOf(price + Pricing.WORK_ORDER + 7).equals(r[2]) && Integer.valueOf(0).equals(r[3]));
+  Setup.chk("X: Cancel changes nothing", Integer.valueOf(price + homeplanet.core.Economy.commissionWorkOrder() + 7).equals(r[2]) && Integer.valueOf(0).equals(r[3]));
   Setup.chk("X: Install fits it for the store's price and 100", shown.size() == 2 && Integer.valueOf(7).equals(r[4]) && Integer.valueOf(1).equals(r[5]));
   Setup.chk("X: Save writes her so", Boolean.TRUE.equals(r[6]) && saved.getScrapAmt() == 7 && level(saved, HACK) == 1 && SaveHelper.systemCount(saved) == 9);
 
@@ -371,16 +421,21 @@ public class GuiT {
   Setup.chk("H: no ship aboard: the Space Dock's Cargo Bay button opens it (" + r[3] + "), on the Cargo Hold", r[3] == null && Boolean.TRUE.equals(r[0]) && Boolean.TRUE.equals(r[1]));
   Setup.chk("H: a weapon and a stored system sold from it: Save pays the hold, both are gone (" + hold.getScrapAmt() + " scrap)", Boolean.TRUE.equals(r[2])
     && hold.getWeaponList().isEmpty() && !file.contains("cloaking") && hold.getScrapAmt() > 10);
-  // and from there, board a docked ship without going back to the Space Dock
+  // and from there, pick a docked ship to work on: the Cargo Bay follows the pick, nobody is boarded (Plan Y)
   final Ship next = v.docked().get(0);
-  final Object[] b = new Object[2];
-  presses.clear(); presses.add(0); shown.clear(); // Board her
+  final Object[] b = new Object[4];
+  shown.clear(); presses.clear(); presses.addAll(Arrays.asList(1, 1, 1)); // nothing should ask; if something does, its second button, and the check says what it was
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
    CargoBayUI bay = f.cargoBay;
-   call(bay, CargoBayUI.class, "boardFromHere", new Class<?>[] {Ship.class}, next);
+   call(bay, CargoBayUI.class, "pick", new Class<?>[] {Ship.class}, next);
    b[0] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
+   b[1] = field(bay, CargoBayUI.class, "currentShip");
+   f.showCargoBay(); // opened again: back to the boarded ship (none), the Cargo Hold alone
+   b[2] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
   } catch (Exception e) { throw new RuntimeException(e); } } });
-  Setup.chk("H: no ship aboard, a docked ship boarded from the Cargo Bay: she's aboard, and the Cargo Bay shows her", v.boarded() == next && Boolean.FALSE.equals(b[0]));
+  Setup.chk("Y: a docked ship picked in the Cargo Bay: the screen works on her, nobody is boarded, no pop-up " + shown, v.boarded() == null && Boolean.FALSE.equals(b[0]) && b[1] == next && shown.isEmpty());
+  Setup.chk("Y: opened again, the pick is fresh: the boarded ship (none), so the Cargo Hold alone", Boolean.TRUE.equals(b[2]));
+  v.board(next); // the tests after this one work on a boarded ship, as before
  }
 
  /** The Space Dock's gold headings fold their buttons away on a click, and stay folded after a redraw. */
@@ -552,11 +607,53 @@ public class GuiT {
     rep[0].equals(rep[1]) && Integer.valueOf(1).equals(rep[2]));
  }
 
+ /** The Space Dock keeps itself current: a letter delivered or read (a write in the fleet's folder) changes the inbox's count behind any window, with no rebuild asked for. */
+ static void liveDock(final MainFrame f) throws Exception {
+  HomePlanet.immersiveNotifications = true;
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { f.showSpaceDock(); } });
+  int before = inboxCount(f);
+  Transmissions.deliver("live:test", "Home Planet Liaison", "A test of the live dock", "Just checking the dock keeps up.");
+  int after = waitCount(f, before + 1);
+  Transmissions.Message m = null; for (Transmissions.Message x : Transmissions.load()) if (x.key.equals("live:test")) m = x;
+  Transmissions.markRead(m);
+  int read = waitCount(f, before);
+  Transmissions.delete(m);
+  Setup.chk("L: a letter delivered: the inbox's count behind the window goes " + before + " -> " + after + " by itself; read: -> " + read, after == before + 1 && read == before);
+ }
+ static int inboxCount(final MainFrame f) throws Exception {
+  final int[] n = {-1};
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   Object btn = field(f.spaceDock, SpaceDockUI.class, "inboxBtn");
+   n[0] = btn == null ? -1 : ((Integer) field(btn, btn.getClass(), "unread")).intValue();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  return n[0];
+ }
+ /** The count once the Space Dock has rebuilt itself (within a few seconds), or whatever it shows then. */
+ static int waitCount(MainFrame f, int want) throws Exception {
+  int n = -1;
+  for (int t = 0; t < 40; t++) { n = inboxCount(f); if (n == want) return n; Thread.sleep(100); }
+  return n;
+ }
+ /** Jobs follow one another without a look at the Space Dock: whoever's time is up leaves the infirmary between them, with the pop-up. */
+ static void infirmaryBetweenJobs(final MainFrame f) throws Exception {
+  final Vault v = Vault.get();
+  SavedGameParser.CrewState hurt = Expeditions.holdCrew(v).get(0);
+  Properties inf = new Properties();
+  inf.setProperty("0.name", hurt.getName()); inf.setProperty("0.race", hurt.getRace().getId()); inf.setProperty("0.until", Integer.toString(v.beaconsSeen())); inf.setProperty("0.drained", Integer.toString(v.beaconsSeen()));
+  StringWriter w = new StringWriter(); inf.store(w, null); SafeFiles.writeText(new File(v.root, "infirmary.txt"), w.toString(), false);
+  int free = Expeditions.holdCrew(v).size();
+  shown.clear(); presses.clear(); presses.add(0);
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   call(null, Class.forName("homeplanet.ui.ExpeditionsDialog"), "afterJob", new Class<?>[] {Component.class}, f.spaceDock);
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  boolean word = false; for (String t : shown) if (t.contains(hurt.getName()) && t.contains("out of the infirmary")) word = true;
+  Setup.chk("X: between jobs, " + hurt.getName() + "'s time up: out of the infirmary with the pop-up, free to send again (" + free + " -> " + Expeditions.holdCrew(v).size() + ")",
+    word && Expeditions.holdCrew(v).size() == free + 1 && Expeditions.infirmary(v).isEmpty());
+ }
  /** With the inbox off, a ransom comes up at the Space Dock: Pay brings them home. */
  static void ransomPopUp(final MainFrame f) throws Exception {
   final Vault v = Vault.get();
-  java.lang.reflect.Method take = Expeditions.class.getDeclaredMethod("takeCaptive", Vault.class, SavedGameParser.CrewState.class, String.class); take.setAccessible(true);
-  take.invoke(null, v, Commission.volunteer("energy", new Random(8)), "pirates");
+  ExpT.take(v, Commission.volunteer("energy", new Random(8)));
   for (int i = 0; i < 6; i++) { SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile()); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock(); }
   final List<Expeditions.RansomNews> news = Expeditions.checkRansoms(v);
   hold(v, 200);

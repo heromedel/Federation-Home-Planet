@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "4B.96";
+	public static final String APP_VERSION = "5.26";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -64,9 +64,13 @@ public class HomePlanet {
 	public static boolean commissionUnlockedOnly = false, commissionCustomUnlockedOnly = false;
 	/** HR1: stored systems can be sold, for half their price and half the upgrades paid for. */
 	public static boolean sellSystems = false;
+	/** Sandbox Mode: an augment thrown away for want of room is shipped home by her crew (Economy.augmentsHome). */
+	public static boolean augmentsHome = true;
 	/** HR2: commissioning a ship costs scrap from the storage hold, at this percent of her price (50, 75 or 100). */
 	public static boolean commissionCosts = false;
 	public static int commissionPercent = 100;
+	/** Hidden (the cfg only, never Settings): which expeditions the Space Dock offers. 2 the crew expeditions (heromedel's second system, 5.00; the default), 1 the board of jobs, 0 none (hiring alone). */
+	public static int expeditionType = 2;
 	/** With HR2: the free ship an empty shipyard (no ship docked, boarded or in the Junkyard) offers: "kestrel", "any" or "relief". */
 	public static String freeShip = "relief";
 	/** With HR2: each ship layout unlocked in the FTL profile after this was turned on can be commissioned free, once. */
@@ -92,6 +96,11 @@ public class HomePlanet {
 	public static boolean reputationOn = false;
 	/** Does the fleet in use earn and lose reputation: always in Immersive Mode, and in Sandbox Mode with its Reputation rule. */
 	public static boolean reputation() { return immersiveMode || reputationOn; }
+	/**
+	 * How Reputation Can be Used (heromedel, 5.15; any mode, never locked): 1 New Journeys and Pleads, 2 Vanillas Breaking
+	 * Actions (and 1), 3 Only as a score. Wherever it can't be used, scrap pays. Default 1.
+	 */
+	public static int reputationUse = 1;
 	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
 	// ---- the rules in force: Sandbox Mode's own (the fields above, as Settings has them), or an Immersive career's, fixed ----
@@ -121,7 +130,6 @@ public class HomePlanet {
 	 * True once the companion mod, as last built, was patched in this session. The game data was read before that
 	 * patch, so the in-game check would still think the mod is missing until a restart.
 	 */
-	public static boolean modPatchedThisSession = false;
 
 	public static void main(String[] args) {
 		for (int i = 0; i + 1 < args.length; i++) {
@@ -151,8 +159,10 @@ public class HomePlanet {
 		commissionUnlockedOnly = flag("commission_unlocked_only");
 		commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only");
 		sellSystems = flag("sell_systems");
+		augmentsHome = flag("augments_home", true);
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
+		try { expeditionType = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("expedition_type", "2").trim()))); } catch (NumberFormatException e) { expeditionType = 2; }
 		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
 		if ("variable".equals(freeShip)) freeShip = "kestrel"; // Variable (a ship by what a report surrendered) is no more
 		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
@@ -165,6 +175,7 @@ public class HomePlanet {
 		longRangePopups = flag("long_range_popups", true);
 		careerMessages = flag("career_messages");
 		reputationOn = flag("reputation");
+		try { reputationUse = Math.max(1, Math.min(3, Integer.parseInt(config.getProperty("reputation_use", "1").trim()))); } catch (NumberFormatException e) { reputationUse = 1; }
 		finalVictory = config.getProperty("final_victory", "nothing");
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 
@@ -330,12 +341,15 @@ public class HomePlanet {
 		config.setProperty("new_journey_fee", Integer.toString(journeyFee));
 		config.setProperty("career_messages", Boolean.toString(careerMessages));
 		config.setProperty("reputation", Boolean.toString(reputationOn));
+		config.setProperty("reputation_use", Integer.toString(reputationUse));
 		config.setProperty("sell_supplies", Boolean.toString(sellSupplies));
 		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));
 		config.setProperty("commission_custom_unlocked_only", Boolean.toString(commissionCustomUnlockedOnly));
 		config.setProperty("sell_systems", Boolean.toString(sellSystems));
+		config.setProperty("augments_home", Boolean.toString(augmentsHome));
 		config.setProperty("commission_costs_scrap", Boolean.toString(commissionCosts));
 		config.setProperty("commission_price_percent", Integer.toString(commissionPercent));
+		config.setProperty("expedition_type", Integer.toString(expeditionType));
 		config.setProperty("free_ship", freeShip);
 		config.setProperty("unlock_free_ships", Boolean.toString(unlockFreeShips));
 		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
@@ -405,8 +419,8 @@ public class HomePlanet {
 	public static void launchFTL() {
 		// a retrofitted ship can't load without the companion mod: don't let FTL try
 		File cont = new File(save_location, "continue.sav");
-		if (cont.exists() && !modPatchedThisSession) {
-			List<String> missing = Retrofit.missingBlueprints(cont);
+		if (cont.exists()) {
+			List<String> missing = Retrofit.missingBlueprints(cont); // against ftl.dat as it is now (PatchState)
 			if (!missing.isEmpty()) {
 				showErrorDialog("The boarded ship flies on blueprints from the " + Retrofit.MOD_NAME + ", which isn't in FTL yet ("
 						+ String.join(", ", missing) + ").\n\nSend it to FTL via Slipstream first (Settings > Patch mods), or board a different ship.");

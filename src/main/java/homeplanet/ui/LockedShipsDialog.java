@@ -3,6 +3,7 @@ package homeplanet.ui;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Rectangle;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
@@ -43,14 +44,19 @@ final class LockedShipsDialog extends JDialog {
 
 	private LockedShipsDialog(Component owner, List<Locked> locked) {
 		super(owner == null ? null : SwingUtilities.getWindowAncestor(owner), "Locked ships", ModalityType.APPLICATION_MODAL);
+		// the words wrap at a width the screen can show: the picture, the text and room for the scrollbar and the frame
+		// (widths in pt: Swing's HTML makes a px 1.3 wide, a pt 1, so pt is what the layout's arithmetic uses)
+		Rectangle screen = ScreenFit.usable(owner);
+		int textW = Math.max(240, Math.min(TEXT_W, (screen == null ? TEXT_W + 300 : screen.width) - PIC_W - 12 - 20 - 60));
 		JPanel rows = new JPanel();
 		rows.setLayout(new BoxLayout(rows, BoxLayout.Y_AXIS));
 		rows.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-		for (Locked l : locked) rows.add(row(l));
+		for (Locked l : locked) rows.add(row(l, textW));
 		JScrollPane sp = new JScrollPane(rows, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		sp.getVerticalScrollBar().setUnitIncrement(24);
-		sp.setPreferredSize(new Dimension(640, Math.min(520, rows.getPreferredSize().height + 10)));
-		JLabel intro = new JLabel("<html>Not yet unlocked in your FTL profile, so they can't be commissioned. Unlock them in FTL, as its hangar says:</html>");
+		int rowsW = PIC_W + 12 + textW + 20 + 24; // the picture, the gap, the words, the border, the scrollbar
+		sp.setPreferredSize(new Dimension(rowsW, Math.min(screen == null ? 520 : Math.max(200, screen.height - 160), rows.getPreferredSize().height + 10)));
+		JLabel intro = new JLabel("<html><div style='width:" + (rowsW - 24) + "pt'>Not yet unlocked in your FTL profile, so they can't be commissioned. Unlock them in FTL, as its hangar says:</div></html>");
 		intro.setBorder(BorderFactory.createEmptyBorder(10, 12, 4, 12));
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton close = new JButton("Close");
@@ -66,17 +72,19 @@ final class LockedShipsDialog extends JDialog {
 		ScreenFit.keepOnScreen(this);
 	}
 
-	private static JPanel row(Locked l) {
+	/** Her picture's width, and the words' at most (less on a narrow screen). */
+	private static final int PIC_W = 130, TEXT_W = 460;
+	private static JPanel row(Locked l, int textW) {
 		JPanel r = new JPanel(new BorderLayout(12, 0));
 		r.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
 		r.setAlignmentX(LEFT_ALIGNMENT);
 		BufferedImage pic = picture(l.bp);
 		JLabel p = new JLabel(pic == null ? null : new ImageIcon(pic));
-		p.setPreferredSize(new Dimension(130, 60));
+		p.setPreferredSize(new Dimension(PIC_W, 60));
 		r.add(p, BorderLayout.WEST);
 		String cls = CommissionDialog.classOf(l.bp);
 		String hint = hint(l, cls);
-		JLabel t = new JLabel("<html><div style='width:460px'><b>" + XmlText.text(cls) + ", Type " + LETTERS[Math.min(2, l.n)]
+		JLabel t = new JLabel("<html><div style='width:" + textW + "pt'><b>" + XmlText.text(cls) + ", Type " + LETTERS[Math.min(2, l.n)]
 				+ "</b><br>" + XmlText.text(hint.trim()) + "</div></html>");
 		t.setFont(t.getFont().deriveFont(Font.PLAIN));
 		r.add(t, BorderLayout.CENTER);

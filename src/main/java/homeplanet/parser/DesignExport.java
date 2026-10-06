@@ -22,6 +22,7 @@ import net.blerf.ftl.xml.ShipBlueprint;
  * registered in the station so she can be drawn and commissioned before she's patched in.
  */
 public class DesignExport {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DesignExport.class);
 	private static final String CRLF = "\r\n";
 	static final int SQ = 35;
 
@@ -65,8 +66,15 @@ public class DesignExport {
 		return out;
 	}
 
-	static BufferedImage base(ShipDesign d) { return ShipArt.scaled(ShipArt.load(d.art, gameArt(d) ? "_base" : ""), d.artScale); }
-	static BufferedImage floor(ShipDesign d) { return d.floor.isEmpty() ? null : ShipArt.scaled(ShipArt.load(d.floor, d.floor.startsWith("game:") ? "_floor" : ""), d.artScale); }
+	static BufferedImage base(ShipDesign d) {
+		BufferedImage b = ShipArt.load(d.art, gameArt(d) ? "_base" : "");
+		if (b == null && !d.art.isEmpty()) { // her picture is gone (a vault moved without its art): the Kestrel's stands in, so her ships still load
+			log.warn("The hull art of {} ({}) is missing: the Kestrel's stands in", d.name, d.art);
+			b = ShipArt.load("game:kestral", "_base");
+		}
+		return ShipArt.scaled(b, d.artScale);
+	}
+	static BufferedImage floor(ShipDesign d) { return ShipArt.floorOf(d); }
 
 	/** Rooms start at square (0, 0) in FTL's files, as the game's own ships do: how far hers are shifted to get there. */
 	static int[] shift(ShipDesign d) {
@@ -79,15 +87,25 @@ public class DesignExport {
 		int[] s = shift(d);
 		return new int[] {d.artX - s[0] * SQ, d.artY - s[1] * SQ};
 	}
+	/** The design grid: the squares a design is drawn on. Its middle is the game's centre (below). */
+	public static final int COLS = 24, ROWS = 14;
 	/**
-	 * Where she sits on screen, in squares. Unless set by hand: chosen so the picture lands about where the game's own
-	 * ships' pictures do (their img position plus the offset averages roughly -45, -40 pixels). Unverified; check in game.
+	 * Where the game puts a ship: in FTL's own frame (squares from its ship origin, the layout's X_OFFSET/Y_OFFSET plus
+	 * the rooms' own position), every one of the game's player ships has the middle of its room block at about 8 across
+	 * and 5 down (measured over all 28: 8.0, 5.2). The middle of the design grid stands for that point, so where the
+	 * player puts the rooms relative to it is where FTL puts her: rooms left of the middle sit left in the game.
+	 */
+	public static final int SHIP_X = 8, SHIP_Y = 5;
+	/** The grid column and row that FTL's offset 0 falls on: a ship can't be put further left or up than these. */
+	public static final int ORIGIN_COL = COLS / 2 - SHIP_X, ORIGIN_ROW = ROWS / 2 - SHIP_Y;
+	/**
+	 * Her screen offsets (X_OFFSET, Y_OFFSET), in squares: how far right and down of FTL's ship origin her rooms start,
+	 * read off her place on the grid. Never negative: FTL has no further left or up than offset 0, so rooms drawn past
+	 * {@link #ORIGIN_COL} / {@link #ORIGIN_ROW} sit at 0 in the game (the editor shades that strip).
 	 */
 	public static int[] offsets(ShipDesign d) {
-		int[] xy = imgXY(d);
-		int ox = d.offX >= 0 ? d.offX : Math.max(0, Math.min(6, Math.round((-45f - xy[0]) / SQ)));
-		int oy = d.offY >= 0 ? d.offY : Math.max(0, Math.min(3, Math.round((-40f - xy[1]) / SQ)));
-		return new int[] {ox, oy};
+		int[] s = shift(d);
+		return new int[] {Math.max(0, s[0] - ORIGIN_COL), Math.max(0, s[1] - ORIGIN_ROW)};
 	}
 
 	// ---- the layout (.txt) ----
@@ -207,7 +225,8 @@ public class DesignExport {
 		String offs = gameChassisPart(d.art.substring(5), "offsets");
 		if (offs != null) {
 			Matcher m = Pattern.compile("<cloak\\s+x=\"(-?\\d+)\"\\s+y=\"(-?\\d+)\"").matcher(offs);
-			if (m.find()) return new int[] {Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2))};
+			// the game's offset is for the game's picture at full size: resized art, resized offset (the cloak picture is scaled with the hull)
+			if (m.find()) return new int[] {Math.round(Integer.parseInt(m.group(1)) * d.artScale / 100f), Math.round(Integer.parseInt(m.group(2)) * d.artScale / 100f)};
 		}
 		return new int[] {0, 0};
 	}
@@ -238,12 +257,8 @@ public class DesignExport {
 		while (l.drones.size() > d.droneSlots) l.drones.remove(l.drones.size() - 1);
 		return CompanionMod.applyLoadout(block, l);
 	}
-	/** One weapon slot per mount, up to FTL's four. */
-	public static int weaponSlots(ShipDesign d) {
-		int n = 0;
-		for (ShipDesign.Mount m : d.mounts) if (!m.artillery) n++;
-		return Math.max(1, Math.min(4, n));
-	}
+	/** Her weapon slots as she sets them (at least one). Past the game's own numbers FTL still takes her: the bar is simply drawn for fewer. */
+	public static int weaponSlots(ShipDesign d) { return Math.max(1, d.weaponSlots); }
 	/** The chassis' mounts: the weapon mounts, then the artillery's (as the Federation Cruiser has hers; unverified that FTL requires it). */
 	static List<ShipDesign.Mount> mountsInOrder(ShipDesign d) {
 		List<ShipDesign.Mount> out = new ArrayList<ShipDesign.Mount>();

@@ -22,8 +22,8 @@ final class ModeRows {
 	/** Each slot's line, in Vault.SLOTS order. */
 	private static final String[] TAGS = {
 		"Your fleet, your rules: every rule can be changed in Settings.",
-		"A gentler career: commissions at 75%, any ship on a plea, the stipend every two months, 50 scrap to start.",
-		"The Federation's standard: full prices, a Kestrel Type A or the Relief Ship on a plea, the stipend every three months.",
+		"A gentler career: commissions at half price, any ship on a plea, the stipend every month, 50 scrap to start.",
+		"The Federation's standard: commissions at 75%, a Kestrel Type A or the Relief Ship on a plea, the stipend every two months.",
 		"No favours: 1000-scrap journeys, the Relief Ship on a plea, no stripping, and the museum takes her after a final victory.",
 		"Choose the level of each rule yourself, once, when the career begins."};
 
