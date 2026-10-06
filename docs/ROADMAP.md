@@ -1186,7 +1186,7 @@ known, every ship they served on, and their expeditions one line each (sector, j
 (the living) and MIA-KIA (the missing and the dead), any one's whole history a click away. Crew assignments in the
 Captain's Log (heromedel): crew sent on assignment, and back, told there like the rest of the day. Skills on the assignment roll (heromedel): the job's skill (each job already has one, `Assignments.JOBS`; Negotiate and Rescue none; until now it only grows the scrap, +10% a level) adds +2 per level over zero to a crew member's d20 (+3 a
 level when their race also suits the job); a natural 1 and a natural 20 stay as they are; a changed roll stays between 2 and 19, so
-only a natural 1 is death and only a natural 20 the top; after the race's reroll. Open: keep the skill's +10% scrap a level too, or not. Reputation by FTL's difficulty
+only a natural 1 is death and only a natural 20 the top; after the race's reroll. The skill's +10% scrap a level stays too (heromedel). Reputation by FTL's difficulty
 (heromedel): reputation earned in FTL itself (a ship's service in a run, not anything done at the station) grows with
 FTL's own difficulty: Normal +10%, Hard +20%, and/or at least +1 more per event.
 
