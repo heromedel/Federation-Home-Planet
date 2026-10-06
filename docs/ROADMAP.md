@@ -1181,8 +1181,10 @@ event's list of ships and her crew). "On board the Kestrel:" takes a colon.
 
 **Ideas, back burner:** the Custom Part Order (heromedel): any weapon, drone or augment in the game without a store, for
 double its price in scrap and an equal amount of reputation; very expensive, as it should be to bypass the game.
-Crew records (heromedel): a place to look up any crew member, present or past: where they came from if known, every
-ship they served on, and their expeditions one line each (sector, job, how it went). Reputation by FTL's difficulty
+Crew records, as a Crew Log (heromedel): a place to look up any crew member, present or past: where they came from if
+known, every ship they served on, and their expeditions one line each (sector, job, how it went); two tabs, Present
+(the living) and MIA-KIA (the missing and the dead), any one's whole history a click away. Crew assignments in the
+Captain's Log (heromedel): crew sent on assignment, and back, told there like the rest of the day. Reputation by FTL's difficulty
 (heromedel): reputation earned in FTL itself (a ship's service in a run, not anything done at the station) grows with
 FTL's own difficulty: Normal +10%, Hard +20%, and/or at least +1 more per event.
 
