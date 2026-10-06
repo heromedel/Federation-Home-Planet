@@ -127,6 +127,7 @@ public final class FtlDock {
 	/** The same, with the station's window to attach FTL's to if the attached way is chosen (5.36). */
 	public static void begin(java.awt.Window stationWindow) {
 		active = true; window = null; shown = true; aside = false; where = null;
+		asked = null; placedAt = null; framed = false; cutAs = null;
 		station = stationWindow;
 		attachedRun = stationWindow != null && attachedChosen();
 		started = System.currentTimeMillis();
@@ -137,6 +138,7 @@ public final class FtlDock {
 	/** The station's window was closed and opened again (a new window to Windows): attached again, if attached. */
 	public static void stationReopened(java.awt.Window stationWindow) {
 		station = stationWindow;
+		cutAs = null; // a new window has no viewport cut out of it yet
 		if (!attachedRun || window == null) return;
 		try { log.info("FTL docked, attached again: {}", Win.own(window, station)); }
 		catch (Throwable t) { log.info("FTL docked: could not attach it again ({})", t.toString()); }
@@ -144,7 +146,7 @@ public final class FtlDock {
 	/** This docked run has FTL's window owned by the station's: it stays over it, and popups over both, by themselves. */
 	public static boolean attached() { return attachedRun && window != null; }
 	/** Ends it: FTL closed, or its window never turned up. */
-	public static void end() { cut(false); active = false; window = null; where = null; aside = false; }
+	public static void end() { cut(false); active = false; window = null; where = null; aside = false; asked = null; placedAt = null; framed = false; cutAs = null; }
 	/** The Space Dock shows the docked ships in FTL's place (heromedel, 5.32): FTL hidden, still running. */
 	public static boolean aside() { return aside; }
 	public static void setAside(boolean ships) { aside = ships; show(!ships); }
@@ -210,33 +212,66 @@ public final class FtlDock {
 	public static boolean alive() {
 		try { return window != null && Win.alive(window); } catch (Throwable t) { return false; }
 	}
-	/** Places FTL's window over the viewport (screen coordinates, in Java's units). */
+	/**
+	 * Places FTL's window over the viewport (screen coordinates, in Java's units). Only when it isn't there already
+	 * (heromedel, 5.42): every save FTL writes rebuilds the Space Dock, and placing it again each time (its frame redrawn,
+	 * the station's window cut again) made the two windows flicker while playing.
+	 */
 	public static void place(Rectangle screen) {
 		where = screen;
 		if (window == null || !shown) return;
-		try { Win.place(window, screen); } catch (Throwable t) { log.debug("FTL docked: could not place its window: {}", t.toString()); }
+		if (!screen.equals(asked) || moved()) put(screen);
 		cut(true);
+	}
+	private static Rectangle asked; // where FTL's window was last put, in Java's units
+	private static Rectangle placedAt; // where Windows says it went (its own units), to notice it moved since
+	private static boolean framed; // its frame redrawn once, after it was made borderless
+	/** FTL's window put over the viewport: its frame redrawn only the first time, when it has just lost its border. */
+	private static void put(Rectangle screen) {
+		asked = new Rectangle(screen);
+		placedAt = null;
+		try { Win.place(window, screen, !framed); framed = true; placedAt = Win.bounds(window); }
+		catch (Throwable t) { log.debug("FTL docked: could not place its window: {}", t.toString()); }
+	}
+	/** FTL's window isn't where it was put (FTL or Windows moved it); not known counts as not moved. */
+	private static boolean moved() {
+		if (placedAt == null) return false;
+		try { return !placedAt.equals(Win.bounds(window)); } catch (Throwable t) { return false; }
 	}
 	/**
 	 * The viewport cut out of the station's window while FTL sits in it (heromedel, 5.37): if FTL slips behind the
 	 * station, it shows through, and clicks there reach it. Closed whenever FTL isn't shown there, so the desktop never
-	 * shows through. Not in the attached way, where FTL stays over the station by itself.
+	 * shows through. Not in the attached way, where FTL stays over the station by itself. A cut the same as the one there
+	 * already is skipped (5.42): Windows redraws the whole window for each.
 	 */
 	private static void cut(boolean open) {
 		if (station == null || attachedRun) return;
 		boolean want = open && window != null && shown && where != null;
+		String as = cutKey(want);
+		if (as != null && as.equals(cutAs)) return;
+		cutAs = as;
 		try { Win.cut(station, want ? where : null); }
 		catch (Throwable t) { log.debug("FTL docked: could not {} the station's window: {}", want ? "cut the viewport out of" : "close the viewport in", t.toString()); }
+	}
+	private static String cutAs; // the cut the station's window has now (cutKey), null when not known
+	/** The cut wanted, as the window sees it (the hole from its corner, its size and scale), or null when it isn't on screen. */
+	private static String cutKey(boolean want) {
+		if (!want) return "whole";
+		try {
+			java.awt.Point at = station.getLocationOnScreen();
+			double scale = 1;
+			try { scale = station.getGraphicsConfiguration().getDefaultTransform().getScaleX(); } catch (Exception e) { }
+			return (where.x - at.x) + "," + (where.y - at.y) + " " + where.width + "x" + where.height + " in " + station.getWidth() + "x" + station.getHeight() + " at " + scale;
+		} catch (Exception e) { return null; }
 	}
 	/** Shows it in its viewport (back at the Space Dock) or hides it (another screen); FTL keeps running either way. */
 	public static void show(boolean visible) {
 		if (shown == visible) return;
 		shown = visible;
 		if (window == null) return;
-		try {
-			if (visible) { Win.show(window, true); if (where != null) Win.place(window, where); }
-			else Win.show(window, false);
-		} catch (Throwable t) { log.debug("FTL docked: could not {} its window: {}", visible ? "show" : "hide", t.toString()); }
+		try { Win.show(window, visible); }
+		catch (Throwable t) { log.debug("FTL docked: could not {} its window: {}", visible ? "show" : "hide", t.toString()); }
+		if (visible && where != null) put(where);
 		cut(visible);
 	}
 
@@ -258,10 +293,11 @@ public final class FtlDock {
 			int GetWindowThreadProcessId(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer pid);
 			boolean AttachThreadInput(int attach, int to, boolean on);
 			boolean GetWindowRect(com.sun.jna.Pointer hwnd, int[] rect); // left, top, right, bottom
+			com.sun.jna.Pointer GetWindow(com.sun.jna.Pointer hwnd, int cmd);
 			com.sun.jna.Pointer MonitorFromWindow(com.sun.jna.Pointer hwnd, int flags);
 			boolean GetMonitorInfoW(com.sun.jna.Pointer monitor, int[] info); // cbSize, monitor rect (4), work rect (4), flags
 		}
-		static final int GWL_STYLE = -16, GWLP_HWNDPARENT = -8;
+		static final int GWL_STYLE = -16, GWLP_HWNDPARENT = -8, GW_HWNDNEXT = 2;
 		/** SetWindowLongPtrW exists only in 64-bit user32 (in 32-bit, SetWindowLongW does the same). */
 		interface User32x64 extends com.sun.jna.win32.StdCallLibrary {
 			User32x64 I = com.sun.jna.Native.POINTER_SIZE == 8 ? com.sun.jna.Native.load("user32", User32x64.class) : null;
@@ -348,7 +384,9 @@ public final class FtlDock {
 		}
 		static boolean under(java.awt.Window station, Object w) {
 			com.sun.jna.Pointer mine = com.sun.jna.Native.getComponentPointer(station);
-			return mine != null && User32.I.SetWindowPos(mine, (com.sun.jna.Pointer) w, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // just after FTL's in the order: under it
+			if (mine == null) return false;
+			if (mine.equals(User32.I.GetWindow((com.sun.jna.Pointer) w, GW_HWNDNEXT))) return true; // just under it already (5.42)
+			return User32.I.SetWindowPos(mine, (com.sun.jna.Pointer) w, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // just after FTL's in the order: under it
 		}
 		static void focus(Object w) {
 			com.sun.jna.Pointer h = (com.sun.jna.Pointer) w;
@@ -357,11 +395,12 @@ public final class FtlDock {
 			User32.I.SetForegroundWindow(h);
 		}
 		static boolean alive(Object w) { return User32.I.IsWindow((com.sun.jna.Pointer) w); }
-		static void place(Object w, Rectangle r) {
+		/** Its frame redrawn too (frame) only just after it lost its border: that redraws the whole window. */
+		static void place(Object w, Rectangle r, boolean frame) {
 			double scale = 1;
 			try { scale = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().getDefaultTransform().getScaleX(); } catch (Exception e) { }
 			User32.I.SetWindowPos((com.sun.jna.Pointer) w, null, (int) Math.round(r.x * scale), (int) Math.round(r.y * scale), (int) Math.round(r.width * scale), (int) Math.round(r.height * scale),
-					SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOZORDER);
+					SWP_NOACTIVATE | (frame ? SWP_FRAMECHANGED : 0) | SWP_SHOWWINDOW | SWP_NOZORDER);
 		}
 		static void show(Object w, boolean visible) { User32.I.ShowWindow((com.sun.jna.Pointer) w, visible ? SW_SHOWNOACTIVATE : SW_HIDE); }
 	}

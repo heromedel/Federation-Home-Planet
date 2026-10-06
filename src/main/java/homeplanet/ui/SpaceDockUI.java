@@ -951,6 +951,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void placeViewport() {
 		JPanel v = viewportPanel;
 		if (v == null || !v.isShowing() || !homeplanet.core.FtlDock.active()) return;
+		if (v.getWidth() <= 2 || v.getHeight() <= 2) return; // a rebuild's new viewport, not laid out yet: FTL shrank to nothing there a moment, every save (heromedel, 5.42)
 		java.awt.Point at = v.getLocationOnScreen();
 		homeplanet.core.FtlDock.place(new java.awt.Rectangle(at.x + 1, at.y + 1, v.getWidth() - 2, v.getHeight() - 2)); // inside the gold frame
 	}
