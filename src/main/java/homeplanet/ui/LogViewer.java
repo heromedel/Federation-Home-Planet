@@ -88,26 +88,31 @@ final class LogViewer extends JPanel {
 		viewCrew.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { showCrew(); }
 		});
-		JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		top.add(viewStation);
-		top.add(javax.swing.Box.createHorizontalStrut(6));
-		top.add(fleet);
-		top.add(javax.swing.Box.createHorizontalStrut(18));
-		top.add(viewShip);
-		top.add(javax.swing.Box.createHorizontalStrut(6));
-		top.add(shipBox);
-		top.add(javax.swing.Box.createHorizontalStrut(18));
-		top.add(viewDebug);
-		top.add(javax.swing.Box.createHorizontalStrut(18));
-		top.add(viewCrew);
+		// the four logs across the top, each list under its own log (heromedel, 5.48: the Crew Log in reach at any width)
+		JPanel top = new JPanel(new java.awt.GridBagLayout());
+		java.awt.GridBagConstraints g = new java.awt.GridBagConstraints();
+		g.fill = java.awt.GridBagConstraints.HORIZONTAL;
+		g.anchor = java.awt.GridBagConstraints.NORTHWEST;
+		g.insets = new java.awt.Insets(0, 0, 4, 18);
+		JButton[] logs = {viewStation, viewShip, viewCrew};
+		JComboBox<?>[] lists = {fleet, shipBox, null};
+		for (int i = 0; i < logs.length; i++) {
+			g.gridx = i; g.gridy = 0;
+			top.add(logs[i], g);
+			if (lists[i] != null) { g.gridy = 1; top.add(lists[i], g); }
+		}
+		g.gridx = logs.length; g.gridy = 0; g.weightx = 1;
+		top.add(javax.swing.Box.createHorizontalGlue(), g); // the rest of the row, empty
+		g.gridx = logs.length + 1; g.weightx = 0; g.insets = new java.awt.Insets(0, 0, 4, 0);
+		top.add(viewDebug, g); // the program's own log, apart at the far right (heromedel, 5.48)
 		JPanel titleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		titleRow.add(showing);
 		titleRow.add(javax.swing.Box.createHorizontalStrut(12));
 		titleRow.add(count);
 		showing.setFont(MenuTheme.LABEL_FONT);
-		JPanel controls = new JPanel(new java.awt.GridLayout(0, 1, 0, 4));
-		controls.add(top);
-		controls.add(titleRow);
+		JPanel controls = new JPanel(new BorderLayout(0, 2));
+		controls.add(top, BorderLayout.NORTH);
+		controls.add(titleRow, BorderLayout.SOUTH);
 
 		scroll.getViewport().setBackground(RecordsLog.BG);
 		scroll.setBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, MenuTheme.GOLD));
