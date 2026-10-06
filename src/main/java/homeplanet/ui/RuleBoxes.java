@@ -63,6 +63,41 @@ public class RuleBoxes {
 	/** How Reputation Can be Used (heromedel's words): any mode, never locked by Immersive Mode. */
 	final JComboBox<String> repUseBox = new JComboBox<String>(new String[] {"New Journeys and Pleads", "Vanillas Breaking Actions", "Only as a score"});
 	private final JLabel repUseLabel = new JLabel("How Reputation Can be Used:  ");
+	/** What each option does, one per option (heromedel, 5.26): the open list's tooltips, and the info window's paragraphs. */
+	static final String[] REP_USE_TIPS = {
+		"<html>Reputation can pay a New Journey's fee, and a plea for a new ship can keep the Cargo Hold.<br>A promise of adventure and a day's rest cost reputation. Everything else is paid in scrap.</html>",
+		"<html>All of New Journeys and Pleads, plus what vanilla FTL can't do:<br>taking a system off at Refit, stripping systems when scrapping, and a custom work order's reputation share.</html>",
+		"<html>Reputation is never spent. A plea gives up the Cargo Hold;<br>a promise of adventure and rest are free. Everything is paid in scrap.</html>"};
+	private final CargoParts.IconButton repUseInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "What each option does", new ActionListener() {
+		public void actionPerformed(ActionEvent e) { repUseInfo(); }
+	});
+	/** The info window: each option and what it changes, then what holds in all of them. */
+	private void repUseInfo() {
+		String gold = MenuTheme.HTML_GOLD;
+		String[] names = {"New Journeys and Pleads", "Vanillas Breaking Actions", "Only as a score"};
+		String[][] effects = {
+			{"A New Journey's fee can be paid in reputation, or in the scrap there is and reputation for the rest.",
+				"A plea for a new ship can keep the Cargo Hold, at a share of reputation set by the difficulty.",
+				"A promise of adventure (hiring with no crew left) and a day's rest in quarters cost reputation.",
+				"Refit removal, stripping when scrapping and custom work orders are paid in scrap."},
+			{"Everything New Journeys and Pleads allows.",
+				"Taking a system off at Refit, at the fee your rules set, in scrap or reputation.",
+				"Stripping systems when scrapping a ship, at the fee a system, in scrap or reputation.",
+				"A custom work order past FTL's System Limit takes its reputation share (with only scrap allowed, both halves are scrap)."},
+			{"Reputation is a score only: nothing ever spends it.",
+				"A plea for a new ship gives up the Cargo Hold.",
+				"A promise of adventure and a day's rest are free.",
+				"Everything else is paid in scrap."}};
+		StringBuilder h = new StringBuilder("<html><body style='width:460px'>");
+		for (int i = 0; i < names.length; i++) {
+			h.append("<p style='margin-top:").append(i == 0 ? 0 : 10).append("px'><font color='").append(gold).append("'><b>").append(names[i]).append("</b></font></p><ul style='margin-left:16px'>");
+			for (String x : effects[i]) h.append("<li>").append(x).append("</li>");
+			h.append("</ul>");
+		}
+		h.append("<p style='margin-top:10px'><font color='").append(MenuTheme.HTML_GREY_GREEN).append("'>Where reputation is spent, a plea, a promise of adventure and rest may take it below zero; "
+				+ "everything else stops at zero. In every option, captives cost reputation and paid ransoms earn some back. Any mode can change this setting.</font></p></body></html>");
+		javax.swing.JOptionPane.showMessageDialog(javax.swing.SwingUtilities.getWindowAncestor(repUseBox), new JLabel(h.toString()), "How Reputation Can be Used", javax.swing.JOptionPane.PLAIN_MESSAGE);
+	}
 	private final JPanel repUseRow = row(22);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
@@ -134,14 +169,23 @@ public class RuleBoxes {
 		repBox.setToolTipText("<html>Your standing with The Federation Home Planet: earned by sectors, scrap, ships defeated and the Rebel Flagship,"
 				+ "<br>lost by crew killed and ships lost in action (never in sector 8). Click it on the Space Dock for the Career Reputation Log.</html>");
 		repUseBox.setSelectedIndex(Math.max(0, Math.min(2, HomePlanet.reputationUse - 1)));
-		String repUseTip = "<html>New Journeys and Pleads: reputation can pay a New Journey's fee, and a plea can keep the Cargo Hold."
-				+ "<br>Vanillas Breaking Actions: those, and Refit removal, stripping when scrapping and a custom work order's share."
-				+ "<br>Only as a score: reputation is never spent; the plea gives up the Cargo Hold, and a promise of adventure and rest are free."
-				+ "<br>Wherever reputation can't be used, scrap pays. Any mode can change it.</html>";
+		String repUseTip = "Hover an option for what it does, or click the info icon";
 		repUseBox.setToolTipText(repUseTip);
 		repUseLabel.setToolTipText(repUseTip);
+		// each option says what it does while the list is open (heromedel, 5.26)
+		repUseBox.setRenderer(new javax.swing.DefaultListCellRenderer() {
+			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
+				java.awt.Component c = super.getListCellRendererComponent(list, value, index, selected, focus);
+				int i = index >= 0 ? index : repUseBox.getSelectedIndex();
+				if (c instanceof JComponent && i >= 0 && i < REP_USE_TIPS.length) ((JComponent) c).setToolTipText(REP_USE_TIPS[i]);
+				return c;
+			}
+		});
+		repUseInfo.setEnabled(false);
 		repUseRow.add(repUseLabel);
 		repUseRow.add(repUseBox);
+		repUseRow.add(javax.swing.Box.createHorizontalStrut(6));
+		repUseRow.add(repUseInfo);
 		repBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { sync(); } });
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A plea for a new ship doesn't reset it");
 		unlockBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
@@ -220,6 +264,7 @@ public class RuleBoxes {
 		if (!im) unlockBox.setEnabled(cost);
 		repUseBox.setEnabled(repBox.isSelected()); // never locked: only the Reputation rule itself
 		repUseLabel.setEnabled(repBox.isSelected());
+		repUseInfo.setEnabled(repBox.isSelected());
 		if (!im) customLockedBox.setEnabled(lockedBox.isSelected());
 	}
 

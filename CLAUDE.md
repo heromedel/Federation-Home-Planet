@@ -95,6 +95,9 @@ copies of it (LinkT runs a second station in its own process, over localhost). E
 `harness2/work/` (ignored). The converter tests (ConvT, StoT) run only when old Homeworld saves and program
 folder are passed as the 2nd and 3rd arguments.
 
+The one exception to running the full harness: small UI or text changes (a button, a message, a tooltip) need only the
+build, plus a screenshot or the one test that covers it.
+
 To see a window without a display, run it under `xvfb-run -a java ...` and paint the dialog's root pane into
 a BufferedImage.
 
