@@ -63,6 +63,16 @@ public class SettingsDialog extends JDialog {
 		d.setVisible(true);
 		return d.savesChanged;
 	}
+	/** Settings on the Records page, this crew member's career open in the Crew Log (a crew popup's Crew Log..., 5.41). */
+	public static void openCrewLog(java.awt.Component owner, int crewId) {
+		Window w = owner == null ? null : owner instanceof Window ? (Window) owner : SwingUtilities.getWindowAncestor(owner);
+		SettingsDialog d = new SettingsDialog(w);
+		d.tabsShown.setSelectedIndex(2);
+		d.records.showCrew(crewId);
+		d.setVisible(true);
+	}
+	private javax.swing.JTabbedPane tabsShown;
+	private LogViewer records;
 
 	private SettingsDialog(Window owner) {
 		super(owner, "Settings", ModalityType.APPLICATION_MODAL);
@@ -265,6 +275,7 @@ public class SettingsDialog extends JDialog {
 		c = constraints();
 		heading(body, c, "Records");
 		final LogViewer logViewer = new LogViewer();
+		records = logViewer;
 		body.add(logViewer, next(c)); // the station log, the ships' logs and the debug log, shown here (never in a text editor)
 		// under the viewer, one row: the folders and the debug toggle
 		JPanel folderRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -353,6 +364,7 @@ public class SettingsDialog extends JDialog {
 			tabs.addTab(names[i], holder);
 		}
 		final javax.swing.JTabbedPane t = tabs;
+		tabsShown = tabs;
 		final java.awt.Color normal = new java.awt.Color(220, 228, 235); // as the theme draws the others
 		javax.swing.event.ChangeListener mark = new javax.swing.event.ChangeListener() { // the open tab's name in dark on its light tab
 			public void stateChanged(javax.swing.event.ChangeEvent e) {

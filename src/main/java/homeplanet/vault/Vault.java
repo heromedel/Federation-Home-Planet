@@ -625,7 +625,11 @@ public final class Vault {
 	 * Reads every ship whose file changed since it was last seen (names, DLC flags and fingerprints). Needs the game
 	 * data loaded, so it runs after {@link #load()} once that is, and again on Refresh.
 	 */
-	public synchronized void takeStock() throws IOException {
+	public void takeStock() throws IOException {
+		takeStockLocked();
+		CrewRegister.sweep(this); // the crew register, outside the fleet's lock (5.41)
+	}
+	private synchronized void takeStockLocked() throws IOException {
 		boolean changed = false;
 		for (Ship s : ships) {
 			File f = fileOf(s);

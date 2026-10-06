@@ -46,6 +46,7 @@ echo "== AsgT"; run AsgT "$GAME" "$WORLD" "$W/asg" | grep -E "$PICK|^PASS|^three
 echo "== RestT"; run RestT "$GAME" "$WORLD" "$W/rest" | grep -E "$PICK|^PASS"
 echo "== OverT"; run OverT "$GAME" "$WORLD" "$W/over" | grep -E "$PICK|^PASS"
 echo "== LogT"; run LogT "$GAME" "$WORLD" "$W/log" | grep -E "$PICK|^PASS"
+echo "== CrewT"; run CrewT "$GAME" "$WORLD" "$W/crew" | grep -E "$PICK|^PASS"
 echo "== ConT"; run ConT "$GAME" "$WORLD" "$W/con" | grep -E "$PICK|^PASS"
 echo "== DockT"; run DockT "$GAME" "$WORLD" "$W/dock" | grep -E "$PICK|^PASS"
 echo "== RepT"; run RepT "$GAME" "$WORLD" "$W/rep" | grep -E "$PICK|^PASS"
