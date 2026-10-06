@@ -66,7 +66,7 @@ final class CrewLogView extends JPanel {
 		for (String k : rest) sections.put(k, new ArrayList<Member>());
 		for (Member m : members) {
 			String k = m.status == Status.KILLED ? "KILLED" : m.status == Status.RETIRED ? "RETIRED" : m.status == Status.TRANSFERRED ? "TRANSFERRED" : m.status != Status.PRESENT ? "MIA"
-					: m.where.startsWith("on assignment") ? "away" : m.where.equals("in the Cargo Hold") ? "hold" : shipKey(ships, m);
+					: m.where.startsWith("on an expedition") || m.where.startsWith("on assignment") ? "away" : m.where.equals("in the Cargo Hold") ? "hold" : shipKey(ships, m);
 			if (!sections.containsKey(k)) sections.put(k, new ArrayList<Member>());
 			sections.get(k).add(m);
 		}
@@ -134,7 +134,7 @@ final class CrewLogView extends JPanel {
 			for (Ship s : ships) if (key.equals("ship:" + s.id)) return (s.isBoarded() ? "Aboard " : s.state == Ship.State.JUNKED ? "In the Junkyard: " : "Docked: ") + s.name;
 		}
 		if (key.equals("hold")) return "The Cargo Hold";
-		if (key.equals("away")) return "On assignment";
+		if (key.equals("away")) return "On an expedition";
 		if (key.equals("TRANSFERRED")) return "Transferred";
 		if (key.equals("RETIRED")) return "Retired";
 		if (key.equals("KILLED")) return "KIA";
@@ -177,9 +177,9 @@ final class CrewLogView extends JPanel {
 			side.add(line("Since Stardate " + MasterLog.stardate(Math.max(1, m.events.get(0).day)) + ".", MenuTheme.TEXT));
 		}
 		int sent = 0, back = 0;
-		for (CrewRegister.Event e : m.events) { if (e.text.startsWith("Sent on assignment")) sent++; if (e.text.startsWith("Back from an assignment")) back++; }
+		for (CrewRegister.Event e : m.events) { if (e.text.startsWith("Sent on an expedition") || e.text.startsWith("Sent on assignment")) sent++; if (e.text.startsWith("Back from an expedition") || e.text.startsWith("Back from an assignment")) back++; } // 5.46 records said "assignment"
 		if (sent > 0 || back > 0) {
-			side.add(heading("Assignments"));
+			side.add(heading("Expeditions"));
 			side.add(line(sent + " sent out, " + back + " came back.", MenuTheme.TEXT));
 		}
 		if (!m.served.isEmpty()) {
@@ -240,9 +240,9 @@ final class CrewLogView extends JPanel {
 	private static String status(Member m) {
 		switch (m.status) {
 			case PRESENT: return "Serving " + m.where + (m.laidUp ? "; laid up in the infirmary" : "") + ".";
-			case CAPTIVE: return "MIA: " + m.where + ".";
+			case CAPTIVE: return "Captive: " + m.where.replaceFirst("^held captive by ", "held by ") + ".";
 			case MISSING: return "MIA: whereabouts unknown.";
-			case KILLED: return "KIA: " + (m.where.isEmpty() ? "lost" : m.where) + ".";
+			case KILLED: return m.where.isEmpty() ? "KIA." : "KIA: " + m.where + ".";
 			case TRANSFERRED: return "Transferred: " + m.where.replaceFirst("^transferred ", "") + ".";
 			default: return "Retired from the station's service.";
 		}

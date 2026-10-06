@@ -121,6 +121,10 @@ public class SettingsDialog extends JDialog {
 		body.add(folderRow("Saves folder:", savesLabel, new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				File f = HomePlanet.promptForSavePath();
+				if (f != null && homeplanet.core.StationLock.inUse(f)) { // another copy of the station works on those saves (5.45)
+					JOptionPane.showMessageDialog(SettingsDialog.this, homeplanet.core.StationLock.inUseMessage(f), "Already open", JOptionPane.WARNING_MESSAGE);
+					return;
+				}
 				if (f != null) { saves = f; refreshLabels(); }
 			}
 		}), next(c));
@@ -286,21 +290,22 @@ public class SettingsDialog extends JDialog {
 		folderRow.add(javax.swing.Box.createHorizontalStrut(14));
 		folderRow.add(debugBox);
 		folderRow.add(javax.swing.Box.createHorizontalStrut(14));
-		JButton feedback = new JButton("Send Feedback...");
-		feedback.setToolTipText("Report a bug or share an idea: opens the feedback form in your web browser");
-		feedback.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { Feedback.send(SettingsDialog.this); } });
-		folderRow.add(feedback);
+		folderRow.add(feedbackButton());
 		body.add(folderRow, next(c));
 		JLabel debugNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>The program's own logs, one per run: "
-				+ "send them along with a bug report. Debug logging adds detail to them. Found a bug or have an idea? Send Feedback... opens the form.</font></div></html>");
+				+ "send them along with a bug report. Debug logging adds detail to them. " + FEEDBACK_LINE + "</font></div></html>");
 		debugNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
 		body.add(debugNote, next(c));
 
 		body = aboutPage;
 		c = constraints();
 		heading(body, c, "About");
+		JLabel credit = new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; Inspired By ManApart's FTL Homeworld.");
+		credit.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+		body.add(credit, next(c));
+		// heromedel's line with the buttons beside it: the old single row was wider than a 1366 screen (5.31)
 		JPanel about = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		about.add(new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; after ManApart's FTL Homeworld; made by heromedel with Claude.  "));
+		about.add(new JLabel("Made by heromedel with Claude.  "));
 		JButton loreBtn = new JButton("Lore...");
 		loreBtn.setToolTipText("A transmission from the Federation Home Planet");
 		loreBtn.addActionListener(new ActionListener() {
@@ -320,6 +325,7 @@ public class SettingsDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) { showBundledText("LICENSE", "Licence (GPL-2.0)"); }
 		});
 		about.add(licenceBtn);
+		about.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(about, next(c));
 		JPanel updateRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JButton updateBtn = new JButton("Check for Updates...");
@@ -328,7 +334,12 @@ public class SettingsDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) { checkForUpdates(); }
 		});
 		updateRow.add(updateBtn);
+		updateRow.add(javax.swing.Box.createHorizontalStrut(8));
+		updateRow.add(feedbackButton()); // the Records tab's own, here too: wherever a player looks (heromedel, 5.30)
 		body.add(updateRow, next(c));
+		JLabel feedbackNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>" + FEEDBACK_LINE + "</font></div></html>");
+		feedbackNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
+		body.add(feedbackNote, next(c));
 
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton ok = new JButton("OK");
@@ -369,6 +380,16 @@ public class SettingsDialog extends JDialog {
 		setResizable(false);
 		setLocationRelativeTo(owner);
 		ScreenFit.keepOnScreen(this); // all of it on its screen, never under the taskbar
+	}
+
+	/** The words under each Send Feedback... button, the same on both tabs. */
+	private static final String FEEDBACK_LINE = "Found a bug or have an idea? Send Feedback... opens the form.";
+	/** Send Feedback..., one and the same on the Records tab and the About tab (heromedel, 5.30). */
+	private JButton feedbackButton() {
+		JButton b = new JButton("Send Feedback...");
+		b.setToolTipText("Report a bug or share an idea: opens the feedback form in your web browser");
+		b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { Feedback.send(SettingsDialog.this); } });
+		return b;
 	}
 
 	private void apply() {
@@ -414,6 +435,7 @@ public class SettingsDialog extends JDialog {
 		savesChanged = !saves.equals(HomePlanet.save_location);
 		HomePlanet.save_location = saves;
 		if (savesChanged) {
+			homeplanet.core.StationLock.claim(saves); // this station's now (looked at when chosen), the old folder let go
 			// another saves folder is another vault (its own ships, designs and remodels)
 			try {
 				homeplanet.vault.Vault.open(saves, HomePlanet.immersiveMode);

@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.48";
+	public static final String APP_VERSION = "5.50";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -97,7 +97,7 @@ public class HomePlanet {
 	/** Does the fleet in use earn and lose reputation: always in Immersive Mode, and in Sandbox Mode with its Reputation rule. */
 	public static boolean reputation() { return immersiveMode || reputationOn; }
 	/**
-	 * How Reputation Can be Used (heromedel, 5.15; any mode, never locked): 1 New Journeys and Pleads, 2 Vanillas Breaking
+	 * How Reputation Can be Used (heromedel, 5.15; any mode, never locked): 1 New Journeys and Pleads, 2 Vanilla-Breaking
 	 * Actions (and 1), 3 Only as a score. Wherever it can't be used, scrap pays. Default 1.
 	 */
 	public static int reputationUse = 1;
@@ -220,6 +220,14 @@ public class HomePlanet {
 		if (save_location == null) {
 			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
 			System.exit(1);
+		}
+		if (!StationLock.claim(save_location)) { // another copy is open on these saves (5.45)
+			final String says = StationLock.inUseMessage(save_location);
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+				JOptionPane.showMessageDialog(null, says, "Already open", JOptionPane.WARNING_MESSAGE);
+				return null;
+			} });
+			System.exit(0);
 		}
 		writeConfig |= !save_location.getAbsolutePath().equals(config.getProperty("ftlSavePath"));
 		if (writeConfig) saveConfig();
@@ -409,9 +417,24 @@ public class HomePlanet {
 	}
 	public static void showErrorDialog(final String message) {
 		onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
-			JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, wrap(message, 100), "Error", JOptionPane.ERROR_MESSAGE);
 			return null;
 		}});
+	}
+	/** Long lines broken after a space or a path's separator: a long path ran off the screen, the reason after it unseen (heromedel, 5.44). */
+	static String wrap(String text, int width) {
+		if (text == null || text.startsWith("<html>")) return text;
+		StringBuilder out = new StringBuilder();
+		for (String line : text.split("\n", -1)) {
+			while (line.length() > width) {
+				int cut = Math.max(line.lastIndexOf(' ', width - 1), Math.max(line.lastIndexOf('\\', width - 1), line.lastIndexOf('/', width - 1))) + 1;
+				if (cut < width / 2) cut = width; // nowhere to break near the end: broken at the width
+				out.append(line, 0, cut).append('\n');
+				line = line.substring(cut);
+			}
+			out.append(line).append('\n');
+		}
+		return out.substring(0, out.length() - 1);
 	}
 
 	// ---- FTL itself ----

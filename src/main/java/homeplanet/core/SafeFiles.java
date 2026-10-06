@@ -64,8 +64,29 @@ public final class SafeFiles {
 		write(target, text.getBytes(StandardCharsets.UTF_8), keepBackup);
 	}
 
+	/**
+	 * How long to wait before each new try when a replace is refused (heromedel, 5.44): Windows refuses it while another
+	 * program holds one of the files open a moment (an antivirus scanning a file just written, a backup, a sync).
+	 */
+	private static final int[] RETRY_MS = {50, 100, 200, 400, 800};
 	/** Moves {@code from} over {@code to} in one step where the file system allows it (the usual case on one disk). */
 	public static void replace(File from, File to) throws IOException {
+		for (int tries = 0; ; tries++) {
+			try {
+				moveOver(from, to);
+				break;
+			} catch (java.nio.file.NoSuchFileException e) {
+				throw e; // nothing there to move: another try won't help
+			} catch (IOException e) {
+				if (tries == RETRY_MS.length) { log.warn("Could not replace " + to + " after " + (tries + 1) + " tries", e); throw new NotReplaced(to, e); }
+				log.debug("Replacing {} was refused ({}); trying again in {} ms", to, e.toString(), RETRY_MS[tries]);
+				try { Thread.sleep(RETRY_MS[tries]); }
+				catch (InterruptedException x) { Thread.currentThread().interrupt(); throw new NotReplaced(to, e); }
+			}
+		}
+		written(to);
+	}
+	private static void moveOver(File from, File to) throws IOException {
 		try {
 			Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
 		} catch (IOException e) {
@@ -73,7 +94,21 @@ public final class SafeFiles {
 			log.debug("Atomic replace of {} failed ({}): a plain replace instead", to, e.toString());
 			Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		}
-		written(to);
+	}
+	/** A file that couldn't be put in place, even after a few tries: said in words a player can act on (5.44). */
+	public static final class NotReplaced extends IOException {
+		NotReplaced(File to, IOException cause) {
+			super(to.getName() + " could not be put in place (in " + to.getAbsoluteFile().getParent() + "), even after a few tries.\n"
+					+ "Most often another program has the file open for a moment: an antivirus scan, a backup or sync program, or a second copy of The Home Planet Station. The old file is still there.\n"
+					+ "Wait a moment and try again. If it keeps happening, close the other program, or have it leave this folder alone."
+					+ (reason(cause) == null ? "" : "\n(The system's reason: " + reason(cause) + ")"), cause);
+		}
+		/** The system's own words for it, if it gave any (the log keeps the rest). */
+		private static String reason(IOException e) {
+			String r = e instanceof java.nio.file.FileSystemException ? ((java.nio.file.FileSystemException) e).getReason() : e.getMessage();
+			return r == null || r.trim().isEmpty() ? null : r.trim();
+		}
+		@Override public String toString() { return getMessage(); } // shown after "could not ...:" as it is, without a class name
 	}
 	/** Copies a file, replacing any file already at {@code to}. The parent folder is created if needed. */
 	public static void copy(File from, File to) throws IOException {

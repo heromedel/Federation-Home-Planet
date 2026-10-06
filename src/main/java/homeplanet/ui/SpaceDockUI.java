@@ -113,11 +113,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	void liftSoon() { if (homeplanet.core.FtlDock.found()) lift.restart(); }
 	/** Lifted now, without taking the keyboard: not while the docked ships are shown, nor over a station popup. */
-	private void liftFtl() {
-		if (!homeplanet.core.FtlDock.found() || homeplanet.core.FtlDock.aside() || homeplanet.core.FtlDock.attached() || !isShowing()) return; // attached, it stays over the station by itself
+	void liftFtl() {
+		if (!homeplanet.core.FtlDock.found() || homeplanet.core.FtlDock.aside() || homeplanet.core.FtlDock.attached() || !isShowing() || overForPopup) return; // attached, it stays over the station by itself
 		java.awt.Window active = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
 		java.awt.Window station = javax.swing.SwingUtilities.getWindowAncestor(this);
-		if (active != null && active != station) return; // a popup is up: FTL stays under it
+		if (active != null && active != station && active.isShowing()) return; // a popup is up: FTL stays under it (one just closed may still count as active a moment)
+		if (active == station) homeplanet.core.FtlDock.raise(station); // the station in use: FTL over it, and over a program left between them by an Alt+Tab (heromedel, 5.43)
 		homeplanet.core.FtlDock.tuckUnder(station); // the station's own window under FTL's: Windows refuses lifting another program's window (5.34)
 	}
 
@@ -951,6 +952,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void placeViewport() {
 		JPanel v = viewportPanel;
 		if (v == null || !v.isShowing() || !homeplanet.core.FtlDock.active()) return;
+		if (v.getWidth() <= 2 || v.getHeight() <= 2) return; // a rebuild's new viewport, not laid out yet: FTL shrank to nothing there a moment, every save (heromedel, 5.42)
 		java.awt.Point at = v.getLocationOnScreen();
 		homeplanet.core.FtlDock.place(new java.awt.Rectangle(at.x + 1, at.y + 1, v.getWidth() - 2, v.getHeight() - 2)); // inside the gold frame
 	}
@@ -991,7 +993,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (!homeplanet.core.FtlDock.found()) {
 			checkFtlRunning(); // closed before its window turned up; once it's found, its window going says FTL closed (5.32: tasklist can misread)
 			homeplanet.core.FtlDock.Found f = homeplanet.core.FtlDock.find();
-			if (f == homeplanet.core.FtlDock.Found.DOCKED) { placeViewport(); homeplanet.core.FtlDock.raise(); if (viewportPanel != null) viewportPanel.repaint(); return; }
+			if (f == homeplanet.core.FtlDock.Found.DOCKED) { placeViewport(); liftFtl(); if (viewportPanel != null) viewportPanel.repaint(); return; }
 			if (f == homeplanet.core.FtlDock.Found.FULLSCREEN) { // left as it is: say what to change in FTL, once
 				endDock();
 				JOptionPane.showMessageDialog(this, "FTL is set to full screen. To play it docked, set Options > Fullscreen to Off in FTL, then launch docked again.",
@@ -1002,7 +1004,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			if (System.currentTimeMillis() - dockStarted > wait) { log.info("FTL docked: no FTL window after {} minutes; it runs as a normal window", wait / 60000); endDock(); }
 			return;
 		}
-		if (!homeplanet.core.FtlDock.alive()) endDock(); // FTL closed
+		if (!homeplanet.core.FtlDock.alive()) { endDock(); return; } // FTL closed
+		if (homeplanet.core.FtlDock.inFront()) liftFtl(); // Alt+Tab straight to FTL: the station comes up under it, no other program round it (heromedel, 5.43)
 	}
 	/**
 	 * FTL starting up can put the station's window back to its old size (seen under Wine, 5.32): for its first 45 seconds

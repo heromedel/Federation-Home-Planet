@@ -46,7 +46,7 @@ final class ImmersiveBriefing extends JDialog {
 	final JCheckBox own = new JCheckBox("Give Immersive Mode its own FTL profile (recommended)", true);
 	final JRadioButton salaryNew = new JRadioButton("Only achievements earned from now on", true);
 	final JRadioButton salaryAll = new JRadioButton("Every achievement already in your FTL profile");
-	/** What a career leaves to the player (Settings has them too): saved on Confirm. */
+	/** What a career leaves to the player (Settings has them too): kept once the career is in use ({@link #keepChoices}). */
 	final JComboBox<String> repUse = new JComboBox<String>(RuleBoxes.REP_USE_OPTIONS);
 	final JCheckBox anyLevel = new JCheckBox("Allow trading with any Immersive level: Easy, Normal, Hard, Custom (when the other station allows it too)");
 	/** The difficulty: Easy, Normal, Hard or Custom (CareerRules.NAMES). */
@@ -91,12 +91,7 @@ final class ImmersiveBriefing extends JDialog {
 		cancel.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
 		back.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { show(page - 1); } });
 		next.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { show(page + 1); } });
-		confirm.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) {
-			HomePlanet.reputationUse = repUse.getSelectedIndex() + 1; // the player's choices, kept as Settings keeps them
-			HomePlanet.immersiveAnyLevel = anyLevel.isSelected();
-			HomePlanet.saveConfig();
-			confirmed = true; dispose();
-		} });
+		confirm.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { confirmed = true; dispose(); } });
 
 		getContentPane().add(top, BorderLayout.NORTH);
 		getContentPane().add(ScreenFit.wrap(deck, 170, owner), BorderLayout.CENTER);
@@ -107,6 +102,16 @@ final class ImmersiveBriefing extends JDialog {
 		setResizable(false);
 		setLocationRelativeTo(getOwner());
 		ScreenFit.keepOnScreen(this);
+	}
+
+	/**
+	 * The player's choices, kept as Settings keeps them: called by ImmersiveDialog once the career is in use, never on
+	 * Confirm alone, since a switch can still stop (FTL running) with "Nothing was changed" (5.29).
+	 */
+	void keepChoices() {
+		HomePlanet.reputationUse = repUse.getSelectedIndex() + 1;
+		HomePlanet.immersiveAnyLevel = anyLevel.isSelected();
+		HomePlanet.saveConfig();
 	}
 
 	private void show(int p) {

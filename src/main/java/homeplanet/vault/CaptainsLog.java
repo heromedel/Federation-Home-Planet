@@ -141,11 +141,11 @@ public final class CaptainsLog {
 		for (int i = 0; i < lines.size(); i++) {
 			Line l = lines.get(i);
 			if (i == 0 && l.aboard) {
-				Line on = new Line("where", "where", false, (Boolean.FALSE.equals(at) ? "Set out on the " : "On board the ") + l.ship + ":");
+				Line on = new Line("where", "where", false, (Boolean.FALSE.equals(at) ? "Set out on " : "On board ") + theShip(l.ship) + ":");
 				on.aboard = true;
 				lines.add(0, on); i++;
 			} else if (at != null && l.aboard != at) {
-				Line w = new Line("where", "where", true, l.aboard ? "Set out on the " + l.ship + ":" : "I returned to The Home Planet Station.");
+				Line w = new Line("where", "where", true, l.aboard ? "Set out on " + theShip(l.ship) + ":" : "I returned to The Home Planet Station.");
 				w.aboard = l.aboard;
 				lines.add(i, w); i++;
 			}
@@ -195,7 +195,7 @@ public final class CaptainsLog {
 		} else if (kind.equals("BUY")) {
 			if (head.contains(", a derelict, for ")) {
 				String name = head.substring(0, head.indexOf(" (") > 0 ? head.indexOf(" (") : head.indexOf(","));
-				Line l = once(m, "buy", true, "Bought the " + name + ", a derelict, from the Junkyard.");
+				Line l = once(m, "buy", true, "Bought " + theShip(name) + ", a derelict, from the Junkyard.");
 				Matcher p = Pattern.compile("for (\\d+) scrap").matcher(head);
 				if (p.find()) l.details.add(p.group(1) + " scrap");
 				return;
@@ -230,26 +230,26 @@ public final class CaptainsLog {
 			Line l = line(m, "board", "board", true, "");
 			l.ship = shipName(head);
 		} else if (kind.equals("NEW JOURNEY")) {
-			Line l = once(m, "journey", true, "Plotted a new journey for the " + shipName(head) + ".");
+			Line l = once(m, "journey", true, "Plotted a new journey for " + theShip(shipName(head)) + ".");
 			int d = head.indexOf("difficulty ");
 			if (d >= 0) l.details.add(head.substring(d));
 		} else if (kind.equals("COMMISSION")) {
 			String model = det.isEmpty() ? null : det.get(0).replaceAll("\\s*\\([A-Z0-9_]+\\).*$", "");
-			Line l = once(m, "commission", true, "Commissioned the " + shipName(head) + (model == null ? "." : ", a " + model + "."));
+			Line l = once(m, "commission", true, "Commissioned " + theShip(shipName(head)) + (model == null ? "." : ", a " + model + "."));
 			for (int i = 1; i < det.size(); i++) l.details.add(det.get(i));
 		} else if (kind.equals("DISBAND")) {
-			once(m, "ships", true, "Decommissioned the " + shipName(head) + ".");
+			once(m, "ships", true, "Decommissioned " + theShip(shipName(head)) + ".");
 		} else if (kind.equals("SCRAP")) {
-			Line l = once(m, "ships", true, "Broke the " + shipName(head.replace(" stripped into storage, hull broken up", "")) + " up for parts.");
+			Line l = once(m, "ships", true, "Broke " + theShip(shipName(head.replace(" stripped into storage, hull broken up", ""))) + " up for parts.");
 			l.details.addAll(det);
 		} else if (kind.equals("DESTROY")) {
-			once(m, "ships", true, "Had the " + shipName(head) + " broken up for good.");
+			once(m, "ships", true, "Had " + theShip(shipName(head)) + " broken up for good.");
 		} else if (kind.equals("SALVAGE")) {
 			String name = shipName(head);
-			once(m, "ships", true, name.contains("/") || name.endsWith(".sav") ? "Salvaged a ship from the Junkyard." : "Salvaged the " + name + " from the Junkyard.");
+			once(m, "ships", true, name.contains("/") || name.endsWith(".sav") ? "Salvaged a ship from the Junkyard." : "Salvaged " + theShip(name) + " from the Junkyard.");
 		} else if (kind.equals("RENAME")) {
 			String[] w = unowned(head).split(" -> ", 2);
-			if (w.length == 2) once(m, "ships", true, "Renamed the " + w[0].trim() + " the " + w[1].trim() + ".");
+			if (w.length == 2) once(m, "ships", true, "Renamed " + theShip(w[0].trim()) + " " + theShip(w[1].trim()) + ".");
 		} else if (kind.equals("CREW")) { // the Cargo Bay's crew moves, one destination a line (heromedel, 5.40)
 			Matcher a = Pattern.compile("^(.+?) assigned to (.+?)\\.?$").matcher(head.trim());
 			if (a.find()) { Line l = line(m, "assign", "assign:" + a.group(2), true, ""); l.ship = a.group(2); add(l, a.group(1), 1); }
@@ -257,7 +257,7 @@ public final class CaptainsLog {
 			String[] w = unowned(head).split(" -> ", 2);
 			if (w.length == 2) once(m, "crew", false, w[0].trim() + " is now " + w[1].trim() + ".");
 		} else if (kind.equals("REMODEL")) {
-			once(m, "ships", true, "Had the " + head.split(" -> ")[0].trim() + " remodeled.");
+			once(m, "ships", true, "Had " + theShip(head.split(" -> ")[0].trim()) + " remodeled.");
 		} else if (kind.equals("EXPEDITION")) {
 			expedition(head, m);
 		} else if (kind.equals("HIRE")) {
@@ -282,18 +282,18 @@ public final class CaptainsLog {
 			once(m, "plea", true, "Withdrew my plea for a new ship.");
 		} else if (kind.equals("VICTORY")) {
 			String name = head.split(" won | was rescued ")[0].trim();
-			if (head.contains(" was rescued after")) once(m, "ships", false, "The " + name + " was brought home after the final battle.");
-			else once(m, "ships", false, "The " + name + " drove the Rebel Flagship off."); // hard rule 1: never that she destroyed it
+			if (head.contains(" was rescued after")) once(m, "ships", false, startShip(name) + " was brought home after the final battle.");
+			else once(m, "ships", false, startShip(name) + " drove the Rebel Flagship off."); // hard rule 1: never that she destroyed it
 		} else if (kind.equals("FINAL BATTLE")) {
-			once(m, "ships", false, "The " + head.split(":")[0].trim() + " went into the final battle.");
+			once(m, "ships", false, startShip(head.split(":")[0].trim()) + " went into the final battle.");
 		} else if (kind.equals("MUSEUM")) {
-			if (head.contains(" is honoured in")) once(m, "ships", false, "The " + head.split(" is honoured")[0].trim() + " went to the Federation museum.");
-			else { int f = head.lastIndexOf(" for "); if (f > 0) { Line l = once(m, "ships", false, "The museum paid for the " + head.substring(f + 5).trim() + "."); l.details.add(head.substring(0, f)); } }
+			if (head.contains(" is honoured in")) once(m, "ships", false, startShip(head.split(" is honoured")[0].trim()) + " went to the Federation museum.");
+			else { int f = head.lastIndexOf(" for "); if (f > 0) { Line l = once(m, "ships", false, "The museum paid for " + theShip(head.substring(f + 5).trim()) + "."); l.details.add(head.substring(0, f)); } }
 		} else if (kind.equals("REWARD")) {
 			int f = head.lastIndexOf(" for ");
-			if (f > 0) { Line l = once(m, "ships", false, "A reward came in for the " + head.substring(f + 5).trim() + "."); l.details.add(head.substring(0, f)); }
+			if (f > 0) { Line l = once(m, "ships", false, "A reward came in for " + theShip(head.substring(f + 5).trim()) + "."); l.details.add(head.substring(0, f)); }
 		} else if (kind.equals("OVERWRITTEN")) {
-			once(m, "ships", false, "The " + head.replaceAll("\\s*\\([0-9a-f]+\\).*$", "").trim() + " was lost.");
+			once(m, "ships", false, startShip(head.replaceAll("\\s*\\([0-9a-f]+\\).*$", "").trim()) + " was lost.");
 		} else if (kind.equals("LONG RANGE TRADE")) {
 			Line l = once(m, "comm", true, "Traded with " + head.replaceAll("^with ", "").replaceAll("\\s+\\(trade .*$", "").trim() + ".");
 			l.details.addAll(det);
@@ -302,17 +302,17 @@ public final class CaptainsLog {
 			if (f > 0) { Line l = once(m, "comm", false, "A shipment arrived from " + head.substring(f + 6).trim() + "."); l.details.add(head.substring(0, f)); }
 		} else if (kind.equals("SENT AWAY")) {
 			Matcher s = Pattern.compile("^(.+?) \\([0-9a-f]+\\) to (.+?)'s fleet").matcher(head);
-			if (s.find()) once(m, "comm", true, "Sent the " + s.group(1) + " to " + s.group(2) + "'s fleet.");
+			if (s.find()) once(m, "comm", true, "Sent " + theShip(s.group(1)) + " to " + s.group(2) + "'s fleet.");
 		} else if (kind.equals("RECEIVED")) {
 			Matcher s = Pattern.compile("^(.+?) \\([0-9a-f]+\\) from (.+?)'s fleet").matcher(head);
-			if (s.find()) once(m, "comm", false, "The " + s.group(1) + " arrived from " + s.group(2) + "'s fleet.");
+			if (s.find()) once(m, "comm", false, startShip(s.group(1)) + " arrived from " + s.group(2) + "'s fleet.");
 		} else if (kind.equals("RETURNED") && head.contains(" to her owner")) {
-			once(m, "ships", true, "Returned the " + head.replaceAll("\\s*\\([0-9a-f]+\\).*$", "").trim() + " to her owner.");
+			once(m, "ships", true, "Returned " + theShip(head.replaceAll("\\s*\\([0-9a-f]+\\).*$", "").trim()) + " to her owner.");
 		} else if (kind.equals("SEIZED")) {
 			once(m, "ships", false, sentence(head.replaceAll("\\s*\\([0-9a-f]+\\)", "").replace(": collected by", " was collected by")));
 		} else if (kind.equals("OVERFLOW")) {
 			Matcher s = Pattern.compile("^(.+?) had no room for (\\S+): her crew ship it home").matcher(head);
-			if (s.find()) once(m, "letter", false, "The " + s.group(1) + "'s crew shipped " + article(homeplanet.model.Items.title(s.group(2))) + " home.");
+			if (s.find()) once(m, "letter", false, startShip(s.group(1)) + "'s crew shipped " + article(homeplanet.model.Items.title(s.group(2))) + " home.");
 		} else if (kind.equals("CAREER")) {
 			once(m, "career", false, "My service with The Federation Home Planet began.");
 		}
@@ -370,11 +370,11 @@ public final class CaptainsLog {
 			return;
 		}
 		if (head.contains(", brought home by an expedition, kept: ")) {
-			once(m, "expedition", true, "Kept the " + head.replaceAll("\\s*\\([A-Z0-9_]+\\).*$", "").trim() + ", brought home by an expedition.");
+			once(m, "expedition", true, "Kept " + theShip(head.replaceAll("\\s*\\([A-Z0-9_]+\\).*$", "").trim()) + ", brought home by an expedition.");
 		} else if (head.contains(", rescued on an expedition, was sent on their way")) {
 			once(m, "expedition", true, "Sent " + head.split(",")[0].trim() + " on their way.");
 		} else if (head.contains(", brought home by an expedition, was not taken")) {
-			once(m, "expedition", true, "Turned down the " + head.split(",")[0].trim() + ".");
+			once(m, "expedition", true, "Turned down " + theShip(head.split(",")[0].trim()) + ".");
 		} else if (head.contains(" (\"")) { // the board of jobs
 			Line l = once(m, "job", true, "Took a job: " + head.substring(0, head.indexOf(" (\"")).trim() + ".");
 			List<String> lost = after(head, "; did not come back: ");
@@ -425,8 +425,8 @@ public final class CaptainsLog {
 		Matcher def = Pattern.compile("^(\\d+) ships? defeated").matcher(text);
 		if (def.find()) { Line l = line(m, "fight", "fight:" + ship, false, ""); l.ship = ship; l.count += Integer.parseInt(def.group(1)); return; }
 		if (text.startsWith("Crew lost: ")) { once(m, "crew", false, "Lost " + join(strip(text.substring(11))) + "."); return; }
-		if (text.startsWith("Crew joined: ")) { once(m, "crew", false, join(strip(text.substring(13))) + " came aboard the " + ship + "."); return; }
-		if (text.startsWith("The Rebel Flagship is alongside")) { once(m, "fight", false, "The Rebel Flagship came alongside the " + ship + "."); return; }
+		if (text.startsWith("Crew joined: ")) { once(m, "crew", false, join(strip(text.substring(13))) + " came aboard " + theShip(ship) + "."); return; }
+		if (text.startsWith("The Rebel Flagship is alongside")) { once(m, "fight", false, "The Rebel Flagship came alongside " + theShip(ship) + "."); return; }
 		if (text.startsWith("The Rebel Flagship withdrew")) { once(m, "fight", false, "The Rebel Flagship withdrew."); return; }
 		if (text.startsWith("Time spent on work")) { once(m, "work", true, "Did some shopping and repairs at a station."); }
 	}
@@ -446,7 +446,7 @@ public final class CaptainsLog {
 		Matcher h = Pattern.compile("hull (\\d+)/(\\d+) \\((-\\d+)\\)|Hull damaged to (\\d+)/(\\d+) \\((-\\d+)\\)").matcher(text);
 		if (!h.find()) return;
 		int max = Integer.parseInt(h.group(2) != null ? h.group(2) : h.group(5)), lost = -Integer.parseInt(h.group(3) != null ? h.group(3) : h.group(6));
-		if (max > 0 && lost * 4 >= max) line(m, "fight", "beating:" + ship, false, "The " + ship + " took a beating.");
+		if (max > 0 && lost * 4 >= max) line(m, "fight", "beating:" + ship, false, startShip(ship) + " took a beating.");
 	}
 
 	/** A merged line's words, once everything of the day is in it. */
@@ -456,11 +456,11 @@ public final class CaptainsLog {
 		else if (l.kind.equals("junk")) l.text = l.things.isEmpty() ? null : "Threw out " + things(l.things) + ".";
 		else if (l.kind.equals("assign")) l.text = l.things.isEmpty() ? null : (l.ship.endsWith("Cargo Hold") ? "Moved " : "Assigned ") + join(each(l)) + " to " + l.ship + ".";
 		else if (l.kind.equals("retire")) l.text = l.things.isEmpty() ? null : "Let " + join(new ArrayList<String>(l.things.keySet())) + " go.";
-		else if (l.kind.equals("board")) l.text = "Took command of the " + l.ship + ".";
+		else if (l.kind.equals("board")) l.text = "Took command of " + theShip(l.ship) + ".";
 		else if (l.kind.equals("move")) l.text = jumpText(l);
 		else if (l.kind.equals("ftlbuy")) l.text = l.things.isEmpty() ? null : "Bought " + things(l.things) + " at a station.";
 		else if (l.kind.equals("found")) l.text = l.things.isEmpty() ? null : "We picked up " + things(l.things) + ".";
-		else if (l.kind.equals("fight") && l.text.isEmpty()) l.text = l.count <= 0 ? null : "The " + l.ship + " defeated " + (l.count == 1 ? "a ship" : number(l.count) + " ships") + ".";
+		else if (l.kind.equals("fight") && l.text.isEmpty()) l.text = l.count <= 0 ? null : startShip(l.ship) + " defeated " + (l.count == 1 ? "a ship" : number(l.count) + " ships") + ".";
 		else if (l.kind.equals("systems")) l.text = systemsText(l);
 	}
 	/**
@@ -483,16 +483,16 @@ public final class CaptainsLog {
 		return "We jumped " + where + (l.met.isEmpty() ? "" : " and met " + join(l.met)) + ".";
 	}
 	private static String systemsText(Line l) {
-		if (l.things.isEmpty()) return l.details.isEmpty() ? null : "Had the Dry Dock work on the " + l.ship + ".";
-		if (l.things.size() > 1) return "Had the Dry Dock work on the " + l.ship + ".";
+		if (l.things.isEmpty()) return l.details.isEmpty() ? null : "Had the Dry Dock work on " + theShip(l.ship) + ".";
+		if (l.things.size() > 1) return "Had the Dry Dock work on " + theShip(l.ship) + ".";
 		String a = l.things.keySet().iterator().next();
-		if (a.startsWith("fit:")) return "Had " + article(a.substring(4)) + (a.endsWith("system") ? "" : " system") + " fitted to the " + l.ship + ".";
-		if (a.startsWith("off:")) return "Had the " + a.substring(4) + " taken off the " + l.ship + ".";
-		if (a.equals("up:reactor")) return "Had the " + l.ship + "'s reactor upgraded.";
-		if (a.startsWith("up:")) return "Had the " + l.ship + "'s " + a.substring(3) + " upgraded.";
-		if (a.equals("mend")) return "Had the " + l.ship + " patched up.";
-		if (a.equals("retrofit")) return "Had the " + l.ship + " retrofitted.";
-		return "Had the Dry Dock work on the " + l.ship + ".";
+		if (a.startsWith("fit:")) return "Had " + article(a.substring(4)) + (a.endsWith("system") ? "" : " system") + " fitted to " + theShip(l.ship) + ".";
+		if (a.startsWith("off:")) return "Had the " + a.substring(4) + " taken off " + theShip(l.ship) + ".";
+		if (a.equals("up:reactor")) return "Had " + theShip(l.ship) + "'s reactor upgraded.";
+		if (a.startsWith("up:")) return "Had " + theShip(l.ship) + "'s " + a.substring(3) + " upgraded.";
+		if (a.equals("mend")) return "Had " + theShip(l.ship) + " patched up.";
+		if (a.equals("retrofit")) return "Had " + theShip(l.ship) + " retrofitted.";
+		return "Had the Dry Dock work on " + theShip(l.ship) + ".";
 	}
 
 	// ---- words ----
@@ -528,6 +528,10 @@ public final class CaptainsLog {
 		return n + (t >= 11 && t <= 13 ? "th" : n % 10 == 1 ? "st" : n % 10 == 2 ? "nd" : n % 10 == 3 ? "rd" : "th");
 	}
 	static String article(String name) { return ("AEIOUaeiou".indexOf(name.isEmpty() ? 'x' : name.charAt(0)) >= 0 ? "an " : "a ") + name; }
+	/** A ship's name after "the" (ShipNames.the): "the Kestrel", but "The Adjudicator" as she is, never "the The" (5.31). */
+	static String theShip(String name) { return homeplanet.parser.ShipNames.the(name); }
+	/** The same, starting a sentence: "The Kestrel", "The Adjudicator". */
+	static String startShip(String name) { return homeplanet.parser.ShipNames.theStart(name); }
 	/** "the Home Planet Liaison", "Commander Wolfy", "the Nebula": a title gets "the", a name doesn't. */
 	static String the(String who) {
 		if (who.startsWith("Commander ") || who.startsWith("The ") || who.startsWith("the ") || who.startsWith("Your ")) return who;

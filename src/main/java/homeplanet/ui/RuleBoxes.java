@@ -66,13 +66,13 @@ public class RuleBoxes {
 	/** What each option does, one per option (heromedel, 5.26): the open list's tooltips, and the info window's paragraphs. */
 	static final String[] REP_USE_TIPS = {
 		"<html>Reputation can pay a New Journey's fee, and a plea for a new ship can keep the Cargo Hold.<br>A promise of adventure and a day's rest cost reputation. Everything else is paid in scrap.</html>",
-		"<html>All of New Journeys and Pleads, plus what vanilla FTL can't do:<br>taking a system off at Refit, stripping systems when scrapping, and a custom work order's reputation share.</html>",
+		"<html>Everything in New Journeys and Pleads, plus what vanilla FTL can't do:<br>taking a system off at Refit, stripping systems when scrapping, and a custom work order's reputation share.</html>",
 		"<html>Reputation is never spent. A plea gives up the Cargo Hold;<br>a promise of adventure and rest are free. Everything is paid in scrap.</html>"};
 	private final CargoParts.IconButton repUseInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "What each option does", new ActionListener() {
 		public void actionPerformed(ActionEvent e) { repUseInfo(repUseBox); }
 	});
 	/** The three options, in heromedel's words (the setting's own list, and the Immersive briefing's). */
-	static final String[] REP_USE_OPTIONS = {"New Journeys and Pleads", "Vanillas Breaking Actions", "Only as a score"};
+	static final String[] REP_USE_OPTIONS = {"New Journeys and Pleads", "Vanilla-Breaking Actions", "Only as a score"};
 	/** A list whose open options say what each does (Settings, and the Immersive briefing, 5.27). */
 	static void explainOptions(final JComboBox<String> box) {
 		box.setRenderer(new javax.swing.DefaultListCellRenderer() {
@@ -89,14 +89,14 @@ public class RuleBoxes {
 		String gold = MenuTheme.HTML_GOLD;
 		String[] names = REP_USE_OPTIONS;
 		String[][] effects = {
-			{"A New Journey's fee can be paid in reputation, or in the scrap there is and reputation for the rest.",
+			{"A New Journey's fee can be paid in reputation, or in whatever scrap the Cargo Hold has, with reputation for the rest.",
 				"A plea for a new ship can keep the Cargo Hold, at a share of reputation set by the difficulty.",
 				"A promise of adventure (hiring with no crew left) and a day's rest in quarters cost reputation.",
 				"Refit removal, stripping when scrapping and custom work orders are paid in scrap."},
 			{"Everything New Journeys and Pleads allows.",
 				"Taking a system off at Refit, at the fee your rules set, in scrap or reputation.",
-				"Stripping systems when scrapping a ship, at the fee a system, in scrap or reputation.",
-				"A custom work order past FTL's System Limit takes its reputation share (with only scrap allowed, both halves are scrap)."},
+				"Stripping systems when scrapping a ship, at the fee for each system, in scrap or reputation.",
+				"A custom work order past FTL's System Limit is paid half in scrap, half in reputation."},
 			{"Reputation is a score only: nothing ever spends it.",
 				"A plea for a new ship gives up the Cargo Hold.",
 				"A promise of adventure and a day's rest are free.",
@@ -108,8 +108,7 @@ public class RuleBoxes {
 			h.append("</ul>");
 		}
 		h.append(costTable());
-		h.append("<p style='margin-top:10px'><font color='").append(MenuTheme.HTML_GREY_GREEN).append("'>Where reputation is spent, a plea, a promise of adventure and rest may take it below zero; "
-				+ "everything else stops at zero.</font></p></body></html>");
+		h.append("<p style='margin-top:10px'><font color='").append(MenuTheme.HTML_GREY_GREEN).append("'>A plea, a promise of adventure and a day's rest can take reputation below zero; nothing else can.</font></p></body></html>");
 		javax.swing.JOptionPane.showMessageDialog(javax.swing.SwingUtilities.getWindowAncestor(near), new JLabel(h.toString()), "How Reputation Can be Used", javax.swing.JOptionPane.PLAIN_MESSAGE);
 	}
 	/**
@@ -131,7 +130,7 @@ public class RuleBoxes {
 			t.append("<td align='right'><font color='").append(inUse ? gold : dim).append("'>").append(inUse ? "<b>" + names.get(i) + "</b>" : names.get(i)).append("</font></td>");
 		}
 		t.append("</tr>");
-		String[] rows = {"New Journey fee", "Plea, the hold kept (of the shortfall)", "Refit: a system taken off", "Stripping, a system", "Custom work order (scrap and reputation, each)"};
+		String[] rows = {"New Journey fee", "A plea that keeps the Cargo Hold (% of the shortfall)", "Refit, each system taken off", "Stripping, each system", "Custom work order (scrap and reputation, each)"};
 		for (int r = 0; r < rows.length; r++) {
 			t.append("<tr><td>").append(rows[r]).append("&nbsp;&nbsp;</td>");
 			for (int i = 0; i < cols.size(); i++) {
