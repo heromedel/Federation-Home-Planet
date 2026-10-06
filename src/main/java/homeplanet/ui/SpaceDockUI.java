@@ -84,7 +84,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private void popupsChanged() {
 		boolean popup = false;
 		for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof java.awt.Dialog && w.isShowing()) { popup = true; break; }
-		if (popup && !hiddenForPopup && homeplanet.core.FtlDock.active() && !homeplanet.core.FtlDock.aside() && parent != null && parent.atSpaceDock()) {
+		if (popup && !hiddenForPopup && homeplanet.core.FtlDock.active() && !homeplanet.core.FtlDock.aside() && !homeplanet.core.FtlDock.attached() && parent != null && parent.atSpaceDock()) { // attached, popups come over FTL by themselves
 			hiddenForPopup = true;
 			log.debug("FTL docked: hidden for a popup");
 			homeplanet.core.FtlDock.show(false);
@@ -105,7 +105,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void liftSoon() { if (homeplanet.core.FtlDock.found()) lift.restart(); }
 	/** Lifted now, without taking the keyboard: not while the docked ships are shown, nor over a station popup. */
 	private void liftFtl() {
-		if (!homeplanet.core.FtlDock.found() || homeplanet.core.FtlDock.aside() || !isShowing()) return;
+		if (!homeplanet.core.FtlDock.found() || homeplanet.core.FtlDock.aside() || homeplanet.core.FtlDock.attached() || !isShowing()) return; // attached, it stays over the station by itself
 		java.awt.Window active = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
 		java.awt.Window station = javax.swing.SwingUtilities.getWindowAncestor(this);
 		if (active != null && active != station) return; // a popup is up: FTL stays under it
@@ -951,7 +951,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try { homeplanet.core.FtlDock.prepareSettings(); }
 		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not set FTL to windowed in its settings.ini:\n" + e.getMessage() + "\n\nFTL may start full screen; it will still be docked if it can be."); }
 		if (!HomePlanet.launchFTL()) return;
-		homeplanet.core.FtlDock.begin();
+		homeplanet.core.FtlDock.begin(javax.swing.SwingUtilities.getWindowAncestor(this));
 		dockStarted = System.currentTimeMillis();
 		ftlSeen = false;
 		init();
