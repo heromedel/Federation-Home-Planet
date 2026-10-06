@@ -242,7 +242,7 @@ public final class CrewRegister {
 
 		if (fresh) {
 			backfill(v, members);
-			for (Member m : members) if (m.events.isEmpty() && m.status == Status.PRESENT) m.events.add(new Event(today, "On the station's records from here, " + m.where + "."));
+			for (Member m : members) if (m.events.isEmpty() && m.status == Status.PRESENT) m.events.add(new Event(today, "On the station's records from this day, " + m.where + "."));
 		}
 		for (Member m : members) if (m.rec.isEmpty() && invent(m)) changed = true;
 		if (changed || seen[0] != histLen || seen[1] != masterLen) write(v, members, histLen, masterLen);
@@ -284,7 +284,7 @@ public final class CrewRegister {
 					for (String key : p.stringPropertyNames()) if (key.startsWith(pre)) fields.put(key.substring(pre.length()), p.getProperty(key));
 					CrewState c;
 					try { c = homeplanet.comm.Line.crewFrom(fields); } catch (Exception e) { return null; }
-					out.add(found(c, "away:" + sector, "on assignment, " + sectorPhrase(sector)));
+					out.add(found(c, "away:" + sector, "on an expedition " + sectorPhrase(sector)));
 				}
 			}
 		}
@@ -347,8 +347,8 @@ public final class CrewRegister {
 	private static String moved(Member m, Found x) {
 		if (x.place.equals("captive")) return "Taken captive; " + x.where + ".";
 		if (m.place.equals("captive")) return "Ransomed; back " + x.where + ".";
-		if (x.place.startsWith("away:")) return "Sent on assignment, " + sectorPhrase(x.place.substring(5)) + ".";
-		if (m.place.startsWith("away:")) return "Back from an assignment " + sectorPhrase(m.place.substring(5)).replaceFirst("^to |^in ", "in ") + "; " + x.where + ".";
+		if (x.place.startsWith("away:")) return "Sent on an expedition " + sectorPhrase(x.place.substring(5)).replaceFirst("^in ", "to ") + ".";
+		if (m.place.startsWith("away:")) return "Back from an expedition " + sectorPhrase(m.place.substring(5)) + "; " + x.where + ".";
 		if (x.place.equals("hold")) return "Moved to the Cargo Hold.";
 		return "Assigned " + x.where.replaceFirst("^aboard ", "to ") + ".";
 	}
@@ -359,12 +359,11 @@ public final class CrewRegister {
 		if (peer != null) return "Transferred from " + peer + "'s fleet; " + x.where + ".";
 		for (String l : recent.split("\n")) {
 			if (!l.contains("  HIRE  ") || !l.contains(x.name + " (")) continue;
-			if (l.contains("rescued on an expedition")) return "Rescued on an expedition, and signed on; " + x.where + ".";
-			return "Hired; " + x.where + ".";
+			if (l.contains("rescued on an expedition")) return "Rescued on an expedition and signed on, serving " + x.where + ".";
+			return "Hired, serving " + x.where + ".";
 		}
-		if (x.place.equals("hold")) return "Joined; " + x.where + ".";
-		if (x.place.startsWith("ship:")) return "Came aboard; " + x.where + ".";
-		return "Joined; " + x.where + ".";
+		if (x.place.startsWith("ship:")) return "Came " + x.where + "."; // "Came aboard the Kestrel."
+		return "Joined, serving " + x.where + ".";
 	}
 	/** {status, event, where} for someone no longer found anywhere. */
 	private static String[] fate(Vault v, Member m, String since, String flown) {
@@ -397,9 +396,9 @@ public final class CrewRegister {
 			String shipName = m.where.replaceFirst("^aboard ", "").replaceFirst(", in the Junkyard$", "");
 			if (s == null) {
 				String f = fateOf(v, id);
-				if (f.equals("LOST") || f.equals("DESTROYED")) return new String[] {"KILLED", "Lost with " + shipName + ".", "lost with " + shipName};
-				if (f.equals("TRANSFERRED")) return new String[] {"TRANSFERRED", "Transferred with " + shipName + " to another fleet.", "transferred with " + shipName};
-				if (!f.isEmpty() && !f.equals("SCRAPPED")) return new String[] {"TRANSFERRED", "Left the fleet with " + shipName + ".", "left the fleet with " + shipName};
+				if (f.equals("LOST") || f.equals("DESTROYED")) return new String[] {"KILLED", "Lost with " + homeplanet.parser.ShipNames.the(shipName) + ".", "lost with " + homeplanet.parser.ShipNames.the(shipName)};
+				if (f.equals("TRANSFERRED")) return new String[] {"TRANSFERRED", "Transferred with " + homeplanet.parser.ShipNames.the(shipName) + " to another fleet.", "transferred with " + homeplanet.parser.ShipNames.the(shipName)};
+				if (!f.isEmpty() && !f.equals("SCRAPPED")) return new String[] {"TRANSFERRED", "Left the fleet with " + homeplanet.parser.ShipNames.the(shipName) + ".", "left the fleet with " + homeplanet.parser.ShipNames.the(shipName)};
 			} else if (s.isBoarded() && flown.contains("Crew lost: ") && listed(flown.replace("Crew lost: ", "\nCrew lost: "), "Crew lost: ", m.name + " (" + m.raceTitle() + ")")) {
 				return new String[] {"KILLED", "Lost aboard " + shipName + ".", "lost aboard " + shipName};
 			}
@@ -551,14 +550,14 @@ public final class CrewRegister {
 			}
 		} else if ((x = java.util.regex.Pattern.compile("^EXPEDITION\\s+(.+?) sent to (.+)$").matcher(head)).find()) {
 			String sector = x.group(2).trim();
-			for (String n : x.group(1).split(", ")) for (Member m : whoever(n.trim(), null, byName, renamedFrom, members, null)) m.events.add(new Event(day, "Sent on assignment, " + sectorPhrase(sector) + "."));
+			for (String n : x.group(1).split(", ")) for (Member m : whoever(n.trim(), null, byName, renamedFrom, members, null)) m.events.add(new Event(day, "Sent on an expedition " + sectorPhrase(sector).replaceFirst("^in ", "to ") + "."));
 		} else if ((x = java.util.regex.Pattern.compile("^EXPEDITION\\s+(.+?) back from (.+?) \\(").matcher(head)).find()) {
 			String sector = x.group(2).trim();
 			for (String n : x.group(1).split(", ")) {
 				n = n.trim();
-				if (listed(head, "killed: ", n)) { for (Member m : whoever(n, null, byName, renamedFrom, members, Status.KILLED)) m.events.add(new Event(day, "Killed on assignment, " + sectorPhrase(sector) + ".")); continue; }
-				if (listed(head, "taken: ", n)) { for (Member m : whoever(n, null, byName, renamedFrom, members, null)) m.events.add(new Event(day, "Taken captive on assignment, " + sectorPhrase(sector) + ".")); continue; }
-				for (Member m : whoever(n, null, byName, renamedFrom, members, null)) m.events.add(new Event(day, "Back from an assignment " + sectorPhrase(sector).replaceFirst("^to |^in ", "in ") + (listed(head, "to the infirmary: ", n) ? "; to the infirmary." : ".")));
+				if (listed(head, "killed: ", n)) { for (Member m : whoever(n, null, byName, renamedFrom, members, Status.KILLED)) m.events.add(new Event(day, "Killed on an expedition " + sectorPhrase(sector) + ".")); continue; }
+				if (listed(head, "taken: ", n)) { for (Member m : whoever(n, null, byName, renamedFrom, members, null)) m.events.add(new Event(day, "Taken captive on an expedition " + sectorPhrase(sector) + ".")); continue; }
+				for (Member m : whoever(n, null, byName, renamedFrom, members, null)) m.events.add(new Event(day, "Back from an expedition " + sectorPhrase(sector) + (listed(head, "to the infirmary: ", n) ? "; to the infirmary." : ".")));
 			}
 		} else if (head.startsWith("EXPEDITION") && head.contains("did not come back: ")) {
 			for (String n : head.substring(head.indexOf("did not come back: ") + 19).split(";")[0].split(", "))

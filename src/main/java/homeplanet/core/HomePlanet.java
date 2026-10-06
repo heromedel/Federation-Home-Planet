@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.48";
+	public static final String APP_VERSION = "5.49";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -97,7 +97,7 @@ public class HomePlanet {
 	/** Does the fleet in use earn and lose reputation: always in Immersive Mode, and in Sandbox Mode with its Reputation rule. */
 	public static boolean reputation() { return immersiveMode || reputationOn; }
 	/**
-	 * How Reputation Can be Used (heromedel, 5.15; any mode, never locked): 1 New Journeys and Pleads, 2 Vanillas Breaking
+	 * How Reputation Can be Used (heromedel, 5.15; any mode, never locked): 1 New Journeys and Pleads, 2 Vanilla-Breaking
 	 * Actions (and 1), 3 Only as a score. Wherever it can't be used, scrap pays. Default 1.
 	 */
 	public static int reputationUse = 1;
