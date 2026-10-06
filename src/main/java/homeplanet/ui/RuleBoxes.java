@@ -107,9 +107,45 @@ public class RuleBoxes {
 			for (String x : effects[i]) h.append("<li>").append(x).append("</li>");
 			h.append("</ul>");
 		}
+		h.append(costTable());
 		h.append("<p style='margin-top:10px'><font color='").append(MenuTheme.HTML_GREY_GREEN).append("'>Where reputation is spent, a plea, a promise of adventure and rest may take it below zero; "
-				+ "everything else stops at zero. In every option, captives cost reputation and paid ransoms earn some back. Any mode can change this setting.</font></p></body></html>");
+				+ "everything else stops at zero.</font></p></body></html>");
 		javax.swing.JOptionPane.showMessageDialog(javax.swing.SwingUtilities.getWindowAncestor(near), new JLabel(h.toString()), "How Reputation Can be Used", javax.swing.JOptionPane.PLAIN_MESSAGE);
+	}
+	/**
+	 * What things cost by difficulty (heromedel, 5.42), from the difficulties' own rules: Easy, Normal and Hard, the
+	 * career's own column too when it's Custom; the difficulty in use in gold. Sandbox Mode's come from its house rules.
+	 */
+	private static String costTable() {
+		homeplanet.parser.CareerRules[] d = {homeplanet.parser.CareerRules.of("easy"), homeplanet.parser.CareerRules.of("normal"), homeplanet.parser.CareerRules.of("hard")};
+		String[] heads = {"Easy", "Normal", "Hard"};
+		homeplanet.parser.CareerRules now = HomePlanet.immersiveMode ? homeplanet.parser.CareerRules.current() : null;
+		java.util.List<homeplanet.parser.CareerRules> cols = new java.util.ArrayList<homeplanet.parser.CareerRules>(java.util.Arrays.asList(d));
+		java.util.List<String> names = new java.util.ArrayList<String>(java.util.Arrays.asList(heads));
+		if (now != null && "custom".equals(now.name)) { cols.add(now); names.add("Custom"); }
+		String gold = MenuTheme.HTML_GOLD, dim = MenuTheme.HTML_GREY_GREEN;
+		StringBuilder t = new StringBuilder("<p style='margin-top:10px'><font color='").append(gold).append("'><b>What they cost, by difficulty</b></font></p>");
+		t.append("<table cellspacing='0' cellpadding='2'><tr><td></td>");
+		for (int i = 0; i < cols.size(); i++) {
+			boolean inUse = now != null && now.name.equals(cols.get(i).name);
+			t.append("<td align='right'><font color='").append(inUse ? gold : dim).append("'>").append(inUse ? "<b>" + names.get(i) + "</b>" : names.get(i)).append("</font></td>");
+		}
+		t.append("</tr>");
+		String[] rows = {"New Journey fee", "Plea, the hold kept (of the shortfall)", "Refit: a system taken off", "Stripping, a system", "Custom work order (scrap and reputation, each)"};
+		for (int r = 0; r < rows.length; r++) {
+			t.append("<tr><td>").append(rows[r]).append("&nbsp;&nbsp;</td>");
+			for (int i = 0; i < cols.size(); i++) {
+				homeplanet.parser.CareerRules c = cols.get(i);
+				int n = r == 0 ? c.journeyFee() : r == 1 ? c.pleaPercent() : r == 2 ? c.removalFee() : r == 3 ? c.stripFee() : c.workOrder();
+				boolean inUse = now != null && now.name.equals(c.name);
+				String v = r == 1 ? n + "%" : Integer.toString(n);
+				t.append("<td align='right'>").append(inUse ? "<font color='" + gold + "'><b>" + v + "</b></font>" : v).append("</td>");
+			}
+			t.append("</tr>");
+		}
+		t.append("</table>");
+		if (!HomePlanet.immersiveMode) t.append("<p style='margin-top:4px'><font color='").append(dim).append("'>In Sandbox Mode, your house rules set the New Journey and Refit fees.</font></p>");
+		return t.toString();
 	}
 	private final JPanel repUseRow = row(22);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
