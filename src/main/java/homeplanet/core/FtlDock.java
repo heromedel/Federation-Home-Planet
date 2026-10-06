@@ -127,7 +127,7 @@ public final class FtlDock {
 	/** The same, with the station's window to attach FTL's to if the attached way is chosen (5.36). */
 	public static void begin(java.awt.Window stationWindow) {
 		active = true; window = null; shown = true; aside = false; where = null;
-		asked = null; placedAt = null; framed = false; cutAs = null;
+		asked = null; placedAt = null; framed = false; cutAs = null; behind = false;
 		station = stationWindow;
 		attachedRun = stationWindow != null && attachedChosen();
 		started = System.currentTimeMillis();
@@ -146,7 +146,7 @@ public final class FtlDock {
 	/** This docked run has FTL's window owned by the station's: it stays over it, and popups over both, by themselves. */
 	public static boolean attached() { return attachedRun && window != null; }
 	/** Ends it: FTL closed, or its window never turned up. */
-	public static void end() { cut(false); active = false; window = null; where = null; aside = false; asked = null; placedAt = null; framed = false; cutAs = null; }
+	public static void end() { cut(false); active = false; window = null; where = null; aside = false; asked = null; placedAt = null; framed = false; cutAs = null; behind = false; }
 	/** The Space Dock shows the docked ships in FTL's place (heromedel, 5.32): FTL hidden, still running. */
 	public static boolean aside() { return aside; }
 	public static void setAside(boolean ships) { aside = ships; show(!ships); }
@@ -180,22 +180,35 @@ public final class FtlDock {
 			return Found.NOT_YET;
 		}
 	}
-	/** FTL's window just above the station's (when the station is activated), without taking the keyboard. */
-	public static void raise() {
+	/**
+	 * FTL's window lifted over the station's and any other program's, without taking the keyboard: only while the
+	 * station is the window in use (brought forward, clicked), never over a program the player is in (heromedel, 5.43:
+	 * after an Alt+Tab back to the station, FTL stayed under the program in between).
+	 */
+	public static void raise(java.awt.Window station) {
 		if (window == null || !shown) return;
-		try { Win.raise(window); } catch (Throwable t) { log.debug("FTL docked: could not lift its window: {}", t.toString()); }
+		try { Win.raise(window, station); } catch (Throwable t) { log.debug("FTL docked: could not lift its window: {}", t.toString()); }
+	}
+	/** FTL is the window in use (played, or Alt+Tabbed straight to). */
+	public static boolean inFront() {
+		try { return window != null && shown && Win.foreground(window); } catch (Throwable t) { return false; }
 	}
 	/**
 	 * The station's own window put just under FTL's (5.34): Windows may refuse to lift another program's window over the
-	 * one in use, but a program may always arrange its own. Logged, so a debug log shows whether Windows took it.
+	 * one in use, but a program may always arrange its own. Logged, so a debug log shows whether Windows took it. Not
+	 * when another program's window covers FTL (5.43): the station would sink under it too; the viewport is closed
+	 * instead, showing Unpause, and a click there brings FTL back.
 	 */
 	public static void tuckUnder(java.awt.Window station) {
 		if (window == null || !shown || station == null || !station.isDisplayable()) return;
-		try {
-			boolean ok = Win.under(station, window);
-			log.debug("FTL docked: the station's window put under FTL's: {}", ok ? "done" : "refused by Windows");
-		} catch (Throwable t) { log.debug("FTL docked: could not put the station's window under FTL's: {}", t.toString()); }
+		int r;
+		try { r = Win.under(station, window); }
+		catch (Throwable t) { log.debug("FTL docked: could not put the station's window under FTL's: {}", t.toString()); return; }
+		if (r != Win.ALREADY) log.debug("FTL docked: the station's window put under FTL's: {}", r == Win.DONE ? "done" : r == Win.BEHIND ? "not, FTL is behind another program's window (Unpause shown)" : "refused by Windows");
+		behind = r == Win.BEHIND;
+		cut(true);
 	}
+	private static boolean behind; // FTL under another program's window: the viewport closed, Unpause shown in it
 	/** The station's own window over FTL's (a popup is open, 5.39): FTL still shows through the viewport's hole. */
 	public static void stationOnTop(java.awt.Window station) {
 		if (window == null || !shown || station == null || !station.isDisplayable()) return;
@@ -204,7 +217,9 @@ public final class FtlDock {
 	/** FTL to the front with the keyboard (the Unpause screen clicked, 5.33): the station has the keyboard to give. */
 	public static void focus() {
 		if (window == null || !shown) return;
-		try { Win.focus(window); } catch (Throwable t) { log.debug("FTL docked: could not bring it to the front: {}", t.toString()); }
+		try { Win.focus(window); } catch (Throwable t) { log.debug("FTL docked: could not bring it to the front: {}", t.toString()); return; }
+		behind = false;
+		cut(true);
 	}
 	/** FTL's window has been found and docked. */
 	public static boolean found() { return window != null; }
@@ -246,7 +261,7 @@ public final class FtlDock {
 	 */
 	private static void cut(boolean open) {
 		if (station == null || attachedRun) return;
-		boolean want = open && window != null && shown && where != null;
+		boolean want = open && window != null && shown && where != null && !behind;
 		String as = cutKey(want);
 		if (as != null && as.equals(cutAs)) return;
 		cutAs = as;
@@ -268,6 +283,7 @@ public final class FtlDock {
 	public static void show(boolean visible) {
 		if (shown == visible) return;
 		shown = visible;
+		behind = false; // hidden, or back: the next lift sees where it is
 		if (window == null) return;
 		try { Win.show(window, visible); }
 		catch (Throwable t) { log.debug("FTL docked: could not {} its window: {}", visible ? "show" : "hide", t.toString()); }
@@ -294,6 +310,7 @@ public final class FtlDock {
 			boolean AttachThreadInput(int attach, int to, boolean on);
 			boolean GetWindowRect(com.sun.jna.Pointer hwnd, int[] rect); // left, top, right, bottom
 			com.sun.jna.Pointer GetWindow(com.sun.jna.Pointer hwnd, int cmd);
+			com.sun.jna.Pointer GetForegroundWindow();
 			com.sun.jna.Pointer MonitorFromWindow(com.sun.jna.Pointer hwnd, int flags);
 			boolean GetMonitorInfoW(com.sun.jna.Pointer monitor, int[] info); // cbSize, monitor rect (4), work rect (4), flags
 		}
@@ -339,9 +356,17 @@ public final class FtlDock {
 			if (!User32.I.GetMonitorInfoW(m, info)) return null;
 			return new java.awt.Rectangle(info[1], info[2], info[3] - info[1], info[4] - info[2]);
 		}
-		static void raise(Object w) {
-			User32.I.SetWindowPos((com.sun.jna.Pointer) w, null, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // HWND_TOP
+		/**
+		 * Made topmost and at once not (5.43): that lifts another program's window over all the others without activating
+		 * it, where HWND_TOP is refused. Not when it's just over the station already.
+		 */
+		static void raise(Object w, java.awt.Window station) {
+			com.sun.jna.Pointer ftl = (com.sun.jna.Pointer) w, mine = station == null ? null : com.sun.jna.Native.getComponentPointer(station);
+			if (mine != null && mine.equals(below(ftl))) return;
+			User32.I.SetWindowPos(ftl, new com.sun.jna.Pointer(-1), 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // HWND_TOPMOST
+			User32.I.SetWindowPos(ftl, new com.sun.jna.Pointer(-2), 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // HWND_NOTOPMOST: the top of the others
 		}
+		static boolean foreground(Object w) { return w.equals(User32.I.GetForegroundWindow()); }
 		/**
 		 * FTL's window owned by the station's (it stays over it; the station's popups come over both), then the two
 		 * programs' input taken apart again: owning links their input (one cursor, one queue), which hid the pointer
@@ -382,11 +407,46 @@ public final class FtlDock {
 			com.sun.jna.Pointer mine = com.sun.jna.Native.getComponentPointer(station);
 			if (mine != null) User32.I.SetWindowPos(mine, null, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // HWND_TOP: its popups come with it
 		}
-		static boolean under(java.awt.Window station, Object w) {
-			com.sun.jna.Pointer mine = com.sun.jna.Native.getComponentPointer(station);
-			if (mine == null) return false;
-			if (mine.equals(User32.I.GetWindow((com.sun.jna.Pointer) w, GW_HWNDNEXT))) return true; // just under it already (5.42)
-			return User32.I.SetWindowPos(mine, (com.sun.jna.Pointer) w, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // just after FTL's in the order: under it
+		/** The first window on show under this one in the order (hidden ones, like a program's input window, skipped). */
+		static com.sun.jna.Pointer below(com.sun.jna.Pointer w) {
+			com.sun.jna.Pointer h = w;
+			for (int i = 0; i < 64; i++) {
+				h = User32.I.GetWindow(h, GW_HWNDNEXT);
+				if (h == null || User32.I.IsWindowVisible(h)) return h;
+			}
+			return null;
+		}
+		static final int REFUSED = 0, DONE = 1, ALREADY = 2, BEHIND = 3;
+		/**
+		 * The station's window put just under FTL's, unless it's there already (5.42), or FTL is under another program's
+		 * window that covers it, below the station (5.43: put under FTL, the station would sink under that window too).
+		 */
+		static int under(java.awt.Window station, Object w) {
+			final com.sun.jna.Pointer mine = com.sun.jna.Native.getComponentPointer(station), ftl = (com.sun.jna.Pointer) w;
+			if (mine == null) return REFUSED;
+			if (mine.equals(below(ftl))) return ALREADY;
+			final java.awt.Rectangle hole = bounds(ftl);
+			final int me = User32.I.GetWindowThreadProcessId(mine, null);
+			final boolean[] seen = new boolean[3]; // the station, then a window covering FTL, then FTL
+			User32.I.EnumWindows(new User32.Each() { // top to bottom
+				public boolean callback(com.sun.jna.Pointer h, com.sun.jna.Pointer data) {
+					if (h.equals(ftl)) { seen[2] = seen[0] && seen[1]; return false; }
+					if (h.equals(mine)) seen[0] = true;
+					else if (seen[0] && !seen[1] && User32.I.IsWindowVisible(h) && User32.I.GetWindowThreadProcessId(h, null) != me && !cloaked(h) && bounds(h).intersects(hole)) seen[1] = true;
+					return true;
+				}
+			}, null);
+			if (seen[2]) return BEHIND;
+			return User32.I.SetWindowPos(mine, ftl, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE) ? DONE : REFUSED; // just after FTL's in the order: under it
+		}
+		interface Dwm extends com.sun.jna.win32.StdCallLibrary {
+			Dwm I = com.sun.jna.Native.load("dwmapi", Dwm.class);
+			int DwmGetWindowAttribute(com.sun.jna.Pointer hwnd, int attribute, int[] value, int size);
+		}
+		/** A window Windows keeps but doesn't show (another desktop's, a suspended app's): it covers nothing. */
+		static boolean cloaked(com.sun.jna.Pointer h) {
+			try { int[] c = new int[1]; return Dwm.I.DwmGetWindowAttribute(h, 14, c, 4) == 0 && c[0] != 0; } // DWMWA_CLOAKED
+			catch (Throwable t) { return false; }
 		}
 		static void focus(Object w) {
 			com.sun.jna.Pointer h = (com.sun.jna.Pointer) w;
