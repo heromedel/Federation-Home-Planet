@@ -73,7 +73,7 @@ public class MainFrame extends JFrame {
 			@Override
 			public void windowDeiconified(java.awt.event.WindowEvent e) {
 				if (!atSpaceDock) return;
-				homeplanet.core.FtlDock.show(true);
+				homeplanet.core.FtlDock.backAtDock();
 				javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { spaceDock.placeViewport(); homeplanet.core.FtlDock.raise(); } });
 			}
 			@Override
@@ -197,7 +197,7 @@ public class MainFrame extends JFrame {
 		screens.show(tasksPane, "dock");
 		spaceDock.revalidate();
 		spaceDock.repaint();
-		homeplanet.core.FtlDock.show(true); // back in its viewport
+		homeplanet.core.FtlDock.backAtDock(); // back in its viewport (or the docked ships there, 5.32)
 		javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { spaceDock.placeViewport(); homeplanet.core.FtlDock.raise(); } });
 	}
 

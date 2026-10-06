@@ -113,14 +113,20 @@ public final class FtlDock {
 	private static volatile boolean active = false;
 	private static Object window; // FTL's window (a JNA Pointer), once found
 	private static boolean shown = true;
+	private static boolean aside; // the Space Dock shows the docked ships in FTL's place (5.32)
 	private static Rectangle where;
 
 	/** A docked run is on: from the docked launch until FTL's window closes (or isn't found). */
 	public static boolean active() { return active; }
 	/** Starts a docked run (FTL being launched): the Space Dock lays out its viewport. */
-	public static void begin() { active = true; window = null; shown = true; where = null; }
+	public static void begin() { active = true; window = null; shown = true; aside = false; where = null; }
 	/** Ends it: FTL closed, or its window never turned up. */
-	public static void end() { active = false; window = null; where = null; }
+	public static void end() { active = false; window = null; where = null; aside = false; }
+	/** The Space Dock shows the docked ships in FTL's place (heromedel, 5.32): FTL hidden, still running. */
+	public static boolean aside() { return aside; }
+	public static void setAside(boolean ships) { aside = ships; show(!ships); }
+	/** Back at the Space Dock: FTL shown in its viewport, unless the docked ships are shown there instead. */
+	public static void backAtDock() { show(!aside); }
 
 	/** What a look for FTL's window found. */
 	public enum Found { NOT_YET, DOCKED, FULLSCREEN }
@@ -136,6 +142,7 @@ public final class FtlDock {
 			if (screen != null && r.width >= screen.width && r.height >= screen.height) { log.info("FTL docked: FTL is full screen; left as it is"); return Found.FULLSCREEN; }
 			Win.adopt(w);
 			window = w;
+			if (!shown) Win.show(w, false); // found while the station shows something else: hidden till it's back
 			log.info("FTL docked: its window was found");
 			if (where != null) place(where);
 			return Found.DOCKED;
