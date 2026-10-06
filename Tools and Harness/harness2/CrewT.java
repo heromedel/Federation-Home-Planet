@@ -33,9 +33,9 @@ public class CrewT { public static void main(String[] a) throws Exception {
  v.takeStock();
  m = CrewRegister.members(v);
  CrewRegister.Member away = null, stayed = null;
- for (CrewRegister.Member x : all(m, "Twin")) { if (x.where.startsWith("on assignment")) away = x; else if (x.where.equals("in the Cargo Hold")) stayed = x; }
+ for (CrewRegister.Member x : all(m, "Twin")) { if (x.where.startsWith("on an expedition")) away = x; else if (x.where.equals("in the Cargo Hold")) stayed = x; }
  Setup.chk("A: the veteran Twin is away, the other in the Cargo Hold, each with their own history", away != null && stayed != null && away.id != stayed.id
-   && said(away, "Sent on assignment") && !said(stayed, "Sent on assignment"));
+   && said(away, "Sent on an expedition") && !said(stayed, "Sent on an expedition"));
 
  // a rename: the same id
  c = v.readCopy(v.storage());
