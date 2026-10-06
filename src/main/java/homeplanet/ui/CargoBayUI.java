@@ -711,8 +711,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		// everything at once, either way (heromedel: the arrows start at 1; these move the lot): double arrows between the
 		// junk and sell icons, never over them (5.21)
 		FtlButton allLeft = new FtlButton("<<", FtlFont.BODY, 32, 22), allRight = new FtlButton(">>", FtlFont.BODY, 32, 22);
-		allLeft.setBounds(GX + 62, y + 68, 32, 22);
-		allRight.setBounds(GX + 96, y + 68, 32, 22);
+		allLeft.setBounds(GX + 61, y + 68, 32, 22); // the pair centered on the number box, 3 pixels to each sell icon (5.27)
+		allRight.setBounds(GX + 95, y + 68, 32, 22);
 		allLeft.setToolTipText("Take all of it from the partner");
 		allRight.setToolTipText("Send all of it to the partner");
 		allLeft.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { moveAllSupply(false); } });
@@ -737,8 +737,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		tf.setForeground(CargoParts.GOLD);
 		tf.setBackground(new Color(16, 20, 26));
 		tf.setCaretColor(CargoParts.GOLD);
-		tf.setBorder(javax.swing.BorderFactory.createEmptyBorder());
-		for (Component c : sp.getComponents()) if (c instanceof javax.swing.JButton) c.setBackground(new Color(28, 36, 44));
+		int arrows = 0;
+		for (Component c : sp.getComponents()) if (c instanceof javax.swing.JButton) { c.setBackground(new Color(28, 36, 44)); arrows = Math.max(arrows, c.getPreferredSize().width); }
+		tf.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, arrows, 0, 0)); // as wide as the arrows: the number centered on the whole box (heromedel, 5.27)
 	}
 
 	/** A supply box: icon, name, amount. Click one to move that supply. */
