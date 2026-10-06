@@ -156,6 +156,17 @@ public final class FtlDock {
 		if (window == null || !shown) return;
 		try { Win.raise(window); } catch (Throwable t) { log.debug("FTL docked: could not lift its window: {}", t.toString()); }
 	}
+	/**
+	 * The station's own window put just under FTL's (5.34): Windows may refuse to lift another program's window over the
+	 * one in use, but a program may always arrange its own. Logged, so a debug log shows whether Windows took it.
+	 */
+	public static void tuckUnder(java.awt.Window station) {
+		if (window == null || !shown || station == null || !station.isDisplayable()) return;
+		try {
+			boolean ok = Win.under(station, window);
+			log.debug("FTL docked: the station's window put under FTL's: {}", ok ? "done" : "refused by Windows");
+		} catch (Throwable t) { log.debug("FTL docked: could not put the station's window under FTL's: {}", t.toString()); }
+	}
 	/** FTL to the front with the keyboard (the Unpause screen clicked, 5.33): the station has the keyboard to give. */
 	public static void focus() {
 		if (window == null || !shown) return;
@@ -241,6 +252,10 @@ public final class FtlDock {
 		}
 		static void raise(Object w) {
 			User32.I.SetWindowPos((com.sun.jna.Pointer) w, null, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // HWND_TOP
+		}
+		static boolean under(java.awt.Window station, Object w) {
+			com.sun.jna.Pointer mine = com.sun.jna.Native.getComponentPointer(station);
+			return mine != null && User32.I.SetWindowPos(mine, (com.sun.jna.Pointer) w, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // just after FTL's in the order: under it
 		}
 		static void focus(Object w) {
 			com.sun.jna.Pointer h = (com.sun.jna.Pointer) w;

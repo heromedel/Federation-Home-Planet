@@ -83,8 +83,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private void liftFtl() {
 		if (!homeplanet.core.FtlDock.found() || homeplanet.core.FtlDock.aside() || !isShowing()) return;
 		java.awt.Window active = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
-		if (active != null && active != javax.swing.SwingUtilities.getWindowAncestor(this)) return; // a popup is up: FTL stays under it
-		homeplanet.core.FtlDock.raise();
+		java.awt.Window station = javax.swing.SwingUtilities.getWindowAncestor(this);
+		if (active != null && active != station) return; // a popup is up: FTL stays under it
+		homeplanet.core.FtlDock.tuckUnder(station); // the station's own window under FTL's: Windows refuses lifting another program's window (5.34)
 	}
 
 	// ---- keeping itself current: a rebuild a moment after anything in the fleet's folder is written ----
@@ -135,8 +136,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		setOpaque(false);
 
 		// Left: the docked ships, three across; this list scrolls on its own, over the fixed backdrop
-		boolean docking = homeplanet.core.FtlDock.active();
-		JPanel grid = new JPanel(new GridLayout(0, docking ? Math.max(3, (homeplanet.core.FtlDock.size().width - 24) / CELL_W) : 3, 0, 0)); // across FTL's place while docked (5.32)
+		JPanel grid = new JPanel(new GridLayout(0, 3, 0, 0));
 		grid.setOpaque(false);
 		for (Ship s : vault.docked()) grid.add(shipPanel(s));
 		JPanel gridTop = new JPanel(new java.awt.BorderLayout());
@@ -153,10 +153,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		gridScroll.getVerticalScrollBar().setPreferredSize(new Dimension(10, 10));
 		gridScroll.getVerticalScrollBar().setUI(new MenuTheme.DarkScrollBarUI(new Color(214, 230, 222, 150), new Color(0, 0, 0, 0))); // slim, to suit the station
 		final JPanel docked = new JPanel(new java.awt.BorderLayout(0, 6));
-		docked.setOpaque(docking); // in FTL's place, on its dark screen rather than over the station's picture (5.32)
-		docked.setBackground(new Color(8, 10, 14));
-		docked.setBorder(docking ? javax.swing.BorderFactory.createCompoundBorder(javax.swing.BorderFactory.createLineBorder(MenuTheme.GOLD), javax.swing.BorderFactory.createEmptyBorder(8, 10, 4, 0))
-				: javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0)); // in FTL's gold frame while docked
+		docked.setOpaque(false);
+		docked.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 14, 0, 0));
 		String title = "Docked";
 		timeRound(true); // ransoms and the infirmary, once the screen is up
 		boolean longRange = parent != null && parent.comm != null && parent.comm.inboxWanted(); // a commander's mail needs an inbox, whatever the setting
@@ -246,7 +244,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final JPanel berth = boarded == null ? null : berthPanel(boarded);
 		final JPanel stats = boarded == null ? null : statsPanel(boarded);
 		final JPanel aboard = boarded == null ? null : aboardRow;
-		final JPanel view = homeplanet.core.FtlDock.active() ? viewport() : null; // FTL docked in her place (5.29)
+		final JPanel view = homeplanet.core.FtlDock.active() && !homeplanet.core.FtlDock.aside() ? viewport() : null; // FTL docked in her place (5.29); flipped, the Space Dock as without FTL (5.34)
 		viewportPanel = view;
 		JPanel main = new JPanel(null) {
 			@Override
@@ -264,10 +262,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					vw = Math.max(160, vw); vh = Math.max(90, vh);
 					if (aboard != null) aboard.setBounds(14, 10, Math.min(aboard.getPreferredSize().width, vw), ah); // her heading its usual length, the inbox and reputation after it
 					view.setBounds(14, y0, vw, vh);
-					boolean ships = homeplanet.core.FtlDock.aside(); // the docked ships in FTL's place, flipped by the icon on her heading (5.32)
-					view.setVisible(!ships);
-					docked.setVisible(ships);
-					docked.setBounds(14, y0, vw, vh);
+					docked.setVisible(false); // nothing below FTL: the flip shows the Space Dock as usual instead (5.34)
 					javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { placeViewport(); } });
 				} else if (berth != null) {
 					Dimension d = berth.getPreferredSize();
@@ -700,7 +695,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		flipBtn = null;
 		if (homeplanet.core.FtlDock.active()) { // FTL docked: the icon that flips its place to the docked ships and back (heromedel, 5.32)
 			flipBtn = new FlipButton();
-			flipBtn.setToolTipText(homeplanet.core.FtlDock.aside() ? "Back to FTL" : "Show your docked ships");
+			flipBtn.setToolTipText(homeplanet.core.FtlDock.aside() ? "Back to FTL" : "Show the Space Dock (FTL waits behind it)");
 			flipBtn.addActionListener(this);
 		}
 		int flipW = flipBtn == null ? 0 : FlipButton.SIZE + 8;
@@ -1078,15 +1073,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** The flip (5.32): the docked ships in FTL's place, FTL hidden but running; again, FTL back where it was. */
 	private void flip() {
 		boolean ships = !homeplanet.core.FtlDock.aside();
-		log.debug("FTL docked: {}", ships ? "the docked ships shown in its place" : "back to FTL");
+		log.debug("FTL docked: {}", ships ? "the Space Dock shown as without FTL" : "back to FTL");
 		homeplanet.core.FtlDock.setAside(ships);
-		flipBtn.setToolTipText(ships ? "Back to FTL" : "Show your docked ships");
-		flipBtn.repaint();
-		revalidate();
-		repaint();
-		if (!ships) javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { placeViewport(); homeplanet.core.FtlDock.raise(); } });
+		init(); // the Space Dock as usual (her berth, the saucer, the docked ships), or FTL's viewport again; the rebuild lifts FTL back
 	}
-	/** The flip's icon: a small ship (to show the docked ships), or a small screen (back to FTL). */
+	/** The flip's icon: a small ship (to show the Space Dock as without FTL), or a small screen (back to FTL). */
 	static final class FlipButton extends FtlButton {
 		static final int SIZE = 26;
 		FlipButton() { super("", FtlFont.MENU, SIZE, SIZE); }
