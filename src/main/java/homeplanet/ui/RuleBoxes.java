@@ -61,7 +61,7 @@ public class RuleBoxes {
 	final JCheckBox careerBox = new JCheckBox("Career messages: a welcome, promotions, rewards for FTL achievements and a stipend, in Sandbox Mode too", HomePlanet.careerMessages);
 	final JCheckBox repBox = new JCheckBox("Reputation: earn and lose reputation points for your ships' service, shown on the Space Dock", HomePlanet.reputationOn);
 	/** How Reputation Can be Used (heromedel's words): any mode, never locked by Immersive Mode. */
-	final JComboBox<String> repUseBox = new JComboBox<String>(new String[] {"New Journeys and Pleads", "Vanillas Breaking Actions", "Only as a score"});
+	final JComboBox<String> repUseBox = new JComboBox<String>(REP_USE_OPTIONS);
 	private final JLabel repUseLabel = new JLabel("How Reputation Can be Used:  ");
 	/** What each option does, one per option (heromedel, 5.26): the open list's tooltips, and the info window's paragraphs. */
 	static final String[] REP_USE_TIPS = {
@@ -69,12 +69,25 @@ public class RuleBoxes {
 		"<html>All of New Journeys and Pleads, plus what vanilla FTL can't do:<br>taking a system off at Refit, stripping systems when scrapping, and a custom work order's reputation share.</html>",
 		"<html>Reputation is never spent. A plea gives up the Cargo Hold;<br>a promise of adventure and rest are free. Everything is paid in scrap.</html>"};
 	private final CargoParts.IconButton repUseInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "What each option does", new ActionListener() {
-		public void actionPerformed(ActionEvent e) { repUseInfo(); }
+		public void actionPerformed(ActionEvent e) { repUseInfo(repUseBox); }
 	});
+	/** The three options, in heromedel's words (the setting's own list, and the Immersive briefing's). */
+	static final String[] REP_USE_OPTIONS = {"New Journeys and Pleads", "Vanillas Breaking Actions", "Only as a score"};
+	/** A list whose open options say what each does (Settings, and the Immersive briefing, 5.27). */
+	static void explainOptions(final JComboBox<String> box) {
+		box.setRenderer(new javax.swing.DefaultListCellRenderer() {
+			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
+				java.awt.Component c = super.getListCellRendererComponent(list, value, index, selected, focus);
+				int i = index >= 0 ? index : box.getSelectedIndex();
+				if (c instanceof JComponent && i >= 0 && i < REP_USE_TIPS.length) ((JComponent) c).setToolTipText(REP_USE_TIPS[i]);
+				return c;
+			}
+		});
+	}
 	/** The info window: each option and what it changes, then what holds in all of them. */
-	private void repUseInfo() {
+	static void repUseInfo(java.awt.Component near) {
 		String gold = MenuTheme.HTML_GOLD;
-		String[] names = {"New Journeys and Pleads", "Vanillas Breaking Actions", "Only as a score"};
+		String[] names = REP_USE_OPTIONS;
 		String[][] effects = {
 			{"A New Journey's fee can be paid in reputation, or in the scrap there is and reputation for the rest.",
 				"A plea for a new ship can keep the Cargo Hold, at a share of reputation set by the difficulty.",
@@ -96,7 +109,7 @@ public class RuleBoxes {
 		}
 		h.append("<p style='margin-top:10px'><font color='").append(MenuTheme.HTML_GREY_GREEN).append("'>Where reputation is spent, a plea, a promise of adventure and rest may take it below zero; "
 				+ "everything else stops at zero. In every option, captives cost reputation and paid ransoms earn some back. Any mode can change this setting.</font></p></body></html>");
-		javax.swing.JOptionPane.showMessageDialog(javax.swing.SwingUtilities.getWindowAncestor(repUseBox), new JLabel(h.toString()), "How Reputation Can be Used", javax.swing.JOptionPane.PLAIN_MESSAGE);
+		javax.swing.JOptionPane.showMessageDialog(javax.swing.SwingUtilities.getWindowAncestor(near), new JLabel(h.toString()), "How Reputation Can be Used", javax.swing.JOptionPane.PLAIN_MESSAGE);
 	}
 	private final JPanel repUseRow = row(22);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
@@ -173,14 +186,7 @@ public class RuleBoxes {
 		repUseBox.setToolTipText(repUseTip);
 		repUseLabel.setToolTipText(repUseTip);
 		// each option says what it does while the list is open (heromedel, 5.26)
-		repUseBox.setRenderer(new javax.swing.DefaultListCellRenderer() {
-			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
-				java.awt.Component c = super.getListCellRendererComponent(list, value, index, selected, focus);
-				int i = index >= 0 ? index : repUseBox.getSelectedIndex();
-				if (c instanceof JComponent && i >= 0 && i < REP_USE_TIPS.length) ((JComponent) c).setToolTipText(REP_USE_TIPS[i]);
-				return c;
-			}
-		});
+		explainOptions(repUseBox);
 		repUseInfo.setEnabled(false);
 		repUseRow.add(repUseLabel);
 		repUseRow.add(repUseBox);
