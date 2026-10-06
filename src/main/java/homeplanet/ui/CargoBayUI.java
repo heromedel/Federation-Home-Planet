@@ -113,6 +113,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private final FtlButton saveBtn, resetBtn;
 	private final CargoParts.Label help = new CargoParts.Label("", FtlFont.BODY, CargoParts.TEXT, -1);
 	private final CargoParts.Label notice = new CargoParts.Label("", FtlFont.MENU, CargoParts.TEXT, 0);
+	/** The notice's second line, and a ship picker under it: a ship out of range can't trade, another may (5.52). */
+	private final CargoParts.Label notice2 = new CargoParts.Label("", FtlFont.BODY, CargoParts.TEXT, 0);
+	private FtlButton noticePick;
 	private final JPanel noticePanel = new JPanel(null);
 
 	// ---- the Trade tab ----
@@ -213,8 +216,16 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 		// the notice shown instead of the tabs (no boarded ship, or not at a station)
 		noticePanel.setOpaque(false);
-		notice.setBounds(290, 250, 700, 120);
+		notice.setBounds(190, 270, 900, 34);
 		noticePanel.add(notice);
+		notice2.setBounds(190, 306, 900, 22);
+		noticePanel.add(notice2);
+		noticePick = dropButton();
+		noticePick.setText("Pick another ship");
+		noticePick.setBounds(640 - DROP_W / 2, 344, DROP_W, 30);
+		noticePick.setToolTipText("Work on another of your ships docked at a station, without leaving the Cargo Bay");
+		noticePick.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pickBoard(noticePick); } });
+		noticePanel.add(noticePick);
 
 		partnerBtn = dropButton();
 		boardBtn = dropButton();
@@ -341,8 +352,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		shop.init();
 		systems.init();
 		refreshTrade();
-		if (currentPath == null) notice.setText("No ship picked: pick one above, or board one at the Space Dock.");
-		else if (!Vault.get().mayTrade(currentShip)) notice.setText(currentSave.getPlayerShipName() + " is not within range of a station. Take her to a beacon with a store to trade.");
+		notice2.setText("");
+		if (currentPath == null) notice.setText("No ship picked: pick one below, or board one at the Space Dock.");
+		else if (!Vault.get().mayTrade(currentShip)) {
+			notice.setText(currentSave.getPlayerShipName() + " is not within range of a station.");
+			notice2.setText("Take her to a beacon with a store to trade, or pick another ship:");
+		}
 		for (int i = 0; i < tabButtons.length; i++) {
 			boolean shipTab = i > 0; // the Shop and the Refit tab
 			tabButtons[i].setEnabled(!tradeUnavailable() && !(shipTab && holdOnly()));
@@ -461,7 +476,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		return b;
 	}
 	/** Pick another ship to work on, without boarding anyone: the ships at the Space Dock, aboard or docked, as the partner list has them. */
-	private void pickBoard() {
+	private void pickBoard() { pickBoard(boardBtn); }
+	/** The same, from this button (the Trade tab's, or the notice's when she can't trade where she is). */
+	private void pickBoard(java.awt.Component anchor) {
 		JPopupMenu m = new JPopupMenu();
 		Ship aboard = Vault.get().boarded();
 		if (currentPath != null) {
@@ -482,7 +499,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			m.add(none);
 		}
 		CargoParts.darkPopup(m);
-		m.show(boardBtn, 0, boardBtn.getHeight());
+		m.show(anchor, 0, anchor.getHeight());
 	}
 	/** The ships that may be picked from here: at the Space Dock, readable (with no ship picked the partner list holds the Cargo Hold alone, so they come from the fleet). */
 	private List<Ship> boardable() {

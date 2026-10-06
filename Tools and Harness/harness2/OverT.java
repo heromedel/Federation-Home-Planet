@@ -1,5 +1,5 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
-/** Augments with no room aboard: four seen away from a store, the one gone after the jump shipped home. args: gamedir, world saves, work */
+/** Augments with no room aboard: four seen away from a store (the fourth in the cargo list, as FTL keeps it), the one gone after the jump shipped home. args: gamedir, world saves, work */
 public class OverT {
  static Vault v;
  public static void main(String[] a) throws Exception {
@@ -16,7 +16,7 @@ public class OverT {
   Setup.chk("O: four aboard: nothing shipped before the jump", shipped().isEmpty());
   fly(1, false, "SCRAP_COLLECTOR", "DRONE_RECOVERY", "AUTO_COOLDOWN");
   List<Transmissions.Message> s = shipped();
-  Setup.chk("O: after the jump, the one thrown away comes home by letter", s.size() == 1 && s.get(0).reward.equals("item SHIELD_RECHARGE")
+  Setup.chk("O: after the jump, the one thrown away comes home by one letter (FTL writes it twice in cargo; the Burst Laser there isn't an augment)", s.size() == 1 && s.get(0).reward.equals("item SHIELD_RECHARGE")
     && s.get(0).from.contains(v.boarded().save().getPlayerShipName()) && !s.get(0).body.contains("{") && !s.get(0).subject.contains("{"));
   int before = count("SHIELD_RECHARGE");
   Transmissions.claim(s.get(0), -1);
@@ -70,8 +70,14 @@ public class OverT {
   SavedGameState gs = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
   if (start < 0) start = gs.getTotalBeaconsExplored();
   gs.setTotalBeaconsExplored(start + jumps);
+  // as FTL writes it (seen in FTL 1.6.14): three in her augment list; the one over capacity in the cargo list, twice,
+  // beside whatever weapons or drones are in cargo
+  List<String> all = Arrays.asList(augs);
   gs.getPlayerShip().getAugmentIdList().clear();
-  gs.getPlayerShip().getAugmentIdList().addAll(Arrays.asList(augs));
+  gs.getPlayerShip().getAugmentIdList().addAll(all.subList(0, Math.min(Overflow.SLOTS, all.size())));
+  gs.getCargoIdList().clear();
+  gs.getCargoIdList().add("LASER_BURST_1");
+  for (String over : all.subList(Math.min(Overflow.SLOTS, all.size()), all.size())) { gs.getCargoIdList().add(over); gs.getCargoIdList().add(over); }
   if (gs.getBeaconList().isEmpty()) gs.getBeaconList().add(new BeaconState());
   gs.setCurrentBeaconId(0);
   gs.getBeaconList().get(0).setStore(store ? new StoreState() : null);

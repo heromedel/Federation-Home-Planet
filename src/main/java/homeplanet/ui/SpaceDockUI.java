@@ -533,13 +533,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		init();
 	}
 
-	/** Why the Cargo Bay can't open now (her save unreadable, or she's away from a station), or null if it can. With no ship aboard it opens on the Cargo Hold. */
+	/**
+	 * Why the Cargo Bay can't open now (her save unreadable), or null if it can. With no ship aboard it opens on the Cargo
+	 * Hold. Away from a store it opens all the same (heromedel, 5.52; the Cargo Bay follows the ship picked on it since
+	 * 5.00): she can't trade there and it says so, and another ship can be picked.
+	 */
 	private String cargoBayClosedReason() {
 		Ship ship = Vault.get().boarded();
 		if (ship == null) return null; // the Cargo Hold alone: its goods can be sold (CargoBayUI.holdOnly)
 		if (ship.save() == null) return ship.name + "'s save can't be read.\nBoard another ship, or check her Records, before returning to the Cargo Bay to trade.";
-		if (!Vault.get().mayTrade(ship))
-			return ship.name + " is not within range of a station.\nFind a beacon with a station, then return to trade.";
 		return null;
 	}
 	private FtlButton controlButton(String text, String tip) {
