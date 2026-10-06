@@ -41,8 +41,14 @@ final class CrewReport extends JPanel {
 
 	/** Shows the report with these buttons; returns the one pressed (JOptionPane's numbering). */
 	static int show(Component parent, CrewState c, boolean laidUp, Object[] options) {
-		return JOptionPane.showOptionDialog(parent, new CrewReport(c, laidUp), "Report for crewman " + c.getName(),
-				JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+		// one of the fleet's own: Crew Log... opens their whole career (heromedel, 5.41); the caller's own buttons keep their numbers
+		int id = homeplanet.vault.Vault.isOpen() ? homeplanet.vault.CrewRegister.identify(homeplanet.vault.Vault.get(), c) : -1;
+		Object[] all = options;
+		if (id > 0) { all = java.util.Arrays.copyOf(options, options.length + 1); all[options.length] = "Crew Log..."; }
+		int r = JOptionPane.showOptionDialog(parent, new CrewReport(c, laidUp), "Report for crewman " + c.getName(),
+				JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, all, all[0]);
+		if (id > 0 && r == options.length) { SettingsDialog.openCrewLog(parent, id); return JOptionPane.CLOSED_OPTION; }
+		return r;
 	}
 
 	@Override public Dimension getPreferredSize() { return new Dimension(330, 330); }
@@ -75,9 +81,11 @@ final class CrewReport extends JPanel {
 		heading(g, "Skills", y - 8);
 		for (int i = 0; i < 6; i++) {
 			y += 20;
+			Icon skill = IconFactory.skillIcon(i, levels[i], 14); // FTL's own skill icon, tinted by level (5.41)
+			if (skill != null) skill.paintIcon(this, g, 14, y - 12);
 			g.setFont(base.deriveFont(Font.PLAIN, 12f));
 			g.setColor(MenuTheme.TEXT);
-			g.drawString(SKILL_NAMES[i], 16, y);
+			g.drawString(SKILL_NAMES[i], skill != null ? 33 : 16, y);
 			for (int k = 0; k < 2; k++) { // a pip a level: green for the first, gold for the second
 				g.setColor(k < levels[i] ? (k == 0 ? HEALTH : MenuTheme.GOLD) : TRACK);
 				g.fillRect(100 + k * 14, y - 9, 10, 9);

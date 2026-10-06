@@ -99,24 +99,34 @@ class RecordsLog extends JComponent implements Scrollable {
 		return r;
 	}
 	/** The station's log (her entries in history.log), or the empty text if there are none. */
-	static RecordsLog station(String text, String empty) {
+	static RecordsLog station(String text, String empty) { return station(text, empty, null); }
+	/**
+	 * The station log; with each entry's stardate (in order, one an entry), it's told by stardate, with no clock times
+	 * (heromedel, 5.41: real dates stay in the file, for bug reports, and out of view).
+	 */
+	static RecordsLog station(String text, String empty, int[] stardays) {
 		RecordsLog r = new RecordsLog(empty);
+		r.noClock = stardays != null;
 		String day = null;
 		Item last = null;
+		int entry = 0;
 		for (String line : text.split("\r?\n")) {
 			if (line.trim().isEmpty()) continue;
 			if (line.startsWith("  ") && last != null) { last.details.add(line.trim()); continue; }
 			Matcher m = STAMP.matcher(line);
 			Item it = new Item();
 			if (m.matches()) {
-				if (!m.group(1).equals(day)) {
-					day = m.group(1);
+				String heading = stardays == null ? m.group(1)
+						: "Stardate " + homeplanet.vault.MasterLog.stardate(Math.max(1, entry < stardays.length ? stardays[entry] : 1));
+				entry++;
+				if (!heading.equals(day)) {
+					day = heading;
 					Item h = new Item();
 					h.heading = true;
 					h.title = day;
 					r.items.add(h);
 				}
-				it.time = m.group(2);
+				if (stardays == null) it.time = m.group(2);
 				String rest = m.group(3);
 				int sp = rest.indexOf("  ");
 				it.tag = sp < 0 ? rest : rest.substring(0, sp);
@@ -132,7 +142,9 @@ class RecordsLog extends JComponent implements Scrollable {
 		r.textX = PAD + r.timeW() + TEXT_GAP + (r.tagW > 0 ? r.tagW + TEXT_GAP : 0);
 		return r;
 	}
+	private boolean noClock;
 	private int timeW() {
+		if (noClock) return 0;
 		int w = PLAIN_FM.stringWidth("00:00");
 		for (Item it : items) if (it.time != null) w = Math.max(w, PLAIN_FM.stringWidth(it.time));
 		return w;
