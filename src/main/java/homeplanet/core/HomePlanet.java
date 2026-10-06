@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.43";
+	public static final String APP_VERSION = "5.44";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -409,9 +409,24 @@ public class HomePlanet {
 	}
 	public static void showErrorDialog(final String message) {
 		onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
-			JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, wrap(message, 100), "Error", JOptionPane.ERROR_MESSAGE);
 			return null;
 		}});
+	}
+	/** Long lines broken after a space or a path's separator: a long path ran off the screen, the reason after it unseen (heromedel, 5.44). */
+	static String wrap(String text, int width) {
+		if (text == null || text.startsWith("<html>")) return text;
+		StringBuilder out = new StringBuilder();
+		for (String line : text.split("\n", -1)) {
+			while (line.length() > width) {
+				int cut = Math.max(line.lastIndexOf(' ', width - 1), Math.max(line.lastIndexOf('\\', width - 1), line.lastIndexOf('/', width - 1))) + 1;
+				if (cut < width / 2) cut = width; // nowhere to break near the end: broken at the width
+				out.append(line, 0, cut).append('\n');
+				line = line.substring(cut);
+			}
+			out.append(line).append('\n');
+		}
+		return out.substring(0, out.length() - 1);
 	}
 
 	// ---- FTL itself ----
