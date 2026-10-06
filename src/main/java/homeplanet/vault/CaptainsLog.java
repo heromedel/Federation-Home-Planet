@@ -256,7 +256,7 @@ public final class CaptainsLog {
 		} else if (kind.equals("RENAME CREW")) {
 			String[] w = unowned(head).split(" -> ", 2);
 			String rank = w.length == 2 ? homeplanet.model.Rank.promotion(w[0].trim(), w[1].trim()) : null; // a rank put on (heromedel, 5.52)
-			if (rank != null) once(m, "crew", false, "Promoted " + homeplanet.model.Rank.bare(w[1].trim()) + " to " + rank + (head.contains("(posthumously)") ? ", posthumously." : "."));
+			if (rank != null) once(m, "crew", false, "I promoted " + homeplanet.model.Rank.bare(w[1].trim()) + " to " + rank + (head.contains("(posthumously)") ? ", posthumously." : ".")); // heromedel's words (5.53)
 			else if (w.length == 2) once(m, "crew", false, w[0].trim() + " is now " + w[1].trim() + ".");
 		} else if (kind.equals("REMODEL")) {
 			once(m, "ships", true, "Had " + theShip(head.split(" -> ")[0].trim()) + " remodeled.");

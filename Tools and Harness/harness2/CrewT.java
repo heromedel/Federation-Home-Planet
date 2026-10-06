@@ -292,6 +292,8 @@ public class CrewT { public static void main(String[] a) throws Exception {
  boolean worn = false; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Sgt. Wanderer")) worn = true;
  wm = byId(CrewRegister.members(v), wid);
  Setup.chk("K: and in her save now, the career unchanged, nothing more to give", worn && count(wm, "Promoted to Sergeant.") == 1 && CrewRegister.rankToGive(v, wm) == -1);
+ String cl = LogT.page(v, false);
+ Setup.chk("K: the Captain's Log: I promoted Gracie to Sergeant; Norwyn Schultze posthumously", cl.contains("I promoted Gracie to Sergeant.") && cl.contains("I promoted Norwyn Schultze to Lieutenant, posthumously."));
  Setup.done();
 }
  static int count(CrewRegister.Member x, String text) { int k = 0; for (CrewRegister.Event e : x.events) if (e.text.contains(text)) k++; return k; }

@@ -1475,7 +1475,8 @@ public final class Vault {
 		marked(s, s.save());
 		keepBoarded(s);
 		saveManifest();
-		HistoryLog.entry("RESTORE", s.name + "  history/" + s.id + "/" + version.getName() + " -> " + (s.isBoarded() ? "continue.sav" : s.state.key + "/" + s.id + ".sav"));
+		log.info("Restored {}: history/{}/{} -> {}", s.name, s.id, version.getName(), s.isBoarded() ? "continue.sav" : s.state.key + "/" + s.id + ".sav");
+		HistoryLog.entry("RESTORE", "Restored " + homeplanet.parser.ShipNames.the(s.name) + " to an earlier version"); // in words; the files in the debug log (heromedel, 5.53)
 	}
 
 	// ---- Long Range Comm.: ships that change hands ----
