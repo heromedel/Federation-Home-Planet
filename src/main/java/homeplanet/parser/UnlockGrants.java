@@ -55,6 +55,71 @@ public final class UnlockGrants {
 		try { append("seen", add); } catch (Exception e) { log.warn("Could not record the unlocked ships: {}", e.toString()); }
 	}
 
+	/**
+	 * An uncommissioned ship boarded in Immersive Mode (5.54): what's unlocked now is seen, never the career's; and what's
+	 * new is noted as hers (heromedel, 5.55), for the offer to take it back out of FTL's profile.
+	 */
+	public static void strangerSeen(Unlocks u) {
+		if (u == null || u.problem() != null) return;
+		if (!file().isFile()) { turnedOn(u); return; } // nothing known before: all seen, none told apart as hers
+		Set<String> seen = read("seen"), add = new LinkedHashSet<String>();
+		for (String k : unlockedNow(u)) if (!seen.contains(k)) add.add(k);
+		try { append("seen", add); append("stranger", add); } catch (Exception e) { log.warn("Could not record the unlocks seen: {}", e.toString()); }
+	}
+	/** What came into FTL's profile while an uncommissioned ship was boarded, not yet answered ("ACH:" and an id, or a base ship and a layout). */
+	public static Set<String> strangers() { return Vault.isOpen() ? read("stranger") : new LinkedHashSet<String>(); }
+	/** One of them in words: the achievement's name, or the layout's ("Engi Cruiser, Type A"). */
+	public static String describe(String key) {
+		if (key.startsWith(ACH)) {
+			try { return DataManager.get().getAchievement(key.substring(ACH.length())).getName().getTextValue(); } catch (Exception e) { return key.substring(ACH.length()); }
+		}
+		String[] w = key.split(" ");
+		try { return Transmissions.layoutName(w[0], Integer.parseInt(w[1])); } catch (Exception e) { return key; }
+	}
+	/** The offer answered: forgotten (and, when they were taken out of the profile, no longer seen: earned again by the career, they count). */
+	public static void strangersAnswered(Set<String> removed) {
+		File f = file();
+		if (!f.isFile()) return;
+		try {
+			StringBuilder sb = new StringBuilder();
+			for (String line : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) {
+				if (line.isEmpty() || line.startsWith("stranger ")) continue;
+				if (line.startsWith("seen ") && removed.contains(line.substring(5).trim())) continue;
+				sb.append(line).append('\n');
+			}
+			SafeFiles.writeText(f, sb.toString(), false);
+		} catch (Exception e) {
+			log.warn("Could not note the answer about the unlocks: {}", e.toString());
+		}
+	}
+	/**
+	 * Takes these out of FTL's profile (heromedel, 5.55), a dated backup made first: the achievements, and layouts A and C
+	 * (a Type B follows its ship's achievements; the Kestrel A always stays). FTL must be closed. Returns the backup.
+	 */
+	public static File removeFromProfile(Set<String> keys) throws java.io.IOException {
+		File saves = homeplanet.core.HomePlanet.save_location;
+		File prof = homeplanet.core.ProfileSwap.current(saves);
+		if (prof == null) throw new java.io.IOException("There's no FTL profile (ae_prof.sav or prof.sav) in " + saves);
+		File backup = homeplanet.core.ProfileSwap.backup(saves, Vault.get().root);
+		net.blerf.ftl.model.Profile p = new net.blerf.ftl.parser.ProfileParser().readProfile(prof);
+		for (java.util.Iterator<net.blerf.ftl.model.AchievementRecord> it = p.getAchievements().iterator(); it.hasNext(); ) {
+			if (keys.contains(ACH + it.next().getAchievementId())) it.remove();
+		}
+		for (String k : keys) {
+			if (k.startsWith(ACH)) continue;
+			String[] w = k.split(" ");
+			if (w.length != 2 || (w[0].equals("PLAYER_SHIP_HARD") && w[1].equals("0"))) continue;
+			net.blerf.ftl.model.ShipAvailability a = p.getShipUnlockMap().get(w[0]);
+			if (a == null) continue;
+			if (w[1].equals("0")) a.setUnlockedA(false);
+			else if (w[1].equals("2")) a.setUnlockedC(false);
+		}
+		java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+		new net.blerf.ftl.parser.ProfileParser().writeProfile(out, p);
+		SafeFiles.write(prof, out.toByteArray());
+		return backup;
+	}
+
 	/** A career begins (Sandbox Mode's Career messages): achievements earned until now are seen, and never rewarded. */
 	public static void achievementsSeen(Unlocks u) {
 		if (u == null || u.problem() != null) return;
