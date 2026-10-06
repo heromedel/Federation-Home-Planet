@@ -323,6 +323,7 @@ public final class CrewRegister {
 		ships.addAll(v.docked());
 		ships.addAll(v.junked());
 		for (Ship s : ships) {
+			if (v.ignoring(s)) continue; // an uncommissioned ship in Immersive Mode: her crew aren't the career's (heromedel, 5.54)
 			if (!v.fileOf(s).isFile()) { if (s == b) return null; continue; } // continue.sav away: FTL is saving, or between runs
 			SavedGameState gs = s.save();
 			if (gs == null || gs.getPlayerShip() == null) return null;
