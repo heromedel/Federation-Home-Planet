@@ -86,3 +86,16 @@ The Captain's Log (Captain's Quarters) is a story told from the master log, not 
 - **Never told:** how a day is counted (no jumps as time, no beacons), reputation as its own lines (it has its log and
   tally), the station's housekeeping (loads, profiles, settings, patches, fleet switches, Medbay visits, moving one's own
   things about), and letters that only repeat an event already told.
+
+## Records agree with each other
+
+The station keeps the same events in several records: each ship's voyage log, the station log, the master log, the
+crew register (crew.txt), the Captain's Log, the Crew Log, expedition reports and letters. A player who knows Gracie
+started on the Unyielding notices a Crew Log that forgets it as surely as a Slug weathering a storm (heromedel, 5.50).
+
+- **Any log, report or letter built from records** is checked this way as well as for voice and lore
+  (`docs/LORE_COMPONENTS.md`): take a few real crew and ships and follow each through every record that mentions them.
+  Every ship served on, every rename, death, capture, trade and return should be there, in the same order, under one
+  name for one ship.
+- **What doesn't match** goes to heromedel as a finding, or as a handoff (`docs/HANDOFF.md`): what is missing or
+  contradicted, where, and the lines from both records that show it. Never a silent fix.

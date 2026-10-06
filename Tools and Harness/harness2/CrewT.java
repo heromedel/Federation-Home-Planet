@@ -155,6 +155,50 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Thread.sleep(1100);
  v.takeStock();
  Setup.chk("W: a look that finds nothing new leaves the register as it was", new File(v.root, "crew.txt").lastModified() == before);
+
+ // the ships served on, from before the master log began (fhp-c-local-session's handoff, 5.51): a ship's voyage log,
+ // a trade off her, her starting crew; a renamed ship once, with the name she had; namesakes on a trade never credited
+ Ship x0 = v.docked().get(0), y0 = v.boarded();
+ c = v.readCopy(y0);
+ CrewState gracie = Commission.volunteer("human", new Random(91)); gracie.setName("Gracie");
+ CrewState norwyn = Commission.volunteer("rock", new Random(92)); norwyn.setName("Norwyn Schultze");
+ CrewState starter = Commission.volunteer("human", new Random(93)); starter.setName("Starter");
+ CrewState joiner = Commission.volunteer("engi", new Random(94)); joiner.setName("Joiner");
+ for (CrewState t : new CrewState[] {gracie, norwyn, starter, joiner}) { SaveHelper.placeCrew(c.save.getPlayerShip(), t, true); c.save.getPlayerShip().getCrewList().add(t); }
+ v.begin().put(y0, c.save, c.hash).commit();
+ File vl = new File(v.historyOf(x0), "voyage.log"); vl.getParentFile().mkdirs();
+ String vlOld = vl.isFile() ? new String(SafeFiles.read(vl), "UTF-8") : "";
+ SafeFiles.writeText(vl, "2000-01-01 00:01  Crew joined: Norwyn Schultze (Rock)\r\n2000-01-01 00:02  Crew joined: Joiner (Engi)\r\n" + vlOld, false); // Windows line endings
+ String hl = new String(SafeFiles.read(v.historyLog()), "UTF-8");
+ SafeFiles.writeText(v.historyLog(), hl
+   + "2000-01-01 00:00  COMMISSION  " + x0.name + "  (" + x0.id + ")\n  The Kestrel (PLAYER_SHIP_HARD), difficulty Easy\n  Crew: Starter (Human)\n"
+   + "2000-01-01 00:05  TRADE  " + x0.name + " <-> Spacedock Storage\n  " + x0.name + ":\n    - Crew Gracie\n    - Crew Norwyn Schultze\n    - Crew Starter\n    - Crew Twin\n"
+   + "2000-01-01 00:06  CREW  Gracie assigned to the Old Glory.\n2000-01-01 00:06  CREW  Norwyn Schultze assigned to the Old Glory.\n2000-01-01 00:06  CREW  Starter assigned to the Old Glory.\n", false);
+ HistoryLog.entry("RENAME", "Old Glory -> " + y0.name + "  (" + y0.id + ")");
+ new File(v.root, "crew.txt").delete(); // read in afresh, logs and all
+ v.takeStock();
+ m = CrewRegister.members(v);
+ List<String> both = Arrays.asList(x0.name, y0.name + "\tOld Glory");
+ CrewRegister.Member g = find(m, "Gracie", CrewRegister.Status.PRESENT), n = find(m, "Norwyn Schultze", CrewRegister.Status.PRESENT), st = find(m, "Starter", CrewRegister.Status.PRESENT);
+ Setup.chk("S: traded off a ship before the master log: she's on the list, then the renamed ship once " + (g == null ? "" : g.served), g != null && g.served.equals(both));
+ Setup.chk("S: joined a ship in her voyage log before the master log: on the list first " + (n == null ? "" : n.served), n != null && n.served.equals(both));
+ CrewRegister.Member jo = find(m, "Joiner", CrewRegister.Status.PRESENT);
+ Setup.chk("S: known only from her voyage log before the master log: she's on the list " + (jo == null ? "" : jo.served), jo != null && jo.served.equals(Arrays.asList(x0.name, y0.name + "\tOld Glory")));
+ Setup.chk("S: a starting crew member named in her COMMISSION: came aboard her, newly commissioned " + (st == null ? "" : st.served), st != null && st.served.equals(both) && said(st, "newly commissioned"));
+ Setup.chk("S: the renamed ship shows her old name", CrewRegister.shipOf(g.served.get(1)).equals(y0.name) && CrewRegister.formerNames(g.served.get(1)).equals(Arrays.asList("Old Glory")));
+ boolean twinOn = false; for (CrewRegister.Member t : all(m, "Twin")) for (String sh : t.served) if (CrewRegister.shipOf(sh).equals(x0.name)) twinOn = true;
+ Setup.chk("S: two namesakes on a trade's line: neither credited with her", !twinOn);
+
+ // a register written before 5.51: its ships rebuilt once
+ File cf = new File(v.root, "crew.txt");
+ String reg = new String(SafeFiles.read(cf), "UTF-8");
+ Setup.chk("U: the register says its ships are kept the 5.51 way", reg.contains("served.v=2"));
+ reg = reg.replace("served.v=2\n", "").replaceAll("(?m)^" + g.id + "\\.served=.*$", g.id + ".served=The Adjudicator|" + java.util.regex.Matcher.quoteReplacement(y0.name));
+ SafeFiles.writeText(cf, reg, false);
+ v.takeStock();
+ m = CrewRegister.members(v);
+ Setup.chk("U: an older register: the ships read again from the logs, one only it knew kept " + byId(m, g.id).served,
+   byId(m, g.id).served.equals(Arrays.asList(x0.name, "The Adjudicator", y0.name + "\tOld Glory")) && new String(SafeFiles.read(cf), "UTF-8").contains("served.v=2"));
  Setup.done();
 }
  static String Line_name(CrewRegister.Member x) { return x.crew().getName(); }

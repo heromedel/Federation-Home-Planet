@@ -184,7 +184,13 @@ final class CrewLogView extends JPanel {
 		}
 		if (!m.served.isEmpty()) {
 			side.add(heading("Ships served on"));
-			for (String s : m.served) side.add(dotted(s, MenuTheme.TEXT, MenuTheme.GOLD));
+			for (String s : m.served) {
+				side.add(dotted(CrewRegister.shipOf(s), MenuTheme.TEXT, MenuTheme.GOLD));
+				List<String> was = CrewRegister.formerNames(s); // a renamed ship, once, with the names she had (heromedel, 5.51)
+				if (was.isEmpty()) continue;
+				side.add(indented("(Previously Known as:", 26));
+				for (int i = 0; i < was.size(); i++) side.add(indented(was.get(i) + (i == was.size() - 1 ? ")" : ""), 38));
+			}
 		}
 		side.add(Box.createVerticalGlue());
 		top.add(side, BorderLayout.CENTER);
@@ -220,6 +226,11 @@ final class CrewLogView extends JPanel {
 		return MenuTheme.GOLD;
 	}
 	/** A line with a small round mark before it. */
+	private static JLabel indented(String text, int left) {
+		JLabel l = line(text, RecordsLog.DIM);
+		l.setBorder(BorderFactory.createEmptyBorder(0, left, 0, 0));
+		return l;
+	}
 	private static JLabel dotted(String text, Color c, final Color dot) {
 		JLabel l = line(text, c);
 		l.setIcon(new Icon() {
