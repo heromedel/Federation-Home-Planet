@@ -98,7 +98,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  m = CrewRegister.members(v);
  Setup.chk("M: back where they were: the same id, found again", byId(m, strayId).status == CrewRegister.Status.PRESENT && said(byId(m, strayId), "Found again"));
 
- // let go in the Cargo Bay
+ // retired in the Cargo Bay
  c = v.readCopy(v.storage());
  CrewState last = null; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Sparky")) last = x;
  c.save.getPlayerShip().getCrewList().remove(last);
@@ -106,7 +106,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  HistoryLog.entry("RETIRE", "1 crew member", Arrays.asList("Sparky (Engi)  (Spacedock Storage)"));
  v.takeStock();
  m = CrewRegister.members(v);
- Setup.chk("D: let go: discharged, the same id", byId(m, engiId).status == CrewRegister.Status.DISCHARGED);
+ Setup.chk("D: retired: retired, the same id", byId(m, engiId).status == CrewRegister.Status.RETIRED && said(byId(m, engiId), "Retired from the station's service."));
 
  // the crew popup's Crew Log...: the one in the popup, never their namesake
  CrewState home = null; for (CrewState x : Expeditions.holdCrew(v)) if (x.getName().equals("Twin")) home = x;
@@ -117,6 +117,38 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Setup.chk("P: known only from the old logs: a look of their race, made once and kept", old != null && old.crew() != null && old.crew().getRace().getId().equals("human")
    && Line_name(old).equals("Old Hand") && CrewRegister.members(v).get(m.indexOf(old)).crew().getSpriteTintIndeces().equals(old.crew().getSpriteTintIndeces()));
  Setup.chk("P: the ships they served on, in order", byId(m, goneId).served.size() >= 1);
+
+ // traded away over the Long Range (Cloud-C-BugsandFeedback's handoff, 5.47): discharged as traded; a namesake stays
+ c = v.readCopy(v.storage());
+ for (int k = 0; k < 3; k++) {
+  CrewState t = Commission.volunteer("human", new Random(40 + k)); t.setName(k < 2 ? "Tradewell" : "Partner"); t.setJumpsSurvived(k * 7);
+  SaveHelper.placeCrew(c.save.getPlayerShip(), t, true); c.save.getPlayerShip().getCrewList().add(t);
+ }
+ v.begin().put(v.storage(), c.save, c.hash).commit();
+ v.takeStock();
+ m = CrewRegister.members(v);
+ c = v.readCopy(v.storage());
+ CrewState sent = null; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Tradewell") && x.getJumpsSurvived() == 7) sent = x;
+ int sentId = -1, keptId = -1; for (CrewRegister.Member x : all(m, "Tradewell")) { if (x.crew() != null && x.crew().getJumpsSurvived() == 7) sentId = x.id; else keptId = x.id; }
+ c.save.getPlayerShip().getCrewList().remove(sent);
+ v.begin().put(v.storage(), c.save, c.hash).commit();
+ HistoryLog.entry("LONG RANGE TRADE", "with Commander Vance  (trade t1)", Arrays.asList("gave: Tradewell (Human)", "received (in the Cargo Hold): 20 scrap"));
+ v.takeStock();
+ m = CrewRegister.members(v);
+ Setup.chk("L: traded away alone: transferred to Commander Vance's fleet; the namesake who stayed still present", sentId > 0 && byId(m, sentId).status == CrewRegister.Status.TRANSFERRED
+   && said(byId(m, sentId), "Transferred to Commander Vance's fleet.") && byId(m, keptId).status == CrewRegister.Status.PRESENT);
+ c = v.readCopy(v.storage());
+ CrewState partner = null; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Partner")) partner = x;
+ int partnerId = idIn(m, "Partner", "in the Cargo Hold");
+ c.save.getPlayerShip().getCrewList().remove(partner);
+ CrewState arrived = Commission.volunteer("engi", new Random(77)); arrived.setName("Newcomer");
+ SaveHelper.placeCrew(c.save.getPlayerShip(), arrived, true); c.save.getPlayerShip().getCrewList().add(arrived);
+ v.begin().put(v.storage(), c.save, c.hash).commit();
+ HistoryLog.entry("LONG RANGE TRADE", "with Commander Vance  (trade t2)", Arrays.asList("gave: 3 missiles and Partner (Human)", "received (in the Cargo Hold): 10 scrap, a Burst Laser I and Newcomer (Engi)"));
+ v.takeStock();
+ m = CrewRegister.members(v);
+ Setup.chk("L: traded along with other things (\"3 missiles and Partner (Human)\"): transferred", byId(m, partnerId).status == CrewRegister.Status.TRANSFERRED && said(byId(m, partnerId), "Transferred to Commander Vance's fleet."));
+ Setup.chk("L: received in a trade: their first line says from whose fleet", said(find(m, "Newcomer", CrewRegister.Status.PRESENT), "Transferred from Commander Vance's fleet; in the Cargo Hold."));
 
  // nothing changed: nothing written
  long before = new File(v.root, "crew.txt").lastModified();

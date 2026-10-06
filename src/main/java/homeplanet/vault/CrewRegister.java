@@ -24,7 +24,7 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
  * Junkyard's hulls, the Cargo Hold, away on assignment, held captive) and matches them to the register: race, sex and
  * colouring never change and the service record only grows, so those decide; name and last known place break ties.
  * A rename keeps the id. What changed since the last look (a move, a rename, an assignment, a capture) is written
- * against the id, a day each. Someone who can no longer be found is killed or let go only on solid evidence (a ship's
+ * against the id, a day each. Someone who can no longer be found is killed, retired or transferred only on solid evidence (a ship's
  * fate, the captives file, the station's own log since they were last seen); otherwise missing, until found again.
  */
 public final class CrewRegister {
@@ -34,7 +34,7 @@ public final class CrewRegister {
 	static final String FILE = "crew.txt";
 	private static final String NOTE = "The crew register: an id for every crew member of this fleet, and what became of them. Kept by The Home Planet Station.";
 
-	public enum Status { PRESENT, CAPTIVE, MISSING, KILLED, DISCHARGED }
+	public enum Status { PRESENT, CAPTIVE, MISSING, KILLED, RETIRED, TRANSFERRED }
 
 	/** One crew member, as the register knows them. */
 	public static final class Member {
@@ -112,7 +112,9 @@ public final class CrewRegister {
 			m.record = p.getProperty(k + "record", "");
 			m.place = p.getProperty(k + "place", "");
 			m.where = p.getProperty(k + "where", "");
-			try { m.status = Status.valueOf(p.getProperty(k + "status", "PRESENT")); } catch (IllegalArgumentException e) { m.status = Status.MISSING; }
+			String st = p.getProperty(k + "status", "PRESENT");
+			if (st.equals("DISCHARGED")) st = "RETIRED"; // 5.41's word for it
+			try { m.status = Status.valueOf(st); } catch (IllegalArgumentException e) { m.status = Status.MISSING; }
 			m.histPos = intOf(p, k + "hist", 0);
 			for (String key : p.stringPropertyNames()) if (key.startsWith(k + "rec.")) m.rec.put(key.substring((k + "rec.").length()), p.getProperty(key));
 			String served = p.getProperty(k + "served", "");
@@ -352,7 +354,9 @@ public final class CrewRegister {
 	}
 	/** How a crew member new to the register came: the station's log since the last look says, else where they are. */
 	private static String joined(Found x, String hist, int since) {
-		String recent = since <= hist.length() ? hist.substring(since) : "";
+		String recent = (since <= hist.length() ? hist.substring(since) : "").replace("\r", "");
+		String peer = traded(recent, "received", x.name + " (" + x.title + ")");
+		if (peer != null) return "Transferred from " + peer + "'s fleet; " + x.where + ".";
 		for (String l : recent.split("\n")) {
 			if (!l.contains("  HIRE  ") || !l.contains(x.name + " (")) continue;
 			if (l.contains("rescued on an expedition")) return "Rescued on an expedition, and signed on; " + x.where + ".";
@@ -364,9 +368,12 @@ public final class CrewRegister {
 	}
 	/** {status, event, where} for someone no longer found anywhere. */
 	private static String[] fate(Vault v, Member m, String since, String flown) {
+		since = since.replace("\r", ""); flown = flown.replace("\r", ""); // the logs are written with \r\n on Windows
 		String named = m.name + " (";
-		for (String l : since.split("\n")) { // let go in the Cargo Bay
-			if (l.startsWith("  ") && l.contains(named) && retireDetail(since, l)) return new String[] {"DISCHARGED", "Let go from the station's service.", "let go"};
+		String peer = traded(since, "gave: ", m.name + " (" + m.raceTitle() + ")"); // traded away over the Long Range (Cloud-C-BugsandFeedback's handoff, 5.47)
+		if (peer != null) return new String[] {"TRANSFERRED", "Transferred to " + peer + "'s fleet.", "transferred to " + peer + "'s fleet"};
+		for (String l : since.split("\n")) { // retired in the Cargo Bay
+			if (l.startsWith("  ") && l.contains(named) && retireDetail(since, l)) return new String[] {"RETIRED", "Retired from the station's service.", "retired"};
 		}
 		for (String l : since.split("\n")) { // an expedition's end
 			if (!l.contains("  EXPEDITION  ")) continue;
@@ -391,12 +398,37 @@ public final class CrewRegister {
 			if (s == null) {
 				String f = fateOf(v, id);
 				if (f.equals("LOST") || f.equals("DESTROYED")) return new String[] {"KILLED", "Lost with " + shipName + ".", "lost with " + shipName};
-				if (!f.isEmpty() && !f.equals("SCRAPPED")) return new String[] {"DISCHARGED", "Left the fleet with " + shipName + ".", "left the fleet with " + shipName};
+				if (f.equals("TRANSFERRED")) return new String[] {"TRANSFERRED", "Transferred with " + shipName + " to another fleet.", "transferred with " + shipName};
+				if (!f.isEmpty() && !f.equals("SCRAPPED")) return new String[] {"TRANSFERRED", "Left the fleet with " + shipName + ".", "left the fleet with " + shipName};
 			} else if (s.isBoarded() && flown.contains("Crew lost: ") && listed(flown.replace("Crew lost: ", "\nCrew lost: "), "Crew lost: ", m.name + " (" + m.raceTitle() + ")")) {
 				return new String[] {"KILLED", "Lost aboard " + shipName + ".", "lost aboard " + shipName};
 			}
 		}
 		return new String[] {"MISSING", "Not found anywhere in the fleet: whereabouts unknown.", ""};
+	}
+	/**
+	 * The commander a Long Range trade in this log text gave this crew member to ("gave: ...") or received them from
+	 * ("received...: ..."), or null. The detail lists things joined with ", " and " and "; a crew member is "Name (Race)".
+	 */
+	private static String traded(String text, String label, String who) {
+		String peer = null;
+		for (String l : text.split("\n")) {
+			if (!l.startsWith("  ")) {
+				int at = l.indexOf("  LONG RANGE TRADE  with ");
+				if (at < 0) { peer = null; continue; }
+				String rest = l.substring(at + 25);
+				int end = rest.indexOf("  (trade");
+				peer = (end < 0 ? rest : rest.substring(0, end)).trim();
+				continue;
+			}
+			if (peer == null) continue;
+			String d = l.trim();
+			if (!d.startsWith(label)) continue;
+			int colon = d.indexOf(": ");
+			if (colon < 0) continue;
+			for (String one : d.substring(colon + 2).split(", | and ")) if (one.trim().equals(who)) return peer;
+		}
+		return null;
 	}
 	/** A RETIRE entry's detail line (the entry line above it says RETIRE). */
 	private static boolean retireDetail(String text, String detail) {
@@ -435,7 +467,7 @@ public final class CrewRegister {
 
 	/**
 	 * The station's log and the ships' voyage logs read once, by name, for what came before the register: the past of
-	 * those found now, and those already gone (killed, lost, let go) as entries of their own. The past only: from now
+	 * those found now, and those already gone (killed, lost, retired) as entries of their own. The past only: from now
 	 * on everything is kept against the id.
 	 */
 	private static void backfill(Vault v, List<Member> members) {
@@ -494,7 +526,7 @@ public final class CrewRegister {
 		for (int i = 0; i < 10 && renamedFrom.containsKey(now); i++) now = renamedFrom.get(now);
 		List<Member> l = byName.get(now);
 		if (l != null && ifNew == null) return l;
-		if (l != null) { // an ending (killed, lost, let go): never pinned on someone found alive now, a namesake's past
+		if (l != null) { // an ending (killed, lost, retired): never pinned on someone found alive now, a namesake's past
 			List<Member> ended = new ArrayList<Member>();
 			for (Member m : l) if (m.status != Status.PRESENT && m.status != Status.CAPTIVE) ended.add(m);
 			if (!ended.isEmpty()) return ended;
@@ -539,7 +571,7 @@ public final class CrewRegister {
 			for (int i = 1; i < lines.length; i++) { // its detail lines (indented in the station log, not in the master log's copy)
 				String l = lines[i];
 				java.util.regex.Matcher r = java.util.regex.Pattern.compile("^\\s*(.+?) \\((\\w[\\w ]*)\\)").matcher(l);
-				if (r.find()) for (Member m : whoever(r.group(1), r.group(2), byName, renamedFrom, members, Status.DISCHARGED)) { if (m.status != Status.PRESENT) m.where = "let go"; m.events.add(new Event(day, "Let go from the station's service.")); }
+				if (r.find()) for (Member m : whoever(r.group(1), r.group(2), byName, renamedFrom, members, Status.RETIRED)) { if (m.status != Status.PRESENT) m.where = "retired"; m.events.add(new Event(day, "Retired from the station's service.")); }
 			}
 		}
 	}
