@@ -327,7 +327,7 @@ public final class RepairJob {
 	public static String whyNot(Vault v, Ship s, boolean mustBeWhole) {
 		if (s == null) return "The " + NAME + " is no longer in your fleet, so she can't be sent back.";
 		if (s.state == Ship.State.BOARDED) {
-			if (homeplanet.core.GameGuard.isFtlRunning()) return "FTL is running with the " + NAME + " aboard. Close FTL, then reply again.";
+			if (homeplanet.core.GameGuard.isFtlRunning()) return "FTL is running with the " + NAME + " aboard. " + homeplanet.core.GameGuard.CLOSE_FTL + " Then reply again.";
 			if (!v.mayTrade(s)) return "The " + NAME + " isn't at a station. Take her to a beacon with a store, then reply again.";
 		}
 		if (mustBeWhole && s.state == Ship.State.JUNKED) return "The " + NAME + " is in the Junkyard. Salvage her, then reply again.";

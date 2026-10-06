@@ -295,7 +295,7 @@ final class ImmersiveBriefing extends JDialog {
 		summary.setFont(summary.getFont().deriveFont(Font.PLAIN));
 		summary.setBorder(BorderFactory.createEmptyBorder(2, 16, 8, 0));
 		p.add(summary);
-		p.add(note("Confirm to enter Immersive Mode. FTL must be closed."));
+		p.add(note("Confirm to enter Immersive Mode. " + homeplanet.core.GameGuard.CLOSE_FTL));
 		return p;
 	}
 	private String summaryText() {

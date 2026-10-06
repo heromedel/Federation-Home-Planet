@@ -67,13 +67,15 @@ public final class GameGuard {
 	 * warning that something is wrong. It's a question rather than a wall because FTL at its main menu hasn't loaded
 	 * the save yet, and a player who knows that may want to carry on.
 	 */
+	/** heromedel's words (5.29), wherever the station says to close FTL first. */
+	public static final String CLOSE_FTL = "Return to The Station to do this. (Close FTL)";
 	public static boolean allows(Component owner, String action) {
 		if (!isFtlRunning()) return true;
 		String nevermind = action.equals("board a ship") ? "Nevermind, save her in the Space Dock" : "Nevermind"; // heromedel's words for boarding
 		Object[] opts = {nevermind, "Go ahead, FTL is at its menu"};
 		int r = JOptionPane.showOptionDialog(owner, "FTL is running. While it is, it may write over the ship you're flying at any moment,\n"
 				+ "and a change The Home Planet Station makes to her then is lost.\n\n"
-				+ "If FTL is only at its main menu, she isn't loaded, and it's safe to " + action + ". Otherwise quit FTL first.",
+				+ "If FTL is only at its main menu, she isn't loaded, and it's safe to " + action + ". Otherwise: " + CLOSE_FTL,
 				"FTL is running", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
 		return r == 1;
 	}

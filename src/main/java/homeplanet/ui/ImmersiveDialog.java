@@ -169,7 +169,7 @@ public final class ImmersiveDialog {
 
 	private static boolean ftlClosed(Component owner, String title) {
 		if (!GameGuard.isFtlRunning()) return true;
-		JOptionPane.showMessageDialog(owner, "FTL is running. Quit FTL first: the fleets and FTL's profile change over.\nNothing was changed.", title, JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(owner, "FTL is running, and the fleets and FTL's profile change over.\n" + homeplanet.core.GameGuard.CLOSE_FTL + "\nNothing was changed.", title, JOptionPane.INFORMATION_MESSAGE);
 		return false;
 	}
 }

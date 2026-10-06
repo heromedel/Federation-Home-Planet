@@ -148,6 +148,7 @@ public class MainFrame extends JFrame {
 	public boolean atLongRangeComm() { return atComm; }
 	/** Opens Long Range Comm. (asking for the commander's name the first time). */
 	public void showLongRangeComm() {
+		homeplanet.core.FtlDock.show(false); // a docked FTL steps behind other screens, still running (5.29)
 		screens.show(tasksPane, "comm");
 		atSpaceDock = false;
 		atMuseum = false;
@@ -159,6 +160,7 @@ public class MainFrame extends JFrame {
 
 	/** Opens the Federation Museum. */
 	public void showMuseum() {
+		homeplanet.core.FtlDock.show(false);
 		atSpaceDock = false;
 		atMuseum = true;
 		atComm = false;
@@ -168,6 +170,7 @@ public class MainFrame extends JFrame {
 
 	/** Opens the Cargo Bay, fresh from the saves. */
 	public void showCargoBay() {
+		homeplanet.core.FtlDock.show(false);
 		cargoBay.openOnBoarded();
 		atSpaceDock = false;
 		atMuseum = false;
@@ -185,6 +188,8 @@ public class MainFrame extends JFrame {
 		screens.show(tasksPane, "dock");
 		spaceDock.revalidate();
 		spaceDock.repaint();
+		homeplanet.core.FtlDock.show(true); // back in its viewport
+		javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { spaceDock.placeViewport(); } });
 	}
 
 	/** Drops cached pictures whose path starts like this (a design's pictures change between previews). */
