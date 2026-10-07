@@ -104,8 +104,9 @@ public final class CrewRegister {
 		List<File> out = new ArrayList<File>();
 		for (File d : v.shipFolders()) out.add(new File(d, CREW_DIR));
 		out.add(new File(v.cargoHoldDir(), CREW_DIR));
-		out.add(new File(new File(v.root, "expeditions"), CREW_DIR));
-		out.add(new File(v.root, "captives"));
+		out.add(new File(v.expeditionsDir(), CREW_DIR));
+		out.add(new File(v.captivesDir(), CREW_DIR));
+		out.add(v.captivesDir()); // 5.83 kept them there: read, and moved to crew/ at the next write
 		out.add(memorialCrewDir(v));
 		return out;
 	}
@@ -118,8 +119,8 @@ public final class CrewRegister {
 				for (File d : v.shipFolders()) if (id.equals(ShipStore.idOf(d))) return new File(d, CREW_DIR);
 			}
 			if (m.place.equals("hold")) return new File(v.cargoHoldDir(), CREW_DIR);
-			if (m.place.startsWith("away:")) return new File(new File(v.root, "expeditions"), CREW_DIR);
-			if (m.place.equals("captive")) return new File(v.root, "captives");
+			if (m.place.startsWith("away:")) return new File(v.expeditionsDir(), CREW_DIR);
+			if (m.place.equals("captive")) return new File(v.captivesDir(), CREW_DIR);
 		}
 		return memorialCrewDir(v);
 	}

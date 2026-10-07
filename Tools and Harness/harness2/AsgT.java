@@ -274,7 +274,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   r.fates.get(2).died = false; r.fates.get(2).captured = false; r.fates.get(2).infirmary = true; r.fates.get(2).band = 1;
   Assignments.bringHome(v, away.get(0), r);
   List<Expeditions.Patient> inf = Expeditions.infirmary(v);
-  File cap = new File(v.root, "captives.txt"); Properties cp = new Properties(); cp.load(new ByteArrayInputStream(SafeFiles.read(cap)));
+  File cap = Expeditions.captivesFile(v); Properties cp = Store.load(cap);
   Setup.chk("A: the dead stay gone, the taken are among the captives (a ransom to come), the badly hurt in the infirmary at a quarter health",
     Assignments.holdCrew(v).size() == 0 && SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip()).size() == 1 && inf.size() == 1 && inf.get(0).name.equals(crew.get(2).getName())
     && cp.getProperty("0.name", "").equals(crew.get(1).getName()) && v.readCopy(v.storage()).save.getPlayerShip().getCrewList().get(0).getHealth() <= 25);

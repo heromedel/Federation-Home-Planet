@@ -40,7 +40,11 @@ import org.slf4j.LoggerFactory;
  *     junkyard/&lt;Name&gt;.&lt;id&gt;/      a disbanded ship, the same
  *     memorials_and_records/ships/&lt;Name&gt;.&lt;id&gt;/   a ship that left the fleet (how, in fate.txt), remembered
  *     <ship folder>/crew/        her crew, a file each (5.83: <Name>.<id>.xml, the crew register's id); the same in cargohold/crew/,
- *                                expeditions/crew/, captives/ and memorials_and_records/crew/ (everyone who left); crew-register.txt the register's own state
+ *                                expeditions/crew/, captives/crew/ and memorials_and_records/crew/ (everyone who left); crew-register.txt the register's own state
+ *     expeditions/               the crew expeditions (5.85): expeditions.xml (the sectors on offer, the crew away), crew/,
+ *                                board-before-5.67.txt (the old board of jobs, kept, unread)
+ *     infirmary/                 infirmary.xml (who is laid up and until when; they stay in the Cargo Hold) (5.85)
+ *     captives/                  captives.xml (who was taken, the ransoms asked), crew/ (5.85)
  *     cargohold/                 the Cargo Hold (5.72): cargohold.xml (what it holds, 5.84; the pretend ship's save cargohold.sav
  *                                before), crew/, systems.txt (its stored systems), parts.txt, overflow.txt, versions/
  *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
@@ -51,7 +55,7 @@ import org.slf4j.LoggerFactory;
  *
  * Before 5.69 a fleet was manifest.xml, ships/&lt;id&gt;.sav, junkyard/&lt;id&gt;.sav and history/&lt;id&gt;/; one is converted on
  * opening (homeplanet.vault.Layout), a zip of it as it was kept beside the folder. Each later step moves its own part
- * the first time a fleet opens, as one journal note (the logs, the Cargo Hold).
+ * the first time a fleet opens, as one journal note (the logs, the Cargo Hold, the expeditions).
  *
  * Each Immersive career has a fleet of its own, by difficulty: FederationHomePlanet-Immersive-Easy, -Normal and -Hard,
  * and FederationHomePlanet-Immersive for Custom (the first Immersive fleet, from before difficulties). The same layout,
@@ -240,6 +244,12 @@ public final class Vault {
 	public File manifestFile() { return new File(root, MANIFEST); }
 	/** The stored-systems list that goes with the storage hold. */
 	public File systemsFile() { return new File(cargoHoldDir(), "systems.txt"); }
+	/** The crew expeditions' folder (5.85): expeditions.xml (the sectors on offer, the crew away), crew/ (their files). */
+	public File expeditionsDir() { return new File(root, "expeditions"); }
+	/** The infirmary's folder (5.85): infirmary.xml (who is laid up, and until when; they stay in the Cargo Hold). */
+	public File infirmaryDir() { return new File(root, "infirmary"); }
+	/** The captives' folder (5.85): captives.xml (who was taken, and the ransoms asked), crew/ (their files). */
+	public File captivesDir() { return new File(root, "captives"); }
 	/** The Cargo Hold's folder (5.72): what it holds (cargohold.xml, 5.84), its crew's files, its stored-systems list, its parts and overflow lists, its versions. */
 	public File cargoHoldDir() { return new File(root, HOLD_DIR); }
 	/** The hold's xml (5.84; from 5.72 to 5.83 that name was its record, beside its save, the pretend ship cargohold.sav). */
@@ -662,6 +672,7 @@ public final class Vault {
 		if (manifestFile().isFile() || oldShipsDir().isDirectory() || oldHistoryDir().isDirectory()) Layout.convert(this);
 		moveCargoHold();
 		holdReady();
+		moveExpeditions();
 		LogConvert.run(this); // the old logs read into the event log once (5.73)
 		LogConvert.fillShipLogs(this); // each ship's entries into her own log, once (5.76)
 		LogConvert.repairDays(this); // converted entries put on their own days, once (5.81)
@@ -696,6 +707,39 @@ public final class Vault {
 		if (n.isEmpty()) return;
 		n.commit();
 		if (oldVersions.getParentFile().isDirectory()) oldVersions.getParentFile().delete(); // empty now
+	}
+	/**
+	 * The expeditions', the infirmary's and the captives' files from the root into folders of their own, as xml (5.85),
+	 * as one journal note; the old board of jobs (expeditions.txt, unread since 5.67) is kept beside them.
+	 */
+	private void moveExpeditions() throws IOException {
+		File[][] files = {{homeplanet.parser.Assignments.oldFile(this), homeplanet.parser.Assignments.file(this)},
+				{homeplanet.parser.Expeditions.oldInfirmaryFile(this), homeplanet.parser.Expeditions.infirmaryFile(this)},
+				{homeplanet.parser.Expeditions.oldCaptivesFile(this), homeplanet.parser.Expeditions.captivesFile(this)}};
+		String[] notes = {homeplanet.parser.Assignments.NOTE, homeplanet.parser.Expeditions.INFIRMARY_NOTE, homeplanet.parser.Expeditions.CAPTIVES_NOTE};
+		File board = new File(root, "expeditions.txt"), boardNow = new File(expeditionsDir(), "board-before-5.67.txt");
+		Journal.Note n = Journal.begin(this, "MOVE_EXPEDITIONS");
+		List<String> moved = new ArrayList<String>();
+		for (int i = 0; i < files.length; i++) {
+			File old = files[i][0], now = files[i][1];
+			if (!old.isFile() || now.exists()) continue;
+			File dir = now.getParentFile();
+			if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
+			n.replace(now, Store.xml(Store.load(old), notes[i]));
+			n.delete(old);
+			moved.add(old.getName() + ">" + dir.getName() + "/" + now.getName());
+		}
+		if (board.isFile() && !boardNow.exists()) {
+			if (!expeditionsDir().isDirectory() && !expeditionsDir().mkdirs()) throw new IOException("Could not create " + expeditionsDir());
+			n.rename(board, boardNow);
+			moved.add(board.getName() + ">" + expeditionsDir().getName() + "/" + boardNow.getName());
+		}
+		if (n.isEmpty()) return;
+		n.commit();
+		Event e = Event.of("EXPEDITION_FILES").put("what", "moved").put("files", moved.size());
+		for (int i = 0; i < moved.size(); i++) e.put("file." + i, moved.get(i));
+		HistoryLog.entry("EXPEDITION_FILES", "the expeditions', the infirmary's and the captives' files moved into folders of their own: " + String.join(", ", moved), null,
+				e.human("The expeditions office, the infirmary and the captives' records were filed in rooms of their own."));
 	}
 	/**
 	 * The Cargo Hold's pretend ship into its xml (5.84), once, as one journal note: cargohold.sav read, cargohold.xml

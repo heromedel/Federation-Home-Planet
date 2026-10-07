@@ -10,8 +10,29 @@ public class ExpT { public static void main(String[] a) throws Exception {
  lateLook(v);
  namesakes(v);
  hiring(v);
+ v = oldFiles(v, game, saves);
  Setup.done();
 }
+ /** A 5.x fleet's files at its root (5.85): moved into expeditions/, infirmary/ and captives/ as xml on opening, nothing in them changed, the old board kept. */
+ static Vault oldFiles(Vault v, File game, File saves) throws Exception {
+  Properties asg = new Properties(), inf = new Properties(), cap = new Properties();
+  asg.setProperty("offer.1.until", "29"); asg.setProperty("face.10.2.crew.s1", "15"); asg.setProperty("face.2.0.crew.name", "Lucky Duck & <Co>");
+  inf.setProperty("healed_at", "23"); inf.setProperty("0.name", "Laid Ulm");
+  cap.setProperty("0.name", "Held Hal"); cap.setProperty("0.state", "gone");
+  Assignments.file(v).delete(); Expeditions.infirmaryFile(v).delete(); Expeditions.captivesFile(v).delete();
+  Store.write(Assignments.oldFile(v), asg, "old"); Store.write(Expeditions.oldInfirmaryFile(v), inf, "old"); Store.write(Expeditions.oldCaptivesFile(v), cap, "old");
+  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=rescue\n", false);
+  v = Setup.open(game, saves); v.takeStock();
+  Setup.chk("F: a 5.x fleet's expeditions, infirmary and captives files move into folders of their own, as xml, nothing in them changed",
+    Store.load(Assignments.file(v)).equals(asg) && Store.load(Expeditions.infirmaryFile(v)).equals(inf) && Store.load(Expeditions.captivesFile(v)).equals(cap)
+    && new String(SafeFiles.read(Assignments.file(v)), "UTF-8").startsWith("<?xml") && !Assignments.oldFile(v).exists() && !Expeditions.oldInfirmaryFile(v).exists() && !Expeditions.oldCaptivesFile(v).exists());
+  String x = new String(SafeFiles.read(Assignments.file(v)), "UTF-8");
+  Setup.chk("F: the keys in order, numbers by their value (face.2 before face.10)", x.indexOf("face.2.0") < x.indexOf("face.10.2") && x.indexOf("face.10.2") < x.indexOf("offer.1"));
+  Setup.chk("F: the old board of jobs kept beside them, unread", new File(v.expeditionsDir(), "board-before-5.67.txt").isFile() && !new File(v.root, "expeditions.txt").exists());
+  boolean logged = false; for (EventLog.Entry e : EventLog.read(v)) if (e.kind.equals("EXPEDITION_FILES") && "4".equals(e.get("files"))) logged = true;
+  Setup.chk("F: said in the event log, every file named; no protection note left", logged && Journal.dir(v).list().length == 1);
+  return v;
+ }
  /** Crew of these races, in the Cargo Hold (any there before are moved out of the way first). */
  static List<CrewState> hold(Vault v, String... races) throws Exception {
   Vault.Copy c = v.readCopy(v.storage()); ShipState h = c.save.getPlayerShip();
@@ -133,7 +154,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
  }
  /** Two crew of one name and race (the band-aid of CONCERNS.md 2): the one hurt is the one laid up; the one lost is the one gone. */
  static void namesakes(Vault v) throws Exception {
-  new File(v.root, "infirmary.txt").delete();
+  Expeditions.infirmaryFile(v).delete();
   List<CrewState> two = hold(v, "human", "human");
   Vault.Copy c = v.readCopy(v.storage()); List<CrewState> crew = c.save.getPlayerShip().getCrewList();
   crew.get(0).setName("Bob"); crew.get(0).setRepairs(7); crew.get(1).setName("Bob"); crew.get(1).setRepairs(8);
@@ -143,7 +164,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   List<CrewState> free = Expeditions.holdCrew(v);
   Setup.chk("N: two Bobs, one hurt: the other Bob (repairs " + (free.isEmpty() ? "?" : free.get(0).getRepairs()) + ") is free to send, the hurt one (" + hurtRepairs + ") laid up",
     free.size() == 1 && free.get(0).getRepairs() != hurtRepairs);
-  new File(v.root, "infirmary.txt").delete();
+  Expeditions.infirmaryFile(v).delete();
   int lostRepairs = crew.get(1).getRepairs();
   Vault.Copy lc = v.readCopy(v.storage()); for (Iterator<CrewState> it = lc.save.getPlayerShip().getCrewList().iterator(); it.hasNext(); ) if (it.next().getRepairs() == lostRepairs) { it.remove(); break; }
   v.begin().put(v.storage(), lc.save, lc.hash).commit();
@@ -164,10 +185,10 @@ public class ExpT { public static void main(String[] a) throws Exception {
  /** Holds a crew member as an expedition's foes would, a ransom to follow. */
  static void take(Vault v, CrewState c) throws Exception { take(v, c, "pirates"); }
  static void take(Vault v, CrewState c, String captors) throws Exception {
-  File f = new File(v.root, "captives.txt"); Properties p = new Properties(); if (f.isFile()) p.load(new ByteArrayInputStream(SafeFiles.read(f)));
+  File f = Expeditions.captivesFile(v); Properties p = Store.load(f);
   java.lang.reflect.Method take = Expeditions.class.getDeclaredMethod("takeCaptive", Properties.class, CrewState.class, String.class, int.class, Random.class); take.setAccessible(true);
   take.invoke(null, p, c, captors, v.beaconsSeen(), new Random(9));
-  StringWriter w = new StringWriter(); p.store(w, null); SafeFiles.writeText(f, w.toString(), false);
+  Store.write(f, p, null);
  }
  /** Admits a crew member to the infirmary, as the crew expeditions do for the hurt. */
  static void admit(Vault v, CrewState c) throws Exception {

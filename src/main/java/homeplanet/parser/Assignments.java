@@ -264,10 +264,13 @@ public final class Assignments {
 		return out;
 	}
 
-	// ---- the board and who's away (assignments.txt in the fleet) ----
+	// ---- the board and who's away (expeditions/expeditions.xml in the fleet; assignments.txt at its root before 5.85) ----
 
-	private static File file(Vault v) { return new File(v.root, "assignments.txt"); }
-	private static final String NOTE = "Crew expeditions: the sectors on offer, and the crew away on one";
+	/** The expeditions' file: the sectors on offer, and the crew away on one. */
+	public static File file(Vault v) { return new File(v.expeditionsDir(), "expeditions.xml"); }
+	/** Where a 5.x fleet kept it. */
+	public static File oldFile(Vault v) { return new File(v.root, "assignments.txt"); }
+	public static final String NOTE = "Crew expeditions: the sectors on offer, and the crew away on one";
 
 	/** A sector on offer. */
 	public static final class Offer {
@@ -935,7 +938,7 @@ public final class Assignments {
 	/** The file as it stands, read without this class's lock (the crew register, taking stock, never takes it). */
 	public static Properties asIs(Vault v) throws IOException { return Store.load(file(v)); }
 	private static Properties readStrict(Vault v) throws IOException { return Store.load(file(v)); }
-	private static byte[] bytes(Properties p) throws IOException { return Store.bytes(p, NOTE); }
+	private static byte[] bytes(Properties p) throws IOException { return Store.xml(p, NOTE); }
 	private static void write(Vault v, Properties p) throws IOException { Store.write(file(v), p, NOTE); }
 	/** Every sector's job weights total the same (for tests). */
 	public static int weightTotal(String sector) { int t = 0; for (Object[] j : JOBS) t += jobWeight(sector, (String) j[0]); return t; }

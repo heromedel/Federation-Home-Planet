@@ -618,8 +618,8 @@ public class GuiT {
    SaveHelper.placeCrew(h, x, true); h.getCrewList().add(x);
   }
   v.begin().put(v.storage(), c.save, c.hash).commit();
-  final File inf = new File(v.root, "infirmary.txt");
-  SafeFiles.writeText(inf, "healed_at=" + v.beaconsSeen() + "\n0.name=Laid Ulm\n0.race=human\n0.until=" + (v.beaconsSeen() + 4) + "\n0.drained=" + v.beaconsSeen() + "\n", false);
+  final File inf = Expeditions.infirmaryFile(v);
+  Store.write(inf, Store.parse(("healed_at=" + v.beaconsSeen() + "\n0.name=Laid Ulm\n0.race=human\n0.until=" + (v.beaconsSeen() + 4) + "\n0.drained=" + v.beaconsSeen() + "\n").getBytes("UTF-8")), null);
   final Map<String, Object[]> bars = new HashMap<String, Object[]>();
   final Object[] r = new Object[3];
   presses.clear(); presses.add(0); shown.clear(); // OK, to the infirmary's word
@@ -719,7 +719,7 @@ public class GuiT {
   SavedGameParser.CrewState hurt = Expeditions.holdCrew(v).get(0);
   Properties inf = new Properties();
   inf.setProperty("0.name", hurt.getName()); inf.setProperty("0.race", hurt.getRace().getId()); inf.setProperty("0.until", Integer.toString(v.beaconsSeen())); inf.setProperty("0.drained", Integer.toString(v.beaconsSeen()));
-  StringWriter w = new StringWriter(); inf.store(w, null); SafeFiles.writeText(new File(v.root, "infirmary.txt"), w.toString(), false);
+  Store.write(Expeditions.infirmaryFile(v), inf, null);
   int free = Expeditions.holdCrew(v).size();
   shown.clear(); presses.clear(); presses.add(0);
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {

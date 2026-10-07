@@ -58,12 +58,12 @@ public class CrewT { public static void main(String[] a) throws Exception {
  for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(rock).entrySet()) cap.setProperty("0.crew." + e.getKey(), e.getValue());
  c.save.getPlayerShip().getCrewList().remove(rock);
  v.begin().put(v.storage(), c.save, c.hash).commit();
- writeProps(new File(v.root, "captives.txt"), cap);
+ Store.write(Expeditions.captivesFile(v), cap, null);
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("C: taken captive: the same id, missing, held by pirates", byId(m, rockId).status == CrewRegister.Status.CAPTIVE && byId(m, rockId).where.contains("pirates"));
  cap.setProperty("0.state", "gone");
- writeProps(new File(v.root, "captives.txt"), cap);
+ Store.write(Expeditions.captivesFile(v), cap, null);
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("C: never ransomed: killed, presumed dead", byId(m, rockId).status == CrewRegister.Status.KILLED && said(byId(m, rockId), "presumed dead"));
