@@ -149,11 +149,21 @@ public final class Reputation {
 		for (int i = lines.length - 1; i >= 0 && out.size() < n; i--) if (!lines[i].isEmpty() && !lines[i].startsWith("  ")) out.add(lines[i]);
 		return out;
 	}
-	/** The Career Reputation Log, oldest first (empty if none yet). */
+	/**
+	 * The Career Reputation Log, oldest first (empty if none yet), in its own form: each change's minute, the change, why,
+	 * and its details under it. From the event log (5.92; reputation.log before): each REPUTATION entry's points, its
+	 * why (the human line for one written before 5.92, which the lore never words), its details.
+	 */
 	public static String log(Vault v) {
-		File f = new File(v.logsDir(), LOG);
-		try { return f.isFile() ? new String(SafeFiles.read(f), StandardCharsets.UTF_8) : ""; }
-		catch (IOException e) { return "The Home Planet Station could not read the reputation log (" + f + "): " + e.getMessage(); }
+		StringBuilder sb = new StringBuilder();
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v))) {
+			if (!e.kind.equals("REPUTATION") || !"reputation".equals(e.get("log"))) continue;
+			int points;
+			try { points = Integer.parseInt(e.get("points", "0").trim()); } catch (NumberFormatException x) { points = 0; }
+			sb.append(e.time.length() >= 16 ? e.time.substring(0, 16) : e.time).append("  ").append(signed(points)).append("  ").append(e.get("why", e.human)).append('\n');
+			for (String[] kv : e.fields()) if (kv[0].startsWith("detail.")) sb.append("  ").append(kv[1]).append('\n');
+		}
+		return sb.toString();
 	}
 
 	// ---- counting as FTL plays ----
@@ -619,7 +629,7 @@ public final class Reputation {
 		if (details != null) for (String d : details) t.append("\n").append(d);
 		MasterLog.entry(v, "reputation", t.toString());
 		Properties p = read(v);
-		homeplanet.core.EventLog.write(v, homeplanet.core.Event.of("REPUTATION").put("log", "reputation").put("reason", reason).put("points", points).put("total", num(p, "total")).details(details).human(why));
+		homeplanet.core.EventLog.write(v, homeplanet.core.Event.of("REPUTATION").put("log", "reputation").put("reason", reason).put("points", points).put("total", num(p, "total")).put("why", why).details(details).human(why));
 	}
 	public static String signed(int n) { return n > 0 ? "+" + n : n < 0 ? "−" + (-n) : "0"; }
 	private static int num(Properties p, String k) { return Store.num(p, k, 0); }

@@ -39,6 +39,13 @@ public class RegT { public static void main(String[] a) throws Exception {
  int count = -before; for (EventLog.Entry e : EventLog.read(v)) if (e.kind.equals("CREW_FILES") && "positions".equals(e.get("what"))) count++;
  Setup.chk("B: once only", count == 0);
  v.takeStock();
+ // C: the reputation log from the event log (5.92), as reputation.log wrote it
+ HomePlanet.reputationOn = true;
+ Reputation.expedition(v, "Nebula, Attack", 24, 0, 2);
+ Reputation.captured(v, Arrays.asList("Ash", "Bob"));
+ File rl = new File(v.logsDir(), "reputation.log");
+ List<String> rWas = rl.isFile() ? rawLines(new String(SafeFiles.read(rl), "UTF-8")) : new ArrayList<String>(), rNow = rawLines(Reputation.log(v));
+ Setup.chk("C: the reputation log read from the event log is reputation.log, line for line (" + rWas.size() + " lines)" + (rWas.equals(rNow) ? "" : "\n    old " + rWas + "\n    new " + rNow), rWas.equals(rNow) && !rWas.isEmpty());
  Setup.done();
 }
  /** A log's lines, its kinds as the event log keeps them (underscores read as spaces), the time to the minute. */
@@ -50,6 +57,12 @@ public class RegT { public static void main(String[] a) throws Exception {
    if (l.length() > 18 && Character.isDigit(l.charAt(0))) { int k = l.indexOf("  ", 18); String kind = k < 0 ? l.substring(18) : l.substring(18, k); l = l.substring(0, 18) + kind.replace('_', ' ').toUpperCase().replaceAll("[^A-Z0-9]+", " ").trim() + (k < 0 ? "" : l.substring(k)); }
    out.add(l);
   }
+  return out;
+ }
+ /** A log's lines as they are, a detail's own indent aside (the 5.73 conversion kept details trimmed). */
+ static List<String> rawLines(String text) {
+  List<String> out = new ArrayList<String>();
+  for (String l : text.replace("\r", "").split("\n")) { if (l.isEmpty()) continue; out.add(l.startsWith("  ") ? "  " + l.trim() : l); }
   return out;
  }
 }
