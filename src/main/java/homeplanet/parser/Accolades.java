@@ -136,8 +136,18 @@ public final class Accolades {
 	static String pick(Vault v, String letterKey, Random rng) {
 		if (v == null) return null;
 		Map<String, String[]> have = new LinkedHashMap<String, String[]>(); // kind -> {ship, n, achievement, model, crew}
-		String rep = text(new File(v.logsDir(), "reputation.log"));
-		String hist = text(v.historyLog());
+		java.util.List<homeplanet.core.EventLog.Entry> events = homeplanet.core.EventLog.read(v); // the logs as events (5.74), in the old logs' form for the readers below
+		StringBuilder repText = new StringBuilder(), histText = new StringBuilder();
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.ofLog(events, "reputation")) {
+			repText.append(e.time.length() >= 16 ? e.time.substring(0, 16) : e.time).append("  ").append(homeplanet.vault.Reputation.signed(e.num("points", 0))).append("  ").append(e.human).append('\n');
+			for (int i = 1; e.get("detail." + i) != null; i++) repText.append("  ").append(e.get("detail." + i)).append('\n');
+		}
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.ofLog(events, "station")) {
+			histText.append(e.time.length() >= 16 ? e.time.substring(0, 16) : e.time).append("  ").append(e.kind.replace('_', ' ')).append("  ").append(e.get("headline", e.human)).append('\n');
+			for (int i = 1; e.get("detail." + i) != null; i++) histText.append("  ").append(e.get("detail." + i)).append('\n');
+		}
+		String rep = repText.toString();
+		String hist = histText.toString();
 		homeplanet.vault.Ship best = mostJumps(v);
 		int jumps = best == null ? 0 : jumps(v, best);
 		if (jumps >= 2) have.put("ship", new String[] {best.name, Integer.toString(jumps), null, null, null});

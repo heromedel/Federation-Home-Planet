@@ -127,12 +127,12 @@ public class ShipRecordsDialog extends JDialog {
 		if (!versions.isEmpty()) kept.add(restoreRow, BorderLayout.SOUTH);
 
 		// three pages under her header: the voyage log, the station's log, and the kept versions
-		String voyage = homeplanet.vault.VoyageLog.read(Vault.get(), ship);
+		List<homeplanet.core.EventLog.Entry> events = homeplanet.core.EventLog.read(Vault.get()); // her events (5.74)
 		final java.awt.CardLayout cards = new java.awt.CardLayout();
 		final JPanel pages = new JPanel(cards);
-		pages.add(logTab(RecordsLog.voyage(voyage, "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
+		pages.add(logTab(RecordsLog.voyage(homeplanet.core.EventLog.voyage(events, ship.id), "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
 				+ "while the station is open (and on Refresh): jumps, sectors, battles, crew, what came aboard, upgrades and repairs.")), "voyage");
-		pages.add(logTab(RecordsLog.station(logLines(ship), "No entries for her yet.")), "station");
+		pages.add(logTab(RecordsLog.station(logEntries(events, ship), "No entries for her yet.", false)), "station");
 		pages.add(kept, "kept");
 		final Tab[] tabs = {new Tab("Voyage log", "Events in FTL, save by save (newest last)", "voyage"),
 				new Tab("Station log", "Her entries in the station's log (history.log), newest last", "station"),
@@ -319,22 +319,14 @@ public class ShipRecordsDialog extends JDialog {
 		}
 	}
 
-	/** Her entries in history.log: those whose headline names her (by name or by her file's id). */
-	static String logLines(Ship ship) {
-		File f = HistoryLog.file();
-		StringBuilder out = new StringBuilder();
-		if (!f.isFile()) return "";
-		try {
-			String[] lines = new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n");
-			boolean mine = false;
-			for (String line : lines) {
-				if (!line.startsWith("  ")) mine = line.contains(ship.id) || (ship.name != null && !ship.name.isEmpty() && line.contains(ship.name));
-				if (mine) out.append(line).append('\n');
-			}
-		} catch (Exception e) {
-			return "The Home Planet Station could not read its log (" + f + "): " + e.getMessage();
+	/** Her entries in the station's log: those that name her (by her id in their fields, or her name or id in the headline). */
+	static List<homeplanet.core.EventLog.Entry> logEntries(List<homeplanet.core.EventLog.Entry> events, Ship ship) {
+		List<homeplanet.core.EventLog.Entry> out = new ArrayList<homeplanet.core.EventLog.Entry>();
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.ofLog(events, "station")) {
+			String head = e.get("headline", e.human);
+			if (ship.id.equals(e.get("ship_id")) || head.contains(ship.id) || (ship.name != null && !ship.name.isEmpty() && head.contains(ship.name))) out.add(e);
 		}
-		return out.length() == 0 ? "No entries for her yet." : out.toString();
+		return out;
 	}
 
 	/** A kept version in words, for the confirmation. */

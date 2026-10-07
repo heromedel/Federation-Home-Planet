@@ -39,7 +39,9 @@ public final class LogConvert {
 	public static final String MARK = "converted.txt";
 	private static final Pattern STAMP = Pattern.compile("(\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d)  (.*)");
 
-	public static boolean done(Vault v) { return new File(v.logsDir(), MARK).isFile(); }
+	public static boolean done(Vault v) { return done(v.root); }
+	/** Whether a fleet's old logs were read in, by its folder (a fleet not in use). */
+	public static boolean done(File fleetRoot) { return new File(new File(fleetRoot, "logs"), MARK).isFile(); }
 
 	/** Converts what has no event yet, and writes the marker. Never throws: a log it can't read is skipped and said in the debug log. */
 	public static void run(Vault v) {

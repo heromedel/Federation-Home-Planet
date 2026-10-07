@@ -63,17 +63,17 @@ public class LogT { public static void main(String[] a) throws Exception {
   File saves = new File(dir, "saves"); saves.mkdirs();
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
   String jump = "Jumped, hull 30/30, scrap 40 (+20), fuel 10 (-1), missiles 8, drone parts 2";
-  MasterLog.entry(v, "voyage: Kestrel", "1 ship defeated (1 in all)");
-  MasterLog.entry(v, "voyage: Kestrel", jump);
+  Setup.voyage(v, "Kestrel", "1 ship defeated (1 in all)");
+  Setup.voyage(v, "Kestrel", jump);
   v.countBeacon("a jump");
-  MasterLog.entry(v, "voyage: Kestrel", "Bought at a store: Burst Laser II");
-  MasterLog.entry(v, "voyage: Kestrel", jump);
-  MasterLog.entry(v, "voyage: Kestrel", "Arrived at a store");
+  Setup.voyage(v, "Kestrel", "Bought at a store: Burst Laser II");
+  Setup.voyage(v, "Kestrel", jump);
+  Setup.voyage(v, "Kestrel", "Arrived at a store");
   v.countBeacon("a jump");
   HistoryLog.entry("SELL", "1 item for 6 scrap", Arrays.asList("2 Missiles for 6 scrap  (Spacedock Storage)"));
   MasterLog.businessDay(v);
-  MasterLog.entry(v, "voyage: Kestrel", "Sector 3 reached (sectors visited: 3)");
-  MasterLog.entry(v, "voyage: Kestrel", jump);
+  Setup.voyage(v, "Kestrel", "Sector 3 reached (sectors visited: 3)");
+  Setup.voyage(v, "Kestrel", jump);
   v.countBeacon("a jump");
   String p = page(v, false);
   int a1 = p.indexOf("On board the Kestrel:"), a2 = p.indexOf("The Kestrel defeated a ship."), a3 = p.indexOf("Then we jumped to a new beacon.");
@@ -108,11 +108,11 @@ public class LogT { public static void main(String[] a) throws Exception {
   File saves = new File(dir, "saves"); saves.mkdirs();
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
   String jump = "Jumped, hull 30/30, scrap 40, fuel 10 (-1), missiles 8, drone parts 2";
-  MasterLog.entry(v, "voyage: Kestrel", jump); MasterLog.entry(v, "voyage: Kestrel", "Beacon: a nebula"); v.countBeacon("a jump");
-  MasterLog.entry(v, "voyage: Kestrel", "1 ship defeated (1 in all)"); MasterLog.entry(v, "voyage: Kestrel", jump); MasterLog.entry(v, "voyage: Kestrel", "Beacon: an ion storm"); v.countBeacon("a jump");
-  MasterLog.entry(v, "voyage: Kestrel", "Ship met: a Rock pirate"); // learned a day after the jump
-  MasterLog.entry(v, "voyage: Kestrel", "Sector 3 reached (sectors visited: 3)"); MasterLog.entry(v, "voyage: Kestrel", jump); MasterLog.entry(v, "voyage: Kestrel", "Beacon: a red giant"); v.countBeacon("a jump");
-  MasterLog.entry(v, "voyage: Kestrel", jump); MasterLog.entry(v, "voyage: Kestrel", "Arrived at a store"); MasterLog.entry(v, "voyage: Kestrel", "Beacon: an asteroid field"); MasterLog.entry(v, "voyage: Kestrel", "Ship met: a Mantis ship"); v.countBeacon("a jump");
+  Setup.voyage(v, "Kestrel", jump); Setup.voyage(v, "Kestrel", "Beacon: a nebula"); v.countBeacon("a jump");
+  Setup.voyage(v, "Kestrel", "1 ship defeated (1 in all)"); Setup.voyage(v, "Kestrel", jump); Setup.voyage(v, "Kestrel", "Beacon: an ion storm"); v.countBeacon("a jump");
+  Setup.voyage(v, "Kestrel", "Ship met: a Rock pirate"); // learned a day after the jump
+  Setup.voyage(v, "Kestrel", "Sector 3 reached (sectors visited: 3)"); Setup.voyage(v, "Kestrel", jump); Setup.voyage(v, "Kestrel", "Beacon: a red giant"); v.countBeacon("a jump");
+  Setup.voyage(v, "Kestrel", jump); Setup.voyage(v, "Kestrel", "Arrived at a store"); Setup.voyage(v, "Kestrel", "Beacon: an asteroid field"); Setup.voyage(v, "Kestrel", "Ship met: a Mantis ship"); v.countBeacon("a jump");
   String p = page(v, false);
   Setup.chk("B: On board the Kestrel: with a colon", p.contains("On board the Kestrel:") && !p.contains("On board the Kestrel."));
   Setup.chk("B: Then we jumped into a nebula", p.contains("Then we jumped into a nebula."));

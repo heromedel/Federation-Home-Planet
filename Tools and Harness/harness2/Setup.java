@@ -46,6 +46,14 @@ public class Setup {
   ShipStore.Record r = new ShipStore.Record(id); r.name = name; r.state = "docked";
   File d = new File(v.memorialDir(), ShipStore.stem(name, id)); ShipStore.write(d, r); ShipStore.versions(d).mkdirs(); return d;
  }
+ /** A voyage line as the station writes one: the master log's copy (the crew register still reads it) and her event (every reader since 5.74). */
+ public static void voyage(Vault v, Ship s, String text) { voyage(v, s.name, s.id, text); }
+ /** The same for a ship the test only names (no ship of the fleet). */
+ public static void voyage(Vault v, String name, String text) { voyage(v, name, name.toLowerCase().replaceAll("[^a-z0-9]", "") + "x", text); }
+ static void voyage(Vault v, String name, String id, String text) {
+  MasterLog.entry(v, "voyage: " + name, text);
+  EventLog.write(v, Event.of("VOYAGE_NOTE").put("log", "voyage").put("ship", name + "." + id).put("ship_name", name).put("ship_id", id).put("text", text).human(text));
+ }
  public static void chk(String n, boolean ok) { System.out.println((ok ? "PASS  " : "FAIL  ") + n); if (!ok) fails++; }
  public static void done() { System.out.println(fails == 0 ? "ALL PASSED" : fails + " FAILED"); }
 }

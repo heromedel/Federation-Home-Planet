@@ -89,14 +89,12 @@ public final class MasterLog {
 		return why;
 	}
 
-	/** Why each day began (its D line: what moved the clock onto it), by day. */
+	/** Why each day began (what moved the clock onto it: the DAY events, 5.74), by day. */
 	public static synchronized Map<Integer, String> dayReasons(Vault v) {
 		Map<Integer, String> out = new LinkedHashMap<Integer, String>();
-		for (String l : lines(v)) {
-			if (!l.startsWith("D\t")) continue;
-			String[] w = l.split("\t", 4);
-			if (w.length < 4) continue;
-			try { out.put(Integer.parseInt(w[2].trim()), w[3]); } catch (NumberFormatException e) { }
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v))) {
+			if (!e.kind.equals("DAY") || e.day < 1 || e.get("why") == null) continue;
+			out.put(e.day, e.get("why"));
 		}
 		return out;
 	}
@@ -106,57 +104,40 @@ public final class MasterLog {
 		public final int day;
 		Entry(String real, int day, String log, String text) { this.real = real; this.day = day; this.log = log; this.text = text; }
 	}
-	/** The entries by day, oldest first; entries with no proper day (Prior) are left out. */
-	/**
-	 * The stardate of each entry of a station log (its history.log text), in order, from the master log's copies of
-	 * them (5.41). An entry from before the master log (5.17), or before the first stardate, is day 1.
-	 */
-	public static int[] stationDays(File fleetRoot, String historyText) {
-		List<String[]> copies = new ArrayList<String[]>(); // {text, day}
-		File f = new File(new File(fleetRoot, "logs"), FILE);
-		if (!f.isFile()) f = new File(fleetRoot, FILE); // a fleet not opened since 5.71 keeps it at the root
-		if (f.isFile()) {
-			try {
-				for (String l : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) {
-					if (!l.startsWith("E\t")) continue;
-					String[] w = l.split("\t", 5);
-					if (w.length == 5 && w[3].equals("station")) copies.add(new String[] {w[4], w[2].trim()});
-				}
-			} catch (IOException e) { /* none: every entry day 1 */ }
-		}
-		List<Integer> out = new ArrayList<Integer>();
-		int at = 0;
-		for (String line : historyText.split("\r?\n")) {
-			if (line.length() < 18 || line.startsWith("  ") || !Character.isDigit(line.charAt(0))) continue;
-			String entry = line.substring(16).trim(); // past "yyyy-MM-dd HH:mm  "
-			int day = 1;
-			for (int i = at; i < copies.size(); i++) {
-				if (!copies.get(i)[0].startsWith(entry)) continue;
-				try { day = Math.max(1, Integer.parseInt(copies.get(i)[1])); } catch (NumberFormatException e) { day = 1; }
-				at = i + 1;
-				break;
-			}
-			out.add(day);
-		}
-		int[] days = new int[out.size()];
-		for (int i = 0; i < days.length; i++) days[i] = out.get(i);
-		return days;
-	}
-
+	/** The entries by day, oldest first, from the event log (5.74; the E lines before): entries with no proper day (Prior) are left out. */
 	public static synchronized Map<Integer, List<Entry>> byDay(Vault v) {
 		Map<Integer, List<Entry>> out = new LinkedHashMap<Integer, List<Entry>>();
-		for (String l : lines(v)) {
-			if (!l.startsWith("E\t")) continue;
-			String[] w = l.split("\t", 5);
-			if (w.length < 5) continue;
-			int day;
-			try { day = Integer.parseInt(w[2].trim()); } catch (NumberFormatException e) { continue; }
-			if (day < 1) continue; // Prior
-			List<Entry> d = out.get(day);
-			if (d == null) out.put(day, d = new ArrayList<Entry>());
-			d.add(new Entry(w[1], day, w[3], w[4]));
+		for (homeplanet.core.EventLog.Entry x : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v))) {
+			Entry e = of(x);
+			if (e == null || e.day < 1) continue;
+			List<Entry> d = out.get(e.day);
+			if (d == null) out.put(e.day, d = new ArrayList<Entry>());
+			d.add(e);
 		}
 		return out;
+	}
+	/**
+	 * An event as the master log copied it (the readers that word the day, the Captain's Log first, read this form):
+	 * a station entry as "KIND  headline / detail / detail" (the kind with spaces, as the station log writes it), a
+	 * voyage entry as its line under "voyage: <her name>", a reputation entry as "+5  why / detail"; null for the rest.
+	 */
+	public static Entry of(homeplanet.core.EventLog.Entry x) {
+		String log = x.get("log", "");
+		if (log.equals("station")) {
+			StringBuilder t = new StringBuilder(x.kind.replace('_', ' '));
+			String head = x.get("headline", x.human);
+			if (!head.isEmpty()) t.append("  ").append(head);
+			for (String d : x.all("detail")) t.append(" / ").append(d);
+			for (int i = 1; x.get("detail." + i) != null; i++) t.append(" / ").append(x.get("detail." + i));
+			return new Entry(x.time, x.day, "station", t.toString());
+		}
+		if (log.equals("voyage")) return new Entry(x.time, x.day, "voyage: " + x.get("ship_name", ""), x.human);
+		if (log.equals("reputation")) {
+			StringBuilder t = new StringBuilder(Reputation.signed(x.num("points", 0))).append("  ").append(x.human);
+			for (int i = 1; x.get("detail." + i) != null; i++) t.append(" / ").append(x.get("detail." + i));
+			return new Entry(x.time, x.day, "reputation", t.toString());
+		}
+		return null;
 	}
 
 	private static List<String> lines(Vault v) {

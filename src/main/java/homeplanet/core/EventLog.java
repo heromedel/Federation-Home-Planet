@@ -40,6 +40,29 @@ public final class EventLog {
 	private static final SimpleDateFormat STAMP = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 	public static File file(Vault v) { return new File(v.logsDir(), FILE); }
+	/** A fleet's event log by its folder (logs/ since 5.71, the root before): for a fleet not in use. */
+	public static File fileIn(File fleetRoot) {
+		File f = new File(new File(fleetRoot, "logs"), FILE);
+		return f.isFile() || !new File(fleetRoot, FILE).isFile() ? f : new File(fleetRoot, FILE);
+	}
+	/** The entries in time order (a converted entry sits in the file where it was written, not where it happened), the file's order deciding a tie. */
+	public static List<Entry> sorted(List<Entry> es) {
+		List<Entry> out = new ArrayList<Entry>(es);
+		java.util.Collections.sort(out, new java.util.Comparator<Entry>() { public int compare(Entry a, Entry b) { return a.time.compareTo(b.time); } });
+		return out;
+	}
+	/** The entries of one of the old logs (`log=station`, `voyage`, `reputation`, `clock`), in time order. */
+	public static List<Entry> ofLog(List<Entry> es, String log) {
+		List<Entry> out = new ArrayList<Entry>();
+		for (Entry e : es) if (log.equals(e.get("log"))) out.add(e);
+		return sorted(out);
+	}
+	/** One ship's voyage entries, by her id, in time order. */
+	public static List<Entry> voyage(List<Entry> es, String shipId) {
+		List<Entry> out = new ArrayList<Entry>();
+		for (Entry e : es) if ("voyage".equals(e.get("log")) && shipId.equals(e.get("ship_id"))) out.add(e);
+		return sorted(out);
+	}
 
 	/** Writes the event's two lines. Never throws; with no fleet open, nothing is written (the debug log notes it). */
 	public static void write(Vault v, Event e) { write(v, v == null ? null : file(v), e); }

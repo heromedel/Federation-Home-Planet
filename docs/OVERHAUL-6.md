@@ -221,6 +221,8 @@ _heromedel, 5.70: the Settings' Folders tab (its Open buttons and their names) f
 
 _5.73, the ground for it: the old logs are read into the event log once, the first time a fleet opens (`vault/LogConvert`, step 22's log half, done early so every reader can switch to events alone): every station-log entry, voyage line, reputation entry and clock day from before the event log (5.63) gets an event with its kind (the voyage lines' kinds and fields recovered from their wording, a `VOYAGE_NOTE` for the rest), its own time and stardate (the master log's copy says the day), `converted=true`, and the old line exactly as its human line; nothing already there is doubled; `logs/converted.txt` marks it done; logged as `LOGS_CONVERTED`. The old logs stay as they are. LogConvT._
 
+_5.74: the readers on events: the Captain's Log's days (`MasterLog.byDay` and `dayReasons` read the event log, each event in the form the master log copied, so the day's wording engine is untouched), the station log view (by stardate, from events; a fleet not opened since 5.73 still shows its old file), a ship's voyage log view and her station entries in Ship Records, the reputation log window, the museum's voyage and lost crew, journeys since a trade, and the rank letters' accolades; `MasterLog.stationDays` (the station-days matcher) deleted. The master log's E lines are still written: the crew register reads them by character offset until the crew files (step 15). The Crew Log waits with it._
+
 ### Phase 4: Long Range Comm
 
 21. A ship package is her folder zipped, with her crew's files. `Session.PROTOCOL` goes up (a 5.x station would trade wrongly), and a 6.0 station tells a 5.x one plainly that one of them needs updating, as today.

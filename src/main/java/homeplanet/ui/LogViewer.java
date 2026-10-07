@@ -132,25 +132,32 @@ final class LogViewer extends JPanel {
 	private void fill() {
 		if (ship != null) {
 			showing.setText(ship.name + "'s voyage log");
-			String text = homeplanet.vault.VoyageLog.read(Vault.get(), ship);
-			int all = 0;
-			for (String line : text.split("\r?\n")) if (!line.trim().isEmpty()) all++;
-			count.setText(all + " lines");
-			show(RecordsLog.voyage(text, "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
+			List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.voyage(homeplanet.core.EventLog.read(Vault.get()), ship.id); // her events (5.74)
+			count.setText(es.size() + " lines");
+			show(RecordsLog.voyage(es, "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
 					+ "while the station is open (and on Refresh)."));
 			return;
 		}
 		if (slots.isEmpty()) return;
 		String slot = slots.get(Math.max(0, fleet.getSelectedIndex()));
 		showing.setText("Station log, " + Vault.title(slot));
-		File f = Vault.historyLogIn(Vault.rootOf(Vault.get().saves, slot));
+		File root = Vault.rootOf(Vault.get().saves, slot);
+		if (homeplanet.vault.LogConvert.done(root)) { // its events (5.74); a fleet not opened since 5.73 still shows its old file, as before
+			List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(homeplanet.core.EventLog.fileIn(root)), "station");
+			int entries = 0;
+			for (homeplanet.core.EventLog.Entry e : es) if (!e.kind.equals("LOADED")) entries++;
+			count.setText(entries + (entries == 1 ? " entry" : " entries"));
+			show(RecordsLog.station(es, "Nothing logged yet.", true));
+			return;
+		}
+		File f = Vault.historyLogIn(root);
 		String text = "";
 		try { if (f.isFile()) text = new String(SafeFiles.read(f), StandardCharsets.UTF_8); }
 		catch (Exception e) { text = "The Home Planet Station could not read " + f + ": " + e.getMessage(); }
 		int entries = 0;
 		for (String line : text.split("\r?\n")) if (!line.isEmpty() && !line.startsWith("  ")) entries++;
 		count.setText(entries + (entries == 1 ? " entry" : " entries"));
-		show(RecordsLog.station(text, "Nothing logged yet.", homeplanet.vault.MasterLog.stationDays(Vault.rootOf(Vault.get().saves, slot), text)));
+		show(RecordsLog.station(text, "Nothing logged yet.", null));
 	}
 
 	/** This run's debug log (the newest in the program's log folder), as plain text: what to read before a bug report. */

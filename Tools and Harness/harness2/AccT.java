@@ -17,9 +17,8 @@ public class AccT {
   Setup.chk("V: three achievements, two of them victories: +10 for the one (" + rep + " -> " + now + ")", now == rep + 10);
   Setup.chk("V: the reputation log names it, never a victory", log.contains("An achievement: Just Getting Started (+10)") && !log.contains("Victory"));
   // a career's log from before 5.60 may name one, after two others (one with a comma in its name)
-  File repLog = new File(v.logsDir(), "reputation.log");
-  SafeFiles.writeText(repLog, new String(SafeFiles.read(repLog), "UTF-8") + "2026-10-06 11:00  +20  2 achievements: Just Getting Started, Givin' her all she's got, Captain! (+20)\n"
-    + "2026-10-06 12:00  +10  An achievement: Federation Victory (Normal) (+10)\n", false);
+  for (String[] old : new String[][] {{"2099-01-01 11:00:00", "20", "2 achievements: Just Getting Started, Givin' her all she's got, Captain! (+20)"}, {"2099-01-01 12:00:00", "10", "An achievement: Federation Victory (Normal) (+10)"}})
+   EventLog.write(v, Event.of("REPUTATION").put("log", "reputation").put("reason", "achievement").put("points", Integer.parseInt(old[1])).put("converted", true).put("time", old[0]).human(old[2])); // as the conversion reads an old line; the readers go by time now (5.74), so these come last
 
   // her jumps: she came by trade after four beacons, then flew ten with the station closed, five at a time
   Ship b = v.boarded();
