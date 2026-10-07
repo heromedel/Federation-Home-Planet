@@ -481,8 +481,6 @@ public class SystemsPanel {
 		return level > 0 ? id + " " + level : id;
 	}
 
-	/** True if a system was taken off the ship: then the file is written before the ship, so a failed save can't lose it. */
-	boolean storedSomething() { return storedSomething; }
 	List<String> changes() { return changes; }
 
 	// ---- Rules ----

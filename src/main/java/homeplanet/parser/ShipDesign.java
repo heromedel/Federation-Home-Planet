@@ -144,10 +144,6 @@ public class ShipDesign {
 		if (there < 0) return new CompanionMod.Door(x, y, here, -1, v);
 		return new CompanionMod.Door(x, y, Math.min(here, there), Math.max(here, there), v);
 	}
-	public CompanionMod.Door doorAt(int x, int y, int v) {
-		for (CompanionMod.Door d : doors) if (d.x == x && d.y == y && d.v == v) return d;
-		return null;
-	}
 	/**
 	 * Recomputes every door's rooms from where it sits. A door whose wall is gone, or that would turn from a door into an
 	 * airlock (or back) because a room moved, is dropped rather than quietly changed.
@@ -274,8 +270,6 @@ public class ShipDesign {
 
 	/** What stops this design from working as a ship (empty when she's sound). */
 	public List<String> problems() { return ShipChecks.check(this, ShipChecks.Context.DESIGN, null, null).problems; }
-	/** Worth knowing, but she'd still fly. */
-	public List<String> warnings() { return ShipChecks.check(this, ShipChecks.Context.DESIGN, null, null).warnings; }
 
 	/** Manned systems get a station; FTL's own defaults where it has them (the square is kept inside the room). */
 	public static String defaultDir(String id) {

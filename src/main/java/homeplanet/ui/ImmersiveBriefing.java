@@ -367,5 +367,4 @@ final class ImmersiveBriefing extends JDialog {
 		return l;
 	}
 	private static String html(String s) { return "<html><div style='width:" + TEXT_W + "px'>" + s + "</div></html>"; }
-	private static String oneLine(String s) { return s.replace("\n", " "); }
 }

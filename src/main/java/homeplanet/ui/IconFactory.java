@@ -148,31 +148,6 @@ public class IconFactory {
 		return icon == NONE ? null : icon;
 	}
 
-	/** Supply icon recolored dark, for light dialog backgrounds. */
-	public static Icon supplyIconDark(String name) {
-		String key = "supplyDark:" + name;
-		if (!cache.containsKey(key)) {
-			Icon icon = null;
-			Icon white = supplyIcon(name);
-			if (white instanceof ImageIcon) {
-				java.awt.Image src = ((ImageIcon) white).getImage();
-				BufferedImage img = new BufferedImage(white.getIconWidth(), white.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
-				Graphics2D g = img.createGraphics();
-				g.drawImage(src, 0, 0, null);
-				g.dispose();
-				for (int y = 0; y < img.getHeight(); y++) {
-					for (int x = 0; x < img.getWidth(); x++) {
-						int argb = img.getRGB(x, y);
-						img.setRGB(x, y, (argb & 0xFF000000) | 0x303030);
-					}
-				}
-				icon = new ImageIcon(img);
-			}
-			cache.put(key, icon != null ? icon : NONE);
-		}
-		Icon icon = cache.get(key);
-		return icon == NONE ? null : icon;
-	}
 
 	// First frame of the weapon's animation, turned to lie flat (barrel to the right).
 	private static Icon weaponArt(WeaponBlueprint w) throws Exception {

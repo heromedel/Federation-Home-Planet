@@ -303,7 +303,6 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	void help(String s) { help.setText(s == null ? "" : s); }
 	/** Something changed that Save would write. */
 	void markDirty() { dirty = true; saveBtn.repaint(); }
-	boolean isDirty() { return dirty; }
 	/** Asks before throwing away unsaved changes; true to go on. */
 	boolean confirmLeave(String doing) {
 		if (!dirty) return true;
@@ -371,8 +370,6 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		revalidate();
 		repaint();
 	}
-	/** Kept for the Space Dock's call after init(): the partner is loaded by init(). */
-	public void tradeShipInit() { }
 
 	private void loadCurrent() {
 		Ship flying = homeplanet.core.FtlDock.active() ? Vault.get().boarded() : null; // FTL docked: the ship in flight stays out of the Cargo Bay (5.29)

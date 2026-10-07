@@ -64,8 +64,6 @@ public final class Expeditions {
 		{"delivery", "Delivery"}, {"repair", "Repair"}, {"security", "Security"}};
 	public static String kindTitle(String kind) { for (String[] k : KINDS) if (k[0].equals(kind)) return k[1]; return kind; }
 	static boolean knownKind(String kind) { for (String[] k : KINDS) if (k[0].equals(kind)) return true; return false; }
-	/** Every kind of job (for tests). */
-	public static List<String> kinds() { List<String> out = new ArrayList<String>(); for (String[] k : KINDS) out.add(k[0]); return out; }
 
 	/** FTL's race ids by the names the events use. */
 	private static final Map<String, String> RACES = new LinkedHashMap<String, String>();

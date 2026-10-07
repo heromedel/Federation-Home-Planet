@@ -61,21 +61,6 @@ public final class TradeMark {
 		TradeMark m = of(s);
 		return Math.max(0, gs.getTotalBeaconsExplored() - (m == null ? 0 : m.beacons));
 	}
-	/** Scrap she has collected since her last trade. */
-	public static int scrapSince(Ship s, SavedGameState gs) {
-		TradeMark m = of(s);
-		return Math.max(0, gs.getTotalScrapCollected() - (m == null ? 0 : m.scrap));
-	}
-	/** Sectors she has visited since her last trade. */
-	public static int sectorsSince(Ship s) {
-		TradeMark m = of(s);
-		return Math.max(0, VoyageLog.visited(Vault.get(), s) - (m == null ? 0 : m.sectors));
-	}
-	/** The date her service in this fleet began ("yyyy-MM-dd HH:mm"), or null if she was never traded: anything earlier doesn't count. */
-	public static String countsFrom(Ship s) {
-		TradeMark m = of(s);
-		return m == null ? null : m.date;
-	}
 
 	// ---- writing ----
 

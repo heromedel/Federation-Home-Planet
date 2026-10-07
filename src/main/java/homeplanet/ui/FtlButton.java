@@ -102,7 +102,6 @@ public class FtlButton extends JButton {
 			});
 			return this;
 		}
-		public boolean folded() { return folded; }
 		@Override
 		protected void paintComponent(Graphics g0) {
 			Graphics2D g = (Graphics2D) g0.create();

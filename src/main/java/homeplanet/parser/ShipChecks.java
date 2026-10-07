@@ -176,10 +176,6 @@ public final class ShipChecks {
 		return need > d.reactor ? "Her reactor (" + d.reactor + ") can't power Oxygen, Shields and her starting weapons and drones together (they need " + need + ")." : null;
 	}
 
-	/** A design that can go into the companion mod: built, and free of problems as a design. */
-	public static boolean buildable(ShipDesign d) {
-		return d.built && check(d, Context.DESIGN, null, null).sound();
-	}
 
 	static String title(String id) { return homeplanet.model.Items.systemTitle(id); }
 }

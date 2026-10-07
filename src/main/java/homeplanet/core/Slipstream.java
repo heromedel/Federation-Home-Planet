@@ -358,7 +358,6 @@ public class Slipstream {
 	private static final Pattern TITLE = Pattern.compile("<title>\\s*(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?\\s*</title>", Pattern.DOTALL);
 	private static final Pattern AUTHOR = Pattern.compile("<author>\\s*(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?\\s*</author>", Pattern.DOTALL);
 
-	public static String titleOf(File ftl) { return metadataOf(ftl)[0]; }
 
 	/** {title, author} from mod-appendix/metadata.xml; the title falls back to the file name without .ftl, the author to "". */
 	public static String[] metadataOf(File ftl) {

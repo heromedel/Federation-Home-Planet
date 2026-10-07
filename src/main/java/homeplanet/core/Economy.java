@@ -104,8 +104,6 @@ public final class Economy {
 	/** A share in words: "a tenth", "a quarter", "half", or "N%". */
 	public static String share(int percent) { return percent == 10 ? "a tenth" : percent == 25 ? "a quarter" : percent == 50 ? "half" : percent + "%"; }
 
-	/** A removal fee as Settings words it. */
-	public static String removalTitle(int fee) { return fee == NOT_ALLOWED ? "not allowed" : fee == 0 ? "free" : fee + " scrap"; }
 	/** A Sandbox removal fee from the cfg (anything unknown is free). */
 	static int removalFee(String v) {
 		try { int f = Integer.parseInt(v == null ? "" : v.trim()); for (int k : REMOVAL_FEES) if (k == f) return f; } catch (NumberFormatException e) { }

@@ -656,10 +656,6 @@ public final class Transmissions {
 	private static Event letter(String kind, Message m) { return Event.of(kind).put("key", m.key).put("from", m.from).put("subject", m.subject); }
 	/** An event about an augment the boarded ship had no room for. */
 	private static Event overflow(String what, homeplanet.vault.Overflow.Parcel x) { return Event.of("OVERFLOW").put("what", what).put("augment", x.augment).put("title", Items.title(x.augment)).put("ship_name", x.ship); }
-	public static synchronized boolean wasSent(String key) {
-		for (Message m : load()) if (m.key.equals(key)) return true;
-		return false;
-	}
 
 	// ---- rewards ----
 
