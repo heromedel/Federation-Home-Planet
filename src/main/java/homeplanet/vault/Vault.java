@@ -39,6 +39,8 @@ import org.slf4j.LoggerFactory;
  *                                copies kept for a reason of their own: victory-, final-battle-, cloud-)
  *     junkyard/&lt;Name&gt;.&lt;id&gt;/      a disbanded ship, the same
  *     memorials_and_records/ships/&lt;Name&gt;.&lt;id&gt;/   a ship that left the fleet (how, in fate.txt), remembered
+ *     <ship folder>/crew/        her crew, a file each (5.83: <Name>.<id>.xml, the crew register's id); the same in cargohold/crew/,
+ *                                expeditions/crew/, captives/ and memorials_and_records/crew/ (everyone who left); crew-register.txt the register's own state
  *     cargohold/                 the Cargo Hold (5.72): cargohold.sav (the pretend ship, until its contents have an xml of their
  *                                own), cargohold.xml (its record), systems.txt (its stored systems), parts.txt, overflow.txt, versions/
  *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
@@ -652,6 +654,7 @@ public final class Vault {
 		readFolders();
 		reconcile();
 		saveManifest();
+		CrewRegister.convert(this); // a 5.x crew.txt into a file per crew member, once (5.83): after the ships, whose folders hold their crew
 	}
 	/** The station's logs from the root into logs/ (5.71), as one journal note: all-or-nothing, finished at the next opening if interrupted. */
 	private void moveLogs() throws IOException {

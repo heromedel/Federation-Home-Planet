@@ -54,6 +54,17 @@ public class Setup {
   MasterLog.entry(v, "voyage: " + name, text);
   EventLog.write(v, Event.of("VOYAGE_NOTE").put("log", "voyage").put("ship", name + "." + id).put("ship_name", name).put("ship_id", id).put("text", text).human(text));
  }
+ /** The crew register forgotten, as a fleet updating to 5.41 had none: its own file, any 5.x crew.txt, and every crew file. */
+ public static void forgetCrew(Vault v) {
+  CrewRegister.registerFileOf(v).delete(); new File(v.root, "crew.txt").delete();
+  for (CrewRegister.Member m : CrewRegister.members(v)) { File f = CrewRegister.fileOf(v, m.id); if (f != null) f.delete(); }
+ }
+ /** When the register's files last changed: its own file and every crew file (to tell a look that wrote nothing). */
+ public static String crewStamp(Vault v) {
+  StringBuilder sb = new StringBuilder(Long.toString(CrewRegister.registerFileOf(v).lastModified()));
+  for (CrewRegister.Member m : CrewRegister.members(v)) { File f = CrewRegister.fileOf(v, m.id); sb.append(',').append(f == null ? 0 : f.lastModified()); }
+  return sb.toString();
+ }
  public static void chk(String n, boolean ok) { System.out.println((ok ? "PASS  " : "FAIL  ") + n); if (!ok) fails++; }
  public static void done() { System.out.println(fails == 0 ? "ALL PASSED" : fails + " FAILED"); }
 }

@@ -185,6 +185,7 @@ public final class Layout {
 	}
 	/** For the harness: an old-layout fleet made from a converted one, so the conversion can be tested. */
 	public static void unconvert(Vault v) throws IOException {
+		CrewRegister.unconvert(v); // the crew files back into one crew.txt, before the folders that hold them go
 		File root = v.root;
 		StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<manifest version=\"1\">\r\n");
 		List<File> all = new ArrayList<File>(v.shipFolders());

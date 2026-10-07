@@ -25,7 +25,9 @@ public class MigT { public static void main(String[] a) throws Exception {
  v.board(b); // the first ship boarded again
  Setup.chk("A: a hull in the Junkyard, a ship destroyed and remembered", d2.state == Ship.State.JUNKED && v.byId(d3.id) == null && new File(v.folderOfId(d3.id), "fate.txt").isFile()
    && v.folderOfId(d3.id).getParentFile().equals(v.memorialDir()));
+ v.takeStock(); // the register caught up with the rename, the decommission and the loss before its picture is taken
  Map<String, String> before = picture(v);
+ List<String> crewBefore = crew(v);
  int eventsBefore = EventLog.read(v).size();
  // back to the old layout, as a 5.x station left it
  Layout.unconvert(v);
@@ -45,6 +47,10 @@ public class MigT { public static void main(String[] a) throws Exception {
  Setup.chk("C: every ship as she was: her folder, her record, her versions and special copies, her side files, her log", diff.isEmpty());
  Setup.chk("C: the fleet as it was: the same ships (" + v.all().size() + "), the renamed one, the hull in the Junkyard, the destroyed one gone", v2.all().size() == v.all().size() && v2.byId(d1.id).name.equals("Nightjar Renamed")
    && v2.byId(d2.id).state == Ship.State.JUNKED && v2.byId(d3.id) == null);
+ List<String> crewAfter = crew(v2);
+ for (int i = 0; i < Math.max(crewBefore.size(), crewAfter.size()); i++) { String cb = i < crewBefore.size() ? crewBefore.get(i) : "-", ca = i < crewAfter.size() ? crewAfter.get(i) : "-"; if (!cb.equals(ca)) System.out.println("  crew differs: " + cb + "  ->  " + ca); }
+ Setup.chk("C: the crew register back from crew.txt into a file each, nobody changed (" + crewAfter.size() + ")", crewAfter.equals(crewBefore) && !crewBefore.isEmpty() && !new File(root, "crew.txt").exists()
+   && CrewRegister.registerFileOf(v2).isFile());
  Setup.chk("C: the same ship boarded, the hold with the same fingerprint", v2.boarded() != null && v2.boarded().id.equals(v.boarded().id) && v2.storage().hash.equals(v.storage().hash));
  Setup.chk("C: the Cargo Hold in its folder: its save and record there, its stored-systems list with it, nothing of it left at the root", v2.fileOf(v2.storage()).equals(new File(v2.cargoHoldDir(), Vault.HOLD_FILE)) && v2.fileOf(v2.storage()).isFile()
    && new File(v2.cargoHoldDir(), "cargohold.xml").isFile() && v2.systemsFile().getParentFile().equals(v2.cargoHoldDir()) && !new File(root, "storage.sav").exists() && !new File(root, "storage.xml").exists() && !new File(root, "storage-systems.txt").exists());
@@ -56,7 +62,7 @@ public class MigT { public static void main(String[] a) throws Exception {
    && es.size() >= eventsBefore + 1);
  // the path budget: the longest path under the fleet's folder, with the longest name and id, stays well under Windows' 260 with a Documents folder before it
  String longest = ""; for (String p : paths(root, "")) if (p.length() > longest.length()) longest = p;
- int budget = "memorials_and_records/ships/".length() + ShipStore.NAME_MAX + 1 + 16 + "/versions/".length() + "final-battle-20261007-065935-10.sav".length();
+ int budget = "memorials_and_records/ships/".length() + ShipStore.NAME_MAX + 1 + 16 + Math.max("/versions/".length() + "final-battle-20261007-065935-10.sav".length(), ("/" + CrewRegister.CREW_DIR + "/").length() + ShipStore.NAME_MAX + ".99999.xml".length());
  System.out.println("  longest path: " + longest.length() + " (" + longest + "), the budget " + budget);
  Setup.chk("P: every path under the fleet's folder is within the budget (" + budget + ")", longest.length() <= budget && budget <= 130);
  Setup.done();
@@ -77,6 +83,12 @@ public class MigT { public static void main(String[] a) throws Exception {
    sb.append(" files=").append(side);
    out.put(d.getName(), sb.toString());
   }
+  return out;
+ }
+ /** Every crew member as a line: id, name, status, where their file is and what it holds. */
+ static List<String> crew(Vault v) throws IOException {
+  List<String> out = new ArrayList<String>();
+  for (CrewRegister.Member m : CrewRegister.members(v)) { File f = CrewRegister.fileOf(v, m.id); out.add(m.id + " " + m.name + " " + m.status + " " + m.where + " " + m.served + " " + m.events.size() + " " + (f == null ? "-" : f.getParentFile().getParentFile().getName() + "/" + f.getParentFile().getName())); }
   return out;
  }
  static List<String> paths(File d, String rel) {

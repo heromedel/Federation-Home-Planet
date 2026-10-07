@@ -14,12 +14,12 @@ public class CrewT { public static void main(String[] a) throws Exception {
  h.get(0).setName("Twin"); h.get(1).setName("Twin"); h.get(1).setJumpsSurvived(h.get(0).getJumpsSurvived() + 5);
  h.get(4).setName("Old Hand");
  v.begin().put(v.storage(), c.save, c.hash).commit();
- new File(v.root, "crew.txt").delete(); // as a fleet updating to 5.41: its logs already written, its register new
+ Setup.forgetCrew(v); // as a fleet updating to 5.41: its logs already written, its register new
  v.takeStock();
  List<CrewRegister.Member> m = CrewRegister.members(v);
  int fleet = 0;
  for (Ship s : v.all()) { if (s.save() != null && s.save().getPlayerShip() != null) fleet += SaveHelper.getOwnCrew(s.save().getPlayerShip()).size(); }
- Setup.chk("R: a new register: everyone in the fleet has an id, all present", count(m, CrewRegister.Status.PRESENT) == fleet && new File(v.root, "crew.txt").isFile());
+ Setup.chk("R: a new register: everyone in the fleet has an id, all present", count(m, CrewRegister.Status.PRESENT) == fleet && CrewRegister.registerFileOf(v).isFile() && CrewRegister.fileOf(v, m.get(0).id) != null);
  CrewRegister.Member oldHand = find(m, "Old Hand", CrewRegister.Status.PRESENT);
  Setup.chk("R: the logs read once: the living Old Hand keeps the move, the one lost long ago has an entry of their own",
    oldHand != null && said(oldHand, "Moved to the Cargo Hold.") && !said(oldHand, "Lost aboard") && find(m, "Old Hand", CrewRegister.Status.KILLED) != null);
@@ -169,10 +169,10 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Setup.chk("L: received in a trade: their first line says from whose fleet", said(find(m, "Newcomer", CrewRegister.Status.PRESENT), "Transferred from Commander Vance's fleet; in the Cargo Hold."));
 
  // nothing changed: nothing written
- long before = new File(v.root, "crew.txt").lastModified();
+ String before = Setup.crewStamp(v);
  Thread.sleep(1100);
  v.takeStock();
- Setup.chk("W: a look that finds nothing new leaves the register as it was", new File(v.root, "crew.txt").lastModified() == before);
+ Setup.chk("W: a look that finds nothing new leaves the register as it was (its file and every crew file)", Setup.crewStamp(v).equals(before));
 
  // the ships served on, from before the master log began (fhp-c-local-session's handoff, 5.51): a ship's voyage log,
  // a trade off her, her starting crew; a renamed ship once, with the name she had; namesakes on a trade never credited
@@ -193,7 +193,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
    + "2000-01-01 00:05  TRADE  " + x0.name + " <-> Spacedock Storage\n  " + x0.name + ":\n    - Crew Gracie Quill\n    - Crew Norwyn Schultze\n    - Crew Starter\n    - Crew Twin\n"
    + "2000-01-01 00:06  CREW  Gracie Quill assigned to the Old Glory.\n2000-01-01 00:06  CREW  Norwyn Schultze assigned to the Old Glory.\n2000-01-01 00:06  CREW  Starter assigned to the Old Glory.\n", false);
  HistoryLog.entry("RENAME", "Old Glory -> " + y0.name + "  (" + y0.id + ")");
- new File(v.root, "crew.txt").delete(); // read in afresh, logs and all
+ Setup.forgetCrew(v); // read in afresh, logs and all
  v.takeStock();
  m = CrewRegister.members(v);
  List<String> both = Arrays.asList(x0.name, y0.name + "\tOld Glory");
@@ -208,11 +208,12 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Setup.chk("S: two namesakes on a trade's line: neither credited with her", !twinOn);
 
  // a register written before 5.51: its ships rebuilt once
- File cf = new File(v.root, "crew.txt");
+ File cf = CrewRegister.registerFileOf(v), gf = CrewRegister.fileOf(v, g.id);
  String reg = new String(SafeFiles.read(cf), "UTF-8");
  Setup.chk("U: the register says its ships are kept the 5.51 way", reg.contains("served.v=2"));
- reg = reg.replace("served.v=2\n", "").replaceAll("(?m)^" + g.id + "\\.served=.*$", g.id + ".served=The Adjudicator|" + java.util.regex.Matcher.quoteReplacement(y0.name));
- SafeFiles.writeText(cf, reg, false);
+ SafeFiles.writeText(cf, reg.replace("served.v=2\n", ""), false);
+ String gx = new String(SafeFiles.read(gf), "UTF-8"); // her own file (5.83): the served entry as an older register would have it
+ SafeFiles.writeText(gf, gx.replaceAll("<entry key=\"served\">[^<]*</entry>", java.util.regex.Matcher.quoteReplacement("<entry key=\"served\">The Adjudicator|" + homeplanet.parser.XmlText.text(y0.name) + "</entry>")), false);
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("U: an older register: the ships read again from the logs, one only it knew kept " + byId(m, g.id).served,
