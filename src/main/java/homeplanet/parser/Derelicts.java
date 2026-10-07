@@ -2,7 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +27,7 @@ import net.blerf.ftl.xml.SystemBlueprint;
 
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
@@ -80,15 +80,15 @@ public final class Derelicts {
 	/** Beacons until new derelicts come in. */
 	public static int beaconsToNext(Vault v) {
 		Properties p = read(v);
-		int at = intOf(p, "rolledAt", -1);
-		return at < 0 ? 0 : Math.max(0, at + intOf(p, "interval", OLD_INTERVAL) - v.beaconsSeen());
+		int at = Store.num(p, "rolledAt", -1);
+		return at < 0 ? 0 : Math.max(0, at + Store.num(p, "interval", OLD_INTERVAL) - v.beaconsSeen());
 	}
 
 	/** What's for sale now: new listings first if it's time (or there have never been any). */
 	public static synchronized List<Listing> current(Vault v) {
 		Properties p = read(v);
-		int at = intOf(p, "rolledAt", -1);
-		if (at < 0 || v.beaconsSeen() >= at + intOf(p, "interval", OLD_INTERVAL)) {
+		int at = Store.num(p, "rolledAt", -1);
+		if (at < 0 || v.beaconsSeen() >= at + Store.num(p, "interval", OLD_INTERVAL)) {
 			try { roll(v, new Random()); p = read(v); }
 			catch (Exception e) { log.warn("Could not bring in new derelicts: {}", e.toString()); }
 		}
@@ -98,8 +98,8 @@ public final class Derelicts {
 			try {
 				SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(saveFile(v, i));
 				// priced when shown, from her share (so a change to the prices reaches listings already in); a listing from before shares keeps its price
-				int pct = intOf(p, i + ".percent", -1);
-				int price = pct < 0 ? intOf(p, i + ".price", 0) : price(gs, pct);
+				int pct = Store.num(p, i + ".percent", -1);
+				int price = pct < 0 ? Store.num(p, i + ".price", 0) : price(gs, pct);
 				out.add(new Listing(i, gs, p.getProperty(i + ".oddity", ""), price, "true".equals(p.getProperty(i + ".locked"))));
 			} catch (Exception e) {
 				log.warn("Could not read derelict listing {}: {}", i, e.toString());
@@ -440,20 +440,6 @@ public final class Derelicts {
 
 	// ---- listings.txt ----
 
-	private static Properties read(Vault v) {
-		Properties p = new Properties();
-		File f = index(v);
-		if (!f.isFile()) return p;
-		try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
-	private static void write(Vault v, Properties p) throws IOException {
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, "The Junkyard's derelicts for sale");
-		SafeFiles.writeText(index(v), w.toString(), false);
-	}
-	private static int intOf(Properties p, String key, int dflt) {
-		try { return Integer.parseInt(p.getProperty(key, "").trim()); } catch (NumberFormatException e) { return dflt; }
-	}
+	private static Properties read(Vault v) { return Store.read(index(v)); }
+	private static void write(Vault v, Properties p) throws IOException { Store.write(index(v), p, "The Junkyard's derelicts for sale"); }
 }

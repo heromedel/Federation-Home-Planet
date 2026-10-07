@@ -2,8 +2,6 @@ package homeplanet.vault;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,6 +24,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 
 /**
@@ -57,22 +56,21 @@ public final class VoyageLog {
 	}
 	/** The sectors a ship (by id) visited in all her journeys, at least the sector she's in in this save. */
 	public static int visited(Vault v, String id, SavedGameState gs) {
-		Properties p = new Properties();
-		File f = new File(new File(v.historyDir(), id), LAST);
-		try { if (f.isFile()) p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); } catch (IOException e) { log.debug("Voyage log: {} could not be read: {}", f, e.toString()); }
-		return Math.max(intOf(p, "visited", 0), gs == null ? 0 : gs.getSectorNumber() + 1);
+		return Math.max(Store.num(last(v, id), "visited", 0), gs == null ? 0 : gs.getSectorNumber() + 1);
 	}
+	/** The sector her last look saw her in (by id; she may have left the fleet), or 0. */
+	public static int lastSector(Vault v, String id) { return Store.num(last(v, id), "sector", 0); }
 	/** The sectors she has visited in all her journeys, as far as the station has seen (at least the current one). */
 	public static int visited(Vault v, Ship s) {
 		Properties last = last(v, s);
-		int n = intOf(last, "visited", 0);
+		int n = Store.num(last, "visited", 0);
 		SavedGameState gs = s.save();
 		int now = gs == null ? 0 : gs.getSectorNumber() + 1;
 		return Math.max(n, now);
 	}
 
 	/** The sector (0 is the first) at her last look, or -1 if the station hasn't looked at her yet. */
-	static int lastSector(Vault v, Ship s) { return intOf(last(v, s), "sector", -1); }
+	static int lastSector(Vault v, Ship s) { return Store.num(last(v, s), "sector", -1); }
 
 	/** The station's note for a New Journey (her log counts her journeys by it). */
 	public static final String NEW_JOURNEY = "A new journey plotted from sector 1";
@@ -85,7 +83,7 @@ public final class VoyageLog {
 		int counted = 1;
 		for (String line : read(v, s).split("\r?\n")) if (line.endsWith(NEW_JOURNEY)) counted++;
 		Properties last = last(v, s);
-		int kept = intOf(last, "journeys", 0), n = Math.max(kept, counted);
+		int kept = Store.num(last, "journeys", 0), n = Math.max(kept, counted);
 		if (n != kept && !last.isEmpty()) { last.setProperty("journeys", Integer.toString(n)); save(v, s, last); }
 		return n;
 	}
@@ -101,10 +99,10 @@ public final class VoyageLog {
 		Properties last = last(v, s);
 		Properties now = summary(gs);
 		carry(last, now);
-		int visited = intOf(last, "visited", gs.getSectorNumber() + 1);
+		int visited = Store.num(last, "visited", gs.getSectorNumber() + 1);
 		if (last.isEmpty()) { now.setProperty("visited", Integer.toString(visited)); save(v, s, now); return; }
 		List<String> lines = new ArrayList<String>();
-		int sector = gs.getSectorNumber(), lastSector = intOf(last, "sector", sector);
+		int sector = gs.getSectorNumber(), lastSector = Store.num(last, "sector", sector);
 		if (sector > lastSector) visited += sector - lastSector;
 		now.setProperty("visited", Integer.toString(visited));
 		changes(last, now, visited, lines);
@@ -118,7 +116,7 @@ public final class VoyageLog {
 		Properties last = last(v, s);
 		Properties now = summary(gs);
 		carry(last, now);
-		now.setProperty("visited", Integer.toString(Math.max(intOf(last, "visited", 0), gs.getSectorNumber() + 1)));
+		now.setProperty("visited", Integer.toString(Math.max(Store.num(last, "visited", 0), gs.getSectorNumber() + 1)));
 		save(v, s, now);
 	}
 	/** A line of the station's own in her log (commissioned, a new journey plotted, rescued). */
@@ -131,15 +129,15 @@ public final class VoyageLog {
 	// ---- what changed ----
 
 	private static void changes(Properties a, Properties b, int visited, List<String> out) {
-		int sector = intOf(b, "sector", 0), lastSector = intOf(a, "sector", 0);
-		int beacons = intOf(b, "beacons", 0) - intOf(a, "beacons", 0);
+		int sector = Store.num(b, "sector", 0), lastSector = Store.num(a, "sector", 0);
+		int beacons = Store.num(b, "beacons", 0) - Store.num(a, "beacons", 0);
 		boolean moved = sector != lastSector || !b.getProperty("beacon", "").equals(a.getProperty("beacon", ""));
 		if (sector > lastSector) out.add("Sector " + (sector + 1) + " reached (sectors visited: " + visited + ")");
 		else if (sector < lastSector) out.add("Back to sector " + (sector + 1) + ": a new run");
-		int hull = intOf(b, "hull", 0), lastHull = intOf(a, "hull", 0), scrap = intOf(b, "scrap", 0), lastScrap = intOf(a, "scrap", 0);
+		int hull = Store.num(b, "hull", 0), lastHull = Store.num(a, "hull", 0), scrap = Store.num(b, "scrap", 0), lastScrap = Store.num(a, "scrap", 0);
 		if (moved || beacons > 0) {
 			out.add((moved ? "Jumped" : "Waited") + ", hull " + hull + "/" + b.getProperty("maxHull", "?") + delta(hull - lastHull)
-					+ ", scrap " + scrap + delta(scrap - lastScrap) + ", fuel " + b.getProperty("fuel", "?") + delta(intOf(b, "fuel", 0) - intOf(a, "fuel", 0))
+					+ ", scrap " + scrap + delta(scrap - lastScrap) + ", fuel " + b.getProperty("fuel", "?") + delta(Store.num(b, "fuel", 0) - Store.num(a, "fuel", 0))
 					+ ", missiles " + b.getProperty("missiles", "?") + ", drone parts " + b.getProperty("drones", "?"));
 		} else {
 			if (hull > lastHull) out.add("Hull repaired to " + hull + "/" + b.getProperty("maxHull", "?") + delta(hull - lastHull));
@@ -147,7 +145,7 @@ public final class VoyageLog {
 			List<String> supplies = new ArrayList<String>();
 			if (scrap != lastScrap) supplies.add("scrap " + scrap + delta(scrap - lastScrap));
 			for (String[] k : new String[][] {{"fuel", "fuel"}, {"missiles", "missiles"}, {"drones", "drone parts"}}) {
-				int now = intOf(b, k[0], 0), was = intOf(a, k[0], 0);
+				int now = Store.num(b, k[0], 0), was = Store.num(a, k[0], 0);
 				if (now != was) supplies.add(k[1] + " " + now + delta(now - was));
 			}
 			if (!supplies.isEmpty()) {
@@ -155,7 +153,7 @@ public final class VoyageLog {
 				out.add(Character.toUpperCase(line.charAt(0)) + line.substring(1));
 			}
 		}
-		int defeated = intOf(b, "defeated", 0) - intOf(a, "defeated", 0);
+		int defeated = Store.num(b, "defeated", 0) - Store.num(a, "defeated", 0);
 		if (defeated > 0) out.add(defeated + (defeated == 1 ? " ship" : " ships") + " defeated (" + b.getProperty("defeated") + " in all)");
 		diff(a.getProperty("crew", ""), b.getProperty("crew", ""), "Crew joined: ", "Crew lost: ", out);
 		diff(a.getProperty("items", ""), b.getProperty("items", ""), "Aboard now: ", "Gone: ", out);
@@ -163,9 +161,9 @@ public final class VoyageLog {
 		if (moved && "true".equals(b.getProperty("store"))) out.add("Arrived at a store");
 		beacon(a, b, moved, out);
 		systems(a.getProperty("systems", ""), b.getProperty("systems", ""), out);
-		int reactor = intOf(b, "reactor", 0), lastReactor = intOf(a, "reactor", 0);
+		int reactor = Store.num(b, "reactor", 0), lastReactor = Store.num(a, "reactor", 0);
 		if (reactor != lastReactor) out.add("Reactor " + (reactor > lastReactor ? "upgraded" : "reduced") + " to " + reactor);
-		int stage = intOf(b, "flagship", 0), lastStage = intOf(a, "flagship", 0);
+		int stage = Store.num(b, "flagship", 0), lastStage = Store.num(a, "flagship", 0);
 		boolean near = "true".equals(b.getProperty("flagshipNear")), wasNear = "true".equals(a.getProperty("flagshipNear"));
 		if (near && !wasNear) out.add("The Rebel Flagship is alongside (battle " + Math.max(1, stage) + ")");
 		if (stage > lastStage && lastStage > 0) out.add("The Rebel Flagship withdrew after battle " + lastStage);
@@ -193,8 +191,8 @@ public final class VoyageLog {
 	private static void beacon(Properties a, Properties b, boolean moved, List<String> out) {
 		if (moved) {
 			List<String> there = new ArrayList<String>(), hazards = split(b.getProperty("hazards", ""));
-			int nebula = intOf(b, "nebulaJumps", 0) - intOf(a, "nebulaJumps", intOf(b, "nebulaJumps", 0)); // no count kept before 5.19: no change
-			int danger = intOf(b, "dangerJumps", 0) - intOf(a, "dangerJumps", intOf(b, "dangerJumps", 0));
+			int nebula = Store.num(b, "nebulaJumps", 0) - Store.num(a, "nebulaJumps", Store.num(b, "nebulaJumps", 0)); // no count kept before 5.19: no change
+			int danger = Store.num(b, "dangerJumps", 0) - Store.num(a, "dangerJumps", Store.num(b, "dangerJumps", 0));
 			if (danger > 0 && hazards.isEmpty()) there.add("an ion storm");
 			else if (nebula > 0) there.add("a nebula");
 			for (String h : hazards) there.add(HAZARDS.containsKey(h) ? HAZARDS.get(h) : h);
@@ -347,21 +345,11 @@ public final class VoyageLog {
 
 	// ---- files ----
 
-	private static Properties last(Vault v, Ship s) {
-		Properties p = new Properties();
-		File f = new File(v.historyOf(s), LAST);
-		if (!f.isFile()) return p;
-		try { p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
+	private static Properties last(Vault v, Ship s) { return Store.read(new File(v.historyOf(s), LAST)); }
+	private static Properties last(Vault v, String id) { return Store.read(new File(new File(v.historyDir(), id), LAST)); }
 	private static void save(Vault v, Ship s, Properties p) {
-		File dir = v.historyOf(s);
 		try {
-			if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
-			StringWriter w = new StringWriter();
-			p.store(w, "Her last look, for the voyage log");
-			SafeFiles.writeText(new File(dir, LAST), w.toString(), false);
+			Store.write(new File(v.historyOf(s), LAST), p, "Her last look, for the voyage log");
 		} catch (IOException e) {
 			log.warn("Could not keep {}'s last look: {}", s, e.toString());
 		}
@@ -379,8 +367,5 @@ public final class VoyageLog {
 			log.warn("Could not write {}'s voyage log: {}", s, e.toString());
 		}
 		for (String l : lines) MasterLog.entry(v, "voyage: " + s.name, l);
-	}
-	private static int intOf(Properties p, String k, int dflt) {
-		try { return Integer.parseInt(p.getProperty(k, "").trim()); } catch (NumberFormatException e) { return dflt; }
 	}
 }

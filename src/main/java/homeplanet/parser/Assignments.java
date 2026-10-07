@@ -24,6 +24,7 @@ import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.model.Skills;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
@@ -298,7 +299,7 @@ public final class Assignments {
 		Random rng = new Random();
 		for (int i = 0; i < OFFERS; i++) {
 			String s = p.getProperty("offer." + i);
-			if (s != null && now < intOf(p, "offer." + i + ".until", 0)) continue;
+			if (s != null && now < Store.num(p, "offer." + i + ".until", 0)) continue;
 			List<String> taken = new ArrayList<String>();
 			for (int k = 0; k < OFFERS; k++) if (k != i && p.getProperty("offer." + k) != null) taken.add(p.getProperty("offer." + k));
 			if (s != null) taken.add(s); // not the one that just came down or was taken
@@ -340,7 +341,7 @@ public final class Assignments {
 			}
 			long seed = 0;
 			try { seed = Long.parseLong(p.getProperty("away." + i + ".seed", "0")); } catch (NumberFormatException e) { }
-			out.add(new Away(i, p.getProperty("away." + i + ".sector"), intOf(p, "away." + i + ".sentAt", 0), intOf(p, "away." + i + ".until", 0), seed, crew,
+			out.add(new Away(i, p.getProperty("away." + i + ".sector"), Store.num(p, "away." + i + ".sentAt", 0), Store.num(p, "away." + i + ".until", 0), seed, crew,
 					"true".equals(p.getProperty("away." + i + ".ae"))));
 		}
 		return out;
@@ -921,29 +922,12 @@ public final class Assignments {
 
 	// ---- the file ----
 
-	private static Properties read(Vault v) {
-		Properties p = new Properties();
-		File f = file(v);
-		if (!f.isFile()) return p;
-		try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
-	private static Properties readStrict(Vault v) throws IOException {
-		Properties p = new Properties();
-		File f = file(v);
-		if (f.isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8)));
-		return p;
-	}
-	private static byte[] bytes(Properties p) throws IOException {
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, NOTE);
-		return w.toString().getBytes(StandardCharsets.UTF_8);
-	}
-	private static void write(Vault v, Properties p) throws IOException { SafeFiles.writeText(file(v), new String(bytes(p), StandardCharsets.UTF_8), false); }
-	private static int intOf(Properties p, String key, int dflt) {
-		try { return Integer.parseInt(p.getProperty(key, "").trim()); } catch (NumberFormatException e) { return dflt; }
-	}
+	private static Properties read(Vault v) { return Store.read(file(v)); }
+	/** The file as it stands, read without this class's lock (the crew register, taking stock, never takes it). */
+	public static Properties asIs(Vault v) throws IOException { return Store.load(file(v)); }
+	private static Properties readStrict(Vault v) throws IOException { return Store.load(file(v)); }
+	private static byte[] bytes(Properties p) throws IOException { return Store.bytes(p, NOTE); }
+	private static void write(Vault v, Properties p) throws IOException { Store.write(file(v), p, NOTE); }
 	/** Every sector's job weights total the same (for tests). */
 	public static int weightTotal(String sector) { int t = 0; for (Object[] j : JOBS) t += jobWeight(sector, (String) j[0]); return t; }
 	/** The sector ids (for tests). */

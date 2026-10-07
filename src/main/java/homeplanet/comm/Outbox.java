@@ -8,7 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
 
-import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 
 /**
  * What waits to go to another commander whose station couldn't be reached: kept in the vault's comm/outbox folder (one
@@ -51,17 +51,16 @@ public final class Outbox {
 		return out;
 	}
 	private static Item read(File f, String id) throws IOException {
-		Properties p = new Properties();
-		java.io.InputStream in = new java.io.ByteArrayInputStream(SafeFiles.read(f));
-		p.load(in);
+		Properties p = Store.load(f);
 		Item i = new Item();
 		i.id = id;
 		i.toStation = p.getProperty("to", "");
 		if (!i.toStation.matches("[0-9a-f]{16}")) throw new IOException("no station");
 		i.toTitle = p.getProperty("toTitle", "A commander");
 		i.host = p.getProperty("host", "");
-		try { i.port = Integer.parseInt(p.getProperty("port", "0")); i.written = Long.parseLong(p.getProperty("written", "0")); }
-		catch (NumberFormatException e) { throw new IOException("damaged"); }
+		i.port = Store.num(p, "port", -1);
+		i.written = Store.longOf(p, "written", -1);
+		if (i.port < 0 || i.written < 0) throw new IOException("damaged");
 		i.text = Notes.clean(p.getProperty("text", ""));
 		i.priority = "true".equals(p.getProperty("priority"));
 		i.refused = p.getProperty("refused", "");
@@ -79,10 +78,7 @@ public final class Outbox {
 		p.setProperty("priority", Boolean.toString(i.priority));
 		p.setProperty("refused", i.refused == null ? "" : i.refused);
 		p.setProperty("shipment", i.shipment == null ? "" : i.shipment);
-		java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
-		p.store(b, "Long Range Comm. outbox");
-		dir().mkdirs();
-		SafeFiles.write(fileOf(i.id), b.toByteArray());
+		Store.write(fileOf(i.id), p, "Long Range Comm. outbox");
 	}
 
 	/** Puts a message in the outbox. Throws, saying why, if it's full. */

@@ -1,9 +1,6 @@
 package homeplanet.vault;
 
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -12,7 +9,7 @@ import java.util.Properties;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
 import homeplanet.core.HistoryLog;
-import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 
 /**
@@ -35,18 +32,10 @@ public final class Overflow {
 
 	private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(Overflow.class);
 	private static java.io.File file(Vault v) { return new java.io.File(v.root, "overflow.txt"); }
-	private static Properties read(Vault v) {
-		Properties p = new Properties();
-		try { if (file(v).isFile()) p.load(new StringReader(new String(SafeFiles.read(file(v)), StandardCharsets.UTF_8))); }
-		catch (IOException e) { LOG.warn("overflow.txt could not be read: {}", e.toString()); } // the debug log's (heromedel, 5.53)
-		return p;
-	}
+	private static Properties read(Vault v) { return Store.read(file(v)); } // a warning goes to the debug log (heromedel, 5.53)
 	private static void write(Vault v, Properties p) {
-		try {
-			StringWriter w = new StringWriter();
-			p.store(w, "Augments the boarded ship had no room for: the four seen away from a store, and those shipped home (the inbox delivers them)");
-			SafeFiles.writeText(file(v), w.toString(), false);
-		} catch (IOException e) { LOG.warn("overflow.txt could not be written: {}", e.toString()); }
+		try { Store.write(file(v), p, "Augments the boarded ship had no room for: the four seen away from a store, and those shipped home (the inbox delivers them)"); }
+		catch (IOException e) { LOG.warn("overflow.txt could not be written: {}", e.toString()); }
 	}
 	/**
 	 * Her augments, the ones FTL counts in its slots, and the one it's over capacity on. That one isn't in her augment
@@ -69,14 +58,13 @@ public final class Overflow {
 		List<String> now = augments(gs);
 		String seen = p.getProperty("seen.augments");
 		if (seen != null) {
-			int at = -1;
-			try { at = Integer.parseInt(p.getProperty("seen.beacons", "").trim()); } catch (NumberFormatException e) { }
+			int at = Store.num(p, "seen.beacons", -1);
 			if (!b.id.equals(p.getProperty("seen.ship")) || beacons < at) { // another ship, or an earlier save put back: nothing to judge by
 				clearSeen(p);
 				changed = true;
 			} else if (beacons > at) { // the jump: what's gone was thrown away
 				List<String> left = new ArrayList<String>(now);
-				int n = intOf(p, "parcels");
+				int n = Store.num(p, "parcels", 0);
 				for (String a : seen.split(",")) {
 					if (a.isEmpty() || left.remove(a)) continue; // still aboard (each copy counted once)
 					p.setProperty("parcel." + n, "shipped:" + b.id + ":" + at + ":" + n + "|" + a + "|" + gs.getPlayerShipName());
@@ -100,16 +88,13 @@ public final class Overflow {
 		if (changed) write(v, p);
 	}
 	private static void clearSeen(Properties p) { p.remove("seen.ship"); p.remove("seen.beacons"); p.remove("seen.augments"); }
-	private static int intOf(Properties p, String k) {
-		try { return Integer.parseInt(p.getProperty(k, "0").trim()); } catch (NumberFormatException e) { return 0; }
-	}
 
 	/** The parcels waiting to be delivered, taken off the list (the caller delivers them, or lets them go). */
 	public static List<Parcel> take(Vault v) {
 		synchronized (v) {
 			Properties p = read(v);
 			List<Parcel> out = new ArrayList<Parcel>();
-			int n = intOf(p, "parcels");
+			int n = Store.num(p, "parcels", 0);
 			boolean any = false;
 			for (int i = 0; i < n; i++) {
 				String x = p.getProperty("parcel." + i);

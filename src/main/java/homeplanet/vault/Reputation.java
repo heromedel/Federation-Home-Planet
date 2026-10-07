@@ -2,8 +2,6 @@ package homeplanet.vault;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,6 +24,7 @@ import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 
 /**
@@ -452,10 +451,7 @@ public final class Reputation {
 		return id;
 	}
 	private static int lastSectorOf(Vault v, String id) {
-		Properties p = new Properties();
-		File f = new File(new File(v.historyDir(), id), VoyageLog.LAST);
-		try { if (f.isFile()) p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); } catch (IOException e) { }
-		return num(p, "sector");
+		return VoyageLog.lastSector(v, id);
 	}
 
 	// ---- a ship's count ----
@@ -468,14 +464,14 @@ public final class Reputation {
 		boolean store, rebel;
 		private Props() { }
 		Props(Properties p, String id) {
-			sector = num(p, id + ".sector", -1);
+			sector = Store.num(p, id + ".sector", -1);
 			collected = num(p, id + ".collected");
 			defeated = num(p, id + ".defeated");
 			lost = num(p, id + ".lost");
 			rest = num(p, id + ".rest");
 			crew = p.getProperty(id + ".crew", "");
 			enemy = p.getProperty(id + ".enemy", "");
-			beacon = num(p, id + ".beacon", -1);
+			beacon = Store.num(p, id + ".beacon", -1);
 			hull = num(p, id + ".hull");
 			scrapNow = num(p, id + ".scrapNow");
 			ammo = num(p, id + ".ammo");
@@ -546,19 +542,10 @@ public final class Reputation {
 	// ---- files ----
 
 	private static boolean counted(Properties p) { return p.getProperty("counted") != null; }
-	private static Properties read(Vault v) {
-		Properties p = new Properties();
-		File f = new File(v.root, FILE);
-		if (!f.isFile()) return p;
-		try { p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
+	private static Properties read(Vault v) { return Store.read(new File(v.root, FILE)); }
 	private static boolean write(Vault v, Properties p) {
 		try {
-			StringWriter w = new StringWriter();
-			p.store(w, "The career's reputation: the total, and where each ship's count stands");
-			SafeFiles.writeText(new File(v.root, FILE), w.toString(), false);
+			Store.write(new File(v.root, FILE), p, "The career's reputation: the total, and where each ship's count stands");
 			return true;
 		} catch (IOException e) {
 			log.warn("Could not keep the reputation: {}", e.toString());
@@ -640,8 +627,5 @@ public final class Reputation {
 		MasterLog.entry(v, "reputation", t.toString());
 	}
 	public static String signed(int n) { return n > 0 ? "+" + n : n < 0 ? "−" + (-n) : "0"; }
-	private static int num(Properties p, String k) { return num(p, k, 0); }
-	private static int num(Properties p, String k, int dflt) {
-		try { return Integer.parseInt(p.getProperty(k, "").trim()); } catch (NumberFormatException e) { return dflt; }
-	}
+	private static int num(Properties p, String k) { return Store.num(p, k, 0); }
 }

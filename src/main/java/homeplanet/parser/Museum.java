@@ -2,8 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -21,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
@@ -65,24 +64,10 @@ public final class Museum {
 	// ---- the records ----
 
 	static File dir(Vault v, String id) { return new File(v.historyDir(), id); }
-	static Properties read(Vault v, String id) {
-		Properties p = new Properties();
-		File f = new File(dir(v, id), FILE);
-		if (!f.isFile()) return p;
-		try { p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
+	static Properties read(Vault v, String id) { return Store.read(new File(dir(v, id), FILE)); }
 	static void write(Vault v, String id, Properties p) {
-		File d = dir(v, id);
-		try {
-			if (!d.isDirectory() && !d.mkdirs()) throw new IOException("Could not create " + d);
-			StringWriter w = new StringWriter();
-			p.store(w, "Her place in the Federation Museum");
-			SafeFiles.writeText(new File(d, FILE), w.toString(), false);
-		} catch (IOException e) {
-			log.warn("Could not keep {}'s museum record: {}", id, e.toString());
-		}
+		try { Store.write(new File(dir(v, id), FILE), p, "Her place in the Federation Museum"); }
+		catch (IOException e) { log.warn("Could not keep {}'s museum record: {}", id, e.toString()); }
 	}
 	private static String today() { return new SimpleDateFormat("d MMMM yyyy").format(new Date()); }
 
@@ -90,7 +75,7 @@ public final class Museum {
 	public static int victories(Vault v, String id) {
 		File d = new File(v.historyDir(), id);
 		File[] wins = d.listFiles(new java.io.FileFilter() { public boolean accept(File f) { return f.isFile() && f.getName().startsWith("victory-") && f.getName().endsWith(".sav"); } });
-		return Math.max(intOf(read(v, id), "victories"), wins == null ? 0 : wins.length);
+		return Math.max(Store.num(read(v, id), "victories", 0), wins == null ? 0 : wins.length);
 	}
 	/** When she was first commissioned ("1 October 2026"), or "" if not known. */
 	public static String commissioned(Vault v, String id) { return read(v, id).getProperty("commissioned", ""); }
@@ -118,7 +103,7 @@ public final class Museum {
 		String key;
 		try { key = SafeFiles.hash(f.copy); } catch (IOException e) { key = f.copy.getName() + f.copy.lastModified(); }
 		Properties p = read(v, f.id);
-		int n = intOf(p, "victories");
+		int n = Store.num(p, "victories", 0);
 		for (int k = 1; k <= n; k++) if (key.equals(p.getProperty("victory." + k + ".key"))) return;
 		n++;
 		p.setProperty("victories", Integer.toString(n));
@@ -172,7 +157,7 @@ public final class Museum {
 			String id = d.getName();
 			Properties p = read(v, id);
 			File[] wins = d.listFiles(new java.io.FileFilter() { public boolean accept(File f) { return f.isFile() && f.getName().startsWith("victory-") && f.getName().endsWith(".sav"); } });
-			int victories = Math.max(intOf(p, "victories"), wins == null ? 0 : wins.length);
+			int victories = Math.max(Store.num(p, "victories", 0), wins == null ? 0 : wins.length);
 			String[] fate = fate(d);
 			Ship inFleet = v.byId(id);
 			String name = inFleet != null ? inFleet.name : !p.getProperty("name", "").isEmpty() ? p.getProperty("name") : fate[1].isEmpty() ? id : fate[1];
@@ -232,8 +217,5 @@ public final class Museum {
 	private static int sectorOf(File save) {
 		if (save == null) return 0;
 		try { return homeplanet.core.HomePlanet.savedGameParser.readSavedGame(save).getSectorNumber() + 1; } catch (Exception e) { return 0; }
-	}
-	private static int intOf(Properties p, String k) {
-		try { return Integer.parseInt(p.getProperty(k, "0").trim()); } catch (NumberFormatException e) { return 0; }
 	}
 }

@@ -2,14 +2,11 @@ package homeplanet.vault;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
-import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 
 /**
  * The mark a ship gets when she changes hands over Long Range Comm. (history/&lt;id&gt;/traded.txt): when, from whom,
@@ -40,9 +37,7 @@ public final class TradeMark {
 		scrap = num(p, "scrap");
 		sectors = num(p, "sectors");
 	}
-	private static int num(Properties p, String k) {
-		try { return Math.max(0, Integer.parseInt(p.getProperty(k, "0").trim())); } catch (NumberFormatException e) { return 0; }
-	}
+	private static int num(Properties p, String k) { return Math.max(0, Store.num(p, k, 0)); }
 
 	/** Her last trade's mark, or null if she was never traded. */
 	public static TradeMark of(Ship s) { return s == null ? null : of(Vault.get(), s.id); }
@@ -50,10 +45,8 @@ public final class TradeMark {
 	public static TradeMark of(Vault v, String id) {
 		File f = new File(new File(v.historyDir(), id), FILE);
 		if (!f.isFile()) return null;
-		Properties p = new Properties();
-		try { p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
+		try { return new TradeMark(Store.load(f)); }
 		catch (IOException e) { return null; }
-		return new TradeMark(p);
 	}
 
 	// ---- counting from her last trade ----
@@ -98,15 +91,13 @@ public final class TradeMark {
 		p.setProperty("beacons", Integer.toString(gs.getTotalBeaconsExplored()));
 		p.setProperty("scrap", Integer.toString(gs.getTotalScrapCollected()));
 		p.setProperty("sectors", Integer.toString(sectors));
-		StringWriter w = new StringWriter();
-		p.store(w, "She joined this fleet over Long Range Comm. Rewards, letters, events and achievements count only what she did after this.");
-		return w.toString().getBytes(StandardCharsets.UTF_8);
+		return Store.bytes(p, "She joined this fleet over Long Range Comm. Rewards, letters, events and achievements count only what she did after this.");
 	}
 	/** The original owner a mark file names, or null (for a ship arriving with her old mark). */
 	static String originalIn(byte[] markFile) {
 		if (markFile == null) return null;
-		Properties p = new Properties();
-		try { p.load(new StringReader(new String(markFile, StandardCharsets.UTF_8))); } catch (IOException e) { return null; }
+		Properties p;
+		try { p = Store.parse(markFile); } catch (IOException e) { return null; }
 		String o = p.getProperty("original", p.getProperty("from", "")).trim();
 		return o.isEmpty() ? null : o;
 	}

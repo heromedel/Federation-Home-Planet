@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import homeplanet.core.Store;
+
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
@@ -51,14 +53,14 @@ public final class ShipStats {
 		st.journey.add(new Line("Sector", Integer.toString(gs.getSectorNumber() + 1), 0));
 		if (gs.getDifficulty() != null) st.journey.add(new Line("Difficulty", title(gs.getDifficulty().toString()), 0));
 		if (st.journeyKnown) {
-			count(st.journey, "Beacons explored", gs.getTotalBeaconsExplored() - num(start, "beacons"), 0);
-			count(st.journey, "Ships defeated", gs.getTotalShipsDefeated() - num(start, "defeated"), 0);
-			count(st.journey, "Scrap collected", gs.getTotalScrapCollected() - num(start, "scrap"), 0);
-			count(st.journey, "Crew hired", gs.getTotalCrewHired() - num(start, "hired"), 0);
+			count(st.journey, "Beacons explored", gs.getTotalBeaconsExplored() - Store.num(start, "beacons", 0), 0);
+			count(st.journey, "Ships defeated", gs.getTotalShipsDefeated() - Store.num(start, "defeated", 0), 0);
+			count(st.journey, "Scrap collected", gs.getTotalScrapCollected() - Store.num(start, "scrap", 0), 0);
+			count(st.journey, "Crew hired", gs.getTotalCrewHired() - Store.num(start, "hired", 0), 0);
 			String[][] vars = {{"killed_crew", "Enemy crew killed"}, {"lost_crew", "Crew lost"}, {"fired_shot", "Shots fired"}, {"used_missile", "Missiles fired"}};
 			for (String[] k : vars) {
 				if (!gs.hasStateVar(k[0])) continue;
-				count(st.journey, k[1], gs.getStateVar(k[0]) - num(start, k[0]), "lost_crew".equals(k[0]) ? -1 : 0);
+				count(st.journey, k[1], gs.getStateVar(k[0]) - Store.num(start, k[0], 0), "lost_crew".equals(k[0]) ? -1 : 0);
 			}
 		}
 
@@ -75,7 +77,7 @@ public final class ShipStats {
 			int journeys = VoyageLog.journeys(v, s);
 			if (journeys > 0) st.service.add(new Line("Journeys", Integer.toString(journeys), 0));
 			st.service.add(new Line("Sectors visited", Integer.toString(VoyageLog.visited(v, s)), 0));
-			int best = Math.max(num(start, "best"), gs.getSectorNumber() + 1);
+			int best = Math.max(Store.num(start, "best", 0), gs.getSectorNumber() + 1);
 			st.service.add(new Line("Furthest sector", Integer.toString(best), 0));
 			int wins = Museum.victories(v, s.id);
 			if (wins > 0) st.service.add(new Line("Final victories", Integer.toString(wins), 1));
@@ -99,9 +101,6 @@ public final class ShipStats {
 	private static void count(List<Line> to, String label, int n, int tone) {
 		if (n <= 0) return; // nothing yet: left out rather than shown as 0
 		to.add(new Line(label, String.format("%,d", n), tone));
-	}
-	private static int num(Properties p, String k) {
-		try { return Integer.parseInt(p.getProperty(k, "0").trim()); } catch (NumberFormatException e) { return 0; }
 	}
 	private static String title(String s) { return s.isEmpty() ? s : s.charAt(0) + s.substring(1).toLowerCase(); }
 

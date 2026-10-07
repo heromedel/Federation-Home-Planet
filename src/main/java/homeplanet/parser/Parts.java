@@ -16,7 +16,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.SystemBlueprint;
 
 import homeplanet.core.HistoryLog;
-import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
@@ -83,34 +83,34 @@ public final class Parts {
 	/** What's for sale now: new parts first if it's time (or there have never been any). */
 	public static synchronized List<Listing> current(Vault v) {
 		Properties p = read(v);
-		int at = intOf(p, "rolledAt", -1);
-		if (at < 0 || v.beaconsSeen() >= at + intOf(p, "interval", 10)) {
+		int at = Store.num(p, "rolledAt", -1);
+		if (at < 0 || v.beaconsSeen() >= at + Store.num(p, "interval", 10)) {
 			try { roll(v, new Random()); p = read(v); }
 			catch (Exception e) { log.warn("Could not bring in new parts: {}", e.toString()); }
 		}
 		List<Listing> out = new ArrayList<Listing>();
-		for (int i = 0; i < intOf(p, "count", 0); i++) {
+		for (int i = 0; i < Store.num(p, "count", 0); i++) {
 			if (!"true".equals(p.getProperty(i + ".open"))) continue;
 			String kind = p.getProperty(i + ".kind", SYSTEM);
 			if (!SYSTEM.equals(kind)) {
 				String id = p.getProperty(i + ".id", "");
-				int count = Math.max(1, intOf(p, i + ".count", 1));
+				int count = Math.max(1, Store.num(p, i + ".count", 1));
 				if (ITEM.equals(kind) && Pricing.item(id) <= 0) continue;
 				int sp = storePrice(kind, id, count);
-				out.add(new Listing(i, kind, id, 0, 0, count, Math.max(3, sp * intOf(p, i + ".percent", SALVAGE_MAX) / 100), false));
+				out.add(new Listing(i, kind, id, 0, 0, count, Math.max(3, sp * Store.num(p, i + ".percent", SALVAGE_MAX) / 100), false));
 				continue;
 			}
 			String id = p.getProperty(i + ".id", "");
 			if (SystemType.findById(id) == null) continue;
-			int level = Math.max(1, intOf(p, i + ".level", 1)), broken = Math.max(1, Math.min(level, intOf(p, i + ".broken", 1)));
+			int level = Math.max(1, Store.num(p, i + ".level", 1)), broken = Math.max(1, Math.min(level, Store.num(p, i + ".broken", 1)));
 			boolean clearance = "true".equals(p.getProperty(i + ".clearance"));
-			int pct = intOf(p, i + ".percent", shareMax((double) broken / level));
+			int pct = Store.num(p, i + ".percent", shareMax((double) broken / level));
 			out.add(new Listing(i, id, level, broken, price(id, level, broken, pct, clearance), clearance));
 		}
 		return out;
 	}
 	/** How many parts the current set had, sold ones included (for the empty spaces). */
-	public static int count(Vault v) { return intOf(read(v), "count", 0); }
+	public static int count(Vault v) { return Store.num(read(v), "count", 0); }
 
 	/** New parts, now (the old ones go). */
 	public static synchronized void roll(Vault v, Random rng) throws IOException {
@@ -225,20 +225,6 @@ public final class Parts {
 
 	// ---- parts.txt ----
 
-	private static Properties read(Vault v) {
-		Properties p = new Properties();
-		File f = file(v);
-		if (!f.isFile()) return p;
-		try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
-	private static void write(Vault v, Properties p) throws IOException {
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, "The Junkyard's parts for sale");
-		SafeFiles.writeText(file(v), w.toString(), false);
-	}
-	private static int intOf(Properties p, String key, int dflt) {
-		try { return Integer.parseInt(p.getProperty(key, "").trim()); } catch (NumberFormatException e) { return dflt; }
-	}
+	private static Properties read(Vault v) { return Store.read(file(v)); }
+	private static void write(Vault v, Properties p) throws IOException { Store.write(file(v), p, "The Junkyard's parts for sale"); }
 }

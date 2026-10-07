@@ -2,7 +2,6 @@ package homeplanet.comm;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +13,7 @@ import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
@@ -69,13 +69,10 @@ public final class Shipments {
 		Wire.Msg m = new Wire.Msg("LINES");
 		Line.writeLines(m, p.lines);
 		for (Map.Entry<String, String> e : m.fields().entrySet()) pr.setProperty("lines." + e.getKey(), e.getValue());
-		java.io.StringWriter w = new java.io.StringWriter();
-		pr.store(w, "A Long Range Comm. shipment (state: " + p.state + "). Federation Home Planet rewrites this file.");
-		return w.toString().getBytes(StandardCharsets.UTF_8);
+		return Store.bytes(pr, "A Long Range Comm. shipment (state: " + p.state + "). Federation Home Planet rewrites this file.");
 	}
 	static Parcel read(File f) throws IOException {
-		Properties pr = new Properties();
-		pr.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8)));
+		Properties pr = Store.load(f);
 		Parcel p = new Parcel();
 		p.id = pr.getProperty("id", "");
 		p.state = pr.getProperty("state", "");
@@ -85,7 +82,7 @@ public final class Shipments {
 		p.peerMode = java.util.Arrays.asList(Vault.SLOTS).contains(pr.getProperty("peerMode")) ? pr.getProperty("peerMode") : Vault.SANDBOX;
 		p.peerAnyLevel = "true".equals(pr.getProperty("peerAnyLevel"));
 		p.host = pr.getProperty("host", "");
-		try { p.port = Integer.parseInt(pr.getProperty("port", "0")); } catch (NumberFormatException e) { p.port = 0; }
+		p.port = Store.num(pr, "port", 0);
 		p.date = pr.getProperty("date", "");
 		Wire.Msg m = new Wire.Msg("LINES");
 		for (String k : pr.stringPropertyNames()) if (k.startsWith("lines.")) m.put(k.substring(6), pr.getProperty(k));

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
@@ -109,17 +110,11 @@ public final class CrewRegister {
 
 	/** The register as it stands (empty if there's none yet). */
 	public static synchronized List<Member> members(Vault v) {
-		Properties p = new Properties();
-		File f = file(v);
-		if (f.isFile()) {
-			try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-			catch (IOException e) { log.warn("Could not read the crew register: {}", e.toString()); }
-		}
-		return read(p);
+		return read(Store.read(file(v)));
 	}
 	private static List<Member> read(Properties p) {
 		List<Member> out = new ArrayList<Member>();
-		int next = intOf(p, "next", 1);
+		int next = Store.num(p, "next", 1);
 		for (int id = 1; id < next; id++) {
 			String k = id + ".";
 			if (p.getProperty(k + "name") == null) continue;
@@ -135,12 +130,12 @@ public final class CrewRegister {
 			String st = p.getProperty(k + "status", "PRESENT");
 			if (st.equals("DISCHARGED")) st = "RETIRED"; // 5.41's word for it
 			try { m.status = Status.valueOf(st); } catch (IllegalArgumentException e) { m.status = Status.MISSING; }
-			m.histPos = intOf(p, k + "hist", 0);
+			m.histPos = Store.num(p, k + "hist", 0);
 			for (String key : p.stringPropertyNames()) if (key.startsWith(k + "rec.")) m.rec.put(key.substring((k + "rec.").length()), p.getProperty(key));
 			String served = p.getProperty(k + "served", "");
 			if (!served.isEmpty()) for (String sh : served.split("\\|")) m.served.add(sh);
-			m.masterPos = intOf(p, k + "master", 0);
-			m.sector = intOf(p, k + "sector", -1);
+			m.masterPos = Store.num(p, k + "master", 0);
+			m.sector = Store.num(p, k + "sector", -1);
 			for (String key : p.stringPropertyNames()) {
 				if (!key.startsWith(k + "with.")) continue;
 				try { m.with.put(Integer.parseInt(key.substring((k + "with.").length())), new ArrayList<String>(java.util.Arrays.asList(p.getProperty(key).split("\\|")))); }
@@ -157,10 +152,8 @@ public final class CrewRegister {
 	}
 	/** How far the station's log and the master log had been read at the last look (for who's new and how they came). */
 	private static int[] seen(Vault v) {
-		Properties p = new Properties();
-		File f = file(v);
-		if (f.isFile()) { try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); } catch (IOException e) { /* none: from the start */ } }
-		return new int[] {intOf(p, "seen.hist", 0), intOf(p, "seen.master", 0), intOf(p, "served.v", 1)};
+		Properties p = Store.read(file(v)); // unreadable: from the start
+		return new int[] {Store.num(p, "seen.hist", 0), Store.num(p, "seen.master", 0), Store.num(p, "served.v", 1)};
 	}
 	private static void write(Vault v, List<Member> members, int histLen, int masterLen) throws IOException {
 		StringBuilder sb = new StringBuilder("# ").append(NOTE).append("\n");
@@ -337,10 +330,10 @@ public final class CrewRegister {
 			if (gs == null || gs.getPlayerShip() == null) return null;
 			for (CrewState c : homeplanet.parser.SaveHelper.getOwnCrew(gs.getPlayerShip())) out.add(found(c, "hold", "in the Cargo Hold"));
 		}
-		File asg = new File(v.root, "assignments.txt");
-		if (asg.isFile()) { // read here, not through Assignments: its lock is never taken while taking stock
-			Properties p = new Properties();
-			try { p.load(new java.io.StringReader(new String(SafeFiles.read(asg), StandardCharsets.UTF_8))); } catch (IOException e) { return null; }
+		Properties asg; // the file as it stands, without Assignments' lock: never taken while taking stock
+		try { asg = homeplanet.parser.Assignments.asIs(v); } catch (IOException e) { return null; }
+		{
+			Properties p = asg;
 			for (int i = 0; i < 64; i++) {
 				String sectorId = p.getProperty("away." + i + ".sector");
 				if (sectorId == null) continue;
@@ -357,10 +350,10 @@ public final class CrewRegister {
 				}
 			}
 		}
-		File cap = new File(v.root, "captives.txt");
-		if (cap.isFile()) {
-			Properties p = new Properties();
-			try { p.load(new java.io.StringReader(new String(SafeFiles.read(cap), StandardCharsets.UTF_8))); } catch (IOException e) { return null; }
+		Properties cap;
+		try { cap = homeplanet.parser.Expeditions.captivesAsIs(v); } catch (IOException e) { return null; }
+		{
+			Properties p = cap;
 			for (int i = 0; p.getProperty(i + ".name") != null; i++) {
 				String state = p.getProperty(i + ".state", "held");
 				if (!state.equals("held") && !state.equals("asked") && !state.equals("reminded")) continue;
@@ -576,10 +569,9 @@ public final class CrewRegister {
 			if (listed(l, "killed: ", m.name) || listed(l, "did not come back: ", m.name)) return new String[] {"KILLED", "Killed on an expedition.", "killed on an expedition"};
 		}
 		if (m.place.equals("captive")) {
-			File cap = new File(v.root, "captives.txt");
-			if (cap.isFile()) {
-				Properties p = new Properties();
-				try { p.load(new java.io.StringReader(new String(SafeFiles.read(cap), StandardCharsets.UTF_8))); } catch (IOException e) { p = new Properties(); }
+			{
+				Properties p;
+				try { p = homeplanet.parser.Expeditions.captivesAsIs(v); } catch (IOException e) { p = new Properties(); }
 				for (int i = 0; p.getProperty(i + ".name") != null; i++) {
 					if (!m.name.equals(p.getProperty(i + ".name")) || !m.race.equals(p.getProperty(i + ".race", "human"))) continue;
 					String st = p.getProperty(i + ".state", "");
@@ -1002,7 +994,6 @@ public final class CrewRegister {
 		return "in " + (("AEIOUaeiou".indexOf(sector.isEmpty() ? 'x' : sector.charAt(0)) >= 0) ? "an " : "a ") + sector;
 	}
 	private static String join(int[] n) { StringBuilder s = new StringBuilder(); for (int i = 0; i < n.length; i++) s.append(i == 0 ? "" : ",").append(n[i]); return s.toString(); }
-	private static int intOf(Properties p, String k, int d) { try { return Integer.parseInt(p.getProperty(k, Integer.toString(d)).trim()); } catch (NumberFormatException e) { return d; } }
 	private static String text(File f) {
 		if (f == null || !f.isFile()) return "";
 		try { return new String(SafeFiles.read(f), StandardCharsets.UTF_8); } catch (IOException e) { return ""; }

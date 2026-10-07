@@ -2,7 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -10,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import net.blerf.ftl.xml.Achievement;
 
-import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.vault.Vault;
 
 /**
@@ -45,18 +44,9 @@ public final class Career {
 	public static int beaconsPerStipend() { return monthsPerStipend() * BEACONS_PER_MONTH; }
 
 	static File file(File fleetRoot) { return new File(fleetRoot, "career.txt"); }
-	private static Properties read(File fleetRoot) {
-		Properties p = new Properties();
-		File f = file(fleetRoot);
-		if (!f.isFile()) return p;
-		try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
+	private static Properties read(File fleetRoot) { return Store.read(file(fleetRoot)); }
 	private static void write(File fleetRoot, Properties p) throws IOException {
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, "The Immersive career: its choices are fixed once made");
-		SafeFiles.writeText(file(fleetRoot), w.toString(), false);
+		Store.write(file(fleetRoot), p, "The Immersive career: its choices are fixed once made");
 	}
 
 	/** Has a career begun in this Immersive fleet (its folder)? */
@@ -134,21 +124,21 @@ public final class Career {
 	static int unpaidMonths() {
 		Vault v = Vault.get();
 		Properties p = read(v.root);
-		int paid = Integer.parseInt(p.getProperty("paidMonths", "0"));
+		int paid = Store.num(p, "paidMonths", 0);
 		if (p.getProperty("beaconsAtStart") == null) {
 			// a career from when the stipend counted sectors: its sectors so far become beacons, so nothing paid or owed changes
-			int sectors = v.sectorsSeen() - Integer.parseInt(p.getProperty("sectorsAtStart", "0"));
+			int sectors = v.sectorsSeen() - Store.num(p, "sectorsAtStart", 0);
 			p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen() - sectors * BEACONS_PER_SECTOR));
 			try { write(v.root, p); } catch (IOException e) { log.warn("Could not record the stipend's beacons: {}", e.toString()); }
 		}
-		int start = Integer.parseInt(p.getProperty("beaconsAtStart", "0"));
+		int start = Store.num(p, "beaconsAtStart", 0);
 		return Math.max(0, (v.beaconsSeen() - start) / beaconsPerStipend() - paid);
 	}
 	/** Records months as paid (or, with a negative count, takes them back after a failed payment). */
 	static void markPaid(int months) throws IOException {
 		File root = Vault.get().root;
 		Properties p = read(root);
-		p.setProperty("paidMonths", Integer.toString(Integer.parseInt(p.getProperty("paidMonths", "0")) + months));
+		p.setProperty("paidMonths", Integer.toString(Store.num(p, "paidMonths", 0) + months));
 		write(root, p);
 	}
 }

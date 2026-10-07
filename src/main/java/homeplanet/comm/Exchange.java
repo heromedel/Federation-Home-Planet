@@ -2,7 +2,6 @@ package homeplanet.comm;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,6 +16,7 @@ import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.model.Items;
 import homeplanet.parser.SaveHelper;
 import homeplanet.vault.Ship;
@@ -71,13 +71,10 @@ public final class Exchange {
 		for (Map.Entry<String, String> e : m.fields().entrySet()) p.setProperty(e.getKey(), e.getValue());
 		for (Map.Entry<String, String> e : out.fields().entrySet()) p.setProperty("out." + e.getKey(), e.getValue());
 		for (Map.Entry<String, String> e : in.fields().entrySet()) p.setProperty("in." + e.getKey(), e.getValue());
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, "A Long Range Comm. trade (state: " + r.state + "). Federation Home Planet rewrites this file.");
-		return w.toString().getBytes(StandardCharsets.UTF_8);
+		return Store.bytes(p, "A Long Range Comm. trade (state: " + r.state + "). Federation Home Planet rewrites this file.");
 	}
 	static Record read(File f) throws IOException {
-		Properties p = new Properties();
-		p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8)));
+		Properties p = Store.load(f);
 		Record r = new Record();
 		r.file = f;
 		r.id = p.getProperty("id", "");

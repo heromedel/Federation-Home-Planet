@@ -22,7 +22,7 @@ import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.HistoryLog;
-import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.model.Skills;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
@@ -405,7 +405,7 @@ public final class Expeditions {
 	}
 	/** When an untaken posting comes down (a beacon count, never shown). */
 	private static int until(Properties p, int i) {
-		try { return Integer.parseInt(p.getProperty(i + ".until", "").trim()); } catch (NumberFormatException e) { return -1; }
+		return Store.num(p, i + ".until", -1);
 	}
 	private static Posting posting(Properties p, int i) {
 		String kind = p.getProperty(i + ".kind"), text = p.getProperty(i + ".text"), event = p.getProperty(i + ".event");
@@ -437,20 +437,11 @@ public final class Expeditions {
 		List<Posting> from = !unmetKind.isEmpty() ? unmetKind : !unmet.isEmpty() ? unmet : !freshKind.isEmpty() ? freshKind : fresh;
 		return from.isEmpty() ? b.postings.get(rng.nextInt(b.postings.size())) : from.get(rng.nextInt(from.size()));
 	}
-	private static Properties readBoard(Vault v) {
-		Properties p = new Properties();
-		File f = boardFile(v);
-		if (!f.isFile()) return p;
-		try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
+	private static Properties readBoard(Vault v) { return Store.read(boardFile(v)); }
 	/** The board for a change: a file that can't be read is an error, never written back empty. */
-	private static Properties readBoardStrict(Vault v) throws IOException { return readPropsStrict(boardFile(v)); }
+	private static Properties readBoardStrict(Vault v) throws IOException { return Store.load(boardFile(v)); }
 	private static void writeBoard(Vault v, Properties p) throws IOException {
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, "The expeditions board: three postings, and the events met lately");
-		SafeFiles.writeText(boardFile(v), w.toString(), false);
+		Store.write(boardFile(v), p, "The expeditions board: three postings, and the events met lately");
 	}
 	/** Events met lately, not to be met again while others are left. */
 	static List<String> recent(Vault v) { return recent(readBoard(v)); }
@@ -792,7 +783,7 @@ public final class Expeditions {
 	public static synchronized List<Patient> infirmary(Vault v) {
 		List<Patient> out = new ArrayList<Patient>();
 		Properties p = readProps(infirmaryFile(v));
-		for (int i = 0; p.getProperty(i + ".name") != null; i++) out.add(new Patient(p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), intOf(p, i + ".until", 0), intOf(p, i + ".drained", 0), p.getProperty(i + ".mark")));
+		for (int i = 0; p.getProperty(i + ".name") != null; i++) out.add(new Patient(p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), Store.num(p, i + ".until", 0), Store.num(p, i + ".drained", 0), p.getProperty(i + ".mark")));
 		return out;
 	}
 	/** Is this crew member laid up in the infirmary? */
@@ -877,7 +868,7 @@ public final class Expeditions {
 		int max = x.getRace().getMaxHealth();
 		if (x.getHealth() >= max) return false;
 		String k = "seen." + place + "." + key(x).replace(' ', '_');
-		int seen = intOf(was, k, now);
+		int seen = Store.num(was, k, now);
 		if (now > seen) {
 			x.setHealth(max);
 			HistoryLog.entry("MEDBAY", x.getName() + "'s visited The Station's Medbay");
@@ -886,33 +877,17 @@ public final class Expeditions {
 		q.setProperty(k, Integer.toString(seen));
 		return false;
 	}
-	private static Properties readProps(File f) {
-		Properties p = new Properties();
-		if (!f.isFile()) return p;
-		try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
+	private static Properties readProps(File f) { return Store.read(f); }
 	/** For a change: a file that can't be read is an error, so it's never written back empty. */
-	private static Properties readPropsStrict(File f) throws IOException {
-		Properties p = new Properties();
-		if (f.isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8)));
-		return p;
-	}
-	private static byte[] propsBytes(Properties p, String comment) throws IOException {
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, comment);
-		return w.toString().getBytes(StandardCharsets.UTF_8);
-	}
-	private static void writeProps(File f, Properties p, String comment) throws IOException {
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, comment);
-		SafeFiles.writeText(f, w.toString(), false);
-	}
+	private static Properties readPropsStrict(File f) throws IOException { return Store.load(f); }
+	private static byte[] propsBytes(Properties p, String comment) throws IOException { return Store.bytes(p, comment); }
+	private static void writeProps(File f, Properties p, String comment) throws IOException { Store.write(f, p, comment); }
 
 	// ---- captives and ransoms ----
 
 	private static File captivesFile(Vault v) { return new File(v.root, "captives.txt"); }
+	/** The captives' file as it stands, read without a lock (for the crew register taking stock). */
+	public static Properties captivesAsIs(Vault v) throws IOException { return Store.load(captivesFile(v)); }
 	/** Crew taken on an expedition: a ransom is asked a few beacons later, and stands a while. */
 	public static final class Captive {
 		public final int index;
@@ -953,7 +928,7 @@ public final class Expeditions {
 	}
 	private static Captive captive(Properties p, int i) {
 		return new Captive(i, p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), "true".equals(p.getProperty(i + ".male")),
-				p.getProperty(i + ".captors", "pirates"), intOf(p, i + ".ransom", 30), intOf(p, i + ".asked", 0), intOf(p, i + ".until", intOf(p, i + ".asked", 0) + RANSOM_STANDS));
+				p.getProperty(i + ".captors", "pirates"), Store.num(p, i + ".ransom", 30), Store.num(p, i + ".asked", 0), Store.num(p, i + ".until", Store.num(p, i + ".asked", 0) + RANSOM_STANDS));
 	}
 	/**
 	 * The ransoms' clock: a letter when a ransom is asked, a reminder near the end, and the Federation Ambassador's
@@ -1075,9 +1050,6 @@ public final class Expeditions {
 		if (f.isEmpty()) return null;
 		try { return homeplanet.comm.Line.crewFrom(f); }
 		catch (Exception e) { log.warn("Could not read {}'s record: {}", p.getProperty(i + ".name"), e.toString()); return null; }
-	}
-	private static int intOf(Properties p, String key, int dflt) {
-		try { return Integer.parseInt(p.getProperty(key, "").trim()); } catch (NumberFormatException e) { return dflt; }
 	}
 
 	// ---- hiring ----

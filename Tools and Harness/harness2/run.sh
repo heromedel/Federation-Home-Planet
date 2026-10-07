@@ -58,6 +58,7 @@ echo "== RepT"; run RepT "$GAME" "$WORLD" "$W/rep" | grep -E "$PICK|^PASS"
 echo "== StatT"; run StatT "$GAME" "$WORLD" "$W/stat" | grep -E "$PICK|^PASS"
 echo "== RepuT"; run RepuT "$GAME" "$WORLD" "$W/repu" | grep -E "$PICK|^PASS"
 echo "== UpdT"; run UpdT "$W/upd" | grep -E "$PICK|^PASS"
+echo "== StoreT"; run StoreT "$W/store" | grep -E "$PICK|^PASS"
 echo "== VicT"; run VicT "$GAME" "$WORLD" "$W/vic" $VICLOG | grep -E "$PICK|^PASS|^replay"
 echo "== LinkT"; run LinkT "$GAME" "$WORLD" "$W/link" | grep -E "$PICK|^PASS"
 # the windows themselves, driven as a player would: needs a display, so a virtual one

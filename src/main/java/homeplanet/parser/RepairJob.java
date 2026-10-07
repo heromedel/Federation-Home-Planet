@@ -2,9 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -27,7 +24,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.HistoryLog;
-import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.vault.Borrowed;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
@@ -64,20 +61,9 @@ public final class RepairJob {
 	// ---- the state ----
 
 	private static File file(Vault v) { return new File(v.root, "repair-job.txt"); }
-	static Properties read(Vault v) {
-		Properties p = new Properties();
-		File f = file(v);
-		try { if (f.isFile()) p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
+	static Properties read(Vault v) { return Store.read(file(v)); }
 	private static void write(Vault v, Properties p) throws IOException {
-		StringWriter w = new StringWriter();
-		p.store(w, "The repair job (the Nightjar): Federation Home Planet rewrites this file");
-		SafeFiles.writeText(file(v), w.toString(), false);
-	}
-	private static int intOf(Properties p, String k, int def) {
-		try { return Integer.parseInt(p.getProperty(k, "").trim()); } catch (NumberFormatException e) { return def; }
+		Store.write(file(v), p, "The repair job (the Nightjar): Federation Home Planet rewrites this file");
 	}
 	private static Set<String> ids(Properties p, String k) {
 		Set<String> out = new LinkedHashSet<String>();
@@ -134,13 +120,13 @@ public final class RepairJob {
 				out.add(OFFER);
 			}
 			String stage = p.getProperty("stage", "");
-			int at = intOf(p, "deliveredAt", -1);
+			int at = Store.num(p, "deliveredAt", -1);
 			if (at >= 0 && stage.isEmpty() && now >= at + OVERDUE && !sent.contains(OVERDUE_LETTER)) {
 				p.setProperty("late", "true"); // her owner has had to ask: the bonus is gone
 				changed = true;
 				out.add(OVERDUE_LETTER);
 			}
-			if ("defied".equals(stage) && now >= intOf(p, "seizeAt", Integer.MAX_VALUE) && !sent.contains(SEIZED)) {
+			if ("defied".equals(stage) && now >= Store.num(p, "seizeAt", Integer.MAX_VALUE) && !sent.contains(SEIZED)) {
 				seize(v, p);
 				changed = false; // seize() wrote it
 				out.add(SEIZED);
@@ -192,8 +178,8 @@ public final class RepairJob {
 			ShipBlueprint bp = DataManager.get().getShip(BLUEPRINT);
 			if (bp != null && bp.getShipClass() != null && bp.getShipClass().getTextValue() != null) cls = bp.getShipClass().getTextValue();
 		} catch (Exception e) { }
-		int paid = intOf(p, "paid", 0);
-		int waiting = intOf(p, "cost", 0) + ("true".equals(p.getProperty("late")) ? 0 : intOf(p, "extra", EXTRA_MIN));
+		int paid = Store.num(p, "paid", 0);
+		int waiting = Store.num(p, "cost", 0) + ("true".equals(p.getProperty("late")) ? 0 : Store.num(p, "extra", EXTRA_MIN));
 		return s.replace("{waiting}", Integer.toString(waiting)).replace("{class}", cls).replace("{extra}", p.getProperty("extra", Integer.toString(EXTRA_MIN)))
 				.replace("{pay}", Integer.toString(paid)).replace("{value}", p.getProperty("value", "0")).replace("{taken}", p.getProperty("taken", "nothing"))
 				.replace("{paidline}", paid > 0 ? "Your payment for the work is enclosed: " + paid + " scrap. Nothing more." : "She came back unfinished, and I do not pay for unfinished work.");
@@ -350,7 +336,7 @@ public final class RepairJob {
 	/** What returning her pays now: the repair cost, and the bonus unless her owner has had to ask for her. */
 	public static int payment(Vault v, boolean late) {
 		Properties p = read(v);
-		return intOf(p, "cost", 0) + (late ? 0 : intOf(p, "extra", EXTRA_MIN));
+		return Store.num(p, "cost", 0) + (late ? 0 : Store.num(p, "extra", EXTRA_MIN));
 	}
 	/** The Cargo Bay's Return button: she leaves the fleet (RETURNED), her payment goes to the Cargo Hold, and her owner writes. */
 	public static synchronized int returnHer(Vault v, Ship s) throws IOException {
@@ -383,7 +369,7 @@ public final class RepairJob {
 	 * property). She goes too if docked; boarded, she's collected when next docked; in the Junkyard, she isn't found.
 	 */
 	private static void seize(Vault v, Properties p) throws IOException {
-		int value = intOf(p, "value", 0);
+		int value = Store.num(p, "value", 0);
 		Ship nightjar = ship(v);
 		List<String> taken = new ArrayList<String>();
 		if (v.storageScrap() >= value) {

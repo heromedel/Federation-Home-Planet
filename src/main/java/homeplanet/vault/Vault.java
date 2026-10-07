@@ -17,6 +17,7 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 import homeplanet.parser.XmlText;
 import org.w3c.dom.Document;
@@ -683,10 +684,9 @@ public final class Vault {
 			SafeFiles.move(tmp, new File(dir, FINAL));
 			int scoresNow = victoriousScores.apply(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId());
 			if (victoriesNow < 0 || scoresNow < 0) { // the profile didn't read (FTL writing it?): the counts from the copy before stand
-				java.util.Properties p = new java.util.Properties();
-				try { p.load(new java.io.StringReader(new String(SafeFiles.read(new File(dir, FINAL_NOTE)), java.nio.charset.StandardCharsets.UTF_8))); } catch (IOException e) { }
-				if (victoriesNow < 0) victoriesNow = intOf(p, "victoriesThen");
-				if (scoresNow < 0) scoresNow = intOf(p, "scoresThen");
+				java.util.Properties p = Store.read(new File(dir, FINAL_NOTE));
+				if (victoriesNow < 0) victoriesNow = Store.num(p, "victoriesThen", -1);
+				if (scoresNow < 0) scoresNow = Store.num(p, "scoresThen", -1);
 			}
 			SafeFiles.writeText(new File(dir, FINAL_NOTE), "victoriesThen=" + victoriesNow + "\nscoresThen=" + scoresNow + "\n", false);
 			if (first) HistoryLog.entry("FINAL BATTLE", b.name + ": the Rebel Flagship is on her way to the last battle. A copy is kept in history/" + b.id + "/" + FINAL);
@@ -718,19 +718,15 @@ public final class Vault {
 		for (File d : dirs) {
 			File copy = new File(d, FINAL), note = new File(d, FINAL_NOTE);
 			if (!d.isDirectory() || byId(d.getName()) != null || !copy.isFile()) continue;
-			java.util.Properties p = new java.util.Properties();
-			try { p.load(new java.io.StringReader(new String(SafeFiles.read(note), java.nio.charset.StandardCharsets.UTF_8))); } catch (IOException e) { log.debug("Final battle note {} could not be read: {}", note, e.toString()); }
+			java.util.Properties p = Store.read(note);
 			String name = d.getName();
 			try {
 				String[] lines = new String(SafeFiles.read(new File(d, FATE_FILE)), java.nio.charset.StandardCharsets.UTF_8).split("\n");
 				if (lines.length > 1) name = lines[1].trim();
 			} catch (IOException e) { }
-			out.add(new FinalBattle(d.getName(), name, copy, intOf(p, "victoriesThen"), intOf(p, "scoresThen"), p.getProperty("outcome", "")));
+			out.add(new FinalBattle(d.getName(), name, copy, Store.num(p, "victoriesThen", -1), Store.num(p, "scoresThen", -1), p.getProperty("outcome", "")));
 		}
 		return out;
-	}
-	private static int intOf(java.util.Properties p, String key) {
-		try { return Integer.parseInt(p.getProperty(key, "-1").trim()); } catch (NumberFormatException e) { return -1; }
 	}
 	/** This ship's final battle (lost, with a copy kept), or null. */
 	public synchronized FinalBattle finalBattle(String id) {
@@ -860,9 +856,7 @@ public final class Vault {
 	private File clockFile() { return new File(root, "clock.txt"); }
 	/** Where the boarded ship's progress was last counted: her sector and beacons, or null if never (she's counted from her next look). */
 	private int[] lastCounted(Ship b) {
-		java.util.Properties p = new java.util.Properties();
-		try { if (clockFile().isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(clockFile()), java.nio.charset.StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", clockFile(), e.toString()); }
+		java.util.Properties p = Store.read(clockFile());
 		try {
 			if (b.id.equals(p.getProperty("ship"))) return new int[] {Integer.parseInt(p.getProperty("sector").trim()), Integer.parseInt(p.getProperty("beacons").trim())};
 			String[] m = b.marks == null ? new String[0] : b.marks.split("\\|", -1);
@@ -904,12 +898,7 @@ public final class Vault {
 	// ---- one-time events (what the fleet has been through, for the transmissions that answer it) ----
 
 	private File eventsFile() { return new File(root, "events.txt"); }
-	private java.util.Properties events() {
-		java.util.Properties p = new java.util.Properties();
-		try { if (eventsFile().isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(eventsFile()), java.nio.charset.StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", eventsFile(), e.toString()); }
-		return p;
-	}
+	private java.util.Properties events() { return Store.read(eventsFile()); }
 	/** What an event recorded (a ship's name, say), or null if it hasn't happened. */
 	public synchronized String event(String key) { return events().getProperty(key); }
 	/** Records an event once: the first record stands. */
@@ -917,11 +906,8 @@ public final class Vault {
 		java.util.Properties p = events();
 		if (p.getProperty(key) != null) return;
 		p.setProperty(key, value);
-		try {
-			java.io.StringWriter w = new java.io.StringWriter();
-			p.store(w, "What this fleet has been through, once each (Federation Home Planet's transmissions answer them)");
-			SafeFiles.writeText(eventsFile(), w.toString(), false);
-		} catch (IOException e) { log.warn("Could not record the event {}: {}", key, e.toString()); }
+		try { Store.write(eventsFile(), p, "What this fleet has been through, once each (Federation Home Planet's transmissions answer them)"); }
+		catch (IOException e) { log.warn("Could not record the event {}: {}", key, e.toString()); }
 	}
 	/** A boarded ship's new save: down to one point of hull with the fight over (no enemy alongside, or one beaten). */
 	private void noteHull(Ship b, SavedGameState gs) {
@@ -943,14 +929,13 @@ public final class Vault {
 	 * station last looked, with no jump in between. Once per beacon stop; crew walking about never counts.
 	 */
 	private void noteWork(Ship b, SavedGameState gs) {
-		java.util.Properties p = new java.util.Properties();
-		try { if (workFile().isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(workFile()), java.nio.charset.StandardCharsets.UTF_8))); }
+		java.util.Properties p;
+		try { p = Store.load(workFile()); }
 		catch (IOException e) { log.warn("Could not read {}: {}", workFile(), e.toString()); return; } // never written back from a failed read
 		String k = b.id + "."; // each ship's own stop: switching ships at a beacon doesn't count her work again
 		int work = workDone(gs), beacons = gs.getTotalBeaconsExplored();
 		boolean here = Integer.toString(beacons).equals(p.getProperty(k + "beacons"));
-		int before = -1;
-		try { before = Integer.parseInt(p.getProperty(k + "work", "").trim()); } catch (NumberFormatException e) { }
+		int before = Store.num(p, k + "work", -1);
 		boolean wasCredited = here && "true".equals(p.getProperty(k + "credited")), credited = wasCredited;
 		if (here && before >= 0 && work > before && !credited) {
 			VoyageLog.note(this, b, "Time spent on work at the beacon (buying, repairs or upgrades)"); // before the day moves (5.20): told on the stop's own day
@@ -962,11 +947,8 @@ public final class Vault {
 		p.setProperty(k + "beacons", Integer.toString(beacons));
 		p.setProperty(k + "work", Integer.toString(work));
 		p.setProperty(k + "credited", Boolean.toString(credited));
-		try {
-			java.io.StringWriter w = new java.io.StringWriter();
-			p.store(w, "Each boarded ship's work in FTL at her current beacon, as last seen (time spent on it counts as a beacon, once a stop)");
-			SafeFiles.writeText(workFile(), w.toString(), false);
-		} catch (IOException e) { log.warn("Could not record her work: {}", e.toString()); }
+		try { Store.write(workFile(), p, "Each boarded ship's work in FTL at her current beacon, as last seen (time spent on it counts as a beacon, once a stop)"); }
+		catch (IOException e) { log.warn("Could not record her work: {}", e.toString()); }
 	}
 	/** One of the fleet's ships came out of a battle with one point of hull (her name). */
 	public static final String EVENT_ONE_HULL = "one-hull";
@@ -1647,10 +1629,8 @@ public final class Vault {
 			String commissioned = old != null && !old.commissioned.isEmpty() ? old.commissioned : homeplanet.parser.Museum.commissioned(this, s.id);
 			java.util.Properties papers = new java.util.Properties();
 			papers.setProperty("commissioned", commissioned);
-			java.io.StringWriter pw = new java.io.StringWriter();
-			papers.store(pw, "Her papers");
 			z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE[4]));
-			z.write(pw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			z.write(Store.bytes(papers, "Her papers"));
 			z.closeEntry();
 			// a custom ship's blueprint and pictures: another station can't fly her without them
 			SavedGameState gs = s.save();
@@ -1794,8 +1774,8 @@ public final class Vault {
 	/** The commission date a ship's papers give, or "". */
 	private static String papersCommissioned(byte[] papers) {
 		if (papers == null) return "";
-		java.util.Properties p = new java.util.Properties();
-		try { p.load(new java.io.StringReader(new String(papers, java.nio.charset.StandardCharsets.UTF_8))); } catch (IOException e) { return ""; }
+		java.util.Properties p;
+		try { p = Store.parse(papers); } catch (IOException e) { return ""; }
 		String d = p.getProperty("commissioned", "").trim();
 		return d.length() > 40 ? "" : d;
 	}
