@@ -372,7 +372,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	}
 
 	private void loadCurrent() {
-		Ship flying = homeplanet.core.FtlDock.active() ? Vault.get().boarded() : null; // FTL docked: the ship in flight stays out of the Cargo Bay (5.29)
+		Ship flying = outOfReach(); // in flight in the dock (5.29), or her save can't be read (5.81): she stays out of the Cargo Bay
 		currentShip = picked != null && picked != flying && Vault.get().fleet().contains(picked) ? picked : flying != null ? null : Vault.get().boarded();
 		if (currentShip != picked) picked = null; // she's gone (boarded elsewhere, decommissioned): back to the boarded ship
 		if (currentShip == null || !currentShip.file().exists()) {
@@ -425,10 +425,31 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	}
 	boolean partnerIsStorage() { return tradeShip == homeSave; }
 
+	/**
+	 * The boarded ship the Cargo Bay leaves out: in flight in the dock (5.29), or one whose save can't be read just now
+	 * (heromedel, 5.81: the whole room used to close; it opens without her, as it does while she's docked).
+	 */
+	static Ship outOfReach() {
+		Ship b = Vault.get().boarded();
+		return b != null && (homeplanet.core.FtlDock.active() || b.save() == null) ? b : null;
+	}
+	/**
+	 * Why the boarded ship is left out of the Cargo Bay when her save can't be read, or null when it can (heromedel's
+	 * idea, 5.81; words to be improved by McCarthy).
+	 */
+	static String unreadableNote() {
+		Ship b = Vault.get().boarded();
+		if (b == null || b.save() != null) return null;
+		return "The Home Planet Station could not load " + homeplanet.parser.ShipNames.the(b.name) + ": her save can't be read right now.\n\n"
+				+ "The Cargo Bay opens without her. She can't be picked, and her store and the Refit tab stay closed until her save\n"
+				+ "can be read. Try again in a moment. If this keeps happening, send the station's log file (the logs folder beside\n"
+				+ "the program) with a bug report.";
+	}
+
 	/** The ships at the Space Dock (boarded and docked) whose saves can be read: any of them can trade (see {@link Dlc} for what may move). */
 	ArrayList<Ship> tradeableShips() {
 		ArrayList<Ship> list = new ArrayList<Ship>();
-		Ship flying = homeplanet.core.FtlDock.active() ? Vault.get().boarded() : null; // in flight, docked: not tradeable till FTL closes (5.29)
+		Ship flying = outOfReach(); // in flight, docked: not tradeable till FTL closes (5.29); unreadable, till she can be read
 		for (Ship s : Vault.get().fleet()) if (s != flying && s.save() != null) list.add(s);
 		return list;
 	}
@@ -1270,6 +1291,16 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	// ============================================================== Save
 
+	/**
+	 * Whether writing this state would change her file: her save as the station last read it and this one, each written
+	 * out, compared. The same object (her copy couldn't be read), or anything that can't be compared, counts as a change.
+	 */
+	static boolean changes(Ship s, SavedGameState now) {
+		try {
+			SavedGameState was = s.save();
+			return was == null || now == null || was == now || !java.util.Arrays.equals(homeplanet.parser.SaveHelper.toBytes(was), homeplanet.parser.SaveHelper.toBytes(now));
+		} catch (Exception e) { return true; }
+	}
 	/** Writes every pending change (ship, trade partner, shop, systems, and the history log entries); true if all of it was written (false after telling the player why not). */
 	public boolean saveAll() {
 		boolean holdAlone = currentShip == null && holdOnly(); // no ship picked: only the Cargo Hold (and the stored systems) change
@@ -1277,7 +1308,15 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			HomePlanet.showErrorDialog("Nothing to save: no ship is picked. Pick one with the button above, or board one at the Space Dock.");
 			return false;
 		}
-		if (currentShip != null && currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return false;
+		// FTL's ship is asked about only when this save really changes her, whichever ship is picked (heromedel, 5.81): a
+		// purchase for the Cargo Hold with her picked left her as she was and still asked; one from her own store with
+		// another ship picked changed her and didn't ask, and FTL, mid-game, put the item back on the shelf
+		Ship flying = Vault.get().boarded();
+		boolean currentSame = currentShip != null && currentShip == flying && !changes(flying, currentSave);
+		boolean tradeSame = tradeShip != null && tradePath != null && tradeShip == flying && !changes(flying, tradeSave);
+		boolean flyingChanged = flying != null && ((currentShip == flying && !currentSame) || (tradeShip == flying && tradePath != null && !tradeSame)
+				|| (shop.touched().contains(flying) && changes(flying, shop.copyOf(flying))));
+		if (flyingChanged && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return false;
 		int billed = 0; // taken from the Cargo Hold in memory (it's the partner): given back if the save fails
 		try {
 			Map<String, Integer> curBefore = null, tradeBefore = null;
@@ -1295,8 +1334,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			shop.countPurchasesAsBefore(tradeBefore, tradeSave);
 			// every file together, or none: the ships, the storage, the shops bought from, the stored-systems list
 			Vault.Transaction tx = Vault.get().begin();
-			if (currentShip != null) tx.put(currentShip, currentSave, currentHash);
-			if (tradeShip != null && tradePath != null) tx.put(tradeShip, tradeSave, tradeHash);
+			if (currentShip != null && !currentSame) tx.put(currentShip, currentSave, currentHash); // FTL's ship, unchanged: her file left alone
+			if (tradeShip != null && tradePath != null && !tradeSame) tx.put(tradeShip, tradeSave, tradeHash);
 			shop.addTo(tx);
 			systems.addTo(tx);
 			billed = systems.payBill(tx); // the Dry Dock's work, from the Cargo Hold, in the same save

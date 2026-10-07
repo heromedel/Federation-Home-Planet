@@ -676,6 +676,8 @@ class DryDockShop {
 	void addTo(homeplanet.vault.Vault.Transaction tx) {
 		for (Ship s : dirty) tx.put(s, otherSaves.get(s), otherHashes.get(s));
 	}
+	/** The ships whose saves only the shop changed (the Cargo Hold bought for, a store bought from): what {@link #addTo} writes. */
+	java.util.Set<Ship> touched() { return new java.util.LinkedHashSet<Ship>(dirty); }
 	/** The shop's own copy of a ship's save (the Cargo Hold read for purchases), or null if it read none: another change to her belongs in it (5.61). */
 	SavedGameState copyOf(Ship s) { return otherSaves.get(s); }
 	/** Puts the shop's copy of her into the save after a change made to it outside the shop (the Dry Dock's bill). */

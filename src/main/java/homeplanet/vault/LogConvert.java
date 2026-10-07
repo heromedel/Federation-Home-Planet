@@ -37,6 +37,8 @@ public final class LogConvert {
 
 	/** The marker, in logs/: when, by which station, how many of each. */
 	public static final String MARK = "converted.txt";
+	/** In the marker: the station that put the converted entries on their own days (5.81), by converting or by repairDays. */
+	static final String DAYS_FIXED = "days_fixed";
 	private static final Pattern STAMP = Pattern.compile("(\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d)  (.*)");
 
 	public static boolean done(Vault v) { return done(v.root); }
@@ -46,36 +48,14 @@ public final class LogConvert {
 	/** Converts what has no event yet, and writes the marker. Never throws: a log it can't read is skipped and said in the debug log. */
 	public static void run(Vault v) {
 		if (done(v)) return;
-		List<EventLog.Entry> have = EventLog.read(v);
-		// the earliest event each log already has: entries before it are the ones without events (the boundary minute by its text)
-		Map<String, String> first = new HashMap<String, String>(); // "station", "reputation", "clock", "voyage:<id>" -> earliest time
-		Set<String> atFirst = new HashSet<String>(); // "<log>|<minute>|<human>": entries at the boundary minute, already there
-		for (EventLog.Entry e : have) {
-			String which = e.get("log", e.kind.equals("DAY") ? "clock" : "");
-			if (which.equals("voyage")) which = "voyage:" + e.get("ship_id", "");
-			if (which.isEmpty()) continue;
-			String was = first.get(which);
-			if (was == null || e.time.compareTo(was) < 0) first.put(which, e.time);
-		}
-		for (EventLog.Entry e : have) {
-			String which = e.get("log", e.kind.equals("DAY") ? "clock" : "");
-			if (which.equals("voyage")) which = "voyage:" + e.get("ship_id", "");
-			String f = first.get(which);
-			if (f != null && e.time.length() >= 16 && e.time.substring(0, 16).equals(f.substring(0, 16))) atFirst.add(which + "|" + f.substring(0, 16) + "|" + (which.equals("station") ? e.get("headline", e.human) : e.human));
-		}
-		Map<String, List<String[]>> master = masterCopies(v); // log -> {text, day}, in order
-		int station = 0, voyage = 0, reputation = 0, days = 0;
-		Map<String, String> known = new HashMap<String, String>(); // every ship the fleet has or remembers: id -> name, so a converted entry that names her by id goes into her log too (5.77)
-		for (File d : v.shipFolders()) { ShipStore.Record r = ShipStore.read(d); if (r != null) known.put(r.id, r.name); }
-		try { station = convertStation(v, first.get("station"), atFirst, master, known); } catch (Exception e) { log.warn("The station log could not be converted: {}", e.toString()); }
-		for (File d : v.shipFolders()) {
-			try { voyage += convertVoyage(v, d, first, atFirst, master); } catch (Exception e) { log.warn("{}'s voyage log could not be converted: {}", d.getName(), e.toString()); }
-		}
-		try { reputation = convertReputation(v, first.get("reputation"), atFirst, master); } catch (Exception e) { log.warn("The reputation log could not be converted: {}", e.toString()); }
-		try { days = convertDays(v, first.get("clock"), atFirst); } catch (Exception e) { log.warn("The clock's days could not be converted: {}", e.toString()); }
+		Bounds b = new Bounds(EventLog.read(v));
+		Map<String, List<String[]>> master = masterCopies(v); // log -> {text, day, time}, in order
+		int[] n = convertAll(v, b, master, null);
+		int station = n[0], voyage = n[1], reputation = n[2], days = n[3];
 		Properties p = new Properties();
 		p.setProperty("station", HomePlanet.version()); p.setProperty("entries_station", Integer.toString(station)); p.setProperty("entries_voyage", Integer.toString(voyage));
 		p.setProperty("entries_reputation", Integer.toString(reputation)); p.setProperty("days", Integer.toString(days));
+		p.setProperty(DAYS_FIXED, HomePlanet.version()); // converted with each entry on its own day: nothing for repairDays to do
 		try { Store.write(new File(v.logsDir(), MARK), p, "The old logs were converted to events once (5.73); Federation Home Planet never does it again for this fleet"); }
 		catch (IOException e) { log.warn("Could not write {}: {}", MARK, e.toString()); }
 		int all = station + voyage + reputation + days;
@@ -83,8 +63,45 @@ public final class LogConvert {
 				Event.of("LOGS_CONVERTED").put("entries_station", station).put("entries_voyage", voyage).put("entries_reputation", reputation).put("days", days)
 						.human("The station read its old logs into its records once."));
 	}
+	/** The earliest event each old log already has (entries before it are the ones without events), and the entries at that minute. */
+	private static final class Bounds {
+		final Map<String, String> first = new HashMap<String, String>(); // "station", "reputation", "clock", "voyage:<id>" -> earliest time
+		final Set<String> atFirst = new HashSet<String>(); // "<log>|<minute>|<human>": entries at the boundary minute, already there
+		Bounds(List<EventLog.Entry> have) {
+			for (EventLog.Entry e : have) {
+				String which = which(e);
+				if (which.isEmpty()) continue;
+				String was = first.get(which);
+				if (was == null || e.time.compareTo(was) < 0) first.put(which, e.time);
+			}
+			for (EventLog.Entry e : have) {
+				String which = which(e);
+				String f = first.get(which);
+				if (f != null && e.time.length() >= 16 && e.time.substring(0, 16).equals(f.substring(0, 16))) atFirst.add(which + "|" + f.substring(0, 16) + "|" + (which.equals("station") ? e.get("headline", e.human) : e.human));
+			}
+		}
+		private static String which(EventLog.Entry e) {
+			String which = e.get("log", e.kind.equals("DAY") ? "clock" : "");
+			return which.equals("voyage") ? "voyage:" + e.get("ship_id", "") : which;
+		}
+	}
+	/** Every old log converted, each event written (or, with a sink, collected instead): the counts of station, voyage, reputation and day entries. */
+	private static int[] convertAll(Vault v, Bounds b, Map<String, List<String[]>> master, List<Event> sink) {
+		int station = 0, voyage = 0, reputation = 0, days = 0;
+		Map<String, String> known = new HashMap<String, String>(); // every ship the fleet has or remembers: id -> name, so a converted entry that names her by id goes into her log too (5.77)
+		for (File d : v.shipFolders()) { ShipStore.Record r = ShipStore.read(d); if (r != null) known.put(r.id, r.name); }
+		try { station = convertStation(v, b.first.get("station"), b.atFirst, master, known, sink); } catch (Exception e) { log.warn("The station log could not be converted: {}", e.toString()); }
+		Days voyageDays = new Days(voyageCopies(master)); // one for all her logs: a renamed ship's copies sit under her old name
+		for (File d : v.shipFolders()) {
+			try { voyage += convertVoyage(v, d, b.first, b.atFirst, voyageDays, sink); } catch (Exception e) { log.warn("{}'s voyage log could not be converted: {}", d.getName(), e.toString()); }
+		}
+		try { reputation = convertReputation(v, b.first.get("reputation"), b.atFirst, master, sink); } catch (Exception e) { log.warn("The reputation log could not be converted: {}", e.toString()); }
+		try { days = convertDays(v, b.first.get("clock"), b.atFirst, sink); } catch (Exception e) { log.warn("The clock's days could not be converted: {}", e.toString()); }
+		return new int[] {station, voyage, reputation, days};
+	}
+	private static void write(Vault v, Event e, List<Event> sink) { if (sink != null) sink.add(e); else EventLog.write(v, e); }
 
-	/** The master log's E lines by log: what each entry said, and its day. */
+	/** The master log's E lines by log: what each entry said, its day and its time. */
 	private static Map<String, List<String[]>> masterCopies(Vault v) {
 		Map<String, List<String[]>> out = new HashMap<String, List<String[]>>();
 		File f = new File(v.logsDir(), MasterLog.FILE);
@@ -96,23 +113,53 @@ public final class LogConvert {
 				if (w.length < 5) continue;
 				List<String[]> list = out.get(w[3]);
 				if (list == null) out.put(w[3], list = new ArrayList<String[]>());
-				list.add(new String[] {w[4], w[2].trim()});
+				list.add(new String[] {w[4], w[2].trim(), w[1].trim()});
 			}
 		} catch (IOException e) { log.warn("Could not read the master log: {}", e.toString()); }
 		return out;
 	}
-	/** The day of an entry: the master log's next copy that starts with its text (in order, as stationDays reads them); 0 when unknown. */
+	/** Every ship's voyage copies together, in time order. */
+	private static List<String[]> voyageCopies(Map<String, List<String[]>> master) {
+		List<String[]> out = new ArrayList<String[]>();
+		for (Map.Entry<String, List<String[]>> e : master.entrySet()) if (e.getKey().startsWith("voyage: ")) out.addAll(e.getValue());
+		java.util.Collections.sort(out, new java.util.Comparator<String[]>() { public int compare(String[] a, String[] b) { return a[2].compareTo(b[2]); } });
+		return out;
+	}
+	/**
+	 * The day of an entry: the master log's copy written in the same minute (or the next: the two logs' clocks were read a
+	 * moment apart) that starts with its text, each copy used once; 0 when there is none, as for everything from before
+	 * the master log began (5.17): Prior. Matched by text alone and in order, a common line ("LOADED  (refresh)") from
+	 * before then took a copy from days later, the rest ran out of copies, and over two thousand old entries were put on
+	 * the day of the conversion (heromedel's Captain's Log, 5.81).
+	 */
 	private static final class Days {
-		private final List<String[]> copies; private int at = 0;
-		Days(List<String[]> copies) { this.copies = copies == null ? new ArrayList<String[]>() : copies; }
-		int of(String text) {
-			for (int i = at; i < copies.size(); i++) {
-				if (!copies.get(i)[0].startsWith(text)) continue;
-				at = i + 1;
+		private final List<String[]> copies; private final boolean[] used;
+		Days(List<String[]> copies) { this.copies = copies == null ? new ArrayList<String[]>() : copies; this.used = new boolean[this.copies.size()]; }
+		int of(String stamp, String text) {
+			String next = nextMinute(stamp);
+			for (int i = firstAt(stamp); i < copies.size(); i++) {
+				String m = minute(copies.get(i));
+				if (m.compareTo(next) > 0) break;
+				if (used[i] || m.compareTo(stamp) < 0 || !copies.get(i)[0].startsWith(text)) continue;
+				used[i] = true;
 				try { return Math.max(0, Integer.parseInt(copies.get(i)[1])); } catch (NumberFormatException e) { return 0; }
 			}
 			return 0;
 		}
+		/** The first copy at or after this minute (the master log is written in time order). */
+		private int firstAt(String stamp) {
+			int lo = 0, hi = copies.size();
+			while (lo < hi) { int mid = (lo + hi) >>> 1; if (minute(copies.get(mid)).compareTo(stamp) < 0) lo = mid + 1; else hi = mid; }
+			return lo;
+		}
+		private static String minute(String[] copy) { return copy.length > 2 && copy[2].length() >= 16 ? copy[2].substring(0, 16) : ""; }
+	}
+	/** "yyyy-MM-dd HH:mm" a minute later. */
+	static String nextMinute(String stamp) {
+		try {
+			java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+			return f.format(new java.util.Date(f.parse(stamp).getTime() + 60000L));
+		} catch (java.text.ParseException e) { return stamp; }
 	}
 	/** Before the log's first event, or at its minute and not among the entries there. */
 	private static boolean wanted(String which, String stamp, String text, String firstTime, Set<String> atFirst) {
@@ -123,12 +170,11 @@ public final class LogConvert {
 	}
 	private static Event base(String kind, String which, String stamp, int day) {
 		Event e = Event.of(kind).put("log", which.startsWith("voyage") ? "voyage" : which).put("converted", true).put("time", stamp + ":00");
-		if (day > 0) e.put("day", day);
-		return e;
+		return e.put("day", Math.max(0, day)); // 0 is Prior; with no day at all, the writer would put it on today's (5.81)
 	}
 
 	private static final Pattern ID = Pattern.compile("\\b([0-9a-f]{16})\\b");
-	private static int convertStation(Vault v, String firstTime, Set<String> atFirst, Map<String, List<String[]>> master, Map<String, String> known) throws IOException {
+	private static int convertStation(Vault v, String firstTime, Set<String> atFirst, Map<String, List<String[]>> master, Map<String, String> known, List<Event> sink) throws IOException {
 		File f = v.historyLog();
 		if (!f.isFile()) return 0;
 		String text = new String(SafeFiles.read(f), StandardCharsets.UTF_8);
@@ -142,14 +188,14 @@ public final class LogConvert {
 			if (!end && line.trim().isEmpty()) continue;
 			if (stamp != null) {
 				String copy = kind + (headline.isEmpty() ? "" : "  " + headline);
-				int day = days.of(copy);
+				int day = days.of(stamp, copy);
 				if (wanted("station", stamp, headline, firstTime, atFirst)) {
 					Event e = base(kind, "station", stamp, day).put("headline", headline).details(details);
 					String id = null;
 					for (Matcher im = ID.matcher(headline); im.find();) if (known.containsKey(im.group(1))) { if (id != null && !id.equals(im.group(1))) { id = null; break; } id = im.group(1); } // one ship named by id: hers
 					if (id != null) e.put("ship", known.get(id) + "." + id).put("ship_name", known.get(id)).put("ship_id", id);
 					String human = !headline.isEmpty() ? headline : !details.isEmpty() ? String.join("; ", details) : kind.toLowerCase();
-					EventLog.write(v, e.human(human));
+					write(v, e.human(human), sink);
 					n++;
 				}
 				stamp = null; details = new ArrayList<String>();
@@ -167,22 +213,21 @@ public final class LogConvert {
 		return n;
 	}
 
-	private static int convertVoyage(Vault v, File folder, Map<String, String> first, Set<String> atFirst, Map<String, List<String[]>> master) throws IOException {
+	private static int convertVoyage(Vault v, File folder, Map<String, String> first, Set<String> atFirst, Days days, List<Event> sink) throws IOException {
 		File f = new File(folder, VoyageLog.LOG);
 		ShipStore.Record r = ShipStore.read(folder);
 		if (!f.isFile() || r == null) return 0;
 		String which = "voyage:" + r.id, firstTime = first.get(which);
-		Days days = new Days(master.get("voyage: " + r.name));
 		Event who = Event.of("SHIP").put("ship", r.name + "." + r.id).put("ship_name", r.name).put("ship_id", r.id);
 		int n = 0;
 		for (String line : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) {
 			Matcher m = STAMP.matcher(line);
 			if (!m.matches()) continue;
 			String stamp = m.group(1), text = m.group(2).trim();
-			int day = days.of(text);
+			int day = days.of(stamp, text);
 			if (!wanted(which, stamp, text, firstTime, atFirst)) continue;
 			Event e = voyageEvent(text);
-			EventLog.write(v, base(e.kind, which, stamp, day).putAll(who).putAll(e).human(text));
+			write(v, base(e.kind, which, stamp, day).putAll(who).putAll(e).human(text), sink);
 			n++;
 		}
 		return n;
@@ -215,14 +260,100 @@ public final class LogConvert {
 		try { Store.write(mark, p, "The old logs were converted to events once (5.73), and each ship's log filled from them once (5.76); Federation Home Planet never does either again for this fleet"); }
 		catch (IOException e) { log.warn("Could not write {}: {}", MARK, e.toString()); }
 	}
-	/** A voyage log that came with a ship from an older station (5.75): each line an event under her id here, its time its own, its day this career's today. */
+	/**
+	 * The days of a fleet's converted entries put right, once (heromedel, 5.81): converted before 5.81, an entry from before
+	 * the master log began, and many after it, were put on the day of the conversion (see Days), and a ship's voyage
+	 * from another station on the day she arrived. The old logs, left as they were, are converted again into a list (not
+	 * written), and each converted entry in events.log and in the ship logs takes its day from its twin there (time,
+	 * kind and words alike), a received ship's Prior. The one time the event log is rewritten rather than appended to:
+	 * only converted entries' stardates and days change, in one journal note. Never throws.
+	 */
+	public static void repairDays(Vault v) {
+		File mark = new File(v.logsDir(), MARK);
+		if (!mark.isFile()) return; // nothing converted yet: run() converts with the right days
+		Properties p = Store.read(mark);
+		if (p.getProperty(DAYS_FIXED) != null) return;
+		try {
+			List<EventLog.Entry> native_ = new ArrayList<EventLog.Entry>();
+			for (EventLog.Entry e : EventLog.read(v)) if (!"true".equals(e.get("converted"))) native_.add(e);
+			List<Event> again = new ArrayList<Event>();
+			convertAll(v, new Bounds(native_), masterCopies(v), again);
+			Map<String, List<Integer>> dayOf = new HashMap<String, List<Integer>>(); // time|kind|words -> the days, in order
+			for (Event e : again) {
+				String k = e.get("time") + "|" + e.kind + "|" + e.human().replace('\r', ' ').replace('\n', ' ').trim();
+				List<Integer> l = dayOf.get(k);
+				if (l == null) dayOf.put(k, l = new ArrayList<Integer>());
+				l.add(Integer.parseInt(e.get("day")));
+			}
+			List<File> files = new ArrayList<File>();
+			files.add(EventLog.file(v));
+			for (File d : v.shipFolders()) files.add(ShipStore.logFile(d));
+			if (v.cargoHoldDir().isDirectory()) files.add(ShipStore.logFile(v.cargoHoldDir()));
+			Journal.Note note = Journal.begin(v, "LOG_DAYS_REPAIRED");
+			int[] count = new int[3]; // moved, now Prior, not found
+			int changedFiles = 0;
+			for (File f : files) {
+				if (!f.isFile()) continue;
+				String text = new String(SafeFiles.read(f), StandardCharsets.UTF_8);
+				String fixed = withDays(text, dayOf, f.equals(EventLog.file(v)) ? count : new int[3]);
+				if (fixed.equals(text)) continue;
+				note.replace(f, fixed.getBytes(StandardCharsets.UTF_8));
+				changedFiles++;
+			}
+			note.commit();
+			p.setProperty(DAYS_FIXED, HomePlanet.version());
+			Store.write(mark, p, "The old logs were converted to events once (5.73), and each ship's log filled from them once (5.76); Federation Home Planet never does either again for this fleet");
+			if (count[0] + count[1] > 0) HistoryLog.entry("LOG_DAYS_REPAIRED", "the old entries read into the event log put on their own days: " + count[0] + " moved to their day, " + count[1] + " from before the stardates (Prior)"
+					+ (count[2] > 0 ? ", " + count[2] + " left as they were" : ""), null,
+					Event.of("LOG_DAYS_REPAIRED").put("entries_moved", count[0]).put("entries_prior", count[1]).put("entries_unmatched", count[2]).put("files", changedFiles)
+							.human("The station put its old log entries back on their own days."));
+		} catch (Exception e) { log.warn("The converted log entries' days could not be put right: {}", e.toString()); }
+	}
+	/** The text of an event log with each converted entry's stardate and day from its twin (a received ship's: Prior); count: moved, Prior, not found. */
+	static String withDays(String text, Map<String, List<Integer>> dayOf, int[] count) {
+		Map<String, Integer> used = new HashMap<String, Integer>();
+		String[] lines = text.split("\n", -1);
+		for (int i = 0; i + 1 < lines.length; i++) {
+			String machine = lines[i].endsWith("\r") ? lines[i].substring(0, lines[i].length() - 1) : lines[i];
+			if (machine.length() < 22 || machine.indexOf(" | ") != 19) continue;
+			String human = lines[i + 1].endsWith("\r") ? lines[i + 1].substring(0, lines[i + 1].length() - 1) : lines[i + 1];
+			List<EventLog.Entry> one = EventLog.parse(machine + "\n" + human);
+			if (one.size() != 1 || !"true".equals(one.get(0).get("converted"))) continue;
+			EventLog.Entry e = one.get(0);
+			int day;
+			if (e.get("received_from") != null) day = 0;
+			else {
+				String k = e.time + "|" + e.kind + "|" + e.human;
+				List<Integer> l = dayOf.get(k);
+				int at = used.containsKey(k) ? used.get(k) : 0;
+				if (l == null || at >= l.size()) { count[2]++; continue; }
+				used.put(k, at + 1);
+				day = l.get(at);
+			}
+			if (day == e.day) continue;
+			count[day < 1 ? 1 : 0]++;
+			String[] head = machine.split(" \\| ", 4);
+			if (head.length < 3) continue;
+			head[1] = day < 1 ? "prior" : MasterLog.stardate(day);
+			String fields = head.length == 4 ? head[3] : "";
+			String f2 = fields.replaceFirst("(^| )day=-?\\d+(?= |$)", "$1day=" + day);
+			if (f2.equals(fields)) f2 = fields + (fields.isEmpty() ? "" : " ") + "day=" + day;
+			String rebuilt = head[0] + " | " + head[1] + " | " + head[2] + (f2.isEmpty() ? "" : " | " + f2);
+			lines[i] = rebuilt + (lines[i].endsWith("\r") ? "\r" : "");
+		}
+		return String.join("\n", lines);
+	}
+	/**
+	 * A voyage log that came with a ship from an older station (5.75): each line an event under her id here, its time its
+	 * own, Prior in this career (5.81): it was another commander's, and on the day she arrived it filled this Captain's Log.
+	 */
 	public static void importVoyage(Vault v, Ship s, String from, String text) {
 		Event who = VoyageLog.shipFields(s).put("received_from", from).put("converted", true);
 		for (String line : text.split("\r?\n")) {
 			Matcher m = STAMP.matcher(line);
 			if (!m.matches()) continue;
 			Event e = voyageEvent(m.group(2).trim());
-			EventLog.write(v, Event.of(e.kind).put("log", "voyage").put("time", m.group(1) + ":00").putAll(who).putAll(e).human(m.group(2).trim()));
+			EventLog.write(v, Event.of(e.kind).put("log", "voyage").put("time", m.group(1) + ":00").put("day", 0).putAll(who).putAll(e).human(m.group(2).trim()));
 		}
 	}
 	private static final Pattern SECTOR = Pattern.compile("Sector (\\d+) reached \\(sectors visited: (\\d+)\\)"), DEFEATED = Pattern.compile("(\\d+) ships? defeated \\((\\d+) in all\\)"),
@@ -268,7 +399,7 @@ public final class LogConvert {
 	}
 
 	private static final Pattern POINTS = Pattern.compile("([+\u2212-]?\\d+)  (.*)");
-	private static int convertReputation(Vault v, String firstTime, Set<String> atFirst, Map<String, List<String[]>> master) throws IOException {
+	private static int convertReputation(Vault v, String firstTime, Set<String> atFirst, Map<String, List<String[]>> master, List<Event> sink) throws IOException {
 		File f = new File(v.logsDir(), Reputation.LOG);
 		if (!f.isFile()) return 0;
 		Days days = new Days(master.get("reputation"));
@@ -280,9 +411,9 @@ public final class LogConvert {
 			if (!end && line.startsWith("  ") && stamp != null) { details.add(line.trim()); continue; }
 			if (!end && line.trim().isEmpty()) continue;
 			if (stamp != null) {
-				int day = days.of(Reputation.signed(points) + "  " + why);
+				int day = days.of(stamp, Reputation.signed(points) + "  " + why);
 				if (wanted("reputation", stamp, why, firstTime, atFirst)) {
-					EventLog.write(v, base("REPUTATION", "reputation", stamp, day).put("reason", "other").put("points", points).details(details).human(why));
+					write(v, base("REPUTATION", "reputation", stamp, day).put("reason", "other").put("points", points).details(details).human(why), sink);
 					n++;
 				}
 				stamp = null; details = new ArrayList<String>();
@@ -299,7 +430,7 @@ public final class LogConvert {
 		return n;
 	}
 
-	private static int convertDays(Vault v, String firstTime, Set<String> atFirst) throws IOException {
+	private static int convertDays(Vault v, String firstTime, Set<String> atFirst, List<Event> sink) throws IOException {
 		File f = new File(v.logsDir(), MasterLog.FILE);
 		if (!f.isFile()) return 0;
 		int n = 0;
@@ -311,7 +442,7 @@ public final class LogConvert {
 			int day; try { day = Integer.parseInt(w[2].trim()); } catch (NumberFormatException e) { continue; }
 			String human = "A day passed: " + why.replaceAll(" \\(\\d+ counted together\\)", "") + ".";
 			if (!wanted("clock", stamp, human, firstTime, atFirst)) continue;
-			EventLog.write(v, base("DAY", "clock", stamp, day).put("why", why).human(human));
+			write(v, base("DAY", "clock", stamp, day).put("why", why).human(human), sink);
 			n++;
 		}
 		return n;

@@ -645,6 +645,7 @@ public final class Vault {
 		moveCargoHold();
 		LogConvert.run(this); // the old logs read into the event log once (5.73)
 		LogConvert.fillShipLogs(this); // each ship's entries into her own log, once (5.76)
+		LogConvert.repairDays(this); // converted entries put on their own days, once (5.81)
 		shipyardDir().mkdirs();
 		junkyardDir().mkdirs();
 		memorialDir().mkdirs();

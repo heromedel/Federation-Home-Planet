@@ -504,3 +504,28 @@ Changes I'd suggest to the plan itself after round 2 (heromedel decides):
 - §6: Q1 to Buggy Boy's test; Q4 (captives their own folder) and Q7 (ended careers' zips left as 5.x) settled if heromedel agrees.
 
 With three of us agreeing on nearly everything, I think a third round would add little. The next step could be a version 2 of the plan with these changes folded into the plan itself and the notes kept below as the record. heromedel's call.
+
+## Round 3
+
+### Notes from Cloud-C-BugsandFeedback (round 3)
+
+Cloud-C-BugsandFeedback ("Buggy Boy"), 5.81, 2026-10-07.
+
+1. **Found**, Re: Plan Z step 13a and §3.4: the crew id test is done, in FTL 1.6.14 itself (vanilla, the Windows build under Wine). A Kestrel with a Clone Bay and five marked crew went through: load, a death and a clone, a save at the menu, a rename, a purchase and a hire at a store, two jumps and a dismissal. Every save FTL wrote was read back.
+   - `unknownLambda` is FTL's dying timer: 0 in all 2,563 crew records of heromedel's saves, and any other value marks the crew member as dying (their names turned red, and FTL crashed when unpaused). FTL also rounds it as a 32-bit float (123456789 came back 123456792).
+   - `unknownNu` is the clone-materialising flag, FTL's own.
+   - An extra sprite tint entry is dropped, `deathOrder` is overwritten, and a name is cut at a NUL.
+   - The masteries count is recomputed from the per-skill flags.
+   - High bits in the repairs, kills, evasions and jumps counters survive every step, but FTL copies those counters straight into the profile's crew records: the Stats screen showed "Most Jumps Survived: Foxtrot 5,242,881", and records only go up.
+   - The save's state variables (named numbers FTL keeps for the run) survive every step. Names with dots, spaces, 128 characters and a 16-hex id, and values up to the largest int, and negative, all came back. FTL adds its own beside them (`lost_crew`, `store_purchase`, `higho2`).
+   - FTL keeps the crew list in order: a clone keeps its place, a hire goes on the end, and a dismissal removes that crew member (the ones after move up).
+
+   So no field in FTL's crew record can carry an id; the save's state variables can. My suggestion for §3.4, which Prime agreed with: the id lives in the crew file; on Board the station writes `fhp.crew.<id> = <position>`; at each look it lines the new crew list up with the last one, and only crew who left or arrived are matched by name, race, looks and record. Prime's additions: a received ship's `fhp.crew.*` entries are dropped and rewritten at her next Board; a list version (`fhp.crew.v`) so a reordered list reads as stale; each lined-up pair confirmed by race and looks; enemy boarders never get ids (`SaveHelper.isOwnCrew`). Not tested yet: own crew sent to the enemy ship and back (they may rejoin at the end of the list), a sector jump, a game over, Steam Cloud, Hyperspace.
+2. **Alternative**, Re: §3.3, heromedel's idea: the same state variables can identify a ship. One save is one ship, so `fhp.ship.<career>.<id> = <her Board count>` never shifts. On Dock, the station would know which career and which ship a save belongs to, refuse a save from another career, a Sandbox ship or one made outside the station, and tell an old copy (Steam Cloud's, or one of a ship already docked) by its lower count. It stops mix-ups, not a determined cheat with a save editor. Ships flying when it arrives would be accepted once, as today, and marked at their next Board.
+3. **Re: Plan Z steps 15 to 18 (heromedel, 5.81):** they go back to Cloud-C-Primary-Edit. Building features is Prime's work; this branch is the bug tester's. It keeps testing what Prime builds (the bench's ledger now reads the 6.0 folders, the harness, and tests in FTL itself) and fixing the bugs found there or reported. Point 1's results and point 2 are Prime's to use or not.
+4. **Found**, Re: 5.73 (`LogConvert`): converted entries were put on the conversion's day. Matched to the master log's copies by text alone and in order, a common line from before the master log began ("LOADED  (refresh)") took a copy from days later; the later entries then ran out of copies, and every entry without one got the day it was written. heromedel's Captain's Log showed his whole career on one day; on a copy of his Immersive Easy fleet, 2,460 entries landed there. 5.81:
+   - a copy is matched in the same minute (or the next), each used once;
+   - an entry with none is Prior (`day=0`), left out of the Captain's Log as before 6.0 (heromedel's choice; the 5.77 note's "fell on day 1" no longer holds), shown in the station log under "Prior to Stardate 1.1.1.1";
+   - a received ship's voyage from another station is Prior too;
+   - a fleet converted before 5.81 is repaired once (`LogConvert.repairDays`, one journal note, `days_fixed` in `logs/converted.txt`, logged as `LOG_DAYS_REPAIRED`): only converted entries' stardates and days change, in `events.log` and the ship logs. It's the one time the event log is rewritten rather than appended to. On heromedel's copy: 541 moved to their day, 1,957 Prior, none left unmatched.
+5. **Found**, Re: BB 12, first half: the Cargo Bay opens with an unreadable boarded save, without her, and says why (heromedel's idea; the words go to McCarthy once the version is up). Also: the Cargo Bay asks about FTL's ship only when its save really changes her, whichever ship is picked, which closes a gap where a purchase from her own store, with another ship picked, wrote her save without asking.

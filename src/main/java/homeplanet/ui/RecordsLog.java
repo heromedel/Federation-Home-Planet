@@ -114,7 +114,7 @@ class RecordsLog extends JComponent implements Scrollable {
 		String day = null;
 		for (homeplanet.core.EventLog.Entry e : es) {
 			if (e.kind.equals("LOADED")) continue; // the fleet's listing: the debug log's now (heromedel, 5.53)
-			String heading = byStardate ? "Stardate " + homeplanet.vault.MasterLog.stardate(Math.max(1, e.day)) : e.time.length() >= 10 ? e.time.substring(0, 10) : e.time;
+			String heading = byStardate ? (e.day == 0 ? "Prior to Stardate 1.1.1.1" : "Stardate " + homeplanet.vault.MasterLog.stardate(Math.max(1, e.day))) : e.time.length() >= 10 ? e.time.substring(0, 10) : e.time; // 0: from before the career's stardates (5.81)
 			if (!heading.equals(day)) {
 				day = heading;
 				Item h = new Item();

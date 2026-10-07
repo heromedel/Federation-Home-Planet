@@ -611,12 +611,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	 * Hold. Away from a store it opens all the same (heromedel, 5.52; the Cargo Bay follows the ship picked on it since
 	 * 5.00): she can't trade there and it says so, and another ship can be picked.
 	 */
-	private String cargoBayClosedReason() {
-		Ship ship = Vault.get().boarded();
-		if (ship == null) return null; // the Cargo Hold alone: its goods can be sold (CargoBayUI.holdOnly)
-		if (ship.save() == null) return ship.name + "'s save can't be read.\nBoard another ship, or check her Records, before returning to the Cargo Bay to trade.";
-		return null;
-	}
 	private FtlButton controlButton(String text, String tip) {
 		FtlButton b = new FtlButton(text, FtlFont.MENU, 180, 40);
 		b.setToolTipText(tip);
@@ -953,9 +947,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else if (o == designBtn) {
 			DesignListDialog.open(this);
 		} else if (o == cargoBtn) {
-			String why = cargoBayClosedReason();
-			if (why == null) parent.showCargoBay();
-			else JOptionPane.showMessageDialog(this, why, "Cargo Bay", JOptionPane.INFORMATION_MESSAGE);
+			parent.showCargoBay(); // always opens: a boarded ship whose save can't be read is left out of it, and the note says why (5.81)
+			String unreadable = CargoBayUI.unreadableNote();
+			if (unreadable != null) JOptionPane.showMessageDialog(this, unreadable, "Cargo Bay", JOptionPane.WARNING_MESSAGE);
 		} else if (o == commBtn) {
 			parent.showLongRangeComm();
 		} else if (o == launchBtn) {

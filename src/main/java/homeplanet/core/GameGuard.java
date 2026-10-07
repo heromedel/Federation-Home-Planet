@@ -23,6 +23,7 @@ public final class GameGuard {
 
 	/** True if FTL's process is running: FTLGame.exe on Windows, "FTL" elsewhere (Steam's Linux and Mac builds). */
 	public static boolean isFtlRunning() {
+		if (Boolean.getBoolean("homeplanet.ftlRunning")) return true; // the harness's stand-in for a running FTL (read each time, 5.81)
 		if (DISABLED) return false;
 		String os = System.getProperty("os.name", "");
 		try {

@@ -241,6 +241,60 @@ public class GuiT {
   Setup.chk("X: for the Cargo Hold, her past the System Limit, a Mind Control (not hers) can be bought: no work order on the row", Boolean.TRUE.equals(h[0]) && h[1] != null && !String.valueOf(h[1]).toLowerCase().contains("work order"));
   Setup.chk("X: bought for the store's price alone, and saved", Integer.valueOf(3).equals(h[2]) && Boolean.TRUE.equals(h[3]) && v.storageScrap() == 3);
 
+  // FTL's ship is asked about only when the Cargo Bay's save changes her, whichever ship is picked (heromedel, 5.81):
+  // fuel for the Cargo Hold from another ship's store, her picked: no question, her file untouched; fuel for the hold
+  // from her own store (its stock is in her save), another ship picked: the question, Nevermind saves nothing, Go ahead saves
+  {
+   Ship other = null; for (Ship d2 : v.docked()) if (d2 != b) { other = d2; break; }
+   SavedGameParser.SavedGameState herMap = v.readCopy(b).save;
+   for (Ship withStore : new Ship[] {b, other}) {
+    SavedGameParser.SavedGameState gs = v.readCopy(withStore).save;
+    if (gs.getBeaconList().isEmpty()) { // a ship the test world made has no map: hers, so she sits at a beacon too
+     for (SavedGameParser.BeaconState bs : herMap.getBeaconList()) gs.getBeaconList().add(new SavedGameParser.BeaconState(bs));
+     gs.setCurrentBeaconId(herMap.getCurrentBeaconId());
+    }
+    SavedGameParser.StoreState st = gs.getBeaconList().get(gs.getCurrentBeaconId()).getStore();
+    if (st == null) { st = new SavedGameParser.StoreState(); gs.getBeaconList().get(gs.getCurrentBeaconId()).setStore(st); }
+    st.setFuel(3);
+    v.write(withStore, gs);
+   }
+   hold(v, 50);
+   System.setProperty("homeplanet.ftlRunning", "true");
+   final Ship store2 = other;
+   final Object[] k = new Object[8];
+   String herHash = SafeFiles.hash(v.fileOf(b));
+   shown.clear(); optionsShown.clear(); presses.clear(); presses.addAll(Arrays.asList(1, 1));
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    CargoBayUI bay = f.cargoBay;
+    bay.init(); // her, FTL's ship, picked
+    k[0] = buyFuel(bay, store2);
+    k[1] = bay.saveAll();
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   int otherFuel = v.readCopy(other).save.getBeaconList().get(v.readCopy(other).save.getCurrentBeaconId()).getStore().getFuel();
+   Setup.chk("Q: fuel for the Cargo Hold from another ship's store, FTL's ship picked: no question " + shown + ", her file untouched, the hold and that store saved",
+     Boolean.TRUE.equals(k[0]) && Boolean.TRUE.equals(k[1]) && !asked() && herHash.equals(SafeFiles.hash(v.fileOf(b))) && otherFuel == 2 && v.storage().save().getPlayerShip().getFuelAmt() >= 1);
+   int holdFuel = v.storage().save().getPlayerShip().getFuelAmt();
+   shown.clear(); optionsShown.clear(); presses.clear(); presses.addAll(Arrays.asList(0, 1)); // Nevermind, then Go ahead
+   final Ship herShip = b;
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    CargoBayUI bay = f.cargoBay;
+    bay.init();
+    call(bay, CargoBayUI.class, "pick", new Class<?>[] {Ship.class}, store2); // the other ship picked
+    k[2] = buyFuel(bay, herShip);
+    k[3] = bay.saveAll(); // Nevermind
+    k[4] = asked();
+    k[5] = bay.saveAll(); // Go ahead
+    java.lang.reflect.Field pk = CargoBayUI.class.getDeclaredField("picked"); pk.setAccessible(true); pk.set(bay, null); bay.init(); // no pick: back on FTL's ship, as the checks after these expect
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   SavedGameParser.SavedGameState herNow = v.readCopy(b).save;
+   Setup.chk("Q: fuel for the hold from her own store, another ship picked: FTL is asked about " + shown + "; Nevermind saves nothing",
+     Boolean.TRUE.equals(k[2]) && Boolean.FALSE.equals(k[3]) && Boolean.TRUE.equals(k[4]));
+   Setup.chk("Q: and Go ahead saves it: her store one fuel short, the hold one more",
+     Boolean.TRUE.equals(k[5]) && herNow.getBeaconList().get(herNow.getCurrentBeaconId()).getStore().getFuel() == 2 && v.storage().save().getPlayerShip().getFuelAmt() == holdFuel + 1);
+   System.clearProperty("homeplanet.ftlRunning");
+   shown.clear(); optionsShown.clear(); presses.clear();
+  }
+
   // from the Cargo Bay: a Mind Control past the limit, then a Clone Bay for her Medbay
   SafeFiles.writeText(v.systemsFile(), "# stored\nmind 2\nclonebay\n", false);
   hold(v, 150);
@@ -306,6 +360,17 @@ public class GuiT {
   Setup.chk("X: at 7, a stored system goes in without asking, for nothing", Integer.valueOf(0).equals(w[2]) && Integer.valueOf(1).equals(w[3]) && Integer.valueOf(60).equals(w[4]));
   v.systemsFile().delete();
  }
+ /** One fuel for the Cargo Hold from the store at this ship's beacon, through the shop as its button does; false if there's no such row. */
+ static boolean buyFuel(CargoBayUI bay, Ship at) throws Exception {
+  Object shop = field(bay, CargoBayUI.class, "shop");
+  java.lang.reflect.Field ts = shop.getClass().getDeclaredField("toStorage"); ts.setAccessible(true); ts.set(shop, true);
+  call(shop, shop.getClass(), "rebuild", new Class<?>[0]);
+  for (Object e : (List<?>) call(shop, shop.getClass(), "buildEntries", new Class<?>[0]))
+   if ("FUEL".equals(String.valueOf(field(e, e.getClass(), "kind"))) && field(e, e.getClass(), "ship") == at) { call(shop, shop.getClass(), "buy", new Class<?>[] {e.getClass()}, e); return true; }
+  return false;
+ }
+ /** Whether the "FTL is running" question was put since shown was last cleared. */
+ static boolean asked() { for (String m : shown) if (m.startsWith("FTL is running")) return true; return false; }
  static ShipState mine(CargoBayUI bay) throws Exception { return ((SavedGameParser.SavedGameState) field(bay, CargoBayUI.class, "currentSave")).getPlayerShip(); }
  static int level(ShipState s, SavedGameParser.SystemType t) { SavedGameParser.SystemState st = s.getSystem(t); return st == null ? 0 : st.getCapacity(); }
  static Object stored(Object sys, String id) throws Exception {
@@ -451,7 +516,7 @@ public class GuiT {
   final Object[] r = new Object[6];
   presses.clear(); presses.addAll(Arrays.asList(0, 0)); // Yes to selling the weapon, Yes to selling the system
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
-   r[3] = call(f.spaceDock, SpaceDockUI.class, "cargoBayClosedReason", new Class<?>[0]); // the Space Dock's Cargo Bay button lets her in
+   r[3] = call(null, CargoBayUI.class, "unreadableNote", new Class<?>[0]); // no ship aboard: nothing to say, the Cargo Bay opens
    f.showCargoBay();
    CargoBayUI bay = f.cargoBay;
    r[0] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
@@ -486,6 +551,25 @@ public class GuiT {
   Setup.chk("Y: a docked ship picked in the Cargo Bay: the screen works on her, nobody is boarded, no pop-up " + shown, v.boarded() == null && Boolean.FALSE.equals(b[0]) && b[1] == next && shown.isEmpty());
   Setup.chk("Y: opened again, the pick is fresh: the boarded ship (none), so the Cargo Hold alone", Boolean.TRUE.equals(b[2]));
   v.board(next); // the tests after this one work on a boarded ship, as before
+  // her save can't be read (heromedel's "comes and goes", 5.81): the Cargo Bay opens anyway, without her, and says why
+  final byte[] keep = SafeFiles.read(v.continueFile());
+  SafeFiles.write(v.continueFile(), "not a save".getBytes("UTF-8"));
+  final Object[] u = new Object[4];
+  shown.clear(); optionsShown.clear(); presses.clear(); presses.addAll(Arrays.asList(0, 0));
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showSpaceDock();
+   Object btn = field(f.spaceDock, SpaceDockUI.class, "cargoBtn");
+   f.spaceDock.actionPerformed(new java.awt.event.ActionEvent(btn, java.awt.event.ActionEvent.ACTION_PERFORMED, "cargo"));
+   CargoBayUI bay = f.cargoBay;
+   u[0] = bay.isShowing();
+   u[1] = field(bay, CargoBayUI.class, "currentShip");
+   u[2] = ((List<?>) call(bay, CargoBayUI.class, "tradeableShips", new Class<?>[0])).contains(next);
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  boolean said = false; for (String m : shown) if (m.contains("could not load " + homeplanet.parser.ShipNames.the(next.name)) && m.contains("opens without her")) said = true;
+  Setup.chk("U: the boarded ship's save can't be read: the Cargo Bay opens anyway " + shown, Boolean.TRUE.equals(u[0]));
+  Setup.chk("U: without her (not worked on, not in range for trade or her store), and a note says why", u[1] == null && Boolean.FALSE.equals(u[2]) && said);
+  SafeFiles.write(v.continueFile(), keep);
+  shown.clear(); optionsShown.clear(); presses.clear();
  }
 
  /** The Space Dock's gold headings fold their buttons away on a click, and stay folded after a redraw. */
