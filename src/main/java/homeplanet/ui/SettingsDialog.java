@@ -40,6 +40,8 @@ public class SettingsDialog extends JDialog {
 	private final JCheckBox dockBox = new JCheckBox("Option to Play FTL, docked in the station window, at", homeplanet.core.FtlDock.optionOn());
 	private final javax.swing.JComboBox<String> dockSize = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.SIZES);
 	private final javax.swing.JComboBox<String> dockHow = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.HOW);
+	/** FTL's -directx switch (heromedel, 5.64), beside the docked option: Windows only. */
+	private final JCheckBox directxBox = new JCheckBox("Launch FTL with DirectX", HomePlanet.launchDirectX);
 	private final RuleBoxes rules = new RuleBoxes();
 	private final JCheckBox borderlessBox = new JCheckBox("Borderless full screen: the station fills the screen, with no title bar (F11 or Alt+Enter switches it any time)", Boolean.parseBoolean(HomePlanet.config.getProperty(MainFrame.CFG_BORDERLESS, "false")));
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
@@ -202,6 +204,9 @@ public class SettingsDialog extends JDialog {
 			experimental.setToolTipText(dockBox.getToolTipText());
 			dockRow.add(experimental);
 			body.add(dockRow, next(c));
+			directxBox.setToolTipText("<html>FTL draws with Direct3D instead of OpenGL (its own -directx switch).<br>"
+					+ "On some PCs FTL in a window, docked included, loads much faster with it.</html>");
+			body.add(directxBox, next(c));
 		}
 
 		heading(body, c, "Mods");
@@ -420,6 +425,7 @@ public class SettingsDialog extends JDialog {
 		boolean dockWas = homeplanet.core.FtlDock.optionOn();
 		if (homeplanet.core.FtlDock.supported() && dockBox.isSelected() != dockWas) changed.add("Option to Play FTL, docked: " + dockBox.isSelected());
 		if (homeplanet.core.FtlDock.supported() && (dockHow.getSelectedIndex() == 1) != homeplanet.core.FtlDock.attachedChosen()) changed.add("FTL docked " + dockHow.getSelectedItem());
+		if (homeplanet.core.FtlDock.supported() && directxBox.isSelected() != HomePlanet.launchDirectX) changed.add("Launch FTL with DirectX: " + directxBox.isSelected());
 		rules.describeChanges(changed);
 		if (!victoryChoice().equals(victoryWas)) changed.add("After a final victory: " + victoryChoice());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
@@ -451,6 +457,7 @@ public class SettingsDialog extends JDialog {
 			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_ON, Boolean.toString(dockBox.isSelected()));
 			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_SIZE, (String) dockSize.getSelectedItem());
 			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_ATTACHED, Boolean.toString(dockHow.getSelectedIndex() == 1));
+			HomePlanet.launchDirectX = directxBox.isSelected();
 			if (dockWas && !dockBox.isSelected()) { // FTL's own fullscreen setting back, unless the player has changed it since
 				try { homeplanet.core.FtlDock.restoreSettings(); }
 				catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not put FTL's fullscreen setting back in its settings.ini:\n" + e.getMessage()); }
