@@ -1920,6 +1920,8 @@ public final class Vault {
 	static final String[] PACKAGE = {"ship.sav", VoyageLog.LOG, VoyageLog.LAST, TradeMark.FILE, "papers.txt"};
 	/** Her record and her events in a package (5.75): an older station leaves them out (unknown files are dropped), and a package without them is read as before. */
 	static final String PACKAGE_RECORD = "record.xml", PACKAGE_EVENTS = "events.log";
+	/** Her crew's files from the crew register, under crew/ in her package (5.90): an older station leaves them out. */
+	static final String PACKAGE_CREW = "crew/";
 	private static final int PACKAGE_MAX = 16 * 1024 * 1024;
 
 	/** A docked ship's package for another station (a zip of {@link #PACKAGE}). */
@@ -1959,10 +1961,26 @@ public final class Vault {
 			z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE_EVENTS));
 			z.write(events.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
 			z.closeEntry();
+			File[] crew = new File(folderOf(s), CrewRegister.CREW_DIR).listFiles(); // her crew's files: their past goes with them (5.90)
+			if (crew != null) {
+				java.util.Arrays.sort(crew);
+				for (File c : crew) {
+					if (!c.isFile() || !c.getName().endsWith(".xml")) continue;
+					z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE_CREW + c.getName()));
+					z.write(SafeFiles.read(c));
+					z.closeEntry();
+				}
+			}
 		} finally {
 			z.close();
 		}
 		return bo.toByteArray();
+	}
+	/** A crew member's file in a package: crew/ and a plain file name, nothing that could climb out of her folder. */
+	static boolean crewEntry(String name) {
+		if (!name.startsWith(PACKAGE_CREW) || !name.endsWith(".xml")) return false;
+		String f = name.substring(PACKAGE_CREW.length());
+		return !f.isEmpty() && f.indexOf('/') < 0 && f.indexOf('\\') < 0 && !f.contains("..") && !f.startsWith(".");
 	}
 	/** A package's files by name: only the ones a package holds, each within its limit. */
 	public static Map<String, byte[]> unpack(byte[] pkg) throws IOException {
@@ -1973,7 +1991,8 @@ public final class Vault {
 			for (java.util.zip.ZipEntry e; (e = z.getNextEntry()) != null;) {
 				if (out.containsKey(e.getName())) throw new IOException("a ship's package names " + e.getName() + " twice");
 				boolean known = java.util.Arrays.asList(PACKAGE).contains(e.getName()) || e.getName().equals(homeplanet.parser.ShipPapers.BLUEPRINT)
-						|| e.getName().startsWith(homeplanet.parser.ShipPapers.ART) || e.getName().equals(PACKAGE_RECORD) || e.getName().equals(PACKAGE_EVENTS);
+						|| e.getName().startsWith(homeplanet.parser.ShipPapers.ART) || e.getName().equals(PACKAGE_RECORD) || e.getName().equals(PACKAGE_EVENTS)
+						|| crewEntry(e.getName());
 				java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
 				byte[] buf = new byte[8192];
 				for (int n; (n = z.read(buf)) > 0;) {
@@ -2075,6 +2094,8 @@ public final class Vault {
 			note.replace(new File(dir, TradeMark.FILE), TradeMark.text(tradeLine, from, original == null ? from : original, commissioned, gs, sectors));
 			File f = fileOf(s);
 			note.replace(f, save);
+			File arrived = new File(new File(dir, CrewRegister.CREW_DIR), CrewRegister.ARRIVED); // her crew's files from the other station, taken in as the register meets each (5.90)
+			for (Map.Entry<String, byte[]> c : files.entrySet()) if (crewEntry(c.getKey())) note.replace(new File(arrived, c.getKey().substring(PACKAGE_CREW.length())), c.getValue());
 			note.commit();
 			s.hash = SafeFiles.hash(f);
 			ships.add(s);

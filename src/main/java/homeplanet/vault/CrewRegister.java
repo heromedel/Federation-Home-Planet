@@ -124,6 +124,34 @@ public final class CrewRegister {
 		}
 		return memorialCrewDir(v);
 	}
+	/** Where a ship received in a trade keeps her crew's files from the other station, until each is taken in (5.90). */
+	public static final String ARRIVED = "arrived";
+	/**
+	 * A crew member new to the register aboard a ship received in a trade: her file from the other station, if one is
+	 * waiting in that ship's crew/arrived/ (the same name and race; the same looks, record and sex count for more, so
+	 * namesakes go to the likeliest); null if none.
+	 */
+	private static File arrived(Vault v, Found x, List<File> used) {
+		if (!x.place.startsWith("ship:")) return null;
+		String id = x.place.substring(5);
+		for (File d : v.shipFolders()) {
+			if (!id.equals(ShipStore.idOf(d))) continue;
+			File[] fs = new File(new File(d, CREW_DIR), ARRIVED).listFiles();
+			if (fs == null) return null;
+			java.util.Arrays.sort(fs);
+			File best = null;
+			int bestScore = 0;
+			for (File f : fs) {
+				if (!f.isFile() || used.contains(f)) continue;
+				Properties p = readCrewFile(f);
+				if (p == null || !x.name.equals(p.getProperty("name")) || !x.race.equalsIgnoreCase(p.getProperty("race", ""))) continue;
+				int score = 1 + (x.tints.equals(p.getProperty("tints", "")) ? 2 : 0) + (x.record.equals(p.getProperty("record", "")) ? 2 : 0) + (Boolean.toString(x.male).equals(p.getProperty("male")) ? 1 : 0);
+				if (score > bestScore) { best = f; bestScore = score; }
+			}
+			return best;
+		}
+		return null;
+	}
 	/** A crew member's file as it is now, by their id; null if they have none (or the register is still a 5.x crew.txt). */
 	public static File fileOf(Vault v, int id) { return crewFiles(v).get(id); }
 	/** The register's own state file (how far the logs were read): for the harness, which ages it by hand. */
@@ -383,6 +411,7 @@ public final class CrewRegister {
 
 		// those found: moved, renamed, back, ransomed, found again
 		Member[] memberOf = new Member[found.size()];
+		List<File> arrivedUsed = new ArrayList<File>();
 		for (int i = 0; i < found.size(); i++) {
 			Found x = found.get(i);
 			Member m = matchOf[i];
@@ -392,6 +421,19 @@ public final class CrewRegister {
 				m.name = x.name; m.race = x.race; m.male = x.male;
 				m.title = x.title;
 				if (!fresh) m.events.add(new Event(today, joined(x, hist, seen[0])));
+				File came = arrived(v, x, arrivedUsed);
+				if (came != null) { // she came in a trade: her past at the other station comes with her (5.90), before anything here
+					Properties p = readCrewFile(came);
+					Member theirs = p == null ? null : member(0, p, "");
+					if (theirs != null) {
+						List<Event> before = new ArrayList<Event>();
+						for (Event e : theirs.events) before.add(new Event(0, e.text)); // their days are another career's: Prior here
+						m.events.addAll(0, before);
+						m.served.addAll(theirs.served);
+						if (m.title.isEmpty()) m.title = theirs.title;
+					}
+					arrivedUsed.add(came);
+				}
 				members.add(m);
 			} else {
 				if (!m.name.equals(x.name) && !onRecord(m.name, x.name)) {
@@ -462,6 +504,7 @@ public final class CrewRegister {
 		if (renamedShips(v, hist, members)) changed = true;
 		for (Member m : members) if (m.rec.isEmpty() && invent(m)) changed = true;
 		if (changed || seen[0] != histLen || seen[1] != masterLen) write(v, members, histLen, masterLen);
+		for (File f : arrivedUsed) if (!f.delete()) log.warn("Could not remove {}, a traded crew member's file now taken in", f);
 	}
 	private static int nextId(List<Member> members) { int n = 1; for (Member m : members) n = Math.max(n, m.id + 1); return n; }
 
