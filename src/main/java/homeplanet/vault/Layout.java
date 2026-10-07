@@ -170,13 +170,15 @@ public final class Layout {
 			try {
 				for (java.util.zip.ZipEntry e; (e = z.getNextEntry()) != null; ) {
 					File f = new File(root, e.getName());
-					if (!f.getCanonicalPath().startsWith(root.getCanonicalPath())) continue;
+					if (!f.getCanonicalPath().startsWith(root.getCanonicalPath() + File.separator)) continue;
 					if (e.isDirectory()) { f.mkdirs(); continue; }
 					f.getParentFile().mkdirs();
 					java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
 					byte[] buf = new byte[65536];
 					for (int n; (n = z.read(buf)) > 0; ) b.write(buf, 0, n);
 					SafeFiles.write(f, b.toByteArray());
+					long t = e.getLastModifiedTime() != null ? e.getLastModifiedTime().toMillis() : e.getTime();
+					if (t > 0) f.setLastModified(t); // its own time back: a ship's versions are ordered by it (5.94)
 				}
 			} finally { z.close(); }
 		} catch (IOException e) {

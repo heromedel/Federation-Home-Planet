@@ -96,7 +96,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
   Vault n = Vault.switchFleet(false);
   int normalShips = n.all().size();
   File zip = Vault.endImmersiveCareer();
-  java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip); int zipped = z.size(); boolean hasCareer = z.getEntry("career.xml") != null || z.getEntry("career.txt") != null; z.close();
+  java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip); int zipped = 0; for (java.util.Enumeration<? extends java.util.zip.ZipEntry> en = z.entries(); en.hasMoreElements(); ) if (!en.nextElement().isDirectory()) zipped++; boolean hasCareer = z.getEntry("career.xml") != null || z.getEntry("career.txt") != null; z.close();
   Setup.chk("E: ending the career keeps the whole of it, zipped, in old-immersive-careers", zip.getParentFile().getName().equals(Vault.OLD_CAREERS) && zipped == files && hasCareer);
   Setup.chk("E: then its folder is gone, and the normal fleet untouched", !im.exists() && Vault.get().all().size() == normalShips && !Vault.get().immersive);
   Vault again = Vault.switchFleet(true);

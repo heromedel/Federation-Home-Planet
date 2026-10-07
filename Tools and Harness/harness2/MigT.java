@@ -34,6 +34,19 @@ public class MigT { public static void main(String[] a) throws Exception {
  Setup.chk("B: the old layout: a manifest, ships/, junkyard/ and history/ of files, the hold and the logs at the root; no folders", new File(root, "manifest.xml").isFile() && new File(root, "storage.sav").isFile() && new File(root, "events.log").isFile() && !new File(root, "cargohold").exists() && !new File(root, "logs").exists() && new File(root, "ships/" + d1.id + ".sav").isFile()
    && new File(root, "junkyard/" + d2.id + ".sav").isFile() && new File(root, "history/" + d3.id + "/fate.txt").isFile() && new File(root, "history/" + d1.id + "/cloud-copy-" + "").getParentFile().isDirectory()
    && !new File(root, "shipyard").exists() && !new File(root, "memorials_and_records").exists() && !new File(root, "storage.xml").exists());
+ // a conversion that fails part way (a ship's folder can't be made: a file stands where it would go) is put back from its zip (step 24)
+ String oldLook = sorted(layoutLook(root).replace("logs/\n", "").replace("logs/", ""));
+ File shipyard = new File(root, "shipyard"); shipyard.mkdirs();
+ File block = new File(shipyard, ShipStore.stem(d1.name, d1.id)); SafeFiles.writeText(block, "in the way", false);
+ String why = null;
+ try { Vault.open(saves); } catch (IOException x) { why = x.getMessage(); }
+ block.delete(); shipyard.delete();
+ Setup.chk("C: a conversion that fails part way says so, naming the zip (" + why + ")", why != null && why.contains("put back as it was") && why.contains("-before-6.0-"));
+ String nowLook = sorted(layoutLook(root).replace("logs/\n", "").replace("logs/", "")); // the logs moved into logs/ before the zip was taken (moveLogs, 5.71): the same files
+ if (!nowLook.equals(oldLook)) { List<String> o = Arrays.asList(oldLook.split("\n")), n = Arrays.asList(nowLook.split("\n")); for (String x : o) if (!n.contains(x)) System.out.println("  gone: " + x); for (String x : n) if (!o.contains(x)) System.out.println("  new:  " + x); }
+ Setup.chk("C: and the fleet is put back from it, every file as it was", nowLook.equals(oldLook));
+ for (File z : root.getParentFile().listFiles()) if (z.getName().startsWith(root.getName() + "-before-6.0-")) z.delete(); // the failed try's zip
+ Thread.sleep(1100); // the next zip's name is its second's
  // opened again: converted
  Vault v2 = Vault.open(saves); v2.takeStock();
  File[] zips = root.getParentFile().listFiles(new FilenameFilter() { public boolean accept(File d, String n) { return n.startsWith(root.getName() + "-before-6.0-") && n.endsWith(".zip"); } });
@@ -76,7 +89,8 @@ public class MigT { public static void main(String[] a) throws Exception {
    // a 5.x fleet kept nothing of a departed ship but her folder: her record is her id and name alone
    StringBuilder sb = new StringBuilder(where + " " + r.id + " " + r.name + (where.equals("memorial") ? "" : " " + r.state + " dlc=" + r.dlc + " hash=" + r.hash));
    sb.append(" save=").append(ShipStore.sav(d).isFile() ? SafeFiles.hash(ShipStore.sav(d)) : "none");
-   List<String> vs = new ArrayList<String>(); for (File f : ShipStore.versions(d, false)) vs.add(f.getName()); for (File f : ShipStore.versions(d, true)) vs.add(f.getName());
+   List<String> vs = new ArrayList<String>(); for (File f : ShipStore.versions(d, false)) vs.add(f.getName());
+   List<String> special = new ArrayList<String>(); for (File f : ShipStore.versions(d, true)) special.add(f.getName()); Collections.sort(special); vs.addAll(special); // the special copies by name: a zip keeps times to the second
    sb.append(" versions=").append(vs);
    List<String> side = new ArrayList<String>(); File[] fs = d.listFiles(); Arrays.sort(fs);
    for (File f : fs) if (f.isFile() && !f.getName().equals(ShipStore.xml(d).getName()) && !f.getName().equals(ShipStore.sav(d).getName())) side.add(f.getName() + ":" + f.length());
@@ -96,4 +110,13 @@ public class MigT { public static void main(String[] a) throws Exception {
   for (File f : fs) { String p = rel.isEmpty() ? f.getName() : rel + "/" + f.getName(); out.add(p); if (f.isDirectory()) out.addAll(paths(f, p)); }
   return out;
  }
+ /** Every file under a folder with its size and fingerprint, the folders too (the zip's restore leaves none behind or out). */
+ static String layoutLook(File root) throws IOException {
+  List<String> out = new ArrayList<String>(); look(root, "", out); Collections.sort(out); return String.join("\n", out) + "\n";
+ }
+ static void look(File d, String at, List<String> out) throws IOException {
+  File[] fs = d.listFiles(); if (fs == null) return;
+  for (File f : fs) { String p = at + f.getName(); if (f.isDirectory()) { out.add(p + "/"); look(f, p + "/", out); } else out.add(p + " " + f.length() + " " + SafeFiles.hash(f)); }
+ }
+ static String sorted(String lines) { List<String> l = new ArrayList<String>(Arrays.asList(lines.split("\n"))); Collections.sort(l); return String.join("\n", l); }
 }

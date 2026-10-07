@@ -180,9 +180,15 @@ public final class SafeFiles {
 			File abs = f.getAbsoluteFile();
 			if (abs.equals(skip) || abs.equals(self)) continue;
 			if (f.isDirectory()) {
+				ZipEntry d = new ZipEntry(prefix + f.getName() + "/"); // an empty folder comes back too
+				d.setLastModifiedTime(java.nio.file.attribute.FileTime.fromMillis(f.lastModified()));
+				z.putNextEntry(d);
+				z.closeEntry();
 				addToZip(z, f, prefix + f.getName() + "/", skip, self);
 			} else if (f.isFile()) {
-				z.putNextEntry(new ZipEntry(prefix + f.getName()));
+				ZipEntry e = new ZipEntry(prefix + f.getName());
+				e.setLastModifiedTime(java.nio.file.attribute.FileTime.fromMillis(f.lastModified())); // a ship's versions are ordered by their time (5.94: lost on a restore before)
+				z.putNextEntry(e);
 				z.write(read(f));
 				z.closeEntry();
 			}

@@ -2356,7 +2356,7 @@ public final class Vault {
 		SafeFiles.zipFolder(im, zip, null);
 		int files = countFiles(im), zipped;
 		java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip);
-		try { zipped = z.size(); } finally { z.close(); }
+		try { zipped = 0; for (java.util.Enumeration<? extends java.util.zip.ZipEntry> en = z.entries(); en.hasMoreElements(); ) if (!en.nextElement().isDirectory()) zipped++; } finally { z.close(); } // its files (its folders are entries too, 5.94)
 		if (zipped != files) throw new IOException("The copy in " + zip + " is incomplete (" + zipped + " of " + files + " files): nothing was deleted");
 		if (!SafeFiles.deleteTree(im))
 			throw new IOException("Some of " + im + " could not be deleted (a file in use?). The whole career is kept in " + zip

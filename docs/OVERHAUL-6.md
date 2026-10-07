@@ -245,7 +245,7 @@ _5.93: the prose logs are no longer written: history.log, the master log (its da
 
 22. On first opening a fleet in 6.0: the whole fleet folder is zipped first (`SafeFiles.zipFolder`, as ending a career does), then converted: manifest and saves into ship folders, `storage.sav` into the Cargo Hold, crew out of every save into files (the crew register's ids carried over), `history/` into ships' versions and the memorial, old logs converted to two-line entries once (the old prose parsers' last job; marked as converted).
 23. Every fleet the player has: Sandbox, each Immersive career, and the ended careers' zips are left alone.
-24. If conversion fails part way, the fleet is put back from the zip and the station says so, with the zip's path.
+24. If conversion fails part way, the fleet is put back from the zip and the station says so, with the zip's path. _5.94: tested at last (MigT: a file standing where a ship's folder would go): the station says so, naming the zip, and the fleet comes back from it file for file. The test found a fault: the zip kept no file times and no empty folders, so a fleet put back had every file dated now, and a ship's versions (ordered by their time) out of order. `SafeFiles.zipFolder` keeps each file's time and every folder now, and the restore puts the times back (to the second: copies made in the same second fall back to their names' order). An ended career's zip keeps its times the same way._
 
 ### Phase 6: tests
 
@@ -253,7 +253,7 @@ _5.93: the prose logs are no longer written: history.log, the master log (its da
 25a. **The kill test** (Buggy Boy's bench): the station in its own process, as LinkT runs one, killed at random moments during a Cargo Bay save, a trade and an expedition's return; reopened, the ledger finds every ship, crew member and item exactly once.
 26. Every harness test moves to the new storage; the tests that write side files by name write through the stores.
 27. **LinkT** between a 5.x and a 6.0 station: refused plainly. Between two 6.0 stations: every trade kind.
-28. Tested in FTL itself (Wine): board, play, dock, a crew death and a promotion, through the new folders.
+28. Tested in FTL itself (Wine): board, play, dock, a crew death and a promotion, through the new folders. _5.94, done with the 5.93 jar, against heromedel's Windows FTL 1.6.14 under Wine: FTL continued a ship the station had boarded from her folder (Test Kestrel, her three crew), jumped, and wrote its save; the station read the jump into her own log (Jumped, Ship met) and the clock (day 2). In one run the ship was destroyed in the fight that followed, and FTL ended the run: the station found continue.sav gone and recorded her lost, her folder in memorials_and_records/ships/ with her fate and her versions (the jump's among them), her three crew killed, "Lost with the Test Kestrel", their files in memorials_and_records/crew/. In the other, FTL saved and quit at the next beacon, and the station docked her: her save in her folder, continue.sav gone, no protection note left. A promotion is the station's own (the Crew Log's), tested in CrewT, not in FTL._
 
 ### Phase 7: 6.00
 
