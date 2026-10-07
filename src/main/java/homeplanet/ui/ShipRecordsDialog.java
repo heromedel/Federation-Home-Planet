@@ -12,7 +12,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,9 +37,7 @@ import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
 import homeplanet.core.GameGuard;
-import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
-import homeplanet.core.SafeFiles;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 

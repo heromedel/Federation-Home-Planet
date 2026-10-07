@@ -14,6 +14,8 @@ settled.
 systems), `infirmary.txt`, `captives.txt`, `work.txt`, `clock.txt`, `beacons.txt`, `sectors.txt`, `parts.txt`,
 `expeditions.txt`, `career.txt`, `reputation.txt`.
 
+_Overhaul 6.0, Phase 2 (5.69 to 5.77): a ship is a folder now (`shipyard/<Name>.<id>/`, `junkyard/`, `memorials_and_records/ships/`), with her record as xml in it in place of the manifest, her save, her log and her versions; the Cargo Hold is `cargohold/` (its save still the pretend ship, its record beside it, until the crew files exist); the station's logs are `logs/`. The rest of this concern (the hold's contents and the crew as xml, the small files one per concern) waits on the crew files (docs/OVERHAUL-6.md, Phase 2 steps 15 to 18)._
+
 **Why.** A ship has to be a save at the moment she's boarded: Board is "copy her file to continue.sav" and FTL reads
 it unchanged, with no converting step to get wrong. Keeping the hold as a save too meant one reader for ships and the
 hold (the Cargo Bay, the ship report, pricing, the Long Range trade), and everything moving between them is already an
@@ -69,6 +71,8 @@ them leaves them disagreeing. `Vault.Transaction` can write side files together 
 `parts.txt` and the hold, the clock files) still go one by one. Small to fix where it matters; goes away with
 concern 1.
 
+_5.71: the journal (docs/OVERHAUL-6.md §3.2): an action that touches more than one file is written as a note first and finished at the next opening if the station stops partway; every Transaction, Board and Dock go through it. The small files that still go one by one join it as their steps are touched._
+
 ## 4. The master log only grows (noted 5.17 by Claude, not yet talked over)
 
 `master.log` (each career's copy of every log entry, and every day counted) is appended to and never trimmed, and the
@@ -76,6 +80,8 @@ Captain's Log and the Cargo Bay's day read it whole. A week of heromedel's testi
 so a long career could reach several megabytes: still quick to read, but each Cargo Bay Save reads it to find the last
 day line. If it ever matters: keep the last day line's reason in a small file of its own, and let the Captain's Log
 read the file a page at a time (or split it by year). Claude's concern, raised while building it; heromedel hasn't weighed in.
+
+_5.74: the Captain's Log and the station log view read the event log now (`logs/events.log`, every entry two lines), not the master log; the master log's E lines are still written, for the crew register, until the crew files (6.0, step 15), and then they can stop. The event log grows the same way; it is read whole at each opening (heromedel's 2026-10-05 fleet, 1,150 entries, opens in about two seconds), and the Cargo Bay's day reads the master log's last D line still._
 
 ## 5. Docked play needs FTL in a window, and FTL's OpenGL is slow there on some PCs (noted 5.64)
 

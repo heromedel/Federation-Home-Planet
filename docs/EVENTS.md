@@ -181,6 +181,13 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | Kind | Fields |
 | --- | --- |
 | `LOADED` | the fleet's listing at a refresh, the debug log's since 5.53: `headline`, `detail.n` |
+| `CONVERTED` | the FTL Homeworld files brought into the vault (the converter): `headline` |
+| `PROFILE` | FTL's profile backed up, set aside or brought back (Immersive Mode's own profile): `headline` |
+| `SLIPSTREAM` | which Slipstream the station found and uses: `headline` (its folder) |
+| `UNDO_RETROFIT` | a retrofit undone (4B): `headline` (her name, the blueprints, her file) |
+| `CLAUDE` | a note a session wrote into a player's log by hand (a repair, a test): `headline`, `detail.n` |
+
+A converted entry (5.73) carries the kind the old line had (its spaces as underscores), `headline`, `detail.n`, `converted=true`, its own `time` and `day`, and, when the headline names one ship the fleet has or remembers by her id (5.77), her `ship`, `ship_name` and `ship_id`, so it goes into her log as well.
 
 ## Adding a kind
 

@@ -65,7 +65,9 @@ public final class LogConvert {
 		}
 		Map<String, List<String[]>> master = masterCopies(v); // log -> {text, day}, in order
 		int station = 0, voyage = 0, reputation = 0, days = 0;
-		try { station = convertStation(v, first.get("station"), atFirst, master); } catch (Exception e) { log.warn("The station log could not be converted: {}", e.toString()); }
+		Map<String, String> known = new HashMap<String, String>(); // every ship the fleet has or remembers: id -> name, so a converted entry that names her by id goes into her log too (5.77)
+		for (File d : v.shipFolders()) { ShipStore.Record r = ShipStore.read(d); if (r != null) known.put(r.id, r.name); }
+		try { station = convertStation(v, first.get("station"), atFirst, master, known); } catch (Exception e) { log.warn("The station log could not be converted: {}", e.toString()); }
 		for (File d : v.shipFolders()) {
 			try { voyage += convertVoyage(v, d, first, atFirst, master); } catch (Exception e) { log.warn("{}'s voyage log could not be converted: {}", d.getName(), e.toString()); }
 		}
@@ -125,7 +127,8 @@ public final class LogConvert {
 		return e;
 	}
 
-	private static int convertStation(Vault v, String firstTime, Set<String> atFirst, Map<String, List<String[]>> master) throws IOException {
+	private static final Pattern ID = Pattern.compile("\\b([0-9a-f]{16})\\b");
+	private static int convertStation(Vault v, String firstTime, Set<String> atFirst, Map<String, List<String[]>> master, Map<String, String> known) throws IOException {
 		File f = v.historyLog();
 		if (!f.isFile()) return 0;
 		String text = new String(SafeFiles.read(f), StandardCharsets.UTF_8);
@@ -142,6 +145,9 @@ public final class LogConvert {
 				int day = days.of(copy);
 				if (wanted("station", stamp, headline, firstTime, atFirst)) {
 					Event e = base(kind, "station", stamp, day).put("headline", headline).details(details);
+					String id = null;
+					for (Matcher im = ID.matcher(headline); im.find();) if (known.containsKey(im.group(1))) { if (id != null && !id.equals(im.group(1))) { id = null; break; } id = im.group(1); } // one ship named by id: hers
+					if (id != null) e.put("ship", known.get(id) + "." + id).put("ship_name", known.get(id)).put("ship_id", id);
 					String human = !headline.isEmpty() ? headline : !details.isEmpty() ? String.join("; ", details) : kind.toLowerCase();
 					EventLog.write(v, e.human(human));
 					n++;

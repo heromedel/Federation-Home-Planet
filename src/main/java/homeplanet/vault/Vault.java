@@ -39,12 +39,17 @@ import org.slf4j.LoggerFactory;
  *                                copies kept for a reason of their own: victory-, final-battle-, cloud-)
  *     junkyard/&lt;Name&gt;.&lt;id&gt;/      a disbanded ship, the same
  *     memorials_and_records/ships/&lt;Name&gt;.&lt;id&gt;/   a ship that left the fleet (how, in fate.txt), remembered
- *     storage.sav, storage.xml   the Cargo Hold and its record; storage-systems.txt its stored-systems list
- *     designs.xml, remodels.xml, art/, history.log, events.log, removed-blueprints.log
+ *     cargohold/                 the Cargo Hold (5.72): cargohold.sav (the pretend ship, until its contents have an xml of their
+ *                                own), cargohold.xml (its record), systems.txt (its stored systems), parts.txt, overflow.txt, versions/
+ *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
+ *                                ones read in once at 5.73), history.log, master.log, reputation.log, converted.txt (the marks)
+ *     journal/                   the notes of actions under way (5.71), empty when the station is at rest
+ *     designs.xml, remodels.xml, art/, removed-blueprints.log, and the career's own small files
  * </pre>
  *
  * Before 5.69 a fleet was manifest.xml, ships/&lt;id&gt;.sav, junkyard/&lt;id&gt;.sav and history/&lt;id&gt;/; one is converted on
- * opening (homeplanet.vault.Layout), a zip of it as it was kept beside the folder.
+ * opening (homeplanet.vault.Layout), a zip of it as it was kept beside the folder. Each later step moves its own part
+ * the first time a fleet opens, as one journal note (the logs, the Cargo Hold).
  *
  * Each Immersive career has a fleet of its own, by difficulty: FederationHomePlanet-Immersive-Easy, -Normal and -Hard,
  * and FederationHomePlanet-Immersive for Custom (the first Immersive fleet, from before difficulties). The same layout,
