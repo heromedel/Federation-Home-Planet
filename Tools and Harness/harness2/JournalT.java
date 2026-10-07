@@ -13,6 +13,7 @@ public class JournalT { public static void main(String[] a) throws Exception {
  // L: the station's logs in logs/
  Setup.chk("L: the station's logs live in logs/: history, master, events; none at the root", v.historyLog().isFile() && v.historyLog().getParentFile().equals(v.logsDir())
    && new File(v.logsDir(), "master.log").isFile() && EventLog.file(v).isFile() && !new File(root, "history.log").exists() && !new File(root, "events.log").exists());
+ Setup.chk("W: the folder carries its why.txt, in heromedel's words", new File(jdir, Journal.WHY).isFile() && text(new File(jdir, Journal.WHY)).startsWith("Some multi step actions") && jdir.getName().equals("station-action-protection"));
  Setup.chk("L: a fleet's station log is found wherever that fleet keeps it", Vault.historyLogIn(root).equals(v.historyLog()) && Vault.historyLogIn(new File(work, "nowhere")).getName().equals("history.log"));
  // A: a note of every kind of step, committed
  File fresh = new File(root, "jt-fresh.txt"), old = new File(root, "jt-old.txt"), dirFrom = new File(root, "jt-folder"), dirTo = new File(root, "jt-moved"), gone = new File(root, "jt-gone.txt");
@@ -21,7 +22,7 @@ public class JournalT { public static void main(String[] a) throws Exception {
  n.replace(fresh, "fresh\n".getBytes("UTF-8")).replace(old, "new\n".getBytes("UTF-8")).rename(dirFrom, dirTo).delete(gone);
  n.commit();
  Setup.chk("A: a file made, one replaced, a folder renamed whole, a file deleted; the note gone after", text(fresh).equals("fresh\n") && text(old).equals("new\n") && !dirFrom.exists() && text(new File(dirTo, "inside.txt")).equals("in\n") && !gone.exists()
-   && (jdir.listFiles() == null || jdir.listFiles().length == 0) && !new File(root, "jt-old.txt.tx").exists());
+   && notes(jdir) == 0 && !new File(root, "jt-old.txt.tx").exists());
  // B: each file once
  boolean refused = false; try { Journal.begin(v, "TEST_TWICE").replace(old, "a\n".getBytes("UTF-8")).replace(old, "b\n".getBytes("UTF-8")); } catch (IOException e) { refused = e.getMessage().contains("twice"); }
  boolean same = true; try { Journal.begin(v, "TEST_TWICE").replace(old, "a\n".getBytes("UTF-8")).replace(old, "a\n".getBytes("UTF-8")); } catch (IOException e) { same = false; }
@@ -32,7 +33,7 @@ public class JournalT { public static void main(String[] a) throws Exception {
  n = Journal.begin(v, "TEST_FAIL").replace(old, "changed\n".getBytes("UTF-8")).rename(dirTo, blocker);
  boolean failed = false; try { n.commit(); } catch (IOException e) { failed = true; }
  Setup.chk("C: a rename onto something already there fails, and the file replaced before it is put back; no note, no waiting bytes left", failed && text(old).equals("new\n") && dirTo.isDirectory()
-   && (jdir.listFiles() == null || jdir.listFiles().length == 0) && !new File(root, "jt-old.txt.tx").exists());
+   && notes(jdir) == 0 && !new File(root, "jt-old.txt.tx").exists());
  // D: a note left by a station that stopped partway: the bytes of one replacement still wait, the rename is done, the delete isn't
  File d1 = new File(root, "jt-d1.txt"), d2 = new File(root, "jt-d2.txt"), dRen = new File(root, "jt-ren-from"), dRenTo = new File(root, "jt-ren-to"), dDel = new File(root, "jt-del.txt");
  SafeFiles.writeText(d1, "before\n", false); SafeFiles.writeText(new File(root, "jt-d1.txt.tx"), "after\n", false);
@@ -58,13 +59,15 @@ public class JournalT { public static void main(String[] a) throws Exception {
  Ship d = v2.docked().get(0);
  net.blerf.ftl.parser.SavedGameParser.SavedGameState g = v2.readCopy(d).save; g.getPlayerShip().setScrapAmt(g.getPlayerShip().getScrapAmt() + 5);
  v2.begin().put(d, g).commit();
- Setup.chk("S: a save through the journal: written, no note or waiting bytes left", d.save().getPlayerShip().getScrapAmt() == g.getPlayerShip().getScrapAmt() && !new File(v2.fileOf(d).getParentFile(), v2.fileOf(d).getName() + ".tx").exists() && Journal.dir(v2).listFiles().length == 1);
+ Setup.chk("S: a save through the journal: written, no note or waiting bytes left", d.save().getPlayerShip().getScrapAmt() == g.getPlayerShip().getScrapAmt() && !new File(v2.fileOf(d).getParentFile(), v2.fileOf(d).getName() + ".tx").exists() && notes(Journal.dir(v2)) == 1);
  int versions = v2.history(d).size();
  v2.board(d);
- Setup.chk("S: Board: continue.sav hers, her file gone, a version kept", v2.boarded() == d && v2.continueFile().isFile() && !ShipStore.sav(v2.folderOf(d)).exists() && v2.history(d).size() == versions + 1 && Journal.dir(v2).listFiles().length == 1);
+ Setup.chk("S: Board: continue.sav hers, her file gone, a version kept", v2.boarded() == d && v2.continueFile().isFile() && !ShipStore.sav(v2.folderOf(d)).exists() && v2.history(d).size() == versions + 1 && notes(Journal.dir(v2)) == 1);
  v2.dock();
- Setup.chk("S: Dock: her file back, continue.sav gone, nothing left behind", d.state == Ship.State.DOCKED && v2.fileOf(d).isFile() && !v2.continueFile().exists() && Journal.dir(v2).listFiles().length == 1);
+ Setup.chk("S: Dock: her file back, continue.sav gone, nothing left behind", d.state == Ship.State.DOCKED && v2.fileOf(d).isFile() && !v2.continueFile().exists() && notes(Journal.dir(v2)) == 1);
  Setup.done();
 }
  static String text(File f) throws IOException { return new String(SafeFiles.read(f), "UTF-8"); }
+ /** The notes in the folder (its why.txt aside). */
+ static int notes(File dir) { int n = 0; File[] fs = dir.listFiles(); if (fs != null) for (File f : fs) if (!f.getName().equals(Journal.WHY)) n++; return n; }
 }

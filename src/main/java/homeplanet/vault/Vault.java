@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  *                                own), cargohold.xml (its record), systems.txt (its stored systems), parts.txt, overflow.txt, versions/
  *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
  *                                ones read in once at 5.73), history.log, master.log, reputation.log, converted.txt (the marks)
- *     journal/                   the notes of actions under way (5.71), empty when the station is at rest
+ *     station-action-protection/ the notes of actions under way (5.71; heromedel's name, 5.78), only its why.txt when the station is at rest
  *     designs.xml, remodels.xml, art/, removed-blueprints.log, and the career's own small files
  * </pre>
  *
@@ -638,6 +638,7 @@ public final class Vault {
 		folders.clear();
 		if (!root.isDirectory() && !root.mkdirs()) throw new IOException("Could not create " + root);
 		if (!logsDir().isDirectory() && !logsDir().mkdirs()) throw new IOException("Could not create " + logsDir());
+		Journal.ensure(this);
 		Journal.settle(this); // an action a station stopped partway through, finished before anything else touches the fleet
 		moveLogs();
 		if (manifestFile().isFile() || oldShipsDir().isDirectory() || oldHistoryDir().isDirectory()) Layout.convert(this);

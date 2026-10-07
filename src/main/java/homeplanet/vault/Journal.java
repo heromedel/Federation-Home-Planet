@@ -22,7 +22,7 @@ import homeplanet.core.Store;
 
 /**
  * The journal (docs/OVERHAUL-6.md §3.2; 5.71): an action that moves or writes more than one file is written as a note
- * first, in {@code journal/} under the fleet's folder, then its steps are done, then the note is deleted. A step is a
+ * first, in {@code station-action-protection/} under the fleet's folder (heromedel's name; its why.txt says what it is), then its steps are done, then the note is deleted. A step is a
  * replacement (the new bytes wait beside the file as {@code <name>.tx} before the note is written), a rename (a file
  * or a whole folder, all-or-nothing on one drive) or a deletion; each file once, with one owner. A step refused by
  * Windows (a file held open by an antivirus scan or a backup program) is tried again, as {@link SafeFiles#replace}
@@ -34,7 +34,15 @@ public final class Journal {
 	private static final Logger log = LoggerFactory.getLogger(Journal.class);
 	private Journal() { }
 
-	public static final String DIR = "journal";
+	public static final String DIR = "station-action-protection", WHY = "why.txt";
+	/** The folder, made with its why.txt (heromedel's words) so a player who finds it knows what it is. */
+	static File ensure(Vault v) throws IOException {
+		File d = dir(v);
+		if (!d.isDirectory() && !d.mkdirs()) throw new IOException("Could not create " + d);
+		File why = new File(d, WHY);
+		if (!why.isFile()) SafeFiles.writeText(why, "Some multi step actions or multiple actions in a row could get interrupted so they are written to this folder as a note and when confirmed complete the note is removed. If a note is still here after the station has been opened again, the station could not finish it on its own: send the note with a bug report.\r\n", false);
+		return d;
+	}
 	/** The new bytes of a file to replace, waiting beside it. */
 	static final String PENDING = ".tx";
 	private static final SimpleDateFormat STAMP = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -95,8 +103,7 @@ public final class Journal {
 		/** Writes the pending bytes and the note, does the steps, deletes the note. On a failure the steps done are undone (the note stays if that fails too). */
 		public void commit() throws IOException {
 			if (steps.isEmpty()) return;
-			File jdir = dir(v);
-			if (!jdir.isDirectory() && !jdir.mkdirs()) throw new IOException("Could not create " + jdir);
+			File jdir = ensure(v);
 			// the new bytes first, beside their files, so the note never names bytes that aren't there
 			List<File> written = new ArrayList<File>();
 			try {
@@ -207,7 +214,7 @@ public final class Journal {
 		if (notes == null) return out;
 		java.util.Arrays.sort(notes);
 		for (File note : notes) {
-			if (!note.isFile() || !note.getName().endsWith(".txt")) continue;
+			if (!note.isFile() || !note.getName().endsWith(".txt") || note.getName().equals(WHY)) continue;
 			Properties p = Store.read(note);
 			String kind = p.getProperty("kind", "ACTION"), time = p.getProperty("time", ""), station = p.getProperty("station", "");
 			int day = Store.num(p, "day", 0);
