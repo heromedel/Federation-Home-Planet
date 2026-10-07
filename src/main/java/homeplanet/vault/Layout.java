@@ -102,9 +102,8 @@ public final class Layout {
 		}
 		String words = ships + (ships == 1 ? " ship" : " ships") + " and " + remembered + " remembered" + (remembered == 1 ? "" : "") + " into folders of their own";
 		HistoryLog.entry("LAYOUT", "The station's records were rearranged: " + words + " (a copy of the fleet as it was is kept beside it)", null,
-				Event.of("LAYOUT").put("what", "converted").put("to", "6.0").put("ships", ships).put("remembered", remembered).put("backup", zip.getName()));
-		EventLog.write(v, Event.of("LAYOUT").put("what", "converted").put("to", "6.0").put("ships", ships).put("remembered", remembered).put("backup", zip.getName())
-				.human("The station's records were rearranged, every ship into a folder of her own."));
+				Event.of("LAYOUT").put("what", "converted").put("to", "6.0").put("ships", ships).put("remembered", remembered).put("backup", zip.getName())
+						.human("The station's records were rearranged, every ship into a folder of her own."));
 	}
 	private static File[] safeList(File d) { File[] fs = d.listFiles(); return fs == null ? new File[0] : fs; }
 

@@ -35,6 +35,9 @@ public class SettingsDialog extends JDialog {
 	private File game = HomePlanet.datsPath;
 	private final JLabel savesLabel = new JLabel();
 	private final JLabel gameLabel = new JLabel();
+	private final JLabel slipLabel = new JLabel();
+	/** The Records tab's place among the tabs (General, Rules, Folders, Mods, Records, About). */
+	private static final int RECORDS_TAB = 4;
 	private final JCheckBox steamBox = new JCheckBox("Launch FTL through Steam", HomePlanet.launchThroughSteam);
 	/** heromedel's words (5.29): FTL docked in the station window, Windows only. */
 	private final JCheckBox dockBox = new JCheckBox("Option to Play FTL, docked in the station window, at", homeplanet.core.FtlDock.optionOn());
@@ -69,7 +72,7 @@ public class SettingsDialog extends JDialog {
 	public static void openCrewLog(java.awt.Component owner, int crewId) {
 		Window w = owner == null ? null : owner instanceof Window ? (Window) owner : SwingUtilities.getWindowAncestor(owner);
 		SettingsDialog d = new SettingsDialog(w);
-		d.tabsShown.setSelectedIndex(2);
+		d.tabsShown.setSelectedIndex(RECORDS_TAB);
 		d.records.showCrew(crewId);
 		d.setVisible(true);
 	}
@@ -78,15 +81,15 @@ public class SettingsDialog extends JDialog {
 
 	private SettingsDialog(Window owner) {
 		super(owner, "Settings", ModalityType.APPLICATION_MODAL);
-		// four tabs: General (folders, launching, mods, audio), Rules, Records, About
-		JPanel general = page(), rulesPage = page(), recordsPage = page(), aboutPage = page();
+		// six tabs (heromedel, 5.70): General (the settings), Rules, Folders (places, not settings), Mods, Records, About
+		JPanel general = page(), rulesPage = page(), foldersPage = page(), modsPage = page(), recordsPage = page(), aboutPage = page();
 		JPanel body = general;
 		GridBagConstraints c = constraints();
 
 		heading(body, c, "Commander");
 		JPanel nameRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JLabel nameLabel = new JLabel("Name:");
-		nameLabel.setPreferredSize(new java.awt.Dimension(103, nameLabel.getPreferredSize().height)); // lines up with the folder paths below
+		nameLabel.setPreferredSize(new java.awt.Dimension(103, nameLabel.getPreferredSize().height));
 		nameRow.add(nameLabel);
 		nameRow.add(commanderField);
 		JLabel nameNote = new JLabel("   How other commanders know you over Long Range Comm. (your rank goes in front)");
@@ -94,6 +97,42 @@ public class SettingsDialog extends JDialog {
 		nameRow.add(nameNote);
 		commanderField.setToolTipText("Up to " + homeplanet.comm.Commander.MAX + " letters, numbers, spaces and ' - . (your rank goes in front of it)");
 		body.add(nameRow, next(c));
+
+		heading(body, c, "Launching");
+		body.add(steamBox, next(c));
+		JLabel cloud = new JLabel("<html><div style='width:560px; color:" + MenuTheme.HTML_ORANGE + "'>Steam version: turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties, General). "
+				+ "With it on, Steam can bring back a docked ship as a copy, or an old FTL profile.</div></html>");
+		cloud.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
+		body.add(cloud, next(c));
+		if (homeplanet.core.FtlDock.supported()) {
+			JPanel dockRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+			dockBox.setToolTipText("<html><font color='" + MenuTheme.HTML_ORANGE + "'>(Experimental)</font> Adds an icon beside Launch FTL on the Space Dock: FTL plays in a frame in the station's window,"
+					+ "<br>with the inbox, the reputation and the station's buttons beside it. FTL is set to windowed for it.</html>");
+			dockSize.setSelectedItem(HomePlanet.config.getProperty(homeplanet.core.FtlDock.CFG_SIZE, homeplanet.core.FtlDock.SIZES[0]));
+			dockSize.setToolTipText("FTL's size in the frame (the station's window grows to hold it, if the screen has room)");
+			dockRow.add(dockBox);
+			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
+			dockRow.add(dockSize);
+			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
+			dockHow.setSelectedIndex(homeplanet.core.FtlDock.attachedChosen() ? 1 : 0);
+			dockHow.setToolTipText("<html>As its own window: FTL kept over the station's window by the station.<br>"
+					+ "Attached (testing): FTL's window belongs to the station's, so it stays over it and the station's popups come over both.</html>");
+			dockRow.add(dockHow);
+			dockRow.add(javax.swing.Box.createHorizontalStrut(8));
+			JLabel experimental = new JLabel("(Experimental)"); // heromedel, 5.38
+			experimental.setForeground(MenuTheme.ORANGE);
+			experimental.setToolTipText(dockBox.getToolTipText());
+			dockRow.add(experimental);
+			body.add(dockRow, next(c));
+			directxBox.setToolTipText("<html>FTL draws with Direct3D instead of OpenGL (its own -directx switch).<br>"
+					+ "On some PCs FTL in a window, docked included, loads much faster with it.</html>");
+			body.add(directxBox, next(c));
+		}
+
+		heading(body, c, "Station");
+		body.add(borderlessBox, next(c));
+		body.add(musicBox, next(c));
+
 		shipTradeBox.setToolTipText("Sandbox fleets always may. A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
 		anyLevelBox.setToolTipText("Off: your career trades only with careers of its own difficulty");
 		heading(body, c, "Long Range Comm.");
@@ -119,6 +158,12 @@ public class SettingsDialog extends JDialog {
 		blockRow.add(blockedLabel);
 		body.add(blockRow, next(c));
 
+
+
+
+
+		body = foldersPage;
+		c = constraints();
 		heading(body, c, "Folders");
 		body.add(folderRow("Saves folder:", savesLabel, new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -134,6 +179,15 @@ public class SettingsDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) {
 				File f = HomePlanet.promptForFtlPath();
 				if (f != null) { game = f; refreshLabels(); }
+			}
+		}), next(c));
+		body.add(folderRow("Slipstream folder:", slipLabel, new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String old = HomePlanet.config.getProperty(homeplanet.core.Slipstream.CFG_DIR);
+				HomePlanet.config.remove(homeplanet.core.Slipstream.CFG_DIR);
+				java.io.File d = homeplanet.core.Slipstream.locate(SettingsDialog.this);
+				if (d == null && old != null) HomePlanet.config.setProperty(homeplanet.core.Slipstream.CFG_DIR, old); // cancelled: keep the old one
+				refreshLabels();
 			}
 		}), next(c));
 		JPanel openRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -175,56 +229,21 @@ public class SettingsDialog extends JDialog {
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
 		openRow.add(openJunk);
 		body.add(openRow, next(c));
-		JPanel slipRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0)); // Slipstream's folder, filled below
-		body.add(slipRow, next(c));
 
-		heading(body, c, "Launching");
-		body.add(steamBox, next(c));
-		JLabel cloud = new JLabel("<html><div style='width:560px; color:" + MenuTheme.HTML_ORANGE + "'>Steam version: turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties, General). "
-				+ "With it on, Steam can bring back a docked ship as a copy, or an old FTL profile.</div></html>");
-		cloud.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
-		body.add(cloud, next(c));
-		if (homeplanet.core.FtlDock.supported()) {
-			JPanel dockRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-			dockBox.setToolTipText("<html><font color='" + MenuTheme.HTML_ORANGE + "'>(Experimental)</font> Adds an icon beside Launch FTL on the Space Dock: FTL plays in a frame in the station's window,"
-					+ "<br>with the inbox, the reputation and the station's buttons beside it. FTL is set to windowed for it.</html>");
-			dockSize.setSelectedItem(HomePlanet.config.getProperty(homeplanet.core.FtlDock.CFG_SIZE, homeplanet.core.FtlDock.SIZES[0]));
-			dockSize.setToolTipText("FTL's size in the frame (the station's window grows to hold it, if the screen has room)");
-			dockRow.add(dockBox);
-			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
-			dockRow.add(dockSize);
-			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
-			dockHow.setSelectedIndex(homeplanet.core.FtlDock.attachedChosen() ? 1 : 0);
-			dockHow.setToolTipText("<html>As its own window: FTL kept over the station's window by the station.<br>"
-					+ "Attached (testing): FTL's window belongs to the station's, so it stays over it and the station's popups come over both.</html>");
-			dockRow.add(dockHow);
-			dockRow.add(javax.swing.Box.createHorizontalStrut(8));
-			JLabel experimental = new JLabel("(Experimental)"); // heromedel, 5.38
-			experimental.setForeground(MenuTheme.ORANGE);
-			experimental.setToolTipText(dockBox.getToolTipText());
-			dockRow.add(experimental);
-			body.add(dockRow, next(c));
-			directxBox.setToolTipText("<html>FTL draws with Direct3D instead of OpenGL (its own -directx switch).<br>"
-					+ "On some PCs FTL in a window, docked included, loads much faster with it.</html>");
-			body.add(directxBox, next(c));
-		}
-
+		body = modsPage;
+		c = constraints();
 		heading(body, c, "Mods");
+		JLabel modsNote = new JLabel("<html><div style='width:600px'>Your blueprints and designs reach FTL as the Federation Home Planet Mod, sent to FTL via Slipstream. "
+				+ "Patch after changing a design or a remodel, and whenever the station says a patch is needed: FTL must be closed, and it starts with the new blueprints the next time it runs.<br><br>"
+				+ "Other mods work the same way: drop an .ftl file into Slipstream's mods folder, and it can be ticked in the patch window to be sent along with the station's own mod. "
+				+ "<font color='" + MenuTheme.HTML_GREY_GREEN + "'>Slipstream's folder is set on the Folders tab.</font></div></html>");
+		modsNote.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+		body.add(modsNote, next(c));
 		JPanel modRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JButton patchBtn = new JButton("Patch mods...");
 		patchBtn.setToolTipText("Choose which mods to send to FTL; Slipstream carries them (the Federation Home Planet Mod is always included)");
 		patchBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { PatchDialog.open(SettingsDialog.this); }
-		});
-		JButton slipBtn = new JButton("Set Slipstream folder...");
-		slipBtn.setToolTipText("Choose the Slipstream folder, or download Slipstream into one");
-		slipBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String old = HomePlanet.config.getProperty(homeplanet.core.Slipstream.CFG_DIR);
-				HomePlanet.config.remove(homeplanet.core.Slipstream.CFG_DIR);
-				java.io.File d = homeplanet.core.Slipstream.locate(SettingsDialog.this);
-				if (d == null && old != null) HomePlanet.config.setProperty(homeplanet.core.Slipstream.CFG_DIR, old); // cancelled: keep the old one
-			}
 		});
 		JButton modsBtn = new JButton("Open mods folder");
 		modsBtn.setToolTipText("Open Slipstream's mods folder in Windows Explorer (drop new .ftl files there)");
@@ -236,21 +255,15 @@ public class SettingsDialog extends JDialog {
 		});
 		modRow.add(patchBtn);
 		modRow.add(javax.swing.Box.createHorizontalStrut(8));
-		slipRow.add(slipBtn);
-		slipRow.add(javax.swing.Box.createHorizontalStrut(8));
-		slipRow.add(modsBtn);
 		JButton starterBtn = new JButton("Blueprints...");
 		starterBtn.setToolTipText("Your own blueprints (remodels and designs): which can be commissioned, and their names and starting loadouts");
 		starterBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { starterShips(); }
 		});
 		modRow.add(starterBtn);
+		modRow.add(javax.swing.Box.createHorizontalStrut(8));
+		modRow.add(modsBtn);
 		body.add(modRow, next(c));
-
-		heading(body, c, "Window");
-		body.add(borderlessBox, next(c));
-		heading(body, c, "Audio");
-		body.add(musicBox, next(c));
 
 		body = rulesPage;
 		c = constraints();
@@ -361,8 +374,8 @@ public class SettingsDialog extends JDialog {
 
 		refreshLabels();
 		javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
-		JPanel[] pages = {general, rulesPage, recordsPage, aboutPage};
-		String[] names = {"General", "Rules", "Records", "About"};
+		JPanel[] pages = {general, rulesPage, foldersPage, modsPage, recordsPage, aboutPage};
+		String[] names = {"General", "Rules", "Folders", "Mods", "Records", "About"};
 		for (int i = 0; i < pages.length; i++) {
 			JPanel holder = new JPanel(new BorderLayout());
 			holder.add(pages[i], BorderLayout.NORTH); // each page at the top of its tab
@@ -437,7 +450,7 @@ public class SettingsDialog extends JDialog {
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { ((MainFrame) frame).setBorderless(on); } }); // once Settings has closed (it closes with the window)
 		}
 		log.debug("Settings saved: {}", changed.isEmpty() ? "nothing changed" : changed);
-		if (!changed.isEmpty()) homeplanet.core.HistoryLog.entry("SETTINGS", "", changed, homeplanet.core.Event.of("SETTINGS").details(changed));
+		if (!changed.isEmpty()) homeplanet.core.HistoryLog.entry("SETTINGS", "settings changed", changed, homeplanet.core.Event.of("SETTINGS").details(changed));
 		savesChanged = !saves.equals(HomePlanet.save_location);
 		HomePlanet.save_location = saves;
 		if (savesChanged) {
@@ -555,6 +568,9 @@ public class SettingsDialog extends JDialog {
 		savesLabel.setToolTipText(saves.getPath());
 		gameLabel.setText(game.getPath());
 		gameLabel.setToolTipText(game.getPath() + " (where FTLGame.exe and ftl.dat are)");
+		String slip = HomePlanet.config.getProperty(homeplanet.core.Slipstream.CFG_DIR);
+		slipLabel.setText(slip == null || slip.isEmpty() ? "(not set: Change... finds Slipstream, or downloads it)" : slip);
+		slipLabel.setToolTipText(slip == null ? "Slipstream carries the station's mod to FTL" : slip);
 		pack();
 	}
 
@@ -570,7 +586,7 @@ public class SettingsDialog extends JDialog {
 	private static JPanel folderRow(String name, JLabel path, ActionListener change) {
 		JPanel row = new JPanel(new BorderLayout(8, 0));
 		JLabel n = new JLabel(name);
-		n.setPreferredSize(new java.awt.Dimension(95, n.getPreferredSize().height));
+		n.setPreferredSize(new java.awt.Dimension(132, n.getPreferredSize().height)); // "Slipstream folder:" fits (5.70)
 		JButton b = new JButton("Change...");
 		b.addActionListener(change);
 		row.add(n, BorderLayout.WEST);

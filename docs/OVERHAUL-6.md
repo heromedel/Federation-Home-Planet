@@ -117,7 +117,7 @@ Fixed in 5.61 by Cloud-C-BugsandFeedback (on main, 292ce7d), each with a harness
                                       the retired, the sold and the traded)
     ships/                            ships lost, destroyed, sold, traded, given back, in the museum; each folder as above
     crew/                             crew killed, missing, retired, transferred
-  history/                            the station's own logs: station.log (the master log's successor), and the rest
+  logs/                               the station's own logs (heromedel's name, 5.69: `history/` was the old versions folder): events.log, and the rest until 6.0
   blueprints/                         every design, free of the ships built from it (each ship also carries her copy)
   journal/                            the notes of actions under way (§3.2); empty when the station is at rest
   career.xml, reputation.xml, inbox.xml, ...   the career's own state, one file per concern (see §3.6)
@@ -202,6 +202,8 @@ Done in 5.61 (Cloud-C-BugsandFeedback; main 292ce7d), as Buggy Boy's notes say r
 
 _5.67 (heromedel's yes): a fleet can't be half in `ships/` and half in `shipyard/`, and the Vault reaches its files directly in too many places to run two layouts side by side, so the migration (Phase 5) moves into this phase. Each step converts its part of the fleet on opening, the whole fleet zipped first, as pre-release versions (5.9x) tested on a copy of a real career; MigT and LedgerT check from the first step. In order: the ship folders (`ShipStore`, 5.90), the journal, the crew files after the crew id test (5.91), the Cargo Hold (5.92), expeditions, the infirmary, captives, memorials and records, Board and Dock (5.93)._
 
+
+_heromedel, 5.70: the Settings' Folders tab (its Open buttons and their names) follows each step that moves a folder, so no button points at an old place; by the end of Phase 2 it offers the shipyard, the Junkyard, memorials and records, the Cargo Hold and the logs._
 
 13. The career folder's new tree (§3.1), written by the new storage classes; ship ids kept for life. _5.68: `vault/ShipStore`, a ship's folder alone (her record as xml with her sections, owners and past names; her save; her log of two-line entries; `versions/` by stamp with the special copies kept apart; rename and move as one rename each; `fromToday` builds her record from the manifest and `history/<id>/`); ShipStoreT. The Vault moves onto it in the next step._
 13a. **The crew id test in FTL itself** (Buggy Boy, under Wine; it touches nothing in the repo, so it can run before Phase 1 is finished): list the fields of FTL's crew record the station never uses, put a marker in each, then load, jump, save at the menu, die and clone, rename, visit a store; keep the fields whose marker survives every step. The results, a short page for everyone, decide §3.4 and gate step 15.
