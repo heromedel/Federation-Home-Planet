@@ -25,8 +25,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Setup.chk("K: +2 a level, +3 a level when the race suits the job", Assignments.skilled(9, 1, false) == 11 && Assignments.skilled(9, 2, false) == 13 && Assignments.skilled(9, 1, true) == 12 && Assignments.skilled(9, 2, true) == 15);
   Setup.chk("K: a changed roll stays between 2 and 19: only a natural 20 is the top", Assignments.skilled(18, 2, true) == 19 && Assignments.skilled(19, 1, false) == 19 && Assignments.skilled(2, 1, false) == 4);
   CrewState ace = Commission.volunteer("human", new Random(5));
-  ace.setPilotMasteryOne(true); ace.setPilotMasteryTwo(true); ace.setEngineMasteryOne(true); ace.setEngineMasteryTwo(true); ace.setShieldMasteryOne(true); ace.setShieldMasteryTwo(true);
-  ace.setWeaponMasteryOne(true); ace.setWeaponMasteryTwo(true); ace.setRepairMasteryOne(true); ace.setRepairMasteryTwo(true); ace.setCombatMasteryOne(true); ace.setCombatMasteryTwo(true);
+  master(ace); // every skill's points full (5.62: a level is read from the points, not FTL's marks)
   boolean all = true; int seen = 0, raised = 0;
   for (int seed = 0; seed < 200; seed++) {
    Assignments.Result r = Assignments.roll("civilian", Collections.singletonList(ace), new Random(seed), true);
@@ -141,9 +140,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   rng = new Random(13); long raw = 0, skilled = 0;
   for (int i = 0; i < n; i++) {
    List<CrewState> p = party("human"); raw += Assignments.roll("rock", p, rng).scrap;
-   List<CrewState> q = party("human"); q.get(0).setCombatMasteryOne(true); q.get(0).setCombatMasteryTwo(true); q.get(0).setPilotMasteryOne(true); q.get(0).setPilotMasteryTwo(true);
-   q.get(0).setEngineMasteryOne(true); q.get(0).setEngineMasteryTwo(true); q.get(0).setShieldMasteryOne(true); q.get(0).setShieldMasteryTwo(true);
-   q.get(0).setWeaponMasteryOne(true); q.get(0).setWeaponMasteryTwo(true); q.get(0).setRepairMasteryOne(true); q.get(0).setRepairMasteryTwo(true);
+   List<CrewState> q = party("human"); master(q.get(0));
    skilled += Assignments.roll("rock", q, rng).scrap;
   }
   Setup.chk("R: skill in the job's skill pays (" + skilled / n + " to " + raw / n + ")", skilled > raw * 11 / 10);
@@ -432,4 +429,6 @@ public class AsgT { public static void main(String[] a) throws Exception {
     pts == ptsAfter && rep.faces.size() == 3 && "dead".equals(rep.faces.get(0).state) && "infirmary".equals(rep.faces.get(1).state) && "".equals(rep.faces.get(2).state)
     && kept.size() == 3 && "dead".equals(kept.get(0).state) && kept.get(1).crew.getName().equals(rep.faces.get(1).crew.getName()));
  }
+ /** Every skill mastered: both levels' points, and FTL's marks with them. */
+ static void master(CrewState c) { for (int i = 0; i < 6; i++) homeplanet.model.Skills.set(c, i, 2 * homeplanet.model.Skills.interval(c, i)); }
 }
