@@ -78,6 +78,9 @@ it does and CREDITS.md for where the code came from.
 - Expeditions come in two systems behind `expedition_type` in the cfg (hidden): 2 the crew expeditions (`Assignments`,
   `docs/ROADMAP.md` 31; the default), 1 the board of jobs (`Expeditions`), 0 hiring alone. They share the infirmary, the captives,
   the crew picker and the hire button, nothing else: keep them apart.
+- **One home each (6.0, step 10):** race names come from `model.Crew` (`raceTitle(id)`: FTL's title, "Rockman"; `racePeople(id)`:
+  the people, "Rock"; `peopleOf(shipId)`), "the" before a ship's name from `parser.ShipNames.the`, capitals and a/an from
+  `model.Words`, prices from `parser.Pricing`, a ship's gear from `parser.SaveHelper.gear`: never a copy of any of them.
 - **Crew names:** avoiding duplicate names is impossible (heromedel): trades, Rename, FTL's own crew, hiring and
   recruits all make namesakes, down to the same looks. Never plan or test a fix that prevents them; anything that
   tracks crew has to work with namesakes (`docs/CONCERNS.md` 2).

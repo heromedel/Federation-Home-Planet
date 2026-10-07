@@ -16,12 +16,50 @@ public final class Crew {
 	/** The race's display name from the game data (e.g. "Zoltan" for energy), or its id. */
 	public static String raceTitle(CrewState cs) {
 		CrewType race = cs.getRace();
-		if (race == null) return "?";
-		CrewBlueprint b = DataManager.get().getCrews().get(race.getId());
-		if (b != null && b.getTitle() != null && b.getTitle().getTextValue() != null && b.getTitle().getTextValue().length() > 0) {
-			return b.getTitle().getTextValue();
-		}
-		return race.getId();
+		return race == null ? "?" : raceTitle(race.getId());
+	}
+	/**
+	 * A crew member's title for a race id, as FTL shows it: "Rockman", "Zoltan", "Lanius", "Human" (the game data's title;
+	 * without the data, the id capitalised with the two FTL names by name). The one home for race names, with
+	 * {@link #racePeople} (Overhaul 6.0, step 10).
+	 */
+	public static String raceTitle(String id) {
+		if (id == null || id.isEmpty()) return "";
+		try {
+			CrewBlueprint b = DataManager.get().getCrews().get(id);
+			if (b != null && b.getTitle() != null && b.getTitle().getTextValue() != null && b.getTitle().getTextValue().length() > 0) return b.getTitle().getTextValue();
+		} catch (RuntimeException e) { /* no game data loaded: the names below */ }
+		String p = racePeople(id);
+		return p.equals("Rock") ? "Rockman" : p;
+	}
+	/**
+	 * The people's name for a race id, as the lore speaks of them: "the Rock", "Rock pirates", "a Rock crew volunteer";
+	 * "Zoltan", "Lanius", "Engi", "Mantis", "Slug", "Crystal", "Human". The voyage log writes this one (a Rock is "Rock"
+	 * there, "Rockman" in FTL's title: the crew register reads both).
+	 */
+	public static String racePeople(String id) {
+		if (id == null || id.isEmpty()) return "";
+		String r = id.toLowerCase();
+		if (r.equals("energy")) return "Zoltan";
+		if (r.equals("anaerobic")) return "Lanius";
+		if (r.equals("rockman")) return "Rock";
+		return Character.toUpperCase(r.charAt(0)) + r.substring(1);
+	}
+	/**
+	 * The people a ship belongs to, from a blueprint id or a ship-list id (PLAYER_SHIP_JELLY, SHIPS_ROCK_PIRATE,
+	 * CIRCLE...): "Engi" (the Circle and the Stealth cruiser), "Zoltan", "Mantis", "Slug", "Rock", "Crystal", "Lanius";
+	 * null when it names none (a Federation, rebel, automated or civilian ship).
+	 */
+	public static String peopleOf(String shipId) {
+		String l = shipId == null ? "" : shipId.toUpperCase();
+		if (l.contains("CIRCLE") || l.contains("ENGI") || l.contains("STEALTH")) return "Engi";
+		if (l.contains("ENERGY") || l.contains("ZOLTAN")) return "Zoltan";
+		if (l.contains("MANTIS")) return "Mantis";
+		if (l.contains("JELLY") || l.contains("SLUG")) return "Slug";
+		if (l.contains("ROCK")) return "Rock";
+		if (l.contains("CRYSTAL")) return "Crystal";
+		if (l.contains("ANAEROBIC") || l.contains("LANIUS")) return "Lanius";
+		return null;
 	}
 	// e.g. "level 1 (70/130)": levels come from the save's mastery flags; FTL:AE needs interval xp for level 1, twice that for level 2
 	private static String skillText(int xp, int interval, boolean one, boolean two) {

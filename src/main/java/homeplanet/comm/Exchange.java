@@ -438,7 +438,7 @@ public final class Exchange {
 		File f = folderOf(r.id);
 		if (f.isDirectory() && !SafeFiles.deleteTree(f)) log.warn("Could not clear {}", f);
 	}
-	private static String capital(String s) { return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
+	private static String capital(String s) { return homeplanet.model.Words.cap(s); }
 	private static void settle(Record r, List<Line> into, String state) throws IOException {
 		if (!ESCROW.equals(r.state)) throw new IOException("This trade was already settled (" + r.state + ")");
 		Vault v = Vault.get();

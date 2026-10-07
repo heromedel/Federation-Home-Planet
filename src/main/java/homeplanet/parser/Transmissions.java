@@ -219,14 +219,8 @@ public final class Transmissions {
 	}
 	/** The people a cruiser comes from, for the shared order letter ("The Zoltan have contacted Federation Command"). */
 	static String raceOf(String base) {
-		if (base.contains("CIRCLE") || base.contains("STEALTH")) return "Engi";
-		if (base.contains("ENERGY")) return "Zoltan";
-		if (base.contains("MANTIS")) return "Mantis";
-		if (base.contains("JELLY")) return "Slug";
-		if (base.contains("ROCK")) return "Rock";
-		if (base.contains("CRYSTAL")) return "Crystal";
-		if (base.contains("ANAEROBIC")) return "Lanius";
-		return "Federation";
+		String p = homeplanet.model.Crew.peopleOf(base);
+		return p == null ? "Federation" : p;
 	}
 	/** Her class alone ("Zoltan Cruiser"), as {cruiser} in the shared order letter. */
 	static String className(String base) {
@@ -694,8 +688,7 @@ public final class Transmissions {
 		if (kind.equals("parts")) return v + " drone parts";
 		if (kind.equals("item")) return Items.title(v);
 		if (kind.equals("crew")) {
-			String race = v.equals("energy") ? "Zoltan" : v.equals("anaerobic") ? "Lanius" : Character.toUpperCase(v.charAt(0)) + v.substring(1);
-			return "a " + race + " crew volunteer";
+			return "a " + homeplanet.model.Crew.racePeople(v) + " crew volunteer";
 		}
 		if (kind.equals("system")) return "a " + Items.systemTitle(v) + " system";
 		if (kind.equals("choice")) {

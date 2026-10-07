@@ -142,7 +142,7 @@ final class CrewLogView extends JPanel {
 		if (key.equals("KILLED")) return "KIA";
 		return "MIA";
 	}
-	private static String the(String ship) { return ship == null ? "" : ship.regionMatches(true, 0, "the ", 0, 4) ? ship : "the " + ship; }
+	private static String the(String ship) { return ship == null ? "" : homeplanet.parser.ShipNames.the(ship); }
 
 	/** How many are on record, for the viewer's title row. */
 	int count() { return members.size(); }
@@ -276,7 +276,7 @@ final class CrewLogView extends JPanel {
 			if (away) side.add(indented("During Expeditions", 26));
 		}
 	}
-	private static String cap(String s) { return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
+	private static String cap(String s) { return homeplanet.model.Words.cap(s); }
 	private static String esc(String s) { return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"); }
 	/** An event's mark: green for joining and coming back, gold for moves and assignments, purple the infirmary, orange taken or missing, red killed. */
 	private static Color mark(String t) {

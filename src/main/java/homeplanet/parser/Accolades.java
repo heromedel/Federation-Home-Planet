@@ -164,7 +164,7 @@ public final class Accolades {
 		if (x[2] != null) line = line.replace("{achievement}", x[2]);
 		if (x[3] != null) line = line.replace("{model}", x[3]);
 		if (x[4] != null) line = line.replace("{crew}", x[4]);
-		line = Character.toUpperCase(line.charAt(0)) + line.substring(1); // "Twelve jumps…", "The Kestrel…"
+		line = homeplanet.model.Words.cap(line); // "Twelve jumps…", "The Kestrel…"
 		v.recordEvent(USED + kind, letterKey);
 		return line;
 	}

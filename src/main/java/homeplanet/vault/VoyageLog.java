@@ -15,13 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
-import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.EnvironmentState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.SystemState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
-import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Event;
@@ -159,7 +157,7 @@ public final class VoyageLog {
 			}
 			if (!supplies.isEmpty()) {
 				String line = String.join(", ", supplies);
-				out.add(Event.of("SUPPLIES").putAll(state).human(Character.toUpperCase(line.charAt(0)) + line.substring(1)));
+				out.add(Event.of("SUPPLIES").putAll(state).human(homeplanet.model.Words.cap(line)));
 			}
 		}
 		int defeated = Store.num(b, "defeated", 0) - Store.num(a, "defeated", 0);
@@ -296,12 +294,10 @@ public final class VoyageLog {
 		p.setProperty("drones", Integer.toString(s.getDronePartsAmt()));
 		p.setProperty("reactor", Integer.toString(s.getReservePowerCapacity()));
 		List<String> crew = new ArrayList<String>();
-		for (CrewState c : SaveHelper.getOwnCrew(s)) crew.add(c.getName() + " (" + race(c.getRace().getId()) + ")");
+		for (CrewState c : SaveHelper.getOwnCrew(s)) crew.add(c.getName() + " (" + homeplanet.model.Crew.racePeople(c.getRace().getId()) + ")"); // the people's name: "Rock" (the register reads "Rockman" too)
 		p.setProperty("crew", String.join("|", crew));
 		List<String> items = new ArrayList<String>();
-		for (WeaponState w : s.getWeaponList()) items.add(title(w.getWeaponId()));
-		for (DroneState d : s.getDroneList()) items.add(title(d.getDroneId()));
-		for (String a : s.getAugmentIdList()) items.add(title(a));
+		for (String g : SaveHelper.gear(s)) items.add(title(g));
 		for (String c : SaveHelper.cargo(gs)) items.add(title(c) + " (cargo)"); // not the augment FTL is asking about (5.52)
 		p.setProperty("items", String.join("|", items));
 		List<String> systems = new ArrayList<String>();
@@ -351,9 +347,8 @@ public final class VoyageLog {
 	public static String shipWords(String event, String list, String crew) {
 		String l = list == null ? "" : list.toUpperCase(), e = event == null ? "" : event.toUpperCase();
 		boolean pirate = l.contains("PIRATE") || e.contains("PIRATE");
-		String race = l.contains("ROCK") ? "Rock" : l.contains("ZOLTAN") ? "Zoltan" : l.contains("MANTIS") ? "Mantis" : l.contains("CIRCLE") || l.contains("ENGI") ? "Engi"
-				: l.contains("JELLY") || l.contains("SLUG") ? "Slug" : l.contains("LANIUS") || l.contains("ANAEROBIC") ? "Lanius" : l.contains("CRYSTAL") ? "Crystal" : null;
-		if (race == null && crew != null && !crew.isEmpty()) race = race(crew);
+		String race = homeplanet.model.Crew.peopleOf(l);
+		if (race == null && crew != null && !crew.isEmpty()) race = homeplanet.model.Crew.racePeople(crew);
 		String what;
 		if (pirate) what = race == null ? "pirate ship" : race + " pirate";
 		else if (l.contains("AUTO")) what = "automated ship";
@@ -361,16 +356,10 @@ public final class VoyageLog {
 		else if (l.contains("FED")) what = "Federation ship";
 		else if (l.contains("CIVILIAN")) what = "civilian ship";
 		else what = race == null ? "ship" : race + " ship";
-		return ("AEIOU".indexOf(Character.toUpperCase(what.charAt(0))) >= 0 ? "an " : "a ") + what;
+		return homeplanet.model.Words.a(what);
 	}
 	private static String title(String id) {
 		try { return homeplanet.model.Items.title(id); } catch (Exception e) { return id; }
-	}
-	/** Her log's word for a race: FTL's id capitalised, Zoltan and Lanius by name (a Rock is "Rock" here, "Rockman" in FTL's title: CrewRegister reads both). */
-	static String race(String id) {
-		if ("energy".equals(id)) return "Zoltan";
-		if ("anaerobic".equals(id)) return "Lanius";
-		return id.isEmpty() ? id : Character.toUpperCase(id.charAt(0)) + id.substring(1);
 	}
 
 	// ---- files ----

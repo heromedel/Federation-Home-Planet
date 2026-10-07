@@ -681,7 +681,7 @@ public final class Assignments {
 		String kind = item.substring(0, colon), n = item.substring(colon + 1);
 		return n + " " + ("parts".equals(kind) ? "drone parts" : kind);
 	}
-	private static String aOrAn(String s) { return (s.isEmpty() ? "" : "aeiouAEIOU".indexOf(s.charAt(0)) >= 0 ? "an " : "a ") + s; }
+	private static String aOrAn(String s) { return homeplanet.model.Words.a(s); }
 
 	/** The report, as heromedel laid it out: the frame, the job line, a hazard, a line per crew member, the prize, the total. Never a roll. */
 	/** heromedel's frame, the first setup line: one of the general ones, and the fallback for every other. */

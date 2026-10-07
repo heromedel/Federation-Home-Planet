@@ -634,6 +634,20 @@ public final class SaveHelper {
 	 * list is the one FTL is over capacity on, asking which to leave behind at the jump (written there twice; seen in
 	 * FTL 1.6.14): it's FTL's question, so the station never shows it (heromedel, 5.52), and leaves it in her save.
 	 */
+	/** Her fitted gear's ids, in order: weapons, drones, augments (not her cargo). */
+	public static List<String> gear(ShipState s) {
+		List<String> out = new java.util.ArrayList<String>();
+		for (WeaponState w : s.getWeaponList()) out.add(w.getWeaponId());
+		for (DroneState d : s.getDroneList()) out.add(d.getDroneId());
+		out.addAll(s.getAugmentIdList());
+		return out;
+	}
+	/** Her gear and her cargo, in that order (the cargo as {@link #cargo} reads it). */
+	public static List<String> gearAndCargo(SavedGameState gs) {
+		List<String> out = gear(gs.getPlayerShip());
+		out.addAll(cargo(gs));
+		return out;
+	}
 	public static List<String> cargo(SavedGameState gs) {
 		List<String> out = new ArrayList<String>();
 		if (gs == null || gs.getCargoIdList() == null) return out;

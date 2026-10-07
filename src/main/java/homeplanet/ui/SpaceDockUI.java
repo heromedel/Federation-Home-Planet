@@ -489,7 +489,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 
 	private boolean askingAboutStranger = false;
-	private static String cap(String s) { return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
+	private static String cap(String s) { return homeplanet.model.Words.cap(s); }
 	/** The offer about a stranger's achievements and unlocks was put off (closed): asked again at the next start. */
 	private boolean profileAsked = false;
 	/** What came into FTL's profile while an uncommissioned ship was boarded: heromedel's offer to take it back out (5.55). */

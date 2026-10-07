@@ -16,11 +16,9 @@ import org.slf4j.LoggerFactory;
 
 import net.blerf.ftl.parser.SavedGameParser.BeaconState;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
-import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.FleetPresence;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
-import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
@@ -495,11 +493,7 @@ public final class Reputation {
 			x.hull = ship.getHullAmt();
 			x.scrapNow = ship.getScrapAmt();
 			x.ammo = ship.getMissilesAmt() + ship.getDronePartsAmt();
-			List<String> gear = new ArrayList<String>();
-			for (WeaponState w : ship.getWeaponList()) gear.add(w.getWeaponId());
-			for (DroneState d : ship.getDroneList()) gear.add(d.getDroneId());
-			gear.addAll(ship.getAugmentIdList());
-			gear.addAll(homeplanet.parser.SaveHelper.cargo(gs));
+			List<String> gear = homeplanet.parser.SaveHelper.gearAndCargo(gs);
 			x.items = String.join("|", gear);
 			List<BeaconState> beacons = gs.getBeaconList();
 			BeaconState here = beacons != null && x.beacon >= 0 && x.beacon < beacons.size() ? beacons.get(x.beacon) : null;

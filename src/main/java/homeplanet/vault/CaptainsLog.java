@@ -120,7 +120,7 @@ public final class CaptainsLog {
 			Line one = last.get(0);
 			List<String> said = new ArrayList<String>();
 			for (Line l : last) { said.add(lower(l.text.replaceAll("\\.$", ""))); if (l != one) one.details.addAll(l.details); }
-			one.text = Character.toUpperCase(said.get(0).charAt(0)) + join(said).substring(1) + ".";
+			one.text = homeplanet.model.Words.cap(join(said)) + ".";
 			lines.removeAll(last.subList(1, last.size()));
 			last = last.subList(0, 1);
 		}
@@ -529,7 +529,7 @@ public final class CaptainsLog {
 		int t = n % 100;
 		return n + (t >= 11 && t <= 13 ? "th" : n % 10 == 1 ? "st" : n % 10 == 2 ? "nd" : n % 10 == 3 ? "rd" : "th");
 	}
-	static String article(String name) { return ("AEIOUaeiou".indexOf(name.isEmpty() ? 'x' : name.charAt(0)) >= 0 ? "an " : "a ") + name; }
+	static String article(String name) { return homeplanet.model.Words.a(name); }
 	/** A ship's name after "the" (ShipNames.the): "the Kestrel", but "The Adjudicator" as she is, never "the The" (5.31). */
 	static String theShip(String name) { return homeplanet.parser.ShipNames.the(name); }
 	/** The same, starting a sentence: "The Kestrel", "The Adjudicator". */
@@ -564,10 +564,7 @@ public final class CaptainsLog {
 		return s.replaceAll("\\s+\\([^)]*\\)\\s*$", "");
 	}
 	private static String shipName(String head) { return head.split("  ")[0].replaceAll("\\s*\\([0-9a-f]{16}\\)", "").trim(); }
-	private static String race(String id) {
-		String r = id.toLowerCase();
-		return r.equals("energy") ? "Zoltan" : r.equals("anaerobic") ? "Lanius" : r.equals("rock") ? "Rockman" : Character.toUpperCase(r.charAt(0)) + r.substring(1);
-	}
-	private static String sentence(String s) { s = s.trim(); return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1) + (s.endsWith(".") ? "" : "."); }
+	private static String race(String id) { return homeplanet.model.Crew.raceTitle(id); }
+	private static String sentence(String s) { s = s.trim(); return s.isEmpty() ? s : homeplanet.model.Words.cap(s) + (s.endsWith(".") ? "" : "."); }
 	private static String lower(String s) { return s.isEmpty() ? s : Character.toLowerCase(s.charAt(0)) + s.substring(1); }
 }

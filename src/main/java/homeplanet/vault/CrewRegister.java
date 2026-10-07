@@ -66,7 +66,7 @@ public final class CrewRegister {
 			try { return homeplanet.comm.Line.crewFrom(rec); } catch (Exception e) { return null; }
 		}
 		/** "Human", "Engi"...: the race as FTL shows it. */
-		public String raceTitle() { return title != null && !title.isEmpty() ? title : race == null || race.isEmpty() ? "" : Character.toUpperCase(race.charAt(0)) + race.substring(1); }
+		public String raceTitle() { return title != null && !title.isEmpty() ? title : homeplanet.model.Crew.raceTitle(race); }
 	}
 	/** Something that happened to a crew member, on a day (0 or less: before the career's first stardate). */
 	public static final class Event {
@@ -591,7 +591,7 @@ public final class CrewRegister {
 				if (f.equals("TRANSFERRED")) return new String[] {"TRANSFERRED", "Transferred with " + homeplanet.parser.ShipNames.the(shipName) + " to another fleet.", "transferred with " + homeplanet.parser.ShipNames.the(shipName)};
 				if (!f.isEmpty() && !f.equals("SCRAPPED")) return new String[] {"TRANSFERRED", "Left the fleet with " + homeplanet.parser.ShipNames.the(shipName) + ".", "left the fleet with " + homeplanet.parser.ShipNames.the(shipName)};
 			} else if (s.isBoarded() && flown.contains("Crew lost: ") && (listed(flown.replace("Crew lost: ", "\nCrew lost: "), "Crew lost: ", m.name + " (" + m.raceTitle() + ")")
-					|| listed(flown.replace("Crew lost: ", "\nCrew lost: "), "Crew lost: ", m.name + " (" + VoyageLog.race(m.race == null ? "" : m.race) + ")"))) { // FTL's title (Rockman), or the voyage log's own word for the race (Rock): 5.61
+					|| listed(flown.replace("Crew lost: ", "\nCrew lost: "), "Crew lost: ", m.name + " (" + homeplanet.model.Crew.racePeople(m.race) + ")"))) { // FTL's title (Rockman), or the voyage log's own word for the race (Rock): 5.61
 				return new String[] {"KILLED", "Lost aboard " + the(shipName) + ".", "lost aboard " + the(shipName)};
 			}
 		}
@@ -989,11 +989,11 @@ public final class CrewRegister {
 	// ---- small helpers ----
 
 	/** "the Kestrel", but "The Adjudicator" as she is (never "the The..."). */
-	static String the(String ship) { return ship == null ? "" : ship.regionMatches(true, 0, "the ", 0, 4) ? ship : "the " + ship; }
+	static String the(String ship) { return ship == null ? "" : homeplanet.parser.ShipNames.the(ship); }
 	/** "in a Rebel Controlled Sector", "in the Crystal Worlds". */
 	static String sectorPhrase(String sector) {
 		if (sector.endsWith("Worlds") || sector.toLowerCase().startsWith("the ")) return "in " + the(sector);
-		return "in " + (("AEIOUaeiou".indexOf(sector.isEmpty() ? 'x' : sector.charAt(0)) >= 0) ? "an " : "a ") + sector;
+		return "in " + homeplanet.model.Words.a(sector);
 	}
 	private static String join(int[] n) { StringBuilder s = new StringBuilder(); for (int i = 0; i < n.length; i++) s.append(i == 0 ? "" : ",").append(n[i]); return s.toString(); }
 	private static String text(File f) {

@@ -86,8 +86,8 @@ public final class Expeditions {
 		FITS.put("heat", new String[] {"rock", null}); FITS.put("power", new String[] {"zoltan", null});
 		FITS.put("airless", new String[] {"lanius", null}); FITS.put("mind", new String[] {"slug", null});
 	}
-	/** A race as the option tags show it: "Rock", "Zoltan". */
-	static String raceWord(String name) { return name.substring(0, 1).toUpperCase() + name.substring(1); }
+	/** A race as the option tags show it, the people's name: "Rock", "Zoltan". */
+	static String raceWord(String name) { return homeplanet.model.Crew.racePeople(name); }
 
 	// ---- the events files ----
 
