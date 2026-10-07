@@ -130,8 +130,8 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("F: what a surrender gives up is valued: the hold's scrap, its stored systems and the Junkyard's hulls", worth > 300 + homeplanet.parser.Pricing.system("teleporter", 2));
   File dir = v.surrender();
   Setup.chk("F: surrender empties the hold and the Junkyard", v.junked().isEmpty() && v.storageScrap() == 0 && !v.systemsFile().exists());
-  Setup.chk("F: what was surrendered is kept", new File(dir, x.id + ".sav").isFile() && new File(dir, "storage.sav").isFile() && new File(dir, "storage-systems.txt").isFile() && dir.equals(v.lastSurrender()));
-  List<String> ids = Retrofit.blueprintIds(new File(dir, x.id + ".sav"));
+  Setup.chk("F: what was surrendered is kept", Setup.savIn(dir, x.id) != null && new File(dir, "storage.sav").isFile() && new File(dir, "storage-systems.txt").isFile() && dir.equals(v.lastSurrender()));
+  List<String> ids = Retrofit.blueprintIds(Setup.savIn(dir, x.id));
   Setup.chk("F: a surrendered hull's blueprints still count", ids != null && v.blueprintsInUseOrHistory().containsAll(ids));
   for (Ship s : v.docked()) v.remove(s, "DESTROY");
   Setup.chk("F: no ship docked, boarded or junked: the shipyard is empty", v.shipyardEmpty());

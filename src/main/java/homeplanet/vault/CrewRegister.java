@@ -647,7 +647,7 @@ public final class CrewRegister {
 		return false;
 	}
 	private static String fateOf(Vault v, String id) {
-		File f = new File(new File(v.historyDir(), id), "fate.txt");
+		File f = new File(v.folderOfId(id), "fate.txt");
 		if (!f.isFile()) return "";
 		String t = text(f).trim();
 		int nl = t.indexOf('\n');
@@ -713,8 +713,7 @@ public final class CrewRegister {
 			whole = new StringBuilder(kindLine);
 		}
 		// and each ship's voyage log from before it began: who joined her and who was lost; the master log has the rest (5.51)
-		File[] dirs = v.historyDir().listFiles();
-		if (dirs != null) for (File d : dirs) {
+		for (File d : v.shipFolders()) {
 			File f = new File(d, "voyage.log");
 			if (!f.isFile()) continue;
 			String ship = shipNamed(v, d);
@@ -733,7 +732,8 @@ public final class CrewRegister {
 	}
 	/** A ship's name from her history folder: hers in the fleet now, else the one her fate was written under; null if neither. */
 	private static String shipNamed(Vault v, File dir) {
-		Ship s = v.byId(dir.getName());
+		String id = ShipStore.idOf(dir);
+		Ship s = id == null ? null : v.byId(id);
 		if (s != null) return s.name;
 		File fate = new File(dir, "fate.txt");
 		if (!fate.isFile()) return null;

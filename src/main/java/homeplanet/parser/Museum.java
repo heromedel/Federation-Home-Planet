@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -21,6 +22,7 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
 import homeplanet.vault.Ship;
+import homeplanet.vault.ShipStore;
 import homeplanet.vault.Vault;
 
 /**
@@ -63,7 +65,7 @@ public final class Museum {
 
 	// ---- the records ----
 
-	static File dir(Vault v, String id) { return new File(v.historyDir(), id); }
+	static File dir(Vault v, String id) { return v.folderOfId(id); }
 	static Properties read(Vault v, String id) { return Store.read(new File(dir(v, id), FILE)); }
 	static void write(Vault v, String id, Properties p) {
 		try { Store.write(new File(dir(v, id), FILE), p, "Her place in the Federation Museum"); }
@@ -73,9 +75,7 @@ public final class Museum {
 
 	/** Her final victories, as her record and her kept victory saves tell (the greater). */
 	public static int victories(Vault v, String id) {
-		File d = new File(v.historyDir(), id);
-		File[] wins = d.listFiles(new java.io.FileFilter() { public boolean accept(File f) { return f.isFile() && f.getName().startsWith("victory-") && f.getName().endsWith(".sav"); } });
-		return Math.max(Store.num(read(v, id), "victories", 0), wins == null ? 0 : wins.length);
+		return Math.max(Store.num(read(v, id), "victories", 0), wins(v.folderOfId(id)).size());
 	}
 	/** When she was first commissioned ("1 October 2026"), or "" if not known. */
 	public static String commissioned(Vault v, String id) { return read(v, id).getProperty("commissioned", ""); }
@@ -151,13 +151,11 @@ public final class Museum {
 	/** Every exhibit: the Hall of Victors first (most victories, then name), then the Memorial (by name). */
 	public static List<Exhibit> exhibits(Vault v) {
 		List<Exhibit> victors = new ArrayList<Exhibit>(), memorial = new ArrayList<Exhibit>();
-		File[] dirs = v.historyDir().listFiles();
-		if (dirs != null) for (File d : dirs) {
-			if (!d.isDirectory()) continue;
-			String id = d.getName();
-			Properties p = read(v, id);
-			File[] wins = d.listFiles(new java.io.FileFilter() { public boolean accept(File f) { return f.isFile() && f.getName().startsWith("victory-") && f.getName().endsWith(".sav"); } });
-			int victories = Math.max(Store.num(p, "victories", 0), wins == null ? 0 : wins.length);
+		for (File d : v.shipFolders()) {
+			String id = ShipStore.idOf(d);
+			if (id == null) continue;
+			Properties p = Store.read(new File(d, FILE));
+			int victories = Math.max(Store.num(p, "victories", 0), wins(d).size());
 			String[] fate = fate(d);
 			Ship inFleet = v.byId(id);
 			String name = inFleet != null ? inFleet.name : !p.getProperty("name", "").isEmpty() ? p.getProperty("name") : fate[1].isEmpty() ? id : fate[1];
@@ -203,16 +201,21 @@ public final class Museum {
 			return new String[] {"", "", ""};
 		}
 	}
+	/** Her victory copies, oldest first (kept in her folder's versions/, 5.69). */
+	private static List<File> wins(File d) {
+		List<File> out = new ArrayList<File>();
+		for (File f : ShipStore.versions(d, true)) if (f.getName().startsWith("victory-")) out.add(f);
+		return out;
+	}
 	/** Her newest kept save: a victory's copy (victory) or any version. */
-	private static File newest(File d, final boolean victory) {
-		File[] fs = d.listFiles(new java.io.FileFilter() {
-			public boolean accept(File f) { return f.isFile() && f.getName().endsWith(".sav") && (!victory || f.getName().startsWith("victory-")); }
-		});
-		if (fs == null || fs.length == 0) return null;
-		Arrays.sort(fs, new Comparator<File>() {
+	private static File newest(File d, boolean victory) {
+		List<File> fs = victory ? wins(d) : new ArrayList<File>(ShipStore.versions(d, false));
+		if (!victory) fs.addAll(ShipStore.versions(d, true));
+		if (fs.isEmpty()) return null;
+		Collections.sort(fs, new Comparator<File>() {
 			public int compare(File a, File b) { int c = Long.compare(a.lastModified(), b.lastModified()); return c != 0 ? c : a.getName().compareTo(b.getName()); }
 		});
-		return fs[fs.length - 1];
+		return fs.get(fs.size() - 1);
 	}
 	private static int sectorOf(File save) {
 		if (save == null) return 0;

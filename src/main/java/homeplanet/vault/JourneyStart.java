@@ -37,11 +37,11 @@ public final class JourneyStart {
 		p.setProperty("hired", Integer.toString(gs.getTotalCrewHired()));
 		for (String k : VARS) if (gs.hasStateVar(k)) p.setProperty(k, Integer.toString(gs.getStateVar(k)));
 		try {
-			Store.write(new File(new File(v.historyDir(), s.id), FILE), p, "Where her current journey began: Federation Home Planet rewrites this file");
+			Store.write(new File(v.historyOf(s), FILE), p, "Where her current journey began: Federation Home Planet rewrites this file");
 		} catch (IOException e) {
 			log.warn("Could not note where {}'s journey began: {}", s.name, e.toString());
 		}
 	}
 	/** Her journey's start, or empty if the station hasn't seen one begin (a ship from before 4B.75). */
-	public static Properties read(Vault v, String id) { return Store.read(new File(new File(v.historyDir(), id), FILE)); }
+	public static Properties read(Vault v, String id) { return Store.read(new File(v.folderOfId(id), FILE)); }
 }

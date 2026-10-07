@@ -79,15 +79,15 @@ public class SafeT { public static void main(String[] a) throws Exception {
  /** D and H: a Board or Dock that fails partway leaves every ship as she was, with no stray continue.sav. */
  static void failedBoardAndDock(Vault v) throws Exception {
   Ship was = v.boarded(), next = v.docked().get(0);
-  // H: Dock can't write her into the ships folder (a folder sits where her file goes)
-  File where = new File(v.shipsDir(), was.id + ".sav"); new File(where, "x").mkdirs();
+  // H: Dock can't write her into her shipyard folder (a folder sits where her file goes)
+  File where = ShipStore.sav(v.folderOf(was)); new File(where, "x").mkdirs();
   boolean failed = false; try { v.dock(); } catch (IOException e) { failed = true; }
   Setup.chk("H: a failed Dock leaves her boarded, continue.sav in place", failed && v.boarded() == was && v.continueFile().isFile());
   SafeFiles.deleteTree(where);
   v.dock();
   Setup.chk("H: once cleared, she docks", v.boarded() == null && was.state == Ship.State.DOCKED && where.isFile());
-  // D: Board can't move her vault copy into her history (a file sits where her history folder goes)
-  File hist = v.historyOf(next); SafeFiles.deleteTree(hist); SafeFiles.write(hist, new byte[] {1});
+  // D: Board can't keep her vault copy as a version (a file sits where her versions folder goes)
+  File hist = ShipStore.versions(v.historyOf(next)); SafeFiles.deleteTree(hist); SafeFiles.write(hist, new byte[] {1});
   failed = false; try { v.board(next); } catch (IOException e) { failed = true; }
   Setup.chk("D: a failed Board leaves no copy in continue.sav, and her still docked", failed && !v.continueFile().exists() && next.state == Ship.State.DOCKED && next.file().isFile());
   hist.delete();

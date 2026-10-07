@@ -39,6 +39,13 @@ public class Setup {
   for (File f : fs) { File t = new File(to, f.getName()); if (f.isDirectory()) copyTree(f, t); else java.nio.file.Files.copy(f.toPath(), t.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
  }
  public static int fails = 0;
+ /** A ship's save in a folder of ship folders (a shipyard, a Junkyard, a surrender), by her id; null if she isn't there. */
+ public static File savIn(File parent, String id) { for (File d : ShipStore.folders(parent)) if (id.equals(ShipStore.idOf(d))) return ShipStore.sav(d).isFile() ? ShipStore.sav(d) : null; return null; }
+ /** A ship the fleet remembers: her folder in the memorial, with a record, as if she had left (fate.txt is the test's to write). */
+ public static File departed(Vault v, String id, String name) throws IOException {
+  ShipStore.Record r = new ShipStore.Record(id); r.name = name; r.state = "docked";
+  File d = new File(v.memorialDir(), ShipStore.stem(name, id)); ShipStore.write(d, r); ShipStore.versions(d).mkdirs(); return d;
+ }
  public static void chk(String n, boolean ok) { System.out.println((ok ? "PASS  " : "FAIL  ") + n); if (!ok) fails++; }
  public static void done() { System.out.println(fails == 0 ? "ALL PASSED" : fails + " FAILED"); }
 }

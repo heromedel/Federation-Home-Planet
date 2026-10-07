@@ -1557,7 +1557,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			back = Vault.get().recover(d);
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not recover " + d.name + ":\n" + e.getMessage()
-					+ "\n\nHer records are still in " + d.last.getParentFile());
+					+ "\n\nHer records are still in " + d.folder);
 			init();
 			return;
 		}

@@ -19,7 +19,7 @@ public final class Borrowed {
 
 	/** Her mark, or null if she's the fleet's own. */
 	public static Borrowed of(Vault v, String id) {
-		File f = new File(new File(v.historyDir(), id), FILE);
+		File f = new File(v.folderOfId(id), FILE);
 		if (!f.isFile()) return null;
 		try {
 			Properties p = Store.load(f);
@@ -33,6 +33,6 @@ public final class Borrowed {
 		Properties p = new Properties();
 		p.setProperty("owner", owner);
 		p.setProperty("kind", kind);
-		Store.write(new File(new File(v.historyDir(), id), FILE), p, "She belongs to someone else: Federation Home Planet reads this for the Return button");
+		Store.write(new File(v.folderOfId(id), FILE), p, "She belongs to someone else: Federation Home Planet reads this for the Return button");
 	}
 }

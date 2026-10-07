@@ -40,7 +40,7 @@ member, when crew files come (Phase 2), by `crew=<name>.<id>`; until then by `cr
 | --- | --- | --- |
 | `DAY` | `clock` (the station's count after), `why` (a jump, time passed, business in the Cargo Bay, a day of rest in your quarters, work at a store in FTL) | "A day passed: a jump." |
 
-## A ship's voyage (`log=voyage`; her log in `history/<id>/voyage.log`)
+## A ship's voyage (`log=voyage`; her log in her folder's `voyage.log`, `shipyard/<Name>.<id>/` since 5.69)
 
 Every voyage entry carries the ship's fields. Those marked **state** also carry her state at the look: `hull`,
 `max_hull`, `hull_change`, `scrap`, `scrap_change`, `fuel`, `fuel_change`, `missiles`, `missiles_change`,
@@ -79,7 +79,8 @@ count), `beacons_jumped` (since the last look), `at_store`.
 Every station-log entry carries `headline` (the entry's first line as `history.log` shows it) and `detail.n` (its
 indented lines), so the old wording is never lost, plus the fields below. A kind with several shapes says which in
 `what` (or `stage`, `how`). A ship's fields are `ship`, `ship_name`, `ship_id`, `ship_state`, `stranger`; a file or
-folder is given as it sits under the career folder (`ships/<id>.sav`, `history/<id>/`, `continue.sav`); `hold` is the
+folder is given as it sits under the career folder (her folder, `shipyard/Kestrel.a3f2`, `junkyard/...` or
+`memorials_and_records/ships/...` since 5.69; before it `ships/<id>.sav`, `history/<id>/`; `continue.sav`); `hold` is the
 Cargo Hold, `junkyard` the Junkyard, `stored_systems` the stored-systems list. A kind not in this table is still
 written (the writer never refuses one), but it is a bug to leave it undocumented.
 
@@ -87,15 +88,16 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 
 | Kind | Fields | Headline today |
 | --- | --- | --- |
-| `BOARD` | ship, `from`, `to` | "Kestrel  ships/a3f2.sav -> continue.sav" |
-| `DOCK` | ship, `from`, `to` | "Kestrel  continue.sav -> ships/a3f2.sav" |
-| `DISBAND` | ship, `from`, `to` (junkyard) | "Kestrel  continue.sav -> junkyard/a3f2.sav" |
-| `SALVAGE` | ship, `from`, `to` | "Kestrel  junkyard/a3f2.sav -> ships/a3f2.sav" |
-| `DESTROY` | ship, `fate`, `from`, `to` (history/<id>/) | "Kestrel  junkyard/a3f2.sav -> history/a3f2/" |
-| `RECOVER` | ship, `fate` (the fate she had), `from`, `to` | "Kestrel (scrapped)  history/a3f2/20261007-043142.sav -> ships/a3f2.sav" |
+| `BOARD` | ship, `from`, `to` | "Kestrel  shipyard/Kestrel.a3f2 -> continue.sav" |
+| `DOCK` | ship, `from`, `to` | "Kestrel  continue.sav -> shipyard/Kestrel.a3f2" |
+| `DISBAND` | ship, `from`, `to` (junkyard) | "Kestrel  continue.sav -> junkyard/Kestrel.a3f2" |
+| `SALVAGE` | ship, `from`, `to` | "Kestrel  junkyard/Kestrel.a3f2 -> shipyard/Kestrel.a3f2" |
+| `DESTROY` | ship, `fate`, `from`, `to` (the memorial) | "Kestrel  junkyard/Kestrel.a3f2 -> memorials_and_records/ships/Kestrel.a3f2" |
+| `RECOVER` | ship, `fate` (the fate she had), `from`, `to` | "Kestrel (scrapped)  memorials_and_records/ships/Kestrel.a3f2 -> shipyard/Kestrel.a3f2" |
 | `RESTORE` | ship, `why` (`version`, `overwritten`), `from`, `to`, `reputation_back` | "Restored the Kestrel to an earlier version" |
 | `OVERWRITTEN` | ship (the one lost), `versions`, `by`, `by_name`, `by_id`, `by_stranger` (the ship now in continue.sav) | "Kestrel (a3f2) was boarded, and continue.sav is now another ship: ..." |
 | `VAULT` | `what` (`taking_stock`, `adopted_continue`), ship (when adopted), `file`, `detail.n` (the notes) | "taking stock" |
+| `LAYOUT` | `what` (`converted`), `to` (`6.0`), `ships`, `remembered` (ships that had left, now in the memorial), `backup` (the zip beside the fleet's folder) | "The station's records were rearranged: 4 ships and 1 remembered into folders of their own (a copy of the fleet as it was is kept beside it)" |
 | `FINAL_BATTLE` | ship, `copy`, `sector`, `victories_then`, `scores_then` | "Kestrel: the Rebel Flagship is on her way to the last battle. ..." |
 | `VICTORY` | ship, `what` (`rescued`), or from FinalVictory: `victories_then`, `victories_now`, `top_scores`, `after` (the choice), `value` | "Kestrel won the last battle (...)" |
 | `MUSEUM` | ship, `scrap`, `to` | "Kestrel is honoured in the Federation museum" |
@@ -106,7 +108,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `SENT_BACK` | ship, `trade`, `to_commander` | "Kestrel (a3f2): the trade was called off, and she stays with Vance's fleet" |
 | `TRADE_CALLED_OFF` | from Vault: ship, `what` (`stays_both`), `trade`, `peer`; from Exchange: `trade`, `peer`, `peer_station`, `why`, `came_back`, `sent_back` | "with Commander Vance  (trade t1)" |
 | `LONG_RANGE_TRADE` | `trade`, `peer`, `peer_station`, `gave`, `received`, `received_to` | "with Commander Vance  (trade t1)" |
-| `SENT` | ship, `from`, `to_fleet`, `to` | "Kestrel  ships/a3f2.sav -> the Sandbox fleet's Space Dock" |
+| `SENT` | ship, `from`, `to_fleet`, `to` | "Kestrel  shipyard/Kestrel.a3f2 -> the Sandbox fleet's Space Dock" |
 | `HANDED_OVER` | ship, `file`, `to_fleet` | "Kestrel (continue.sav) to the Sandbox fleet, now in use" |
 | `SWITCH_FLEET` | `stage` (`leaving`, `arrived`), `to_fleet`, `parked`, `boarded` | "to the Immersive fleet; Kestrel docked here, ..." |
 | `CAREER_ENDED` | `fleet`, `copy`, `files` | "the Immersive career was ended; a copy is kept in ..." |

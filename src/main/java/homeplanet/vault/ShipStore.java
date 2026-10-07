@@ -97,6 +97,9 @@ public final class ShipStore {
 	/** Writes her record into her folder (made if need be), safely. Her save, log and versions are left as they are. */
 	public static void write(File folder, Record r) throws IOException {
 		if (!folder.isDirectory() && !folder.mkdirs()) throw new IOException("Could not create " + folder);
+		writeFile(xml(folder), r);
+	}
+	private static void writeFile(File to, Record r) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n");
 		sb.append("<!-- ").append(XmlText.attr(r.name)).append(": her record. Federation Home Planet rewrites this file; edit it by hand only when the station is closed. -->\r\n");
@@ -125,21 +128,24 @@ public final class ShipStore {
 			sb.append("/>\r\n");
 		}
 		sb.append("</ship>\r\n");
-		SafeFiles.writeText(xml(folder), sb.toString(), false);
+		SafeFiles.writeText(to, sb.toString(), false);
 	}
 	/** A key as an attribute name: letters, digits, dots, dashes and underscores only (a space or a colon becomes an underscore). */
 	private static String attrName(String k) { return k.replaceAll("[^A-Za-z0-9._-]", "_"); }
 
 	/** Reads her record from her folder; null if the folder has none, or it can't be read (the log says why). */
-	public static Record read(File folder) {
-		File f = xml(folder);
+	public static Record read(File folder) { return readFile(xml(folder), idOf(folder)); }
+	/** A record kept on its own, as a file named by a stem in a folder (the Cargo Hold's at the career's root). */
+	public static Record read(File dir, String stem) { return readFile(new File(dir, stem + ".xml"), stem); }
+	public static void write(File dir, String stem, Record r) throws IOException { writeFile(new File(dir, stem + ".xml"), r); }
+	private static Record readFile(File f, String idIfNone) {
 		if (!f.isFile()) return null;
 		try {
 			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f);
 			Element ship = doc.getDocumentElement();
 			if (!"ship".equals(ship.getTagName())) throw new IOException("not a ship record");
 			String id = ship.getAttribute("id");
-			if (id.isEmpty()) id = idOf(folder);
+			if (id.isEmpty()) id = idIfNone;
 			Record r = new Record(id);
 			r.name = ship.getAttribute("name");
 			r.state = ship.hasAttribute("state") ? ship.getAttribute("state") : "docked";
@@ -188,9 +194,13 @@ public final class ShipStore {
 	 * never changes. Returns the folder as it is after. A rename refused (a file in use) throws, with nothing changed.
 	 */
 	public static File rename(File folder, Record r, String newName) throws IOException {
-		String was = folder.getName(), now = stem(newName, r.id);
 		r.pastNames.add(r.name);
 		r.name = newName;
+		return renameTo(folder, r);
+	}
+	/** Renames her folder and files to the record's name (the record written into it); the caller keeps her past names. */
+	public static File renameTo(File folder, Record r) throws IOException {
+		String was = folder.getName(), now = stem(r.name, r.id);
 		if (now.equals(was)) { write(folder, r); return folder; }
 		for (String ext : new String[] {".xml", ".sav", ".log"}) {
 			File f = new File(folder, was + ext);
@@ -222,14 +232,22 @@ public final class ShipStore {
 
 	// ---- her versions ----
 
-	/** Her kept versions (the ordinary ones, by their stamp; not the special copies), oldest first. */
+	/** Her kept versions (the ordinary ones; not the special copies), oldest first: by the file's time, the name's order deciding a tie (a name from before UTC stamps sorts by when it was kept). */
 	public static List<File> versions(File folder, boolean special) {
 		List<File> out = new ArrayList<File>();
 		File[] fs = versions(folder).listFiles();
 		if (fs == null) return out;
 		for (File f : fs) if (f.isFile() && f.getName().endsWith(".sav") && isSpecial(f) == special) out.add(f);
-		java.util.Collections.sort(out, new java.util.Comparator<File>() { public int compare(File a, File b) { return a.getName().compareTo(b.getName()); } });
+		java.util.Collections.sort(out, new java.util.Comparator<File>() { public int compare(File a, File b) { int t = Long.compare(a.lastModified(), b.lastModified()); return t != 0 ? t : order(a).compareTo(order(b)); } });
 		return out;
+	}
+	/** A version's place in time, from her name: the stamp, then the counter as a number (so -10 follows -9, not -1). */
+	public static String order(File f) {
+		String n = f.getName().replace(".sav", "");
+		int dash = n.indexOf('-', 9); // past the date-time's own dash
+		int count = 1;
+		if (dash > 0) { try { count = Integer.parseInt(n.substring(dash + 1)); } catch (NumberFormatException e) { } n = n.substring(0, dash); }
+		return n + String.format("%06d", count);
 	}
 	public static boolean isSpecial(File f) {
 		for (String p : KEPT_PREFIXES) if (f.getName().startsWith(p)) return true;
@@ -242,11 +260,22 @@ public final class ShipStore {
 		String stamp;
 		synchronized (STAMP) { stamp = STAMP.format(new java.util.Date()); }
 		String base = (prefix == null ? "" : prefix) + stamp;
-		File f = new File(dir, base + ".sav");
-		for (int i = 2; f.exists(); i++) f = new File(dir, base + "-" + i + ".sav");
+		// the counter follows the highest one there, not the first free name: a number pruning freed would sort as old
+		int next = 1;
+		File[] fs = dir.listFiles();
+		if (fs != null) for (File x : fs) {
+			String n = x.getName();
+			if (!n.startsWith(base) || !n.endsWith(".sav")) continue;
+			String rest = n.substring(base.length(), n.length() - 4);
+			int c = rest.isEmpty() ? 1 : rest.startsWith("-") ? count(rest.substring(1)) : 0;
+			if (c > next) next = c;
+			if (c == next && c >= 1) next = c + 1;
+		}
+		File f = new File(dir, base + (next == 1 ? "" : "-" + next) + ".sav");
 		SafeFiles.write(f, save);
 		return f;
 	}
+	private static int count(String s) { try { return Integer.parseInt(s); } catch (NumberFormatException e) { return 0; } }
 	private static final java.text.SimpleDateFormat STAMP = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss");
 	static { STAMP.setTimeZone(java.util.TimeZone.getTimeZone("UTC")); }
 	/** Prunes her ordinary versions to the newest {@code keep}; the special copies are never touched. */

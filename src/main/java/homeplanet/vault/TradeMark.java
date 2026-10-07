@@ -43,7 +43,7 @@ public final class TradeMark {
 	public static TradeMark of(Ship s) { return s == null ? null : of(Vault.get(), s.id); }
 	/** The mark of a ship by id (she may have left the fleet), or null. */
 	public static TradeMark of(Vault v, String id) {
-		File f = new File(new File(v.historyDir(), id), FILE);
+		File f = new File(v.folderOfId(id), FILE);
 		if (!f.isFile()) return null;
 		try { return new TradeMark(Store.load(f)); }
 		catch (IOException e) { return null; }

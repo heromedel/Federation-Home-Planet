@@ -190,7 +190,7 @@ public class LinkPeer {
    if (c.equals("unfinished")) return "" + Exchange.unfinished().size();
    if (c.equals("mark")) { Ship sh = shipNamed(w[1]); TradeMark m = sh == null ? null : TradeMark.of(sh); return m == null ? "none" : "from=" + m.from.replace(' ', '_') + " original=" + m.original.replace(' ', '_') + " defeated=" + m.defeated; }
    if (c.equals("since")) { Ship sh = shipNamed(w[1]); return "defeated=" + TradeMark.defeatedSince(sh, sh.save()) + " beacons=" + TradeMark.beaconsSince(sh, sh.save()) + " lifetime=" + sh.save().getTotalShipsDefeated(); }
-   if (c.equals("fate")) { File f = new File(new File(v.historyDir(), w[1]), "fate.txt"); return f.isFile() ? new String(SafeFiles.read(f), "UTF-8").trim().replace('\n', '|') : "none"; }
+   if (c.equals("fate")) { File f = new File(v.folderOfId(w[1]), "fate.txt"); return f.isFile() ? new String(SafeFiles.read(f), "UTF-8").trim().replace('\n', '|') : "none"; }
    if (c.equals("idof")) { Ship sh = shipNamed(w[1]); return sh == null ? "none" : sh.id; }
    if (c.equals("recoverable")) { List<String> n = new ArrayList<String>(); for (Vault.Departed d : v.recoverable()) n.add(d.name.replace(' ', '_')); return n.isEmpty() ? "none" : String.join(",", n); }
    if (c.equals("defeat")) { // FTL's progress on a docked ship: more ships defeated

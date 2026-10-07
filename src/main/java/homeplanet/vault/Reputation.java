@@ -345,14 +345,12 @@ public final class Reputation {
 			Map<String, Ship> inFleet = new LinkedHashMap<String, Ship>();
 			for (Ship s : v.all()) if (s.state != Ship.State.STORAGE) inFleet.put(s.id, s);
 			List<String> ids = new ArrayList<String>(inFleet.keySet());
-			File[] dirs = v.historyDir().listFiles();
-			if (dirs != null) {
-				java.util.Arrays.sort(dirs);
-				for (File d : dirs) if (d.isDirectory() && !ids.contains(d.getName()) && served(d)) ids.add(d.getName());
-			}
+			List<File> dirs = v.departedFolders();
+			java.util.Collections.sort(dirs);
+			for (File d : dirs) { String id = ShipStore.idOf(d); if (id != null && !ids.contains(id) && served(d)) ids.add(id); }
 			for (String id : ids) {
 				Ship s = inFleet.get(id);
-				SavedGameState gs = s != null ? s.save() : lastSave(new File(v.historyDir(), id));
+				SavedGameState gs = s != null ? s.save() : lastSave(v.folderOfId(id));
 				String name = s != null ? s.name : departedName(v, id);
 				List<String> why = new ArrayList<String>();
 				int pts = 0;
@@ -406,9 +404,9 @@ public final class Reputation {
 			inFleet.add(s.id);
 			if (!v.ignoring(s)) n += defeatedSince(v, s.id, s.save()); // an ignored one isn't the career's ship (5.54)
 		}
-		File[] dirs = v.historyDir().listFiles();
-		if (dirs != null) for (File d : dirs) {
-			if (d.isDirectory() && !inFleet.contains(d.getName()) && new File(d, "fate.txt").isFile()) n += defeatedSince(v, d.getName(), lastSave(d));
+		for (File d : v.departedFolders()) {
+			String id = ShipStore.idOf(d);
+			if (id != null && !inFleet.contains(id) && new File(d, "fate.txt").isFile()) n += defeatedSince(v, id, lastSave(d));
 		}
 		return n;
 	}
@@ -420,8 +418,7 @@ public final class Reputation {
 	/** A history folder of a ship that served (a voyage log or a kept save), not the Cargo Hold's. */
 	private static boolean served(File d) {
 		if (new File(d, VoyageLog.LAST).isFile()) return true;
-		File[] saves = d.listFiles(new java.io.FileFilter() { public boolean accept(File x) { return x.getName().endsWith(".sav"); } });
-		return saves != null && saves.length > 0 && new File(d, "fate.txt").isFile();
+		return (!ShipStore.versions(d, false).isEmpty() || !ShipStore.versions(d, true).isEmpty()) && new File(d, "fate.txt").isFile();
 	}
 	/** New Journeys since her trade (each starts from sector 1 again, which isn't a jump): all of them if never traded. */
 	private static int journeysSince(Vault v, String id, TradeMark m) {
@@ -438,12 +435,12 @@ public final class Reputation {
 		try { return HomePlanet.savedGameParser.readSavedGame(newest); } catch (Exception e) { return null; }
 	}
 	private static String fate(Vault v, String id) {
-		try { return new String(SafeFiles.read(new File(new File(v.historyDir(), id), "fate.txt")), StandardCharsets.UTF_8).split("\n")[0].trim(); }
+		try { return new String(SafeFiles.read(new File(v.folderOfId(id), "fate.txt")), StandardCharsets.UTF_8).split("\n")[0].trim(); }
 		catch (Exception e) { return ""; }
 	}
 	private static String departedName(Vault v, String id) {
 		try {
-			String[] l = new String(SafeFiles.read(new File(new File(v.historyDir(), id), "fate.txt")), StandardCharsets.UTF_8).split("\n");
+			String[] l = new String(SafeFiles.read(new File(v.folderOfId(id), "fate.txt")), StandardCharsets.UTF_8).split("\n");
 			if (l.length > 1 && !l[1].trim().isEmpty()) return l[1].trim();
 		} catch (Exception e) { }
 		return id;

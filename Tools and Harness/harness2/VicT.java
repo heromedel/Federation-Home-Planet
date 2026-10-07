@@ -43,8 +43,12 @@ public class VicT { public static void main(String[] a) throws Exception {
   FinalVictory.watch();
  }
  static File copyOf(Vault v, Ship s) { return new File(v.historyOf(s), "final-battle.sav"); }
+ /** Her special copies by prefix (in her folder's versions/, 5.69). */
+ static List<File> kept(Vault v, String id, String prefix) { List<File> out = new ArrayList<File>(); for (File f : ShipStore.versions(v.folderOfId(id), true)) if (f.getName().startsWith(prefix)) out.add(f); return out; }
+ static final Set<String> used = new HashSet<String>();
+ /** Boards a docked ship not sent out before (the fleet reads in name order since 5.69, so a ship brought home would be first again). */
  static Ship boardNext(Vault v) throws Exception {
-  if (v.boarded() == null) v.board(v.docked().get(0));
+  if (v.boarded() == null) for (Ship d : v.docked()) if (used.add(d.id)) { v.board(d); break; }
   v.takeStock();
   return v.boarded();
  }
@@ -76,7 +80,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   runEnds(v, false, s);
   List<FinalVictory.Notice> n = FinalVictory.settle();
   Setup.chk("L: lost in the last battle (no victory): nothing to tell, the copy is closed", n.isEmpty() && v.byId(id) == null && v.finalBattles().isEmpty()
-    && new File(v.historyDir(), id).list(new FilenameFilter() { public boolean accept(File d, String f) { return f.startsWith("final-battle-"); } }).length == 1);
+    && kept(v, id, "final-battle-").size() == 1);
  }
  static Ship toVictory(Vault v, String choice) throws Exception {
   HomePlanet.finalVictory = choice;
@@ -98,7 +102,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   Setup.chk("K: keep her: docked under her own id, as she was kept (hull 11)", back != null && back.state == Ship.State.DOCKED && g.getPlayerShip().getHullAmt() == 11 && what.contains(name));
   Setup.chk("K: ready for a new journey: sector 1, no flagship alongside or on her way", g.getSectorNumber() == 0 && !g.isRebelFlagshipNearby() && g.getRebelFlagshipState().getPendingStage() < 3);
   Setup.chk("K: settled: no offer left, her victory kept in her history", FinalVictory.settle().isEmpty() && FinalVictory.offer(id) == null
-    && new File(v.historyDir(), id).list(new FilenameFilter() { public boolean accept(File d, String f) { return f.startsWith("victory-"); } }).length == 1);
+    && kept(v, id, "victory-").size() == 1);
  }
  static void rescueMuseum(Vault v) throws Exception {
   Ship s = toVictory(v, FinalVictory.RESCUE); String id = s.id;
@@ -107,7 +111,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   FinalVictory.museum(FinalVictory.offer(id));
   boolean recoverable = false; for (Vault.Departed d : v.recoverable()) if (d.id.equals(id)) recoverable = true;
   Setup.chk("M: the museum's offer: her full value to storage, and she doesn't come back", v.storageScrap() == before + value && v.byId(id) == null && !recoverable);
-  Setup.chk("M: her fate is the museum", new String(SafeFiles.read(new File(v.historyDir(), id + "/fate.txt")), "UTF-8").startsWith("MUSEUM") && FinalVictory.settle().isEmpty());
+  Setup.chk("M: her fate is the museum", new String(SafeFiles.read(new File(v.folderOfId(id), "fate.txt")), "UTF-8").startsWith("MUSEUM") && FinalVictory.settle().isEmpty());
  }
  static void reward(Vault v) throws Exception {
   Ship s = toVictory(v, FinalVictory.REWARD); String id = s.id;
@@ -116,7 +120,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   List<FinalVictory.Notice> n = FinalVictory.settle();
   Setup.chk("R: a reward: her full value to storage, a notice to read, and she stays lost", n.size() == 1 && n.get(0).offer == null && v.storageScrap() == before + value && v.byId(id) == null && n.get(0).text.contains(value + " scrap"));
   Setup.chk("R: paid once", FinalVictory.settle().isEmpty() && v.storageScrap() == before + value);
-  SavedGameState g = read(new File(v.historyDir(), id).listFiles(new FilenameFilter() { public boolean accept(File d, String f) { return f.startsWith("victory-"); } })[0]);
+  SavedGameState g = read(kept(v, id, "victory-").get(0));
   Setup.chk("R: her value is her price at the rate", value == Pricing.ship(g, Pricing.rate()).total() && value > 0);
  }
  static void inbox(Vault v) throws Exception {

@@ -50,7 +50,7 @@ public final class VoyageLog {
 	}
 	/** The log of a ship by her id (she may have left the fleet: the museum), oldest first; empty if none. */
 	public static String read(Vault v, String id) {
-		File f = new File(new File(v.historyDir(), id), LOG);
+		File f = new File(v.folderOfId(id), LOG);
 		try { return f.isFile() ? new String(SafeFiles.read(f), StandardCharsets.UTF_8) : ""; }
 		catch (IOException e) { return ""; }
 	}
@@ -365,7 +365,7 @@ public final class VoyageLog {
 	// ---- files ----
 
 	private static Properties last(Vault v, Ship s) { return Store.read(new File(v.historyOf(s), LAST)); }
-	private static Properties last(Vault v, String id) { return Store.read(new File(new File(v.historyDir(), id), LAST)); }
+	private static Properties last(Vault v, String id) { return Store.read(new File(v.folderOfId(id), LAST)); }
 	private static void save(Vault v, Ship s, Properties p) {
 		try {
 			Store.write(new File(v.historyOf(s), LAST), p, "Her last look, for the voyage log");
