@@ -99,7 +99,9 @@ public final class ShipStore {
 		if (!folder.isDirectory() && !folder.mkdirs()) throw new IOException("Could not create " + folder);
 		writeFile(xml(folder), r);
 	}
-	private static void writeFile(File to, Record r) throws IOException {
+	private static void writeFile(File to, Record r) throws IOException { SafeFiles.write(to, bytes(r)); }
+	/** Her record as its file's bytes (for a package, 5.75). */
+	public static byte[] bytes(Record r) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n");
 		sb.append("<!-- ").append(XmlText.attr(r.name)).append(": her record. Federation Home Planet rewrites this file; edit it by hand only when the station is closed. -->\r\n");
@@ -128,7 +130,7 @@ public final class ShipStore {
 			sb.append("/>\r\n");
 		}
 		sb.append("</ship>\r\n");
-		SafeFiles.writeText(to, sb.toString(), false);
+		return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
 	}
 	/** A key as an attribute name: letters, digits, dots, dashes and underscores only (a space or a colon becomes an underscore). */
 	private static String attrName(String k) { return k.replaceAll("[^A-Za-z0-9._-]", "_"); }
@@ -140,8 +142,13 @@ public final class ShipStore {
 	public static void write(File dir, String stem, Record r) throws IOException { writeFile(new File(dir, stem + ".xml"), r); }
 	private static Record readFile(File f, String idIfNone) {
 		if (!f.isFile()) return null;
+		try { return parse(SafeFiles.read(f), idIfNone); }
+		catch (Exception e) { log.warn("Could not read {}: {}", f, e.toString()); return null; }
+	}
+	/** A record from its file's bytes (a package's, 5.75): the id given stands if the record names none. */
+	public static Record parse(byte[] xml, String idIfNone) throws IOException {
 		try {
-			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f);
+			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new java.io.ByteArrayInputStream(xml));
 			Element ship = doc.getDocumentElement();
 			if (!"ship".equals(ship.getTagName())) throw new IOException("not a ship record");
 			String id = ship.getAttribute("id");
@@ -167,8 +174,7 @@ public final class ShipStore {
 			}
 			return r;
 		} catch (Exception e) {
-			log.warn("Could not read {}: {}", f, e.toString());
-			return null;
+			throw new IOException("not a ship record: " + e.getMessage(), e);
 		}
 	}
 	private static List<Element> children(Element e, String tag) {

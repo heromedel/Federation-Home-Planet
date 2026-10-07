@@ -16,6 +16,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
 import homeplanet.core.Event;
+import homeplanet.core.EventLog;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
@@ -1733,6 +1734,8 @@ public final class Vault {
 
 	/** What travels with a ship: her save, her voyage log and its last look, and her last trade mark. */
 	static final String[] PACKAGE = {"ship.sav", VoyageLog.LOG, VoyageLog.LAST, TradeMark.FILE, "papers.txt"};
+	/** Her record and her events in a package (5.75): an older station leaves them out (unknown files are dropped), and a package without them is read as before. */
+	static final String PACKAGE_RECORD = "record.xml", PACKAGE_EVENTS = "events.log";
 	private static final int PACKAGE_MAX = 16 * 1024 * 1024;
 
 	/** A docked ship's package for another station (a zip of {@link #PACKAGE}). */
@@ -1763,6 +1766,15 @@ public final class Vault {
 				z.write(e.getValue());
 				z.closeEntry();
 			}
+			// her record (owners, past names, her sections) and her events, two lines each, as the log holds them (5.75)
+			z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE_RECORD));
+			z.write(ShipStore.bytes(recordOf(s)));
+			z.closeEntry();
+			StringBuilder events = new StringBuilder();
+			for (EventLog.Entry e : EventLog.voyage(EventLog.read(this), s.id)) events.append(EventLog.text(e));
+			z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE_EVENTS));
+			z.write(events.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			z.closeEntry();
 		} finally {
 			z.close();
 		}
@@ -1777,7 +1789,7 @@ public final class Vault {
 			for (java.util.zip.ZipEntry e; (e = z.getNextEntry()) != null;) {
 				if (out.containsKey(e.getName())) throw new IOException("a ship's package names " + e.getName() + " twice");
 				boolean known = java.util.Arrays.asList(PACKAGE).contains(e.getName()) || e.getName().equals(homeplanet.parser.ShipPapers.BLUEPRINT)
-						|| e.getName().startsWith(homeplanet.parser.ShipPapers.ART);
+						|| e.getName().startsWith(homeplanet.parser.ShipPapers.ART) || e.getName().equals(PACKAGE_RECORD) || e.getName().equals(PACKAGE_EVENTS);
 				java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
 				byte[] buf = new byte[8192];
 				for (int n; (n = z.read(buf)) > 0;) {
@@ -1885,6 +1897,26 @@ public final class Vault {
 			SafeFiles.write(f, save); // her save as it arrived, or renamed onto a blueprint here (homeplanet.parser.ShipPapers)
 			s.hash = SafeFiles.hash(f);
 			ships.add(s);
+			if (files.containsKey(PACKAGE_RECORD)) { // her record's owners, past names and sections come with her (5.75); her id, name and state are this fleet's
+				try {
+					ShipStore.Record theirs = ShipStore.parse(files.get(PACKAGE_RECORD), s.id), r = recordOf(s);
+					for (String o : theirs.owners) if (!r.owners.contains(o)) r.owners.add(o);
+					for (String n : theirs.pastNames) if (!r.pastNames.contains(n)) r.pastNames.add(n);
+					for (Map.Entry<String, java.util.Properties> sec : theirs.sections.entrySet()) if (!sec.getKey().equals("fate")) r.sections.put(sec.getKey(), sec.getValue());
+					ShipStore.write(dir, r);
+				} catch (IOException e) { log.warn("{}'s record didn't travel well: {}", s.name, e.toString()); }
+			}
+			if (files.containsKey(PACKAGE_EVENTS)) { // her events, under her new id (5.75); their time is their own, their day this career's today
+				Event who = VoyageLog.shipFields(s).put("received_from", from);
+				for (EventLog.Entry e : EventLog.parse(new String(files.get(PACKAGE_EVENTS), java.nio.charset.StandardCharsets.UTF_8))) {
+					Event x = Event.of(e.kind).put("log", "voyage").putAll(who);
+					for (String[] kv : e.fields()) if (!kv[0].matches("log|ship|ship_name|ship_id|ship_state|day|station|received_from")) x.put(kv[0], kv[1]);
+					if (x.get("time") == null) x.put("time", e.time);
+					EventLog.write(this, x.human(e.human));
+				}
+			} else if (files.containsKey(VoyageLog.LOG)) { // an older station's package: her voyage log read in as the conversion reads one
+				LogConvert.importVoyage(this, s, from, new String(files.get(VoyageLog.LOG), java.nio.charset.StandardCharsets.UTF_8));
+			}
 			setOut(s, gs, "Received from " + from + "'s fleet at The Home Planet Station");
 			homeplanet.parser.Museum.setCommissioned(this, s.id, commissioned); // her own date, not her arrival
 		} catch (IOException e) {

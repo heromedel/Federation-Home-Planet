@@ -119,8 +119,8 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
   takes at most 8 messages in 4 seconds (a flood is dropped, not queued). The hello says whether a station shows
   messages (`chat`); an older one doesn't, so the box stays off rather than sending what wouldn't be seen.
 - **Distrust:** sizes are checked before anything is read; item ids must be in this station's game data; crew are
-  rebuilt field by field within FTL's limits; a ship's package holds only its four files, and her save must read and be
-  the ship offered. A malformed message closes the channel.
+  rebuilt field by field within FTL's limits; a ship's package holds only its files (her save, voyage log, last look, trade mark, papers, her
+  blueprint and art, and since 5.75 her record and her events), and her save must read and be the ship offered. A malformed message closes the channel.
 - **History and letters:** a LONG RANGE TRADE (or TRADE CALLED OFF) entry in history.log; with the inbox on, a receipt
   from the Home Planet Quartermaster, "Receipt of Transfer: Signed by Quartermaster" (a title nobody takes for the other
   commander's own message), in a few wordings. Receipts pile up, so they can be deleted as well as archived: the trade
@@ -174,7 +174,7 @@ Trading with another commander's Home Planet Station. Decided with heromedel; th
 
 Each side ignores message fields, offer kinds and package files it doesn't know, so adding one is safe. Bump
 `Session.PROTOCOL` only when an older station would trade wrongly (a new step in the exchange, a field it must read).
-Protocol 2: custom ships' papers.
+Protocol 2: custom ships' papers. 5.75 adds her record (`record.xml`) and her events (`events.log`, two lines each) to a ship's package without a bump: an older station drops them, and a package without them is read as before (her voyage log read in as events).
 
 ## Harness
 

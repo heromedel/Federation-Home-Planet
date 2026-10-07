@@ -225,7 +225,7 @@ _5.74: the readers on events: the Captain's Log's days (`MasterLog.byDay` and `d
 
 ### Phase 4: Long Range Comm
 
-21. A ship package is her folder zipped, with her crew's files. `Session.PROTOCOL` goes up (a 5.x station would trade wrongly), and a 6.0 station tells a 5.x one plainly that one of them needs updating, as today.
+21. A ship package is her folder zipped, with her crew's files. `Session.PROTOCOL` goes up (a 5.x station would trade wrongly), and a 6.0 station tells a 5.x one plainly that one of them needs updating, as today. _5.75, as far as it goes without crew files: her package carries her record (`record.xml`: owners, past names, sections) and her events (`events.log`, her voyage entries, two lines each); the receiving station keeps both under her new id (`received_from` on each event, the day this career's), and reads an older station's package as before, its voyage log turned into events. No protocol bump: both directions work with a 5.x station. Her crew's files join the package with step 15; the bump waits for that._
 
 ### Phase 5: migration
 

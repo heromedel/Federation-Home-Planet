@@ -181,6 +181,16 @@ public final class LogConvert {
 		}
 		return n;
 	}
+	/** A voyage log that came with a ship from an older station (5.75): each line an event under her id here, its time its own, its day this career's today. */
+	public static void importVoyage(Vault v, Ship s, String from, String text) {
+		Event who = VoyageLog.shipFields(s).put("received_from", from).put("converted", true);
+		for (String line : text.split("\r?\n")) {
+			Matcher m = STAMP.matcher(line);
+			if (!m.matches()) continue;
+			Event e = voyageEvent(m.group(2).trim());
+			EventLog.write(v, Event.of(e.kind).put("log", "voyage").put("time", m.group(1) + ":00").putAll(who).putAll(e).human(m.group(2).trim()));
+		}
+	}
 	private static final Pattern SECTOR = Pattern.compile("Sector (\\d+) reached \\(sectors visited: (\\d+)\\)"), DEFEATED = Pattern.compile("(\\d+) ships? defeated \\((\\d+) in all\\)"),
 			HULL = Pattern.compile("Hull (repaired|damaged) to (\\d+)/(\\d+).*"), NEW_RUN = Pattern.compile("Back to sector (\\d+): a new run"), CREW = Pattern.compile("(.+?) \\(([^()]+)\\)");
 	/** The kind and fields an old voyage line gives away; the rest is a note with the line as its text. */

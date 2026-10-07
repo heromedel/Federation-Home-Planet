@@ -78,6 +78,12 @@ public final class EventLog {
 		String human = e.human().replace('\r', ' ').replace('\n', ' ').trim();
 		append(to, machine + NL + human + NL);
 	}
+	/** An entry's two lines as the log holds them (to carry entries elsewhere: a ship's package, 5.75). */
+	public static String text(Entry e) {
+		Event f = Event.of(e.kind);
+		for (String[] kv : e.fields()) f.put(kv[0], kv[1]);
+		return e.time + " | " + e.stardate + " | " + e.kind + " | " + f.fieldText() + NL + e.human.replace('\r', ' ').replace('\n', ' ') + NL;
+	}
 	private static int dayOf(String s, int dflt) { try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return dflt; } }
 	private static synchronized void append(File f, String text) {
 		Writer w = null;
