@@ -29,7 +29,7 @@ public class MigT { public static void main(String[] a) throws Exception {
  int eventsBefore = EventLog.read(v).size();
  // back to the old layout, as a 5.x station left it
  Layout.unconvert(v);
- Setup.chk("B: the old layout: a manifest, ships/, junkyard/ and history/ of files; no folders", new File(root, "manifest.xml").isFile() && new File(root, "ships/" + d1.id + ".sav").isFile()
+ Setup.chk("B: the old layout: a manifest, ships/, junkyard/ and history/ of files, the hold and the logs at the root; no folders", new File(root, "manifest.xml").isFile() && new File(root, "storage.sav").isFile() && new File(root, "history.log").isFile() && !new File(root, "cargohold").exists() && !new File(root, "logs").exists() && new File(root, "ships/" + d1.id + ".sav").isFile()
    && new File(root, "junkyard/" + d2.id + ".sav").isFile() && new File(root, "history/" + d3.id + "/fate.txt").isFile() && new File(root, "history/" + d1.id + "/cloud-copy-" + "").getParentFile().isDirectory()
    && !new File(root, "shipyard").exists() && !new File(root, "memorials_and_records").exists() && !new File(root, "storage.xml").exists());
  // opened again: converted
@@ -46,6 +46,8 @@ public class MigT { public static void main(String[] a) throws Exception {
  Setup.chk("C: the fleet as it was: the same ships (" + v.all().size() + "), the renamed one, the hull in the Junkyard, the destroyed one gone", v2.all().size() == v.all().size() && v2.byId(d1.id).name.equals("Nightjar Renamed")
    && v2.byId(d2.id).state == Ship.State.JUNKED && v2.byId(d3.id) == null);
  Setup.chk("C: the same ship boarded, the hold with the same fingerprint", v2.boarded() != null && v2.boarded().id.equals(v.boarded().id) && v2.storage().hash.equals(v.storage().hash));
+ Setup.chk("C: the Cargo Hold in its folder: its save and record there, its stored-systems list with it, nothing of it left at the root", v2.fileOf(v2.storage()).equals(new File(v2.cargoHoldDir(), Vault.HOLD_FILE)) && v2.fileOf(v2.storage()).isFile()
+   && new File(v2.cargoHoldDir(), "cargohold.xml").isFile() && v2.systemsFile().getParentFile().equals(v2.cargoHoldDir()) && !new File(root, "storage.sav").exists() && !new File(root, "storage.xml").exists() && !new File(root, "storage-systems.txt").exists());
  Setup.chk("C: her kept versions read back in order, the victory copy and the cloud copy among her special copies", v2.history(v2.byId(d1.id)).size() == v.history(d1).size()
    && ShipStore.versions(v2.folderOf(v2.byId(d1.id)), true).size() == 2 && v2.kept(v2.byId(d1.id)).size() == v.kept(d1).size());
  List<EventLog.Entry> es = EventLog.read(v2); EventLog.Entry layout = null;

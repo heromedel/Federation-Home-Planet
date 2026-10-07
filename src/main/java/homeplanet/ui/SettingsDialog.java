@@ -133,6 +133,11 @@ public class SettingsDialog extends JDialog {
 			directxNote.setToolTipText(directxBox.getToolTipText());
 			directxRow.add(directxNote);
 			body.add(directxRow, next(c));
+			JLabel steamDirectx = new JLabel("<html><div style='width:560px; color:" + MenuTheme.HTML_GREY_GREEN + "'>If also launching through Steam: Steam may ask each time before passing -directx on. "
+					+ "To skip the question: in your Steam library, right-click FTL, choose Properties, then General, and type -directx under Launch Options. "
+					+ "Leave this box off then: Steam adds it every time by itself.</div></html>"); // heromedel's words, 5.72
+			steamDirectx.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
+			body.add(steamDirectx, next(c));
 		}
 
 		heading(body, c, "Station");
@@ -203,7 +208,7 @@ public class SettingsDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) { openFolder(saves); }
 		});
 		JButton openStation = new JButton("Open the station's folder");
-		openStation.setToolTipText("Open The Home Planet Station's own folder (its ships, Junkyard, records and blueprints) in Windows Explorer: for backups, or a look around");
+		openStation.setToolTipText("Open The Home Planet Station's own folder (the shipyard, the Junkyard, the Cargo Hold, memorials and records, the logs) in Windows Explorer: for backups, or a look around");
 		openStation.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().root); }
 		});
@@ -234,6 +239,13 @@ public class SettingsDialog extends JDialog {
 		openRow.add(openStation);
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
 		openRow.add(openJunk);
+		JButton openHold = new JButton("Open Cargo Hold");
+		openHold.setToolTipText("Open the Cargo Hold's folder (its save, its stored-systems list, its earlier versions) in Windows Explorer");
+		openHold.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().cargoHoldDir()); }
+		});
+		openRow.add(javax.swing.Box.createHorizontalStrut(8));
+		openRow.add(openHold);
 		body.add(openRow, next(c));
 
 		body = modsPage;

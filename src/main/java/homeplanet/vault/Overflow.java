@@ -17,7 +17,7 @@ import homeplanet.parser.SaveHelper;
  * Augments a ship had no room for (heromedel): when FTL gives a fourth augment it asks which to throw away, and the save
  * holds all four while it asks. Away from a store, the station writes the four down; at the next save after a jump,
  * whichever is gone was the one thrown away, and her crew ship it home (a parcel the inbox delivers, Transmissions).
- * At a store nothing is noted: there one could be sold instead. Kept in the fleet's overflow.txt.
+ * At a store nothing is noted: there one could be sold instead. Kept in the Cargo Hold's overflow.txt (cargohold/, 5.72).
  */
 public final class Overflow {
 	private Overflow() { }
@@ -32,7 +32,7 @@ public final class Overflow {
 	}
 
 	private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(Overflow.class);
-	private static java.io.File file(Vault v) { return new java.io.File(v.root, "overflow.txt"); }
+	private static java.io.File file(Vault v) { return new java.io.File(v.cargoHoldDir(), "overflow.txt"); }
 	private static Properties read(Vault v) { return Store.read(file(v)); } // a warning goes to the debug log (heromedel, 5.53)
 	private static void write(Vault v, Properties p) {
 		try { Store.write(file(v), p, "Augments the boarded ship had no room for: the four seen away from a store, and those shipped home (the inbox delivers them)"); }

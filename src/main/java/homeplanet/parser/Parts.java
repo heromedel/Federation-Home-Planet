@@ -29,7 +29,7 @@ import homeplanet.vault.Vault;
  * rate (Pricing.rate; the rolls and the clearance come off that). One set in SALVAGE_ONE_IN also has a piece of salvage: most
  * often missiles, fuel or drone parts, sometimes a weapon, drone or augment, at 40-70% of FTL's store price, to the
  * Cargo Hold. New ones come in after 5 to 15 beacons the fleet travels.
- * Kept in the fleet's parts.txt.
+ * Kept in the Cargo Hold's parts.txt (cargohold/, 5.72).
  */
 public final class Parts {
 	private static final Logger log = LoggerFactory.getLogger(Parts.class);
@@ -79,7 +79,7 @@ public final class Parts {
 		public int storePrice() { return Parts.storePrice(kind, id, count); }
 	}
 
-	private static File file(Vault v) { return new File(v.root, "parts.txt"); }
+	private static File file(Vault v) { return new File(v.cargoHoldDir(), "parts.txt"); }
 
 	/** What's for sale now: new parts first if it's time (or there have never been any). */
 	public static synchronized List<Listing> current(Vault v) {

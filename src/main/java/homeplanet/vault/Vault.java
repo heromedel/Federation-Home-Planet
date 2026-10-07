@@ -168,6 +168,7 @@ public final class Vault {
 	private File parentOf(Ship.State state) { return state == Ship.State.JUNKED ? junkyardDir() : shipyardDir(); }
 	/** Her folder: the one known for her id, else the one she'd have where her state puts her. */
 	public File folderOf(Ship s) {
+		if (s.state == Ship.State.STORAGE) return cargoHoldDir();
 		File f = folders.get(s.id);
 		return f != null ? f : new File(parentOf(s.state), ShipStore.stem(s.name, s.id));
 	}
@@ -194,6 +195,7 @@ public final class Vault {
 	}
 	/** Puts her folder where her state says, moving it if it sits elsewhere (the Junkyard, the memorial); the folder as it is after. */
 	private File settleFolder(Ship s) throws IOException {
+		if (s.state == Ship.State.STORAGE) { File d = cargoHoldDir(); if (!d.isDirectory() && !d.mkdirs()) throw new IOException("Could not create " + d); return d; }
 		File want = parentOf(s.state), have = folders.get(s.id);
 		if (have != null && have.isDirectory() && !have.getParentFile().getAbsoluteFile().equals(want.getAbsoluteFile())) {
 			have = ShipStore.move(have, want);
@@ -229,17 +231,25 @@ public final class Vault {
 	static final String[] LOG_FILES = {"history.log", "master.log", "events.log", "reputation.log"};
 	public File manifestFile() { return new File(root, MANIFEST); }
 	/** The stored-systems list that goes with the storage hold. */
-	public File systemsFile() { return new File(root, "storage-systems.txt"); }
+	public File systemsFile() { return new File(cargoHoldDir(), "systems.txt"); }
+	/** The Cargo Hold's folder (5.72): its save (the pretend ship, until its contents have an xml of their own), its record, its stored-systems list, its parts and overflow lists, its versions. */
+	public File cargoHoldDir() { return new File(root, HOLD_DIR); }
+	public static final String HOLD_DIR = "cargohold", HOLD_FILE = "cargohold.sav", HOLD_STEM = "cargohold";
+	/** A fleet's Cargo Hold save, wherever that fleet keeps it (cargohold/ since 5.72, storage.sav at the root before): for a fleet not in use. */
+	public static File holdFileIn(File fleetRoot) {
+		File f = new File(new File(fleetRoot, HOLD_DIR), HOLD_FILE);
+		return f.isFile() || !new File(fleetRoot, STORAGE_FILE).isFile() ? f : new File(fleetRoot, STORAGE_FILE);
+	}
 	/** The storage hold's id (and file stem). Before 4B there were two holds; the old AE one's stem is kept for its file name. */
 	static final String STORAGE_ID = "storage";
-	/** The Cargo Hold's file in a fleet's folder (written directly when a shipment goes to a fleet not in use). */
+	/** The Cargo Hold's file at a fleet's root before 5.72 (see {@link #holdFileIn}). */
 	public static final String STORAGE_FILE = STORAGE_ID + ".sav";
 
 	/** Where a ship's save is, given her state: FTL's continue.sav when boarded, her folder's otherwise (the Cargo Hold's at the root, until it has a folder of its own). */
 	public File fileOf(Ship s) {
 		switch (s.state) {
 			case BOARDED: return continueFile();
-			case STORAGE: return new File(root, s.id + ".sav");
+			case STORAGE: return new File(cargoHoldDir(), HOLD_FILE);
 			default: return ShipStore.sav(folderOf(s));
 		}
 	}
@@ -619,6 +629,7 @@ public final class Vault {
 		Journal.settle(this); // an action a station stopped partway through, finished before anything else touches the fleet
 		moveLogs();
 		if (manifestFile().isFile() || oldShipsDir().isDirectory() || oldHistoryDir().isDirectory()) Layout.convert(this);
+		moveCargoHold();
 		shipyardDir().mkdirs();
 		junkyardDir().mkdirs();
 		memorialDir().mkdirs();
@@ -634,6 +645,21 @@ public final class Vault {
 			if (old.isFile() && !now.exists()) n.rename(old, now);
 		}
 		if (!n.isEmpty()) n.commit();
+	}
+	/** The Cargo Hold's files from the root into cargohold/ (5.72), as one journal note: its save, its record, its lists and its versions. */
+	private void moveCargoHold() throws IOException {
+		File hold = cargoHoldDir();
+		Journal.Note n = Journal.begin(this, "MOVE_CARGO_HOLD");
+		String[][] files = {{STORAGE_FILE, HOLD_FILE}, {STORAGE_ID + ".xml", HOLD_STEM + ".xml"}, {"storage-systems.txt", "systems.txt"}, {"parts.txt", "parts.txt"}, {"overflow.txt", "overflow.txt"}};
+		for (String[] f : files) {
+			File old = new File(root, f[0]), now = new File(hold, f[1]);
+			if (old.isFile() && !now.exists()) n.rename(old, now);
+		}
+		File oldVersions = new File(new File(shipyardDir(), ShipStore.stem("Spacedock Storage", STORAGE_ID)), ShipStore.VERSIONS); // 5.69 to 5.71 kept its snapshots there
+		if (oldVersions.isDirectory() && !ShipStore.versions(hold).exists()) n.rename(oldVersions, ShipStore.versions(hold));
+		if (n.isEmpty()) return;
+		n.commit();
+		if (oldVersions.getParentFile().isDirectory()) oldVersions.getParentFile().delete(); // empty now
 	}
 	/** Re-reads everything (Refresh). Parsed saves whose files didn't change are kept. */
 	public synchronized void reload() throws IOException {
@@ -669,7 +695,7 @@ public final class Vault {
 			s.hash = r.hash; s.marks = r.marks; s.stranger = r.stranger; s.fresh = r.fresh;
 			ships.add(s);
 		}
-		ShipStore.Record hold = ShipStore.read(root, STORAGE_ID);
+		ShipStore.Record hold = ShipStore.read(cargoHoldDir(), HOLD_STEM);
 		if (hold != null) {
 			Ship s = new Ship(STORAGE_ID, hold.name.isEmpty() ? "Spacedock Storage" : hold.name, Ship.State.STORAGE, true);
 			s.hash = hold.hash;
@@ -1319,7 +1345,7 @@ public final class Vault {
 	 */
 	public synchronized void saveManifest() throws IOException {
 		for (Ship s : ships) {
-			if (s.state == Ship.State.STORAGE) { ShipStore.write(root, STORAGE_ID, recordOf(s)); continue; }
+			if (s.state == Ship.State.STORAGE) { ShipStore.write(settleFolder(s), HOLD_STEM, recordOf(s)); continue; }
 			File d = settleFolder(s);
 			ShipStore.Record r = recordOf(s);
 			if (!d.getName().equals(ShipStore.stem(s.name, s.id))) {

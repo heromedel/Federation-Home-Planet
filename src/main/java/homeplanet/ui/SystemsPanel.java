@@ -96,7 +96,7 @@ public class SystemsPanel {
 	SystemsPanel(CargoBayUI bay) { this.bay = bay; }
 
 
-	/** The stored-systems list that goes with the storage hold (storage-systems.txt in the vault). */
+	/** The stored-systems list that goes with the storage hold (systems.txt in the Cargo Hold's folder). */
 	File file() {
 		return bay.homeSave == null ? null : homeplanet.vault.Vault.get().systemsFile();
 	}

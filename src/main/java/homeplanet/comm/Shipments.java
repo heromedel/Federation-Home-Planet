@@ -273,7 +273,7 @@ public final class Shipments {
 		Vault v = Vault.get();
 		for (String k : Vault.SLOTS) {
 			if (k.equals(v.slot)) continue;
-			if (!new File(Vault.rootOf(v.saves, k), Vault.STORAGE_FILE).isFile()) continue;
+			if (!Vault.holdFileIn(Vault.rootOf(v.saves, k)).isFile()) continue;
 			if (Session.cantTrade(p.peer(), k, HomePlanet.immersiveAnyLevel) == null) out.add(k);
 		}
 		return out;
@@ -286,7 +286,7 @@ public final class Shipments {
 		if (!p.incoming || !HELD.equals(p.state)) throw new IOException("This shipment was already dealt with (" + p.state + ")");
 		if (!otherFleets(p).contains(slot)) throw new IOException("The " + Vault.title(slot) + " fleet can't take it");
 		Vault v = Vault.get();
-		File hold = new File(Vault.rootOf(v.saves, slot), Vault.STORAGE_FILE);
+		File hold = Vault.holdFileIn(Vault.rootOf(v.saves, slot));
 		SavedGameState gs;
 		try { gs = new net.blerf.ftl.parser.SavedGameParser().readSavedGame(hold); }
 		catch (Exception e) { throw new IOException("The " + Vault.title(slot) + " fleet's Cargo Hold couldn't be read: " + e.getMessage()); }

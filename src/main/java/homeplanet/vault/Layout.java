@@ -207,8 +207,17 @@ public final class Layout {
 					.append("\" dlc=\"").append(r.dlc).append("\" hash=\"").append(r.hash).append("\"").append(r.stranger ? " stranger=\"true\"" : "").append("/>\r\n");
 			SafeFiles.deleteTree(d);
 		}
-		ShipStore.Record hold = ShipStore.read(root, Vault.STORAGE_ID);
-		if (hold != null) { sb.append("\t<ship id=\"storage\" name=\"").append(homeplanet.parser.XmlText.attr(hold.name)).append("\" state=\"storage\" dlc=\"true\" hash=\"").append(hold.hash).append("\"/>\r\n"); new File(root, Vault.STORAGE_ID + ".xml").delete(); }
+		File holdDir = v.cargoHoldDir();
+		ShipStore.Record hold = ShipStore.read(holdDir, Vault.HOLD_STEM);
+		if (hold != null) {
+			sb.append("\t<ship id=\"storage\" name=\"").append(homeplanet.parser.XmlText.attr(hold.name)).append("\" state=\"storage\" dlc=\"true\" hash=\"").append(hold.hash).append("\"/>\r\n");
+			new File(holdDir, Vault.HOLD_STEM + ".xml").delete();
+		}
+		String[][] back = {{Vault.HOLD_FILE, Vault.STORAGE_FILE}, {"systems.txt", "storage-systems.txt"}, {"parts.txt", "parts.txt"}, {"overflow.txt", "overflow.txt"}};
+		for (String[] f : back) { File now = new File(holdDir, f[0]); if (now.isFile()) SafeFiles.move(now, new File(root, f[1])); }
+		SafeFiles.deleteTree(holdDir);
+		for (String name : Vault.LOG_FILES) { File now = new File(v.logsDir(), name); if (now.isFile()) SafeFiles.move(now, new File(root, name)); } // the logs at the root, as before 5.71
+		SafeFiles.deleteTree(v.logsDir());
 		sb.append("</manifest>\r\n");
 		SafeFiles.writeText(new File(root, Vault.MANIFEST), sb.toString(), false);
 		SafeFiles.deleteTree(v.shipyardDir());
