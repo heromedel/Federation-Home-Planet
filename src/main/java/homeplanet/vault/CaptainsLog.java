@@ -101,7 +101,7 @@ public final class CaptainsLog {
 		for (Line l : merged.values()) if (l.kind.equals("ftlbuy")) boughtAboard = true;
 		for (Line l : merged.values()) {
 			if (l.kind.equals("beacon")) { later.add(l); continue; }
-			if (boughtAboard && l.kind.equals("work")) continue; // the purchase tells it
+			if (boughtAboard && l.kind.equals("work") && l.things.isEmpty()) continue; // the purchase tells it (what was fitted or mended, it doesn't)
 			finish(l);
 			if (l.text != null && !l.text.isEmpty()) lines.add(l);
 		}
@@ -430,7 +430,44 @@ public final class CaptainsLog {
 		if (text.startsWith("Crew joined: ")) { once(m, "crew", false, join(strip(text.substring(13))) + " came aboard " + theShip(ship) + "."); return; }
 		if (text.startsWith("The Rebel Flagship is alongside")) { once(m, "fight", false, "The Rebel Flagship came alongside " + theShip(ship) + "."); return; }
 		if (text.startsWith("The Rebel Flagship withdrew")) { once(m, "fight", false, "The Rebel Flagship withdrew."); return; }
-		if (text.startsWith("Time spent on work")) { once(m, "work", true, "Did some shopping and repairs at a station."); }
+		// a stop's work at a store says what was new aboard (heromedel, 5.80); told only on a day with the work note, as a
+		// repair drone, an event's free system or a crew member mending the hull aren't work at a station
+		if (text.startsWith("Time spent on work")) { work(ship, m).station = true; return; }
+		Matcher fitted = Pattern.compile("^New system: (.+?) \\d+$").matcher(text);
+		if (fitted.find()) { add(work(ship, m), "fit:" + fitted.group(1), 1); return; }
+		if (text.startsWith("Reactor upgraded")) { add(work(ship, m), "up:reactor", 1); return; }
+		Matcher upped = Pattern.compile("^(.+?) upgraded to \\d+$").matcher(text);
+		if (upped.find()) { add(work(ship, m), "up:" + upped.group(1), 1); return; }
+		if (text.startsWith("Hull repaired")) { add(work(ship, m), "mend", 1); return; }
+	}
+	/** Her stop's work at a store, the day's one line of it. */
+	private static Line work(String ship, Map<String, Line> m) {
+		Line l = line(m, "work", "work:" + ship, true, "");
+		l.ship = ship;
+		return l;
+	}
+	/**
+	 * A stop's work at a store in words: "Had a Clone Bay installed and got the Kestrel repaired.", "Had the Shields
+	 * upgraded."; with the work noted and nothing known of it, as before; null on a day without the note.
+	 */
+	static String workText(Line l) {
+		if (!l.station) return null;
+		if (l.things.isEmpty()) return "Did some shopping and repairs at a station.";
+		List<String> fitted = new ArrayList<String>(), upped = new ArrayList<String>();
+		for (String a : l.things.keySet()) {
+			if (a.startsWith("fit:")) fitted.add(article(systemWords(a.substring(4))));
+			else if (a.equals("up:reactor")) upped.add("the reactor");
+			else if (a.startsWith("up:")) upped.add("the " + systemWords(a.substring(3)));
+		}
+		String had = fitted.isEmpty() ? "" : join(fitted) + " installed";
+		if (!upped.isEmpty()) had += (had.isEmpty() ? "" : " and ") + join(upped) + " upgraded";
+		String mended = l.things.containsKey("mend") ? "got " + theShip(l.ship) + " repaired" : "";
+		String s = had.isEmpty() ? mended : "had " + had + (mended.isEmpty() ? "" : (fitted.isEmpty() || upped.isEmpty() ? " and " : ", and ") + mended);
+		return homeplanet.model.Words.cap(s) + ".";
+	}
+	/** A system as said aboard: "Clone Bay", "Shields", but "Hacking system", "Mind Control system" (FTL's titles that aren't things). */
+	private static String systemWords(String title) {
+		return java.util.Arrays.asList("Hacking", "Cloaking", "Mind Control", "Drone Control", "Piloting", "Oxygen").contains(title) ? title + " system" : title;
 	}
 	/** The day's jump of hers: one line, "We jumped to sector 3", "…to a station", "…to a new beacon". */
 	private static Line jump(String ship, Map<String, Line> m) {
@@ -464,6 +501,7 @@ public final class CaptainsLog {
 		else if (l.kind.equals("found")) l.text = l.things.isEmpty() ? null : "We picked up " + things(l.things) + ".";
 		else if (l.kind.equals("fight") && l.text.isEmpty()) l.text = l.count <= 0 ? null : startShip(l.ship) + " defeated " + (l.count == 1 ? "a ship" : number(l.count) + " ships") + ".";
 		else if (l.kind.equals("systems")) l.text = systemsText(l);
+		else if (l.kind.equals("work")) l.text = workText(l);
 	}
 	/**
 	 * A jump in words (heromedel, 5.19): where to, what was there, who she met. "We jumped into a nebula and met a Rock

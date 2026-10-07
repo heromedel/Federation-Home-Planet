@@ -1035,7 +1035,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private void launchDocked() {
 		try { homeplanet.core.FtlDock.prepareSettings(); }
 		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not set FTL to windowed in its settings.ini:\n" + e.getMessage() + "\n\nFTL may start full screen; it will still be docked if it can be."); }
-		if (!HomePlanet.launchFTL()) return;
+		if (!HomePlanet.launchFTL(true)) return;
 		homeplanet.core.FtlDock.begin(javax.swing.SwingUtilities.getWindowAncestor(this));
 		dockStarted = System.currentTimeMillis();
 		ftlSeen = false;

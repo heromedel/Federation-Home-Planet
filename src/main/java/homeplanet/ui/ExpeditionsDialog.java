@@ -153,14 +153,7 @@ final class ExpeditionsDialog {
 			items[0] = nobody;
 			for (int k = 0; k < crew.size(); k++) items[k + 1] = crew.get(k);
 			final javax.swing.JComboBox<Object> box = new javax.swing.JComboBox<Object>(items);
-			box.setRenderer(new javax.swing.DefaultListCellRenderer() {
-				@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> l, Object v, int idx, boolean sel, boolean foc) {
-					super.getListCellRendererComponent(l, v, idx, sel, foc);
-					if (v instanceof CrewState) { CrewState c = (CrewState) v; setText(c.getName() + "  (" + homeplanet.model.Crew.raceTitle(c) + ")"); setIcon(IconFactory.crewIcon(c)); }
-					else { setText(String.valueOf(v)); setIcon(null); }
-					return this;
-				}
-			});
+			box.setRenderer(new CrewRow());
 			if (i < crew.size()) box.setSelectedIndex(i + 1);
 			final CrewCard card = new CrewCard();
 			card.show(box.getSelectedItem() instanceof CrewState ? (CrewState) box.getSelectedItem() : null);
@@ -192,6 +185,35 @@ final class ExpeditionsDialog {
 			for (javax.swing.JComboBox<Object> b : picks) if (b.getSelectedItem() instanceof CrewState && !out.contains(b.getSelectedItem())) out.add((CrewState) b.getSelectedItem());
 			if (!out.isEmpty()) return out;
 			JOptionPane.showMessageDialog(owner, "Choose at least one crew member to go.", "Expeditions", JOptionPane.INFORMATION_MESSAGE);
+		}
+	}
+
+	/**
+	 * A crew member in the picker's list: portrait, name and race, and after them FTL's icon for each skill they have a
+	 * level in, grey for one level, gold for two (heromedel, 5.80), so the list shows who's good at what before a pick.
+	 */
+	static final class CrewRow extends JPanel implements javax.swing.ListCellRenderer<Object> {
+		final JLabel who = new JLabel(), skills = new JLabel();
+		CrewRow() {
+			super(new BorderLayout(10, 0));
+			setBorder(BorderFactory.createEmptyBorder(1, 2, 1, 4));
+			add(who, BorderLayout.CENTER);
+			add(skills, BorderLayout.EAST);
+		}
+		@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> l, Object v, int idx, boolean sel, boolean foc) {
+			setOpaque(true);
+			setBackground(sel ? l.getSelectionBackground() : l.getBackground());
+			who.setForeground(sel ? l.getSelectionForeground() : l.getForeground());
+			who.setFont(l.getFont());
+			if (v instanceof CrewState) {
+				CrewState c = (CrewState) v;
+				who.setText(c.getName() + "  (" + homeplanet.model.Crew.raceTitle(c) + ")");
+				who.setIcon(IconFactory.crewIcon(c));
+				skills.setIcon(IconFactory.skillMarks(homeplanet.model.Crew.skillLevels(c), 12));
+			} else {
+				who.setText(String.valueOf(v)); who.setIcon(null); skills.setIcon(null);
+			}
+			return this;
 		}
 	}
 

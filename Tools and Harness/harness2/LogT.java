@@ -34,6 +34,7 @@ public class LogT { public static void main(String[] a) throws Exception {
  storyDays(game, new File(work, "story"));
  voyageDays(game, new File(work, "voyage"));
  beaconDays(game, new File(work, "beacon"));
+ storeWork(game, new File(work, "storework"));
  System.setProperty("game", game.getPath()); fixes520(v);
  // 5.53 (heromedel): the fleet's listing is the debug log's; old LOADED entries stay in the file, out of view, the stardates still in line
  HistoryLog.loaded("refresh");
@@ -84,6 +85,22 @@ public class LogT { public static void main(String[] a) throws Exception {
   Setup.chk("V: back at the station after time aboard: I returned, Then I sold", c1 > b2 && c2 > c1);
   int d1 = p.indexOf("Set out on the Kestrel:"), d2 = p.indexOf("Then we jumped to sector 3.");
   Setup.chk("V: aboard again after the station: Set out, Then we jumped to sector 3", d1 > c2 && d2 > d1 && !p.contains("pressed on"));
+ }
+ /** A stop's work at a store says what was new aboard (heromedel, 5.80), only on a day with the work note. */
+ static void storeWork(File game, File dir) throws Exception {
+  File saves = new File(dir, "saves"); saves.mkdirs();
+  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
+  String jump = "Jumped, hull 25/30, scrap 40, fuel 10 (-1), missiles 8, drone parts 2", work = "Time spent on work at the beacon (buying, repairs or upgrades)";
+  Setup.voyage(v, "Kestrel", jump); Setup.voyage(v, "Kestrel", "Arrived at a store"); v.countBeacon("a jump");
+  Setup.voyage(v, "Kestrel", "New system: Clone Bay 1"); Setup.voyage(v, "Kestrel", "System removed: Medbay"); Setup.voyage(v, "Kestrel", "Hull repaired to 30/30 (+5)"); Setup.voyage(v, "Kestrel", work); v.countBeacon("work at a store in FTL");
+  Setup.voyage(v, "Kestrel", jump); Setup.voyage(v, "Kestrel", "Hull repaired to 28/30 (+3)"); v.countBeacon("a jump"); // a repair drone: no work note
+  Setup.voyage(v, "Kestrel", "Shields upgraded to 3"); Setup.voyage(v, "Kestrel", "Reactor upgraded to 9"); Setup.voyage(v, "Kestrel", work); v.countBeacon("work at a store in FTL");
+  Setup.voyage(v, "Kestrel", work); v.countBeacon("work at a store in FTL"); // the work noted, nothing of it known
+  String p = page(v, false);
+  Setup.chk("W: a Clone Bay and a repair at a store: Had a Clone Bay installed and got the Kestrel repaired", p.contains("ad a Clone Bay installed and got the Kestrel repaired."));
+  Setup.chk("W: a repair with no work at a station (a drone) isn't told as one", !p.contains("ot the Kestrel repaired.") || p.indexOf("ot the Kestrel repaired.") == p.lastIndexOf("ot the Kestrel repaired."));
+  Setup.chk("W: upgrades: Had the Shields and the reactor upgraded", p.contains("ad the Shields and the reactor upgraded."));
+  Setup.chk("W: the work noted with nothing known of it: as before", p.contains("id some shopping and repairs at a station."));
  }
  /** What a beacon held (5.19): nebulas, storms, hazards, a ship met, the next day's news going to the jump before it. */
  static void beaconDays(File game, File dir) throws Exception {

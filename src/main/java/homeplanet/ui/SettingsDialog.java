@@ -45,6 +45,10 @@ public class SettingsDialog extends JDialog {
 	private final javax.swing.JComboBox<String> dockHow = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.HOW);
 	/** FTL's -directx switch (heromedel, 5.64), beside the docked option: Windows only. */
 	private final JCheckBox directxBox = new JCheckBox("Launch FTL with DirectX", HomePlanet.launchDirectX);
+	/** The screen FTL is set to for a launch outside the dock (heromedel, 5.80), in FTL's own words: Windows only, like docking. */
+	private final JCheckBox videoBox = new JCheckBox("Undocked launches: set FTL's Fullscreen to", homeplanet.core.FtlDock.videoChosen());
+	private final javax.swing.JComboBox<String> fullscreenBox = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.FULLSCREEN_MODES);
+	private final JCheckBox vsyncBox = new JCheckBox("and Vertical Sync", homeplanet.core.FtlDock.vsyncChosen());
 	private final RuleBoxes rules = new RuleBoxes();
 	private final JCheckBox borderlessBox = new JCheckBox("Borderless full screen: the station fills the screen, with no title bar (F11 or Alt+Enter switches it any time)", Boolean.parseBoolean(HomePlanet.config.getProperty(MainFrame.CFG_BORDERLESS, "false")));
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
@@ -138,6 +142,20 @@ public class SettingsDialog extends JDialog {
 					+ "Leave this box off then: Steam adds it every time by itself.</div></html>"); // heromedel's words, 5.72
 			steamDirectx.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
 			body.add(steamDirectx, next(c));
+			JPanel videoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+			String videoTip = "<html>Written into FTL's own settings each time the station launches it outside the dock, as FTL's Options name them.<br>"
+					+ "Not for docked play: docked, FTL always runs in a window. Unticked, FTL starts as you last set it.</html>";
+			fullscreenBox.setSelectedIndex(homeplanet.core.FtlDock.fullscreenChosen());
+			for (javax.swing.JComponent x : new javax.swing.JComponent[] {videoBox, fullscreenBox, vsyncBox}) x.setToolTipText(videoTip);
+			final Runnable videoOn = new Runnable() { public void run() { fullscreenBox.setEnabled(videoBox.isSelected()); vsyncBox.setEnabled(videoBox.isSelected()); } };
+			videoBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { videoOn.run(); } });
+			videoOn.run();
+			videoRow.add(videoBox);
+			videoRow.add(javax.swing.Box.createHorizontalStrut(6));
+			videoRow.add(fullscreenBox);
+			videoRow.add(javax.swing.Box.createHorizontalStrut(10));
+			videoRow.add(vsyncBox);
+			body.add(videoRow, next(c));
 		}
 
 		heading(body, c, "Station");
@@ -364,6 +382,7 @@ public class SettingsDialog extends JDialog {
 		about.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(about, next(c));
 		JPanel updateRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		updateRow.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0)); // a line of space between the credits and these (heromedel, 5.80)
 		JButton updateBtn = new JButton("Check for Updates...");
 		updateBtn.setToolTipText("Ask The Federation Home Planet for newer construction plans (the main branch on GitHub)");
 		updateBtn.addActionListener(new ActionListener() {
@@ -457,6 +476,9 @@ public class SettingsDialog extends JDialog {
 		if (homeplanet.core.FtlDock.supported() && dockBox.isSelected() != dockWas) changed.add("Option to Play FTL, docked: " + dockBox.isSelected());
 		if (homeplanet.core.FtlDock.supported() && (dockHow.getSelectedIndex() == 1) != homeplanet.core.FtlDock.attachedChosen()) changed.add("FTL docked " + dockHow.getSelectedItem());
 		if (homeplanet.core.FtlDock.supported() && directxBox.isSelected() != HomePlanet.launchDirectX) changed.add("Launch FTL with DirectX: " + directxBox.isSelected());
+		if (homeplanet.core.FtlDock.supported() && (videoBox.isSelected() != homeplanet.core.FtlDock.videoChosen() || videoBox.isSelected()
+				&& (fullscreenBox.getSelectedIndex() != homeplanet.core.FtlDock.fullscreenChosen() || vsyncBox.isSelected() != homeplanet.core.FtlDock.vsyncChosen())))
+			changed.add("Undocked launches: " + (videoBox.isSelected() ? "Fullscreen " + fullscreenBox.getSelectedItem() + ", Vertical Sync " + (vsyncBox.isSelected() ? "on" : "off") : "FTL as last set"));
 		rules.describeChanges(changed);
 		if (!victoryChoice().equals(victoryWas)) changed.add("After a final victory: " + victoryChoice());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
@@ -489,6 +511,9 @@ public class SettingsDialog extends JDialog {
 			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_SIZE, (String) dockSize.getSelectedItem());
 			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_ATTACHED, Boolean.toString(dockHow.getSelectedIndex() == 1));
 			HomePlanet.launchDirectX = directxBox.isSelected();
+			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_VIDEO, Boolean.toString(videoBox.isSelected()));
+			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_FULLSCREEN, Integer.toString(fullscreenBox.getSelectedIndex()));
+			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_VSYNC, Boolean.toString(vsyncBox.isSelected()));
 			if (dockWas && !dockBox.isSelected()) { // FTL's own fullscreen setting back, unless the player has changed it since
 				try { homeplanet.core.FtlDock.restoreSettings(); }
 				catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not put FTL's fullscreen setting back in its settings.ini:\n" + e.getMessage()); }
