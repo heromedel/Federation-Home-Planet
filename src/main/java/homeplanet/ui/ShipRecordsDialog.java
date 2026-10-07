@@ -130,7 +130,7 @@ public class ShipRecordsDialog extends JDialog {
 		List<homeplanet.core.EventLog.Entry> events = homeplanet.core.EventLog.read(Vault.get()); // her events (5.74)
 		final java.awt.CardLayout cards = new java.awt.CardLayout();
 		final JPanel pages = new JPanel(cards);
-		pages.add(logTab(RecordsLog.voyage(homeplanet.core.EventLog.voyage(events, ship.id), "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
+		pages.add(logTab(RecordsLog.voyage(homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOf(ship)), ship.id), "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
 				+ "while the station is open (and on Refresh): jumps, sectors, battles, crew, what came aboard, upgrades and repairs.")), "voyage");
 		pages.add(logTab(RecordsLog.station(logEntries(events, ship), "No entries for her yet.", false)), "station");
 		pages.add(kept, "kept");

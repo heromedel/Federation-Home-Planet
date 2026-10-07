@@ -30,6 +30,7 @@ so a new kind or field is added here first, by whoever writes it. Started at 5.6
 | `log` | Which of the old logs the entry also went to: `station`, `voyage`, `reputation`, `clock`; none when it went to the event log alone. |
 | `day` | The career's day as a number (the stardate is this, shown). Never in a human line. |
 | `station` | The station's version that wrote it. |
+| (her own log) | Every entry that names a ship by `ship_id` is written into her folder's log as well as the fleet's (5.76): the same two lines. Her voyage views, the museum and her package read her log. |
 | `received_from` | On a voyage entry that came with a ship over Long Range Comm. (5.75): the commander she came from. Her entries travel in her package under her new id; their time is their own, their day this career's. |
 | `converted` | `true` on an entry read in from an old log once (5.73, `LogConvert`): the human line is the old line exactly as it was, the fields what it gave away, `time` and `day` its own. |
 | `time`, `day` (given by the writer) | An entry about something that happened earlier (a journal note finished at start-up, 5.71): the writer gives the time (`yyyy-MM-dd HH:mm:ss`) and the day it happened, and the entry's own columns follow them instead of the clock. |

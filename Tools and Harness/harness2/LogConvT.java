@@ -62,6 +62,13 @@ public class LogConvT { public static void main(String[] a) throws Exception {
  int convAgain = 0; for (EventLog.Entry e : EventLog.read(v3)) if ("true".equals(e.get("converted"))) convAgain++;
  Setup.chk("M: never twice: opened again, nothing is converted again", convAgain == conv.size() && EventLog.read(v3).size() <= before + 3);
  Setup.chk("H: no converted human line counts beacons or destroys the Rebel Flagship", clean(conv));
+ // her own log (5.76): every entry that names her, the converted ones among them, and each new one as it's written
+ List<EventLog.Entry> hers = ShipStore.entries(v3.folderOf(v3.byId(d.id)));
+ int voyageHers = 0; for (EventLog.Entry e : hers) if ("voyage".equals(e.get("log"))) voyageHers++;
+ Setup.chk("L: her folder's log holds her voyage entries, the converted ones too (" + voyageHers + ")", voyageHers >= 8 && find(hers, "CREW_LOST") != null && find(hers, "SECTOR_REACHED") != null && EventLog.voyage(EventLog.read(v3), d.id).size() == voyageHers);
+ Setup.voyage(v3, v3.byId(d.id), "A line of her own");
+ Setup.chk("L: a new entry goes into her log and the fleet's alike", ShipStore.entries(v3.folderOf(v3.byId(d.id))).size() == hers.size() + 1 && EventLog.voyage(EventLog.read(v3), d.id).size() == voyageHers + 1);
+ Setup.chk("L: filled once: marked, and not doubled on a later opening", "true".equals(Store.read(new File(v3.logsDir(), LogConvert.MARK)).getProperty("ship_logs")));
  Setup.done();
 }
  static int count(List<EventLog.Entry> es, String log) { int n = 0; for (EventLog.Entry e : es) if (log.equals(e.get("log"))) n++; return n; }

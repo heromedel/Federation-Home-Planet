@@ -65,7 +65,11 @@ public final class EventLog {
 	}
 
 	/** Writes the event's two lines. Never throws; with no fleet open, nothing is written (the debug log notes it). */
-	public static void write(Vault v, Event e) { write(v, v == null ? null : file(v), e); }
+	public static void write(Vault v, Event e) {
+		write(v, v == null ? null : file(v), e);
+		File hers = v == null ? null : v.shipLogFor(e.get("ship_id")); // her own log, in her folder (5.76): every entry that names her
+		if (hers != null) write(v, hers, e);
+	}
 	/** As above, into another log of the same shape (a ship's own, in her folder); the stardate is the fleet's. */
 	public static void write(Vault v, File to, Event e) {
 		if (v == null) { log.debug("No fleet open for the event {}: {}", e.kind, e.human()); return; }
@@ -85,7 +89,8 @@ public final class EventLog {
 		return e.time + " | " + e.stardate + " | " + e.kind + " | " + f.fieldText() + NL + e.human.replace('\r', ' ').replace('\n', ' ') + NL;
 	}
 	private static int dayOf(String s, int dflt) { try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return dflt; } }
-	private static synchronized void append(File f, String text) {
+	/** Lines appended as they are (a ship's log filled from the fleet's, 5.76). */
+	public static synchronized void append(File f, String text) {
 		Writer w = null;
 		try {
 			w = new OutputStreamWriter(new FileOutputStream(f, true), StandardCharsets.UTF_8);

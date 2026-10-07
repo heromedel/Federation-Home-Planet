@@ -132,7 +132,7 @@ final class LogViewer extends JPanel {
 	private void fill() {
 		if (ship != null) {
 			showing.setText(ship.name + "'s voyage log");
-			List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.voyage(homeplanet.core.EventLog.read(Vault.get()), ship.id); // her events (5.74)
+			List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOf(ship)), ship.id); // her own log (5.76)
 			count.setText(es.size() + " lines");
 			show(RecordsLog.voyage(es, "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
 					+ "while the station is open (and on Refresh)."));

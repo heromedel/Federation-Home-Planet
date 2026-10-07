@@ -181,6 +181,34 @@ public final class LogConvert {
 		}
 		return n;
 	}
+	/**
+	 * Each ship's log in her folder filled from the fleet's event log, once (5.76): every entry that names her by id,
+	 * in time order, that her log doesn't hold yet. From then on the writer puts each new entry in both.
+	 */
+	public static void fillShipLogs(Vault v) {
+		File mark = new File(v.logsDir(), MARK);
+		Properties p = Store.read(mark);
+		if ("true".equals(p.getProperty("ship_logs"))) return;
+		List<EventLog.Entry> all = EventLog.sorted(EventLog.read(v));
+		List<File> folders = new ArrayList<File>(v.shipFolders());
+		if (v.cargoHoldDir().isDirectory()) folders.add(v.cargoHoldDir());
+		int n = 0;
+		for (File d : folders) {
+			String id = d.equals(v.cargoHoldDir()) ? Vault.STORAGE_ID : ShipStore.idOf(d);
+			if (id == null) continue;
+			File f = ShipStore.logFile(d);
+			Set<String> has = new HashSet<String>();
+			for (EventLog.Entry e : EventLog.read(f)) has.add(e.time + "|" + e.kind + "|" + e.human);
+			StringBuilder sb = new StringBuilder();
+			for (EventLog.Entry e : all) if (id.equals(e.get("ship_id")) && !has.contains(e.time + "|" + e.kind + "|" + e.human)) { sb.append(EventLog.text(e)); n++; }
+			if (sb.length() == 0) continue;
+			try { EventLog.append(f, sb.toString()); } catch (Exception e) { log.warn("Could not fill {}: {}", f, e.toString()); }
+		}
+		p.setProperty("ship_logs", "true");
+		p.setProperty("ship_log_entries", Integer.toString(n));
+		try { Store.write(mark, p, "The old logs were converted to events once (5.73), and each ship's log filled from them once (5.76); Federation Home Planet never does either again for this fleet"); }
+		catch (IOException e) { log.warn("Could not write {}: {}", MARK, e.toString()); }
+	}
 	/** A voyage log that came with a ship from an older station (5.75): each line an event under her id here, its time its own, its day this career's today. */
 	public static void importVoyage(Vault v, Ship s, String from, String text) {
 		Event who = VoyageLog.shipFields(s).put("received_from", from).put("converted", true);

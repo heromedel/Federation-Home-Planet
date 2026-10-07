@@ -119,7 +119,7 @@ public final class Layout {
 				if (!versions.isDirectory() && !versions.mkdirs()) throw new IOException("Could not create " + versions);
 				to = new File(versions, n.startsWith("cloud-copy-") ? "cloud-" + n.substring("cloud-copy-".length()) : n);
 			} else {
-				to = new File(folder, n);
+				to = n.equals("ship.log") ? ShipStore.logFile(folder) : new File(folder, n); // her log under her own name (unconvert names it ship.log)
 			}
 			SafeFiles.move(f, to);
 		}

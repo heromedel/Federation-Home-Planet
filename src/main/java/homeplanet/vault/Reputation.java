@@ -423,7 +423,7 @@ public final class Reputation {
 	/** New Journeys since her trade (each starts from sector 1 again, which isn't a jump): all of them if never traded. */
 	private static int journeysSince(Vault v, String id, TradeMark m) {
 		int n = 0;
-		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.voyage(homeplanet.core.EventLog.read(v), id)) { // her events (5.74)
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.voyage(ShipStore.entries(v.folderOfId(id)), id)) { // her own log (5.76)
 			if (!e.kind.equals("NEW_RUN") && !e.human.endsWith(VoyageLog.NEW_JOURNEY)) continue;
 			if (m == null || e.time.length() < 16 || e.time.substring(0, 16).compareTo(m.date) >= 0) n++;
 		}

@@ -254,6 +254,12 @@ public final class Vault {
 			default: return ShipStore.sav(folderOf(s));
 		}
 	}
+	/** Her own log, in her folder, for an entry that names her by id (5.76); null when the fleet has no folder for that id. */
+	public File shipLogFor(String id) {
+		if (id == null || id.isEmpty()) return null;
+		File d = id.equals(STORAGE_ID) ? cargoHoldDir() : folders.get(id);
+		return d != null && d.isDirectory() ? ShipStore.logFile(d) : null;
+	}
 	/** A ship's folder, where her log, her side files and her kept versions are (what history/&lt;id&gt;/ was before 5.69). */
 	public File historyOf(Ship s) { return folderOf(s); }
 
@@ -632,6 +638,7 @@ public final class Vault {
 		if (manifestFile().isFile() || oldShipsDir().isDirectory() || oldHistoryDir().isDirectory()) Layout.convert(this);
 		moveCargoHold();
 		LogConvert.run(this); // the old logs read into the event log once (5.73)
+		LogConvert.fillShipLogs(this); // each ship's entries into her own log, once (5.76)
 		shipyardDir().mkdirs();
 		junkyardDir().mkdirs();
 		memorialDir().mkdirs();
@@ -1771,7 +1778,7 @@ public final class Vault {
 			z.write(ShipStore.bytes(recordOf(s)));
 			z.closeEntry();
 			StringBuilder events = new StringBuilder();
-			for (EventLog.Entry e : EventLog.voyage(EventLog.read(this), s.id)) events.append(EventLog.text(e));
+			for (EventLog.Entry e : EventLog.voyage(ShipStore.entries(folderOf(s)), s.id)) events.append(EventLog.text(e)); // her own log (5.76)
 			z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE_EVENTS));
 			z.write(events.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
 			z.closeEntry();
