@@ -412,13 +412,23 @@ public final class Exchange {
 						: "Sent to " + r.peerTitle + ": " + r.outWords() + ".\n\n" + RECEIPT_CLOSE[(pick / RECEIPT_OPEN.length) % RECEIPT_CLOSE.length])
 				+ "\n~ Home Planet Quartermaster";
 	}
-	/** This station's own lines go back, into the Cargo Hold, and the record is marked called off. */
+	/**
+	 * Any ship already received for it goes back (a completion that failed part way: the other station keeps her), this
+	 * station's own lines come back, into the Cargo Hold, and the record is marked called off.
+	 */
 	public static void callOff(Record r, String why) throws IOException {
 		if (!ESCROW.equals(r.state)) throw new IOException("This trade was already settled (" + r.state + ")");
+		List<String> sentBack = new ArrayList<String>();
+		for (Line l : r.in) {
+			if (l.kind != Line.Kind.SHIP) continue;
+			homeplanet.vault.Ship s = Vault.get().unreceive(r.id + "#" + l.n, r.peerTitle); // 5.61: she stayed, and was in both fleets
+			if (s != null) sentBack.add(s.name);
+		}
 		for (Line l : r.out) if (l.kind == Line.Kind.SHIP) Vault.get().comeBack(l.from, SafeFiles.read(pkgFile(r, true, l.n)));
 		settle(r, r.out, CALLED_OFF);
 		cleanUp(r);
 		List<String> lines = new ArrayList<String>();
+		if (!sentBack.isEmpty()) lines.add("sent back (received before it was called off): " + String.join(", ", sentBack));
 		lines.add("came back (" + whereTheyGo(r.out) + "): " + r.outWords());
 		if (why != null && !why.isEmpty()) lines.add("why: " + why);
 		HistoryLog.entry("TRADE CALLED OFF", "with " + r.peerTitle + "  (trade " + r.id + ")", lines);

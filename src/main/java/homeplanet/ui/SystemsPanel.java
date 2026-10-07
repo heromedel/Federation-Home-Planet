@@ -432,6 +432,7 @@ public class SystemsPanel {
 	 * it). Returns what was taken from the partner in memory, for the caller to put back if the save fails.
 	 */
 	int payBill(homeplanet.vault.Vault.Transaction tx) throws java.io.IOException {
+		billedShop = null;
 		if (bill == 0) return 0;
 		if (bay.partnerIsStorage() && bay.tradeState != null) {
 			if (bay.tradeState.getScrapAmt() < bill) throw new java.io.IOException("The Cargo Hold holds " + bay.tradeState.getScrapAmt() + " scrap; the Dry Dock's work costs " + bill);
@@ -440,12 +441,28 @@ public class SystemsPanel {
 		}
 		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
 		homeplanet.vault.Ship hold = v.storage();
+		SavedGameState shopHold = bay.shop.copyOf(hold);
+		if (shopHold != null) { // the shop read the hold for purchases: the bill comes from that same copy, so both are saved (5.61: a fresh copy replaced it, and the purchases vanished)
+			ShipState s = shopHold.getPlayerShip();
+			if (s.getScrapAmt() < bill) throw new java.io.IOException("The Cargo Hold holds " + s.getScrapAmt() + " scrap; the Dry Dock's work costs " + bill);
+			s.setScrapAmt(s.getScrapAmt() - bill);
+			bay.shop.putCopy(tx, hold);
+			billedShop = shopHold;
+			return 0;
+		}
 		homeplanet.vault.Vault.Copy c = v.readCopy(hold);
 		ShipState s = c.save.getPlayerShip();
 		if (s.getScrapAmt() < bill) throw new java.io.IOException("The Cargo Hold holds " + s.getScrapAmt() + " scrap; the Dry Dock's work costs " + bill);
 		s.setScrapAmt(s.getScrapAmt() - bill);
 		tx.put(hold, c.save, c.hash);
 		return 0;
+	}
+	/** The shop's copy of the hold the bill was just taken from in memory, if it was (given back if the save fails). */
+	private SavedGameState billedShop;
+	/** The save failed: the bill taken from the shop's copy of the hold goes back to it, so a second Save doesn't pay twice. */
+	void giveBackBill() {
+		if (billedShop != null) billedShop.getPlayerShip().setScrapAmt(billedShop.getPlayerShip().getScrapAmt() + bill);
+		billedShop = null;
 	}
 	void addTo(homeplanet.vault.Vault.Transaction tx) {
 		if (changes.isEmpty()) return;

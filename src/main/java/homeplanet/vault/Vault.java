@@ -1273,21 +1273,44 @@ public final class Vault {
 		if (s.state != Ship.State.BOARDED) return;
 		try { snapshot(s); } catch (IOException e) { log.warn("Could not keep {}'s new version in her history: {}", s, e.toString()); }
 	}
+	/**
+	 * An ordinary kept version ("yyyyMMdd-HHmmss.sav", or "…-2.sav" from the same second): not a copy kept for a reason
+	 * of its own (a victory's, a final battle's, the one waiting in final-battle.sav, Steam Cloud's). Only these count
+	 * as her versions and are pruned (5.61: the special ones were pruned with the rest, the Museum's victories too).
+	 */
+	static boolean ordinary(File f) { return f.isFile() && f.getName().matches("\\d{8}-\\d{6}(-\\d+)?\\.sav"); }
+	private static final java.io.FileFilter ORDINARY = new java.io.FileFilter() { public boolean accept(File f) { return ordinary(f); } };
 	private void prune(File dir) {
-		File[] files = dir.listFiles(new java.io.FileFilter() { public boolean accept(File f) { return f.isFile() && f.getName().endsWith(".sav"); } });
+		File[] files = dir.listFiles(ORDINARY);
 		if (files == null || files.length <= KEEP) return;
 		java.util.Arrays.sort(files, OLDEST_FIRST);
 		for (int i = 0; i < files.length - KEEP; i++) {
 			if (!files[i].delete()) log.warn("Could not prune {}", files[i]);
 		}
 	}
-	/** Her earlier versions, oldest first. */
+	/** Her earlier versions, oldest first: the ordinary ones (the copies kept for a reason of their own are in {@link #kept}). */
 	public List<File> history(Ship s) {
+		File[] files = historyOf(s).listFiles(ORDINARY);
+		List<File> out = new ArrayList<File>();
+		if (files != null) out.addAll(java.util.Arrays.asList(files));
+		Collections.sort(out, OLDEST_FIRST);
+		return out;
+	}
+	/** Every save kept of her, oldest first: her versions and the copies kept for a reason of their own (the Records' Restore list). */
+	public List<File> kept(Ship s) {
 		File[] files = historyOf(s).listFiles();
 		List<File> out = new ArrayList<File>();
 		if (files != null) for (File f : files) if (f.isFile() && f.getName().endsWith(".sav")) out.add(f);
 		Collections.sort(out, OLDEST_FIRST);
 		return out;
+	}
+	/** The newest save kept in a ship's history folder: her newest ordinary version, or the newest of any if she has none. */
+	static File newestKept(File dir) {
+		File[] saves = dir.listFiles(ORDINARY);
+		if (saves == null || saves.length == 0) saves = dir.listFiles(new java.io.FileFilter() { public boolean accept(File x) { return x.isFile() && x.getName().endsWith(".sav"); } });
+		if (saves == null || saves.length == 0) return null;
+		java.util.Arrays.sort(saves, OLDEST_FIRST);
+		return saves[saves.length - 1];
 	}
 
 	// ---- writing ----
@@ -1347,12 +1370,18 @@ public final class Vault {
 		private final Map<Ship, SavedGameState> pending = new LinkedHashMap<Ship, SavedGameState>();
 		private final Map<Ship, String> expected = new LinkedHashMap<Ship, String>();
 		private final Map<File, byte[]> extra = new LinkedHashMap<File, byte[]>();
-		public Transaction put(Ship s, SavedGameState state) { pending.put(s, state); return this; }
+		public Transaction put(Ship s, SavedGameState state) { twice(s, state); pending.put(s, state); return this; }
 		/** As {@link #put(Ship, SavedGameState)}, written only if her file is still the one fingerprinted {@code readHash} (from {@link #readCopy}). */
 		public Transaction put(Ship s, SavedGameState state, String readHash) {
+			twice(s, state);
 			pending.put(s, state);
 			if (readHash != null) expected.put(s, readHash);
 			return this;
+		}
+		/** One ship put twice with different contents: the second replaces the first, which is lost (5.61: a Cargo Bay purchase was). Said in the log. */
+		private void twice(Ship s, SavedGameState state) {
+			SavedGameState had = pending.get(s);
+			if (had != null && had != state) log.warn("One save holds two different versions of {}: the second replaces the first", s, new IllegalStateException("put twice"));
 		}
 		/** Another file that belongs with the change (a stored-systems list), written with the same care. */
 		public Transaction put(File f, byte[] bytes) { extra.put(f, bytes); return this; }
@@ -1551,10 +1580,9 @@ public final class Vault {
 				String[] lines = new String(SafeFiles.read(fate), java.nio.charset.StandardCharsets.UTF_8).split("\n");
 				Fate f = Fate.valueOf(lines[0].trim());
 				if (f == Fate.SCRAPPED || f == Fate.MUSEUM || f == Fate.SOLD || f == Fate.TRANSFERRED || f == Fate.RETURNED || f == Fate.SEIZED) continue; // a traded ship brought back would be in two fleets
-				File[] saves = d.listFiles(new java.io.FileFilter() { public boolean accept(File x) { return x.isFile() && x.getName().endsWith(".sav"); } });
-				if (saves == null || saves.length == 0) continue;
-				java.util.Arrays.sort(saves, OLDEST_FIRST);
-				out.add(new Departed(d.getName(), lines.length > 1 ? lines[1].trim() : d.getName(), f, saves[saves.length - 1]));
+				File last = newestKept(d);
+				if (last == null) continue;
+				out.add(new Departed(d.getName(), lines.length > 1 ? lines[1].trim() : d.getName(), f, last));
 			} catch (Exception e) {
 				log.warn("Could not read {}: {}", fate, e.toString());
 			}
@@ -1689,6 +1717,31 @@ public final class Vault {
 		saveManifest();
 		HistoryLog.entry("RETURNED", s.name + " (" + id + "): the trade was called off, and she is back at the Space Dock");
 		return s;
+	}
+	/**
+	 * A trade called off after this ship had already been received for it (a later ship's papers missing, say): she goes
+	 * back as sent away, since the other station keeps her (5.61: she stayed, and was in both fleets). Her save goes into
+	 * her history, and her fate says where she went. Only a ship still docked: one flown since is left, and logged.
+	 * Returns her, or null if no ship came for this trade line.
+	 */
+	public synchronized Ship unreceive(String tradeLine, String to) throws IOException {
+		for (Ship s : new ArrayList<Ship>(ships)) {
+			TradeMark m = TradeMark.of(this, s.id);
+			if (m == null || !m.trade.equals(tradeLine)) continue;
+			if (s.state != Ship.State.DOCKED) {
+				log.warn("{} came in trade line {}, which was called off, but isn't docked any more: she stays", s, tradeLine);
+				HistoryLog.entry("TRADE CALLED OFF", s.name + " (" + s.id + ") came in it and isn't docked any more, so she stays here as well as with " + to + "'s fleet");
+				return null;
+			}
+			File f = fileOf(s);
+			if (f.isFile()) moveToHistory(s, f);
+			writeFate(s.id, Fate.TRANSFERRED, s.name, to);
+			ships.remove(s);
+			saveManifest();
+			HistoryLog.entry("SENT BACK", s.name + " (" + s.id + "): the trade was called off, and she stays with " + to + "'s fleet");
+			return s;
+		}
+		return null;
 	}
 	/** The trade went through: she flies for the other fleet now (her history stays here, as a record). */
 	public synchronized void transferred(String id, String name, String to) throws IOException {

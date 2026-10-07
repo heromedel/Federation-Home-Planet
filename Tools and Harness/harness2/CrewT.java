@@ -80,6 +80,24 @@ public class CrewT { public static void main(String[] a) throws Exception {
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("F: lost aboard her in FTL: killed", byId(m, goneId).status == CrewRegister.Status.KILLED && said(byId(m, goneId), "Lost aboard"));
+ // a Rock lost aboard her, in her voyage log's word for the race (Rock), FTL's title being Rockman (5.61: listed missing)
+ c = v.readCopy(b);
+ CrewState stoneface = Commission.volunteer("rock", new Random(5));
+ stoneface.setName("Stoneface");
+ SaveHelper.placeCrew(c.save.getPlayerShip(), stoneface, false);
+ c.save.getPlayerShip().getCrewList().add(stoneface);
+ v.begin().put(b, c.save, c.hash).commit();
+ v.takeStock();
+ m = CrewRegister.members(v);
+ int rockLostId = idOf(m, "Stoneface");
+ c = v.readCopy(b);
+ for (CrewState x : new ArrayList<CrewState>(c.save.getPlayerShip().getCrewList())) if (x.getName().equals("Stoneface")) c.save.getPlayerShip().getCrewList().remove(x);
+ v.begin().put(b, c.save, c.hash).commit();
+ MasterLog.entry(v, "voyage: " + b.name, "Crew lost: Stoneface (Rock)");
+ v.takeStock();
+ m = CrewRegister.members(v);
+ Setup.chk("F: a Rock lost aboard her, said as her voyage log says it (Rock): killed, lost aboard " + ShipNames.the(b.name), rockLostId >= 0 && byId(m, rockLostId).status == CrewRegister.Status.KILLED
+   && said(byId(m, rockLostId), "Lost aboard " + ShipNames.the(b.name) + "."));
 
  // found nowhere, with nothing to say why: missing; then found again
  Ship d = v.docked().get(0);

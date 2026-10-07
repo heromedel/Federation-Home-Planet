@@ -1373,11 +1373,13 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			if (business) homeplanet.vault.MasterLog.businessDay(Vault.get()); // after its entries: they belong to the day the business ended
 		} catch (Vault.StaleException e) {
 			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
+			systems.giveBackBill(); // or to the shop's copy of the hold (5.61)
 			log.warn("Save refused: {}", e.getMessage());
 			HomePlanet.showErrorDialog(e.getMessage() + "\n\nPress Reset to load her as she is now, then make the changes again.");
 			return false;
 		} catch (Exception e) {
 			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
+			systems.giveBackBill(); // or to the shop's copy of the hold (5.61)
 			log.error("Saving failed", e);
 			HomePlanet.showErrorDialog("The Home Planet Station could not save the changes:\n" + e);
 			return false;
