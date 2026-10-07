@@ -106,7 +106,7 @@ public class GuiT {
   final String tag = otherPartner ? " (another ship the partner)" : " (the Cargo Hold the partner)";
   SavedGameParser.SavedGameState g = v.readCopy(v.boarded()).save; g.getPlayerShip().setHullAmt(21); g.getPlayerShip().setScrapAmt(0); v.write(v.boarded(), g);
   hold(v, 100);
-  final Object[] r = new Object[6];
+  final Object[] r = new Object[8];
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
    f.showCargoBay();
    CargoBayUI bay = (CargoBayUI) field(f, MainFrame.class, "cargoBay");
@@ -121,13 +121,22 @@ public class GuiT {
    r[0] = call(bay, CargoBayUI.class, "partnerIsStorage", new Class<?>[0]);
    call(sys, sys.getClass(), "repairHull", new Class<?>[] {int.class}, Integer.MAX_VALUE);
    r[1] = call(sys, sys.getClass(), "hold", new Class<?>[0]);
+   r[6] = v.readCopy(v.storage()).save.getPlayerShip().getFuelAmt();
+   if (otherPartner) { // the shop puts seven fuel into its own copy of the Cargo Hold in the same Save (5.61: the bill's fresh copy replaced it, and the purchase vanished)
+    Object shop = field(bay, CargoBayUI.class, "shop");
+    SavedGameParser.SavedGameState hc = (SavedGameParser.SavedGameState) call(shop, shop.getClass(), "resolve", new Class<?>[] {Ship.class}, v.storage());
+    hc.getPlayerShip().setFuelAmt(hc.getPlayerShip().getFuelAmt() + 7);
+    call(shop, shop.getClass(), "markDirty", new Class<?>[] {SavedGameParser.SavedGameState.class}, hc);
+   }
    r[2] = bay.saveAll();
    SavedGameParser.SavedGameState after = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
    r[3] = v.storageScrap(); r[4] = after.getPlayerShip().getScrapAmt(); r[5] = after.getPlayerShip().getHullAmt();
+   r[7] = v.readCopy(v.storage()).save.getPlayerShip().getFuelAmt();
   } catch (Exception e) { throw new RuntimeException(e); } } });
   Setup.chk("B: the partner is as set" + tag, Boolean.valueOf(!otherPartner).equals(r[0]));
   Setup.chk("B: 9 hull points on the bill: the hold shows 64 before Save" + tag, Integer.valueOf(64).equals(r[1]));
   Setup.chk("B: Save pays the bill from the Cargo Hold, not her" + tag, Boolean.TRUE.equals(r[2]) && Integer.valueOf(64).equals(r[3]) && Integer.valueOf(0).equals(r[4]) && Integer.valueOf(30).equals(r[5]));
+  if (otherPartner) Setup.chk("B: what the shop put into the Cargo Hold in the same Save is there too (fuel " + r[6] + " -> " + r[7] + ")" + tag, r[6] != null && Integer.valueOf((Integer) r[6] + 7).equals(r[7]));
   // damaged again: a repair, then Reset, takes nothing
   g = v.readCopy(v.boarded()).save; g.getPlayerShip().setHullAmt(25); v.write(v.boarded(), g);
   final Object[] q = new Object[2];

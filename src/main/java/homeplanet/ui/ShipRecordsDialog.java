@@ -87,7 +87,7 @@ public class ShipRecordsDialog extends JDialog {
 	private ShipRecordsDialog(Component owner, Ship ship) {
 		super(SwingUtilities.getWindowAncestor(owner), "Ship's records: " + ship.name, ModalityType.APPLICATION_MODAL);
 		this.ship = ship;
-		versions.addAll(Vault.get().history(ship));
+		versions.addAll(Vault.get().kept(ship)); // her versions, and the copies kept for a reason of their own
 		Collections.reverse(versions); // newest first
 		DefaultListModel<Version> model = new DefaultListModel<Version>();
 		for (File f : versions) model.addElement(new Version(f));

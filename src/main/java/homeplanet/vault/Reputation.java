@@ -58,15 +58,24 @@ public final class Reputation {
 	/** FTL's sector 8 (0 is the first): nothing is lost there. */
 	static final int LAST_STAND = 7;
 
+	/**
+	 * Reputation's lock is the fleet's own vault (5.61): the vault locks first and then calls in here (a ship lost, a
+	 * look), while a review read the vault inside a lock of Reputation's own, and the two orders could freeze the
+	 * station. With one lock there is no order to get wrong.
+	 */
+	private static Object lock(Vault v) { return v != null ? v : Reputation.class; }
+
 	/** Does the fleet in use have a reputation (Settings' Reputation rule, always on in Immersive Mode)? */
 	public static boolean shown() { return Vault.isOpen() && HomePlanet.reputation(); }
 
 	/** The fleet's reputation, its service reviewed first if it never was, and any new FTL achievements counted. */
-	public static synchronized int total(Vault v) {
-		Properties p = read(v);
-		if (!counted(p)) { review(v); p = read(v); }
-		else if (shown()) { achievements(v, p); cruisers(v, read(v)); p = read(v); }
-		return num(p, "total");
+	public static int total(Vault v) {
+		synchronized (lock(v)) {
+			Properties p = read(v);
+			if (!counted(p)) { review(v); p = read(v); }
+			else if (shown()) { achievements(v, p); cruisers(v, read(v)); p = read(v); }
+			return num(p, "total");
+		}
 	}
 	/** New FTL achievements (the profile, as the career's rewards count them: earned in this fleet's service) score. */
 	private static void achievements(Vault v, Properties p) {
@@ -120,13 +129,19 @@ public final class Reputation {
 			if (u.problem() != null) return out;
 			for (String id : homeplanet.parser.UnlockGrants.newAchievements(u)) {
 				net.blerf.ftl.xml.Achievement a = net.blerf.ftl.parser.DataManager.get().getAchievement(id);
-				if (a != null && !a.isVictory() && !a.isQuest()) out.add(id);
+				if (a != null && !a.isVictory() && !a.isQuest() && !victory(id)) out.add(id);
 			}
 		} catch (Exception e) {
 			log.warn("Could not read the FTL profile's achievements: {}", e.toString());
 		}
 		return out;
 	}
+	/**
+	 * FTL's victory achievements (Federation Victory, Easy and Normal): told in their own letter when won, then never
+	 * scored or told again, as the war goes on (hard rule 1; heromedel, 5.60). The parser's isVictory() marks only its own
+	 * PLAYER_SHIP_*_VICTORY markers, not these.
+	 */
+	public static boolean victory(String achievementId) { return "ACH_WIN_EASY".equals(achievementId) || "ACH_WIN_NORMAL".equals(achievementId); }
 	private static String achievementName(String id) {
 		try { return net.blerf.ftl.parser.DataManager.get().getAchievement(id).getName().getTextValue(); } catch (Exception e) { return id; }
 	}
@@ -147,57 +162,59 @@ public final class Reputation {
 	// ---- counting as FTL plays ----
 
 	/** FTL has written her save (the voyage log's look): what she did since her last count scores. */
-	static synchronized void look(Vault v, Ship s, SavedGameState gs) {
-		if (s == null || gs == null || s.state == Ship.State.STORAGE) return;
-		Properties p = read(v);
-		if (!shown()) { if (counted(p)) rebase(v, s, gs); return; } // careers switched off: her count moves on, so nothing done meanwhile scores later
-		if (!counted(p)) { review(v); return; } // the review counts her as she is now
-		Props was = new Props(p, s.id);
-		Props now = Props.of(gs);
-		if (!was.known()) { now.put(p, s.id, 0); write(v, p); return; } // a ship the count hasn't met: she starts here
-		List<String> why = new ArrayList<String>();
-		int points = 0;
-		boolean lastStand = now.sector >= LAST_STAND || was.sector >= LAST_STAND;
-		if (now.sector > was.sector) {
-			int n = now.sector - was.sector;
-			points += n * SECTOR;
-			why.add((n == 1 ? "sector " + (now.sector + 1) + " reached" : n + " sectors further") + " (+" + n * SECTOR + ")");
-		}
-		int scrap = Math.max(0, now.collected - was.collected) + was.rest;
-		int fromScrap = scrap / SCRAP_PER_POINT;
-		if (fromScrap > 0) { points += fromScrap; why.add((scrap - was.rest) + " scrap collected (+" + fromScrap + ")"); }
-		int defeated = Math.max(0, now.defeated - was.defeated);
-		if (defeated > 0) {
-			boolean rebel = rebel(now.enemy) || rebel(was.enemy);
-			int pts = defeated * DEFEATED + (rebel ? REBEL_DEFEATED - DEFEATED : 0);
-			points += pts;
-			why.add((rebel ? (defeated == 1 ? "a rebel ship" : defeated + " ships, a rebel among them") : defeated == 1 ? "a ship" : defeated + " ships") + " defeated (+" + pts + ")");
-		}
-		// a death: FTL's lost-crew count went up and the crew member is gone (a clone came back; a dismissal isn't a death)
-		int died = Math.min(Math.max(0, now.lost - was.lost), gone(was.crew, now.crew).size());
-		if (died > 0 && !lastStand) {
-			points += died * CREW_DIED;
-			List<String> names = gone(was.crew, now.crew);
-			why.add((died == 1 ? names.get(0) + " died" : died + " crew died") + " (" + signed(died * CREW_DIED) + ")");
-		}
-		// caught by the rebel fleet: at a beacon it holds that she wasn't caught at already (never in the last stand)
-		boolean moved = now.beacon != was.beacon || now.sector != was.sector;
-		if (now.rebel && (moved || !was.rebel) && !lastStand) {
-			points += CAUGHT;
-			why.add("caught by the rebel fleet (" + signed(CAUGHT) + ")");
-		}
-		// an event's outcome: a jump within the sector to a beacon with no fight, no ship and no store, nor a store left behind
-		if (moved && now.sector == was.sector && defeated == 0 && now.enemy.isEmpty() && !now.store && !was.store) {
-			int outcome = outcome(was, now, died);
-			if (outcome > 0) { points += EVENT_GOOD; why.add("a good outcome (+" + EVENT_GOOD + ")"); }
-			else if (outcome < 0 && !lastStand) { points += EVENT_BAD; why.add("a bad outcome (" + signed(EVENT_BAD) + ")"); }
-		}
-		now.put(p, s.id, scrap % SCRAP_PER_POINT);
-		if (points != 0 || !why.isEmpty()) {
-			p.setProperty("total", Integer.toString(num(p, "total") + points));
-			if (write(v, p)) entry(v, points, s.name + ": " + String.join(", ", why), null);
-		} else {
-			write(v, p);
+	static void look(Vault v, Ship s, SavedGameState gs) {
+		synchronized (lock(v)) {
+			if (s == null || gs == null || s.state == Ship.State.STORAGE) return;
+			Properties p = read(v);
+			if (!shown()) { if (counted(p)) rebase(v, s, gs); return; } // careers switched off: her count moves on, so nothing done meanwhile scores later
+			if (!counted(p)) { review(v); return; } // the review counts her as she is now
+			Props was = new Props(p, s.id);
+			Props now = Props.of(gs);
+			if (!was.known()) { now.put(p, s.id, 0); write(v, p); return; } // a ship the count hasn't met: she starts here
+			List<String> why = new ArrayList<String>();
+			int points = 0;
+			boolean lastStand = now.sector >= LAST_STAND || was.sector >= LAST_STAND;
+			if (now.sector > was.sector) {
+				int n = now.sector - was.sector;
+				points += n * SECTOR;
+				why.add((n == 1 ? "sector " + (now.sector + 1) + " reached" : n + " sectors further") + " (+" + n * SECTOR + ")");
+			}
+			int scrap = Math.max(0, now.collected - was.collected) + was.rest;
+			int fromScrap = scrap / SCRAP_PER_POINT;
+			if (fromScrap > 0) { points += fromScrap; why.add((scrap - was.rest) + " scrap collected (+" + fromScrap + ")"); }
+			int defeated = Math.max(0, now.defeated - was.defeated);
+			if (defeated > 0) {
+				boolean rebel = rebel(now.enemy) || rebel(was.enemy);
+				int pts = defeated * DEFEATED + (rebel ? REBEL_DEFEATED - DEFEATED : 0);
+				points += pts;
+				why.add((rebel ? (defeated == 1 ? "a rebel ship" : defeated + " ships, a rebel among them") : defeated == 1 ? "a ship" : defeated + " ships") + " defeated (+" + pts + ")");
+			}
+			// a death: FTL's lost-crew count went up and the crew member is gone (a clone came back; a dismissal isn't a death)
+			int died = Math.min(Math.max(0, now.lost - was.lost), gone(was.crew, now.crew).size());
+			if (died > 0 && !lastStand) {
+				points += died * CREW_DIED;
+				List<String> names = gone(was.crew, now.crew);
+				why.add((died == 1 ? names.get(0) + " died" : died + " crew died") + " (" + signed(died * CREW_DIED) + ")");
+			}
+			// caught by the rebel fleet: at a beacon it holds that she wasn't caught at already (never in the last stand)
+			boolean moved = now.beacon != was.beacon || now.sector != was.sector;
+			if (now.rebel && (moved || !was.rebel) && !lastStand) {
+				points += CAUGHT;
+				why.add("caught by the rebel fleet (" + signed(CAUGHT) + ")");
+			}
+			// an event's outcome: a jump within the sector to a beacon with no fight, no ship and no store, nor a store left behind
+			if (moved && now.sector == was.sector && defeated == 0 && now.enemy.isEmpty() && !now.store && !was.store) {
+				int outcome = outcome(was, now, died);
+				if (outcome > 0) { points += EVENT_GOOD; why.add("a good outcome (+" + EVENT_GOOD + ")"); }
+				else if (outcome < 0 && !lastStand) { points += EVENT_BAD; why.add("a bad outcome (" + signed(EVENT_BAD) + ")"); }
+			}
+			now.put(p, s.id, scrap % SCRAP_PER_POINT);
+			if (points != 0 || !why.isEmpty()) {
+				p.setProperty("total", Integer.toString(num(p, "total") + points));
+				if (write(v, p)) entry(v, points, s.name + ": " + String.join(", ", why), null);
+			} else {
+				write(v, p);
+			}
 		}
 	}
 	/**
@@ -211,91 +228,107 @@ public final class Reputation {
 		return gained == lost ? 0 : gained ? 1 : -1;
 	}
 	/** The station changed her itself (a trade, a New Journey, commissioning): her count moves, nothing scores. */
-	static synchronized void rebase(Vault v, Ship s, SavedGameState gs) {
-		if (s == null || gs == null || s.state == Ship.State.STORAGE) return;
-		Properties p = read(v);
-		if (!counted(p)) return; // the review will count her as she is (or there's no career, and never was)
-		Props.of(gs).put(p, s.id, new Props(p, s.id).rest);
-		write(v, p);
+	static void rebase(Vault v, Ship s, SavedGameState gs) {
+		synchronized (lock(v)) {
+			if (s == null || gs == null || s.state == Ship.State.STORAGE) return;
+			Properties p = read(v);
+			if (!counted(p)) return; // the review will count her as she is (or there's no career, and never was)
+			Props.of(gs).put(p, s.id, new Props(p, s.id).rest);
+			write(v, p);
+		}
 	}
 	/** She was lost in action: the fleet's loss, unless it was the last stand (sector 8). */
-	static synchronized int lost(Vault v, Ship s) {
-		if (s == null) return 0;
-		Properties p = read(v);
-		if (!counted(p)) return 0; // the review counts her loss from her fate
-		Props was = new Props(p, s.id);
-		int sector = was.known() ? was.sector : VoyageLog.lastSector(v, s);
-		Props.forget(p, s.id);
-		if (sector >= LAST_STAND || !shown()) { write(v, p); return 0; }
-		p.setProperty("total", Integer.toString(num(p, "total") + SHIP_LOST));
-		if (write(v, p)) { entry(v, SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null); return SHIP_LOST; }
-		return 0;
+	static int lost(Vault v, Ship s) {
+		synchronized (lock(v)) {
+			if (s == null) return 0;
+			Properties p = read(v);
+			if (!counted(p)) return 0; // the review counts her loss from her fate
+			Props was = new Props(p, s.id);
+			int sector = was.known() ? was.sector : VoyageLog.lastSector(v, s);
+			Props.forget(p, s.id);
+			if (sector >= LAST_STAND || !shown()) { write(v, p); return 0; }
+			p.setProperty("total", Integer.toString(num(p, "total") + SHIP_LOST));
+			if (write(v, p)) { entry(v, SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null); return SHIP_LOST; }
+			return 0;
+		}
 	}
 	/** She was restored after FTL's New Game wrote over her (heromedel, 5.55): what her loss took is given back. */
-	static synchronized void restored(Vault v, Ship s, int taken) {
-		if (taken == 0) return;
-		Properties p = read(v);
-		p.setProperty("total", Integer.toString(num(p, "total") - taken));
-		if (write(v, p)) entry(v, -taken, s.name + " was restored after FTL's New Game wrote over her (" + signed(-taken) + ")", null);
+	static void restored(Vault v, Ship s, int taken) {
+		synchronized (lock(v)) {
+			if (taken == 0) return;
+			Properties p = read(v);
+			p.setProperty("total", Integer.toString(num(p, "total") - taken));
+			if (write(v, p)) entry(v, -taken, s.name + " was restored after FTL's New Game wrote over her (" + signed(-taken) + ")", null);
+		}
 	}
 	/**
 	 * A crew expedition, scored as the game is (heromedel, 5.00): the pot a tenth, each crew member killed CREW_DIED, a good
 	 * outcome (everyone successful or better) EVENT_GOOD, a bad one (nobody successful) EVENT_BAD. Nothing for items or prizes.
 	 * {@code outcome}: 1 good, -1 bad, 0 neither.
 	 */
-	public static synchronized void expedition(Vault v, String what, int scrap, int died, int outcome) { expedition(v, what, scrap, died, 0, outcome); }
+	public static void expedition(Vault v, String what, int scrap, int died, int outcome) { synchronized (lock(v)) { expedition(v, what, scrap, died, 0, outcome); } }
 	/** As above, with the crew taken captive. */
-	public static synchronized void expedition(Vault v, String what, int scrap, int died, int taken, int outcome) {
-		if (!shown()) return;
-		int points = scrap / SCRAP_PER_POINT + died * CREW_DIED + taken * CAPTURED + (outcome > 0 ? EVENT_GOOD : outcome < 0 ? EVENT_BAD : 0);
-		List<String> why = new ArrayList<String>();
-		if (scrap / SCRAP_PER_POINT > 0) why.add(scrap + " scrap (+" + scrap / SCRAP_PER_POINT + ")");
-		if (died > 0) why.add((died == 1 ? "a crew member killed" : died + " crew killed") + " (" + signed(died * CREW_DIED) + ")");
-		if (taken > 0) why.add((taken == 1 ? "a crew member taken captive" : taken + " crew taken captive") + " (" + signed(taken * CAPTURED) + ")");
-		if (outcome > 0) why.add("a good outcome (+" + EVENT_GOOD + ")");
-		if (outcome < 0) why.add("a bad outcome (" + EVENT_BAD + ")");
-		if (points == 0 && why.isEmpty()) return;
-		Properties p = read(v);
-		if (!counted(p)) { review(v); p = read(v); }
-		p.setProperty("total", Integer.toString(num(p, "total") + points));
-		if (write(v, p)) entry(v, points, "Expedition: " + what + " (" + signed(points) + ")", why);
+	public static void expedition(Vault v, String what, int scrap, int died, int taken, int outcome) {
+		synchronized (lock(v)) {
+			if (!shown()) return;
+			int points = scrap / SCRAP_PER_POINT + died * CREW_DIED + taken * CAPTURED + (outcome > 0 ? EVENT_GOOD : outcome < 0 ? EVENT_BAD : 0);
+			List<String> why = new ArrayList<String>();
+			if (scrap / SCRAP_PER_POINT > 0) why.add(scrap + " scrap (+" + scrap / SCRAP_PER_POINT + ")");
+			if (died > 0) why.add((died == 1 ? "a crew member killed" : died + " crew killed") + " (" + signed(died * CREW_DIED) + ")");
+			if (taken > 0) why.add((taken == 1 ? "a crew member taken captive" : taken + " crew taken captive") + " (" + signed(taken * CAPTURED) + ")");
+			if (outcome > 0) why.add("a good outcome (+" + EVENT_GOOD + ")");
+			if (outcome < 0) why.add("a bad outcome (" + EVENT_BAD + ")");
+			if (points == 0 && why.isEmpty()) return;
+			Properties p = read(v);
+			if (!counted(p)) { review(v); p = read(v); }
+			p.setProperty("total", Integer.toString(num(p, "total") + points));
+			if (write(v, p)) entry(v, points, "Expedition: " + what + " (" + signed(points) + ")", why);
+		}
 	}
 	/** Crew taken captive on the board of jobs (the crew expeditions count them in their report's entry). */
-	public static synchronized void captured(Vault v, List<String> names) {
-		if (!shown() || names.isEmpty()) return;
-		int points = names.size() * CAPTURED;
-		Properties p = read(v);
-		if (!counted(p)) { review(v); p = read(v); }
-		p.setProperty("total", Integer.toString(num(p, "total") + points));
-		if (write(v, p)) entry(v, points, "Taken captive: " + String.join(", ", names) + " (" + signed(points) + ")", null);
+	public static void captured(Vault v, List<String> names) {
+		synchronized (lock(v)) {
+			if (!shown() || names.isEmpty()) return;
+			int points = names.size() * CAPTURED;
+			Properties p = read(v);
+			if (!counted(p)) { review(v); p = read(v); }
+			p.setProperty("total", Integer.toString(num(p, "total") + points));
+			if (write(v, p)) entry(v, points, "Taken captive: " + String.join(", ", names) + " (" + signed(points) + ")", null);
+		}
 	}
 	/** A captive brought home: the ransom paid. */
-	public static synchronized void ransomed(Vault v, String name) {
-		if (!shown()) return;
-		Properties p = read(v);
-		if (!counted(p)) { review(v); p = read(v); }
-		p.setProperty("total", Integer.toString(num(p, "total") + RANSOMED));
-		if (write(v, p)) entry(v, RANSOMED, "Ransomed: " + name + " brought home (" + signed(RANSOMED) + ")", null);
+	public static void ransomed(Vault v, String name) {
+		synchronized (lock(v)) {
+			if (!shown()) return;
+			Properties p = read(v);
+			if (!counted(p)) { review(v); p = read(v); }
+			p.setProperty("total", Integer.toString(num(p, "total") + RANSOMED));
+			if (write(v, p)) entry(v, RANSOMED, "Ransomed: " + name + " brought home (" + signed(RANSOMED) + ")", null);
+		}
 	}
 	/** Can this much be spent without going below zero (the fees reputation may pay; a plea, a promise and rest may go below)? */
-	public static synchronized boolean canSpend(Vault v, int cost) { return shown() && (cost <= 0 || total(v) >= cost); }
+	public static boolean canSpend(Vault v, int cost) { synchronized (lock(v)) { return shown() && (cost <= 0 || total(v) >= cost); } }
 	/** A plea's new ship, answered for with the career's reputation: what it costs, and why. */
-	public static synchronized void plea(Vault v, int cost, String why) { spend(v, cost, why); }
+	public static void plea(Vault v, int cost, String why) { synchronized (lock(v)) { spend(v, cost, why); } }
 	/** Reputation spent on anything the career pays for with it (a plea's ship, a promise of adventure): what it costs, and why. */
-	public static synchronized void spend(Vault v, int cost, String why) {
-		if (!shown() || cost <= 0) return;
-		Properties p = read(v);
-		if (!counted(p)) { review(v); p = read(v); }
-		p.setProperty("total", Integer.toString(num(p, "total") - cost));
-		if (write(v, p)) entry(v, -cost, why + " (" + signed(-cost) + ")", null);
+	public static void spend(Vault v, int cost, String why) {
+		synchronized (lock(v)) {
+			if (!shown() || cost <= 0) return;
+			Properties p = read(v);
+			if (!counted(p)) { review(v); p = read(v); }
+			p.setProperty("total", Integer.toString(num(p, "total") - cost));
+			if (write(v, p)) entry(v, -cost, why + " (" + signed(-cost) + ")", null);
+		}
 	}
 	/** She won the last battle: the Rebel Flagship defeated. */
-	public static synchronized void flagship(Vault v, String name) {
-		if (!shown()) return;
-		Properties p = read(v);
-		if (!counted(p)) { review(v); return; } // the review finds her in the Hall of Victors
-		p.setProperty("total", Integer.toString(num(p, "total") + FLAGSHIP));
-		if (write(v, p)) entry(v, FLAGSHIP, name + " defeated the Rebel Flagship (+" + FLAGSHIP + ")", null);
+	public static void flagship(Vault v, String name) {
+		synchronized (lock(v)) {
+			if (!shown()) return;
+			Properties p = read(v);
+			if (!counted(p)) { review(v); return; } // the review finds her in the Hall of Victors
+			p.setProperty("total", Integer.toString(num(p, "total") + FLAGSHIP));
+			if (write(v, p)) entry(v, FLAGSHIP, name + " defeated the Rebel Flagship (+" + FLAGSHIP + ")", null);
+		}
 	}
 
 	// ---- the first count: the service so far ----
@@ -306,59 +339,86 @@ public final class Reputation {
 	 * her victories over the Rebel Flagship, and the FTL achievements earned in the fleet's service. Older records can't tell
 	 * rebel ships apart (they count as ships), nor events or the rebel fleet catching her (not counted).
 	 */
-	static synchronized void review(Vault v) {
-		Properties p = read(v);
-		if (counted(p)) return;
-		int total = 0;
-		List<String> details = new ArrayList<String>();
-		Map<String, Ship> inFleet = new LinkedHashMap<String, Ship>();
-		for (Ship s : v.all()) if (s.state != Ship.State.STORAGE) inFleet.put(s.id, s);
-		List<String> ids = new ArrayList<String>(inFleet.keySet());
+	static void review(Vault v) {
+		synchronized (lock(v)) {
+			Properties p = read(v);
+			if (counted(p)) return;
+			int total = 0;
+			List<String> details = new ArrayList<String>();
+			Map<String, Ship> inFleet = new LinkedHashMap<String, Ship>();
+			for (Ship s : v.all()) if (s.state != Ship.State.STORAGE) inFleet.put(s.id, s);
+			List<String> ids = new ArrayList<String>(inFleet.keySet());
+			File[] dirs = v.historyDir().listFiles();
+			if (dirs != null) {
+				java.util.Arrays.sort(dirs);
+				for (File d : dirs) if (d.isDirectory() && !ids.contains(d.getName()) && served(d)) ids.add(d.getName());
+			}
+			for (String id : ids) {
+				Ship s = inFleet.get(id);
+				SavedGameState gs = s != null ? s.save() : lastSave(new File(v.historyDir(), id));
+				String name = s != null ? s.name : departedName(v, id);
+				List<String> why = new ArrayList<String>();
+				int pts = 0;
+				TradeMark m = TradeMark.of(v, id);
+				if (gs != null) {
+					int journeys = m == null && s != null ? VoyageLog.journeys(v, s) : journeysSince(v, id, m); // each began in sector 1: not a jump
+					int sectors = Math.max(0, VoyageLog.visited(v, id, gs) - (m == null ? 0 : m.sectors) - journeys);
+					if (sectors > 0) { pts += sectors * SECTOR; why.add(sectors + (sectors == 1 ? " sector" : " sectors") + " (+" + sectors * SECTOR + ")"); }
+					int scrap = Math.max(0, gs.getTotalScrapCollected() - (m == null ? 0 : m.scrap));
+					if (scrap / SCRAP_PER_POINT > 0) { pts += scrap / SCRAP_PER_POINT; why.add(scrap + " scrap (+" + scrap / SCRAP_PER_POINT + ")"); }
+					int defeated = Math.max(0, gs.getTotalShipsDefeated() - (m == null ? 0 : m.defeated));
+					if (defeated > 0) { pts += defeated * DEFEATED; why.add(defeated + (defeated == 1 ? " ship" : " ships") + " defeated (+" + defeated * DEFEATED + ")"); }
+					int died = m != null || !gs.hasStateVar("lost_crew") ? 0 : gs.getStateVar("lost_crew"); // a traded ship's losses before she came aren't told apart
+					if (died > 0) { pts += died * CREW_DIED; why.add(died + " crew lost (" + signed(died * CREW_DIED) + ")"); }
+					if (s != null) Props.of(gs).put(p, id, 0); // counted from here on
+				}
+				int won = homeplanet.parser.Museum.victories(v, id);
+				if (won > 0) { pts += won * FLAGSHIP; why.add((won == 1 ? "the Rebel Flagship defeated" : "the Rebel Flagship defeated " + won + " times") + " (+" + won * FLAGSHIP + ")"); }
+				if (s == null && Vault.Fate.LOST.name().equals(fate(v, id)) && won == 0 && lastSectorOf(v, id) < LAST_STAND) {
+					pts += SHIP_LOST;
+					why.add("lost in action (" + signed(SHIP_LOST) + ")");
+				}
+				if (why.isEmpty()) continue;
+				total += pts;
+				details.add(name + ": " + String.join(", ", why) + "  = " + signed(pts));
+			}
+			List<String> earned = newAchievements(); // FTL's achievements earned in the fleet's service so far
+			if (!earned.isEmpty()) {
+				List<String> names = new ArrayList<String>();
+				for (String id : earned) names.add(achievementName(id));
+				total += earned.size() * ACHIEVEMENT;
+				details.add("Achievements: " + String.join(", ", names) + "  = " + signed(earned.size() * ACHIEVEMENT));
+				p.setProperty("achievements", String.join("|", earned));
+			}
+			p.setProperty("counted", new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()));
+			p.setProperty("total", Integer.toString(total));
+			if (write(v, p)) entry(v, total, "Service record reviewed: the fleet's service so far", details);
+		}
+	}
+	/**
+	 * Enemy ships the career's ships have defeated (the rank letters, 5.60): every ship that served, in the fleet now or
+	 * gone from it, each from her own save since she joined or her last trade, as the review counts them. A ship gone
+	 * counts only with a fate recorded (lost, destroyed, traded away...): an uncommissioned ship sent to the other fleet
+	 * leaves a history folder without one, and was never the career's.
+	 */
+	public static int defeatedInService(Vault v) {
+		int n = 0;
+		java.util.Set<String> inFleet = new java.util.HashSet<String>();
+		for (Ship s : v.all()) {
+			if (s.state == Ship.State.STORAGE) continue;
+			inFleet.add(s.id);
+			if (!v.ignoring(s)) n += defeatedSince(v, s.id, s.save()); // an ignored one isn't the career's ship (5.54)
+		}
 		File[] dirs = v.historyDir().listFiles();
-		if (dirs != null) {
-			java.util.Arrays.sort(dirs);
-			for (File d : dirs) if (d.isDirectory() && !ids.contains(d.getName()) && served(d)) ids.add(d.getName());
+		if (dirs != null) for (File d : dirs) {
+			if (d.isDirectory() && !inFleet.contains(d.getName()) && new File(d, "fate.txt").isFile()) n += defeatedSince(v, d.getName(), lastSave(d));
 		}
-		for (String id : ids) {
-			Ship s = inFleet.get(id);
-			SavedGameState gs = s != null ? s.save() : lastSave(new File(v.historyDir(), id));
-			String name = s != null ? s.name : departedName(v, id);
-			List<String> why = new ArrayList<String>();
-			int pts = 0;
-			TradeMark m = TradeMark.of(v, id);
-			if (gs != null) {
-				int journeys = m == null && s != null ? VoyageLog.journeys(v, s) : journeysSince(v, id, m); // each began in sector 1: not a jump
-				int sectors = Math.max(0, VoyageLog.visited(v, id, gs) - (m == null ? 0 : m.sectors) - journeys);
-				if (sectors > 0) { pts += sectors * SECTOR; why.add(sectors + (sectors == 1 ? " sector" : " sectors") + " (+" + sectors * SECTOR + ")"); }
-				int scrap = Math.max(0, gs.getTotalScrapCollected() - (m == null ? 0 : m.scrap));
-				if (scrap / SCRAP_PER_POINT > 0) { pts += scrap / SCRAP_PER_POINT; why.add(scrap + " scrap (+" + scrap / SCRAP_PER_POINT + ")"); }
-				int defeated = Math.max(0, gs.getTotalShipsDefeated() - (m == null ? 0 : m.defeated));
-				if (defeated > 0) { pts += defeated * DEFEATED; why.add(defeated + (defeated == 1 ? " ship" : " ships") + " defeated (+" + defeated * DEFEATED + ")"); }
-				int died = m != null || !gs.hasStateVar("lost_crew") ? 0 : gs.getStateVar("lost_crew"); // a traded ship's losses before she came aren't told apart
-				if (died > 0) { pts += died * CREW_DIED; why.add(died + " crew lost (" + signed(died * CREW_DIED) + ")"); }
-				if (s != null) Props.of(gs).put(p, id, 0); // counted from here on
-			}
-			int won = homeplanet.parser.Museum.victories(v, id);
-			if (won > 0) { pts += won * FLAGSHIP; why.add((won == 1 ? "the Rebel Flagship defeated" : "the Rebel Flagship defeated " + won + " times") + " (+" + won * FLAGSHIP + ")"); }
-			if (s == null && Vault.Fate.LOST.name().equals(fate(v, id)) && won == 0 && lastSectorOf(v, id) < LAST_STAND) {
-				pts += SHIP_LOST;
-				why.add("lost in action (" + signed(SHIP_LOST) + ")");
-			}
-			if (why.isEmpty()) continue;
-			total += pts;
-			details.add(name + ": " + String.join(", ", why) + "  = " + signed(pts));
-		}
-		List<String> earned = newAchievements(); // FTL's achievements earned in the fleet's service so far
-		if (!earned.isEmpty()) {
-			List<String> names = new ArrayList<String>();
-			for (String id : earned) names.add(achievementName(id));
-			total += earned.size() * ACHIEVEMENT;
-			details.add("Achievements: " + String.join(", ", names) + "  = " + signed(earned.size() * ACHIEVEMENT));
-			p.setProperty("achievements", String.join("|", earned));
-		}
-		p.setProperty("counted", new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()));
-		p.setProperty("total", Integer.toString(total));
-		if (write(v, p)) entry(v, total, "Service record reviewed: the fleet's service so far", details);
+		return n;
+	}
+	private static int defeatedSince(Vault v, String id, SavedGameState gs) {
+		if (gs == null) return 0;
+		TradeMark m = TradeMark.of(v, id);
+		return Math.max(0, gs.getTotalShipsDefeated() - (m == null ? 0 : m.defeated));
 	}
 	/** A history folder of a ship that served (a voyage log or a kept save), not the Cargo Hold's. */
 	private static boolean served(File d) {
@@ -376,10 +436,8 @@ public final class Reputation {
 		return n + (m == null ? 1 : 0); // her first journey began in sector 1 as well
 	}
 	private static SavedGameState lastSave(File dir) {
-		File[] saves = dir.listFiles(new java.io.FileFilter() { public boolean accept(File x) { return x.isFile() && x.getName().endsWith(".sav"); } });
-		if (saves == null || saves.length == 0) return null;
-		File newest = saves[0];
-		for (File f : saves) if (f.lastModified() > newest.lastModified()) newest = f;
+		File newest = Vault.newestKept(dir); // her newest version, not a copy kept for a reason of its own (5.61)
+		if (newest == null) return null;
 		try { return HomePlanet.savedGameParser.readSavedGame(newest); } catch (Exception e) { return null; }
 	}
 	private static String fate(Vault v, String id) {
@@ -520,23 +578,25 @@ public final class Reputation {
 	 * (-10)") sorted by what they say, so a jump that did three things counts in three pools. The pools add up to the
 	 * log's own changes; pools at zero are left out.
 	 */
-	public static synchronized Map<String, Integer> tally(Vault v) {
-		Map<String, Integer> pools = new LinkedHashMap<String, Integer>();
-		for (String k : POOLS) pools.put(k, 0);
-		String header = null; int points = 0; List<String> details = new ArrayList<String>();
-		for (String line : log(v).split("\r?\n")) {
-			if (line.startsWith("  ")) { if (header != null) details.add(line.trim()); continue; }
-			if (header != null) pool(pools, header, points, details);
-			header = null; details.clear();
-			String[] w = line.split("  ", 3); // date time, the change, why
-			if (w.length < 3) continue;
-			try { points = Integer.parseInt(w[1].trim().replace('\u2212', '-').replace("+", "")); } catch (NumberFormatException e) { continue; }
-			header = w[2];
+	public static Map<String, Integer> tally(Vault v) {
+		synchronized (lock(v)) {
+			Map<String, Integer> pools = new LinkedHashMap<String, Integer>();
+			for (String k : POOLS) pools.put(k, 0);
+			String header = null; int points = 0; List<String> details = new ArrayList<String>();
+			for (String line : log(v).split("\r?\n")) {
+				if (line.startsWith("  ")) { if (header != null) details.add(line.trim()); continue; }
+				if (header != null) pool(pools, header, points, details);
+				header = null; details.clear();
+				String[] w = line.split("  ", 3); // date time, the change, why
+				if (w.length < 3) continue;
+				try { points = Integer.parseInt(w[1].trim().replace('\u2212', '-').replace("+", "")); } catch (NumberFormatException e) { continue; }
+				header = w[2];
+			}
+			if (header != null) pool(pools, header, points, details); // the last entry
+			Map<String, Integer> out = new LinkedHashMap<String, Integer>();
+			for (Map.Entry<String, Integer> e : pools.entrySet()) if (e.getValue() != 0) out.put(e.getKey(), e.getValue());
+			return out;
 		}
-		if (header != null) pool(pools, header, points, details); // the last entry
-		Map<String, Integer> out = new LinkedHashMap<String, Integer>();
-		for (Map.Entry<String, Integer> e : pools.entrySet()) if (e.getValue() != 0) out.put(e.getKey(), e.getValue());
-		return out;
 	}
 	private static void pool(Map<String, Integer> pools, String header, int points, List<String> details) {
 		for (String s : SPENT_STARTS) if (header.startsWith(s)) { add(pools, "Spent", points); return; }

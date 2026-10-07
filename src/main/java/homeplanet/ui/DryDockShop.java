@@ -679,6 +679,13 @@ class DryDockShop {
 	void addTo(homeplanet.vault.Vault.Transaction tx) {
 		for (Ship s : dirty) tx.put(s, otherSaves.get(s), otherHashes.get(s));
 	}
+	/** The shop's own copy of a ship's save (the Cargo Hold read for purchases), or null if it read none: another change to her belongs in it (5.61). */
+	SavedGameState copyOf(Ship s) { return otherSaves.get(s); }
+	/** Puts the shop's copy of her into the save after a change made to it outside the shop (the Dry Dock's bill). */
+	void putCopy(homeplanet.vault.Vault.Transaction tx, Ship s) {
+		dirty.add(s);
+		tx.put(s, otherSaves.get(s), otherHashes.get(s));
+	}
 	List<String> purchases() { return purchases; }
 
 	private void note(SavedGameState gs, String key, int n) {

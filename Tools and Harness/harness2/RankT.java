@@ -27,12 +27,13 @@ public class RankT { public static void main(String[] a) throws Exception {
  UnlockGrants.turnedOn(Unlocks.read());
  TransT.profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_FED"}, new String[0]);
  Setup.chk("O: under the cruiser's ranks, a Captain", PlayerRank.rank(Unlocks.read()) == 1 && Transmissions.rank().equals("Captain"));
+ Reputation.expedition(v, "an old expedition", 0, 0, 1); Reputation.expedition(v, "another old expedition", 0, 0, 1); // something for its letter to recall
  new File(v.root, "rank.txt").delete(); // as a career from before 5.56
  PlayerRank.setting = PlayerRank.FROM_REP;
  Transmissions.check();
  int captain = Arrays.asList(PlayerRank.REP_RANKS).indexOf("Captain");
  Setup.chk("O: checked once: still a Captain, one letter about the new ranks, no letter for each step passed, custom ships kept",
-   PlayerRank.rank(Unlocks.read()) == captain && TransT.find("rank:ladder") != null && TransT.find("rank:ladder").body.contains("you hold the rank of Captain")
+   PlayerRank.rank(Unlocks.read()) == captain && TransT.find("rank:ladder") != null && TransT.find("rank:ladder").body.contains("Our Sincerest Congratulations Captain.")
    && TransT.find("rank:1") == null && TransT.find("rank:3") == null && PlayerRank.kept(v, "custom") && !PlayerRank.kept(v, "artillery"));
  Transmissions.check();
  int ladders = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.equals("rank:ladder")) ladders++;
@@ -45,7 +46,18 @@ public class RankT { public static void main(String[] a) throws Exception {
  Reputation.expedition(v, "test standing", 10 * (PlayerRank.REP_STEPS[PlayerRank.COMMODORE] - Reputation.total(v)), 0, 0);
  Transmissions.check();
  Setup.chk("R: 2,500 reputation: Commodore, its letter alone", PlayerRank.rank(Unlocks.read()) == PlayerRank.COMMODORE && TransT.find("rank:4") != null && TransT.find("rank:3") == null
-   && TransT.find("rank:4").body.startsWith("Priority message from The Federation Home Planet Fleet Admiralty"));
+   && TransT.find("rank:4").body.startsWith("The Federation Home Planet Admiralty is thrilled to inform you"));
+ // what the career did, once each (heromedel, 5.57): no token left, never the same line twice, never the Rebel Flagship
+ String l0 = TransT.find("rank:ladder").body, l4 = TransT.find("rank:4").body;
+ Setup.chk("A: the letters' accolades filled or left out, no two alike: [" + l0.replace("\n", " / ") + "] [" + l4.replace("\n", " / ") + "]",
+   !l0.contains("{") && !l4.contains("{") && !l0.contains("\n\n\n") && !l4.contains("\n\n\n") && !l0.contains("Flagship") && !l4.contains("Flagship"));
+ int ladderSaid = 0; for (String k : new String[] {"ship", "achievement", "model", "fights", "crew", "expeditions"}) if ("rank:ladder".equals(v.event("accolade:" + k))) ladderSaid++;
+ Setup.chk("A: a career confirmed as Captain (three ranks up): up to three accolades in its letter, as many as the fleet has (" + ladderSaid + ")", ladderSaid >= 1 && ladderSaid <= 3);
+ java.lang.reflect.Method aid = Accolades.class.getDeclaredMethod("achievementId", String.class); aid.setAccessible(true);
+ Setup.chk("A: an achievement is told as its deed: FTL's name found (" + aid.invoke(null, "Givin' her all she's got, Captain!") + ")", "ACH_ENERGY_POWER".equals(aid.invoke(null, "Givin' her all she's got, Captain!")) && "ACH_SECTOR_5".equals(aid.invoke(null, "Just Getting Started")));
+ String rest = "A\n\n{accolade}\n\nB", once = null; java.util.Set<String> said = new java.util.HashSet<String>(); boolean twice = false;
+ for (int i = 0; i < 10; i++) { once = Accolades.fill(v, "test:" + i, rest); if (!once.equals("A\n\nB") && !said.add(once)) twice = true; }
+ Setup.chk("A: once every kind is used, the line is left out cleanly (" + once.replace("\n", "/") + ")", once.equals("A\n\nB") && !twice);
  // switching back and forth in Sandbox Mode loses nothing
  PlayerRank.setting = PlayerRank.FROM_CRUISER;
  Setup.chk("W: switched to the cruiser's ranks: a Captain there, x2", PlayerRank.rank(Unlocks.read()) == 1 && PlayerRank.multiple(PlayerRank.rank(Unlocks.read())) == 2);

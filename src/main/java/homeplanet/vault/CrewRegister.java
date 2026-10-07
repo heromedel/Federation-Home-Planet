@@ -596,8 +596,9 @@ public final class CrewRegister {
 				if (f.equals("LOST") || f.equals("DESTROYED")) return new String[] {"KILLED", "Lost with " + homeplanet.parser.ShipNames.the(shipName) + ".", "lost with " + homeplanet.parser.ShipNames.the(shipName)};
 				if (f.equals("TRANSFERRED")) return new String[] {"TRANSFERRED", "Transferred with " + homeplanet.parser.ShipNames.the(shipName) + " to another fleet.", "transferred with " + homeplanet.parser.ShipNames.the(shipName)};
 				if (!f.isEmpty() && !f.equals("SCRAPPED")) return new String[] {"TRANSFERRED", "Left the fleet with " + homeplanet.parser.ShipNames.the(shipName) + ".", "left the fleet with " + homeplanet.parser.ShipNames.the(shipName)};
-			} else if (s.isBoarded() && flown.contains("Crew lost: ") && listed(flown.replace("Crew lost: ", "\nCrew lost: "), "Crew lost: ", m.name + " (" + m.raceTitle() + ")")) {
-				return new String[] {"KILLED", "Lost aboard " + shipName + ".", "lost aboard " + shipName};
+			} else if (s.isBoarded() && flown.contains("Crew lost: ") && (listed(flown.replace("Crew lost: ", "\nCrew lost: "), "Crew lost: ", m.name + " (" + m.raceTitle() + ")")
+					|| listed(flown.replace("Crew lost: ", "\nCrew lost: "), "Crew lost: ", m.name + " (" + VoyageLog.race(m.race == null ? "" : m.race) + ")"))) { // FTL's title (Rockman), or the voyage log's own word for the race (Rock): 5.61
+				return new String[] {"KILLED", "Lost aboard " + the(shipName) + ".", "lost aboard " + the(shipName)};
 			}
 		}
 		return new String[] {"MISSING", "Not found anywhere in the fleet: whereabouts unknown.", ""};
@@ -765,7 +766,9 @@ public final class CrewRegister {
 	}
 	private static void station(String head, String whole, int day, Map<String, List<Member>> byName, Map<String, String> renamedFrom, List<Member> members) {
 		java.util.regex.Matcher x;
-		if ((x = java.util.regex.Pattern.compile("^HIRE\\s+(.+?) \\((\\w+)\\)(,? rescued on an expedition)?").matcher(head)).find()) {
+		if ((x = java.util.regex.Pattern.compile("^HIRE\\s+(?:A promise of adventure|Posted for volunteers)[^:]*: (.+?) \\((\\w+)\\) joined").matcher(head)).find()) { // the job board's wording (5.61)
+			for (Member m : whoever(x.group(1), x.group(2), byName, renamedFrom, members, null)) m.events.add(new Event(day, "Hired."));
+		} else if ((x = java.util.regex.Pattern.compile("^HIRE\\s+(.+?) \\((\\w+)\\)(,? rescued on an expedition)?").matcher(head)).find()) {
 			for (Member m : whoever(x.group(1), x.group(2), byName, renamedFrom, members, null)) m.events.add(new Event(day, x.group(3) != null ? "Rescued on an expedition, and signed on." : "Hired."));
 		} else if ((x = java.util.regex.Pattern.compile("^CREW\\s+(.+?) assigned to (.+?)\\.?$").matcher(head)).find()) {
 			String to = x.group(2);

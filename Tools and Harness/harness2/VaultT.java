@@ -61,5 +61,18 @@ public class VaultT { public static void main(String[] a) throws Exception {
  List<Ship> users = v5.usingBlueprint("PLAYER_SHIP_STEALTH_HP");
  Setup.chk("usingBlueprint finds the Test Stealth", users.size() == 1 && users.get(0).name.equals("Test Stealth"));
  Setup.chk("storage holds untouched", v5.storage().save() != null);
+ // kept versions (5.61): a victory copy and a final battle's waiting copy are never pruned with her ordinary versions
+ Ship kv = v5.docked().get(0);
+ File kd = v5.historyOf(kv); kd.mkdirs();
+ File victory = new File(kd, "victory-20200101-000000.sav"), waiting = new File(kd, "final-battle.sav"), cloud = new File(kd, "cloud-copy-20200101-000000.sav");
+ for (File f : new File[] {victory, waiting, cloud}) { SafeFiles.copy(v5.fileOf(kv), f); f.setLastModified(946684800000L); } // the oldest files there
+ for (int i = 0; i < 11; i++) { SavedGameState kg = v5.readCopy(kv).save; kg.getPlayerShip().setScrapAmt(1000 + i); v5.write(kv, kg); }
+ int ordinaryLeft = 0; for (File f : kd.listFiles()) if (f.getName().matches("\\d{8}-\\d{6}(-\\d+)?\\.sav")) ordinaryLeft++;
+ Setup.chk("V: eleven new versions: the victory copy, the waiting final battle copy and the cloud copy stay; ten ordinary versions (" + ordinaryLeft + ")",
+   victory.isFile() && waiting.isFile() && cloud.isFile() && ordinaryLeft == Vault.KEEP);
+ boolean special = false; for (File f : v5.history(kv)) if (!f.getName().matches("\\d{8}-\\d{6}(-\\d+)?\\.sav")) special = true;
+ int savs = 0; for (File f : kd.listFiles()) if (f.getName().endsWith(".sav")) savs++;
+ Setup.chk("V: her versions are the ordinary ones; the Records list shows the special copies too (" + v5.history(kv).size() + " of " + v5.kept(kv).size() + ")",
+   v5.history(kv).size() == Vault.KEEP && !special && v5.kept(kv).size() == savs && v5.kept(kv).contains(victory) && v5.kept(kv).contains(waiting));
  Setup.done();
 }}

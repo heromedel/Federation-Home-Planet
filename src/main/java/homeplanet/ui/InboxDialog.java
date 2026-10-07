@@ -65,6 +65,9 @@ public class InboxDialog extends JDialog {
 		return d.openCommission;
 	}
 
+	/** The two panes' widths: the window is always these and the button space, whatever the letter (5.58). */
+	private static final int LIST_W = 360, LETTER_W = 520;
+
 	private InboxDialog(java.awt.Component dock) {
 		super(SwingUtilities.getWindowAncestor(dock), "Transmissions", ModalityType.APPLICATION_MODAL);
 		this.dock = dock;
@@ -85,16 +88,21 @@ public class InboxDialog extends JDialog {
 			public void valueChanged(ListSelectionEvent e) { if (!e.getValueIsAdjusting()) show(list.getSelectedValue()); }
 		});
 		JScrollPane ls = new JScrollPane(list, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		ls.setPreferredSize(new Dimension(360, 420));
+		ls.setPreferredSize(new Dimension(LIST_W, 420));
 
 		text.setEditable(false);
 		text.setFont(MenuTheme.TEXT_FONT);
 		text.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
 		JScrollPane ts = new JScrollPane(text);
-		ts.setPreferredSize(new Dimension(520, 420));
+		ts.setPreferredSize(new Dimension(LETTER_W, 420));
 		JPanel right = new JPanel(new BorderLayout(0, 6));
 		right.add(ts, BorderLayout.CENTER);
-		JPanel act = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+		// a fixed space for the letter's buttons, the letter's width and two rows high (heromedel, 5.58): the window is sized from
+		// it, never from the buttons switched on when it opens (all of them, before the first letter is shown: 2,000 pixels wide)
+		JPanel act = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4)) {
+			@Override public Dimension getPreferredSize() { return new Dimension(LETTER_W, 2 * archive.getPreferredSize().height + 12); }
+			@Override public Dimension getMinimumSize() { return getPreferredSize(); }
+		};
 		act.add(reply);
 		act.add(claim);
 		act.add(commission);
@@ -296,7 +304,7 @@ public class InboxDialog extends JDialog {
 				doc.insertString(doc.getLength(), meta + "\n\n", a);
 			}
 			if (faces != null && !faces.isEmpty()) ReportFaces.insert(doc, body, faces, null);
-			else doc.insertString(doc.getLength(), body, null);
+			else underlined(doc, body);
 			javax.swing.text.SimpleAttributeSet p = new javax.swing.text.SimpleAttributeSet();
 			javax.swing.text.StyleConstants.setLineSpacing(p, 0.2f);
 			doc.setParagraphAttributes(0, doc.getLength(), p, false);
@@ -304,6 +312,20 @@ public class InboxDialog extends JDialog {
 			text.setText(body); // not expected: the plain text, at least
 		}
 		text.setCaretPosition(0);
+	}
+
+	/** A letter's words, with &lt;u&gt;…&lt;/u&gt; underlined (heromedel's "Approved", 5.57); everything else as it is. */
+	private static void underlined(javax.swing.text.StyledDocument doc, String body) throws javax.swing.text.BadLocationException {
+		javax.swing.text.SimpleAttributeSet u = new javax.swing.text.SimpleAttributeSet();
+		javax.swing.text.StyleConstants.setUnderline(u, true);
+		int at = 0;
+		while (true) {
+			int s = body.indexOf("<u>", at), e = s < 0 ? -1 : body.indexOf("</u>", s);
+			if (s < 0 || e < 0) { doc.insertString(doc.getLength(), body.substring(at), null); return; }
+			doc.insertString(doc.getLength(), body.substring(at, s), null);
+			doc.insertString(doc.getLength(), body.substring(s + 3, e), u);
+			at = e + 4;
+		}
 	}
 
 	private void show(Transmissions.Message m) {

@@ -338,7 +338,8 @@ public final class VoyageLog {
 	private static String title(String id) {
 		try { return homeplanet.model.Items.title(id); } catch (Exception e) { return id; }
 	}
-	private static String race(String id) {
+	/** Her log's word for a race: FTL's id capitalised, Zoltan and Lanius by name (a Rock is "Rock" here, "Rockman" in FTL's title: CrewRegister reads both). */
+	static String race(String id) {
 		if ("energy".equals(id)) return "Zoltan";
 		if ("anaerobic".equals(id)) return "Lanius";
 		return id.isEmpty() ? id : Character.toUpperCase(id.charAt(0)) + id.substring(1);
