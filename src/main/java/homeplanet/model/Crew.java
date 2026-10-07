@@ -1,7 +1,5 @@
 package homeplanet.model;
 
-import net.blerf.ftl.constants.AdvancedFTLConstants;
-import net.blerf.ftl.constants.FTLConstants;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.CrewType;
@@ -10,8 +8,6 @@ import net.blerf.ftl.xml.CrewBlueprint;
 /** A crew member's race name, skills and report, as players see them. */
 public final class Crew {
 	private Crew() { }
-
-	private static final FTLConstants CONSTANTS = new AdvancedFTLConstants();
 
 	/** The race's display name from the game data (e.g. "Zoltan" for energy), or its id. */
 	public static String raceTitle(CrewState cs) {
@@ -61,29 +57,30 @@ public final class Crew {
 		if (l.contains("ANAEROBIC") || l.contains("LANIUS")) return "Lanius";
 		return null;
 	}
-	// e.g. "level 1 (70/130)": levels come from the save's mastery flags; FTL:AE needs interval xp for level 1, twice that for level 2
-	private static String skillText(int xp, int interval, boolean one, boolean two) {
-		int level = two ? 2 : (one ? 1 : 0);
+	// e.g. "level 1 (70/130)": the level from the points as they stand (skillLevels); FTL:AE needs interval xp for level 1, twice that for level 2
+	private static String skillText(int xp, int interval) {
+		int level = level(xp, interval);
 		String progress = (level >= 2) ? "max" : (xp + "/" + (interval * (level + 1)));
 		return "level " + level + " (" + progress + ")";
 	}
 	private static String[][] skillRows(CrewState cs) {
-		CrewType r = cs.getRace();
-		return new String[][] {
-			{"Pilot", skillText(cs.getPilotSkill(), CONSTANTS.getMasteryIntervalPilot(r), cs.getPilotMasteryOne(), cs.getPilotMasteryTwo())},
-			{"Engines", skillText(cs.getEngineSkill(), CONSTANTS.getMasteryIntervalEngine(r), cs.getEngineMasteryOne(), cs.getEngineMasteryTwo())},
-			{"Shields", skillText(cs.getShieldSkill(), CONSTANTS.getMasteryIntervalShield(r), cs.getShieldMasteryOne(), cs.getShieldMasteryTwo())},
-			{"Weapons", skillText(cs.getWeaponSkill(), CONSTANTS.getMasteryIntervalWeapon(r), cs.getWeaponMasteryOne(), cs.getWeaponMasteryTwo())},
-			{"Repair", skillText(cs.getRepairSkill(), CONSTANTS.getMasteryIntervalRepair(r), cs.getRepairMasteryOne(), cs.getRepairMasteryTwo())},
-			{"Combat", skillText(cs.getCombatSkill(), CONSTANTS.getMasteryIntervalCombat(r), cs.getCombatMasteryOne(), cs.getCombatMasteryTwo())}};
+		String[] names = {"Pilot", "Engines", "Shields", "Weapons", "Repair", "Combat"};
+		String[][] out = new String[6][];
+		for (int i = 0; i < 6; i++) out[i] = new String[] {names[i], skillText(Skills.points(cs, i), Skills.interval(cs, i))};
+		return out;
 	}
-	/** Her skill levels (0, 1 or 2, from the save's mastery flags): pilot, engines, shields, weapons, repair, combat. */
+	/**
+	 * Each skill's level as it stands, from its points: the race's interval for level one, twice it for level two (pilot,
+	 * engines, shields, weapons, repair, combat). Not FTL's mastery marks (5.62): FTL sets those only for a level earned in
+	 * play, so a crew member an event gives fully skilled (the Zoltan peace quest's Envoy) has none, and a skill a Clone
+	 * Bay lowered keeps its marks.
+	 */
 	public static int[] skillLevels(CrewState cs) {
-		return new int[] {lv(cs.getPilotMasteryOne(), cs.getPilotMasteryTwo()), lv(cs.getEngineMasteryOne(), cs.getEngineMasteryTwo()),
-				lv(cs.getShieldMasteryOne(), cs.getShieldMasteryTwo()), lv(cs.getWeaponMasteryOne(), cs.getWeaponMasteryTwo()),
-				lv(cs.getRepairMasteryOne(), cs.getRepairMasteryTwo()), lv(cs.getCombatMasteryOne(), cs.getCombatMasteryTwo())};
+		int[] out = new int[6];
+		for (int i = 0; i < 6; i++) out[i] = level(Skills.points(cs, i), Skills.interval(cs, i));
+		return out;
 	}
-	private static int lv(boolean one, boolean two) { return two ? 2 : one ? 1 : 0; }
+	private static int level(int points, int interval) { return points >= 2 * interval ? 2 : points >= interval ? 1 : 0; }
 	/** Hover text for a crew member: race and skill levels. */
 	public static String tooltip(CrewState cs) {
 		if (cs == null || cs.getRace() == null) return null;

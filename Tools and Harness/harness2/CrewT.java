@@ -312,6 +312,22 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Setup.chk("K: and in her save now, the career unchanged, nothing more to give", worn && count(wm, "Promoted to Sergeant.") == 1 && CrewRegister.rankToGive(v, wm) == -1);
  String cl = LogT.page(v, false);
  Setup.chk("K: the Captain's Log: I promoted Gracie Quill to Sergeant; Norwyn Schultze posthumously", cl.contains("I promoted Gracie Quill to Sergeant.") && cl.contains("I promoted Norwyn Schultze to Lieutenant, posthumously."));
+
+ // skill levels from the points as they stand, not FTL's marks (5.62): FTL marks only a level earned in play
+ CrewState envoy = Commission.volunteer("energy", new Random(7)); // the Zoltan peace quest's Envoy: every skill full, no marks
+ CrewState charlie = Commission.volunteer("human", new Random(8)); // the event's Charlie: every skill at level one, no marks
+ CrewState cloned = Commission.volunteer("engi", new Random(9)); // marks for level two kept, points back to level one (a Clone Bay)
+ for (int i = 0; i < 6; i++) {
+  int iv = homeplanet.model.Skills.interval(envoy, i);
+  setRaw(envoy, i, 2 * iv); setRaw(charlie, i, homeplanet.model.Skills.interval(charlie, i));
+  homeplanet.model.Skills.set(cloned, i, 2 * homeplanet.model.Skills.interval(cloned, i)); setRaw(cloned, i, homeplanet.model.Skills.interval(cloned, i));
+ }
+ setMarks(envoy, false); setMarks(charlie, false);
+ Setup.chk("M: full points with no marks: mastered (" + Arrays.toString(homeplanet.model.Crew.skillLevels(envoy)) + "), the hover text says so",
+   Arrays.equals(homeplanet.model.Crew.skillLevels(envoy), new int[] {2, 2, 2, 2, 2, 2}) && homeplanet.model.Crew.tooltip(envoy).contains("level 2 (max)"));
+ Setup.chk("M: level-one points with no marks: level one (" + Arrays.toString(homeplanet.model.Crew.skillLevels(charlie)) + ")", Arrays.equals(homeplanet.model.Crew.skillLevels(charlie), new int[] {1, 1, 1, 1, 1, 1}));
+ Setup.chk("M: marks kept after a Clone Bay, points at level one: level one (" + Arrays.toString(homeplanet.model.Crew.skillLevels(cloned)) + ")", Arrays.equals(homeplanet.model.Crew.skillLevels(cloned), new int[] {1, 1, 1, 1, 1, 1}));
+ Setup.chk("M: and the rank agrees: six skills mastered, a Captain due", homeplanet.model.Rank.mastered(envoy) == 6 && homeplanet.model.Rank.due(envoy) == 5);
  Setup.done();
 }
  static int count(CrewRegister.Member x, String text) { int k = 0; for (CrewRegister.Event e : x.events) if (e.text.contains(text)) k++; return k; }
@@ -323,5 +339,13 @@ public class CrewT { public static void main(String[] a) throws Exception {
  static int idIn(List<CrewRegister.Member> m, String name, String where) { for (CrewRegister.Member x : m) if (x.name.equals(name) && x.where.equals(where) && x.status == CrewRegister.Status.PRESENT) return x.id; return -1; }
  static CrewRegister.Member byId(List<CrewRegister.Member> m, int id) { for (CrewRegister.Member x : m) if (x.id == id) return x; return null; }
  static boolean said(CrewRegister.Member x, String text) { if (x == null) return false; for (CrewRegister.Event e : x.events) if (e.text.contains(text)) return true; return false; }
+ /** A skill's points as FTL can leave them, the marks untouched. */
+ static void setRaw(CrewState c, int skill, int p) {
+  switch (skill) { case 0: c.setPilotSkill(p); break; case 1: c.setEngineSkill(p); break; case 2: c.setShieldSkill(p); break; case 3: c.setWeaponSkill(p); break; case 4: c.setRepairSkill(p); break; default: c.setCombatSkill(p); }
+ }
+ static void setMarks(CrewState c, boolean b) {
+  c.setPilotMasteryOne(b); c.setPilotMasteryTwo(b); c.setEngineMasteryOne(b); c.setEngineMasteryTwo(b); c.setShieldMasteryOne(b); c.setShieldMasteryTwo(b);
+  c.setWeaponMasteryOne(b); c.setWeaponMasteryTwo(b); c.setRepairMasteryOne(b); c.setRepairMasteryTwo(b); c.setCombatMasteryOne(b); c.setCombatMasteryTwo(b);
+ }
  static void writeProps(File f, Properties p) throws IOException { StringWriter w = new StringWriter(); p.store(w, null); SafeFiles.writeText(f, w.toString(), false); }
 }
