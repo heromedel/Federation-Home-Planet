@@ -209,12 +209,15 @@ public final class Layout {
 			SafeFiles.deleteTree(d);
 		}
 		File holdDir = v.cargoHoldDir();
-		ShipStore.Record hold = ShipStore.read(holdDir, Vault.HOLD_STEM);
-		if (hold != null) {
-			sb.append("\t<ship id=\"storage\" name=\"").append(homeplanet.parser.XmlText.attr(hold.name)).append("\" state=\"storage\" dlc=\"true\" hash=\"").append(hold.hash).append("\"/>\r\n");
-			new File(holdDir, Vault.HOLD_STEM + ".xml").delete();
+		File holdXml = new File(holdDir, Vault.HOLD_FILE);
+		if (homeplanet.parser.HoldXml.isHold(holdXml)) { // its xml back into the pretend ship's save (5.84)
+			net.blerf.ftl.parser.SavedGameParser.SavedGameState gs = homeplanet.parser.HoldXml.read(holdXml);
+			File sav = new File(holdDir, Vault.HOLD_SAV);
+			SafeFiles.write(sav, homeplanet.parser.SaveHelper.toBytes(gs));
+			sb.append("\t<ship id=\"storage\" name=\"").append(homeplanet.parser.XmlText.attr(gs.getPlayerShipName())).append("\" state=\"storage\" dlc=\"true\" hash=\"").append(SafeFiles.hash(sav)).append("\"/>\r\n");
+			holdXml.delete();
 		}
-		String[][] back = {{Vault.HOLD_FILE, Vault.STORAGE_FILE}, {"systems.txt", "storage-systems.txt"}, {"parts.txt", "parts.txt"}, {"overflow.txt", "overflow.txt"}};
+		String[][] back = {{Vault.HOLD_SAV, Vault.STORAGE_FILE}, {"systems.txt", "storage-systems.txt"}, {"parts.txt", "parts.txt"}, {"overflow.txt", "overflow.txt"}};
 		for (String[] f : back) { File now = new File(holdDir, f[0]); if (now.isFile()) SafeFiles.move(now, new File(root, f[1])); }
 		SafeFiles.deleteTree(holdDir);
 		for (String name : Vault.LOG_FILES) { File now = new File(v.logsDir(), name); if (now.isFile()) SafeFiles.move(now, new File(root, name)); } // the logs at the root, as before 5.71

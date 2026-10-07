@@ -243,13 +243,13 @@ public final class ShipStore {
 		List<File> out = new ArrayList<File>();
 		File[] fs = versions(folder).listFiles();
 		if (fs == null) return out;
-		for (File f : fs) if (f.isFile() && f.getName().endsWith(".sav") && isSpecial(f) == special) out.add(f);
+		for (File f : fs) if (f.isFile() && kept(f.getName()) && isSpecial(f) == special) out.add(f);
 		java.util.Collections.sort(out, new java.util.Comparator<File>() { public int compare(File a, File b) { int t = Long.compare(a.lastModified(), b.lastModified()); return t != 0 ? t : order(a).compareTo(order(b)); } });
 		return out;
 	}
 	/** A version's place in time, from her name: the stamp, then the counter as a number (so -10 follows -9, not -1). */
 	public static String order(File f) {
-		String n = f.getName().replace(".sav", "");
+		String n = f.getName().replaceAll("\\.(sav|xml)$", "");
 		int dash = n.indexOf('-', 9); // past the date-time's own dash
 		int count = 1;
 		if (dash > 0) { try { count = Integer.parseInt(n.substring(dash + 1)); } catch (NumberFormatException e) { } n = n.substring(0, dash); }
@@ -261,12 +261,14 @@ public final class ShipStore {
 	}
 	/** Keeps a copy of her save as a version, named by the stamp (UTC, so the order survives clock changes), a counter after it when two fall in a second. */
 	public static File keepVersion(File folder, byte[] save, String prefix) throws IOException {
-		File f = versionFile(folder, prefix);
+		File f = versionFile(folder, prefix, homeplanet.parser.HoldXml.isHold(save) ? ".xml" : ".sav");
 		SafeFiles.write(f, save);
 		return f;
 	}
 	/** The name her next version gets (not written: for a journal note that writes it). */
-	public static File versionFile(File folder, String prefix) throws IOException {
+	public static File versionFile(File folder, String prefix) throws IOException { return versionFile(folder, prefix, ".sav"); }
+	/** As {@link #versionFile(File, String)}, with the file's ending (the Cargo Hold keeps its versions as xml, 5.84). */
+	public static File versionFile(File folder, String prefix, String ext) throws IOException {
 		File dir = versions(folder);
 		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
 		String stamp;
@@ -277,14 +279,16 @@ public final class ShipStore {
 		File[] fs = dir.listFiles();
 		if (fs != null) for (File x : fs) {
 			String n = x.getName();
-			if (!n.startsWith(base) || !n.endsWith(".sav")) continue;
+			if (!n.startsWith(base) || !kept(n)) continue;
 			String rest = n.substring(base.length(), n.length() - 4);
 			int c = rest.isEmpty() ? 1 : rest.startsWith("-") ? count(rest.substring(1)) : 0;
 			if (c > next) next = c;
 			if (c == next && c >= 1) next = c + 1;
 		}
-		return new File(dir, base + (next == 1 ? "" : "-" + next) + ".sav");
+		return new File(dir, base + (next == 1 ? "" : "-" + next) + ext);
 	}
+	/** A kept version's name: a save, or the Cargo Hold's xml. */
+	static boolean kept(String n) { return n.endsWith(".sav") || n.endsWith(".xml"); }
 	private static int count(String s) { try { return Integer.parseInt(s); } catch (NumberFormatException e) { return 0; } }
 	private static final java.text.SimpleDateFormat STAMP = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss");
 	static { STAMP.setTimeZone(java.util.TimeZone.getTimeZone("UTC")); }

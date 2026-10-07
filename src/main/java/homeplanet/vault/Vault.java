@@ -41,8 +41,8 @@ import org.slf4j.LoggerFactory;
  *     memorials_and_records/ships/&lt;Name&gt;.&lt;id&gt;/   a ship that left the fleet (how, in fate.txt), remembered
  *     <ship folder>/crew/        her crew, a file each (5.83: <Name>.<id>.xml, the crew register's id); the same in cargohold/crew/,
  *                                expeditions/crew/, captives/ and memorials_and_records/crew/ (everyone who left); crew-register.txt the register's own state
- *     cargohold/                 the Cargo Hold (5.72): cargohold.sav (the pretend ship, until its contents have an xml of their
- *                                own), cargohold.xml (its record), systems.txt (its stored systems), parts.txt, overflow.txt, versions/
+ *     cargohold/                 the Cargo Hold (5.72): cargohold.xml (what it holds, 5.84; the pretend ship's save cargohold.sav
+ *                                before), crew/, systems.txt (its stored systems), parts.txt, overflow.txt, versions/
  *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
  *                                ones read in once at 5.73), history.log, master.log, reputation.log, converted.txt (the marks)
  *     station-action-protection/ the notes of actions under way (5.71; heromedel's name, 5.78), only its why.txt when the station is at rest
@@ -240,13 +240,26 @@ public final class Vault {
 	public File manifestFile() { return new File(root, MANIFEST); }
 	/** The stored-systems list that goes with the storage hold. */
 	public File systemsFile() { return new File(cargoHoldDir(), "systems.txt"); }
-	/** The Cargo Hold's folder (5.72): its save (the pretend ship, until its contents have an xml of their own), its record, its stored-systems list, its parts and overflow lists, its versions. */
+	/** The Cargo Hold's folder (5.72): what it holds (cargohold.xml, 5.84), its crew's files, its stored-systems list, its parts and overflow lists, its versions. */
 	public File cargoHoldDir() { return new File(root, HOLD_DIR); }
-	public static final String HOLD_DIR = "cargohold", HOLD_FILE = "cargohold.sav", HOLD_STEM = "cargohold";
-	/** A fleet's Cargo Hold save, wherever that fleet keeps it (cargohold/ since 5.72, storage.sav at the root before): for a fleet not in use. */
+	/** The hold's xml (5.84; from 5.72 to 5.83 that name was its record, beside its save, the pretend ship cargohold.sav). */
+	public static final String HOLD_DIR = "cargohold", HOLD_FILE = "cargohold.xml", HOLD_SAV = "cargohold.sav", HOLD_STEM = "cargohold";
+	/**
+	 * A fleet's Cargo Hold file, wherever that fleet keeps it (cargohold.xml since 5.84, cargohold.sav from 5.72, storage.sav
+	 * at the root before), for a fleet not in use: read it with {@link homeplanet.parser.HoldXml#read(File)}, which reads any of them.
+	 */
 	public static File holdFileIn(File fleetRoot) {
-		File f = new File(new File(fleetRoot, HOLD_DIR), HOLD_FILE);
-		return f.isFile() || !new File(fleetRoot, STORAGE_FILE).isFile() ? f : new File(fleetRoot, STORAGE_FILE);
+		File d = new File(fleetRoot, HOLD_DIR), sav = new File(d, HOLD_SAV), xml = new File(d, HOLD_FILE), old = new File(fleetRoot, STORAGE_FILE);
+		if (sav.isFile()) return sav; // not opened since 5.84: the xml beside it is still its record
+		return xml.isFile() || !old.isFile() ? xml : old;
+	}
+	/** A hold file's bytes, in the kind of file it is (the xml, or a 5.x fleet's save). */
+	public static byte[] holdBytes(File f, SavedGameState gs) throws IOException {
+		return f.getName().endsWith(".xml") ? homeplanet.parser.HoldXml.toBytes(gs) : SaveHelper.toBytes(gs);
+	}
+	/** Her save's bytes, as her file keeps them: the Cargo Hold's as its xml. */
+	private byte[] bytesOf(Ship s, SavedGameState state) throws IOException {
+		return s.state == Ship.State.STORAGE ? homeplanet.parser.HoldXml.toBytes(state) : SaveHelper.toBytes(state);
 	}
 	/** The storage hold's id (and file stem). Before 4B there were two holds; the old AE one's stem is kept for its file name. */
 	static final String STORAGE_ID = "storage";
@@ -257,7 +270,7 @@ public final class Vault {
 	public File fileOf(Ship s) {
 		switch (s.state) {
 			case BOARDED: return continueFile();
-			case STORAGE: return new File(cargoHoldDir(), HOLD_FILE);
+			case STORAGE: holdReady(); return new File(cargoHoldDir(), HOLD_FILE);
 			default: return ShipStore.sav(folderOf(s));
 		}
 	}
@@ -310,6 +323,8 @@ public final class Vault {
 	public synchronized Ship storage() throws IOException {
 		Ship s = storageEntry();
 		if (!fileOf(s).isFile()) {
+			File waiting = holdWaiting();
+			if (waiting != null) throw new IOException("The Cargo Hold's save (" + waiting + ") could not be read. Put back a copy from cargohold/versions, or send it with a bug report.");
 			SavedGameState empty = SaveHelper.createStorageSave(s.name, true);
 			writeQuietly(s, empty);
 			saveManifest();
@@ -612,7 +627,8 @@ public final class Vault {
 			throw e;
 		}
 		snapshot(st);
-		SafeFiles.write(hold, SafeFiles.read(new File(dir, SURRENDER_HOLD)));
+		File keptHold = new File(dir, SURRENDER_HOLD); // the hold's file as it was: a save, if surrendered before 5.84
+		SafeFiles.write(hold, homeplanet.parser.HoldXml.isHold(keptHold) ? SafeFiles.read(keptHold) : homeplanet.parser.HoldXml.toBytes(homeplanet.parser.HoldXml.read(keptHold)));
 		st.invalidate();
 		st.hash = SafeFiles.hash(hold);
 		File sys = new File(dir, SURRENDER_SYSTEMS);
@@ -645,6 +661,7 @@ public final class Vault {
 		moveLogs();
 		if (manifestFile().isFile() || oldShipsDir().isDirectory() || oldHistoryDir().isDirectory()) Layout.convert(this);
 		moveCargoHold();
+		holdReady();
 		LogConvert.run(this); // the old logs read into the event log once (5.73)
 		LogConvert.fillShipLogs(this); // each ship's entries into her own log, once (5.76)
 		LogConvert.repairDays(this); // converted entries put on their own days, once (5.81)
@@ -669,7 +686,7 @@ public final class Vault {
 	private void moveCargoHold() throws IOException {
 		File hold = cargoHoldDir();
 		Journal.Note n = Journal.begin(this, "MOVE_CARGO_HOLD");
-		String[][] files = {{STORAGE_FILE, HOLD_FILE}, {STORAGE_ID + ".xml", HOLD_STEM + ".xml"}, {"storage-systems.txt", "systems.txt"}, {"parts.txt", "parts.txt"}, {"overflow.txt", "overflow.txt"}};
+		String[][] files = {{STORAGE_FILE, HOLD_SAV}, {STORAGE_ID + ".xml", HOLD_STEM + ".xml"}, {"storage-systems.txt", "systems.txt"}, {"parts.txt", "parts.txt"}, {"overflow.txt", "overflow.txt"}};
 		for (String[] f : files) {
 			File old = new File(root, f[0]), now = new File(hold, f[1]);
 			if (old.isFile() && !now.exists()) n.rename(old, now);
@@ -679,6 +696,44 @@ public final class Vault {
 		if (n.isEmpty()) return;
 		n.commit();
 		if (oldVersions.getParentFile().isDirectory()) oldVersions.getParentFile().delete(); // empty now
+	}
+	/**
+	 * The Cargo Hold's pretend ship into its xml (5.84), once, as one journal note: cargohold.sav read, cargohold.xml
+	 * (its record until now) written with what it holds, the save gone. Its kept versions stay as they are. A fleet
+	 * whose hold has a record and no save gets a new hold when it is next asked for, as before.
+	 */
+	private synchronized void holdReady() {
+		File sav = new File(cargoHoldDir(), HOLD_SAV), xml = new File(cargoHoldDir(), HOLD_FILE);
+		if (converting || !sav.isFile() && !xml.isFile()) return;
+		if (!sav.isFile()) {
+			if (!homeplanet.parser.HoldXml.isHold(xml) && !xml.delete()) log.warn("Could not remove the Cargo Hold's old record {}", xml);
+			return;
+		}
+		if (homeplanet.parser.HoldXml.isHold(xml)) return; // both: the xml is the hold, the save an old copy left beside it (kept, not read)
+		if (net.blerf.ftl.parser.DataManager.get() == null) return; // FTL's blueprints aren't read yet: the next look at the hold converts it
+		converting = true;
+		try { convertCargoHold(sav, xml); }
+		catch (Exception e) { log.warn("Could not give the Cargo Hold its xml ({} stays as it is): {}", sav, e.toString()); }
+		finally { converting = false; }
+	}
+	private boolean converting;
+	/** The hold's 5.x save, if it is still waiting to be converted (it couldn't be read). */
+	private File holdWaiting() {
+		File sav = new File(cargoHoldDir(), HOLD_SAV);
+		return sav.isFile() && !homeplanet.parser.HoldXml.isHold(new File(cargoHoldDir(), HOLD_FILE)) ? sav : null;
+	}
+	private void convertCargoHold(File sav, File xml) throws IOException {
+		SavedGameState gs = new net.blerf.ftl.parser.SavedGameParser().readSavedGame(sav);
+		Journal.Note n = Journal.begin(this, "CONVERT_CARGO_HOLD");
+		n.replace(xml, homeplanet.parser.HoldXml.toBytes(gs));
+		n.delete(sav);
+		n.commit();
+		net.blerf.ftl.parser.SavedGameParser.ShipState p = gs.getPlayerShip();
+		int items = p.getWeaponList().size() + p.getDroneList().size() + p.getAugmentIdList().size() + (gs.getCargoIdList() == null ? 0 : gs.getCargoIdList().size());
+		HistoryLog.entry("HOLD_FILE", "the Cargo Hold's contents were written into cargohold.xml (" + p.getScrapAmt() + " scrap, " + items + " items, " + p.getCrewList().size() + " crew)", null,
+				Event.of("HOLD_FILE").put("what", "converted").put("scrap", p.getScrapAmt()).put("fuel", p.getFuelAmt()).put("missiles", p.getMissilesAmt()).put("drone_parts", p.getDronePartsAmt())
+						.put("items", items).put("crew", p.getCrewList().size()).put("folder", HOLD_DIR).put("file", HOLD_DIR + "/" + HOLD_FILE)
+						.human("The Cargo Hold's inventory was written up in a new ledger."));
 	}
 	/** Re-reads everything (Refresh). Parsed saves whose files didn't change are kept. */
 	public synchronized void reload() throws IOException {
@@ -714,10 +769,10 @@ public final class Vault {
 			s.hash = r.hash; s.marks = r.marks; s.stranger = r.stranger; s.fresh = r.fresh;
 			ships.add(s);
 		}
-		ShipStore.Record hold = ShipStore.read(cargoHoldDir(), HOLD_STEM);
-		if (hold != null) {
-			Ship s = new Ship(STORAGE_ID, hold.name.isEmpty() ? "Spacedock Storage" : hold.name, Ship.State.STORAGE, true);
-			s.hash = hold.hash;
+		File hold = new File(cargoHoldDir(), HOLD_FILE);
+		if (hold.isFile() || holdWaiting() != null) { // the hold needs no record (5.84): its file says what it is
+			Ship s = new Ship(STORAGE_ID, "Spacedock Storage", Ship.State.STORAGE, true);
+			try { s.hash = SafeFiles.hash(hold); } catch (IOException e) { s.hash = ""; }
 			ships.add(s);
 		}
 	}
@@ -1364,7 +1419,7 @@ public final class Vault {
 	 */
 	public synchronized void saveManifest() throws IOException {
 		for (Ship s : ships) {
-			if (s.state == Ship.State.STORAGE) { ShipStore.write(settleFolder(s), HOLD_STEM, recordOf(s)); continue; }
+			if (s.state == Ship.State.STORAGE) { settleFolder(s); continue; } // its xml is all it needs (5.84)
 			File d = settleFolder(s);
 			ShipStore.Record r = recordOf(s);
 			if (!d.getName().equals(ShipStore.stem(s.name, s.id))) {
@@ -1423,7 +1478,7 @@ public final class Vault {
 	 * of its own (a victory's, a final battle's, the one waiting in final-battle.sav, Steam Cloud's). Only these count
 	 * as her versions and are pruned (5.61: the special ones were pruned with the rest, the Museum's victories too).
 	 */
-	static boolean ordinary(File f) { return f.isFile() && f.getName().matches("\\d{8}-\\d{6}(-\\d+)?\\.sav"); }
+	static boolean ordinary(File f) { return f.isFile() && f.getName().matches("\\d{8}-\\d{6}(-\\d+)?\\.(sav|xml)"); }
 	/** Her earlier versions, oldest first: the ordinary ones (the copies kept for a reason of their own are in {@link #kept}). */
 	public List<File> history(Ship s) { return ShipStore.versions(folderOf(s), false); }
 	/** Every save kept of her, oldest first: her versions and the copies kept for a reason of their own (the Records' Restore list). */
@@ -1458,7 +1513,7 @@ public final class Vault {
 	private void writeQuietly(Ship s, SavedGameState state) throws IOException {
 		if (s.state != Ship.State.BOARDED && s.state != Ship.State.STORAGE) settleFolder(s);
 		File f = fileOf(s);
-		byte[] bytes = SaveHelper.toBytes(state);
+		byte[] bytes = bytesOf(s, state);
 		SafeFiles.write(f, bytes);
 		s.written(state, SafeFiles.hash(f));
 	}
@@ -1477,7 +1532,7 @@ public final class Vault {
 		File f = fileOf(s);
 		for (int tries = 0; tries < 3; tries++) {
 			String before = SafeFiles.hash(f);
-			SavedGameState g = new net.blerf.ftl.parser.SavedGameParser().readSavedGame(f);
+			SavedGameState g = s.state == Ship.State.STORAGE ? homeplanet.parser.HoldXml.read(f) : new net.blerf.ftl.parser.SavedGameParser().readSavedGame(f);
 			if (before.equals(SafeFiles.hash(f))) return new Copy(g, before); // else FTL wrote it mid-read: again
 		}
 		throw new IOException(f.getName() + " kept changing while The Home Planet Station read it. Is FTL running?");
@@ -1525,7 +1580,7 @@ public final class Vault {
 					if (!SafeFiles.hash(f).equals(e.getValue())) throw new StaleException(e.getKey(), false);
 				}
 				Map<File, byte[]> bytes = new LinkedHashMap<File, byte[]>();
-				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) bytes.put(fileOf(e.getKey()), SaveHelper.toBytes(e.getValue()));
+				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) bytes.put(fileOf(e.getKey()), bytesOf(e.getKey(), e.getValue()));
 				bytes.putAll(extra);
 				// one journal note (5.71): every file's new bytes wait beside it, then each is replaced in one move; a failure puts the rest back
 				Journal.Note note = Journal.begin(Vault.this, "SAVE");

@@ -1,3 +1,7 @@
+/*
+ * This file comes from Vhati's FTL Profile Editor (GPL-2.0) and was modified for Federation Home Planet:
+ * readCrewMember made public (the Cargo Hold keeps its crew in its own xml, 5.84).
+ */
 // Variables with unknown meanings are named with greek letters.
 // Classes for unknown objects are named after deities.
 // http://en.wikipedia.org/wiki/List_of_Greek_mythological_figures#Personified_concepts
@@ -920,7 +924,7 @@ public class SavedGameParser extends Parser {
 		writeString( out, startingCrew.getName() );
 	}
 
-	private CrewState readCrewMember( InputStream in, int fileFormat ) throws IOException {
+	public CrewState readCrewMember( InputStream in, int fileFormat ) throws IOException {
 		CrewState crew = new CrewState();
 		crew.setName( readString( in ) );
 

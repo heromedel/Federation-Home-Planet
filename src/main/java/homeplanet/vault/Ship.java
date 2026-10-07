@@ -84,7 +84,7 @@ public final class Ship {
 		save = null;
 		readError = null;
 		try {
-			save = HomePlanet.savedGameParser.readSavedGame(f);
+			save = isStorage() ? homeplanet.parser.HoldXml.read(f) : HomePlanet.savedGameParser.readSavedGame(f); // the Cargo Hold's is its xml (5.84)
 			readHash = h;
 			failedHash = null;
 			if (save != null) {

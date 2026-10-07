@@ -288,11 +288,11 @@ public final class Shipments {
 		Vault v = Vault.get();
 		File hold = Vault.holdFileIn(Vault.rootOf(v.saves, slot));
 		SavedGameState gs;
-		try { gs = new net.blerf.ftl.parser.SavedGameParser().readSavedGame(hold); }
+		try { gs = homeplanet.parser.HoldXml.read(hold); }
 		catch (Exception e) { throw new IOException("The " + Vault.title(slot) + " fleet's Cargo Hold couldn't be read: " + e.getMessage()); }
 		for (Line l : p.lines) Exchange.give(gs.getPlayerShip(), l);
 		p.state = ELSEWHERE;
-		v.begin().put(hold, SaveHelper.toBytes(gs)).put(fileOf(p.id), bytes(p)).commit();
+		v.begin().put(hold, Vault.holdBytes(hold, gs)).put(fileOf(p.id), bytes(p)).commit();
 		HistoryLog.entry("SHIPMENT ACCEPTED", p.words() + " from " + p.peerTitle + ": in the " + Vault.title(slot) + " fleet's Cargo Hold", null, parcelEvent("SHIPMENT_ACCEPTED", p).put("to", "hold").put("to_fleet", Vault.title(slot)));
 	}
 	/** Returns a held parcel: it waits in the Outbox, addressed back to its sender, and goes when their station is found. */
