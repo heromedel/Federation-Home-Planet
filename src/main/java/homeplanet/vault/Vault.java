@@ -630,6 +630,7 @@ public final class Vault {
 		moveLogs();
 		if (manifestFile().isFile() || oldShipsDir().isDirectory() || oldHistoryDir().isDirectory()) Layout.convert(this);
 		moveCargoHold();
+		LogConvert.run(this); // the old logs read into the event log once (5.73)
 		shipyardDir().mkdirs();
 		junkyardDir().mkdirs();
 		memorialDir().mkdirs();
