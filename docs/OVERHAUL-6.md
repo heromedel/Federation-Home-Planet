@@ -2,6 +2,8 @@
 
 _A plan for heromedel, written by Cloud-C-Primary-Edit at 5.57 (2026-10-07), from four read-only surveys of the code and the design talked over with heromedel. Built to be handed to Cloud-C-BugsandFeedback ("Buggy Boy") and McCarthy (claude/bold-mccarthy-x17mq6) for their thoughts: see "How to add to this plan" first._
 
+_Version 2 (5.61, 2026-10-07): the plan with what two rounds of notes agreed folded into it. The notes below the plan stay as they were written, as the record; where the plan now says something different from a note, the plan is the later word. Version 1's step numbers are kept so the notes still point at the right steps; steps added since are lettered (9a)._
+
 ## How to add to this plan
 
 - Read it all once, then add your thoughts **only under your own heading** at the end ("Notes from ..."). Never edit another session's section or the plan above it: heromedel decides what changes in the plan itself.
@@ -69,14 +71,15 @@ Duplicates worth one home each: **six race-name helpers that disagree**, three "
 
 ### 2.5 Bugs found by the surveys (before 6.0, not part of it)
 
-These hurt fleets now, so they come first, in 5.x, each with its own test:
+Fixed in 5.61 by Cloud-C-BugsandFeedback (on main, 292ce7d), each with a harness test that fails on 5.60 (GuiT, CrewT, VaultT, CallOffT, LockT). Kept here as the record of what the surveys found:
 
 1. **A Cargo Bay purchase into the Cargo Hold can vanish** (confirmed by reading): when the Dry Dock's bill is paid from the hold in a save where the hold isn't the trading partner, `SystemsPanel.payBill` (SystemsPanel.java:434) reads a fresh copy of the hold and puts it in the same transaction as the shop's copy; the transaction keeps one copy per ship, so the shop's purchases (and their price) are dropped, while the BUY entry is still logged.
 2. **A Rockman lost in FTL is recorded missing, not killed** (confirmed by reading): the voyage log writes "Rock" (VoyageLog.java:341), the crew register looks for FTL's title "Rockman" (CrewRegister `fate()`).
-3. **Victory and final-battle saves can be pruned** (confirmed by reading): `prune` (Vault.java:1276) keeps the newest 10 `.sav` files of any name in `history/<id>/`, so a victor's `victory-*.sav` (what the museum's Hall counts) and a waiting `final-battle.sav` are deleted like old versions once newer versions pile up.
+3. **Victory and final-battle saves can be pruned** (confirmed by reading): `prune` (Vault.java:1276) keeps the newest 10 `.sav` files of any name in `history/<id>/`, so a victor's `victory-*.sav` (what the museum's Hall counts) and a waiting `final-battle.sav` are deleted like old versions once newer versions pile up. Worse than it looked: the final-battle copy could be pruned during the final battle itself, so the victory was never recorded; and `history()` could take a victory or Steam Cloud copy for her newest version.
 4. **A trade's completion can double a ship** if settling fails (§2.2, item 1). Rare; not reproduced.
-5. **The vault and reputation locks can deadlock** (§2.4, item 5). Not reproduced.
+5. **The vault and reputation locks can deadlock** (§2.4, item 5). Reproduced by LockT in 5.61: with one thread holding the vault for 2 ms, 5.60 froze on the first round.
 6. Smaller: the crew register's backfill can't read hires from the job board's wording (CrewRegister.java:768); "Lost aboard X." without "the" in one place (CrewRegister.java:600).
+7. **Still open:** the Cargo Bay sometimes says a boarded ship's "save can't be read" while FTL runs, and shuts the whole room (SpaceDockUI.java:616 on 5.60). Two halves: open the Cargo Bay anyway with the boarded ship out of reach, as while FTL is docked (CargoBayUI.java:378), which can go whenever heromedel says; and find the cause, which needs the station's own log from a run when it happened (`logs/home-planet-<date>-<time>.log` beside the jar, the last eight runs kept: the line starting "Could not read").
 
 ## 3. The design (talked over with heromedel)
 
@@ -87,15 +90,18 @@ These hurt fleets now, so they come first, in 5.x, each with its own test:
   shipyard/                           the ships at the Space Dock (heromedel: "a ships folder, or shipyard, or docking bay")
     <Ship name>.<id>/
       <Ship name>.<id>.xml            everything ours about her: name, id, class, flag (where she is), papers, her
-                                      blueprint's backup copy, marks, the station's data
+                                      blueprint's backup copy, marks, the station's data; her owners (original,
+                                      previous, now) and her past names, oldest first
       <Ship name>.<id>.sav            her FTL save, exactly as FTL wrote it (FTL's state is never rebuilt from ours)
       <Ship name>.<id>.log            her log (append-only, two-line entries)
-      versions/                       her kept versions (special copies kept apart: never pruned with the rest)
+      versions/                       her kept versions, named by their stamp alone (20261007-043142.sav); special
+                                      copies keep a short prefix (victory-, final-battle-, cloud-) and are never
+                                      pruned with the rest
       <Crew name>.<id>.xml            each crew member aboard: identity, career, rank, served-with, her log, and a backup
                                       of her skills and stats as last seen
   junkyard/                           the same shape, for hulls in the Junkyard
-  cargobay/
-    cargobay.xml                      what the hold holds: scrap, fuel, missiles, drone parts, weapons, drones, augments,
+  cargohold/                          the storage (the Cargo Bay is the screen; the Cargo Hold is the storage)
+    cargohold.xml                     what the hold holds: scrap, fuel, missiles, drone parts, weapons, drones, augments,
                                       stored systems (no pretend ship)
     storelist.xml                     what the stores at the Space Dock offer (heromedel's name; parts, derelicts)
     crew/                             crew in the Cargo Hold, a file each
@@ -105,20 +111,30 @@ These hurt fleets now, so they come first, in 5.x, each with its own test:
   infirmary/
     infirmary.xml                     who's laid up and until when
     crew/                             crew in the infirmary
-  captives/                           crew held captive, and the ransoms asked (or a section of expeditions: open)
-  memorial/                           everyone who has left, remembered (heromedel: not only the fallen)
+  captives/                           crew held captive, and the ransoms asked (their own folder: a captive is neither
+                                      away nor home)
+  memorials_and_records/              everyone who has left (heromedel's name: the fallen are remembered, and so are
+                                      the retired, the sold and the traded)
     ships/                            ships lost, destroyed, sold, traded, given back, in the museum; each folder as above
     crew/                             crew killed, missing, retired, transferred
   history/                            the station's own logs: station.log (the master log's successor), and the rest
   blueprints/                         every design, free of the ships built from it (each ship also carries her copy)
+  journal/                            the notes of actions under way (§3.2); empty when the station is at rest
   career.xml, reputation.xml, inbox.xml, ...   the career's own state, one file per concern (see §3.6)
+
+<beside the jar>/
+  lore/                               the player-facing words the station writes from data (§3.5): the jar carries the
+                                      defaults, and a copy here wins, entry by entry
 ```
+
+Windows paths stop at 260 characters for many programs, and players browse these folders (Buggy Boy's count: a version of a memorial ship with a 30-character name came to about 246 under a plain Documents folder). So: names in folder and file names are capped at about 32 characters (the full name lives in the xml), versions are named by their stamp alone, and MigT checks that the longest path in a converted fleet stays under a budget (about 150 characters below the saves folder).
 
 ### 3.2 Where a thing is
 
 - **The folder is where it is; the flag in its file says where it should be.** If they ever disagree, the logs settle it (heromedel's redundancy idea). A ship's flag: Space Dock, boarded, Junkyard, memorial with how she left. A crew member's flag: aboard (which ship), Cargo Hold, expedition, infirmary, captive, memorial with how they left.
-- **A move is a rename.** On one drive, moving a file or folder is all-or-nothing, so "Gracie moves to the Cargo Hold" can't half-happen.
-- **Several moves as one action** (a Cargo Bay save, a trade, an expedition's return) are written as a journal note first: what is about to move. The moves are done, then the note is deleted. A note found at start-up is finished, or undone. This replaces today's hand-written undos.
+- **A move is a rename plus a flag edit** (heromedel): the folder goes first, then the flag in the file is set to match. On one drive a rename is all-or-nothing, so the two steps can't be interleaved with another; a folder whose flag disagrees with where it sits is a move that stopped between the two, and the logs settle it.
+- **Every action that moves or writes more than one thing** (a single move, a Cargo Bay save, a trade, an expedition's return) is written as a journal note first: each file once, with one owner (a second, different write to the same file is refused: that is the shape of the vanishing purchase, §2.5 item 1), the moves and the flag edits to come, the real time and the stardate. The steps are done, then the note is deleted. A note found at start-up is finished where it can be, else undone; an entry it then writes keeps the note's own time and stardate and says `finished=startup`, so the Captain's Log never tells a move on the wrong day. This replaces today's hand-written undos.
+- **Renames retry.** On Windows a folder rename is refused while any file inside it is open (an antivirus scan, a backup or sync program, Explorer's preview); 5.44's `SafeFiles.replace` retries a single file, and the journal retries the same way.
 - **No index is needed** for the lists: listing a folder and reading small XML files is fast, because the heavy FTL save is a separate file read only when she's boarded, traded or opened. (heromedel was uncertain about an index: open.)
 - **Names in folder and file names are for people; the id is the key.** A rename renames the folder; names are cleaned for Windows (`:`, `?` and the like); namesakes stop mattering.
 - **An id is for life**, across fleets and trades: no more new ids when a ship crosses fleets.
@@ -126,7 +142,8 @@ These hurt fleets now, so they come first, in 5.x, each with its own test:
 ### 3.3 Ships
 
 - Her folder holds everything about her; packing her for a trade is zipping her folder (and her crew's files).
-- `continue.sav` is her `.sav` written out on Board, and read back on Dock. Between the two, FTL owns it; the station watches it (as today) and keeps a version at its looks.
+- `continue.sav` is her `.sav` written out on Board, and read back on Dock. Between the two, FTL owns it; the station watches it (as today) and keeps a version at its looks. FTL sometimes removes `continue.sav` while it writes the new one (16 seconds, in heromedel's save logger), and Steam Cloud can bring back an old one: Dock reads it only when it is whole and FTL isn't writing it (as `MainFrame` waits today), and never records her lost from a missing or half-written file while FTL runs.
+- Anything that copies her cargo into an xml (the migration, a trade package, the hold) goes through `SaveHelper.cargo`: when FTL asks which augment to leave behind, it writes the extra one twice in the cargo list, and only that reader hides it. Hide by kind (an augment in the cargo list), never by "there's a second one": two identical drones in cargo are real.
 - Her blueprint's copy travels with her: if `blueprints/` loses the design, she still works and can restore it.
 - Kept versions live in `versions/`; victory and final-battle copies are kept apart and never pruned (bug 3 above).
 
@@ -135,20 +152,24 @@ These hurt fleets now, so they come first, in 5.x, each with its own test:
 - Every crew member has one file, always: identity (id, name, race, looks), career, rank, served-with, their log, and their stats as last seen. The file sits wherever they are.
 - **While aboard the ship FTL is flying**, FTL changes their skills and health inside her `.sav`; their file's copy is refreshed from it at each look. Everywhere else, their file is the authority.
 - Moving a crew member is moving their file; their history goes with them, unbroken.
-- The crew register as it is now (crew.txt, matching by looks and record) becomes the migration's job only: once every crew member has a file with an id written into their save's data, matching by looks is no longer needed. (How the id survives inside an FTL save: open, see §6.)
+- The crew register as it is now (crew.txt, matching by looks and record) becomes the migration's job only: once every crew member has a file with an id written into their save's data, matching by looks is no longer needed. How the id survives inside an FTL save is decided by a test in FTL itself (Plan Z step 13a) before `CrewStore` is written; if no field survives, the fallback is matching by looks and record only aboard the ship FTL is flying, which is far less than the register does today.
 
 ### 3.5 Logs (the hard rule in CLAUDE.md, "Log lines")
 
 - Every entry is two lines: a **machine line** (real time, stardate, the kind of event, then `key=value` fields with everything the program could need; more data than named is better than missing data), and a **human line** written from it.
 - Values with a space or `|` are quoted: `to="ship:Shippy McShipface.c77a"` (the example in CLAUDE.md needs this fix).
+- **The list of event kinds**, each with its fields, is published first (a home: `docs/EVENTS.md`) and both the writers and the words files are written against it.
 - **One parser** for the whole station turns machine lines into events; the Captain's Log, the Crew Log, the station log, the reputation log and the crew records read events and word them their own way. Nothing parses a human line.
+- **The words live in `lore/`** (heromedel's name), not in Java strings beside the writers: XML files keyed by event kind with `{field}` tokens, one per reader, as heromedel suggested: `lore/logs/captains-log.xml`, `crew-log.xml`, `station-log.xml` (each entry with the rules its view needs: merge, "Then", kinds never told); and the words the station already writes from data, `lore/expeditions.xml` (today's `assignments.txt`), `lore/letters.xml` (`transmissions.txt`), `lore/deeds.xml` (the achievement deeds and rank accolades). McCarthy owns them (step 9a). `docs/LORE_COMPONENTS.md` is the facts file and is never shipped; CLAUDE.md's Layout says so.
+- **An edited `lore/` copy** is read entry by entry. An entry that is broken XML, names a `{field}` that doesn't exist, or breaks a hard rule or a voice rule falls back to the jar's words; the start-up check names the file, the line and the rule; the station always starts, and the player never sees a raw `{token}`.
 - Logs are append-only and never rewritten (today's reputation and voyage logs are rewritten whole on each entry).
-- Until 6.0 lands, new code writes both lines, but readers keep reading the human lines; 6.0 switches every reader at once.
+- Until 6.0 lands, new code writes both lines, but readers keep reading the human lines; 6.0 switches every reader at once. The voyage log keeps writing "Rock" until then: switching to "Rockman" early would make every Rock aboard look lost and rejoined at the first look, because `voyage.txt` still says "(Rock)".
+- **Converting old logs keeps every old human line exactly as it was**; fresh wording is generated only for new entries. Some of those lines are heromedel's own text.
 
 ### 3.6 Everything else in one place each
 
 - **One storage helper** for the small files: read, write (safely), with the defaults; replaces the 37 hand-rolled reads and the 15 `intOf` copies. Each file has one owning class; nothing reads another class's file behind its back.
-- **One home** for race names (FTL's titles: Zoltan, Lanius, Rockman...), ship names with "the", capitalising, prices, crew matching, inventory listing.
+- **One home** for race names, in both forms: the crew member's title ("a Rockman", "a Zoltan", as FTL names them) and the people's name ("the Rock", "Rock pirates", as the lore and the expeditions speak); and one each for ship names with "the", capitalising, prices, crew matching, inventory listing.
 - Crew storage no longer uses the Long Range wire format (the wire format reads and writes crew files instead).
 
 ## 4. Plan Z: Overhaul 6.0
@@ -157,30 +178,35 @@ Lettered Z to stand apart from the day-to-day plans. Steps are grouped in phases
 
 ### Phase 0: fix what the surveys found (5.x, before anything else)
 
-1. The vanishing Cargo Hold purchase: `payBill` uses the shop's copy of the hold when it has one. Test: buy into the hold and pay a Dry Dock bill in one save, while trading with a docked ship; the item is there and paid for.
-2. The Rockman lost in FTL: the voyage log writes FTL's race titles (`Crew.raceTitle`), and the crew register accepts both the old and the new wording. Test: a Rockman lost aboard is KIA.
-3. Pruning: `prune` and `history()` count only ordinary versions; victory, final-battle and cloud copies are kept apart. Test: eleven versions after a victory; the victory copy survives.
-4. The trade that can double a ship: received ships are undone if settling fails (or received only after it). Test: a settle that fails leaves the fleet as before.
-5. The lock order: Reputation never calls into the vault while holding its own lock (read what it needs first). Test: two threads, `reload` and `review`, a thousand times, no hang.
-6. The small ones (the hire backfill, "Lost aboard the X.").
+Done in 5.61 (Cloud-C-BugsandFeedback; main 292ce7d), as Buggy Boy's notes say rather than as version 1 wrote them: the bill taken from the Cargo Bay's own copy of the hold, with a warning when a ship is put into one save twice with different contents (1); "Rock" kept in the voyage log and `fate()` accepting either word (2); only versions named by date and time counted or pruned, the Restore list still showing everything (3); a called-off trade taking back the ships it received, by their trade mark, before sending ours back (4); Reputation locking on the vault, one lock and no order (5); the small ones (6). Cloud-C-Primary-Edit's BugRepro passes on 5.61.
+
+1. ~~The vanishing Cargo Hold purchase.~~ GuiT.
+2. ~~The Rockman lost in FTL.~~ CrewT.
+3. ~~Pruning.~~ VaultT: a victory copy, the waiting final battle copy and a Steam Cloud copy outlive eleven versions.
+4. ~~The trade that can double a ship.~~ CallOffT.
+5. ~~The lock order.~~ LockT.
+6. ~~The small ones.~~
+6a. **The Cargo Bay shut by an unreadable boarded save** (§2.5 item 7), two halves: open the room anyway with her out of reach (whenever heromedel says); find the cause from the station's log of a run when it happened.
 
 ### Phase 1: foundations (no change to what's on disk yet)
 
 7. **The storage helper** (`core/Store` or similar): properties and XML read/write, safe writes, defaults; move every hand-rolled read to it, file by file, each class owning its files.
 8. **The journal** for multi-step actions: write the note, do the steps, delete the note; finish or undo a leftover note at start-up. First users: the Cargo Bay save, scrap and sell, commission.
-9. **The two-line log writer and the one parser**: every `HistoryLog.entry`, `VoyageLog`, `Reputation.entry` and `MasterLog` call writes a machine line and the human line from it. Readers still read the old human lines (§3.5). The parser has its own test with every kind.
-10. **One home each** for race names, "the" ship names, capitalising, prices, crew matching, inventory listing; delete the copies (§3.6).
+9. **The two-line log writer and the one parser**: first the list of event kinds with their fields (`docs/EVENTS.md`), then every `HistoryLog.entry`, `VoyageLog`, `Reputation.entry` and `MasterLog` call writes a machine line and the human line from it. Readers still read the old human lines (§3.5). The parser has its own test with every kind.
+9a. **The words files** (McCarthy): the human lines, the expeditions' words, the letters and the deeds move out of the Java into `lore/` (§3.5), each line reviewed against `docs/LORE_COMPONENTS.md` and the voice rules as it goes; AsgT's checks (every job and band has words, no six words copied from FTL) point at the new files. **The rules test**: one harness test over every words file, every flag value's human line, and the copy in use: no beacon next to a number, never the Rebel Flagship destroyed ("drove the Rebel Flagship off", "went into the final battle"), "the rebellion" and "the rebels" never capitalised, "the Rebel Flagship" the only capitalised Rebel, never "FHP" or "Home World", "The Home Planet Station" and "The Federation Home Planet" with a capital T; the parser's test checks every kind has words. Wording-only work can carry on beside the overhaul once the files exist.
+10. **One home each** for race names (both forms), "the" ship names, capitalising, prices, crew matching, inventory listing; delete the copies (§3.6).
 11. **Delete dead code**: the unused methods, the old Report for Reassignment, and (heromedel's call) the job board.
 12. **Statics and the vault global**: settings into one settings object passed where needed; `Vault.get()` only at the UI's edge; the harness sets settings through it.
 
 ### Phase 2: the new layout, written beside the old
 
 13. The career folder's new tree (§3.1), written by the new storage classes; ship ids kept for life.
+13a. **The crew id test in FTL itself** (Buggy Boy, under Wine; it touches nothing in the repo, so it can run before Phase 1 is finished): list the fields of FTL's crew record the station never uses, put a marker in each, then load, jump, save at the menu, die and clone, rename, visit a store; keep the fields whose marker survives every step. The results, a short page for everyone, decide §3.4 and gate step 15.
 14. **Ships**: `ShipStore` reads and writes a ship folder (her xml, her `.sav`, her log, her versions, her crew files).
 15. **Crew**: `CrewStore` reads and writes crew files; the crew's id is kept with them through FTL (§6, open question 1).
-16. **The Cargo Hold**: `cargobay.xml` and its crew folder replace `storage.sav`; every reader of the hold (the Cargo Bay, trading, rewards, expeditions, ransoms, commissioning, the plea, prices) moves to it. The biggest step.
+16. **The Cargo Hold**: `cargohold.xml` and its crew folder replace `storage.sav`; every reader of the hold (the Cargo Bay, trading, rewards, expeditions, ransoms, commissioning, the plea, prices) moves to it. The biggest step.
 17. **Expeditions, the infirmary and captives** as folders with crew inside.
-18. **The memorial**: departed ships and crew, with how they left.
+18. **Memorials and records**: departed ships and crew, with how they left in the flag.
 19. **Board and Dock** write and read `continue.sav` from a ship's folder; the save watcher and checks work as today.
 
 ### Phase 3: readers switch to events
@@ -199,7 +225,8 @@ Lettered Z to stand apart from the day-to-day plans. Steps are grouped in phases
 
 ### Phase 6: tests
 
-25. **MigT**: a 5.x world (from WorldT, aged by the other tests) converted; every ship, crew member, item and log entry accounted for, and the converted fleet passing every other test.
+25. **MigT**: a 5.x world (from WorldT, aged by the other tests) converted; every ship, crew member, item and log entry accounted for, and the converted fleet passing every other test. Also on aged fleets from Buggy Boy's bench (300-step voyages with trades, renames, namesakes, deaths, strangers and New Journeys), with its ledger (LedgerT) run before and after and compared; the longest path checked against the budget (§3.1); heromedel's own logs as a real-world check of the log conversion, with his permission, kept in a scratchpad and never in the repo.
+25a. **The kill test** (Buggy Boy's bench): the station in its own process, as LinkT runs one, killed at random moments during a Cargo Bay save, a trade and an expedition's return; reopened, the ledger finds every ship, crew member and item exactly once.
 26. Every harness test moves to the new storage; the tests that write side files by name write through the stores.
 27. **LinkT** between a 5.x and a 6.0 station: refused plainly. Between two 6.0 stations: every trade kind.
 28. Tested in FTL itself (Wine): board, play, dock, a crew death and a promotion, through the new folders.
@@ -211,19 +238,20 @@ Lettered Z to stand apart from the day-to-day plans. Steps are grouped in phases
 
 ## 5. Branches and merging
 
-- 6\.0 touches nearly every file. Two sessions editing the same files at once would make merging painful, so: Phase 0 goes ahead on whichever branch owns each bug (heromedel decides: work here, or hand off). Phases 1 to 7 are built on one branch, with the others merging main into it often and keeping their own changes small meanwhile, or pausing feature work during the overhaul (heromedel's call).
+- 6\.0 touches nearly every file. Two sessions editing the same files at once would make merging painful, so: Phases 1 to 7 are built on one branch, with the others merging main into it often and keeping their own changes small meanwhile, or pausing feature work during the overhaul (heromedel's call). Wording-only work (letters, expedition lines, deeds) touches the words files, not storage, so it can carry on beside the overhaul once step 9a has made them. Buggy Boy runs the harness and his bench at the end of each phase and reports, as for merges.
 - Each phase ends merged into main at a version of its own (6.0 phases as 5.9x pre-releases, or a separate 6.0 branch heromedel tests as a whole: heromedel's call).
 - The other sessions' notes below may change the order.
 
 ## 6. Open questions
 
-1. **How a crew member's id survives inside an FTL save.** FTL rewrites the save; a crew member has no spare field we control. Options: match by looks and record at each look (as the crew register does now, but only aboard the flown ship); or store the id in a field FTL keeps but doesn't show (to be found; a guess until tested in FTL).
+1. **How a crew member's id survives inside an FTL save:** answered by step 13a's test, not by guessing.
 2. **An index after all?** The design needs none for speed (§3.2); heromedel was unsure. An index file could still help people browsing the folder.
 3. **The job board (expedition type 1):** keep it, or delete it in Phase 1?
-4. **Captives** as their own folder, or inside expeditions?
+4. **Captives:** their own folder (McCarthy and Buggy Boy agree; in the plan unless heromedel says otherwise).
 5. **One branch for 6.0 or phased merges** (§5)?
-6. **Feature work during the overhaul:** paused, or kept small?
-7. **The ended careers' zips:** converted on opening, or left as 5.x forever?
+6. **Feature work during the overhaul:** paused apart from words (McCarthy and Buggy Boy agree), or kept small?
+7. **The ended careers' zips:** left as 5.x forever (McCarthy and Buggy Boy agree: a closed record; in the plan unless heromedel says otherwise).
+8. **A third round of notes, or straight to Phase 1?** (Cloud-C-Primary-Edit: with three sessions agreeing on nearly everything, a third round would add little.)
 
 ---
 
