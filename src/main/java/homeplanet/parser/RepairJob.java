@@ -304,7 +304,7 @@ public final class RepairJob {
 	public static String patchNote() {
 		if (CompanionMod.inGameData(BLUEPRINT + Retrofit.SUFFIX)) return null;
 		return "The " + NAME + " is built on a blueprint FTL doesn't have yet.\nShe can be repaired and returned at The Home Planet Station as she is.\n"
-				+ "To fly her in FTL, The Home Planet Station must first send the " + CompanionMod.TITLE + " to FTL via Slipstream (Settings > Patch mods).";
+				+ "To fly her in FTL, The Home Planet Station must first send the " + CompanionMod.TITLE + " to FTL via Slipstream (Settings > Mods > Patch mods).";
 	}
 
 	/**

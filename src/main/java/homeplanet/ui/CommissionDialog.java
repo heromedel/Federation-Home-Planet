@@ -452,7 +452,7 @@ public class CommissionDialog extends JDialog {
 		if (!RELIEF.equals(e.id) && (CompanionMod.isRemodelId(e.id) || e.id.startsWith("PLAYER_SHIP_DESIGN_")) && !CompanionMod.inGameData(e.id)
 				&& !HomePlanet.confirmNo(this, "FTL doesn't have " + e.label.replace(" - not in FTL yet", "") + "'s blueprint yet, as it is now.\n\n"
 				+ "You can commission her all the same: she waits at the Space Dock, and can't fly until The Home Planet Station sends the "
-				+ homeplanet.parser.Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Patch mods).\n\nCommission her anyway?", "Commission Ship")) return;
+				+ homeplanet.parser.Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Mods > Patch mods).\n\nCommission her anyway?", "Commission Ship")) return;
 		SavedGameState s;
 		try {
 			s = make(e.id, name, chosenDifficulty(), rng);

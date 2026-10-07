@@ -83,7 +83,7 @@ public final class BuildDialog extends JDialog {
 
 		// what Build does
 		List<String> does = new ArrayList<String>();
-		does.add("Blueprint " + bpId + " (layout " + DesignExport.layoutId(d) + ") goes into the " + homeplanet.parser.CompanionMod.TITLE + ", which then needs sending to FTL via Slipstream (Settings > Patch mods).");
+		does.add("Blueprint " + bpId + " (layout " + DesignExport.layoutId(d) + ") goes into the " + homeplanet.parser.CompanionMod.TITLE + ", which then needs sending to FTL via Slipstream (Settings > Mods > Patch mods).");
 		if (snapshot != null && DesignExport.changesBlueprint(snapshot, d)) {
 			List<String> ships = DesignDialog.shipsUsing(DesignExport.bpId(snapshot));
 			if (!ships.isEmpty()) does.add("She was built before (v" + snapshot.version + ") and " + (ships.size() == 1 ? "1 ship flies it" : ships.size() + " ships fly it")

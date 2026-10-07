@@ -295,7 +295,7 @@ class DryDockShop {
 			this.e = e;
 			String why = e.kind == Kind.SYSTEM ? systemReason(e.id) : e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(bay.currentSave, e.id)
 					: e.kind == Kind.CREW ? crewReason(e.id) : null;
-			boolean order = e.kind == Kind.SYSTEM && why == null && bay.systems.pastLimit(e.id); // past FTL's System Limit: a custom work order too
+			boolean order = e.kind == Kind.SYSTEM && why == null && !toStorage && bay.systems.pastLimit(e.id); // past FTL's System Limit: a custom work order too; the hold has no limit (5.79: its Buy was greyed by the picked ship's)
 			int cost = e.price + (order ? homeplanet.core.Economy.workOrderScrap() : 0);
 			boolean repShort = order && bay.systems.repHave() < homeplanet.core.Economy.workOrderRep();
 			can = why == null && cost <= scrap && !repShort;

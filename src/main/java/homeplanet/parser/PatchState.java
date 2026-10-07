@@ -56,7 +56,7 @@ public final class PatchState {
 		}
 		if (mine == null) return ((DefaultDataManager) dm).shipInGameData(id); // not the station's blueprint: the game's own, or nobody's
 		String game = block(gameText("data/" + file), id);
-		if (game == null || !norm(game).equals(norm(mine))) return false;
+		if (game == null || !sameXml(game, mine)) return false;
 		// her own layout, chassis and pictures, where she has them
 		CompanionMod.Remodel r = CompanionMod.find(remodels, id);
 		if (r != null && CompanionMod.ownLayout(r)) {
@@ -75,7 +75,8 @@ public final class PatchState {
 	private static boolean sameText(String path, String mine) {
 		if (mine == null) return false;
 		String game = gameText(path);
-		return game != null && norm(game).equals(norm(mine));
+		if (game == null) return false;
+		return path.endsWith(".xml") ? sameXml(game, mine) : norm(game).equals(norm(mine));
 	}
 	private static boolean samePictures(ShipDesign d) {
 		try {
@@ -108,6 +109,55 @@ public final class PatchState {
 	/** Comments and whitespace aside. */
 	static String norm(String s) {
 		return s.replaceAll("<!--[\\s\\S]*?-->", "").replaceAll("\\s+", " ").trim();
+	}
+	/**
+	 * The same XML however it's written (5.79): Slipstream reads each file it patches and writes it back in its own style
+	 * ("<x />" for "<x/>", amount="10" for amount ="10", "&gt;" for ">" in text), so the station's text and the patched
+	 * game's never matched and every retrofitted ship read as unpatched, patch as you might (heromedel, 5.70). Elements,
+	 * attributes and text are compared; comments and the spaces between elements aren't. If either side won't parse,
+	 * the text decides as before (comments and whitespace aside).
+	 */
+	static boolean sameXml(String a, String b) {
+		String ca = canonical(a), cb = canonical(b);
+		if (ca == null || cb == null) return norm(a).equals(norm(b));
+		return ca.equals(cb);
+	}
+	/** Elements in order, each with its attributes sorted and its text trimmed; null if it isn't XML. */
+	private static String canonical(String xml) {
+		try {
+			javax.xml.parsers.DocumentBuilderFactory f = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+			f.setIgnoringComments(true);
+			try { f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); } catch (Exception e) { } // no outside entities in a game file
+			javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
+			b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() { // quiet: a file that won't parse is answered by the text
+				@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
+			});
+			String body = xml.replaceFirst("^\\s*<\\?xml[^>]*\\?>", ""); // FTL's files may hold several elements: one root round them
+			org.w3c.dom.Document d = b.parse(new org.xml.sax.InputSource(new java.io.StringReader("<r>" + body + "</r>")));
+			StringBuilder sb = new StringBuilder();
+			canonical(d.getDocumentElement(), sb);
+			return sb.toString();
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	private static void canonical(org.w3c.dom.Element e, StringBuilder sb) {
+		sb.append('<').append(e.getTagName());
+		java.util.TreeMap<String, String> attrs = new java.util.TreeMap<String, String>();
+		org.w3c.dom.NamedNodeMap at = e.getAttributes();
+		for (int i = 0; i < at.getLength(); i++) attrs.put(at.item(i).getNodeName(), at.item(i).getNodeValue());
+		for (Map.Entry<String, String> a : attrs.entrySet()) sb.append(' ').append(a.getKey()).append("=\"").append(a.getValue()).append('"');
+		sb.append('>');
+		org.w3c.dom.NodeList kids = e.getChildNodes();
+		for (int i = 0; i < kids.getLength(); i++) {
+			org.w3c.dom.Node n = kids.item(i);
+			if (n.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) canonical((org.w3c.dom.Element) n, sb);
+			else if (n.getNodeType() == org.w3c.dom.Node.TEXT_NODE || n.getNodeType() == org.w3c.dom.Node.CDATA_SECTION_NODE) {
+				String t = n.getNodeValue().replaceAll("\\s+", " ").trim();
+				if (!t.isEmpty()) sb.append('"').append(t).append('"');
+			}
+		}
+		sb.append("</").append(e.getTagName()).append('>');
 	}
 
 	private static File datFileOf() {

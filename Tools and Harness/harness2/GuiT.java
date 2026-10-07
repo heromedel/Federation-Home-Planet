@@ -204,6 +204,43 @@ public class GuiT {
   Setup.chk("X: Install fits it for the store's price and 100", shown.size() == 2 && Integer.valueOf(7).equals(r[4]) && Integer.valueOf(1).equals(r[5]));
   Setup.chk("X: Save writes her so", Boolean.TRUE.equals(r[6]) && saved.getScrapAmt() == 7 && level(saved, HACK) == 1 && SaveHelper.systemCount(saved) == 9);
 
+  // a system she hasn't got, bought with the Cargo Hold's scrap (5.79): FTL's System Limit is a ship's, never the hold's,
+  // but the row priced in her custom work order and greyed Buy out (another player's report, 5.26)
+  {
+   SavedGameParser.SavedGameState g2 = v.readCopy(b).save;
+   SavedGameParser.StoreState st2 = new SavedGameParser.StoreState(); SavedGameParser.StoreShelf sh2 = new SavedGameParser.StoreShelf();
+   SavedGameParser.StoreItem again = new SavedGameParser.StoreItem("mind"); again.setAvailable(true);
+   sh2.setItemType(SavedGameParser.StoreItemType.SYSTEM); sh2.addItem(again); st2.addShelf(sh2);
+   g2.getBeaconList().get(g2.getCurrentBeaconId()).setStore(st2);
+   v.write(b, g2);
+  }
+  final int mindPrice = DataManager.get().getSystem("mind").getCost();
+  hold(v, mindPrice + 3); // the store's price, not a work order's more
+  shown.clear(); optionsShown.clear(); defaults.clear(); presses.clear();
+  presses.addAll(Arrays.asList(0, 0));
+  final Object[] h = new Object[6];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   CargoBayUI bay = f.cargoBay;
+   bay.init();
+   Object shop = field(bay, CargoBayUI.class, "shop");
+   java.lang.reflect.Field ts = shop.getClass().getDeclaredField("toStorage"); ts.setAccessible(true); ts.set(shop, true);
+   call(shop, shop.getClass(), "rebuild", new Class<?>[0]);
+   Object hack = null;
+   for (Object e : (List<?>) call(shop, shop.getClass(), "buildEntries", new Class<?>[0])) if ("mind".equals(field(e, e.getClass(), "id"))) hack = e;
+   for (Component c : ((JComponent) field(shop, shop.getClass(), "content")).getComponents()) {
+    if (!c.getClass().getSimpleName().equals("StoreRow")) continue;
+    Object e = field(c, c.getClass(), "e");
+    if ("mind".equals(field(e, e.getClass(), "id"))) { h[0] = field(c, c.getClass(), "can"); h[1] = ((JComponent) c).getToolTipText(); }
+   }
+   if (hack == null) return;
+   call(shop, shop.getClass(), "buy", new Class<?>[] {hack.getClass()}, hack);
+   SavedGameParser.SavedGameState hs = (SavedGameParser.SavedGameState) call(shop, shop.getClass(), "resolve", new Class<?>[] {Ship.class}, v.storage());
+   h[2] = hs.getPlayerShip().getScrapAmt();
+   h[3] = bay.saveAll();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("X: for the Cargo Hold, her past the System Limit, a Mind Control (not hers) can be bought: no work order on the row", Boolean.TRUE.equals(h[0]) && h[1] != null && !String.valueOf(h[1]).toLowerCase().contains("work order"));
+  Setup.chk("X: bought for the store's price alone, and saved", Integer.valueOf(3).equals(h[2]) && Boolean.TRUE.equals(h[3]) && v.storageScrap() == 3);
+
   // from the Cargo Bay: a Mind Control past the limit, then a Clone Bay for her Medbay
   SafeFiles.writeText(v.systemsFile(), "# stored\nmind 2\nclonebay\n", false);
   hold(v, 150);
@@ -311,6 +348,10 @@ public class GuiT {
  /** A damaged system stored from the Cargo Bay keeps its broken bars, and comes aboard again with them. */
  static void damaged(final MainFrame f) throws Exception {
   final Vault v = Vault.get();
+  // a retrofitted ship aboard, whose systems can come off: which ship the earlier steps leave aboard changed when the
+  // Space Dock went to listing by name (5.69), and a plain one's are all standard equipment
+  if (!v.boarded().save().getPlayerShipBlueprintId().endsWith(Retrofit.SUFFIX))
+   for (Ship s : v.docked()) { SavedGameParser.SavedGameState sg = s.save(); if (sg != null && sg.getPlayerShipBlueprintId().endsWith(Retrofit.SUFFIX)) { v.board(s); break; } }
   Vault.Copy c = v.readCopy(v.boarded());
   ShipState bs = c.save.getPlayerShip();
   final SavedGameParser.SystemType[] pick = new SavedGameParser.SystemType[1];
@@ -320,7 +361,11 @@ public class GuiT {
    if (pick[0] != null || st == null || st.getCapacity() < 2 || t == SavedGameParser.SystemType.WEAPONS || t == SavedGameParser.SystemType.DRONE_CTRL || t == SavedGameParser.SystemType.CLONEBAY || t == SavedGameParser.SystemType.MEDBAY) continue;
    if (call(null, sp, "refitReason", new Class<?>[] {ShipState.class, SavedGameParser.SystemType.class}, bs, t) == null) pick[0] = t;
   }
-  if (pick[0] == null) { Setup.chk("R: a system on her that can be stored", false); return; }
+  if (pick[0] == null) { // which ship, and why none of hers can go
+   StringBuilder why = new StringBuilder();
+   for (SavedGameParser.SystemType t : SavedGameParser.SystemType.values()) { SavedGameParser.SystemState st = bs.getSystem(t); if (st != null && st.getCapacity() > 0) why.append("; ").append(t).append(' ').append(st.getCapacity()).append(": ").append(call(null, sp, "refitReason", new Class<?>[] {ShipState.class, SavedGameParser.SystemType.class}, bs, t)); }
+   Setup.chk("R: a system on her that can be stored (" + v.boarded().name + ", " + c.save.getPlayerShipBlueprintId() + why + ")", false); return;
+  }
   final int level = bs.getSystem(pick[0]).getCapacity();
   bs.getSystem(pick[0]).setDamagedBars(1); bs.getSystem(pick[0]).setPower(0);
   v.begin().put(v.boarded(), c.save, c.hash).commit();
@@ -594,10 +639,10 @@ public class GuiT {
   int free = Expeditions.holdCrew(v).size();
   shown.clear(); presses.clear(); presses.add(0);
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
-   call(null, Class.forName("homeplanet.ui.ExpeditionsDialog"), "afterJob", new Class<?>[] {Component.class}, f.spaceDock);
+   call(f.spaceDock, SpaceDockUI.class, "timeRound", new Class<?>[] {boolean.class}, false); // the station's round (the job board's afterJob went with it at 5.67)
   } catch (Exception e) { throw new RuntimeException(e); } } });
   boolean word = false; for (String t : shown) if (t.contains(hurt.getName()) && t.contains("out of the infirmary")) word = true;
-  Setup.chk("X: between jobs, " + hurt.getName() + "'s time up: out of the infirmary with the pop-up, free to send again (" + free + " -> " + Expeditions.holdCrew(v).size() + ")",
+  Setup.chk("X: at the station's round, " + hurt.getName() + "'s time up: out of the infirmary with the pop-up, free to send again (" + free + " -> " + Expeditions.holdCrew(v).size() + ")",
     word && Expeditions.holdCrew(v).size() == free + 1 && Expeditions.infirmary(v).isEmpty());
  }
  /** With the inbox off, a ransom comes up at the Space Dock: Pay brings them home. */

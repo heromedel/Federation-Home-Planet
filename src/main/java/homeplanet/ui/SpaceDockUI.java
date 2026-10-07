@@ -1600,7 +1600,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		SavedGameState sgs = ship.save();
 		if (sgs == null) {
 			JOptionPane.showMessageDialog(this, "The Home Planet Station can't read " + ship.name + "'s save:\n" + ship.readError()
-					+ (Retrofit.missingBlueprints(ship.file()).isEmpty() ? "" : "\n\nShe can't fly until The Home Planet Station sends the " + Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Patch mods)."),
+					+ (Retrofit.missingBlueprints(ship.file()).isEmpty() ? "" : "\n\nShe can't fly until The Home Planet Station sends the " + Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Mods > Patch mods)."),
 					"Ship's report", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}

@@ -491,10 +491,15 @@ public class Slipstream {
 	public static void restart() {
 		try {
 			File jar = new File(HomePlanet.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-			ProcessBuilder pb = new ProcessBuilder(javaExe(), "-jar", jar.getAbsolutePath());
+			List<String> cmd = new ArrayList<String>(java.util.Arrays.asList(javaExe(), "-jar", jar.getAbsolutePath()));
+			cmd.addAll(HomePlanet.startArgs); // a second station comes back as itself
+			cmd.add("--restarted");
+			ProcessBuilder pb = new ProcessBuilder(cmd);
 			pb.directory(new File(".").getAbsoluteFile().getParentFile());
+			StationLock.letGo(); // the saves folder free before the new one looks (5.79: it found it taken and said "already open")
 			pb.start();
 		} catch (Exception e) {
+			if (HomePlanet.save_location != null) StationLock.claim(HomePlanet.save_location); // still open here: the folder ours again
 			log.warn("Could not restart", e);
 			JOptionPane.showMessageDialog(null, "The Home Planet Station systems were unable to reboot by themselves. Please start it again.", "Restart", JOptionPane.WARNING_MESSAGE);
 			return;

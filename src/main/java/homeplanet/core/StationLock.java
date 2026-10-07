@@ -33,14 +33,32 @@ public final class StationLock {
 	private static File held;
 
 	/** Claims this saves folder for this station, letting go of the one claimed before: false if another copy has it. */
-	public static synchronized boolean claim(File saves) {
+	public static boolean claim(File saves) { return claim(saves, true); }
+	/**
+	 * {@link #claim}, asked again for up to {@code ms} while another copy still has the folder: a station started by
+	 * Restart, while the one that started it closes (5.79).
+	 */
+	public static boolean claimWaiting(File saves, long ms) {
+		long end = System.currentTimeMillis() + ms;
+		while (System.currentTimeMillis() < end) {
+			if (claim(saves, false)) return true;
+			try { Thread.sleep(250); } catch (InterruptedException e) { break; }
+		}
+		return claim(saves, true);
+	}
+	/**
+	 * Lets go of the saves folder now, ahead of closing: Restart starts the new station before this one closes, and the
+	 * new one found the folder still taken and stopped with "already open" (heromedel, 5.61).
+	 */
+	public static synchronized void letGo() { release(); }
+	private static synchronized boolean claim(File saves, boolean say) {
 		File dir = folder(saves);
 		if (dir.equals(held)) return true;
 		FileChannel ch = null;
 		try {
 			ch = FileChannel.open(new File(dir, FILE).toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 			FileLock l = ch.tryLock(AT, 1, false);
-			if (l == null) { ch.close(); log.info("{} is open in another copy of the station", dir); return false; }
+			if (l == null) { ch.close(); if (say) log.info("{} is open in another copy of the station", dir); return false; }
 			release();
 			channel = ch; lock = l; held = dir;
 			try { ch.truncate(0); ch.write(ByteBuffer.wrap(NOTE.getBytes(StandardCharsets.UTF_8))); }

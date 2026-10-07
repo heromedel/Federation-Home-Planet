@@ -281,7 +281,7 @@ public class SystemsPanel {
 		layoutLbl.setText("Layout:  " + txt + (inGame ? "" : "  (not patched in)") + (retro ? "   ·   retrofitted: any system can be stored" : ""));
 		layoutLbl.setColor(inGame ? CargoParts.TEXT : CargoParts.ORANGE);
 		layoutLbl.setToolTipText(!retro ? "Her systems are where the ship model puts them"
-				: "Blueprint " + id + (inGame ? "" : ". The game data doesn't have it yet: install the mod (Settings > Patch mods) before launching"));
+				: "Blueprint " + id + (inGame ? "" : ". The game data doesn't have it yet: install the mod (Settings > Mods > Patch mods) before launching"));
 		layoutLbl.setBounds(0, y, w, 18);
 		lists.add(layoutLbl);
 		y += 24;
@@ -527,7 +527,7 @@ public class SystemsPanel {
 		if (type == SystemType.MEDBAY) return homeplanet.parser.Retrofit.isRetrofitted(ship) ? null : MEDBAY;
 		if (type == SystemType.CLONEBAY) return hasRoomFor(ship, SystemType.MEDBAY) ? null : STARTING; // storing it leaves a Medbay in the room
 		if (isStarting(ship, type)) {
-			return homeplanet.parser.Retrofit.blankAvailable(ship) ? STARTING + ". Press Retrofit (below) to allow removing it" : STARTING + ". Send the " + homeplanet.parser.Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Patch mods) to allow retrofitting";
+			return homeplanet.parser.Retrofit.blankAvailable(ship) ? STARTING + ". Press Retrofit (below) to allow removing it" : STARTING + ". Send the " + homeplanet.parser.Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Mods > Patch mods) to allow retrofitting";
 		}
 		return null;
 	}
@@ -868,7 +868,7 @@ public class SystemsPanel {
 		boolean undo = homeplanet.parser.Retrofit.isRetrofitted(ship);
 		if (!undo && !homeplanet.parser.Retrofit.blankAvailable(ship)) {
 			JOptionPane.showMessageDialog(bay, "Retrofit needs the " + homeplanet.parser.Retrofit.MOD_NAME + ".\n"
-					+ "Send it to FTL via Slipstream with Settings > Patch mods (it comes with Federation Home Planet), then restart The Home Planet Station.", "Retrofit", JOptionPane.INFORMATION_MESSAGE);
+					+ "Send it to FTL via Slipstream with Settings > Mods > Patch mods (it comes with Federation Home Planet), then restart The Home Planet Station.", "Retrofit", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		if (undo) {

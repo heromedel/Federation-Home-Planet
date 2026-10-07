@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.78";
+	public static final String APP_VERSION = "5.79";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -136,7 +136,13 @@ public class HomePlanet {
 	 * patch, so the in-game check would still think the mod is missing until a restart.
 	 */
 
+	/** The arguments the station was started with, but --restarted: Restart starts the new one with the same (a second station stays one). */
+	public static final java.util.List<String> startArgs = new java.util.ArrayList<String>();
+	/** Started by Restart (5.79): the station that started it may still hold the saves folder a moment. */
+	private static boolean restarted = false;
+
 	public static void main(String[] args) {
+		for (String s : args) { if (s.equals("--restarted")) restarted = true; else startArgs.add(s); }
 		for (int i = 0; i + 1 < args.length; i++) {
 			if (!args[i].equals("--station")) continue;
 			File dir = new File(args[i + 1]).getAbsoluteFile();
@@ -229,7 +235,7 @@ public class HomePlanet {
 			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
 			System.exit(1);
 		}
-		if (!StationLock.claim(save_location)) { // another copy is open on these saves (5.45)
+		if (!(restarted ? StationLock.claimWaiting(save_location, 10000) : StationLock.claim(save_location))) { // another copy is open on these saves (5.45)
 			final String says = StationLock.inUseMessage(save_location);
 			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
 				JOptionPane.showMessageDialog(null, says, "Already open", JOptionPane.WARNING_MESSAGE);
@@ -455,9 +461,17 @@ public class HomePlanet {
 		File cont = new File(save_location, "continue.sav");
 		if (cont.exists()) {
 			List<String> missing = Retrofit.missingBlueprints(cont); // against ftl.dat as it is now (PatchState)
-			if (!missing.isEmpty()) {
-				showErrorDialog("The boarded ship flies on blueprints from the " + Retrofit.MOD_NAME + ", which isn't in FTL yet ("
-						+ String.join(", ", missing) + ").\n\nSend it to FTL via Slipstream first (Settings > Patch mods), or board a different ship.");
+			if (!missing.isEmpty()) { // one blueprint a line, her name first (heromedel, 5.70: the list ran on in one long line)
+				String name = "The boarded ship";
+				try { name = savedGameParser.readSavedGame(cont).getPlayerShipName(); } catch (Exception e) { }
+				StringBuilder sb = new StringBuilder(name + " can't fly yet: FTL doesn't have " + (missing.size() == 1 ? "her blueprint" : "these blueprints") + " from the " + Retrofit.MOD_NAME + ".\n");
+				for (String id : missing) sb.append("\n    ").append(Retrofit.described(id));
+				sb.append("\n\nSend the mod to FTL via Slipstream (Settings > Mods > Patch mods), then launch again. Or board a different ship.");
+				final String says = sb.toString();
+				onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+					JOptionPane.showMessageDialog(null, says, "Launch FTL", JOptionPane.WARNING_MESSAGE);
+					return null;
+				} });
 				return false;
 			}
 		}
