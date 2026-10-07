@@ -75,9 +75,9 @@ it does and CREDITS.md for where the code came from.
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
 - `docs/LORE_COMPONENTS.md` is the facts file (real FTL lore with sources) for checking words against: it is never shipped
   and is not part of the 6.0 `lore/` words folder (`docs/OVERHAUL-6.md` §3.5).
-- Expeditions come in two systems behind `expedition_type` in the cfg (hidden): 2 the crew expeditions (`Assignments`,
-  `docs/ROADMAP.md` 31; the default), 1 the board of jobs (`Expeditions`), 0 hiring alone. They share the infirmary, the captives,
-  the crew picker and the hire button, nothing else: keep them apart.
+- Expeditions: `expedition_type` in the cfg (hidden) is 2, the crew expeditions (`Assignments`, `docs/ROADMAP.md` 31; the
+  default), or 0, hiring alone. The infirmary, the captives and ransoms, and hiring live in `Expeditions`; the old board of
+  jobs that used to be 1 went at 5.67 (heromedel), and 1 reads as 2.
 - **One home each (6.0, step 10):** race names come from `model.Crew` (`raceTitle(id)`: FTL's title, "Rockman"; `racePeople(id)`:
   the people, "Rock"; `peopleOf(shipId)`), "the" before a ship's name from `parser.ShipNames.the`, capitals and a/an from
   `model.Words`, prices from `parser.Pricing`, a ship's gear from `parser.SaveHelper.gear`: never a copy of any of them.

@@ -53,11 +53,11 @@ found again. The harness test CrewT holds it: namesakes sent apart, a rename, a 
 
 - The crew expeditions (`expedition_type` 2, the default) never did: a detail leaves the Cargo Hold's save whole and
   comes back whole (5.00), and the one picked from a list is matched on the whole record (5.33).
-- The old board of jobs (`expedition_type` 1) still keeps the infirmary and an expedition's party by name and race, with
-  the band-aid (`Expeditions.mark`: sex, colouring and service record beside the name, used to pick between namesakes;
-  marked BAND-AID in the code). A real clash there needs two of the same name, race, sex, colouring and record in the
-  hold at once, which in practice means none. Its way out, when that board is next worked on: the laid-up kept out of
-  the hold's save in the infirmary file, as the captives are, so nothing there is matched at all.
+- The infirmary still keeps the laid up by name and race, with the band-aid (`Expeditions.mark`: sex, colouring and
+  service record beside the name, used to pick between namesakes; marked BAND-AID in the code). A real clash there needs
+  two of the same name, race, sex, colouring and record in the hold at once, which in practice means none. Its way out
+  is 6.0's crew files (`docs/OVERHAUL-6.md` §3.4): nothing matched by name at all. The old board of jobs that shared the
+  file went at 5.67.
 - The one-time reading of the old logs when a fleet's register is new (the past only, by name): an old loss is never
   pinned on someone alive now; it gets an entry of its own.
 

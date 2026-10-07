@@ -942,8 +942,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			commissionShip();
 		} else if (o == expeditionsBtn) {
 			if (HomePlanet.expeditionType == 0) ExpeditionsDialog.hire(this);
-			else if (HomePlanet.expeditionType == 2) AssignmentsDialog.open(this);
-			else ExpeditionsDialog.open(this);
+			else AssignmentsDialog.open(this);
 			init(); // every return rebuilds, whatever the window reports
 		} else if (o == salvageBtn) {
 			salvageShip();
