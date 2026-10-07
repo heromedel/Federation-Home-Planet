@@ -151,7 +151,7 @@ public final class Reputation {
 	}
 	/** The Career Reputation Log, oldest first (empty if none yet). */
 	public static String log(Vault v) {
-		File f = new File(v.root, LOG);
+		File f = new File(v.logsDir(), LOG);
 		try { return f.isFile() ? new String(SafeFiles.read(f), StandardCharsets.UTF_8) : ""; }
 		catch (IOException e) { return "The Home Planet Station could not read the reputation log (" + f + "): " + e.getMessage(); }
 	}
@@ -613,7 +613,7 @@ public final class Reputation {
 		StringBuilder sb = new StringBuilder(log(v));
 		sb.append(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date())).append("  ").append(signed(points)).append("  ").append(why).append('\n');
 		if (details != null) for (String d : details) sb.append("  ").append(d).append('\n');
-		try { SafeFiles.writeText(new File(v.root, LOG), sb.toString(), false); }
+		try { SafeFiles.writeText(new File(v.logsDir(), LOG), sb.toString(), false); }
 		catch (IOException e) { log.warn("Could not write the reputation log: {}", e.toString()); }
 		StringBuilder t = new StringBuilder(signed(points) + "  " + why);
 		if (details != null) for (String d : details) t.append("\n").append(d);

@@ -39,21 +39,23 @@ public final class EventLog {
 	private static final String NL = System.getProperty("line.separator");
 	private static final SimpleDateFormat STAMP = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-	public static File file(Vault v) { return new File(v.root, FILE); }
+	public static File file(Vault v) { return new File(v.logsDir(), FILE); }
 
 	/** Writes the event's two lines. Never throws; with no fleet open, nothing is written (the debug log notes it). */
 	public static void write(Vault v, Event e) { write(v, v == null ? null : file(v), e); }
 	/** As above, into another log of the same shape (a ship's own, in her folder); the stardate is the fleet's. */
 	public static void write(Vault v, File to, Event e) {
 		if (v == null) { log.debug("No fleet open for the event {}: {}", e.kind, e.human()); return; }
-		int day = MasterLog.today(v);
-		String stamp;
-		synchronized (STAMP) { stamp = STAMP.format(new Date()); }
+		// an entry about something that happened earlier (a journal note finished at start-up) carries its own time and day, and the columns follow them
+		int day = e.get("day") != null ? dayOf(e.get("day"), MasterLog.today(v)) : MasterLog.today(v);
+		String stamp = e.get("time") != null && e.get("time").matches("\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d") ? e.get("time") : null;
+		if (stamp == null) synchronized (STAMP) { stamp = STAMP.format(new Date()); }
 		String machine = stamp + " | " + (day < 1 ? "prior" : MasterLog.stardate(day)) + " | " + e.kind + " | " + e.fieldText()
 				+ (e.get("day") == null ? " day=" + day : "") + " station=" + HomePlanet.version();
 		String human = e.human().replace('\r', ' ').replace('\n', ' ').trim();
 		append(to, machine + NL + human + NL);
 	}
+	private static int dayOf(String s, int dflt) { try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return dflt; } }
 	private static synchronized void append(File f, String text) {
 		Writer w = null;
 		try {

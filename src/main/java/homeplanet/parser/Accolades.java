@@ -136,8 +136,8 @@ public final class Accolades {
 	static String pick(Vault v, String letterKey, Random rng) {
 		if (v == null) return null;
 		Map<String, String[]> have = new LinkedHashMap<String, String[]>(); // kind -> {ship, n, achievement, model, crew}
-		String rep = text(new File(v.root, "reputation.log"));
-		String hist = text(new File(v.root, "history.log"));
+		String rep = text(new File(v.logsDir(), "reputation.log"));
+		String hist = text(v.historyLog());
 		homeplanet.vault.Ship best = mostJumps(v);
 		int jumps = best == null ? 0 : jumps(v, best);
 		if (jumps >= 2) have.put("ship", new String[] {best.name, Integer.toString(jumps), null, null, null});

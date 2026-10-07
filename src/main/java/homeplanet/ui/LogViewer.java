@@ -41,7 +41,7 @@ final class LogViewer extends JPanel {
 		super(new BorderLayout(0, 6));
 		Vault v = Vault.get();
 		for (String s : Vault.SLOTS) {
-			if (!new File(Vault.rootOf(v.saves, s), "history.log").isFile() && !s.equals(v.slot)) continue;
+			if (!Vault.historyLogIn(Vault.rootOf(v.saves, s)).isFile() && !s.equals(v.slot)) continue;
 			slots.add(s);
 			fleet.addItem(Vault.title(s) + (s.equals(v.slot) ? " (in use)" : ""));
 		}
@@ -143,7 +143,7 @@ final class LogViewer extends JPanel {
 		if (slots.isEmpty()) return;
 		String slot = slots.get(Math.max(0, fleet.getSelectedIndex()));
 		showing.setText("Station log, " + Vault.title(slot));
-		File f = new File(Vault.rootOf(Vault.get().saves, slot), "history.log");
+		File f = Vault.historyLogIn(Vault.rootOf(Vault.get().saves, slot));
 		String text = "";
 		try { if (f.isFile()) text = new String(SafeFiles.read(f), StandardCharsets.UTF_8); }
 		catch (Exception e) { text = "The Home Planet Station could not read " + f + ": " + e.getMessage(); }

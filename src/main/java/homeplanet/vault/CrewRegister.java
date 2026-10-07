@@ -202,7 +202,7 @@ public final class CrewRegister {
 		List<Member> members = members(v);
 		int[] seen = seen(v);
 		int today = MasterLog.today(v);
-		String hist = text(v.historyLog()), master = text(new File(v.root, MasterLog.FILE));
+		String hist = text(v.historyLog()), master = text(new File(v.logsDir(), MasterLog.FILE));
 		int histLen = hist.length(), masterLen = master.length();
 		boolean changed = fresh;
 
@@ -688,7 +688,7 @@ public final class CrewRegister {
 	private static List<String[]> pastEntries(Vault v) {
 		List<String[]> out = new ArrayList<String[]>();
 		String firstReal = null;
-		for (String l : text(new File(v.root, MasterLog.FILE)).split("\r?\n")) {
+		for (String l : text(new File(v.logsDir(), MasterLog.FILE)).split("\r?\n")) {
 			if (!l.startsWith("E\t")) continue;
 			String[] w = l.split("\t", 5);
 			if (w.length < 5) continue;

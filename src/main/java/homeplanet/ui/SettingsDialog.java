@@ -126,7 +126,13 @@ public class SettingsDialog extends JDialog {
 			body.add(dockRow, next(c));
 			directxBox.setToolTipText("<html>FTL draws with Direct3D instead of OpenGL (its own -directx switch).<br>"
 					+ "On some PCs FTL in a window, docked included, loads much faster with it.</html>");
-			body.add(directxBox, next(c));
+			JPanel directxRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+			directxRow.add(directxBox);
+			JLabel directxNote = new JLabel("   (may speed up load times in windowed or docked mode)"); // heromedel, 5.71
+			directxNote.setForeground(MenuTheme.GREY_GREEN);
+			directxNote.setToolTipText(directxBox.getToolTipText());
+			directxRow.add(directxNote);
+			body.add(directxRow, next(c));
 		}
 
 		heading(body, c, "Station");

@@ -113,7 +113,8 @@ public final class MasterLog {
 	 */
 	public static int[] stationDays(File fleetRoot, String historyText) {
 		List<String[]> copies = new ArrayList<String[]>(); // {text, day}
-		File f = new File(fleetRoot, FILE);
+		File f = new File(new File(fleetRoot, "logs"), FILE);
+		if (!f.isFile()) f = new File(fleetRoot, FILE); // a fleet not opened since 5.71 keeps it at the root
 		if (f.isFile()) {
 			try {
 				for (String l : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) {
@@ -160,14 +161,14 @@ public final class MasterLog {
 
 	private static List<String> lines(Vault v) {
 		List<String> out = new ArrayList<String>();
-		File f = new File(v.root, FILE);
+		File f = new File(v.logsDir(), FILE);
 		if (!f.isFile()) return out;
 		try { for (String l : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) if (!l.isEmpty()) out.add(l); }
 		catch (IOException e) { }
 		return out;
 	}
 	private static synchronized void write(Vault v, String line) {
-		File f = new File(v.root, FILE);
+		File f = new File(v.logsDir(), FILE);
 		if (!f.isFile()) append(f, "# The career's master log: D lines (a day the clock counted: real time, day, why) and E lines (an entry a log got: real time, day, which log, what it said)\n", true);
 		append(f, line + "\n", true);
 	}

@@ -30,6 +30,7 @@ so a new kind or field is added here first, by whoever writes it. Started at 5.6
 | `log` | Which of the old logs the entry also went to: `station`, `voyage`, `reputation`, `clock`; none when it went to the event log alone. |
 | `day` | The career's day as a number (the stardate is this, shown). Never in a human line. |
 | `station` | The station's version that wrote it. |
+| `time`, `day` (given by the writer) | An entry about something that happened earlier (a journal note finished at start-up, 5.71): the writer gives the time (`yyyy-MM-dd HH:mm:ss`) and the day it happened, and the entry's own columns follow them instead of the clock. |
 
 A ship is named by `ship=<name>.<id>` with `ship_name` and `ship_id` beside it (and `ship_state` where known). A crew
 member, when crew files come (Phase 2), by `crew=<name>.<id>`; until then by `crew=<name>` and `race`.
@@ -97,6 +98,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `RESTORE` | ship, `why` (`version`, `overwritten`), `from`, `to`, `reputation_back` | "Restored the Kestrel to an earlier version" |
 | `OVERWRITTEN` | ship (the one lost), `versions`, `by`, `by_name`, `by_id`, `by_stranger` (the ship now in continue.sav) | "Kestrel (a3f2) was boarded, and continue.sav is now another ship: ..." |
 | `VAULT` | `what` (`taking_stock`, `adopted_continue`), ship (when adopted), `file`, `detail.n` (the notes) | "taking stock" |
+| `JOURNAL` | `what` (`finished`, `stuck`), `action` (the note's kind: `SAVE`, `BOARD`, `DOCK`, `MOVE_LOGS`), `steps`, `note` (its file), `finished=startup`, `time` and `day` (the note's own), `left_by` (the station's version that wrote the note), `detail.n` (what couldn't be told, when stuck) | "The station finished what it had begun." |
 | `LAYOUT` | `what` (`converted`), `to` (`6.0`), `ships`, `remembered` (ships that had left, now in the memorial), `backup` (the zip beside the fleet's folder) | "The station's records were rearranged: 4 ships and 1 remembered into folders of their own (a copy of the fleet as it was is kept beside it)" |
 | `FINAL_BATTLE` | ship, `copy`, `sector`, `victories_then`, `scores_then` | "Kestrel: the Rebel Flagship is on her way to the last battle. ..." |
 | `VICTORY` | ship, `what` (`rescued`), or from FinalVictory: `victories_then`, `victories_now`, `top_scores`, `after` (the choice), `value` | "Kestrel won the last battle (...)" |

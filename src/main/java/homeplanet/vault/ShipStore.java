@@ -255,6 +255,12 @@ public final class ShipStore {
 	}
 	/** Keeps a copy of her save as a version, named by the stamp (UTC, so the order survives clock changes), a counter after it when two fall in a second. */
 	public static File keepVersion(File folder, byte[] save, String prefix) throws IOException {
+		File f = versionFile(folder, prefix);
+		SafeFiles.write(f, save);
+		return f;
+	}
+	/** The name her next version gets (not written: for a journal note that writes it). */
+	public static File versionFile(File folder, String prefix) throws IOException {
 		File dir = versions(folder);
 		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
 		String stamp;
@@ -271,9 +277,7 @@ public final class ShipStore {
 			if (c > next) next = c;
 			if (c == next && c >= 1) next = c + 1;
 		}
-		File f = new File(dir, base + (next == 1 ? "" : "-" + next) + ".sav");
-		SafeFiles.write(f, save);
-		return f;
+		return new File(dir, base + (next == 1 ? "" : "-" + next) + ".sav");
 	}
 	private static int count(String s) { try { return Integer.parseInt(s); } catch (NumberFormatException e) { return 0; } }
 	private static final java.text.SimpleDateFormat STAMP = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss");

@@ -20,7 +20,7 @@ public class LogT { public static void main(String[] a) throws Exception {
  for (MasterLog.Entry e : days.get(2)) if (e.text.contains("Ash sent to the Nebula")) ash2 = true;
  Setup.chk("S: every station log entry is copied, on its day, with the real time", ash1 && ash2 && days.get(1).get(0).real.matches("\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d"));
  // Prior: no day, 0 or -1 are never in the Captain's Log
- FileOutputStream o = new FileOutputStream(new File(v.root, "master.log"), true);
+ FileOutputStream o = new FileOutputStream(new File(v.logsDir(), "master.log"), true);
  o.write("E\t2026-01-01 00:00:00\t0\tstation\tCREW  zero day\nE\t2026-01-01 00:00:00\t-1\tstation\tCREW  minus day\nE\t2026-01-01 00:00:00\t\tstation\tCREW  no day\nE\tbroken\n".getBytes("UTF-8")); o.close();
  boolean prior = false; for (List<MasterLog.Entry> l : MasterLog.byDay(v).values()) for (MasterLog.Entry e : l) if (e.text.contains(" day")) prior = true;
  Setup.chk("S: an entry with no day, 0 or -1 is Prior: left out", !prior);
@@ -187,7 +187,7 @@ public class LogT { public static void main(String[] a) throws Exception {
   Setup.chk("L: details only when asked: the costs and the reputation", !p.contains("reputation") && !p.contains("scrap") && d.contains("\u22121 reputation") && d.contains("Missiles, 9 scrap"));
   Setup.chk("L: never the letter that tells an expedition again, reputation as its own line, housekeeping, why a day passed, or beacons",
     !p.contains("Expedition Command") && !p.contains("Reputation") && !p.contains(MasterLog.CARGO_BAY) && !p.contains("day of rest") && !p.toLowerCase().contains("beacon"));
-  String raw = new String(SafeFiles.read(new File(v.root, "master.log")), "UTF-8");
+  String raw = new String(SafeFiles.read(new File(v.logsDir(), "master.log")), "UTF-8");
   Setup.chk("L: the master list keeps every raw line", count(raw, "SELL") == 2 && count(raw, "BOARD") == 2 && raw.contains("Expedition Command: Back from Nebula"));
  }
  @SuppressWarnings({"unchecked", "rawtypes"})
