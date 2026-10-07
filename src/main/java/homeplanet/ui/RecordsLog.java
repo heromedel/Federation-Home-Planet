@@ -98,6 +98,43 @@ class RecordsLog extends JComponent implements Scrollable {
 		r.textX = PAD + r.timeW() + TEXT_GAP + 16;
 		return r;
 	}
+	/** A ship's voyage log from her events (5.74), or the empty text if there are none yet. */
+	static RecordsLog voyage(List<homeplanet.core.EventLog.Entry> es, String empty) {
+		StringBuilder sb = new StringBuilder();
+		for (homeplanet.core.EventLog.Entry e : es) sb.append(e.time.length() >= 16 ? e.time.substring(0, 16) : e.time).append("  ").append(e.human).append('\n');
+		return voyage(sb.toString(), empty);
+	}
+	/**
+	 * The station's log from its events (5.74): each entry with its kind as its tag (the reputation log's change as its tag
+	 * for a reputation entry), its headline and its details; told by stardate (no clock times) when asked, else by date.
+	 */
+	static RecordsLog station(List<homeplanet.core.EventLog.Entry> es, String empty, boolean byStardate) {
+		RecordsLog r = new RecordsLog(empty);
+		r.noClock = byStardate;
+		String day = null;
+		for (homeplanet.core.EventLog.Entry e : es) {
+			if (e.kind.equals("LOADED")) continue; // the fleet's listing: the debug log's now (heromedel, 5.53)
+			String heading = byStardate ? "Stardate " + homeplanet.vault.MasterLog.stardate(Math.max(1, e.day)) : e.time.length() >= 10 ? e.time.substring(0, 10) : e.time;
+			if (!heading.equals(day)) {
+				day = heading;
+				Item h = new Item();
+				h.heading = true;
+				h.title = day;
+				r.items.add(h);
+			}
+			Item it = new Item();
+			if (!byStardate) it.time = e.time.length() >= 16 ? e.time.substring(11, 16) : "";
+			boolean rep = e.kind.equals("REPUTATION");
+			it.tag = rep ? homeplanet.vault.Reputation.signed(e.num("points", 0)) : e.kind.replace('_', ' ');
+			it.mark = tagColour(it.tag);
+			it.segs.add(new Seg(rep ? e.human : e.get("headline", e.human), TXT));
+			for (int i = 1; e.get("detail." + i) != null; i++) it.details.add(e.get("detail." + i));
+			r.tagW = Math.max(r.tagW, BOLD_FM.stringWidth(it.tag) + 16);
+			r.items.add(it);
+		}
+		r.textX = PAD + r.timeW() + TEXT_GAP + (r.tagW > 0 ? r.tagW + TEXT_GAP : 0);
+		return r;
+	}
 	/** The station's log (her entries in history.log), or the empty text if there are none. */
 	static RecordsLog station(String text, String empty) { return station(text, empty, null); }
 	/**

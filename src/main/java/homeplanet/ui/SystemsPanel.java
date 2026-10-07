@@ -96,7 +96,7 @@ public class SystemsPanel {
 	SystemsPanel(CargoBayUI bay) { this.bay = bay; }
 
 
-	/** The stored-systems list that goes with the storage hold (storage-systems.txt in the vault). */
+	/** The stored-systems list that goes with the storage hold (systems.txt in the Cargo Hold's folder). */
 	File file() {
 		return bay.homeSave == null ? null : homeplanet.vault.Vault.get().systemsFile();
 	}
@@ -481,8 +481,6 @@ public class SystemsPanel {
 		return level > 0 ? id + " " + level : id;
 	}
 
-	/** True if a system was taken off the ship: then the file is written before the ship, so a failed save can't lose it. */
-	boolean storedSomething() { return storedSomething; }
 	List<String> changes() { return changes; }
 
 	// ---- Rules ----

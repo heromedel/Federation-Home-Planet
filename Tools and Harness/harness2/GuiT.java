@@ -11,9 +11,6 @@ public class GuiT {
  static final List<Object> defaults = new ArrayList<Object>();
  static final List<Object[]> extras = new ArrayList<Object[]>(); // per pop-up: the Info button and the list, if any
  static final LinkedList<Integer> presses = new LinkedList<Integer>();
- /** Each expedition pop-up's close operation (they carry the "homeplanet.expedition" mark), and a hook run once at the first. */
- static final List<Integer> expeditionCloseOps = new ArrayList<Integer>();
- static Runnable atExpedition = null;
 
  public static void main(String[] a) throws Exception {
   File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
@@ -40,7 +37,6 @@ public class GuiT {
   holdAlone(v, f);
   damaged(f);
   folding(f);
-  expedition(f);
   infirmaryBetweenJobs(f);
   liveDock(f);
   ransomPopUp(f);
@@ -295,7 +291,7 @@ public class GuiT {
   Setup.chk("A: the result offers only Accept Bid", optionsShown.get(2).length == 1 && "Accept Bid".equals(String.valueOf(optionsShown.get(2)[0])));
   int bid = Integer.parseInt(shown.get(2).replaceAll("(?s).*highest bid for [^:]*: (\\d+) scrap.*", "$1"));
   Setup.chk("A: she's sold: gone from the fleet, fate SOLD, the bid and her scrap in the Cargo Hold",
-    v.byId(id) == null && new String(SafeFiles.read(new File(new File(v.historyDir(), id), "fate.txt")), "UTF-8").startsWith("SOLD")
+    v.byId(id) == null && new String(SafeFiles.read(new File(v.folderOfId(id), "fate.txt")), "UTF-8").startsWith("SOLD")
     && v.storageScrap() == before + bid + scrapAboard);
   System.out.println("auction: " + name + " for " + bid);
  }
@@ -477,61 +473,6 @@ public class GuiT {
   return null;
  }
 
- /** An expedition played through its pop-ups: crew picked, each event's choice, its outcome, the end; the Cargo Hold paid. */
- static void expedition(final MainFrame f) throws Exception {
-  final Vault v = Vault.get();
-  Vault.Copy c = v.readCopy(v.storage()); ShipState h = c.save.getPlayerShip(); h.getCrewList().clear();
-  for (String race : new String[] {"rock", "human"}) { SavedGameParser.CrewState x = Commission.volunteer(race, new Random(2)); SaveHelper.placeCrew(h, x, true); h.getCrewList().add(x); }
-  h.setScrapAmt(0);
-  v.begin().put(v.storage(), c.save, c.hash).commit();
-  final int beacons = v.beaconsSeen();
-  // a known job in the first place: the Rock shaft, whose first choice always pays
-  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=rescue\n0.event=rock_shaft\n0.until=999999\n0.text=A Rock mining colony has lost a work crew in a shaft collapse.\n"
-    + "1.kind=escort\n1.until=999999\n1.text=b\n2.kind=delivery\n2.until=999999\n2.text=c\n", false);
-  Class<?> k = Class.forName("homeplanet.ui.ExpeditionsDialog");
-  java.lang.reflect.Field rf = k.getDeclaredField("rng"); rf.setAccessible(true); rf.set(null, new Random(8));
-  shown.clear(); optionsShown.clear(); presses.clear();
-  for (int i = 0; i < 30; i++) presses.add(0); // Send them; then each event's first choice; Continue; the message's Close; the end
-  expeditionCloseOps.clear();
-  final Object[] during = new Object[1];
-  final Object[] dlg = new Object[1]; final boolean[] done = {false};
-  final java.awt.Dimension[] jobSize = new java.awt.Dimension[1]; final boolean[] boardUp = {true};
-  atExpedition = new Runnable() { public void run() { try { // a priority message arrives, and a hail, while an expedition is under way
-   boardUp[0] = ((JDialog) dlg[0]).isShowing(); // the board stepped aside
-   for (Window w : Window.getWindows()) if (w instanceof JDialog && w.isShowing() && Boolean.TRUE.equals(((JDialog) w).getRootPane().getClientProperty("homeplanet.expedition"))) jobSize[0] = w.getSize();
-   Class<?> ed = Class.forName("homeplanet.ui.ExpeditionsDialog");
-   java.lang.reflect.Method away = ed.getDeclaredMethod("awayNotice", String.class); away.setAccessible(true);
-   during[0] = away.invoke(null, "Commander Test");
-   homeplanet.comm.Notes.Note n = new homeplanet.comm.Notes.Note(); n.station = "x"; n.title = "Commander Bree"; n.text = "Testing the long range set, over."; n.priority = true; n.replyPort = 0;
-   call(f.comm, LongRangeCommUI.class, "showNote", new Class<?>[] {homeplanet.comm.Notes.Note.class, String.class}, n, "localhost");
-  } catch (Exception e) { throw new RuntimeException(e); } } };
-  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
-   java.lang.reflect.Constructor<?> ctor = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredConstructor(Component.class); ctor.setAccessible(true);
-   dlg[0] = ctor.newInstance(f);
-  } catch (Exception e) { throw new RuntimeException(e); } } });
-  SwingUtilities.invokeLater(new Runnable() { public void run() { try {
-   call(dlg[0], dlg[0].getClass(), "send", new Class<?>[] {int.class}, 0); // signs on: the board closes
-   Object run = field(dlg[0], dlg[0].getClass(), "signedOn");
-   call(null, dlg[0].getClass(), "play", new Class<?>[] {Component.class, Expeditions.Run.class, Vault.class}, f, run, v);
-  } catch (Exception e) { throw new RuntimeException(e); } finally { done[0] = true; } } });
-  for (int t = 0; t < 600 && !done[0]; t++) Thread.sleep(100);
-  presses.clear();
-  boolean picker = !shown.isEmpty() && shown.get(0).contains("Who goes");
-  boolean events = false; for (Object[] o : optionsShown) if (o.length >= 2) events = true;
-  String end = ""; boolean docked = false; // the job's last screen (a priority message may come up after it)
-  for (String t : shown) { if (t.contains("You dig beside")) end = t; if (t.contains("docks at")) docked = true; }
-  Setup.chk("X: the crew picker, then events with their choices (" + shown.size() + " pop-ups)", done[0] && picker && events);
-  Setup.chk("X: the last outcome is the end, no docking screen after it; the Cargo Hold has the scrap (" + v.storageScrap() + "); a beacon passed", end.contains("You receive") && !docked
-    && v.storageScrap() > 0 && v.beaconsSeen() >= beacons + 1);
-  Setup.chk("X: the board steps aside during the job (" + boardUp[0] + "), and a fresh one has a new job in its place", !boardUp[0] && !Expeditions.board(v).get(0).text.startsWith("A Rock mining colony"));
-  Setup.chk("X: the job's window is FTL's event box, sized to its words, not the whole screen (" + jobSize[0] + ")", jobSize[0] != null && jobSize[0].width < 700 && jobSize[0].height < 600);
-  boolean noX = !expeditionCloseOps.isEmpty(); for (int op : expeditionCloseOps) if (op != JDialog.DO_NOTHING_ON_CLOSE) noX = false;
-  Setup.chk("X: the expedition's pop-ups can't be closed, only answered (" + expeditionCloseOps.size() + ")", noX);
-  boolean note = false; for (String t : shown) if (t.contains("Commander Bree, priority")) note = true;
-  Setup.chk("X: a priority message comes through over the expedition, and the expedition carries on after it", note && done[0] && end.contains("You receive"));
-  Object after = null; try { java.lang.reflect.Method away = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredMethod("awayNotice", String.class); away.setAccessible(true); after = away.invoke(null, "Commander Test"); } catch (Exception e) { }
-  Setup.chk("X: a hail during the expedition is told the commander is away (" + during[0] + "); after it, hails are answered as usual", String.valueOf(during[0]).contains("away on an expedition") && after == null);
- }
 
  /**
   * The infirmary in the Cargo Bay: no bar for the whole, green with the rest red for a hurt from the game, purple and full
@@ -693,10 +634,6 @@ public class GuiT {
     if (op == null) continue;
     seen.add(w);
     String title = ((JDialog) w).getTitle();
-    if (Boolean.TRUE.equals(((JDialog) w).getRootPane().getClientProperty("homeplanet.expedition"))) {
-     expeditionCloseOps.add(((JDialog) w).getDefaultCloseOperation());
-     if (atExpedition != null) { Runnable r = atExpedition; atExpedition = null; r.run(); }
-    }
     shown.add(text(op.getMessage()));
     List<JButton> inMessage = op.getMessage() instanceof Container ? all((Container) op.getMessage(), JButton.class) : new ArrayList<JButton>();
     boolean ownButtons = op.getOptions() != null && op.getOptions().length == 0 && !inMessage.isEmpty(); // choices laid out in the message itself

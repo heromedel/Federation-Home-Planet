@@ -150,21 +150,17 @@ final class ReputationLogDialog extends JDialog {
 
 	/** The log, kept to the entries that match the search, the latest in view. */
 	private void fill() {
-		String text = Reputation.log(Vault.get());
+		java.util.List<homeplanet.core.EventLog.Entry> all = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(Vault.get()), "reputation"); // its events (5.74)
 		String q = search.getText().trim().toLowerCase();
-		int entries = 0, shown = 0;
-		StringBuilder out = new StringBuilder(), entry = new StringBuilder();
-		for (String line : text.split("\r?\n")) {
-			if (!line.startsWith("  ")) { // a new entry: the last one goes in if it matched
-				if (entry.length() > 0 && (q.isEmpty() || entry.toString().toLowerCase().contains(q))) { out.append(entry); shown++; }
-				if (entry.length() > 0) entries++;
-				entry.setLength(0);
-			}
-			if (!line.trim().isEmpty()) entry.append(line).append('\n');
+		java.util.List<homeplanet.core.EventLog.Entry> out = new java.util.ArrayList<homeplanet.core.EventLog.Entry>();
+		for (homeplanet.core.EventLog.Entry e : all) {
+			StringBuilder words = new StringBuilder(Reputation.signed(e.num("points", 0))).append(' ').append(e.human);
+			for (int i = 1; e.get("detail." + i) != null; i++) words.append(' ').append(e.get("detail." + i));
+			if (q.isEmpty() || words.toString().toLowerCase().contains(q)) out.add(e);
 		}
-		if (entry.length() > 0) { entries++; if (q.isEmpty() || entry.toString().toLowerCase().contains(q)) { out.append(entry); shown++; } }
+		int entries = all.size(), shown = out.size();
 		count.setText(q.isEmpty() ? entries + (entries == 1 ? " entry" : " entries") : shown + " of " + entries + (entries == 1 ? " entry" : " entries"));
-		scroll.setViewportView(RecordsLog.station(out.toString(), q.isEmpty() ? "Nothing yet: your ships' service will be noted here." : "No entries mention \"" + search.getText().trim() + "\"."));
+		scroll.setViewportView(RecordsLog.station(out, q.isEmpty() ? "Nothing yet: your ships' service will be noted here." : "No entries mention \"" + search.getText().trim() + "\".", false));
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() { scroll.getViewport().revalidate(); javax.swing.JScrollBar b = scroll.getVerticalScrollBar(); b.setValue(b.getMaximum()); }
 		});

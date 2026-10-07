@@ -11,7 +11,7 @@ public class VaultT { public static void main(String[] a) throws Exception {
  v.board(d);
  Setup.chk("boarded swapped", v.boarded() == d && v.byId(bId).state == Ship.State.DOCKED);
  Setup.chk("continue.sav is hers", v.continueFile().isFile() && SafeFiles.hash(v.continueFile()).equals(d.hash));
- Setup.chk("old boarded ship's file is in ships/", new File(v.shipsDir(), bId + ".sav").isFile());
+ Setup.chk("old boarded ship's file is in her shipyard folder", v.fileOf(v.byId(bId)).isFile() && v.fileOf(v.byId(bId)).getParentFile().getParentFile().equals(v.shipyardDir()));
  Setup.chk("her old vault copy went to history", v.history(d).size() == 1);
  Setup.chk("fleet size unchanged", v.fleet().size() == n);
  // write with snapshot
@@ -25,9 +25,9 @@ public class VaultT { public static void main(String[] a) throws Exception {
  v.dock();
  Setup.chk("dock: nobody boarded, continue.sav gone", v.boarded() == null && !v.continueFile().exists() && d.state == Ship.State.DOCKED);
  v.board(d); v.disband();
- Setup.chk("disband: junked", d.state == Ship.State.JUNKED && new File(v.junkyardDir(), dId + ".sav").isFile() && !v.continueFile().exists());
+ Setup.chk("disband: junked", d.state == Ship.State.JUNKED && v.fileOf(d).isFile() && v.fileOf(d).getParentFile().getParentFile().equals(v.junkyardDir()) && !v.continueFile().exists());
  v.salvage(d);
- Setup.chk("salvage: docked again", d.state == Ship.State.DOCKED && new File(v.shipsDir(), dId + ".sav").isFile());
+ Setup.chk("salvage: docked again", d.state == Ship.State.DOCKED && v.fileOf(d).isFile() && v.fileOf(d).getParentFile().getParentFile().equals(v.shipyardDir()));
  v.board(d); v.disband(); v.remove(d, "DESTROY");
  Setup.chk("remove: gone from manifest, history kept", v.byId(dId) == null && v.history(d).size() >= 2);
  // history pruning
@@ -36,11 +36,11 @@ public class VaultT { public static void main(String[] a) throws Exception {
  Setup.chk("history pruned to " + Vault.KEEP, v.history(e).size() == Vault.KEEP);
  // Steam Cloud's copy of a docked ship in continue.sav: set aside in her records, not a second ship
  int before = v.fleet().size();
- SafeFiles.copy(new File(v.shipsDir(), e.id + ".sav"), v.continueFile());
+ SafeFiles.copy(v.fileOf(e), v.continueFile());
  Vault vc = Vault.open(saves); vc.takeStock();
  Setup.chk("cloud copy of a docked ship: set aside, not adopted", vc.boarded() == null && !vc.continueFile().exists() && e.name.equals(vc.takeCloudCopy()) && vc.fleet().size() == before);
  // unknown continue.sav (a new game in FTL): adopted on reload
- SavedGameState other = HomePlanet.savedGameParser.readSavedGame(new File(v.shipsDir(), e.id + ".sav"));
+ SavedGameState other = HomePlanet.savedGameParser.readSavedGame(v.fileOf(e));
  other.getPlayerShip().setScrapAmt(other.getPlayerShip().getScrapAmt() + 1000);
  SaveHelper.writeSavedGame(v.continueFile(), other);
  Vault v3 = Vault.open(saves); v3.takeStock();
@@ -63,15 +63,15 @@ public class VaultT { public static void main(String[] a) throws Exception {
  Setup.chk("storage holds untouched", v5.storage().save() != null);
  // kept versions (5.61): a victory copy and a final battle's waiting copy are never pruned with her ordinary versions
  Ship kv = v5.docked().get(0);
- File kd = v5.historyOf(kv); kd.mkdirs();
- File victory = new File(kd, "victory-20200101-000000.sav"), waiting = new File(kd, "final-battle.sav"), cloud = new File(kd, "cloud-copy-20200101-000000.sav");
+ File kd = ShipStore.versions(v5.historyOf(kv)); kd.mkdirs();
+ File victory = new File(kd, "victory-20200101-000000.sav"), waiting = new File(v5.historyOf(kv), "final-battle.sav"), cloud = new File(kd, "cloud-20200101-000000.sav");
  for (File f : new File[] {victory, waiting, cloud}) { SafeFiles.copy(v5.fileOf(kv), f); f.setLastModified(946684800000L); } // the oldest files there
  for (int i = 0; i < 11; i++) { SavedGameState kg = v5.readCopy(kv).save; kg.getPlayerShip().setScrapAmt(1000 + i); v5.write(kv, kg); }
  int ordinaryLeft = 0; for (File f : kd.listFiles()) if (f.getName().matches("\\d{8}-\\d{6}(-\\d+)?\\.sav")) ordinaryLeft++;
  Setup.chk("V: eleven new versions: the victory copy, the waiting final battle copy and the cloud copy stay; ten ordinary versions (" + ordinaryLeft + ")",
    victory.isFile() && waiting.isFile() && cloud.isFile() && ordinaryLeft == Vault.KEEP);
  boolean special = false; for (File f : v5.history(kv)) if (!f.getName().matches("\\d{8}-\\d{6}(-\\d+)?\\.sav")) special = true;
- int savs = 0; for (File f : kd.listFiles()) if (f.getName().endsWith(".sav")) savs++;
+ int savs = 1; for (File f : kd.listFiles()) if (f.getName().endsWith(".sav")) savs++; // and the waiting copy
  Setup.chk("V: her versions are the ordinary ones; the Records list shows the special copies too (" + v5.history(kv).size() + " of " + v5.kept(kv).size() + ")",
    v5.history(kv).size() == Vault.KEEP && !special && v5.kept(kv).size() == savs && v5.kept(kv).contains(victory) && v5.kept(kv).contains(waiting));
  Setup.done();

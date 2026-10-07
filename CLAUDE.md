@@ -47,6 +47,10 @@ it does and CREDITS.md for where the code came from.
   `docs/CONCERNS.md` lists the design debts talked over (how the station is built, what it costs, what a change would
   take): add to it when one comes up, with the version; read it before planning anything that touches the vault's files
   or how crew are tracked.
+  `docs/OVERHAUL-6.md` is the 6.0 plan (storage, logs and code rebuilt) with every session's notes: read it before planning
+  anything that touches storage or logs, and add thoughts only under your own heading at its end, as it says.
+  `docs/EVENTS.md` lists every event kind the station logs and its fields: anything that writes a log adds its kind there
+  first (the log rule below), and EventT checks the list.
 - **Handoffs:** before fixing a bug, ask heromedel "Would you like me to work on this or prepare a handoff?". A handoff
   is written as `docs/HANDOFF.md` says (the parts in order, and a page template to publish).
 - The version (4B.nn; after 4B.99 comes 5.00, then 5.01 to 5.99, then 6.00) goes up by one only with a commit: `<version>` in `pom.xml` and
@@ -58,6 +62,12 @@ it does and CREDITS.md for where the code came from.
 - `src/main/java/homeplanet/`: the program. `core` (startup, config, Slipstream, music), `ui` (windows),
   `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
   Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`).
+- **A fleet on disk (6.0, since 5.69):** every ship is a folder (`shipyard/<Name>.<id>/`, `junkyard/`, `memorials_and_records/ships/`
+  for the ones that left) with her record as xml, her save, her log and her `versions/`; the Cargo Hold is `cargohold/`; the station's
+  logs are `logs/` (`events.log` is the one every reader reads); `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
+  at the top of `vault/Vault.java`. A 5.x fleet is converted the first time it opens, a zip of it kept beside its folder. There is no
+  index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
+  `vault/Journal`** (a note first, the steps, the note deleted; a note left behind is finished at the next opening): never a hand-written undo.
 - **Long Range Comm.:** stations match on `Session.PROTOCOL`, not the version. Bump it only when an older station
   would trade wrongly; new fields, kinds and package files are ignored by older stations, so adding one is safe.
 - **Traded ships:** anything that rewards or reacts to what a ship has done (events, rewards, letters, achievements)
@@ -69,9 +79,14 @@ it does and CREDITS.md for where the code came from.
 - `src/main/java/net/blerf/ftl`, `net/vhati`: Vhati's save parser and ftl.dat reader (GPL, lightly extended;
   each changed file says so at the top).
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
-- Expeditions come in two systems behind `expedition_type` in the cfg (hidden): 2 the crew expeditions (`Assignments`,
-  `docs/ROADMAP.md` 31; the default), 1 the board of jobs (`Expeditions`), 0 hiring alone. They share the infirmary, the captives,
-  the crew picker and the hire button, nothing else: keep them apart.
+- `docs/LORE_COMPONENTS.md` is the facts file (real FTL lore with sources) for checking words against: it is never shipped
+  and is not part of the 6.0 `lore/` words folder (`docs/OVERHAUL-6.md` §3.5).
+- Expeditions: `expedition_type` in the cfg (hidden) is 2, the crew expeditions (`Assignments`, `docs/ROADMAP.md` 31; the
+  default), or 0, hiring alone. The infirmary, the captives and ransoms, and hiring live in `Expeditions`; the old board of
+  jobs that used to be 1 went at 5.67 (heromedel), and 1 reads as 2.
+- **One home each (6.0, step 10):** race names come from `model.Crew` (`raceTitle(id)`: FTL's title, "Rockman"; `racePeople(id)`:
+  the people, "Rock"; `peopleOf(shipId)`), "the" before a ship's name from `parser.ShipNames.the`, capitals and a/an from
+  `model.Words`, prices from `parser.Pricing`, a ship's gear from `parser.SaveHelper.gear`: never a copy of any of them.
 - **Crew names:** avoiding duplicate names is impossible (heromedel): trades, Rename, FTL's own crew, hiring and
   recruits all make namesakes, down to the same looks. Never plan or test a fix that prevents them; anything that
   tracks crew has to work with namesakes (`docs/CONCERNS.md` 2).
@@ -128,6 +143,23 @@ Three rules with no exceptions, in anything the player sees:
 3. Check any system, outcome or message against `docs/LORE_COMPONENTS.md` (real FTL lore, each fact with its source):
    report any inconsistency to heromedel, and add no new ones. Don't edit that file without his permission; when new
    real FTL lore turns up, offer it to him as a numbered list and ask whether it should be added.
+
+## Log lines (hard rule)
+
+heromedel, 5.57: anything new that writes a log follows this from now on, and the 6.0 storage overhaul brings every
+log to it. Every log entry is two lines:
+
+1. A machine line: real time, stardate, the kind of event, then everything the program could ever need as `key=value`
+   fields: ids, names, races, places and folders, classes, the systems involved, the station's version. The fields
+   listed here are a minimum: more data than the rule names is always better than missing data.
+2. A human line, written from the machine line (never separately, so the two can't disagree): simple, lore-friendly,
+   and following the hard rules above (never a beacon count). Readers (the Captain's Log, the Crew Log, the station
+   log) read the machine lines and word them their own way; nothing parses the human line.
+
+For example:
+
+    2026-10-07 14:02:11 | 1.2.3.4 | CREW_MOVE | crew=Bob.17 race=human sex=male tints=0.2 rank=Sgt. skills=s0:13,s1:0,s2:4,s3:58,s4:0,s5:7 record=repairs:3,kills:12,evasions:0,jumps:41,masteries:2 from=ship:Kestrel.a3f2 from_class=PLAYER_SHIP_HARD from_folder=shipyard/Kestrel.a3f2 to=ship:Shippy McShipface.c77a to_class=PLAYER_SHIP_FED to_folder=shipyard/Shippy McShipface.c77a reason=cargo_bay_save by=player station=6.00
+    Bob was transferred to the Shippy McShipface.
 
 ## Voice (player-facing text)
 

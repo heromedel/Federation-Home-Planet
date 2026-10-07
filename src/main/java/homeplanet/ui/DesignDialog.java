@@ -15,6 +15,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.parser.CompanionMod;
 import homeplanet.parser.DesignExport;
@@ -131,7 +132,8 @@ public class DesignDialog extends ShipEditorDialog {
 		if (!confirmVersion()) return;
 		d.pendingBuild = true;
 		saved = true;
-		HistoryLog.entry("DESIGN", "Built " + d.name + " (" + DesignExport.bpId(d) + (d.pendingVersion > 0 ? ", v" + d.pendingVersion : "") + ")");
+		HistoryLog.entry("DESIGN", "Built " + d.name + " (" + DesignExport.bpId(d) + (d.pendingVersion > 0 ? ", v" + d.pendingVersion : "") + ")", null,
+				Event.of("DESIGN").put("what", "built").put("design", d.name).put("design_id", d.id).put("blueprint", DesignExport.bpId(d)).put("version", d.pendingVersion > 0 ? String.valueOf(d.pendingVersion) : null));
 		dispose();
 	}
 
@@ -153,7 +155,7 @@ public class DesignDialog extends ShipEditorDialog {
 		saved = true;
 		List<String> lines = new ArrayList<String>();
 		lines.add("Rooms " + d.rooms.size() + ", doors " + d.doors.size() + ", systems " + d.systems.keySet());
-		HistoryLog.entry("DESIGN", d.name + " (" + d.id + ")", lines);
+		HistoryLog.entry("DESIGN", d.name + " (" + d.id + ")", lines, Event.of("DESIGN").put("what", "saved").put("design", d.name).put("design_id", d.id).put("rooms", d.rooms.size()).put("doors", d.doors.size()).details(lines));
 		dispose();
 	}
 	/**

@@ -21,9 +21,11 @@ import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.model.Skills;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
@@ -298,7 +300,7 @@ public final class Assignments {
 		Random rng = new Random();
 		for (int i = 0; i < OFFERS; i++) {
 			String s = p.getProperty("offer." + i);
-			if (s != null && now < intOf(p, "offer." + i + ".until", 0)) continue;
+			if (s != null && now < Store.num(p, "offer." + i + ".until", 0)) continue;
 			List<String> taken = new ArrayList<String>();
 			for (int k = 0; k < OFFERS; k++) if (k != i && p.getProperty("offer." + k) != null) taken.add(p.getProperty("offer." + k));
 			if (s != null) taken.add(s); // not the one that just came down or was taken
@@ -340,7 +342,7 @@ public final class Assignments {
 			}
 			long seed = 0;
 			try { seed = Long.parseLong(p.getProperty("away." + i + ".seed", "0")); } catch (NumberFormatException e) { }
-			out.add(new Away(i, p.getProperty("away." + i + ".sector"), intOf(p, "away." + i + ".sentAt", 0), intOf(p, "away." + i + ".until", 0), seed, crew,
+			out.add(new Away(i, p.getProperty("away." + i + ".sector"), Store.num(p, "away." + i + ".sentAt", 0), Store.num(p, "away." + i + ".until", 0), seed, crew,
 					"true".equals(p.getProperty("away." + i + ".ae"))));
 		}
 		return out;
@@ -411,7 +413,8 @@ public final class Assignments {
 			c.save.getPlayerShip().getCrewList().add(x.crew);
 			forget(p, x.index);
 			v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
-			HistoryLog.entry("HIRE", x.name + " (" + race(x.crew) + "), rescued on an expedition, signed on: in the Cargo Hold");
+			HistoryLog.entry("HIRE", x.name + " (" + race(x.crew) + "), rescued on an expedition, signed on: in the Cargo Hold", null,
+				Event.of("HIRE").put("how", "rescued").put("crew", x.name).put("race", race(x.crew)).put("to", "hold"));
 			return;
 		}
 		SavedGameState gs = HomePlanet.savedGameParser.readSavedGame(x.save);
@@ -420,7 +423,8 @@ public final class Assignments {
 		forget(p, x.index);
 		write(v, p);
 		x.save.delete();
-		HistoryLog.entry("EXPEDITION", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), brought home by an expedition, kept: " + (dock ? "at the Space Dock" : "in the Junkyard"));
+		HistoryLog.entry("EXPEDITION", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), brought home by an expedition, kept: " + (dock ? "at the Space Dock" : "in the Junkyard"), null,
+				Vault.shipEvent("EXPEDITION", s).put("what", "prize_ship").put("ship_class", gs.getPlayerShipBlueprintId()).put("to", dock ? "ships" : "junkyard"));
 	}
 	/** No: the recruit goes their way, the ship is left where she lies. */
 	public static synchronized void decline(Vault v, Pending x) throws IOException {
@@ -428,7 +432,8 @@ public final class Assignments {
 		forget(p, x.index);
 		write(v, p);
 		if (x.save != null) x.save.delete();
-		HistoryLog.entry("EXPEDITION", "recruit".equals(x.kind) ? x.name + ", rescued on an expedition, was sent on their way" : x.name + ", brought home by an expedition, was not taken");
+		HistoryLog.entry("EXPEDITION", "recruit".equals(x.kind) ? x.name + ", rescued on an expedition, was sent on their way" : x.name + ", brought home by an expedition, was not taken", null,
+				Event.of("EXPEDITION").put("what", "recruit".equals(x.kind) ? "recruit_declined" : "prize_ship_declined").put("name", x.name));
 	}
 	private static void forget(Properties p, int index) {
 		for (String key : new ArrayList<String>(p.stringPropertyNames())) if (key.startsWith("pending." + index + ".")) p.remove(key);
@@ -500,8 +505,9 @@ public final class Assignments {
 		p.setProperty("offer." + slot + ".until", "0"); p.remove("offer." + slot + ".words"); // comes down now: redrawn, not the same sector, at the next look
 		v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
 		List<String> names = new ArrayList<String>();
-		for (CrewState x : party) names.add(x.getName());
-		HistoryLog.entry("EXPEDITION", String.join(", ", names) + " sent to " + sectorTitle(sector));
+		Event sent = Event.of("EXPEDITION").put("what", "sent").put("sector", sectorTitle(sector)).put("sector_id", sector).put("party", i);
+		for (CrewState x : party) { names.add(x.getName()); sent.put("crew", x.getName()).put("race", race(x)); }
+		HistoryLog.entry("EXPEDITION", String.join(", ", names) + " sent to " + sectorTitle(sector), null, sent);
 	}
 
 	/**
@@ -675,7 +681,7 @@ public final class Assignments {
 		String kind = item.substring(0, colon), n = item.substring(colon + 1);
 		return n + " " + ("parts".equals(kind) ? "drone parts" : kind);
 	}
-	private static String aOrAn(String s) { return (s.isEmpty() ? "" : "aeiouAEIOU".indexOf(s.charAt(0)) >= 0 ? "an " : "a ") + s; }
+	private static String aOrAn(String s) { return homeplanet.model.Words.a(s); }
 
 	/** The report, as heromedel laid it out: the frame, the job line, a hazard, a line per crew member, the prize, the total. Never a roll. */
 	/** heromedel's frame, the first setup line: one of the general ones, and the fallback for every other. */
@@ -876,9 +882,13 @@ public final class Assignments {
 		homeplanet.vault.Reputation.expedition(v, sectorTitle(r.sector) + ", " + jobTitle(r.job), r.scrap, r.dead().size(), takenCount, bad == 0 ? 1 : good == 0 ? -1 : 0);
 		List<String> dead = new ArrayList<String>();
 		for (Fate f : r.dead()) dead.add(f.name());
+		Event back = Event.of("EXPEDITION").put("what", "back").put("sector", sectorTitle(r.sector)).put("sector_id", r.sector).put("job", jobTitle(r.job)).put("job_id", r.job)
+				.put("scrap", r.scrap).put("prize", r.prize).put("prize_detail", r.prizeDetail).put("captured", takenCount).put("good", good).put("bad", bad);
+		for (String x : a.names()) back.put("crew", x);
+		for (String x : dead) back.put("killed", x);
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
 				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead))
-				+ fatesNamed(r, true) + fatesNamed(r, false));
+				+ fatesNamed(r, true) + fatesNamed(r, false), null, back);
 		if (HomePlanet.immersiveNotifications()) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text);
 		return new Report(r.sector, text, a.names(), faces);
 	}
@@ -921,29 +931,12 @@ public final class Assignments {
 
 	// ---- the file ----
 
-	private static Properties read(Vault v) {
-		Properties p = new Properties();
-		File f = file(v);
-		if (!f.isFile()) return p;
-		try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
-	private static Properties readStrict(Vault v) throws IOException {
-		Properties p = new Properties();
-		File f = file(v);
-		if (f.isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8)));
-		return p;
-	}
-	private static byte[] bytes(Properties p) throws IOException {
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, NOTE);
-		return w.toString().getBytes(StandardCharsets.UTF_8);
-	}
-	private static void write(Vault v, Properties p) throws IOException { SafeFiles.writeText(file(v), new String(bytes(p), StandardCharsets.UTF_8), false); }
-	private static int intOf(Properties p, String key, int dflt) {
-		try { return Integer.parseInt(p.getProperty(key, "").trim()); } catch (NumberFormatException e) { return dflt; }
-	}
+	private static Properties read(Vault v) { return Store.read(file(v)); }
+	/** The file as it stands, read without this class's lock (the crew register, taking stock, never takes it). */
+	public static Properties asIs(Vault v) throws IOException { return Store.load(file(v)); }
+	private static Properties readStrict(Vault v) throws IOException { return Store.load(file(v)); }
+	private static byte[] bytes(Properties p) throws IOException { return Store.bytes(p, NOTE); }
+	private static void write(Vault v, Properties p) throws IOException { Store.write(file(v), p, NOTE); }
 	/** Every sector's job weights total the same (for tests). */
 	public static int weightTotal(String sector) { int t = 0; for (Object[] j : JOBS) t += jobWeight(sector, (String) j[0]); return t; }
 	/** The sector ids (for tests). */

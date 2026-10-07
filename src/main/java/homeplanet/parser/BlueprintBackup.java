@@ -9,6 +9,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.vault.Vault;
@@ -112,6 +113,6 @@ public final class BlueprintBackup {
 	private static void restored(String bpId) {
 		if (!told.add(bpId)) return;
 		log.warn("Blueprint {} was missing from the station's files: restored from its backup", bpId);
-		HistoryLog.entry("BLUEPRINT", bpId + " restored from its backup (a ship still needs it)");
+		HistoryLog.entry("BLUEPRINT", bpId + " restored from its backup (a ship still needs it)", null, Event.of("BLUEPRINT").put("what", "restored_from_backup").put("blueprint", bpId));
 	}
 }

@@ -35,6 +35,7 @@ import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.core.GameGuard;
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.model.Items;
@@ -488,7 +489,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 
 	private boolean askingAboutStranger = false;
-	private static String cap(String s) { return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
+	private static String cap(String s) { return homeplanet.model.Words.cap(s); }
 	/** The offer about a stranger's achievements and unlocks was put off (closed): asked again at the next start. */
 	private boolean profileAsked = false;
 	/** What came into FTL's profile while an uncommissioned ship was boarded: heromedel's offer to take it back out (5.55). */
@@ -515,7 +516,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			File backup = homeplanet.parser.UnlockGrants.removeFromProfile(keys);
 			homeplanet.parser.UnlockGrants.strangersAnswered(keys);
 			log.info("FTL profile backed up before the removal: {}", backup);
-			HistoryLog.entry("PROFILE", "Removed from FTL's profile: " + String.join(", ", names));
+			HistoryLog.entry("PROFILE", "Removed from FTL's profile: " + String.join(", ", names), null, Event.of("PROFILE").put("what", "removed").put("removed", String.join(", ", names)).put("keys", String.join(", ", keys)));
 			JOptionPane.showMessageDialog(null, "Removed from FTL's profile. A backup was made first: " + backup.getName(), "Achievements and unlocks", JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not change FTL's profile:\n" + e.getMessage() + "\nNothing was removed.");
@@ -941,8 +942,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			commissionShip();
 		} else if (o == expeditionsBtn) {
 			if (HomePlanet.expeditionType == 0) ExpeditionsDialog.hire(this);
-			else if (HomePlanet.expeditionType == 2) AssignmentsDialog.open(this);
-			else ExpeditionsDialog.open(this);
+			else AssignmentsDialog.open(this);
 			init(); // every return rebuilds, whatever the window reports
 		} else if (o == salvageBtn) {
 			salvageShip();
@@ -1557,7 +1557,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			back = Vault.get().recover(d);
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not recover " + d.name + ":\n" + e.getMessage()
-					+ "\n\nHer records are still in " + d.last.getParentFile());
+					+ "\n\nHer records are still in " + d.folder);
 			init();
 			return;
 		}
@@ -1625,7 +1625,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("She could not be renamed; her save could not be written:\n" + e);
 			return;
 		}
-		HistoryLog.entry("RENAME", oldName + " -> " + newName + "  (" + ship.id + ")");
+		HistoryLog.entry("RENAME", oldName + " -> " + newName + "  (" + ship.id + ")", null, Vault.shipEvent("RENAME", ship).put("from", oldName).put("to", newName));
 		JOptionPane.showMessageDialog(null, oldName + " is now known as " + newName + ".", "Rename Ship", JOptionPane.INFORMATION_MESSAGE);
 		init();
 	}
@@ -1780,7 +1780,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault.get().write(ship, gs);
 			Vault.get().setOut(ship, gs, homeplanet.vault.VoyageLog.NEW_JOURNEY); // at The Home Planet Station until she jumps
-			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + RepPay.words(pay) + (pay[0] > 0 ? " (the scrap from the Cargo Hold)" : "") : ""));
+			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + RepPay.words(pay) + (pay[0] > 0 ? " (the scrap from the Cargo Hold)" : "") : ""), null,
+					Vault.shipEvent("NEW_JOURNEY", ship).put("difficulty", options[choice]).put("fee", fee).put("paid", fee > 0 ? RepPay.words(pay) : null));
 		} catch (Exception e) {
 			ship.invalidate();
 			String refund = "";
@@ -1904,7 +1905,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The order to scrap was called off. Nothing was changed:\n" + e);
 			return;
 		}
-		HistoryLog.entry("SCRAP", name + " stripped into storage, hull broken up", scrapped);
+		HistoryLog.entry("SCRAP", name + " stripped into storage, hull broken up", scrapped, Event.of("SCRAP").put("ship_name", name).put("stripped", strip).put("to", "hold").details(scrapped));
 		if (strip && pay[1] > 0) homeplanet.vault.Reputation.spend(Vault.get(), pay[1], "Stripping " + name + "'s systems when she was scrapped");
 		init();
 	}
@@ -1991,7 +1992,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The sale of " + name + " was called off. Nothing was changed:\n" + e);
 			return;
 		}
-		HistoryLog.entry("SELL", name + (auction ? " sold at auction" : " traded in") + " for " + price + " scrap; her scrap and crew to the Cargo Hold");
+		HistoryLog.entry("SELL", name + (auction ? " sold at auction" : " traded in") + " for " + price + " scrap; her scrap and crew to the Cargo Hold", null,
+				Event.of("SELL").put("ship_name", name).put("how", auction ? "auction" : "trade_in").put("price", price).put("to", "hold"));
 		if (auction) {
 			int base = homeplanet.parser.Pricing.auctionBase(gs);
 			Object[] accept = {"Accept Bid"};

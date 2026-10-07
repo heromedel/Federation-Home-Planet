@@ -99,7 +99,7 @@ public class RepT {
   int paid = RepairJob.returnHer(v, n);
   Transmissions.Message m = find(RepairJob.PAID);
   Setup.chk("R: returned: paid into the Cargo Hold, gone from the fleet, fate RETURNED", paid == pay && v.storageScrap() == before + pay && v.byId(n.id) == null
-    && new String(SafeFiles.read(new File(new File(v.historyDir(), n.id), "fate.txt")), "UTF-8").startsWith("RETURNED"));
+    && new String(SafeFiles.read(new File(v.folderOfId(n.id), "fate.txt")), "UTF-8").startsWith("RETURNED"));
   Setup.chk("R: She's home, with the sum paid", m != null && m.body.contains(pay + " scrap"));
   ChainT.jump(v, 250); Transmissions.check();
   Setup.chk("R: returned: no demand ever comes", find(RepairJob.OVERDUE_LETTER) == null);
@@ -144,7 +144,7 @@ public class RepT {
   Transmissions.Message s = find(RepairJob.SEIZED);
   Setup.chk("S: 14 beacons on: Notice of recovery", s != null);
   Setup.chk("S: her value from the Cargo Hold (" + value + "), and she's taken: fate SEIZED", v.storageScrap() == 50 && v.byId(n.id) == null
-    && new String(SafeFiles.read(new File(new File(v.historyDir(), n.id), "fate.txt")), "UTF-8").startsWith("SEIZED"));
+    && new String(SafeFiles.read(new File(v.folderOfId(n.id), "fate.txt")), "UTF-8").startsWith("SEIZED"));
   Setup.chk("S: the notice says what was taken", s.body.contains(value + " scrap from the Cargo Hold") && s.body.contains("the Nightjar herself"));
  }
 

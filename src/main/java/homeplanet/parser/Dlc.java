@@ -2,12 +2,10 @@ package homeplanet.parser;
 
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
-import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.SystemState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
-import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 /**
  * Advanced Edition rules for trading. A save made with AE content off can't hold items or crew that only exist in
@@ -44,9 +42,7 @@ public final class Dlc {
 		if (built == null || built.getPlayerShip() == null) return null;
 		ShipState ship = built.getPlayerShip();
 		for (CrewState c : ship.getCrewList()) if (aeOnlyCrew(c)) return "Her crew includes an Advanced Edition race.";
-		for (WeaponState w : ship.getWeaponList()) if (aeOnlyItem(w.getWeaponId())) return homeplanet.model.Items.title(w.getWeaponId()) + " is Advanced Edition only.";
-		for (DroneState d : ship.getDroneList()) if (aeOnlyItem(d.getDroneId())) return homeplanet.model.Items.title(d.getDroneId()) + " is Advanced Edition only.";
-		for (String a : ship.getAugmentIdList()) if (aeOnlyItem(a)) return homeplanet.model.Items.title(a) + " is Advanced Edition only.";
+		for (String g : SaveHelper.gear(ship)) if (aeOnlyItem(g)) return homeplanet.model.Items.title(g) + " is Advanced Edition only.";
 		for (SystemType t : AE_SYSTEMS) {
 			SystemState sys = ship.getSystem(t);
 			if (sys != null && sys.getCapacity() > 0) return "She starts with an Advanced Edition system.";

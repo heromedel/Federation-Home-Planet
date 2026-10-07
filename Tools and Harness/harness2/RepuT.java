@@ -23,7 +23,7 @@ public class RepuT {
   g = v.readCopy(stealth).save;
   g.setTotalShipsDefeated(8); g.setTotalScrapCollected(300); g.setSectorNumber(3); g.setStateVar("lost_crew", 4);
   v.write(stealth, g);
-  SafeFiles.writeText(new File(new File(v.historyDir(), stealth.id), "traded.txt"), "trade=x\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=5\nbeacons=0\nscrap=200\nsectors=2\n", false);
+  SafeFiles.writeText(new File(v.historyOf(stealth), "traded.txt"), "trade=x\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=5\nbeacons=0\nscrap=200\nsectors=2\n", false);
   departed(v, "lost-early", "Lost One", 2);
   departed(v, "lost-last", "Last Stand", 7);
   int total = Reputation.total(v);
@@ -143,7 +143,7 @@ public class RepuT {
  /** FTL writes continue.sav, and the save watcher has the station look. */
  static void ftl(Vault v, SavedGameState g) throws Exception { SaveHelper.writeSavedGame(v.continueFile(), g); v.observeBoarded(); }
  static void departed(Vault v, String id, String name, int sector) throws Exception {
-  File d = new File(v.historyDir(), id); d.mkdirs();
+  File d = Setup.departed(v, id, name);
   SafeFiles.writeText(new File(d, "fate.txt"), "LOST\n" + name + "\n", false);
   SafeFiles.writeText(new File(d, "voyage.txt"), "sector=" + sector + "\nvisited=" + (sector + 1) + "\n", false);
  }

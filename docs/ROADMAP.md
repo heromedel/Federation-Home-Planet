@@ -915,6 +915,9 @@ of jobs of section 25, 2 is this (the default since heromedel's go-ahead). The o
 share those files, the crew-card picker and the hire button, and nothing else (`parser/Assignments.java`,
 `ui/AssignmentsDialog.java`, the fleet's `assignments.txt`, the words in `resource/assignments.txt`).
 
+5.67 (heromedel, in the 6.0 overhaul): the old board of jobs is deleted. `expedition_type` 1 reads as 2; the infirmary,
+the captives and ransoms, and hiring stay in `parser/Expeditions.java` for the crew expeditions; ExpT tests those alone.
+
 - **The board** offers three sectors of the ten (Civilian, Engi, Zoltan, Mantis, Pirate, Rebel, Rock, Nebula,
   Crystal rarely), each with a line of words that says nothing of the odds; an
   offer not taken comes down after a few beacons (hidden). Pick one and one to three crew from the Cargo Hold; they

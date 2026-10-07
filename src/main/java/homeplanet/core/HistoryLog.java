@@ -40,7 +40,13 @@ public class HistoryLog {
 	private static final String NL = System.getProperty("line.separator");
 
 	/** Writes one entry: a headline plus optional indented detail lines. Never throws. */
-	public static synchronized void entry(String kind, String headline, List<String> details) {
+	public static void entry(String kind, String headline, List<String> details) { entry(kind, headline, details, null); }
+	/**
+	 * As above, with the event it is (Overhaul 6.0, step 9): the same entry goes to the event log as two lines, the
+	 * event's fields and its human line (the headline when the event has none). With no event given, one is made from
+	 * the kind, the headline and the details, so the event log is never short of an entry; it only lacks the fields.
+	 */
+	public static synchronized void entry(String kind, String headline, List<String> details, Event event) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date())).append("  ").append(kind);
 		if (headline != null && headline.length() > 0) sb.append("  ").append(headline);
@@ -62,6 +68,11 @@ public class HistoryLog {
 			if (headline != null && headline.length() > 0) t.append("  ").append(headline);
 			if (details != null) for (String d : details) t.append("\n").append(d);
 			homeplanet.vault.MasterLog.entry(Vault.get(), "station", t.toString());
+			Event e = event != null ? event : Event.of(kind);
+			if (e.get("headline") == null) e.put("headline", headline); // the old wording kept beside the fields, always
+			if (e.get("detail.1") == null) e.details(details);
+			if (e.human().isEmpty()) e.human(headline != null && !headline.isEmpty() ? headline : details != null && !details.isEmpty() ? String.join("; ", details) : kind.toLowerCase());
+			EventLog.write(Vault.get(), Event.of(e.kind).put("log", "station").putAll(e).human(e.human()));
 		}
 	}
 	public static void entry(String kind, String headline) {

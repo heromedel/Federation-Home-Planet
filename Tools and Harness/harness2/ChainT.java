@@ -55,7 +55,7 @@ public class ChainT { public static void main(String[] a) throws Exception {
  Ship was = v.boarded();
  v.continueFile().delete();
  v.reload();
- Setup.chk("G: FTL closed, continue.sav gone: recorded lost", v.boarded() == null && new File(new File(v.historyDir(), was.id), "fate.txt").exists());
+ Setup.chk("G: FTL closed, continue.sav gone: recorded lost", v.boarded() == null && new File(v.folderOfId(was.id), "fate.txt").exists());
  SavedGameParser.SavedGameState other = Commission.build("PLAYER_SHIP_STEALTH", "Somebody Else", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(9));
  SaveHelper.writeSavedGame(v.continueFile(), other);
  v.reload(); v.takeStock();

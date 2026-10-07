@@ -526,19 +526,19 @@ public class MuseumUI extends JPanel {
 	private static List<String> lostCrew(Museum.Exhibit ex) {
 		List<String> out = new ArrayList<String>();
 		int sector = 0;
-		for (String line : VoyageLog.read(Vault.get(), ex.id).split("\n")) {
-			int s = line.indexOf("Sector "), r = line.indexOf(" reached");
-			if (s >= 0 && r > s) try { sector = Integer.parseInt(line.substring(s + 7, r).trim()); } catch (NumberFormatException e) { }
-			int c = line.indexOf("Crew lost: ");
-			if (c < 0) continue;
-			for (String who : line.substring(c + 11).split(", (?=[^)]*\\()")) out.add(who.trim() + (sector > 0 ? ", lost in sector " + sector : ""));
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOfId(ex.id)), ex.id)) { // her own log (5.76)
+			if (e.kind.equals("SECTOR_REACHED")) sector = e.num("sector", sector);
+			if (!e.kind.equals("CREW_LOST")) continue;
+			java.util.List<String> crew = e.all("crew"), race = e.all("race");
+			for (int i = 0; i < crew.size(); i++) out.add(crew.get(i) + (i < race.size() ? " (" + race.get(i) + ")" : "") + (sector > 0 ? ", lost in sector " + sector : ""));
 		}
 		return out;
 	}
 	private void voyage(JPanel p, Museum.Exhibit ex) {
 		heading(p, "Voyage");
-		String log = VoyageLog.read(Vault.get(), ex.id);
-		JTextArea a = new JTextArea(log.isEmpty() ? "No voyage log was kept for her: the station started keeping them in 4B.29." : log);
+		StringBuilder log = new StringBuilder();
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOfId(ex.id)), ex.id)) log.append(e.time.length() >= 16 ? e.time.substring(0, 16) : e.time).append("  ").append(e.human).append('\n');
+		JTextArea a = new JTextArea(log.length() == 0 ? "No voyage log was kept for her: the station started keeping them in 4B.29." : log.toString());
 		a.setEditable(false);
 		a.setLineWrap(true);
 		a.setWrapStyleWord(true);

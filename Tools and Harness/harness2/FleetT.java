@@ -71,7 +71,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
   Vault.switchFleet(Vault.SANDBOX);
   Vault normal = Vault.switchFleet(Vault.NORMAL);
   Setup.chk("M: the Normal career doesn't see the Easy one's ships", normal.byId(e.id) == null && Vault.NORMAL.equals(normal.slot));
-  File fake = new File(Vault.rootOf(normal.saves, Vault.EASY), "ships/retrofit.sav"); // a hull on the station's blueprint, as far as the scan cares
+  File fake = new File(Vault.rootOf(normal.saves, Vault.EASY), "shipyard/retrofit.sav"); // a hull on the station's blueprint, as far as the scan cares
   SafeFiles.writeText(fake, "PLAYER_SHIP_CIRCLE" + Retrofit.SUFFIX, false);
   Setup.chk("M: but every other fleet's ships count for blueprints in use", normal.otherFleetUsing("PLAYER_SHIP_CIRCLE" + Retrofit.SUFFIX).contains("retrofit (Immersive Easy fleet)")
     && normal.otherFleetBlueprints().contains("PLAYER_SHIP_CIRCLE" + Retrofit.SUFFIX));
@@ -116,8 +116,8 @@ public class FleetT { public static void main(String[] a) throws Exception {
   im.board(n);
   Vault back = Vault.switchFleet(false);
   Setup.chk("V: back in the normal fleet: its ship is boarded again, and all its ships are there", !back.immersive && normalBoarded.equals(continueName(back)) && back.boarded() != null && back.all().size() == normalShips);
-  Setup.chk("V: the Immersive ship waits in her own fleet", new File(back.otherRoot(), "ships/" + n.id + ".sav").isFile());
-  Setup.chk("V: the other fleet's ships count as flying their blueprints", back.otherFleetBlueprints().containsAll(nz(Retrofit.blueprintIds(new File(back.otherRoot(), "ships/" + n.id + ".sav")))));
+  Setup.chk("V: the Immersive ship waits in her own fleet", Setup.savIn(new File(back.otherRoot(), "shipyard"), n.id) != null);
+  Setup.chk("V: the other fleet's ships count as flying their blueprints", back.otherFleetBlueprints().containsAll(nz(Retrofit.blueprintIds(Setup.savIn(new File(back.otherRoot(), "shipyard"), n.id)))));
   Vault again = Vault.switchFleet(true);
   Setup.chk("V: and in Immersive again, she's boarded again", "Immersive Stealth".equals(continueName(again)) && again.boarded() != null && again.all().size() >= 1);
   Setup.chk("V: the normal fleet's boarded ship was docked, not lost", new File(again.otherRoot(), "parked-boarded.txt").isFile());

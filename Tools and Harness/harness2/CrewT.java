@@ -6,7 +6,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive(); HomePlanet.expeditionType = 2;
  Vault v = Setup.open(game, saves); v.storage();
  HistoryLog.entry("CREW", "Old Hand assigned to the Cargo Hold."); // before the register: read in once
- MasterLog.entry(v, "voyage: Test Kestrel", "Crew lost: Old Hand (Human)"); // a namesake lost long ago: never pinned on the living one
+ Setup.voyage(v, "Test Kestrel", "Crew lost: Old Hand (Human)"); // a namesake lost long ago: never pinned on the living one
  List<CrewState> hold = ExpT.hold(v, "human", "human", "engi", "rock", "human");
  // two namesakes, told apart by their colouring and service record
  Vault.Copy c = v.readCopy(v.storage());
@@ -76,7 +76,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  int goneId = idOf(m, gone.getName());
  c.save.getPlayerShip().getCrewList().remove(gone);
  v.begin().put(b, c.save, c.hash).commit();
- MasterLog.entry(v, "voyage: " + b.name, "Crew lost: " + gone.getName() + " (" + homeplanet.model.Crew.raceTitle(gone) + ")");
+ Setup.voyage(v, b, "Crew lost: " + gone.getName() + " (" + homeplanet.model.Crew.raceTitle(gone) + ")");
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("F: lost aboard her in FTL: killed", byId(m, goneId).status == CrewRegister.Status.KILLED && said(byId(m, goneId), "Lost aboard"));
@@ -93,7 +93,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  c = v.readCopy(b);
  for (CrewState x : new ArrayList<CrewState>(c.save.getPlayerShip().getCrewList())) if (x.getName().equals("Stoneface")) c.save.getPlayerShip().getCrewList().remove(x);
  v.begin().put(b, c.save, c.hash).commit();
- MasterLog.entry(v, "voyage: " + b.name, "Crew lost: Stoneface (Rock)");
+ Setup.voyage(v, b, "Crew lost: Stoneface (Rock)");
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("F: a Rock lost aboard her, said as her voyage log says it (Rock): killed, lost aboard " + ShipNames.the(b.name), rockLostId >= 0 && byId(m, rockLostId).status == CrewRegister.Status.KILLED
@@ -273,7 +273,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Norwyn Schultze")) nw = x;
  c.save.getPlayerShip().getCrewList().remove(nw);
  v.begin().put(y0, c.save, c.hash).commit();
- MasterLog.entry(v, "voyage: " + y0.name, "Crew lost: Norwyn Schultze (" + homeplanet.model.Crew.raceTitle(nw) + ")");
+ Setup.voyage(v, y0, "Crew lost: Norwyn Schultze (" + homeplanet.model.Crew.raceTitle(nw) + ")");
  v.takeStock();
  n = byId(CrewRegister.members(v), n.id);
  Setup.chk("K: two skills mastered, killed: Lieutenant due posthumously", n.status == CrewRegister.Status.KILLED && CrewRegister.rankDue(n) == 1 && CrewRegister.cannotPromote(v, n) == null);

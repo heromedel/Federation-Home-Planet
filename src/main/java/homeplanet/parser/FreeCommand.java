@@ -4,10 +4,8 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
-import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
-import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
@@ -74,10 +72,7 @@ public final class FreeCommand {
 			if (gs != null) {
 				ShipState s = gs.getPlayerShip();
 				total += s.getScrapAmt();
-				for (WeaponState w : s.getWeaponList()) total += Pricing.item(w.getWeaponId()) / 2;
-				for (DroneState d : s.getDroneList()) total += Pricing.item(d.getDroneId()) / 2;
-				for (String a : s.getAugmentIdList()) total += Pricing.item(a) / 2;
-				for (String c : SaveHelper.cargo(gs)) total += Pricing.item(c) / 2;
+				for (String g : SaveHelper.gearAndCargo(gs)) total += Pricing.item(g) / 2;
 				if (HomePlanet.sellSupplies())
 					total += homeplanet.core.Economy.supplySale(s.getMissilesAmt(), Pricing.MISSILE) + homeplanet.core.Economy.supplySale(s.getDronePartsAmt(), Pricing.DRONE_PART);
 			}
@@ -113,10 +108,7 @@ public final class FreeCommand {
 			if (gs != null) {
 				ShipState s = gs.getPlayerShip();
 				total += s.getScrapAmt() + s.getFuelAmt() * Pricing.FUEL + s.getMissilesAmt() * Pricing.MISSILE + s.getDronePartsAmt() * Pricing.DRONE_PART;
-				for (WeaponState w : s.getWeaponList()) total += Pricing.item(w.getWeaponId());
-				for (DroneState d : s.getDroneList()) total += Pricing.item(d.getDroneId());
-				for (String a : s.getAugmentIdList()) total += Pricing.item(a);
-				for (String c : SaveHelper.cargo(gs)) total += Pricing.item(c);
+				for (String g : SaveHelper.gearAndCargo(gs)) total += Pricing.item(g);
 				for (CrewState c : SaveHelper.getOwnCrew(s)) total += Pricing.crew(c.getRace().getId());
 			}
 		} catch (Exception e) { log.debug("Free command: the Cargo Hold could not be read, counted as empty: {}", e.toString()); } // an unreadable hold counts as empty

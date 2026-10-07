@@ -2,12 +2,9 @@ package homeplanet.vault;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 
 /**
  * A ship flying in the fleet who belongs to someone else, kept in her history folder beside her {@link TradeMark}: her
@@ -22,11 +19,10 @@ public final class Borrowed {
 
 	/** Her mark, or null if she's the fleet's own. */
 	public static Borrowed of(Vault v, String id) {
-		File f = new File(new File(v.historyDir(), id), FILE);
+		File f = new File(v.folderOfId(id), FILE);
 		if (!f.isFile()) return null;
 		try {
-			Properties p = new Properties();
-			p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8)));
+			Properties p = Store.load(f);
 			return new Borrowed(p.getProperty("owner", ""), p.getProperty("kind", ""));
 		} catch (IOException e) {
 			return null;
@@ -34,13 +30,9 @@ public final class Borrowed {
 	}
 	/** Marks her as borrowed from this owner. */
 	public static void mark(Vault v, String id, String owner, String kind) throws IOException {
-		File dir = new File(v.historyDir(), id);
-		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
 		Properties p = new Properties();
 		p.setProperty("owner", owner);
 		p.setProperty("kind", kind);
-		StringWriter w = new StringWriter();
-		p.store(w, "She belongs to someone else: Federation Home Planet reads this for the Return button");
-		SafeFiles.writeText(new File(dir, FILE), w.toString(), false);
+		Store.write(new File(v.folderOfId(id), FILE), p, "She belongs to someone else: Federation Home Planet reads this for the Return button");
 	}
 }

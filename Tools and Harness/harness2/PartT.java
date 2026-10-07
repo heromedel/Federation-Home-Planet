@@ -143,7 +143,7 @@ public class PartT { public static void main(String[] a) throws Exception {
   v.takeStock(); v.observeBoarded(); v.takeStock();
   Setup.chk("K: and nothing counts twice", v.beaconsSeen() == b0 + 45);
   Parts.current(v);
-  Properties pp = new Properties(); pp.load(new ByteArrayInputStream(SafeFiles.read(new File(v.root, "parts.txt"))));
+  Properties pp = new Properties(); pp.load(new ByteArrayInputStream(SafeFiles.read(new File(v.cargoHoldDir(), "parts.txt"))));
   Setup.chk("K: the Junkyard's Parts restock as the fleet flies", Integer.parseInt(pp.getProperty("rolledAt")) > b0);
   // FTL's New Game writes over her: the new ship's run so far was flown in the fleet's time
   SavedGameState n = Commission.build("PLAYER_SHIP_HARD", "Newcomer", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3));

@@ -491,7 +491,6 @@ public class LayoutEditor {
 		selMount = null;
 		host.say("Artillery needs a mount for its gun: click her art where the gun sits. Esc cancels.");
 	}
-	public boolean hasDesignArt() { return designArt && baseImg != null; }
 	public void repaint() { canvas.repaint(); }
 
 	private JToggleButton toolButton(ButtonGroup g, String text, final RoomTool t, String tip) {
@@ -572,8 +571,6 @@ public class LayoutEditor {
 		edited();
 		return true;
 	}
-	/** After the host changed the layout itself: the lists, the canvas size and the checks. */
-	public void refreshAfterEdit() { edited(); }
 
 	/** Starts placing rooms of this size (Design Ship's starting tool). */
 	public void startPlacing() { if (roomsEditable) { setRoomTool(RoomTool.ROOM_22); toolButtons.get(RoomTool.ROOM_22).setSelected(true); } }
