@@ -400,7 +400,10 @@ public class MuseumUI extends JPanel {
 		r.setOpaque(false);
 		r.setAlignmentX(LEFT_ALIGNMENT);
 		r.add(label(sym, 14, c, true));
-		r.add(label(text, 12, TXT, false));
+		JLabel t = label(text, 12, TXT, false);
+		Dimension d = t.getPreferredSize();
+		t.setPreferredSize(new Dimension(d.width + 4, d.height)); // a little slack: under Windows display scaling the measured width can fall short and cut the last letter (5.87)
+		r.add(t);
 		r.setMaximumSize(new Dimension(INFO_W, r.getPreferredSize().height + 4));
 		p.add(r);
 	}
@@ -434,7 +437,7 @@ public class MuseumUI extends JPanel {
 		if (!ex.victor) return;
 		heading(p, "Honours");
 		mark(p, "★", GOLD, ex.victories == 1 ? "Drove off the Rebel Flagship" : "Drove off the Rebel Flagship " + ex.victories + " times");
-		for (String[] v : vd) for (String h : v[4].split("\\|")) if (!h.isEmpty()) mark(p, "★", GOLD, h);
+		for (String[] v : vd) for (String h : Museum.shownHonours(v[4])) mark(p, "★", GOLD, h);
 		List<String> recs = records(ex);
 		if (!recs.isEmpty()) {
 			heading(p, "Museum records");

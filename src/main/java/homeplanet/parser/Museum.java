@@ -116,16 +116,31 @@ public final class Museum {
 		p.setProperty("victory." + n + ".difficulty", best == null || best.getDifficulty() == null ? difficulty(gs) : title(best.getDifficulty().toString()));
 		Set<String> before = new LinkedHashSet<String>(Arrays.asList(p.getProperty("achievementsAtStart", "").split("\\|")));
 		boolean known = !p.getProperty("achievementsAtStart", "").isEmpty();
-		List<String> honours = new ArrayList<String>();
-		if (known) for (String a : u.achievements()) {
-			if (before.contains(a)) continue;
-			net.blerf.ftl.xml.Achievement ach = net.blerf.ftl.parser.DataManager.get().getAchievement(a);
-			if (ach == null || ach.getName() == null) continue;
-			honours.add(ach.getName().getTextValue());
-		}
+		List<String> honours = known ? honours(before, u.achievements()) : new ArrayList<String>();
 		p.setProperty("victory." + n + ".honours", String.join("|", honours));
 		p.setProperty("kept", "false");
 		write(v, f.id, p);
+	}
+	/**
+	 * The honours of a command: the achievements gained since it began, by name. The save reader's own victory markers
+	 * (PLAYER_SHIP_*_VICTORY, one per cruiser) aren't FTL's achievements and have no name: "Drove off the Rebel Flagship"
+	 * already says she won (5.87: one showed as its id).
+	 */
+	public static List<String> honours(Set<String> before, Iterable<String> now) {
+		List<String> out = new ArrayList<String>();
+		for (String a : now) {
+			if (before.contains(a)) continue;
+			net.blerf.ftl.xml.Achievement ach = net.blerf.ftl.parser.DataManager.get().getAchievement(a);
+			if (ach == null || ach.isVictory() || ach.getName() == null) continue;
+			out.add(ach.getName().getTextValue());
+		}
+		return out;
+	}
+	/** A victory's honours as kept, for showing: a victory marker's id kept before 5.87 left out. */
+	public static List<String> shownHonours(String kept) {
+		List<String> out = new ArrayList<String>();
+		for (String h : (kept == null ? "" : kept).split("\\|")) if (!h.isEmpty() && !h.matches("PLAYER_SHIP_[A-Z0-9_]+_VICTORY")) out.add(h);
+		return out;
 	}
 	private static String difficulty(SavedGameState gs) { return gs.getDifficulty() == null ? "" : title(gs.getDifficulty().toString()); }
 	private static String title(String s) { return s.isEmpty() ? s : s.charAt(0) + s.substring(1).toLowerCase(); }

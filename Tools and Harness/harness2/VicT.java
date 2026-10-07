@@ -17,6 +17,12 @@ public class VicT { public static void main(String[] a) throws Exception {
  inbox(v);
  museum(v);
  if (a.length > 3) replay(game, new File(a[3]), new File(work, "replay"));
+ // the honours (5.87, heromedel's Flagarino): the save reader's victory markers aren't honours, and one kept before shows without its id
+ net.blerf.ftl.xml.Achievement real = null;
+ for (net.blerf.ftl.xml.Achievement x : DataManager.get().getGeneralAchievements()) if (!x.isVictory() && x.getName() != null) { real = x; break; }
+ java.util.List<String> hon = Museum.honours(new java.util.HashSet<String>(), java.util.Arrays.asList("PLAYER_SHIP_ENERGY_VICTORY", real.getId()));
+ Setup.chk("V: a victory marker gained during her command is no honour; a real achievement is, by name (" + hon + ")", hon.equals(java.util.Arrays.asList(real.getName().getTextValue())));
+ Setup.chk("V: a victory kept before 5.87 with the marker's id shows without it", Museum.shownHonours("Ballistophobia|PLAYER_SHIP_ENERGY_VICTORY|Federation Victory (Easy)").equals(java.util.Arrays.asList("Ballistophobia", "Federation Victory (Easy)")));
  Setup.done();
 }
  static int victories = 0;
