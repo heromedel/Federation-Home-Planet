@@ -223,7 +223,8 @@ public final class Updater {
 		} finally {
 			z.close();
 		}
-		HistoryLog.entry("UPDATE", "New construction plans from main (" + version + "): " + replaced + " files replaced, " + added.size() + " added, " + removed + " removed");
+		HistoryLog.entry("UPDATE", "New construction plans from main (" + version + "): " + replaced + " files replaced, " + added.size() + " added, " + removed + " removed", null,
+				Event.of("UPDATE").put("version", version).put("replaced", replaced).put("added", added.size()).put("removed", removed));
 		return new Result(version, replaced, added.size(), removed);
 	}
 	/** Every file touched, back as it was: the kept copies return, the new ones go. */

@@ -14,6 +14,7 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
@@ -380,7 +381,8 @@ public final class Exchange {
 		lines.add("gave: " + r.outWords());
 		String where = whereTheyGo(r.in);
 		lines.add("received" + (where.isEmpty() ? "" : " (" + where + ")") + ": " + r.inWords()); // a one-sided trade receives nothing, and goes nowhere
-		HistoryLog.entry("LONG RANGE TRADE", "with " + r.peerTitle + "  (trade " + r.id + ")", lines);
+		HistoryLog.entry("LONG RANGE TRADE", "with " + r.peerTitle + "  (trade " + r.id + ")", lines,
+				Event.of("LONG_RANGE_TRADE").put("trade", r.id).put("peer", r.peerTitle).put("peer_station", r.peerStation).put("gave", r.outWords()).put("received", r.inWords()).put("received_to", where).details(lines));
 		homeplanet.parser.Transmissions.deliver("trade:" + r.id, "Home Planet Quartermaster", RECEIPT_SUBJECT, receipt(r));
 	}
 	/** The Quartermaster's receipt: a title nobody takes for the other commander's own message. */
@@ -428,7 +430,8 @@ public final class Exchange {
 		if (!sentBack.isEmpty()) lines.add("sent back (received before it was called off): " + String.join(", ", sentBack));
 		lines.add("came back (" + whereTheyGo(r.out) + "): " + r.outWords());
 		if (why != null && !why.isEmpty()) lines.add("why: " + why);
-		HistoryLog.entry("TRADE CALLED OFF", "with " + r.peerTitle + "  (trade " + r.id + ")", lines);
+		HistoryLog.entry("TRADE CALLED OFF", "with " + r.peerTitle + "  (trade " + r.id + ")", lines,
+				Event.of("TRADE_CALLED_OFF").put("trade", r.id).put("peer", r.peerTitle).put("peer_station", r.peerStation).put("why", why).put("came_back", r.outWords()).put("sent_back", sentBack.isEmpty() ? null : String.join(", ", sentBack)).details(lines));
 	}
 	/** A settled trade's ships' packages have done their job: only the record stays, as a receipt. */
 	private static void cleanUp(Record r) {

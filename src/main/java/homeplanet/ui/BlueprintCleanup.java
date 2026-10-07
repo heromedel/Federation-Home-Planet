@@ -73,7 +73,7 @@ final class BlueprintCleanup {
 		java.util.List<String> ids = new java.util.ArrayList<String>();
 		for (homeplanet.parser.CompanionMod.Remodel u : unused) ids.add(u.id);
 		for (homeplanet.parser.ShipDesign d : unusedDesigns) ids.add(homeplanet.parser.DesignExport.bpId(d) + " (" + d.name + ")");
-		homeplanet.core.HistoryLog.entry("CLEAN", "Removed " + count + " unused blueprint(s)", ids);
+		homeplanet.core.HistoryLog.entry("CLEAN", "Removed " + count + " unused blueprint(s)", ids, homeplanet.core.Event.of("CLEAN").put("count", count).details(ids));
 		File mod = homeplanet.core.Slipstream.writeMod();
 		Object[] opts2 = {"Patch Now", "Later"};
 		int p = JOptionPane.showOptionDialog(owner, "Removed. The Federation Home Planet Mod was rebuilt" + (mod == null ? "." : " at:\n" + mod.getPath())

@@ -68,7 +68,9 @@ public class HistoryLog {
 			if (headline != null && headline.length() > 0) t.append("  ").append(headline);
 			if (details != null) for (String d : details) t.append("\n").append(d);
 			homeplanet.vault.MasterLog.entry(Vault.get(), "station", t.toString());
-			Event e = event != null ? event : Event.of(kind).put("headline", headline).details(details);
+			Event e = event != null ? event : Event.of(kind);
+			if (e.get("headline") == null) e.put("headline", headline); // the old wording kept beside the fields, always
+			if (e.get("detail.1") == null) e.details(details);
 			if (e.human().isEmpty()) e.human(headline != null && !headline.isEmpty() ? headline : details != null && !details.isEmpty() ? String.join("; ", details) : kind.toLowerCase());
 			EventLog.write(Vault.get(), Event.of(e.kind).put("log", "station").putAll(e).human(e.human()));
 		}

@@ -515,7 +515,8 @@ public final class CrewRegister {
 			m.events.add(new Event(MasterLog.today(v), (dead ? "Promoted posthumously to " : "Promoted to ") + homeplanet.model.Rank.TITLE[r] + "."));
 			int[] seen = seen(v);
 			write(v, members, seen[0], seen[1]);
-			homeplanet.core.HistoryLog.entry("RENAME CREW", was + " -> " + m.name + "  (" + (dead ? "posthumously" : "on the record") + ")");
+			homeplanet.core.HistoryLog.entry("RENAME CREW", was + " -> " + m.name + "  (" + (dead ? "posthumously" : "on the record") + ")", null,
+					homeplanet.core.Event.of("RENAME_CREW").put("what", "promoted").put("from", was).put("to", m.name).put("crew_id", m.id).put("race", m.race).put("rank", homeplanet.model.Rank.TITLE[r]).put("posthumously", dead));
 			return m.name;
 		}
 		String was = savedName(m), now = homeplanet.model.Rank.promoted(was, r);
@@ -528,7 +529,8 @@ public final class CrewRegister {
 		if (who == null) throw new IOException(was + " could not be found " + m.where + " just now; nothing was changed.");
 		who.setName(now);
 		v.begin().put(s, c.save, c.hash).commit();
-		homeplanet.core.HistoryLog.entry("RENAME CREW", was + " -> " + now + "  (" + (m.place.equals("hold") ? HOLD_NAME : s.name) + ")");
+		homeplanet.core.HistoryLog.entry("RENAME CREW", was + " -> " + now + "  (" + (m.place.equals("hold") ? HOLD_NAME : s.name) + ")", null,
+				homeplanet.core.Event.of("RENAME_CREW").put("what", "renamed").put("from", was).put("to", now).put("crew_id", m.id).put("race", m.race).put("place", m.place).put("ship_name", m.place.equals("hold") ? null : s.name).put("ship_id", m.place.equals("hold") ? null : s.id));
 		sweep(v); // the register sees the new name: "Promoted to ..." (none if their record already wore it)
 		return now;
 	}

@@ -105,7 +105,8 @@ public final class Outbox {
 		Shipments.Parcel parcel = i.shipment.isEmpty() ? null : Shipments.find(i.shipment);
 		if (parcel != null && !parcel.incoming) Shipments.inOutbox(parcel, toStation, i.toTitle);
 		write(i);
-		homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " waits to go");
+		homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " waits to go", null,
+				homeplanet.core.Event.of("LONG_RANGE_OUTBOX").put("what", "waiting").put("to_commander", i.toTitle).put("to_station", i.toStation).put("message_id", i.id).put("priority", i.priority).put("shipment", i.shipment.isEmpty() ? null : i.shipment));
 		return i;
 	}
 	/** Cancels an item: a shipment with it is unpacked (or, a return, goes back to waiting in the inbox). */
@@ -171,7 +172,8 @@ public final class Outbox {
 				remove(i);
 				said.add((Notes.POPUP.equals(where) ? "Shown to " + i.toTitle : "Delivered to " + i.toTitle + "'s inbox") + " (it waited " + waited(i.written) + ")"
 						+ (parcel != null ? ", with the shipment (" + parcel.words() + ")." : "."));
-				homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " delivered, after " + waited(i.written));
+				homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " delivered, after " + waited(i.written), null,
+						homeplanet.core.Event.of("LONG_RANGE_OUTBOX").put("what", "delivered").put("to_commander", i.toTitle).put("to_station", i.toStation).put("message_id", i.id).put("waited", waited(i.written)).put("shipment", parcel == null ? null : parcel.id));
 			} catch (Notes.Refused e) {
 				if (e.getMessage().contains(Notes.TOO_MANY)) { // busy for a minute: it stays waiting, and goes on a later search
 					said.add(i.toTitle + "'s station is busy: the Outbox tries again shortly.");

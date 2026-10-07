@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.vault.Ship;
@@ -124,12 +125,13 @@ public final class FinalVictory {
 				if (won) homeplanet.vault.Reputation.flagship(v, f.name); // the career's standing, if one runs
 				if (!won || NOTHING.equals(c)) {
 					v.closeFinal(f, won);
-					if (won) HistoryLog.entry("VICTORY", f.name + " won the last battle and was lost with the run (after a final victory: nothing)");
+					if (won) HistoryLog.entry("VICTORY", f.name + " won the last battle and was lost with the run (after a final victory: nothing)", null, battle("VICTORY", f).put("after", "nothing"));
 					continue;
 				}
 				boolean named = u.victoriousScores(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId()) > f.scoresThen;
 				HistoryLog.entry("VICTORY", f.name + " won the last battle (the profile's victories " + f.victoriesThen + " -> " + u.victories()
-						+ (named ? ", and a Top Scores entry names her" : "") + "); after a final victory: " + c + ", her value " + value + " scrap");
+						+ (named ? ", and a Top Scores entry names her" : "") + "); after a final victory: " + c + ", her value " + value + " scrap", null,
+						battle("VICTORY", f).put("victories_then", f.victoriesThen).put("victories_now", u.victories()).put("top_scores", named).put("after", c).put("value", value));
 				if (MUSEUM.equals(c)) { // Hard: no keeping her; the museum takes her at its price
 					fills.put("value", Integer.toString(museumPrice(value)));
 					museum(f);
@@ -149,7 +151,7 @@ public final class FinalVictory {
 						throw e;
 					}
 					v.closeFinal(f, true);
-					HistoryLog.entry("REWARD", value + " scrap to the Cargo Hold for " + f.name);
+					HistoryLog.entry("REWARD", value + " scrap to the Cargo Hold for " + f.name, null, battle("REWARD", f).put("scrap", value).put("to", "hold"));
 					if (HomePlanet.immersiveNotifications()) Transmissions.post("reward:" + f.id, "reward", fills);
 					else out.add(notice("reward", fills, null, value));
 				}
@@ -176,13 +178,15 @@ public final class FinalVictory {
 		return s.name + " is docked at the Space Dock, ready for her next journey.";
 	}
 	/** The museum's offer: its price (her value, or half on harder careers) to the Cargo Hold, and she goes to the museum. Returns what came of it, in words. */
+	/** An event about the ship of a final battle (she may have left the fleet). */
+	private static Event battle(String kind, Vault.FinalBattle f) { return Event.of(kind).put("ship", f.name + "." + f.id).put("ship_name", f.name).put("ship_id", f.id); }
 	public static String museum(Vault.FinalBattle f) throws IOException {
 		int value = museumPrice(value(HomePlanet.savedGameParser.readSavedGame(f.copy)));
 		Vault v = Vault.get();
 		v.depositToStorage(value);
 		v.toMuseum(f);
 		Museum.preserved(v, f.id, value);
-		HistoryLog.entry("MUSEUM", value + " scrap to the Cargo Hold for " + f.name);
+		HistoryLog.entry("MUSEUM", value + " scrap to the Cargo Hold for " + f.name, null, battle("MUSEUM", f).put("scrap", value).put("to", "hold"));
 		return f.name + " is honoured in the Federation museum. " + value + " scrap is waiting in the Cargo Hold.";
 	}
 }

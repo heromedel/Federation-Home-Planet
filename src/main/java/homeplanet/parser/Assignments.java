@@ -21,6 +21,7 @@ import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
@@ -412,7 +413,8 @@ public final class Assignments {
 			c.save.getPlayerShip().getCrewList().add(x.crew);
 			forget(p, x.index);
 			v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
-			HistoryLog.entry("HIRE", x.name + " (" + race(x.crew) + "), rescued on an expedition, signed on: in the Cargo Hold");
+			HistoryLog.entry("HIRE", x.name + " (" + race(x.crew) + "), rescued on an expedition, signed on: in the Cargo Hold", null,
+				Event.of("HIRE").put("how", "rescued").put("crew", x.name).put("race", race(x.crew)).put("to", "hold"));
 			return;
 		}
 		SavedGameState gs = HomePlanet.savedGameParser.readSavedGame(x.save);
@@ -421,7 +423,8 @@ public final class Assignments {
 		forget(p, x.index);
 		write(v, p);
 		x.save.delete();
-		HistoryLog.entry("EXPEDITION", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), brought home by an expedition, kept: " + (dock ? "at the Space Dock" : "in the Junkyard"));
+		HistoryLog.entry("EXPEDITION", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), brought home by an expedition, kept: " + (dock ? "at the Space Dock" : "in the Junkyard"), null,
+				Vault.shipEvent("EXPEDITION", s).put("what", "prize_ship").put("ship_class", gs.getPlayerShipBlueprintId()).put("to", dock ? "ships" : "junkyard"));
 	}
 	/** No: the recruit goes their way, the ship is left where she lies. */
 	public static synchronized void decline(Vault v, Pending x) throws IOException {
@@ -429,7 +432,8 @@ public final class Assignments {
 		forget(p, x.index);
 		write(v, p);
 		if (x.save != null) x.save.delete();
-		HistoryLog.entry("EXPEDITION", "recruit".equals(x.kind) ? x.name + ", rescued on an expedition, was sent on their way" : x.name + ", brought home by an expedition, was not taken");
+		HistoryLog.entry("EXPEDITION", "recruit".equals(x.kind) ? x.name + ", rescued on an expedition, was sent on their way" : x.name + ", brought home by an expedition, was not taken", null,
+				Event.of("EXPEDITION").put("what", "recruit".equals(x.kind) ? "recruit_declined" : "prize_ship_declined").put("name", x.name));
 	}
 	private static void forget(Properties p, int index) {
 		for (String key : new ArrayList<String>(p.stringPropertyNames())) if (key.startsWith("pending." + index + ".")) p.remove(key);
@@ -501,8 +505,9 @@ public final class Assignments {
 		p.setProperty("offer." + slot + ".until", "0"); p.remove("offer." + slot + ".words"); // comes down now: redrawn, not the same sector, at the next look
 		v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
 		List<String> names = new ArrayList<String>();
-		for (CrewState x : party) names.add(x.getName());
-		HistoryLog.entry("EXPEDITION", String.join(", ", names) + " sent to " + sectorTitle(sector));
+		Event sent = Event.of("EXPEDITION").put("what", "sent").put("sector", sectorTitle(sector)).put("sector_id", sector).put("party", i);
+		for (CrewState x : party) { names.add(x.getName()); sent.put("crew", x.getName()).put("race", race(x)); }
+		HistoryLog.entry("EXPEDITION", String.join(", ", names) + " sent to " + sectorTitle(sector), null, sent);
 	}
 
 	/**
@@ -877,9 +882,13 @@ public final class Assignments {
 		homeplanet.vault.Reputation.expedition(v, sectorTitle(r.sector) + ", " + jobTitle(r.job), r.scrap, r.dead().size(), takenCount, bad == 0 ? 1 : good == 0 ? -1 : 0);
 		List<String> dead = new ArrayList<String>();
 		for (Fate f : r.dead()) dead.add(f.name());
+		Event back = Event.of("EXPEDITION").put("what", "back").put("sector", sectorTitle(r.sector)).put("sector_id", r.sector).put("job", jobTitle(r.job)).put("job_id", r.job)
+				.put("scrap", r.scrap).put("prize", r.prize).put("prize_detail", r.prizeDetail).put("captured", takenCount).put("good", good).put("bad", bad);
+		for (String x : a.names()) back.put("crew", x);
+		for (String x : dead) back.put("killed", x);
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
 				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead))
-				+ fatesNamed(r, true) + fatesNamed(r, false));
+				+ fatesNamed(r, true) + fatesNamed(r, false), null, back);
 		if (HomePlanet.immersiveNotifications()) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text);
 		return new Report(r.sector, text, a.names(), faces);
 	}

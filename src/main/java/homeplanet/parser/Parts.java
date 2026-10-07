@@ -15,6 +15,7 @@ import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.SystemBlueprint;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.Store;
 import homeplanet.vault.Ship;
@@ -207,7 +208,8 @@ public final class Parts {
 			v.begin().put(st, c.save, c.hash).commit();
 			p.setProperty(l.index + ".open", "false");
 			try { write(v, p); } catch (IOException e) { log.warn("Could not mark salvage {} sold: {}", l.index, e.toString()); }
-			HistoryLog.entry("BUY", l.title() + ", salvage from the Junkyard, for " + l.price + " scrap from the Cargo Hold");
+			HistoryLog.entry("BUY", l.title() + ", salvage from the Junkyard, for " + l.price + " scrap from the Cargo Hold", null,
+					Event.of("BUY").put("what", "salvage").put("item", l.id).put("title", l.title()).put("price", l.price).put("from", "hold").put("to", "hold"));
 			return;
 		}
 		File f = v.systemsFile();
@@ -220,7 +222,8 @@ public final class Parts {
 		try { write(v, p); }
 		catch (IOException e) { log.warn("Could not mark part {} sold: {}", l.index, e.toString()); } // bought all the same: at worst it's offered again
 		ThirdFleet.partBought(v); // the Third Fleet Commander needn't point the way to them
-		HistoryLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard" + (l.clearance ? " on clearance" : "") + ", for " + l.price + " scrap from the Cargo Hold");
+		HistoryLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard" + (l.clearance ? " on clearance" : "") + ", for " + l.price + " scrap from the Cargo Hold", null,
+				Event.of("BUY").put("what", "part").put("system", l.id).put("title", homeplanet.model.Items.systemTitle(l.id)).put("level", l.level).put("broken", l.broken).put("clearance", l.clearance).put("price", l.price).put("from", "hold").put("to", "stored_systems"));
 	}
 
 	// ---- parts.txt ----

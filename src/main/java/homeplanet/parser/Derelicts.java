@@ -25,6 +25,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.SystemBlueprint;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
@@ -423,7 +424,8 @@ public final class Derelicts {
 			write(v, p);
 			saveFile(v, l.index).delete();
 			HistoryLog.entry("BUY", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), a derelict, for " + l.price + " scrap from the Cargo Hold"
-					+ (l.oddity.isEmpty() ? "" : "; " + words(l.oddity)));
+					+ (l.oddity.isEmpty() ? "" : "; " + words(l.oddity)), null,
+					Vault.shipEvent("BUY", s).put("what", "derelict").put("ship_class", gs.getPlayerShip().getShipBlueprintId()).put("price", l.price).put("oddity", l.oddity.isEmpty() ? null : l.oddity).put("from", "hold").put("to", "junkyard"));
 			ThirdFleet.derelictBought(v, s); // the Third Fleet Commander's project ship, the first time
 			return s;
 		} catch (IOException e) {

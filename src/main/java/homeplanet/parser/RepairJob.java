@@ -23,6 +23,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.ShipBlueprint;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.Store;
 import homeplanet.vault.Borrowed;
@@ -138,7 +139,7 @@ public final class RepairJob {
 			if ("true".equals(p.getProperty("collectLater")) && s != null && s.state == Ship.State.DOCKED && !sent.contains(COLLECTED)) {
 				v.remove(s, null, Vault.Fate.SEIZED);
 				p.setProperty("collectLater", "false");
-				HistoryLog.entry("SEIZED", s.name + " (" + s.id + "): collected by the Federation Office of Salvage and Claims");
+				HistoryLog.entry("SEIZED", s.name + " (" + s.id + "): collected by the Federation Office of Salvage and Claims", null, Vault.shipEvent("SEIZED", s).put("what", "collected").put("by", "Federation Office of Salvage and Claims"));
 				changed = true;
 				out.add(COLLECTED);
 			}
@@ -221,7 +222,7 @@ public final class RepairJob {
 				p.setProperty("stage", "defied");
 				p.setProperty("seizeAt", Integer.toString(v.beaconsSeen() + 7 + new Random().nextInt(8)));
 				write(v, p);
-				HistoryLog.entry("REPAIR JOB", "The " + NAME + " is kept: her owner's attorneys will come for her value");
+				HistoryLog.entry("REPAIR JOB", "The " + NAME + " is kept: her owner's attorneys will come for her value", null, Event.of("REPAIR_JOB").put("stage", "defied").put("ship_name", NAME));
 			}
 		}
 	}
@@ -292,7 +293,7 @@ public final class RepairJob {
 		p.setProperty("cost", Integer.toString(repairCost(gs.getPlayerShip())));
 		p.setProperty("value", Integer.toString(Pricing.saleValue(gs)));
 		write(v, p);
-		HistoryLog.entry("REPAIR JOB", "The " + NAME + " delivered to the Junkyard (" + s.id + ")");
+		HistoryLog.entry("REPAIR JOB", "The " + NAME + " delivered to the Junkyard (" + s.id + ")", null, Vault.shipEvent("REPAIR_JOB", s).put("stage", "delivered").put("to", "junkyard").put("cost", p.getProperty("cost")).put("value", p.getProperty("value")));
 		return s;
 	}
 
@@ -356,7 +357,7 @@ public final class RepairJob {
 			try { v.depositToStorage(pay); }
 			catch (IOException e) { log.error("The " + NAME + "'s payment of " + pay + " scrap could not reach the Cargo Hold", e); throw new IOException("The " + NAME + " was returned, but her payment of " + pay + " scrap could not be put in the Cargo Hold: " + e.getMessage()); }
 		}
-		HistoryLog.entry("RETURNED", s.name + " (" + s.id + ") to her owner" + (pay > 0 ? ", for " + pay + " scrap" : ", unpaid"));
+		HistoryLog.entry("RETURNED", s.name + " (" + s.id + ") to her owner" + (pay > 0 ? ", for " + pay + " scrap" : ", unpaid"), null, Vault.shipEvent("RETURNED", s).put("what", "to_owner").put("paid", pay).put("late", late));
 		if (letter) Transmissions.post(late ? LATE : PAID, late ? LATE : PAID, fills(v));
 		return pay;
 	}
@@ -394,7 +395,7 @@ public final class RepairJob {
 		p.setProperty("stage", "seized");
 		p.setProperty("taken", join(taken));
 		write(v, p);
-		HistoryLog.entry("SEIZED", "The Federation Office of Salvage and Claims took " + join(taken));
+		HistoryLog.entry("SEIZED", "The Federation Office of Salvage and Claims took " + join(taken), null, Event.of("SEIZED").put("what", "office").put("taken", join(taken)));
 	}
 	/** "a, b and c" (a part starting "and" joins as it is). */
 	static String join(List<String> parts) {

@@ -24,6 +24,7 @@ import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.ShipChassis;
 
 import homeplanet.core.HomePlanet;
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.Slipstream;
 import homeplanet.model.Items;
@@ -375,7 +376,7 @@ public class RemodelDialog extends ShipEditorDialog {
 			HomePlanet.showErrorDialog("Her remodel was called off: her save and her blueprint are as they were before.");
 			return;
 		}
-		HistoryLog.entry("REMODEL", name + " -> " + ship.getShipBlueprintId(), lines);
+		HistoryLog.entry("REMODEL", name + " -> " + ship.getShipBlueprintId(), lines, Event.of("REMODEL").put("ship_name", name).put("to_class", ship.getShipBlueprintId()).details(lines));
 		ShipArt.sweep(); // pictures her old overhaul no longer uses (only now that everything is saved)
 		finalized = true;
 		openKey = ShipDesign.editKey(d);

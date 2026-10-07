@@ -112,7 +112,7 @@ final class OutboxPanel extends JPanel {
 		if (!HomePlanet.confirmNo(this, "Cancel the message to " + i.toTitle + "?\nIt won't be sent." + goods, "Outbox")) return;
 		try {
 			Outbox.cancel(i);
-			homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " cancelled");
+			homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " cancelled", null, homeplanet.core.Event.of("LONG_RANGE_OUTBOX").put("what", "cancelled").put("to_commander", i.toTitle).put("message_id", i.id));
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not cancel it:\n" + e.getMessage());
 		}

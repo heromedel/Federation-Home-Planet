@@ -124,7 +124,8 @@ public final class ThirdFleet {
 		String title = homeplanet.model.Items.systemTitle(pick.getId());
 		String words = ("aeiouAEIOU".indexOf(title.charAt(0)) >= 0 ? "an " : "a ") + title + " system";
 		v.recordEvent(E_PART, words);
-		homeplanet.core.HistoryLog.entry("GIFT", "The Third Fleet Commander sent " + words + " for the project ship, to the stored systems");
+		homeplanet.core.HistoryLog.entry("GIFT", "The Third Fleet Commander sent " + words + " for the project ship, to the stored systems", null,
+				homeplanet.core.Event.of("GIFT").put("from", "Third Fleet Commander").put("system", pick.getId()).put("title", title).put("to", "stored_systems"));
 		return words;
 	}
 	private static SystemType missing(ShipState her, SystemType[] order) {

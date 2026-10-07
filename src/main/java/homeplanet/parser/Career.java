@@ -102,7 +102,9 @@ public final class Career {
 		v.depositToStorage(scrap);
 		if (withShip) v.grantFreeCommand("an Immersive career began", FreeCommand.KESTREL); // a Kestrel Type A, as a new FTL game starts
 		homeplanet.core.HistoryLog.entry("CAREER", (v.immersive ? "Immersive" : "Sandbox") + " career begun: stipend counts " + (salaryAll ? "every achievement" : "achievements earned from now on")
-				+ (ownProfile ? "; its own FTL profile" : "") + "; " + scrap + " scrap in the Cargo Hold" + (rules != null ? "; difficulty " + rules.describe() : ""));
+				+ (ownProfile ? "; its own FTL profile" : "") + "; " + scrap + " scrap in the Cargo Hold" + (rules != null ? "; difficulty " + rules.describe() : ""), null,
+				homeplanet.core.Event.of("CAREER").put("what", "begun").put("mode", v.immersive ? "Immersive" : "Sandbox").put("stipend", salaryAll ? "every_achievement" : "from_now").put("own_profile", ownProfile)
+						.put("scrap", scrap).put("difficulty", rules != null ? rules.describe() : null).put("with_ship", withShip));
 	}
 
 	/** The achievements the stipend counts now (real ones, not FTL's hidden unlock markers). */

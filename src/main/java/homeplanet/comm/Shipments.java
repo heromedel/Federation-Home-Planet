@@ -10,6 +10,7 @@ import java.util.Properties;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
@@ -70,6 +71,10 @@ public final class Shipments {
 		Line.writeLines(m, p.lines);
 		for (Map.Entry<String, String> e : m.fields().entrySet()) pr.setProperty("lines." + e.getKey(), e.getValue());
 		return Store.bytes(pr, "A Long Range Comm. shipment (state: " + p.state + "). Federation Home Planet rewrites this file.");
+	}
+	/** An event about a parcel: its id and state, whose it is, and its goods in words. */
+	private static Event parcelEvent(String kind, Parcel p) {
+		return Event.of(kind).put("shipment", p.id).put("state", p.state).put("incoming", p.incoming).put("peer", p.peerTitle).put("peer_station", p.peerStation).put("goods", p.words());
 	}
 	static Parcel read(File f) throws IOException {
 		Properties pr = Store.load(f);
@@ -147,7 +152,7 @@ public final class Shipments {
 		tx.put(fileOf(p.id), bytes(p));
 		Exchange.dir().mkdirs();
 		tx.commit();
-		HistoryLog.entry("SHIPMENT PACKED", p.words());
+		HistoryLog.entry("SHIPMENT PACKED", p.words(), null, parcelEvent("SHIPMENT_PACKED", p));
 		return p;
 	}
 	/** Goods into this fleet's Cargo Hold, and the parcel's new state, in one save. */
@@ -165,7 +170,7 @@ public final class Shipments {
 		log.debug("Shipment {}: unpacked into the Cargo Hold ({})", p.id, p.words());
 		if (p.incoming || !(PACKED.equals(p.state) || OUTBOX.equals(p.state))) throw new IOException("This shipment isn't waiting to be sent (" + p.state + ")");
 		intoHold(p, UNPACKED);
-		HistoryLog.entry("SHIPMENT UNPACKED", p.words() + ": back in the Cargo Hold");
+		HistoryLog.entry("SHIPMENT UNPACKED", p.words() + ": back in the Cargo Hold", null, parcelEvent("SHIPMENT_UNPACKED", p).put("to", "hold"));
 	}
 	/** Marks a parcel waiting in the Outbox for that commander. */
 	static void inOutbox(Parcel p, String toStation, String toTitle) throws IOException {
@@ -181,7 +186,7 @@ public final class Shipments {
 		p.state = p.incoming ? RETURNED : SENT;
 		if (!p.incoming) p.peerTitle = toTitle;
 		SafeFiles.write(fileOf(p.id), bytes(p));
-		HistoryLog.entry(p.incoming ? "SHIPMENT RETURNED" : "SHIPMENT SENT", p.words() + (p.incoming ? " back to " : " to ") + toTitle);
+		HistoryLog.entry(p.incoming ? "SHIPMENT RETURNED" : "SHIPMENT SENT", p.words() + (p.incoming ? " back to " : " to ") + toTitle, null, parcelEvent(p.incoming ? "SHIPMENT_RETURNED" : "SHIPMENT_SENT", p).put("to_commander", toTitle));
 	}
 	/** Taken out of the Outbox: an outgoing one is unpacked; a return goes back to waiting in the inbox. */
 	static void cancelled(Parcel p) throws IOException {
@@ -245,7 +250,7 @@ public final class Shipments {
 		p.lines = n.lines;
 		Exchange.dir().mkdirs();
 		SafeFiles.write(fileOf(p.id), bytes(p));
-		HistoryLog.entry("SHIPMENT ARRIVED", p.words() + " from " + p.peerTitle);
+		HistoryLog.entry("SHIPMENT ARRIVED", p.words() + " from " + p.peerTitle, null, parcelEvent("SHIPMENT_ARRIVED", p));
 		homeplanet.parser.Transmissions.deliver("parcel:" + p.id, n.title, "Shipment from " + n.title,
 				n.text + "\n~ " + n.title + Notes.waitedNote(n) + "\n\nThe shipment: " + p.words() + ".");
 		return true;
@@ -260,7 +265,7 @@ public final class Shipments {
 		String why = whyNot(p);
 		if (why != null) throw new IOException(why);
 		intoHold(p, ACCEPTED);
-		HistoryLog.entry("SHIPMENT ACCEPTED", p.words() + " from " + p.peerTitle + ": in the Cargo Hold");
+		HistoryLog.entry("SHIPMENT ACCEPTED", p.words() + " from " + p.peerTitle + ": in the Cargo Hold", null, parcelEvent("SHIPMENT_ACCEPTED", p).put("to", "hold"));
 	}
 	/** This commander's other fleets that may take the parcel (by the mode rules), with a Cargo Hold to put it in. */
 	public static List<String> otherFleets(Parcel p) {
@@ -288,7 +293,7 @@ public final class Shipments {
 		for (Line l : p.lines) Exchange.give(gs.getPlayerShip(), l);
 		p.state = ELSEWHERE;
 		v.begin().put(hold, SaveHelper.toBytes(gs)).put(fileOf(p.id), bytes(p)).commit();
-		HistoryLog.entry("SHIPMENT ACCEPTED", p.words() + " from " + p.peerTitle + ": in the " + Vault.title(slot) + " fleet's Cargo Hold");
+		HistoryLog.entry("SHIPMENT ACCEPTED", p.words() + " from " + p.peerTitle + ": in the " + Vault.title(slot) + " fleet's Cargo Hold", null, parcelEvent("SHIPMENT_ACCEPTED", p).put("to", "hold").put("to_fleet", Vault.title(slot)));
 	}
 	/** Returns a held parcel: it waits in the Outbox, addressed back to its sender, and goes when their station is found. */
 	public static void returnIt(Parcel p) throws IOException {
@@ -296,6 +301,6 @@ public final class Shipments {
 		Outbox.add(p.peerStation, p.peerTitle, p.host, p.port, "Returned: " + p.words() + ".", false, p.id);
 		p.state = RETURNING;
 		SafeFiles.write(fileOf(p.id), bytes(p));
-		HistoryLog.entry("SHIPMENT RETURNING", p.words() + " to " + p.peerTitle);
+		HistoryLog.entry("SHIPMENT RETURNING", p.words() + " to " + p.peerTitle, null, parcelEvent("SHIPMENT_RETURNING", p));
 	}
 }

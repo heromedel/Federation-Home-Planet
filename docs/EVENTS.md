@@ -76,23 +76,103 @@ count), `beacons_jumped` (since the last look), `at_store`.
 
 ## The station log (`log=station`; `history.log`)
 
-The station log's kinds, as `HistoryLog.entry` is called today, with a space in a kind written as `_`
-(`RENAME CREW` is `RENAME_CREW`). At 5.63 they carry `headline` (the entry's first line) and `detail.n` (its indented
-lines), which is the old wording and not yet fields: each call site gets its own fields in the next version, and its
-row here fills in then. A kind not in this table is still written (the writer never refuses one), but it is a bug to
-leave it undocumented.
+Every station-log entry carries `headline` (the entry's first line as `history.log` shows it) and `detail.n` (its
+indented lines), so the old wording is never lost, plus the fields below. A kind with several shapes says which in
+`what` (or `stage`, `how`). A ship's fields are `ship`, `ship_name`, `ship_id`, `ship_state`, `stranger`; a file or
+folder is given as it sits under the career folder (`ships/<id>.sav`, `history/<id>/`, `continue.sav`); `hold` is the
+Cargo Hold, `junkyard` the Junkyard, `stored_systems` the stored-systems list. A kind not in this table is still
+written (the writer never refuses one), but it is a bug to leave it undocumented.
 
-| Kind | Where it comes from | Fields at 5.63 |
+### Ships: the Space Dock, FTL, the Junkyard, her history (Vault)
+
+| Kind | Fields | Headline today |
 | --- | --- | --- |
-| `BOARD`, `DOCK`, `DISBAND`, `SALVAGE`, `RECOVER`, `RESTORE`, `DESTROY` | Vault: a ship's moves between the Space Dock, FTL, the Junkyard and her history | `headline`, `detail.n` |
-| `COMMISSION`, `NEW_JOURNEY`, `RENAME`, `RENAME_CREW`, `REMODEL`, `DESIGN`, `BLUEPRINT`, `BLUEPRINTS`, `CLEAN`, `PATCH` | the Space Dock, the Cargo Bay, the designs, Slipstream | `headline`, `detail.n` |
-| `BUY`, `SELL`, `SCRAP`, `TRADE`, `CREW`, `SYSTEMS`, `RETIRE`, `OVERFLOW`, `CLAIM`, `GIFT`, `REWARD`, `STIPEND` | the Cargo Bay, the Junkyard's stores, the inbox's deliveries | `headline`, `detail.n` |
-| `EXPEDITION`, `HIRE`, `MEDBAY`, `REST`, `REPAIR_JOB`, `SEIZED`, `RETURNED` | expeditions, the infirmary, Captain's Quarters, the repair job | `headline`, `detail.n` |
-| `TRANSMISSION`, `REPLY`, `CAREER`, `CAREER_ENDED`, `PLEAD`, `UNDO_PLEA`, `REASSIGN`, `UNDO_REASSIGN`, `SETTINGS`, `PROFILE`, `UPDATE` | the inbox, the career, the settings | `headline`, `detail.n` |
-| `FINAL_BATTLE`, `VICTORY`, `MUSEUM` | the final battle and the museum | `headline`, `detail.n` |
-| `LONG_RANGE_TRADE`, `TRADE_CALLED_OFF`, `SENT_AWAY`, `SENT_BACK`, `RECEIVED`, `SENT`, `HANDED_OVER`, `SWITCH_FLEET`, `LONG_RANGE_OUTBOX`, `SHIPMENT_PACKED`, `SHIPMENT_UNPACKED`, `SHIPMENT_SENT`, `SHIPMENT_ARRIVED`, `SHIPMENT_ACCEPTED`, `SHIPMENT_RETURNING`, `SHIPMENT_RETURNED` | Long Range Comm. and the fleets | `headline`, `detail.n` |
-| `VAULT`, `OVERWRITTEN` | taking stock | `headline`, `detail.n` |
-| `LOADED` | old station logs only: the fleet's listing at a refresh, the debug log's since 5.53 | `headline`, `detail.n` |
+| `BOARD` | ship, `from`, `to` | "Kestrel  ships/a3f2.sav -> continue.sav" |
+| `DOCK` | ship, `from`, `to` | "Kestrel  continue.sav -> ships/a3f2.sav" |
+| `DISBAND` | ship, `from`, `to` (junkyard) | "Kestrel  continue.sav -> junkyard/a3f2.sav" |
+| `SALVAGE` | ship, `from`, `to` | "Kestrel  junkyard/a3f2.sav -> ships/a3f2.sav" |
+| `DESTROY` | ship, `fate`, `from`, `to` (history/<id>/) | "Kestrel  junkyard/a3f2.sav -> history/a3f2/" |
+| `RECOVER` | ship, `fate` (the fate she had), `from`, `to` | "Kestrel (scrapped)  history/a3f2/20261007-043142.sav -> ships/a3f2.sav" |
+| `RESTORE` | ship, `why` (`version`, `overwritten`), `from`, `to`, `reputation_back` | "Restored the Kestrel to an earlier version" |
+| `OVERWRITTEN` | ship (the one lost), `versions`, `by`, `by_name`, `by_id`, `by_stranger` (the ship now in continue.sav) | "Kestrel (a3f2) was boarded, and continue.sav is now another ship: ..." |
+| `VAULT` | `what` (`taking_stock`, `adopted_continue`), ship (when adopted), `file`, `detail.n` (the notes) | "taking stock" |
+| `FINAL_BATTLE` | ship, `copy`, `sector`, `victories_then`, `scores_then` | "Kestrel: the Rebel Flagship is on her way to the last battle. ..." |
+| `VICTORY` | ship, `what` (`rescued`), or from FinalVictory: `victories_then`, `victories_now`, `top_scores`, `after` (the choice), `value` | "Kestrel won the last battle (...)" |
+| `MUSEUM` | ship, `scrap`, `to` | "Kestrel is honoured in the Federation museum" |
+| `REWARD` | ship, `scrap`, `to` | "120 scrap to the Cargo Hold for the Kestrel" |
+| `SENT_AWAY` | ship, `to_commander`, `to` | "Kestrel (a3f2) to Vance's fleet, over Long Range Comm." |
+| `RECEIVED` | ship, `from_commander`, `trade`, `to` | "Kestrel (a3f2) from Vance's fleet, over Long Range Comm.: docked" |
+| `RETURNED` | ship, `why` (`trade_called_off`), `to`; or from the repair job: `what` (`to_owner`), `paid`, `late` | "Kestrel (a3f2): the trade was called off, and she is back at the Space Dock" |
+| `SENT_BACK` | ship, `trade`, `to_commander` | "Kestrel (a3f2): the trade was called off, and she stays with Vance's fleet" |
+| `TRADE_CALLED_OFF` | from Vault: ship, `what` (`stays_both`), `trade`, `peer`; from Exchange: `trade`, `peer`, `peer_station`, `why`, `came_back`, `sent_back` | "with Commander Vance  (trade t1)" |
+| `LONG_RANGE_TRADE` | `trade`, `peer`, `peer_station`, `gave`, `received`, `received_to` | "with Commander Vance  (trade t1)" |
+| `SENT` | ship, `from`, `to_fleet`, `to` | "Kestrel  ships/a3f2.sav -> the Sandbox fleet's Space Dock" |
+| `HANDED_OVER` | ship, `file`, `to_fleet` | "Kestrel (continue.sav) to the Sandbox fleet, now in use" |
+| `SWITCH_FLEET` | `stage` (`leaving`, `arrived`), `to_fleet`, `parked`, `boarded` | "to the Immersive fleet; Kestrel docked here, ..." |
+| `CAREER_ENDED` | `fleet`, `copy`, `files` | "the Immersive career was ended; a copy is kept in ..." |
+| `REASSIGN`, `UNDO_REASSIGN` | `hulls` (count), `hull` (repeated: name.id), `value`, `folder` | "the Cargo Hold and 2 hull(s) from the Junkyard surrendered ..." |
+| `PLEAD`, `UNDO_PLEA` | `stage` (`agreed`, `hold_given`), `value`, `refund` | "The Federation Home Planet agreed to send a new ship ..." |
+
+### The Space Dock, the Cargo Bay, the designs, Slipstream
+
+| Kind | Fields | Headline today |
+| --- | --- | --- |
+| `COMMISSION` | ship, `detail.n` (her fittings and crew) | "Kestrel  (a3f2)" |
+| `NEW_JOURNEY` | ship, `difficulty`, `fee`, `paid` | "Kestrel  difficulty Normal, fee ..." |
+| `RENAME` | ship, `from`, `to` | "Old Glory -> Kestrel  (a3f2)" |
+| `RENAME_CREW` | `what` (`renamed`, `promoted`), `from`, `to`, `crew_id`, `race`, `rank`, `posthumously`, `place`, `ship_name`, `ship_id` | "Gracie -> Sgt. Gracie  (Kestrel)" |
+| `REMODEL` | `ship_name`, `to_class`, `detail.n` | "Kestrel -> PLAYER_SHIP_FED" |
+| `SCRAP` | `ship_name`, `stripped`, `to`, `detail.n` (what went into storage) | "Kestrel stripped into storage, hull broken up" |
+| `SELL` | from the Space Dock: `ship_name`, `how` (`auction`, `trade_in`), `price`, `to`; from the Cargo Bay: `what` (`cargo_bay`), `count`, `scrap`, `detail.n` | "Kestrel sold at auction for 80 scrap; ..." |
+| `BUY` | `what` (`cargo_bay`: `purchases`, `detail.n`; `derelict`: ship, `ship_class`, `price`, `oddity`; `salvage`: `item`, `title`, `price`; `part`: `system`, `title`, `level`, `broken`, `clearance`, `price`), `from`, `to` | "2 purchases" |
+| `TRADE` | `what` (`cargo_bay`), `ship_name`, `ship_id`, `partner_name`, `partner_id`, `detail.n` | "Kestrel <-> Spacedock Storage" |
+| `SYSTEMS` | `ship_name`, `ship_id`, `detail.n` (the changes) | "Kestrel" |
+| `CREW` | `what` (`assigned`), `crew`, `race`, `to` (`hold`, `ship`), `ship_name` | "Gracie assigned to the Kestrel." |
+| `RETIRE` | `what` (`cargo_bay`), `count`, `detail.n` | "1 crew member" |
+| `DESIGN` | `what` (`built`, `saved`, `retired`, `deleted`, `version_built`), `design`, `design_id`, `blueprint`, `version`, `kept_version`, `rooms`, `doors` | "Built Nightjar (PLAYER_SHIP_X_HP, v2)" |
+| `BLUEPRINT` | `what` (`restored_from_backup`), `blueprint` | "PLAYER_SHIP_X_HP restored from its backup ..." |
+| `BLUEPRINTS` | `changes`, `detail.n` | "3 change(s)" |
+| `CLEAN` | `count`, `detail.n` (the blueprints removed) | "Removed 2 unused blueprint(s)" |
+| `PATCH` | `ok`, `mods`, `launched_ftl`, `exit`, `detail.n` (the mods) | "Patched 2 mods with Slipstream" |
+
+### Expeditions, the infirmary, Captain's Quarters, the repair job
+
+| Kind | Fields | Headline today |
+| --- | --- | --- |
+| `EXPEDITION` | `what`: `sent` (`sector`, `sector_id`, `party`, `crew` and `race` repeated); `back` (`sector`, `sector_id`, `job`, `job_id`, `scrap`, `prize`, `prize_detail`, `captured`, `good`, `bad`, `crew` repeated, `killed` repeated); `prize_ship` (ship, `ship_class`, `to`); `recruit_declined`, `prize_ship_declined` (`name`); `job` (`job`, `job_kind`, `event_id`, `scrap`, `item`, `joined`, `lost`, `hurt` repeated); `out_of_infirmary` (`crew`); `captive_lost` (`crew`, `race`, `captors`, `why`); `ransomed` (`crew`, `race`, `captors`, `ransom`, `to`) | "Twin sent to Nebula" |
+| `HIRE` | `how` (`rescued`, `promise`, `posted`), `crew`, `race`, `cost`, `reputation`, `to` | "Posted for volunteers, 40 scrap: Bob (human) joined, in the Cargo Hold" |
+| `MEDBAY` | `crew`, `race`, `place` | "Bob's visited The Station's Medbay" |
+| `REST` | `days_in_a_row`, `cost` | "Rested in quarters (2 days in a row)" |
+| `REPAIR_JOB` | `stage` (`delivered`: ship, `to`, `cost`, `value`; `defied`: `ship_name`) | "The Nightjar delivered to the Junkyard (a3f2)" |
+| `SEIZED` | `what` (`collected`: ship, `by`; `office`: `taken`) | "The Federation Office of Salvage and Claims took ..." |
+
+### The inbox, the career, the settings
+
+| Kind | Fields | Headline today |
+| --- | --- | --- |
+| `TRANSMISSION` | `key`, `from`, `subject`, `how` (`sent`, `posted`, `delivered`), `reward` | "Expedition Command: Back from Nebula" |
+| `REPLY` | `key`, `from`, `subject`, `reply` | "Expedition Command: Yes" |
+| `CLAIM` | `key`, `subject`, `what`, `to` | "Stipend: 120 scrap to the Cargo Hold" |
+| `STIPEND` | `scrap`, `months` | "120 scrap issued, to claim from the inbox (one stipend)" |
+| `OVERFLOW` | `what` (`shipped`, `shipped_home`, `lost`), `augment`, `title`, ship or `ship_name`, `parcel`, `to` | "Kestrel had no room for ...: her crew ship it home" |
+| `GIFT` | `from`, `system`, `title`, `to` | "The Third Fleet Commander sent a ... system for the project ship, ..." |
+| `CAREER` | `what` (`begun`), `mode`, `stipend`, `own_profile`, `scrap`, `difficulty`, `with_ship` | "Immersive career begun: ..." |
+| `SETTINGS` | `commander_name`, `detail.n` (each setting changed) | "" |
+| `PROFILE` | `what` (`removed`), `removed`, `keys` | "Removed from FTL's profile: ..." |
+| `UPDATE` | `version`, `replaced`, `added`, `removed` | "New construction plans from main (5.64): ..." |
+
+### Long Range Comm. (the trades are with the ships, above)
+
+| Kind | Fields | Headline today |
+| --- | --- | --- |
+| `LONG_RANGE_OUTBOX` | `what` (`waiting`, `delivered`, `cancelled`), `to_commander`, `to_station`, `message_id`, `priority`, `waited`, `shipment` | "a message for Vance waits to go" |
+| `SHIPMENT_PACKED`, `SHIPMENT_UNPACKED`, `SHIPMENT_SENT`, `SHIPMENT_ARRIVED`, `SHIPMENT_ACCEPTED`, `SHIPMENT_RETURNING`, `SHIPMENT_RETURNED` | `shipment`, `state`, `incoming`, `peer`, `peer_station`, `goods`, `to`, `to_fleet`, `to_commander` | "3 missiles and a Burst Laser I from Vance: in the Cargo Hold" |
+
+### Old station logs only
+
+| Kind | Fields |
+| --- | --- |
+| `LOADED` | the fleet's listing at a refresh, the debug log's since 5.53: `headline`, `detail.n` |
 
 ## Adding a kind
 

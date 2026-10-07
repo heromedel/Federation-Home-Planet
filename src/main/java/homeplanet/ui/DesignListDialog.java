@@ -23,6 +23,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 
 import homeplanet.core.HomePlanet;
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.parser.ShipDesign;
 
@@ -171,7 +172,7 @@ public class DesignListDialog extends JDialog {
 						+ homeplanet.parser.CompanionMod.TITLE + " for as long as any ship needs it.\n\nRetire \"" + d.name + "\"?";
 		if (JOptionPane.showConfirmDialog(this, ask, "Design Ship", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
 		store(ShipDesign.deleteOrRetire(designs, d.id, kept));
-		HistoryLog.entry("DESIGN", (anyKept ? "Retired " : "Deleted ") + d.name + " (" + d.id + ")");
+		HistoryLog.entry("DESIGN", (anyKept ? "Retired " : "Deleted ") + d.name + " (" + d.id + ")", null, Event.of("DESIGN").put("what", anyKept ? "retired" : "deleted").put("design", d.name).put("design_id", d.id));
 	}
 	/**
 	 * Saves a design the editor handed back. Save alone changes the working copy only; Build blueprint takes a fresh
@@ -186,7 +187,8 @@ public class DesignListDialog extends JDialog {
 			if (old != null) { old.frozenOf = d.id; old.snapshotOf = null; }
 			d.version = d.pendingVersion;
 			d.pendingVersion = 0;
-			HistoryLog.entry("DESIGN", d.name + ": built as v" + d.version + (old != null ? " (v" + old.version + " kept for the ships built from it)" : ""));
+			HistoryLog.entry("DESIGN", d.name + ": built as v" + d.version + (old != null ? " (v" + old.version + " kept for the ships built from it)" : ""), null,
+					Event.of("DESIGN").put("what", "version_built").put("design", d.name).put("design_id", d.id).put("version", d.version).put("kept_version", old != null ? String.valueOf(old.version) : null));
 		} else if (old != null) designs.remove(old);
 		d.built = true;
 		ShipDesign snap = ShipDesign.copy(d);

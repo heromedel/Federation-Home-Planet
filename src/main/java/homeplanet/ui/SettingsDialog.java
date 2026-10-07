@@ -431,7 +431,7 @@ public class SettingsDialog extends JDialog {
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { ((MainFrame) frame).setBorderless(on); } }); // once Settings has closed (it closes with the window)
 		}
 		log.debug("Settings saved: {}", changed.isEmpty() ? "nothing changed" : changed);
-		if (!changed.isEmpty()) homeplanet.core.HistoryLog.entry("SETTINGS", "", changed);
+		if (!changed.isEmpty()) homeplanet.core.HistoryLog.entry("SETTINGS", "", changed, homeplanet.core.Event.of("SETTINGS").details(changed));
 		savesChanged = !saves.equals(HomePlanet.save_location);
 		HomePlanet.save_location = saves;
 		if (savesChanged) {
@@ -532,7 +532,7 @@ public class SettingsDialog extends JDialog {
 		}
 		homeplanet.parser.CompanionMod.register(all); // Commission sees the changes at once
 		if (!edited.isEmpty()) homeplanet.core.Slipstream.writeMod(); // keep the mod's copy in step
-		homeplanet.core.HistoryLog.entry("BLUEPRINTS", changed.size() + " change(s)", changed);
+		homeplanet.core.HistoryLog.entry("BLUEPRINTS", changed.size() + " change(s)", changed, homeplanet.core.Event.of("BLUEPRINTS").put("changes", changed.size()).details(changed));
 	}
 	private static String blueprintLabel(homeplanet.parser.CompanionMod.Remodel r) {
 		String own = r.loadout != null && r.loadout.className.length() > 0 ? r.loadout.className : null;

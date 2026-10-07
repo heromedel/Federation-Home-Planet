@@ -568,7 +568,7 @@ public class CommissionDialog extends JDialog {
 			crew.append(crew.length() == 0 ? "" : ", ").append(c.getName()).append(" (").append(race).append(")");
 		}
 		lines.add("Crew: " + (crew.length() == 0 ? "none" : crew.toString()));
-		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines);
+		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines, homeplanet.vault.Vault.shipEvent("COMMISSION", ship).details(lines));
 		made = ship;
 		dispose();
 	}

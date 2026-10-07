@@ -731,10 +731,15 @@ public final class Expeditions {
 		// the last outcome has told the rest: only the infirmary is news
 		StringBuilder sb = new StringBuilder();
 		if (!hurtNames.isEmpty()) sb.append(String.join(" and ", hurtNames)).append(hurtNames.size() > 1 ? " are" : " is").append(" carried to the infirmary when the shuttle docks.");
+		homeplanet.core.Event job = homeplanet.core.Event.of("EXPEDITION").put("what", "job").put("job", r.posting.title()).put("job_kind", r.posting.kind).put("event_id", r.event.id).put("scrap", r.scrap);
+		for (String x : r.items) job.put("item", x);
+		for (String x : joinedNames) job.put("joined", x);
+		for (String x : lostNames) job.put("lost", x);
+		for (String x : hurtNames) job.put("hurt", x);
 		HistoryLog.entry("EXPEDITION", r.posting.title() + " (\"" + r.posting.text + "\", " + r.event.id + "): " + r.scrap + " scrap"
 				+ (r.items.isEmpty() ? "" : ", " + String.join(", ", r.items)) + (joinedNames.isEmpty() ? "" : "; joined: " + String.join(", ", joinedNames))
 				+ (lostNames.isEmpty() ? "" : "; did not come back: " + String.join(", ", lostNames))
-				+ (hurtNames.isEmpty() ? "" : "; to the infirmary: " + String.join(", ", hurtNames)));
+				+ (hurtNames.isEmpty() ? "" : "; to the infirmary: " + String.join(", ", hurtNames)), null, job);
 		v.countBeacon("a job from the board"); // after its entry (5.20): the job is told on the day it was taken, closing it
 		return sb.toString();
 	}
@@ -857,7 +862,7 @@ public final class Expeditions {
 		// those whose time is up are let go (any no longer in the Cargo Hold, retired or moved, quietly)
 		for (int i = 0; i < keep.size(); i++) { q.setProperty(i + ".name", keep.get(i).name); q.setProperty(i + ".race", keep.get(i).race); q.setProperty(i + ".until", Integer.toString(keep.get(i).until)); q.setProperty(i + ".drained", Integer.toString(now)); if (keep.get(i).mark != null) q.setProperty(i + ".mark", keep.get(i).mark); }
 		try { writeProps(infirmaryFile(v), q, INFIRMARY_NOTE); } catch (IOException e) { log.warn("Could not write the infirmary: {}", e.toString()); }
-		for (String n : back) HistoryLog.entry("EXPEDITION", n + " is out of the infirmary");
+		for (String n : back) HistoryLog.entry("EXPEDITION", n + " is out of the infirmary", null, homeplanet.core.Event.of("EXPEDITION").put("what", "out_of_infirmary").put("crew", n));
 		return back;
 	}
 	/**
@@ -871,7 +876,7 @@ public final class Expeditions {
 		int seen = Store.num(was, k, now);
 		if (now > seen) {
 			x.setHealth(max);
-			HistoryLog.entry("MEDBAY", x.getName() + "'s visited The Station's Medbay");
+			HistoryLog.entry("MEDBAY", x.getName() + "'s visited The Station's Medbay", null, homeplanet.core.Event.of("MEDBAY").put("crew", x.getName()).put("race", x.getRace().getId()).put("place", place));
 			return true;
 		}
 		q.setProperty(k, Integer.toString(seen));
@@ -972,7 +977,8 @@ public final class Expeditions {
 	/** Word of a captive lost for good: the Ambassador's letter, and the history log. */
 	private static void lost(Captive c, String why) {
 		Transmissions.deliver("presumed:" + c.index + ":" + c.name, AMBASSADOR, "Presumed dead: " + c.name, lostLetter(c));
-		HistoryLog.entry("EXPEDITION", c.name + ", taken by " + c.captors + ": " + why + "; presumed dead");
+		HistoryLog.entry("EXPEDITION", c.name + ", taken by " + c.captors + ": " + why + "; presumed dead", null,
+				homeplanet.core.Event.of("EXPEDITION").put("what", "captive_lost").put("crew", c.name).put("race", c.race).put("captors", c.captors).put("why", why));
 	}
 	/** The ransom a letter is about, if it can still be paid or refused (its key: "ransom:<n>" or "ransom-reminder:<n>"), else null. */
 	public static synchronized Captive openRansom(Vault v, String key) {
@@ -1039,7 +1045,8 @@ public final class Expeditions {
 		hold.setScrapAmt(hold.getScrapAmt() - c.ransom);
 		p.setProperty(c.index + ".state", "ransomed");
 		v.begin().put(st, cp.save, cp.hash).put(captivesFile(v), propsBytes(p, CAPTIVES_NOTE)).commit(); // paid and marked together: never twice
-		HistoryLog.entry("EXPEDITION", c.name + " ransomed from " + c.captors + " for " + c.ransom + " scrap, back in the Cargo Hold");
+		HistoryLog.entry("EXPEDITION", c.name + " ransomed from " + c.captors + " for " + c.ransom + " scrap, back in the Cargo Hold", null,
+				homeplanet.core.Event.of("EXPEDITION").put("what", "ransomed").put("crew", c.name).put("race", c.race).put("captors", c.captors).put("ransom", c.ransom).put("to", "hold"));
 		homeplanet.vault.Reputation.ransomed(v, c.name); // +2: brought home
 	}
 	/** A captive's kept record (skills, service, looks), or null for one taken before records were kept. */
@@ -1111,7 +1118,9 @@ public final class Expeditions {
 		if (cost > 0 || hired != null) v.begin().put(st, c.save, c.hash).commit();
 		if (rep > 0) homeplanet.vault.Reputation.spend(v, rep, "A promise of adventure posted" + (hired == null ? ", unanswered" : ": " + hired.getName() + " answered"));
 		HistoryLog.entry("HIRE", (cost == 0 ? "A promise of adventure" + (rep > 0 ? ", " + rep + " reputation" : "") : "Posted for volunteers, " + cost + " scrap") + ": "
-				+ (hired == null ? "no one answered" : hired.getName() + " (" + hired.getRace().getId() + ") joined, in the Cargo Hold"));
+				+ (hired == null ? "no one answered" : hired.getName() + " (" + hired.getRace().getId() + ") joined, in the Cargo Hold"), null,
+				homeplanet.core.Event.of("HIRE").put("how", cost == 0 ? "promise" : "posted").put("cost", cost).put("reputation", rep).put("crew", hired == null ? null : hired.getName())
+						.put("race", hired == null ? null : hired.getRace().getId()).put("to", hired == null ? null : "hold"));
 		return hired;
 	}
 }

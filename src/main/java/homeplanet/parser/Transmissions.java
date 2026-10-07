@@ -29,6 +29,7 @@ import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.ShipBlueprint;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
@@ -333,7 +334,7 @@ public final class Transmissions {
 		}
 		for (homeplanet.vault.Overflow.Parcel x : homeplanet.vault.Overflow.take(v)) { // augments she had no room for, crated up by her crew
 			if (homeplanet.core.Economy.augmentsHome()) shipped(all, sent, x, rank);
-			else HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career");
+			else HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career", null, overflow("lost", x));
 		}
 		if (HomePlanet.career() && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
 		// reply chains: a letter for what the fleet has been through, and the letters now due
@@ -426,7 +427,7 @@ public final class Transmissions {
 		save(all);
 		m.replied = words;
 		m.read = true;
-		HistoryLog.entry("REPLY", m.from + ": " + words);
+		HistoryLog.entry("REPLY", m.from + ": " + words, null, letter("REPLY", m).put("reply", words));
 	}
 	/** The stipend for whole months travelled (every 30 to 60 beacons, by difficulty), in one message: its scrap is claimed into the Cargo Hold. */
 	private static void payStipend(List<Message> all, java.util.Set<String> sent, Unlocks u, String rank) {
@@ -461,7 +462,7 @@ public final class Transmissions {
 			return;
 		}
 		sent.add(m.key);
-		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + (months == 1 ? "one stipend" : months + " stipends") + ")");
+		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + (months == 1 ? "one stipend" : months + " stipends") + ")", null, Event.of("STIPEND").put("scrap", amount).put("months", months));
 	}
 	/** A stipend's notice: deleted rather than archived once claimed, so they don't pile up. */
 	public static boolean isStipend(Message m) { return m.key.startsWith("stipend:"); }
@@ -540,7 +541,7 @@ public final class Transmissions {
 		m.reward = "";
 		all.add(0, m);
 		save(all);
-		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
+		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "posted"));
 	}
 	/** A rescued ship's offer (keep her, or the museum's price), until it's decided. */
 	public static boolean isRescue(Message m) { return m.key.startsWith("rescue:"); }
@@ -574,7 +575,7 @@ public final class Transmissions {
 		all.add(0, m);
 		try {
 			save(all);
-			HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
+			HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "delivered"));
 		} catch (IOException e) {
 			log.warn("Could not deliver {}: {}", key, e.toString());
 		}
@@ -598,9 +599,9 @@ public final class Transmissions {
 			Ship st = v.storage();
 			Vault.Copy c = v.readCopy(st);
 			for (homeplanet.vault.Overflow.Parcel x : ps) {
-				if (!homeplanet.core.Economy.augmentsHome()) { HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home"); continue; }
+				if (!homeplanet.core.Economy.augmentsHome()) { HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home", null, overflow("lost", x)); continue; }
 				c.save.getPlayerShip().getAugmentIdList().add(x.augment);
-				HistoryLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of " + ShipNames.the(x.ship) + ", is in the Cargo Hold");
+				HistoryLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of " + ShipNames.the(x.ship) + ", is in the Cargo Hold", null, overflow("shipped_home", x).put("to", "hold"));
 			}
 			v.begin().put(st, c.save, c.hash).commit();
 		} catch (IOException e) {
@@ -649,7 +650,7 @@ public final class Transmissions {
 		m.cost = t.cost;
 		all.add(0, m); // newest first
 		sent.add(key);
-		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
+		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "sent").put("reward", m.reward == null || m.reward.isEmpty() ? null : m.reward));
 	}
 	private static String fill(String s, String rank, String ship) {
 		if (s.contains("{start}")) s = s.replace("{start}", Integer.toString(Career.startingScrap())); // the career's sign-on bonus, by difficulty
@@ -657,6 +658,10 @@ public final class Transmissions {
 		return ShipNames.fill(s.replace("{rank}", rank), "ship", ship); // "the {ship}" fitted to her name (5.31)
 	}
 	/** Has a letter with this key been sent to this fleet? */
+	/** An event about a letter: its key, who it is from and its subject. */
+	private static Event letter(String kind, Message m) { return Event.of(kind).put("key", m.key).put("from", m.from).put("subject", m.subject); }
+	/** An event about an augment the boarded ship had no room for. */
+	private static Event overflow(String what, homeplanet.vault.Overflow.Parcel x) { return Event.of("OVERFLOW").put("what", what).put("augment", x.augment).put("title", Items.title(x.augment)).put("ship_name", x.ship); }
 	public static synchronized boolean wasSent(String key) {
 		for (Message m : load()) if (m.key.equals(key)) return true;
 		return false;
@@ -790,7 +795,7 @@ public final class Transmissions {
 		}
 		m.claimed = true;
 		m.claimedWhat = what;
-		HistoryLog.entry("CLAIM", m.subject + ": " + what + " to the Cargo Hold");
+		HistoryLog.entry("CLAIM", m.subject + ": " + what + " to the Cargo Hold", null, letter("CLAIM", m).put("what", what).put("to", "hold"));
 		return what;
 	}
 	/** Moves a message to the Archive (read), or back to the inbox. */
