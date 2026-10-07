@@ -76,3 +76,22 @@ Captain's Log and the Cargo Bay's day read it whole. A week of heromedel's testi
 so a long career could reach several megabytes: still quick to read, but each Cargo Bay Save reads it to find the last
 day line. If it ever matters: keep the last day line's reason in a small file of its own, and let the Captain's Log
 read the file a page at a time (or split it by year). Claude's concern, raised while building it; heromedel hasn't weighed in.
+
+## 5. Docked play needs FTL in a window, and FTL's OpenGL is slow there on some PCs (noted 5.64)
+
+**What it is.** Docked play (Settings, "Option to Play FTL, docked") sets FTL to windowed, since a fullscreen FTL can't
+sit in the station's window. On heromedel's PC (Windows, NVIDIA) FTL's loading bar then took 88 seconds instead of 6:
+FTL.log's "Resource Preload: 88.474" windowed against 5.956 in native fullscreen. Windowed and borderless fullscreen were
+both slow, V-Sync off didn't help, and a vanilla ftl.dat, Steam, the profile and the station's files made no difference.
+FTL redraws its loading bar about 250 times while it loads, and each redraw waits until it's shown, so a slow way to the
+screen stretches the whole load (tested under Wine: each frame held 100 ms made the load 33 s instead of 8).
+
+**The way out (5.64).** FTL 1.6 has two renderers, picked by its `-directx` and `-opengl` switches. With `-directx`
+(Direct3D 11) windowed FTL loaded fast on heromedel's PC and docked as usual. Settings has "Launch FTL with DirectX"
+beside the docked option: the station starts FTLGame.exe with `-directx`, or Steam with `steam://run/212680//-directx/`.
+
+**Still open.** Whether Steam asks before passing the switch (heromedel to test); and the main-menu route for players
+it doesn't help: FTL reads continue.sav only when Continue is pressed, so a player who goes back to FTL's main menu
+(not Save + Quit) can dock and board while it waits there and loads FTL once a session (tested under Wine, 5.63).
+FTL rewrites its profile (ae_prof.sav) at the menu and on quitting, so anything that changes the profile still waits
+for FTL to close.

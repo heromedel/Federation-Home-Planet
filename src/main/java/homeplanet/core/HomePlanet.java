@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.63";
+	public static final String APP_VERSION = "5.64";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -48,6 +48,11 @@ public class HomePlanet {
 
 	// ---- settings (all kept in the cfg) ----
 	public static boolean launchThroughSteam = false;
+	/**
+	 * FTL started with its -directx switch (heromedel, 5.64): Direct3D instead of OpenGL, Windows only. In a window (docked
+	 * included) FTL's loading took 88 s with OpenGL on heromedel's PC, a few with Direct3D.
+	 */
+	public static boolean launchDirectX = false;
 	/** Ships can only trade in the Cargo Bay while docked at a station (a beacon with a store). */
 	public static boolean storeRequirement = false;
 	/** A New Journey can only begin while the boarded ship is docked at a station. */
@@ -150,6 +155,7 @@ public class HomePlanet {
 			public void uncaughtException(Thread t, Throwable e) { log.error("Uncaught in " + t.getName(), e); }
 		});
 		launchThroughSteam = flag("launch_through_steam");
+		launchDirectX = flag("launch_directx");
 		storeRequirement = flag("store_requirement");
 		journeyStoreRequirement = flag("new_journey_store_requirement");
 		stripAllowed = flag("strip_when_scrapping");
@@ -342,6 +348,7 @@ public class HomePlanet {
 		if (save_location != null) config.setProperty("ftlSavePath", save_location.getAbsolutePath());
 		if (datsPath != null) config.setProperty("ftlDatsPath", datsPath.getAbsolutePath());
 		config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
+		config.setProperty("launch_directx", Boolean.toString(launchDirectX));
 		config.setProperty("debug_logging", Boolean.toString(debugLogging));
 		config.setProperty("store_requirement", Boolean.toString(storeRequirement));
 		config.setProperty("new_journey_store_requirement", Boolean.toString(journeyStoreRequirement));
@@ -456,9 +463,10 @@ public class HomePlanet {
 		String empty = noOneAboard(cont);
 		if (empty != null) { showErrorDialog(empty); return false; }
 		Music.stop(); // FTL has its own music
+		boolean dx = directX();
 		if (launchThroughSteam) {
-			String steamUri = "steam://rungameid/" + FTLUtilities.STEAM_APPID_FTL;
-			log.debug("Running FTL through Steam: {}", steamUri);
+			String steamUri = steamUri(dx);
+			log.debug("Running FTL through Steam{}: {}", dx ? ", with DirectX" : "", steamUri);
 			try {
 				if (System.getProperty("os.name").startsWith("Windows")) new ProcessBuilder("cmd", "/c", "start", "", steamUri).start();
 				else java.awt.Desktop.getDesktop().browse(new java.net.URI(steamUri));
@@ -476,9 +484,10 @@ public class HomePlanet {
 			showErrorDialog("The Home Planet Station could not find FTL's executable near:\n" + datsPath + "\n\nCheck the game folder in Settings.");
 			return false;
 		}
-		log.debug("Running FTL: {}", ftl.getAbsolutePath());
+		List<String> cmd = exeCommand(ftl, dx);
+		log.debug("Running FTL{}: {}", dx ? ", with DirectX" : "", cmd);
 		try {
-			ProcessBuilder builder = new ProcessBuilder(ftl.getAbsolutePath());
+			ProcessBuilder builder = new ProcessBuilder(cmd);
 			builder.directory(ftl.getParentFile()); // the exe expects its own folder as the working directory
 			builder.start();
 			return true;
@@ -487,6 +496,20 @@ public class HomePlanet {
 			showErrorDialog("FTL could not be started:\n" + ex);
 			return false;
 		}
+	}
+
+	/** The DirectX option, on Windows only: FTL's Mac and Linux builds have no Direct3D. */
+	public static boolean directX() { return launchDirectX && System.getProperty("os.name", "").startsWith("Windows"); }
+	/** Steam's link for FTL: steam://run carries the -directx switch, steam://rungameid can carry none. */
+	public static String steamUri(boolean directX) {
+		return directX ? "steam://run/" + FTLUtilities.STEAM_APPID_FTL + "//-directx/" : "steam://rungameid/" + FTLUtilities.STEAM_APPID_FTL;
+	}
+	/** FTL's own program, with -directx when asked. */
+	public static List<String> exeCommand(File exe, boolean directX) {
+		List<String> cmd = new java.util.ArrayList<String>();
+		cmd.add(exe.getAbsolutePath());
+		if (directX) cmd.add("-directx");
+		return cmd;
 	}
 
 	/**
