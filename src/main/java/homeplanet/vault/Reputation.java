@@ -120,13 +120,19 @@ public final class Reputation {
 			if (u.problem() != null) return out;
 			for (String id : homeplanet.parser.UnlockGrants.newAchievements(u)) {
 				net.blerf.ftl.xml.Achievement a = net.blerf.ftl.parser.DataManager.get().getAchievement(id);
-				if (a != null && !a.isVictory() && !a.isQuest()) out.add(id);
+				if (a != null && !a.isVictory() && !a.isQuest() && !victory(id)) out.add(id);
 			}
 		} catch (Exception e) {
 			log.warn("Could not read the FTL profile's achievements: {}", e.toString());
 		}
 		return out;
 	}
+	/**
+	 * FTL's victory achievements (Federation Victory, Easy and Normal): told in their own letter when won, then never
+	 * scored or told again, as the war goes on (hard rule 1; heromedel, 5.60). The parser's isVictory() marks only its own
+	 * PLAYER_SHIP_*_VICTORY markers, not these.
+	 */
+	public static boolean victory(String achievementId) { return "ACH_WIN_EASY".equals(achievementId) || "ACH_WIN_NORMAL".equals(achievementId); }
 	private static String achievementName(String id) {
 		try { return net.blerf.ftl.parser.DataManager.get().getAchievement(id).getName().getTextValue(); } catch (Exception e) { return id; }
 	}
@@ -359,6 +365,31 @@ public final class Reputation {
 		p.setProperty("counted", new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()));
 		p.setProperty("total", Integer.toString(total));
 		if (write(v, p)) entry(v, total, "Service record reviewed: the fleet's service so far", details);
+	}
+	/**
+	 * Enemy ships the career's ships have defeated (the rank letters, 5.60): every ship that served, in the fleet now or
+	 * gone from it, each from her own save since she joined or her last trade, as the review counts them. A ship gone
+	 * counts only with a fate recorded (lost, destroyed, traded away...): an uncommissioned ship sent to the other fleet
+	 * leaves a history folder without one, and was never the career's.
+	 */
+	public static int defeatedInService(Vault v) {
+		int n = 0;
+		java.util.Set<String> inFleet = new java.util.HashSet<String>();
+		for (Ship s : v.all()) {
+			if (s.state == Ship.State.STORAGE) continue;
+			inFleet.add(s.id);
+			if (!v.ignoring(s)) n += defeatedSince(v, s.id, s.save()); // an ignored one isn't the career's ship (5.54)
+		}
+		File[] dirs = v.historyDir().listFiles();
+		if (dirs != null) for (File d : dirs) {
+			if (d.isDirectory() && !inFleet.contains(d.getName()) && new File(d, "fate.txt").isFile()) n += defeatedSince(v, d.getName(), lastSave(d));
+		}
+		return n;
+	}
+	private static int defeatedSince(Vault v, String id, SavedGameState gs) {
+		if (gs == null) return 0;
+		TradeMark m = TradeMark.of(v, id);
+		return Math.max(0, gs.getTotalShipsDefeated() - (m == null ? 0 : m.defeated));
 	}
 	/** A history folder of a ship that served (a voyage log or a kept save), not the Cargo Hold's. */
 	private static boolean served(File d) {

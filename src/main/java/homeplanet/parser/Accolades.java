@@ -21,10 +21,11 @@ import homeplanet.vault.Vault;
 
 /**
  * A rank letter's {accolade} (heromedel, 5.57): one line naming something the career really did, so the Admiralty
- * sounds like it has been reading about you, with a figure or two, never a score. Drawn from the station's records:
- * the ship that has done the most (her jumps), the latest achievement, the model commissioned most, the ships defeated,
- * a veteran crew member, the expeditions. Never the Rebel Flagship (heromedel). Each kind is used once a career, so
- * no two letters say the same thing; with nothing left to say, the line is left out.
+ * sounds like it has been reading about you, with a figure or two, never a score. Drawn from the station's records and
+ * the ships' own saves (their real counts, 5.60): the ship that has done the most (her jumps), the latest achievement,
+ * the model commissioned most, the ships defeated, a veteran crew member, the expeditions. Never the Rebel Flagship, nor
+ * a victory achievement (heromedel). Each kind is used once a career, so no two letters say the same thing; with
+ * nothing left to say, the line is left out.
  */
 public final class Accolades {
 	private static final Logger log = LoggerFactory.getLogger(Accolades.class);
@@ -137,14 +138,14 @@ public final class Accolades {
 		Map<String, String[]> have = new LinkedHashMap<String, String[]>(); // kind -> {ship, n, achievement, model, crew}
 		String rep = text(new File(v.root, "reputation.log"));
 		String hist = text(new File(v.root, "history.log"));
-		homeplanet.vault.Ship best = bestShip(v, rep);
-		int jumps = best == null ? 0 : count(voyage(v, best), "(?m)^\\S+ \\S+  Jumped");
+		homeplanet.vault.Ship best = mostJumps(v);
+		int jumps = best == null ? 0 : jumps(v, best);
 		if (jumps >= 2) have.put("ship", new String[] {best.name, Integer.toString(jumps), null, null, null});
 		String ach = latestAchievement(rep);
 		if (ach != null) have.put("achievement", new String[] {null, null, ach, null, null});
 		String[] model = mostFlown(hist);
 		if (model != null) have.put("model", new String[] {null, model[1], null, model[0], null});
-		int fights = defeated(v);
+		int fights = homeplanet.vault.Reputation.defeatedInService(v);
 		if (fights >= 3) have.put("fights", new String[] {null, Integer.toString(fights), null, null, null});
 		String crew = veteran(v);
 		if (crew != null) have.put("crew", new String[] {null, null, null, null, crew});
@@ -173,39 +174,55 @@ public final class Accolades {
 		return n >= 0 && n < w.length ? w[n] : String.format("%,d", n);
 	}
 	private static int count(String s, String regex) { int n = 0; Matcher m = Pattern.compile(regex).matcher(s); while (m.find()) n++; return n; }
-	private static String voyage(Vault v, homeplanet.vault.Ship s) { return text(new File(new File(new File(v.root, "history"), s.id), "voyage.log")); }
-	/** Enemy ships the fleet's ships have defeated, by their voyage logs ("2 ships defeated (5 in all)"). */
-	static int defeated(Vault v) {
-		int n = 0;
+	/**
+	 * Her jumps in the career's service, from her own save (heromedel, 5.60): beacons explored since she joined the fleet,
+	 * less the one she started at, or since her last trade (CLAUDE.md, traded ships). Her voyage log can't count them: it
+	 * has a line for each save the station saw, and FTL flown with the station closed is one line for many jumps.
+	 */
+	static int jumps(Vault v, homeplanet.vault.Ship s) {
+		net.blerf.ftl.parser.SavedGameParser.SavedGameState gs = s.save();
+		if (gs == null) return 0;
+		homeplanet.vault.TradeMark m = homeplanet.vault.TradeMark.of(v, s.id);
+		return Math.max(0, gs.getTotalBeaconsExplored() - (m == null ? 1 : m.beacons));
+	}
+	/** The fleet's ship (still on the books, not the Cargo Hold) with the most jumps in the career's service, or null. */
+	static homeplanet.vault.Ship mostJumps(Vault v) {
+		homeplanet.vault.Ship best = null;
+		int most = 0;
 		for (homeplanet.vault.Ship s : v.all()) {
-			Matcher m = Pattern.compile("(?m)^\\S+ \\S+  (\\d+) ships? defeated").matcher(voyage(v, s));
-			while (m.find()) n += Integer.parseInt(m.group(1));
+			if (s.isStorage() || v.ignoring(s)) continue; // an ignored one isn't the career's ship (5.54)
+			int n = jumps(v, s);
+			if (n > most) { most = n; best = s; }
 		}
-		return n;
+		return best;
 	}
-
-	/** The fleet's ship (still on the books) whose service has earned the most, by the reputation log's "Name: …" lines. */
-	static homeplanet.vault.Ship bestShip(Vault v, String rep) {
-		Map<String, Integer> sum = new LinkedHashMap<String, Integer>();
-		Map<String, homeplanet.vault.Ship> names = new LinkedHashMap<String, homeplanet.vault.Ship>();
-		for (homeplanet.vault.Ship s : v.all()) if (s.name != null) names.put(s.name, s);
-		Pattern p = Pattern.compile("^\\S+ \\S+  ([+−-]?\\d+)  (.+?): ");
-		for (String l : rep.split("\r?\n")) {
-			Matcher m = p.matcher(l);
-			if (!m.find() || !names.containsKey(m.group(2))) continue;
-			int n = Integer.parseInt(m.group(1).replace("−", "-").replace("+", ""));
-			sum.put(m.group(2), (sum.containsKey(m.group(2)) ? sum.get(m.group(2)) : 0) + n);
-		}
-		String best = null;
-		for (Map.Entry<String, Integer> e : sum.entrySet()) if (e.getValue() > 0 && (best == null || e.getValue() > sum.get(best))) best = e.getKey();
-		return best == null ? null : names.get(best);
-	}
-	/** The latest FTL achievement the career was credited with ("An achievement: X" or "2 achievements: X, Y"). */
+	/**
+	 * The latest FTL achievement the career was credited with ("An achievement: X" or "2 achievements: X, Y"), never a
+	 * victory: a career's log from before 5.60 may name one, and after its own letter the war goes on (hard rule 1).
+	 */
 	static String latestAchievement(String rep) {
 		String last = null;
 		Matcher m = Pattern.compile("(?m)achievements?: (.+?) \\(\\+\\d+\\)\\s*$").matcher(rep);
-		while (m.find()) { String[] w = m.group(1).split(", "); last = w[w.length - 1].trim(); }
+		while (m.find()) { String one = lastNamed(m.group(1)); if (one != null) last = one; }
 		return last;
+	}
+	/**
+	 * The last of FTL's achievements named in a log line's list, never a victory. Found by FTL's names, not by splitting
+	 * at commas: one has a comma of its own ("Givin' her all she's got, Captain!").
+	 */
+	private static String lastNamed(String said) {
+		String best = null;
+		int at = -1;
+		try {
+			for (Map.Entry<String, net.blerf.ftl.xml.Achievement> e : DataManager.get().getAchievements().entrySet()) {
+				if (e.getValue().getName() == null || homeplanet.vault.Reputation.victory(e.getKey())) continue;
+				String n = e.getValue().getName().getTextValue();
+				int i = n == null || n.isEmpty() ? -1 : said.lastIndexOf(n);
+				if (i < 0 || (i > 0 && !said.startsWith(", ", i - 2)) || (i + n.length() < said.length() && !said.startsWith(", ", i + n.length()))) continue; // a whole name in the list
+				if (i > at || (i == at && n.length() > best.length())) { at = i; best = n; }
+			}
+		} catch (RuntimeException e) { log.debug("Could not look up FTL's achievements: {}", e.toString()); }
+		return best;
 	}
 	/** FTL's id for an achievement's name, or null. */
 	static String achievementId(String name) {
