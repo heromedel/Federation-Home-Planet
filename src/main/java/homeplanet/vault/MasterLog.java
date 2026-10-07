@@ -64,6 +64,9 @@ public final class MasterLog {
 	/** A day the clock counted, and why (the clock already moved: this is its count after). */
 	public static void day(Vault v, int clockAfter, String why) {
 		write(v, "D\t" + now() + "\t" + dayAt(v, clockAfter) + "\t" + flat(why));
+		int day = dayAt(v, clockAfter);
+		homeplanet.core.EventLog.write(v, homeplanet.core.Event.of("DAY").put("log", "clock").put("day", day).put("clock", clockAfter).put("why", why)
+				.human("A day passed: " + why.replaceAll(" \\(\\d+ counted together\\)", "") + "."));
 	}
 	/** An entry one of the career's logs got: which log, and what it said. Never throws. */
 	public static void entry(Vault v, String log, String text) {

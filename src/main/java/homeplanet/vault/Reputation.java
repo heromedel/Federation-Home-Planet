@@ -89,7 +89,7 @@ public final class Reputation {
 		p.setProperty("achievements", String.join("|", had));
 		int pts = fresh.size() * ACHIEVEMENT;
 		p.setProperty("total", Integer.toString(num(p, "total") + pts));
-		if (write(v, p)) entry(v, pts, (fresh.size() == 1 ? "An achievement: " : fresh.size() + " achievements: ") + String.join(", ", names) + " (+" + pts + ")", null);
+		if (write(v, p)) entry(v, "achievement", pts, (fresh.size() == 1 ? "An achievement: " : fresh.size() + " achievements: ") + String.join(", ", names) + " (+" + pts + ")", null);
 	}
 	/**
 	 * Each Federation Cruiser layout unlocked in the career's service (Ranks From Rep, heromedel, 5.56): +100, once. Not
@@ -117,7 +117,7 @@ public final class Reputation {
 		if (write(v, p) && pts > 0) {
 			List<String> names = new ArrayList<String>();
 			for (String k : fresh) names.add(homeplanet.parser.UnlockGrants.describe(k));
-			entry(v, pts, String.join(", ", names) + " unlocked (+" + pts + ")", null);
+			entry(v, "cruiser", pts, String.join(", ", names) + " unlocked (+" + pts + ")", null);
 		}
 	}
 	/** FTL's real achievements earned since the fleet's record began (empty if the profile can't be read). */
@@ -210,7 +210,7 @@ public final class Reputation {
 			now.put(p, s.id, scrap % SCRAP_PER_POINT);
 			if (points != 0 || !why.isEmpty()) {
 				p.setProperty("total", Integer.toString(num(p, "total") + points));
-				if (write(v, p)) entry(v, points, s.name + ": " + String.join(", ", why), null);
+				if (write(v, p)) entry(v, "voyage", points, s.name + ": " + String.join(", ", why), null);
 			} else {
 				write(v, p);
 			}
@@ -247,7 +247,7 @@ public final class Reputation {
 			Props.forget(p, s.id);
 			if (sector >= LAST_STAND || !shown()) { write(v, p); return 0; }
 			p.setProperty("total", Integer.toString(num(p, "total") + SHIP_LOST));
-			if (write(v, p)) { entry(v, SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null); return SHIP_LOST; }
+			if (write(v, p)) { entry(v, "ship_lost", SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null); return SHIP_LOST; }
 			return 0;
 		}
 	}
@@ -257,7 +257,7 @@ public final class Reputation {
 			if (taken == 0) return;
 			Properties p = read(v);
 			p.setProperty("total", Integer.toString(num(p, "total") - taken));
-			if (write(v, p)) entry(v, -taken, s.name + " was restored after FTL's New Game wrote over her (" + signed(-taken) + ")", null);
+			if (write(v, p)) entry(v, "restored", -taken, s.name + " was restored after FTL's New Game wrote over her (" + signed(-taken) + ")", null);
 		}
 	}
 	/**
@@ -281,7 +281,7 @@ public final class Reputation {
 			Properties p = read(v);
 			if (!counted(p)) { review(v); p = read(v); }
 			p.setProperty("total", Integer.toString(num(p, "total") + points));
-			if (write(v, p)) entry(v, points, "Expedition: " + what + " (" + signed(points) + ")", why);
+			if (write(v, p)) entry(v, "expedition", points, "Expedition: " + what + " (" + signed(points) + ")", why);
 		}
 	}
 	/** Crew taken captive on the board of jobs (the crew expeditions count them in their report's entry). */
@@ -292,7 +292,7 @@ public final class Reputation {
 			Properties p = read(v);
 			if (!counted(p)) { review(v); p = read(v); }
 			p.setProperty("total", Integer.toString(num(p, "total") + points));
-			if (write(v, p)) entry(v, points, "Taken captive: " + String.join(", ", names) + " (" + signed(points) + ")", null);
+			if (write(v, p)) entry(v, "captive", points, "Taken captive: " + String.join(", ", names) + " (" + signed(points) + ")", null);
 		}
 	}
 	/** A captive brought home: the ransom paid. */
@@ -302,7 +302,7 @@ public final class Reputation {
 			Properties p = read(v);
 			if (!counted(p)) { review(v); p = read(v); }
 			p.setProperty("total", Integer.toString(num(p, "total") + RANSOMED));
-			if (write(v, p)) entry(v, RANSOMED, "Ransomed: " + name + " brought home (" + signed(RANSOMED) + ")", null);
+			if (write(v, p)) entry(v, "ransomed", RANSOMED, "Ransomed: " + name + " brought home (" + signed(RANSOMED) + ")", null);
 		}
 	}
 	/** Can this much be spent without going below zero (the fees reputation may pay; a plea, a promise and rest may go below)? */
@@ -316,7 +316,7 @@ public final class Reputation {
 			Properties p = read(v);
 			if (!counted(p)) { review(v); p = read(v); }
 			p.setProperty("total", Integer.toString(num(p, "total") - cost));
-			if (write(v, p)) entry(v, -cost, why + " (" + signed(-cost) + ")", null);
+			if (write(v, p)) entry(v, "spent", -cost, why + " (" + signed(-cost) + ")", null);
 		}
 	}
 	/** She won the last battle: the Rebel Flagship defeated. */
@@ -326,7 +326,7 @@ public final class Reputation {
 			Properties p = read(v);
 			if (!counted(p)) { review(v); return; } // the review finds her in the Hall of Victors
 			p.setProperty("total", Integer.toString(num(p, "total") + FLAGSHIP));
-			if (write(v, p)) entry(v, FLAGSHIP, name + " defeated the Rebel Flagship (+" + FLAGSHIP + ")", null);
+			if (write(v, p)) entry(v, "flagship", FLAGSHIP, name + " defeated the Rebel Flagship (+" + FLAGSHIP + ")", null);
 		}
 	}
 
@@ -391,7 +391,7 @@ public final class Reputation {
 			}
 			p.setProperty("counted", new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()));
 			p.setProperty("total", Integer.toString(total));
-			if (write(v, p)) entry(v, total, "Service record reviewed: the fleet's service so far", details);
+			if (write(v, p)) entry(v, "review", total, "Service record reviewed: the fleet's service so far", details);
 		}
 	}
 	/**
@@ -616,7 +616,9 @@ public final class Reputation {
 	private static void add(Map<String, Integer> pools, String k, int n) { pools.put(k, pools.get(k) + n); }
 
 	/** One entry in the reputation log, in the station log's form: its time, the change as its tag, why, and details under it. */
-	private static void entry(Vault v, int points, String why, List<String> details) {
+	private static void entry(Vault v, int points, String why, List<String> details) { entry(v, "other", points, why, details); }
+	/** As above, with what the change was for (the event's reason field: achievement, cruiser, voyage, ship_lost, restored, expedition, captive, ransomed, spent, flagship, review). */
+	private static void entry(Vault v, String reason, int points, String why, List<String> details) {
 		StringBuilder sb = new StringBuilder(log(v));
 		sb.append(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date())).append("  ").append(signed(points)).append("  ").append(why).append('\n');
 		if (details != null) for (String d : details) sb.append("  ").append(d).append('\n');
@@ -625,6 +627,8 @@ public final class Reputation {
 		StringBuilder t = new StringBuilder(signed(points) + "  " + why);
 		if (details != null) for (String d : details) t.append("\n").append(d);
 		MasterLog.entry(v, "reputation", t.toString());
+		Properties p = read(v);
+		homeplanet.core.EventLog.write(v, homeplanet.core.Event.of("REPUTATION").put("log", "reputation").put("reason", reason).put("points", points).put("total", num(p, "total")).details(details).human(why));
 	}
 	public static String signed(int n) { return n > 0 ? "+" + n : n < 0 ? "−" + (-n) : "0"; }
 	private static int num(Properties p, String k) { return Store.num(p, k, 0); }

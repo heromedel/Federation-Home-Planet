@@ -24,6 +24,8 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Event;
+import homeplanet.core.EventLog;
 import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 
@@ -101,7 +103,7 @@ public final class VoyageLog {
 		carry(last, now);
 		int visited = Store.num(last, "visited", gs.getSectorNumber() + 1);
 		if (last.isEmpty()) { now.setProperty("visited", Integer.toString(visited)); save(v, s, now); return; }
-		List<String> lines = new ArrayList<String>();
+		List<Event> lines = new ArrayList<Event>();
 		int sector = gs.getSectorNumber(), lastSector = Store.num(last, "sector", sector);
 		if (sector > lastSector) visited += sector - lastSector;
 		now.setProperty("visited", Integer.toString(visited));
@@ -120,28 +122,35 @@ public final class VoyageLog {
 		save(v, s, now);
 	}
 	/** A line of the station's own in her log (commissioned, a new journey plotted, rescued). */
-	static void note(Vault v, Ship s, String text) {
-		List<String> one = new ArrayList<String>();
-		one.add(text);
+	static void note(Vault v, Ship s, String text) { note(v, s, Event.of("VOYAGE_NOTE").put("text", text).human(text)); }
+	/** As above, with the event's own kind and fields (the human line is what her log shows). */
+	static void note(Vault v, Ship s, Event e) {
+		List<Event> one = new ArrayList<Event>();
+		one.add(e);
 		append(v, s, one);
 	}
 
 	// ---- what changed ----
 
-	private static void changes(Properties a, Properties b, int visited, List<String> out) {
+	private static void changes(Properties a, Properties b, int visited, List<Event> out) {
 		int sector = Store.num(b, "sector", 0), lastSector = Store.num(a, "sector", 0);
 		int beacons = Store.num(b, "beacons", 0) - Store.num(a, "beacons", 0);
 		boolean moved = sector != lastSector || !b.getProperty("beacon", "").equals(a.getProperty("beacon", ""));
-		if (sector > lastSector) out.add("Sector " + (sector + 1) + " reached (sectors visited: " + visited + ")");
-		else if (sector < lastSector) out.add("Back to sector " + (sector + 1) + ": a new run");
+		if (sector > lastSector) out.add(Event.of("SECTOR_REACHED").put("sector", sector + 1).put("visited", visited).human("Sector " + (sector + 1) + " reached (sectors visited: " + visited + ")"));
+		else if (sector < lastSector) out.add(Event.of("NEW_RUN").put("sector", sector + 1).put("was", lastSector + 1).human("Back to sector " + (sector + 1) + ": a new run"));
 		int hull = Store.num(b, "hull", 0), lastHull = Store.num(a, "hull", 0), scrap = Store.num(b, "scrap", 0), lastScrap = Store.num(a, "scrap", 0);
+		Event state = Event.of("STATE").put("hull", hull).put("max_hull", b.getProperty("maxHull", "?")).put("hull_change", hull - lastHull)
+				.put("scrap", scrap).put("scrap_change", scrap - lastScrap).put("fuel", b.getProperty("fuel", "?")).put("fuel_change", Store.num(b, "fuel", 0) - Store.num(a, "fuel", 0))
+				.put("missiles", b.getProperty("missiles", "?")).put("missiles_change", Store.num(b, "missiles", 0) - Store.num(a, "missiles", 0))
+				.put("drone_parts", b.getProperty("drones", "?")).put("drone_parts_change", Store.num(b, "drones", 0) - Store.num(a, "drones", 0))
+				.put("sector", sector + 1).put("beacon", b.getProperty("beacon")).put("beacons_total", b.getProperty("beacons")).put("beacons_jumped", beacons).put("at_store", b.getProperty("store"));
 		if (moved || beacons > 0) {
-			out.add((moved ? "Jumped" : "Waited") + ", hull " + hull + "/" + b.getProperty("maxHull", "?") + delta(hull - lastHull)
+			out.add(Event.of(moved ? "JUMPED" : "WAITED").putAll(state).human((moved ? "Jumped" : "Waited") + ", hull " + hull + "/" + b.getProperty("maxHull", "?") + delta(hull - lastHull)
 					+ ", scrap " + scrap + delta(scrap - lastScrap) + ", fuel " + b.getProperty("fuel", "?") + delta(Store.num(b, "fuel", 0) - Store.num(a, "fuel", 0))
-					+ ", missiles " + b.getProperty("missiles", "?") + ", drone parts " + b.getProperty("drones", "?"));
+					+ ", missiles " + b.getProperty("missiles", "?") + ", drone parts " + b.getProperty("drones", "?")));
 		} else {
-			if (hull > lastHull) out.add("Hull repaired to " + hull + "/" + b.getProperty("maxHull", "?") + delta(hull - lastHull));
-			else if (hull < lastHull) out.add("Hull damaged to " + hull + "/" + b.getProperty("maxHull", "?") + delta(hull - lastHull));
+			if (hull > lastHull) out.add(Event.of("HULL_REPAIRED").putAll(state).human("Hull repaired to " + hull + "/" + b.getProperty("maxHull", "?") + delta(hull - lastHull)));
+			else if (hull < lastHull) out.add(Event.of("HULL_DAMAGED").putAll(state).human("Hull damaged to " + hull + "/" + b.getProperty("maxHull", "?") + delta(hull - lastHull)));
 			List<String> supplies = new ArrayList<String>();
 			if (scrap != lastScrap) supplies.add("scrap " + scrap + delta(scrap - lastScrap));
 			for (String[] k : new String[][] {{"fuel", "fuel"}, {"missiles", "missiles"}, {"drones", "drone parts"}}) {
@@ -150,29 +159,50 @@ public final class VoyageLog {
 			}
 			if (!supplies.isEmpty()) {
 				String line = String.join(", ", supplies);
-				out.add(Character.toUpperCase(line.charAt(0)) + line.substring(1));
+				out.add(Event.of("SUPPLIES").putAll(state).human(Character.toUpperCase(line.charAt(0)) + line.substring(1)));
 			}
 		}
 		int defeated = Store.num(b, "defeated", 0) - Store.num(a, "defeated", 0);
-		if (defeated > 0) out.add(defeated + (defeated == 1 ? " ship" : " ships") + " defeated (" + b.getProperty("defeated") + " in all)");
-		diff(a.getProperty("crew", ""), b.getProperty("crew", ""), "Crew joined: ", "Crew lost: ", out);
-		diff(a.getProperty("items", ""), b.getProperty("items", ""), "Aboard now: ", "Gone: ", out);
+		if (defeated > 0) out.add(Event.of("SHIPS_DEFEATED").put("count", defeated).put("total", b.getProperty("defeated")).human(defeated + (defeated == 1 ? " ship" : " ships") + " defeated (" + b.getProperty("defeated") + " in all)"));
+		crewDiff(a.getProperty("crew", ""), b.getProperty("crew", ""), out);
+		List<String>[] items = diff(a.getProperty("items", ""), b.getProperty("items", ""));
+		if (!items[0].isEmpty()) out.add(list(Event.of("ITEMS_ABOARD"), "item", items[0]).human("Aboard now: " + String.join(", ", items[0])));
+		if (!items[1].isEmpty()) out.add(list(Event.of("ITEMS_GONE"), "item", items[1]).human("Gone: " + String.join(", ", items[1])));
 		gear(a, b, scrap < lastScrap, out);
-		if (moved && "true".equals(b.getProperty("store"))) out.add("Arrived at a store");
+		if (moved && "true".equals(b.getProperty("store"))) out.add(Event.of("STORE_ARRIVED").put("sector", sector + 1).put("beacon", b.getProperty("beacon")).human("Arrived at a store"));
 		beacon(a, b, moved, out);
 		systems(a.getProperty("systems", ""), b.getProperty("systems", ""), out);
 		int reactor = Store.num(b, "reactor", 0), lastReactor = Store.num(a, "reactor", 0);
-		if (reactor != lastReactor) out.add("Reactor " + (reactor > lastReactor ? "upgraded" : "reduced") + " to " + reactor);
+		if (reactor != lastReactor) out.add(Event.of(reactor > lastReactor ? "REACTOR_UPGRADED" : "REACTOR_REDUCED").put("level", reactor).put("was", lastReactor).human("Reactor " + (reactor > lastReactor ? "upgraded" : "reduced") + " to " + reactor));
 		int stage = Store.num(b, "flagship", 0), lastStage = Store.num(a, "flagship", 0);
 		boolean near = "true".equals(b.getProperty("flagshipNear")), wasNear = "true".equals(a.getProperty("flagshipNear"));
-		if (near && !wasNear) out.add("The Rebel Flagship is alongside (battle " + Math.max(1, stage) + ")");
-		if (stage > lastStage && lastStage > 0) out.add("The Rebel Flagship withdrew after battle " + lastStage);
+		if (near && !wasNear) out.add(Event.of("FLAGSHIP_ALONGSIDE").put("battle", Math.max(1, stage)).human("The Rebel Flagship is alongside (battle " + Math.max(1, stage) + ")"));
+		if (stage > lastStage && lastStage > 0) out.add(Event.of("FLAGSHIP_WITHDREW").put("battle", lastStage).put("next", stage).human("The Rebel Flagship withdrew after battle " + lastStage));
+	}
+	/** A list as repeated fields of one key. */
+	private static Event list(Event e, String key, List<String> values) {
+		for (String x : values) e.put(key, x);
+		return e;
+	}
+	/** Crew who came aboard and crew lost since the last look, each with name and race ("Name (Race)" in the summary). */
+	private static void crewDiff(String before, String after, List<Event> out) {
+		List<String>[] d = diff(before, after);
+		String[] kinds = {"CREW_JOINED", "CREW_LOST"}, words = {"Crew joined: ", "Crew lost: "};
+		for (int i = 0; i < 2; i++) {
+			if (d[i].isEmpty()) continue;
+			Event e = Event.of(kinds[i]);
+			for (String x : d[i]) {
+				int c = x.lastIndexOf(" (");
+				e.put("crew", c > 0 ? x.substring(0, c) : x).put("race", c > 0 && x.endsWith(")") ? x.substring(c + 2, x.length() - 1) : null);
+			}
+			out.add(e.human(words[i] + String.join(", ", d[i])));
+		}
 	}
 	/**
 	 * Gear new to her (moved between cargo and fittings doesn't count): bought, if she was at a store and spent scrap
 	 * there, else picked up (an event's gift, a salvage). For the Captain's Log (5.18); the Aboard now / Gone lines stay.
 	 */
-	private static void gear(Properties a, Properties b, boolean spent, List<String> out) {
+	private static void gear(Properties a, Properties b, boolean spent, List<Event> out) {
 		Map<String, Integer> count = new LinkedHashMap<String, Integer>();
 		for (String x : split(b.getProperty("items", ""))) { String k = x.replace(" (cargo)", ""); count.put(k, (count.containsKey(k) ? count.get(k) : 0) + 1); }
 		for (String x : split(a.getProperty("items", ""))) { String k = x.replace(" (cargo)", ""); count.put(k, (count.containsKey(k) ? count.get(k) : 0) - 1); }
@@ -180,7 +210,7 @@ public final class VoyageLog {
 		for (Map.Entry<String, Integer> e : count.entrySet()) for (int i = 0; i < e.getValue(); i++) plus.add(e.getKey());
 		if (plus.isEmpty()) return;
 		boolean bought = spent && "true".equals(a.getProperty("store")); // where she was when she had it: the stop before the jump
-		out.add((bought ? "Bought at a store: " : "Picked up: ") + String.join(", ", plus));
+		out.add(list(Event.of(bought ? "BOUGHT" : "PICKED_UP"), "item", plus).human((bought ? "Bought at a store: " : "Picked up: ") + String.join(", ", plus)));
 	}
 	/**
 	 * What her new beacon held (heromedel, 5.19, for the Captain's Log): the hazards there, and a ship met. The save keeps
@@ -188,18 +218,18 @@ public final class VoyageLog {
 	 * nebula jumps, and an ion storm as a jump into danger that names none of those. A ship can turn up after the jump
 	 * (her next look): "Ship met" then, on its own.
 	 */
-	private static void beacon(Properties a, Properties b, boolean moved, List<String> out) {
+	private static void beacon(Properties a, Properties b, boolean moved, List<Event> out) {
 		if (moved) {
-			List<String> there = new ArrayList<String>(), hazards = split(b.getProperty("hazards", ""));
+			List<String> there = new ArrayList<String>(), ids = new ArrayList<String>(), hazards = split(b.getProperty("hazards", ""));
 			int nebula = Store.num(b, "nebulaJumps", 0) - Store.num(a, "nebulaJumps", Store.num(b, "nebulaJumps", 0)); // no count kept before 5.19: no change
 			int danger = Store.num(b, "dangerJumps", 0) - Store.num(a, "dangerJumps", Store.num(b, "dangerJumps", 0));
-			if (danger > 0 && hazards.isEmpty()) there.add("an ion storm");
-			else if (nebula > 0) there.add("a nebula");
-			for (String h : hazards) there.add(HAZARDS.containsKey(h) ? HAZARDS.get(h) : h);
-			if (!there.isEmpty()) out.add("Beacon: " + String.join(", ", there));
+			if (danger > 0 && hazards.isEmpty()) { there.add("an ion storm"); ids.add("storm"); }
+			else if (nebula > 0) { there.add("a nebula"); ids.add("nebula"); }
+			for (String h : hazards) { there.add(HAZARDS.containsKey(h) ? HAZARDS.get(h) : h); ids.add(h); }
+			if (!there.isEmpty()) out.add(list(Event.of("BEACON_HAZARDS"), "hazard", ids).put("sector", Store.num(b, "sector", 0) + 1).put("beacon", b.getProperty("beacon")).human("Beacon: " + String.join(", ", there)));
 		}
 		String met = b.getProperty("met", ""), was = a.getProperty("met");
-		if (!met.isEmpty() && (moved || (was != null && !met.equals(was)))) out.add("Ship met: " + met);
+		if (!met.isEmpty() && (moved || (was != null && !met.equals(was)))) out.add(Event.of("SHIP_MET").put("met", met).put("sector", Store.num(b, "sector", 0) + 1).put("beacon", b.getProperty("beacon")).human("Ship met: " + met));
 	}
 	private static final Map<String, String> HAZARDS = new LinkedHashMap<String, String>();
 	static {
@@ -209,8 +239,9 @@ public final class VoyageLog {
 		HAZARDS.put("pds", "an Anti-Ship Battery"); // FTL's name for it (docs/LORE_COMPONENTS.md 22)
 	}
 	private static String delta(int d) { return d == 0 ? "" : " (" + (d > 0 ? "+" : "") + d + ")"; }
-	/** Two lists of names ("a|b|b"): what's new, and what's gone, counting repeats. */
-	private static void diff(String before, String after, String added, String removed, List<String> out) {
+	/** Two lists of names ("a|b|b"): {what's new, what's gone}, counting repeats. */
+	@SuppressWarnings("unchecked")
+	private static List<String>[] diff(String before, String after) {
 		Map<String, Integer> count = new LinkedHashMap<String, Integer>();
 		for (String x : split(after)) count.put(x, (count.containsKey(x) ? count.get(x) : 0) + 1);
 		for (String x : split(before)) count.put(x, (count.containsKey(x) ? count.get(x) : 0) - 1);
@@ -219,18 +250,17 @@ public final class VoyageLog {
 			for (int i = 0; i < e.getValue(); i++) plus.add(e.getKey());
 			for (int i = 0; i < -e.getValue(); i++) minus.add(e.getKey());
 		}
-		if (!plus.isEmpty()) out.add(added + String.join(", ", plus));
-		if (!minus.isEmpty()) out.add(removed + String.join(", ", minus));
+		return new List[] {plus, minus};
 	}
-	private static void systems(String before, String after, List<String> out) {
+	private static void systems(String before, String after, List<Event> out) {
 		Map<String, Integer> a = levels(before), b = levels(after);
 		for (Map.Entry<String, Integer> e : b.entrySet()) {
 			Integer was = a.get(e.getKey());
-			if (was == null) out.add("New system: " + e.getKey() + " " + e.getValue());
-			else if (e.getValue() > was) out.add(e.getKey() + " upgraded to " + e.getValue());
-			else if (e.getValue() < was) out.add(e.getKey() + " reduced to " + e.getValue());
+			if (was == null) out.add(Event.of("SYSTEM_NEW").put("system", e.getKey()).put("level", e.getValue()).human("New system: " + e.getKey() + " " + e.getValue()));
+			else if (e.getValue() > was) out.add(Event.of("SYSTEM_UPGRADED").put("system", e.getKey()).put("level", e.getValue()).put("was", was).human(e.getKey() + " upgraded to " + e.getValue()));
+			else if (e.getValue() < was) out.add(Event.of("SYSTEM_REDUCED").put("system", e.getKey()).put("level", e.getValue()).put("was", was).human(e.getKey() + " reduced to " + e.getValue()));
 		}
-		for (String k : a.keySet()) if (!b.containsKey(k)) out.add("System removed: " + k);
+		for (String k : a.keySet()) if (!b.containsKey(k)) out.add(Event.of("SYSTEM_REMOVED").put("system", k).put("was", a.get(k)).human("System removed: " + k));
 	}
 	private static Map<String, Integer> levels(String s) {
 		Map<String, Integer> m = new LinkedHashMap<String, Integer>();
@@ -354,11 +384,17 @@ public final class VoyageLog {
 			log.warn("Could not keep {}'s last look: {}", s, e.toString());
 		}
 	}
-	private static void append(Vault v, Ship s, List<String> lines) {
+	/** The fields every event in her log carries: who she is. */
+	static Event shipFields(Ship s) {
+		return Event.of("SHIP").put("ship", s.name + "." + s.id).put("ship_name", s.name).put("ship_id", s.id).put("ship_state", s.state == null ? null : s.state.name().toLowerCase());
+	}
+	private static void append(Vault v, Ship s, List<Event> events) {
 		File dir = v.historyOf(s), f = new File(dir, LOG);
 		String stamp = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
 		StringBuilder sb = new StringBuilder(read(v, s));
 		if (f.length() > MAX_BYTES) sb.delete(0, sb.indexOf("\n", sb.length() / 2) + 1); // the newer half stays
+		List<String> lines = new ArrayList<String>();
+		for (Event e : events) lines.add(e.human());
 		for (String l : lines) sb.append(stamp).append("  ").append(l).append('\n');
 		try {
 			if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
@@ -367,5 +403,7 @@ public final class VoyageLog {
 			log.warn("Could not write {}'s voyage log: {}", s, e.toString());
 		}
 		for (String l : lines) MasterLog.entry(v, "voyage: " + s.name, l);
+		Event who = shipFields(s);
+		for (Event e : events) EventLog.write(v, Event.of(e.kind).put("log", "voyage").putAll(who).putAll(e).human(e.human()));
 	}
 }

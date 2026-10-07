@@ -88,19 +88,19 @@ public class LogT { public static void main(String[] a) throws Exception {
  /** What a beacon held (5.19): nebulas, storms, hazards, a ship met, the next day's news going to the jump before it. */
  static void beaconDays(File game, File dir) throws Exception {
   java.lang.reflect.Method ch = VoyageLog.class.getDeclaredMethod("changes", Properties.class, Properties.class, int.class, List.class); ch.setAccessible(true);
-  Properties a = look("1", 2, 1, "", ""); List<String> out = new ArrayList<String>();
-  ch.invoke(null, a, look("2", 3, 1, "", ""), 1, out);
+  Properties a = look("1", 2, 1, "", ""); List out = new ArrayList(); // the events, read as their human lines (5.63)
+  ch.invoke(null, a, look("2", 3, 1, "", ""), 1, out); words(out);
   Setup.chk("B: FTL's nebula count rose with the jump: a nebula " + out, out.contains("Beacon: a nebula"));
-  out.clear(); ch.invoke(null, a, look("2", 3, 2, "", ""), 1, out);
+  out.clear(); ch.invoke(null, a, look("2", 3, 2, "", ""), 1, out); words(out);
   Setup.chk("B: a jump into danger the save names none of: an ion storm, not a nebula " + out, out.contains("Beacon: an ion storm") && !out.toString().contains("nebula"));
-  out.clear(); ch.invoke(null, a, look("2", 2, 2, "sun|pds", "a Rock pirate"), 1, out);
+  out.clear(); ch.invoke(null, a, look("2", 2, 2, "sun|pds", "a Rock pirate"), 1, out); words(out);
   Setup.chk("B: the save's own hazards, and the ship met " + out, out.contains("Beacon: a star, an Anti-Ship Battery") && out.contains("Ship met: a Rock pirate"));
   Properties old = look("1", 0, 0, "", ""); old.remove("nebulaJumps"); old.remove("dangerJumps"); old.remove("met");
-  out.clear(); ch.invoke(null, old, look("2", 9, 9, "", ""), 1, out);
+  out.clear(); ch.invoke(null, old, look("2", 9, 9, "", ""), 1, out); words(out);
   Setup.chk("B: a last look from before 5.19 (no counts kept) reads no nebula or storm " + out, !out.toString().contains("Beacon"));
-  out.clear(); ch.invoke(null, old, look("1", 0, 0, "", "a Mantis ship"), 1, out);
+  out.clear(); ch.invoke(null, old, look("1", 0, 0, "", "a Mantis ship"), 1, out); words(out);
   Setup.chk("B: and no ship 'met' without a jump on that first look " + out, out.isEmpty());
-  out.clear(); ch.invoke(null, a, look("1", 2, 1, "", "a Mantis ship"), 1, out);
+  out.clear(); ch.invoke(null, a, look("1", 2, 1, "", "a Mantis ship"), 1, out); words(out);
   Setup.chk("B: a ship turning up after the jump: met, on its own " + out, out.size() == 1 && out.contains("Ship met: a Mantis ship"));
   Setup.chk("B: ships in words", VoyageLog.shipWords("ROCK_PIRATE", "SHIPS_ROCK_PIRATE", "rock").equals("a Rock pirate") && VoyageLog.shipWords("PIRATE", "SHIPS_PIRATE", "mantis").equals("a Mantis pirate")
     && VoyageLog.shipWords("REBEL", "SHIPS_REBEL", "human").equals("a rebel ship") && VoyageLog.shipWords("REBEL_AUTO", "SHIPS_AUTO", "").equals("an automated ship")
@@ -190,4 +190,6 @@ public class LogT { public static void main(String[] a) throws Exception {
   String raw = new String(SafeFiles.read(new File(v.root, "master.log")), "UTF-8");
   Setup.chk("L: the master list keeps every raw line", count(raw, "SELL") == 2 && count(raw, "BOARD") == 2 && raw.contains("Expedition Command: Back from Nebula"));
  }
+ @SuppressWarnings({"unchecked", "rawtypes"})
+ static void words(List out) { for (int i = 0; i < out.size(); i++) if (out.get(i) instanceof homeplanet.core.Event) out.set(i, ((homeplanet.core.Event) out.get(i)).human()); }
 }
