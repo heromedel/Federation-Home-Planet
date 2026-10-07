@@ -42,7 +42,9 @@ public final class EventLog {
 	public static File file(Vault v) { return new File(v.root, FILE); }
 
 	/** Writes the event's two lines. Never throws; with no fleet open, nothing is written (the debug log notes it). */
-	public static void write(Vault v, Event e) {
+	public static void write(Vault v, Event e) { write(v, v == null ? null : file(v), e); }
+	/** As above, into another log of the same shape (a ship's own, in her folder); the stardate is the fleet's. */
+	public static void write(Vault v, File to, Event e) {
 		if (v == null) { log.debug("No fleet open for the event {}: {}", e.kind, e.human()); return; }
 		int day = MasterLog.today(v);
 		String stamp;
@@ -50,7 +52,7 @@ public final class EventLog {
 		String machine = stamp + " | " + (day < 1 ? "prior" : MasterLog.stardate(day)) + " | " + e.kind + " | " + e.fieldText()
 				+ (e.get("day") == null ? " day=" + day : "") + " station=" + HomePlanet.version();
 		String human = e.human().replace('\r', ' ').replace('\n', ' ').trim();
-		append(file(v), machine + NL + human + NL);
+		append(to, machine + NL + human + NL);
 	}
 	private static synchronized void append(File f, String text) {
 		Writer w = null;

@@ -198,9 +198,12 @@ Done in 5.61 (Cloud-C-BugsandFeedback; main 292ce7d), as Buggy Boy's notes say r
 11. **Delete dead code**: the unused methods, the old Report for Reassignment, and (heromedel's call) the job board. _5.66: 19 methods nothing called are gone. The old Report for Reassignment stays: `surrender()` is what RuleT and PriceT use to test undoing one on an old fleet, and `undoSurrender` serves fleets that have a `surrendered/` folder; the survey's "~230 lines" counted both. The job board went at 5.67 (heromedel): the board's code in `Expeditions` and `ExpeditionsDialog`, its words file, its tests in ExpT and GuiT; the shared infirmary, captives and hiring stay._
 12. **Statics and the vault global**: settings into one settings object passed where needed; `Vault.get()` only at the UI's edge; the harness sets settings through it. _5.66, Cloud-C-Primary-Edit's call: deferred to Phase 2. The 58 `Vault.get()` calls outside the ui package sit at the entry of methods the UI calls (`Transmissions.check()`, `Exchange.complete(r)`, `FinalVictory`...), so taking the vault as a parameter means changing those signatures and their UI callers, about 300 sites with the 30 settings; done now it would churn every file for little, and make the merges with the other branches painful (§5). The stores Phase 2 writes (`ShipStore`, `CrewStore`, the hold) take the vault and the settings they need as arguments from the start, and the old entry points are moved onto them as each reader switches (step 16 and Phase 3), which is where the global ends._
 
-### Phase 2: the new layout, written beside the old
+### Phase 2: the new layout, converting each fleet on opening
 
-13. The career folder's new tree (§3.1), written by the new storage classes; ship ids kept for life.
+_5.67 (heromedel's yes): a fleet can't be half in `ships/` and half in `shipyard/`, and the Vault reaches its files directly in too many places to run two layouts side by side, so the migration (Phase 5) moves into this phase. Each step converts its part of the fleet on opening, the whole fleet zipped first, as pre-release versions (5.9x) tested on a copy of a real career; MigT and LedgerT check from the first step. In order: the ship folders (`ShipStore`, 5.90), the journal, the crew files after the crew id test (5.91), the Cargo Hold (5.92), expeditions, the infirmary, captives, memorials and records, Board and Dock (5.93)._
+
+
+13. The career folder's new tree (§3.1), written by the new storage classes; ship ids kept for life. _5.68: `vault/ShipStore`, a ship's folder alone (her record as xml with her sections, owners and past names; her save; her log of two-line entries; `versions/` by stamp with the special copies kept apart; rename and move as one rename each; `fromToday` builds her record from the manifest and `history/<id>/`); ShipStoreT. The Vault moves onto it in the next step._
 13a. **The crew id test in FTL itself** (Buggy Boy, under Wine; it touches nothing in the repo, so it can run before Phase 1 is finished): list the fields of FTL's crew record the station never uses, put a marker in each, then load, jump, save at the menu, die and clone, rename, visit a store; keep the fields whose marker survives every step. The results, a short page for everyone, decide §3.4 and gate step 15.
 14. **Ships**: `ShipStore` reads and writes a ship folder (her xml, her `.sav`, her log, her versions, her crew files).
 15. **Crew**: `CrewStore` reads and writes crew files; the crew's id is kept with them through FTL (§6, open question 1).
@@ -245,7 +248,7 @@ Done in 5.61 (Cloud-C-BugsandFeedback; main 292ce7d), as Buggy Boy's notes say r
 ## 6. Open questions
 
 1. **How a crew member's id survives inside an FTL save:** answered by step 13a's test, not by guessing.
-2. **An index after all?** The design needs none for speed (§3.2); heromedel was unsure. An index file could still help people browsing the folder.
+2. **An index after all?** No (heromedel, 5.67): an index file on disk is a second copy of where everything is, and it can disagree with the folders, as the manifest does today. The station lists the folders and reads the small xml files each time it opens a fleet; the heavy saves are read only when a ship is opened.
 3. **The job board (expedition type 1):** deleted at 5.67 (heromedel's answer). `expedition_type` 1 reads as 2; the infirmary, the captives and hiring stay.
 4. **Captives:** their own folder (McCarthy and Buggy Boy agree; in the plan unless heromedel says otherwise).
 5. **One branch for 6.0 or phased merges** (§5)?
