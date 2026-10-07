@@ -7,14 +7,17 @@ public class RegT { public static void main(String[] a) throws Exception {
  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
  HistoryLog.entry("LONG RANGE TRADE", "with Commander Bree  (trade #7)", Arrays.asList("gave: Ash (Human), Bob (Rockman)", "received: Cy (Engi)"));
  HistoryLog.entry("RENAME", "Old Glory -> New Glory  (abc123)");
- List<String> was = lines(new String(SafeFiles.read(v.historyLog()), "UTF-8")), now = lines(CrewRegister.stationText(v));
- int diff = -1; for (int i = 0; i < Math.max(was.size(), now.size()); i++) if (i >= was.size() || i >= now.size() || !was.get(i).equals(now.get(i))) { diff = i; break; }
- if (diff >= 0) System.out.println("  first difference at line " + diff + ":\n    old: " + (diff < was.size() ? was.get(diff) : "-") + "\n    new: " + (diff < now.size() ? now.get(diff) : "-"));
- Setup.chk("A: the station entries from the event log read as the station log wrote them (" + was.size() + " lines)", diff < 0 && was.size() > 3);
+ String st = CrewRegister.stationText(v);
+ Setup.chk("A: the station entries from the event log in the station log's form: minute, kind, headline, then each detail (" + st.split("\n").length + " lines)",
+   st.matches("(?s).*\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d  LONG RANGE TRADE  with Commander Bree  \\(trade #7\\)\n  gave: Ash \\(Human\\), Bob \\(Rockman\\)\n  received: Cy \\(Engi\\)\n.*")
+   && st.contains("  RENAME  Old Glory -> New Glory  (abc123)\n"));
+ Setup.chk("A: history.log is no longer written (5.93)", !v.historyLog().isFile() || !new String(SafeFiles.read(v.historyLog()), "UTF-8").contains("Commander Bree"));
  // B: a register from before 5.91, its place in the old logs by character offset
  File reg = CrewRegister.registerFileOf(v);
  Properties p = Store.load(reg);
- String hist = new String(SafeFiles.read(v.historyLog()), "UTF-8"), master = new String(SafeFiles.read(new File(v.logsDir(), "master.log")), "UTF-8");
+ // the old logs as a 5.90 fleet had them: written here by hand, since the station no longer writes them
+ String hist = "2026-01-01 10:00  HIRE  Ash (Human)\n2026-01-01 10:05  CREW  Ash assigned to the Cargo Hold.\n", master = "E\t2026-01-01 10:00:00\t1\tstation\tHIRE  Ash (Human)\n";
+ SafeFiles.writeText(v.historyLog(), hist, false); SafeFiles.writeText(new File(v.logsDir(), "master.log"), master, false);
  int eventsBefore = new String(SafeFiles.read(EventLog.file(v)), "UTF-8").length();
  p.remove("seen.at"); p.setProperty("seen.hist", Integer.toString(hist.length())); p.setProperty("seen.master", Integer.toString(master.length()));
  Store.write(reg, p, null);
@@ -27,9 +30,7 @@ public class RegT { public static void main(String[] a) throws Exception {
  Properties after = Store.load(reg);
  int at = Integer.parseInt(after.getProperty("seen.at", "-1"));
  Setup.chk("B: its place carried across, at or before where it had read to (" + at + " of " + eventsBefore + "), never past it", at >= 0 && at <= eventsBefore && after.getProperty("seen.hist") == null);
- String lastMinute = null; for (String l : lines(hist)) if (l.length() > 16 && Character.isDigit(l.charAt(0))) lastMinute = l.substring(0, 16);
- String tail = new String(SafeFiles.read(EventLog.file(v)), "UTF-8").substring(at);
- Setup.chk("B: what follows its place starts in the minute it had reached (" + lastMinute + ")", tail.startsWith(lastMinute));
+ Setup.chk("B: its place is at the first entry of the minute it had reached, or later (2026-01-01 10:05: every entry of the event log is later)", at == 0 || new String(SafeFiles.read(EventLog.file(v)), "UTF-8").substring(at).compareTo("2026-01-01 10:05") >= 0);
  boolean every = true; for (CrewRegister.Member m : CrewRegister.members(v)) { File f = CrewRegister.fileOf(v, m.id); Properties q = new Properties(); InputStream in = new FileInputStream(f); q.loadFromXML(in); in.close(); every &= q.getProperty("at") != null && q.getProperty("hist") == null; }
  Setup.chk("B: each crew member's place too", every);
  boolean logged = false; for (EventLog.Entry e : EventLog.read(v)) if (e.kind.equals("CREW_FILES") && "positions".equals(e.get("what"))) logged = true;
@@ -43,9 +44,9 @@ public class RegT { public static void main(String[] a) throws Exception {
  HomePlanet.reputationOn = true;
  Reputation.expedition(v, "Nebula, Attack", 24, 0, 2);
  Reputation.captured(v, Arrays.asList("Ash", "Bob"));
- File rl = new File(v.logsDir(), "reputation.log");
- List<String> rWas = rl.isFile() ? rawLines(new String(SafeFiles.read(rl), "UTF-8")) : new ArrayList<String>(), rNow = rawLines(Reputation.log(v));
- Setup.chk("C: the reputation log read from the event log is reputation.log, line for line (" + rWas.size() + " lines)" + (rWas.equals(rNow) ? "" : "\n    old " + rWas + "\n    new " + rNow), rWas.equals(rNow) && !rWas.isEmpty());
+ String rep = Reputation.log(v);
+ Setup.chk("C: the reputation log from the event log, in its own form: minute, the change, why, details", rep.matches("(?s).*\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d  \\+\\d+  Expedition: Nebula, Attack.*") && rep.contains("Taken captive: Ash, Bob"));
+ Setup.chk("C: reputation.log is no longer written (5.93)", !new File(v.logsDir(), "reputation.log").isFile());
  Setup.done();
 }
  /** A log's lines, its kinds as the event log keeps them (underscores read as spaces), the time to the minute. */

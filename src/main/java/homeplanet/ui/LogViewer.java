@@ -41,7 +41,8 @@ final class LogViewer extends JPanel {
 		super(new BorderLayout(0, 6));
 		Vault v = Vault.get();
 		for (String s : Vault.SLOTS) {
-			if (!Vault.historyLogIn(Vault.rootOf(v.saves, s)).isFile() && !s.equals(v.slot)) continue;
+			File r = Vault.rootOf(v.saves, s);
+			if (!homeplanet.core.EventLog.fileIn(r).isFile() && !Vault.historyLogIn(r).isFile() && !s.equals(v.slot)) continue; // a fleet with a log of either kind
 			slots.add(s);
 			fleet.addItem(Vault.title(s) + (s.equals(v.slot) ? " (in use)" : ""));
 		}

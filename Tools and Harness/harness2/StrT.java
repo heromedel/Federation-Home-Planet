@@ -29,8 +29,7 @@ public class StrT { public static void main(String[] a) throws Exception {
  SaveHelper.writeSavedGame(im.continueFile(), g); im.observeBoarded(); im.takeStock();
  Setup.chk("A: as she flies: no beacons, no days", im.beaconsSeen() == b0);
  Setup.chk("A: no reputation for her sectors, kills or scrap", Reputation.total(im) == rep);
- File vl = new File(im.historyOf(st), "voyage.log");
- Setup.chk("A: no voyage log kept for her", !vl.isFile() || vl.length() == 0);
+ Setup.chk("A: no voyage log kept for her", Setup.voyageLog(im, st).isEmpty());
  boolean signed = false; for (CrewRegister.Member m : CrewRegister.members(im)) if (m.where.contains("Stray Engi")) signed = true;
  Setup.chk("A: her crew aren't signed on", !signed);
  Setup.chk("A: no final-battle copy kept for her", !im.watchContinue(0, (n, b) -> 0));

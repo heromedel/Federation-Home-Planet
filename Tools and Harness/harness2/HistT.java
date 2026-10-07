@@ -13,13 +13,13 @@ public class HistT { public static void main(String[] a) throws Exception {
  Setup.done();
 }
  static SavedGameState cont(Vault v) throws Exception { return homeplanet.core.HomePlanet.savedGameParser.readSavedGame(v.continueFile()); }
- static String newLines(Vault v, Ship s, int from) { String all = VoyageLog.read(v, s); return all.length() > from ? all.substring(from) : ""; }
+ static String newLines(Vault v, Ship s, int from) { String all = Setup.voyageLog(v, s); return all.length() > from ? all.substring(from) : ""; }
  /** The voyage log: FTL's doings between looks, logged; the station's own changes not. */
  static void voyage(Vault v) throws Exception {
   if (v.boarded() == null) v.board(v.docked().get(0));
   v.takeStock();
   Ship b = v.boarded();
-  int at = VoyageLog.read(v, b).length();
+  int at = Setup.voyageLog(v, b).length();
   // FTL: a jump, a battle won, a crew member lost and one hired, a weapon found, damage
   SavedGameState g = cont(v);
   g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); g.setTotalShipsDefeated(g.getTotalShipsDefeated() + 1);
@@ -33,14 +33,14 @@ public class HistT { public static void main(String[] a) throws Exception {
   Setup.chk("Y: a jump is logged, with hull, scrap and fuel", l.contains("Jumped") && l.contains("(-5)") && l.contains("(+30)"));
   Setup.chk("Y: the battle, and the crew lost and joined", l.contains("1 ship defeated") && l.contains("Crew lost: " + lostName) && l.contains("Crew joined: Voyage Newcomer"));
   Setup.chk("Y: what came aboard", l.contains("Aboard now: " + homeplanet.model.Items.title("LASER_BURST_2")));
-  at = VoyageLog.read(v, b).length();
+  at = Setup.voyageLog(v, b).length();
   int visited = VoyageLog.visited(v, b);
   g = cont(v); g.setSectorNumber(g.getSectorNumber() + 1); g.setCurrentBeaconId(0); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1);
   homeplanet.parser.SaveHelper.writeSavedGame(v.continueFile(), g);
   v.observeBoarded(); // as the save watcher does
   l = newLines(v, b, at);
   Setup.chk("Y: a new sector, and her sectors visited go up", l.contains("Sector " + (g.getSectorNumber() + 1) + " reached") && VoyageLog.visited(v, b) == visited + 1);
-  at = VoyageLog.read(v, b).length();
+  at = Setup.voyageLog(v, b).length();
   Vault.Copy c = v.readCopy(b); c.save.getPlayerShip().setScrapAmt(c.save.getPlayerShip().getScrapAmt() - 10); v.begin().put(b, c.save, c.hash).commit();
   b.invalidate(); v.takeStock();
   Setup.chk("Y: the station's own change (a trade) isn't in her voyage log", newLines(v, b, at).isEmpty());
@@ -54,7 +54,7 @@ public class HistT { public static void main(String[] a) throws Exception {
   c = v.readCopy(b); c.save.getPlayerShip().setScrapAmt(c.save.getPlayerShip().getScrapAmt() - 1); v.begin().put(b, c.save, c.hash).commit();
   b.invalidate(); v.takeStock();
   Setup.chk("Y: the count survives the station's own change", VoyageLog.journeys(v, b) == journeys + 1);
-  System.out.print(VoyageLog.read(v, b));
+  System.out.print(Setup.voyageLog(v, b));
  }
  static Ship named(Vault v, String name) { for (Ship s : v.all()) if (name.equals(s.name)) return s; return null; }
  static boolean departed(Vault v, String id) { for (Vault.Departed d : v.recoverable()) if (d.id.equals(id)) return true; return false; }

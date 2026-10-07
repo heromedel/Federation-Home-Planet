@@ -54,7 +54,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   ChainT.jump(v, 1);
   Expeditions.checkInfirmary(v);
   Setup.chk("C: a beacon later the station has healed her, no skill lost", hp(v, a.getName()) == 100 && homeplanet.model.Skills.points(crew(v, a.getName()), 0) == 20);
-  String hist0 = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
+  String hist0 = Setup.stationLog(v);
   Setup.chk("C: and says so in the history log, in heromedel's words", hist0.contains(a.getName() + "'s visited The Station's Medbay"));
   // heromedel's case: beacons pass while she's away, then she arrives hurt: the station sees her, and heals her only a beacon later
   ChainT.jump(v, 2);
@@ -137,7 +137,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   boolean twice = false; try { Expeditions.payRansom(v, pa); twice = true; } catch (IOException e) { }
   Setup.chk("W: a ransom paid can't be paid again", !twice);
   Expeditions.refuseRansom(v, pr);
-  String hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
+  String hist = Setup.stationLog(v);
   Setup.chk("W: a ransom refused: presumed dead, in the history log, the choices gone", hist.contains(pr.name + ", taken by") && hist.contains("ransom was refused") && Expeditions.openRansom(v, "ransom:0") == null);
   Expeditions.Captive held = Expeditions.openRansom(v, "ransom:2");
   ChainT.jump(v, held.until - Expeditions.REMINDER_BEFORE - 1 - v.beaconsSeen());
@@ -148,7 +148,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   Setup.chk("W: near the end, a reminder for the one still held, and only then", reminded);
   ChainT.jump(v, Expeditions.REMINDER_BEFORE + 1);
   news = Expeditions.checkRansoms(v);
-  hist = new String(SafeFiles.read(HistoryLog.file()), "UTF-8");
+  hist = Setup.stationLog(v);
   Setup.chk("W: unpaid, it runs out: the Ambassador's letter (presumed dead), the history log, the choices gone", news.size() == 1 && news.get(0).kind.equals("lost")
     && news.get(0).text().contains("presumed dead") && news.get(0).text().contains(c3.getName()) && hist.contains("ransom went unpaid") && Expeditions.openRansom(v, "ransom:2") == null);
  }

@@ -16,23 +16,20 @@ import java.util.Map;
 import homeplanet.core.SafeFiles;
 
 /**
- * Each career's master log (heromedel, 5.17), hidden: every day its clock counts and why (D lines), and every entry any
- * of its logs gets, with the real time and the career's stardate (E lines). It copies, it never replaces: the other logs
- * keep their own files and shapes. The Captain's Log reads it, and so does the Cargo Bay's day (was the last day counted
- * a Cargo Bay day?).
+ * The career's days and stardates. Each career had a master log (heromedel, 5.17, logs/master.log): every day its clock
+ * counted and why, and a copy of every entry its logs got. Since 5.93 nothing writes it: the days are the event log's
+ * DAY entries (the Captain's Log and the Cargo Bay's day read them), and the entries are the event log's own. The old
+ * file stays, read only by the conversion of a fleet's old logs (LogConvert).
  *
  * A career's day 1 is the day this was first asked of it: a new career's first moment, or the first look at an older
  * one on 5.17 (its earlier entries are Prior to 1.1.1.1). The day is stored as a plain number and shown as a stardate,
- * year.month.week.day: 7-day weeks, 28-day months, 13-month years. A line with no day, or 0 or less, is Prior.
- *
- * Appended directly, never through SafeFiles' notice, so writing it never makes the Space Dock rebuild; and it never
- * takes the Vault's lock (it reads the clock's own file), so it can be written from anywhere.
+ * year.month.week.day: 7-day weeks, 28-day months, 13-month years. A day of 0 or less is Prior.
  */
 public final class MasterLog {
 	private MasterLog() { }
 
 	static final String FILE = "master.log";
-	/** Why a day passed (the D lines' reasons the station itself checks). */
+	/** Why a day passed (the reasons the station itself checks). */
 	public static final String CARGO_BAY = "business in the Cargo Bay";
 	public static final int WEEK = 7, MONTH = 28, YEAR = 13 * MONTH;
 
@@ -59,15 +56,9 @@ public final class MasterLog {
 
 	/** A day the clock counted, and why (the clock already moved: this is its count after). */
 	public static void day(Vault v, int clockAfter, String why) {
-		write(v, "D\t" + now() + "\t" + dayAt(v, clockAfter) + "\t" + flat(why));
 		int day = dayAt(v, clockAfter);
 		homeplanet.core.EventLog.write(v, homeplanet.core.Event.of("DAY").put("log", "clock").put("day", day).put("clock", clockAfter).put("why", why)
 				.human("A day passed: " + why.replaceAll(" \\(\\d+ counted together\\)", "") + "."));
-	}
-	/** An entry one of the career's logs got: which log, and what it said. Never throws. */
-	public static void entry(Vault v, String log, String text) {
-		if (v == null) return;
-		write(v, "E\t" + now() + "\t" + today(v) + "\t" + flat(log) + "\t" + flat(text));
 	}
 	/**
 	 * Business in the Cargo Bay passes a day, unless the last day counted was already one (heromedel, 5.17: nothing else
@@ -80,8 +71,8 @@ public final class MasterLog {
 	}
 	/** Why the last day counted passed, or null if none is noted. */
 	public static synchronized String lastDayWhy(Vault v) {
-		String why = null;
-		for (String l : lines(v)) if (l.startsWith("D\t")) { String[] w = l.split("\t", 4); if (w.length == 4) why = w[3]; }
+		String why = null; // the DAY events (5.93; the master log's D lines before)
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v))) if (e.kind.equals("DAY")) why = e.get("why", why);
 		return why;
 	}
 
@@ -135,32 +126,4 @@ public final class MasterLog {
 		}
 		return null;
 	}
-
-	private static List<String> lines(Vault v) {
-		List<String> out = new ArrayList<String>();
-		File f = new File(v.logsDir(), FILE);
-		if (!f.isFile()) return out;
-		try { for (String l : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) if (!l.isEmpty()) out.add(l); }
-		catch (IOException e) { }
-		return out;
-	}
-	private static synchronized void write(Vault v, String line) {
-		File f = new File(v.logsDir(), FILE);
-		if (!f.isFile()) append(f, "# The career's master log: D lines (a day the clock counted: real time, day, why) and E lines (an entry a log got: real time, day, which log, what it said)\n", true);
-		append(f, line + "\n", true);
-	}
-	private static void append(File f, String text, boolean append) {
-		Writer w = null;
-		try {
-			if (f.getParentFile() != null && !f.getParentFile().isDirectory()) return; // no fleet folder: nothing to keep it beside
-			w = new OutputStreamWriter(new FileOutputStream(f, append), StandardCharsets.UTF_8);
-			w.write(text);
-		} catch (IOException e) {
-			// a copy: if it can't be kept, the station carries on and only the Captain's Log misses it
-		} finally {
-			try { if (w != null) w.close(); } catch (IOException e) { }
-		}
-	}
-	private static String now() { return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()); }
-	private static String flat(String s) { return s == null ? "" : s.replace("\t", " ").replace("\r", "").replace("\n", " / "); }
 }

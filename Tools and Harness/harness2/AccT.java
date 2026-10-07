@@ -66,8 +66,7 @@ public class AccT {
   Setup.done();
  }
  static int jumped(Vault v, Ship b) throws IOException {
-  File f = new File(v.historyOf(b), "voyage.log"); if (!f.isFile()) return 0;
-  int n = 0; for (String l : new String(SafeFiles.read(f), "UTF-8").split("\r?\n")) if (l.matches("^\\S+ \\S+  Jumped.*")) n++; return n;
+  int n = 0; for (String l : Setup.voyageLog(v, b).split("\n")) if (l.matches("^\\S+ \\S+  Jumped.*")) n++; return n;
  }
  static String words(int n) { String[] w = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"}; return n >= 0 && n < w.length ? w[n] : String.format("%,d", n); }
 }

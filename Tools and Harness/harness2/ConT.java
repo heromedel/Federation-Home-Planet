@@ -32,7 +32,7 @@ public class ConT { public static void main(String[] a) throws Exception {
  Map<Integer, String> why = MasterLog.dayReasons(v);
  int dev = 0; for (String w : why.values()) if (StationConsole.DAY_WHY.equals(w)) dev++;
  Setup.chk("P: each day noted in the master log as passed by a dev command (" + dev + ")", dev == n);
- String hist = new String(SafeFiles.read(v.historyLog()), "UTF-8");
+ String hist = Setup.stationLog(v);
  Setup.chk("P: the history log never mentions the dev command (5.23: the debug log only)", !hist.contains("Dev command") && !hist.contains("DEV  "));
  java.lang.reflect.Method page = Class.forName("homeplanet.ui.CaptainsLogDialog").getDeclaredMethod("page", Vault.class, boolean.class); page.setAccessible(true);
  String p = (String) page.invoke(null, v, false);

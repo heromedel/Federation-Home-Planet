@@ -172,7 +172,7 @@ public class PartT { public static void main(String[] a) throws Exception {
   g.setStateVar("system_upgrade", (g.hasStateVar("system_upgrade") ? g.getStateVar("system_upgrade") : 0) + 2);
   SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock();
   Setup.chk("W: more work at the same stop: no more", v.beaconsSeen() == seen + 1);
-  String vl = VoyageLog.read(v, s);
+  String vl = Setup.voyageLog(v, s);
   Setup.chk("W: noted in her voyage log, never as a beacon (the second hard rule)", vl.contains("Time spent on work at the beacon") && !vl.contains("counted as a beacon"));
   Ship other = v.docked().get(0);
   v.board(other); v.takeStock(); v.board(s); v.takeStock();

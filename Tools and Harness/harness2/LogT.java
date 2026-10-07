@@ -20,10 +20,10 @@ public class LogT { public static void main(String[] a) throws Exception {
  for (MasterLog.Entry e : days.get(2)) if (e.text.contains("Ash sent to the Nebula")) ash2 = true;
  Setup.chk("S: every station log entry is copied, on its day, with the real time", ash1 && ash2 && days.get(1).get(0).real.matches("\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d"));
  // Prior: no day, 0 or -1 are never in the Captain's Log
- FileOutputStream o = new FileOutputStream(new File(v.logsDir(), "master.log"), true);
- o.write("E\t2026-01-01 00:00:00\t0\tstation\tCREW  zero day\nE\t2026-01-01 00:00:00\t-1\tstation\tCREW  minus day\nE\t2026-01-01 00:00:00\t\tstation\tCREW  no day\nE\tbroken\n".getBytes("UTF-8")); o.close();
+ EventLog.write(v, Event.of("CREW").put("log", "station").put("headline", "zero day").put("day", "0").human("zero day"));
+ EventLog.write(v, Event.of("CREW").put("log", "station").put("headline", "minus day").put("day", "-1").human("minus day"));
  boolean prior = false; for (List<MasterLog.Entry> l : MasterLog.byDay(v).values()) for (MasterLog.Entry e : l) if (e.text.contains(" day")) prior = true;
- Setup.chk("S: an entry with no day, 0 or -1 is Prior: left out", !prior);
+ Setup.chk("S: an entry of day 0 or -1 is Prior: left out", !prior);
  // the Cargo Bay's day: once, then not again until something else moves the clock
  int c0 = v.beaconsSeen();
  boolean first = MasterLog.businessDay(v), second = MasterLog.businessDay(v);
@@ -38,7 +38,7 @@ public class LogT { public static void main(String[] a) throws Exception {
  System.setProperty("game", game.getPath()); fixes520(v);
  // 5.53 (heromedel): the fleet's listing is the debug log's; old LOADED entries stay in the file, out of view, the stardates still in line
  HistoryLog.loaded("refresh");
- Setup.chk("L: a refresh's listing no longer goes in the station log", count(new String(SafeFiles.read(v.historyLog()), "UTF-8"), "LOADED") == 1);
+ Setup.chk("L: a refresh's listing no longer goes in the station log", count(Setup.stationLog(v), "LOADED") == 1);
  Class<?> rl = Class.forName("homeplanet.ui.RecordsLog");
  java.lang.reflect.Method st = rl.getDeclaredMethod("station", String.class, String.class, int[].class); st.setAccessible(true);
  Object view = st.invoke(null, "2026-01-01 00:00  CREW  Ash signed on\n2026-01-01 00:01  LOADED  (startup)\n  a ship line\n2026-01-01 00:02  CREW  Bree signed on\n", "", new int[] {1, 2, 3});
@@ -204,8 +204,8 @@ public class LogT { public static void main(String[] a) throws Exception {
   Setup.chk("L: details only when asked: the costs and the reputation", !p.contains("reputation") && !p.contains("scrap") && d.contains("\u22121 reputation") && d.contains("Missiles, 9 scrap"));
   Setup.chk("L: never the letter that tells an expedition again, reputation as its own line, housekeeping, why a day passed, or beacons",
     !p.contains("Expedition Command") && !p.contains("Reputation") && !p.contains(MasterLog.CARGO_BAY) && !p.contains("day of rest") && !p.toLowerCase().contains("beacon"));
-  String raw = new String(SafeFiles.read(new File(v.logsDir(), "master.log")), "UTF-8");
-  Setup.chk("L: the master list keeps every raw line", count(raw, "SELL") == 2 && count(raw, "BOARD") == 2 && raw.contains("Expedition Command: Back from Nebula"));
+  String raw = new String(SafeFiles.read(EventLog.file(v)), "UTF-8"); // the event log keeps every entry (5.93: the master log no longer does)
+  Setup.chk("L: the event log keeps every entry, merged or not", count(raw, "| SELL |") == 2 && count(raw, "| BOARD |") == 2 && raw.contains("Expedition Command: Back from Nebula"));
  }
  @SuppressWarnings({"unchecked", "rawtypes"})
  static void words(List out) { for (int i = 0; i < out.size(); i++) if (out.get(i) instanceof homeplanet.core.Event) out.set(i, ((homeplanet.core.Event) out.get(i)).human()); }

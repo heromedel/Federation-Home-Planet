@@ -31,7 +31,7 @@ public class MigT { public static void main(String[] a) throws Exception {
  int eventsBefore = EventLog.read(v).size();
  // back to the old layout, as a 5.x station left it
  Layout.unconvert(v);
- Setup.chk("B: the old layout: a manifest, ships/, junkyard/ and history/ of files, the hold and the logs at the root; no folders", new File(root, "manifest.xml").isFile() && new File(root, "storage.sav").isFile() && new File(root, "history.log").isFile() && !new File(root, "cargohold").exists() && !new File(root, "logs").exists() && new File(root, "ships/" + d1.id + ".sav").isFile()
+ Setup.chk("B: the old layout: a manifest, ships/, junkyard/ and history/ of files, the hold and the logs at the root; no folders", new File(root, "manifest.xml").isFile() && new File(root, "storage.sav").isFile() && new File(root, "events.log").isFile() && !new File(root, "cargohold").exists() && !new File(root, "logs").exists() && new File(root, "ships/" + d1.id + ".sav").isFile()
    && new File(root, "junkyard/" + d2.id + ".sav").isFile() && new File(root, "history/" + d3.id + "/fate.txt").isFile() && new File(root, "history/" + d1.id + "/cloud-copy-" + "").getParentFile().isDirectory()
    && !new File(root, "shipyard").exists() && !new File(root, "memorials_and_records").exists() && !new File(root, "storage.xml").exists());
  // opened again: converted

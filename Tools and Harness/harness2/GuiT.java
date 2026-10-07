@@ -666,7 +666,7 @@ public class GuiT {
   boolean said = false; for (String t : shown) if (t.contains("Laid Ulm is in the infirmary")) said = true;
   Setup.chk("I: sent aboard, the laid up are refused with a word, and stay in the Cargo Hold", Boolean.TRUE.equals(r[0]) && said);
   Setup.chk("I: the Long Range offers the Cargo Hold's crew but not the laid up (" + r[1] + ")", String.valueOf(r[1]).contains("Hurt Hale") && !String.valueOf(r[1]).contains("Laid Ulm"));
-  Setup.chk("I: taken aboard and saved, the history log says so (" + r[2] + ")", new String(SafeFiles.read(HistoryLog.file()), "UTF-8").contains(String.valueOf(r[2])));
+  Setup.chk("I: taken aboard and saved, the history log says so (" + r[2] + ")", Setup.stationLog(v).contains(String.valueOf(r[2])));
   inf.delete();
   // the ship report: each crew member's name opens their report; a hurt one has a bar under the icon
   final Object[] rep = new Object[3];

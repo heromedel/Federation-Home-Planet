@@ -23,7 +23,7 @@ public class LogConvT { public static void main(String[] a) throws Exception {
    + "2026-01-03 09:00  LOADED  Loaded (startup):\n  Old Glory\n"
    + "2026-01-01 08:00  LOADED  (refresh)\n  Old Glory  sector 1\n" // before the master log began (out of order on purpose): no copy of its own
    + "2026-01-02 10:10  LOADED  (refresh)\n  Old Glory  sector 1\n"; // its copy is the master log's at 10:10
- SafeFiles.writeText(v.historyLog(), old + new String(SafeFiles.read(v.historyLog()), "UTF-8"), false);
+ SafeFiles.writeText(v.historyLog(), old + (v.historyLog().isFile() ? new String(SafeFiles.read(v.historyLog()), "UTF-8") : ""), false); // a 5.x fleet's station log (5.93 writes none)
  File master = new File(logs, "master.log");
  String m = "# master\nD\t2026-01-02 09:00:00\t2\ta jump\nD\t2026-01-02 09:30:00\t3\ta jump (2 counted together)\n"
    + "E\t2026-01-02 10:00:00\t3\tstation\tCOMMISSION  Old Glory  (abc123)\n  The Kestrel\nE\t2026-01-02 10:05:00\t3\tstation\tUNDO REASSIGN  the Cargo Hold and 2 hull(s) returned from surrendered/x\n"

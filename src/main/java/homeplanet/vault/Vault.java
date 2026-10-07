@@ -48,7 +48,8 @@ import org.slf4j.LoggerFactory;
  *     cargohold/                 the Cargo Hold (5.72): cargohold.xml (what it holds, 5.84; the pretend ship's save cargohold.sav
  *                                before), crew/, systems.txt (its stored systems), parts.txt, overflow.txt, versions/
  *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
- *                                ones read in once at 5.73), history.log, master.log, reputation.log, converted.txt (the marks)
+ *                                ones read in once at 5.73; the only log written since 5.93), converted.txt (the marks); a fleet
+ *                                from before keeps its history.log, master.log and reputation.log as they were, unwritten
  *     station-action-protection/ the notes of actions under way (5.71; heromedel's name, 5.78), only its why.txt when the station is at rest
  *     clock.xml                  the fleet's clock (5.86; five .txt files before): the sectors and beacons travelled, the day 1
  *     career.xml, reputation.xml, rest.xml, rank.xml, repair-job.xml, events.xml, crew-register.xml: the career's own state,

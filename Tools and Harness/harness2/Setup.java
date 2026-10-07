@@ -46,12 +46,11 @@ public class Setup {
   ShipStore.Record r = new ShipStore.Record(id); r.name = name; r.state = "docked";
   File d = new File(v.memorialDir(), ShipStore.stem(name, id)); ShipStore.write(d, r); ShipStore.versions(d).mkdirs(); return d;
  }
- /** A voyage line as the station writes one: the master log's copy (the crew register still reads it) and her event (every reader since 5.74). */
+ /** A voyage line as the station writes one: her event (every reader since 5.74; the master log's copy went at 5.93). */
  public static void voyage(Vault v, Ship s, String text) { voyage(v, s.name, s.id, text); }
  /** The same for a ship the test only names (no ship of the fleet). */
  public static void voyage(Vault v, String name, String text) { voyage(v, name, name.toLowerCase().replaceAll("[^a-z0-9]", "") + "x", text); }
  static void voyage(Vault v, String name, String id, String text) {
-  MasterLog.entry(v, "voyage: " + name, text);
   Event e = Event.of("VOYAGE_NOTE").put("text", text);
   for (String[] k : new String[][] {{"Crew joined: ", "CREW_JOINED"}, {"Crew lost: ", "CREW_LOST"}}) { // as VoyageLog writes them: each crew member and race a field
    if (!text.startsWith(k[0])) continue;
@@ -69,6 +68,14 @@ public class Setup {
  public static String crewStamp(Vault v) {
   StringBuilder sb = new StringBuilder(Long.toString(CrewRegister.registerFileOf(v).lastModified()));
   for (CrewRegister.Member m : CrewRegister.members(v)) { File f = CrewRegister.fileOf(v, m.id); sb.append(',').append(f == null ? 0 : f.lastModified()); }
+  return sb.toString();
+ }
+ /** The station log as it would have read (5.93: history.log is no longer written): the event log's station entries, in its form. */
+ public static String stationLog(Vault v) { return CrewRegister.stationText(v); }
+ /** A ship's voyage log as it would have read (5.93: voyage.log is no longer written): her own log's voyage entries, each "time  line". */
+ public static String voyageLog(Vault v, Ship s) {
+  StringBuilder sb = new StringBuilder();
+  for (EventLog.Entry e : EventLog.voyage(ShipStore.entries(v.folderOf(s)), s.id)) sb.append(e.time.length() >= 16 ? e.time.substring(0, 16) : e.time).append("  ").append(e.human).append('\n');
   return sb.toString();
  }
  public static void chk(String n, boolean ok) { System.out.println((ok ? "PASS  " : "FAIL  ") + n); if (!ok) fails++; }

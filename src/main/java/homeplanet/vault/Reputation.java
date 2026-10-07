@@ -434,7 +434,7 @@ public final class Reputation {
 	private static int journeysSince(Vault v, String id, TradeMark m) {
 		int n = 0;
 		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.voyage(ShipStore.entries(v.folderOfId(id)), id)) { // her own log (5.76)
-			if (!e.kind.equals("NEW_RUN") && !e.human.endsWith(VoyageLog.NEW_JOURNEY)) continue;
+			if (!VoyageLog.newJourney(e)) continue;
 			if (m == null || e.time.length() < 16 || e.time.substring(0, 16).compareTo(m.date) >= 0) n++;
 		}
 		return n + (m == null ? 1 : 0); // her first journey began in sector 1 as well
@@ -620,15 +620,7 @@ public final class Reputation {
 	private static void entry(Vault v, int points, String why, List<String> details) { entry(v, "other", points, why, details); }
 	/** As above, with what the change was for (the event's reason field: achievement, cruiser, voyage, ship_lost, restored, expedition, captive, ransomed, spent, flagship, review). */
 	private static void entry(Vault v, String reason, int points, String why, List<String> details) {
-		StringBuilder sb = new StringBuilder(log(v));
-		sb.append(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date())).append("  ").append(signed(points)).append("  ").append(why).append('\n');
-		if (details != null) for (String d : details) sb.append("  ").append(d).append('\n');
-		try { SafeFiles.writeText(new File(v.logsDir(), LOG), sb.toString(), false); }
-		catch (IOException e) { log.warn("Could not write the reputation log: {}", e.toString()); }
-		StringBuilder t = new StringBuilder(signed(points) + "  " + why);
-		if (details != null) for (String d : details) t.append("\n").append(d);
-		MasterLog.entry(v, "reputation", t.toString());
-		Properties p = read(v);
+		Properties p = read(v); // the event log alone (5.93): reputation.log and the master log's copy are no longer written
 		homeplanet.core.EventLog.write(v, homeplanet.core.Event.of("REPUTATION").put("log", "reputation").put("reason", reason).put("points", points).put("total", num(p, "total")).put("why", why).details(details).human(why));
 	}
 	public static String signed(int n) { return n > 0 ? "+" + n : n < 0 ? "−" + (-n) : "0"; }

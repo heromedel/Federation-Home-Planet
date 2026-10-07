@@ -28,7 +28,8 @@ import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 
 /**
- * Each ship's voyage log (history/&lt;id&gt;/voyage.log): what FTL did to her between one look and the next (the
+ * Each ship's voyage: what FTL did to her between one look and the next, in her own log and the fleet's event log (her
+ * voyage.log until 5.93, kept as it was, no longer written; it still travels in her package for an older station) (the
  * station looks at each save FTL writes while it's open, and on Refresh): jumps, sectors, ships defeated, crew joined
  * and lost, what came aboard and went, upgrades, damage and repairs, the Rebel Flagship. The last look is kept in
  * voyage.txt, with the sectors she has visited in all her journeys (FTL's save knows only the current one).
@@ -39,21 +40,6 @@ public final class VoyageLog {
 	private VoyageLog() { }
 
 	static final String LOG = "voyage.log", LAST = "voyage.txt";
-	/** Past this size the log keeps its newer half. */
-	private static final long MAX_BYTES = 512 * 1024;
-
-	/** Her log, oldest first (empty if none yet). */
-	public static String read(Vault v, Ship s) {
-		File f = new File(v.historyOf(s), LOG);
-		try { return f.isFile() ? new String(SafeFiles.read(f), StandardCharsets.UTF_8) : ""; }
-		catch (IOException e) { return "The Home Planet Station could not read her voyage log (" + f + "): " + e.getMessage(); }
-	}
-	/** The log of a ship by her id (she may have left the fleet: the museum), oldest first; empty if none. */
-	public static String read(Vault v, String id) {
-		File f = new File(v.folderOfId(id), LOG);
-		try { return f.isFile() ? new String(SafeFiles.read(f), StandardCharsets.UTF_8) : ""; }
-		catch (IOException e) { return ""; }
-	}
 	/** The sectors a ship (by id) visited in all her journeys, at least the sector she's in in this save. */
 	public static int visited(Vault v, String id, SavedGameState gs) {
 		return Math.max(Store.num(last(v, id), "visited", 0), gs == null ? 0 : gs.getSectorNumber() + 1);
@@ -74,14 +60,16 @@ public final class VoyageLog {
 
 	/** The station's note for a New Journey (her log counts her journeys by it). */
 	public static final String NEW_JOURNEY = "A new journey plotted from sector 1";
+	/** A New Journey in her log: its own kind, or the note the station writes when it plots one (by its text field; an older note by its line). */
+	public static boolean newJourney(EventLog.Entry e) { return e.kind.equals("NEW_RUN") || e.get("text", e.human).endsWith(NEW_JOURNEY); }
 	/**
-	 * Her journeys: the first (commissioning) and each New Journey since, as her voyage log tells (logs began in 4B.29,
-	 * so an older ship counts from then). The count is kept in voyage.txt too, so a log cut down to its newer half
-	 * doesn't lose any.
+	 * Her journeys: the first (commissioning) and each New Journey since, as her own log tells (5.93; her voyage.log
+	 * before, which began in 4B.29, so an older ship counts from then). The count is kept in voyage.txt too, so none is
+	 * lost to a log cut down.
 	 */
 	public static int journeys(Vault v, Ship s) {
 		int counted = 1;
-		for (String line : read(v, s).split("\r?\n")) if (line.endsWith(NEW_JOURNEY)) counted++;
+		for (EventLog.Entry e : EventLog.voyage(ShipStore.entries(v.folderOf(s)), s.id)) if (newJourney(e)) counted++;
 		Properties last = last(v, s);
 		int kept = Store.num(last, "journeys", 0), n = Math.max(kept, counted);
 		if (n != kept && !last.isEmpty()) { last.setProperty("journeys", Integer.toString(n)); save(v, s, last); }
@@ -378,20 +366,7 @@ public final class VoyageLog {
 		return Event.of("SHIP").put("ship", s.name + "." + s.id).put("ship_name", s.name).put("ship_id", s.id).put("ship_state", s.state == null ? null : s.state.name().toLowerCase());
 	}
 	private static void append(Vault v, Ship s, List<Event> events) {
-		File dir = v.historyOf(s), f = new File(dir, LOG);
-		String stamp = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
-		StringBuilder sb = new StringBuilder(read(v, s));
-		if (f.length() > MAX_BYTES) sb.delete(0, sb.indexOf("\n", sb.length() / 2) + 1); // the newer half stays
-		List<String> lines = new ArrayList<String>();
-		for (Event e : events) lines.add(e.human());
-		for (String l : lines) sb.append(stamp).append("  ").append(l).append('\n');
-		try {
-			if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
-			SafeFiles.writeText(f, sb.toString(), false);
-		} catch (IOException e) {
-			log.warn("Could not write {}'s voyage log: {}", s, e.toString());
-		}
-		for (String l : lines) MasterLog.entry(v, "voyage: " + s.name, l);
+		// her own log and the fleet's event log alone (5.93): voyage.log and the master log's copy are no longer written
 		Event who = shipFields(s);
 		for (Event e : events) EventLog.write(v, Event.of(e.kind).put("log", "voyage").putAll(who).putAll(e).human(e.human()));
 	}
