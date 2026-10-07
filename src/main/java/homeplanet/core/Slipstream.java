@@ -284,10 +284,15 @@ public class Slipstream {
 	}
 
 	/**
-	 * Slipstream's command line needs the FTL folder in modman.cfg ("No FTL dats path previously set" otherwise).
-	 * Fills it in from the station's own setting when it's missing, and leaves everything else alone.
+	 * Slipstream's command line needs the FTL folder in modman.cfg ("No FTL dats path previously set" otherwise), and it
+	 * patches the FTL named there. Run before every patch: when it names no folder, one that's gone, or another copy of FTL,
+	 * it's set to the station's own. FTL moved used to leave Slipstream on the old folder, so a patch failed, or went into the
+	 * old copy while the station said done (heromedel, 5.63). Everything else in the file is left alone. Returns what changed,
+	 * for the patch's history entry, or null if nothing did.
 	 */
-	public static void prepareConfig(File dir) {
+	public static String prepareConfig(File dir) {
+		File ftl = HomePlanet.datsPath;
+		if (ftl == null) return null;
 		File cfg = new File(dir, "modman.cfg");
 		Properties p = new Properties();
 		if (cfg.isFile()) {
@@ -296,18 +301,28 @@ public class Slipstream {
 				try { p.load(in); } finally { in.close(); }
 			} catch (IOException e) {
 				log.warn("Could not read " + cfg, e);
-				return;
+				return null;
 			}
 		}
 		String have = p.getProperty("ftl_dats_path");
-		if (have != null && have.length() > 0 && new File(have, "ftl.dat").isFile()) return;
-		p.setProperty("ftl_dats_path", HomePlanet.datsPath.getAbsolutePath());
+		if (have != null && have.length() > 0 && sameFolder(new File(have), ftl)) return null;
+		p.setProperty("ftl_dats_path", ftl.getAbsolutePath());
 		try {
 			OutputStream out = new FileOutputStream(cfg);
 			try { p.store(out, "Slipstream Mod Manager config (FTL folder filled in by Federation Home Planet)"); } finally { out.close(); }
-			log.debug("Wrote ftl_dats_path to {}", cfg);
 		} catch (IOException e) {
 			log.warn("Could not write " + cfg, e);
+			return null;
+		}
+		log.debug("Wrote ftl_dats_path to {}: {} (was {})", cfg, ftl.getAbsolutePath(), have);
+		return have == null || have.length() == 0 ? "Slipstream given FTL's folder: " + ftl.getAbsolutePath()
+				: "Slipstream pointed at FTL's folder: " + ftl.getAbsolutePath() + " (it had " + have + ")";
+	}
+	private static boolean sameFolder(File a, File b) {
+		try {
+			return a.getCanonicalFile().equals(b.getCanonicalFile());
+		} catch (IOException e) {
+			return a.getAbsoluteFile().equals(b.getAbsoluteFile());
 		}
 	}
 
