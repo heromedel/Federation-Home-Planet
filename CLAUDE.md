@@ -63,8 +63,13 @@ it does and CREDITS.md for where the code came from.
   `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
   Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`).
 - **A fleet on disk (6.0, since 5.69):** every ship is a folder (`shipyard/<Name>.<id>/`, `junkyard/`, `memorials_and_records/ships/`
-  for the ones that left) with her record as xml, her save, her log and her `versions/`; the Cargo Hold is `cargohold/`; the station's
-  logs are `logs/` (`events.log` is the one every reader reads); `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
+  for the ones that left) with her record as xml, her save, her log, her `versions/` and her crew's files (`crew/`, one per crew member, 5.83);
+  the Cargo Hold is `cargohold/` (`cargohold.xml` is what it holds, 5.84: no pretend ship); `expeditions/`, `infirmary/` and `captives/`
+  have their own xml (5.85); the career's small files are xml, one per concern, the clock in `clock.xml` (5.86); everyone who left is in
+  `memorials_and_records/` (ships and crew). The station's log is `logs/events.log` alone: since 5.93 nothing writes history.log,
+  master.log, voyage.log or reputation.log (an older fleet keeps them, read only by the conversion). The words the station writes
+  from data can be overridden in `lore/` beside the jar (`core/Lore`, 5.89; the jar holds the defaults; the words are McCarthy's).
+  `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
   at the top of `vault/Vault.java`. A 5.x fleet is converted the first time it opens, a zip of it kept beside its folder. There is no
   index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
   `vault/Journal`** (a note first, the steps, the note deleted; a note left behind is finished at the next opening): never a hand-written undo.
@@ -111,7 +116,8 @@ scratchpad, never in the repo. Then, after building the jar:
     "Tools and Harness/harness2/run.sh" /path/to/folder-with-ftl.dat
 
 It builds a fresh test world from ftl.dat alone (WorldT), then runs VaultT, RoundT, PicT, DesT, CommT and the rest on
-copies of it (LinkT runs a second station in its own process, over localhost). Every test should print ALL PASSED, and RoundT "0 differ, 0 unreadable". Scratch goes in
+copies of it (LinkT runs a second station in its own process, over localhost; HoldT, SmallT, LoreT, CarryT and RegT test the 6.0 storage,
+and the harness reads the station log and a voyage log from events with `Setup.stationLog` and `Setup.voyageLog`). Every test should print ALL PASSED, and RoundT "0 differ, 0 unreadable". Scratch goes in
 `harness2/work/` (ignored). The converter tests (ConvT, StoT) run only when old Homeworld saves and program
 folder are passed as the 2nd and 3rd arguments.
 

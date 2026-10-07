@@ -25,6 +25,10 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 
 All built. What remains is testing in real play and bug checks.
 
+The 6.0 overhaul (storage, logs and code rebuilt; `docs/OVERHAUL-6.md`) is built through 5.94: what is left before 6.00 is listed
+in its "Where it stands" note (McCarthy's words into `lore/`, Buggy Boy's kill test, heromedel's call on the protocol, the docs'
+final pass). No 6.00 until every step is done (heromedel).
+
 ---
 
 ## 1. Save safety — done (harness test SafeT)

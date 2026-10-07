@@ -39,6 +39,8 @@ for every existing fleet; every reader of the hold (the Cargo Bay, trading, rewa
 commissioning, the plea, their tests). Best done in one go, after the current features settle, not half and half. The
 player sees no difference on the day it lands.
 
+_Where it stands at 5.94 (the overhaul, nearly done): a ship is still her FTL save, kept in her folder, since Board is a copy FTL reads unchanged; everything else is a record of its own. The Cargo Hold is `cargohold.xml` (5.84), with no hull, rooms or squares: what it holds by name, its crew by name, race, skills and record with FTL's bytes beside them; in memory it is still read as the storage save, so its readers didn't change. Its crew have files in `cargohold/crew/`; the side files are xml in folders of their own (expeditions, infirmary, captives, 5.85) or one per concern at the root (5.86). For heromedel to close at 6.00._
+
 ## 2. Crew identity (noted 4B.97; band-aid 4B.98; the crew register, 5.41)
 
 **Where it stands (5.41): solved for the records.** Every crew member has an id of the station's own in the fleet's
@@ -65,6 +67,8 @@ found again. The harness test CrewT holds it: namesakes sent apart, a rename, a 
 
 _5.82, a later improvement, not built: Buggy Boy's test in FTL 1.6.14 (5.80) found that the save's state variables survive everything FTL does (a death and clone, a save at the menu, a rename, a store, a hire, jumps, a dismissal), while no field of the crew record can safely carry an id. So an id-to-position list written into the save on Board (`fhp.crew.<id> = <position>`, with a list version, dropped when a ship arrives by trade) would let the station line crew up by place and match by looks only those who joined or left. heromedel's ship marks are the same idea for ships (`fhp.ship.<career>.<id> = <board count>`: a save from another career, or an old Steam Cloud copy, told apart). heromedel, 5.82: not for 6.0 (the goal is files and logs; this adds risk and testing); 6.0's crew files keep the register's matching._
 
+_Where it stands at 5.94: every crew member the register knows has a file of their own in the folder of whatever holds them (5.83), and a traded ship's crew bring theirs with them (5.90: their past ships and deeds there, as Prior). The register reads the event log (5.91), never a log's prose, and how far it has read is an offset in it. Matching is unchanged: by race, sex, colouring and a record that only grows, as above; namesakes stay namesakes, each with their own id._
+
 ## 3. Side files are written one at a time (noted 4B.97)
 
 Most of the small files in concern 1 are written on their own, with a failure only logged; a failure between two of
@@ -75,6 +79,8 @@ concern 1.
 
 _5.71: the journal (docs/OVERHAUL-6.md §3.2): an action that touches more than one file is written as a note first and finished at the next opening if the station stops partway; every Transaction, Board and Dock go through it. The small files that still go one by one join it as their steps are touched._
 
+_Where it stands at 5.94: solved, for heromedel to close at 6.00. Every action that moves or writes more than one file goes on a protection note (5.71 to 5.88): saves, Board, Dock, Decommission, a ship leaving or coming home, a trade received, the crew register's files, the conversions. The clock's five files are one (5.86). What is still written on its own is one file to one owner (a single move or a single write), which can't disagree with itself. Buggy Boy's kill test (6.0 step 25a) is the last check._
+
 ## 4. The master log only grows (noted 5.17 by Claude, not yet talked over)
 
 `master.log` (each career's copy of every log entry, and every day counted) is appended to and never trimmed, and the
@@ -84,6 +90,8 @@ day line. If it ever matters: keep the last day line's reason in a small file of
 read the file a page at a time (or split it by year). Claude's concern, raised while building it; heromedel hasn't weighed in.
 
 _5.74: the Captain's Log and the station log view read the event log now (`logs/events.log`, every entry two lines), not the master log; the master log's E lines are still written, for the crew register, until the crew files (6.0, step 15), and then they can stop. The event log grows the same way; it is read whole at each opening (heromedel's 2026-10-05 fleet, 1,150 entries, opens in about two seconds), and the Cargo Bay's day reads the master log's last D line still._
+
+_Where it stands at 5.94: the master log is no longer written (5.93); the Cargo Bay's day reads the DAY events. The event log grows the same way, append-only, read whole by the Captain's Log and the register; if it ever matters, it can be read from the end or split by year. Still not talked over._
 
 ## 5. Docked play needs FTL in a window, and FTL's OpenGL is slow there on some PCs (noted 5.64)
 
