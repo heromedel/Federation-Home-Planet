@@ -26,7 +26,7 @@ public class LoreT { public static void main(String[] a) throws Exception {
    + "\t<entry kind=\"TEST_GOOD\">{name} came aboard at a beacon with a store, and the rebels fled from the Rebel Flagship's path.</entry>\n"
    + "</lore>\n", false);
  Setup.chk("B: the copy's entry wins, its {scrap} filled", Lore.human(hold).equals("12 scrap counted into the new ledger."));
- Setup.chk("B: its condition is kept: another what falls to the jar's words", Lore.human(Event.of("HOLD_FILE").put("what", "other").human("x")).equals("The Cargo Hold's inventory was written up in a new ledger."));
+ Setup.chk("B: its condition is kept: another what is no entry's (the jar's is for what=converted too): the writer's own words", Lore.human(Event.of("HOLD_FILE").put("what", "other").human("x")).equals("x"));
  Setup.chk("B: a {field} the event hasn't got: the writer's words, never a raw token", Lore.human(Event.of("TEST_MISSING").human("fallback")).equals("fallback"));
  Setup.chk("B: hard rule 1, the Flagship destroyed: left out", Lore.human(Event.of("TEST_FLAG").human("fallback")).equals("fallback"));
  Setup.chk("B: hard rule 2, time in beacons: left out", Lore.human(Event.of("TEST_BEACONS").human("fallback")).equals("fallback"));

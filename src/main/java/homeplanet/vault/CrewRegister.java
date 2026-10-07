@@ -49,7 +49,10 @@ public final class CrewRegister {
 		public Status status = Status.PRESENT;
 		/** Laid up in the infirmary (in the Cargo Hold): for the Present tab only, not kept. */
 		public boolean laidUp;
-		int histPos, masterPos;
+		/** How far the event log had been read when they were last seen (a character offset in events.log, 5.91). */
+		int at;
+		/** A register from before 5.91: how far the station log and the master log had been read, for {@link #convertPositions}; -1 if not kept. */
+		int oldHist = -1, oldMaster = -1;
 		public final List<Event> events = new ArrayList<Event>();
 		/** Their whole record as last seen (skills, masteries, service, looks): to draw and describe them, gone or not. */
 		final Map<String, String> rec = new LinkedHashMap<String, String>();
@@ -262,11 +265,12 @@ public final class CrewRegister {
 			String st = p.getProperty(k + "status", "PRESENT");
 			if (st.equals("DISCHARGED")) st = "RETIRED"; // 5.41's word for it
 			try { m.status = Status.valueOf(st); } catch (IllegalArgumentException e) { m.status = Status.MISSING; }
-			m.histPos = Store.num(p, k + "hist", 0);
+			m.at = Store.num(p, k + "at", 0);
+			m.oldHist = p.getProperty(k + "at") == null ? Store.num(p, k + "hist", -1) : -1;
 			for (String key : p.stringPropertyNames()) if (key.startsWith(k + "rec.")) m.rec.put(key.substring((k + "rec.").length()), p.getProperty(key));
 			String served = p.getProperty(k + "served", "");
 			if (!served.isEmpty()) for (String sh : served.split("\\|")) m.served.add(sh);
-			m.masterPos = Store.num(p, k + "master", 0);
+			m.oldMaster = p.getProperty(k + "at") == null ? Store.num(p, k + "master", -1) : -1;
 			m.sector = Store.num(p, k + "sector", -1);
 			for (String key : p.stringPropertyNames()) {
 				if (!key.startsWith(k + "with.")) continue;
@@ -281,10 +285,10 @@ public final class CrewRegister {
 			return m;
 		}
 	}
-	/** How far the station's log and the master log had been read at the last look (for who's new and how they came). */
+	/** How far the event log had been read at the last look (for who's new and how they came), and the served lists' version: {at, unused, served.v}. */
 	private static int[] seen(Vault v) {
 		Properties p = Store.read(file(v).isFile() ? file(v) : registerFile(v)); // unreadable: from the start
-		return new int[] {Store.num(p, "seen.hist", 0), Store.num(p, "seen.master", 0), Store.num(p, "served.v", 1)};
+		return new int[] {Store.num(p, "seen.at", 0), 0, Store.num(p, "served.v", 1)};
 	}
 	/** A member's keys and values, in the register's order (the same for crew.txt and their own file). */
 	private static Map<String, String> fields(Member m) {
@@ -292,7 +296,7 @@ public final class CrewRegister {
 		f.put("name", m.name); f.put("race", m.race); f.put("title", m.title); f.put("male", Boolean.toString(m.male));
 		f.put("tints", m.tints); f.put("record", m.record);
 		f.put("place", m.place); f.put("where", m.where); f.put("status", m.status.name());
-		f.put("hist", Integer.toString(m.histPos)); f.put("master", Integer.toString(m.masterPos));
+		f.put("at", Integer.toString(m.at));
 		if (!m.served.isEmpty()) f.put("served", String.join("|", m.served));
 		if (m.sector >= 0) f.put("sector", Integer.toString(m.sector));
 		for (Map.Entry<Integer, List<String>> w : m.with.entrySet()) f.put("with." + w.getKey(), String.join("|", w.getValue()));
@@ -301,9 +305,9 @@ public final class CrewRegister {
 		return f;
 	}
 	/** The register's own state, as its file's text. */
-	private static String registerText(List<Member> members, int histLen, int masterLen) {
+	private static String registerText(List<Member> members, int at, int unused) {
 		Properties p = new Properties();
-		p.setProperty("seen.hist", Integer.toString(histLen)); p.setProperty("seen.master", Integer.toString(masterLen));
+		p.setProperty("seen.at", Integer.toString(at));
 		p.setProperty("served.v", Integer.toString(SERVED_VERSION)); p.setProperty("next", Integer.toString(nextId(members)));
 		return new String(Store.xml(p, NOTE + " Each crew member has a file of their own, in a crew folder beside whatever holds them."), StandardCharsets.UTF_8);
 	}
@@ -330,7 +334,7 @@ public final class CrewRegister {
 	/** The register in the 5.x shape (one crew.txt), for the harness's way back to the old layout (Layout.unconvert). */
 	static void writeOld(Vault v, List<Member> members, int histLen, int masterLen) throws IOException {
 		StringBuilder sb = new StringBuilder("# ").append(NOTE).append("\n");
-		sb.append("seen.hist=").append(histLen).append("\nseen.master=").append(masterLen).append("\nserved.v=").append(SERVED_VERSION).append("\n");
+		sb.append("seen.at=").append(histLen).append("\nserved.v=").append(SERVED_VERSION).append("\n");
 		sb.append("next=").append(nextId(members)).append("\n");
 		for (Member m : members) for (Map.Entry<String, String> e : fields(m).entrySet()) line(sb, m.id + "." + e.getKey(), e.getValue());
 		SafeFiles.writeText(file(v), sb.toString(), false);
@@ -388,8 +392,10 @@ public final class CrewRegister {
 		List<Member> members = members(v);
 		int[] seen = seen(v);
 		int today = MasterLog.today(v);
-		String hist = text(v.historyLog()), master = text(new File(v.logsDir(), MasterLog.FILE));
-		int histLen = hist.length(), masterLen = master.length();
+		// what the station has logged, from the event log (5.91: the station log and the master log by character offset before)
+		String events = text(homeplanet.core.EventLog.file(v));
+		int histLen = events.length(), masterLen = 0;
+		String hist = stationText(v, events);
 		boolean changed = fresh;
 
 		// the likeliest pairs first: a crew member is matched once, and to one entry
@@ -420,7 +426,7 @@ public final class CrewRegister {
 				m = new Member(nextId(members));
 				m.name = x.name; m.race = x.race; m.male = x.male;
 				m.title = x.title;
-				if (!fresh) m.events.add(new Event(today, joined(x, hist, seen[0])));
+				if (!fresh) m.events.add(new Event(today, joined(x, since(events, seen[0], true))));
 				File came = arrived(v, x, arrivedUsed);
 				if (came != null) { // she came in a trade: her past at the other station comes with her (5.90), before anything here
 					Properties p = readCrewFile(came);
@@ -457,7 +463,7 @@ public final class CrewRegister {
 			if (!x.title.isEmpty()) m.title = x.title;
 			if (x.fields != null && !x.fields.equals(m.rec)) { m.rec.clear(); m.rec.putAll(x.fields); changed = true; }
 			if (x.place.startsWith("ship:") && !x.ship.isEmpty() && (m.served.isEmpty() || !shipOf(m.served.get(m.served.size() - 1)).equals(x.ship))) { m.served.add(x.ship); changed = true; }
-			m.histPos = histLen; m.masterPos = masterLen;
+			m.at = histLen;
 		}
 
 		// who served with whom: everyone aboard the same ship, or out on the same expedition, has each other (heromedel, 5.52)
@@ -482,8 +488,7 @@ public final class CrewRegister {
 			if (taken[j]) continue;
 			Member m = open.get(j);
 			if (m.status == Status.MISSING) continue;
-			String since = m.histPos <= hist.length() ? hist.substring(m.histPos) : hist;
-			String flown = m.masterPos <= master.length() ? master.substring(m.masterPos) : master;
+			String since = since(events, m.at, true), flown = since(events, m.at, false);
 			String[] fate = fate(v, m, since, flown);
 			m.status = Status.valueOf(fate[0]);
 			m.events.add(new Event(today, fate[1]));
@@ -746,8 +751,7 @@ public final class CrewRegister {
 		return "Assigned " + x.where.replaceFirst("^aboard ", "to ") + ".";
 	}
 	/** How a crew member new to the register came: the station's log since the last look says, else where they are. */
-	private static String joined(Found x, String hist, int since) {
-		String recent = (since <= hist.length() ? hist.substring(since) : "").replace("\r", "");
+	private static String joined(Found x, String recent) {
 		String peer = traded(recent, "received", x.name + " (" + x.title + ")");
 		if (peer != null) return "Transferred from " + peer + "'s fleet; " + x.where + ".";
 		for (String l : recent.split("\n")) {
@@ -882,54 +886,114 @@ public final class CrewRegister {
 		}
 	}
 	/**
-	 * Everything logged before the register, oldest first: the master log's entries (those before the first stardate
-	 * too, as day 0), and before it began (5.17), the station log's own (day 0). A master entry's details are its
-	 * lines joined with " / ".
+	 * Everything logged before the register, oldest first, from the event log (5.91; the master log and the station
+	 * log before, which the old logs' conversion read into it at 5.73): each station entry as {day, "station", its
+	 * first line, the whole entry}, and each ship's crew joined and lost as {day, "voyage: her name", the line, the line}.
 	 */
 	private static List<String[]> pastEntries(Vault v) {
 		List<String[]> out = new ArrayList<String[]>();
-		String firstReal = null;
-		for (String l : text(new File(v.logsDir(), MasterLog.FILE)).split("\r?\n")) {
-			if (!l.startsWith("E\t")) continue;
-			String[] w = l.split("\t", 5);
-			if (w.length < 5) continue;
-			int day;
-			try { day = Math.max(0, Integer.parseInt(w[2].trim())); } catch (NumberFormatException e) { continue; }
-			if (firstReal == null) firstReal = w[1];
-			String whole = w[4].replace(" / ", "\n");
-			out.add(new String[] {Integer.toString(day), w[3], whole.split("\n", 2)[0], whole});
-		}
-		// the station log from before the master log began (its lines are stamped to the minute; the master's to the second)
-		final String before = firstReal == null ? null : firstReal.substring(0, Math.min(16, firstReal.length()));
-		List<Object[]> older = new ArrayList<Object[]>(); // {stamp, entry}
-		String kindLine = null, stamp = null; StringBuilder whole = null;
-		for (String l : (text(v.historyLog()) + "\n").split("\r?\n")) {
-			boolean detail = l.startsWith("  ");
-			if (!detail && kindLine != null) { older.add(new Object[] {stamp, new String[] {"0", "station", kindLine, whole.toString()}}); kindLine = null; }
-			if (detail) { if (whole != null) whole.append("\n").append(l); continue; }
-			whole = null;
-			if (l.length() < 18 || (before != null && l.substring(0, 16).compareTo(before) >= 0)) continue;
-			stamp = l.substring(0, 16);
-			kindLine = l.substring(16).trim();
-			whole = new StringBuilder(kindLine);
-		}
-		// and each ship's voyage log from before it began: who joined her and who was lost; the master log has the rest (5.51)
-		for (File d : v.shipFolders()) {
-			File f = new File(d, "voyage.log");
-			if (!f.isFile()) continue;
-			String ship = shipNamed(v, d);
-			if (ship == null) continue;
-			for (String l : text(f).split("\r?\n")) {
-				if (l.length() < 18 || (before != null && l.substring(0, 16).compareTo(before) >= 0)) continue;
-				String line = l.substring(16).trim();
-				if (line.startsWith("Crew joined: ") || line.startsWith("Crew lost: ")) older.add(new Object[] {l.substring(0, 16), new String[] {"0", "voyage: " + ship, line, line}});
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v))) {
+			String day = Integer.toString(Math.max(0, e.day));
+			if ("station".equals(e.get("log"))) {
+				String first = e.kind.replace('_', ' ') + (e.get("headline", "").isEmpty() ? "" : "  " + e.get("headline"));
+				StringBuilder whole = new StringBuilder(first);
+				for (String[] kv : e.fields()) if (kv[0].startsWith("detail.")) whole.append("\n").append(kv[1]);
+				out.add(new String[] {day, "station", first, whole.toString()});
+			} else if ("voyage".equals(e.get("log"))) {
+				String line = voyageLine(e);
+				if (line != null && !e.get("ship_name", "").isEmpty()) out.add(new String[] {day, "voyage: " + e.get("ship_name"), line, line});
 			}
 		}
-		Collections.sort(older, new Comparator<Object[]>() { public int compare(Object[] a, Object[] b) { return ((String) a[0]).compareTo((String) b[0]); } }); // stable: a minute's lines keep their order
-		List<String[]> all = new ArrayList<String[]>();
-		for (Object[] o : older) all.add((String[]) o[1]);
-		all.addAll(out);
-		return all;
+		return out;
+	}
+
+	// ---- what the register reads: the event log (5.91; the station log and the master log, by character offset, before) ----
+
+	/** An entry in the station log's own form, the one the register's readers know: its minute, its kind, its headline, then each detail on a line of its own. */
+	private static void stationLines(StringBuilder sb, homeplanet.core.EventLog.Entry e) {
+		sb.append(e.time.length() >= 16 ? e.time.substring(0, 16) : e.time).append("  ").append(e.kind.replace('_', ' '));
+		String head = e.get("headline", "");
+		if (!head.isEmpty()) sb.append("  ").append(head);
+		sb.append('\n');
+		for (String[] kv : e.fields()) if (kv[0].startsWith("detail.")) sb.append("  ").append(kv[1]).append('\n');
+	}
+	/** A voyage's crew joined or lost, as the voyage log said it ("Crew lost: Ash (Rockman), Bob (Human)"), from the event's fields; null for any other entry. */
+	static String voyageLine(homeplanet.core.EventLog.Entry e) {
+		String word = e.kind.equals("CREW_LOST") ? "Crew lost: " : e.kind.equals("CREW_JOINED") ? "Crew joined: " : null;
+		if (word == null) return null;
+		List<String> crew = e.all("crew"), race = e.all("race");
+		if (crew.isEmpty() || crew.size() != race.size()) return e.human.startsWith(word) ? e.human : null; // an older line, read in with its own words
+		StringBuilder sb = new StringBuilder(word);
+		for (int i = 0; i < crew.size(); i++) sb.append(i == 0 ? "" : ", ").append(crew.get(i)).append(" (").append(race.get(i)).append(')');
+		return sb.toString();
+	}
+	/** What the station logged after this point of the event log, in the station log's form (station) or as the voyages' crew lines (not station); the past read in at 5.73 is never "since". */
+	private static String since(String events, int at, boolean station) {
+		String tail = at >= 0 && at <= events.length() ? events.substring(at) : events;
+		StringBuilder sb = new StringBuilder();
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.parse(tail)) {
+			if ("true".equals(e.get("converted"))) continue;
+			if (station) { if ("station".equals(e.get("log"))) stationLines(sb, e); }
+			else if ("voyage".equals(e.get("log"))) { String l = voyageLine(e); if (l != null) sb.append(l).append('\n'); }
+		}
+		return sb.toString();
+	}
+	private static final Object[] WHOLE = {null, -1, null}; // the event log's path and length, and its station entries in the station log's form
+	/** Every station entry, oldest first, in the station log's form (for the ships renamed, and the served lists rebuilt). */
+	private static String stationText(Vault v, String events) {
+		String path = homeplanet.core.EventLog.file(v).getAbsolutePath();
+		synchronized (WHOLE) {
+			if (path.equals(WHOLE[0]) && (Integer) WHOLE[1] == events.length()) return (String) WHOLE[2];
+			StringBuilder sb = new StringBuilder();
+			for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.parse(events))) if ("station".equals(e.get("log"))) stationLines(sb, e);
+			WHOLE[0] = path; WHOLE[1] = events.length(); WHOLE[2] = sb.toString();
+			return (String) WHOLE[2];
+		}
+	}
+	/** The station log's form of every station entry (for the harness, which holds it against the old station log). */
+	public static String stationText(Vault v) { return stationText(v, text(homeplanet.core.EventLog.file(v))); }
+
+	/**
+	 * A register from before 5.91 kept how far it had read the station log and the master log as character offsets in
+	 * them: each becomes an offset in the event log, at the first entry of the minute the old one had reached (an entry
+	 * of that minute is read again rather than missed: missed, a death would read as missing). Once, on opening, before
+	 * a 5.x crew.txt is converted.
+	 */
+	public static void convertPositions(Vault v) {
+		try {
+			boolean old = file(v).isFile();
+			Properties p = Store.read(old ? file(v) : registerFile(v));
+			if (p.getProperty("seen.at") != null || p.getProperty("seen.hist") == null) return;
+			String hist = text(v.historyLog()), master = text(new File(v.logsDir(), MasterLog.FILE)), events = text(homeplanet.core.EventLog.file(v));
+			int seenAt = Math.min(offsetAt(events, minuteIn(hist, Store.num(p, "seen.hist", 0))), offsetAt(events, minuteIn(master, Store.num(p, "seen.master", 0))));
+			List<Member> members = members(v);
+			for (Member m : members) m.at = m.oldHist < 0 ? seenAt : Math.min(offsetAt(events, minuteIn(hist, m.oldHist)), offsetAt(events, minuteIn(master, Math.max(0, m.oldMaster))));
+			if (old) writeOld(v, members, seenAt, 0); // a 5.x crew.txt stays one, for its conversion
+			else write(v, members, seenAt, 0);
+			homeplanet.core.HistoryLog.entry("CREW_FILES", "the crew register reads the event log now: how far it had read was carried across", null,
+					homeplanet.core.Event.of("CREW_FILES").put("what", "positions").put("members", members.size()).put("at", seenAt)
+							.human("The crew register was brought up to date with the station's log."));
+		} catch (IOException e) {
+			log.warn("Could not carry the crew register's place in the logs across (it reads the event log from its start instead): {}", e.toString());
+		}
+	}
+	/** The minute of the last entry before this offset in an old log (the station log's "yyyy-MM-dd HH:mm", the master log's "E\t..."); null at its start. */
+	static String minuteIn(String text, int pos) {
+		if (pos <= 0) return null;
+		java.util.regex.Matcher x = java.util.regex.Pattern.compile("(?m)^(?:[A-Z]\t)?(\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d)").matcher(text.substring(0, Math.min(pos, text.length())));
+		String last = null;
+		while (x.find()) last = x.group(1);
+		return last;
+	}
+	/** Where in the event log the entries of this minute begin (the past read in at 5.73 passed over); its end if none is that late. */
+	static int offsetAt(String events, String minute) {
+		if (minute == null) return 0;
+		int at = 0;
+		for (String l : events.split("\n", -1)) {
+			if (l.length() >= 22 && l.charAt(4) == '-' && l.charAt(19) == ' ' && l.startsWith(" | ", 19) && !l.contains(" converted=true") && l.substring(0, 16).compareTo(minute) >= 0) return at;
+			at += l.length() + 1;
+		}
+		return events.length();
 	}
 	/** A ship's name from her history folder: hers in the fleet now, else the one her fate was written under; null if neither. */
 	private static String shipNamed(Vault v, File dir) {

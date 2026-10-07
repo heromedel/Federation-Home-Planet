@@ -686,6 +686,7 @@ public final class Vault {
 		readFolders();
 		reconcile();
 		saveManifest();
+		CrewRegister.convertPositions(this); // a register from before 5.91: how far it had read the old logs, as places in the event log
 		CrewRegister.convert(this); // a 5.x crew.txt into a file per crew member, once (5.83): after the ships, whose folders hold their crew
 	}
 	/** The station's logs from the root into logs/ (5.71), as one journal note: all-or-nothing, finished at the next opening if interrupted. */

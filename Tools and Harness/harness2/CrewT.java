@@ -184,14 +184,12 @@ public class CrewT { public static void main(String[] a) throws Exception {
  CrewState joiner = Commission.volunteer("engi", new Random(94)); joiner.setName("Joiner");
  for (CrewState t : new CrewState[] {gracie, norwyn, starter, joiner}) { SaveHelper.placeCrew(c.save.getPlayerShip(), t, true); c.save.getPlayerShip().getCrewList().add(t); }
  v.begin().put(y0, c.save, c.hash).commit();
- File vl = new File(v.historyOf(x0), "voyage.log"); vl.getParentFile().mkdirs();
- String vlOld = vl.isFile() ? new String(SafeFiles.read(vl), "UTF-8") : "";
- SafeFiles.writeText(vl, "2000-01-01 00:01  Crew joined: Norwyn Schultze (Rock)\r\n2000-01-01 00:02  Crew joined: Joiner (Engi)\r\n" + vlOld, false); // Windows line endings
- String hl = new String(SafeFiles.read(v.historyLog()), "UTF-8");
- SafeFiles.writeText(v.historyLog(), hl
-   + "2000-01-01 00:00  COMMISSION  " + x0.name + "  (" + x0.id + ")\n  The Kestrel (PLAYER_SHIP_HARD), difficulty Easy\n  Crew: Starter (Human)\n"
-   + "2000-01-01 00:05  TRADE  " + x0.name + " <-> Spacedock Storage\n  " + x0.name + ":\n    - Crew Gracie Quill\n    - Crew Norwyn Schultze\n    - Crew Starter\n    - Crew Twin\n"
-   + "2000-01-01 00:06  CREW  Gracie Quill assigned to the Old Glory.\n2000-01-01 00:06  CREW  Norwyn Schultze assigned to the Old Glory.\n2000-01-01 00:06  CREW  Starter assigned to the Old Glory.\n", false);
+ // the old logs as the 5.73 conversion read them into the event log (5.91: the register reads only that): a voyage's crew, a commission, a trade, the crew assigned
+ EventLog.write(v, old("CREW_JOINED", "voyage", "2000-01-01 00:01:00").put("ship", x0.name + "." + x0.id).put("ship_name", x0.name).put("ship_id", x0.id).put("crew", "Norwyn Schultze").put("race", "Rock").human("Crew joined: Norwyn Schultze (Rock)"));
+ EventLog.write(v, old("CREW_JOINED", "voyage", "2000-01-01 00:02:00").put("ship", x0.name + "." + x0.id).put("ship_name", x0.name).put("ship_id", x0.id).put("crew", "Joiner").put("race", "Engi").human("Crew joined: Joiner (Engi)"));
+ EventLog.write(v, old("COMMISSION", "station", "2000-01-01 00:00:00").put("headline", x0.name + "  (" + x0.id + ")").detail("The Kestrel (PLAYER_SHIP_HARD), difficulty Easy").detail("Crew: Starter (Human)").human(x0.name));
+ EventLog.write(v, old("TRADE", "station", "2000-01-01 00:05:00").put("headline", x0.name + " <-> Spacedock Storage").detail(x0.name + ":").detail("  - Crew Gracie Quill").detail("  - Crew Norwyn Schultze").detail("  - Crew Starter").detail("  - Crew Twin").human("trade"));
+ for (String who : new String[] {"Gracie Quill", "Norwyn Schultze", "Starter"}) EventLog.write(v, old("CREW", "station", "2000-01-01 00:06:00").put("headline", who + " assigned to the Old Glory.").human(who));
  HistoryLog.entry("RENAME", "Old Glory -> " + y0.name + "  (" + y0.id + ")");
  Setup.forgetCrew(v); // read in afresh, logs and all
  v.takeStock();
@@ -349,4 +347,6 @@ public class CrewT { public static void main(String[] a) throws Exception {
   c.setWeaponMasteryOne(b); c.setWeaponMasteryTwo(b); c.setRepairMasteryOne(b); c.setRepairMasteryTwo(b); c.setCombatMasteryOne(b); c.setCombatMasteryTwo(b);
  }
  static void writeProps(File f, Properties p) throws IOException { StringWriter w = new StringWriter(); p.store(w, null); SafeFiles.writeText(f, w.toString(), false); }
+ /** An entry as the 5.73 conversion read one in from the old logs: its own time, Prior, converted. */
+ static Event old(String kind, String log, String time) { return Event.of(kind).put("log", log).put("time", time).put("day", "0").put("converted", "true"); }
 }

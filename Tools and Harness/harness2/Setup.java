@@ -52,7 +52,13 @@ public class Setup {
  public static void voyage(Vault v, String name, String text) { voyage(v, name, name.toLowerCase().replaceAll("[^a-z0-9]", "") + "x", text); }
  static void voyage(Vault v, String name, String id, String text) {
   MasterLog.entry(v, "voyage: " + name, text);
-  EventLog.write(v, Event.of("VOYAGE_NOTE").put("log", "voyage").put("ship", name + "." + id).put("ship_name", name).put("ship_id", id).put("text", text).human(text));
+  Event e = Event.of("VOYAGE_NOTE").put("text", text);
+  for (String[] k : new String[][] {{"Crew joined: ", "CREW_JOINED"}, {"Crew lost: ", "CREW_LOST"}}) { // as VoyageLog writes them: each crew member and race a field
+   if (!text.startsWith(k[0])) continue;
+   e = Event.of(k[1]);
+   for (String one : text.substring(k[0].length()).split(", ")) { int c = one.lastIndexOf(" ("); e.put("crew", c > 0 ? one.substring(0, c) : one).put("race", c > 0 && one.endsWith(")") ? one.substring(c + 2, one.length() - 1) : null); }
+  }
+  EventLog.write(v, Event.of(e.kind).put("log", "voyage").put("ship", name + "." + id).put("ship_name", name).put("ship_id", id).putAll(e).human(text));
  }
  /** The crew register forgotten, as a fleet updating to 5.41 had none: its own file, any 5.x crew.txt, and every crew file. */
  public static void forgetCrew(Vault v) {
