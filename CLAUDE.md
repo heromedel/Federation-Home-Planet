@@ -129,6 +129,23 @@ Three rules with no exceptions, in anything the player sees:
    report any inconsistency to heromedel, and add no new ones. Don't edit that file without his permission; when new
    real FTL lore turns up, offer it to him as a numbered list and ask whether it should be added.
 
+## Log lines (hard rule)
+
+heromedel, 5.57: anything new that writes a log follows this from now on, and the 6.0 storage overhaul brings every
+log to it. Every log entry is two lines:
+
+1. A machine line: real time, stardate, the kind of event, then everything the program could ever need as `key=value`
+   fields: ids, names, races, places and folders, classes, the systems involved, the station's version. The fields
+   listed here are a minimum: more data than the rule names is always better than missing data.
+2. A human line, written from the machine line (never separately, so the two can't disagree): simple, lore-friendly,
+   and following the hard rules above (never a beacon count). Readers (the Captain's Log, the Crew Log, the station
+   log) read the machine lines and word them their own way; nothing parses the human line.
+
+For example:
+
+    2026-10-07 14:02:11 | 1.2.3.4 | CREW_MOVE | crew=Bob.17 race=human sex=male tints=0.2 rank=Sgt. skills=s0:13,s1:0,s2:4,s3:58,s4:0,s5:7 record=repairs:3,kills:12,evasions:0,jumps:41,masteries:2 from=ship:Kestrel.a3f2 from_class=PLAYER_SHIP_HARD from_folder=shipyard/Kestrel.a3f2 to=ship:Shippy McShipface.c77a to_class=PLAYER_SHIP_FED to_folder=shipyard/Shippy McShipface.c77a reason=cargo_bay_save by=player station=6.00
+    Bob was transferred to the Shippy McShipface.
+
 ## Voice (player-facing text)
 
 - Immersion and understandability matter more than identical phrasing: messages may vary their wording for flavour.
