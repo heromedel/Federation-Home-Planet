@@ -63,6 +63,8 @@ found again. The harness test CrewT holds it: namesakes sent apart, a rename, a 
 - The one-time reading of the old logs when a fleet's register is new (the past only, by name): an old loss is never
   pinned on someone alive now; it gets an entry of its own.
 
+_5.82, a later improvement, not built: Buggy Boy's test in FTL 1.6.14 (5.80) found that the save's state variables survive everything FTL does (a death and clone, a save at the menu, a rename, a store, a hire, jumps, a dismissal), while no field of the crew record can safely carry an id. So an id-to-position list written into the save on Board (`fhp.crew.<id> = <position>`, with a list version, dropped when a ship arrives by trade) would let the station line crew up by place and match by looks only those who joined or left. heromedel's ship marks are the same idea for ships (`fhp.ship.<career>.<id> = <board count>`: a save from another career, or an old Steam Cloud copy, told apart). heromedel, 5.82: not for 6.0 (the goal is files and logs; this adds risk and testing); 6.0's crew files keep the register's matching._
+
 ## 3. Side files are written one at a time (noted 4B.97)
 
 Most of the small files in concern 1 are written on their own, with a failure only logged; a failure between two of
