@@ -79,7 +79,7 @@ public final class EventLog {
 		if (stamp == null) synchronized (STAMP) { stamp = STAMP.format(new Date()); }
 		String machine = stamp + " | " + (day < 1 ? "prior" : MasterLog.stardate(day)) + " | " + e.kind + " | " + e.fieldText()
 				+ (e.get("day") == null ? " day=" + day : "") + " station=" + HomePlanet.version();
-		String human = e.human().replace('\r', ' ').replace('\n', ' ').trim();
+		String human = Lore.human(e).replace('\r', ' ').replace('\n', ' ').trim(); // lore/'s words for it, if it has some (5.89)
 		append(to, machine + NL + human + NL);
 	}
 	/** An entry's two lines as the log holds them (to carry entries elsewhere: a ship's package, 5.75). */
