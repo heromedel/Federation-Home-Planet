@@ -160,7 +160,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  // a trade off her, her starting crew; a renamed ship once, with the name she had; namesakes on a trade never credited
  Ship x0 = v.docked().get(0), y0 = v.boarded();
  c = v.readCopy(y0);
- CrewState gracie = Commission.volunteer("human", new Random(91)); gracie.setName("Gracie");
+ CrewState gracie = Commission.volunteer("human", new Random(91)); gracie.setName("Gracie Quill");
  CrewState norwyn = Commission.volunteer("rock", new Random(92)); norwyn.setName("Norwyn Schultze");
  CrewState starter = Commission.volunteer("human", new Random(93)); starter.setName("Starter");
  CrewState joiner = Commission.volunteer("engi", new Random(94)); joiner.setName("Joiner");
@@ -172,14 +172,14 @@ public class CrewT { public static void main(String[] a) throws Exception {
  String hl = new String(SafeFiles.read(v.historyLog()), "UTF-8");
  SafeFiles.writeText(v.historyLog(), hl
    + "2000-01-01 00:00  COMMISSION  " + x0.name + "  (" + x0.id + ")\n  The Kestrel (PLAYER_SHIP_HARD), difficulty Easy\n  Crew: Starter (Human)\n"
-   + "2000-01-01 00:05  TRADE  " + x0.name + " <-> Spacedock Storage\n  " + x0.name + ":\n    - Crew Gracie\n    - Crew Norwyn Schultze\n    - Crew Starter\n    - Crew Twin\n"
-   + "2000-01-01 00:06  CREW  Gracie assigned to the Old Glory.\n2000-01-01 00:06  CREW  Norwyn Schultze assigned to the Old Glory.\n2000-01-01 00:06  CREW  Starter assigned to the Old Glory.\n", false);
+   + "2000-01-01 00:05  TRADE  " + x0.name + " <-> Spacedock Storage\n  " + x0.name + ":\n    - Crew Gracie Quill\n    - Crew Norwyn Schultze\n    - Crew Starter\n    - Crew Twin\n"
+   + "2000-01-01 00:06  CREW  Gracie Quill assigned to the Old Glory.\n2000-01-01 00:06  CREW  Norwyn Schultze assigned to the Old Glory.\n2000-01-01 00:06  CREW  Starter assigned to the Old Glory.\n", false);
  HistoryLog.entry("RENAME", "Old Glory -> " + y0.name + "  (" + y0.id + ")");
  new File(v.root, "crew.txt").delete(); // read in afresh, logs and all
  v.takeStock();
  m = CrewRegister.members(v);
  List<String> both = Arrays.asList(x0.name, y0.name + "\tOld Glory");
- CrewRegister.Member g = find(m, "Gracie", CrewRegister.Status.PRESENT), n = find(m, "Norwyn Schultze", CrewRegister.Status.PRESENT), st = find(m, "Starter", CrewRegister.Status.PRESENT);
+ CrewRegister.Member g = find(m, "Gracie Quill", CrewRegister.Status.PRESENT), n = find(m, "Norwyn Schultze", CrewRegister.Status.PRESENT), st = find(m, "Starter", CrewRegister.Status.PRESENT);
  Setup.chk("S: traded off a ship before the master log: she's on the list, then the renamed ship once " + (g == null ? "" : g.served), g != null && g.served.equals(both));
  Setup.chk("S: joined a ship in her voyage log before the master log: on the list first " + (n == null ? "" : n.served), n != null && n.served.equals(both));
  CrewRegister.Member jo = find(m, "Joiner", CrewRegister.Status.PRESENT);
@@ -205,7 +205,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
 
  // served with: everyone aboard together has each other, by id
  m = CrewRegister.members(v);
- g = find(m, "Gracie", CrewRegister.Status.PRESENT); n = find(m, "Norwyn Schultze", CrewRegister.Status.PRESENT);
+ g = find(m, "Gracie Quill", CrewRegister.Status.PRESENT); n = find(m, "Norwyn Schultze", CrewRegister.Status.PRESENT);
  Setup.chk("W: aboard together: each has the other, on that ship", g.with.containsKey(n.id) && g.with.get(n.id).contains(y0.name) && n.with.containsKey(g.id));
  c = v.readCopy(x0);
  for (int k = 0; k < 2; k++) { CrewState t = Commission.volunteer("human", new Random(60 + k)); t.setName("Pair"); t.setJumpsSurvived(k * 3); SaveHelper.placeCrew(c.save.getPlayerShip(), t, true); c.save.getPlayerShip().getCrewList().add(t); }
@@ -226,7 +226,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
 
  // milestones: a mastery, the first kill, sector 5; each once
  c = v.readCopy(y0);
- CrewState gs0 = null; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Gracie")) gs0 = x;
+ CrewState gs0 = null; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Gracie Quill")) gs0 = x;
  gs0.setCombatKills(2); homeplanet.model.Skills.set(gs0, 3, 2 * homeplanet.model.Skills.interval(gs0, 3)); c.save.setSectorNumber(2);
  v.begin().put(y0, c.save, c.hash).commit();
  v.takeStock();
@@ -242,8 +242,8 @@ public class CrewT { public static void main(String[] a) throws Exception {
  String gName = CrewRegister.promote(v, g.id);
  m = CrewRegister.members(v);
  c = v.readCopy(y0);
- boolean inSave = false; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Sgt. Gracie")) inSave = true;
- Setup.chk("K: promoted: Sgt. Gracie in her ship's save, the same id, Promoted to Sergeant, nothing more due", gName.equals("Sgt. Gracie") && inSave && byId(m, g.id).name.equals("Sgt. Gracie")
+ boolean inSave = false; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Sgt. Gracie Quill")) inSave = true;
+ Setup.chk("K: promoted: Sgt. Gracie Quill in her ship's save, the same id, Promoted to Sergeant, nothing more due", gName.equals("Sgt. Gracie Quill") && inSave && byId(m, g.id).name.equals("Sgt. Gracie Quill")
    && said(byId(m, g.id), "Promoted to Sergeant.") && !said(byId(m, g.id), "Now known as") && CrewRegister.rankDue(byId(m, g.id)) == -1);
  // the KIA: posthumously, on the record alone
  c = v.readCopy(y0);
@@ -293,7 +293,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  wm = byId(CrewRegister.members(v), wid);
  Setup.chk("K: and in her save now, the career unchanged, nothing more to give", worn && count(wm, "Promoted to Sergeant.") == 1 && CrewRegister.rankToGive(v, wm) == -1);
  String cl = LogT.page(v, false);
- Setup.chk("K: the Captain's Log: I promoted Gracie to Sergeant; Norwyn Schultze posthumously", cl.contains("I promoted Gracie to Sergeant.") && cl.contains("I promoted Norwyn Schultze to Lieutenant, posthumously."));
+ Setup.chk("K: the Captain's Log: I promoted Gracie Quill to Sergeant; Norwyn Schultze posthumously", cl.contains("I promoted Gracie Quill to Sergeant.") && cl.contains("I promoted Norwyn Schultze to Lieutenant, posthumously."));
  Setup.done();
 }
  static int count(CrewRegister.Member x, String text) { int k = 0; for (CrewRegister.Event e : x.events) if (e.text.contains(text)) k++; return k; }

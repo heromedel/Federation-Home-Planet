@@ -157,6 +157,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	private void build() {
 		removeAll();
+		// the safety check (heromedel, 5.57): still in the docked view, but FTL's window gone: the normal Space Dock
+		if (homeplanet.core.FtlDock.active() && homeplanet.core.FtlDock.found() && !homeplanet.core.FtlDock.alive()) {
+			log.info("FTL docked: its window is gone; the Space Dock as usual");
+			endDockView();
+		}
 		Vault vault = Vault.get();
 		try {
 			vault.takeStock();
@@ -252,8 +257,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		controlGroup(controls, "Helm", launchBtn, journeyBtn);
 		if (homeplanet.core.FtlDock.optionOn()) { // heromedel, 5.29: the docked launch, a small icon under Refresh
 			dockLaunchBtn = new DockLaunchButton();
-			dockLaunchBtn.setToolTipText(homeplanet.core.FtlDock.active() ? "FTL is docked in the station window" : "Launch FTL docked in the station window");
-			dockLaunchBtn.setEnabled(!homeplanet.core.FtlDock.active());
+			dockLaunchBtn.setToolTipText(homeplanet.core.FtlDock.active() ? "Undock or close FTL" : "Launch FTL docked in the station window"); // an X while docked (heromedel, 5.57)
 			dockLaunchBtn.addActionListener(this);
 			launchBtn.addComponentListener(new java.awt.event.ComponentAdapter() { @Override public void componentMoved(java.awt.event.ComponentEvent e) { alignDockLaunch(); } });
 		} else {
@@ -957,7 +961,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else if (o == launchBtn) {
 			HomePlanet.launchFTL();
 		} else if (o == dockLaunchBtn) {
-			launchDocked();
+			if (homeplanet.core.FtlDock.active()) askUndock();
+			else launchDocked();
 		} else if (o == flipBtn) {
 			flip();
 		} else if (infoButtons.containsKey(o)) {
@@ -1109,13 +1114,49 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** FTL closed (or never turned up): the Space Dock as usual, at its old size, taking stock. */
 	private void endDock() {
 		log.info("FTL docked: the docked view ends (FTL closed, or its window not found)");
+		endDockView();
+		init();
+	}
+	/** The docked view ended: FTL let go, the window at its old size (the rebuild follows). */
+	private void endDockView() {
 		homeplanet.core.FtlDock.end();
 		dockWatch.stop();
 		java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(this);
 		if (w != null && sizeBeforeDock != null && (parent == null || !parent.isBorderless())) w.setSize(sizeBeforeDock);
 		sizeBeforeDock = null;
 		dockedSize = null;
-		init();
+	}
+	/** The X while FTL is docked (heromedel, 5.57): Cancel, Remove from Dock (FTL keeps running in its own window), or Close (confirmed first). */
+	private void askUndock() {
+		Object[] options = {"Cancel", "Remove from Dock", "Close"};
+		int c = JOptionPane.showOptionDialog(this, "FTL is docked. Remove it from the dock and keep playing in its own window, or close FTL?",
+				"Docked FTL", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+		if (c == 1) {
+			log.info("FTL docked: removed from the dock by the player");
+			homeplanet.core.FtlDock.release();
+			endDockView();
+			init();
+		} else if (c == 2) {
+			Object[] sure = {"Cancel", "Close FTL"};
+			int d = JOptionPane.showOptionDialog(this, "Close FTL?\n\nAnything FTL did not or does not save on its own may be lost.",
+					"Close FTL", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, sure, sure[0]);
+			if (d != 1) return;
+			if (!homeplanet.core.FtlDock.close()) { endDock(); return; } // no window to ask: FTL is gone already
+			new Thread(new Runnable() { public void run() { // FTL gone a few seconds later ends the docked view; still open, it's left be
+				boolean open = true;
+				for (int i = 0; i < 10 && open; i++) {
+					try { Thread.sleep(700); } catch (InterruptedException e) { return; }
+					open = GameGuard.isFtlRunning();
+				}
+				final boolean still = open;
+				javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() {
+					if (!homeplanet.core.FtlDock.active()) return;
+					if (!still) { endDock(); return; }
+					JOptionPane.showMessageDialog(SpaceDockUI.this, "FTL is still open (it may be asking something itself). The Home Planet Station has left it be.",
+							"Close FTL", JOptionPane.INFORMATION_MESSAGE);
+				} });
+			} }, "ftl-close-check").start();
+		}
 	}
 	private static int lastUnread = -1;
 	/**
@@ -1169,6 +1210,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			g.setColor(isEnabled() ? (getModel().isRollover() ? TEXT_HOT : TEXT) : Color.gray);
 			g.setStroke(new BasicStroke(2f));
 			int w = getWidth(), h = getHeight();
+			if (homeplanet.core.FtlDock.active()) { // FTL docked: an X, to undock or close it (heromedel, 5.57)
+				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g.setStroke(new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+				g.drawLine(w / 2 - 7, h / 2 - 7, w / 2 + 7, h / 2 + 7);
+				g.drawLine(w / 2 + 7, h / 2 - 7, w / 2 - 7, h / 2 + 7);
+				g.dispose();
+				return;
+			}
 			g.drawRect(w / 2 - 9, h / 2 - 8, 18, 12); // the screen
 			g.fillRect(w / 2 - 6, h / 2 - 5, 12, 6);
 			g.drawLine(w / 2, h / 2 + 4, w / 2, h / 2 + 7); // its stand
@@ -1274,6 +1323,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		SpaceDockScrollPane.reroll(parent, false); // now and then, different ships leaving the station
 		init();
 		HistoryLog.loaded("refresh");
+		if (homeplanet.core.FtlDock.active()) new Thread(new Runnable() { public void run() { // and on Refresh, FTL not running at all (5.57)
+			if (homeplanet.core.FtlDock.found() || !ftlSeen || GameGuard.isFtlRunning()) return; // once its window is found, the window says (the build checks it: tasklist can misread); a launch still starting isn't ended
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { if (homeplanet.core.FtlDock.active()) endDock(); } });
+		} }, "ftl-refresh-check").start();
 	}
 
 	/** The transmissions icon: an antenna, and a green light with the unread count. */
