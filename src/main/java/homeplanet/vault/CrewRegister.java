@@ -95,8 +95,8 @@ public final class CrewRegister {
 	/** The 5.x register, one file for everyone: converted to crew files the first time a fleet opens at 5.83 or later. */
 	static File file(Vault v) { return new File(v.root, FILE); }
 	/** The register's own state (how far the logs were read, the next id), beside the crew files. */
-	static final String REGISTER = "crew-register.txt";
-	static File registerFile(Vault v) { return new File(v.root, REGISTER); }
+	static final String REGISTER = "crew-register";
+	static File registerFile(Vault v) { return Store.file(v.root, REGISTER); } // crew-register.xml (5.86; .txt at 5.83)
 	/** Crew files sit in a crew/ folder inside whatever holds them: a ship's folder, the Cargo Hold's, expeditions/. */
 	public static final String CREW_DIR = "crew";
 	/** The folders crew files can be in, in the order they are read. */
@@ -274,10 +274,10 @@ public final class CrewRegister {
 	}
 	/** The register's own state, as its file's text. */
 	private static String registerText(List<Member> members, int histLen, int masterLen) {
-		StringBuilder sb = new StringBuilder("# ").append(NOTE).append(" Each crew member has a file of their own, in a crew folder beside whatever holds them.\n");
-		sb.append("seen.hist=").append(histLen).append("\nseen.master=").append(masterLen).append("\nserved.v=").append(SERVED_VERSION).append("\n");
-		sb.append("next=").append(nextId(members)).append("\n");
-		return sb.toString();
+		Properties p = new Properties();
+		p.setProperty("seen.hist", Integer.toString(histLen)); p.setProperty("seen.master", Integer.toString(masterLen));
+		p.setProperty("served.v", Integer.toString(SERVED_VERSION)); p.setProperty("next", Integer.toString(nextId(members)));
+		return new String(Store.xml(p, NOTE + " Each crew member has a file of their own, in a crew folder beside whatever holds them."), StandardCharsets.UTF_8);
 	}
 	/**
 	 * Writes the register: each crew member's file where they are now (moved when they moved), the register's own state,

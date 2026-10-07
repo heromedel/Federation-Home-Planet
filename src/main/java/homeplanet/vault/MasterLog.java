@@ -31,23 +31,19 @@ import homeplanet.core.SafeFiles;
 public final class MasterLog {
 	private MasterLog() { }
 
-	static final String FILE = "master.log", START = "stardate.txt";
+	static final String FILE = "master.log";
 	/** Why a day passed (the D lines' reasons the station itself checks). */
 	public static final String CARGO_BAY = "business in the Cargo Bay";
 	public static final int WEEK = 7, MONTH = 28, YEAR = 13 * MONTH;
 
 	/** The clock's count as its own file has it (no lock: Vault.beaconsSeen without it). */
-	private static int clock(Vault v) {
-		try { return Integer.parseInt(new String(SafeFiles.read(new File(v.root, "beacons.txt")), StandardCharsets.UTF_8).trim()); }
-		catch (Exception e) { return 0; }
-	}
-	/** The clock's count on the career's day 1, written down the first time it's asked. */
+	private static int clock(Vault v) { return Clock.num(v, "beacons", 0); }
+	/** The clock's count on the career's day 1 (Stardate 1.1.1.1; entries before it are Prior), written down the first time it's asked. */
 	public static synchronized int start(Vault v) {
-		File f = new File(v.root, START);
-		try { if (f.isFile()) return Integer.parseInt(new String(SafeFiles.read(f), StandardCharsets.UTF_8).replaceAll("(?s).*start=", "").trim()); }
-		catch (Exception e) { }
-		int at = clock(v);
-		append(f, "# The career's day 1 (Stardate 1.1.1.1) is the station's clock at this count; entries before it are Prior\nstart=" + at + "\n", false);
+		int at = Clock.num(v, "start", -1);
+		if (at >= 0) return at;
+		at = clock(v);
+		try { Clock.set(v, "start", Integer.toString(at)); } catch (IOException e) { org.slf4j.LoggerFactory.getLogger(MasterLog.class).warn("Could not record the career's day 1: {}", e.toString()); }
 		return at;
 	}
 	/** The career's day now: 1 on its first day. */

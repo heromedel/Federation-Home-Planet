@@ -8,7 +8,7 @@ public class LogT { public static void main(String[] a) throws Exception {
  Setup.chk("S: stardates: 1.1.1.1, a week on 1.1.2.1, a month on 1.2.1.1, a year on 2.1.1.1; before day 1, Prior",
    MasterLog.stardate(1).equals("1.1.1.1") && MasterLog.stardate(8).equals("1.1.2.1") && MasterLog.stardate(29).equals("1.2.1.1") && MasterLog.stardate(365).equals("2.1.1.1")
    && MasterLog.stardate(0).equals("Prior to 1.1.1.1") && MasterLog.stardate(-1).equals("Prior to 1.1.1.1"));
- Setup.chk("S: the fleet's day 1 is today (its first look on 5.17), written down once", MasterLog.today(v) == 1 && new File(v.root, "stardate.txt").isFile() && MasterLog.start(v) == v.beaconsSeen());
+ Setup.chk("S: the fleet's day 1 is today (its first look on 5.17), written down once", MasterLog.today(v) == 1 && Clock.num(v, "start", -1) >= 0 && MasterLog.start(v) == v.beaconsSeen());
  HistoryLog.entry("CREW", "Ash signed on");
  HistoryLog.entry("LOADED", "(refresh)", Arrays.asList("a ship line"));
  Rest.rest(v);

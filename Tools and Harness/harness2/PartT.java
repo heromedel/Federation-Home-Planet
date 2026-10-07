@@ -108,14 +108,14 @@ public class PartT { public static void main(String[] a) throws Exception {
  static void stipend(Vault v) throws Exception {
   if (!Career.started(v.root)) Career.start(false, false, false);
   java.lang.reflect.Method unpaid = Career.class.getDeclaredMethod("unpaidMonths"); unpaid.setAccessible(true);
-  File cf = new File(v.root, "career.txt");
-  Properties p = new Properties(); p.load(new ByteArrayInputStream(SafeFiles.read(cf)));
+  File cf = Store.file(v.root, "career");
+  Properties p = Store.load(cf);
   Setup.chk("S: a career begun now counts beacons from its start", Integer.toString(v.beaconsSeen()).equals(p.getProperty("beaconsAtStart")));
   Setup.chk("S: Sandbox careers: every two months, 56 beacons", Career.beaconsPerStipend() == 56);
   // a career from before: 9 sectors travelled at 4 a month, 1 month paid: 1 month owed, a sector on to the next
   p.remove("beaconsAtStart"); p.setProperty("sectorsAtStart", "0"); p.setProperty("paidMonths", "1");
-  SafeFiles.writeText(new File(v.root, "sectors.txt"), "9\n", false);
-  ByteArrayOutputStream b = new ByteArrayOutputStream(); p.store(b, null); SafeFiles.write(cf, b.toByteArray());
+  Clock.set(v, "sectors", "9");
+  Store.write(cf, p, null);
   int owed = (Integer) unpaid.invoke(null);
   Setup.chk("S: a career from sectors: still 1 month owed after the switch (" + owed + ")", owed == 1);
   ChainT.jump(v, 32);

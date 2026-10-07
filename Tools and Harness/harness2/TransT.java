@@ -234,7 +234,7 @@ public class TransT { public static void main(String[] a) throws Exception {
   v.takeStock();
   Transmissions.check(); Transmissions.Message owed = find("stipend:"); if (owed != null) Transmissions.delete(owed); // anything owed already, paid first
   int sectors = v.sectorsSeen();
-  java.util.Properties cp = new java.util.Properties(); cp.load(new java.io.ByteArrayInputStream(SafeFiles.read(new File(v.root, "career.txt"))));
+  java.util.Properties cp = Store.load(Store.file(v.root, "career"));
   int month = Career.beaconsPerStipend(), into = (v.beaconsSeen() - Integer.parseInt(cp.getProperty("beaconsAtStart"))) % month;
   int jump = 2 * month - into + month / 2; // two months and half another, at the career's difficulty
   SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());

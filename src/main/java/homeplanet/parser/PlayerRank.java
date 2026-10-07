@@ -80,7 +80,7 @@ public final class PlayerRank {
 
 	// ---- the ladder, kept with the fleet: the highest rank reached, never lowered ----
 
-	private static File file(Vault v) { return new File(v.root, "rank.txt"); }
+	private static File file(Vault v) { return Store.file(v.root, "rank"); } // rank.xml (5.86)
 	private static Properties read(Vault v) { return Store.read(file(v)); }
 	private static void write(Vault v, Properties p) {
 		try { Store.write(file(v), p, "The player's rank on the reputation ladder (Ranks From Rep): the highest reached, never lowered"); }

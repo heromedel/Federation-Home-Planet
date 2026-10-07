@@ -21,6 +21,14 @@ public final class Store {
 	private static final Logger log = LoggerFactory.getLogger(Store.class);
 	private Store() { }
 
+	/**
+	 * A small file of a fleet's by its stem: stem.xml (5.86), or the 5.x stem.txt while a fleet not yet opened by 5.86
+	 * still has it (another career's, say). Written by its name, so either kind stays the kind it is.
+	 */
+	public static File file(File dir, String stem) {
+		File xml = new File(dir, stem + ".xml"), txt = new File(dir, stem + ".txt");
+		return !xml.exists() && txt.isFile() ? txt : xml;
+	}
 	/** The file's properties; empty if it doesn't exist, and empty with a warning in the log if it can't be read. */
 	public static Properties read(File f) {
 		try { return load(f); }

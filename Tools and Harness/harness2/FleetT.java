@@ -17,7 +17,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
   Vault v = Vault.get();
   if (!v.immersive) v = Vault.switchFleet(true);
   HomePlanet.immersiveMode = true;
-  File career = new File(v.root, "career.txt");
+  File career = Store.file(v.root, "career");
   String[] names = {CareerRules.EASY, CareerRules.NORMAL, CareerRules.HARD};
   int[][] want = {{200, 25, 15, 50, 1, 50, 50, 25, 10}, {500, 50, 30, 25, 2, 75, 25, 50, 25}, {1000, 75, 60, 0, 3, 100, 10, 75, 50}}; // (5.13: removal 25/50/75, stripping 15/30/60, work orders, the plea's share)
   String[] reassign = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF}; // Easy any ship, Normal a Kestrel (or the Relief Ship), Hard the Relief Ship
@@ -43,7 +43,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
   // a career from before difficulties: no difficulty in its career.txt
   Properties p = new Properties(); p.setProperty("salaryAll", "false"); p.setProperty("ownProfile", "false"); p.setProperty("finalVictory", FinalVictory.REWARD);
   p.setProperty("paidMonths", "0"); p.setProperty("sectorsAtStart", "0");
-  java.io.StringWriter sw = new java.io.StringWriter(); p.store(sw, ""); SafeFiles.writeText(career, sw.toString(), false);
+  Store.write(career, p, "");
   Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
   HomePlanet.stripAllowed = true;
   CareerRules e = Career.rules(v.root);
@@ -52,7 +52,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
     && e.supplyPercent() == 25 && e.stipendMonths() == 2 && e.commissionPercent() == 100);
   HomePlanet.stripAllowed = false;
   Setup.chk("D: and its own final victory choice, written down once", FinalVictory.choice().equals(FinalVictory.REWARD) && FinalVictory.fixed() == null
-    && Career.rules(v.root).stripAllowed() && new String(SafeFiles.read(career), "UTF-8").contains("difficulty=earlier"));
+    && Career.rules(v.root).stripAllowed() && "earlier".equals(Store.load(career).getProperty("difficulty")));
   HomePlanet.leaveImmersive();
   Vault.switchFleet(false);
  }
@@ -96,7 +96,7 @@ public class FleetT { public static void main(String[] a) throws Exception {
   Vault n = Vault.switchFleet(false);
   int normalShips = n.all().size();
   File zip = Vault.endImmersiveCareer();
-  java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip); int zipped = z.size(); boolean hasCareer = z.getEntry("career.txt") != null; z.close();
+  java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip); int zipped = z.size(); boolean hasCareer = z.getEntry("career.xml") != null || z.getEntry("career.txt") != null; z.close();
   Setup.chk("E: ending the career keeps the whole of it, zipped, in old-immersive-careers", zip.getParentFile().getName().equals(Vault.OLD_CAREERS) && zipped == files && hasCareer);
   Setup.chk("E: then its folder is gone, and the normal fleet untouched", !im.exists() && Vault.get().all().size() == normalShips && !Vault.get().immersive);
   Vault again = Vault.switchFleet(true);

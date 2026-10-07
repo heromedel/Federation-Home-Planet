@@ -27,7 +27,7 @@ public final class Rest {
 	/** The most a day in a row costs. */
 	public static final int MAX_COST = 5;
 
-	private static File file(Vault v) { return new File(v.root, "rest.txt"); }
+	private static File file(Vault v) { return Store.file(v.root, "rest"); } // rest.xml (5.86)
 	private static Properties read(Vault v) { return Store.read(file(v)); }
 
 	/** Days rested in a row so far: the last rest ended on this very beacon, else 0. */

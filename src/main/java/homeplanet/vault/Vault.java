@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  *     junkyard/&lt;Name&gt;.&lt;id&gt;/      a disbanded ship, the same
  *     memorials_and_records/ships/&lt;Name&gt;.&lt;id&gt;/   a ship that left the fleet (how, in fate.txt), remembered
  *     <ship folder>/crew/        her crew, a file each (5.83: <Name>.<id>.xml, the crew register's id); the same in cargohold/crew/,
- *                                expeditions/crew/, captives/crew/ and memorials_and_records/crew/ (everyone who left); crew-register.txt the register's own state
+ *                                expeditions/crew/, captives/crew/ and memorials_and_records/crew/ (everyone who left); crew-register.xml the register's own state
  *     expeditions/               the crew expeditions (5.85): expeditions.xml (the sectors on offer, the crew away), crew/,
  *                                board-before-5.67.txt (the old board of jobs, kept, unread)
  *     infirmary/                 infirmary.xml (who is laid up and until when; they stay in the Cargo Hold) (5.85)
@@ -50,12 +50,15 @@ import org.slf4j.LoggerFactory;
  *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
  *                                ones read in once at 5.73), history.log, master.log, reputation.log, converted.txt (the marks)
  *     station-action-protection/ the notes of actions under way (5.71; heromedel's name, 5.78), only its why.txt when the station is at rest
- *     designs.xml, remodels.xml, art/, removed-blueprints.log, and the career's own small files
+ *     clock.xml                  the fleet's clock (5.86; five .txt files before): the sectors and beacons travelled, the day 1
+ *     career.xml, reputation.xml, rest.xml, rank.xml, repair-job.xml, events.xml, crew-register.xml: the career's own state,
+ *                                one file per concern (5.86; .txt before); free-command.txt and unlock-grants.txt, two lists
+ *     designs.xml, remodels.xml, art/, removed-blueprints.log
  * </pre>
  *
  * Before 5.69 a fleet was manifest.xml, ships/&lt;id&gt;.sav, junkyard/&lt;id&gt;.sav and history/&lt;id&gt;/; one is converted on
  * opening (homeplanet.vault.Layout), a zip of it as it was kept beside the folder. Each later step moves its own part
- * the first time a fleet opens, as one journal note (the logs, the Cargo Hold, the expeditions).
+ * the first time a fleet opens, as one journal note (the logs, the small files, the Cargo Hold, the expeditions).
  *
  * Each Immersive career has a fleet of its own, by difficulty: FederationHomePlanet-Immersive-Easy, -Normal and -Hard,
  * and FederationHomePlanet-Immersive for Custom (the first Immersive fleet, from before difficulties). The same layout,
@@ -669,6 +672,7 @@ public final class Vault {
 		Journal.ensure(this);
 		Journal.settle(this); // an action a station stopped partway through, finished before anything else touches the fleet
 		moveLogs();
+		moveSmallFiles(); // first of the moves: every log entry after it reads the clock
 		if (manifestFile().isFile() || oldShipsDir().isDirectory() || oldHistoryDir().isDirectory()) Layout.convert(this);
 		moveCargoHold();
 		holdReady();
@@ -740,6 +744,36 @@ public final class Vault {
 		for (int i = 0; i < moved.size(); i++) e.put("file." + i, moved.get(i));
 		HistoryLog.entry("EXPEDITION_FILES", "the expeditions', the infirmary's and the captives' files moved into folders of their own: " + String.join(", ", moved), null,
 				e.human("The expeditions office, the infirmary and the captives' records were filed in rooms of their own."));
+	}
+	/** The career's small files that became xml at 5.86, by stem (each owner names its file with {@link Store#file}). */
+	static final String[] SMALL_FILES = {"career", "reputation", "rest", "rank", "repair-job", "events", "crew-register"};
+	/**
+	 * The career's small files into xml, one per concern (5.86), as one journal note: each properties file at the root
+	 * becomes its .xml (nothing in it changed, its comment kept), and the five files of the fleet's clock become one,
+	 * clock.xml ({@link Clock}). The lists that aren't settings (free-command.txt, unlock-grants.txt) stay as they are.
+	 */
+	private void moveSmallFiles() throws IOException {
+		Journal.Note n = Journal.begin(this, "MOVE_SMALL_FILES");
+		List<String> moved = new ArrayList<String>();
+		for (String stem : SMALL_FILES) {
+			File txt = new File(root, stem + ".txt"), xml = new File(root, stem + ".xml");
+			if (!txt.isFile() || xml.exists()) continue;
+			byte[] b = SafeFiles.read(txt);
+			String comment = null;
+			for (String line : new String(b, java.nio.charset.StandardCharsets.UTF_8).split("\\r?\\n", 3)) if (line.startsWith("#")) { comment = line.substring(1).trim(); break; }
+			n.replace(xml, Store.xml(Store.parse(b), comment));
+			n.delete(txt);
+			moved.add(txt.getName() + ">" + xml.getName());
+		}
+		java.util.Properties clock = Clock.file(this).exists() ? null : Clock.fromOld(this);
+		if (clock != null) n.replace(Clock.file(this), Store.xml(clock, Clock.NOTE));
+		for (String old : Clock.OLD) if (new File(root, old).isFile()) { n.delete(new File(root, old)); moved.add(old + ">" + Clock.FILE); } // already taken in, if the clock was written first
+		if (n.isEmpty()) return;
+		n.commit();
+		Event e = Event.of("SMALL_FILES").put("what", "moved").put("files", moved.size());
+		for (int i = 0; i < moved.size(); i++) e.put("file." + i, moved.get(i));
+		HistoryLog.entry("SMALL_FILES", "the career's small files written as xml, one per concern: " + String.join(", ", moved), null,
+				e.human("The station's records were tidied into one file for each concern."));
 	}
 	/**
 	 * The Cargo Hold's pretend ship into its xml (5.84), once, as one journal note: cargohold.sav read, cargohold.xml
@@ -1090,26 +1124,18 @@ public final class Vault {
 
 	// ---- sectors travelled (the Immersive stipend) ----
 
-	private File sectorsFile() { return new File(root, "sectors.txt"); }
 	/** Sectors this fleet's boarded ships have been seen to advance, in all (FTL's progress, not the station's own changes). */
-	public synchronized int sectorsSeen() {
-		try { return Integer.parseInt(new String(SafeFiles.read(sectorsFile()), java.nio.charset.StandardCharsets.UTF_8).trim()); }
-		catch (Exception e) { return 0; }
-	}
+	public synchronized int sectorsSeen() { return Clock.num(this, "sectors", 0); }
 	private void addSectors(int n) {
 		if (n <= 0) return;
-		try { SafeFiles.writeText(sectorsFile(), (sectorsSeen() + n) + "\n", false); }
+		try { Clock.set(this, "sectors", Integer.toString(sectorsSeen() + n)); }
 		catch (IOException e) { log.warn("Could not count the sectors travelled: {}", e.toString()); }
 	}
 
 	// ---- beacons travelled (transmissions that answer a reply some beacons later) ----
 
-	private File beaconsFile() { return new File(root, "beacons.txt"); }
 	/** Beacons this fleet's boarded ships have been seen to explore, in all (FTL's progress, as with the sectors). */
-	public synchronized int beaconsSeen() {
-		try { return Integer.parseInt(new String(SafeFiles.read(beaconsFile()), java.nio.charset.StandardCharsets.UTF_8).trim()); }
-		catch (Exception e) { return 0; }
-	}
+	public synchronized int beaconsSeen() { return Clock.num(this, "beacons", 0); }
 	/** One beacon of the fleet's time passes away from FTL (a finished expedition): everything timed counts it. */
 	public synchronized void countBeacon() { countBeacon("time passed"); }
 	/** As above, with why (the master log's day line: rest, a job, business in the Cargo Bay). */
@@ -1117,19 +1143,19 @@ public final class Vault {
 	private void addBeacons(int n, String why) {
 		if (n <= 0) return;
 		int was = beaconsSeen();
-		try { SafeFiles.writeText(beaconsFile(), (was + n) + "\n", false); }
+		try { Clock.set(this, "beacons", Integer.toString(was + n)); }
 		catch (IOException e) { log.warn("Could not count the beacons travelled: {}", e.toString()); return; }
 		for (int i = 1; i <= n; i++) MasterLog.day(this, was + i, why); // each day, and why it passed
 	}
 
 	// ---- the fleet's clock: every beacon and sector the boarded ship flies, counted once ----
 
-	private File clockFile() { return new File(root, "clock.txt"); }
 	/** Where the boarded ship's progress was last counted: her sector and beacons, or null if never (she's counted from her next look). */
 	private int[] lastCounted(Ship b) {
-		java.util.Properties p = Store.read(clockFile());
+		java.util.Properties p;
+		try { p = Clock.read(this); } catch (IOException e) { log.warn("Could not read the fleet's clock: {}", e.toString()); p = new java.util.Properties(); }
 		try {
-			if (b.id.equals(p.getProperty("ship"))) return new int[] {Integer.parseInt(p.getProperty("sector").trim()), Integer.parseInt(p.getProperty("beacons").trim())};
+			if (b.id.equals(p.getProperty("last.ship"))) return new int[] {Integer.parseInt(p.getProperty("last.sector").trim()), Integer.parseInt(p.getProperty("last.beacons").trim())};
 			String[] m = b.marks == null ? new String[0] : b.marks.split("\\|", -1);
 			if (m.length == 6) return new int[] {Integer.parseInt(m[2]), Integer.parseInt(m[3])}; // a fleet from before the clock: her marks are where it stopped
 		} catch (RuntimeException e) { }
@@ -1137,7 +1163,7 @@ public final class Vault {
 	}
 	/** Sets where the boarded ship's progress was last counted (after the station writes her, or boards her: nothing to count). */
 	private void setClock(Ship b, int sector, int beacons) {
-		try { SafeFiles.writeText(clockFile(), "# The boarded ship's progress, as last counted into sectors.txt and beacons.txt\nship=" + b.id + "\nsector=" + sector + "\nbeacons=" + beacons + "\n", false); }
+		try { Clock.set(this, "last.ship", b.id, "last.sector", Integer.toString(sector), "last.beacons", Integer.toString(beacons)); }
 		catch (IOException e) { log.warn("Could not record the fleet's clock: {}", e.toString()); }
 	}
 	/**
@@ -1168,7 +1194,7 @@ public final class Vault {
 
 	// ---- one-time events (what the fleet has been through, for the transmissions that answer it) ----
 
-	private File eventsFile() { return new File(root, "events.txt"); }
+	private File eventsFile() { return Store.file(root, "events"); } // events.xml (5.86)
 	private java.util.Properties events() { return Store.read(eventsFile()); }
 	/** What an event recorded (a ship's name, say), or null if it hasn't happened. */
 	public synchronized String event(String key) { return events().getProperty(key); }
@@ -1194,16 +1220,15 @@ public final class Vault {
 		for (String k : WORK) if (gs.hasStateVar(k)) n += gs.getStateVar(k);
 		return n;
 	}
-	private File workFile() { return new File(root, "work.txt"); }
 	/**
 	 * Time spent on work in FTL counts as a beacon: when the boarded ship has bought, been repaired or upgraded since the
 	 * station last looked, with no jump in between. Once per beacon stop; crew walking about never counts.
 	 */
 	private void noteWork(Ship b, SavedGameState gs) {
 		java.util.Properties p;
-		try { p = Store.load(workFile()); }
-		catch (IOException e) { log.warn("Could not read {}: {}", workFile(), e.toString()); return; } // never written back from a failed read
-		String k = b.id + "."; // each ship's own stop: switching ships at a beacon doesn't count her work again
+		try { p = Clock.read(this); }
+		catch (IOException e) { log.warn("Could not read the fleet's clock: {}", e.toString()); return; } // never written back from a failed read
+		String k = "work." + b.id + "."; // each ship's own stop: switching ships at a beacon doesn't count her work again
 		int work = workDone(gs), beacons = gs.getTotalBeaconsExplored();
 		boolean here = Integer.toString(beacons).equals(p.getProperty(k + "beacons"));
 		int before = Store.num(p, k + "work", -1);
@@ -1214,11 +1239,7 @@ public final class Vault {
 			credited = true;
 		}
 		if (here && before == work && credited == wasCredited) return; // nothing new
-		p.remove("ship"); p.remove("beacons"); p.remove("work"); p.remove("credited"); // the one-ship form, from before
-		p.setProperty(k + "beacons", Integer.toString(beacons));
-		p.setProperty(k + "work", Integer.toString(work));
-		p.setProperty(k + "credited", Boolean.toString(credited));
-		try { Store.write(workFile(), p, "Each boarded ship's work in FTL at her current beacon, as last seen (time spent on it counts as a beacon, once a stop)"); }
+		try { Clock.set(this, k + "beacons", Integer.toString(beacons), k + "work", Integer.toString(work), k + "credited", Boolean.toString(credited)); }
 		catch (IOException e) { log.warn("Could not record her work: {}", e.toString()); }
 	}
 	/** One of the fleet's ships came out of a battle with one point of hull (her name). */

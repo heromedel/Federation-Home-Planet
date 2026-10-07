@@ -37,7 +37,7 @@ public final class Reputation {
 	private static final Logger log = LoggerFactory.getLogger(Reputation.class);
 	private Reputation() { }
 
-	static final String FILE = "reputation.txt", LOG = "reputation.log";
+	static final String FILE = "reputation", LOG = "reputation.log"; // reputation.xml (5.86)
 
 	// ---- the scoring (docs/ROADMAP.md) ----
 	public static final int SECTOR = 6, DEFEATED = 4, REBEL_DEFEATED = 6, FLAGSHIP = 100;
@@ -533,10 +533,10 @@ public final class Reputation {
 	// ---- files ----
 
 	private static boolean counted(Properties p) { return p.getProperty("counted") != null; }
-	private static Properties read(Vault v) { return Store.read(new File(v.root, FILE)); }
+	private static Properties read(Vault v) { return Store.read(Store.file(v.root, FILE)); }
 	private static boolean write(Vault v, Properties p) {
 		try {
-			Store.write(new File(v.root, FILE), p, "The career's reputation: the total, and where each ship's count stands");
+			Store.write(Store.file(v.root, FILE), p, "The career's reputation: the total, and where each ship's count stands");
 			return true;
 		} catch (IOException e) {
 			log.warn("Could not keep the reputation: {}", e.toString());

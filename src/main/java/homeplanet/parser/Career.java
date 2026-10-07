@@ -43,7 +43,7 @@ public final class Career {
 	/** Beacons between stipends in the fleet in use. */
 	public static int beaconsPerStipend() { return monthsPerStipend() * BEACONS_PER_MONTH; }
 
-	static File file(File fleetRoot) { return new File(fleetRoot, "career.txt"); }
+	static File file(File fleetRoot) { return Store.file(fleetRoot, "career"); } // career.xml (5.86; career.txt in a fleet not opened since)
 	private static Properties read(File fleetRoot) { return Store.read(file(fleetRoot)); }
 	private static void write(File fleetRoot, Properties p) throws IOException {
 		Store.write(file(fleetRoot), p, "The Immersive career: its choices are fixed once made");

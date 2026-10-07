@@ -51,7 +51,7 @@ public class ConT { public static void main(String[] a) throws Exception {
   Vault v = Vault.get();
   if (!Career.started(v.root)) Career.start(false, false);
   Transmissions.check(); Transmissions.Message owed = TransT.find("stipend:"); if (owed != null) Transmissions.delete(owed); // anything owed already, paid first
-  Properties cp = new Properties(); cp.load(new ByteArrayInputStream(SafeFiles.read(new File(v.root, "career.txt"))));
+  Properties cp = Store.load(Store.file(v.root, "career"));
   int month = Career.beaconsPerStipend(), into = (v.beaconsSeen() - Integer.parseInt(cp.getProperty("beaconsAtStart"))) % month;
   int start = v.beaconsSeen(), dueOn = start + (month - into), n = month - into + 3, issued = -1;
   StationConsole.Round round = new StationConsole.Round();

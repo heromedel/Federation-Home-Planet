@@ -210,14 +210,14 @@ public class CrewT { public static void main(String[] a) throws Exception {
  // a register written before 5.51: its ships rebuilt once
  File cf = CrewRegister.registerFileOf(v), gf = CrewRegister.fileOf(v, g.id);
  String reg = new String(SafeFiles.read(cf), "UTF-8");
- Setup.chk("U: the register says its ships are kept the 5.51 way", reg.contains("served.v=2"));
- SafeFiles.writeText(cf, reg.replace("served.v=2\n", ""), false);
+ Setup.chk("U: the register says its ships are kept the 5.51 way", reg.contains("<entry key=\"served.v\">2</entry>"));
+ SafeFiles.writeText(cf, reg.replace("<entry key=\"served.v\">2</entry>\r\n", ""), false);
  String gx = new String(SafeFiles.read(gf), "UTF-8"); // her own file (5.83): the served entry as an older register would have it
  SafeFiles.writeText(gf, gx.replaceAll("<entry key=\"served\">[^<]*</entry>", java.util.regex.Matcher.quoteReplacement("<entry key=\"served\">The Adjudicator|" + homeplanet.parser.XmlText.text(y0.name) + "</entry>")), false);
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("U: an older register: the ships read again from the logs, one only it knew kept " + byId(m, g.id).served,
-   byId(m, g.id).served.equals(Arrays.asList(x0.name, "The Adjudicator", y0.name + "\tOld Glory")) && new String(SafeFiles.read(cf), "UTF-8").contains("served.v=2"));
+   byId(m, g.id).served.equals(Arrays.asList(x0.name, "The Adjudicator", y0.name + "\tOld Glory")) && new String(SafeFiles.read(cf), "UTF-8").contains("<entry key=\"served.v\">2</entry>"));
  // ranks (heromedel, 5.52): a prefix on the name, worn with or without the dot
  Setup.chk("K: ranks read from a name: Lt Gracie, sgt. gracie, none", homeplanet.model.Rank.worn("Lt Gracie") == 1 && homeplanet.model.Rank.worn("sgt. gracie") == 0 && homeplanet.model.Rank.worn("Gracie") == -1 && homeplanet.model.Rank.worn("Lt.") == -1);
  Setup.chk("K: a promotion swaps the rank, never stacks it", homeplanet.model.Rank.promoted("Sgt. Gracie", 1).equals("Lt. Gracie") && "Lieutenant".equals(homeplanet.model.Rank.promotion("Sgt Gracie", "Lt. Gracie")) && homeplanet.model.Rank.promotion("Gracie", "Grace") == null);

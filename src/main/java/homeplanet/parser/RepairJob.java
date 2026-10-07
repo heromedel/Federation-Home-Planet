@@ -61,7 +61,7 @@ public final class RepairJob {
 
 	// ---- the state ----
 
-	private static File file(Vault v) { return new File(v.root, "repair-job.txt"); }
+	private static File file(Vault v) { return Store.file(v.root, "repair-job"); } // repair-job.xml (5.86)
 	static Properties read(Vault v) { return Store.read(file(v)); }
 	private static void write(Vault v, Properties p) throws IOException {
 		Store.write(file(v), p, "The repair job (the Nightjar): Federation Home Planet rewrites this file");

@@ -258,13 +258,27 @@ public class SettingsDialog extends JDialog {
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
 		openRow.add(openJunk);
 		JButton openHold = new JButton("Open Cargo Hold");
-		openHold.setToolTipText("Open the Cargo Hold's folder (its save, its stored-systems list, its earlier versions) in Windows Explorer");
+		openHold.setToolTipText("Open the Cargo Hold's folder (what it holds, its crew's files, its stored systems, its earlier versions) in Windows Explorer");
 		openHold.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().cargoHoldDir()); }
 		});
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
 		openRow.add(openHold);
 		body.add(openRow, next(c));
+		// the station's other places (5.86): a folder each, as the player browses them
+		JPanel placesRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		placesRow.add(placeButton("Open Shipyard", "Open the shipyard (the ships at the Space Dock, a folder each: her record, her save, her log, her crew, her earlier versions) in Windows Explorer",
+				"shipyard"));
+		placesRow.add(javax.swing.Box.createHorizontalStrut(8));
+		placesRow.add(placeButton("Open Memorials and Records", "Open the memorials and records (the ships and crew who have left the fleet, remembered) in Windows Explorer",
+				"memorials_and_records"));
+		placesRow.add(javax.swing.Box.createHorizontalStrut(8));
+		placesRow.add(placeButton("Open Expeditions", "Open the expeditions' folder (the sectors on offer, the crew away) in Windows Explorer",
+				"expeditions"));
+		placesRow.add(javax.swing.Box.createHorizontalStrut(8));
+		placesRow.add(placeButton("Open Station Logs", "Open the station's own logs (every entry The Home Planet Station has written) in Windows Explorer",
+				"logs"));
+		body.add(placesRow, next(c));
 
 		body = modsPage;
 		c = constraints();
@@ -617,6 +631,15 @@ public class SettingsDialog extends JDialog {
 		pack();
 	}
 
+	/** A button that opens one of the fleet's places (a folder in the fleet in use when it's clicked), made first if it isn't there yet (an empty folder says more than an error). */
+	private JButton placeButton(String label, String tip, final String place) {
+		JButton b = new JButton(label);
+		b.setToolTipText(tip);
+		b.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { File dir = new File(homeplanet.vault.Vault.get().root, place); dir.mkdirs(); openFolder(dir); }
+		});
+		return b;
+	}
 	private void openFolder(File dir) {
 		try {
 			Desktop.getDesktop().open(dir);
