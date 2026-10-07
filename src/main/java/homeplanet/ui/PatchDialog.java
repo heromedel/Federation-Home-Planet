@@ -216,6 +216,7 @@ public class PatchDialog extends JDialog {
 		List<String> order = new ArrayList<String>();
 		for (int i = 0; i < model.size(); i++) order.add(model.get(i).mod.name());
 		Slipstream.writeOrder(dir, order);
+		String pointed = Slipstream.prepareConfig(dir); // FTL may have moved since Slipstream was found: it patches the FTL the station plays
 
 		final boolean runFtl = runBox.isSelected();
 		final JDialog wait = new JDialog(this, "Patching", ModalityType.APPLICATION_MODAL);
@@ -236,6 +237,7 @@ public class PatchDialog extends JDialog {
 		wait.setVisible(true); // blocks until the thread closes it
 		Slipstream.Result res = result[0];
 		List<String> details = new ArrayList<String>(names);
+		if (pointed != null) details.add(pointed);
 		if (res != null && res.ok()) {
 			HistoryLog.entry("PATCH", "Patched " + count(names.size()) + " with Slipstream" + (runFtl ? ", then launched FTL" : ""), details, Event.of("PATCH").put("ok", true).put("mods", names.size()).put("launched_ftl", runFtl).details(details));
 			patched = true;
