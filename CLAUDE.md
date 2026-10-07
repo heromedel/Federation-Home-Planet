@@ -62,6 +62,12 @@ it does and CREDITS.md for where the code came from.
 - `src/main/java/homeplanet/`: the program. `core` (startup, config, Slipstream, music), `ui` (windows),
   `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
   Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`).
+- **A fleet on disk (6.0, since 5.69):** every ship is a folder (`shipyard/<Name>.<id>/`, `junkyard/`, `memorials_and_records/ships/`
+  for the ones that left) with her record as xml, her save, her log and her `versions/`; the Cargo Hold is `cargohold/`; the station's
+  logs are `logs/` (`events.log` is the one every reader reads); `journal/` holds the notes of actions under way. The tree is drawn
+  at the top of `vault/Vault.java`. A 5.x fleet is converted the first time it opens, a zip of it kept beside its folder. There is no
+  index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
+  `vault/Journal`** (a note first, the steps, the note deleted; a note left behind is finished at the next opening): never a hand-written undo.
 - **Long Range Comm.:** stations match on `Session.PROTOCOL`, not the version. Bump it only when an older station
   would trade wrongly; new fields, kinds and package files are ignored by older stations, so adding one is safe.
 - **Traded ships:** anything that rewards or reacts to what a ship has done (events, rewards, letters, achievements)
