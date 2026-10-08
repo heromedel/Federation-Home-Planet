@@ -155,7 +155,7 @@ public final class VoyageLog {
 			String opp = defeated != 1 ? "" : !a.getProperty("met", "").isEmpty() ? a.getProperty("met") : moved ? "" : b.getProperty("met", "");
 			String who = opp.isEmpty() ? null : homeplanet.model.Words.the(opp);
 			out.add(Event.of("SHIPS_DEFEATED").put("count", defeated).put("total", b.getProperty("defeated")).put("defeated", who)
-					.human(who != null ? "Defeated " + who + "." : defeated == 1 ? "Defeated a ship." : "Defeated " + defeated + " ships."));
+					.human(who != null ? "Defeated " + who + "." : defeated == 1 ? "Defeated a ship." : "Defeated " + homeplanet.model.Words.number(defeated) + " ships."));
 		}
 		crewDiff(a.getProperty("crew", ""), b.getProperty("crew", ""), out);
 		List<String>[] items = diff(a.getProperty("items", ""), b.getProperty("items", ""));

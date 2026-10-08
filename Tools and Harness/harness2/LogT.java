@@ -191,7 +191,7 @@ public class LogT { public static void main(String[] a) throws Exception {
   Setup.chk("F: no ship seen before: Defeated a ship. " + out, out.contains("Defeated a ship."));
   Properties two = look("1", 2, 2, "", "an automated ship"); two.setProperty("defeated", "3");
   out.clear(); ch.invoke(null, two, after, 1, out); words(out);
-  Setup.chk("F: two between looks: not named, counted " + out, out.contains("Defeated 2 ships."));
+  Setup.chk("F: two between looks: not named, counted " + out, out.contains("Defeated two ships."));
   Properties auto = look("2", 2, 2, "", "an automated ship"); auto.setProperty("defeated", "4");
   out.clear(); ch.invoke(null, auto, after, 1, out); words(out);
   Setup.chk("F: an becomes the: Defeated the automated ship. " + out, out.contains("Defeated the automated ship."));
