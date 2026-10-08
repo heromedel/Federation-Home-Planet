@@ -34,6 +34,7 @@ public class LogT { public static void main(String[] a) throws Exception {
  storyDays(game, new File(work, "story"));
  voyageDays(game, new File(work, "voyage"));
  beaconDays(game, new File(work, "beacon"));
+ fightDays(game, new File(work, "fight"));
  storeWork(game, new File(work, "storework"));
  System.setProperty("game", game.getPath()); fixes520(v);
  // 5.53 (heromedel): the fleet's listing is the debug log's; old LOADED entries stay in the file, out of view, the stardates still in line
@@ -118,14 +119,14 @@ public class LogT { public static void main(String[] a) throws Exception {
   out.clear(); ch.invoke(null, a, look("2", 3, 2, "", ""), 1, out); words(out);
   Setup.chk("B: a jump into danger the save names none of: an ion storm, not a nebula " + out, out.contains("Beacon: an ion storm") && !out.toString().contains("nebula"));
   out.clear(); ch.invoke(null, a, look("2", 2, 2, "sun|pds", "a Rock pirate"), 1, out); words(out);
-  Setup.chk("B: the save's own hazards, and the ship met " + out, out.contains("Beacon: a star, an Anti-Ship Battery") && out.contains("Ship met: a Rock pirate"));
+  Setup.chk("B: the save's own hazards, and the ship met " + out, out.contains("Beacon: a star, an Anti-Ship Battery") && out.contains("Encountered a Rock pirate."));
   Properties old = look("1", 0, 0, "", ""); old.remove("nebulaJumps"); old.remove("dangerJumps"); old.remove("met");
   out.clear(); ch.invoke(null, old, look("2", 9, 9, "", ""), 1, out); words(out);
   Setup.chk("B: a last look from before 5.19 (no counts kept) reads no nebula or storm " + out, !out.toString().contains("Beacon"));
   out.clear(); ch.invoke(null, old, look("1", 0, 0, "", "a Mantis ship"), 1, out); words(out);
   Setup.chk("B: and no ship 'met' without a jump on that first look " + out, out.isEmpty());
   out.clear(); ch.invoke(null, a, look("1", 2, 1, "", "a Mantis ship"), 1, out); words(out);
-  Setup.chk("B: a ship turning up after the jump: met, on its own " + out, out.size() == 1 && out.contains("Ship met: a Mantis ship"));
+  Setup.chk("B: a ship turning up after the jump: met, on its own " + out, out.size() == 1 && out.contains("Encountered a Mantis ship."));
   Setup.chk("B: ships in words", VoyageLog.shipWords("ROCK_PIRATE", "SHIPS_ROCK_PIRATE", "rock").equals("a Rock pirate") && VoyageLog.shipWords("PIRATE", "SHIPS_PIRATE", "mantis").equals("a Mantis pirate")
     && VoyageLog.shipWords("REBEL", "SHIPS_REBEL", "human").equals("a rebel ship") && VoyageLog.shipWords("REBEL_AUTO", "SHIPS_AUTO", "").equals("an automated ship")
     && VoyageLog.shipWords("ENGI_SHIP", "SHIPS_CIRCLE", "engi").equals("an Engi ship") && VoyageLog.shipWords(null, null, "").equals("a ship") && VoyageLog.shipWords("MOD_EVENT", null, "energy").equals("a Zoltan ship"));
@@ -175,6 +176,39 @@ public class LogT { public static void main(String[] a) throws Exception {
   String r = page(v, false);
   Setup.chk("F: crew moved in the Cargo Bay: one line a destination (5.40)", r.contains("Assigned Joel and Ferry to the Test Kestrel.") && r.contains("Moved Kirkner to the Cargo Hold.") && !r.contains("Ash"));
   Setup.chk("F: a sale from a ship's cargo, or a ship with brackets in her name, reads cleanly", p.contains("Sold a Burst Laser II and an Ion Blast.") && !p.contains("(cargo)"));
+ }
+ /** 6.09 (heromedel: "Encountered a rebel ship", "Defeated the rebel ship"): a defeat names the ship alongside at the look before. */
+ static void fightDays(File game, File dir) throws Exception {
+  java.lang.reflect.Method ch = VoyageLog.class.getDeclaredMethod("changes", Properties.class, Properties.class, int.class, List.class); ch.setAccessible(true);
+  Properties before = look("2", 2, 2, "", "a rebel ship"); before.setProperty("defeated", "4");
+  Properties after = look("2", 2, 2, "", ""); after.setProperty("defeated", "5");
+  List out = new ArrayList(); ch.invoke(null, before, after, 1, out);
+  homeplanet.core.Event ev = null; for (Object o : out) if (((homeplanet.core.Event) o).kind.equals("SHIPS_DEFEATED")) ev = (homeplanet.core.Event) o;
+  words(out);
+  Setup.chk("F: the ship alongside before is the one beaten: defeated=the rebel ship " + out, ev != null && "the rebel ship".equals(ev.get("defeated")) && out.contains("Defeated the rebel ship."));
+  Properties none = look("2", 2, 2, "", ""); none.setProperty("defeated", "4");
+  out.clear(); ch.invoke(null, none, after, 1, out); words(out);
+  Setup.chk("F: no ship seen before: Defeated a ship. " + out, out.contains("Defeated a ship."));
+  Properties two = look("1", 2, 2, "", "an automated ship"); two.setProperty("defeated", "3");
+  out.clear(); ch.invoke(null, two, after, 1, out); words(out);
+  Setup.chk("F: two between looks: not named, counted " + out, out.contains("Defeated 2 ships."));
+  Properties auto = look("2", 2, 2, "", "an automated ship"); auto.setProperty("defeated", "4");
+  out.clear(); ch.invoke(null, auto, after, 1, out); words(out);
+  Setup.chk("F: an becomes the: Defeated the automated ship. " + out, out.contains("Defeated the automated ship."));
+  // the Captain's Log, from the events' fields, and the words from lore/ in the events written
+  File saves = new File(dir, "saves"); saves.mkdirs();
+  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
+  homeplanet.core.Event met = homeplanet.core.Event.of("SHIP_MET").put("met", "a rebel ship").put("sector", 1).put("beacon", "2");
+  homeplanet.core.Event won = homeplanet.core.Event.of("SHIPS_DEFEATED").put("count", 1).put("total", 5).put("defeated", "the rebel ship");
+  homeplanet.core.Event old = homeplanet.core.Event.of("SHIPS_DEFEATED").put("count", 1).put("total", 6).human("1 ship defeated (6 in all)"); // as written before 6.09
+  for (homeplanet.core.Event e : new homeplanet.core.Event[] {met, won, old})
+   EventLog.write(v, e.put("log", "voyage").put("ship", "Kestrel.kestrelx").put("ship_name", "Kestrel").put("ship_id", "kestrelx"));
+  Setup.voyage(v, "Kestrel", "Jumped, hull 30/30, scrap 40 (+20), fuel 10 (-1), missiles 8, drone parts 2");
+  v.countBeacon("a jump");
+  String log = new String(java.nio.file.Files.readAllBytes(new File(v.root, "logs/events.log").toPath()), "UTF-8");
+  Setup.chk("F: her log's lines are lore's words: Encountered a rebel ship. / Defeated the rebel ship.", log.contains("\nEncountered a rebel ship.") && log.contains("\nDefeated the rebel ship."));
+  String p = page(v, false);
+  Setup.chk("F: the Captain's Log names who she beat, the older entry counted with it: The Kestrel defeated the rebel ship and one other ship.", p.contains("The Kestrel defeated the rebel ship and one other ship."));
  }
  static Properties look(String beacon, int nebula, int danger, String hazards, String met) {
   Properties p = new Properties();

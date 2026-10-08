@@ -38,6 +38,8 @@ public final class CaptainsLog {
 		boolean station;
 		/** For a ship's jumps: what her beacon held ("a nebula", "a star") and the ships met there ("a Rock pirate"). */
 		final List<String> hazards = new ArrayList<String>(), met = new ArrayList<String>();
+		/** For a day's fight: the ships beaten, where the station saw who ("the rebel ship"; 6.09). */
+		final List<String> beaten = new ArrayList<String>();
 		// what's merged into it
 		final Map<String, Integer> things = new LinkedHashMap<String, Integer>();
 		int count;
@@ -173,7 +175,7 @@ public final class CaptainsLog {
 
 	private static void read(MasterLog.Entry e, Map<String, Line> m) {
 		if ("station".equals(e.log)) station(e.text, m);
-		else if (e.log.startsWith("voyage: ")) voyage(e.log.substring(8), e.text, m);
+		else if (e.log.startsWith("voyage: ")) voyage(e.log.substring(8), e.text, e.event, m);
 		// reputation has its own log and tally: never a line here
 	}
 	private static final Pattern NUM = Pattern.compile("^(\\d+) (.+)$");
@@ -405,10 +407,34 @@ public final class CaptainsLog {
 		else meaning = subject;
 		once(m, "letter", false, "Got a letter from " + the(from) + ": " + meaning + (meaning.endsWith(".") || meaning.endsWith("!") || meaning.endsWith("?") ? "" : "."));
 	}
-	private static void voyage(String ship, String text, Map<String, Line> m) {
+	private static void voyage(String ship, String text, homeplanet.core.EventLog.Entry x, Map<String, Line> m) {
 		java.util.Set<String> before = new java.util.HashSet<String>(m.keySet());
-		voyageLine(ship, text, m);
+		if (!fought(ship, x, m)) voyageLine(ship, text, m);
 		for (Map.Entry<String, Line> e : m.entrySet()) if (!before.contains(e.getKey())) { e.getValue().aboard = true; if (e.getValue().ship == null) e.getValue().ship = ship; }
+	}
+	/**
+	 * A ship met or ships defeated, read from the event's fields (6.09: their words are lore's now, and may change): the
+	 * ship met joins the jump's line, the ships defeated the day's fight, by name where the station saw who. False for any
+	 * other entry, and for one too old to have its event.
+	 */
+	private static boolean fought(String ship, homeplanet.core.EventLog.Entry x, Map<String, Line> m) {
+		if (x == null) return false;
+		if (x.kind.equals("SHIP_MET")) {
+			String met = x.get("met", "");
+			if (met.isEmpty()) return false;
+			Line l = beacon(ship, m);
+			if (!l.met.contains(met)) l.met.add(met);
+			return true;
+		}
+		if (x.kind.equals("SHIPS_DEFEATED")) {
+			Line l = line(m, "fight", "fight:" + ship, false, "");
+			l.ship = ship;
+			l.count += x.num("count", 0);
+			String who = x.get("defeated");
+			if (who != null && !who.isEmpty()) l.beaten.add(who);
+			return true;
+		}
+		return false;
 	}
 	private static void voyageLine(String ship, String text, Map<String, Line> m) {
 		Matcher sector = Pattern.compile("^Sector (\\d+) reached").matcher(text);
@@ -489,6 +515,13 @@ public final class CaptainsLog {
 		if (max > 0 && lost * 4 >= max) line(m, "fight", "beating:" + ship, false, startShip(ship) + " took a beating.");
 	}
 
+	/** Who she beat in a day: by name where the station saw who ("the rebel ship and the Rock pirate"), the rest counted (6.09). */
+	private static String beaten(Line l) {
+		List<String> said = new ArrayList<String>(l.beaten);
+		int unknown = l.count - said.size();
+		if (unknown > 0) said.add(said.isEmpty() ? (unknown == 1 ? "a ship" : number(unknown) + " ships") : (unknown == 1 ? "one other ship" : number(unknown) + " other ships"));
+		return join(said);
+	}
 	/** A merged line's words, once everything of the day is in it. */
 	private static void finish(Line l) {
 		if (l.kind.equals("buy") && l.text.isEmpty()) l.text = l.things.isEmpty() ? null : "Bought " + things(l.things) + ".";
@@ -500,7 +533,7 @@ public final class CaptainsLog {
 		else if (l.kind.equals("move")) l.text = jumpText(l);
 		else if (l.kind.equals("ftlbuy")) l.text = l.things.isEmpty() ? null : "Bought " + things(l.things) + " at a station.";
 		else if (l.kind.equals("found")) l.text = l.things.isEmpty() ? null : "We picked up " + things(l.things) + ".";
-		else if (l.kind.equals("fight") && l.text.isEmpty()) l.text = l.count <= 0 ? null : startShip(l.ship) + " defeated " + (l.count == 1 ? "a ship" : number(l.count) + " ships") + ".";
+		else if (l.kind.equals("fight") && l.text.isEmpty()) l.text = l.count <= 0 ? null : startShip(l.ship) + " defeated " + beaten(l) + ".";
 		else if (l.kind.equals("systems")) l.text = systemsText(l);
 		else if (l.kind.equals("work")) l.text = workText(l);
 	}

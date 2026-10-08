@@ -29,4 +29,4 @@ Status: done (with the version), open, or not for the station (jokes, questions 
 | 10/7 23:18 | 5.94 | The Crew Log's drop-down with the same skill-mastery icons as the expedition list | done 6.02 |
 | 10/8 02:51 | 6.04 | Switching careers: a temporary pop-up saying it's switching, then all pop-ups closed | done 6.07 |
 | 10/8 02:53 | 6.04 | An empty line between the folders' Change rows and the Open buttons (Settings > Folders) | done 6.07 |
-| 10/8 03:31 | 6.05 | A ship defeated is always "We defeated a ship": the log knows what kind she was (a rebel ship), so it should say so | **open** |
+| 10/8 03:31 | 6.05 | A ship defeated is always "We defeated a ship": the log knows what kind she was (a rebel ship), so it should say so | done 6.09 ("Encountered a rebel ship.", "Defeated the rebel ship."; the Captain's Log names her too) |

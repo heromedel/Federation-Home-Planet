@@ -247,7 +247,7 @@ class RecordsLog extends JComponent implements Scrollable {
 	private static Color voyageMark(String t) {
 		if (t.startsWith("Jumped") || t.startsWith("Waited")) return BLUE;
 		if (t.startsWith("The Rebel Flagship")) return FLAG;
-		if (t.contains(" defeated (") || t.startsWith("Crew lost") || t.startsWith("Hull damaged")) return BAD;
+		if (t.contains(" defeated (") || t.startsWith("Defeated ") || t.startsWith("Crew lost") || t.startsWith("Hull damaged")) return BAD;
 		if (t.startsWith("Crew joined") || t.startsWith("Hull repaired")) return GOOD;
 		if (t.startsWith("Aboard now")) return GOLD;
 		if (t.startsWith("Gone")) return DIM;

@@ -88,7 +88,10 @@ public final class MasterLog {
 	public static final class Entry {
 		public final String real, log, text;
 		public final int day;
-		Entry(String real, int day, String log, String text) { this.real = real; this.day = day; this.log = log; this.text = text; }
+		/** The event it was read from, for its fields (6.09: the Captain's Log reads a voyage's ships met and defeated from them); null if none. */
+		public final homeplanet.core.EventLog.Entry event;
+		Entry(String real, int day, String log, String text) { this(real, day, log, text, null); }
+		Entry(String real, int day, String log, String text, homeplanet.core.EventLog.Entry event) { this.real = real; this.day = day; this.log = log; this.text = text; this.event = event; }
 	}
 	/** The entries by day, oldest first, from the event log (5.74; the E lines before): entries with no proper day (Prior) are left out. */
 	public static synchronized Map<Integer, List<Entry>> byDay(Vault v) {
@@ -117,7 +120,7 @@ public final class MasterLog {
 			for (int i = 1; x.get("detail." + i) != null; i++) t.append(" / ").append(x.get("detail." + i));
 			return new Entry(x.time, x.day, "station", t.toString());
 		}
-		if (log.equals("voyage")) return new Entry(x.time, x.day, "voyage: " + x.get("ship_name", ""), x.human);
+		if (log.equals("voyage")) return new Entry(x.time, x.day, "voyage: " + x.get("ship_name", ""), x.human, x);
 		if (log.equals("reputation")) {
 			StringBuilder t = new StringBuilder(Reputation.signed(x.num("points", 0))).append("  ").append(x.human);
 			for (int i = 1; x.get("detail." + i) != null; i++) t.append(" / ").append(x.get("detail." + i));

@@ -59,13 +59,13 @@ count), `beacons_jumped` (since the last look), `at_store`.
 | `WAITED` | state | "Waited, hull ..." (FTL's count moved, her beacon didn't) |
 | `HULL_REPAIRED`, `HULL_DAMAGED` | state | "Hull repaired to 30/30 (+2)" |
 | `SUPPLIES` | state | "Scrap 61 (+14), fuel 12 (-1)" |
-| `SHIPS_DEFEATED` | `count`, `total` | "2 ships defeated (41 in all)" |
+| `SHIPS_DEFEATED` | `count`, `total`; `defeated` (6.09: the ship alongside at the look before, "the rebel ship", when one was beaten and the station saw who) | "Defeated the rebel ship." (before 6.09: "2 ships defeated (41 in all)") |
 | `CREW_JOINED`, `CREW_LOST` | `crew` and `race` for each (repeated) | "Crew lost: Stoneface (Rock)" |
 | `ITEMS_ABOARD`, `ITEMS_GONE` | `item` (repeated; " (cargo)" marks cargo) | "Aboard now: Burst Laser II" |
 | `BOUGHT`, `PICKED_UP` | `item` (repeated) | "Bought at a store: Burst Laser II" |
 | `STORE_ARRIVED` | `sector`, `beacon` | "Arrived at a store" |
 | `BEACON_HAZARDS` | `hazard` (repeated: `asteroids`, `sun`, `pulsar`, `pds`, `nebula`, `storm`), `sector`, `beacon` | "Beacon: an asteroid field, a nebula" |
-| `SHIP_MET` | `met` (in words), `sector`, `beacon` | "Ship met: a Rock pirate" |
+| `SHIP_MET` | `met` (in words), `sector`, `beacon` | "Encountered a Rock pirate." (before 6.09: "Ship met: a Rock pirate") |
 | `SYSTEM_NEW`, `SYSTEM_UPGRADED`, `SYSTEM_REDUCED`, `SYSTEM_REMOVED` | `system` (its title), `level`, `was` | "Shields upgraded to 4" |
 | `REACTOR_UPGRADED`, `REACTOR_REDUCED` | `level`, `was` | "Reactor upgraded to 12" |
 | `FLAGSHIP_ALONGSIDE` | `battle` (1 to 3) | "The Rebel Flagship is alongside (battle 2)" |

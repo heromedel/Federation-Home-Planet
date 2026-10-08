@@ -149,7 +149,14 @@ public final class VoyageLog {
 			}
 		}
 		int defeated = Store.num(b, "defeated", 0) - Store.num(a, "defeated", 0);
-		if (defeated > 0) out.add(Event.of("SHIPS_DEFEATED").put("count", defeated).put("total", b.getProperty("defeated")).human(defeated + (defeated == 1 ? " ship" : " ships") + " defeated (" + b.getProperty("defeated") + " in all)"));
+		if (defeated > 0) {
+			// the one beaten is the ship alongside at the look before (heromedel, 6.09: "Defeated the rebel ship"); one at this
+			// beacon only if none was seen before and she hasn't jumped; two or more between looks, or none seen: not known
+			String opp = defeated != 1 ? "" : !a.getProperty("met", "").isEmpty() ? a.getProperty("met") : moved ? "" : b.getProperty("met", "");
+			String who = opp.isEmpty() ? null : homeplanet.model.Words.the(opp);
+			out.add(Event.of("SHIPS_DEFEATED").put("count", defeated).put("total", b.getProperty("defeated")).put("defeated", who)
+					.human(who != null ? "Defeated " + who + "." : defeated == 1 ? "Defeated a ship." : "Defeated " + defeated + " ships."));
+		}
 		crewDiff(a.getProperty("crew", ""), b.getProperty("crew", ""), out);
 		List<String>[] items = diff(a.getProperty("items", ""), b.getProperty("items", ""));
 		if (!items[0].isEmpty()) out.add(list(Event.of("ITEMS_ABOARD"), "item", items[0]).human("Aboard now: " + String.join(", ", items[0])));
@@ -215,7 +222,7 @@ public final class VoyageLog {
 			if (!there.isEmpty()) out.add(list(Event.of("BEACON_HAZARDS"), "hazard", ids).put("sector", Store.num(b, "sector", 0) + 1).put("beacon", b.getProperty("beacon")).human("Beacon: " + String.join(", ", there)));
 		}
 		String met = b.getProperty("met", ""), was = a.getProperty("met");
-		if (!met.isEmpty() && (moved || (was != null && !met.equals(was)))) out.add(Event.of("SHIP_MET").put("met", met).put("sector", Store.num(b, "sector", 0) + 1).put("beacon", b.getProperty("beacon")).human("Ship met: " + met));
+		if (!met.isEmpty() && (moved || (was != null && !met.equals(was)))) out.add(Event.of("SHIP_MET").put("met", met).put("sector", Store.num(b, "sector", 0) + 1).put("beacon", b.getProperty("beacon")).human("Encountered " + met + "."));
 	}
 	private static final Map<String, String> HAZARDS = new LinkedHashMap<String, String>();
 	static {
