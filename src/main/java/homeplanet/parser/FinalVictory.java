@@ -172,12 +172,47 @@ public final class FinalVictory {
 		Vault.FinalBattle f = Vault.get().finalBattle(id);
 		return f != null && "offered".equals(f.outcome) ? f : null;
 	}
-	/** Rescued Ships after Victory moved to Hard difficulty: the setting, or a Hard career's rule (locked on there). */
-	public static boolean toHard() { return toHardLocked() || HomePlanet.rescuedToHard; }
-	/** An Immersive career on Hard: rescued ships go to Hard, not a choice in Settings. */
-	public static boolean toHardLocked() {
+	// Rescued Ships after Victory moved to Hard difficulty (heromedel, 6.02 and 6.03), as the fleet in use has it:
+	/** The player's, in Settings: Sandbox Mode (the cfg) and Easy (its career). */
+	public static final String TO_HARD_FREE = "free";
+	/** Always: Normal, or a Custom career that chose it. */
+	public static final String TO_HARD_ON = "on";
+	/** Never: a Custom career that chose not to (she gets the question of her difficulty). */
+	public static final String TO_HARD_OFF = "off";
+	/** Doesn't apply: the museum takes every victor (Hard, or a Custom career with that rule). */
+	public static final String TO_HARD_NONE = "none";
+	/** A Custom career that hasn't chosen yet: the Space Dock asks, as the briefing would have. */
+	public static final String TO_HARD_ASK = "ask";
+	/** How it stands for the fleet in use. */
+	public static String toHardRule() {
 		CareerRules r = CareerRules.current();
-		return r != null && CareerRules.HARD.equals(r.name);
+		return toHardRule(r, r == null ? null : Career.rescuedToHard(Vault.get().root));
+	}
+	/** How it stands for a career with these rules and this saved answer (null: none); null rules, Sandbox Mode. */
+	public static String toHardRule(CareerRules r, String saved) {
+		if (r == null) return TO_HARD_FREE;
+		if (MUSEUM.equals(r.victory())) return TO_HARD_NONE;
+		if (CareerRules.NORMAL.equals(r.name)) return TO_HARD_ON; // no saved answer is read: deleting one changes nothing
+		if (CareerRules.CUSTOM.equals(r.name)) return saved == null ? TO_HARD_ASK : Boolean.parseBoolean(saved) ? TO_HARD_ON : TO_HARD_OFF;
+		return TO_HARD_FREE; // Easy, or a career from before difficulties
+	}
+	/** Whether a rescued ship, kept, sets out on Hard without asking. */
+	public static boolean toHard() {
+		String rule = toHardRule();
+		if (TO_HARD_ON.equals(rule)) return true;
+		if (!TO_HARD_FREE.equals(rule)) return false;
+		return CareerRules.current() == null ? HomePlanet.rescuedToHard : Boolean.parseBoolean(Career.rescuedToHard(Vault.get().root));
+	}
+	/** The player's own answer, where it is theirs (Sandbox Mode's in the cfg: the caller saves it; Easy's in its career). */
+	public static void setToHard(boolean on) throws IOException {
+		if (CareerRules.current() == null) HomePlanet.rescuedToHard = on;
+		else if (TO_HARD_FREE.equals(toHardRule())) Career.setRescuedToHard(Vault.get().root, on);
+	}
+	/** A Custom career's answer, chosen once (the briefing, or the Space Dock's question). */
+	public static void chooseToHard(java.io.File immersiveRoot, boolean on) throws IOException {
+		Career.setRescuedToHard(immersiveRoot, on);
+		HistoryLog.entry("CAREER", "Rescued Ships after Victory moved to Hard difficulty: " + (on ? "yes" : "no") + " (chosen for the career, fixed)", null,
+				Event.of("CAREER").put("what", "rescued_to_hard").put("rescued_to_hard", on));
 	}
 	/** Keep her: she docks, ready for a new journey at this difficulty (null: the one she won on). Returns what came of it, in words. */
 	public static String keep(Vault.FinalBattle f, Difficulty difficulty) throws IOException {

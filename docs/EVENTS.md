@@ -171,7 +171,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `STIPEND` | `scrap`, `months` | "120 scrap issued, to claim from the inbox (one stipend)" |
 | `OVERFLOW` | `what` (`shipped`, `shipped_home`, `lost`), `augment`, `title`, ship or `ship_name`, `parcel`, `to` | "Kestrel had no room for ...: her crew ship it home" |
 | `GIFT` | `from`, `system`, `title`, `to` | "The Third Fleet Commander sent a ... system for the project ship, ..." |
-| `CAREER` | `what` (`begun`), `mode`, `stipend`, `own_profile`, `scrap`, `difficulty`, `with_ship` | "Immersive career begun: ..." |
+| `CAREER` | `what` (`begun`, `rescued_to_hard`), `mode`, `stipend`, `own_profile`, `scrap`, `difficulty`, `with_ship`; `rescued_to_hard` (6.03: a Custom career's choice, fixed) | "Immersive career begun: ..." |
 | `SETTINGS` | `commander_name`, `detail.n` (each setting changed) | "" |
 | `PROFILE` | `what` (`removed`), `removed`, `keys` | "Removed from FTL's profile: ..." |
 | `UPDATE` | `version`, `replaced`, `added`, `removed` | "New construction plans from main (5.64): ..." |

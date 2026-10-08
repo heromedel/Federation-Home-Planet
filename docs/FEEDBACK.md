@@ -23,7 +23,7 @@ Status: done (with the version), open, or not for the station (jokes, questions 
 | 10/7 04:47 | 5.70 | The Captain's Log shows a shipped-home letter's {name} and {item} unfilled, out of order; the debug log copied to the clipboard without asking | done 6.02 (the letter's words filled in before it is logged; the log copied only on "Copy Log and Open Form") |
 | 10/7 04:50 | 5.70 | Expedition letters should have a Claim button | done 6.02 (what an expedition brings home comes with its letter, to claim like any other) |
 | 10/7 14:27 | 5.80 | The Ballistaphobia letter says the missile tubes are as full as at launch, after the missiles were sold | **open: for McCarthy** (the words, heromedel) |
-| 10/7 15:28 | 5.80 | Keeping a rescued ship after a victory: ask about her difficulty; a setting "Rescued Ships after Victory moved to Hard difficulty", locked on in Hard Immersive Mode | done 6.02 |
+| 10/7 15:28 | 5.80 | Keeping a rescued ship after a victory: ask about her difficulty; a setting "Rescued Ships after Victory moved to Hard difficulty", locked on in Hard Immersive Mode | done 6.02; 6.03: each career's own (Normal always, Hard crossed out, Custom chosen once) |
 | 10/7 17:14 | 5.94 | Lore, Credits and Licence on a new line under "Designed and Produced by heromedel" | done 6.02 |
 | 10/7 17:15 | 5.94 | Docking and boarding feel slow | done 6.01; 6.02: the check for a running FTL is Windows' own list (not tasklist), and the button answers at once |
 | 10/7 23:18 | 5.94 | The Crew Log's drop-down with the same skill-mastery icons as the expedition list | done 6.02 |

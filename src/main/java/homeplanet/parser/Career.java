@@ -80,6 +80,18 @@ public final class Career {
 		write(immersiveRoot, p);
 	}
 
+	/**
+	 * Rescued Ships after Victory moved to Hard difficulty, as this career has it: "true", "false", or null where it was
+	 * never chosen (6.03). Read only where the career leaves it to the player: Easy (changed in Settings) and Custom
+	 * (chosen once, fixed); Normal and Hard decide it themselves (FinalVictory.toHardRule).
+	 */
+	public static String rescuedToHard(File immersiveRoot) { return read(immersiveRoot).getProperty("rescuedToHard"); }
+	public static void setRescuedToHard(File immersiveRoot, boolean on) throws IOException {
+		Properties p = read(immersiveRoot);
+		p.setProperty("rescuedToHard", Boolean.toString(on));
+		write(immersiveRoot, p);
+	}
+
 	/** Begins a career in the Immersive fleet now open, at Normal difficulty. */
 	public static void start(boolean salaryAll, boolean ownProfile) throws IOException { start(salaryAll, ownProfile, true, CareerRules.of(CareerRules.NORMAL)); }
 	/** Begins a career in the Immersive fleet now open, at this difficulty: its choices, the starting scrap, and a Kestrel Type A to command. */

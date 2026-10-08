@@ -316,7 +316,7 @@ public final class CaptainsLog {
 		} else if (kind.equals("OVERFLOW")) {
 			Matcher s = Pattern.compile("^(.+?) had no room for (\\S+): her crew ship it home").matcher(head);
 			if (s.find()) once(m, "letter", false, startShip(s.group(1)) + "'s crew shipped " + article(homeplanet.model.Items.title(s.group(2))) + " home.");
-		} else if (kind.equals("CAREER")) {
+		} else if (kind.equals("CAREER") && head.contains(" career begun")) { // not a rule chosen later (6.03)
 			once(m, "career", false, "My service with The Federation Home Planet began.");
 		}
 		// everything else is the station's own housekeeping, or told by another line (DOCK, TRADE, MEDBAY, CREW, LOADED…)

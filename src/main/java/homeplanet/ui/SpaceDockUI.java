@@ -361,6 +361,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 						+ "To stop this, turn off Steam Cloud for FTL: in your Steam library, right-click FTL, Properties, General.", "Steam Cloud", JOptionPane.WARNING_MESSAGE);
 			} });
 		}
+		if (!askingToHard && !toHardPutOff && homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(homeplanet.parser.FinalVictory.toHardRule())) { // before any rescue offer it would decide
+			askingToHard = true;
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askToHard(); } });
+		}
 		for (final homeplanet.parser.FinalVictory.Notice n : victories) {
 			if (n.offer != null && deferredOffers.contains(n.offer.id)) continue;
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { victoryNotice(n); } });
@@ -508,6 +512,25 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "Her last journey was on " + options[now] + ". How dangerous will her next one be?", "Keep " + f.name, JOptionPane.DEFAULT_OPTION,
 				JOptionPane.QUESTION_MESSAGE, null, options, options[now]);
 		return c >= 0 && c <= 2 ? diffs[c] : null;
+	}
+
+	private boolean askingToHard = false, toHardPutOff = false;
+	/** A Custom career with no answer to Rescued Ships after Victory moved to Hard difficulty: asked as its briefing would (6.03), then fixed. Closed: asked again at the next start. */
+	private void askToHard() {
+		try {
+			if (!homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(homeplanet.parser.FinalVictory.toHardRule())) return;
+			Object[] options = {"Yes: always to Hard", "No: I'll choose her difficulty"};
+			int c = JOptionPane.showOptionDialog(null, "Your Custom career hasn't chosen one of its rules yet:\n\n    Rescued Ships after Victory moved to Hard difficulty\n\n"
+					+ "When you keep a ship rescued after a final victory, does she set out on Hard without asking?\n"
+					+ "Like the career's other rules, it is chosen once and fixed from then on.", "Your Custom career", JOptionPane.DEFAULT_OPTION,
+					JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+			if (c != 0 && c != 1) { toHardPutOff = true; return; }
+			homeplanet.parser.FinalVictory.chooseToHard(Vault.get().root, c == 0);
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not record the career's choice in its file (it will ask again):\n" + e.getMessage());
+		} finally {
+			askingToHard = false;
+		}
 	}
 
 	private boolean askingAboutStranger = false;

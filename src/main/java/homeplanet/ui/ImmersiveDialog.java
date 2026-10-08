@@ -65,7 +65,11 @@ public final class ImmersiveDialog {
 			Vault.immersiveSlot = slot;
 			HomePlanet.immersiveMode = true;
 			HomePlanet.saveConfig();
-			if (!begun) Career.start(brief.salaryAll.isSelected() && !ownProfile, ownProfile, brief.rules());
+			if (!begun) {
+				Career.start(brief.salaryAll.isSelected() && !ownProfile, ownProfile, brief.rules());
+				Boolean toHard = brief.toHardChosen(); // a Custom career's, chosen once (6.03)
+				if (toHard != null) homeplanet.parser.FinalVictory.chooseToHard(Vault.get().root, toHard);
+			}
 			UnlockGrants.returning(Unlocks.read()); // a new career starts its record here
 			homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());
 			Vault.get().takeStock();

@@ -16,6 +16,7 @@ public class VicT { public static void main(String[] a) throws Exception {
  reward(v);
  inbox(v);
  museum(v);
+ toHardRules();
  if (a.length > 3) replay(game, new File(a[3]), new File(work, "replay"));
  // the honours (5.87, heromedel's Flagarino): the save reader's victory markers aren't honours, and one kept before shows without its id
  net.blerf.ftl.xml.Achievement real = null;
@@ -25,6 +26,38 @@ public class VicT { public static void main(String[] a) throws Exception {
  Setup.chk("V: a victory kept before 5.87 with the marker's id shows without it", Museum.shownHonours("Ballistophobia|PLAYER_SHIP_ENERGY_VICTORY|Federation Victory (Easy)").equals(java.util.Arrays.asList("Ballistophobia", "Federation Victory (Easy)")));
  Setup.done();
 }
+ /** Rescued Ships after Victory moved to Hard difficulty in each mode (heromedel, 6.03). */
+ static void toHardRules() throws Exception {
+  HomePlanet.rescuedToHard = true;
+  Setup.chk("T: Sandbox Mode: the cfg's answer, never locked", FinalVictory.TO_HARD_FREE.equals(FinalVictory.toHardRule()) && FinalVictory.toHard());
+  HomePlanet.rescuedToHard = false;
+  Vault.switchFleet(Vault.EASY); Career.start(false, false, CareerRules.of(CareerRules.EASY));
+  boolean before = FinalVictory.toHard();
+  FinalVictory.setToHard(true);
+  Setup.chk("T: Easy: the player's, kept with the career (not the cfg's)", FinalVictory.TO_HARD_FREE.equals(FinalVictory.toHardRule()) && !before && FinalVictory.toHard()
+    && "true".equals(Career.rescuedToHard(Vault.get().root)) && !HomePlanet.rescuedToHard);
+  Vault.switchFleet(Vault.NORMAL); Career.start(false, false, CareerRules.of(CareerRules.NORMAL));
+  Career.setRescuedToHard(Vault.get().root, false); // an answer written in by hand: Normal never reads one
+  FinalVictory.setToHard(false);
+  Setup.chk("T: Normal: always, whatever the file says", FinalVictory.TO_HARD_ON.equals(FinalVictory.toHardRule()) && FinalVictory.toHard());
+  Vault.switchFleet(Vault.HARD); Career.start(false, false, CareerRules.of(CareerRules.HARD));
+  Career.setRescuedToHard(Vault.get().root, true);
+  Setup.chk("T: Hard: doesn't apply (the museum takes every victor)", FinalVictory.TO_HARD_NONE.equals(FinalVictory.toHardRule()) && !FinalVictory.toHard());
+  int[] lv = CareerRules.of(CareerRules.NORMAL).levels();
+  Vault.switchFleet(Vault.CUSTOM); Career.start(false, false, new CareerRules(CareerRules.CUSTOM, lv));
+  Setup.chk("T: Custom with no answer: the Space Dock asks", FinalVictory.TO_HARD_ASK.equals(FinalVictory.toHardRule()) && !FinalVictory.toHard());
+  FinalVictory.setToHard(true); // Settings can't answer it: only the question can
+  Setup.chk("T: Custom: Settings doesn't write its answer", FinalVictory.TO_HARD_ASK.equals(FinalVictory.toHardRule()));
+  FinalVictory.chooseToHard(Vault.get().root, true);
+  Setup.chk("T: Custom, ticked: always", FinalVictory.TO_HARD_ON.equals(FinalVictory.toHardRule()) && FinalVictory.toHard());
+  Setup.chk("T: the choice is logged", new String(java.nio.file.Files.readAllBytes(new File(Vault.get().root, "logs/events.log").toPath()), "UTF-8").contains("what=rescued_to_hard rescued_to_hard=true"));
+  CareerRules custom = new CareerRules(CareerRules.CUSTOM, lv);
+  Setup.chk("T: Custom, unticked: never", FinalVictory.TO_HARD_OFF.equals(FinalVictory.toHardRule(custom, "false")));
+  lv[CareerRules.VICTORY] = 2;
+  Setup.chk("T: Custom with the museum's rule: doesn't apply, ticked or not", FinalVictory.TO_HARD_NONE.equals(FinalVictory.toHardRule(new CareerRules(CareerRules.CUSTOM, lv), "true"))
+    && FinalVictory.TO_HARD_NONE.equals(FinalVictory.toHardRule(new CareerRules(CareerRules.CUSTOM, lv), null)));
+  Vault.switchFleet(Vault.SANDBOX);
+ }
  static int victories = 0;
  static void profile(File saves, int wins, String shipName, String shipId) throws Exception {
   Profile p = Profile.createEmptyProfile(); p.setFileFormat(9);
@@ -107,7 +140,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   SavedGameState g = back == null ? null : back.save();
   Setup.chk("K: keep her: docked under her own id, as she was kept (hull 11)", back != null && back.state == Ship.State.DOCKED && g.getPlayerShip().getHullAmt() == 11 && what.contains(name));
   Setup.chk("K: her next journey at the difficulty chosen (6.02), and the letter says so", g.getDifficulty() == net.blerf.ftl.constants.Difficulty.HARD && what.contains("on Hard"));
-  Setup.chk("K: the setting off and no Hard career: not locked", !FinalVictory.toHard() && !FinalVictory.toHardLocked());
+  Setup.chk("K: Sandbox Mode with the setting off: not to Hard", FinalVictory.TO_HARD_FREE.equals(FinalVictory.toHardRule()) && !FinalVictory.toHard());
   Setup.chk("K: ready for a new journey: sector 1, no flagship alongside or on her way", g.getSectorNumber() == 0 && !g.isRebelFlagshipNearby() && g.getRebelFlagshipState().getPendingStage() < 3);
   Setup.chk("K: settled: no offer left, her victory kept in her history", FinalVictory.settle().isEmpty() && FinalVictory.offer(id) == null
     && kept(v, id, "victory-").size() == 1);
