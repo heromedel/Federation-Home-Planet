@@ -207,7 +207,7 @@ public final class Lore {
 	/**
 	 * Why an entry can't be used, or null: the hard rules (the Rebel Flagship never destroyed; time never told in
 	 * beacons) and the voice rules a word can be checked for (the rebellion and the rebels in lower case, never "Home
-	 * World" or "FHP", The Home Planet Station and The Federation Home Planet with a capital T). Checked on the player's copy; the jar's own words are held to it by the harness.
+	 * World", The Home Planet Station and The Federation Home Planet with a capital T). Checked on the player's copy; the jar's own words are held to it by the harness.
 	 */
 	public static String broken(Entry e) {
 		String why = rule(e.words);
@@ -221,7 +221,7 @@ public final class Lore {
 		if (low.matches("(?s).*(\\b\\d+|\\b(one|two|three|few|several|many))\\s+beacons?\\b.*") || low.matches("(?s).*\\bbeacons?\\s+(later|ago|passed|from now|since)\\b.*")) return "hard rule 2: time is never told in beacons";
 		if (low.matches("(?s).*\\{[a-z0-9_.]*beacon[a-z0-9_.]*\\}.*")) return "hard rule 2: time is never told in beacons (a beacon count in a token)";
 		if (w.matches("(?s).*\\bRebellion\\b.*") || w.replace("Rebel Flagship", "").matches("(?s).*\\bRebels?\\b.*")) return "voice: the rebellion and the rebels are never capitalised (only the Rebel Flagship)";
-		if (w.contains("Home World") || w.matches("(?s).*\\bFHP\\b.*")) return "voice: never \"Home World\" or \"FHP\"";
+		if (w.contains("Home World")) return "voice: never \"Home World\""; // "FHP" is allowed: never a rule of heromedel's (6.04)
 		if (w.matches("(?s).*\\bthe (Home Planet Station|Federation Home Planet)\\b.*")) return "voice: The Home Planet Station and The Federation Home Planet take a capital T, even mid-sentence";
 		return null;
 	}
