@@ -593,8 +593,7 @@ public final class CaptainsLog {
 		if (low.equals("scrap")) return number(n) + " scrap";
 		return n == 1 ? article(name) : number(n) + " " + name + (name.endsWith("s") ? "" : "s");
 	}
-	private static final String[] NUMBERS = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
-	static String number(int n) { return n >= 0 && n < NUMBERS.length ? NUMBERS[n] : Integer.toString(n); }
+	static String number(int n) { return homeplanet.model.Words.number(n); } // one home (6.0 step 10)
 	private static final String[] ORDINALS = {"", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"};
 	static String ordinal(int n) {
 		if (n > 0 && n < ORDINALS.length) return ORDINALS[n];

@@ -14,5 +14,8 @@ public final class Words {
 		if (s.startsWith("an ")) return "the " + s.substring(3);
 		return s.startsWith("the ") ? s : "the " + s;
 	}
+	/** A count as the style guide says it (docs/STYLE.md): up to ten in words, then digits ("two ships", "1,024 scrap"). */
+	public static String number(int n) { return n >= 0 && n < NUMBERS.length ? NUMBERS[n] : String.format("%,d", n); }
+	private static final String[] NUMBERS = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
 	public static String a(String s) { return s == null || s.isEmpty() ? "" : ("AEIOUaeiou".indexOf(s.charAt(0)) >= 0 ? "an " : "a ") + s; }
 }
