@@ -173,6 +173,20 @@ public final class Lore {
 		return w != null ? w : e.human();
 	}
 
+	/**
+	 * An entry already written, told in the station log's words as a reader shows it (6.05): worded afresh from its
+	 * fields, so an entry from before the words were in lore/ reads like a new one; its own line when no entry's words
+	 * fit (an old log's line read in with nothing but its headline, a kind with no words) or it came with a received ship.
+	 * The stored line is never changed.
+	 */
+	public static String told(EventLog.Entry x) {
+		if (x.get("received_from") != null) return x.human;
+		Event e = Event.of(x.kind);
+		for (String[] kv : x.fields()) e.put(kv[0], kv[1]);
+		String w = words(STATION_LOG, e);
+		return w != null ? w : x.human;
+	}
+
 	private static final Pattern TOKEN = Pattern.compile("\\{([a-z0-9_.]+)(\\+?)\\}");
 	/**
 	 * The words with every {field} filled from the event; null if one names a field the event hasn't got. {field+} is

@@ -52,6 +52,13 @@ public class LogT { public static void main(String[] a) throws Exception {
  }
  Setup.chk("L: an old LOADED entry is out of view, its lines with it; the next entry keeps its own stardate " + seen,
    seen.equals(Arrays.asList("Stardate " + MasterLog.stardate(1), "CREW/0", "Stardate " + MasterLog.stardate(3), "CREW/0")));
+ // 6.05 (heromedel): the station log's view is the station's business, in its words; its housekeeping stays in events.log
+ EventLog.write(v, Event.of("PATCH").put("log", "station").put("headline", "Patched 2 mods with Slipstream").put("ok", true).put("mods", 2).put("launched_ftl", false));
+ EventLog.write(v, Event.of("DOCK").put("log", "station").put("headline", "Kestrel  continue.sav -> shipyard/Kestrel.a3f2").put("ship", "Kestrel.a3f2").put("ship_name", "Kestrel").put("ship_id", "a3f2").put("from", "continue.sav").put("to", "shipyard/Kestrel.a3f2"));
+ java.lang.reflect.Method tagOf = rl.getDeclaredMethod("tag", EventLog.Entry.class); tagOf.setAccessible(true);
+ EventLog.Entry patch = null, dock = null; for (EventLog.Entry e : EventLog.read(v)) { if (e.kind.equals("PATCH")) patch = e; if (e.kind.equals("DOCK")) dock = e; }
+ Setup.chk("V: a patch is housekeeping, out of view; a ship docked is the Space Dock's business, in the station's words, tagged Ships",
+   patch != null && tagOf.invoke(null, patch) == null && dock != null && "Ships".equals(tagOf.invoke(null, dock)) && Lore.told(dock).equals("The Kestrel came back to the Space Dock."));
  Setup.done();
 }
  static int count(String s, String w) { int n = 0, i = 0; while ((i = s.indexOf(w, i)) >= 0) { n++; i += w.length(); } return n; }
