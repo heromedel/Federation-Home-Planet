@@ -259,8 +259,8 @@ _5.93: the prose logs are no longer written: history.log, the master log (its da
 
 ### Phase 7: 6.00
 
-29. CLAUDE.md, ROADMAP, CONCERNS (concerns 1 and 3 closed, 2 and 4 rewritten), the docs on the new layout.
-30. One version, 6.00, merged with every branch (§5). _heromedel, 5.98: KillT removed from the harness (after 5.98, not waiting for 6.00)._
+29. CLAUDE.md, ROADMAP, CONCERNS (concerns 1 and 3 closed, 2 and 4 rewritten), the docs on the new layout. _Done: the docs' pass at 5.991 (Buggy Boy, McCarthy), concerns 1 and 3 closed at 6.00._
+30. One version, 6.00, merged with every branch (§5). _heromedel, 5.98: KillT removed from the harness (after 5.98, not waiting for 6.00). **Done: 6.00** (heromedel), on Cloud-C-Primary-Edit, with Buggy Boy's 5.992 and McCarthy's 5.991 merged in._
 
 ## 5. Branches and merging
 

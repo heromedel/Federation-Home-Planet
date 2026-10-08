@@ -5,7 +5,9 @@ something and may be worth changing later. Each entry says what it is, why it's 
 change would look like. Started at 4B.97 (branch Cloud-C-Primary-Edit); add the version when an entry is added or
 settled.
 
-## 1. The Cargo Hold and the ships are still FTL saves (noted 4B.97)
+## 1. The Cargo Hold and the ships are still FTL saves (noted 4B.97; closed at 6.00)
+
+_Closed at 6.00: the Cargo Hold is its own xml (5.84); a ship stays her FTL save by design, kept in her folder beside her record (see the 5.94 note below)._
 
 **What it is.** The 4B rewrite moved the bookkeeping to XML (`manifest.xml` as the index of the fleet, `designs.xml`,
 `remodels.xml`, `transmissions.xml`), but the things themselves are still FTL save files: a docked ship is
@@ -69,7 +71,9 @@ _5.82, a later improvement, not built: Buggy Boy's test in FTL 1.6.14 (5.80) fou
 
 _Where it stands at 5.94: every crew member the register knows has a file of their own in the folder of whatever holds them (5.83), and a traded ship's crew bring theirs with them (5.90: their past ships and deeds there, as Prior). The register reads the event log (5.91), never a log's prose, and how far it has read is an offset in it. Matching is unchanged: by race, sex, colouring and a record that only grows, as above; namesakes stay namesakes, each with their own id._
 
-## 3. Side files are written one at a time (noted 4B.97)
+## 3. Side files are written one at a time (noted 4B.97; closed at 6.00)
+
+_Closed at 6.00: every action that writes more than one file goes on a protection note (5.71 to 5.88), and a ship's side files are sections of her record (5.98)._
 
 Most of the small files in concern 1 are written on their own, with a failure only logged; a failure between two of
 them leaves them disagreeing. `Vault.Transaction` can write side files together with a save (`put(File, byte[])`), and
