@@ -73,6 +73,10 @@ public final class EventLog {
 	/** As above, into another log of the same shape (a ship's own, in her folder); the stardate is the fleet's. */
 	public static void write(Vault v, File to, Event e) {
 		if (v == null) { log.debug("No fleet open for the event {}: {}", e.kind, e.human()); return; }
+		append(to, lines(v, e));
+	}
+	/** The event's two lines as {@link #write} puts them in a log (for many written at once, in one protection note: 5.992). */
+	public static String lines(Vault v, Event e) {
 		// an entry about something that happened earlier (a journal note finished at start-up) carries its own time and day, and the columns follow them
 		int day = e.get("day") != null ? dayOf(e.get("day"), MasterLog.today(v)) : MasterLog.today(v);
 		String stamp = e.get("time") != null && e.get("time").matches("\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d") ? e.get("time") : null;
@@ -80,7 +84,7 @@ public final class EventLog {
 		String machine = stamp + " | " + (day < 1 ? "prior" : MasterLog.stardate(day)) + " | " + e.kind + " | " + e.fieldText()
 				+ (e.get("day") == null ? " day=" + day : "") + " station=" + HomePlanet.version();
 		String human = Lore.human(e).replace('\r', ' ').replace('\n', ' ').trim(); // lore/'s words for it, if it has some (5.89)
-		append(to, machine + NL + human + NL);
+		return machine + NL + human + NL;
 	}
 	/** An entry's two lines as the log holds them (to carry entries elsewhere: a ship's package, 5.75). */
 	public static String text(Entry e) {

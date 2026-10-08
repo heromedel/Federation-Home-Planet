@@ -545,6 +545,36 @@ Cloud-C-BugsandFeedback ("Buggy Boy"), 5.81, 2026-10-07.
    - Board docks the ship already boarded first, as an action of its own, so a Board stopped between the two leaves both ships docked. KillT counts that as whole: nothing is lost, and the player boards again.
    - Still open, small: an action's log entry is written after its note, so a stop between the two leaves the move done with no entry. For Board and Dock only the Captain's Log reads it, for one line.
 
+7. **Found and fixed**, Re: Phase 5 step 22 and step 25a (5.992, after merging McCarthy's 5.991): the final check before 6.00.
+   - **Passed:** the full harness, every section; the kill test's six actions; Buggy Boy's bench (apart from four of its own tests
+     that still read the retired logs); and eight copies of heromedel's own fleets from before 6.0 (Sandbox, the four Immersive
+     careers, two older backups and the one he'd kept as broken), converted on opening with every ship, crew member, item,
+     supply, stored system, part, crew member away and captive where they were, in 1 to 4 seconds each, and the same when opened again.
+   - **Found:** the conversion itself, stopped dead partway (a crash or End Task in the seconds the first opening takes), then
+     opened again. (a) The old logs were read in one entry at a time. Opened again, the first of them already in events.log
+     looked like where the event log began, and everything after it was never read in: on a copy of heromedel's Sandbox fleet
+     214 entries instead of 1,312, and two crew members without their files. About half the stop points fell in that window.
+     (b) A departed ship's history was moved into her new folder file by file. Opened again, her fate and museum notes had already
+     gone from the old folder, so she was given a second folder named by her id, with no name and no fate (Red-Tail, traded
+     away, lost "transferred"). Or, stopped after her history had moved but before her record was written, her folder had no
+     record at all. Nothing in the fleet in service was touched either way.
+   - **5.992:** `LogConvert.run` gathers every entry first and writes them, each ship's own log and the marker, as one protection
+     note (`LOGS_CONVERTED`); `fillShipLogs` likewise (`SHIP_LOGS_FILLED`); `EventLog.lines` gives an entry's two lines for that.
+     `Layout.convert` carries on in a departed ship's folder already begun (her name from the fate or museum note already in it,
+     else the folder's own), and writes the record of any begun folder left without one.
+   - **Tested:** KillT has a seventh action, `convert`: the world with a ship decommissioned and destroyed, put back into the old
+     layout (as MigT does) with an old station log and voyage log, opened in its own process and stopped before 145 of its 257
+     files and at random moments. Opened again, it must be exactly what a whole conversion gives: the fleet, its crew files and
+     its event log, with nothing of the old layout left; and a whole conversion must give back the fleet as it was. On heromedel's
+     own fleets (the bench's ConvKill), stopped at about 350 points each: before 5.992, 143 of 334 stops went wrong on Sandbox and
+     1 of 218 on Immersive Easy; at 5.992, the fleet, its crew files and every old log entry came out whole at every stop on both,
+     the only difference a step's own line (below).
+   - **Still open, small (the same as Board's and Dock's, round 3 point 6):** each conversion step writes its own line in the log
+     after its work (LAYOUT, SHIP_FILES, LOGS_CONVERTED, CREW_FILES, HOLD_FILE). A stop between the two leaves the work whole and that
+     one line missing. KillT counts these and tells them, without failing on them.
+   - **Small, not fixed:** a ship that left before 5.x kept fate notes (seven of eleven in heromedel's Sandbox fleet) is named in
+     memorials_and_records by her id; her name is in her saves. The player doesn't see these folders anywhere but on disk.
+
 ### Notes from Cloud-C-Primary-Edit (round 3)
 
 Cloud-C-Primary-Edit ("Prime"), 5.97, 2026-10-08. A look back over the overhaul, for heromedel (who asked whether it had become

@@ -2,7 +2,7 @@ import java.io.*; import java.util.*; import net.blerf.ftl.parser.SavedGameParse
 /**
  * The station in its own process, for KillT: opens a fleet, says READY, and on GO does one action ("save", a Cargo Bay
  * save between two ships and the Cargo Hold; "receive", a ship arriving in a trade; "home", an expedition's return;
- * "board"; "dock"; "disband"), then says DONE and stops dead. With a count N, it stops dead (Runtime.halt, as a crash or a power cut
+ * "board"; "dock"; "disband"; "convert", a fleet from before 6.0 opened and so converted), then says DONE and stops dead. With a count N, it stops dead (Runtime.halt, as a crash or a power cut
  * would: no undo, no shutdown) just before the Nth file it would write, rename or delete once GO is given: a test-only
  * SecurityManager counts them, so nothing in the station is changed for the test (Java 8 to 23; on a Java without one, ops=-1
  * and only random kills are made). args: gamedir, saves, action, N (0:
@@ -19,7 +19,9 @@ public class KillPeer {
   trace = a.length > 4 && a[4].equals("trace");
   HomePlanet.propFile = new File(saves.getParentFile(), "station.cfg"); // its own settings, beside its saves
   HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive(); HomePlanet.immersiveNotifications = false;
-  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
+  boolean convert = action.equals("convert"); // an old fleet: opening it is the action (its conversion), so it opens after GO
+  Vault v = convert ? null : Setup.open(game, saves);
+  if (v != null) { v.storage(); v.takeStock(); }
   boolean counts = true;
   try { System.setSecurityManager(new Killer()); }
   catch (UnsupportedOperationException e) { counts = false; } // Java 24 on: no SecurityManager, so no stop at a chosen file (KillT kills at random moments only)
@@ -28,7 +30,7 @@ public class KillPeer {
   long t0 = System.nanoTime();
   counting = true;
   System.out.println("GO"); System.out.flush();
-  try { run(v, action, new File(saves.getParentFile(), "kill-inputs")); }
+  try { if (convert) { Vault w = Setup.open(game, saves); w.storage(); w.takeStock(); } else run(v, action, new File(saves.getParentFile(), "kill-inputs")); }
   catch (Throwable t) { counting = false; System.out.println("ERROR " + t); t.printStackTrace(System.out); System.out.flush(); Runtime.getRuntime().halt(2); }
   counting = false;
   System.out.println("DONE ops=" + (counts ? n : -1) + " ms=" + (System.nanoTime() - t0) / 1000000); System.out.flush();

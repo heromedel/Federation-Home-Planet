@@ -73,13 +73,24 @@ public final class Layout {
 				if (!d.isDirectory()) continue;
 				String id = d.getName();
 				if (manifest.containsKey(id)) { if (!SafeFiles.deleteTree(d)) log.warn("Could not remove the converted {}", d); continue; }
-				String name = departedName(d, id);
-				File folder = new File(v.memorialDir(), ShipStore.stem(name, id));
+				// a conversion stopped while moving her (5.992): carry on in the folder it began, named from her fate before it moved there
+				File folder = begun(v.memorialDir(), id);
+				String name = folder != null ? nameIn(folder, id) : departedName(d, id);
+				if (folder == null) folder = new File(v.memorialDir(), ShipStore.stem(name, id));
 				if (!folder.isDirectory() && !folder.mkdirs()) throw new IOException("Could not create " + folder);
 				moveHistory(d, folder);
 				ShipStore.Record r = new ShipStore.Record(id);
 				r.name = name; r.state = "departed";
 				ShipStore.write(folder, r);
+				remembered++;
+			}
+			// and one stopped after her history was moved but before her record was written: her folder is all there is of her now
+			for (File f : safeList(v.memorialDir())) {
+				String id = ShipStore.idOf(f);
+				if (!f.isDirectory() || id == null || ShipStore.read(f) != null) continue;
+				ShipStore.Record r = new ShipStore.Record(id);
+				r.name = nameIn(f, id); r.state = "departed";
+				ShipStore.write(f, r);
 				remembered++;
 			}
 			// the old folders go once they're empty; what's left in them (a stray save) is adopted from the shipyard instead
@@ -129,6 +140,18 @@ public final class Layout {
 		File[] left = from.listFiles();
 		if (left != null) for (File f : left) if (f.isDirectory()) SafeFiles.move(f, new File(folder, f.getName())); // nothing of ours, but kept
 		if (!from.delete()) log.warn("Could not remove {}", from);
+	}
+	/** The folder a stopped conversion began for her in the memorial, or null. */
+	private static File begun(File memorial, String id) {
+		for (File f : safeList(memorial)) if (f.isDirectory() && id.equals(ShipStore.idOf(f))) return f;
+		return null;
+	}
+	/** Her name in a folder already begun: from her fate or museum record, moved there by now, else as the folder has it ("Red-Tail.a9ee…" is Red-Tail). */
+	private static String nameIn(File folder, String id) {
+		String fromNotes = departedName(folder, id);
+		if (!fromNotes.equals(id)) return fromNotes;
+		String n = folder.getName();
+		return n.endsWith("." + id) && n.length() > id.length() + 1 ? n.substring(0, n.length() - id.length() - 1) : id;
 	}
 	/** A departed ship's name, from her fate or her museum record, else her id. */
 	private static String departedName(File d, String id) {

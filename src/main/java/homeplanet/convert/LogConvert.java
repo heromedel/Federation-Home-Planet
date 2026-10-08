@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -58,14 +59,29 @@ public final class LogConvert {
 		if (done(v)) return;
 		Bounds b = new Bounds(EventLog.read(v));
 		Map<String, List<String[]>> master = masterCopies(v); // log -> {text, day, time}, in order
-		int[] n = convertAll(v, b, master, null);
+		List<Event> converted = new ArrayList<Event>();
+		int[] n = convertAll(v, b, master, converted);
 		int station = n[0], voyage = n[1], reputation = n[2], days = n[3];
 		Properties p = new Properties();
 		p.setProperty("station", HomePlanet.version()); p.setProperty("entries_station", Integer.toString(station)); p.setProperty("entries_voyage", Integer.toString(voyage));
 		p.setProperty("entries_reputation", Integer.toString(reputation)); p.setProperty("days", Integer.toString(days));
 		p.setProperty(DAYS_FIXED, HomePlanet.version()); // converted with each entry on its own day: nothing for repairDays to do
-		try { Store.write(new File(v.logsDir(), MARK), p, "The old logs were converted to events once (5.73); Federation Home Planet never does it again for this fleet"); }
-		catch (IOException e) { log.warn("Could not write {}: {}", MARK, e.toString()); }
+		// every entry and the marker in one protection note (5.992): written one by one, a station stopped partway found the first of
+		// them on opening, took it for where the event log began, and never converted the rest (1,098 of 1,312 entries on a copy of heromedel's fleet)
+		try {
+			Map<File, StringBuilder> added = new LinkedHashMap<File, StringBuilder>();
+			for (Event e : converted) {
+				String lines = EventLog.lines(v, e);
+				add(added, EventLog.file(v), lines);
+				File hers = v.shipLogFor(e.get("ship_id")); // her own log too, as EventLog.write does
+				if (hers != null) add(added, hers, lines);
+			}
+			Journal.Note note = Journal.begin(v, "LOGS_CONVERTED");
+			for (Map.Entry<File, StringBuilder> a : added.entrySet()) note.replace(a.getKey(), withAdded(a.getKey(), a.getValue()));
+			File mark = new File(v.logsDir(), MARK);
+			note.replace(mark, Store.bytes(mark, p, "The old logs were converted to events once (5.73); Federation Home Planet never does it again for this fleet"));
+			note.commit();
+		} catch (IOException e) { log.warn("The old logs could not be read into the event log: {}", e.toString()); return; }
 		int all = station + voyage + reputation + days;
 		if (all > 0) HistoryLog.entry("LOGS_CONVERTED", "the old logs were read into the event log once: " + station + " station entries, " + voyage + " voyage entries, " + reputation + " reputation entries, " + days + " days", null,
 				Event.of("LOGS_CONVERTED").put("entries_station", station).put("entries_voyage", voyage).put("entries_reputation", reputation).put("days", days)
@@ -108,6 +124,18 @@ public final class LogConvert {
 		return new int[] {station, voyage, reputation, days};
 	}
 	private static void write(Vault v, Event e, List<Event> sink) { if (sink != null) sink.add(e); else EventLog.write(v, e); }
+	private static void add(Map<File, StringBuilder> added, File f, String lines) {
+		StringBuilder sb = added.get(f);
+		if (sb == null) added.put(f, sb = new StringBuilder());
+		sb.append(lines);
+	}
+	/** A log's bytes with these lines after what it holds (as appending them would leave it). */
+	private static byte[] withAdded(File f, CharSequence lines) throws IOException {
+		byte[] had = f.isFile() ? SafeFiles.read(f) : new byte[0], more = lines.toString().getBytes(StandardCharsets.UTF_8);
+		byte[] out = java.util.Arrays.copyOf(had, had.length + more.length);
+		System.arraycopy(more, 0, out, had.length, more.length);
+		return out;
+	}
 
 	/** The master log's E lines by log: what each entry said, its day and its time. */
 	private static Map<String, List<String[]>> masterCopies(Vault v) {
@@ -252,21 +280,23 @@ public final class LogConvert {
 		List<File> folders = new ArrayList<File>(v.shipFolders());
 		if (v.cargoHoldDir().isDirectory()) folders.add(v.cargoHoldDir());
 		int n = 0;
-		for (File d : folders) {
-			String id = d.equals(v.cargoHoldDir()) ? Vault.STORAGE_ID : ShipStore.idOf(d);
-			if (id == null) continue;
-			File f = ShipStore.logFile(d);
-			Set<String> has = new HashSet<String>();
-			for (EventLog.Entry e : EventLog.read(f)) has.add(e.time + "|" + e.kind + "|" + e.human);
-			StringBuilder sb = new StringBuilder();
-			for (EventLog.Entry e : all) if (id.equals(e.get("ship_id")) && !has.contains(e.time + "|" + e.kind + "|" + e.human)) { sb.append(EventLog.text(e)); n++; }
-			if (sb.length() == 0) continue;
-			try { EventLog.append(f, sb.toString()); } catch (Exception e) { log.warn("Could not fill {}: {}", f, e.toString()); }
-		}
-		p.setProperty("ship_logs", "true");
-		p.setProperty("ship_log_entries", Integer.toString(n));
-		try { Store.write(mark, p, "The old logs were converted to events once (5.73), and each ship's log filled from them once (5.76); Federation Home Planet never does either again for this fleet"); }
-		catch (IOException e) { log.warn("Could not write {}: {}", MARK, e.toString()); }
+		try {
+			Journal.Note note = Journal.begin(v, "SHIP_LOGS_FILLED"); // every ship's log and the marker together (5.992), as run() writes its entries
+			for (File d : folders) {
+				String id = d.equals(v.cargoHoldDir()) ? Vault.STORAGE_ID : ShipStore.idOf(d);
+				if (id == null) continue;
+				File f = ShipStore.logFile(d);
+				Set<String> has = new HashSet<String>();
+				for (EventLog.Entry e : EventLog.read(f)) has.add(e.time + "|" + e.kind + "|" + e.human);
+				StringBuilder sb = new StringBuilder();
+				for (EventLog.Entry e : all) if (id.equals(e.get("ship_id")) && !has.contains(e.time + "|" + e.kind + "|" + e.human)) { sb.append(EventLog.text(e)); n++; }
+				if (sb.length() > 0) note.replace(f, withAdded(f, sb));
+			}
+			p.setProperty("ship_logs", "true");
+			p.setProperty("ship_log_entries", Integer.toString(n));
+			note.replace(mark, Store.bytes(mark, p, "The old logs were converted to events once (5.73), and each ship's log filled from them once (5.76); Federation Home Planet never does either again for this fleet"));
+			note.commit();
+		} catch (IOException e) { log.warn("The ships' logs could not be filled from the event log: {}", e.toString()); }
 	}
 	/**
 	 * The days of a fleet's converted entries put right, once (heromedel, 5.81): converted before 5.81, an entry from before
