@@ -134,6 +134,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	} });
 	{ settle.setRepeats(false); }
 	private boolean rebuilding;
+	/** How long the last rebuild's look took (the debug log's timing of Board and Dock, 6.01). */
+	private long lastLookMs;
 	/**
 	 * Something in the fleet's folder was written (a letter read, a job finished, a parcel landed over the Long Range, a
 	 * ransom settled), from whatever thread: the Space Dock rebuilds itself a moment later, behind whatever window is
@@ -164,8 +166,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			endDockView();
 		}
 		Vault vault = Vault.get();
+		long look = System.nanoTime();
 		try {
 			vault.takeStock();
+			lastLookMs = (System.nanoTime() - look) / 1000000;
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not take stock of the fleet:\n" + e);
 		}
@@ -1563,6 +1567,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	public boolean board(Ship ship) {
 		if (ship == null || ship.isBoarded()) return false;
 		if (!GameGuard.allows(this, "board a ship")) return false;
+		long t0 = System.nanoTime();
 		try {
 			Vault.get().board(ship);
 		} catch (IOException e) {
@@ -1570,7 +1575,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			init();
 			return false;
 		}
+		long t1 = System.nanoTime();
 		init();
+		timed("Board", ship.name, t0, t1);
 		return true;
 	}
 	/** Docks the boarded ship. True if she was docked. */
@@ -1578,6 +1585,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		Ship b = Vault.get().boarded();
 		if (b == null) return false;
 		if (!GameGuard.allows(this, "dock her")) return false;
+		long t0 = System.nanoTime();
 		try {
 			Vault.get().dock();
 		} catch (IOException e) {
@@ -1585,8 +1593,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			init();
 			return false;
 		}
+		long t1 = System.nanoTime();
 		init();
+		timed("Dock", b.name, t0, t1);
 		return true;
+	}
+	/** Where a Board's or Dock's time went, in the debug log (6.01): the move, the look after it, and the Space Dock redrawn. */
+	private void timed(String what, String name, long t0, long t1) {
+		long move = (t1 - t0) / 1000000, all = (System.nanoTime() - t0) / 1000000;
+		log.debug("{} {}: {} ms in all (the move {} ms, the look {} ms, the Space Dock redrawn {} ms)", what, name, all, move, lastLookMs, Math.max(0, all - move - lastLookMs));
 	}
 
 	/** Shows the ship report, with the option to rename the ship. */

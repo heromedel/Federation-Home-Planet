@@ -53,7 +53,9 @@ public final class Store {
 	public static void write(File f, Properties p, String comment) throws IOException {
 		File dir = f.getAbsoluteFile().getParentFile();
 		if (dir != null && !dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
-		SafeFiles.write(f, bytes(f, p, comment));
+		byte[] b = bytes(f, p, comment);
+		if (f.isFile() && java.util.Arrays.equals(SafeFiles.read(f), b)) return; // unchanged: not written again (6.01)
+		SafeFiles.write(f, b);
 	}
 	/** The properties as this file's bytes: its XML if the name ends in .xml, else the plain text. */
 	public static byte[] bytes(File f, Properties p, String comment) throws IOException {

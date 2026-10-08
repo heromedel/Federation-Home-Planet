@@ -99,7 +99,11 @@ public final class ShipStore {
 		if (!folder.isDirectory() && !folder.mkdirs()) throw new IOException("Could not create " + folder);
 		writeFile(xml(folder), r);
 	}
-	private static void writeFile(File to, Record r) throws IOException { SafeFiles.write(to, bytes(r)); }
+	private static void writeFile(File to, Record r) throws IOException {
+		byte[] b = bytes(r);
+		if (to.isFile() && java.util.Arrays.equals(SafeFiles.read(to), b)) return; // unchanged: not written again (6.01: every look rewrote every ship's record)
+		SafeFiles.write(to, b);
+	}
 	/** Her record as its file's bytes (for a package, 5.75). */
 	public static byte[] bytes(Record r) {
 		StringBuilder sb = new StringBuilder();

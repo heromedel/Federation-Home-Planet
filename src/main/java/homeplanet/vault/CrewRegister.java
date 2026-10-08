@@ -199,12 +199,16 @@ public final class CrewRegister {
 		CACHE.put(f, new Object[] {f.lastModified(), f.length(), p});
 		return p;
 	}
-	/** A member's file, as its bytes: Java's own properties XML, keys in the register's order. */
-	static byte[] crewXml(Member m) {
+	/**
+	 * A member's file, as its bytes: Java's own properties XML, keys in the register's order. Their place in the event
+	 * log is left out when it is the register's own (6.01): most crew are seen at every look, and their files then don't
+	 * change because the log grew (every file was rewritten at every Board and Dock before).
+	 */
+	static byte[] crewXml(Member m, int registerAt) {
 		StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\r\n<!DOCTYPE properties SYSTEM \"http://java.sun.com/dtd/properties.dtd\">\r\n<properties>\r\n");
 		sb.append("<comment>").append(homeplanet.parser.XmlText.text(m.name)).append(": a crew member of this fleet. Kept by The Home Planet Station; edit by hand only when the station is closed.</comment>\r\n");
 		sb.append("<entry key=\"id\">").append(m.id).append("</entry>\r\n");
-		for (Map.Entry<String, String> e : fields(m).entrySet())
+		for (Map.Entry<String, String> e : fields(m, registerAt).entrySet())
 			sb.append("<entry key=\"").append(homeplanet.parser.XmlText.attr(e.getKey())).append("\">").append(xmlSafe(e.getValue())).append("</entry>\r\n");
 		sb.append("</properties>\r\n");
 		return sb.toString().getBytes(StandardCharsets.UTF_8);
@@ -234,9 +238,11 @@ public final class CrewRegister {
 	public static synchronized List<Member> members(Vault v) {
 		if (file(v).isFile()) return read(Store.read(file(v))); // a 5.x register not converted yet
 		List<Member> out = new ArrayList<Member>();
+		Properties reg = Store.read(registerFile(v));
+		int registerAt = Store.num(reg, "seen.at", -1); // a member's file without a place has the register's; none known: -1, read as now (sweepNow)
 		for (Map.Entry<Integer, File> e : crewFiles(v).entrySet()) {
 			Properties p = readCrewFile(e.getValue());
-			if (p != null && p.getProperty("name") != null) out.add(member(e.getKey(), p, ""));
+			if (p != null && p.getProperty("name") != null) out.add(member(e.getKey(), p, "", registerAt));
 		}
 		Collections.sort(out, new Comparator<Member>() { public int compare(Member a, Member b) { return a.id - b.id; } });
 		return out;
@@ -247,12 +253,12 @@ public final class CrewRegister {
 		for (int id = 1; id < next; id++) {
 			String k = id + ".";
 			if (p.getProperty(k + "name") == null) continue;
-			out.add(member(id, p, k));
+			out.add(member(id, p, k, 0));
 		}
 		return out;
 	}
 	/** A member from their keys, each with this prefix ("17." in crew.txt, none in their own file). */
-	private static Member member(int id, Properties p, String k) {
+	private static Member member(int id, Properties p, String k, int registerAt) {
 		{
 			Member m = new Member(id);
 			m.name = p.getProperty(k + "name");
@@ -266,7 +272,7 @@ public final class CrewRegister {
 			String st = p.getProperty(k + "status", "PRESENT");
 			if (st.equals("DISCHARGED")) st = "RETIRED"; // 5.41's word for it
 			try { m.status = Status.valueOf(st); } catch (IllegalArgumentException e) { m.status = Status.MISSING; }
-			m.at = Store.num(p, k + "at", 0);
+			m.at = Store.num(p, k + "at", registerAt);
 			m.oldHist = p.getProperty(k + "at") == null ? Store.num(p, k + "hist", -1) : -1;
 			for (String key : p.stringPropertyNames()) if (key.startsWith(k + "rec.")) m.rec.put(key.substring((k + "rec.").length()), p.getProperty(key));
 			String served = p.getProperty(k + "served", "");
@@ -292,12 +298,12 @@ public final class CrewRegister {
 		return new int[] {Store.num(p, "seen.at", 0), 0, Store.num(p, "served.v", 1)};
 	}
 	/** A member's keys and values, in the register's order (the same for crew.txt and their own file). */
-	private static Map<String, String> fields(Member m) {
+	private static Map<String, String> fields(Member m, int registerAt) {
 		Map<String, String> f = new LinkedHashMap<String, String>();
 		f.put("name", m.name); f.put("race", m.race); f.put("title", m.title); f.put("male", Boolean.toString(m.male));
 		f.put("tints", m.tints); f.put("record", m.record);
 		f.put("place", m.place); f.put("where", m.where); f.put("status", m.status.name());
-		f.put("at", Integer.toString(m.at));
+		if (m.at != registerAt) f.put("at", Integer.toString(m.at));
 		if (!m.served.isEmpty()) f.put("served", String.join("|", m.served));
 		if (m.sector >= 0) f.put("sector", Integer.toString(m.sector));
 		for (Map.Entry<Integer, List<String>> w : m.with.entrySet()) f.put("with." + w.getKey(), String.join("|", w.getValue()));
@@ -321,7 +327,7 @@ public final class CrewRegister {
 		Journal.Note n = Journal.begin(v, "CREW_REGISTER");
 		for (Member m : members) {
 			File to = fileFor(v, m), was = have.get(m.id);
-			byte[] bytes = crewXml(m);
+			byte[] bytes = crewXml(m, histLen);
 			if (was != null && !was.getAbsoluteFile().equals(to.getAbsoluteFile())) n.delete(was);
 			if (was == null || !was.getAbsoluteFile().equals(to.getAbsoluteFile()) || !java.util.Arrays.equals(SafeFiles.read(was), bytes)) n.replace(to, bytes);
 		}
@@ -337,7 +343,7 @@ public final class CrewRegister {
 		StringBuilder sb = new StringBuilder("# ").append(NOTE).append("\n");
 		sb.append("seen.at=").append(histLen).append("\nserved.v=").append(SERVED_VERSION).append("\n");
 		sb.append("next=").append(nextId(members)).append("\n");
-		for (Member m : members) for (Map.Entry<String, String> e : fields(m).entrySet()) line(sb, m.id + "." + e.getKey(), e.getValue());
+		for (Member m : members) for (Map.Entry<String, String> e : fields(m, -1).entrySet()) line(sb, m.id + "." + e.getKey(), e.getValue());
 		SafeFiles.writeText(file(v), sb.toString(), false);
 	}
 	/** Back to crew.txt: the crew files and the register's own file gone (Layout.unconvert, for the harness). */
@@ -396,6 +402,7 @@ public final class CrewRegister {
 		// what the station has logged, from the event log (5.91: the station log and the master log by character offset before)
 		String events = text(homeplanet.core.EventLog.file(v));
 		int histLen = events.length(), masterLen = 0;
+		for (Member m : members) if (m.at < 0) m.at = histLen; // no place known (the register's own file unreadable): seen up to now, never the whole log again
 		String hist = stationText(v, events);
 		boolean changed = fresh;
 
@@ -431,7 +438,7 @@ public final class CrewRegister {
 				File came = arrived(v, x, arrivedUsed);
 				if (came != null) { // she came in a trade: her past at the other station comes with her (5.90), before anything here
 					Properties p = readCrewFile(came);
-					Member theirs = p == null ? null : member(0, p, "");
+					Member theirs = p == null ? null : member(0, p, "", 0);
 					if (theirs != null) {
 						List<Event> before = new ArrayList<Event>();
 						for (Event e : theirs.events) before.add(new Event(0, e.text)); // their days are another career's: Prior here
@@ -937,17 +944,36 @@ public final class CrewRegister {
 		}
 		return sb.toString();
 	}
-	private static final Object[] WHOLE = {null, -1, null}; // the event log's path and length, and its station entries in the station log's form
-	/** Every station entry, oldest first, in the station log's form (for the ships renamed, and the served lists rebuilt). */
+	/** The event log as last read here: its path, its text, its station entries in the station log's form, and its latest entry's time. */
+	private static final Object[] WHOLE = {null, null, null, null};
+	/**
+	 * Every station entry, oldest first, in the station log's form (for the ships renamed, and the served lists rebuilt).
+	 * The log only grows at its end, so when it has grown and nothing new is older than what was read, only the new
+	 * entries are read and added (6.01: reading it whole was most of every look's time); otherwise it is read whole.
+	 */
 	private static String stationText(Vault v, String events) {
 		String path = homeplanet.core.EventLog.file(v).getAbsolutePath();
 		synchronized (WHOLE) {
-			if (path.equals(WHOLE[0]) && (Integer) WHOLE[1] == events.length()) return (String) WHOLE[2];
+			String was = path.equals(WHOLE[0]) ? (String) WHOLE[1] : null;
+			if (was != null && was.equals(events)) return (String) WHOLE[2];
+			if (was != null && events.length() > was.length() && was.endsWith("\n") && events.startsWith(was)) {
+				List<homeplanet.core.EventLog.Entry> added = homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.parse(events.substring(was.length())));
+				String latest = (String) WHOLE[3];
+				if (added.isEmpty() || latest == null || added.get(0).time.compareTo(latest) >= 0) {
+					StringBuilder sb = new StringBuilder((String) WHOLE[2]);
+					for (homeplanet.core.EventLog.Entry e : added) if ("station".equals(e.get("log"))) stationLines(sb, e);
+					return keepWhole(path, events, sb.toString(), added.isEmpty() ? latest : added.get(added.size() - 1).time);
+				}
+			}
 			StringBuilder sb = new StringBuilder();
-			for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.parse(events))) if ("station".equals(e.get("log"))) stationLines(sb, e);
-			WHOLE[0] = path; WHOLE[1] = events.length(); WHOLE[2] = sb.toString();
-			return (String) WHOLE[2];
+			List<homeplanet.core.EventLog.Entry> all = homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.parse(events));
+			for (homeplanet.core.EventLog.Entry e : all) if ("station".equals(e.get("log"))) stationLines(sb, e);
+			return keepWhole(path, events, sb.toString(), all.isEmpty() ? null : all.get(all.size() - 1).time);
 		}
+	}
+	private static String keepWhole(String path, String events, String text, String latest) {
+		WHOLE[0] = path; WHOLE[1] = events; WHOLE[2] = text; WHOLE[3] = latest;
+		return text;
 	}
 	/** The station log's form of every station entry (for the harness, which holds it against the old station log). */
 	public static String stationText(Vault v) { return stationText(v, text(homeplanet.core.EventLog.file(v))); }
@@ -1154,6 +1180,7 @@ public final class CrewRegister {
 		Map<String, List<String>> names = new LinkedHashMap<String, List<String>>(); // id -> her names, oldest first
 		java.util.regex.Pattern p = java.util.regex.Pattern.compile("^\\S+ \\S+  RENAME  (.+?) -> (.+?)  \\(([0-9a-f]+)\\)\\s*$");
 		for (String l : hist.split("\r?\n")) {
+			if (!l.contains("  RENAME  ")) continue; // the pattern only for the lines it can match: most of the history isn't a rename
 			java.util.regex.Matcher x = p.matcher(l);
 			if (!x.find()) continue;
 			List<String> n = names.get(x.group(3));

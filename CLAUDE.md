@@ -131,8 +131,11 @@ LogConvT, SmallT and the old-fleet parts of HoldT, ExpT, RegT, JournalT and Ship
 they passed for the 6.0 conversion, which each player does once, and running them again only cost time). They are in git
 history if ever wanted; Buggy Boy can run an overkill check on request.
 
-The one exception to running the full harness: small UI or text changes (a button, a message, a tooltip) need only the
-build, plus a screenshot or the one test that covers it.
+**What to run before a commit (heromedel, 6.01):** the tests that cover the change (a handful, usually under a minute:
+`cd "Tools and Harness/harness2/work"`, compile the harness, run each by name as `run.sh` does), plus a check on a copy of
+heromedel's real fleet where the change touches what it holds. Not the full harness: that runs only when heromedel asks,
+or on Buggy Boy's bench. Small UI or text changes (a button, a message, a tooltip) need only the build, plus a screenshot
+or the one test that covers it.
 
 To see a window without a display, run it under `xvfb-run -a java ...` and paint the dialog's root pane into
 a BufferedImage.

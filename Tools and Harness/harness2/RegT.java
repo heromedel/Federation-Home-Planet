@@ -19,6 +19,18 @@ public class RegT { public static void main(String[] a) throws Exception {
  String rep = Reputation.log(v);
  Setup.chk("C: the reputation log from the event log, in its own form: minute, the change, why, details", rep.matches("(?s).*\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d  \\+\\d+  Expedition: Nebula, Attack.*") && rep.contains("Taken captive: Ash, Bob"));
  Setup.chk("C: reputation.log is no longer written (5.93)", !new File(v.logsDir(), "reputation.log").isFile());
+ // D (6.01): the station's history read bit by bit is the history read whole; a look rewrites no crew file that didn't change
+ for (int i = 0; i < 3; i++) { Ship sh = v.docked().get(i % v.docked().size()); v.board(sh); v.takeStock(); v.dock(); v.takeStock(); }
+ String bitByBit = CrewRegister.stationText(v);
+ java.lang.reflect.Field whole = CrewRegister.class.getDeclaredField("WHOLE"); whole.setAccessible(true); Object[] w = (Object[]) whole.get(null);
+ synchronized (w) { java.util.Arrays.fill(w, null); }
+ Setup.chk("D: the station's history read bit by bit, as new entries came, is the same as read whole", bitByBit.equals(CrewRegister.stationText(v)) && bitByBit.length() > 0);
+ Map<File, Long> crewTimes = new HashMap<File, Long>(); for (File f : crewFilesUnder(v.root)) crewTimes.put(f, f.lastModified());
+ Thread.sleep(1100);
+ Ship sh = v.docked().get(0); v.board(sh); v.takeStock(); v.dock(); v.takeStock();
+ int rewritten = 0, aboard = 0; for (File f : crewFilesUnder(v.root)) if (crewTimes.containsKey(f) && crewTimes.get(f) != f.lastModified()) rewritten++;
+ for (CrewRegister.Member m : CrewRegister.members(v)) if (m.status == CrewRegister.Status.PRESENT && m.where.contains(sh.name)) aboard++;
+ Setup.chk("D: a Board and Dock rewrites only her crew's files, not everyone's (" + rewritten + " rewritten, " + aboard + " aboard her, " + crewTimes.size() + " in all)", rewritten <= aboard && crewTimes.size() > aboard);
  Setup.done();
 }
  /** A log's lines, its kinds as the event log keeps them (underscores read as spaces), the time to the minute. */
@@ -38,4 +50,6 @@ public class RegT { public static void main(String[] a) throws Exception {
   for (String l : text.replace("\r", "").split("\n")) { if (l.isEmpty()) continue; out.add(l.startsWith("  ") ? "  " + l.trim() : l); }
   return out;
  }
+ static List<File> crewFilesUnder(File d) { List<File> out = new ArrayList<File>(); File[] fs = d.listFiles(); if (fs == null) return out;
+  for (File f : fs) { if (f.isDirectory()) out.addAll(crewFilesUnder(f)); else if (f.getParentFile().getName().equals("crew") && f.getName().endsWith(".xml")) out.add(f); } return out; }
 }

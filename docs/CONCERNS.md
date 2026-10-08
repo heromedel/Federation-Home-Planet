@@ -97,6 +97,12 @@ _5.74: the Captain's Log and the station log view read the event log now (`logs/
 
 _Where it stands at 5.94: the master log is no longer written (5.93); the Cargo Bay's day reads the DAY events. The event log grows the same way, append-only, read whole by the Captain's Log and the register; if it ever matters, it can be read from the end or split by year. Still not talked over._
 
+_6.01: what made Board and Dock slow wasn't reading the log but writing: every look rewrote every crew member's file (their
+place in the event log moved as the log grew) and every ship's record, each forced to disk, 86 files on heromedel's fleet.
+Now a crew member's file leaves their place out when it's the register's own, a record or small file whose bytes haven't
+changed isn't written again, and the register reads only the event log's new entries. A look writes 2 files; on heromedel's
+fleet a Board's look went from about 165 ms to 36, a Dock's from 145 to 26. The log still grows and is read once on opening._
+
 ## 5. Docked play needs FTL in a window, and FTL's OpenGL is slow there on some PCs (noted 5.64)
 
 **What it is.** Docked play (Settings, "Option to Play FTL, docked") sets FTL to windowed, since a fullscreen FTL can't
