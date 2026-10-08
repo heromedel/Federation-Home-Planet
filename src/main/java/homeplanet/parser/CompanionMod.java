@@ -452,14 +452,6 @@ public class CompanionMod {
 	private static List<Remodel> loadQuietly() {
 		try { return load(); } catch (RuntimeException e) { log.warn("Could not read the remodels: {}", e.toString()); return new ArrayList<Remodel>(); }
 	}
-	static boolean sameLayout(Map<String, Sys> a, Map<String, Sys> b) {
-		if (!a.keySet().equals(b.keySet())) return false;
-		for (Sys s : a.values()) {
-			Sys t = b.get(s.id);
-			if (s.room != t.room || !eq(s.dir, t.dir) || !eq(s.square, t.square)) return false;
-		}
-		return true;
-	}
 	private static boolean eq(Object x, Object y) { return x == null ? y == null : x.equals(y); }
 
 	// ---- remodels.xml ----

@@ -32,6 +32,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 
 import homeplanet.core.HomePlanet;
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.Slipstream;
 import homeplanet.core.Slipstream.Mod;
@@ -215,6 +216,7 @@ public class PatchDialog extends JDialog {
 		List<String> order = new ArrayList<String>();
 		for (int i = 0; i < model.size(); i++) order.add(model.get(i).mod.name());
 		Slipstream.writeOrder(dir, order);
+		String pointed = Slipstream.prepareConfig(dir); // FTL may have moved since Slipstream was found: it patches the FTL the station plays
 
 		final boolean runFtl = runBox.isSelected();
 		final JDialog wait = new JDialog(this, "Patching", ModalityType.APPLICATION_MODAL);
@@ -235,8 +237,9 @@ public class PatchDialog extends JDialog {
 		wait.setVisible(true); // blocks until the thread closes it
 		Slipstream.Result res = result[0];
 		List<String> details = new ArrayList<String>(names);
+		if (pointed != null) details.add(pointed);
 		if (res != null && res.ok()) {
-			HistoryLog.entry("PATCH", "Patched " + count(names.size()) + " with Slipstream" + (runFtl ? ", then launched FTL" : ""), details);
+			HistoryLog.entry("PATCH", "Patched " + count(names.size()) + " with Slipstream" + (runFtl ? ", then launched FTL" : ""), details, Event.of("PATCH").put("ok", true).put("mods", names.size()).put("launched_ftl", runFtl).details(details));
 			patched = true;
 			homeplanet.parser.PatchState.refresh(); // ftl.dat changed: what's in the game is read again from it
 			if (runFtl) HomePlanet.launchFTL();
@@ -249,7 +252,7 @@ public class PatchDialog extends JDialog {
 			if (r == 0) Slipstream.restart();
 		} else {
 			String out = res == null ? "" : res.output.trim();
-			HistoryLog.entry("PATCH", "Slipstream patch failed" + (res == null ? "" : " (exit " + res.exitCode + ")"), details);
+			HistoryLog.entry("PATCH", "Slipstream patch failed" + (res == null ? "" : " (exit " + res.exitCode + ")"), details, Event.of("PATCH").put("ok", false).put("exit", res == null ? null : String.valueOf(res.exitCode)).details(details));
 			JTextArea ta = new JTextArea(out.length() == 0 ? "(no output)" : out, 12, 70);
 			ta.setEditable(false);
 			ta.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.PLAIN, 12));

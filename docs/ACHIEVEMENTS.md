@@ -4,7 +4,8 @@ Every achievement in FTL 1.6.x (`data/achievements.xml` and `data/text_achieveme
 Home Planet Station says about it. Kept so no session has to dig them out of ftl.dat again (heromedel, 5.57).
 
 - **Name** and **What FTL asks** are FTL's own words.
-- **Our deed line** is how a rank letter's accolade tells it (`homeplanet.parser.Accolades.DEEDS`): the deed itself, as a
+- **Our deed line** is how a rank letter's accolade tells it (`lore/deeds.xml`, its `DEED` entries, since 5.991; a map in
+  `homeplanet.parser.Accolades` before): the deed itself, as a
   phrase under "Of particular note in the discussions was:", never the rule. Victories (beating the Rebel Flagship) are never scored or
   told (hard rule 1); an achievement with no line here gets the general words.
 - A ship's achievements say which cruiser earned them; ship classes are FTL's (the Kestrel Cruiser, the Zoltan Cruiser…).

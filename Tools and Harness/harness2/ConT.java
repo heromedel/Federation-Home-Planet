@@ -32,7 +32,7 @@ public class ConT { public static void main(String[] a) throws Exception {
  Map<Integer, String> why = MasterLog.dayReasons(v);
  int dev = 0; for (String w : why.values()) if (StationConsole.DAY_WHY.equals(w)) dev++;
  Setup.chk("P: each day noted in the master log as passed by a dev command (" + dev + ")", dev == n);
- String hist = new String(SafeFiles.read(new File(v.root, "history.log")), "UTF-8");
+ String hist = Setup.stationLog(v);
  Setup.chk("P: the history log never mentions the dev command (5.23: the debug log only)", !hist.contains("Dev command") && !hist.contains("DEV  "));
  java.lang.reflect.Method page = Class.forName("homeplanet.ui.CaptainsLogDialog").getDeclaredMethod("page", Vault.class, boolean.class); page.setAccessible(true);
  String p = (String) page.invoke(null, v, false);
@@ -51,7 +51,7 @@ public class ConT { public static void main(String[] a) throws Exception {
   Vault v = Vault.get();
   if (!Career.started(v.root)) Career.start(false, false);
   Transmissions.check(); Transmissions.Message owed = TransT.find("stipend:"); if (owed != null) Transmissions.delete(owed); // anything owed already, paid first
-  Properties cp = new Properties(); cp.load(new ByteArrayInputStream(SafeFiles.read(new File(v.root, "career.txt"))));
+  Properties cp = Store.load(Store.file(v.root, "career"));
   int month = Career.beaconsPerStipend(), into = (v.beaconsSeen() - Integer.parseInt(cp.getProperty("beaconsAtStart"))) % month;
   int start = v.beaconsSeen(), dueOn = start + (month - into), n = month - into + 3, issued = -1;
   StationConsole.Round round = new StationConsole.Round();

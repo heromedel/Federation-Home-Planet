@@ -1,7 +1,5 @@
 package homeplanet.model;
 
-import net.blerf.ftl.constants.AdvancedFTLConstants;
-import net.blerf.ftl.constants.FTLConstants;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.CrewType;
@@ -11,41 +9,78 @@ import net.blerf.ftl.xml.CrewBlueprint;
 public final class Crew {
 	private Crew() { }
 
-	private static final FTLConstants CONSTANTS = new AdvancedFTLConstants();
-
 	/** The race's display name from the game data (e.g. "Zoltan" for energy), or its id. */
 	public static String raceTitle(CrewState cs) {
 		CrewType race = cs.getRace();
-		if (race == null) return "?";
-		CrewBlueprint b = DataManager.get().getCrews().get(race.getId());
-		if (b != null && b.getTitle() != null && b.getTitle().getTextValue() != null && b.getTitle().getTextValue().length() > 0) {
-			return b.getTitle().getTextValue();
-		}
-		return race.getId();
+		return race == null ? "?" : raceTitle(race.getId());
 	}
-	// e.g. "level 1 (70/130)": levels come from the save's mastery flags; FTL:AE needs interval xp for level 1, twice that for level 2
-	private static String skillText(int xp, int interval, boolean one, boolean two) {
-		int level = two ? 2 : (one ? 1 : 0);
+	/**
+	 * A crew member's title for a race id, as FTL shows it: "Rockman", "Zoltan", "Lanius", "Human" (the game data's title;
+	 * without the data, the id capitalised with the two FTL names by name). The one home for race names, with
+	 * {@link #racePeople} (Overhaul 6.0, step 10).
+	 */
+	public static String raceTitle(String id) {
+		if (id == null || id.isEmpty()) return "";
+		try {
+			CrewBlueprint b = DataManager.get().getCrews().get(id);
+			if (b != null && b.getTitle() != null && b.getTitle().getTextValue() != null && b.getTitle().getTextValue().length() > 0) return b.getTitle().getTextValue();
+		} catch (RuntimeException e) { /* no game data loaded: the names below */ }
+		String p = racePeople(id);
+		return p.equals("Rock") ? "Rockman" : p;
+	}
+	/**
+	 * The people's name for a race id, as the lore speaks of them: "the Rock", "Rock pirates", "a Rock crew volunteer";
+	 * "Zoltan", "Lanius", "Engi", "Mantis", "Slug", "Crystal", "Human". The voyage log writes this one (a Rock is "Rock"
+	 * there, "Rockman" in FTL's title: the crew register reads both).
+	 */
+	public static String racePeople(String id) {
+		if (id == null || id.isEmpty()) return "";
+		String r = id.toLowerCase();
+		if (r.equals("energy")) return "Zoltan";
+		if (r.equals("anaerobic")) return "Lanius";
+		if (r.equals("rockman")) return "Rock";
+		return Character.toUpperCase(r.charAt(0)) + r.substring(1);
+	}
+	/**
+	 * The people a ship belongs to, from a blueprint id or a ship-list id (PLAYER_SHIP_JELLY, SHIPS_ROCK_PIRATE,
+	 * CIRCLE...): "Engi" (the Circle and the Stealth cruiser), "Zoltan", "Mantis", "Slug", "Rock", "Crystal", "Lanius";
+	 * null when it names none (a Federation, rebel, automated or civilian ship).
+	 */
+	public static String peopleOf(String shipId) {
+		String l = shipId == null ? "" : shipId.toUpperCase();
+		if (l.contains("CIRCLE") || l.contains("ENGI") || l.contains("STEALTH")) return "Engi";
+		if (l.contains("ENERGY") || l.contains("ZOLTAN")) return "Zoltan";
+		if (l.contains("MANTIS")) return "Mantis";
+		if (l.contains("JELLY") || l.contains("SLUG")) return "Slug";
+		if (l.contains("ROCK")) return "Rock";
+		if (l.contains("CRYSTAL")) return "Crystal";
+		if (l.contains("ANAEROBIC") || l.contains("LANIUS")) return "Lanius";
+		return null;
+	}
+	// e.g. "level 1 (70/130)": the level from the points as they stand (skillLevels); FTL:AE needs interval xp for level 1, twice that for level 2
+	private static String skillText(int xp, int interval) {
+		int level = level(xp, interval);
 		String progress = (level >= 2) ? "max" : (xp + "/" + (interval * (level + 1)));
 		return "level " + level + " (" + progress + ")";
 	}
 	private static String[][] skillRows(CrewState cs) {
-		CrewType r = cs.getRace();
-		return new String[][] {
-			{"Pilot", skillText(cs.getPilotSkill(), CONSTANTS.getMasteryIntervalPilot(r), cs.getPilotMasteryOne(), cs.getPilotMasteryTwo())},
-			{"Engines", skillText(cs.getEngineSkill(), CONSTANTS.getMasteryIntervalEngine(r), cs.getEngineMasteryOne(), cs.getEngineMasteryTwo())},
-			{"Shields", skillText(cs.getShieldSkill(), CONSTANTS.getMasteryIntervalShield(r), cs.getShieldMasteryOne(), cs.getShieldMasteryTwo())},
-			{"Weapons", skillText(cs.getWeaponSkill(), CONSTANTS.getMasteryIntervalWeapon(r), cs.getWeaponMasteryOne(), cs.getWeaponMasteryTwo())},
-			{"Repair", skillText(cs.getRepairSkill(), CONSTANTS.getMasteryIntervalRepair(r), cs.getRepairMasteryOne(), cs.getRepairMasteryTwo())},
-			{"Combat", skillText(cs.getCombatSkill(), CONSTANTS.getMasteryIntervalCombat(r), cs.getCombatMasteryOne(), cs.getCombatMasteryTwo())}};
+		String[] names = {"Pilot", "Engines", "Shields", "Weapons", "Repair", "Combat"};
+		String[][] out = new String[6][];
+		for (int i = 0; i < 6; i++) out[i] = new String[] {names[i], skillText(Skills.points(cs, i), Skills.interval(cs, i))};
+		return out;
 	}
-	/** Her skill levels (0, 1 or 2, from the save's mastery flags): pilot, engines, shields, weapons, repair, combat. */
+	/**
+	 * Each skill's level as it stands, from its points: the race's interval for level one, twice it for level two (pilot,
+	 * engines, shields, weapons, repair, combat). Not FTL's mastery marks (5.62): FTL sets those only for a level earned in
+	 * play, so a crew member an event gives fully skilled (the Zoltan peace quest's Envoy) has none, and a skill a Clone
+	 * Bay lowered keeps its marks.
+	 */
 	public static int[] skillLevels(CrewState cs) {
-		return new int[] {lv(cs.getPilotMasteryOne(), cs.getPilotMasteryTwo()), lv(cs.getEngineMasteryOne(), cs.getEngineMasteryTwo()),
-				lv(cs.getShieldMasteryOne(), cs.getShieldMasteryTwo()), lv(cs.getWeaponMasteryOne(), cs.getWeaponMasteryTwo()),
-				lv(cs.getRepairMasteryOne(), cs.getRepairMasteryTwo()), lv(cs.getCombatMasteryOne(), cs.getCombatMasteryTwo())};
+		int[] out = new int[6];
+		for (int i = 0; i < 6; i++) out[i] = level(Skills.points(cs, i), Skills.interval(cs, i));
+		return out;
 	}
-	private static int lv(boolean one, boolean two) { return two ? 2 : one ? 1 : 0; }
+	private static int level(int points, int interval) { return points >= 2 * interval ? 2 : points >= interval ? 1 : 0; }
 	/** Hover text for a crew member: race and skill levels. */
 	public static String tooltip(CrewState cs) {
 		if (cs == null || cs.getRace() == null) return null;

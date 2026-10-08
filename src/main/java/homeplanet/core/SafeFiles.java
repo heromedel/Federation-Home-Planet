@@ -158,6 +158,16 @@ public final class SafeFiles {
 			throw new IOException(e);
 		}
 	}
+	/** The same fingerprint of bytes not yet written (a save waiting in a journal note, 5.95). */
+	public static String hash(byte[] bytes) throws IOException {
+		try {
+			StringBuilder sb = new StringBuilder();
+			for (byte b : MessageDigest.getInstance("SHA-1").digest(bytes)) sb.append(String.format("%02x", b & 0xff));
+			return sb.toString();
+		} catch (java.security.NoSuchAlgorithmException e) {
+			throw new IOException(e);
+		}
+	}
 
 	/** Zips a folder (recursively) into {@code zip}, skipping {@code skip} (a sub-folder to leave out, or null). */
 	public static void zipFolder(File folder, File zip, File skip) throws IOException {
@@ -180,9 +190,15 @@ public final class SafeFiles {
 			File abs = f.getAbsoluteFile();
 			if (abs.equals(skip) || abs.equals(self)) continue;
 			if (f.isDirectory()) {
+				ZipEntry d = new ZipEntry(prefix + f.getName() + "/"); // an empty folder comes back too
+				d.setLastModifiedTime(java.nio.file.attribute.FileTime.fromMillis(f.lastModified()));
+				z.putNextEntry(d);
+				z.closeEntry();
 				addToZip(z, f, prefix + f.getName() + "/", skip, self);
 			} else if (f.isFile()) {
-				z.putNextEntry(new ZipEntry(prefix + f.getName()));
+				ZipEntry e = new ZipEntry(prefix + f.getName());
+				e.setLastModifiedTime(java.nio.file.attribute.FileTime.fromMillis(f.lastModified())); // a ship's versions are ordered by their time (5.94: lost on a restore before)
+				z.putNextEntry(e);
 				z.write(read(f));
 				z.closeEntry();
 			}

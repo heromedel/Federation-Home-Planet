@@ -43,23 +43,28 @@ final class Feedback {
 		return newest;
 	}
 
-	/** Copies this run's log, says so, then opens the form (or shows its link to copy if no browser could open). */
+	/**
+	 * Says what happens, then opens the form (or shows its link to copy if no browser could open). This run's debug log
+	 * goes on the clipboard only when the player asks (heromedel, 6.02: copied without asking, it replaced what they had
+	 * there).
+	 */
 	static void send(Component owner) {
 		String url = link(HomePlanet.APP_VERSION);
 		boolean copied = false;
 		File f = newestLog();
-		if (f != null) {
+		// said first, then the browser (heromedel, 5.26: opened at once, the browser covered the message before it could be read)
+		String about = f != null ? "To send this run's debug log too, choose Copy Log and Open Form, then paste it into the last question." : "No debug log to copy this run.";
+		Object[] go = f != null ? new Object[] {"Open Form", "Copy Log and Open Form", "Cancel"} : new Object[] {"Open Form", "Cancel"};
+		int pick = JOptionPane.showOptionDialog(owner, "The feedback form opens in your web browser, with this version filled in.\n\n" + about, "Send Feedback",
+				JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, go, go[0]);
+		if (pick < 0 || go[pick].equals("Cancel")) return;
+		if (go[pick].equals("Copy Log and Open Form")) {
 			try {
 				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(new String(SafeFiles.read(f), StandardCharsets.UTF_8)), null);
 				copied = true;
 			} catch (Exception e) { log.debug("Feedback: the debug log could not be copied: {}", e.toString()); }
 		}
-		// said first, then the browser (heromedel, 5.26: opened at once, the browser covered the message before it could be read)
-		String about = copied ? "This run's debug log is copied: paste it into the last question if you like." : "No debug log to copy this run.";
-		Object[] go = {"Open Form", "Cancel"};
-		int pick = JOptionPane.showOptionDialog(owner, "The feedback form opens in your web browser, with this version filled in.\n\n" + about, "Send Feedback",
-				JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, go, go[0]);
-		if (pick != 0) return;
+		if (copied) about = "This run's debug log is copied: paste it into the last question.";
 		try {
 			if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
 				java.awt.Desktop.getDesktop().browse(new java.net.URI(url));

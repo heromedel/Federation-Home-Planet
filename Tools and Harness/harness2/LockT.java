@@ -12,7 +12,7 @@ public class LockT {
   HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
   HomePlanet.immersiveNotifications = false; HomePlanet.careerMessages = false; HomePlanet.reputationOn = true;
   final Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
-  final File counted = new File(v.root, "reputation.txt");
+  final File counted = Store.file(v.root, "reputation");
   final int rounds = 300;
   final int[] done = new int[2];
   Thread vaultFirst = new Thread(new Runnable() { public void run() {

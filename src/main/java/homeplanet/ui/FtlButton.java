@@ -30,6 +30,9 @@ public class FtlButton extends JButton {
 	private boolean lit = false;
 	/** Shows the button lit, as if the mouse were over it (the current tab). */
 	public void setLit(boolean on) { lit = on; repaint(); }
+	private boolean held = false;
+	/** Shows the button held down while its work runs (6.02: Board and Dock answer at once). */
+	void setHeld(boolean on) { held = on; }
 
 	public FtlButton(String text, FtlFont font, int w, int h) {
 		super(text);
@@ -57,9 +60,9 @@ public class FtlButton extends JButton {
 		p.translate(1, 1);
 		ButtonModel m = getModel();
 		boolean on = isEnabled();
-		boolean hot = on && ((m.isRollover() && !m.isPressed()) || lit);
+		boolean hot = on && !held && ((m.isRollover() && !m.isPressed()) || lit);
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-		g.setColor(hot ? HOT : (on && m.isPressed() ? FILL_DOWN : FILL));
+		g.setColor(hot ? HOT : (on && (m.isPressed() || held) ? FILL_DOWN : FILL));
 		g.fillPolygon(p);
 		g.setStroke(new BasicStroke(2f));
 		g.setColor(on ? LINE : DIM);
@@ -102,7 +105,6 @@ public class FtlButton extends JButton {
 			});
 			return this;
 		}
-		public boolean folded() { return folded; }
 		@Override
 		protected void paintComponent(Graphics g0) {
 			Graphics2D g = (Graphics2D) g0.create();

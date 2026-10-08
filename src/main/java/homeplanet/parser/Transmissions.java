@@ -1,11 +1,7 @@
 package homeplanet.parser;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,6 +25,7 @@ import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.ShipBlueprint;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
@@ -39,7 +36,7 @@ import homeplanet.vault.Vault;
 /**
  * Transmissions from The Federation Home Planet (Immersive Notifications): the messages, kept per fleet in
  * transmissions.xml, and the rewards some carry, claimed into the Cargo Hold. The texts and rewards are in the
- * resource transmissions.txt. {@link #check} sends what's due; each message is sent once.
+ * lore/letters.xml (the jar's, or the player's copy, letter by letter). {@link #check} sends what's due; each message is sent once.
  */
 public final class Transmissions {
 	private static final Logger log = LoggerFactory.getLogger(Transmissions.class);
@@ -75,47 +72,94 @@ public final class Transmissions {
 	// ---- the texts ----
 
 	private static Map<String, Template> templates;
+	private static long templatesStamp = -2;
+	/**
+	 * The letters in force (6.0 step 9a, 5.991: lore/letters.xml, transmissions.txt before): the station's own from the
+	 * jar, each replaced by the player's copy of it in lore/ when that copy keeps the rules and uses only the {tokens}
+	 * the station's own letter does. Read again when the copy changes.
+	 */
 	static synchronized Map<String, Template> templates() {
-		if (templates != null) return templates;
-		templates = new LinkedHashMap<String, Template>();
-		InputStream in = Transmissions.class.getResourceAsStream("/homeplanet/resource/transmissions.txt");
-		if (in == null) { log.error("transmissions.txt is missing from the program"); return templates; }
-		try {
-			BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-			Template t = null;
-			boolean inBody = false;
-			String line;
-			while ((line = r.readLine()) != null) {
-				if (line.startsWith("#") && t == null) continue;
-				if (line.startsWith("== ")) {
-					t = new Template();
-					t.key = line.substring(3).trim();
-					templates.put(t.key, t);
-					inBody = false;
-					continue;
-				}
-				if (t == null) continue;
-				if (!inBody) {
-					if (line.trim().isEmpty()) { inBody = true; continue; }
-					int colon = line.indexOf(':');
-					if (colon < 0) continue;
-					String k = line.substring(0, colon).trim(), v = line.substring(colon + 1).trim();
-					if (k.equals("from")) t.from = v;
-					else if (k.equals("subject")) t.subject = v;
-					else if (k.equals("reward")) t.reward = v;
-					else if (k.equals("replies")) t.replies = v;
-					else if (k.equals("then")) t.then = v;
-					else if (k.equals("cost")) t.cost = v;
-					else if (k.equals("action")) t.action = v;
-					continue;
-				}
-				t.body.append(line).append('\n');
-			}
-			r.close();
-		} catch (IOException e) {
-			log.error("Could not read transmissions.txt", e);
+		long stamp = homeplanet.core.Lore.stamp(homeplanet.core.Lore.LETTERS);
+		if (templates != null && stamp == templatesStamp) return templates;
+		Map<String, Template> out = new LinkedHashMap<String, Template>();
+		byte[] jar = homeplanet.core.Lore.jarBytes(homeplanet.core.Lore.LETTERS);
+		if (jar == null) log.error("The letters (lore/{}) are missing from the program", homeplanet.core.Lore.LETTERS);
+		else {
+			try { for (Template t : letters(jar)) out.put(t.key, t); }
+			catch (IOException e) { log.error("The station's own letters could not be read: {}", e.getMessage()); }
 		}
+		File copy = homeplanet.core.Lore.copy(homeplanet.core.Lore.LETTERS);
+		if (copy != null) {
+			String where = "lore/" + homeplanet.core.Lore.LETTERS;
+			try {
+				java.util.Set<String> anyToken = new java.util.HashSet<String>();
+				for (Template t : out.values()) anyToken.addAll(tokens(t));
+				for (Template t : letters(SafeFiles.read(copy))) {
+					Template own = out.get(t.key);
+					String why = homeplanet.core.Lore.rule(t.from + "\n" + t.subject + "\n" + t.body);
+					if (why == null) for (String k : tokens(t)) if (!(own != null ? tokens(own) : anyToken).contains(k)) { why = "{" + k + "} isn't one of this letter's"; break; }
+					if (why == null) out.put(t.key, t);
+					else homeplanet.core.Lore.problem(where + ", letter " + t.key + ": " + why + "; the station's own letter is sent");
+				}
+			} catch (IOException e) {
+				homeplanet.core.Lore.problem(where + " could not be read (" + e.getMessage() + "); the station's own letters are sent");
+			}
+		}
+		templates = out;
+		templatesStamp = stamp;
 		return templates;
+	}
+	/** Every letter in force as "key: from / subject / text", for the rules test (LoreT). */
+	public static List<String> allLetters() {
+		List<String> out = new ArrayList<String>();
+		for (Template t : templates().values()) out.add(t.key + ": " + t.from + " / " + t.subject + " / " + t.body.toString().trim());
+		return out;
+	}
+	/** The start-up check: the letters read once, so a broken copy is named in the debug log from the start. Never throws. */
+	public static void loreCheck() {
+		try { templates(); } catch (RuntimeException e) { log.warn("The letters could not be checked: {}", e.toString()); }
+	}
+	/** The letters of a letters.xml, in order: each one's key, its header attributes, and its text as written. */
+	static List<Template> letters(byte[] bytes) throws IOException {
+		Element root;
+		try {
+			DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
+			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			f.setExpandEntityReferences(false);
+			javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
+			b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
+				@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
+			});
+			root = b.parse(new java.io.ByteArrayInputStream(bytes)).getDocumentElement();
+		} catch (Exception e) {
+			throw new IOException("broken XML: " + e.getMessage(), e);
+		}
+		List<Template> out = new ArrayList<Template>();
+		NodeList nl = root.getElementsByTagName("letter");
+		for (int i = 0; i < nl.getLength(); i++) {
+			Element x = (Element) nl.item(i);
+			Template t = new Template();
+			t.key = x.getAttribute("key").trim();
+			if (t.key.isEmpty()) continue;
+			t.from = x.getAttribute("from").trim();
+			t.subject = x.getAttribute("subject").trim();
+			t.reward = x.getAttribute("reward").trim();
+			t.replies = x.getAttribute("replies").trim();
+			t.then = x.getAttribute("then").trim();
+			t.cost = x.getAttribute("cost").trim();
+			t.action = x.getAttribute("action").trim();
+			t.body.append(x.getTextContent().replace("\r\n", "\n").trim()).append('\n');
+			out.add(t);
+		}
+		return out;
+	}
+	private static final java.util.regex.Pattern TOKEN = java.util.regex.Pattern.compile("\\{([A-Za-z0-9_.]+)\\}");
+	/** The {tokens} a letter uses, in its subject and text. */
+	static java.util.Set<String> tokens(Template t) {
+		java.util.Set<String> out = new java.util.HashSet<String>();
+		java.util.regex.Matcher m = TOKEN.matcher(t.from + " " + t.subject + " " + t.body);
+		while (m.find()) out.add(m.group(1));
+		return out;
 	}
 
 	// ---- the inbox (per fleet) ----
@@ -218,14 +262,8 @@ public final class Transmissions {
 	}
 	/** The people a cruiser comes from, for the shared order letter ("The Zoltan have contacted Federation Command"). */
 	static String raceOf(String base) {
-		if (base.contains("CIRCLE") || base.contains("STEALTH")) return "Engi";
-		if (base.contains("ENERGY")) return "Zoltan";
-		if (base.contains("MANTIS")) return "Mantis";
-		if (base.contains("JELLY")) return "Slug";
-		if (base.contains("ROCK")) return "Rock";
-		if (base.contains("CRYSTAL")) return "Crystal";
-		if (base.contains("ANAEROBIC")) return "Lanius";
-		return "Federation";
+		String p = homeplanet.model.Crew.peopleOf(base);
+		return p == null ? "Federation" : p;
 	}
 	/** Her class alone ("Zoltan Cruiser"), as {cruiser} in the shared order letter. */
 	static String className(String base) {
@@ -332,8 +370,8 @@ public final class Transmissions {
 			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, achTemplate(a, CREW_CARE.contains(a) ? boardedShip(v) : null), rank, null);
 		}
 		for (homeplanet.vault.Overflow.Parcel x : homeplanet.vault.Overflow.take(v)) { // augments she had no room for, crated up by her crew
-			if (homeplanet.core.Economy.augmentsHome()) shipped(all, sent, x, rank);
-			else HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career");
+			if (homeplanet.core.Economy.augmentsHome()) shipped(v, all, sent, x, rank);
+			else HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career", null, overflow("lost", x));
 		}
 		if (HomePlanet.career() && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
 		// reply chains: a letter for what the fleet has been through, and the letters now due
@@ -426,7 +464,7 @@ public final class Transmissions {
 		save(all);
 		m.replied = words;
 		m.read = true;
-		HistoryLog.entry("REPLY", m.from + ": " + words);
+		HistoryLog.entry("REPLY", m.from + ": " + words, null, letter("REPLY", m).put("reply", words));
 	}
 	/** The stipend for whole months travelled (every 30 to 60 beacons, by difficulty), in one message: its scrap is claimed into the Cargo Hold. */
 	private static void payStipend(List<Message> all, java.util.Set<String> sent, Unlocks u, String rank) {
@@ -461,7 +499,7 @@ public final class Transmissions {
 			return;
 		}
 		sent.add(m.key);
-		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + (months == 1 ? "one stipend" : months + " stipends") + ")");
+		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + (months == 1 ? "one stipend" : months + " stipends") + ")", null, Event.of("STIPEND").put("scrap", amount).put("months", months));
 	}
 	/** A stipend's notice: deleted rather than archived once claimed, so they don't pile up. */
 	public static boolean isStipend(Message m) { return m.key.startsWith("stipend:"); }
@@ -482,6 +520,8 @@ public final class Transmissions {
 	}
 	/** A message from another commander (Long Range Comm.): archived or deleted, as the commander likes, and answered. */
 	public static boolean isNote(Message m) { return m.key.startsWith("note:"); }
+	/** An augment shipped home by a ship's crew (6.02: these can be deleted, the augment with them). */
+	public static boolean isShipped(Message m) { return m.key.startsWith("shipped:"); }
 	/** Where to reply to a commander's message: their station, host and port (0: their frequencies were closed); null if it isn't one. */
 	public static String[] noteFrom(Message m) {
 		if (!isNote(m)) return null;
@@ -522,6 +562,8 @@ public final class Transmissions {
 			f.put("rank", rankName(u.problem() == null ? u : null));
 		}
 		String[] out = {t.from, t.subject, t.body.toString().trim()};
+		for (String k : new String[] {"ship", "name"}) // "reached the {ship}", "word that the {name} returned": never "the The Adjudicator"
+			if (f.containsKey(k)) for (int i = 0; i < out.length; i++) out[i] = ShipNames.fill(out[i], k, f.get(k));
 		for (int i = 0; i < out.length; i++) for (Map.Entry<String, String> e : f.entrySet()) out[i] = out[i].replace("{" + e.getKey() + "}", e.getValue());
 		return out;
 	}
@@ -540,7 +582,7 @@ public final class Transmissions {
 		m.reward = "";
 		all.add(0, m);
 		save(all);
-		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
+		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "posted"));
 	}
 	/** A rescued ship's offer (keep her, or the museum's price), until it's decided. */
 	public static boolean isRescue(Message m) { return m.key.startsWith("rescue:"); }
@@ -560,7 +602,9 @@ public final class Transmissions {
 	 * Long Range Comm. mail (another commander's message, a trade's receipt): sent once per key. It always reaches
 	 * the inbox: the Immersive messages setting is about The Federation Home Planet's own letters, not a commander's mail.
 	 */
-	public static synchronized void deliver(String key, String from, String subject, String body) {
+	public static synchronized void deliver(String key, String from, String subject, String body) { deliver(key, from, subject, body, ""); }
+	/** As above, with a reward to claim ("scrap 25, item X": what an expedition brought back, 6.02). */
+	public static synchronized void deliver(String key, String from, String subject, String body, String reward) {
 		if (!Vault.isOpen()) return;
 		List<Message> all = load();
 		for (Message x : all) if (x.key.equals(key)) return;
@@ -570,25 +614,40 @@ public final class Transmissions {
 		m.from = from;
 		m.subject = subject;
 		m.body = body;
-		m.reward = "";
+		m.reward = reward == null ? "" : reward;
 		all.add(0, m);
 		try {
 			save(all);
-			HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
+			HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "delivered").put("reward", m.reward.isEmpty() ? null : m.reward));
 		} catch (IOException e) {
 			log.warn("Could not deliver {}: {}", key, e.toString());
 		}
 	}
-	/** An augment her crew shipped home: the "shipped" letter, with the augment to claim. */
-	private static void shipped(List<Message> all, Set<String> sent, homeplanet.vault.Overflow.Parcel x, String rank) {
-		send(all, sent, x.key, "shipped", rank, null, x.ship);
-		if (all.isEmpty() || !all.get(0).key.equals(x.key)) return; // no letter written for it
-		Message m = all.get(0);
-		String item = Items.title(x.augment);
-		m.from = ShipNames.fill(m.from, "name", x.ship); // "The crew of the {name}": never "the The" (5.31)
-		m.subject = m.subject.replace("{item}", item);
-		m.body = m.body.replace("{item}", item);
-		m.reward = "item " + x.augment;
+	/**
+	 * An augment her crew shipped home: the "shipped" letter, with the augment to claim, signed by one of her crew and the
+	 * rest (heromedel, 6.02: "From Gracie and the rest of the crew"). Filled in before it's logged (6.02: the Captain's Log
+	 * read "{name}" and "{item}").
+	 */
+	private static void shipped(final Vault v, List<Message> all, Set<String> sent, final homeplanet.vault.Overflow.Parcel x, String rank) {
+		send(all, sent, x.key, "shipped", rank, null, x.ship, null, new java.util.function.Consumer<Message>() { public void accept(Message m) {
+			String item = Items.title(x.augment);
+			String one = crewMemberOf(v, x.ship, x.key);
+			m.from = one != null ? one + " and the rest of the crew" : ShipNames.fill(m.from, "name", x.ship); // "The crew of the {name}": never "the The" (5.31)
+			m.subject = m.subject.replace("{item}", item);
+			m.body = m.body.replace("{item}", item);
+			m.reward = "item " + x.augment;
+		} });
+	}
+	/** One of her own crew by name, the same one for the same parcel; null if she or her crew can't be read. */
+	private static String crewMemberOf(Vault v, String shipName, String key) {
+		Ship s = v.boarded() != null && shipName.equals(v.boarded().name) ? v.boarded() : null;
+		if (s == null) for (Ship x : v.all()) if (shipName.equals(x.name) && !x.isStorage()) { s = x; break; }
+		net.blerf.ftl.parser.SavedGameParser.SavedGameState gs = s == null ? null : s.save();
+		if (gs == null) return null;
+		List<CrewState> crew = SaveHelper.getOwnCrew(gs.getPlayerShip());
+		if (crew.isEmpty()) return null;
+		String name = crew.get(new java.util.Random(key.hashCode()).nextInt(crew.size())).getName();
+		return name == null || name.trim().isEmpty() ? null : name.trim();
 	}
 	/** Without the inbox: augments shipped home go straight to the Cargo Hold (or are lost, as the career has it). */
 	private static void shipHome(Vault v) {
@@ -598,9 +657,9 @@ public final class Transmissions {
 			Ship st = v.storage();
 			Vault.Copy c = v.readCopy(st);
 			for (homeplanet.vault.Overflow.Parcel x : ps) {
-				if (!homeplanet.core.Economy.augmentsHome()) { HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home"); continue; }
+				if (!homeplanet.core.Economy.augmentsHome()) { HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home", null, overflow("lost", x)); continue; }
 				c.save.getPlayerShip().getAugmentIdList().add(x.augment);
-				HistoryLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of " + ShipNames.the(x.ship) + ", is in the Cargo Hold");
+				HistoryLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of " + ShipNames.the(x.ship) + ", is in the Cargo Hold", null, overflow("shipped_home", x).put("to", "hold"));
 			}
 			v.begin().put(st, c.save, c.hash).commit();
 		} catch (IOException e) {
@@ -630,6 +689,10 @@ public final class Transmissions {
 	}
 	/** As above, for a commission order: {race} and {class} from the ship's base id. */
 	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship, String name, String base) {
+		send(all, sent, key, templateKey, rank, ship, name, base, null);
+	}
+	/** As above; {@code finish} fills in what's particular to this letter before it's kept and logged. */
+	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship, String name, String base, java.util.function.Consumer<Message> finish) {
 		if (sent.contains(key)) return;
 		Template t = templates().get(templateKey);
 		if (t == null) return; // no message written for it
@@ -647,9 +710,10 @@ public final class Transmissions {
 		m.reward = t.reward;
 		m.replies = t.replies;
 		m.cost = t.cost;
+		if (finish != null) finish.accept(m);
 		all.add(0, m); // newest first
 		sent.add(key);
-		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject);
+		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "sent").put("reward", m.reward == null || m.reward.isEmpty() ? null : m.reward));
 	}
 	private static String fill(String s, String rank, String ship) {
 		if (s.contains("{start}")) s = s.replace("{start}", Integer.toString(Career.startingScrap())); // the career's sign-on bonus, by difficulty
@@ -657,10 +721,10 @@ public final class Transmissions {
 		return ShipNames.fill(s.replace("{rank}", rank), "ship", ship); // "the {ship}" fitted to her name (5.31)
 	}
 	/** Has a letter with this key been sent to this fleet? */
-	public static synchronized boolean wasSent(String key) {
-		for (Message m : load()) if (m.key.equals(key)) return true;
-		return false;
-	}
+	/** An event about a letter: its key, who it is from and its subject. */
+	private static Event letter(String kind, Message m) { return Event.of(kind).put("key", m.key).put("from", m.from).put("subject", m.subject); }
+	/** An event about an augment the boarded ship had no room for. */
+	private static Event overflow(String what, homeplanet.vault.Overflow.Parcel x) { return Event.of("OVERFLOW").put("what", what).put("augment", x.augment).put("title", Items.title(x.augment)).put("ship_name", x.ship); }
 
 	// ---- rewards ----
 
@@ -689,10 +753,12 @@ public final class Transmissions {
 		if (kind.equals("parts")) return v + " drone parts";
 		if (kind.equals("item")) return Items.title(v);
 		if (kind.equals("crew")) {
-			String race = v.equals("energy") ? "Zoltan" : v.equals("anaerobic") ? "Lanius" : Character.toUpperCase(v.charAt(0)) + v.substring(1);
-			return "a " + race + " crew volunteer";
+			return "a " + homeplanet.model.Crew.racePeople(v) + " crew volunteer";
 		}
-		if (kind.equals("system")) return "a " + Items.systemTitle(v) + " system";
+		if (kind.equals("system")) { // "system ID", or "system ID level broken" (an expedition's part, 6.02)
+			String[] s = v.trim().split("\\s+");
+			return "a " + Items.systemTitle(s[0]) + " system" + (s.length > 2 && !"0".equals(s[2]) ? ", damaged" : "");
+		}
 		if (kind.equals("choice")) {
 			List<String> names = new ArrayList<String>();
 			for (String o : v.split("\\|")) names.add(describe(o));
@@ -757,22 +823,17 @@ public final class Transmissions {
 				if (!SaveHelper.placeCrew(s, crew, true)) throw new IOException("The Cargo Hold has no room for another crew member");
 				s.getCrewList().add(crew);
 			} else if (kind.equals("system")) {
-				SystemType t = SystemType.findById(val);
+				String[] sv = val.split("\\s+");
+				SystemType t = SystemType.findById(sv[0]);
 				if (t == null) throw new IOException("Unknown system in the reward: " + val);
-				systems.add(t == SystemType.CLONEBAY ? val : val + " 1");
+				if (sv.length > 1) systems.add(val); // a level and broken bars of its own (an expedition's part, 6.02): as the stored systems keep it
+				else systems.add(t == SystemType.CLONEBAY ? val : val + " 1");
 			} else {
 				throw new IOException("Unknown reward: " + p);
 			}
 		}
 		Vault.Transaction tx = v.begin().put(st, c.save, c.hash);
-		if (!systems.isEmpty()) {
-			File f = v.systemsFile();
-			List<String> lines = new ArrayList<String>();
-			if (f.isFile()) lines.addAll(java.nio.file.Files.readAllLines(f.toPath(), StandardCharsets.UTF_8));
-			else lines.add("# Ship systems stored in the Cargo Bay: <system id> <level> (a Clone Bay has no level: it uses the Medbay's)");
-			lines.addAll(systems);
-			tx.put(f, (String.join("\n", lines) + "\n").getBytes(StandardCharsets.UTF_8));
-		}
+		homeplanet.vault.StoredSystems.add(tx, v, systems);
 		List<String> words = new ArrayList<String>();
 		for (String p : give) words.add(describe(p));
 		String what = String.join(", ", words) + (price > 0 ? " (" + price + " scrap paid)" : "");
@@ -790,7 +851,7 @@ public final class Transmissions {
 		}
 		m.claimed = true;
 		m.claimedWhat = what;
-		HistoryLog.entry("CLAIM", m.subject + ": " + what + " to the Cargo Hold");
+		HistoryLog.entry("CLAIM", m.subject + ": " + what + " to the Cargo Hold", null, letter("CLAIM", m).put("what", what).put("to", "hold"));
 		return what;
 	}
 	/** Moves a message to the Archive (read), or back to the inbox. */

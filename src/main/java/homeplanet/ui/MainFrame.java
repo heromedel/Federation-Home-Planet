@@ -43,6 +43,7 @@ public class MainFrame extends JFrame {
 			if (!(fr instanceof MainFrame) || !fr.isDisplayable()) continue;
 			final MainFrame f = (MainFrame) fr;
 			for (java.awt.Window w : f.getOwnedWindows()) if (w.isShowing()) w.dispose();
+			for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof javax.swing.JDialog && w.isShowing()) w.dispose(); // every pop-up, whoever owns it (heromedel, 6.07)
 			f.showSpaceDock();
 			return true;
 		}

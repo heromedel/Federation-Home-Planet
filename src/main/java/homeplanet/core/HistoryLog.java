@@ -27,41 +27,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * history.log in the vault: an append-only record of what the station saw and did.
- * Each entry starts with "yyyy-MM-dd HH:mm  KIND", detail lines are indented two spaces.
+ * The station's log: what the station saw and did, each entry its kind, a headline and details, written to the event
+ * log (logs/events.log) with its fields. Until 5.93 it was also history.log ("yyyy-MM-dd HH:mm  KIND  headline", details
+ * indented two spaces); that file stays as it was, read only by the conversion of a fleet's old logs.
  */
 public class HistoryLog {
 	private static final Logger log = LoggerFactory.getLogger(HistoryLog.class);
 
-	/** The log lives in the vault, beside the ships it describes. */
+	/** Where the old station log is (no longer written: the conversion and the harness read it). */
 	public static File file() {
 		return Vault.isOpen() ? Vault.get().historyLog() : new File(HomePlanet.save_location, "history.log");
 	}
 	private static final String NL = System.getProperty("line.separator");
 
-	/** Writes one entry: a headline plus optional indented detail lines. Never throws. */
-	public static synchronized void entry(String kind, String headline, List<String> details) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date())).append("  ").append(kind);
-		if (headline != null && headline.length() > 0) sb.append("  ").append(headline);
-		sb.append(NL);
-		if (details != null) {
-			for (String d : details) sb.append("  ").append(d).append(NL);
-		}
-		Writer w = null;
-		try {
-			w = new OutputStreamWriter(new FileOutputStream(file(), true), StandardCharsets.UTF_8);
-			w.write(sb.toString());
-		} catch (Exception e) {
-			log.warn("Could not write to " + file().getAbsolutePath(), e);
-		} finally {
-			try { if (w != null) w.close(); } catch (Exception e) { }
-		}
-		if (Vault.isOpen()) { // the career's master log keeps a copy, with the real time and the stardate (5.17)
-			StringBuilder t = new StringBuilder(kind);
-			if (headline != null && headline.length() > 0) t.append("  ").append(headline);
-			if (details != null) for (String d : details) t.append("\n").append(d);
-			homeplanet.vault.MasterLog.entry(Vault.get(), "station", t.toString());
+	/** Writes one entry: a headline plus optional detail lines. Never throws. */
+	public static void entry(String kind, String headline, List<String> details) { entry(kind, headline, details, null); }
+	/**
+	 * As above, with the event it is (Overhaul 6.0, step 9): the entry goes to the event log as two lines, the event's
+	 * fields (its headline and details among them) and its human line (the headline when the event has none). With no
+	 * event given, one is made from the kind, the headline and the details; it only lacks the fields.
+	 */
+	public static synchronized void entry(String kind, String headline, List<String> details, Event event) {
+		// the event log alone (5.93): history.log and the master log's copy are no longer written; the old files stay as they are
+		if (Vault.isOpen()) {
+			Event e = event != null ? event : Event.of(kind);
+			if (e.get("headline") == null) e.put("headline", headline); // the old wording kept beside the fields, always
+			if (e.get("detail.1") == null) e.details(details);
+			if (e.human().isEmpty()) e.human(headline != null && !headline.isEmpty() ? headline : details != null && !details.isEmpty() ? String.join("; ", details) : kind.toLowerCase());
+			EventLog.write(Vault.get(), Event.of(e.kind).put("log", "station").putAll(e).human(e.human()));
 		}
 	}
 	public static void entry(String kind, String headline) {

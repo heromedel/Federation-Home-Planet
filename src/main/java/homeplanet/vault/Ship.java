@@ -29,7 +29,7 @@ public final class Ship {
 		STORAGE("storage");
 		public final String key;
 		State(String key) { this.key = key; }
-		static State of(String key) {
+		public static State of(String key) {
 			for (State s : values()) if (s.key.equals(key)) return s;
 			return DOCKED;
 		}
@@ -55,6 +55,8 @@ public final class Ship {
 	 * beacon she counts as still at The Home Planet Station, and may trade. Empty otherwise.
 	 */
 	String fresh = "";
+	/** How she came into the fleet (6.10: "commissioned.6.10.20261008-174200"), kept in her record; empty until known. */
+	String origin = "";
 
 	private SavedGameState save;
 	private String readError;
@@ -84,7 +86,7 @@ public final class Ship {
 		save = null;
 		readError = null;
 		try {
-			save = HomePlanet.savedGameParser.readSavedGame(f);
+			save = isStorage() ? homeplanet.parser.HoldXml.read(f) : HomePlanet.savedGameParser.readSavedGame(f); // the Cargo Hold's is its xml (5.84)
 			readHash = h;
 			failedHash = null;
 			if (save != null) {

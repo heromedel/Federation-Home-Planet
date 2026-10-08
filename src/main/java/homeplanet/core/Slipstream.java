@@ -284,10 +284,15 @@ public class Slipstream {
 	}
 
 	/**
-	 * Slipstream's command line needs the FTL folder in modman.cfg ("No FTL dats path previously set" otherwise).
-	 * Fills it in from the station's own setting when it's missing, and leaves everything else alone.
+	 * Slipstream's command line needs the FTL folder in modman.cfg ("No FTL dats path previously set" otherwise), and it
+	 * patches the FTL named there. Run before every patch: when it names no folder, one that's gone, or another copy of FTL,
+	 * it's set to the station's own. FTL moved used to leave Slipstream on the old folder, so a patch failed, or went into the
+	 * old copy while the station said done (heromedel, 5.63). Everything else in the file is left alone. Returns what changed,
+	 * for the patch's history entry, or null if nothing did.
 	 */
-	public static void prepareConfig(File dir) {
+	public static String prepareConfig(File dir) {
+		File ftl = HomePlanet.datsPath;
+		if (ftl == null) return null;
 		File cfg = new File(dir, "modman.cfg");
 		Properties p = new Properties();
 		if (cfg.isFile()) {
@@ -296,18 +301,28 @@ public class Slipstream {
 				try { p.load(in); } finally { in.close(); }
 			} catch (IOException e) {
 				log.warn("Could not read " + cfg, e);
-				return;
+				return null;
 			}
 		}
 		String have = p.getProperty("ftl_dats_path");
-		if (have != null && have.length() > 0 && new File(have, "ftl.dat").isFile()) return;
-		p.setProperty("ftl_dats_path", HomePlanet.datsPath.getAbsolutePath());
+		if (have != null && have.length() > 0 && sameFolder(new File(have), ftl)) return null;
+		p.setProperty("ftl_dats_path", ftl.getAbsolutePath());
 		try {
 			OutputStream out = new FileOutputStream(cfg);
 			try { p.store(out, "Slipstream Mod Manager config (FTL folder filled in by Federation Home Planet)"); } finally { out.close(); }
-			log.debug("Wrote ftl_dats_path to {}", cfg);
 		} catch (IOException e) {
 			log.warn("Could not write " + cfg, e);
+			return null;
+		}
+		log.debug("Wrote ftl_dats_path to {}: {} (was {})", cfg, ftl.getAbsolutePath(), have);
+		return have == null || have.length() == 0 ? "Slipstream given FTL's folder: " + ftl.getAbsolutePath()
+				: "Slipstream pointed at FTL's folder: " + ftl.getAbsolutePath() + " (it had " + have + ")";
+	}
+	private static boolean sameFolder(File a, File b) {
+		try {
+			return a.getCanonicalFile().equals(b.getCanonicalFile());
+		} catch (IOException e) {
+			return a.getAbsoluteFile().equals(b.getAbsoluteFile());
 		}
 	}
 
@@ -358,7 +373,6 @@ public class Slipstream {
 	private static final Pattern TITLE = Pattern.compile("<title>\\s*(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?\\s*</title>", Pattern.DOTALL);
 	private static final Pattern AUTHOR = Pattern.compile("<author>\\s*(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?\\s*</author>", Pattern.DOTALL);
 
-	public static String titleOf(File ftl) { return metadataOf(ftl)[0]; }
 
 	/** {title, author} from mod-appendix/metadata.xml; the title falls back to the file name without .ftl, the author to "". */
 	public static String[] metadataOf(File ftl) {
@@ -477,10 +491,15 @@ public class Slipstream {
 	public static void restart() {
 		try {
 			File jar = new File(HomePlanet.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-			ProcessBuilder pb = new ProcessBuilder(javaExe(), "-jar", jar.getAbsolutePath());
+			List<String> cmd = new ArrayList<String>(java.util.Arrays.asList(javaExe(), "-jar", jar.getAbsolutePath()));
+			cmd.addAll(HomePlanet.startArgs); // a second station comes back as itself
+			cmd.add("--restarted");
+			ProcessBuilder pb = new ProcessBuilder(cmd);
 			pb.directory(new File(".").getAbsoluteFile().getParentFile());
+			StationLock.letGo(); // the saves folder free before the new one looks (5.79: it found it taken and said "already open")
 			pb.start();
 		} catch (Exception e) {
+			if (HomePlanet.save_location != null) StationLock.claim(HomePlanet.save_location); // still open here: the folder ours again
 			log.warn("Could not restart", e);
 			JOptionPane.showMessageDialog(null, "The Home Planet Station systems were unable to reboot by themselves. Please start it again.", "Restart", JOptionPane.WARNING_MESSAGE);
 			return;

@@ -25,8 +25,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Setup.chk("K: +2 a level, +3 a level when the race suits the job", Assignments.skilled(9, 1, false) == 11 && Assignments.skilled(9, 2, false) == 13 && Assignments.skilled(9, 1, true) == 12 && Assignments.skilled(9, 2, true) == 15);
   Setup.chk("K: a changed roll stays between 2 and 19: only a natural 20 is the top", Assignments.skilled(18, 2, true) == 19 && Assignments.skilled(19, 1, false) == 19 && Assignments.skilled(2, 1, false) == 4);
   CrewState ace = Commission.volunteer("human", new Random(5));
-  ace.setPilotMasteryOne(true); ace.setPilotMasteryTwo(true); ace.setEngineMasteryOne(true); ace.setEngineMasteryTwo(true); ace.setShieldMasteryOne(true); ace.setShieldMasteryTwo(true);
-  ace.setWeaponMasteryOne(true); ace.setWeaponMasteryTwo(true); ace.setRepairMasteryOne(true); ace.setRepairMasteryTwo(true); ace.setCombatMasteryOne(true); ace.setCombatMasteryTwo(true);
+  master(ace); // every skill's points full (5.62: a level is read from the points, not FTL's marks)
   boolean all = true; int seen = 0, raised = 0;
   for (int seed = 0; seed < 200; seed++) {
    Assignments.Result r = Assignments.roll("civilian", Collections.singletonList(ace), new Random(seed), true);
@@ -141,9 +140,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   rng = new Random(13); long raw = 0, skilled = 0;
   for (int i = 0; i < n; i++) {
    List<CrewState> p = party("human"); raw += Assignments.roll("rock", p, rng).scrap;
-   List<CrewState> q = party("human"); q.get(0).setCombatMasteryOne(true); q.get(0).setCombatMasteryTwo(true); q.get(0).setPilotMasteryOne(true); q.get(0).setPilotMasteryTwo(true);
-   q.get(0).setEngineMasteryOne(true); q.get(0).setEngineMasteryTwo(true); q.get(0).setShieldMasteryOne(true); q.get(0).setShieldMasteryTwo(true);
-   q.get(0).setWeaponMasteryOne(true); q.get(0).setWeaponMasteryTwo(true); q.get(0).setRepairMasteryOne(true); q.get(0).setRepairMasteryTwo(true);
+   List<CrewState> q = party("human"); master(q.get(0));
    skilled += Assignments.roll("rock", q, rng).scrap;
   }
   Setup.chk("R: skill in the job's skill pays (" + skilled / n + " to " + raw / n + ")", skilled > raw * 11 / 10);
@@ -277,7 +274,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   r.fates.get(2).died = false; r.fates.get(2).captured = false; r.fates.get(2).infirmary = true; r.fates.get(2).band = 1;
   Assignments.bringHome(v, away.get(0), r);
   List<Expeditions.Patient> inf = Expeditions.infirmary(v);
-  File cap = new File(v.root, "captives.txt"); Properties cp = new Properties(); cp.load(new ByteArrayInputStream(SafeFiles.read(cap)));
+  File cap = Expeditions.captivesFile(v); Properties cp = Store.load(cap);
   Setup.chk("A: the dead stay gone, the taken are among the captives (a ransom to come), the badly hurt in the infirmary at a quarter health",
     Assignments.holdCrew(v).size() == 0 && SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip()).size() == 1 && inf.size() == 1 && inf.get(0).name.equals(crew.get(2).getName())
     && cp.getProperty("0.name", "").equals(crew.get(1).getName()) && v.readCopy(v.storage()).save.getPlayerShip().getCrewList().get(0).getHealth() <= 25);
@@ -373,6 +370,21 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Setup.chk("Z: and the letter is in the inbox", delivered);
   Assignments.accept(v, pend.get(0), false);
   Setup.chk("Z: answered from the letter, they're in the hold", Assignments.holdCrew(v).size() == 2 && Assignments.pendingFor(v, letterKey) == null);
+  { // what they bring back comes with the letter, claimed like anything shipped home (heromedel, 6.02)
+   a = null; Assignments.send(v, Assignments.board(v).get(0).slot, ExpT.hold(v, "human"), new Random(5));
+   a = Assignments.away(v).get(0);
+   while (v.beaconsSeen() < a.until) v.countBeacon();
+   r = Assignments.roll("civilian", a.crew, new Random(2));
+   for (Assignments.Fate f : r.fates) { f.died = false; f.captured = false; f.infirmary = false; f.band = 5; f.item = null; }
+   r.fates.get(0).item = "SCRAP_COLLECTOR"; r.scrap = 37; r.prize = null;
+   int scrapBefore = v.storageScrap();
+   rep = Assignments.bringHome(v, a, r);
+   Transmissions.Message back = null; for (Transmissions.Message m : Transmissions.load()) if (m.key.equals(Assignments.letterKey(a))) back = m;
+   Setup.chk("Z: the loot rides the letter, not yet in the hold", back != null && back.hasReward() && back.reward.contains("scrap 37") && back.reward.contains("item SCRAP_COLLECTOR")
+     && v.storageScrap() == scrapBefore);
+   Transmissions.claim(back, -1);
+   Setup.chk("Z: claimed from the letter, it's in the hold", v.storageScrap() == scrapBefore + 37);
+  }
   HomePlanet.immersiveNotifications = false;
   // the reputation, as the game scores it: the scrap a tenth, a death -10, everyone successful +2, nobody -1
   HomePlanet.reputationOn = true;
@@ -432,4 +444,6 @@ public class AsgT { public static void main(String[] a) throws Exception {
     pts == ptsAfter && rep.faces.size() == 3 && "dead".equals(rep.faces.get(0).state) && "infirmary".equals(rep.faces.get(1).state) && "".equals(rep.faces.get(2).state)
     && kept.size() == 3 && "dead".equals(kept.get(0).state) && kept.get(1).crew.getName().equals(rep.faces.get(1).crew.getName()));
  }
+ /** Every skill mastered: both levels' points, and FTL's marks with them. */
+ static void master(CrewState c) { for (int i = 0; i < 6; i++) homeplanet.model.Skills.set(c, i, 2 * homeplanet.model.Skills.interval(c, i)); }
 }

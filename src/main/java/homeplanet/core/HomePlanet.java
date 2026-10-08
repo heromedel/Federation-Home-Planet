@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.61";
+	public static final String APP_VERSION = "6.12";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -48,6 +48,11 @@ public class HomePlanet {
 
 	// ---- settings (all kept in the cfg) ----
 	public static boolean launchThroughSteam = false;
+	/**
+	 * FTL started with its -directx switch (heromedel, 5.64): Direct3D instead of OpenGL, Windows only. In a window (docked
+	 * included) FTL's loading took 88 s with OpenGL on heromedel's PC, a few with Direct3D.
+	 */
+	public static boolean launchDirectX = false;
 	/** Ships can only trade in the Cargo Bay while docked at a station (a beacon with a store). */
 	public static boolean storeRequirement = false;
 	/** A New Journey can only begin while the boarded ship is docked at a station. */
@@ -69,7 +74,7 @@ public class HomePlanet {
 	/** HR2: commissioning a ship costs scrap from the storage hold, at this percent of her price (50, 75 or 100). */
 	public static boolean commissionCosts = false;
 	public static int commissionPercent = 100;
-	/** Hidden (the cfg only, never Settings): which expeditions the Space Dock offers. 2 the crew expeditions (heromedel's second system, 5.00; the default), 1 the board of jobs, 0 none (hiring alone). */
+	/** Hidden (the cfg only, never Settings): which expeditions the Space Dock offers. 2 the crew expeditions (heromedel's system, 5.00; the default), 0 hiring alone (1, the old board of jobs, went at 5.67 and reads as 2). */
 	public static int expeditionType = 2;
 	/** With HR2: the free ship an empty shipyard (no ship docked, boarded or in the Junkyard) offers: "kestrel", "any" or "relief". */
 	public static String freeShip = "relief";
@@ -103,6 +108,8 @@ public class HomePlanet {
 	public static int reputationUse = 1;
 	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
+	/** Rescued Ships after Victory moved to Hard difficulty (heromedel, 6.02): kept without asking, on Hard. Locked on in a Hard career (see parser.FinalVictory.toHard). */
+	public static boolean rescuedToHard = false;
 	// ---- the rules in force: Sandbox Mode's own (the fields above, as Settings has them), or an Immersive career's, fixed ----
 	// Immersive Mode never writes over the fields: each rule is read through its method, which answers for the mode in use.
 
@@ -131,7 +138,13 @@ public class HomePlanet {
 	 * patch, so the in-game check would still think the mod is missing until a restart.
 	 */
 
+	/** The arguments the station was started with, but --restarted: Restart starts the new one with the same (a second station stays one). */
+	public static final java.util.List<String> startArgs = new java.util.ArrayList<String>();
+	/** Started by Restart (5.79): the station that started it may still hold the saves folder a moment. */
+	private static boolean restarted = false;
+
 	public static void main(String[] args) {
+		for (String s : args) { if (s.equals("--restarted")) restarted = true; else startArgs.add(s); }
 		for (int i = 0; i + 1 < args.length; i++) {
 			if (!args[i].equals("--station")) continue;
 			File dir = new File(args[i + 1]).getAbsoluteFile();
@@ -150,6 +163,7 @@ public class HomePlanet {
 			public void uncaughtException(Thread t, Throwable e) { log.error("Uncaught in " + t.getName(), e); }
 		});
 		launchThroughSteam = flag("launch_through_steam");
+		launchDirectX = flag("launch_directx");
 		storeRequirement = flag("store_requirement");
 		journeyStoreRequirement = flag("new_journey_store_requirement");
 		stripAllowed = flag("strip_when_scrapping");
@@ -163,6 +177,7 @@ public class HomePlanet {
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
 		try { expeditionType = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("expedition_type", "2").trim()))); } catch (NumberFormatException e) { expeditionType = 2; }
+		if (expeditionType == 1) expeditionType = 2; // the old board of jobs went at 5.67 (heromedel): its setting reads as the crew expeditions
 		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
 		if ("variable".equals(freeShip)) freeShip = "kestrel"; // Variable (a ship by what a report surrendered) is no more
 		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
@@ -178,6 +193,7 @@ public class HomePlanet {
 		try { reputationUse = Math.max(1, Math.min(3, Integer.parseInt(config.getProperty("reputation_use", "1").trim()))); } catch (NumberFormatException e) { reputationUse = 1; }
 		try { homeplanet.parser.PlayerRank.setting = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty(homeplanet.parser.PlayerRank.CFG, "0").trim()))); } catch (NumberFormatException e) { homeplanet.parser.PlayerRank.setting = 0; }
 		finalVictory = config.getProperty("final_victory", "nothing");
+		rescuedToHard = Boolean.parseBoolean(config.getProperty("rescued_to_hard", "false"));
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 
 		// FTL's data and saves: the folders kept in the cfg, else the ones found and confirmed, else the ones chosen
@@ -222,7 +238,7 @@ public class HomePlanet {
 			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
 			System.exit(1);
 		}
-		if (!StationLock.claim(save_location)) { // another copy is open on these saves (5.45)
+		if (!(restarted ? StationLock.claimWaiting(save_location, 10000) : StationLock.claim(save_location))) { // another copy is open on these saves (5.45)
 			final String says = StationLock.inUseMessage(save_location);
 			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
 				JOptionPane.showMessageDialog(null, says, "Already open", JOptionPane.WARNING_MESSAGE);
@@ -232,6 +248,12 @@ public class HomePlanet {
 		}
 		writeConfig |= !save_location.getAbsolutePath().equals(config.getProperty("ftlSavePath"));
 		if (writeConfig) saveConfig();
+
+		// the words folder beside the program, and its check: a copy's broken entry is named in the debug log, and the station's own words stand (5.89)
+		Lore.prepare();
+		Lore.check();
+		homeplanet.parser.Transmissions.loreCheck(); // the letters and the expedition words, read by their own readers (5.991)
+		homeplanet.parser.Assignments.loreCheck();
 
 		// The vault (files only so far; the ships are read once the game data is in)
 		try {
@@ -287,6 +309,7 @@ public class HomePlanet {
 					frame.setVisible(true);
 					Music.refresh();
 					SaveWatcher.start(); // FTL's writes to continue.sav, for final victories
+					GameGuard.warm(); // the first Board or Dock answers as fast as the rest
 				} catch (Exception e) {
 					log.error("Exception while creating the main window.", e);
 					showErrorDialog("Communication with The Home Planet Station could not be opened:\n" + e);
@@ -342,6 +365,7 @@ public class HomePlanet {
 		if (save_location != null) config.setProperty("ftlSavePath", save_location.getAbsolutePath());
 		if (datsPath != null) config.setProperty("ftlDatsPath", datsPath.getAbsolutePath());
 		config.setProperty("launch_through_steam", Boolean.toString(launchThroughSteam));
+		config.setProperty("launch_directx", Boolean.toString(launchDirectX));
 		config.setProperty("debug_logging", Boolean.toString(debugLogging));
 		config.setProperty("store_requirement", Boolean.toString(storeRequirement));
 		config.setProperty("new_journey_store_requirement", Boolean.toString(journeyStoreRequirement));
@@ -365,6 +389,7 @@ public class HomePlanet {
 		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
 		config.setProperty("immersive_slot", Vault.immersiveSlot);
 		config.setProperty("final_victory", finalVictory);
+		config.setProperty("rescued_to_hard", Boolean.toString(rescuedToHard));
 		config.setProperty("immersive_notifications", Boolean.toString(immersiveNotifications));
 		config.setProperty("immersive_ship_trading", Boolean.toString(immersiveShipTrading));
 		config.setProperty("immersive_any_level", Boolean.toString(immersiveAnyLevel));
@@ -441,24 +466,39 @@ public class HomePlanet {
 
 	// ---- FTL itself ----
 
-	/** Starts FTL (true if it was started: the docked view waits for its window then). */
-	public static boolean launchFTL() {
+	/** Starts FTL outside the dock (true if it was started). */
+	public static boolean launchFTL() { return launchFTL(false); }
+	/** Starts FTL (true if it was started: the docked view waits for its window then); outside the dock, with the screen chosen in Settings (5.80). */
+	public static boolean launchFTL(boolean docked) {
 		// a retrofitted ship can't load without the companion mod: don't let FTL try
 		File cont = new File(save_location, "continue.sav");
 		if (cont.exists()) {
 			List<String> missing = Retrofit.missingBlueprints(cont); // against ftl.dat as it is now (PatchState)
-			if (!missing.isEmpty()) {
-				showErrorDialog("The boarded ship flies on blueprints from the " + Retrofit.MOD_NAME + ", which isn't in FTL yet ("
-						+ String.join(", ", missing) + ").\n\nSend it to FTL via Slipstream first (Settings > Patch mods), or board a different ship.");
+			if (!missing.isEmpty()) { // one blueprint a line, her name first (heromedel, 5.70: the list ran on in one long line)
+				String name = "The boarded ship";
+				try { name = savedGameParser.readSavedGame(cont).getPlayerShipName(); } catch (Exception e) { }
+				StringBuilder sb = new StringBuilder(name + " can't fly yet: FTL doesn't have " + (missing.size() == 1 ? "her blueprint" : "these blueprints") + " from the " + Retrofit.MOD_NAME + ".\n");
+				for (String id : missing) sb.append("\n    ").append(Retrofit.described(id));
+				sb.append("\n\nSend the mod to FTL via Slipstream (Settings > Mods > Patch mods), then launch again. Or board a different ship.");
+				final String says = sb.toString();
+				onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+					JOptionPane.showMessageDialog(null, says, "Launch FTL", JOptionPane.WARNING_MESSAGE);
+					return null;
+				} });
 				return false;
 			}
 		}
 		String empty = noOneAboard(cont);
 		if (empty != null) { showErrorDialog(empty); return false; }
+		if (!docked) {
+			try { FtlDock.prepareUndocked(); }
+			catch (IOException e) { log.warn("Could not set FTL's screen in its settings.ini: {}", e.toString()); showErrorDialog("The Home Planet Station could not set FTL's screen in its settings.ini:\n" + e.getMessage() + "\n\nFTL starts as it was set."); }
+		}
 		Music.stop(); // FTL has its own music
+		boolean dx = directX();
 		if (launchThroughSteam) {
-			String steamUri = "steam://rungameid/" + FTLUtilities.STEAM_APPID_FTL;
-			log.debug("Running FTL through Steam: {}", steamUri);
+			String steamUri = steamUri(dx);
+			log.debug("Running FTL through Steam{}: {}", dx ? ", with DirectX" : "", steamUri);
 			try {
 				if (System.getProperty("os.name").startsWith("Windows")) new ProcessBuilder("cmd", "/c", "start", "", steamUri).start();
 				else java.awt.Desktop.getDesktop().browse(new java.net.URI(steamUri));
@@ -476,9 +516,10 @@ public class HomePlanet {
 			showErrorDialog("The Home Planet Station could not find FTL's executable near:\n" + datsPath + "\n\nCheck the game folder in Settings.");
 			return false;
 		}
-		log.debug("Running FTL: {}", ftl.getAbsolutePath());
+		List<String> cmd = exeCommand(ftl, dx);
+		log.debug("Running FTL{}: {}", dx ? ", with DirectX" : "", cmd);
 		try {
-			ProcessBuilder builder = new ProcessBuilder(ftl.getAbsolutePath());
+			ProcessBuilder builder = new ProcessBuilder(cmd);
 			builder.directory(ftl.getParentFile()); // the exe expects its own folder as the working directory
 			builder.start();
 			return true;
@@ -487,6 +528,20 @@ public class HomePlanet {
 			showErrorDialog("FTL could not be started:\n" + ex);
 			return false;
 		}
+	}
+
+	/** The DirectX option, on Windows only: FTL's Mac and Linux builds have no Direct3D. */
+	public static boolean directX() { return launchDirectX && System.getProperty("os.name", "").startsWith("Windows"); }
+	/** Steam's link for FTL: steam://run carries the -directx switch, steam://rungameid can carry none. */
+	public static String steamUri(boolean directX) {
+		return directX ? "steam://run/" + FTLUtilities.STEAM_APPID_FTL + "//-directx/" : "steam://rungameid/" + FTLUtilities.STEAM_APPID_FTL;
+	}
+	/** FTL's own program, with -directx when asked. */
+	public static List<String> exeCommand(File exe, boolean directX) {
+		List<String> cmd = new java.util.ArrayList<String>();
+		cmd.add(exe.getAbsolutePath());
+		if (directX) cmd.add("-directx");
+		return cmd;
 	}
 
 	/**

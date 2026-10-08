@@ -37,10 +37,7 @@ import net.blerf.ftl.parser.SavedGameParser.StoreItemType;
 import net.blerf.ftl.parser.SavedGameParser.StoreShelf;
 import net.blerf.ftl.parser.SavedGameParser.StoreState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
-import net.blerf.ftl.xml.AugBlueprint;
-import net.blerf.ftl.xml.DroneBlueprint;
 import net.blerf.ftl.xml.ShipBlueprint;
-import net.blerf.ftl.xml.WeaponBlueprint;
 
 import homeplanet.model.Items;
 import homeplanet.vault.Ship;
@@ -298,7 +295,7 @@ class DryDockShop {
 			this.e = e;
 			String why = e.kind == Kind.SYSTEM ? systemReason(e.id) : e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(bay.currentSave, e.id)
 					: e.kind == Kind.CREW ? crewReason(e.id) : null;
-			boolean order = e.kind == Kind.SYSTEM && why == null && bay.systems.pastLimit(e.id); // past FTL's System Limit: a custom work order too
+			boolean order = e.kind == Kind.SYSTEM && why == null && !toStorage && bay.systems.pastLimit(e.id); // past FTL's System Limit: a custom work order too; the hold has no limit (5.79: its Buy was greyed by the picked ship's)
 			int cost = e.price + (order ? homeplanet.core.Economy.workOrderScrap() : 0);
 			boolean repShort = order && bay.systems.repHave() < homeplanet.core.Economy.workOrderRep();
 			can = why == null && cost <= scrap && !repShort;
@@ -349,7 +346,7 @@ class DryDockShop {
 		private static String tip(SavedGameState g) {
 			ShipState s = g.getPlayerShip();
 			List<String> w = new ArrayList<String>(), d = new ArrayList<String>(), c = new ArrayList<String>();
-			for (net.blerf.ftl.parser.SavedGameParser.WeaponState x : s.getWeaponList()) w.add(Items.title(x.getWeaponId()));
+			for (net.blerf.ftl.parser.SavedGameParser.WeaponState x : s.getWeaponList()) w.add(Items.title(x.getWeaponId())); // by kind: the gear helper would mix them
 			for (net.blerf.ftl.parser.SavedGameParser.DroneState x : s.getDroneList()) d.add(Items.title(x.getDroneId()));
 			for (String id : SaveHelper.cargo(g)) c.add(Items.title(id)); // not the augment FTL is asking about (5.52)
 			return "<html>Weapons: " + (w.isEmpty() ? "none" : String.join(", ", w)) + "<br>Drones: " + (d.isEmpty() ? "none" : String.join(", ", d))
@@ -679,6 +676,8 @@ class DryDockShop {
 	void addTo(homeplanet.vault.Vault.Transaction tx) {
 		for (Ship s : dirty) tx.put(s, otherSaves.get(s), otherHashes.get(s));
 	}
+	/** The ships whose saves only the shop changed (the Cargo Hold bought for, a store bought from): what {@link #addTo} writes. */
+	java.util.Set<Ship> touched() { return new java.util.LinkedHashSet<Ship>(dirty); }
 	/** The shop's own copy of a ship's save (the Cargo Hold read for purchases), or null if it read none: another change to her belongs in it (5.61). */
 	SavedGameState copyOf(Ship s) { return otherSaves.get(s); }
 	/** Puts the shop's copy of her into the save after a change made to it outside the shop (the Dry Dock's bill). */
@@ -705,28 +704,10 @@ class DryDockShop {
 
 	// ---- Names, prices, icons ----
 
-	static int priceOf(String id) {
-		WeaponBlueprint w = DataManager.get().getWeapons().get(id);
-		if (w != null) return w.getCost();
-		DroneBlueprint d = DataManager.get().getDrones().get(id);
-		if (d != null) return d.getCost();
-		AugBlueprint a = DataManager.get().getAugments().get(id);
-		if (a != null) return a.getCost();
-		return -1;
-	}
-	static int crewPrice(String race) {
-		net.blerf.ftl.xml.CrewBlueprint b = DataManager.get().getCrews().get(race);
-		return b == null || SavedGameParser.CrewType.findById(race) == null ? -1 : b.getCost();
-	}
-	static String raceTitle(String race) {
-		net.blerf.ftl.xml.CrewBlueprint b = DataManager.get().getCrews().get(race);
-		String t = b == null || b.getTitle() == null ? null : b.getTitle().getTextValue();
-		return t == null || t.isEmpty() ? race : t;
-	}
-	static int systemPrice(String id) {
-		net.blerf.ftl.xml.SystemBlueprint s = DataManager.get().getSystem(id);
-		return s == null ? -1 : s.getCost();
-	}
+	static int priceOf(String id) { return homeplanet.parser.Pricing.store(id); } // FTL's own store prices, -1 when the data doesn't know the item (Pricing is the one home)
+	static int crewPrice(String race) { return homeplanet.parser.Pricing.crewStore(race); }
+	static String raceTitle(String race) { return homeplanet.model.Crew.raceTitle(race); }
+	static int systemPrice(String id) { return homeplanet.parser.Pricing.systemStore(id); }
 	static String systemTitle(String id) { return Items.systemTitle(id); }
 	private static String supplyName(Kind k) {
 		return k == Kind.FUEL ? "Fuel" : k == Kind.MISSILES ? "Missiles" : "Drone parts";

@@ -16,9 +16,48 @@ public class VicT { public static void main(String[] a) throws Exception {
  reward(v);
  inbox(v);
  museum(v);
+ toHardRules();
  if (a.length > 3) replay(game, new File(a[3]), new File(work, "replay"));
+ // the honours (5.87, heromedel's Flagarino): the save reader's victory markers aren't honours, and one kept before shows without its id
+ net.blerf.ftl.xml.Achievement real = null;
+ for (net.blerf.ftl.xml.Achievement x : DataManager.get().getGeneralAchievements()) if (!x.isVictory() && x.getName() != null) { real = x; break; }
+ java.util.List<String> hon = Museum.honours(new java.util.HashSet<String>(), java.util.Arrays.asList("PLAYER_SHIP_ENERGY_VICTORY", real.getId()));
+ Setup.chk("V: a victory marker gained during her command is no honour; a real achievement is, by name (" + hon + ")", hon.equals(java.util.Arrays.asList(real.getName().getTextValue())));
+ Setup.chk("V: a victory kept before 5.87 with the marker's id shows without it", Museum.shownHonours("Ballistophobia|PLAYER_SHIP_ENERGY_VICTORY|Federation Victory (Easy)").equals(java.util.Arrays.asList("Ballistophobia", "Federation Victory (Easy)")));
  Setup.done();
 }
+ /** Rescued Ships after Victory moved to Hard difficulty in each mode (heromedel, 6.03). */
+ static void toHardRules() throws Exception {
+  HomePlanet.rescuedToHard = true;
+  Setup.chk("T: Sandbox Mode: the cfg's answer, never locked", FinalVictory.TO_HARD_FREE.equals(FinalVictory.toHardRule()) && FinalVictory.toHard());
+  HomePlanet.rescuedToHard = false;
+  Vault.switchFleet(Vault.EASY); Career.start(false, false, CareerRules.of(CareerRules.EASY));
+  boolean before = FinalVictory.toHard();
+  FinalVictory.setToHard(true);
+  Setup.chk("T: Easy: the player's, kept with the career (not the cfg's)", FinalVictory.TO_HARD_FREE.equals(FinalVictory.toHardRule()) && !before && FinalVictory.toHard()
+    && "true".equals(Career.rescuedToHard(Vault.get().root)) && !HomePlanet.rescuedToHard);
+  Vault.switchFleet(Vault.NORMAL); Career.start(false, false, CareerRules.of(CareerRules.NORMAL));
+  Career.setRescuedToHard(Vault.get().root, false); // an answer written in by hand: Normal never reads one
+  FinalVictory.setToHard(false);
+  Setup.chk("T: Normal: always, whatever the file says", FinalVictory.TO_HARD_ON.equals(FinalVictory.toHardRule()) && FinalVictory.toHard());
+  Vault.switchFleet(Vault.HARD); Career.start(false, false, CareerRules.of(CareerRules.HARD));
+  Career.setRescuedToHard(Vault.get().root, true);
+  Setup.chk("T: Hard: doesn't apply (the museum takes every victor)", FinalVictory.TO_HARD_NONE.equals(FinalVictory.toHardRule()) && !FinalVictory.toHard());
+  int[] lv = CareerRules.of(CareerRules.NORMAL).levels();
+  Vault.switchFleet(Vault.CUSTOM); Career.start(false, false, new CareerRules(CareerRules.CUSTOM, lv));
+  Setup.chk("T: Custom with no answer: the Space Dock asks", FinalVictory.TO_HARD_ASK.equals(FinalVictory.toHardRule()) && !FinalVictory.toHard());
+  FinalVictory.setToHard(true); // Settings can't answer it: only the question can
+  Setup.chk("T: Custom: Settings doesn't write its answer", FinalVictory.TO_HARD_ASK.equals(FinalVictory.toHardRule()));
+  FinalVictory.chooseToHard(Vault.get().root, true);
+  Setup.chk("T: Custom, ticked: always", FinalVictory.TO_HARD_ON.equals(FinalVictory.toHardRule()) && FinalVictory.toHard());
+  Setup.chk("T: the choice is logged", new String(java.nio.file.Files.readAllBytes(new File(Vault.get().root, "logs/events.log").toPath()), "UTF-8").contains("what=rescued_to_hard rescued_to_hard=true"));
+  CareerRules custom = new CareerRules(CareerRules.CUSTOM, lv);
+  Setup.chk("T: Custom, unticked: never", FinalVictory.TO_HARD_OFF.equals(FinalVictory.toHardRule(custom, "false")));
+  lv[CareerRules.VICTORY] = 2;
+  Setup.chk("T: Custom with the museum's rule: doesn't apply, ticked or not", FinalVictory.TO_HARD_NONE.equals(FinalVictory.toHardRule(new CareerRules(CareerRules.CUSTOM, lv), "true"))
+    && FinalVictory.TO_HARD_NONE.equals(FinalVictory.toHardRule(new CareerRules(CareerRules.CUSTOM, lv), null)));
+  Vault.switchFleet(Vault.SANDBOX);
+ }
  static int victories = 0;
  static void profile(File saves, int wins, String shipName, String shipId) throws Exception {
   Profile p = Profile.createEmptyProfile(); p.setFileFormat(9);
@@ -43,8 +82,12 @@ public class VicT { public static void main(String[] a) throws Exception {
   FinalVictory.watch();
  }
  static File copyOf(Vault v, Ship s) { return new File(v.historyOf(s), "final-battle.sav"); }
+ /** Her special copies by prefix (in her folder's versions/, 5.69). */
+ static List<File> kept(Vault v, String id, String prefix) { List<File> out = new ArrayList<File>(); for (File f : ShipStore.versions(v.folderOfId(id), true)) if (f.getName().startsWith(prefix)) out.add(f); return out; }
+ static final Set<String> used = new HashSet<String>();
+ /** Boards a docked ship not sent out before (the fleet reads in name order since 5.69, so a ship brought home would be first again). */
  static Ship boardNext(Vault v) throws Exception {
-  if (v.boarded() == null) v.board(v.docked().get(0));
+  if (v.boarded() == null) for (Ship d : v.docked()) if (used.add(d.id)) { v.board(d); break; }
   v.takeStock();
   return v.boarded();
  }
@@ -76,7 +119,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   runEnds(v, false, s);
   List<FinalVictory.Notice> n = FinalVictory.settle();
   Setup.chk("L: lost in the last battle (no victory): nothing to tell, the copy is closed", n.isEmpty() && v.byId(id) == null && v.finalBattles().isEmpty()
-    && new File(v.historyDir(), id).list(new FilenameFilter() { public boolean accept(File d, String f) { return f.startsWith("final-battle-"); } }).length == 1);
+    && kept(v, id, "final-battle-").size() == 1);
  }
  static Ship toVictory(Vault v, String choice) throws Exception {
   HomePlanet.finalVictory = choice;
@@ -92,13 +135,15 @@ public class VicT { public static void main(String[] a) throws Exception {
   Setup.chk("K: a victory with rescue chosen: an offer, with her value", n.size() == 1 && n.get(0).offer != null && n.get(0).value > 0 && n.get(0).text.contains(name) && n.get(0).text.contains(n.get(0).value + " scrap"));
   Setup.chk("K: the lore holds: the flagship withdraws", n.get(0).text.contains("withdrawn") && !n.get(0).text.toLowerCase().contains("destroyed"));
   Setup.chk("K: the offer stays open until decided", FinalVictory.settle().size() == 1 && FinalVictory.offer(id) != null);
-  String what = FinalVictory.keep(FinalVictory.offer(id));
+  String what = FinalVictory.keep(FinalVictory.offer(id), net.blerf.ftl.constants.Difficulty.HARD);
   Ship back = v.byId(id);
   SavedGameState g = back == null ? null : back.save();
   Setup.chk("K: keep her: docked under her own id, as she was kept (hull 11)", back != null && back.state == Ship.State.DOCKED && g.getPlayerShip().getHullAmt() == 11 && what.contains(name));
+  Setup.chk("K: her next journey at the difficulty chosen (6.02), and the letter says so", g.getDifficulty() == net.blerf.ftl.constants.Difficulty.HARD && what.contains("on Hard"));
+  Setup.chk("K: Sandbox Mode with the setting off: not to Hard", FinalVictory.TO_HARD_FREE.equals(FinalVictory.toHardRule()) && !FinalVictory.toHard());
   Setup.chk("K: ready for a new journey: sector 1, no flagship alongside or on her way", g.getSectorNumber() == 0 && !g.isRebelFlagshipNearby() && g.getRebelFlagshipState().getPendingStage() < 3);
   Setup.chk("K: settled: no offer left, her victory kept in her history", FinalVictory.settle().isEmpty() && FinalVictory.offer(id) == null
-    && new File(v.historyDir(), id).list(new FilenameFilter() { public boolean accept(File d, String f) { return f.startsWith("victory-"); } }).length == 1);
+    && kept(v, id, "victory-").size() == 1);
  }
  static void rescueMuseum(Vault v) throws Exception {
   Ship s = toVictory(v, FinalVictory.RESCUE); String id = s.id;
@@ -107,7 +152,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   FinalVictory.museum(FinalVictory.offer(id));
   boolean recoverable = false; for (Vault.Departed d : v.recoverable()) if (d.id.equals(id)) recoverable = true;
   Setup.chk("M: the museum's offer: her full value to storage, and she doesn't come back", v.storageScrap() == before + value && v.byId(id) == null && !recoverable);
-  Setup.chk("M: her fate is the museum", new String(SafeFiles.read(new File(v.historyDir(), id + "/fate.txt")), "UTF-8").startsWith("MUSEUM") && FinalVictory.settle().isEmpty());
+  Setup.chk("M: her fate is the museum", Setup.fateText(v.folderOfId(id)).startsWith("MUSEUM") && FinalVictory.settle().isEmpty());
  }
  static void reward(Vault v) throws Exception {
   Ship s = toVictory(v, FinalVictory.REWARD); String id = s.id;
@@ -116,7 +161,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   List<FinalVictory.Notice> n = FinalVictory.settle();
   Setup.chk("R: a reward: her full value to storage, a notice to read, and she stays lost", n.size() == 1 && n.get(0).offer == null && v.storageScrap() == before + value && v.byId(id) == null && n.get(0).text.contains(value + " scrap"));
   Setup.chk("R: paid once", FinalVictory.settle().isEmpty() && v.storageScrap() == before + value);
-  SavedGameState g = read(new File(v.historyDir(), id).listFiles(new FilenameFilter() { public boolean accept(File d, String f) { return f.startsWith("victory-"); } })[0]);
+  SavedGameState g = read(kept(v, id, "victory-").get(0));
   Setup.chk("R: her value is her price at the rate", value == Pricing.ship(g, Pricing.rate()).total() && value > 0);
  }
  static void inbox(Vault v) throws Exception {
@@ -125,7 +170,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   List<FinalVictory.Notice> n = FinalVictory.settle();
   Transmissions.Message m = null; for (Transmissions.Message x : Transmissions.load()) if (x.key.equals("rescue:" + id)) m = x;
   Setup.chk("I: with Transmissions on, the offer goes to the inbox, not a notice", n.isEmpty() && m != null && Transmissions.isRescue(m) && !m.claimed && m.body.contains(s.name));
-  String what = FinalVictory.keep(FinalVictory.offer(Transmissions.rescueId(m)));
+  String what = FinalVictory.keep(FinalVictory.offer(Transmissions.rescueId(m)), null); // null: the difficulty she won on
   Transmissions.decided(m, what);
   m = null; for (Transmissions.Message x : Transmissions.load()) if (x.key.equals("rescue:" + id)) m = x;
   Setup.chk("I: decided in the inbox: she's docked, the message says so", v.byId(id) != null && m.claimed && m.claimedWhat.contains("docked"));

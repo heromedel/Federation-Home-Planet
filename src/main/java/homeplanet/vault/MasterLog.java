@@ -16,38 +16,30 @@ import java.util.Map;
 import homeplanet.core.SafeFiles;
 
 /**
- * Each career's master log (heromedel, 5.17), hidden: every day its clock counts and why (D lines), and every entry any
- * of its logs gets, with the real time and the career's stardate (E lines). It copies, it never replaces: the other logs
- * keep their own files and shapes. The Captain's Log reads it, and so does the Cargo Bay's day (was the last day counted
- * a Cargo Bay day?).
+ * The career's days and stardates. Each career had a master log (heromedel, 5.17, logs/master.log): every day its clock
+ * counted and why, and a copy of every entry its logs got. Since 5.93 nothing writes it: the days are the event log's
+ * DAY entries (the Captain's Log and the Cargo Bay's day read them), and the entries are the event log's own. The old
+ * file stays, read only by the conversion of a fleet's old logs (LogConvert).
  *
  * A career's day 1 is the day this was first asked of it: a new career's first moment, or the first look at an older
  * one on 5.17 (its earlier entries are Prior to 1.1.1.1). The day is stored as a plain number and shown as a stardate,
- * year.month.week.day: 7-day weeks, 28-day months, 13-month years. A line with no day, or 0 or less, is Prior.
- *
- * Appended directly, never through SafeFiles' notice, so writing it never makes the Space Dock rebuild; and it never
- * takes the Vault's lock (it reads the clock's own file), so it can be written from anywhere.
+ * year.month.week.day: 7-day weeks, 28-day months, 13-month years. A day of 0 or less is Prior.
  */
 public final class MasterLog {
 	private MasterLog() { }
 
-	static final String FILE = "master.log", START = "stardate.txt";
-	/** Why a day passed (the D lines' reasons the station itself checks). */
+	/** Why a day passed (the reasons the station itself checks). */
 	public static final String CARGO_BAY = "business in the Cargo Bay";
 	public static final int WEEK = 7, MONTH = 28, YEAR = 13 * MONTH;
 
 	/** The clock's count as its own file has it (no lock: Vault.beaconsSeen without it). */
-	private static int clock(Vault v) {
-		try { return Integer.parseInt(new String(SafeFiles.read(new File(v.root, "beacons.txt")), StandardCharsets.UTF_8).trim()); }
-		catch (Exception e) { return 0; }
-	}
-	/** The clock's count on the career's day 1, written down the first time it's asked. */
+	private static int clock(Vault v) { return Clock.num(v, "beacons", 0); }
+	/** The clock's count on the career's day 1 (Stardate 1.1.1.1; entries before it are Prior), written down the first time it's asked. */
 	public static synchronized int start(Vault v) {
-		File f = new File(v.root, START);
-		try { if (f.isFile()) return Integer.parseInt(new String(SafeFiles.read(f), StandardCharsets.UTF_8).replaceAll("(?s).*start=", "").trim()); }
-		catch (Exception e) { }
-		int at = clock(v);
-		append(f, "# The career's day 1 (Stardate 1.1.1.1) is the station's clock at this count; entries before it are Prior\nstart=" + at + "\n", false);
+		int at = Clock.num(v, "start", -1);
+		if (at >= 0) return at;
+		at = clock(v);
+		try { Clock.set(v, "start", Integer.toString(at)); } catch (IOException e) { org.slf4j.LoggerFactory.getLogger(MasterLog.class).warn("Could not record the career's day 1: {}", e.toString()); }
 		return at;
 	}
 	/** The career's day now: 1 on its first day. */
@@ -63,12 +55,9 @@ public final class MasterLog {
 
 	/** A day the clock counted, and why (the clock already moved: this is its count after). */
 	public static void day(Vault v, int clockAfter, String why) {
-		write(v, "D\t" + now() + "\t" + dayAt(v, clockAfter) + "\t" + flat(why));
-	}
-	/** An entry one of the career's logs got: which log, and what it said. Never throws. */
-	public static void entry(Vault v, String log, String text) {
-		if (v == null) return;
-		write(v, "E\t" + now() + "\t" + today(v) + "\t" + flat(log) + "\t" + flat(text));
+		int day = dayAt(v, clockAfter);
+		homeplanet.core.EventLog.write(v, homeplanet.core.Event.of("DAY").put("log", "clock").put("day", day).put("clock", clockAfter).put("why", why)
+				.human("A day passed: " + why.replaceAll(" \\(\\d+ counted together\\)", "") + "."));
 	}
 	/**
 	 * Business in the Cargo Bay passes a day, unless the last day counted was already one (heromedel, 5.17: nothing else
@@ -81,19 +70,17 @@ public final class MasterLog {
 	}
 	/** Why the last day counted passed, or null if none is noted. */
 	public static synchronized String lastDayWhy(Vault v) {
-		String why = null;
-		for (String l : lines(v)) if (l.startsWith("D\t")) { String[] w = l.split("\t", 4); if (w.length == 4) why = w[3]; }
+		String why = null; // the DAY events (5.93; the master log's D lines before)
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v))) if (e.kind.equals("DAY")) why = e.get("why", why);
 		return why;
 	}
 
-	/** Why each day began (its D line: what moved the clock onto it), by day. */
+	/** Why each day began (what moved the clock onto it: the DAY events, 5.74), by day. */
 	public static synchronized Map<Integer, String> dayReasons(Vault v) {
 		Map<Integer, String> out = new LinkedHashMap<Integer, String>();
-		for (String l : lines(v)) {
-			if (!l.startsWith("D\t")) continue;
-			String[] w = l.split("\t", 4);
-			if (w.length < 4) continue;
-			try { out.put(Integer.parseInt(w[2].trim()), w[3]); } catch (NumberFormatException e) { }
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v))) {
+			if (!e.kind.equals("DAY") || e.day < 1 || e.get("why") == null) continue;
+			out.put(e.day, e.get("why"));
 		}
 		return out;
 	}
@@ -101,85 +88,44 @@ public final class MasterLog {
 	public static final class Entry {
 		public final String real, log, text;
 		public final int day;
-		Entry(String real, int day, String log, String text) { this.real = real; this.day = day; this.log = log; this.text = text; }
+		/** The event it was read from, for its fields (6.09: the Captain's Log reads a voyage's ships met and defeated from them); null if none. */
+		public final homeplanet.core.EventLog.Entry event;
+		Entry(String real, int day, String log, String text) { this(real, day, log, text, null); }
+		Entry(String real, int day, String log, String text, homeplanet.core.EventLog.Entry event) { this.real = real; this.day = day; this.log = log; this.text = text; this.event = event; }
 	}
-	/** The entries by day, oldest first; entries with no proper day (Prior) are left out. */
-	/**
-	 * The stardate of each entry of a station log (its history.log text), in order, from the master log's copies of
-	 * them (5.41). An entry from before the master log (5.17), or before the first stardate, is day 1.
-	 */
-	public static int[] stationDays(File fleetRoot, String historyText) {
-		List<String[]> copies = new ArrayList<String[]>(); // {text, day}
-		File f = new File(fleetRoot, FILE);
-		if (f.isFile()) {
-			try {
-				for (String l : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) {
-					if (!l.startsWith("E\t")) continue;
-					String[] w = l.split("\t", 5);
-					if (w.length == 5 && w[3].equals("station")) copies.add(new String[] {w[4], w[2].trim()});
-				}
-			} catch (IOException e) { /* none: every entry day 1 */ }
-		}
-		List<Integer> out = new ArrayList<Integer>();
-		int at = 0;
-		for (String line : historyText.split("\r?\n")) {
-			if (line.length() < 18 || line.startsWith("  ") || !Character.isDigit(line.charAt(0))) continue;
-			String entry = line.substring(16).trim(); // past "yyyy-MM-dd HH:mm  "
-			int day = 1;
-			for (int i = at; i < copies.size(); i++) {
-				if (!copies.get(i)[0].startsWith(entry)) continue;
-				try { day = Math.max(1, Integer.parseInt(copies.get(i)[1])); } catch (NumberFormatException e) { day = 1; }
-				at = i + 1;
-				break;
-			}
-			out.add(day);
-		}
-		int[] days = new int[out.size()];
-		for (int i = 0; i < days.length; i++) days[i] = out.get(i);
-		return days;
-	}
-
+	/** The entries by day, oldest first, from the event log (5.74; the E lines before): entries with no proper day (Prior) are left out. */
 	public static synchronized Map<Integer, List<Entry>> byDay(Vault v) {
 		Map<Integer, List<Entry>> out = new LinkedHashMap<Integer, List<Entry>>();
-		for (String l : lines(v)) {
-			if (!l.startsWith("E\t")) continue;
-			String[] w = l.split("\t", 5);
-			if (w.length < 5) continue;
-			int day;
-			try { day = Integer.parseInt(w[2].trim()); } catch (NumberFormatException e) { continue; }
-			if (day < 1) continue; // Prior
-			List<Entry> d = out.get(day);
-			if (d == null) out.put(day, d = new ArrayList<Entry>());
-			d.add(new Entry(w[1], day, w[3], w[4]));
+		for (homeplanet.core.EventLog.Entry x : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v))) {
+			Entry e = of(x);
+			if (e == null || e.day < 1) continue;
+			List<Entry> d = out.get(e.day);
+			if (d == null) out.put(e.day, d = new ArrayList<Entry>());
+			d.add(e);
 		}
 		return out;
 	}
-
-	private static List<String> lines(Vault v) {
-		List<String> out = new ArrayList<String>();
-		File f = new File(v.root, FILE);
-		if (!f.isFile()) return out;
-		try { for (String l : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) if (!l.isEmpty()) out.add(l); }
-		catch (IOException e) { }
-		return out;
-	}
-	private static synchronized void write(Vault v, String line) {
-		File f = new File(v.root, FILE);
-		if (!f.isFile()) append(f, "# The career's master log: D lines (a day the clock counted: real time, day, why) and E lines (an entry a log got: real time, day, which log, what it said)\n", true);
-		append(f, line + "\n", true);
-	}
-	private static void append(File f, String text, boolean append) {
-		Writer w = null;
-		try {
-			if (f.getParentFile() != null && !f.getParentFile().isDirectory()) return; // no fleet folder: nothing to keep it beside
-			w = new OutputStreamWriter(new FileOutputStream(f, append), StandardCharsets.UTF_8);
-			w.write(text);
-		} catch (IOException e) {
-			// a copy: if it can't be kept, the station carries on and only the Captain's Log misses it
-		} finally {
-			try { if (w != null) w.close(); } catch (IOException e) { }
+	/**
+	 * An event as the master log copied it (the readers that word the day, the Captain's Log first, read this form):
+	 * a station entry as "KIND  headline / detail / detail" (the kind with spaces, as the station log writes it), a
+	 * voyage entry as its line under "voyage: <her name>", a reputation entry as "+5  why / detail"; null for the rest.
+	 */
+	public static Entry of(homeplanet.core.EventLog.Entry x) {
+		String log = x.get("log", "");
+		if (log.equals("station")) {
+			StringBuilder t = new StringBuilder(x.kind.replace('_', ' '));
+			String head = x.get("headline", x.human);
+			if (!head.isEmpty()) t.append("  ").append(head);
+			for (String d : x.all("detail")) t.append(" / ").append(d);
+			for (int i = 1; x.get("detail." + i) != null; i++) t.append(" / ").append(x.get("detail." + i));
+			return new Entry(x.time, x.day, "station", t.toString());
 		}
+		if (log.equals("voyage")) return new Entry(x.time, x.day, "voyage: " + x.get("ship_name", ""), x.human, x);
+		if (log.equals("reputation")) {
+			StringBuilder t = new StringBuilder(Reputation.signed(x.num("points", 0))).append("  ").append(x.human);
+			for (int i = 1; x.get("detail." + i) != null; i++) t.append(" / ").append(x.get("detail." + i));
+			return new Entry(x.time, x.day, "reputation", t.toString());
+		}
+		return null;
 	}
-	private static String now() { return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()); }
-	private static String flat(String s) { return s == null ? "" : s.replace("\t", " ").replace("\r", "").replace("\n", " / "); }
 }

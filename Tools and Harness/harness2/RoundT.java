@@ -8,8 +8,9 @@ public class RoundT { public static void main(String[] a) throws Exception {
  for (File f : files) {
   try {
    byte[] orig = SafeFiles.read(f);
-   SavedGameState g = new SavedGameParser().readSavedGame(f);
-   byte[] out = SaveHelper.toBytes(g);
+   boolean hold = HoldXml.isHold(orig); // the Cargo Hold's xml (5.84): read and written as itself
+   SavedGameState g = hold ? HoldXml.read(orig) : new SavedGameParser().readSavedGame(f);
+   byte[] out = hold ? HoldXml.toBytes(g) : SaveHelper.toBytes(g);
    if (Arrays.equals(orig, out)) { same++; continue; }
    diff++;
    int k = 0; while (k < Math.min(orig.length, out.length) && orig[k] == out[k]) k++;

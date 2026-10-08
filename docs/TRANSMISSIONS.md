@@ -1,8 +1,9 @@
 # Transmissions
 
 The transmissions inbox: the letters The Federation Home Planet's people send in Immersive Mode, and their rewards.
-The letters themselves live in `src/main/resources/homeplanet/resource/transmissions.txt`, the one place their text is
-kept; this page covers how they work, who sends them, and the rewards.
+The letters themselves live in `src/main/resources/homeplanet/resource/lore/letters.xml` (5.991; `transmissions.txt` before),
+the one place their text is kept, and a player's copy in `lore/` beside the program wins letter by letter (its notes at the top
+say how); this page covers how they work, who sends them, and the rewards.
 
 ## How it works
 

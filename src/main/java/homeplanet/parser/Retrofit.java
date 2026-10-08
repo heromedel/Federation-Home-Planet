@@ -283,6 +283,13 @@ public class Retrofit {
 		return out;
 	}
 
+	/** One of our blueprints as a player knows her: "PLAYER_SHIP_DESIGN_3_HP (the Spear of Artemis design)", or the id alone. */
+	public static String described(String id) {
+		for (ShipDesign d : DesignExport.built()) if (DesignExport.bpId(d).equals(id)) return id + " (the " + d.name + " design)";
+		CompanionMod.Remodel r = CompanionMod.find(CompanionMod.load(), id);
+		if (r != null && r.ship != null && !r.ship.isEmpty()) return id + " (" + r.ship + "'s remodel)";
+		return id;
+	}
 	/** Our blueprint names this save refers to that the game data doesn't have (FTL can't load the ship without the mod). */
 	public static List<String> missingBlueprints(File save) {
 		List<String> out = new ArrayList<String>();

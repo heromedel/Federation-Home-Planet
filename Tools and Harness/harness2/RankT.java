@@ -28,7 +28,7 @@ public class RankT { public static void main(String[] a) throws Exception {
  TransT.profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_FED"}, new String[0]);
  Setup.chk("O: under the cruiser's ranks, a Captain", PlayerRank.rank(Unlocks.read()) == 1 && Transmissions.rank().equals("Captain"));
  Reputation.expedition(v, "an old expedition", 0, 0, 1); Reputation.expedition(v, "another old expedition", 0, 0, 1); // something for its letter to recall
- new File(v.root, "rank.txt").delete(); // as a career from before 5.56
+ Store.file(v.root, "rank").delete(); // as a career from before 5.56
  PlayerRank.setting = PlayerRank.FROM_REP;
  Transmissions.check();
  int captain = Arrays.asList(PlayerRank.REP_RANKS).indexOf("Captain");

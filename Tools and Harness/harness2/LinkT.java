@@ -389,6 +389,7 @@ public class LinkT {
   a("rename Test_Engi Wanderer"); // B has a Test Engi of its own
   a("commissioned Wanderer 30 September 2026");
   String engiA = a("idof Wanderer");
+  a("voyageline Wanderer Sector_2_reached_(sectors_visited:_2)"); // a line of her voyage log at A, to travel with her
   a("offer ship Wanderer"); b("offer supply fuel 1");
   trade("a whole ship");
   Setup.chk("A's Engi left her fleet", !a("fleet").contains("Wanderer"));
@@ -397,6 +398,9 @@ public class LinkT {
   Setup.chk("B's fleet has her", b("fleet").contains("Wanderer"));
   Setup.chk("her mark: from and first commissioned by Captain Ash", b("mark Wanderer").startsWith("from=Captain_Ash original=Captain_Ash"));
   Setup.chk("her commission date came with her", b("commissioned Wanderer").equals("30 September 2026"));
+  String bLog = b("shiplog Wanderer");
+  Setup.chk("her voyage log came with her as events (5.75), under her new id, marked from Captain Ash: " + bLog, Integer.parseInt(bLog.split(" ")[0]) >= 2 && bLog.contains("Sector_2_reached") && bLog.contains("from=Captain_Ash"));
+  Setup.chk("her record came with her: her past name among her names", b("owners Wanderer").contains("Test_Engi"));
   Setup.chk("a settled trade leaves no packages behind (A and B)", a("packages").equals("0") && b("packages").equals("0"));
   b("defeat Wanderer 3");
   String since = b("since Wanderer");

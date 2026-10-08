@@ -35,11 +35,20 @@ public class SettingsDialog extends JDialog {
 	private File game = HomePlanet.datsPath;
 	private final JLabel savesLabel = new JLabel();
 	private final JLabel gameLabel = new JLabel();
+	private final JLabel slipLabel = new JLabel();
+	/** The Records tab's place among the tabs (General, Rules, Folders, Mods, Records, About). */
+	private static final int RECORDS_TAB = 4;
 	private final JCheckBox steamBox = new JCheckBox("Launch FTL through Steam", HomePlanet.launchThroughSteam);
 	/** heromedel's words (5.29): FTL docked in the station window, Windows only. */
 	private final JCheckBox dockBox = new JCheckBox("Option to Play FTL, docked in the station window, at", homeplanet.core.FtlDock.optionOn());
 	private final javax.swing.JComboBox<String> dockSize = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.SIZES);
 	private final javax.swing.JComboBox<String> dockHow = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.HOW);
+	/** FTL's -directx switch (heromedel, 5.64), beside the docked option: Windows only. */
+	private final JCheckBox directxBox = new JCheckBox("Launch FTL with DirectX", HomePlanet.launchDirectX);
+	/** The screen FTL is set to for a launch outside the dock (heromedel, 5.80), in FTL's own words: Windows only, like docking. */
+	private final JCheckBox videoBox = new JCheckBox("Undocked launches: set FTL's Fullscreen to", homeplanet.core.FtlDock.videoChosen());
+	private final javax.swing.JComboBox<String> fullscreenBox = new javax.swing.JComboBox<String>(homeplanet.core.FtlDock.FULLSCREEN_MODES);
+	private final JCheckBox vsyncBox = new JCheckBox("and Vertical Sync", homeplanet.core.FtlDock.vsyncChosen());
 	private final RuleBoxes rules = new RuleBoxes();
 	private final JCheckBox borderlessBox = new JCheckBox("Borderless full screen: the station fills the screen, with no title bar (F11 or Alt+Enter switches it any time)", Boolean.parseBoolean(HomePlanet.config.getProperty(MainFrame.CFG_BORDERLESS, "false")));
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
@@ -49,6 +58,10 @@ public class SettingsDialog extends JDialog {
 	private final javax.swing.JRadioButton[] victoryButtons = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
 	private String victoryWas = homeplanet.parser.FinalVictory.choice();
 	private final JLabel victoryHeading = new JLabel();
+	/** Rescued Ships after Victory moved to Hard difficulty (heromedel, 6.02 and 6.03): the player's in Sandbox Mode and Easy, the career's otherwise. */
+	private static final String TO_HARD = "Rescued Ships after Victory moved to Hard difficulty";
+	private final javax.swing.JCheckBox toHardBox = new javax.swing.JCheckBox(TO_HARD);
+	private boolean toHardWas;
 	private final String commanderWas = homeplanet.comm.Commander.name() == null ? "" : homeplanet.comm.Commander.name();
 	private final javax.swing.JTextField commanderField = new javax.swing.JTextField(commanderWas, 18);
 	private final JCheckBox shipTradeBox = new JCheckBox("Immersive careers: allow trading whole ships (with a career that allows it too; Sandbox fleets always may)", HomePlanet.immersiveShipTrading);
@@ -67,7 +80,7 @@ public class SettingsDialog extends JDialog {
 	public static void openCrewLog(java.awt.Component owner, int crewId) {
 		Window w = owner == null ? null : owner instanceof Window ? (Window) owner : SwingUtilities.getWindowAncestor(owner);
 		SettingsDialog d = new SettingsDialog(w);
-		d.tabsShown.setSelectedIndex(2);
+		d.tabsShown.setSelectedIndex(RECORDS_TAB);
 		d.records.showCrew(crewId);
 		d.setVisible(true);
 	}
@@ -76,15 +89,15 @@ public class SettingsDialog extends JDialog {
 
 	private SettingsDialog(Window owner) {
 		super(owner, "Settings", ModalityType.APPLICATION_MODAL);
-		// four tabs: General (folders, launching, mods, audio), Rules, Records, About
-		JPanel general = page(), rulesPage = page(), recordsPage = page(), aboutPage = page();
+		// six tabs (heromedel, 5.70): General (the settings), Rules, Folders (places, not settings), Mods, Records, About
+		JPanel general = page(), rulesPage = page(), foldersPage = page(), modsPage = page(), recordsPage = page(), aboutPage = page();
 		JPanel body = general;
 		GridBagConstraints c = constraints();
 
 		heading(body, c, "Commander");
 		JPanel nameRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JLabel nameLabel = new JLabel("Name:");
-		nameLabel.setPreferredSize(new java.awt.Dimension(103, nameLabel.getPreferredSize().height)); // lines up with the folder paths below
+		nameLabel.setPreferredSize(new java.awt.Dimension(103, nameLabel.getPreferredSize().height));
 		nameRow.add(nameLabel);
 		nameRow.add(commanderField);
 		JLabel nameNote = new JLabel("   How other commanders know you over Long Range Comm. (your rank goes in front)");
@@ -92,6 +105,67 @@ public class SettingsDialog extends JDialog {
 		nameRow.add(nameNote);
 		commanderField.setToolTipText("Up to " + homeplanet.comm.Commander.MAX + " letters, numbers, spaces and ' - . (your rank goes in front of it)");
 		body.add(nameRow, next(c));
+
+		heading(body, c, "Launching");
+		body.add(steamBox, next(c));
+		JLabel cloud = new JLabel("<html><div style='width:560px; color:" + MenuTheme.HTML_ORANGE + "'>Steam version: turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties, General). "
+				+ "With it on, Steam can bring back a docked ship as a copy, or an old FTL profile.</div></html>");
+		cloud.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
+		body.add(cloud, next(c));
+		if (homeplanet.core.FtlDock.supported()) {
+			JPanel dockRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+			dockBox.setToolTipText("<html><font color='" + MenuTheme.HTML_ORANGE + "'>(Experimental)</font> Adds an icon beside Launch FTL on the Space Dock: FTL plays in a frame in the station's window,"
+					+ "<br>with the inbox, the reputation and the station's buttons beside it. FTL is set to windowed for it.</html>");
+			dockSize.setSelectedItem(HomePlanet.config.getProperty(homeplanet.core.FtlDock.CFG_SIZE, homeplanet.core.FtlDock.SIZES[0]));
+			dockSize.setToolTipText("FTL's size in the frame (the station's window grows to hold it, if the screen has room)");
+			dockRow.add(dockBox);
+			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
+			dockRow.add(dockSize);
+			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
+			dockHow.setSelectedIndex(homeplanet.core.FtlDock.attachedChosen() ? 1 : 0);
+			dockHow.setToolTipText("<html>As its own window: FTL kept over the station's window by the station.<br>"
+					+ "Attached (testing): FTL's window belongs to the station's, so it stays over it and the station's popups come over both.</html>");
+			dockRow.add(dockHow);
+			dockRow.add(javax.swing.Box.createHorizontalStrut(8));
+			JLabel experimental = new JLabel("(Experimental)"); // heromedel, 5.38
+			experimental.setForeground(MenuTheme.ORANGE);
+			experimental.setToolTipText(dockBox.getToolTipText());
+			dockRow.add(experimental);
+			body.add(dockRow, next(c));
+			directxBox.setToolTipText("<html>FTL draws with Direct3D instead of OpenGL (its own -directx switch).<br>"
+					+ "On some PCs FTL in a window, docked included, loads much faster with it.</html>");
+			JPanel directxRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+			directxRow.add(directxBox);
+			JLabel directxNote = new JLabel("   (may speed up load times in windowed or docked mode)"); // heromedel, 5.71
+			directxNote.setForeground(MenuTheme.GREY_GREEN);
+			directxNote.setToolTipText(directxBox.getToolTipText());
+			directxRow.add(directxNote);
+			body.add(directxRow, next(c));
+			JLabel steamDirectx = new JLabel("<html><div style='width:560px; color:" + MenuTheme.HTML_GREY_GREEN + "'>If also launching through Steam: Steam may ask each time before passing -directx on. "
+					+ "To skip the question: in your Steam library, right-click FTL, choose Properties, then General, and type -directx under Launch Options. "
+					+ "Leave this box off then: Steam adds it every time by itself.</div></html>"); // heromedel's words, 5.72
+			steamDirectx.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
+			body.add(steamDirectx, next(c));
+			JPanel videoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+			String videoTip = "<html>Written into FTL's own settings each time the station launches it outside the dock, as FTL's Options name them.<br>"
+					+ "Not for docked play: docked, FTL always runs in a window. Unticked, FTL starts as you last set it.</html>";
+			fullscreenBox.setSelectedIndex(homeplanet.core.FtlDock.fullscreenChosen());
+			for (javax.swing.JComponent x : new javax.swing.JComponent[] {videoBox, fullscreenBox, vsyncBox}) x.setToolTipText(videoTip);
+			final Runnable videoOn = new Runnable() { public void run() { fullscreenBox.setEnabled(videoBox.isSelected()); vsyncBox.setEnabled(videoBox.isSelected()); } };
+			videoBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { videoOn.run(); } });
+			videoOn.run();
+			videoRow.add(videoBox);
+			videoRow.add(javax.swing.Box.createHorizontalStrut(6));
+			videoRow.add(fullscreenBox);
+			videoRow.add(javax.swing.Box.createHorizontalStrut(10));
+			videoRow.add(vsyncBox);
+			body.add(videoRow, next(c));
+		}
+
+		heading(body, c, "Station");
+		body.add(borderlessBox, next(c));
+		body.add(musicBox, next(c));
+
 		shipTradeBox.setToolTipText("Sandbox fleets always may. A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
 		anyLevelBox.setToolTipText("Off: your career trades only with careers of its own difficulty");
 		heading(body, c, "Long Range Comm.");
@@ -117,6 +191,12 @@ public class SettingsDialog extends JDialog {
 		blockRow.add(blockedLabel);
 		body.add(blockRow, next(c));
 
+
+
+
+
+		body = foldersPage;
+		c = constraints();
 		heading(body, c, "Folders");
 		body.add(folderRow("Saves folder:", savesLabel, new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -134,14 +214,24 @@ public class SettingsDialog extends JDialog {
 				if (f != null) { game = f; refreshLabels(); }
 			}
 		}), next(c));
+		body.add(folderRow("Slipstream folder:", slipLabel, new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String old = HomePlanet.config.getProperty(homeplanet.core.Slipstream.CFG_DIR);
+				HomePlanet.config.remove(homeplanet.core.Slipstream.CFG_DIR);
+				java.io.File d = homeplanet.core.Slipstream.locate(SettingsDialog.this);
+				if (d == null && old != null) HomePlanet.config.setProperty(homeplanet.core.Slipstream.CFG_DIR, old); // cancelled: keep the old one
+				refreshLabels();
+			}
+		}), next(c));
 		JPanel openRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		openRow.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0)); // a line's space between changing the folders and opening them (heromedel, 6.07)
 		JButton openSaves = new JButton("Open saves folder");
 		openSaves.setToolTipText("Open the saves folder in Windows Explorer");
 		openSaves.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { openFolder(saves); }
 		});
 		JButton openStation = new JButton("Open the station's folder");
-		openStation.setToolTipText("Open The Home Planet Station's own folder (its ships, Junkyard, records and blueprints) in Windows Explorer: for backups, or a look around");
+		openStation.setToolTipText("Open The Home Planet Station's own folder (the shipyard, the Junkyard, the Cargo Hold, memorials and records, the logs) in Windows Explorer: for backups, or a look around");
 		openStation.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().root); }
 		});
@@ -172,54 +262,62 @@ public class SettingsDialog extends JDialog {
 		openRow.add(openStation);
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
 		openRow.add(openJunk);
+		JButton openHold = new JButton("Open Cargo Hold");
+		openHold.setToolTipText("Open the Cargo Hold's folder (what it holds, its crew's files, its stored systems, its earlier versions) in Windows Explorer");
+		openHold.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().cargoHoldDir()); }
+		});
+		openRow.add(javax.swing.Box.createHorizontalStrut(8));
+		openRow.add(openHold);
 		body.add(openRow, next(c));
-		JPanel slipRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0)); // Slipstream's folder, filled below
-		body.add(slipRow, next(c));
+		// the station's other places (5.86): a folder each, as the player browses them
+		JPanel placesRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		placesRow.add(placeButton("Open Shipyard", "Open the shipyard (the ships at the Space Dock, a folder each: her record, her save, her log, her crew, her earlier versions) in Windows Explorer",
+				"shipyard"));
+		placesRow.add(javax.swing.Box.createHorizontalStrut(8));
+		placesRow.add(placeButton("Open Memorials and Records", "Open the memorials and records (the ships and crew who have left the fleet, remembered) in Windows Explorer",
+				"memorials_and_records"));
+		placesRow.add(javax.swing.Box.createHorizontalStrut(8));
+		placesRow.add(placeButton("Open Expeditions", "Open the expeditions' folder (the sectors on offer, the crew away) in Windows Explorer",
+				"expeditions"));
+		placesRow.add(javax.swing.Box.createHorizontalStrut(8));
+		placesRow.add(placeButton("Open Station Logs", "Open the station's own logs (every entry The Home Planet Station has written) in Windows Explorer",
+				"logs"));
+		body.add(placesRow, next(c));
+		// FTL's own log (heromedel, 6.02): FTL.log, in FTL's folder beside FTLGame.exe, begun afresh each time FTL starts
+		JPanel ftlRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		ftlRow.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+		JButton ftlLogs = new JButton("Open FTL Logs");
+		ftlLogs.setToolTipText("Open FTL's own folder, where FTL writes its log (FTL.log, begun afresh each time FTL starts), in Windows Explorer");
+		ftlLogs.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				File dir = game != null ? game : HomePlanet.datsPath; // the Game folder as chosen here
+				if (dir == null || !dir.isDirectory()) {
+					JOptionPane.showMessageDialog(SettingsDialog.this, "The Home Planet Station doesn't know where FTL is yet. Choose the Game folder above, then try again.", "FTL Logs", JOptionPane.INFORMATION_MESSAGE);
+					return;
+				}
+				if (!new File(dir, "FTL.log").isFile())
+					JOptionPane.showMessageDialog(SettingsDialog.this, "FTL hasn't written its log here yet: FTL.log appears in this folder once FTL has been started.", "FTL Logs", JOptionPane.INFORMATION_MESSAGE);
+				openFolder(dir);
+			}
+		});
+		ftlRow.add(ftlLogs);
+		body.add(ftlRow, next(c));
 
-		heading(body, c, "Launching");
-		body.add(steamBox, next(c));
-		JLabel cloud = new JLabel("<html><div style='width:560px; color:" + MenuTheme.HTML_ORANGE + "'>Steam version: turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties, General). "
-				+ "With it on, Steam can bring back a docked ship as a copy, or an old FTL profile.</div></html>");
-		cloud.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
-		body.add(cloud, next(c));
-		if (homeplanet.core.FtlDock.supported()) {
-			JPanel dockRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-			dockBox.setToolTipText("<html><font color='" + MenuTheme.HTML_ORANGE + "'>(Experimental)</font> Adds an icon beside Launch FTL on the Space Dock: FTL plays in a frame in the station's window,"
-					+ "<br>with the inbox, the reputation and the station's buttons beside it. FTL is set to windowed for it.</html>");
-			dockSize.setSelectedItem(HomePlanet.config.getProperty(homeplanet.core.FtlDock.CFG_SIZE, homeplanet.core.FtlDock.SIZES[0]));
-			dockSize.setToolTipText("FTL's size in the frame (the station's window grows to hold it, if the screen has room)");
-			dockRow.add(dockBox);
-			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
-			dockRow.add(dockSize);
-			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
-			dockHow.setSelectedIndex(homeplanet.core.FtlDock.attachedChosen() ? 1 : 0);
-			dockHow.setToolTipText("<html>As its own window: FTL kept over the station's window by the station.<br>"
-					+ "Attached (testing): FTL's window belongs to the station's, so it stays over it and the station's popups come over both.</html>");
-			dockRow.add(dockHow);
-			dockRow.add(javax.swing.Box.createHorizontalStrut(8));
-			JLabel experimental = new JLabel("(Experimental)"); // heromedel, 5.38
-			experimental.setForeground(MenuTheme.ORANGE);
-			experimental.setToolTipText(dockBox.getToolTipText());
-			dockRow.add(experimental);
-			body.add(dockRow, next(c));
-		}
-
+		body = modsPage;
+		c = constraints();
 		heading(body, c, "Mods");
+		JLabel modsNote = new JLabel("<html><div style='width:600px'>Your blueprints and designs reach FTL as the Federation Home Planet Mod, sent to FTL via Slipstream. "
+				+ "Patch after changing a design or a remodel, and whenever the station says a patch is needed: FTL must be closed, and it starts with the new blueprints the next time it runs.<br><br>"
+				+ "Other mods work the same way: drop an .ftl file into Slipstream's mods folder, and it can be ticked in the patch window to be sent along with the station's own mod. "
+				+ "<font color='" + MenuTheme.HTML_GREY_GREEN + "'>Slipstream's folder is set on the Folders tab.</font></div></html>");
+		modsNote.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+		body.add(modsNote, next(c));
 		JPanel modRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JButton patchBtn = new JButton("Patch mods...");
 		patchBtn.setToolTipText("Choose which mods to send to FTL; Slipstream carries them (the Federation Home Planet Mod is always included)");
 		patchBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { PatchDialog.open(SettingsDialog.this); }
-		});
-		JButton slipBtn = new JButton("Set Slipstream folder...");
-		slipBtn.setToolTipText("Choose the Slipstream folder, or download Slipstream into one");
-		slipBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String old = HomePlanet.config.getProperty(homeplanet.core.Slipstream.CFG_DIR);
-				HomePlanet.config.remove(homeplanet.core.Slipstream.CFG_DIR);
-				java.io.File d = homeplanet.core.Slipstream.locate(SettingsDialog.this);
-				if (d == null && old != null) HomePlanet.config.setProperty(homeplanet.core.Slipstream.CFG_DIR, old); // cancelled: keep the old one
-			}
 		});
 		JButton modsBtn = new JButton("Open mods folder");
 		modsBtn.setToolTipText("Open Slipstream's mods folder in Windows Explorer (drop new .ftl files there)");
@@ -231,21 +329,15 @@ public class SettingsDialog extends JDialog {
 		});
 		modRow.add(patchBtn);
 		modRow.add(javax.swing.Box.createHorizontalStrut(8));
-		slipRow.add(slipBtn);
-		slipRow.add(javax.swing.Box.createHorizontalStrut(8));
-		slipRow.add(modsBtn);
 		JButton starterBtn = new JButton("Blueprints...");
 		starterBtn.setToolTipText("Your own blueprints (remodels and designs): which can be commissioned, and their names and starting loadouts");
 		starterBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { starterShips(); }
 		});
 		modRow.add(starterBtn);
+		modRow.add(javax.swing.Box.createHorizontalStrut(8));
+		modRow.add(modsBtn);
 		body.add(modRow, next(c));
-
-		heading(body, c, "Window");
-		body.add(borderlessBox, next(c));
-		heading(body, c, "Audio");
-		body.add(musicBox, next(c));
 
 		body = rulesPage;
 		c = constraints();
@@ -270,6 +362,8 @@ public class SettingsDialog extends JDialog {
 				+ "it keeps her as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
 		victoryNote.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		body.add(victoryNote, next(c));
+		body.add(toHardBox, next(c));
+		refreshVictory();
 
 		body = recordsPage;
 		c = constraints();
@@ -300,12 +394,14 @@ public class SettingsDialog extends JDialog {
 		body = aboutPage;
 		c = constraints();
 		heading(body, c, "About");
-		JLabel credit = new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; Inspired By ManApart's FTL Homeworld.");
+		JLabel credit = new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; Inspired by and originally built upon ManApart's FTL Homeworld.");
 		credit.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(credit, next(c));
-		// heromedel's line with the buttons beside it: the old single row was wider than a 1366 screen (5.31)
+		// heromedel's line, and the buttons on a line of their own beneath it (heromedel, 6.02: his words)
+		JLabel madeBy = new JLabel("Designed and Produced by heromedel");
+		madeBy.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+		body.add(madeBy, next(c));
 		JPanel about = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		about.add(new JLabel("Made by heromedel with Claude.  "));
 		JButton loreBtn = new JButton("Lore...");
 		loreBtn.setToolTipText("A transmission from the Federation Home Planet");
 		loreBtn.addActionListener(new ActionListener() {
@@ -328,6 +424,7 @@ public class SettingsDialog extends JDialog {
 		about.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(about, next(c));
 		JPanel updateRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		updateRow.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0)); // a line of space between the credits and these (heromedel, 5.80)
 		JButton updateBtn = new JButton("Check for Updates...");
 		updateBtn.setToolTipText("Ask The Federation Home Planet for newer construction plans (the main branch on GitHub)");
 		updateBtn.addActionListener(new ActionListener() {
@@ -356,8 +453,8 @@ public class SettingsDialog extends JDialog {
 
 		refreshLabels();
 		javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
-		JPanel[] pages = {general, rulesPage, recordsPage, aboutPage};
-		String[] names = {"General", "Rules", "Records", "About"};
+		JPanel[] pages = {general, rulesPage, foldersPage, modsPage, recordsPage, aboutPage};
+		String[] names = {"General", "Rules", "Folders", "Mods", "Records", "About"};
 		for (int i = 0; i < pages.length; i++) {
 			JPanel holder = new JPanel(new BorderLayout());
 			holder.add(pages[i], BorderLayout.NORTH); // each page at the top of its tab
@@ -420,8 +517,13 @@ public class SettingsDialog extends JDialog {
 		boolean dockWas = homeplanet.core.FtlDock.optionOn();
 		if (homeplanet.core.FtlDock.supported() && dockBox.isSelected() != dockWas) changed.add("Option to Play FTL, docked: " + dockBox.isSelected());
 		if (homeplanet.core.FtlDock.supported() && (dockHow.getSelectedIndex() == 1) != homeplanet.core.FtlDock.attachedChosen()) changed.add("FTL docked " + dockHow.getSelectedItem());
+		if (homeplanet.core.FtlDock.supported() && directxBox.isSelected() != HomePlanet.launchDirectX) changed.add("Launch FTL with DirectX: " + directxBox.isSelected());
+		if (homeplanet.core.FtlDock.supported() && (videoBox.isSelected() != homeplanet.core.FtlDock.videoChosen() || videoBox.isSelected()
+				&& (fullscreenBox.getSelectedIndex() != homeplanet.core.FtlDock.fullscreenChosen() || vsyncBox.isSelected() != homeplanet.core.FtlDock.vsyncChosen())))
+			changed.add("Undocked launches: " + (videoBox.isSelected() ? "Fullscreen " + fullscreenBox.getSelectedItem() + ", Vertical Sync " + (vsyncBox.isSelected() ? "on" : "off") : "FTL as last set"));
 		rules.describeChanges(changed);
 		if (!victoryChoice().equals(victoryWas)) changed.add("After a final victory: " + victoryChoice());
+		if (toHardBox.isEnabled() && toHardBox.isSelected() != toHardWas) changed.add(TO_HARD + ": " + toHardBox.isSelected());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
 		final java.awt.Window frame = getOwner();
@@ -431,7 +533,7 @@ public class SettingsDialog extends JDialog {
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { ((MainFrame) frame).setBorderless(on); } }); // once Settings has closed (it closes with the window)
 		}
 		log.debug("Settings saved: {}", changed.isEmpty() ? "nothing changed" : changed);
-		if (!changed.isEmpty()) homeplanet.core.HistoryLog.entry("SETTINGS", "", changed);
+		if (!changed.isEmpty()) homeplanet.core.HistoryLog.entry("SETTINGS", "settings changed", changed, homeplanet.core.Event.of("SETTINGS").details(changed));
 		savesChanged = !saves.equals(HomePlanet.save_location);
 		HomePlanet.save_location = saves;
 		if (savesChanged) {
@@ -451,6 +553,10 @@ public class SettingsDialog extends JDialog {
 			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_ON, Boolean.toString(dockBox.isSelected()));
 			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_SIZE, (String) dockSize.getSelectedItem());
 			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_ATTACHED, Boolean.toString(dockHow.getSelectedIndex() == 1));
+			HomePlanet.launchDirectX = directxBox.isSelected();
+			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_VIDEO, Boolean.toString(videoBox.isSelected()));
+			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_FULLSCREEN, Integer.toString(fullscreenBox.getSelectedIndex()));
+			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_VSYNC, Boolean.toString(vsyncBox.isSelected()));
 			if (dockWas && !dockBox.isSelected()) { // FTL's own fullscreen setting back, unless the player has changed it since
 				try { homeplanet.core.FtlDock.restoreSettings(); }
 				catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not put FTL's fullscreen setting back in its settings.ini:\n" + e.getMessage()); }
@@ -460,6 +566,10 @@ public class SettingsDialog extends JDialog {
 		if (!savesChanged && !victoryChoice().equals(victoryWas)) {
 			try { homeplanet.parser.FinalVictory.setChoice(victoryChoice()); }
 			catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not record the choice after a final victory:\n" + e.getMessage()); }
+		}
+		if (!savesChanged && toHardBox.isEnabled() && toHardBox.isSelected() != toHardWas) {
+			try { homeplanet.parser.FinalVictory.setToHard(toHardBox.isSelected()); }
+			catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not record " + TO_HARD + " in the career's file:\n" + e.getMessage()); }
 		}
 		HomePlanet.setDebugLogging(debugBox.isSelected());
 		homeplanet.core.Music.enabled = musicBox.isSelected();
@@ -532,7 +642,7 @@ public class SettingsDialog extends JDialog {
 		}
 		homeplanet.parser.CompanionMod.register(all); // Commission sees the changes at once
 		if (!edited.isEmpty()) homeplanet.core.Slipstream.writeMod(); // keep the mod's copy in step
-		homeplanet.core.HistoryLog.entry("BLUEPRINTS", changed.size() + " change(s)", changed);
+		homeplanet.core.HistoryLog.entry("BLUEPRINTS", changed.size() + " change(s)", changed, homeplanet.core.Event.of("BLUEPRINTS").put("changes", changed.size()).details(changed));
 	}
 	private static String blueprintLabel(homeplanet.parser.CompanionMod.Remodel r) {
 		String own = r.loadout != null && r.loadout.className.length() > 0 ? r.loadout.className : null;
@@ -548,9 +658,21 @@ public class SettingsDialog extends JDialog {
 		savesLabel.setToolTipText(saves.getPath());
 		gameLabel.setText(game.getPath());
 		gameLabel.setToolTipText(game.getPath() + " (where FTLGame.exe and ftl.dat are)");
+		String slip = HomePlanet.config.getProperty(homeplanet.core.Slipstream.CFG_DIR);
+		slipLabel.setText(slip == null || slip.isEmpty() ? "(not set: Change... finds Slipstream, or downloads it)" : slip);
+		slipLabel.setToolTipText(slip == null ? "Slipstream carries the station's mod to FTL" : slip);
 		pack();
 	}
 
+	/** A button that opens one of the fleet's places (a folder in the fleet in use when it's clicked), made first if it isn't there yet (an empty folder says more than an error). */
+	private JButton placeButton(String label, String tip, final String place) {
+		JButton b = new JButton(label);
+		b.setToolTipText(tip);
+		b.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { File dir = new File(homeplanet.vault.Vault.get().root, place); dir.mkdirs(); openFolder(dir); }
+		});
+		return b;
+	}
 	private void openFolder(File dir) {
 		try {
 			Desktop.getDesktop().open(dir);
@@ -563,7 +685,7 @@ public class SettingsDialog extends JDialog {
 	private static JPanel folderRow(String name, JLabel path, ActionListener change) {
 		JPanel row = new JPanel(new BorderLayout(8, 0));
 		JLabel n = new JLabel(name);
-		n.setPreferredSize(new java.awt.Dimension(95, n.getPreferredSize().height));
+		n.setPreferredSize(new java.awt.Dimension(132, n.getPreferredSize().height)); // "Slipstream folder:" fits (5.70)
 		JButton b = new JButton("Change...");
 		b.addActionListener(change);
 		row.add(n, BorderLayout.WEST);
@@ -622,6 +744,18 @@ public class SettingsDialog extends JDialog {
 			victoryButtons[i].setSelected(homeplanet.parser.FinalVictory.CHOICES[i].equals(victoryWas));
 			victoryButtons[i].setEnabled(career == null); // the career's difficulty decides it
 		}
+		String rule = homeplanet.parser.FinalVictory.toHardRule();
+		homeplanet.parser.CareerRules r = homeplanet.parser.CareerRules.current();
+		boolean none = homeplanet.parser.FinalVictory.TO_HARD_NONE.equals(rule), normal = r != null && homeplanet.parser.CareerRules.NORMAL.equals(r.name);
+		toHardWas = homeplanet.parser.FinalVictory.toHard();
+		toHardBox.setSelected(toHardWas);
+		toHardBox.setEnabled(homeplanet.parser.FinalVictory.TO_HARD_FREE.equals(rule));
+		toHardBox.setText(none ? "<html><s>" + TO_HARD + "</s></html>" : TO_HARD); // crossed out where it can never come into play
+		toHardBox.setToolTipText(none ? (r != null && homeplanet.parser.CareerRules.HARD.equals(r.name) ? "A Hard career" : "This career") + ": the museum takes every victor, so a rescued ship never comes back to fly"
+				: homeplanet.parser.FinalVictory.TO_HARD_ON.equals(rule) ? (normal ? "A Normal career: a rescued ship always sets out on Hard" : "Chosen when this career began: a rescued ship always sets out on Hard")
+				: homeplanet.parser.FinalVictory.TO_HARD_OFF.equals(rule) ? "Chosen when this career began: when you keep a rescued ship, you choose her difficulty"
+				: homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(rule) ? "This career hasn't chosen yet: the Space Dock will ask"
+				: "When you keep a rescued ship, she sets out on Hard without asking; otherwise you choose her difficulty. Each fleet has its own choice.");
 	}
 	private String victoryChoice() {
 		if (homeplanet.parser.FinalVictory.fixed() != null) return victoryWas;

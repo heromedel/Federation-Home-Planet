@@ -9,8 +9,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.blerf.ftl.constants.Difficulty;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.vault.Ship;
@@ -124,12 +126,13 @@ public final class FinalVictory {
 				if (won) homeplanet.vault.Reputation.flagship(v, f.name); // the career's standing, if one runs
 				if (!won || NOTHING.equals(c)) {
 					v.closeFinal(f, won);
-					if (won) HistoryLog.entry("VICTORY", f.name + " won the last battle and was lost with the run (after a final victory: nothing)");
+					if (won) HistoryLog.entry("VICTORY", f.name + " won the last battle and was lost with the run (after a final victory: nothing)", null, battle("VICTORY", f).put("after", "nothing"));
 					continue;
 				}
 				boolean named = u.victoriousScores(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId()) > f.scoresThen;
 				HistoryLog.entry("VICTORY", f.name + " won the last battle (the profile's victories " + f.victoriesThen + " -> " + u.victories()
-						+ (named ? ", and a Top Scores entry names her" : "") + "); after a final victory: " + c + ", her value " + value + " scrap");
+						+ (named ? ", and a Top Scores entry names her" : "") + "); after a final victory: " + c + ", her value " + value + " scrap", null,
+						battle("VICTORY", f).put("victories_then", f.victoriesThen).put("victories_now", u.victories()).put("top_scores", named).put("after", c).put("value", value));
 				if (MUSEUM.equals(c)) { // Hard: no keeping her; the museum takes her at its price
 					fills.put("value", Integer.toString(museumPrice(value)));
 					museum(f);
@@ -149,7 +152,7 @@ public final class FinalVictory {
 						throw e;
 					}
 					v.closeFinal(f, true);
-					HistoryLog.entry("REWARD", value + " scrap to the Cargo Hold for " + f.name);
+					HistoryLog.entry("REWARD", value + " scrap to the Cargo Hold for " + f.name, null, battle("REWARD", f).put("scrap", value).put("to", "hold"));
 					if (HomePlanet.immersiveNotifications()) Transmissions.post("reward:" + f.id, "reward", fills);
 					else out.add(notice("reward", fills, null, value));
 				}
@@ -169,20 +172,66 @@ public final class FinalVictory {
 		Vault.FinalBattle f = Vault.get().finalBattle(id);
 		return f != null && "offered".equals(f.outcome) ? f : null;
 	}
-	/** Keep her: she docks, ready for a new journey. Returns what came of it, in words. */
-	public static String keep(Vault.FinalBattle f) throws IOException {
-		Ship s = Vault.get().bringHome(f);
-		Museum.kept(Vault.get(), f.id);
-		return s.name + " is docked at the Space Dock, ready for her next journey.";
+	// Rescued Ships after Victory moved to Hard difficulty (heromedel, 6.02 and 6.03), as the fleet in use has it:
+	/** The player's, in Settings: Sandbox Mode (the cfg) and Easy (its career). */
+	public static final String TO_HARD_FREE = "free";
+	/** Always: Normal, or a Custom career that chose it. */
+	public static final String TO_HARD_ON = "on";
+	/** Never: a Custom career that chose not to (she gets the question of her difficulty). */
+	public static final String TO_HARD_OFF = "off";
+	/** Doesn't apply: the museum takes every victor (Hard, or a Custom career with that rule). */
+	public static final String TO_HARD_NONE = "none";
+	/** A Custom career that hasn't chosen yet: the Space Dock asks, as the briefing would have. */
+	public static final String TO_HARD_ASK = "ask";
+	/** How it stands for the fleet in use. */
+	public static String toHardRule() {
+		CareerRules r = CareerRules.current();
+		return toHardRule(r, r == null ? null : Career.rescuedToHard(Vault.get().root));
 	}
+	/** How it stands for a career with these rules and this saved answer (null: none); null rules, Sandbox Mode. */
+	public static String toHardRule(CareerRules r, String saved) {
+		if (r == null) return TO_HARD_FREE;
+		if (MUSEUM.equals(r.victory())) return TO_HARD_NONE;
+		if (CareerRules.NORMAL.equals(r.name)) return TO_HARD_ON; // no saved answer is read: deleting one changes nothing
+		if (CareerRules.CUSTOM.equals(r.name)) return saved == null ? TO_HARD_ASK : Boolean.parseBoolean(saved) ? TO_HARD_ON : TO_HARD_OFF;
+		return TO_HARD_FREE; // Easy, or a career from before difficulties
+	}
+	/** Whether a rescued ship, kept, sets out on Hard without asking. */
+	public static boolean toHard() {
+		String rule = toHardRule();
+		if (TO_HARD_ON.equals(rule)) return true;
+		if (!TO_HARD_FREE.equals(rule)) return false;
+		return CareerRules.current() == null ? HomePlanet.rescuedToHard : Boolean.parseBoolean(Career.rescuedToHard(Vault.get().root));
+	}
+	/** The player's own answer, where it is theirs (Sandbox Mode's in the cfg: the caller saves it; Easy's in its career). */
+	public static void setToHard(boolean on) throws IOException {
+		if (CareerRules.current() == null) HomePlanet.rescuedToHard = on;
+		else if (TO_HARD_FREE.equals(toHardRule())) Career.setRescuedToHard(Vault.get().root, on);
+	}
+	/** A Custom career's answer, chosen once (the briefing, or the Space Dock's question). */
+	public static void chooseToHard(java.io.File immersiveRoot, boolean on) throws IOException {
+		Career.setRescuedToHard(immersiveRoot, on);
+		HistoryLog.entry("CAREER", "Rescued Ships after Victory moved to Hard difficulty: " + (on ? "yes" : "no") + " (chosen for the career, fixed)", null,
+				Event.of("CAREER").put("what", "rescued_to_hard").put("rescued_to_hard", on));
+	}
+	/** Keep her: she docks, ready for a new journey at this difficulty (null: the one she won on). Returns what came of it, in words. */
+	public static String keep(Vault.FinalBattle f, Difficulty difficulty) throws IOException {
+		Ship s = Vault.get().bringHome(f, difficulty);
+		Museum.kept(Vault.get(), f.id);
+		return s.name + " is docked at the Space Dock, ready for her next journey" + (difficulty == null ? "." : ", on " + title(difficulty) + ".");
+	}
+	/** "Easy", "Normal" or "Hard". */
+	public static String title(Difficulty d) { return d == null ? "" : d.toString().substring(0, 1) + d.toString().substring(1).toLowerCase(); }
 	/** The museum's offer: its price (her value, or half on harder careers) to the Cargo Hold, and she goes to the museum. Returns what came of it, in words. */
+	/** An event about the ship of a final battle (she may have left the fleet). */
+	private static Event battle(String kind, Vault.FinalBattle f) { return Event.of(kind).put("ship", f.name + "." + f.id).put("ship_name", f.name).put("ship_id", f.id); }
 	public static String museum(Vault.FinalBattle f) throws IOException {
 		int value = museumPrice(value(HomePlanet.savedGameParser.readSavedGame(f.copy)));
 		Vault v = Vault.get();
 		v.depositToStorage(value);
 		v.toMuseum(f);
 		Museum.preserved(v, f.id, value);
-		HistoryLog.entry("MUSEUM", value + " scrap to the Cargo Hold for " + f.name);
-		return f.name + " is honoured in the Federation museum. " + value + " scrap is waiting in the Cargo Hold.";
+		HistoryLog.entry("MUSEUM", value + " scrap to the Cargo Hold for " + f.name, null, battle("MUSEUM", f).put("scrap", value).put("to", "hold"));
+		return f.name + " is honoured in the Federation Museum. " + value + " scrap is waiting in the Cargo Hold.";
 	}
 }

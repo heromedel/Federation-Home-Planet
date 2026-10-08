@@ -83,8 +83,12 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("S: paying more than the hold has is refused, saying what it has", refused && SafeFiles.hash(st.file()).equals(hash));
   byte[] before = v.payFromStorage(120);
   Setup.chk("S: paying takes the scrap", v.storageScrap() == 180);
-  v.refundStorage(before);
-  Setup.chk("S: a refund puts it back", v.storageScrap() == 300);
+  boolean short_ = false; try { v.begin().pay(181); } catch (IOException e) { short_ = e.getMessage().contains("180"); }
+  Vault.Transaction t = v.begin().pay(80);
+  Setup.chk("S: paid in a note (6.11): refused when short, nothing taken until it's written", short_ && v.storageScrap() == 180);
+  t.commit();
+  Setup.chk("S: and taken when it is", v.storageScrap() == 100);
+  v.depositToStorage(200); // back to 300, as the rest expects
  }
  static void relief() throws Exception {
   SavedGameState r = Commission.buildRelief("Relief", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(2));
@@ -117,8 +121,8 @@ public class PriceT { public static void main(String[] a) throws Exception {
   v.board(x); v.disband();
   String bp = x.save().getPlayerShipBlueprintId();
   SafeFiles.writeText(v.systemsFile(), SystemsPanelHeader.H + "\nteleporter 2\n", false);
-  // the hold can't be emptied (its records folder is blocked by a file): the hulls stay in the Junkyard
-  File block = v.historyOf(v.storage()); SafeFiles.deleteTree(block); SafeFiles.writeText(block, "x", false);
+  // the hold can't be emptied (its versions folder is blocked by a file): the hulls stay in the Junkyard
+  File block = ShipStore.versions(v.historyOf(v.storage())); SafeFiles.deleteTree(block); SafeFiles.writeText(block, "x", false);
   int junked = v.junked().size(); boolean failed = false;
   try { v.surrender(); } catch (IOException e) { failed = true; }
   boolean still = true; for (Ship j : v.junked()) if (!j.file().isFile()) still = false;
@@ -130,8 +134,8 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("F: what a surrender gives up is valued: the hold's scrap, its stored systems and the Junkyard's hulls", worth > 300 + homeplanet.parser.Pricing.system("teleporter", 2));
   File dir = v.surrender();
   Setup.chk("F: surrender empties the hold and the Junkyard", v.junked().isEmpty() && v.storageScrap() == 0 && !v.systemsFile().exists());
-  Setup.chk("F: what was surrendered is kept", new File(dir, x.id + ".sav").isFile() && new File(dir, "storage.sav").isFile() && new File(dir, "storage-systems.txt").isFile() && dir.equals(v.lastSurrender()));
-  List<String> ids = Retrofit.blueprintIds(new File(dir, x.id + ".sav"));
+  Setup.chk("F: what was surrendered is kept", Setup.savIn(dir, x.id) != null && new File(dir, "storage.sav").isFile() && new File(dir, "storage-systems.txt").isFile() && dir.equals(v.lastSurrender()));
+  List<String> ids = Retrofit.blueprintIds(Setup.savIn(dir, x.id));
   Setup.chk("F: a surrendered hull's blueprints still count", ids != null && v.blueprintsInUseOrHistory().containsAll(ids));
   for (Ship s : v.docked()) v.remove(s, "DESTROY");
   Setup.chk("F: no ship docked, boarded or junked: the shipyard is empty", v.shipyardEmpty());
@@ -167,13 +171,23 @@ public class PriceT { public static void main(String[] a) throws Exception {
   v.plead();
   Setup.chk("F: a plea takes nothing", v.storageScrap() == 400 && v.freeCommandOpen() && v.freeCommandReassigned());
   int junked = v.junked().size();
-  byte[][] before = v.forfeitHold(500, 100);
+  // given up in the new ship's note (6.11): a ship that can't be written leaves the hold as it was
+  Vault.Transaction tx = v.begin(); v.forfeitHold(500, 100, tx);
+  Ship failing = tx.adopt(Commission.buildRelief("Never Written", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)), Ship.State.DOCKED, "commissioned");
+  File blocker = v.folderOf(failing); blocker.getParentFile().mkdirs(); SafeFiles.writeText(blocker, "in the way", false); // her folder can't be made
+  boolean failed = false; try { tx.commit(); } catch (IOException e) { failed = true; }
+  blocker.delete();
+  Setup.chk("F: her commission fails: the hold as it was, its systems kept, no ship", failed && v.storageScrap() == 400 && v.systemsFile().isFile() && v.byId(failing.id) == null);
+  int fleet = v.fleet().size();
+  tx = v.begin(); v.forfeitHold(500, 100, tx);
+  Ship relief = tx.adopt(Commission.buildRelief("Given For", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(4)), Ship.State.DOCKED, "commissioned");
+  Setup.chk("F: nothing taken until the note is written", v.storageScrap() == 400 && v.systemsFile().isFile());
+  tx.commit();
   SavedGameState after = v.readCopy(v.storage()).save;
   Setup.chk("F: giving up the hold: emptied but for the refund, the crew stay, the Junkyard untouched", v.storageScrap() == 100 && after.getPlayerShip().getMissilesAmt() == 0
     && after.getPlayerShip().getWeaponList().isEmpty() && !v.systemsFile().exists() && v.junked().size() == junked
     && SaveHelper.getOwnCrew(after.getPlayerShip()).size() == 1 && "Stays Aboard".equals(SaveHelper.getOwnCrew(after.getPlayerShip()).get(0).getName()));
-  v.unforfeitHold(before);
-  Setup.chk("F: and put back as it was when her commission fails", v.storageScrap() == 400 && v.systemsFile().isFile());
+  Setup.chk("F: and her ship docked with it, her record there", v.byId(relief.id) != null && v.fleet().size() == fleet + 1 && ShipStore.read(v.folderOf(relief)) != null && v.fileOf(relief).isFile());
   v.withdrawPlea();
  }
 }

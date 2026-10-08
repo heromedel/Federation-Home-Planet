@@ -5,11 +5,8 @@ import java.awt.Component;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -96,7 +93,7 @@ public class SystemsPanel {
 	SystemsPanel(CargoBayUI bay) { this.bay = bay; }
 
 
-	/** The stored-systems list that goes with the storage hold (storage-systems.txt in the vault). */
+	/** The stored-systems list that goes with the storage hold (systems.txt in the Cargo Hold's folder). */
 	File file() {
 		return bay.homeSave == null ? null : homeplanet.vault.Vault.get().systemsFile();
 	}
@@ -281,7 +278,7 @@ public class SystemsPanel {
 		layoutLbl.setText("Layout:  " + txt + (inGame ? "" : "  (not patched in)") + (retro ? "   ·   retrofitted: any system can be stored" : ""));
 		layoutLbl.setColor(inGame ? CargoParts.TEXT : CargoParts.ORANGE);
 		layoutLbl.setToolTipText(!retro ? "Her systems are where the ship model puts them"
-				: "Blueprint " + id + (inGame ? "" : ". The game data doesn't have it yet: install the mod (Settings > Patch mods) before launching"));
+				: "Blueprint " + id + (inGame ? "" : ". The game data doesn't have it yet: install the mod (Settings > Mods > Patch mods) before launching"));
 		layoutLbl.setBounds(0, y, w, 18);
 		lists.add(layoutLbl);
 		y += 24;
@@ -368,28 +365,15 @@ public class SystemsPanel {
 		unknownLines.clear();
 		File f = file();
 		if (f == null || !f.exists()) return;
-		BufferedReader r = null;
 		try {
-			r = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"));
-			String line;
-			while ((line = r.readLine()) != null) {
-				line = line.trim();
-				if (line.isEmpty() || line.startsWith("#")) continue;
-				String[] p = line.split("\\s+");
-				if (SystemType.findById(p[0]) == null) { log.warn("Unknown system in {}: {}", f.getName(), line); unknownLines.add(line); continue; }
-				int level = 1;
-				try { if (p.length > 1) level = Math.max(1, Integer.parseInt(p[1])); } catch (NumberFormatException e) { }
-				if (SystemType.findById(p[0]) == SystemType.CLONEBAY) level = 0; // the level stays with the Medbay
-				int broken = 0;
-				try { if (p.length > 2) broken = Math.max(0, Integer.parseInt(p[2])); } catch (NumberFormatException e) { }
-				if (level > 0) broken = Math.min(broken, level);
-				stored.add(new Stored(p[0], level, broken));
+			for (homeplanet.vault.StoredSystems.Entry e : homeplanet.vault.StoredSystems.read(f)) {
+				if (SystemType.findById(e.id) == null) { log.warn("Unknown system in {}: {}", f.getName(), e.line); unknownLines.add(e.line); continue; }
+				int level = SystemType.findById(e.id) == SystemType.CLONEBAY ? 0 : e.level; // a Clone Bay's level stays with the Medbay
+				stored.add(new Stored(e.id, level, level > 0 ? Math.min(e.broken, level) : e.broken));
 			}
 		} catch (Exception e) {
 			log.error("Could not read " + f, e);
 			homeplanet.core.HomePlanet.showErrorDialog("Could not read the list of systems stored in the Cargo Bay:\n" + f + "\n\n" + e);
-		} finally {
-			try { if (r != null) r.close(); } catch (Exception e) { }
 		}
 	}
 
@@ -468,21 +452,11 @@ public class SystemsPanel {
 		if (changes.isEmpty()) return;
 		File f = file();
 		if (f == null) return;
-		StringBuilder sb = new StringBuilder(HEADER).append("\n");
-		for (Stored s : stored) sb.append(line(s.id, s.level, s.broken)).append("\n");
-		for (String u : unknownLines) sb.append(u).append("\n"); // lines this version can't use are kept, not dropped
-		tx.put(f, sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-	}
-	public static final String HEADER = "# Ship systems stored in the Cargo Bay: <system id> <level> [<broken bars>] (a Clone Bay has no level: it uses the Medbay's)";
-	static String line(String id, int level) { return line(id, level, 0); }
-	/** A stored system's line; broken bars go third (an older station reads the first two, and keeps the rest of its lines). */
-	public static String line(String id, int level, int broken) {
-		if (broken > 0) return id + " " + level + " " + broken;
-		return level > 0 ? id + " " + level : id;
+		List<String> lines = new ArrayList<String>();
+		for (Stored s : stored) lines.add(homeplanet.vault.StoredSystems.line(s.id, s.level, s.broken));
+		homeplanet.vault.StoredSystems.write(tx, homeplanet.vault.Vault.get(), lines, unknownLines); // lines this version can't use are kept, not dropped
 	}
 
-	/** True if a system was taken off the ship: then the file is written before the ship, so a failed save can't lose it. */
-	boolean storedSomething() { return storedSomething; }
 	List<String> changes() { return changes; }
 
 	// ---- Rules ----
@@ -529,7 +503,7 @@ public class SystemsPanel {
 		if (type == SystemType.MEDBAY) return homeplanet.parser.Retrofit.isRetrofitted(ship) ? null : MEDBAY;
 		if (type == SystemType.CLONEBAY) return hasRoomFor(ship, SystemType.MEDBAY) ? null : STARTING; // storing it leaves a Medbay in the room
 		if (isStarting(ship, type)) {
-			return homeplanet.parser.Retrofit.blankAvailable(ship) ? STARTING + ". Press Retrofit (below) to allow removing it" : STARTING + ". Send the " + homeplanet.parser.Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Patch mods) to allow retrofitting";
+			return homeplanet.parser.Retrofit.blankAvailable(ship) ? STARTING + ". Press Retrofit (below) to allow removing it" : STARTING + ". Send the " + homeplanet.parser.Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Mods > Patch mods) to allow retrofitting";
 		}
 		return null;
 	}
@@ -801,27 +775,19 @@ public class SystemsPanel {
 	}
 
 	/**
-	 * Scrapping and stripping (where allowed): moves the wreck's storable systems into the stored-systems file
-	 * (standard equipment and the Medbay stay with the hull; damaged systems are lost). Returns log lines.
+	 * Scrapping and stripping (where allowed): the wreck's storable systems, as lines for the stored systems (into
+	 * {@code store}; standard equipment and the Medbay stay with the hull; damaged ones go too, damaged). Returns log lines.
 	 */
-	static List<String> scrapSystems(ShipState wreck, homeplanet.vault.Vault.Transaction tx) throws java.io.IOException {
+	static List<String> scrapSystems(ShipState wreck, List<String> store) {
 		List<String> lines = new ArrayList<String>();
-		List<String> add = new ArrayList<String>();
 		for (SystemType t : SystemType.values()) {
 			SystemState st = wreck.getSystem(t);
 			if (st == null || st.getCapacity() <= 0 || storeReason(wreck, t) != null) continue;
 			String name = DryDockShop.systemTitle(t.getId());
 			int level = t == SystemType.CLONEBAY ? 0 : st.getCapacity(), broken = level > 0 ? st.getDamagedBars() : 0; // damaged systems are kept, damaged
-			add.add(line(t.getId(), level, broken));
+			store.add(homeplanet.vault.StoredSystems.line(t.getId(), level, broken));
 			lines.add("+ " + name + (level > 0 ? " (level " + level + (broken > 0 ? ", " + broken + " broken" : "") + ")" : "") + " (system)");
 		}
-		if (add.isEmpty()) return lines;
-		File f = homeplanet.vault.Vault.get().systemsFile();
-		List<String> keep = new ArrayList<String>();
-		if (f.exists()) keep.addAll(java.nio.file.Files.readAllLines(f.toPath(), java.nio.charset.StandardCharsets.UTF_8));
-		else keep.add(HEADER);
-		keep.addAll(add);
-		tx.put(f, (String.join("\n", keep) + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
 		return lines;
 	}
 	/** How many of her systems stripping would move to the Cargo Bay (storable ones: damaged ones go too, damaged). */
@@ -870,7 +836,7 @@ public class SystemsPanel {
 		boolean undo = homeplanet.parser.Retrofit.isRetrofitted(ship);
 		if (!undo && !homeplanet.parser.Retrofit.blankAvailable(ship)) {
 			JOptionPane.showMessageDialog(bay, "Retrofit needs the " + homeplanet.parser.Retrofit.MOD_NAME + ".\n"
-					+ "Send it to FTL via Slipstream with Settings > Patch mods (it comes with Federation Home Planet), then restart The Home Planet Station.", "Retrofit", JOptionPane.INFORMATION_MESSAGE);
+					+ "Send it to FTL via Slipstream with Settings > Mods > Patch mods (it comes with Federation Home Planet), then restart The Home Planet Station.", "Retrofit", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		if (undo) {

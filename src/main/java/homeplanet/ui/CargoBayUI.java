@@ -18,7 +18,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -303,7 +302,6 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	void help(String s) { help.setText(s == null ? "" : s); }
 	/** Something changed that Save would write. */
 	void markDirty() { dirty = true; saveBtn.repaint(); }
-	boolean isDirty() { return dirty; }
 	/** Asks before throwing away unsaved changes; true to go on. */
 	boolean confirmLeave(String doing) {
 		if (!dirty) return true;
@@ -371,11 +369,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		revalidate();
 		repaint();
 	}
-	/** Kept for the Space Dock's call after init(): the partner is loaded by init(). */
-	public void tradeShipInit() { }
 
 	private void loadCurrent() {
-		Ship flying = homeplanet.core.FtlDock.active() ? Vault.get().boarded() : null; // FTL docked: the ship in flight stays out of the Cargo Bay (5.29)
+		Ship flying = outOfReach(); // in flight in the dock (5.29), or her save can't be read (5.81): she stays out of the Cargo Bay
 		currentShip = picked != null && picked != flying && Vault.get().fleet().contains(picked) ? picked : flying != null ? null : Vault.get().boarded();
 		if (currentShip != picked) picked = null; // she's gone (boarded elsewhere, decommissioned): back to the boarded ship
 		if (currentShip == null || !currentShip.file().exists()) {
@@ -428,10 +424,33 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	}
 	boolean partnerIsStorage() { return tradeShip == homeSave; }
 
+	/**
+	 * The boarded ship the Cargo Bay leaves out: in flight in the dock (5.29), or one whose save can't be read just now
+	 * (heromedel, 5.81: the whole room used to close; it opens without her, as it does while she's docked).
+	 */
+	static Ship outOfReach() {
+		Ship b = Vault.get().boarded();
+		return b != null && (homeplanet.core.FtlDock.active() || b.save() == null) ? b : null;
+	}
+	/**
+	 * Why the boarded ship is left out of the Cargo Bay when her save can't be read, or null when it can (heromedel's
+	 * idea, 5.81; words to be improved by McCarthy).
+	 */
+	static String unreadableNote() {
+		Ship b = Vault.get().boarded();
+		if (b == null || b.save() != null) return null;
+		// line breaks where the sense breaks (docs/STYLE.md), never mid-sentence
+		return "The Home Planet Station could not load " + homeplanet.parser.ShipNames.the(b.name) + ": her save can't be read right now.\n\n"
+				+ "The Cargo Bay opens without her: she can't be picked, and her store and the Refit tab stay closed\n"
+				+ "until her save can be read again. Close the Cargo Bay and try again in a moment.\n\n"
+				+ "If this keeps happening, send a bug report (Settings, Send Feedback) with the station's log\n"
+				+ "from the logs folder beside the program.";
+	}
+
 	/** The ships at the Space Dock (boarded and docked) whose saves can be read: any of them can trade (see {@link Dlc} for what may move). */
 	ArrayList<Ship> tradeableShips() {
 		ArrayList<Ship> list = new ArrayList<Ship>();
-		Ship flying = homeplanet.core.FtlDock.active() ? Vault.get().boarded() : null; // in flight, docked: not tradeable till FTL closes (5.29)
+		Ship flying = outOfReach(); // in flight, docked: not tradeable till FTL closes (5.29); unreadable, till she can be read
 		for (Ship s : Vault.get().fleet()) if (s != flying && s.save() != null) list.add(s);
 		return list;
 	}
@@ -1192,20 +1211,6 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		refreshTrade();
 		help(cs.getName() + (fromMine ? " went to " + partnerName() + "." : " came aboard your ship."));
 	}
-	/** One history line for each crew member on this side now who wasn't before the save. */
-	private static void assigned(ShipState now, Map<String, Integer> before, SavedGameState save, boolean hold) {
-		if (now == null || before == null) return;
-		Map<String, Integer> seen = new HashMap<String, Integer>();
-		for (CrewState c : SaveHelper.getOwnCrew(now)) {
-			int n = seen.containsKey(c.getName()) ? seen.get(c.getName()) + 1 : 1;
-			seen.put(c.getName(), n);
-			Integer had = before.get("Crew " + c.getName());
-			if (had != null && n <= had) continue;
-			String ship = save.getPlayerShipName();
-			String place = hold ? "the Cargo Hold" : the(ship);
-			homeplanet.core.HistoryLog.entry("CREW", c.getName() + " assigned to " + place + ".");
-		}
-	}
 	private void crewInfo(boolean mine) {
 		Category c = cats[3];
 		CrewState cs = (CrewState) (mine ? c.mine : c.theirs).selectedValue();
@@ -1272,6 +1277,16 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	// ============================================================== Save
 
+	/**
+	 * Whether writing this state would change her file: her save as the station last read it and this one, each written
+	 * out, compared. The same object (her copy couldn't be read), or anything that can't be compared, counts as a change.
+	 */
+	static boolean changes(Ship s, SavedGameState now) {
+		try {
+			SavedGameState was = s.save();
+			return was == null || now == null || was == now || !java.util.Arrays.equals(homeplanet.parser.SaveHelper.toBytes(was), homeplanet.parser.SaveHelper.toBytes(now));
+		} catch (Exception e) { return true; }
+	}
 	/** Writes every pending change (ship, trade partner, shop, systems, and the history log entries); true if all of it was written (false after telling the player why not). */
 	public boolean saveAll() {
 		boolean holdAlone = currentShip == null && holdOnly(); // no ship picked: only the Cargo Hold (and the stored systems) change
@@ -1279,98 +1294,35 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			HomePlanet.showErrorDialog("Nothing to save: no ship is picked. Pick one with the button above, or board one at the Space Dock.");
 			return false;
 		}
-		if (currentShip != null && currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return false;
+		// FTL's ship is asked about only when this save really changes her, whichever ship is picked (heromedel, 5.81): a
+		// purchase for the Cargo Hold with her picked left her as she was and still asked; one from her own store with
+		// another ship picked changed her and didn't ask, and FTL, mid-game, put the item back on the shelf
+		Ship flying = Vault.get().boarded();
+		boolean currentSame = currentShip != null && currentShip == flying && !changes(flying, currentSave);
+		boolean tradeSame = tradeShip != null && tradePath != null && tradeShip == flying && !changes(flying, tradeSave);
+		boolean flyingChanged = flying != null && ((currentShip == flying && !currentSame) || (tradeShip == flying && tradePath != null && !tradeSame)
+				|| (shop.touched().contains(flying) && changes(flying, shop.copyOf(flying))));
+		if (flyingChanged && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return false;
 		int billed = 0; // taken from the Cargo Hold in memory (it's the partner): given back if the save fails
 		try {
-			Map<String, Integer> curBefore = null, tradeBefore = null;
-			String nameBefore = null, tradeNameBefore = null;
-			try {
-				// the ships as their files have them: the vault's own parse (a fresh read could fail after a remodel changed her layout)
-				SavedGameState onDisk = currentShip == null ? null : currentShip.save();
-				if (onDisk != null) { nameBefore = onDisk.getPlayerShipName(); curBefore = homeplanet.core.HistoryLog.inventory(onDisk); }
-				SavedGameState tradeDisk = tradeShip != null && tradePath != null ? tradeShip.save() : null;
-				if (tradeDisk != null) { tradeNameBefore = tradeDisk.getPlayerShipName(); tradeBefore = homeplanet.core.HistoryLog.inventory(tradeDisk); }
-			} catch (Exception e) {
-				log.warn("Could not read saves for the history log", e);
-			}
-			shop.countPurchasesAsBefore(curBefore, currentSave); // purchases get their own BUY entry
-			shop.countPurchasesAsBefore(tradeBefore, tradeSave);
+			boolean partner = tradeShip != null && tradePath != null;
+			homeplanet.vault.CargoBaySave.Changes ch = new homeplanet.vault.CargoBaySave.Changes(currentShip, currentSave, currentState,
+					partner ? tradeShip : null, partner ? tradeSave : null, partner ? tradeState : null, partnerIsStorage());
+			shop.countPurchasesAsBefore(ch.currentBefore, currentSave); // purchases get their own BUY entry
+			shop.countPurchasesAsBefore(ch.partnerBefore, tradeSave);
 			// every file together, or none: the ships, the storage, the shops bought from, the stored-systems list
 			Vault.Transaction tx = Vault.get().begin();
-			if (currentShip != null) tx.put(currentShip, currentSave, currentHash);
-			if (tradeShip != null && tradePath != null) tx.put(tradeShip, tradeSave, tradeHash);
+			if (currentShip != null && !currentSame) tx.put(currentShip, currentSave, currentHash); // FTL's ship, unchanged: her file left alone
+			if (partner && !tradeSame) tx.put(tradeShip, tradeSave, tradeHash);
 			shop.addTo(tx);
 			systems.addTo(tx);
 			billed = systems.payBill(tx); // the Dry Dock's work, from the Cargo Hold, in the same save
-			tx.commit();
-			systems.spendRepBill(); // and the reputation it took, once the save stands
-			// real business at the station passes a day (heromedel, 5.17): buying, selling, the Dry Dock's work, a system in
-			// or out; never moving your own things about. Not twice running: a Save after a Cargo Bay day, with nothing else
-			// moving the clock between, passes none (selling one missile at a time can't run the clock)
-			boolean business = !systems.changes().isEmpty() || !shop.purchases().isEmpty();
-			for (Disposal dp : disposals) if ("SELL".equals(dp.kind) && (dp.save == currentSave || dp.save == tradeSave)) business = true;
-			if (!systems.changes().isEmpty())
-				homeplanet.core.HistoryLog.entry("SYSTEMS", currentSave.getPlayerShipName(), new ArrayList<String>(systems.changes()));
-			for (String c : systems.changes()) if (c.startsWith("Installed ")) { homeplanet.parser.ThirdFleet.partInstalled(Vault.get()); break; } // the technicians tell the Third Fleet Commander
-			if (!shop.purchases().isEmpty())
-				homeplanet.core.HistoryLog.entry("BUY", shop.purchases().size() == 1 ? "1 purchase" : shop.purchases().size() + " purchases",
-						new ArrayList<String>(shop.purchases()));
-			if (currentShip != null && nameBefore != null && !nameBefore.equals(currentSave.getPlayerShipName()))
-				homeplanet.core.HistoryLog.entry("RENAME", nameBefore + " -> " + currentSave.getPlayerShipName() + "  (" + currentShip.id + ")");
-			if (tradeNameBefore != null && !partnerIsStorage() && !tradeNameBefore.equals(tradeSave.getPlayerShipName()))
-				homeplanet.core.HistoryLog.entry("RENAME", tradeNameBefore + " -> " + tradeSave.getPlayerShipName() + "  (" + tradeShip.id + ")");
-			// crew renames get their own lines, not a "left / joined" pair in the trade
-			for (Map.Entry<CrewState, String> r : crewRenames.entrySet()) {
-				String oldN = r.getValue(), newN = r.getKey().getName();
-				if (oldN.equals(newN)) continue;
-				String ship = currentState.getCrewList().contains(r.getKey()) ? currentSave.getPlayerShipName() : (tradeSave != null ? tradeSave.getPlayerShipName() : "");
-				for (Map<String, Integer> m : java.util.Arrays.asList(curBefore, tradeBefore)) {
-					if (m != null && m.containsKey("Crew " + oldN)) {
-						int n = m.remove("Crew " + oldN);
-						m.put("Crew " + newN, (m.containsKey("Crew " + newN) ? m.get("Crew " + newN) : 0) + n);
-					}
-				}
-				homeplanet.core.HistoryLog.entry("RENAME CREW", oldN + " -> " + newN + "  (" + ship + ")");
-			}
-			// crew who came aboard a ship or into the Cargo Hold: "Lisandra assigned to the Kestrel." (their arrival at the
-			// station's medbay counts from here)
-			assigned(currentShip != null ? currentState : null, curBefore, currentSave, false);
-			if (tradeShip != null && tradePath != null) assigned(tradeState, tradeBefore, tradeSave, partnerIsStorage());
-			// junked, sold and retired get entries of their own, not lines in the trade
-			Map<String, List<String>> byKind = new LinkedHashMap<String, List<String>>();
-			Map<String, Integer> countByKind = new LinkedHashMap<String, Integer>();
-			int sellTotal = 0;
-			for (Disposal dp : disposals) {
-				if (dp.save != currentSave && dp.save != tradeSave) continue;
-				Map<String, Integer> m = dp.save == currentSave ? curBefore : tradeBefore;
-				if (m != null) {
-					Integer n = m.get(dp.invKey);
-					if (n != null) { if (n <= dp.amount) m.remove(dp.invKey); else m.put(dp.invKey, n - dp.amount); }
-					if (dp.scrap > 0) m.put("Scrap", (m.containsKey("Scrap") ? m.get("Scrap") : 0) + dp.scrap);
-				}
-				sellTotal += dp.scrap;
-				if (!byKind.containsKey(dp.kind)) byKind.put(dp.kind, new ArrayList<String>());
-				byKind.get(dp.kind).add(dp.line);
-				countByKind.put(dp.kind, (countByKind.containsKey(dp.kind) ? countByKind.get(dp.kind) : 0) + dp.amount);
-			}
-			for (Map.Entry<String, List<String>> k : byKind.entrySet()) {
-				int n = countByKind.get(k.getKey());
-				String head = k.getKey().equals("RETIRE") ? (n == 1 ? "1 crew member" : n + " crew members") : (n == 1 ? "1 item" : n + " items");
-				if (k.getKey().equals("SELL")) head += " for " + sellTotal + " scrap";
-				homeplanet.core.HistoryLog.entry(k.getKey(), head, k.getValue());
-			}
-			List<String> lines = new ArrayList<String>();
-			if (curBefore != null) {
-				List<String> c = homeplanet.core.HistoryLog.changes(curBefore, homeplanet.core.HistoryLog.inventory(currentSave));
-				if (!c.isEmpty()) { lines.add(currentSave.getPlayerShipName() + ":"); for (String l : c) lines.add("  " + l); }
-			}
-			if (tradeBefore != null) {
-				List<String> c = homeplanet.core.HistoryLog.changes(tradeBefore, homeplanet.core.HistoryLog.inventory(tradeSave));
-				if (!c.isEmpty()) { lines.add(tradeSave.getPlayerShipName() + ":"); for (String l : c) lines.add("  " + l); }
-			}
-			if (!lines.isEmpty())
-				homeplanet.core.HistoryLog.entry("TRADE", currentShip == null ? tradeSave.getPlayerShipName() : currentSave.getPlayerShipName() + (tradeSave != null ? " <-> " + tradeSave.getPlayerShipName() : ""), lines);
-			if (business) homeplanet.vault.MasterLog.businessDay(Vault.get()); // after its entries: they belong to the day the business ended
+			ch.systems.addAll(systems.changes());
+			ch.purchases.addAll(shop.purchases());
+			ch.crewRenames = crewRenames;
+			for (Disposal dp : disposals) if (dp.save == currentSave || dp.save == tradeSave)
+				ch.disposals.add(new homeplanet.vault.CargoBaySave.Disposal(dp.kind, dp.invKey, dp.scrap, dp.line, dp.amount, dp.save != currentSave));
+			homeplanet.vault.CargoBaySave.save(Vault.get(), tx, ch, new Runnable() { public void run() { systems.spendRepBill(); } }); // and the reputation it took, once the save stands
 		} catch (Vault.StaleException e) {
 			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
 			systems.giveBackBill(); // or to the shop's copy of the hold (5.61)

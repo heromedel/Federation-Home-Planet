@@ -2,11 +2,8 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,9 +18,11 @@ import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.model.Skills;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
@@ -37,7 +36,7 @@ import homeplanet.vault.Vault;
  * race's fit for the sector and the job, the job's skill and any hazard. A natural 20 may find an item; a Hijack,
  * Salvage or Rescue that went well may bring a prize. When they're back, a report says what happened in plain words,
  * never a roll or a percentage: the player learns who to send where from the reports alone.
- * Kept in the fleet's assignments.txt (the board, who's away); the words in resource/assignments.txt.
+ * Kept in the fleet's expeditions/expeditions.xml (the board, who's away); the words in lore/expeditions.xml.
  */
 public final class Assignments {
 	private static final Logger log = LoggerFactory.getLogger(Assignments.class);
@@ -159,23 +158,91 @@ public final class Assignments {
 	// ---- the words ----
 
 	private static Map<String, List<String>> words;
+	private static long wordsStamp = -2;
+	/**
+	 * The words in force, by key ("band defend died", "event defend zoltan"), each key's lines in order (6.0 step 9a,
+	 * 5.991: lore/expeditions.xml, assignments.txt before): the station's own from the jar, a key's lines replaced by the
+	 * player's copy's lines for it, those that keep the rules and use only the {tokens} the station's own lines for that
+	 * key do. Read again when the copy changes.
+	 */
 	private static synchronized Map<String, List<String>> words() {
-		if (words != null) return words;
-		Map<String, List<String>> out = new HashMap<String, List<String>>();
-		InputStream in = Assignments.class.getResourceAsStream("/homeplanet/resource/assignments.txt");
-		if (in != null) {
-			try {
-				for (String line : new String(SafeFiles.readAll(in), StandardCharsets.UTF_8).split("\r?\n")) {
-					line = line.trim();
-					int bar = line.indexOf('|');
-					if (line.isEmpty() || line.startsWith("#") || bar < 0) continue;
-					String key = line.substring(0, bar).trim().replaceAll("\\s+", " "), text = line.substring(bar + 1).trim();
-					if (!out.containsKey(key)) out.put(key, new ArrayList<String>());
-					out.get(key).add(text);
-				}
-			} catch (IOException e) { log.warn("Could not read the expedition words: {}", e.toString()); }
+		long stamp = homeplanet.core.Lore.stamp(homeplanet.core.Lore.EXPEDITIONS);
+		if (words != null && stamp == wordsStamp) return words;
+		Map<String, List<String>> out = new LinkedHashMap<String, List<String>>();
+		byte[] jar = homeplanet.core.Lore.jarBytes(homeplanet.core.Lore.EXPEDITIONS);
+		if (jar == null) log.warn("The expedition words (lore/{}) are missing from the program", homeplanet.core.Lore.EXPEDITIONS);
+		else {
+			try { out = lines(jar); }
+			catch (IOException e) { log.warn("Could not read the expedition words: {}", e.toString()); }
 		}
+		java.io.File copy = homeplanet.core.Lore.copy(homeplanet.core.Lore.EXPEDITIONS);
+		if (copy != null) {
+			String where = "lore/" + homeplanet.core.Lore.EXPEDITIONS;
+			try {
+				Map<String, List<String>> theirs = lines(SafeFiles.read(copy));
+				for (Map.Entry<String, List<String>> k : theirs.entrySet()) {
+					java.util.Set<String> may = new java.util.HashSet<String>(java.util.Arrays.asList("he", "him", "his", "He", "His"));
+					if (out.get(k.getKey()) != null) for (String l : out.get(k.getKey())) may.addAll(tokens(l));
+					List<String> good = new ArrayList<String>();
+					for (String l : k.getValue()) {
+						String why = homeplanet.core.Lore.rule(l);
+						if (why == null) for (String t : tokens(l)) if (!may.contains(t)) { why = "{" + t + "} isn't one of these lines'"; break; }
+						if (why == null) good.add(l);
+						else homeplanet.core.Lore.problem(where + ", " + k.getKey() + ": " + why + " (\"" + l + "\"); left out");
+					}
+					if (!good.isEmpty()) out.put(k.getKey(), good);
+				}
+			} catch (IOException e) {
+				homeplanet.core.Lore.problem(where + " could not be read (" + e.getMessage() + "); the station's own words are used");
+			}
+		}
+		wordsStamp = stamp;
 		return words = out;
+	}
+	/** The start-up check: the words read once, so a broken copy is named in the debug log from the start. Never throws. */
+	public static void loreCheck() {
+		try { words(); } catch (RuntimeException e) { log.warn("The expedition words could not be checked: {}", e.toString()); }
+	}
+	/** The marks a line's key is made of, in the key's order (an offer's is its sector alone). */
+	private static final String[] MARKS = {"job", "hazard", "band", "cause", "prize", "race", "captors", "sector"};
+	/** The lines of an expeditions.xml by key, in order: each line's key made from its marks. */
+	static Map<String, List<String>> lines(byte[] bytes) throws IOException {
+		org.w3c.dom.Element root;
+		try {
+			javax.xml.parsers.DocumentBuilderFactory f = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			f.setExpandEntityReferences(false);
+			javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
+			b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
+				@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
+			});
+			root = b.parse(new java.io.ByteArrayInputStream(bytes)).getDocumentElement();
+		} catch (Exception e) {
+			throw new IOException("broken XML: " + e.getMessage(), e);
+		}
+		Map<String, List<String>> out = new LinkedHashMap<String, List<String>>();
+		org.w3c.dom.NodeList nl = root.getElementsByTagName("line");
+		for (int i = 0; i < nl.getLength(); i++) {
+			org.w3c.dom.Element x = (org.w3c.dom.Element) nl.item(i);
+			String kind = x.getAttribute("kind").trim(), text = x.getTextContent().trim();
+			if (kind.isEmpty() || text.isEmpty()) continue;
+			StringBuilder key = new StringBuilder(kind);
+			for (String m : MARKS) {
+				String v = x.getAttribute(m).trim();
+				if (!v.isEmpty()) key.append(' ').append(m.equals("cause") ? "cause" : v);
+			}
+			String k = key.toString();
+			if (!out.containsKey(k)) out.put(k, new ArrayList<String>());
+			out.get(k).add(text);
+		}
+		return out;
+	}
+	private static final java.util.regex.Pattern TOKEN = java.util.regex.Pattern.compile("\\{([A-Za-z0-9_.]+)\\}");
+	private static java.util.Set<String> tokens(String line) {
+		java.util.Set<String> out = new java.util.HashSet<String>();
+		java.util.regex.Matcher m = TOKEN.matcher(line);
+		while (m.find()) out.add(m.group(1));
+		return out;
 	}
 	/** One of the lines for this key, or the fallback ("\n" in the file is a line break: a long line broken where the sense breaks). */
 	static String say(Random rng, String fallback, String... key) {
@@ -262,10 +329,11 @@ public final class Assignments {
 		return out;
 	}
 
-	// ---- the board and who's away (assignments.txt in the fleet) ----
+	// ---- the board and who's away (expeditions/expeditions.xml in the fleet; assignments.txt at its root before 5.85) ----
 
-	private static File file(Vault v) { return new File(v.root, "assignments.txt"); }
-	private static final String NOTE = "Crew expeditions: the sectors on offer, and the crew away on one";
+	/** The expeditions' file: the sectors on offer, and the crew away on one. */
+	public static File file(Vault v) { return new File(v.expeditionsDir(), "expeditions.xml"); }
+	public static final String NOTE = "Crew expeditions: the sectors on offer, and the crew away on one";
 
 	/** A sector on offer. */
 	public static final class Offer {
@@ -298,7 +366,7 @@ public final class Assignments {
 		Random rng = new Random();
 		for (int i = 0; i < OFFERS; i++) {
 			String s = p.getProperty("offer." + i);
-			if (s != null && now < intOf(p, "offer." + i + ".until", 0)) continue;
+			if (s != null && now < Store.num(p, "offer." + i + ".until", 0)) continue;
 			List<String> taken = new ArrayList<String>();
 			for (int k = 0; k < OFFERS; k++) if (k != i && p.getProperty("offer." + k) != null) taken.add(p.getProperty("offer." + k));
 			if (s != null) taken.add(s); // not the one that just came down or was taken
@@ -336,11 +404,11 @@ public final class Assignments {
 				Map<String, String> f = new LinkedHashMap<String, String>();
 				String pre = "away." + i + ".crew." + k + ".";
 				for (String key : p.stringPropertyNames()) if (key.startsWith(pre)) f.put(key.substring(pre.length()), p.getProperty(key));
-				try { crew.add(homeplanet.comm.Line.crewFrom(f)); } catch (IOException e) { log.warn("A crew member away on an expedition can't be read: {}", e.toString()); }
+				try { crew.add(homeplanet.vault.CrewRecord.crew(f)); } catch (IOException e) { log.warn("A crew member away on an expedition can't be read: {}", e.toString()); }
 			}
 			long seed = 0;
 			try { seed = Long.parseLong(p.getProperty("away." + i + ".seed", "0")); } catch (NumberFormatException e) { }
-			out.add(new Away(i, p.getProperty("away." + i + ".sector"), intOf(p, "away." + i + ".sentAt", 0), intOf(p, "away." + i + ".until", 0), seed, crew,
+			out.add(new Away(i, p.getProperty("away." + i + ".sector"), Store.num(p, "away." + i + ".sentAt", 0), Store.num(p, "away." + i + ".until", 0), seed, crew,
 					"true".equals(p.getProperty("away." + i + ".ae"))));
 		}
 		return out;
@@ -383,7 +451,7 @@ public final class Assignments {
 				Map<String, String> f = new LinkedHashMap<String, String>();
 				String pre = "pending." + i + ".crew.";
 				for (String key : p.stringPropertyNames()) if (key.startsWith(pre)) f.put(key.substring(pre.length()), p.getProperty(key));
-				try { c = homeplanet.comm.Line.crewFrom(f); } catch (IOException e) { log.warn("A recruit waiting on an answer can't be read: {}", e.toString()); continue; }
+				try { c = homeplanet.vault.CrewRecord.crew(f); } catch (IOException e) { log.warn("A recruit waiting on an answer can't be read: {}", e.toString()); continue; }
 			}
 			out.add(new Pending(i, kind, p.getProperty("pending." + i + ".name", ""), c, "ship".equals(kind) ? new File(v.root, p.getProperty("pending." + i + ".file", "")) : null, p.getProperty("pending." + i + ".letter")));
 		}
@@ -411,16 +479,18 @@ public final class Assignments {
 			c.save.getPlayerShip().getCrewList().add(x.crew);
 			forget(p, x.index);
 			v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
-			HistoryLog.entry("HIRE", x.name + " (" + race(x.crew) + "), rescued on an expedition, signed on: in the Cargo Hold");
+			HistoryLog.entry("HIRE", x.name + " (" + race(x.crew) + "), rescued on an expedition, signed on: in the Cargo Hold", null,
+				Event.of("HIRE").put("how", "rescued").put("crew", x.name).put("race", race(x.crew)).put("to", "hold"));
 			return;
 		}
 		SavedGameState gs = HomePlanet.savedGameParser.readSavedGame(x.save);
-		Ship s = dock ? v.adopt(gs) : v.adoptJunked(gs);
+		Ship s = dock ? v.adopt(gs, "brought_home") : v.adoptJunked(gs, "brought_home");
 		v.setOut(s, gs, "Brought home by an expedition");
 		forget(p, x.index);
 		write(v, p);
 		x.save.delete();
-		HistoryLog.entry("EXPEDITION", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), brought home by an expedition, kept: " + (dock ? "at the Space Dock" : "in the Junkyard"));
+		HistoryLog.entry("EXPEDITION", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), brought home by an expedition, kept: " + (dock ? "at the Space Dock" : "in the Junkyard"), null,
+				Vault.shipEvent("EXPEDITION", s).put("what", "prize_ship").put("ship_class", gs.getPlayerShipBlueprintId()).put("to", dock ? "ships" : "junkyard"));
 	}
 	/** No: the recruit goes their way, the ship is left where she lies. */
 	public static synchronized void decline(Vault v, Pending x) throws IOException {
@@ -428,7 +498,8 @@ public final class Assignments {
 		forget(p, x.index);
 		write(v, p);
 		if (x.save != null) x.save.delete();
-		HistoryLog.entry("EXPEDITION", "recruit".equals(x.kind) ? x.name + ", rescued on an expedition, was sent on their way" : x.name + ", brought home by an expedition, was not taken");
+		HistoryLog.entry("EXPEDITION", "recruit".equals(x.kind) ? x.name + ", rescued on an expedition, was sent on their way" : x.name + ", brought home by an expedition, was not taken", null,
+				Event.of("EXPEDITION").put("what", "recruit".equals(x.kind) ? "recruit_declined" : "prize_ship_declined").put("name", x.name));
 	}
 	private static void forget(Properties p, int index) {
 		for (String key : new ArrayList<String>(p.stringPropertyNames())) if (key.startsWith("pending." + index + ".")) p.remove(key);
@@ -456,8 +527,8 @@ public final class Assignments {
 	 */
 	static CrewState picked(List<CrewState> hold, CrewState sent, List<CrewState> taken) {
 		for (CrewState x : hold) if (x == sent && !among(taken, x)) return x;
-		Map<String, String> whole = sent.getRace() == null ? null : homeplanet.comm.Line.crewFields(sent);
-		if (whole != null) for (CrewState x : hold) if (!among(taken, x) && x.getRace() != null && homeplanet.comm.Line.crewFields(x).equals(whole)) return x;
+		Map<String, String> whole = sent.getRace() == null ? null : homeplanet.vault.CrewRecord.of(sent);
+		if (whole != null) for (CrewState x : hold) if (!among(taken, x) && x.getRace() != null && homeplanet.vault.CrewRecord.of(x).equals(whole)) return x;
 		for (CrewState x : hold) if (!among(taken, x) && x.getName().equals(sent.getName()) && x.getRace() == sent.getRace()) return x;
 		return null;
 	}
@@ -486,9 +557,9 @@ public final class Assignments {
 		int k = 0;
 		for (CrewState mine : going) {
 			hold.getCrewList().remove(mine);
-			Map<String, String> f = homeplanet.comm.Line.crewFields(mine);
+			Map<String, String> f = homeplanet.vault.CrewRecord.of(mine);
 			for (Map.Entry<String, String> e : f.entrySet()) p.setProperty("away." + i + ".crew." + k + "." + e.getKey(), e.getValue());
-			asLeft.add(homeplanet.comm.Line.crewFrom(f));
+			asLeft.add(homeplanet.vault.CrewRecord.crew(f));
 			k++;
 		}
 		Result r = roll(sector, asLeft, new Random(seed));
@@ -500,8 +571,9 @@ public final class Assignments {
 		p.setProperty("offer." + slot + ".until", "0"); p.remove("offer." + slot + ".words"); // comes down now: redrawn, not the same sector, at the next look
 		v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
 		List<String> names = new ArrayList<String>();
-		for (CrewState x : party) names.add(x.getName());
-		HistoryLog.entry("EXPEDITION", String.join(", ", names) + " sent to " + sectorTitle(sector));
+		Event sent = Event.of("EXPEDITION").put("what", "sent").put("sector", sectorTitle(sector)).put("sector_id", sector).put("party", i);
+		for (CrewState x : party) { names.add(x.getName()); sent.put("crew", x.getName()).put("race", race(x)); }
+		HistoryLog.entry("EXPEDITION", String.join(", ", names) + " sent to " + sectorTitle(sector), null, sent);
 	}
 
 	/**
@@ -675,7 +747,7 @@ public final class Assignments {
 		String kind = item.substring(0, colon), n = item.substring(colon + 1);
 		return n + " " + ("parts".equals(kind) ? "drone parts" : kind);
 	}
-	private static String aOrAn(String s) { return (s.isEmpty() ? "" : "aeiouAEIOU".indexOf(s.charAt(0)) >= 0 ? "an " : "a ") + s; }
+	private static String aOrAn(String s) { return homeplanet.model.Words.a(s); }
 
 	/** The report, as heromedel laid it out: the frame, the job line, a hazard, a line per crew member, the prize, the total. Never a roll. */
 	/** heromedel's frame, the first setup line: one of the general ones, and the fallback for every other. */
@@ -746,7 +818,7 @@ public final class Assignments {
 		for (int i = 0; i < faces.size(); i++) {
 			Face f = faces.get(i);
 			q.setProperty("face.0." + i + ".state", f.state);
-			for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(f.crew).entrySet()) q.setProperty("face.0." + i + ".crew." + e.getKey(), e.getValue());
+			for (Map.Entry<String, String> e : homeplanet.vault.CrewRecord.of(f.crew).entrySet()) q.setProperty("face.0." + i + ".crew." + e.getKey(), e.getValue());
 		}
 		for (int n = 0; n + 1 < FACES_KEPT && old.getProperty("face." + n + ".letter") != null; n++) {
 			String pre = "face." + n + ".";
@@ -763,7 +835,7 @@ public final class Assignments {
 				Map<String, String> fields = new LinkedHashMap<String, String>();
 				String pre = "face." + n + "." + i + ".crew.";
 				for (String k : p.stringPropertyNames()) if (k.startsWith(pre)) fields.put(k.substring(pre.length()), p.getProperty(k));
-				try { out.add(new Face(homeplanet.comm.Line.crewFrom(fields), p.getProperty("face." + n + "." + i + ".state"))); }
+				try { out.add(new Face(homeplanet.vault.CrewRecord.crew(fields), p.getProperty("face." + n + "." + i + ".state"))); }
 				catch (Exception e) { log.debug("A face in an expedition report can't be read: {}", e.toString()); }
 			}
 			break;
@@ -803,7 +875,12 @@ public final class Assignments {
 		Ship st = v.storage();
 		Vault.Copy c = v.readCopy(st);
 		ShipState hold = c.save.getPlayerShip();
-		hold.setScrapAmt(hold.getScrapAmt() + r.scrap);
+		// what they brought back comes with their letter, to claim like anything else shipped home (heromedel, 6.02); with no
+		// inbox there's no letter, and it goes straight into the Cargo Hold as before
+		boolean byLetter = HomePlanet.immersiveNotifications();
+		List<String> brought = new ArrayList<String>();
+		if (!byLetter) hold.setScrapAmt(hold.getScrapAmt() + r.scrap);
+		else if (r.scrap > 0) brought.add("scrap " + r.scrap);
 		List<CrewState> hurt = new ArrayList<CrewState>(), taken = new ArrayList<CrewState>();
 		int skill = jobSkill(r.job);
 		for (Fate f : r.fates) {
@@ -817,7 +894,7 @@ public final class Assignments {
 			if (skill >= 0 && BAND_XP[f.band] > 0) Skills.add(m, skill, BAND_XP[f.band]);
 			if (!SaveHelper.placeCrew(hold, m, true)) throw new IOException("The Cargo Hold has no room for " + m.getName() + "; the detail waits");
 			hold.getCrewList().add(m);
-			if (f.item != null) give(hold, f.item);
+			if (f.item != null) { if (byLetter) brought.add(reward(f.item)); else give(hold, f.item); }
 		}
 		List<String> stored = new ArrayList<String>();
 		File prizeFile = null;
@@ -839,14 +916,19 @@ public final class Assignments {
 				p.setProperty("pending." + pendingIndex + ".file", "assignments/" + prizeFile.getName());
 			} catch (Exception e) { log.warn("The hijacked ship could not be built: {}", e.toString()); r.prize = "part"; }
 		}
-		if ("part".equals(r.prize)) { r.prizeDetail = part(stored, v); }
+		if ("part".equals(r.prize)) {
+			String id = partId();
+			r.prizeDetail = homeplanet.model.Items.systemTitle(id);
+			if (byLetter) brought.add("system " + homeplanet.vault.StoredSystems.line(id, 1, 1));
+			else part(stored, v, id);
+		}
 		if ("recruit".equals(r.prize)) {
 			CrewState n = recruit(new Random());
 			if (n == null) r.prize = null;
 			else {
 				r.recruit = n; r.prizeDetail = n.getName() + " (" + homeplanet.model.Crew.raceTitle(n) + ")";
 				pendingIndex = keep(p, "recruit", n.getName());
-				for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(n).entrySet()) p.setProperty("pending." + pendingIndex + ".crew." + e.getKey(), e.getValue());
+				for (Map.Entry<String, String> e : homeplanet.vault.CrewRecord.of(n).entrySet()) p.setProperty("pending." + pendingIndex + ".crew." + e.getKey(), e.getValue());
 			}
 		}
 		String letter = letterKey(a);
@@ -856,7 +938,7 @@ public final class Assignments {
 		Vault.Transaction tx = v.begin().put(st, c.save, c.hash);
 		if (prizeFile != null) tx.put(prizeFile, prizeBytes);
 		Expeditions.admitAndTake(tx, v, hurt, taken, sectorCaptors(r.sector), v.beaconsSeen(), new Random());
-		if (!stored.isEmpty()) tx.put(v.systemsFile(), (String.join("\n", stored) + "\n").getBytes(StandardCharsets.UTF_8));
+		homeplanet.vault.StoredSystems.add(tx, v, stored);
 		// the away record goes, and the rest are renumbered without a gap
 		Properties q = new Properties();
 		int n = 0;
@@ -876,10 +958,14 @@ public final class Assignments {
 		homeplanet.vault.Reputation.expedition(v, sectorTitle(r.sector) + ", " + jobTitle(r.job), r.scrap, r.dead().size(), takenCount, bad == 0 ? 1 : good == 0 ? -1 : 0);
 		List<String> dead = new ArrayList<String>();
 		for (Fate f : r.dead()) dead.add(f.name());
+		Event back = Event.of("EXPEDITION").put("what", "back").put("sector", sectorTitle(r.sector)).put("sector_id", r.sector).put("job", jobTitle(r.job)).put("job_id", r.job)
+				.put("scrap", r.scrap).put("prize", r.prize).put("prize_detail", r.prizeDetail).put("captured", takenCount).put("good", good).put("bad", bad);
+		for (String x : a.names()) back.put("crew", x);
+		for (String x : dead) back.put("killed", x);
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
 				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead))
-				+ fatesNamed(r, true) + fatesNamed(r, false));
-		if (HomePlanet.immersiveNotifications()) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text);
+				+ fatesNamed(r, true) + fatesNamed(r, false), null, back);
+		if (byLetter) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text, String.join(", ", brought));
 		return new Report(r.sector, text, a.names(), faces);
 	}
 	/** "; taken: …" (captive) or "; to the infirmary: …" for the station log, or nothing. */
@@ -891,6 +977,13 @@ public final class Assignments {
 	/** Who holds a captive taken in this sector. */
 	static String sectorCaptors(String sector) {
 		return "rebel".equals(sector) ? "the rebels" : "mantis".equals(sector) ? "a Mantis clan" : "pirate".equals(sector) ? "pirates" : "slavers";
+	}
+	/** A crew member's find as a letter's reward: "item ID", or "fuel N" / "missiles N" / "parts N". */
+	private static String reward(String item) {
+		int colon = item.indexOf(':');
+		if (colon < 0) return "item " + item;
+		String kind = item.substring(0, colon), n = item.substring(colon + 1);
+		return ("fuel".equals(kind) || "missiles".equals(kind) ? kind : "parts") + " " + n;
 	}
 	private static void give(ShipState hold, String item) {
 		int colon = item.indexOf(':');
@@ -906,44 +999,27 @@ public final class Assignments {
 		else if ("missiles".equals(kind)) hold.setMissilesAmt(hold.getMissilesAmt() + n);
 		else hold.setDronePartsAmt(hold.getDronePartsAmt() + n);
 	}
-	/** A system for the stored systems (a Junkyard-style part, at level 1 with a bar broken): the lines to write, and its title. */
-	private static String part(List<String> lines, Vault v) throws IOException {
+	/** A system a part can be (a Junkyard-style part): any but artillery and the Clone Bay. */
+	private static String partId() {
 		List<String> kinds = new ArrayList<String>();
 		for (net.blerf.ftl.parser.SavedGameParser.SystemType t : net.blerf.ftl.parser.SavedGameParser.SystemType.values())
 			if (t != net.blerf.ftl.parser.SavedGameParser.SystemType.ARTILLERY && t != net.blerf.ftl.parser.SavedGameParser.SystemType.CLONEBAY && DataManager.get().getSystem(t.getId()) != null) kinds.add(t.getId());
-		String id = kinds.get(new Random().nextInt(kinds.size()));
-		File f = v.systemsFile();
-		if (f.isFile()) lines.addAll(java.nio.file.Files.readAllLines(f.toPath(), StandardCharsets.UTF_8));
-		else lines.add(homeplanet.ui.SystemsPanel.HEADER);
-		lines.add(homeplanet.ui.SystemsPanel.line(id, 1, 1));
+		return kinds.get(new Random().nextInt(kinds.size()));
+	}
+	/** The part for the stored systems, at level 1 with a bar broken: its line added to those to store, and its title. */
+	private static String part(List<String> lines, Vault v, String id) throws IOException {
+		lines.add(homeplanet.vault.StoredSystems.line(id, 1, 1));
 		return homeplanet.model.Items.systemTitle(id);
 	}
 
 	// ---- the file ----
 
-	private static Properties read(Vault v) {
-		Properties p = new Properties();
-		File f = file(v);
-		if (!f.isFile()) return p;
-		try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
-	private static Properties readStrict(Vault v) throws IOException {
-		Properties p = new Properties();
-		File f = file(v);
-		if (f.isFile()) p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8)));
-		return p;
-	}
-	private static byte[] bytes(Properties p) throws IOException {
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, NOTE);
-		return w.toString().getBytes(StandardCharsets.UTF_8);
-	}
-	private static void write(Vault v, Properties p) throws IOException { SafeFiles.writeText(file(v), new String(bytes(p), StandardCharsets.UTF_8), false); }
-	private static int intOf(Properties p, String key, int dflt) {
-		try { return Integer.parseInt(p.getProperty(key, "").trim()); } catch (NumberFormatException e) { return dflt; }
-	}
+	private static Properties read(Vault v) { return Store.read(file(v)); }
+	/** The file as it stands, read without this class's lock (the crew register, taking stock, never takes it). */
+	public static Properties asIs(Vault v) throws IOException { return Store.load(file(v)); }
+	private static Properties readStrict(Vault v) throws IOException { return Store.load(file(v)); }
+	private static byte[] bytes(Properties p) throws IOException { return Store.xml(p, NOTE); }
+	private static void write(Vault v, Properties p) throws IOException { Store.write(file(v), p, NOTE); }
 	/** Every sector's job weights total the same (for tests). */
 	public static int weightTotal(String sector) { int t = 0; for (Object[] j : JOBS) t += jobWeight(sector, (String) j[0]); return t; }
 	/** The sector ids (for tests). */

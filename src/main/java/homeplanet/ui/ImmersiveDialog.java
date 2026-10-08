@@ -42,6 +42,14 @@ public final class ImmersiveDialog {
 		brief.setVisible(true);
 		if (!brief.confirmed) return false;
 		if (!ftlClosed(owner, Vault.title(slot))) return false; // started while the briefing was open
+		javax.swing.JDialog busy = switching(owner, Vault.title(slot));
+		try {
+			return enterNow(owner, slot, v, immersiveRoot, begun, brief);
+		} finally {
+			busy.dispose();
+		}
+	}
+	private static boolean enterNow(Component owner, String slot, Vault v, File immersiveRoot, boolean begun, ImmersiveBriefing brief) {
 		if (v.immersive) {
 			try {
 				leaveNow(null); // to Sandbox Mode first: its fleet and profile are the way between careers
@@ -65,7 +73,11 @@ public final class ImmersiveDialog {
 			Vault.immersiveSlot = slot;
 			HomePlanet.immersiveMode = true;
 			HomePlanet.saveConfig();
-			if (!begun) Career.start(brief.salaryAll.isSelected() && !ownProfile, ownProfile, brief.rules());
+			if (!begun) {
+				Career.start(brief.salaryAll.isSelected() && !ownProfile, ownProfile, brief.rules());
+				Boolean toHard = brief.toHardChosen(); // a Custom career's, chosen once (6.03)
+				if (toHard != null) homeplanet.parser.FinalVictory.chooseToHard(Vault.get().root, toHard);
+			}
 			UnlockGrants.returning(Unlocks.read()); // a new career starts its record here
 			homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());
 			Vault.get().takeStock();
@@ -89,14 +101,47 @@ public final class ImmersiveDialog {
 		Object[] opts = {"Switch to Sandbox Mode", "Cancel"};
 		if (JOptionPane.showOptionDialog(owner, message, "Switch Game Mode", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]) != 0) return false;
 		if (!ftlClosed(owner, "Switch Game Mode")) return false;
+		javax.swing.JDialog busy = switching(owner, Vault.title(Vault.SANDBOX));
 		try {
 			leaveNow(null);
 		} catch (IOException e) {
+			busy.dispose();
 			HomePlanet.showErrorDialog("The Home Planet Station could not switch to Sandbox Mode:\n" + e.getMessage()
 					+ "\n\nThe fleet in use now is " + Vault.title(Vault.get().slot) + "'s.");
 			return !Vault.get().immersive;
+		} finally {
+			busy.dispose();
 		}
 		return true;
+	}
+	/**
+	 * "Switching to ...": on screen while the fleets and profiles change over (heromedel, 6.07: the switch said nothing
+	 * until it was done), painted at once since the work holds the screen. The caller closes it; every other pop-up
+	 * closes with the switch (MainFrame.modeSwitched).
+	 */
+	static javax.swing.JDialog switching(Component owner, String to) {
+		java.awt.Window w = owner == null ? null : owner instanceof java.awt.Window ? (java.awt.Window) owner : javax.swing.SwingUtilities.getWindowAncestor(owner);
+		javax.swing.JDialog d = new javax.swing.JDialog(w, "Switch Game Mode", java.awt.Dialog.ModalityType.MODELESS);
+		d.setUndecorated(true);
+		javax.swing.JLabel l = new javax.swing.JLabel("The Home Planet Station is switching to " + to + "...");
+		l.setFont(l.getFont().deriveFont(java.awt.Font.BOLD));
+		l.setOpaque(true); // the station's colours set here: it's painted before MenuTheme dresses a new window
+		l.setBackground(MenuTheme.BG);
+		l.setForeground(MenuTheme.TEXT);
+		l.setBorder(javax.swing.BorderFactory.createCompoundBorder(javax.swing.BorderFactory.createLineBorder(MenuTheme.GOLD, 2), javax.swing.BorderFactory.createEmptyBorder(18, 28, 18, 28)));
+		d.getContentPane().add(l);
+		d.pack();
+		d.setLocationRelativeTo(w);
+		d.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+		if (w != null) w.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+		d.setVisible(true);
+		javax.swing.JRootPane r = d.getRootPane();
+		r.paintImmediately(0, 0, r.getWidth(), r.getHeight());
+		if (w != null) {
+			final java.awt.Window owned = w;
+			d.addWindowListener(new java.awt.event.WindowAdapter() { @Override public void windowClosed(java.awt.event.WindowEvent e) { owned.setCursor(null); } });
+		}
+		return d;
 	}
 	/**
 	 * Ends this Immersive career, after two confirmations: if it's in use, Sandbox Mode first. Its folder is zipped

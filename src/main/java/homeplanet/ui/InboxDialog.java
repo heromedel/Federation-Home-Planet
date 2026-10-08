@@ -136,7 +136,7 @@ public class InboxDialog extends JDialog {
 		delete.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { deleteSelected(); } });
 		keep.setToolTipText("She docks at the Space Dock, ready for a new journey from the first sector");
 		keep.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(true); } });
-		museum.setToolTipText("Her full value goes to the Cargo Hold, and she to the Federation museum");
+		museum.setToolTipText("Her full value goes to the Cargo Hold, and she to the Federation Museum");
 		museum.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(false); } });
 		payRansom.setToolTipText("Paid from the Cargo Hold; they come back to it");
 		payRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(true); } });
@@ -267,9 +267,13 @@ public class InboxDialog extends JDialog {
 	private void deleteSelected() {
 		Transmissions.Message m = list.getSelectedValue();
 		boolean report = m != null && m.key.startsWith("expedition:"); // an expedition report (heromedel, 5.16)
-		if (m == null || !(Transmissions.isReceipt(m) || Transmissions.isNote(m) || m.key.startsWith("parcel:") || report)) return;
+		boolean shipped = m != null && Transmissions.isShipped(m);
+		if (m == null || !(Transmissions.isReceipt(m) || Transmissions.isNote(m) || m.key.startsWith("parcel:") || report || shipped)) return;
+		String unclaimed = m.hasReward() && !m.claimed ? Transmissions.describeReward(m) : null; // what goes with it (6.02: an expedition's finds come with its letter)
 		homeplanet.parser.Assignments.Pending prize = report && homeplanet.vault.Vault.isOpen() ? homeplanet.parser.Assignments.pendingFor(homeplanet.vault.Vault.get(), m.key) : null;
-		String ask = report ? "Delete this expedition report?" + (prize == null ? "" : "ship".equals(prize.kind)
+		String ask = shipped ? "Delete this letter?" + (unclaimed == null ? "" : "\n\nThe " + unclaimed + " it carries, not yet claimed, is lost with it.")
+				: report ? "Delete this expedition report?" + (unclaimed == null ? "" : "\n\nWhat they brought back, not yet claimed (" + unclaimed + "), is lost with it.")
+				+ (prize == null ? "" : "ship".equals(prize.kind)
 				? "\n\nThe ship waiting on your answer is turned away with it." : "\n\nThe recruit waiting on your answer goes on their way with it.")
 				: Transmissions.isNote(m) ? "Delete this message from " + m.from + "?" : "Delete this receipt?\nThe trade stays in the station's history.";
 		if (!HomePlanet.confirmNo(this, ask, "Delete")) return;
@@ -375,7 +379,7 @@ public class InboxDialog extends JDialog {
 		prizeNo.setText(ship ? "Don't take her" : "Send them on their way");
 		archive.setVisible(true);
 		boolean held = parcel != null && (homeplanet.comm.Shipments.HELD.equals(parcel.state) || homeplanet.comm.Shipments.RETURNING.equals(parcel.state));
-		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m) || (m.key.startsWith("parcel:") && !held) || m.key.startsWith("expedition:")); // they pile up: archive one or be rid of it (not a shipment still to deal with)
+		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m) || (m.key.startsWith("parcel:") && !held) || m.key.startsWith("expedition:") || Transmissions.isShipped(m)); // they pile up: archive one or be rid of it (not a shipment still to deal with)
 		boolean waiting = parcel != null && homeplanet.comm.Shipments.HELD.equals(parcel.state);
 		String whyNot = waiting ? homeplanet.comm.Shipments.whyNot(parcel) : null;
 		takeIt.setVisible(waiting);
@@ -387,7 +391,8 @@ public class InboxDialog extends JDialog {
 		elsewhere.setToolTipText(fleets.isEmpty() ? "None of your other fleets may take it (the trading rules), or they have no Cargo Hold yet"
 				: "Into the Cargo Hold of another of your fleets that may trade with them (it needn't be the one in use)");
 		sendBack.setVisible(waiting);
-		delete.setToolTipText(m.key.startsWith("expedition:") ? "Delete this report for good: the expedition stays in the station's history"
+		delete.setToolTipText(Transmissions.isShipped(m) ? "Delete this letter for good" + (m.hasReward() && !m.claimed ? ", and the augment with it" : "")
+				: m.key.startsWith("expedition:") ? "Delete this report for good: the expedition stays in the station's history"
 				: Transmissions.isNote(m) ? "Delete this message for good" : "Delete this receipt for good: the trade stays in the station's history");
 		boolean stipend = Transmissions.deletable(m);
 		boolean unclaimed = Transmissions.unclaimedStipend(m) && !m.archived;
@@ -470,7 +475,9 @@ public class InboxDialog extends JDialog {
 		if (m == null || m.claimed) return;
 		try {
 			homeplanet.vault.Vault.FinalBattle f = homeplanet.parser.FinalVictory.offer(Transmissions.rescueId(m));
-			String what = f == null ? "Already settled." : keepHer ? homeplanet.parser.FinalVictory.keep(f) : homeplanet.parser.FinalVictory.museum(f);
+			net.blerf.ftl.constants.Difficulty d = null;
+			if (f != null && keepHer && (d = SpaceDockUI.keptDifficulty(this, f)) == null) return; // the offer stays open
+			String what = f == null ? "Already settled." : keepHer ? homeplanet.parser.FinalVictory.keep(f, d) : homeplanet.parser.FinalVictory.museum(f);
 			Transmissions.decided(m, what);
 			JOptionPane.showMessageDialog(this, what, m.subject, JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception e) {

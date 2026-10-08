@@ -13,13 +13,14 @@ public class HistT { public static void main(String[] a) throws Exception {
  Setup.done();
 }
  static SavedGameState cont(Vault v) throws Exception { return homeplanet.core.HomePlanet.savedGameParser.readSavedGame(v.continueFile()); }
- static String newLines(Vault v, Ship s, int from) { String all = VoyageLog.read(v, s); return all.length() > from ? all.substring(from) : ""; }
+ static String newLines(Vault v, Ship s, int from) { String all = Setup.voyageLog(v, s); return all.length() > from ? all.substring(from) : ""; }
  /** The voyage log: FTL's doings between looks, logged; the station's own changes not. */
  static void voyage(Vault v) throws Exception {
   if (v.boarded() == null) v.board(v.docked().get(0));
   v.takeStock();
   Ship b = v.boarded();
-  int at = VoyageLog.read(v, b).length();
+  int at = Setup.voyageLog(v, b).length();
+  Set<String> seen = new HashSet<String>(); for (EventLog.Entry e : EventLog.voyage(EventLog.read(v), b.id)) seen.add(e.time + "|" + e.human); // her entries before FTL's doings below
   // FTL: a jump, a battle won, a crew member lost and one hired, a weapon found, damage
   SavedGameState g = cont(v);
   g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); g.setTotalShipsDefeated(g.getTotalShipsDefeated() + 1);
@@ -31,16 +32,17 @@ public class HistT { public static void main(String[] a) throws Exception {
   homeplanet.parser.SaveHelper.writeSavedGame(v.continueFile(), g); b.invalidate(); v.takeStock();
   String l = newLines(v, b, at);
   Setup.chk("Y: a jump is logged, with hull, scrap and fuel", l.contains("Jumped") && l.contains("(-5)") && l.contains("(+30)"));
-  Setup.chk("Y: the battle, and the crew lost and joined", l.contains("1 ship defeated") && l.contains("Crew lost: " + lostName) && l.contains("Crew joined: Voyage Newcomer"));
+  int defeated = 0; for (EventLog.Entry e : EventLog.voyage(EventLog.read(v), b.id)) if (e.kind.equals("SHIPS_DEFEATED") && !seen.contains(e.time + "|" + e.human)) defeated += e.num("count", 0);
+  Setup.chk("Y: the battle (by its machine line: the words are McCarthy's), and the crew lost and joined", defeated == 1 && l.contains("Crew lost: " + lostName) && l.contains("Crew joined: Voyage Newcomer"));
   Setup.chk("Y: what came aboard", l.contains("Aboard now: " + homeplanet.model.Items.title("LASER_BURST_2")));
-  at = VoyageLog.read(v, b).length();
+  at = Setup.voyageLog(v, b).length();
   int visited = VoyageLog.visited(v, b);
   g = cont(v); g.setSectorNumber(g.getSectorNumber() + 1); g.setCurrentBeaconId(0); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1);
   homeplanet.parser.SaveHelper.writeSavedGame(v.continueFile(), g);
   v.observeBoarded(); // as the save watcher does
   l = newLines(v, b, at);
   Setup.chk("Y: a new sector, and her sectors visited go up", l.contains("Sector " + (g.getSectorNumber() + 1) + " reached") && VoyageLog.visited(v, b) == visited + 1);
-  at = VoyageLog.read(v, b).length();
+  at = Setup.voyageLog(v, b).length();
   Vault.Copy c = v.readCopy(b); c.save.getPlayerShip().setScrapAmt(c.save.getPlayerShip().getScrapAmt() - 10); v.begin().put(b, c.save, c.hash).commit();
   b.invalidate(); v.takeStock();
   Setup.chk("Y: the station's own change (a trade) isn't in her voyage log", newLines(v, b, at).isEmpty());
@@ -54,7 +56,7 @@ public class HistT { public static void main(String[] a) throws Exception {
   c = v.readCopy(b); c.save.getPlayerShip().setScrapAmt(c.save.getPlayerShip().getScrapAmt() - 1); v.begin().put(b, c.save, c.hash).commit();
   b.invalidate(); v.takeStock();
   Setup.chk("Y: the count survives the station's own change", VoyageLog.journeys(v, b) == journeys + 1);
-  System.out.print(VoyageLog.read(v, b));
+  System.out.print(Setup.voyageLog(v, b));
  }
  static Ship named(Vault v, String name) { for (Ship s : v.all()) if (name.equals(s.name)) return s; return null; }
  static boolean departed(Vault v, String id) { for (Vault.Departed d : v.recoverable()) if (d.id.equals(id)) return true; return false; }
@@ -118,15 +120,14 @@ public class HistT { public static void main(String[] a) throws Exception {
   Setup.chk("H: she can't be recovered twice", refused && v.byId(a.id) != null);
  }
  /** A kept version named in local time (before UTC names), ahead of UTC: still sorted by when it was kept. */
+ /** 6.08 (docs/BUGS.md 1): versions go by the stamp in their names, written once when kept, not by file times, which a folder copied or unzipped without them can change. */
  static void oldNames(Vault v) throws Exception {
   Ship s = named(v, "Test Engi");
-  File dir = v.historyOf(s); dir.mkdirs();
-  File old = new File(dir, "20991231-235959.sav");
-  SafeFiles.copy(s.file(), old);
-  old.setLastModified(System.currentTimeMillis() - 86400000L);
-  addScrap(v, s, 7);
+  addScrap(v, s, 7); Thread.sleep(1100); addScrap(v, s, 7); // two versions, a second apart
   List<File> h = v.history(s);
-  Setup.chk("H: an old local-time name doesn't pass for the newest version", !h.get(h.size() - 1).equals(old) && h.contains(old));
-  old.delete();
+  File newest = h.get(h.size() - 1);
+  for (File f : h) f.setLastModified(f.equals(newest) ? System.currentTimeMillis() - 86400000L : System.currentTimeMillis()); // the newest given the oldest file time
+  List<File> after = v.history(s);
+  Setup.chk("H: the version with the newest stamp in its name is the newest, whatever its file's time", after.get(after.size() - 1).equals(newest) && h.size() >= 2);
  }
 }

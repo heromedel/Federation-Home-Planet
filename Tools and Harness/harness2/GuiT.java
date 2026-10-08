@@ -11,9 +11,6 @@ public class GuiT {
  static final List<Object> defaults = new ArrayList<Object>();
  static final List<Object[]> extras = new ArrayList<Object[]>(); // per pop-up: the Info button and the list, if any
  static final LinkedList<Integer> presses = new LinkedList<Integer>();
- /** Each expedition pop-up's close operation (they carry the "homeplanet.expedition" mark), and a hook run once at the first. */
- static final List<Integer> expeditionCloseOps = new ArrayList<Integer>();
- static Runnable atExpedition = null;
 
  public static void main(String[] a) throws Exception {
   File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
@@ -40,7 +37,6 @@ public class GuiT {
   holdAlone(v, f);
   damaged(f);
   folding(f);
-  expedition(f);
   infirmaryBetweenJobs(f);
   liveDock(f);
   ransomPopUp(f);
@@ -208,6 +204,97 @@ public class GuiT {
   Setup.chk("X: Install fits it for the store's price and 100", shown.size() == 2 && Integer.valueOf(7).equals(r[4]) && Integer.valueOf(1).equals(r[5]));
   Setup.chk("X: Save writes her so", Boolean.TRUE.equals(r[6]) && saved.getScrapAmt() == 7 && level(saved, HACK) == 1 && SaveHelper.systemCount(saved) == 9);
 
+  // a system she hasn't got, bought with the Cargo Hold's scrap (5.79): FTL's System Limit is a ship's, never the hold's,
+  // but the row priced in her custom work order and greyed Buy out (another player's report, 5.26)
+  {
+   SavedGameParser.SavedGameState g2 = v.readCopy(b).save;
+   SavedGameParser.StoreState st2 = new SavedGameParser.StoreState(); SavedGameParser.StoreShelf sh2 = new SavedGameParser.StoreShelf();
+   SavedGameParser.StoreItem again = new SavedGameParser.StoreItem("mind"); again.setAvailable(true);
+   sh2.setItemType(SavedGameParser.StoreItemType.SYSTEM); sh2.addItem(again); st2.addShelf(sh2);
+   g2.getBeaconList().get(g2.getCurrentBeaconId()).setStore(st2);
+   v.write(b, g2);
+  }
+  final int mindPrice = DataManager.get().getSystem("mind").getCost();
+  hold(v, mindPrice + 3); // the store's price, not a work order's more
+  shown.clear(); optionsShown.clear(); defaults.clear(); presses.clear();
+  presses.addAll(Arrays.asList(0, 0));
+  final Object[] h = new Object[6];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   CargoBayUI bay = f.cargoBay;
+   bay.init();
+   Object shop = field(bay, CargoBayUI.class, "shop");
+   java.lang.reflect.Field ts = shop.getClass().getDeclaredField("toStorage"); ts.setAccessible(true); ts.set(shop, true);
+   call(shop, shop.getClass(), "rebuild", new Class<?>[0]);
+   Object hack = null;
+   for (Object e : (List<?>) call(shop, shop.getClass(), "buildEntries", new Class<?>[0])) if ("mind".equals(field(e, e.getClass(), "id"))) hack = e;
+   for (Component c : ((JComponent) field(shop, shop.getClass(), "content")).getComponents()) {
+    if (!c.getClass().getSimpleName().equals("StoreRow")) continue;
+    Object e = field(c, c.getClass(), "e");
+    if ("mind".equals(field(e, e.getClass(), "id"))) { h[0] = field(c, c.getClass(), "can"); h[1] = ((JComponent) c).getToolTipText(); }
+   }
+   if (hack == null) return;
+   call(shop, shop.getClass(), "buy", new Class<?>[] {hack.getClass()}, hack);
+   SavedGameParser.SavedGameState hs = (SavedGameParser.SavedGameState) call(shop, shop.getClass(), "resolve", new Class<?>[] {Ship.class}, v.storage());
+   h[2] = hs.getPlayerShip().getScrapAmt();
+   h[3] = bay.saveAll();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("X: for the Cargo Hold, her past the System Limit, a Mind Control (not hers) can be bought: no work order on the row", Boolean.TRUE.equals(h[0]) && h[1] != null && !String.valueOf(h[1]).toLowerCase().contains("work order"));
+  Setup.chk("X: bought for the store's price alone, and saved", Integer.valueOf(3).equals(h[2]) && Boolean.TRUE.equals(h[3]) && v.storageScrap() == 3);
+
+  // FTL's ship is asked about only when the Cargo Bay's save changes her, whichever ship is picked (heromedel, 5.81):
+  // fuel for the Cargo Hold from another ship's store, her picked: no question, her file untouched; fuel for the hold
+  // from her own store (its stock is in her save), another ship picked: the question, Nevermind saves nothing, Go ahead saves
+  {
+   Ship other = null; for (Ship d2 : v.docked()) if (d2 != b) { other = d2; break; }
+   SavedGameParser.SavedGameState herMap = v.readCopy(b).save;
+   for (Ship withStore : new Ship[] {b, other}) {
+    SavedGameParser.SavedGameState gs = v.readCopy(withStore).save;
+    if (gs.getBeaconList().isEmpty()) { // a ship the test world made has no map: hers, so she sits at a beacon too
+     for (SavedGameParser.BeaconState bs : herMap.getBeaconList()) gs.getBeaconList().add(new SavedGameParser.BeaconState(bs));
+     gs.setCurrentBeaconId(herMap.getCurrentBeaconId());
+    }
+    SavedGameParser.StoreState st = gs.getBeaconList().get(gs.getCurrentBeaconId()).getStore();
+    if (st == null) { st = new SavedGameParser.StoreState(); gs.getBeaconList().get(gs.getCurrentBeaconId()).setStore(st); }
+    st.setFuel(3);
+    v.write(withStore, gs);
+   }
+   hold(v, 50);
+   System.setProperty("homeplanet.ftlRunning", "true");
+   final Ship store2 = other;
+   final Object[] k = new Object[8];
+   String herHash = SafeFiles.hash(v.fileOf(b));
+   shown.clear(); optionsShown.clear(); presses.clear(); presses.addAll(Arrays.asList(1, 1));
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    CargoBayUI bay = f.cargoBay;
+    bay.init(); // her, FTL's ship, picked
+    k[0] = buyFuel(bay, store2);
+    k[1] = bay.saveAll();
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   int otherFuel = v.readCopy(other).save.getBeaconList().get(v.readCopy(other).save.getCurrentBeaconId()).getStore().getFuel();
+   Setup.chk("Q: fuel for the Cargo Hold from another ship's store, FTL's ship picked: no question " + shown + ", her file untouched, the hold and that store saved",
+     Boolean.TRUE.equals(k[0]) && Boolean.TRUE.equals(k[1]) && !asked() && herHash.equals(SafeFiles.hash(v.fileOf(b))) && otherFuel == 2 && v.storage().save().getPlayerShip().getFuelAmt() >= 1);
+   int holdFuel = v.storage().save().getPlayerShip().getFuelAmt();
+   shown.clear(); optionsShown.clear(); presses.clear(); presses.addAll(Arrays.asList(0, 1)); // Nevermind, then Go ahead
+   final Ship herShip = b;
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    CargoBayUI bay = f.cargoBay;
+    bay.init();
+    call(bay, CargoBayUI.class, "pick", new Class<?>[] {Ship.class}, store2); // the other ship picked
+    k[2] = buyFuel(bay, herShip);
+    k[3] = bay.saveAll(); // Nevermind
+    k[4] = asked();
+    k[5] = bay.saveAll(); // Go ahead
+    java.lang.reflect.Field pk = CargoBayUI.class.getDeclaredField("picked"); pk.setAccessible(true); pk.set(bay, null); bay.init(); // no pick: back on FTL's ship, as the checks after these expect
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   SavedGameParser.SavedGameState herNow = v.readCopy(b).save;
+   Setup.chk("Q: fuel for the hold from her own store, another ship picked: FTL is asked about " + shown + "; Nevermind saves nothing",
+     Boolean.TRUE.equals(k[2]) && Boolean.FALSE.equals(k[3]) && Boolean.TRUE.equals(k[4]));
+   Setup.chk("Q: and Go ahead saves it: her store one fuel short, the hold one more",
+     Boolean.TRUE.equals(k[5]) && herNow.getBeaconList().get(herNow.getCurrentBeaconId()).getStore().getFuel() == 2 && v.storage().save().getPlayerShip().getFuelAmt() == holdFuel + 1);
+   System.clearProperty("homeplanet.ftlRunning");
+   shown.clear(); optionsShown.clear(); presses.clear();
+  }
+
   // from the Cargo Bay: a Mind Control past the limit, then a Clone Bay for her Medbay
   SafeFiles.writeText(v.systemsFile(), "# stored\nmind 2\nclonebay\n", false);
   hold(v, 150);
@@ -273,6 +360,17 @@ public class GuiT {
   Setup.chk("X: at 7, a stored system goes in without asking, for nothing", Integer.valueOf(0).equals(w[2]) && Integer.valueOf(1).equals(w[3]) && Integer.valueOf(60).equals(w[4]));
   v.systemsFile().delete();
  }
+ /** One fuel for the Cargo Hold from the store at this ship's beacon, through the shop as its button does; false if there's no such row. */
+ static boolean buyFuel(CargoBayUI bay, Ship at) throws Exception {
+  Object shop = field(bay, CargoBayUI.class, "shop");
+  java.lang.reflect.Field ts = shop.getClass().getDeclaredField("toStorage"); ts.setAccessible(true); ts.set(shop, true);
+  call(shop, shop.getClass(), "rebuild", new Class<?>[0]);
+  for (Object e : (List<?>) call(shop, shop.getClass(), "buildEntries", new Class<?>[0]))
+   if ("FUEL".equals(String.valueOf(field(e, e.getClass(), "kind"))) && field(e, e.getClass(), "ship") == at) { call(shop, shop.getClass(), "buy", new Class<?>[] {e.getClass()}, e); return true; }
+  return false;
+ }
+ /** Whether the "FTL is running" question was put since shown was last cleared. */
+ static boolean asked() { for (String m : shown) if (m.startsWith("FTL is running")) return true; return false; }
  static ShipState mine(CargoBayUI bay) throws Exception { return ((SavedGameParser.SavedGameState) field(bay, CargoBayUI.class, "currentSave")).getPlayerShip(); }
  static int level(ShipState s, SavedGameParser.SystemType t) { SavedGameParser.SystemState st = s.getSystem(t); return st == null ? 0 : st.getCapacity(); }
  static Object stored(Object sys, String id) throws Exception {
@@ -295,7 +393,7 @@ public class GuiT {
   Setup.chk("A: the result offers only Accept Bid", optionsShown.get(2).length == 1 && "Accept Bid".equals(String.valueOf(optionsShown.get(2)[0])));
   int bid = Integer.parseInt(shown.get(2).replaceAll("(?s).*highest bid for [^:]*: (\\d+) scrap.*", "$1"));
   Setup.chk("A: she's sold: gone from the fleet, fate SOLD, the bid and her scrap in the Cargo Hold",
-    v.byId(id) == null && new String(SafeFiles.read(new File(new File(v.historyDir(), id), "fate.txt")), "UTF-8").startsWith("SOLD")
+    v.byId(id) == null && Setup.fateText(v.folderOfId(id)).startsWith("SOLD")
     && v.storageScrap() == before + bid + scrapAboard);
   System.out.println("auction: " + name + " for " + bid);
  }
@@ -315,6 +413,10 @@ public class GuiT {
  /** A damaged system stored from the Cargo Bay keeps its broken bars, and comes aboard again with them. */
  static void damaged(final MainFrame f) throws Exception {
   final Vault v = Vault.get();
+  // a retrofitted ship aboard, whose systems can come off: which ship the earlier steps leave aboard changed when the
+  // Space Dock went to listing by name (5.69), and a plain one's are all standard equipment
+  if (!v.boarded().save().getPlayerShipBlueprintId().endsWith(Retrofit.SUFFIX))
+   for (Ship s : v.docked()) { SavedGameParser.SavedGameState sg = s.save(); if (sg != null && sg.getPlayerShipBlueprintId().endsWith(Retrofit.SUFFIX)) { v.board(s); break; } }
   Vault.Copy c = v.readCopy(v.boarded());
   ShipState bs = c.save.getPlayerShip();
   final SavedGameParser.SystemType[] pick = new SavedGameParser.SystemType[1];
@@ -324,7 +426,11 @@ public class GuiT {
    if (pick[0] != null || st == null || st.getCapacity() < 2 || t == SavedGameParser.SystemType.WEAPONS || t == SavedGameParser.SystemType.DRONE_CTRL || t == SavedGameParser.SystemType.CLONEBAY || t == SavedGameParser.SystemType.MEDBAY) continue;
    if (call(null, sp, "refitReason", new Class<?>[] {ShipState.class, SavedGameParser.SystemType.class}, bs, t) == null) pick[0] = t;
   }
-  if (pick[0] == null) { Setup.chk("R: a system on her that can be stored", false); return; }
+  if (pick[0] == null) { // which ship, and why none of hers can go
+   StringBuilder why = new StringBuilder();
+   for (SavedGameParser.SystemType t : SavedGameParser.SystemType.values()) { SavedGameParser.SystemState st = bs.getSystem(t); if (st != null && st.getCapacity() > 0) why.append("; ").append(t).append(' ').append(st.getCapacity()).append(": ").append(call(null, sp, "refitReason", new Class<?>[] {ShipState.class, SavedGameParser.SystemType.class}, bs, t)); }
+   Setup.chk("R: a system on her that can be stored (" + v.boarded().name + ", " + c.save.getPlayerShipBlueprintId() + why + ")", false); return;
+  }
   final int level = bs.getSystem(pick[0]).getCapacity();
   bs.getSystem(pick[0]).setDamagedBars(1); bs.getSystem(pick[0]).setPower(0);
   v.begin().put(v.boarded(), c.save, c.hash).commit();
@@ -410,7 +516,7 @@ public class GuiT {
   final Object[] r = new Object[6];
   presses.clear(); presses.addAll(Arrays.asList(0, 0)); // Yes to selling the weapon, Yes to selling the system
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
-   r[3] = call(f.spaceDock, SpaceDockUI.class, "cargoBayClosedReason", new Class<?>[0]); // the Space Dock's Cargo Bay button lets her in
+   r[3] = call(null, CargoBayUI.class, "unreadableNote", new Class<?>[0]); // no ship aboard: nothing to say, the Cargo Bay opens
    f.showCargoBay();
    CargoBayUI bay = f.cargoBay;
    r[0] = call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]);
@@ -445,6 +551,25 @@ public class GuiT {
   Setup.chk("Y: a docked ship picked in the Cargo Bay: the screen works on her, nobody is boarded, no pop-up " + shown, v.boarded() == null && Boolean.FALSE.equals(b[0]) && b[1] == next && shown.isEmpty());
   Setup.chk("Y: opened again, the pick is fresh: the boarded ship (none), so the Cargo Hold alone", Boolean.TRUE.equals(b[2]));
   v.board(next); // the tests after this one work on a boarded ship, as before
+  // her save can't be read (heromedel's "comes and goes", 5.81): the Cargo Bay opens anyway, without her, and says why
+  final byte[] keep = SafeFiles.read(v.continueFile());
+  SafeFiles.write(v.continueFile(), "not a save".getBytes("UTF-8"));
+  final Object[] u = new Object[4];
+  shown.clear(); optionsShown.clear(); presses.clear(); presses.addAll(Arrays.asList(0, 0));
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showSpaceDock();
+   Object btn = field(f.spaceDock, SpaceDockUI.class, "cargoBtn");
+   f.spaceDock.actionPerformed(new java.awt.event.ActionEvent(btn, java.awt.event.ActionEvent.ACTION_PERFORMED, "cargo"));
+   CargoBayUI bay = f.cargoBay;
+   u[0] = bay.isShowing();
+   u[1] = field(bay, CargoBayUI.class, "currentShip");
+   u[2] = ((List<?>) call(bay, CargoBayUI.class, "tradeableShips", new Class<?>[0])).contains(next);
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  boolean said = false; for (String m : shown) if (m.contains("could not load " + homeplanet.parser.ShipNames.the(next.name)) && m.contains("opens without her")) said = true;
+  Setup.chk("U: the boarded ship's save can't be read: the Cargo Bay opens anyway " + shown, Boolean.TRUE.equals(u[0]));
+  Setup.chk("U: without her (not worked on, not in range for trade or her store), and a note says why", u[1] == null && Boolean.FALSE.equals(u[2]) && said);
+  SafeFiles.write(v.continueFile(), keep);
+  shown.clear(); optionsShown.clear(); presses.clear();
  }
 
  /** The Space Dock's gold headings fold their buttons away on a click, and stay folded after a redraw. */
@@ -477,61 +602,6 @@ public class GuiT {
   return null;
  }
 
- /** An expedition played through its pop-ups: crew picked, each event's choice, its outcome, the end; the Cargo Hold paid. */
- static void expedition(final MainFrame f) throws Exception {
-  final Vault v = Vault.get();
-  Vault.Copy c = v.readCopy(v.storage()); ShipState h = c.save.getPlayerShip(); h.getCrewList().clear();
-  for (String race : new String[] {"rock", "human"}) { SavedGameParser.CrewState x = Commission.volunteer(race, new Random(2)); SaveHelper.placeCrew(h, x, true); h.getCrewList().add(x); }
-  h.setScrapAmt(0);
-  v.begin().put(v.storage(), c.save, c.hash).commit();
-  final int beacons = v.beaconsSeen();
-  // a known job in the first place: the Rock shaft, whose first choice always pays
-  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=rescue\n0.event=rock_shaft\n0.until=999999\n0.text=A Rock mining colony has lost a work crew in a shaft collapse.\n"
-    + "1.kind=escort\n1.until=999999\n1.text=b\n2.kind=delivery\n2.until=999999\n2.text=c\n", false);
-  Class<?> k = Class.forName("homeplanet.ui.ExpeditionsDialog");
-  java.lang.reflect.Field rf = k.getDeclaredField("rng"); rf.setAccessible(true); rf.set(null, new Random(8));
-  shown.clear(); optionsShown.clear(); presses.clear();
-  for (int i = 0; i < 30; i++) presses.add(0); // Send them; then each event's first choice; Continue; the message's Close; the end
-  expeditionCloseOps.clear();
-  final Object[] during = new Object[1];
-  final Object[] dlg = new Object[1]; final boolean[] done = {false};
-  final java.awt.Dimension[] jobSize = new java.awt.Dimension[1]; final boolean[] boardUp = {true};
-  atExpedition = new Runnable() { public void run() { try { // a priority message arrives, and a hail, while an expedition is under way
-   boardUp[0] = ((JDialog) dlg[0]).isShowing(); // the board stepped aside
-   for (Window w : Window.getWindows()) if (w instanceof JDialog && w.isShowing() && Boolean.TRUE.equals(((JDialog) w).getRootPane().getClientProperty("homeplanet.expedition"))) jobSize[0] = w.getSize();
-   Class<?> ed = Class.forName("homeplanet.ui.ExpeditionsDialog");
-   java.lang.reflect.Method away = ed.getDeclaredMethod("awayNotice", String.class); away.setAccessible(true);
-   during[0] = away.invoke(null, "Commander Test");
-   homeplanet.comm.Notes.Note n = new homeplanet.comm.Notes.Note(); n.station = "x"; n.title = "Commander Bree"; n.text = "Testing the long range set, over."; n.priority = true; n.replyPort = 0;
-   call(f.comm, LongRangeCommUI.class, "showNote", new Class<?>[] {homeplanet.comm.Notes.Note.class, String.class}, n, "localhost");
-  } catch (Exception e) { throw new RuntimeException(e); } } };
-  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
-   java.lang.reflect.Constructor<?> ctor = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredConstructor(Component.class); ctor.setAccessible(true);
-   dlg[0] = ctor.newInstance(f);
-  } catch (Exception e) { throw new RuntimeException(e); } } });
-  SwingUtilities.invokeLater(new Runnable() { public void run() { try {
-   call(dlg[0], dlg[0].getClass(), "send", new Class<?>[] {int.class}, 0); // signs on: the board closes
-   Object run = field(dlg[0], dlg[0].getClass(), "signedOn");
-   call(null, dlg[0].getClass(), "play", new Class<?>[] {Component.class, Expeditions.Run.class, Vault.class}, f, run, v);
-  } catch (Exception e) { throw new RuntimeException(e); } finally { done[0] = true; } } });
-  for (int t = 0; t < 600 && !done[0]; t++) Thread.sleep(100);
-  presses.clear();
-  boolean picker = !shown.isEmpty() && shown.get(0).contains("Who goes");
-  boolean events = false; for (Object[] o : optionsShown) if (o.length >= 2) events = true;
-  String end = ""; boolean docked = false; // the job's last screen (a priority message may come up after it)
-  for (String t : shown) { if (t.contains("You dig beside")) end = t; if (t.contains("docks at")) docked = true; }
-  Setup.chk("X: the crew picker, then events with their choices (" + shown.size() + " pop-ups)", done[0] && picker && events);
-  Setup.chk("X: the last outcome is the end, no docking screen after it; the Cargo Hold has the scrap (" + v.storageScrap() + "); a beacon passed", end.contains("You receive") && !docked
-    && v.storageScrap() > 0 && v.beaconsSeen() >= beacons + 1);
-  Setup.chk("X: the board steps aside during the job (" + boardUp[0] + "), and a fresh one has a new job in its place", !boardUp[0] && !Expeditions.board(v).get(0).text.startsWith("A Rock mining colony"));
-  Setup.chk("X: the job's window is FTL's event box, sized to its words, not the whole screen (" + jobSize[0] + ")", jobSize[0] != null && jobSize[0].width < 700 && jobSize[0].height < 600);
-  boolean noX = !expeditionCloseOps.isEmpty(); for (int op : expeditionCloseOps) if (op != JDialog.DO_NOTHING_ON_CLOSE) noX = false;
-  Setup.chk("X: the expedition's pop-ups can't be closed, only answered (" + expeditionCloseOps.size() + ")", noX);
-  boolean note = false; for (String t : shown) if (t.contains("Commander Bree, priority")) note = true;
-  Setup.chk("X: a priority message comes through over the expedition, and the expedition carries on after it", note && done[0] && end.contains("You receive"));
-  Object after = null; try { java.lang.reflect.Method away = Class.forName("homeplanet.ui.ExpeditionsDialog").getDeclaredMethod("awayNotice", String.class); away.setAccessible(true); after = away.invoke(null, "Commander Test"); } catch (Exception e) { }
-  Setup.chk("X: a hail during the expedition is told the commander is away (" + during[0] + "); after it, hails are answered as usual", String.valueOf(during[0]).contains("away on an expedition") && after == null);
- }
 
  /**
   * The infirmary in the Cargo Bay: no bar for the whole, green with the rest red for a hurt from the game, purple and full
@@ -548,8 +618,8 @@ public class GuiT {
    SaveHelper.placeCrew(h, x, true); h.getCrewList().add(x);
   }
   v.begin().put(v.storage(), c.save, c.hash).commit();
-  final File inf = new File(v.root, "infirmary.txt");
-  SafeFiles.writeText(inf, "healed_at=" + v.beaconsSeen() + "\n0.name=Laid Ulm\n0.race=human\n0.until=" + (v.beaconsSeen() + 4) + "\n0.drained=" + v.beaconsSeen() + "\n", false);
+  final File inf = Expeditions.infirmaryFile(v);
+  Store.write(inf, Store.parse(("healed_at=" + v.beaconsSeen() + "\n0.name=Laid Ulm\n0.race=human\n0.until=" + (v.beaconsSeen() + 4) + "\n0.drained=" + v.beaconsSeen() + "\n").getBytes("UTF-8")), null);
   final Map<String, Object[]> bars = new HashMap<String, Object[]>();
   final Object[] r = new Object[3];
   presses.clear(); presses.add(0); shown.clear(); // OK, to the infirmary's word
@@ -596,7 +666,7 @@ public class GuiT {
   boolean said = false; for (String t : shown) if (t.contains("Laid Ulm is in the infirmary")) said = true;
   Setup.chk("I: sent aboard, the laid up are refused with a word, and stay in the Cargo Hold", Boolean.TRUE.equals(r[0]) && said);
   Setup.chk("I: the Long Range offers the Cargo Hold's crew but not the laid up (" + r[1] + ")", String.valueOf(r[1]).contains("Hurt Hale") && !String.valueOf(r[1]).contains("Laid Ulm"));
-  Setup.chk("I: taken aboard and saved, the history log says so (" + r[2] + ")", new String(SafeFiles.read(HistoryLog.file()), "UTF-8").contains(String.valueOf(r[2])));
+  Setup.chk("I: taken aboard and saved, the history log says so (" + r[2] + ")", Setup.stationLog(v).contains(String.valueOf(r[2])));
   inf.delete();
   // the ship report: each crew member's name opens their report; a hurt one has a bar under the icon
   final Object[] rep = new Object[3];
@@ -649,14 +719,14 @@ public class GuiT {
   SavedGameParser.CrewState hurt = Expeditions.holdCrew(v).get(0);
   Properties inf = new Properties();
   inf.setProperty("0.name", hurt.getName()); inf.setProperty("0.race", hurt.getRace().getId()); inf.setProperty("0.until", Integer.toString(v.beaconsSeen())); inf.setProperty("0.drained", Integer.toString(v.beaconsSeen()));
-  StringWriter w = new StringWriter(); inf.store(w, null); SafeFiles.writeText(new File(v.root, "infirmary.txt"), w.toString(), false);
+  Store.write(Expeditions.infirmaryFile(v), inf, null);
   int free = Expeditions.holdCrew(v).size();
   shown.clear(); presses.clear(); presses.add(0);
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
-   call(null, Class.forName("homeplanet.ui.ExpeditionsDialog"), "afterJob", new Class<?>[] {Component.class}, f.spaceDock);
+   call(f.spaceDock, SpaceDockUI.class, "timeRound", new Class<?>[] {boolean.class}, false); // the station's round (the job board's afterJob went with it at 5.67)
   } catch (Exception e) { throw new RuntimeException(e); } } });
   boolean word = false; for (String t : shown) if (t.contains(hurt.getName()) && t.contains("out of the infirmary")) word = true;
-  Setup.chk("X: between jobs, " + hurt.getName() + "'s time up: out of the infirmary with the pop-up, free to send again (" + free + " -> " + Expeditions.holdCrew(v).size() + ")",
+  Setup.chk("X: at the station's round, " + hurt.getName() + "'s time up: out of the infirmary with the pop-up, free to send again (" + free + " -> " + Expeditions.holdCrew(v).size() + ")",
     word && Expeditions.holdCrew(v).size() == free + 1 && Expeditions.infirmary(v).isEmpty());
  }
  /** With the inbox off, a ransom comes up at the Space Dock: Pay brings them home. */
@@ -693,10 +763,6 @@ public class GuiT {
     if (op == null) continue;
     seen.add(w);
     String title = ((JDialog) w).getTitle();
-    if (Boolean.TRUE.equals(((JDialog) w).getRootPane().getClientProperty("homeplanet.expedition"))) {
-     expeditionCloseOps.add(((JDialog) w).getDefaultCloseOperation());
-     if (atExpedition != null) { Runnable r = atExpedition; atExpedition = null; r.run(); }
-    }
     shown.add(text(op.getMessage()));
     List<JButton> inMessage = op.getMessage() instanceof Container ? all((Container) op.getMessage(), JButton.class) : new ArrayList<JButton>();
     boolean ownButtons = op.getOptions() != null && op.getOptions().length == 0 && !inMessage.isEmpty(); // choices laid out in the message itself

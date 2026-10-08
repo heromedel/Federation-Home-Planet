@@ -148,31 +148,6 @@ public class IconFactory {
 		return icon == NONE ? null : icon;
 	}
 
-	/** Supply icon recolored dark, for light dialog backgrounds. */
-	public static Icon supplyIconDark(String name) {
-		String key = "supplyDark:" + name;
-		if (!cache.containsKey(key)) {
-			Icon icon = null;
-			Icon white = supplyIcon(name);
-			if (white instanceof ImageIcon) {
-				java.awt.Image src = ((ImageIcon) white).getImage();
-				BufferedImage img = new BufferedImage(white.getIconWidth(), white.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
-				Graphics2D g = img.createGraphics();
-				g.drawImage(src, 0, 0, null);
-				g.dispose();
-				for (int y = 0; y < img.getHeight(); y++) {
-					for (int x = 0; x < img.getWidth(); x++) {
-						int argb = img.getRGB(x, y);
-						img.setRGB(x, y, (argb & 0xFF000000) | 0x303030);
-					}
-				}
-				icon = new ImageIcon(img);
-			}
-			cache.put(key, icon != null ? icon : NONE);
-		}
-		Icon icon = cache.get(key);
-		return icon == NONE ? null : icon;
-	}
 
 	// First frame of the weapon's animation, turned to lie flat (barrel to the right).
 	private static Icon weaponArt(WeaponBlueprint w) throws Exception {
@@ -203,13 +178,38 @@ public class IconFactory {
 	 * FTL's own skill icon (img/people/skill_*_white.png), tinted as FTL tints a skill: grey untrained, green at the
 	 * first level, gold mastered (the Crew Log, 5.41). Null if the game's art can't be read.
 	 */
-	public static synchronized Icon skillIcon(int skill, int level, int size) {
-		String key = skill + "/" + level + "/" + size;
+	public static Icon skillIcon(int skill, int level, int size) {
+		return skillTinted(skill, level >= 2 ? SKILL_GOLD : level == 1 ? new java.awt.Color(120, 230, 120) : new java.awt.Color(110, 122, 130), size);
+	}
+	private static final java.awt.Color SKILL_GOLD = new java.awt.Color(250, 210, 120), SKILL_GREY = new java.awt.Color(196, 204, 210);
+	/**
+	 * The skills a crew member has a level in, FTL's icons side by side in skill order: grey for one level, gold for two,
+	 * nothing for none (the expedition picker's list, heromedel 5.80). Null if they have none.
+	 */
+	public static Icon skillMarks(int[] levels, int size) {
+		java.util.List<Icon> marks = new java.util.ArrayList<Icon>();
+		for (int i = 0; i < SKILL_ART.length && i < levels.length; i++) {
+			if (levels[i] <= 0) continue;
+			Icon m = skillTinted(i, levels[i] >= 2 ? SKILL_GOLD : SKILL_GREY, size);
+			if (m != null) marks.add(m);
+		}
+		if (marks.isEmpty()) return null;
+		int gap = 3, w = -gap, h = 0;
+		for (Icon m : marks) { w += m.getIconWidth() + gap; h = Math.max(h, m.getIconHeight()); }
+		BufferedImage b = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+		java.awt.Graphics2D g = b.createGraphics();
+		int x = 0;
+		for (Icon m : marks) { m.paintIcon(null, g, x, (h - m.getIconHeight()) / 2); x += m.getIconWidth() + gap; }
+		g.dispose();
+		return new javax.swing.ImageIcon(b);
+	}
+	/** FTL's skill icon in one colour, at a width; null if the game's art can't be read. */
+	private static synchronized Icon skillTinted(int skill, java.awt.Color tint, int size) {
+		String key = skill + "/" + tint.getRGB() + "/" + size;
 		if (skillIcons.containsKey(key)) return skillIcons.get(key);
 		BufferedImage src = load("img/people/skill_" + SKILL_ART[skill] + "_white.png");
 		Icon out = null;
 		if (src != null) {
-			java.awt.Color tint = level >= 2 ? new java.awt.Color(250, 210, 120) : level == 1 ? new java.awt.Color(120, 230, 120) : new java.awt.Color(110, 122, 130);
 			BufferedImage t = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
 			for (int y = 0; y < src.getHeight(); y++) for (int x = 0; x < src.getWidth(); x++) {
 				int argb = src.getRGB(x, y), alpha = argb >>> 24, lum = ((argb >> 16 & 255) + (argb >> 8 & 255) + (argb & 255)) / 3;

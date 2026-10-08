@@ -38,6 +38,8 @@ public final class CaptainsLog {
 		boolean station;
 		/** For a ship's jumps: what her beacon held ("a nebula", "a star") and the ships met there ("a Rock pirate"). */
 		final List<String> hazards = new ArrayList<String>(), met = new ArrayList<String>();
+		/** For a day's fight: the ships beaten, where the station saw who ("the rebel ship"; 6.09). */
+		final List<String> beaten = new ArrayList<String>();
 		// what's merged into it
 		final Map<String, Integer> things = new LinkedHashMap<String, Integer>();
 		int count;
@@ -101,7 +103,7 @@ public final class CaptainsLog {
 		for (Line l : merged.values()) if (l.kind.equals("ftlbuy")) boughtAboard = true;
 		for (Line l : merged.values()) {
 			if (l.kind.equals("beacon")) { later.add(l); continue; }
-			if (boughtAboard && l.kind.equals("work")) continue; // the purchase tells it
+			if (boughtAboard && l.kind.equals("work") && l.things.isEmpty()) continue; // the purchase tells it (what was fitted or mended, it doesn't)
 			finish(l);
 			if (l.text != null && !l.text.isEmpty()) lines.add(l);
 		}
@@ -120,7 +122,7 @@ public final class CaptainsLog {
 			Line one = last.get(0);
 			List<String> said = new ArrayList<String>();
 			for (Line l : last) { said.add(lower(l.text.replaceAll("\\.$", ""))); if (l != one) one.details.addAll(l.details); }
-			one.text = Character.toUpperCase(said.get(0).charAt(0)) + join(said).substring(1) + ".";
+			one.text = homeplanet.model.Words.cap(join(said)) + ".";
 			lines.removeAll(last.subList(1, last.size()));
 			last = last.subList(0, 1);
 		}
@@ -173,7 +175,7 @@ public final class CaptainsLog {
 
 	private static void read(MasterLog.Entry e, Map<String, Line> m) {
 		if ("station".equals(e.log)) station(e.text, m);
-		else if (e.log.startsWith("voyage: ")) voyage(e.log.substring(8), e.text, m);
+		else if (e.log.startsWith("voyage: ")) voyage(e.log.substring(8), e.text, e.event, m);
 		// reputation has its own log and tally: never a line here
 	}
 	private static final Pattern NUM = Pattern.compile("^(\\d+) (.+)$");
@@ -256,6 +258,7 @@ public final class CaptainsLog {
 		} else if (kind.equals("RENAME CREW")) {
 			String[] w = unowned(head).split(" -> ", 2);
 			String rank = w.length == 2 ? homeplanet.model.Rank.promotion(w[0].trim(), w[1].trim()) : null; // a rank put on (heromedel, 5.52)
+			if (head.endsWith("; on the record already)")) return; // the promotion was told the day it was given on the record
 			if (rank != null) once(m, "crew", false, "I promoted " + homeplanet.model.Rank.bare(w[1].trim()) + " to " + rank + (head.contains("(posthumously)") ? ", posthumously." : ".")); // heromedel's words (5.53)
 			else if (w.length == 2) once(m, "crew", false, w[0].trim() + " is now " + w[1].trim() + ".");
 		} else if (kind.equals("REMODEL")) {
@@ -289,7 +292,7 @@ public final class CaptainsLog {
 		} else if (kind.equals("FINAL BATTLE")) {
 			once(m, "ships", false, startShip(head.split(":")[0].trim()) + " went into the final battle.");
 		} else if (kind.equals("MUSEUM")) {
-			if (head.contains(" is honoured in")) once(m, "ships", false, startShip(head.split(" is honoured")[0].trim()) + " went to the Federation museum.");
+			if (head.contains(" is honoured in")) once(m, "ships", false, startShip(head.split(" is honoured")[0].trim()) + " went to the Federation Museum.");
 			else { int f = head.lastIndexOf(" for "); if (f > 0) { Line l = once(m, "ships", false, "The museum paid for " + theShip(head.substring(f + 5).trim()) + "."); l.details.add(head.substring(0, f)); } }
 		} else if (kind.equals("REWARD")) {
 			int f = head.lastIndexOf(" for ");
@@ -315,7 +318,7 @@ public final class CaptainsLog {
 		} else if (kind.equals("OVERFLOW")) {
 			Matcher s = Pattern.compile("^(.+?) had no room for (\\S+): her crew ship it home").matcher(head);
 			if (s.find()) once(m, "letter", false, startShip(s.group(1)) + "'s crew shipped " + article(homeplanet.model.Items.title(s.group(2))) + " home.");
-		} else if (kind.equals("CAREER")) {
+		} else if (kind.equals("CAREER") && head.contains(" career begun")) { // not a rule chosen later (6.03)
 			once(m, "career", false, "My service with The Federation Home Planet began.");
 		}
 		// everything else is the station's own housekeeping, or told by another line (DOCK, TRADE, MEDBAY, CREW, LOADED…)
@@ -404,10 +407,34 @@ public final class CaptainsLog {
 		else meaning = subject;
 		once(m, "letter", false, "Got a letter from " + the(from) + ": " + meaning + (meaning.endsWith(".") || meaning.endsWith("!") || meaning.endsWith("?") ? "" : "."));
 	}
-	private static void voyage(String ship, String text, Map<String, Line> m) {
+	private static void voyage(String ship, String text, homeplanet.core.EventLog.Entry x, Map<String, Line> m) {
 		java.util.Set<String> before = new java.util.HashSet<String>(m.keySet());
-		voyageLine(ship, text, m);
+		if (!fought(ship, x, m)) voyageLine(ship, text, m);
 		for (Map.Entry<String, Line> e : m.entrySet()) if (!before.contains(e.getKey())) { e.getValue().aboard = true; if (e.getValue().ship == null) e.getValue().ship = ship; }
+	}
+	/**
+	 * A ship met or ships defeated, read from the event's fields (6.09: their words are lore's now, and may change): the
+	 * ship met joins the jump's line, the ships defeated the day's fight, by name where the station saw who. False for any
+	 * other entry, and for one too old to have its event.
+	 */
+	private static boolean fought(String ship, homeplanet.core.EventLog.Entry x, Map<String, Line> m) {
+		if (x == null) return false;
+		if (x.kind.equals("SHIP_MET")) {
+			String met = x.get("met", "");
+			if (met.isEmpty()) return false;
+			Line l = beacon(ship, m);
+			if (!l.met.contains(met)) l.met.add(met);
+			return true;
+		}
+		if (x.kind.equals("SHIPS_DEFEATED")) {
+			Line l = line(m, "fight", "fight:" + ship, false, "");
+			l.ship = ship;
+			l.count += x.num("count", 0);
+			String who = x.get("defeated");
+			if (who != null && !who.isEmpty()) l.beaten.add(who);
+			return true;
+		}
+		return false;
 	}
 	private static void voyageLine(String ship, String text, Map<String, Line> m) {
 		Matcher sector = Pattern.compile("^Sector (\\d+) reached").matcher(text);
@@ -430,7 +457,44 @@ public final class CaptainsLog {
 		if (text.startsWith("Crew joined: ")) { once(m, "crew", false, join(strip(text.substring(13))) + " came aboard " + theShip(ship) + "."); return; }
 		if (text.startsWith("The Rebel Flagship is alongside")) { once(m, "fight", false, "The Rebel Flagship came alongside " + theShip(ship) + "."); return; }
 		if (text.startsWith("The Rebel Flagship withdrew")) { once(m, "fight", false, "The Rebel Flagship withdrew."); return; }
-		if (text.startsWith("Time spent on work")) { once(m, "work", true, "Did some shopping and repairs at a station."); }
+		// a stop's work at a store says what was new aboard (heromedel, 5.80); told only on a day with the work note, as a
+		// repair drone, an event's free system or a crew member mending the hull aren't work at a station
+		if (text.startsWith("Time spent on work")) { work(ship, m).station = true; return; }
+		Matcher fitted = Pattern.compile("^New system: (.+?) \\d+$").matcher(text);
+		if (fitted.find()) { add(work(ship, m), "fit:" + fitted.group(1), 1); return; }
+		if (text.startsWith("Reactor upgraded")) { add(work(ship, m), "up:reactor", 1); return; }
+		Matcher upped = Pattern.compile("^(.+?) upgraded to \\d+$").matcher(text);
+		if (upped.find()) { add(work(ship, m), "up:" + upped.group(1), 1); return; }
+		if (text.startsWith("Hull repaired")) { add(work(ship, m), "mend", 1); return; }
+	}
+	/** Her stop's work at a store, the day's one line of it. */
+	private static Line work(String ship, Map<String, Line> m) {
+		Line l = line(m, "work", "work:" + ship, true, "");
+		l.ship = ship;
+		return l;
+	}
+	/**
+	 * A stop's work at a store in words: "Had a Clone Bay installed and got the Kestrel repaired.", "Had the Shields
+	 * upgraded."; with the work noted and nothing known of it, as before; null on a day without the note.
+	 */
+	static String workText(Line l) {
+		if (!l.station) return null;
+		if (l.things.isEmpty()) return "Did some shopping and repairs at a station.";
+		List<String> fitted = new ArrayList<String>(), upped = new ArrayList<String>();
+		for (String a : l.things.keySet()) {
+			if (a.startsWith("fit:")) fitted.add(article(systemWords(a.substring(4))));
+			else if (a.equals("up:reactor")) upped.add("the reactor");
+			else if (a.startsWith("up:")) upped.add("the " + systemWords(a.substring(3)));
+		}
+		String had = fitted.isEmpty() ? "" : join(fitted) + " installed";
+		if (!upped.isEmpty()) had += (had.isEmpty() ? "" : " and ") + join(upped) + " upgraded";
+		String mended = l.things.containsKey("mend") ? "got " + theShip(l.ship) + " repaired" : "";
+		String s = had.isEmpty() ? mended : "had " + had + (mended.isEmpty() ? "" : (fitted.isEmpty() || upped.isEmpty() ? " and " : ", and ") + mended);
+		return homeplanet.model.Words.cap(s) + ".";
+	}
+	/** A system as said aboard: "Clone Bay", "Shields", but "Hacking system", "Mind Control system" (FTL's titles that aren't things). */
+	private static String systemWords(String title) {
+		return java.util.Arrays.asList("Hacking", "Cloaking", "Mind Control", "Drone Control", "Piloting", "Oxygen").contains(title) ? title + " system" : title;
 	}
 	/** The day's jump of hers: one line, "We jumped to sector 3", "…to a station", "…to a new beacon". */
 	private static Line jump(String ship, Map<String, Line> m) {
@@ -451,6 +515,13 @@ public final class CaptainsLog {
 		if (max > 0 && lost * 4 >= max) line(m, "fight", "beating:" + ship, false, startShip(ship) + " took a beating.");
 	}
 
+	/** Who she beat in a day: by name where the station saw who ("the rebel ship and the Rock pirate"), the rest counted (6.09). */
+	private static String beaten(Line l) {
+		List<String> said = new ArrayList<String>(l.beaten);
+		int unknown = l.count - said.size();
+		if (unknown > 0) said.add(said.isEmpty() ? (unknown == 1 ? "a ship" : number(unknown) + " ships") : (unknown == 1 ? "one other ship" : number(unknown) + " other ships"));
+		return join(said);
+	}
 	/** A merged line's words, once everything of the day is in it. */
 	private static void finish(Line l) {
 		if (l.kind.equals("buy") && l.text.isEmpty()) l.text = l.things.isEmpty() ? null : "Bought " + things(l.things) + ".";
@@ -462,8 +533,9 @@ public final class CaptainsLog {
 		else if (l.kind.equals("move")) l.text = jumpText(l);
 		else if (l.kind.equals("ftlbuy")) l.text = l.things.isEmpty() ? null : "Bought " + things(l.things) + " at a station.";
 		else if (l.kind.equals("found")) l.text = l.things.isEmpty() ? null : "We picked up " + things(l.things) + ".";
-		else if (l.kind.equals("fight") && l.text.isEmpty()) l.text = l.count <= 0 ? null : startShip(l.ship) + " defeated " + (l.count == 1 ? "a ship" : number(l.count) + " ships") + ".";
+		else if (l.kind.equals("fight") && l.text.isEmpty()) l.text = l.count <= 0 ? null : startShip(l.ship) + " defeated " + beaten(l) + ".";
 		else if (l.kind.equals("systems")) l.text = systemsText(l);
+		else if (l.kind.equals("work")) l.text = workText(l);
 	}
 	/**
 	 * A jump in words (heromedel, 5.19): where to, what was there, who she met. "We jumped into a nebula and met a Rock
@@ -521,15 +593,14 @@ public final class CaptainsLog {
 		if (low.equals("scrap")) return number(n) + " scrap";
 		return n == 1 ? article(name) : number(n) + " " + name + (name.endsWith("s") ? "" : "s");
 	}
-	private static final String[] NUMBERS = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
-	static String number(int n) { return n >= 0 && n < NUMBERS.length ? NUMBERS[n] : Integer.toString(n); }
+	static String number(int n) { return homeplanet.model.Words.number(n); } // one home (6.0 step 10)
 	private static final String[] ORDINALS = {"", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"};
 	static String ordinal(int n) {
 		if (n > 0 && n < ORDINALS.length) return ORDINALS[n];
 		int t = n % 100;
 		return n + (t >= 11 && t <= 13 ? "th" : n % 10 == 1 ? "st" : n % 10 == 2 ? "nd" : n % 10 == 3 ? "rd" : "th");
 	}
-	static String article(String name) { return ("AEIOUaeiou".indexOf(name.isEmpty() ? 'x' : name.charAt(0)) >= 0 ? "an " : "a ") + name; }
+	static String article(String name) { return homeplanet.model.Words.a(name); }
 	/** A ship's name after "the" (ShipNames.the): "the Kestrel", but "The Adjudicator" as she is, never "the The" (5.31). */
 	static String theShip(String name) { return homeplanet.parser.ShipNames.the(name); }
 	/** The same, starting a sentence: "The Kestrel", "The Adjudicator". */
@@ -564,10 +635,7 @@ public final class CaptainsLog {
 		return s.replaceAll("\\s+\\([^)]*\\)\\s*$", "");
 	}
 	private static String shipName(String head) { return head.split("  ")[0].replaceAll("\\s*\\([0-9a-f]{16}\\)", "").trim(); }
-	private static String race(String id) {
-		String r = id.toLowerCase();
-		return r.equals("energy") ? "Zoltan" : r.equals("anaerobic") ? "Lanius" : r.equals("rock") ? "Rockman" : Character.toUpperCase(r.charAt(0)) + r.substring(1);
-	}
-	private static String sentence(String s) { s = s.trim(); return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1) + (s.endsWith(".") ? "" : "."); }
+	private static String race(String id) { return homeplanet.model.Crew.raceTitle(id); }
+	private static String sentence(String s) { s = s.trim(); return s.isEmpty() ? s : homeplanet.model.Words.cap(s) + (s.endsWith(".") ? "" : "."); }
 	private static String lower(String s) { return s.isEmpty() ? s : Character.toLowerCase(s.charAt(0)) + s.substring(1); }
 }

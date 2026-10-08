@@ -2,7 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -10,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import net.blerf.ftl.xml.Achievement;
 
-import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.vault.Vault;
 
 /**
@@ -44,19 +43,10 @@ public final class Career {
 	/** Beacons between stipends in the fleet in use. */
 	public static int beaconsPerStipend() { return monthsPerStipend() * BEACONS_PER_MONTH; }
 
-	static File file(File fleetRoot) { return new File(fleetRoot, "career.txt"); }
-	private static Properties read(File fleetRoot) {
-		Properties p = new Properties();
-		File f = file(fleetRoot);
-		if (!f.isFile()) return p;
-		try { p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
+	static File file(File fleetRoot) { return Store.file(fleetRoot, "career"); } // career.xml (5.86; career.txt in a fleet not opened since)
+	private static Properties read(File fleetRoot) { return Store.read(file(fleetRoot)); }
 	private static void write(File fleetRoot, Properties p) throws IOException {
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, "The Immersive career: its choices are fixed once made");
-		SafeFiles.writeText(file(fleetRoot), w.toString(), false);
+		Store.write(file(fleetRoot), p, "The Immersive career: its choices are fixed once made");
 	}
 
 	/** Has a career begun in this Immersive fleet (its folder)? */
@@ -90,6 +80,18 @@ public final class Career {
 		write(immersiveRoot, p);
 	}
 
+	/**
+	 * Rescued Ships after Victory moved to Hard difficulty, as this career has it: "true", "false", or null where it was
+	 * never chosen (6.03). Read only where the career leaves it to the player: Easy (changed in Settings) and Custom
+	 * (chosen once, fixed); Normal and Hard decide it themselves (FinalVictory.toHardRule).
+	 */
+	public static String rescuedToHard(File immersiveRoot) { return read(immersiveRoot).getProperty("rescuedToHard"); }
+	public static void setRescuedToHard(File immersiveRoot, boolean on) throws IOException {
+		Properties p = read(immersiveRoot);
+		p.setProperty("rescuedToHard", Boolean.toString(on));
+		write(immersiveRoot, p);
+	}
+
 	/** Begins a career in the Immersive fleet now open, at Normal difficulty. */
 	public static void start(boolean salaryAll, boolean ownProfile) throws IOException { start(salaryAll, ownProfile, true, CareerRules.of(CareerRules.NORMAL)); }
 	/** Begins a career in the Immersive fleet now open, at this difficulty: its choices, the starting scrap, and a Kestrel Type A to command. */
@@ -112,7 +114,9 @@ public final class Career {
 		v.depositToStorage(scrap);
 		if (withShip) v.grantFreeCommand("an Immersive career began", FreeCommand.KESTREL); // a Kestrel Type A, as a new FTL game starts
 		homeplanet.core.HistoryLog.entry("CAREER", (v.immersive ? "Immersive" : "Sandbox") + " career begun: stipend counts " + (salaryAll ? "every achievement" : "achievements earned from now on")
-				+ (ownProfile ? "; its own FTL profile" : "") + "; " + scrap + " scrap in the Cargo Hold" + (rules != null ? "; difficulty " + rules.describe() : ""));
+				+ (ownProfile ? "; its own FTL profile" : "") + "; " + scrap + " scrap in the Cargo Hold" + (rules != null ? "; difficulty " + rules.describe() : ""), null,
+				homeplanet.core.Event.of("CAREER").put("what", "begun").put("mode", v.immersive ? "Immersive" : "Sandbox").put("stipend", salaryAll ? "every_achievement" : "from_now").put("own_profile", ownProfile)
+						.put("scrap", scrap).put("difficulty", rules != null ? rules.describe() : null).put("with_ship", withShip));
 	}
 
 	/** The achievements the stipend counts now (real ones, not FTL's hidden unlock markers). */
@@ -134,21 +138,21 @@ public final class Career {
 	static int unpaidMonths() {
 		Vault v = Vault.get();
 		Properties p = read(v.root);
-		int paid = Integer.parseInt(p.getProperty("paidMonths", "0"));
+		int paid = Store.num(p, "paidMonths", 0);
 		if (p.getProperty("beaconsAtStart") == null) {
 			// a career from when the stipend counted sectors: its sectors so far become beacons, so nothing paid or owed changes
-			int sectors = v.sectorsSeen() - Integer.parseInt(p.getProperty("sectorsAtStart", "0"));
+			int sectors = v.sectorsSeen() - Store.num(p, "sectorsAtStart", 0);
 			p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen() - sectors * BEACONS_PER_SECTOR));
 			try { write(v.root, p); } catch (IOException e) { log.warn("Could not record the stipend's beacons: {}", e.toString()); }
 		}
-		int start = Integer.parseInt(p.getProperty("beaconsAtStart", "0"));
+		int start = Store.num(p, "beaconsAtStart", 0);
 		return Math.max(0, (v.beaconsSeen() - start) / beaconsPerStipend() - paid);
 	}
 	/** Records months as paid (or, with a negative count, takes them back after a failed payment). */
 	static void markPaid(int months) throws IOException {
 		File root = Vault.get().root;
 		Properties p = read(root);
-		p.setProperty("paidMonths", Integer.toString(Integer.parseInt(p.getProperty("paidMonths", "0")) + months));
+		p.setProperty("paidMonths", Integer.toString(Store.num(p, "paidMonths", 0) + months));
 		write(root, p);
 	}
 }

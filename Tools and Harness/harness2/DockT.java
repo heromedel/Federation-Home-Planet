@@ -28,6 +28,19 @@ public class DockT { public static void main(String[] a) throws Exception {
  Setup.chk("S: no fullscreen line: one is added", read(ini).equals("sound=60\nfullscreen=0\n"));
  FtlDock.restoreSettings();
  Setup.chk("S: and taken away again", read(ini).equals("sound=60\n"));
+ // a launch outside the dock (5.80): the screen chosen in Settings, in FTL's own keys; nothing when none is chosen
+ String ftls = "fullscreen=0\r\nlast_fullscreen=0\r\nvsync=1\r\nsound=60\r\n#Manual resolution choices\r\nmanual=0\r\nwindowed=0\r\n";
+ SafeFiles.writeText(ini, ftls, false);
+ HomePlanet.config.setProperty(FtlDock.CFG_VIDEO, "false"); FtlDock.prepareUndocked();
+ Setup.chk("U: none chosen: FTL's settings untouched", read(ini).equals(ftls));
+ HomePlanet.config.setProperty(FtlDock.CFG_VIDEO, "true"); HomePlanet.config.setProperty(FtlDock.CFG_FULLSCREEN, "3"); HomePlanet.config.setProperty(FtlDock.CFG_VSYNC, "false");
+ FtlDock.prepareUndocked();
+ Setup.chk("U: On (Native) without V-Sync: fullscreen=3, last_fullscreen=3, vsync=0, the rest as it was", read(ini).equals(ftls.replace("fullscreen=0\r\nlast_fullscreen=0\r\nvsync=1", "fullscreen=3\r\nlast_fullscreen=3\r\nvsync=0")));
+ HomePlanet.config.setProperty(FtlDock.CFG_FULLSCREEN, "0"); HomePlanet.config.setProperty(FtlDock.CFG_VSYNC, "true"); FtlDock.prepareUndocked();
+ Setup.chk("U: Off with V-Sync: fullscreen=0, vsync=1, last_fullscreen kept (FTL's own toggle goes back to it)", read(ini).equals(ftls.replace("last_fullscreen=0", "last_fullscreen=3")));
+ SafeFiles.writeText(ini, "sound=60\r\n", false); HomePlanet.config.setProperty(FtlDock.CFG_FULLSCREEN, "1"); FtlDock.prepareUndocked();
+ Setup.chk("U: the keys missing: added, in the file's own line ends", read(ini).equals("sound=60\r\nfullscreen=1\r\nlast_fullscreen=1\r\nvsync=1\r\n"));
+ HomePlanet.config.setProperty(FtlDock.CFG_VIDEO, "false");
  HomePlanet.config.setProperty(FtlDock.CFG_SIZE, "1600x900");
  SafeFiles.writeText(stray, "fullscreen=0\nsound=40\n", false); FtlDock.cleanUpStray();
  Setup.chk("S: a settings.ini beside the saves holding more than the station's line is left alone", stray.isFile());

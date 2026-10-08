@@ -5,12 +5,10 @@ import java.util.List;
 
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
-import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.SystemState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
-import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 import net.blerf.ftl.xml.AugBlueprint;
 import net.blerf.ftl.xml.CrewBlueprint;
 import net.blerf.ftl.xml.DroneBlueprint;
@@ -109,18 +107,30 @@ public final class Pricing {
 
 	/** A weapon, drone or augment at store price; an unpriced artillery weapon at UNPRICED_ARTILLERY; 0 if unknown. */
 	public static int item(String id) {
+		if (id != null && id.toUpperCase().startsWith("ARTILLERY") && DataManager.get().getWeapons().get(id) != null) return artillery(id);
+		return Math.max(0, store(id));
+	}
+	/** A weapon, drone or augment at FTL's own store price, as the game data has it; -1 if the data doesn't know it (a removed mod's). */
+	public static int store(String id) {
 		WeaponBlueprint w = DataManager.get().getWeapons().get(id);
-		if (w != null) return id.toUpperCase().startsWith("ARTILLERY") ? artillery(id) : Math.max(0, w.getCost());
+		if (w != null) return w.getCost();
 		DroneBlueprint d = DataManager.get().getDrones().get(id);
-		if (d != null) return Math.max(0, d.getCost());
+		if (d != null) return d.getCost();
 		AugBlueprint a = DataManager.get().getAugments().get(id);
-		if (a != null) return Math.max(0, a.getCost());
-		return 0;
+		if (a != null) return a.getCost();
+		return -1;
 	}
 	/** A crew member of this race at hiring price (0 if unknown). */
-	public static int crew(String race) {
+	public static int crew(String race) { return Math.max(0, crewStore(race)); }
+	/** A crew member of this race at FTL's hiring price; -1 if the data doesn't know the race, or the save format can't hold it. */
+	public static int crewStore(String race) {
 		CrewBlueprint c = DataManager.get().getCrews().get(race);
-		return c == null ? 0 : Math.max(0, c.getCost());
+		return c == null || net.blerf.ftl.parser.SavedGameParser.CrewType.findById(race) == null ? -1 : c.getCost();
+	}
+	/** A system at FTL's own store price (its first level); -1 if the data doesn't know it. */
+	public static int systemStore(String id) {
+		net.blerf.ftl.xml.SystemBlueprint s = DataManager.get().getSystem(id);
+		return s == null ? -1 : s.getCost();
 	}
 
 	/** FTL's store prices for one fuel, missile and drone part. */
@@ -238,10 +248,7 @@ public final class Pricing {
 		}
 		q.add("Systems and their levels", sys);
 		int gear = 0;
-		for (WeaponState w : s.getWeaponList()) gear += item(w.getWeaponId());
-		for (DroneState d : s.getDroneList()) gear += item(d.getDroneId());
-		for (String a : s.getAugmentIdList()) gear += item(a);
-		for (String c : SaveHelper.cargo(gs)) gear += item(c); // not the augment FTL is asking about (5.52)
+		for (String g : SaveHelper.gearAndCargo(gs)) gear += item(g); // not the augment FTL is asking about (5.52)
 		SystemState art = s.getSystem(SystemType.ARTILLERY);
 		if (art != null && art.getCapacity() > 0) gear += artillery(Commission.artilleryWeapon(gs.getPlayerShipBlueprintId())); // the gun her artillery fires
 		q.add("Weapons, drones and augments", gear);

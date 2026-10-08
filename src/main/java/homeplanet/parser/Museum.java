@@ -2,12 +2,10 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -21,12 +19,14 @@ import org.slf4j.LoggerFactory;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.vault.Ship;
+import homeplanet.vault.ShipStore;
 import homeplanet.vault.Vault;
 
 /**
  * The Federation Museum: the Hall of Victors (every ship that won, whatever came after) and the Memorial (ships lost
- * in action without a victory). What the saves can't say is kept in each ship's history folder, museum.txt: her
+ * in action without a victory). What the saves can't say is kept in each ship's record (its museum section, 5.98; museum.txt before): her
  * victories (date, score, difficulty, the honours earned during her command), whether she was kept or preserved, her
  * epitaph, when she was commissioned, and the profile's achievements when she was last set out.
  */
@@ -34,7 +34,6 @@ public final class Museum {
 	private static final Logger log = LoggerFactory.getLogger(Museum.class);
 	private Museum() { }
 
-	static final String FILE = "museum.txt";
 	public enum Status { PRESERVED, IN_SERVICE, MEMORY, LOST, MEMORIAL, TRANSFERRED, RETURNED, SEIZED }
 
 	/** One ship on show. */
@@ -64,33 +63,17 @@ public final class Museum {
 
 	// ---- the records ----
 
-	static File dir(Vault v, String id) { return new File(v.historyDir(), id); }
-	static Properties read(Vault v, String id) {
-		Properties p = new Properties();
-		File f = new File(dir(v, id), FILE);
-		if (!f.isFile()) return p;
-		try { p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
+	static File dir(Vault v, String id) { return v.folderOfId(id); }
+	static Properties read(Vault v, String id) { return ShipStore.notes(dir(v, id), ShipStore.MUSEUM); }
 	static void write(Vault v, String id, Properties p) {
-		File d = dir(v, id);
-		try {
-			if (!d.isDirectory() && !d.mkdirs()) throw new IOException("Could not create " + d);
-			StringWriter w = new StringWriter();
-			p.store(w, "Her place in the Federation Museum");
-			SafeFiles.writeText(new File(d, FILE), w.toString(), false);
-		} catch (IOException e) {
-			log.warn("Could not keep {}'s museum record: {}", id, e.toString());
-		}
+		try { v.setNotes(dir(v, id), ShipStore.MUSEUM, p); }
+		catch (IOException e) { log.warn("Could not keep {}'s museum record: {}", id, e.toString()); }
 	}
 	private static String today() { return new SimpleDateFormat("d MMMM yyyy").format(new Date()); }
 
 	/** Her final victories, as her record and her kept victory saves tell (the greater). */
 	public static int victories(Vault v, String id) {
-		File d = new File(v.historyDir(), id);
-		File[] wins = d.listFiles(new java.io.FileFilter() { public boolean accept(File f) { return f.isFile() && f.getName().startsWith("victory-") && f.getName().endsWith(".sav"); } });
-		return Math.max(intOf(read(v, id), "victories"), wins == null ? 0 : wins.length);
+		return Math.max(Store.num(read(v, id), "victories", 0), wins(v.folderOfId(id)).size());
 	}
 	/** When she was first commissioned ("1 October 2026"), or "" if not known. */
 	public static String commissioned(Vault v, String id) { return read(v, id).getProperty("commissioned", ""); }
@@ -118,7 +101,7 @@ public final class Museum {
 		String key;
 		try { key = SafeFiles.hash(f.copy); } catch (IOException e) { key = f.copy.getName() + f.copy.lastModified(); }
 		Properties p = read(v, f.id);
-		int n = intOf(p, "victories");
+		int n = Store.num(p, "victories", 0);
 		for (int k = 1; k <= n; k++) if (key.equals(p.getProperty("victory." + k + ".key"))) return;
 		n++;
 		p.setProperty("victories", Integer.toString(n));
@@ -131,16 +114,31 @@ public final class Museum {
 		p.setProperty("victory." + n + ".difficulty", best == null || best.getDifficulty() == null ? difficulty(gs) : title(best.getDifficulty().toString()));
 		Set<String> before = new LinkedHashSet<String>(Arrays.asList(p.getProperty("achievementsAtStart", "").split("\\|")));
 		boolean known = !p.getProperty("achievementsAtStart", "").isEmpty();
-		List<String> honours = new ArrayList<String>();
-		if (known) for (String a : u.achievements()) {
-			if (before.contains(a)) continue;
-			net.blerf.ftl.xml.Achievement ach = net.blerf.ftl.parser.DataManager.get().getAchievement(a);
-			if (ach == null || ach.getName() == null) continue;
-			honours.add(ach.getName().getTextValue());
-		}
+		List<String> honours = known ? honours(before, u.achievements()) : new ArrayList<String>();
 		p.setProperty("victory." + n + ".honours", String.join("|", honours));
 		p.setProperty("kept", "false");
 		write(v, f.id, p);
+	}
+	/**
+	 * The honours of a command: the achievements gained since it began, by name. The save reader's own victory markers
+	 * (PLAYER_SHIP_*_VICTORY, one per cruiser) aren't FTL's achievements and have no name: "Drove off the Rebel Flagship"
+	 * already says she won (5.87: one showed as its id).
+	 */
+	public static List<String> honours(Set<String> before, Iterable<String> now) {
+		List<String> out = new ArrayList<String>();
+		for (String a : now) {
+			if (before.contains(a)) continue;
+			net.blerf.ftl.xml.Achievement ach = net.blerf.ftl.parser.DataManager.get().getAchievement(a);
+			if (ach == null || ach.isVictory() || ach.getName() == null) continue;
+			out.add(ach.getName().getTextValue());
+		}
+		return out;
+	}
+	/** A victory's honours as kept, for showing: a victory marker's id kept before 5.87 left out. */
+	public static List<String> shownHonours(String kept) {
+		List<String> out = new ArrayList<String>();
+		for (String h : (kept == null ? "" : kept).split("\\|")) if (!h.isEmpty() && !h.matches("PLAYER_SHIP_[A-Z0-9_]+_VICTORY")) out.add(h);
+		return out;
 	}
 	private static String difficulty(SavedGameState gs) { return gs.getDifficulty() == null ? "" : title(gs.getDifficulty().toString()); }
 	private static String title(String s) { return s.isEmpty() ? s : s.charAt(0) + s.substring(1).toLowerCase(); }
@@ -166,13 +164,11 @@ public final class Museum {
 	/** Every exhibit: the Hall of Victors first (most victories, then name), then the Memorial (by name). */
 	public static List<Exhibit> exhibits(Vault v) {
 		List<Exhibit> victors = new ArrayList<Exhibit>(), memorial = new ArrayList<Exhibit>();
-		File[] dirs = v.historyDir().listFiles();
-		if (dirs != null) for (File d : dirs) {
-			if (!d.isDirectory()) continue;
-			String id = d.getName();
-			Properties p = read(v, id);
-			File[] wins = d.listFiles(new java.io.FileFilter() { public boolean accept(File f) { return f.isFile() && f.getName().startsWith("victory-") && f.getName().endsWith(".sav"); } });
-			int victories = Math.max(intOf(p, "victories"), wins == null ? 0 : wins.length);
+		for (File d : v.shipFolders()) {
+			String id = ShipStore.idOf(d);
+			if (id == null) continue;
+			Properties p = ShipStore.notes(d, ShipStore.MUSEUM);
+			int victories = Math.max(Store.num(p, "victories", 0), wins(d).size());
 			String[] fate = fate(d);
 			Ship inFleet = v.byId(id);
 			String name = inFleet != null ? inFleet.name : !p.getProperty("name", "").isEmpty() ? p.getProperty("name") : fate[1].isEmpty() ? id : fate[1];
@@ -211,29 +207,27 @@ public final class Museum {
 	}
 
 	private static String[] fate(File d) {
-		try {
-			String[] l = new String(SafeFiles.read(new File(d, "fate.txt")), StandardCharsets.UTF_8).split("\n");
-			return new String[] {l[0].trim(), l.length > 1 ? l[1].trim() : "", l.length > 2 ? l[2].trim() : ""};
-		} catch (IOException e) {
-			return new String[] {"", "", ""};
-		}
+		String[] f = ShipStore.fate(d);
+		return f != null ? f : new String[] {"", "", ""};
+	}
+	/** Her victory copies, oldest first (kept in her folder's versions/, 5.69). */
+	private static List<File> wins(File d) {
+		List<File> out = new ArrayList<File>();
+		for (File f : ShipStore.versions(d, true)) if (f.getName().startsWith("victory-")) out.add(f);
+		return out;
 	}
 	/** Her newest kept save: a victory's copy (victory) or any version. */
-	private static File newest(File d, final boolean victory) {
-		File[] fs = d.listFiles(new java.io.FileFilter() {
-			public boolean accept(File f) { return f.isFile() && f.getName().endsWith(".sav") && (!victory || f.getName().startsWith("victory-")); }
-		});
-		if (fs == null || fs.length == 0) return null;
-		Arrays.sort(fs, new Comparator<File>() {
+	private static File newest(File d, boolean victory) {
+		List<File> fs = victory ? wins(d) : new ArrayList<File>(ShipStore.versions(d, false));
+		if (!victory) fs.addAll(ShipStore.versions(d, true));
+		if (fs.isEmpty()) return null;
+		Collections.sort(fs, new Comparator<File>() {
 			public int compare(File a, File b) { int c = Long.compare(a.lastModified(), b.lastModified()); return c != 0 ? c : a.getName().compareTo(b.getName()); }
 		});
-		return fs[fs.length - 1];
+		return fs.get(fs.size() - 1);
 	}
 	private static int sectorOf(File save) {
 		if (save == null) return 0;
 		try { return homeplanet.core.HomePlanet.savedGameParser.readSavedGame(save).getSectorNumber() + 1; } catch (Exception e) { return 0; }
-	}
-	private static int intOf(Properties p, String k) {
-		try { return Integer.parseInt(p.getProperty(k, "0").trim()); } catch (NumberFormatException e) { return 0; }
 	}
 }

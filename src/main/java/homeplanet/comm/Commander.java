@@ -76,7 +76,7 @@ public final class Commander {
 			JOptionPane.showMessageDialog(owner, why, "Commander", JOptionPane.INFORMATION_MESSAGE);
 		}
 		setName(value);
-		homeplanet.core.HistoryLog.entry("SETTINGS", "", java.util.Collections.singletonList("Commander name: " + value));
+		homeplanet.core.HistoryLog.entry("SETTINGS", "", java.util.Collections.singletonList("Commander name: " + value), homeplanet.core.Event.of("SETTINGS").put("commander_name", value).detail("Commander name: " + value));
 		return true;
 	}
 }

@@ -2,8 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -12,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import homeplanet.core.HomePlanet;
-import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.vault.Vault;
 
 /**
@@ -82,24 +80,15 @@ public final class PlayerRank {
 
 	// ---- the ladder, kept with the fleet: the highest rank reached, never lowered ----
 
-	private static File file(Vault v) { return new File(v.root, "rank.txt"); }
-	private static Properties read(Vault v) {
-		Properties p = new Properties();
-		File f = file(v);
-		try { if (f.isFile()) p.load(new StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8))); }
-		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); }
-		return p;
-	}
+	private static File file(Vault v) { return Store.file(v.root, "rank"); } // rank.xml (5.86)
+	private static Properties read(Vault v) { return Store.read(file(v)); }
 	private static void write(Vault v, Properties p) {
-		try {
-			java.io.StringWriter w = new java.io.StringWriter();
-			p.store(w, "The player's rank on the reputation ladder (Ranks From Rep): the highest reached, never lowered");
-			SafeFiles.writeText(file(v), w.toString(), false);
-		} catch (IOException e) { log.warn("Could not record the rank: {}", e.toString()); }
+		try { Store.write(file(v), p, "The player's rank on the reputation ladder (Ranks From Rep): the highest reached, never lowered"); }
+		catch (IOException e) { log.warn("Could not record the rank: {}", e.toString()); }
 	}
 	/** The highest rank reached on the ladder. */
 	public static int reached(Vault v) {
-		try { return Integer.parseInt(read(v).getProperty("reached", "0").trim()); } catch (NumberFormatException e) { return 0; }
+		return Store.num(read(v), "reached", 0);
 	}
 	/** A clearance an old career held under the cruiser ranks, kept ("custom": remodels and custom ships; "artillery"). */
 	public static boolean kept(Vault v, String what) { return "true".equals(read(v).getProperty("kept." + what)); }
@@ -134,8 +123,7 @@ public final class PlayerRank {
 			return c;
 		}
 		Properties p = read(v);
-		int was;
-		try { was = Integer.parseInt(p.getProperty("reached", "0").trim()); } catch (NumberFormatException e) { was = 0; }
+		int was = Store.num(p, "reached", 0);
 		if (now <= was) return c;
 		for (int r = was + 1; r <= now; r++) c.promoted.add(r);
 		p.setProperty("reached", Integer.toString(now));

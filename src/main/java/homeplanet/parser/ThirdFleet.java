@@ -1,8 +1,6 @@
 package homeplanet.parser;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -115,16 +113,14 @@ public final class ThirdFleet {
 			if (pick == null) for (SystemType t : FIRST) if (room(her, t)) { pick = t; break; }
 		}
 		if (pick == null) pick = SystemType.ENGINES;
-		File f = v.systemsFile();
-		List<String> lines = new ArrayList<String>();
-		if (f.isFile()) lines.addAll(java.nio.file.Files.readAllLines(f.toPath(), StandardCharsets.UTF_8));
-		else lines.add(homeplanet.ui.SystemsPanel.HEADER);
-		lines.add(homeplanet.ui.SystemsPanel.line(pick.getId(), 1, 0));
-		v.begin().put(f, (String.join("\n", lines) + "\n").getBytes(StandardCharsets.UTF_8)).commit();
+		Vault.Transaction tx = v.begin();
+		homeplanet.vault.StoredSystems.add(tx, v, java.util.Collections.singletonList(homeplanet.vault.StoredSystems.line(pick.getId(), 1, 0)));
+		tx.commit();
 		String title = homeplanet.model.Items.systemTitle(pick.getId());
-		String words = ("aeiouAEIOU".indexOf(title.charAt(0)) >= 0 ? "an " : "a ") + title + " system";
+		String words = homeplanet.model.Words.a(title) + " system";
 		v.recordEvent(E_PART, words);
-		homeplanet.core.HistoryLog.entry("GIFT", "The Third Fleet Commander sent " + words + " for the project ship, to the stored systems");
+		homeplanet.core.HistoryLog.entry("GIFT", "The Third Fleet Commander sent " + words + " for the project ship, to the stored systems", null,
+				homeplanet.core.Event.of("GIFT").put("from", "Third Fleet Commander").put("system", pick.getId()).put("title", title).put("to", "stored_systems"));
 		return words;
 	}
 	private static SystemType missing(ShipState her, SystemType[] order) {

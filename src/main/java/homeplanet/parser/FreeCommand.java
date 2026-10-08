@@ -1,16 +1,11 @@
 package homeplanet.parser;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
 
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
-import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
-import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.HomePlanet;
-import homeplanet.core.SafeFiles;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
@@ -74,34 +69,20 @@ public final class FreeCommand {
 			if (gs != null) {
 				ShipState s = gs.getPlayerShip();
 				total += s.getScrapAmt();
-				for (WeaponState w : s.getWeaponList()) total += Pricing.item(w.getWeaponId()) / 2;
-				for (DroneState d : s.getDroneList()) total += Pricing.item(d.getDroneId()) / 2;
-				for (String a : s.getAugmentIdList()) total += Pricing.item(a) / 2;
-				for (String c : SaveHelper.cargo(gs)) total += Pricing.item(c) / 2;
+				for (String g : SaveHelper.gearAndCargo(gs)) total += Pricing.item(g) / 2;
 				if (HomePlanet.sellSupplies())
 					total += homeplanet.core.Economy.supplySale(s.getMissilesAmt(), Pricing.MISSILE) + homeplanet.core.Economy.supplySale(s.getDronePartsAmt(), Pricing.DRONE_PART);
 			}
 		} catch (Exception e) { } // an unreadable hold counts as empty
-		File sys = v.systemsFile();
-		if (HomePlanet.sellSystems() && sys.isFile()) {
+		if (HomePlanet.sellSystems()) {
 			try {
-				for (String line : new String(SafeFiles.read(sys), StandardCharsets.UTF_8).split("\r?\n")) {
-					line = line.trim();
-					if (line.isEmpty() || line.startsWith("#")) continue;
-					String[] p = line.split("\\s+");
-					int level = 1;
-					try { if (p.length > 1) level = Math.max(1, Integer.parseInt(p[1])); } catch (NumberFormatException e) { }
-					total += Math.max(0, Pricing.systemSale(p[0], level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT) - broken(p) * Pricing.brokenBarValue(p[0])); // as the Cargo Bay sells it
-				}
+				for (homeplanet.vault.StoredSystems.Entry s : homeplanet.vault.StoredSystems.read(v))
+					total += Math.max(0, Pricing.systemSale(s.id, s.level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT) - s.broken * Pricing.brokenBarValue(s.id)); // as the Cargo Bay sells it
 			} catch (Exception e) { }
 		}
 		return total;
 	}
 
-	/** A stored system line's broken bars (its third field), or 0. */
-	private static int broken(String[] p) {
-		try { return p.length > 2 ? Math.max(0, Integer.parseInt(p[2])) : 0; } catch (NumberFormatException e) { return 0; }
-	}
 	/**
 	 * Everything of value a plea would forfeit, in scrap: the Cargo Hold (scrap, supplies, items,
 	 * crew, stored systems) and the Junkyard's hulls at their full price.
@@ -113,24 +94,14 @@ public final class FreeCommand {
 			if (gs != null) {
 				ShipState s = gs.getPlayerShip();
 				total += s.getScrapAmt() + s.getFuelAmt() * Pricing.FUEL + s.getMissilesAmt() * Pricing.MISSILE + s.getDronePartsAmt() * Pricing.DRONE_PART;
-				for (WeaponState w : s.getWeaponList()) total += Pricing.item(w.getWeaponId());
-				for (DroneState d : s.getDroneList()) total += Pricing.item(d.getDroneId());
-				for (String a : s.getAugmentIdList()) total += Pricing.item(a);
-				for (String c : SaveHelper.cargo(gs)) total += Pricing.item(c);
+				for (String g : SaveHelper.gearAndCargo(gs)) total += Pricing.item(g);
 				for (CrewState c : SaveHelper.getOwnCrew(s)) total += Pricing.crew(c.getRace().getId());
 			}
 		} catch (Exception e) { log.debug("Free command: the Cargo Hold could not be read, counted as empty: {}", e.toString()); } // an unreadable hold counts as empty
-		File sys = v.systemsFile();
-		if (sys.isFile()) {
+		{
 			try {
-				for (String line : new String(SafeFiles.read(sys), StandardCharsets.UTF_8).split("\r?\n")) {
-					line = line.trim();
-					if (line.isEmpty() || line.startsWith("#")) continue;
-					String[] p = line.split("\\s+");
-					int level = 1;
-					try { if (p.length > 1) level = Math.max(1, Integer.parseInt(p[1])); } catch (NumberFormatException e) { }
-					total += Math.max(0, Pricing.system(p[0], level) - broken(p) * Pricing.brokenBarValue(p[0]));
-				}
+				for (homeplanet.vault.StoredSystems.Entry s : homeplanet.vault.StoredSystems.read(v))
+					total += Math.max(0, Pricing.system(s.id, s.level) - s.broken * Pricing.brokenBarValue(s.id));
 			} catch (Exception e) { log.debug("Free command: the stored systems could not be read: {}", e.toString()); }
 		}
 		for (Ship j : v.junked()) {

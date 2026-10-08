@@ -18,11 +18,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import net.blerf.ftl.parser.DataManager;
-import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.SystemState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
-import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.GameGuard;
@@ -158,9 +156,7 @@ final class DerelictsDialog extends JDialog {
 					.append(" points less until ").append(core == 1 ? "it's" : "they're").append(" put back</font>");
 		}
 		List<String> aboard = new ArrayList<String>();
-		for (WeaponState w : s.getWeaponList()) aboard.add(Items.title(w.getWeaponId()));
-		for (DroneState d : s.getDroneList()) aboard.add(Items.title(d.getDroneId()));
-		for (String a : s.getAugmentIdList()) aboard.add(Items.title(a));
+		for (String g : homeplanet.parser.SaveHelper.gear(s)) aboard.add(Items.title(g));
 		sb.append("<br>Aboard: ").append(aboard.isEmpty() ? "nothing" : homeplanet.parser.XmlText.text(String.join(", ", aboard)));
 		if (!l.oddityWords().isEmpty()) sb.append("<br><br><font color='").append(gold).append("'>").append(l.oddityWords()).append("</font>")
 				.append("<br><font color='").append(dim).append("'>She'll need her own blueprint sent to FTL via Slipstream.</font>");

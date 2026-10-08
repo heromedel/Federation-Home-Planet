@@ -25,7 +25,7 @@ public class PartT { public static void main(String[] a) throws Exception {
   Setup.chk("D: 2 broken Shields bars 10, a broken Engines and Piloting bar 10 each (" + (Pricing.damage(s) - base) + ")", Pricing.damage(s) - base == 30);
   Setup.chk("D: a bar's value by system", Pricing.brokenBarValue("oxygen") == 10 && Pricing.brokenBarValue("weapons") == 5);
   Setup.chk("D: stored lines: a damaged system keeps its broken bars, an undamaged one is as before",
-    "shields 3 2".equals(homeplanet.ui.SystemsPanel.line("shields", 3, 2)) && "shields 3".equals(homeplanet.ui.SystemsPanel.line("shields", 3, 0)) && "clonebay".equals(homeplanet.ui.SystemsPanel.line("clonebay", 0, 0)));
+    "shields 3 2".equals(homeplanet.vault.StoredSystems.line("shields", 3, 2)) && "shields 3".equals(homeplanet.vault.StoredSystems.line("shields", 3, 0)) && "clonebay".equals(homeplanet.vault.StoredSystems.line("clonebay", 0, 0)));
  }
  static void parts(Vault v) throws Exception {
   List<Parts.Listing> l = Parts.current(v);
@@ -94,8 +94,8 @@ public class PartT { public static void main(String[] a) throws Exception {
   SavedGameState hold = v.readCopy(v.storage()).save; hold.getPlayerShip().setScrapAmt(pick.price + 3); v.write(v.storage(), hold);
   Parts.buy(v, pick);
   String file = new String(SafeFiles.read(v.systemsFile()), "UTF-8");
-  Setup.chk("P: bought: the price from the Cargo Hold, the part stored broken (" + homeplanet.ui.SystemsPanel.line(pick.id, pick.level, pick.broken) + ")",
-    v.storageScrap() == 3 && file.contains("\n" + homeplanet.ui.SystemsPanel.line(pick.id, pick.level, pick.broken) + "\n"));
+  Setup.chk("P: bought: the price from the Cargo Hold, the part stored broken (" + homeplanet.vault.StoredSystems.line(pick.id, pick.level, pick.broken) + ")",
+    v.storageScrap() == 3 && file.contains("\n" + homeplanet.vault.StoredSystems.line(pick.id, pick.level, pick.broken) + "\n"));
   boolean gone = true; for (Parts.Listing x : Parts.current(v)) if (x.index == pick.index) gone = false;
   boolean twice = false; try { Parts.buy(v, pick); } catch (IOException e) { twice = true; }
   Setup.chk("P: sold once only", gone && twice && v.storageScrap() == 3);
@@ -108,14 +108,14 @@ public class PartT { public static void main(String[] a) throws Exception {
  static void stipend(Vault v) throws Exception {
   if (!Career.started(v.root)) Career.start(false, false, false);
   java.lang.reflect.Method unpaid = Career.class.getDeclaredMethod("unpaidMonths"); unpaid.setAccessible(true);
-  File cf = new File(v.root, "career.txt");
-  Properties p = new Properties(); p.load(new ByteArrayInputStream(SafeFiles.read(cf)));
+  File cf = Store.file(v.root, "career");
+  Properties p = Store.load(cf);
   Setup.chk("S: a career begun now counts beacons from its start", Integer.toString(v.beaconsSeen()).equals(p.getProperty("beaconsAtStart")));
   Setup.chk("S: Sandbox careers: every two months, 56 beacons", Career.beaconsPerStipend() == 56);
   // a career from before: 9 sectors travelled at 4 a month, 1 month paid: 1 month owed, a sector on to the next
   p.remove("beaconsAtStart"); p.setProperty("sectorsAtStart", "0"); p.setProperty("paidMonths", "1");
-  SafeFiles.writeText(new File(v.root, "sectors.txt"), "9\n", false);
-  ByteArrayOutputStream b = new ByteArrayOutputStream(); p.store(b, null); SafeFiles.write(cf, b.toByteArray());
+  Clock.set(v, "sectors", "9");
+  Store.write(cf, p, null);
   int owed = (Integer) unpaid.invoke(null);
   Setup.chk("S: a career from sectors: still 1 month owed after the switch (" + owed + ")", owed == 1);
   ChainT.jump(v, 32);
@@ -143,7 +143,7 @@ public class PartT { public static void main(String[] a) throws Exception {
   v.takeStock(); v.observeBoarded(); v.takeStock();
   Setup.chk("K: and nothing counts twice", v.beaconsSeen() == b0 + 45);
   Parts.current(v);
-  Properties pp = new Properties(); pp.load(new ByteArrayInputStream(SafeFiles.read(new File(v.root, "parts.txt"))));
+  Properties pp = new Properties(); pp.load(new ByteArrayInputStream(SafeFiles.read(new File(v.cargoHoldDir(), "parts.txt"))));
   Setup.chk("K: the Junkyard's Parts restock as the fleet flies", Integer.parseInt(pp.getProperty("rolledAt")) > b0);
   // FTL's New Game writes over her: the new ship's run so far was flown in the fleet's time
   SavedGameState n = Commission.build("PLAYER_SHIP_HARD", "Newcomer", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3));
@@ -172,7 +172,7 @@ public class PartT { public static void main(String[] a) throws Exception {
   g.setStateVar("system_upgrade", (g.hasStateVar("system_upgrade") ? g.getStateVar("system_upgrade") : 0) + 2);
   SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock();
   Setup.chk("W: more work at the same stop: no more", v.beaconsSeen() == seen + 1);
-  String vl = VoyageLog.read(v, s);
+  String vl = Setup.voyageLog(v, s);
   Setup.chk("W: noted in her voyage log, never as a beacon (the second hard rule)", vl.contains("Time spent on work at the beacon") && !vl.contains("counted as a beacon"));
   Ship other = v.docked().get(0);
   v.board(other); v.takeStock(); v.board(s); v.takeStock();

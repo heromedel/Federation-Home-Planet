@@ -9,7 +9,7 @@ public class StatT {
 
   // a ship the station never saw begin a journey: only the sector and difficulty for this journey
   Ship old = v.docked().get(0);
-  new File(new File(v.historyDir(), old.id), "journey.txt").delete();
+  v.setNotes(v.historyOf(old), ShipStore.JOURNEY, null);
   ShipStats o = ShipStats.of(v, old, old.save());
   Setup.chk("S: a journey the station didn't see begin: no journey counts, said so", !o.journeyKnown && labels(o.journey).equals(Arrays.asList("Sector", "Difficulty")));
 
@@ -35,7 +35,7 @@ public class StatT {
   Setup.chk("S: her service: 2 journeys, furthest sector 7 (the last journey's), 47 ships, 1,210 scrap", "2".equals(value(st.service, "Journeys"))
     && "7".equals(value(st.service, "Furthest sector")) && "47".equals(value(st.service, "Ships defeated")) && "1,210".equals(value(st.service, "Scrap collected")));
   Setup.chk("S: no final victories line without a victory", value(st.service, "Final victories") == null);
-  SafeFiles.write(new File(new File(v.historyDir(), s.id), "victory-1.sav"), SafeFiles.read(s.file()));
+  ShipStore.keepVersion(v.historyOf(s), SafeFiles.read(s.file()), "victory-");
   Setup.chk("S: a victory: Final victories 1, as a gain", "1".equals(value(ShipStats.of(v, s, s.save()).service, "Final victories")) && line(ShipStats.of(v, s, s.save()).service, "Final victories").tone == 1);
   Setup.chk("S: her crew's standouts: Best Pilot 214 evasions and Longest Serving to one, Best Gunner 28 kills to the other, none for repairs",
     standout(st, "Best Pilot", crew.get(0).getName(), "214 evasions") && standout(st, "Longest Serving", crew.get(0).getName(), "160 jumps survived")
@@ -43,7 +43,7 @@ public class StatT {
 
   // a traded ship: where she came from, and her original owner
   Ship t = v.docked().get(2);
-  SafeFiles.writeText(new File(new File(v.historyDir(), t.id), "traded.txt"), "trade=x\ndate=2026-10-01 18:40\nfrom=Commander Bree\noriginal=Captain Ash\ndefeated=0\nbeacons=0\nscrap=0\nsectors=0\n", false);
+  Setup.side(v, v.historyOf(t), "traded.txt", "trade=x\ndate=2026-10-01 18:40\nfrom=Commander Bree\noriginal=Captain Ash\ndefeated=0\nbeacons=0\nscrap=0\nsectors=0\n");
   ShipStats ts = ShipStats.of(v, t, t.save());
   Setup.chk("S: a traded ship: first commissioned by Captain Ash; with you since the trade, from Commander Bree", "Captain Ash".equals(value(ts.service, "First commissioned by"))
     && ts.traded != null && ts.traded.contains("Commander Bree") && ts.traded.contains("2026-10-01 18:40"));

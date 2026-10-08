@@ -11,9 +11,9 @@ import net.blerf.ftl.parser.SavedGameParser.CrewType;
 
 /**
  * A crew member's skill points, as FTL:AE keeps them: each skill's points climb to the race's interval for level one
- * and twice it for level two, and the save's mastery flags say which level they hold. Expeditions add points for
- * work done, the infirmary takes them away, and a clone bay takes a level. Order: pilot, engines, shields, weapons,
- * repair, combat (Crew.skillLevels' order).
+ * and twice it for level two, and the level they hold is read from the points (Crew.skillLevels; the save's mastery
+ * flags are kept in step when the station sets points). Expeditions add points for work done, the infirmary takes them
+ * away, and a clone bay takes a level. Order: pilot, engines, shields, weapons, repair, combat (Crew.skillLevels' order).
  */
 public final class Skills {
 	private Skills() { }

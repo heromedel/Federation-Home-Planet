@@ -2,7 +2,6 @@ package homeplanet.comm;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,8 +14,10 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
+import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
+import homeplanet.core.Store;
 import homeplanet.model.Items;
 import homeplanet.parser.SaveHelper;
 import homeplanet.vault.Ship;
@@ -71,13 +72,10 @@ public final class Exchange {
 		for (Map.Entry<String, String> e : m.fields().entrySet()) p.setProperty(e.getKey(), e.getValue());
 		for (Map.Entry<String, String> e : out.fields().entrySet()) p.setProperty("out." + e.getKey(), e.getValue());
 		for (Map.Entry<String, String> e : in.fields().entrySet()) p.setProperty("in." + e.getKey(), e.getValue());
-		java.io.StringWriter w = new java.io.StringWriter();
-		p.store(w, "A Long Range Comm. trade (state: " + r.state + "). Federation Home Planet rewrites this file.");
-		return w.toString().getBytes(StandardCharsets.UTF_8);
+		return Store.bytes(p, "A Long Range Comm. trade (state: " + r.state + "). Federation Home Planet rewrites this file.");
 	}
 	static Record read(File f) throws IOException {
-		Properties p = new Properties();
-		p.load(new java.io.StringReader(new String(SafeFiles.read(f), StandardCharsets.UTF_8)));
+		Properties p = Store.load(f);
 		Record r = new Record();
 		r.file = f;
 		r.id = p.getProperty("id", "");
@@ -383,7 +381,8 @@ public final class Exchange {
 		lines.add("gave: " + r.outWords());
 		String where = whereTheyGo(r.in);
 		lines.add("received" + (where.isEmpty() ? "" : " (" + where + ")") + ": " + r.inWords()); // a one-sided trade receives nothing, and goes nowhere
-		HistoryLog.entry("LONG RANGE TRADE", "with " + r.peerTitle + "  (trade " + r.id + ")", lines);
+		HistoryLog.entry("LONG RANGE TRADE", "with " + r.peerTitle + "  (trade " + r.id + ")", lines,
+				Event.of("LONG_RANGE_TRADE").put("trade", r.id).put("peer", r.peerTitle).put("peer_station", r.peerStation).put("gave", r.outWords()).put("received", r.inWords()).put("received_to", where).details(lines));
 		homeplanet.parser.Transmissions.deliver("trade:" + r.id, "Home Planet Quartermaster", RECEIPT_SUBJECT, receipt(r));
 	}
 	/** The Quartermaster's receipt: a title nobody takes for the other commander's own message. */
@@ -431,14 +430,15 @@ public final class Exchange {
 		if (!sentBack.isEmpty()) lines.add("sent back (received before it was called off): " + String.join(", ", sentBack));
 		lines.add("came back (" + whereTheyGo(r.out) + "): " + r.outWords());
 		if (why != null && !why.isEmpty()) lines.add("why: " + why);
-		HistoryLog.entry("TRADE CALLED OFF", "with " + r.peerTitle + "  (trade " + r.id + ")", lines);
+		HistoryLog.entry("TRADE CALLED OFF", "with " + r.peerTitle + "  (trade " + r.id + ")", lines,
+				Event.of("TRADE_CALLED_OFF").put("trade", r.id).put("peer", r.peerTitle).put("peer_station", r.peerStation).put("why", why).put("came_back", r.outWords()).put("sent_back", sentBack.isEmpty() ? null : String.join(", ", sentBack)).details(lines));
 	}
 	/** A settled trade's ships' packages have done their job: only the record stays, as a receipt. */
 	private static void cleanUp(Record r) {
 		File f = folderOf(r.id);
 		if (f.isDirectory() && !SafeFiles.deleteTree(f)) log.warn("Could not clear {}", f);
 	}
-	private static String capital(String s) { return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
+	private static String capital(String s) { return homeplanet.model.Words.cap(s); }
 	private static void settle(Record r, List<Line> into, String state) throws IOException {
 		if (!ESCROW.equals(r.state)) throw new IOException("This trade was already settled (" + r.state + ")");
 		Vault v = Vault.get();

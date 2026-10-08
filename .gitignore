@@ -5,6 +5,8 @@ Tools and Harness/hw2fhp-converter/classes/
 # per-machine files: settings and logs beside the jar
 *.cfg
 logs/
+# the jar's default words for the station log are not a log: keep them (5.95)
+!src/main/resources/homeplanet/resource/lore/logs/
 # harness scratch
 Tools and Harness/harness2/*.ftl
 Tools and Harness/harness2/work/

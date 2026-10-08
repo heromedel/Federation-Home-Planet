@@ -95,6 +95,40 @@ public final class FtlDock {
 		SafeFiles.writeText(f, out, false);
 		log.info("FTL docked: settings.ini set to windowed (fullscreen was {})", was == null ? "unset" : was);
 	}
+	/** The screen FTL is set to for a launch outside the dock (heromedel, 5.80): chosen at all, the fullscreen mode, V-Sync. */
+	public static final String CFG_VIDEO = "launch_video", CFG_FULLSCREEN = "launch_fullscreen", CFG_VSYNC = "launch_vsync";
+	/** FTL's own words for its fullscreen setting, 0 to 3 (text_misc.xml's fullscreen_0 to fullscreen_3); Native was the fast one (5.64). */
+	public static final String[] FULLSCREEN_MODES = {"Off", "On (Stretch)", "On (Borders)", "On (Native)"};
+	public static boolean videoChosen() { return Boolean.parseBoolean(HomePlanet.config.getProperty(CFG_VIDEO, "false")); }
+	public static int fullscreenChosen() {
+		try { return Math.max(0, Math.min(3, Integer.parseInt(HomePlanet.config.getProperty(CFG_FULLSCREEN, "3").trim()))); } catch (NumberFormatException e) { return 3; }
+	}
+	public static boolean vsyncChosen() { return Boolean.parseBoolean(HomePlanet.config.getProperty(CFG_VSYNC, "true")); }
+	/**
+	 * Before a launch outside the dock: the fullscreen mode and V-Sync chosen in Settings written into FTL's settings.ini
+	 * (and last_fullscreen with a fullscreen mode, which FTL's own Options toggle goes back to). Nothing if none was chosen,
+	 * or FTL has no settings yet (it makes its own on its first start). A docked launch is always windowed (prepareSettings).
+	 */
+	public static void prepareUndocked() throws IOException {
+		if (!videoChosen()) return;
+		File f = settingsFile();
+		if (f == null || !f.isFile()) return;
+		String text = new String(SafeFiles.read(f), StandardCharsets.UTF_8), out = text;
+		int mode = fullscreenChosen();
+		out = setKey(out, "fullscreen", Integer.toString(mode));
+		if (mode > 0) out = setKey(out, "last_fullscreen", Integer.toString(mode));
+		out = setKey(out, "vsync", vsyncChosen() ? "1" : "0");
+		if (out.equals(text)) return;
+		SafeFiles.writeText(f, out, false);
+		log.info("FTL undocked: settings.ini set to fullscreen {} ({}), V-Sync {}", mode, FULLSCREEN_MODES[mode], vsyncChosen() ? "on" : "off");
+	}
+	/** One "key=value" line of FTL's settings.ini set (the first of that key), or added at the end in the file's own line ending. */
+	private static String setKey(String text, String key, String value) {
+		Matcher m = Pattern.compile("(?m)^([ \\t]*" + Pattern.quote(key) + "[ \\t]*=[ \\t]*)([^\\r\\n]*)$").matcher(text);
+		if (m.find()) return text.substring(0, m.start(2)) + value + text.substring(m.end(2));
+		String nl = text.contains("\r\n") ? "\r\n" : "\n";
+		return text + (text.isEmpty() || text.endsWith("\n") ? "" : nl) + key + "=" + value + nl;
+	}
 	/** The option turned off: the player's fullscreen value back, unless they've changed it since (it isn't 0 any more). */
 	public static void restoreSettings() throws IOException {
 		String was = HomePlanet.config.getProperty(CFG_WAS);

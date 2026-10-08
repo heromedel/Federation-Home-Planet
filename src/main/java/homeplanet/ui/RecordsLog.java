@@ -98,6 +98,83 @@ class RecordsLog extends JComponent implements Scrollable {
 		r.textX = PAD + r.timeW() + TEXT_GAP + 16;
 		return r;
 	}
+	/** A ship's voyage log from her events (5.74), or the empty text if there are none yet. */
+	static RecordsLog voyage(List<homeplanet.core.EventLog.Entry> es, String empty) {
+		StringBuilder sb = new StringBuilder();
+		for (homeplanet.core.EventLog.Entry e : es) sb.append(e.time.length() >= 16 ? e.time.substring(0, 16) : e.time).append("  ").append(e.human).append('\n');
+		return voyage(sb.toString(), empty);
+	}
+	/**
+	 * Where a station entry belongs in view (heromedel, 6.05: the station log is the station's business, its housekeeping
+	 * kept in events.log and out of view): its plain tag, or null for the station's own housekeeping (patches, taking
+	 * stock, the protection notes, converting files, settings, blueprints, profiles, updates, a message queued, a
+	 * shipment packed, a switch between fleets). A kind not listed shows as Station.
+	 */
+	static String tag(homeplanet.core.EventLog.Entry e) {
+		String k = e.kind, what = e.get("what", "");
+		if (k.equals("REPUTATION")) return homeplanet.vault.Reputation.signed(e.num("points", 0)); // the reputation log: its change
+		if (HIDDEN.contains("," + k + ",")) return null;
+		if (k.equals("VAULT")) return what.matches("adopted_continue|set_aside|arrived|taken_in|rebuilt|save_restored") ? "Ships" : null; // checking and the notes: housekeeping // taking stock is housekeeping; a stranger taken in is a ship
+		if (k.equals("DESIGN")) return what.equals("saved") ? null : "Shipyard";
+		if (k.equals("LONG_RANGE_OUTBOX")) return what.equals("delivered") ? "Long Range Comm." : null;
+		if (k.equals("BUY")) return what.equals("cargo_bay") ? "Cargo Bay" : "Junkyard";
+		if (k.equals("SELL")) return what.equals("cargo_bay") ? "Cargo Bay" : "Junkyard";
+		if (k.equals("RETURNED")) return what.equals("to_owner") ? "Junkyard" : "Long Range Comm.";
+		for (String[] t : TAGS) if (("," + t[1] + ",").contains("," + k + ",")) return t[0];
+		return "Station";
+	}
+	private static final String HIDDEN = ",LOADED,PATCH,JOURNAL,LAYOUT,LOGS_CONVERTED,LOG_DAYS_REPAIRED,CREW_FILES,HOLD_FILE,EXPEDITION_FILES,"
+			+ "SMALL_FILES,SHIP_FILES,SETTINGS,BLUEPRINT,BLUEPRINTS,CLEAN,PROFILE,UPDATE,CONVERTED,SLIPSTREAM,UNDO_RETROFIT,CLAUDE,"
+			+ "SHIPMENT_PACKED,SHIPMENT_UNPACKED,DAY,SWITCH_FLEET,"; // a switch between fleets reads as the station's own workings, not this career's business (heromedel)
+	private static final String[][] TAGS = {
+		{"Ships", "BOARD,DOCK,COMMISSION,NEW_JOURNEY,RENAME,REMODEL,RESTORE,RECOVER,OVERWRITTEN,FINAL_BATTLE,VICTORY,MUSEUM,REWARD,SENT,HANDED_OVER"},
+		{"Junkyard", "DISBAND,SALVAGE,SCRAP,DESTROY,REPAIR_JOB,SEIZED,SENT_TO_SANDBOX"},
+		{"Cargo Bay", "TRADE,SYSTEMS,JUNK,OVERFLOW"},
+		{"Crew", "CREW,RETIRE,RENAME_CREW,HIRE,MEDBAY"},
+		{"Expeditions", "EXPEDITION"},
+		{"Quarters", "REST"},
+		{"Inbox", "TRANSMISSION,REPLY,CLAIM,STIPEND,GIFT"},
+		{"Career", "CAREER,CAREER_ENDED,PLEAD,UNDO_PLEA,REASSIGN,UNDO_REASSIGN"},
+		{"Long Range Comm.", "SENT_AWAY,RECEIVED,SENT_BACK,TRADE_CALLED_OFF,LONG_RANGE_TRADE,SHIPMENT_SENT,SHIPMENT_RETURNED,SHIPMENT_ARRIVED,SHIPMENT_ACCEPTED,SHIPMENT_RETURNING"}};
+	/** The kinds whose detail lines are business (what moved in a trade, what was bought, sold, thrown out or stripped); the rest keep theirs out of view. */
+	private static final String DETAILED = ",TRADE,BUY,SELL,JUNK,RETIRE,SYSTEMS,SCRAP,LONG_RANGE_TRADE,TRADE_CALLED_OFF,";
+	/** An entry shown in the station log's view. */
+	static boolean shown(homeplanet.core.EventLog.Entry e) { return tag(e) != null; }
+
+	/**
+	 * The station's log from its events (5.74; 6.05 as the station's business): each entry with its plain tag (the reputation
+	 * log's change as its tag for a reputation entry), told in the station's words (lore/logs/station-log.xml, from its fields),
+	 * and the details that are business; the housekeeping left out of view. Told by stardate (no clock times) when asked, else by date.
+	 */
+	static RecordsLog station(List<homeplanet.core.EventLog.Entry> es, String empty, boolean byStardate) {
+		RecordsLog r = new RecordsLog(empty);
+		r.noClock = byStardate;
+		String day = null;
+		for (homeplanet.core.EventLog.Entry e : es) {
+			String tag = tag(e);
+			if (tag == null) continue; // the station's own housekeeping: in events.log, out of view (heromedel, 5.53 and 6.05)
+			String heading = byStardate ? (e.day == 0 ? "Prior to Stardate 1.1.1.1" : "Stardate " + homeplanet.vault.MasterLog.stardate(Math.max(1, e.day))) : e.time.length() >= 10 ? e.time.substring(0, 10) : e.time; // 0: from before the career's stardates (5.81)
+			if (!heading.equals(day)) {
+				day = heading;
+				Item h = new Item();
+				h.heading = true;
+				h.title = day;
+				r.items.add(h);
+			}
+			Item it = new Item();
+			if (!byStardate) it.time = e.time.length() >= 16 ? e.time.substring(11, 16) : "";
+			boolean rep = e.kind.equals("REPUTATION");
+			it.tag = tag;
+			it.mark = tagColour(rep ? tag : e.kind.replace('_', ' ')); // the kind still colours it: gains green, losses red
+			it.segs.add(new Seg(rep ? e.human : homeplanet.core.Lore.told(e), TXT));
+			if (rep || DETAILED.contains("," + e.kind + ","))
+				for (int i = 1; e.get("detail." + i) != null; i++) it.details.add(e.get("detail." + i).replace("Spacedock Storage", "the Cargo Hold")); // the hold's save keeps its old name
+			r.tagW = Math.max(r.tagW, BOLD_FM.stringWidth(it.tag) + 16);
+			r.items.add(it);
+		}
+		r.textX = PAD + r.timeW() + TEXT_GAP + (r.tagW > 0 ? r.tagW + TEXT_GAP : 0);
+		return r;
+	}
 	/** The station's log (her entries in history.log), or the empty text if there are none. */
 	static RecordsLog station(String text, String empty) { return station(text, empty, null); }
 	/**
@@ -170,7 +247,7 @@ class RecordsLog extends JComponent implements Scrollable {
 	private static Color voyageMark(String t) {
 		if (t.startsWith("Jumped") || t.startsWith("Waited")) return BLUE;
 		if (t.startsWith("The Rebel Flagship")) return FLAG;
-		if (t.contains(" defeated (") || t.startsWith("Crew lost") || t.startsWith("Hull damaged")) return BAD;
+		if (t.contains(" defeated (") || t.startsWith("Defeated ") || t.startsWith("Crew lost") || t.startsWith("Hull damaged")) return BAD;
 		if (t.startsWith("Crew joined") || t.startsWith("Hull repaired")) return GOOD;
 		if (t.startsWith("Aboard now")) return GOLD;
 		if (t.startsWith("Gone")) return DIM;
