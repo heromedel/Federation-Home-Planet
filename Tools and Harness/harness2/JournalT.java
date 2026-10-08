@@ -14,7 +14,7 @@ public class JournalT { public static void main(String[] a) throws Exception {
  Setup.chk("L: the station's logs live in logs/: the event log (the old history and master logs too, where a fleet had them); none at the root", v.historyLog().getParentFile().equals(v.logsDir())
    && EventLog.file(v).isFile() && EventLog.file(v).getParentFile().equals(v.logsDir()) && !new File(root, "history.log").exists() && !new File(root, "events.log").exists());
  Setup.chk("W: the folder carries its why.txt, in heromedel's words", new File(jdir, Journal.WHY).isFile() && text(new File(jdir, Journal.WHY)).startsWith("Some multi step actions") && jdir.getName().equals("station-action-protection"));
- Setup.chk("L: a fleet's station log is found wherever that fleet keeps it", Vault.historyLogIn(root).equals(v.historyLog()) && Vault.historyLogIn(new File(work, "nowhere")).getName().equals("history.log"));
+ Setup.chk("L: a fleet's station log is found wherever that fleet keeps it", homeplanet.convert.OldFleet.historyLogIn(root).equals(v.historyLog()) && homeplanet.convert.OldFleet.historyLogIn(new File(work, "nowhere")).getName().equals("history.log"));
  // A: a note of every kind of step, committed
  File fresh = new File(root, "jt-fresh.txt"), old = new File(root, "jt-old.txt"), dirFrom = new File(root, "jt-folder"), dirTo = new File(root, "jt-moved"), gone = new File(root, "jt-gone.txt");
  SafeFiles.writeText(old, "old\n", false); SafeFiles.writeText(gone, "x\n", false); dirFrom.mkdirs(); SafeFiles.writeText(new File(dirFrom, "inside.txt"), "in\n", false);

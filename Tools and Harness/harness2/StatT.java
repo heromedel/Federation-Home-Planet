@@ -9,7 +9,7 @@ public class StatT {
 
   // a ship the station never saw begin a journey: only the sector and difficulty for this journey
   Ship old = v.docked().get(0);
-  new File(v.historyOf(old), "journey.txt").delete();
+  v.setNotes(v.historyOf(old), ShipStore.JOURNEY, null);
   ShipStats o = ShipStats.of(v, old, old.save());
   Setup.chk("S: a journey the station didn't see begin: no journey counts, said so", !o.journeyKnown && labels(o.journey).equals(Arrays.asList("Sector", "Difficulty")));
 
@@ -43,7 +43,7 @@ public class StatT {
 
   // a traded ship: where she came from, and her original owner
   Ship t = v.docked().get(2);
-  SafeFiles.writeText(new File(v.historyOf(t), "traded.txt"), "trade=x\ndate=2026-10-01 18:40\nfrom=Commander Bree\noriginal=Captain Ash\ndefeated=0\nbeacons=0\nscrap=0\nsectors=0\n", false);
+  Setup.side(v, v.historyOf(t), "traded.txt", "trade=x\ndate=2026-10-01 18:40\nfrom=Commander Bree\noriginal=Captain Ash\ndefeated=0\nbeacons=0\nscrap=0\nsectors=0\n");
   ShipStats ts = ShipStats.of(v, t, t.save());
   Setup.chk("S: a traded ship: first commissioned by Captain Ash; with you since the trade, from Commander Bree", "Captain Ash".equals(value(ts.service, "First commissioned by"))
     && ts.traded != null && ts.traded.contains("Commander Bree") && ts.traded.contains("2026-10-01 18:40"));

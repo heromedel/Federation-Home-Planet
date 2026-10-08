@@ -90,7 +90,6 @@ public final class Expeditions {
 
 	/** The infirmary's file (infirmary/infirmary.xml; infirmary.txt at the fleet's root before 5.85). */
 	public static File infirmaryFile(Vault v) { return new File(v.infirmaryDir(), "infirmary.xml"); }
-	public static File oldInfirmaryFile(Vault v) { return new File(v.root, "infirmary.txt"); }
 	public static final String INFIRMARY_NOTE = "Crew hurt on expeditions, and when they're on their feet again";
 	/** A crew member laid up: they stay in the Cargo Hold's save, but can't be sent or moved until their time is up. */
 	public static final class Patient {
@@ -212,7 +211,6 @@ public final class Expeditions {
 
 	/** The captives' file (captives/captives.xml; captives.txt at the fleet's root before 5.85). */
 	public static File captivesFile(Vault v) { return new File(v.captivesDir(), "captives.xml"); }
-	public static File oldCaptivesFile(Vault v) { return new File(v.root, "captives.txt"); }
 	/** The captives' file as it stands, read without a lock (for the crew register taking stock). */
 	public static Properties captivesAsIs(Vault v) throws IOException { return Store.load(captivesFile(v)); }
 	/** Crew taken on an expedition: a ransom is asked a few beacons later, and stands a while. */

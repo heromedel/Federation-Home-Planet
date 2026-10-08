@@ -1,4 +1,4 @@
-import java.io.*; import java.util.*; import homeplanet.core.*; import homeplanet.vault.*;
+import java.io.*; import java.util.*; import homeplanet.core.*; import homeplanet.vault.*; import homeplanet.convert.*;
 /**
  * The old logs read into the event log once (Overhaul 6.0 §3.5, 5.73): a fleet with a station log, a voyage log, a reputation log
  * and days in its master log from before the event log, opened: each old entry gets an event with its kind, its fields, its own
@@ -80,7 +80,7 @@ public class LogConvT { public static void main(String[] a) throws Exception {
  Setup.chk("L: a new entry goes into her log and the fleet's alike", ShipStore.entries(v3.folderOf(v3.byId(d.id))).size() == hers.size() + 1 && EventLog.voyage(EventLog.read(v3), d.id).size() == voyageHers + 1);
  Setup.chk("L: filled once: marked, and not doubled on a later opening", "true".equals(Store.read(new File(v3.logsDir(), LogConvert.MARK)).getProperty("ship_logs")));
  // a ship from another station brings her voyage log (5.75): her lines are Prior here, not this career's today (5.81)
- LogConvert.importVoyage(v3, v3.byId(d.id), "Commander Elsewhere", "2025-12-01 10:00  Sector 3 reached (sectors visited: 3)\n2025-12-01 10:05  Crew joined: Farhand (Mantis)\n");
+ OldPackage.voyage(v3, v3.byId(d.id), "Commander Elsewhere", "2025-12-01 10:00  Sector 3 reached (sectors visited: 3)\n2025-12-01 10:05  Crew joined: Farhand (Mantis)\n");
  EventLog.Entry came = null; for (EventLog.Entry e : EventLog.read(v3)) if ("Commander Elsewhere".equals(e.get("received_from")) && e.kind.equals("CREW_JOINED")) came = e;
  Setup.chk("I: a received ship's old voyage lines are Prior here, in the fleet's log", came != null && came.day == 0 && came.stardate.equals("prior"));
  // a fleet converted before 5.81: its converted entries put on the conversion's day, as 5.73 to 5.80 did

@@ -24,8 +24,8 @@ public class AccT {
   Ship b = v.boarded();
   SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
   int start = g.getTotalBeaconsExplored(), herDefeats = g.getTotalShipsDefeated(), defeatedBefore = Reputation.defeatedInService(v) - herDefeats, linesBefore = jumped(v, b);
-  SafeFiles.writeText(new File(v.historyOf(b), "traded.txt"), "trade=x\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=" + g.getTotalShipsDefeated()
-    + "\nbeacons=" + (start + 4) + "\nscrap=0\nsectors=1\n", false);
+  Setup.side(v, v.historyOf(b), "traded.txt", "trade=x\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=" + g.getTotalShipsDefeated()
+    + "\nbeacons=" + (start + 4) + "\nscrap=0\nsectors=1\n");
   for (int i = 1; i <= 2; i++) {
    g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
    g.setTotalBeaconsExplored(start + 5 * i); g.setCurrentBeaconId(g.getCurrentBeaconId() == 1 ? 2 : 1);
@@ -41,13 +41,13 @@ public class AccT {
   SavedGameState gone = v.readCopy(donor).save;
   gone.setTotalShipsDefeated(7);
   File goneDir = Setup.departed(v, "acc-gone", "Gone Before");
-  SafeFiles.writeText(new File(goneDir, "fate.txt"), "LOST\nGone Before\n", false);
-  SafeFiles.writeText(new File(goneDir, "traded.txt"), "trade=y\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=2\nbeacons=0\nscrap=0\nsectors=0\n", false);
+  Setup.side(v, goneDir, "fate.txt", "LOST\nGone Before\n");
+  Setup.side(v, goneDir, "traded.txt", "trade=y\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=2\nbeacons=0\nscrap=0\nsectors=0\n");
   SaveHelper.writeSavedGame(new File(ShipStore.versions(goneDir), "20261001-120000.sav"), gone);
   SavedGameState away = v.readCopy(donor).save;
   away.setTotalShipsDefeated(50);
   File awayDir = Setup.departed(v, "acc-away", "Sent Away");
-  SafeFiles.writeText(new File(awayDir, "voyage.txt"), "sector=3\nvisited=4\n", false);
+  Setup.side(v, awayDir, "voyage.txt", "sector=3\nvisited=4\n");
   SaveHelper.writeSavedGame(new File(ShipStore.versions(awayDir), "20261001-120000.sav"), away);
   int defeated = Reputation.defeatedInService(v);
   Setup.chk("D: her four since her trade, and five of the gone ship's seven; the one sent away not counted (" + defeatedBefore + " -> " + defeated + ")", defeated == defeatedBefore + 9);

@@ -27,8 +27,8 @@ public class CallOffT {
   v.takeStock();
   boolean still = false; for (Ship s : v.fleet()) if (s.id.equals(came.id)) still = true;
   String fate = "";
-  File ff = new File(v.folderOfId(came.id), "fate.txt");
-  if (ff.isFile()) fate = new String(SafeFiles.read(ff), "UTF-8").split("\n")[0].trim();
+  String[] ff = ShipStore.fate(v.folderOfId(came.id));
+  if (ff != null) fate = ff[0];
   Setup.chk("T: called off: the ship received for it goes back (the other station keeps her), the fleet as it was (" + v.fleet().size() + ")", !still && v.fleet().size() == before);
   Setup.chk("T: her record says she went to the other fleet (" + fate + ")", fate.equals("TRANSFERRED"));
   String hist = Setup.stationLog(v);

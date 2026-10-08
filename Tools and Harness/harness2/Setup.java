@@ -41,6 +41,19 @@ public class Setup {
  public static int fails = 0;
  /** A ship's save in a folder of ship folders (a shipyard, a Junkyard, a surrender), by her id; null if she isn't there. */
  public static File savIn(File parent, String id) { for (File d : ShipStore.folders(parent)) if (id.equals(ShipStore.idOf(d))) return ShipStore.sav(d).isFile() ? ShipStore.sav(d) : null; return null; }
+ /**
+  * What a side file of hers held before 5.98, written as the station keeps it now: the section of her record it became
+  * (fate.txt's lines as her fate). Tests written against the files keep their text.
+  */
+ public static void side(Vault v, File folder, String file, String text) throws IOException {
+  if (file.equals("fate.txt")) { String[] l = text.split("\n"); v.setNotes(folder, ShipStore.FATE, ShipStore.fateNotes(l[0].trim(), l.length > 1 ? l[1].trim() : "", l.length > 2 ? l[2].trim() : null)); return; }
+  for (String[] f : new String[][] {{"traded.txt", ShipStore.TRADE}, {"journey.txt", ShipStore.JOURNEY}, {"museum.txt", ShipStore.MUSEUM}, {"borrowed.txt", ShipStore.BORROWED},
+    {"voyage.txt", ShipStore.LAST}, {"final-battle.txt", ShipStore.FINAL}, {"overwritten.txt", ShipStore.OVERWRITTEN}})
+   if (f[0].equals(file)) { v.setNotes(folder, f[1], Store.parse(text.getBytes("UTF-8"))); return; }
+  throw new IllegalArgumentException(file);
+ }
+ /** Her fate as fate.txt said it, "KIND\nname\ndetail" (5.98: her record's fate section); "" if none. */
+ public static String fateText(File folder) { String[] f = ShipStore.fate(folder); return f == null ? "" : f[0] + "\n" + f[1] + (f[2].isEmpty() ? "" : "\n" + f[2]); }
  /** A ship the fleet remembers: her folder in the memorial, with a record, as if she had left (fate.txt is the test's to write). */
  public static File departed(Vault v, String id, String name) throws IOException {
   ShipStore.Record r = new ShipStore.Record(id); r.name = name; r.state = "docked";

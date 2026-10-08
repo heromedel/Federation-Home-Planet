@@ -1,6 +1,5 @@
 package homeplanet.vault;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -12,7 +11,7 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import homeplanet.core.Store;
 
 /**
- * Where her current journey began (history/&lt;id&gt;/journey.txt): FTL's running totals at that moment (they carry on
+ * Where her current journey began (her record's journey section, 5.98; journey.txt before): FTL's running totals at that moment (they carry on
  * across a New Journey), so her report can tell this journey from her whole service; and the furthest sector any of
  * her journeys reached. Written each time the station sets her out: commissioned, a New Journey, received, rescued.
  */
@@ -20,7 +19,6 @@ public final class JourneyStart {
 	private static final Logger log = LoggerFactory.getLogger(JourneyStart.class);
 	private JourneyStart() {}
 
-	static final String FILE = "journey.txt";
 	/** FTL's own counts kept from the journey's start (each only when her save has it). */
 	public static final String[] VARS = {"killed_crew", "lost_crew", "fired_shot", "used_missile"};
 
@@ -37,11 +35,11 @@ public final class JourneyStart {
 		p.setProperty("hired", Integer.toString(gs.getTotalCrewHired()));
 		for (String k : VARS) if (gs.hasStateVar(k)) p.setProperty(k, Integer.toString(gs.getStateVar(k)));
 		try {
-			Store.write(new File(v.historyOf(s), FILE), p, "Where her current journey began: Federation Home Planet rewrites this file");
+			v.setNotes(v.historyOf(s), ShipStore.JOURNEY, p);
 		} catch (IOException e) {
 			log.warn("Could not note where {}'s journey began: {}", s.name, e.toString());
 		}
 	}
 	/** Her journey's start, or empty if the station hasn't seen one begin (a ship from before 4B.75). */
-	public static Properties read(Vault v, String id) { return Store.read(new File(v.folderOfId(id), FILE)); }
+	public static Properties read(Vault v, String id) { return ShipStore.notes(v.folderOfId(id), ShipStore.JOURNEY); }
 }

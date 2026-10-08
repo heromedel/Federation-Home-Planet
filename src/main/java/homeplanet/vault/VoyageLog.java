@@ -1,6 +1,5 @@
 package homeplanet.vault;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -39,7 +38,8 @@ public final class VoyageLog {
 	private static final Logger log = LoggerFactory.getLogger(VoyageLog.class);
 	private VoyageLog() { }
 
-	static final String LOG = "voyage.log", LAST = "voyage.txt";
+	/** Her voyage log in prose (before 5.76) and her last look (before 5.98), by the names a ship's package still gives them. */
+	public static final String LOG = "voyage.log", LAST = "voyage.txt";
 	/** The sectors a ship (by id) visited in all her journeys, at least the sector she's in in this save. */
 	public static int visited(Vault v, String id, SavedGameState gs) {
 		return Math.max(Store.num(last(v, id), "visited", 0), gs == null ? 0 : gs.getSectorNumber() + 1);
@@ -352,17 +352,19 @@ public final class VoyageLog {
 
 	// ---- files ----
 
-	private static Properties last(Vault v, Ship s) { return Store.read(new File(v.historyOf(s), LAST)); }
-	private static Properties last(Vault v, String id) { return Store.read(new File(v.folderOfId(id), LAST)); }
+	private static Properties last(Vault v, Ship s) { return ShipStore.notes(v.historyOf(s), ShipStore.LAST); }
+	private static Properties last(Vault v, String id) { return ShipStore.notes(v.folderOfId(id), ShipStore.LAST); }
+	/** Her last look as its file in a package (older stations read it from there; her record's last section since 5.98). */
+	static final String LAST_NOTE = "Her last look, for the voyage log";
 	private static void save(Vault v, Ship s, Properties p) {
 		try {
-			Store.write(new File(v.historyOf(s), LAST), p, "Her last look, for the voyage log");
+			v.setNotes(v.historyOf(s), ShipStore.LAST, p);
 		} catch (IOException e) {
 			log.warn("Could not keep {}'s last look: {}", s, e.toString());
 		}
 	}
 	/** The fields every event in her log carries: who she is. */
-	static Event shipFields(Ship s) {
+	public static Event shipFields(Ship s) {
 		return Event.of("SHIP").put("ship", s.name + "." + s.id).put("ship_name", s.name).put("ship_id", s.id).put("ship_state", s.state == null ? null : s.state.name().toLowerCase());
 	}
 	private static void append(Vault v, Ship s, List<Event> events) {

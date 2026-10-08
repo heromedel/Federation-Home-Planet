@@ -2,7 +2,6 @@ package homeplanet.vault;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -21,7 +20,6 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 
 import homeplanet.core.HomePlanet;
-import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 
@@ -37,7 +35,7 @@ public final class Reputation {
 	private static final Logger log = LoggerFactory.getLogger(Reputation.class);
 	private Reputation() { }
 
-	static final String FILE = "reputation", LOG = "reputation.log"; // reputation.xml (5.86)
+	static final String FILE = "reputation"; // reputation.xml (5.86)
 
 	// ---- the scoring (docs/ROADMAP.md) ----
 	public static final int SECTOR = 6, DEFEATED = 4, REBEL_DEFEATED = 6, FLAGSHIP = 100;
@@ -416,7 +414,7 @@ public final class Reputation {
 		}
 		for (File d : v.departedFolders()) {
 			String id = ShipStore.idOf(d);
-			if (id != null && !inFleet.contains(id) && new File(d, "fate.txt").isFile()) n += defeatedSince(v, id, lastSave(d));
+			if (id != null && !inFleet.contains(id) && ShipStore.fate(d) != null) n += defeatedSince(v, id, lastSave(d));
 		}
 		return n;
 	}
@@ -427,8 +425,8 @@ public final class Reputation {
 	}
 	/** A history folder of a ship that served (a voyage log or a kept save), not the Cargo Hold's. */
 	private static boolean served(File d) {
-		if (new File(d, VoyageLog.LAST).isFile()) return true;
-		return (!ShipStore.versions(d, false).isEmpty() || !ShipStore.versions(d, true).isEmpty()) && new File(d, "fate.txt").isFile();
+		if (!ShipStore.notes(d, ShipStore.LAST).isEmpty()) return true;
+		return (!ShipStore.versions(d, false).isEmpty() || !ShipStore.versions(d, true).isEmpty()) && ShipStore.fate(d) != null;
 	}
 	/** New Journeys since her trade (each starts from sector 1 again, which isn't a jump): all of them if never traded. */
 	private static int journeysSince(Vault v, String id, TradeMark m) {
@@ -445,15 +443,12 @@ public final class Reputation {
 		try { return HomePlanet.savedGameParser.readSavedGame(newest); } catch (Exception e) { return null; }
 	}
 	private static String fate(Vault v, String id) {
-		try { return new String(SafeFiles.read(new File(v.folderOfId(id), "fate.txt")), StandardCharsets.UTF_8).split("\n")[0].trim(); }
-		catch (Exception e) { return ""; }
+		String[] f = ShipStore.fate(v.folderOfId(id));
+		return f == null ? "" : f[0];
 	}
 	private static String departedName(Vault v, String id) {
-		try {
-			String[] l = new String(SafeFiles.read(new File(v.folderOfId(id), "fate.txt")), StandardCharsets.UTF_8).split("\n");
-			if (l.length > 1 && !l[1].trim().isEmpty()) return l[1].trim();
-		} catch (Exception e) { }
-		return id;
+		String[] f = ShipStore.fate(v.folderOfId(id));
+		return f != null && !f[1].isEmpty() ? f[1] : id;
 	}
 	private static int lastSectorOf(Vault v, String id) {
 		return VoyageLog.lastSector(v, id);

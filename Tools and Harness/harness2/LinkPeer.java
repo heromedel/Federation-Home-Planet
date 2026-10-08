@@ -190,7 +190,7 @@ public class LinkPeer {
    if (c.equals("unfinished")) return "" + Exchange.unfinished().size();
    if (c.equals("mark")) { Ship sh = shipNamed(w[1]); TradeMark m = sh == null ? null : TradeMark.of(sh); return m == null ? "none" : "from=" + m.from.replace(' ', '_') + " original=" + m.original.replace(' ', '_') + " defeated=" + m.defeated; }
    if (c.equals("since")) { Ship sh = shipNamed(w[1]); return "defeated=" + TradeMark.defeatedSince(sh, sh.save()) + " beacons=" + TradeMark.beaconsSince(sh, sh.save()) + " lifetime=" + sh.save().getTotalShipsDefeated(); }
-   if (c.equals("fate")) { File f = new File(v.folderOfId(w[1]), "fate.txt"); return f.isFile() ? new String(SafeFiles.read(f), "UTF-8").trim().replace('\n', '|') : "none"; }
+   if (c.equals("fate")) { String f = Setup.fateText(v.folderOfId(w[1])); return f.isEmpty() ? "none" : f.replace('\n', '|'); }
    if (c.equals("idof")) { Ship sh = shipNamed(w[1]); return sh == null ? "none" : sh.id; }
    if (c.equals("voyageline")) { Ship sh = shipNamed(w[1]); if (sh == null) return "none"; Setup.voyage(v, sh, cmd.substring(cmd.indexOf(w[2])).replace('_', ' ')); return "OK"; }
    if (c.equals("shiplog")) { Ship sh = shipNamed(w[1]); if (sh == null) return "none"; List<EventLog.Entry> es = EventLog.voyage(EventLog.read(v), sh.id); return es.size() + " " + (es.isEmpty() ? "" : es.get(0).human.replace(' ', '_') + " from=" + es.get(0).get("received_from", "-").replace(' ', '_')); }
@@ -383,11 +383,11 @@ public class LinkPeer {
    if (k.equals("deliver")) { if (held == null) return "none"; try { Shipments.deliverTo(held, w[2]); return "OK"; } catch (IOException e) { return "FAILED " + e.getMessage(); } }
    if (k.equals("makefleet")) {
     File root = Vault.rootOf(v.saves, w[2]); root.mkdirs();
-    SafeFiles.write(new File(root, Vault.STORAGE_FILE), SaveHelper.toBytes(SaveHelper.createStorageSave("Spacedock Storage", true)));
+    SafeFiles.write(new File(root, "storage.sav"), SaveHelper.toBytes(SaveHelper.createStorageSave("Spacedock Storage", true)));
     return "OK";
    }
    if (k.equals("holdof")) {
-    SavedGameState gs = new SavedGameParser().readSavedGame(new File(Vault.rootOf(v.saves, w[2]), Vault.STORAGE_FILE));
+    SavedGameState gs = new SavedGameParser().readSavedGame(new File(Vault.rootOf(v.saves, w[2]), "storage.sav"));
     return holdText(gs);
    }
    return "unknown";

@@ -245,7 +245,7 @@ _5.93: the prose logs are no longer written: history.log, the master log (its da
 
 ### Phase 5: migration
 
-22. On first opening a fleet in 6.0: the whole fleet folder is zipped first (`SafeFiles.zipFolder`, as ending a career does), then converted: manifest and saves into ship folders, `storage.sav` into the Cargo Hold, crew out of every save into files (the crew register's ids carried over), `history/` into ships' versions and the memorial, old logs converted to two-line entries once (the old prose parsers' last job; marked as converted).
+22. On first opening a fleet in 6.0: the whole fleet folder is zipped first (`SafeFiles.zipFolder`, as ending a career does), then converted: manifest and saves into ship folders, `storage.sav` into the Cargo Hold, crew out of every save into files (the crew register's ids carried over), `history/` into ships' versions and the memorial, old logs converted to two-line entries once (the old prose parsers' last job; marked as converted). _5.97: every step of it, and every reader of a fleet not yet brought across, gathered in one package, `homeplanet.convert` (`OldFleet` runs the steps in order; `Layout`, `LogConvert`; `OldPackage` for a ship from a station older than 5.75), the few pieces too much a part of their class to move marked `@Before6`. Nothing on disk changed: heromedel's fleet converted by 5.96 and by 5.97 came out the same, file for file. It goes whole once no one plays a fleet from before 6.0 (heromedel, 5.97; `docs/CONCERNS.md` 7)._
 23. Every fleet the player has: Sandbox, each Immersive career, and the ended careers' zips are left alone.
 24. If conversion fails part way, the fleet is put back from the zip and the station says so, with the zip's path. _5.94: tested at last (MigT: a file standing where a ship's folder would go): the station says so, naming the zip, and the fleet comes back from it file for file. The test found a fault: the zip kept no file times and no empty folders, so a fleet put back had every file dated now, and a ship's versions (ordered by their time) out of order. `SafeFiles.zipFolder` keeps each file's time and every folder now, and the restore puts the times back (to the second: copies made in the same second fall back to their names' order). An ended career's zip keeps its times the same way._
 
@@ -254,7 +254,7 @@ _5.93: the prose logs are no longer written: history.log, the master log (its da
 25. **MigT**: a 5.x world (from WorldT, aged by the other tests) converted; every ship, crew member, item and log entry accounted for, and the converted fleet passing every other test. Also on aged fleets from Buggy Boy's bench (300-step voyages with trades, renames, namesakes, deaths, strangers and New Journeys), with its ledger (LedgerT) run before and after and compared; the longest path checked against the budget (§3.1); heromedel's own logs as a real-world check of the log conversion, with his permission, kept in a scratchpad and never in the repo.
 25a. **The kill test** (Buggy Boy's bench): the station in its own process, as LinkT runs one, killed at random moments during a Cargo Bay save, a trade and an expedition's return; reopened, the ledger finds every ship, crew member and item exactly once.
 26. Every harness test moves to the new storage; the tests that write side files by name write through the stores.
-27. **LinkT** between a 5.x and a 6.0 station: refused plainly. Between two 6.0 stations: every trade kind. _5.90: not done as written, for heromedel to decide: `Session.PROTOCOL` was not raised, because a 5.x station takes a 6.0 ship package as before (it leaves out the crew files it doesn't know) and a 6.0 station takes a 5.x one (no crew files to take in): neither trades wrongly, so CLAUDE.md's rule says no bump. LinkT keeps testing every trade kind between two stations of this version._
+27. **LinkT** between a 5.x and a 6.0 station: refused plainly. Between two 6.0 stations: every trade kind. _5.90: not done as written, for heromedel to decide: `Session.PROTOCOL` was not raised, because a 5.x station takes a 6.0 ship package as before (it leaves out the crew files it doesn't know) and a 6.0 station takes a 5.x one (no crew files to take in): neither trades wrongly, so CLAUDE.md's rule says no bump. LinkT keeps testing every trade kind between two stations of this version._ _5.98, settled (heromedel: no bump, "unless it doesn't know how to accept it"): ships traded each way between 5.98 and a real 5.61 station (its jar, from `main`), by package: the ship, her crew, her trade mark and her original owner came through every hop, and each side ignored the files it didn't know._
 28. Tested in FTL itself (Wine): board, play, dock, a crew death and a promotion, through the new folders. _5.94, done with the 5.93 jar, against heromedel's Windows FTL 1.6.14 under Wine: FTL continued a ship the station had boarded from her folder (Test Kestrel, her three crew), jumped, and wrote its save; the station read the jump into her own log (Jumped, Ship met) and the clock (day 2). In one run the ship was destroyed in the fight that followed, and FTL ended the run: the station found continue.sav gone and recorded her lost, her folder in memorials_and_records/ships/ with her fate and her versions (the jump's among them), her three crew killed, "Lost with the Test Kestrel", their files in memorials_and_records/crew/. In the other, FTL saved and quit at the next beacon, and the station docked her: her save in her folder, continue.sav gone, no protection note left. A promotion is the station's own (the Crew Log's), tested in CrewT, not in FTL._
 
 ### Phase 7: 6.00
@@ -544,3 +544,32 @@ Cloud-C-BugsandFeedback ("Buggy Boy"), 5.81, 2026-10-07.
    - **5.95:** Board and Dock write her record in the same note as her save, so the two can't disagree. A fleet already caught is put right when it opens. A ship recorded boarded, with no continue.sav and her save in her folder, is docked. A ship recorded docked, with her save gone and continue.sav byte for byte hers (her record's fingerprint or a kept version) while no one else is boarded, is boarded. KillT builds both of those by hand; on 5.94 both fail.
    - Board docks the ship already boarded first, as an action of its own, so a Board stopped between the two leaves both ships docked. KillT counts that as whole: nothing is lost, and the player boards again.
    - Still open, small: an action's log entry is written after its note, so a stop between the two leaves the move done with no entry. For Board and Dock only the Captain's Log reads it, for one line.
+
+### Notes from Cloud-C-Primary-Edit (round 3)
+
+Cloud-C-Primary-Edit ("Prime"), 5.97, 2026-10-08. A look back over the overhaul, for heromedel (who asked whether it had become
+convoluted), with what it found.
+
+1. **Done**, Re: Phase 5 step 22: the conversion gathered into `homeplanet.convert` (step 22's note). A fleet from before 6.0
+   now goes through one list of steps in one class, instead of a chain spread over `Vault.load()`, the Cargo Hold, the clock, the
+   expeditions and the register.
+2. **Found**, Re: §3.1 (her record with her sections): a ship's side files are still loose .txt files in her folder (`voyage.txt`,
+   `fate.txt`, `museum.txt`, `journey.txt`, `traded.txt`, `borrowed.txt`, `final-battle.txt`, `overwritten.txt`). Her record
+   has room for them (`ShipStore.Record.sections`, and `ShipStore.fromToday` builds them, tested in ShipStoreT), but nothing in the
+   station fills or reads them. Either finish it (one more step for `OldFleet`, and the readers moved onto the record) or drop the
+   sections and `fromToday`. heromedel's call; the station works either way.
+   **Done at 5.98** (heromedel: "fold them in, one record"): every owner reads its section (`ShipStore.notes`, `ShipStore.fate`) and
+   writes it through `Vault.setNotes`, under the fleet's lock; where a section changes with other files (leaving, coming home,
+   a restore, a receipt) her record goes in the same protection note. A fleet's loose side files are folded once by `OldFleet`
+   (one note, `SHIP_FILES`). A ship's package still carries `voyage.txt` and `traded.txt` as files, made from her record, so
+   every station reads them as before; her record travels without its sections (they are her old fleet's notes on her), and the
+   protocol is unchanged (heromedel, 5.98: "no why should it, unless it doesn't know how to accept it").
+3. **Found**: a few fleet files stay .txt on purpose, being lists rather than settings (5.86): `free-command.txt`,
+   `unlock-grants.txt`, `cargohold/systems.txt`, `parts.txt`, `overflow.txt`, `derelicts/listings.txt`, `parked-boarded.txt`.
+4. **Alternative**, Re: step 23: other fleets are converted only when opened, so a few readers still look at a fleet in an
+   older shape (`docs/CONCERNS.md` 7). Converting every fleet when the station starts would let them go, once each fleet's
+   conversion can write to its own log.
+5. **Found**: `Vault.saveManifest` kept its name after the manifest went (5.69): it writes every ship's record into her folder.
+   A rename is worth doing when the branches are quiet, since it touches about thirty lines that other branches also touch.
+6. **Done**, Re: `docs/CONCERNS.md` 6: half of it (5.97): an old copy identical to one of her kept versions is set aside, not
+   adopted. The ship mark is held back.

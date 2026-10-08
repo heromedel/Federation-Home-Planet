@@ -1,4 +1,4 @@
-package homeplanet.vault;
+package homeplanet.convert;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +22,12 @@ import homeplanet.core.HistoryLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
+import homeplanet.vault.Journal;
+import homeplanet.vault.MasterLog;
+import homeplanet.vault.Reputation;
+import homeplanet.vault.ShipStore;
+import homeplanet.vault.Vault;
+import homeplanet.vault.VoyageLog;
 
 /**
  * The old logs converted to events once (docs/OVERHAUL-6.md §3.5, Phase 5 step 22; 5.73): the first time a fleet opens
@@ -35,11 +41,13 @@ public final class LogConvert {
 	private static final Logger log = LoggerFactory.getLogger(LogConvert.class);
 	private LogConvert() { }
 
+	/** The old logs beside the station log (history.log): the clock's days, and reputation's. */
+	public static final String MASTER_LOG = "master.log", REPUTATION_LOG = "reputation.log";
 	/** The marker, in logs/: when, by which station, how many of each. */
 	public static final String MARK = "converted.txt";
 	/** In the marker: the station that put the converted entries on their own days (5.81), by converting or by repairDays. */
 	static final String DAYS_FIXED = "days_fixed";
-	private static final Pattern STAMP = Pattern.compile("(\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d)  (.*)");
+	static final Pattern STAMP = Pattern.compile("(\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d)  (.*)");
 
 	public static boolean done(Vault v) { return done(v.root); }
 	/** Whether a fleet's old logs were read in, by its folder (a fleet not in use). */
@@ -104,7 +112,7 @@ public final class LogConvert {
 	/** The master log's E lines by log: what each entry said, its day and its time. */
 	private static Map<String, List<String[]>> masterCopies(Vault v) {
 		Map<String, List<String[]>> out = new HashMap<String, List<String[]>>();
-		File f = new File(v.logsDir(), MasterLog.FILE);
+		File f = new File(v.logsDir(), MASTER_LOG);
 		if (!f.isFile()) return out;
 		try {
 			for (String l : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) {
@@ -343,19 +351,6 @@ public final class LogConvert {
 		}
 		return String.join("\n", lines);
 	}
-	/**
-	 * A voyage log that came with a ship from an older station (5.75): each line an event under her id here, its time its
-	 * own, Prior in this career (5.81): it was another commander's, and on the day she arrived it filled this Captain's Log.
-	 */
-	public static void importVoyage(Vault v, Ship s, String from, String text) {
-		Event who = VoyageLog.shipFields(s).put("received_from", from).put("converted", true);
-		for (String line : text.split("\r?\n")) {
-			Matcher m = STAMP.matcher(line);
-			if (!m.matches()) continue;
-			Event e = voyageEvent(m.group(2).trim());
-			EventLog.write(v, Event.of(e.kind).put("log", "voyage").put("time", m.group(1) + ":00").put("day", 0).putAll(who).putAll(e).human(m.group(2).trim()));
-		}
-	}
 	private static final Pattern SECTOR = Pattern.compile("Sector (\\d+) reached \\(sectors visited: (\\d+)\\)"), DEFEATED = Pattern.compile("(\\d+) ships? defeated \\((\\d+) in all\\)"),
 			HULL = Pattern.compile("Hull (repaired|damaged) to (\\d+)/(\\d+).*"), NEW_RUN = Pattern.compile("Back to sector (\\d+): a new run"), CREW = Pattern.compile("(.+?) \\(([^()]+)\\)");
 	/** The kind and fields an old voyage line gives away; the rest is a note with the line as its text. */
@@ -400,7 +395,7 @@ public final class LogConvert {
 
 	private static final Pattern POINTS = Pattern.compile("([+\u2212-]?\\d+)  (.*)");
 	private static int convertReputation(Vault v, String firstTime, Set<String> atFirst, Map<String, List<String[]>> master, List<Event> sink) throws IOException {
-		File f = new File(v.logsDir(), Reputation.LOG);
+		File f = new File(v.logsDir(), REPUTATION_LOG);
 		if (!f.isFile()) return 0;
 		Days days = new Days(master.get("reputation"));
 		int n = 0;
@@ -431,7 +426,7 @@ public final class LogConvert {
 	}
 
 	private static int convertDays(Vault v, String firstTime, Set<String> atFirst, List<Event> sink) throws IOException {
-		File f = new File(v.logsDir(), MasterLog.FILE);
+		File f = new File(v.logsDir(), MASTER_LOG);
 		if (!f.isFile()) return 0;
 		int n = 0;
 		for (String l : new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) {

@@ -42,7 +42,7 @@ public class FleetLedger {
   }
   if (!boarded && v.continueFile().isFile()) l.problems.add("continue.sav is there, but no ship is boarded");
   File hf = new File(v.cargoHoldDir(), Vault.HOLD_FILE); // cargohold.xml (5.84), else the pretend ship's save from before
-  if (!HoldXml.isHold(hf)) hf = new File(v.cargoHoldDir(), Vault.HOLD_SAV);
+  if (!HoldXml.isHold(hf)) hf = new File(v.cargoHoldDir(), "cargohold.sav");
   if (hf.isFile()) l.state(HoldXml.read(hf), "hold", true); else l.problems.add("the Cargo Hold has no file");
   l.at = "hold";
   for (String line : lines(v.systemsFile())) { String[] w = line.trim().split("\\s+"); if (w.length >= 2 && !line.startsWith("#")) l.add("stored", w[0] + " L" + w[1]); }
@@ -121,7 +121,7 @@ public class FleetLedger {
   for (Integer i : c.getSpriteTintIndeces()) t.append(t.length() == 0 ? "" : ",").append(i);
   return c.getName() + "|" + (c.getRace() == null ? "?" : c.getRace().getId()) + "|" + (c.isMale() ? "m" : "f") + "|" + t + "|" + c.getRepairs() + "/" + c.getCombatKills() + "/" + c.getPilotedEvasions() + "/" + c.getJumpsSurvived();
  }
- static String fate(File d) { List<String> l = lines(new File(d, "fate.txt")); return l.isEmpty() ? "?" : l.get(0).trim(); }
+ static String fate(File d) { String[] f = ShipStore.fate(d); return f == null ? "?" : f[0]; } // her record's fate (5.98; fate.txt before)
  static List<String> lines(File f) {
   try { return f.isFile() ? Arrays.asList(new String(SafeFiles.read(f), StandardCharsets.UTF_8).split("\r?\n")) : new ArrayList<String>(); }
   catch (IOException e) { return Collections.singletonList("#unreadable " + e); }

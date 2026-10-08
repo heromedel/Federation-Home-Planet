@@ -393,7 +393,7 @@ public class GuiT {
   Setup.chk("A: the result offers only Accept Bid", optionsShown.get(2).length == 1 && "Accept Bid".equals(String.valueOf(optionsShown.get(2)[0])));
   int bid = Integer.parseInt(shown.get(2).replaceAll("(?s).*highest bid for [^:]*: (\\d+) scrap.*", "$1"));
   Setup.chk("A: she's sold: gone from the fleet, fate SOLD, the bid and her scrap in the Cargo Hold",
-    v.byId(id) == null && new String(SafeFiles.read(new File(v.folderOfId(id), "fate.txt")), "UTF-8").startsWith("SOLD")
+    v.byId(id) == null && Setup.fateText(v.folderOfId(id)).startsWith("SOLD")
     && v.storageScrap() == before + bid + scrapAboard);
   System.out.println("auction: " + name + " for " + bid);
  }

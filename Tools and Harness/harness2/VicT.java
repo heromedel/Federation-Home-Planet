@@ -117,7 +117,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   FinalVictory.museum(FinalVictory.offer(id));
   boolean recoverable = false; for (Vault.Departed d : v.recoverable()) if (d.id.equals(id)) recoverable = true;
   Setup.chk("M: the museum's offer: her full value to storage, and she doesn't come back", v.storageScrap() == before + value && v.byId(id) == null && !recoverable);
-  Setup.chk("M: her fate is the museum", new String(SafeFiles.read(new File(v.folderOfId(id), "fate.txt")), "UTF-8").startsWith("MUSEUM") && FinalVictory.settle().isEmpty());
+  Setup.chk("M: her fate is the museum", Setup.fateText(v.folderOfId(id)).startsWith("MUSEUM") && FinalVictory.settle().isEmpty());
  }
  static void reward(Vault v) throws Exception {
   Ship s = toVictory(v, FinalVictory.REWARD); String id = s.id;
