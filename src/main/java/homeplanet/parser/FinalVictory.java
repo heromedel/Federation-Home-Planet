@@ -187,6 +187,6 @@ public final class FinalVictory {
 		v.toMuseum(f);
 		Museum.preserved(v, f.id, value);
 		HistoryLog.entry("MUSEUM", value + " scrap to the Cargo Hold for " + f.name, null, battle("MUSEUM", f).put("scrap", value).put("to", "hold"));
-		return f.name + " is honoured in the Federation museum. " + value + " scrap is waiting in the Cargo Hold.";
+		return f.name + " is honoured in the Federation Museum. " + value + " scrap is waiting in the Cargo Hold.";
 	}
 }

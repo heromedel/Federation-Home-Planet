@@ -733,10 +733,11 @@ public final class CrewRegister {
 			if (x.getName().equals(was) && score(f, m) > 0 && (m.record.isEmpty() || f.record.equals(m.record))) { who = x; break; }
 		}
 		if (who == null) throw new IOException(was + " could not be found " + m.where + " just now; nothing was changed.");
+		boolean worn = m.name.equals(now); // promoted on the record while away: this only puts it in her save
 		who.setName(now);
 		v.begin().put(s, c.save, c.hash).commit();
-		homeplanet.core.HistoryLog.entry("RENAME CREW", was + " -> " + now + "  (" + (m.place.equals("hold") ? HOLD_NAME : s.name) + ")", null,
-				homeplanet.core.Event.of("RENAME_CREW").put("what", "renamed").put("from", was).put("to", now).put("crew_id", m.id).put("race", m.race).put("place", m.place).put("ship_name", m.place.equals("hold") ? null : s.name).put("ship_id", m.place.equals("hold") ? null : s.id));
+		homeplanet.core.HistoryLog.entry("RENAME CREW", was + " -> " + now + "  (" + (m.place.equals("hold") ? HOLD_NAME : s.name) + (worn ? "; on the record already" : "") + ")", null,
+				homeplanet.core.Event.of("RENAME_CREW").put("what", "renamed").put("from", was).put("to", now).put("crew_id", m.id).put("race", m.race).put("place", m.place).put("ship_name", m.place.equals("hold") ? null : s.name).put("ship_id", m.place.equals("hold") ? null : s.id).put("on_record", worn ? "true" : null));
 		sweep(v); // the register sees the new name: "Promoted to ..." (none if their record already wore it)
 		return now;
 	}
@@ -1049,7 +1050,7 @@ public final class CrewRegister {
 		} else if (head.startsWith("EXPEDITION") && head.contains("did not come back: ")) {
 			for (String n : head.substring(head.indexOf("did not come back: ") + 19).split(";")[0].split(", "))
 				for (Member m : whoever(n.trim(), null, byName, renamedFrom, members, Status.KILLED)) m.events.add(new Event(day, "Did not come back from an expedition."));
-		} else if (head.startsWith("RENAME CREW")) {
+		} else if (head.startsWith("RENAME CREW") && !head.trim().endsWith("; on the record already)")) { // that one only put a rank already given in her save
 			String[] w = head.substring(11).trim().replaceAll("\\s+\\(.*$", "").split(" -> ", 2);
 			String rank = w.length == 2 ? homeplanet.model.Rank.promotion(w[0].trim(), w[1].trim()) : null;
 			if (w.length == 2) for (Member m : whoever(w[1].trim(), null, byName, renamedFrom, members, null)) m.events.add(new Event(day, rank != null ? "Promoted to " + rank + "." : "Now known as " + w[1].trim() + " (was " + w[0].trim() + ")."));

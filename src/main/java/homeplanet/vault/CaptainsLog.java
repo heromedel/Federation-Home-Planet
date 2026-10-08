@@ -256,6 +256,7 @@ public final class CaptainsLog {
 		} else if (kind.equals("RENAME CREW")) {
 			String[] w = unowned(head).split(" -> ", 2);
 			String rank = w.length == 2 ? homeplanet.model.Rank.promotion(w[0].trim(), w[1].trim()) : null; // a rank put on (heromedel, 5.52)
+			if (head.endsWith("; on the record already)")) return; // the promotion was told the day it was given on the record
 			if (rank != null) once(m, "crew", false, "I promoted " + homeplanet.model.Rank.bare(w[1].trim()) + " to " + rank + (head.contains("(posthumously)") ? ", posthumously." : ".")); // heromedel's words (5.53)
 			else if (w.length == 2) once(m, "crew", false, w[0].trim() + " is now " + w[1].trim() + ".");
 		} else if (kind.equals("REMODEL")) {
@@ -289,7 +290,7 @@ public final class CaptainsLog {
 		} else if (kind.equals("FINAL BATTLE")) {
 			once(m, "ships", false, startShip(head.split(":")[0].trim()) + " went into the final battle.");
 		} else if (kind.equals("MUSEUM")) {
-			if (head.contains(" is honoured in")) once(m, "ships", false, startShip(head.split(" is honoured")[0].trim()) + " went to the Federation museum.");
+			if (head.contains(" is honoured in")) once(m, "ships", false, startShip(head.split(" is honoured")[0].trim()) + " went to the Federation Museum.");
 			else { int f = head.lastIndexOf(" for "); if (f > 0) { Line l = once(m, "ships", false, "The museum paid for " + theShip(head.substring(f + 5).trim()) + "."); l.details.add(head.substring(0, f)); } }
 		} else if (kind.equals("REWARD")) {
 			int f = head.lastIndexOf(" for ");

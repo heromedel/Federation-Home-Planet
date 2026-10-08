@@ -517,6 +517,7 @@ public final class Transmissions {
 			f.put("rank", rankName(u.problem() == null ? u : null));
 		}
 		String[] out = {t.from, t.subject, t.body.toString().trim()};
+		if (f.containsKey("ship")) for (int i = 0; i < out.length; i++) out[i] = ShipNames.fill(out[i], "ship", f.get("ship")); // "reached the {ship}": never "the The Adjudicator"
 		for (int i = 0; i < out.length; i++) for (Map.Entry<String, String> e : f.entrySet()) out[i] = out[i].replace("{" + e.getKey() + "}", e.getValue());
 		return out;
 	}

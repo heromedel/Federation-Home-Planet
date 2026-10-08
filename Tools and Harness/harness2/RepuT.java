@@ -98,7 +98,7 @@ public class RepuT {
     && Reputation.recent(v, 1).get(0).contains("Test Federation was lost in action (−50)"));
   // the Rebel Flagship
   Reputation.flagship(v, "Test Kestrel");
-  Setup.chk("R: the Rebel Flagship defeated: +100", Reputation.total(v) == expect + 50 && Reputation.recent(v, 1).get(0).contains("  +100  Test Kestrel defeated the Rebel Flagship (+100)"));
+  Setup.chk("R: the Rebel Flagship driven off: +100", Reputation.total(v) == expect + 50 && Reputation.recent(v, 1).get(0).contains("  +100  Test Kestrel drove off the Rebel Flagship (+100)"));
   // the rule off: nothing counts
   HomePlanet.reputationOn = false;
   Ship lan = named(v, "Test Lanius"); v.board(lan);

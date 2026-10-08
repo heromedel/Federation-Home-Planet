@@ -1122,12 +1122,12 @@ public final class Vault {
 		HistoryLog.entry("VICTORY", s.name + " was rescued after the last battle: docked, ready for a new journey", null, shipEvent("VICTORY", s).put("what", "rescued"));
 		return s;
 	}
-	/** A rescued ship goes to the Federation museum instead: her fate recorded, her copy kept as her last version. */
+	/** A rescued ship goes to the Federation Museum instead: her fate recorded, her copy kept as her last version. */
 	public synchronized void toMuseum(FinalBattle f) {
 		Ship gone = new Ship(f.id, f.name, Ship.State.DOCKED, true);
 		recordFate(gone, Fate.MUSEUM);
 		closeFinal(f, true);
-		HistoryLog.entry("MUSEUM", f.name + " is honoured in the Federation museum", null, shipEvent("MUSEUM", gone));
+		HistoryLog.entry("MUSEUM", f.name + " is honoured in the Federation Museum", null, shipEvent("MUSEUM", gone));
 	}
 
 	// ---- Steam Cloud's copies ----
@@ -1869,7 +1869,7 @@ public final class Vault {
 		LOST,
 		/** Stripped for parts: everything aboard went into storage, so she can't come back without duplicating it. */
 		SCRAPPED,
-		/** Sold to the Federation museum after a final victory: her price was paid, so she doesn't come back. */
+		/** Sold to the Federation Museum after a final victory: her price was paid, so she doesn't come back. */
 		MUSEUM,
 		/** Traded in or auctioned off from the Junkyard: she was paid for, so she doesn't come back. */
 		SOLD,

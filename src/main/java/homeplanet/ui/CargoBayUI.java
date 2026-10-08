@@ -440,10 +440,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	static String unreadableNote() {
 		Ship b = Vault.get().boarded();
 		if (b == null || b.save() != null) return null;
+		// line breaks where the sense breaks (docs/STYLE.md), never mid-sentence
 		return "The Home Planet Station could not load " + homeplanet.parser.ShipNames.the(b.name) + ": her save can't be read right now.\n\n"
-				+ "The Cargo Bay opens without her. She can't be picked, and her store and the Refit tab stay closed until her save\n"
-				+ "can be read. Try again in a moment. If this keeps happening, send the station's log file (the logs folder beside\n"
-				+ "the program) with a bug report.";
+				+ "The Cargo Bay opens without her: she can't be picked, and her store and the Refit tab stay closed\n"
+				+ "until her save can be read again. Close the Cargo Bay and try again in a moment.\n\n"
+				+ "If this keeps happening, send a bug report (Settings, Send Feedback) with the station's log\n"
+				+ "from the logs folder beside the program.";
 	}
 
 	/** The ships at the Space Dock (boarded and docked) whose saves can be read: any of them can trade (see {@link Dlc} for what may move). */

@@ -334,7 +334,7 @@ public final class Reputation {
 			Properties p = read(v);
 			if (!counted(p)) { review(v); return; } // the review finds her in the Hall of Victors
 			p.setProperty("total", Integer.toString(num(p, "total") + FLAGSHIP));
-			if (write(v, p)) entry(v, "flagship", FLAGSHIP, name + " defeated the Rebel Flagship (+" + FLAGSHIP + ")", null);
+			if (write(v, p)) entry(v, "flagship", FLAGSHIP, name + " drove off the Rebel Flagship (+" + FLAGSHIP + ")" /* hard rule 1: never that she destroyed it, as the museum and the Captain's Log say it */, null);
 		}
 	}
 

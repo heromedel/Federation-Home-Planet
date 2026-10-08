@@ -22,7 +22,7 @@ public class LogT { public static void main(String[] a) throws Exception {
  // Prior: no day, 0 or -1 are never in the Captain's Log
  EventLog.write(v, Event.of("CREW").put("log", "station").put("headline", "zero day").put("day", "0").human("zero day"));
  EventLog.write(v, Event.of("CREW").put("log", "station").put("headline", "minus day").put("day", "-1").human("minus day"));
- boolean prior = false; for (List<MasterLog.Entry> l : MasterLog.byDay(v).values()) for (MasterLog.Entry e : l) if (e.text.contains(" day")) prior = true;
+ boolean prior = false; for (List<MasterLog.Entry> l : MasterLog.byDay(v).values()) for (MasterLog.Entry e : l) if (e.text.contains("zero day") || e.text.contains("minus day")) prior = true;
  Setup.chk("S: an entry of day 0 or -1 is Prior: left out", !prior);
  // the Cargo Bay's day: once, then not again until something else moves the clock
  int c0 = v.beaconsSeen();

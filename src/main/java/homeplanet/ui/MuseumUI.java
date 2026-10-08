@@ -541,7 +541,7 @@ public class MuseumUI extends JPanel {
 		heading(p, "Voyage");
 		StringBuilder log = new StringBuilder();
 		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOfId(ex.id)), ex.id)) log.append(e.time.length() >= 16 ? e.time.substring(0, 16) : e.time).append("  ").append(e.human).append('\n');
-		JTextArea a = new JTextArea(log.length() == 0 ? "No voyage log was kept for her: the station started keeping them in 4B.29." : log.toString());
+		JTextArea a = new JTextArea(log.length() == 0 ? "No voyage log was kept for her: she sailed before The Home Planet Station began keeping them." : log.toString());
 		a.setEditable(false);
 		a.setLineWrap(true);
 		a.setWrapStyleWord(true);

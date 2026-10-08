@@ -111,7 +111,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `LAYOUT` | `what` (`converted`), `to` (`6.0`), `ships`, `remembered` (ships that had left, now in the memorial), `backup` (the zip beside the fleet's folder) | "The station's records were rearranged: 4 ships and 1 remembered into folders of their own (a copy of the fleet as it was is kept beside it)" |
 | `FINAL_BATTLE` | ship, `copy`, `sector`, `victories_then`, `scores_then` | "Kestrel: the Rebel Flagship is on her way to the last battle. ..." |
 | `VICTORY` | ship, `what` (`rescued`), or from FinalVictory: `victories_then`, `victories_now`, `top_scores`, `after` (the choice), `value` | "Kestrel won the last battle (...)" |
-| `MUSEUM` | ship, `scrap`, `to` | "Kestrel is honoured in the Federation museum" |
+| `MUSEUM` | ship, `scrap`, `to` | "Kestrel is honoured in the Federation Museum" |
 | `REWARD` | ship, `scrap`, `to` | "120 scrap to the Cargo Hold for the Kestrel" |
 | `SENT_AWAY` | ship, `to_commander`, `to` | "Kestrel (a3f2) to Vance's fleet, over Long Range Comm." |
 | `RECEIVED` | ship, `from_commander`, `trade`, `to` | "Kestrel (a3f2) from Vance's fleet, over Long Range Comm.: docked" |
@@ -133,7 +133,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `COMMISSION` | ship, `detail.n` (her fittings and crew) | "Kestrel  (a3f2)" |
 | `NEW_JOURNEY` | ship, `difficulty`, `fee`, `paid` | "Kestrel  difficulty Normal, fee ..." |
 | `RENAME` | ship, `from`, `to` | "Old Glory -> Kestrel  (a3f2)" |
-| `RENAME_CREW` | `what` (`renamed`, `promoted`), `from`, `to`, `crew_id`, `race`, `rank`, `posthumously`, `place`, `ship_name`, `ship_id` | "Gracie -> Sgt. Gracie  (Kestrel)" |
+| `RENAME_CREW` | `what` (`renamed`, `promoted`), `from`, `to`, `crew_id`, `race`, `rank`, `posthumously`, `place`, `ship_name`, `ship_id`, `on_record` (`true` when a rank given on the record is put in her save) | "Gracie -> Sgt. Gracie  (Kestrel)" |
 | `REMODEL` | `ship_name`, `to_class`, `detail.n` | "Kestrel -> PLAYER_SHIP_FED" |
 | `SCRAP` | `ship_name`, `stripped`, `to`, `detail.n` (what went into storage) | "Kestrel stripped into storage, hull broken up" |
 | `SELL` | from the Space Dock: `ship_name`, `how` (`auction`, `trade_in`), `price`, `to`; from the Cargo Bay: `what` (`cargo_bay`), `count`, `scrap`, `detail.n` | "Kestrel sold at auction for 80 scrap; ..." |

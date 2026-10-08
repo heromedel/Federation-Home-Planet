@@ -311,6 +311,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Setup.chk("K: and in her save now, the career unchanged, nothing more to give", worn && count(wm, "Promoted to Sergeant.") == 1 && CrewRegister.rankToGive(v, wm) == -1);
  String cl = LogT.page(v, false);
  Setup.chk("K: the Captain's Log: I promoted Gracie Quill to Sergeant; Norwyn Schultze posthumously", cl.contains("I promoted Gracie Quill to Sergeant.") && cl.contains("I promoted Norwyn Schultze to Lieutenant, posthumously."));
+ Setup.chk("K: the Captain's Log tells Wanderer's promotion once: putting it in her save later is no second promotion", cl.split("I promoted Wanderer to Sergeant\\.", -1).length == 2);
 
  // skill levels from the points as they stand, not FTL's marks (5.62): FTL marks only a level earned in play
  CrewState envoy = Commission.volunteer("energy", new Random(7)); // the Zoltan peace quest's Envoy: every skill full, no marks

@@ -136,7 +136,7 @@ public class InboxDialog extends JDialog {
 		delete.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { deleteSelected(); } });
 		keep.setToolTipText("She docks at the Space Dock, ready for a new journey from the first sector");
 		keep.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(true); } });
-		museum.setToolTipText("Her full value goes to the Cargo Hold, and she to the Federation museum");
+		museum.setToolTipText("Her full value goes to the Cargo Hold, and she to the Federation Museum");
 		museum.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(false); } });
 		payRansom.setToolTipText("Paid from the Cargo Hold; they come back to it");
 		payRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(true); } });
