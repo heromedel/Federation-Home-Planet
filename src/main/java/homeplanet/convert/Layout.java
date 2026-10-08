@@ -209,6 +209,9 @@ public final class Layout {
 				if (f.isDirectory() || f.getName().equals(ShipStore.xml(d).getName())) continue;
 				SafeFiles.move(f, new File(hist, f.getName().equals(ShipStore.logFile(d).getName()) ? "ship.log" : f.getName()));
 			}
+			for (String[] side : OldFleet.SIDE_FILES) if (r.has(side[0])) homeplanet.core.Store.write(new File(hist, side[1]), r.sections.get(side[0]), "as before 5.98"); // her record's sections back into side files
+			String[] fate = ShipStore.fate(d);
+			if (fate != null) SafeFiles.writeText(new File(hist, OldFleet.FATE_FILE), fate[0] + "\n" + fate[1] + "\n" + (fate[2].isEmpty() ? "" : fate[2] + "\n"), false);
 			if (!memorial) sb.append("\t<ship id=\"").append(r.id).append("\" name=\"").append(homeplanet.parser.XmlText.attr(r.name)).append("\" state=\"").append(junk ? "junked" : "boarded".equals(r.state) ? "boarded" : "docked")
 					.append("\" dlc=\"").append(r.dlc).append("\" hash=\"").append(r.hash).append("\"").append(r.stranger ? " stranger=\"true\"" : "").append("/>\r\n");
 			SafeFiles.deleteTree(d);

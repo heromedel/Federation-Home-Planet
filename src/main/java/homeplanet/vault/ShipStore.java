@@ -125,7 +125,7 @@ public final class ShipStore {
 			if (e.getValue().isEmpty()) continue;
 			sb.append("\t<").append(e.getKey());
 			for (String k : new java.util.TreeSet<String>(e.getValue().stringPropertyNames())) {
-				sb.append(" ").append(attrName(k)).append("=\"").append(XmlText.attr(e.getValue().getProperty(k))).append("\"");
+				sb.append(" ").append(attrName(k)).append("=\"").append(XmlText.attr(e.getValue().getProperty(k)).replace("\r", "&#13;").replace("\n", "&#10;").replace("\t", "&#9;")).append("\"");
 			}
 			sb.append("/>\r\n");
 		}
@@ -298,40 +298,34 @@ public final class ShipStore {
 		for (int i = 0; i < all.size() - keep; i++) if (!all.get(i).delete()) log.warn("Could not prune {}", all.get(i));
 	}
 
-	// ---- from today's files ----
+	// ---- her notes (5.98) ----
 
 	/**
-	 * Her record built from what the station keeps today: her manifest entry and the side files in history/&lt;id&gt;/
-	 * (fate.txt, traded.txt, journey.txt, museum.txt, borrowed.txt, voyage.txt, final-battle.txt, overwritten.txt).
-	 * The conversion's first half; nothing is moved.
+	 * Her record's sections that hold what her side files did before 5.98 (traded.txt, journey.txt, museum.txt,
+	 * borrowed.txt, voyage.txt, final-battle.txt, overwritten.txt, fate.txt), by their owners' names for them.
 	 */
-	public static Record fromToday(Vault v, Ship s) {
-		Record r = new Record(s.id);
-		r.name = s.name == null ? "" : s.name;
-		r.state = s.state == null ? "docked" : s.state.key;
-		r.dlc = s.dlc; r.hash = s.hash == null ? "" : s.hash; r.marks = s.marks == null ? "" : s.marks; r.stranger = s.stranger; r.fresh = s.fresh == null ? "" : s.fresh;
-		File dir = v.historyOf(s);
-		for (String[] side : new String[][] {{"trade", "traded.txt"}, {"journey", "journey.txt"}, {"museum", "museum.txt"}, {"borrowed", "borrowed.txt"},
-				{"last", "voyage.txt"}, {"final", "final-battle.txt"}, {"overwritten", "overwritten.txt"}}) {
-			File f = new File(dir, side[1]);
-			if (f.isFile()) r.section(side[0]).putAll(Store.read(f));
-		}
-		File fate = new File(dir, "fate.txt");
-		if (fate.isFile()) {
-			try {
-				String[] lines = new String(SafeFiles.read(fate), StandardCharsets.UTF_8).split("\r?\n");
-				Properties p = r.section("fate");
-				if (lines.length > 0) p.setProperty("kind", lines[0].trim());
-				if (lines.length > 1) p.setProperty("name", lines[1].trim());
-				if (lines.length > 2) p.setProperty("detail", lines[2].trim());
-			} catch (IOException e) { log.warn("Could not read {}: {}", fate, e.toString()); }
-		}
-		Properties trade = r.sections.get("trade");
-		if (trade != null) { // her owners as her trade mark knows them: the original first, then who sent her
-			String original = trade.getProperty("original", "").trim(), from = trade.getProperty("from", "").trim();
-			if (!original.isEmpty()) r.owners.add(original);
-			if (!from.isEmpty() && !from.equals(original)) r.owners.add(from);
-		}
-		return r;
+	public static final String TRADE = "trade", JOURNEY = "journey", MUSEUM = "museum", BORROWED = "borrowed", LAST = "last",
+			FINAL = "final", OVERWRITTEN = "overwritten", FATE = "fate";
+	/** One section of the record in this folder, as a copy: empty if she has none, or there's no record. Written through {@link Vault#setNotes}. */
+	public static Properties notes(File folder, String section) {
+		Record r = idOf(folder) == null ? null : read(folder); // the Cargo Hold's folder (no id) has no record: its xml is what it holds
+		Properties out = new Properties();
+		if (r != null && r.sections.containsKey(section)) out.putAll(r.sections.get(section));
+		return out;
+	}
+	/** What became of a ship that left, as her record keeps it: {kind, name, detail}, or null if it isn't known. */
+	public static String[] fate(File folder) {
+		Properties p = notes(folder, FATE);
+		if (p.getProperty("kind", "").trim().isEmpty()) return null;
+		return new String[] {p.getProperty("kind").trim(), p.getProperty("name", "").trim(), p.getProperty("detail", "").trim()};
+	}
+	/** Her fate as her record's section: when it was written, so the latest departures can come first. */
+	public static Properties fateNotes(String kind, String name, String detail) {
+		Properties p = new Properties();
+		p.setProperty("kind", kind);
+		p.setProperty("name", name == null ? "" : name);
+		if (detail != null && !detail.isEmpty()) p.setProperty("detail", detail);
+		p.setProperty("when", Long.toString(System.currentTimeMillis()));
+		return p;
 	}
 }

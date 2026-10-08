@@ -63,7 +63,8 @@ it does and CREDITS.md for where the code came from.
   `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
   Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`), `convert` (a fleet from before 6.0 brought across).
 - **A fleet on disk (6.0, since 5.69):** every ship is a folder (`shipyard/<Name>.<id>/`, `junkyard/`, `memorials_and_records/ships/`
-  for the ones that left) with her record as xml, her save, her log, her `versions/` and her crew's files (`crew/`, one per crew member, 5.83);
+  for the ones that left) with her record as xml (her notes are sections of it, 5.98: trade mark, journey, museum entry, last look, fate and the
+  rest; `ShipStore.notes` reads one, `Vault.setNotes` writes one), her save, her log, her `versions/` and her crew's files (`crew/`, one per crew member, 5.83);
   the Cargo Hold is `cargohold/` (`cargohold.xml` is what it holds, 5.84: no pretend ship); `expeditions/`, `infirmary/` and `captives/`
   have their own xml (5.85); the career's small files are xml, one per concern, the clock in `clock.xml` (5.86); everyone who left is in
   `memorials_and_records/` (ships and crew). The station's log is `logs/events.log` alone: since 5.93 nothing writes history.log,

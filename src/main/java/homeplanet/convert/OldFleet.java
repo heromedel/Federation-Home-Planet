@@ -44,10 +44,11 @@ import homeplanet.vault.Vault;
  * <li>manifest.xml, ships/, junkyard/ and history/ into a folder per ship, the whole fleet zipped beside it first ({@link Layout}, 5.69);</li>
  * <li>the Cargo Hold's files from the root into cargohold/ (5.72), and its save into cargohold.xml (5.84);</li>
  * <li>the expeditions', the infirmary's and the captives' files into folders of their own, as xml (5.85);</li>
+ * <li>each ship's side files (her trade mark, journey, museum entry, last look, fate and the rest) into her record (5.98);</li>
  * <li>the old logs read into the event log, each ship's entries into her own log, and put on their own days ({@link LogConvert}, 5.73, 5.76, 5.81);</li>
  * </ol>
  * then the ships are read, and after them:
- * <ol start="7">
+ * <ol start="8">
  * <li>the crew register's places in the old logs as places in the event log (5.91), and its crew.txt into a file per crew member (5.83).</li>
  * </ol>
  * A ship from an older station in a trade is the other way in ({@link OldPackage}).
@@ -56,7 +57,7 @@ public final class OldFleet {
 	private static final Logger log = LoggerFactory.getLogger(OldFleet.class);
 	private OldFleet() { }
 
-	/** Steps 1 to 6: before the ships are read. */
+	/** Steps 1 to 7: before the ships are read. */
 	public static void before(Vault v) throws IOException {
 		moveLogs(v);
 		moveSmallFiles(v); // first of the moves after the logs: every log entry after it reads the clock
@@ -64,11 +65,12 @@ public final class OldFleet {
 		moveCargoHold(v);
 		holdReady(v);
 		moveExpeditions(v);
+		foldShipFiles(v);
 		LogConvert.run(v); // the old logs read into the event log once (5.73)
 		LogConvert.fillShipLogs(v); // each ship's entries into her own log, once (5.76)
 		LogConvert.repairDays(v); // converted entries put on their own days, once (5.81)
 	}
-	/** Step 7: after the ships, whose folders hold their crew. */
+	/** Step 8: after the ships, whose folders hold their crew. */
 	public static void after(Vault v) {
 		CrewRegister.convertPositions(v); // a register from before 5.91: how far it had read the old logs, as places in the event log
 		CrewRegister.convert(v); // a 5.x crew.txt into a file per crew member, once (5.83)
@@ -277,5 +279,62 @@ public final class OldFleet {
 		for (int i = 0; i < moved.size(); i++) e.put("file." + i, moved.get(i));
 		HistoryLog.entry("EXPEDITION_FILES", "the expeditions', the infirmary's and the captives' files moved into folders of their own: " + String.join(", ", moved), null,
 				e.human("The expeditions office, the infirmary and the captives' records were filed in rooms of their own."));
+	}
+
+	/** The side files a ship's folder kept before 5.98, and the section of her record each became. */
+	static final String[][] SIDE_FILES = {{ShipStore.TRADE, "traded.txt"}, {ShipStore.JOURNEY, "journey.txt"}, {ShipStore.MUSEUM, "museum.txt"},
+			{ShipStore.BORROWED, "borrowed.txt"}, {ShipStore.LAST, "voyage.txt"}, {ShipStore.FINAL, "final-battle.txt"}, {ShipStore.OVERWRITTEN, "overwritten.txt"}};
+	/** Her fate before 5.98: its kind, her name and the detail, a line each. */
+	static final String FATE_FILE = "fate.txt";
+	/**
+	 * The side files in her folder folded into her record: each one's keys become its section (the file's word over
+	 * any section of that name already there), her fate's three lines its kind, name and detail, with the file's time
+	 * as when she left. The files folded are added to the list; nothing is written.
+	 */
+	public static void fold(ShipStore.Record r, File dir, List<File> folded) throws IOException {
+		for (String[] side : SIDE_FILES) {
+			File f = new File(dir, side[1]);
+			if (!f.isFile()) continue;
+			Properties p = new Properties();
+			p.putAll(Store.load(f));
+			r.sections.put(side[0], p);
+			folded.add(f);
+		}
+		File fate = new File(dir, FATE_FILE);
+		if (fate.isFile()) {
+			String[] lines = new String(SafeFiles.read(fate), java.nio.charset.StandardCharsets.UTF_8).split("\\r?\\n");
+			Properties p = ShipStore.fateNotes(lines[0].trim(), lines.length > 1 ? lines[1].trim() : "", lines.length > 2 ? lines[2].trim() : null);
+			p.setProperty("when", Long.toString(fate.lastModified()));
+			r.sections.put(ShipStore.FATE, p);
+			folded.add(fate);
+		}
+	}
+	/** Every ship's side files into her record (5.98), as one journal note: her record rewritten, the files gone. */
+	private static void foldShipFiles(Vault v) throws IOException {
+		Journal.Note n = Journal.begin(v, "FOLD_SHIP_FILES");
+		List<String> ships = new ArrayList<String>();
+		int files = 0;
+		for (File d : v.shipFolders()) {
+			ShipStore.Record r = ShipStore.read(d);
+			if (r == null) continue;
+			List<File> folded = new ArrayList<File>();
+			fold(r, d, folded);
+			if (folded.isEmpty()) continue;
+			n.replace(ShipStore.xml(d), ShipStore.bytes(r));
+			StringBuilder which = new StringBuilder();
+			for (File f : folded) { n.delete(f); which.append(which.length() == 0 ? "" : "+").append(f.getName().equals(FATE_FILE) ? ShipStore.FATE : sectionOf(f.getName())); }
+			ships.add(d.getParentFile().getName() + "/" + d.getName() + ">" + which);
+			files += folded.size();
+		}
+		if (n.isEmpty()) return;
+		n.commit();
+		Event e = Event.of("SHIP_FILES").put("what", "folded").put("ships", ships.size()).put("files", files);
+		for (int i = 0; i < ships.size(); i++) e.put("ship." + i, ships.get(i));
+		HistoryLog.entry("SHIP_FILES", "each ship's side files written into her record: " + files + " files, " + ships.size() + " ships", null,
+				e.human("Each ship's notes were filed with her record."));
+	}
+	private static String sectionOf(String file) {
+		for (String[] side : SIDE_FILES) if (side[1].equals(file)) return side[0];
+		return file;
 	}
 }

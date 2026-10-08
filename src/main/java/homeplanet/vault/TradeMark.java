@@ -1,6 +1,5 @@
 package homeplanet.vault;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -9,7 +8,7 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import homeplanet.core.Store;
 
 /**
- * The mark a ship gets when she changes hands over Long Range Comm. (history/&lt;id&gt;/traded.txt): when, from whom,
+ * The mark a ship gets when she changes hands over Long Range Comm. (her record's trade section, 5.98; traded.txt before): when, from whom,
  * who first commissioned her, and her lifetime totals at that moment.
  *
  * <p>The rule it serves: <b>anything that rewards or reacts to what a ship has done</b> (events, rewards, letters,
@@ -18,7 +17,9 @@ import homeplanet.core.Store;
  * A ship never traded has no mark, and everything since her commissioning counts.
  */
 public final class TradeMark {
+	/** Her mark as a file in a ship's package, as older stations read it. */
 	static final String FILE = "traded.txt";
+	private static final String NOTE = "She joined this fleet over Long Range Comm. Rewards, letters, events and achievements count only what she did after this.";
 
 	public final String trade, date, from, original;
 	/** When her original owner commissioned her ("1 October 2026"), or "" if not known. */
@@ -43,10 +44,8 @@ public final class TradeMark {
 	public static TradeMark of(Ship s) { return s == null ? null : of(Vault.get(), s.id); }
 	/** The mark of a ship by id (she may have left the fleet), or null. */
 	public static TradeMark of(Vault v, String id) {
-		File f = new File(v.folderOfId(id), FILE);
-		if (!f.isFile()) return null;
-		try { return new TradeMark(Store.load(f)); }
-		catch (IOException e) { return null; }
+		Properties p = ShipStore.notes(v.folderOfId(id), ShipStore.TRADE);
+		return p.isEmpty() ? null : new TradeMark(p);
 	}
 
 	// ---- counting from her last trade ----
@@ -64,8 +63,8 @@ public final class TradeMark {
 
 	// ---- writing ----
 
-	/** Her mark as a file's text, for a ship arriving: this trade, this sender, the original owner carried along. */
-	static byte[] text(String trade, String from, String original, String commissioned, SavedGameState gs, int sectors) throws IOException {
+	/** Her mark, for a ship arriving: this trade, this sender, the original owner carried along. */
+	static Properties mark(String trade, String from, String original, String commissioned, SavedGameState gs, int sectors) throws IOException {
 		Properties p = new Properties();
 		p.setProperty("trade", trade);
 		p.setProperty("date", new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date()));
@@ -76,8 +75,10 @@ public final class TradeMark {
 		p.setProperty("beacons", Integer.toString(gs.getTotalBeaconsExplored()));
 		p.setProperty("scrap", Integer.toString(gs.getTotalScrapCollected()));
 		p.setProperty("sectors", Integer.toString(sectors));
-		return Store.bytes(p, "She joined this fleet over Long Range Comm. Rewards, letters, events and achievements count only what she did after this.");
+		return p;
 	}
+	/** A mark as its file in a package (older stations read her mark from it). */
+	static byte[] fileBytes(Properties p) throws IOException { return Store.bytes(p, NOTE); }
 	/** The original owner a mark file names, or null (for a ship arriving with her old mark). */
 	static String originalIn(byte[] markFile) {
 		if (markFile == null) return null;

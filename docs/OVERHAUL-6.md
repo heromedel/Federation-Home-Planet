@@ -558,6 +558,12 @@ convoluted), with what it found.
    has room for them (`ShipStore.Record.sections`, and `ShipStore.fromToday` builds them, tested in ShipStoreT), but nothing in the
    station fills or reads them. Either finish it (one more step for `OldFleet`, and the readers moved onto the record) or drop the
    sections and `fromToday`. heromedel's call; the station works either way.
+   **Done at 5.98** (heromedel: "fold them in, one record"): every owner reads its section (`ShipStore.notes`, `ShipStore.fate`) and
+   writes it through `Vault.setNotes`, under the fleet's lock; where a section changes with other files (leaving, coming home,
+   a restore, a receipt) her record goes in the same protection note. A fleet's loose side files are folded once by `OldFleet`
+   (one note, `SHIP_FILES`). A ship's package still carries `voyage.txt` and `traded.txt` as files, made from her record, so
+   every station reads them as before; her record travels without its sections (they are her old fleet's notes on her), and the
+   protocol is unchanged (heromedel, 5.98: "no why should it, unless it doesn't know how to accept it").
 3. **Found**: a few fleet files stay .txt on purpose, being lists rather than settings (5.86): `free-command.txt`,
    `unlock-grants.txt`, `cargohold/systems.txt`, `parts.txt`, `overflow.txt`, `derelicts/listings.txt`, `parked-boarded.txt`.
 4. **Alternative**, Re: step 23: other fleets are converted only when opened, so a few readers still look at a fleet in an

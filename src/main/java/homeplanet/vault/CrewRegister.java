@@ -854,11 +854,8 @@ public final class CrewRegister {
 		return false;
 	}
 	private static String fateOf(Vault v, String id) {
-		File f = new File(v.folderOfId(id), "fate.txt");
-		if (!f.isFile()) return "";
-		String t = text(f).trim();
-		int nl = t.indexOf('\n');
-		return (nl < 0 ? t : t.substring(0, nl)).trim();
+		String[] f = ShipStore.fate(v.folderOfId(id));
+		return f == null ? "" : f[0];
 	}
 
 	// ---- a new register: the logs read once, for what came before ----
@@ -1002,10 +999,8 @@ public final class CrewRegister {
 		String id = ShipStore.idOf(dir);
 		Ship s = id == null ? null : v.byId(id);
 		if (s != null) return s.name;
-		File fate = new File(dir, "fate.txt");
-		if (!fate.isFile()) return null;
-		String[] w = text(fate).split("\r?\n");
-		return w.length > 1 && !w[1].trim().isEmpty() ? w[1].trim() : null;
+		String[] f = ShipStore.fate(dir);
+		return f != null && !f[1].isEmpty() ? f[1] : null;
 	}
 	private static List<Member> whoever(String name, String race, Map<String, List<Member>> byName, Map<String, String> renamedFrom, List<Member> members, Status ifNew) {
 		String now = name;

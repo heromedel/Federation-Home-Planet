@@ -160,7 +160,8 @@ Boy's bench.
 
 **What it is.** Each fleet is brought across to the 6.0 layout the first time it opens, so the station carries the code that
 reads every older shape: manifest.xml and history/ (before 5.69), the logs at the root (before 5.71), the Cargo Hold as a save
-(before 5.84), the small files as .txt (before 5.86), the old prose logs (before 5.73), crew.txt (before 5.83). Since 5.97 it is
+(before 5.84), the small files as .txt (before 5.86), the old prose logs (before 5.73), crew.txt (before 5.83), a ship's side files
+(before 5.98). Since 5.97 it is
 all in `homeplanet.convert`: `OldFleet` runs the steps in order, `Layout` and `LogConvert` do the two big ones, and the few
 pieces too much a part of their class to move (the crew register's reading of crew.txt) are marked `@Before6`. `OldPackage` is
 apart from the rest: a ship traded from a station older than 5.75 (her voyage log as prose); it goes with the protocol, not with

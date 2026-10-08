@@ -17,13 +17,13 @@ public class MigT { public static void main(String[] a) throws Exception {
  for (int i = 0; i < 3; i++) { SavedGameState g = v.readCopy(d1).save; g.getPlayerShip().setScrapAmt(100 + i); v.write(d1, g); Thread.sleep(2); }
  ShipStore.keepVersion(v.historyOf(d1), SafeFiles.read(v.fileOf(d1)), "victory-");
  ShipStore.keepVersion(v.historyOf(d1), SafeFiles.read(v.fileOf(d1)), "cloud-");
- SafeFiles.writeText(new File(v.historyOf(d1), "traded.txt"), "trade=t1\ndate=2026-01-01 00:00\nfrom=Commander Bree\noriginal=Captain Ash\ndefeated=0\nbeacons=0\nscrap=0\nsectors=0\n", false);
+ Setup.side(v, v.historyOf(d1), "traded.txt", "trade=t1\ndate=2026-01-01 00:00\nfrom=Commander Bree\noriginal=Captain Ash\ndefeated=0\nbeacons=0\nscrap=0\nsectors=0\n");
  SavedGameState rn = v.readCopy(d1).save; rn.setPlayerShipName("Nightjar Renamed"); rn.getPlayerShip().setShipName("Nightjar Renamed"); v.write(d1, rn);
  Setup.chk("A: renamed, her folder follows her name", v.folderOf(d1).getName().equals("Nightjar Renamed." + d1.id) && v.fileOf(d1).isFile());
  v.board(d2); v.disband();
  v.board(d3); v.disband(); v.remove(d3, "DESTROY");
  v.board(b); // the first ship boarded again
- Setup.chk("A: a hull in the Junkyard, a ship destroyed and remembered", d2.state == Ship.State.JUNKED && v.byId(d3.id) == null && new File(v.folderOfId(d3.id), "fate.txt").isFile()
+ Setup.chk("A: a hull in the Junkyard, a ship destroyed and remembered", d2.state == Ship.State.JUNKED && v.byId(d3.id) == null && !Setup.fateText(v.folderOfId(d3.id)).isEmpty()
    && v.folderOfId(d3.id).getParentFile().equals(v.memorialDir()));
  v.takeStock(); // the register caught up with the rename, the decommission and the loss before its picture is taken
  Map<String, String> before = picture(v);
@@ -58,6 +58,11 @@ public class MigT { public static void main(String[] a) throws Exception {
  for (String k : after.keySet()) if (!before.containsKey(k)) diff.add(k + ": new");
  for (String d : diff) System.out.println("  differs: " + d);
  Setup.chk("C: every ship as she was: her folder, her record, her versions and special copies, her side files, her log", diff.isEmpty());
+ int loose = 0; for (File d : v2.shipFolders()) for (String n : new String[] {"traded.txt", "journey.txt", "museum.txt", "borrowed.txt", "voyage.txt", "final-battle.txt", "overwritten.txt", "fate.txt"}) if (new File(d, n).isFile()) loose++;
+ TradeMark tm = TradeMark.of(v2, d1.id); String[] f3 = ShipStore.fate(v2.folderOfId(d3.id));
+ boolean folded = false; for (EventLog.Entry e : EventLog.read(v2)) if (e.kind.equals("SHIP_FILES") && "folded".equals(e.get("what"))) folded = true;
+ Setup.chk("C: each ship's side files folded into her record (5.98): her trade mark, the destroyed one's fate, none left loose, logged (" + loose + " loose)",
+   loose == 0 && tm != null && tm.original.equals("Captain Ash") && f3 != null && f3[0].equals("DESTROYED") && folded);
  Setup.chk("C: the fleet as it was: the same ships (" + v.all().size() + "), the renamed one, the hull in the Junkyard, the destroyed one gone", v2.all().size() == v.all().size() && v2.byId(d1.id).name.equals("Nightjar Renamed")
    && v2.byId(d2.id).state == Ship.State.JUNKED && v2.byId(d3.id) == null);
  List<String> crewAfter = crew(v2);

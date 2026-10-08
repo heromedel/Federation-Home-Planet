@@ -2,7 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,7 +26,7 @@ import homeplanet.vault.Vault;
 
 /**
  * The Federation Museum: the Hall of Victors (every ship that won, whatever came after) and the Memorial (ships lost
- * in action without a victory). What the saves can't say is kept in each ship's history folder, museum.txt: her
+ * in action without a victory). What the saves can't say is kept in each ship's record (its museum section, 5.98; museum.txt before): her
  * victories (date, score, difficulty, the honours earned during her command), whether she was kept or preserved, her
  * epitaph, when she was commissioned, and the profile's achievements when she was last set out.
  */
@@ -35,7 +34,6 @@ public final class Museum {
 	private static final Logger log = LoggerFactory.getLogger(Museum.class);
 	private Museum() { }
 
-	static final String FILE = "museum.txt";
 	public enum Status { PRESERVED, IN_SERVICE, MEMORY, LOST, MEMORIAL, TRANSFERRED, RETURNED, SEIZED }
 
 	/** One ship on show. */
@@ -66,9 +64,9 @@ public final class Museum {
 	// ---- the records ----
 
 	static File dir(Vault v, String id) { return v.folderOfId(id); }
-	static Properties read(Vault v, String id) { return Store.read(new File(dir(v, id), FILE)); }
+	static Properties read(Vault v, String id) { return ShipStore.notes(dir(v, id), ShipStore.MUSEUM); }
 	static void write(Vault v, String id, Properties p) {
-		try { Store.write(new File(dir(v, id), FILE), p, "Her place in the Federation Museum"); }
+		try { v.setNotes(dir(v, id), ShipStore.MUSEUM, p); }
 		catch (IOException e) { log.warn("Could not keep {}'s museum record: {}", id, e.toString()); }
 	}
 	private static String today() { return new SimpleDateFormat("d MMMM yyyy").format(new Date()); }
@@ -169,7 +167,7 @@ public final class Museum {
 		for (File d : v.shipFolders()) {
 			String id = ShipStore.idOf(d);
 			if (id == null) continue;
-			Properties p = Store.read(new File(d, FILE));
+			Properties p = ShipStore.notes(d, ShipStore.MUSEUM);
 			int victories = Math.max(Store.num(p, "victories", 0), wins(d).size());
 			String[] fate = fate(d);
 			Ship inFleet = v.byId(id);
@@ -209,12 +207,8 @@ public final class Museum {
 	}
 
 	private static String[] fate(File d) {
-		try {
-			String[] l = new String(SafeFiles.read(new File(d, "fate.txt")), StandardCharsets.UTF_8).split("\n");
-			return new String[] {l[0].trim(), l.length > 1 ? l[1].trim() : "", l.length > 2 ? l[2].trim() : ""};
-		} catch (IOException e) {
-			return new String[] {"", "", ""};
-		}
+		String[] f = ShipStore.fate(d);
+		return f != null ? f : new String[] {"", "", ""};
 	}
 	/** Her victory copies, oldest first (kept in her folder's versions/, 5.69). */
 	private static List<File> wins(File d) {
