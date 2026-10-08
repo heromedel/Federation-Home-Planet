@@ -20,12 +20,12 @@ public class ExpT { public static void main(String[] a) throws Exception {
   inf.setProperty("healed_at", "23"); inf.setProperty("0.name", "Laid Ulm");
   cap.setProperty("0.name", "Held Hal"); cap.setProperty("0.state", "gone");
   Assignments.file(v).delete(); Expeditions.infirmaryFile(v).delete(); Expeditions.captivesFile(v).delete();
-  Store.write(Assignments.oldFile(v), asg, "old"); Store.write(Expeditions.oldInfirmaryFile(v), inf, "old"); Store.write(Expeditions.oldCaptivesFile(v), cap, "old");
+  Store.write(new File(v.root, "assignments.txt"), asg, "old"); Store.write(new File(v.root, "infirmary.txt"), inf, "old"); Store.write(new File(v.root, "captives.txt"), cap, "old");
   SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=rescue\n", false);
   v = Setup.open(game, saves); v.takeStock();
   Setup.chk("F: a 5.x fleet's expeditions, infirmary and captives files move into folders of their own, as xml, nothing in them changed",
     Store.load(Assignments.file(v)).equals(asg) && Store.load(Expeditions.infirmaryFile(v)).equals(inf) && Store.load(Expeditions.captivesFile(v)).equals(cap)
-    && new String(SafeFiles.read(Assignments.file(v)), "UTF-8").startsWith("<?xml") && !Assignments.oldFile(v).exists() && !Expeditions.oldInfirmaryFile(v).exists() && !Expeditions.oldCaptivesFile(v).exists());
+    && new String(SafeFiles.read(Assignments.file(v)), "UTF-8").startsWith("<?xml") && !new File(v.root, "assignments.txt").exists() && !new File(v.root, "infirmary.txt").exists() && !new File(v.root, "captives.txt").exists());
   String x = new String(SafeFiles.read(Assignments.file(v)), "UTF-8");
   Setup.chk("F: the keys in order, numbers by their value (face.2 before face.10)", x.indexOf("face.2.0") < x.indexOf("face.10.2") && x.indexOf("face.10.2") < x.indexOf("offer.1"));
   Setup.chk("F: the old board of jobs kept beside them, unread", new File(v.expeditionsDir(), "board-before-5.67.txt").isFile() && !new File(v.root, "expeditions.txt").exists());

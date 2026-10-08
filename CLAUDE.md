@@ -61,7 +61,7 @@ it does and CREDITS.md for where the code came from.
 
 - `src/main/java/homeplanet/`: the program. `core` (startup, config, Slipstream, music), `ui` (windows),
   `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
-  Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`).
+  Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`), `convert` (a fleet from before 6.0 brought across).
 - **A fleet on disk (6.0, since 5.69):** every ship is a folder (`shipyard/<Name>.<id>/`, `junkyard/`, `memorials_and_records/ships/`
   for the ones that left) with her record as xml, her save, her log, her `versions/` and her crew's files (`crew/`, one per crew member, 5.83);
   the Cargo Hold is `cargohold/` (`cargohold.xml` is what it holds, 5.84: no pretend ship); `expeditions/`, `infirmary/` and `captives/`
@@ -70,7 +70,9 @@ it does and CREDITS.md for where the code came from.
   master.log, voyage.log or reputation.log (an older fleet keeps them, read only by the conversion). The words the station writes
   from data can be overridden in `lore/` beside the jar (`core/Lore`, 5.89; the jar holds the defaults; the words are McCarthy's).
   `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
-  at the top of `vault/Vault.java`. A 5.x fleet is converted the first time it opens, a zip of it kept beside its folder. There is no
+  at the top of `vault/Vault.java`. A 5.x fleet is converted the first time it opens, a zip of it kept beside its folder: every step of that, and every
+  reader of an old shape, goes in `homeplanet.convert` (`OldFleet` runs them in order; anything that must stay in its own class is
+  marked `@Before6`), so the package can be deleted one day (`docs/CONCERNS.md` 7). There is no
   index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
   `vault/Journal`** (a note first, the steps, the note deleted; a note left behind is finished at the next opening): never a hand-written undo.
 - **Long Range Comm.:** stations match on `Session.PROTOCOL`, not the version. Bump it only when an older station

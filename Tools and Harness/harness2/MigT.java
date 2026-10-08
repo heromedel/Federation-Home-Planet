@@ -1,4 +1,4 @@
-import java.io.*; import java.util.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.vault.*;
+import java.io.*; import java.util.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.vault.*; import homeplanet.convert.*;
 /**
  * A 5.x fleet converted to the 6.0 layout on opening (Overhaul 6.0, Phase 2 step 2): a fleet with some history is put
  * back into the old layout (manifest, ships/, junkyard/, history/), reopened, and comes out as it was: every ship, her
@@ -66,7 +66,7 @@ public class MigT { public static void main(String[] a) throws Exception {
    && CrewRegister.registerFileOf(v2).isFile());
  Setup.chk("C: the same ship boarded, the hold with the same fingerprint", v2.boarded() != null && v2.boarded().id.equals(v.boarded().id) && v2.storage().hash.equals(v.storage().hash));
  Setup.chk("C: the Cargo Hold in its folder: its xml there (no pretend ship's save), its stored-systems list with it, nothing of it left at the root", v2.fileOf(v2.storage()).equals(new File(v2.cargoHoldDir(), Vault.HOLD_FILE)) && v2.fileOf(v2.storage()).isFile()
-   && homeplanet.parser.HoldXml.isHold(new File(v2.cargoHoldDir(), "cargohold.xml")) && !new File(v2.cargoHoldDir(), Vault.HOLD_SAV).exists() && v2.systemsFile().getParentFile().equals(v2.cargoHoldDir()) && !new File(root, "storage.sav").exists() && !new File(root, "storage.xml").exists() && !new File(root, "storage-systems.txt").exists());
+   && homeplanet.parser.HoldXml.isHold(new File(v2.cargoHoldDir(), "cargohold.xml")) && !new File(v2.cargoHoldDir(), "cargohold.sav").exists() && v2.systemsFile().getParentFile().equals(v2.cargoHoldDir()) && !new File(root, "storage.sav").exists() && !new File(root, "storage.xml").exists() && !new File(root, "storage-systems.txt").exists());
  Setup.chk("C: her kept versions read back in order, the victory copy and the cloud copy among her special copies", v2.history(v2.byId(d1.id)).size() == v.history(d1).size()
    && ShipStore.versions(v2.folderOf(v2.byId(d1.id)), true).size() == 2 && v2.kept(v2.byId(d1.id)).size() == v.kept(d1).size());
  List<EventLog.Entry> es = EventLog.read(v2); EventLog.Entry layout = null;

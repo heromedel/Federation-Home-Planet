@@ -42,7 +42,7 @@ final class LogViewer extends JPanel {
 		Vault v = Vault.get();
 		for (String s : Vault.SLOTS) {
 			File r = Vault.rootOf(v.saves, s);
-			if (!homeplanet.core.EventLog.fileIn(r).isFile() && !Vault.historyLogIn(r).isFile() && !s.equals(v.slot)) continue; // a fleet with a log of either kind
+			if (!homeplanet.core.EventLog.fileIn(r).isFile() && !homeplanet.convert.OldFleet.historyLogIn(r).isFile() && !s.equals(v.slot)) continue; // a fleet with a log of either kind
 			slots.add(s);
 			fleet.addItem(Vault.title(s) + (s.equals(v.slot) ? " (in use)" : ""));
 		}
@@ -143,7 +143,7 @@ final class LogViewer extends JPanel {
 		String slot = slots.get(Math.max(0, fleet.getSelectedIndex()));
 		showing.setText("Station log, " + Vault.title(slot));
 		File root = Vault.rootOf(Vault.get().saves, slot);
-		if (homeplanet.vault.LogConvert.done(root)) { // its events (5.74); a fleet not opened since 5.73 still shows its old file, as before
+		if (homeplanet.convert.LogConvert.done(root)) { // its events (5.74); a fleet not opened since 5.73 still shows its old file, as before
 			List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(homeplanet.core.EventLog.fileIn(root)), "station");
 			int entries = 0;
 			for (homeplanet.core.EventLog.Entry e : es) if (!e.kind.equals("LOADED")) entries++;
@@ -151,7 +151,7 @@ final class LogViewer extends JPanel {
 			show(RecordsLog.station(es, "Nothing logged yet.", true));
 			return;
 		}
-		File f = Vault.historyLogIn(root);
+		File f = homeplanet.convert.OldFleet.historyLogIn(root);
 		String text = "";
 		try { if (f.isFile()) text = new String(SafeFiles.read(f), StandardCharsets.UTF_8); }
 		catch (Exception e) { text = "The Home Planet Station could not read " + f + ": " + e.getMessage(); }

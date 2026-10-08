@@ -1,4 +1,4 @@
-package homeplanet.vault;
+package homeplanet.convert;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,9 +19,12 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import homeplanet.core.Event;
-import homeplanet.core.EventLog;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
+import homeplanet.vault.CrewRegister;
+import homeplanet.vault.Ship;
+import homeplanet.vault.ShipStore;
+import homeplanet.vault.Vault;
 
 /**
  * The fleet folder's layout, and a fleet from before 5.69 converted to it on opening (Overhaul 6.0, Phase 2; the
@@ -48,7 +51,7 @@ public final class Layout {
 		File zip = backup(root);
 		SafeFiles.zipFolder(root, zip, null);
 		log.info("Converting {} to the 6.0 layout; a copy of it as it was is in {}", root, zip);
-		Map<String, String[]> manifest = readManifest(new File(root, Vault.MANIFEST)); // id -> {name, state, dlc, hash, marks, stranger, fresh}
+		Map<String, String[]> manifest = readManifest(OldFleet.manifest(root)); // id -> {name, state, dlc, hash, marks, stranger, fresh}
 		int ships = 0, remembered = 0;
 		try {
 			for (Map.Entry<String, String[]> e : manifest.entrySet()) {
@@ -57,15 +60,15 @@ public final class Layout {
 				Ship.State state = Ship.State.of(m[1]);
 				File folder = new File(state == Ship.State.JUNKED ? v.junkyardDir() : v.shipyardDir(), ShipStore.stem(m[0], id));
 				if (!folder.isDirectory() && !folder.mkdirs()) throw new IOException("Could not create " + folder);
-				File sav = state == Ship.State.JUNKED ? new File(new File(root, "junkyard"), id + ".sav") : new File(v.oldShipsDir(), id + ".sav");
+				File sav = state == Ship.State.JUNKED ? new File(new File(root, "junkyard"), id + ".sav") : new File(OldFleet.shipsDir(v.root), id + ".sav");
 				if (sav.isFile()) SafeFiles.move(sav, ShipStore.sav(folder));
-				moveHistory(new File(v.oldHistoryDir(), id), folder);
+				moveHistory(new File(OldFleet.historyDir(v.root), id), folder);
 				ShipStore.Record r = new ShipStore.Record(id);
 				r.name = m[0]; r.state = state.key; r.dlc = "true".equals(m[2]); r.hash = m[3]; r.marks = m[4]; r.stranger = "true".equals(m[5]); r.fresh = m[6];
 				ShipStore.write(folder, r);
 				ships++;
 			}
-			File[] dirs = v.oldHistoryDir().listFiles();
+			File[] dirs = OldFleet.historyDir(v.root).listFiles();
 			if (dirs != null) for (File d : dirs) {
 				if (!d.isDirectory()) continue;
 				String id = d.getName();
@@ -81,11 +84,11 @@ public final class Layout {
 			}
 			// the old folders go once they're empty; what's left in them (a stray save) is adopted from the shipyard instead
 			File oldJunk = new File(root, "junkyard"); // the same folder serves the new layout: only the old files were in it
-			for (File f : safeList(v.oldShipsDir())) if (f.isFile()) SafeFiles.move(f, new File(v.shipyardDir(), f.getName()));
+			for (File f : safeList(OldFleet.shipsDir(v.root))) if (f.isFile()) SafeFiles.move(f, new File(v.shipyardDir(), f.getName()));
 			for (File f : safeList(oldJunk)) if (f.isFile()) SafeFiles.move(f, new File(v.junkyardDir(), f.getName()));
-			if (v.oldShipsDir().isDirectory() && !v.oldShipsDir().delete()) log.warn("Could not remove the old {}", v.oldShipsDir());
-			if (v.oldHistoryDir().isDirectory() && !SafeFiles.deleteTree(v.oldHistoryDir())) log.warn("Could not remove the old {}", v.oldHistoryDir());
-			File manifestFile = new File(root, Vault.MANIFEST);
+			if (OldFleet.shipsDir(v.root).isDirectory() && !OldFleet.shipsDir(v.root).delete()) log.warn("Could not remove the old {}", OldFleet.shipsDir(v.root));
+			if (OldFleet.historyDir(v.root).isDirectory() && !SafeFiles.deleteTree(OldFleet.historyDir(v.root))) log.warn("Could not remove the old {}", OldFleet.historyDir(v.root));
+			File manifestFile = OldFleet.manifest(root);
 			if (manifest.containsKey(Vault.STORAGE_ID)) { // the hold's record, before the manifest goes
 				String[] m = manifest.get(Vault.STORAGE_ID);
 				ShipStore.Record r = new ShipStore.Record(Vault.STORAGE_ID);
@@ -93,7 +96,7 @@ public final class Layout {
 				ShipStore.write(root, Vault.STORAGE_ID, r);
 			}
 			if (manifestFile.isFile() && !manifestFile.delete()) throw new IOException("Could not remove " + manifestFile);
-			new File(root, Vault.MANIFEST + ".bak").delete();
+			new File(root, OldFleet.MANIFEST + ".bak").delete();
 		} catch (IOException e) {
 			log.error("Converting " + root + " failed; putting it back from " + zip, e);
 			restore(root, zip);
@@ -196,10 +199,10 @@ public final class Layout {
 			if (r == null) continue;
 			boolean memorial = d.getParentFile().getAbsoluteFile().equals(v.memorialDir().getAbsoluteFile());
 			boolean junk = d.getParentFile().getAbsoluteFile().equals(v.junkyardDir().getAbsoluteFile());
-			File hist = new File(v.oldHistoryDir(), r.id);
+			File hist = new File(OldFleet.historyDir(v.root), r.id);
 			if (!hist.isDirectory() && !hist.mkdirs()) throw new IOException("Could not create " + hist);
 			File sav = ShipStore.sav(d);
-			if (!memorial && sav.isFile()) SafeFiles.move(sav, new File(junk ? new File(root, "junkyard") : v.oldShipsDir(), r.id + ".sav"));
+			if (!memorial && sav.isFile()) SafeFiles.move(sav, new File(junk ? new File(root, "junkyard") : OldFleet.shipsDir(v.root), r.id + ".sav"));
 			else if (sav.isFile()) SafeFiles.move(sav, new File(hist, "19700101-000000.sav"));
 			for (File f : safeList(ShipStore.versions(d))) if (f.isFile()) SafeFiles.move(f, new File(hist, f.getName().startsWith("cloud-") ? "cloud-copy-" + f.getName().substring(6) : f.getName()));
 			for (File f : safeList(d)) {
@@ -214,18 +217,18 @@ public final class Layout {
 		File holdXml = new File(holdDir, Vault.HOLD_FILE);
 		if (homeplanet.parser.HoldXml.isHold(holdXml)) { // its xml back into the pretend ship's save (5.84)
 			net.blerf.ftl.parser.SavedGameParser.SavedGameState gs = homeplanet.parser.HoldXml.read(holdXml);
-			File sav = new File(holdDir, Vault.HOLD_SAV);
+			File sav = new File(holdDir, OldFleet.HOLD_SAV);
 			SafeFiles.write(sav, homeplanet.parser.SaveHelper.toBytes(gs));
 			sb.append("\t<ship id=\"storage\" name=\"").append(homeplanet.parser.XmlText.attr(gs.getPlayerShipName())).append("\" state=\"storage\" dlc=\"true\" hash=\"").append(SafeFiles.hash(sav)).append("\"/>\r\n");
 			holdXml.delete();
 		}
-		String[][] back = {{Vault.HOLD_SAV, Vault.STORAGE_FILE}, {"systems.txt", "storage-systems.txt"}, {"parts.txt", "parts.txt"}, {"overflow.txt", "overflow.txt"}};
+		String[][] back = {{OldFleet.HOLD_SAV, OldFleet.STORAGE_FILE}, {"systems.txt", "storage-systems.txt"}, {"parts.txt", "parts.txt"}, {"overflow.txt", "overflow.txt"}};
 		for (String[] f : back) { File now = new File(holdDir, f[0]); if (now.isFile()) SafeFiles.move(now, new File(root, f[1])); }
 		SafeFiles.deleteTree(holdDir);
-		for (String name : Vault.LOG_FILES) { File now = new File(v.logsDir(), name); if (now.isFile()) SafeFiles.move(now, new File(root, name)); } // the logs at the root, as before 5.71
+		for (String name : OldFleet.LOG_FILES) { File now = new File(v.logsDir(), name); if (now.isFile()) SafeFiles.move(now, new File(root, name)); } // the logs at the root, as before 5.71
 		SafeFiles.deleteTree(v.logsDir());
 		sb.append("</manifest>\r\n");
-		SafeFiles.writeText(new File(root, Vault.MANIFEST), sb.toString(), false);
+		SafeFiles.writeText(OldFleet.manifest(root), sb.toString(), false);
 		SafeFiles.deleteTree(v.shipyardDir());
 		SafeFiles.deleteTree(new File(root, "memorials_and_records"));
 	}

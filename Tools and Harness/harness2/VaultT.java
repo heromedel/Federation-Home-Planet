@@ -39,6 +39,12 @@ public class VaultT { public static void main(String[] a) throws Exception {
  SafeFiles.copy(v.fileOf(e), v.continueFile());
  Vault vc = Vault.open(saves); vc.takeStock();
  Setup.chk("cloud copy of a docked ship: set aside, not adopted", vc.boarded() == null && !vc.continueFile().exists() && e.name.equals(vc.takeCloudCopy()) && vc.fleet().size() == before);
+ // an older copy (5.97, concerns 6): one of her kept versions, not her save as it is now
+ File older = vc.history(vc.byId(e.id)).get(0);
+ Setup.chk("an older copy differs from her save as it is now", !SafeFiles.hash(older).equals(SafeFiles.hash(vc.fileOf(vc.byId(e.id)))));
+ SafeFiles.copy(older, vc.continueFile());
+ Vault vo = Vault.open(saves); vo.takeStock();
+ Setup.chk("an older cloud copy of a docked ship (one of her versions): set aside, not adopted", vo.boarded() == null && !vo.continueFile().exists() && e.name.equals(vo.takeCloudCopy()) && vo.fleet().size() == before);
  // unknown continue.sav (a new game in FTL): adopted on reload
  SavedGameState other = HomePlanet.savedGameParser.readSavedGame(v.fileOf(e));
  other.getPlayerShip().setScrapAmt(other.getPlayerShip().getScrapAmt() + 1000);

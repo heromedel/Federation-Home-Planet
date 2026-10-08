@@ -28,7 +28,6 @@ import homeplanet.core.SafeFiles;
 public final class MasterLog {
 	private MasterLog() { }
 
-	static final String FILE = "master.log";
 	/** Why a day passed (the reasons the station itself checks). */
 	public static final String CARGO_BAY = "business in the Cargo Bay";
 	public static final int WEEK = 7, MONTH = 28, YEAR = 13 * MONTH;

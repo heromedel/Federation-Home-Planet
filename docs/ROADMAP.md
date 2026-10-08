@@ -25,9 +25,13 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 
 All built. What remains is testing in real play and bug checks.
 
-The 6.0 overhaul (storage, logs and code rebuilt; `docs/OVERHAUL-6.md`) is built through 5.94: what is left before 6.00 is listed
-in its "Where it stands" note (McCarthy's words into `lore/`, Buggy Boy's kill test, heromedel's call on the protocol, the docs'
-final pass). No 6.00 until every step is done (heromedel).
+The 6.0 overhaul (storage, logs and code rebuilt; `docs/OVERHAUL-6.md`) is built through 5.97: what is left before 6.00 is listed
+in its "Where it stands" note (McCarthy's words into `lore/`, heromedel's call on the protocol, the docs' final pass; Buggy Boy's
+kill test was done at 5.95). No 6.00 until every step is done (heromedel).
+
+The code that brings a fleet from before 6.0 across lives in one package, `homeplanet.convert` (5.97), so that it can be removed
+in a future build once no one plays a fleet from before 6.0 (heromedel, 5.97). When is heromedel's call; after it, such a fleet
+has to be opened once by a 6.x station first (`docs/CONCERNS.md` 7).
 
 ---
 

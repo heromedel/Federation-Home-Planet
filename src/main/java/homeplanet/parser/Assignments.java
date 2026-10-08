@@ -268,8 +268,6 @@ public final class Assignments {
 
 	/** The expeditions' file: the sectors on offer, and the crew away on one. */
 	public static File file(Vault v) { return new File(v.expeditionsDir(), "expeditions.xml"); }
-	/** Where a 5.x fleet kept it. */
-	public static File oldFile(Vault v) { return new File(v.root, "assignments.txt"); }
 	public static final String NOTE = "Crew expeditions: the sectors on offer, and the crew away on one";
 
 	/** A sector on offer. */

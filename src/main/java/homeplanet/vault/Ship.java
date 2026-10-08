@@ -29,7 +29,7 @@ public final class Ship {
 		STORAGE("storage");
 		public final String key;
 		State(String key) { this.key = key; }
-		static State of(String key) {
+		public static State of(String key) {
 			for (State s : values()) if (s.key.equals(key)) return s;
 			return DOCKED;
 		}

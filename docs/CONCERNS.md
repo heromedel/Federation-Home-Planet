@@ -112,7 +112,12 @@ it doesn't help: FTL reads continue.sav only when Continue is pressed, so a play
 FTL rewrites its profile (ae_prof.sav) at the menu and on quitting, so anything that changes the profile still waits
 for FTL to close.
 
-## 6. An old Steam Cloud copy can come back as a second ship (noted 5.95 by Buggy Boy; heromedel: written up for now)
+## 6. An old Steam Cloud copy can come back as a second ship (noted 5.95 by Buggy Boy; heromedel: written up for now; half fixed 5.97)
+
+**5.97:** the check looks in her `versions/` (`Vault.kept`), so a copy identical to one of her kept versions is set aside,
+not adopted (VaultT: a copy of her oldest version put back as `continue.sav`; it fails without the fix). Still open: a copy
+identical to nothing kept, and a copy of a ship that has left the fleet. The ship mark in the save (below) is held back for
+now (heromedel, 5.97).
 
 **What it is.** When the station opens and finds a `continue.sav` that no boarded ship owns, it asks whether Steam
 Cloud brought back a copy of a ship it already has (`Vault.cloudCopyOf`, Vault.java:1142). It compares the file with
@@ -150,3 +155,24 @@ Whichever way it's done, a harness check: dock a ship, change her in the Cargo B
 open the station. There must be one of her, with the copy put aside. Add a second check for a copy that isn't
 identical to anything kept, and a third for one of a ship that has left. The scratch test is CloudCheck on Buggy
 Boy's bench.
+
+## 7. Code kept for fleets from before 6.0 (noted 5.97)
+
+**What it is.** Each fleet is brought across to the 6.0 layout the first time it opens, so the station carries the code that
+reads every older shape: manifest.xml and history/ (before 5.69), the logs at the root (before 5.71), the Cargo Hold as a save
+(before 5.84), the small files as .txt (before 5.86), the old prose logs (before 5.73), crew.txt (before 5.83). Since 5.97 it is
+all in `homeplanet.convert`: `OldFleet` runs the steps in order, `Layout` and `LogConvert` do the two big ones, and the few
+pieces too much a part of their class to move (the crew register's reading of crew.txt) are marked `@Before6`. `OldPackage` is
+apart from the rest: a ship traded from a station older than 5.75 (her voyage log as prose); it goes with the protocol, not with
+old fleets.
+
+**What it costs.** About 1,000 lines that a 6.0 fleet never runs, and a harness that keeps testing them (MigT, LogConvT, HoldT,
+SmallT, RegT, ExpT's old files). Other fleets are converted only when they are opened, so a few readers still look at another
+fleet in an older shape (its hold, its station log, its ships' blueprints, a ship sent to it); converting every fleet at start-up
+would let those go sooner, but each fleet's conversion writes its own log, which today always goes to the fleet in use.
+
+**What a change would look like.** Delete the package; the compiler then points at each call into it and each `@Before6`, every
+one a line or a method to delete. Then delete the tests of old fleets. A fleet from before 6.0 would then have to be opened once
+by a 6.x station first: the station could say so plainly when it finds `manifest.xml` or `ships/`. When is heromedel's call
+(5.97: "at some point in a future build").
+

@@ -39,7 +39,7 @@ public final class VoyageLog {
 	private static final Logger log = LoggerFactory.getLogger(VoyageLog.class);
 	private VoyageLog() { }
 
-	static final String LOG = "voyage.log", LAST = "voyage.txt";
+	public static final String LOG = "voyage.log", LAST = "voyage.txt";
 	/** The sectors a ship (by id) visited in all her journeys, at least the sector she's in in this save. */
 	public static int visited(Vault v, String id, SavedGameState gs) {
 		return Math.max(Store.num(last(v, id), "visited", 0), gs == null ? 0 : gs.getSectorNumber() + 1);
@@ -362,7 +362,7 @@ public final class VoyageLog {
 		}
 	}
 	/** The fields every event in her log carries: who she is. */
-	static Event shipFields(Ship s) {
+	public static Event shipFields(Ship s) {
 		return Event.of("SHIP").put("ship", s.name + "." + s.id).put("ship_name", s.name).put("ship_id", s.id).put("ship_state", s.state == null ? null : s.state.name().toLowerCase());
 	}
 	private static void append(Vault v, Ship s, List<Event> events) {

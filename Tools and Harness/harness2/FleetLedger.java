@@ -42,7 +42,7 @@ public class FleetLedger {
   }
   if (!boarded && v.continueFile().isFile()) l.problems.add("continue.sav is there, but no ship is boarded");
   File hf = new File(v.cargoHoldDir(), Vault.HOLD_FILE); // cargohold.xml (5.84), else the pretend ship's save from before
-  if (!HoldXml.isHold(hf)) hf = new File(v.cargoHoldDir(), Vault.HOLD_SAV);
+  if (!HoldXml.isHold(hf)) hf = new File(v.cargoHoldDir(), "cargohold.sav");
   if (hf.isFile()) l.state(HoldXml.read(hf), "hold", true); else l.problems.add("the Cargo Hold has no file");
   l.at = "hold";
   for (String line : lines(v.systemsFile())) { String[] w = line.trim().split("\\s+"); if (w.length >= 2 && !line.startsWith("#")) l.add("stored", w[0] + " L" + w[1]); }

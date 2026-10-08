@@ -37,7 +37,7 @@ public final class Reputation {
 	private static final Logger log = LoggerFactory.getLogger(Reputation.class);
 	private Reputation() { }
 
-	static final String FILE = "reputation", LOG = "reputation.log"; // reputation.xml (5.86)
+	static final String FILE = "reputation"; // reputation.xml (5.86)
 
 	// ---- the scoring (docs/ROADMAP.md) ----
 	public static final int SECTOR = 6, DEFEATED = 4, REBEL_DEFEATED = 6, FLAGSHIP = 100;
