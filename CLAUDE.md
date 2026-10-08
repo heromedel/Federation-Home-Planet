@@ -50,6 +50,9 @@ it does and CREDITS.md for where the code came from.
   `docs/OVERHAUL-6.md` is the 6.0 plan (storage, logs and code rebuilt) with every session's notes: read it before planning
   anything that touches storage or logs, and add thoughts only under your own heading at its end, as it says.
   `docs/BUGS.md` lists bugs found and not yet fixed (heromedel, 6.01): add one there when a fix is put off.
+- **The feedback sheet (Prime only):** Cloud-C-Primary-Edit reads the Send Feedback responses after every push
+  (https://docs.google.com/spreadsheets/d/1QxIH-JnaGoCNnucmq1O6qU5eCSABymt-A5NHXfQgRFY), brings `docs/FEEDBACK.md` up to date
+  (what each response asked and what became of it) and tells heromedel what's new. Other sessions leave it to Prime.
   `docs/EVENTS.md` lists every event kind the station logs and its fields: anything that writes a log adds its kind there
   first (the log rule below), and EventT checks the list.
 - **Handoffs:** before fixing a bug, ask heromedel "Would you like me to work on this or prepare a handoff?". A handoff
