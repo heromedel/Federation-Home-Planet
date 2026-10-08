@@ -1,10 +1,7 @@
 package homeplanet.parser;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -40,7 +37,7 @@ import homeplanet.vault.Vault;
 /**
  * Transmissions from The Federation Home Planet (Immersive Notifications): the messages, kept per fleet in
  * transmissions.xml, and the rewards some carry, claimed into the Cargo Hold. The texts and rewards are in the
- * resource transmissions.txt. {@link #check} sends what's due; each message is sent once.
+ * lore/letters.xml (the jar's, or the player's copy, letter by letter). {@link #check} sends what's due; each message is sent once.
  */
 public final class Transmissions {
 	private static final Logger log = LoggerFactory.getLogger(Transmissions.class);
@@ -76,47 +73,94 @@ public final class Transmissions {
 	// ---- the texts ----
 
 	private static Map<String, Template> templates;
+	private static long templatesStamp = -2;
+	/**
+	 * The letters in force (6.0 step 9a, 5.991: lore/letters.xml, transmissions.txt before): the station's own from the
+	 * jar, each replaced by the player's copy of it in lore/ when that copy keeps the rules and uses only the {tokens}
+	 * the station's own letter does. Read again when the copy changes.
+	 */
 	static synchronized Map<String, Template> templates() {
-		if (templates != null) return templates;
-		templates = new LinkedHashMap<String, Template>();
-		InputStream in = Transmissions.class.getResourceAsStream("/homeplanet/resource/transmissions.txt");
-		if (in == null) { log.error("transmissions.txt is missing from the program"); return templates; }
-		try {
-			BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-			Template t = null;
-			boolean inBody = false;
-			String line;
-			while ((line = r.readLine()) != null) {
-				if (line.startsWith("#") && t == null) continue;
-				if (line.startsWith("== ")) {
-					t = new Template();
-					t.key = line.substring(3).trim();
-					templates.put(t.key, t);
-					inBody = false;
-					continue;
-				}
-				if (t == null) continue;
-				if (!inBody) {
-					if (line.trim().isEmpty()) { inBody = true; continue; }
-					int colon = line.indexOf(':');
-					if (colon < 0) continue;
-					String k = line.substring(0, colon).trim(), v = line.substring(colon + 1).trim();
-					if (k.equals("from")) t.from = v;
-					else if (k.equals("subject")) t.subject = v;
-					else if (k.equals("reward")) t.reward = v;
-					else if (k.equals("replies")) t.replies = v;
-					else if (k.equals("then")) t.then = v;
-					else if (k.equals("cost")) t.cost = v;
-					else if (k.equals("action")) t.action = v;
-					continue;
-				}
-				t.body.append(line).append('\n');
-			}
-			r.close();
-		} catch (IOException e) {
-			log.error("Could not read transmissions.txt", e);
+		long stamp = homeplanet.core.Lore.stamp(homeplanet.core.Lore.LETTERS);
+		if (templates != null && stamp == templatesStamp) return templates;
+		Map<String, Template> out = new LinkedHashMap<String, Template>();
+		byte[] jar = homeplanet.core.Lore.jarBytes(homeplanet.core.Lore.LETTERS);
+		if (jar == null) log.error("The letters (lore/{}) are missing from the program", homeplanet.core.Lore.LETTERS);
+		else {
+			try { for (Template t : letters(jar)) out.put(t.key, t); }
+			catch (IOException e) { log.error("The station's own letters could not be read: {}", e.getMessage()); }
 		}
+		File copy = homeplanet.core.Lore.copy(homeplanet.core.Lore.LETTERS);
+		if (copy != null) {
+			String where = "lore/" + homeplanet.core.Lore.LETTERS;
+			try {
+				java.util.Set<String> anyToken = new java.util.HashSet<String>();
+				for (Template t : out.values()) anyToken.addAll(tokens(t));
+				for (Template t : letters(SafeFiles.read(copy))) {
+					Template own = out.get(t.key);
+					String why = homeplanet.core.Lore.rule(t.from + "\n" + t.subject + "\n" + t.body);
+					if (why == null) for (String k : tokens(t)) if (!(own != null ? tokens(own) : anyToken).contains(k)) { why = "{" + k + "} isn't one of this letter's"; break; }
+					if (why == null) out.put(t.key, t);
+					else homeplanet.core.Lore.problem(where + ", letter " + t.key + ": " + why + "; the station's own letter is sent");
+				}
+			} catch (IOException e) {
+				homeplanet.core.Lore.problem(where + " could not be read (" + e.getMessage() + "); the station's own letters are sent");
+			}
+		}
+		templates = out;
+		templatesStamp = stamp;
 		return templates;
+	}
+	/** Every letter in force as "key: from / subject / text", for the rules test (LoreT). */
+	public static List<String> allLetters() {
+		List<String> out = new ArrayList<String>();
+		for (Template t : templates().values()) out.add(t.key + ": " + t.from + " / " + t.subject + " / " + t.body.toString().trim());
+		return out;
+	}
+	/** The start-up check: the letters read once, so a broken copy is named in the debug log from the start. Never throws. */
+	public static void loreCheck() {
+		try { templates(); } catch (RuntimeException e) { log.warn("The letters could not be checked: {}", e.toString()); }
+	}
+	/** The letters of a letters.xml, in order: each one's key, its header attributes, and its text as written. */
+	static List<Template> letters(byte[] bytes) throws IOException {
+		Element root;
+		try {
+			DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
+			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			f.setExpandEntityReferences(false);
+			javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
+			b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
+				@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
+			});
+			root = b.parse(new java.io.ByteArrayInputStream(bytes)).getDocumentElement();
+		} catch (Exception e) {
+			throw new IOException("broken XML: " + e.getMessage(), e);
+		}
+		List<Template> out = new ArrayList<Template>();
+		NodeList nl = root.getElementsByTagName("letter");
+		for (int i = 0; i < nl.getLength(); i++) {
+			Element x = (Element) nl.item(i);
+			Template t = new Template();
+			t.key = x.getAttribute("key").trim();
+			if (t.key.isEmpty()) continue;
+			t.from = x.getAttribute("from").trim();
+			t.subject = x.getAttribute("subject").trim();
+			t.reward = x.getAttribute("reward").trim();
+			t.replies = x.getAttribute("replies").trim();
+			t.then = x.getAttribute("then").trim();
+			t.cost = x.getAttribute("cost").trim();
+			t.action = x.getAttribute("action").trim();
+			t.body.append(x.getTextContent().replace("\r\n", "\n").trim()).append('\n');
+			out.add(t);
+		}
+		return out;
+	}
+	private static final java.util.regex.Pattern TOKEN = java.util.regex.Pattern.compile("\\{([A-Za-z0-9_.]+)\\}");
+	/** The {tokens} a letter uses, in its subject and text. */
+	static java.util.Set<String> tokens(Template t) {
+		java.util.Set<String> out = new java.util.HashSet<String>();
+		java.util.regex.Matcher m = TOKEN.matcher(t.from + " " + t.subject + " " + t.body);
+		while (m.find()) out.add(m.group(1));
+		return out;
 	}
 
 	// ---- the inbox (per fleet) ----
@@ -517,7 +561,8 @@ public final class Transmissions {
 			f.put("rank", rankName(u.problem() == null ? u : null));
 		}
 		String[] out = {t.from, t.subject, t.body.toString().trim()};
-		if (f.containsKey("ship")) for (int i = 0; i < out.length; i++) out[i] = ShipNames.fill(out[i], "ship", f.get("ship")); // "reached the {ship}": never "the The Adjudicator"
+		for (String k : new String[] {"ship", "name"}) // "reached the {ship}", "word that the {name} returned": never "the The Adjudicator"
+			if (f.containsKey(k)) for (int i = 0; i < out.length; i++) out[i] = ShipNames.fill(out[i], k, f.get(k));
 		for (int i = 0; i < out.length; i++) for (Map.Entry<String, String> e : f.entrySet()) out[i] = out[i].replace("{" + e.getKey() + "}", e.getValue());
 		return out;
 	}

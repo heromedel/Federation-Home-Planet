@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "5.99";
+	public static final String APP_VERSION = "5.991";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -249,6 +249,8 @@ public class HomePlanet {
 		// the words folder beside the program, and its check: a copy's broken entry is named in the debug log, and the station's own words stand (5.89)
 		Lore.prepare();
 		Lore.check();
+		homeplanet.parser.Transmissions.loreCheck(); // the letters and the expedition words, read by their own readers (5.991)
+		homeplanet.parser.Assignments.loreCheck();
 
 		// The vault (files only so far; the ships are read once the game data is in)
 		try {

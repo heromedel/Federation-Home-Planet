@@ -109,7 +109,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `EXPEDITION_FILES` | `what` (`moved`), `files` (how many), `file.n` (each: its old name `>` its folder and new name) | "The expeditions office, the infirmary and the captives' records were filed in rooms of their own." |
 | `SMALL_FILES` | `what` (`moved`), `files` (how many), `file.n` (each: its old name `>` its new one; the clock's five old files each `>clock.xml`) | "The station's records were tidied into one file for each concern." |
 | `SHIP_FILES` | `what` (`folded`), `ships` (how many), `files` (how many), `ship.n` (each: her folder `>` the sections her side files became, `+` between) (5.98) | "Each ship's notes were filed with her record." |
-| `LAYOUT` | `what` (`converted`), `to` (`6.0`), `ships`, `remembered` (ships that had left, now in the memorial), `backup` (the zip beside the fleet's folder) | "The station's records were rearranged: 4 ships and 1 remembered into folders of their own (a copy of the fleet as it was is kept beside it)" |
+| `LAYOUT` | `what` (`converted`), `to` (`folders`; `6.0` before 5.991), `ships`, `remembered` (ships that had left, now in the memorial), `backup` (the zip beside the fleet's folder) | "The station's records were rearranged: 4 ships and 1 remembered into folders of their own (a copy of the fleet as it was is kept beside it)" |
 | `FINAL_BATTLE` | ship, `copy`, `sector`, `victories_then`, `scores_then` | "Kestrel: the Rebel Flagship is on her way to the last battle. ..." |
 | `VICTORY` | ship, `what` (`rescued`), or from FinalVictory: `victories_then`, `victories_now`, `top_scores`, `after` (the choice), `value` | "Kestrel won the last battle (...)" |
 | `MUSEUM` | ship, `scrap`, `to` | "Kestrel is honoured in the Federation Museum" |
@@ -138,6 +138,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `REMODEL` | `ship_name`, `to_class`, `detail.n` | "Kestrel -> PLAYER_SHIP_FED" |
 | `SCRAP` | `ship_name`, `stripped`, `to`, `detail.n` (what went into storage) | "Kestrel stripped into storage, hull broken up" |
 | `SELL` | from the Space Dock: `ship_name`, `how` (`auction`, `trade_in`), `price`, `to`; from the Cargo Bay: `what` (`cargo_bay`), `count`, `scrap`, `detail.n` | "Kestrel sold at auction for 80 scrap; ..." |
+| `JUNK` | `what` (`cargo_bay`), `count`, `detail.n` (what was thrown out) | "2 items" |
 | `BUY` | `what` (`cargo_bay`: `purchases`, `detail.n`; `derelict`: ship, `ship_class`, `price`, `oddity`; `salvage`: `item`, `title`, `price`; `part`: `system`, `title`, `level`, `broken`, `clearance`, `price`), `from`, `to` | "2 purchases" |
 | `TRADE` | `what` (`cargo_bay`), `ship_name`, `ship_id`, `partner_name`, `partner_id`, `detail.n` | "Kestrel <-> Spacedock Storage" |
 | `SYSTEMS` | `ship_name`, `ship_id`, `detail.n` (the changes) | "Kestrel" |

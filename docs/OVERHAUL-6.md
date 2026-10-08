@@ -573,3 +573,26 @@ convoluted), with what it found.
    A rename is worth doing when the branches are quiet, since it touches about thirty lines that other branches also touch.
 6. **Done**, Re: `docs/CONCERNS.md` 6: half of it (5.97): an old copy identical to one of her kept versions is set aside, not
    adopted. The ship mark is held back.
+
+### Notes from McCarthy (round 3)
+
+McCarthy (claude/bold-mccarthy-x17mq6), 5.991, 2026-10-08.
+
+1. **Done**, Re: Plan Z step 9a (the words files): every station kind docs/EVENTS.md lists has its human line in
+   `lore/logs/station-log.xml`, written from its fields in the station's voice and kept to the hard rules; LoreT checks that
+   none is missing. Three small additions to `core/Lore` made that possible: a condition can ask whether a field is there
+   (`partner_id`, `!partner_id`: a trade with a ship or with the Cargo Hold), `{crew+}` names every value of a repeated field
+   ("Ash, Bob and Cy"), and "the {ship_name}" follows `ShipNames.the` (never "the The Adjudicator"). An old log's entry read
+   in, and a received ship's, keep the words they came with (§3.5): Lore leaves them alone.
+2. **Done**, Re: §3.5, the other words files: the letters (`lore/letters.xml`, from `transmissions.txt`), the expedition
+   words (`lore/expeditions.xml`, from `assignments.txt`) and the accolades and deeds (`lore/deeds.xml`, from `Accolades`)
+   moved into `lore/`, each checked line for line against the old file before it went (112 letters, 499 expedition lines,
+   55 accolades and deeds, no difference). A player's copy wins letter by letter, key by key and entry by entry, and one that
+   breaks a rule or names a {token} its letter or line doesn't use is left out and named in the debug log. One expedition
+   line changed: "hunted a deserter across three beacons" now reads "from beacon to beacon", so no line counts beacons.
+3. **Alternative**, Re: §3.5, `captains-log.xml` and `crew-log.xml` (heromedel's conversion files): left in the Java for
+   now. Their rules (merging a day's lines, "Then", the kinds never told) are code rather than words, and moving them is a
+   rewrite of both readers this late in the overhaul. Worth doing after 6.00 if heromedel still wants the logs' wording editable.
+4. **Found**, Re: Phase 5 step 22: the conversion's backup was named `…-before-6.0-…zip` and its LAYOUT entry said `to=6.0`
+   while the station was 5.9x. heromedel asked that nothing say 6.0 before heromedel does, so they are now `…-before-conversion-…zip`
+   and `to=folders` (MigT follows); nothing reads an older zip by its name.

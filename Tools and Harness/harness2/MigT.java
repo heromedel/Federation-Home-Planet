@@ -41,15 +41,15 @@ public class MigT { public static void main(String[] a) throws Exception {
  String why = null;
  try { Vault.open(saves); } catch (IOException x) { why = x.getMessage(); }
  block.delete(); shipyard.delete();
- Setup.chk("C: a conversion that fails part way says so, naming the zip (" + why + ")", why != null && why.contains("put back as it was") && why.contains("-before-6.0-"));
+ Setup.chk("C: a conversion that fails part way says so, naming the zip (" + why + ")", why != null && why.contains("put back as it was") && why.contains("-before-conversion-"));
  String nowLook = sorted(layoutLook(root).replace("logs/\n", "").replace("logs/", "")); // the logs moved into logs/ before the zip was taken (moveLogs, 5.71): the same files
  if (!nowLook.equals(oldLook)) { List<String> o = Arrays.asList(oldLook.split("\n")), n = Arrays.asList(nowLook.split("\n")); for (String x : o) if (!n.contains(x)) System.out.println("  gone: " + x); for (String x : n) if (!o.contains(x)) System.out.println("  new:  " + x); }
  Setup.chk("C: and the fleet is put back from it, every file as it was", nowLook.equals(oldLook));
- for (File z : root.getParentFile().listFiles()) if (z.getName().startsWith(root.getName() + "-before-6.0-")) z.delete(); // the failed try's zip
+ for (File z : root.getParentFile().listFiles()) if (z.getName().startsWith(root.getName() + "-before-conversion-")) z.delete(); // the failed try's zip
  Thread.sleep(1100); // the next zip's name is its second's
  // opened again: converted
  Vault v2 = Vault.open(saves); v2.takeStock();
- File[] zips = root.getParentFile().listFiles(new FilenameFilter() { public boolean accept(File d, String n) { return n.startsWith(root.getName() + "-before-6.0-") && n.endsWith(".zip"); } });
+ File[] zips = root.getParentFile().listFiles(new FilenameFilter() { public boolean accept(File d, String n) { return n.startsWith(root.getName() + "-before-conversion-") && n.endsWith(".zip"); } });
  Setup.chk("C: converted on opening: the old files gone, a zip of the fleet as it was beside it", !new File(root, "manifest.xml").exists() && !new File(root, "ships").exists() && !new File(root, "history").exists()
    && zips != null && zips.length == 1 && zips[0].length() > 1000);
  Map<String, String> after = picture(v2);

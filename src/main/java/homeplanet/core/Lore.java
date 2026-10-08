@@ -26,6 +26,9 @@ import org.w3c.dom.Node;
  * program wins, entry by entry. An entry of the copy that breaks a hard rule or a voice rule is left out, and the jar's
  * words stand; one that names a field the event hasn't got is passed over when it's written, so a raw {token} never
  * reaches the player. The station always starts: what was left out is named in the debug log, by file, line and rule.
+ * Since 5.991 the letters (letters.xml), the expedition words (expeditions.xml) and the accolades and deeds (deeds.xml)
+ * live here too; the first two have shapes of their own, read by their readers (parser/Transmissions, parser/Assignments)
+ * with this class's rules, jar, copy and problems.
  *
  * <pre>
  *   &lt;lore&gt;
@@ -45,6 +48,12 @@ public final class Lore {
 
 	/** The station log's human lines: every event's second line. */
 	public static final String STATION_LOG = "logs/station-log.xml";
+	/** The Federation's letters (parser/Transmissions reads them, letter by letter). */
+	public static final String LETTERS = "letters.xml";
+	/** The expedition reports' words (parser/Assignments reads them, key by key). */
+	public static final String EXPEDITIONS = "expeditions.xml";
+	/** The rank letters' accolades and the achievements told as deeds (parser/Accolades reads them, as entries). */
+	public static final String DEEDS = "deeds.xml";
 	static final String JAR = "/homeplanet/resource/lore/";
 
 	/** The player's lore folder: beside the program (a test may point it elsewhere). */
@@ -61,8 +70,13 @@ public final class Lore {
 		boolean matches(Event e) {
 			if (when == null || when.isEmpty()) return true;
 			for (String c : when.split("&")) {
+				c = c.trim();
 				int eq = c.indexOf('=');
-				if (eq < 0) return false;
+				if (eq < 0) { // "field": the event has it; "!field": it hasn't (a trade with the Cargo Hold has no partner_id, say)
+					boolean not = c.startsWith("!");
+					if ((e.get(not ? c.substring(1).trim() : c) != null) == not) return false;
+					continue;
+				}
 				String v = e.get(c.substring(0, eq).trim());
 				if (v == null || !v.equals(c.substring(eq + 1).trim())) return false;
 			}
@@ -94,27 +108,50 @@ public final class Lore {
 			}
 		}
 		out.addAll(jar(file));
-		synchronized (PROBLEMS) {
-			for (String p : problems) { if (!PROBLEMS.contains(p)) PROBLEMS.add(p); log.warn("Lore: {}", p); }
-		}
+		for (String p : problems) problem(p);
 		CACHE.put(file, Collections.unmodifiableList(out));
 		STAMPS.put(file, stamp);
 		return CACHE.get(file);
 	}
 	private static List<Entry> jar(String file) {
+		byte[] b = jarBytes(file);
+		if (b == null) return new ArrayList<Entry>();
+		try {
+			return parse(b, "jar " + file);
+		} catch (IOException e) {
+			log.error("The station's own words in {} could not be read: {}", file, e.toString());
+			return new ArrayList<Entry>();
+		}
+	}
+	/** A lore file as the jar carries it, or null (the readers of letters and expedition words parse their own). */
+	public static byte[] jarBytes(String file) {
 		InputStream in = Lore.class.getResourceAsStream(JAR + file);
-		if (in == null) return new ArrayList<Entry>();
+		if (in == null) return null;
 		try {
 			java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
 			byte[] buf = new byte[8192];
 			for (int n; (n = in.read(buf)) > 0; ) b.write(buf, 0, n);
-			return parse(b.toByteArray(), "jar " + file);
+			return b.toByteArray();
 		} catch (IOException e) {
 			log.error("The station's own words in {} could not be read: {}", file, e.toString());
-			return new ArrayList<Entry>();
+			return null;
 		} finally {
 			try { in.close(); } catch (IOException e) { }
 		}
+	}
+	/** The player's copy of a lore file, or null if there is none. */
+	public static File copy(String file) {
+		File f = new File(dir(), file);
+		return f.isFile() ? f : null;
+	}
+	/** A stamp that changes when the player's copy does (-1 with none): a reader reads its file again when it moves. */
+	public static long stamp(String file) {
+		File f = copy(file);
+		return f == null ? -1 : f.lastModified() * 31 + f.length();
+	}
+	/** Notes a problem with a player's copy, for the debug log and {@link #problems()}: once each. */
+	public static void problem(String p) {
+		synchronized (PROBLEMS) { if (!PROBLEMS.contains(p)) { PROBLEMS.add(p); log.warn("Lore: {}", p); } }
 	}
 
 	/** The words for this event from a lore file, its tokens filled; null when no entry fits (the caller's own words stand). */
@@ -126,41 +163,66 @@ public final class Lore {
 		}
 		return null;
 	}
-	/** An event's human line: the station log's lore entry for it, or the words its writer gave. */
+	/**
+	 * An event's human line: the station log's lore entry for it, or the words its writer gave. An old log's entry read in
+	 * keeps its old line exactly (6.0 §3.5), and a received ship's entry the words her own station gave it.
+	 */
 	public static String human(Event e) {
+		if ("true".equals(e.get("converted")) || e.get("received_from") != null) return e.human();
 		String w = words(STATION_LOG, e);
 		return w != null ? w : e.human();
 	}
 
-	private static final Pattern TOKEN = Pattern.compile("\\{([a-z0-9_.]+)\\}");
-	/** The words with every {field} filled from the event; null if one names a field the event hasn't got. */
+	private static final Pattern TOKEN = Pattern.compile("\\{([a-z0-9_.]+)(\\+?)\\}");
+	/**
+	 * The words with every {field} filled from the event; null if one names a field the event hasn't got. {field+} is
+	 * every value of a repeated field ("Ash, Bob and Cy": an expedition's crew); "the {field}" is a ship's name by the
+	 * station's one rule, never "the The Adjudicator" (ShipNames.the).
+	 */
 	static String fill(String words, Event e) {
 		Matcher m = TOKEN.matcher(words);
 		StringBuffer sb = new StringBuffer();
 		while (m.find()) {
-			String v = e.get(m.group(1));
+			String v = m.group(2).isEmpty() ? e.get(m.group(1)) : list(e.all(m.group(1)));
 			if (v == null) return null;
 			m.appendReplacement(sb, Matcher.quoteReplacement(v));
+			int end = sb.length() - v.length(); // where the value begins
+			if (end >= 4 && sb.substring(end - 4, end).equalsIgnoreCase("the ") && (end == 4 || !Character.isLetter(sb.charAt(end - 5)))) { // "the {ship_name}": the station's one rule
+				boolean cap = sb.charAt(end - 4) == 'T';
+				sb.setLength(end - 4);
+				sb.append(cap ? homeplanet.parser.ShipNames.theStart(v) : homeplanet.parser.ShipNames.the(v));
+			}
 		}
 		m.appendTail(sb);
 		String s = sb.toString();
 		return s.contains("{") || s.contains("}") ? null : s;
 	}
+	/** Every value, as a reader says a list: "Ash", "Ash and Bob", "Ash, Bob and Cy"; null for none. */
+	static String list(List<String> v) {
+		if (v.isEmpty()) return null;
+		if (v.size() == 1) return v.get(0);
+		return String.join(", ", v.subList(0, v.size() - 1)) + " and " + v.get(v.size() - 1);
+	}
 
 	/**
 	 * Why an entry can't be used, or null: the hard rules (the Rebel Flagship never destroyed; time never told in
 	 * beacons) and the voice rules a word can be checked for (the rebellion and the rebels in lower case, never "Home
-	 * World" or "FHP"). Checked on the player's copy; the jar's own words are held to it by the harness.
+	 * World" or "FHP", The Home Planet Station and The Federation Home Planet with a capital T). Checked on the player's copy; the jar's own words are held to it by the harness.
 	 */
 	public static String broken(Entry e) {
-		String w = e.words, low = w.toLowerCase();
+		String why = rule(e.words);
+		return why != null ? why : fillCheck(e.words);
+	}
+	/** The hard and voice rules alone, for any words (a letter, an expedition line), or null when they keep them. */
+	public static String rule(String w) {
+		String low = w.toLowerCase();
 		if (w.trim().isEmpty()) return "no words";
 		if (low.contains("flagship") && low.matches("(?s).*\\b(destroy(ed|s)?|killed|blown up|blew up|wrecked|defeated)\\b.*")) return "hard rule 1: the Rebel Flagship is never destroyed (the war goes on)";
 		if (low.matches("(?s).*(\\b\\d+|\\b(one|two|three|few|several|many))\\s+beacons?\\b.*") || low.matches("(?s).*\\bbeacons?\\s+(later|ago|passed|from now|since)\\b.*")) return "hard rule 2: time is never told in beacons";
 		if (low.matches("(?s).*\\{[a-z0-9_.]*beacon[a-z0-9_.]*\\}.*")) return "hard rule 2: time is never told in beacons (a beacon count in a token)";
 		if (w.matches("(?s).*\\bRebellion\\b.*") || w.replace("Rebel Flagship", "").matches("(?s).*\\bRebels?\\b.*")) return "voice: the rebellion and the rebels are never capitalised (only the Rebel Flagship)";
 		if (w.contains("Home World") || w.matches("(?s).*\\bFHP\\b.*")) return "voice: never \"Home World\" or \"FHP\"";
-		if (fillCheck(w) != null) return fillCheck(w);
+		if (w.matches("(?s).*\\bthe (Home Planet Station|Federation Home Planet)\\b.*")) return "voice: The Home Planet Station and The Federation Home Planet take a capital T, even mid-sentence";
 		return null;
 	}
 	private static String fillCheck(String w) {
@@ -172,13 +234,15 @@ public final class Lore {
 	public static List<String> problems() { synchronized (PROBLEMS) { return new ArrayList<String>(PROBLEMS); } }
 	/** The start-up check: every lore file read once, so a broken copy is named in the debug log from the start. Never throws. */
 	public static List<String> check() {
-		for (String f : FILES) {
+		for (String f : ENTRY_FILES) {
 			try { entries(f); } catch (RuntimeException e) { log.warn("Lore: {} could not be checked: {}", f, e.toString()); }
 		}
 		return problems();
 	}
 	/** The lore files the jar carries. */
-	public static final String[] FILES = {STATION_LOG};
+	public static final String[] FILES = {STATION_LOG, LETTERS, EXPEDITIONS, DEEDS};
+	/** Those made of entries (the letters and the expedition words have shapes of their own, checked by their readers). */
+	public static final String[] ENTRY_FILES = {STATION_LOG, DEEDS};
 
 	/** Parses a lore file, each entry with its line number. */
 	static List<Entry> parse(byte[] bytes, String source) throws IOException {
@@ -214,7 +278,7 @@ public final class Lore {
 
 	/**
 	 * Makes lore/ beside the program if it isn't there: a readme saying how a copy works, and the jar's files under
-	 * lore/defaults/ (rewritten each start, never read) to copy entries from. Never throws.
+	 * lore/defaults/ (both rewritten each start when they've changed; defaults/ is never read) to copy entries from. Never throws.
 	 */
 	public static void prepare() {
 		File d = dir();
@@ -231,20 +295,26 @@ public final class Lore {
 				if (!to.getParentFile().isDirectory() && !to.getParentFile().mkdirs()) throw new IOException("Could not create " + to.getParentFile());
 				SafeFiles.write(to, b.toByteArray());
 			}
-			File readme = new File(d, "readme.txt");
-			if (!readme.isFile()) SafeFiles.writeText(readme, README, false);
+			File readme = new File(d, "readme.txt"); // the station's own, kept up to date like defaults/
+			if (!readme.isFile() || !README.equals(new String(SafeFiles.read(readme), java.nio.charset.StandardCharsets.UTF_8))) SafeFiles.writeText(readme, README, false);
 		} catch (IOException e) {
 			log.warn("Could not prepare the lore folder {}: {}", d, e.toString());
 		}
 	}
-	static final String README = "The words The Home Planet Station writes from what happens: its log's lines, and in time its letters and deeds.\r\n"
+	static final String README = "The words The Home Planet Station writes: its log's lines, The Federation Home Planet's letters, the expedition\r\n"
+			+ "reports and the rank letters' accolades.\r\n"
 			+ "\r\n"
 			+ "defaults/ holds the station's own words, rewritten each time it starts: read them, never edit them there.\r\n"
-			+ "To change an entry, copy it into a file of the same name here (logs/station-log.xml, say) and edit the copy.\r\n"
-			+ "The copy wins entry by entry; anything it leaves out keeps the station's own words.\r\n"
-			+ "{field} fills in a value from the event (its fields are listed in the station's own log, logs/events.log).\r\n"
-			+ "An entry that breaks a rule (the Rebel Flagship is never destroyed, time is never told in beacons, the rebels\r\n"
-			+ "are never capitalised) is left out, and the debug log says which file, line and rule.\r\n";
+			+ "To change something, copy it into a file of the same name here and edit the copy:\r\n"
+			+ "  logs/station-log.xml  the log's lines, entry by entry;\r\n"
+			+ "  letters.xml           the letters, letter by letter (copy a <letter> whole);\r\n"
+			+ "  expeditions.xml       the expedition reports' words: a copy's lines take the place of the station's own\r\n"
+			+ "                        lines with the same marks;\r\n"
+			+ "  deeds.xml             the accolades and deeds, entry by entry.\r\n"
+			+ "Anything the copy leaves out keeps the station's own words.\r\n"
+			+ "{field} fills in a value; each file's own notes say which ones it has.\r\n"
+			+ "Something that breaks a rule (the Rebel Flagship is never destroyed, the rebels are never capitalised, a {field}\r\n"
+			+ "that isn't there) is left out, and the debug log says which file, which entry and which rule.\r\n";
 	/** A builder that keeps quiet: its errors come back as the exception, not printed to the console. */
 	private static javax.xml.parsers.DocumentBuilder quiet(javax.xml.parsers.DocumentBuilder b) {
 		b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {

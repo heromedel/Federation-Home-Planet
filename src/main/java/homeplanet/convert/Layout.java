@@ -41,7 +41,7 @@ public final class Layout {
 	public static File backup(File root) {
 		String stamp;
 		synchronized (STAMP) { stamp = STAMP.format(new Date()); }
-		return new File(root.getParentFile(), root.getName() + "-before-6.0-" + stamp + ".zip");
+		return new File(root.getParentFile(), root.getName() + "-before-conversion-" + stamp + ".zip");
 	}
 	private static final SimpleDateFormat STAMP = new SimpleDateFormat("yyyyMMdd-HHmmss");
 
@@ -50,7 +50,7 @@ public final class Layout {
 		File root = v.root;
 		File zip = backup(root);
 		SafeFiles.zipFolder(root, zip, null);
-		log.info("Converting {} to the 6.0 layout; a copy of it as it was is in {}", root, zip);
+		log.info("Converting {} to the folder layout; a copy of it as it was is in {}", root, zip);
 		Map<String, String[]> manifest = readManifest(OldFleet.manifest(root)); // id -> {name, state, dlc, hash, marks, stranger, fresh}
 		int ships = 0, remembered = 0;
 		try {
@@ -105,7 +105,7 @@ public final class Layout {
 		}
 		String words = ships + (ships == 1 ? " ship" : " ships") + " and " + remembered + " remembered" + (remembered == 1 ? "" : "") + " into folders of their own";
 		HistoryLog.entry("LAYOUT", "The station's records were rearranged: " + words + " (a copy of the fleet as it was is kept beside it)", null,
-				Event.of("LAYOUT").put("what", "converted").put("to", "6.0").put("ships", ships).put("remembered", remembered).put("backup", zip.getName())
+				Event.of("LAYOUT").put("what", "converted").put("to", "folders").put("ships", ships).put("remembered", remembered).put("backup", zip.getName())
 						.human("The station's records were rearranged, every ship into a folder of her own."));
 	}
 	private static File[] safeList(File d) { File[] fs = d.listFiles(); return fs == null ? new File[0] : fs; }

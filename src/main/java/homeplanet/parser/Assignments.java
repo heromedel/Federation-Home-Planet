@@ -2,11 +2,9 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +37,7 @@ import homeplanet.vault.Vault;
  * race's fit for the sector and the job, the job's skill and any hazard. A natural 20 may find an item; a Hijack,
  * Salvage or Rescue that went well may bring a prize. When they're back, a report says what happened in plain words,
  * never a roll or a percentage: the player learns who to send where from the reports alone.
- * Kept in the fleet's assignments.txt (the board, who's away); the words in resource/assignments.txt.
+ * Kept in the fleet's expeditions/expeditions.xml (the board, who's away); the words in lore/expeditions.xml.
  */
 public final class Assignments {
 	private static final Logger log = LoggerFactory.getLogger(Assignments.class);
@@ -161,23 +159,91 @@ public final class Assignments {
 	// ---- the words ----
 
 	private static Map<String, List<String>> words;
+	private static long wordsStamp = -2;
+	/**
+	 * The words in force, by key ("band defend died", "event defend zoltan"), each key's lines in order (6.0 step 9a,
+	 * 5.991: lore/expeditions.xml, assignments.txt before): the station's own from the jar, a key's lines replaced by the
+	 * player's copy's lines for it, those that keep the rules and use only the {tokens} the station's own lines for that
+	 * key do. Read again when the copy changes.
+	 */
 	private static synchronized Map<String, List<String>> words() {
-		if (words != null) return words;
-		Map<String, List<String>> out = new HashMap<String, List<String>>();
-		InputStream in = Assignments.class.getResourceAsStream("/homeplanet/resource/assignments.txt");
-		if (in != null) {
-			try {
-				for (String line : new String(SafeFiles.readAll(in), StandardCharsets.UTF_8).split("\r?\n")) {
-					line = line.trim();
-					int bar = line.indexOf('|');
-					if (line.isEmpty() || line.startsWith("#") || bar < 0) continue;
-					String key = line.substring(0, bar).trim().replaceAll("\\s+", " "), text = line.substring(bar + 1).trim();
-					if (!out.containsKey(key)) out.put(key, new ArrayList<String>());
-					out.get(key).add(text);
-				}
-			} catch (IOException e) { log.warn("Could not read the expedition words: {}", e.toString()); }
+		long stamp = homeplanet.core.Lore.stamp(homeplanet.core.Lore.EXPEDITIONS);
+		if (words != null && stamp == wordsStamp) return words;
+		Map<String, List<String>> out = new LinkedHashMap<String, List<String>>();
+		byte[] jar = homeplanet.core.Lore.jarBytes(homeplanet.core.Lore.EXPEDITIONS);
+		if (jar == null) log.warn("The expedition words (lore/{}) are missing from the program", homeplanet.core.Lore.EXPEDITIONS);
+		else {
+			try { out = lines(jar); }
+			catch (IOException e) { log.warn("Could not read the expedition words: {}", e.toString()); }
 		}
+		java.io.File copy = homeplanet.core.Lore.copy(homeplanet.core.Lore.EXPEDITIONS);
+		if (copy != null) {
+			String where = "lore/" + homeplanet.core.Lore.EXPEDITIONS;
+			try {
+				Map<String, List<String>> theirs = lines(SafeFiles.read(copy));
+				for (Map.Entry<String, List<String>> k : theirs.entrySet()) {
+					java.util.Set<String> may = new java.util.HashSet<String>(java.util.Arrays.asList("he", "him", "his", "He", "His"));
+					if (out.get(k.getKey()) != null) for (String l : out.get(k.getKey())) may.addAll(tokens(l));
+					List<String> good = new ArrayList<String>();
+					for (String l : k.getValue()) {
+						String why = homeplanet.core.Lore.rule(l);
+						if (why == null) for (String t : tokens(l)) if (!may.contains(t)) { why = "{" + t + "} isn't one of these lines'"; break; }
+						if (why == null) good.add(l);
+						else homeplanet.core.Lore.problem(where + ", " + k.getKey() + ": " + why + " (\"" + l + "\"); left out");
+					}
+					if (!good.isEmpty()) out.put(k.getKey(), good);
+				}
+			} catch (IOException e) {
+				homeplanet.core.Lore.problem(where + " could not be read (" + e.getMessage() + "); the station's own words are used");
+			}
+		}
+		wordsStamp = stamp;
 		return words = out;
+	}
+	/** The start-up check: the words read once, so a broken copy is named in the debug log from the start. Never throws. */
+	public static void loreCheck() {
+		try { words(); } catch (RuntimeException e) { log.warn("The expedition words could not be checked: {}", e.toString()); }
+	}
+	/** The marks a line's key is made of, in the key's order (an offer's is its sector alone). */
+	private static final String[] MARKS = {"job", "hazard", "band", "cause", "prize", "race", "captors", "sector"};
+	/** The lines of an expeditions.xml by key, in order: each line's key made from its marks. */
+	static Map<String, List<String>> lines(byte[] bytes) throws IOException {
+		org.w3c.dom.Element root;
+		try {
+			javax.xml.parsers.DocumentBuilderFactory f = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			f.setExpandEntityReferences(false);
+			javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
+			b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
+				@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
+			});
+			root = b.parse(new java.io.ByteArrayInputStream(bytes)).getDocumentElement();
+		} catch (Exception e) {
+			throw new IOException("broken XML: " + e.getMessage(), e);
+		}
+		Map<String, List<String>> out = new LinkedHashMap<String, List<String>>();
+		org.w3c.dom.NodeList nl = root.getElementsByTagName("line");
+		for (int i = 0; i < nl.getLength(); i++) {
+			org.w3c.dom.Element x = (org.w3c.dom.Element) nl.item(i);
+			String kind = x.getAttribute("kind").trim(), text = x.getTextContent().trim();
+			if (kind.isEmpty() || text.isEmpty()) continue;
+			StringBuilder key = new StringBuilder(kind);
+			for (String m : MARKS) {
+				String v = x.getAttribute(m).trim();
+				if (!v.isEmpty()) key.append(' ').append(m.equals("cause") ? "cause" : v);
+			}
+			String k = key.toString();
+			if (!out.containsKey(k)) out.put(k, new ArrayList<String>());
+			out.get(k).add(text);
+		}
+		return out;
+	}
+	private static final java.util.regex.Pattern TOKEN = java.util.regex.Pattern.compile("\\{([A-Za-z0-9_.]+)\\}");
+	private static java.util.Set<String> tokens(String line) {
+		java.util.Set<String> out = new java.util.HashSet<String>();
+		java.util.regex.Matcher m = TOKEN.matcher(line);
+		while (m.find()) out.add(m.group(1));
+		return out;
 	}
 	/** One of the lines for this key, or the fallback ("\n" in the file is a line break: a long line broken where the sense breaks). */
 	static String say(Random rng, String fallback, String... key) {

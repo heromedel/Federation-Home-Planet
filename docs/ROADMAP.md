@@ -25,9 +25,9 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 
 All built. What remains is testing in real play and bug checks.
 
-The 6.0 overhaul (storage, logs and code rebuilt; `docs/OVERHAUL-6.md`) is built through 5.97: what is left before 6.00 is listed
-in its "Where it stands" note (McCarthy's words into `lore/`, heromedel's call on the protocol, the docs' final pass; Buggy Boy's
-kill test was done at 5.95). No 6.00 until every step is done (heromedel).
+The 6.0 overhaul (storage, logs and code rebuilt; `docs/OVERHAUL-6.md`) is built through 5.991: the kill test was done at 5.95
+(Buggy Boy), the protocol settled at 5.98 (heromedel: no bump), and McCarthy's words moved into `lore/` with the docs' pass at
+5.991 (the log's human lines for every kind, the letters, the expedition words and the deeds). No 6.00 until heromedel says so.
 
 The code that brings a fleet from before 6.0 across lives in one package, `homeplanet.convert` (5.97), so that it can be removed
 in a future build once no one plays a fleet from before 6.0 (heromedel, 5.97). When is heromedel's call; after it, such a fleet
@@ -217,7 +217,7 @@ Draft of every message and reward: `docs/TRANSMISSIONS.md` (rewards approved by 
 - **Achievement rewards** (Immersive Mode only; achievements earned after it was turned on): scrap, supplies, items,
   crew volunteers and systems, into Spacedock Storage; a free ship becomes a commission order used up in Commission.
 - Checked at startup and on Refresh; each message is sent once.
-- As built: the texts and rewards live in `src/main/resources/homeplanet/resource/transmissions.txt` (edit it to
+- As built: the texts and rewards live in `src/main/resources/homeplanet/resource/transmissions.txt` (`lore/letters.xml` since 5.991; edit it to
   change wording or rewards; TransT checks every achievement has a message and every reward exists in FTL). The inbox
   is kept per fleet (`transmissions.xml`). Commission orders and promotions have a **Commission…** button; the free
   ship itself follows the free-ship rules. Achievements count from when the fleet's record began, and not while away
@@ -310,7 +310,7 @@ station's style: the FTL fonts, gold headings, ships from the game art. The head
 
 From IDEAS.md (Ideas A and C). Letters can carry a **Reply** button: the player picks an answer, and the next letter
 comes a random number of beacons later (the fleet counts every beacon its ships jump to). The machinery is all in
-`transmissions.txt` (`replies:`, `then:`, `cost:`, `action:`), so later chains (Ancestry first) need only letters.
+`transmissions.txt` (`replies:`, `then:`, `cost:`, `action:`; attributes of a `<letter>` in `lore/letters.xml` since 5.991), so later chains (Ancestry first) need only letters.
 
 - **The trigger:** once per fleet, the first time the boarded ship comes out of a battle with one point of hull (no
   hostile ship alongside). The Engi Restoration Collective writes, naming her.
@@ -921,7 +921,7 @@ heromedel's design, tried beside the old board rather than in its place: `expedi
 Settings), 0 hides expeditions (the Space Dock's button becomes Hire Crew, the volunteer board alone), 1 is the board
 of jobs of section 25, 2 is this (the default since heromedel's go-ahead). The old system's infirmary and ransoms settle under any value; the two
 share those files, the crew-card picker and the hire button, and nothing else (`parser/Assignments.java`,
-`ui/AssignmentsDialog.java`, the fleet's `assignments.txt`, the words in `resource/assignments.txt`).
+`ui/AssignmentsDialog.java`, the fleet's `assignments.txt`, the words in `resource/assignments.txt`, `lore/expeditions.xml` since 5.991).
 
 5.67 (heromedel, in the 6.0 overhaul): the old board of jobs is deleted. `expedition_type` 1 reads as 2; the infirmary,
 the captives and ransoms, and hiring stay in `parser/Expeditions.java` for the crew expeditions; ExpT tests those alone.
@@ -966,7 +966,7 @@ the captives and ransoms, and hiring stay in `parser/Expeditions.java` for the c
   Notifications on), in heromedel's frame: the heading, the sector, "Due to events during the assignment the crew"
   and a line for the job, a hazard's line, a line a crew member ("was injured in the attack", "was extremely
   successful and brought back an Artemis Missile"), the prize's line, Total Reward. Never a roll, a die or a
-  percentage. The lines are in `resource/assignments.txt` (several per job, one picked), editable without a build.
+  percentage. The lines are in `resource/assignments.txt` (`lore/expeditions.xml` since 5.991; several per job, one picked), and a copy in `lore/` beside the program changes them without a build.
 
 - **The words, first batch** (5.01, Plan MM; every line shown to heromedel by number first): hazards three or four
   lines each, written to FTL's own tooltips (a star's flares set fires, a pulsar's waves knock systems out, a plasma
@@ -1076,7 +1076,7 @@ system's row the room it would go into. Nothing on the plan is clickable; the bu
 
 heromedel: the two achievements that look after a crew, No Redshirts Here and Trustworthy Auto-Pilot, send a Clone Bay
 (to the stored systems; it takes the Medbay's place), or a Backup DNA Bank when the boarded ship already has a Clone Bay,
-where a Clone Bay would be no use. The station picks the letter when it is sent (`ach:<id>:dna` in transmissions.txt),
+where a Clone Bay would be no use. The station picks the letter when it is sent (`ach:<id>:dna` in transmissions.txt, now `lore/letters.xml`),
 so the words and the reward always agree; no ship aboard, or one unreadable, gets the Clone Bay. The letters are a
 first draft, for McCarthy's session (lore) to look over.
 
@@ -1099,7 +1099,7 @@ wait until this has been tried in play. The letter's words are a first draft for
 
 ## 38. The Third Fleet Commander — built (5.11, Plan RR, heromedel's chain; harness test ThirdT)
 
-heromedel's letters, with the agreed edits only (`fleet3:*` in transmissions.txt, `parser/ThirdFleet.java`); the
+heromedel's letters, with the agreed edits only (`fleet3:*` in transmissions.txt, now `lore/letters.xml`, and `parser/ThirdFleet.java`); the
 first character at the station beyond the offices, set up to come back ("Might be fun rebuilding ships together").
 
 - **His first word**, 7 to 21 days after the station first looks at the fleet: the boarded ship's class (else a random

@@ -1,31 +1,38 @@
-# Transmissions: the messages The Federation Home Planet sends (Immersive Notifications), and their rewards.
-# Edit freely. Each message starts with "== key", then "from:", "subject:" and, if it carries one, "reward:" lines,
-# a blank line, and the text. {rank} is the player's rank, {ship} a ship's class and layout.
-#
-# Rewards, comma separated (they go to the Cargo Hold): scrap N, fuel N, missiles N, parts N (drone parts),
-# item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
-# anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
-# Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in), empty (the free command), pleaded (the order after a
-# plea for a new ship; {ship} is what it offers), withdrawn (that plea withdrawn: its order leaves the inbox), stranded or stranded:junkyard (no ship to command and no free command waiting; the second when
-# a hull waits in the Junkyard), shipped (an augment a ship had no room for, sent home by her crew: {name} is her name,
-# {item} the augment, which is the reward), fleet3:* (the Third Fleet Commander, ThirdFleet.java: {name} is the ship class or the part), promo:1, promo:2 (Ranks From Cruiser), rank:1 to rank:5 (Ranks From Rep: Colonel to Admiral; a career from before 5.56 gets its rank's letter once, with up to three accolades; heromedel's words, 5.57), order:<base ship id>, ach:<achievement id> (ach:ACH_NO_DEATH:dna and ach:ACH_INVADE_SHIP:dna when the boarded ship has a Clone Bay already),
-# rescue and reward (after a final victory: {ship} is her name, {value} her full value in scrap; also shown as a
-# notice when Transmissions are off).
-#
-# Reply chains: a letter with "replies: words -> next-key 5-10 | other words -> other-key 3-5" gets a Reply button;
-# the chosen reply sends next-key's letter a random 5 to 10 beacons later. "then: next-key 5-7" sends the next letter
-# by itself, that many beacons after this one. "cost: scrap N" makes the reward's claim cost N scrap from the Cargo
-# Hold. "action: derelict" delivers the Engi Restoration Collective's derelict to the Junkyard with the letter.
-# chain:one-hull starts once per fleet, the first time the boarded ship comes out of a battle with one point of hull
-# ({name} is her name).
-# chain:repair-job starts once per fleet, after three ships that couldn't fly were made to fly again; "action:
-# repair-job" delivers the Nightjar to the Junkyard. Its letters may use {class} (her model), {extra} (the bonus),
-# {pay} (what was paid), {waiting} (what returning her pays now), {value} (her value, for the claims office), {taken} (what it took) and {paidline}.
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The letters The Federation Home Planet sends (Immersive Notifications), and their rewards. Each letter is a <letter>
+     with its key, who it is from, its subject and, if it carries them, its reward, replies, then, cost and action; its
+     text is between <![CDATA[ and ]]>, kept as written, line breaks and all (<u>...</u> underlines a word).
+     {rank} is the player's rank and {ship} a ship's class and layout ("the {ship}" by the station's rule for ships'
+     names); a letter may use only the {tokens} the station's own copy of it uses.
 
-== welcome
-from: Home Planet Liaison
-subject: Welcome to the Front
+     To change a letter, copy it whole into letters.xml in the lore folder beside the program and edit the copy: it wins
+     over the station's own, letter by letter. A copy that breaks a rule (the Rebel Flagship destroyed, the rebels
+     capitalised, a {token} the letter doesn't have) is left out, and the station's own letter is sent.
 
+     Rewards, comma separated (they go to the Cargo Hold): scrap N, fuel N, missiles N, parts N (drone parts),
+     item ID (a weapon, drone or augment), crew RACE (a volunteer: human, engi, mantis, energy, rock, slug, crystal,
+     anaerobic), system ID (a stored system, e.g. cloaking, battery, clonebay), and "choice A | B" to let the player pick.
+
+     Keys: welcome, welcome:career (Career messages begun in Sandbox Mode), stipend ({period} and {amount} are filled in),
+     empty (the free command), pleaded (the order after a plea for a new ship; {ship} is what it offers), withdrawn (that
+     plea withdrawn: its order leaves the inbox), stranded or stranded:junkyard (no ship to command and no free command
+     waiting; the second when a hull waits in the Junkyard), shipped (an augment a ship had no room for, sent home by her
+     crew: {name} is her name, {item} the augment, which is the reward), fleet3:* (the Third Fleet Commander: {name} is
+     the ship class or the part), promo:1, promo:2 (Ranks From Cruiser), rank:1 to rank:5 (Ranks From Rep: Colonel to
+     Admiral; {accolade} is filled with what the career did), rescue and reward (after a final victory: {ship} is her
+     name, {value} her full value in scrap; also shown as a notice when Transmissions are off).
+
+     Reply chains: replies="words -> next-key 5-10 | other words -> other-key 3-5" gives the letter a Reply button; the
+     chosen reply sends next-key's letter a random 5 to 10 days later. then="next-key 5-7" sends the next letter by
+     itself, that many days after this one. cost="scrap N" makes the reward's claim cost N scrap from the Cargo Hold.
+     action="derelict" delivers the Engi Restoration Collective's derelict to the Junkyard with the letter.
+     chain:one-hull starts once per fleet, the first time the boarded ship comes out of a battle with one point of hull
+     ({name} is her name). chain:repair-job starts once per fleet, after three ships that couldn't fly were made to fly
+     again; action="repair-job" delivers the Nightjar to the Junkyard. Its letters may use {class} (her model), {extra}
+     (the bonus), {pay} (what was paid), {waiting} (what returning her pays now), {value} (her value, for the claims
+     office), {taken} (what it took) and {paidline}. -->
+<letters>
+	<letter key="welcome" from="Home Planet Liaison" subject="Welcome to the Front"><![CDATA[
 {rank},
 
 I see you have volunteered to serve in the war against the rebellion.
@@ -47,11 +54,9 @@ Watch this channel. The Federation will be in contact.
 For the Federation, and all its worlds.
 Until every beacon is free.
 ~ Home Planet Liaison
+]]></letter>
 
-== stranded
-from: Home Planet Liaison
-subject: Without a ship
-
+	<letter key="stranded" from="Home Planet Liaison" subject="Without a ship"><![CDATA[
 {rank},
 
 The Home Planet Station reports that you have no ship under your command. I am sorry. She served the Federation, and so did you.
@@ -62,11 +67,9 @@ Every commander loses a ship sooner or later. What matters is that you come back
 
 For the Federation, and all its worlds.
 ~ Home Planet Liaison
+]]></letter>
 
-== stranded:junkyard
-from: Home Planet Liaison
-subject: Without a ship
-
+	<letter key="stranded:junkyard" from="Home Planet Liaison" subject="Without a ship"><![CDATA[
 {rank},
 
 The Home Planet Station reports that you have no ship under your command. I am sorry. She served the Federation, and so did you.
@@ -79,11 +82,9 @@ Every commander loses a ship sooner or later. What matters is that you come back
 
 For the Federation, and all its worlds.
 ~ Home Planet Liaison
+]]></letter>
 
-== welcome:career
-from: Home Planet Liaison
-subject: On the career rolls
-
+	<letter key="welcome:career" from="Home Planet Liaison" subject="On the career rolls"><![CDATA[
 {rank},
 
 The Federation Home Planet has added your service to its career rolls. From today your achievements will be noticed, and rewarded. Promotions will follow as they are earned, and a stipend will reach the Cargo Hold as your ships explore the beacons. To start you off, {start} scrap is already waiting there.
@@ -93,11 +94,9 @@ Your fleet stays your own, and so do your rules. The Federation asks only that y
 For the Federation, and all its worlds.
 Until every beacon is free.
 ~ Home Planet Liaison
+]]></letter>
 
-== rescue
-from: Federation Fleet Command
-subject: Rescued from the Final Engagement
-
+	<letter key="rescue" from="Federation Fleet Command" subject="Rescued from the Final Engagement"><![CDATA[
 {rank},
 
 Dispatch from Federation Fleet Command.
@@ -109,11 +108,9 @@ Recovery teams reached the {ship} in time, and The Home Planet Station has resto
 The Federation Home Planet makes an offer: {worth}, {value} scrap, to place her in the Federation Museum. Or keep her, and she will be waiting at the Space Dock for her next journey. The decision is yours.
 
 ~ Federation Fleet Command
+]]></letter>
 
-== museum
-from: Federation Fleet Command
-subject: Into the Museum
-
+	<letter key="museum" from="Federation Fleet Command" subject="Into the Museum"><![CDATA[
 {rank},
 
 Dispatch from Federation Fleet Command.
@@ -125,11 +122,9 @@ Recovery teams reached the {ship} in time. By order of The Federation Home Plane
 In recognition, {worth}, {value} scrap, has been granted to The Home Planet Station. It is waiting in the Station's Cargo Hold.
 
 ~ Federation Fleet Command
+]]></letter>
 
-== reward
-from: The Federation Home Planet
-subject: In Recognition
-
+	<letter key="reward" from="The Federation Home Planet" subject="In Recognition"><![CDATA[
 Official notice from The Federation Home Planet
 
 {rank},
@@ -141,21 +136,17 @@ In recognition of her service, her full value of {value} scrap has been granted 
 Her name has been entered in the fleet's records.
 
 ~ The Federation Home Planet
+]]></letter>
 
-== stipend
-from: The Federation Home Planet
-subject: Stipend
-
+	<letter key="stipend" from="The Federation Home Planet" subject="Stipend"><![CDATA[
 Automated message from The Federation Home Planet
 
 Your {period} of {amount} scrap has been issued. Claim it to have it transferred to the Station's Cargo Hold.
 
 Thank you for your service, {rank}.
+]]></letter>
 
-== empty
-from: Home Planet Shipyard
-subject: A new command
-
+	<letter key="empty" from="Home Planet Shipyard" subject="A new command"><![CDATA[
 {rank},
 
 Our records show you without a ship at your command.
@@ -167,11 +158,9 @@ Last guy I knew who needed a new ship, they demanded he hand over his entire car
 
 Godspeed and come home.
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== pleaded
-from: Home Planet Shipyard
-subject: Your plea was heard
-
+	<letter key="pleaded" from="Home Planet Shipyard" subject="Your plea was heard"><![CDATA[
 {rank},
 
 Heard you've been asking around for a new ship. Well, good news: word came down from The Federation Home Planet. Your plea was heard, and they're sending you one. Not every captain gets that, Lucky Duck.
@@ -182,11 +171,9 @@ Change your mind before she's built? Withdraw the plea (Other... at the Space Do
 
 Try not to scratch the paint.
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== withdrawn
-from: Home Planet Shipyard
-subject: Order cancelled
-
+	<letter key="withdrawn" from="Home Planet Shipyard" subject="Order cancelled"><![CDATA[
 {rank},
 
 Got word you withdrew your plea, so I've torn up the order. Nothing owed, nothing built.
@@ -195,11 +182,9 @@ Shame. I'd already picked out a paint colour. If you change your mind again, you
 
 Godspeed and come home.
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== promo:1
-from: Federation Fleet Admiral
-subject: Priority: selected for promotion
-
+	<letter key="promo:1" from="Federation Fleet Admiral" subject="Priority: selected for promotion"><![CDATA[
 Priority message from the Federation Fleet Admiral:
 
 Commander, your ongoing efforts against the rebellion have not gone unnoticed. It is my honor to inform you that The Federation Home Planet has selected you for commendation and promotion.
@@ -210,11 +195,9 @@ Keep up the good work and make excellent use of her. This class of ship is a rea
 
 Godspeed,
 Your Fleet Admiral
+]]></letter>
 
-== promo:2
-from: Federation Fleet Admiral
-subject: Priority: promoted to Commodore
-
+	<letter key="promo:2" from="Federation Fleet Admiral" subject="Priority: promoted to Commodore"><![CDATA[
 Priority message from the Federation Fleet Admiral:
 
 Captain, the fleet has taken notice again. Few officers hold the line the way you have, and fewer still bring their crews home while doing it. The Federation Home Planet has approved your promotion to Commodore, effective immediately.
@@ -223,11 +206,9 @@ A Commodore's flag needs a ship to fly from. Home Planet Shipyard has a Federati
 
 Hold the line, Commodore.
 Your Fleet Admiral
+]]></letter>
 
-== rank:1
-from: The Federation Home Planet Fleet Admiralty
-subject: Priority: promoted to Colonel
-
+	<letter key="rank:1" from="The Federation Home Planet Fleet Admiralty" subject="Priority: promoted to Colonel"><![CDATA[
 The Federation Home Planet Admiralty is writing to inform you
 of your recommendation for promotion to Colonel for your outstanding service
 
@@ -241,11 +222,9 @@ Our Sincerest Congratulations Colonel.
 With this promotion your stipend will be increased based on your achievements.
 
 The Fleet Admiralty
+]]></letter>
 
-== rank:2
-from: The Federation Home Planet Fleet Admiralty
-subject: Priority: promoted to Commander
-
+	<letter key="rank:2" from="The Federation Home Planet Fleet Admiralty" subject="Priority: promoted to Commander"><![CDATA[
 The Federation Home Planet Admiralty is pleased to inform you
 of your recommendation for promotion to Commander for your outstanding service
 
@@ -259,11 +238,9 @@ Our Sincerest Congratulations Commander.
 With this promotion you are cleared to remodel the ships under your command.
 
 The Fleet Admiralty
+]]></letter>
 
-== rank:3
-from: The Federation Home Planet Fleet Admiralty
-subject: Priority: promoted to Captain
-
+	<letter key="rank:3" from="The Federation Home Planet Fleet Admiralty" subject="Priority: promoted to Captain"><![CDATA[
 The Federation Home Planet Admiralty is happy to inform you
 of your recommendation for promotion to Captain for your outstanding service
 
@@ -277,11 +254,9 @@ Our Sincerest Congratulations Captain.
 With this promotion your stipend will be increased further based on your achievements.
 
 The Fleet Admiralty
+]]></letter>
 
-== rank:4
-from: The Federation Home Planet Fleet Admiralty
-subject: Priority: promoted to Commodore
-
+	<letter key="rank:4" from="The Federation Home Planet Fleet Admiralty" subject="Priority: promoted to Commodore"><![CDATA[
 The Federation Home Planet Admiralty is thrilled to inform you
 of your recommendation for promotion to Commodore for your outstanding service
 
@@ -295,11 +270,9 @@ Our Sincerest Congratulations Commodore.
 With this promotion you are cleared to design your own ships, and The Federation Home Planet will draw up their blueprints.
 
 The Fleet Admiralty
+]]></letter>
 
-== rank:5
-from: The Federation Home Planet Fleet Admiralty
-subject: Priority: promoted to Admiral
-
+	<letter key="rank:5" from="The Federation Home Planet Fleet Admiralty" subject="Priority: promoted to Admiral"><![CDATA[
 The Federation Home Planet Admiralty is overwhelmed to inform you
 of your recommendation for promotion to Admiralty for your outstanding service
 
@@ -313,11 +286,9 @@ Our Sincerest Congratulations Admiral.
 With this promotion your stipend will be increased even further based on your achievements.
 
 The Fleet Admiralty
+]]></letter>
 
-== order:PLAYER_SHIP_HARD
-from: Home Planet Shipyard
-subject: Commission order: {ship}
-
+	<letter key="order:PLAYER_SHIP_HARD" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 The Kestrel yards have turned out another pattern of the old workhorse: the {ship}, at no cost to you. Take this order to Commission and she's yours.
@@ -326,11 +297,9 @@ I know, I know. "Just another Kestrel." But there's a reason the Federation keep
 
 Try not to scratch the paint.
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== order:nextModel
-from: Home Planet Shipyard
-subject: Commission order: {ship}
-
+	<letter key="order:nextModel" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 The {race} have contacted Federation Command. They are impressed with what you have managed to achieve with the {cruiser}. During negotiations they have agreed to share blueprints of a different model with The Federation.
@@ -342,11 +311,9 @@ I don't know about how all the politics work but the ship looks interesting.
 Let me know how it feels to fly one of these, and come home safe.
 ~ Comm. Officer.
 Home Planet Station Shipyard.
+]]></letter>
 
-== order:nextModel:PLAYER_SHIP_CIRCLE
-from: Office of Alien Affairs
-subject: Commission order: {ship}
-
+	<letter key="order:nextModel:PLAYER_SHIP_CIRCLE" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 The Engi have reviewed the logs from your {cruiser}. They describe your use of her as "within acceptable deviation", which, we are told, is the highest praise their language allows.
@@ -354,11 +321,9 @@ The Engi have reviewed the logs from your {cruiser}. They describe your use of h
 In return they have shared the plans for a second design, the {ship}. Take this order to Commission. The Engi have already asked for weekly reports. This office has told them monthly. Negotiations continue.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== order:nextModel:PLAYER_SHIP_ENERGY
-from: Office of Alien Affairs
-subject: Commission order: {ship}
-
+	<letter key="order:nextModel:PLAYER_SHIP_ENERGY" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 The Zoltan Council has spoken of you again. What you have done with the {cruiser} has kept the peace they offered her for, and they have chosen to offer more: the plans for a {ship}.
@@ -366,11 +331,9 @@ The Zoltan Council has spoken of you again. What you have done with the {cruiser
 Take this order to Commission. The Council asks nothing in return, which in this office's experience means they trust you to know what is owed.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== order:nextModel:PLAYER_SHIP_MANTIS
-from: Home Planet Shipyard
-subject: Commission order: {ship}
-
+	<letter key="order:nextModel:PLAYER_SHIP_MANTIS" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 Another Mantis ship has come our way. Word of what you did with the {cruiser} has spread among the clans, and one of them sent us a {ship} with a message our translators rendered as "a better hunter should have it." We think it was a compliment.
@@ -378,11 +341,9 @@ Another Mantis ship has come our way. Word of what you did with the {cruiser} ha
 Take this order to Commission. Engineering says this one is safe to fly. Not "mostly" this time. I checked.
 
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== order:nextModel:PLAYER_SHIP_JELLY
-from: Office of Alien Affairs
-subject: Commission order: {ship}
-
+	<letter key="order:nextModel:PLAYER_SHIP_JELLY" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 The same Slug consortium is back. Your record with the {cruiser} has made them, in their words, "enthusiastic partners", and they are offering the plans for a {ship}.
@@ -390,11 +351,9 @@ The same Slug consortium is back. Your record with the {cruiser} has made them, 
 This time the second invoice arrived first, and The Federation Home Planet has already paid it. The ship is yours: take this order to Commission. Engineering checked the plans three times and found nothing, which worries them more than finding something would have.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== order:nextModel:PLAYER_SHIP_ROCK
-from: Office of Alien Affairs
-subject: Commission order: {ship}
-
+	<letter key="order:nextModel:PLAYER_SHIP_ROCK" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 The Rock clan that sent us the {cruiser} has heard how you flew her. They have sent a {ship} after her, with no message at all. Among the Rock, we are told, that is how you thank someone you respect.
@@ -402,11 +361,9 @@ The Rock clan that sent us the {cruiser} has heard how you flew her. They have s
 Take this order to Commission. They will still ask about her.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== order:nextModel:PLAYER_SHIP_STEALTH
-from: Home Planet Shipyard
-subject: Commission order: {ship}
-
+	<letter key="order:nextModel:PLAYER_SHIP_STEALTH" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 Federation Intelligence has read the reports on your {cruiser}, or so I'm told, since nobody lets me read them. Whatever they said, Intelligence has cleared you for a {ship}.
@@ -414,11 +371,9 @@ Federation Intelligence has read the reports on your {cruiser}, or so I'm told, 
 Take this order to Commission. Same rules as last time: she doesn't exist, and you didn't get this from me.
 
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== order:nextModel:PLAYER_SHIP_ANAEROBIC
-from: Home Planet Shipyard
-subject: Commission order: {ship}
-
+	<letter key="order:nextModel:PLAYER_SHIP_ANAEROBIC" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 Engineering has been taking the {cruiser}'s logs apart since you brought her home, and they have learned enough to build a {ship}. Still no air aboard. I've stopped asking.
@@ -426,11 +381,9 @@ Engineering has been taking the {cruiser}'s logs apart since you brought her hom
 Take this order to Commission and she's yours. Same advice as before: count the spare metal, and count it again in the morning.
 
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== order:nextModel:PLAYER_SHIP_CRYSTAL
-from: Office of Alien Affairs
-subject: Commission order: {ship}
-
+	<letter key="order:nextModel:PLAYER_SHIP_CRYSTAL" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 The Crystal have been watching how you flew the {cruiser}. They do not say what they saw. They have, however, allowed our engineers a second vessel to study, and this {ship} is the result.
@@ -438,11 +391,9 @@ The Crystal have been watching how you flew the {cruiser}. They do not say what 
 Take this order to Commission. As before: the Crystal remember everything.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== order:PLAYER_SHIP_CIRCLE
-from: Office of Alien Affairs
-subject: Commission order: {ship}
-
+	<letter key="order:PLAYER_SHIP_CIRCLE" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 The Engi have shared the plans of their {ship}. In their words, it is "to better the mutual efficiency of allied peoples." In ours: thank you.
@@ -450,21 +401,17 @@ The Engi have shared the plans of their {ship}. In their words, it is "to better
 The first one built from those plans is yours. Take this order to Commission. The Engi ask that you log her performance carefully; they find our reports "insufficiently detailed."
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== order:PLAYER_SHIP_ENERGY
-from: Office of Alien Affairs
-subject: Commission order: {ship}
-
+	<letter key="order:PLAYER_SHIP_ENERGY" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 Your restraint among the Zoltan has not gone unnoticed. Where others would have fired first, you chose peace, and the Zoltan Council has answered in kind: they have offered a {ship} to mark the peaceful relations between our peoples. The Federation Home Planet has agreed to let you command the new ship.
 
 Office of Alien Affairs
+]]></letter>
 
-== order:PLAYER_SHIP_MANTIS
-from: Home Planet Shipyard
-subject: Commission order: {ship}
-
+	<letter key="order:PLAYER_SHIP_MANTIS" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 Intelligence recovered a {ship} from a raiding party that thought better of it. The Engineering Corps says the design is safe to fly. Mostly. I asked what "mostly" meant, and they walked away.
@@ -472,11 +419,9 @@ Intelligence recovered a {ship} from a raiding party that thought better of it. 
 Take this order to Commission and she's yours. Maybe keep the crew quarters locked for the first week.
 
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== order:PLAYER_SHIP_JELLY
-from: Office of Alien Affairs
-subject: Commission order: {ship}
-
+	<letter key="order:PLAYER_SHIP_JELLY" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 A Slug consortium has sold us the plans for their {ship}. The price was suspiciously fair. In this office's experience, Slug generosity usually arrives with a second invoice.
@@ -484,11 +429,9 @@ A Slug consortium has sold us the plans for their {ship}. The price was suspicio
 Engineering has checked the plans twice. Take this order to Commission, and have your own people check her a third time.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== order:PLAYER_SHIP_ROCK
-from: Office of Alien Affairs
-subject: Commission order: {ship}
-
+	<letter key="order:PLAYER_SHIP_ROCK" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 A Rock clan that has broken with the pirates has sent us a {ship} as a gesture of good faith. The Rocks do not make gestures lightly. This is a first.
@@ -496,11 +439,9 @@ A Rock clan that has broken with the pirates has sent us a {ship} as a gesture o
 Take this order to Commission and treat her with respect. They will ask.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== order:PLAYER_SHIP_STEALTH
-from: Home Planet Shipyard
-subject: Commission order: {ship}
-
+	<letter key="order:PLAYER_SHIP_STEALTH" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 Federation Intelligence has cleared the {ship} for your use. Officially, she doesn't exist. Unofficially, I've been dying to see one of these on an order.
@@ -508,11 +449,9 @@ Federation Intelligence has cleared the {ship} for your use. Officially, she doe
 Take this order to Commission. And if anyone asks, you didn't get it from me.
 
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== order:PLAYER_SHIP_CRYSTAL
-from: Office of Alien Affairs
-subject: Commission order: {ship}
-
+	<letter key="order:PLAYER_SHIP_CRYSTAL" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 First contact has been made with the Crystal. After long talks they allowed our engineers to study one of their vessels. This {ship} is what we learned, and she is assigned to you.
@@ -520,11 +459,9 @@ First contact has been made with the Crystal. After long talks they allowed our 
 Take this order to Commission. The Crystal remember everything; fly her with honor.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== order:PLAYER_SHIP_ANAEROBIC
-from: Home Planet Shipyard
-subject: Commission order: {ship}
-
+	<letter key="order:PLAYER_SHIP_ANAEROBIC" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 A Lanius vessel was captured intact, a first for the fleet, and Engineering learned enough to build a {ship}. No air aboard, by design. I still don't understand how that's a feature.
@@ -532,11 +469,9 @@ A Lanius vessel was captured intact, a first for the fleet, and Engineering lear
 Take this order to Commission and she's yours. Keep the spare metal locked up; the Lanius eat it. Literally.
 
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== order:PLAYER_SHIP_FED
-from: Home Planet Shipyard
-subject: Commission order: {ship}
-
+	<letter key="order:PLAYER_SHIP_FED" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
 The Federation Home Planet has released another {ship} to the fleet, and this one has your name on it. Do you know how long I've waited to write up one of these?
@@ -545,12 +480,9 @@ Take this order to Commission and she's yours, on the house.
 
 Look after her. I want to hear all about her when you get back.
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== ach:ACH_SECTOR_5
-from: Home Planet Quartermaster
-subject: Just Getting Started
-reward: scrap 25, fuel 4
-
+	<letter key="ach:ACH_SECTOR_5" from="Home Planet Quartermaster" subject="Just Getting Started" reward="scrap 25, fuel 4"><![CDATA[
 {rank},
 
 Sector 5. Half the captains who set out never see it. You did.
@@ -558,12 +490,9 @@ Sector 5. Half the captains who set out never see it. You did.
 25 scrap and 4 fuel, in the Cargo Hold. Don't waste them. I'll know.
 
 ~ Home Planet Quartermaster
+]]></letter>
 
-== ach:ACH_SECTOR_8
-from: Home Planet Quartermaster
-subject: Federation Base in Range
-reward: scrap 60, missiles 4, parts 4, fuel 4
-
+	<letter key="ach:ACH_SECTOR_8" from="Home Planet Quartermaster" subject="Federation Base in Range" reward="scrap 60, missiles 4, parts 4, fuel 4"><![CDATA[
 {rank},
 
 Sector 8. You've carried the fight a long way from home, and a fight that long runs on supplies.
@@ -572,12 +501,9 @@ Sector 8. You've carried the fight a long way from home, and a fight that long r
 
 Not one more sector.
 ~ Home Planet Quartermaster
+]]></letter>
 
-== ach:ACH_WIN_EASY
-from: Federation Fleet Admiral
-subject: Federation Victory
-reward: scrap 300
-
+	<letter key="ach:ACH_WIN_EASY" from="Federation Fleet Admiral" subject="Federation Victory" reward="scrap 300"><![CDATA[
 {rank},
 
 The Rebel Flagship has been driven off, and every freed beacon from here to The Home Planet Station is celebrating tonight. Let them. Tomorrow the rebellion regroups, and so will we.
@@ -586,12 +512,9 @@ The Federation Home Planet has authorized your share of the victory purse. It is
 
 Many worlds, one Federation.
 Your Fleet Admiral
+]]></letter>
 
-== ach:ACH_WIN_NORMAL
-from: Federation Fleet Admiral
-subject: Federation Victory
-reward: scrap 400
-
+	<letter key="ach:ACH_WIN_NORMAL" from="Federation Fleet Admiral" subject="Federation Victory" reward="scrap 400"><![CDATA[
 {rank},
 
 That was no training exercise. You met the rebellion at its full strength and turned it back, and the whole fleet knows it. I have read the reports. So has every officer in the fleet.
@@ -600,12 +523,9 @@ The war is far from over. But The Federation Home Planet has authorized a victor
 
 Hold the line, {rank}.
 Your Fleet Admiral
+]]></letter>
 
-== ach:ACH_UNLOCK_ALL
-from: Federation Fleet Admiral
-subject: Your Own Fleet
-reward: scrap 500
-
+	<letter key="ach:ACH_UNLOCK_ALL" from="Federation Fleet Admiral" subject="Your Own Fleet" reward="scrap 500"><![CDATA[
 {rank},
 
 Every class of ship the Federation fields has now been cleared for your command. There are admirals who cannot say that.
@@ -614,12 +534,9 @@ That is a fleet, {rank}, and fleets need funding. The Federation Home Planet has
 
 Many worlds, one Federation.
 Your Fleet Admiral
+]]></letter>
 
-== ach:ACH_SCRAP
-from: Home Planet Quartermaster
-subject: Rule Ten: Greed is Eternal
-reward: item SCRAP_COLLECTOR
-
+	<letter key="ach:ACH_SCRAP" from="Home Planet Quartermaster" subject="Rule Ten: Greed is Eternal" reward="item SCRAP_COLLECTOR"><![CDATA[
 {rank},
 
 Ten thousand scrap through your hands. I've counted every piece. Twice.
@@ -630,12 +547,9 @@ One more thing. Intelligence stole the plans for the Rebel Flagship's weapons. Y
 
 Give the rebellion nothing.
 ~ Home Planet Quartermaster
+]]></letter>
 
-== ach:ACH_SHIPS
-from: Federation Fleet Admiral
-subject: Warlord
-reward: item FTL_JUMPER, item FTL_BOOSTER
-
+	<letter key="ach:ACH_SHIPS" from="Federation Fleet Admiral" subject="Warlord" reward="item FTL_JUMPER, item FTL_BOOSTER"><![CDATA[
 {rank},
 
 One thousand enemy ships. I had the number checked. There are rebel captains who change course at the sound of your name, and I intend to keep it that way.
@@ -644,12 +558,9 @@ For a hunter who never stops moving: an Adv. FTL Navigation and an FTL Recharge 
 
 Stand fast. The Federation endures.
 Your Fleet Admiral
+]]></letter>
 
-== ach:ACH_NO_UPGRADES
-from: Federation Engineering Corps
-subject: I don't need no stinkin' upgrades!
-reward: system cloaking
-
+	<letter key="ach:ACH_NO_UPGRADES" from="Federation Engineering Corps" subject="I don't need no stinkin' upgrades!" reward="system cloaking"><![CDATA[
 {rank},
 
 Sector 5 on factory settings. We ran the numbers. They should not have worked.
@@ -657,12 +568,9 @@ Sector 5 on factory settings. We ran the numbers. They should not have worked.
 Since you clearly don't need upgrades, here is something that isn't one: a Cloaking system, crated and waiting in the Cargo Hold. Installation instructions are included. Please read them.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_PACIFIST
-from: Home Planet Liaison
-subject: Coming in for my Pacifism run!
-reward: item FTL_BOOSTER
-
+	<letter key="ach:ACH_PACIFIST" from="Home Planet Liaison" subject="Coming in for my Pacifism run!" reward="item FTL_BOOSTER"><![CDATA[
 {rank},
 
 Sector 5, and not a single shot fired. Some officers will call that cowardice. They are the ones who have never seen what the rebels do to a ship that stays to fight.
@@ -672,12 +580,9 @@ Knowing when to run is a skill, and you have it. Here is an FTL Recharge Booster
 My advice: don't make a habit of it. The rebellion won't be outrun forever.
 
 ~ Home Planet Liaison
+]]></letter>
 
-== ach:ACH_NO_REPAIR
-from: Federation Engineering Corps
-subject: On a Wing and a Prayer
-reward: item REPAIR_ARM
-
+	<letter key="ach:ACH_NO_REPAIR" from="Federation Engineering Corps" subject="On a Wing and a Prayer" reward="item REPAIR_ARM"><![CDATA[
 {rank},
 
 Sector 5 without a single repair. The Corps is fascinated. The Corps is also horrified.
@@ -685,12 +590,9 @@ Sector 5 without a single repair. The Corps is fascinated. The Corps is also hor
 Please accept this Repair Arm. Please use it.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_NO_MISSILES
-from: Federation Engineering Corps
-subject: Ballistophobia
-reward: system battery
-
+	<letter key="ach:ACH_NO_MISSILES" from="Federation Engineering Corps" subject="Ballistophobia" reward="system battery"><![CDATA[
 {rank},
 
 Your missile tubes arrived at sector 8 exactly as full as they left. Admirable restraint, or a supply problem. We didn't ask.
@@ -698,12 +600,9 @@ Your missile tubes arrived at sector 8 exactly as full as they left. Admirable r
 A captain who shoots clean needs power for the guns: a Backup Battery, for when the reactor can't keep up. It's in the Cargo Hold.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_NO_DRONES
-from: Federation Engineering Corps
-subject: Technophobia
-reward: item DEFENSE_SCRAMBLER
-
+	<letter key="ach:ACH_NO_DRONES" from="Federation Engineering Corps" subject="Technophobia" reward="item DEFENSE_SCRAMBLER"><![CDATA[
 {rank},
 
 Not one drone launched, all the way to sector 8. You clearly don't trust them. Frankly, neither do we.
@@ -711,12 +610,9 @@ Not one drone launched, all the way to sector 8. You clearly don't trust them. F
 This Defense Scrambler will make sure the enemy's defense drones can't bother you either. Consider it a professional courtesy.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_NO_BUYING
-from: Home Planet Quartermaster
-subject: Living off the Land
-reward: choice item REPAIR_ARM | item SHIP_REPAIR
-
+	<letter key="ach:ACH_NO_BUYING" from="Home Planet Quartermaster" subject="Living off the Land" reward="choice item REPAIR_ARM | item SHIP_REPAIR"><![CDATA[
 {rank},
 
 Sector 8 without spending a scrap at a store. Do you know how rare that is? I do. I keep the ledgers.
@@ -724,12 +620,9 @@ Sector 8 without spending a scrap at a store. Do you know how rare that is? I do
 A ship that lives off the land should fix herself too. Pick one: a Repair Arm, which patches the hull every time you collect scrap, or a Hull Repair drone, if you fly with drones. Your choice.
 
 ~ Home Planet Quartermaster
+]]></letter>
 
-== ach:ACH_NO_DEATH
-from: Home Planet Liaison
-subject: No Redshirts Here
-reward: system clonebay
-
+	<letter key="ach:ACH_NO_DEATH" from="Home Planet Liaison" subject="No Redshirts Here" reward="system clonebay"><![CDATA[
 {rank},
 
 Every crew member who set out with you reached sector 8. Every one.
@@ -740,12 +633,9 @@ Loyalty runs both ways. Your crew will remember this.
 
 For the Federation, and all its worlds.
 ~ Home Planet Liaison
+]]></letter>
 
-== ach:ACH_NO_DEATH:dna
-from: Home Planet Liaison
-subject: No Redshirts Here
-reward: item BACKUP_DNA
-
+	<letter key="ach:ACH_NO_DEATH:dna" from="Home Planet Liaison" subject="No Redshirts Here" reward="item BACKUP_DNA"><![CDATA[
 {rank},
 
 Every crew member who set out with you reached sector 8. Every one.
@@ -756,12 +646,9 @@ Loyalty runs both ways. Your crew will remember this.
 
 For the Federation, and all its worlds.
 ~ Home Planet Liaison
+]]></letter>
 
-== ach:ACH_BURNING
-from: Federation Engineering Corps
-subject: Some people just like to watch ships burn
-reward: item FIRE_EXTINGUISHERS
-
+	<letter key="ach:ACH_BURNING" from="Federation Engineering Corps" subject="Some people just like to watch ships burn" reward="item FIRE_EXTINGUISHERS"><![CDATA[
 {rank},
 
 We've seen the footage. That was a great deal of fire. Impressive, and a little alarming.
@@ -769,12 +656,9 @@ We've seen the footage. That was a great deal of fire. Impressive, and a little 
 A Fire Suppression system. Professional courtesy between arsonists.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_BAD_DODGING
-from: Federation Engineering Corps
-subject: Astronomically Low Odds
-reward: item SHIELD_RECHARGE
-
+	<letter key="ach:ACH_BAD_DODGING" from="Federation Engineering Corps" subject="Astronomically Low Odds" reward="item SHIELD_RECHARGE"><![CDATA[
 {rank},
 
 Five shots. Five hits. Engines at full power.
@@ -784,12 +668,9 @@ The Corps has reviewed the logs and reached a conclusion: you cannot dodge. We c
 So stop trying. Here is a Shield Charge Booster. Let the shields do the work.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_ONE_VOLLEY
-from: Home Planet Liaison
-subject: They never saw it coming
-reward: item LASER_CHAINGUN_2
-
+	<letter key="ach:ACH_ONE_VOLLEY" from="Home Planet Liaison" subject="They never saw it coming" reward="item LASER_CHAINGUN_2"><![CDATA[
 {rank},
 
 One volley, and the enemy ship was gone before she could fire back. Clean work.
@@ -797,12 +678,9 @@ One volley, and the enemy ship was gone before she could fire back. Clean work.
 Not every fight ends that fast, and the rebels are learning. For the battles that drag on: a Chain Vulcan. It starts slow and doesn't stop.
 
 ~ Home Planet Liaison
+]]></letter>
 
-== ach:ACH_BOARDING_DRONE
-from: Federation Engineering Corps
-subject: BOARDING OBJECTIVE SUCCESSFUL
-reward: item BATTLE
-
+	<letter key="ach:ACH_BOARDING_DRONE" from="Federation Engineering Corps" subject="BOARDING OBJECTIVE SUCCESSFUL" reward="item BATTLE"><![CDATA[
 {rank},
 
 One boarding drone, four enemy crew. The report wrote itself.
@@ -810,12 +688,9 @@ One boarding drone, four enemy crew. The report wrote itself.
 Expect the enemy to try the same on you. An Anti-Personnel Drone, to be waiting when they do.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_INVADE_SHIP
-from: Home Planet Liaison
-subject: Trustworthy Auto-Pilot
-reward: system clonebay
-
+	<letter key="ach:ACH_INVADE_SHIP" from="Home Planet Liaison" subject="Trustworthy Auto-Pilot" reward="system clonebay"><![CDATA[
 {rank},
 
 Your whole crew aboard the enemy ship, and your own ship left flying herself. I've read the report. Bold. Reckless. It worked.
@@ -823,12 +698,9 @@ Your whole crew aboard the enemy ship, and your own ship left flying herself. I'
 Next time it might not. The Federation Home Planet is sending a Clone Bay, so the people who follow you that far get to come home. Fit it where the Medbay was; it does that job too, between jumps.
 
 ~ Home Planet Liaison
+]]></letter>
 
-== ach:ACH_INVADE_SHIP:dna
-from: Home Planet Liaison
-subject: Trustworthy Auto-Pilot
-reward: item BACKUP_DNA
-
+	<letter key="ach:ACH_INVADE_SHIP:dna" from="Home Planet Liaison" subject="Trustworthy Auto-Pilot" reward="item BACKUP_DNA"><![CDATA[
 {rank},
 
 Your whole crew aboard the enemy ship, and your own ship left flying herself. I've read the report. Bold. Reckless. It worked.
@@ -836,12 +708,9 @@ Your whole crew aboard the enemy ship, and your own ship left flying herself. I'
 Next time it might not. You already carry a Clone Bay, so The Federation Home Planet is sending a Backup DNA Bank. If the bay goes dark while they're away, the people who follow you that far still get to come home.
 
 ~ Home Planet Liaison
+]]></letter>
 
-== ach:ACH_SLICE_DICE
-from: Federation Engineering Corps
-subject: Slice and Dice
-reward: item WEAPON_PREIGNITE
-
+	<letter key="ach:ACH_SLICE_DICE" from="Federation Engineering Corps" subject="Slice and Dice" reward="item WEAPON_PREIGNITE"><![CDATA[
 {rank},
 
 Every room of the enemy ship in five seconds. The beam specialists printed the recording and hung it on the lab wall.
@@ -849,12 +718,9 @@ Every room of the enemy ship in five seconds. The beam specialists printed the r
 A Weapon Pre-igniter. The specialists would like you to do it again, faster.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_SUFFOCATE
-from: Home Planet Liaison
-subject: Victory through Asphyxiation
-reward: item O2_MASKS
-
+	<letter key="ach:ACH_SUFFOCATE" from="Home Planet Liaison" subject="Victory through Asphyxiation" reward="item O2_MASKS"><![CDATA[
 {rank},
 
 An enemy crew left without air. Grim work. But it is a war, and the rebels would do the same to you without a second thought.
@@ -862,12 +728,9 @@ An enemy crew left without air. Grim work. But it is a war, and the rebels would
 Which is why you're getting Emergency Respirators. Make sure it never happens to yours.
 
 ~ Home Planet Liaison
+]]></letter>
 
-== ach:ACH_UNITED_FEDERATION
-from: Office of Alien Affairs
-subject: The United Federation
-reward: system clonebay
-
+	<letter key="ach:ACH_UNITED_FEDERATION" from="Office of Alien Affairs" subject="The United Federation" reward="system clonebay"><![CDATA[
 {rank},
 
 Six peoples aboard one Kestrel, working as a single crew. This office read that report aloud, start to finish. That is what the Federation is for.
@@ -876,12 +739,9 @@ A Clone Bay. Six peoples, one crew; keep it that way.
 
 Many worlds, one Federation.
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_FULL_ARSENAL
-from: Home Planet Shipyard
-subject: Full Arsenal
-reward: item SYSTEM_CASING
-
+	<letter key="ach:ACH_FULL_ARSENAL" from="Home Planet Shipyard" subject="Full Arsenal" reward="item SYSTEM_CASING"><![CDATA[
 {rank},
 
 Eleven systems in one Kestrel. ELEVEN. I've worked on those hulls. I didn't think she had the room.
@@ -890,12 +750,9 @@ Here, take a Titanium System Casing, to protect all of them. And send me a pictu
 
 Don't let anyone dent her.
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== ach:ACH_TOUGH_SHIP
-from: Home Planet Shipyard
-subject: Tough Little Ship
-reward: item ROCK_ARMOR
-
+	<letter key="ach:ACH_TOUGH_SHIP" from="Home Planet Shipyard" subject="Tough Little Ship" reward="item ROCK_ARMOR"><![CDATA[
 {rank},
 
 One hull point. ONE. And you brought her all the way back to full. That's a tough little ship, and whoever's flying her isn't bad either.
@@ -903,12 +760,9 @@ One hull point. ONE. And you brought her all the way back to full. That's a toug
 Rock Plating, so next time she doesn't get quite that close. I'd like her back in one piece.
 
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== ach:ACH_ENERGY_SHIELDS
-from: Home Planet Shipyard
-subject: Shields Holding
-reward: item SHIELD_RECHARGE
-
+	<letter key="ach:ACH_ENERGY_SHIELDS" from="Home Planet Shipyard" subject="Shields Holding" reward="item SHIELD_RECHARGE"><![CDATA[
 {rank},
 
 The enemy never got through your Zoltan Shield. Not once. The Zoltan are very pleased; apparently you used it "as intended."
@@ -918,12 +772,9 @@ How does a Zoltan shield work anyway? I've asked three engineers and gotten four
 Here's a Shield Charge Booster, with the Zoltan's compliments. They say it will all make sense once it's installed. I'll take their word for it.
 
 ~ Home Planet Shipyard Comm. Officer
+]]></letter>
 
-== ach:ACH_ENERGY_POWER
-from: Federation Engineering Corps
-subject: Givin' her all she's got, Captain!
-reward: item BATTERY_BOOSTER
-
+	<letter key="ach:ACH_ENERGY_POWER" from="Federation Engineering Corps" subject="Givin' her all she's got, Captain!" reward="item BATTERY_BOOSTER"><![CDATA[
 {rank},
 
 Twenty-nine power running through your systems at once. The reactor must have been singing. We would have liked to hear it.
@@ -931,12 +782,9 @@ Twenty-nine power running through your systems at once. The reactor must have be
 A Battery Charger, for when she needs even more. There is always more.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_ENERGY_MANPOWER
-from: Office of Alien Affairs
-subject: Manpower
-reward: crew energy
-
+	<letter key="ach:ACH_ENERGY_MANPOWER" from="Office of Alien Affairs" subject="Manpower" reward="crew energy"><![CDATA[
 {rank},
 
 Sector 5 without a single reactor upgrade: your Zoltan crew powered the ship themselves. The Zoltan consider this simply good manners.
@@ -944,12 +792,9 @@ Sector 5 without a single reactor upgrade: your Zoltan crew powered the ship the
 One of them has asked to serve with you. They are reporting to The Home Planet Station, and they will thank you for the opportunity. At length.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_STEALTH_DESTROY
-from: Home Planet Liaison
-subject: Bird of Prey
-reward: item WEAPON_PREIGNITE
-
+	<letter key="ach:ACH_STEALTH_DESTROY" from="Home Planet Liaison" subject="Bird of Prey" reward="item WEAPON_PREIGNITE"><![CDATA[
 {rank},
 
 A ship at full strength, destroyed before your cloak even dropped. Federation Intelligence has asked me how you did it. I told them to read your logs like the rest of us.
@@ -957,12 +802,9 @@ A ship at full strength, destroyed before your cloak even dropped. Federation In
 Until they work it out, a Weapon Pre-igniter, so the strike lands even sooner.
 
 ~ Home Planet Liaison
+]]></letter>
 
-== ach:ACH_STEALTH_AVOID
-from: Home Planet Liaison
-subject: Phase Shift
-reward: item FTL_JAMMER
-
+	<letter key="ach:ACH_STEALTH_AVOID" from="Home Planet Liaison" subject="Phase Shift" reward="item FTL_JAMMER"><![CDATA[
 {rank},
 
 Nine points of incoming fire, and not one of them found you. The rebels are wasting ammunition on shadows.
@@ -971,12 +813,9 @@ Here is an FTL Jammer, so the ones you're hunting can't run either. Once you've 
 
 Until every beacon is free.
 ~ Home Planet Liaison
+]]></letter>
 
-== ach:ACH_STEALTH_TACTICAL
-from: Home Planet Quartermaster
-subject: Tactical Approach
-reward: scrap 500
-
+	<letter key="ach:ACH_STEALTH_TACTICAL" from="Home Planet Quartermaster" subject="Tactical Approach" reward="scrap 500"><![CDATA[
 {rank},
 
 Sector 8 without flying into a single storm, sun or asteroid field. Hull repairs cost the fleet a fortune. You didn't need any.
@@ -984,12 +823,9 @@ Sector 8 without flying into a single storm, sun or asteroid field. Hull repairs
 You saved us a fortune, so here's some of it back: 500 scrap. Don't let it go to your head.
 
 ~ Home Planet Quartermaster
+]]></letter>
 
-== ach:ACH_ROBOTIC
-from: Office of Alien Affairs
-subject: Robotic Warfare
-reward: item DRONE_SPEED
-
+	<letter key="ach:ACH_ROBOTIC" from="Office of Alien Affairs" subject="Robotic Warfare" reward="item DRONE_SPEED"><![CDATA[
 {rank},
 
 Three drones working at once. The Engi sent a note that simply reads: "Acceptable." From the Engi, that is a standing ovation.
@@ -997,12 +833,9 @@ Three drones working at once. The Engi sent a note that simply reads: "Acceptabl
 A Drone Reactor Booster, on their recommendation.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_ONLY_DRONES
-from: Office of Alien Affairs
-subject: I hardly lifted a finger
-reward: item DRONE_RECOVERY
-
+	<letter key="ach:ACH_ONLY_DRONES" from="Office of Alien Affairs" subject="I hardly lifted a finger" reward="item DRONE_RECOVERY"><![CDATA[
 {rank},
 
 An enemy ship destroyed by drones alone. The Engi called it "elegant." We have never heard them call anything elegant.
@@ -1010,12 +843,9 @@ An enemy ship destroyed by drones alone. The Engi called it "elegant." We have n
 A Drone Recovery Arm, so your drones come home too.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_IONED
-from: Office of Alien Affairs
-subject: The guns... They've stopped
-reward: item ION_ARMOR
-
+	<letter key="ach:ACH_IONED" from="Office of Alien Affairs" subject="The guns... They've stopped" reward="item ION_ARMOR"><![CDATA[
 {rank},
 
 Four enemy systems ioned at once. The Engi were watching, and they have shared their Reverse Ion Field with you: the same trick won't work on your ship.
@@ -1023,12 +853,9 @@ Four enemy systems ioned at once. The Engi were watching, and they have shared t
 It has not left Engi hands before. Please do not take it apart.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_ROCK_FIRE
-from: Office of Alien Affairs
-subject: Is it warm in here?
-reward: item FIRE_EXTINGUISHERS
-
+	<letter key="ach:ACH_ROCK_FIRE" from="Office of Alien Affairs" subject="Is it warm in here?" reward="item FIRE_EXTINGUISHERS"><![CDATA[
 {rank},
 
 Your Rock crew fought a burning enemy and won. According to the report, they didn't notice the fire.
@@ -1036,12 +863,9 @@ Your Rock crew fought a burning enemy and won. According to the report, they did
 The rest of your crew did. A Fire Suppression system, for everyone aboard who isn't made of stone.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_ROCK_MISSILES
-from: Federation Engineering Corps
-subject: Defense Drones Don't Do D'anything!
-reward: item DEFENSE_SCRAMBLER, missiles 6
-
+	<letter key="ach:ACH_ROCK_MISSILES" from="Federation Engineering Corps" subject="Defense Drones Don't Do D'anything!" reward="item DEFENSE_SCRAMBLER, missiles 6"><![CDATA[
 {rank},
 
 Missiles only, straight through a defense drone. We can now confirm that the drone did not, in fact, do anything.
@@ -1049,12 +873,9 @@ Missiles only, straight through a defense drone. We can now confirm that the dro
 A Defense Scrambler and six missiles, to keep proving it.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_ROCK_CRYSTAL
-from: Office of Alien Affairs
-subject: Ancestry
-reward: item CRYSTAL_HEAVY_1
-
+	<letter key="ach:ACH_ROCK_CRYSTAL" from="Office of Alien Affairs" subject="Ancestry" reward="item CRYSTAL_HEAVY_1"><![CDATA[
 {rank},
 
 You found the Crystal's hidden sector. Your Rock crew hasn't stopped talking about it. They say it feels like visiting family.
@@ -1062,12 +883,9 @@ You found the Crystal's hidden sector. Your Rock crew hasn't stopped talking abo
 The Crystal, to everyone's surprise, sent a gift: a Heavy Crystal Mark I. We are told this is a great honor. We are also told not to ask why.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_MANTIS_CREW_DEAD
-from: Office of Alien Affairs
-subject: Take no prisoners!
-reward: item CREW_STIMS
-
+	<letter key="ach:ACH_MANTIS_CREW_DEAD" from="Office of Alien Affairs" subject="Take no prisoners!" reward="item CREW_STIMS"><![CDATA[
 {rank},
 
 The crews of twenty ships defeated by sector 6. Even the Mantis are impressed, and the Mantis are never impressed.
@@ -1075,12 +893,9 @@ The crews of twenty ships defeated by sector 6. Even the Mantis are impressed, a
 Mantis Pheromones, to keep your crew moving. The Mantis ambassador insisted. This office does not argue with the Mantis ambassador.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_MANTIS_SLAUGHTER
-from: Office of Alien Affairs
-subject: Avast, ye scurvy dogs!
-reward: crew mantis
-
+	<letter key="ach:ACH_MANTIS_SLAUGHTER" from="Office of Alien Affairs" subject="Avast, ye scurvy dogs!" reward="crew mantis"><![CDATA[
 {rank},
 
 Five enemy crew taken down, without a scratch on your hull or a single loss. A Mantis warrior heard the story and asked to join you. They love this sort of thing.
@@ -1088,12 +903,9 @@ Five enemy crew taken down, without a scratch on your hull or a single loss. A M
 They are reporting to The Home Planet Station. Mantis custom says you greet a new warrior with a hunt, not a handshake.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_MANTIS_SURVIVOR
-from: Office of Alien Affairs
-subject: Battle Royale
-reward: item BEAM_BIO
-
+	<letter key="ach:ACH_MANTIS_SURVIVOR" from="Office of Alien Affairs" subject="Battle Royale" reward="item BEAM_BIO"><![CDATA[
 {rank},
 
 Your last crew member against their last, and yours walked away. That was far too close.
@@ -1101,12 +913,9 @@ Your last crew member against their last, and yours walked away. That was far to
 The Slugs have offered an Anti-Bio Beam, so it's never that close again. They were quite insistent.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_SLUG_VISION
-from: Office of Alien Affairs
-subject: We're in Position!
-reward: item LIFE_SCANNER
-
+	<letter key="ach:ACH_SLUG_VISION" from="Office of Alien Affairs" subject="We're in Position!" reward="item LIFE_SCANNER"><![CDATA[
 {rank},
 
 Every room of the enemy ship seen without sensors. The Slugs call it "simply paying attention." They would not explain further.
@@ -1114,12 +923,9 @@ Every room of the enemy ship seen without sensors. The Slugs call it "simply pay
 They did, however, sell us a Lifeform Scanner, so you can pay attention the way they do.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_SLUG_NEBULA
-from: Office of Alien Affairs
-subject: Home Sweet Home
-reward: item SLUG_GEL
-
+	<letter key="ach:ACH_SLUG_NEBULA" from="Office of Alien Affairs" subject="Home Sweet Home" reward="item SLUG_GEL"><![CDATA[
 {rank},
 
 Thirty nebulas before sector 8. The Slugs say you would feel right at home among them. We believe that is a compliment.
@@ -1127,12 +933,9 @@ Thirty nebulas before sector 8. The Slugs say you would feel right at home among
 Slug Repair Gel, to keep the breaches sealed. It smells exactly as you would expect.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_SLUG_BIO
-from: Office of Alien Affairs
-subject: Disintegration Ray
-reward: item BEAM_BIO
-
+	<letter key="ach:ACH_SLUG_BIO" from="Office of Alien Affairs" subject="Disintegration Ray" reward="item BEAM_BIO"><![CDATA[
 {rank},
 
 Three enemy crew with a single Anti-Bio shot. The Slugs are delighted that someone finally uses their weapon properly, and they have sent another.
@@ -1140,24 +943,18 @@ Three enemy crew with a single Anti-Bio shot. The Slugs are delighted that someo
 This one came without an invoice. We are still looking for the catch.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_FED_PATIENCE
-from: Home Planet Liaison
-subject: Master of Patience
-reward: item ENERGY_SHIELD
-
+	<letter key="ach:ACH_FED_PATIENCE" from="Home Planet Liaison" subject="Master of Patience" reward="item ENERGY_SHIELD"><![CDATA[
 {rank},
 
 Word got around about your recent victory using only the Artillery Beam, without taking a scratch. The Admirals are impressed. They have negotiated with the Zoltan and acquired a Zoltan Shield for your ship: more time to charge the artillery.
 
 Make good use of it.
 Home Planet Liaison
+]]></letter>
 
-== ach:ACH_FED_DIPLOMACY
-from: Office of Alien Affairs
-subject: Diplomatic Immunity
-reward: crew human
-
+	<letter key="ach:ACH_FED_DIPLOMACY" from="Office of Alien Affairs" subject="Diplomatic Immunity" reward="crew human"><![CDATA[
 {rank},
 
 Four delicate situations resolved with tact by sector 5. This office notices these things, even when the Admiralty doesn't.
@@ -1165,12 +962,9 @@ Four delicate situations resolved with tact by sector 5. This office notices the
 The Diplomatic Corps has assigned one of its officers to serve with you. They are reporting to The Home Planet Station. They speak nine languages and will mention it.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_FED_UPGRADE
-from: Federation Engineering Corps
-subject: Artillery Mastery
-reward: item WEAPON_PREIGNITE
-
+	<letter key="ach:ACH_FED_UPGRADE" from="Federation Engineering Corps" subject="Artillery Mastery" reward="item WEAPON_PREIGNITE"><![CDATA[
 {rank},
 
 Sector 5 without a single weapon upgrade. You trusted the artillery, and it carried you. We designed it to. It's nice when someone notices.
@@ -1178,12 +972,9 @@ Sector 5 without a single weapon upgrade. You trusted the artillery, and it carr
 A Weapon Pre-igniter, so the rest of your guns are ready while the artillery charges.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_CRYSTAL_SHARD
-from: Office of Alien Affairs
-subject: Sweet Revenge
-reward: item SYSTEM_CASING
-
+	<letter key="ach:ACH_CRYSTAL_SHARD" from="Office of Alien Affairs" subject="Sweet Revenge" reward="item SYSTEM_CASING"><![CDATA[
 {rank},
 
 An enemy ship destroyed by its own damage, turned back on it by a Vengeance shard. The Crystal call that justice. We call it poetic.
@@ -1191,12 +982,9 @@ An enemy ship destroyed by its own damage, turned back on it by a Vengeance shar
 Titanium System Casing, hardened on the Crystal pattern.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_CRYSTAL_LOCKDOWN
-from: Office of Alien Affairs
-subject: No Escape
-reward: item BOMB_LOCK
-
+	<letter key="ach:ACH_CRYSTAL_LOCKDOWN" from="Office of Alien Affairs" subject="No Escape" reward="item BOMB_LOCK"><![CDATA[
 {rank},
 
 Four enemy crew sealed in one room, with nowhere to run. The Crystal were watching, and they approve.
@@ -1204,12 +992,9 @@ Four enemy crew sealed in one room, with nowhere to run. The Crystal were watchi
 They have sent a Crystal Lockdown Bomb, so you can do it again. They ask that you use it only on those who deserve it. We assured them the rebels qualify.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== ach:ACH_CRYSTAL_CLASH
-from: Home Planet Quartermaster
-subject: Clash of the Titans
-reward: item ROCK_ARMOR
-
+	<letter key="ach:ACH_CRYSTAL_CLASH" from="Home Planet Quartermaster" subject="Clash of the Titans" reward="item ROCK_ARMOR"><![CDATA[
 {rank},
 
 Ten Rock ships broken up by your Crystal Cruiser. The salvage crews went through the wreckage and pulled out good Rock Plating. Waste not.
@@ -1217,12 +1002,9 @@ Ten Rock ships broken up by your Crystal Cruiser. The salvage crews went through
 It's in the Cargo Hold. Bolt it onto something that's going to get shot at.
 
 ~ Home Planet Quartermaster
+]]></letter>
 
-== ach:ACH_LANIUS_ADVANCED
-from: Federation Engineering Corps
-subject: Advanced Mastery
-reward: item HACKING_STUN
-
+	<letter key="ach:ACH_LANIUS_ADVANCED" from="Federation Engineering Corps" subject="Advanced Mastery" reward="item HACKING_STUN"><![CDATA[
 {rank},
 
 Hacking, Mind Control and a Battery, all running at once. The Lanius do this without thinking. Now so do you.
@@ -1230,12 +1012,9 @@ Hacking, Mind Control and a Battery, all running at once. The Lanius do this wit
 Hacking Stun, to make the combination even nastier.
 
 ~ Federation Engineering Corps
+]]></letter>
 
-== ach:ACH_LANIUS_SCRAP
-from: Home Planet Quartermaster
-subject: Scrap Hoarder
-reward: item REPAIR_ARM, item SCRAP_COLLECTOR
-
+	<letter key="ach:ACH_LANIUS_SCRAP" from="Home Planet Quartermaster" subject="Scrap Hoarder" reward="item REPAIR_ARM, item SCRAP_COLLECTOR"><![CDATA[
 {rank},
 
 Six hundred scrap aboard and not a piece spent. Finally, someone who understands.
@@ -1243,12 +1022,9 @@ Six hundred scrap aboard and not a piece spent. Finally, someone who understands
 A Repair Arm and a Scrap Recovery Arm: save more, find more. Keep hoarding. When the fleet needs it, you'll be the one who has it.
 
 ~ Home Planet Quartermaster
+]]></letter>
 
-== ach:ACH_LANIUS_OXYGEN
-from: Office of Alien Affairs
-subject: Loss of Cabin Pressure
-reward: item BOMB_BREACH_2
-
+	<letter key="ach:ACH_LANIUS_OXYGEN" from="Office of Alien Affairs" subject="Loss of Cabin Pressure" reward="item BOMB_BREACH_2"><![CDATA[
 {rank},
 
 Sector 8 with the air nearly gone. The Lanius manage without it; the rest of us marvel that your crew did.
@@ -1256,12 +1032,9 @@ Sector 8 with the air nearly gone. The Lanius manage without it; the rest of us 
 A Breach Bomb Mark II, so your enemies can find out what breathing space feels like.
 
 ~ Office of Alien Affairs
+]]></letter>
 
-== fleet3:hello
-from: Third Fleet Commander
-subject: Rebuilding ships
-replies: Not interested -> fleet3:no 1-2 | Interested -> fleet3:yes 1-2
-
+	<letter key="fleet3:hello" from="Third Fleet Commander" subject="Rebuilding ships" replies="Not interested -&gt; fleet3:no 1-2 | Interested -&gt; fleet3:yes 1-2"><![CDATA[
 Hey {rank}, this is The Station's Third Fleet Commander.
 
 I saw you've been flying that {name}. It's not a bad vessel, but it got me thinking: did you know you can rebuild ships from the junkyard?
@@ -1273,62 +1046,49 @@ Tell you what, if you pick up a derelict from the Ship Yard's junk, I'll see if 
 Might be fun rebuilding ships together.
 
 ~ Federation Home Planet Station: Third Fleet Commander.
+]]></letter>
 
-== fleet3:no
-from: Third Fleet Commander
-subject: Re: Rebuilding ships
-
+	<letter key="fleet3:no" from="Third Fleet Commander" subject="Re: Rebuilding ships"><![CDATA[
 {rank},
 
 No problem. If you change your mind, I'll still see about sending you an extra part.
 
 ~ Federation Home Planet Station: Third Fleet Commander.
+]]></letter>
 
-== fleet3:yes
-from: Third Fleet Commander
-subject: Re: Rebuilding ships
-
+	<letter key="fleet3:yes" from="Third Fleet Commander" subject="Re: Rebuilding ships"><![CDATA[
 {rank},
 
 Good to hear. I'll keep an eye out for spare parts.
 
 ~ Federation Home Planet Station: Third Fleet Commander.
+]]></letter>
 
-== fleet3:part
-from: Third Fleet Commander
-subject: Your project ship
-
+	<letter key="fleet3:part" from="Third Fleet Commander" subject="Your project ship"><![CDATA[
 {rank},
 
 Glad to see you decided to try picking out your own project ship and fixing her up. Here, I saw she was missing {name}. Go ahead and have this one I had laying around. Head to your Cargo Bay, and it should be easy to Refit your ship with the system.
 
 ~ Federation Home Planet Station: Third Fleet Commander.
+]]></letter>
 
-== fleet3:part:no
-from: Third Fleet Commander
-subject: Your project ship
-
+	<letter key="fleet3:part:no" from="Third Fleet Commander" subject="Your project ship"><![CDATA[
 {rank},
 
 Glad to see you decided to try picking out your own project ship and fixing her up, even though you said you didn't want to. Here, I saw she was missing {name}. Go ahead and have this one I had laying around. Head to your Cargo Bay, and it should be easy to Refit your ship with the system.
 
 ~ Federation Home Planet Station: Third Fleet Commander.
+]]></letter>
 
-== fleet3:parts
-from: Third Fleet Commander
-subject: Parts from the Junkyard
-
+	<letter key="fleet3:parts" from="Third Fleet Commander" subject="Parts from the Junkyard"><![CDATA[
 {rank},
 
 I heard from the technicians down in refitting you got some work done with one of those parts. Just wanted to make sure you knew you can get cheap parts at the junkyard too, not just ships. Gotta repair them yourself though, or pay the refitting technicians to repair it.
 
 ~ Federation Home Planet Station: Third Fleet Commander.
+]]></letter>
 
-== chain:one-hull
-from: Engi Restoration Collective
-subject: One point of hull
-replies: Tell me about these derelict vessels. -> chain:one-hull:derelict 5-10 | I could definitely use a repair tool. -> chain:one-hull:tool 3-5
-
+	<letter key="chain:one-hull" from="Engi Restoration Collective" subject="One point of hull" replies="Tell me about these derelict vessels. -&gt; chain:one-hull:derelict 5-10 | I could definitely use a repair tool. -&gt; chain:one-hull:tool 3-5"><![CDATA[
 {rank},
 
 We have received word that the {name} returned from battle with one point of hull remaining. One. We hope she was kept, and repaired, and not discarded.
@@ -1340,12 +1100,9 @@ We maintain several derelict vessels that are waiting for such a person. Perhaps
 Reply, and tell us which.
 
 ~ Engi Restoration Collective
+]]></letter>
 
-== chain:one-hull:derelict
-from: Engi Restoration Collective
-subject: A vessel in need
-then: chain:one-hull:delivered 5-7
-
+	<letter key="chain:one-hull:derelict" from="Engi Restoration Collective" subject="A vessel in need" then="chain:one-hull:delivered 5-7"><![CDATA[
 {rank},
 
 We have chosen a vessel for you. She is a Slug Cruiser, found drifting, and she has had a difficult life. We call her Patience.
@@ -1355,12 +1112,9 @@ Her hull holds at one fifth. Her oxygen system does not work. Someone tore out h
 We find her beautiful. She is being prepared for transfer to your Junkyard. This will take time.
 
 ~ Engi Restoration Collective
+]]></letter>
 
-== chain:one-hull:delivered
-from: Engi Restoration Collective
-subject: Delivered
-action: derelict
-
+	<letter key="chain:one-hull:delivered" from="Engi Restoration Collective" subject="Delivered" action="derelict"><![CDATA[
 {rank},
 
 Patience has been delivered to the Junkyard at The Home Planet Station.
@@ -1370,13 +1124,9 @@ To restore her, use Salvage at the Space Dock to bring her back into service, th
 Repair her well. We will ask.
 
 ~ Engi Restoration Collective
+]]></letter>
 
-== chain:one-hull:tool
-from: Engi Restoration Collective
-subject: The tool
-reward: item REPAIR_ARM
-cost: scrap 25
-
+	<letter key="chain:one-hull:tool" from="Engi Restoration Collective" subject="The tool" reward="item REPAIR_ARM" cost="scrap 25"><![CDATA[
 {rank},
 
 We have set aside a Repair Arm for you. It mends the hull a little each time you collect scrap. We ask 25 scrap from your Cargo Hold to cover its parts, which is less than any store will ask. We do not believe in profit from repairs.
@@ -1384,12 +1134,9 @@ We have set aside a Repair Arm for you. It mends the hull a little each time you
 Claim it when you are ready.
 
 ~ Engi Restoration Collective
+]]></letter>
 
-== chain:repair-job
-from: A Collector, Civilian Sector
-subject: A restoration job
-replies: Send her over. I'll restore her. -> chain:repair-job:accepted 3-5 | I can't take this on. -> chain:repair-job:refused 3-5
-
+	<letter key="chain:repair-job" from="A Collector, Civilian Sector" subject="A restoration job" replies="Send her over. I'll restore her. -&gt; chain:repair-job:accepted 3-5 | I can't take this on. -&gt; chain:repair-job:refused 3-5"><![CDATA[
 {rank},
 
 I heard you are good at repairs. I own a classic {class}, the {name}, but my idiot brother took her out and got her wrecked. If you can restore her I'll pay enough to cover the cost plus {extra} scrap.
@@ -1399,11 +1146,9 @@ She is one of the old experimental Stealths, from before the war: there are very
 My brother says it was not his fault. My brother says a great many things.
 
 ~ A Collector, Civilian Sector
+]]></letter>
 
-== chain:repair-job:refused
-from: A Collector, Civilian Sector
-subject: Re: A restoration job
-
+	<letter key="chain:repair-job:refused" from="A Collector, Civilian Sector" subject="Re: A restoration job"><![CDATA[
 {rank},
 
 A pity. I had hoped someone out there still valued the old ships for what they are.
@@ -1411,12 +1156,9 @@ A pity. I had hoped someone out there still valued the old ships for what they a
 She will wait. She has waited before. If you are ever less busy, I suspect I will still be looking.
 
 ~ A Collector, Civilian Sector
+]]></letter>
 
-== chain:repair-job:accepted
-from: A Collector, Civilian Sector
-subject: She's on her way
-action: repair-job
-
+	<letter key="chain:repair-job:accepted" from="A Collector, Civilian Sector" subject="She's on her way" action="repair-job"><![CDATA[
 {rank},
 
 Thank you. The {name} has been towed to your Junkyard. Salvage her, and put at least one of your own crew aboard if you mean to fly her: my brother has been forbidden from going near her again.
@@ -1426,12 +1168,9 @@ Repair her completely: every hull plate, every breach sealed. When she's whole, 
 Please take care of her. She is older than both of us.
 
 ~ A Collector, Civilian Sector
+]]></letter>
 
-== chain:repair-job:ready
-from: The Home Planet Station
-subject: Ready to return: the {name}
-replies: Send her home. | Not yet.
-
+	<letter key="chain:repair-job:ready" from="The Home Planet Station" subject="Ready to return: the {name}" replies="Send her home. | Not yet."><![CDATA[
 Automated message from The Home Planet Station.
 
 {rank},
@@ -1439,11 +1178,9 @@ Automated message from The Home Planet Station.
 The {name} has been fully repaired: every hull point restored, every breach sealed, Engines and Piloting working. She is ready to return to her owner, who will pay {waiting} scrap into the Cargo Hold when she arrives.
 
 Reply to send her home now. Or return her later from the Cargo Bay while you are aboard her (at a station, with FTL closed).
+]]></letter>
 
-== chain:repair-job:paid
-from: A Collector, Civilian Sector
-subject: She's home
-
+	<letter key="chain:repair-job:paid" from="A Collector, Civilian Sector" subject="She's home"><![CDATA[
 {rank},
 
 She came in under her own power. I stood in the hangar and watched her dock, and for a moment she looked exactly as she did the day I bought her.
@@ -1452,12 +1189,9 @@ Your payment has been sent to your Cargo Hold: {pay} scrap, the cost of the work
 
 Fair flights between the stars.
 ~ A Collector, Civilian Sector
+]]></letter>
 
-== chain:repair-job:overdue
-from: A Collector, Civilian Sector
-subject: Where is my ship?
-replies: Send her back now. -> chain:repair-job:returned-late 1-2 | She stays with me. -> chain:repair-job:defied 2-4
-
+	<letter key="chain:repair-job:overdue" from="A Collector, Civilian Sector" subject="Where is my ship?" replies="Send her back now. -&gt; chain:repair-job:returned-late 1-2 | She stays with me. -&gt; chain:repair-job:defied 2-4"><![CDATA[
 {rank},
 
 It has been a long time and I have heard nothing. I would like to believe that the {name} is simply taking longer than expected. I would also like to believe my brother will grow up.
@@ -1465,11 +1199,9 @@ It has been a long time and I have heard nothing. I would like to believe that t
 Return her. Finished or unfinished, she comes back to me now. If she does not, my next letter will be written by my attorneys, and they are not as patient as I am.
 
 ~ A Collector, Civilian Sector
+]]></letter>
 
-== chain:repair-job:returned-late
-from: A Collector, Civilian Sector
-subject: Received
-
+	<letter key="chain:repair-job:returned-late" from="A Collector, Civilian Sector" subject="Received"><![CDATA[
 {rank},
 
 The {name} is back in my hangar.
@@ -1477,21 +1209,17 @@ The {name} is back in my hangar.
 {paidline}
 
 ~ A Collector, Civilian Sector
+]]></letter>
 
-== chain:repair-job:defied
-from: A Collector, Civilian Sector
-subject: Very well
-
+	<letter key="chain:repair-job:defied" from="A Collector, Civilian Sector" subject="Very well"><![CDATA[
 {rank},
 
 I see. Then this is no longer a conversation between the two of us.
 
 ~ A Collector, Civilian Sector
+]]></letter>
 
-== chain:repair-job:seized
-from: Federation Office of Salvage and Claims
-subject: Notice of recovery
-
+	<letter key="chain:repair-job:seized" from="Federation Office of Salvage and Claims" subject="Notice of recovery"><![CDATA[
 {rank},
 
 This office acts for the lawful owner of the {name}, a registered civilian vessel.
@@ -1502,11 +1230,9 @@ This office acts for the lawful owner of the {name}, a registered civilian vesse
 4. The matter is closed. No reply is required, and none will be read.
 
 ~ Federation Office of Salvage and Claims, Recovery Division
+]]></letter>
 
-== chain:repair-job:collected
-from: Federation Office of Salvage and Claims
-subject: Notice of recovery: the vessel
-
+	<letter key="chain:repair-job:collected" from="Federation Office of Salvage and Claims" subject="Notice of recovery: the vessel"><![CDATA[
 {rank},
 
 The {name} has docked at The Home Planet Station and has been recovered for her owner, as this office's notice said she would be.
@@ -1514,11 +1240,9 @@ The {name} has docked at The Home Planet Station and has been recovered for her 
 No reply is required.
 
 ~ Federation Office of Salvage and Claims, Recovery Division
+]]></letter>
 
-== chain:repair-job:hidden
-from: Junkyard Foreman
-subject: (no subject)
-
+	<letter key="chain:repair-job:hidden" from="Junkyard Foreman" subject="(no subject)"><![CDATA[
 {rank},
 
 I know what you did, hiding the {name} in my yard. Sneaky, but smart.
@@ -1528,11 +1252,9 @@ Funny thing: the claims office sent two of their people through here asking afte
 You don't owe me anything. Just remember who's been minding your yard.
 
 ~ Junkyard Foreman
+]]></letter>
 
-== shipped
-from: The crew of the {name}
-subject: Shipped home: {item}
-
+	<letter key="shipped" from="The crew of the {name}" subject="Shipped home: {item}"><![CDATA[
 {rank},
 
 The {name} had no room aboard for another augment, and without a way to store one, we crated up the {item} and shipped it back to The Home Planet Station.
@@ -1540,3 +1262,5 @@ The {name} had no room aboard for another augment, and without a way to store on
 It's yours to claim. It will wait in the Cargo Hold until a ship has room for it.
 
 ~ The crew of the {name}
+]]></letter>
+</letters>

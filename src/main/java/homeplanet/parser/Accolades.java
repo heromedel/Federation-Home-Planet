@@ -35,82 +35,35 @@ public final class Accolades {
 	/** The vault's events: "accolade:<kind>" -> the letter it went in. */
 	static final String USED = "accolade:";
 
-	/** The words, by kind: {ship} "the Kestrel", {n} a count (in words up to ten), {achievement}, {model}, {crew}. */
-	static final Map<String, String[]> WORDS = new LinkedHashMap<String, String[]>();
-	static {
-		// phrases, not sentences: they follow "Of particular note in the discussions was:" (heromedel's template, 5.57)
-		WORDS.put("ship", new String[] {
-			"Your {n} jumps aboard {ship}.",
-			"{ship}'s remarkable service, {n} jumps and counting."});
-		WORDS.put("achievement", new String[] {
-			"Word of \"{achievement}\" reaching the Admiralty.",
-			"Your achievement, \"{achievement}\"."});
-		WORDS.put("model", new String[] {
-			"Your {n} {model}s, every one of them made your own.",
-			"Getting more out of the {model} than anyone, across {n} of them."});
-		WORDS.put("fights", new String[] {
-			"Your defeat of {n} enemy ships.",
-			"The {n} enemy ships fallen to your fleet's guns."});
-		WORDS.put("crew", new String[] {
-			"{crew}'s service at your side.",
-			"The crew you chose, {crew} first among them."});
-		WORDS.put("expeditions", new String[] {
-			"Your {n} expeditions, and every crew that went.",
-			"Your reports from {n} expeditions."});
+	/** The tokens an accolade or a deed may use: {ship} "the Kestrel", {n} a count (in words up to ten), {achievement}, {model}, {crew}. */
+	static final List<String> TOKENS = java.util.Arrays.asList("ship", "n", "achievement", "model", "crew");
+	/**
+	 * The phrases for a kind of accolade (6.0 step 9a, 5.991: lore/deeds.xml, a map here before): phrases, not sentences,
+	 * as they follow "Of particular note in the discussions was:" (heromedel's template, 5.57). The player's copy's
+	 * phrases for a kind take the place of the station's own; none for an unknown kind.
+	 */
+	public static String[] words(String kind) { return lore("ACCOLADE", "of=" + kind, true); }
+	/** An achievement told as the deed itself (heromedel, 5.57), by FTL's id; null for one not listed (the general words). */
+	public static String deed(String achievementId) {
+		String[] d = lore("DEED", "achievement=" + achievementId, false);
+		return d.length == 0 ? null : d[0];
 	}
-
-	/** An achievement told as the deed itself (heromedel, 5.57), by FTL's id; one not listed gets the general words. */
-	static final Map<String, String> DEEDS = new LinkedHashMap<String, String>();
-	static {
-		DEEDS.put("ACH_SECTOR_5", "One of your ships fighting her way to sector 5.");
-		DEEDS.put("ACH_SECTOR_8", "One of your ships making it all the way to sector 8, within reach of the Federation's own base.");
-		DEEDS.put("ACH_UNLOCK_ALL", "Flying every kind of cruiser the Federation knows of.");
-		DEEDS.put("ACH_SCRAP", "Your fleet hauling in over 10,000 scrap since you took command.");
-		DEEDS.put("ACH_SHIPS", "Your defeat of a thousand enemy ships.");
-		DEEDS.put("ACH_NO_UPGRADES", "Taking a ship to sector 5 without a single upgrade.");
-		DEEDS.put("ACH_PACIFIST", "Reaching sector 5 without firing a shot.");
-		DEEDS.put("ACH_NO_REPAIR", "Flying to sector 5 without once stopping for repairs at a store.");
-		DEEDS.put("ACH_NO_MISSILES", "Reaching sector 8 without firing a single missile or bomb.");
-		DEEDS.put("ACH_NO_DRONES", "Reaching sector 8 without launching a single drone.");
-		DEEDS.put("ACH_NO_BUYING", "Reaching sector 8 without buying a thing at a store.");
-		DEEDS.put("ACH_NO_DEATH", "Bringing every one of your crew through to sector 8 alive.");
-		DEEDS.put("ACH_BURNING", "Setting every room of an enemy ship ablaze at once.");
-		DEEDS.put("ACH_BAD_DODGING", "Taking five shots in a row with your engines at full, and flying on anyway.");
-		DEEDS.put("ACH_ONE_VOLLEY", "Destroying an enemy ship in one volley, before she could fire a single shot.");
-		DEEDS.put("ACH_BOARDING_DRONE", "A single boarding drone of yours clearing four enemy crew off their own ship.");
-		DEEDS.put("ACH_INVADE_SHIP", "Your whole crew going across and taking an enemy ship with their own hands.");
-		DEEDS.put("ACH_SLICE_DICE", "Your beams sweeping every room of an enemy ship in a matter of seconds.");
-		DEEDS.put("ACH_SUFFOCATE", "Draining the air from an enemy ship until there was none left to breathe.");
-		DEEDS.put("ACH_UNITED_FEDERATION", "Six peoples serving side by side aboard your Kestrel Cruiser.");
-		DEEDS.put("ACH_FULL_ARSENAL", "Running eleven systems aboard one Kestrel Cruiser.");
-		DEEDS.put("ACH_TOUGH_SHIP", "Bringing a Kestrel Cruiser back from a single point of hull to full strength.");
-		DEEDS.put("ACH_ENERGY_SHIELDS", "Finishing a fight in your Zoltan Cruiser before the enemy ever got through her shield.");
-		DEEDS.put("ACH_ENERGY_POWER", "Powering a ton of systems on that Zoltan Cruiser, all at once.");
-		DEEDS.put("ACH_ENERGY_MANPOWER", "Reaching sector 5 in a Zoltan Cruiser on her original reactor.");
-		DEEDS.put("ACH_STEALTH_DESTROY", "Taking an enemy from full strength to nothing in a single cloak of your Stealth Cruiser.");
-		DEEDS.put("ACH_STEALTH_AVOID", "Slipping a storm of fire under a single cloak of your Stealth Cruiser.");
-		DEEDS.put("ACH_STEALTH_TACTICAL", "Taking your Stealth Cruiser to sector 8 without once flying into a hazard.");
-		DEEDS.put("ACH_ROBOTIC", "Keeping three drones at work at once from your Engi Cruiser.");
-		DEEDS.put("ACH_ONLY_DRONES", "Your Engi Cruiser's drones winning a fight on their own, without a single weapon fired.");
-		DEEDS.put("ACH_IONED", "Ioning four enemy systems at once from your Engi Cruiser.");
-		DEEDS.put("ACH_ROCK_FIRE", "Your Rock crew fighting on through the flames aboard an enemy ship, and winning.");
-		DEEDS.put("ACH_ROCK_MISSILES", "Your Rock Cruiser's missiles getting past an enemy's defense drone to finish her.");
-		DEEDS.put("ACH_ROCK_CRYSTAL", "Your Rock Cruiser finding the hidden Crystal worlds, home of the Rock's ancient ancestors.");
-		DEEDS.put("ACH_MANTIS_CREW_DEAD", "Your Mantis Cruiser's boarders clearing twenty enemy crews before sector 6.");
-		DEEDS.put("ACH_MANTIS_SLAUGHTER", "Taking down five enemy crew without a scratch to your Mantis Cruiser or her crew.");
-		DEEDS.put("ACH_MANTIS_SURVIVOR", "Your last Mantis standing winning the fight aboard the enemy's own ship.");
-		DEEDS.put("ACH_SLUG_VISION", "Your Slug Cruiser having eyes in every room of an enemy ship, sensors or not.");
-		DEEDS.put("ACH_SLUG_NEBULA", "Your Slug Cruiser visiting thirty nebulas before sector 8.");
-		DEEDS.put("ACH_SLUG_BIO", "Taking down three enemy crew with one shot from your Anti-Bio Beam.");
-		DEEDS.put("ACH_FED_PATIENCE", "Winning a fight with the Artillery Beam alone, without a scratch to the hull.");
-		DEEDS.put("ACH_FED_DIPLOMACY", "Your Federation Cruiser's crew talking their way through four tight spots before sector 5.");
-		DEEDS.put("ACH_FED_UPGRADE", "Reaching sector 5 in a Federation Cruiser without upgrading her weapons.");
-		DEEDS.put("ACH_CRYSTAL_SHARD", "Finishing an enemy ship with a shard of Crystal Vengeance.");
-		DEEDS.put("ACH_CRYSTAL_LOCKDOWN", "Sealing four enemy crew in a single room from your Crystal Cruiser.");
-		DEEDS.put("ACH_CRYSTAL_CLASH", "Your Crystal Cruiser's defeat of ten Rock ships.");
-		DEEDS.put("ACH_LANIUS_ADVANCED", "Running Hacking, Mind Control and the Battery all at once aboard your Lanius Cruiser.");
-		DEEDS.put("ACH_LANIUS_SCRAP", "Filling one Lanius Cruiser's hold with six hundred scrap.");
-		DEEDS.put("ACH_LANIUS_OXYGEN", "Taking your Lanius Cruiser to sector 8 on barely a breath of air.");
+	/** The words of deeds.xml's entries of this kind and condition, from the first source that has any (the copy wins), tokens checked. */
+	private static String[] lore(String kind, String when, boolean all) {
+		List<String> out = new ArrayList<String>();
+		String from = null;
+		for (homeplanet.core.Lore.Entry e : homeplanet.core.Lore.entries(homeplanet.core.Lore.DEEDS)) {
+			if (!e.kind.equals(kind) || !when.equals(e.when == null ? "" : e.when.trim())) continue;
+			if (from != null && !from.equals(e.source)) break; // the copy's entries come first: they take the kind's place
+			String bad = null;
+			Matcher m = Pattern.compile("\\{([a-z0-9_.]+)\\}").matcher(e.words);
+			while (m.find()) if (!TOKENS.contains(m.group(1))) bad = m.group(1);
+			if (bad != null) { homeplanet.core.Lore.problem(e.source + ", line " + e.line + " (" + when + "): {" + bad + "} isn't an accolade's token; left out"); continue; }
+			from = e.source;
+			out.add(e.words);
+			if (!all) break;
+		}
+		return out.toArray(new String[0]);
 	}
 
 	/** The letter's text with its {accolade} filled, or that paragraph taken out when there's nothing left to say. */
@@ -165,10 +118,11 @@ public final class Accolades {
 		for (String k : have.keySet()) if (v.event(USED + k) == null) open.add(k);
 		if (open.isEmpty()) return null;
 		String kind = open.get(rng.nextInt(open.size()));
-		String[] say = WORDS.get(kind);
+		String[] say = words(kind);
+		if (say.length == 0) return null; // no words for it (a copy of deeds.xml can't take a kind's words away: the station's own stand)
 		String[] x = have.get(kind);
 		String line = say[rng.nextInt(say.length)];
-		if (kind.equals("achievement")) { String deed = DEEDS.get(achievementId(x[2])); if (deed != null) line = deed; }
+		if (kind.equals("achievement")) { String deed = deed(achievementId(x[2])); if (deed != null) line = deed; }
 		if (x[0] != null) line = line.replace("{ship}", ShipNames.the(x[0]));
 		if (x[1] != null) line = line.replace("{n}", number(Integer.parseInt(x[1])));
 		if (x[2] != null) line = line.replace("{achievement}", x[2]);
