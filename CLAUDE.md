@@ -49,6 +49,7 @@ it does and CREDITS.md for where the code came from.
   or how crew are tracked.
   `docs/OVERHAUL-6.md` is the 6.0 plan (storage, logs and code rebuilt) with every session's notes: read it before planning
   anything that touches storage or logs, and add thoughts only under your own heading at its end, as it says.
+  `docs/BUGS.md` lists bugs found and not yet fixed (heromedel, 6.01): add one there when a fix is put off.
   `docs/EVENTS.md` lists every event kind the station logs and its fields: anything that writes a log adds its kind there
   first (the log rule below), and EventT checks the list.
 - **Handoffs:** before fixing a bug, ask heromedel "Would you like me to work on this or prepare a handoff?". A handoff
