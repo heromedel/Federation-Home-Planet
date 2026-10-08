@@ -2,7 +2,7 @@
 
 What players (heromedel and the testers) send through the station's Send Feedback form, and what became of each. The
 responses are in the sheet linked in `CLAUDE.md`; Cloud-C-Primary-Edit ("Prime") reads it after every push and brings this
-list up to date. The newest response read: **10/8/2026 2:53:46**.
+list up to date. The newest response read: **10/8/2026 3:31:49**.
 
 Status: done (with the version), open, or not for the station (jokes, questions answered).
 
@@ -29,3 +29,4 @@ Status: done (with the version), open, or not for the station (jokes, questions 
 | 10/7 23:18 | 5.94 | The Crew Log's drop-down with the same skill-mastery icons as the expedition list | done 6.02 |
 | 10/8 02:51 | 6.04 | Switching careers: a temporary pop-up saying it's switching, then all pop-ups closed | done 6.07 |
 | 10/8 02:53 | 6.04 | An empty line between the folders' Change rows and the Open buttons (Settings > Folders) | done 6.07 |
+| 10/8 03:31 | 6.05 | A ship defeated is always "We defeated a ship": the log knows what kind she was (a rebel ship), so it should say so | **open** |
