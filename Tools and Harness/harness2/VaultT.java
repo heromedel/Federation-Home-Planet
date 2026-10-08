@@ -38,13 +38,57 @@ public class VaultT { public static void main(String[] a) throws Exception {
  int before = v.fleet().size();
  SafeFiles.copy(v.fileOf(e), v.continueFile());
  Vault vc = Vault.open(saves); vc.takeStock();
- Setup.chk("cloud copy of a docked ship: set aside, not adopted", vc.boarded() == null && !vc.continueFile().exists() && e.name.equals(vc.takeCloudCopy()) && vc.fleet().size() == before);
+ Setup.chk("cloud copy of a docked ship: set aside, not adopted", vc.boarded() == null && !vc.continueFile().exists() && vc.takeCloudCopy().contains(e.name) && vc.fleet().size() == before);
  // an older copy (5.97, concerns 6): one of her kept versions, not her save as it is now
  File older = vc.history(vc.byId(e.id)).get(0);
  Setup.chk("an older copy differs from her save as it is now", !SafeFiles.hash(older).equals(SafeFiles.hash(vc.fileOf(vc.byId(e.id)))));
  SafeFiles.copy(older, vc.continueFile());
  Vault vo = Vault.open(saves); vo.takeStock();
- Setup.chk("an older cloud copy of a docked ship (one of her versions): set aside, not adopted", vo.boarded() == null && !vo.continueFile().exists() && e.name.equals(vo.takeCloudCopy()) && vo.fleet().size() == before);
+ Setup.chk("an older cloud copy of a docked ship (one of her versions): set aside, not adopted", vo.boarded() == null && !vo.continueFile().exists() && vo.takeCloudCopy().contains(e.name) && vo.fleet().size() == before);
+ // 6.08: the ship mark (concerns 6 closed): Board writes her count and the day into her save; a marked copy is set aside whatever it matches
+ String today = new java.text.SimpleDateFormat("yyyyMMdd").format(new java.util.Date());
+ Ship g = null; for (Ship x : vo.docked()) if (!x.id.equals(e.id)) { g = x; break; }
+ vo.board(g);
+ ShipMark.Found m1 = ShipMark.read(vo.continueFile());
+ Setup.chk("M: Board marks her save: this career, her id, boarded once, today", m1 != null && m1.career.equals(vo.slot) && m1.id.equals(g.id) && m1.boards == 1 && Integer.toString(m1.day).equals(today));
+ SavedGameState gm = HomePlanet.savedGameParser.readSavedGame(vo.continueFile());
+ vo.dock(); vo.board(g);
+ ShipMark.Found m2 = ShipMark.read(vo.continueFile());
+ Setup.chk("M: boarded again: twice, and only her mark in the save", m2 != null && m2.boards == 2 && m2.id.equals(g.id));
+ vo.dock();
+ gm.getPlayerShip().setScrapAmt(gm.getPlayerShip().getScrapAmt() + 7); // a copy of her from her first boarding that matches nothing kept
+ SaveHelper.writeSavedGame(vo.continueFile(), gm);
+ int fleetNow = vo.fleet().size();
+ Vault vm = Vault.open(saves); vm.takeStock();
+ String told = vm.takeCloudCopy();
+ boolean asCloud = false; for (File f : ShipStore.versions(vm.historyOf(vm.byId(g.id)), true)) if (f.getName().startsWith("cloud-")) asCloud = true;
+ Setup.chk("M: a marked copy of her that matches nothing kept: set aside in her records, not adopted", vm.boarded() == null && !vm.continueFile().exists() && vm.fleet().size() == fleetNow
+   && told != null && told.contains(g.name) && told.contains("already in your fleet") && asCloud);
+ // a ship that has left the fleet (the one destroyed above)
+ SavedGameState gd = HomePlanet.savedGameParser.readSavedGame(vm.fileOf(vm.byId(g.id)));
+ gd.getStateVars().clear();
+ gd.setStateVar("fhp.ship." + vm.slot + "." + dId, 3);
+ SaveHelper.writeSavedGame(vm.continueFile(), gd);
+ Vault vd = Vault.open(saves); vd.takeStock();
+ told = vd.takeCloudCopy();
+ boolean dCloud = false; for (File f : ShipStore.versions(vd.folderOfId(dId), true)) if (f.getName().startsWith("cloud-")) dCloud = true;
+ Setup.chk("M: a marked copy of a ship that has left: set aside in her memorial folder, not adopted", vd.boarded() == null && !vd.continueFile().exists() && vd.fleet().size() == fleetNow
+   && told != null && told.contains("has left your fleet") && dCloud);
+ // another career's ship
+ gd.getStateVars().clear();
+ String otherCareer = vd.slot.equals(Vault.NORMAL) ? Vault.HARD : Vault.NORMAL;
+ gd.setStateVar("fhp.ship." + otherCareer + ".0123456789abcdef", 5);
+ SaveHelper.writeSavedGame(vd.continueFile(), gd);
+ Vault vx = Vault.open(saves); vx.takeStock();
+ told = vx.takeCloudCopy();
+ File[] aside = new File(vx.root, Vault.SET_ASIDE).listFiles();
+ Setup.chk("M: another career's ship: set aside in set-aside/, not adopted, the message names her career", vx.boarded() == null && !vx.continueFile().exists() && vx.fleet().size() == fleetNow
+   && aside != null && aside.length == 1 && aside[0].getName().startsWith(otherCareer + ".0123456789abcdef.") && told != null && told.contains(Vault.title(otherCareer)));
+ // a ship sent away keeps no station's mark (Vault.receive strips it)
+ byte[] markedSave = SafeFiles.read(vx.fileOf(vx.byId(g.id)));
+ File stripped = new File(work, "stripped.sav"); SafeFiles.write(stripped, ShipMark.strip(markedSave));
+ File markedFile = new File(work, "marked.sav"); SafeFiles.write(markedFile, markedSave);
+ Setup.chk("M: a trade takes the mark off her save", ShipMark.read(markedFile) != null && ShipMark.read(stripped) == null);
  // unknown continue.sav (a new game in FTL): adopted on reload
  SavedGameState other = HomePlanet.savedGameParser.readSavedGame(v.fileOf(e));
  other.getPlayerShip().setScrapAmt(other.getPlayerShip().getScrapAmt() + 1000);
@@ -80,5 +124,15 @@ public class VaultT { public static void main(String[] a) throws Exception {
  int savs = 1; for (File f : kd.listFiles()) if (f.getName().endsWith(".sav")) savs++; // and the waiting copy
  Setup.chk("V: her versions are the ordinary ones; the Records list shows the special copies too (" + v5.history(kv).size() + " of " + v5.kept(kv).size() + ")",
    v5.history(kv).size() == Vault.KEEP && !special && v5.kept(kv).size() == savs && v5.kept(kv).contains(victory) && v5.kept(kv).contains(waiting));
+ // 6.08 (docs/BUGS.md, found 6.01): versions in the order their names were stamped, whatever their file times say
+ File vf = new File(work, "order"); File vv = ShipStore.versions(vf); vv.mkdirs();
+ String[] names = {"20261005-192053.sav", "20261005-192052-2.sav", "20261005-192051.sav", "20261005-192052.sav", "20261005-192052-10.sav"};
+ long t = 1759692052000L;
+ for (int i = 0; i < names.length; i++) { File f = new File(vv, names[i]); SafeFiles.write(f, new byte[] {(byte) i}); f.setLastModified(t); }
+ new File(vv, names[0]).setLastModified(t - 60000); // the newest name, the oldest file time
+ List<File> ordered = ShipStore.versions(vf, false);
+ StringBuilder got = new StringBuilder(); for (File f : ordered) got.append(f.getName()).append(' ');
+ Setup.chk("O: versions ordered by their stamps, file times aside (" + got.toString().trim() + ")",
+   got.toString().trim().equals("20261005-192051.sav 20261005-192052.sav 20261005-192052-2.sav 20261005-192052-10.sav 20261005-192053.sav"));
  Setup.done();
 }}

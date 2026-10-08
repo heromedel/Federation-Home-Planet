@@ -114,7 +114,7 @@ class RecordsLog extends JComponent implements Scrollable {
 		String k = e.kind, what = e.get("what", "");
 		if (k.equals("REPUTATION")) return homeplanet.vault.Reputation.signed(e.num("points", 0)); // the reputation log: its change
 		if (HIDDEN.contains("," + k + ",")) return null;
-		if (k.equals("VAULT")) return what.equals("adopted_continue") ? "Ships" : null; // taking stock is housekeeping; a stranger taken in is a ship
+		if (k.equals("VAULT")) return what.equals("adopted_continue") || what.equals("set_aside") ? "Ships" : null; // taking stock is housekeeping; a stranger taken in is a ship
 		if (k.equals("DESIGN")) return what.equals("saved") ? null : "Shipyard";
 		if (k.equals("LONG_RANGE_OUTBOX")) return what.equals("delivered") ? "Long Range Comm." : null;
 		if (k.equals("BUY")) return what.equals("cargo_bay") ? "Cargo Bay" : "Junkyard";

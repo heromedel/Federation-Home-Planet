@@ -23,6 +23,9 @@
 	<entry kind="JOURNAL" when="what=finished">The station finished what it had begun.</entry>
 	<entry kind="JOURNAL" when="what=stuck">The station could not finish what it had begun; its note is kept.</entry>
 	<entry kind="VAULT" when="what=adopted_continue">The {ship_name}, a ship the station didn't know, turned up in FTL and was taken in as the boarded ship.</entry>
+	<entry kind="VAULT" when="what=set_aside&amp;other_career=true">A ship from another career's fleet turned up in FTL's saves and was set aside, not taken into this fleet.</entry>
+	<entry kind="VAULT" when="what=set_aside&amp;in_fleet=false">An old copy of the {ship_name}, who has left the fleet, turned up in FTL's saves and was set aside in her records.</entry>
+	<entry kind="VAULT" when="what=set_aside">An old copy of the {ship_name} turned up in FTL's saves and was set aside in her records, not added as a second ship.</entry>
 	<entry kind="VAULT" when="what=taking_stock">The Home Planet Station took stock of the fleet.</entry>
 	<entry kind="SETTINGS" when="commander_name">The commander's name was set to {commander_name}.</entry>
 	<entry kind="SETTINGS">The station's settings were changed.</entry>

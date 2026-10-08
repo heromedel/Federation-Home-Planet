@@ -356,8 +356,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final String cloud = vault.takeCloudCopy();
 		if (cloud != null) {
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() {
-				JOptionPane.showMessageDialog(null, "Steam Cloud brought back an old copy of " + cloud + ", who is already in your fleet.\n"
-						+ "The copy was set aside in her records, not added as a second ship.\n\n"
+				JOptionPane.showMessageDialog(null, cloud + "\n\n" // what was set aside, and where (Vault, 6.08: the ship mark)
 						+ "To stop this, turn off Steam Cloud for FTL: in your Steam library, right-click FTL, Properties, General.", "Steam Cloud", JOptionPane.WARNING_MESSAGE);
 			} });
 		}

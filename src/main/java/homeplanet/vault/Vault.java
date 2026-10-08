@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
  *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
  *                                ones read in once at 5.73; the only log written since 5.93), converted.txt (the marks); a fleet
  *                                from before keeps its history.log, master.log and reputation.log as they were, unwritten
+ *     set-aside/                 a continue.sav marked as another career's ship (6.08, ShipMark), set aside rather than taken in
  *     station-action-protection/ the notes of actions under way (5.71; heromedel's name, 5.78), only its why.txt when the station is at rest
  *     clock.xml                  the fleet's clock (5.86; five .txt files before): the sectors and beacons travelled, the day 1
  *     career.xml, reputation.xml, rest.xml, rank.xml, repair-job.xml, events.xml, crew-register.xml: the career's own state,
@@ -806,6 +807,7 @@ public final class Vault {
 			ships.remove(b);
 			b = null;
 		}
+		if (b == null && cont.isFile()) setAsideMarked(cont, notes); // her mark says whose she is (6.08)
 		if (b == null && cont.isFile()) {
 			Ship original = cloudCopyOf(cont);
 			if (original != null) {
@@ -814,7 +816,8 @@ public final class Vault {
 					File dir = settleFolder(original);
 					ShipStore.keepVersion(dir, SafeFiles.read(cont), "cloud-");
 					if (!cont.delete()) throw new IOException("Could not remove " + cont);
-					cloudCopy = original.name;
+					cloudCopy = "Steam Cloud brought back an old copy of " + homeplanet.parser.ShipNames.the(original.name) + ", who is already in your fleet.\n"
+							+ "The copy was set aside in her records, not added as a second ship.";
 					notes.add("continue.sav was a copy of " + original.name + " (" + original.state.key + "), brought back by Steam Cloud most likely: set aside in " + dir.getParentFile().getName() + "/" + dir.getName() + "/" + ShipStore.VERSIONS + " (cloud-)");
 				} catch (IOException e) {
 					log.warn("Could not set aside the copy of {} in continue.sav: {}", original, e.toString());
@@ -1027,8 +1030,57 @@ public final class Vault {
 	// ---- Steam Cloud's copies ----
 
 	private String cloudCopy = null;
-	/** The name of a ship whose copy continue.sav turned out to be (set aside since this was last asked), or null. */
+	/** What the player is told of a copy continue.sav turned out to be (set aside since this was last asked), or null. */
 	public synchronized String takeCloudCopy() { String c = cloudCopy; cloudCopy = null; return c; }
+	/** Where a copy marked as another career's ship is set aside (6.08). */
+	public static final String SET_ASIDE = "set-aside";
+	/**
+	 * A continue.sav no boarded ship owns, marked (ShipMark, 6.08) as a ship of this career the station knows (in the
+	 * fleet, or one that has left it) or as a ship of another career: a copy FTL handed back (Steam Cloud, most likely),
+	 * set aside rather than adopted as a second ship. Unmarked, or marked as a ship of this career the station has no
+	 * record of: left to the older checks.
+	 */
+	private void setAsideMarked(File cont, List<String> notes) {
+		ShipMark.Found m = ShipMark.read(cont);
+		if (m == null) return;
+		boolean ours = slot.equals(m.career);
+		Ship s = ours ? byId(m.id) : null;
+		if (s != null && s.state == Ship.State.STORAGE) return;
+		File dir;
+		try { dir = s != null ? settleFolder(s) : ours ? folderOfId(m.id) : new File(root, SET_ASIDE); }
+		catch (IOException e) { log.warn("Could not find {}'s folder to set her copy aside: {}", s.name, e.toString()); return; }
+		ShipStore.Record r = ours && s == null && dir.isDirectory() ? ShipStore.read(dir) : null;
+		if (ours && s == null && r == null) return; // no record of her here: a stranger, as before
+		String name = s != null ? s.name : r != null ? r.name : null;
+		int now = ours ? Store.num(ShipStore.notes(dir, ShipMark.SECTION), "boards", 0) : 0;
+		try {
+			byte[] copy = SafeFiles.read(cont);
+			File kept;
+			if (ours) kept = ShipStore.keepVersion(dir, copy, "cloud-");
+			else {
+				if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
+				String stamp;
+				synchronized (STAMP) { stamp = STAMP.format(new Date()); }
+				kept = new File(dir, m.career + "." + m.id + "." + stamp + ".sav");
+				SafeFiles.write(kept, copy);
+			}
+			if (!cont.delete()) throw new IOException("Could not remove " + cont);
+			String where = (ours ? dir.getParentFile().getName() + "/" + dir.getName() + "/" + ShipStore.VERSIONS : SET_ASIDE) + "/" + kept.getName();
+			String career = title(m.career);
+			cloudCopy = ours
+					? "Steam Cloud brought back an old copy of " + homeplanet.parser.ShipNames.the(name) + (s != null ? ", who is already in your fleet" : ", who has left your fleet") + ".\n"
+							+ "The copy was set aside in her records, not added as a second ship."
+					: "FTL's saves held a ship from your " + career + " fleet, not this one's.\n"
+							+ "She was set aside in " + root.getName() + "/" + SET_ASIDE + ", not added to this fleet: switch to " + career + " to fly her there.";
+			notes.add("continue.sav was " + (ours ? "a copy of " + name : "a ship of the " + career + " fleet") + " (marked " + m.boards + (ours ? " of " + now : "") + " boardings): set aside in " + where);
+			Event e = (s != null ? shipEvent("VAULT", s) : Event.of("VAULT").put("ship", (name != null ? name : "") + "." + m.id).put("ship_name", name).put("ship_id", m.id))
+					.put("what", "set_aside").put("file", "continue.sav").put("to", where).put("mark_career", m.career).put("mark_boards", m.boards)
+					.put("mark_day", m.day > 0 ? m.day : null).put("boards_now", ours ? now : null).put("in_fleet", s != null).put("other_career", !ours);
+			HistoryLog.entry("VAULT", "continue.sav set aside: " + (ours ? "a copy of " + name : "a ship of the " + career + " fleet"), null, e);
+		} catch (IOException e) {
+			log.warn("Could not set aside the marked continue.sav ({} {}): {}", m.career, m.id, e.toString());
+		}
+	}
 	/**
 	 * The fleet's ship this continue.sav is a copy of, byte for byte: her current save, or one of her kept versions
 	 * (Steam Cloud restoring the last continue.sav it uploaded after she was docked). Null if it's none of them.
@@ -1446,19 +1498,8 @@ public final class Vault {
 	/** History file names: UTC, so they keep their order across clock changes (daylight saving). */
 	private static final SimpleDateFormat STAMP = new SimpleDateFormat("yyyyMMdd-HHmmss");
 	static { STAMP.setTimeZone(java.util.TimeZone.getTimeZone("UTC")); }
-	/** A history file's place in time: its stamp, then its counter ("…-2.sav" after "….sav" from the same second). */
-	private static String order(File f) { return ShipStore.order(f); }
-	/**
-	 * Oldest first: by when each was kept, then by name. (Names alone won't do: before 4B.04 they were in local time,
-	 * now UTC, so an old name can sort after a new one.) A version is kept by a copy (stamped then) or a move of
-	 * her current file (stamped when last written, which is after every version kept before it).
-	 */
-	private static final java.util.Comparator<File> OLDEST_FIRST = new java.util.Comparator<File>() {
-		public int compare(File a, File b) {
-			int t = Long.compare(a.lastModified(), b.lastModified());
-			return t != 0 ? t : order(a).compareTo(order(b));
-		}
-	};
+	/** Oldest first: when each was kept, by the stamp in her name (ShipStore.OLDEST_FIRST, 6.08). */
+	private static final java.util.Comparator<File> OLDEST_FIRST = ShipStore.OLDEST_FIRST;
 
 	/** Copies her current save into her history folder (before it's changed), keeping the last KEEP. Nothing if her newest kept version is the same. */
 	public synchronized void snapshot(Ship s) throws IOException {
@@ -1613,21 +1654,31 @@ public final class Vault {
 		// one journal note (5.71): her save into continue.sav, her vault copy kept as a version (from now on continue.sav is the only current one), her record saying boarded (5.95), her file gone
 		byte[] save = SafeFiles.read(from);
 		File dir = settleFolder(s);
+		// the ship mark (6.08): her board count and today's date in her save's state variables, so a copy of her FTL hands back later is known as hers
+		int boards = Store.num(ShipStore.notes(dir, ShipMark.SECTION), "boards", 0) + 1;
+		ShipMark.Marked marked = null;
+		try { marked = ShipMark.mark(from, slot, s.id, boards); }
+		catch (Exception e) { log.warn("Could not mark {}'s save (boarded without it): {}", s.name, e.toString()); }
+		byte[] boardedSave = marked != null ? marked.bytes : save;
+		ShipStore.Record record = recordOf(s);
+		record.state = Ship.State.BOARDED.key; record.hash = SafeFiles.hash(boardedSave); record.marks = "";
+		if (marked != null) { record.section(ShipMark.SECTION).setProperty("boards", Integer.toString(boards)); record.section(ShipMark.SECTION).setProperty("day", Integer.toString(ShipMark.today())); }
 		Journal.Note note = Journal.begin(this, "BOARD");
-		note.replace(to, save);
+		note.replace(to, boardedSave);
 		List<File> kept = history(s);
-		if (kept.isEmpty() || !SafeFiles.hash(kept.get(kept.size() - 1)).equals(SafeFiles.hash(from))) note.replace(ShipStore.versionFile(dir, null), save);
-		note.replace(ShipStore.xml(dir), recordAs(s, Ship.State.BOARDED, SafeFiles.hash(save), ""));
+		if (kept.isEmpty() || !SafeFiles.hash(kept.get(kept.size() - 1)).equals(SafeFiles.hash(boardedSave))) note.replace(ShipStore.versionFile(dir, null), boardedSave); // as boarded, her mark in it: the newest version is continue.sav as it starts
+		note.replace(ShipStore.xml(dir), ShipStore.bytes(record));
 		note.delete(from);
 		note.commit();
 		ShipStore.prune(dir, KEEP);
 		s.state = Ship.State.BOARDED;
 		s.hash = SafeFiles.hash(to);
 		s.marks = ""; // seen afresh at the next look
-		try { SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(to); setClock(s, gs.getSectorNumber(), gs.getTotalBeaconsExplored()); }
+		try { SavedGameState gs = marked != null ? marked.gs : homeplanet.core.HomePlanet.savedGameParser.readSavedGame(to); setClock(s, gs.getSectorNumber(), gs.getTotalBeaconsExplored()); }
 		catch (Exception e) { log.warn("Could not read her progress as boarded: {}", e.toString()); } // she's counted from her next look instead
 		saveManifest();
-		HistoryLog.entry("BOARD", s.name + "  " + place(s) + " -> continue.sav", null, shipEvent("BOARD", s).put("from", place(s)).put("to", "continue.sav"));
+		HistoryLog.entry("BOARD", s.name + "  " + place(s) + " -> continue.sav", null, shipEvent("BOARD", s).put("from", place(s)).put("to", "continue.sav")
+				.put("boards", marked != null ? boards : null).put("mark", marked != null ? ShipMark.COUNT + slot + "." + s.id : null));
 	}
 	/** Docks the boarded ship: continue.sav comes back into the vault. */
 	public synchronized void dock() throws IOException {
@@ -2025,6 +2076,8 @@ public final class Vault {
 			if (m != null && m.trade.equals(tradeLine)) return s;
 		}
 		Map<String, byte[]> files = unpack(pkg);
+		try { save = ShipMark.strip(save); } // her old station's mark off: this one marks her at her first Board here (6.08)
+		catch (IOException e) { log.warn("Could not take her old station's mark off {}: {}", gs.getPlayerShipName(), e.toString()); }
 		Ship s = new Ship(newId(), gs.getPlayerShipName(), Ship.State.DOCKED, gs.isDLCEnabled());
 		File dir = settleFolder(s);
 		try {

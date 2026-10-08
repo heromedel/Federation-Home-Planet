@@ -242,23 +242,43 @@ public final class ShipStore {
 
 	// ---- her versions ----
 
-	/** Her kept versions (the ordinary ones; not the special copies), oldest first: by the file's time, the name's order deciding a tie (a name from before UTC stamps sorts by when it was kept). */
+	/** Her kept versions (the ordinary ones; not the special copies), oldest first ({@link #OLDEST_FIRST}). */
 	public static List<File> versions(File folder, boolean special) {
 		List<File> out = new ArrayList<File>();
 		File[] fs = versions(folder).listFiles();
 		if (fs == null) return out;
 		for (File f : fs) if (f.isFile() && kept(f.getName()) && isSpecial(f) == special) out.add(f);
-		java.util.Collections.sort(out, new java.util.Comparator<File>() { public int compare(File a, File b) { int t = Long.compare(a.lastModified(), b.lastModified()); return t != 0 ? t : order(a).compareTo(order(b)); } });
+		java.util.Collections.sort(out, OLDEST_FIRST);
 		return out;
 	}
-	/** A version's place in time, from her name: the stamp, then the counter as a number (so -10 follows -9, not -1). */
-	public static String order(File f) {
-		String n = f.getName().replaceAll("\\.(sav|xml)$", "");
-		int dash = n.indexOf('-', 9); // past the date-time's own dash
-		int count = 1;
-		if (dash > 0) { try { count = Integer.parseInt(n.substring(dash + 1)); } catch (NumberFormatException e) { } n = n.substring(0, dash); }
-		return n + String.format("%06d", count);
+	/** A kept version's stamp and counter: "20261005-192052.sav", "victory-20261005-192052-2.sav". */
+	private static final java.util.regex.Pattern STAMPED = java.util.regex.Pattern.compile("(\\d{8}-\\d{6})(?:-(\\d+))?\\.(?:sav|xml)$");
+	/**
+	 * When a version was kept: the stamp in her name (UTC, written once when she was kept), or the file's time for a
+	 * name without one. 6.08 (docs/BUGS.md, found 6.01): file times alone decided, and a fleet folder copied or unzipped
+	 * by a tool that doesn't keep them gave a ship's versions one time to the second, so which was newest came down to chance.
+	 */
+	static long keptAt(File f) {
+		java.util.regex.Matcher m = STAMPED.matcher(f.getName());
+		if (m.find()) {
+			try { synchronized (STAMP) { return STAMP.parse(m.group(1)).getTime(); } } catch (java.text.ParseException e) { }
+		}
+		return f.lastModified();
 	}
+	/** The counter after a stamp ("…-2.sav" after "….sav" from the same second): 1 without one. */
+	private static int counter(File f) {
+		java.util.regex.Matcher m = STAMPED.matcher(f.getName());
+		return m.find() && m.group(2) != null ? count(m.group(2)) : 1;
+	}
+	/** Oldest first: when each was kept ({@link #keptAt}), then the counter, then the name. */
+	public static final java.util.Comparator<File> OLDEST_FIRST = new java.util.Comparator<File>() {
+		public int compare(File a, File b) {
+			int t = Long.compare(keptAt(a), keptAt(b));
+			if (t != 0) return t;
+			t = Integer.compare(counter(a), counter(b));
+			return t != 0 ? t : a.getName().compareTo(b.getName());
+		}
+	};
 	public static boolean isSpecial(File f) {
 		for (String p : KEPT_PREFIXES) if (f.getName().startsWith(p)) return true;
 		return false;

@@ -92,7 +92,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 
 | Kind | Fields | Headline today |
 | --- | --- | --- |
-| `BOARD` | ship, `from`, `to` | "Kestrel  shipyard/Kestrel.a3f2 -> continue.sav" |
+| `BOARD` | ship, `from`, `to`; `boards`, `mark` (6.08: her board count, and the state variable that carries it in her save) | "Kestrel  shipyard/Kestrel.a3f2 -> continue.sav" |
 | `DOCK` | ship, `from`, `to` | "Kestrel  continue.sav -> shipyard/Kestrel.a3f2" |
 | `DISBAND` | ship, `from`, `to` (junkyard) | "Kestrel  continue.sav -> junkyard/Kestrel.a3f2" |
 | `SALVAGE` | ship, `from`, `to` | "Kestrel  junkyard/Kestrel.a3f2 -> shipyard/Kestrel.a3f2" |
@@ -100,7 +100,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `RECOVER` | ship, `fate` (the fate she had), `from`, `to` | "Kestrel (scrapped)  memorials_and_records/ships/Kestrel.a3f2 -> shipyard/Kestrel.a3f2" |
 | `RESTORE` | ship, `why` (`version`, `overwritten`), `from`, `to`, `reputation_back` | "Restored the Kestrel to an earlier version" |
 | `OVERWRITTEN` | ship (the one lost), `versions`, `by`, `by_name`, `by_id`, `by_stranger` (the ship now in continue.sav) | "Kestrel (a3f2) was boarded, and continue.sav is now another ship: ..." |
-| `VAULT` | `what` (`taking_stock`, `adopted_continue`), ship (when adopted), `file`, `detail.n` (the notes) | "taking stock" |
+| `VAULT` | `what` (`taking_stock`, `adopted_continue`, `set_aside`), ship (when adopted or set aside), `file`, `detail.n` (the notes); `set_aside` (6.08, the ship mark): `to`, `mark_career`, `mark_boards`, `mark_day`, `boards_now`, `in_fleet`, `other_career` | "taking stock" |
 | `JOURNAL` | `what` (`finished`, `stuck`), `action` (the note's kind: `SAVE`, `BOARD`, `DOCK`, `MOVE_LOGS`, `MOVE_CARGO_HOLD`, `CREW_REGISTER`, `CONVERT_CARGO_HOLD`, `MOVE_EXPEDITIONS`, `MOVE_SMALL_FILES`, `FOLD_SHIP_FILES`, `LEAVE`, `DISBAND`, `COME_HOME`, `RESTORE`, `RECEIVE`, `LOG_DAYS_REPAIRED`, `LOGS_CONVERTED` and `SHIP_LOGS_FILLED` (5.992: the old logs read in, and the ships' logs filled, each as one note)), `steps`, `note` (its file), `finished=startup`, `time` and `day` (the note's own), `left_by` (the station's version that wrote the note), `detail.n` (what couldn't be told, when stuck) | "The station finished what it had begun." |
 | `LOGS_CONVERTED` | `entries_station`, `entries_voyage`, `entries_reputation`, `days` (how many old entries got an event, 5.73) | "The station read its old logs into its records once." |
 | `LOG_DAYS_REPAIRED` | `entries_moved` (converted entries put on their own day), `entries_prior` (from before the career's stardates, or a received ship's voyage from another station: Prior), `entries_unmatched` (left as they were), `files` (logs rewritten), once per fleet (5.81) | "The station put its old log entries back on their own days." |
