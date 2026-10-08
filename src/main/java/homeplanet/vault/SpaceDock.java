@@ -1,6 +1,5 @@
 package homeplanet.vault;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -12,7 +11,6 @@ import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
-import homeplanet.core.SafeFiles;
 import homeplanet.model.Items;
 import homeplanet.parser.SaveHelper;
 
@@ -73,7 +71,8 @@ public final class SpaceDock {
 
 	/**
 	 * Scraps a junked ship: everything aboard to the Cargo Hold (her systems too, when stripped: their lines for the
-	 * stored systems and for the log, from the Refit tab's rules), the stripping paid, the hull broken up; then logged
+	 * stored systems and for the log, from the Refit tab's rules), the stripping paid, the hull broken up, all as one
+	 * protection note; then logged
 	 * and the stripping's reputation spent.
 	 *
 	 * @param systems      the stored systems' lines for her stripped systems, or null if she isn't stripped
@@ -88,9 +87,6 @@ public final class SpaceDock {
 		Vault.Copy storageCopy;
 		try { storageCopy = v.readCopy(storageShip); } catch (IOException e) { throw new IOException("The Cargo Hold can't be read: " + e.getMessage()); }
 		SavedGameState storage = storageCopy.save;
-		// what the hold and the stored-systems list hold now, to put back if the wreck can't be removed after them
-		File storageFile = storageShip.file(), systemsFile = v.systemsFile();
-		byte[] storageBefore = SafeFiles.read(storageFile), systemsBefore = systemsFile.isFile() ? SafeFiles.read(systemsFile) : null;
 		scrapped = HistoryLog.changes(new java.util.HashMap<String, Integer>(), HistoryLog.inventory(wreck));
 		ShipState from = wreck.getPlayerShip();
 		ShipState to = storage.getPlayerShip();
@@ -122,16 +118,8 @@ public final class SpaceDock {
 			}
 			if (repPaid > 0) scrapped.add("- " + repPaid + " reputation (stripping her systems)");
 		}
-		tx.commit();
-		try {
-			v.remove(wreckShip, null); // logged below, with what came off her
-		} catch (IOException e) {
-			// she's still in the Junkyard with everything aboard: the hold must not keep a second copy
-			SafeFiles.write(storageFile, storageBefore);
-			if (systemsBefore != null) SafeFiles.write(systemsFile, systemsBefore); else systemsFile.delete();
-			storageShip.invalidate();
-			throw e;
-		}
+		// the hull broken up in the same note (6.11, CONCERNS 8): never her crew and gear in the hold and still aboard her
+		tx.leave(wreckShip, Vault.Fate.SCRAPPED).commit();
 		HistoryLog.entry("SCRAP", name + " stripped into storage, hull broken up", scrapped, Event.of("SCRAP").put("ship_name", name).put("stripped", strip).put("to", "hold").details(scrapped));
 		if (strip && repPaid > 0) Reputation.spend(v, repPaid, "Stripping " + name + "'s systems when she was scrapped");
 	}
@@ -144,21 +132,12 @@ public final class SpaceDock {
 		Vault.Copy storageCopy;
 		try { storageCopy = v.readCopy(storageShip); } catch (IOException e) { throw new IOException("The Cargo Hold can't be read: " + e.getMessage()); }
 		SavedGameState storage = storageCopy.save;
-		File storageFile = storageShip.file();
-		byte[] storageBefore = SafeFiles.read(storageFile);
 		ShipState to = storage.getPlayerShip();
 		to.setScrapAmt(to.getScrapAmt() + from.getScrapAmt() + price);
 		for (CrewState c : SaveHelper.getOwnCrew(from)) {
 			if (SaveHelper.hasBody(c) && SaveHelper.placeCrew(to, c, true)) to.getCrewList().add(c);
 		}
-		v.begin().put(storageShip, storage, storageCopy.hash).commit();
-		try {
-			v.remove(ship, null, Vault.Fate.SOLD);
-		} catch (IOException e) {
-			SafeFiles.write(storageFile, storageBefore); // she's still in the Junkyard: the hold mustn't keep her scrap and crew too
-			storageShip.invalidate();
-			throw e;
-		}
+		v.begin().put(storageShip, storage, storageCopy.hash).leave(ship, Vault.Fate.SOLD).commit(); // one note: she goes as her scrap and crew arrive
 		HistoryLog.entry("SELL", name + (auction ? " sold at auction" : " traded in") + " for " + price + " scrap; her scrap and crew to the Cargo Hold", null,
 				Event.of("SELL").put("ship_name", name).put("how", auction ? "auction" : "trade_in").put("price", price).put("to", "hold"));
 	}

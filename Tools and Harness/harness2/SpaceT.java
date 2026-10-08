@@ -49,6 +49,13 @@ public class SpaceT { public static void main(String[] a) throws Exception {
  v.takeStock();
  String xId = x.id; int xCrew = SaveHelper.getOwnCrew(x.save().getPlayerShip()).size(), xScrap = x.save().getPlayerShip().getScrapAmt();
  crew0 = crew1; scrap0 = v.storageScrap();
+ // she can't leave (her place in the memorial is taken): one note, so nothing at all happens (6.11, CONCERNS 8)
+ File inWay = new File(v.memorialDir(), v.folderOf(x).getName()); inWay.mkdirs();
+ boolean stopped = false; try { SpaceDock.sell(v, x, x.save(), 100, false); } catch (IOException e) { stopped = true; }
+ SafeFiles.deleteTree(inWay);
+ v = Vault.open(saves); v.takeStock(); x = v.byId(xId);
+ Setup.chk("T: a sale that can't finish: the hold as it was, she's still in the Junkyard with her crew", stopped && x != null && v.storageScrap() == scrap0
+   && SaveHelper.getOwnCrew(v.storage().save().getPlayerShip()).size() == crew0 && SaveHelper.getOwnCrew(x.save().getPlayerShip()).size() == xCrew);
  SpaceDock.sell(v, x, x.save(), 100, false);
  v.takeStock();
  String[] fate = ShipStore.fate(v.folderOfId(xId));

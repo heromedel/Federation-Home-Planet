@@ -465,11 +465,11 @@ public class CommissionDialog extends JDialog {
 		}
 		homeplanet.vault.Vault vault = homeplanet.vault.Vault.get();
 		int price = 0;
-		byte[] storageBefore = null;
 		boolean isFree = free(e.id);
 		// a plea's ship: paid with the Cargo Hold (at what it would sell for), or against the career's reputation
 		boolean plea = isFree && emptyFree(e.id) && vault.freeCommandReassigned() && !vault.freeCommandForfeit(); // (an old report's ship was paid for already)
-		byte[][] holdBefore = null;
+		// what she costs and she herself, as one protection note (6.11, CONCERNS 8: paid first and put back by hand if she failed, before)
+		homeplanet.vault.Vault.Transaction tx = vault.begin();
 		int repCost = 0;
 		String howPaid = null;
 		if (plea) {
@@ -503,7 +503,7 @@ public class CommissionDialog extends JDialog {
 			repCost = rep ? (giving ? costGiving : costKeeping) : 0;
 			howPaid = giving ? "the Cargo Hold given up (worth " + hold + " scrap at sale)" + (refund > 0 ? ", " + refund + " scrap refunded" : "") : "the Cargo Hold kept";
 			if (giving) {
-				try { holdBefore = vault.forfeitHold(hold, refund); }
+				try { vault.forfeitHold(hold, refund, tx); }
 				catch (Exception ex) { HomePlanet.showErrorDialog("The Home Planet Station could not take the Cargo Hold. Nothing was changed:\n" + ex.getMessage()); return; }
 			}
 		}
@@ -520,7 +520,7 @@ public class CommissionDialog extends JDialog {
 			if (JOptionPane.showConfirmDialog(this, "Commission " + name + " for " + price + " scrap from the Cargo Hold" + "?",
 					"Commission Ship", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
 			try {
-				storageBefore = vault.payFromStorage(price);
+				tx.pay(price);
 			} catch (Exception ex) {
 				HomePlanet.showErrorDialog("The Home Planet Station could not take the scrap from the Cargo Hold. Nothing was changed:\n" + ex.getMessage());
 				return;
@@ -528,21 +528,15 @@ public class CommissionDialog extends JDialog {
 		}
 		homeplanet.vault.Ship ship;
 		try {
-			ship = vault.adopt(s);
-			vault.setOut(ship, s, "Commissioned at The Home Planet Station"); // she waits there until her first jump
+			ship = tx.adopt(s, homeplanet.vault.Ship.State.DOCKED, "commissioned");
+			tx.commit();
 		} catch (Exception ex) {
-			String refund = "";
-			if (storageBefore != null) {
-				try { vault.refundStorage(storageBefore); refund = "\nThe " + price + " scrap was returned to the Cargo Hold."; }
-				catch (Exception again) { refund = "\nThe " + price + " scrap could not be returned to the Cargo Hold: " + again.getMessage(); }
-			}
-			if (holdBefore != null) {
-				try { vault.unforfeitHold(holdBefore); refund += "\nThe Cargo Hold was given back as it was."; }
-				catch (Exception again) { refund += "\nThe Cargo Hold could not be given back: " + again.getMessage() + " (its last version is in its history)."; }
-			}
-			HomePlanet.showErrorDialog("The new ship could not be docked; her save could not be written:\n" + ex + refund);
+			HomePlanet.showErrorDialog("The new ship could not be docked; her save could not be written. Nothing was changed"
+					+ (price > 0 || plea ? " (the Cargo Hold is as it was)" : "") + ":\n" + ex);
 			return;
 		}
+		try { vault.setOut(ship, s, "Commissioned at The Home Planet Station"); } // she waits there until her first jump
+		catch (Exception ex) { log.warn("{} is docked, but her voyage log couldn't note where she set out: {}", ship.name, ex.toString()); }
 		log.debug("Commissioned {} ({}): {}, difficulty {}, AE {}, crew {}, paid {}", name, ship.id, e.id, difficulty.getSelectedItem(), s.isDLCEnabled(),
 				s.getPlayerShip().getCrewList().size(), price);
 		List<String> lines = new ArrayList<String>();
