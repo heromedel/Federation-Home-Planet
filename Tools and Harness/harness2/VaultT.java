@@ -8,16 +8,17 @@ public class VaultT { public static void main(String[] a) throws Exception {
  Ship b = v.boarded(); Ship d = v.docked().get(0);
  String bId = b.id, dId = d.id;
  // board another: the old one docks
+ int k0 = v.history(d).size(); // 6.10: marking her save at the opening kept her unmarked version first
  v.board(d);
  Setup.chk("boarded swapped", v.boarded() == d && v.byId(bId).state == Ship.State.DOCKED);
  Setup.chk("continue.sav is hers", v.continueFile().isFile() && SafeFiles.hash(v.continueFile()).equals(d.hash));
  Setup.chk("old boarded ship's file is in her shipyard folder", v.fileOf(v.byId(bId)).isFile() && v.fileOf(v.byId(bId)).getParentFile().getParentFile().equals(v.shipyardDir()));
- Setup.chk("her old vault copy went to history", v.history(d).size() == 1);
+ Setup.chk("her old vault copy went to history", v.history(d).size() == k0 + 1);
  Setup.chk("fleet size unchanged", v.fleet().size() == n);
  // write with snapshot
  SavedGameState gs = d.save(); String oldName = gs.getPlayerShipName(); gs.setPlayerShipName("Renamed One"); gs.getPlayerShip().setShipName("Renamed One");
  v.write(d, gs);
- Setup.chk("write updates name", d.name.equals("Renamed One") && v.history(d).size() == 2);
+ Setup.chk("write updates name", d.name.equals("Renamed One") && v.history(d).size() == k0 + 2);
  Vault v2 = Vault.open(saves); v2.takeStock();
  Setup.chk("manifest reload keeps the rename", v2.byId(dId).name.equals("Renamed One") && v2.byId(dId).isBoarded());
  v = v2; d = v.byId(dId);
@@ -92,6 +93,7 @@ public class VaultT { public static void main(String[] a) throws Exception {
  // unknown continue.sav (a new game in FTL): adopted on reload
  SavedGameState other = HomePlanet.savedGameParser.readSavedGame(v.fileOf(e));
  other.getPlayerShip().setScrapAmt(other.getPlayerShip().getScrapAmt() + 1000);
+ for (java.util.Iterator<String> it = other.getStateVars().keySet().iterator(); it.hasNext(); ) if (it.next().startsWith("fhp.")) it.remove(); // a New Game in FTL carries no station's mark (6.10)
  SaveHelper.writeSavedGame(v.continueFile(), other);
  Vault v3 = Vault.open(saves); v3.takeStock();
  Setup.chk("stray continue.sav adopted as boarded", v3.boarded() != null && !v3.boarded().id.equals(e.id) && v3.boarded().name.equals(e.name));

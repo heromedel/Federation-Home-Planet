@@ -364,6 +364,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			askingToHard = true;
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askToHard(); } });
 		}
+		if (!askingFound && !vault.found().isEmpty()) { // saves and ships found as the fleet opened, waiting on the player's word (6.10)
+			askingFound = true;
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askFound(); } });
+		}
 		for (final homeplanet.parser.FinalVictory.Notice n : victories) {
 			if (n.offer != null && deferredOffers.contains(n.offer.id)) continue;
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { victoryNotice(n); } });
@@ -513,6 +517,56 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return c >= 0 && c <= 2 ? diffs[c] : null;
 	}
 
+	private boolean askingFound = false;
+	/** What the player closed without an answer, asked again at the next start. */
+	private final java.util.Set<String> foundPutOff = new java.util.HashSet<String>();
+	/** Each save or ship found as the fleet opened (6.10, Plan N), one at a time: taken in (or sent to Sandbox Mode's fleet), or left. */
+	private void askFound() {
+		boolean any = false;
+		try {
+			boolean sandbox = Vault.SANDBOX.equals(Vault.get().slot);
+			for (Vault.Found f : Vault.get().found()) {
+				String key = f.kind + ":" + f.file.getAbsolutePath();
+				if (foundPutOff.contains(key)) continue;
+				String where = f.file.getParentFile().getName();
+				where = where.equals("shipyard") ? "the shipyard" : where.equals("junkyard") ? "the Junkyard" : "FTL's saves folder";
+				String text, yes, no = "Leave it", title;
+				if (f.kind == Vault.Found.Kind.NO_SAVE) {
+					title = "A ship's save is missing";
+					text = f.name + "'s save is missing from her folder in " + where + ".\n\n"
+							+ ("marked".equals(f.fix()) ? "A save carrying her mark was found: " + f.source().getName() + ". Put it back in her folder?"
+							: "version".equals(f.fix()) ? "Her newest kept version can be put back, as she was then."
+							: "Nothing of her save is left, but she can be rebuilt from her records: her class, her crew and her supplies;\nher gear and systems as her class comes.")
+							+ "\n\nLeft, she goes to the memorial, as a ship whose save is gone always has.";
+					yes = "rebuild".equals(f.fix()) ? "Rebuild her" : "Put it back";
+					no = "Leave her";
+				} else {
+					title = f.kind == Vault.Found.Kind.LOOSE ? "A ship's save was found" : "A ship the fleet doesn't know";
+					String what = f.kind == Vault.Found.Kind.LOOSE ? f.file.getName() + " was found in " + where + ": " + f.name + ", a ship FTL can fly."
+							: f.kind == Vault.Found.Kind.OTHER ? f.name + "'s folder is in " + where + ", but her record says she belongs to the " + Vault.title(f.career) + " fleet."
+							: f.name + "'s folder is in " + where + ", but nothing shows she belongs to this fleet:\nher save doesn't match the station's last copy of it, and the fleet's log has no entry for her.";
+					boolean here = sandbox;
+					text = what + "\n\n" + (here ? "Take her into the fleet?" : "Only ships this career knows can join it. She can go to Sandbox Mode's fleet instead.")
+							+ "\n\nLeft, she isn't asked about again.";
+					yes = here ? "Take her in" : "Send her to Sandbox";
+				}
+				Object[] options = {yes, no};
+				int c = JOptionPane.showOptionDialog(null, text, title, JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+				if (c != 0 && c != 1) { foundPutOff.add(key); continue; }
+				try {
+					if (c == 0) JOptionPane.showMessageDialog(null, Vault.get().accept(f), title, JOptionPane.INFORMATION_MESSAGE);
+					else Vault.get().decline(f);
+					any = true;
+				} catch (IOException e) {
+					HomePlanet.showErrorDialog("The Home Planet Station could not do that; nothing was changed for " + f.name + ":\n" + e.getMessage());
+					foundPutOff.add(key);
+				}
+			}
+		} finally {
+			askingFound = false;
+		}
+		if (any) init();
+	}
 	private boolean askingToHard = false, toHardPutOff = false;
 	/** A Custom career with no answer to Rescued Ships after Victory moved to Hard difficulty: asked as its briefing would (6.03), then fixed. Closed: asked again at the next start. */
 	private void askToHard() {
@@ -2107,9 +2161,26 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	/** Removes a junked ship for good (her last save stays in her history folder). */
 	void destroyShip(Ship ship) {
+		if (HomePlanet.immersiveMode) { // or on to Sandbox Mode's fleet, gone from this career all the same (heromedel, 6.10)
+			Object[] options = {"Cancel", "Destroy", "Send to Sandbox"};
+			int c = JOptionPane.showOptionDialog(null, "Destroy " + ship.name + "?\n\n"
+					+ "The ship, her cargo and her crew will be lost to this career. This cannot be undone.\n\n"
+					+ "Or send her to Sandbox Mode's Junkyard, her crew with her: this career counts her as gone all the same.",
+					"Destroy Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+			if (c != 1 && c != 2) return;
+			try {
+				if (c == 1) Vault.get().remove(ship, "DESTROY");
+				else JOptionPane.showMessageDialog(null, Vault.get().sendToSandbox(ship), "Send to Sandbox", JOptionPane.INFORMATION_MESSAGE);
+			} catch (IOException e) {
+				HomePlanet.showErrorDialog(c == 1 ? "She could not be destroyed; her save was not removed:\n" + e
+						: "The Home Planet Station could not send her to Sandbox Mode's fleet; she is still in the Junkyard:\n" + e.getMessage());
+			}
+			init();
+			return;
+		}
 		if (!confirmIrreversible("Destroy Ship", "Destroy " + ship.name + "?\n\n"
-				+ "The ship, her cargo and her crew will be lost. " + (HomePlanet.immersiveMode ? "This cannot be undone."
-				: "The Home Planet Station keeps her last records,\nso she could be recovered later (Other... > Recover a ship)."), "Destroy")) return;
+				+ "The ship, her cargo and her crew will be lost. "
+				+ "The Home Planet Station keeps her last records,\nso she could be recovered later (Other... > Recover a ship).", "Destroy")) return;
 		try {
 			Vault.get().remove(ship, "DESTROY");
 		} catch (IOException e) {

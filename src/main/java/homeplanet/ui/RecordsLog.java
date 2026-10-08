@@ -114,7 +114,7 @@ class RecordsLog extends JComponent implements Scrollable {
 		String k = e.kind, what = e.get("what", "");
 		if (k.equals("REPUTATION")) return homeplanet.vault.Reputation.signed(e.num("points", 0)); // the reputation log: its change
 		if (HIDDEN.contains("," + k + ",")) return null;
-		if (k.equals("VAULT")) return what.equals("adopted_continue") || what.equals("set_aside") ? "Ships" : null; // taking stock is housekeeping; a stranger taken in is a ship
+		if (k.equals("VAULT")) return what.matches("adopted_continue|set_aside|arrived|taken_in|rebuilt|save_restored") ? "Ships" : null; // checking and the notes: housekeeping // taking stock is housekeeping; a stranger taken in is a ship
 		if (k.equals("DESIGN")) return what.equals("saved") ? null : "Shipyard";
 		if (k.equals("LONG_RANGE_OUTBOX")) return what.equals("delivered") ? "Long Range Comm." : null;
 		if (k.equals("BUY")) return what.equals("cargo_bay") ? "Cargo Bay" : "Junkyard";
@@ -128,7 +128,7 @@ class RecordsLog extends JComponent implements Scrollable {
 			+ "SHIPMENT_PACKED,SHIPMENT_UNPACKED,DAY,SWITCH_FLEET,"; // a switch between fleets reads as the station's own workings, not this career's business (heromedel)
 	private static final String[][] TAGS = {
 		{"Ships", "BOARD,DOCK,COMMISSION,NEW_JOURNEY,RENAME,REMODEL,RESTORE,RECOVER,OVERWRITTEN,FINAL_BATTLE,VICTORY,MUSEUM,REWARD,SENT,HANDED_OVER"},
-		{"Junkyard", "DISBAND,SALVAGE,SCRAP,DESTROY,REPAIR_JOB,SEIZED"},
+		{"Junkyard", "DISBAND,SALVAGE,SCRAP,DESTROY,REPAIR_JOB,SEIZED,SENT_TO_SANDBOX"},
 		{"Cargo Bay", "TRADE,SYSTEMS,JUNK,OVERFLOW"},
 		{"Crew", "CREW,RETIRE,RENAME_CREW,HIRE,MEDBAY"},
 		{"Expeditions", "EXPEDITION"},

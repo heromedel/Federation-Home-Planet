@@ -35,7 +35,9 @@ public final class ShipMark {
 	public static final class Found {
 		public final String career, id;
 		public final int boards, day;
-		Found(String career, String id, int boards, int day) { this.career = career; this.id = id; this.boards = boards; this.day = day; }
+		/** The save's ship class (her blueprint), kept in her record with the mark (6.10: what a rebuild starts from). */
+		public final String blueprint;
+		Found(String career, String id, int boards, int day, String blueprint) { this.career = career; this.id = id; this.boards = boards; this.day = day; this.blueprint = blueprint; }
 	}
 
 	/** Her save with this Board's mark (any other station's or career's taken off): the bytes, and the save as read. */
@@ -44,11 +46,13 @@ public final class ShipMark {
 		final SavedGameState gs;
 		Marked(byte[] bytes, SavedGameState gs) { this.bytes = bytes; this.gs = gs; }
 	}
-	static Marked mark(File save, String career, String id, int boards) throws IOException {
+	static Marked mark(File save, String career, String id, int boards) throws IOException { return mark(save, career, id, boards, today()); }
+	/** As above, with the day she was last boarded (0 or less: none, for a ship marked without a Board, 6.10). */
+	static Marked mark(File save, String career, String id, int boards, int day) throws IOException {
 		SavedGameState gs = parse(save);
 		strip(gs);
 		gs.setStateVar(COUNT + career + "." + id, boards);
-		gs.setStateVar(DAY + career + "." + id, today());
+		if (day > 0) gs.setStateVar(DAY + career + "." + id, day);
 		return new Marked(SaveHelper.toBytes(gs), gs);
 	}
 	/** The date as a number to read: 20261008. */
@@ -57,7 +61,8 @@ public final class ShipMark {
 	/** The mark in a save, or null if it has none (a New Game in FTL, a ship not boarded since 6.08) or can't be read. */
 	public static Found read(File save) {
 		try {
-			Map<String, Integer> vars = parse(save).getStateVars();
+			SavedGameState gs = parse(save);
+			Map<String, Integer> vars = gs.getStateVars();
 			for (Map.Entry<String, Integer> e : vars.entrySet()) {
 				if (!e.getKey().startsWith(COUNT)) continue;
 				String rest = e.getKey().substring(COUNT.length());
@@ -65,7 +70,7 @@ public final class ShipMark {
 				if (dot <= 0) continue;
 				String career = rest.substring(0, dot), id = rest.substring(dot + 1);
 				Integer day = vars.get(DAY + rest);
-				return new Found(career, id, e.getValue(), day == null ? 0 : day);
+				return new Found(career, id, e.getValue(), day == null ? 0 : day, gs.getPlayerShipBlueprintId());
 			}
 		} catch (IOException e) { /* unreadable: no mark to go by */ }
 		return null;

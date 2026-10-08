@@ -485,7 +485,7 @@ public final class Assignments {
 			return;
 		}
 		SavedGameState gs = HomePlanet.savedGameParser.readSavedGame(x.save);
-		Ship s = dock ? v.adopt(gs) : v.adoptJunked(gs);
+		Ship s = dock ? v.adopt(gs, "brought_home") : v.adoptJunked(gs, "brought_home");
 		v.setOut(s, gs, "Brought home by an expedition");
 		forget(p, x.index);
 		write(v, p);
