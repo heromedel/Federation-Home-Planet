@@ -13,14 +13,18 @@ public class CarryT { public static void main(String[] a) throws Exception {
  Setup.chk("A: her crew's files are in her folder", files != null && files.length > 0);
  Arrays.sort(files);
  File one = files[0];
- Properties p = new Properties(); InputStream in = new FileInputStream(one); p.loadFromXML(in); in.close();
- String name = p.getProperty("name");
- p.setProperty("served", "The Old Glory|" + p.getProperty("served", "")); p.setProperty("e.0", "3|Held the line at the Old Glory's last stand."); // her past at the other station
- OutputStream out = new FileOutputStream(one); p.storeToXML(out, null); out.close();
+ String name = CrewRegister.readFile(one).getProperty("name");
+ String x = new String(SafeFiles.read(one), "UTF-8"); // her past at the other station (6.11: her file's tags)
+ Setup.chk("A: her file is tags, her record in the station's names", x.startsWith("<?xml") && x.contains("<crew>") && x.contains("<skills>") && !x.contains("<entry"));
+ x = x.contains("<served>\r\n") ? x.replace("<served>\r\n", "<served>\r\n\t\t<ship><name>The Old Glory</name></ship>\r\n") : x.replace("</crew>", "\t<served><ship><name>The Old Glory</name></ship></served>\r\n</crew>");
+ x = x.contains("<events>\r\n") ? x.replace("<events>\r\n", "<events>\r\n\t\t<event><day>3</day><text>Held the line at the Old Glory's last stand.</text></event>\r\n") : x.replace("</crew>", "\t<events><event><day>3</day><text>Held the line at the Old Glory's last stand.</text></event></events>\r\n</crew>");
+ SafeFiles.writeText(one, x, false);
  byte[] pkg = v.packageOf(donor);
  Map<String, byte[]> got = Vault.unpack(pkg);
  int crewIn = 0; for (String k : got.keySet()) if (k.startsWith("crew/")) crewIn++;
  Setup.chk("B: her package carries her crew's files (" + crewIn + " of " + files.length + ")", crewIn == files.length);
+ String inPkg = new String(got.get("crew/" + one.getName()), "UTF-8");
+ Setup.chk("B: in the package, the form every station reads (properties, the wire's names), her past kept", inPkg.contains("<!DOCTYPE properties") && inPkg.contains("key=\"rec.s0\"") && inPkg.contains("The Old Glory|") && inPkg.contains("Held the line"));
  // a package can't put a file outside her folder
  ByteArrayOutputStream bo = new ByteArrayOutputStream(); java.util.zip.ZipOutputStream z = new java.util.zip.ZipOutputStream(bo);
  z.putNextEntry(new java.util.zip.ZipEntry("ship.sav")); z.write(got.get("ship.sav")); z.closeEntry();

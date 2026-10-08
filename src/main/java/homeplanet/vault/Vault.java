@@ -1973,7 +1973,7 @@ public final class Vault {
 				for (File c : crew) {
 					if (!c.isFile() || !c.getName().endsWith(".xml")) continue;
 					z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE_CREW + c.getName()));
-					z.write(SafeFiles.read(c));
+					z.write(CrewRegister.forPackage(c)); // in the form every station reads (6.11: their own files are tags)
 					z.closeEntry();
 				}
 			}
@@ -2548,13 +2548,14 @@ public final class Vault {
 		List<net.blerf.ftl.parser.SavedGameParser.CrewState> theirs = new ArrayList<net.blerf.ftl.parser.SavedGameParser.CrewState>();
 		{
 			for (File c : crew) {
-				java.util.Properties p = Store.read(c);
+				java.util.Properties p = CrewRegister.readFile(c);
+				if (p == null) continue;
 				String status = p.getProperty("status", "PRESENT");
 				if (!("ship:" + r.id).equals(p.getProperty("place")) || status.equals("KILLED") || status.equals("RETIRED") || status.equals("TRANSFERRED")) continue;
 				java.util.Map<String, String> fields = new LinkedHashMap<String, String>();
 				for (String k : p.stringPropertyNames()) if (k.startsWith("rec.")) fields.put(k.substring(4), p.getProperty(k));
 				if (fields.isEmpty()) continue;
-				try { theirs.add(homeplanet.comm.Line.crewFrom(fields)); } catch (Exception e) { log.warn("Could not rebuild {} from {}: {}", p.getProperty("name"), c.getName(), e.toString()); }
+				try { theirs.add(CrewRecord.crew(fields)); } catch (Exception e) { log.warn("Could not rebuild {} from {}: {}", p.getProperty("name"), c.getName(), e.toString()); }
 			}
 		}
 		if (!theirs.isEmpty()) {

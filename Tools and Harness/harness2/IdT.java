@@ -10,6 +10,8 @@ public class IdT {
  public static void main(String[] a) throws Exception {
   File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
   saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
+  HomePlanet.savedGameParser = new SavedGameParser(); if (DataManager.get() == null) { DefaultDataManager dm = new DefaultDataManager(game); DataManager.setInstance(dm); dm.setDLCEnabledByDefault(true); }
+  before610(Vault.rootOf(saves, Vault.SANDBOX)); // the world as a station before 6.10 left it, whatever made it
   HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
 
@@ -54,7 +56,7 @@ public class IdT {
   // 4. a record with no save: her newest version put back; then with none, rebuilt from her records
   Ship z = ships(v).get(2); String zId = z.id, zName = z.name; File zDir = v.folderOf(z);
   List<String> crewNames = new ArrayList<String>();
-  File[] cf = new File(zDir, "crew").listFiles(); if (cf != null) for (File c : cf) if (c.getName().endsWith(".xml")) crewNames.add(Store.read(c).getProperty("name"));
+  File[] cf = new File(zDir, "crew").listFiles(); if (cf != null) for (File c : cf) if (c.getName().endsWith(".xml")) crewNames.add(CrewRegister.readFile(c).getProperty("name"));
   String zClass = HomePlanet.savedGameParser.readSavedGame(v.fileOf(z)).getPlayerShipBlueprintId();
   v.fileOf(z).delete();
   v = reopen(game);
@@ -95,7 +97,7 @@ public class IdT {
   File sent = null; for (File d : sandShipyard.listFiles()) if (d.getName().startsWith("Dropped In.")) sent = d;
   ShipStore.Record sr = sent == null ? null : ShipStore.read(sent);
   Setup.chk("L: sent to Sandbox Mode's fleet, the career untouched (" + said + ")", !loose.exists() && n.fleet().size() == careerShips && sr != null && Vault.SANDBOX.equals(sr.career)
-    && sr.origin.startsWith("taken_in.6.10.") && "true".equals(ShipStore.notes(sent, "mark").getProperty("marked")));
+    && sr.origin.startsWith("taken_in." + HomePlanet.APP_VERSION + ".") && "true".equals(ShipStore.notes(sent, "mark").getProperty("marked")));
 
   // 7. Destroy in a career, the other way: on to Sandbox Mode's Junkyard with her crew; gone from the career
   Ship wreck = n.adoptJunked(Commission.build("PLAYER_SHIP_CIRCLE", "Old Faithful", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(6)));
@@ -107,7 +109,7 @@ public class IdT {
   File moved = null; for (File d : sandJunk.listFiles()) if (d.getName().startsWith("Old Faithful.")) moved = d;
   Setup.chk("D: gone from the career, her fate there transferred to Sandbox Mode (" + told + ")", n.byId(wId) == null && fate != null && "TRANSFERRED".equals(fate[0]) && "Sandbox Mode".equals(fate[2]));
   Setup.chk("D: in Sandbox Mode's Junkyard, her record Sandbox's, her origin kept, her save marked for it", moved != null && Vault.SANDBOX.equals(ShipStore.read(moved).career)
-    && ShipStore.read(moved).origin.startsWith("derelict.6.10.") && Vault.SANDBOX.equals(ShipMark.read(ShipStore.sav(moved)).career));
+    && ShipStore.read(moved).origin.startsWith("derelict." + HomePlanet.APP_VERSION + ".") && Vault.SANDBOX.equals(ShipMark.read(ShipStore.sav(moved)).career));
   Setup.chk("D: logged in the career", log(n).contains("SENT_TO_SANDBOX"));
 
   // and Sandbox Mode, opened: both there, their arrival logged
@@ -123,6 +125,16 @@ public class IdT {
  static Vault reopen(File game) throws Exception { Vault v = Vault.open(saves); v.takeStock(); return v; }
  static Vault.Found only(Vault v, Vault.Found.Kind k) { for (Vault.Found f : v.found()) if (f.kind == k) return f; return null; }
  static String log(Vault v) throws IOException { File f = new File(v.root, "logs/events.log"); return f.isFile() ? new String(SafeFiles.read(f), "UTF-8") : ""; }
+ /** A fleet as a station before 6.10 left it: no career or origin in any record, no mark in any save (her fingerprint its save's). */
+ static void before610(File root) throws IOException {
+  for (String where : new String[] {"shipyard", "junkyard"}) for (File d : ShipStore.folders(new File(root, where))) {
+   ShipStore.Record r = ShipStore.read(d); if (r == null) continue;
+   File sav = ShipStore.sav(d);
+   if (sav.isFile()) { SafeFiles.write(sav, ShipMark.strip(SafeFiles.read(sav))); r.hash = SafeFiles.hash(sav); }
+   r.career = ""; r.origin = ""; r.sections.remove("mark");
+   SafeFiles.write(ShipStore.xml(d), ShipStore.bytes(r));
+  }
+ }
  /** Her record as from before 6.10: no career, no origin. */
  static void unknow(File dir) throws IOException { ShipStore.Record r = ShipStore.read(dir); r.career = ""; r.origin = ""; SafeFiles.write(ShipStore.xml(dir), ShipStore.bytes(r)); }
  /** Her save changed by another tool (scrap up one), the station's fingerprint of it no longer matching. */

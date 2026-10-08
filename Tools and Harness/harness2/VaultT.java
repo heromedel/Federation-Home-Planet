@@ -49,13 +49,14 @@ public class VaultT { public static void main(String[] a) throws Exception {
  // 6.08: the ship mark (concerns 6 closed): Board writes her count and the day into her save; a marked copy is set aside whatever it matches
  String today = new java.text.SimpleDateFormat("yyyyMMdd").format(new java.util.Date());
  Ship g = null; for (Ship x : vo.docked()) if (!x.id.equals(e.id)) { g = x; break; }
+ ShipMark.Found m0 = ShipMark.read(vo.fileOf(g)); int b0 = m0 == null ? 0 : m0.boards; // marked already if the fleet's one-time check (6.10) marked her
  vo.board(g);
  ShipMark.Found m1 = ShipMark.read(vo.continueFile());
- Setup.chk("M: Board marks her save: this career, her id, boarded once, today", m1 != null && m1.career.equals(vo.slot) && m1.id.equals(g.id) && m1.boards == 1 && Integer.toString(m1.day).equals(today));
+ Setup.chk("M: Board marks her save: this career, her id, boarded once more, today", m1 != null && m1.career.equals(vo.slot) && m1.id.equals(g.id) && m1.boards == b0 + 1 && Integer.toString(m1.day).equals(today));
  SavedGameState gm = HomePlanet.savedGameParser.readSavedGame(vo.continueFile());
  vo.dock(); vo.board(g);
  ShipMark.Found m2 = ShipMark.read(vo.continueFile());
- Setup.chk("M: boarded again: twice, and only her mark in the save", m2 != null && m2.boards == 2 && m2.id.equals(g.id));
+ Setup.chk("M: boarded again: twice, and only her mark in the save", m2 != null && m2.boards == b0 + 2 && m2.id.equals(g.id));
  vo.dock();
  gm.getPlayerShip().setScrapAmt(gm.getPlayerShip().getScrapAmt() + 7); // a copy of her from her first boarding that matches nothing kept
  SaveHelper.writeSavedGame(vo.continueFile(), gm);
