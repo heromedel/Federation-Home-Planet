@@ -35,14 +35,14 @@ import org.slf4j.LoggerFactory;
  *                                copies kept for a reason of their own: victory-, final-battle-, cloud-)
  *     junkyard/&lt;Name&gt;.&lt;id&gt;/      a disbanded ship, the same
  *     memorials_and_records/ships/&lt;Name&gt;.&lt;id&gt;/   a ship that left the fleet (how, in her record's fate), remembered
- *     <ship folder>/crew/        her crew, a file each (5.83: <Name>.<id>.xml, the crew register's id); the same in cargohold/crew/,
+ *     <ship folder>/crew/        her crew, a file each (5.83: <Name>.<id>.xml, the crew register's id; plain tags since 6.11, CrewRecord); the same in cargohold/crew/,
  *                                expeditions/crew/, captives/crew/ and memorials_and_records/crew/ (everyone who left); crew-register.xml the register's own state
  *     expeditions/               the crew expeditions (5.85): expeditions.xml (the sectors on offer, the crew away), crew/,
  *                                board-before-5.67.txt (the old board of jobs, kept, unread)
  *     infirmary/                 infirmary.xml (who is laid up and until when; they stay in the Cargo Hold) (5.85)
  *     captives/                  captives.xml (who was taken, the ransoms asked), crew/ (5.85)
  *     cargohold/                 the Cargo Hold (5.72): cargohold.xml (what it holds, 5.84; the pretend ship's save cargohold.sav
- *                                before), crew/, systems.txt (its stored systems), parts.txt, overflow.txt, versions/
+ *                                before), crew/, systems.txt (its stored systems, StoredSystems), parts.txt, overflow.txt, versions/
  *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
  *                                ones read in once at 5.73; the only log written since 5.93), converted.txt (the marks); a fleet
  *                                from before keeps its history.log, master.log and reputation.log as they were, unwritten
@@ -2296,7 +2296,7 @@ public final class Vault {
 			String how = born != null ? birth(born) : "unknown";
 			String when = proof != null ? stampOf(proof.time) : originNow("x").substring(originNow("x").lastIndexOf('.') + 1);
 			String by = proof != null ? "verified-log-" + proof.kind : "verified-record-" + r.hash.substring(0, Math.min(8, r.hash.length()));
-			s.origin = how + ".pre-" + homeplanet.core.HomePlanet.APP_VERSION + "." + when + "." + by;
+			s.origin = how + ".pre-6.10." + when + "." + by; // from before 6.10, when ships were first given a career and origin, whichever station checks her
 			notes.add(s.name + ": checked, " + s.origin);
 			HistoryLog.entry("VAULT", s.name + " checked: " + s.origin, null, shipEvent("VAULT", s).put("what", "checked").put("origin", s.origin)
 					.put("fingerprint", print).put("history", first != null).put("career", slot));

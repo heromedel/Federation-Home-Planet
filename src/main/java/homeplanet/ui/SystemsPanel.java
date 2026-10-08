@@ -775,21 +775,19 @@ public class SystemsPanel {
 	}
 
 	/**
-	 * Scrapping and stripping (where allowed): moves the wreck's storable systems into the stored-systems file
-	 * (standard equipment and the Medbay stay with the hull; damaged systems are lost). Returns log lines.
+	 * Scrapping and stripping (where allowed): the wreck's storable systems, as lines for the stored systems (into
+	 * {@code store}; standard equipment and the Medbay stay with the hull; damaged ones go too, damaged). Returns log lines.
 	 */
-	static List<String> scrapSystems(ShipState wreck, homeplanet.vault.Vault.Transaction tx) throws java.io.IOException {
+	static List<String> scrapSystems(ShipState wreck, List<String> store) {
 		List<String> lines = new ArrayList<String>();
-		List<String> add = new ArrayList<String>();
 		for (SystemType t : SystemType.values()) {
 			SystemState st = wreck.getSystem(t);
 			if (st == null || st.getCapacity() <= 0 || storeReason(wreck, t) != null) continue;
 			String name = DryDockShop.systemTitle(t.getId());
 			int level = t == SystemType.CLONEBAY ? 0 : st.getCapacity(), broken = level > 0 ? st.getDamagedBars() : 0; // damaged systems are kept, damaged
-			add.add(homeplanet.vault.StoredSystems.line(t.getId(), level, broken));
+			store.add(homeplanet.vault.StoredSystems.line(t.getId(), level, broken));
 			lines.add("+ " + name + (level > 0 ? " (level " + level + (broken > 0 ? ", " + broken + " broken" : "") + ")" : "") + " (system)");
 		}
-		homeplanet.vault.StoredSystems.add(tx, homeplanet.vault.Vault.get(), add);
 		return lines;
 	}
 	/** How many of her systems stripping would move to the Cargo Bay (storable ones: damaged ones go too, damaged). */

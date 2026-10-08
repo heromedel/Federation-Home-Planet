@@ -26,3 +26,16 @@ one a line or a method to delete. Then delete the tests of old fleets. A fleet f
 by a 6.x station first: the station could say so plainly when it finds `manifest.xml` or `ships/`. When is heromedel's call
 (5.97: "at some point in a future build").
 
+## 8. Undos written by hand (noted 6.11)
+
+**What it is.** A few actions still write the Cargo Hold first and something else after, and put the hold back by hand if the
+second step fails, against the Journal rule: Scrap and Sell (`vault/SpaceDock`: the hold, then the ship's removal), a commission
+paid from the hold (`ui/CommissionDialog`) and a derelict bought (`parser/Derelicts`), both through `Vault.payFromStorage` and
+`refundStorage`. New Journey did the same until 6.11, when its fee and her save became one protection note.
+
+**What it costs.** If the station stops between the two steps, or the putting back fails too, the hold keeps what it was given
+while the ship keeps it as well: a scrapped or sold ship's crew would be in both places (cloned). Rare: it needs a failure at
+that moment.
+
+**What a change would look like.** The ship's removal (`Vault.remove`) written into the same note as the hold, as Board does
+with its files; the commission and the derelict paid in the same transaction as the ship they bring.

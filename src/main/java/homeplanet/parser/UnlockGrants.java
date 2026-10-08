@@ -96,6 +96,15 @@ public final class UnlockGrants {
 			log.warn("Could not note the answer about the unlocks: {}", e.toString());
 		}
 	}
+	/** The player's answer to the offer, Remove them: taken out of FTL's profile, the offer answered, logged. Returns the backup made first. */
+	public static File removeStrangers(Set<String> keys, java.util.List<String> names) throws java.io.IOException {
+		File backup = removeFromProfile(keys);
+		strangersAnswered(keys);
+		log.info("FTL profile backed up before the removal: {}", backup);
+		homeplanet.core.HistoryLog.entry("PROFILE", "Removed from FTL's profile: " + String.join(", ", names), null,
+				homeplanet.core.Event.of("PROFILE").put("what", "removed").put("removed", String.join(", ", names)).put("keys", String.join(", ", keys)));
+		return backup;
+	}
 	/**
 	 * Takes these out of FTL's profile (heromedel, 5.55), a dated backup made first: the achievements, and layouts A and C
 	 * (a Type B follows its ship's achievements; the Kestrel A always stays). FTL must be closed. Returns the backup.
