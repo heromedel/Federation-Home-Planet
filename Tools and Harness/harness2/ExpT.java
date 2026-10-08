@@ -131,7 +131,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   Setup.chk("W: unpaid, it runs out: the Ambassador's letter (presumed dead), the history log, the choices gone", news.size() == 1 && news.get(0).kind.equals("lost")
     && news.get(0).text().contains("presumed dead") && news.get(0).text().contains(c3.getName()) && hist.contains("ransom went unpaid") && Expeditions.openRansom(v, "ransom:2") == null);
  }
- /** Two crew of one name and race (the band-aid of CONCERNS.md 2): the one hurt is the one laid up; the one lost is the one gone. */
+ /** Two crew of one name and race (the infirmary's band-aid): the one hurt is the one laid up; the one lost is the one gone. */
  static void namesakes(Vault v) throws Exception {
   Expeditions.infirmaryFile(v).delete();
   List<CrewState> two = hold(v, "human", "human");

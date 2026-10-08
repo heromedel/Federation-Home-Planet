@@ -103,7 +103,7 @@ it does and CREDITS.md for where the code came from.
   `model.Words`, prices from `parser.Pricing`, a ship's gear from `parser.SaveHelper.gear`: never a copy of any of them.
 - **Crew names:** avoiding duplicate names is impossible (heromedel): trades, Rename, FTL's own crew, hiring and
   recruits all make namesakes, down to the same looks. Never plan or test a fix that prevents them; anything that
-  tracks crew has to work with namesakes (`docs/CONCERNS.md` 2).
+  tracks crew has to work with namesakes.
 - `Tools and Harness/harness2/`: the regression harness (Claude's test bench, not a user tool).
 - `Tools and Harness/hw2fhp-converter/`: the FTL Homeworld to FHP converter (a separate jar) and its tests.
 - `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to

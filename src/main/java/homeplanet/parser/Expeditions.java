@@ -62,7 +62,7 @@ public final class Expeditions {
 	}
 	private static String key(CrewState c) { return c.getName() + "/" + (c.getRace() == null ? "human" : c.getRace().getId()); }
 	/**
-	 * BAND-AID (docs/CONCERNS.md, 2): the station's records know a crew member by name and race, so two of a name and race
+	 * BAND-AID: the station's records know a crew member by name and race, so two of a name and race
 	 * get mixed up. Until crew who are away leave the Cargo Hold's save (the real fix), this mark tells namesakes apart:
 	 * sex, colouring and the service record, none of which change while they sit in the hold. Records keep it beside the
 	 * name; a record without one (from before) matches any namesake, as it always did.
