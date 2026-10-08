@@ -1,0 +1,579 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The words of an expedition report (the crew expeditions): the report's frame is fixed, these fill it in. Each <line>
+     is one choice of words, marked by its kind and, as the kind needs, its job, band, hazard, prize, race, captors and
+     sector; where several lines share the same marks, one is picked at random, so the same job doesn't read the same twice.
+     "\n" in a line is a line break: break a long line where the sense breaks (the style guide's layout rule).
+
+     To change the words for one mark, copy every line with those marks into expeditions.xml in the lore folder beside
+     the program and edit the copies: they take the place of the station's own lines for those marks. A copied line that
+     breaks a rule (the Rebel Flagship destroyed, the rebels capitalised, a {token} its marks don't use) is left out.
+
+       kind="frame"                  the line before what the crew did: heromedel's ("Due to events during the
+                                     assignment the crew") half the time, else one of these general ones
+       kind="frame" job="..."        the job's own setups (and sector-marked ones), used half the time: the setup,
+                                     never the news; every one has to read well before every event line of its job,
+                                     say nothing an event line says, and mention nothing it hasn't introduced itself
+                                     ("the enemy", "the quarry") beyond what any hired crew has (a client, the job,
+                                     the route)
+       kind="event" job="..."        what the crew did, after the frame; several per job
+       kind="band" job band          after a name: "Bob <phrase>." Bands: died, injured, failed, success, high, top
+                                     (top: "and brought back <item>" is added when a 20 found something)
+       kind="band" ... cause="other" an injury that names a cause other than any hazard: drawn with the others, and
+                                     alone for someone hurt whose race shrugged the hazard off
+       kind="hazard" hazard          flare, asteroids, pulsar, storm (nebula only), battery (rebel space only)
+       kind="hacked"                 after the battery's line when an Engi hacked it ({name}: the Engi)
+       kind="prize" job prize        hijack ship, hijack part, salvage part, rescue recruit ({name}: the ship's name
+                                     and class, the part's system, or the recruit's name and race)
+       kind="captured" captors       after a name, taken on Get Boarded (a ransom letter always follows); captors are
+                                     slavers, pirates, rebels or mantis, the same who sign the ransom letter
+       kind="infirmary"              after a name, badly hurt: in the infirmary a while
+       kind="offer" sector           the card on the board for a sector; several per sector
+       kind="shrug" hazard race      after a crew member's line when their race shrugged the hazard off (not for the
+                                     dead, the taken, the infirmary or the injured)
+
+     sector="..." on any line but an offer marks it for that sector: it joins the unmarked lines only there. In a line
+     after a name, {he} {him} {his} become she, her, her for a woman ({He} {His} to begin a sentence). Every line
+     finishes its thought: a reader should never be left asking "decide what?".
+
+     Jobs: defend attack negotiate boarded rescue salvage scout repair transport lost escort capture board hijack
+     infection spiders. Sectors: civilian engi zoltan mantis pirate rebel rock nebula abandoned crystal. -->
+<expeditions>
+	<line kind="frame">Due to events during the assignment the crew</line>
+	<line kind="frame">Over the course of the assignment the crew</line>
+	<line kind="frame">From what the station could piece together, the crew</line>
+	<line kind="frame">As far as anyone at the station can tell, the crew</line>
+	<line kind="frame">According to the detail's own account, the crew</line>
+	<line kind="frame">The detail's log, once it was decoded, says the crew</line>
+	<line kind="frame" job="defend">After unknown ships were sighted at the next beacon, the crew</line>
+	<line kind="frame" job="defend">With the nearest Federation patrol days away, the crew</line>
+	<line kind="frame" job="defend" sector="rock">Since the Rock trust outsiders with nothing but the dangerous work, the crew</line>
+	<line kind="frame" job="defend">With nothing but a borrowed turret and their own sidearms, the crew</line>
+	<line kind="frame" job="defend">Once the local militia had run out of people willing to stand watch, the crew</line>
+	<line kind="frame" job="defend">When a prisoner boasted that his friends would return, the crew</line>
+	<line kind="frame" job="defend">Paid in advance, which should have been a warning, the crew</line>
+	<line kind="frame" job="defend">With the rebel fleet's advance drawing every armed ship away, the crew</line>
+	<line kind="frame" job="defend">After a day of distress calls from across the system, the crew</line>
+	<line kind="frame" job="attack">Once Federation intelligence had a location, the crew</line>
+	<line kind="frame" job="attack">After one raid too many, the crew</line>
+	<line kind="frame" job="attack" sector="rebel">Under orders that came straight from The Federation Home Planet, the crew</line>
+	<line kind="frame" job="attack">After a raid took a hospital ship and everyone aboard, the crew</line>
+	<line kind="frame" job="attack">When a prisoner traded a location for his freedom, the crew</line>
+	<line kind="frame" job="attack">With the assault already planned and short of hands, the crew</line>
+	<line kind="frame" job="attack">Because a Federation convoy was due through in two days and the way had to be clear, the crew</line>
+	<line kind="frame" job="attack">Once the scrap on offer was enough to make everyone forget the risk, the crew</line>
+	<line kind="frame" job="negotiate">With both sides' guns already warm, the crew</line>
+	<line kind="frame" job="negotiate">Because nobody else in the sector was trusted by both sides, the crew</line>
+	<line kind="frame" job="negotiate" sector="zoltan">Since the Zoltan will only deal with those who come unarmed, the crew</line>
+	<line kind="frame" job="negotiate">After the last mediator went home with a broken jaw, the crew</line>
+	<line kind="frame" job="negotiate">Since talking costs less than missiles, the crew</line>
+	<line kind="frame" job="negotiate">With a whole colony waiting on the outcome, the crew</line>
+	<line kind="frame" job="negotiate">Because a single shot would have started a war nobody could afford, the crew</line>
+	<line kind="frame" job="negotiate">When both sides agreed on exactly one thing, that outsiders should do the talking, the crew</line>
+	<line kind="frame" job="boarded">When an unmarked ship matched course and stopped answering hails, the crew</line>
+	<line kind="frame" job="boarded">Halfway through what had been a quiet run, the crew</line>
+	<line kind="frame" job="boarded">Shortly after the sensors picked up a ship running dark, the crew</line>
+	<line kind="frame" job="boarded">Two days into a run that had been sold to them as safe, the crew</line>
+	<line kind="frame" job="boarded">With the freighter's own weapons removed to make room for cargo, the crew</line>
+	<line kind="frame" job="boarded">When the captain decided to save fuel by skipping the patrolled beacons, the crew</line>
+	<line kind="frame" job="boarded">Shortly after a stranger asked a few too many questions at the last store, the crew</line>
+	<line kind="frame" job="boarded">Though the owner swore nobody knew what the ship carried, the crew</line>
+	<line kind="frame" job="rescue">Although cries for help out here are often traps, the crew</line>
+	<line kind="frame" job="rescue">Because they were the only ship within a day's jump, the crew</line>
+	<line kind="frame" job="rescue">With a family offering everything they owned, the crew</line>
+	<line kind="frame" job="rescue">Because the Federation still remembers who came when it was called, the crew</line>
+	<line kind="frame" job="rescue">Hearing that whoever was left had perhaps a day of air, the crew</line>
+	<line kind="frame" job="rescue">Since the official rescue ship had been called away to the front, the crew</line>
+	<line kind="frame" job="rescue">Though the odds were poor and the pay was poorer, the crew</line>
+	<line kind="frame" job="salvage">Following a salvage claim bought cheap from a trader who seemed glad to be rid of it, the crew</line>
+	<line kind="frame" job="salvage">With The Home Planet Station's Junkyard short of parts, the crew</line>
+	<line kind="frame" job="salvage">After a long-range scan turned up something metal where the charts showed nothing, the crew</line>
+	<line kind="frame" job="salvage">With scrap prices up across the sector, the crew</line>
+	<line kind="frame" job="salvage">Because whoever got there second would get nothing, the crew</line>
+	<line kind="frame" job="salvage">Acting on a tip from a Slug who wanted a cut, the crew</line>
+	<line kind="frame" job="salvage">Needing scrap more than they needed caution, the crew</line>
+	<line kind="frame" job="scout">Because the old charts of the sector could no longer be trusted, the crew</line>
+	<line kind="frame" job="scout">With the war changing the map every week, the crew</line>
+	<line kind="frame" job="scout">With the sector's beacons going quiet one after another, the crew</line>
+	<line kind="frame" job="scout">Since one small ship is easier to lose than a fleet, the crew</line>
+	<line kind="frame" job="scout">When a trader's map showed systems nobody else had heard of, the crew</line>
+	<line kind="frame" job="scout">Because Federation command wanted eyes on the sector before committing a ship, the crew</line>
+	<line kind="frame" job="scout">With a borrowed ship and very little fuel, the crew</line>
+	<line kind="frame" job="repair">Since no shipyard would come out this far, the crew</line>
+	<line kind="frame" job="repair">With supplies scarce and the nearest store sold out, the crew</line>
+	<line kind="frame" job="repair">After the local mechanics walked out over unpaid wages, the crew</line>
+	<line kind="frame" job="repair">With nobody qualified within three jumps, the crew</line>
+	<line kind="frame" job="repair">Working from a manual written in three languages, none of them complete, the crew</line>
+	<line kind="frame" job="repair">Brought in after two other crews had made things worse, the crew</line>
+	<line kind="frame" job="repair">Since everything out here runs on salvage and hope, the crew</line>
+	<line kind="frame" job="transport">With every regular freighter in the sector already booked, the crew</line>
+	<line kind="frame" job="transport">Because the job could not wait for a proper convoy, the crew</line>
+	<line kind="frame" job="transport">With the route running past three known pirate haunts, the crew</line>
+	<line kind="frame" job="transport">Because the client wanted people who asked no questions, the crew</line>
+	<line kind="frame" job="transport">After the last ship on the same route disappeared, the crew</line>
+	<line kind="frame" job="transport">With a delivery date that left no room for detours, the crew</line>
+	<line kind="frame" job="transport">Once the client had offered a bonus for speed, the crew</line>
+	<line kind="frame" job="lost">Somewhere past the edge of the known lanes, the crew</line>
+	<line kind="frame" job="lost">On what should have been the simplest leg of the trip, the crew</line>
+	<line kind="frame" job="lost">After the navigation computer took a hit it never quite recovered from, the crew</line>
+	<line kind="frame" job="lost">Trusting directions from a trader they had only just met, the crew</line>
+	<line kind="frame" job="lost">With the local beacon flickering in and out, the crew</line>
+	<line kind="frame" job="lost">Short of fuel and too proud to turn back, the crew</line>
+	<line kind="frame" job="lost">Taking a shortcut that looked fine on paper, the crew</line>
+	<line kind="frame" job="escort">Because the rebel fleet's advance had pulled the regular patrols away, the crew</line>
+	<line kind="frame" job="escort">For a fee that seemed generous until they saw the route, the crew</line>
+	<line kind="frame" job="escort">Because the last guards on the route had come home without their charge, the crew</line>
+	<line kind="frame" job="escort">After the regular guards turned back at the sector border, the crew</line>
+	<line kind="frame" job="escort">Since nobody would make the trip unguarded, the crew</line>
+	<line kind="frame" job="escort">Hired at the last minute when the usual guards failed to show, the crew</line>
+	<line kind="frame" job="escort">With rumours of raiders at every stop along the route, the crew</line>
+	<line kind="frame" job="capture">With a bounty posted at every store in the sector, the crew</line>
+	<line kind="frame" job="capture">Because a dead quarry would pay nothing, the crew</line>
+	<line kind="frame" job="capture">When a dock worker sold them the quarry's next stop, the crew</line>
+	<line kind="frame" job="capture">Because the one they were hunting had made enemies faster than friends, the crew</line>
+	<line kind="frame" job="capture">With the Federation's own hunters busy elsewhere, the crew</line>
+	<line kind="frame" job="capture">After two crews before them had come back empty-handed, the crew</line>
+	<line kind="frame" job="capture">Following a trail of rumours from store to store, the crew</line>
+	<line kind="frame" job="board">Hired by a convoy that had been shadowed for three days by the same silent ship, the crew</line>
+	<line kind="frame" job="board">Sent by a colony that wanted back what had been taken from it, the crew</line>
+	<line kind="frame" job="board">After a merchant's cargo was stolen in the night and the thieves were traced, the crew</line>
+	<line kind="frame" job="board">With a Federation warrant to seize any vessel running dark, the crew</line>
+	<line kind="frame" job="board">Rather than fight a battle between ships they could not win, the crew</line>
+	<line kind="frame" job="board">Because a ship blown apart tells no one what she was carrying, the crew</line>
+	<line kind="frame" job="board">With a bounty offered for a ship and her captain together, the crew</line>
+	<line kind="frame" job="hijack">With forged docking papers and a story they had rehearsed twice, the crew</line>
+	<line kind="frame" job="hijack">Timing it for when the dockyard was emptiest, the crew</line>
+	<line kind="frame" job="hijack">With a buyer already waiting at the next beacon, the crew</line>
+	<line kind="frame" job="hijack">With the dock's guards changing shift every few hours, the crew</line>
+	<line kind="frame" job="hijack">Working for someone with a grudge and a good price, the crew</line>
+	<line kind="frame" job="hijack">Armed with security codes bought from a dock worker, the crew</line>
+	<line kind="frame" job="hijack">Since the Federation needed a ship whose owners would not sell, the crew</line>
+	<line kind="frame" job="infection">With the local medics already sick themselves, the crew</line>
+	<line kind="frame" job="infection">Because every medbay in the sector was full, the crew</line>
+	<line kind="frame" job="infection">After the first supply ship to visit came back with half its crew sick, the crew</line>
+	<line kind="frame" job="infection">Wearing suits that had not been tested in years, the crew</line>
+	<line kind="frame" job="infection">Because nobody else would go near the place, the crew</line>
+	<line kind="frame" job="infection">With the Federation threatening to seal the place off for good, the crew</line>
+	<line kind="frame" job="infection">Following a medic who had already lost her own crew to it, the crew</line>
+	<line kind="frame" job="spiders">Having been told the job was quiet and the pay was good, the crew</line>
+	<line kind="frame" job="spiders">Against the advice of everyone who had been there before, the crew</line>
+	<line kind="frame" job="spiders">After the last team sent in stopped reporting, the crew</line>
+	<line kind="frame" job="spiders">Laughing off the stories they had heard at the last store, the crew</line>
+	<line kind="frame" job="spiders">Promised a bonus for every nest they destroyed, the crew</line>
+	<line kind="frame" job="spiders">Following tracks far too large for anything they had seen before, the crew</line>
+	<line kind="frame" job="spiders">With people going missing one by one, the crew</line>
+
+	<line kind="offer" sector="civilian">A trading post is short of hands.</line>
+	<line kind="offer" sector="civilian">A colony has put out word for help.</line>
+	<line kind="offer" sector="civilian">Work on offer along the trade lanes.</line>
+	<line kind="offer" sector="civilian">A merchant guild is hiring crews by the job, and paying on their return.</line>
+	<line kind="offer" sector="civilian">A mining colony wants extra hands until its own crews come home.</line>
+	<line kind="offer" sector="engi">An Engi outpost is taking on crew.</line>
+	<line kind="offer" sector="engi">The Engi have work, for those who can follow instructions.</line>
+	<line kind="offer" sector="engi">An Engi trade station needs crew for work its own drones can't do.</line>
+	<line kind="offer" sector="engi">The Engi have posted a job in exact detail, with nothing about why.</line>
+	<line kind="offer" sector="zoltan">A Zoltan envoy is hiring an escort.</line>
+	<line kind="offer" sector="zoltan">The Zoltan Monks have posted for help.</line>
+	<line kind="offer" sector="zoltan">A Zoltan colony is asking for outsiders, politely, and only once.</line>
+	<line kind="offer" sector="zoltan">The Zoltan want crew for a task they will explain on arrival.</line>
+	<line kind="offer" sector="mantis">Someone is paying well for crew willing to go into Mantis space.</line>
+	<line kind="offer" sector="mantis">A convoy needs hands before it crosses Mantis territory.</line>
+	<line kind="offer" sector="mantis">A Mantis captain who trades instead of raiding is hiring outsiders.</line>
+	<line kind="offer" sector="mantis">Good money is on offer for anyone who can stand Mantis space for a few days.</line>
+	<line kind="offer" sector="pirate">A merchant wants crew for a run through pirate space. No questions asked.</line>
+	<line kind="offer" sector="pirate">Pay offered for a job near the pirates' haunts.</line>
+	<line kind="offer" sector="pirate">A pirate captain is hiring through a go-between, and promises nobody will be shot at.</line>
+	<line kind="offer" sector="pirate">A smuggler needs a crew who can keep their mouths shut.</line>
+	<line kind="offer" sector="rebel">The Federation is hiring for work in a sector the rebels hold.</line>
+	<line kind="offer" sector="rebel">A Federation contact needs crew in rebel space.</line>
+	<line kind="offer" sector="rebel">Federation intelligence needs a crew that can pass for traders in rebel space.</line>
+	<line kind="offer" sector="rebel">A resistance cell behind rebel lines has asked for help.</line>
+	<line kind="offer" sector="rock">A Rock clan has work for outsiders, for once.</line>
+	<line kind="offer" sector="rock">Crew wanted for a job in Rock territory.</line>
+	<line kind="offer" sector="rock">A Rock mining clan is short of hands small enough for its narrower tunnels.</line>
+	<line kind="offer" sector="rock">The Rock want outsiders for a job they won't do themselves, which says something.</line>
+	<line kind="offer" sector="nebula">A freighter line wants hands in a nebula.</line>
+	<line kind="offer" sector="nebula">Work in a nebula, for crew who don't mind the dark.</line>
+	<line kind="offer" sector="nebula">A Slug trader is hiring, and says the work is simple. Slugs always say that.</line>
+	<line kind="offer" sector="nebula">A research team inside the nebula needs crew to keep their station running.</line>
+	<line kind="offer" sector="abandoned">A salvager is taking on crew for an abandoned sector.</line>
+	<line kind="offer" sector="abandoned">Someone wants a look at a sector the Lanius have been through.</line>
+	<line kind="offer" sector="abandoned">The last few families of an old colony want an escort out.</line>
+	<line kind="offer" sector="abandoned">Someone is paying for news of what is left in a sector the Lanius have stripped.</line>
+	<line kind="offer" sector="crystal">Word has come, by a roundabout way, of work in Crystal space.</line>
+	<line kind="offer" sector="crystal">A message reached the station in no language anyone uses, with coordinates and a promise of pay.</line>
+	<line kind="offer" sector="crystal">Someone in Crystal space is hiring, and the station still can't tell who.</line>
+
+	<line kind="event" job="defend">were hired to hold a trading station against raiders who wanted everything in her stores</line>
+	<line kind="event" job="defend">stood guard over a convoy under attack</line>
+	<line kind="event" job="defend">held a colony's landing pad through a long night</line>
+	<line kind="event" job="defend" sector="engi">were posted to an Engi supply station that a Mantis raider kept coming back to</line>
+	<line kind="event" job="defend" sector="zoltan">stood guard over a Zoltan monastery whose monks would not lift a hand to save it</line>
+	<line kind="event" job="defend" sector="rock">helped a Rock outpost hold its mine against raiders who wanted the ore</line>
+
+	<line kind="band" job="defend" band="died">was killed holding the line</line>
+	<line kind="band" job="defend" band="died">was killed when the raiders broke through {his} section</line>
+	<line kind="band" job="defend" band="injured">was injured holding the line</line>
+	<line kind="band" job="defend" band="injured">was injured, and stayed at {his} post until it was over</line>
+	<line kind="band" job="defend" band="injured" cause="other">was injured when a raider got close enough to use a knife</line>
+	<line kind="band" job="defend" band="failed">fell back when the raiders pushed</line>
+	<line kind="band" job="defend" band="failed">left {his} post when the raiders pushed, and the others had to cover the gap</line>
+	<line kind="band" job="defend" band="success">was successful holding the line</line>
+	<line kind="band" job="defend" band="success">was successful, and {his} part of the line held</line>
+	<line kind="band" job="defend" band="high">was very successful: the raiders broke on {his} position</line>
+	<line kind="band" job="defend" band="high">was very successful: no raider got within reach of what {he} was guarding</line>
+	<line kind="band" job="defend" band="top">was extremely successful and turned the raiders around single-handed</line>
+	<line kind="band" job="defend" band="top">was extremely successful and is the reason there was anything left to defend</line>
+
+	<line kind="event" job="attack">were sent with a strike team against a raider base that had been bleeding the trade lanes dry</line>
+	<line kind="event" job="attack">joined a strike on a smugglers' den</line>
+	<line kind="event" job="attack" sector="rebel">joined a Federation strike on a rebel listening post</line>
+	<line kind="event" job="attack" sector="pirate">went in with a mercenary crew to burn out a pirate refuelling station</line>
+	<line kind="event" job="attack" sector="mantis">were sent to break up a Mantis hunting camp before the hunters came home</line>
+
+	<line kind="band" job="attack" band="died">was killed in the attack</line>
+	<line kind="band" job="attack" band="died">was killed in the first rush</line>
+	<line kind="band" job="attack" band="injured">was injured in the attack</line>
+	<line kind="band" job="attack" band="injured">was injured going in, and kept going anyway</line>
+	<line kind="band" job="attack" band="injured" cause="other">was injured by a mine at the base's outer door</line>
+	<line kind="band" job="attack" band="failed">lost {his} nerve in the attack</line>
+	<line kind="band" job="attack" band="failed">hung back when the shooting started</line>
+	<line kind="band" job="attack" band="success">was successful in the attack</line>
+	<line kind="band" job="attack" band="success">was successful, and was there when the base fell</line>
+	<line kind="band" job="attack" band="high">was very successful: {he} was first through the breach</line>
+	<line kind="band" job="attack" band="high">was very successful: the defenders fell back wherever {he} went</line>
+	<line kind="band" job="attack" band="top">was extremely successful and led the attack home</line>
+	<line kind="band" job="attack" band="top">was extremely successful and took the enemy's command post alone</line>
+
+	<line kind="event" job="negotiate">sat at the table while two clans argued over a mining claim</line>
+	<line kind="event" job="negotiate">were sent to talk a standoff down</line>
+	<line kind="event" job="negotiate">carried terms between two captains who wouldn't meet</line>
+	<line kind="event" job="negotiate" sector="engi">settled a trade dispute with Engi who answered every offer with a counter-offer, to the decimal</line>
+	<line kind="event" job="negotiate" sector="zoltan">spoke for a freighter crew who had parked on the doorstep of a Zoltan monastery</line>
+	<line kind="event" job="negotiate" sector="rebel">were sent to talk a rebel garrison into letting a refugee ship pass</line>
+
+	<line kind="band" job="negotiate" band="died">was killed when the talks turned violent</line>
+	<line kind="band" job="negotiate" band="died">was killed when someone at the table decided the talking was over</line>
+	<line kind="band" job="negotiate" band="injured">was injured when the talks turned violent</line>
+	<line kind="band" job="negotiate" band="injured" cause="other">was injured in the scuffle that ended the first round of talks</line>
+	<line kind="band" job="negotiate" band="failed">said the wrong thing at the table</line>
+	<line kind="band" job="negotiate" band="failed">lost {his} temper at the table, and the talks went backwards from there</line>
+	<line kind="band" job="negotiate" band="success">was successful at the table</line>
+	<line kind="band" job="negotiate" band="success">was successful, and both sides walked away with something</line>
+	<line kind="band" job="negotiate" band="high">was very successful: both sides shook on it</line>
+	<line kind="band" job="negotiate" band="high">was very successful: {he} found the deal nobody else had seen</line>
+	<line kind="band" job="negotiate" band="top">was extremely successful and brought both sides to terms</line>
+	<line kind="band" job="negotiate" band="top">was extremely successful and turned old enemies into trading partners</line>
+
+	<line kind="event" job="boarded">were aboard a freighter when she was boarded</line>
+	<line kind="event" job="boarded">were on watch when boarders came through the hull</line>
+	<line kind="event" job="boarded">were asleep in their bunks when the alarms went, and the boarders were already inside</line>
+	<line kind="event" job="boarded" sector="rebel">were caught aboard a ship the rebels boarded</line>
+	<line kind="event" job="boarded" sector="mantis">were working a cargo run when a Mantis boarding party appeared in the hold</line>
+	<line kind="event" job="boarded" sector="pirate">were crewing an ore hauler when pirates cut through her airlock</line>
+
+	<line kind="band" job="boarded" band="died">was killed by the boarders</line>
+	<line kind="band" job="boarded" band="died">was killed defending the corridor to the bridge</line>
+	<line kind="band" job="boarded" band="injured">was injured by the boarders</line>
+	<line kind="band" job="boarded" band="injured" cause="other">was injured holding a door until the boarders gave up on it</line>
+	<line kind="band" job="boarded" band="failed">was driven back by the boarders</line>
+	<line kind="band" job="boarded" band="failed">lost {his} section of the ship to the boarders</line>
+	<line kind="band" job="boarded" band="success">was successful against the boarders</line>
+	<line kind="band" job="boarded" band="success">was successful, and cleared the boarders from {his} deck</line>
+	<line kind="band" job="boarded" band="high">was very successful: the boarders never got past {him}</line>
+	<line kind="band" job="boarded" band="high">was very successful: every boarder who reached {him} regretted it</line>
+	<line kind="band" job="boarded" band="top">was extremely successful and threw the boarders off the ship</line>
+	<line kind="band" job="boarded" band="top">was extremely successful and had the boarders running for their own airlock</line>
+
+	<line kind="event" job="rescue">answered a distress call from a ship whose life support was failing</line>
+	<line kind="event" job="rescue">went down to a crashed ship for survivors</line>
+	<line kind="event" job="rescue">pulled the survivors out of a dying station</line>
+	<line kind="event" job="rescue" sector="nebula">went into the dark after a Slug crew who had lost power somewhere in the nebula</line>
+	<line kind="event" job="rescue" sector="rock">dug a mining crew out of a collapsed Rock tunnel</line>
+	<line kind="event" job="rescue" sector="abandoned">searched an abandoned colony for the few who had refused to leave</line>
+
+	<line kind="band" job="rescue" band="died">was killed in the rescue</line>
+	<line kind="band" job="rescue" band="died">was killed going in for one more</line>
+	<line kind="band" job="rescue" band="injured">was injured in the rescue</line>
+	<line kind="band" job="rescue" band="injured" cause="other">was injured when a damaged bulkhead came down across the corridor</line>
+	<line kind="band" job="rescue" band="failed">got lost in the wreck</line>
+	<line kind="band" job="rescue" band="failed">could not reach the survivors in time</line>
+	<line kind="band" job="rescue" band="success">was successful in the rescue</line>
+	<line kind="band" job="rescue" band="success">was successful, and brought out everyone {he} could reach</line>
+	<line kind="band" job="rescue" band="high">was very successful: everyone was brought out</line>
+	<line kind="band" job="rescue" band="high">was very successful: {he} found survivors the others had given up on</line>
+	<line kind="band" job="rescue" band="top">was extremely successful and carried the last one out</line>
+	<line kind="band" job="rescue" band="top">was extremely successful and talked a trapped crew through the dark to safety</line>
+
+	<line kind="event" job="salvage">stripped a wreck for what it still had</line>
+	<line kind="event" job="salvage">picked over a derelict in a debris field</line>
+	<line kind="event" job="salvage">cut their way into an old hulk nobody had opened in years</line>
+	<line kind="event" job="salvage">salvaged a freighter that had drifted so long her name had worn off the hull</line>
+	<line kind="event" job="salvage" sector="abandoned">raced a Lanius ship to the last good parts of a gutted research station</line>
+	<line kind="event" job="salvage" sector="rebel">picked through the wreckage of a battle the Federation had lost</line>
+
+	<line kind="band" job="salvage" band="died">was killed when a bulkhead gave</line>
+	<line kind="band" job="salvage" band="died">was killed when the wreck's reactor woke up</line>
+	<line kind="band" job="salvage" band="injured">was injured when a bulkhead gave</line>
+	<line kind="band" job="salvage" band="injured" cause="other">was injured cutting into a compartment that still had pressure in it</line>
+	<line kind="band" job="salvage" band="failed">came back with nothing worth keeping</line>
+	<line kind="band" job="salvage" band="failed">spent the whole job cutting into compartments that were already empty</line>
+	<line kind="band" job="salvage" band="success">was successful in the salvage</line>
+	<line kind="band" job="salvage" band="success">was successful, and filled {his} share of the hold</line>
+	<line kind="band" job="salvage" band="high">was very successful: {he} came home with a good haul</line>
+	<line kind="band" job="salvage" band="high">was very successful: {he} knew which panels were worth pulling</line>
+	<line kind="band" job="salvage" band="top">was extremely successful and found the best of the wreck</line>
+	<line kind="band" job="salvage" band="top">was extremely successful and found the one compartment nobody else had opened</line>
+
+	<line kind="event" job="scout">scouted a beacon ahead of a convoy</line>
+	<line kind="event" job="scout">ran a reconnaissance past an enemy picket</line>
+	<line kind="event" job="scout" sector="nebula">went out in a shuttle to chart a nebula's edge</line>
+	<line kind="event" job="scout" sector="rebel">flew a shuttle past the rebel fleet's outriders to count their ships</line>
+	<line kind="event" job="scout" sector="pirate">mapped the beacons a pirate gang had been using to hide</line>
+	<line kind="event" job="scout" sector="crystal">went looking for the Crystal worlds on directions that made no sense until they did</line>
+
+	<line kind="band" job="scout" band="died">was killed when the shuttle was spotted</line>
+	<line kind="band" job="scout" band="died">was killed when an enemy patrol caught the shuttle in the open</line>
+	<line kind="band" job="scout" band="injured">was injured when the shuttle was spotted</line>
+	<line kind="band" job="scout" band="injured" cause="other">was injured bringing a damaged shuttle home</line>
+	<line kind="band" job="scout" band="failed">brought back a chart nobody could read</line>
+	<line kind="band" job="scout" band="failed">came home with nothing anyone could use</line>
+	<line kind="band" job="scout" band="success">was successful in the reconnaissance</line>
+	<line kind="band" job="scout" band="success">was successful, and the convoy took the route {he} charted</line>
+	<line kind="band" job="scout" band="high">was very successful: {he} made a chart worth paying for</line>
+	<line kind="band" job="scout" band="high">was very successful: {he} found a safe route nobody else had seen</line>
+	<line kind="band" job="scout" band="top">was extremely successful and charted every lane in the sector</line>
+	<line kind="band" job="scout" band="top">was extremely successful and mapped the enemy's positions without being seen</line>
+
+	<line kind="event" job="repair">patched up a station's failing systems</line>
+	<line kind="event" job="repair">were called to a freighter dead in space</line>
+	<line kind="event" job="repair">spent the job up to the elbows in an old reactor</line>
+	<line kind="event" job="repair">kept a colony's failing life support running until the parts arrived</line>
+	<line kind="event" job="repair" sector="engi">were hired by Engi engineers who needed hands, not advice, to rebuild a reactor</line>
+	<line kind="event" job="repair" sector="zoltan">rewired a Zoltan ship whose crew could power her but no longer fix her</line>
+
+	<line kind="band" job="repair" band="died">was killed when the reactor flared</line>
+	<line kind="band" job="repair" band="died">was killed when a conduit {he} was working on went live</line>
+	<line kind="band" job="repair" band="injured">was injured when the reactor flared</line>
+	<line kind="band" job="repair" band="injured" cause="other">was injured by a burst coolant line</line>
+	<line kind="band" job="repair" band="failed">made things worse, and someone else had to finish the job</line>
+	<line kind="band" job="repair" band="failed">spent the whole job chasing a fault that was never found</line>
+	<line kind="band" job="repair" band="success">was successful in the repairs</line>
+	<line kind="band" job="repair" band="success">was successful, and the lights came back on</line>
+	<line kind="band" job="repair" band="high">was very successful: what {he} fixed ran better than new</line>
+	<line kind="band" job="repair" band="high">was very successful: {he} found the fault the last three crews had missed</line>
+	<line kind="band" job="repair" band="top">was extremely successful and had everything running in half the time</line>
+	<line kind="band" job="repair" band="top">was extremely successful and rebuilt the reactor better than it was first built</line>
+
+	<line kind="event" job="transport">hauled a hold full of machine parts across the sector for a buyer who had paid half up front</line>
+	<line kind="event" job="transport">flew a load of medical supplies to a colony that had run out of almost everything</line>
+	<line kind="event" job="transport">ferried passengers who wouldn't say where they were going</line>
+	<line kind="event" job="transport" sector="engi">carried a sealed Engi cargo that the Engi would weigh but never describe</line>
+	<line kind="event" job="transport" sector="rebel">ran supplies through rebel space to a Federation outpost that was still holding out</line>
+	<line kind="event" job="transport" sector="rock">hauled ore for a Rock clan that counted every piece at both ends</line>
+
+	<line kind="band" job="transport" band="died">was killed on the run</line>
+	<line kind="band" job="transport" band="died">was killed when raiders caught the transport between beacons</line>
+	<line kind="band" job="transport" band="injured">was injured on the run</line>
+	<line kind="band" job="transport" band="injured" cause="other">was injured when the cargo shifted in a hard turn</line>
+	<line kind="band" job="transport" band="failed">lost part of the cargo on the way</line>
+	<line kind="band" job="transport" band="failed">signed for the wrong cargo, and nobody noticed until delivery</line>
+	<line kind="band" job="transport" band="success">was successful on the run</line>
+	<line kind="band" job="transport" band="success">was successful, and the cargo arrived as promised</line>
+	<line kind="band" job="transport" band="high">was very successful: the cargo came in early</line>
+	<line kind="band" job="transport" band="high">was very successful: {he} found a shorter route and took it</line>
+	<line kind="band" job="transport" band="top">was extremely successful and brought the cargo in untouched</line>
+	<line kind="band" job="transport" band="top">was extremely successful and talked the buyer into paying extra</line>
+
+	<line kind="event" job="lost">explored around the beacon after the jump, lost their bearings, and spent days finding their way back to it</line>
+	<line kind="event" job="lost">got turned around in the dark and ran low on everything</line>
+	<line kind="event" job="lost">lost the beacon and drifted a long while</line>
+	<line kind="event" job="lost" sector="nebula">lost every sensor reading in the nebula and flew on guesswork</line>
+	<line kind="event" job="lost" sector="abandoned">followed an old chart through abandoned space to beacons that weren't there any more</line>
+	<line kind="event" job="lost" sector="crystal">chased a signal into Crystal space and could not find the way out again</line>
+
+	<line kind="band" job="lost" band="died">was lost and never found</line>
+	<line kind="band" job="lost" band="died">was killed before the way home was found</line>
+	<line kind="band" job="lost" band="injured">was injured finding the way back</line>
+	<line kind="band" job="lost" band="injured" cause="other">was injured scavenging parts to keep the ship going</line>
+	<line kind="band" job="lost" band="failed">made the wrong call at every turn</line>
+	<line kind="band" job="lost" band="failed">was sure of the way home, and was wrong every time</line>
+	<line kind="band" job="lost" band="success">was successful in finding the way back</line>
+	<line kind="band" job="lost" band="success">was successful, and kept everyone calm until the beacon was found</line>
+	<line kind="band" job="lost" band="high">was very successful: it was {his} chart that got everyone home</line>
+	<line kind="band" job="lost" band="high">was very successful: {he} spotted the beacon before the sensors did</line>
+	<line kind="band" job="lost" band="top">was extremely successful and found a beacon no one knew of</line>
+	<line kind="band" job="lost" band="top">was extremely successful and found a faster route than the one they had lost</line>
+
+	<line kind="event" job="escort">escorted a merchant through a stretch of space where ships kept going missing</line>
+	<line kind="event" job="escort">rode shotgun on a slow freighter</line>
+	<line kind="event" job="escort">saw an envoy's ship through hostile space</line>
+	<line kind="event" job="escort" sector="zoltan">flew escort for a Zoltan peace envoy whose crew insisted they needed no escort</line>
+	<line kind="event" job="escort" sector="mantis">took a refugee convoy through Mantis hunting grounds</line>
+	<line kind="event" job="escort" sector="pirate">escorted a merchant who was sure the pirates had been paid off, and was wrong</line>
+
+	<line kind="band" job="escort" band="died">was killed in the escort</line>
+	<line kind="band" job="escort" band="died">was killed drawing fire away from the ship {he} was guarding</line>
+	<line kind="band" job="escort" band="injured">was injured in the escort</line>
+	<line kind="band" job="escort" band="injured" cause="other">was injured when the raiders turned on the escort instead</line>
+	<line kind="band" job="escort" band="failed">lost sight of the ship {he} was guarding</line>
+	<line kind="band" job="escort" band="failed">was too slow to stop the raiders reaching the ship {he} was guarding</line>
+	<line kind="band" job="escort" band="success">was successful in the escort</line>
+	<line kind="band" job="escort" band="success">was successful, and the ship arrived safely</line>
+	<line kind="band" job="escort" band="high">was very successful: the ship {he} guarded came through without a scratch</line>
+	<line kind="band" job="escort" band="high">was very successful: the raiders took one look at {him} and went elsewhere</line>
+	<line kind="band" job="escort" band="top">was extremely successful and saw the ship through a running fight</line>
+	<line kind="band" job="escort" band="top">was extremely successful and turned a convoy's worst day into an uneventful one</line>
+
+	<line kind="event" job="capture">were sent to take a wanted captain alive</line>
+	<line kind="event" job="capture">laid an ambush for a smuggler who had been running guns to the rebels</line>
+	<line kind="event" job="capture">hunted a deserter from beacon to beacon</line>
+	<line kind="event" job="capture" sector="rock">were hired by a Rock clan to bring back one of its own, who had run off with the clan's ship</line>
+	<line kind="event" job="capture" sector="zoltan">were sent to bring in a Zoltan who had stolen from a monastery and would not say why</line>
+	<line kind="event" job="capture" sector="rebel">went after a rebel officer who knew where the fleet would move next</line>
+
+	<line kind="band" job="capture" band="died">was killed in the capture</line>
+	<line kind="band" job="capture" band="died">was killed when the quarry turned and fought</line>
+	<line kind="band" job="capture" band="injured">was injured in the capture</line>
+	<line kind="band" job="capture" band="injured" cause="other">was injured wrestling the quarry to the deck</line>
+	<line kind="band" job="capture" band="failed">let the quarry slip</line>
+	<line kind="band" job="capture" band="failed">followed the wrong ship for two days</line>
+	<line kind="band" job="capture" band="success">was successful in the capture</line>
+	<line kind="band" job="capture" band="success">was successful, and the quarry is in custody</line>
+	<line kind="band" job="capture" band="high">was very successful: the quarry gave up without a fight</line>
+	<line kind="band" job="capture" band="high">was very successful: {he} was waiting where the quarry ran</line>
+	<line kind="band" job="capture" band="top">was extremely successful and brought the quarry in alone</line>
+	<line kind="band" job="capture" band="top">was extremely successful and took the quarry without firing a shot</line>
+
+	<line kind="event" job="board">boarded a ship that wouldn't answer hails</line>
+	<line kind="event" job="board">forced an airlock on an enemy vessel and fought their way along her corridors</line>
+	<line kind="event" job="board">were put aboard a pirate ship to take her bridge</line>
+	<line kind="event" job="board" sector="rebel">boarded a rebel supply ship to take her before she could call for help</line>
+	<line kind="event" job="board" sector="rock">boarded a Rock pirate ship and found out why so few crews try</line>
+	<line kind="event" job="board" sector="mantis">went aboard a Mantis raider while her crew were away on a raid of their own</line>
+
+	<line kind="band" job="board" band="died">was killed in the boarding</line>
+	<line kind="band" job="board" band="died">was killed in the fighting for the engine room</line>
+	<line kind="band" job="board" band="injured">was injured in the boarding</line>
+	<line kind="band" job="board" band="injured" cause="other">was injured clearing the ship one room at a time</line>
+	<line kind="band" job="board" band="failed">was pushed back to the airlock</line>
+	<line kind="band" job="board" band="failed">was cut off from the others and had to fall back</line>
+	<line kind="band" job="board" band="success">was successful in the boarding</line>
+	<line kind="band" job="board" band="success">was successful, and {his} half of the ship was taken</line>
+	<line kind="band" job="board" band="high">was very successful: {he} took the bridge</line>
+	<line kind="band" job="board" band="high">was very successful: the enemy crew surrendered to {him}</line>
+	<line kind="band" job="board" band="top">was extremely successful and took the ship nearly single-handed</line>
+	<line kind="band" job="board" band="top">was extremely successful and had the enemy crew locked in their own brig</line>
+
+	<line kind="event" job="hijack">were hired to steal a ship from her moorings</line>
+	<line kind="event" job="hijack">went after a ship someone wanted very badly, and would not say why</line>
+	<line kind="event" job="hijack">slipped aboard a ship at anchor to take her</line>
+	<line kind="event" job="hijack" sector="pirate">were hired to take back a ship the pirates had taken first</line>
+	<line kind="event" job="hijack" sector="engi">were hired to take an Engi ship whose crew trusted her locks a little too much</line>
+	<line kind="event" job="hijack" sector="rebel">were sent to steal a ship out from under a rebel garrison</line>
+
+	<line kind="band" job="hijack" band="died">was killed before the ship was clear</line>
+	<line kind="band" job="hijack" band="died">was killed by a security drone in the docking bay</line>
+	<line kind="band" job="hijack" band="injured">was injured before the ship was clear</line>
+	<line kind="band" job="hijack" band="injured" cause="other">was injured getting through the ship's locks</line>
+	<line kind="band" job="hijack" band="failed">tripped every alarm aboard</line>
+	<line kind="band" job="hijack" band="failed">was spotted at the airlock, and the job fell apart from there</line>
+	<line kind="band" job="hijack" band="success">was successful in the hijack</line>
+	<line kind="band" job="hijack" band="success">was successful, and the ship was taken</line>
+	<line kind="band" job="hijack" band="high">was very successful: the ship was away before anyone noticed</line>
+	<line kind="band" job="hijack" band="high">was very successful: {he} had the locks open before the guards changed</line>
+	<line kind="band" job="hijack" band="top">was extremely successful and had the ship out of dock in minutes</line>
+	<line kind="band" job="hijack" band="top">was extremely successful and left the owners thinking the ship had never been there</line>
+
+	<line kind="event" job="infection">were sent into a station under quarantine</line>
+	<line kind="event" job="infection">dealt with something that had got loose in a ship's vents</line>
+	<line kind="event" job="infection">cleared a colony of a sickness nobody would name</line>
+	<line kind="event" job="infection" sector="engi">chased a virus through an Engi station's nanobots before it could rewrite anyone else</line>
+	<line kind="event" job="infection" sector="zoltan">helped Zoltan healers hold back a sickness that was draining their people's light</line>
+	<line kind="event" job="infection" sector="abandoned">went into a sealed colony to find out why nobody had come out</line>
+
+	<line kind="band" job="infection" band="died">was killed by the infection</line>
+	<line kind="band" job="infection" band="died">was killed by the sickness before a cure could be found</line>
+	<line kind="band" job="infection" band="injured">was injured by the infection</line>
+	<line kind="band" job="infection" band="injured" cause="other">was injured by the infected, who no longer knew what they were doing</line>
+	<line kind="band" job="infection" band="failed">came out of it too weak to be of use</line>
+	<line kind="band" job="infection" band="failed">spent the job sealing doors that would not stay sealed</line>
+	<line kind="band" job="infection" band="success">was successful against the infection</line>
+	<line kind="band" job="infection" band="success">was successful, and the quarantine held</line>
+	<line kind="band" job="infection" band="high">was very successful: the outbreak was declared over</line>
+	<line kind="band" job="infection" band="high">was very successful: {he} kept the sickness from spreading past the first deck</line>
+	<line kind="band" job="infection" band="top">was extremely successful and found where it had come from</line>
+	<line kind="band" job="infection" band="top">was extremely successful and found a cure the local doctors had missed</line>
+
+	<line kind="event" job="spiders">dropped down to a planet and were attacked by Giant Spiders</line>
+	<line kind="event" job="spiders">went into a derelict and found it full of Giant Spiders</line>
+	<line kind="event" job="spiders">were cornered by Giant Spiders in a station's lower decks</line>
+	<line kind="event" job="spiders">answered a mining colony's call for help against Giant Spiders coming up out of the shafts</line>
+	<line kind="event" job="spiders" sector="rock">went down a Rock mine where the miners had broken into a nest of Giant Spiders</line>
+	<line kind="event" job="spiders" sector="engi">cleared Giant Spiders out of an Engi greenhouse dome before they ate their way to the crew quarters</line>
+
+	<line kind="band" job="spiders" band="died">was killed by the spiders</line>
+	<line kind="band" job="spiders" band="died">was killed when the spiders came out of the walls</line>
+	<line kind="band" job="spiders" band="injured">was killed by the spiders</line>
+	<line kind="band" job="spiders" band="injured">was bitten, and the venom did the rest</line>
+	<line kind="band" job="spiders" band="failed">ran, and nobody blames {him}</line>
+	<line kind="band" job="spiders" band="failed">refused to go any further into the dark, and nobody blames {him}</line>
+	<line kind="band" job="spiders" band="success">was successful fighting them back</line>
+	<line kind="band" job="spiders" band="success">was successful, and kept the spiders off the others</line>
+	<line kind="band" job="spiders" band="high">was very successful: the spiders went back down the hole</line>
+	<line kind="band" job="spiders" band="high">was very successful: {he} killed the biggest of them</line>
+	<line kind="band" job="spiders" band="top">was extremely successful and burned the nest out</line>
+	<line kind="band" job="spiders" band="top">was extremely successful and burned out every nest {he} found</line>
+
+	<line kind="hazard" hazard="flare">A solar flare caught them halfway through.</line>
+	<line kind="hazard" hazard="flare">They worked too close to a star, and the flares set fires faster than they could put them out.</line>
+	<line kind="hazard" hazard="flare">The star flared twice while they were at it, and everything that could burn did.</line>
+	<line kind="hazard" hazard="flare">A solar flare scorched the hull and lit fires on three decks.</line>
+	<line kind="hazard" hazard="asteroids">Asteroids kept striking the shields from the moment they arrived until the moment they left.</line>
+	<line kind="hazard" hazard="asteroids">Asteroids hammered the shields from start to finish.</line>
+	<line kind="hazard" hazard="asteroids">They spent as much time dodging asteroids as working.</line>
+	<line kind="hazard" hazard="pulsar">A pulsar's electromagnetic pulses had their systems down again and again.</line>
+	<line kind="hazard" hazard="pulsar">A nearby pulsar knocked the power out with every pulse.</line>
+	<line kind="hazard" hazard="pulsar">Their work was slowed by each wave of energy from the pulsar.</line>
+	<line kind="hazard" hazard="storm">A plasma storm held their reactor at half power for most of the job.</line>
+	<line kind="hazard" hazard="storm">A plasma storm rolled in on the first day, and their reactor never ran above half until it passed.</line>
+	<line kind="hazard" hazard="battery">A rebel Anti-Ship Battery on the planet below kept them under fire from start to finish.</line>
+	<line kind="hazard" hazard="battery">Every few hours the planet's Anti-Ship Battery locked on, and everyone aboard braced for the hit.</line>
+	<line kind="hazard" hazard="battery">The rebels' planetary guns found their range on the first day and never lost it.</line>
+
+	<line kind="hacked">Then {name} turned the ship's Hacking system on the battery's targeting, and it never found them again.</line>
+	<line kind="hacked">{name} turned the ship's Hacking system on the battery, and it stopped firing entirely.</line>
+
+	<line kind="shrug" hazard="flare" race="rock">The fires never bothered {him}; Rock doesn't burn.</line>
+	<line kind="shrug" hazard="flare" race="rock">{His} part of the ship was on fire twice, and {he} worked straight through it both times.</line>
+	<line kind="shrug" hazard="flare" race="anaerobic">Every fire that reached {his} room went out on its own.</line>
+	<line kind="shrug" hazard="flare" race="anaerobic">The one room aboard where nothing burned was {his}.</line>
+	<line kind="shrug" hazard="asteroids" race="energy">With {him} feeding power to the shields, the asteroids never got through.</line>
+	<line kind="shrug" hazard="asteroids" race="energy">{His} own power kept the shields up whenever the reactor faltered.</line>
+	<line kind="shrug" hazard="pulsar" race="engi">Each time the pulsar knocked a system out, {he} got it back online as fast as {he} could.</line>
+	<line kind="shrug" hazard="storm" race="slug">With the reactor at half, {he} could feel every ship moving in the clouds, so they kept out of the way of anyone who might notice how weak they were.</line>
+	<line kind="shrug" hazard="storm" race="slug">The storm left their sensors blind, but {he} never needed them; {he} knew where every crew in the nebula was and steered them around the lot.</line>
+
+	<line kind="captured">was last seen being carried through the boarders' airlock.</line>
+	<line kind="captured">was taken by the boarders. The crew hope {he}'s all right out there.</line>
+	<line kind="captured">was taken by the boarders. You may never see {him} again.</line>
+	<line kind="captured" captors="slavers">was taken by slavers, to be sold to whoever pays the most.</line>
+	<line kind="captured" captors="pirates">was dragged aboard the pirate ship before it broke away.</line>
+	<line kind="captured" captors="rebels">was taken by the rebels for questioning.</line>
+	<line kind="captured" captors="mantis">was taken by Mantis instead of being killed immediately.</line>
+
+	<line kind="infirmary">was badly hurt and is in the infirmary.</line>
+	<line kind="infirmary">was carried to the infirmary when they docked.</line>
+	<line kind="infirmary">came home on a stretcher and went straight to the infirmary.</line>
+	<line kind="infirmary">is in the infirmary, and will be for a while.</line>
+
+	<line kind="prize" job="hijack" prize="ship">They brought the ship home: {name}.\nShe's moored at the station until you decide whether she joins the fleet, goes to the Junkyard, or is let go.</line>
+	<line kind="prize" job="hijack" prize="ship">They didn't come home on the shuttle. They came home in {name},\nmoored at the station until you decide whether she joins the fleet, goes to the Junkyard, or is let go.</line>
+	<line kind="prize" job="hijack" prize="part">The alarms went before she cleared her moorings,\nbut they pulled her {name} system out before they ran.</line>
+	<line kind="prize" job="hijack" prize="part">She was too badly shot up to fly home, so they took her {name} system and left the rest.</line>
+	<line kind="prize" job="hijack" prize="part">Her owners came back sooner than expected.\nThe crew left with her {name} system and nothing else.</line>
+	<line kind="prize" job="salvage" prize="part">They pulled a whole system out of the wreck.</line>
+	<line kind="prize" job="salvage" prize="part">They cut the wreck's {name} system free and brought it home. It's seen some damage.</line>
+	<line kind="prize" job="salvage" prize="part">The wreck's {name} system came home with them, damaged but worth fitting.</line>
+	<line kind="prize" job="rescue" prize="recruit">One of those they rescued, {name}, asked to sign on.\nThey wait in The Station Lounge for your word.</line>
+	<line kind="prize" job="rescue" prize="recruit">They came back with one more than they left with: {name},\nwho asks to sign on and waits in The Station Lounge.</line>
+</expeditions>

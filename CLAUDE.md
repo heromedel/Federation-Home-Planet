@@ -69,7 +69,9 @@ it does and CREDITS.md for where the code came from.
   have their own xml (5.85); the career's small files are xml, one per concern, the clock in `clock.xml` (5.86); everyone who left is in
   `memorials_and_records/` (ships and crew). The station's log is `logs/events.log` alone: since 5.93 nothing writes history.log,
   master.log, voyage.log or reputation.log (an older fleet keeps them, read only by the conversion). The words the station writes
-  from data can be overridden in `lore/` beside the jar (`core/Lore`, 5.89; the jar holds the defaults; the words are McCarthy's).
+  (the log's human lines, the letters, the expedition words, the accolades and deeds: `lore/logs/station-log.xml`, `letters.xml`,
+  `expeditions.xml`, `deeds.xml`) can be overridden in `lore/` beside the jar (`core/Lore`, 5.89 and 5.991; the jar holds the
+  defaults in `resource/lore/`; the words are McCarthy's, and LoreT holds every file to the hard and voice rules).
   `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
   at the top of `vault/Vault.java`. A 5.x fleet is converted the first time it opens, a zip of it kept beside its folder: every step of that, and every
   reader of an old shape, goes in `homeplanet.convert` (`OldFleet` runs them in order; anything that must stay in its own class is
