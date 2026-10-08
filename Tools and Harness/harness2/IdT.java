@@ -3,13 +3,17 @@ import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.
  * Who a ship is (6.10, heromedel's Plan N): her career and origin in her record, the one-time check of a fleet from
  * before 6.10 (her fingerprint or her history), her mark in every save, saves and records found where no ship holds
  * them (and the player's word on them), Restore marking again, and Destroy in a career sending her on to Sandbox Mode.
- * args: gamedir, world saves (from WorldT, records from before 6.10), work
+ * args: gamedir, world saves (from WorldT; their records are made as before 6.10 here), work
  */
 public class IdT {
  static File saves;
  public static void main(String[] a) throws Exception {
   File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
   saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
+  for (String place : new String[] {"shipyard", "junkyard"}) for (File d : ShipStore.folders(new File(new File(saves, Vault.FOLDER), place))) { // as a 6.09 station left them: no career, no origin (the world is made by this version, 6.11)
+   ShipStore.Record r = ShipStore.read(d);
+   if (r != null) { r.career = ""; r.origin = ""; ShipStore.write(d, r); }
+  }
   HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
 
@@ -95,7 +99,7 @@ public class IdT {
   File sent = null; for (File d : sandShipyard.listFiles()) if (d.getName().startsWith("Dropped In.")) sent = d;
   ShipStore.Record sr = sent == null ? null : ShipStore.read(sent);
   Setup.chk("L: sent to Sandbox Mode's fleet, the career untouched (" + said + ")", !loose.exists() && n.fleet().size() == careerShips && sr != null && Vault.SANDBOX.equals(sr.career)
-    && sr.origin.startsWith("taken_in.6.10.") && "true".equals(ShipStore.notes(sent, "mark").getProperty("marked")));
+    && sr.origin.startsWith("taken_in." + HomePlanet.APP_VERSION + ".") && "true".equals(ShipStore.notes(sent, "mark").getProperty("marked")));
 
   // 7. Destroy in a career, the other way: on to Sandbox Mode's Junkyard with her crew; gone from the career
   Ship wreck = n.adoptJunked(Commission.build("PLAYER_SHIP_CIRCLE", "Old Faithful", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(6)));
@@ -107,7 +111,7 @@ public class IdT {
   File moved = null; for (File d : sandJunk.listFiles()) if (d.getName().startsWith("Old Faithful.")) moved = d;
   Setup.chk("D: gone from the career, her fate there transferred to Sandbox Mode (" + told + ")", n.byId(wId) == null && fate != null && "TRANSFERRED".equals(fate[0]) && "Sandbox Mode".equals(fate[2]));
   Setup.chk("D: in Sandbox Mode's Junkyard, her record Sandbox's, her origin kept, her save marked for it", moved != null && Vault.SANDBOX.equals(ShipStore.read(moved).career)
-    && ShipStore.read(moved).origin.startsWith("derelict.6.10.") && Vault.SANDBOX.equals(ShipMark.read(ShipStore.sav(moved)).career));
+    && ShipStore.read(moved).origin.startsWith("derelict." + HomePlanet.APP_VERSION + ".") && Vault.SANDBOX.equals(ShipMark.read(ShipStore.sav(moved)).career));
   Setup.chk("D: logged in the career", log(n).contains("SENT_TO_SANDBOX"));
 
   // and Sandbox Mode, opened: both there, their arrival logged

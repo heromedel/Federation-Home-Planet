@@ -1896,17 +1896,32 @@ public final class Vault {
 	/** Puts one of her earlier versions back as her current save; the one it replaces goes into her history first. */
 	public synchronized void restore(Ship s, File version) throws IOException {
 		if (s.state == Ship.State.STORAGE) throw new IOException("The Cargo Hold has no earlier versions to go back to");
-		byte[] bytes = SafeFiles.read(version); // before the snapshot below, which may prune it
+		byte[] bytes = SafeFiles.read(version); // before the version she has now is kept, which may prune it
 		countBefore(s);
-		snapshot(s);
-		File f = fileOf(s);
-		SafeFiles.write(f, bytes);
+		File f = fileOf(s), dir = settleFolder(s);
+		// one note (6.11): the save she has now kept as her newest version, the older one put back already marked (a docked or
+		// Junkyard ship's: 6.10), her record with it. Marked after it was put back (6.10), the older save was kept again as her
+		// newest version, above the one it replaced, so undoing a Restore took the second one down the list
+		ShipStore.Record r = null;
+		if (s.state == Ship.State.DOCKED || s.state == Ship.State.JUNKED) {
+			try { ShipMark.Marked mk = markFrom(s, dir, version); bytes = mk.bytes; r = markedRecord(s, dir, mk); }
+			catch (IOException e) { log.warn("Could not mark {}'s older save (marked at the next opening): {}", s.name, e.toString()); }
+		}
+		Journal.Note n = Journal.begin(this, "RESTORE_VERSION");
+		if (f.isFile()) { // as snapshot() does: kept unless her newest version is the same, so undoing the Restore is restoring the newest
+			byte[] now = SafeFiles.read(f);
+			List<File> h = history(s);
+			if (h.isEmpty() || !SafeFiles.hash(h.get(h.size() - 1)).equals(SafeFiles.hash(now))) n.replace(ShipStore.versionFile(dir, null), now);
+		}
+		n.replace(f, bytes);
+		if (r != null) n.replace(ShipStore.xml(dir), ShipStore.bytes(r));
+		n.commit();
+		ShipStore.prune(dir, KEEP);
 		s.invalidate();
 		s.hash = SafeFiles.hash(f);
 		marked(s, s.save());
 		keepBoarded(s);
 		saveManifest();
-		remarkQuietly(s); // an older save put back has her mark again (6.10)
 		log.info("Restored {}: {}/versions/{} -> {}", s.name, place(s), version.getName(), s.isBoarded() ? "continue.sav" : place(s));
 		HistoryLog.entry("RESTORE", "Restored " + homeplanet.parser.ShipNames.the(s.name) + " to an earlier version", null, // in words; the files in the debug log (heromedel, 5.53)
 				shipEvent("RESTORE", s).put("why", "version").put("from", place(s) + "/" + ShipStore.VERSIONS + "/" + version.getName()).put("to", s.isBoarded() ? "continue.sav" : place(s)));
@@ -2296,7 +2311,7 @@ public final class Vault {
 			String how = born != null ? birth(born) : "unknown";
 			String when = proof != null ? stampOf(proof.time) : originNow("x").substring(originNow("x").lastIndexOf('.') + 1);
 			String by = proof != null ? "verified-log-" + proof.kind : "verified-record-" + r.hash.substring(0, Math.min(8, r.hash.length()));
-			s.origin = how + ".pre-" + homeplanet.core.HomePlanet.APP_VERSION + "." + when + "." + by;
+			s.origin = how + ".pre-6.10." + when + "." + by; // a record with no origin was written before 6.10 gave her one, whichever version checks her
 			notes.add(s.name + ": checked, " + s.origin);
 			HistoryLog.entry("VAULT", s.name + " checked: " + s.origin, null, shipEvent("VAULT", s).put("what", "checked").put("origin", s.origin)
 					.put("fingerprint", print).put("history", first != null).put("career", slot));
@@ -2404,26 +2419,40 @@ public final class Vault {
 	/** Writes her mark into her save (docked or in the Junkyard), her version kept first, as one note; her count and last day as her record has them. */
 	private void remark(Ship s) throws IOException {
 		File dir = settleFolder(s), f = fileOf(s);
+		ShipMark.Marked mk = markFrom(s, dir, f);
+		ShipStore.Record r = markedRecord(s, dir, mk);
+		Journal.Note n = Journal.begin(this, "MARK");
+		byte[] was = SafeFiles.read(f);
+		if (!alreadyKept(s, was)) n.replace(ShipStore.versionFile(dir, null), was);
+		n.replace(f, mk.bytes);
+		n.replace(ShipStore.xml(dir), ShipStore.bytes(r));
+		n.commit();
+		ShipStore.prune(dir, KEEP);
+		s.hash = r.hash;
+		s.invalidate();
+		log.debug("Marked {} ({} {}, boarded {} times)", s.name, slot, s.id, r.section(ShipMark.SECTION).getProperty("boards"));
+	}
+	/** This save with her mark as her record has it (her Board count and day): the save itself is left as it is. */
+	private ShipMark.Marked markFrom(Ship s, File dir, File save) throws IOException {
 		java.util.Properties m = ShipStore.notes(dir, ShipMark.SECTION);
-		int boards = Store.num(m, "boards", 0), day = Store.num(m, "day", 0);
-		ShipMark.Marked mk = ShipMark.mark(f, slot, s.id, boards, day);
+		return ShipMark.mark(save, slot, s.id, Store.num(m, "boards", 0), Store.num(m, "day", 0));
+	}
+	/** Her record once her save is this marked one: its fingerprint, and her mark's section. */
+	private ShipStore.Record markedRecord(Ship s, File dir, ShipMark.Marked mk) throws IOException {
+		int boards = Store.num(ShipStore.notes(dir, ShipMark.SECTION), "boards", 0);
 		String h = SafeFiles.hash(mk.bytes);
 		ShipStore.Record r = recordOf(s);
 		r.hash = h;
 		java.util.Properties sec = r.section(ShipMark.SECTION);
 		sec.setProperty("boards", Integer.toString(boards)); sec.setProperty("marked", "true"); sec.setProperty("save", h);
 		if (mk.gs.getPlayerShipBlueprintId() != null) sec.setProperty("class", mk.gs.getPlayerShipBlueprintId());
-		Journal.Note n = Journal.begin(this, "MARK");
-		List<File> kept = history(s);
-		byte[] was = SafeFiles.read(f);
-		if (kept.isEmpty() || !SafeFiles.hash(kept.get(kept.size() - 1)).equals(SafeFiles.hash(was))) n.replace(ShipStore.versionFile(dir, null), was);
-		n.replace(f, mk.bytes);
-		n.replace(ShipStore.xml(dir), ShipStore.bytes(r));
-		n.commit();
-		ShipStore.prune(dir, KEEP);
-		s.hash = h;
-		s.invalidate();
-		log.debug("Marked {} ({} {}, boarded {} times)", s.name, slot, s.id, boards);
+		return r;
+	}
+	/** One of her kept saves (a version or a copy kept for a reason) has these very bytes: no need to keep them again (6.11). */
+	private boolean alreadyKept(Ship s, byte[] save) throws IOException {
+		String h = SafeFiles.hash(save);
+		for (File k : kept(s)) if (h.equals(SafeFiles.hash(k))) return true;
+		return false;
 	}
 	/** As {@link #remark}, for an action that just put an older save back (Restore, Recover): never fatal. */
 	private void remarkQuietly(Ship s) {
