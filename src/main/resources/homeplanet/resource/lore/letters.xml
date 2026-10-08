@@ -595,7 +595,7 @@ Please accept this Repair Arm. Please use it.
 	<letter key="ach:ACH_NO_MISSILES" from="Federation Engineering Corps" subject="Ballistophobia" reward="system battery"><![CDATA[
 {rank},
 
-Your missile tubes arrived at sector 8 exactly as full as they left. Admirable restraint, or a supply problem. We didn't ask.
+Your ship reached sector 8 without firing a single missile or bomb. Admirable restraint, or a supply problem. We didn't ask.
 
 A captain who shoots clean needs power for the guns: a Backup Battery, for when the reactor can't keep up. It's in the Cargo Hold.
 

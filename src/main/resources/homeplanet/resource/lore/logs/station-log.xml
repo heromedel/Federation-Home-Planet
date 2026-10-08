@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The station log's human lines (the second line of every entry in logs/events.log), by event kind. {field} fills in a
+<!-- The station log's words, by event kind: what the Station Log window shows for each entry (worded from its fields
+     as it is shown, so an older entry reads like a new one), and the second line of every entry in logs/events.log.
+     The window shows the station's business; its housekeeping (patches, taking stock, settings, files converted) stays
+     in events.log only. {field} fills in a
      value from the entry's machine line; {field+} every value of a field that repeats ("Ash, Bob and Cy"); "the {ship_name}"
      a ship's name, never "the The Adjudicator". An entry with when="..." is used only when the event matches: "field=value",
      "field" (the event has it) or "!field" (it hasn't), several joined by "&". The first match wins, so the particular

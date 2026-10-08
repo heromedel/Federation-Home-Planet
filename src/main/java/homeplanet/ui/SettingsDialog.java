@@ -393,7 +393,7 @@ public class SettingsDialog extends JDialog {
 		body = aboutPage;
 		c = constraints();
 		heading(body, c, "About");
-		JLabel credit = new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; Inspired By ManApart's FTL Homeworld.");
+		JLabel credit = new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; Inspired by and originally built upon ManApart's FTL Homeworld.");
 		credit.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(credit, next(c));
 		// heromedel's line, and the buttons on a line of their own beneath it (heromedel, 6.02: his words)

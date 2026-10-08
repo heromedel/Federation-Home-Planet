@@ -132,7 +132,7 @@ public class ShipRecordsDialog extends JDialog {
 		pages.add(logTab(RecordsLog.station(logEntries(events, ship), "No entries for her yet.", false)), "station");
 		pages.add(kept, "kept");
 		final Tab[] tabs = {new Tab("Voyage log", "Events in FTL, save by save (newest last)", "voyage"),
-				new Tab("Station log", "Her entries in the station's log (history.log), newest last", "station"),
+				new Tab("Station log", "Her entries in the station's log, newest last", "station"),
 				new Tab("Kept versions (" + versions.size() + ")", "Her earlier versions, to look back on or restore", "kept")};
 		JPanel tabRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		tabRow.setOpaque(false);

@@ -146,7 +146,7 @@ final class LogViewer extends JPanel {
 		if (homeplanet.convert.LogConvert.done(root)) { // its events (5.74); a fleet not opened since 5.73 still shows its old file, as before
 			List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(homeplanet.core.EventLog.fileIn(root)), "station");
 			int entries = 0;
-			for (homeplanet.core.EventLog.Entry e : es) if (!e.kind.equals("LOADED")) entries++;
+			for (homeplanet.core.EventLog.Entry e : es) if (RecordsLog.shown(e)) entries++; // the station's business: its housekeeping stays out of view (6.05)
 			count.setText(entries + (entries == 1 ? " entry" : " entries"));
 			show(RecordsLog.station(es, "Nothing logged yet.", true));
 			return;

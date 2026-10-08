@@ -173,6 +173,20 @@ public final class Lore {
 		return w != null ? w : e.human();
 	}
 
+	/**
+	 * An entry already written, told in the station log's words as a reader shows it (6.05): worded afresh from its
+	 * fields, so an entry from before the words were in lore/ reads like a new one; its own line when no entry's words
+	 * fit (an old log's line read in with nothing but its headline, a kind with no words) or it came with a received ship.
+	 * The stored line is never changed.
+	 */
+	public static String told(EventLog.Entry x) {
+		if (x.get("received_from") != null) return x.human;
+		Event e = Event.of(x.kind);
+		for (String[] kv : x.fields()) e.put(kv[0], kv[1]);
+		String w = words(STATION_LOG, e);
+		return w != null ? w : x.human;
+	}
+
 	private static final Pattern TOKEN = Pattern.compile("\\{([a-z0-9_.]+)(\\+?)\\}");
 	/**
 	 * The words with every {field} filled from the event; null if one names a field the event hasn't got. {field+} is
@@ -207,7 +221,7 @@ public final class Lore {
 	/**
 	 * Why an entry can't be used, or null: the hard rules (the Rebel Flagship never destroyed; time never told in
 	 * beacons) and the voice rules a word can be checked for (the rebellion and the rebels in lower case, never "Home
-	 * World" or "FHP", The Home Planet Station and The Federation Home Planet with a capital T). Checked on the player's copy; the jar's own words are held to it by the harness.
+	 * World", The Home Planet Station and The Federation Home Planet with a capital T). Checked on the player's copy; the jar's own words are held to it by the harness.
 	 */
 	public static String broken(Entry e) {
 		String why = rule(e.words);
@@ -221,7 +235,7 @@ public final class Lore {
 		if (low.matches("(?s).*(\\b\\d+|\\b(one|two|three|few|several|many))\\s+beacons?\\b.*") || low.matches("(?s).*\\bbeacons?\\s+(later|ago|passed|from now|since)\\b.*")) return "hard rule 2: time is never told in beacons";
 		if (low.matches("(?s).*\\{[a-z0-9_.]*beacon[a-z0-9_.]*\\}.*")) return "hard rule 2: time is never told in beacons (a beacon count in a token)";
 		if (w.matches("(?s).*\\bRebellion\\b.*") || w.replace("Rebel Flagship", "").matches("(?s).*\\bRebels?\\b.*")) return "voice: the rebellion and the rebels are never capitalised (only the Rebel Flagship)";
-		if (w.contains("Home World") || w.matches("(?s).*\\bFHP\\b.*")) return "voice: never \"Home World\" or \"FHP\"";
+		if (w.contains("Home World")) return "voice: never \"Home World\""; // "FHP" is allowed: never a rule of heromedel's (6.04)
 		if (w.matches("(?s).*\\bthe (Home Planet Station|Federation Home Planet)\\b.*")) return "voice: The Home Planet Station and The Federation Home Planet take a capital T, even mid-sentence";
 		return null;
 	}
