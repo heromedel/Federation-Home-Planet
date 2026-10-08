@@ -133,10 +133,7 @@ public final class Accolades {
 		return line;
 	}
 	/** Up to ten in words, then digits (docs/STYLE.md). */
-	static String number(int n) {
-		String[] w = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
-		return n >= 0 && n < w.length ? w[n] : String.format("%,d", n);
-	}
+	static String number(int n) { return homeplanet.model.Words.number(n); }
 	private static int count(String s, String regex) { int n = 0; Matcher m = Pattern.compile(regex).matcher(s); while (m.find()) n++; return n; }
 	/**
 	 * Her jumps in the career's service, from her own save (heromedel, 5.60): beacons explored since she joined the fleet,

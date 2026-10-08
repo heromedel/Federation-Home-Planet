@@ -187,17 +187,18 @@ public final class Lore {
 		return w != null ? w : x.human;
 	}
 
-	private static final Pattern TOKEN = Pattern.compile("\\{([a-z0-9_.]+)(\\+?)\\}");
+	private static final Pattern TOKEN = Pattern.compile("\\{([a-z0-9_.]+)([+#]?)\\}");
 	/**
 	 * The words with every {field} filled from the event; null if one names a field the event hasn't got. {field+} is
-	 * every value of a repeated field ("Ash, Bob and Cy": an expedition's crew); "the {field}" is a ship's name by the
+	 * every value of a repeated field ("Ash, Bob and Cy": an expedition's crew); {field#} a count, up to ten in words
+	 * ("two ships", docs/STYLE.md); "the {field}" is a ship's name by the
 	 * station's one rule, never "the The Adjudicator" (ShipNames.the).
 	 */
 	static String fill(String words, Event e) {
 		Matcher m = TOKEN.matcher(words);
 		StringBuffer sb = new StringBuffer();
 		while (m.find()) {
-			String v = m.group(2).isEmpty() ? e.get(m.group(1)) : list(e.all(m.group(1)));
+			String v = m.group(2).equals("+") ? list(e.all(m.group(1))) : m.group(2).equals("#") ? count(e.get(m.group(1))) : e.get(m.group(1));
 			if (v == null) return null;
 			m.appendReplacement(sb, Matcher.quoteReplacement(v));
 			int end = sb.length() - v.length(); // where the value begins
@@ -208,8 +209,13 @@ public final class Lore {
 			}
 		}
 		m.appendTail(sb);
-		String s = sb.toString();
+		String s = homeplanet.model.Words.cap(sb.toString()); // a line can begin with a count in words: "Three items were sold"
 		return s.contains("{") || s.contains("}") ? null : s;
+	}
+	/** A count as the style guide says it, up to ten in words ({count#}: "two ships"); the value as it is if it isn't a number; null for none. */
+	static String count(String v) {
+		if (v == null) return null;
+		try { return homeplanet.model.Words.number(Integer.parseInt(v.trim())); } catch (NumberFormatException x) { return v; }
 	}
 	/** Every value, as a reader says a list: "Ash", "Ash and Bob", "Ash, Bob and Cy"; null for none. */
 	static String list(List<String> v) {
