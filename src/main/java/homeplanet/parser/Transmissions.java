@@ -2,7 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -834,14 +833,7 @@ public final class Transmissions {
 			}
 		}
 		Vault.Transaction tx = v.begin().put(st, c.save, c.hash);
-		if (!systems.isEmpty()) {
-			File f = v.systemsFile();
-			List<String> lines = new ArrayList<String>();
-			if (f.isFile()) lines.addAll(java.nio.file.Files.readAllLines(f.toPath(), StandardCharsets.UTF_8));
-			else lines.add("# Ship systems stored in the Cargo Bay: <system id> <level> (a Clone Bay has no level: it uses the Medbay's)");
-			lines.addAll(systems);
-			tx.put(f, (String.join("\n", lines) + "\n").getBytes(StandardCharsets.UTF_8));
-		}
+		homeplanet.vault.StoredSystems.add(tx, v, systems);
 		List<String> words = new ArrayList<String>();
 		for (String p : give) words.add(describe(p));
 		String what = String.join(", ", words) + (price > 0 ? " (" + price + " scrap paid)" : "");

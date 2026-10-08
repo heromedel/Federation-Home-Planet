@@ -240,7 +240,7 @@ public final class Expeditions {
 		p.setProperty(i + ".ransom", Integer.toString(20 + rng.nextInt(21)));
 		p.setProperty(i + ".asked", Integer.toString(now + RANSOM_DELAY_MIN + rng.nextInt(RANSOM_DELAY_MAX - RANSOM_DELAY_MIN + 1)));
 		p.setProperty(i + ".state", "held");
-		if (c.getRace() != null) for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(c).entrySet()) p.setProperty(i + ".crew." + e.getKey(), e.getValue());
+		if (c.getRace() != null) for (Map.Entry<String, String> e : homeplanet.vault.CrewRecord.of(c).entrySet()) p.setProperty(i + ".crew." + e.getKey(), e.getValue());
 	}
 	/** What a ransom check found new, for a pop-up when the inbox is off: the ask, the reminder, or word of the loss. */
 	public static final class RansomNews {
@@ -375,7 +375,7 @@ public final class Expeditions {
 		Map<String, String> f = new LinkedHashMap<String, String>();
 		for (String k : p.stringPropertyNames()) if (k.startsWith(pre)) f.put(k.substring(pre.length()), p.getProperty(k));
 		if (f.isEmpty()) return null;
-		try { return homeplanet.comm.Line.crewFrom(f); }
+		try { return homeplanet.vault.CrewRecord.crew(f); }
 		catch (Exception e) { log.warn("Could not read {}'s record: {}", p.getProperty(i + ".name"), e.toString()); return null; }
 	}
 

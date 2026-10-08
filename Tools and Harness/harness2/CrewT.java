@@ -55,7 +55,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Properties cap = new Properties();
  cap.setProperty("0.name", rock.getName()); cap.setProperty("0.race", "rock"); cap.setProperty("0.male", Boolean.toString(rock.isMale()));
  cap.setProperty("0.captors", "pirates"); cap.setProperty("0.state", "held");
- for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(rock).entrySet()) cap.setProperty("0.crew." + e.getKey(), e.getValue());
+ for (Map.Entry<String, String> e : homeplanet.vault.CrewRecord.of(rock).entrySet()) cap.setProperty("0.crew." + e.getKey(), e.getValue());
  c.save.getPlayerShip().getCrewList().remove(rock);
  v.begin().put(v.storage(), c.save, c.hash).commit();
  Store.write(Expeditions.captivesFile(v), cap, null);
@@ -211,7 +211,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Setup.chk("U: the register says its ships are kept the 5.51 way", reg.contains("<entry key=\"served.v\">2</entry>"));
  SafeFiles.writeText(cf, reg.replace("<entry key=\"served.v\">2</entry>\r\n", ""), false);
  String gx = new String(SafeFiles.read(gf), "UTF-8"); // her own file (5.83): the served entry as an older register would have it
- SafeFiles.writeText(gf, gx.replaceAll("<entry key=\"served\">[^<]*</entry>", java.util.regex.Matcher.quoteReplacement("<entry key=\"served\">The Adjudicator|" + homeplanet.parser.XmlText.text(y0.name) + "</entry>")), false);
+ SafeFiles.writeText(gf, gx.replaceAll("(?s)<served>.*?</served>", java.util.regex.Matcher.quoteReplacement("<served><ship><name>The Adjudicator</name></ship><ship><name>" + homeplanet.parser.XmlText.text(y0.name) + "</name></ship></served>")), false);
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("U: an older register: the ships read again from the logs, one only it knew kept " + byId(m, g.id).served,
@@ -328,8 +328,41 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Setup.chk("M: level-one points with no marks: level one (" + Arrays.toString(homeplanet.model.Crew.skillLevels(charlie)) + ")", Arrays.equals(homeplanet.model.Crew.skillLevels(charlie), new int[] {1, 1, 1, 1, 1, 1}));
  Setup.chk("M: marks kept after a Clone Bay, points at level one: level one (" + Arrays.toString(homeplanet.model.Crew.skillLevels(cloned)) + ")", Arrays.equals(homeplanet.model.Crew.skillLevels(cloned), new int[] {1, 1, 1, 1, 1, 1}));
  Setup.chk("M: and the rank agrees: six skills mastered, a Captain due", homeplanet.model.Rank.mastered(envoy) == 6 && homeplanet.model.Rank.due(envoy) == 5);
+
+ // a crew file from pre611 6.11 (Java's properties, the wire's names): read as it is, written as tags at its next save, every field the same (Plan O)
+ v.takeStock();
+ List<CrewRegister.Member> pre611 = CrewRegister.members(v);
+ int olds = 0;
+ for (CrewRegister.Member x : pre611) {
+  File f = CrewRegister.fileOf(v, x.id); if (f == null) continue;
+  Properties p = CrewRegister.readFile(f), wire = new Properties(); wire.setProperty("id", Integer.toString(x.id));
+  Map<String, String> rec = new LinkedHashMap<String, String>();
+  for (String k : p.stringPropertyNames()) { if (k.startsWith("rec.")) rec.put(k.substring(4), p.getProperty(k)); else wire.setProperty(k, p.getProperty(k)); }
+  for (Map.Entry<String, String> e : CrewRecord.toWire(rec).entrySet()) wire.setProperty("rec." + e.getKey(), e.getValue());
+  OutputStream o = new FileOutputStream(f); wire.storeToXML(o, null); o.close(); olds++;
+ }
+ Setup.chk("F: every crew file written the old way (" + olds + ")", olds == pre611.size() && olds > 0);
+ Setup.chk("F: read as they are, every field the same", same(pre611, CrewRegister.members(v)));
+ HistoryLog.entry("CREW", "A test entry: the log grows, the register writes at its next look.");
+ v.takeStock();
+ int tags = 0; for (CrewRegister.Member x : pre611) { String t = new String(SafeFiles.read(CrewRegister.fileOf(v, x.id)), "UTF-8"); if (t.contains("<crew>") && t.contains("<last_seen>") && !t.contains("<entry")) tags++; }
+ Setup.chk("F: written as tags at the next save (" + tags + " of " + pre611.size() + ")", tags == pre611.size());
+ Setup.chk("F: and every field still the same", same(pre611, CrewRegister.members(v)));
  Setup.done();
 }
+ /** Two reads of the register the same, member by member: who, where, their ships, who they served with, their days, their whole record. */
+ static boolean same(List<CrewRegister.Member> a, List<CrewRegister.Member> b) {
+  if (a.size() != b.size()) { System.out.println("  members " + a.size() + " vs " + b.size()); return false; }
+  for (int i = 0; i < a.size(); i++) if (!describe(a.get(i)).equals(describe(b.get(i)))) { System.out.println("  differs:\n   " + describe(a.get(i)) + "\n   " + describe(b.get(i))); return false; }
+  return true;
+ }
+ static String describe(CrewRegister.Member x) {
+  StringBuilder sb = new StringBuilder().append(x.id).append('|').append(x.name).append('|').append(x.race).append('|').append(x.title).append('|').append(x.male).append('|').append(x.where).append('|').append(x.status).append('|').append(x.served).append('|');
+  for (Map.Entry<Integer, List<String>> w : x.with.entrySet()) sb.append(w.getKey()).append(w.getValue());
+  for (CrewRegister.Event e : x.events) sb.append('|').append(e.day).append(':').append(e.text);
+  CrewState c = x.crew(); sb.append('|').append(c == null ? "none" : new TreeMap<String, String>(CrewRecord.of(c)).toString());
+  return sb.toString();
+ }
  static int count(CrewRegister.Member x, String text) { int k = 0; for (CrewRegister.Event e : x.events) if (e.text.contains(text)) k++; return k; }
  static String Line_name(CrewRegister.Member x) { return x.crew().getName(); }
  static int count(List<CrewRegister.Member> m, CrewRegister.Status s) { int n = 0; for (CrewRegister.Member x : m) if (x.status == s) n++; return n; }

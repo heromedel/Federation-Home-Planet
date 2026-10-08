@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
-import net.blerf.ftl.parser.SavedGameParser.CrewType;
 
 /**
  * One line of an offer: an item, an amount of a supply, a crew member, or a whole ship. Each side numbers its own
@@ -128,93 +127,19 @@ public final class Line {
 
 	// ---- a crew member, field by field ----
 
-	/** A crew member as fields, as the Long Range sends them (for a record kept on disk: a captive's). */
-	public static java.util.Map<String, String> crewFields(CrewState c) {
-		Wire.Msg m = new Wire.Msg("crew");
-		writeCrew(m, "", c);
-		return new java.util.LinkedHashMap<String, String>(m.fields());
-	}
-	/** A crew member rebuilt from {@link #crewFields}, checked as one from the Long Range is. */
-	public static CrewState crewFrom(java.util.Map<String, String> fields) throws Wire.Garbled {
-		Wire.Msg m = new Wire.Msg("crew");
-		for (java.util.Map.Entry<String, String> e : fields.entrySet()) m.put(e.getKey(), e.getValue());
-		return readCrew(m, "");
-	}
+	/** A crew member on the wire: their record in the station's names ({@link homeplanet.vault.CrewRecord}), sent in the wire's. */
 	private static void writeCrew(Wire.Msg m, String p, CrewState c) {
-		m.put(p + "name", c.getName()).put(p + "race", c.getRace().getId()).put(p + "male", c.isMale()).put(p + "health", c.getHealth());
-		int[] skills = skills(c);
-		for (int i = 0; i < 6; i++) m.put(p + "s" + i, skills[i]);
-		boolean[] mastery = masteries(c);
-		StringBuilder mb = new StringBuilder();
-		for (boolean b : mastery) mb.append(b ? '1' : '0');
-		m.put(p + "mastery", mb.toString());
-		m.put(p + "repairs", c.getRepairs()).put(p + "kills", c.getCombatKills()).put(p + "evasions", c.getPilotedEvasions())
-				.put(p + "jumps", c.getJumpsSurvived()).put(p + "masteries", c.getSkillMasteriesEarned());
-		StringBuilder tb = new StringBuilder();
-		for (Integer t : c.getSpriteTintIndeces()) tb.append(tb.length() == 0 ? "" : ",").append(t);
-		m.put(p + "tints", tb.toString());
+		for (java.util.Map.Entry<String, String> e : homeplanet.vault.CrewRecord.toWire(homeplanet.vault.CrewRecord.of(c)).entrySet()) m.put(p + e.getKey(), e.getValue());
 	}
-	/**
-	 * A crew member rebuilt from the fields, each kept within what FTL allows: a known race, health up to the race's
-	 * most, skills up to their second level, counts that can't go negative. Everything else starts as a new
-	 * crew member's would; where they stand is set when they come aboard.
-	 */
+	/** A crew member from the wire, kept within what FTL allows ({@link homeplanet.vault.CrewRecord#crew}); garbled if they can't be one. */
 	private static CrewState readCrew(Wire.Msg m, String p) throws Wire.Garbled {
-		CrewType race = CrewType.findById(m.get(p + "race"));
-		if (race == null) throw new Wire.Garbled("unknown crew race " + text(m.get(p + "race"), 32));
-		String name = text(m.get(p + "name"), 32);
-		if (name.isEmpty()) name = "Crew";
-		CrewState c = new CrewState();
-		c.setRace(race);
-		c.setName(name);
-		c.setMale(m.flag(p + "male"));
-		c.setPlayerControlled(true);
-		c.setHealth(Math.max(1, Math.min(race.getMaxHealth(), m.num(p + "health", 0, 100000))));
-		int[] max = maxSkills(race);
-		int[] s = new int[6];
-		for (int i = 0; i < 6; i++) s[i] = Math.min(max[i], m.num(p + "s" + i, 0, 100000));
-		c.setPilotSkill(s[0]); c.setEngineSkill(s[1]); c.setShieldSkill(s[2]); c.setWeaponSkill(s[3]); c.setRepairSkill(s[4]); c.setCombatSkill(s[5]);
-		String mb = m.get(p + "mastery");
-		if (!mb.matches("[01]{12}")) throw new Wire.Garbled("mastery flags");
-		boolean[] f = new boolean[12];
-		for (int i = 0; i < 12; i++) f[i] = mb.charAt(i) == '1';
-		for (int i = 0; i < 6; i++) { if (f[i * 2 + 1]) f[i * 2] = true; } // a second level has the first
-		c.setPilotMasteryOne(f[0]); c.setPilotMasteryTwo(f[1]); c.setEngineMasteryOne(f[2]); c.setEngineMasteryTwo(f[3]);
-		c.setShieldMasteryOne(f[4]); c.setShieldMasteryTwo(f[5]); c.setWeaponMasteryOne(f[6]); c.setWeaponMasteryTwo(f[7]);
-		c.setRepairMasteryOne(f[8]); c.setRepairMasteryTwo(f[9]); c.setCombatMasteryOne(f[10]); c.setCombatMasteryTwo(f[11]);
-		int cap = 1000000;
-		c.setRepairs(m.num(p + "repairs", 0, cap)); c.setCombatKills(m.num(p + "kills", 0, cap)); c.setPilotedEvasions(m.num(p + "evasions", 0, cap));
-		c.setJumpsSurvived(m.num(p + "jumps", 0, cap)); c.setSkillMasteriesEarned(m.num(p + "masteries", 0, 12));
-		List<Integer> tints = new ArrayList<Integer>();
-		String ts = m.get(p + "tints");
-		if (!ts.isEmpty()) {
-			if (!ts.matches("\\d{1,3}(,\\d{1,3}){0,15}")) throw new Wire.Garbled("tints");
-			for (String t : ts.split(",")) tints.add(Integer.parseInt(t));
-		}
-		c.setSpriteTintIndeces(fitTints(race, tints));
-		return c;
-	}
-	/** Each tint within its layer's colours, and no more layers than the race has. */
-	private static List<Integer> fitTints(CrewType race, List<Integer> tints) {
-		List<Integer> out = new ArrayList<Integer>();
-		try {
-			net.blerf.ftl.xml.CrewBlueprint cb = net.blerf.ftl.parser.DataManager.get().getCrew(race.getId());
-			if (cb == null || cb.getSpriteTintLayerList() == null) return out;
-			List<net.blerf.ftl.xml.CrewBlueprint.SpriteTintLayer> layers = cb.getSpriteTintLayerList();
-			for (int i = 0; i < layers.size() && i < tints.size(); i++) {
-				int n = layers.get(i).tintList == null ? 0 : layers.get(i).tintList.size();
-				out.add(n == 0 ? 0 : Math.min(tints.get(i), n - 1));
-			}
-		} catch (Exception e) {
-			out.clear();
-		}
-		return out;
-	}
-	private static final net.blerf.ftl.constants.FTLConstants CONSTANTS = new net.blerf.ftl.constants.AdvancedFTLConstants();
-	/** The most experience each skill holds (its second level): pilot, engines, shields, weapons, repair, combat. */
-	private static int[] maxSkills(CrewType r) {
-		return new int[] {2 * CONSTANTS.getMasteryIntervalPilot(r), 2 * CONSTANTS.getMasteryIntervalEngine(r), 2 * CONSTANTS.getMasteryIntervalShield(r),
-				2 * CONSTANTS.getMasteryIntervalWeapon(r), 2 * CONSTANTS.getMasteryIntervalRepair(r), 2 * CONSTANTS.getMasteryIntervalCombat(r)};
+		java.util.Map<String, String> f = new java.util.LinkedHashMap<String, String>();
+		for (java.util.Map.Entry<String, String> e : m.fields().entrySet()) if (e.getKey().startsWith(p)) f.put(e.getKey().substring(p.length()), e.getValue());
+		for (String k : new String[] {"name", "race", "male", "health", "mastery", "repairs", "kills", "evasions", "jumps", "masteries", "tints"}) if (!f.containsKey(k)) f.put(k, "");
+		for (int i = 0; i < 6; i++) if (!f.containsKey("s" + i)) f.put("s" + i, "");
+		try { return homeplanet.vault.CrewRecord.crew(f); }
+		catch (Wire.Garbled e) { throw e; }
+		catch (java.io.IOException e) { throw new Wire.Garbled(e.getMessage()); }
 	}
 	static int[] skills(CrewState c) {
 		return new int[] {c.getPilotSkill(), c.getEngineSkill(), c.getShieldSkill(), c.getWeaponSkill(), c.getRepairSkill(), c.getCombatSkill()};

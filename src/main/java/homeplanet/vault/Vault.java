@@ -35,14 +35,14 @@ import org.slf4j.LoggerFactory;
  *                                copies kept for a reason of their own: victory-, final-battle-, cloud-)
  *     junkyard/&lt;Name&gt;.&lt;id&gt;/      a disbanded ship, the same
  *     memorials_and_records/ships/&lt;Name&gt;.&lt;id&gt;/   a ship that left the fleet (how, in her record's fate), remembered
- *     <ship folder>/crew/        her crew, a file each (5.83: <Name>.<id>.xml, the crew register's id); the same in cargohold/crew/,
+ *     <ship folder>/crew/        her crew, a file each (5.83: <Name>.<id>.xml, the crew register's id; plain tags since 6.11, CrewRecord); the same in cargohold/crew/,
  *                                expeditions/crew/, captives/crew/ and memorials_and_records/crew/ (everyone who left); crew-register.xml the register's own state
  *     expeditions/               the crew expeditions (5.85): expeditions.xml (the sectors on offer, the crew away), crew/,
  *                                board-before-5.67.txt (the old board of jobs, kept, unread)
  *     infirmary/                 infirmary.xml (who is laid up and until when; they stay in the Cargo Hold) (5.85)
  *     captives/                  captives.xml (who was taken, the ransoms asked), crew/ (5.85)
  *     cargohold/                 the Cargo Hold (5.72): cargohold.xml (what it holds, 5.84; the pretend ship's save cargohold.sav
- *                                before), crew/, systems.txt (its stored systems), parts.txt, overflow.txt, versions/
+ *                                before), crew/, systems.txt (its stored systems, StoredSystems), parts.txt, overflow.txt, versions/
  *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
  *                                ones read in once at 5.73; the only log written since 5.93), converted.txt (the marks); a fleet
  *                                from before keeps its history.log, master.log and reputation.log as they were, unwritten
@@ -427,7 +427,7 @@ public final class Vault {
 	}
 	/**
 	 * Pays scrap from the storage hold (a commission, a journey's fee). Refuses, changing nothing, if the hold has less.
-	 * Returns the hold's file as it was, for {@link #refundStorage} if what was paid for then fails.
+	 * Returns the hold's file as it was. Paying for something written as well: {@link Transaction#pay}, in the same note.
 	 */
 	public synchronized byte[] payFromStorage(int scrap) throws IOException {
 		log.debug("Cargo Hold pays {} scrap", scrap);
@@ -439,15 +439,6 @@ public final class Vault {
 		c.save.getPlayerShip().setScrapAmt(have - scrap);
 		begin().put(st, c.save, c.hash).commit();
 		return before;
-	}
-	/** Puts the storage hold back as {@link #payFromStorage} found it. */
-	public synchronized void refundStorage(byte[] before) throws IOException {
-		Ship st = storage();
-		File f = fileOf(st);
-		SafeFiles.write(f, before);
-		st.invalidate();
-		st.hash = SafeFiles.hash(f);
-		saveManifest();
 	}
 
 	// ---- Plead for New Ship ----
@@ -537,33 +528,22 @@ public final class Vault {
 	/**
 	 * The plea's ship is paid for with the Cargo Hold: everything in it (scrap, supplies, items, stored systems) goes to
 	 * The Federation Home Planet, and the hold starts again with the refund (the difference, if the captain asked for it).
-	 * The crew in it stay (they aren't counted, and aren't given up); the Junkyard is untouched. Returns the hold's file and stored systems as they were, for {@link #unforfeitHold}.
+	 * The crew in it stay (they aren't counted, and aren't given up); the Junkyard is untouched. Written with this
+	 * transaction (6.11: the new ship's, so the hold is given only if she comes; put back by hand before), logged once it stands.
 	 */
-	public synchronized byte[][] forfeitHold(int saleValue, int refund) throws IOException {
+	public synchronized void forfeitHold(final int saleValue, final int refund, Transaction tx) throws IOException {
 		Ship st = storage();
-		File hold = fileOf(st), systems = systemsFile();
-		byte[][] before = {SafeFiles.read(hold), systems.isFile() ? SafeFiles.read(systems) : null};
 		snapshot(st);
-		SavedGameState was = readCopy(st).save;
+		Copy was = readCopy(st);
 		SavedGameState fresh = SaveHelper.createStorageSave(st.name, true);
 		fresh.getPlayerShip().setScrapAmt(Math.max(0, refund));
-		fresh.getPlayerShip().getCrewList().addAll(was.getPlayerShip().getCrewList()); // the crew stay
-		writeQuietly(st, fresh);
-		if (systems.isFile() && !systems.delete()) log.warn("Could not remove {}", systems);
-		saveManifest();
-		HistoryLog.entry("PLEAD", "the Cargo Hold given for the new ship (worth " + saleValue + " scrap at sale)" + (refund > 0 ? "; " + refund + " scrap refunded to it" : ""), null,
-				Event.of("PLEAD").put("stage", "hold_given").put("value", saleValue).put("refund", refund));
-		return before;
-	}
-	/** Puts the Cargo Hold back as {@link #forfeitHold} found it (her commission failed). */
-	public synchronized void unforfeitHold(byte[][] before) throws IOException {
-		Ship st = storage();
-		File hold = fileOf(st);
-		SafeFiles.write(hold, before[0]);
-		st.invalidate();
-		st.hash = SafeFiles.hash(hold);
-		if (before[1] != null) SafeFiles.write(systemsFile(), before[1]);
-		saveManifest();
+		fresh.getPlayerShip().getCrewList().addAll(was.save.getPlayerShip().getCrewList()); // the crew stay
+		tx.put(st, fresh, was.hash);
+		tx.delete(systemsFile());
+		tx.then(new Runnable() { public void run() {
+			HistoryLog.entry("PLEAD", "the Cargo Hold given for the new ship (worth " + saleValue + " scrap at sale)" + (refund > 0 ? "; " + refund + " scrap refunded to it" : ""), null,
+					Event.of("PLEAD").put("stage", "hold_given").put("value", saleValue).put("refund", refund));
+		} });
 	}
 	/** Withdraws a waiting plea (nothing was taken: her order is simply cancelled). */
 	public synchronized void withdrawPlea() throws IOException {
@@ -1610,6 +1590,38 @@ public final class Vault {
 		}
 		/** Another file that belongs with the change (a stored-systems list), written with the same care. */
 		public Transaction put(File f, byte[] bytes) { extra.put(f, bytes); return this; }
+
+		// 6.11 (CONCERNS 8): what used to be written in a second step, and put back by hand if that failed, goes in the same note
+		private final List<File> deletes = new ArrayList<File>();
+		private final Map<Ship, SavedGameState> arriving = new LinkedHashMap<Ship, SavedGameState>();
+		private Ship leaving;
+		private Fate leavingFate;
+		private final List<Runnable> after = new ArrayList<Runnable>();
+		/** A file that goes with the change (the stored systems, when the Cargo Hold is given up), if it's there. */
+		public Transaction delete(File f) { deletes.add(f); return this; }
+		/** Scrap from the Cargo Hold, in this note: the hold as this transaction already has it, else a fresh copy. Throws if it hasn't enough. */
+		public Transaction pay(int scrap) throws IOException {
+			if (scrap <= 0) return this;
+			Ship st = storage();
+			SavedGameState hold = pending.get(st);
+			if (hold == null) { Copy c = readCopy(st); hold = c.save; put(st, hold, c.hash); }
+			int have = hold.getPlayerShip().getScrapAmt();
+			if (have < scrap) throw new IOException("The Cargo Hold has " + have + " scrap; " + scrap + " is needed");
+			hold.getPlayerShip().setScrapAmt(have - scrap);
+			return this;
+		}
+		/** A new ship into the fleet (docked, or in the Junkyard) with this note: her folder, save and record. In the fleet once it stands. */
+		public Ship adopt(SavedGameState state, Ship.State where, String how) {
+			Ship s = new Ship(newId(), state.getPlayerShipName(), where, state.isDLCEnabled());
+			s.origin = originNow(how);
+			arriving.put(s, state);
+			return s;
+		}
+		/** She leaves the fleet with this note (her last version kept, her fate written, her folder to the memorial). */
+		public Transaction leave(Ship s, Fate fate) { leaving = s; leavingFate = fate; return this; }
+		/** Done once the note stands (its log entries). */
+		public Transaction then(Runnable r) { after.add(r); return this; }
+
 		public void commit() throws IOException {
 			synchronized (Vault.this) {
 				for (Map.Entry<Ship, String> e : expected.entrySet()) {
@@ -1623,11 +1635,23 @@ public final class Vault {
 				// one journal note (5.71): every file's new bytes wait beside it, then each is replaced in one move; a failure puts the rest back
 				Journal.Note note = Journal.begin(Vault.this, "SAVE");
 				for (Map.Entry<File, byte[]> e : bytes.entrySet()) note.replace(e.getKey(), e.getValue());
+				for (Map.Entry<Ship, SavedGameState> e : arriving.entrySet()) { // her folder is made with her files (the note's own new bytes beside them)
+					Ship s = e.getKey();
+					byte[] save = bytesOf(s, e.getValue());
+					s.hash = SafeFiles.hash(save);
+					note.replace(fileOf(s), save);
+					note.replace(ShipStore.xml(folderOf(s)), ShipStore.bytes(recordOf(s)));
+				}
+				for (File f : deletes) if (f.exists()) note.delete(f);
+				File leftTo = leaving == null ? null : leaveSteps(note, leaving, leavingFate, null);
 				for (Ship s : pending.keySet()) { countBefore(s); snapshot(s); }
 				note.commit();
 				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) { e.getKey().written(e.getValue(), SafeFiles.hash(fileOf(e.getKey()))); marked(e.getKey(), e.getValue()); keepBoarded(e.getKey()); }
+				for (Map.Entry<Ship, SavedGameState> e : arriving.entrySet()) { Ship s = e.getKey(); folders.put(s.id, folderOf(s)); s.written(e.getValue(), s.hash); ships.add(s); }
+				if (leaving != null) { left(leaving, leftTo); ships.remove(leaving); }
 				saveManifest();
 			}
+			for (Runnable r : after) r.run();
 		}
 	}
 	public Transaction begin() { return new Transaction(); }
@@ -1768,11 +1792,17 @@ public final class Vault {
 	 * her fate written, her folder to the memorial. Her versions are pruned after. The caller takes her off the list.
 	 */
 	private void leave(Ship s, Fate fate, String detail) throws IOException {
+		Journal.Note n = Journal.begin(this, "LEAVE");
+		File to = leaveSteps(n, s, fate, detail);
+		n.commit();
+		left(s, to);
+	}
+	/** Her leaving's steps, added to a note (6.11: Scrap and Sell put the Cargo Hold's in the same one). Returns her memorial folder, or null if she's there. */
+	private File leaveSteps(Journal.Note n, Ship s, Fate fate, String detail) throws IOException {
 		File dir = settleFolder(s), f = fileOf(s), to = new File(memorialDir(), dir.getName());
 		boolean move = !dir.getParentFile().getAbsoluteFile().equals(memorialDir().getAbsoluteFile());
 		if (move && to.exists()) throw new IOException(to + " is already there");
 		if (!memorialDir().isDirectory() && !memorialDir().mkdirs()) throw new IOException("Could not create " + memorialDir());
-		Journal.Note n = Journal.begin(this, "LEAVE");
 		if (f.isFile()) {
 			List<File> kept = history(s);
 			if (kept.isEmpty() || !SafeFiles.hash(kept.get(kept.size() - 1)).equals(SafeFiles.hash(f))) n.replace(ShipStore.versionFile(dir, null), SafeFiles.read(f));
@@ -1780,8 +1810,11 @@ public final class Vault {
 		}
 		n.replace(ShipStore.xml(dir), recordWithNotes(dir, ShipStore.FATE, ShipStore.fateNotes(fate.name(), s.name, detail)));
 		if (move) n.rename(dir, to);
-		n.commit();
-		if (move) folders.put(s.id, to);
+		return move ? to : null;
+	}
+	/** Her leaving done: her folder where it went, her versions pruned. */
+	private void left(Ship s, File to) {
+		if (to != null) folders.put(s.id, to);
 		ShipStore.prune(folders.get(s.id), KEEP);
 	}
 	/**
@@ -1988,7 +2021,7 @@ public final class Vault {
 				for (File c : crew) {
 					if (!c.isFile() || !c.getName().endsWith(".xml")) continue;
 					z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE_CREW + c.getName()));
-					z.write(SafeFiles.read(c));
+					z.write(CrewRegister.forPackage(c)); // in the form every station reads (6.11: their own files are tags)
 					z.closeEntry();
 				}
 			}
@@ -2311,7 +2344,7 @@ public final class Vault {
 			String how = born != null ? birth(born) : "unknown";
 			String when = proof != null ? stampOf(proof.time) : originNow("x").substring(originNow("x").lastIndexOf('.') + 1);
 			String by = proof != null ? "verified-log-" + proof.kind : "verified-record-" + r.hash.substring(0, Math.min(8, r.hash.length()));
-			s.origin = how + ".pre-6.10." + when + "." + by; // a record with no origin was written before 6.10 gave her one, whichever version checks her
+			s.origin = how + ".pre-6.10." + when + "." + by; // from before 6.10, when ships were first given a career and origin, whichever station checks her
 			notes.add(s.name + ": checked, " + s.origin);
 			HistoryLog.entry("VAULT", s.name + " checked: " + s.origin, null, shipEvent("VAULT", s).put("what", "checked").put("origin", s.origin)
 					.put("fingerprint", print).put("history", first != null).put("career", slot));
@@ -2577,13 +2610,14 @@ public final class Vault {
 		List<net.blerf.ftl.parser.SavedGameParser.CrewState> theirs = new ArrayList<net.blerf.ftl.parser.SavedGameParser.CrewState>();
 		{
 			for (File c : crew) {
-				java.util.Properties p = Store.read(c);
+				java.util.Properties p = CrewRegister.readFile(c);
+				if (p == null) continue;
 				String status = p.getProperty("status", "PRESENT");
 				if (!("ship:" + r.id).equals(p.getProperty("place")) || status.equals("KILLED") || status.equals("RETIRED") || status.equals("TRANSFERRED")) continue;
 				java.util.Map<String, String> fields = new LinkedHashMap<String, String>();
 				for (String k : p.stringPropertyNames()) if (k.startsWith("rec.")) fields.put(k.substring(4), p.getProperty(k));
 				if (fields.isEmpty()) continue;
-				try { theirs.add(homeplanet.comm.Line.crewFrom(fields)); } catch (Exception e) { log.warn("Could not rebuild {} from {}: {}", p.getProperty("name"), c.getName(), e.toString()); }
+				try { theirs.add(CrewRecord.crew(fields)); } catch (Exception e) { log.warn("Could not rebuild {} from {}: {}", p.getProperty("name"), c.getName(), e.toString()); }
 			}
 		}
 		if (!theirs.isEmpty()) {

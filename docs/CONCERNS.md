@@ -25,4 +25,3 @@ would let those go sooner, but each fleet's conversion writes its own log, which
 one a line or a method to delete. Then delete the tests of old fleets. A fleet from before 6.0 would then have to be opened once
 by a 6.x station first: the station could say so plainly when it finds `manifest.xml` or `ships/`. When is heromedel's call
 (5.97: "at some point in a future build").
-

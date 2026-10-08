@@ -25,7 +25,7 @@ public class PartT { public static void main(String[] a) throws Exception {
   Setup.chk("D: 2 broken Shields bars 10, a broken Engines and Piloting bar 10 each (" + (Pricing.damage(s) - base) + ")", Pricing.damage(s) - base == 30);
   Setup.chk("D: a bar's value by system", Pricing.brokenBarValue("oxygen") == 10 && Pricing.brokenBarValue("weapons") == 5);
   Setup.chk("D: stored lines: a damaged system keeps its broken bars, an undamaged one is as before",
-    "shields 3 2".equals(homeplanet.ui.SystemsPanel.line("shields", 3, 2)) && "shields 3".equals(homeplanet.ui.SystemsPanel.line("shields", 3, 0)) && "clonebay".equals(homeplanet.ui.SystemsPanel.line("clonebay", 0, 0)));
+    "shields 3 2".equals(homeplanet.vault.StoredSystems.line("shields", 3, 2)) && "shields 3".equals(homeplanet.vault.StoredSystems.line("shields", 3, 0)) && "clonebay".equals(homeplanet.vault.StoredSystems.line("clonebay", 0, 0)));
  }
  static void parts(Vault v) throws Exception {
   List<Parts.Listing> l = Parts.current(v);
@@ -94,8 +94,8 @@ public class PartT { public static void main(String[] a) throws Exception {
   SavedGameState hold = v.readCopy(v.storage()).save; hold.getPlayerShip().setScrapAmt(pick.price + 3); v.write(v.storage(), hold);
   Parts.buy(v, pick);
   String file = new String(SafeFiles.read(v.systemsFile()), "UTF-8");
-  Setup.chk("P: bought: the price from the Cargo Hold, the part stored broken (" + homeplanet.ui.SystemsPanel.line(pick.id, pick.level, pick.broken) + ")",
-    v.storageScrap() == 3 && file.contains("\n" + homeplanet.ui.SystemsPanel.line(pick.id, pick.level, pick.broken) + "\n"));
+  Setup.chk("P: bought: the price from the Cargo Hold, the part stored broken (" + homeplanet.vault.StoredSystems.line(pick.id, pick.level, pick.broken) + ")",
+    v.storageScrap() == 3 && file.contains("\n" + homeplanet.vault.StoredSystems.line(pick.id, pick.level, pick.broken) + "\n"));
   boolean gone = true; for (Parts.Listing x : Parts.current(v)) if (x.index == pick.index) gone = false;
   boolean twice = false; try { Parts.buy(v, pick); } catch (IOException e) { twice = true; }
   Setup.chk("P: sold once only", gone && twice && v.storageScrap() == 3);

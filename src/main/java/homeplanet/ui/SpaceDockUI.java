@@ -35,7 +35,6 @@ import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.core.GameGuard;
-import homeplanet.core.Event;
 import homeplanet.core.HistoryLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.model.Items;
@@ -611,10 +610,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		try {
-			File backup = homeplanet.parser.UnlockGrants.removeFromProfile(keys);
-			homeplanet.parser.UnlockGrants.strangersAnswered(keys);
-			log.info("FTL profile backed up before the removal: {}", backup);
-			HistoryLog.entry("PROFILE", "Removed from FTL's profile: " + String.join(", ", names), null, Event.of("PROFILE").put("what", "removed").put("removed", String.join(", ", names)).put("keys", String.join(", ", keys)));
+			File backup = homeplanet.parser.UnlockGrants.removeStrangers(keys, names);
 			JOptionPane.showMessageDialog(null, "Removed from FTL's profile. A backup was made first: " + backup.getName(), "Achievements and unlocks", JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not change FTL's profile:\n" + e.getMessage() + "\nNothing was removed.");
@@ -1745,17 +1741,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String newName = promptForName("What shall she be called?", "Rename Ship", oldName);
 		if (newName == null || newName.equals(oldName)) return;
 		if (ship.isBoarded() && !GameGuard.allows(this, "rename her")) return;
-		sgs.setPlayerShipName(newName);
-		sgs.getPlayerShip().setShipName(newName);
 		try {
-			Vault.get().write(ship, sgs);
+			homeplanet.vault.SpaceDock.rename(Vault.get(), ship, sgs, newName);
 		} catch (Exception e) {
-			sgs.setPlayerShipName(oldName);
-			sgs.getPlayerShip().setShipName(oldName);
 			HomePlanet.showErrorDialog("She could not be renamed; her save could not be written:\n" + e);
 			return;
 		}
-		HistoryLog.entry("RENAME", oldName + " -> " + newName + "  (" + ship.id + ")", null, Vault.shipEvent("RENAME", ship).put("from", oldName).put("to", newName));
 		JOptionPane.showMessageDialog(null, oldName + " is now known as " + newName + ".", "Rename Ship", JOptionPane.INFORMATION_MESSAGE);
 		init();
 	}
@@ -1889,15 +1880,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			if (!HomePlanet.confirmNo(this, "The Federation Home Planet charges " + fee + " scrap to plot a new journey,\npaid from the Cargo Hold (which holds " + have + "). Pay it?", "New Journey")) return;
 		}
 		if (!GameGuard.allows(this, "start her new journey")) return;
-		byte[] storageBefore = null;
-		if (pay[0] > 0) {
-			try {
-				storageBefore = Vault.get().payFromStorage(pay[0]);
-			} catch (IOException e) {
-				HomePlanet.showErrorDialog("The Home Planet Station could not take the fee from the Cargo Hold. Nothing was changed:\n" + e.getMessage());
-				return;
-			}
-		}
 		net.blerf.ftl.constants.Difficulty[] diffs = {net.blerf.ftl.constants.Difficulty.EASY,
 				net.blerf.ftl.constants.Difficulty.NORMAL, net.blerf.ftl.constants.Difficulty.HARD};
 		SaveHelper.startJourney(gs, diffs[choice]);
@@ -1908,21 +1890,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		java.util.Iterator<CrewState> it = ps.getCrewList().iterator();
 		while (it.hasNext()) if (!SaveHelper.isOwnCrew(it.next())) it.remove();
 		try {
-			Vault.get().write(ship, gs);
-			Vault.get().setOut(ship, gs, homeplanet.vault.VoyageLog.NEW_JOURNEY); // at The Home Planet Station until she jumps
-			HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + options[choice] + (fee > 0 ? ", fee " + RepPay.words(pay) + (pay[0] > 0 ? " (the scrap from the Cargo Hold)" : "") : ""), null,
-					Vault.shipEvent("NEW_JOURNEY", ship).put("difficulty", options[choice]).put("fee", fee).put("paid", fee > 0 ? RepPay.words(pay) : null));
+			homeplanet.vault.SpaceDock.newJourney(Vault.get(), ship, gs, (String) options[choice], fee, pay[0], pay[1], fee > 0 ? RepPay.words(pay) : null);
 		} catch (Exception e) {
-			ship.invalidate();
-			String refund = "";
-			if (storageBefore != null) {
-				try { Vault.get().refundStorage(storageBefore); refund = "\nThe fee was returned to the Cargo Hold."; }
-				catch (IOException again) { refund = "\nThe fee could not be returned to the Cargo Hold: " + again.getMessage(); }
-			}
-			HomePlanet.showErrorDialog("The Home Planet Station could not save her new journey:\n" + e + refund);
+			HomePlanet.showErrorDialog("The Home Planet Station could not save her new journey. Nothing was changed" + (pay[0] > 0 ? " (the fee stays in the Cargo Hold)" : "") + ":\n" + e.getMessage());
 			return;
 		}
-		if (pay[1] > 0) homeplanet.vault.Reputation.spend(Vault.get(), pay[1], "A new journey plotted for " + gs.getPlayerShipName()); // once her journey is saved
 		JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is ready to depart: a new journey is plotted, Captain.",
 				"New Journey", JOptionPane.INFORMATION_MESSAGE);
 		init();
@@ -1980,63 +1952,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					+ "The hull will be broken up and can never be recovered.", "Scrap")) return;
 			strip = false;
 		}
-		List<String> scrapped;
 		try {
-			Vault vault = Vault.get();
-			Ship storageShip = vault.storage();
-			// a fresh copy: the shared one must not keep the additions if anything below fails
-			Vault.Copy storageCopy;
-			try { storageCopy = vault.readCopy(storageShip); } catch (IOException e) { throw new IOException("The Cargo Hold can't be read: " + e.getMessage()); }
-			SavedGameState storage = storageCopy.save;
-			// what the hold and the stored-systems list hold now, to put back if the wreck can't be removed after them
-			File storageFile = storageShip.file(), systemsFile = vault.systemsFile();
-			byte[] storageBefore = SafeFiles.read(storageFile), systemsBefore = systemsFile.isFile() ? SafeFiles.read(systemsFile) : null;
-			scrapped = HistoryLog.changes(new java.util.HashMap<String, Integer>(), HistoryLog.inventory(wreck));
-			ShipState from = wreck.getPlayerShip();
-			ShipState to = storage.getPlayerShip();
-			to.setScrapAmt(to.getScrapAmt() + from.getScrapAmt());
-			to.setFuelAmt(to.getFuelAmt() + from.getFuelAmt());
-			to.setMissilesAmt(to.getMissilesAmt() + from.getMissilesAmt());
-			to.setDronePartsAmt(to.getDronePartsAmt() + from.getDronePartsAmt());
-			for (WeaponState w : from.getWeaponList()) to.getWeaponList().add(SaveHelper.newIdleWeapon(w.getWeaponId()));
-			for (DroneState d : from.getDroneList()) to.getDroneList().add(SaveHelper.copyDroneForTransfer(d));
-			to.getAugmentIdList().addAll(from.getAugmentIdList());
-			// Storage keeps cargo sorted by kind
-			for (String id : SaveHelper.cargo(wreck)) { // not the augment FTL was asking about: left behind (5.52)
-				if (Items.isWeapon(id)) to.getWeaponList().add(SaveHelper.newIdleWeapon(id));
-				else if (Items.isDrone(id)) to.getDroneList().add(SaveHelper.newIdleDrone(id));
-				else if (Items.isAugment(id)) to.getAugmentIdList().add(id);
-				else storage.getCargoIdList().add(id);
-			}
-			for (CrewState c : SaveHelper.getOwnCrew(from)) {
-				if (SaveHelper.hasBody(c) && SaveHelper.placeCrew(to, c, true)) to.getCrewList().add(c);
-			}
-			Vault.Transaction tx = vault.begin().put(storageShip, storage, storageCopy.hash);
-			if (strip) {
-				scrapped.addAll(SystemsPanel.scrapSystems(from, tx));
-				if (pay[0] > 0) {
-					if (to.getScrapAmt() < pay[0]) throw new IOException("the Cargo Hold holds " + to.getScrapAmt() + " scrap, short of the " + pay[0] + " stripping costs");
-					to.setScrapAmt(to.getScrapAmt() - pay[0]);
-					scrapped.add("- " + pay[0] + " scrap (stripping her systems)");
-				}
-				if (pay[1] > 0) scrapped.add("- " + pay[1] + " reputation (stripping her systems)");
-			}
-			tx.commit();
-			try {
-				vault.remove(wreckShip, null); // logged below, with what came off her
-			} catch (IOException e) {
-				// she's still in the Junkyard with everything aboard: the hold must not keep a second copy
-				SafeFiles.write(storageFile, storageBefore);
-				if (systemsBefore != null) SafeFiles.write(systemsFile, systemsBefore); else systemsFile.delete();
-				storageShip.invalidate();
-				throw e;
-			}
+			List<String> store = null, said = null;
+			if (strip) { store = new java.util.ArrayList<String>(); said = SystemsPanel.scrapSystems(wreck.getPlayerShip(), store); } // the Refit tab's rules: what of hers can be stored
+			homeplanet.vault.SpaceDock.scrap(Vault.get(), wreckShip, wreck, store, said, pay[0], pay[1]);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The order to scrap was called off. Nothing was changed:\n" + e);
 			return;
 		}
-		HistoryLog.entry("SCRAP", name + " stripped into storage, hull broken up", scrapped, Event.of("SCRAP").put("ship_name", name).put("stripped", strip).put("to", "hold").details(scrapped));
-		if (strip && pay[1] > 0) homeplanet.vault.Reputation.spend(Vault.get(), pay[1], "Stripping " + name + "'s systems when she was scrapped");
 		init();
 	}
 	/**
@@ -2098,32 +2021,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "Her fuel, missiles, drone parts, weapons, drones, augments, cargo and systems go with her.\nShe leaves the fleet for good.";
 		if (!confirmIrreversible(auction ? "Auction" : "Trade In", message, auction ? "Hold Auction" : "Trade In")) return;
 		try {
-			Vault vault = Vault.get();
-			Ship storageShip = vault.storage();
-			Vault.Copy storageCopy;
-			try { storageCopy = vault.readCopy(storageShip); } catch (IOException e) { throw new IOException("The Cargo Hold can't be read: " + e.getMessage()); }
-			SavedGameState storage = storageCopy.save;
-			File storageFile = storageShip.file();
-			byte[] storageBefore = SafeFiles.read(storageFile);
-			ShipState to = storage.getPlayerShip();
-			to.setScrapAmt(to.getScrapAmt() + from.getScrapAmt() + price);
-			for (CrewState c : SaveHelper.getOwnCrew(from)) {
-				if (SaveHelper.hasBody(c) && SaveHelper.placeCrew(to, c, true)) to.getCrewList().add(c);
-			}
-			vault.begin().put(storageShip, storage, storageCopy.hash).commit();
-			try {
-				vault.remove(ship, null, Vault.Fate.SOLD);
-			} catch (IOException e) {
-				SafeFiles.write(storageFile, storageBefore); // she's still in the Junkyard: the hold mustn't keep her scrap and crew too
-				storageShip.invalidate();
-				throw e;
-			}
+			homeplanet.vault.SpaceDock.sell(Vault.get(), ship, gs, price, auction);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The sale of " + name + " was called off. Nothing was changed:\n" + e);
 			return;
 		}
-		HistoryLog.entry("SELL", name + (auction ? " sold at auction" : " traded in") + " for " + price + " scrap; her scrap and crew to the Cargo Hold", null,
-				Event.of("SELL").put("ship_name", name).put("how", auction ? "auction" : "trade_in").put("price", price).put("to", "hold"));
 		if (auction) {
 			int base = homeplanet.parser.Pricing.auctionBase(gs);
 			Object[] accept = {"Accept Bid"};

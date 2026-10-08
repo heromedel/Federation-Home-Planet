@@ -10,10 +10,8 @@ public class IdT {
  public static void main(String[] a) throws Exception {
   File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
   saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
-  for (String place : new String[] {"shipyard", "junkyard"}) for (File d : ShipStore.folders(new File(new File(saves, Vault.FOLDER), place))) { // as a 6.09 station left them: no career, no origin (the world is made by this version, 6.11)
-   ShipStore.Record r = ShipStore.read(d);
-   if (r != null) { r.career = ""; r.origin = ""; ShipStore.write(d, r); }
-  }
+  HomePlanet.savedGameParser = new SavedGameParser(); if (DataManager.get() == null) { DefaultDataManager dm = new DefaultDataManager(game); DataManager.setInstance(dm); dm.setDLCEnabledByDefault(true); }
+  before610(Vault.rootOf(saves, Vault.SANDBOX)); // the world as a station before 6.10 left it, whatever made it
   HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
 
@@ -58,7 +56,7 @@ public class IdT {
   // 4. a record with no save: her newest version put back; then with none, rebuilt from her records
   Ship z = ships(v).get(2); String zId = z.id, zName = z.name; File zDir = v.folderOf(z);
   List<String> crewNames = new ArrayList<String>();
-  File[] cf = new File(zDir, "crew").listFiles(); if (cf != null) for (File c : cf) if (c.getName().endsWith(".xml")) crewNames.add(Store.read(c).getProperty("name"));
+  File[] cf = new File(zDir, "crew").listFiles(); if (cf != null) for (File c : cf) if (c.getName().endsWith(".xml")) crewNames.add(CrewRegister.readFile(c).getProperty("name"));
   String zClass = HomePlanet.savedGameParser.readSavedGame(v.fileOf(z)).getPlayerShipBlueprintId();
   v.fileOf(z).delete();
   v = reopen(game);
@@ -127,6 +125,16 @@ public class IdT {
  static Vault reopen(File game) throws Exception { Vault v = Vault.open(saves); v.takeStock(); return v; }
  static Vault.Found only(Vault v, Vault.Found.Kind k) { for (Vault.Found f : v.found()) if (f.kind == k) return f; return null; }
  static String log(Vault v) throws IOException { File f = new File(v.root, "logs/events.log"); return f.isFile() ? new String(SafeFiles.read(f), "UTF-8") : ""; }
+ /** A fleet as a station before 6.10 left it: no career or origin in any record, no mark in any save (her fingerprint its save's). */
+ static void before610(File root) throws IOException {
+  for (String where : new String[] {"shipyard", "junkyard"}) for (File d : ShipStore.folders(new File(root, where))) {
+   ShipStore.Record r = ShipStore.read(d); if (r == null) continue;
+   File sav = ShipStore.sav(d);
+   if (sav.isFile()) { SafeFiles.write(sav, ShipMark.strip(SafeFiles.read(sav))); r.hash = SafeFiles.hash(sav); }
+   r.career = ""; r.origin = ""; r.sections.remove("mark");
+   SafeFiles.write(ShipStore.xml(d), ShipStore.bytes(r));
+  }
+ }
  /** Her record as from before 6.10: no career, no origin. */
  static void unknow(File dir) throws IOException { ShipStore.Record r = ShipStore.read(dir); r.career = ""; r.origin = ""; SafeFiles.write(ShipStore.xml(dir), ShipStore.bytes(r)); }
  /** Her save changed by another tool (scrap up one), the station's fingerprint of it no longer matching. */
