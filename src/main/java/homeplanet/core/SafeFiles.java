@@ -158,6 +158,16 @@ public final class SafeFiles {
 			throw new IOException(e);
 		}
 	}
+	/** The same fingerprint of bytes not yet written (a save waiting in a journal note, 5.95). */
+	public static String hash(byte[] bytes) throws IOException {
+		try {
+			StringBuilder sb = new StringBuilder();
+			for (byte b : MessageDigest.getInstance("SHA-1").digest(bytes)) sb.append(String.format("%02x", b & 0xff));
+			return sb.toString();
+		} catch (java.security.NoSuchAlgorithmException e) {
+			throw new IOException(e);
+		}
+	}
 
 	/** Zips a folder (recursively) into {@code zip}, skipping {@code skip} (a sub-folder to leave out, or null). */
 	public static void zipFolder(File folder, File zip, File skip) throws IOException {

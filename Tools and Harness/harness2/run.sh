@@ -74,6 +74,7 @@ echo "== RegT"; run RegT "$GAME" "$WORLD" "$W/reg" | grep -E "$PICK|^PASS|differ
 echo "== LogConvT"; run LogConvT "$GAME" "$WORLD" "$W/logconv" | grep -E "$PICK|^PASS|converted:"
 echo "== VicT"; run VicT "$GAME" "$WORLD" "$W/vic" $VICLOG | grep -E "$PICK|^PASS|^replay"
 echo "== LinkT"; run LinkT "$GAME" "$WORLD" "$W/link" | grep -E "$PICK|^PASS"
+echo "== KillT"; run KillT "$GAME" "$WORLD" "$W/kill" | grep -E "$PICK|^PASS|^  \("
 echo "== EventT"; run EventT "$GAME" "$WORLD" "$W/event" | grep -E "$PICK|^PASS|event logs"
 # the windows themselves, driven as a player would: needs a display, so a virtual one
 echo "== GuiT"

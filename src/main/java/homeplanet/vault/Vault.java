@@ -866,10 +866,31 @@ public final class Vault {
 		if (was != null) { r.owners.addAll(was.owners); r.pastNames.addAll(was.pastNames); r.sections.putAll(was.sections); } // what her record holds besides
 		return r;
 	}
+	/**
+	 * Her record's bytes as they'll be once a move is done (5.95): Board and Dock write it in the same note as her save,
+	 * so a station stopped partway finds her record saying where her save is, never where it was. Marks null: kept.
+	 */
+	private byte[] recordAs(Ship s, Ship.State state, String hash, String marks) {
+		ShipStore.Record r = recordOf(s);
+		r.state = state.key; r.hash = hash == null ? "" : hash;
+		if (marks != null) r.marks = marks;
+		return ShipStore.bytes(r);
+	}
 
 	/** Makes the list match the files: adopts strays, drops ships whose files are gone, settles who's boarded. */
 	private void reconcile() {
 		List<String> notes = new ArrayList<String>();
+		File cont = continueFile();
+		// a Board stopped partway before 5.95 (her record still saying docked): her save is continue.sav, and nobody else is boarded
+		if (boarded() == null && cont.isFile()) {
+			for (Ship s : ships) {
+				if (s.state != Ship.State.DOCKED || fileOf(s).isFile() || !isHers(s, cont)) continue;
+				s.state = Ship.State.BOARDED;
+				try { s.hash = SafeFiles.hash(cont); } catch (IOException e) { s.hash = ""; }
+				notes.add(s.name + " was being boarded when the station stopped: continue.sav is her save, so she is boarded");
+				break;
+			}
+		}
 		// ships whose files vanished
 		for (Ship s : new ArrayList<Ship>(ships)) {
 			if (s.state == Ship.State.BOARDED) continue;
@@ -882,7 +903,13 @@ public final class Vault {
 		}
 		// the boarded ship: continue.sav is hers, if it's there
 		Ship b = boarded();
-		File cont = continueFile();
+		// a Dock stopped partway before 5.95 (her record still saying boarded): her save is back in her folder, so she's docked, not lost
+		if (b != null && !cont.isFile() && ShipStore.sav(folderOf(b)).isFile()) {
+			b.state = Ship.State.DOCKED;
+			try { b.hash = SafeFiles.hash(fileOf(b)); } catch (IOException e) { b.hash = ""; }
+			notes.add(b.name + " was being docked when the station stopped: her save is in her folder, so she is docked");
+			b = null;
+		}
 		// never while FTL is running: it rewrites continue.sav by deleting it first, so a missing file there proves nothing
 		if (b != null && !cont.isFile() && !homeplanet.core.GameGuard.isFtlRunning()) {
 			notes.add(b.name + " was boarded, and continue.sav is gone: lost in action (FTL ends a run by deleting the save). "
@@ -1125,6 +1152,16 @@ public final class Vault {
 			}
 		}
 		return null;
+	}
+	/** This save is hers byte for byte: the save her record names, or one of her kept versions (Board keeps one as it takes her save). */
+	private boolean isHers(Ship s, File save) {
+		String h;
+		try { h = SafeFiles.hash(save); } catch (IOException e) { return false; }
+		if (h.equals(s.hash)) return true;
+		for (File f : kept(s)) {
+			try { if (h.equals(SafeFiles.hash(f))) return true; } catch (IOException e) { }
+		}
+		return false;
 	}
 
 	// ---- sectors travelled (the Immersive stipend) ----
@@ -1680,13 +1717,14 @@ public final class Vault {
 		if (b != null) dock();
 		File from = fileOf(s), to = continueFile();
 		if (to.exists()) throw new IOException("continue.sav is already there (a ship the station doesn't know?)");
-		// one journal note (5.71): her save into continue.sav, her vault copy kept as a version (from now on continue.sav is the only current one), her file gone
+		// one journal note (5.71): her save into continue.sav, her vault copy kept as a version (from now on continue.sav is the only current one), her record saying boarded (5.95), her file gone
 		byte[] save = SafeFiles.read(from);
 		File dir = settleFolder(s);
 		Journal.Note note = Journal.begin(this, "BOARD");
 		note.replace(to, save);
 		List<File> kept = history(s);
 		if (kept.isEmpty() || !SafeFiles.hash(kept.get(kept.size() - 1)).equals(SafeFiles.hash(from))) note.replace(ShipStore.versionFile(dir, null), save);
+		note.replace(ShipStore.xml(dir), recordAs(s, Ship.State.BOARDED, SafeFiles.hash(save), ""));
 		note.delete(from);
 		note.commit();
 		ShipStore.prune(dir, KEEP);
@@ -1707,8 +1745,10 @@ public final class Vault {
 		if (!from.isFile()) throw new IOException("continue.sav is missing: " + b.name + " may have been lost in FTL. Refresh to take stock.");
 		countBefore(b); // her voyage since the last look counts before she leaves continue.sav
 		File to = ShipStore.sav(settleFolder(b)); // where a docked ship's save lives (fileOf, once she's docked)
-		Journal.Note note = Journal.begin(this, "DOCK"); // one note (5.71): her save into her folder, continue.sav gone; a failure leaves her boarded, as she was
-		note.replace(to, SafeFiles.read(from));
+		byte[] save = SafeFiles.read(from);
+		Journal.Note note = Journal.begin(this, "DOCK"); // one note (5.71): her save into her folder, her record saying docked (5.95), continue.sav gone; a failure leaves her boarded, as she was
+		note.replace(to, save);
+		note.replace(ShipStore.xml(to.getParentFile()), recordAs(b, Ship.State.DOCKED, SafeFiles.hash(save), null));
 		note.delete(from);
 		try { note.commit(); }
 		catch (IOException e) { throw new IOException(e.getMessage() + " (is FTL running?)", e); }
