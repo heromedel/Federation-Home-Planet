@@ -10,29 +10,8 @@ public class ExpT { public static void main(String[] a) throws Exception {
  lateLook(v);
  namesakes(v);
  hiring(v);
- v = oldFiles(v, game, saves);
  Setup.done();
 }
- /** A 5.x fleet's files at its root (5.85): moved into expeditions/, infirmary/ and captives/ as xml on opening, nothing in them changed, the old board kept. */
- static Vault oldFiles(Vault v, File game, File saves) throws Exception {
-  Properties asg = new Properties(), inf = new Properties(), cap = new Properties();
-  asg.setProperty("offer.1.until", "29"); asg.setProperty("face.10.2.crew.s1", "15"); asg.setProperty("face.2.0.crew.name", "Lucky Duck & <Co>");
-  inf.setProperty("healed_at", "23"); inf.setProperty("0.name", "Laid Ulm");
-  cap.setProperty("0.name", "Held Hal"); cap.setProperty("0.state", "gone");
-  Assignments.file(v).delete(); Expeditions.infirmaryFile(v).delete(); Expeditions.captivesFile(v).delete();
-  Store.write(new File(v.root, "assignments.txt"), asg, "old"); Store.write(new File(v.root, "infirmary.txt"), inf, "old"); Store.write(new File(v.root, "captives.txt"), cap, "old");
-  SafeFiles.writeText(new File(v.root, "expeditions.txt"), "0.kind=rescue\n", false);
-  v = Setup.open(game, saves); v.takeStock();
-  Setup.chk("F: a 5.x fleet's expeditions, infirmary and captives files move into folders of their own, as xml, nothing in them changed",
-    Store.load(Assignments.file(v)).equals(asg) && Store.load(Expeditions.infirmaryFile(v)).equals(inf) && Store.load(Expeditions.captivesFile(v)).equals(cap)
-    && new String(SafeFiles.read(Assignments.file(v)), "UTF-8").startsWith("<?xml") && !new File(v.root, "assignments.txt").exists() && !new File(v.root, "infirmary.txt").exists() && !new File(v.root, "captives.txt").exists());
-  String x = new String(SafeFiles.read(Assignments.file(v)), "UTF-8");
-  Setup.chk("F: the keys in order, numbers by their value (face.2 before face.10)", x.indexOf("face.2.0") < x.indexOf("face.10.2") && x.indexOf("face.10.2") < x.indexOf("offer.1"));
-  Setup.chk("F: the old board of jobs kept beside them, unread", new File(v.expeditionsDir(), "board-before-5.67.txt").isFile() && !new File(v.root, "expeditions.txt").exists());
-  boolean logged = false; for (EventLog.Entry e : EventLog.read(v)) if (e.kind.equals("EXPEDITION_FILES") && "4".equals(e.get("files"))) logged = true;
-  Setup.chk("F: said in the event log, every file named; no protection note left", logged && Journal.dir(v).list().length == 1);
-  return v;
- }
  /** Crew of these races, in the Cargo Hold (any there before are moved out of the way first). */
  static List<CrewState> hold(Vault v, String... races) throws Exception {
   Vault.Copy c = v.readCopy(v.storage()); ShipState h = c.save.getPlayerShip();

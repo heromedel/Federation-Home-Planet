@@ -52,6 +52,10 @@ import homeplanet.vault.Vault;
  * <li>the crew register's places in the old logs as places in the event log (5.91), and its crew.txt into a file per crew member (5.83).</li>
  * </ol>
  * A ship from an older station in a trade is the other way in ({@link OldPackage}).
+ *
+ * <p><b>Frozen (heromedel, 5.98):</b> this package isn't edited any more. It did its work for the few fleets that needed it,
+ * passed on heromedel's own, and its tests (MigT, LogConvT, SmallT and the old-fleet parts of the others) were taken out of
+ * the harness. A change here needs those tests back first, from the commit before they were removed.
  */
 public final class OldFleet {
 	private static final Logger log = LoggerFactory.getLogger(OldFleet.class);

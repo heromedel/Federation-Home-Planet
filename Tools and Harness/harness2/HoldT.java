@@ -1,5 +1,5 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
-/** The Cargo Hold as xml (5.84): what it holds read back whole, a hand edit read, a 5.x hold's save converted once, its versions kept as xml, another fleet's hold found. args: gamedir, world saves (from WorldT), work */
+/** The Cargo Hold as xml (5.84): what it holds read back whole, a hand edit read, its versions kept as xml. args: gamedir, world saves (from WorldT), work */
 public class HoldT { public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
@@ -37,23 +37,6 @@ public class HoldT { public static void main(String[] a) throws Exception {
  List<File> kept = v.history(v.storage());
  boolean allXml = !kept.isEmpty(); for (File k : kept) allXml &= k.getName().endsWith(".xml") && HoldXml.isHold(k);
  Setup.chk("C: its earlier versions kept as xml (" + kept.size() + "), the newest the one before the last change", allXml && HoldXml.read(kept.get(kept.size() - 1)).getPlayerShip().getScrapAmt() == 601);
- // D: a 5.x hold: its save converted once on opening, its contents the same, said in the log
- Vault.Copy last = v.readCopy(v.storage());
- String was = picture(last.save);
- File sav = new File(v.cargoHoldDir(), "cargohold.sav");
- SafeFiles.write(sav, SaveHelper.toBytes(last.save));
- String record = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<ship version=\"1\" id=\"storage\" name=\"Spacedock Storage\" state=\"storage\" dlc=\"true\" hash=\"x\">\r\n</ship>\r\n";
- SafeFiles.write(f, record.getBytes("UTF-8"));
- Setup.chk("D: another fleet's hold, not yet opened since 5.84, is found by its save", Vault.holdFileIn(v.root).equals(sav) && picture(HoldXml.read(Vault.holdFileIn(v.root))).equals(was));
- v = Setup.open(game, saves); v.takeStock();
- Setup.chk("D: on opening the save becomes the xml, the record it replaced gone, the save gone", HoldXml.isHold(f) && !sav.exists() && picture(v.storage().save()).equals(was));
- boolean logged = false; for (EventLog.Entry en : EventLog.read(v)) if (en.kind.equals("HOLD_FILE") && "converted".equals(en.get("what")) && "602".equals(en.get("scrap")) && "4".equals(en.get("crew"))) logged = true;
- Setup.chk("D: and the event log says so, with what it held", logged);
- Setup.chk("D: no note of it left in station-action-protection", Journal.dir(v).list().length == 1);
- // E: a fleet from before 5.72, its hold at the root
- File other = new File(work, "old"); other.mkdirs();
- SafeFiles.write(new File(other, "storage.sav"), SaveHelper.toBytes(last.save));
- Setup.chk("E: a fleet from before 5.72: its hold found at the root and read", Vault.holdFileIn(other).getName().equals("storage.sav") && picture(HoldXml.read(Vault.holdFileIn(other))).equals(was));
  Setup.done();
 }
  /** What a hold holds, in one line: supplies, the ids of its goods, every crew member's FTL bytes. */

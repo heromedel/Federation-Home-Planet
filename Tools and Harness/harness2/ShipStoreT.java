@@ -48,14 +48,10 @@ public class ShipStoreT { public static void main(String[] a) throws Exception {
  Setup.chk("M: moved to the Junkyard as one rename, everything with her", moved.getParentFile().equals(junk) && ShipStore.read(moved).id.equals("a3f2") && ShipStore.entries(moved).size() == 2 && !renamed.exists());
  boolean refused = false; try { ShipStore.move(moved, junk); } catch (IOException e) { refused = true; }
  Setup.chk("M: a move onto a folder already there is refused", refused && moved.isDirectory());
- // her side files from before 5.98 folded into her record (OldFleet.fold), and read back through her notes
- File hist = v.historyOf(d); hist.mkdirs();
- SafeFiles.writeText(new File(hist, "fate.txt"), "TRANSFERRED\n" + d.name + "\nCommander Vance\n", false);
- Properties mark = new Properties(); mark.setProperty("trade", "t1"); mark.setProperty("from", "Commander Vance"); mark.setProperty("original", "heromedel"); Store.write(new File(hist, "traded.txt"), mark, "x");
- ShipStore.Record t = ShipStore.read(hist); List<File> folded = new ArrayList<File>();
- homeplanet.convert.OldFleet.fold(t, hist, folded);
- Setup.chk("T: her fate and her trade mark as sections of her record", folded.size() == 2 && t.section("fate").getProperty("kind").equals("TRANSFERRED") && t.section("fate").getProperty("detail").equals("Commander Vance")
-   && t.section("trade").getProperty("trade").equals("t1") && t.section("fate").getProperty("when") != null);
+ // her notes as sections of her record (5.98), read back through ShipStore.notes and ShipStore.fate
+ ShipStore.Record t = ShipStore.read(v.historyOf(d));
+ t.sections.put(ShipStore.FATE, ShipStore.fateNotes("TRANSFERRED", d.name, "Commander Vance"));
+ t.section(ShipStore.TRADE).setProperty("trade", "t1"); t.section(ShipStore.TRADE).setProperty("from", "Commander Vance"); t.section(ShipStore.TRADE).setProperty("original", "heromedel");
  t.section("museum").setProperty("epitaph", "She came home.\nTwice, \"almost\" & <once> more.\tThe end");
  File tf = ShipStore.folder(yard, t); ShipStore.write(tf, t);
  Setup.chk("T: and written, she reads back the same: her mark, her fate, an epitaph with line breaks, quotes and tabs", ShipStore.notes(tf, ShipStore.TRADE).getProperty("original").equals("heromedel")

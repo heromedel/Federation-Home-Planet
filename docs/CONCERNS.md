@@ -167,8 +167,8 @@ pieces too much a part of their class to move (the crew register's reading of cr
 apart from the rest: a ship traded from a station older than 5.75 (her voyage log as prose); it goes with the protocol, not with
 old fleets.
 
-**What it costs.** About 1,000 lines that a 6.0 fleet never runs, and a harness that keeps testing them (MigT, LogConvT, HoldT,
-SmallT, RegT, ExpT's old files). Other fleets are converted only when they are opened, so a few readers still look at another
+**What it costs.** About 1,000 lines that a 6.0 fleet never runs. Its tests were removed from the harness after 5.98
+(heromedel) and the package is frozen: not edited, so nothing can break it; a change would bring its tests back from git history. Other fleets are converted only when they are opened, so a few readers still look at another
 fleet in an older shape (its hold, its station log, its ships' blueprints, a ship sent to it); converting every fleet at start-up
 would let those go sooner, but each fleet's conversion writes its own log, which today always goes to the fleet in use.
 

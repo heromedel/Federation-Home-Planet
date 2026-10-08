@@ -73,7 +73,7 @@ it does and CREDITS.md for where the code came from.
   `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
   at the top of `vault/Vault.java`. A 5.x fleet is converted the first time it opens, a zip of it kept beside its folder: every step of that, and every
   reader of an old shape, goes in `homeplanet.convert` (`OldFleet` runs them in order; anything that must stay in its own class is
-  marked `@Before6`), so the package can be deleted one day (`docs/CONCERNS.md` 7). There is no
+  marked `@Before6`), so the package can be deleted one day (`docs/CONCERNS.md` 7). It is frozen: not edited, and no longer tested. There is no
   index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
   `vault/Journal`** (a note first, the steps, the note deleted; a note left behind is finished at the next opening): never a hand-written undo.
 - **Long Range Comm.:** stations match on `Session.PROTOCOL`, not the version. Bump it only when an older station
@@ -119,14 +119,15 @@ scratchpad, never in the repo. Then, after building the jar:
     "Tools and Harness/harness2/run.sh" /path/to/folder-with-ftl.dat
 
 It builds a fresh test world from ftl.dat alone (WorldT), then runs VaultT, RoundT, PicT, DesT, CommT and the rest on
-copies of it (LinkT runs a second station in its own process, over localhost; HoldT, SmallT, LoreT, CarryT and RegT test the 6.0 storage,
+copies of it (LinkT runs a second station in its own process, over localhost; HoldT, LoreT, CarryT and RegT test the 6.0 storage,
 and the harness reads the station log and a voyage log from events with `Setup.stationLog` and `Setup.voyageLog`). Every test should print ALL PASSED, and RoundT "0 differ, 0 unreadable". Scratch goes in
 `harness2/work/` (ignored). The converter tests (ConvT, StoT) run only when old Homeworld saves and program
 folder are passed as the 2nd and 3rd arguments.
 
-From 6.00 on, the harness doesn't run KillT, the kill test that stops the station before every file it writes (heromedel,
-5.98: it passed for the 6.0 conversion, so there's no need to keep checking every stop). Its line comes out of `run.sh` in
-the 6.00 version; KillT and KillPeer stay in the folder.
+The kill test (KillT, which stopped the station before every file it wrote) and the old-fleet conversion's tests (MigT,
+LogConvT, SmallT and the old-fleet parts of HoldT, ExpT, RegT, JournalT and ShipStoreT) were removed after 5.98 (heromedel:
+they passed for the 6.0 conversion, which each player does once, and running them again only cost time). They are in git
+history if ever wanted; Buggy Boy can run an overkill check on request.
 
 The one exception to running the full harness: small UI or text changes (a button, a message, a tooltip) need only the
 build, plus a screenshot or the one test that covers it.

@@ -251,7 +251,7 @@ _5.93: the prose logs are no longer written: history.log, the master log (its da
 
 ### Phase 6: tests
 
-25. **MigT**: a 5.x world (from WorldT, aged by the other tests) converted; every ship, crew member, item and log entry accounted for, and the converted fleet passing every other test. Also on aged fleets from Buggy Boy's bench (300-step voyages with trades, renames, namesakes, deaths, strangers and New Journeys), with its ledger (LedgerT) run before and after and compared; the longest path checked against the budget (§3.1); heromedel's own logs as a real-world check of the log conversion, with his permission, kept in a scratchpad and never in the repo.
+25. **MigT**: a 5.x world (from WorldT, aged by the other tests) converted; every ship, crew member, item and log entry accounted for, and the converted fleet passing every other test. Also on aged fleets from Buggy Boy's bench (300-step voyages with trades, renames, namesakes, deaths, strangers and New Journeys), with its ledger (LedgerT) run before and after and compared; the longest path checked against the budget (§3.1); heromedel's own logs as a real-world check of the log conversion, with his permission, kept in a scratchpad and never in the repo. _Removed after 5.98 (heromedel), with LogConvT, SmallT and KillT: they passed for the conversion, which each player does once; the converter is frozen._
 25a. **The kill test** (Buggy Boy's bench): the station in its own process, as LinkT runs one, killed at random moments during a Cargo Bay save, a trade and an expedition's return; reopened, the ledger finds every ship, crew member and item exactly once.
 26. Every harness test moves to the new storage; the tests that write side files by name write through the stores.
 27. **LinkT** between a 5.x and a 6.0 station: refused plainly. Between two 6.0 stations: every trade kind. _5.90: not done as written, for heromedel to decide: `Session.PROTOCOL` was not raised, because a 5.x station takes a 6.0 ship package as before (it leaves out the crew files it doesn't know) and a 6.0 station takes a 5.x one (no crew files to take in): neither trades wrongly, so CLAUDE.md's rule says no bump. LinkT keeps testing every trade kind between two stations of this version._ _5.98, settled (heromedel: no bump, "unless it doesn't know how to accept it"): ships traded each way between 5.98 and a real 5.61 station (its jar, from `main`), by package: the ship, her crew, her trade mark and her original owner came through every hop, and each side ignored the files it didn't know._
@@ -260,7 +260,7 @@ _5.93: the prose logs are no longer written: history.log, the master log (its da
 ### Phase 7: 6.00
 
 29. CLAUDE.md, ROADMAP, CONCERNS (concerns 1 and 3 closed, 2 and 4 rewritten), the docs on the new layout.
-30. One version, 6.00, merged with every branch (§5). _heromedel, 5.98: from 6.00 the harness no longer runs KillT (its line comes out of `run.sh`; the test stays in the folder)._
+30. One version, 6.00, merged with every branch (§5). _heromedel, 5.98: KillT removed from the harness (after 5.98, not waiting for 6.00)._
 
 ## 5. Branches and merging
 

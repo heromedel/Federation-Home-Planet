@@ -28,8 +28,8 @@ All built. What remains is testing in real play and bug checks.
 The 6.0 overhaul (storage, logs and code rebuilt; `docs/OVERHAUL-6.md`) is built through 5.97: what is left before 6.00 is listed
 in its "Where it stands" note (McCarthy's words into `lore/`, heromedel's call on the protocol, the docs' final pass; Buggy Boy's
 kill test was done at 5.95). No 6.00 until every step is done (heromedel).
-After the 6.0 conversion the kill test (KillT) is no longer run with the harness: it passed for 6.0, and there's no need to
-keep checking every stop (heromedel, 5.98).
+The kill test (KillT) and the old-fleet conversion's tests are removed from the harness (heromedel, after 5.98): they passed
+for 6.0, and the conversion runs once per player, so running them again only cost time. The converter is frozen meanwhile.
 
 The code that brings a fleet from before 6.0 across lives in one package, `homeplanet.convert` (5.97), so that it can be removed
 in a future build once no one plays a fleet from before 6.0 (heromedel, 5.97). When is heromedel's call; after it, such a fleet
