@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The station log's human lines (the second line of every entry in logs/events.log), by event kind. {field} fills in a
+     value from the entry's machine line; an entry with when="field=value" is used only when the event matches, and the
+     first match wins. An event with no entry here keeps the words the station's code gives it. -->
+<lore>
+	<entry kind="CREW_FILES" when="what=converted">Every crew member's record was given a file of their own.</entry>
+	<entry kind="HOLD_FILE" when="what=converted">The Cargo Hold's inventory was written up in a new ledger.</entry>
+	<entry kind="EXPEDITION_FILES" when="what=moved">The expeditions office, the infirmary and the captives' records were filed in rooms of their own.</entry>
+	<entry kind="SMALL_FILES" when="what=moved">The station's records were tidied into one file for each concern.</entry>
+</lore>
