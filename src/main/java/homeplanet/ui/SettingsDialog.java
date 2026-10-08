@@ -224,6 +224,7 @@ public class SettingsDialog extends JDialog {
 			}
 		}), next(c));
 		JPanel openRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		openRow.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0)); // a line's space between changing the folders and opening them (heromedel, 6.07)
 		JButton openSaves = new JButton("Open saves folder");
 		openSaves.setToolTipText("Open the saves folder in Windows Explorer");
 		openSaves.addActionListener(new ActionListener() {

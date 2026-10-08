@@ -27,5 +27,5 @@ Status: done (with the version), open, or not for the station (jokes, questions 
 | 10/7 17:14 | 5.94 | Lore, Credits and Licence on a new line under "Designed and Produced by heromedel" | done 6.02 |
 | 10/7 17:15 | 5.94 | Docking and boarding feel slow | done 6.01; 6.02: the check for a running FTL is Windows' own list (not tasklist), and the button answers at once |
 | 10/7 23:18 | 5.94 | The Crew Log's drop-down with the same skill-mastery icons as the expedition list | done 6.02 |
-| 10/8 02:51 | 6.04 | Switching careers: a temporary pop-up saying it's switching, then all pop-ups closed | **open** |
-| 10/8 02:53 | 6.04 | An empty line between the folders' Change rows and the Open buttons (Settings > Folders) | **open** |
+| 10/8 02:51 | 6.04 | Switching careers: a temporary pop-up saying it's switching, then all pop-ups closed | done 6.07 |
+| 10/8 02:53 | 6.04 | An empty line between the folders' Change rows and the Open buttons (Settings > Folders) | done 6.07 |
