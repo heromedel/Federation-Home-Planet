@@ -22,7 +22,7 @@ Status: done (with the version), open, or not for the station (jokes, questions 
 | 10/7 04:42 | 5.70 | An augment shipped home: a Delete button; a setting to turn it off; a crew member's name as sender | setting done 5.10; Delete and the sender's name **open** |
 | 10/7 04:47 | 5.70 | The Captain's Log shows a shipped-home letter's {name} and {item} unfilled, out of order; the debug log copied to the clipboard without asking | **open** (a bug: the log entry is written before the letter's words are filled in) |
 | 10/7 04:50 | 5.70 | Expedition letters should have a Claim button | **open** |
-| 10/7 14:27 | 5.80 | The Ballistaphobia letter says the missile tubes are as full as at launch, after the missiles were sold | **open** |
+| 10/7 14:27 | 5.80 | The Ballistaphobia letter says the missile tubes are as full as at launch, after the missiles were sold | **open: for McCarthy** (the words, heromedel) |
 | 10/7 15:28 | 5.80 | Keeping a rescued ship after a victory: ask about her difficulty; a setting "Rescued Ships after Victory moved to Hard difficulty", locked on in Hard Immersive Mode | **open** |
 | 10/7 17:14 | 5.94 | Lore, Credits and Licence on a new line under "Designed and Produced by heromedel" | **open** |
 | 10/7 17:15 | 5.94 | Docking and boarding feel slow | done 6.01 |
