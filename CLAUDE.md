@@ -124,6 +124,10 @@ and the harness reads the station log and a voyage log from events with `Setup.s
 `harness2/work/` (ignored). The converter tests (ConvT, StoT) run only when old Homeworld saves and program
 folder are passed as the 2nd and 3rd arguments.
 
+From 6.00 on, the harness doesn't run KillT, the kill test that stops the station before every file it writes (heromedel,
+5.98: it passed for the 6.0 conversion, so there's no need to keep checking every stop). Its line comes out of `run.sh` in
+the 6.00 version; KillT and KillPeer stay in the folder.
+
 The one exception to running the full harness: small UI or text changes (a button, a message, a tooltip) need only the
 build, plus a screenshot or the one test that covers it.
 

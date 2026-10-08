@@ -260,7 +260,7 @@ _5.93: the prose logs are no longer written: history.log, the master log (its da
 ### Phase 7: 6.00
 
 29. CLAUDE.md, ROADMAP, CONCERNS (concerns 1 and 3 closed, 2 and 4 rewritten), the docs on the new layout.
-30. One version, 6.00, merged with every branch (§5).
+30. One version, 6.00, merged with every branch (§5). _heromedel, 5.98: from 6.00 the harness no longer runs KillT (its line comes out of `run.sh`; the test stays in the folder)._
 
 ## 5. Branches and merging
 
