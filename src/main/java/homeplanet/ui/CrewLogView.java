@@ -79,6 +79,9 @@ final class CrewLogView extends JPanel {
 			for (Member m : e.getValue()) { pick.addItem(m); if (m.id == select || chosen == null && select < 0) chosen = m; }
 		}
 		pick.setRenderer(new DefaultListCellRenderer() {
+			// the list's crew carry their skill marks on the right, as the expedition picker shows them (heromedel, 6.02)
+			private final javax.swing.JPanel row = new javax.swing.JPanel(new java.awt.BorderLayout(10, 0));
+			private final JLabel marks = new JLabel();
 			@Override public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected, boolean focus) {
 				if (value instanceof Section) {
 					JLabel l = (JLabel) super.getListCellRendererComponent(list, "  " + value, index, false, false);
@@ -91,7 +94,17 @@ final class CrewLogView extends JPanel {
 				JLabel l = (JLabel) super.getListCellRendererComponent(list, m == null ? "" : "      " + m.name + " (" + m.raceTitle() + ")", index, selected, focus);
 				CrewState c = m == null ? null : m.crew();
 				l.setIcon(c == null || index < 0 ? null : IconFactory.crewIcon(c));
-				return l;
+				if (c == null || index < 0) return l; // the closed box: the name alone
+				javax.swing.Icon skill = IconFactory.skillMarks(homeplanet.model.Crew.skillLevels(c), 12);
+				if (skill == null) return l;
+				marks.setIcon(skill);
+				row.removeAll();
+				row.add(l, java.awt.BorderLayout.CENTER);
+				row.add(marks, java.awt.BorderLayout.EAST);
+				row.setOpaque(true);
+				row.setBackground(l.getBackground());
+				row.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 4));
+				return row;
 			}
 		});
 		pick.setMaximumRowCount(20);

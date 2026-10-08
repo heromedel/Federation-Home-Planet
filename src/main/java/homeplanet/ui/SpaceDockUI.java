@@ -482,7 +482,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			if (c != 0 && c != 1) { deferredOffers.add(n.offer.id); return; }
 			homeplanet.vault.Vault.FinalBattle f = homeplanet.parser.FinalVictory.offer(n.offer.id);
 			if (f == null) return; // settled meanwhile
-			String what = c == 0 ? homeplanet.parser.FinalVictory.keep(f) : homeplanet.parser.FinalVictory.museum(f);
+			net.blerf.ftl.constants.Difficulty d = null;
+			if (c == 0 && (d = keptDifficulty(null, f)) == null) { deferredOffers.add(n.offer.id); return; }
+			String what = c == 0 ? homeplanet.parser.FinalVictory.keep(f, d) : homeplanet.parser.FinalVictory.museum(f);
 			JOptionPane.showMessageDialog(null, what, n.title, JOptionPane.INFORMATION_MESSAGE);
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not do that:\n" + e.getMessage());
@@ -490,6 +492,22 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			askingOffers.remove(n.offer.id);
 		}
 		init();
+	}
+
+	/**
+	 * Keeping a rescued ship: the difficulty of her next journey (heromedel, 6.02), asked unless Rescued Ships after
+	 * Victory moved to Hard difficulty is on. Null if the player cancels (the offer stays open).
+	 */
+	static net.blerf.ftl.constants.Difficulty keptDifficulty(java.awt.Component parent, homeplanet.vault.Vault.FinalBattle f) throws IOException {
+		if (homeplanet.parser.FinalVictory.toHard()) return net.blerf.ftl.constants.Difficulty.HARD;
+		net.blerf.ftl.constants.Difficulty was = HomePlanet.savedGameParser.readSavedGame(f.copy).getDifficulty();
+		net.blerf.ftl.constants.Difficulty[] diffs = {net.blerf.ftl.constants.Difficulty.EASY, net.blerf.ftl.constants.Difficulty.NORMAL, net.blerf.ftl.constants.Difficulty.HARD};
+		Object[] options = {"Easy", "Normal", "Hard", "Cancel"};
+		int now = was == null ? 1 : was.ordinal();
+		int c = JOptionPane.showOptionDialog(parent, f.name + " will set out once more from the first sector, with the rebel fleet in pursuit.\n"
+				+ "Her last journey was on " + options[now] + ". How dangerous will her next one be?", "Keep " + f.name, JOptionPane.DEFAULT_OPTION,
+				JOptionPane.QUESTION_MESSAGE, null, options, options[now]);
+		return c >= 0 && c <= 2 ? diffs[c] : null;
 	}
 
 	private boolean askingAboutStranger = false;
@@ -915,8 +933,19 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		JButton o = (JButton) ae.getSource();
 		if (boardButtons.containsKey(o)) {
 			Ship ship = boardButtons.get(o);
-			if (ship.isBoarded()) dock();
-			else board(ship);
+			String was = o.getText();
+			java.awt.Cursor cursorWas = o.getCursor();
+			busy(o, ship.isBoarded() ? "Docking..." : "Boarding...");
+			try {
+				if (ship.isBoarded()) dock();
+				else board(ship);
+			} finally { // the button is usually rebuilt by then; if not (FTL running, or a failure), it's itself again
+				o.setText(was);
+				if (o instanceof FtlButton) ((FtlButton) o).setHeld(false);
+				o.setCursor(cursorWas);
+				o.repaint();
+				setCursor(null);
+			}
 		} else if (o == settingsBtn) {
 			SettingsDialog.open(this);
 			init(); // rules or the saves folder may have changed
@@ -1563,9 +1592,23 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		JOptionPane.showMessageDialog(null, back.name + " has been recovered. She waits at the Space Dock.", "Recover a Ship", JOptionPane.INFORMATION_MESSAGE);
 	}
 
+	/**
+	 * The clicked Board or Dock answers at once (heromedel, 6.02: "it still feels like its taking 1-2 full seconds"):
+	 * its new word and the wait cursor painted now, before the work holds the screen.
+	 */
+	private void busy(JButton b, String text) {
+		java.awt.Cursor wait = java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR);
+		setCursor(wait);
+		b.setCursor(wait);
+		if (FtlFont.BODY.render(text.toUpperCase(), Color.WHITE).getWidth() + 8 <= b.getWidth()) b.setText(text); // the small cards' buttons are too narrow: held down alone
+		if (b instanceof FtlButton) ((FtlButton) b).setHeld(true);
+		b.paintImmediately(0, 0, b.getWidth(), b.getHeight());
+	}
+
 	/** Takes command of a docked ship (docking the boarded one first). True if she was boarded. */
 	public boolean board(Ship ship) {
 		if (ship == null || ship.isBoarded()) return false;
+		long g0 = System.nanoTime();
 		if (!GameGuard.allows(this, "board a ship")) return false;
 		long t0 = System.nanoTime();
 		try {
@@ -1577,13 +1620,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		long t1 = System.nanoTime();
 		init();
-		timed("Board", ship.name, t0, t1);
+		timed("Board", ship.name, g0, t0, t1);
 		return true;
 	}
 	/** Docks the boarded ship. True if she was docked. */
 	public boolean dock() {
 		Ship b = Vault.get().boarded();
 		if (b == null) return false;
+		long g0 = System.nanoTime();
 		if (!GameGuard.allows(this, "dock her")) return false;
 		long t0 = System.nanoTime();
 		try {
@@ -1595,13 +1639,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		long t1 = System.nanoTime();
 		init();
-		timed("Dock", b.name, t0, t1);
+		timed("Dock", b.name, g0, t0, t1);
 		return true;
 	}
-	/** Where a Board's or Dock's time went, in the debug log (6.01): the move, the look after it, and the Space Dock redrawn. */
-	private void timed(String what, String name, long t0, long t1) {
-		long move = (t1 - t0) / 1000000, all = (System.nanoTime() - t0) / 1000000;
-		log.debug("{} {}: {} ms in all (the move {} ms, the look {} ms, the Space Dock redrawn {} ms)", what, name, all, move, lastLookMs, Math.max(0, all - move - lastLookMs));
+	/** Where a Board's or Dock's time went, in the debug log (6.01): the check that FTL isn't running (6.02), the move, the look after it, and the Space Dock redrawn. */
+	private void timed(String what, String name, long g0, long t0, long t1) {
+		long check = (t0 - g0) / 1000000, move = (t1 - t0) / 1000000, all = (System.nanoTime() - g0) / 1000000;
+		log.debug("{} {}: {} ms in all (the FTL check {} ms, the move {} ms, the look {} ms, the Space Dock redrawn {} ms)", what, name, all, check, move, lastLookMs,
+				Math.max(0, all - check - move - lastLookMs));
 	}
 
 	/** Shows the ship report, with the option to rename the ship. */

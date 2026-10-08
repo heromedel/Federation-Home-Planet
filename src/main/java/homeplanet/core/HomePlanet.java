@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.01";
+	public static final String APP_VERSION = "6.02";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -108,6 +108,8 @@ public class HomePlanet {
 	public static int reputationUse = 1;
 	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
+	/** Rescued Ships after Victory moved to Hard difficulty (heromedel, 6.02): kept without asking, on Hard. Locked on in a Hard career (see parser.FinalVictory.toHard). */
+	public static boolean rescuedToHard = false;
 	// ---- the rules in force: Sandbox Mode's own (the fields above, as Settings has them), or an Immersive career's, fixed ----
 	// Immersive Mode never writes over the fields: each rule is read through its method, which answers for the mode in use.
 
@@ -191,6 +193,7 @@ public class HomePlanet {
 		try { reputationUse = Math.max(1, Math.min(3, Integer.parseInt(config.getProperty("reputation_use", "1").trim()))); } catch (NumberFormatException e) { reputationUse = 1; }
 		try { homeplanet.parser.PlayerRank.setting = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty(homeplanet.parser.PlayerRank.CFG, "0").trim()))); } catch (NumberFormatException e) { homeplanet.parser.PlayerRank.setting = 0; }
 		finalVictory = config.getProperty("final_victory", "nothing");
+		rescuedToHard = Boolean.parseBoolean(config.getProperty("rescued_to_hard", "false"));
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 
 		// FTL's data and saves: the folders kept in the cfg, else the ones found and confirmed, else the ones chosen
@@ -306,6 +309,7 @@ public class HomePlanet {
 					frame.setVisible(true);
 					Music.refresh();
 					SaveWatcher.start(); // FTL's writes to continue.sav, for final victories
+					GameGuard.warm(); // the first Board or Dock answers as fast as the rest
 				} catch (Exception e) {
 					log.error("Exception while creating the main window.", e);
 					showErrorDialog("Communication with The Home Planet Station could not be opened:\n" + e);
@@ -385,6 +389,7 @@ public class HomePlanet {
 		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
 		config.setProperty("immersive_slot", Vault.immersiveSlot);
 		config.setProperty("final_victory", finalVictory);
+		config.setProperty("rescued_to_hard", Boolean.toString(rescuedToHard));
 		config.setProperty("immersive_notifications", Boolean.toString(immersiveNotifications));
 		config.setProperty("immersive_ship_trading", Boolean.toString(immersiveShipTrading));
 		config.setProperty("immersive_any_level", Boolean.toString(immersiveAnyLevel));

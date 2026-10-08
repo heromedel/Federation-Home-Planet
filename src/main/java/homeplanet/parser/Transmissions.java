@@ -371,7 +371,7 @@ public final class Transmissions {
 			for (String a : UnlockGrants.newAchievements(u)) send(all, sent, "ach:" + a, achTemplate(a, CREW_CARE.contains(a) ? boardedShip(v) : null), rank, null);
 		}
 		for (homeplanet.vault.Overflow.Parcel x : homeplanet.vault.Overflow.take(v)) { // augments she had no room for, crated up by her crew
-			if (homeplanet.core.Economy.augmentsHome()) shipped(all, sent, x, rank);
+			if (homeplanet.core.Economy.augmentsHome()) shipped(v, all, sent, x, rank);
 			else HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career", null, overflow("lost", x));
 		}
 		if (HomePlanet.career() && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
@@ -521,6 +521,8 @@ public final class Transmissions {
 	}
 	/** A message from another commander (Long Range Comm.): archived or deleted, as the commander likes, and answered. */
 	public static boolean isNote(Message m) { return m.key.startsWith("note:"); }
+	/** An augment shipped home by a ship's crew (6.02: these can be deleted, the augment with them). */
+	public static boolean isShipped(Message m) { return m.key.startsWith("shipped:"); }
 	/** Where to reply to a commander's message: their station, host and port (0: their frequencies were closed); null if it isn't one. */
 	public static String[] noteFrom(Message m) {
 		if (!isNote(m)) return null;
@@ -601,7 +603,9 @@ public final class Transmissions {
 	 * Long Range Comm. mail (another commander's message, a trade's receipt): sent once per key. It always reaches
 	 * the inbox: the Immersive messages setting is about The Federation Home Planet's own letters, not a commander's mail.
 	 */
-	public static synchronized void deliver(String key, String from, String subject, String body) {
+	public static synchronized void deliver(String key, String from, String subject, String body) { deliver(key, from, subject, body, ""); }
+	/** As above, with a reward to claim ("scrap 25, item X": what an expedition brought back, 6.02). */
+	public static synchronized void deliver(String key, String from, String subject, String body, String reward) {
 		if (!Vault.isOpen()) return;
 		List<Message> all = load();
 		for (Message x : all) if (x.key.equals(key)) return;
@@ -611,25 +615,40 @@ public final class Transmissions {
 		m.from = from;
 		m.subject = subject;
 		m.body = body;
-		m.reward = "";
+		m.reward = reward == null ? "" : reward;
 		all.add(0, m);
 		try {
 			save(all);
-			HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "delivered"));
+			HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "delivered").put("reward", m.reward.isEmpty() ? null : m.reward));
 		} catch (IOException e) {
 			log.warn("Could not deliver {}: {}", key, e.toString());
 		}
 	}
-	/** An augment her crew shipped home: the "shipped" letter, with the augment to claim. */
-	private static void shipped(List<Message> all, Set<String> sent, homeplanet.vault.Overflow.Parcel x, String rank) {
-		send(all, sent, x.key, "shipped", rank, null, x.ship);
-		if (all.isEmpty() || !all.get(0).key.equals(x.key)) return; // no letter written for it
-		Message m = all.get(0);
-		String item = Items.title(x.augment);
-		m.from = ShipNames.fill(m.from, "name", x.ship); // "The crew of the {name}": never "the The" (5.31)
-		m.subject = m.subject.replace("{item}", item);
-		m.body = m.body.replace("{item}", item);
-		m.reward = "item " + x.augment;
+	/**
+	 * An augment her crew shipped home: the "shipped" letter, with the augment to claim, signed by one of her crew and the
+	 * rest (heromedel, 6.02: "From Gracie and the rest of the crew"). Filled in before it's logged (6.02: the Captain's Log
+	 * read "{name}" and "{item}").
+	 */
+	private static void shipped(final Vault v, List<Message> all, Set<String> sent, final homeplanet.vault.Overflow.Parcel x, String rank) {
+		send(all, sent, x.key, "shipped", rank, null, x.ship, null, new java.util.function.Consumer<Message>() { public void accept(Message m) {
+			String item = Items.title(x.augment);
+			String one = crewMemberOf(v, x.ship, x.key);
+			m.from = one != null ? one + " and the rest of the crew" : ShipNames.fill(m.from, "name", x.ship); // "The crew of the {name}": never "the The" (5.31)
+			m.subject = m.subject.replace("{item}", item);
+			m.body = m.body.replace("{item}", item);
+			m.reward = "item " + x.augment;
+		} });
+	}
+	/** One of her own crew by name, the same one for the same parcel; null if she or her crew can't be read. */
+	private static String crewMemberOf(Vault v, String shipName, String key) {
+		Ship s = v.boarded() != null && shipName.equals(v.boarded().name) ? v.boarded() : null;
+		if (s == null) for (Ship x : v.all()) if (shipName.equals(x.name) && !x.isStorage()) { s = x; break; }
+		net.blerf.ftl.parser.SavedGameParser.SavedGameState gs = s == null ? null : s.save();
+		if (gs == null) return null;
+		List<CrewState> crew = SaveHelper.getOwnCrew(gs.getPlayerShip());
+		if (crew.isEmpty()) return null;
+		String name = crew.get(new java.util.Random(key.hashCode()).nextInt(crew.size())).getName();
+		return name == null || name.trim().isEmpty() ? null : name.trim();
 	}
 	/** Without the inbox: augments shipped home go straight to the Cargo Hold (or are lost, as the career has it). */
 	private static void shipHome(Vault v) {
@@ -671,6 +690,10 @@ public final class Transmissions {
 	}
 	/** As above, for a commission order: {race} and {class} from the ship's base id. */
 	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship, String name, String base) {
+		send(all, sent, key, templateKey, rank, ship, name, base, null);
+	}
+	/** As above; {@code finish} fills in what's particular to this letter before it's kept and logged. */
+	private static void send(List<Message> all, Set<String> sent, String key, String templateKey, String rank, String ship, String name, String base, java.util.function.Consumer<Message> finish) {
 		if (sent.contains(key)) return;
 		Template t = templates().get(templateKey);
 		if (t == null) return; // no message written for it
@@ -688,6 +711,7 @@ public final class Transmissions {
 		m.reward = t.reward;
 		m.replies = t.replies;
 		m.cost = t.cost;
+		if (finish != null) finish.accept(m);
 		all.add(0, m); // newest first
 		sent.add(key);
 		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "sent").put("reward", m.reward == null || m.reward.isEmpty() ? null : m.reward));
@@ -732,7 +756,10 @@ public final class Transmissions {
 		if (kind.equals("crew")) {
 			return "a " + homeplanet.model.Crew.racePeople(v) + " crew volunteer";
 		}
-		if (kind.equals("system")) return "a " + Items.systemTitle(v) + " system";
+		if (kind.equals("system")) { // "system ID", or "system ID level broken" (an expedition's part, 6.02)
+			String[] s = v.trim().split("\\s+");
+			return "a " + Items.systemTitle(s[0]) + " system" + (s.length > 2 && !"0".equals(s[2]) ? ", damaged" : "");
+		}
 		if (kind.equals("choice")) {
 			List<String> names = new ArrayList<String>();
 			for (String o : v.split("\\|")) names.add(describe(o));
@@ -797,9 +824,11 @@ public final class Transmissions {
 				if (!SaveHelper.placeCrew(s, crew, true)) throw new IOException("The Cargo Hold has no room for another crew member");
 				s.getCrewList().add(crew);
 			} else if (kind.equals("system")) {
-				SystemType t = SystemType.findById(val);
+				String[] sv = val.split("\\s+");
+				SystemType t = SystemType.findById(sv[0]);
 				if (t == null) throw new IOException("Unknown system in the reward: " + val);
-				systems.add(t == SystemType.CLONEBAY ? val : val + " 1");
+				if (sv.length > 1) systems.add(val); // a level and broken bars of its own (an expedition's part, 6.02): as the stored systems keep it
+				else systems.add(t == SystemType.CLONEBAY ? val : val + " 1");
 			} else {
 				throw new IOException("Unknown reward: " + p);
 			}

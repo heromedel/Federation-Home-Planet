@@ -9,6 +9,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.blerf.ftl.constants.Difficulty;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
 import homeplanet.core.Event;
@@ -171,12 +172,21 @@ public final class FinalVictory {
 		Vault.FinalBattle f = Vault.get().finalBattle(id);
 		return f != null && "offered".equals(f.outcome) ? f : null;
 	}
-	/** Keep her: she docks, ready for a new journey. Returns what came of it, in words. */
-	public static String keep(Vault.FinalBattle f) throws IOException {
-		Ship s = Vault.get().bringHome(f);
-		Museum.kept(Vault.get(), f.id);
-		return s.name + " is docked at the Space Dock, ready for her next journey.";
+	/** Rescued Ships after Victory moved to Hard difficulty: the setting, or a Hard career's rule (locked on there). */
+	public static boolean toHard() { return toHardLocked() || HomePlanet.rescuedToHard; }
+	/** An Immersive career on Hard: rescued ships go to Hard, not a choice in Settings. */
+	public static boolean toHardLocked() {
+		CareerRules r = CareerRules.current();
+		return r != null && CareerRules.HARD.equals(r.name);
 	}
+	/** Keep her: she docks, ready for a new journey at this difficulty (null: the one she won on). Returns what came of it, in words. */
+	public static String keep(Vault.FinalBattle f, Difficulty difficulty) throws IOException {
+		Ship s = Vault.get().bringHome(f, difficulty);
+		Museum.kept(Vault.get(), f.id);
+		return s.name + " is docked at the Space Dock, ready for her next journey" + (difficulty == null ? "." : ", on " + title(difficulty) + ".");
+	}
+	/** "Easy", "Normal" or "Hard". */
+	public static String title(Difficulty d) { return d == null ? "" : d.toString().substring(0, 1) + d.toString().substring(1).toLowerCase(); }
 	/** The museum's offer: its price (her value, or half on harder careers) to the Cargo Hold, and she goes to the museum. Returns what came of it, in words. */
 	/** An event about the ship of a final battle (she may have left the fleet). */
 	private static Event battle(String kind, Vault.FinalBattle f) { return Event.of(kind).put("ship", f.name + "." + f.id).put("ship_name", f.name).put("ship_id", f.id); }

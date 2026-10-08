@@ -982,12 +982,13 @@ public final class Vault {
 	}
 	/**
 	 * Brings a victorious ship home from her copy: docked, her journey reset as a New Journey would (the flagship and
-	 * its fleet gone from her charts), her crew, cargo and damage as they were.
+	 * its fleet gone from her charts), her crew, cargo and damage as they were. Her next journey is at this difficulty
+	 * (null: the one she won on).
 	 */
-	public synchronized Ship bringHome(FinalBattle f) throws IOException {
+	public synchronized Ship bringHome(FinalBattle f, net.blerf.ftl.constants.Difficulty difficulty) throws IOException {
 		if (byId(f.id) != null) throw new IOException(f.name + " is already in the fleet");
 		SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(f.copy);
-		SaveHelper.startJourney(gs, gs.getDifficulty());
+		SaveHelper.startJourney(gs, difficulty != null ? difficulty : gs.getDifficulty());
 		java.util.Iterator<net.blerf.ftl.parser.SavedGameParser.CrewState> it = gs.getPlayerShip().getCrewList().iterator();
 		while (it.hasNext()) if (!SaveHelper.isOwnCrew(it.next())) it.remove(); // boarders and the like stay behind
 		Ship s = new Ship(f.id, gs.getPlayerShipName(), Ship.State.DOCKED, gs.isDLCEnabled());
@@ -999,7 +1000,9 @@ public final class Vault {
 		ships.add(s);
 		s.fresh = position(gs); // she's back at The Home Planet Station
 		VoyageLog.baseline(this, s, gs);
-		VoyageLog.note(this, s, "Rescued after the final engagement: back at The Home Planet Station, ready for a new journey");
+		String rescued = "Rescued after the final engagement: back at The Home Planet Station, ready for a new journey";
+		VoyageLog.note(this, s, homeplanet.core.Event.of("VOYAGE_NOTE").put("text", rescued).put("difficulty", gs.getDifficulty() == null ? null : gs.getDifficulty().toString().toLowerCase())
+				.put("difficulty_chosen", difficulty != null).human(rescued));
 		homeplanet.parser.Museum.setOut(this, s, false);
 		try {
 			saveManifest();

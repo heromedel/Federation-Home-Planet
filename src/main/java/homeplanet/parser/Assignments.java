@@ -876,7 +876,12 @@ public final class Assignments {
 		Ship st = v.storage();
 		Vault.Copy c = v.readCopy(st);
 		ShipState hold = c.save.getPlayerShip();
-		hold.setScrapAmt(hold.getScrapAmt() + r.scrap);
+		// what they brought back comes with their letter, to claim like anything else shipped home (heromedel, 6.02); with no
+		// inbox there's no letter, and it goes straight into the Cargo Hold as before
+		boolean byLetter = HomePlanet.immersiveNotifications();
+		List<String> brought = new ArrayList<String>();
+		if (!byLetter) hold.setScrapAmt(hold.getScrapAmt() + r.scrap);
+		else if (r.scrap > 0) brought.add("scrap " + r.scrap);
 		List<CrewState> hurt = new ArrayList<CrewState>(), taken = new ArrayList<CrewState>();
 		int skill = jobSkill(r.job);
 		for (Fate f : r.fates) {
@@ -890,7 +895,7 @@ public final class Assignments {
 			if (skill >= 0 && BAND_XP[f.band] > 0) Skills.add(m, skill, BAND_XP[f.band]);
 			if (!SaveHelper.placeCrew(hold, m, true)) throw new IOException("The Cargo Hold has no room for " + m.getName() + "; the detail waits");
 			hold.getCrewList().add(m);
-			if (f.item != null) give(hold, f.item);
+			if (f.item != null) { if (byLetter) brought.add(reward(f.item)); else give(hold, f.item); }
 		}
 		List<String> stored = new ArrayList<String>();
 		File prizeFile = null;
@@ -912,7 +917,12 @@ public final class Assignments {
 				p.setProperty("pending." + pendingIndex + ".file", "assignments/" + prizeFile.getName());
 			} catch (Exception e) { log.warn("The hijacked ship could not be built: {}", e.toString()); r.prize = "part"; }
 		}
-		if ("part".equals(r.prize)) { r.prizeDetail = part(stored, v); }
+		if ("part".equals(r.prize)) {
+			String id = partId();
+			r.prizeDetail = homeplanet.model.Items.systemTitle(id);
+			if (byLetter) brought.add("system " + homeplanet.ui.SystemsPanel.line(id, 1, 1));
+			else part(stored, v, id);
+		}
 		if ("recruit".equals(r.prize)) {
 			CrewState n = recruit(new Random());
 			if (n == null) r.prize = null;
@@ -956,7 +966,7 @@ public final class Assignments {
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
 				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead))
 				+ fatesNamed(r, true) + fatesNamed(r, false), null, back);
-		if (HomePlanet.immersiveNotifications()) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text);
+		if (byLetter) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text, String.join(", ", brought));
 		return new Report(r.sector, text, a.names(), faces);
 	}
 	/** "; taken: …" (captive) or "; to the infirmary: …" for the station log, or nothing. */
@@ -968,6 +978,13 @@ public final class Assignments {
 	/** Who holds a captive taken in this sector. */
 	static String sectorCaptors(String sector) {
 		return "rebel".equals(sector) ? "the rebels" : "mantis".equals(sector) ? "a Mantis clan" : "pirate".equals(sector) ? "pirates" : "slavers";
+	}
+	/** A crew member's find as a letter's reward: "item ID", or "fuel N" / "missiles N" / "parts N". */
+	private static String reward(String item) {
+		int colon = item.indexOf(':');
+		if (colon < 0) return "item " + item;
+		String kind = item.substring(0, colon), n = item.substring(colon + 1);
+		return ("fuel".equals(kind) || "missiles".equals(kind) ? kind : "parts") + " " + n;
 	}
 	private static void give(ShipState hold, String item) {
 		int colon = item.indexOf(':');
@@ -983,12 +1000,15 @@ public final class Assignments {
 		else if ("missiles".equals(kind)) hold.setMissilesAmt(hold.getMissilesAmt() + n);
 		else hold.setDronePartsAmt(hold.getDronePartsAmt() + n);
 	}
-	/** A system for the stored systems (a Junkyard-style part, at level 1 with a bar broken): the lines to write, and its title. */
-	private static String part(List<String> lines, Vault v) throws IOException {
+	/** A system a part can be (a Junkyard-style part): any but artillery and the Clone Bay. */
+	private static String partId() {
 		List<String> kinds = new ArrayList<String>();
 		for (net.blerf.ftl.parser.SavedGameParser.SystemType t : net.blerf.ftl.parser.SavedGameParser.SystemType.values())
 			if (t != net.blerf.ftl.parser.SavedGameParser.SystemType.ARTILLERY && t != net.blerf.ftl.parser.SavedGameParser.SystemType.CLONEBAY && DataManager.get().getSystem(t.getId()) != null) kinds.add(t.getId());
-		String id = kinds.get(new Random().nextInt(kinds.size()));
+		return kinds.get(new Random().nextInt(kinds.size()));
+	}
+	/** The part for the stored systems, at level 1 with a bar broken: the lines to write, and its title. */
+	private static String part(List<String> lines, Vault v, String id) throws IOException {
 		File f = v.systemsFile();
 		if (f.isFile()) lines.addAll(java.nio.file.Files.readAllLines(f.toPath(), StandardCharsets.UTF_8));
 		else lines.add(homeplanet.ui.SystemsPanel.HEADER);

@@ -70,7 +70,7 @@ count), `beacons_jumped` (since the last look), `at_store`.
 | `REACTOR_UPGRADED`, `REACTOR_REDUCED` | `level`, `was` | "Reactor upgraded to 12" |
 | `FLAGSHIP_ALONGSIDE` | `battle` (1 to 3) | "The Rebel Flagship is alongside (battle 2)" |
 | `FLAGSHIP_WITHDREW` | `battle`, `next` | "The Rebel Flagship withdrew after battle 1" |
-| `VOYAGE_NOTE` | `text` | A line of the station's own in her log: commissioned, rescued after the final engagement, time spent on work at a store. |
+| `VOYAGE_NOTE` | `text`; `difficulty`, `difficulty_chosen` (rescued, 6.02) | A line of the station's own in her log: commissioned, rescued after the final engagement (the difficulty of her next journey, and whether it was chosen or kept), time spent on work at a store. |
 
 ## Reputation (`log=reputation`)
 

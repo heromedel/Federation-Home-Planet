@@ -102,10 +102,12 @@ public class VicT { public static void main(String[] a) throws Exception {
   Setup.chk("K: a victory with rescue chosen: an offer, with her value", n.size() == 1 && n.get(0).offer != null && n.get(0).value > 0 && n.get(0).text.contains(name) && n.get(0).text.contains(n.get(0).value + " scrap"));
   Setup.chk("K: the lore holds: the flagship withdraws", n.get(0).text.contains("withdrawn") && !n.get(0).text.toLowerCase().contains("destroyed"));
   Setup.chk("K: the offer stays open until decided", FinalVictory.settle().size() == 1 && FinalVictory.offer(id) != null);
-  String what = FinalVictory.keep(FinalVictory.offer(id));
+  String what = FinalVictory.keep(FinalVictory.offer(id), net.blerf.ftl.constants.Difficulty.HARD);
   Ship back = v.byId(id);
   SavedGameState g = back == null ? null : back.save();
   Setup.chk("K: keep her: docked under her own id, as she was kept (hull 11)", back != null && back.state == Ship.State.DOCKED && g.getPlayerShip().getHullAmt() == 11 && what.contains(name));
+  Setup.chk("K: her next journey at the difficulty chosen (6.02), and the letter says so", g.getDifficulty() == net.blerf.ftl.constants.Difficulty.HARD && what.contains("on Hard"));
+  Setup.chk("K: the setting off and no Hard career: not locked", !FinalVictory.toHard() && !FinalVictory.toHardLocked());
   Setup.chk("K: ready for a new journey: sector 1, no flagship alongside or on her way", g.getSectorNumber() == 0 && !g.isRebelFlagshipNearby() && g.getRebelFlagshipState().getPendingStage() < 3);
   Setup.chk("K: settled: no offer left, her victory kept in her history", FinalVictory.settle().isEmpty() && FinalVictory.offer(id) == null
     && kept(v, id, "victory-").size() == 1);
@@ -135,7 +137,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   List<FinalVictory.Notice> n = FinalVictory.settle();
   Transmissions.Message m = null; for (Transmissions.Message x : Transmissions.load()) if (x.key.equals("rescue:" + id)) m = x;
   Setup.chk("I: with Transmissions on, the offer goes to the inbox, not a notice", n.isEmpty() && m != null && Transmissions.isRescue(m) && !m.claimed && m.body.contains(s.name));
-  String what = FinalVictory.keep(FinalVictory.offer(Transmissions.rescueId(m)));
+  String what = FinalVictory.keep(FinalVictory.offer(Transmissions.rescueId(m)), null); // null: the difficulty she won on
   Transmissions.decided(m, what);
   m = null; for (Transmissions.Message x : Transmissions.load()) if (x.key.equals("rescue:" + id)) m = x;
   Setup.chk("I: decided in the inbox: she's docked, the message says so", v.byId(id) != null && m.claimed && m.claimedWhat.contains("docked"));

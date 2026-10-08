@@ -58,6 +58,8 @@ public class SettingsDialog extends JDialog {
 	private final javax.swing.JRadioButton[] victoryButtons = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
 	private String victoryWas = homeplanet.parser.FinalVictory.choice();
 	private final JLabel victoryHeading = new JLabel();
+	/** Rescued Ships after Victory moved to Hard difficulty (heromedel, 6.02): locked on in a Hard career. */
+	private final javax.swing.JCheckBox toHardBox = new javax.swing.JCheckBox("Rescued Ships after Victory moved to Hard difficulty");
 	private final String commanderWas = homeplanet.comm.Commander.name() == null ? "" : homeplanet.comm.Commander.name();
 	private final javax.swing.JTextField commanderField = new javax.swing.JTextField(commanderWas, 18);
 	private final JCheckBox shipTradeBox = new JCheckBox("Immersive careers: allow trading whole ships (with a career that allows it too; Sandbox fleets always may)", HomePlanet.immersiveShipTrading);
@@ -279,6 +281,25 @@ public class SettingsDialog extends JDialog {
 		placesRow.add(placeButton("Open Station Logs", "Open the station's own logs (every entry The Home Planet Station has written) in Windows Explorer",
 				"logs"));
 		body.add(placesRow, next(c));
+		// FTL's own log (heromedel, 6.02): FTL.log, in FTL's folder beside FTLGame.exe, begun afresh each time FTL starts
+		JPanel ftlRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		ftlRow.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+		JButton ftlLogs = new JButton("Open FTL Logs");
+		ftlLogs.setToolTipText("Open FTL's own folder, where FTL writes its log (FTL.log, begun afresh each time FTL starts), in Windows Explorer");
+		ftlLogs.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				File dir = game != null ? game : HomePlanet.datsPath; // the Game folder as chosen here
+				if (dir == null || !dir.isDirectory()) {
+					JOptionPane.showMessageDialog(SettingsDialog.this, "The Home Planet Station doesn't know where FTL is yet. Choose the Game folder above, then try again.", "FTL Logs", JOptionPane.INFORMATION_MESSAGE);
+					return;
+				}
+				if (!new File(dir, "FTL.log").isFile())
+					JOptionPane.showMessageDialog(SettingsDialog.this, "FTL hasn't written its log here yet: FTL.log appears in this folder once FTL has been started.", "FTL Logs", JOptionPane.INFORMATION_MESSAGE);
+				openFolder(dir);
+			}
+		});
+		ftlRow.add(ftlLogs);
+		body.add(ftlRow, next(c));
 
 		body = modsPage;
 		c = constraints();
@@ -338,6 +359,9 @@ public class SettingsDialog extends JDialog {
 				+ "it keeps her as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
 		victoryNote.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		body.add(victoryNote, next(c));
+		toHardBox.setSelected(HomePlanet.rescuedToHard);
+		body.add(toHardBox, next(c));
+		refreshVictory();
 
 		body = recordsPage;
 		c = constraints();
@@ -371,9 +395,11 @@ public class SettingsDialog extends JDialog {
 		JLabel credit = new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; Inspired By ManApart's FTL Homeworld.");
 		credit.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(credit, next(c));
-		// heromedel's line with the buttons beside it: the old single row was wider than a 1366 screen (5.31)
+		// heromedel's line, and the buttons on a line of their own beneath it (heromedel, 6.02: his words)
+		JLabel madeBy = new JLabel("Designed and Produced by heromedel");
+		madeBy.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+		body.add(madeBy, next(c));
 		JPanel about = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		about.add(new JLabel("Made by heromedel with Claude.  "));
 		JButton loreBtn = new JButton("Lore...");
 		loreBtn.setToolTipText("A transmission from the Federation Home Planet");
 		loreBtn.addActionListener(new ActionListener() {
@@ -495,6 +521,7 @@ public class SettingsDialog extends JDialog {
 			changed.add("Undocked launches: " + (videoBox.isSelected() ? "Fullscreen " + fullscreenBox.getSelectedItem() + ", Vertical Sync " + (vsyncBox.isSelected() ? "on" : "off") : "FTL as last set"));
 		rules.describeChanges(changed);
 		if (!victoryChoice().equals(victoryWas)) changed.add("After a final victory: " + victoryChoice());
+		if (!homeplanet.parser.FinalVictory.toHardLocked() && toHardBox.isSelected() != HomePlanet.rescuedToHard) changed.add("Rescued Ships after Victory moved to Hard difficulty: " + toHardBox.isSelected());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
 		final java.awt.Window frame = getOwner();
@@ -538,6 +565,7 @@ public class SettingsDialog extends JDialog {
 			try { homeplanet.parser.FinalVictory.setChoice(victoryChoice()); }
 			catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not record the choice after a final victory:\n" + e.getMessage()); }
 		}
+		if (!homeplanet.parser.FinalVictory.toHardLocked()) HomePlanet.rescuedToHard = toHardBox.isSelected();
 		HomePlanet.setDebugLogging(debugBox.isSelected());
 		homeplanet.core.Music.enabled = musicBox.isSelected();
 		homeplanet.core.Music.refresh(); // starts or stops right away
@@ -711,6 +739,11 @@ public class SettingsDialog extends JDialog {
 			victoryButtons[i].setSelected(homeplanet.parser.FinalVictory.CHOICES[i].equals(victoryWas));
 			victoryButtons[i].setEnabled(career == null); // the career's difficulty decides it
 		}
+		boolean locked = homeplanet.parser.FinalVictory.toHardLocked();
+		if (locked) toHardBox.setSelected(true);
+		else if (!toHardBox.isEnabled()) toHardBox.setSelected(HomePlanet.rescuedToHard); // unlocked again: the player's own choice
+		toHardBox.setEnabled(!locked);
+		toHardBox.setToolTipText(locked ? "A Hard career: a rescued ship always sets out on Hard" : "When you keep a rescued ship, she sets out on Hard without asking; otherwise you choose her difficulty");
 	}
 	private String victoryChoice() {
 		if (homeplanet.parser.FinalVictory.fixed() != null) return victoryWas;

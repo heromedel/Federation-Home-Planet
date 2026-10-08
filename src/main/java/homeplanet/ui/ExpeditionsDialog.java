@@ -157,6 +157,11 @@ final class ExpeditionsDialog {
 			if (i < crew.size()) box.setSelectedIndex(i + 1);
 			final CrewCard card = new CrewCard();
 			card.show(box.getSelectedItem() instanceof CrewState ? (CrewState) box.getSelectedItem() : null);
+			card.setToolTipText("Click for their report");
+			card.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+			card.addMouseListener(new java.awt.event.MouseAdapter() { // their report, as the Cargo Bay and the Space Dock open it (heromedel, 6.02)
+				@Override public void mouseClicked(java.awt.event.MouseEvent e) { if (card.c != null) CrewReport.show(card, card.c, false, new Object[] {"OK"}); }
+			});
 			picks.add(box); cards.add(card);
 			JPanel col = new JPanel(new BorderLayout(0, 8));
 			JLabel n = new JLabel("Seat " + (i + 1));

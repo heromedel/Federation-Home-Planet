@@ -370,6 +370,21 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Setup.chk("Z: and the letter is in the inbox", delivered);
   Assignments.accept(v, pend.get(0), false);
   Setup.chk("Z: answered from the letter, they're in the hold", Assignments.holdCrew(v).size() == 2 && Assignments.pendingFor(v, letterKey) == null);
+  { // what they bring back comes with the letter, claimed like anything shipped home (heromedel, 6.02)
+   a = null; Assignments.send(v, Assignments.board(v).get(0).slot, ExpT.hold(v, "human"), new Random(5));
+   a = Assignments.away(v).get(0);
+   while (v.beaconsSeen() < a.until) v.countBeacon();
+   r = Assignments.roll("civilian", a.crew, new Random(2));
+   for (Assignments.Fate f : r.fates) { f.died = false; f.captured = false; f.infirmary = false; f.band = 5; f.item = null; }
+   r.fates.get(0).item = "SCRAP_COLLECTOR"; r.scrap = 37; r.prize = null;
+   int scrapBefore = v.storageScrap();
+   rep = Assignments.bringHome(v, a, r);
+   Transmissions.Message back = null; for (Transmissions.Message m : Transmissions.load()) if (m.key.equals(Assignments.letterKey(a))) back = m;
+   Setup.chk("Z: the loot rides the letter, not yet in the hold", back != null && back.hasReward() && back.reward.contains("scrap 37") && back.reward.contains("item SCRAP_COLLECTOR")
+     && v.storageScrap() == scrapBefore);
+   Transmissions.claim(back, -1);
+   Setup.chk("Z: claimed from the letter, it's in the hold", v.storageScrap() == scrapBefore + 37);
+  }
   HomePlanet.immersiveNotifications = false;
   // the reputation, as the game scores it: the scrap a tenth, a death -10, everyone successful +2, nobody -1
   HomePlanet.reputationOn = true;

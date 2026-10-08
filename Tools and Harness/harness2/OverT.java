@@ -17,10 +17,18 @@ public class OverT {
   fly(1, false, "SCRAP_COLLECTOR", "DRONE_RECOVERY", "AUTO_COOLDOWN");
   List<Transmissions.Message> s = shipped();
   Setup.chk("O: after the jump, the one thrown away comes home by one letter (FTL writes it twice in cargo; the Burst Laser there isn't an augment)", s.size() == 1 && s.get(0).reward.equals("item SHIELD_RECHARGE")
-    && s.get(0).from.contains(v.boarded().save().getPlayerShipName()) && !s.get(0).body.contains("{") && !s.get(0).subject.contains("{"));
+    && !s.get(0).body.contains("{") && !s.get(0).subject.contains("{"));
+  Setup.chk("O: sent by one of her crew, for the rest (6.02)", s.get(0).from.endsWith(" and the rest of the crew") && !s.get(0).from.contains("{"));
   int before = count("SHIELD_RECHARGE");
   Transmissions.claim(s.get(0), -1);
   Setup.chk("O: claimed, it is in the Cargo Hold", count("SHIELD_RECHARGE") == before + 1);
+  { // the station log: her crew's note, then the letter with its words filled in, then the claim (6.02: the letter was logged before its words were filled)
+   String log = new String(java.nio.file.Files.readAllBytes(new File(v.root, "logs/events.log").toPath()), "UTF-8");
+   int o = log.indexOf("what=shipped augment=SHIELD_RECHARGE"), t = log.indexOf("| TRANSMISSION | log=station key=shipped:", Math.max(0, o)), c = log.indexOf("| CLAIM |", Math.max(0, t));
+   String letter = t < 0 ? "" : log.substring(log.lastIndexOf('\n', t) + 1, log.indexOf('\n', log.indexOf('\n', t) + 1));
+   Setup.chk("O: the station log has her crew's note, the letter, then the claim, in order", o >= 0 && t > o && c > t);
+   Setup.chk("O: the letter's log lines have its words filled in", letter.contains("TRANSMISSION") && !letter.contains("{") && letter.contains("reward=\"item SHIELD_RECHARGE\""));
+  }
   fly(2, false, "SCRAP_COLLECTOR", "DRONE_RECOVERY", "AUTO_COOLDOWN");
   Setup.chk("O: shipped once", shipped().size() == 1);
 

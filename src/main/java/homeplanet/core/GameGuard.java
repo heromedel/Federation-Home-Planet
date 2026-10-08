@@ -29,6 +29,8 @@ public final class GameGuard {
 		try {
 			Process p;
 			if (os.startsWith("Windows")) {
+				Boolean quick = Processes.running("FTLGame.exe");
+				if (quick != null) return quick;
 				p = new ProcessBuilder("tasklist", "/FI", "IMAGENAME eq FTLGame.exe", "/NH").redirectErrorStream(true).start();
 				return outputContains(p, "ftlgame.exe");
 			}
@@ -38,6 +40,62 @@ public final class GameGuard {
 		} catch (Exception e) {
 			log.debug("Could not check whether FTL is running: {}", e.toString());
 			return false;
+		}
+	}
+	/** Loads the Windows process check in the background at startup, so the first Board or Dock doesn't wait for JNA. */
+	public static void warm() {
+		if (DISABLED || !System.getProperty("os.name", "").startsWith("Windows")) return;
+		Thread t = new Thread(new Runnable() { public void run() { Processes.running("FTLGame.exe"); } }, "FTL check warm-up");
+		t.setDaemon(true);
+		t.start();
+	}
+
+	/**
+	 * Windows' own process list, through JNA (6.02): tasklist took most of a second before every Board and Dock
+	 * (heromedel: "it still feels like its taking 1-2 full seconds"). Null when it can't be trusted (JNA missing, a
+	 * call failed, or the list doesn't show the station itself): tasklist answers then.
+	 */
+	static final class Processes {
+		interface Kernel32 extends com.sun.jna.win32.StdCallLibrary {
+			Kernel32 I = com.sun.jna.Native.load("kernel32", Kernel32.class);
+			com.sun.jna.Pointer CreateToolhelp32Snapshot(int flags, int pid);
+			boolean Process32FirstW(com.sun.jna.Pointer snapshot, Entry entry);
+			boolean Process32NextW(com.sun.jna.Pointer snapshot, Entry entry);
+			boolean CloseHandle(com.sun.jna.Pointer handle);
+			int GetCurrentProcessId();
+		}
+		/** PROCESSENTRY32W. */
+		@com.sun.jna.Structure.FieldOrder({"dwSize", "cntUsage", "th32ProcessID", "th32DefaultHeapID", "th32ModuleID", "cntThreads",
+				"th32ParentProcessID", "pcPriClassBase", "dwFlags", "szExeFile"})
+		public static class Entry extends com.sun.jna.Structure {
+			public int dwSize, cntUsage, th32ProcessID;
+			public com.sun.jna.Pointer th32DefaultHeapID; // ULONG_PTR: the pointer's size
+			public int th32ModuleID, cntThreads, th32ParentProcessID, pcPriClassBase, dwFlags;
+			public char[] szExeFile = new char[260]; // wide characters
+			public Entry() { dwSize = size(); }
+		}
+		static final int TH32CS_SNAPPROCESS = 0x2;
+		static Boolean running(String exe) {
+			try {
+				com.sun.jna.Pointer snap = Kernel32.I.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+				if (snap == null || com.sun.jna.Pointer.nativeValue(snap) == -1) return null;
+				try {
+					int me = Kernel32.I.GetCurrentProcessId();
+					boolean found = false, sawMe = false;
+					Entry e = new Entry();
+					for (boolean more = Kernel32.I.Process32FirstW(snap, e); more; more = Kernel32.I.Process32NextW(snap, e)) {
+						String name = com.sun.jna.Native.toString(e.szExeFile);
+						if (e.th32ProcessID == me && name.toLowerCase().endsWith(".exe")) sawMe = true;
+						if (exe.equalsIgnoreCase(name)) found = true;
+					}
+					return sawMe ? Boolean.valueOf(found) : null; // the station's own entry proves the list was read right
+				} finally {
+					Kernel32.I.CloseHandle(snap);
+				}
+			} catch (Throwable t) {
+				log.debug("Windows' process list could not be read ({}): asking tasklist", t.toString());
+				return null;
+			}
 		}
 	}
 	private static boolean outputContains(Process p, String needle) throws Exception {
