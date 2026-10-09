@@ -26,6 +26,56 @@ test holds every list to this guide.
   M or B name, a female an F or B one. Where a race makes its female names with an ending or a mark (below), the plain
   name is M and its female form, written out beside it, is F.
 
+## The file
+
+```xml
+<names race="zoltan">
+	<rarity>
+		<level name="common" weight="1000"/>
+		<level name="uncommon" weight="300"/>
+		<level name="rare" weight="100"/>
+		<level name="very-rare" weight="30"/>
+		<level name="highly-unusual" weight="10"/>
+		<level name="almost-unique" weight="1"/>
+	</rarity>
+	<female suffix="y, ie, i"/>
+	<name sex="B">Volt</name>
+	<name sex="B" ex="y">Ohm</name>
+	<name sex="B" rarity="rare">Joule</name>
+</names>
+```
+
+- **The female forms are the program's,** from the endings at the top (`suffix`, or the Engi's `replace`): a B name
+  gives a female crew member a name with one of the endings on. `ex` names an ending that reads wrong on that name
+  ("Ohmy" reads "oh my"); a name every ending reads wrong on is tagged M. Two joining rules: a final E drops before
+  an ending that starts with a vowel (Pumice, Pumicite), and a name ending in X takes only the rest of an ending (Ix,
+  Ixa). An M or F name takes no ending.
+- **Rarity:** each file has its own ladder at the top, a weight for each level; a name comes up in proportion to its
+  level's weight. A name with no rarity is on the first level. Humans' weights are real: how many people in a
+  million have a name at that level, from the baby-name counts, and every name is put on its level the same way.
+- **The Engi** are written as plain words (`<write as="hex"/>` at the top): the station writes the hex.
+
+### The ladder for Rock, Crystal and Lanius
+
+These three are named after real and imagined materials, so their ladder says where a name comes from:
+
+| Level | Weight | Example |
+|---|---|---|
+| Realworld | 1000 | Iron |
+| Realworld-Uncommon | 300 | Tin |
+| Realworld-Rare | 100 | Gold |
+| Semi-Fictional | 30 | Quicksilver |
+| Known-Fiction | 10 | Adamantium |
+| Bizarre | 1 | Mnkntr |
+
+The test for the two in the middle (heromedel): where does the **name** come from, not what is the material like.
+A name real people used, in folk speech, alchemy or myth, is Semi-Fictional (Quicksilver, Orichalcum, Adamantine);
+nobody owns it. A name one story or author made up is Known-Fiction, however famous, and however real the thing
+behind it (Mithril, Valyrian Steel, Adamantium, Vibranium, Kryptonite). Real old names for real things stay real
+(Damascus). Bizarre is everything made up here, filler and in-jokes alike (Rgornaite, Stupidmetalium, Homeplanetium).
+
+The other races use the plain ladder: common, uncommon, rare, very-rare, highly-unusual, almost-unique.
+
 ## Humans
 
 FTL's own names, and more from public-domain lists: first names from the US Social Security baby-name data, last
@@ -59,7 +109,8 @@ Female: sorted by hand, by how a name sounds, and the mineral endings: -ite (the
 ## Crystal
 
 Crystals, minerals and their formations: Quartz, Beryl, Zircon, Galena, Spinel, Pyrite, Calcite, Fluorite, Selenite,
-Geode, Druse, Prism, Lattice, Facet. The Crystal are the ancient ancestors of the Rock (LORE_COMPONENTS 12): the two
+Geode, Druse, Prism, Lattice, Facet, and the ores (Hematite, Magnetite). Kryptonite is their easter egg.
+The Crystal are the ancient ancestors of the Rock (LORE_COMPONENTS 12): the two
 lists are kin but share no names.
 
 Female: sorted by hand (Onyx and Rose Quartz are F), and the same endings as the Rock's, -ite and -ine (Quartzite and
@@ -90,8 +141,11 @@ Female: the hyphen is a tilde, so a female Byte is 4279~7465.
 ## Lanius
 
 Metals, alloys and materials, the longer and heavier the better, one word or two: Wrought Iron, Carbon Fiber,
-Damascus, Titanium, Adamantine (and the easter eggs, Adamantium and Captain America's Vibranium). Not the plain short
-ones (Steel, Tin). Not Mercury (a god, and a planet).
+Damascus, Titanium, Adamantine, and the metallic elements (Cobalt, Tungsten, Osmium, Iridium, Vanadium, Bismuth).
+The easter eggs: Adamantium and Captain America's Vibranium. Not Mercury (a god, and a planet).
+
+The gases are theirs too, all Realworld-Rare (heromedel): a Lanius takes the oxygen from a room, and the nitrogen and
+argon are what's left behind it. Nitrogen, Argon, Neon, Xenon, Krypton, Helium.
 
 Female: sorted by hand (Quicksilver is F), and the endings -ia (the old Latin way metals were named: Titanium is
 Titania, Ferria, Cobaltia, Chromia) and -ine. Not -ite: it sounds like a mineral, not a metal.
@@ -123,3 +177,8 @@ Two kinds of name, sorted by hand: slimy ones (Slime, Slither, Crawls, Snail, an
 | Shimmer | Shiimmer | the vowel after SH draws out |
 | Glib | Gllib | |
 | Squill | Squill | the S is before a hard Q |
+
+## Later
+
+If the lists go well (heromedel, 6.28): many more Slugs; Bizarre rock names to grow the Rock list, since real rocks
+run out first; more easter eggs.
