@@ -214,7 +214,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		// the reputation (Settings' Reputation rule; always in Immersive Mode), in gold to the inbox's right: clicking opens its log
 		repBtn = homeplanet.vault.Reputation.shown() ? new ReputationButton(homeplanet.vault.Reputation.total(vault)) : null;
 		if (repBtn != null) repBtn.addActionListener(this);
-		boolean inboxHere = vault.boarded() == null; // with a ship aboard, the inbox and reputation sit on her heading instead
+		// with a ship aboard, the inbox and reputation sit on her heading instead; with FTL docked and nobody aboard, on an
+		// "Aboard: none" heading over FTL (6.13: on the Docked one, hidden below FTL, they were gone, and the flip with them)
+		boolean noneAboard = vault.boarded() == null && homeplanet.core.FtlDock.active();
+		boolean inboxHere = vault.boarded() == null && !noneAboard;
 		int inboxW = inboxHere ? inboxWidth() : 0;
 		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW, true);
 		if (HomePlanet.immersiveMode) dockedHeader.setToolTipText("Immersive Mode: your rank. Captains may commission custom ships; Commodores, custom ships with artillery");
@@ -285,7 +288,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final Ship boarded = vault.boarded();
 		final JPanel berth = boarded == null ? null : berthPanel(boarded);
 		final JPanel stats = boarded == null ? null : statsPanel(boarded);
-		final JPanel aboard = boarded == null ? null : aboardRow;
+		final JPanel aboard = boarded != null ? aboardRow : noneAboard ? noneAboardRow() : null;
 		final JPanel view = homeplanet.core.FtlDock.active() && !homeplanet.core.FtlDock.aside() ? viewport() : null; // FTL docked in her place (5.29); flipped, the Space Dock as without FTL (5.34)
 		viewportPanel = view;
 		JPanel main = new JPanel(null) {
@@ -327,6 +330,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					top = y0 + d.height + 6;
 					if (room) top = Math.max(top, stats.getY() + sd.height + 6); // a tall stats column pushes the docked ships down, not under it
 				}
+				else if (aboard != null) { // FTL docked but flipped aside, nobody aboard: her heading, "Aboard: none", then the docked ships
+					Dimension ad = aboard.getPreferredSize();
+					aboard.setBounds(14, 10, ad.width, ad.height);
+					top = 10 + ad.height + 6;
+				}
 				if (view == null) docked.setBounds(0, top, Math.min(dockedW, getWidth()), Math.max(0, getHeight() - top)); // while docked, nothing below FTL (5.32)
 				refreshBtn.setBounds(getWidth() - RefreshButton.SIZE - 2, 14, RefreshButton.SIZE, RefreshButton.SIZE); // at the top right, left of Helm, past the column's edge
 				if (dockLaunchBtn != null) { // the docked launch, under it, level with Launch FTL's middle
@@ -340,6 +348,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (dockLaunchBtn != null) main.add(dockLaunchBtn);
 		if (view != null) { if (aboard != null) main.add(aboard); main.add(view); }
 		else if (berth != null) { main.add(aboard); main.add(berth); main.add(stats); }
+		else if (aboard != null) main.add(aboard);
 		main.add(docked);
 
 		add(main, java.awt.BorderLayout.CENTER);
@@ -915,6 +924,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	 * A heading with the transmissions light at the end of its line (where the eye goes first) and the reputation to its
 	 * right, if they go here (either may be off).
 	 */
+	/** The Aboard heading with FTL docked and no ship boarded (6.13): the flip, the inbox and the reputation, as on hers. */
+	private JPanel noneAboardRow() {
+		flipBtn = new FlipButton();
+		flipBtn.setToolTipText(homeplanet.core.FtlDock.aside() ? "Back to FTL" : "Show the Space Dock (FTL waits behind it)");
+		flipBtn.addActionListener(this);
+		return withInbox(new FtlButton.Header("Aboard: none", BERTH_W - inboxWidth() - FlipButton.SIZE - 8, true), true, flipBtn);
+	}
 	private JPanel withInbox(FtlButton.Header header, boolean here) { return withInbox(header, here, null); }
 	/** The same, with a small icon first (the docked flip, 5.32) before the inbox. */
 	private JPanel withInbox(FtlButton.Header header, boolean here, JButton first) {
