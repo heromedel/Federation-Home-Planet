@@ -269,7 +269,7 @@ public class Commission {
 			for (int i = 0; i < g.amount; i++) {
 				CrewState c = new CrewState();
 				c.setRace(race);
-				boolean male = race != CrewType.HUMAN || rng.nextBoolean();
+				boolean male = (race != CrewType.HUMAN || rng.nextBoolean()) && !homeplanet.core.StationConsole.girlPower(); // girl power (6.22): a woman, her name from FTL's women's names
 				c.setMale(male);
 				c.setName(uniqueName(male, used));
 				c.setHealth(race.getMaxHealth());
@@ -319,12 +319,15 @@ public class Commission {
 	}
 
 	/** A crew volunteer of this race (a reward), named and tinted as a new game's crew are, placed nowhere yet. Null for an unknown race. */
-	public static CrewState volunteer(String raceId, Random rng) {
+	public static CrewState volunteer(String raceId, Random rng) { return volunteer(raceId, rng, homeplanet.core.StationConsole.girlPower()); }
+	/** As {@link #volunteer(String, Random)}, the girl power setting aside: the look of someone who already served (6.22). */
+	public static CrewState lookOf(String raceId, Random rng) { return volunteer(raceId, rng, false); }
+	private static CrewState volunteer(String raceId, Random rng, boolean girlPower) {
 		CrewType race = CrewType.findById(raceId);
 		if (race == null) return null;
 		CrewState c = new CrewState();
 		c.setRace(race);
-		boolean male = race != CrewType.HUMAN || rng.nextBoolean();
+		boolean male = (race != CrewType.HUMAN || rng.nextBoolean()) && !girlPower; // girl power (6.22)
 		c.setMale(male);
 		c.setName(uniqueName(male, new HashSet<String>()));
 		c.setHealth(race.getMaxHealth());
