@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Zoltan crew names (docs/NAMES.md): electricity, short words first, long ones cut down.
+
+     sex: B (both), M or F. A female crew member given a B name gets it with one of the endings in <female>, picked at
+     random: ex="..." leaves out an ending that reads wrong on that name. A name already ending in one of them is its
+     own female form; a final E drops before an ending that starts with a vowel (Pulse, Pulsie).
+     rarity: a level of the ladder below; a name comes up in proportion to its level's weight. No rarity is the first.
+
+     To change them, copy this file into names in the lore folder beside the program and edit the copy. -->
+<names race="zoltan">
+	<rarity>
+		<level name="common" weight="1000"/>
+		<level name="uncommon" weight="300"/>
+		<level name="rare" weight="100"/>
+		<level name="very-rare" weight="30"/>
+		<level name="highly-unusual" weight="10"/>
+		<level name="almost-unique" weight="1"/>
+	</rarity>
+	<female suffix="y, ie, i"/>
+
+	<name sex="B">Zolt</name>
+	<name sex="B">Bolt</name>
+	<name sex="B">Jolt</name>
+	<name sex="B">Amp</name>
+	<name sex="B">Volt</name>
+	<name sex="B" ex="y">Ohm</name>
+	<name sex="B">Watt</name>
+	<name sex="B">Arc</name>
+	<name sex="B">Flux</name>
+	<name sex="B">Coil</name>
+	<name sex="B">Spark</name>
+	<name sex="B" ex="y">Surge</name>
+	<name sex="B" ex="y">Pulse</name>
+	<name sex="B">Buzz</name>
+	<name sex="B">Glow</name>
+	<name sex="B" ex="y">Charge</name>
+	<name sex="B" ex="y">Fuse</name>
+	<name sex="B">Cell</name>
+	<name sex="B" ex="y">Grid</name>
+	<name sex="B">Lux</name>
+	<name sex="B">Beam</name>
+	<name sex="B">Ray</name>
+	<name sex="B">Flash</name>
+	<name sex="B">Glint</name>
+	<name sex="B">Shock</name>
+	<name sex="B">Fizz</name>
+	<name sex="B" ex="y">Phase</name>
+	<name sex="B">Relay</name>
+	<name sex="B" ex="y">Diode</name>
+	<name sex="B" ex="y">Anode</name>
+	<name sex="B">Joule</name>
+	<name sex="B">Hertz</name>
+	<name sex="B">Farad</name>
+	<name sex="B" ex="y">Ampere</name>
+	<name sex="B" ex="y">Lumen</name>
+	<name sex="B" ex="y">Photon</name>
+	<name sex="B" ex="y">Strobe</name>
+	<name sex="B" ex="y">Ozone</name>
+	<name sex="B">Flicker</name>
+	<name sex="B" ex="y">Crackle</name>
+	<name sex="B" ex="y">Socket</name>
+	<name sex="B" ex="y">Toggle</name>
+	<name sex="B" ex="y, ie">Static</name>
+	<name sex="B" ex="y" rarity="uncommon">Cathode</name>
+	<name sex="B" rarity="uncommon">Circuit</name>
+	<name sex="B" rarity="uncommon">Resi</name>
+	<name sex="B" rarity="uncommon">Transi</name>
+	<name sex="B" rarity="uncommon">Ampli</name>
+	<name sex="B" rarity="uncommon">Recti</name>
+	<name sex="B" rarity="uncommon">Oscil</name>
+	<name sex="B" rarity="uncommon">Solen</name>
+	<name sex="B" rarity="rare">Cap Acitor</name>
+	<name sex="B" rarity="rare">Con Ductor</name>
+	<name sex="M" rarity="rare">Gene Rator</name>
+	<name sex="F" rarity="rare">Jen Erator</name>
+	<name sex="M" rarity="rare">Phil Ament</name>
+	<name sex="M" rarity="rare">Eddy Current</name>
+	<name sex="F" rarity="rare">Rhea Stat</name>
+	<name sex="F" rarity="rare">Rhea Ctor</name>
+	<name sex="F" rarity="rare">Ann Ode</name>
+	<name sex="F" rarity="rare">Cath Ode</name>
+	<name sex="M" rarity="rare">Al Ternator</name>
+	<name sex="M" rarity="rare">Sol Enoid</name>
+	<name sex="M" rarity="rare">Ty Ristor</name>
+	<name sex="B" rarity="rare">Trans Istor</name>
+	<name sex="M" rarity="rare">Mag Neto</name>
+	<name sex="M">Plasma</name>
+	<name sex="F">Corona</name>
+	<name sex="F">Aurora</name>
+	<name sex="B">Zing</name>
+	<name sex="B" ex="y">Zap</name>
+	<name sex="B" ex="y">Hum</name>
+	<name sex="B">Fritz</name>
+	<name sex="B" ex="y">Sparkle</name>
+	<name sex="B">Gauss</name>
+	<name sex="B" ex="y">Coulomb</name>
+	<name sex="B">Magnet</name>
+	<name sex="B">Pole</name>
+	<name sex="B">Wave</name>
+	<name sex="B">Storm</name>
+	<name sex="B" ex="y">Flare</name>
+	<name sex="M">Thunder</name>
+	<name sex="B">Fulgur</name>
+	<name sex="B">Quark</name>
+	<name sex="B">Boson</name>
+	<name sex="B" ex="y">Proton</name>
+	<name sex="B" ex="y">Electron</name>
+	<name sex="B">Wire</name>
+</names>

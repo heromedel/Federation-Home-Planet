@@ -547,10 +547,10 @@ public class SystemsPanel {
 			changes.add("Paid " + RepPay.words(pay) + " to take the " + name + " off " + save.getPlayerShipName());
 		} else if (fee > 0) {
 			if (hold() < fee) {
-				JOptionPane.showMessageDialog(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off; the Cargo Hold has " + hold() + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off.\nThe Cargo Hold has " + hold() + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
-			if (!homeplanet.core.HomePlanet.confirmNo(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName() + ".\nThe Cargo Hold pays (on Save). Uninstall it?", "Systems")) return;
+			if (!homeplanet.core.HomePlanet.confirmNo(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName() + ".\nThe Cargo Hold pays (on Save).\n\nUninstall it?", "Systems")) return;
 			charge(fee);
 			changes.add("Paid " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName());
 		}
@@ -590,7 +590,7 @@ public class SystemsPanel {
 		if (SaveHelper.pastSystemLimit(bs, type)) { // past FTL's System Limit: a custom work order, on the Dry Dock's bill
 			int fee = homeplanet.core.Economy.workOrderScrap(), rep = homeplanet.core.Economy.workOrderRep();
 			if (hold() < fee || repHave() < rep) {
-				JOptionPane.showMessageDialog(bay, "A custom work order costs " + homeplanet.core.Economy.workOrderWords() + "; the Cargo Hold has " + hold() + " scrap"
+				JOptionPane.showMessageDialog(bay, "A custom work order costs " + homeplanet.core.Economy.workOrderWords() + ".\nThe Cargo Hold has " + hold() + " scrap"
 						+ (rep > 0 ? " and your reputation is " + homeplanet.vault.Reputation.signed(repHave()) : "") + ".", "System Limit", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}

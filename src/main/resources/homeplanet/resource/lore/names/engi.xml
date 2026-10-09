@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Engi crew names (docs/NAMES.md): a four-letter word of their trade, written by the station in hexadecimal, each
+     letter two hex digits (its ASCII code, capital hex), the word split in half: Byte is 4279-7465.
+
+     sex: all B. A female's hyphen is a tilde (<female replace>): a female Byte is 4279~7465.
+     rarity: a level of the ladder below; a name comes up in proportion to its level's weight. No rarity is the first.
+
+     To change them, copy this file into names in the lore folder beside the program and edit the copy: write the
+     word, never the hex. -->
+<names race="engi">
+	<rarity>
+		<level name="common" weight="1000"/>
+		<level name="uncommon" weight="300"/>
+		<level name="rare" weight="100"/>
+		<level name="very-rare" weight="30"/>
+		<level name="highly-unusual" weight="10"/>
+		<level name="almost-unique" weight="1"/>
+	</rarity>
+	<write as="hex"/>
+	<female replace="-" with="~"/>
+
+	<name sex="B">Byte</name>
+	<name sex="B">Gram</name>
+	<name sex="B">Code</name>
+	<name sex="B">Data</name>
+	<name sex="B">Node</name>
+	<name sex="B">Core</name>
+	<name sex="B">Gear</name>
+	<name sex="B">Bolt</name>
+	<name sex="B">Wire</name>
+	<name sex="B">Kilo</name>
+	<name sex="B">Mega</name>
+	<name sex="B">Giga</name>
+	<name sex="B">Tera</name>
+	<name sex="B">Nano</name>
+	<name sex="B">Disk</name>
+	<name sex="B">Chip</name>
+	<name sex="B">Port</name>
+	<name sex="B">Link</name>
+	<name sex="B">Grid</name>
+	<name sex="B">Cell</name>
+	<name sex="B">Fuse</name>
+	<name sex="B">Load</name>
+	<name sex="B">Sync</name>
+	<name sex="B">Ping</name>
+	<name sex="B">Bits</name>
+	<name sex="B">Unit</name>
+	<name sex="B">Axle</name>
+	<name sex="B">Beam</name>
+	<name sex="B">Pump</name>
+	<name sex="B">Gyro</name>
+	<name sex="B">Hull</name>
+	<name sex="B">Weld</name>
+	<name sex="B">Plug</name>
+	<name sex="B">Jack</name>
+	<name sex="B">Cord</name>
+	<name sex="B">Rail</name>
+	<name sex="B">Tool</name>
+	<name sex="B">Spec</name>
+	<name sex="B">Mesh</name>
+	<name sex="B">Loop</name>
+	<name sex="B">Scan</name>
+	<name sex="B">Task</name>
+	<name sex="B">Cogs</name>
+	<name sex="B">Nuts</name>
+	<name sex="B">Lens</name>
+	<name sex="B">Coil</name>
+	<name sex="B">Gate</name>
+	<name sex="B">Bank</name>
+	<name sex="B">Vent</name>
+	<name sex="B">Duct</name>
+	<name sex="B">Pipe</name>
+	<name sex="B">Tank</name>
+	<name sex="B">Dial</name>
+	<name sex="B">Knob</name>
+	<name sex="B">Lock</name>
+	<name sex="B">Seal</name>
+	<name sex="B">Spin</name>
+	<name sex="B" rarity="uncommon">Hash</name>
+	<name sex="B" rarity="uncommon">Heap</name>
+	<name sex="B" rarity="rare">Bool</name>
+	<name sex="B">Axis</name>
+	<name sex="B">Bore</name>
+	<name sex="B">Calc</name>
+	<name sex="B">Cast</name>
+	<name sex="B">Clip</name>
+	<name sex="B">Dock</name>
+	<name sex="B">Echo</name>
+	<name sex="B">Feed</name>
+	<name sex="B">File</name>
+	<name sex="B">Flag</name>
+	<name sex="B">Flow</name>
+	<name sex="B">Fork</name>
+	<name sex="B">Gain</name>
+	<name sex="B">Helm</name>
+	<name sex="B">Hook</name>
+	<name sex="B">Hose</name>
+	<name sex="B">Keys</name>
+	<name sex="B">Lead</name>
+	<name sex="B">Lift</name>
+	<name sex="B">Line</name>
+	<name sex="B">Mask</name>
+	<name sex="B">Melt</name>
+	<name sex="B">Mill</name>
+	<name sex="B">Mode</name>
+	<name sex="B">Nail</name>
+	<name sex="B">Pack</name>
+	<name sex="B">Path</name>
+	<name sex="B">Peak</name>
+	<name sex="B">Pins</name>
+	<name sex="B">Plan</name>
+	<name sex="B">Plot</name>
+	<name sex="B">Prop</name>
+	<name sex="B">Push</name>
+	<name sex="B">Ramp</name>
+	<name sex="B">Reel</name>
+	<name sex="B">Root</name>
+	<name sex="B">Rope</name>
+	<name sex="B">Rung</name>
+	<name sex="B">Seam</name>
+	<name sex="B">Send</name>
+	<name sex="B">Shim</name>
+	<name sex="B">Silo</name>
+	<name sex="B">Slot</name>
+	<name sex="B">Sort</name>
+	<name sex="B">Spot</name>
+	<name sex="B">Stud</name>
+	<name sex="B">Tape</name>
+	<name sex="B">Test</name>
+	<name sex="B">Tick</name>
+	<name sex="B">Tile</name>
+	<name sex="B">Trim</name>
+	<name sex="B">Tube</name>
+	<name sex="B">Tune</name>
+	<name sex="B">Type</name>
+	<name sex="B">Wick</name>
+	<name sex="B">Wrap</name>
+	<name sex="B">Zero</name>
+	<name sex="B" rarity="rare">Null</name>
+	<name sex="B" rarity="rare">Void</name>
+	<name sex="B" rarity="rare">Grep</name>
+	<name sex="B" rarity="uncommon">Bugs</name>
+</names>

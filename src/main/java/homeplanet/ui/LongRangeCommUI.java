@@ -665,7 +665,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (poweredUp) { toggleFrequencies(); return; }
 		if (post == null) return;
 		if (!HomePlanet.confirmNo(this, "Leave Long Range Comm. powered up, with your hailing frequency (port " + post.port + ") open?\n\n"
-				+ "(This leaves your station available for other commanders to find and hail, from any screen,\nuntil you power down or close the program.)", "Stay Powered Up")) return;
+				+ "(This leaves your station available for other commanders to find and hail, from any screen, until you power down or close the program.)", "Stay Powered Up")) return;
 		poweredUp = true;
 		refreshAll();
 		repaintDock();
@@ -1006,7 +1006,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		int colon = a.lastIndexOf(':');
 		if (colon > 0 && a.indexOf(':') == colon) {
 			try { ports = new int[] {Integer.parseInt(a.substring(colon + 1).trim())}; host = a.substring(0, colon).trim(); }
-			catch (NumberFormatException e) { HomePlanet.showErrorDialog("\"" + a.substring(colon + 1) + "\" isn't a port number."); return; }
+			catch (NumberFormatException e) { HomePlanet.showNotice("\"" + a.substring(colon + 1) + "\" isn't a port number.", "Long Range Comm."); return; }
 		}
 		HomePlanet.config.setProperty("long_range_comm_address", a);
 		HomePlanet.saveConfig();
@@ -1457,7 +1457,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (l.kind == Line.Kind.CREW && !source.isStorage()) {
 			int crewLeft = 0;
 			for (Line a : available) if (a.kind == Line.Kind.CREW) crewLeft++;
-			if (crewLeft <= 1) { HomePlanet.showErrorDialog("At least one crew member must stay aboard " + source.name + "."); return; }
+			if (crewLeft <= 1) { HomePlanet.showNotice("At least one crew member must stay aboard " + source.name + ".", "Long Range Comm."); return; }
 		}
 		Line added = session.add(l);
 		if (added == null) { help("The offer can't take more lines."); return; }
@@ -1762,15 +1762,15 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				if (r.leader) {
 					Object[] opts = {"Call it off", "Leave it"};
 					int c = JOptionPane.showOptionDialog(owner, what + "The link was lost before this station completed the trade, so " + r.peerTitle
-							+ " received nothing.\nCalling it off brings back what you gave: ships to the Space Dock, the rest to the Cargo Hold. (It is also called off the next time you connect to them.)",
+							+ " received nothing.\n\nCalling it off brings back what you gave: ships to the Space Dock, the rest to the Cargo Hold.\n(It is also called off the next time you connect to them.)",
 							"Unfinished trade", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
 					if (c == 0) { Exchange.callOff(r, "called off by hand"); JOptionPane.showMessageDialog(owner, "Called off. " + r.outWords() + " came back: " + Exchange.whereTheyGo(r.out) + ".", "Unfinished trade", JOptionPane.INFORMATION_MESSAGE); }
 				} else {
 					Object[] opts = {"Leave it", "Finish it", "Call it off"};
 					int c = JOptionPane.showOptionDialog(owner, what + r.peerTitle + "'s station led this trade, and only it knows whether it went through.\n"
 							+ "The simplest way to settle it: connect to " + r.peerTitle + " with Long Range Comm. It settles by itself.\n\n"
-							+ "If that can't happen, ask them how it ended:\n  Finish it: only if it went through at their end (you receive what was offered).\n"
-							+ "  Call it off: only if it didn't (what you gave comes back).",
+							+ "If that can't happen, ask them how it ended:\n • Finish it: only if it went through at their end (you receive what was offered).\n"
+							+ " • Call it off: only if it didn't (what you gave comes back).",
 							"Unfinished trade", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
 					if (c == 1 && HomePlanet.confirmNo(owner, "Finish the trade with " + r.peerTitle + "?\nYou receive " + r.inWords() + ".", "Unfinished trade")) {
 						Exchange.complete(r);

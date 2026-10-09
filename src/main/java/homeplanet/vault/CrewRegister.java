@@ -1357,7 +1357,7 @@ public final class CrewRegister {
 	 */
 	private static boolean invent(Member m) {
 		try {
-			CrewState c = homeplanet.parser.Commission.volunteer(raceId(m), new java.util.Random(m.id * 7919L + 17));
+			CrewState c = homeplanet.parser.Commission.lookOf(raceId(m), new java.util.Random(m.id * 7919L + 17)); // already served: never girl power
 			c.setName(m.name);
 			m.male = c.isMale();
 			m.rec.putAll(CrewRecord.of(c));

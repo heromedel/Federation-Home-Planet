@@ -136,7 +136,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 
 | Kind | Fields | Headline today |
 | --- | --- | --- |
-| `COMMISSION` | ship, `detail.n` (her fittings and crew) | "Kestrel  (a3f2)" |
+| `COMMISSION` | ship, `detail.n` (her fittings and crew), `crew` and `race` once a crew member (6.30: the Captain's Log's "came aboard with her") | "Kestrel  (a3f2)" |
 | `NEW_JOURNEY` | ship, `difficulty`, `fee`, `paid` | "Kestrel  difficulty Normal, fee ..." |
 | `RENAME` | ship, `from`, `to` | "Old Glory -> Kestrel  (a3f2)" |
 | `RENAME_CREW` | `what` (`renamed`, `promoted`), `from`, `to`, `crew_id`, `race`, `rank`, `posthumously`, `place`, `ship_name`, `ship_id`, `on_record` (`true` when a rank given on the record is put in her save) | "Gracie -> Sgt. Gracie  (Kestrel)" |
@@ -177,7 +177,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `OVERFLOW` | `what` (`shipped`, `shipped_home`, `lost`), `augment`, `title`, ship or `ship_name`, `parcel`, `to` | "Kestrel had no room for ...: her crew ship it home" |
 | `GIFT` | `from`, `system`, `title`, `to` | "The Third Fleet Commander sent a ... system for the project ship, ..." |
 | `CAREER` | `what` (`begun`, `rescued_to_hard`, `reputation_rate`), `mode`, `stipend`, `own_profile`, `scrap`, `difficulty`, `with_ship`; `rescued_to_hard` (6.03: a Custom career's choice, fixed); `rate` and `level` (6.13: a Custom career's reputation rate, `1`, `1.5` or `2`, level 0 to 2, fixed) | "Immersive career begun: ..." |
-| `SETTINGS` | `commander_name`, `detail.n` (each setting changed) | "" |
+| `SETTINGS` | `commander_name`, `girlpower` (6.22: the admin command, `true` or `false`), `detail.n` (each setting changed) | "" |
 | `PROFILE` | `what` (`removed`), `removed`, `keys` | "Removed from FTL's profile: ..." |
 | `UPDATE` | `version`, `replaced`, `added`, `removed` | "New construction plans from main (5.64): ..." |
 

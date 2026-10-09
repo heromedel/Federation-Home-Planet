@@ -132,7 +132,7 @@ public final class MasterLog {
 			if (!head.isEmpty()) t.append("  ").append(head);
 			for (String d : x.all("detail")) t.append(" / ").append(d);
 			for (int i = 1; x.get("detail." + i) != null; i++) t.append(" / ").append(x.get("detail." + i));
-			return new Entry(x.time, x.day, "station", t.toString());
+			return new Entry(x.time, x.day, "station", t.toString(), x); // its fields too (6.30: a commission's crew)
 		}
 		if (log.equals("voyage")) return new Entry(x.time, x.day, "voyage: " + x.get("ship_name", ""), x.human, x);
 		if (log.equals("reputation")) {

@@ -95,10 +95,10 @@ public class Slipstream {
 	 */
 	public static boolean offerAtStart() {
 		if (dir() != null || HomePlanet.config.getProperty(CFG_OFFERED) != null) return false;
-		ask(null, "Retrofitted, remodeled and designed ships are made with custom blueprints from The Federation Home Planet,\n"
+		ask(null, "Retrofitted, remodeled and designed ships are made with custom blueprints from The Federation Home Planet, "
 				+ "and those are sent to FTL via Slipstream (Mod Manager).\n\n"
 				+ "The rest of The Home Planet Station's functionality works without it.\n\n"
-				+ "Point The Station's databases at your Slipstream folder (the one with modman.jar),\n"
+				+ "Point The Station's databases at your Slipstream folder (the one with modman.jar), "
 				+ "or have The Home Planet Station download Slipstream for you.\n\n"
 				+ "You can also do this later in Settings.",
 				"Slipstream Mod Manager", "Not now");

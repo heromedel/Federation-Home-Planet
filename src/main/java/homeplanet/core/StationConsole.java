@@ -36,7 +36,11 @@ public final class StationConsole {
 		public final int days;
 		Reply(String text, int days) { this.text = text; this.days = days; }
 	}
-	private static final String LIST = "Dev commands:\n  /passtime <days>   pass that many days (1 to " + PASS_MAX + ")\n  /admin dc off   lock them again";
+	private static final String LIST = "Dev commands:\n  /passtime <days>   pass that many days (1 to " + PASS_MAX + ")\n  /admin girlpower   every crew member the station makes from now on a woman (again: off)\n  /admin dc off   lock them again";
+	/** Girl power (heromedel, 6.22): in the cfg only while on; a missing line is off. */
+	public static final String GIRL_POWER = "girlpower";
+	/** Is every crew member the station makes a woman (commissions, hiring, recruits, the Cargo Bay's store, rewards)? */
+	public static boolean girlPower() { return "true".equals(HomePlanet.config.getProperty(GIRL_POWER)); }
 
 	public static Reply answer(String line) {
 		String s = line == null ? "" : line.trim().replaceAll("\\s+", " "), low = s.toLowerCase();
@@ -51,6 +55,15 @@ public final class StationConsole {
 		if (devOn() && low.equals("/admin ?")) return new Reply(LIST, 0);
 		if (devOn() && low.equals("/admin")) return new Reply("Dev commands are on. /admin ? lists them.", 0);
 		if (devOn() && (low.equals("/admin dc") || low.equals("/admin dev commands"))) return new Reply("Dev commands are on. /admin dc off locks them.", 0);
+		if (devOn() && low.equals("/admin girlpower")) {
+			boolean on = !girlPower();
+			if (on) HomePlanet.config.setProperty(GIRL_POWER, "true"); else HomePlanet.config.remove(GIRL_POWER); // never written as false: off leaves no trace
+			if (HomePlanet.propFile != null) HomePlanet.saveConfig();
+			String said = "Girl power: " + (on ? "on" : "off");
+			HistoryLog.entry("SETTINGS", "settings changed", java.util.Collections.singletonList(said), Event.of("SETTINGS").put("girlpower", on).detail(said));
+			return new Reply(on ? "Girl power on: every crew member The Home Planet Station makes from now on is a woman. Crew already aboard, FTL and trades are unchanged."
+					: "Girl power off.", 0);
+		}
 		if (devOn() && (low.equals("/passtime") || low.startsWith("/passtime "))) {
 			int n;
 			try { n = Integer.parseInt(low.substring(9).trim()); } catch (NumberFormatException e) { n = 0; }

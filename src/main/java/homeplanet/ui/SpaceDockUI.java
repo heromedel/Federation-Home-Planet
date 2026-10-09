@@ -628,8 +628,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private void askRecords(homeplanet.vault.Reputation.Reevaluation r) {
 		try {
 			Object[] options = {"Reevaluate", "Keep my current score"};
-			int c = JOptionPane.showOptionDialog(null, "The Federation Home Planet is updating its records. Many of your accomplishments were before the update and may warrant a different Reputation score. "
-					+ "Would you like to be reevaluated or keep your current score?\n\nReevaluated: " + r.reevaluated + "\nCurrent: " + r.current,
+			int c = JOptionPane.showOptionDialog(null, "The Federation Home Planet is updating its records.\nMany of your accomplishments were before the update and may warrant a different Reputation score.\n\n"
+					+ "Reevaluated: " + r.reevaluated + "\nCurrent: " + r.current + "\n\nWould you like to be reevaluated or keep your current score?",
 					"Reputation", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
 			if (c != 0 && c != 1) { recordsPutOff = true; return; }
 			homeplanet.vault.Reputation.answer(Vault.get(), r, c == 0);
@@ -653,8 +653,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		List<String> names = new java.util.ArrayList<String>();
 		for (String k : keys) { String n = homeplanet.parser.UnlockGrants.describe(k); names.add(n); list.append("\n  \u2022 ").append(n); }
 		Object[] options = {"Remove them", "Keep them"};
-		int c = JOptionPane.showOptionDialog(null, "Achievements and unlocks were found that may not have come from an Immersive Commissioned ship, so you may not receive their bonuses and unlocks in this mode.\n"
-				+ "Would you like them removed from the FTL profile this career uses?\n" + list,
+		int c = JOptionPane.showOptionDialog(null, "Achievements and unlocks were found that may not have come from an Immersive Commissioned ship.\nYou may not receive their bonuses and unlocks in this mode.\n"
+				+ list + "\n\nWould you like them removed from the FTL profile this career uses?",
 				"Achievements and unlocks", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 		if (c < 0) return; // closed: asked again at the next start
 		if (c == 1) { homeplanet.parser.UnlockGrants.strangersAnswered(java.util.Collections.<String>emptySet()); return; }
@@ -719,8 +719,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 	}
 	private void askAboutStranger(String lost, Ship stranger) {
-		String message = (lost.isEmpty() ? "" : lost + "\n")
-				+ "Uncommissioned ship detected.\n\n" + stranger.name + " was not commissioned by The Federation Home Planet: this save was not made in Immersive Mode.\n"
+		String message = "Uncommissioned ship detected.\n\n" + (lost.isEmpty() ? "" : lost + "\n")
+				+ stranger.name + " was not commissioned by The Federation Home Planet: this save was not made in Immersive Mode.\n\n"
 				+ "What should be done with her?";
 		Object[] options = {"Send her to the Sandbox fleet's Space Dock", "Decommission her", "Switch to Sandbox Mode now", "Close The Home Planet Station"};
 		int c = JOptionPane.showOptionDialog(null, message, "Uncommissioned ship", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
@@ -738,7 +738,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			} else if (c == 1) {
 				Object[] how = {"Send her to the normal Junkyard", "Destroy her", "Cancel"};
 				int d = JOptionPane.showOptionDialog(null, "Decommission " + stranger.name + ":\n\n"
-						+ "Send her to the Sandbox fleet's Junkyard, or destroy her? (A destroyed ship's last version stays in the station's records.)",
+						+ "Send her to the Sandbox fleet's Junkyard, or destroy her?\n(A destroyed ship's last version stays in the station's records.)",
 						"Decommission", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, how, how[2]);
 				if (d == 0) v.sendToOtherFleet(stranger, true);
 				else if (d == 1) v.remove(stranger, "DESTROY");
@@ -1642,8 +1642,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				+ "You put your case to The Federation Home Planet: one more ship, and you'll bring her home. They listen.\n"
 				+ "They will send " + offered + ". Her order will wait for you at Commission.\n\n"
 				+ "Nothing is taken now. When you commission her, you choose how to pay:\n"
-				+ "  - Give up the Cargo Hold: everything in it but the crew, at what it would sell for (the Junkyard isn't touched).\n"
-				+ (rep ? "  - Keep the Cargo Hold, and answer for her with your reputation.\n"
+				+ " • Give up the Cargo Hold: everything in it but the crew, at what it would sell for (the Junkyard isn't touched).\n"
+				+ (rep ? " • Keep the Cargo Hold, and answer for her with your reputation.\n"
 						+ "Whatever the hold doesn't cover of her value, " + homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent()) + " of it comes off your reputation.\n"
 						: homeplanet.vault.Reputation.shown() ? "" // How Reputation Can be Used: Only as a score
 						: "  (With the Reputation rule on, you could keep the Cargo Hold and answer for her with your reputation.)\n")
@@ -1674,7 +1674,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String hulls;
 		try { hulls = String.join(", ", Vault.get().surrenderedNames(dir)); } catch (IOException e) { hulls = "?"; }
 		if (!HomePlanet.confirmNo(this, "Take back what was surrendered in the last report for reassignment?\n\n"
-				+ "The Cargo Hold returns as it was, and these hulls return to the Junkyard: " + (hulls.isEmpty() ? "(none)" : hulls) + ".\n"
+				+ "The Cargo Hold returns as it was, and these hulls return to the Junkyard:\n" + (hulls.isEmpty() ? "(none)" : hulls) + ".\n\n"
 				+ "The free command it earned is given up.", "Undo Reassignment")) return;
 		try {
 			Vault.get().undoSurrender(dir);
@@ -1918,7 +1918,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		String message = "Prepare " + gs.getPlayerShipName() + " for a new journey?\n\n"
-				+ "Crew, cargo and supplies stay aboard. The old star charts are wiped, and the ship sets out\n"
+				+ "Crew, cargo and supplies stay aboard. The old star charts are wiped, and the ship sets out "
 				+ "once more from the first sector with the rebel fleet in pursuit.\n\n"
 				+ "How dangerous will this journey be?";
 		Object[] options = {"Easy", "Normal", "Hard", "Cancel"};
@@ -1934,11 +1934,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else if (fee > 0) {
 			int have = Vault.get().storageScrap();
 			if (have < fee) {
-				JOptionPane.showMessageDialog(null, "The Federation Home Planet charges " + fee + " scrap to plot a new journey, paid from the Cargo Hold,\n"
-						+ "which holds " + have + ". Store more scrap in the Cargo Bay first.", "New Journey", JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(null, "The Federation Home Planet charges " + fee + " scrap to plot a new journey, paid from the Cargo Hold, which holds " + have + ".\n"
+						+ "Store more scrap in the Cargo Bay first.", "New Journey", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
-			if (!HomePlanet.confirmNo(this, "The Federation Home Planet charges " + fee + " scrap to plot a new journey,\npaid from the Cargo Hold (which holds " + have + "). Pay it?", "New Journey")) return;
+			if (!HomePlanet.confirmNo(this, "The Federation Home Planet charges " + fee + " scrap to plot a new journey, paid from the Cargo Hold (which holds " + have + ").\n\nPay it?", "New Journey")) return;
 		}
 		if (!GameGuard.allows(this, "start her new journey")) return;
 		net.blerf.ftl.constants.Difficulty[] diffs = {net.blerf.ftl.constants.Difficulty.EASY,
