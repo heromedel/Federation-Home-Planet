@@ -211,6 +211,23 @@ public class RepuT {
   Setup.chk("W: a reputation entry about her: her id, sector and difficulty", repOk);
   Reputation.ransomed(v, "Dune");
   Setup.chk("Z: away from FTL, the career's rate alone: a ransom +2", Reputation.recent(v, 1).get(0).contains("brought home (+2)"));
+  // 6.19 (heromedel): a score counted before the rates is offered a re-evaluation, once; its log re-scored
+  HomePlanet.reputationRate = 0;
+  Properties pr = Store.read(Store.file(v.root, "reputation"));
+  Setup.chk("O: a score counted at the rates is never offered", pr.getProperty("rated") != null && Reputation.offer(v) == null);
+  pr.remove("rated"); pr.setProperty("total", Integer.toString(Store.num(pr, "total", 0) + 6)); Store.write(Store.file(v.root, "reputation"), pr, null);
+  EventLog.write(v, Event.of("REPUTATION").put("log", "reputation").put("reason", "voyage").put("points", 6).put("why", "Old Timer: sector 5 reached (+6)").human("Old Timer: sector 5 reached (+6)")); // as written before 6.13
+  int cur = Reputation.total(v);
+  Reputation.Reevaluation re = Reputation.offer(v);
+  Setup.chk("O: an old entry: sector 5 reached (+6) re-scored at sector 5's bonus (x1.4): 8.4 (" + (re == null ? "none" : re.current + " -> " + re.reevaluated) + ")", re != null && re.current == cur && re.reevaluated >= cur + 2 && re.reevaluated <= cur + 3);
+  Reputation.answer(v, re, false);
+  Setup.chk("O: kept: the score as it was, the answer logged, never offered again", Reputation.total(v) == cur && Reputation.offer(v) == null && Reputation.recent(v, 1).get(0).contains("Records updated: the current score kept"));
+  pr = Store.read(Store.file(v.root, "reputation")); pr.remove("rated"); Store.write(Store.file(v.root, "reputation"), pr, null);
+  re = Reputation.offer(v);
+  Reputation.answer(v, re, true);
+  Setup.chk("O: re-evaluated: the new score, one entry saying what it changed (" + Reputation.recent(v, 1).get(0).trim() + ")", Reputation.total(v) == re.reevaluated && Reputation.recent(v, 1).get(0).contains("Records updated (+") && Reputation.offer(v) == null);
+  t = Reputation.tally(v); sum = 0; for (int x : t.values()) sum += x;
+  Setup.chk("O: the tally still adds up to the total " + t, sum == Reputation.total(v));
   Setup.chk("X: the rule: Sandbox free; Easy x1, Normal x1.5, Hard x2 whatever is saved; Custom asks, then keeps its choice",
     Reputation.RATE_FREE.equals(Reputation.rateRule(null, null)) && Reputation.rateLevel(CareerRules.of(CareerRules.EASY), "2") == 0 && Reputation.rateLevel(CareerRules.of(CareerRules.NORMAL), null) == 1
     && Reputation.rateLevel(CareerRules.of(CareerRules.HARD), "0") == 2 && Reputation.RATE_FIXED.equals(Reputation.rateRule(CareerRules.of(CareerRules.HARD), null))

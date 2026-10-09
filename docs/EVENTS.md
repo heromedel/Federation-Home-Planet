@@ -79,7 +79,7 @@ count), `beacons_jumped` (since the last look), `at_store`.
 
 | Kind | Fields | Human line today |
 | --- | --- | --- |
-| `REPUTATION` | `reason` (`achievement`, `cruiser`, `voyage`, `ship_lost`, `restored`, `expedition`, `captive`, `ransomed`, `spent`, `flagship`, `review`, `other`), `points` (signed, the whole points the total moved), `exact` (6.13: the change itself, to the ten-thousandth since 6.17: `4.5`, `2.0625`), `rate` (6.13: `1`, `1.5` or `2`, the career's rate), `ship_rate` and `sector_rate` (6.17, on what a ship earned in FTL: her difficulty's `1`, `1.25` or `1.5`; the sector's `1` to `1.7`), `total` (after, its whole part), `total_exact` (6.13), `detail.n` | The reputation log's own line: "Expedition: ... (+3)", each piece at what it added |
+| `REPUTATION` | `reason` (`achievement`, `cruiser`, `voyage`, `ship_lost`, `restored`, `expedition`, `captive`, `ransomed`, `spent`, `flagship`, `review`, `records` (6.19: a score counted before the rates re-evaluated, or kept, once), `other`), `rates` (`6.17`: written at every rate, left as it is by a re-evaluation), `points` (signed, the whole points the total moved), `exact` (6.13: the change itself, to the ten-thousandth since 6.17: `4.5`, `2.0625`), `rate` (6.13: `1`, `1.5` or `2`, the career's rate), `ship_rate` and `sector_rate` (6.17, on what a ship earned in FTL: her difficulty's `1`, `1.25` or `1.5`; the sector's `1` to `1.7`), `total` (after, its whole part), `total_exact` (6.13), `detail.n` | The reputation log's own line: "Expedition: ... (+3)", each piece at what it added |
 
 ## The station log (`log=station`; `history.log`)
 

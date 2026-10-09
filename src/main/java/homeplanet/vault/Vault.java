@@ -1784,6 +1784,7 @@ public final class Vault {
 	 */
 	public static Event where(Event e, Ship s) {
 		if (s == null || s.state == Ship.State.STORAGE) return e;
+		if (net.blerf.ftl.parser.DataManager.get() == null) return e; // the fleet opens before FTL's game data: a read now would fail, and her save be taken for unreadable until it changed
 		SavedGameState gs;
 		try { gs = s.save(); } catch (RuntimeException x) { gs = null; }
 		return where(e, gs);

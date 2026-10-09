@@ -375,6 +375,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (!askingRate && !ratePutOff && homeplanet.vault.Reputation.RATE_ASK.equals(homeplanet.vault.Reputation.rateRule())) { // a Custom career from before 6.13
 			askingRate = true;
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askRepRate(); } });
+		} else if (!askingRecords && !recordsPutOff) { // a score counted before the rates (6.19): once, after the rate is chosen
+			final homeplanet.vault.Reputation.Reevaluation r = homeplanet.vault.Reputation.offer(vault);
+			if (r != null) {
+				askingRecords = true;
+				javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askRecords(r); } });
+			}
 		}
 		if (!askingFound && !vault.found().isEmpty()) { // saves and ships found as the fleet opened, waiting on the player's word (6.10)
 			askingFound = true;
@@ -614,6 +620,22 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The Home Planet Station could not record the career's choice in its file (it will ask again):\n" + e.getMessage());
 		} finally {
 			askingRate = false;
+		}
+	}
+
+	private boolean askingRecords = false, recordsPutOff = false;
+	/** heromedel's question (6.19), with the two scores: re-evaluated at the rates, or kept. Closed: asked again at the next start. */
+	private void askRecords(homeplanet.vault.Reputation.Reevaluation r) {
+		try {
+			Object[] options = {"Re-evaluate", "Keep my current score"};
+			int c = JOptionPane.showOptionDialog(null, "Federation Home Planet is updating its records. Many of your accomplishments were before the update and may warrant a different Reputation score. "
+					+ "Would you like to be reevaluated or keep your current score.\n\nRe-evaluated: " + r.reevaluated + "\nCurrent: " + r.current,
+					"Reputation", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+			if (c != 0 && c != 1) { recordsPutOff = true; return; }
+			homeplanet.vault.Reputation.answer(Vault.get(), r, c == 0);
+			init();
+		} finally {
+			askingRecords = false;
 		}
 	}
 
