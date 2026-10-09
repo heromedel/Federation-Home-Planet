@@ -177,13 +177,13 @@ public final class CaptainsLog {
 	private static Line once(Map<String, Line> m, String kind, boolean byMe, String text) { return line(m, kind, kind + ":" + m.size(), byMe, text); }
 
 	private static void read(MasterLog.Entry e, Map<String, Line> m) {
-		if ("station".equals(e.log)) station(e.text, m);
+		if ("station".equals(e.log)) station(e.text, e.event, m);
 		else if (e.log.startsWith("voyage: ")) voyage(e.log.substring(8), e.text, e.event, m);
 		// reputation has its own log and tally: never a line here
 	}
 	private static final Pattern NUM = Pattern.compile("^(\\d+) (.+)$");
 
-	private static void station(String text, Map<String, Line> m) {
+	private static void station(String text, homeplanet.core.EventLog.Entry event, Map<String, Line> m) {
 		String[] parts = text.split(" / ");
 		String first = parts[0];
 		int gap = first.indexOf("  ");
@@ -241,7 +241,9 @@ public final class CaptainsLog {
 		} else if (kind.equals("COMMISSION")) {
 			String model = det.isEmpty() ? null : det.get(0).replaceAll("\\s*\\([A-Z0-9_]+\\).*$", "");
 			Line l = once(m, "commission", true, "Commissioned " + theShip(shipName(head)) + (model == null ? "." : ", a " + model + "."));
-			for (int i = 1; i < det.size(); i++) l.details.add(det.get(i));
+			List<String> crew = event == null ? new ArrayList<String>() : event.all("crew"); // who came aboard with her, by name (heromedel, 6.30); an older entry keeps its Crew: line
+			for (int i = 1; i < det.size(); i++) if (crew.isEmpty() || !det.get(i).startsWith("Crew: ")) l.details.add(det.get(i));
+			if (!crew.isEmpty()) l.details.add(join(crew) + " came aboard with her.");
 		} else if (kind.equals("DISBAND")) {
 			once(m, "ships", true, "Decommissioned " + theShip(shipName(head)) + ".");
 		} else if (kind.equals("SCRAP")) {

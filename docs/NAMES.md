@@ -69,13 +69,16 @@ These three are named after real and imagined materials, so their ladder says wh
 | Realworld-Rare | 100 | Gold |
 | Semi-Fictional | 30 | Quicksilver |
 | Known-Fiction | 10 | Adamantium |
+| Human-Influenced | 5 | Whetstone |
 | Bizarre | 1 | Mnkntr |
 
 The test for the two in the middle (heromedel): where does the **name** come from, not what is the material like.
-A name real people used, in folk speech, alchemy or myth, is Semi-Fictional (Quicksilver, Orichalcum, Adamantine);
-nobody owns it. A name one story or author made up is Known-Fiction, however famous, and however real the thing
+A name real people used for the material itself, in folk speech, alchemy or myth, is Semi-Fictional (Quicksilver,
+Orichalcum, Adamantine, Lodestone); nobody owns it. A myth that isn't the material (Golem, Atlas) is Human-Influenced. A name one story or author made up is Known-Fiction, however famous, and however real the thing
 behind it (Mithril, Valyrian Steel, Adamantium, Vibranium, Kryptonite). Real old names for real things stay real
-(Damascus). Bizarre is everything made up here, filler and in-jokes alike (Rgornaite, Stupidmetalium, Homeplanetium).
+(Damascus). Human-Influenced (heromedel, 6.30) is a real name with a non-rock word in it, or named for what people
+make of stone or metal (Tiger Eye, Moonstone, Whetstone, Keystone, Obelisk, Gunmetal): the Rocks picked up human
+words along the way. Bizarre is everything made up here, filler and in-jokes alike (Rgornaite, Stupidmetalium, Homeplanetium).
 
 The other races use the plain ladder: common, uncommon, rare, very-rare, highly-unusual, almost-unique.
 
@@ -101,9 +104,11 @@ name already ending in Y, I or IE stays as it is, and is B.
 
 ## Rock
 
-Rocks, not single crystals (those are the Crystal's). Preferably not plain English: Basalt, Gabbro, Schist, Gneiss,
-Breccia, Tuff, Scoria, Pumice, Dacite, Diorite, Andesite, Rhyolite, Obsidian (a glass, not a crystal), Slate. Not
-Agate (a quartz), not Tiger Eye (plain English).
+Rocks, not single crystals (those are the Crystal's). A rock thing all the way through, plain English or not
+(heromedel, 6.30: Flint, Bedrock, Sandstone, Dust as much as Basalt, Gabbro, Gneiss, Obsidian); a name with a non-rock
+word in it is Human-Influenced, and so are the myths of stone and their folk names (heromedel, 6.30: a rock guy is
+named for rock, and a human myth is human influence): Golem, Atlas, Gargoyle, Troll, Petra (Greek for rock),
+Thunderstone, Hagstone. Medusa is Bizarre. Not Agate (a quartz).
 
 Female: sorted by hand, by how a name sounds, and the mineral endings: -ite (the way minerals are really named) and
 -ine. Some come out real (Pumicite is a real rock), the rest plausible (Basaltine, Gabbroite); `ex` the one that

@@ -556,13 +556,17 @@ public class CommissionDialog extends JDialog {
 			catch (Exception ex) { HomePlanet.showErrorDialog("The Home Planet Station could not record that this free ship was claimed:\n" + ex.getMessage()); }
 		}
 		StringBuilder crew = new StringBuilder(); // her starting crew by name, for the crew register (5.51; "Crew: 3" before)
+		java.util.List<String[]> aboard = new java.util.ArrayList<String[]>(); // and as fields, crew= and race= a member, for the Captain's Log's line (6.30)
 		for (net.blerf.ftl.parser.SavedGameParser.CrewState c : homeplanet.parser.SaveHelper.getOwnCrew(s.getPlayerShip())) {
 			String race;
 			try { race = homeplanet.model.Crew.raceTitle(c); } catch (RuntimeException x) { race = c.getRace() == null ? "Human" : c.getRace().getId(); }
 			crew.append(crew.length() == 0 ? "" : ", ").append(c.getName()).append(" (").append(race).append(")");
+			aboard.add(new String[] {c.getName(), c.getRace() == null ? "human" : c.getRace().getId()});
 		}
 		lines.add("Crew: " + (crew.length() == 0 ? "none" : crew.toString()));
-		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines, homeplanet.vault.Vault.shipEvent("COMMISSION", ship).details(lines));
+		homeplanet.core.Event ev = homeplanet.vault.Vault.shipEvent("COMMISSION", ship).details(lines);
+		for (String[] c : aboard) ev.put("crew", c[0]).put("race", c[1]);
+		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines, ev);
 		made = ship;
 		dispose();
 	}

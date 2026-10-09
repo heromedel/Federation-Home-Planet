@@ -404,7 +404,7 @@ public class SettingsDialog extends JDialog {
 		body.add(madeBy, next(c));
 		JPanel about = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JButton loreBtn = new JButton("Lore...");
-		loreBtn.setToolTipText("A transmission from the Federation Home Planet");
+		loreBtn.setToolTipText("A transmission from The Federation Home Planet");
 		loreBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { showLore(); }
 		});
@@ -696,7 +696,7 @@ public class SettingsDialog extends JDialog {
 	}
 
 	/** Shows a text file bundled in the jar (CREDITS.md, LICENSE) in a window of its own. */
-	static final String LORE = "~ Incoming transmission from the Federation Home Planet ~\n\n"
+	static final String LORE = "~ Incoming transmission from The Federation Home Planet ~\n\n"
 			+ "Despite the ongoing war with the rebellion, the Federation has restored its long-range trade and communication network, "
 			+ "carried by official stores and stations across the sectors.\n\n"
 			+ "From the Home Planet, the Federation can once more reach beacons in many star systems: moving goods and crew between ships "
