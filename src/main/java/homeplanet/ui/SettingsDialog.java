@@ -395,7 +395,7 @@ public class SettingsDialog extends JDialog {
 		c = constraints();
 		heading(body, c, "About");
 		JLabel credit = new JLabel("<html>" + HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games.<br>" // two lines, not one off the edge (heromedel, 6.22)
-				+ "Save parser by Vhati. Inspired by and originally built upon ManApart's FTL Homeworld.</html>");
+				+ "Inspired by and originally built upon ManApart's FTL Homeworld. Save parser by Vhati.</html>");
 		credit.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(credit, next(c));
 		// heromedel's line, and the buttons on a line of their own beneath it (heromedel, 6.02: his words)
