@@ -157,8 +157,6 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 		JPanel row = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		row.add(button("Close", null, new ActionListener() { public void actionPerformed(ActionEvent e) { w.setVisible(false); } }));
 		w.getContentPane().add(row, BorderLayout.SOUTH);
-		w.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "close");
-		w.getRootPane().getActionMap().put("close", new javax.swing.AbstractAction() { public void actionPerformed(ActionEvent e) { w.setVisible(false); } });
 		return w;
 	}
 	protected static JButton button(String text, String tip, ActionListener a) {

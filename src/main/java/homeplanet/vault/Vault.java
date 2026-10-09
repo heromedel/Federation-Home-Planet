@@ -1776,7 +1776,24 @@ public final class Vault {
 	}
 	/** An event about a ship: her name and id together (as the log names her), apart, and where she is. */
 	public static Event shipEvent(String kind, Ship s) {
-		return Event.of(kind).put("ship", s.name + "." + s.id).put("ship_name", s.name).put("ship_id", s.id).put("ship_state", s.state == null ? null : s.state.key).put("stranger", s.stranger ? "true" : null);
+		return where(Event.of(kind).put("ship", s.name + "." + s.id).put("ship_name", s.name).put("ship_id", s.id).put("ship_state", s.state == null ? null : s.state.key).put("stranger", s.stranger ? "true" : null), s);
+	}
+	/**
+	 * Where she was when it happened (heromedel, 6.18): her sector (1 to 8, as the player counts) and FTL's difficulty she
+	 * flies on, from her save as it is now; left out where she has none (the Cargo Hold, a ship that has just left).
+	 */
+	public static Event where(Event e, Ship s) {
+		if (s == null || s.state == Ship.State.STORAGE) return e;
+		if (net.blerf.ftl.parser.DataManager.get() == null) return e; // the fleet opens before FTL's game data: a read now would fail, and her save be taken for unreadable until it changed
+		SavedGameState gs;
+		try { gs = s.save(); } catch (RuntimeException x) { gs = null; }
+		if (gs == null) s.invalidate(); // a fleet opened at a career switch: her design may not be registered yet, and the failure isn't to be kept (6.22)
+		return where(e, gs);
+	}
+	/** As above, from her save in hand. */
+	public static Event where(Event e, SavedGameState gs) {
+		if (gs == null) return e;
+		return e.put("ship_sector", gs.getSectorNumber() + 1).put("ship_difficulty", gs.getDifficulty() == null ? null : gs.getDifficulty().toString().toLowerCase());
 	}
 	/** The same, recording this fate (a ship traded in or auctioned off is SOLD). */
 	public synchronized void remove(Ship s, String why, Fate fate) throws IOException {

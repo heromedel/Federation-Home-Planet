@@ -35,7 +35,10 @@ so a new kind or field is added here first, by whoever writes it. Started at 5.6
 | `converted` | `true` on an entry read in from an old log once (5.73, `LogConvert`): the human line is the old line exactly as it was, the fields what it gave away, `time` and `day` its own. |
 | `time`, `day` (given by the writer) | An entry about something that happened earlier (a journal note finished at start-up, 5.71): the writer gives the time (`yyyy-MM-dd HH:mm:ss`) and the day it happened, and the entry's own columns follow them instead of the clock. |
 
-A ship is named by `ship=<name>.<id>` with `ship_name` and `ship_id` beside it (and `ship_state` where known). A crew
+A ship is named by `ship=<name>.<id>` with `ship_name` and `ship_id` beside it (and `ship_state` where known). Since 6.18
+(heromedel) every entry about a ship also says where she was when it happened: `ship_sector` (1 to 8, as the player counts)
+and `ship_difficulty` (`easy`, `normal`, `hard`, FTL's difficulty she flies on), from her save at that moment; left out
+where she has none (the Cargo Hold, a ship that has just left). Reputation entries about a ship carry all of these too. A crew
 member, when crew files come (Phase 2), by `crew=<name>.<id>`; until then by `crew=<name>` and `race`.
 
 ## The clock (`log=clock`)
@@ -76,7 +79,7 @@ count), `beacons_jumped` (since the last look), `at_store`.
 
 | Kind | Fields | Human line today |
 | --- | --- | --- |
-| `REPUTATION` | `reason` (`achievement`, `cruiser`, `voyage`, `ship_lost`, `restored`, `expedition`, `captive`, `ransomed`, `spent`, `flagship`, `review`, `other`), `points` (signed, the whole points the total moved), `exact` (6.13: the change itself, a half point where there is one: `4.5`), `rate` (6.13: `1`, `1.5` or `2`, what was earned counted at), `total` (after, its whole part), `total_exact` (6.13), `detail.n` | The reputation log's own line: "Expedition: ... (+3)", each piece at what it added |
+| `REPUTATION` | `reason` (`achievement`, `cruiser`, `voyage`, `ship_lost`, `restored`, `expedition`, `captive`, `ransomed`, `spent`, `flagship`, `review`, `records` (6.19: a score counted before the rates re-evaluated, or kept, once), `other`), `rates` (`6.17`: written at every rate, left as it is by a re-evaluation), `points` (signed, the whole points the total moved), `exact` (6.13: the change itself, to the ten-thousandth since 6.17: `4.5`, `2.0625`), `rate` (6.13: `1`, `1.5` or `2`, the career's rate), `ship_rate` and `sector_rate` (6.17, on what a ship earned in FTL: her difficulty's `1`, `1.25` or `1.5`; the sector's `1` to `1.7`), `total` (after, its whole part), `total_exact` (6.13), `detail.n` | The reputation log's own line: "Expedition: ... (+3)", each piece at what it added |
 
 ## The station log (`log=station`; `history.log`)
 

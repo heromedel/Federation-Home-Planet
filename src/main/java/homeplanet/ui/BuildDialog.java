@@ -17,7 +17,6 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
 import net.blerf.ftl.constants.Difficulty;
@@ -128,8 +127,6 @@ public final class BuildDialog extends JDialog {
 		cancel.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
 		buttons.add(preview); buttons.add(loadout); buttons.add(build); buttons.add(cancel);
 		getRootPane().setDefaultButton(cancel);
-		getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "close");
-		getRootPane().getActionMap().put("close", new javax.swing.AbstractAction() { public void actionPerformed(ActionEvent e) { dispose(); } });
 
 		getContentPane().add(sp, BorderLayout.CENTER);
 		getContentPane().add(buttons, BorderLayout.SOUTH);
