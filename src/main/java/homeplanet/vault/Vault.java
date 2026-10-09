@@ -1787,6 +1787,7 @@ public final class Vault {
 		if (net.blerf.ftl.parser.DataManager.get() == null) return e; // the fleet opens before FTL's game data: a read now would fail, and her save be taken for unreadable until it changed
 		SavedGameState gs;
 		try { gs = s.save(); } catch (RuntimeException x) { gs = null; }
+		if (gs == null) s.invalidate(); // a fleet opened at a career switch: her design may not be registered yet, and the failure isn't to be kept (6.22)
 		return where(e, gs);
 	}
 	/** As above, from her save in hand. */
