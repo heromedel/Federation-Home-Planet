@@ -486,12 +486,12 @@ class DryDockShop {
 		boolean order = e.kind == Kind.SYSTEM && !toStorage && SaveHelper.pastSystemLimit(bs, SystemType.findById(e.id)); // the hold has no System Limit
 		int fee = order ? homeplanet.core.Economy.workOrderScrap() : 0, cost = e.price + fee, rep = order ? homeplanet.core.Economy.workOrderRep() : 0;
 		if (bs.getScrapAmt() < cost) {
-			JOptionPane.showMessageDialog(bay, buyerName + " has " + bs.getScrapAmt() + " scrap; " + name + " costs " + e.price
-					+ (order ? ", and the custom work order to fit it " + fee + " more" : "") + ".", "Not enough scrap", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(bay, name + " costs " + e.price + " scrap" + (order ? ", and the custom work order to fit it " + fee + " more" : "") + ".\n"
+					+ buyerName + " has " + bs.getScrapAmt() + ".", "Not enough scrap", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		if (rep > bay.systems.repHave()) {
-			JOptionPane.showMessageDialog(bay, "The custom work order to fit " + name + " costs " + rep + " reputation as well as its scrap; your reputation is "
+			JOptionPane.showMessageDialog(bay, "The custom work order to fit " + name + " costs " + rep + " reputation as well as its scrap.\nYour reputation is "
 					+ homeplanet.vault.Reputation.signed(bay.systems.repHave()) + ".", "Not enough reputation", JOptionPane.WARNING_MESSAGE);
 			return;
 		}

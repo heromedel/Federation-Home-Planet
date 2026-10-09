@@ -64,6 +64,8 @@ public final class MenuTheme {
 		UIManager.put("OptionPane.background", new ColorUIResource(BG));
 		UIManager.put("OptionPane.messageForeground", new ColorUIResource(TEXT));
 		UIManager.put("TitledBorder.titleColor", new ColorUIResource(TEXT));
+		UIManager.put("OptionPaneUI", WrappingOptionPaneUI.class.getName()); // every pop-up wraps its long lines (heromedel, 6.27: one ran off the screen)
+		UIManager.put(WrappingOptionPaneUI.class.getName(), WrappingOptionPaneUI.class);
 		Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
 			public void eventDispatched(AWTEvent e) {
 				try {
@@ -231,6 +233,16 @@ public final class MenuTheme {
 			if (r.isEmpty()) return;
 			g.setColor(thumb);
 			g.fillRect(r.x + 3, r.y + 2, r.width - 6, r.height - 4);
+		}
+	}
+
+	/** A pop-up's plain text wrapped at about 100 characters a line (as HomePlanet.wrap does errors), between words; html sets its own width and is left as it is. */
+	public static final class WrappingOptionPaneUI extends javax.swing.plaf.basic.BasicOptionPaneUI {
+		public static javax.swing.plaf.ComponentUI createUI(JComponent c) { return new WrappingOptionPaneUI(); }
+		@Override protected int getMaxCharactersPerLineCount() { return 100; }
+		@Override protected void addMessageComponents(Container c, java.awt.GridBagConstraints g, Object msg, int maxll, boolean internal) {
+			if (msg instanceof String && ((String) msg).regionMatches(true, 0, "<html>", 0, 6)) maxll = Integer.MAX_VALUE;
+			super.addMessageComponents(c, g, msg, maxll, internal);
 		}
 	}
 }

@@ -202,8 +202,8 @@ public class RemodelDialog extends ShipEditorDialog {
 	// ---- the overhaul ----
 
 	private void askOverhaul() {
-		int r = JOptionPane.showConfirmDialog(this, "Overhauling her deck plan lets you move, add and remove rooms, move her art and weapon mounts, reshape her shield,\n"
-				+ "and drop or replace her floor art. Systems and doors stay where they can; rooms holding installed systems stay.\n"
+		int r = JOptionPane.showConfirmDialog(this, "Overhauling her deck plan lets you move, add and remove rooms, move her art and weapon mounts, reshape her shield, "
+				+ "and drop or replace her floor art.\n\nSystems and doors stay where they can; rooms holding installed systems stay.\n"
 				+ "Crew standing where a room no longer is are moved to a free square when you finalize.\n\n"
 				+ "Restore original layout undoes the whole overhaul.", "Overhaul deck plan: " + save.getPlayerShipName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
 		if (r != JOptionPane.OK_OPTION) return;

@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.26";
+	public static final String APP_VERSION = "6.27";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -630,7 +630,7 @@ public class HomePlanet {
 	}
 	/** Asks for FTL's saves folder, by one of its files. Null if none was chosen. */
 	public static File promptForSavePath() {
-		File f = choose("The Home Planet Station sends ships out using FTL's saves,\nbut its search could not find FTL's saves folder on its own.\n\n"
+		File f = choose("The Home Planet Station sends ships out using FTL's saves, but its search could not find FTL's saves folder on its own.\n\n"
 				+ "Select '/Documents/My Games/FasterThanLight/continue.sav' (or ae_prof.sav).",
 				"FTL Save Not Found", "Find continue.sav or ae_prof.sav", "FTL save files (continue.sav, ae_prof.sav, prof.sav)", SAVE_FILES);
 		File dir = f == null ? null : f.getParentFile();

@@ -815,8 +815,8 @@ public class SettingsDialog extends JDialog {
 			return;
 		}
 		Object[] opts = {"Update Now", "Later"};
-		if (JOptionPane.showOptionDialog(this, news + "\n\nUpdate Now downloads them and rebuilds the station: it closes, the Construction Yard builds the new version,"
-				+ "\nthen opens it again. Your fleets, settings, mods and the downloaded JDK and Maven aren't touched.", title,
+		if (JOptionPane.showOptionDialog(this, news + "\n\nUpdate Now downloads them and rebuilds the station: it closes, the Construction Yard builds the new version, "
+				+ "then opens it again.\nYour fleets, settings, mods and the downloaded JDK and Maven aren't touched.", title,
 				JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]) != 0) return;
 		final java.awt.Window owner = getOwner();
 		if (owner instanceof MainFrame && !((MainFrame) owner).mayClose("update the station")) return;

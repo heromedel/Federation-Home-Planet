@@ -476,14 +476,14 @@ public class CommissionDialog extends JDialog {
 			int value = pleaValue(e.id, s), hold = homeplanet.parser.FreeCommand.holdSaleValue(vault);
 			boolean rep = homeplanet.core.Economy.repForJourneysAndPleas(); // How Reputation Can be Used: Only as a score offers the hold alone
 			int costGiving = homeplanet.parser.FreeCommand.reputationCost(value, hold), costKeeping = homeplanet.parser.FreeCommand.reputationCost(value, 0);
-			StringBuilder msg = new StringBuilder(name + " is worth " + value + " scrap. Your Cargo Hold would sell for " + hold + " scrap.\n\n");
+			StringBuilder msg = new StringBuilder(name + " is worth " + value + " scrap.\nYour Cargo Hold would sell for " + hold + " scrap.\n\n");
 			String share = homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent());
 			if (rep && hold <= 0) {
 				msg.append("The hold has nothing to sell, so either way " + share + " of her value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").\n"
 						+ "Giving it up still takes everything in it but the crew, who stay.");
 			} else if (rep) {
 				msg.append("Give it up (everything in it but the crew, who stay): ").append(costGiving == 0 ? "she costs your reputation nothing.\n"
-						: share + " of the " + (value - hold) + " it doesn't cover comes off your reputation (" + homeplanet.vault.Reputation.signed(-costGiving) + ").\n");
+						: share + " of the " + (value - hold) + " it doesn't cover comes off your reputation (" + homeplanet.vault.Reputation.signed(-costGiving) + ").\n\n");
 				msg.append("Keep it: " + share + " of her whole value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").");
 			} else {
 				msg.append("The Federation Home Planet takes the Cargo Hold for her (everything in it but the crew, who stay), whatever it's worth.");
