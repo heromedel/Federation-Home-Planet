@@ -10,14 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.KeyStroke;
 import javax.swing.SwingWorker;
 
 import homeplanet.core.StationConsole;
@@ -76,8 +74,6 @@ final class ConsoleDialog extends JDialog {
 		getContentPane().add(body);
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE); // never mid-run
 		addWindowListener(new java.awt.event.WindowAdapter() { @Override public void windowClosing(java.awt.event.WindowEvent e) { close(); } });
-		getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "close");
-		getRootPane().getActionMap().put("close", new javax.swing.AbstractAction() { public void actionPerformed(ActionEvent e) { close(); } });
 		pack();
 		setMinimumSize(new Dimension(480, 260));
 		setLocationRelativeTo(frame);
