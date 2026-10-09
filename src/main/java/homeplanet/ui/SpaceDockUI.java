@@ -214,7 +214,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		// the reputation (Settings' Reputation rule; always in Immersive Mode), in gold to the inbox's right: clicking opens its log
 		repBtn = homeplanet.vault.Reputation.shown() ? new ReputationButton(homeplanet.vault.Reputation.total(vault)) : null;
 		if (repBtn != null) repBtn.addActionListener(this);
-		boolean inboxHere = vault.boarded() == null; // with a ship aboard, the inbox and reputation sit on her heading instead
+		// with a ship aboard, the inbox and reputation sit on her heading instead; with FTL docked and nobody aboard, on an
+		// "Aboard: none" heading over FTL (6.13: on the Docked one, hidden below FTL, they were gone, and the flip with them)
+		boolean noneAboard = vault.boarded() == null && homeplanet.core.FtlDock.active();
+		boolean inboxHere = vault.boarded() == null && !noneAboard;
 		int inboxW = inboxHere ? inboxWidth() : 0;
 		FtlButton.Header dockedHeader = new FtlButton.Header(title, CELL_W * 3 - inboxW, true);
 		if (HomePlanet.immersiveMode) dockedHeader.setToolTipText("Immersive Mode: your rank. Captains may commission custom ships; Commodores, custom ships with artillery");
@@ -285,7 +288,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		final Ship boarded = vault.boarded();
 		final JPanel berth = boarded == null ? null : berthPanel(boarded);
 		final JPanel stats = boarded == null ? null : statsPanel(boarded);
-		final JPanel aboard = boarded == null ? null : aboardRow;
+		final JPanel aboard = boarded != null ? aboardRow : noneAboard ? noneAboardRow() : null;
 		final JPanel view = homeplanet.core.FtlDock.active() && !homeplanet.core.FtlDock.aside() ? viewport() : null; // FTL docked in her place (5.29); flipped, the Space Dock as without FTL (5.34)
 		viewportPanel = view;
 		JPanel main = new JPanel(null) {
@@ -327,6 +330,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 					top = y0 + d.height + 6;
 					if (room) top = Math.max(top, stats.getY() + sd.height + 6); // a tall stats column pushes the docked ships down, not under it
 				}
+				else if (aboard != null) { // FTL docked but flipped aside, nobody aboard: her heading, "Aboard: none", then the docked ships
+					Dimension ad = aboard.getPreferredSize();
+					aboard.setBounds(14, 10, ad.width, ad.height);
+					top = 10 + ad.height + 6;
+				}
 				if (view == null) docked.setBounds(0, top, Math.min(dockedW, getWidth()), Math.max(0, getHeight() - top)); // while docked, nothing below FTL (5.32)
 				refreshBtn.setBounds(getWidth() - RefreshButton.SIZE - 2, 14, RefreshButton.SIZE, RefreshButton.SIZE); // at the top right, left of Helm, past the column's edge
 				if (dockLaunchBtn != null) { // the docked launch, under it, level with Launch FTL's middle
@@ -340,6 +348,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (dockLaunchBtn != null) main.add(dockLaunchBtn);
 		if (view != null) { if (aboard != null) main.add(aboard); main.add(view); }
 		else if (berth != null) { main.add(aboard); main.add(berth); main.add(stats); }
+		else if (aboard != null) main.add(aboard);
 		main.add(docked);
 
 		add(main, java.awt.BorderLayout.CENTER);
@@ -362,6 +371,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (!askingToHard && !toHardPutOff && homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(homeplanet.parser.FinalVictory.toHardRule())) { // before any rescue offer it would decide
 			askingToHard = true;
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askToHard(); } });
+		}
+		if (!askingRate && !ratePutOff && homeplanet.vault.Reputation.RATE_ASK.equals(homeplanet.vault.Reputation.rateRule())) { // a Custom career from before 6.13
+			askingRate = true;
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askRepRate(); } });
 		}
 		if (!askingFound && !vault.found().isEmpty()) { // saves and ships found as the fleet opened, waiting on the player's word (6.10)
 			askingFound = true;
@@ -582,6 +595,25 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The Home Planet Station could not record the career's choice in its file (it will ask again):\n" + e.getMessage());
 		} finally {
 			askingToHard = false;
+		}
+	}
+
+	private boolean askingRate = false, ratePutOff = false;
+	/** A Custom career with no reputation rate: asked as its briefing would (heromedel, 6.13), then fixed. Closed: asked again at the next start (x1 meanwhile). */
+	private void askRepRate() {
+		try {
+			if (!homeplanet.vault.Reputation.RATE_ASK.equals(homeplanet.vault.Reputation.rateRule())) return;
+			Object[] options = homeplanet.vault.Reputation.RATE_WORDS;
+			int c = JOptionPane.showOptionDialog(null, "Your Custom career hasn't chosen one of its rules yet:\n\n    Reputation earned\n\n"
+					+ "What your ships earn (sectors, ships defeated, scrap, good outcomes, achievements, expeditions) counts at this rate.\n"
+					+ "Losses and spending count as they are. Like the career's other rules, it is chosen once and fixed from then on.", "Your Custom career", JOptionPane.DEFAULT_OPTION,
+					JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+			if (c < 0 || c > 2) { ratePutOff = true; return; }
+			homeplanet.vault.Reputation.chooseRate(Vault.get().root, c);
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not record the career's choice in its file (it will ask again):\n" + e.getMessage());
+		} finally {
+			askingRate = false;
 		}
 	}
 
@@ -915,6 +947,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	 * A heading with the transmissions light at the end of its line (where the eye goes first) and the reputation to its
 	 * right, if they go here (either may be off).
 	 */
+	/** The Aboard heading with FTL docked and no ship boarded (6.13): the flip, the inbox and the reputation, as on hers. */
+	private JPanel noneAboardRow() {
+		flipBtn = new FlipButton();
+		flipBtn.setToolTipText(homeplanet.core.FtlDock.aside() ? "Back to FTL" : "Show the Space Dock (FTL waits behind it)");
+		flipBtn.addActionListener(this);
+		return withInbox(new FtlButton.Header("Aboard: none", BERTH_W - inboxWidth() - FlipButton.SIZE - 8, true), true, flipBtn);
+	}
 	private JPanel withInbox(FtlButton.Header header, boolean here) { return withInbox(header, here, null); }
 	/** The same, with a small icon first (the docked flip, 5.32) before the inbox. */
 	private JPanel withInbox(FtlButton.Header header, boolean here, JButton first) {

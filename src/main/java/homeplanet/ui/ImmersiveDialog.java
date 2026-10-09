@@ -77,6 +77,8 @@ public final class ImmersiveDialog {
 				Career.start(brief.salaryAll.isSelected() && !ownProfile, ownProfile, brief.rules());
 				Boolean toHard = brief.toHardChosen(); // a Custom career's, chosen once (6.03)
 				if (toHard != null) homeplanet.parser.FinalVictory.chooseToHard(Vault.get().root, toHard);
+				int rate = brief.repRateChosen(); // a Custom career's, chosen once (6.13)
+				if (rate >= 0) homeplanet.vault.Reputation.chooseRate(Vault.get().root, rate);
 			}
 			UnlockGrants.returning(Unlocks.read()); // a new career starts its record here
 			homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());

@@ -61,6 +61,10 @@ final class ImmersiveBriefing extends JDialog {
 	private static final String TO_HARD = "Rescued Ships after Victory moved to Hard difficulty";
 	private final JLabel toHardLabel = new JLabel(TO_HARD);
 	private final JCheckBox toHard = new JCheckBox();
+	/** The reputation rate (heromedel, 6.13): chosen here for Custom, shown for the rest. */
+	private static final String REP_RATE = "Reputation earned";
+	private final JComboBox<String> repRate = new JComboBox<String>(homeplanet.vault.Reputation.RATE_WORDS);
+	private final JLabel repRateNote = new JLabel();
 	boolean confirmed = false;
 
 	private final boolean begun;
@@ -249,6 +253,14 @@ final class ImmersiveBriefing extends JDialog {
 		grid.add(toHardLabel, c);
 		c.gridx = 1;
 		grid.add(toHard, c);
+		c.gridx = 0; c.gridy = levels.length + 1;
+		grid.add(new JLabel(REP_RATE), c);
+		JPanel rateRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		rateRow.add(repRate);
+		rateRow.add(repRateNote);
+		c.gridx = 1;
+		grid.add(rateRow, c);
+		repRate.setToolTipText("What your ships earn counts this much: sectors, ships defeated, scrap, good outcomes, achievements, expeditions. Losses and spending count as they are");
 		levels[CareerRules.VICTORY].addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { syncToHard(); } });
 		grid.setMaximumSize(new Dimension(Integer.MAX_VALUE, grid.getPreferredSize().height)); // room for the line's words to change
 		p.add(grid);
@@ -270,7 +282,22 @@ final class ImmersiveBriefing extends JDialog {
 			levels[i].setEnabled(custom && !begun);
 		}
 		syncToHard();
+		syncRepRate();
 	}
+	/** The reputation rate's line, as the difficulty (or a career already begun) has it; Custom chooses it here, once. */
+	private void syncRepRate() {
+		CareerRules r = begun ? Career.rules(immersiveRoot) : rules();
+		boolean custom = CareerRules.CUSTOM.equals(r.name) || CareerRules.EARLIER.equals(r.name);
+		String saved = begun ? Career.repRate(immersiveRoot) : null;
+		String rule = homeplanet.vault.Reputation.rateRule(r, saved);
+		boolean choosing = custom && !begun;
+		repRate.setEnabled(choosing);
+		if (!choosing) repRate.setSelectedIndex(homeplanet.vault.Reputation.rateLevel(r, saved));
+		repRateNote.setText(choosing ? "   fixed once chosen" : homeplanet.vault.Reputation.RATE_ASK.equals(rule) ? "   not chosen yet: the Space Dock will ask"
+				: homeplanet.vault.Reputation.RATE_CHOSEN.equals(rule) ? "   chosen when it began" : "   the difficulty's");
+	}
+	/** A new Custom career's reputation rate, to keep with it; -1 where the career doesn't choose it. */
+	int repRateChosen() { return repRate.isEnabled() ? repRate.getSelectedIndex() : -1; }
 	/** The rescued-ship line, as the difficulty (or a career already begun) has it; Custom chooses it here, once. */
 	private void syncToHard() {
 		CareerRules r = begun ? Career.rules(immersiveRoot) : rules();
@@ -360,6 +387,7 @@ final class ImmersiveBriefing extends JDialog {
 		String rule = FinalVictory.toHardRule(r, CareerRules.CUSTOM.equals(r.name) ? Boolean.toString(toHard.isSelected()) : null);
 		sb.append("<br>&nbsp;&nbsp;&nbsp;").append(TO_HARD).append(": ").append(FinalVictory.TO_HARD_NONE.equals(rule) ? "doesn't apply" : FinalVictory.TO_HARD_FREE.equals(rule) ? "yours to choose in Settings"
 				: FinalVictory.TO_HARD_ON.equals(rule) ? "always" : "never: you choose her difficulty");
+		sb.append("<br>&nbsp;&nbsp;&nbsp;").append(REP_RATE).append(": ").append(XmlText.text(String.valueOf(repRate.getSelectedItem())));
 		return sb.toString();
 	}
 

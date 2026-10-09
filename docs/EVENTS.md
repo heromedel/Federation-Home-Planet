@@ -76,7 +76,7 @@ count), `beacons_jumped` (since the last look), `at_store`.
 
 | Kind | Fields | Human line today |
 | --- | --- | --- |
-| `REPUTATION` | `reason` (`achievement`, `cruiser`, `voyage`, `ship_lost`, `restored`, `expedition`, `captive`, `ransomed`, `spent`, `flagship`, `review`, `other`), `points` (signed), `total` (after), `detail.n` | The reputation log's own line: "Expedition: ... (+3)" |
+| `REPUTATION` | `reason` (`achievement`, `cruiser`, `voyage`, `ship_lost`, `restored`, `expedition`, `captive`, `ransomed`, `spent`, `flagship`, `review`, `other`), `points` (signed, the whole points the total moved), `exact` (6.13: the change itself, a half point where there is one: `4.5`), `rate` (6.13: `1`, `1.5` or `2`, what was earned counted at), `total` (after, its whole part), `total_exact` (6.13), `detail.n` | The reputation log's own line: "Expedition: ... (+3)", each piece at what it added |
 
 ## The station log (`log=station`; `history.log`)
 
@@ -172,7 +172,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `STIPEND` | `scrap`, `months` | "120 scrap issued, to claim from the inbox (one stipend)" |
 | `OVERFLOW` | `what` (`shipped`, `shipped_home`, `lost`), `augment`, `title`, ship or `ship_name`, `parcel`, `to` | "Kestrel had no room for ...: her crew ship it home" |
 | `GIFT` | `from`, `system`, `title`, `to` | "The Third Fleet Commander sent a ... system for the project ship, ..." |
-| `CAREER` | `what` (`begun`, `rescued_to_hard`), `mode`, `stipend`, `own_profile`, `scrap`, `difficulty`, `with_ship`; `rescued_to_hard` (6.03: a Custom career's choice, fixed) | "Immersive career begun: ..." |
+| `CAREER` | `what` (`begun`, `rescued_to_hard`, `reputation_rate`), `mode`, `stipend`, `own_profile`, `scrap`, `difficulty`, `with_ship`; `rescued_to_hard` (6.03: a Custom career's choice, fixed); `rate` and `level` (6.13: a Custom career's reputation rate, `1`, `1.5` or `2`, level 0 to 2, fixed) | "Immersive career begun: ..." |
 | `SETTINGS` | `commander_name`, `detail.n` (each setting changed) | "" |
 | `PROFILE` | `what` (`removed`), `removed`, `keys` | "Removed from FTL's profile: ..." |
 | `UPDATE` | `version`, `replaced`, `added`, `removed` | "New construction plans from main (5.64): ..." |

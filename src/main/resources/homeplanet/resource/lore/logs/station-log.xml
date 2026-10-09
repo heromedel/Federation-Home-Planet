@@ -163,6 +163,9 @@
 	<entry kind="CAREER" when="what=begun">A {mode} career began, with {scrap} scrap in the Cargo Hold.</entry>
 	<entry kind="CAREER" when="what=rescued_to_hard&amp;rescued_to_hard=true">The career's rule was set: a ship rescued after a victory sets out on Hard.</entry>
 	<entry kind="CAREER" when="what=rescued_to_hard">The career's rule was set: a ship rescued after a victory has her next journey's danger chosen when she is kept.</entry>
+	<entry kind="CAREER" when="what=reputation_rate&amp;level=2">The career's rule was set: reputation is earned as on Hard.</entry>
+	<entry kind="CAREER" when="what=reputation_rate&amp;level=1">The career's rule was set: reputation is earned as on Normal.</entry>
+	<entry kind="CAREER" when="what=reputation_rate">The career's rule was set: reputation is earned as on Easy.</entry>
 	<entry kind="CAREER_ENDED">The {fleet} career was ended. A copy of it is kept.</entry>
 	<entry kind="PLEAD" when="stage=agreed">The Federation Home Planet agreed to send a new ship. Her order waits at Commission.</entry>
 	<entry kind="PLEAD" when="stage=hold_given">The Cargo Hold was given up for the new ship.</entry>

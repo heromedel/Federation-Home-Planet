@@ -136,6 +136,39 @@ public class RepuT {
   Setup.chk("T: the pools add up to the total " + t, sum == Reputation.total(v) && !t.containsKey("Other"));
   Setup.chk("T: the plea is Spent, captives and the ransom are Crew, sectors Travel, ships Combat, achievements their own",
     t.get("Spent") == -184 && t.containsKey("Crew") && t.get("Travel") > 0 && t.containsKey("Combat") && t.get("Achievements") > 0 && t.containsKey("Scrap") && t.containsKey("Events"));
+
+  // 6.13: the rate (heromedel): what's earned counts x1 (Easy), x1.5 (Normal), x2 (Hard); losses and spending as they are;
+  // a half point kept, never shown; each piece in the log at what it added, never a bonus of its own
+  int r0 = Reputation.total(v);
+  HomePlanet.reputationRate = 1; // Sandbox Mode's own, as on Normal
+  g = cont(v); g.setTotalScrapCollected(g.getTotalScrapCollected() + 10); g.setTotalShipsDefeated(g.getTotalShipsDefeated() + 1); g.setNearbyShip(null); ftl(v, g);
+  String line = Reputation.recent(v, 1).get(0);
+  Properties rp = Store.read(Store.file(v.root, "reputation"));
+  Setup.chk("X: x1.5: 10 scrap (1) and a ship (4) earn 7.5: the total reads " + (r0 + 7) + ", the half kept (got " + Reputation.total(v) + ")", Reputation.total(v) == r0 + 7 && "1".equals(rp.getProperty("half")));
+  Setup.chk("X: each piece at what it added, adding up, no bonus shown (" + line.trim() + ")", line.contains("10 scrap collected (+1)") && line.contains("a ship defeated (+6)") && line.contains("+7") && !line.toLowerCase().contains("bonus") && !line.contains(".5"));
+  String ev = new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8");
+  Setup.chk("X: the machine line keeps the rate and the exact change", ev.contains("rate=1.5") && ev.contains("exact=7.5"));
+  Reputation.captured(v, java.util.Arrays.asList("Cedar"));
+  Setup.chk("X: a loss as it is (-4), the half still kept", Reputation.total(v) == r0 + 3 && "1".equals(Store.read(Store.file(v.root, "reputation")).getProperty("half")));
+  g = cont(v); g.setTotalScrapCollected(g.getTotalScrapCollected() + 10); ftl(v, g);
+  Setup.chk("X: the next 1.5 completes the half: +2, nothing lost to rounding (got " + Reputation.total(v) + ")", Reputation.total(v) == r0 + 5 && Store.read(Store.file(v.root, "reputation")).getProperty("half") == null
+    && Reputation.recent(v, 1).get(0).contains("10 scrap collected (+2)"));
+  HomePlanet.reputationRate = 2; // as on Hard
+  Reputation.ransomed(v, "Cedar");
+  Setup.chk("X: x2: a ransom +4", Reputation.total(v) == r0 + 9 && Reputation.recent(v, 1).get(0).contains("Ransomed: Cedar brought home (+4)"));
+  Reputation.spend(v, 3, "A plea, at x2");
+  Setup.chk("X: spending as it is", Reputation.total(v) == r0 + 6);
+  HomePlanet.reputationRate = 0;
+  t = Reputation.tally(v); sum = 0; for (int x : t.values()) sum += x;
+  Setup.chk("X: the tally still adds up to the total " + t, sum == Reputation.total(v) && !t.containsKey("Other"));
+  // the rate's rule: Sandbox Mode's own; a career's difficulty; Custom chooses once (asked if it never did)
+  int[] lv = new int[CareerRules.RULES.length]; Arrays.fill(lv, 1);
+  CareerRules custom = new CareerRules(CareerRules.CUSTOM, lv);
+  Setup.chk("X: the rule: Sandbox free; Easy x1, Normal x1.5, Hard x2 whatever is saved; Custom asks, then keeps its choice",
+    Reputation.RATE_FREE.equals(Reputation.rateRule(null, null)) && Reputation.rateLevel(CareerRules.of(CareerRules.EASY), "2") == 0 && Reputation.rateLevel(CareerRules.of(CareerRules.NORMAL), null) == 1
+    && Reputation.rateLevel(CareerRules.of(CareerRules.HARD), "0") == 2 && Reputation.RATE_FIXED.equals(Reputation.rateRule(CareerRules.of(CareerRules.HARD), null))
+    && Reputation.RATE_ASK.equals(Reputation.rateRule(custom, null)) && Reputation.rateLevel(custom, null) == 0
+    && Reputation.RATE_CHOSEN.equals(Reputation.rateRule(custom, "2")) && Reputation.rateLevel(custom, "2") == 2 && Reputation.RATE_ASK.equals(Reputation.rateRule(custom, "7")));
   Setup.done();
  }
  static Ship named(Vault v, String n) { for (Ship s : v.all()) if (n.equals(s.name)) return s; throw new IllegalStateException(n); }
