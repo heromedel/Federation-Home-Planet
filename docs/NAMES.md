@@ -4,9 +4,9 @@ FTL gives every race the same human names. The Home Planet Station names the cre
 starting crew at Commission, volunteers, recruits and hires (and the dice in Rename crew). Crew that FTL hires in its
 own stores, or meets in its events, keep FTL's names: FTL has one list for everyone, and a mod can't split it by race.
 
-The lists are written by hand from this guide (McCarthy's, with heromedel's choices; 6.28), finished: every rule
-below, the Slugs' letters, the Engi's hex, every female form, is already applied in the file. The station only picks
-a name that fits the crew member's race and sex; it changes nothing. The lists are words like the station's others:
+The lists are written by hand from this guide (McCarthy's, with heromedel's choices; 6.28): the Slugs' letters and
+every name's tags are the writer's. The station picks a name that fits the crew member's race and sex, by its rarity,
+and does only two things to it: a female form from the file's endings, and the Engi's hex. The lists are words like the station's others:
 the jar holds the defaults in `resource/lore/names/`, and a copy in `lore/names/` beside the jar overrides them. A
 test holds every list to this guide.
 
@@ -23,8 +23,7 @@ test holds every list to this guide.
 - **Namesakes are fine.** Two crew can share a name, as they always could; nothing has to be unique.
 - **M, F or B.** FTL marks every crew member male or female, whatever the race, and the letters say "he" or "she"
   from it. Every name carries one of three tags: M (male), F (female) or B (both: Jesse). A male crew member gets an
-  M or B name, a female an F or B one. Where a race makes its female names with an ending or a mark (below), the plain
-  name is M and its female form, written out beside it, is F.
+  M or B name, a female an F or B one; a female given a B name gets it with one of her race's endings (below).
 
 ## The file
 
@@ -103,8 +102,8 @@ Breccia, Tuff, Scoria, Pumice, Dacite, Diorite, Andesite, Rhyolite, Obsidian (a 
 Agate (a quartz), not Tiger Eye (plain English).
 
 Female: sorted by hand, by how a name sounds, and the mineral endings: -ite (the way minerals are really named) and
--ine. Some come out real (Pumicite is a real rock), the rest plausible; the ending that reads best is the one used
-(Basaltine, Gabbroite). Where neither reads well (Breccia), the rock stays M only.
+-ine. Some come out real (Pumicite is a real rock), the rest plausible (Basaltine, Gabbroite); `ex` the one that
+reads wrong. Where neither reads well (Breccia), the rock is tagged M.
 
 ## Crystal
 
@@ -114,15 +113,15 @@ The Crystal are the ancient ancestors of the Rock (LORE_COMPONENTS 12): the two
 lists are kin but share no names.
 
 Female: sorted by hand (Onyx and Rose Quartz are F), and the same endings as the Rock's, -ite and -ine (Quartzite and
-Jadeite, both real). A name already ending in -ite (Pyrite) takes -ine or stays M only.
+Jadeite, both real). A name already ending in -ite (Pyrite) takes `ex="ite"`, or is tagged M.
 
 ## Mantis
 
 Made-up words that sound like insects (clicks, buzzing, scraping), never an insect's name: Skrit, Zerg, Cuttler,
 Chitch, Vrask, Kessik, Ix. The one real insect allowed is Scarab. Nothing soft or human-sounding (not Thrum).
 
-Female: one of IX, XA, IXI or IXA on the end (Skritix, Zergxa, Vraskixi, Kessikixa), the one that reads best, spread
-over the list so all four are used. A name ending in X takes only the rest of an ending (Ix is Ixa or Ixi).
+Female: one of IX, XA, IXI or IXA on the end (Skritix, Zergxa, Vraskixi, Kessikixa), the station's pick each time;
+`ex` the ones that read wrong on a name. A name ending in X takes only the rest of an ending (Ix is Ixa or Ixi).
 
 ## Engi
 
