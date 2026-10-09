@@ -1221,7 +1221,11 @@ x1.5 on Normal, x2 on Hard (sectors, ships defeated, scrap, good outcomes, achie
 Rebel Flagship, expeditions, ransoms); losses and spending never. No rounding: the total keeps a hidden half point
 (`reputation.xml`'s `half`), so Normal's 120.5 reads 120 and the .5 counts toward the next. Each piece in the log shows
 what it added at the rate, never a bonus of its own. A Custom career chooses its rate once (its briefing, or the Space
-Dock asks one from before 6.13), then fixed; Sandbox Mode's is in Settings beside the Reputation rule, changeable anytime.
+Dock asks one from before 6.13), then fixed; Sandbox Mode's is in Settings beside the Reputation rule, changeable anytime. What a ship
+earns in FTL (sectors, ships defeated, scrap, good outcomes, the Rebel Flagship) also counts at her own difficulty's rate
+(heromedel, 6.17): Easy x1, Normal x1.25, Hard x1.5, and the sector's bonus, 1 + 0.1 for each sector after the first (x1.7
+in sector 8): ship x sector x career, from x1 up to x5.1. Away from FTL (achievements, Cruiser unlocks, expeditions,
+ransoms) the career's rate alone. The hidden remainder is kept in ten-thousandths (`rest`; 6.13's `half` reads as 5000).
 
 ## 44. The console — built (5.22; harness test ConT)
 

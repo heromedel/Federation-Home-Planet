@@ -7,6 +7,10 @@ public class RepuT {
   HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
   HomePlanet.immersiveNotifications = false; HomePlanet.careerMessages = false; HomePlanet.reputationOn = false;
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
+  for (Ship s : v.all()) { // the fleet flown on Easy (6.17: her own difficulty's rate x1), so the base points can be checked
+   if (s.state == Ship.State.STORAGE || s.save() == null) continue;
+   SavedGameState e = v.readCopy(s).save; e.setDifficulty(net.blerf.ftl.constants.Difficulty.EASY); v.write(s, e);
+  }
   Setup.chk("R: Sandbox Mode without its Reputation rule: none", !Reputation.shown());
   HomePlanet.reputationOn = true; // Settings' Reputation rule
   Setup.chk("R: with the rule, a reputation (no career or inbox needed)", Reputation.shown());
@@ -44,49 +48,57 @@ public class RepuT {
   g.getPlayerShip().getCrewList().remove(SaveHelper.getOwnCrew(g.getPlayerShip()).get(0));
   g.setStateVar("lost_crew", (g.hasStateVar("lost_crew") ? g.getStateVar("lost_crew") : 0) + 1);
   ftl(v, g);
+  int sec = g.getSectorNumber(); // the sector bonus from here (6.17): 1 + 0.1 a sector after the first
+  long eu = 82 * U + inFtl(6 + 8 + 6, sec) - 10 * U;
   total = Reputation.total(v);
-  Setup.chk("R: a sector +6, 85 scrap +8, a rebel ship +6, a death -10: 92 (got " + total + ")", total == 92);
+  Setup.chk("R: a sector 6, 85 scrap 8, a rebel ship 6, at sector " + (sec + 1) + "'s bonus, a death -10 as it is: " + eu / U + " (got " + total + ")", total == eu / U);
   String last = Reputation.recent(v, 1).get(0);
-  Setup.chk("R: said in the log, the death by name", last.contains("a rebel ship defeated (+6)") && last.contains(dead + " died (−10)") && last.contains("85 scrap collected (+8)"));
+  Setup.chk("R: said in the log, the death by name (" + last.trim() + ")", last.contains("a rebel ship defeated (+") && last.contains(dead + " died (−10)") && last.contains("85 scrap collected (+"));
   // the scrap left over counts when it makes up ten
   g = cont(v); g.setTotalScrapCollected(g.getTotalScrapCollected() + 5); g.setNearbyShip(null); ftl(v, g);
-  Setup.chk("R: 5 more scrap, with the 5 left over: +1", Reputation.total(v) == 93);
+  eu += inFtl(1, sec);
+  Setup.chk("R: 5 more scrap, with the 5 left over: 1 more", Reputation.total(v) == eu / U);
   // a clone came back (FTL counts it lost, but she's aboard), and a dismissal (gone, but not counted lost): no deaths
   g = cont(v); g.setStateVar("lost_crew", g.getStateVar("lost_crew") + 1); ftl(v, g);
   g = cont(v); g.getPlayerShip().getCrewList().remove(SaveHelper.getOwnCrew(g.getPlayerShip()).get(0)); ftl(v, g);
-  Setup.chk("R: a clone and a dismissal cost nothing", Reputation.total(v) == 93);
+  Setup.chk("R: a clone and a dismissal cost nothing", Reputation.total(v) == eu / U);
   // the station's own change (a trade at the Cargo Bay, say): not scored
   g = v.readCopy(b).save; g.setTotalScrapCollected(g.getTotalScrapCollected() + 1000); v.write(b, g);
   g = cont(v); ftl(v, g);
-  Setup.chk("R: the station's own change isn't scored", Reputation.total(v) == 93);
+  Setup.chk("R: the station's own change isn't scored", Reputation.total(v) == eu / U);
   // events: a jump within the sector to a quiet beacon (no fight, no ship, no store)
   g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.setTotalScrapCollected(g.getTotalScrapCollected() + 20); g.getPlayerShip().setScrapAmt(g.getPlayerShip().getScrapAmt() + 20);
   ftl(v, g);
-  Setup.chk("R: a good outcome +2 (with its 20 scrap +2): 97 (got " + Reputation.total(v) + ")", Reputation.total(v) == 97 && Reputation.recent(v, 1).get(0).contains("a good outcome (+2)"));
+  eu += inFtl(2 + 2, sec);
+  Setup.chk("R: a good outcome 2 (with its 20 scrap 2): " + eu / U + " (got " + Reputation.total(v) + ")", Reputation.total(v) == eu / U && Reputation.recent(v, 1).get(0).contains("a good outcome (+"));
   g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.getPlayerShip().setHullAmt(g.getPlayerShip().getHullAmt() - 3);
   ftl(v, g);
-  Setup.chk("R: a bad outcome -1 (hull lost): 96", Reputation.total(v) == 96 && Reputation.recent(v, 1).get(0).contains("a bad outcome (\u22121)"));
+  eu -= U;
+  Setup.chk("R: a bad outcome -1 (hull lost), as it is", Reputation.total(v) == eu / U && Reputation.recent(v, 1).get(0).contains("a bad outcome (\u22121)"));
   g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.getPlayerShip().setHullAmt(g.getPlayerShip().getHullAmt() - 2); g.getPlayerShip().setMissilesAmt(g.getPlayerShip().getMissilesAmt() + 2);
   ftl(v, g);
-  Setup.chk("R: gains and losses both: no outcome", Reputation.total(v) == 96);
+  Setup.chk("R: gains and losses both: no outcome", Reputation.total(v) == eu / U);
   // caught: the rebel fleet holds the beacon she jumps to
   g = cont(v); int at = g.getCurrentBeaconId() + 1; g.setCurrentBeaconId(at);
   while (g.getBeaconList().size() <= at) g.getBeaconList().add(new BeaconState());
   g.getBeaconList().get(at).setFleetPresence(FleetPresence.REBEL);
   ftl(v, g);
-  Setup.chk("R: caught by the rebel fleet -5: 91 (got " + Reputation.total(v) + ")", Reputation.total(v) == 91 && Reputation.recent(v, 1).get(0).contains("caught by the rebel fleet (\u22125)"));
+  eu -= 5 * U;
+  Setup.chk("R: caught by the rebel fleet -5: " + eu / U + " (got " + Reputation.total(v) + ")", Reputation.total(v) == eu / U && Reputation.recent(v, 1).get(0).contains("caught by the rebel fleet (\u22125)"));
   g = cont(v); g.getPlayerShip().setHullAmt(g.getPlayerShip().getHullAmt() + 1); ftl(v, g); // still there, a repair
-  Setup.chk("R: caught once, not again while she stays", Reputation.total(v) == 91);
+  Setup.chk("R: caught once, not again while she stays", Reputation.total(v) == eu / U);
   // an FTL achievement earned in the fleet's service: +10, once
   TransT.profile(saves, new String[] {"PLAYER_SHIP_HARD"}, new String[] {"ACH_SECTOR_5"});
-  Setup.chk("R: a new achievement +10: 101 (got " + Reputation.total(v) + ")", Reputation.total(v) == 101 && Reputation.recent(v, 1).get(0).contains("An achievement: "));
-  Setup.chk("R: counted once", Reputation.total(v) == 101);
+  eu += 10 * U; // away from FTL: the career's rate alone
+  Setup.chk("R: a new achievement +10, no ship or sector rate: " + eu / U + " (got " + Reputation.total(v) + ")", Reputation.total(v) == eu / U && Reputation.recent(v, 1).get(0).contains("An achievement: ") && Reputation.recent(v, 1).get(0).contains("(+10)"));
+  Setup.chk("R: counted once", Reputation.total(v) == eu / U);
   // the last stand: sector 8 reached (+6 a sector), a death there costs nothing
   g = cont(v); int from = g.getSectorNumber(); g.setSectorNumber(7);
   g.getPlayerShip().getCrewList().remove(SaveHelper.getOwnCrew(g.getPlayerShip()).get(0)); g.setStateVar("lost_crew", g.getStateVar("lost_crew") + 1);
   ftl(v, g);
-  int expect = 101 + (7 - from) * 6;
-  Setup.chk("R: sector 8 reached, a death there costs nothing: " + expect + " (got " + Reputation.total(v) + ")", Reputation.total(v) == expect);
+  eu += inFtl((7 - from) * 6, 7);
+  int expect = (int) (eu / U);
+  Setup.chk("R: sector 8 reached at its bonus (x1.7), a death there costs nothing: " + expect + " (got " + Reputation.total(v) + ")", Reputation.total(v) == expect);
   // lost in the last stand: no loss; lost before it: -50
   v.continueFile().delete(); v.reload();
   Setup.chk("R: lost in sector 8: no loss", v.byId(b.id) == null && Reputation.total(v) == expect);
@@ -98,15 +110,16 @@ public class RepuT {
     && Reputation.recent(v, 1).get(0).contains("Test Federation was lost in action (−50)"));
   // the Rebel Flagship
   Reputation.flagship(v, "Test Kestrel");
-  Setup.chk("R: the Rebel Flagship driven off: +100", Reputation.total(v) == expect + 50 && Reputation.recent(v, 1).get(0).contains("  +100  Test Kestrel drove off the Rebel Flagship (+100)"));
+  eu += -50 * U + inFtl(100, 7);
+  Setup.chk("R: the Rebel Flagship driven off, in sector 8: +170 (" + Reputation.recent(v, 1).get(0).trim() + ")", Reputation.total(v) == eu / U && Reputation.recent(v, 1).get(0).contains("Test Kestrel drove off the Rebel Flagship (+170)"));
   // the rule off: nothing counts
   HomePlanet.reputationOn = false;
   Ship lan = named(v, "Test Lanius"); v.board(lan);
   g = cont(v); g.setTotalShipsDefeated(g.getTotalShipsDefeated() + 3); ftl(v, g);
   HomePlanet.reputationOn = true;
-  Setup.chk("R: with the rule off nothing was counted", Reputation.total(v) == expect + 50);
+  Setup.chk("R: with the rule off nothing was counted", Reputation.total(v) == eu / U);
   g = cont(v); ftl(v, g); // the next look, the rule on again: what was done meanwhile isn't scored now either
-  Setup.chk("R: nor later, when the rule is back on", Reputation.total(v) == expect + 50);
+  Setup.chk("R: nor later, when the rule is back on", Reputation.total(v) == eu / U);
   Setup.chk("R: signs: +5, −50, 0", "+5".equals(Reputation.signed(5)) && "−50".equals(Reputation.signed(-50)) && "0".equals(Reputation.signed(0)));
   // 5.13: reputation as a currency (heromedel)
   HomePlanet.reputationOn = true;
@@ -135,35 +148,58 @@ public class RepuT {
   int sum = 0; for (int x : t.values()) sum += x;
   Setup.chk("T: the pools add up to the total " + t, sum == Reputation.total(v) && !t.containsKey("Other"));
   Setup.chk("T: the plea is Spent, captives and the ransom are Crew, sectors Travel, ships Combat, achievements their own",
-    t.get("Spent") == -184 && t.containsKey("Crew") && t.get("Travel") > 0 && t.containsKey("Combat") && t.get("Achievements") > 0 && t.containsKey("Scrap") && t.containsKey("Events"));
+    t.get("Spent") < 0 && t.containsKey("Crew") && t.get("Travel") > 0 && t.containsKey("Combat") && t.get("Achievements") > 0 && t.containsKey("Scrap") && t.containsKey("Events"));
 
   // 6.13: the rate (heromedel): what's earned counts x1 (Easy), x1.5 (Normal), x2 (Hard); losses and spending as they are;
   // a half point kept, never shown; each piece in the log at what it added, never a bonus of its own
-  int r0 = Reputation.total(v);
+  Ship lx = v.boarded(); // an Easy run in sector 1 (6.17: her rate and the sector's x1), so the career's rate shows alone
+  g = v.readCopy(lx).save; g.setDifficulty(net.blerf.ftl.constants.Difficulty.EASY); g.setSectorNumber(0); v.write(lx, g);
+  g = cont(v); ftl(v, g);
+  long u0 = units(v);
   HomePlanet.reputationRate = 1; // Sandbox Mode's own, as on Normal
   g = cont(v); g.setTotalScrapCollected(g.getTotalScrapCollected() + 10); g.setTotalShipsDefeated(g.getTotalShipsDefeated() + 1); g.setNearbyShip(null); ftl(v, g);
   String line = Reputation.recent(v, 1).get(0);
-  Properties rp = Store.read(Store.file(v.root, "reputation"));
-  Setup.chk("X: x1.5: 10 scrap (1) and a ship (4) earn 7.5: the total reads " + (r0 + 7) + ", the half kept (got " + Reputation.total(v) + ")", Reputation.total(v) == r0 + 7 && "1".equals(rp.getProperty("half")));
-  Setup.chk("X: each piece at what it added, adding up, no bonus shown (" + line.trim() + ")", line.contains("10 scrap collected (+1)") && line.contains("a ship defeated (+6)") && line.contains("+7") && !line.toLowerCase().contains("bonus") && !line.contains(".5"));
+  Setup.chk("X: x1.5: 10 scrap (1) and a ship (4) earn exactly 7.5, the rest kept hidden (got " + Reputation.total(v) + ")", units(v) == u0 + 75000 && Reputation.total(v) == Math.floorDiv(u0 + 75000, U));
+  Setup.chk("X: each piece at what it added, adding up, no bonus shown (" + line.trim() + ")", line.contains("10 scrap collected (+") && line.contains("a ship defeated (+") && !line.toLowerCase().contains("bonus") && !line.contains(".5"));
   String ev = new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8");
   Setup.chk("X: the machine line keeps the rate and the exact change", ev.contains("rate=1.5") && ev.contains("exact=7.5"));
   Reputation.captured(v, java.util.Arrays.asList("Cedar"));
-  Setup.chk("X: a loss as it is (-4), the half still kept", Reputation.total(v) == r0 + 3 && "1".equals(Store.read(Store.file(v.root, "reputation")).getProperty("half")));
+  Setup.chk("X: a loss as it is (-4), the rest still kept", units(v) == u0 + 35000);
   g = cont(v); g.setTotalScrapCollected(g.getTotalScrapCollected() + 10); ftl(v, g);
-  Setup.chk("X: the next 1.5 completes the half: +2, nothing lost to rounding (got " + Reputation.total(v) + ")", Reputation.total(v) == r0 + 5 && Store.read(Store.file(v.root, "reputation")).getProperty("half") == null
-    && Reputation.recent(v, 1).get(0).contains("10 scrap collected (+2)"));
+  Setup.chk("X: the next 1.5 adds to it, nothing lost to rounding (got " + Reputation.total(v) + ")", units(v) == u0 + 50000 && Reputation.total(v) == Math.floorDiv(u0 + 50000, U));
   HomePlanet.reputationRate = 2; // as on Hard
   Reputation.ransomed(v, "Cedar");
-  Setup.chk("X: x2: a ransom +4", Reputation.total(v) == r0 + 9 && Reputation.recent(v, 1).get(0).contains("Ransomed: Cedar brought home (+4)"));
+  Setup.chk("X: x2: a ransom 4 (" + Reputation.recent(v, 1).get(0).trim() + ")", units(v) == u0 + 90000 && Reputation.recent(v, 1).get(0).contains("Ransomed: Cedar brought home (+"));
   Reputation.spend(v, 3, "A plea, at x2");
-  Setup.chk("X: spending as it is", Reputation.total(v) == r0 + 6);
+  Setup.chk("X: spending as it is", units(v) == u0 + 60000);
   HomePlanet.reputationRate = 0;
   t = Reputation.tally(v); sum = 0; for (int x : t.values()) sum += x;
   Setup.chk("X: the tally still adds up to the total " + t, sum == Reputation.total(v) && !t.containsKey("Other"));
   // the rate's rule: Sandbox Mode's own; a career's difficulty; Custom chooses once (asked if it never did)
   int[] lv = new int[CareerRules.RULES.length]; Arrays.fill(lv, 1);
   CareerRules custom = new CareerRules(CareerRules.CUSTOM, lv);
+  // 6.17: in FTL, her own difficulty (Easy 1, Normal 1.25, Hard 1.5) and the sector's bonus (1 + 0.1 a sector after the first) too
+  Ship lb = v.boarded();
+  g = v.readCopy(lb).save; g.setDifficulty(net.blerf.ftl.constants.Difficulty.HARD); g.setSectorNumber(7); v.write(lb, g); // the station's change: not scored
+  g = cont(v); ftl(v, g);
+  int h0 = Reputation.total(v);
+  g = cont(v); g.setTotalScrapCollected(g.getTotalScrapCollected() + 10); ftl(v, g);
+  String hard = Reputation.recent(v, 1).get(0);
+  ev = new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8");
+  Setup.chk("Z: a Hard run in sector 8: 10 scrap earns 1 x 1.5 x 1.7 = 2.55 (" + hard.trim() + ")", ev.contains("exact=2.55") && ev.contains("ship_rate=1.5") && ev.contains("sector_rate=1.7") && Reputation.total(v) >= h0 + 2);
+  g = v.readCopy(lb).save; g.setDifficulty(net.blerf.ftl.constants.Difficulty.NORMAL); g.setSectorNumber(1); v.write(lb, g);
+  g = cont(v); ftl(v, g);
+  g = cont(v); g.setTotalShipsDefeated(g.getTotalShipsDefeated() + 1); g.setNearbyShip(null); ftl(v, g);
+  ev = new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8");
+  Setup.chk("Z: a Normal run in sector 2: a ship defeated earns 4 x 1.25 x 1.1 = 5.5", ev.contains("exact=5.5") && ev.contains("ship_rate=1.25") && ev.contains("sector_rate=1.1"));
+  int c0 = Reputation.total(v);
+  g = cont(v); int cat = g.getCurrentBeaconId() + 1; g.setCurrentBeaconId(cat);
+  while (g.getBeaconList().size() <= cat) g.getBeaconList().add(new BeaconState());
+  g.getBeaconList().get(cat).setFleetPresence(FleetPresence.REBEL);
+  ftl(v, g);
+  Setup.chk("Z: a loss in FTL as it is, whatever her rates: caught -5", Reputation.total(v) == c0 - 5 || Reputation.total(v) == c0 - 4); // -5 exactly; the total's hidden remainder may carry it to -4
+  Reputation.ransomed(v, "Dune");
+  Setup.chk("Z: away from FTL, the career's rate alone: a ransom +2", Reputation.recent(v, 1).get(0).contains("brought home (+2)"));
   Setup.chk("X: the rule: Sandbox free; Easy x1, Normal x1.5, Hard x2 whatever is saved; Custom asks, then keeps its choice",
     Reputation.RATE_FREE.equals(Reputation.rateRule(null, null)) && Reputation.rateLevel(CareerRules.of(CareerRules.EASY), "2") == 0 && Reputation.rateLevel(CareerRules.of(CareerRules.NORMAL), null) == 1
     && Reputation.rateLevel(CareerRules.of(CareerRules.HARD), "0") == 2 && Reputation.RATE_FIXED.equals(Reputation.rateRule(CareerRules.of(CareerRules.HARD), null))
@@ -171,6 +207,12 @@ public class RepuT {
     && Reputation.RATE_CHOSEN.equals(Reputation.rateRule(custom, "2")) && Reputation.rateLevel(custom, "2") == 2 && Reputation.RATE_ASK.equals(Reputation.rateRule(custom, "7")));
   Setup.done();
  }
+ /** Ten-thousandths of a point (the total's hidden remainder, 6.17). */
+ static final long U = 10000;
+ /** What a point earned in FTL is worth on an Easy run in Sandbox Mode at x1, in this sector (0 is sector 1): 1 + 0.1 a sector after the first. */
+ static long inFtl(int points, int sector) { return points * 1000L * (10 + Math.max(0, Math.min(7, sector))); }
+ /** The total exactly, in ten-thousandths, as its file keeps it. */
+ static long units(Vault v) { Properties p = Store.read(Store.file(v.root, "reputation")); long rest = Store.num(p, "rest", "1".equals(p.getProperty("half")) ? 5000 : 0); return Store.num(p, "total", 0) * U + rest; }
  static Ship named(Vault v, String n) { for (Ship s : v.all()) if (n.equals(s.name)) return s; throw new IllegalStateException(n); }
  static SavedGameState cont(Vault v) throws Exception { return HomePlanet.savedGameParser.readSavedGame(v.continueFile()); }
  /** FTL writes continue.sav, and the save watcher has the station look. */

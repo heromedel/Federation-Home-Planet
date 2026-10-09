@@ -136,8 +136,8 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("T: a new unlock brings a commission order", order != null && order.body.contains("Mantis") && order.isOrder());
   Setup.chk("T: Ranks From Rep (5.56): the Federation Cruiser A brings an order like any ship's, and no promotion", promo == null && find("order:PLAYER_SHIP_FED 0") != null && PlayerRank.rank(Unlocks.read()) == 0);
   Reputation.total(Vault.get()); int repNow = Reputation.total(Vault.get()); // (the first look reviews the service)
-  int cruiserRep = 0; for (String l : Reputation.recent(Vault.get(), 30)) if (l.contains("Federation Cruiser, Type A unlocked (+100)")) cruiserRep++;
-  Setup.chk("T: and +100 reputation, once", cruiserRep == 1 && Reputation.total(Vault.get()) == repNow);
+  int cruiserRep = 0; for (String l : Reputation.recent(Vault.get(), 30)) if (l.contains("Federation Cruiser, Type A unlocked (+" + (100 * (2 + Reputation.rateLevel()) / 2) + ")")) cruiserRep++;
+  Setup.chk("T: and 100 reputation at the career's rate (6.13), once", cruiserRep == 1 && Reputation.total(Vault.get()) == repNow);
   // a Type B (two of her achievements): the shared letter (her makers open the next model), not her Type A's story
   profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_FED", "PLAYER_SHIP_ENERGY"}, new String[] {"ACH_SECTOR_5", "ACH_TOUGH_SHIP", "ACH_NO_BUYING", "ACH_MANTIS_SLAUGHTER", "ACH_NO_UPGRADES", "ACH_ENERGY_SHIELDS", "ACH_ENERGY_POWER"});
   Transmissions.check();
