@@ -35,7 +35,10 @@ so a new kind or field is added here first, by whoever writes it. Started at 5.6
 | `converted` | `true` on an entry read in from an old log once (5.73, `LogConvert`): the human line is the old line exactly as it was, the fields what it gave away, `time` and `day` its own. |
 | `time`, `day` (given by the writer) | An entry about something that happened earlier (a journal note finished at start-up, 5.71): the writer gives the time (`yyyy-MM-dd HH:mm:ss`) and the day it happened, and the entry's own columns follow them instead of the clock. |
 
-A ship is named by `ship=<name>.<id>` with `ship_name` and `ship_id` beside it (and `ship_state` where known). A crew
+A ship is named by `ship=<name>.<id>` with `ship_name` and `ship_id` beside it (and `ship_state` where known). Since 6.18
+(heromedel) every entry about a ship also says where she was when it happened: `ship_sector` (1 to 8, as the player counts)
+and `ship_difficulty` (`easy`, `normal`, `hard`, FTL's difficulty she flies on), from her save at that moment; left out
+where she has none (the Cargo Hold, a ship that has just left). Reputation entries about a ship carry all of these too. A crew
 member, when crew files come (Phase 2), by `crew=<name>.<id>`; until then by `crew=<name>` and `race`.
 
 ## The clock (`log=clock`)

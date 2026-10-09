@@ -372,7 +372,7 @@ public final class VoyageLog {
 	}
 	/** The fields every event in her log carries: who she is. */
 	public static Event shipFields(Ship s) {
-		return Event.of("SHIP").put("ship", s.name + "." + s.id).put("ship_name", s.name).put("ship_id", s.id).put("ship_state", s.state == null ? null : s.state.name().toLowerCase());
+		return Vault.where(Event.of("SHIP").put("ship", s.name + "." + s.id).put("ship_name", s.name).put("ship_id", s.id).put("ship_state", s.state == null ? null : s.state.name().toLowerCase()), s); // her sector and difficulty (6.18)
 	}
 	private static void append(Vault v, Ship s, List<Event> events) {
 		// her own log and the fleet's event log alone (5.93): voyage.log and the master log's copy are no longer written

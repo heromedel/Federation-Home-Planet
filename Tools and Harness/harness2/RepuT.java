@@ -198,6 +198,17 @@ public class RepuT {
   g.getBeaconList().get(cat).setFleetPresence(FleetPresence.REBEL);
   ftl(v, g);
   Setup.chk("Z: a loss in FTL as it is, whatever her rates: caught -5", Reputation.total(v) == c0 - 5 || Reputation.total(v) == c0 - 4); // -5 exactly; the total's hidden remainder may carry it to -4
+  // 6.18 (heromedel): every entry about a ship says where she was: her sector and her difficulty
+  ev = new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8");
+  boolean boards = false, boardsOk = true, voyage = false, repOk = false;
+  for (String l : ev.split("\n")) {
+   if (l.contains(" | BOARD | ") && l.contains("station=" + HomePlanet.APP_VERSION)) { boards = true; if (!l.contains("ship_sector=") || !l.contains("ship_difficulty=")) boardsOk = false; } // this test's Boards
+   if (l.contains("log=voyage") && l.contains("ship_sector=") && l.contains("ship_difficulty=")) voyage = true;
+   if (l.contains(" | REPUTATION | ") && l.contains("reason=voyage") && l.contains("ship_id=") && l.contains("ship_sector=2") && l.contains("ship_difficulty=normal")) repOk = true;
+  }
+  Setup.chk("W: Board entries say her sector and difficulty", boards && boardsOk);
+  Setup.chk("W: her voyage entries too", voyage);
+  Setup.chk("W: a reputation entry about her: her id, sector and difficulty", repOk);
   Reputation.ransomed(v, "Dune");
   Setup.chk("Z: away from FTL, the career's rate alone: a ransom +2", Reputation.recent(v, 1).get(0).contains("brought home (+2)"));
   Setup.chk("X: the rule: Sandbox free; Easy x1, Normal x1.5, Hard x2 whatever is saved; Custom asks, then keeps its choice",

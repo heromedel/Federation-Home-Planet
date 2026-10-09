@@ -335,7 +335,7 @@ public final class Reputation {
 			now.put(p, s.id, scrap % SCRAP_PER_POINT);
 			if (!ch.isEmpty()) {
 				List<String> why = ch.apply(p);
-				if (write(v, p)) entry(v, "voyage", ch, s.name + ": " + String.join(", ", why), null);
+				if (write(v, p)) entry(v, "voyage", ch, s.name + ": " + String.join(", ", why), null, Vault.where(Vault.shipEvent("SHIP", s), gs));
 			} else {
 				write(v, p);
 			}
@@ -372,7 +372,7 @@ public final class Reputation {
 			Props.forget(p, s.id);
 			if (sector >= LAST_STAND || !shown()) { write(v, p); return 0; }
 			plain(p, SHIP_LOST);
-			if (write(v, p)) { entry(v, "ship_lost", SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null); return SHIP_LOST; }
+			if (write(v, p)) { entry(v, "ship_lost", plainChange(SHIP_LOST), s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null, Vault.shipEvent("SHIP", s)); return SHIP_LOST; }
 			return 0;
 		}
 	}
@@ -382,7 +382,7 @@ public final class Reputation {
 			if (taken == 0) return;
 			Properties p = read(v);
 			plain(p, -taken);
-			if (write(v, p)) entry(v, "restored", -taken, s.name + " was restored after FTL's New Game wrote over her (" + signed(-taken) + ")", null);
+			if (write(v, p)) entry(v, "restored", plainChange(-taken), s.name + " was restored after FTL's New Game wrote over her (" + signed(-taken) + ")", null, Vault.shipEvent("SHIP", s));
 		}
 	}
 	/**
@@ -454,7 +454,7 @@ public final class Reputation {
 			if (!counted(p)) { review(v); return; } // the review finds her in the Hall of Victors
 			Change ch = new Change().inFtl(name + " drove off the Rebel Flagship", FLAGSHIP, shipLevel(gs), LAST_STAND); // hard rule 1: never that she destroyed it, as the museum and the Captain's Log say it
 			String why = ch.apply(p).get(0);
-			if (write(v, p)) entry(v, "flagship", ch, why, null);
+			if (write(v, p)) entry(v, "flagship", ch, why, null, Vault.where(homeplanet.core.Event.of("SHIP").put("ship_name", name), gs));
 		}
 	}
 
@@ -735,16 +735,21 @@ public final class Reputation {
 	/** One entry in the reputation log, in the station log's form: its time, the change as its tag, why, and details under it. */
 	private static void entry(Vault v, int points, String why, List<String> details) { entry(v, "other", points, why, details); }
 	/** As above, with what the change was for (the event's reason field: achievement, cruiser, voyage, ship_lost, restored, expedition, captive, ransomed, spent, flagship, review). */
-	private static void entry(Vault v, String reason, int points, String why, List<String> details) {
+	private static void entry(Vault v, String reason, int points, String why, List<String> details) { entry(v, reason, plainChange(points), why, details); }
+	/** A change of points as they are, for an entry. */
+	private static Change plainChange(int points) {
 		Change plain = new Change();
 		plain.moved = points; plain.movedUnits = points * UNIT;
-		entry(v, reason, plain, why, details);
+		return plain;
 	}
 	/** As above, from a {@link Change}: the whole points it moved the total by, and on the machine line the exact change and its rates (6.13, 6.17). */
-	private static void entry(Vault v, String reason, Change ch, String why, List<String> details) {
+	private static void entry(Vault v, String reason, Change ch, String why, List<String> details) { entry(v, reason, ch, why, details, null); }
+	/** As above, about a ship: her id, name, sector and difficulty on the machine line too (6.18). */
+	private static void entry(Vault v, String reason, Change ch, String why, List<String> details, homeplanet.core.Event ship) {
 		Properties p = read(v); // the event log alone (5.93): reputation.log and the master log's copy are no longer written
 		homeplanet.core.Event e = homeplanet.core.Event.of("REPUTATION").put("log", "reputation").put("reason", reason).put("points", ch.moved)
 				.put("exact", unitWords(ch.movedUnits)).put("rate", RATE[rateLevel()]);
+		if (ship != null) for (String k : new String[] {"ship", "ship_name", "ship_id", "ship_state", "stranger", "ship_sector", "ship_difficulty"}) if (ship.get(k) != null) e.put(k, ship.get(k));
 		if (ch.ship >= 0) e.put("ship_rate", SHIP_RATE[ch.ship]).put("sector_rate", sectorRate(ch.sector));
 		homeplanet.core.EventLog.write(v, e.put("total", num(p, "total")).put("total_exact", unitWords(units(p))).put("why", why).details(details).human(why));
 	}
