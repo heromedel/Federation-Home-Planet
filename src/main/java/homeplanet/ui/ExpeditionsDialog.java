@@ -292,6 +292,6 @@ final class ExpeditionsDialog {
 		b.setText(fleet == 0 ? "Post a promise of adventure" + (rep > 0 ? ": " + rep + " reputation" : "") : "Post for volunteers: " + cost + " scrap");
 		b.setToolTipText(fleet == 0 ? (rep > 0 ? rep + " reputation, spent whether or not anyone answers: " : "Free: ") + "with no crew anywhere, a promise of adventure is all you can offer. Someone may answer."
 				: "5 scrap for each crew member in your fleet (" + fleet + "), at most 60: paid whether or not anyone answers. New crew wait in the Cargo Hold.");
-		b.setEnabled(cost <= v.storageScrap() && rep <= homeplanet.vault.Reputation.total(v));
+		b.setEnabled(cost <= v.storageScrap()); // a promise of adventure may take reputation below zero (heromedel, 5.13)
 	}
 }

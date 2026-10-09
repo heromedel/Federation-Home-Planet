@@ -10,6 +10,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
  lateLook(v);
  namesakes(v);
  hiring(v);
+ promise(v);
  Setup.done();
 }
  /** Crew of these races, in the Cargo Hold (any there before are moved out of the way first). */
@@ -186,6 +187,19 @@ public class ExpT { public static void main(String[] a) throws Exception {
   Setup.chk("I: a posting is answered now and then (" + tries + " tries), the volunteer in the Cargo Hold, the scrap paid each time", answered == 1 && Expeditions.holdCrew(v).size() == 1 && v.storageScrap() == 500 - cost * tries);
   List<String> races = Expeditions.hireableRaces();
   Setup.chk("I: volunteers come from the ships the commander has unlocked " + races, !races.isEmpty() && races.contains("human"));
+ }
+ /** No crew anywhere and no reputation to spare: a promise of adventure is never refused, and may take reputation below zero (heromedel, 5.13; the button and the posting refused it before 6.16). */
+ static void promise(Vault v) throws Exception {
+  boolean repWas = HomePlanet.reputationOn; HomePlanet.reputationOn = true;
+  for (Ship s : v.all()) { // every crew member gone: ships, Junkyard and the Cargo Hold
+   if (s.save() == null || !v.fileOf(s).isFile()) continue;
+   Vault.Copy c = v.readCopy(s); c.save.getPlayerShip().getCrewList().removeAll(SaveHelper.getOwnCrew(c.save.getPlayerShip())); v.begin().put(s, c.save, c.hash).commit();
+  }
+  Reputation.spend(v, Reputation.total(v) + 3, "Test: down to -3");
+  int before = Reputation.total(v);
+  boolean refused = false; try { Expeditions.hire(v, new Random(1)); } catch (IOException e) { refused = true; System.out.println("  refused: " + e.getMessage()); }
+  Setup.chk("Y: no crew, reputation " + before + ": the promise is posted all the same, 15 below (now " + Reputation.total(v) + ")", Expeditions.fleetCrew(v) <= 1 && !refused && Reputation.total(v) == before - 15);
+  HomePlanet.reputationOn = repWas;
  }
  /** For AsgT's check of the words against FTL's own: a stream read whole, and a line split into lower-case words. */
  static byte[] readAll(InputStream in) throws IOException { ByteArrayOutputStream o = new ByteArrayOutputStream(); byte[] b = new byte[8192]; for (int n; (n = in.read(b)) > 0; ) o.write(b, 0, n); in.close(); return o.toByteArray(); }
