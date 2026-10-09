@@ -212,6 +212,8 @@ public final class VoyageLog {
 	 * (her next look): "Ship met" then, on its own.
 	 */
 	private static void beacon(Properties a, Properties b, boolean moved, List<Event> out) {
+		// a distress beacon (heromedel, 6.21): she responded, before anything she met there; once an arrival
+		if (moved && "true".equals(b.getProperty("distress"))) out.add(Event.of("DISTRESS").put("sector", Store.num(b, "sector", 0) + 1).put("beacon", b.getProperty("beacon")).human("Responded to a distress signal."));
 		if (moved) {
 			List<String> there = new ArrayList<String>(), ids = new ArrayList<String>(), hazards = split(b.getProperty("hazards", ""));
 			int nebula = Store.num(b, "nebulaJumps", 0) - Store.num(a, "nebulaJumps", Store.num(b, "nebulaJumps", 0)); // no count kept before 5.19: no change
@@ -278,6 +280,7 @@ public final class VoyageLog {
 		p.setProperty("beacon", Integer.toString(gs.getCurrentBeaconId()));
 		p.setProperty("beacons", Integer.toString(gs.getTotalBeaconsExplored()));
 		p.setProperty("store", Boolean.toString(SaveHelper.isAtStation(gs))); // a store at her beacon (5.18: arriving at a station, buying there)
+		if (homeplanet.parser.Distress.arrivedAt(gs)) p.setProperty("distress", "true"); // a distress beacon's event on screen (6.21)
 		p.setProperty("defeated", Integer.toString(gs.getTotalShipsDefeated()));
 		p.setProperty("hull", Integer.toString(s.getHullAmt()));
 		int maxHull = s.getHullAmt();

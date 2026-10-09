@@ -39,6 +39,8 @@ public final class Reputation {
 
 	// ---- the scoring (docs/ROADMAP.md) ----
 	public static final int SECTOR = 6, DEFEATED = 4, REBEL_DEFEATED = 6, FLAGSHIP = 100;
+	/** Responding to a distress signal (heromedel, 6.21): +1 for arriving, whatever it turns out to be. */
+	public static final int DISTRESS = 1;
 	/** Scrap collected counts a tenth (FTL's own total: sales at stores and the Scrap Recovery Arm don't add to it). */
 	public static final int SCRAP_PER_POINT = 10;
 	public static final int CREW_DIED = -10, SHIP_LOST = -50;
@@ -306,6 +308,7 @@ public final class Reputation {
 				int n = now.sector - was.sector;
 				ch.inFtl(n == 1 ? "sector " + (now.sector + 1) + " reached" : n + " sectors further", n * SECTOR, ship, at);
 			}
+			if ((now.beacon != was.beacon || now.sector != was.sector) && homeplanet.parser.Distress.arrivedAt(gs)) ch.inFtl("responded to a distress signal", DISTRESS, ship, at); // once an arrival
 			int scrap = Math.max(0, now.collected - was.collected) + was.rest;
 			int fromScrap = scrap / SCRAP_PER_POINT;
 			if (fromScrap > 0) ch.inFtl((scrap - was.rest) + " scrap collected", fromScrap, ship, at);

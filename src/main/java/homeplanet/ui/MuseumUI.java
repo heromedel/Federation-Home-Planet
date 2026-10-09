@@ -410,7 +410,8 @@ public class MuseumUI extends JPanel {
 
 	private void record(JPanel p, Museum.Exhibit ex, SavedGameState gs) {
 		heading(p, "Service record");
-		if (!ex.get("commissioned").isEmpty()) row(p, "Commissioned", ex.get("commissioned"));
+		String commissioned = homeplanet.vault.MasterLog.stardateOf(Vault.get(), "COMMISSION", ex.id); // a stardate, never a calendar date (heromedel, 6.24)
+		if (commissioned != null) row(p, "Commissioned", commissioned);
 		homeplanet.vault.TradeMark mark = homeplanet.vault.TradeMark.of(Vault.get(), ex.id);
 		if (mark != null) {
 			row(p, "Original owner", mark.original);

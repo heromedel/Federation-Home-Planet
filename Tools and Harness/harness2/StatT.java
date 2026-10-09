@@ -35,6 +35,9 @@ public class StatT {
   Setup.chk("S: her service: 2 journeys, furthest sector 7 (the last journey's), 47 ships, 1,210 scrap", "2".equals(value(st.service, "Journeys"))
     && "7".equals(value(st.service, "Furthest sector")) && "47".equals(value(st.service, "Ships defeated")) && "1,210".equals(value(st.service, "Scrap collected")));
   Setup.chk("S: no final victories line without a victory", value(st.service, "Final victories") == null);
+  homeplanet.core.EventLog.write(v, homeplanet.vault.Vault.shipEvent("COMMISSION", s).put("log", "station").put("headline", s.name).human("x"));
+  String when = value(ShipStats.of(v, s, s.save()).service, "Commissioned");
+  Setup.chk("S: commissioned on a stardate, never a calendar date (heromedel, 6.24): " + when, when != null && when.matches("Stardate \\d+\\.\\d+\\.\\d+\\.\\d+"));
   ShipStore.keepVersion(v.historyOf(s), SafeFiles.read(s.file()), "victory-");
   Setup.chk("S: a victory: Final victories 1, as a gain", "1".equals(value(ShipStats.of(v, s, s.save()).service, "Final victories")) && line(ShipStats.of(v, s, s.save()).service, "Final victories").tone == 1);
   Setup.chk("S: her crew's standouts: Best Pilot 214 evasions and Longest Serving to one, Best Gunner 28 kills to the other, none for repairs",
@@ -46,7 +49,7 @@ public class StatT {
   Setup.side(v, v.historyOf(t), "traded.txt", "trade=x\ndate=2026-10-01 18:40\nfrom=Commander Bree\noriginal=Captain Ash\ndefeated=0\nbeacons=0\nscrap=0\nsectors=0\n");
   ShipStats ts = ShipStats.of(v, t, t.save());
   Setup.chk("S: a traded ship: first commissioned by Captain Ash; with you since the trade, from Commander Bree", "Captain Ash".equals(value(ts.service, "First commissioned by"))
-    && ts.traded != null && ts.traded.contains("Commander Bree") && ts.traded.contains("2026-10-01 18:40"));
+    && ts.traded != null && ts.traded.contains("Commander Bree") && !ts.traded.contains("2026-10-01")); // a stardate where she arrived, never a calendar date (6.24)
   Setup.done();
  }
  static List<String> labels(List<ShipStats.Line> l) { List<String> out = new ArrayList<String>(); for (ShipStats.Line x : l) out.add(x.label); return out; }

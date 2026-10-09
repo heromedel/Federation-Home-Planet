@@ -228,6 +228,21 @@ public class RepuT {
   Setup.chk("O: re-evaluated: the new score, one entry saying what it changed (" + Reputation.recent(v, 1).get(0).trim() + ")", Reputation.total(v) == re.reevaluated && Reputation.recent(v, 1).get(0).contains("Records updated (+") && Reputation.offer(v) == null);
   t = Reputation.tally(v); sum = 0; for (int x : t.values()) sum += x;
   Setup.chk("O: the tally still adds up to the total " + t, sum == Reputation.total(v));
+  // 6.21 (heromedel): responding to a distress signal, +1 earned in FTL, once an arrival; its own line in her voyage log, before what she met there
+  g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.getEncounter().setText("event_DISTRESS_SATELLITE_DEFENSE_text");
+  g.setNearbyShip(Commission.build("REBEL_FAT", "Rebel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1)).getPlayerShip()); g.setNearbyShipAI(new NearbyShipAIState()); g.setUnknownXi(0);
+  ftl(v, g);
+  String dl = Reputation.recent(v, 1).get(0);
+  ev = new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8");
+  int dAt = ev.lastIndexOf("| DISTRESS |"), mAt = ev.lastIndexOf("| SHIP_MET |");
+  Setup.chk("D: arriving at a distress beacon: responded to a distress signal, earned (" + dl.trim() + ")", dl.contains("responded to a distress signal (+"));
+  Setup.chk("D: her voyage log says so, before the ship she met there", dAt > 0 && mAt > dAt && ev.contains("Responded to a distress signal."));
+  int d0 = count(new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8"), "| DISTRESS |"), r0d = count(Reputation.log(v), "responded to a distress signal");
+  g = cont(v); g.getPlayerShip().setHullAmt(g.getPlayerShip().getHullAmt() - 1); ftl(v, g); // still there
+  Setup.chk("D: waiting at the same beacon: not again", count(new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8"), "| DISTRESS |") == d0 && count(Reputation.log(v), "responded to a distress signal") == r0d);
+  g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.getEncounter().setText("event_NEBULA_text"); g.setNearbyShip(null); ftl(v, g);
+  Setup.chk("D: an ordinary beacon: nothing", count(new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8"), "| DISTRESS |") == d0);
+  Setup.chk("D: the Captain's Log: \"We responded to a distress signal. We encountered a rebel ship.\"", captainsDistress());
   Setup.chk("X: the rule: Sandbox free; Easy x1, Normal x1.5, Hard x2 whatever is saved; Custom asks, then keeps its choice",
     Reputation.RATE_FREE.equals(Reputation.rateRule(null, null)) && Reputation.rateLevel(CareerRules.of(CareerRules.EASY), "2") == 0 && Reputation.rateLevel(CareerRules.of(CareerRules.NORMAL), null) == 1
     && Reputation.rateLevel(CareerRules.of(CareerRules.HARD), "0") == 2 && Reputation.RATE_FIXED.equals(Reputation.rateRule(CareerRules.of(CareerRules.HARD), null))
@@ -241,6 +256,17 @@ public class RepuT {
  static long inFtl(int points, int sector) { return points * 1000L * (10 + Math.max(0, Math.min(7, sector))); }
  /** The total exactly, in ten-thousandths, as its file keeps it. */
  static long units(Vault v) { Properties p = Store.read(Store.file(v.root, "reputation")); long rest = Store.num(p, "rest", "1".equals(p.getProperty("half")) ? 5000 : 0); return Store.num(p, "total", 0) * U + rest; }
+ /** The Captain's Log's jump line at a distress beacon where a ship was met (6.21). */
+ static boolean captainsDistress() throws Exception {
+  java.lang.reflect.Constructor<homeplanet.vault.CaptainsLog.Line> k = homeplanet.vault.CaptainsLog.Line.class.getDeclaredConstructor(String.class, String.class, boolean.class, String.class); k.setAccessible(true);
+  homeplanet.vault.CaptainsLog.Line l = k.newInstance("move", "move:x", false, "");
+  java.lang.reflect.Field d = l.getClass().getDeclaredField("distress"); d.setAccessible(true); d.set(l, true);
+  java.lang.reflect.Field met = l.getClass().getDeclaredField("met"); met.setAccessible(true); ((List<String>) met.get(l)).add("a rebel ship");
+  java.lang.reflect.Method j = homeplanet.vault.CaptainsLog.class.getDeclaredMethod("jumpText", homeplanet.vault.CaptainsLog.Line.class); j.setAccessible(true);
+  String t = (String) j.invoke(null, l);
+  System.out.println("  Captain's Log: " + t);
+  return "We responded to a distress signal. We encountered a rebel ship.".equals(t);
+ }
  static Ship named(Vault v, String n) { for (Ship s : v.all()) if (n.equals(s.name)) return s; throw new IllegalStateException(n); }
  static SavedGameState cont(Vault v) throws Exception { return HomePlanet.savedGameParser.readSavedGame(v.continueFile()); }
  /** FTL writes continue.sav, and the save watcher has the station look. */

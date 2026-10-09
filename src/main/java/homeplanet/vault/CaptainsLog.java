@@ -38,6 +38,8 @@ public final class CaptainsLog {
 		boolean station;
 		/** For a ship's jumps: what her beacon held ("a nebula", "a star") and the ships met there ("a Rock pirate"). */
 		final List<String> hazards = new ArrayList<String>(), met = new ArrayList<String>();
+		/** For a ship's jumps: to a distress beacon (6.21): "We responded to a distress signal." */
+		boolean distress;
 		/** For a day's fight: the ships beaten, where the station saw who ("the rebel ship"; 6.09). */
 		final List<String> beaten = new ArrayList<String>();
 		// what's merged into it
@@ -76,6 +78,7 @@ public final class CaptainsLog {
 				if (j == null) continue;
 				for (String x : b.hazards) if (!j.hazards.contains(x)) j.hazards.add(x);
 				for (String x : b.met) if (!j.met.contains(x)) j.met.add(x);
+				if (b.distress) j.distress = true;
 				boolean then = j.text.startsWith("Then ");
 				j.text = then ? "Then " + lower(jumpText(j)) : jumpText(j);
 			}
@@ -419,6 +422,7 @@ public final class CaptainsLog {
 	 */
 	private static boolean fought(String ship, homeplanet.core.EventLog.Entry x, Map<String, Line> m) {
 		if (x == null) return false;
+		if (x.kind.equals("DISTRESS")) { beacon(ship, m).distress = true; return true; } // 6.21: the jump's line says she responded
 		if (x.kind.equals("SHIP_MET")) {
 			String met = x.get("met", "");
 			if (met.isEmpty()) return false;
@@ -554,6 +558,12 @@ public final class CaptainsLog {
 		if (l.sector > 0) where = "to sector " + l.sector + (into != null ? ", into " + into + (near.isEmpty() ? "" : " " + nearby) : near.isEmpty() ? "" : ", to a beacon " + nearby);
 		else if (l.station) where = "to a station" + (into != null ? " in " + into : "") + (near.isEmpty() ? "" : " " + nearby);
 		else where = into != null ? "into " + into + (near.isEmpty() ? "" : " " + nearby) : near.isEmpty() ? "to a new beacon" : "to a beacon " + nearby;
+		if (l.distress) { // heromedel (6.21): "We responded to a distress signal." then "We encountered a rebel ship."
+			String at = l.sector > 0 ? " in sector " + l.sector : "";
+			if (into != null) at += (at.isEmpty() ? "" : ",") + " in " + into;
+			if (!near.isEmpty()) at += " " + nearby;
+			return "We responded to a distress signal" + at + "." + (l.met.isEmpty() ? "" : " We encountered " + join(l.met) + ".");
+		}
 		return "We jumped " + where + (l.met.isEmpty() ? "" : " and met " + join(l.met)) + ".";
 	}
 	private static String systemsText(Line l) {

@@ -47,6 +47,20 @@ public final class MasterLog {
 	/** The career's day at this count of the clock. */
 	public static int dayAt(Vault v, int clock) { return clock - start(v) + 1; }
 	/** A day as a stardate, year.month.week.day; "Prior to 1.1.1.1" for a day before the first. */
+	/**
+	 * When something happened to a ship, as the player is told it (heromedel, 6.24: stardates, never a calendar date):
+	 * "Stardate 1.2.3.4" from the first entry of this kind about her in the fleet's log, "Prior to Stardate 1.1.1.1" for
+	 * one from before the stardates; null if this fleet's log has none (a ship that came from another station: her
+	 * entries from there are another career's days).
+	 */
+	public static String stardateOf(Vault v, String kind, String shipId) {
+		if (v == null || shipId == null) return null;
+		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.read(v)) {
+			if (!e.kind.equals(kind) || !shipId.equals(e.get("ship_id")) || e.get("received_from") != null) continue;
+			return e.day < 1 ? "Prior to Stardate 1.1.1.1" : "Stardate " + stardate(e.day);
+		}
+		return null;
+	}
 	public static String stardate(int day) {
 		if (day < 1) return "Prior to 1.1.1.1";
 		int n = day - 1;
