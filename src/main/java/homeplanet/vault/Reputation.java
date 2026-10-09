@@ -444,7 +444,7 @@ public final class Reputation {
 			if (write(v, p)) entry(v, "spent", -cost, why + " (" + signed(-cost) + ")", null);
 		}
 	}
-	/** She won the last battle: the Rebel Flagship defeated. */
+	/** She won the last battle: the Rebel Flagship driven off. */
 	public static void flagship(Vault v, String name) { flagship(v, name, null); }
 	/** As above, at her difficulty's rate (her save as she won: 6.17) and sector 8's bonus. */
 	public static void flagship(Vault v, String name, SavedGameState gs) {
@@ -498,7 +498,7 @@ public final class Reputation {
 					if (s != null) Props.of(gs).put(p, id, 0); // counted from here on
 				}
 				int won = homeplanet.parser.Museum.victories(v, id);
-				if (won > 0) ch.inFtl(won == 1 ? "the Rebel Flagship defeated" : "the Rebel Flagship defeated " + won + " times", won * FLAGSHIP, shipLevel(gs), LAST_STAND); // in sector 8
+				if (won > 0) ch.inFtl(won == 1 ? "the Rebel Flagship driven off" : "the Rebel Flagship driven off " + homeplanet.model.Words.number(won) + " times", won * FLAGSHIP, shipLevel(gs), LAST_STAND); // in sector 8; hard rule 1: driven off, never defeated
 				if (s == null && Vault.Fate.LOST.name().equals(fate(v, id)) && won == 0 && lastSectorOf(v, id) < LAST_STAND) ch.lost("lost in action", SHIP_LOST);
 				if (ch.isEmpty()) continue;
 				List<String> why = ch.apply(p);

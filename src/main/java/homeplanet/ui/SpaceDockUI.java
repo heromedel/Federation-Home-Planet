@@ -627,9 +627,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** heromedel's question (6.19), with the two scores: re-evaluated at the rates, or kept. Closed: asked again at the next start. */
 	private void askRecords(homeplanet.vault.Reputation.Reevaluation r) {
 		try {
-			Object[] options = {"Re-evaluate", "Keep my current score"};
-			int c = JOptionPane.showOptionDialog(null, "Federation Home Planet is updating its records. Many of your accomplishments were before the update and may warrant a different Reputation score. "
-					+ "Would you like to be reevaluated or keep your current score.\n\nRe-evaluated: " + r.reevaluated + "\nCurrent: " + r.current,
+			Object[] options = {"Reevaluate", "Keep my current score"};
+			int c = JOptionPane.showOptionDialog(null, "The Federation Home Planet is updating its records. Many of your accomplishments were before the update and may warrant a different Reputation score. "
+					+ "Would you like to be reevaluated or keep your current score?\n\nReevaluated: " + r.reevaluated + "\nCurrent: " + r.current,
 					"Reputation", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
 			if (c != 0 && c != 1) { recordsPutOff = true; return; }
 			homeplanet.vault.Reputation.answer(Vault.get(), r, c == 0);
