@@ -16,6 +16,7 @@
 		<level name="Realworld-Rare" weight="100"/>
 		<level name="Semi-Fictional" weight="30"/>
 		<level name="Known-Fiction" weight="10"/>
+		<level name="Human-Influenced" weight="5"/>
 		<level name="Bizarre" weight="1"/>
 	</rarity>
 	<female suffix="ite, ine"/>
@@ -47,10 +48,10 @@
 	<name sex="B" rarity="Realworld-Uncommon">Peridot</name>
 	<name sex="B" rarity="Realworld-Uncommon">Tourmaline</name>
 	<name sex="M" rarity="Realworld-Uncommon">Jasper</name>
-	<name sex="F" rarity="Realworld-Uncommon">Rose Quartz</name>
-	<name sex="F" rarity="Realworld-Uncommon">Moonstone</name>
-	<name sex="M" rarity="Realworld-Uncommon">Bloodstone</name>
-	<name sex="M" rarity="Realworld-Uncommon">Sunstone</name>
+	<name sex="F" rarity="Human-Influenced">Rose Quartz</name>
+	<name sex="F" rarity="Human-Influenced">Moonstone</name>
+	<name sex="M" rarity="Human-Influenced">Bloodstone</name>
+	<name sex="M" rarity="Human-Influenced">Sunstone</name>
 	<name sex="F" rarity="Realworld-Uncommon">Mica</name>
 	<name sex="B" rarity="Realworld-Uncommon">Feldspar</name>
 	<name sex="M" rarity="Realworld-Uncommon">Gypsum</name>
@@ -66,10 +67,52 @@
 	<name sex="B" rarity="Realworld-Rare">Barite</name>
 	<name sex="B" rarity="Realworld-Rare">Dolomite</name>
 	<name sex="M" rarity="Realworld-Rare">Corundum</name>
+	<name sex="M" rarity="Human-Influenced">Tiger Eye</name>
 	<name sex="M" rarity="Semi-Fictional">Lodestone</name>
 	<name sex="M" rarity="Semi-Fictional">Brimstone</name>
 	<name sex="B" rarity="Known-Fiction">Kryptonite</name>
 	<name sex="M" rarity="Known-Fiction">Dilithium</name>
 	<name sex="M" rarity="Known-Fiction">Tiberium</name>
 	<name sex="F" rarity="Bizarre">Shardonnay</name>
+	<name sex="F">Turquoise</name>
+	<name sex="F">Aquamarine</name>
+	<name sex="B">Lapis</name>
+	<name sex="B">Cinnabar</name>
+	<name sex="M">Talc</name>
+	<name sex="M">Sulfur</name>
+	<name sex="M">Gemstone</name>
+	<name sex="B">Shard</name>
+	<name sex="B" rarity="Realworld-Uncommon">Kunzite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Labradorite</name>
+	<name sex="F" rarity="Realworld-Uncommon">Larimar</name>
+	<name sex="B" rarity="Realworld-Uncommon">Iolite</name>
+	<name sex="M" rarity="Realworld-Uncommon">Chrysoberyl</name>
+	<name sex="F" rarity="Realworld-Uncommon">Chrysocolla</name>
+	<name sex="B" rarity="Realworld-Uncommon">Rhodonite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Sodalite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Aragonite</name>
+	<name sex="M" rarity="Realworld-Uncommon">Fluorspar</name>
+	<name sex="M" rarity="Realworld-Uncommon">Spar</name>
+	<name sex="M" rarity="Realworld-Uncommon">Vug</name>
+	<name sex="M" rarity="Realworld-Uncommon">Cluster</name>
+	<name sex="M" rarity="Realworld-Uncommon">Point</name>
+	<name sex="B" rarity="Realworld-Rare">Hemimorphite</name>
+	<name sex="B" rarity="Realworld-Rare">Vanadinite</name>
+	<name sex="B" rarity="Realworld-Rare">Cerussite</name>
+	<name sex="B" rarity="Realworld-Rare">Sphalerite</name>
+	<name sex="B" rarity="Realworld-Rare">Cassiterite</name>
+	<name sex="B" rarity="Realworld-Rare">Wolframite</name>
+	<name sex="B" rarity="Realworld-Rare">Stibnite</name>
+	<name sex="M" rarity="Realworld-Rare">Realgar</name>
+	<name sex="M" rarity="Realworld-Rare">Orpiment</name>
+	<name sex="F" rarity="Human-Influenced">Smoky Quartz</name>
+	<name sex="F" rarity="Human-Influenced">Marquise</name>
+	<name sex="F" rarity="Human-Influenced">Baguette</name>
+	<name sex="M" rarity="Human-Influenced">Brilliant</name>
+	<name sex="M" rarity="Human-Influenced">Cabochon</name>
+	<name sex="M" rarity="Human-Influenced">Birthstone</name>
+	<name sex="M" rarity="Known-Fiction">Arkenstone</name>
+	<name sex="M" rarity="Known-Fiction">Silmaril</name>
+	<name sex="B" rarity="Known-Fiction">Kyber</name>
+	<name sex="M" rarity="Bizarre">Quartzbert</name>
 </names>

@@ -79,4 +79,65 @@
 	<name sex="B" rarity="uncommon">Hash</name>
 	<name sex="B" rarity="uncommon">Heap</name>
 	<name sex="B" rarity="rare">Bool</name>
+	<name sex="B">Axis</name>
+	<name sex="B">Bore</name>
+	<name sex="B">Calc</name>
+	<name sex="B">Cast</name>
+	<name sex="B">Clip</name>
+	<name sex="B">Dock</name>
+	<name sex="B">Echo</name>
+	<name sex="B">Feed</name>
+	<name sex="B">File</name>
+	<name sex="B">Flag</name>
+	<name sex="B">Flow</name>
+	<name sex="B">Fork</name>
+	<name sex="B">Gain</name>
+	<name sex="B">Helm</name>
+	<name sex="B">Hook</name>
+	<name sex="B">Hose</name>
+	<name sex="B">Keys</name>
+	<name sex="B">Lead</name>
+	<name sex="B">Lift</name>
+	<name sex="B">Line</name>
+	<name sex="B">Mask</name>
+	<name sex="B">Melt</name>
+	<name sex="B">Mill</name>
+	<name sex="B">Mode</name>
+	<name sex="B">Nail</name>
+	<name sex="B">Pack</name>
+	<name sex="B">Path</name>
+	<name sex="B">Peak</name>
+	<name sex="B">Pins</name>
+	<name sex="B">Plan</name>
+	<name sex="B">Plot</name>
+	<name sex="B">Prop</name>
+	<name sex="B">Push</name>
+	<name sex="B">Ramp</name>
+	<name sex="B">Reel</name>
+	<name sex="B">Root</name>
+	<name sex="B">Rope</name>
+	<name sex="B">Rung</name>
+	<name sex="B">Seam</name>
+	<name sex="B">Send</name>
+	<name sex="B">Shim</name>
+	<name sex="B">Silo</name>
+	<name sex="B">Slot</name>
+	<name sex="B">Sort</name>
+	<name sex="B">Spot</name>
+	<name sex="B">Stud</name>
+	<name sex="B">Tape</name>
+	<name sex="B">Test</name>
+	<name sex="B">Tick</name>
+	<name sex="B">Tile</name>
+	<name sex="B">Trim</name>
+	<name sex="B">Tube</name>
+	<name sex="B">Tune</name>
+	<name sex="B">Type</name>
+	<name sex="B">Wick</name>
+	<name sex="B">Wrap</name>
+	<name sex="B">Zero</name>
+	<name sex="B" rarity="rare">Null</name>
+	<name sex="B" rarity="rare">Void</name>
+	<name sex="B" rarity="rare">Grep</name>
+	<name sex="B" rarity="uncommon">Bugs</name>
 </names>

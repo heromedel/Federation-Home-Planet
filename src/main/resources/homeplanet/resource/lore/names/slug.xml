@@ -50,6 +50,26 @@
 	<name sex="M" from="Fen">Fenn</name>
 	<name sex="M" from="Smarm" rarity="uncommon">Ssmmarmm</name>
 	<name sex="M" from="Schmooze" rarity="rare">Schmmozze</name>
+	<name sex="M" from="Swamp">Sswwammp</name>
+	<name sex="M" from="Smog">Ssmmog</name>
+	<name sex="M" from="Slop">Ssllop</name>
+	<name sex="M" from="Gunk">Gunnk</name>
+	<name sex="M" from="Grime">Grimme</name>
+	<name sex="M" from="Muddle">Mmuddlle</name>
+	<name sex="M" from="Sleaze">Sslleazze</name>
+	<name sex="M" from="Smug">Ssmmug</name>
+	<name sex="M" from="Swindle">Sswwinndlle</name>
+	<name sex="M" from="Hawker">Hhawwker</name>
+	<name sex="M" from="Peddler">Peddller</name>
+	<name sex="M" from="Monger">Mmonnger</name>
+	<name sex="M" from="Huckster">Hhuckster</name>
+	<name sex="M" from="Mammon">Mmammonn</name>
+	<name sex="M" from="Shark">Shaark</name>
+	<name sex="M" from="Slobber">Ssllobber</name>
+	<name sex="M" from="Plunder">Pllunnder</name>
+	<name sex="M" from="Bullion">Bullionn</name>
+	<name sex="M" from="Loam">Lloamm</name>
+	<name sex="M" from="Slug" rarity="rare">Ssllug</name>
 
 	<name sex="F" from="Flowers">Fllowwers</name>
 	<name sex="F" from="Mirrow">Mmirrow</name>
@@ -80,4 +100,26 @@
 	<name sex="F" from="Honey">Hhonney</name>
 	<name sex="F" from="Pearl">Pearll</name>
 	<name sex="F" from="Lagoon">Llagonn</name>
+	<name sex="F" from="Silk">Sillk</name>
+	<name sex="F" from="Satin">Satinn</name>
+	<name sex="F" from="Lilac">Llillac</name>
+	<name sex="F" from="Lotus">Llotus</name>
+	<name sex="F" from="Lullaby">Llullaby</name>
+	<name sex="F" from="Melody">Mmellody</name>
+	<name sex="F" from="Marigold">Mmarigolld</name>
+	<name sex="F" from="Shelly">Sheelly</name>
+	<name sex="F" from="Luna">Llunna</name>
+	<name sex="F" from="Mint">Mminnt</name>
+	<name sex="F" from="Lavender">Llavvennder</name>
+	<name sex="F" from="Nectar">Nnectar</name>
+	<name sex="F" from="Molasses">Mmollasses</name>
+	<name sex="F" from="Caramel">Carammell</name>
+	<name sex="F" from="Coral">Corall</name>
+	<name sex="F" from="Bliss">Blliss</name>
+	<name sex="F" from="Swish">Sswwish</name>
+	<name sex="F" from="Swoon">Sswwonn</name>
+	<name sex="F" from="Willa">Wwilla</name>
+	<name sex="F" from="Solace">Sollace</name>
+	<name sex="F" from="Mellow">Mmellow</name>
+	<name sex="F" from="Shimmy">Shiimmy</name>
 </names>

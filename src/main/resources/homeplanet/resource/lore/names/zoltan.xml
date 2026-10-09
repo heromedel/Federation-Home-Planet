@@ -71,4 +71,39 @@
 	<name sex="B" rarity="uncommon">Solen</name>
 	<name sex="B" rarity="rare">Cap Acitor</name>
 	<name sex="B" rarity="rare">Con Ductor</name>
+	<name sex="M" rarity="rare">Gene Rator</name>
+	<name sex="F" rarity="rare">Jen Erator</name>
+	<name sex="M" rarity="rare">Phil Ament</name>
+	<name sex="M" rarity="rare">Eddy Current</name>
+	<name sex="F" rarity="rare">Rhea Stat</name>
+	<name sex="F" rarity="rare">Rhea Ctor</name>
+	<name sex="F" rarity="rare">Ann Ode</name>
+	<name sex="F" rarity="rare">Cath Ode</name>
+	<name sex="M" rarity="rare">Al Ternator</name>
+	<name sex="M" rarity="rare">Sol Enoid</name>
+	<name sex="M" rarity="rare">Ty Ristor</name>
+	<name sex="B" rarity="rare">Trans Istor</name>
+	<name sex="M" rarity="rare">Mag Neto</name>
+	<name sex="M">Plasma</name>
+	<name sex="F">Corona</name>
+	<name sex="F">Aurora</name>
+	<name sex="B">Zing</name>
+	<name sex="B" ex="y">Zap</name>
+	<name sex="B" ex="y">Hum</name>
+	<name sex="B">Fritz</name>
+	<name sex="B" ex="y">Sparkle</name>
+	<name sex="B">Gauss</name>
+	<name sex="B" ex="y">Coulomb</name>
+	<name sex="B">Magnet</name>
+	<name sex="B">Pole</name>
+	<name sex="B">Wave</name>
+	<name sex="B">Storm</name>
+	<name sex="B" ex="y">Flare</name>
+	<name sex="M">Thunder</name>
+	<name sex="B">Fulgur</name>
+	<name sex="B">Quark</name>
+	<name sex="B">Boson</name>
+	<name sex="B" ex="y">Proton</name>
+	<name sex="B" ex="y">Electron</name>
+	<name sex="B">Wire</name>
 </names>

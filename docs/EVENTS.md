@@ -136,7 +136,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 
 | Kind | Fields | Headline today |
 | --- | --- | --- |
-| `COMMISSION` | ship, `detail.n` (her fittings and crew) | "Kestrel  (a3f2)" |
+| `COMMISSION` | ship, `detail.n` (her fittings and crew), `crew` and `race` once a crew member (6.30: the Captain's Log's "came aboard with her") | "Kestrel  (a3f2)" |
 | `NEW_JOURNEY` | ship, `difficulty`, `fee`, `paid` | "Kestrel  difficulty Normal, fee ..." |
 | `RENAME` | ship, `from`, `to` | "Old Glory -> Kestrel  (a3f2)" |
 | `RENAME_CREW` | `what` (`renamed`, `promoted`), `from`, `to`, `crew_id`, `race`, `rank`, `posthumously`, `place`, `ship_name`, `ship_id`, `on_record` (`true` when a rank given on the record is put in her save) | "Gracie -> Sgt. Gracie  (Kestrel)" |
