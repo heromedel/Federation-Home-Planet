@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.11";
+	public static final String APP_VERSION = "6.14";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -106,6 +106,8 @@ public class HomePlanet {
 	 * Actions (and 1), 3 Only as a score. Wherever it can't be used, scrap pays. Default 1.
 	 */
 	public static int reputationUse = 1;
+	/** Sandbox Mode's reputation rate (heromedel, 6.13): 0 x1, 1 x1.5, 2 x2; changeable in Settings. A career's is its difficulty's (vault.Reputation.rateLevel). */
+	public static int reputationRate = 0;
 	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
 	/** Rescued Ships after Victory moved to Hard difficulty (heromedel, 6.02): kept without asking, on Hard. Locked on in a Hard career (see parser.FinalVictory.toHard). */
@@ -191,6 +193,7 @@ public class HomePlanet {
 		careerMessages = flag("career_messages");
 		reputationOn = flag("reputation");
 		try { reputationUse = Math.max(1, Math.min(3, Integer.parseInt(config.getProperty("reputation_use", "1").trim()))); } catch (NumberFormatException e) { reputationUse = 1; }
+		try { reputationRate = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("reputation_rate", "0").trim()))); } catch (NumberFormatException e) { reputationRate = 0; }
 		try { homeplanet.parser.PlayerRank.setting = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty(homeplanet.parser.PlayerRank.CFG, "0").trim()))); } catch (NumberFormatException e) { homeplanet.parser.PlayerRank.setting = 0; }
 		finalVictory = config.getProperty("final_victory", "nothing");
 		rescuedToHard = Boolean.parseBoolean(config.getProperty("rescued_to_hard", "false"));
@@ -375,6 +378,7 @@ public class HomePlanet {
 		config.setProperty("career_messages", Boolean.toString(careerMessages));
 		config.setProperty("reputation", Boolean.toString(reputationOn));
 		config.setProperty("reputation_use", Integer.toString(reputationUse));
+		config.setProperty("reputation_rate", Integer.toString(reputationRate));
 		config.setProperty(homeplanet.parser.PlayerRank.CFG, Integer.toString(homeplanet.parser.PlayerRank.setting));
 		config.setProperty("sell_supplies", Boolean.toString(sellSupplies));
 		config.setProperty("commission_unlocked_only", Boolean.toString(commissionUnlockedOnly));

@@ -20,6 +20,7 @@ public class HistT { public static void main(String[] a) throws Exception {
   v.takeStock();
   Ship b = v.boarded();
   int at = Setup.voyageLog(v, b).length();
+  Set<String> seen = new HashSet<String>(); for (EventLog.Entry e : EventLog.voyage(EventLog.read(v), b.id)) seen.add(e.time + "|" + e.human); // her entries before FTL's doings below
   // FTL: a jump, a battle won, a crew member lost and one hired, a weapon found, damage
   SavedGameState g = cont(v);
   g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); g.setTotalShipsDefeated(g.getTotalShipsDefeated() + 1);
@@ -31,7 +32,8 @@ public class HistT { public static void main(String[] a) throws Exception {
   homeplanet.parser.SaveHelper.writeSavedGame(v.continueFile(), g); b.invalidate(); v.takeStock();
   String l = newLines(v, b, at);
   Setup.chk("Y: a jump is logged, with hull, scrap and fuel", l.contains("Jumped") && l.contains("(-5)") && l.contains("(+30)"));
-  Setup.chk("Y: the battle, and the crew lost and joined", l.contains("1 ship defeated") && l.contains("Crew lost: " + lostName) && l.contains("Crew joined: Voyage Newcomer"));
+  int defeated = 0; for (EventLog.Entry e : EventLog.voyage(EventLog.read(v), b.id)) if (e.kind.equals("SHIPS_DEFEATED") && !seen.contains(e.time + "|" + e.human)) defeated += e.num("count", 0);
+  Setup.chk("Y: the battle (by its machine line: the words are McCarthy's), and the crew lost and joined", defeated == 1 && l.contains("Crew lost: " + lostName) && l.contains("Crew joined: Voyage Newcomer"));
   Setup.chk("Y: what came aboard", l.contains("Aboard now: " + homeplanet.model.Items.title("LASER_BURST_2")));
   at = Setup.voyageLog(v, b).length();
   int visited = VoyageLog.visited(v, b);
@@ -118,15 +120,14 @@ public class HistT { public static void main(String[] a) throws Exception {
   Setup.chk("H: she can't be recovered twice", refused && v.byId(a.id) != null);
  }
  /** A kept version named in local time (before UTC names), ahead of UTC: still sorted by when it was kept. */
+ /** 6.08 (docs/BUGS.md 1): versions go by the stamp in their names, written once when kept, not by file times, which a folder copied or unzipped without them can change. */
  static void oldNames(Vault v) throws Exception {
   Ship s = named(v, "Test Engi");
-  File dir = ShipStore.versions(v.historyOf(s)); dir.mkdirs();
-  File old = new File(dir, "20991231-235959.sav");
-  SafeFiles.copy(s.file(), old);
-  old.setLastModified(System.currentTimeMillis() - 86400000L);
-  addScrap(v, s, 7);
+  addScrap(v, s, 7); Thread.sleep(1100); addScrap(v, s, 7); // two versions, a second apart
   List<File> h = v.history(s);
-  Setup.chk("H: an old local-time name doesn't pass for the newest version", !h.get(h.size() - 1).equals(old) && h.contains(old));
-  old.delete();
+  File newest = h.get(h.size() - 1);
+  for (File f : h) f.setLastModified(f.equals(newest) ? System.currentTimeMillis() - 86400000L : System.currentTimeMillis()); // the newest given the oldest file time
+  List<File> after = v.history(s);
+  Setup.chk("H: the version with the newest stamp in its name is the newest, whatever its file's time", after.get(after.size() - 1).equals(newest) && h.size() >= 2);
  }
 }

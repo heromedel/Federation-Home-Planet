@@ -58,6 +58,12 @@ public final class ShipStore {
 		public String name = "", state = "docked";
 		public boolean dlc, stranger;
 		public String hash = "", marks = "", fresh = "";
+		/**
+		 * The fleet she belongs to (6.10: "sandbox", "easy", "normal", "hard", "custom"), and how she came into it
+		 * ("commissioned.6.10.20261008-174200"; one from before 6.10 "commissioned.pre-6.10.<her first entry's time>.verified-log-COMMISSION").
+		 * Empty in a record from before 6.10 until the fleet's check gives them (Vault.checkShips).
+		 */
+		public String career = "", origin = "";
 		/** Her owners, the first her original (as her trade mark has them today), and her past names, oldest first. */
 		public final List<String> owners = new ArrayList<String>(), pastNames = new ArrayList<String>();
 		/** Her sections by name: fate, trade, journey, museum, borrowed, last, final, overwritten; anything else is kept as read. */
@@ -114,6 +120,8 @@ public final class ShipStore {
 		if (r.marks != null && !r.marks.isEmpty()) sb.append(" marks=\"").append(XmlText.attr(r.marks)).append("\"");
 		if (r.stranger) sb.append(" stranger=\"true\"");
 		if (r.fresh != null && !r.fresh.isEmpty()) sb.append(" fresh=\"").append(XmlText.attr(r.fresh)).append("\"");
+		if (r.career != null && !r.career.isEmpty()) sb.append(" career=\"").append(XmlText.attr(r.career)).append("\"");
+		if (r.origin != null && !r.origin.isEmpty()) sb.append(" origin=\"").append(XmlText.attr(r.origin)).append("\"");
 		sb.append(">\r\n");
 		if (!r.owners.isEmpty()) {
 			sb.append("\t<owners>\r\n");
@@ -165,6 +173,8 @@ public final class ShipStore {
 			r.marks = ship.getAttribute("marks");
 			r.stranger = "true".equals(ship.getAttribute("stranger"));
 			r.fresh = ship.getAttribute("fresh");
+			r.career = ship.getAttribute("career");
+			r.origin = ship.getAttribute("origin");
 			NodeList kids = ship.getChildNodes();
 			for (int i = 0; i < kids.getLength(); i++) {
 				if (!(kids.item(i) instanceof Element)) continue;

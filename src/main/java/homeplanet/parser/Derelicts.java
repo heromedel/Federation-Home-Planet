@@ -415,21 +415,21 @@ public final class Derelicts {
 			Retrofit.switchTo(gs, r.id);
 			Retrofit.syncStations(gs.getPlayerShip());
 		}
-		byte[] storageBefore = null;
 		try {
-			storageBefore = v.payFromStorage(l.price);
-			Ship s = v.adoptJunked(gs);
-			v.setOut(s, gs, "Bought as a derelict from the Junkyard");
+			// paid, in the Junkyard, off the list, as one protection note (6.11, CONCERNS 8: paid, then refunded by hand if she failed)
 			p.setProperty(l.index + ".open", "false");
-			write(v, p);
-			saveFile(v, l.index).delete();
+			Vault.Transaction tx = v.begin().pay(l.price);
+			Ship s = tx.adopt(gs, Ship.State.JUNKED, "derelict");
+			tx.put(index(v), Store.bytes(index(v), p, "The Junkyard's derelicts for sale")).delete(saveFile(v, l.index)).commit();
+			try { v.setOut(s, gs, "Bought as a derelict from the Junkyard"); }
+			catch (IOException e) { log.warn("{} is in the Junkyard, but her voyage log couldn't note where she set out: {}", s.name, e.toString()); }
 			HistoryLog.entry("BUY", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), a derelict, for " + l.price + " scrap from the Cargo Hold"
 					+ (l.oddity.isEmpty() ? "" : "; " + words(l.oddity)), null,
 					Vault.shipEvent("BUY", s).put("what", "derelict").put("ship_class", gs.getPlayerShip().getShipBlueprintId()).put("price", l.price).put("oddity", l.oddity.isEmpty() ? null : l.oddity).put("from", "hold").put("to", "junkyard"));
 			ThirdFleet.derelictBought(v, s); // the Third Fleet Commander's project ship, the first time
 			return s;
 		} catch (IOException e) {
-			if (storageBefore != null) try { v.refundStorage(storageBefore); } catch (IOException again) { e.addSuppressed(again); }
+			p.setProperty(l.index + ".open", "true"); // still for sale
 			if (!l.oddity.isEmpty()) {
 				try {
 					if (remodelsBefore == null) remodels.delete(); else SafeFiles.write(remodels, remodelsBefore);

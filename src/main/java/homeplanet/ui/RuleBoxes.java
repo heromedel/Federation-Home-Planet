@@ -154,6 +154,10 @@ public class RuleBoxes {
 		return t.toString();
 	}
 	private final JPanel repUseRow = row(22);
+	/** Reputation earned (heromedel, 6.13): Sandbox Mode's own, changeable anytime; a career's shown, as its difficulty (or Custom's choice) has it. */
+	private final JPanel rateRow = row(22);
+	private final JLabel rateLabel = new JLabel("Reputation earned:  ");
+	final JComboBox<String> rateBox = new JComboBox<String>(homeplanet.vault.Reputation.RATE_WORDS);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
@@ -235,6 +239,9 @@ public class RuleBoxes {
 		repUseRow.add(javax.swing.Box.createHorizontalStrut(6));
 		repUseRow.add(repUseInfo);
 		repBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { sync(); } });
+		rateRow.add(rateLabel);
+		rateRow.add(rateBox);
+		rateBox.setSelectedIndex(Math.max(0, Math.min(2, HomePlanet.reputationRate)));
 		ranksRow.setOpaque(false);
 		ranksRow.add(ranksLabel);
 		ranksRow.add(ranksBox);
@@ -276,6 +283,7 @@ public class RuleBoxes {
 		sync();
 	}
 
+	private boolean showingRateCareer;
 	/** Greys out what depends on an unticked rule, and sets what Immersive Mode decides. */
 	private void sync() {
 		boolean im = immersiveBox.isSelected();
@@ -339,6 +347,20 @@ public class RuleBoxes {
 		repUseBox.setEnabled(repBox.isSelected()); // never locked: only the Reputation rule itself
 		repUseLabel.setEnabled(repBox.isSelected());
 		repUseInfo.setEnabled(repBox.isSelected());
+		// the rate: Sandbox Mode's own; a career's as its difficulty (or Custom's choice) has it, shown and fixed
+		String rateTip = "What your ships earn (sectors, ships defeated, scrap, good outcomes, achievements, expeditions) counts at this rate. Losses and spending count as they are";
+		if (im) {
+			rateBox.setSelectedIndex(homeplanet.vault.Reputation.rateLevel());
+			String rule = homeplanet.vault.Reputation.rateRule();
+			rateBox.setToolTipText(homeplanet.vault.Reputation.RATE_ASK.equals(rule) ? "This career hasn't chosen yet: the Space Dock will ask"
+					: homeplanet.vault.Reputation.RATE_CHOSEN.equals(rule) ? "Chosen when this career began, and fixed" : "The career's difficulty sets it");
+		} else {
+			if (showingRateCareer) rateBox.setSelectedIndex(Math.max(0, Math.min(2, HomePlanet.reputationRate)));
+			rateBox.setToolTipText(rateTip + ". Sandbox Mode's to change anytime");
+		}
+		showingRateCareer = im;
+		rateBox.setEnabled(!im && repBox.isSelected());
+		rateLabel.setEnabled(repBox.isSelected());
 		if (!im) customLockedBox.setEnabled(lockedBox.isSelected());
 	}
 
@@ -371,7 +393,7 @@ public class RuleBoxes {
 		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0)); // under Immersive Notifications, which it needs
 		// the game mode, then the rules in groups, each under a small heading
 		Object[] rows = {immersiveRow,
-				"The Federation Home Planet", notifyBox, careerBox, repBox, repUseRow, ranksRow,
+				"The Federation Home Planet", notifyBox, careerBox, repBox, repUseRow, rateRow, ranksRow,
 				"Journeys and trading", tradeBox, journeyBox, journeyFeeRow, augmentBox,
 				"Refit, scrapping and selling", removalRow, scrapBox, sellBox, sellSystemsBox,
 				"Shipyard", lockedBox, customLockedBox, costRow, freeRow, unlockBox};
@@ -412,6 +434,7 @@ public class RuleBoxes {
 			if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
 			if (careerBox.isSelected() != HomePlanet.careerMessages) changed.add("Career messages: " + careerBox.isSelected());
 			if (repBox.isSelected() != HomePlanet.reputationOn) changed.add("Reputation: " + repBox.isSelected());
+			if (rateBox.getSelectedIndex() != HomePlanet.reputationRate) changed.add("Reputation earned: " + rateBox.getSelectedItem());
 			if (unlockBox.isSelected() != HomePlanet.unlockFreeShips) changed.add("A free ship for each new FTL unlock: " + unlockBox.isSelected());
 		}
 	}
@@ -422,6 +445,7 @@ public class RuleBoxes {
 		if (!HomePlanet.immersiveMode) HomePlanet.freeShip = FREE_KEYS[freeBox.getSelectedIndex()]; // (Immersive Mode shows its own, Variable)
 		if (!HomePlanet.immersiveMode) HomePlanet.careerMessages = careerBox.isSelected();
 		if (!HomePlanet.immersiveMode) HomePlanet.reputationOn = repBox.isSelected();
+		if (!HomePlanet.immersiveMode) HomePlanet.reputationRate = rateBox.getSelectedIndex(); // Sandbox Mode's own (6.13)
 		HomePlanet.reputationUse = repUseBox.getSelectedIndex() + 1; // any mode
 		if (!HomePlanet.immersiveMode) homeplanet.parser.PlayerRank.setting = ranksBox.getSelectedIndex(); // (Immersive Mode is always Ranks From Rep)
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)

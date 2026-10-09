@@ -2,7 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -212,12 +211,9 @@ public final class Parts {
 					Event.of("BUY").put("what", "salvage").put("item", l.id).put("title", l.title()).put("price", l.price).put("from", "hold").put("to", "hold"));
 			return;
 		}
-		File f = v.systemsFile();
-		List<String> lines = new ArrayList<String>();
-		if (f.isFile()) lines.addAll(java.nio.file.Files.readAllLines(f.toPath(), StandardCharsets.UTF_8));
-		else lines.add(homeplanet.ui.SystemsPanel.HEADER);
-		lines.add(homeplanet.ui.SystemsPanel.line(l.id, l.level, l.broken));
-		v.begin().put(st, c.save, c.hash).put(f, (String.join("\n", lines) + "\n").getBytes(StandardCharsets.UTF_8)).commit();
+		Vault.Transaction tx = v.begin().put(st, c.save, c.hash);
+		homeplanet.vault.StoredSystems.add(tx, v, java.util.Collections.singletonList(homeplanet.vault.StoredSystems.line(l.id, l.level, l.broken)));
+		tx.commit();
 		p.setProperty(l.index + ".open", "false");
 		try { write(v, p); }
 		catch (IOException e) { log.warn("Could not mark part {} sold: {}", l.index, e.toString()); } // bought all the same: at worst it's offered again

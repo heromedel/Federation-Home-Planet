@@ -55,6 +55,8 @@ public final class Ship {
 	 * beacon she counts as still at The Home Planet Station, and may trade. Empty otherwise.
 	 */
 	String fresh = "";
+	/** How she came into the fleet (6.10: "commissioned.6.10.20261008-174200"), kept in her record; empty until known. */
+	String origin = "";
 
 	private SavedGameState save;
 	private String readError;

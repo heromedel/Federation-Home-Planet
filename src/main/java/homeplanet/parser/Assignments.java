@@ -2,7 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -405,7 +404,7 @@ public final class Assignments {
 				Map<String, String> f = new LinkedHashMap<String, String>();
 				String pre = "away." + i + ".crew." + k + ".";
 				for (String key : p.stringPropertyNames()) if (key.startsWith(pre)) f.put(key.substring(pre.length()), p.getProperty(key));
-				try { crew.add(homeplanet.comm.Line.crewFrom(f)); } catch (IOException e) { log.warn("A crew member away on an expedition can't be read: {}", e.toString()); }
+				try { crew.add(homeplanet.vault.CrewRecord.crew(f)); } catch (IOException e) { log.warn("A crew member away on an expedition can't be read: {}", e.toString()); }
 			}
 			long seed = 0;
 			try { seed = Long.parseLong(p.getProperty("away." + i + ".seed", "0")); } catch (NumberFormatException e) { }
@@ -452,7 +451,7 @@ public final class Assignments {
 				Map<String, String> f = new LinkedHashMap<String, String>();
 				String pre = "pending." + i + ".crew.";
 				for (String key : p.stringPropertyNames()) if (key.startsWith(pre)) f.put(key.substring(pre.length()), p.getProperty(key));
-				try { c = homeplanet.comm.Line.crewFrom(f); } catch (IOException e) { log.warn("A recruit waiting on an answer can't be read: {}", e.toString()); continue; }
+				try { c = homeplanet.vault.CrewRecord.crew(f); } catch (IOException e) { log.warn("A recruit waiting on an answer can't be read: {}", e.toString()); continue; }
 			}
 			out.add(new Pending(i, kind, p.getProperty("pending." + i + ".name", ""), c, "ship".equals(kind) ? new File(v.root, p.getProperty("pending." + i + ".file", "")) : null, p.getProperty("pending." + i + ".letter")));
 		}
@@ -485,7 +484,7 @@ public final class Assignments {
 			return;
 		}
 		SavedGameState gs = HomePlanet.savedGameParser.readSavedGame(x.save);
-		Ship s = dock ? v.adopt(gs) : v.adoptJunked(gs);
+		Ship s = dock ? v.adopt(gs, "brought_home") : v.adoptJunked(gs, "brought_home");
 		v.setOut(s, gs, "Brought home by an expedition");
 		forget(p, x.index);
 		write(v, p);
@@ -528,8 +527,8 @@ public final class Assignments {
 	 */
 	static CrewState picked(List<CrewState> hold, CrewState sent, List<CrewState> taken) {
 		for (CrewState x : hold) if (x == sent && !among(taken, x)) return x;
-		Map<String, String> whole = sent.getRace() == null ? null : homeplanet.comm.Line.crewFields(sent);
-		if (whole != null) for (CrewState x : hold) if (!among(taken, x) && x.getRace() != null && homeplanet.comm.Line.crewFields(x).equals(whole)) return x;
+		Map<String, String> whole = sent.getRace() == null ? null : homeplanet.vault.CrewRecord.of(sent);
+		if (whole != null) for (CrewState x : hold) if (!among(taken, x) && x.getRace() != null && homeplanet.vault.CrewRecord.of(x).equals(whole)) return x;
 		for (CrewState x : hold) if (!among(taken, x) && x.getName().equals(sent.getName()) && x.getRace() == sent.getRace()) return x;
 		return null;
 	}
@@ -558,9 +557,9 @@ public final class Assignments {
 		int k = 0;
 		for (CrewState mine : going) {
 			hold.getCrewList().remove(mine);
-			Map<String, String> f = homeplanet.comm.Line.crewFields(mine);
+			Map<String, String> f = homeplanet.vault.CrewRecord.of(mine);
 			for (Map.Entry<String, String> e : f.entrySet()) p.setProperty("away." + i + ".crew." + k + "." + e.getKey(), e.getValue());
-			asLeft.add(homeplanet.comm.Line.crewFrom(f));
+			asLeft.add(homeplanet.vault.CrewRecord.crew(f));
 			k++;
 		}
 		Result r = roll(sector, asLeft, new Random(seed));
@@ -819,7 +818,7 @@ public final class Assignments {
 		for (int i = 0; i < faces.size(); i++) {
 			Face f = faces.get(i);
 			q.setProperty("face.0." + i + ".state", f.state);
-			for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(f.crew).entrySet()) q.setProperty("face.0." + i + ".crew." + e.getKey(), e.getValue());
+			for (Map.Entry<String, String> e : homeplanet.vault.CrewRecord.of(f.crew).entrySet()) q.setProperty("face.0." + i + ".crew." + e.getKey(), e.getValue());
 		}
 		for (int n = 0; n + 1 < FACES_KEPT && old.getProperty("face." + n + ".letter") != null; n++) {
 			String pre = "face." + n + ".";
@@ -836,7 +835,7 @@ public final class Assignments {
 				Map<String, String> fields = new LinkedHashMap<String, String>();
 				String pre = "face." + n + "." + i + ".crew.";
 				for (String k : p.stringPropertyNames()) if (k.startsWith(pre)) fields.put(k.substring(pre.length()), p.getProperty(k));
-				try { out.add(new Face(homeplanet.comm.Line.crewFrom(fields), p.getProperty("face." + n + "." + i + ".state"))); }
+				try { out.add(new Face(homeplanet.vault.CrewRecord.crew(fields), p.getProperty("face." + n + "." + i + ".state"))); }
 				catch (Exception e) { log.debug("A face in an expedition report can't be read: {}", e.toString()); }
 			}
 			break;
@@ -920,7 +919,7 @@ public final class Assignments {
 		if ("part".equals(r.prize)) {
 			String id = partId();
 			r.prizeDetail = homeplanet.model.Items.systemTitle(id);
-			if (byLetter) brought.add("system " + homeplanet.ui.SystemsPanel.line(id, 1, 1));
+			if (byLetter) brought.add("system " + homeplanet.vault.StoredSystems.line(id, 1, 1));
 			else part(stored, v, id);
 		}
 		if ("recruit".equals(r.prize)) {
@@ -929,7 +928,7 @@ public final class Assignments {
 			else {
 				r.recruit = n; r.prizeDetail = n.getName() + " (" + homeplanet.model.Crew.raceTitle(n) + ")";
 				pendingIndex = keep(p, "recruit", n.getName());
-				for (Map.Entry<String, String> e : homeplanet.comm.Line.crewFields(n).entrySet()) p.setProperty("pending." + pendingIndex + ".crew." + e.getKey(), e.getValue());
+				for (Map.Entry<String, String> e : homeplanet.vault.CrewRecord.of(n).entrySet()) p.setProperty("pending." + pendingIndex + ".crew." + e.getKey(), e.getValue());
 			}
 		}
 		String letter = letterKey(a);
@@ -939,7 +938,7 @@ public final class Assignments {
 		Vault.Transaction tx = v.begin().put(st, c.save, c.hash);
 		if (prizeFile != null) tx.put(prizeFile, prizeBytes);
 		Expeditions.admitAndTake(tx, v, hurt, taken, sectorCaptors(r.sector), v.beaconsSeen(), new Random());
-		if (!stored.isEmpty()) tx.put(v.systemsFile(), (String.join("\n", stored) + "\n").getBytes(StandardCharsets.UTF_8));
+		homeplanet.vault.StoredSystems.add(tx, v, stored);
 		// the away record goes, and the rest are renumbered without a gap
 		Properties q = new Properties();
 		int n = 0;
@@ -1007,12 +1006,9 @@ public final class Assignments {
 			if (t != net.blerf.ftl.parser.SavedGameParser.SystemType.ARTILLERY && t != net.blerf.ftl.parser.SavedGameParser.SystemType.CLONEBAY && DataManager.get().getSystem(t.getId()) != null) kinds.add(t.getId());
 		return kinds.get(new Random().nextInt(kinds.size()));
 	}
-	/** The part for the stored systems, at level 1 with a bar broken: the lines to write, and its title. */
+	/** The part for the stored systems, at level 1 with a bar broken: its line added to those to store, and its title. */
 	private static String part(List<String> lines, Vault v, String id) throws IOException {
-		File f = v.systemsFile();
-		if (f.isFile()) lines.addAll(java.nio.file.Files.readAllLines(f.toPath(), StandardCharsets.UTF_8));
-		else lines.add(homeplanet.ui.SystemsPanel.HEADER);
-		lines.add(homeplanet.ui.SystemsPanel.line(id, 1, 1));
+		lines.add(homeplanet.vault.StoredSystems.line(id, 1, 1));
 		return homeplanet.model.Items.systemTitle(id);
 	}
 

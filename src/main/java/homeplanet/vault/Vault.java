@@ -35,18 +35,19 @@ import org.slf4j.LoggerFactory;
  *                                copies kept for a reason of their own: victory-, final-battle-, cloud-)
  *     junkyard/&lt;Name&gt;.&lt;id&gt;/      a disbanded ship, the same
  *     memorials_and_records/ships/&lt;Name&gt;.&lt;id&gt;/   a ship that left the fleet (how, in her record's fate), remembered
- *     <ship folder>/crew/        her crew, a file each (5.83: <Name>.<id>.xml, the crew register's id); the same in cargohold/crew/,
+ *     <ship folder>/crew/        her crew, a file each (5.83: <Name>.<id>.xml, the crew register's id; plain tags since 6.11, CrewRecord); the same in cargohold/crew/,
  *                                expeditions/crew/, captives/crew/ and memorials_and_records/crew/ (everyone who left); crew-register.xml the register's own state
  *     expeditions/               the crew expeditions (5.85): expeditions.xml (the sectors on offer, the crew away), crew/,
  *                                board-before-5.67.txt (the old board of jobs, kept, unread)
  *     infirmary/                 infirmary.xml (who is laid up and until when; they stay in the Cargo Hold) (5.85)
  *     captives/                  captives.xml (who was taken, the ransoms asked), crew/ (5.85)
  *     cargohold/                 the Cargo Hold (5.72): cargohold.xml (what it holds, 5.84; the pretend ship's save cargohold.sav
- *                                before), crew/, systems.txt (its stored systems), parts.txt, overflow.txt, versions/
+ *                                before), crew/, systems.txt (its stored systems, StoredSystems), parts.txt, overflow.txt, versions/
  *     logs/                      the station's own logs (5.71): events.log (every entry, two lines each, since 5.63, the older
  *                                ones read in once at 5.73; the only log written since 5.93), converted.txt (the marks); a fleet
  *                                from before keeps its history.log, master.log and reputation.log as they were, unwritten
  *     set-aside/                 a continue.sav marked as another career's ship (6.08, ShipMark), set aside rather than taken in
+ *     declined.xml               what the player said no to taking in (6.10: a loose save, a ship's folder): not asked again
  *     station-action-protection/ the notes of actions under way (5.71; heromedel's name, 5.78), only its why.txt when the station is at rest
  *     clock.xml                  the fleet's clock (5.86; five .txt files before): the sectors and beacons travelled, the day 1
  *     career.xml, reputation.xml, rest.xml, rank.xml, repair-job.xml, events.xml, crew-register.xml: the career's own state,
@@ -426,7 +427,7 @@ public final class Vault {
 	}
 	/**
 	 * Pays scrap from the storage hold (a commission, a journey's fee). Refuses, changing nothing, if the hold has less.
-	 * Returns the hold's file as it was, for {@link #refundStorage} if what was paid for then fails.
+	 * Returns the hold's file as it was. Paying for something written as well: {@link Transaction#pay}, in the same note.
 	 */
 	public synchronized byte[] payFromStorage(int scrap) throws IOException {
 		log.debug("Cargo Hold pays {} scrap", scrap);
@@ -438,15 +439,6 @@ public final class Vault {
 		c.save.getPlayerShip().setScrapAmt(have - scrap);
 		begin().put(st, c.save, c.hash).commit();
 		return before;
-	}
-	/** Puts the storage hold back as {@link #payFromStorage} found it. */
-	public synchronized void refundStorage(byte[] before) throws IOException {
-		Ship st = storage();
-		File f = fileOf(st);
-		SafeFiles.write(f, before);
-		st.invalidate();
-		st.hash = SafeFiles.hash(f);
-		saveManifest();
 	}
 
 	// ---- Plead for New Ship ----
@@ -536,33 +528,22 @@ public final class Vault {
 	/**
 	 * The plea's ship is paid for with the Cargo Hold: everything in it (scrap, supplies, items, stored systems) goes to
 	 * The Federation Home Planet, and the hold starts again with the refund (the difference, if the captain asked for it).
-	 * The crew in it stay (they aren't counted, and aren't given up); the Junkyard is untouched. Returns the hold's file and stored systems as they were, for {@link #unforfeitHold}.
+	 * The crew in it stay (they aren't counted, and aren't given up); the Junkyard is untouched. Written with this
+	 * transaction (6.11: the new ship's, so the hold is given only if she comes; put back by hand before), logged once it stands.
 	 */
-	public synchronized byte[][] forfeitHold(int saleValue, int refund) throws IOException {
+	public synchronized void forfeitHold(final int saleValue, final int refund, Transaction tx) throws IOException {
 		Ship st = storage();
-		File hold = fileOf(st), systems = systemsFile();
-		byte[][] before = {SafeFiles.read(hold), systems.isFile() ? SafeFiles.read(systems) : null};
 		snapshot(st);
-		SavedGameState was = readCopy(st).save;
+		Copy was = readCopy(st);
 		SavedGameState fresh = SaveHelper.createStorageSave(st.name, true);
 		fresh.getPlayerShip().setScrapAmt(Math.max(0, refund));
-		fresh.getPlayerShip().getCrewList().addAll(was.getPlayerShip().getCrewList()); // the crew stay
-		writeQuietly(st, fresh);
-		if (systems.isFile() && !systems.delete()) log.warn("Could not remove {}", systems);
-		saveManifest();
-		HistoryLog.entry("PLEAD", "the Cargo Hold given for the new ship (worth " + saleValue + " scrap at sale)" + (refund > 0 ? "; " + refund + " scrap refunded to it" : ""), null,
-				Event.of("PLEAD").put("stage", "hold_given").put("value", saleValue).put("refund", refund));
-		return before;
-	}
-	/** Puts the Cargo Hold back as {@link #forfeitHold} found it (her commission failed). */
-	public synchronized void unforfeitHold(byte[][] before) throws IOException {
-		Ship st = storage();
-		File hold = fileOf(st);
-		SafeFiles.write(hold, before[0]);
-		st.invalidate();
-		st.hash = SafeFiles.hash(hold);
-		if (before[1] != null) SafeFiles.write(systemsFile(), before[1]);
-		saveManifest();
+		fresh.getPlayerShip().getCrewList().addAll(was.save.getPlayerShip().getCrewList()); // the crew stay
+		tx.put(st, fresh, was.hash);
+		tx.delete(systemsFile());
+		tx.then(new Runnable() { public void run() {
+			HistoryLog.entry("PLEAD", "the Cargo Hold given for the new ship (worth " + saleValue + " scrap at sale)" + (refund > 0 ? "; " + refund + " scrap refunded to it" : ""), null,
+					Event.of("PLEAD").put("stage", "hold_given").put("value", saleValue).put("refund", refund));
+		} });
 	}
 	/** Withdraws a waiting plea (nothing was taken: her order is simply cancelled). */
 	public synchronized void withdrawPlea() throws IOException {
@@ -660,8 +641,10 @@ public final class Vault {
 		shipyardDir().mkdirs();
 		junkyardDir().mkdirs();
 		memorialDir().mkdirs();
+		found.clear();
 		readFolders();
 		reconcile();
+		sortShips(new ArrayList<String>()); // her fleet and origin, on evidence for a record from before 6.10 (Plan N)
 		saveManifest();
 		homeplanet.convert.OldFleet.after(this); // and its crew register, after the ships whose folders hold their crew
 	}
@@ -696,7 +679,7 @@ public final class Vault {
 			Ship.State where = parent.equals(junkyardDir().getAbsoluteFile()) ? Ship.State.JUNKED : "boarded".equals(r.state) ? Ship.State.BOARDED : Ship.State.DOCKED; // boarded with no continue.sav: lost, as reconcile finds
 			if (!where.key.equals(r.state)) log.info("{}'s record says {} but her folder is in {}: the folder stands", r.name, r.state, d.getParentFile().getName());
 			Ship s = new Ship(r.id, r.name, where, r.dlc);
-			s.hash = r.hash; s.marks = r.marks; s.stranger = r.stranger; s.fresh = r.fresh;
+			s.hash = r.hash; s.marks = r.marks; s.stranger = r.stranger; s.fresh = r.fresh; s.origin = r.origin;
 			ships.add(s);
 		}
 		File hold = new File(cargoHoldDir(), HOLD_FILE);
@@ -714,6 +697,9 @@ public final class Vault {
 		File d = folders.get(s.id);
 		ShipStore.Record was = d == null ? null : ShipStore.read(d);
 		if (was != null) { r.owners.addAll(was.owners); r.pastNames.addAll(was.pastNames); r.sections.putAll(was.sections); } // what her record holds besides
+		// her fleet and how she came into it (6.10): the fleet writing her record is hers; a record from before 6.10 gets them at the fleet's check
+		r.origin = s.origin != null && !s.origin.isEmpty() ? s.origin : was != null ? was.origin : "";
+		r.career = was != null && !was.career.isEmpty() ? was.career : !r.origin.isEmpty() ? slot : ""; // never overwritten here: another career's record waits for its offer
 		return r;
 	}
 	/**
@@ -784,6 +770,7 @@ public final class Vault {
 			if (s.state == Ship.State.BOARDED) continue;
 			if (!fileOf(s).isFile()) {
 				if (s.state == Ship.State.STORAGE) continue; // recreated on demand
+				if (saveGone(s, notes)) continue; // the player's word on putting it back (6.10)
 				notes.add(s.name + " (" + s.state.key + "): her file is gone; " + (historyOf(s).isDirectory() ? "her folder is kept in the memorial" : "nothing left of her"));
 				ships.remove(s);
 				try { toMemorial(s); } catch (IOException e) { log.warn("Could not move {}'s folder to the memorial: {}", s, e.toString()); }
@@ -826,18 +813,18 @@ public final class Vault {
 		}
 		if (b == null && cont.isFile()) {
 			Ship n = new Ship(newId(), "Unknown ship", Ship.State.BOARDED, true);
+			n.origin = originNow("adopted");
 			n.name = ""; // filled in by takeStock() once the game data is loaded
 			n.stranger = true; // not commissioned here (FTL's New Game, most likely)
 			ships.add(n);
 			notes.add("continue.sav is a ship the station didn't know (a new game started in FTL, most likely): she is now boarded");
 			b = n;
 		}
-		// strays: files in ships/ and junkyard/ that no entry names (a save copied in by hand)
-		adoptStrays(shipyardDir(), Ship.State.DOCKED, notes);
-		adoptStrays(junkyardDir(), Ship.State.JUNKED, notes);
+		// strays: a save in the shipyard or the Junkyard that no ship holds waits for the player's word, never taken in unasked (6.10: findLoose)
 		// a folder in the shipyard with no ship in it (her save gone, and not boarded): remembered, not listed
 		for (Ship s : new ArrayList<Ship>(ships)) {
 			if (s.state == Ship.State.BOARDED || s.state == Ship.State.STORAGE || fileOf(s).isFile()) continue;
+			if (saveGone(s, notes)) continue;
 			notes.add(s.name + " (" + s.state.key + "): her save is gone; her folder is kept in the memorial");
 			ships.remove(s);
 			try { toMemorial(s); } catch (IOException e) { log.warn("Could not move {}'s folder to the memorial: {}", s, e.toString()); }
@@ -868,6 +855,10 @@ public final class Vault {
 		}
 		if (checkBoarded()) changed = true;
 		if (changed) saveManifest();
+		List<String> notes = new ArrayList<String>();
+		findLoose(notes); // a save lying where no ship holds it waits for the player's word (6.10)
+		markShips(); // every save carries her mark (6.10)
+		if (!notes.isEmpty()) HistoryLog.entry("VAULT", "taking stock", notes, Event.of("VAULT").put("what", "taking_stock").details(notes));
 	}
 
 	// ---- the final victory (rescue or reward) ----
@@ -1298,6 +1289,7 @@ public final class Vault {
 		if (immersive) offerBack(b, took); // by accident, perhaps: she may be offered back (5.55)
 		ships.remove(b);
 		Ship n = new Ship(newId(), gs.getPlayerShipName(), Ship.State.BOARDED, gs.isDLCEnabled());
+		n.origin = originNow("adopted");
 		n.stranger = true;
 		n.hash = SafeFiles.hash(continueFile());
 		n.marks = now;
@@ -1335,6 +1327,7 @@ public final class Vault {
 		File cont = continueFile();
 		if (!cont.isFile()) return false;
 		Ship n = new Ship(newId(), "Unknown ship", Ship.State.BOARDED, true);
+		n.origin = originNow("adopted");
 		n.stranger = true;
 		ships.add(n);
 		SavedGameState gs = n.save();
@@ -1448,28 +1441,6 @@ public final class Vault {
 		noteHull(b, gs);
 		Overflow.note(this, b, gs); // an augment she had no room for
 	}
-	/** A save lying in the shipyard or the Junkyard (copied in by hand, or sent from the other fleet): a ship of her own, in a folder. */
-	private void adoptStrays(File dir, Ship.State state, List<String> notes) {
-		File[] files = dir.listFiles();
-		if (files == null) return;
-		java.util.Arrays.sort(files);
-		for (File f : files) {
-			if (!f.isFile() || !f.getName().toLowerCase().endsWith(".sav")) continue;
-			String stem = f.getName().substring(0, f.getName().length() - 4);
-			Ship s = new Ship(newId(), stem, state, true);
-			try {
-				File folder = settleFolder(s);
-				SafeFiles.move(f, ShipStore.sav(folder));
-			} catch (IOException e) {
-				log.warn("Could not adopt {}", f, e);
-				folders.remove(s.id);
-				continue;
-			}
-			ships.add(s);
-			notes.add(f.getName() + " found in " + dir.getName() + "/: adopted (" + state.key + ")");
-		}
-	}
-
 	/**
 	 * Writes every ship's record into her folder (the manifest's successor, 5.69): a ship whose name changed gets her
 	 * folder and files renamed with it; one whose folder sits in the wrong place is moved. The Cargo Hold needs none:
@@ -1619,6 +1590,38 @@ public final class Vault {
 		}
 		/** Another file that belongs with the change (a stored-systems list), written with the same care. */
 		public Transaction put(File f, byte[] bytes) { extra.put(f, bytes); return this; }
+
+		// 6.11 (CONCERNS 8): what used to be written in a second step, and put back by hand if that failed, goes in the same note
+		private final List<File> deletes = new ArrayList<File>();
+		private final Map<Ship, SavedGameState> arriving = new LinkedHashMap<Ship, SavedGameState>();
+		private Ship leaving;
+		private Fate leavingFate;
+		private final List<Runnable> after = new ArrayList<Runnable>();
+		/** A file that goes with the change (the stored systems, when the Cargo Hold is given up), if it's there. */
+		public Transaction delete(File f) { deletes.add(f); return this; }
+		/** Scrap from the Cargo Hold, in this note: the hold as this transaction already has it, else a fresh copy. Throws if it hasn't enough. */
+		public Transaction pay(int scrap) throws IOException {
+			if (scrap <= 0) return this;
+			Ship st = storage();
+			SavedGameState hold = pending.get(st);
+			if (hold == null) { Copy c = readCopy(st); hold = c.save; put(st, hold, c.hash); }
+			int have = hold.getPlayerShip().getScrapAmt();
+			if (have < scrap) throw new IOException("The Cargo Hold has " + have + " scrap; " + scrap + " is needed");
+			hold.getPlayerShip().setScrapAmt(have - scrap);
+			return this;
+		}
+		/** A new ship into the fleet (docked, or in the Junkyard) with this note: her folder, save and record. In the fleet once it stands. */
+		public Ship adopt(SavedGameState state, Ship.State where, String how) {
+			Ship s = new Ship(newId(), state.getPlayerShipName(), where, state.isDLCEnabled());
+			s.origin = originNow(how);
+			arriving.put(s, state);
+			return s;
+		}
+		/** She leaves the fleet with this note (her last version kept, her fate written, her folder to the memorial). */
+		public Transaction leave(Ship s, Fate fate) { leaving = s; leavingFate = fate; return this; }
+		/** Done once the note stands (its log entries). */
+		public Transaction then(Runnable r) { after.add(r); return this; }
+
 		public void commit() throws IOException {
 			synchronized (Vault.this) {
 				for (Map.Entry<Ship, String> e : expected.entrySet()) {
@@ -1632,11 +1635,23 @@ public final class Vault {
 				// one journal note (5.71): every file's new bytes wait beside it, then each is replaced in one move; a failure puts the rest back
 				Journal.Note note = Journal.begin(Vault.this, "SAVE");
 				for (Map.Entry<File, byte[]> e : bytes.entrySet()) note.replace(e.getKey(), e.getValue());
+				for (Map.Entry<Ship, SavedGameState> e : arriving.entrySet()) { // her folder is made with her files (the note's own new bytes beside them)
+					Ship s = e.getKey();
+					byte[] save = bytesOf(s, e.getValue());
+					s.hash = SafeFiles.hash(save);
+					note.replace(fileOf(s), save);
+					note.replace(ShipStore.xml(folderOf(s)), ShipStore.bytes(recordOf(s)));
+				}
+				for (File f : deletes) if (f.exists()) note.delete(f);
+				File leftTo = leaving == null ? null : leaveSteps(note, leaving, leavingFate, null);
 				for (Ship s : pending.keySet()) { countBefore(s); snapshot(s); }
 				note.commit();
 				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) { e.getKey().written(e.getValue(), SafeFiles.hash(fileOf(e.getKey()))); marked(e.getKey(), e.getValue()); keepBoarded(e.getKey()); }
+				for (Map.Entry<Ship, SavedGameState> e : arriving.entrySet()) { Ship s = e.getKey(); folders.put(s.id, folderOf(s)); s.written(e.getValue(), s.hash); ships.add(s); }
+				if (leaving != null) { left(leaving, leftTo); ships.remove(leaving); }
 				saveManifest();
 			}
+			for (Runnable r : after) r.run();
 		}
 	}
 	public Transaction begin() { return new Transaction(); }
@@ -1662,7 +1677,12 @@ public final class Vault {
 		byte[] boardedSave = marked != null ? marked.bytes : save;
 		ShipStore.Record record = recordOf(s);
 		record.state = Ship.State.BOARDED.key; record.hash = SafeFiles.hash(boardedSave); record.marks = "";
-		if (marked != null) { record.section(ShipMark.SECTION).setProperty("boards", Integer.toString(boards)); record.section(ShipMark.SECTION).setProperty("day", Integer.toString(ShipMark.today())); }
+		if (marked != null) {
+			java.util.Properties sec = record.section(ShipMark.SECTION);
+			sec.setProperty("boards", Integer.toString(boards)); sec.setProperty("day", Integer.toString(ShipMark.today()));
+			sec.setProperty("marked", "true"); sec.setProperty("save", record.hash);
+			if (marked.gs.getPlayerShipBlueprintId() != null) sec.setProperty("class", marked.gs.getPlayerShipBlueprintId());
+		}
 		Journal.Note note = Journal.begin(this, "BOARD");
 		note.replace(to, boardedSave);
 		List<File> kept = history(s);
@@ -1690,9 +1710,22 @@ public final class Vault {
 		countBefore(b); // her voyage since the last look counts before she leaves continue.sav
 		File to = ShipStore.sav(settleFolder(b)); // where a docked ship's save lives (fileOf, once she's docked)
 		byte[] save = SafeFiles.read(from);
+		java.util.Properties markNotes = ShipStore.notes(to.getParentFile(), ShipMark.SECTION);
+		boolean marking = !"true".equals(markNotes.getProperty("marked")); // boarded before the mark (6.10): she gets it as she comes home
+		if (marking) {
+			try { save = ShipMark.mark(from, slot, b.id, Store.num(markNotes, "boards", 0), Store.num(markNotes, "day", 0)).bytes; }
+			catch (Exception e) { marking = false; log.warn("Could not mark {}'s save as she docked (marked at the next opening): {}", b.name, e.toString()); }
+		}
 		Journal.Note note = Journal.begin(this, "DOCK"); // one note (5.71): her save into her folder, her record saying docked (5.95), continue.sav gone; a failure leaves her boarded, as she was
 		note.replace(to, save);
-		note.replace(ShipStore.xml(to.getParentFile()), recordAs(b, Ship.State.DOCKED, SafeFiles.hash(save), null));
+		byte[] rec = recordAs(b, Ship.State.DOCKED, SafeFiles.hash(save), null);
+		if (marking) {
+			ShipStore.Record r = ShipStore.parse(rec, b.id);
+			java.util.Properties sec = r.section(ShipMark.SECTION);
+			sec.setProperty("boards", Integer.toString(Store.num(markNotes, "boards", 0))); sec.setProperty("marked", "true"); sec.setProperty("save", SafeFiles.hash(save));
+			rec = ShipStore.bytes(r);
+		}
+		note.replace(ShipStore.xml(to.getParentFile()), rec);
 		note.delete(from);
 		try { note.commit(); }
 		catch (IOException e) { throw new IOException(e.getMessage() + " (is FTL running?)", e); }
@@ -1759,11 +1792,17 @@ public final class Vault {
 	 * her fate written, her folder to the memorial. Her versions are pruned after. The caller takes her off the list.
 	 */
 	private void leave(Ship s, Fate fate, String detail) throws IOException {
+		Journal.Note n = Journal.begin(this, "LEAVE");
+		File to = leaveSteps(n, s, fate, detail);
+		n.commit();
+		left(s, to);
+	}
+	/** Her leaving's steps, added to a note (6.11: Scrap and Sell put the Cargo Hold's in the same one). Returns her memorial folder, or null if she's there. */
+	private File leaveSteps(Journal.Note n, Ship s, Fate fate, String detail) throws IOException {
 		File dir = settleFolder(s), f = fileOf(s), to = new File(memorialDir(), dir.getName());
 		boolean move = !dir.getParentFile().getAbsoluteFile().equals(memorialDir().getAbsoluteFile());
 		if (move && to.exists()) throw new IOException(to + " is already there");
 		if (!memorialDir().isDirectory() && !memorialDir().mkdirs()) throw new IOException("Could not create " + memorialDir());
-		Journal.Note n = Journal.begin(this, "LEAVE");
 		if (f.isFile()) {
 			List<File> kept = history(s);
 			if (kept.isEmpty() || !SafeFiles.hash(kept.get(kept.size() - 1)).equals(SafeFiles.hash(f))) n.replace(ShipStore.versionFile(dir, null), SafeFiles.read(f));
@@ -1771,8 +1810,11 @@ public final class Vault {
 		}
 		n.replace(ShipStore.xml(dir), recordWithNotes(dir, ShipStore.FATE, ShipStore.fateNotes(fate.name(), s.name, detail)));
 		if (move) n.rename(dir, to);
-		n.commit();
-		if (move) folders.put(s.id, to);
+		return move ? to : null;
+	}
+	/** Her leaving done: her folder where it went, her versions pruned. */
+	private void left(Ship s, File to) {
+		if (to != null) folders.put(s.id, to);
 		ShipStore.prune(folders.get(s.id), KEEP);
 	}
 	/**
@@ -1879,6 +1921,7 @@ public final class Vault {
 		if (new File(folder, FINAL).isFile()) closeFinal(new FinalBattle(d.id, d.name, new File(folder, FINAL), -1, -1, ""), false); // settled by coming back
 		saveManifest();
 		s.save(); // her name and DLC flag, as the save has them
+		remarkQuietly(s); // her last version, marked again (6.10)
 		HistoryLog.entry("RECOVER", s.name + " (" + d.fate.name().toLowerCase() + ")  " + from + " -> " + place(s), null,
 				shipEvent("RECOVER", s).put("fate", d.fate.name().toLowerCase()).put("from", from).put("to", place(s)));
 		return s;
@@ -1886,11 +1929,27 @@ public final class Vault {
 	/** Puts one of her earlier versions back as her current save; the one it replaces goes into her history first. */
 	public synchronized void restore(Ship s, File version) throws IOException {
 		if (s.state == Ship.State.STORAGE) throw new IOException("The Cargo Hold has no earlier versions to go back to");
-		byte[] bytes = SafeFiles.read(version); // before the snapshot below, which may prune it
+		byte[] bytes = SafeFiles.read(version); // before the version she has now is kept, which may prune it
 		countBefore(s);
-		snapshot(s);
-		File f = fileOf(s);
-		SafeFiles.write(f, bytes);
+		File f = fileOf(s), dir = settleFolder(s);
+		// one note (6.11): the save she has now kept as her newest version, the older one put back already marked (a docked or
+		// Junkyard ship's: 6.10), her record with it. Marked after it was put back (6.10), the older save was kept again as her
+		// newest version, above the one it replaced, so undoing a Restore took the second one down the list
+		ShipStore.Record r = null;
+		if (s.state == Ship.State.DOCKED || s.state == Ship.State.JUNKED) {
+			try { ShipMark.Marked mk = markFrom(s, dir, version); bytes = mk.bytes; r = markedRecord(s, dir, mk); }
+			catch (IOException e) { log.warn("Could not mark {}'s older save (marked at the next opening): {}", s.name, e.toString()); }
+		}
+		Journal.Note n = Journal.begin(this, "RESTORE_VERSION");
+		if (f.isFile()) { // as snapshot() does: kept unless her newest version is the same, so undoing the Restore is restoring the newest
+			byte[] now = SafeFiles.read(f);
+			List<File> h = history(s);
+			if (h.isEmpty() || !SafeFiles.hash(h.get(h.size() - 1)).equals(SafeFiles.hash(now))) n.replace(ShipStore.versionFile(dir, null), now);
+		}
+		n.replace(f, bytes);
+		if (r != null) n.replace(ShipStore.xml(dir), ShipStore.bytes(r));
+		n.commit();
+		ShipStore.prune(dir, KEEP);
 		s.invalidate();
 		s.hash = SafeFiles.hash(f);
 		marked(s, s.save());
@@ -1962,7 +2021,7 @@ public final class Vault {
 				for (File c : crew) {
 					if (!c.isFile() || !c.getName().endsWith(".xml")) continue;
 					z.putNextEntry(new java.util.zip.ZipEntry(PACKAGE_CREW + c.getName()));
-					z.write(SafeFiles.read(c));
+					z.write(CrewRegister.forPackage(c)); // in the form every station reads (6.11: their own files are tags)
 					z.closeEntry();
 				}
 			}
@@ -2079,6 +2138,7 @@ public final class Vault {
 		try { save = ShipMark.strip(save); } // her old station's mark off: this one marks her at her first Board here (6.08)
 		catch (IOException e) { log.warn("Could not take her old station's mark off {}: {}", gs.getPlayerShipName(), e.toString()); }
 		Ship s = new Ship(newId(), gs.getPlayerShipName(), Ship.State.DOCKED, gs.isDLCEnabled());
+		s.origin = originNow("received");
 		File dir = settleFolder(s);
 		try {
 			// her files in one note (5.88): her save as it arrived (or renamed onto a blueprint here, homeplanet.parser.ShipPapers), her voyage, her
@@ -2144,8 +2204,11 @@ public final class Vault {
 	public boolean finalBattlePending(Ship s) { return new File(historyOf(s), FINAL).isFile(); }
 
 	/** A ship just built (commissioned): written into the ships folder, docked. */
-	public synchronized Ship adopt(SavedGameState state) throws IOException {
+	public synchronized Ship adopt(SavedGameState state) throws IOException { return adopt(state, "commissioned"); }
+	/** As above, saying how she came (6.10: her origin, "commissioned" or "brought_home"). */
+	public synchronized Ship adopt(SavedGameState state, String how) throws IOException {
 		Ship s = new Ship(newId(), state.getPlayerShipName(), Ship.State.DOCKED, state.isDLCEnabled());
+		s.origin = originNow(how);
 		log.debug("New ship docked: {} ({}), {}, AE {}", s.name, s.id, state.getPlayerShipBlueprintId(), state.isDLCEnabled());
 		writeQuietly(s, state); // her file first: a failed write leaves no entry without one
 		ships.add(s);
@@ -2153,8 +2216,11 @@ public final class Vault {
 		return s;
 	}
 	/** A ship that arrives as a wreck (a gift of salvage): written straight into the Junkyard. */
-	public synchronized Ship adoptJunked(SavedGameState state) throws IOException {
+	public synchronized Ship adoptJunked(SavedGameState state) throws IOException { return adoptJunked(state, "derelict"); }
+	/** As above, saying how she came (6.10: "derelict", "brought_home"). */
+	public synchronized Ship adoptJunked(SavedGameState state, String how) throws IOException {
 		Ship s = new Ship(newId(), state.getPlayerShipName(), Ship.State.JUNKED, state.isDLCEnabled());
+		s.origin = originNow(how);
 		writeQuietly(s, state); // her file first: a failed write leaves no entry without one
 		ships.add(s);
 		saveManifest();
@@ -2163,6 +2229,7 @@ public final class Vault {
 	/** A save file from elsewhere (a file the player dropped in, a converter's) taken into the vault: the file is moved. */
 	public synchronized Ship adoptFile(File f, Ship.State state, String cachedName) throws IOException {
 		Ship s = new Ship(newId(), cachedName, state, true);
+		s.origin = originNow("taken_in");
 		if (state != Ship.State.BOARDED) settleFolder(s);
 		File to = fileOf(s);
 		if (state == Ship.State.BOARDED) {
@@ -2176,6 +2243,480 @@ public final class Vault {
 		s.hash = SafeFiles.hash(to);
 		saveManifest();
 		return s;
+	}
+
+	// ---- who she is: her fleet, how she came into it, her mark (6.10, heromedel's Plan N) ----
+
+	/** How a ship came into the fleet, now: "commissioned.6.10.20261008-174200" (UTC, as her versions are stamped). */
+	static String originNow(String how) {
+		String stamp;
+		synchronized (STAMP) { stamp = STAMP.format(new Date()); }
+		return how + "." + homeplanet.core.HomePlanet.APP_VERSION + "." + stamp;
+	}
+
+	/** Something found as the fleet opened that waits on the player's word (6.10). */
+	public static final class Found {
+		/**
+		 * LOOSE: a save lying where no ship holds it (dropped in by hand); UNPROVEN: a ship's folder with nothing to show
+		 * she's this fleet's; OTHER: a record of another career's fleet; NO_SAVE: a ship whose save is gone from her folder.
+		 */
+		public enum Kind { LOOSE, UNPROVEN, OTHER, NO_SAVE }
+		public final Kind kind;
+		/** The loose save, or her folder. */
+		public final File file;
+		public final String name, id, career;
+		/** What a no thanks is remembered by ("file:" and the save's fingerprint, or "ship:" and her id). */
+		final String key;
+		/** NO_SAVE: where her save would come from: "marked" (a save found carrying her mark), "version" (her newest kept), "rebuild" (her records). */
+		String fix = "";
+		File source;
+		Found(Kind kind, File file, String name, String id, String career, String key) {
+			this.kind = kind; this.file = file; this.name = name == null || name.isEmpty() ? "an unnamed ship" : name; this.id = id; this.career = career == null ? "" : career; this.key = key;
+		}
+		public String fix() { return fix; }
+		public File source() { return source; }
+	}
+	private final List<Found> found = new ArrayList<Found>();
+	/** What waits on the player's word (6.10), oldest found first. */
+	public synchronized List<Found> found() { return new ArrayList<Found>(found); }
+	/** The things the player said no to, remembered so they're not asked again (6.10). */
+	private File declinedFile() { return Store.file(root, "declined"); }
+	private boolean declined(String key) { return Store.read(declinedFile()).containsKey(key); }
+
+	/** Her birth entry's kind in words for her origin: commissioned, received, adopted, brought_home, derelict; null for any other entry. */
+	private static String birth(homeplanet.core.EventLog.Entry e) {
+		if (e.kind.equals("COMMISSION")) return "commissioned";
+		if (e.kind.equals("RECEIVED")) return "received";
+		if (e.kind.equals("VAULT") && "adopted_continue".equals(e.get("what"))) return "adopted";
+		if (e.kind.equals("EXPEDITION")) return "brought_home";
+		if (e.kind.equals("BUY") || e.kind.equals("REPAIR_JOB")) return "derelict";
+		return null;
+	}
+	private static boolean names(homeplanet.core.EventLog.Entry e, String id) {
+		String ship = e.get("ship");
+		return id.equals(e.get("ship_id")) || (ship != null && ship.endsWith("." + id));
+	}
+	/** "2026-10-05 19:20:52" as a version's stamp, "20261005-192052" (the log keeps local time; close enough for a record of when). */
+	private static String stampOf(String time) { return time == null ? "" : time.replace("-", "").replace(":", "").replace(' ', '-'); }
+
+	/**
+	 * Every ship's place in this fleet (6.10), as the fleet opens: another career's record waits for its offer; a record
+	 * from before 6.10 (no career or origin) is accepted on evidence (her save matching her record's fingerprint, or her
+	 * history in this fleet's log), her origin read from her first entry; one with neither waits for its offer. A ship
+	 * sent here from another career's fleet has her arrival logged.
+	 */
+	private void sortShips(List<String> notes) {
+		List<homeplanet.core.EventLog.Entry> history = null;
+		for (Ship s : new ArrayList<Ship>(ships)) {
+			if (s.state != Ship.State.DOCKED && s.state != Ship.State.JUNKED) continue;
+			File dir = folderOf(s);
+			ShipStore.Record r = ShipStore.read(dir);
+			if (r == null) continue;
+			if (!r.career.isEmpty() && !r.career.equals(slot)) { // another career's: not this fleet's until the player says
+				ships.remove(s);
+				if (!declined("ship:" + s.id)) found.add(new Found(Found.Kind.OTHER, dir, r.name, s.id, r.career, "ship:" + s.id));
+				continue;
+			}
+			if (r.has(ARRIVAL)) { // sent here from a career (Destroy, or a ship taken in there): her arrival, in this fleet's log
+				java.util.Properties a = r.sections.get(ARRIVAL);
+				HistoryLog.entry("VAULT", s.name + " arrived from the " + a.getProperty("from", "") + " fleet", null, shipEvent("VAULT", s).put("what", "arrived")
+						.put("from_career", a.getProperty("career")).put("from", a.getProperty("from")).put("how", a.getProperty("how")).put("origin", r.origin));
+				try { setNotes(dir, ARRIVAL, null); } catch (IOException e) { log.warn("Could not clear {}'s arrival note: {}", s.name, e.toString()); }
+			}
+			if (!r.career.isEmpty() && !r.origin.isEmpty()) continue; // known
+			if (declined("ship:" + s.id)) { ships.remove(s); continue; } // the player said no: left as she is, not asked again
+			boolean print = false;
+			File f = fileOf(s);
+			try { print = f.isFile() && r.hash != null && !r.hash.isEmpty() && SafeFiles.hash(f).equals(r.hash); } catch (IOException e) { }
+			if (history == null) history = homeplanet.core.EventLog.read(this);
+			homeplanet.core.EventLog.Entry first = null, born = null;
+			for (homeplanet.core.EventLog.Entry e : history) {
+				if (!names(e, s.id) || (e.kind.equals("VAULT") && "declined".equals(e.get("what")))) continue; // a no thanks is no history
+				if (first == null) first = e;
+				if (birth(e) != null) { born = e; break; }
+			}
+			if (!print && first == null) { // nothing shows she's this fleet's
+				ships.remove(s);
+				if (!declined("ship:" + s.id)) found.add(new Found(Found.Kind.UNPROVEN, dir, r.name, s.id, slot, "ship:" + s.id));
+				continue;
+			}
+			homeplanet.core.EventLog.Entry proof = born != null ? born : first;
+			String how = born != null ? birth(born) : "unknown";
+			String when = proof != null ? stampOf(proof.time) : originNow("x").substring(originNow("x").lastIndexOf('.') + 1);
+			String by = proof != null ? "verified-log-" + proof.kind : "verified-record-" + r.hash.substring(0, Math.min(8, r.hash.length()));
+			s.origin = how + ".pre-6.10." + when + "." + by; // from before 6.10, when ships were first given a career and origin, whichever station checks her
+			notes.add(s.name + ": checked, " + s.origin);
+			HistoryLog.entry("VAULT", s.name + " checked: " + s.origin, null, shipEvent("VAULT", s).put("what", "checked").put("origin", s.origin)
+					.put("fingerprint", print).put("history", first != null).put("career", slot));
+		}
+	}
+	/**
+	 * Her save is gone from her folder, her record still there (6.10): she waits for the player's word on putting it back
+	 * (her newest kept version, or her records), off the fleet's list meanwhile. False if they said no before: the
+	 * memorial, as before 6.10.
+	 */
+	private boolean saveGone(Ship s, List<String> notes) {
+		File dir = folderOf(s);
+		if (!dir.isDirectory() || ShipStore.read(dir) == null || declined("ship:" + s.id)) return false;
+		Found f = new Found(Found.Kind.NO_SAVE, dir, s.name, s.id, slot, "ship:" + s.id);
+		f.fix = newestKept(dir) != null ? "version" : "rebuild";
+		found.add(f);
+		ships.remove(s);
+		notes.add(s.name + " (" + s.state.key + "): her save is gone; asking about putting it back (" + f.fix + ")");
+		return true;
+	}
+	/** The ships whose saves were seen marked, by the fingerprint then (so a look reads no record twice). */
+	private final Map<String, String> markedSeen = new java.util.HashMap<String, String>();
+	/** Her record's section for a ship sent here from another career's fleet, until this fleet logs her arrival. */
+	static final String ARRIVAL = "arrival";
+
+	/**
+	 * A save lying where no ship holds it (6.10; adopted without a word before): in the shipyard, the Junkyard, or FTL's
+	 * saves folder (any .sav but continue.sav and FTL's profiles). One carrying the mark of a ship whose save is gone is
+	 * hers; one carrying the mark of a ship in the fleet is a copy, left alone; any other FTL could fly waits for its offer.
+	 */
+	private void findLoose(List<String> notes) {
+		for (java.util.Iterator<Found> it = found.iterator(); it.hasNext(); ) { Found x = it.next(); if (x.kind == Found.Kind.LOOSE && !x.file.isFile()) it.remove(); } // gone meanwhile
+		java.util.Set<String> known = new java.util.HashSet<String>();
+		for (Found x : found) known.add(x.key);
+		List<File> files = new ArrayList<File>();
+		for (File d : new File[] {shipyardDir(), junkyardDir(), saves}) {
+			File[] fs = d.listFiles();
+			if (fs == null) continue;
+			java.util.Arrays.sort(fs);
+			for (File f : fs) {
+				String n = f.getName().toLowerCase();
+				if (!f.isFile() || !n.endsWith(".sav")) continue;
+				if (d == saves && (n.equals("continue.sav") || n.equals("ae_prof.sav") || n.equals("prof.sav"))) continue;
+				files.add(f);
+			}
+		}
+		for (File f : files) {
+			String key;
+			try { key = "file:" + SafeFiles.hash(f); } catch (IOException e) { continue; }
+			if (known.contains(key) || declined(key)) continue;
+			ShipMark.Found mk = ShipMark.read(f);
+			if (mk != null) {
+				boolean placed = false;
+				for (Found x : found) if (x.kind == Found.Kind.NO_SAVE && mk.id.equals(x.id)) { x.fix = "marked"; x.source = f; placed = true; }
+				if (placed) continue;
+				if (slot.equals(mk.career) && byId(mk.id) != null) { // a copy of a ship already here: never a second her
+					notes.add(f.getName() + " is a copy of " + byId(mk.id).name + ", who is in the fleet: left where it is");
+					remember(key, f.getName() + " (a copy of " + byId(mk.id).name + ")");
+					continue;
+				}
+			}
+			SavedGameState gs;
+			try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(f); } catch (Exception e) { continue; } // not a save FTL wrote
+			if (gs == null || gs.getPlayerShip() == null || !homeplanet.parser.Retrofit.missingBlueprints(f).isEmpty()) continue; // not one FTL could fly
+			found.add(new Found(Found.Kind.LOOSE, f, gs.getPlayerShipName(), null, mk == null ? "" : mk.career, key));
+		}
+	}
+	private void remember(String key, String what) {
+		try {
+			java.util.Properties p = Store.read(declinedFile());
+			p.setProperty(key, what);
+			Store.write(declinedFile(), p, "What the player said no to (Federation Home Planet 6.10): not asked about again");
+		} catch (IOException e) { log.warn("Could not remember {}: {}", what, e.toString()); }
+	}
+
+	/**
+	 * Every docked and Junkyard ship's save carries her mark (6.10): one without it (from before 6.08, a backup put back,
+	 * a save edited elsewhere) gets it, her version kept first. A save marked and unchanged since is passed over unread.
+	 */
+	private void markShips() {
+		for (Ship s : new ArrayList<Ship>(ships)) {
+			if (s.state != Ship.State.DOCKED && s.state != Ship.State.JUNKED) continue;
+			File f = fileOf(s);
+			if (!f.isFile()) continue;
+			String h = s.hash; // as this look found it
+			if (h != null && h.equals(markedSeen.get(s.id))) continue;
+			File dir = folderOf(s);
+			java.util.Properties m = ShipStore.notes(dir, ShipMark.SECTION);
+			if ("true".equals(m.getProperty("marked")) && h != null && h.equals(m.getProperty("save", ""))) { markedSeen.put(s.id, h); continue; } // marked, and unchanged since
+			try {
+				ShipMark.Found mk = ShipMark.read(f);
+				if (mk != null && slot.equals(mk.career) && s.id.equals(mk.id)) { // hers already: noted, so it isn't read again
+					m.setProperty("marked", "true"); m.setProperty("save", h);
+					if (mk.blueprint != null) m.setProperty("class", mk.blueprint);
+					setNotes(dir, ShipMark.SECTION, m);
+				} else {
+					remark(s);
+				}
+				markedSeen.put(s.id, s.hash);
+			} catch (IOException e) {
+				log.warn("Could not mark {}'s save: {}", s.name, e.toString());
+			}
+		}
+	}
+	/** Writes her mark into her save (docked or in the Junkyard), her version kept first, as one note; her count and last day as her record has them. */
+	private void remark(Ship s) throws IOException {
+		File dir = settleFolder(s), f = fileOf(s);
+		ShipMark.Marked mk = markFrom(s, dir, f);
+		ShipStore.Record r = markedRecord(s, dir, mk);
+		Journal.Note n = Journal.begin(this, "MARK");
+		byte[] was = SafeFiles.read(f);
+		if (!alreadyKept(s, was)) n.replace(ShipStore.versionFile(dir, null), was);
+		n.replace(f, mk.bytes);
+		n.replace(ShipStore.xml(dir), ShipStore.bytes(r));
+		n.commit();
+		ShipStore.prune(dir, KEEP);
+		s.hash = r.hash;
+		s.invalidate();
+		log.debug("Marked {} ({} {}, boarded {} times)", s.name, slot, s.id, r.section(ShipMark.SECTION).getProperty("boards"));
+	}
+	/** This save with her mark as her record has it (her Board count and day): the save itself is left as it is. */
+	private ShipMark.Marked markFrom(Ship s, File dir, File save) throws IOException {
+		java.util.Properties m = ShipStore.notes(dir, ShipMark.SECTION);
+		return ShipMark.mark(save, slot, s.id, Store.num(m, "boards", 0), Store.num(m, "day", 0));
+	}
+	/** Her record once her save is this marked one: its fingerprint, and her mark's section. */
+	private ShipStore.Record markedRecord(Ship s, File dir, ShipMark.Marked mk) throws IOException {
+		int boards = Store.num(ShipStore.notes(dir, ShipMark.SECTION), "boards", 0);
+		String h = SafeFiles.hash(mk.bytes);
+		ShipStore.Record r = recordOf(s);
+		r.hash = h;
+		java.util.Properties sec = r.section(ShipMark.SECTION);
+		sec.setProperty("boards", Integer.toString(boards)); sec.setProperty("marked", "true"); sec.setProperty("save", h);
+		if (mk.gs.getPlayerShipBlueprintId() != null) sec.setProperty("class", mk.gs.getPlayerShipBlueprintId());
+		return r;
+	}
+	/** One of her kept saves (a version or a copy kept for a reason) has these very bytes: no need to keep them again (6.11). */
+	private boolean alreadyKept(Ship s, byte[] save) throws IOException {
+		String h = SafeFiles.hash(save);
+		for (File k : kept(s)) if (h.equals(SafeFiles.hash(k))) return true;
+		return false;
+	}
+	/** As {@link #remark}, for an action that just put an older save back (Restore, Recover): never fatal. */
+	private void remarkQuietly(Ship s) {
+		if (s.state != Ship.State.DOCKED && s.state != Ship.State.JUNKED) return;
+		try { remark(s); } catch (IOException e) { log.warn("Could not mark {}'s save (marked at the next opening): {}", s.name, e.toString()); }
+	}
+
+	/**
+	 * The player's yes to something found (6.10). In Sandbox Mode she's taken in here; in a career she goes to Sandbox
+	 * Mode's fleet (a career takes only ships it knows); a ship whose save is gone gets one back. What came of it, in words.
+	 */
+	public synchronized String accept(Found f) throws IOException {
+		boolean here = SANDBOX.equals(slot);
+		String result;
+		if (f.kind == Found.Kind.NO_SAVE) {
+			result = restoreSave(f);
+		} else if (f.kind == Found.Kind.LOOSE) {
+			Ship.State state = f.file.getParentFile().getAbsoluteFile().equals(junkyardDir().getAbsoluteFile()) ? Ship.State.JUNKED : Ship.State.DOCKED;
+			String origin = originNow("taken_in") + "." + f.file.getName().replaceAll("\\.sav$", "").replaceAll("[^A-Za-z0-9_-]", "_");
+			if (here) {
+				Ship s = adoptFile(f.file, state, f.name);
+				s.origin = origin;
+				saveManifest();
+				remark(s);
+				result = f.name + " was taken into the fleet: she " + (state == Ship.State.JUNKED ? "waits in the Junkyard." : "is docked at the Space Dock.");
+			} else {
+				toSandbox(null, SafeFiles.read(f.file), f.name, newId(), state, origin, "taken_in");
+				if (!f.file.delete()) log.warn("Could not remove {} after sending her to Sandbox Mode", f.file);
+				result = f.name + " was sent to Sandbox Mode's fleet: she waits there " + (state == Ship.State.JUNKED ? "in the Junkyard." : "at the Space Dock.");
+			}
+			HistoryLog.entry("VAULT", f.name + " taken in from " + f.file.getName() + (here ? "" : ", to Sandbox Mode's fleet"), null,
+					Event.of("VAULT").put("what", "taken_in").put("ship_name", f.name).put("file", f.file.getName()).put("to", here ? "here" : "sandbox").put("origin", origin));
+		} else { // UNPROVEN or OTHER: her folder
+			ShipStore.Record r = ShipStore.read(f.file);
+			Ship.State state = f.file.getParentFile().getAbsoluteFile().equals(junkyardDir().getAbsoluteFile()) ? Ship.State.JUNKED : Ship.State.DOCKED;
+			String origin = r != null && !r.origin.isEmpty() ? r.origin : originNow("taken_in");
+			if (here) {
+				Ship s = new Ship(f.id, f.name, state, r == null || r.dlc);
+				s.origin = origin;
+				if (r != null) { s.hash = r.hash; s.marks = r.marks; s.stranger = r.stranger; s.fresh = r.fresh; }
+				folders.put(s.id, f.file);
+				ships.add(s);
+				ShipStore.Record mine = recordOf(s);
+				mine.career = slot;
+				SafeFiles.write(ShipStore.xml(f.file), ShipStore.bytes(mine));
+				s.invalidate();
+				s.save();
+				remark(s);
+				result = f.name + " was taken into the fleet.";
+			} else {
+				File save = ShipStore.sav(f.file);
+				if (!save.isFile()) throw new IOException(f.name + "'s folder has no save to send");
+				toSandbox(f.file, SafeFiles.read(save), f.name, f.id, state, origin, f.kind == Found.Kind.OTHER ? "other_career" : "taken_in");
+				SafeFiles.deleteTree(f.file);
+				result = f.name + " was sent to Sandbox Mode's fleet.";
+			}
+			HistoryLog.entry("VAULT", f.name + " taken in from her folder" + (here ? "" : ", to Sandbox Mode's fleet"), null,
+					Event.of("VAULT").put("what", "taken_in").put("ship", f.name + "." + f.id).put("ship_name", f.name).put("ship_id", f.id).put("file", f.file.getName())
+							.put("to", here ? "here" : "sandbox").put("origin", origin).put("record_career", f.career));
+		}
+		found.remove(f);
+		saveManifest();
+		return result;
+	}
+	/** The player's no (6.10): left as it is, and not asked again; a ship whose save is gone goes to the memorial, as before 6.10. */
+	public synchronized void decline(Found f) throws IOException {
+		found.remove(f);
+		if (f.kind == Found.Kind.NO_SAVE) {
+			Ship s = new Ship(f.id, f.name, Ship.State.DOCKED, true);
+			folders.put(s.id, f.file);
+			toMemorial(s);
+		} else {
+			remember(f.key, f.name + " (" + f.file.getName() + ")");
+		}
+		HistoryLog.entry("VAULT", f.name + ": left as it is (" + f.kind.name().toLowerCase() + ")", null,
+				Event.of("VAULT").put("what", "declined").put("ship_name", f.name).put("ship_id", f.id).put("found", f.kind.name().toLowerCase()).put("file", f.file.getName()));
+	}
+	/** Her save back in her folder: a save carrying her mark, her newest kept version, or one rebuilt from her records. */
+	private String restoreSave(Found f) throws IOException {
+		ShipStore.Record r = ShipStore.read(f.file);
+		if (r == null) throw new IOException(f.name + "'s record can't be read");
+		Ship.State state = f.file.getParentFile().getAbsoluteFile().equals(junkyardDir().getAbsoluteFile()) ? Ship.State.JUNKED : Ship.State.DOCKED;
+		byte[] save;
+		String how;
+		if ("marked".equals(f.fix) && f.source != null && f.source.isFile()) { save = SafeFiles.read(f.source); how = "a save carrying her mark (" + f.source.getName() + ")"; }
+		else {
+			File v = newestKept(f.file);
+			if (v != null) { save = SafeFiles.read(v); how = "her newest kept version"; }
+			else { save = SaveHelper.toBytes(rebuild(f.file, r)); how = "her records (rebuilt)"; }
+		}
+		Ship s = new Ship(f.id, r.name, state, r.dlc);
+		s.marks = r.marks; s.stranger = r.stranger; s.fresh = r.fresh;
+		s.origin = !r.origin.isEmpty() ? r.origin : originNow("rebuilt");
+		folders.put(s.id, f.file);
+		SafeFiles.write(ShipStore.sav(f.file), save);
+		if ("marked".equals(f.fix) && f.source != null && !f.source.delete()) log.warn("Could not remove {} once it was back in her folder", f.source);
+		s.hash = SafeFiles.hash(ShipStore.sav(f.file));
+		ships.add(s);
+		s.save();
+		remark(s);
+		HistoryLog.entry("VAULT", s.name + "'s save put back from " + how, null, shipEvent("VAULT", s).put("what", how.endsWith("(rebuilt)") ? "rebuilt" : "save_restored").put("from", how));
+		return s.name + "'s save was put back from " + how + ".";
+	}
+	/**
+	 * A save made from her records alone (6.10): her class (her record's marks name it) and name, her crew from their
+	 * files in her folder (names, races, looks, skills and records), her supplies from her last look; her gear and
+	 * systems as her class comes. Throws if her class isn't known.
+	 */
+	static SavedGameState rebuild(File dir, ShipStore.Record r) throws IOException {
+		java.util.Properties mark = r.sections.containsKey(ShipMark.SECTION) ? r.sections.get(ShipMark.SECTION) : new java.util.Properties();
+		String bp = mark.getProperty("class", r.marks == null ? "" : r.marks.split("\\|", -1)[0]);
+		if (bp.isEmpty() || net.blerf.ftl.parser.DataManager.get().getShip(bp) == null) throw new IOException((r.name.isEmpty() ? "She" : r.name) + " can't be rebuilt: her record doesn't name a ship class the game knows");
+		SavedGameState gs = homeplanet.parser.Commission.build(bp, r.name, net.blerf.ftl.constants.Difficulty.NORMAL, new java.util.Random());
+		net.blerf.ftl.parser.SavedGameParser.ShipState ps = gs.getPlayerShip();
+		// her crew: their files in her folder, or wherever the register has put them since her save went (last seen aboard her)
+		List<File> crew = new ArrayList<File>();
+		for (File d : new File[] {new File(dir, CrewRegister.CREW_DIR), CrewRegister.memorialCrewDir(get())}) {
+			File[] fs = d.listFiles();
+			if (fs != null) for (File c : fs) if (c.isFile() && c.getName().endsWith(".xml")) crew.add(c);
+		}
+		java.util.Collections.sort(crew);
+		List<net.blerf.ftl.parser.SavedGameParser.CrewState> theirs = new ArrayList<net.blerf.ftl.parser.SavedGameParser.CrewState>();
+		{
+			for (File c : crew) {
+				java.util.Properties p = CrewRegister.readFile(c);
+				if (p == null) continue;
+				String status = p.getProperty("status", "PRESENT");
+				if (!("ship:" + r.id).equals(p.getProperty("place")) || status.equals("KILLED") || status.equals("RETIRED") || status.equals("TRANSFERRED")) continue;
+				java.util.Map<String, String> fields = new LinkedHashMap<String, String>();
+				for (String k : p.stringPropertyNames()) if (k.startsWith("rec.")) fields.put(k.substring(4), p.getProperty(k));
+				if (fields.isEmpty()) continue;
+				try { theirs.add(CrewRecord.crew(fields)); } catch (Exception e) { log.warn("Could not rebuild {} from {}: {}", p.getProperty("name"), c.getName(), e.toString()); }
+			}
+		}
+		if (!theirs.isEmpty()) {
+			ps.getCrewList().clear();
+			for (net.blerf.ftl.parser.SavedGameParser.CrewState c : theirs) if (SaveHelper.placeCrew(ps, c, true)) ps.getCrewList().add(c); // placed, then aboard
+		}
+		java.util.Properties last = r.sections.containsKey(ShipStore.LAST) ? r.sections.get(ShipStore.LAST) : new java.util.Properties();
+		ps.setScrapAmt(Store.num(last, "scrap", ps.getScrapAmt()));
+		ps.setFuelAmt(Store.num(last, "fuel", ps.getFuelAmt()));
+		ps.setMissilesAmt(Store.num(last, "missiles", ps.getMissilesAmt()));
+		ps.setDronePartsAmt(Store.num(last, "drones", ps.getDronePartsAmt()));
+		return gs;
+	}
+
+	/**
+	 * A ship into Sandbox Mode's fleet (6.10), written straight into its folders (it needn't be open): her folder copied
+	 * (or a new one made for a loose save), her record saying Sandbox and how she came, her save marked for it, her crew's
+	 * files waiting in crew/arrived/ for its register (as a traded ship's do). The fleet logs her arrival when it next opens.
+	 */
+	private File toSandbox(File dir, byte[] save, String name, String id, Ship.State state, String origin, String how) throws IOException {
+		File sandbox = rootOf(saves, SANDBOX);
+		File parent = new File(sandbox, state == Ship.State.JUNKED ? "junkyard" : "shipyard");
+		if (!parent.isDirectory() && !parent.mkdirs()) throw new IOException("Could not create " + parent);
+		String stem = ShipStore.stem(name, id);
+		File to = new File(parent, stem);
+		if (to.exists() || new File(new File(sandbox, state == Ship.State.JUNKED ? "shipyard" : "junkyard"), stem).exists()) { // her id taken there: a new one
+			id = newId();
+			stem = ShipStore.stem(name, id);
+			to = new File(parent, stem);
+		}
+		try {
+			if (dir != null) copyTree(dir, to, dir.getName(), stem);
+			else if (!to.mkdirs()) throw new IOException("Could not create " + to);
+			File crew = new File(to, CrewRegister.CREW_DIR), arrived = new File(crew, CrewRegister.ARRIVED);
+			File[] cs = crew.listFiles();
+			if (cs != null) for (File c : cs) {
+				if (!c.isFile()) continue;
+				if (!arrived.isDirectory() && !arrived.mkdirs()) throw new IOException("Could not create " + arrived);
+				SafeFiles.move(c, new File(arrived, c.getName()));
+			}
+			ShipStore.Record was = dir == null ? null : ShipStore.read(to);
+			ShipStore.Record r = new ShipStore.Record(id);
+			if (was != null) { r.dlc = was.dlc; r.marks = was.marks; r.stranger = was.stranger; r.owners.addAll(was.owners); r.pastNames.addAll(was.pastNames); r.sections.putAll(was.sections); }
+			else r.dlc = true;
+			r.name = name; r.state = state.key; r.career = SANDBOX;
+			r.origin = origin != null && !origin.isEmpty() ? origin : was != null && !was.origin.isEmpty() ? was.origin : originNow("taken_in");
+			java.util.Properties m = r.section(ShipMark.SECTION);
+			File sav = ShipStore.sav(to);
+			SafeFiles.write(sav, save);
+			ShipMark.Marked mk = ShipMark.mark(sav, SANDBOX, id, Store.num(m, "boards", 0), Store.num(m, "day", 0));
+			SafeFiles.write(sav, mk.bytes);
+			r.hash = SafeFiles.hash(mk.bytes);
+			m.setProperty("marked", "true"); m.setProperty("save", r.hash);
+			if (mk.gs.getPlayerShipBlueprintId() != null) m.setProperty("class", mk.gs.getPlayerShipBlueprintId());
+			java.util.Properties a = r.section(ARRIVAL);
+			a.setProperty("from", title(slot)); a.setProperty("career", slot); a.setProperty("how", how);
+			File oldXml = new File(to, stem + ".xml");
+			SafeFiles.write(oldXml, ShipStore.bytes(r));
+		} catch (IOException e) {
+			SafeFiles.deleteTree(to);
+			throw e;
+		}
+		return to;
+	}
+	/** Copies a folder, the files named for her old stem renamed for the new one. */
+	private static void copyTree(File from, File to, String oldStem, String newStem) throws IOException {
+		if (!to.mkdirs() && !to.isDirectory()) throw new IOException("Could not create " + to);
+		File[] fs = from.listFiles();
+		if (fs == null) return;
+		for (File f : fs) {
+			String n = f.getName();
+			if (n.startsWith(oldStem + ".")) n = newStem + n.substring(oldStem.length());
+			File t = new File(to, n);
+			if (f.isDirectory()) copyTree(f, t, oldStem, newStem);
+			else SafeFiles.write(t, SafeFiles.read(f));
+		}
+	}
+
+	/**
+	 * Destroy in Immersive Mode, the other way (heromedel, 6.10): she leaves the career as if destroyed (no reward, no
+	 * refund; her fate there "transferred", to Sandbox Mode), and lives on in Sandbox Mode's Junkyard with her crew.
+	 */
+	public synchronized String sendToSandbox(Ship s) throws IOException {
+		if (SANDBOX.equals(slot)) throw new IOException("She is in Sandbox Mode already");
+		if (s.state != Ship.State.JUNKED) throw new IOException(s.name + " isn't in the Junkyard");
+		File dir = settleFolder(s);
+		File to = toSandbox(dir, SafeFiles.read(fileOf(s)), s.name, s.id, Ship.State.JUNKED, null, "sent_from_career");
+		String from = place(s);
+		try {
+			leave(s, Fate.TRANSFERRED, "Sandbox Mode");
+		} catch (IOException e) {
+			SafeFiles.deleteTree(to);
+			throw e;
+		}
+		ships.remove(s);
+		saveManifest();
+		HistoryLog.entry("SENT TO SANDBOX", s.name + "  " + from + " -> Sandbox Mode's Junkyard", null,
+				shipEvent("SENT_TO_SANDBOX", s).put("from", from).put("to", rootOf(saves, SANDBOX).getName() + "/junkyard/" + to.getName()).put("career", slot));
+		return s.name + " was sent to Sandbox Mode's Junkyard, her crew with her. This career counts her as gone.";
 	}
 
 	// ---- who uses a blueprint ----
@@ -2357,6 +2898,19 @@ public final class Vault {
 	public synchronized void sendToOtherFleet(Ship s, boolean junkyard) throws IOException {
 		File other = otherRoot();
 		boolean old = homeplanet.convert.OldFleet.notConverted(other); // not converted yet: it adopts strays from its old folders
+		if (immersive && !old) { // a ship of her own there, never a loose save (6.10: loose saves wait for the player's word)
+			String from = s.isBoarded() ? "continue.sav" : place(s);
+			File her = fileOf(s);
+			File to = toSandbox(settleFolder(s), SafeFiles.read(her), s.name == null || s.name.trim().isEmpty() ? "Unknown ship" : s.name.trim(), s.id,
+					junkyard ? Ship.State.JUNKED : Ship.State.DOCKED, originNow("adopted"), "uncommissioned");
+			if (!her.delete()) { SafeFiles.deleteTree(to); throw new IOException("Could not remove " + her + " (is FTL running?)"); }
+			ships.remove(s);
+			toMemorial(s);
+			saveManifest();
+			HistoryLog.entry("SENT", s.name + "  " + from + " -> the Sandbox fleet's " + (junkyard ? "Junkyard" : "Space Dock"), null,
+					shipEvent("SENT", s).put("from", from).put("to_fleet", "Sandbox").put("to", to.getParentFile().getName() + "/" + to.getName()));
+			return;
+		}
 		File dir = new File(other, junkyard ? "junkyard" : old ? homeplanet.convert.OldFleet.SHIPS : "shipyard");
 		if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("Could not create " + dir);
 		String stem = (s.name == null || s.name.trim().isEmpty() ? "Unknown ship" : s.name.trim()).replaceAll("[\\\\/:*?\"<>|]", "_");

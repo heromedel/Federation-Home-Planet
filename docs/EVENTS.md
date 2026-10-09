@@ -76,7 +76,7 @@ count), `beacons_jumped` (since the last look), `at_store`.
 
 | Kind | Fields | Human line today |
 | --- | --- | --- |
-| `REPUTATION` | `reason` (`achievement`, `cruiser`, `voyage`, `ship_lost`, `restored`, `expedition`, `captive`, `ransomed`, `spent`, `flagship`, `review`, `other`), `points` (signed), `total` (after), `detail.n` | The reputation log's own line: "Expedition: ... (+3)" |
+| `REPUTATION` | `reason` (`achievement`, `cruiser`, `voyage`, `ship_lost`, `restored`, `expedition`, `captive`, `ransomed`, `spent`, `flagship`, `review`, `other`), `points` (signed, the whole points the total moved), `exact` (6.13: the change itself, a half point where there is one: `4.5`), `rate` (6.13: `1`, `1.5` or `2`, what was earned counted at), `total` (after, its whole part), `total_exact` (6.13), `detail.n` | The reputation log's own line: "Expedition: ... (+3)", each piece at what it added |
 
 ## The station log (`log=station`; `history.log`)
 
@@ -100,8 +100,8 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `RECOVER` | ship, `fate` (the fate she had), `from`, `to` | "Kestrel (scrapped)  memorials_and_records/ships/Kestrel.a3f2 -> shipyard/Kestrel.a3f2" |
 | `RESTORE` | ship, `why` (`version`, `overwritten`), `from`, `to`, `reputation_back` | "Restored the Kestrel to an earlier version" |
 | `OVERWRITTEN` | ship (the one lost), `versions`, `by`, `by_name`, `by_id`, `by_stranger` (the ship now in continue.sav) | "Kestrel (a3f2) was boarded, and continue.sav is now another ship: ..." |
-| `VAULT` | `what` (`taking_stock`, `adopted_continue`, `set_aside`), ship (when adopted or set aside), `file`, `detail.n` (the notes); `set_aside` (6.08, the ship mark): `to`, `mark_career`, `mark_boards`, `mark_day`, `boards_now`, `in_fleet`, `other_career` | "taking stock" |
-| `JOURNAL` | `what` (`finished`, `stuck`), `action` (the note's kind: `SAVE`, `BOARD`, `DOCK`, `MOVE_LOGS`, `MOVE_CARGO_HOLD`, `CREW_REGISTER`, `CONVERT_CARGO_HOLD`, `MOVE_EXPEDITIONS`, `MOVE_SMALL_FILES`, `FOLD_SHIP_FILES`, `LEAVE`, `DISBAND`, `COME_HOME`, `RESTORE`, `RECEIVE`, `LOG_DAYS_REPAIRED`, `LOGS_CONVERTED` and `SHIP_LOGS_FILLED` (5.992: the old logs read in, and the ships' logs filled, each as one note)), `steps`, `note` (its file), `finished=startup`, `time` and `day` (the note's own), `left_by` (the station's version that wrote the note), `detail.n` (what couldn't be told, when stuck) | "The station finished what it had begun." |
+| `VAULT` | `what` (`taking_stock`, `adopted_continue`, `set_aside`; 6.10: `checked`, `arrived`, `taken_in`, `declined`, `rebuilt`, `save_restored`), ship (when one is named), `file`, `detail.n` (the notes); `set_aside` (6.08, the ship mark): `to`, `mark_career`, `mark_boards`, `mark_day`, `boards_now`, `in_fleet`, `other_career`; `checked` (6.10, a record from before 6.10 accepted on evidence): `origin`, `fingerprint`, `history`, `career`; `arrived` (sent here from a career): `from_career`, `from`, `how`, `origin`; `taken_in`: `to` (`here`, `sandbox`), `origin`, `record_career`; `declined`: `found` (`loose`, `unproven`, `other`, `no_save`); `rebuilt`/`save_restored`: `from` | "taking stock" |
+| `JOURNAL` | `what` (`finished`, `stuck`), `action` (the note's kind: `SAVE`, `BOARD`, `DOCK`, `MOVE_LOGS`, `MOVE_CARGO_HOLD`, `CREW_REGISTER`, `CONVERT_CARGO_HOLD`, `MOVE_EXPEDITIONS`, `MOVE_SMALL_FILES`, `FOLD_SHIP_FILES`, `LEAVE`, `DISBAND`, `COME_HOME`, `RESTORE`, `RECEIVE`, `LOG_DAYS_REPAIRED`, `LOGS_CONVERTED` and `SHIP_LOGS_FILLED` (5.992: the old logs read in, and the ships' logs filled, each as one note), `MARK` (6.10: her mark written into her save) and `RESTORE_VERSION` (6.11: a kept version put back, already marked, with the save it replaced kept as her newest)), `steps`, `note` (its file), `finished=startup`, `time` and `day` (the note's own), `left_by` (the station's version that wrote the note), `detail.n` (what couldn't be told, when stuck) | "The station finished what it had begun." |
 | `LOGS_CONVERTED` | `entries_station`, `entries_voyage`, `entries_reputation`, `days` (how many old entries got an event, 5.73) | "The station read its old logs into its records once." |
 | `LOG_DAYS_REPAIRED` | `entries_moved` (converted entries put on their own day), `entries_prior` (from before the career's stardates, or a received ship's voyage from another station: Prior), `entries_unmatched` (left as they were), `files` (logs rewritten), once per fleet (5.81) | "The station put its old log entries back on their own days." |
 | `CREW_FILES` | `what` (`converted`: a 5.x crew.txt given a file per member, with `members`, `remembered` (those no longer serving: killed, missing, retired, transferred); `positions` (5.91): a register's place in the old logs carried across into the event log, with `members` and `at`, its offset in events.log) | "Every crew member's record was given a file of their own." / "The crew register was brought up to date with the station's log." |
@@ -114,6 +114,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `VICTORY` | ship, `what` (`rescued`), or from FinalVictory: `victories_then`, `victories_now`, `top_scores`, `after` (the choice), `value` | "Kestrel won the last battle (...)" |
 | `MUSEUM` | ship, `scrap`, `to` | "Kestrel is honoured in the Federation Museum" |
 | `REWARD` | ship, `scrap`, `to` | "120 scrap to the Cargo Hold for the Kestrel" |
+| `SENT_TO_SANDBOX` | ship, `from`, `to`, `career` (6.10: Destroy in a career, the other way: on to Sandbox Mode's Junkyard) | "Kestrel  junkyard/Kestrel.a3f2 -> Sandbox Mode's Junkyard" |
 | `SENT_AWAY` | ship, `to_commander`, `to` | "Kestrel (a3f2) to Vance's fleet, over Long Range Comm." |
 | `RECEIVED` | ship, `from_commander`, `trade`, `to` | "Kestrel (a3f2) from Vance's fleet, over Long Range Comm.: docked" |
 | `RETURNED` | ship, `why` (`trade_called_off`), `to`; or from the repair job: `what` (`to_owner`), `paid`, `late` | "Kestrel (a3f2): the trade was called off, and she is back at the Space Dock" |
@@ -171,7 +172,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `STIPEND` | `scrap`, `months` | "120 scrap issued, to claim from the inbox (one stipend)" |
 | `OVERFLOW` | `what` (`shipped`, `shipped_home`, `lost`), `augment`, `title`, ship or `ship_name`, `parcel`, `to` | "Kestrel had no room for ...: her crew ship it home" |
 | `GIFT` | `from`, `system`, `title`, `to` | "The Third Fleet Commander sent a ... system for the project ship, ..." |
-| `CAREER` | `what` (`begun`, `rescued_to_hard`), `mode`, `stipend`, `own_profile`, `scrap`, `difficulty`, `with_ship`; `rescued_to_hard` (6.03: a Custom career's choice, fixed) | "Immersive career begun: ..." |
+| `CAREER` | `what` (`begun`, `rescued_to_hard`, `reputation_rate`), `mode`, `stipend`, `own_profile`, `scrap`, `difficulty`, `with_ship`; `rescued_to_hard` (6.03: a Custom career's choice, fixed); `rate` and `level` (6.13: a Custom career's reputation rate, `1`, `1.5` or `2`, level 0 to 2, fixed) | "Immersive career begun: ..." |
 | `SETTINGS` | `commander_name`, `detail.n` (each setting changed) | "" |
 | `PROFILE` | `what` (`removed`), `removed`, `keys` | "Removed from FTL's profile: ..." |
 | `UPDATE` | `version`, `replaced`, `added`, `removed` | "New construction plans from main (5.64): ..." |
