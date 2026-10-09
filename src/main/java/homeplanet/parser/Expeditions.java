@@ -426,7 +426,7 @@ public final class Expeditions {
 		Vault.Copy c = v.readCopy(st);
 		ShipState hold = c.save.getPlayerShip();
 		if (hold.getScrapAmt() < cost) throw new IOException("The Cargo Hold holds " + hold.getScrapAmt() + " scrap; posting costs " + cost);
-		if (rep > 0 && homeplanet.vault.Reputation.total(v) < rep) throw new IOException("A promise of adventure costs " + rep + " reputation; the career has " + homeplanet.vault.Reputation.total(v));
+		// a promise of adventure is never refused for want of reputation: it may take it below zero (heromedel, 5.13), or a fleet with no crew would be finished
 		hold.setScrapAmt(hold.getScrapAmt() - cost);
 		CrewState hired = null;
 		if (rng.nextInt(100) < (cost == 0 ? FREE_CHANCE : PAID_CHANCE)) {
