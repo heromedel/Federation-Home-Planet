@@ -46,9 +46,13 @@ test holds every list to this guide.
 
 - **The female forms are the program's,** from the endings at the top (`suffix`, or the Engi's `replace`): a B name
   gives a female crew member a name with one of the endings on. `ex` names an ending that reads wrong on that name
-  ("Ohmy" reads "oh my"); a name every ending reads wrong on is tagged M. Two joining rules: a final E drops before
-  an ending that starts with a vowel (Pumice, Pumicite), and a name ending in X takes only the rest of an ending (Ix,
-  Ixa). An M or F name takes no ending.
+  ("Ohmy" reads "oh my"); a name every ending reads wrong on is tagged M. The joining rules, in order: a name ending
+  in X takes only the rest of an ending with an X (Ix, Ixa; an ending with nothing left is skipped); otherwise a name
+  already ending in one of the endings is its own female form (Resi, Granite); a `drop` ending goes first (the
+  Lanius' `drop="ium, um"`: Titanium, Titania); a final E drops before an ending that starts with a vowel (Pumice,
+  Pumicite). An M or F name takes no ending.
+- **The Slugs** are written drawn out, with `from="..."` the plain word, for the curious: the test draws it out again
+  by the six rules and checks they agree.
 - **Rarity:** each file has its own ladder at the top, a weight for each level; a name comes up in proportion to its
   level's weight. A name with no rarity is on the first level. Humans' weights are real: how many people in a
   million have a name at that level, from the baby-name counts, and every name is put on its level the same way.
@@ -112,8 +116,8 @@ Geode, Druse, Prism, Lattice, Facet, and the ores (Hematite, Magnetite). Krypton
 The Crystal are the ancient ancestors of the Rock (LORE_COMPONENTS 12): the two
 lists are kin but share no names.
 
-Female: sorted by hand (Onyx and Rose Quartz are F), and the same endings as the Rock's, -ite and -ine (Quartzite and
-Jadeite, both real). A name already ending in -ite (Pyrite) takes `ex="ite"`, or is tagged M.
+Female: sorted by hand (Onyx and Rose Quartz are F), and the same endings as the Rock's, -ite and -ine (Quartzite;
+Jadite and Jadine, from Jade). A name already ending in -ite (Pyrite) is its own female form.
 
 ## Mantis
 

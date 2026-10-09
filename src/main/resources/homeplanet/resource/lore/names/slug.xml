@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Slug crew names (docs/NAMES.md): slimy words and a salesman's, sorted by hand into M and F, every one drawn out by
+     the Slugs' six rules (the guide): soft consonants double, never an added R; no vowel drags but the one after SH;
+     SH, TH, CH and PH never double; no three doubles in a row; an S or soft C doubles only when the letter after it
+     does; hard stops never double.
+
+     from="..." is the plain word the name was drawn out from, for the curious (and the test, which draws it out again
+     and checks they agree). The station uses the name.
+     rarity: a level of the ladder below; a name comes up in proportion to its level's weight. No rarity is the first.
+
+     To change them, copy this file into names in the lore folder beside the program and edit the copy. -->
+<names race="slug">
+	<rarity>
+		<level name="common" weight="1000"/>
+		<level name="uncommon" weight="300"/>
+		<level name="rare" weight="100"/>
+		<level name="very-rare" weight="30"/>
+		<level name="highly-unusual" weight="10"/>
+		<level name="almost-unique" weight="1"/>
+	</rarity>
+
+	<name sex="M" from="Slime">Ssllimme</name>
+	<name sex="M" from="Slither">Ssllither</name>
+	<name sex="M" from="Crawls">Crawwlls</name>
+	<name sex="M" from="Snail">Ssnnaill</name>
+	<name sex="M" from="Glim">Gllimm</name>
+	<name sex="M" from="Squill">Squill</name>
+	<name sex="M" from="Glib">Gllib</name>
+	<name sex="M" from="Muck">Mmuck</name>
+	<name sex="M" from="Slurp">Ssllurp</name>
+	<name sex="M" from="Drool">Droll</name>
+	<name sex="M" from="Squelch">Squellch</name>
+	<name sex="M" from="Slosh">Ssllosh</name>
+	<name sex="M" from="Slick">Ssllick</name>
+	<name sex="M" from="Coin">Coinn</name>
+	<name sex="M" from="Lucre">Llucre</name>
+	<name sex="M" from="Glint">Gllinnt</name>
+	<name sex="M" from="Ledger">Lledger</name>
+	<name sex="M" from="Margin">Mmarginn</name>
+	<name sex="M" from="Shill">Shiill</name>
+	<name sex="M" from="Spiel">Spiell</name>
+	<name sex="M" from="Sly">Sslly</name>
+	<name sex="M" from="Slink">Ssllinnk</name>
+	<name sex="M" from="Sludge">Sslludge</name>
+	<name sex="M" from="Murk">Mmurk</name>
+	<name sex="M" from="Nimbus">Nnimmbus</name>
+	<name sex="M" from="Wallow">Wwallow</name>
+	<name sex="M" from="Hollow">Hhollow</name>
+	<name sex="M" from="Marsh">Mmarsh</name>
+	<name sex="M" from="Fen">Fenn</name>
+	<name sex="M" from="Smarm" rarity="uncommon">Ssmmarmm</name>
+	<name sex="M" from="Schmooze" rarity="rare">Schmmozze</name>
+
+	<name sex="F" from="Flowers">Fllowwers</name>
+	<name sex="F" from="Mirrow">Mmirrow</name>
+	<name sex="F" from="Shimmer">Shiimmer</name>
+	<name sex="F" from="Lily">Llilly</name>
+	<name sex="F" from="Willow">Wwillow</name>
+	<name sex="F" from="Lemon">Llemmonn</name>
+	<name sex="F" from="Glimmer">Gllimmer</name>
+	<name sex="F" from="Gleam">Glleamm</name>
+	<name sex="F" from="Charm">Charmm</name>
+	<name sex="F" from="Lure">Llure</name>
+	<name sex="F" from="Trinket">Trinnket</name>
+	<name sex="F" from="Bauble">Baublle</name>
+	<name sex="F" from="Lavish">Llavvish</name>
+	<name sex="F" from="Luxe">Lluxe</name>
+	<name sex="F" from="Plush">Pllush</name>
+	<name sex="F" from="Lustre">Llustre</name>
+	<name sex="F" from="Gloss">Glloss</name>
+	<name sex="F" from="Sheen">Sheenn</name>
+	<name sex="F" from="Shine">Shiinne</name>
+	<name sex="F" from="Oily">Oilly</name>
+	<name sex="F" from="Slurry">Ssllurry</name>
+	<name sex="F" from="Nebula">Nnebulla</name>
+	<name sex="F" from="Haze">Hhazze</name>
+	<name sex="F" from="Mist">Mmist</name>
+	<name sex="F" from="Mallow">Mmallow</name>
+	<name sex="F" from="Lolly">Llolly</name>
+	<name sex="F" from="Honey">Hhonney</name>
+	<name sex="F" from="Pearl">Pearll</name>
+	<name sex="F" from="Lagoon">Llagonn</name>
+</names>
