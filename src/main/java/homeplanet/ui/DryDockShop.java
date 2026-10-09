@@ -486,12 +486,12 @@ class DryDockShop {
 		boolean order = e.kind == Kind.SYSTEM && !toStorage && SaveHelper.pastSystemLimit(bs, SystemType.findById(e.id)); // the hold has no System Limit
 		int fee = order ? homeplanet.core.Economy.workOrderScrap() : 0, cost = e.price + fee, rep = order ? homeplanet.core.Economy.workOrderRep() : 0;
 		if (bs.getScrapAmt() < cost) {
-			JOptionPane.showMessageDialog(bay, buyerName + " has " + bs.getScrapAmt() + " scrap; " + name + " costs " + e.price
-					+ (order ? ", and the custom work order to fit it " + fee + " more" : "") + ".", "Not enough scrap", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(bay, name + " costs " + e.price + " scrap" + (order ? ", and the custom work order to fit it " + fee + " more" : "") + ".\n"
+					+ buyerName + " has " + bs.getScrapAmt() + ".", "Not enough scrap", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		if (rep > bay.systems.repHave()) {
-			JOptionPane.showMessageDialog(bay, "The custom work order to fit " + name + " costs " + rep + " reputation as well as its scrap; your reputation is "
+			JOptionPane.showMessageDialog(bay, "The custom work order to fit " + name + " costs " + rep + " reputation as well as its scrap.\nYour reputation is "
 					+ homeplanet.vault.Reputation.signed(bay.systems.repHave()) + ".", "Not enough reputation", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
@@ -502,12 +502,12 @@ class DryDockShop {
 		if (e.kind == Kind.CREW) {
 			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
 			if (!it.isAvailable() || !e.id.equals(it.getItemId())) {
-				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
+				homeplanet.core.HomePlanet.showNotice(name + " is no longer in that store.", "Shop");
 				return;
 			}
 			net.blerf.ftl.parser.SavedGameParser.CrewState c = homeplanet.parser.Commission.volunteer(e.id, new java.util.Random());
 			if (c == null) { homeplanet.core.HomePlanet.showErrorDialog("The Home Planet Station doesn't know the race " + e.id + "."); return; }
-			if (!SaveHelper.placeCrew(bs, c, toStorage)) { homeplanet.core.HomePlanet.showErrorDialog(buyerName + " has no free floor space for more crew."); return; }
+			if (!SaveHelper.placeCrew(bs, c, toStorage)) { homeplanet.core.HomePlanet.showNotice(buyerName + " has no free floor space for more crew.", "Shop"); return; }
 			bs.getCrewList().add(c);
 			it.setAvailable(false);
 			if (!toStorage) buyer.setTotalCrewHired(buyer.getTotalCrewHired() + 1);
@@ -515,7 +515,7 @@ class DryDockShop {
 		} else if (e.kind == Kind.SYSTEM) {
 			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
 			if (!it.isAvailable() || !e.id.equals(it.getItemId())) {
-				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
+				homeplanet.core.HomePlanet.showNotice(name + " is no longer in that store.", "Shop");
 				return;
 			}
 			if (order && !SystemsPanel.confirmWorkOrder(bay)) return;
@@ -525,7 +525,7 @@ class DryDockShop {
 		} else if (e.kind == Kind.ITEM) {
 			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
 			if (!it.isAvailable() || !e.id.equals(it.getItemId())) { // shouldn't happen, but never sell something twice
-				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
+				homeplanet.core.HomePlanet.showNotice(name + " is no longer in that store.", "Shop");
 				return;
 			}
 			if (!toStorage) {

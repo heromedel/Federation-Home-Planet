@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Lanius crew names (docs/NAMES.md): metals, alloys and materials, the longer and heavier the better, and the gases
+     (the Lanius take the oxygen from a room: the nitrogen and argon are what's left behind them).
+
+     sex: B (both), M or F, chosen by how a name sounds. A female crew member given a B name gets it with one of the
+     endings in <female>, picked at random: ex="..." leaves out an ending that reads wrong on that name. A name ending
+     in one of the drop endings loses it first (Titanium, Titania); a name already ending in one of the endings is its
+     own female form; a final E drops before an ending that starts with a vowel (Bronze, Bronzia).
+     rarity: where the name comes from (docs/NAMES.md): real metals by how well known, then names from folk speech and
+     myth, from one story, and made up here. A name comes up in proportion to its level's weight. No rarity is the first.
+
+     To change them, copy this file into names in the lore folder beside the program and edit the copy. -->
+<names race="lanius">
+	<rarity>
+		<level name="Realworld" weight="1000"/>
+		<level name="Realworld-Uncommon" weight="300"/>
+		<level name="Realworld-Rare" weight="100"/>
+		<level name="Semi-Fictional" weight="30"/>
+		<level name="Known-Fiction" weight="10"/>
+		<level name="Human-Influenced" weight="5"/>
+		<level name="Bizarre" weight="1"/>
+	</rarity>
+	<female suffix="ia, ine" drop="ium, um"/>
+
+	<name sex="B" ex="ine">Wrought Iron</name>
+	<name sex="M">Carbon Fiber</name>
+	<name sex="M">Damascus</name>
+	<name sex="B">Titanium</name>
+	<name sex="B">Cobalt</name>
+	<name sex="B" ex="ine">Tungsten</name>
+	<name sex="B">Nickel</name>
+	<name sex="B">Bronze</name>
+	<name sex="B">Brass</name>
+	<name sex="B">Pewter</name>
+	<name sex="M">Cast Iron</name>
+	<name sex="B">Platinum</name>
+	<name sex="B">Chromium</name>
+	<name sex="B">Magnesium</name>
+	<name sex="B" rarity="Human-Influenced">Gunmetal</name>
+	<name sex="B" rarity="Realworld-Uncommon">Osmium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Iridium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Vanadium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Bismuth</name>
+	<name sex="B" rarity="Realworld-Uncommon">Gallium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Palladium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Rhodium</name>
+	<name sex="B" ex="ine" rarity="Realworld-Uncommon">Manganese</name>
+	<name sex="B" rarity="Realworld-Uncommon">Uranium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Plutonium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Zirconium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Tantalum</name>
+	<name sex="B" rarity="Realworld-Uncommon">Electrum</name>
+	<name sex="B" rarity="Realworld-Uncommon">Nichrome</name>
+	<name sex="M" rarity="Human-Influenced">Pig Iron</name>
+	<name sex="M" rarity="Human-Influenced">Bell Metal</name>
+	<name sex="B" rarity="Realworld-Rare">Wootz</name>
+	<name sex="B" rarity="Realworld-Rare">Invar</name>
+	<name sex="B" ex="ine" rarity="Realworld-Rare">Duralumin</name>
+	<name sex="B" ex="ine" rarity="Realworld-Rare">Molybdenum</name>
+	<name sex="B" rarity="Realworld-Rare">Ruthenium</name>
+	<name sex="B" rarity="Realworld-Rare">Hafnium</name>
+	<name sex="B" rarity="Realworld-Rare">Niobium</name>
+	<name sex="B" rarity="Realworld-Rare">Beryllium</name>
+	<name sex="B" rarity="Realworld-Rare">Thorium</name>
+	<name sex="B" ex="ine" rarity="Realworld-Rare">Nitrogen</name>
+	<name sex="B" ex="ine" rarity="Realworld-Rare">Argon</name>
+	<name sex="B" ex="ine" rarity="Realworld-Rare">Neon</name>
+	<name sex="B" ex="ine" rarity="Realworld-Rare">Xenon</name>
+	<name sex="B" ex="ine" rarity="Realworld-Rare">Krypton</name>
+	<name sex="B" rarity="Realworld-Rare">Helium</name>
+	<name sex="F" rarity="Semi-Fictional">Quicksilver</name>
+	<name sex="B" rarity="Semi-Fictional">Orichalcum</name>
+	<name sex="B" rarity="Semi-Fictional">Adamantine</name>
+	<name sex="B" rarity="Known-Fiction">Adamantium</name>
+	<name sex="B" rarity="Known-Fiction">Vibranium</name>
+	<name sex="B" rarity="Known-Fiction">Mithril</name>
+	<name sex="M" rarity="Known-Fiction">Valyrian Steel</name>
+	<name sex="M" rarity="Known-Fiction">Uru</name>
+	<name sex="B" rarity="Bizarre">Stupidmetalium</name>
+	<name sex="B" rarity="Bizarre">Homeplanetium</name>
+	<name sex="B" rarity="Bizarre">Mnkntr</name>
+	<name sex="M" rarity="Human-Influenced">Copper Wire</name>
+	<name sex="M">Solder</name>
+	<name sex="M" rarity="Realworld-Uncommon">Antimony</name>
+	<name sex="B" rarity="Realworld-Uncommon">Cadmium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Indium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Germanium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Tellurium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Scandium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Strontium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Calcium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Lithium</name>
+	<name sex="B" rarity="Realworld-Uncommon">Nitinol</name>
+	<name sex="M" rarity="Realworld-Uncommon">Alnico</name>
+	<name sex="B" rarity="Realworld-Uncommon">Constantan</name>
+	<name sex="B" rarity="Realworld-Rare">Yttrium</name>
+	<name sex="B" rarity="Realworld-Rare">Lanthanum</name>
+	<name sex="B" rarity="Realworld-Rare">Neodymium</name>
+	<name sex="B" rarity="Realworld-Rare">Samarium</name>
+	<name sex="B" rarity="Realworld-Rare">Europium</name>
+	<name sex="B" rarity="Realworld-Rare">Terbium</name>
+	<name sex="B" rarity="Realworld-Rare">Erbium</name>
+	<name sex="B" rarity="Realworld-Rare">Holmium</name>
+	<name sex="B" rarity="Realworld-Rare">Rhenium</name>
+	<name sex="B" rarity="Realworld-Rare">Francium</name>
+	<name sex="B" rarity="Realworld-Rare">Rubidium</name>
+	<name sex="B" rarity="Realworld-Rare">Caesium</name>
+	<name sex="B" rarity="Realworld-Rare">Galinstan</name>
+	<name sex="M" rarity="Realworld-Rare">Manganin</name>
+	<name sex="B" ex="ine" rarity="Realworld-Rare">Radon</name>
+	<name sex="B" ex="ine" rarity="Realworld-Rare">Hydrogen</name>
+	<name sex="B" rarity="Human-Influenced">Americium</name>
+	<name sex="B" rarity="Human-Influenced">Californium</name>
+	<name sex="M" rarity="Human-Influenced">Sterling</name>
+	<name sex="M" rarity="Human-Influenced">Rebar</name>
+	<name sex="M" rarity="Human-Influenced">Chainmail</name>
+	<name sex="M" rarity="Human-Influenced">Tinfoil</name>
+	<name sex="M" rarity="Human-Influenced">Rivet</name>
+	<name sex="M" rarity="Human-Influenced">Girder</name>
+	<name sex="M" rarity="Human-Influenced">Ingot</name>
+	<name sex="M" rarity="Human-Influenced">Anvil</name>
+	<name sex="B" rarity="Known-Fiction">Unobtainium</name>
+	<name sex="M" rarity="Known-Fiction">Beskar</name>
+	<name sex="B" rarity="Known-Fiction">Duranium</name>
+	<name sex="B" rarity="Known-Fiction">Neutronium</name>
+	<name sex="B" rarity="Known-Fiction">Elerium</name>
+	<name sex="B" rarity="Bizarre">Crunchium</name>
+</names>

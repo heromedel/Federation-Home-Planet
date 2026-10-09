@@ -199,6 +199,14 @@ public class ExpT { public static void main(String[] a) throws Exception {
   int before = Reputation.total(v);
   boolean refused = false; try { Expeditions.hire(v, new Random(1)); } catch (IOException e) { refused = true; System.out.println("  refused: " + e.getMessage()); }
   Setup.chk("Y: no crew, reputation " + before + ": the promise is posted all the same, 15 below (now " + Reputation.total(v) + ")", Expeditions.fleetCrew(v) <= 1 && !refused && Reputation.total(v) == before - 15);
+  // 6.26 (heromedel): crew away on an expedition are the fleet's: sending everyone out doesn't make the promise free
+  List<CrewState> two = hold(v, "human", "human");
+  Assignments.send(v, Assignments.board(v).get(0).slot, two, new Random(5));
+  Vault.Copy c = v.readCopy(v.storage()); c.save.getPlayerShip().setScrapAmt(100); v.begin().put(v.storage(), c.save, c.hash).commit();
+  int rep0 = Reputation.total(v);
+  Expeditions.hire(v, new Random(1));
+  Setup.chk("Y: everyone away on an expedition: still crew (" + Expeditions.fleetCrew(v) + "), no promise; posting for volunteers costs 10 scrap (" + v.storageScrap() + " left)",
+    Expeditions.holdCrew(v).size() <= 1 && Assignments.away(v).size() == 1 && Expeditions.promiseRep(v) == 0 && v.storageScrap() == 90 && Reputation.total(v) == rep0);
   HomePlanet.reputationOn = repWas;
  }
  /** For AsgT's check of the words against FTL's own: a stream read whole, and a line split into lower-case words. */

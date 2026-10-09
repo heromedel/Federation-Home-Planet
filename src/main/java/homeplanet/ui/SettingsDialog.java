@@ -395,7 +395,7 @@ public class SettingsDialog extends JDialog {
 		c = constraints();
 		heading(body, c, "About");
 		JLabel credit = new JLabel("<html>" + HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games.<br>" // two lines, not one off the edge (heromedel, 6.22)
-				+ "Save parser by Vhati. Inspired by and originally built upon ManApart's FTL Homeworld.</html>");
+				+ "Inspired by and originally built upon ManApart's FTL Homeworld. Save parser by Vhati.</html>");
 		credit.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(credit, next(c));
 		// heromedel's line, and the buttons on a line of their own beneath it (heromedel, 6.02: his words)
@@ -404,7 +404,7 @@ public class SettingsDialog extends JDialog {
 		body.add(madeBy, next(c));
 		JPanel about = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JButton loreBtn = new JButton("Lore...");
-		loreBtn.setToolTipText("A transmission from the Federation Home Planet");
+		loreBtn.setToolTipText("A transmission from The Federation Home Planet");
 		loreBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { showLore(); }
 		});
@@ -696,7 +696,7 @@ public class SettingsDialog extends JDialog {
 	}
 
 	/** Shows a text file bundled in the jar (CREDITS.md, LICENSE) in a window of its own. */
-	static final String LORE = "~ Incoming transmission from the Federation Home Planet ~\n\n"
+	static final String LORE = "~ Incoming transmission from The Federation Home Planet ~\n\n"
 			+ "Despite the ongoing war with the rebellion, the Federation has restored its long-range trade and communication network, "
 			+ "carried by official stores and stations across the sectors.\n\n"
 			+ "From the Home Planet, the Federation can once more reach beacons in many star systems: moving goods and crew between ships "
@@ -815,8 +815,8 @@ public class SettingsDialog extends JDialog {
 			return;
 		}
 		Object[] opts = {"Update Now", "Later"};
-		if (JOptionPane.showOptionDialog(this, news + "\n\nUpdate Now downloads them and rebuilds the station: it closes, the Construction Yard builds the new version,"
-				+ "\nthen opens it again. Your fleets, settings, mods and the downloaded JDK and Maven aren't touched.", title,
+		if (JOptionPane.showOptionDialog(this, news + "\n\nUpdate Now downloads them and rebuilds the station: it closes, the Construction Yard builds the new version, "
+				+ "then opens it again.\nYour fleets, settings, mods and the downloaded JDK and Maven aren't touched.", title,
 				JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]) != 0) return;
 		final java.awt.Window owner = getOwner();
 		if (owner instanceof MainFrame && !((MainFrame) owner).mayClose("update the station")) return;

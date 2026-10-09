@@ -476,14 +476,14 @@ public class CommissionDialog extends JDialog {
 			int value = pleaValue(e.id, s), hold = homeplanet.parser.FreeCommand.holdSaleValue(vault);
 			boolean rep = homeplanet.core.Economy.repForJourneysAndPleas(); // How Reputation Can be Used: Only as a score offers the hold alone
 			int costGiving = homeplanet.parser.FreeCommand.reputationCost(value, hold), costKeeping = homeplanet.parser.FreeCommand.reputationCost(value, 0);
-			StringBuilder msg = new StringBuilder(name + " is worth " + value + " scrap. Your Cargo Hold would sell for " + hold + " scrap.\n\n");
+			StringBuilder msg = new StringBuilder(name + " is worth " + value + " scrap.\nYour Cargo Hold would sell for " + hold + " scrap.\n\n");
 			String share = homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent());
 			if (rep && hold <= 0) {
 				msg.append("The hold has nothing to sell, so either way " + share + " of her value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").\n"
 						+ "Giving it up still takes everything in it but the crew, who stay.");
 			} else if (rep) {
 				msg.append("Give it up (everything in it but the crew, who stay): ").append(costGiving == 0 ? "she costs your reputation nothing.\n"
-						: share + " of the " + (value - hold) + " it doesn't cover comes off your reputation (" + homeplanet.vault.Reputation.signed(-costGiving) + ").\n");
+						: share + " of the " + (value - hold) + " it doesn't cover comes off your reputation (" + homeplanet.vault.Reputation.signed(-costGiving) + ").\n\n");
 				msg.append("Keep it: " + share + " of her whole value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").");
 			} else {
 				msg.append("The Federation Home Planet takes the Cargo Hold for her (everything in it but the crew, who stay), whatever it's worth.");
@@ -556,13 +556,17 @@ public class CommissionDialog extends JDialog {
 			catch (Exception ex) { HomePlanet.showErrorDialog("The Home Planet Station could not record that this free ship was claimed:\n" + ex.getMessage()); }
 		}
 		StringBuilder crew = new StringBuilder(); // her starting crew by name, for the crew register (5.51; "Crew: 3" before)
+		java.util.List<String[]> aboard = new java.util.ArrayList<String[]>(); // and as fields, crew= and race= a member, for the Captain's Log's line (6.30)
 		for (net.blerf.ftl.parser.SavedGameParser.CrewState c : homeplanet.parser.SaveHelper.getOwnCrew(s.getPlayerShip())) {
 			String race;
 			try { race = homeplanet.model.Crew.raceTitle(c); } catch (RuntimeException x) { race = c.getRace() == null ? "Human" : c.getRace().getId(); }
 			crew.append(crew.length() == 0 ? "" : ", ").append(c.getName()).append(" (").append(race).append(")");
+			aboard.add(new String[] {c.getName(), c.getRace() == null ? "human" : c.getRace().getId()});
 		}
 		lines.add("Crew: " + (crew.length() == 0 ? "none" : crew.toString()));
-		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines, homeplanet.vault.Vault.shipEvent("COMMISSION", ship).details(lines));
+		homeplanet.core.Event ev = homeplanet.vault.Vault.shipEvent("COMMISSION", ship).details(lines);
+		for (String[] c : aboard) ev.put("crew", c[0]).put("race", c[1]);
+		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines, ev);
 		made = ship;
 		dispose();
 	}

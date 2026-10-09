@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.25";
+	public static final String APP_VERSION = "6.32";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -447,6 +447,13 @@ public class HomePlanet {
 		Object[] options = {"Yes", "No"};
 		return JOptionPane.showOptionDialog(owner, message, title, JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) == 0;
 	}
+	/** Something the player can't do just now (no room, already gone): a notice, not an error (6.28, heromedel: they came up as Error). */
+	public static void showNotice(final String message, final String title) {
+		onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+			JOptionPane.showMessageDialog(null, message, title, JOptionPane.INFORMATION_MESSAGE);
+			return null;
+		}});
+	}
 	public static void showErrorDialog(final String message) {
 		onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
 			JOptionPane.showMessageDialog(null, wrap(message, 100), "Error", JOptionPane.ERROR_MESSAGE);
@@ -601,7 +608,7 @@ public class HomePlanet {
 		return f != null && f.isDirectory() ? f : null;
 	}
 	private static boolean confirmFound(String what, File dir) {
-		return confirm("The Home Planet Station found FTL's " + what + " in:\n" + dir.getPath() + "\nIs this correct?", "Confirm");
+		return confirm("The Home Planet Station found FTL's " + what + " in:\n" + dir.getPath() + "\n\nIs this correct?", "Confirm");
 	}
 	/** The files that mark FTL's saves folder: the profile (ae_prof.sav from FTL 1.5.4, prof.sav before) or a game in progress. */
 	private static final String[] SAVE_FILES = {"ae_prof.sav", "prof.sav", "continue.sav"};
@@ -630,7 +637,7 @@ public class HomePlanet {
 	}
 	/** Asks for FTL's saves folder, by one of its files. Null if none was chosen. */
 	public static File promptForSavePath() {
-		File f = choose("The Home Planet Station sends ships out using FTL's saves,\nbut its search could not find FTL's saves folder on its own.\n\n"
+		File f = choose("The Home Planet Station sends ships out using FTL's saves, but its search could not find FTL's saves folder on its own.\n\n"
 				+ "Select '/Documents/My Games/FasterThanLight/continue.sav' (or ae_prof.sav).",
 				"FTL Save Not Found", "Find continue.sav or ae_prof.sav", "FTL save files (continue.sav, ae_prof.sav, prof.sav)", SAVE_FILES);
 		File dir = f == null ? null : f.getParentFile();

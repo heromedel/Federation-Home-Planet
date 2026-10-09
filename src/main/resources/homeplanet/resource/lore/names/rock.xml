@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Rock crew names (docs/NAMES.md): rocks, not single crystals (those are the Crystal's, and the two lists share no
+     names): a rock thing all the way through, plain English or not. A name with a non-rock word in it, or named for
+     what people make of stone, is Human-Influenced (the Rocks picked up human words).
+
+     sex: B (both), M or F, chosen by how a name sounds. A female crew member given a B name gets it with one of the
+     endings in <female>, picked at random: ex="..." leaves out an ending that reads wrong on that name. A name already
+     ending in one of them is its own female form; a final E drops before an ending that starts with a vowel (Pumice,
+     Pumicite).
+     rarity: where the name comes from (docs/NAMES.md): real rocks by how well known, then names from folk speech and
+     myth, from one story, and made up here. A name comes up in proportion to its level's weight. No rarity is the first.
+
+     To change them, copy this file into names in the lore folder beside the program and edit the copy. -->
+<names race="rock">
+	<rarity>
+		<level name="Realworld" weight="1000"/>
+		<level name="Realworld-Uncommon" weight="300"/>
+		<level name="Realworld-Rare" weight="100"/>
+		<level name="Semi-Fictional" weight="30"/>
+		<level name="Known-Fiction" weight="10"/>
+		<level name="Human-Influenced" weight="5"/>
+		<level name="Bizarre" weight="1"/>
+	</rarity>
+	<female suffix="ite, ine"/>
+
+	<name sex="B">Basalt</name>
+	<name sex="B">Granite</name>
+	<name sex="B">Marble</name>
+	<name sex="B">Slate</name>
+	<name sex="B">Shale</name>
+	<name sex="M">Obsidian</name>
+	<name sex="B">Pumice</name>
+	<name sex="B">Schist</name>
+	<name sex="B">Gneiss</name>
+	<name sex="B" rarity="Realworld-Uncommon">Gabbro</name>
+	<name sex="M" rarity="Realworld-Uncommon">Breccia</name>
+	<name sex="B" rarity="Realworld-Uncommon">Tuff</name>
+	<name sex="M" rarity="Realworld-Uncommon">Scoria</name>
+	<name sex="B" rarity="Realworld-Uncommon">Dacite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Diorite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Andesite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Rhyolite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Chert</name>
+	<name sex="B" rarity="Realworld-Uncommon">Marl</name>
+	<name sex="B" rarity="Realworld-Uncommon">Travertine</name>
+	<name sex="F" rarity="Realworld-Uncommon">Tufa</name>
+	<name sex="F" rarity="Realworld-Uncommon">Coquina</name>
+	<name sex="B" rarity="Realworld-Uncommon">Arkose</name>
+	<name sex="B" rarity="Realworld-Uncommon">Phyllite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Kimberlite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Pegmatite</name>
+	<name sex="B" rarity="Realworld-Rare">Dunite</name>
+	<name sex="B" rarity="Realworld-Rare">Norite</name>
+	<name sex="B" rarity="Realworld-Rare">Tonalite</name>
+	<name sex="B" ex="ite" rarity="Realworld-Rare">Trachyte</name>
+	<name sex="B" rarity="Realworld-Rare">Phonolite</name>
+	<name sex="B" rarity="Realworld-Rare">Basanite</name>
+	<name sex="B" rarity="Realworld-Rare">Latite</name>
+	<name sex="B" rarity="Realworld-Rare">Felsite</name>
+	<name sex="B" rarity="Realworld-Rare">Aplite</name>
+	<name sex="M" rarity="Realworld-Rare">Greywacke</name>
+	<name sex="B" rarity="Realworld-Rare">Hornfels</name>
+	<name sex="B" rarity="Realworld-Rare">Eclogite</name>
+	<name sex="B" rarity="Realworld-Rare">Mylonite</name>
+	<name sex="B" rarity="Realworld-Rare">Migmatite</name>
+	<name sex="B" rarity="Realworld-Rare">Skarn</name>
+	<name sex="B" rarity="Realworld-Rare">Komatiite</name>
+	<name sex="B" rarity="Realworld-Rare">Ignimbrite</name>
+	<name sex="B" rarity="Realworld-Rare">Tillite</name>
+	<name sex="M" rarity="Realworld-Rare">Loess</name>
+	<name sex="M" rarity="Human-Influenced">Thunderstone</name>
+	<name sex="F" rarity="Human-Influenced">Hagstone</name>
+	<name sex="B">Flint</name>
+	<name sex="B">Gravel</name>
+	<name sex="B">Dust</name>
+	<name sex="B">Ash</name>
+	<name sex="B">Chalk</name>
+	<name sex="F">Pebble</name>
+	<name sex="F">Clay</name>
+	<name sex="M">Limestone</name>
+	<name sex="M">Sandstone</name>
+	<name sex="M">Bedrock</name>
+	<name sex="M">Boulder</name>
+	<name sex="M">Rubble</name>
+	<name sex="M">Crag</name>
+	<name sex="F" rarity="Realworld-Uncommon">Cinder</name>
+	<name sex="F" rarity="Realworld-Uncommon">Magma</name>
+	<name sex="F" rarity="Realworld-Uncommon">Lava</name>
+	<name sex="M" rarity="Realworld-Uncommon">Mudstone</name>
+	<name sex="M" rarity="Realworld-Uncommon">Siltstone</name>
+	<name sex="M" rarity="Realworld-Uncommon">Ironstone</name>
+	<name sex="M" rarity="Realworld-Uncommon">Igneous</name>
+	<name sex="M" rarity="Realworld-Uncommon">Sedimentary</name>
+	<name sex="M" rarity="Realworld-Uncommon">Tor</name>
+	<name sex="M" rarity="Realworld-Uncommon">Bluff</name>
+	<name sex="M" rarity="Realworld-Uncommon">Ridge</name>
+	<name sex="M" rarity="Realworld-Uncommon">Scree</name>
+	<name sex="M" rarity="Realworld-Uncommon">Talus</name>
+	<name sex="B" rarity="Realworld-Uncommon">Cobble</name>
+	<name sex="M" rarity="Human-Influenced">Whetstone</name>
+	<name sex="M" rarity="Human-Influenced">Millstone</name>
+	<name sex="M" rarity="Human-Influenced">Grindstone</name>
+	<name sex="M" rarity="Human-Influenced">Keystone</name>
+	<name sex="M" rarity="Human-Influenced">Cornerstone</name>
+	<name sex="M" rarity="Human-Influenced">Capstone</name>
+	<name sex="M" rarity="Human-Influenced">Flagstone</name>
+	<name sex="M" rarity="Human-Influenced">Soapstone</name>
+	<name sex="M" rarity="Human-Influenced">Bluestone</name>
+	<name sex="M" rarity="Human-Influenced">Monolith</name>
+	<name sex="M" rarity="Human-Influenced">Menhir</name>
+	<name sex="M" rarity="Human-Influenced">Obelisk</name>
+	<name sex="B" rarity="Human-Influenced">Cairn</name>
+	<name sex="M" rarity="Human-Influenced">Golem</name>
+	<name sex="M" rarity="Human-Influenced">Atlas</name>
+	<name sex="M" rarity="Human-Influenced">Gargoyle</name>
+	<name sex="M" rarity="Human-Influenced">Troll</name>
+	<name sex="F" rarity="Bizarre">Medusa</name>
+	<name sex="F" rarity="Human-Influenced">Petra</name>
+	<name sex="B" rarity="Bizarre">Rgornaite</name>
+</names>

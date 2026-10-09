@@ -96,6 +96,8 @@ it does and CREDITS.md for where the code came from.
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
 - `docs/LORE_COMPONENTS.md` is the facts file (real FTL lore with sources) for checking words against: it is never shipped
   and is not part of the 6.0 `lore/` words folder (`docs/OVERHAUL-6.md` §3.5).
+- `docs/NAMES.md` is the style guide for crew names by race (heromedel, 6.28: the Slugs' drawn-out letters, the Engi's
+  hex and the rest): every name in `lore/names/` follows it.
 - Expeditions: `expedition_type` in the cfg (hidden) is 2, the crew expeditions (`Assignments`, `docs/ROADMAP.md` 31; the
   default), or 0, hiring alone. The infirmary, the captives and ransoms, and hiring live in `Expeditions`; the old board of
   jobs that used to be 1 went at 5.67 (heromedel), and 1 reads as 2.

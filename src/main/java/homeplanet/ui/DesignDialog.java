@@ -171,9 +171,9 @@ public class DesignDialog extends ShipEditorDialog {
 		String cur = snapshot.name + " v" + snapshot.version, nw = d.name + " v" + next;
 		if (!ships.isEmpty()) {
 			Object[] opts = {"Build as " + nw, "Keep editing"};
-			int r = JOptionPane.showOptionDialog(this, (ships.size() == 1 ? "1 ship was" : ships.size() + " ships were") + " built from " + cur + ": " + String.join(", ", ships) + ".\n"
-					+ "Any change to her blueprint reaches ships already built from it: the game can alter them (give them a system you\n"
-					+ "added, say), and room or door changes stop their saves loading. So this is built as a new blueprint, " + nw + ".\n"
+			int r = JOptionPane.showOptionDialog(this, (ships.size() == 1 ? "1 ship was" : ships.size() + " ships were") + " built from " + cur + ":\n" + String.join(", ", ships) + ".\n\n"
+					+ "Any change to her blueprint reaches ships already built from it: the game can alter them (give them a system you "
+					+ "added, say), and room or door changes stop their saves loading. So this is built as a new blueprint, " + nw + ".\n\n"
 					+ "They keep " + cur + "; ships commissioned from now on use " + nw + ".",
 					"New blueprint version", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[0]);
 			if (r != 0) return false;

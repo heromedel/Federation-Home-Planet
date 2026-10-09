@@ -1,0 +1,192 @@
+# Crew names by race: style guide
+
+FTL gives every race the same human names. The Home Planet Station names the crew it brings aboard by race: the
+starting crew at Commission, volunteers, recruits and hires (and the dice in Rename crew). Crew that FTL hires in its
+own stores, or meets in its events, keep FTL's names: FTL has one list for everyone, and a mod can't split it by race.
+
+The lists are written by hand from this guide (McCarthy's, with heromedel's choices; 6.28): the Slugs' letters and
+every name's tags are the writer's. The station picks a name that fits the crew member's race and sex, by its rarity,
+and does only two things to it: a female form from the file's endings, and the Engi's hex. The lists are words like the station's others:
+the jar holds the defaults in `resource/lore/names/`, and a copy in `lore/names/` beside the jar overrides them. A
+test holds every list to this guide.
+
+## Every race
+
+- **Fits the lore.** Check a name against `docs/LORE_COMPONENTS.md` like any other word: nothing that contradicts it.
+- **Nobody else's, mostly.** No real people (the unit, not the scientist: Volt, never Volta) and no brands. An
+  occasional easter egg from another game or story is welcome (Zerg, Adamantium), as a nod, never a whole set of them.
+- **Short.** Twelve letters at most where it can be, a two-word name fourteen: a rank adds up to five ("Cmd. "), and
+  FTL cuts long names off on screen.
+- **Never starts with a rank** (Sgt., Lt., Maj., Col., Cmd., Cpt.), with or without the point. "Cap Acitor" is fine;
+  it is not Cpt. Acitor.
+- **Capitals:** each word starts with one, the rest small (except the Engi's hex, below).
+- **Namesakes are fine.** Two crew can share a name, as they always could; nothing has to be unique.
+- **M, F or B.** FTL marks every crew member male or female, whatever the race, and the letters say "he" or "she"
+  from it. Every name carries one of three tags: M (male), F (female) or B (both: Jesse). A male crew member gets an
+  M or B name, a female an F or B one; a female given a B name gets it with one of her race's endings (below).
+
+## The file
+
+```xml
+<names race="zoltan">
+	<rarity>
+		<level name="common" weight="1000"/>
+		<level name="uncommon" weight="300"/>
+		<level name="rare" weight="100"/>
+		<level name="very-rare" weight="30"/>
+		<level name="highly-unusual" weight="10"/>
+		<level name="almost-unique" weight="1"/>
+	</rarity>
+	<female suffix="y, ie, i"/>
+	<name sex="B">Volt</name>
+	<name sex="B" ex="y">Ohm</name>
+	<name sex="B" rarity="rare">Joule</name>
+</names>
+```
+
+- **The female forms are the program's,** from the endings at the top (`suffix`, or the Engi's `replace`): a B name
+  gives a female crew member a name with one of the endings on. `ex` names an ending that reads wrong on that name
+  ("Ohmy" reads "oh my"); a name every ending reads wrong on is tagged M. The joining rules, in order: a name ending
+  in X takes only the rest of an ending with an X (Ix, Ixa; an ending with nothing left is skipped); otherwise a name
+  already ending in one of the endings is its own female form (Resi, Granite); a `drop` ending goes first (the
+  Lanius' `drop="ium, um"`: Titanium, Titania); a final E drops before an ending that starts with a vowel (Pumice,
+  Pumicite). An M or F name takes no ending.
+- **The Slugs** are written drawn out, with `from="..."` the plain word, for the curious: the test draws it out again
+  by the six rules and checks they agree.
+- **Rarity:** each file has its own ladder at the top, a weight for each level; a name comes up in proportion to its
+  level's weight. A name with no rarity is on the first level. Humans' weights are real: how many people in a
+  million have a name at that level, from the baby-name counts, and every name is put on its level the same way.
+- **The Engi** are written as plain words (`<write as="hex"/>` at the top): the station writes the hex.
+
+### The ladder for Rock, Crystal and Lanius
+
+These three are named after real and imagined materials, so their ladder says where a name comes from:
+
+| Level | Weight | Example |
+|---|---|---|
+| Realworld | 1000 | Iron |
+| Realworld-Uncommon | 300 | Tin |
+| Realworld-Rare | 100 | Gold |
+| Semi-Fictional | 30 | Quicksilver |
+| Known-Fiction | 10 | Adamantium |
+| Human-Influenced | 5 | Whetstone |
+| Bizarre | 1 | Mnkntr |
+
+The test for the two in the middle (heromedel): where does the **name** come from, not what is the material like.
+A name real people used for the material itself, in folk speech, alchemy or myth, is Semi-Fictional (Quicksilver,
+Orichalcum, Adamantine, Lodestone); nobody owns it. A myth that isn't the material (Golem, Atlas) is Human-Influenced. A name one story or author made up is Known-Fiction, however famous, and however real the thing
+behind it (Mithril, Valyrian Steel, Adamantium, Vibranium, Kryptonite). Real old names for real things stay real
+(Damascus). Human-Influenced (heromedel, 6.30) is a real name with a non-rock word in it, or named for what people
+make of stone or metal (Tiger Eye, Moonstone, Whetstone, Keystone, Obelisk, Gunmetal): the Rocks picked up human
+words along the way. Bizarre is everything made up here, filler and in-jokes alike (Rgornaite, Stupidmetalium, Homeplanetium).
+
+The other races use the plain ladder: common, uncommon, rare, very-rare, highly-unusual, almost-unique.
+
+## Humans
+
+FTL's own names, and more from public-domain lists: first names from the US Social Security baby-name data, last
+names from the US Census surname list. Tagged as modern American practice has it: the baby-name data counts each name
+by sex, and a name given often to both (Jesse, Riley, Avery) is B. Settings, Human Name Gen:
+
+| Choice | Gives |
+|---|---|
+| Normal | as FTL mixes them: mostly a first name, sometimes first and last |
+| First Names Only | a first name |
+| First and Last Always | a first name and a last name |
+
+## Zoltan
+
+Electricity. Short words first: Zolt, Bolt, Jolt, Amp, Volt, Ohm, Watt, Arc, Flux, Coil, Spark. A long word is cut
+down or split into a first and last name (Resistor is Resi, Capacitor is Cap Acitor).
+
+Female: the name ends in Y (Volty, Ampy), or in I or IE where a Y reads wrong ("Ohmy" reads "oh my", so Ohmie). A
+name already ending in Y, I or IE stays as it is, and is B.
+
+## Rock
+
+Rocks, not single crystals (those are the Crystal's). A rock thing all the way through, plain English or not
+(heromedel, 6.30: Flint, Bedrock, Sandstone, Dust as much as Basalt, Gabbro, Gneiss, Obsidian); a name with a non-rock
+word in it is Human-Influenced, and so are the myths of stone and their folk names (heromedel, 6.30: a rock guy is
+named for rock, and a human myth is human influence): Golem, Atlas, Gargoyle, Troll, Petra (Greek for rock),
+Thunderstone, Hagstone. Medusa is Bizarre. Not Agate (a quartz).
+
+Female: sorted by hand, by how a name sounds, and the mineral endings: -ite (the way minerals are really named) and
+-ine. Some come out real (Pumicite is a real rock), the rest plausible (Basaltine, Gabbroite); `ex` the one that
+reads wrong. Where neither reads well (Breccia), the rock is tagged M.
+
+## Crystal
+
+Crystals, minerals and their formations: Quartz, Beryl, Zircon, Galena, Spinel, Pyrite, Calcite, Fluorite, Selenite,
+Geode, Druse, Prism, Lattice, Facet, and the ores (Hematite, Magnetite). Kryptonite is their easter egg.
+The Crystal are the ancient ancestors of the Rock (LORE_COMPONENTS 12): the two
+lists are kin but share no names.
+
+Female: sorted by hand (Onyx and Rose Quartz are F), and the same endings as the Rock's, -ite and -ine (Quartzite;
+Jadite and Jadine, from Jade). A name already ending in -ite (Pyrite) is its own female form.
+
+## Mantis
+
+Made-up words that sound like insects (clicks, buzzing, scraping), never an insect's name: Skrit, Zerg, Cuttler,
+Chitch, Vrask, Kessik, Ix. The one real insect allowed is Scarab. Nothing soft or human-sounding (not Thrum).
+
+Female: one of IX, XA, IXI or IXA on the end (Skritix, Zergxa, Vraskixi, Kessikixa), the station's pick each time;
+`ex` the ones that read wrong on a name. A name ending in X takes only the rest of an ending (Ix is Ixa or Ixi).
+
+## Engi
+
+One four-letter English word, capital first, written in hexadecimal: each letter is two hex digits (its ASCII code,
+capital hex), the word split in half, so every Engi name is the same shape, `xxxx-xxxx`.
+
+| Word | Name |
+|---|---|
+| Byte | 4279-7465 |
+| Kilo | 4B69-6C6F |
+
+Words of their trade: Byte, Gram, Code, Data, Node, Core, Gear, Bolt, Wire. Four letters only, never longer.
+
+Female: the hyphen is a tilde, so a female Byte is 4279~7465.
+
+## Lanius
+
+Metals, alloys and materials, the longer and heavier the better, one word or two: Wrought Iron, Carbon Fiber,
+Damascus, Titanium, Adamantine, and the metallic elements (Cobalt, Tungsten, Osmium, Iridium, Vanadium, Bismuth).
+The easter eggs: Adamantium and Captain America's Vibranium. Not Mercury (a god, and a planet).
+
+The gases are theirs too, all Realworld-Rare (heromedel): a Lanius takes the oxygen from a room, and the nitrogen and
+argon are what's left behind it. Nitrogen, Argon, Neon, Xenon, Krypton, Helium.
+
+Female: sorted by hand (Quicksilver is F), and the endings -ia (the old Latin way metals were named: Titanium is
+Titania, Ferria, Cobaltia, Chromia) and -ine. Not -ite: it sounds like a mineral, not a metal.
+
+## Slug
+
+Two kinds of name, sorted by hand: slimy ones (Slime, Slither, Crawls, Snail, and Flowers for her) and a salesman's
+(Glim, Mirrow, Squill, Shimmer, Glib). Both are drawn out the same way, by these rules, in order:
+
+1. **Soft consonants double:** L, M, N, W, Z, V and H, every one of them. The rules never add an R (heromedel). A
+   double the word already has (the rr of Mirrow, the mm of Shimmer) stays as it is; a W at the end of a name stays
+   single.
+2. **No vowel drags**, and a word's own double vowels go single. The one exception: the vowel after SH draws out
+   instead (Shimmer is Shiimmer), because a doubled SH is a snake.
+3. **Two-letter sounds never double:** SH, TH, CH, PH.
+4. **No three doubles in a row:** two doubled letters side by side is the most; a third stays single.
+5. **No snake:** an S, or a C said as S, doubles only when the letter after it doubles too. Alone, it stays single.
+6. **Hard stops never double:** G, K, T, B, P, D, Q, X, and a C said as K.
+
+| Word | Name | Why |
+|---|---|---|
+| Slime | Ssllimme | the S doubles because the L after it does |
+| Slither | Ssllither | the TH stays as it is; R never doubles |
+| Crawls | Crawwlls | the C is hard; the S would be a third double |
+| Snail | Ssnnaill | |
+| Flowers | Fllowwers | F isn't a soft letter; no R is added |
+| Glim | Gllimm | |
+| Mirrow | Mmirrow | its own rr; the final W stays single |
+| Shimmer | Shiimmer | the vowel after SH draws out |
+| Glib | Gllib | |
+| Squill | Squill | the S is before a hard Q |
+
+## Later
+
+If the lists go well (heromedel, 6.28): many more Slugs; Bizarre rock names to grow the Rock list, since real rocks
+run out first; more easter eggs.
