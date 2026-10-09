@@ -63,6 +63,100 @@ public final class Reputation {
 	/** Does the fleet in use have a reputation (Settings' Reputation rule, always on in Immersive Mode)? */
 	public static boolean shown() { return Vault.isOpen() && HomePlanet.reputation(); }
 
+	// ---- the rate (heromedel, 6.13): what's earned counts x1 on Easy, x1.5 on Normal, x2 on Hard; losses and spending never ----
+
+	/** The rates in words, by level: 0, 1, 2. */
+	public static final String[] RATE_WORDS = {"x1 (as on Easy)", "x1.5 (as on Normal)", "x2 (as on Hard)"};
+	/** Sandbox Mode's: the player's, in Settings, changeable anytime. */
+	public static final String RATE_FREE = "free";
+	/** Easy, Normal or Hard: the difficulty's. */
+	public static final String RATE_FIXED = "fixed";
+	/** A Custom career (or one from before difficulties) that chose its rate, fixed from then on. */
+	public static final String RATE_CHOSEN = "chosen";
+	/** A Custom career that hasn't chosen yet: the Space Dock asks, as its briefing would have (x1 meanwhile). */
+	public static final String RATE_ASK = "ask";
+	/** How the rate stands for a career with these rules and this saved answer (null: none); null rules, Sandbox Mode. */
+	public static String rateRule(homeplanet.parser.CareerRules r, String saved) {
+		if (r == null) return RATE_FREE;
+		if (homeplanet.parser.CareerRules.CUSTOM.equals(r.name) || homeplanet.parser.CareerRules.EARLIER.equals(r.name)) return level(saved) < 0 ? RATE_ASK : RATE_CHOSEN;
+		return RATE_FIXED; // no saved answer is read: deleting one changes nothing
+	}
+	/** How it stands for the fleet in use. */
+	public static String rateRule() {
+		homeplanet.parser.CareerRules r = homeplanet.parser.CareerRules.current();
+		return rateRule(r, r == null ? null : homeplanet.parser.Career.repRate(Vault.get().root));
+	}
+	/** The rate's level (0 x1, 1 x1.5, 2 x2) for a career with these rules and this saved answer; null rules, Sandbox Mode's setting. */
+	public static int rateLevel(homeplanet.parser.CareerRules r, String saved) {
+		if (r == null) return Math.max(0, Math.min(2, HomePlanet.reputationRate));
+		if (homeplanet.parser.CareerRules.HARD.equals(r.name)) return 2;
+		if (homeplanet.parser.CareerRules.NORMAL.equals(r.name)) return 1;
+		if (homeplanet.parser.CareerRules.EASY.equals(r.name)) return 0;
+		return Math.max(0, level(saved));
+	}
+	/** The fleet in use's. */
+	public static int rateLevel() {
+		if (!Vault.isOpen()) return 0;
+		homeplanet.parser.CareerRules r = homeplanet.parser.CareerRules.current();
+		return rateLevel(r, r == null ? null : homeplanet.parser.Career.repRate(Vault.get().root));
+	}
+	private static int level(String saved) {
+		try { int l = Integer.parseInt(saved.trim()); return l >= 0 && l <= 2 ? l : -1; } catch (RuntimeException e) { return -1; }
+	}
+	/** A Custom career's rate, chosen once (its briefing, or the Space Dock's question), and logged. */
+	public static void chooseRate(File immersiveRoot, int level) throws IOException {
+		homeplanet.parser.Career.setRepRate(immersiveRoot, level);
+		homeplanet.core.HistoryLog.entry("CAREER", "Reputation earned at " + RATE_WORDS[level] + " (chosen for the career, fixed)", null,
+				homeplanet.core.Event.of("CAREER").put("what", "reputation_rate").put("rate", RATE[level]).put("level", level));
+	}
+	/** Each level as a number for the log. */
+	static final String[] RATE = {"1", "1.5", "2"};
+	/** Half points earned for a point, at the rate in use: 2, 3 or 4. */
+	private static int halvesPerPoint() { return 2 + rateLevel(); }
+
+	// ---- the total, in halves: its whole part in "total", as always (every reader reads it), and a half kept in "half" ----
+
+	static int halves(Properties p) { return num(p, "total") * 2 + ("1".equals(p.getProperty("half")) ? 1 : 0); }
+	private static void setHalves(Properties p, int h) {
+		p.setProperty("total", Integer.toString(Math.floorDiv(h, 2)));
+		if (Math.floorMod(h, 2) == 1) p.setProperty("half", "1"); else p.remove("half");
+	}
+	/** Moves the total by points as they are (a loss, spending, a loss given back). */
+	private static void plain(Properties p, int points) { setHalves(p, halves(p) + points * 2); }
+
+	/**
+	 * One change, piece by piece (6.13): each earned piece at the rate, each loss as it is. Every piece is shown at what it
+	 * added to the total ("10 scrap collected (+2)" at x2), a half point carried silently from piece to piece, so the pieces
+	 * always add up to the change the player sees, and no rate or bonus is ever shown as a piece of its own.
+	 */
+	private static final class Change {
+		private final int perPoint = halvesPerPoint();
+		private final List<String> texts = new ArrayList<String>();
+		private final List<Integer> halves = new ArrayList<Integer>();
+		/** Earned: at the rate. */
+		Change earned(String text, int points) { texts.add(text); halves.add(points * perPoint); return this; }
+		/** Lost: as it is. */
+		Change lost(String text, int points) { texts.add(text); halves.add(points * 2); return this; }
+		boolean isEmpty() { return texts.isEmpty(); }
+		/** The whole points it moved the total by, and the half points (the machine line's exact figure); set by {@link #apply}. */
+		int moved, movedHalves;
+		/** Puts it into the total; returns its pieces in words, each with what it added. */
+		List<String> apply(Properties p) {
+			List<String> out = new ArrayList<String>();
+			int before = Reputation.halves(p), h = before;
+			for (int i = 0; i < texts.size(); i++) {
+				int was = Math.floorDiv(h, 2);
+				h += halves.get(i);
+				out.add(texts.get(i) + " (" + signed(Math.floorDiv(h, 2) - was) + ")");
+			}
+			setHalves(p, h);
+			moved = Math.floorDiv(h, 2) - Math.floorDiv(before, 2);
+			movedHalves = h - before;
+			return out;
+		}
+		int[] result() { return new int[] {moved, movedHalves}; }
+	}
+
 	/** The fleet's reputation, its service reviewed first if it never was, and any new FTL achievements counted. */
 	public static int total(Vault v) {
 		synchronized (lock(v)) {
@@ -83,9 +177,9 @@ public final class Reputation {
 		had.addAll(fresh);
 		had.remove("");
 		p.setProperty("achievements", String.join("|", had));
-		int pts = fresh.size() * ACHIEVEMENT;
-		p.setProperty("total", Integer.toString(num(p, "total") + pts));
-		if (write(v, p)) entry(v, "achievement", pts, (fresh.size() == 1 ? "An achievement: " : fresh.size() + " achievements: ") + String.join(", ", names) + " (+" + pts + ")", null);
+		Change ch = new Change().earned((fresh.size() == 1 ? "An achievement: " : fresh.size() + " achievements: ") + String.join(", ", names), fresh.size() * ACHIEVEMENT);
+		String why = ch.apply(p).get(0);
+		if (write(v, p)) entry(v, "achievement", ch.result(), why, null);
 	}
 	/**
 	 * Each Federation Cruiser layout unlocked in the career's service (Ranks From Rep, heromedel, 5.56): +100, once. Not
@@ -109,12 +203,11 @@ public final class Reputation {
 		if (had.size() == before) return;
 		p.setProperty("cruisers", String.join("|", had));
 		int pts = fresh.size() * homeplanet.parser.PlayerRank.CRUISER_BONUS;
-		if (pts > 0) p.setProperty("total", Integer.toString(num(p, "total") + pts));
-		if (write(v, p) && pts > 0) {
-			List<String> names = new ArrayList<String>();
-			for (String k : fresh) names.add(homeplanet.parser.UnlockGrants.describe(k));
-			entry(v, "cruiser", pts, String.join(", ", names) + " unlocked (+" + pts + ")", null);
-		}
+		List<String> names = new ArrayList<String>();
+		for (String k : fresh) names.add(homeplanet.parser.UnlockGrants.describe(k));
+		Change ch = new Change();
+		String why = pts > 0 ? ch.earned(String.join(", ", names) + " unlocked", pts).apply(p).get(0) : null;
+		if (write(v, p) && pts > 0) entry(v, "cruiser", ch.result(), why, null);
 	}
 	/** FTL's real achievements earned since the fleet's record began (empty if the profile can't be read). */
 	private static List<String> newAchievements() {
@@ -176,47 +269,42 @@ public final class Reputation {
 			Props was = new Props(p, s.id);
 			Props now = Props.of(gs);
 			if (!was.known()) { now.put(p, s.id, 0); write(v, p); return; } // a ship the count hasn't met: she starts here
-			List<String> why = new ArrayList<String>();
-			int points = 0;
+			Change ch = new Change(); // earned at the rate, lost as it is
 			boolean lastStand = now.sector >= LAST_STAND || was.sector >= LAST_STAND;
 			if (now.sector > was.sector) {
 				int n = now.sector - was.sector;
-				points += n * SECTOR;
-				why.add((n == 1 ? "sector " + (now.sector + 1) + " reached" : n + " sectors further") + " (+" + n * SECTOR + ")");
+				ch.earned(n == 1 ? "sector " + (now.sector + 1) + " reached" : n + " sectors further", n * SECTOR);
 			}
 			int scrap = Math.max(0, now.collected - was.collected) + was.rest;
 			int fromScrap = scrap / SCRAP_PER_POINT;
-			if (fromScrap > 0) { points += fromScrap; why.add((scrap - was.rest) + " scrap collected (+" + fromScrap + ")"); }
+			if (fromScrap > 0) ch.earned((scrap - was.rest) + " scrap collected", fromScrap);
 			int defeated = Math.max(0, now.defeated - was.defeated);
 			if (defeated > 0) {
 				boolean rebel = rebel(now.enemy) || rebel(was.enemy);
 				int pts = defeated * DEFEATED + (rebel ? REBEL_DEFEATED - DEFEATED : 0);
-				points += pts;
-				why.add((rebel ? (defeated == 1 ? "a rebel ship" : defeated + " ships, a rebel among them") : defeated == 1 ? "a ship" : defeated + " ships") + " defeated (+" + pts + ")");
+				ch.earned((rebel ? (defeated == 1 ? "a rebel ship" : defeated + " ships, a rebel among them") : defeated == 1 ? "a ship" : defeated + " ships") + " defeated", pts);
 			}
 			// a death: FTL's lost-crew count went up and the crew member is gone (a clone came back; a dismissal isn't a death)
 			int died = Math.min(Math.max(0, now.lost - was.lost), gone(was.crew, now.crew).size());
 			if (died > 0 && !lastStand) {
-				points += died * CREW_DIED;
 				List<String> names = gone(was.crew, now.crew);
-				why.add((died == 1 ? names.get(0) + " died" : died + " crew died") + " (" + signed(died * CREW_DIED) + ")");
+				ch.lost(died == 1 ? names.get(0) + " died" : died + " crew died", died * CREW_DIED);
 			}
 			// caught by the rebel fleet: at a beacon it holds that she wasn't caught at already (never in the last stand)
 			boolean moved = now.beacon != was.beacon || now.sector != was.sector;
 			if (now.rebel && (moved || !was.rebel) && !lastStand) {
-				points += CAUGHT;
-				why.add("caught by the rebel fleet (" + signed(CAUGHT) + ")");
+				ch.lost("caught by the rebel fleet", CAUGHT);
 			}
 			// an event's outcome: a jump within the sector to a beacon with no fight, no ship and no store, nor a store left behind
 			if (moved && now.sector == was.sector && defeated == 0 && now.enemy.isEmpty() && !now.store && !was.store) {
 				int outcome = outcome(was, now, died);
-				if (outcome > 0) { points += EVENT_GOOD; why.add("a good outcome (+" + EVENT_GOOD + ")"); }
-				else if (outcome < 0 && !lastStand) { points += EVENT_BAD; why.add("a bad outcome (" + signed(EVENT_BAD) + ")"); }
+				if (outcome > 0) ch.earned("a good outcome", EVENT_GOOD);
+				else if (outcome < 0 && !lastStand) ch.lost("a bad outcome", EVENT_BAD);
 			}
 			now.put(p, s.id, scrap % SCRAP_PER_POINT);
-			if (points != 0 || !why.isEmpty()) {
-				p.setProperty("total", Integer.toString(num(p, "total") + points));
-				if (write(v, p)) entry(v, "voyage", points, s.name + ": " + String.join(", ", why), null);
+			if (!ch.isEmpty()) {
+				List<String> why = ch.apply(p);
+				if (write(v, p)) entry(v, "voyage", ch.result(), s.name + ": " + String.join(", ", why), null);
 			} else {
 				write(v, p);
 			}
@@ -252,7 +340,7 @@ public final class Reputation {
 			int sector = was.known() ? was.sector : VoyageLog.lastSector(v, s);
 			Props.forget(p, s.id);
 			if (sector >= LAST_STAND || !shown()) { write(v, p); return 0; }
-			p.setProperty("total", Integer.toString(num(p, "total") + SHIP_LOST));
+			plain(p, SHIP_LOST);
 			if (write(v, p)) { entry(v, "ship_lost", SHIP_LOST, s.name + " was lost in action (" + signed(SHIP_LOST) + ")", null); return SHIP_LOST; }
 			return 0;
 		}
@@ -262,7 +350,7 @@ public final class Reputation {
 		synchronized (lock(v)) {
 			if (taken == 0) return;
 			Properties p = read(v);
-			p.setProperty("total", Integer.toString(num(p, "total") - taken));
+			plain(p, -taken);
 			if (write(v, p)) entry(v, "restored", -taken, s.name + " was restored after FTL's New Game wrote over her (" + signed(-taken) + ")", null);
 		}
 	}
@@ -276,18 +364,17 @@ public final class Reputation {
 	public static void expedition(Vault v, String what, int scrap, int died, int taken, int outcome) {
 		synchronized (lock(v)) {
 			if (!shown()) return;
-			int points = scrap / SCRAP_PER_POINT + died * CREW_DIED + taken * CAPTURED + (outcome > 0 ? EVENT_GOOD : outcome < 0 ? EVENT_BAD : 0);
-			List<String> why = new ArrayList<String>();
-			if (scrap / SCRAP_PER_POINT > 0) why.add(scrap + " scrap (+" + scrap / SCRAP_PER_POINT + ")");
-			if (died > 0) why.add((died == 1 ? "a crew member killed" : died + " crew killed") + " (" + signed(died * CREW_DIED) + ")");
-			if (taken > 0) why.add((taken == 1 ? "a crew member taken captive" : taken + " crew taken captive") + " (" + signed(taken * CAPTURED) + ")");
-			if (outcome > 0) why.add("a good outcome (+" + EVENT_GOOD + ")");
-			if (outcome < 0) why.add("a bad outcome (" + EVENT_BAD + ")");
-			if (points == 0 && why.isEmpty()) return;
+			Change ch = new Change();
+			if (scrap / SCRAP_PER_POINT > 0) ch.earned(scrap + " scrap", scrap / SCRAP_PER_POINT);
+			if (died > 0) ch.lost(died == 1 ? "a crew member killed" : died + " crew killed", died * CREW_DIED);
+			if (taken > 0) ch.lost(taken == 1 ? "a crew member taken captive" : taken + " crew taken captive", taken * CAPTURED);
+			if (outcome > 0) ch.earned("a good outcome", EVENT_GOOD);
+			if (outcome < 0) ch.lost("a bad outcome", EVENT_BAD);
+			if (ch.isEmpty()) return;
 			Properties p = read(v);
 			if (!counted(p)) { review(v); p = read(v); }
-			p.setProperty("total", Integer.toString(num(p, "total") + points));
-			if (write(v, p)) entry(v, "expedition", points, "Expedition: " + what + " (" + signed(points) + ")", why);
+			List<String> why = ch.apply(p);
+			if (write(v, p)) entry(v, "expedition", ch.result(), "Expedition: " + what + " (" + signed(ch.moved) + ")", why);
 		}
 	}
 	/** Crew taken captive on the board of jobs (the crew expeditions count them in their report's entry). */
@@ -297,7 +384,7 @@ public final class Reputation {
 			int points = names.size() * CAPTURED;
 			Properties p = read(v);
 			if (!counted(p)) { review(v); p = read(v); }
-			p.setProperty("total", Integer.toString(num(p, "total") + points));
+			plain(p, points);
 			if (write(v, p)) entry(v, "captive", points, "Taken captive: " + String.join(", ", names) + " (" + signed(points) + ")", null);
 		}
 	}
@@ -307,8 +394,9 @@ public final class Reputation {
 			if (!shown()) return;
 			Properties p = read(v);
 			if (!counted(p)) { review(v); p = read(v); }
-			p.setProperty("total", Integer.toString(num(p, "total") + RANSOMED));
-			if (write(v, p)) entry(v, "ransomed", RANSOMED, "Ransomed: " + name + " brought home (" + signed(RANSOMED) + ")", null);
+			Change ch = new Change().earned("Ransomed: " + name + " brought home", RANSOMED);
+			String why = ch.apply(p).get(0);
+			if (write(v, p)) entry(v, "ransomed", ch.result(), why, null);
 		}
 	}
 	/** Can this much be spent without going below zero (the fees reputation may pay; a plea, a promise and rest may go below)? */
@@ -321,7 +409,7 @@ public final class Reputation {
 			if (!shown() || cost <= 0) return;
 			Properties p = read(v);
 			if (!counted(p)) { review(v); p = read(v); }
-			p.setProperty("total", Integer.toString(num(p, "total") - cost));
+			plain(p, -cost);
 			if (write(v, p)) entry(v, "spent", -cost, why + " (" + signed(-cost) + ")", null);
 		}
 	}
@@ -331,8 +419,9 @@ public final class Reputation {
 			if (!shown()) return;
 			Properties p = read(v);
 			if (!counted(p)) { review(v); return; } // the review finds her in the Hall of Victors
-			p.setProperty("total", Integer.toString(num(p, "total") + FLAGSHIP));
-			if (write(v, p)) entry(v, "flagship", FLAGSHIP, name + " drove off the Rebel Flagship (+" + FLAGSHIP + ")" /* hard rule 1: never that she destroyed it, as the museum and the Captain's Log say it */, null);
+			Change ch = new Change().earned(name + " drove off the Rebel Flagship", FLAGSHIP); // hard rule 1: never that she destroyed it, as the museum and the Captain's Log say it
+			String why = ch.apply(p).get(0);
+			if (write(v, p)) entry(v, "flagship", ch.result(), why, null);
 		}
 	}
 
@@ -348,7 +437,7 @@ public final class Reputation {
 		synchronized (lock(v)) {
 			Properties p = read(v);
 			if (counted(p)) return;
-			int total = 0;
+			setHalves(p, 0); // counted from nothing, ship by ship
 			List<String> details = new ArrayList<String>();
 			Map<String, Ship> inFleet = new LinkedHashMap<String, Ship>();
 			for (Ship s : v.all()) if (s.state != Ship.State.STORAGE) inFleet.put(s.id, s);
@@ -360,42 +449,39 @@ public final class Reputation {
 				Ship s = inFleet.get(id);
 				SavedGameState gs = s != null ? s.save() : lastSave(v.folderOfId(id));
 				String name = s != null ? s.name : departedName(v, id);
-				List<String> why = new ArrayList<String>();
-				int pts = 0;
+				Change ch = new Change();
 				TradeMark m = TradeMark.of(v, id);
 				if (gs != null) {
 					int journeys = m == null && s != null ? VoyageLog.journeys(v, s) : journeysSince(v, id, m); // each began in sector 1: not a jump
 					int sectors = Math.max(0, VoyageLog.visited(v, id, gs) - (m == null ? 0 : m.sectors) - journeys);
-					if (sectors > 0) { pts += sectors * SECTOR; why.add(sectors + (sectors == 1 ? " sector" : " sectors") + " (+" + sectors * SECTOR + ")"); }
+					if (sectors > 0) ch.earned(sectors + (sectors == 1 ? " sector" : " sectors"), sectors * SECTOR);
 					int scrap = Math.max(0, gs.getTotalScrapCollected() - (m == null ? 0 : m.scrap));
-					if (scrap / SCRAP_PER_POINT > 0) { pts += scrap / SCRAP_PER_POINT; why.add(scrap + " scrap (+" + scrap / SCRAP_PER_POINT + ")"); }
+					if (scrap / SCRAP_PER_POINT > 0) ch.earned(scrap + " scrap", scrap / SCRAP_PER_POINT);
 					int defeated = Math.max(0, gs.getTotalShipsDefeated() - (m == null ? 0 : m.defeated));
-					if (defeated > 0) { pts += defeated * DEFEATED; why.add(defeated + (defeated == 1 ? " ship" : " ships") + " defeated (+" + defeated * DEFEATED + ")"); }
+					if (defeated > 0) ch.earned(defeated + (defeated == 1 ? " ship" : " ships") + " defeated", defeated * DEFEATED);
 					int died = m != null || !gs.hasStateVar("lost_crew") ? 0 : gs.getStateVar("lost_crew"); // a traded ship's losses before she came aren't told apart
-					if (died > 0) { pts += died * CREW_DIED; why.add(died + " crew lost (" + signed(died * CREW_DIED) + ")"); }
+					if (died > 0) ch.lost(died + " crew lost", died * CREW_DIED);
 					if (s != null) Props.of(gs).put(p, id, 0); // counted from here on
 				}
 				int won = homeplanet.parser.Museum.victories(v, id);
-				if (won > 0) { pts += won * FLAGSHIP; why.add((won == 1 ? "the Rebel Flagship defeated" : "the Rebel Flagship defeated " + won + " times") + " (+" + won * FLAGSHIP + ")"); }
-				if (s == null && Vault.Fate.LOST.name().equals(fate(v, id)) && won == 0 && lastSectorOf(v, id) < LAST_STAND) {
-					pts += SHIP_LOST;
-					why.add("lost in action (" + signed(SHIP_LOST) + ")");
-				}
-				if (why.isEmpty()) continue;
-				total += pts;
-				details.add(name + ": " + String.join(", ", why) + "  = " + signed(pts));
+				if (won > 0) ch.earned(won == 1 ? "the Rebel Flagship defeated" : "the Rebel Flagship defeated " + won + " times", won * FLAGSHIP);
+				if (s == null && Vault.Fate.LOST.name().equals(fate(v, id)) && won == 0 && lastSectorOf(v, id) < LAST_STAND) ch.lost("lost in action", SHIP_LOST);
+				if (ch.isEmpty()) continue;
+				List<String> why = ch.apply(p);
+				details.add(name + ": " + String.join(", ", why) + "  = " + signed(ch.moved));
 			}
 			List<String> earned = newAchievements(); // FTL's achievements earned in the fleet's service so far
 			if (!earned.isEmpty()) {
 				List<String> names = new ArrayList<String>();
 				for (String id : earned) names.add(achievementName(id));
-				total += earned.size() * ACHIEVEMENT;
-				details.add("Achievements: " + String.join(", ", names) + "  = " + signed(earned.size() * ACHIEVEMENT));
+				Change ch = new Change().earned("Achievements", earned.size() * ACHIEVEMENT);
+				ch.apply(p);
+				details.add("Achievements: " + String.join(", ", names) + "  = " + signed(ch.moved));
 				p.setProperty("achievements", String.join("|", earned));
 			}
 			p.setProperty("counted", new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()));
-			p.setProperty("total", Integer.toString(total));
-			if (write(v, p)) entry(v, "review", total, "Service record reviewed: the fleet's service so far", details);
+			int h = halves(p);
+			if (write(v, p)) entry(v, "review", new int[] {Math.floorDiv(h, 2), h}, "Service record reviewed: the fleet's service so far", details);
 		}
 	}
 	/**
@@ -614,10 +700,16 @@ public final class Reputation {
 	/** One entry in the reputation log, in the station log's form: its time, the change as its tag, why, and details under it. */
 	private static void entry(Vault v, int points, String why, List<String> details) { entry(v, "other", points, why, details); }
 	/** As above, with what the change was for (the event's reason field: achievement, cruiser, voyage, ship_lost, restored, expedition, captive, ransomed, spent, flagship, review). */
-	private static void entry(Vault v, String reason, int points, String why, List<String> details) {
+	private static void entry(Vault v, String reason, int points, String why, List<String> details) { entry(v, reason, new int[] {points, points * 2}, why, details); }
+	/** As above, from {@link #move}: the whole points it moved the total by, and the exact change and the rate besides (6.13). */
+	private static void entry(Vault v, String reason, int[] moved, String why, List<String> details) {
 		Properties p = read(v); // the event log alone (5.93): reputation.log and the master log's copy are no longer written
-		homeplanet.core.EventLog.write(v, homeplanet.core.Event.of("REPUTATION").put("log", "reputation").put("reason", reason).put("points", points).put("total", num(p, "total")).put("why", why).details(details).human(why));
+		int h = halves(p);
+		homeplanet.core.EventLog.write(v, homeplanet.core.Event.of("REPUTATION").put("log", "reputation").put("reason", reason).put("points", moved[0])
+				.put("exact", halfWords(moved[1])).put("rate", RATE[rateLevel()]).put("total", num(p, "total")).put("total_exact", halfWords(h)).put("why", why).details(details).human(why));
 	}
+	/** Half points as a number to read: 9, -4, 4.5. */
+	private static String halfWords(int halves) { return Math.floorMod(halves, 2) == 0 ? Integer.toString(halves / 2) : (halves < 0 && halves > -2 ? "-0" : Integer.toString(halves / 2)) + ".5"; }
 	public static String signed(int n) { return n > 0 ? "+" + n : n < 0 ? "−" + (-n) : "0"; }
 	private static int num(Properties p, String k) { return Store.num(p, k, 0); }
 }

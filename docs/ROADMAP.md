@@ -1215,9 +1215,13 @@ known, every ship they served on, and their expeditions one line each (sector, j
 (the living) and MIA-KIA (the missing and the dead), any one's whole history a click away. Built 5.52 (heromedel): Served With (everyone aboard a ship or out on an expedition together, by id, a link each), a few milestones in the career (a skill mastery, the first kill, a hundred jumps, the first time in sectors 5 and 8; never every jump), and Promote (`model/Rank`: Sgt., Lt., Maj., Col., Cmd., Cpt. for one to six skills fully mastered as they stand; a prefix on the name and nothing more; anyone, on the record alone where no save can be changed, the KIA posthumously). Crew assignments in the
 Captain's Log (heromedel): crew sent on assignment, and back, told there like the rest of the day. Skills on the assignment roll (heromedel; built 5.43, `Assignments.skilled`, checks in AsgT): the job's skill (each job already has one, `Assignments.JOBS`; Negotiate and Rescue none; until now it only grows the scrap, +10% a level) adds +2 per level over zero to a crew member's d20 (+3 a
 level when their race also suits the job); a natural 1 and a natural 20 stay as they are; a changed roll stays between 2 and 19, so
-only a natural 1 is death and only a natural 20 the top; after the race's reroll. The skill's +10% scrap a level stays too (heromedel). Reputation by FTL's difficulty
-(heromedel): reputation earned in FTL itself (a ship's service in a run, not anything done at the station) grows with
-FTL's own difficulty: Normal +10%, Hard +20%, and/or at least +1 more per event.
+only a natural 1 is death and only a natural 20 the top; after the race's reroll. The skill's +10% scrap a level stays too (heromedel). Reputation by the career's difficulty
+(heromedel, built 6.13; it replaces "Normal +10%, Hard +20%" by FTL's own difficulty): everything earned counts x1 on Easy,
+x1.5 on Normal, x2 on Hard (sectors, ships defeated, scrap, good outcomes, achievements, Federation Cruiser unlocks, the
+Rebel Flagship, expeditions, ransoms); losses and spending never. No rounding: the total keeps a hidden half point
+(`reputation.xml`'s `half`), so Normal's 120.5 reads 120 and the .5 counts toward the next. Each piece in the log shows
+what it added at the rate, never a bonus of its own. A Custom career chooses its rate once (its briefing, or the Space
+Dock asks one from before 6.13), then fixed; Sandbox Mode's is in Settings beside the Reputation rule, changeable anytime.
 
 ## 44. The console — built (5.22; harness test ConT)
 

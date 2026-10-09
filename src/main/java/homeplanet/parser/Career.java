@@ -92,6 +92,17 @@ public final class Career {
 		write(immersiveRoot, p);
 	}
 
+	/**
+	 * The reputation rate a Custom career chose (heromedel, 6.13): "0" (x1, as on Easy), "1" (x1.5) or "2" (x2), or null
+	 * if never chosen. Read only for Custom (and a career from before difficulties); the others' difficulty decides it.
+	 */
+	public static String repRate(File immersiveRoot) { return read(immersiveRoot).getProperty("repRate"); }
+	public static void setRepRate(File immersiveRoot, int level) throws IOException {
+		Properties p = read(immersiveRoot);
+		p.setProperty("repRate", Integer.toString(level));
+		write(immersiveRoot, p);
+	}
+
 	/** Begins a career in the Immersive fleet now open, at Normal difficulty. */
 	public static void start(boolean salaryAll, boolean ownProfile) throws IOException { start(salaryAll, ownProfile, true, CareerRules.of(CareerRules.NORMAL)); }
 	/** Begins a career in the Immersive fleet now open, at this difficulty: its choices, the starting scrap, and a Kestrel Type A to command. */

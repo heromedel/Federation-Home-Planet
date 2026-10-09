@@ -20,6 +20,14 @@ a thousand of this program).
 **heromedel**: Designer, Producer, Coordinator and Tester of Federation Home Planet. With use of
 Claude Opus 5.5 and Fable 5.1 for coding and programming.
 
+**Playtesters**
+* Ivy Max
+* Wolfy
+* Lillythayn
+
+**Docked Mode inspired by**
+* Lillythayn
+
 ## What is bundled
 
 * `homeplanet/resource/mod/*.xml.append` – the three "plain copy" blueprint files that make up

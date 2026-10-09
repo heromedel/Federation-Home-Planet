@@ -372,6 +372,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			askingToHard = true;
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askToHard(); } });
 		}
+		if (!askingRate && !ratePutOff && homeplanet.vault.Reputation.RATE_ASK.equals(homeplanet.vault.Reputation.rateRule())) { // a Custom career from before 6.13
+			askingRate = true;
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askRepRate(); } });
+		}
 		if (!askingFound && !vault.found().isEmpty()) { // saves and ships found as the fleet opened, waiting on the player's word (6.10)
 			askingFound = true;
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askFound(); } });
@@ -591,6 +595,25 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The Home Planet Station could not record the career's choice in its file (it will ask again):\n" + e.getMessage());
 		} finally {
 			askingToHard = false;
+		}
+	}
+
+	private boolean askingRate = false, ratePutOff = false;
+	/** A Custom career with no reputation rate: asked as its briefing would (heromedel, 6.13), then fixed. Closed: asked again at the next start (x1 meanwhile). */
+	private void askRepRate() {
+		try {
+			if (!homeplanet.vault.Reputation.RATE_ASK.equals(homeplanet.vault.Reputation.rateRule())) return;
+			Object[] options = homeplanet.vault.Reputation.RATE_WORDS;
+			int c = JOptionPane.showOptionDialog(null, "Your Custom career hasn't chosen one of its rules yet:\n\n    Reputation earned\n\n"
+					+ "What your ships earn (sectors, ships defeated, scrap, good outcomes, achievements, expeditions) counts at this rate.\n"
+					+ "Losses and spending count as they are. Like the career's other rules, it is chosen once and fixed from then on.", "Your Custom career", JOptionPane.DEFAULT_OPTION,
+					JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+			if (c < 0 || c > 2) { ratePutOff = true; return; }
+			homeplanet.vault.Reputation.chooseRate(Vault.get().root, c);
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The Home Planet Station could not record the career's choice in its file (it will ask again):\n" + e.getMessage());
+		} finally {
+			askingRate = false;
 		}
 	}
 
