@@ -381,7 +381,10 @@ public final class Expeditions {
 
 	// ---- hiring ----
 
-	/** Crew in the whole fleet: every ship (docked, boarded, in the Junkyard) and the Cargo Hold. */
+	/**
+	 * Crew in the whole fleet: every ship (docked, boarded, in the Junkyard), the Cargo Hold, and everyone away on an
+	 * expedition (6.26: they come back, so a fleet that sent them all out has crew; captives are someone else's to hold).
+	 */
 	public static int fleetCrew(Vault v) {
 		int n = 0;
 		for (Ship s : v.all()) {
@@ -389,6 +392,7 @@ public final class Expeditions {
 			if (g != null) n += SaveHelper.getOwnCrew(g.getPlayerShip()).size();
 		}
 		try { if (!v.all().contains(v.storage())) n += SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip()).size(); } catch (IOException e) { }
+		for (Assignments.Away a : Assignments.away(v)) n += a.crew.size();
 		return n;
 	}
 	/** What posting for volunteers costs: 5 for each crew member the commander has, at most 60 (FTL's dearest crew); no scrap with none (the promise of adventure, which costs reputation). */
