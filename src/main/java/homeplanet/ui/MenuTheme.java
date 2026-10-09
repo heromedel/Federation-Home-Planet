@@ -64,6 +64,10 @@ public final class MenuTheme {
 		UIManager.put("OptionPane.background", new ColorUIResource(BG));
 		UIManager.put("OptionPane.messageForeground", new ColorUIResource(TEXT));
 		UIManager.put("TitledBorder.titleColor", new ColorUIResource(TEXT));
+		UIManager.put("OptionPaneUI", WrappingOptionPaneUI.class.getName()); // every pop-up wraps its long lines (heromedel, 6.27: one ran off the screen)
+		UIManager.put(WrappingOptionPaneUI.class.getName(), WrappingOptionPaneUI.class);
+		UIManager.put("ToolTipUI", WrappingToolTipUI.class.getName()); // and every long tooltip (6.28: 41 ran out in one strip)
+		UIManager.put(WrappingToolTipUI.class.getName(), WrappingToolTipUI.class);
 		Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
 			public void eventDispatched(AWTEvent e) {
 				try {
@@ -231,6 +235,28 @@ public final class MenuTheme {
 			if (r.isEmpty()) return;
 			g.setColor(thumb);
 			g.fillRect(r.x + 3, r.y + 2, r.width - 6, r.height - 4);
+		}
+	}
+
+	/** A pop-up's plain text wrapped at about 100 characters a line (as HomePlanet.wrap does errors), between words; html sets its own width and is left as it is. */
+	public static final class WrappingOptionPaneUI extends javax.swing.plaf.basic.BasicOptionPaneUI {
+		public static javax.swing.plaf.ComponentUI createUI(JComponent c) { return new WrappingOptionPaneUI(); }
+		@Override protected int getMaxCharactersPerLineCount() { return 100; }
+		@Override protected void addMessageComponents(Container c, java.awt.GridBagConstraints g, Object msg, int maxll, boolean internal) {
+			if (msg instanceof String && ((String) msg).regionMatches(true, 0, "<html>", 0, 6)) maxll = Integer.MAX_VALUE;
+			super.addMessageComponents(c, g, msg, maxll, internal);
+		}
+	}
+
+	/** A long plain tooltip wrapped to 400 pixels; short ones and html (which sets its own width) are left as they are. */
+	public static final class WrappingToolTipUI extends javax.swing.plaf.metal.MetalToolTipUI {
+		public static javax.swing.plaf.ComponentUI createUI(JComponent c) { return new WrappingToolTipUI(); }
+		@Override public java.awt.Dimension getPreferredSize(JComponent c) {
+			javax.swing.JToolTip tip = (javax.swing.JToolTip) c;
+			String t = tip.getTipText();
+			if (t != null && t.length() > 80 && !t.regionMatches(true, 0, "<html>", 0, 6))
+				tip.setTipText("<html><div style='width:400px'>" + t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>") + "</div></html>");
+			return super.getPreferredSize(c);
 		}
 	}
 }

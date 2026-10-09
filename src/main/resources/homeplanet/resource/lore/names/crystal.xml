@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Crystal crew names (docs/NAMES.md): crystals, minerals and their formations. The Crystal are the ancient ancestors
+     of the Rock: the two lists are kin but share no names.
+
+     sex: B (both), M or F, chosen by how a name sounds. A female crew member given a B name gets it with one of the
+     endings in <female>, picked at random: ex="..." leaves out an ending that reads wrong on that name. A name already
+     ending in one of them is its own female form; a final E drops before an ending that starts with a vowel.
+     rarity: where the name comes from (docs/NAMES.md): real crystals by how well known, then names from folk speech and
+     myth, from one story, and made up here. A name comes up in proportion to its level's weight. No rarity is the first.
+
+     To change them, copy this file into names in the lore folder beside the program and edit the copy. -->
+<names race="crystal">
+	<rarity>
+		<level name="Realworld" weight="1000"/>
+		<level name="Realworld-Uncommon" weight="300"/>
+		<level name="Realworld-Rare" weight="100"/>
+		<level name="Semi-Fictional" weight="30"/>
+		<level name="Known-Fiction" weight="10"/>
+		<level name="Bizarre" weight="1"/>
+	</rarity>
+	<female suffix="ite, ine"/>
+
+	<name sex="B">Quartz</name>
+	<name sex="B" ex="ite">Diamond</name>
+	<name sex="F">Ruby</name>
+	<name sex="F">Emerald</name>
+	<name sex="F">Sapphire</name>
+	<name sex="B">Topaz</name>
+	<name sex="F">Opal</name>
+	<name sex="B">Jade</name>
+	<name sex="F">Amethyst</name>
+	<name sex="B" ex="ite">Garnet</name>
+	<name sex="F">Onyx</name>
+	<name sex="B">Agate</name>
+	<name sex="B">Prism</name>
+	<name sex="B">Geode</name>
+	<name sex="B" ex="ite">Facet</name>
+	<name sex="B" rarity="Realworld-Uncommon">Beryl</name>
+	<name sex="B" rarity="Realworld-Uncommon">Zircon</name>
+	<name sex="F" rarity="Realworld-Uncommon">Galena</name>
+	<name sex="B" rarity="Realworld-Uncommon">Spinel</name>
+	<name sex="B" rarity="Realworld-Uncommon">Pyrite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Calcite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Fluorite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Malachite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Citrine</name>
+	<name sex="B" rarity="Realworld-Uncommon">Peridot</name>
+	<name sex="B" rarity="Realworld-Uncommon">Tourmaline</name>
+	<name sex="M" rarity="Realworld-Uncommon">Jasper</name>
+	<name sex="F" rarity="Realworld-Uncommon">Rose Quartz</name>
+	<name sex="F" rarity="Realworld-Uncommon">Moonstone</name>
+	<name sex="M" rarity="Realworld-Uncommon">Bloodstone</name>
+	<name sex="M" rarity="Realworld-Uncommon">Sunstone</name>
+	<name sex="F" rarity="Realworld-Uncommon">Mica</name>
+	<name sex="B" rarity="Realworld-Uncommon">Feldspar</name>
+	<name sex="M" rarity="Realworld-Uncommon">Gypsum</name>
+	<name sex="B" rarity="Realworld-Uncommon">Halite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Hematite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Magnetite</name>
+	<name sex="B" rarity="Realworld-Uncommon">Lattice</name>
+	<name sex="B" rarity="Realworld-Uncommon">Druse</name>
+	<name sex="B" rarity="Realworld-Rare">Selenite</name>
+	<name sex="B" rarity="Realworld-Rare">Azurite</name>
+	<name sex="B" rarity="Realworld-Rare">Celestine</name>
+	<name sex="B" rarity="Realworld-Rare">Apatite</name>
+	<name sex="B" rarity="Realworld-Rare">Barite</name>
+	<name sex="B" rarity="Realworld-Rare">Dolomite</name>
+	<name sex="M" rarity="Realworld-Rare">Corundum</name>
+	<name sex="M" rarity="Semi-Fictional">Lodestone</name>
+	<name sex="M" rarity="Semi-Fictional">Brimstone</name>
+	<name sex="B" rarity="Known-Fiction">Kryptonite</name>
+	<name sex="M" rarity="Known-Fiction">Dilithium</name>
+	<name sex="M" rarity="Known-Fiction">Tiberium</name>
+	<name sex="F" rarity="Bizarre">Shardonnay</name>
+</names>

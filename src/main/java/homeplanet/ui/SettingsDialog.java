@@ -394,7 +394,8 @@ public class SettingsDialog extends JDialog {
 		body = aboutPage;
 		c = constraints();
 		heading(body, c, "About");
-		JLabel credit = new JLabel(HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games; save parser by Vhati; Inspired by and originally built upon ManApart's FTL Homeworld.");
+		JLabel credit = new JLabel("<html>" + HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games.<br>" // two lines, not one off the edge (heromedel, 6.22)
+				+ "Inspired by and originally built upon ManApart's FTL Homeworld. Save parser by Vhati.</html>");
 		credit.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(credit, next(c));
 		// heromedel's line, and the buttons on a line of their own beneath it (heromedel, 6.02: his words)
@@ -814,8 +815,8 @@ public class SettingsDialog extends JDialog {
 			return;
 		}
 		Object[] opts = {"Update Now", "Later"};
-		if (JOptionPane.showOptionDialog(this, news + "\n\nUpdate Now downloads them and rebuilds the station: it closes, the Construction Yard builds the new version,"
-				+ "\nthen opens it again. Your fleets, settings, mods and the downloaded JDK and Maven aren't touched.", title,
+		if (JOptionPane.showOptionDialog(this, news + "\n\nUpdate Now downloads them and rebuilds the station: it closes, the Construction Yard builds the new version, "
+				+ "then opens it again.\nYour fleets, settings, mods and the downloaded JDK and Maven aren't touched.", title,
 				JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]) != 0) return;
 		final java.awt.Window owner = getOwner();
 		if (owner instanceof MainFrame && !((MainFrame) owner).mayClose("update the station")) return;

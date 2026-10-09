@@ -1098,8 +1098,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			else { room = 3; used = destState.getAugmentIdList().size(); }
 			if (used >= room) {
 				String who = destSave.getPlayerShipName();
-				if (kind == 2) { HomePlanet.showErrorDialog(who + "'s augment slots are full (3). Send one of hers away first."); return; }
-				if (SaveHelper.cargo(destSave).size() >= 4) { HomePlanet.showErrorDialog(who + " has no room for the " + title + ", and her cargo hold is full too."); return; }
+				if (kind == 2) { HomePlanet.showNotice(who + "'s augment slots are full (3). Send one of hers away first.", "Cargo Bay"); return; }
+				if (SaveHelper.cargo(destSave).size() >= 4) { HomePlanet.showNotice(who + " has no room for the " + title + ", and her cargo hold is full too.", "Cargo Bay"); return; }
 				String q = kind == 1 && room == 0 ? who + " has no Drone Control system. Put the drone in her cargo hold?" : who + " has no free " + (kind == 0 ? "weapon" : "drone") + " slot. Put the " + title + " in her cargo hold?";
 				if (JOptionPane.showConfirmDialog(this, q, "Send to cargo?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
 				toCargo = true;
@@ -1108,16 +1108,16 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		// take it from the sender (releasing its power if it was powered)
 		DroneState srcDrone = null;
 		if (r.inCargo) {
-			if (!startSave.getCargoIdList().remove(id)) { HomePlanet.showErrorDialog("That item is no longer in the cargo hold."); return; }
+			if (!startSave.getCargoIdList().remove(id)) { HomePlanet.showNotice("That item is no longer in the cargo hold.", "Cargo Bay"); return; }
 		} else if (kind == 0) {
 			WeaponState w = SaveHelper.findWeapon(startState.getWeaponList(), id);
-			if (w == null) { HomePlanet.showErrorDialog("That weapon is no longer aboard."); return; }
+			if (w == null) { HomePlanet.showNotice("That weapon is no longer aboard.", "Cargo Bay"); return; }
 			SaveHelper.removeWeapon(startState, w);
 		} else if (kind == 1) {
 			srcDrone = SaveHelper.findDrone(startState.getDroneList(), id);
-			if (srcDrone == null) { HomePlanet.showErrorDialog("That drone is no longer aboard."); return; }
+			if (srcDrone == null) { HomePlanet.showNotice("That drone is no longer aboard.", "Cargo Bay"); return; }
 			SaveHelper.removeDrone(startState, srcDrone);
-		} else if (!startState.getAugmentIdList().remove(id)) { HomePlanet.showErrorDialog("That augment is no longer aboard."); return; }
+		} else if (!startState.getAugmentIdList().remove(id)) { HomePlanet.showNotice("That augment is no longer aboard.", "Cargo Bay"); return; }
 		// give it to the receiver, unpowered
 		if (toCargo) SaveHelper.addCargo(destSave, id);
 		else if (kind == 0) destState.getWeaponList().add(SaveHelper.newIdleWeapon(id));
@@ -1144,20 +1144,20 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		ShipState state = save.getPlayerShip();
 		String title = Items.title(r.id);
 		int price = sell ? sellPrice(r.id) : 0;
-		if (sell && price <= 0) { HomePlanet.showErrorDialog(title + " has no price, so no one will buy it."); return; }
+		if (sell && price <= 0) { HomePlanet.showNotice(title + " has no price, so no one will buy it.", "Cargo Bay"); return; }
 		String q = sell ? "Sell the " + title + " for " + price + " scrap?" : "Junk the " + title + "?\nYou get nothing for it.";
 		if (!HomePlanet.confirmNo(this, q, sell ? "Sell" : "Junk")) return;
 		if (r.inCargo) {
-			if (!save.getCargoIdList().remove(r.id)) { HomePlanet.showErrorDialog("That item is no longer in the cargo hold."); return; }
+			if (!save.getCargoIdList().remove(r.id)) { HomePlanet.showNotice("That item is no longer in the cargo hold.", "Cargo Bay"); return; }
 		} else if (kind == 0) {
 			WeaponState w = SaveHelper.findWeapon(state.getWeaponList(), r.id);
-			if (w == null) { HomePlanet.showErrorDialog("That weapon is no longer aboard."); return; }
+			if (w == null) { HomePlanet.showNotice("That weapon is no longer aboard.", "Cargo Bay"); return; }
 			SaveHelper.removeWeapon(state, w);
 		} else if (kind == 1) {
 			DroneState d = SaveHelper.findDrone(state.getDroneList(), r.id);
-			if (d == null) { HomePlanet.showErrorDialog("That drone is no longer aboard."); return; }
+			if (d == null) { HomePlanet.showNotice("That drone is no longer aboard.", "Cargo Bay"); return; }
 			SaveHelper.removeDrone(state, d);
-		} else if (!state.getAugmentIdList().remove(r.id)) { HomePlanet.showErrorDialog("That augment is no longer aboard."); return; }
+		} else if (!state.getAugmentIdList().remove(r.id)) { HomePlanet.showNotice("That augment is no longer aboard.", "Cargo Bay"); return; }
 		if (sell) state.setScrapAmt(state.getScrapAmt() + price);
 		String from = save.getPlayerShipName() + (r.inCargo ? " (cargo)" : "");
 		disposals.add(new Disposal(save, sell ? "SELL" : "JUNK", title + (r.inCargo ? " (cargo)" : ""), price,
@@ -1173,7 +1173,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (cs == null) return;
 		ShipState state = mine ? currentState : tradeState;
 		SavedGameState save = mine ? currentSave : tradeSave;
-		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't retire right now."); return; }
+		if (!SaveHelper.hasBody(cs)) { HomePlanet.showNotice(cs.getName() + " is waiting to be cloned and can't retire right now.", "Cargo Bay"); return; }
 		if (!HomePlanet.confirmNo(this, "Retire " + cs.getName() + "?\nThey leave " + save.getPlayerShipName() + " for good.", "Retire")) return;
 		state.getCrewList().remove(cs);
 		String diskName = crewRenames.containsKey(cs) ? crewRenames.remove(cs) : cs.getName();
@@ -1194,8 +1194,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		ShipState startState = fromMine ? currentState : tradeState, destState = fromMine ? tradeState : currentState;
 		// a ship may be left with no one aboard (fixing up a derelict, say): FTL just won't launch her until someone is (HomePlanet.noOneAboard)
 		boolean destIsStorage = fromMine && partnerIsStorage();
-		if (!destIsStorage && SaveHelper.getOwnCrew(destState).size() >= 8) { HomePlanet.showErrorDialog("No room for more crew: a ship carries 8 at most."); return; }
-		if (!SaveHelper.hasBody(cs)) { HomePlanet.showErrorDialog(cs.getName() + " is waiting to be cloned and can't be moved right now."); return; }
+		if (!destIsStorage && SaveHelper.getOwnCrew(destState).size() >= 8) { HomePlanet.showNotice("No room for more crew: a ship carries 8 at most.", "Cargo Bay"); return; }
+		if (!SaveHelper.hasBody(cs)) { HomePlanet.showNotice(cs.getName() + " is waiting to be cloned and can't be moved right now.", "Cargo Bay"); return; }
 		if (!fromMine && partnerIsStorage() && Vault.isOpen() && homeplanet.parser.Expeditions.laidUp(Vault.get(), cs)) {
 			JOptionPane.showMessageDialog(this, cs.getName() + " is in the infirmary, and stays there until they're on their feet.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
 			return;
@@ -1203,7 +1203,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		String refused = destIsStorage ? null : Dlc.refusesCrew(fromMine ? tradeSave : currentSave, cs);
 		if (refused != null) { JOptionPane.showMessageDialog(this, refused, "Advanced Edition only", JOptionPane.INFORMATION_MESSAGE); return; }
 		// their room and square referred to the old ship: stand them on a free square of the new one
-		if (!SaveHelper.placeCrew(destState, cs, destIsStorage)) { HomePlanet.showErrorDialog("That ship has no free floor space for more crew."); return; }
+		if (!SaveHelper.placeCrew(destState, cs, destIsStorage)) { HomePlanet.showNotice("That ship has no free floor space for more crew.", "Cargo Bay"); return; }
 		startState.getCrewList().remove(cs);
 		destState.getCrewList().add(cs);
 		log.debug("Sent crew {} to {}", cs.getName(), destState.getShipName());
@@ -1291,7 +1291,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	public boolean saveAll() {
 		boolean holdAlone = currentShip == null && holdOnly(); // no ship picked: only the Cargo Hold (and the stored systems) change
 		if ((currentPath == null || currentShip == null) && !holdAlone) {
-			HomePlanet.showErrorDialog("Nothing to save: no ship is picked. Pick one with the button above, or board one at the Space Dock.");
+			HomePlanet.showNotice("Nothing to save: no ship is picked. Pick one with the button above, or board one at the Space Dock.", "Cargo Bay");
 			return false;
 		}
 		// FTL's ship is asked about only when this save really changes her, whichever ship is picked (heromedel, 5.81): a

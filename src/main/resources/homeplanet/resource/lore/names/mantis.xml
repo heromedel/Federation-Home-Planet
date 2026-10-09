@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mantis crew names (docs/NAMES.md): made-up words that sound like insects (clicks, buzzing, scraping), never an
+     insect's name, but Scarab.
+
+     sex: B (both), M or F. A female crew member given a B name gets it with one of the endings in <female>, picked at
+     random: ex="..." leaves out an ending that reads wrong on that name. A name ending in X takes only the rest of an
+     ending (Ix is Ixa or Ixi); a final E drops before an ending that starts with a vowel.
+     rarity: a level of the ladder below; a name comes up in proportion to its level's weight. No rarity is the first.
+
+     To change them, copy this file into names in the lore folder beside the program and edit the copy. -->
+<names race="mantis">
+	<rarity>
+		<level name="common" weight="1000"/>
+		<level name="uncommon" weight="300"/>
+		<level name="rare" weight="100"/>
+		<level name="very-rare" weight="30"/>
+		<level name="highly-unusual" weight="10"/>
+		<level name="almost-unique" weight="1"/>
+	</rarity>
+	<female suffix="ix, xa, ixi, ixa"/>
+
+	<name sex="B">Skrit</name>
+	<name sex="B">Cuttler</name>
+	<name sex="B">Chitch</name>
+	<name sex="B">Vrask</name>
+	<name sex="B">Kessik</name>
+	<name sex="B">Ix</name>
+	<name sex="B">Krik</name>
+	<name sex="B">Tchak</name>
+	<name sex="B">Zzik</name>
+	<name sex="B">Skarr</name>
+	<name sex="B">Klikt</name>
+	<name sex="B">Kzzt</name>
+	<name sex="B">Thrak</name>
+	<name sex="B">Kret</name>
+	<name sex="B">Szik</name>
+	<name sex="B">Grisk</name>
+	<name sex="B">Chak</name>
+	<name sex="B">Tik</name>
+	<name sex="B">Tsek</name>
+	<name sex="B">Krask</name>
+	<name sex="B">Vrix</name>
+	<name sex="B">Zix</name>
+	<name sex="B">Klax</name>
+	<name sex="B">Rask</name>
+	<name sex="B">Kriv</name>
+	<name sex="B">Gzar</name>
+	<name sex="B">Tzak</name>
+	<name sex="B">Sketh</name>
+	<name sex="B">Zekk</name>
+	<name sex="B">Chitter</name>
+	<name sex="B">Skitch</name>
+	<name sex="B">Kach</name>
+	<name sex="B">Trik</name>
+	<name sex="B">Brak</name>
+	<name sex="B">Drask</name>
+	<name sex="B">Kzik</name>
+	<name sex="B">Sket</name>
+	<name sex="B">Kraz</name>
+	<name sex="B">Zrik</name>
+	<name sex="B">Rikt</name>
+	<name sex="B">Graz</name>
+	<name sex="B">Vraz</name>
+	<name sex="B">Krix</name>
+	<name sex="B">Zakt</name>
+	<name sex="B">Kritch</name>
+	<name sex="B">Chikk</name>
+	<name sex="B">Scrik</name>
+	<name sex="B">Thrix</name>
+	<name sex="B">Grakk</name>
+	<name sex="B">Tchekk</name>
+	<name sex="B">Vrek</name>
+	<name sex="B">Skaz</name>
+	<name sex="B">Zrakt</name>
+	<name sex="B">Ktik</name>
+	<name sex="B">Krakk</name>
+	<name sex="B">Tikkit</name>
+	<name sex="B">Vrisk</name>
+	<name sex="B" rarity="uncommon">Scarab</name>
+	<name sex="B" rarity="rare">Kzzkt</name>
+	<name sex="B" rarity="very-rare">Zerg</name>
+</names>
