@@ -17,11 +17,11 @@ final class BlueprintCleanup {
 	/** Moves blueprints no ship names into Removed Blueprints.log, rebuilds the mod, and offers to patch. */
 	static void run(Component owner) {
 		if (!HomePlanet.confirmNo(owner, "Clean up blueprints?\n\n"
-				+ "Every remodel and custom design The Home Planet Station draws up becomes a blueprint in the Federation Home Planet Mod,\n"
+				+ "Every remodel and custom design The Home Planet Station draws up becomes a blueprint in the Federation Home Planet Mod, "
 				+ "and stays there while any ship flies it, or could fly it again (her kept versions, the Junkyard, a surrender).\n"
 				+ "When a remodel was replaced, or a design retired, its old blueprint can linger with nothing left to use it.\n\n"
-				+ "This finds those and removes them, then rebuilds the mod. Only needed if the mod has grown large;\n"
-				+ "nothing a ship needs is ever touched. Look for unused blueprints now?", "Clean up blueprints")) return;
+				+ "This finds those and removes them, then rebuilds the mod. Only needed if the mod has grown large; "
+				+ "nothing a ship needs is ever touched.\n\nLook for unused blueprints now?", "Clean up blueprints")) return;
 		java.util.List<homeplanet.parser.CompanionMod.Remodel> all = homeplanet.parser.CompanionMod.load();
 		java.util.List<homeplanet.parser.ShipDesign> designs = homeplanet.parser.ShipDesign.load();
 		boolean anyRetired = false;

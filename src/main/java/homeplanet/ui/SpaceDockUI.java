@@ -1674,7 +1674,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String hulls;
 		try { hulls = String.join(", ", Vault.get().surrenderedNames(dir)); } catch (IOException e) { hulls = "?"; }
 		if (!HomePlanet.confirmNo(this, "Take back what was surrendered in the last report for reassignment?\n\n"
-				+ "The Cargo Hold returns as it was, and these hulls return to the Junkyard: " + (hulls.isEmpty() ? "(none)" : hulls) + ".\n"
+				+ "The Cargo Hold returns as it was, and these hulls return to the Junkyard:\n" + (hulls.isEmpty() ? "(none)" : hulls) + ".\n\n"
 				+ "The free command it earned is given up.", "Undo Reassignment")) return;
 		try {
 			Vault.get().undoSurrender(dir);
@@ -1938,7 +1938,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 						+ "Store more scrap in the Cargo Bay first.", "New Journey", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
-			if (!HomePlanet.confirmNo(this, "The Federation Home Planet charges " + fee + " scrap to plot a new journey,\npaid from the Cargo Hold (which holds " + have + "). Pay it?", "New Journey")) return;
+			if (!HomePlanet.confirmNo(this, "The Federation Home Planet charges " + fee + " scrap to plot a new journey, paid from the Cargo Hold (which holds " + have + ").\n\nPay it?", "New Journey")) return;
 		}
 		if (!GameGuard.allows(this, "start her new journey")) return;
 		net.blerf.ftl.constants.Difficulty[] diffs = {net.blerf.ftl.constants.Difficulty.EASY,

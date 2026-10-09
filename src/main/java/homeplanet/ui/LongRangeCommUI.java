@@ -665,7 +665,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (poweredUp) { toggleFrequencies(); return; }
 		if (post == null) return;
 		if (!HomePlanet.confirmNo(this, "Leave Long Range Comm. powered up, with your hailing frequency (port " + post.port + ") open?\n\n"
-				+ "(This leaves your station available for other commanders to find and hail, from any screen,\nuntil you power down or close the program.)", "Stay Powered Up")) return;
+				+ "(This leaves your station available for other commanders to find and hail, from any screen, until you power down or close the program.)", "Stay Powered Up")) return;
 		poweredUp = true;
 		refreshAll();
 		repaintDock();
@@ -1006,7 +1006,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		int colon = a.lastIndexOf(':');
 		if (colon > 0 && a.indexOf(':') == colon) {
 			try { ports = new int[] {Integer.parseInt(a.substring(colon + 1).trim())}; host = a.substring(0, colon).trim(); }
-			catch (NumberFormatException e) { HomePlanet.showErrorDialog("\"" + a.substring(colon + 1) + "\" isn't a port number."); return; }
+			catch (NumberFormatException e) { HomePlanet.showNotice("\"" + a.substring(colon + 1) + "\" isn't a port number.", "Long Range Comm."); return; }
 		}
 		HomePlanet.config.setProperty("long_range_comm_address", a);
 		HomePlanet.saveConfig();
@@ -1457,7 +1457,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (l.kind == Line.Kind.CREW && !source.isStorage()) {
 			int crewLeft = 0;
 			for (Line a : available) if (a.kind == Line.Kind.CREW) crewLeft++;
-			if (crewLeft <= 1) { HomePlanet.showErrorDialog("At least one crew member must stay aboard " + source.name + "."); return; }
+			if (crewLeft <= 1) { HomePlanet.showNotice("At least one crew member must stay aboard " + source.name + ".", "Long Range Comm."); return; }
 		}
 		Line added = session.add(l);
 		if (added == null) { help("The offer can't take more lines."); return; }

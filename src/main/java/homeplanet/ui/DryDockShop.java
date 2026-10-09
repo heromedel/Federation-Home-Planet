@@ -502,12 +502,12 @@ class DryDockShop {
 		if (e.kind == Kind.CREW) {
 			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
 			if (!it.isAvailable() || !e.id.equals(it.getItemId())) {
-				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
+				homeplanet.core.HomePlanet.showNotice(name + " is no longer in that store.", "Shop");
 				return;
 			}
 			net.blerf.ftl.parser.SavedGameParser.CrewState c = homeplanet.parser.Commission.volunteer(e.id, new java.util.Random());
 			if (c == null) { homeplanet.core.HomePlanet.showErrorDialog("The Home Planet Station doesn't know the race " + e.id + "."); return; }
-			if (!SaveHelper.placeCrew(bs, c, toStorage)) { homeplanet.core.HomePlanet.showErrorDialog(buyerName + " has no free floor space for more crew."); return; }
+			if (!SaveHelper.placeCrew(bs, c, toStorage)) { homeplanet.core.HomePlanet.showNotice(buyerName + " has no free floor space for more crew.", "Shop"); return; }
 			bs.getCrewList().add(c);
 			it.setAvailable(false);
 			if (!toStorage) buyer.setTotalCrewHired(buyer.getTotalCrewHired() + 1);
@@ -515,7 +515,7 @@ class DryDockShop {
 		} else if (e.kind == Kind.SYSTEM) {
 			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
 			if (!it.isAvailable() || !e.id.equals(it.getItemId())) {
-				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
+				homeplanet.core.HomePlanet.showNotice(name + " is no longer in that store.", "Shop");
 				return;
 			}
 			if (order && !SystemsPanel.confirmWorkOrder(bay)) return;
@@ -525,7 +525,7 @@ class DryDockShop {
 		} else if (e.kind == Kind.ITEM) {
 			StoreItem it = store.getShelfList().get(e.shelf).getItems().get(e.slot);
 			if (!it.isAvailable() || !e.id.equals(it.getItemId())) { // shouldn't happen, but never sell something twice
-				homeplanet.core.HomePlanet.showErrorDialog(name + " is no longer in that store.");
+				homeplanet.core.HomePlanet.showNotice(name + " is no longer in that store.", "Shop");
 				return;
 			}
 			if (!toStorage) {

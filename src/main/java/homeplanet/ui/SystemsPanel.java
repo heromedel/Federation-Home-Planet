@@ -550,7 +550,7 @@ public class SystemsPanel {
 				JOptionPane.showMessageDialog(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off.\nThe Cargo Hold has " + hold() + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
-			if (!homeplanet.core.HomePlanet.confirmNo(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName() + ".\nThe Cargo Hold pays (on Save). Uninstall it?", "Systems")) return;
+			if (!homeplanet.core.HomePlanet.confirmNo(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName() + ".\nThe Cargo Hold pays (on Save).\n\nUninstall it?", "Systems")) return;
 			charge(fee);
 			changes.add("Paid " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName());
 		}
