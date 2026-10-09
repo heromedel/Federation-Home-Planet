@@ -68,6 +68,7 @@ count), `beacons_jumped` (since the last look), `at_store`.
 | `BOUGHT`, `PICKED_UP` | `item` (repeated) | "Bought at a store: Burst Laser II" |
 | `STORE_ARRIVED` | `sector`, `beacon` | "Arrived at a store" |
 | `BEACON_HAZARDS` | `hazard` (repeated: `asteroids`, `sun`, `pulsar`, `pds`, `nebula`, `storm`), `sector`, `beacon` | "Beacon: an asteroid field, a nebula" |
+| `DISTRESS` | `sector`, `beacon` (6.21: she arrived at a distress beacon, known by the distress event's text on screen; before anything she met there) | "Responded to a distress signal." |
 | `SHIP_MET` | `met` (in words), `sector`, `beacon` | "Encountered a Rock pirate." (before 6.09: "Ship met: a Rock pirate") |
 | `SYSTEM_NEW`, `SYSTEM_UPGRADED`, `SYSTEM_REDUCED`, `SYSTEM_REMOVED` | `system` (its title), `level`, `was` | "Shields upgraded to 4" |
 | `REACTOR_UPGRADED`, `REACTOR_REDUCED` | `level`, `was` | "Reactor upgraded to 12" |

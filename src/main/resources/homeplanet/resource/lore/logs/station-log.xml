@@ -199,6 +199,7 @@
 	<entry kind="SHIPMENT_ACCEPTED">A shipment from {peer} was taken into the Cargo Hold: {goods}.</entry>
 	<entry kind="SHIPMENT_RETURNING">A shipment is on its way back to {peer}: {goods}.</entry>
 	<!-- A ship's own voyage, as the station sees it in her saves (6.09, heromedel's words): who she met, and who she beat. -->
+	<entry kind="DISTRESS">Responded to a distress signal.</entry>
 	<entry kind="SHIP_MET">Encountered {met}.</entry>
 	<entry kind="SHIPS_DEFEATED" when="defeated">Defeated {defeated}.</entry>
 	<entry kind="SHIPS_DEFEATED" when="count=1">Defeated a ship.</entry>
