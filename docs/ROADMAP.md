@@ -1225,7 +1225,9 @@ Dock asks one from before 6.13), then fixed; Sandbox Mode's is in Settings besid
 earns in FTL (sectors, ships defeated, scrap, good outcomes, the Rebel Flagship) also counts at her own difficulty's rate
 (heromedel, 6.17): Easy x1, Normal x1.25, Hard x1.5, and the sector's bonus, 1 + 0.1 for each sector after the first (x1.7
 in sector 8): ship x sector x career, from x1 up to x5.1. Away from FTL (achievements, Cruiser unlocks, expeditions,
-ransoms) the career's rate alone. The hidden remainder is kept in ten-thousandths (`rest`; 6.13's `half` reads as 5000).
+ransoms) the career's rate alone. The hidden remainder is kept in ten-thousandths (`rest`; 6.13's `half` reads as 5000). Responding to a distress signal (heromedel, 6.21): +1 for
+arriving at a distress beacon of any kind, earned in FTL; the Captain's Log reads "We responded to a distress signal." with
+what she encountered there after it.
 
 ## 44. The console — built (5.22; harness test ConT)
 
