@@ -149,6 +149,12 @@ public class SystemsPanel {
 		panel.add(ph);
 		power.setBounds(16, CargoBayUI.H - 52 - 26 - 4 - POWER_H + 24, 1248, POWER_H - 24);
 		panel.add(power);
+		FtlButton powerReset = new FtlButton("Reset", FtlFont.CARGO, 70, 22);
+		powerReset.setToolTipText("Put the power back as " + homeplanet.model.Words.her() + " save has it (the simulation saves nothing)");
+		powerReset.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { power.reset(); } });
+		powerReset.setBounds(16 + 1248 - 74, CargoBayUI.H - 52 - 26 - 4 - POWER_H, 70, 22);
+		panel.add(powerReset);
+		panel.setComponentZOrder(powerReset, 0);
 		sysList.setOpaque(false);
 		sysScroll = new javax.swing.JScrollPane(sysList, javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		sysScroll.setOpaque(false);
@@ -716,7 +722,7 @@ public class SystemsPanel {
 		return m;
 	}
 	/** FTL's text for an id (its text files), or null. */
-	private static String ftlText(String id) {
+	static String ftlText(String id) {
 		return DataManager.get() instanceof net.blerf.ftl.parser.DefaultDataManager ? ((net.blerf.ftl.parser.DefaultDataManager) DataManager.get()).getTextById(id) : null;
 	}
 	/**

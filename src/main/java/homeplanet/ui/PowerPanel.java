@@ -31,15 +31,18 @@ final class PowerPanel extends JComponent {
 	// FTL's colours, read off its screen
 	static final Color GREEN = new Color(100, 255, 100), CREAM = new Color(243, 255, 230), GREY = new Color(150, 150, 150);
 	static final Color RED = new Color(255, 60, 50), HATCH_DIM = new Color(150, 150, 150), SLOT_DARK = new Color(30, 24, 28, 200);
-	static final Color TAB_TEXT = new Color(32, 58, 66);
+	static final Color TAB_TEXT = new Color(32, 58, 66), ZOLTAN = new Color(255, 230, 60);
 	/** FTL's order along the panel; the ones a ship hasn't got leave no gap. Doors, Piloting, Sensors and the Backup Battery are left out (heromedel). */
 	static final SystemType[] ORDER = {SystemType.SHIELDS, SystemType.ENGINES, SystemType.MEDBAY, SystemType.CLONEBAY, SystemType.OXYGEN,
 			SystemType.TELEPORTER, SystemType.CLOAKING, SystemType.ARTILLERY, SystemType.MIND, SystemType.HACKING};
 
 	/** A powered system as the panel holds it. */
 	static final class Sys {
-		final SystemType type; final int level, damaged; int power;
+		final SystemType type; final int level, damaged; int power, zoltan;
 		Sys(SystemType type, int level, int damaged, int power) { this.type = type; this.level = level; this.damaged = Math.min(damaged, level); this.power = Math.min(power, level - this.damaged); }
+		int usable() { return level - damaged; }
+		/** The bars it takes from the reactor: a Zoltan's are its own. */
+		int fromReactor() { return Math.max(0, power - zoltan); }
 	}
 	/** A weapon or drone in its slot. */
 	static final class Slot {
@@ -55,7 +58,22 @@ final class PowerPanel extends JComponent {
 	/** The systems a crew member stands at (FTL draws a little figure over them while they're powered). */
 	final java.util.Set<SystemType> manned = new java.util.HashSet<SystemType>();
 
-	PowerPanel() { setOpaque(false); }
+	/** As the save had it, for Reset: each system's power, each weapon's and drone's on or off. */
+	private final Map<Object, Integer> saved = new HashMap<Object, Integer>();
+	/** A refusal flashing over the panel, as FTL's warnings do, and when it goes. */
+	private String warning; private long warningUntil; private boolean warningAtReactor; private int warningX;
+	/** Each slot's centre, so a warning flashes over the slot that was refused. */
+	private final Map<Object, Integer> centreX = new HashMap<Object, Integer>();
+	/** Where each thing was drawn, for the mouse. */
+	private final List<Object[]> hits = new ArrayList<Object[]>();
+
+	PowerPanel() {
+		setOpaque(false);
+		setToolTipText(""); // tips come from getToolTipText(MouseEvent)
+		addMouseListener(new java.awt.event.MouseAdapter() {
+			@Override public void mousePressed(java.awt.event.MouseEvent e) { click(at(e.getX(), e.getY()), javax.swing.SwingUtilities.isRightMouseButton(e)); }
+		});
+	}
 
 	/** Takes the ship as her save has her: her reactor, her systems' power and damage, which weapons and drones are on. */
 	void show(ShipState s) {
@@ -77,6 +95,9 @@ final class PowerPanel extends JComponent {
 			droneSlots.add(new Slot(d.getDroneId(), shortName(b == null ? null : b.getShortTitle(), b == null ? null : b.getTitle(), d.getDroneId()),
 					b == null ? 0 : b.getPower(), false, b == null ? null : iconImage(d.getDroneId(), false), d.isArmed()));
 		}
+		zoltans(s, bp);
+		if (weapons != null) { weapons.power = 0; for (Slot w : weaponSlots) if (w.on) weapons.power += w.power; weapons.power = Math.min(weapons.power, weapons.usable()); }
+		if (drones != null) { drones.power = 0; for (Slot d : droneSlots) if (d.on) drones.power += d.power; drones.power = Math.min(drones.power, drones.usable()); }
 		manned.clear();
 		if (bp != null && bp.getSystemList() != null) for (SystemType t : new SystemType[] {SystemType.SHIELDS, SystemType.ENGINES, SystemType.WEAPONS}) {
 			net.blerf.ftl.xml.ShipBlueprint.SystemList.SystemRoom[] rooms = bp.getSystemList().getSystemRoom(t);
@@ -85,6 +106,11 @@ final class PowerPanel extends JComponent {
 		}
 		weaponSlotCount = Math.max(weaponSlotCount, weaponSlots.size());
 		droneSlotCount = Math.max(droneSlotCount, droneSlots.size());
+		saved.clear();
+		for (Sys x : all()) saved.put(x, x.power);
+		for (Slot x : weaponSlots) saved.put(x, x.on ? 1 : 0);
+		for (Slot x : droneSlots) saved.put(x, x.on ? 1 : 0);
+		warning = null;
 		revalidate();
 		repaint();
 	}
@@ -123,6 +149,211 @@ final class PowerPanel extends JComponent {
 				}
 			} catch (Exception e) { // no pictures, then: the slots show their names alone
 			} finally { try { if (in != null) in.close(); } catch (Exception e) { } }
+		}
+	}
+
+	/** A Zoltan powers the system in the room they stand in, a bar each, free (FTL: "Zoltan Bonus Power"). */
+	private void zoltans(ShipState s, net.blerf.ftl.xml.ShipBlueprint bp) {
+		if (bp == null || bp.getSystemList() == null) return;
+		for (Sys x : all()) {
+			net.blerf.ftl.xml.ShipBlueprint.SystemList.SystemRoom[] rooms = bp.getSystemList().getSystemRoom(x.type);
+			if (rooms == null || rooms.length == 0) continue;
+			int n = 0;
+			for (net.blerf.ftl.parser.SavedGameParser.CrewState c : s.getCrewList()) if (c.getRace() == net.blerf.ftl.parser.SavedGameParser.CrewType.ENERGY && c.getRoomId() == rooms[0].getRoomId()) n++;
+			x.zoltan = Math.min(n, x.usable());
+			if (x.type != SystemType.WEAPONS && x.type != SystemType.DRONE_CTRL) x.power = Math.min(x.usable(), x.power + x.zoltan);
+		}
+	}
+	/** Every powered system the panel shows, Weapons and Drones too. */
+	private List<Sys> all() {
+		List<Sys> a = new ArrayList<Sys>(systems);
+		if (weapons != null) a.add(weapons);
+		if (drones != null) a.add(drones);
+		return a;
+	}
+	/** The reactor's bars not in use. */
+	int left() { int used = 0; for (Sys x : all()) used += x.fromReactor(); return reactor - used; }
+
+	// ---- The rules (FTL's, as its screen and its own warnings have them) ----
+
+	/** A click on something: a system takes a bar (left) or gives one back (right); a weapon or drone goes on or off. */
+	void click(Object what, boolean right) {
+		if (what == null || "reactor".equals(what)) return;
+		warningX = centreX.containsKey(what) ? centreX.get(what) : getWidth() / 2;
+		boolean done;
+		if (what instanceof Sys) {
+			Sys x = (Sys) what;
+			if (x == weapons || x == drones) done = right ? lastOff(x == weapons ? weaponSlots : droneSlots, x) : firstOn(x == weapons ? weaponSlots : droneSlots, x);
+			else done = right ? remove(x) : add(x);
+		} else if (what instanceof Slot) {
+			Slot sl = (Slot) what;
+			boolean drone = droneSlots.contains(sl);
+			Sys x = drone ? drones : weapons;
+			done = sl.on ? off(sl, x) : !right && on(sl, x);
+		} else return;
+		sound(done ? (right || (what instanceof Slot && !((Slot) what).on) ? "select_down2" : "select_up1") : "select_b_fail1");
+		repaint();
+	}
+	/** One more bar (Shields: a barrier, two bars). */
+	boolean add(Sys x) {
+		int step = x.type == SystemType.SHIELDS ? 2 : 1;
+		if (x.power + step > x.usable()) {
+			if (x.type == SystemType.SHIELDS && x.damaged == 0 && x.power + 1 == x.usable()) warn("warning_needs_upgrade", "REQUIRES\nSYSTEM\nUPGRADE", false);
+			return false;
+		}
+		if (left() < step) { warn("warning_no_power", "NOT\nENOUGH\nPOWER", true); return false; }
+		x.power += step;
+		return true;
+	}
+	/** One bar fewer (Shields: a barrier), never a Zoltan's. */
+	boolean remove(Sys x) {
+		int step = x.type == SystemType.SHIELDS && (x.power - x.zoltan) % 2 == 0 ? 2 : 1;
+		if (x.power - step < x.zoltan) return false;
+		x.power -= step;
+		return true;
+	}
+	/** A weapon or drone on, with its whole power, if it fits. */
+	boolean on(Slot sl, Sys x) {
+		if (x == null || sl.power > x.level) { warn("warning_needs_upgrade", "REQUIRES\nSYSTEM\nUPGRADE", false); return false; }
+		if (sl.power > x.usable()) { warn("warning_system_broken", "SYSTEM\nBROKEN", false); return false; }
+		if (x.power + sl.power > x.usable()) { warn("warning_no_system_power", "NOT ENOUGH\nSYSTEM POWER", false); return false; }
+		int fromReactor = Math.max(0, x.power + sl.power - x.zoltan) - x.fromReactor();
+		if (left() < fromReactor) { warn("warning_no_power", "NOT\nENOUGH\nPOWER", true); return false; }
+		sl.on = true;
+		x.power += sl.power;
+		return true;
+	}
+	boolean off(Slot sl, Sys x) {
+		sl.on = false;
+		if (x != null) x.power = Math.max(0, x.power - sl.power);
+		return true;
+	}
+	/** Clicking Weapons' or Drones' own icon: the first one off that fits goes on (FTL's Add Power on the system). */
+	private boolean firstOn(List<Slot> slots, Sys x) {
+		for (Slot sl : slots) if (!sl.on && sl.power > 0 && x.power + sl.power <= x.usable()) {
+			String w = warning; long u = warningUntil;
+			if (on(sl, x)) return true;
+			warning = w; warningUntil = u;
+		}
+		for (Slot sl : slots) if (!sl.on && sl.power > 0) return on(sl, x); // none fits: FTL's warning for the first
+		return false;
+	}
+	/** Right on the icon: the rightmost one on goes off (as FTL depowers). */
+	private boolean lastOff(List<Slot> slots, Sys x) {
+		for (int i = slots.size() - 1; i >= 0; i--) if (slots.get(i).on) return off(slots.get(i), x);
+		return false;
+	}
+	/** Back as the save had it. */
+	void reset() {
+		for (Sys x : all()) if (saved.containsKey(x)) x.power = saved.get(x);
+		for (Slot x : weaponSlots) if (saved.containsKey(x)) x.on = saved.get(x) == 1;
+		for (Slot x : droneSlots) if (saved.containsKey(x)) x.on = saved.get(x) == 1;
+		warning = null;
+		repaint();
+	}
+	/** FTL's own warning, in its words from its text files, flashing for a moment. */
+	private void warn(String id, String fallback, boolean atReactor) {
+		String t = SystemsPanel.ftlText(id);
+		warning = (t == null ? fallback : t).replace("\\n", "\n");
+		warningAtReactor = atReactor;
+		warningUntil = System.currentTimeMillis() + 1600;
+		javax.swing.Timer tm = new javax.swing.Timer(1700, new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { repaint(); } });
+		tm.setRepeats(false);
+		tm.start();
+	}
+
+	/** FTL's own clicks from its ftl.dat (audio/waves/ui), played as the game plays them; quiet when there's no sound device. */
+	private static final Map<String, byte[]> SOUNDS = new HashMap<String, byte[]>();
+	static void sound(final String name) {
+		new Thread("power-sound") {
+			@Override public void run() {
+				try {
+					byte[] b;
+					synchronized (SOUNDS) {
+						b = SOUNDS.get(name);
+						if (b == null) {
+							java.io.InputStream in = DataManager.get().getResourceInputStream("audio/waves/ui/" + name + ".wav");
+							java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+							byte[] buf = new byte[8192];
+							for (int n; (n = in.read(buf)) > 0;) bo.write(buf, 0, n);
+							in.close();
+							b = bo.toByteArray();
+							SOUNDS.put(name, b);
+						}
+					}
+					final javax.sound.sampled.Clip clip = javax.sound.sampled.AudioSystem.getClip();
+					clip.open(javax.sound.sampled.AudioSystem.getAudioInputStream(new java.io.ByteArrayInputStream(b)));
+					clip.addLineListener(new javax.sound.sampled.LineListener() {
+						public void update(javax.sound.sampled.LineEvent e) { if (e.getType() == javax.sound.sampled.LineEvent.Type.STOP) clip.close(); }
+					});
+					clip.start();
+				} catch (Throwable t) { // no sound: the panel works the same
+				}
+			}
+		}.start();
+	}
+
+	/** What's under the mouse: a system, a weapon or drone slot, the reactor ("reactor"), or null. */
+	private Object at(int x, int y) {
+		for (int i = hits.size() - 1; i >= 0; i--) if (((java.awt.Rectangle) hits.get(i)[0]).contains(x, y)) return hits.get(i)[1];
+		return null;
+	}
+	@Override public String getToolTipText(java.awt.event.MouseEvent e) {
+		Object o = at(e.getX(), e.getY());
+		return o == null ? null : tip(o);
+	}
+	@Override public java.awt.Point getToolTipLocation(java.awt.event.MouseEvent e) { return new java.awt.Point(e.getX() + 14, e.getY() - 10 - tipHeight(e)); }
+	private int tipHeight(java.awt.event.MouseEvent e) { String t = getToolTipText(e); return t == null ? 0 : FtlTip.size(t).height; }
+	@Override public javax.swing.JToolTip createToolTip() { FtlTip t = new FtlTip(); t.setComponent(this); return t; }
+
+	/** The hover, in FTL's words: its tooltip for the system, the level, the status; a weapon's name and power. */
+	String tip(Object o) {
+		if ("reactor".equals(o)) { String t = SystemsPanel.ftlText("tooltip_powerTotal"); return (t == null ? "Reactor: Unused reactor energy available to power your systems." : t) + "\n\n" + left() + " of " + reactor + " bars free"; }
+		if (o instanceof Sys) {
+			Sys x = (Sys) o;
+			String id = x.type.getId();
+			String head = SystemsPanel.ftlText("tooltip_" + (id.equals("pilot") ? "pilot" : id));
+			StringBuilder b = new StringBuilder(head == null ? DryDockShop.systemTitle(id) : head);
+			String said = SystemsPanel.levelLabel(id, x.level), lv = SystemsPanel.ftlText("level");
+			if (!said.isEmpty()) b.append("\n\n").append(lv == null ? "Level " + x.level + ": " + said : lv.replace("\\1", Integer.toString(x.level)).replace("\\2", said));
+			b.append("\n\n").append(word("status", "Status:"));
+			b.append("\n-").append(x.power >= x.level ? word("full_powered", "Fully Powered") : x.power > 0 ? word("partial_powered", "Partially Powered") : word("unpowered", "Unpowered"));
+			if (x.damaged > 0) b.append("\n-").append(x.damaged >= x.level ? word("destroyed", "Destroyed") : word("damaged", "Damaged"));
+			if (x.zoltan > 0) b.append("\n-").append(word("zoltan", "Zoltan Bonus Power"));
+			String add = SystemsPanel.ftlText("add_power"), rem = SystemsPanel.ftlText("remove_power");
+			b.append("\n\n").append(add == null ? "Add Power: Left Click" : add.replace("\\1", "Left Click"));
+			b.append("\n").append(rem == null ? "Remove Power: Right Click" : rem.replace("\\1", "Right Click"));
+			return b.toString();
+		}
+		Slot sl = (Slot) o;
+		return sl.name + "\nPower: " + sl.power + "\n\n" + (sl.on ? "Click to depower" : "Click to power");
+	}
+	private static String word(String id, String fallback) { String t = SystemsPanel.ftlText(id); return t == null ? fallback : t; }
+
+	/** FTL's tooltip: a black box, a cream border, its words in white. */
+	static final class FtlTip extends javax.swing.JToolTip {
+		FtlTip() { setOpaque(true); setBorder(null); }
+		static Dimension size(String t) {
+			int w = 0, h = 0;
+			for (String line : lines(t)) { w = Math.max(w, FtlFont.BODY.width(line)); h += 16; }
+			return new Dimension(w + 20, h + 14);
+		}
+		static List<String> lines(String t) {
+			List<String> out = new ArrayList<String>();
+			for (String para : t.split("\n", -1)) { if (para.isEmpty()) out.add(""); else out.addAll(InfoTip.wrap(para, FtlFont.BODY, 440)); }
+			return out;
+		}
+		@Override public Dimension getPreferredSize() { return size(getTipText() == null ? "" : getTipText()); }
+		@Override public void paint(Graphics g0) {
+			Graphics2D g = (Graphics2D) g0.create();
+			g.setColor(Color.black);
+			g.fillRect(0, 0, getWidth(), getHeight());
+			g.setColor(CREAM);
+			g.setStroke(new BasicStroke(2f));
+			g.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
+			int y = 8;
+			for (String line : lines(getTipText() == null ? "" : getTipText())) { if (!line.isEmpty()) text(g, line, FtlFont.BODY, Color.white, 10, y); y += 16; }
+			g.dispose();
 		}
 	}
 
@@ -171,6 +402,7 @@ final class PowerPanel extends JComponent {
 		Graphics2D g = (Graphics2D) g0.create();
 		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 		Layout l = layout(getWidth());
+		hits.clear();
 		// FTL draws its panel over dark space; here the station's dark box behind it, as wide as what's in it
 		g.setColor(CargoParts.BOX);
 		g.fillPolygon(CargoParts.cut(0, 0, Math.min(getWidth(), Math.max(l.wireEnd1, l.wireEnd2) + 14), getHeight(), 6));
@@ -188,16 +420,22 @@ final class PowerPanel extends JComponent {
 			paintSystem(g, drones != null ? drones : new Sys(SystemType.DRONE_CTRL, 0, 0, 0), l.cx.get("drones"), l.baseline2);
 			paintBox(g, l.dronesBoxX, l.baseline2, droneSlots, droneSlotCount, "DRONES", weaponSlotCount + 1);
 		}
+		if (warning != null && System.currentTimeMillis() < warningUntil) { // FTL's warning, over the panel where it was refused
+			String[] lines = warning.split("\n");
+			int wx = warningAtReactor ? l.reactorX + REACTOR_W + HATCH_W + 8 : warningX, wy = 4;
+			for (String line : lines) {
+				int lw = FtlFont.MENU.width(line);
+				CargoParts.text(g, line, FtlFont.MENU, Color.white, warningAtReactor ? wx : Math.max(4, wx - lw / 2), wy);
+				wy += 18;
+			}
+		}
 		g.dispose();
 	}
 
 	/** The reactor column: the power left in green, what's in use as empty bars; the hatched strip beside it, bright beside the green. */
 	private void paintReactor(Graphics2D g, Layout l) {
-		int used = 0;
-		for (Sys s : systems) used += s.power;
-		if (weapons != null) used += weapons.power;
-		if (drones != null) used += drones.power;
-		int left = Math.max(0, reactor - used);
+		int left = Math.max(0, left());
+		hits.add(new Object[] {new java.awt.Rectangle(l.reactorX - 2, 0, REACTOR_W + HATCH_W + 6, l.baseline1), "reactor"});
 		int room = l.baseline1 - 17 - 4, step = reactor * REACTOR_STEP > room ? Math.max(3, room / Math.max(1, reactor)) : REACTOR_STEP, h = Math.max(2, step - 2);
 		int x = l.reactorX, hx = x + REACTOR_W + 2;
 		for (int k = 0; k < reactor; k++) {
@@ -213,11 +451,17 @@ final class PowerPanel extends JComponent {
 		g.setStroke(new BasicStroke(2f));
 		int topAll = l.baseline1 - 17 - (reactor - 1) * step - h;
 		g.drawLine(hx + HATCH_W, Math.min(topAll, l.baseline1 - 17), hx + HATCH_W, l.baseline1 - 8);
-		if (left == 0) for (int i = 0; i < 3; i++) text(g, new String[] {"NOT", "ENOUGH", "POWER"}[i], FtlFont.SLOT, GREY, x, topAll - 40 + i * 12);
+		if (left == 0 && (warning == null || System.currentTimeMillis() >= warningUntil || !warningAtReactor)) { // FTL's note over an empty reactor, in grey
+			String t = SystemsPanel.ftlText("warning_no_power");
+			int ty = 4;
+			for (String line : (t == null ? "NOT\\nENOUGH\\nPOWER" : t).split("\\\\n")) { text(g, line, FtlFont.SLOT, GREY, hx + HATCH_W + 8, ty); ty += 11; }
+		}
 	}
 
 	/** One system: its round icon (green, grey, orange or red as FTL colours it), its bars above, the tick down to the wire, its side panel. */
 	private void paintSystem(Graphics2D g, Sys s, int cx, int baseline) {
+		hits.add(new Object[] {new java.awt.Rectangle(cx - 17, baseline - 46 - Math.max(1, s.level) * BAR_STEP, 34, Math.max(1, s.level) * BAR_STEP + 36), s});
+		centreX.put(s, cx);
 		g.setColor(CREAM);
 		g.setStroke(new BasicStroke(2f));
 		g.drawLine(cx - 10, baseline, cx - 3, baseline - 8);
@@ -230,7 +474,8 @@ final class PowerPanel extends JComponent {
 			int bottom = baseline - 44 - k * BAR_STEP, top = bottom - BAR_H, x = cx - BAR_W / 2;
 			if (k >= s.level - s.damaged) { // broken, at the top: red, slashed
 				g.setColor(RED); g.setStroke(new BasicStroke(1f)); g.drawRect(x, top, BAR_W - 1, BAR_H - 1); g.drawLine(x + 2, bottom - 2, x + BAR_W - 3, top + 1);
-			} else if (k < s.power) { g.setColor(GREEN); g.fillRect(x, top, BAR_W, BAR_H); }
+			} else if (k < s.zoltan) { g.setColor(ZOLTAN); g.fillRect(x, top, BAR_W, BAR_H); } // a Zoltan's bar, free
+			else if (k < s.power) { g.setColor(GREEN); g.fillRect(x, top, BAR_W, BAR_H); }
 			else { g.setColor(CREAM); g.setStroke(new BasicStroke(1f)); g.drawRect(x, top, BAR_W - 1, BAR_H - 1); }
 		}
 		if (sidePanel(s.type)) { // the plate and its buttons: layers on one canvas, as FTL keeps them
@@ -285,6 +530,8 @@ final class PowerPanel extends JComponent {
 	 * and its key at the bottom right. An empty slot is a dark box.
 	 */
 	private void paintSlot(Graphics2D g, int x, int y, Slot s, int key) {
+		if (s != null) hits.add(new Object[] {new java.awt.Rectangle(x, y, SLOT_W, SLOT_H), s});
+		if (s != null) centreX.put(s, x + SLOT_W / 2);
 		int bx = x + 10;
 		if (s == null) { g.setColor(SLOT_DARK); g.fillRect(x, y, SLOT_W, SLOT_H); g.setColor(GREY); g.setStroke(new BasicStroke(2f)); g.drawRect(x + 1, y + 1, SLOT_W - 2, SLOT_H - 2); return; }
 		boolean drone = droneSlots.contains(s);

@@ -32,6 +32,14 @@ the ship's reactor will go round in FTL before taking her out. It is a simulatio
 6. **Later:** dragging weapons and drones between slots as in FTL. That one changes the ship (the slot order is in
    her save), so it would be kept by the Cargo Bay's Save, not the simulation.
 
+## Where it stands
+
+- 6.43: steps 2 to 5 built (`ui/PowerPanel`, along the bottom of the Refit tab, the ship and the lists above it; one
+  row at FTL's own size, which fits even a ship with every system). Checked side by side with FTL's screen, and by
+  PowerT (the rules). FTL's warnings, hover words and clicks come from the player's own ftl.dat. A Zoltan's bar is
+  drawn yellow and is free. Reset puts it back as the save had it.
+- Next: step 6, dragging weapons and drones between slots, when heromedel says.
+
 ## Notes from the study (6.42, FTL 1.6.14 under Wine)
 
 **The look**
