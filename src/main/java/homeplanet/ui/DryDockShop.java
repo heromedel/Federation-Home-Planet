@@ -88,9 +88,14 @@ class DryDockShop {
 	private final JPanel panel = new JPanel(null);
 	private final JPanel content = new JPanel(null);
 	private final JScrollPane scroll = new JScrollPane(content, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-	private final CargoParts.Label scrapLbl = new CargoParts.Label("", FtlFont.MENU, CargoParts.TEXT, -1);
+	/** Whose scrap the Shop spends, the Shop's own scrap count, and what it buys for, in words (6.44). */
+	private final CargoParts.ScrapCount scrapCount = new CargoParts.ScrapCount();
+	private final FlipSwitch buyFor = new FlipSwitch("Ship", "Cargo Bay");
+	private final CargoParts.Label bf = new CargoParts.Label("BUYING FOR", FtlFont.CARGO, CargoParts.DIM, -1);
+	/** The cfg line for the Shop's switch: "cargo" while it buys for the Cargo Hold (the ship is the default). */
+	static final String CFG_BUYS_FOR = "shop_buys_for";
 	private final CargoParts.Label storesLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 1);
-	private FtlButton buyerBtn, info;
+	private FtlButton info;
 	private final JLabel shipPic = new JLabel();
 	private final CargoParts.Label classLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, -1);
 	private final Aboard aboard = new Aboard();
@@ -98,20 +103,17 @@ class DryDockShop {
 
 	/** The Shop tab (built once; its contents are rebuilt from the saves). */
 	JPanel panel() {
-		if (buyerBtn != null) return panel;
+		if (info != null) return panel;
 		panel.setOpaque(false);
-		// the Trade tab's left side: her picture, a small label, the drop-down, and her grey line with an info button
+		// the Trade tab's left side: the picture, what it buys for, the Ship | Cargo Bay switch, the grey line with an info button
 		int dx = 16 + CargoBayUI.DROP_IN;
 		shipPic.setBounds(16, 8, 120, 62);
 		shipPic.setHorizontalAlignment(JLabel.CENTER);
 		shipPic.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 		shipPic.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { if (!toStorage) bay.showCurrentShipInfo(); } });
 		panel.add(shipPic);
-		CargoParts.Label bf = new CargoParts.Label("BUYING FOR", FtlFont.CARGO, CargoParts.DIM, -1);
-		bf.setBounds(dx, 6, CargoBayUI.DROP_W, 16);
+		bf.setBounds(dx, 6, CargoBayUI.DROP_W + 200, 16);
 		panel.add(bf);
-		buyerBtn = CargoBayUI.dropButton();
-		buyerBtn.setBounds(dx, 22, CargoBayUI.DROP_W, 30);
 		info = new CargoParts.IconButton(CargoParts.infoIcon(), "", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { if (toStorage) bay.storageInfo(); else bay.showCurrentShipInfo(); }
 		});
@@ -119,22 +121,22 @@ class DryDockShop {
 		panel.add(info);
 		classLbl.setBounds(dx + 30, 58, CargoBayUI.DROP_W - 30, 16);
 		panel.add(classLbl);
-		buyerBtn.setToolTipText("Buy for the ship picked in the Cargo Bay, or for the Cargo Hold");
-		buyerBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				javax.swing.JPopupMenu m = new javax.swing.JPopupMenu();
-				javax.swing.JMenuItem a = new javax.swing.JMenuItem(bay.currentSave.getPlayerShipName() + " (your ship)");
-				javax.swing.JMenuItem b = new javax.swing.JMenuItem("Cargo Hold (items, supplies and systems)");
-				a.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toStorage = false; rebuild(); } });
-				b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { toStorage = true; rebuild(); } });
-				m.add(a); m.add(b);
-				CargoParts.darkPopup(m);
-				m.show(buyerBtn, 0, buyerBtn.getHeight());
+		// Ship | Cargo Bay (6.44, heromedel): whose scrap buys, and where it goes; remembered, as the Refit's is
+		java.awt.Dimension ps = buyFor.getPreferredSize();
+		buyFor.setBounds(dx, 24, ps.width, ps.height);
+		buyFor.setToolTipText("Buy for the ship picked in the Cargo Bay (" + homeplanet.model.Words.her() + " scrap pays), or for the Cargo Hold (its scrap pays)");
+		buyFor.onChange(new Runnable() {
+			public void run() {
+				toStorage = buyFor.right();
+				if (toStorage) homeplanet.core.HomePlanet.config.setProperty(CFG_BUYS_FOR, "cargo");
+				else homeplanet.core.HomePlanet.config.remove(CFG_BUYS_FOR); // the ship is the default: the line only while it's the Cargo Hold
+				homeplanet.core.HomePlanet.saveConfig();
+				rebuild();
 			}
 		});
-		panel.add(buyerBtn);
-		scrapLbl.setBounds(dx + CargoBayUI.DROP_W + 20, 22, 260, 30);
-		panel.add(scrapLbl);
+		panel.add(buyFor);
+		scrapCount.setBounds(dx + CargoBayUI.DROP_W + 20, 22, 300, 30);
+		panel.add(scrapCount);
 		aboard.setBounds(dx + CargoBayUI.DROP_W + 20, 54, 1264 - (dx + CargoBayUI.DROP_W + 20), 22);
 		panel.add(aboard);
 		CargoParts.Label title = new CargoParts.Label("STORES AT YOUR SHIPS' BEACONS", FtlFont.MENU, CargoParts.GOLD, 1);
@@ -162,7 +164,7 @@ class DryDockShop {
 		dirty.clear();
 		purchases.clear();
 		bought.clear();
-		toStorage = false;
+		toStorage = "cargo".equals(homeplanet.core.HomePlanet.config.getProperty(CFG_BUYS_FOR)); // as it was left (6.44)
 		rebuild();
 	}
 
@@ -181,17 +183,19 @@ class DryDockShop {
 
 	/** Lays out every store: its items in three columns, then its systems and supplies. */
 	void rebuild() {
-		if (buyerBtn == null) panel();
+		if (info == null) panel();
 		content.removeAll();
 		if (bay.currentPath == null) { content.revalidate(); content.repaint(); return; }
 		SavedGameState buyer = buyer();
 		int scrap = buyer == null ? 0 : buyer.getPlayerShip().getScrapAmt();
-		buyerBtn.setText(toStorage ? "Cargo Hold" : bay.currentSave.getPlayerShipName());
+		buyFor.setRight(toStorage);
+		bf.setText("BUYING FOR " + (toStorage ? "THE CARGO HOLD" : homeplanet.parser.ShipNames.the(bay.currentSave.getPlayerShipName()).toUpperCase()));
 		shipPic.setIcon(toStorage ? null : bay.shipIcon(bay.currentSave));
 		shipPic.setToolTipText(toStorage ? null : "Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		classLbl.setText(toStorage ? "Items, supplies, and systems to fit at Refit" : CargoBayUI.shipClass(bay.currentState));
 		info.setToolTipText(toStorage ? "What the Cargo Hold is" : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report, and to rename " + homeplanet.model.Words.herObj());
-		scrapLbl.setText(scrap + " scrap to spend");
+		scrapCount.set(scrap, "to spend");
+		scrapCount.setToolTipText((toStorage ? "The Cargo Hold" : homeplanet.model.Words.cap(homeplanet.parser.ShipNames.the(bay.currentSave.getPlayerShipName()))) + " has " + scrap + " scrap to spend here (paid on Save)");
 		aboard.show(buyer, toStorage);
 		List<Entry> entries = buildEntries();
 		int stores = 0;

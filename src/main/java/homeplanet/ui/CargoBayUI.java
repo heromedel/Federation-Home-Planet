@@ -1297,12 +1297,14 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		// FTL's ship is asked about only when this save really changes her, whichever ship is picked (heromedel, 5.81): a
 		// purchase for the Cargo Hold with her picked left her as she was and still asked; one from her own store with
 		// another ship picked changed her and didn't ask, and FTL, mid-game, put the item back on the shelf
+		try { systems.payFromShip(); } // the Dry Dock's bill, when the ship pays (6.44): taken before her save is looked at, so it's written with her
+		catch (java.io.IOException e) { HomePlanet.showErrorDialog(e.getMessage()); return false; }
 		Ship flying = Vault.get().boarded();
 		boolean currentSame = currentShip != null && currentShip == flying && !changes(flying, currentSave);
 		boolean tradeSame = tradeShip != null && tradePath != null && tradeShip == flying && !changes(flying, tradeSave);
 		boolean flyingChanged = flying != null && ((currentShip == flying && !currentSame) || (tradeShip == flying && tradePath != null && !tradeSame)
 				|| (shop.touched().contains(flying) && changes(flying, shop.copyOf(flying))));
-		if (flyingChanged && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) return false;
+		if (flyingChanged && !homeplanet.core.GameGuard.allows(this, "save the Cargo Bay")) { systems.giveBackShipBill(); return false; }
 		int billed = 0; // taken from the Cargo Hold in memory (it's the partner): given back if the save fails
 		try {
 			boolean partner = tradeShip != null && tradePath != null;
@@ -1326,12 +1328,14 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		} catch (Vault.StaleException e) {
 			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
 			systems.giveBackBill(); // or to the shop's copy of the hold (5.61)
+			systems.giveBackShipBill();
 			log.warn("Save refused: {}", e.getMessage());
 			HomePlanet.showErrorDialog(e.getMessage() + "\n\nPress Reset to load " + homeplanet.model.Words.herObj() + " as " + homeplanet.model.Words.she() + " is now, then make the changes again.");
 			return false;
 		} catch (Exception e) {
 			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
 			systems.giveBackBill(); // or to the shop's copy of the hold (5.61)
+			systems.giveBackShipBill();
 			log.error("Saving failed", e);
 			HomePlanet.showErrorDialog("The Home Planet Station could not save the changes:\n" + e);
 			return false;

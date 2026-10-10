@@ -29,6 +29,7 @@ public class GuiT {
   final MainFrame f = (MainFrame) frame[0];
   bill(v, f, false);
   bill(v, f, true);
+  shipPays(v, f);
   systemLimit(v, f);
   auction(v, f);
   junkyardInfo(v, f);
@@ -145,6 +146,33 @@ public class GuiT {
    q[0] = v.storageScrap(); q[1] = call(sys, sys.getClass(), "hold", new Class<?>[0]);
   } catch (Exception e) { throw new RuntimeException(e); } } });
   Setup.chk("B: a repair, then Reset: nothing taken" + tag, Integer.valueOf(64).equals(q[0]) && Integer.valueOf(64).equals(q[1]));
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { f.showSpaceDock(); } catch (Exception e) { throw new RuntimeException(e); } } });
+ }
+
+ /** The Refit's Ship | Cargo Bay switch on Ship (6.44): the Dry Dock's bill comes from the ship's own scrap on Save, the Cargo Hold untouched; remembered in the cfg. */
+ static void shipPays(final Vault v, final MainFrame f) throws Exception {
+  SavedGameParser.SavedGameState g = v.readCopy(v.boarded()).save; g.getPlayerShip().setHullAmt(21); g.getPlayerShip().setScrapAmt(50); v.write(v.boarded(), g);
+  hold(v, 100);
+  final Object[] r = new Object[6];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showCargoBay();
+   CargoBayUI bay = (CargoBayUI) field(f, MainFrame.class, "cargoBay");
+   bay.init();
+   Object sys = field(bay, CargoBayUI.class, "systems");
+   Object sw = field(sys, sys.getClass(), "payer");
+   ((java.awt.Component) sw).dispatchEvent(new java.awt.event.MouseEvent((java.awt.Component) sw, java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 5, 5, 1, false)); // Cargo Bay -> Ship
+   r[0] = HomePlanet.config.getProperty("refit_pays");
+   call(sys, sys.getClass(), "repairHull", new Class<?>[] {int.class}, Integer.MAX_VALUE);
+   r[1] = call(sys, sys.getClass(), "hold", new Class<?>[0]);
+   r[2] = bay.saveAll();
+   SavedGameParser.SavedGameState after = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
+   r[3] = after.getPlayerShip().getScrapAmt(); r[4] = after.getPlayerShip().getHullAmt(); r[5] = v.storageScrap();
+   ((java.awt.Component) sw).dispatchEvent(new java.awt.event.MouseEvent((java.awt.Component) sw, java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 5, 5, 1, false)); // back to the Cargo Bay
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("S: the Refit's switch on Ship is remembered (refit_pays=ship)", "ship".equals(r[0]));
+  Setup.chk("S: 9 hull points from the ship's 50 scrap: 14 left to spend before Save", Integer.valueOf(14).equals(r[1]));
+  Setup.chk("S: Save takes it from her (14 left, hull 30), the Cargo Hold untouched (100)", Boolean.TRUE.equals(r[2]) && Integer.valueOf(14).equals(r[3]) && Integer.valueOf(30).equals(r[4]) && Integer.valueOf(100).equals(r[5]));
+  Setup.chk("S: switched back, the cfg line goes (the Cargo Hold is the default)", HomePlanet.config.getProperty("refit_pays") == null);
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { f.showSpaceDock(); } catch (Exception e) { throw new RuntimeException(e); } } });
  }
 
