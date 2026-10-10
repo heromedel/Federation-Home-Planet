@@ -219,7 +219,7 @@
 	<line kind="band" job="defend" band="failed">left {his} post when the raiders pushed, and the others had to cover the gap</line>
 	<line kind="band" job="defend" band="success">was successful holding the line</line>
 	<line kind="band" job="defend" band="success">was successful, and {his} part of the line held</line>
-	<line kind="band" job="defend" band="high">was very successful: the raiders broke on {his} position</line>
+	<line kind="band" job="defend" band="high">was very successful: {he} held {his} position and drove the raiders off</line>
 	<line kind="band" job="defend" band="high">was very successful: no raider got within reach of what {he} was guarding</line>
 	<line kind="band" job="defend" band="top">was extremely successful and turned the raiders around single-handed</line>
 	<line kind="band" job="defend" band="top">was extremely successful and is the reason there was anything left to defend</line>
@@ -238,9 +238,9 @@
 	<line kind="band" job="attack" band="failed">lost {his} nerve in the attack</line>
 	<line kind="band" job="attack" band="failed">hung back when the shooting started</line>
 	<line kind="band" job="attack" band="success">was successful in the attack</line>
-	<line kind="band" job="attack" band="success">was successful, and was there when the base fell</line>
+	<line kind="band" job="attack" band="success">was successful, and was there when the enemy base fell</line>
 	<line kind="band" job="attack" band="high">was very successful: {he} was first through the breach</line>
-	<line kind="band" job="attack" band="high">was very successful: the defenders fell back wherever {he} went</line>
+	<line kind="band" job="attack" band="high">was very successful: {he} drove the defenders back wherever {he} went</line>
 	<line kind="band" job="attack" band="top">was extremely successful and led the attack home</line>
 	<line kind="band" job="attack" band="top">was extremely successful and took the enemy's command post alone</line>
 
@@ -439,7 +439,7 @@
 	<line kind="band" job="capture" band="failed">followed the wrong ship for two days</line>
 	<line kind="band" job="capture" band="success">was successful in the capture</line>
 	<line kind="band" job="capture" band="success">was successful, and the quarry is in custody</line>
-	<line kind="band" job="capture" band="high">was very successful: the quarry gave up without a fight</line>
+	<line kind="band" job="capture" band="high">was very successful: {he} brought the quarry in without a fight</line>
 	<line kind="band" job="capture" band="high">was very successful: {he} was waiting where the quarry ran</line>
 	<line kind="band" job="capture" band="top">was extremely successful and brought the quarry in alone</line>
 	<line kind="band" job="capture" band="top">was extremely successful and took the quarry without firing a shot</line>
@@ -458,9 +458,9 @@
 	<line kind="band" job="board" band="failed">was pushed back to the airlock</line>
 	<line kind="band" job="board" band="failed">was cut off from the others and had to fall back</line>
 	<line kind="band" job="board" band="success">was successful in the boarding</line>
-	<line kind="band" job="board" band="success">was successful, and {his} half of the ship was taken</line>
+	<line kind="band" job="board" band="success">was successful, and took {his} half of the ship</line>
 	<line kind="band" job="board" band="high">was very successful: {he} took the bridge</line>
-	<line kind="band" job="board" band="high">was very successful: the enemy crew surrendered to {him}</line>
+	<line kind="band" job="board" band="high">was very successful: {he} made the enemy crew surrender</line>
 	<line kind="band" job="board" band="top">was extremely successful and took the ship nearly single-handed</line>
 	<line kind="band" job="board" band="top">was extremely successful and had the enemy crew locked in their own brig</line>
 
@@ -478,7 +478,7 @@
 	<line kind="band" job="hijack" band="failed">tripped every alarm aboard</line>
 	<line kind="band" job="hijack" band="failed">was spotted at the airlock, and the job fell apart from there</line>
 	<line kind="band" job="hijack" band="success">was successful in the hijack</line>
-	<line kind="band" job="hijack" band="success">was successful, and the ship was taken</line>
+	<line kind="band" job="hijack" band="success">was successful, and helped take the ship</line>
 	<line kind="band" job="hijack" band="high">was very successful: the ship was away before anyone noticed</line>
 	<line kind="band" job="hijack" band="high">was very successful: {he} had the locks open before the guards changed</line>
 	<line kind="band" job="hijack" band="top">was extremely successful and had the ship out of dock in minutes</line>
@@ -519,7 +519,7 @@
 	<line kind="band" job="spiders" band="failed">refused to go any further into the dark, and nobody blames {him}</line>
 	<line kind="band" job="spiders" band="success">was successful fighting them back</line>
 	<line kind="band" job="spiders" band="success">was successful, and kept the spiders off the others</line>
-	<line kind="band" job="spiders" band="high">was very successful: the spiders went back down the hole</line>
+	<line kind="band" job="spiders" band="high">was very successful: {he} drove the spiders back down the hole</line>
 	<line kind="band" job="spiders" band="high">was very successful: {he} killed the biggest of them</line>
 	<line kind="band" job="spiders" band="top">was extremely successful and burned the nest out</line>
 	<line kind="band" job="spiders" band="top">was extremely successful and burned out every nest {he} found</line>
