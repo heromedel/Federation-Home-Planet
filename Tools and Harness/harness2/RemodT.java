@@ -22,6 +22,8 @@ public class RemodT {
   for (String cls : new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_CIRCLE", "PLAYER_SHIP_ENERGY"}) { System.out.println("STEP overhaul " + cls); overhaul(v, f, cls, work); }
   System.out.println("STEP uninstall");
   uninstall(v, f);
+  System.out.println("STEP refit");
+  refit();
   for (String sh : GuiT.shown) System.out.println("POPUP " + sh.replace("\n", " / "));
   Setup.done();
   System.exit(0);
@@ -113,6 +115,29 @@ public class RemodT {
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { ((JDialog) o[0]).dispose(); } });
  }
 
+ /**
+  * The Refit tab's hover against FTL's own upgrade screen (6.42, read off FTL 1.6.14 under Wine, system by system): the
+  * level lines and prices, the maximum, FTL's descriptions.
+  */
+ static void refit() throws Exception {
+  Class<?> sp = Class.forName("homeplanet.ui.SystemsPanel");
+  java.lang.reflect.Method label = sp.getDeclaredMethod("levelLabel", String.class, int.class); label.setAccessible(true);
+  java.lang.reflect.Method info = sp.getDeclaredMethod("info", String.class, int.class, int.class, String.class); info.setAccessible(true);
+  String[][] want = {
+   {"engines", "1", "Dodge: 5 / FTL: 1x"}, {"engines", "4", "Dodge: 20 / FTL: 1.75x"}, {"engines", "8", "Dodge: 35 / FTL: 2.75x"},
+   {"medbay", "2", "Healing Boost: 1.5x"}, {"oxygen", "3", "O2 Refill Boost: 6x"}, {"pilot", "3", "Auto: 80 percent evasion"},
+   {"doors", "2", "Blast Doors"}, {"sensors", "3", "See enemy weapon charge"}, {"shields", "2", "One Shield Barrier"}, {"shields", "3", ""},
+   {"shields", "8", "Four Shield Barriers"}, {"weapons", "5", "More System Power"}, {"drones", "1", "More System Power"},
+   {"teleporter", "1", "20 sec cooldown"}, {"cloaking", "3", "Cloak: 15 seconds"}, {"hacking", "2", "7 second disruption"},
+   {"battery", "2", "Provides 4 bonus power"}, {"clonebay", "1", "12 sec clone + 8 hp/jump"}, {"clonebay", "3", "7 sec clone + 25 hp/jump"},
+   {"mind", "2", "Boosts health and damage"}};
+  List<String> off = new ArrayList<String>();
+  for (String[] w : want) { String got = (String) label.invoke(null, w[0], Integer.parseInt(w[1])); if (!w[2].equals(got)) off.add(w[0] + " " + w[1] + ": \"" + got + "\""); }
+  Setup.chk("F: each level's line as FTL's upgrade screen has it (" + want.length + " read off FTL)" + (off.isEmpty() ? "" : " " + off), off.isEmpty());
+  String drones = ((String) info.invoke(null, "drones", 3, 8, null)).replaceAll("<[^>]+>", " ").replaceAll("&nbsp;", " ").replaceAll("\\s+", " ");
+  Setup.chk("F: Drone Control at level 3: FTL's description, 100 80 60 45 30 for levels 8 to 4, levels 3 to 1 hers",
+    drones.contains("Powers all of the ship's drones.") && drones.contains("level 8: 100 scrap") && drones.contains("level 4: 30 scrap") && drones.contains("level 3 (hers)") && !drones.contains("level 3: "));
+ }
  /** A system lifted off the remodel: it can come off the blueprint, and Uninstall takes it into the Cargo Bay the Refit tab's way. */
  static void uninstall(Vault v, MainFrame f) throws Exception {
   final Object[] o = open(v, f, "PLAYER_SHIP_HARD");

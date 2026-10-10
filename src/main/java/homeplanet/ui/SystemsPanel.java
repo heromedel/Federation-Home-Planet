@@ -213,6 +213,8 @@ public class SystemsPanel {
 					new ActionListener() { public void actionPerformed(ActionEvent e) { storeSystem(type); } });
 			int up = upgradePrice(bs, t), broken = st.getDamagedBars();
 			r.broken = broken;
+			r.max = maxLevel(bs, t);
+			r.setToolTipText(info(t.getId(), st.getCapacity(), r.max, why)); // FTL's own words and what's left to buy, as its upgrade screen shows on hover
 			if (broken > 0) { // mended first: then she can be upgraded
 				int scrap = hold(), fix = broken * homeplanet.parser.Pricing.SYSTEM_REPAIR;
 				r.addButton("Fix: " + fix, 78, ROW_W - 108 - 82, scrap >= fix,
@@ -252,6 +254,12 @@ public class SystemsPanel {
 					(why != null ? why : order ? workOrderTip() : "Install the " + DryDockShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName()) + damage,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { installSystem(s); } });
 			r.broken = s.broken;
+			SystemType st2 = SystemType.findById(s.id);
+			if (st2 != null) {
+				r.max = maxLevel(bay.currentSave.getPlayerShip(), st2);
+				String note = (why != null ? why : order ? workOrderTip() : "") + damage;
+				r.setToolTipText(info(s.id, s.level, r.max, note.trim().isEmpty() ? null : note.trim()));
+			}
 			if (homeplanet.core.HomePlanet.sellSystems()) r.addSell(salePrice(s), new ActionListener() { public void actionPerformed(ActionEvent e) { sellSystem(s); } });
 			r.lights(pic, s.id); // the room it would go into
 			r.setBounds(0, y + j * 32, w, 28);
@@ -259,6 +267,7 @@ public class SystemsPanel {
 			j++;
 		}
 		y += j * 32 + 12;
+		y = weaponsAndDrones(bs, y, w); // last: the Dry Dock and the stored systems stay where they were
 		sysList.setPreferredSize(new java.awt.Dimension(ROW_W, y - 12));
 		int H = lists.getHeight();
 		sysScroll.setBounds(0, 0, 564, H - LAYOUT_H);
@@ -303,10 +312,14 @@ public class SystemsPanel {
 	}
 
 	/** A system line: name, level bars, and its Uninstall or Install button (greyed out with the reason on hover). */
+	/** Where a row's bars start (6.42: left of where they were, so FTL's eight always clear the Up button). */
+	private static final int BARS_X = 296;
 	private static class SysRow extends JComponent {
 		final String title; final int level; final boolean ok;
 		/** Broken bars, drawn red at the end of the level bar (as FTL draws damage). */
 		int broken = 0;
+		/** FTL's most for this system on her (6.42): the bars past her level drawn dim, as FTL's upgrade screen draws them. */
+		int max = 0;
 		SysRow(String title, int level, String action, String why, String tip, ActionListener a) {
 			this.title = title; this.level = level; this.ok = why == null;
 			setLayout(null);
@@ -346,14 +359,21 @@ public class SystemsPanel {
 			java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
 			CargoParts.paintBox(g, 0, 0, getWidth(), getHeight(), CargoParts.BOX_LINE);
 			CargoParts.text(g, FtlFont.CARGO.fit(title, 230), FtlFont.CARGO, ok ? CargoParts.TEXT : CargoParts.DIM, 10, 7);
-			CargoParts.text(g, level > 0 ? "level " + level : "", FtlFont.CARGO, CargoParts.DIM, 250, 7);
-			int bars = Math.min(level, 8), red = Math.min(broken, bars);
-			for (int k = 0; k < bars; k++) {
-				boolean bad = k >= bars - red; // the broken ones last, red
+			CargoParts.text(g, level > 0 ? "level " + level : "", FtlFont.CARGO, CargoParts.DIM, 232, 7);
+			int all = Math.max(level, max), red = Math.min(broken, Math.max(0, level));
+			// up to 8 bars as before; more (the reactor's 25) narrower, in the same 64 pixels
+			int step = all <= 8 ? 7 : Math.max(2, 56 / Math.max(1, all)), bw = all <= 8 ? 5 : Math.max(1, step - 1);
+			for (int k = 0; k < all && BARS_X + k * step + bw <= BARS_X + 56; k++) { // clear of the Up button
+				if (k >= level) { // not hers yet: FTL's empty bar, outlined
+					g.setColor(new Color(70, 80, 84));
+					g.drawRect(BARS_X + k * step, 9, bw - 1, 10);
+					continue;
+				}
+				boolean bad = k >= level - red; // the broken ones last, red
 				g.setColor(bad ? (ok ? new Color(225, 70, 55) : new Color(140, 70, 60)) : ok ? new Color(120, 230, 120) : new Color(90, 130, 95));
-				g.fillRect(310 + k * 8, 9, 6, 11);
+				g.fillRect(BARS_X + k * step, 9, bw, 11);
 			}
-			if (level == 0) CargoParts.text(g, "uses the Medbay's level", FtlFont.CARGO, CargoParts.DIM, 250, 7); // (below 0: a Dry Dock row, no level)
+			if (level == 0) CargoParts.text(g, "uses the Medbay's level", FtlFont.CARGO, CargoParts.DIM, 232, 7); // (below 0: a Dry Dock row, no level)
 			g.dispose();
 		}
 	}
@@ -651,6 +671,162 @@ public class SystemsPanel {
 		if (rooms != null && rooms.length > 0 && rooms[0].getMaxPower() != null && st.getCapacity() >= rooms[0].getMaxPower()) return -1;
 		return homeplanet.parser.Pricing.upgrade(t.getId(), st.getCapacity());
 	}
+	/** FTL's most for this system on her: her model's own limit for its room, else the system's (6.42). */
+	static int maxLevel(ShipState bs, SystemType t) {
+		ShipBlueprint bp = DataManager.get().getShip(bs.getShipBlueprintId());
+		ShipBlueprint.SystemList.SystemRoom[] rooms = bp == null || bp.getSystemList() == null ? null : bp.getSystemList().getSystemRoom(t);
+		if (rooms != null && rooms.length > 0 && rooms[0].getMaxPower() != null) return rooms[0].getMaxPower();
+		net.blerf.ftl.xml.SystemBlueprint sb = DataManager.get().getSystem(t.getId());
+		return sb == null ? 0 : sb.getMaxPower();
+	}
+	/**
+	 * A system's hover, as FTL's upgrade screen shows it (6.42, heromedel): its title and FTL's own description, then its
+	 * levels from the most down, hers filled and each one past them with its price; and why it's greyed out, if it is.
+	 */
+	static String info(String id, int level, int max, String why) {
+		net.blerf.ftl.xml.SystemBlueprint sb = DataManager.get().getSystem(id);
+		String title = sb != null && sb.getTitle() != null ? sb.getTitle().getTextValue() : DryDockShop.systemTitle(id);
+		String desc = sb != null && sb.getDescription() != null ? sb.getDescription().getTextValue() : "";
+		StringBuilder h = new StringBuilder("<html><div style='width:300px'><b>").append(esc(title)).append("</b>");
+		if (!desc.isEmpty()) h.append("<br>").append(esc(desc));
+		if (max > 0) {
+			h.append("<table cellspacing='0' cellpadding='1' style='margin-top:4px'>");
+			for (int lv = max; lv >= 1; lv--) {
+				int price = lv > level ? homeplanet.parser.Pricing.upgrade(id, lv - 1) : -1;
+				h.append("<tr><td><font color='").append(lv <= Math.max(0, level) ? "#1f8f2f" : "#8a9599").append("'>\u25A0</font></td><td>");
+				String what = levelLabel(id, lv);
+				String said = what.isEmpty() ? "" : " &nbsp;<font color='#4d5a5e'>" + esc(what) + "</font>";
+				if (lv <= Math.max(0, level)) h.append("<font color='#1f8f2f'>level ").append(lv).append(" (hers)</font>").append(said);
+				else h.append("level ").append(lv).append(price > 0 ? ": " + price + " scrap" : "").append(said);
+				h.append("</td></tr>");
+			}
+			h.append("</table>");
+		}
+		if (why != null) h.append("<br><font color='#b8641a'>").append(esc(why)).append("</font>");
+		return h.append("</div></html>").toString();
+	}
+	/** FTL's text for an id (its text files), or null. */
+	private static String ftlText(String id) {
+		return DataManager.get() instanceof net.blerf.ftl.parser.DefaultDataManager ? ((net.blerf.ftl.parser.DefaultDataManager) DataManager.get()).getTextById(id) : null;
+	}
+	/**
+	 * What a level of a system gives, as FTL's upgrade screen says beside its price (6.42): FTL's own lines from its text
+	 * files; where FTL fills in a number itself (dodge, boosts, seconds), the numbers as FTL 1.6 shows them on that screen,
+	 * read off it level by level. Empty when FTL says nothing for that level.
+	 */
+	static String levelLabel(String id, int lv) {
+		if (lv < 1) return "";
+		String t;
+		if ("pilot".equals(id)) t = ftlText("pilot_" + lv);
+		else if ("doors".equals(id)) t = ftlText("door_" + lv);
+		else if ("sensors".equals(id)) t = ftlText("sensor_" + lv);
+		else if ("mind".equals(id)) t = ftlText("mind_" + lv);
+		else if ("artillery".equals(id)) t = ftlText("artillery_" + lv);
+		else if ("shields".equals(id)) t = lv % 2 == 0 ? ftlText("shields_" + (lv / 2 - 1)) : null; // a barrier every two levels
+		else if ("weapons".equals(id) || "drones".equals(id)) t = ftlText("system_power");
+		else if ("engines".equals(id)) {
+			int[] dodge = {5, 10, 15, 20, 25, 28, 31, 35};
+			t = lv > dodge.length ? null : fill(ftlText("engine"), dodge[lv - 1] + "", num(1 + 0.25 * (lv - 1)));
+		}
+		else if ("medbay".equals(id)) t = pick(lv, new String[] {"1", "1.5", "3"}, ftlText("medbay_healing"));
+		else if ("oxygen".equals(id)) t = pick(lv, new String[] {"1", "3", "6"}, ftlText("oxygen_on"));
+		else if ("cloaking".equals(id)) t = pick(lv, new String[] {"5", "10", "15"}, ftlText("cloak"));
+		else if ("teleporter".equals(id)) t = pick(lv, new String[] {"20", "15", "10"}, ftlText("teleporter_on"));
+		else if ("hacking".equals(id)) t = pick(lv, new String[] {"4", "7", "10"}, ftlText("hacking_duration"));
+		else if ("battery".equals(id)) t = pick(lv, new String[] {"2", "4"}, ftlText("battery_power"));
+		else if ("clonebay".equals(id)) {
+			String[] sec = {"12", "9", "7"}, hp = {"8", "16", "25"};
+			t = lv > sec.length ? null : fill(ftlText("clone_full"), sec[lv - 1], hp[lv - 1]);
+		}
+		else t = null;
+		return t == null ? "" : t;
+	}
+	private static String pick(int lv, String[] v, String template) { return lv > v.length ? null : fill(template, v[lv - 1], null); }
+	private static String fill(String template, String a, String b) {
+		if (template == null) return null;
+		String t = template.replace("\\1", a);
+		return b == null ? t : t.replace("\\2", b);
+	}
+	private static String num(double d) { return d == Math.floor(d) ? Integer.toString((int) d) : (Math.round(d * 100) % 10 == 0 ? String.format("%.1f", d) : String.format("%.2f", d)); }
+
+	/** The reactor's hover: FTL's own words for it, her bars, and the next ones' prices. */
+	static String reactorInfo(int bars) {
+		String desc = ftlText("reactor_desc");
+		StringBuilder h = new StringBuilder("<html><div style='width:300px'><b>Reactor</b>" + (desc == null ? "" : "<br>" + esc(desc)) + "<br>Her power: " + bars + " of " + homeplanet.parser.Pricing.REACTOR_MAX + " bars.");
+		h.append("<table cellspacing='0' cellpadding='1' style='margin-top:4px'>");
+		for (int n = Math.min(homeplanet.parser.Pricing.REACTOR_MAX, bars + 5); n > bars; n--)
+			h.append("<tr><td><font color='#8a9599'>\u25A0</font></td><td>bar ").append(n).append(": ").append(homeplanet.parser.Pricing.reactorBar(n)).append(" scrap</td></tr>");
+		return h.append("</table></div></html>").toString();
+	}
+	private static String esc(String t) { return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>"); }
+
+	/**
+	 * Her weapons and drones and the power each needs, against Weapon Control's and Drone Control's levels (6.42,
+	 * heromedel: the Refit tab didn't show them). In orange when she can't power them all at once.
+	 */
+	private int weaponsAndDrones(ShipState bs, int y, int w) {
+		List<String[]> rows = new ArrayList<String[]>();
+		int wNeed = 0, dNeed = 0;
+		for (net.blerf.ftl.parser.SavedGameParser.WeaponState ws : bs.getWeaponList()) {
+			net.blerf.ftl.xml.WeaponBlueprint wb = DataManager.get().getWeapon(ws.getWeaponId());
+			int p = wb == null ? 0 : wb.getPower();
+			wNeed += p;
+			rows.add(new String[] {"w", wb != null && wb.getTitle() != null ? wb.getTitle().getTextValue() : ws.getWeaponId(), Integer.toString(p),
+					wb != null && wb.getDescription() != null ? wb.getDescription().getTextValue() : ""});
+		}
+		for (net.blerf.ftl.parser.SavedGameParser.DroneState ds : bs.getDroneList()) {
+			net.blerf.ftl.xml.DroneBlueprint db = DataManager.get().getDrone(ds.getDroneId());
+			int p = db == null ? 0 : db.getPower();
+			dNeed += p;
+			rows.add(new String[] {"d", db != null && db.getTitle() != null ? db.getTitle().getTextValue() : ds.getDroneId(), Integer.toString(p),
+					db != null && db.getDescription() != null ? db.getDescription().getTextValue() : ""});
+		}
+		if (rows.isEmpty()) return y;
+		CargoParts.Header h = new CargoParts.Header("Weapons and drones", false);
+		h.setBounds(0, y, w, 22);
+		sysList.add(h);
+		y += 26;
+		SystemState ws = bs.getSystem(SystemType.WEAPONS), ds = bs.getSystem(SystemType.DRONE_CTRL);
+		final int wHave = ws == null ? 0 : ws.getCapacity(), dHave = ds == null ? 0 : ds.getCapacity();
+		for (int k = 0; k < 2; k++) {
+			final boolean weapons = k == 0;
+			int need = weapons ? wNeed : dNeed, have = weapons ? wHave : dHave;
+			if (need == 0 && (weapons ? wHave : dHave) == 0) continue;
+			final boolean short_ = need > have;
+			final String line = (weapons ? "Weapon Control" : "Drone Control") + ": " + have + (have == 1 ? " bar" : " bars") + "; " + (weapons ? "her weapons" : "her drones") + " need " + need;
+			JComponent sum = new JComponent() {
+				@Override protected void paintComponent(java.awt.Graphics g0) {
+					java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
+					CargoParts.text(g, line + (short_ ? " (not all at once)" : ""), FtlFont.CARGO, short_ ? CargoParts.ORANGE : CargoParts.DIM, 8, 3);
+					g.dispose();
+				}
+			};
+			sum.setToolTipText(short_ ? "She can't power all of them at once: upgrade the " + (weapons ? "Weapon Control" : "Drone Control") + ", or carry fewer" : null);
+			sum.setBounds(0, y, w, 20);
+			sysList.add(sum);
+			y += 22;
+			for (String[] r : rows) {
+				if (!r[0].equals(weapons ? "w" : "d")) continue;
+				final String name = r[1];
+				final int p = Integer.parseInt(r[2]);
+				JComponent row = new JComponent() {
+					@Override protected void paintComponent(java.awt.Graphics g0) {
+						java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
+						CargoParts.paintBox(g, 0, 0, getWidth(), getHeight(), CargoParts.BOX_LINE);
+						CargoParts.text(g, FtlFont.CARGO.fit(name, 230), FtlFont.CARGO, CargoParts.TEXT, 10, 5);
+						CargoParts.text(g, p + " power", FtlFont.CARGO, CargoParts.DIM, 226, 5);
+						for (int b = 0; b < p && b < 8; b++) { g.setColor(new Color(120, 230, 120)); g.fillRect(BARS_X + b * 7, 7, 5, 11); }
+						g.dispose();
+					}
+				};
+				row.setToolTipText("<html><div style='width:300px'><b>" + esc(name) + "</b>" + (r[3].isEmpty() ? "" : "<br>" + esc(r[3])) + "<br>Power: " + p + "</div></html>");
+				row.setBounds(0, y, w, 24);
+				sysList.add(row);
+				y += 26;
+			}
+		}
+		return y + 10;
+	}
 	/** Her hull at full strength (her model's). */
 	static int maxHull(ShipState bs) {
 		ShipBlueprint bp = DataManager.get().getShip(bs.getShipBlueprintId());
@@ -665,6 +841,8 @@ public class SystemsPanel {
 		int scrap = hold();
 		int bars = bs.getReservePowerCapacity(), rp = homeplanet.parser.Pricing.reactorBar(bars + 1);
 		SysRow reactor = new SysRow("Reactor", bars, "", null, "Reactor power: " + bars + " bars", null);
+		reactor.max = homeplanet.parser.Pricing.REACTOR_MAX;
+		reactor.setToolTipText(reactorInfo(bars));
 		if (bars < homeplanet.parser.Pricing.REACTOR_MAX) {
 			reactor.addButton("Up: " + rp, 78, ROW_W - 82, scrap >= rp, scrap >= rp ? "One more bar of reactor power for " + rp + " scrap" : "One more bar costs " + rp + " scrap; the Cargo Hold has " + scrap,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { upgradeReactor(); } });
