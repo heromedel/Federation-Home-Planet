@@ -141,3 +141,26 @@ Added 6.38, confirmed by heromedel.
     *(FTL:AE's mastery intervals; heromedel)*
 53. Mantis move faster than other crew. *(FTL's race description; heromedel)*
 54. Rock move slower than other crew and have more health. *(FTL's race description; heromedel)*
+
+## What each system's level gives
+
+Added 6.42, confirmed by heromedel: read off FTL 1.6.14's upgrade screen, level by level (its hover box), with its
+upgrade prices from FTL's blueprints.
+
+55. Engines give dodge 5, 10, 15, 20, 25, 28, 31, 35 by level, and the FTL drive charges 1x at level 1, a quarter
+    faster each level after (2.75x at level 8). *(FTL: "Dodge: \1 / FTL: \2x"; the upgrade screen)*
+56. The Medbay heals 1x, 1.5x, 3x by level; Oxygen refills 1x, 3x, 6x. *(FTL: "Healing Boost", "O2 Refill Boost";
+    the upgrade screen)*
+57. Cloaking lasts 5, 10, 15 seconds by level; the Crew Teleporter's cooldown is 20, 15, 10 seconds; Hacking disrupts
+    for 4, 7, 10 seconds. *(FTL: "Cloak: \1 seconds", "\1 sec cooldown", "\1 second disruption"; the upgrade screen)*
+58. The Backup Battery gives 2 bonus power at level 1, 4 at level 2. *(FTL: "Provides \1 bonus power"; the upgrade
+    screen)*
+59. The Clone Bay clones in 12, 9, 7 seconds by level and heals 8, 16, 25 hp a jump. *(FTL: "\1 sec clone + \2
+    hp/jump"; the upgrade screen)*
+60. Doors and Sensors list a fourth level ("Super Blast Doors", "See enemy power use") that no upgrade buys: FTL shows
+    its price as a dash. *(FTL's text, door_4 and sensor_4; the upgrade screen)*
+61. A shield barrier comes every two levels of Shields, up to four at level 8. *(FTL: "One Shield Barrier" to "Four
+    Shield Barriers"; the upgrade screen)*
+62. FTL's price table has a price for every level, the ones a ship starts with too: Shields' first upgrade is 100
+    scrap, then 20, 30, 40, 60, 80, 100; Weapon Control's is 40, then 25, 35, 50, 75, 90, 100. *(FTL's blueprints,
+    upgradeCost)*
