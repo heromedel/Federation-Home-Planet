@@ -40,6 +40,13 @@ public final class CrewNames {
 	public static final String CFG_LISTS = "custom_crew_names";
 	/** cfg: normal, first or first_last (missing is normal). */
 	public static final String CFG_HUMAN = "human_name_gen";
+	/** cfg: prefix or append while an Engi's English word goes with the hex (heromedel, 6.36); missing is none. */
+	public static final String CFG_ENGI = "engi_translate";
+	public static final String PREFIX = "prefix", APPEND = "append", NONE = "none";
+	public static String engiTranslate() {
+		String t = HomePlanet.config.getProperty(CFG_ENGI, NONE);
+		return PREFIX.equals(t) || APPEND.equals(t) ? t : NONE;
+	}
 	public static final String NORMAL = "normal", FIRST = "first", FIRST_LAST = "first_last";
 
 	public static boolean listsOn() { return "true".equals(HomePlanet.config.getProperty(CFG_LISTS)); }
@@ -119,9 +126,11 @@ public final class CrewNames {
 		long r = (long) (rng.nextDouble() * total);
 		Name got = ok.get(ok.size() - 1);
 		for (Name n : ok) { r -= l.weight(n); if (r < 0) { got = n; break; } }
-		if (male) return shown(l, got);
-		List<String> f = female(l, got);
-		return f.isEmpty() ? shown(l, got) : f.get(rng.nextInt(f.size()));
+		List<String> f = male ? null : female(l, got);
+		String name = male || f.isEmpty() ? shown(l, got) : f.get(rng.nextInt(f.size()));
+		if (!l.hex) return name;
+		String t = engiTranslate(); // the Engi's English word beside the hex: Byte 4279-7465, or 4279-7465 Byte (6.36)
+		return PREFIX.equals(t) ? got.text + " " + name : APPEND.equals(t) ? name + " " + got.text : name;
 	}
 
 	/** The name as shown: the Engi's word in hex, split in half; anyone else's as written. */
