@@ -20,12 +20,16 @@ final class FlipSwitch extends JComponent {
 	private static final Color TRACK = new Color(36, 46, 56), EDGE = new Color(90, 108, 120), LIT = new Color(235, 140, 50), LIT_TEXT = new Color(24, 20, 16);
 	private final String left, right;
 	private boolean onRight, hover;
+	private final boolean small;
 	private Runnable onChange;
 
-	FlipSwitch(String left, String right) {
+	FlipSwitch(String left, String right) { this(left, right, false); }
+	/** Small: each half sized to its own word, in a smaller font (6.44, heromedel: the Refit's, beside "Installed systems"). */
+	FlipSwitch(String left, String right, boolean small) {
 		this.left = left;
 		this.right = right;
-		setFont(MenuTheme.LABEL_FONT);
+		this.small = small;
+		setFont(small ? MenuTheme.LABEL_FONT.deriveFont(11f) : MenuTheme.LABEL_FONT);
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
@@ -44,6 +48,7 @@ final class FlipSwitch extends JComponent {
 
 	public Dimension getPreferredSize() {
 		FontMetrics fm = getFontMetrics(getFont());
+		if (small) return new Dimension(fm.stringWidth(left) + fm.stringWidth(right) + 32, fm.getHeight() + 4);
 		return new Dimension(2 * (Math.max(fm.stringWidth(left), fm.stringWidth(right)) + 22), fm.getHeight() + 8);
 	}
 
@@ -52,7 +57,7 @@ final class FlipSwitch extends JComponent {
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 		FontMetrics fm = g.getFontMetrics(getFont());
-		int w = getWidth() - 1, h = getHeight() - 1, r = h, half = w / 2;
+		int w = getWidth() - 1, h = getHeight() - 1, r = h, half = small ? fm.stringWidth(left) + 16 : w / 2; // small: each half its own word's width
 		g.setColor(TRACK);
 		g.fillRoundRect(0, 0, w, h, r, r);
 		g.setColor(LIT);

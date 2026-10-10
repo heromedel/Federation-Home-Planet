@@ -109,7 +109,7 @@ public class SystemsPanel {
 	private final CargoParts.Label sub = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 0);
 	/** What the Cargo Hold can still spend at the Dry Dock, always in view under her name. */
 	/** Who pays the Dry Dock (6.44, heromedel): the ship or the Cargo Bay's hold, remembered; and what that side can spend. */
-	private final FlipSwitch payer = new FlipSwitch("Ship", "Cargo Bay");
+	private final FlipSwitch payer = new FlipSwitch("Ship", "Cargo", true);
 	private final CargoParts.ScrapCount scrapCount = new CargoParts.ScrapCount();
 	/** The cfg line for who pays at Refit: "ship", or the Cargo Hold (the default, as before 6.44). */
 	static final String CFG_PAYS = "refit_pays";
@@ -117,8 +117,13 @@ public class SystemsPanel {
 	/** The installed and stored systems scroll inside the top of the column; Layout and model stays pinned below. */
 	private final JPanel sysList = new JPanel(null);
 	private javax.swing.JScrollPane sysScroll;
+	/** The uninstalled systems, a list of their own under the installed ones (6.44, heromedel: both always in view). */
+	private final JPanel storedList = new JPanel(null);
+	private javax.swing.JScrollPane storedScroll;
+	/** The installed list's share of the column: its heading and rows; the uninstalled systems take the rest. */
+	private static final int INST_H = 250; // seven rows exactly
 	/** Row width: the column less room for the scroll bar. */
-	private static final int ROW_W = 550, REMODEL_W = 150, RETROFIT_W = 180;
+	private static final int ROW_W = 550, BTN_W = 104;
 	/** The power distribution simulation under the ship and the lists: its heading and FTL's panel (6.42). */
 	private static final int POWER_H = 184;
 	private final PowerPanel power = new PowerPanel();
@@ -132,7 +137,7 @@ public class SystemsPanel {
 		pic.setBounds(16, 8, 640, 322);
 		pic.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " rooms and what's in them; a faint icon is a room kept for a system " + homeplanet.model.Words.she() + " doesn't have");
 		panel.add(pic);
-		name.setBounds(16 + REMODEL_W + 10, 334, 640 - REMODEL_W - RETROFIT_W - 20, 26); // between Remodel and Retrofit (6.44)
+		name.setBounds(16, 334, 640, 26);
 		name.setToolTipText("Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		name.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 		name.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { bay.showCurrentShipInfo(); } });
@@ -141,11 +146,11 @@ public class SystemsPanel {
 		panel.add(sub);
 		payer.setRight(!shipPays());
 		java.awt.Dimension ps = payer.getPreferredSize();
-		payer.setBounds(16, 8, ps.width, ps.height);
-		payer.setToolTipText("Who pays the Dry Dock: the ship's own scrap, or the Cargo Hold's (paid on Save)");
+		payer.setBounds(700 + 564 - ps.width - 2, 8 + (22 - ps.height) / 2, ps.width, ps.height); // on the "Installed systems" heading, at its right end
+		payer.setToolTipText("Who pays the Dry Dock: the ship's own scrap, or the Cargo Hold's (Cargo; paid on Save)");
 		payer.onChange(new Runnable() { public void run() { switchPayer(); } });
 		panel.add(payer);
-		scrapCount.setBounds(16 + ps.width + 12, 8, 330, ps.height);
+		scrapCount.setBounds(700 + 564 - ps.width - 2 - 96, 8, 90, 22); // the scrap that side has, just left of the switch
 		panel.add(scrapCount);
 		panel.setComponentZOrder(payer, 0);
 		panel.setComponentZOrder(scrapCount, 0);
@@ -175,7 +180,16 @@ public class SystemsPanel {
 		sysScroll.getVerticalScrollBar().setPreferredSize(new java.awt.Dimension(10, 10));
 		sysScroll.getVerticalScrollBar().setOpaque(false);
 		sysScroll.getVerticalScrollBar().setUnitIncrement(32);
-		remodelBtn = new FtlButton("Remodel...", FtlFont.MENU, REMODEL_W, 34);
+		storedList.setOpaque(false);
+		storedScroll = new javax.swing.JScrollPane(storedList, javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		storedScroll.setOpaque(false);
+		storedScroll.getViewport().setOpaque(false);
+		storedScroll.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+		storedScroll.getVerticalScrollBar().setUI(new MenuTheme.DarkScrollBarUI(new Color(214, 230, 222, 170), new Color(40, 50, 58, 200)));
+		storedScroll.getVerticalScrollBar().setPreferredSize(new java.awt.Dimension(10, 10));
+		storedScroll.getVerticalScrollBar().setOpaque(false);
+		storedScroll.getVerticalScrollBar().setUnitIncrement(32);
+		remodelBtn = new FtlButton("Remodel...", FtlFont.CARGO, BTN_W, 24);
 		remodelBtn.setToolTipText("Move " + homeplanet.model.Words.her() + " systems and doors, or overhaul " + homeplanet.model.Words.her() + " deck plan (a retrofitted ship only)");
 		remodelBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -184,11 +198,11 @@ public class SystemsPanel {
 				if (RemodelDialog.open(bay)) { load(); refresh(); bay.refreshTrade(); } // the remodel saved the Cargo Bay: nothing left unsaved
 			}
 		});
-		retrofitBtn = new FtlButton("Retrofit", FtlFont.MENU, RETROFIT_W, 34);
+		retrofitBtn = new FtlButton("Retrofit", FtlFont.CARGO, BTN_W, 24);
 		retrofitBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { retrofit(); } });
-		// Layout and model under the ship (6.44, heromedel): Remodel left of her name, Retrofit right of it, the layout below
-		remodelBtn.setBounds(16, 330, REMODEL_W, 34);
-		retrofitBtn.setBounds(16 + 640 - RETROFIT_W, 330, RETROFIT_W, 34);
+		// Retrofit with Remodel under it, just left of the uninstalled systems (6.44, heromedel); the layout under the ship's class
+		retrofitBtn.setBounds(700 - 8 - BTN_W, 8 + INST_H + 6, BTN_W, 24);
+		remodelBtn.setBounds(700 - 8 - BTN_W, 8 + INST_H + 6 + 30, BTN_W, 24);
 		layoutLbl.setBounds(16, 384, 640, 14);
 		layoutHint.setBounds(16, 398, 640, 14);
 		panel.add(remodelBtn); panel.add(retrofitBtn); panel.add(layoutLbl); panel.add(layoutHint);
@@ -228,15 +242,16 @@ public class SystemsPanel {
 		sub.setBounds(gx + 30, 364, tw + 4, 16);
 		power.show(bs);
 		payer.setRight(!shipPays());
-		scrapCount.set(hold(), (bill > 0 ? bill + " spent here" : bill < 0 ? (-bill) + " from sales" : "") + (repBill > 0 ? (bill != 0 ? ", " : "") + repBill + " reputation" : "")
-				+ (bill != 0 || repBill > 0 ? ", on Save" : ""));
-		scrapCount.setToolTipText(cap(payerName()) + " has " + hold() + " scrap left to spend here" + (bill > 0 ? " (" + bill + " spent, paid on Save)" : bill < 0 ? " (" + (-bill) + " to come from sales, on Save)" : ""));
+		scrapCount.set(hold(), ""); // what's spent here and on Save: in its tooltip
+		scrapCount.setToolTipText(cap(payerName()) + " has " + hold() + " scrap left to spend here" + (bill > 0 ? " (" + bill + " spent, paid on Save)" : bill < 0 ? " (" + (-bill) + " to come from sales, on Save)" : "")
+				+ (repBill > 0 ? ", and " + repBill + " reputation on Save" : ""));
 		int w = ROW_W, y = 0;
 		sysList.removeAll();
+		storedList.removeAll();
 		CargoParts.Header h1 = new CargoParts.Header("Installed systems", false);
-		h1.setBounds(0, y, w, 22);
-		sysList.add(h1);
-		y += 26;
+		h1.setBounds(0, 0, 564 - payer.getWidth() - 106, 22); // its line stops short of the scrap and the switch
+		lists.add(h1);
+		y = dryDock(bs, y, w); // the hull and the reactor first, no Dry Dock heading of their own (6.44, heromedel)
 		int i = 0;
 		for (SystemType t : SystemType.values()) {
 			SystemState st = bs.getSystem(t);
@@ -269,15 +284,20 @@ public class SystemsPanel {
 			sysList.add(r);
 			i++;
 		}
-		y += i * 32 + 12;
+		y += i * 32;
+		sysList.setPreferredSize(new java.awt.Dimension(ROW_W, y));
+		int H = lists.getHeight();
+		sysScroll.setBounds(0, 26, 564, INST_H - 26);
+		lists.add(sysScroll);
+		sysList.revalidate();
 		CargoParts.Header h2 = new CargoParts.Header("Uninstalled systems in the Cargo Bay", false);
-		h2.setBounds(0, y, w, 22);
-		sysList.add(h2);
-		y += 26;
+		h2.setBounds(0, INST_H + 6, 564, 22);
+		lists.add(h2);
+		y = 0;
 		if (stored.isEmpty()) {
 			CargoParts.Label none = new CargoParts.Label("None yet. Uninstall one from the list above.", FtlFont.CARGO, CargoParts.DIM, -1);
 			none.setBounds(8, y + 6, w, 16);
-			sysList.add(none);
+			storedList.add(none);
 			y += 32;
 		}
 		int j = 0;
@@ -298,16 +318,14 @@ public class SystemsPanel {
 			if (homeplanet.core.HomePlanet.sellSystems()) r.addSell(salePrice(s), payerName(), new ActionListener() { public void actionPerformed(ActionEvent e) { sellSystem(s); } });
 			r.lights(pic, s.id); // the room it would go into
 			r.setBounds(0, y + j * 32, w, 28);
-			sysList.add(r);
+			storedList.add(r);
 			j++;
 		}
-		y += j * 32 + 12;
-		y = dryDock(bs, y, w); // the Dry Dock last: what's installed and what's stored stay together (6.44, heromedel)
-		sysList.setPreferredSize(new java.awt.Dimension(ROW_W, y - 12));
-		int H = lists.getHeight();
-		sysScroll.setBounds(0, 0, 564, H);
-		lists.add(sysScroll);
-		sysList.revalidate();
+		y += j * 32;
+		storedList.setPreferredSize(new java.awt.Dimension(ROW_W, y));
+		storedScroll.setBounds(0, INST_H + 32, 564, H - INST_H - 32);
+		lists.add(storedScroll);
+		storedList.revalidate();
 		boolean retro = homeplanet.parser.Retrofit.isRetrofitted(bs);
 		boolean inGame = homeplanet.parser.Retrofit.inGame(bs);
 		String id = bs.getShipBlueprintId();
@@ -824,24 +842,12 @@ public class SystemsPanel {
 		ShipBlueprint bp = DataManager.get().getShip(bs.getShipBlueprintId());
 		return bp == null || bp.getHealth() == null ? bs.getHullAmt() : bp.getHealth().amount;
 	}
-	/** The Dry Dock rows: reactor power and hull repairs. Returns the y below them. */
+	/**
+	 * The Dry Dock's rows at the top of the installed list (6.44, heromedel: no section of their own): the hull and its
+	 * repairs, the hull breaches when there are any, then the reactor with its Up. Returns the y below them.
+	 */
 	private int dryDock(ShipState bs, int y, int w) {
-		CargoParts.Header h = new CargoParts.Header("Dry Dock: " + payerName() + " pays (" + hold() + " scrap)", false);
-		h.setBounds(0, y, w, 22);
-		sysList.add(h);
-		y += 26;
 		int scrap = hold();
-		int bars = bs.getReservePowerCapacity(), rp = homeplanet.parser.Pricing.reactorBar(bars + 1);
-		SysRow reactor = new SysRow("Reactor", bars, "", null, "Reactor power: " + bars + " bars", null);
-		reactor.max = homeplanet.parser.Pricing.REACTOR_MAX;
-		reactor.info(reactorInfo(bars));
-		if (bars < homeplanet.parser.Pricing.REACTOR_MAX) {
-			reactor.addButton("Up: " + rp, 78, ROW_W - 82, scrap >= rp, scrap >= rp ? "One more bar of reactor power for " + rp + " scrap" : "One more bar costs " + rp + " scrap; " + payerName() + " has " + scrap,
-					new ActionListener() { public void actionPerformed(ActionEvent e) { upgradeReactor(); } });
-		}
-		reactor.setBounds(0, y, w, 28);
-		sysList.add(reactor);
-		y += 32;
 		int hull = bs.getHullAmt(), max = maxHull(bs), each = homeplanet.parser.Pricing.hullRepair();
 		int gap = max - hull, all = gap * each;
 		SysRow repair = new SysRow("Hull " + hull + " / " + max, -1, "", null, "Hull repairs: " + each + " scrap a point (The Federation charges a premium)", null);
@@ -867,8 +873,17 @@ public class SystemsPanel {
 			sysList.add(br);
 			y += 32;
 		}
-		y += 12;
-		return y;
+		int bars = bs.getReservePowerCapacity(), rp = homeplanet.parser.Pricing.reactorBar(bars + 1);
+		SysRow reactor = new SysRow("Reactor", bars, "", null, "Reactor power: " + bars + " bars", null);
+		reactor.max = homeplanet.parser.Pricing.REACTOR_MAX;
+		reactor.info(reactorInfo(bars));
+		if (bars < homeplanet.parser.Pricing.REACTOR_MAX) {
+			reactor.addButton("Up: " + rp, 78, ROW_W - 82, scrap >= rp, scrap >= rp ? "One more bar of reactor power for " + rp + " scrap" : "One more bar costs " + rp + " scrap; " + payerName() + " has " + scrap,
+					new ActionListener() { public void actionPerformed(ActionEvent e) { upgradeReactor(); } });
+		}
+		reactor.setBounds(0, y, w, 28);
+		sysList.add(reactor);
+		return y + 32;
 	}
 	private void upgradeSystem(SystemType t) {
 		ShipState bs = bay.currentSave.getPlayerShip();
