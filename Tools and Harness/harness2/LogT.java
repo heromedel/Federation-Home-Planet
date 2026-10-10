@@ -65,9 +65,9 @@ public class LogT { public static void main(String[] a) throws Exception {
  EventLog.write(v, Event.of("COMMISSION").put("log", "station").put("headline", "Nightjar  (c77a)").put("ship_name", "Nightjar").put("ship_id", "c77a").details(det)
    .put("crew", "Bob").put("race", "human").put("crew", "Ann").put("race", "engi").put("crew", "Kenji").put("race", "human"));
  EventLog.write(v, Event.of("COMMISSION").put("log", "station").put("headline", "Red-Tail  (d19b)").put("ship_name", "Red-Tail").put("ship_id", "d19b").details(Arrays.asList("Kestrel Cruiser (PLAYER_SHIP_HARD)", "Crew: Old (Human)")));
- String cap = page(v, true);
- Setup.chk("W: a commission says who came aboard with her, by name; an older one keeps its Crew: line",
-   cap.contains("Bob, Ann and Kenji came aboard with her.") && !cap.contains("Crew: Bob") && cap.contains("Crew: Old (Human)"));
+ String cap = page(v, true), shown = page(v, false);
+ Setup.chk("W: a commission says who joined to crew her, by name, shown without the details (6.37); an older one keeps its Crew: line",
+   shown.contains("Bob, Ann and Kenji joined my fleet to crew the ship.") && cap.contains("Bob, Ann and Kenji joined my fleet to crew the ship.") && !cap.contains("Crew: Bob") && cap.contains("Crew: Old (Human)"));
  Setup.done();
 }
  static int count(String s, String w) { int n = 0, i = 0; while ((i = s.indexOf(w, i)) >= 0) { n++; i += w.length(); } return n; }
