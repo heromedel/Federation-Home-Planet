@@ -174,7 +174,20 @@ public class SettingsDialog extends JDialog {
 		namesBox.setSelectedIndex(homeplanet.parser.CrewNames.listsOn() ? 0 : 1);
 		humanGenBox.setSelectedIndex(java.util.Arrays.asList(HUMAN_GEN_CFG).indexOf(homeplanet.parser.CrewNames.humanGen()));
 		namesBox.setToolTipText("On: the crew The Home Planet Station brings aboard are named from their own race's list (lore/names). Off: every race has FTL's names, as FTL gives them. Crew already aboard keep theirs");
-		humanGenBox.setToolTipText("How humans are named. With the name lists off, every race has FTL's human names, so this applies to every race");
+		final String[] genTips = {
+				"Normal: as FTL names them. FTL's names sometimes have a last name and sometimes don't; with the lists on, about half of humans get one",
+				"First Names Only: a first name alone (with the lists off, FTL's names cut to their first word)",
+				"First and Last Always: a first and a last name (with the lists off, a one-word FTL name borrows a last name from FTL's others)"};
+		final String genAll = "How humans are named. With the name lists off, every race has FTL's human names, so this applies to every race";
+		humanGenBox.setToolTipText("<html>" + genAll + "<br>" + genTips[humanGenBox.getSelectedIndex()] + "</html>");
+		humanGenBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { humanGenBox.setToolTipText("<html>" + genAll + "<br>" + genTips[humanGenBox.getSelectedIndex()] + "</html>"); } });
+		humanGenBox.setRenderer(new javax.swing.DefaultListCellRenderer() { // each choice explains itself in the open list
+			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
+				java.awt.Component comp = super.getListCellRendererComponent(list, value, index, selected, focus);
+				if (index >= 0 && index < genTips.length) list.setToolTipText(selected ? genTips[index] : list.getToolTipText());
+				return comp;
+			}
+		});
 		body.add(labelled("Custom Name Lists Per Race:", namesBox), next(c));
 		body.add(labelled("Human Name Gen:", humanGenBox), next(c));
 
@@ -541,8 +554,8 @@ public class SettingsDialog extends JDialog {
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
 		if ((namesBox.getSelectedIndex() == 0) != homeplanet.parser.CrewNames.listsOn()) {
 			changed.add("Custom Name Lists Per Race: " + namesBox.getSelectedItem());
-			if (namesBox.getSelectedIndex() == 0) HomePlanet.config.remove(homeplanet.parser.CrewNames.CFG_LISTS); // on is the default: the line only while off
-			else HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_LISTS, "false");
+			if (namesBox.getSelectedIndex() == 0) HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_LISTS, "true");
+			else HomePlanet.config.remove(homeplanet.parser.CrewNames.CFG_LISTS); // off is the default, as FTL names its crew: the line only while on (6.34)
 		}
 		if (!HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.humanGen())) {
 			changed.add("Human Name Gen: " + humanGenBox.getSelectedItem());
