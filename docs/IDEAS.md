@@ -110,6 +110,19 @@ Notes: as it stands, a ship from Design Ship ticked as a starter ship is listed 
 start, with no unlock of its own; a remodel of one of FTL's ships follows her base ship's unlock when the career's
 unlock rule is on (`CommissionDialog`).
 
+## Idea H: a setting for how a ship is spoken of (noted 6.42)
+
+From heromedel:
+
+    Setting
+
+    Ship Pronoun: her | him | it
+
+Notes: "she" was never meant as an enforced style (heromedel, 6.42: a ship can be her, it, or the ship). Today the
+station's words say "she" and "her" for ships throughout (the letters, the log's lines, the Captain's Log, buttons and
+messages), so the setting would mean every such word coming from one place that asks it, and the lore files' words
+given a token for it, the way {he} and {his} already follow a crew member's sex in the expedition words.
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just
