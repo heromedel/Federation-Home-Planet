@@ -128,20 +128,20 @@ public class SystemsPanel {
 	private static final int POWER_H = 184;
 	private final PowerPanel power = new PowerPanel();
 	private FtlButton remodelBtn, retrofitBtn;
-	private final CargoParts.Label layoutLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.TEXT, 0);
+	private final CargoParts.Label layoutLbl = new CargoParts.Label("", FtlFont.SLOT, CargoParts.DIM, -1); // a size under the class (6.44)
 
 	JPanel panel() {
 		if (remodelBtn != null) return panel;
 		panel.setOpaque(false);
-		pic.setBounds(16, 8, 640, 322);
+		pic.setBounds(16, 8, 640, 344); // two lines under it now, not three: the picture gets the room (6.44, heromedel)
 		pic.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " rooms and what's in them; a faint icon is a room kept for a system " + homeplanet.model.Words.she() + " doesn't have");
 		panel.add(pic);
-		name.setBounds(16, 334, 640, 26);
+		name.setBounds(16, 354, 640, 26);
 		name.setToolTipText("Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		name.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 		name.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { bay.showCurrentShipInfo(); } });
 		panel.add(name);
-		sub.setBounds(16, 364, 640, 16);
+		sub.setBounds(16, 384, 640, 16);
 		panel.add(sub);
 		payer.setRight(!shipPays());
 		java.awt.Dimension ps = payer.getPreferredSize();
@@ -202,7 +202,6 @@ public class SystemsPanel {
 		// Retrofit with Remodel under it, just left of the uninstalled systems (6.44, heromedel); the layout under the ship's class
 		retrofitBtn.setBounds(700 - 8 - BTN_W, 8 + INST_H + 6, BTN_W, 24);
 		remodelBtn.setBounds(700 - 8 - BTN_W, 8 + INST_H + 6 + 30, BTN_W, 24);
-		layoutLbl.setBounds(16, 384, 640, 14);
 		panel.add(remodelBtn); panel.add(retrofitBtn); panel.add(layoutLbl); // (6.44, heromedel: no hint line under it; the buttons' tooltips say it)
 		return panel;
 	}
@@ -217,6 +216,14 @@ public class SystemsPanel {
 		storedSomething = false;
 		load();
 		refresh();
+	}
+	/** The line under the ship's name (6.44, heromedel): the info button, her class, then the layout a size smaller, centred together. */
+	private void lineTwo(String cls) {
+		int tw = CargoParts.width(cls, FtlFont.CARGO), lw = layoutLbl.getText().isEmpty() ? 0 : CargoParts.width(layoutLbl.getText(), FtlFont.SLOT);
+		int all = 30 + tw + (lw > 0 ? 14 + lw : 0), gx = 16 + Math.max(0, (640 - all) / 2);
+		info.setBounds(gx, 381, 24, 22);
+		sub.setBounds(gx + 30, 384, tw + 4, 16);
+		layoutLbl.setBounds(gx + 30 + tw + 14, 386, Math.min(lw + 4, 640 - (gx - 16) - 30 - tw - 14), 14);
 	}
 	String helpText() {
 		return "Uninstall takes a system off at its level. Up upgrades it; the Dry Dock repairs " + homeplanet.model.Words.her() + " hull. Greyed out: hover to see why.";
@@ -235,9 +242,7 @@ public class SystemsPanel {
 		// her grey line centred under her name, with the info button to its left (as on the Trade tab)
 		String cls = CargoBayUI.shipClass(bs);
 		sub.setText(cls);
-		int tw = CargoParts.width(cls, FtlFont.CARGO), gx = 16 + (640 - tw - 30) / 2;
-		info.setBounds(gx, 361, 24, 22);
-		sub.setBounds(gx + 30, 364, tw + 4, 16);
+		lineTwo(cls);
 		power.show(bs);
 		payer.setRight(!shipPays());
 		scrapCount.set(hold(), ""); // what's spent here and on Save: in its tooltip
@@ -329,10 +334,11 @@ public class SystemsPanel {
 		String id = bs.getShipBlueprintId();
 		String txt = !retro ? "Original" : homeplanet.parser.CompanionMod.isRemodelId(id)
 				? "Custom " + homeplanet.parser.CompanionMod.numberOf(id) : "Original";
-		layoutLbl.setText("Layout:  " + txt + (inGame ? "" : "  (not patched in)") + (retro ? "   ·   retrofitted: any system can be stored" : ""));
+		layoutLbl.setText("Layout: " + txt + (inGame ? "" : " (not patched in)") + (retro ? " · retrofitted" : ""));
+		lineTwo(cls);
 		layoutLbl.setColor(inGame ? CargoParts.TEXT : CargoParts.ORANGE);
 		layoutLbl.setToolTipText(!retro ? homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " systems are where the ship model puts them"
-				: "Blueprint " + id + (inGame ? "" : ". The game data doesn't have it yet: install the mod (Settings > Mods > Patch mods) before launching"));
+				: "Retrofitted: any system can be stored. Blueprint " + id + (inGame ? "" : ". The game data doesn't have it yet: install the mod (Settings > Mods > Patch mods) before launching"));
 		remodelBtn.setEnabled(retro);
 		String remodelLock = homeplanet.parser.Clearance.remodelReason(); // Immersive Mode: a Commander's work (5.56)
 		remodelBtn.setToolTipText(remodelLock == null ? (retro ? "Move " + homeplanet.model.Words.her() + " systems and doors, or overhaul " + homeplanet.model.Words.her() + " deck plan"
