@@ -93,7 +93,7 @@
 	<name sex="B">Fritz</name>
 	<name sex="B" ex="y">Sparkle</name>
 	<name sex="B">Gauss</name>
-	<name sex="B" ex="y">Coulomb</name>
+	<name sex="B" ex="y" rarity="highly-unusual">Coulomb</name>
 	<name sex="B">Magnet</name>
 	<name sex="B">Pole</name>
 	<name sex="B">Wave</name>
