@@ -429,7 +429,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Setup.chk("X: repair experience by outcome: injured " + gain[0] + ", successful " + gain[1] + ", extremely " + gain[2] + "; the injured at half health (" + r.fates.get(0).crew.getHealth() + ")",
     gain[0] == 1 && gain[1] == 2 && gain[2] == 4 && r.fates.get(0).crew.getHealth() == 50); // 6.39: fixed points by skill
   Setup.chk("X: the report's faces, as they came home", rep.faces.size() == 3 && "".equals(rep.faces.get(0).state) && rep.faces.get(0).crew.getHealth() == 50);
-  // a job of race alone (Infection) teaches nothing; the dead and the infirmary are faces too, and the letter keeps them
+  // Infection (6.40: repair first, then pilot and shields) teaches the well; the dead and the infirmary are faces too, and the letter keeps them
   crew = ExpT.hold(v, "human", "human", "human");
   Assignments.send(v, Assignments.board(v).get(0).slot, crew, new Random(10));
   aways = Assignments.away(v); aw = aways.get(aways.size() - 1);
@@ -442,14 +442,14 @@ public class AsgT { public static void main(String[] a) throws Exception {
   rep = Assignments.bringHome(v, aw, r);
   int ptsAfter = 0; for (int k = 0; k < 6; k++) ptsAfter += homeplanet.model.Skills.points(r.fates.get(2).crew, k);
   List<Assignments.Face> kept = Assignments.facesFor(v, letter);
-  Setup.chk("X: Infection teaches no skill (" + pts + " -> " + ptsAfter + "); the dead, the infirmary and the well each a face, kept for the letter (" + kept.size() + ")",
-    pts == ptsAfter && rep.faces.size() == 3 && "dead".equals(rep.faces.get(0).state) && "infirmary".equals(rep.faces.get(1).state) && "".equals(rep.faces.get(2).state)
+  Setup.chk("X: Infection teaches the well (" + pts + " -> " + ptsAfter + "); the dead, the infirmary and the well each a face, kept for the letter (" + kept.size() + ")",
+    pts < ptsAfter && rep.faces.size() == 3 && "dead".equals(rep.faces.get(0).state) && "infirmary".equals(rep.faces.get(1).state) && "".equals(rep.faces.get(2).state)
     && kept.size() == 3 && "dead".equals(kept.get(0).state) && kept.get(1).crew.getName().equals(rep.faces.get(1).crew.getName()));
  }
  /** The roles (6.39, heromedel and McCarthy): a role each, never NA; the best at the primary gets it most of the time; fixed points; every skill at about the same pace. */
  static void roles() {
   String[] jobs = {"defend", "attack", "negotiate", "boarded", "rescue", "salvage", "scout", "repair", "transport", "lost", "escort", "capture", "board", "hijack", "infection", "spiders"};
-  boolean three = true, raceAlone = true; List<String> bad = new ArrayList<String>();
+  boolean three = true; List<String> bad = new ArrayList<String>();
   for (String job : jobs) for (int seed = 0; seed < 50; seed++) {
    List<Assignments.Fate> fs = new ArrayList<Assignments.Fate>();
    for (int i = 0; i < 3; i++) fs.add(new Assignments.Fate(Commission.volunteer("human", new Random(seed * 7 + i))));
@@ -457,11 +457,9 @@ public class AsgT { public static void main(String[] a) throws Exception {
    Assignments.Roles r = Assignments.roles(job);
    Set<Integer> got = new HashSet<Integer>();
    for (Assignments.Fate f : fs) { if (f.skill >= 0 && r.na[f.skill]) bad.add(job + " NA " + f.skill); if (f.skill >= 0) got.add(f.skill); if (f.other) bad.add(job + " other with three"); }
-   if (job.equals("infection")) { if (!got.isEmpty()) raceAlone = false; }
-   else if (got.size() != 3) three = false;
+   if (got.size() != 3) three = false;
   }
   Setup.chk("R: three crew get the three roles of every job, never an NA skill" + (bad.isEmpty() ? "" : " " + bad.subList(0, Math.min(5, bad.size()))), three && bad.isEmpty());
-  Setup.chk("R: Infection runs on race alone: no roles", raceAlone);
   // five crew: two left over get "other" skills, never NA (Giant Spiders: only its own non-NA skills)
   boolean others = true;
   for (int seed = 0; seed < 50; seed++) for (String job : new String[] {"board", "spiders"}) {

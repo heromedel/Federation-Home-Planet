@@ -595,6 +595,6 @@
 	<role job="capture" primary="combat" secondary="pilot, weapons"/>
 	<role job="board" primary="combat" secondary="pilot, repair"/>
 	<role job="hijack" primary="pilot" secondary="combat, engines"/>
-	<role job="infection" na="pilot, engines, shields, weapons, repair, combat"/>
+	<role job="infection" primary="repair" secondary="pilot, shields"/>
 	<role job="spiders" primary="combat" secondary="repair, shields" na="pilot, engines, weapons"/>
 </expeditions>
