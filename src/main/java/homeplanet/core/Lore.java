@@ -240,7 +240,9 @@ public final class Lore {
 		if (low.contains("flagship") && low.matches("(?s).*\\b(destroy(ed|s)?|killed|blown up|blew up|wrecked|defeated)\\b.*")) return "hard rule 1: the Rebel Flagship is never destroyed (the war goes on)";
 		if (low.matches("(?s).*(\\b\\d+|\\b(one|two|three|few|several|many))\\s+beacons?\\b.*") || low.matches("(?s).*\\bbeacons?\\s+(later|ago|passed|from now|since)\\b.*")) return "hard rule 2: time is never told in beacons";
 		if (low.matches("(?s).*\\{[a-z0-9_.]*beacon[a-z0-9_.]*\\}.*")) return "hard rule 2: time is never told in beacons (a beacon count in a token)";
-		if (w.matches("(?s).*\\bRebellion\\b.*") || w.replace("Rebel Flagship", "").matches("(?s).*\\bRebels?\\b.*")) return "voice: the rebellion and the rebels are never capitalised (only the Rebel Flagship)";
+		// a title is the fault, not grammar: a sentence may start with "Rebels" (heromedel, 6.41)
+		String asTitle = w.replace("Rebel Flagship", "").replaceAll("(^|[.!?]\\s+|\\n\\s*|\"\\s*)Rebel", "$1rebel");
+		if (asTitle.matches("(?s).*\\bRebellion\\b.*") || asTitle.matches("(?s).*\\bRebels?\\b.*")) return "voice: the rebellion and the rebels are never capitalised as a title (only the Rebel Flagship)";
 		if (w.contains("Home World")) return "voice: never \"Home World\""; // "FHP" is allowed: never a rule of heromedel's (6.04)
 		if (w.matches("(?s).*\\bthe (Home Planet Station|Federation Home Planet)\\b.*")) return "voice: The Home Planet Station and The Federation Home Planet take a capital T, even mid-sentence";
 		return null;

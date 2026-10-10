@@ -44,8 +44,8 @@ the sense breaks; a thing that stands apart (a prize, a question, a cost) gets a
 
 ## The Federation's voice
 
-The rebellion and the rebels are never capitalised (the Federation won't dignify them with a title); only the Rebel
-Flagship keeps its capitals. Messages may use `{rank}` where a phrase names the player ("Hold the line, {rank}.").
+The rebellion and the rebels are never capitalised as a title (the Federation won't dignify them with one; a sentence
+may still start with "Rebels"); only the Rebel Flagship keeps its capitals. Messages may use `{rank}` where a phrase names the player ("Hold the line, {rank}.").
 
 Catch phrases. The most common of all: **"The Federation endures."**
 

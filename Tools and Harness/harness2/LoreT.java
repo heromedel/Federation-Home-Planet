@@ -56,6 +56,8 @@ public class LoreT { public static void main(String[] a) throws Exception {
  Setup.chk("B: hard rule 1, the Flagship destroyed: left out", Lore.human(Event.of("TEST_FLAG").human("fallback")).equals("fallback"));
  Setup.chk("B: hard rule 2, time in beacons: left out", Lore.human(Event.of("TEST_BEACONS").human("fallback")).equals("fallback"));
  Setup.chk("B: the rebels capitalised: left out", Lore.human(Event.of("TEST_REBELS").human("fallback")).equals("fallback"));
+ Setup.chk("B: a sentence may start with Rebels; a title mid-sentence may not (6.41)", Lore.rule("Rebel guards patrolled the dock.") == null && Lore.rule("They ran. Rebels followed.") == null
+   && Lore.rule("The Rebels fled.") != null && Lore.rule("They fought the Rebellion.") != null);
  Setup.chk("B: a beacon as a place, the rebels in lower case and the Rebel Flagship by name are fine", Lore.human(Event.of("TEST_GOOD").put("name", "Bob").human("fallback")).startsWith("Bob came aboard"));
  String probs = Lore.check().toString();
  Setup.chk("B: the check names the file, the line and the rule (" + probs + ")", probs.contains("lore/logs/station-log.xml, line 5 (TEST_FLAG): hard rule 1") && probs.contains("line 6 (TEST_BEACONS): hard rule 2") && probs.contains("(TEST_REBELS): voice"));
