@@ -28,7 +28,7 @@ import homeplanet.core.SafeFiles;
 
 /**
  * The one home for the names the station gives crew (heromedel and McCarthy, 6.33; docs/NAMES.md). With Custom Name
- * Lists Per Race on (the default), each race is named from its list in lore/names/ (a copy beside the jar replaces the
+ * Lists Per Race on (off by default, 6.34: FTL's own names are vanilla), each race is named from its list in lore/names/ (a copy beside the jar replaces the
  * jar's whole file; a copy that won't read falls back to the jar's and is named in Lore.problems()); a race with no
  * list (a mod's) keeps FTL's names. Human Name Gen shapes the human names, and with the lists off every race's, since
  * then every race has FTL's human names. The reading and the female forms follow the harness's NamesT, the reference.
@@ -36,13 +36,13 @@ import homeplanet.core.SafeFiles;
 public final class CrewNames {
 	private CrewNames() { }
 
-	/** cfg: "false" turns the lists off; missing or anything else is on. */
+	/** cfg: "true" while the lists are on; missing is off, as FTL names its crew (heromedel, 6.34). */
 	public static final String CFG_LISTS = "custom_crew_names";
 	/** cfg: normal, first or first_last (missing is normal). */
 	public static final String CFG_HUMAN = "human_name_gen";
 	public static final String NORMAL = "normal", FIRST = "first", FIRST_LAST = "first_last";
 
-	public static boolean listsOn() { return !"false".equals(HomePlanet.config.getProperty(CFG_LISTS)); }
+	public static boolean listsOn() { return "true".equals(HomePlanet.config.getProperty(CFG_LISTS)); }
 	public static String humanGen() {
 		String g = HomePlanet.config.getProperty(CFG_HUMAN, NORMAL);
 		return FIRST.equals(g) || FIRST_LAST.equals(g) ? g : NORMAL;

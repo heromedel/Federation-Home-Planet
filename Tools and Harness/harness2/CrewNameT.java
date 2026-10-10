@@ -11,7 +11,8 @@ public class CrewNameT { public static void main(String[] a) throws Exception {
  HomePlanet.propFile = new File(work, "test.cfg");
  HomePlanet.config.remove(CrewNames.CFG_LISTS); HomePlanet.config.remove(CrewNames.CFG_HUMAN); HomePlanet.config.remove(StationConsole.GIRL_POWER);
  Setup.open(game, Setup.world(game, new File(work, "w")));
- Setup.chk("S: with no cfg lines, the lists are on and humans Normal", CrewNames.listsOn() && CrewNames.NORMAL.equals(CrewNames.humanGen()));
+ Setup.chk("S: with no cfg lines, the lists are off (vanilla, 6.34) and humans Normal", !CrewNames.listsOn() && CrewNames.NORMAL.equals(CrewNames.humanGen()));
+ HomePlanet.config.setProperty(CrewNames.CFG_LISTS, "true"); // on for the checks below, until O
 
  String[][] races = {{"human", "human"}, {"energy", "zoltan"}, {"engi", "engi"}, {"mantis", "mantis"}, {"rock", "rock"}, {"crystal", "crystal"}, {"anaerobic", "lanius"}, {"slug", "slug"}};
  for (String[] r : races) {
@@ -76,7 +77,7 @@ public class CrewNameT { public static void main(String[] a) throws Exception {
  Setup.chk("R: crew already on record keep the old roll (a Rock from the old logs is still a man)", asBefore);
 
  // lists off: FTL's names, aliens men, Human Name Gen for every race
- HomePlanet.config.setProperty(CrewNames.CFG_LISTS, "false");
+ HomePlanet.config.remove(CrewNames.CFG_LISTS);
  boolean ftl = true, men = true; Set<String> ftlM = new HashSet<String>(net.blerf.ftl.parser.DataManager.get().getCrewNames(true)), ftlF = new HashSet<String>(net.blerf.ftl.parser.DataManager.get().getCrewNames(false));
  for (int s = 0; s < 20; s++) { CrewState c = Commission.volunteer("rock", new Random(s)); if (!c.isMale()) men = false; if (!ftlM.contains(c.getName())) ftl = false; }
  Setup.chk("O: lists off: a Rock volunteer is a man with one of FTL's names, as before", ftl && men);
@@ -84,7 +85,7 @@ public class CrewNameT { public static void main(String[] a) throws Exception {
  HomePlanet.config.setProperty(CrewNames.CFG_HUMAN, CrewNames.FIRST_LAST); boolean ftlTwo = true; for (int i = 0; i < 400; i++) if (!CrewNames.pick(i % 3 == 0 ? "engi" : "human", i % 2 == 0, rng).contains(" ")) ftlTwo = false;
  HomePlanet.config.remove(CrewNames.CFG_HUMAN); boolean ftlAsIs = true; for (int i = 0; i < 400; i++) { boolean m = i % 2 == 0; if (!(m ? ftlM : ftlF).contains(CrewNames.pick("rock", m, rng))) ftlAsIs = false; }
  Setup.chk("O: lists off: First Names Only cuts FTL's names to a word (Mr Buga kept), First and Last Always gives two, Normal FTL's own, for every race", ftlFirst && ftlTwo && ftlAsIs);
- HomePlanet.config.remove(CrewNames.CFG_LISTS);
+ HomePlanet.config.setProperty(CrewNames.CFG_LISTS, "true");
 
  // a player's copy replaces the whole list; a broken one falls back and is named
  File copy = new File(lore, "names/rock.xml"); copy.getParentFile().mkdirs();
