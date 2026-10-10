@@ -945,12 +945,15 @@ public final class Assignments {
 				else if (hurt) line = fresh(rng, fallback, used, "band " + r.job + " injured", "band " + r.job + " injured cause", "band " + r.job + " injured " + r.sector);
 				else { String b = f.died ? "died" : BANDS[f.band]; line = fresh(rng, fallback, used, "band " + r.job + " " + b, "band " + r.job + " " + b + " " + r.sector); } // a wound that killed reads as a death
 				used.add(line);
-				if (f.item != null) line += (line.contains("brought back") ? ", " : " and brought back ") + (f.item.indexOf(':') < 0 ? aOrAn(itemWords(f.item)) : itemWords(f.item));
-				line += ".";
+				String found = f.item == null ? null : f.item.indexOf(':') < 0 ? aOrAn(itemWords(f.item)) : itemWords(f.item);
+				if (line.contains("{name}")) { if (found != null) line += " Along the way, {he} found " + found + "."; } // a whole sentence (6.41)
+				else line += (found == null ? "" : (line.contains("brought back") ? ", " : " and brought back ") + found) + ".";
 			}
 			// a race that shrugged off the hazard says so, a sentence of its own (never for the dead, the taken, the infirmary or the injured)
 			if (shrugged && !hurt) line += " " + sayAt(rng, "", r.sector, "shrug", r.hazard, race);
-			sb.append(stars).append(f.name()).append(" ").append(pronouns(line, f.crew).trim()).append("\n");
+			// a line with {name} is a whole sentence, the name where it falls (6.41); an older one follows the name
+			if (line.contains("{name}")) sb.append(stars).append(pronouns(line.replace("{name}", f.name()), f.crew).trim()).append("\n");
+			else sb.append(stars).append(f.name()).append(" ").append(pronouns(line, f.crew).trim()).append("\n");
 		}
 		if (r.prize != null) sb.append("\n").append(sayAt(rng, "They brought something back.", r.sector, "prize", r.job, r.prize).replace("{name}", r.prizeDetail == null ? "" : r.prizeDetail)).append("\n"); // the prize stands apart
 		sb.append("\nTotal Reward: ").append(r.scrap).append(" scrap");
