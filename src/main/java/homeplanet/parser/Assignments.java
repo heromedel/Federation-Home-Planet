@@ -901,6 +901,7 @@ public final class Assignments {
 		int colon = item.indexOf(':');
 		if (colon < 0) return homeplanet.model.Items.title(item);
 		String kind = item.substring(0, colon), n = item.substring(colon + 1);
+		if ("1".equals(n)) return "parts".equals(kind) ? "a drone part" : "missiles".equals(kind) ? "a missile" : "a little " + kind; // never "1 drone parts"
 		return n + " " + ("parts".equals(kind) ? "drone parts" : kind);
 	}
 	private static String aOrAn(String s) { return homeplanet.model.Words.a(s); }
@@ -930,7 +931,7 @@ public final class Assignments {
 			if (role != null) {
 				used.add(role);
 				String said = role.replace("{name}", f.name());
-				if (f.item != null) said += " {He} also brought back " + (f.item.indexOf(':') < 0 ? aOrAn(itemWords(f.item)) : itemWords(f.item)) + ".";
+				if (f.item != null) said += " Along the way, {he} found " + (f.item.indexOf(':') < 0 ? aOrAn(itemWords(f.item)) : itemWords(f.item)) + ".";
 				if (shrugged) said += " " + sayAt(rng, "", r.sector, "shrug", r.hazard, race);
 				sb.append(stars).append(pronouns(said, f.crew).trim()).append("\n");
 				continue;

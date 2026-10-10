@@ -121,7 +121,16 @@ told whichever way reads best. The killed, the hurt and the taken get no mark: t
 - **Each sentence is its own thing.** Write what that line is saying, not the shape of the line before it. Read a batch
   back for accidental patterns: every line opening with the name, every line joined with ", and", every line two short
   sentences, the same word ("kept", "twice", "halfway", "made sure") over and over.
-- **Don't lean on ", and".** Often the second half is a "but", a "because", or a sentence of its own.
+- **Don't lean on ", and".** Often the second half is a "but", a "because", or a sentence of its own. If "and" sits in
+  the same spot in half the lines, the batch has failed, wherever the name went.
+- **Finish the explanation.** No abrupt hints or punchlines left hanging ("It got loud.", "and then Ann shot." is worse
+  than "and then Ann shot at them."), and no unanswered questions ("without telling anyone why"). Read each line asking
+  what the player would still want to know.
+- **Natural, not forced.** "Everyone but Ann retreated" beats "Everyone retreated, but not Ann." A semicolon or a dash
+  in a line means the sentence needs rewriting. Tone and style come first: narrative to the situation, never a
+  pattern.
+- **Checked on real reports.** A batch is read as the station rolls it (dozens of whole reports), not line by line: a
+  test that only counts names says nothing about how a report reads.
 - **Every line fits every event of its job** (a convoy, a station, a mine, two captains who won't meet), and nothing in
   it says more of the others than it must ("nobody was hurt" can sit beside someone who was).
 - **FTL's rules hold through the proxies:** missiles go through shields (a shield line says lasers, or nothing that
