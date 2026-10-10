@@ -115,6 +115,9 @@ public class SystemsPanel {
 	private javax.swing.JScrollPane sysScroll;
 	/** Row width: the column less room for the scroll bar. */
 	private static final int ROW_W = 550, LAYOUT_H = 118;
+	/** The power distribution simulation under the ship and the lists: its heading and FTL's panel (6.42). */
+	private static final int POWER_H = 184;
+	private final PowerPanel power = new PowerPanel();
 	private FtlButton remodelBtn, retrofitBtn;
 	private final CargoParts.Label layoutLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.TEXT, -1);
 	private final CargoParts.Label layoutHint = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, -1);
@@ -122,24 +125,30 @@ public class SystemsPanel {
 	JPanel panel() {
 		if (remodelBtn != null) return panel;
 		panel.setOpaque(false);
-		pic.setBounds(16, 8, 640, 470);
+		pic.setBounds(16, 8, 640, 322);
 		pic.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " rooms and what's in them; a faint icon is a room kept for a system " + homeplanet.model.Words.she() + " doesn't have");
 		panel.add(pic);
-		name.setBounds(16, 490, 640, 26);
+		name.setBounds(16, 334, 640, 26);
 		name.setToolTipText("Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		name.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 		name.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { bay.showCurrentShipInfo(); } });
 		panel.add(name);
-		sub.setBounds(16, 520, 640, 16);
+		sub.setBounds(16, 364, 640, 16);
 		panel.add(sub);
-		holdLbl.setBounds(16, 542, 640, 16);
+		holdLbl.setBounds(16, 386, 640, 16);
 		holdLbl.setToolTipText("The Dry Dock's work is paid from the Cargo Hold when you Save; this is what it has left to spend");
 		panel.add(holdLbl);
 		info = new CargoParts.IconButton(CargoParts.infoIcon(), homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report, and to rename " + homeplanet.model.Words.herObj(), new ActionListener() { public void actionPerformed(ActionEvent e) { bay.showCurrentShipInfo(); } });
 		panel.add(info);
 		lists.setOpaque(false);
-		lists.setBounds(700, 8, 564, CargoBayUI.H - 52 - 26 - 12);
+		lists.setBounds(700, 8, 564, CargoBayUI.H - 52 - 26 - 12 - POWER_H);
 		panel.add(lists);
+		// the power distribution simulation along the bottom, FTL's own panel at its own size (6.42, heromedel)
+		CargoParts.Header ph = new CargoParts.Header("Power Distribution Simulation", false);
+		ph.setBounds(16, CargoBayUI.H - 52 - 26 - 4 - POWER_H, 1248, 22);
+		panel.add(ph);
+		power.setBounds(16, CargoBayUI.H - 52 - 26 - 4 - POWER_H + 24, 1248, POWER_H - 24);
+		panel.add(power);
 		sysList.setOpaque(false);
 		sysScroll = new javax.swing.JScrollPane(sysList, javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		sysScroll.setOpaque(false);
@@ -191,8 +200,9 @@ public class SystemsPanel {
 		String cls = CargoBayUI.shipClass(bs);
 		sub.setText(cls);
 		int tw = CargoParts.width(cls, FtlFont.CARGO), gx = 16 + (640 - tw - 30) / 2;
-		info.setBounds(gx, 517, 24, 22);
-		sub.setBounds(gx + 30, 520, tw + 4, 16);
+		info.setBounds(gx, 361, 24, 22);
+		sub.setBounds(gx + 30, 364, tw + 4, 16);
+		power.show(bs);
 		holdLbl.setText("Cargo Hold: " + hold() + " scrap" + (bill > 0 ? " (" + bill + " spent here, paid on Save)" : bill < 0 ? " (" + (-bill) + " to come from sales, on Save)" : "")
 				+ (repBill > 0 ? ", and " + repBill + " reputation on Save" : ""));
 		int w = ROW_W, y = 0;
@@ -267,7 +277,6 @@ public class SystemsPanel {
 			j++;
 		}
 		y += j * 32 + 12;
-		y = weaponsAndDrones(bs, y, w); // last: the Dry Dock and the stored systems stay where they were
 		sysList.setPreferredSize(new java.awt.Dimension(ROW_W, y - 12));
 		int H = lists.getHeight();
 		sysScroll.setBounds(0, 0, 564, H - LAYOUT_H);
@@ -759,77 +768,6 @@ public class SystemsPanel {
 		return m;
 	}
 
-	/**
-	 * Her weapons and drones and the power each needs, against Weapon Control's and Drone Control's levels (6.42,
-	 * heromedel: the Refit tab didn't show them). In orange when she can't power them all at once.
-	 */
-	private int weaponsAndDrones(ShipState bs, int y, int w) {
-		List<String[]> rows = new ArrayList<String[]>();
-		int wNeed = 0, dNeed = 0;
-		for (net.blerf.ftl.parser.SavedGameParser.WeaponState ws : bs.getWeaponList()) {
-			net.blerf.ftl.xml.WeaponBlueprint wb = DataManager.get().getWeapon(ws.getWeaponId());
-			int p = wb == null ? 0 : wb.getPower();
-			wNeed += p;
-			rows.add(new String[] {"w", wb != null && wb.getTitle() != null ? wb.getTitle().getTextValue() : ws.getWeaponId(), Integer.toString(p),
-					wb != null && wb.getDescription() != null ? wb.getDescription().getTextValue() : ""});
-		}
-		for (net.blerf.ftl.parser.SavedGameParser.DroneState ds : bs.getDroneList()) {
-			net.blerf.ftl.xml.DroneBlueprint db = DataManager.get().getDrone(ds.getDroneId());
-			int p = db == null ? 0 : db.getPower();
-			dNeed += p;
-			rows.add(new String[] {"d", db != null && db.getTitle() != null ? db.getTitle().getTextValue() : ds.getDroneId(), Integer.toString(p),
-					db != null && db.getDescription() != null ? db.getDescription().getTextValue() : ""});
-		}
-		if (rows.isEmpty()) return y;
-		CargoParts.Header h = new CargoParts.Header("Weapons and drones", false);
-		h.setBounds(0, y, w, 22);
-		sysList.add(h);
-		y += 26;
-		SystemState ws = bs.getSystem(SystemType.WEAPONS), ds = bs.getSystem(SystemType.DRONE_CTRL);
-		final int wHave = ws == null ? 0 : ws.getCapacity(), dHave = ds == null ? 0 : ds.getCapacity();
-		for (int k = 0; k < 2; k++) {
-			final boolean weapons = k == 0;
-			int need = weapons ? wNeed : dNeed, have = weapons ? wHave : dHave;
-			if (need == 0 && (weapons ? wHave : dHave) == 0) continue;
-			final boolean short_ = need > have;
-			final String line = (weapons ? "Weapon Control" : "Drone Control") + ": " + have + (have == 1 ? " bar" : " bars") + "; " + (weapons ? "the weapons" : "the drones") + " need " + need;
-			JComponent sum = new JComponent() {
-				@Override protected void paintComponent(java.awt.Graphics g0) {
-					java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
-					CargoParts.text(g, line + (short_ ? " (not all at once)" : ""), FtlFont.CARGO, short_ ? CargoParts.ORANGE : CargoParts.DIM, 8, 3);
-					g.dispose();
-				}
-			};
-			sum.setToolTipText(short_ ? "Not all of them can be powered at once: upgrade the " + (weapons ? "Weapon Control" : "Drone Control") + ", or carry fewer" : null);
-			sum.setBounds(0, y, w, 20);
-			sysList.add(sum);
-			y += 22;
-			for (String[] r : rows) {
-				if (!r[0].equals(weapons ? "w" : "d")) continue;
-				final String name = r[1];
-				final int p = Integer.parseInt(r[2]);
-				final InfoTip.Model tip = new InfoTip.Model(name, r[3]);
-				tip.line = "Power:";
-				tip.squares = p;
-				JComponent row = new JComponent() {
-					@Override public javax.swing.JToolTip createToolTip() { InfoTip t = new InfoTip(tip); t.setComponent(this); return t; }
-					@Override protected void paintComponent(java.awt.Graphics g0) {
-						java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
-						CargoParts.paintBox(g, 0, 0, getWidth(), getHeight(), CargoParts.BOX_LINE);
-						CargoParts.text(g, FtlFont.CARGO.fit(name, 230), FtlFont.CARGO, CargoParts.TEXT, 10, 5);
-						CargoParts.text(g, p + " power", FtlFont.CARGO, CargoParts.DIM, 226, 5);
-						for (int b = 0; b < p && b < 8; b++) { g.setColor(new Color(120, 230, 120)); g.fillRect(BARS_X + b * 7, 7, 5, 11); }
-						g.dispose();
-					}
-				};
-				row.setToolTipText(tip.plain());
-				row.setBounds(0, y, w, 24);
-				sysList.add(row);
-				y += 26;
-			}
-		}
-		return y + 10;
-	}
 	/** Her hull at full strength (her model's). */
 	static int maxHull(ShipState bs) {
 		ShipBlueprint bp = DataManager.get().getShip(bs.getShipBlueprintId());
