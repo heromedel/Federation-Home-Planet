@@ -214,7 +214,7 @@ public class SystemsPanel {
 			int up = upgradePrice(bs, t), broken = st.getDamagedBars();
 			r.broken = broken;
 			r.max = maxLevel(bs, t);
-			r.setToolTipText(info(t.getId(), st.getCapacity(), r.max, why)); // FTL's own words and what's left to buy, as its upgrade screen shows on hover
+			r.info(info(t.getId(), st.getCapacity(), r.max, why)); // FTL's own words and what's left to buy, as its upgrade screen shows on hover
 			if (broken > 0) { // mended first: then she can be upgraded
 				int scrap = hold(), fix = broken * homeplanet.parser.Pricing.SYSTEM_REPAIR;
 				r.addButton("Fix: " + fix, 78, ROW_W - 108 - 82, scrap >= fix,
@@ -258,7 +258,7 @@ public class SystemsPanel {
 			if (st2 != null) {
 				r.max = maxLevel(bay.currentSave.getPlayerShip(), st2);
 				String note = (why != null ? why : order ? workOrderTip() : "") + damage;
-				r.setToolTipText(info(s.id, s.level, r.max, note.trim().isEmpty() ? null : note.trim()));
+				r.info(info(s.id, s.level, r.max, note.trim().isEmpty() ? null : note.trim()));
 			}
 			if (homeplanet.core.HomePlanet.sellSystems()) r.addSell(salePrice(s), new ActionListener() { public void actionPerformed(ActionEvent e) { sellSystem(s); } });
 			r.lights(pic, s.id); // the room it would go into
@@ -320,6 +320,15 @@ public class SystemsPanel {
 		int broken = 0;
 		/** FTL's most for this system on her (6.42): the bars past her level drawn dim, as FTL's upgrade screen draws them. */
 		int max = 0;
+		/** Its hover as FTL's upgrade screen draws it (6.42), or null for a plain tooltip. */
+		private InfoTip.Model info;
+		void info(InfoTip.Model m) { info = m; setToolTipText(m.plain()); }
+		@Override public javax.swing.JToolTip createToolTip() {
+			if (info == null) return super.createToolTip();
+			InfoTip t = new InfoTip(info);
+			t.setComponent(this);
+			return t;
+		}
 		SysRow(String title, int level, String action, String why, String tip, ActionListener a) {
 			this.title = title; this.level = level; this.ok = why == null;
 			setLayout(null);
@@ -364,7 +373,7 @@ public class SystemsPanel {
 			// up to 8 bars as before; more (the reactor's 25) narrower, in the same 64 pixels
 			int step = all <= 8 ? 7 : Math.max(2, 56 / Math.max(1, all)), bw = all <= 8 ? 5 : Math.max(1, step - 1);
 			for (int k = 0; k < all && BARS_X + k * step + bw <= BARS_X + 56; k++) { // clear of the Up button
-				if (k >= level) { // not hers yet: FTL's empty bar, outlined
+				if (k >= level) { // not had yet: FTL's empty bar, outlined
 					g.setColor(new Color(70, 80, 84));
 					g.drawRect(BARS_X + k * step, 9, bw - 1, 10);
 					continue;
@@ -681,29 +690,21 @@ public class SystemsPanel {
 	}
 	/**
 	 * A system's hover, as FTL's upgrade screen shows it (6.42, heromedel): its title and FTL's own description, then its
-	 * levels from the most down, hers filled and each one past them with its price; and why it's greyed out, if it is.
+	 * levels from the most down, each with its price and what it gives, the ones already had in green; and why it's
+	 * greyed out, if it is.
 	 */
-	static String info(String id, int level, int max, String why) {
+	static InfoTip.Model info(String id, int level, int max, String why) {
 		net.blerf.ftl.xml.SystemBlueprint sb = DataManager.get().getSystem(id);
 		String title = sb != null && sb.getTitle() != null ? sb.getTitle().getTextValue() : DryDockShop.systemTitle(id);
 		String desc = sb != null && sb.getDescription() != null ? sb.getDescription().getTextValue() : "";
-		StringBuilder h = new StringBuilder("<html><div style='width:300px'><b>").append(esc(title)).append("</b>");
-		if (!desc.isEmpty()) h.append("<br>").append(esc(desc));
-		if (max > 0) {
-			h.append("<table cellspacing='0' cellpadding='1' style='margin-top:4px'>");
-			for (int lv = max; lv >= 1; lv--) {
-				int price = lv > level ? homeplanet.parser.Pricing.upgrade(id, lv - 1) : -1;
-				h.append("<tr><td><font color='").append(lv <= Math.max(0, level) ? "#1f8f2f" : "#8a9599").append("'>\u25A0</font></td><td>");
-				String what = levelLabel(id, lv);
-				String said = what.isEmpty() ? "" : " &nbsp;<font color='#4d5a5e'>" + esc(what) + "</font>";
-				if (lv <= Math.max(0, level)) h.append("<font color='#1f8f2f'>level ").append(lv).append(" (hers)</font>").append(said);
-				else h.append("level ").append(lv).append(price > 0 ? ": " + price + " scrap" : "").append(said);
-				h.append("</td></tr>");
-			}
-			h.append("</table>");
-		}
-		if (why != null) h.append("<br><font color='#b8641a'>").append(esc(why)).append("</font>");
-		return h.append("</div></html>").toString();
+		InfoTip.Model m = new InfoTip.Model(title, desc);
+		// past the system's most, FTL lists a level no upgrade buys (the doors' and sensors' fourth), its price a dash
+		String beyond = sb != null && max == sb.getMaxPower() && !"weapons".equals(id) && !"drones".equals(id) ? levelLabel(id, max + 1) : "";
+		if (!beyond.isEmpty()) m.rows.add(new InfoTip.Row(max + 1, false, 0, beyond));
+		for (int lv = max; lv >= 1; lv--) // level 1 has no price: it comes with the system
+			m.rows.add(new InfoTip.Row(lv, lv <= Math.max(0, level), lv > 1 ? homeplanet.parser.Pricing.upgrade(id, lv - 1) : -1, levelLabel(id, lv)));
+		m.note = why;
+		return m;
 	}
 	/** FTL's text for an id (its text files), or null. */
 	private static String ftlText(String id) {
@@ -749,16 +750,14 @@ public class SystemsPanel {
 	}
 	private static String num(double d) { return d == Math.floor(d) ? Integer.toString((int) d) : (Math.round(d * 100) % 10 == 0 ? String.format("%.1f", d) : String.format("%.2f", d)); }
 
-	/** The reactor's hover: FTL's own words for it, her bars, and the next ones' prices. */
-	static String reactorInfo(int bars) {
-		String desc = ftlText("reactor_desc");
-		StringBuilder h = new StringBuilder("<html><div style='width:300px'><b>Reactor</b>" + (desc == null ? "" : "<br>" + esc(desc)) + "<br>Her power: " + bars + " of " + homeplanet.parser.Pricing.REACTOR_MAX + " bars.");
-		h.append("<table cellspacing='0' cellpadding='1' style='margin-top:4px'>");
+	/** The reactor's hover: FTL's own words for it, its bars, and the next ones' prices. */
+	static InfoTip.Model reactorInfo(int bars) {
+		InfoTip.Model m = new InfoTip.Model("Reactor", ftlText("reactor_desc"));
+		m.line = "Power bars: " + bars + " of " + homeplanet.parser.Pricing.REACTOR_MAX;
 		for (int n = Math.min(homeplanet.parser.Pricing.REACTOR_MAX, bars + 5); n > bars; n--)
-			h.append("<tr><td><font color='#8a9599'>\u25A0</font></td><td>bar ").append(n).append(": ").append(homeplanet.parser.Pricing.reactorBar(n)).append(" scrap</td></tr>");
-		return h.append("</table></div></html>").toString();
+			m.rows.add(new InfoTip.Row(n, false, homeplanet.parser.Pricing.reactorBar(n), "bar " + n));
+		return m;
 	}
-	private static String esc(String t) { return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>"); }
 
 	/**
 	 * Her weapons and drones and the power each needs, against Weapon Control's and Drone Control's levels (6.42,
@@ -793,7 +792,7 @@ public class SystemsPanel {
 			int need = weapons ? wNeed : dNeed, have = weapons ? wHave : dHave;
 			if (need == 0 && (weapons ? wHave : dHave) == 0) continue;
 			final boolean short_ = need > have;
-			final String line = (weapons ? "Weapon Control" : "Drone Control") + ": " + have + (have == 1 ? " bar" : " bars") + "; " + (weapons ? "her weapons" : "her drones") + " need " + need;
+			final String line = (weapons ? "Weapon Control" : "Drone Control") + ": " + have + (have == 1 ? " bar" : " bars") + "; " + (weapons ? "the weapons" : "the drones") + " need " + need;
 			JComponent sum = new JComponent() {
 				@Override protected void paintComponent(java.awt.Graphics g0) {
 					java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
@@ -801,7 +800,7 @@ public class SystemsPanel {
 					g.dispose();
 				}
 			};
-			sum.setToolTipText(short_ ? "She can't power all of them at once: upgrade the " + (weapons ? "Weapon Control" : "Drone Control") + ", or carry fewer" : null);
+			sum.setToolTipText(short_ ? "Not all of them can be powered at once: upgrade the " + (weapons ? "Weapon Control" : "Drone Control") + ", or carry fewer" : null);
 			sum.setBounds(0, y, w, 20);
 			sysList.add(sum);
 			y += 22;
@@ -809,7 +808,11 @@ public class SystemsPanel {
 				if (!r[0].equals(weapons ? "w" : "d")) continue;
 				final String name = r[1];
 				final int p = Integer.parseInt(r[2]);
+				final InfoTip.Model tip = new InfoTip.Model(name, r[3]);
+				tip.line = "Power:";
+				tip.squares = p;
 				JComponent row = new JComponent() {
+					@Override public javax.swing.JToolTip createToolTip() { InfoTip t = new InfoTip(tip); t.setComponent(this); return t; }
 					@Override protected void paintComponent(java.awt.Graphics g0) {
 						java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
 						CargoParts.paintBox(g, 0, 0, getWidth(), getHeight(), CargoParts.BOX_LINE);
@@ -819,7 +822,7 @@ public class SystemsPanel {
 						g.dispose();
 					}
 				};
-				row.setToolTipText("<html><div style='width:300px'><b>" + esc(name) + "</b>" + (r[3].isEmpty() ? "" : "<br>" + esc(r[3])) + "<br>Power: " + p + "</div></html>");
+				row.setToolTipText(tip.plain());
 				row.setBounds(0, y, w, 24);
 				sysList.add(row);
 				y += 26;
@@ -842,7 +845,7 @@ public class SystemsPanel {
 		int bars = bs.getReservePowerCapacity(), rp = homeplanet.parser.Pricing.reactorBar(bars + 1);
 		SysRow reactor = new SysRow("Reactor", bars, "", null, "Reactor power: " + bars + " bars", null);
 		reactor.max = homeplanet.parser.Pricing.REACTOR_MAX;
-		reactor.setToolTipText(reactorInfo(bars));
+		reactor.info(reactorInfo(bars));
 		if (bars < homeplanet.parser.Pricing.REACTOR_MAX) {
 			reactor.addButton("Up: " + rp, 78, ROW_W - 82, scrap >= rp, scrap >= rp ? "One more bar of reactor power for " + rp + " scrap" : "One more bar costs " + rp + " scrap; the Cargo Hold has " + scrap,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { upgradeReactor(); } });

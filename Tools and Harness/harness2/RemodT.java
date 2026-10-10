@@ -134,9 +134,12 @@ public class RemodT {
   List<String> off = new ArrayList<String>();
   for (String[] w : want) { String got = (String) label.invoke(null, w[0], Integer.parseInt(w[1])); if (!w[2].equals(got)) off.add(w[0] + " " + w[1] + ": \"" + got + "\""); }
   Setup.chk("F: each level's line as FTL's upgrade screen has it (" + want.length + " read off FTL)" + (off.isEmpty() ? "" : " " + off), off.isEmpty());
-  String drones = ((String) info.invoke(null, "drones", 3, 8, null)).replaceAll("<[^>]+>", " ").replaceAll("&nbsp;", " ").replaceAll("\\s+", " ");
-  Setup.chk("F: Drone Control at level 3: FTL's description, 100 80 60 45 30 for levels 8 to 4, levels 3 to 1 hers",
-    drones.contains("Powers all of the ship's drones.") && drones.contains("level 8: 100 scrap") && drones.contains("level 4: 30 scrap") && drones.contains("level 3 (hers)") && !drones.contains("level 3: "));
+  Object m = info.invoke(null, "drones", 3, 8, null);
+  java.lang.reflect.Method plain = m.getClass().getDeclaredMethod("plain"); plain.setAccessible(true);
+  String drones = (String) plain.invoke(m);
+  Setup.chk("F: Drone Control at level 3: FTL's description, 100 80 60 45 30 for levels 8 to 4, levels 3 to 1 had (their prices green), level 1 no price, no \"hers\"",
+    drones.contains("Powers all of the ship's drones.") && drones.contains("level 8: 100 ") && drones.contains("level 4: 30 ") && drones.contains("level 3: ") && drones.contains("level 3: " + homeplanet.parser.Pricing.upgrade("drones", 2) + " (had)")
+    && drones.contains("level 1 (had)") && !drones.contains("level 1: ") && !drones.contains("level 4: 30 (had)") && !drones.contains("hers"));
  }
  /** A system lifted off the remodel: it can come off the blueprint, and Uninstall takes it into the Cargo Bay the Refit tab's way. */
  static void uninstall(Vault v, MainFrame f) throws Exception {
