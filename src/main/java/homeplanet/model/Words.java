@@ -17,5 +17,10 @@ public final class Words {
 	/** A count as the style guide says it (docs/STYLE.md): up to ten in words, then digits ("two ships", "1,024 scrap"). */
 	public static String number(int n) { return n >= 0 && n < NUMBERS.length ? NUMBERS[n] : String.format("%,d", n); }
 	private static final String[] NUMBERS = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
-	public static String a(String s) { return s == null || s.isEmpty() ? "" : ("AEIOUaeiou".indexOf(s.charAt(0)) >= 0 ? "an " : "a ") + s; }
+	public static String a(String s) {
+		if (s == null || s.isEmpty()) return "";
+		String first = s.split(" ")[0];
+		boolean initials = first.length() > 1 && first.matches("[A-Z]+"); // "an FTL Jammer": said letter by letter
+		return ((initials ? "AEFHILMNORSX" : "AEIOUaeiou").indexOf(s.charAt(0)) >= 0 ? "an " : "a ") + s;
+	}
 }

@@ -130,3 +130,14 @@ facts above.
     for Sensors to be installed for use by other races. The Slug Ships ability to survive based in nebulas has to do
     with Slug Repair gel not resistance to the storms that they avoid. Mantis like hunting in nebulas as a challenge and
     because they hate how slugs see them coming but they still are not good at it.
+
+## More on the races
+
+Added 6.38, confirmed by heromedel.
+
+51. A Crystal can lock down a room, sealing it with crystal for a while. *(FTL: "Can lockdown rooms"; heromedel)*
+52. Humans learn skills faster than other races: FTL needs fewer points for each level of a human's skill (piloting
+    and engines 13 against 15, shields 50 against 55, weapons 58 against 65, repair 16 against 18, combat 7 against 8).
+    *(FTL:AE's mastery intervals; heromedel)*
+53. Mantis move faster than other crew. *(FTL's race description; heromedel)*
+54. Rock move slower than other crew and have more health. *(FTL's race description; heromedel)*

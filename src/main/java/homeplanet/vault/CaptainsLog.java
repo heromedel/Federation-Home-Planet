@@ -160,7 +160,7 @@ public final class CaptainsLog {
 	/** The kinds of line that moved the day on, by the master log's reason for the day after. */
 	private static List<String> moverKinds(String why) {
 		if (why.startsWith("a day of rest")) return Arrays.asList("rest");
-		if (why.equals(MasterLog.CARGO_BAY)) return Arrays.asList("buy", "sell", "systems", "junk", "retire");
+		if (why.equals(MasterLog.CARGO_BAY)) return Arrays.asList("buy", "hire", "sell", "systems", "junk", "retire");
 		if (why.startsWith("work at a store")) return Arrays.asList("work", "ftlbuy");
 		if (why.startsWith("a jump")) return Arrays.asList("move");
 		if (why.startsWith("a job")) return Arrays.asList("job");
@@ -207,6 +207,12 @@ public final class CaptainsLog {
 			}
 			Line l = line(m, "buy", "buy", true, "");
 			for (String d : det) {
+				Matcher h = HIRED.matcher(d);
+				if (h.find() && isRace(h.group(2))) { // crew from a store are hired, not bought (heromedel, 6.40)
+					Line c = line(m, "hire", "hire:" + h.group(1), true, "Hired " + h.group(1) + ", " + article(h.group(2)) + ", at a station.");
+					c.details.add(h.group(1) + ", " + h.group(3) + " scrap");
+					continue;
+				}
 				String item = d.contains(" (") ? d.substring(0, d.indexOf(" (")) : d;
 				add(l, item, 1);
 				Matcher p = Pattern.compile("\\((\\d+) scrap\\)").matcher(d);
@@ -648,6 +654,12 @@ public final class CaptainsLog {
 	}
 	private static String shipName(String head) { return head.split("  ")[0].replaceAll("\\s*\\([0-9a-f]{16}\\)", "").trim(); }
 	private static String race(String id) { return homeplanet.model.Crew.raceTitle(id); }
+	/** A purchase from a store that was a crew member: "Coil (Engi) (45 scrap) from the store at…". */
+	private static final Pattern HIRED = Pattern.compile("^(.+) \\(([^()]+)\\) \\((\\d+) scrap\\) from the store at ");
+	private static boolean isRace(String title) {
+		for (String id : new String[] {"human", "engi", "energy", "mantis", "rockman", "slug", "crystal", "anaerobic"}) if (title.equals(race(id))) return true;
+		return false;
+	}
 	private static String sentence(String s) { s = s.trim(); return s.isEmpty() ? s : homeplanet.model.Words.cap(s) + (s.endsWith(".") ? "" : "."); }
 	private static String lower(String s) { return s.isEmpty() ? s : Character.toLowerCase(s.charAt(0)) + s.substring(1); }
 }
