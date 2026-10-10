@@ -207,7 +207,7 @@
 	<line kind="offer" sector="crystal">A message reached the station in no language anyone uses, with coordinates and a promise of pay.</line>
 	<line kind="offer" sector="crystal">Someone in Crystal space is hiring, and the station still can't tell who.</line>
 
-	<line kind="event" job="defend">were hired to hold off the raiders circling a trading station that had no guns of her own</line>
+	<line kind="event" job="defend">were hired to hold off the raiders circling a trading station that had no guns of its own</line>
 	<line kind="event" job="defend">held their ground beside a convoy at anchor while raiders came at it from every side</line>
 	<line kind="event" job="defend">guarded a colony from orbit through a long night of raids</line>
 	<line kind="event" job="defend" sector="engi">were posted above an Engi supply station that a Mantis raider kept coming back to</line>
