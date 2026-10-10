@@ -1025,6 +1025,18 @@ the captives and ransoms, and hiring stay in `parser/Expeditions.java` for the c
   now one of the six general ones, no more likely than the others (about one report in twelve). The harness checks the
   experience: the job's skill, 1 point for injured or failed, 4, 6 or 8 for the successes, none on Negotiate or Rescue.
 
+  **6.39 (heromedel and McCarthy): roles and fixed training.** Combat levelled far faster than anything else (the flat
+  points above were a whole combat level, an eighth of a weapons one). Each job now has a primary skill, two
+  secondaries, its other skills and the ones with no place in it (NA), in lore/expeditions.xml's `<role>`: the primary
+  goes 75% to whoever is best at it (then 50%, 25%), each secondary 50% to someone whose own best skill it is (then 25%,
+  12.5%), a role nobody wins to anyone, anyone left over one of the other skills; "best at" is the level with its
+  fraction, a race's own skill half a level more. Each rolls their own role's skill. Training is fixed whole points by
+  skill and roll, as FTL pays them (failed or injured / success / natural 20): combat 0/1/2; piloting, engines and
+  repair 1/2/4; shields 3/7/14; weapons 5/10/20 (a little more than first set: it has the fewest roles); an "other"
+  role half, at least 1. Negotiate is Piloting with Combat and Shields; Infection runs on race alone and trains nobody;
+  Giant Spiders has no ship skills (NA: piloting, engines, weapons); Get Boarded has no weapons. AsgT checks 4000
+  expeditions keep every skill within a factor of two.
+
 ## 32. One day a beacon — built (5.00; harness checks in PartT, FleetT, TransT, ExpT)
 
 heromedel's clock: a beacon is a day, 28 to the month, for everything the station times. The stipend comes every

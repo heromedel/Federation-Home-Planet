@@ -159,7 +159,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 
 | Kind | Fields | Headline today |
 | --- | --- | --- |
-| `EXPEDITION` | `what`: `sent` (`sector`, `sector_id`, `party`, `crew` and `race` repeated); `back` (`sector`, `sector_id`, `job`, `job_id`, `scrap`, `prize`, `prize_detail`, `captured`, `good`, `bad`, `crew` repeated, `killed` repeated); `prize_ship` (ship, `ship_class`, `to`); `recruit_declined`, `prize_ship_declined` (`name`); `job` (`job`, `job_kind`, `event_id`, `scrap`, `item`, `joined`, `lost`, `hurt` repeated); `out_of_infirmary` (`crew`); `captive_lost` (`crew`, `race`, `captors`, `why`); `ransomed` (`crew`, `race`, `captors`, `ransom`, `to`) | "Twin sent to Nebula" |
+| `EXPEDITION` | `what`: `sent` (`sector`, `sector_id`, `party`, `crew` and `race` repeated); `back` (`sector`, `sector_id`, `job`, `job_id`, `scrap`, `prize`, `prize_detail`, `captured`, `good`, `bad`, `crew` repeated, `killed` repeated, `role` repeated (6.39: `name:skill:kind:band:points`, kind `primary`, `secondary` or `other`; none on a job of race alone)); `prize_ship` (ship, `ship_class`, `to`); `recruit_declined`, `prize_ship_declined` (`name`); `job` (`job`, `job_kind`, `event_id`, `scrap`, `item`, `joined`, `lost`, `hurt` repeated); `out_of_infirmary` (`crew`); `captive_lost` (`crew`, `race`, `captors`, `why`); `ransomed` (`crew`, `race`, `captors`, `ransom`, `to`) | "Twin sent to Nebula" |
 | `HIRE` | `how` (`rescued`, `promise`, `posted`), `crew`, `race`, `cost`, `reputation`, `to` | "Posted for volunteers, 40 scrap: Bob (human) joined, in the Cargo Hold" |
 | `MEDBAY` | `crew`, `race`, `place` | "Bob's visited The Station's Medbay" |
 | `REST` | `days_in_a_row`, `cost` | "Rested in quarters (2 days in a row)" |

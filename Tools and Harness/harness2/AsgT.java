@@ -17,6 +17,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
  twoPrizesOneDay(v);
  experience(v);
  skillOnRoll();
+ roles();
  Setup.done();
 }
  /** The job's skill on the d20 (5.43): +2 a level, +3 with a suited race; naturals 1 and 20 untouched; 2 to 19 otherwise. */
@@ -30,11 +31,11 @@ public class AsgT { public static void main(String[] a) throws Exception {
   for (int seed = 0; seed < 200; seed++) {
    Assignments.Result r = Assignments.roll("civilian", Collections.singletonList(ace), new Random(seed), true);
    Assignments.Fate f = r.fates.get(0);
-   int want = Assignments.jobSkill(r.job) < 0 ? f.natural : Assignments.skilled(f.natural, 2, Assignments.raceJob("human", r.job) > 0);
+   int want = f.skill < 0 ? f.natural : Assignments.skilled(f.natural, 2, Assignments.raceJob("human", r.job) > 0);
    if (f.roll != want || f.band != Assignments.band(f.roll)) all = false;
    seen++; if (f.roll > f.natural) raised++;
   }
-  Setup.chk("K: a master's rolls take the job's skill (" + raised + " of " + seen + " raised), none for Negotiate or Rescue, the band from the changed roll", all && raised > 0);
+  Setup.chk("K: a master's rolls take their role's skill (" + raised + " of " + seen + " raised), none for a job of race alone, the band from the changed roll", all && raised > 0);
  }
  static void tables() {
   boolean same = true;
@@ -421,28 +422,84 @@ public class AsgT { public static void main(String[] a) throws Exception {
   List<Assignments.Away> aways = Assignments.away(v); Assignments.Away aw = aways.get(aways.size() - 1);
   Assignments.Result r = aw.result(); r.job = "repair"; r.prize = null; r.hazard = null; r.hacker = null;
   int[] bands = {1, 3, 5};
-  for (int i = 0; i < 3; i++) { Assignments.Fate f = r.fates.get(i); f.band = bands[i]; f.died = f.captured = f.infirmary = f.worn = false; f.item = null; f.crew.setHealth(100); }
+  for (int i = 0; i < 3; i++) { Assignments.Fate f = r.fates.get(i); f.band = bands[i]; f.died = f.captured = f.infirmary = f.worn = false; f.item = null; f.crew.setHealth(100); f.skill = 4; f.other = false; }
   int[] before = new int[3]; for (int i = 0; i < 3; i++) before[i] = homeplanet.model.Skills.points(r.fates.get(i).crew, 4);
   Assignments.Report rep = Assignments.bringHome(v, aw, r);
   int[] gain = new int[3]; for (int i = 0; i < 3; i++) gain[i] = homeplanet.model.Skills.points(r.fates.get(i).crew, 4) - before[i];
   Setup.chk("X: repair experience by outcome: injured " + gain[0] + ", successful " + gain[1] + ", extremely " + gain[2] + "; the injured at half health (" + r.fates.get(0).crew.getHealth() + ")",
-    gain[0] == 1 && gain[1] == 4 && gain[2] == 8 && r.fates.get(0).crew.getHealth() == 50);
+    gain[0] == 1 && gain[1] == 2 && gain[2] == 4 && r.fates.get(0).crew.getHealth() == 50); // 6.39: fixed points by skill
   Setup.chk("X: the report's faces, as they came home", rep.faces.size() == 3 && "".equals(rep.faces.get(0).state) && rep.faces.get(0).crew.getHealth() == 50);
-  // Negotiate teaches nothing; the dead and the infirmary are faces too, and the letter keeps them
+  // a job of race alone (Infection) teaches nothing; the dead and the infirmary are faces too, and the letter keeps them
   crew = ExpT.hold(v, "human", "human", "human");
   Assignments.send(v, Assignments.board(v).get(0).slot, crew, new Random(10));
   aways = Assignments.away(v); aw = aways.get(aways.size() - 1);
-  r = aw.result(); r.job = "negotiate"; r.prize = null; r.hazard = null; r.hacker = null;
-  for (int i = 0; i < 3; i++) { Assignments.Fate f = r.fates.get(i); f.band = 5; f.died = f.captured = f.infirmary = f.worn = false; f.item = null; f.crew.setHealth(100); }
+  r = aw.result(); r.job = "infection"; r.prize = null; r.hazard = null; r.hacker = null;
+  for (int i = 0; i < 3; i++) { Assignments.Fate f = r.fates.get(i); f.band = 5; f.died = f.captured = f.infirmary = f.worn = false; f.item = null; f.crew.setHealth(100); f.skill = -1; }
+  Assignments.assignRoles("infection", r.fates, new Random(3));
   r.fates.get(0).band = 0; r.fates.get(0).died = true; r.fates.get(1).band = 1; r.fates.get(1).infirmary = true;
   int pts = 0; for (int k = 0; k < 6; k++) pts += homeplanet.model.Skills.points(r.fates.get(2).crew, k);
   String letter = Assignments.letterKey(aw);
   rep = Assignments.bringHome(v, aw, r);
   int ptsAfter = 0; for (int k = 0; k < 6; k++) ptsAfter += homeplanet.model.Skills.points(r.fates.get(2).crew, k);
   List<Assignments.Face> kept = Assignments.facesFor(v, letter);
-  Setup.chk("X: Negotiate teaches no skill (" + pts + " -> " + ptsAfter + "); the dead, the infirmary and the well each a face, kept for the letter (" + kept.size() + ")",
+  Setup.chk("X: Infection teaches no skill (" + pts + " -> " + ptsAfter + "); the dead, the infirmary and the well each a face, kept for the letter (" + kept.size() + ")",
     pts == ptsAfter && rep.faces.size() == 3 && "dead".equals(rep.faces.get(0).state) && "infirmary".equals(rep.faces.get(1).state) && "".equals(rep.faces.get(2).state)
     && kept.size() == 3 && "dead".equals(kept.get(0).state) && kept.get(1).crew.getName().equals(rep.faces.get(1).crew.getName()));
+ }
+ /** The roles (6.39, heromedel and McCarthy): a role each, never NA; the best at the primary gets it most of the time; fixed points; every skill at about the same pace. */
+ static void roles() {
+  String[] jobs = {"defend", "attack", "negotiate", "boarded", "rescue", "salvage", "scout", "repair", "transport", "lost", "escort", "capture", "board", "hijack", "infection", "spiders"};
+  boolean three = true, raceAlone = true; List<String> bad = new ArrayList<String>();
+  for (String job : jobs) for (int seed = 0; seed < 50; seed++) {
+   List<Assignments.Fate> fs = new ArrayList<Assignments.Fate>();
+   for (int i = 0; i < 3; i++) fs.add(new Assignments.Fate(Commission.volunteer("human", new Random(seed * 7 + i))));
+   Assignments.assignRoles(job, fs, new Random(seed));
+   Assignments.Roles r = Assignments.roles(job);
+   Set<Integer> got = new HashSet<Integer>();
+   for (Assignments.Fate f : fs) { if (f.skill >= 0 && r.na[f.skill]) bad.add(job + " NA " + f.skill); if (f.skill >= 0) got.add(f.skill); if (f.other) bad.add(job + " other with three"); }
+   if (job.equals("infection")) { if (!got.isEmpty()) raceAlone = false; }
+   else if (got.size() != 3) three = false;
+  }
+  Setup.chk("R: three crew get the three roles of every job, never an NA skill" + (bad.isEmpty() ? "" : " " + bad.subList(0, Math.min(5, bad.size()))), three && bad.isEmpty());
+  Setup.chk("R: Infection runs on race alone: no roles", raceAlone);
+  // five crew: two left over get "other" skills, never NA (Giant Spiders: only its own non-NA skills)
+  boolean others = true;
+  for (int seed = 0; seed < 50; seed++) for (String job : new String[] {"board", "spiders"}) {
+   List<Assignments.Fate> fs = new ArrayList<Assignments.Fate>();
+   for (int i = 0; i < 5; i++) fs.add(new Assignments.Fate(Commission.volunteer("human", new Random(seed * 11 + i))));
+   Assignments.assignRoles(job, fs, new Random(seed)); int o = 0;
+   for (Assignments.Fate f : fs) { if (f.skill < 0 || Assignments.roles(job).na[f.skill]) others = false; if (f.other) o++; }
+   if (o != 2) others = false;
+  }
+  Setup.chk("R: anyone left over gets one of the job's other skills, never NA", others);
+  // a clear best fighter on Board gets combat about 3 times in 4 (or more: a missed roll goes to anyone, him too)
+  int combat = 0, n = 4000;
+  for (int seed = 0; seed < n; seed++) {
+   CrewState ace = Commission.volunteer("human", new Random(1)); homeplanet.model.Skills.set(ace, 5, 2 * homeplanet.model.Skills.interval(ace, 5));
+   List<Assignments.Fate> fs = new ArrayList<Assignments.Fate>(); fs.add(new Assignments.Fate(Commission.volunteer("human", new Random(2)))); fs.add(new Assignments.Fate(ace)); fs.add(new Assignments.Fate(Commission.volunteer("human", new Random(3))));
+   Assignments.assignRoles("board", fs, new Random(seed * 31L + 7));
+   if (fs.get(1).skill == 5) combat++;
+  }
+  Setup.chk("R: the best fighter on Board gets combat about 3 times in 4 (" + combat + " of " + n + ")", combat > n * 0.72 && combat < n * 0.9);
+  // fixed points by skill and roll: a natural 20, a success, a failure; "other" half, at least 1
+  Setup.chk("P: the points: a natural 20 pays pilot 4, shields 14, weapons 20, combat 2; a success 2, 7, 10, 1; failed 1, 3, 5, 0; the dead nothing",
+    Assignments.training(0, 5, false) == 4 && Assignments.training(2, 5, false) == 14 && Assignments.training(3, 5, false) == 20 && Assignments.training(5, 5, false) == 2
+    && Assignments.training(0, 3, false) == 2 && Assignments.training(2, 4, false) == 7 && Assignments.training(3, 3, false) == 10 && Assignments.training(5, 3, false) == 1
+    && Assignments.training(0, 2, false) == 1 && Assignments.training(2, 1, false) == 3 && Assignments.training(5, 2, false) == 0 && Assignments.training(3, 0, false) == 0);
+  Setup.chk("P: an other role earns half, rounded down, at least 1 (combat success 1, weapons 5, a failed combat still 0)",
+    Assignments.training(5, 3, true) == 1 && Assignments.training(3, 3, true) == 5 && Assignments.training(2, 5, true) == 7 && Assignments.training(5, 2, true) == 0 && Assignments.training(0, 2, true) == 1);
+  // thousands of expeditions with fresh crew: each skill's points against its interval, all within a factor of two
+  double[] pts = new double[6]; Random rr = new Random(39); String[] sectors = Assignments.sectors().toArray(new String[0]);
+  for (int i = 0; i < 4000; i++) {
+   List<CrewState> party = new ArrayList<CrewState>(); String[] races = {"human", "engi", "mantis", "rock", "slug", "energy", "crystal", "anaerobic"};
+   for (int k = 0; k < 3; k++) party.add(Commission.volunteer(races[rr.nextInt(races.length)], new Random(rr.nextLong())));
+   Assignments.Result r = Assignments.roll(sectors[rr.nextInt(sectors.length)], party, new Random(rr.nextLong()), true);
+   for (Assignments.Fate f : r.fates) if (!f.died && f.skill >= 0) pts[f.skill] += Assignments.training(f.skill, f.band, f.other) / (double) homeplanet.model.Skills.interval(f.crew, f.skill);
+  }
+  double lo = Double.MAX_VALUE, hi = 0; StringBuilder each = new StringBuilder();
+  String[] names = {"pilot", "engines", "shields", "weapons", "repair", "combat"};
+  for (int k = 0; k < 6; k++) { lo = Math.min(lo, pts[k]); hi = Math.max(hi, pts[k]); each.append(names[k]).append(' ').append(String.format("%.0f", pts[k])).append(k < 5 ? ", " : ""); }
+  Setup.chk("P: 4000 expeditions, levels gained per skill within a factor of two of each other (" + each + ")", hi <= 2 * lo);
  }
  /** Every skill mastered: both levels' points, and FTL's marks with them. */
  static void master(CrewState c) { for (int i = 0; i < 6; i++) homeplanet.model.Skills.set(c, i, 2 * homeplanet.model.Skills.interval(c, i)); }
