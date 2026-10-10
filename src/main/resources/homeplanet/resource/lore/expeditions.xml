@@ -576,4 +576,25 @@
 	<line kind="prize" job="salvage" prize="part">The wreck's {name} system came home with them, damaged but worth fitting.</line>
 	<line kind="prize" job="rescue" prize="recruit">One of those they rescued, {name}, asked to sign on.\nThey wait in The Station Lounge for your word.</line>
 	<line kind="prize" job="rescue" prize="recruit">They came back with one more than they left with: {name},\nwho asks to sign on and waits in The Station Lounge.</line>
+
+	<!-- The roles a job hands out (heromedel and McCarthy, 6.39): its primary skill, two secondaries, and the skills that
+	     have nothing to do in it (na). The rest are its "other" skills, for anyone left over. Skills: pilot engines
+	     shields weapons repair combat. A job with no primary runs on race alone and trains nobody. A copy's <role> for a
+	     job takes the place of the station's own for it. -->
+	<role job="defend" primary="shields" secondary="weapons, combat"/>
+	<role job="attack" primary="weapons" secondary="combat, pilot"/>
+	<role job="negotiate" primary="pilot" secondary="combat, shields"/>
+	<role job="boarded" primary="combat" secondary="repair, shields" na="weapons"/>
+	<role job="rescue" primary="pilot" secondary="repair, engines"/>
+	<role job="salvage" primary="repair" secondary="engines, pilot"/>
+	<role job="scout" primary="pilot" secondary="engines, shields"/>
+	<role job="repair" primary="repair" secondary="engines, shields"/>
+	<role job="transport" primary="engines" secondary="pilot, shields"/>
+	<role job="lost" primary="pilot" secondary="engines, repair"/>
+	<role job="escort" primary="weapons" secondary="engines, shields"/>
+	<role job="capture" primary="combat" secondary="pilot, weapons"/>
+	<role job="board" primary="combat" secondary="pilot, repair"/>
+	<role job="hijack" primary="pilot" secondary="combat, engines"/>
+	<role job="infection" na="pilot, engines, shields, weapons, repair, combat"/>
+	<role job="spiders" primary="combat" secondary="repair, shields" na="pilot, engines, weapons"/>
 </expeditions>
