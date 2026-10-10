@@ -129,7 +129,6 @@ public class SystemsPanel {
 	private final PowerPanel power = new PowerPanel();
 	private FtlButton remodelBtn, retrofitBtn;
 	private final CargoParts.Label layoutLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.TEXT, 0);
-	private final CargoParts.Label layoutHint = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 0);
 
 	JPanel panel() {
 		if (remodelBtn != null) return panel;
@@ -204,8 +203,7 @@ public class SystemsPanel {
 		retrofitBtn.setBounds(700 - 8 - BTN_W, 8 + INST_H + 6, BTN_W, 24);
 		remodelBtn.setBounds(700 - 8 - BTN_W, 8 + INST_H + 6 + 30, BTN_W, 24);
 		layoutLbl.setBounds(16, 384, 640, 14);
-		layoutHint.setBounds(16, 398, 640, 14);
-		panel.add(remodelBtn); panel.add(retrofitBtn); panel.add(layoutLbl); panel.add(layoutHint);
+		panel.add(remodelBtn); panel.add(retrofitBtn); panel.add(layoutLbl); // (6.44, heromedel: no hint line under it; the buttons' tooltips say it)
 		return panel;
 	}
 
@@ -295,7 +293,7 @@ public class SystemsPanel {
 		lists.add(h2);
 		y = 0;
 		if (stored.isEmpty()) {
-			CargoParts.Label none = new CargoParts.Label("None yet. Uninstall one from the list above.", FtlFont.CARGO, CargoParts.DIM, -1);
+			CargoParts.Label none = new CargoParts.Label("None yet.", FtlFont.CARGO, CargoParts.DIM, -1);
 			none.setBounds(8, y + 6, w, 16);
 			storedList.add(none);
 			y += 32;
@@ -337,13 +335,12 @@ public class SystemsPanel {
 				: "Blueprint " + id + (inGame ? "" : ". The game data doesn't have it yet: install the mod (Settings > Mods > Patch mods) before launching"));
 		remodelBtn.setEnabled(retro);
 		String remodelLock = homeplanet.parser.Clearance.remodelReason(); // Immersive Mode: a Commander's work (5.56)
-		remodelBtn.setToolTipText(remodelLock == null ? "Move " + homeplanet.model.Words.her() + " systems and doors, or overhaul " + homeplanet.model.Words.her() + " deck plan (a retrofitted ship only)"
+		remodelBtn.setToolTipText(remodelLock == null ? (retro ? "Move " + homeplanet.model.Words.her() + " systems and doors, or overhaul " + homeplanet.model.Words.her() + " deck plan"
+				: "Retrofit first to remodel " + homeplanet.model.Words.herObj() + " or to uninstall standard equipment")
 				: "<html>" + homeplanet.parser.XmlText.text(remodelLock).replace("\n", "<br>") + "</html>");
 		retrofitBtn.setText(retro ? "Undo Retrofit" : "Retrofit");
 		retrofitBtn.setToolTipText(retro ? "Return this ship to " + homeplanet.model.Words.her() + " original model (needs all " + homeplanet.model.Words.her() + " standard equipment installed)"
 				: "Let this ship remove any system, including standard equipment (needs the " + homeplanet.parser.Retrofit.MOD_NAME + ")");
-		layoutHint.setText(retro ? "Remodel moves systems and doors, or overhauls " + homeplanet.model.Words.her() + " deck plan."
-				: "Retrofit first to remodel " + homeplanet.model.Words.herObj() + " or to uninstall standard equipment.");
 		lists.revalidate();
 		lists.repaint();
 	}
