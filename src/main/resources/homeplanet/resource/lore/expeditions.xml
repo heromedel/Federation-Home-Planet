@@ -1533,7 +1533,7 @@
 	<line kind="band" job="board" band="top" skill="combat" sector="rock">{name} fought through a Rock crew on their own ship, which few boarders live to talk about.</line>
 	<line kind="band" job="board" band="success" skill="combat" sector="mantis">Most of the Mantis crew were away, but the few left behind fought hard until {name} put them down.</line>
 	<line kind="band" job="hijack" band="high" skill="repair" sector="engi">Engi locks are the best in the sector, and {name} opened them anyway.</line>
-	<line kind="band" job="hijack" band="success" skill="shields" sector="rebel">The rebel guards patrolled the dock all night, but {name} kept the crew out of their sight.</line>
+	<line kind="band" job="hijack" band="success" skill="shields" sector="rebel">Rebel guards patrolled the dock all night, but {name} kept the crew out of their sight.</line>
 	<line kind="band" job="infection" band="high" skill="pilot" sector="zoltan">The sickness was dimming the Zoltan's glow, and {name} worked out how to bring it back.</line>
 	<line kind="band" job="infection" band="top" skill="repair" sector="engi">{name} helped the Engi purge the infection from their nanobots before it could spread to anyone else.</line>
 	<line kind="band" job="lost" band="high" skill="pilot" sector="nebula">With no sensors in the nebula, {name} found the way home by dead reckoning alone.</line>
