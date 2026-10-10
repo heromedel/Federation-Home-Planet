@@ -1,6 +1,6 @@
 /*
  * This file comes from Vhati's FTL Profile Editor (GPL-2.0) and was modified for Federation Home Planet:
- * text lookup for FTL 1.6.1+ text ids, extra resources, layouts and blueprints registered from memory (the station's own ships), game-data queries, weapon art by id, and _HP blueprint ids.
+ * text lookup for FTL 1.6.1+ text ids, extra resources, layouts and blueprints registered from memory (the station's own ships), game-data queries, weapon art by id, _HP blueprint ids, and FTL's whole crew name lists.
  * See CREDITS.md and LICENSE at the root of the project.
  */
 package net.blerf.ftl.parser;
@@ -1339,6 +1339,13 @@ public class DefaultDataManager extends DataManager {
 			return traditional ? "zh-Hant" : "zh-Hans";
 		}
 		return l;
+	}
+
+	@Override
+	public List<String> getCrewNames( boolean isMale ) {
+		List<String> out = new ArrayList<String>();
+		for ( CrewNameList.CrewName n : (isMale ? crewNamesMale : crewNamesFemale) ) out.add( n.name );
+		return out;
 	}
 
 	@Override

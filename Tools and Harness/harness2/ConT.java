@@ -66,7 +66,7 @@ public class ConT { public static void main(String[] a) throws Exception {
   r = StationConsole.answer("/admin girlpower");
   cfg = new String(SafeFiles.read(HomePlanet.propFile), "UTF-8");
   boolean men = false; for (int i = 0; i < 10; i++) if (Commission.volunteer("human", new Random(i)).isMale()) men = true;
-  boolean nonHumanMen = Commission.volunteer("engi", new Random(1)).isMale();
+  boolean nonHumanMen = false; Random any = new Random(1); for (int i = 0; i < 20; i++) if (Commission.volunteer("engi", any).isMale()) nonHumanMen = true; // 6.33: with the name lists, aliens are men and women
   Setup.chk("G: again: off, the line gone from the cfg, crew rolled as before", !StationConsole.girlPower() && r.text.equals("Girl power off.") && !cfg.contains("girlpower") && men && nonHumanMen
     && SpaceT.log(v).contains("girlpower=false"));
  }

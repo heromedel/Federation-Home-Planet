@@ -304,7 +304,9 @@ public final class Lore {
 		File d = dir();
 		try {
 			File defaults = new File(d, "defaults");
-			for (String f : FILES) {
+			List<String> all = new ArrayList<String>(java.util.Arrays.asList(FILES));
+			all.addAll(java.util.Arrays.asList(homeplanet.parser.CrewNames.FILES)); // the crew names (6.33)
+			for (String f : all) {
 				InputStream in = Lore.class.getResourceAsStream(JAR + f);
 				if (in == null) continue;
 				java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
@@ -332,6 +334,8 @@ public final class Lore {
 			+ "                        lines with the same marks;\r\n"
 			+ "  deeds.xml             the accolades and deeds, entry by entry.\r\n"
 			+ "Anything the copy leaves out keeps the station's own words.\r\n"
+			+ "names/ holds the crew names, a file per race (Settings, Custom Name Lists Per Race): a copy replaces the station's\r\n"
+			+ "whole list for that race; each file's top says how it is written.\r\n"
 			+ "{field} fills in a value; each file's own notes say which ones it has.\r\n"
 			+ "Something that breaks a rule (the Rebel Flagship is never destroyed, the rebels are never capitalised, a {field}\r\n"
 			+ "that isn't there) is left out, and the debug log says which file, which entry and which rule.\r\n";

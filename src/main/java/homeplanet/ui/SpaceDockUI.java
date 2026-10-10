@@ -1850,9 +1850,33 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		return sp;
 	}
 	/** Asks for a name. Returns the trimmed name, or null if cancelled or left blank. */
-	public static String promptForName(String message, String title, String current) {
+	public static String promptForName(String message, String title, String current) { return promptForName(message, title, current, null); }
+	/** As above; for a crew member, a die beside the name rolls a new one for their race and sex (6.33: the name lists). */
+	public static String promptForCrewName(String message, String title, net.blerf.ftl.parser.SavedGameParser.CrewState crew) {
+		return promptForName(message, title, crew.getName(), crew);
+	}
+	private static String promptForName(String message, String title, String current, final net.blerf.ftl.parser.SavedGameParser.CrewState crew) {
 		while (true) {
-			Object answer = JOptionPane.showInputDialog(null, message, title, JOptionPane.PLAIN_MESSAGE, null, null, current);
+			Object answer;
+			if (crew == null) answer = JOptionPane.showInputDialog(null, message, title, JOptionPane.PLAIN_MESSAGE, null, null, current);
+			else {
+				final javax.swing.JTextField field = new javax.swing.JTextField(current, 18);
+				final String race = crew.getRace() == null ? "human" : crew.getRace().getId();
+				JPanel row = new JPanel(new java.awt.BorderLayout(6, 0));
+				row.add(field, java.awt.BorderLayout.CENTER);
+				row.add(DiceIcon.button("A new name from the " + homeplanet.model.Crew.racePeople(race) + " names", new Runnable() {
+					public void run() { String n = homeplanet.parser.CrewNames.pick(race, crew.isMale(), new java.util.Random()); if (n != null) field.setText(n); }
+				}), java.awt.BorderLayout.EAST);
+				JPanel box = new JPanel(new java.awt.BorderLayout(0, 6));
+				box.add(new JLabel(message), java.awt.BorderLayout.NORTH);
+				box.add(row, java.awt.BorderLayout.CENTER);
+				field.addAncestorListener(new javax.swing.event.AncestorListener() { // the name ready to type over
+					public void ancestorAdded(javax.swing.event.AncestorEvent e) { field.requestFocusInWindow(); field.selectAll(); }
+					public void ancestorRemoved(javax.swing.event.AncestorEvent e) { }
+					public void ancestorMoved(javax.swing.event.AncestorEvent e) { }
+				});
+				answer = JOptionPane.showConfirmDialog(null, box, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION ? field.getText() : null;
+			}
 			if (answer == null) return null;
 			String name = answer.toString().trim();
 			if (name.isEmpty()) return null;
