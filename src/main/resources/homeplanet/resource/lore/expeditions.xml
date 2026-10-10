@@ -546,7 +546,7 @@
 	<line kind="hacked">Then {name} turned the ship's Hacking system on the battery's targeting, and it never found them again.</line>
 	<line kind="hacked">{name} turned the ship's Hacking system on the battery, and it stopped firing entirely.</line>
 
-	<line kind="shrug" hazard="flare" race="rock">The fires never bothered {him}; Rock doesn't burn.</line>
+	<line kind="shrug" hazard="flare" race="rock">The fires never bothered {him}, because Rock doesn't burn.</line>
 	<line kind="shrug" hazard="flare" race="rock">{His} part of the ship was on fire twice, and {he} worked straight through it both times.</line>
 	<line kind="shrug" hazard="flare" race="anaerobic">Every fire that reached {his} room went out on its own.</line>
 	<line kind="shrug" hazard="flare" race="anaerobic">The one room aboard where nothing burned was {his}.</line>
@@ -554,7 +554,7 @@
 	<line kind="shrug" hazard="asteroids" race="energy">{His} own power kept the shields up whenever the reactor faltered.</line>
 	<line kind="shrug" hazard="pulsar" race="engi">Each time the pulsar knocked a system out, {he} got it back online as fast as {he} could.</line>
 	<line kind="shrug" hazard="storm" race="slug">With the reactor at half, {he} could feel every ship moving in the clouds, so they kept out of the way of anyone who might notice how weak they were.</line>
-	<line kind="shrug" hazard="storm" race="slug">The storm left their sensors blind, but {he} never needed them; {he} knew where every crew in the nebula was and steered them around the lot.</line>
+	<line kind="shrug" hazard="storm" race="slug">The storm left their sensors blind, but {he} never needed them. {He} knew where every crew in the nebula was and steered them around the lot.</line>
 
 	<line kind="captured">was last seen being carried through the boarders' airlock.</line>
 	<line kind="captured">was taken by the boarders. The crew hope {he}'s all right out there.</line>
@@ -603,7 +603,7 @@
 	<line kind="band" job="defend" band="success" skill="engines">The lights stayed on and the doors kept working, because {name} never let the generators falter.</line>
 	<line kind="band" job="defend" band="high" skill="engines">When the main power went down, {name} had the backup running before the raiders could take advantage.</line>
 	<line kind="band" job="defend" band="high" skill="engines">Even after the raiders cut the main route between the posts, {name} found a way to keep them all supplied.</line>
-	<line kind="band" job="defend" band="top" skill="engines">Power, air and ammunition never once ran short, and that was all {name}'s doing.</line>
+	<line kind="band" job="defend" band="top" skill="engines">Power, air and ammunition never ran short, and {name} is the reason why.</line>
 	<line kind="band" job="defend" band="top" skill="engines">{name} rerouted the power so the defences ran at full strength just as the raiders made their big push.</line>
 	<line kind="band" job="defend" band="failed" skill="shields">The raiders found the gap {name} had left in the line and poured through it.</line>
 	<line kind="band" job="defend" band="failed" skill="shields">{name} was meant to be covering the people behind {him}, but {he} lost track of them when the raiders came.</line>
@@ -647,7 +647,7 @@
 	<line kind="band" job="attack" band="success" skill="pilot">Plenty of the enemy's shots went wide while {name} kept the ship moving.</line>
 	<line kind="band" job="attack" band="success" skill="pilot">The enemy struggled to land a shot with {name} at the helm.</line>
 	<line kind="band" job="attack" band="success" skill="pilot">Throughout the fight, {name} held the ship where their own guns had the best chance against the enemy.</line>
-	<line kind="band" job="attack" band="high" skill="pilot">Nearly everything the enemy fired at them missed, because {name} saw it coming and turned away in time.</line>
+	<line kind="band" job="attack" band="high" skill="pilot">{name} saw nearly every shot coming and turned the ship away in time.</line>
 	<line kind="band" job="attack" band="high" skill="pilot">{name} called the targets for the whole fight, and the enemy's systems went down one after another.</line>
 	<line kind="band" job="attack" band="top" skill="pilot">{name} kept the ship where the enemy's guns couldn't follow, and the enemy barely landed a shot.</line>
 	<line kind="band" job="attack" band="top" skill="pilot">The enemy captain never made a move that {name} hadn't already seen coming, and the fight was never in doubt.</line>
@@ -695,7 +695,7 @@
 	<line kind="band" job="attack" band="high" skill="combat">{name} cut the enemy's boarders down before they reached anything that mattered.</line>
 	<line kind="band" job="attack" band="high" skill="combat">{name} crossed over to the enemy ship and put their gunners out of the fight.</line>
 	<line kind="band" job="attack" band="top" skill="combat">The enemy's boarders never made it out of the room they landed in, thanks to {name}.</line>
-	<line kind="band" job="attack" band="top" skill="combat">Not content with defending, {name} took the fight to the enemy's own ship and came back only once their weapons had fallen silent.</line>
+	<line kind="band" job="attack" band="top" skill="combat">{name} took the fight to the enemy's own ship and didn't come back until their weapons had fallen silent.</line>
 
 	<line kind="band" job="negotiate" band="failed" skill="pilot">{name} talked the deal into a corner and couldn't find a way to talk it back out.</line>
 	<line kind="band" job="negotiate" band="failed" skill="pilot">Both sides walked away from the talks angrier than they arrived, mostly because of something {name} said.</line>
@@ -804,7 +804,7 @@
 	<line kind="band" job="rescue" band="success" skill="pilot">The survivors were hidden deep inside, but {name} worked out where they would be.</line>
 	<line kind="band" job="rescue" band="success" skill="pilot">Everyone else wanted to hurry, but {name} kept the search calm and steady.</line>
 	<line kind="band" job="rescue" band="high" skill="pilot">{name} found survivors that the others had given up on.</line>
-	<line kind="band" job="rescue" band="high" skill="pilot">The survivors were found within the hour, because {name} guessed which way they would have gone.</line>
+	<line kind="band" job="rescue" band="high" skill="pilot">{name} guessed which way the survivors would have gone and found them within the hour.</line>
 	<line kind="band" job="rescue" band="top" skill="pilot">The way out collapsed behind them, but {name} found another and led everyone through it.</line>
 	<line kind="band" job="rescue" band="top" skill="pilot">{name} led the survivors out by a route nobody else had noticed, just before the rest of the place gave way.</line>
 	<line kind="band" job="rescue" band="failed" skill="engines">The shuttle's engines gave out on the way, and {name} couldn't get them going again.</line>
@@ -814,9 +814,9 @@
 	<line kind="band" job="rescue" band="success" skill="engines">While the others carried the survivors out, {name} kept the lights and the air pumps going.</line>
 	<line kind="band" job="rescue" band="high" skill="engines">{name} had the shuttle there and back faster than anyone thought it could fly.</line>
 	<line kind="band" job="rescue" band="high" skill="engines">Supplies came in faster than the survivors could use them, because {name} kept the shuttle moving.</line>
-	<line kind="band" job="rescue" band="top" skill="engines">The survivors' air and lights were failing, so {name} ran power from the shuttle to keep them going until the last survivor was out.</line>
+	<line kind="band" job="rescue" band="top" skill="engines">The survivors' air and lights were failing. {name} ran power from the shuttle to keep them going until the last survivor was out.</line>
 	<line kind="band" job="rescue" band="top" skill="engines">{name} made three trips in the time it should have taken to make one, and nobody was left behind.</line>
-	<line kind="band" job="rescue" band="failed" skill="shields">Two of the survivors wandered off, and {name} couldn't get everyone back together.</line>
+	<line kind="band" job="rescue" band="failed" skill="shields">Two of the survivors wandered off. {name} couldn't get everyone back together.</line>
 	<line kind="band" job="rescue" band="failed" skill="shields">{name} was too busy watching for danger to notice a survivor slipping away from the group.</line>
 	<line kind="band" job="rescue" band="success" skill="shields">The survivors were frightened, but {name} kept them calm and together on the way out.</line>
 	<line kind="band" job="rescue" band="success" skill="shields">{name} walked at the back of the group so nobody fell behind.</line>
@@ -831,7 +831,7 @@
 	<line kind="band" job="rescue" band="success" skill="weapons">While the others searched, {name} kept watch, ready for whatever might be waiting in the dark.</line>
 	<line kind="band" job="rescue" band="success" skill="weapons">Scavengers had been circling the place, but they kept their distance while {name} was on watch.</line>
 	<line kind="band" job="rescue" band="high" skill="weapons">Scavengers came for what was left, and {name} kept them at a distance until the rescue was done.</line>
-	<line kind="band" job="rescue" band="high" skill="weapons">A survivor was pinned under wreckage too heavy to lift, until {name} shot it away with a precision nobody else could have managed.</line>
+	<line kind="band" job="rescue" band="high" skill="weapons">A survivor was pinned under wreckage too heavy to lift, so {name} cut it apart with a few careful shots.</line>
 	<line kind="band" job="rescue" band="top" skill="weapons">Something in the dark had been hunting the survivors, and {name} put an end to it.</line>
 	<line kind="band" job="rescue" band="top" skill="weapons">Raiders arrived to pick over the wreck just as the rescue began, but {name} drove them off before they got close.</line>
 	<line kind="band" job="rescue" band="failed" skill="repair">Someone else had to get the door to the survivors open, because {name} couldn't.</line>
@@ -896,9 +896,9 @@
 	<line kind="band" job="salvage" band="success" skill="repair">The good parts were buried deep, but {name} got them out in one piece.</line>
 	<line kind="band" job="salvage" band="high" skill="repair">The others had given up on a sealed compartment, but {name} got it open.</line>
 	<line kind="band" job="salvage" band="high" skill="repair">{name} found a part still in working order and freed it without a scratch.</line>
-	<line kind="band" job="salvage" band="top" skill="repair">Deep in the wreck was a compartment nobody had opened in years, and {name} got it open to find it stacked with spare parts nobody had ever unpacked.</line>
+	<line kind="band" job="salvage" band="top" skill="repair">Deep in the wreck was a compartment nobody had opened in years. {name} got it open and found it stacked with spare parts nobody had ever unpacked.</line>
 	<line kind="band" job="salvage" band="top" skill="repair">{name} stripped the wreck so thoroughly that the next crew to come by found nothing left worth taking.</line>
-	<line kind="band" job="salvage" band="failed" skill="combat">Another salvage crew wanted the same panel as {name}, and {he} wasted half the day fighting them over it.</line>
+	<line kind="band" job="salvage" band="failed" skill="combat">Another salvage crew wanted the same panel as {name}. {He} wasted time fighting over it.</line>
 	<line kind="band" job="salvage" band="failed" skill="combat">{name} picked a fight with a rival crew over a crate that turned out to be empty.</line>
 	<line kind="band" job="salvage" band="success" skill="combat">Whatever was waiting in the dark compartments met {name} first.</line>
 	<line kind="band" job="salvage" band="success" skill="combat">{name} went first into every dark compartment, ready for anything left alive inside.</line>
@@ -911,13 +911,13 @@
 	<line kind="band" job="scout" band="failed" skill="pilot">{name} flew them out into the open, where anyone nearby could see them coming.</line>
 	<line kind="band" job="scout" band="failed" skill="pilot">{name} charted the wrong part of the sector and came back with a chart nobody needed.</line>
 	<line kind="band" job="scout" band="success" skill="pilot">{name} got them in close and out again without being seen.</line>
-	<line kind="band" job="scout" band="success" skill="pilot">Every lane they passed through went onto {name}'s chart, clearly enough for anyone to follow.</line>
+	<line kind="band" job="scout" band="success" skill="pilot">{name} charted every lane they passed through, clearly enough for anyone to follow.</line>
 	<line kind="band" job="scout" band="success" skill="pilot">The shuttle went out and came home without a single scare, because {name} chose every turn with care.</line>
 	<line kind="band" job="scout" band="high" skill="pilot">The chart they came back with was the best anyone had seen in a while, and most of it was {name}'s work.</line>
 	<line kind="band" job="scout" band="high" skill="pilot">{name} found a quiet route nobody had charted before and marked it for whoever comes next.</line>
 	<line kind="band" job="scout" band="top" skill="pilot">{name} found a route through that wasn't on anyone's chart, and it carries {his} name now.</line>
 	<line kind="band" job="scout" band="top" skill="pilot">In a single trip {name} mapped the whole area, and the station's charts were rewritten from {his} notes.</line>
-	<line kind="band" job="scout" band="failed" skill="engines">The shuttle ran low on fuel halfway out, so they had to turn back before {name} had seen everything.</line>
+	<line kind="band" job="scout" band="failed" skill="engines">The shuttle ran low on fuel halfway out, so they turned back early. {name} had been sure it would last.</line>
 	<line kind="band" job="scout" band="failed" skill="engines">{name} ran the engines so hot that the shuttle lit up like a flare for anyone watching.</line>
 	<line kind="band" job="scout" band="success" skill="engines">{name} kept the shuttle running so quietly that nothing gave it away.</line>
 	<line kind="band" job="scout" band="success" skill="engines">{name} stretched the shuttle's fuel far enough to see everything they had been sent to see.</line>
@@ -939,7 +939,7 @@
 	<line kind="band" job="scout" band="failed" skill="weapons">{name} spent the trip watching the guns instead of the chart and missed half of what they passed.</line>
 	<line kind="band" job="scout" band="success" skill="weapons">{name} counted every gun on every ship they saw and marked it on the chart.</line>
 	<line kind="band" job="scout" band="success" skill="weapons">{name} watched over the shuttle's guns the whole way, though they never needed to fire.</line>
-	<line kind="band" job="scout" band="success" skill="weapons">Every defence in the area went into {name}'s notes, so nobody would be surprised by them later.</line>
+	<line kind="band" job="scout" band="success" skill="weapons">{name} noted where every defence in the area stood, so nobody would be surprised by them later.</line>
 	<line kind="band" job="scout" band="high" skill="weapons">A lone patrol stumbled on them, and {name} made sure it never reported back.</line>
 	<line kind="band" job="scout" band="high" skill="weapons">{name} picked out the weak point in every defence they passed and marked it for the next crew.</line>
 	<line kind="band" job="scout" band="top" skill="weapons">From a distance, {name} worked out what every ship out there was armed with, so whoever goes next will know exactly what they face.</line>
@@ -974,17 +974,17 @@
 	<line kind="band" job="repair" band="top" skill="pilot">The owners asked for the same crew next time, mostly because of how well {name} had run the job.</line>
 	<line kind="band" job="repair" band="failed" skill="engines">A power surge undid a day's work while {name} was meant to be watching the lines.</line>
 	<line kind="band" job="repair" band="failed" skill="engines">{name} routed the power the wrong way, and half the systems shut themselves down.</line>
-	<line kind="band" job="repair" band="success" skill="engines">Wherever the others were working, the power reached them, because {name} ran it there.</line>
-	<line kind="band" job="repair" band="success" skill="engines">The generators stayed steady under {name}'s care, so the repairs went ahead without interruption.</line>
+	<line kind="band" job="repair" band="success" skill="engines">{name} kept power flowing wherever the others were working.</line>
+	<line kind="band" job="repair" band="success" skill="engines">{name} nursed the generators along, so the repairs never had to stop.</line>
 	<line kind="band" job="repair" band="success" skill="engines">The parts the others needed always seemed to arrive just in time, because {name} was fetching them.</line>
 	<line kind="band" job="repair" band="high" skill="engines">{name} rebalanced the power so nothing ran short again.</line>
-	<line kind="band" job="repair" band="high" skill="engines">The power losses came from one overloaded line, and once {name} traced it, {he} spread the load until everything ran smoothly.</line>
+	<line kind="band" job="repair" band="high" skill="engines">{name} traced the power losses to one overloaded line and spread the load until everything ran smoothly.</line>
 	<line kind="band" job="repair" band="top" skill="engines">{name} coaxed more power out of the system than it was ever built to give.</line>
 	<line kind="band" job="repair" band="top" skill="engines">When the main power failed completely, {name} kept the whole place running on the backup until the repairs were done.</line>
 	<line kind="band" job="repair" band="failed" skill="shields">{name} was supposed to isolate the live panels and missed one, and the sparks set the job back.</line>
 	<line kind="band" job="repair" band="failed" skill="shields">{name} let the others work on a line that was still live, and someone nearly got burned.</line>
 	<line kind="band" job="repair" band="success" skill="shields">{name} made sure nobody touched a live line.</line>
-	<line kind="band" job="repair" band="success" skill="shields">Nothing in the work area could hurt the crew once {name} had cleared it.</line>
+	<line kind="band" job="repair" band="success" skill="shields">{name} cleared the work area of anything that could hurt the crew.</line>
 	<line kind="band" job="repair" band="success" skill="shields">Before anyone opened a panel, {name} had checked it was safe.</line>
 	<line kind="band" job="repair" band="high" skill="shields">A fire broke out partway through, and {name} had it sealed off before it spread.</line>
 	<line kind="band" job="repair" band="high" skill="shields">{name} noticed a gas leak before anyone else did and got everyone clear until it was fixed.</line>
@@ -1196,7 +1196,7 @@
 	<line kind="band" job="capture" band="failed" skill="engines">{name} let the fuel run low, and the quarry gained a full day on them.</line>
 	<line kind="band" job="capture" band="success" skill="engines">However hard the quarry ran, {name} kept pace.</line>
 	<line kind="band" job="capture" band="success" skill="engines">Wherever the quarry went, {name} had the engines ready to follow.</line>
-	<line kind="band" job="capture" band="success" skill="engines">It was a long chase, but {name} had planned the supplies for it, so they never had to give up the trail.</line>
+	<line kind="band" job="capture" band="success" skill="engines">{name} stocked up for a long chase, so they never had to give up the trail.</line>
 	<line kind="band" job="capture" band="high" skill="engines">The chase went on far longer than anyone planned, but {name} made the fuel last.</line>
 	<line kind="band" job="capture" band="high" skill="engines">{name} found the speed to close the gap on the quarry just before they reached safety.</line>
 	<line kind="band" job="capture" band="top" skill="engines">The quarry reached the next stop and found that {name} had got there first.</line>
@@ -1280,7 +1280,7 @@
 	<line kind="band" job="board" band="success" skill="repair">{name} forced the enemy's airlock open in moments and let the boarding party through.</line>
 	<line kind="band" job="board" band="success" skill="repair">The enemy tried to trap the boarding party behind their doors, but {name} had already disabled the controls.</line>
 	<line kind="band" job="board" band="high" skill="repair">{name} locked the enemy crew out of their own weapons.</line>
-	<line kind="band" job="board" band="high" skill="repair">The enemy's internal defences never got the chance to fire on the boarding party, because {name} shut them down first.</line>
+	<line kind="band" job="board" band="high" skill="repair">{name} shut down the enemy's internal defences before they could fire on the boarding party.</line>
 	<line kind="band" job="board" band="top" skill="repair">{name} cut the ship's call for help before it could go out.</line>
 	<line kind="band" job="board" band="top" skill="repair">{name} rewired the enemy's doors so the boarding party could open every one of them and the enemy couldn't open any.</line>
 	<line kind="band" job="board" band="failed" skill="combat">Cut off from the others, {name} had to fall back to the airlock.</line>
@@ -1297,7 +1297,7 @@
 	<line kind="band" job="hijack" band="failed" skill="pilot">{name} told the dock guards a story so unlikely that they started asking questions.</line>
 	<line kind="band" job="hijack" band="success" skill="pilot">Before anyone came looking, {name} had the ship's controls figured out.</line>
 	<line kind="band" job="hijack" band="success" skill="pilot">Everyone knew exactly what to do and when, because {name} had planned the job down to the minute.</line>
-	<line kind="band" job="hijack" band="success" skill="pilot">Nobody saw them go aboard, because {name} had chosen the quietest moment of the night.</line>
+	<line kind="band" job="hijack" band="success" skill="pilot">{name} chose the quietest moment of the night to go aboard, and nobody saw them.</line>
 	<line kind="band" job="hijack" band="high" skill="pilot">{name} talked them past the dock guards with a story nobody questioned.</line>
 	<line kind="band" job="hijack" band="high" skill="pilot">The guards had forgotten about an old way into the docks, and {name} led them through it.</line>
 	<line kind="band" job="hijack" band="top" skill="pilot">{name} planned it so well that the owners still can't work out how their ship was taken.</line>
@@ -1328,7 +1328,7 @@
 	<line kind="band" job="hijack" band="high" skill="weapons">The security drones never got the chance to call for help, because {name} took them out first.</line>
 	<line kind="band" job="hijack" band="high" skill="weapons">{name} disabled the dock's guns before anyone could turn them on the ship.</line>
 	<line kind="band" job="hijack" band="top" skill="weapons">The dock's own defences came under fire from the very ship they were guarding, with {name} on her guns.</line>
-	<line kind="band" job="hijack" band="top" skill="weapons">Every light on the dock went out under {name}'s fire, and the crew slipped away in the darkness.</line>
+	<line kind="band" job="hijack" band="top" skill="weapons">{name} shot out every light on the dock, and the crew slipped away in the darkness.</line>
 	<line kind="band" job="hijack" band="failed" skill="repair">Every alarm on the dock went off when {name} opened the wrong lock.</line>
 	<line kind="band" job="hijack" band="failed" skill="repair">{name} broke the ship's lock instead of opening it, and they had to cut their way in.</line>
 	<line kind="band" job="hijack" band="success" skill="repair">{name} had the locks open before the guards changed.</line>
@@ -1337,7 +1337,7 @@
 	<line kind="band" job="hijack" band="high" skill="repair">{name} rewired the ship's security to recognise them as her crew.</line>
 	<line kind="band" job="hijack" band="high" skill="repair">{name} cracked the ship's codes in minutes, a job that should have taken hours.</line>
 	<line kind="band" job="hijack" band="top" skill="repair">According to the dock's records the ship was never there, because {name} rewrote them before they left.</line>
-	<line kind="band" job="hijack" band="top" skill="repair">Long after she was gone, the ship's tracking beacon still reported her at anchor, because {name} had rigged it.</line>
+	<line kind="band" job="hijack" band="top" skill="repair">{name} rigged the ship's tracking beacon to report her still at anchor long after she was gone.</line>
 	<line kind="band" job="hijack" band="failed" skill="combat">{name} decided the quiet way was taking too long, and the fight that followed woke the whole dock.</line>
 	<line kind="band" job="hijack" band="failed" skill="combat">{name} knocked out a guard too loudly, and every other guard came running.</line>
 	<line kind="band" job="hijack" band="success" skill="combat">A guard wandered in at the wrong time, but {name} stopped him before he could raise the alarm.</line>
@@ -1355,13 +1355,13 @@
 	<line kind="band" job="infection" band="success" skill="pilot">The healthy stayed healthy, because {name} kept careful track of who was sick and who wasn't.</line>
 	<line kind="band" job="infection" band="high" skill="pilot">The people there were close to panic until {name} took charge.</line>
 	<line kind="band" job="infection" band="high" skill="pilot">As soon as {name} worked out how the sickness was spreading, {he} changed the quarantine to stop it.</line>
-	<line kind="band" job="infection" band="top" skill="pilot">{name} pieced together where the infection had started, and once that was found the outbreak was soon over.</line>
+	<line kind="band" job="infection" band="top" skill="pilot">{name} found where the infection had started, and the outbreak was over soon after.</line>
 	<line kind="band" job="infection" band="top" skill="pilot">{name} ran the whole fight against the sickness, and the place was clear within days.</line>
 	<line kind="band" job="infection" band="failed" skill="engines">On {name}'s watch the power to the quarantine failed, and the doors opened.</line>
 	<line kind="band" job="infection" band="failed" skill="engines">{name} let the medical supplies run out before more could arrive.</line>
 	<line kind="band" job="infection" band="success" skill="engines">{name} ran the medical supplies from ward to ward.</line>
 	<line kind="band" job="infection" band="success" skill="engines">The medical equipment never stopped, because {name} kept the power steady in the wards.</line>
-	<line kind="band" job="infection" band="success" skill="engines">Fresh supplies arrived whenever they ran low, because {name} kept bringing them in.</line>
+	<line kind="band" job="infection" band="success" skill="engines">{name} brought in fresh supplies whenever they ran low.</line>
 	<line kind="band" job="infection" band="high" skill="engines">{name} kept the medbay powered through the worst of it.</line>
 	<line kind="band" job="infection" band="high" skill="engines">{name} ran the air pumps at full power day and night, and the sickness spread no further.</line>
 	<line kind="band" job="infection" band="top" skill="engines">{name} vented the infected decks to space without so much as a flicker of power anywhere else.</line>
@@ -1370,7 +1370,7 @@
 	<line kind="band" job="infection" band="failed" skill="shields">{name} let someone in without checking their suit, and the sickness came in with them.</line>
 	<line kind="band" job="infection" band="success" skill="shields">Nobody went in until {name} had checked their suit seals.</line>
 	<line kind="band" job="infection" band="success" skill="shields">{name} kept the sick and the healthy apart through the whole outbreak.</line>
-	<line kind="band" job="infection" band="success" skill="shields">Every suit that came back from the infected wards was scrubbed clean before {name} let its wearer through.</line>
+	<line kind="band" job="infection" band="success" skill="shields">{name} had every suit scrubbed clean before anyone came back from the infected wards.</line>
 	<line kind="band" job="infection" band="high" skill="shields">When the infected rushed the door, {name} held it shut.</line>
 	<line kind="band" job="infection" band="high" skill="shields">{name} led the healthy out through an infected corridor without letting any of them catch the sickness.</line>
 	<line kind="band" job="infection" band="top" skill="shields">Before the quarantine closed for good, {name} got the last of the healthy out.</line>
@@ -1425,9 +1425,9 @@
 	<line kind="band" job="spiders" band="failed" skill="combat">{name} froze when the first spider came out of the dark, and the others had to pull {him} back.</line>
 	<line kind="band" job="spiders" band="success" skill="combat">Every spider that came at {name} went down.</line>
 	<line kind="band" job="spiders" band="success" skill="combat">{name} fought the spiders off with whatever came to hand.</line>
-	<line kind="band" job="spiders" band="success" skill="combat">The spiders backed away in the end, after {name} had stood in front of the others and fought them for every step.</line>
+	<line kind="band" job="spiders" band="success" skill="combat">{name} stood in front of the others and fought until the spiders backed away.</line>
 	<line kind="band" job="spiders" band="high" skill="combat">The biggest of the spiders came for {name}, and {he} killed it before it could reach anyone else.</line>
-	<line kind="band" job="spiders" band="high" skill="combat">The spiders were driven back into the dark, and {name} stood guard so they stayed there.</line>
+	<line kind="band" job="spiders" band="high" skill="combat">{name} drove the spiders back into the dark and stood guard so they stayed there.</line>
 	<line kind="band" job="spiders" band="top" skill="combat">{name} went down into the nest and destroyed it, and no more spiders came up after {him}.</line>
 	<line kind="band" job="spiders" band="top" skill="combat">Nest by nest, {name} fought the spiders back until the whole place was clear.</line>
 
