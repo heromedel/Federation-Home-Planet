@@ -87,6 +87,26 @@ The Captain's Log (Captain's Quarters) is a story told from the master log, not 
   tally), the station's housekeeping (loads, profiles, settings, patches, fleet switches, Medbay visits, moving one's own
   things about), and letters that only repeat an event already told.
 
+## Expedition result lines
+
+An expedition's crew are given roles by skill (`<role>` in `lore/expeditions.xml`, 6.39), but a skill is a proxy for
+what the crew member did, not the station they sat at (heromedel, 6.39). The player never sees the skill's name in a
+result line. Each skill stands for:
+
+- **Piloting:** leading, navigating, making the calls. "Ann led the negotiations", "Ann found the way through".
+- **Shields:** defending and protecting others. "Ann kept the spiders at bay", "Ann held the perimeter".
+- **Weapons:** firepower, marksmanship, covering fire. "Bob picked off the raiders from cover".
+- **Engines:** keeping things running and moving: power, logistics, speed. "Kenji kept the convoy moving", "Kenji got
+  the power back on".
+- **Repair:** hands-on technical work: fixing, rigging, patching, cutting through. "Kenji cut through the bulkhead",
+  "Kenji rigged the doors shut".
+- **Combat:** hand-to-hand fighting, toe to toe. "Ashlee met the boarders at the airlock".
+
+The result lines are written per job and per skill, and most never name a station: "Ann led the negotiations", never
+"Ann, on piloting, negotiated well". A line may name the place when it adds something ("Ann, on the perimeter…"), and
+one day some may be written for a sector as well. Every new batch of lines goes to heromedel numbered (1., 2., 3.) to
+check for sense and tone before it goes in.
+
 ## Records agree with each other
 
 The station keeps the same events in several records: each ship's voyage log, the station log, the master log, the
