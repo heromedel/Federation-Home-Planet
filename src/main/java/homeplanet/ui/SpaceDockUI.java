@@ -1918,8 +1918,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		Ship made = CommissionDialog.open(this);
 		if (made == null) return;
 		init();
-		int r = JOptionPane.showConfirmDialog(null, "The Federation Home Planet has commissioned " + made.name + ". She waits at the Space Dock.\n\nBoard her now?",
-				"Commission Ship", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+		String done = "The Federation Home Planet has commissioned " + made.name + ". She waits at the Space Dock.";
+		if (GameGuard.isFtlRunning()) { // boarding now could be lost to FTL's next save: not offered (heromedel, 6.39)
+			JOptionPane.showMessageDialog(null, done + "\n\nFTL is running: board her from the Space Dock once it is at its main menu or closed.",
+					"Commission Ship", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		int r = JOptionPane.showConfirmDialog(null, done + "\n\nBoard her now?", "Commission Ship", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 		if (r == JOptionPane.YES_OPTION) board(made);
 	}
 

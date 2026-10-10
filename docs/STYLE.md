@@ -87,6 +87,56 @@ The Captain's Log (Captain's Quarters) is a story told from the master log, not 
   tally), the station's housekeeping (loads, profiles, settings, patches, fleet switches, Medbay visits, moving one's own
   things about), and letters that only repeat an event already told.
 
+## Expedition result lines
+
+An expedition's crew are given roles by skill (`<role>` in `lore/expeditions.xml`, 6.39), but a skill is a proxy for
+what the crew member did, not the station they sat at (heromedel, 6.39). The player never sees the skill's name in a
+result line. Each skill stands for:
+
+- **Piloting:** leading, navigating, making the calls. "Ann led the negotiations", "Ann found the way through".
+- **Shields:** defending and protecting others. "Ann kept the spiders at bay", "Ann held the perimeter".
+- **Weapons:** firepower, marksmanship, covering fire. "Bob picked off the raiders from cover".
+- **Engines:** keeping things running and moving: power, logistics, speed. "Kenji kept the convoy moving", "Kenji got
+  the power back on".
+- **Repair:** hands-on technical work: fixing, rigging, patching, cutting through. "Kenji cut through the bulkhead",
+  "Kenji rigged the doors shut".
+- **Combat:** hand-to-hand fighting, toe to toe. "Ashlee met the boarders at the airlock".
+
+The result lines are written per job and per skill, and most never name a station: "Ann led the negotiations", never
+"Ann, on piloting, negotiated well". A line may name the place when it adds something ("Ann, on the perimeter…"), and
+one day some may be written for a sector as well. Every new batch of lines goes to heromedel numbered (1., 2., 3.) to
+check for sense and tone before it goes in.
+
+**How the report shows them (heromedel, 6.40):** the result is marked, not said: ✗ for a failure, ★, ★★ or ★★★ for a
+success, a very good and an outstanding one, in gold before the line ("was successful", "was very successful" are no
+longer written). The crew member's name is bold wherever it falls (`{name}` in the line), so a line is a whole sentence
+told whichever way reads best. The killed, the hurt and the taken get no mark: their lines already say it.
+
+**Writing them (heromedel):**
+
+- **Whoever acts is the subject.** When the crew member did it, they lead: "Kenji cut through the wreckage blocking the
+  way to the survivors." When something happened first and the crew member answered, that comes first: "Two of the
+  survivors wandered off. Ann couldn't get everyone back together." Never move the name just to move it, and never
+  tack it on at the end ("A knife was hidden near the proceedings, found by Kenji" makes the knife the subject).
+- **Each sentence is its own thing.** Write what that line is saying, not the shape of the line before it. Read a batch
+  back for accidental patterns: every line opening with the name, every line joined with ", and", every line two short
+  sentences, the same word ("kept", "twice", "halfway", "made sure") over and over.
+- **Don't lean on ", and".** Often the second half is a "but", a "because", or a sentence of its own. If "and" sits in
+  the same spot in half the lines, the batch has failed, wherever the name went.
+- **Finish the explanation.** No abrupt hints or punchlines left hanging ("It got loud.", "and then Ann shot." is worse
+  than "and then Ann shot at them."), and no unanswered questions ("without telling anyone why"). Read each line asking
+  what the player would still want to know.
+- **Natural, not forced.** "Everyone but Ann retreated" beats "Everyone retreated, but not Ann." A semicolon or a dash
+  in a line means the sentence needs rewriting. Tone and style come first: narrative to the situation, never a
+  pattern.
+- **Checked on real reports.** A batch is read as the station rolls it (dozens of whole reports), not line by line: a
+  test that only counts names says nothing about how a report reads.
+- **Every line fits every event of its job** (a convoy, a station, a mine, two captains who won't meet), and nothing in
+  it says more of the others than it must ("nobody was hurt" can sit beside someone who was).
+- **FTL's rules hold through the proxies:** missiles go through shields (a shield line says lasers, or nothing that
+  claims every shot), ships don't chase each other down in a fight (an enemy that runs jumps away), and Attack is the
+  crew's ship against another ship; Board is the boarding job.
+
 ## Records agree with each other
 
 The station keeps the same events in several records: each ship's voyage log, the station log, the master log, the

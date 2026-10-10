@@ -6,6 +6,8 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.GrayFilter;
 import javax.swing.Icon;
@@ -39,8 +41,10 @@ final class ReportFaces {
 			String line = lines[i];
 			int start = doc.getLength();
 			Icon icon = null;
+			String name = null;
 			for (Assignments.Face f : byName) {
-				if (!line.startsWith(f.crew.getName() + " ")) continue;
+				if (!names(line, f.crew.getName())) continue;
+				name = f.crew.getName();
 				icon = icon(f);
 				if (icon != null) {
 					SimpleAttributeSet a = new SimpleAttributeSet();
@@ -50,7 +54,9 @@ final class ReportFaces {
 				byName.remove(f);
 				break;
 			}
-			doc.insertString(doc.getLength(), line + (i < lines.length - 1 ? "\n" : ""), base);
+			String end = i < lines.length - 1 ? "\n" : "";
+			if (name == null) doc.insertString(doc.getLength(), line + end, base);
+			else words(doc, line, name, base, end);
 			if (icon != null) { // a hanging indent: a line that wraps lines up with the words, not under the face
 				SimpleAttributeSet hang = new SimpleAttributeSet();
 				StyleConstants.setLeftIndent(hang, icon.getIconWidth());
@@ -59,6 +65,40 @@ final class ReportFaces {
 			}
 		}
 	}
+	/** The stars a line starts with (heromedel, 6.40: a cross for a failure, a star to three for the rest). */
+	private static int stars(String line) {
+		int n = 0;
+		while (n < line.length() && (line.charAt(n) == '\u2605' || line.charAt(n) == '\u2717')) n++;
+		return n == 0 ? 0 : n < line.length() && line.charAt(n) == ' ' ? n + 1 : n;
+	}
+	/** A crew member's line: it starts with their name (after any stars), or names them anywhere in it (6.40). */
+	private static boolean names(String line, String name) {
+		String rest = line.substring(stars(line));
+		if (rest.startsWith(name + " ")) return true;
+		return Pattern.compile("(^|[^\\p{L}\\p{N}])" + Pattern.quote(name) + "([^\\p{L}\\p{N}]|$)").matcher(rest).find();
+	}
+	/** A crew member's line: the stars in gold (a cross greyed), their name in bold wherever it falls. */
+	private static void words(StyledDocument doc, String line, String name, AttributeSet base, String end) throws BadLocationException {
+		int n = stars(line);
+		if (n > 0) {
+			SimpleAttributeSet st = new SimpleAttributeSet(base == null ? SimpleAttributeSet.EMPTY : base);
+			StyleConstants.setForeground(st, line.charAt(0) == '\u2717' ? CROSS : FtlButton.GOLD);
+			doc.insertString(doc.getLength(), line.substring(0, n), st);
+		}
+		SimpleAttributeSet bold = new SimpleAttributeSet(base == null ? SimpleAttributeSet.EMPTY : base);
+		StyleConstants.setBold(bold, true);
+		String rest = line.substring(n);
+		Matcher m = Pattern.compile("(?<![\\p{L}\\p{N}])" + Pattern.quote(name) + "(?![\\p{L}\\p{N}])").matcher(rest);
+		int at = 0;
+		while (m.find()) {
+			doc.insertString(doc.getLength(), rest.substring(at, m.start()), base);
+			doc.insertString(doc.getLength(), name, bold);
+			at = m.end();
+		}
+		doc.insertString(doc.getLength(), rest.substring(at) + end, base);
+	}
+	/** A failure's cross: a muted red, not the stars' gold. */
+	private static final java.awt.Color CROSS = new java.awt.Color(200, 110, 100);
 
 	/** A face: the crew icon with its health bar (purple and full in the infirmary), greyed for the dead and the taken. */
 	static Icon icon(Assignments.Face f) {

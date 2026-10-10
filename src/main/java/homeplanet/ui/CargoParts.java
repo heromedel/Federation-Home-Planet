@@ -248,7 +248,7 @@ final class CargoParts {
 			paintBox(g, 0, 0, getWidth(), getHeight(), BOX_LINE);
 			if (model.isEmpty()) {
 				String s = empty;
-				text(g, s, FtlFont.BODY, DIM, (getWidth() - width(s, FtlFont.BODY)) / 2, getHeight() / 2 - 7);
+				text(g, s, FtlFont.CARGO, DIM, (getWidth() - width(s, FtlFont.CARGO)) / 2, getHeight() / 2 - 7);
 			}
 			g.dispose();
 		}
@@ -282,10 +282,10 @@ final class CargoParts {
 				row.icon.paintIcon(this, g, 5 + (30 - row.icon.getIconWidth()) / 2, 10 - row.icon.getIconHeight() / 2);
 				tx = 40;
 			}
-			int noteW = row.note == null ? 0 : width(row.note, FtlFont.BODY) + 14;
+			int noteW = row.note == null ? 0 : width(row.note, FtlFont.CARGO) + 14;
 			Color c = row.dim ? DIM : selected ? GOLD : TEXT;
-			text(g, FtlFont.BODY.fit(row.name, width - tx - noteW - 6), FtlFont.BODY, c, tx, 4);
-			if (row.note != null) text(g, row.note, FtlFont.BODY, DIM, width - noteW + 4, 4);
+			text(g, FtlFont.CARGO.fit(row.name, width - tx - noteW - 6), FtlFont.CARGO, c, tx, 4);
+			if (row.note != null) text(g, row.note, FtlFont.CARGO, DIM, width - noteW + 4, 4);
 			if (row.bar >= 0) { // under the icon, as FTL draws a crew member's health under the portrait: the fill, then the rest
 				int bx = 5 + (30 - BAR_W) / 2, fill = Math.max(1, Math.round(BAR_W * Math.min(1f, row.bar)));
 				g.setColor(row.barRest != null ? row.barRest : new Color(0, 0, 0, 110));

@@ -106,9 +106,9 @@ public class SystemsPanel {
 	private final ShipPlanView pic = new ShipPlanView();
 	private FtlButton info;
 	private final CargoParts.Label name = new CargoParts.Label("", FtlFont.MENU, CargoParts.GOLD, 0);
-	private final CargoParts.Label sub = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 0);
+	private final CargoParts.Label sub = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 0);
 	/** What the Cargo Hold can still spend at the Dry Dock, always in view under her name. */
-	private final CargoParts.Label holdLbl = new CargoParts.Label("", FtlFont.BODY, CargoParts.GOLD, 0);
+	private final CargoParts.Label holdLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.GOLD, 0);
 	private final JPanel lists = new JPanel(null);
 	/** The installed and stored systems scroll inside the top of the column; Layout and model stays pinned below. */
 	private final JPanel sysList = new JPanel(null);
@@ -116,8 +116,8 @@ public class SystemsPanel {
 	/** Row width: the column less room for the scroll bar. */
 	private static final int ROW_W = 550, LAYOUT_H = 118;
 	private FtlButton remodelBtn, retrofitBtn;
-	private final CargoParts.Label layoutLbl = new CargoParts.Label("", FtlFont.BODY, CargoParts.TEXT, -1);
-	private final CargoParts.Label layoutHint = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, -1);
+	private final CargoParts.Label layoutLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.TEXT, -1);
+	private final CargoParts.Label layoutHint = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, -1);
 
 	JPanel panel() {
 		if (remodelBtn != null) return panel;
@@ -190,7 +190,7 @@ public class SystemsPanel {
 		// her grey line centred under her name, with the info button to its left (as on the Trade tab)
 		String cls = CargoBayUI.shipClass(bs);
 		sub.setText(cls);
-		int tw = CargoParts.width(cls, FtlFont.BODY), gx = 16 + (640 - tw - 30) / 2;
+		int tw = CargoParts.width(cls, FtlFont.CARGO), gx = 16 + (640 - tw - 30) / 2;
 		info.setBounds(gx, 517, 24, 22);
 		sub.setBounds(gx + 30, 520, tw + 4, 16);
 		holdLbl.setText("Cargo Hold: " + hold() + " scrap" + (bill > 0 ? " (" + bill + " spent here, paid on Save)" : bill < 0 ? " (" + (-bill) + " to come from sales, on Save)" : "")
@@ -238,7 +238,7 @@ public class SystemsPanel {
 		sysList.add(h2);
 		y += 26;
 		if (stored.isEmpty()) {
-			CargoParts.Label none = new CargoParts.Label("None yet. Uninstall one from the list above.", FtlFont.BODY, CargoParts.DIM, -1);
+			CargoParts.Label none = new CargoParts.Label("None yet. Uninstall one from the list above.", FtlFont.CARGO, CargoParts.DIM, -1);
 			none.setBounds(8, y + 6, w, 16);
 			sysList.add(none);
 			y += 32;
@@ -312,7 +312,7 @@ public class SystemsPanel {
 			setLayout(null);
 			setToolTipText(tip);
 			int bw = action.length() > 7 ? 104 : action.length() > 5 ? 78 : 62;
-			FtlButton b = new FtlButton(action, FtlFont.BODY, bw, 22);
+			FtlButton b = new FtlButton(action, FtlFont.CARGO, bw, 22);
 			b.setEnabled(ok);
 			if (action.isEmpty()) b.setVisible(false); // a row with only its own extra buttons
 			b.setToolTipText(tip);
@@ -335,7 +335,7 @@ public class SystemsPanel {
 		}
 		/** Another button, left of the row's own. */
 		void addButton(String text, int bw, int x, boolean enabled, String tip, ActionListener a) {
-			FtlButton b = new FtlButton(text, FtlFont.BODY, bw, 22);
+			FtlButton b = new FtlButton(text, FtlFont.CARGO, bw, 22);
 			b.setEnabled(enabled);
 			b.setToolTipText(tip);
 			b.addActionListener(a);
@@ -345,15 +345,15 @@ public class SystemsPanel {
 		@Override protected void paintComponent(java.awt.Graphics g0) {
 			java.awt.Graphics2D g = (java.awt.Graphics2D) g0.create();
 			CargoParts.paintBox(g, 0, 0, getWidth(), getHeight(), CargoParts.BOX_LINE);
-			CargoParts.text(g, FtlFont.BODY.fit(title, 230), FtlFont.BODY, ok ? CargoParts.TEXT : CargoParts.DIM, 10, 7);
-			CargoParts.text(g, level > 0 ? "level " + level : "", FtlFont.BODY, CargoParts.DIM, 250, 7);
+			CargoParts.text(g, FtlFont.CARGO.fit(title, 230), FtlFont.CARGO, ok ? CargoParts.TEXT : CargoParts.DIM, 10, 7);
+			CargoParts.text(g, level > 0 ? "level " + level : "", FtlFont.CARGO, CargoParts.DIM, 250, 7);
 			int bars = Math.min(level, 8), red = Math.min(broken, bars);
 			for (int k = 0; k < bars; k++) {
 				boolean bad = k >= bars - red; // the broken ones last, red
 				g.setColor(bad ? (ok ? new Color(225, 70, 55) : new Color(140, 70, 60)) : ok ? new Color(120, 230, 120) : new Color(90, 130, 95));
 				g.fillRect(310 + k * 8, 9, 6, 11);
 			}
-			if (level == 0) CargoParts.text(g, "uses the Medbay's level", FtlFont.BODY, CargoParts.DIM, 250, 7); // (below 0: a Dry Dock row, no level)
+			if (level == 0) CargoParts.text(g, "uses the Medbay's level", FtlFont.CARGO, CargoParts.DIM, 250, 7); // (below 0: a Dry Dock row, no level)
 			g.dispose();
 		}
 	}

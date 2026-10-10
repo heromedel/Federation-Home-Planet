@@ -23,6 +23,8 @@ public class FtlFont {
 	/** The menu font (buttons like the pause menu's) and the body font (ship names, small buttons). */
 	public static final FtlFont MENU = new FtlFont("fonts/HL2.font", 2, new Font(Font.SANS_SERIF, Font.BOLD, 15));
 	public static final FtlFont BODY = new FtlFont("fonts/JustinFont12Bold.font", 1, new Font(Font.SANS_SERIF, Font.BOLD, 12));
+	/** The Cargo Bay's text (6.39, heromedel): the body font a size down, whose ~ is a tilde (12 Bold draws FTL's scrap gear there, in a female Engi's name). */
+	public static final FtlFont CARGO = new FtlFont("fonts/JustinFont11Bold.font", 1, new Font(Font.SANS_SERIF, Font.BOLD, 12));
 
 	private static class Glyph { int x, y, w, h, base, bearing, advance; }
 

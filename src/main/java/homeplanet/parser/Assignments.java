@@ -33,10 +33,11 @@ import homeplanet.vault.Vault;
  * commander picks one and sends one to three crew from the Cargo Hold, and they leave it for a while. What job they
  * find there is drawn from the sector's weights, unseen. Each rolls a d20 for their outcome, with one reroll when the
  * sector or the job suits their race; the pot is 2d10 scrap, grown or cut by the headcount, each one's outcome, their
- * race's fit for the sector and the job, the job's skill and any hazard. A natural 20 may find an item; a Hijack,
+ * race's fit for the sector and the job, their role's skill (6.39: each gets a role from the job's primary, secondary and
+ * other skills, lore/expeditions.xml's roles) and any hazard. A natural 20 may find an item; a Hijack,
  * Salvage or Rescue that went well may bring a prize. When they're back, a report says what happened in plain words,
  * never a roll or a percentage: the player learns who to send where from the reports alone.
- * Kept in the fleet's expeditions/expeditions.xml (the board, who's away); the words in lore/expeditions.xml.
+ * Kept in the fleet's expeditions/expeditions.xml (the board, who's away); the words and the jobs' roles in lore/expeditions.xml.
  */
 public final class Assignments {
 	private static final Logger log = LoggerFactory.getLogger(Assignments.class);
@@ -69,14 +70,15 @@ public final class Assignments {
 	/** How often a sector is drawn for the board (Crystal rarely). */
 	static int sectorWeight(String id) { return "crystal".equals(id) ? 1 : 4; }
 
-	/** The jobs: id, title, base weight, the skill that helps (pilot, engines, shields, weapons, repair, combat; none for Negotiate and Rescue). */
+	/** The jobs: id, title, base weight, and the skill that helped before 6.39 (unused: each job's roles are in lore/expeditions.xml, read by {@link #roles}). */
 	public static final Object[][] JOBS = {
 		{"defend", "Defend", 14, "shields"}, {"attack", "Attack", 11, "weapons"}, {"negotiate", "Negotiate", 10, null}, {"boarded", "Get Boarded", 9, "combat"},
 		{"rescue", "Rescue", 9, null}, {"salvage", "Salvage", 8, "repair"}, {"scout", "Scout", 8, "pilot"}, {"repair", "Repair", 8, "repair"},
 		{"transport", "Transport", 8, "engines"}, {"lost", "Got Lost", 8, "pilot"}, {"escort", "Escort", 8, "engines"}, {"capture", "Capture", 8, "combat"},
 		{"board", "Board", 7, "combat"}, {"hijack", "Hijack", 7, "pilot"}, {"infection", "Infection", 7, "repair"}, {"spiders", "Giant Spiders", 6, "combat"}};
 	public static String jobTitle(String id) { for (Object[] j : JOBS) if (j[0].equals(id)) return (String) j[1]; return id; }
-	public static int jobSkill(String id) { for (Object[] j : JOBS) if (j[0].equals(id)) return Expeditions.skillIndex((String) j[3]); return -1; }
+	/** The job's primary skill (6.39: from its roles), or -1 for a job of race alone. */
+	public static int jobSkill(String id) { return roles(id).primary; }
 	/** Each sector adds 5 to two jobs and takes 5 from two, so every sector still totals 136. */
 	static final Map<String, String[][]> SECTOR_JOBS = new LinkedHashMap<String, String[][]>();
 	static {
@@ -150,10 +152,159 @@ public final class Assignments {
 	}
 	/** The d20's bands: died, injured, failed, success, high, top; and what each does to the pot. */
 	public static final String[] BANDS = {"died", "injured", "failed", "success", "high", "top"};
+	/** How a band reads in the report (heromedel, 6.40): a cross for a failure, a star to three for the rest; nothing for the dead, the hurt, the taken. */
+	public static final String[] STARS = {"", "", "\u2717 ", "\u2605 ", "\u2605\u2605 ", "\u2605\u2605\u2605 "};
 	public static final int[] BAND_MOD = {-30, -20, -10, 10, 20, 30};
 	public static int band(int roll) { return roll <= 1 ? 0 : roll <= 5 ? 1 : roll <= 9 ? 2 : roll <= 15 ? 3 : roll <= 19 ? 4 : 5; }
-	/** Skill points a job pays its skill, by band (nothing for the dead, the infirmary's drain aside). */
-	static final int[] BAND_XP = {0, 1, 1, 4, 6, 8};
+	/**
+	 * Skill points a role's skill earns, by skill (pilot, engines, shields, weapons, repair, combat) and band (died,
+	 * injured, failed, success, high, top): fixed whole points, as FTL pays them, sized to each skill's interval so every
+	 * skill trains at about the same pace (heromedel, 6.39: combat had levelled far faster). An "other" role earns half,
+	 * rounded down, at least 1 where the role's own would be any.
+	 */
+	static final int[][] TRAIN = {
+		{0, 1, 1, 2, 2, 4}, {0, 1, 1, 2, 2, 4}, {0, 3, 3, 7, 7, 14}, {0, 5, 5, 10, 10, 20}, {0, 1, 1, 2, 2, 4}, {0, 0, 0, 1, 1, 2}}; // weapons a little more: it has the fewest roles (6.39)
+	/** The points a role earns for this band. */
+	public static int training(int skill, int band, boolean other) {
+		if (skill < 0 || skill >= TRAIN.length) return 0;
+		int p = TRAIN[skill][band];
+		return other && p > 0 ? Math.max(1, p / 2) : p;
+	}
+
+	// ---- the roles (heromedel and McCarthy, 6.39) ----
+
+	/** A job's roles: its primary skill (-1: none, a job of race alone), its secondaries, and the skills with no place in it. */
+	public static final class Roles {
+		public final int primary;
+		public final int[] secondary;
+		public final boolean[] na = new boolean[6];
+		Roles(int primary, int[] secondary) { this.primary = primary; this.secondary = secondary; }
+		/** The skills left for anyone over: not the primary, a secondary or an NA one. */
+		List<Integer> others() {
+			List<Integer> o = new ArrayList<Integer>();
+			for (int s = 0; s < 6; s++) {
+				boolean taken = na[s] || s == primary;
+				for (int x : secondary) if (x == s) taken = true;
+				if (!taken) o.add(s);
+			}
+			return o;
+		}
+	}
+	private static Map<String, Roles> roles;
+	private static long rolesStamp = -2;
+	/** The roles of every job: the station's own from the jar, each job's replaced by a player's copy's (lore/expeditions.xml). */
+	public static synchronized Roles roles(String job) {
+		long stamp = homeplanet.core.Lore.stamp(homeplanet.core.Lore.EXPEDITIONS);
+		if (roles == null || stamp != rolesStamp) {
+			Map<String, Roles> out = new LinkedHashMap<String, Roles>();
+			byte[] jar = homeplanet.core.Lore.jarBytes(homeplanet.core.Lore.EXPEDITIONS);
+			try { if (jar != null) out.putAll(readRoles(jar, null)); } catch (IOException e) { log.warn("Could not read the expedition roles: {}", e.toString()); }
+			java.io.File copy = homeplanet.core.Lore.copy(homeplanet.core.Lore.EXPEDITIONS);
+			if (copy != null) {
+				try { out.putAll(readRoles(SafeFiles.read(copy), "lore/" + homeplanet.core.Lore.EXPEDITIONS)); }
+				catch (IOException e) { homeplanet.core.Lore.problem("lore/" + homeplanet.core.Lore.EXPEDITIONS + " could not be read for its roles (" + e.getMessage() + "); the station's own are used"); }
+			}
+			roles = out;
+			rolesStamp = stamp;
+		}
+		Roles r = roles.get(job);
+		return r != null ? r : new Roles(-1, new int[0]);
+	}
+	private static Map<String, Roles> readRoles(byte[] bytes, String where) throws IOException {
+		org.w3c.dom.Element root;
+		try {
+			javax.xml.parsers.DocumentBuilderFactory f = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			f.setExpandEntityReferences(false);
+			javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
+			b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
+				@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
+			});
+			root = b.parse(new java.io.ByteArrayInputStream(bytes)).getDocumentElement();
+		} catch (Exception e) {
+			throw new IOException("broken XML: " + e.getMessage(), e);
+		}
+		Map<String, Roles> out = new LinkedHashMap<String, Roles>();
+		org.w3c.dom.NodeList nl = root.getElementsByTagName("role");
+		for (int i = 0; i < nl.getLength(); i++) {
+			org.w3c.dom.Element x = (org.w3c.dom.Element) nl.item(i);
+			String job = x.getAttribute("job").trim();
+			try {
+				if (jobTitle(job).equals(job)) throw new IOException("no job " + job);
+				int primary = x.getAttribute("primary").trim().isEmpty() ? -1 : skill(x.getAttribute("primary"));
+				List<Integer> sec = new ArrayList<Integer>();
+				for (String t : x.getAttribute("secondary").split(",")) if (!t.trim().isEmpty()) sec.add(skill(t));
+				int[] secondary = new int[sec.size()];
+				for (int k = 0; k < secondary.length; k++) secondary[k] = sec.get(k);
+				Roles r = new Roles(primary, secondary);
+				for (String t : x.getAttribute("na").split(",")) if (!t.trim().isEmpty()) r.na[skill(t)] = true;
+				if (primary >= 0 && r.na[primary]) throw new IOException("its primary is NA");
+				for (int s2 : secondary) if (r.na[s2] || s2 == primary) throw new IOException("a secondary is NA or the primary");
+				out.put(job, r);
+			} catch (IOException e) {
+				if (where == null) log.warn("The station's own role for {} is broken: {}", job, e.getMessage());
+				else homeplanet.core.Lore.problem(where + ", the role for " + job + ": " + e.getMessage() + "; the station's own is used");
+			}
+		}
+		return out;
+	}
+	private static int skill(String name) throws IOException {
+		int s = Expeditions.skillIndex(name.trim());
+		if (s < 0) throw new IOException("no skill " + name.trim());
+		return s;
+	}
+
+	/** What each race is best at, as FTL has it, counted half a level more when roles are handed out (pilot 0 ... combat 5). */
+	static int raceSkill(String race) {
+		if ("engi".equals(race)) return 4;
+		if ("mantis".equals(race) || "anaerobic".equals(race)) return 5;
+		if ("slug".equals(race)) return 0;
+		if ("rock".equals(race)) return 3;
+		if ("energy".equals(race)) return 1;
+		if ("crystal".equals(race)) return 2;
+		return -1;
+	}
+	/** How good they are at a skill for the roles: their level with its fraction (0 to 2), half a level more for their race's skill. */
+	static double ability(CrewState c, int skill) {
+		double a = Skills.points(c, skill) / (double) Math.max(1, Skills.interval(c, skill));
+		return Math.min(2, a) + (raceSkill(race(c)) == skill ? 0.5 : 0);
+	}
+	/** Their best skill by ability (-1 when they have none at all). */
+	static int bestSkill(CrewState c) {
+		int best = -1;
+		double top = 0;
+		for (int s = 0; s < 6; s++) { double a = ability(c, s); if (a > top) { top = a; best = s; } }
+		return best;
+	}
+	/**
+	 * Hands out the job's roles, each to a crew member without one: the primary, a 75% chance for whoever is best at it,
+	 * then 50% and 25% for the next best; each secondary 50% for the best of those whose own best skill it is, then 25% and
+	 * 12.5%; a role nobody wins goes to someone at random. Anyone left gets one of the job's other skills at random (an
+	 * "other" role), never an NA one. A job of race alone gives nobody a role.
+	 */
+	public static void assignRoles(String job, List<Fate> fates, Random rng) {
+		Roles r = roles(job);
+		if (r.primary < 0 && r.secondary.length == 0) return;
+		List<Fate> free = new ArrayList<Fate>(fates);
+		if (r.primary >= 0) give(free, r.primary, false, new double[] {0.75, 0.5, 0.25}, rng);
+		for (int s : r.secondary) give(free, s, true, new double[] {0.5, 0.25, 0.125}, rng);
+		List<Integer> others = r.others();
+		if (others.isEmpty()) { for (int s = 0; s < 6; s++) if (!r.na[s]) others.add(s); } // every skill has a role: anyone left helps with one of them
+		for (Fate f : free) { f.skill = others.get(rng.nextInt(others.size())); f.other = true; }
+	}
+	private static void give(List<Fate> free, final int skill, boolean ownBest, double[] chances, Random rng) {
+		if (free.isEmpty()) return;
+		List<Fate> suited = new ArrayList<Fate>();
+		for (Fate f : free) if (ownBest ? bestSkill(f.crew) == skill : ability(f.crew, skill) > 0) suited.add(f);
+		java.util.Collections.sort(suited, new java.util.Comparator<Fate>() {
+			public int compare(Fate a, Fate b) { return Double.compare(ability(b.crew, skill), ability(a.crew, skill)); }
+		});
+		Fate got = null;
+		for (int i = 0; i < suited.size() && i < chances.length && got == null; i++) if (rng.nextDouble() < chances[i]) got = suited.get(i);
+		if (got == null) got = free.get(rng.nextInt(free.size()));
+		got.skill = skill;
+		free.remove(got);
+	}
 
 	// ---- the words ----
 
@@ -204,7 +355,7 @@ public final class Assignments {
 		try { words(); } catch (RuntimeException e) { log.warn("The expedition words could not be checked: {}", e.toString()); }
 	}
 	/** The marks a line's key is made of, in the key's order (an offer's is its sector alone). */
-	private static final String[] MARKS = {"job", "hazard", "band", "cause", "prize", "race", "captors", "sector"};
+	private static final String[] MARKS = {"job", "hazard", "band", "cause", "prize", "race", "captors", "skill", "sector"};
 	/** The lines of an expeditions.xml by key, in order: each line's key made from its marks. */
 	static Map<String, List<String>> lines(byte[] bytes) throws IOException {
 		org.w3c.dom.Element root;
@@ -297,6 +448,7 @@ public final class Assignments {
 		for (String[] x : SECTORS) { base.add("offer " + x[0]); sectors.add(x[0]); }
 		for (Object[] h : HAZARDS) for (String race : (String[]) h[3]) base.add("shrug " + h[0] + " " + race);
 		for (Object[] j : JOBS) { base.add("band " + j[0] + " injured cause"); base.add("frame " + j[0]); }
+		for (Object[] j : JOBS) for (int b = 2; b < BANDS.length; b++) for (String sk : Expeditions.SKILLS) base.add("band " + j[0] + " " + BANDS[b] + " " + sk);
 		List<String> out = new ArrayList<String>();
 		for (String k : words().keySet()) {
 			if (base.contains(k)) continue;
@@ -606,13 +758,16 @@ public final class Assignments {
 	public static final class Fate {
 		public final CrewState crew;
 		public int roll, band;
-		/** The d20 as it fell (after the race's reroll), before the job's skill (5.43). */
+		/** The d20 as it fell (after the race's reroll), before their role's skill (5.43; the job's one skill before 6.39). */
 		public int natural;
 		public boolean rerolled, died, captured, infirmary;
 		/** Sent hurt and hurt again, and it wasn't worse: half of what they had. */
 		public boolean worn;
 		/** The item a 20 found (an id, or "fuel:3", "missiles:2", "parts:2"), or null. */
 		public String item;
+		/** Their role's skill (-1: none, a job of race alone), and whether it's one of the job's "other" skills (6.39). */
+		public int skill = -1;
+		public boolean other;
 		public Fate(CrewState c) { crew = c; }
 		public String name() { return crew.getName(); }
 	}
@@ -659,7 +814,7 @@ public final class Assignments {
 	public static Result roll(String sector, List<CrewState> party, Random rng) { return roll(sector, party, rng, true); }
 	/** The same, with or without the Anti-Ship Battery (a detail sent before 5.05 was rolled without it). */
 	/**
-	 * The job's skill on the d20 (heromedel, 5.43): +2 a level over none, +3 a level when their race suits the job too;
+	 * Their role's skill on the d20 (heromedel, 5.43; the job's one skill before 6.39): +2 a level over none, +3 a level when their race suits the job too;
 	 * a natural 1 or 20 stays as it fell, and anything else stays between 2 and 19, so only a natural 1 is death and only
 	 * a natural 20 the top (and its find). The skill's +10% of the pot a level stays as well.
 	 */
@@ -678,11 +833,12 @@ public final class Assignments {
 			for (CrewState c : party) if ("engi".equals(race(c))) { engi++; if (r.hacker == null) r.hacker = c; }
 			if (engi == 0 || rng.nextInt(BATTERY_HACK) >= engi) r.hacker = null;
 		}
-		int skill = jobSkill(r.job);
 		int mods = PER_HEAD * party.size(), best = 0;
-		for (CrewState c : party) {
-			Fate f = new Fate(c);
-			r.fates.add(f);
+		for (CrewState c : party) r.fates.add(new Fate(c));
+		assignRoles(r.job, r.fates, rng); // each their own role's skill (6.39), not the job's one skill for everyone
+		for (Fate f : r.fates) {
+			CrewState c = f.crew;
+			int skill = f.skill;
 			String race = race(c);
 			int sec = raceSector(race, sector), job = raceJob(race, r.job);
 			f.roll = 1 + rng.nextInt(20);
@@ -745,6 +901,7 @@ public final class Assignments {
 		int colon = item.indexOf(':');
 		if (colon < 0) return homeplanet.model.Items.title(item);
 		String kind = item.substring(0, colon), n = item.substring(colon + 1);
+		if ("1".equals(n)) return "parts".equals(kind) ? "a drone part" : "missiles".equals(kind) ? "a missile" : "a little " + kind; // never "1 drone parts"
 		return n + " " + ("parts".equals(kind) ? "drone parts" : kind);
 	}
 	private static String aOrAn(String s) { return homeplanet.model.Words.a(s); }
@@ -767,6 +924,18 @@ public final class Assignments {
 			String race = f.crew.getRace() == null ? null : f.crew.getRace().getId();
 			boolean shrugged = r.hazard != null && race != null && !f.died && !f.captured && !f.infirmary && cancels(r.hazard, race);
 			boolean hurt = !f.died && BANDS[f.band].equals("injured");
+			// a role's own line (6.40, heromedel): a whole sentence with the name where it falls, the stars before it
+			String role = f.captured || f.infirmary || f.died || hurt || f.skill < 0 ? null
+					: fresh(rng, null, used, "band " + r.job + " " + BANDS[f.band] + " " + Expeditions.SKILLS[f.skill], "band " + r.job + " " + BANDS[f.band] + " " + Expeditions.SKILLS[f.skill] + " " + r.sector);
+			String stars = f.captured || f.infirmary || f.died || hurt ? "" : STARS[f.band];
+			if (role != null) {
+				used.add(role);
+				String said = role.replace("{name}", f.name());
+				if (f.item != null) said += " Along the way, {he} found " + (f.item.indexOf(':') < 0 ? aOrAn(itemWords(f.item)) : itemWords(f.item)) + ".";
+				if (shrugged) said += " " + sayAt(rng, "", r.sector, "shrug", r.hazard, race);
+				sb.append(stars).append(pronouns(said, f.crew).trim()).append("\n");
+				continue;
+			}
 			if (f.captured) line = sayAt(rng, "was taken by the boarders.", captorsMark(r.sector), "captured");
 			else if (f.infirmary) line = sayAt(rng, "was badly hurt and is in the infirmary.", r.sector, "infirmary");
 			else {
@@ -781,7 +950,7 @@ public final class Assignments {
 			}
 			// a race that shrugged off the hazard says so, a sentence of its own (never for the dead, the taken, the infirmary or the injured)
 			if (shrugged && !hurt) line += " " + sayAt(rng, "", r.sector, "shrug", r.hazard, race);
-			sb.append(f.name()).append(" ").append(pronouns(line, f.crew).trim()).append("\n");
+			sb.append(stars).append(f.name()).append(" ").append(pronouns(line, f.crew).trim()).append("\n");
 		}
 		if (r.prize != null) sb.append("\n").append(sayAt(rng, "They brought something back.", r.sector, "prize", r.job, r.prize).replace("{name}", r.prizeDetail == null ? "" : r.prizeDetail)).append("\n"); // the prize stands apart
 		sb.append("\nTotal Reward: ").append(r.scrap).append(" scrap");
@@ -882,7 +1051,6 @@ public final class Assignments {
 		if (!byLetter) hold.setScrapAmt(hold.getScrapAmt() + r.scrap);
 		else if (r.scrap > 0) brought.add("scrap " + r.scrap);
 		List<CrewState> hurt = new ArrayList<CrewState>(), taken = new ArrayList<CrewState>();
-		int skill = jobSkill(r.job);
 		for (Fate f : r.fates) {
 			CrewState m = f.crew;
 			if (f.died) continue;
@@ -891,7 +1059,8 @@ public final class Assignments {
 			if (f.infirmary) { m.setHealth(Math.max(1, Math.min(m.getHealth(), max / 4))); hurt.add(m); }
 			else if (f.worn) m.setHealth(Math.max(1, m.getHealth() / 2));
 			else if (f.band == 1) m.setHealth(Math.max(1, Math.min(m.getHealth(), max / 2)));
-			if (skill >= 0 && BAND_XP[f.band] > 0) Skills.add(m, skill, BAND_XP[f.band]);
+			int earned = training(f.skill, f.band, f.other);
+			if (earned > 0) Skills.add(m, f.skill, earned);
 			if (!SaveHelper.placeCrew(hold, m, true)) throw new IOException("The Cargo Hold has no room for " + m.getName() + "; the detail waits");
 			hold.getCrewList().add(m);
 			if (f.item != null) { if (byLetter) brought.add(reward(f.item)); else give(hold, f.item); }
@@ -962,6 +1131,12 @@ public final class Assignments {
 				.put("scrap", r.scrap).put("prize", r.prize).put("prize_detail", r.prizeDetail).put("captured", takenCount).put("good", good).put("bad", bad);
 		for (String x : a.names()) back.put("crew", x);
 		for (String x : dead) back.put("killed", x);
+		Roles jr = roles(r.job);
+		for (Fate f : r.fates) { // each one's role and what it taught (6.39): name:skill:kind:band:points
+			if (f.skill < 0) continue;
+			String kind = f.other ? "other" : f.skill == jr.primary ? "primary" : "secondary";
+			back.put("role", f.name() + ":" + Expeditions.SKILLS[f.skill] + ":" + kind + ":" + BANDS[f.band] + ":" + (f.died ? 0 : training(f.skill, f.band, f.other)));
+		}
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
 				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead))
 				+ fatesNamed(r, true) + fatesNamed(r, false), null, back);
