@@ -107,6 +107,27 @@ The result lines are written per job and per skill, and most never name a statio
 one day some may be written for a sector as well. Every new batch of lines goes to heromedel numbered (1., 2., 3.) to
 check for sense and tone before it goes in.
 
+**How the report shows them (heromedel, 6.40):** the result is marked, not said: ✗ for a failure, ★, ★★ or ★★★ for a
+success, a very good and an outstanding one, in gold before the line ("was successful", "was very successful" are no
+longer written). The crew member's name is bold wherever it falls (`{name}` in the line), so a line is a whole sentence
+told whichever way reads best. The killed, the hurt and the taken get no mark: their lines already say it.
+
+**Writing them (heromedel):**
+
+- **Whoever acts is the subject.** When the crew member did it, they lead: "Kenji cut through the wreckage blocking the
+  way to the survivors." When something happened first and the crew member answered, that comes first: "Two of the
+  survivors wandered off. Ann couldn't get everyone back together." Never move the name just to move it, and never
+  tack it on at the end ("A knife was hidden near the proceedings, found by Kenji" makes the knife the subject).
+- **Each sentence is its own thing.** Write what that line is saying, not the shape of the line before it. Read a batch
+  back for accidental patterns: every line opening with the name, every line joined with ", and", every line two short
+  sentences, the same word ("kept", "twice", "halfway", "made sure") over and over.
+- **Don't lean on ", and".** Often the second half is a "but", a "because", or a sentence of its own.
+- **Every line fits every event of its job** (a convoy, a station, a mine, two captains who won't meet), and nothing in
+  it says more of the others than it must ("nobody was hurt" can sit beside someone who was).
+- **FTL's rules hold through the proxies:** missiles go through shields (a shield line says lasers, or nothing that
+  claims every shot), ships don't chase each other down in a fight (an enemy that runs jumps away), and Attack is the
+  crew's ship against another ship; Board is the boarding job.
+
 ## Records agree with each other
 
 The station keeps the same events in several records: each ship's voyage log, the station log, the master log, the

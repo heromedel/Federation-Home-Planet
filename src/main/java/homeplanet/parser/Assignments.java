@@ -152,6 +152,8 @@ public final class Assignments {
 	}
 	/** The d20's bands: died, injured, failed, success, high, top; and what each does to the pot. */
 	public static final String[] BANDS = {"died", "injured", "failed", "success", "high", "top"};
+	/** How a band reads in the report (heromedel, 6.40): a cross for a failure, a star to three for the rest; nothing for the dead, the hurt, the taken. */
+	public static final String[] STARS = {"", "", "\u2717 ", "\u2605 ", "\u2605\u2605 ", "\u2605\u2605\u2605 "};
 	public static final int[] BAND_MOD = {-30, -20, -10, 10, 20, 30};
 	public static int band(int roll) { return roll <= 1 ? 0 : roll <= 5 ? 1 : roll <= 9 ? 2 : roll <= 15 ? 3 : roll <= 19 ? 4 : 5; }
 	/**
@@ -353,7 +355,7 @@ public final class Assignments {
 		try { words(); } catch (RuntimeException e) { log.warn("The expedition words could not be checked: {}", e.toString()); }
 	}
 	/** The marks a line's key is made of, in the key's order (an offer's is its sector alone). */
-	private static final String[] MARKS = {"job", "hazard", "band", "cause", "prize", "race", "captors", "sector"};
+	private static final String[] MARKS = {"job", "hazard", "band", "cause", "prize", "race", "captors", "skill", "sector"};
 	/** The lines of an expeditions.xml by key, in order: each line's key made from its marks. */
 	static Map<String, List<String>> lines(byte[] bytes) throws IOException {
 		org.w3c.dom.Element root;
@@ -446,6 +448,7 @@ public final class Assignments {
 		for (String[] x : SECTORS) { base.add("offer " + x[0]); sectors.add(x[0]); }
 		for (Object[] h : HAZARDS) for (String race : (String[]) h[3]) base.add("shrug " + h[0] + " " + race);
 		for (Object[] j : JOBS) { base.add("band " + j[0] + " injured cause"); base.add("frame " + j[0]); }
+		for (Object[] j : JOBS) for (int b = 2; b < BANDS.length; b++) for (String sk : Expeditions.SKILLS) base.add("band " + j[0] + " " + BANDS[b] + " " + sk);
 		List<String> out = new ArrayList<String>();
 		for (String k : words().keySet()) {
 			if (base.contains(k)) continue;
@@ -920,6 +923,18 @@ public final class Assignments {
 			String race = f.crew.getRace() == null ? null : f.crew.getRace().getId();
 			boolean shrugged = r.hazard != null && race != null && !f.died && !f.captured && !f.infirmary && cancels(r.hazard, race);
 			boolean hurt = !f.died && BANDS[f.band].equals("injured");
+			// a role's own line (6.40, heromedel): a whole sentence with the name where it falls, the stars before it
+			String role = f.captured || f.infirmary || f.died || hurt || f.skill < 0 ? null
+					: fresh(rng, null, used, "band " + r.job + " " + BANDS[f.band] + " " + Expeditions.SKILLS[f.skill], "band " + r.job + " " + BANDS[f.band] + " " + Expeditions.SKILLS[f.skill] + " " + r.sector);
+			String stars = f.captured || f.infirmary || f.died || hurt ? "" : STARS[f.band];
+			if (role != null) {
+				used.add(role);
+				String said = role.replace("{name}", f.name());
+				if (f.item != null) said += " {He} also brought back " + (f.item.indexOf(':') < 0 ? aOrAn(itemWords(f.item)) : itemWords(f.item)) + ".";
+				if (shrugged) said += " " + sayAt(rng, "", r.sector, "shrug", r.hazard, race);
+				sb.append(stars).append(pronouns(said, f.crew).trim()).append("\n");
+				continue;
+			}
 			if (f.captured) line = sayAt(rng, "was taken by the boarders.", captorsMark(r.sector), "captured");
 			else if (f.infirmary) line = sayAt(rng, "was badly hurt and is in the infirmary.", r.sector, "infirmary");
 			else {
@@ -934,7 +949,7 @@ public final class Assignments {
 			}
 			// a race that shrugged off the hazard says so, a sentence of its own (never for the dead, the taken, the infirmary or the injured)
 			if (shrugged && !hurt) line += " " + sayAt(rng, "", r.sector, "shrug", r.hazard, race);
-			sb.append(f.name()).append(" ").append(pronouns(line, f.crew).trim()).append("\n");
+			sb.append(stars).append(f.name()).append(" ").append(pronouns(line, f.crew).trim()).append("\n");
 		}
 		if (r.prize != null) sb.append("\n").append(sayAt(rng, "They brought something back.", r.sector, "prize", r.job, r.prize).replace("{name}", r.prizeDetail == null ? "" : r.prizeDetail)).append("\n"); // the prize stands apart
 		sb.append("\nTotal Reward: ").append(r.scrap).append(" scrap");

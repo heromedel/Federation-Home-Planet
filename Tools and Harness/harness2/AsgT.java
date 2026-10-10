@@ -479,6 +479,19 @@ public class AsgT { public static void main(String[] a) throws Exception {
    if (fs.get(1).skill == 5) combat++;
   }
   Setup.chk("R: the best fighter on Board gets combat about 3 times in 4 (" + combat + " of " + n + ")", combat > n * 0.72 && combat < n * 0.9);
+  // 6.40 (heromedel): a crew member in a role gets their role's own line, a whole sentence, the stars before it
+  Random rq = new Random(41); int starred = 0, old = 0, stray = 0, named = 0;
+  for (int i = 0; i < 3000; i++) {
+   Assignments.Result rr = Assignments.roll(i % 2 == 0 ? "civilian" : "zoltan", party("human", "engi", "mantis"), rq);
+   if (rr.report.contains("{")) stray++;
+   for (String l : rr.report.split("\n")) {
+    if (!l.startsWith("\u2605") && !l.startsWith("\u2717")) continue;
+    starred++;
+    if (l.matches(".*\\bwas (very |extremely )?successful.*")) old++;
+    for (Assignments.Fate f : rr.fates) if (l.contains(f.name())) { named++; break; }
+   }
+  }
+  Setup.chk("S: crew in a role get their role's own line, stars first, their name in it (" + starred + " starred, " + named + " named, " + old + " the band's own)", starred > 1000 && named == starred && old == 0 && stray == 0);
   // fixed points by skill and roll: a natural 20, a success, a failure; "other" half, at least 1
   Setup.chk("P: the points: a natural 20 pays pilot 4, shields 14, weapons 20, combat 2; a success 2, 7, 10, 1; failed 1, 3, 5, 0; the dead nothing",
     Assignments.training(0, 5, false) == 4 && Assignments.training(2, 5, false) == 14 && Assignments.training(3, 5, false) == 20 && Assignments.training(5, 5, false) == 2
