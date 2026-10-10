@@ -30,4 +30,4 @@ Status: done (with the version), open, or not for the station (jokes, questions 
 | 10/8 02:51 | 6.04 | Switching careers: a temporary pop-up saying it's switching, then all pop-ups closed | done 6.07 |
 | 10/8 02:53 | 6.04 | An empty line between the folders' Change rows and the Open buttons (Settings > Folders) | done 6.07 |
 | 10/8 03:31 | 6.05 | A ship defeated is always "We defeated a ship": the log knows what kind she was (a rebel ship), so it should say so | done 6.09 ("Encountered a rebel ship.", "Defeated the rebel ship."; the Captain's Log names her too) |
-| 10/9 19:33 | (not given) | Custom ships could show up in the background with the other ships unlocked so far | open: an idea for heromedel |
+| 10/9 19:33 | (not given) | Custom ships could show up in the background with the other ships unlocked so far | done 6.36 (the Space Dock backdrop already flew starter blueprints on FTL's hulls; designs with pictures of their own now fly too) |

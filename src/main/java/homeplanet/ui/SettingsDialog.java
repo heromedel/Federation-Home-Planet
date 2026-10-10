@@ -56,6 +56,9 @@ public class SettingsDialog extends JDialog {
 	private static final String[] LISTS_ON_OFF = {"On", "Off"}, HUMAN_GEN = {"Normal", "First Names Only", "First and Last Always"};
 	private static final String[] HUMAN_GEN_CFG = {homeplanet.parser.CrewNames.NORMAL, homeplanet.parser.CrewNames.FIRST, homeplanet.parser.CrewNames.FIRST_LAST};
 	private final javax.swing.JComboBox<String> namesBox = new javax.swing.JComboBox<String>(LISTS_ON_OFF), humanGenBox = new javax.swing.JComboBox<String>(HUMAN_GEN);
+	private static final String[] ENGI = {"Prefix", "Append", "None"};
+	private static final String[] ENGI_CFG = {homeplanet.parser.CrewNames.PREFIX, homeplanet.parser.CrewNames.APPEND, homeplanet.parser.CrewNames.NONE};
+	private final javax.swing.JComboBox<String> engiBox = new javax.swing.JComboBox<String>(ENGI);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging", HomePlanet.debugLogging);
 	private boolean savesChanged = false;
 	/** After a final victory: nothing, rescue her, or a reward of her value (the fleet in use has its own choice). */
@@ -190,6 +193,12 @@ public class SettingsDialog extends JDialog {
 		});
 		body.add(labelled("Custom Name Lists Per Race:", namesBox), next(c));
 		body.add(labelled("Human Name Gen:", humanGenBox), next(c));
+		engiBox.setSelectedIndex(java.util.Arrays.asList(ENGI_CFG).indexOf(homeplanet.parser.CrewNames.engiTranslate()));
+		engiBox.setToolTipText("<html>The Engi's name lists write an English word in hex. Prefix: Byte 4279-7465. Append: 4279-7465 Byte. None: 4279-7465.<br>"
+				+ "Only with the name lists on (the Engi have FTL's names without them)</html>");
+		engiBox.setEnabled(namesBox.getSelectedIndex() == 0);
+		namesBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { engiBox.setEnabled(namesBox.getSelectedIndex() == 0); } });
+		body.add(labelled("Engi Translate:", engiBox), next(c));
 
 		shipTradeBox.setToolTipText("Sandbox fleets always may. A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
 		anyLevelBox.setToolTipText("Off: your career trades only with careers of its own difficulty");
@@ -556,6 +565,11 @@ public class SettingsDialog extends JDialog {
 			changed.add("Custom Name Lists Per Race: " + namesBox.getSelectedItem());
 			if (namesBox.getSelectedIndex() == 0) HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_LISTS, "true");
 			else HomePlanet.config.remove(homeplanet.parser.CrewNames.CFG_LISTS); // off is the default, as FTL names its crew: the line only while on (6.34)
+		}
+		if (!ENGI_CFG[engiBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.engiTranslate())) {
+			changed.add("Engi Translate: " + engiBox.getSelectedItem());
+			if (engiBox.getSelectedIndex() == 2) HomePlanet.config.remove(homeplanet.parser.CrewNames.CFG_ENGI); // None is the default: the line only while Prefix or Append
+			else HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_ENGI, ENGI_CFG[engiBox.getSelectedIndex()]);
 		}
 		if (!HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.humanGen())) {
 			changed.add("Human Name Gen: " + humanGenBox.getSelectedItem());

@@ -59,6 +59,21 @@ public class CrewNameT { public static void main(String[] a) throws Exception {
  HomePlanet.config.remove(CrewNames.CFG_HUMAN);
  Setup.chk("H: lists on: Human Name Gen leaves the aliens' names whole", zWhole);
 
+ // Engi Translate (6.36): the English word before or after the hex, a woman's tilde kept; None the hex alone
+ Set<String> engi = new HashSet<String>(CrewNames.every("names/engi.xml"));
+ boolean pre = true, app = true, none = true; int tilde = 0;
+ for (String[] t : new String[][] {{CrewNames.PREFIX, "p"}, {CrewNames.APPEND, "a"}, {null, "n"}}) {
+  if (t[0] == null) HomePlanet.config.remove(CrewNames.CFG_ENGI); else HomePlanet.config.setProperty(CrewNames.CFG_ENGI, t[0]);
+  for (int i = 0; i < 200; i++) {
+   boolean male = i % 2 == 0; String x = CrewNames.pick("engi", male, rng); String[] w = x.split(" ");
+   if (t[1].equals("p")) { if (!(w.length == 2 && w[0].matches("[A-Z][a-z]{3}") && engi.contains(w[1]) && hexOf(w[0]).equals(w[1].replace("~", "-")))) pre = false; if (!male && w.length == 2 && w[1].contains("~")) tilde++; }
+   if (t[1].equals("a")) { if (!(w.length == 2 && w[1].matches("[A-Z][a-z]{3}") && engi.contains(w[0]) && hexOf(w[1]).equals(w[0].replace("~", "-")))) app = false; }
+   if (t[1].equals("n")) { if (!(w.length == 1 && engi.contains(w[0]))) none = false; }
+  }
+ }
+ HomePlanet.config.remove(CrewNames.CFG_ENGI);
+ Setup.chk("T: Engi Translate: Prefix gives Byte 4279-7465, Append 4279-7465 Byte, None the hex alone; women keep the tilde (" + tilde + ")", pre && app && none && tilde > 50);
+
  // Commission and volunteers, lists on
  Set<String> rock = new HashSet<String>(CrewNames.every("names/rock.xml"));
  boolean rocks = true; int rockWomen = 0, rockCrew = 0;
@@ -99,6 +114,7 @@ public class CrewNameT { public static void main(String[] a) throws Exception {
  Setup.chk("L: lore/defaults/names holds the station's lists", new File(lore, "defaults/names/rock.xml").isFile() && new File(lore, "defaults/names/human.xml").isFile());
  Setup.done();
 }
+ static String hexOf(String word) { StringBuilder h = new StringBuilder(); for (char c : word.toCharArray()) h.append(String.format("%02X", (int) c)); return h.substring(0, h.length() / 2) + "-" + h.substring(h.length() / 2); }
  static int count(NamesT.List_ l, String level) { int n = 0; String first = l.levels.keySet().iterator().next(); for (NamesT.Name x : l.names) if (!x.sex.equals("F") && level.equals(x.rarity == null ? first : x.rarity)) n++; return n; }
  static int get(Map<String, Integer> m, String k) { return m.containsKey(k) ? m.get(k) : 0; }
 }
