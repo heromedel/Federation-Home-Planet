@@ -2846,6 +2846,7 @@ public final class Vault {
 	public static Vault switchFleet(String toSlot) throws IOException {
 		Vault from = get();
 		if (from.slot.equals(toSlot)) return from;
+		homeplanet.core.StationConsole.lock(); // another career: dev commands never carried across (heromedel, 6.35)
 		from.reload();
 		Ship b = from.boarded();
 		File park = new File(from.root, PARKED);
