@@ -206,7 +206,8 @@ For example:
 - Never imply the Rebel Flagship has been destroyed: the war goes on. Its weapons come from plans stolen from the
   Rebels, not salvage.
 - Places: the Space Dock, the Cargo Bay, the Cargo Hold (the storage; its save keeps the internal name "Spacedock
-  Storage"), the Dry Dock, the Junkyard. A ship is **decommissioned** (not disbanded). Ships are "she". Never "Home World",
+  Storage"), the Dry Dock, the Junkyard. A ship is **decommissioned** (not disbanded). A ship is her, him or it as the Ship Pronoun setting says (Settings, General, 6.42):
+  `model.Words` (`she()`, `her()`, `herObj()`) in code, `{she}`, `{her}` in lore; never a fixed "she". Never "Home World",
   never "FHP"* in player-facing text. Errors stay actionable (what failed, what to do, the file or path).
   *it may seem like bad form but it is not a hard rule that heromedel ever made
 

@@ -54,7 +54,7 @@ final class DerelictsDialog extends JDialog {
 		JPanel body = new JPanel(new BorderLayout(0, 10));
 		body.setBorder(BorderFactory.createEmptyBorder(12, 16, 10, 16));
 		body.add(new JLabel("<html><div style='width:780px'>The Junkyard foreman has hulls nobody wanted, sold as they are: no crew, little or nothing aboard, "
-				+ "and often put together strangely. Whatever you buy goes to the Junkyard; salvage her, then make her fly.</div></html>"), BorderLayout.NORTH);
+				+ "and often put together strangely. Whatever you buy goes to the Junkyard; salvage " + homeplanet.model.Words.herObj() + ", then make " + homeplanet.model.Words.herObj() + " fly.</div></html>"), BorderLayout.NORTH);
 		body.add(cols, BorderLayout.CENTER);
 		JPanel south = new JPanel(new BorderLayout());
 		south.add(foot, BorderLayout.WEST);
@@ -106,9 +106,9 @@ final class DerelictsDialog extends JDialog {
 		JLabel words = new JLabel("<html><div style='width:240px'>" + report(l) + "</div></html>");
 		words.setVerticalAlignment(JLabel.TOP);
 		p.add(words, BorderLayout.CENTER);
-		JButton buy = new JButton("Buy her: " + l.price + " scrap");
+		JButton buy = new JButton("Buy " + homeplanet.model.Words.herObj() + ": " + l.price + " scrap");
 		buy.setEnabled(hold >= l.price);
-		buy.setToolTipText(hold >= l.price ? "Paid from the Cargo Hold; she goes to the Junkyard" : "She costs " + l.price + " scrap; the Cargo Hold holds " + hold);
+		buy.setToolTipText(hold >= l.price ? "Paid from the Cargo Hold; " + homeplanet.model.Words.she() + " goes to the Junkyard" : homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " costs " + l.price + " scrap; the Cargo Hold holds " + hold);
 		buy.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { buy(l); } });
 		p.add(buy, BorderLayout.SOUTH);
 		return p;
@@ -141,7 +141,7 @@ final class DerelictsDialog extends JDialog {
 			if (st == null || st.getCapacity() <= 0) continue;
 			String line = Items.systemTitle(t.getId()) + " " + st.getCapacity();
 			if (st.getDamagedBars() > 0) line += " <font color='#d86a4a'>(" + st.getDamagedBars() + " broken)</font>";
-			if (!standard(model, t)) line += " <font color='" + dim + "'>(not hers)</font>";
+			if (!standard(model, t)) line += " <font color='" + dim + "'>(not " + homeplanet.model.Words.hers() + ")</font>";
 			sys.add(line);
 		}
 		sb.append("<br><br>Systems: ").append(sys.isEmpty() ? "none" : String.join(", ", sys));
@@ -159,7 +159,7 @@ final class DerelictsDialog extends JDialog {
 		for (String g : homeplanet.parser.SaveHelper.gear(s)) aboard.add(Items.title(g));
 		sb.append("<br>Aboard: ").append(aboard.isEmpty() ? "nothing" : homeplanet.parser.XmlText.text(String.join(", ", aboard)));
 		if (!l.oddityWords().isEmpty()) sb.append("<br><br><font color='").append(gold).append("'>").append(l.oddityWords()).append("</font>")
-				.append("<br><font color='").append(dim).append("'>She'll need her own blueprint sent to FTL via Slipstream.</font>");
+				.append("<br><font color='").append(dim).append("'>" + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + "'ll need " + homeplanet.model.Words.her() + " own blueprint sent to FTL via Slipstream.</font>");
 		return sb.toString();
 	}
 	/** Did her model come with this system? */
@@ -170,8 +170,8 @@ final class DerelictsDialog extends JDialog {
 
 	private void buy(Derelicts.Listing l) {
 		String name = l.save.getPlayerShipName();
-		if (!HomePlanet.confirmNo(this, "Buy " + name + " for " + l.price + " scrap from the Cargo Hold?\nShe goes to the Junkyard as she is.", "Derelicts for sale")) return;
-		if (!l.oddity.isEmpty() && !GameGuard.allows(this, "write her blueprint")) return;
+		if (!HomePlanet.confirmNo(this, "Buy " + name + " for " + l.price + " scrap from the Cargo Hold?\n" + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " goes to the Junkyard as " + homeplanet.model.Words.she() + " is.", "Derelicts for sale")) return;
+		if (!l.oddity.isEmpty() && !GameGuard.allows(this, "write " + homeplanet.model.Words.her() + " blueprint")) return;
 		Ship s;
 		try {
 			s = Derelicts.buy(Vault.get(), l);
@@ -184,11 +184,11 @@ final class DerelictsDialog extends JDialog {
 		fill();
 		List<String> missing = Retrofit.missingBlueprints(s.file());
 		if (missing.isEmpty()) {
-			JOptionPane.showMessageDialog(this, name + " is in the Junkyard. Salvage her there to bring her to the Space Dock.", "Derelicts for sale", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, name + " is in the Junkyard. Salvage " + homeplanet.model.Words.herObj() + " there to bring " + homeplanet.model.Words.herObj() + " to the Space Dock.", "Derelicts for sale", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		Object[] opts = {"Patch Now", "Later"};
-		int r = JOptionPane.showOptionDialog(this, name + " is in the Junkyard. She can't fly until The Home Planet Station sends her blueprint ("
+		int r = JOptionPane.showOptionDialog(this, name + " is in the Junkyard. " + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " can't fly until The Home Planet Station sends " + homeplanet.model.Words.her() + " blueprint ("
 				+ String.join(", ", missing) + ") to FTL via Slipstream.", "Derelicts for sale", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[0]);
 		if (r == 0) PatchDialog.open(this);
 	}

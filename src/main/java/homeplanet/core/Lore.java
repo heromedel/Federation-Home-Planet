@@ -195,6 +195,7 @@ public final class Lore {
 	 * station's one rule, never "the The Adjudicator" (ShipNames.the).
 	 */
 	static String fill(String words, Event e) {
+		words = homeplanet.model.Words.ship(words); // {she}, {her}: the Ship Pronoun setting (6.42)
 		Matcher m = TOKEN.matcher(words);
 		StringBuffer sb = new StringBuffer();
 		while (m.find()) {
@@ -248,7 +249,7 @@ public final class Lore {
 		return null;
 	}
 	private static String fillCheck(String w) {
-		String bare = TOKEN.matcher(w).replaceAll("");
+		String bare = TOKEN.matcher(homeplanet.model.Words.ship(w)).replaceAll("");
 		return bare.contains("{") || bare.contains("}") ? "a { or } that isn't a {field}" : null;
 	}
 
@@ -339,6 +340,8 @@ public final class Lore {
 			+ "names/ holds the crew names, a file per race (Settings, Custom Name Lists Per Race): a copy replaces the station's\r\n"
 			+ "whole list for that race; each file's top says how it is written.\r\n"
 			+ "{field} fills in a value; each file's own notes say which ones it has.\r\n"
+			+ "{she}, {her} (her crew), {her_obj} (flies her), {hers}, {herself}, {She} and {Her} speak of a ship as the Ship\r\n"
+			+ "Pronoun setting says (Settings, General: her, him or it).\r\n"
 			+ "Something that breaks a rule (the Rebel Flagship is never destroyed, the rebels are never capitalised, a {field}\r\n"
 			+ "that isn't there) is left out, and the debug log says which file, which entry and which rule.\r\n";
 	/** A builder that keeps quiet: its errors come back as the exception, not printed to the console. */

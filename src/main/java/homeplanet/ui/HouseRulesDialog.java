@@ -63,10 +63,10 @@ public class HouseRulesDialog extends JDialog {
 				body.add(victory[i], (GridBagConstraints) c.clone());
 				c.gridy++;
 			}
-			victory[1].setToolTipText("She comes back as she was moments before the final engagement, ready for a new journey; or take her full value for the museum");
-			victory[2].setToolTipText("Her full value, as the shipyard would charge for her, goes to the Cargo Hold");
+			victory[1].setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " comes back as " + homeplanet.model.Words.she() + " was moments before the final engagement, ready for a new journey; or take " + homeplanet.model.Words.her() + " full value for the museum");
+			victory[2].setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " full value, as the shipyard would charge for " + homeplanet.model.Words.herObj() + ", goes to the Cargo Hold");
 			JLabel note = new JLabel("<html><div style='width:520px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>For a rescue or a reward, The Home Planet Station must be open while you play: "
-					+ "it keeps her as the Rebel Flagship heads for the last battle.</font></div></html>");
+					+ "it keeps " + homeplanet.model.Words.herObj() + " as the Rebel Flagship heads for the last battle.</font></div></html>");
 			note.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 			body.add(note, (GridBagConstraints) c.clone());
 			c.gridy++;

@@ -62,7 +62,7 @@ final class GameShipPicker {
 		JScrollPane sp = new JScrollPane(list);
 		sp.setPreferredSize(new java.awt.Dimension(460, 300));
 		JPanel p = new JPanel(new BorderLayout(8, 6));
-		p.add(new JLabel("Her rooms, doors, systems, art and loadout become the new design's; change what you like."), BorderLayout.NORTH);
+		p.add(new JLabel(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " rooms, doors, systems, art and loadout become the new design's; change what you like."), BorderLayout.NORTH);
 		p.add(sp, BorderLayout.WEST);
 		p.add(preview, BorderLayout.CENTER);
 		if (!labels.isEmpty()) list.setSelectedIndex(0);

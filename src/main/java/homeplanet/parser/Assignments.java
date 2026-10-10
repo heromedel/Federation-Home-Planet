@@ -337,7 +337,7 @@ public final class Assignments {
 					List<String> good = new ArrayList<String>();
 					for (String l : k.getValue()) {
 						String why = homeplanet.core.Lore.rule(l);
-						if (why == null) for (String t : tokens(l)) if (!may.contains(t)) { why = "{" + t + "} isn't one of these lines'"; break; }
+						if (why == null) for (String t : tokens(l)) if (!may.contains(t) && !java.util.Arrays.asList(homeplanet.model.Words.SHIP_TOKENS).contains(t)) { why = "{" + t + "} isn't one of these lines'"; break; }
 						if (why == null) good.add(l);
 						else homeplanet.core.Lore.problem(where + ", " + k.getKey() + ": " + why + " (\"" + l + "\"); left out");
 					}
@@ -398,7 +398,7 @@ public final class Assignments {
 	/** One of the lines for this key, or the fallback ("\n" in the file is a line break: a long line broken where the sense breaks). */
 	static String say(Random rng, String fallback, String... key) {
 		List<String> l = words().get(String.join(" ", key));
-		return (l == null || l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n");
+		return homeplanet.model.Words.ship((l == null || l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n"));
 	}
 	/**
 	 * One of the lines for this key, the lines marked for this place joining them ("event defend zoltan | ..." is drawn
@@ -409,22 +409,22 @@ public final class Assignments {
 		List<String> l = new ArrayList<String>();
 		if (words().get(k) != null) l.addAll(words().get(k));
 		if (mark != null && words().get(k + " " + mark) != null) l.addAll(words().get(k + " " + mark));
-		return (l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n"); // ("\n" in the file is a line break)
+		return homeplanet.model.Words.ship((l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n")); // ("\n" in the file is a line break; {she}, {her}: the Ship Pronoun setting)
 	}
 	/** One of the lines under any of these keys together not used yet in this report (any of them, once all are), or the fallback. */
 	static String fresh(Random rng, String fallback, java.util.Set<String> used, String... keys) {
 		List<String> all = new ArrayList<String>();
 		for (String k : keys) if (words().get(k) != null) all.addAll(words().get(k));
 		List<String> left = new ArrayList<String>();
-		for (String s : all) if (!used.contains(s.replace("\\n", "\n"))) left.add(s); // used holds lines as told, line breaks made
+		for (String s : all) if (!used.contains(homeplanet.model.Words.ship(s.replace("\\n", "\n")))) left.add(s); // used holds lines as told: line breaks made, a ship's pronoun filled
 		List<String> l = left.isEmpty() ? all : left;
-		return l.isEmpty() ? fallback : l.get(rng.nextInt(l.size())).replace("\\n", "\n");
+		return homeplanet.model.Words.ship(l.isEmpty() ? fallback : l.get(rng.nextInt(l.size())).replace("\\n", "\n"));
 	}
 	/** One of the lines under any of these keys together, or the fallback. */
 	static String pick(Random rng, String fallback, String... keys) {
 		List<String> l = new ArrayList<String>();
 		for (String k : keys) if (words().get(k) != null) l.addAll(words().get(k));
-		return (l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n"); // ("\n" in the file is a line break)
+		return homeplanet.model.Words.ship((l.isEmpty() ? fallback : l.get(rng.nextInt(l.size()))).replace("\\n", "\n")); // ("\n" in the file is a line break)
 	}
 	/** He or she for a crew member: {he}, {him}, {his} in a line after their name ({He}, {His} to begin a sentence). */
 	static String pronouns(String line, CrewState c) {
@@ -588,7 +588,7 @@ public final class Assignments {
 		Pending(int index, String kind, String name, CrewState crew, File save, String letter) { this.index = index; this.kind = kind; this.name = name; this.crew = crew; this.save = save; this.letter = letter; }
 		public String question() {
 			return "recruit".equals(kind) ? name + " (" + homeplanet.model.Crew.raceTitle(crew) + "), rescued on an expedition, asks to sign on with your fleet.\nTake them into the Cargo Hold?"
-					: "Your crew brought a ship home from an expedition: " + name + ".\nTake her in as she is? To the Space Dock to fly, to the Junkyard to be set right or scrapped, or not at all.";
+					: "Your crew brought a ship home from an expedition: " + name + ".\nTake " + homeplanet.model.Words.herObj() + " in as " + homeplanet.model.Words.she() + " is? To the Space Dock to fly, to the Junkyard to be set right or scrapped, or not at all.";
 		}
 	}
 	/** The prizes waiting on an answer. */

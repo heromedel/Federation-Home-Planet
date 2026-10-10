@@ -62,7 +62,7 @@ public class DesignExport {
 	/** Why she can't be built yet (empty when she can): a design needs art and a mount on top of a sound layout. */
 	public static List<String> problems(ShipDesign d) {
 		List<String> out = d.problems();
-		if (d.art.isEmpty()) out.add("She needs hull art.");
+		if (d.art.isEmpty()) out.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " needs hull art.");
 		return out;
 	}
 
@@ -315,13 +315,13 @@ public class DesignExport {
 	/** Everything the game would get for her, as text: for looking over before she's built (or by the curious). */
 	public static String preview(ShipDesign d) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("== data/").append(layoutId(d)).append(".txt (the layout: her rooms and doors)").append(CRLF).append(layoutText(d)).append(CRLF);
-		sb.append("== data/").append(layoutId(d)).append(".xml (the chassis: her pictures, mounts and gibs)").append(CRLF).append(chassisText(d)).append(CRLF);
+		sb.append("== data/").append(layoutId(d)).append(".txt (the layout: " + homeplanet.model.Words.her() + " rooms and doors)").append(CRLF).append(layoutText(d)).append(CRLF);
+		sb.append("== data/").append(layoutId(d)).append(".xml (the chassis: " + homeplanet.model.Words.her() + " pictures, mounts and gibs)").append(CRLF).append(chassisText(d)).append(CRLF);
 		sb.append("== the blueprint (in ").append(CompanionMod.FILES[0]).append(".append)").append(CRLF).append(blueprintText(d)).append(CRLF);
 		sb.append("== pictures").append(CRLF);
 		try {
 			Map<String, byte[]> imgs = images(d);
-			if (imgs.isEmpty()) sb.append("none of her own: the game's ").append(d.art.startsWith("game:") ? d.art.substring(5) : "").append(" pictures are used by name").append(CRLF);
+			if (imgs.isEmpty()) sb.append("none of " + homeplanet.model.Words.her() + " own: the game's ").append(d.art.startsWith("game:") ? d.art.substring(5) : "").append(" pictures are used by name").append(CRLF);
 			for (Map.Entry<String, byte[]> e : imgs.entrySet()) sb.append(e.getKey()).append("  (").append(e.getValue().length / 1024).append(" KB)").append(CRLF);
 		} catch (Exception e) { sb.append("could not be made: ").append(e).append(CRLF); }
 		return sb.toString();

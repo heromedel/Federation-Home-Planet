@@ -22,18 +22,18 @@ public final class CareerRules {
 			"An augment with no room aboard", "A custom work order (past the System Limit) costs", "A plea answered with reputation costs"};
 	/** Each rule's Easy, Normal and Hard, in words. */
 	public static final String[][] LEVELS = {
-		{"Save her, or the museum buys her at full value", "Save her, or the museum buys her at half value", "The museum takes her, at half value"},
+		{"Save {her_obj}, or the museum buys {her_obj} at full value", "Save {her_obj}, or the museum buys {her_obj} at half value", "The museum takes {her_obj}, at half value"},
 		{"200 scrap", "500 scrap", "1000 scrap"},
 		{"any ship (or the Relief Ship Type A)", "a Kestrel Type A or the Relief Ship Type A", "the Relief Ship Type A"},
 		{"25 scrap or reputation", "50 scrap or reputation", "75 scrap or reputation"},
 		{"15 scrap or reputation a system", "30 scrap or reputation a system", "60 scrap or reputation a system"},
 		{"half the store price", "a quarter of the store price", "1 scrap each"},
 		{"one month", "two months", "three months"},
-		{"half her price", "75% of her price", "her full price"},
+		{"half {her} price", "75% of {her} price", "{her} full price"},
 		{"50 scrap", "25 scrap", "10 scrap"},
-		{"is shipped home by her crew", "is shipped home by her crew", "is lost"},
+		{"is shipped home by {her} crew", "is shipped home by {her} crew", "is lost"},
 		{"25 scrap and 25 reputation", "50 scrap and 50 reputation", "75 scrap and 75 reputation"},
-		{"a tenth of her value", "a quarter of her value", "half her value"}};
+		{"a tenth of {her} value", "a quarter of {her} value", "half {her} value"}};
 	private static final int[] JOURNEY_FEES = {200, 500, 1000}, REMOVAL_FEES = {25, 50, 75}, STRIP_FEES = {15, 30, 60}, SUPPLY_PERCENT = {50, 25, 0},
 			STIPEND_MONTHS = {1, 2, 3}, COMMISSION_PERCENT = {50, 75, 100}, START_SCRAP = {50, 25, 10}, WORK_ORDERS = {25, 50, 75}, PLEA_PERCENT = {10, 25, 50};
 	private static final String[] REASSIGN = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF};
@@ -73,7 +73,7 @@ public final class CareerRules {
 		if (rule == VICTORY && level[rule] == OWN_CHOICE) return "as chosen in Settings";
 		if (EARLIER.equals(name) && rule == REMOVAL) return "free";
 		if (EARLIER.equals(name) && rule == STRIPPING) return stripAllowed() ? "allowed, free" : "not allowed";
-		return LEVELS[rule][level[rule]];
+		return homeplanet.model.Words.ship(LEVELS[rule][level[rule]]);
 	}
 
 	public int journeyFee() { return JOURNEY_FEES[level[JOURNEY]]; }

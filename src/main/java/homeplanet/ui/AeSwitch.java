@@ -55,9 +55,9 @@ final class AeSwitch extends JComponent {
 	}
 
 	private void tip() {
-		setToolTipText(lockReason != null ? "<html>Advanced Edition content: needed for her.<br>" + lockReason + "</html>"
+		setToolTipText(lockReason != null ? "<html>Advanced Edition content: needed for " + homeplanet.model.Words.herObj() + ".<br>" + lockReason + "</html>"
 				: ae ? "<html>Advanced Edition content on, as FTL's New Game has it: its sectors, events, crew and gear.<br>Click for an Original run.</html>"
-				: "<html>Original: Advanced Edition content off for her runs, as FTL's New Game toggle has it.<br>Click to turn it back on.</html>");
+				: "<html>Original: Advanced Edition content off for " + homeplanet.model.Words.her() + " runs, as FTL's New Game toggle has it.<br>Click to turn it back on.</html>");
 	}
 
 	public Dimension getPreferredSize() {

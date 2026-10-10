@@ -49,7 +49,7 @@ public class ArtPanel extends JPanel {
 	private final JLabel mountFacing = new JLabel(" ");
 	private final JButton mountTurn = new JButton("Turn (R)");
 	private JButton centerBtn, artilleryBtn, mountEarlier, mountLater;
-	private final JRadioButton floorNone = new JRadioButton("No floor"), floorRooms = new JRadioButton("Drawn from her rooms"),
+	private final JRadioButton floorNone = new JRadioButton("No floor"), floorRooms = new JRadioButton("Drawn from " + homeplanet.model.Words.her() + " rooms"),
 			floorFile = new JRadioButton("A picture of my own...");
 	private final JComboBox<String> mountSlide = new JComboBox<String>(new String[] {"up", "down", "left", "right", "no"});
 	private final JLabel mountLabel = new JLabel("No mount selected");
@@ -110,9 +110,9 @@ public class ArtPanel extends JPanel {
 		}), button("From the game...", "Use one of the game's ship pictures", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { pickGameArt(); }
 		})));
-		p.add(row(button("Rotate", "Turn her pictures a quarter turn clockwise (four make a full turn): for a picture drawn facing the wrong way. The mounts and shield turn with it; the rooms stay.", new ActionListener() {
+		p.add(row(button("Rotate", "Turn " + homeplanet.model.Words.her() + " pictures a quarter turn clockwise (four make a full turn): for a picture drawn facing the wrong way. The mounts and shield turn with it; the rooms stay.", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { turnArt(true); }
-		}), button("Flip left / right", "Mirror her pictures left to right (the mounts and shield with them; the rooms stay)", new ActionListener() {
+		}), button("Flip left / right", "Mirror " + homeplanet.model.Words.her() + " pictures left to right (the mounts and shield with them; the rooms stay)", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { turnArt(false); }
 		})));
 		JPanel size = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 2));
@@ -146,12 +146,12 @@ public class ArtPanel extends JPanel {
 		JToggleButton move = editor.artToolButton("Move art", false, "Drag the hull art into place over the rooms. Arrow keys nudge it a pixel.");
 		JToggleButton mounts = editor.artToolButton("Weapon mounts", true, "Click the hull to place a mount, drag to move it, right-click to remove it. Arrow keys nudge.");
 		p.add(row(move, mounts));
-		p.add(row(centerBtn = button("Center on the anchor", "Put the picture's visible middle on the anchor (the cyan cross: where FTL puts her)", new ActionListener() {
-			public void actionPerformed(ActionEvent e) { if (editor.centerArt()) host.say("Art centred on the anchor: where FTL puts her."); else host.say("Choose her hull art first."); }
+		p.add(row(centerBtn = button("Center on the anchor", "Put the picture's visible middle on the anchor (the cyan cross: where FTL puts " + homeplanet.model.Words.herObj() + ")", new ActionListener() {
+			public void actionPerformed(ActionEvent e) { if (editor.centerArt()) host.say("Art centred on the anchor: where FTL puts " + homeplanet.model.Words.herObj() + "."); else host.say("Choose " + homeplanet.model.Words.her() + " hull art first."); }
 		}), artilleryBtn = button("Artillery mount", "Place the mount for the artillery gun (ships with an artillery system need one)", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { editor.startArtilleryMount(); }
 		})));
-		JLabel tips = new JLabel("<html><div style='width:230px'>The cyan cross in the grid's middle is where FTL puts her: the rooms and the art sit in the game as they sit round it here. The faint strip at the top and left is past the game's edge. Middle-drag moves the view; Alt + middle-drag moves the art in any tool. The wheel zooms; with a mount selected it turns the mount (Ctrl+wheel still zooms).</div></html>");
+		JLabel tips = new JLabel("<html><div style='width:230px'>The cyan cross in the grid's middle is where FTL puts " + homeplanet.model.Words.herObj() + ": the rooms and the art sit in the game as they sit round it here. The faint strip at the top and left is past the game's edge. Middle-drag moves the view; Alt + middle-drag moves the art in any tool. The wheel zooms; with a mount selected it turns the mount (Ctrl+wheel still zooms).</div></html>");
 		tips.setFont(tips.getFont().deriveFont(11f));
 		tips.setAlignmentX(LEFT_ALIGNMENT);
 		p.add(tips);
@@ -204,7 +204,7 @@ public class ArtPanel extends JPanel {
 		p.add(row(button("Fit to the art", "Size the ellipse from the hull art again", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { d.ellipseW = d.ellipseH = d.ellipseX = d.ellipseY = 0; fitEllipse(); editor.repaint(); host.changed(); }
 		})));
-		p.add(heading("Fine adjustment: gibs (the pieces she breaks into)"));
+		p.add(heading("Fine adjustment: gibs (the pieces " + homeplanet.model.Words.she() + " breaks into)"));
 		ButtonGroup gg = new ButtonGroup();
 		gg.add(gibGame); gg.add(gibAuto); gg.add(gibFiles);
 		gibGame.setAlignmentX(LEFT_ALIGNMENT);
@@ -218,7 +218,7 @@ public class ArtPanel extends JPanel {
 		gibGame.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { if (!refreshing) { d.gibs = "game"; host.changed(); } } });
 		gibAuto.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { if (!refreshing) { d.gibs = "cut"; host.changed(); } } });
 		gibFiles.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { chooseGibs(); } });
-		p.add(row(button("Preview gibs", "See the pieces she'd break into", new ActionListener() {
+		p.add(row(button("Preview gibs", "See the pieces " + homeplanet.model.Words.she() + "'d break into", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { previewGibs(); }
 		})));
 		// the panel scrolls when the window is too short for all of it
@@ -253,16 +253,16 @@ public class ArtPanel extends JPanel {
 
 	/** Rotate or Flip left / right: her pictures turned, as copies of her own; the editor's undo takes it back. */
 	private void turnArt(boolean rotate) {
-		if (baseArt == null) { host.say("Choose her hull art first."); return; }
+		if (baseArt == null) { host.say("Choose " + homeplanet.model.Words.her() + " hull art first."); return; }
 		try {
 			if (rotate) ShipArt.rotate(d); else ShipArt.flipHorizontally(d);
 		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(this, "The Home Planet Station couldn't turn her pictures:\n" + ex.getMessage(), rotate ? "Rotate" : "Flip left / right", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, "The Home Planet Station couldn't turn " + homeplanet.model.Words.her() + " pictures:\n" + ex.getMessage(), rotate ? "Rotate" : "Flip left / right", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		loadArt(false);
 		host.changed();
-		host.say(rotate ? "Her pictures turned a quarter turn clockwise; the mounts and shield with them." : "Her pictures mirrored left to right; the mounts and shield with them.");
+		host.say(rotate ? homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " pictures turned a quarter turn clockwise; the mounts and shield with them." : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " pictures mirrored left to right; the mounts and shield with them.");
 	}
 	/** No floor, or one drawn from her rooms (a picture of her own comes through importArt). */
 	private void setFloor(String floor) {
@@ -270,7 +270,7 @@ public class ArtPanel extends JPanel {
 		d.floor = floor; d.floorX = 0; d.floorY = 0;
 		loadArt(false);
 		host.changed();
-		host.say(floor.isEmpty() ? "No floor: FTL tiles her rooms plain." : "Her floor is drawn from her rooms, and follows them.");
+		host.say(floor.isEmpty() ? "No floor: FTL tiles " + homeplanet.model.Words.her() + " rooms plain." : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " floor is drawn from " + homeplanet.model.Words.her() + " rooms, and follows them.");
 	}
 	/** Reads the design's pictures and hands them to the editor. */
 	void loadArt() { loadArt(true); }
@@ -279,7 +279,7 @@ public class ArtPanel extends JPanel {
 		floorArt = ShipArt.floorOf(d);
 		editor.setDesignArt(baseArt, floorArt);
 		artName.setText(d.art.isEmpty() ? "none yet" : baseArt == null ? "missing: " + d.art : describe(d.art) + "  (" + baseArt.getWidth() + " x " + baseArt.getHeight() + ")");
-		floorName.setText(d.floor.isEmpty() ? " " : d.floorFromRooms() ? (baseArt == null ? "drawn once she has hull art" : "walls round the rooms, open at the doors")
+		floorName.setText(d.floor.isEmpty() ? " " : d.floorFromRooms() ? (baseArt == null ? "drawn once " + homeplanet.model.Words.she() + " has hull art" : "walls round the rooms, open at the doors")
 				: floorArt == null ? "missing: " + d.floor : describe(d.floor) + "  (" + floorArt.getWidth() + " x " + floorArt.getHeight() + ")");
 		if (fit) fitEllipse(); else refreshArtControls();
 	}
@@ -348,7 +348,7 @@ public class ArtPanel extends JPanel {
 				boolean hadPicture = !d.floor.isEmpty() && !d.floorFromRooms();
 				d.art = src; d.ellipseW = d.ellipseH = 0; d.artScale = 100;
 				if (hadPicture) { d.floor = ""; d.floorX = d.floorY = 0; } // a floor picture was made for the old hull: it goes with it (one drawn from the rooms follows)
-				if (hadPicture) host.say("Her floor picture went with the old hull: choose one for this hull, or a floor drawn from the rooms.");
+				if (hadPicture) host.say(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " floor picture went with the old hull: choose one for this hull, or a floor drawn from the rooms.");
 			}
 		} catch (Exception ex) {
 			JOptionPane.showMessageDialog(this, "The Home Planet Station couldn't use that picture:\n" + ex.getMessage(), floor ? "Floor picture" : "Hull art", JOptionPane.WARNING_MESSAGE);
@@ -377,8 +377,8 @@ public class ArtPanel extends JPanel {
 		JPanel p = new JPanel(new BorderLayout(8, 0));
 		p.add(sp, BorderLayout.WEST);
 		p.add(preview, BorderLayout.CENTER);
-		final JCheckBox takeFloor = new JCheckBox("Her floor art", true), takeMounts = new JCheckBox("Her weapon mounts and shield ellipse", true),
-				takeGibs = new JCheckBox("Her gibs (the pieces she breaks into)", true);
+		final JCheckBox takeFloor = new JCheckBox(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " floor art", true), takeMounts = new JCheckBox(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " weapon mounts and shield ellipse", true),
+				takeGibs = new JCheckBox(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " gibs (the pieces " + homeplanet.model.Words.she() + " breaks into)", true);
 		JPanel takes = new JPanel(new GridLayout(0, 1));
 		takes.add(new JLabel("Also take from that ship:"));
 		takes.add(takeFloor); takes.add(takeMounts); takes.add(takeGibs);
@@ -423,10 +423,10 @@ public class ArtPanel extends JPanel {
 		d.gibs = d.gibFiles.isEmpty() ? "cut" : "files";
 		refreshArtControls();
 		host.changed();
-		host.say(d.gibFiles.isEmpty() ? "No gib pictures: she'll be cut up from the hull art." : d.gibFiles.size() + " gib pictures in use.");
+		host.say(d.gibFiles.isEmpty() ? "No gib pictures: " + homeplanet.model.Words.she() + "'ll be cut up from the hull art." : d.gibFiles.size() + " gib pictures in use.");
 	}
 	private void previewGibs() {
-		if (baseArt == null) { host.say("Choose her hull art first."); return; }
+		if (baseArt == null) { host.say("Choose " + homeplanet.model.Words.her() + " hull art first."); return; }
 		java.util.List<ShipArt.Gib> gibs = homeplanet.parser.DesignExport.gibs(d, baseArt); // what the export will use
 		// spread the pieces a little from the middle, as if she's just come apart
 		int pad = 90;

@@ -64,7 +64,7 @@ final class LogViewer extends JPanel {
 			public void actionPerformed(ActionEvent e) { ship = null; fill(); }
 		});
 		final JButton viewShip = new JButton("View Ship Log");
-		viewShip.setToolTipText("Her voyage log: her jumps, sectors, battles, crew, what came aboard, upgrades and repairs");
+		viewShip.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " voyage log: " + homeplanet.model.Words.her() + " jumps, sectors, battles, crew, what came aboard, upgrades and repairs");
 		viewShip.setEnabled(!ships.isEmpty());
 		shipBox.setEnabled(!ships.isEmpty());
 		ActionListener toShip = new ActionListener() {
@@ -135,7 +135,7 @@ final class LogViewer extends JPanel {
 			showing.setText(ship.name + "'s voyage log");
 			List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOf(ship)), ship.id); // her own log (5.76)
 			count.setText(es.size() + " lines");
-			show(RecordsLog.voyage(es, "Nothing logged yet. The Home Planet Station writes her voyage log as FTL saves her,\n"
+			show(RecordsLog.voyage(es, "Nothing logged yet. The Home Planet Station writes " + homeplanet.model.Words.her() + " voyage log as FTL saves " + homeplanet.model.Words.herObj() + ",\n"
 					+ "while the station is open (and on Refresh)."));
 			return;
 		}

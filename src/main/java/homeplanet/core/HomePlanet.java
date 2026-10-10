@@ -490,7 +490,7 @@ public class HomePlanet {
 			if (!missing.isEmpty()) { // one blueprint a line, her name first (heromedel, 5.70: the list ran on in one long line)
 				String name = "The boarded ship";
 				try { name = savedGameParser.readSavedGame(cont).getPlayerShipName(); } catch (Exception e) { }
-				StringBuilder sb = new StringBuilder(name + " can't fly yet: FTL doesn't have " + (missing.size() == 1 ? "her blueprint" : "these blueprints") + " from the " + Retrofit.MOD_NAME + ".\n");
+				StringBuilder sb = new StringBuilder(name + " can't fly yet: FTL doesn't have " + (missing.size() == 1 ? homeplanet.model.Words.her() + " blueprint" : "these blueprints") + " from the " + Retrofit.MOD_NAME + ".\n");
 				for (String id : missing) sb.append("\n    ").append(Retrofit.described(id));
 				sb.append("\n\nSend the mod to FTL via Slipstream (Settings > Mods > Patch mods), then launch again. Or board a different ship.");
 				final String says = sb.toString();
@@ -566,8 +566,8 @@ public class HomePlanet {
 		try {
 			net.blerf.ftl.parser.SavedGameParser.SavedGameState g = savedGameParser.readSavedGame(cont);
 			if (!homeplanet.parser.SaveHelper.getOwnCrew(g.getPlayerShip()).isEmpty()) return null;
-			return g.getPlayerShipName() + " has no one aboard, and FTL would end her journey the moment she launched.\n\n"
-					+ "Open the Cargo Bay and move at least one crew member to her (from the Cargo Hold or another ship), then launch FTL.";
+			return g.getPlayerShipName() + " has no one aboard, and FTL would end " + homeplanet.model.Words.her() + " journey the moment " + homeplanet.model.Words.she() + " launched.\n\n"
+					+ "Open the Cargo Bay and move at least one crew member to " + homeplanet.model.Words.herObj() + " (from the Cargo Hold or another ship), then launch FTL.";
 		} catch (Exception e) {
 			return null; // unreadable: FTL will say so itself
 		}

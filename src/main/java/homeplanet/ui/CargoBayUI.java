@@ -76,7 +76,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	ShipState currentState;
 	ShipState tradeState;
 	File currentPath;
-	private static final String NO_SHIP = "No ship picked: pick one with the button above (or board one at the Space Dock) to move things onto her. The Cargo Hold's goods can be sold or junked here.";
+	private static String noShip() { return "No ship picked: pick one with the button above (or board one at the Space Dock) to move things onto " + homeplanet.model.Words.herObj() + ". The Cargo Hold's goods can be sold or junked here."; }
 	/** The ship the Cargo Bay works on, picked here (heromedel: everything on the screen follows the pick, nothing the boarded ship); null: the boarded ship. */
 	private Ship picked;
 	File tradePath;
@@ -354,7 +354,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		if (currentPath == null) notice.setText("No ship picked: pick one below, or board one at the Space Dock.");
 		else if (!Vault.get().mayTrade(currentShip)) {
 			notice.setText(currentSave.getPlayerShipName() + " is not within range of a station.");
-			notice2.setText("Take her to a beacon with a store to trade, or pick another ship:");
+			notice2.setText("Take " + homeplanet.model.Words.herObj() + " to a beacon with a store to trade, or pick another ship:");
 		}
 		for (int i = 0; i < tabButtons.length; i++) {
 			boolean shipTab = i > 0; // the Shop and the Refit tab
@@ -440,9 +440,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		Ship b = Vault.get().boarded();
 		if (b == null || b.save() != null) return null;
 		// line breaks where the sense breaks (docs/STYLE.md), never mid-sentence
-		return "The Home Planet Station could not load " + homeplanet.parser.ShipNames.the(b.name) + ": her save can't be read right now.\n\n"
-				+ "The Cargo Bay opens without her: she can't be picked, and her store and the Refit tab stay closed\n"
-				+ "until her save can be read again. Close the Cargo Bay and try again in a moment.\n\n"
+		return "The Home Planet Station could not load " + homeplanet.parser.ShipNames.the(b.name) + ": " + homeplanet.model.Words.her() + " save can't be read right now.\n\n"
+				+ "The Cargo Bay opens without " + homeplanet.model.Words.herObj() + ": " + homeplanet.model.Words.she() + " can't be picked, and " + homeplanet.model.Words.her() + " store and the Refit tab stay closed\n"
+				+ "until " + homeplanet.model.Words.her() + " save can be read again. Close the Cargo Bay and try again in a moment.\n\n"
 				+ "If this keeps happening, send a bug report (Settings, Send Feedback) with the station's log\n"
 				+ "from the logs folder beside the program.";
 	}
@@ -574,12 +574,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			trade.add(myHead); trade.add(theirHead); trade.add(mine); trade.add(theirs);
 			int by = y + 22 + 16;
 			if (kind == 3) {
-				myButtons.add(icon(CargoParts.infoIcon(), 4, by, "Her report (and rename)", new ActionListener() { public void actionPerformed(ActionEvent e) { crewInfo(true); } }));
+				myButtons.add(icon(CargoParts.infoIcon(), 4, by, "The crew member's report (and rename)", new ActionListener() { public void actionPerformed(ActionEvent e) { crewInfo(true); } }));
 				myButtons.add(button("Retire", 30, by, 70, "Retire this crew member: they leave for good", new ActionListener() { public void actionPerformed(ActionEvent e) { retire(true); } }));
 				myButtons.add(button("Send >", 104, by, 80, "Send this crew member to the partner", new ActionListener() { public void actionPerformed(ActionEvent e) { sendCrew(true); } }));
 				theirButtons.add(button("< Take", 4, by + 28, 80, "Take this crew member aboard your ship", new ActionListener() { public void actionPerformed(ActionEvent e) { sendCrew(false); } }));
 				theirButtons.add(button("Retire", 88, by + 28, 70, "Retire this crew member: they leave for good", new ActionListener() { public void actionPerformed(ActionEvent e) { retire(false); } }));
-				theirButtons.add(icon(CargoParts.infoIcon(), 160, by + 28, "Her report (and rename)", new ActionListener() { public void actionPerformed(ActionEvent e) { crewInfo(false); } }));
+				theirButtons.add(icon(CargoParts.infoIcon(), 160, by + 28, "The crew member's report (and rename)", new ActionListener() { public void actionPerformed(ActionEvent e) { crewInfo(false); } }));
 				mine.setEmptyText("No crew");
 				theirs.setEmptyText("No crew");
 				mine.onDoubleClick(new Runnable() { public void run() { crewInfo(true); } });
@@ -642,7 +642,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		int o = -52;
 		myPic.setBounds(LX, 60 + o, 120, 62);
 		myPic.setHorizontalAlignment(JLabel.CENTER);
-		myPic.setToolTipText("Click for her report, and to rename her");
+		myPic.setToolTipText("Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		myPic.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 		myPic.addMouseListener(new MouseAdapter() { @Override public void mouseClicked(MouseEvent e) { showCurrentShipInfo(); } });
 		trade.add(myPic);
@@ -660,14 +660,14 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		boardBtn.setToolTipText("Board another of your ships docked at a station, without leaving the Cargo Bay");
 		boardBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pickBoard(); } });
 		trade.add(boardBtn);
-		myInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "Her report, and to rename her", new ActionListener() { public void actionPerformed(ActionEvent e) { showCurrentShipInfo(); } });
+		myInfo = new CargoParts.IconButton(CargoParts.infoIcon(), homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report, and to rename " + homeplanet.model.Words.herObj(), new ActionListener() { public void actionPerformed(ActionEvent e) { showCurrentShipInfo(); } });
 		myInfo.setBounds(LX + DROP_IN, 107 + o, 24, 22);
 		trade.add(myInfo);
 		mySub.setBounds(LX + DROP_IN + 30, 110 + o, 400, 16);
 		trade.add(mySub);
 		theirPic.setBounds(RX + RW - 120, 60 + o, 120, 62);
 		theirPic.setHorizontalAlignment(JLabel.CENTER);
-		theirPic.setToolTipText("Click for her report, and to rename her");
+		theirPic.setToolTipText("Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		theirPic.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 		theirPic.addMouseListener(new MouseAdapter() {
 			@Override public void mouseClicked(MouseEvent e) { if (!partnerIsStorage()) showPartnerInfo(); }
@@ -680,7 +680,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		partnerBtn.setToolTipText("Choose who to trade with: the Cargo Hold, or another of your ships docked at a station");
 		partnerBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { pickPartner(); } });
 		trade.add(partnerBtn);
-		theirInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "Her report", new ActionListener() {
+		theirInfo = new CargoParts.IconButton(CargoParts.infoIcon(), homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report", new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (partnerIsStorage()) storageInfo();
 				else showPartnerInfo();
@@ -693,7 +693,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		// beside the ship you're aboard: it's her it returns
 		returnBtn = new FtlButton("Return", FtlFont.CARGO, 180, 24);
 		returnBtn.setBounds(LX + LW - 180, 106 + o, 180, 24);
-		returnBtn.setToolTipText("The Home Planet Station reports her fully repaired: send her back to her owner, and be paid");
+		returnBtn.setToolTipText("The Home Planet Station reports " + homeplanet.model.Words.herObj() + " fully repaired: send " + homeplanet.model.Words.herObj() + " back to " + homeplanet.model.Words.her() + " owner, and be paid");
 		returnBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { returnHer(); } });
 		returnBtn.setVisible(false);
 		trade.add(returnBtn);
@@ -846,12 +846,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	}
 	/** All of the chosen supply, one way or the other. */
 	private void moveAllSupply(boolean send) {
-		if (currentPath == null) { help(NO_SHIP); return; }
+		if (currentPath == null) { help(noShip()); return; }
 		moveSupply(send, Integer.MAX_VALUE);
 	}
 	private void moveSupply(boolean send) { moveSupply(send, (Integer) moveAmount.getValue()); }
 	private void moveSupply(boolean send, int n) {
-		if (currentPath == null) { help(NO_SHIP); return; }
+		if (currentPath == null) { help(noShip()); return; }
 		ShipState from = send ? currentState : tradeState, to = send ? tradeState : currentState;
 		int have = supply(from, supplyIdx);
 		if (have <= 0) { help((send ? "Your ship has" : partnerName() + " has") + " no " + SUPPLIES[supplyIdx][1].toLowerCase() + " to move."); return; }
@@ -934,10 +934,10 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			int max = c.getRace() == null ? 100 : c.getRace().getMaxHealth();
 			boolean hurt = body && !resting && c.getHealth() < max;
 			String state = resting ? "<br><font color='" + INFIRMARY_HTML + "'>In the infirmary: can't be moved, traded or sent until they're on their feet</font>"
-					: hurt ? "<br><font color='#e1463c'>" + (s == currentState ? "Injured: the station's medbay will see to them once she's docked"
+					: hurt ? "<br><font color='#e1463c'>" + (s == currentState ? "Injured: the station's medbay will see to them once " + homeplanet.model.Words.she() + "'s docked"
 							: "Injured: the station's medbay will have them on their feet after some time here") + "</font>" : "";
 			CargoParts.Row row = new CargoParts.Row(IconFactory.crewIcon(c), c.getName(), body ? Crew.raceTitle(c) : "being cloned", c,
-					Crew.tooltip(c).replace("</html>", state + "<br><i>(double-click for her report)</i></html>"), !body);
+					Crew.tooltip(c).replace("</html>", state + "<br><i>(double-click for " + (c.isMale() ? "his" : "her") + " report)</i></html>"), !body);
 			if (resting) row.bar(1f, INFIRMARY, null);
 			else if (hurt) row.bar(c.getHealth() / (float) max, HEALTH, HURT);
 			rows.add(row);
@@ -977,10 +977,10 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		boolean ready = currentShip != null && homeplanet.vault.Borrowed.of(Vault.get(), currentShip.id) != null && homeplanet.parser.RepairJob.ready(Vault.get(), currentShip);
 		if (ready) returnBtn.setText("Return " + currentSave.getPlayerShipName());
 		returnBtn.setVisible(ready && !tradeUnavailable());
-		theirPic.setToolTipText(partnerIsStorage() || shipSelect.isEmpty() ? null : "Click for her report, and to rename her");
+		theirPic.setToolTipText(partnerIsStorage() || shipSelect.isEmpty() ? null : "Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		theirPic.setIcon(partnerIsStorage() ? null : shipIcon(tradeSave));
 		theirInfo.setVisible(!shipSelect.isEmpty());
-		theirInfo.setToolTipText(partnerIsStorage() ? "What the Cargo Hold is" : "Her report, and to rename her");
+		theirInfo.setToolTipText(partnerIsStorage() ? "What the Cargo Hold is" : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report, and to rename " + homeplanet.model.Words.herObj());
 		myInfo.setVisible(currentPath != null);
 		for (int k = 0; k < 4; k++) {
 			Category c = cats[k];
@@ -1059,18 +1059,18 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	/** Sends the borrowed ship you're aboard back to her owner (saved changes first: she goes as she was last saved). */
 	private void returnHer() {
-		if (currentShip == null || !confirmLeave("return her")) return;
-		if (!homeplanet.core.GameGuard.allows(this, "return her")) return;
+		if (currentShip == null || !confirmLeave("return " + homeplanet.model.Words.herObj())) return;
+		if (!homeplanet.core.GameGuard.allows(this, "return " + homeplanet.model.Words.herObj())) return;
 		Ship s = currentShip;
 		String title = "Return " + s.name;
 		int pay = homeplanet.parser.RepairJob.payment(Vault.get(), homeplanet.parser.RepairJob.late(Vault.get()));
-		if (!HomePlanet.confirmNo(this, "Return " + the(s.name) + " to her owner?\nShe leaves the fleet, and " + pay + " scrap is paid into the Cargo Hold.\n"
+		if (!HomePlanet.confirmNo(this, "Return " + the(s.name) + " to " + homeplanet.model.Words.her() + " owner?\n" + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " leaves the fleet, and " + pay + " scrap is paid into the Cargo Hold.\n"
 				+ "You'll have no ship boarded: board another at the Space Dock.", title)) return;
 		try {
 			int paid = homeplanet.parser.RepairJob.returnHer(Vault.get(), s);
-			JOptionPane.showMessageDialog(this, homeplanet.parser.ShipNames.theStart(s.name) + " is on her way home. " + paid + " scrap has been paid into the Cargo Hold.", title, JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, homeplanet.parser.ShipNames.theStart(s.name) + " is on " + homeplanet.model.Words.her() + " way home. " + paid + " scrap has been paid into the Cargo Hold.", title, JOptionPane.INFORMATION_MESSAGE);
 		} catch (java.io.IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not return her:\n" + e.getMessage());
+			HomePlanet.showErrorDialog("The Home Planet Station could not return " + homeplanet.model.Words.herObj() + ":\n" + e.getMessage());
 		}
 		init();
 	}
@@ -1079,7 +1079,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	/** Moves the selected item across (fromMine: your ship to the partner). The same rules as FTL: slots, Drone Control, the cargo hold. */
 	private void sendItem(boolean fromMine, int kind) {
-		if (currentPath == null) { help(NO_SHIP); return; }
+		if (currentPath == null) { help(noShip()); return; }
 		Category c = cats[kind];
 		ItemRef r = (ItemRef) (fromMine ? c.mine : c.theirs).selectedValue();
 		if (r == null) return;
@@ -1098,9 +1098,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			else { room = 3; used = destState.getAugmentIdList().size(); }
 			if (used >= room) {
 				String who = destSave.getPlayerShipName();
-				if (kind == 2) { HomePlanet.showNotice(who + "'s augment slots are full (3). Send one of hers away first.", "Cargo Bay"); return; }
-				if (SaveHelper.cargo(destSave).size() >= 4) { HomePlanet.showNotice(who + " has no room for the " + title + ", and her cargo hold is full too.", "Cargo Bay"); return; }
-				String q = kind == 1 && room == 0 ? who + " has no Drone Control system. Put the drone in her cargo hold?" : who + " has no free " + (kind == 0 ? "weapon" : "drone") + " slot. Put the " + title + " in her cargo hold?";
+				if (kind == 2) { HomePlanet.showNotice(who + "'s augment slots are full (3). Send one of " + homeplanet.model.Words.hers() + " away first.", "Cargo Bay"); return; }
+				if (SaveHelper.cargo(destSave).size() >= 4) { HomePlanet.showNotice(who + " has no room for the " + title + ", and " + homeplanet.model.Words.her() + " cargo hold is full too.", "Cargo Bay"); return; }
+				String q = kind == 1 && room == 0 ? who + " has no Drone Control system. Put the drone in " + homeplanet.model.Words.her() + " cargo hold?" : who + " has no free " + (kind == 0 ? "weapon" : "drone") + " slot. Put the " + title + " in " + homeplanet.model.Words.her() + " cargo hold?";
 				if (JOptionPane.showConfirmDialog(this, q, "Send to cargo?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
 				toCargo = true;
 			}
@@ -1187,7 +1187,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	// ---- crew ----
 
 	private void sendCrew(boolean fromMine) {
-		if (currentPath == null) { help(NO_SHIP); return; }
+		if (currentPath == null) { help(noShip()); return; }
 		Category c = cats[3];
 		CrewState cs = (CrewState) (fromMine ? c.mine : c.theirs).selectedValue();
 		if (cs == null) return;
@@ -1327,7 +1327,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);
 			systems.giveBackBill(); // or to the shop's copy of the hold (5.61)
 			log.warn("Save refused: {}", e.getMessage());
-			HomePlanet.showErrorDialog(e.getMessage() + "\n\nPress Reset to load her as she is now, then make the changes again.");
+			HomePlanet.showErrorDialog(e.getMessage() + "\n\nPress Reset to load " + homeplanet.model.Words.herObj() + " as " + homeplanet.model.Words.she() + " is now, then make the changes again.");
 			return false;
 		} catch (Exception e) {
 			if (billed != 0) tradeState.setScrapAmt(tradeState.getScrapAmt() + billed);

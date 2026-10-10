@@ -385,7 +385,7 @@ public final class Reputation {
 			if (taken == 0) return;
 			Properties p = read(v);
 			plain(p, -taken);
-			if (write(v, p)) entry(v, "restored", plainChange(-taken), s.name + " was restored after FTL's New Game wrote over her (" + signed(-taken) + ")", null, Vault.shipEvent("SHIP", s));
+			if (write(v, p)) entry(v, "restored", plainChange(-taken), s.name + " was restored after FTL's New Game wrote over " + homeplanet.model.Words.herObj() + " (" + signed(-taken) + ")", null, Vault.shipEvent("SHIP", s));
 		}
 	}
 	/**

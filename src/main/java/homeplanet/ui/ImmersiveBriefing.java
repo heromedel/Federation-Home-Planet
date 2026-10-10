@@ -238,7 +238,7 @@ final class ImmersiveBriefing extends JDialog {
 		for (int i = 0; i < levels.length; i++) {
 			java.util.List<String> words = new java.util.ArrayList<String>();
 			java.util.List<Integer> lv = new java.util.ArrayList<Integer>();
-			for (int l = 0; l < 3; l++) if (!words.contains(CareerRules.LEVELS[i][l])) { words.add(CareerRules.LEVELS[i][l]); lv.add(l); }
+			for (int l = 0; l < 3; l++) { String w = homeplanet.model.Words.ship(CareerRules.LEVELS[i][l]); if (!words.contains(w)) { words.add(w); lv.add(l); } } // {her}: the Ship Pronoun setting
 			if (i == CareerRules.VICTORY && was.level(i) == CareerRules.OWN_CHOICE) { words.add(was.words(i)); lv.add(CareerRules.OWN_CHOICE); }
 			levelOf[i] = new int[lv.size()];
 			for (int k = 0; k < levelOf[i].length; k++) levelOf[i][k] = lv.get(k);
@@ -265,7 +265,7 @@ final class ImmersiveBriefing extends JDialog {
 		grid.setMaximumSize(new Dimension(Integer.MAX_VALUE, grid.getPreferredSize().height)); // room for the line's words to change
 		p.add(grid);
 		p.add(note(begun ? "Its rules were fixed when it began. To begin " + Vault.title(slot) + " afresh (and, for Custom, choose its rules again), end this career in Settings > Switch Game Mode: a copy is kept." : (custom ? "Choose each rule's level. " : "") + "Every other rule is The Federation Home Planet's, the same at every difficulty. "
-				+ "A rescue brings her back as she was moments before the final engagement; The Home Planet Station must be open while you play."));
+				+ "A rescue brings " + homeplanet.model.Words.herObj() + " back as " + homeplanet.model.Words.she() + " was moments before the final engagement; The Home Planet Station must be open while you play."));
 		syncLevels();
 		return p;
 	}
@@ -310,7 +310,7 @@ final class ImmersiveBriefing extends JDialog {
 		boolean none = FinalVictory.TO_HARD_NONE.equals(rule);
 		toHardLabel.setText(none ? "<html><s>" + TO_HARD + "</s></html>" : TO_HARD);
 		toHard.setText(toHardWords(rule, r, choosing));
-		toHard.setToolTipText(none ? "The museum takes every victor, so a rescued ship never comes back to fly" : "When you keep a rescued ship, she sets out on Hard without asking; otherwise you choose her difficulty");
+		toHard.setToolTipText(none ? "The museum takes every victor, so a rescued ship never comes back to fly" : "When you keep a rescued ship, " + homeplanet.model.Words.she() + " sets out on Hard without asking; otherwise you choose " + homeplanet.model.Words.her() + " difficulty");
 	}
 	private static String toHardWords(String rule, CareerRules r, boolean choosing) {
 		if (choosing) return "fixed once chosen";
@@ -318,7 +318,7 @@ final class ImmersiveBriefing extends JDialog {
 		if (FinalVictory.TO_HARD_FREE.equals(rule)) return "yours to choose in Settings";
 		if (FinalVictory.TO_HARD_ASK.equals(rule)) return "not chosen yet: the Space Dock will ask";
 		if (CareerRules.NORMAL.equals(r.name)) return "always";
-		return FinalVictory.TO_HARD_ON.equals(rule) ? "always (chosen when it began)" : "never: you choose her difficulty (chosen when it began)";
+		return FinalVictory.TO_HARD_ON.equals(rule) ? "always (chosen when it began)" : "never: you choose " + homeplanet.model.Words.her() + " difficulty (chosen when it began)";
 	}
 	/** A new Custom career's answer, to keep with it; null where the career doesn't choose it. */
 	Boolean toHardChosen() { return toHard.isEnabled() ? Boolean.valueOf(toHard.isSelected()) : null; }
@@ -386,7 +386,7 @@ final class ImmersiveBriefing extends JDialog {
 		for (int i = 0; i < CareerRules.RULES.length; i++) sb.append("<br>&nbsp;&nbsp;&nbsp;").append(XmlText.text(CareerRules.RULES[i])).append(": ").append(XmlText.text(r.words(i)));
 		String rule = FinalVictory.toHardRule(r, CareerRules.CUSTOM.equals(r.name) ? Boolean.toString(toHard.isSelected()) : null);
 		sb.append("<br>&nbsp;&nbsp;&nbsp;").append(TO_HARD).append(": ").append(FinalVictory.TO_HARD_NONE.equals(rule) ? "doesn't apply" : FinalVictory.TO_HARD_FREE.equals(rule) ? "yours to choose in Settings"
-				: FinalVictory.TO_HARD_ON.equals(rule) ? "always" : "never: you choose her difficulty");
+				: FinalVictory.TO_HARD_ON.equals(rule) ? "always" : "never: you choose " + homeplanet.model.Words.her() + " difficulty");
 		sb.append("<br>&nbsp;&nbsp;&nbsp;").append(REP_RATE).append(": ").append(XmlText.text(String.valueOf(repRate.getSelectedItem())));
 		return sb.toString();
 	}

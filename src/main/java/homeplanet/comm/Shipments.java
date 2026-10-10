@@ -139,7 +139,7 @@ public final class Shipments {
 		v.storage(); // made if missing
 		Exchange.Sources src = new Exchange.Sources();
 		for (Line l : lines) {
-			if (l.kind == Line.Kind.SHIP) throw new IOException("A whole ship can't be shipped: hail to trade her.");
+			if (l.kind == Line.Kind.SHIP) throw new IOException("A whole ship can't be shipped: hail to trade " + homeplanet.model.Words.herObj() + ".");
 			Exchange.take(src, l);
 		}
 		Parcel p = new Parcel();

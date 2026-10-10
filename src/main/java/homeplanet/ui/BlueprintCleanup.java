@@ -18,7 +18,7 @@ final class BlueprintCleanup {
 	static void run(Component owner) {
 		if (!HomePlanet.confirmNo(owner, "Clean up blueprints?\n\n"
 				+ "Every remodel and custom design The Home Planet Station draws up becomes a blueprint in the Federation Home Planet Mod, "
-				+ "and stays there while any ship flies it, or could fly it again (her kept versions, the Junkyard, a surrender).\n"
+				+ "and stays there while any ship flies it, or could fly it again (" + homeplanet.model.Words.her() + " kept versions, the Junkyard, a surrender).\n"
 				+ "When a remodel was replaced, or a design retired, its old blueprint can linger with nothing left to use it.\n\n"
 				+ "This finds those and removes them, then rebuilds the mod. Only needed if the mod has grown large; "
 				+ "nothing a ship needs is ever touched.\n\nLook for unused blueprints now?", "Clean up blueprints")) return;

@@ -130,11 +130,11 @@ public final class GameGuard {
 	public static final String CLOSE_FTL = "Return to The Station to do this. (Close FTL)";
 	public static boolean allows(Component owner, String action) {
 		if (!isFtlRunning()) return true;
-		String nevermind = action.equals("board a ship") ? "Nevermind, save her in the Space Dock" : "Nevermind"; // heromedel's words for boarding
+		String nevermind = action.equals("board a ship") ? "Nevermind, save " + homeplanet.model.Words.herObj() + " in the Space Dock" : "Nevermind"; // heromedel's words for boarding
 		Object[] opts = {nevermind, "Go ahead, FTL is at its menu"};
 		int r = JOptionPane.showOptionDialog(owner, "FTL is running.\n\nWhile it is, it may write over the ship you're flying at any moment, "
-				+ "and a change The Home Planet Station makes to her then is lost.\n\n"
-				+ "If FTL is only at its main menu, she isn't loaded, and it's safe to " + action + ".\nOtherwise: " + CLOSE_FTL,
+				+ "and a change The Home Planet Station makes to " + homeplanet.model.Words.herObj() + " then is lost.\n\n"
+				+ "If FTL is only at its main menu, " + homeplanet.model.Words.she() + " isn't loaded, and it's safe to " + action + ".\nOtherwise: " + CLOSE_FTL,
 				"FTL is running", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
 		return r == 1;
 	}

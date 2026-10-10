@@ -39,13 +39,13 @@ public final class ShipChecks {
 		Report r = new Report();
 		List<String> p = r.problems, w = r.warnings;
 		boolean art = ctx != Context.REMODEL;
-		if (ctx == Context.DESIGN && d.name.trim().isEmpty()) p.add("She needs a name.");
+		if (ctx == Context.DESIGN && d.name.trim().isEmpty()) p.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " needs a name.");
 		if (otherNames != null && !d.name.trim().isEmpty()) {
 			for (String n : otherNames) if (n.trim().equalsIgnoreCase(d.name.trim())) { p.add("Another design is already called " + d.name.trim() + "."); break; }
 		}
 		if (d.rooms.isEmpty()) { p.add("There are no rooms."); return r; }
-		if (!d.systems.containsKey("pilot")) p.add("No Piloting: she can't dodge or jump without it.");
-		if (!d.systems.containsKey("engines")) p.add("No Engines: she can't jump without them.");
+		if (!d.systems.containsKey("pilot")) p.add("No Piloting: " + homeplanet.model.Words.she() + " can't dodge or jump without it.");
+		if (!d.systems.containsKey("engines")) p.add("No Engines: " + homeplanet.model.Words.she() + " can't jump without them.");
 		// one system per room (a Medbay and a Clone Bay may share: only one of them is ever installed)
 		for (int i = 0; i < d.rooms.size(); i++) {
 			List<String> here = d.systemsIn(i);
@@ -67,26 +67,26 @@ public final class ShipChecks {
 			if (art && !d.art.isEmpty() && artilleryMounts == 0) p.add("Artillery needs its gun's mount: press Artillery mount, then click the art.");
 			if (d.systems.get("artillery").weapon == null) p.add("Artillery needs a weapon: choose it with Artillery weapon (or in Build blueprint).");
 		} else if (artilleryMounts > 0) {
-			p.add("She has an artillery mount but no Artillery system: remove the mount, or add the system.");
+			p.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " has an artillery mount but no Artillery system: remove the mount, or add the system.");
 		}
 		// weapon mounts
 		if (art) {
 			int weaponMounts = d.mounts.size() - artilleryMounts;
 			if (d.art.isEmpty()) w.add("No hull art yet.");
-			else if (!ShipArt.available(d.art, d.art.startsWith("game:") ? "_base" : "")) w.add("Her hull art is missing (" + d.art + "): the Kestrel's stands in until it's back, so ships built from her still fly.");
-			else if (weaponMounts == 0) p.add("She needs at least one weapon mount.");
+			else if (!ShipArt.available(d.art, d.art.startsWith("game:") ? "_base" : "")) w.add(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " hull art is missing (" + d.art + "): the Kestrel's stands in until it's back, so ships built from " + homeplanet.model.Words.herObj() + " still fly.");
+			else if (weaponMounts == 0) p.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " needs at least one weapon mount.");
 			if (!d.floor.isEmpty() && !d.floorFromRooms() && ShipArt.available(d.art, d.art.startsWith("game:") ? "_base" : "") && ShipArt.available(d.floor, d.floor.startsWith("game:") ? "_floor" : "")) {
 				// FTL draws the floor at the hull's corner plus its offset: one that sticks out of the hull was most likely drawn for another hull
 				java.awt.image.BufferedImage hull = ShipArt.scaled(ShipArt.load(d.art, d.art.startsWith("game:") ? "_base" : ""), d.artScale), fl = ShipArt.scaled(ShipArt.load(d.floor, d.floor.startsWith("game:") ? "_floor" : ""), d.artScale);
 				if (hull != null && fl != null && (d.floorX < 0 || d.floorY < 0 || d.floorX + fl.getWidth() > hull.getWidth() || d.floorY + fl.getHeight() > hull.getHeight()))
-					w.add("Her floor picture (" + fl.getWidth() + " x " + fl.getHeight() + " at " + d.floorX + ", " + d.floorY + ") sticks out of her hull picture (" + hull.getWidth() + " x " + hull.getHeight()
+					w.add(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " floor picture (" + fl.getWidth() + " x " + fl.getHeight() + " at " + d.floorX + ", " + d.floorY + ") sticks out of " + homeplanet.model.Words.her() + " hull picture (" + hull.getWidth() + " x " + hull.getHeight()
 							+ "): it may have been drawn for another hull. Choose no floor, or one drawn from the rooms.");
 			}
 			// FTL draws slot n's weapon on mount n: a slot past her mounts has nowhere to draw (the game's own ships carry spare mounts, the Kestrel 8 for 4 slots)
 			if (ctx == Context.DESIGN && !d.art.isEmpty() && weaponMounts < DesignExport.weaponSlots(d))
-				w.add("She has " + DesignExport.weaponSlots(d) + " weapon slots but " + weaponMounts + " weapon mount" + (weaponMounts == 1 ? "" : "s") + ": a weapon in a slot past her mounts has nowhere to draw. Add mounts, or fewer slots.");
+				w.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " has " + DesignExport.weaponSlots(d) + " weapon slots but " + weaponMounts + " weapon mount" + (weaponMounts == 1 ? "" : "s") + ": a weapon in a slot past " + homeplanet.model.Words.her() + " mounts has nowhere to draw. Add mounts, or fewer slots.");
 			if (requiredWeaponSlots != null && weaponMounts < requiredWeaponSlots)
-				p.add("She has " + requiredWeaponSlots + " weapon slots but " + weaponMounts + " weapon mount" + (weaponMounts == 1 ? "" : "s") + ": each slot needs a mount.");
+				p.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " has " + requiredWeaponSlots + " weapon slots but " + weaponMounts + " weapon mount" + (weaponMounts == 1 ? "" : "s") + ": each slot needs a mount.");
 		}
 		// the doors: every room reachable; the biggest group of connected rooms is "the ship", the rest are cut off
 		List<Set<Integer>> groups = new ArrayList<Set<Integer>>();
@@ -112,18 +112,18 @@ public final class ShipChecks {
 			for (Set<Integer> g : groups) if (g.size() > main.size()) main = g;
 			List<Integer> cut = new ArrayList<Integer>();
 			for (int i = 0; i < d.rooms.size(); i++) if (!main.contains(i)) cut.add(i);
-			w.add((cut.size() == 1 ? "Room " + cut.get(0) + " has" : "Rooms " + cut + " have") + " no door to the rest of the ship: her crew can't get in (FTL allows it).");
+			w.add((cut.size() == 1 ? "Room " + cut.get(0) + " has" : "Rooms " + cut + " have") + " no door to the rest of the ship: " + homeplanet.model.Words.her() + " crew can't get in (FTL allows it).");
 		}
-		if (!d.systems.containsKey("oxygen")) w.add("No Oxygen: her crew will suffocate.");
+		if (!d.systems.containsKey("oxygen")) w.add("No Oxygen: " + homeplanet.model.Words.her() + " crew will suffocate.");
 		if (!d.systems.containsKey("shields")) w.add("No Shields.");
-		if (!d.systems.containsKey("weapons") && !d.systems.containsKey("drones")) w.add("No Weapons or Drone Control: she can't fight.");
+		if (!d.systems.containsKey("weapons") && !d.systems.containsKey("drones")) w.add("No Weapons or Drone Control: " + homeplanet.model.Words.she() + " can't fight.");
 		int starting = startingSystems(d);
 		if (ctx == Context.DESIGN && starting > SaveHelper.SYSTEMS_MAX)
-			w.add("She starts with " + starting + " systems; FTL's System Limit is " + SaveHelper.SYSTEMS_MAX + " (subsystems aside). Each one past it is a custom work order ("
+			w.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " starts with " + starting + " systems; FTL's System Limit is " + SaveHelper.SYSTEMS_MAX + " (subsystems aside). Each one past it is a custom work order ("
 					+ homeplanet.core.Economy.commissionWorkOrder() + " scrap) when commissioning costs scrap.");
 		boolean airlock = false;
 		for (CompanionMod.Door door : d.doors) if (door.b < 0) airlock = true;
-		if (!airlock) w.add("No airlocks: she can't vent fires or boarders.");
+		if (!airlock) w.add("No airlocks: " + homeplanet.model.Words.she() + " can't vent fires or boarders.");
 		// past the game's own numbers: FTL takes her, but its bars and upgrade screen are drawn for the vanilla ones
 		if (ctx == Context.DESIGN) {
 			List<String> past = new ArrayList<String>();
@@ -132,18 +132,18 @@ public final class ShipChecks {
 			for (CompanionMod.Sys s : d.systems.values())
 				if (s.power > VanillaMax.system(s.id)) past.add(title(s.id) + " at level " + s.power + " (the game's top is " + VanillaMax.system(s.id) + "; its upgrade screen won't show past that)");
 			if (!past.isEmpty()) w.add("Past vanilla: " + String.join("; ", past) + ".");
-			if (d.loadout != null && d.loadout.crewTotal() > VanillaMax.CREW) p.add("She starts with " + d.loadout.crewTotal() + " crew: FTL's ships hold " + VanillaMax.CREW + ".");
-			if (d.loadout != null && d.loadout.crewTotal() == 0) w.add("No starting crew set: she'd start with one human.");
+			if (d.loadout != null && d.loadout.crewTotal() > VanillaMax.CREW) p.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " starts with " + d.loadout.crewTotal() + " crew: FTL's ships hold " + VanillaMax.CREW + ".");
+			if (d.loadout != null && d.loadout.crewTotal() == 0) w.add("No starting crew set: " + homeplanet.model.Words.she() + "'d start with one human.");
 		}
 		// the loadout, against the ship
 		if (d.loadout != null) {
 			int slots = DesignExport.weaponSlots(d);
-			if (art && d.loadout.weapons.size() > slots) w.add("She starts with " + d.loadout.weapons.size() + " weapons but has " + slots + " weapon slots: the extra ones go in her cargo hold.");
-			if (d.loadout.drones.size() > d.droneSlots) w.add("She starts with " + d.loadout.drones.size() + " drones but has " + d.droneSlots + " drone slots: the extra ones go in her cargo hold.");
-			if (!d.loadout.drones.isEmpty() && !d.systems.containsKey("drones")) w.add("She starts with drones but has no Drone Control: they go in her cargo hold.");
+			if (art && d.loadout.weapons.size() > slots) w.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " starts with " + d.loadout.weapons.size() + " weapons but has " + slots + " weapon slots: the extra ones go in " + homeplanet.model.Words.her() + " cargo hold.");
+			if (d.loadout.drones.size() > d.droneSlots) w.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " starts with " + d.loadout.drones.size() + " drones but has " + d.droneSlots + " drone slots: the extra ones go in " + homeplanet.model.Words.her() + " cargo hold.");
+			if (!d.loadout.drones.isEmpty() && !d.systems.containsKey("drones")) w.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " starts with drones but has no Drone Control: they go in " + homeplanet.model.Words.her() + " cargo hold.");
 			// hacking launches its drone with a drone part (FTL wiki, Hacking); a ship that starts without any can't use it until she buys some
 			if (d.loadout.droneParts == 0 && d.systems.containsKey("hacking") && !d.notAtStart.contains("hacking"))
-				w.add("Hacking needs a drone part to launch, and she starts with none.");
+				w.add("Hacking needs a drone part to launch, and " + homeplanet.model.Words.she() + " starts with none.");
 			String power = powerShort(d);
 			if (power != null) w.add(power);
 		}
@@ -173,7 +173,7 @@ public final class ShipChecks {
 			for (String w : d.loadout.weapons) { net.blerf.ftl.xml.WeaponBlueprint b = dm.getWeapon(w); if (b != null) need += b.getPower(); }
 			for (String w : d.loadout.drones) { net.blerf.ftl.xml.DroneBlueprint b = dm.getDrone(w); if (b != null) need += b.getPower(); }
 		} catch (Exception e) { return null; }
-		return need > d.reactor ? "Her reactor (" + d.reactor + ") can't power Oxygen, Shields and her starting weapons and drones together (they need " + need + ")." : null;
+		return need > d.reactor ? homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " reactor (" + d.reactor + ") can't power Oxygen, Shields and " + homeplanet.model.Words.her() + " starting weapons and drones together (they need " + need + ")." : null;
 	}
 
 

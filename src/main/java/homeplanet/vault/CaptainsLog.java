@@ -323,7 +323,7 @@ public final class CaptainsLog {
 			Matcher s = Pattern.compile("^(.+?) \\([0-9a-f]+\\) from (.+?)'s fleet").matcher(head);
 			if (s.find()) once(m, "comm", false, startShip(s.group(1)) + " arrived from " + s.group(2) + "'s fleet.");
 		} else if (kind.equals("RETURNED") && head.contains(" to her owner")) {
-			once(m, "ships", true, "Returned " + theShip(head.replaceAll("\\s*\\([0-9a-f]+\\).*$", "").trim()) + " to her owner.");
+			once(m, "ships", true, "Returned " + theShip(head.replaceAll("\\s*\\([0-9a-f]+\\).*$", "").trim()) + " to " + homeplanet.model.Words.her() + " owner.");
 		} else if (kind.equals("SEIZED")) {
 			once(m, "ships", false, sentence(head.replaceAll("\\s*\\([0-9a-f]+\\)", "").replace(": collected by", " was collected by")));
 		} else if (kind.equals("OVERFLOW")) {

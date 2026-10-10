@@ -87,7 +87,7 @@ final class ArtilleryPicker {
 		JScrollPane sp = new JScrollPane(list);
 		sp.setPreferredSize(new Dimension(300, 230));
 		JPanel p = new JPanel(new BorderLayout(0, 6));
-		JLabel q = new JLabel("Which weapon does her artillery fire?");
+		JLabel q = new JLabel("Which weapon does " + homeplanet.model.Words.her() + " artillery fire?");
 		q.setToolTipText("Artillery is not normally available as a stock part.");
 		list.setToolTipText("Artillery is not normally available as a stock part.");
 		p.add(q, BorderLayout.NORTH);

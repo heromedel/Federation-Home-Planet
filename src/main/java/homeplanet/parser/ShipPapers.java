@@ -51,19 +51,19 @@ public final class ShipPapers {
 		String xml;
 		if (CompanionMod.isRemodelId(bpId)) {
 			CompanionMod.Remodel r = CompanionMod.find(CompanionMod.load(), bpId);
-			if (r == null) throw new IOException("her blueprint (" + bpId + ") isn't on file at this station");
+			if (r == null) throw new IOException(homeplanet.model.Words.her() + " blueprint (" + bpId + ") isn't on file at this station");
 			xml = "<remodels>" + CRLF + CompanionMod.remodelXml(r) + "</remodels>" + CRLF;
 			art = r.geometry;
 		} else {
 			ShipDesign d = builtCopy(ShipDesign.load(), bpId);
-			if (d == null) throw new IOException("her blueprint (" + bpId + ") isn't on file at this station");
+			if (d == null) throw new IOException(homeplanet.model.Words.her() + " blueprint (" + bpId + ") isn't on file at this station");
 			xml = "<designs>" + CRLF + ShipDesign.xmlOf(d) + "</designs>" + CRLF;
 			art = d;
 		}
 		out.put(BLUEPRINT, xml.getBytes(StandardCharsets.UTF_8));
 		for (String src : ShipArt.filesOf(art)) {
 			File f = ShipArt.file(src);
-			if (!f.isFile()) throw new IOException("a picture of hers is missing: " + f);
+			if (!f.isFile()) throw new IOException("a picture of " + homeplanet.model.Words.hers() + " is missing: " + f);
 			out.put(ART + f.getName(), SafeFiles.read(f));
 		}
 		return out;
@@ -91,13 +91,13 @@ public final class ShipPapers {
 	 */
 	static Incoming read(Map<String, byte[]> files, String bpId) throws IOException {
 		byte[] xml = files.get(BLUEPRINT);
-		if (xml == null) throw new IOException("her blueprint didn't come with her");
+		if (xml == null) throw new IOException(homeplanet.model.Words.her() + " blueprint didn't come with " + homeplanet.model.Words.herObj());
 		Incoming in = new Incoming();
 		int pictures = 0;
 		for (Map.Entry<String, byte[]> e : files.entrySet()) {
 			if (!e.getKey().startsWith(ART)) continue;
 			String name = e.getKey().substring(ART.length());
-			if (!name.matches("[A-Za-z0-9_.-]{1,80}\\.png") || ++pictures > MAX_PICTURES) throw new IOException("her pictures aren't as a blueprint's are (" + shown(name) + ")");
+			if (!name.matches("[A-Za-z0-9_.-]{1,80}\\.png") || ++pictures > MAX_PICTURES) throw new IOException(homeplanet.model.Words.her() + " pictures aren't as a blueprint's are (" + shown(name) + ")");
 			BufferedImage img;
 			try { img = ImageIO.read(new ByteArrayInputStream(e.getValue())); } catch (Exception x) { img = null; }
 			if (img == null || img.getWidth() > MAX_SIDE || img.getHeight() > MAX_SIDE) throw new IOException(shown(name) + " isn't a picture The Home Planet Station can use");
@@ -107,22 +107,22 @@ public final class ShipPapers {
 		try {
 			SafeFiles.write(tmp, xml);
 			String text = new String(xml, StandardCharsets.UTF_8);
-			if (text.contains("<!DOCTYPE") || text.contains("<!ENTITY")) throw new IOException("her blueprint isn't a plain blueprint");
+			if (text.contains("<!DOCTYPE") || text.contains("<!ENTITY")) throw new IOException(homeplanet.model.Words.her() + " blueprint isn't a plain blueprint");
 			if (CompanionMod.isRemodelId(bpId)) {
 				List<CompanionMod.Remodel> rs = new ArrayList<CompanionMod.Remodel>();
-				try { CompanionMod.readInto(tmp, rs); } catch (Exception x) { throw new IOException("her blueprint couldn't be read: " + x.getMessage()); }
-				if (rs.size() != 1 || !rs.get(0).id.equals(bpId)) throw new IOException("her blueprint isn't the one her save names");
+				try { CompanionMod.readInto(tmp, rs); } catch (Exception x) { throw new IOException(homeplanet.model.Words.her() + " blueprint couldn't be read: " + x.getMessage()); }
+				if (rs.size() != 1 || !rs.get(0).id.equals(bpId)) throw new IOException(homeplanet.model.Words.her() + " blueprint isn't the one " + homeplanet.model.Words.her() + " save names");
 				in.remodel = rs.get(0);
-				if (!in.remodel.base.matches("PLAYER_SHIP_[A-Z0-9_]+") || !in.remodel.id.startsWith(in.remodel.base + "_R")) throw new IOException("her blueprint names an unknown model");
-				if (net.blerf.ftl.parser.DataManager.get().getShip(in.remodel.base + Retrofit.SUFFIX) == null) throw new IOException("her model (" + in.remodel.base + ") isn't in this station's game data");
-				if (!java.util.Arrays.asList(CompanionMod.FILES).contains(in.remodel.file)) throw new IOException("her blueprint names an unknown blueprint file");
+				if (!in.remodel.base.matches("PLAYER_SHIP_[A-Z0-9_]+") || !in.remodel.id.startsWith(in.remodel.base + "_R")) throw new IOException(homeplanet.model.Words.her() + " blueprint names an unknown model");
+				if (net.blerf.ftl.parser.DataManager.get().getShip(in.remodel.base + Retrofit.SUFFIX) == null) throw new IOException(homeplanet.model.Words.her() + " model (" + in.remodel.base + ") isn't in this station's game data");
+				if (!java.util.Arrays.asList(CompanionMod.FILES).contains(in.remodel.file)) throw new IOException(homeplanet.model.Words.her() + " blueprint names an unknown blueprint file");
 				if (in.remodel.geometry != null) in.remodel.geometry.id = in.remodel.id;
 			} else {
 				List<ShipDesign> ds = new ArrayList<ShipDesign>();
-				try { ShipDesign.readInto(tmp, ds); } catch (Exception x) { throw new IOException("her blueprint couldn't be read: " + x.getMessage()); }
-				if (ds.size() != 1 || !ds.get(0).built || !DesignExport.bpId(ds.get(0)).equals(bpId)) throw new IOException("her blueprint isn't the one her save names");
+				try { ShipDesign.readInto(tmp, ds); } catch (Exception x) { throw new IOException(homeplanet.model.Words.her() + " blueprint couldn't be read: " + x.getMessage()); }
+				if (ds.size() != 1 || !ds.get(0).built || !DesignExport.bpId(ds.get(0)).equals(bpId)) throw new IOException(homeplanet.model.Words.her() + " blueprint isn't the one " + homeplanet.model.Words.her() + " save names");
 				in.design = ds.get(0);
-				if (!in.design.id.matches("DESIGN_\\d+") || in.design.version < 1) throw new IOException("her blueprint's number isn't a design's");
+				if (!in.design.id.matches("DESIGN_\\d+") || in.design.version < 1) throw new IOException(homeplanet.model.Words.her() + " blueprint's number isn't a design's");
 			}
 		} finally {
 			tmp.delete();
@@ -130,10 +130,10 @@ public final class ShipPapers {
 		ShipDesign art = in.art();
 		if (art != null) for (String src : ShipArt.filesOf(art)) {
 			String name = new File(src.substring(5)).getName();
-			if (!src.startsWith("file:art/") || !in.pictures.containsKey(name)) throw new IOException("a picture of hers didn't come with her (" + shown(name) + ")");
+			if (!src.startsWith("file:art/") || !in.pictures.containsKey(name)) throw new IOException("a picture of " + homeplanet.model.Words.hers() + " didn't come with " + homeplanet.model.Words.herObj() + " (" + shown(name) + ")");
 		}
 		if (art != null) for (String src : new String[] {art.art, art.floor}) {
-			if (src.startsWith("game:") && !src.substring(5).matches("[A-Za-z0-9_]{1,64}")) throw new IOException("her blueprint names game art that isn't there");
+			if (src.startsWith("game:") && !src.substring(5).matches("[A-Za-z0-9_]{1,64}")) throw new IOException(homeplanet.model.Words.her() + " blueprint names game art that isn't there");
 		}
 		return in;
 	}
@@ -201,7 +201,7 @@ public final class ShipPapers {
 		d.retired = true;
 		List<File> made = new ArrayList<File>();
 		refile(d, in.pictures, made);
-		if (!DesignExport.problems(d).isEmpty()) { undo(made); throw new IOException("her blueprint has problems here: " + DesignExport.problems(d)); }
+		if (!DesignExport.problems(d).isEmpty()) { undo(made); throw new IOException(homeplanet.model.Words.her() + " blueprint has problems here: " + DesignExport.problems(d)); }
 		rename(renames, in.design, d);
 		all.add(d);
 		boolean saved = false;

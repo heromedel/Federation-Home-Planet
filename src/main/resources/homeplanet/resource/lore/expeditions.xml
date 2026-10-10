@@ -37,6 +37,7 @@
      sector="..." on any line but an offer marks it for that sector: it joins the unmarked lines only there. In a line
      after a name, {he} {him} {his} become she, her, her for a woman ({He} {His} to begin a sentence). Every line
      finishes its thought: a reader should never be left asking "decide what?".
+     The ship pronoun tokens {she} {her} {her_obj} {hers} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General).
 
      Jobs: defend attack negotiate boarded rescue salvage scout repair transport lost escort capture board hijack
      infection spiders. Sectors: civilian engi zoltan mantis pirate rebel rock nebula abandoned crystal. -->
@@ -141,8 +142,8 @@
 	<line kind="frame" job="board">After a merchant's cargo was stolen in the night and the thieves were traced, the crew</line>
 	<line kind="frame" job="board">With a Federation warrant to seize any vessel running dark, the crew</line>
 	<line kind="frame" job="board">Rather than fight a battle between ships they could not win, the crew</line>
-	<line kind="frame" job="board">Because a ship blown apart tells no one what she was carrying, the crew</line>
-	<line kind="frame" job="board">With a bounty offered for a ship and her captain together, the crew</line>
+	<line kind="frame" job="board">Because a ship blown apart tells no one what {she} was carrying, the crew</line>
+	<line kind="frame" job="board">With a bounty offered for a ship and {her} captain together, the crew</line>
 	<line kind="frame" job="hijack">With forged docking papers and a story they had rehearsed twice, the crew</line>
 	<line kind="frame" job="hijack">Timing it for when the dockyard was emptiest, the crew</line>
 	<line kind="frame" job="hijack">With a buyer already waiting at the next beacon, the crew</line>
@@ -228,11 +229,11 @@
 	<line kind="band" job="defend" band="top">was extremely successful and is the reason there was anything left to defend</line>
 
 	<line kind="event" job="attack">took a borrowed gunship after a raider that had been bleeding the trade lanes dry</line>
-	<line kind="event" job="attack">ran down a smuggler's ship before she could reach the next beacon</line>
+	<line kind="event" job="attack">ran down a smuggler's ship before {she} could reach the next beacon</line>
 	<line kind="event" job="attack">were sent to drive off a ship that had been shadowing a convoy</line>
 	<line kind="event" job="attack" sector="rebel">flew with a Federation strike on a rebel scout ship</line>
 	<line kind="event" job="attack" sector="pirate">flew with a mercenary crew against a pirate ship lying in wait at a refuelling beacon</line>
-	<line kind="event" job="attack" sector="mantis">caught a Mantis hunting ship while her boarding party was still away</line>
+	<line kind="event" job="attack" sector="mantis">caught a Mantis hunting ship while {her} boarding party was still away</line>
 
 	<line kind="band" job="attack" band="died">An enemy shot found {name}'s station, and {he} was killed instantly.</line>
 	<line kind="band" job="attack" band="died">{name} was killed by the enemy's first volley.</line>
@@ -268,12 +269,12 @@
 	<line kind="band" job="negotiate" band="top">was extremely successful and brought both sides to terms</line>
 	<line kind="band" job="negotiate" band="top">was extremely successful and turned old enemies into trading partners</line>
 
-	<line kind="event" job="boarded">were aboard a freighter when she was boarded</line>
+	<line kind="event" job="boarded">were aboard a freighter when {she} was boarded</line>
 	<line kind="event" job="boarded">were on watch when boarders came through the hull</line>
 	<line kind="event" job="boarded">were asleep in their bunks when the alarms went, and the boarders were already inside</line>
 	<line kind="event" job="boarded" sector="rebel">were caught aboard a ship the rebels boarded</line>
 	<line kind="event" job="boarded" sector="mantis">were working a cargo run when a Mantis boarding party appeared in the hold</line>
-	<line kind="event" job="boarded" sector="pirate">were crewing an ore hauler when pirates cut through her airlock</line>
+	<line kind="event" job="boarded" sector="pirate">were crewing an ore hauler when pirates cut through {her} airlock</line>
 
 	<line kind="band" job="boarded" band="died">{name} was killed fighting the boarders.</line>
 	<line kind="band" job="boarded" band="died">{name} died defending the corridor to the bridge.</line>
@@ -311,7 +312,7 @@
 	<line kind="event" job="salvage">stripped a wreck for what it still had</line>
 	<line kind="event" job="salvage">picked over a derelict in a debris field</line>
 	<line kind="event" job="salvage">cut their way into an old hulk nobody had opened in years</line>
-	<line kind="event" job="salvage">salvaged a freighter that had drifted so long her name had worn off the hull</line>
+	<line kind="event" job="salvage">salvaged a freighter that had drifted so long {her} name had worn off the hull</line>
 	<line kind="event" job="salvage" sector="abandoned">raced a Lanius ship to the last good parts of a gutted research station</line>
 	<line kind="event" job="salvage" sector="rebel">picked through the wreckage of a battle the Federation had lost</line>
 
@@ -353,7 +354,7 @@
 	<line kind="event" job="repair">spent the job up to the elbows in an old reactor</line>
 	<line kind="event" job="repair">kept a colony's failing life support running until the parts arrived</line>
 	<line kind="event" job="repair" sector="engi">were hired by Engi engineers who needed hands, not advice, to rebuild a reactor</line>
-	<line kind="event" job="repair" sector="zoltan">rewired a Zoltan ship whose crew could power her but no longer fix her</line>
+	<line kind="event" job="repair" sector="zoltan">rewired a Zoltan ship whose crew could power {her_obj} but no longer fix {her_obj}</line>
 
 	<line kind="band" job="repair" band="died">The reactor flared while {name} was working on it, and {he} was killed.</line>
 	<line kind="band" job="repair" band="died">A conduit {name} was working on went live, and it killed {him}.</line>
@@ -449,11 +450,11 @@
 	<line kind="band" job="capture" band="top">was extremely successful and took the quarry without firing a shot</line>
 
 	<line kind="event" job="board">boarded a ship that wouldn't answer hails</line>
-	<line kind="event" job="board">forced an airlock on an enemy vessel and fought their way along her corridors</line>
-	<line kind="event" job="board">were put aboard a pirate ship to take her bridge</line>
-	<line kind="event" job="board" sector="rebel">boarded a rebel supply ship to take her before she could call for help</line>
+	<line kind="event" job="board">forced an airlock on an enemy vessel and fought their way along {her} corridors</line>
+	<line kind="event" job="board">were put aboard a pirate ship to take {her} bridge</line>
+	<line kind="event" job="board" sector="rebel">boarded a rebel supply ship to take {her_obj} before {she} could call for help</line>
 	<line kind="event" job="board" sector="rock">boarded a Rock pirate ship and found out why so few crews try</line>
-	<line kind="event" job="board" sector="mantis">went aboard a Mantis raider while her crew were away on a raid of their own</line>
+	<line kind="event" job="board" sector="mantis">went aboard a Mantis raider while {her} crew were away on a raid of their own</line>
 
 	<line kind="band" job="board" band="died">{name} was killed in the boarding.</line>
 	<line kind="band" job="board" band="died">{name} died in the fighting for the engine room.</line>
@@ -468,11 +469,11 @@
 	<line kind="band" job="board" band="top">was extremely successful and took the ship nearly single-handed</line>
 	<line kind="band" job="board" band="top">was extremely successful and had the enemy crew locked in their own brig</line>
 
-	<line kind="event" job="hijack">were hired to steal a ship from her moorings</line>
+	<line kind="event" job="hijack">were hired to steal a ship from {her} moorings</line>
 	<line kind="event" job="hijack">went after a ship someone wanted very badly, and would not say why</line>
-	<line kind="event" job="hijack">slipped aboard a ship at anchor to take her</line>
+	<line kind="event" job="hijack">slipped aboard a ship at anchor to take {her_obj}</line>
 	<line kind="event" job="hijack" sector="pirate">were hired to take back a ship the pirates had taken first</line>
-	<line kind="event" job="hijack" sector="engi">were hired to take an Engi ship whose crew trusted her locks a little too much</line>
+	<line kind="event" job="hijack" sector="engi">were hired to take an Engi ship whose crew trusted {her} locks a little too much</line>
 	<line kind="event" job="hijack" sector="rebel">were sent to steal a ship out from under a rebel garrison</line>
 
 	<line kind="band" job="hijack" band="died">{name} was killed before the ship was clear.</line>
@@ -570,11 +571,11 @@
 	<line kind="infirmary">{name} came home on a stretcher and went straight to the infirmary.</line>
 	<line kind="infirmary">The infirmary will have {name} for a while yet.</line>
 
-	<line kind="prize" job="hijack" prize="ship">They brought the ship home: {name}.\nShe's moored at the station until you decide whether she joins the fleet, goes to the Junkyard, or is let go.</line>
-	<line kind="prize" job="hijack" prize="ship">They didn't come home on the shuttle. They came home in {name},\nmoored at the station until you decide whether she joins the fleet, goes to the Junkyard, or is let go.</line>
-	<line kind="prize" job="hijack" prize="part">The alarms went before she cleared her moorings,\nbut they pulled her {name} system out before they ran.</line>
-	<line kind="prize" job="hijack" prize="part">She was too badly shot up to fly home, so they took her {name} system and left the rest.</line>
-	<line kind="prize" job="hijack" prize="part">Her owners came back sooner than expected.\nThe crew left with her {name} system and nothing else.</line>
+	<line kind="prize" job="hijack" prize="ship">They brought the ship home: {name}.\n{She}'s moored at the station until you decide whether {she} joins the fleet, goes to the Junkyard, or is let go.</line>
+	<line kind="prize" job="hijack" prize="ship">They didn't come home on the shuttle. They came home in {name},\nmoored at the station until you decide whether {she} joins the fleet, goes to the Junkyard, or is let go.</line>
+	<line kind="prize" job="hijack" prize="part">The alarms went before {she} cleared {her} moorings,\nbut they pulled {her} {name} system out before they ran.</line>
+	<line kind="prize" job="hijack" prize="part">{She} was too badly shot up to fly home, so they took {her} {name} system and left the rest.</line>
+	<line kind="prize" job="hijack" prize="part">{Her} owners came back sooner than expected.\nThe crew left with {her} {name} system and nothing else.</line>
 	<line kind="prize" job="salvage" prize="part">They pulled a whole system out of the wreck.</line>
 	<line kind="prize" job="salvage" prize="part">They cut the wreck's {name} system free and brought it home. It's seen some damage.</line>
 	<line kind="prize" job="salvage" prize="part">The wreck's {name} system came home with them, damaged but worth fitting.</line>
@@ -591,7 +592,7 @@
 
 	<line kind="band" job="defend" band="failed" skill="pilot">{name} pulled the ship back too early, and the raiders got a clear run at what the crew were guarding.</line>
 	<line kind="band" job="defend" band="failed" skill="pilot">Orders from {name} kept changing, and by the end nobody was sure where they were supposed to be.</line>
-	<line kind="band" job="defend" band="success" skill="pilot">{name} held the ship exactly where she was needed.</line>
+	<line kind="band" job="defend" band="success" skill="pilot">{name} held the ship exactly where {she} was needed.</line>
 	<line kind="band" job="defend" band="success" skill="pilot">Whenever the raiders shifted their attack, {name} moved the ship to meet it.</line>
 	<line kind="band" job="defend" band="success" skill="pilot">Nobody wasted a shot or a moment while {name} was giving the orders.</line>
 	<line kind="band" job="defend" band="high" skill="pilot">{name} guessed where the raiders would come from next and had the ship waiting there.</line>
@@ -622,7 +623,7 @@
 	<line kind="band" job="defend" band="success" skill="weapons">The raiders learned to keep their distance whenever {name} had them in {his} sights.</line>
 	<line kind="band" job="defend" band="success" skill="weapons">{name} kept up a steady fire that broke up every run the raiders made.</line>
 	<line kind="band" job="defend" band="high" skill="weapons">Wherever the raiders tried to break through, {name}'s fire was already waiting for them.</line>
-	<line kind="band" job="defend" band="high" skill="weapons">The raiders brought a gunship of their own, but {name} found her weak spot and knocked out her weapons.</line>
+	<line kind="band" job="defend" band="high" skill="weapons">The raiders brought a gunship of their own, but {name} found {her} weak spot and knocked out {her} weapons.</line>
 	<line kind="band" job="defend" band="top" skill="weapons">The raiders' charge broke under {name}'s fire before it reached anyone.</line>
 	<line kind="band" job="defend" band="top" skill="weapons">{name} crippled the raiders' lead ship early in the fight, and the rest of them lost their nerve soon after.</line>
 	<line kind="band" job="defend" band="failed" skill="repair">{name}'s patch gave way in the middle of the fight, and the raiders' next volley went straight through.</line>
@@ -633,7 +634,7 @@
 	<line kind="band" job="defend" band="high" skill="repair">When the raiders knocked out the shields, {name} had them repaired before the next volley arrived.</line>
 	<line kind="band" job="defend" band="high" skill="repair">A breach opened in the middle of the attack, but {name} had it sealed before the air could go.</line>
 	<line kind="band" job="defend" band="top" skill="repair">Out of nothing but scrap, {name} built armour that the raiders' guns couldn't get through.</line>
-	<line kind="band" job="defend" band="top" skill="repair">{name} kept the ship together through raid after raid, and she was in better shape at the end than at the start.</line>
+	<line kind="band" job="defend" band="top" skill="repair">{name} kept the ship together through raid after raid, and {she} was in better shape at the end than at the start.</line>
 	<line kind="band" job="defend" band="failed" skill="combat">The raiders sent boarders across, and {name} was pushed back in the first rush.</line>
 	<line kind="band" job="defend" band="failed" skill="combat">A boarder got inside {name}'s guard early on, and {he} spent more time fending the boarder off than holding the corridor.</line>
 	<line kind="band" job="defend" band="success" skill="combat">Any boarder who got close enough found {name} waiting for them.</line>
@@ -642,7 +643,7 @@
 	<line kind="band" job="defend" band="high" skill="combat">{name} met the boarders' charge head on and stopped it cold.</line>
 	<line kind="band" job="defend" band="high" skill="combat">The raiders sent their toughest fighter across, and {name} put him down and went looking for the next one.</line>
 	<line kind="band" job="defend" band="top" skill="combat">The boarders who made it aboard ran into {name}, and every one of them ran straight back out again.</line>
-	<line kind="band" job="defend" band="top" skill="combat">{name} crossed to the raiders' ship and fought through her crew until the rest of the raiders broke off.</line>
+	<line kind="band" job="defend" band="top" skill="combat">{name} crossed to the raiders' ship and fought through {her} crew until the rest of the raiders broke off.</line>
 	<line kind="band" job="attack" band="failed" skill="pilot">{name} flew straight into the enemy's line of fire.</line>
 	<line kind="band" job="attack" band="failed" skill="pilot">{name} held the ship steady for too long, and the enemy found the range easily.</line>
 	<line kind="band" job="attack" band="success" skill="pilot">Plenty of the enemy's shots went wide while {name} kept the ship moving.</line>
@@ -687,7 +688,7 @@
 	<line kind="band" job="attack" band="high" skill="repair">Moments after the enemy knocked the weapons out, {name} had them back online.</line>
 	<line kind="band" job="attack" band="high" skill="repair">A breach opened next to the shield room, but {name} sealed it before the air ran out.</line>
 	<line kind="band" job="attack" band="top" skill="repair">The enemy hit the ship hard, and by the end of the fight {name} had fixed every bit of it.</line>
-	<line kind="band" job="attack" band="top" skill="repair">{name} kept the ship together through hit after hit, and she came home in better shape than anyone expected.</line>
+	<line kind="band" job="attack" band="top" skill="repair">{name} kept the ship together through hit after hit, and {she} came home in better shape than anyone expected.</line>
 	<line kind="band" job="attack" band="failed" skill="combat">The enemy sent boarders across, and {name} couldn't stop them reaching the weapons.</line>
 	<line kind="band" job="attack" band="failed" skill="combat">{name} went after the enemy's boarders alone and had to be pulled out by the rest of the crew.</line>
 	<line kind="band" job="attack" band="success" skill="combat">The enemy sent boarders across, and {name} forced them off.</line>
@@ -712,7 +713,7 @@
 	<line kind="band" job="negotiate" band="success" skill="engines">{name} kept the lights and the air on while everyone talked.</line>
 	<line kind="band" job="negotiate" band="success" skill="engines">Food, water and power never ran short during the talks, because {name} had planned for all of it.</line>
 	<line kind="band" job="negotiate" band="success" skill="engines">{name} carried messages and people between the two sides quickly enough that neither lost patience.</line>
-	<line kind="band" job="negotiate" band="high" skill="engines">The other side's ship lost power on the way in, and {name} towed her the rest of the way.</line>
+	<line kind="band" job="negotiate" band="high" skill="engines">The other side's ship lost power on the way in, and {name} towed {her_obj} the rest of the way.</line>
 	<line kind="band" job="negotiate" band="high" skill="engines">When the talks moved at short notice, {name} had everyone there and settled before the other side arrived.</line>
 	<line kind="band" job="negotiate" band="top" skill="engines">The talks ran for days, and {name} kept everyone fed, powered and comfortable enough to stay at the table.</line>
 	<line kind="band" job="negotiate" band="top" skill="engines">A string of breakdowns would have ended the talks, but {name} had both sides' ships running again each time.</line>
@@ -783,7 +784,7 @@
 	<line kind="band" job="boarded" band="failed" skill="repair">{name} tried to seal the doors, but the boarders came through them anyway.</line>
 	<line kind="band" job="boarded" band="failed" skill="repair">The boarders cut the power to the doors, and {name} couldn't get it back before they were through.</line>
 	<line kind="band" job="boarded" band="success" skill="repair">While the crew fought, {name} kept the ship's systems running.</line>
-	<line kind="band" job="boarded" band="success" skill="repair">The boarders had cut a hole in the hull, and {name} patched it before the ship lost her air.</line>
+	<line kind="band" job="boarded" band="success" skill="repair">The boarders had cut a hole in the hull, and {name} patched it before the ship lost {her} air.</line>
 	<line kind="band" job="boarded" band="success" skill="repair">When the boarders wrecked the oxygen system, {name} had it running again before anyone felt the difference.</line>
 	<line kind="band" job="boarded" band="high" skill="repair">{name} rigged the doors shut and trapped half the boarders in one room.</line>
 	<line kind="band" job="boarded" band="high" skill="repair">The boarders reached the bridge door just as {name} finished rewiring it, and it never opened for them.</line>
@@ -871,7 +872,7 @@
 	<line kind="band" job="salvage" band="high" skill="engines">They came home with nearly twice as much as expected, thanks to the way {name} packed the hold.</line>
 	<line kind="band" job="salvage" band="high" skill="engines">Rather than cut it apart, {name} towed a whole section of the wreck back to the ship.</line>
 	<line kind="band" job="salvage" band="top" skill="engines">The wreck's batteries still held a charge, and {name} got every one of them out intact.</line>
-	<line kind="band" job="salvage" band="top" skill="engines">{name} got the wreck's own engines turning long enough to bring her alongside, which made the whole job twice as fast.</line>
+	<line kind="band" job="salvage" band="top" skill="engines">{name} got the wreck's own engines turning long enough to bring {her_obj} alongside, which made the whole job twice as fast.</line>
 	<line kind="band" job="salvage" band="failed" skill="shields">{name} was supposed to keep watch, but was caught looking at the salvage instead.</line>
 	<line kind="band" job="salvage" band="failed" skill="shields">Debris struck the ship twice while {name} had the shields set too low.</line>
 	<line kind="band" job="salvage" band="success" skill="shields">While the others worked, {name} watched their backs.</line>
@@ -930,7 +931,7 @@
 	<line kind="band" job="scout" band="failed" skill="shields">The shuttle took a stray shot that {name} should have been ready for.</line>
 	<line kind="band" job="scout" band="failed" skill="shields">{name} left the shields down to save power, and the shuttle came home scorched.</line>
 	<line kind="band" job="scout" band="success" skill="shields">Whenever they got close to anything, {name} had the shuttle's shields up.</line>
-	<line kind="band" job="scout" band="success" skill="shields">The shuttle came home without a mark on her, because {name} kept the shields ready.</line>
+	<line kind="band" job="scout" band="success" skill="shields">The shuttle came home without a mark on {her_obj}, because {name} kept the shields ready.</line>
 	<line kind="band" job="scout" band="success" skill="shields">{name} watched for danger the whole trip and warned the pilot in good time.</line>
 	<line kind="band" job="scout" band="high" skill="shields">When someone took shots at the shuttle, not one laser got through {name}'s shields.</line>
 	<line kind="band" job="scout" band="high" skill="shields">A debris field would have torn the shuttle open if {name} hadn't held the shields up all the way through it.</line>
@@ -1062,7 +1063,7 @@
 	<line kind="band" job="transport" band="success" skill="repair">After every scrape, {name} patched the hull so the run never had to stop.</line>
 	<line kind="band" job="transport" band="high" skill="repair">When the life support failed, {name} had it working again before anyone noticed.</line>
 	<line kind="band" job="transport" band="high" skill="repair">When the ship was hit, {name} sealed the hold before anything inside was lost.</line>
-	<line kind="band" job="transport" band="top" skill="repair">Partway through the run the ship lost all power, but {name} brought her back to life in the dark.</line>
+	<line kind="band" job="transport" band="top" skill="repair">Partway through the run the ship lost all power, but {name} brought {her_obj} back to life in the dark.</line>
 	<line kind="band" job="transport" band="top" skill="repair">{name} rebuilt a failing engine part in flight and saved them from being stranded halfway to the buyer.</line>
 	<line kind="band" job="transport" band="failed" skill="combat">{name} picked a fight with the buyer's people at the end of the run.</line>
 	<line kind="band" job="transport" band="failed" skill="combat">{name} got into a fight at a stop along the way, and they had to leave in a hurry.</line>
@@ -1118,7 +1119,7 @@
 	<line kind="band" job="lost" band="high" skill="repair">The navigation computer had given up, but {name} got it working again.</line>
 	<line kind="band" job="lost" band="high" skill="repair">{name} rebuilt the ship's comms from spare parts, and at last they heard the beacon.</line>
 	<line kind="band" job="lost" band="top" skill="repair">Out of spare parts, {name} built something that could pick up the beacon's signal.</line>
-	<line kind="band" job="lost" band="top" skill="repair">{name} rebuilt half the ship on the way home and brought her back in better shape than she left.</line>
+	<line kind="band" job="lost" band="top" skill="repair">{name} rebuilt half the ship on the way home and brought {her_obj} back in better shape than {she} left.</line>
 	<line kind="band" job="lost" band="failed" skill="combat">{name} got restless being lost and started a fight with the pilot.</line>
 	<line kind="band" job="lost" band="failed" skill="combat">{name} lost {his} temper with the crew and made a hard trip harder.</line>
 	<line kind="band" job="lost" band="success" skill="combat">{name} kept order aboard when tempers ran short.</line>
@@ -1140,7 +1141,7 @@
 	<line kind="band" job="escort" band="top" skill="pilot">{name} found a path around the danger that nobody else knew about, and both ships arrived without seeing a single raider.</line>
 	<line kind="band" job="escort" band="failed" skill="engines">Their charge pulled ahead and out of reach while {name} struggled with a stalled engine.</line>
 	<line kind="band" job="escort" band="failed" skill="engines">{name} let the escort fall behind, and their charge had to slow down and wait for them.</line>
-	<line kind="band" job="escort" band="success" skill="engines">Slow as their charge was, {name} matched her pace without a single stall.</line>
+	<line kind="band" job="escort" band="success" skill="engines">Slow as their charge was, {name} matched {her} pace without a single stall.</line>
 	<line kind="band" job="escort" band="success" skill="engines">Their charge was never left alone, because {name} kept the escort close at every jump.</line>
 	<line kind="band" job="escort" band="success" skill="engines">In case trouble came, {name} had the engines ready to sprint the whole way.</line>
 	<line kind="band" job="escort" band="high" skill="engines">Raiders went for their charge, but {name} got the escort there first.</line>
@@ -1167,12 +1168,12 @@
 	<line kind="band" job="escort" band="top" skill="weapons">{name} broke up an ambush before it could close on their charge, and the rest of the trip was quiet.</line>
 	<line kind="band" job="escort" band="failed" skill="repair">The raiders struck in the middle of one of {name}'s repairs, and the guns stayed down for the whole fight.</line>
 	<line kind="band" job="escort" band="failed" skill="repair">{name} patched the escort's hull with parts that gave out at the first hit.</line>
-	<line kind="band" job="escort" band="success" skill="repair">Their charge broke down partway through the trip, so {name} went across and got her moving again.</line>
+	<line kind="band" job="escort" band="success" skill="repair">Their charge broke down partway through the trip, so {name} went across and got {her_obj} moving again.</line>
 	<line kind="band" job="escort" band="success" skill="repair">Both ships stayed in good repair for the whole journey, because {name} worked on whichever one needed it.</line>
 	<line kind="band" job="escort" band="success" skill="repair">Between jumps, {name} patched the escort's hull so it was always ready for a fight.</line>
 	<line kind="band" job="escort" band="high" skill="repair">{name} patched the escort's hull between attacks, so they went into each fight whole.</line>
 	<line kind="band" job="escort" band="high" skill="repair">When a raider holed their charge, {name} went across and sealed the breach before the air ran out.</line>
-	<line kind="band" job="escort" band="top" skill="repair">A raider crippled their charge, but {name}'s patchwork got her the rest of the way.</line>
+	<line kind="band" job="escort" band="top" skill="repair">A raider crippled their charge, but {name}'s patchwork got {her_obj} the rest of the way.</line>
 	<line kind="band" job="escort" band="top" skill="repair">{name} rebuilt their charge's engine in the middle of hostile space, and both ships made it home.</line>
 	<line kind="band" job="escort" band="failed" skill="combat">{name} went across to their charge to help and spent the trip arguing with the crew there.</line>
 	<line kind="band" job="escort" band="failed" skill="combat">{name} picked a fight with one of their charge's passengers, and the captain complained to the station about it.</line>
@@ -1181,7 +1182,7 @@
 	<line kind="band" job="escort" band="success" skill="combat">Nobody tried anything aboard their charge while {name} was there to stop them.</line>
 	<line kind="band" job="escort" band="high" skill="combat">Raiders boarded their charge, but {name} went over after them and threw them back out.</line>
 	<line kind="band" job="escort" band="high" skill="combat">{name} caught a stowaway who had been signalling the raiders and locked them away until the trip was over.</line>
-	<line kind="band" job="escort" band="top" skill="combat">Nobody expected the escort to board the lead raider, least of all her crew. When {name} did, the rest of the raiders broke off.</line>
+	<line kind="band" job="escort" band="top" skill="combat">Nobody expected the escort to board the lead raider, least of all {her} crew. When {name} did, the rest of the raiders broke off.</line>
 	<line kind="band" job="escort" band="top" skill="combat">{name} held their charge's airlock against a boarding party until the raiders gave up.</line>
 
 	<line kind="band" job="capture" band="failed" skill="pilot">For two days they followed the wrong ship, with {name} sure it was the right one.</line>
@@ -1227,7 +1228,7 @@
 	<line kind="band" job="capture" band="success" skill="repair">The quarry couldn't call for help, because {name} had jammed their comms.</line>
 	<line kind="band" job="capture" band="high" skill="repair">While the quarry slept, {name} quietly disconnected their engines.</line>
 	<line kind="band" job="capture" band="high" skill="repair">When the quarry tried to jump away, the drive failed, because {name} had slipped a fault into it.</line>
-	<line kind="band" job="capture" band="top" skill="repair">{name} had planted a tracker on the quarry's ship days earlier, so wherever she ran, they knew.</line>
+	<line kind="band" job="capture" band="top" skill="repair">{name} had planted a tracker on the quarry's ship days earlier, so wherever {she} ran, they knew.</line>
 	<line kind="band" job="capture" band="top" skill="repair">{name} locked the quarry inside their own ship and brought the whole ship in.</line>
 	<line kind="band" job="capture" band="failed" skill="combat">The quarry was pinned under {name} for a moment before wriggling free.</line>
 	<line kind="band" job="capture" band="failed" skill="combat">{name} tackled the wrong person in the crowd, and the quarry slipped away in the confusion.</line>
@@ -1246,7 +1247,7 @@
 	<line kind="band" job="board" band="success" skill="pilot">Following {name}'s lead, the boarding party stayed together and moved steadily toward the bridge.</line>
 	<line kind="band" job="board" band="high" skill="pilot">Ships like this one are all built the same way, so {name} led them straight to the bridge.</line>
 	<line kind="band" job="board" band="high" skill="pilot">{name} split the boarding party in two and caught the enemy crew between them.</line>
-	<line kind="band" job="board" band="top" skill="pilot">With {name} giving the orders, they took the ship before her crew knew they had been boarded.</line>
+	<line kind="band" job="board" band="top" skill="pilot">With {name} giving the orders, they took the ship before {her} crew knew they had been boarded.</line>
 	<line kind="band" job="board" band="top" skill="pilot">Before a single shot was fired, {name} had talked the enemy captain into surrendering over the comms.</line>
 	<line kind="band" job="board" band="failed" skill="engines">Partway through the fight, the docking clamps tore loose because {name} couldn't hold the two ships together.</line>
 	<line kind="band" job="board" band="failed" skill="engines">{name} let the shuttle drift away from the enemy ship, and the boarding party nearly lost their way home.</line>
@@ -1274,7 +1275,7 @@
 	<line kind="band" job="board" band="high" skill="weapons">Before anyone went aboard, {name} had knocked out the enemy's weapons from outside.</line>
 	<line kind="band" job="board" band="high" skill="weapons">As the boarding party advanced, {name} picked off the enemy's guards one by one.</line>
 	<line kind="band" job="board" band="top" skill="weapons">One shot from {name} took out the enemy's medbay, so nobody the boarding party put down got back up.</line>
-	<line kind="band" job="board" band="top" skill="weapons">{name} disabled the enemy ship's drive from outside, so she couldn't run even if her crew had won.</line>
+	<line kind="band" job="board" band="top" skill="weapons">{name} disabled the enemy ship's drive from outside, so {she} couldn't run even if {her} crew had won.</line>
 	<line kind="band" job="board" band="failed" skill="repair">The cutter jammed in the enemy's hull and {name} couldn't free it, so they had to find another way in.</line>
 	<line kind="band" job="board" band="failed" skill="repair">{name} cut into the wrong section of hull and opened a room full of the enemy's crew.</line>
 	<line kind="band" job="board" band="success" skill="repair">The enemy were still running for the airlock when {name} cut through it.</line>
@@ -1328,17 +1329,17 @@
 	<line kind="band" job="hijack" band="success" skill="weapons">From a high walkway, {name} watched the dock and warned the others of every guard who moved.</line>
 	<line kind="band" job="hijack" band="high" skill="weapons">The security drones never got the chance to call for help, because {name} took them out first.</line>
 	<line kind="band" job="hijack" band="high" skill="weapons">{name} disabled the dock's guns before anyone could turn them on the ship.</line>
-	<line kind="band" job="hijack" band="top" skill="weapons">The dock's own defences came under fire from the very ship they were guarding, with {name} on her guns.</line>
+	<line kind="band" job="hijack" band="top" skill="weapons">The dock's own defences came under fire from the very ship they were guarding, with {name} on {her} guns.</line>
 	<line kind="band" job="hijack" band="top" skill="weapons">{name} shot out every light on the dock, and the crew slipped away in the darkness.</line>
 	<line kind="band" job="hijack" band="failed" skill="repair">Every alarm on the dock went off when {name} opened the wrong lock.</line>
 	<line kind="band" job="hijack" band="failed" skill="repair">{name} broke the ship's lock instead of opening it, and they had to cut their way in.</line>
 	<line kind="band" job="hijack" band="success" skill="repair">{name} had the locks open before the guards changed.</line>
 	<line kind="band" job="hijack" band="success" skill="repair">{name} bypassed the ship's security without leaving a trace.</line>
 	<line kind="band" job="hijack" band="success" skill="repair">While the others waited, {name} disabled the dock's alarms one at a time.</line>
-	<line kind="band" job="hijack" band="high" skill="repair">{name} rewired the ship's security to recognise them as her crew.</line>
+	<line kind="band" job="hijack" band="high" skill="repair">{name} rewired the ship's security to recognise them as {her} crew.</line>
 	<line kind="band" job="hijack" band="high" skill="repair">{name} cracked the ship's codes in minutes, a job that should have taken hours.</line>
 	<line kind="band" job="hijack" band="top" skill="repair">According to the dock's records the ship was never there, because {name} rewrote them before they left.</line>
-	<line kind="band" job="hijack" band="top" skill="repair">{name} rigged the ship's tracking beacon to report her still at anchor long after she was gone.</line>
+	<line kind="band" job="hijack" band="top" skill="repair">{name} rigged the ship's tracking beacon to report {her_obj} still at anchor long after {she} was gone.</line>
 	<line kind="band" job="hijack" band="failed" skill="combat">{name} decided the quiet way was taking too long, and the fight that followed woke the whole dock.</line>
 	<line kind="band" job="hijack" band="failed" skill="combat">{name} knocked out a guard too loudly, and every other guard came running.</line>
 	<line kind="band" job="hijack" band="success" skill="combat">A guard wandered in at the wrong time, but {name} stopped him before he could raise the alarm.</line>
@@ -1512,7 +1513,7 @@
 	<line kind="band" job="defend" band="top" skill="combat" sector="mantis">{name} fought off a Mantis boarding party, which few crews ever manage.</line>
 	<line kind="band" job="defend" band="success" skill="weapons" sector="rock">Rock pirates came looking for an easy target, and {name}'s fire taught them otherwise.</line>
 	<line kind="band" job="defend" band="high" skill="shields" sector="zoltan">The Zoltan wouldn't fight for themselves, so {name} put the ship's shields between them and the raiders.</line>
-	<line kind="band" job="attack" band="high" skill="weapons" sector="rebel">{name} knocked out the rebel ship's weapons before she could call the rest of the fleet.</line>
+	<line kind="band" job="attack" band="high" skill="weapons" sector="rebel">{name} knocked out the rebel ship's weapons before {she} could call the rest of the fleet.</line>
 	<line kind="band" job="attack" band="top" skill="pilot" sector="rebel">{name} finished the fight before the rebel fleet could catch up, and they jumped away clean.</line>
 	<line kind="band" job="boarded" band="failed" skill="combat" sector="mantis">The Mantis boarders were faster than {name} expected, and {he} lost the corridor to them.</line>
 	<line kind="band" job="boarded" band="high" skill="combat" sector="mantis">The Mantis boarders came through fast, but {name} met them faster.</line>

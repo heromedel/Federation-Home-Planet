@@ -59,6 +59,8 @@ public class SettingsDialog extends JDialog {
 	private static final String[] ENGI = {"Prefix", "Append", "None"};
 	private static final String[] ENGI_CFG = {homeplanet.parser.CrewNames.PREFIX, homeplanet.parser.CrewNames.APPEND, homeplanet.parser.CrewNames.NONE};
 	private final javax.swing.JComboBox<String> engiBox = new javax.swing.JComboBox<String>(ENGI);
+	/** How the station speaks of a ship (6.42, heromedel): her, him or it. */
+	private final javax.swing.JComboBox<String> pronounBox = new javax.swing.JComboBox<String>(homeplanet.model.Words.SHIP_PRONOUNS);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging", HomePlanet.debugLogging);
 	private boolean savesChanged = false;
 	/** After a final victory: nothing, rescue her, or a reward of her value (the fleet in use has its own choice). */
@@ -172,6 +174,9 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Station");
 		body.add(borderlessBox, next(c));
 		body.add(musicBox, next(c));
+		pronounBox.setSelectedItem(homeplanet.model.Words.shipPronoun());
+		pronounBox.setToolTipText("How The Home Planet Station speaks of a ship in its messages, letters and logs: \"her crew\", \"his crew\" or \"its crew\"");
+		body.add(labelled("Ship Pronoun:", pronounBox), next(c));
 
 		heading(body, c, "Crew Names");
 		namesBox.setSelectedIndex(homeplanet.parser.CrewNames.listsOn() ? 0 : 1);
@@ -200,7 +205,7 @@ public class SettingsDialog extends JDialog {
 		namesBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { engiBox.setEnabled(namesBox.getSelectedIndex() == 0); } });
 		body.add(labelled("Engi Translate:", engiBox), next(c));
 
-		shipTradeBox.setToolTipText("Sandbox fleets always may. A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
+		shipTradeBox.setToolTipText("Sandbox fleets always may. A ship traded in arrives commissioned, and only what " + homeplanet.model.Words.she() + " does in your fleet counts toward letters, rewards and achievements");
 		anyLevelBox.setToolTipText("Off: your career trades only with careers of its own difficulty");
 		heading(body, c, "Long Range Comm.");
 		body.add(shipTradeBox, next(c));
@@ -306,7 +311,7 @@ public class SettingsDialog extends JDialog {
 		body.add(openRow, next(c));
 		// the station's other places (5.86): a folder each, as the player browses them
 		JPanel placesRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		placesRow.add(placeButton("Open Shipyard", "Open the shipyard (the ships at the Space Dock, a folder each: her record, her save, her log, her crew, her earlier versions) in Windows Explorer",
+		placesRow.add(placeButton("Open Shipyard", "Open the shipyard (the ships at the Space Dock, a folder each: " + homeplanet.model.Words.her() + " record, " + homeplanet.model.Words.her() + " save, " + homeplanet.model.Words.her() + " log, " + homeplanet.model.Words.her() + " crew, " + homeplanet.model.Words.her() + " earlier versions) in Windows Explorer",
 				"shipyard"));
 		placesRow.add(javax.swing.Box.createHorizontalStrut(8));
 		placesRow.add(placeButton("Open Memorials and Records", "Open the memorials and records (the ships and crew who have left the fleet, remembered) in Windows Explorer",
@@ -390,10 +395,10 @@ public class SettingsDialog extends JDialog {
 		}
 		refreshVictory();
 		rules.afterFleetChange = new Runnable() { public void run() { refreshVictory(); } };
-		victoryButtons[1].setToolTipText("She comes back as she was moments before the final engagement, ready for a new journey; or take her full value for the museum");
-		victoryButtons[2].setToolTipText("Her full value, as the shipyard would charge for her, goes to the Cargo Hold");
+		victoryButtons[1].setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " comes back as " + homeplanet.model.Words.she() + " was moments before the final engagement, ready for a new journey; or take " + homeplanet.model.Words.her() + " full value for the museum");
+		victoryButtons[2].setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " full value, as the shipyard would charge for " + homeplanet.model.Words.herObj() + ", goes to the Cargo Hold");
 		JLabel victoryNote = new JLabel("<html><div style='width:520px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>For a rescue or a reward, The Home Planet Station must be open while you play: "
-				+ "it keeps her as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
+				+ "it keeps " + homeplanet.model.Words.herObj() + " as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
 		victoryNote.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		body.add(victoryNote, next(c));
 		body.add(toHardBox, next(c));
@@ -571,6 +576,11 @@ public class SettingsDialog extends JDialog {
 			if (engiBox.getSelectedIndex() == 2) HomePlanet.config.remove(homeplanet.parser.CrewNames.CFG_ENGI); // None is the default: the line only while Prefix or Append
 			else HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_ENGI, ENGI_CFG[engiBox.getSelectedIndex()]);
 		}
+		if (!pronounBox.getSelectedItem().equals(homeplanet.model.Words.shipPronoun())) {
+			changed.add("Ship Pronoun: " + pronounBox.getSelectedItem());
+			if (pronounBox.getSelectedIndex() == 0) HomePlanet.config.remove(homeplanet.model.Words.CFG_SHIP); // her is the default: the line only while him or it
+			else HomePlanet.config.setProperty(homeplanet.model.Words.CFG_SHIP, (String) pronounBox.getSelectedItem());
+		}
 		if (!HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.humanGen())) {
 			changed.add("Human Name Gen: " + humanGenBox.getSelectedItem());
 			HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_HUMAN, HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()]);
@@ -651,7 +661,7 @@ public class SettingsDialog extends JDialog {
 			b.setToolTipText("Ticked: a starter ship, available to commission");
 			boxes.add(b);
 			JButton edit = new JButton("Edit...");
-			edit.setToolTipText("Her class, default name, and what a newly commissioned ship starts with");
+			edit.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " class, default name, and what a newly commissioned ship starts with");
 			edit.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					homeplanet.parser.CompanionMod.Loadout start = r.loadout != null ? homeplanet.parser.CompanionMod.copy(r.loadout)
@@ -810,9 +820,9 @@ public class SettingsDialog extends JDialog {
 		toHardBox.setText(none ? "<html><s>" + TO_HARD + "</s></html>" : TO_HARD); // crossed out where it can never come into play
 		toHardBox.setToolTipText(none ? (r != null && homeplanet.parser.CareerRules.HARD.equals(r.name) ? "A Hard career" : "This career") + ": the museum takes every victor, so a rescued ship never comes back to fly"
 				: homeplanet.parser.FinalVictory.TO_HARD_ON.equals(rule) ? (normal ? "A Normal career: a rescued ship always sets out on Hard" : "Chosen when this career began: a rescued ship always sets out on Hard")
-				: homeplanet.parser.FinalVictory.TO_HARD_OFF.equals(rule) ? "Chosen when this career began: when you keep a rescued ship, you choose her difficulty"
+				: homeplanet.parser.FinalVictory.TO_HARD_OFF.equals(rule) ? "Chosen when this career began: when you keep a rescued ship, you choose " + homeplanet.model.Words.her() + " difficulty"
 				: homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(rule) ? "This career hasn't chosen yet: the Space Dock will ask"
-				: "When you keep a rescued ship, she sets out on Hard without asking; otherwise you choose her difficulty. Each fleet has its own choice.");
+				: "When you keep a rescued ship, " + homeplanet.model.Words.she() + " sets out on Hard without asking; otherwise you choose " + homeplanet.model.Words.her() + " difficulty. Each fleet has its own choice.");
 	}
 	private String victoryChoice() {
 		if (homeplanet.parser.FinalVictory.fixed() != null) return victoryWas;

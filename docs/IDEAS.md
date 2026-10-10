@@ -110,7 +110,7 @@ Notes: as it stands, a ship from Design Ship ticked as a starter ship is listed 
 start, with no unlock of its own; a remodel of one of FTL's ships follows her base ship's unlock when the career's
 unlock rule is on (`CommissionDialog`).
 
-## Idea H: a setting for how a ship is spoken of (noted 6.42)
+## Idea H: a setting for how a ship is spoken of (noted 6.42) — built (6.42)
 
 From heromedel:
 

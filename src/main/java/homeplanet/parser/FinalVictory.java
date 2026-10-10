@@ -34,9 +34,9 @@ public final class FinalVictory {
 
 	/** A choice as Settings and the Immersive briefing offer it. */
 	public static String label(String choice) {
-		if (RESCUE.equals(choice)) return "Rescue the ship (with an offer to sell her to the museum)";
-		if (REWARD.equals(choice)) return "Receive a reward equal to her value";
-		return "Nothing (she is lost with the run)";
+		if (RESCUE.equals(choice)) return "Rescue the ship (with an offer to sell " + homeplanet.model.Words.herObj() + " to the museum)";
+		if (REWARD.equals(choice)) return "Receive a reward equal to " + homeplanet.model.Words.her() + " value";
+		return "Nothing (" + homeplanet.model.Words.she() + " is lost with the run)";
 	}
 	private static String norm(String c) { return RESCUE.equals(c) || REWARD.equals(c) ? c : NOTHING; }
 	/** The choice of the fleet in use (the Immersive fleet's is its difficulty's, or, from before difficulties, kept in its career). */
@@ -59,7 +59,7 @@ public final class FinalVictory {
 	/** The museum's price for her. */
 	public static int museumPrice(int value) { return value * museumPercent() / 100; }
 	/** "her full value" or "half her value", for the letters. */
-	static String worth() { return museumPercent() >= 100 ? "her full value" : "half her value"; }
+	static String worth() { return museumPercent() >= 100 ? homeplanet.model.Words.her() + " full value" : "half " + homeplanet.model.Words.her() + " value"; }
 	/** Sets the choice of the fleet in use (the normal fleet's is in the cfg: the caller saves it). */
 	public static void setChoice(String c) throws IOException {
 		Vault v = Vault.get();
@@ -131,7 +131,7 @@ public final class FinalVictory {
 				}
 				boolean named = u.victoriousScores(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId()) > f.scoresThen;
 				HistoryLog.entry("VICTORY", f.name + " won the last battle (the profile's victories " + f.victoriesThen + " -> " + u.victories()
-						+ (named ? ", and a Top Scores entry names her" : "") + "); after a final victory: " + c + ", her value " + value + " scrap", null,
+						+ (named ? ", and a Top Scores entry names " + homeplanet.model.Words.herObj() : "") + "); after a final victory: " + c + ", " + homeplanet.model.Words.her() + " value " + value + " scrap", null,
 						battle("VICTORY", f).put("victories_then", f.victoriesThen).put("victories_now", u.victories()).put("top_scores", named).put("after", c).put("value", value));
 				if (MUSEUM.equals(c)) { // Hard: no keeping her; the museum takes her at its price
 					fills.put("value", Integer.toString(museumPrice(value)));
@@ -218,7 +218,7 @@ public final class FinalVictory {
 	public static String keep(Vault.FinalBattle f, Difficulty difficulty) throws IOException {
 		Ship s = Vault.get().bringHome(f, difficulty);
 		Museum.kept(Vault.get(), f.id);
-		return s.name + " is docked at the Space Dock, ready for her next journey" + (difficulty == null ? "." : ", on " + title(difficulty) + ".");
+		return s.name + " is docked at the Space Dock, ready for " + homeplanet.model.Words.her() + " next journey" + (difficulty == null ? "." : ", on " + title(difficulty) + ".");
 	}
 	/** "Easy", "Normal" or "Hard". */
 	public static String title(Difficulty d) { return d == null ? "" : d.toString().substring(0, 1) + d.toString().substring(1).toLowerCase(); }

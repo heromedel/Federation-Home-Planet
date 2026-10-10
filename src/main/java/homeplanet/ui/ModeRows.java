@@ -24,7 +24,7 @@ final class ModeRows {
 		"Your fleet, your rules: every rule can be changed in Settings.",
 		"A gentler career: commissions at half price, any ship on a plea, the stipend every month, 50 scrap to start.",
 		"The Federation's standard: commissions at 75%, a Kestrel Type A or the Relief Ship on a plea, the stipend every two months.",
-		"No favours: 1000-scrap journeys, the Relief Ship on a plea, no stripping, and the museum takes her after a final victory.",
+		"No favours: 1000-scrap journeys, the Relief Ship on a plea, no stripping, and the museum takes {her_obj} after a final victory.",
 		"Choose the level of each rule yourself, once, when the career begins."};
 
 	/** The slot's line; the Custom slot holding the first career (from before difficulties) says so. */
@@ -34,7 +34,7 @@ final class ModeRows {
 			CareerRules r = Career.rules(root);
 			if (r != null && CareerRules.EARLIER.equals(r.name)) return "Your first Immersive career, from before difficulties, with the rules it had.";
 		}
-		for (int i = 0; i < Vault.SLOTS.length; i++) if (Vault.SLOTS[i].equals(slot)) return TAGS[i];
+		for (int i = 0; i < Vault.SLOTS.length; i++) if (Vault.SLOTS[i].equals(slot)) return homeplanet.model.Words.ship(TAGS[i]);
 		return "";
 	}
 	/** Has this mode a fleet already: a Sandbox fleet with ships, or a career begun? */

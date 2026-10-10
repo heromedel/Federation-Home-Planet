@@ -4,6 +4,7 @@
      text is between <![CDATA[ and ]]>, kept as written, line breaks and all (<u>...</u> underlines a word).
      {rank} is the player's rank and {ship} a ship's class and layout ("the {ship}" by the station's rule for ships'
      names); a letter may use only the {tokens} the station's own copy of it uses.
+     The ship pronoun tokens {she} {her} {her_obj} {hers} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General).
 
      To change a letter, copy it whole into letters.xml in the lore folder beside the program and edit the copy: it wins
      over the station's own, letter by letter. A copy that breaks a rule (the Rebel Flagship destroyed, the rebels
@@ -59,7 +60,7 @@ Until every beacon is free.
 	<letter key="stranded" from="Home Planet Liaison" subject="Without a ship"><![CDATA[
 {rank},
 
-The Home Planet Station reports that you have no ship under your command. I am sorry. She served the Federation, and so did you.
+The Home Planet Station reports that you have no ship under your command. I am sorry. {She} served the Federation, and so did you.
 
 This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship. If it does not, what it holds can be sold from the Cargo Bay, ship or no ship. Failing that, there is a last resort: Plead for New Ship (Other... at the Space Dock). The Federation Home Planet will send you a new ship, paid for with the Cargo Hold or set against your good name.
 
@@ -72,9 +73,9 @@ For the Federation, and all its worlds.
 	<letter key="stranded:junkyard" from="Home Planet Liaison" subject="Without a ship"><![CDATA[
 {rank},
 
-The Home Planet Station reports that you have no ship under your command. I am sorry. She served the Federation, and so did you.
+The Home Planet Station reports that you have no ship under your command. I am sorry. {She} served the Federation, and so did you.
 
-This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship; what it holds can be sold from the Cargo Bay, ship or no ship. There is a hull in the Junkyard, too: Salvage her at the Space Dock and she is yours again, at no cost; if you have a ship in the Junkyard that you cannot afford to repair, try trading it in or auctioning it off to raise money.
+This is not the end of your service. If the Cargo Hold holds enough scrap, commission a new ship; what it holds can be sold from the Cargo Bay, ship or no ship. There is a hull in the Junkyard, too: Salvage {her_obj} at the Space Dock and {she} is yours again, at no cost; if you have a ship in the Junkyard that you cannot afford to repair, try trading it in or auctioning it off to raise money.
 
 If none of that will do, there is a last resort: Plead for New Ship (Other... at the Space Dock). The Federation Home Planet will send you a new ship, paid for with the Cargo Hold or set against your good name.
 
@@ -101,11 +102,11 @@ Until every beacon is free.
 
 Dispatch from Federation Fleet Command.
 
-The Rebel Flagship has broken off her assault and withdrawn. The line held. The war continues.
+The Rebel Flagship has broken off {her} assault and withdrawn. The line held. The war continues.
 
-Recovery teams reached the {ship} in time, and The Home Planet Station has restored her as she was moments before the final engagement.
+Recovery teams reached the {ship} in time, and The Home Planet Station has restored {her_obj} as {she} was moments before the final engagement.
 
-The Federation Home Planet makes an offer: {worth}, {value} scrap, to place her in the Federation Museum. Or keep her, and she will be waiting at the Space Dock for her next journey. The decision is yours.
+The Federation Home Planet makes an offer: {worth}, {value} scrap, to place {her_obj} in the Federation Museum. Or keep {her_obj}, and {she} will be waiting at the Space Dock for {her} next journey. The decision is yours.
 
 ~ Federation Fleet Command
 ]]></letter>
@@ -115,9 +116,9 @@ The Federation Home Planet makes an offer: {worth}, {value} scrap, to place her 
 
 Dispatch from Federation Fleet Command.
 
-The Rebel Flagship has broken off her assault and withdrawn. The line held. The war continues.
+The Rebel Flagship has broken off {her} assault and withdrawn. The line held. The war continues.
 
-Recovery teams reached the {ship} in time. By order of The Federation Home Planet she will not fly again: she has been placed in the Federation Museum, where her service will be remembered.
+Recovery teams reached the {ship} in time. By order of The Federation Home Planet {she} will not fly again: {she} has been placed in the Federation Museum, where {her} service will be remembered.
 
 In recognition, {worth}, {value} scrap, has been granted to The Home Planet Station. It is waiting in the Station's Cargo Hold.
 
@@ -129,11 +130,11 @@ Official notice from The Federation Home Planet
 
 {rank},
 
-The Rebel Flagship has withdrawn. The {ship} was lost in the engagement that forced her back. Recovery was not possible.
+The Rebel Flagship has withdrawn. The {ship} was lost in the engagement that forced {her_obj} back. Recovery was not possible.
 
-In recognition of her service, her full value of {value} scrap has been granted to The Home Planet Station. It is waiting in the Station's Cargo Hold: enough to commission a ship of equal worth.
+In recognition of {her} service, {her} full value of {value} scrap has been granted to The Home Planet Station. It is waiting in the Station's Cargo Hold: enough to commission a ship of equal worth.
 
-Her name has been entered in the fleet's records.
+{Her} name has been entered in the fleet's records.
 
 ~ The Federation Home Planet
 ]]></letter>
@@ -152,7 +153,7 @@ Thank you for your service, {rank}.
 Our records show you without a ship at your command.
 That will not do. That will not do at all.
 
-The Federation Home Planet has authorized a new ship in your name: {ship}, at no cost to you. Lucky Duck, this doesn't happen often. Take this order to Commission and she's yours.
+The Federation Home Planet has authorized a new ship in your name: {ship}, at no cost to you. Lucky Duck, this doesn't happen often. Take this order to Commission and {she}'s yours.
 
 Last guy I knew who needed a new ship, they demanded he hand over his entire cargo hold.
 
@@ -165,9 +166,9 @@ Godspeed and come home.
 
 Heard you've been asking around for a new ship. Well, good news: word came down from The Federation Home Planet. Your plea was heard, and they're sending you one. Not every captain gets that, Lucky Duck.
 
-The order is for {ship}. Bring it to Commission and pick her out. When you sign for her, you settle up: hand over the Cargo Hold, or put her on your good name. The shipyard doesn't mind which. The Federation Home Planet keeps count of both.
+The order is for {ship}. Bring it to Commission and pick {her_obj} out. When you sign for {her_obj}, you settle up: hand over the Cargo Hold, or put {her_obj} on your good name. The shipyard doesn't mind which. The Federation Home Planet keeps count of both.
 
-Change your mind before she's built? Withdraw the plea (Other... at the Space Dock) and nobody owes anything.
+Change your mind before {she}'s built? Withdraw the plea (Other... at the Space Dock) and nobody owes anything.
 
 Try not to scratch the paint.
 ~ Home Planet Shipyard Comm. Officer
@@ -191,7 +192,7 @@ Commander, your ongoing efforts against the rebellion have not gone unnoticed. I
 
 From here on you will command your ships as a Federation Captain, with all the dignity and honor that comes with it, including a Federation Cruiser, Type A, of your very own.
 
-Keep up the good work and make excellent use of her. This class of ship is a real beauty.
+Keep up the good work and make excellent use of {her_obj}. This class of ship is a real beauty.
 
 Godspeed,
 Your Fleet Admiral
@@ -291,7 +292,7 @@ The Fleet Admiralty
 	<letter key="order:PLAYER_SHIP_HARD" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
-The Kestrel yards have turned out another pattern of the old workhorse: the {ship}, at no cost to you. Take this order to Commission and she's yours.
+The Kestrel yards have turned out another pattern of the old workhorse: the {ship}, at no cost to you. Take this order to Commission and {she}'s yours.
 
 I know, I know. "Just another Kestrel." But there's a reason the Federation keeps building them: they come home.
 
@@ -316,7 +317,7 @@ Home Planet Station Shipyard.
 	<letter key="order:nextModel:PLAYER_SHIP_CIRCLE" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
-The Engi have reviewed the logs from your {cruiser}. They describe your use of her as "within acceptable deviation", which, we are told, is the highest praise their language allows.
+The Engi have reviewed the logs from your {cruiser}. They describe your use of {her_obj} as "within acceptable deviation", which, we are told, is the highest praise their language allows.
 
 In return they have shared the plans for a second design, the {ship}. Take this order to Commission. The Engi have already asked for weekly reports. This office has told them monthly. Negotiations continue.
 
@@ -326,7 +327,7 @@ In return they have shared the plans for a second design, the {ship}. Take this 
 	<letter key="order:nextModel:PLAYER_SHIP_ENERGY" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
-The Zoltan Council has spoken of you again. What you have done with the {cruiser} has kept the peace they offered her for, and they have chosen to offer more: the plans for a {ship}.
+The Zoltan Council has spoken of you again. What you have done with the {cruiser} has kept the peace they offered {her_obj} for, and they have chosen to offer more: the plans for a {ship}.
 
 Take this order to Commission. The Council asks nothing in return, which in this office's experience means they trust you to know what is owed.
 
@@ -356,9 +357,9 @@ This time the second invoice arrived first, and The Federation Home Planet has a
 	<letter key="order:nextModel:PLAYER_SHIP_ROCK" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
-The Rock clan that sent us the {cruiser} has heard how you flew her. They have sent a {ship} after her, with no message at all. Among the Rock, we are told, that is how you thank someone you respect.
+The Rock clan that sent us the {cruiser} has heard how you flew {her_obj}. They have sent a {ship} after {her_obj}, with no message at all. Among the Rock, we are told, that is how you thank someone you respect.
 
-Take this order to Commission. They will still ask about her.
+Take this order to Commission. They will still ask about {her_obj}.
 
 ~ Office of Alien Affairs
 ]]></letter>
@@ -368,7 +369,7 @@ Take this order to Commission. They will still ask about her.
 
 Federation Intelligence has read the reports on your {cruiser}, or so I'm told, since nobody lets me read them. Whatever they said, Intelligence has cleared you for a {ship}.
 
-Take this order to Commission. Same rules as last time: she doesn't exist, and you didn't get this from me.
+Take this order to Commission. Same rules as last time: {she} doesn't exist, and you didn't get this from me.
 
 ~ Home Planet Shipyard Comm. Officer
 ]]></letter>
@@ -376,9 +377,9 @@ Take this order to Commission. Same rules as last time: she doesn't exist, and y
 	<letter key="order:nextModel:PLAYER_SHIP_ANAEROBIC" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
-Engineering has been taking the {cruiser}'s logs apart since you brought her home, and they have learned enough to build a {ship}. Still no air aboard. I've stopped asking.
+Engineering has been taking the {cruiser}'s logs apart since you brought {her_obj} home, and they have learned enough to build a {ship}. Still no air aboard. I've stopped asking.
 
-Take this order to Commission and she's yours. Same advice as before: count the spare metal, and count it again in the morning.
+Take this order to Commission and {she}'s yours. Same advice as before: count the spare metal, and count it again in the morning.
 
 ~ Home Planet Shipyard Comm. Officer
 ]]></letter>
@@ -398,7 +399,7 @@ Take this order to Commission. As before: the Crystal remember everything.
 
 The Engi have shared the plans of their {ship}. In their words, it is "to better the mutual efficiency of allied peoples." In ours: thank you.
 
-The first one built from those plans is yours. Take this order to Commission. The Engi ask that you log her performance carefully; they find our reports "insufficiently detailed."
+The first one built from those plans is yours. Take this order to Commission. The Engi ask that you log {her} performance carefully; they find our reports "insufficiently detailed."
 
 ~ Office of Alien Affairs
 ]]></letter>
@@ -416,7 +417,7 @@ Office of Alien Affairs
 
 Intelligence recovered a {ship} from a raiding party that thought better of it. The Engineering Corps says the design is safe to fly. Mostly. I asked what "mostly" meant, and they walked away.
 
-Take this order to Commission and she's yours. Maybe keep the crew quarters locked for the first week.
+Take this order to Commission and {she}'s yours. Maybe keep the crew quarters locked for the first week.
 
 ~ Home Planet Shipyard Comm. Officer
 ]]></letter>
@@ -426,7 +427,7 @@ Take this order to Commission and she's yours. Maybe keep the crew quarters lock
 
 A Slug consortium has sold us the plans for their {ship}. The price was suspiciously fair. In this office's experience, Slug generosity usually arrives with a second invoice.
 
-Engineering has checked the plans twice. Take this order to Commission, and have your own people check her a third time.
+Engineering has checked the plans twice. Take this order to Commission, and have your own people check {her_obj} a third time.
 
 ~ Office of Alien Affairs
 ]]></letter>
@@ -436,7 +437,7 @@ Engineering has checked the plans twice. Take this order to Commission, and have
 
 A Rock clan that has broken with the pirates has sent us a {ship} as a gesture of good faith. The Rocks do not make gestures lightly. This is a first.
 
-Take this order to Commission and treat her with respect. They will ask.
+Take this order to Commission and treat {her_obj} with respect. They will ask.
 
 ~ Office of Alien Affairs
 ]]></letter>
@@ -444,7 +445,7 @@ Take this order to Commission and treat her with respect. They will ask.
 	<letter key="order:PLAYER_SHIP_STEALTH" from="Home Planet Shipyard" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
-Federation Intelligence has cleared the {ship} for your use. Officially, she doesn't exist. Unofficially, I've been dying to see one of these on an order.
+Federation Intelligence has cleared the {ship} for your use. Officially, {she} doesn't exist. Unofficially, I've been dying to see one of these on an order.
 
 Take this order to Commission. And if anyone asks, you didn't get it from me.
 
@@ -454,9 +455,9 @@ Take this order to Commission. And if anyone asks, you didn't get it from me.
 	<letter key="order:PLAYER_SHIP_CRYSTAL" from="Office of Alien Affairs" subject="Commission order: {ship}"><![CDATA[
 {rank},
 
-First contact has been made with the Crystal. After long talks they allowed our engineers to study one of their vessels. This {ship} is what we learned, and she is assigned to you.
+First contact has been made with the Crystal. After long talks they allowed our engineers to study one of their vessels. This {ship} is what we learned, and {she} is assigned to you.
 
-Take this order to Commission. The Crystal remember everything; fly her with honor.
+Take this order to Commission. The Crystal remember everything; fly {her_obj} with honor.
 
 ~ Office of Alien Affairs
 ]]></letter>
@@ -466,7 +467,7 @@ Take this order to Commission. The Crystal remember everything; fly her with hon
 
 A Lanius vessel was captured intact, a first for the fleet, and Engineering learned enough to build a {ship}. No air aboard, by design. I still don't understand how that's a feature.
 
-Take this order to Commission and she's yours. Keep the spare metal locked up; the Lanius eat it. Literally.
+Take this order to Commission and {she}'s yours. Keep the spare metal locked up; the Lanius eat it. Literally.
 
 ~ Home Planet Shipyard Comm. Officer
 ]]></letter>
@@ -476,9 +477,9 @@ Take this order to Commission and she's yours. Keep the spare metal locked up; t
 
 The Federation Home Planet has released another {ship} to the fleet, and this one has your name on it. Do you know how long I've waited to write up one of these?
 
-Take this order to Commission and she's yours, on the house.
+Take this order to Commission and {she}'s yours, on the house.
 
-Look after her. I want to hear all about her when you get back.
+Look after {her_obj}. I want to hear all about {her_obj} when you get back.
 ~ Home Planet Shipyard Comm. Officer
 ]]></letter>
 
@@ -617,7 +618,7 @@ This Defense Scrambler will make sure the enemy's defense drones can't bother yo
 
 Sector 8 without spending a scrap at a store. Do you know how rare that is? I do. I keep the ledgers.
 
-A ship that lives off the land should fix herself too. Pick one: a Repair Arm, which patches the hull every time you collect scrap, or a Hull Repair drone, if you fly with drones. Your choice.
+A ship that lives off the land should fix {herself} too. Pick one: a Repair Arm, which patches the hull every time you collect scrap, or a Hull Repair drone, if you fly with drones. Your choice.
 
 ~ Home Planet Quartermaster
 ]]></letter>
@@ -673,7 +674,7 @@ So stop trying. Here is a Shield Charge Booster. Let the shields do the work.
 	<letter key="ach:ACH_ONE_VOLLEY" from="Home Planet Liaison" subject="They never saw it coming" reward="item LASER_CHAINGUN_2"><![CDATA[
 {rank},
 
-One volley, and the enemy ship was gone before she could fire back. Clean work.
+One volley, and the enemy ship was gone before {she} could fire back. Clean work.
 
 Not every fight ends that fast, and the rebels are learning. For the battles that drag on: a Chain Vulcan. It starts slow and doesn't stop.
 
@@ -693,7 +694,7 @@ Expect the enemy to try the same on you. An Anti-Personnel Drone, to be waiting 
 	<letter key="ach:ACH_INVADE_SHIP" from="Home Planet Liaison" subject="Trustworthy Auto-Pilot" reward="system clonebay"><![CDATA[
 {rank},
 
-Your whole crew aboard the enemy ship, and your own ship left flying herself. I've read the report. Bold. Reckless. It worked.
+Your whole crew aboard the enemy ship, and your own ship left flying {herself}. I've read the report. Bold. Reckless. It worked.
 
 Next time it might not. The Federation Home Planet is sending a Clone Bay, so the people who follow you that far get to come home. Fit it where the Medbay was; it does that job too, between jumps.
 
@@ -703,7 +704,7 @@ Next time it might not. The Federation Home Planet is sending a Clone Bay, so th
 	<letter key="ach:ACH_INVADE_SHIP:dna" from="Home Planet Liaison" subject="Trustworthy Auto-Pilot" reward="item BACKUP_DNA"><![CDATA[
 {rank},
 
-Your whole crew aboard the enemy ship, and your own ship left flying herself. I've read the report. Bold. Reckless. It worked.
+Your whole crew aboard the enemy ship, and your own ship left flying {herself}. I've read the report. Bold. Reckless. It worked.
 
 Next time it might not. You already carry a Clone Bay, so The Federation Home Planet is sending a Backup DNA Bank. If the bay goes dark while they're away, the people who follow you that far still get to come home.
 
@@ -744,20 +745,20 @@ Many worlds, one Federation.
 	<letter key="ach:ACH_FULL_ARSENAL" from="Home Planet Shipyard" subject="Full Arsenal" reward="item SYSTEM_CASING"><![CDATA[
 {rank},
 
-Eleven systems in one Kestrel. ELEVEN. I've worked on those hulls. I didn't think she had the room.
+Eleven systems in one Kestrel. ELEVEN. I've worked on those hulls. I didn't think {she} had the room.
 
 Here, take a Titanium System Casing, to protect all of them. And send me a picture of that engine room, please. For science.
 
-Don't let anyone dent her.
+Don't let anyone dent {her_obj}.
 ~ Home Planet Shipyard Comm. Officer
 ]]></letter>
 
 	<letter key="ach:ACH_TOUGH_SHIP" from="Home Planet Shipyard" subject="Tough Little Ship" reward="item ROCK_ARMOR"><![CDATA[
 {rank},
 
-One hull point. ONE. And you brought her all the way back to full. That's a tough little ship, and whoever's flying her isn't bad either.
+One hull point. ONE. And you brought {her_obj} all the way back to full. That's a tough little ship, and whoever's flying {her_obj} isn't bad either.
 
-Rock Plating, so next time she doesn't get quite that close. I'd like her back in one piece.
+Rock Plating, so next time {she} doesn't get quite that close. I'd like {her_obj} back in one piece.
 
 ~ Home Planet Shipyard Comm. Officer
 ]]></letter>
@@ -779,7 +780,7 @@ Here's a Shield Charge Booster, with the Zoltan's compliments. They say it will 
 
 Twenty-nine power running through your systems at once. The reactor must have been singing. We would have liked to hear it.
 
-A Battery Charger, for when she needs even more. There is always more.
+A Battery Charger, for when {she} needs even more. There is always more.
 
 ~ Federation Engineering Corps
 ]]></letter>
@@ -1041,7 +1042,7 @@ I saw you've been flying that {name}. It's not a bad vessel, but it got me think
 
 Sometimes you can even find rare models, or some with weapons left on board.
 
-Tell you what, if you pick up a derelict from the Ship Yard's junk, I'll see if I got an extra part she needs and have it sent to you to get her up and running.
+Tell you what, if you pick up a derelict from the Ship Yard's junk, I'll see if I got an extra part {she} needs and have it sent to you to get {her_obj} up and running.
 
 Might be fun rebuilding ships together.
 
@@ -1067,7 +1068,7 @@ Good to hear. I'll keep an eye out for spare parts.
 	<letter key="fleet3:part" from="Third Fleet Commander" subject="Your project ship"><![CDATA[
 {rank},
 
-Glad to see you decided to try picking out your own project ship and fixing her up. Here, I saw she was missing {name}. Go ahead and have this one I had laying around. Head to your Cargo Bay, and it should be easy to Refit your ship with the system.
+Glad to see you decided to try picking out your own project ship and fixing {her_obj} up. Here, I saw {she} was missing {name}. Go ahead and have this one I had laying around. Head to your Cargo Bay, and it should be easy to Refit your ship with the system.
 
 ~ Federation Home Planet Station: Third Fleet Commander.
 ]]></letter>
@@ -1075,7 +1076,7 @@ Glad to see you decided to try picking out your own project ship and fixing her 
 	<letter key="fleet3:part:no" from="Third Fleet Commander" subject="Your project ship"><![CDATA[
 {rank},
 
-Glad to see you decided to try picking out your own project ship and fixing her up, even though you said you didn't want to. Here, I saw she was missing {name}. Go ahead and have this one I had laying around. Head to your Cargo Bay, and it should be easy to Refit your ship with the system.
+Glad to see you decided to try picking out your own project ship and fixing {her_obj} up, even though you said you didn't want to. Here, I saw {she} was missing {name}. Go ahead and have this one I had laying around. Head to your Cargo Bay, and it should be easy to Refit your ship with the system.
 
 ~ Federation Home Planet Station: Third Fleet Commander.
 ]]></letter>
@@ -1091,7 +1092,7 @@ I heard from the technicians down in refitting you got some work done with one o
 	<letter key="chain:one-hull" from="Engi Restoration Collective" subject="One point of hull" replies="Tell me about these derelict vessels. -&gt; chain:one-hull:derelict 5-10 | I could definitely use a repair tool. -&gt; chain:one-hull:tool 3-5"><![CDATA[
 {rank},
 
-We have received word that the {name} returned from battle with one point of hull remaining. One. We hope she was kept, and repaired, and not discarded.
+We have received word that the {name} returned from battle with one point of hull remaining. One. We hope {she} was kept, and repaired, and not discarded.
 
 It is a common error to treat damaged things as finished things. Most are only waiting for someone with patience and the right tools.
 
@@ -1105,11 +1106,11 @@ Reply, and tell us which.
 	<letter key="chain:one-hull:derelict" from="Engi Restoration Collective" subject="A vessel in need" then="chain:one-hull:delivered 5-7"><![CDATA[
 {rank},
 
-We have chosen a vessel for you. She is a Slug Cruiser, found drifting, and she has had a difficult life. We call her Patience.
+We have chosen a vessel for you. {She} is a Slug Cruiser, found drifting, and {she} has had a difficult life. We call {her_obj} Patience.
 
-Her hull holds at one fifth. Her oxygen system does not work. Someone tore out her medbay and installed a hacking bay, and it does not work either. Her piloting is better than her engines, which is the wrong way round. Her airlock and her weapons room are breached. Her only weapon is poor.
+{Her} hull holds at one fifth. {Her} oxygen system does not work. Someone tore out {her} medbay and installed a hacking bay, and it does not work either. {Her} piloting is better than {her} engines, which is the wrong way round. {Her} airlock and {her} weapons room are breached. {Her} only weapon is poor.
 
-We find her beautiful. She is being prepared for transfer to your Junkyard. This will take time.
+We find {her_obj} beautiful. {She} is being prepared for transfer to your Junkyard. This will take time.
 
 ~ Engi Restoration Collective
 ]]></letter>
@@ -1119,9 +1120,9 @@ We find her beautiful. She is being prepared for transfer to your Junkyard. This
 
 Patience has been delivered to the Junkyard at The Home Planet Station.
 
-To restore her, use Salvage at the Space Dock to bring her back into service, then move at least one crew member aboard through the Cargo Bay before she flies. A ship with no one aboard is only a very large box.
+To restore {her_obj}, use Salvage at the Space Dock to bring {her_obj} back into service, then move at least one crew member aboard through the Cargo Bay before {she} flies. A ship with no one aboard is only a very large box.
 
-Repair her well. We will ask.
+Repair {her_obj} well. We will ask.
 
 ~ Engi Restoration Collective
 ]]></letter>
@@ -1136,12 +1137,12 @@ Claim it when you are ready.
 ~ Engi Restoration Collective
 ]]></letter>
 
-	<letter key="chain:repair-job" from="A Collector, Civilian Sector" subject="A restoration job" replies="Send her over. I'll restore her. -&gt; chain:repair-job:accepted 3-5 | I can't take this on. -&gt; chain:repair-job:refused 3-5"><![CDATA[
+	<letter key="chain:repair-job" from="A Collector, Civilian Sector" subject="A restoration job" replies="Send {her_obj} over. I'll restore {her_obj}. -&gt; chain:repair-job:accepted 3-5 | I can't take this on. -&gt; chain:repair-job:refused 3-5"><![CDATA[
 {rank},
 
-I heard you are good at repairs. I own a classic {class}, the {name}, but my idiot brother took her out and got her wrecked. If you can restore her I'll pay enough to cover the cost plus {extra} scrap.
+I heard you are good at repairs. I own a classic {class}, the {name}, but my idiot brother took {her_obj} out and got {her_obj} wrecked. If you can restore {her_obj} I'll pay enough to cover the cost plus {extra} scrap.
 
-She is one of the old experimental Stealths, from before the war: there are very few left, and fewer still that anyone would know how to put back together. She has a teleporter where no teleporter should fit, and a Zoltan shield the Engi swore could not be installed. Both were working when she left my hangar. I make no promises about either now.
+{She} is one of the old experimental Stealths, from before the war: there are very few left, and fewer still that anyone would know how to put back together. {She} has a teleporter where no teleporter should fit, and a Zoltan shield the Engi swore could not be installed. Both were working when {she} left my hangar. I make no promises about either now.
 
 My brother says it was not his fault. My brother says a great many things.
 
@@ -1153,37 +1154,37 @@ My brother says it was not his fault. My brother says a great many things.
 
 A pity. I had hoped someone out there still valued the old ships for what they are.
 
-She will wait. She has waited before. If you are ever less busy, I suspect I will still be looking.
+{She} will wait. {She} has waited before. If you are ever less busy, I suspect I will still be looking.
 
 ~ A Collector, Civilian Sector
 ]]></letter>
 
-	<letter key="chain:repair-job:accepted" from="A Collector, Civilian Sector" subject="She's on her way" action="repair-job"><![CDATA[
+	<letter key="chain:repair-job:accepted" from="A Collector, Civilian Sector" subject="{She}'s on {her} way" action="repair-job"><![CDATA[
 {rank},
 
-Thank you. The {name} has been towed to your Junkyard. Salvage her, and put at least one of your own crew aboard if you mean to fly her: my brother has been forbidden from going near her again.
+Thank you. The {name} has been towed to your Junkyard. Salvage {her_obj}, and put at least one of your own crew aboard if you mean to fly {her_obj}: my brother has been forbidden from going near {her_obj} again.
 
-Repair her completely: every hull plate, every breach sealed. When she's whole, send her back to me and I will pay you what I promised, with the cost of your work on top.
+Repair {her_obj} completely: every hull plate, every breach sealed. When {she}'s whole, send {her_obj} back to me and I will pay you what I promised, with the cost of your work on top.
 
-Please take care of her. She is older than both of us.
+Please take care of {her_obj}. {She} is older than both of us.
 
 ~ A Collector, Civilian Sector
 ]]></letter>
 
-	<letter key="chain:repair-job:ready" from="The Home Planet Station" subject="Ready to return: the {name}" replies="Send her home. | Not yet."><![CDATA[
+	<letter key="chain:repair-job:ready" from="The Home Planet Station" subject="Ready to return: the {name}" replies="Send {her_obj} home. | Not yet."><![CDATA[
 Automated message from The Home Planet Station.
 
 {rank},
 
-The {name} has been fully repaired: every hull point restored, every breach sealed, Engines and Piloting working. She is ready to return to her owner, who will pay {waiting} scrap into the Cargo Hold when she arrives.
+The {name} has been fully repaired: every hull point restored, every breach sealed, Engines and Piloting working. {She} is ready to return to {her} owner, who will pay {waiting} scrap into the Cargo Hold when {she} arrives.
 
-Reply to send her home now. Or return her later from the Cargo Bay while you are aboard her (at a station, with FTL closed).
+Reply to send {her_obj} home now. Or return {her_obj} later from the Cargo Bay while you are aboard {her_obj} (at a station, with FTL closed).
 ]]></letter>
 
-	<letter key="chain:repair-job:paid" from="A Collector, Civilian Sector" subject="She's home"><![CDATA[
+	<letter key="chain:repair-job:paid" from="A Collector, Civilian Sector" subject="{She}'s home"><![CDATA[
 {rank},
 
-She came in under her own power. I stood in the hangar and watched her dock, and for a moment she looked exactly as she did the day I bought her.
+{She} came in under {her} own power. I stood in the hangar and watched {her_obj} dock, and for a moment {she} looked exactly as {she} did the day I bought {her_obj}.
 
 Your payment has been sent to your Cargo Hold: {pay} scrap, the cost of the work and {extra} more, as agreed. I have also taken the liberty of telling a few friends where they can find someone who still does things properly.
 
@@ -1191,12 +1192,12 @@ Fair flights between the stars.
 ~ A Collector, Civilian Sector
 ]]></letter>
 
-	<letter key="chain:repair-job:overdue" from="A Collector, Civilian Sector" subject="Where is my ship?" replies="Send her back now. -&gt; chain:repair-job:returned-late 1-2 | She stays with me. -&gt; chain:repair-job:defied 2-4"><![CDATA[
+	<letter key="chain:repair-job:overdue" from="A Collector, Civilian Sector" subject="Where is my ship?" replies="Send {her_obj} back now. -&gt; chain:repair-job:returned-late 1-2 | {She} stays with me. -&gt; chain:repair-job:defied 2-4"><![CDATA[
 {rank},
 
 It has been a long time and I have heard nothing. I would like to believe that the {name} is simply taking longer than expected. I would also like to believe my brother will grow up.
 
-Return her. Finished or unfinished, she comes back to me now. If she does not, my next letter will be written by my attorneys, and they are not as patient as I am.
+Return {her_obj}. Finished or unfinished, {she} comes back to me now. If {she} does not, my next letter will be written by my attorneys, and they are not as patient as I am.
 
 ~ A Collector, Civilian Sector
 ]]></letter>
@@ -1235,7 +1236,7 @@ This office acts for the lawful owner of the {name}, a registered civilian vesse
 	<letter key="chain:repair-job:collected" from="Federation Office of Salvage and Claims" subject="Notice of recovery: the vessel"><![CDATA[
 {rank},
 
-The {name} has docked at The Home Planet Station and has been recovered for her owner, as this office's notice said she would be.
+The {name} has docked at The Home Planet Station and has been recovered for {her} owner, as this office's notice said {she} would be.
 
 No reply is required.
 
@@ -1247,7 +1248,7 @@ No reply is required.
 
 I know what you did, hiding the {name} in my yard. Sneaky, but smart.
 
-Funny thing: the claims office sent two of their people through here asking after her. I told them the truth, which is that I've got a lot of junk and I don't keep records of it.
+Funny thing: the claims office sent two of their people through here asking after {her_obj}. I told them the truth, which is that I've got a lot of junk and I don't keep records of it.
 
 You don't owe me anything. Just remember who's been minding your yard.
 

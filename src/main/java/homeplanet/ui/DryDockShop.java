@@ -188,9 +188,9 @@ class DryDockShop {
 		int scrap = buyer == null ? 0 : buyer.getPlayerShip().getScrapAmt();
 		buyerBtn.setText(toStorage ? "Cargo Hold" : bay.currentSave.getPlayerShipName());
 		shipPic.setIcon(toStorage ? null : bay.shipIcon(bay.currentSave));
-		shipPic.setToolTipText(toStorage ? null : "Click for her report, and to rename her");
+		shipPic.setToolTipText(toStorage ? null : "Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		classLbl.setText(toStorage ? "Items, supplies, and systems to fit at Refit" : CargoBayUI.shipClass(bay.currentState));
-		info.setToolTipText(toStorage ? "What the Cargo Hold is" : "Her report, and to rename her");
+		info.setToolTipText(toStorage ? "What the Cargo Hold is" : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report, and to rename " + homeplanet.model.Words.herObj());
 		scrapLbl.setText(scrap + " scrap to spend");
 		aboard.show(buyer, toStorage);
 		List<Entry> entries = buildEntries();

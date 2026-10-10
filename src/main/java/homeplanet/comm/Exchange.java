@@ -143,7 +143,7 @@ public final class Exchange {
 	public static String shipRefused(String blueprint) {
 		if (homeplanet.parser.ShipPapers.custom(blueprint)) return null;
 		if (!net.blerf.ftl.parser.DataManager.get().getShips().containsKey(blueprint))
-			return "Her blueprint (" + blueprint + ") isn't in this station's game data";
+			return homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint (" + blueprint + ") isn't in this station's game data";
 		return null;
 	}
 	private static String unknown(Line l) { return l.id + " isn't in this station's game data (a mod the other station uses?)"; }
@@ -161,7 +161,7 @@ public final class Exchange {
 			if (s == null) throw new IOException("A ship in your offer is no longer at the Space Dock");
 			if (!s.isStorage()) {
 				if (s.state != Ship.State.DOCKED && s.state != Ship.State.BOARDED) throw new IOException(s.name + " is no longer at the Space Dock");
-				if (!v.mayTrade(s)) throw new IOException(s.name + " has left the station: she can only trade at a beacon with a store");
+				if (!v.mayTrade(s)) throw new IOException(s.name + " has left the station: " + homeplanet.model.Words.she() + " can only trade at a beacon with a store");
 			}
 			Vault.Copy c = v.readCopy(s);
 			ships.put(shipId, s);
@@ -225,13 +225,13 @@ public final class Exchange {
 		Ship s = v.byId(l.from);
 		if (s == null) throw new IOException(l.name + " is no longer at the Space Dock");
 		if (s.state != Ship.State.DOCKED) throw new IOException(s.name + " must be docked to change hands" + (s.isBoarded() ? ": board another ship first" : ""));
-		if (!v.mayTrade(s)) throw new IOException(s.name + " has left the station: she can only change hands at a beacon with a store");
+		if (!v.mayTrade(s)) throw new IOException(s.name + " has left the station: " + homeplanet.model.Words.she() + " can only change hands at a beacon with a store");
 		if (v.finalBattlePending(s)) throw new IOException(s.name + " has a final battle still to settle");
 		SavedGameState gs = s.save();
 		if (gs == null) throw new IOException(s.name + "'s save can't be read");
 		String why = shipRefused(gs.getPlayerShipBlueprintId());
 		if (why != null) throw new IOException(s.name + ": " + why);
-		for (Line o : out) if (o != l && o.from.equals(s.id)) throw new IOException(s.name + " is offered whole: everything aboard goes with her");
+		for (Line o : out) if (o != l && o.from.equals(s.id)) throw new IOException(s.name + " is offered whole: everything aboard goes with " + homeplanet.model.Words.herObj());
 		return s;
 	}
 
@@ -287,7 +287,7 @@ public final class Exchange {
 		try {
 			SafeFiles.write(tmp, sav);
 			try { return new net.blerf.ftl.parser.SavedGameParser().readSavedGame(tmp); }
-			catch (Exception e) { throw new IOException("Her save couldn't be read: " + e.getMessage()); }
+			catch (Exception e) { throw new IOException(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " save couldn't be read: " + e.getMessage()); }
 		} finally {
 			tmp.delete();
 		}
@@ -342,7 +342,7 @@ public final class Exchange {
 		int ships = 0, goods = 0;
 		for (Line l : lines) { if (l.kind == Line.Kind.SHIP) ships++; else goods++; }
 		if (ships == 0) return goods == 0 ? "" : "in the Cargo Hold";
-		String docked = ships == 1 ? "she is docked at the Space Dock" : "they are docked at the Space Dock";
+		String docked = ships == 1 ? homeplanet.model.Words.she() + " is docked at the Space Dock" : "they are docked at the Space Dock";
 		return goods == 0 ? docked : docked + ", and the rest is in the Cargo Hold";
 	}
 
@@ -368,7 +368,7 @@ public final class Exchange {
 				gs = readSave(sav);
 			} catch (IOException e) {
 				if (papers != null && papers.newBlueprint) homeplanet.parser.ShipPapers.uninstall(papers.bpId);
-				throw new IOException(l.name + " couldn't be read on her blueprint here: " + e.getMessage());
+				throw new IOException(l.name + " couldn't be read on " + homeplanet.model.Words.her() + " blueprint here: " + e.getMessage());
 			}
 			v.receive(pkg, sav, gs, r.id + "#" + l.n, r.peerTitle);
 			if (papers != null && papers.newBlueprint) r.needsPatch = true;

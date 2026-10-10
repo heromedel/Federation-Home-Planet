@@ -179,7 +179,7 @@ public class LayoutEditor {
 			shift.add(smallButton("\u2192", "Move the whole ship one square right", new ActionListener() { public void actionPerformed(ActionEvent e) { shiftShip(1, 0); } }));
 			roomToolParts.add(shift);
 			wholeShipParts.add(shift);
-			roomToolParts.add(smallButton("Flip top / bottom", "Mirror the ship top to bottom: rooms, doors, stations, art and mounts (FTL's ships face right, so that's the one flip that keeps her flying forward)",
+			roomToolParts.add(smallButton("Flip top / bottom", "Mirror the ship top to bottom: rooms, doors, stations, art and mounts (FTL's ships face right, so that's the one flip that keeps " + homeplanet.model.Words.herObj() + " flying forward)",
 					new ActionListener() { public void actionPerformed(ActionEvent e) { flipShip(); } }));
 			wholeShipParts.add(roomToolParts.get(roomToolParts.size() - 1));
 			roomToolParts.add(new JLabel("Doors"));
@@ -201,7 +201,7 @@ public class LayoutEditor {
 		systemsHead.setFont(MenuTheme.HEADING_FONT);
 		systemsHead.setForeground(MenuTheme.GOLD);
 		top.add(systemsHead, BorderLayout.NORTH);
-		JLabel systemsHint = new JLabel("<html>Not on her yet. Click one, then an empty room to put it there.</html>");
+		JLabel systemsHint = new JLabel("<html>Not on " + homeplanet.model.Words.herObj() + " yet. Click one, then an empty room to put it there.</html>");
 		systemsHint.setFont(MenuTheme.TEXT_FONT);
 		systemsHint.setForeground(MenuTheme.GREY_GREEN);
 		top.add(systemsHint, BorderLayout.CENTER);
@@ -492,12 +492,12 @@ public class LayoutEditor {
 	boolean hasArtilleryMount() { for (ShipDesign.Mount m : d.mounts) if (m.artillery) return true; return false; }
 	/** Artillery needs a mount for its gun: switch to placing it (or say why not yet). */
 	public void startArtilleryMount() {
-		if (!designArt || baseImg == null) { host.say("Artillery added. Once she has hull art, place the artillery gun's mount on it (Artillery mount)."); return; }
+		if (!designArt || baseImg == null) { host.say("Artillery added. Once " + homeplanet.model.Words.she() + " has hull art, place the artillery gun's mount on it (Artillery mount)."); return; }
 		setRoomTool(RoomTool.MOUNTS);
 		toolButtons.get(RoomTool.MOUNTS).setSelected(true);
 		placingArtilleryMount = true;
 		selMount = null;
-		host.say("Artillery needs a mount for its gun: click her art where the gun sits. Esc cancels.");
+		host.say("Artillery needs a mount for its gun: click " + homeplanet.model.Words.her() + " art where the gun sits. Esc cancels.");
 	}
 	public void repaint() { canvas.repaint(); }
 
@@ -561,7 +561,7 @@ public class LayoutEditor {
 	/** Moves the whole ship a square; says so if she's at the grid's edge. */
 	public void shiftShip(int dx, int dy) {
 		if (!roomsEditable || artLocked) return;
-		if (!d.shift(dx, dy)) { host.say("She's at the edge of the grid already."); return; }
+		if (!d.shift(dx, dy)) { host.say(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + "'s at the edge of the grid already."); return; }
 		host.say("Ship moved " + (dx < 0 ? "left" : dx > 0 ? "right" : dy < 0 ? "up" : "down") + " one square.");
 		edited();
 	}
@@ -573,13 +573,13 @@ public class LayoutEditor {
 		try {
 			if (designArt && baseImg != null) homeplanet.parser.ShipArt.flipVertically(d);
 		} catch (Exception e) {
-			host.say("The Home Planet Station couldn't flip her pictures: " + e.getMessage());
+			host.say("The Home Planet Station couldn't flip " + homeplanet.model.Words.her() + " pictures: " + e.getMessage());
 			return;
 		}
 		d.flipVertically(h);
 		selMount = null;
 		if (onRestore != null) onRestore.run(); // the art panel reloads the flipped pictures
-		host.say("Ship flipped top to bottom." + (h > 0 ? " Her pictures are now copies of her own." : ""));
+		host.say("Ship flipped top to bottom." + (h > 0 ? " " + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " pictures are now copies of " + homeplanet.model.Words.her() + " own." : ""));
 		edited();
 	}
 	/** Moves the selected mount earlier or later in the order (FTL's weapon slots follow it). */
@@ -763,12 +763,12 @@ public class LayoutEditor {
 			return;
 		}
 		if (SwingUtilities.isMiddleMouseButton(e)) {
-			if (artLocked) { host.say("Her art stays where it is in a remodel: move her rooms and doors over it."); return; }
+			if (artLocked) { host.say(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " art stays where it is in a remodel: move " + homeplanet.model.Words.her() + " rooms and doors over it."); return; }
 			if (designArt && baseImg != null) {
 				artDrag = true;
 				artGrabX = x - originX - d.artX;
 				artGrabY = y - originY - d.artY;
-			} else host.say(designArt ? "Choose her hull art first." : "Her art moves only in an overhaul: Overhaul deck plan... unlocks it.");
+			} else host.say(designArt ? "Choose " + homeplanet.model.Words.her() + " hull art first." : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " art moves only in an overhaul: Overhaul deck plan... unlocks it.");
 			return;
 		}
 
@@ -785,7 +785,7 @@ public class LayoutEditor {
 			return;
 		}
 		if (roomTool == RoomTool.ART) {
-			if (baseImg == null) { host.say("Choose her hull art first."); return; }
+			if (baseImg == null) { host.say("Choose " + homeplanet.model.Words.her() + " hull art first."); return; }
 			dragging = true;
 			artGrabX = x - originX - d.artX;
 			artGrabY = y - originY - d.artY;
@@ -793,7 +793,7 @@ public class LayoutEditor {
 			return;
 		}
 		if (roomTool == RoomTool.MOUNTS) {
-			if (baseImg == null) { host.say("Choose her hull art first."); return; }
+			if (baseImg == null) { host.say("Choose " + homeplanet.model.Words.her() + " hull art first."); return; }
 			int ax = x - originX - d.artX, ay = y - originY - d.artY;
 			ShipDesign.Mount near = null;
 			for (ShipDesign.Mount m : d.mounts) if (Math.abs(m.x - ax) <= 10 && Math.abs(m.y - ay) <= 10) near = m;
@@ -1113,11 +1113,11 @@ public class LayoutEditor {
 				g.drawOval(cx - 5, cy - 5, 10, 10);
 				g.setStroke(new BasicStroke(1f));
 				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
-				g.drawString("where FTL puts her", cx + 12, cy - 4);
+				g.drawString("where FTL puts " + homeplanet.model.Words.herObj(), cx + 12, cy - 4);
 			}
 			// what to do first, written on the empty grid
-			String hint = roomsEditable && d.rooms.isEmpty() ? "Place her first room: Place 2 x 2, then click the grid. The cross is where FTL puts her."
-					: designArt && baseImg == null && !d.rooms.isEmpty() ? "She needs hull art: the Art step, Import PNG or From the game." : null;
+			String hint = roomsEditable && d.rooms.isEmpty() ? "Place " + homeplanet.model.Words.her() + " first room: Place 2 x 2, then click the grid. The cross is where FTL puts " + homeplanet.model.Words.herObj() + "."
+					: designArt && baseImg == null && !d.rooms.isEmpty() ? homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " needs hull art: the Art step, Import PNG or From the game." : null;
 			if (hint != null) {
 				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
 				int tw = g.getFontMetrics().stringWidth(hint);

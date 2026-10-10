@@ -235,7 +235,7 @@ public class MuseumUI extends JPanel {
 			ep.setFont(ep.getFont().deriveFont(Font.ITALIC));
 			center(st, ep, cx, 14 > plinthY ? 0 : 6);
 		}
-		JButton epitaph = smallButton(ex.epitaph().isEmpty() ? "Write epitaph..." : "Change epitaph...", "One line of your own, on her plate");
+		JButton epitaph = smallButton(ex.epitaph().isEmpty() ? "Write epitaph..." : "Change epitaph...", "One line of your own, on " + homeplanet.model.Words.her() + " plate");
 		epitaph.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { writeEpitaph(ex); } });
 		JButton picture = smallButton("Save as picture", "Save this exhibit as a picture (PNG)");
 		picture.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { saveAsPicture(ex); } });
@@ -362,7 +362,7 @@ public class MuseumUI extends JPanel {
 		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 		content.setOpaque(false);
 		content.setBorder(BorderFactory.createEmptyBorder(4, 14, 10, 14));
-		if (gs == null) content.add(label("Her record can't be read: " + (ex.save == null ? "no save kept" : ex.save.getName()), 12, DIMC, false));
+		if (gs == null) content.add(label(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " record can't be read: " + (ex.save == null ? "no save kept" : ex.save.getName()), 12, DIMC, false));
 		else if ("Crew".equals(tab)) crew(content, ex, gs);
 		else if ("Voyage".equals(tab)) voyage(content, ex);
 		else if ("Loadout".equals(tab)) loadout(content, gs);
@@ -479,7 +479,7 @@ public class MuseumUI extends JPanel {
 	}
 
 	private void crew(JPanel p, Museum.Exhibit ex, SavedGameState gs) {
-		heading(p, ex.victor ? "At the final engagement" : "Her crew at the end");
+		heading(p, ex.victor ? "At the final engagement" : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " crew at the end");
 		String[] sk = {"Pilot", "Eng", "Shld", "Weap", "Rep", "Cmbt"};
 		for (CrewState c : SaveHelper.getOwnCrew(gs.getPlayerShip())) {
 			JPanel r = new JPanel(null);
@@ -523,7 +523,7 @@ public class MuseumUI extends JPanel {
 		}
 		if (ex.victor) {
 			p.add(Box.createRigidArea(new Dimension(1, 10)));
-			p.add(label("As she turned for the final engagement: FTL saves nothing during the last fight.", 12, DIMC, false));
+			p.add(label("As " + homeplanet.model.Words.she() + " turned for the final engagement: FTL saves nothing during the last fight.", 12, DIMC, false));
 		}
 	}
 	/** Her crew lost on the way, from her voyage log: "Name (Race), lost in sector N". */
@@ -542,7 +542,7 @@ public class MuseumUI extends JPanel {
 		heading(p, "Voyage");
 		StringBuilder log = new StringBuilder();
 		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOfId(ex.id)), ex.id)) log.append(e.time.length() >= 16 ? e.time.substring(0, 16) : e.time).append("  ").append(e.human).append('\n');
-		JTextArea a = new JTextArea(log.length() == 0 ? "No voyage log was kept for her: she sailed before The Home Planet Station began keeping them." : log.toString());
+		JTextArea a = new JTextArea(log.length() == 0 ? "No voyage log was kept for " + homeplanet.model.Words.herObj() + ": " + homeplanet.model.Words.she() + " sailed before The Home Planet Station began keeping them." : log.toString());
 		a.setEditable(false);
 		a.setLineWrap(true);
 		a.setWrapStyleWord(true);

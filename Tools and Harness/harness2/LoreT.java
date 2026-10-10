@@ -102,5 +102,21 @@ public class LoreT { public static void main(String[] a) throws Exception {
    + "</lore>\n", false);
  Setup.chk("G: the copy's accolade and deed win; a {token} an accolade hasn't got is left out", Arrays.asList(Accolades.words("ship")).equals(Arrays.asList("{ship}, {n} jumps without a scratch."))
    && Accolades.words("fights").length == 2 && "Sector 5, the hard way.".equals(Accolades.deed("ACH_SECTOR_5")) && Accolades.deed("ACH_SECTOR_8").startsWith("One of your ships"));
+ // H: the Ship Pronoun setting (6.42): {she}, {her} and the rest in any words file follow it, the jar's own words too; her reads as before
+ SafeFiles.writeText(copy, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<lore>\n"
+   + "\t<entry kind=\"TEST_SHIP\">{She} lost {her} shields; FTL flies {her_obj} now, and {she} is {hers} alone: {herself}.</entry>\n"
+   + "</lore>\n", false);
+ String[] wantShip = {"She lost her shields; FTL flies her now, and she is hers alone: herself.", "He lost his shields; FTL flies him now, and he is his alone: himself.",
+   "It lost its shields; FTL flies it now, and it is its alone: itself."};
+ String[] destroyed = {"She is remembered", "He is remembered", "It is remembered"};
+ List<String> off = new ArrayList<String>();
+ for (int i = 0; i < 3; i++) {
+  HomePlanet.config.setProperty(homeplanet.model.Words.CFG_SHIP, homeplanet.model.Words.SHIP_PRONOUNS[i]);
+  String got = Lore.human(Event.of("TEST_SHIP").human("fallback")), gone = Lore.human(Event.of("DESTROY").put("ship_name", "Kestrel").human("fallback"));
+  if (!got.equals(wantShip[i])) off.add(got);
+  if (!gone.contains(destroyed[i])) off.add(gone);
+ }
+ HomePlanet.config.remove(homeplanet.model.Words.CFG_SHIP);
+ Setup.chk("H: her, him and it, in a copy's words and the jar's own (" + off + ")", off.isEmpty() && homeplanet.model.Words.she().equals("she") && Lore.human(Event.of("TEST_SHIP").human("x")).equals(wantShip[0]));
  Setup.done();
 }}
