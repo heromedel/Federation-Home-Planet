@@ -52,6 +52,10 @@ public class SettingsDialog extends JDialog {
 	private final RuleBoxes rules = new RuleBoxes();
 	private final JCheckBox borderlessBox = new JCheckBox("Borderless full screen: the station fills the screen, with no title bar (F11 or Alt+Enter switches it any time)", Boolean.parseBoolean(HomePlanet.config.getProperty(MainFrame.CFG_BORDERLESS, "false")));
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
+	// crew names (heromedel and McCarthy, 6.33): each race's own list, and how humans are named
+	private static final String[] LISTS_ON_OFF = {"On", "Off"}, HUMAN_GEN = {"Normal", "First Names Only", "First and Last Always"};
+	private static final String[] HUMAN_GEN_CFG = {homeplanet.parser.CrewNames.NORMAL, homeplanet.parser.CrewNames.FIRST, homeplanet.parser.CrewNames.FIRST_LAST};
+	private final javax.swing.JComboBox<String> namesBox = new javax.swing.JComboBox<String>(LISTS_ON_OFF), humanGenBox = new javax.swing.JComboBox<String>(HUMAN_GEN);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging", HomePlanet.debugLogging);
 	private boolean savesChanged = false;
 	/** After a final victory: nothing, rescue her, or a reward of her value (the fleet in use has its own choice). */
@@ -165,6 +169,14 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Station");
 		body.add(borderlessBox, next(c));
 		body.add(musicBox, next(c));
+
+		heading(body, c, "Crew Names");
+		namesBox.setSelectedIndex(homeplanet.parser.CrewNames.listsOn() ? 0 : 1);
+		humanGenBox.setSelectedIndex(java.util.Arrays.asList(HUMAN_GEN_CFG).indexOf(homeplanet.parser.CrewNames.humanGen()));
+		namesBox.setToolTipText("On: the crew The Home Planet Station brings aboard are named from their own race's list (lore/names). Off: every race has FTL's names, as FTL gives them. Crew already aboard keep theirs");
+		humanGenBox.setToolTipText("How humans are named. With the name lists off, every race has FTL's human names, so this applies to every race");
+		body.add(labelled("Custom Name Lists Per Race:", namesBox), next(c));
+		body.add(labelled("Human Name Gen:", humanGenBox), next(c));
 
 		shipTradeBox.setToolTipText("Sandbox fleets always may. A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
 		anyLevelBox.setToolTipText("Off: your career trades only with careers of its own difficulty");
@@ -527,6 +539,15 @@ public class SettingsDialog extends JDialog {
 		if (toHardBox.isEnabled() && toHardBox.isSelected() != toHardWas) changed.add(TO_HARD + ": " + toHardBox.isSelected());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
+		if ((namesBox.getSelectedIndex() == 0) != homeplanet.parser.CrewNames.listsOn()) {
+			changed.add("Custom Name Lists Per Race: " + namesBox.getSelectedItem());
+			if (namesBox.getSelectedIndex() == 0) HomePlanet.config.remove(homeplanet.parser.CrewNames.CFG_LISTS); // on is the default: the line only while off
+			else HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_LISTS, "false");
+		}
+		if (!HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.humanGen())) {
+			changed.add("Human Name Gen: " + humanGenBox.getSelectedItem());
+			HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_HUMAN, HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()]);
+		}
 		final java.awt.Window frame = getOwner();
 		if (frame instanceof MainFrame && borderlessBox.isSelected() != ((MainFrame) frame).isBorderless()) {
 			changed.add("Borderless full screen: " + borderlessBox.isSelected());
@@ -681,6 +702,14 @@ public class SettingsDialog extends JDialog {
 			JOptionPane.showMessageDialog(this, "The Home Planet Station could not open the folder:\n" + dir.getPath(),
 					"Open folder", JOptionPane.WARNING_MESSAGE);
 		}
+	}
+
+	/** A label and its choice on one line, the choice at its own width. */
+	private static JPanel labelled(String name, javax.swing.JComponent choice) {
+		JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+		row.add(new JLabel(name));
+		row.add(choice);
+		return row;
 	}
 
 	private static JPanel folderRow(String name, JLabel path, ActionListener change) {
