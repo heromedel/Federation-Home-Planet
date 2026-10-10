@@ -633,7 +633,7 @@
 	<line kind="band" job="attack" band="high" skill="repair">Moments after the enemy knocked the weapons out, {name} had them back online.</line>
 	<line kind="band" job="attack" band="top" skill="repair">The enemy hit the ship hard, and by the end of the fight {name} had fixed every bit of it.</line>
 	<line kind="band" job="attack" band="failed" skill="combat">The enemy sent boarders across, and {name} couldn't stop them reaching the weapons.</line>
-	<line kind="band" job="attack" band="success" skill="combat">The enemy sent boarders across, and {name} saw them off.</line>
+	<line kind="band" job="attack" band="success" skill="combat">The enemy sent boarders across, and {name} forced them off.</line>
 	<line kind="band" job="attack" band="high" skill="combat">{name} cut the enemy's boarders down before they reached anything that mattered.</line>
 	<line kind="band" job="attack" band="top" skill="combat">The enemy's boarders never made it out of the room they landed in, thanks to {name}.</line>
 
