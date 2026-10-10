@@ -82,6 +82,8 @@ if command -v xvfb-run >/dev/null; then
 	(cd "$W" && xvfb-run -a java -Dhomeplanet.noGameCheck=true -cp "$CP" GuiT "$GAME" "$WORLD" "$W/gui" 2>&1) | grep -E "$PICK|^PASS|^auction"
 	echo "== EscT"
 	(cd "$W" && xvfb-run -a java -cp "$CP" EscT 2>&1) | grep -E "$PICK"
+	echo "== RemodT"
+	(cd "$W" && xvfb-run -a java -Dhomeplanet.noGameCheck=true -cp "$CP" RemodT "$GAME" "$WORLD" "$W/remod" 2>&1) | grep -E "$PICK|^PASS"
 else echo "(GuiT skipped: no xvfb-run)"; fi
 
 # the converter, only with old Homeworld data to convert

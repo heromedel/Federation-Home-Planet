@@ -517,40 +517,46 @@ public class SystemsPanel {
 
 	// ---- Actions ----
 
-	private void storeSystem(SystemType type) {
+	/** Why this system can't be uninstalled from the bay's ship now (the rules, weapons or drones aboard), or null. */
+	String uninstallReason(SystemType type) {
+		ShipState bs = bay.currentSave.getPlayerShip();
+		String why = refitReason(bs, type);
+		if (why != null) return why;
+		if (type == SystemType.WEAPONS && !bs.getWeaponList().isEmpty()) return "move the weapons to cargo first";
+		if (type == SystemType.DRONE_CTRL && !bs.getDroneList().isEmpty()) return "move the drones to cargo first";
+		return null;
+	}
+	/** Remodel's Uninstall (6.42): as the Uninstall button, the player already asked; true if it came off. */
+	boolean uninstallForRemodel(SystemType type) { return storeSystem(type, true); }
+
+	private void storeSystem(SystemType type) { storeSystem(type, false); }
+	/** Takes a system off her into the Cargo Bay for the Dry Dock's fee; {@code asked}: the player has already said yes. True if it came off. */
+	private boolean storeSystem(SystemType type, boolean asked) {
 		Installed sel = new Installed(type, 0);
 		SavedGameState save = bay.currentSave;
 		ShipState bs = save.getPlayerShip();
-		String why = refitReason(bs, sel.type);
+		String why = uninstallReason(sel.type);
 		if (why != null) {
-			JOptionPane.showMessageDialog(bay, why + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
-			return;
-		}
-		if (sel.type == SystemType.WEAPONS && !bs.getWeaponList().isEmpty()) {
-			JOptionPane.showMessageDialog(bay, "Move the weapons to cargo first.", "Systems", JOptionPane.WARNING_MESSAGE);
-			return;
-		}
-		if (sel.type == SystemType.DRONE_CTRL && !bs.getDroneList().isEmpty()) {
-			JOptionPane.showMessageDialog(bay, "Move the drones to cargo first.", "Systems", JOptionPane.WARNING_MESSAGE);
-			return;
+			JOptionPane.showMessageDialog(bay, Character.toUpperCase(why.charAt(0)) + why.substring(1) + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
+			return false;
 		}
 		SystemState st = bs.getSystem(sel.type);
-		if (st == null || st.getCapacity() <= 0) return;
+		if (st == null || st.getCapacity() <= 0) return false;
 		String name = DryDockShop.systemTitle(sel.type.getId());
 		int broken = st.getDamagedBars(); // a damaged system goes into storage damaged: storing is no free repair
 		int fee = homeplanet.core.Economy.removalFee();
 		if (fee > 0 && homeplanet.core.Economy.repForVanillaBreaking()) { // scrap or reputation (heromedel, 5.13)
 			int[] pay = RepPay.choose(bay, "Systems", "Taking the " + name + " off " + save.getPlayerShipName() + " costs", fee, hold(), repHave(), "The Cargo Hold");
-			if (pay == null) return;
+			if (pay == null) return false;
 			if (pay[0] > 0) charge(pay[0]);
 			chargeRep(pay[1], "the " + name + " taken off " + save.getPlayerShipName());
 			changes.add("Paid " + RepPay.words(pay) + " to take the " + name + " off " + save.getPlayerShipName());
 		} else if (fee > 0) {
 			if (hold() < fee) {
 				JOptionPane.showMessageDialog(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off.\nThe Cargo Hold has " + hold() + ".", "Systems", JOptionPane.INFORMATION_MESSAGE);
-				return;
+				return false;
 			}
-			if (!homeplanet.core.HomePlanet.confirmNo(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName() + ".\nThe Cargo Hold pays (on Save).\n\nUninstall it?", "Systems")) return;
+			if (!asked && !homeplanet.core.HomePlanet.confirmNo(bay, "The Dry Dock charges " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName() + ".\nThe Cargo Hold pays (on Save).\n\nUninstall it?", "Systems")) return false;
 			charge(fee);
 			changes.add("Paid " + fee + " scrap to take the " + name + " off " + save.getPlayerShipName());
 		}
@@ -575,6 +581,7 @@ public class SystemsPanel {
 		homeplanet.parser.Retrofit.syncStations(bs); // its room no longer has a station
 		log.debug("Stored {} level {} from {}", sel.type, level, save.getPlayerShipName());
 		changed();
+		return true;
 	}
 
 	private void installSystem(Stored sel) {
