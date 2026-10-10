@@ -176,6 +176,10 @@ public class LogT { public static void main(String[] a) throws Exception {
   MasterLog.businessDay(v);
   String q = page(v, false);
   Setup.chk("F: a system bought into the Cargo Hold: Bought a Cloaking system, and no Dry Dock work told for it (5.30)", q.contains("Bought a Cloaking system.") && !q.contains("Had the Dry Dock work on the Test Kestrel"));
+  HistoryLog.entry("BUY", "2 purchases", Arrays.asList("Missiles (6 scrap) from the store at Test Kestrel's beacon -> Test Kestrel", "436F~696C Coil (Engi) (45 scrap) from the store at Test Kestrel's beacon -> Test Kestrel"));
+  MasterLog.businessDay(v);
+  String h = page(v, false);
+  Setup.chk("F: crew from a store are hired, not bought (6.40)", h.contains("ired 436F~696C Coil, an Engi, at a station.") && !h.contains("Bought a 436F") && !h.contains("bought a 436F"));
   HistoryLog.entry("CREW", "Joel assigned to the Test Kestrel.");
   HistoryLog.entry("CREW", "Ferry assigned to the Test Kestrel.");
   HistoryLog.entry("CREW", "Kirkner assigned to the Cargo Hold.");
