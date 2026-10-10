@@ -14,7 +14,7 @@ public class PowerT { public static void main(String[] a) throws Exception {
  ShipState s = g.getPlayerShip();
  for (String w : new String[] {"LASER_HEAVY_1", "ION_1"}) s.addWeapon(SaveHelper.newIdleWeapon(w));
  for (String d : new String[] {"COMBAT_1", "DEFENSE_1"}) s.addDrone(SaveHelper.newIdleDrone(d));
- int[][] caps = {{SystemType.WEAPONS.ordinal(), 4}, {SystemType.DRONE_CTRL.ordinal(), 3}, {SystemType.SHIELDS.ordinal(), 4}, {SystemType.CLOAKING.ordinal(), 1}, {SystemType.TELEPORTER.ordinal(), 1}, {SystemType.ENGINES.ordinal(), 3}};
+ int[][] caps = {{SystemType.WEAPONS.ordinal(), 4}, {SystemType.DRONE_CTRL.ordinal(), 3}, {SystemType.SHIELDS.ordinal(), 4}, {SystemType.CLOAKING.ordinal(), 1}, {SystemType.TELEPORTER.ordinal(), 1}, {SystemType.ENGINES.ordinal(), 3}, {SystemType.BATTERY.ordinal(), 1}};
  for (int[] c : caps) { SystemType t = SystemType.values()[c[0]]; SystemState st = s.getSystem(t); if (st == null) { st = new SystemState(t); s.addSystem(st); } st.setCapacity(c[1]); }
  s.getSystem(SystemType.SHIELDS).setDamagedBars(1);
  s.getSystem(SystemType.SHIELDS).setPower(2);
@@ -83,6 +83,27 @@ public class PowerT { public static void main(String[] a) throws Exception {
  Setup.chk("K: right click takes the reactor's two, never the Zoltan's", power(shields) == 1 && left(p) == saveLeft + 2);
  click(p, shields, true);
  Setup.chk("K: nothing more to take", power(shields) == 1);
+
+ // the subsystems and the Backup Battery (6.44)
+ List<?> subs = (List<?>) field(p, "subsystems");
+ Object pilot = find(subs, "PILOT"), battery = field(p, "battery");
+ Setup.chk("M: the subsystems are FTL's three, apart from the reactor's systems; the Backup Battery apart", subs.size() == 3 && pilot != null && find(subs, "SENSORS") != null && find(subs, "DOORS") != null && battery != null && find(systems, "PILOT") == null);
+ int before = left(p);
+ click(p, pilot, false);
+ Setup.chk("M: a click on Piloting changes nothing (it takes no reactor power)", left(p) == before);
+ click(p, battery, false);
+ Setup.chk("N: the Battery on: 2 more bars for its 30 seconds", left(p) == before + 2 && (Long) field(p, "batteryUntil") > System.currentTimeMillis() + 25000);
+ call(p, "reset", new Class<?>[0]); systems = (List<?>) field(p, "systems");
+ click(p, battery, false);
+ Object burst2 = ((List<?>) field(p, "weaponSlots")).get(1), heavy2 = ((List<?>) field(p, "weaponSlots")).get(2), ion2 = ((List<?>) field(p, "weaponSlots")).get(3), defense2 = ((List<?>) field(p, "droneSlots")).get(1);
+ Object tele2 = find(systems, "TELEPORTER"), cloak2 = find(systems, "CLOAKING"), engines2 = find(systems, "ENGINES");
+ for (Object o : new Object[] {burst2, heavy2, ion2, defense2, tele2, cloak2}) click(p, o, false);
+ while (left(p) > 0) click(p, engines2, false);
+ int usedUp = left(p);
+ call(p, "endBattery", new Class<?>[] {boolean.class}, false);
+ Setup.chk("N: run out with every bar in use: the rightmost goes dark until the reactor covers it (the Defense drone's two), the weapons stay on", usedUp == 0 && left(p) == 0 && !on(defense2) && on(ion2) && on(heavy2) && on(burst2) && (Long) field(p, "batteryUntil") == 0);
+ click(p, battery, false); call(p, "reset", new Class<?>[0]);
+ Setup.chk("N: Reset ends the Battery too", (Long) field(p, "batteryUntil") == 0 && left(p) == saveLeft);
 
  // it draws, at the tab's width and at FTL's
  for (int w : new int[] {1248, 640}) {

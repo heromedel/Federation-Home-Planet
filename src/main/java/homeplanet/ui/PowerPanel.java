@@ -31,7 +31,7 @@ final class PowerPanel extends JComponent {
 	// FTL's colours, read off its screen
 	static final Color GREEN = new Color(100, 255, 100), CREAM = new Color(243, 255, 230), GREY = new Color(150, 150, 150);
 	static final Color RED = new Color(255, 60, 50), HATCH_DIM = new Color(150, 150, 150), SLOT_DARK = new Color(30, 24, 28, 200);
-	static final Color TAB_TEXT = new Color(32, 58, 66), ZOLTAN = new Color(255, 230, 60);
+	static final Color TAB_TEXT = new Color(32, 58, 66), ZOLTAN = new Color(255, 230, 60), BATTERY = new Color(255, 120, 40);
 	/** FTL's order along the panel; the ones a ship hasn't got leave no gap. Doors, Piloting, Sensors and the Backup Battery are left out (heromedel). */
 	static final SystemType[] ORDER = {SystemType.SHIELDS, SystemType.ENGINES, SystemType.MEDBAY, SystemType.CLONEBAY, SystemType.OXYGEN,
 			SystemType.TELEPORTER, SystemType.CLOAKING, SystemType.ARTILLERY, SystemType.MIND, SystemType.HACKING};
@@ -57,6 +57,15 @@ final class PowerPanel extends JComponent {
 	int weaponSlotCount, droneSlotCount;
 	/** The systems a crew member stands at (FTL draws a little figure over them while they're powered). */
 	final java.util.Set<SystemType> manned = new java.util.HashSet<SystemType>();
+	/** The subsystems, in FTL's SUBSYSTEMS box (6.44): Piloting, Sensors, Doors; the Backup Battery apart, as it can be switched on. */
+	final List<Sys> subsystems = new ArrayList<Sys>();
+	Sys battery;
+	/** The Backup Battery's boost: when it runs out (0: off). FTL's battery lasts 30 seconds. */
+	long batteryUntil;
+	static final int BATTERY_MS = 30000;
+	private javax.swing.Timer batteryTick;
+	/** The systems FTL shows a crew figure over: solid when someone's at the station, an outline when not. */
+	static final java.util.Set<SystemType> MANNABLE = new java.util.HashSet<SystemType>(java.util.Arrays.asList(SystemType.SHIELDS, SystemType.ENGINES, SystemType.WEAPONS, SystemType.PILOT, SystemType.SENSORS, SystemType.DOORS));
 
 	/** As the save had it, for Reset: each system's power, each weapon's and drone's on or off. */
 	private final Map<Object, Integer> saved = new HashMap<Object, Integer>();
@@ -77,11 +86,14 @@ final class PowerPanel extends JComponent {
 
 	/** Takes the ship as her save has her: her reactor, her systems' power and damage, which weapons and drones are on. */
 	void show(ShipState s) {
-		systems.clear(); weaponSlots.clear(); droneSlots.clear(); weapons = null; drones = null;
+		systems.clear(); weaponSlots.clear(); droneSlots.clear(); subsystems.clear(); weapons = null; drones = null; battery = null;
+		endBattery(false);
 		reactor = s.getReservePowerCapacity();
 		for (SystemType t : ORDER) { Sys x = sys(s, t); if (x != null) systems.add(x); }
 		weapons = sys(s, SystemType.WEAPONS);
 		drones = sys(s, SystemType.DRONE_CTRL);
+		for (SystemType t : new SystemType[] {SystemType.PILOT, SystemType.SENSORS, SystemType.DOORS}) { Sys x = sys(s, t); if (x != null) { x.power = x.usable(); subsystems.add(x); } }
+		battery = sys(s, SystemType.BATTERY);
 		net.blerf.ftl.xml.ShipBlueprint bp = DataManager.get().getShip(s.getShipBlueprintId());
 		weaponSlotCount = bp != null && bp.getWeaponSlots() != null ? bp.getWeaponSlots() : 4;
 		droneSlotCount = bp != null && bp.getDroneSlots() != null ? bp.getDroneSlots() : 2;
@@ -99,7 +111,7 @@ final class PowerPanel extends JComponent {
 		if (weapons != null) { weapons.power = 0; for (Slot w : weaponSlots) if (w.on) weapons.power += w.power; weapons.power = Math.min(weapons.power, weapons.usable()); }
 		if (drones != null) { drones.power = 0; for (Slot d : droneSlots) if (d.on) drones.power += d.power; drones.power = Math.min(drones.power, drones.usable()); }
 		manned.clear();
-		if (bp != null && bp.getSystemList() != null) for (SystemType t : new SystemType[] {SystemType.SHIELDS, SystemType.ENGINES, SystemType.WEAPONS}) {
+		if (bp != null && bp.getSystemList() != null) for (SystemType t : MANNABLE) {
 			net.blerf.ftl.xml.ShipBlueprint.SystemList.SystemRoom[] rooms = bp.getSystemList().getSystemRoom(t);
 			if (rooms == null || rooms.length == 0) continue;
 			for (net.blerf.ftl.parser.SavedGameParser.CrewState c : s.getCrewList()) if (c.getRoomId() == rooms[0].getRoomId()) { manned.add(t); break; }
@@ -172,7 +184,9 @@ final class PowerPanel extends JComponent {
 		return a;
 	}
 	/** The reactor's bars not in use. */
-	int left() { int used = 0; for (Sys x : all()) used += x.fromReactor(); return reactor - used; }
+	int left() { int used = 0; for (Sys x : all()) used += x.fromReactor(); return reactor + batteryBonus() - used; }
+	/** The bars the Backup Battery adds while it's on: 2 at level 1, 4 at level 2 (FTL's upgrade screen). */
+	int batteryBonus() { return batteryUntil == 0 || battery == null ? 0 : 2 * Math.max(1, Math.min(2, battery.usable())); }
 
 	// ---- The rules (FTL's, as its screen and its own warnings have them) ----
 
@@ -181,6 +195,14 @@ final class PowerPanel extends JComponent {
 		if (what == null || "reactor".equals(what)) return;
 		warningX = centreX.containsKey(what) ? centreX.get(what) : getWidth() / 2;
 		boolean done;
+		if (what == battery) { // switched on, as FTL's button does; it can't be switched off, only run out
+			boolean ok = !right && batteryUntil == 0 && battery.usable() > 0;
+			if (ok) startBattery();
+			sound(ok ? "select_up1" : "select_b_fail1");
+			repaint();
+			return;
+		}
+		if (what instanceof Sys && subsystems.contains(what)) { sound("select_b_fail1"); return; } // a subsystem takes no reactor power: nothing to click
 		if (what instanceof Sys) {
 			Sys x = (Sys) what;
 			if (x == weapons || x == drones) done = right ? lastOff(x == weapons ? weaponSlots : droneSlots, x) : firstOn(x == weapons ? weaponSlots : droneSlots, x);
@@ -244,7 +266,41 @@ final class PowerPanel extends JComponent {
 		return false;
 	}
 	/** Back as the save had it. */
+	/** The Backup Battery on: its bars join the reactor for 30 seconds, counted down on its plate. */
+	void startBattery() {
+		batteryUntil = System.currentTimeMillis() + BATTERY_MS;
+		if (batteryTick == null) {
+			batteryTick = new javax.swing.Timer(250, new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					if (batteryUntil != 0 && System.currentTimeMillis() >= batteryUntil) endBattery(true);
+					repaint();
+				}
+			});
+		}
+		batteryTick.start();
+	}
+	/**
+	 * The boost over: its bars leave the reactor, and what they were powering drops, the rightmost first (as FTL
+	 * depowers): drones, then weapons, then the systems from the right, a bar at a time, until the reactor covers it.
+	 */
+	void endBattery(boolean sound) {
+		if (batteryTick != null) batteryTick.stop();
+		if (batteryUntil == 0) return;
+		batteryUntil = 0;
+		boolean dropped = false;
+		while (left() < 0) {
+			if (drones != null && drones.fromReactor() > 0 && lastOff(droneSlots, drones)) { dropped = true; continue; }
+			if (weapons != null && weapons.fromReactor() > 0 && lastOff(weaponSlots, weapons)) { dropped = true; continue; }
+			boolean any = false;
+			for (int i = systems.size() - 1; i >= 0 && !any; i--) if (systems.get(i).fromReactor() > 0) any = remove(systems.get(i));
+			if (!any) break;
+			dropped = true;
+		}
+		if (sound && dropped) sound("select_down2");
+		repaint();
+	}
 	void reset() {
+		endBattery(false);
 		for (Sys x : all()) if (saved.containsKey(x)) x.power = saved.get(x);
 		for (Slot x : weaponSlots) if (saved.containsKey(x)) x.on = saved.get(x) == 1;
 		for (Slot x : droneSlots) if (saved.containsKey(x)) x.on = saved.get(x) == 1;
@@ -320,6 +376,12 @@ final class PowerPanel extends JComponent {
 			b.append("\n-").append(x.power >= x.level ? word("full_powered", "Fully Powered") : x.power > 0 ? word("partial_powered", "Partially Powered") : word("unpowered", "Unpowered"));
 			if (x.damaged > 0) b.append("\n-").append(x.damaged >= x.level ? word("destroyed", "Destroyed") : word("damaged", "Damaged"));
 			if (x.zoltan > 0) b.append("\n-").append(word("zoltan", "Zoltan Bonus Power"));
+			if (x == battery) {
+				String act = SystemsPanel.ftlText("activate_battery");
+				b.append("\n\n").append(batteryUntil != 0 ? "On: " + Math.max(0, (batteryUntil - System.currentTimeMillis() + 999) / 1000) + " seconds left" : (act == null ? "Activate the Backup Battery, providing additional Reactor power bars" : act.split("\\\\n")[0]) + "\nClick to switch it on");
+				return b.toString();
+			}
+			if (subsystems.contains(x)) return b.append("\n\nA subsystem: it takes no power from the reactor").toString();
 			String add = SystemsPanel.ftlText("add_power"), rem = SystemsPanel.ftlText("remove_power");
 			b.append("\n\n").append(add == null ? "Add Power: Left Click" : add.replace("\\1", "Left Click"));
 			b.append("\n").append(rem == null ? "Remove Power: Right Click" : rem.replace("\\1", "Right Click"));
@@ -370,6 +432,8 @@ final class PowerPanel extends JComponent {
 		int baseline1, baseline2, reactorX, wireEnd1, wireEnd2;
 		final Map<Object, Integer> cx = new HashMap<Object, Integer>();
 		int weaponsBoxX, dronesBoxX;
+		/** The SUBSYSTEMS box's left (0: it doesn't fit, and is left out) and right. */
+		int subX, subEnd;
 		boolean twoRows;
 	}
 	private Layout layout(int width) {
@@ -388,6 +452,8 @@ final class PowerPanel extends JComponent {
 		if (drones != null || !droneSlots.isEmpty()) { l.cx.put("drones", bx); l.dronesBoxX = bx + 10; bx = l.dronesBoxX + boxWidth(droneSlotCount) + 4; }
 		l.wireEnd1 = l.twoRows ? rowEnd - 20 : bx;
 		l.wireEnd2 = bx;
+		int subW = battery != null ? 182 : 158; // FTL's SUBSYSTEMS box, its plate and the Doors' (and the Battery's) buttons
+		if (!subsystems.isEmpty() || battery != null) { int sx = bx + 26; if (sx + subW <= width - 4) { l.subX = sx; l.subEnd = sx + subW; } }
 		return l;
 	}
 	private static boolean sidePanel(SystemType t) { return t == SystemType.TELEPORTER || t == SystemType.CLOAKING || t == SystemType.MIND || t == SystemType.HACKING; }
@@ -405,7 +471,7 @@ final class PowerPanel extends JComponent {
 		hits.clear();
 		// FTL draws its panel over dark space; here the station's dark box behind it, as wide as what's in it
 		g.setColor(CargoParts.BOX);
-		g.fillPolygon(CargoParts.cut(0, 0, Math.min(getWidth(), Math.max(l.wireEnd1, l.wireEnd2) + 14), getHeight(), 6));
+		g.fillPolygon(CargoParts.cut(0, 0, Math.min(getWidth(), Math.max(Math.max(l.wireEnd1, l.wireEnd2), l.subEnd) + 14), getHeight(), 6));
 		paintReactor(g, l);
 		// the wire: under the reactor's strip, along under every icon, to the boxes
 		g.setColor(CREAM);
@@ -420,6 +486,7 @@ final class PowerPanel extends JComponent {
 			paintSystem(g, drones != null ? drones : new Sys(SystemType.DRONE_CTRL, 0, 0, 0), l.cx.get("drones"), l.baseline2);
 			paintBox(g, l.dronesBoxX, l.baseline2, droneSlots, droneSlotCount, "DRONES", weaponSlotCount + 1);
 		}
+		if (l.subX > 0) paintSubsystems(g, l.subX, l.baseline1);
 		if (warning != null && System.currentTimeMillis() < warningUntil) { // FTL's warning, over the panel where it was refused
 			String[] lines = warning.split("\n");
 			int wx = warningAtReactor ? l.reactorX + REACTOR_W + HATCH_W + 8 : warningX, wy = 4;
@@ -432,17 +499,93 @@ final class PowerPanel extends JComponent {
 		g.dispose();
 	}
 
+	/**
+	 * FTL's SUBSYSTEMS box (6.44, heromedel), as FTL 1.6.14 draws it: the cream plate with its name, Piloting, Sensors
+	 * and Doors as octagons with their bars and crew figures, the Doors' two buttons, and the Backup Battery with its own
+	 * plate: its power button, or while it's on, its stripes counting down.
+	 */
+	private void paintSubsystems(Graphics2D g, int px, int baseline) {
+		BufferedImage plate = image("img/box_subsystems4.png");
+		if (plate != null) g.drawImage(plate, px - 7, baseline - 43, null);
+		text(g, "SUBSYSTEMS", FtlFont.TAB, TAB_TEXT, px + 6, baseline - 30);
+		int[] at = {19, 54, 90};
+		for (int i = 0; i < subsystems.size() && i < 3; i++) {
+			Sys x = subsystems.get(i);
+			int cx = px + at[i];
+			subsystem(g, x, cx, baseline, x.damaged >= x.level ? "red" : x.damaged > 0 ? "orange" : "green");
+			if (x.type == SystemType.DOORS) for (String layer : new String[] {"button_door_base", "button_door_top_on", "button_door_bottom_on"}) {
+				BufferedImage b = image("img/systemUI/" + layer + ".png");
+				if (b != null) g.drawImage(b, cx + 6, baseline - 112, null);
+			}
+		}
+		if (battery != null) {
+			int cx = px + 142;
+			boolean on = batteryUntil != 0;
+			subsystem(g, battery, cx, baseline, on ? "blue" : battery.damaged >= battery.level ? "red" : "green");
+			BufferedImage base = image("img/systemUI/button_battery3_base.png");
+			int bx = cx + 4, by = baseline - 125;
+			if (base != null) g.drawImage(base, bx, by, null);
+			if (!on) { g.setColor(new Color(243, 255, 238)); g.fillRoundRect(bx + 9, by + 22, 22, 46, 6, 6); } // its plate, cream inside as FTL has it (dark while on)
+			if (!on) { // FTL's lit button: a cream plate with the power symbol cut out, the dark base showing through
+				BufferedImage b = image("img/systemUI/button_default_on.png");
+				g.setColor(new Color(42, 58, 70));
+				g.fillRoundRect(bx + 13, by + 39, 14, 25, 4, 4);
+				if (b != null) g.drawImage(b, bx, by + 14, null);
+			}
+			else { // its stripes, emptying as the 30 seconds run out
+				BufferedImage b = image("img/systemUI/button_charging_on.png");
+				double leftPart = Math.max(0, Math.min(1, (batteryUntil - System.currentTimeMillis()) / (double) BATTERY_MS));
+				if (b != null) {
+					int top = 22, hgt = 31, cut = (int) Math.round(hgt * (1 - leftPart));
+					g.drawImage(b, bx + 10, by + 1 + top + cut, bx + 30, by + 1 + top + hgt, 10, top + cut, 30, top + hgt, null);
+				}
+				// FTL's white padlock over the bar while it's on
+				int ly = baseline - 84;
+				g.setColor(CREAM);
+				g.setStroke(new BasicStroke(2f));
+				g.drawArc(cx - 4, ly, 8, 8, 0, 180);
+				g.drawLine(cx - 4, ly + 4, cx - 4, ly + 6); g.drawLine(cx + 4, ly + 4, cx + 4, ly + 6);
+				g.fillRect(cx - 6, ly + 6, 13, 9);
+				g.setColor(new Color(42, 58, 70));
+				g.fillRect(cx, ly + 9, 2, 3);
+			}
+			hits.add(new Object[] {new java.awt.Rectangle(bx + 4, by + 18, 30, 70), battery}); // its plate is a button too
+		}
+	}
+	/** One subsystem's octagon, its bars above, its crew figure (they always run on their own: no reactor power). */
+	private void subsystem(Graphics2D g, Sys x, int cx, int baseline, String state) {
+		hits.add(new Object[] {new java.awt.Rectangle(cx - 16, baseline - 100, 32, 72), x});
+		centreX.put(x, cx);
+		BufferedImage icon = image("img/icons/s_" + x.type.getId() + "_" + state + "1.png");
+		if (icon != null) g.drawImage(icon, cx - icon.getWidth() / 2, baseline - 46 - icon.getHeight() / 2, null);
+		boolean on = x == battery && batteryUntil != 0;
+		for (int k = 0; k < x.level; k++) {
+			int bottom = baseline - 61 - k * BAR_STEP, top = bottom - BAR_H, bx = cx - BAR_W / 2;
+			if (k >= x.level - x.damaged) { g.setColor(RED); g.setStroke(new BasicStroke(1f)); g.drawRect(bx, top, BAR_W - 1, BAR_H - 1); g.drawLine(bx + 2, bottom - 2, bx + BAR_W - 3, top + 1); }
+			else if (on) { g.setColor(CREAM); g.setStroke(new BasicStroke(1f)); g.drawRect(bx, top, BAR_W - 1, BAR_H - 1); }
+			else { g.setColor(GREEN); g.fillRect(bx, top, BAR_W, BAR_H); }
+		}
+		if (MANNABLE.contains(x.type)) { // Piloting: the crew figure; Sensors and Doors: FTL's little bar, yellow when manned (+1 level)
+			boolean bar = x.type == SystemType.SENSORS || x.type == SystemType.DOORS, in = manned.contains(x.type);
+			BufferedImage m = image(bar ? (in ? "img/systemUI/manning_bar_on.png" : "img/systemUI/manning_bar_off.png") : in ? "img/systemUI/manning_white.png" : "img/systemUI/manning_outline.png");
+			int top = baseline - 61 - (x.level - 1) * BAR_STEP - BAR_H;
+			if (m != null) g.drawImage(m, cx - m.getWidth() / 2, top - m.getHeight() - 2, null);
+		}
+	}
+
 	/** The reactor column: the power left in green, what's in use as empty bars; the hatched strip beside it, bright beside the green. */
 	private void paintReactor(Graphics2D g, Layout l) {
-		int left = Math.max(0, left());
+		int left = Math.max(0, left()), bonus = batteryBonus(), all = reactor + bonus;
 		hits.add(new Object[] {new java.awt.Rectangle(l.reactorX - 2, 0, REACTOR_W + HATCH_W + 6, l.baseline1), "reactor"});
-		int room = l.baseline1 - 17 - 4, step = reactor * REACTOR_STEP > room ? Math.max(3, room / Math.max(1, reactor)) : REACTOR_STEP, h = Math.max(2, step - 2);
+		int room = l.baseline1 - 17 - 4, step = all * REACTOR_STEP > room ? Math.max(3, room / Math.max(1, all)) : REACTOR_STEP, h = Math.max(2, step - 2);
 		int x = l.reactorX, hx = x + REACTOR_W + 2;
+		int reactor = all; // the Battery's bars at the bottom of the column, framed orange (as FTL draws them)
 		for (int k = 0; k < reactor; k++) {
 			int bottom = l.baseline1 - 17 - k * step, top = bottom - h;
 			boolean green = k < left;
 			if (green) { g.setColor(GREEN); g.fillRect(x, top, REACTOR_W, h); }
 			else { g.setColor(CREAM); g.setStroke(new BasicStroke(2f)); g.drawRect(x + 1, top + 1, REACTOR_W - 2, h - 2); }
+			if (k < bonus) { g.setColor(BATTERY); g.setStroke(new BasicStroke(2f)); g.drawRect(x + 1, top + 1, REACTOR_W - 2, h - 2); }
 			g.setColor(green ? CREAM : HATCH_DIM);
 			g.setStroke(new BasicStroke(2f));
 			g.drawLine(hx + 1, top, hx + HATCH_W - 2, top + step - 2); // FTL's strip: one stroke beside each bar
@@ -479,17 +622,18 @@ final class PowerPanel extends JComponent {
 			else { g.setColor(CREAM); g.setStroke(new BasicStroke(1f)); g.drawRect(x, top, BAR_W - 1, BAR_H - 1); }
 		}
 		if (sidePanel(s.type)) { // the plate and its buttons: layers on one canvas, as FTL keeps them
-			String[] layers = s.type == SystemType.TELEPORTER ? new String[] {"button_teleport_base", "button_teleport_top_off", "button_teleport_bottom_off"}
-					: s.type == SystemType.CLOAKING ? new String[] {"button_cloaking1_base", "button_cloaking1_off"}
-					: s.type == SystemType.HACKING ? new String[] {"button_hack_base", "button_hack_drone_off"} : new String[] {"button_default_base", "button_default_off"};
+			String o = s.power > 0 ? "_on" : "_off"; // lit while the system has power, as FTL draws its buttons
+			String[] layers = s.type == SystemType.TELEPORTER ? new String[] {"button_teleport_base", "button_teleport_top" + o, "button_teleport_bottom" + o}
+					: s.type == SystemType.CLOAKING ? new String[] {"button_cloaking1_base", "button_cloaking1" + o}
+					: s.type == SystemType.HACKING ? new String[] {"button_hack_base", "button_hack_drone" + o} : new String[] {"button_default_base", "button_default" + o};
 			for (String layer : layers) {
 				BufferedImage b = image("img/systemUI/" + layer + ".png");
-				int dy = layer.equals("button_hack_drone_off") ? 26 : 0; // its button sits at the canvas's top; FTL puts it on the plate
+				int dy = layer.startsWith("button_hack_drone") ? 26 : 0; // its button sits at the canvas's top; FTL puts it on the plate
 				if (b != null) g.drawImage(b, cx + 3, baseline - 13 - b.getHeight() + dy, null);
 			}
 		}
-		if (s.power > 0 && manned.contains(s.type)) { // a crew member at the station: FTL's little figure over the bars
-			BufferedImage m = image("img/systemUI/manning_white.png");
+		if (s.power > 0 && MANNABLE.contains(s.type)) { // FTL's little figure over the bars: solid with a crew member at the station, an outline without
+			BufferedImage m = image(manned.contains(s.type) ? "img/systemUI/manning_white.png" : "img/systemUI/manning_outline.png");
 			int top = baseline - 44 - (s.level - 1) * BAR_STEP - BAR_H;
 			if (m != null) g.drawImage(m, cx - m.getWidth() / 2, top - m.getHeight() - 2, null);
 		}

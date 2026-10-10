@@ -38,6 +38,12 @@ the ship's reactor will go round in FTL before taking her out. It is a simulatio
   row at FTL's own size, which fits even a ship with every system). Checked side by side with FTL's screen, and by
   PowerT (the rules). FTL's warnings, hover words and clicks come from the player's own ftl.dat. A Zoltan's bar is
   drawn yellow and is free. Reset puts it back as the save had it.
+- 6.44 (heromedel's Plans A to E): FTL's SUBSYSTEMS box after the drones (Piloting, Sensors, Doors, as FTL draws
+  them: octagons, the crew figure or FTL's little manning bar, the Doors' buttons), left out on a ship too wide for it;
+  the Backup Battery clickable as in FTL: its bars join the bottom of the reactor column framed orange for 30 seconds,
+  its icon blue, a padlock over its bar and its plate's stripes counting down; when it runs out, what it powered goes
+  dark from the right (drones, then weapons, then systems) with FTL's sound. Reset ends it. FTL's cooldown before the
+  Battery can be used again isn't simulated. Lit buttons when a system has power (FTL's `_on` pictures). PowerT checks.
 - Next: step 6, dragging weapons and drones between slots, when heromedel says.
 
 ## Notes from the study (6.42, FTL 1.6.14 under Wine)
