@@ -89,10 +89,10 @@ class DryDockShop {
 	private final JPanel content = new JPanel(null);
 	private final JScrollPane scroll = new JScrollPane(content, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 	private final CargoParts.Label scrapLbl = new CargoParts.Label("", FtlFont.MENU, CargoParts.TEXT, -1);
-	private final CargoParts.Label storesLbl = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
+	private final CargoParts.Label storesLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 1);
 	private FtlButton buyerBtn, info;
 	private final JLabel shipPic = new JLabel();
-	private final CargoParts.Label classLbl = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, -1);
+	private final CargoParts.Label classLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, -1);
 	private final Aboard aboard = new Aboard();
 	private boolean toStorage = false; // buying for the Cargo Bay rather than the picked ship
 
@@ -107,7 +107,7 @@ class DryDockShop {
 		shipPic.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 		shipPic.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { if (!toStorage) bay.showCurrentShipInfo(); } });
 		panel.add(shipPic);
-		CargoParts.Label bf = new CargoParts.Label("BUYING FOR", FtlFont.BODY, CargoParts.DIM, -1);
+		CargoParts.Label bf = new CargoParts.Label("BUYING FOR", FtlFont.CARGO, CargoParts.DIM, -1);
 		bf.setBounds(dx, 6, CargoBayUI.DROP_W, 16);
 		panel.add(bf);
 		buyerBtn = CargoBayUI.dropButton();
@@ -208,14 +208,14 @@ class DryDockShop {
 			head.setBounds(0, y, w - 90, 22);
 			content.add(head);
 			SavedGameState src = resolve(h.ship);
-			CargoParts.Label sector = new CargoParts.Label(src == null ? "" : "Sector " + (src.getSectorNumber() + 1), FtlFont.BODY, CargoParts.DIM, 1);
+			CargoParts.Label sector = new CargoParts.Label(src == null ? "" : "Sector " + (src.getSectorNumber() + 1), FtlFont.CARGO, CargoParts.DIM, 1);
 			sector.setBounds(w - 90, y + 3, 90, 16);
 			content.add(sector);
 			y += 26;
 			String[] cols = {"Weapons", "Drones", "Augments"};
 			int[] colY = {y + 20, y + 20, y + 20};
 			for (int c = 0; c < 3; c++) {
-				CargoParts.Label l = new CargoParts.Label(cols[c], FtlFont.BODY, CargoParts.GOLD, -1);
+				CargoParts.Label l = new CargoParts.Label(cols[c], FtlFont.CARGO, CargoParts.GOLD, -1);
 				l.setBounds(c * (colW + 10), y, colW, 18);
 				content.add(l);
 			}
@@ -234,13 +234,13 @@ class DryDockShop {
 			y = Math.max(colY[0], Math.max(colY[1], colY[2])) + 4;
 			// systems, then (when the store hires) crew, then supplies: crew takes the middle column and the supplies stack in the last
 			boolean hires = !hire.isEmpty();
-			CargoParts.Label sl = new CargoParts.Label("Systems", FtlFont.BODY, CargoParts.GOLD, -1), ul = new CargoParts.Label("Supplies", FtlFont.BODY, CargoParts.GOLD, -1);
+			CargoParts.Label sl = new CargoParts.Label("Systems", FtlFont.CARGO, CargoParts.GOLD, -1), ul = new CargoParts.Label("Supplies", FtlFont.CARGO, CargoParts.GOLD, -1);
 			sl.setBounds(0, y, colW, 18);
 			ul.setBounds(hires ? 2 * (colW + 10) : colW + 10, y, colW, 18);
 			content.add(sl); content.add(ul);
 			int hy = y + 20;
 			if (hires) {
-				CargoParts.Label hl = new CargoParts.Label("Crew", FtlFont.BODY, CargoParts.GOLD, -1);
+				CargoParts.Label hl = new CargoParts.Label("Crew", FtlFont.CARGO, CargoParts.GOLD, -1);
 				hl.setBounds(colW + 10, y, colW, 18);
 				content.add(hl);
 				for (Entry e : hire) {
@@ -282,7 +282,7 @@ class DryDockShop {
 		scroll.revalidate();
 	}
 	private void emptyNote(int x, int y, String s) {
-		CargoParts.Label l = new CargoParts.Label(s, FtlFont.BODY, CargoParts.DIM, -1);
+		CargoParts.Label l = new CargoParts.Label(s, FtlFont.CARGO, CargoParts.DIM, -1);
 		l.setBounds(x + 8, y + 7, 200, 16);
 		content.add(l);
 	}
@@ -302,7 +302,7 @@ class DryDockShop {
 			installed = e.kind == Kind.SYSTEM && SystemsPanel.INSTALLED.equals(why);
 			setLayout(null);
 			setToolTipText(why != null ? why : order ? SystemsPanel.workOrderTip() : tipFor(e));
-			FtlButton buy = new FtlButton("Buy", FtlFont.BODY, 54, 22);
+			FtlButton buy = new FtlButton("Buy", FtlFont.CARGO, 54, 22);
 			buy.setEnabled(can);
 			buy.setToolTipText(why != null ? why : cost > scrap ? (order ? "Not enough scrap: with the custom work order, " + cost : "Not enough scrap")
 					: repShort ? "Not enough reputation for the custom work order: it costs " + homeplanet.core.Economy.workOrderWords()
@@ -322,10 +322,10 @@ class DryDockShop {
 			String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) + (installed ? "  (installed)" : "")
 					: e.kind == Kind.CREW ? raceTitle(e.id) : supplyName(e.kind) + "  x" + e.count;
 			int px = getWidth() - 110;
-			CargoParts.text(g, FtlFont.BODY.fit(name, px - tx - 8), FtlFont.BODY, can ? CargoParts.TEXT : CargoParts.DIM, tx, 8);
+			CargoParts.text(g, FtlFont.CARGO.fit(name, px - tx - 8), FtlFont.CARGO, can ? CargoParts.TEXT : CargoParts.DIM, tx, 8);
 			javax.swing.Icon sc = IconFactory.supplyIcon("scrap");
 			if (sc != null) sc.paintIcon(this, g, px, 7);
-			CargoParts.text(g, "" + e.price, FtlFont.BODY, can ? CargoParts.GOLD : CargoParts.DIM, px + 18, 8);
+			CargoParts.text(g, "" + e.price, FtlFont.CARGO, can ? CargoParts.GOLD : CargoParts.DIM, px + 18, 8);
 			g.dispose();
 		}
 	}
@@ -363,15 +363,15 @@ class DryDockShop {
 				javax.swing.Icon ic = IconFactory.supplyIcon(icons[i]);
 				if (ic != null) { ic.paintIcon(this, gr, x, (getHeight() - ic.getIconHeight()) / 2); x += ic.getIconWidth() + 4; }
 				String n = "" + counts[i];
-				CargoParts.text(gr, n, FtlFont.BODY, CargoParts.TEXT, x, 3);
-				x += CargoParts.width(n, FtlFont.BODY) + 18;
+				CargoParts.text(gr, n, FtlFont.CARGO, CargoParts.TEXT, x, 3);
+				x += CargoParts.width(n, FtlFont.CARGO) + 18;
 			}
 			if (!hold) {
 				int ds = CargoBayUI.droneSlots(s);
 				String slots = "Weapons " + s.getWeaponList().size() + "/" + CargoBayUI.weaponSlots(s)
 						+ "  \u00b7  Drones " + (ds == 0 ? "none" : s.getDroneList().size() + "/" + ds)
 						+ "  \u00b7  Cargo " + SaveHelper.cargo(g).size() + "/" + SaveHelper.CARGO_SLOTS;
-				CargoParts.text(gr, FtlFont.BODY.fit(slots, getWidth() - x - 12), FtlFont.BODY, CargoParts.TEXT, x + 12, 3);
+				CargoParts.text(gr, FtlFont.CARGO.fit(slots, getWidth() - x - 12), FtlFont.CARGO, CargoParts.TEXT, x + 12, 3);
 			}
 			gr.dispose();
 		}

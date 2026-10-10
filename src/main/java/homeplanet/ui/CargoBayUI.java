@@ -110,17 +110,17 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private FtlButton storedBtn;
 	private String currentTab = "trade";
 	private final FtlButton saveBtn, resetBtn;
-	private final CargoParts.Label help = new CargoParts.Label("", FtlFont.BODY, CargoParts.TEXT, -1);
+	private final CargoParts.Label help = new CargoParts.Label("", FtlFont.CARGO, CargoParts.TEXT, -1);
 	private final CargoParts.Label notice = new CargoParts.Label("", FtlFont.MENU, CargoParts.TEXT, 0);
 	/** The notice's second line, and a ship picker under it: a ship out of range can't trade, another may (5.52). */
-	private final CargoParts.Label notice2 = new CargoParts.Label("", FtlFont.BODY, CargoParts.TEXT, 0);
+	private final CargoParts.Label notice2 = new CargoParts.Label("", FtlFont.CARGO, CargoParts.TEXT, 0);
 	private FtlButton noticePick;
 	private final JPanel noticePanel = new JPanel(null);
 
 	// ---- the Trade tab ----
 	private final JPanel trade = new JPanel(null);
 	private final JLabel myPic = new JLabel(), theirPic = new JLabel();
-	private final CargoParts.Label mySub = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, -1);
+	private final CargoParts.Label mySub = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, -1);
 	private final FtlButton partnerBtn;
 	/** Her name, as a drop-down of the ships she could swap for (mirrors the partner's). */
 	private final FtlButton boardBtn;
@@ -128,7 +128,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	static final int DROP_IN = 132, DROP_W = 320;
 	/** Info buttons beside each ship's line, mirrored: they open the same report as clicking her picture. */
 	private FtlButton myInfo, theirInfo;
-	private final CargoParts.Label partnerNote = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 1);
+	private final CargoParts.Label partnerNote = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 1);
 	/** Return (ship): shown aboard a borrowed ship (the repair job's Nightjar) that's ready to go home. */
 	private FtlButton returnBtn;
 	private static final String[][] SUPPLIES = {{"scrap", "Scrap"}, {"fuel", "Fuel"}, {"missiles", "Missiles"}, {"drones", "Parts"}};
@@ -137,7 +137,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private final SupplyCell[] mySupply = new SupplyCell[4], theirSupply = new SupplyCell[4];
 	private FtlButton myJunkSupply, mySellSupply, theirJunkSupply, theirSellSupply;
 	private int supplyIdx = 0;
-	private final CargoParts.Label moveLabel = new CargoParts.Label("", FtlFont.BODY, CargoParts.DIM, 0);
+	private final CargoParts.Label moveLabel = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 0);
 	private final JSpinner moveAmount = new JSpinner(new SpinnerNumberModel(1, 1, 9999, 1));
 	/** The four item categories: 0 weapons, 1 drones, 2 augments, 3 crew. */
 	private final Category[] cats = new Category[4];
@@ -608,7 +608,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		}
 	}
 	private FtlButton button(String text, int x, int y, int w, String tip, ActionListener a) {
-		FtlButton b = new FtlButton(text, FtlFont.BODY, w, 22);
+		FtlButton b = new FtlButton(text, FtlFont.CARGO, w, 22);
 		b.setBounds(GX + x, y, w, 22);
 		b.setToolTipText(tip);
 		b.addActionListener(a);
@@ -646,14 +646,14 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		myPic.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 		myPic.addMouseListener(new MouseAdapter() { @Override public void mouseClicked(MouseEvent e) { showCurrentShipInfo(); } });
 		trade.add(myPic);
-		storedBtn = new FtlButton("Stored Systems", FtlFont.BODY, 170, 24);
+		storedBtn = new FtlButton("Stored Systems", FtlFont.CARGO, 170, 24);
 		storedBtn.setBounds(LX + DROP_IN, 107 + o, 170, 24); // under "No ship aboard", where her report's line would be
 		storedBtn.setToolTipText("The ship systems stored in the Cargo Hold: sell them here (the hold is paid on Save)");
 		storedBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { storedSystems(); } });
 		storedBtn.setVisible(false);
 		trade.add(storedBtn);
 		// the two sides mirror: a small label, the ship's drop-down, then her grey line with an info button on the outside
-		CargoParts.Label ca = new CargoParts.Label("CURRENTLY ABOARD", FtlFont.BODY, CargoParts.DIM, -1);
+		CargoParts.Label ca = new CargoParts.Label("CURRENTLY ABOARD", FtlFont.CARGO, CargoParts.DIM, -1);
 		ca.setBounds(LX + DROP_IN, 58 + o, DROP_W, 16);
 		trade.add(ca);
 		boardBtn.setBounds(LX + DROP_IN, 74 + o, DROP_W, 30);
@@ -673,7 +673,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			@Override public void mouseClicked(MouseEvent e) { if (!partnerIsStorage()) showPartnerInfo(); }
 		});
 		trade.add(theirPic);
-		CargoParts.Label tw = new CargoParts.Label("TRADING WITH", FtlFont.BODY, CargoParts.DIM, 1);
+		CargoParts.Label tw = new CargoParts.Label("TRADING WITH", FtlFont.CARGO, CargoParts.DIM, 1);
 		tw.setBounds(RX + RW - DROP_IN - DROP_W, 58 + o, DROP_W, 16);
 		trade.add(tw);
 		partnerBtn.setBounds(RX + RW - DROP_IN - DROP_W, 74 + o, DROP_W, 30);
@@ -691,7 +691,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		partnerNote.setBounds(RX + RW - DROP_IN - 30 - 400, 110 + o, 400, 16);
 		trade.add(partnerNote);
 		// beside the ship you're aboard: it's her it returns
-		returnBtn = new FtlButton("Return", FtlFont.BODY, 180, 24);
+		returnBtn = new FtlButton("Return", FtlFont.CARGO, 180, 24);
 		returnBtn.setBounds(LX + LW - 180, 106 + o, 180, 24);
 		returnBtn.setToolTipText("The Home Planet Station reports her fully repaired: send her back to her owner, and be paid");
 		returnBtn.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { returnHer(); } });
@@ -701,7 +701,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			@Override protected void paintComponent(Graphics g0) {
 				Graphics2D g = (Graphics2D) g0.create();
 				String s = "SELECT, THEN SEND";
-				CargoParts.text(g, s, FtlFont.BODY, CargoParts.DIM, (getWidth() - CargoParts.width(s, FtlFont.BODY)) / 2, 0);
+				CargoParts.text(g, s, FtlFont.CARGO, CargoParts.DIM, (getWidth() - CargoParts.width(s, FtlFont.CARGO)) / 2, 0);
 				g.setColor(CargoParts.GOLD);
 				g.setStroke(new BasicStroke(2f));
 				int y = 24, w = getWidth();
@@ -748,7 +748,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		trade.add(moveAmount);
 		// everything at once, either way (heromedel: the arrows start at 1; these move the lot): double arrows between the
 		// junk and sell icons, never over them (5.21)
-		FtlButton allLeft = new FtlButton("<<", FtlFont.BODY, 32, 22), allRight = new FtlButton(">>", FtlFont.BODY, 32, 22);
+		FtlButton allLeft = new FtlButton("<<", FtlFont.CARGO, 32, 22), allRight = new FtlButton(">>", FtlFont.CARGO, 32, 22);
 		allLeft.setBounds(GX + 61, y + 68, 32, 22); // the pair centered on the number box, 3 pixels to each sell icon (5.27)
 		allRight.setBounds(GX + 95, y + 68, 32, 22);
 		allLeft.setToolTipText("Take all of it from the partner");
@@ -792,7 +792,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			super.paintComponent(g);
 			javax.swing.Icon ic = IconFactory.supplyIcon(SUPPLIES[idx][0]);
 			if (ic != null) ic.paintIcon(this, g, 8, 6);
-			CargoParts.text(g, SUPPLIES[idx][1], FtlFont.BODY, CargoParts.DIM, 28, 7);
+			CargoParts.text(g, SUPPLIES[idx][1], FtlFont.CARGO, CargoParts.DIM, 28, 7);
 			ShipState s = mine ? currentState : tradeState;
 			if (s == null) return;
 			String v = "" + supply(s, idx);
