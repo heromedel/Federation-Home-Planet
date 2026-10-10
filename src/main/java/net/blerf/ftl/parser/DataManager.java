@@ -1,3 +1,8 @@
+/*
+ * This file comes from Vhati's FTL Profile Editor (GPL-2.0) and was modified for Federation Home Planet:
+ * FTL's whole crew name lists (getCrewNames, 6.33).
+ * See CREDITS.md and LICENSE at the root of the project.
+ */
 package net.blerf.ftl.parser;
 
 import java.io.Closeable;
@@ -328,6 +333,11 @@ public abstract class DataManager implements Closeable {
 	}
 
 	public String getCrewName( boolean isMale ) {
+		throw new UnsupportedOperationException();
+	}
+
+	/** Every crew name of that sex, as FTL's list has it (Federation Home Planet, 6.33: a last word borrowed from them). */
+	public java.util.List<String> getCrewNames( boolean isMale ) {
 		throw new UnsupportedOperationException();
 	}
 

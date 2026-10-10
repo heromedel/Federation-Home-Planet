@@ -231,6 +231,9 @@ final class StationBackdrop {
 			ShipBlueprint bp = DataManager.get().getShip(id);
 			if (bp == null) continue;
 			BufferedImage art = frame.getResourceImage("img/ship/" + bp.getGraphicsBaseName() + "_base.png", false);
+			if (art == null) { // a ship you designed, with pictures of her own: from her design, not FTL's data (feedback, 6.36)
+				try { art = homeplanet.parser.DesignExport.hullOf(id); } catch (RuntimeException e) { log.debug("No hull art for {}: {}", id, e.toString()); }
+			}
 			if (art != null) pool.add(art);
 		}
 		List<Ship> ships = new ArrayList<Ship>();

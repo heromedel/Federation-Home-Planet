@@ -70,6 +70,7 @@ echo "== JournalT"; run JournalT "$GAME" "$WORLD" "$W/journal" | grep -E "$PICK|
 echo "== HoldT"; run HoldT "$GAME" "$WORLD" "$W/hold" | grep -E "$PICK|^PASS"
 echo "== LoreT"; run LoreT "$GAME" "$WORLD" "$W/lore" | grep -E "$PICK|^PASS"
 echo "== NamesT"; run NamesT "$GAME" "$WORLD" "$W/names" | grep -E "$PICK|^PASS|^SAMPLE"
+echo "== CrewNameT"; run CrewNameT "$GAME" "$WORLD" "$W/cname" | grep -E "$PICK|^PASS"
 echo "== CarryT"; run CarryT "$GAME" "$WORLD" "$W/carry" | grep -E "$PICK|^PASS"
 echo "== RegT"; run RegT "$GAME" "$WORLD" "$W/reg" | grep -E "$PICK|^PASS|difference|old:|new:"
 echo "== VicT"; run VicT "$GAME" "$WORLD" "$W/vic" $VICLOG | grep -E "$PICK|^PASS|^replay"

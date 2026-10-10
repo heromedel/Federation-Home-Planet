@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.32";
+	public static final String APP_VERSION = "6.37";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -361,6 +361,7 @@ public class HomePlanet {
 		String old = config.getProperty("scrap_keeps_systems");
 		if (old != null && config.getProperty("strip_when_scrapping") == null) config.setProperty("strip_when_scrapping", old);
 		config.remove("scrap_keeps_systems");
+		config.remove(StationConsole.DEV); // before 6.35 dev commands stayed on in the cfg: now they last one run, never left on (heromedel)
 		return from != propFile; // an old config: written to its new place
 	}
 

@@ -403,7 +403,7 @@ public class CommissionDialog extends JDialog {
 	/** Clicking a crew member's name in the preview: her name in the crew she'll be built with. */
 	private void renameCrew(Entry e, int i, net.blerf.ftl.parser.SavedGameParser.CrewState shown) {
 		if (crew == null || i < 0 || i >= crew.size()) return;
-		String name = SpaceDockUI.promptForName("New name for " + shown.getName() + " (" + homeplanet.model.Crew.raceTitle(shown) + "):", "Rename Crew", shown.getName());
+		String name = SpaceDockUI.promptForCrewName("New name for " + shown.getName() + " (" + homeplanet.model.Crew.raceTitle(shown) + "):", "Rename Crew", shown);
 		if (name == null) return;
 		crew.get(i).setName(name);
 		showPreview(e);

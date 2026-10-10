@@ -269,9 +269,9 @@ public class Commission {
 			for (int i = 0; i < g.amount; i++) {
 				CrewState c = new CrewState();
 				c.setRace(race);
-				boolean male = (race != CrewType.HUMAN || rng.nextBoolean()) && !homeplanet.core.StationConsole.girlPower(); // girl power (6.22): a woman, her name from FTL's women's names
+				boolean male = rollMale(race, rng) && !homeplanet.core.StationConsole.girlPower(); // girl power (6.22): a woman, her name from the women's names
 				c.setMale(male);
-				c.setName(uniqueName(male, used));
+				c.setName(CrewNames.unique(race.getId(), male, rng, used));
 				c.setHealth(race.getMaxHealth());
 				c.setPlayerControlled(true);
 				c.getTeleportAnim().setPlaying(true);
@@ -319,23 +319,30 @@ public class Commission {
 	}
 
 	/** A crew volunteer of this race (a reward), named and tinted as a new game's crew are, placed nowhere yet. Null for an unknown race. */
-	public static CrewState volunteer(String raceId, Random rng) { return volunteer(raceId, rng, homeplanet.core.StationConsole.girlPower()); }
-	/** As {@link #volunteer(String, Random)}, the girl power setting aside: the look of someone who already served (6.22). */
-	public static CrewState lookOf(String raceId, Random rng) { return volunteer(raceId, rng, false); }
-	private static CrewState volunteer(String raceId, Random rng, boolean girlPower) {
+	public static CrewState volunteer(String raceId, Random rng) { return volunteer(raceId, rng, false); }
+	/**
+	 * As {@link #volunteer(String, Random)}, rolled as before 6.22 whatever the settings (no girl power, no name lists):
+	 * the look of someone who already served, the same for the same seed as it always was.
+	 */
+	public static CrewState lookOf(String raceId, Random rng) { return volunteer(raceId, rng, true); }
+	private static CrewState volunteer(String raceId, Random rng, boolean asBefore) {
 		CrewType race = CrewType.findById(raceId);
 		if (race == null) return null;
 		CrewState c = new CrewState();
 		c.setRace(race);
-		boolean male = (race != CrewType.HUMAN || rng.nextBoolean()) && !girlPower; // girl power (6.22)
+		boolean male = asBefore ? race != CrewType.HUMAN || rng.nextBoolean() : rollMale(race, rng) && !homeplanet.core.StationConsole.girlPower(); // girl power (6.22)
 		c.setMale(male);
-		c.setName(uniqueName(male, new HashSet<String>()));
+		c.setName(asBefore ? uniqueName(male, new HashSet<String>()) : CrewNames.unique(raceId, male, rng, new HashSet<String>()));
 		c.setHealth(race.getMaxHealth());
 		c.setPlayerControlled(true);
 		c.setSpriteTintIndeces(tints(race, rng));
 		return c;
 	}
 
+	/** A new crew member's sex: with the name lists on, an even chance for every race (6.33); off, as FTL rolls them (every alien a man). */
+	private static boolean rollMale(CrewType race, Random rng) {
+		return CrewNames.listsOn() ? (rng.nextInt() & 1) == 0 : race != CrewType.HUMAN || rng.nextBoolean(); // a low bit: a Random seeded just before gives the same first nextBoolean for nearby seeds
+	}
 	private static String uniqueName(boolean male, Set<String> used) {
 		String n = null;
 		for (int tries = 0; tries < 50; tries++) {
