@@ -243,7 +243,7 @@ public final class CaptainsLog {
 			Line l = once(m, "commission", true, "Commissioned " + theShip(shipName(head)) + (model == null ? "." : ", a " + model + "."));
 			List<String> crew = event == null ? new ArrayList<String>() : event.all("crew"); // who came aboard with her, by name (heromedel, 6.30); an older entry keeps its Crew: line
 			for (int i = 1; i < det.size(); i++) if (crew.isEmpty() || !det.get(i).startsWith("Crew: ")) l.details.add(det.get(i));
-			if (!crew.isEmpty()) l.details.add(join(crew) + " came aboard with her.");
+			if (!crew.isEmpty()) once(m, "commission", true, join(crew) + " joined my fleet to crew the ship."); // shown, its own line (heromedel's words, 6.37)
 		} else if (kind.equals("DISBAND")) {
 			once(m, "ships", true, "Decommissioned " + theShip(shipName(head)) + ".");
 		} else if (kind.equals("SCRAP")) {
