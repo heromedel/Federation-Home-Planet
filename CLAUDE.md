@@ -40,6 +40,7 @@ it does and CREDITS.md for where the code came from.
   the same version number meanwhile; the merge renumbers to follow `main`.
 - Never commit or push to `main`. Work only on your own session branch; heromedel decides what goes into
   `main` (a pull request or their own merge).
+- Do not make a pull requst without double checking. Hero prefers simple merges.
 - heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build The Federation Home Planet Station.bat`.
   They know how to fetch and build: don't repeat test steps after each commit. Mention what to test only when it's
   something unusual they wouldn't find on their own.
