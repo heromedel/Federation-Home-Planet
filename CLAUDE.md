@@ -40,6 +40,7 @@ it does and CREDITS.md for where the code came from.
   the same version number meanwhile; the merge renumbers to follow `main`.
 - Never commit or push to `main`. Work only on your own session branch; heromedel decides what goes into
   `main` (a pull request or their own merge).
+- Do not make a pull requst without double checking. Hero prefers simple merges.
 - heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build The Federation Home Planet Station.bat`.
   They know how to fetch and build: don't repeat test steps after each commit. Mention what to test only when it's
   something unusual they wouldn't find on their own.
@@ -104,7 +105,7 @@ it does and CREDITS.md for where the code came from.
 - **One home each (6.0, step 10):** race names come from `model.Crew` (`raceTitle(id)`: FTL's title, "Rockman"; `racePeople(id)`:
   the people, "Rock"; `peopleOf(shipId)`), "the" before a ship's name from `parser.ShipNames.the`, capitals and a/an from
   `model.Words`, prices from `parser.Pricing`, a ship's gear from `parser.SaveHelper.gear`, a crew member on disk from `vault.CrewRecord`
-  (6.11: every file that keeps crew; Long Range Comm. converts to its own names), the stored systems from `vault.StoredSystems`:
+  (6.11: every file that keeps crew; Long Range Comm. converts to its own names), the stored systems from `vault.StoredSystems`, a new crew member's name from `parser.CrewNames` (6.33: the race lists and the Settings):
   never a copy of any of them. The windows ask and show; what they save goes through the vault (6.11: the Cargo Bay's Save is
   `vault.CargoBaySave`, the Space Dock's business `vault.SpaceDock`).
 - **Crew names:** avoiding duplicate names is impossible (heromedel): trades, Rename, FTL's own crew, hiring and

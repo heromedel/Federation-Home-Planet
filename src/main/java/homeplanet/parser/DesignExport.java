@@ -74,6 +74,15 @@ public class DesignExport {
 		}
 		return ShipArt.scaled(b, d.artScale);
 	}
+	/** The hull picture of the design this blueprint id was built from (her own art, at her size), or null: the Space Dock's backdrop flies them too (6.36). */
+	public static BufferedImage hullOf(String bpId) {
+		for (ShipDesign d : built()) {
+			if (!bpId(d).equals(bpId) || d.art.isEmpty()) continue;
+			BufferedImage b = ShipArt.load(d.art, gameArt(d) ? "_base" : "");
+			return b == null ? null : ShipArt.scaled(b, d.artScale);
+		}
+		return null;
+	}
 	static BufferedImage floor(ShipDesign d) { return ShipArt.floorOf(d); }
 
 	/** Rooms start at square (0, 0) in FTL's files, as the game's own ships do: how far hers are shifted to get there. */

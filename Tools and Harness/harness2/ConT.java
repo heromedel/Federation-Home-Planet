@@ -1,5 +1,5 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*; import net.blerf.ftl.model.*;
-/** The console (5.22): admin commands locked, then unlocked; /passtime passes exactly that many days, each with the station's round. args: gamedir, world saves, work */
+/** The console (5.22): admin commands locked, then unlocked for the run only (6.35); /passtime passes exactly that many days, each with the station's round; /?, /easter and girl power (6.35). args: gamedir, world saves, work */
 public class ConT { public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
@@ -9,11 +9,17 @@ public class ConT { public static void main(String[] a) throws Exception {
  StationConsole.Reply r = StationConsole.answer("/admin");
  Setup.chk("A: locked, /admin, /admin ? and /admin dc are unknown commands: nothing says there is anything to unlock", r.text.equals("Unknown command: /admin") && r.days == 0
    && StationConsole.answer("/admin ?").text.startsWith("Unknown command") && StationConsole.answer("/admin dc").text.startsWith("Unknown command"));
+ oldSwitch(work);
+ Setup.chk("E: /? lists /? and /easter, and nothing else", StationConsole.answer("/?").text.equals("/?\n/easter"));
+ Setup.chk("E: /easter: \"Wouldn't you like to know, Weather Boy.\"", StationConsole.answer("/easter").text.equals("Wouldn't you like to know, Weather Boy."));
+ Setup.chk("E: /easter ? gives the hint", StationConsole.answer("/easter ?").text.equals("* When sisters unite they have.."));
+ girlPower(v); // with dev commands locked: an easter egg, not a dev command
  r = StationConsole.answer("/passtime 3");
  Setup.chk("A: a locked command stays hidden: unknown, nothing passes", r.text.startsWith("Unknown command") && r.days == 0);
  r = StationConsole.answer("  /ADMIN  dc   on ");
  String cfg = new String(SafeFiles.read(HomePlanet.propFile), "UTF-8");
- Setup.chk("A: /admin dc on unlocks them, kept in the cfg, without listing them", StationConsole.devOn() && r.text.equals("Dev commands on.") && cfg.contains("dev_commands=true"));
+ Setup.chk("A: /admin dc on unlocks them for this run, never in the cfg, without listing them", StationConsole.devOn() && r.text.equals("Dev commands on.") && !cfg.contains("dev_commands"));
+ Setup.chk("G: /admin girlpower is gone, even unlocked", StationConsole.answer("/admin girlpower").text.startsWith("Unknown command") && !StationConsole.answer("/admin ?").text.contains("girlpower"));
  Setup.chk("A: /admin ? lists them now, /admin points to it", StationConsole.answer("/admin ?").text.contains("/passtime") && StationConsole.answer("/admin").text.contains("/admin ?"));
  Setup.chk("P: /passtime with no number, 0, too many or words: how to use it, nothing passes",
    StationConsole.answer("/passtime").days == 0 && StationConsole.answer("/passtime 0").days == 0 && StationConsole.answer("/passtime 366").days == 0 && StationConsole.answer("/passtime ten").text.startsWith("Usage"));
@@ -38,10 +44,46 @@ public class ConT { public static void main(String[] a) throws Exception {
  String p = (String) page.invoke(null, v, false);
  Setup.chk("P: the Captain's Log tells the quiet days as quiet, the homecoming on its day, and never the command", p.contains("Nothing to report.") && p.contains("came back from the expedition") && !p.toLowerCase().contains("dev command"));
  stipend(saves);
+ Setup.chk("A: a career switch locked them (another fleet opened)", !StationConsole.devOn() && StationConsole.answer("/passtime 2").days == 0);
+ StationConsole.answer("/admin dc on");
  r = StationConsole.answer("/admin dc off");
  Setup.chk("A: /admin dc off locks them again", !StationConsole.devOn() && StationConsole.answer("/admin ?").text.startsWith("Unknown command") && StationConsole.answer("/passtime 2").days == 0);
  Setup.done();
 }
+ /** A cfg from before 6.35 with dev commands left on: read at startup, they are locked and the line goes. */
+ static void oldSwitch(File work) throws Exception {
+  File was = HomePlanet.propFile, cfg = new File(work, "old.cfg");
+  SafeFiles.writeText(cfg, "dev_commands=true\n", false);
+  HomePlanet.propFile = cfg;
+  java.lang.reflect.Method load = HomePlanet.class.getDeclaredMethod("loadConfig"); load.setAccessible(true); load.invoke(null);
+  HomePlanet.propFile = was;
+  Setup.chk("Y: an old cfg's dev_commands=true: locked at startup, the line gone", !StationConsole.devOn() && HomePlanet.config.getProperty(StationConsole.DEV) == null
+    && StationConsole.answer("/passtime 2").text.startsWith("Unknown command"));
+ }
+ /** /easter girlpower (6.22; an easter egg since 6.35): every crew member the station makes is a woman while it's on; the cfg has the line only then; crew already made are as they were. */
+ static void girlPower(Vault v) throws Exception {
+  SavedGameState before = Commission.build("PLAYER_SHIP_HARD", "Before", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(5));
+  StationConsole.Reply r = StationConsole.answer("/easter girlpower");
+  String cfg = new String(SafeFiles.read(HomePlanet.propFile), "UTF-8");
+  Setup.chk("G: on: said, kept in the cfg as girlpower=true", StationConsole.girlPower() && r.text.startsWith("Girl power on") && cfg.contains("girlpower=true"));
+  boolean women = true;
+  for (String race : new String[] {"human", "engi", "mantis", "rock", "slug", "crystal", "energy", "anaerobic"})
+   for (int i = 0; i < 10; i++) { CrewState c = Commission.volunteer(race, new Random(i)); if (c == null || c.isMale()) women = false; }
+  for (CrewState c : Commission.build("PLAYER_SHIP_HARD", "After", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(5)).getPlayerShip().getCrewList()) if (c.isMale()) women = false;
+  for (CrewState c : Commission.build("PLAYER_SHIP_ROCK", "Rocks", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(6)).getPlayerShip().getCrewList()) if (c.isMale()) women = false;
+  Setup.chk("G: on: volunteers of every race and a commissioned ship's crew are all women", women);
+  boolean menStill = false; for (int i = 0; i < 10; i++) if (Commission.lookOf("human", new Random(i)).isMale()) menStill = true;
+  int beforeMen = 0; for (CrewState c : before.getPlayerShip().getCrewList()) if (c.isMale()) beforeMen++;
+  Setup.chk("G: on: the look of someone who already served is unchanged; crew made before keep theirs (" + beforeMen + " men)", menStill && beforeMen > 0);
+  String log = SpaceT.log(v);
+  Setup.chk("G: logged as a settings change", log.contains("| SETTINGS |") && log.contains("girlpower=true"));
+  r = StationConsole.answer("/easter girlpower");
+  cfg = new String(SafeFiles.read(HomePlanet.propFile), "UTF-8");
+  boolean men = false; for (int i = 0; i < 10; i++) if (Commission.volunteer("human", new Random(i)).isMale()) men = true;
+  boolean nonHumanMen = false; Random any = new Random(1); for (int i = 0; i < 20; i++) if (Commission.volunteer("engi", any).isMale()) nonHumanMen = true; // 6.33: with the name lists, aliens are men and women
+  Setup.chk("G: again: off, the line gone from the cfg, crew rolled as before", !StationConsole.girlPower() && r.text.equals("Girl power off.") && !cfg.contains("girlpower") && men && nonHumanMen
+    && SpaceT.log(v).contains("girlpower=false"));
+ }
  /** A stipend due partway through a run is issued on its own day, once (5.23: it came only when the run was over). */
  static void stipend(File saves) throws Exception {
   TransT.profile(saves, new String[] {"PLAYER_SHIP_HARD"}, new String[] {"ACH_SECTOR_5"});

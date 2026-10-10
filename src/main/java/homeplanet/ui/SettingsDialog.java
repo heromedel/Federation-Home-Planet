@@ -52,6 +52,13 @@ public class SettingsDialog extends JDialog {
 	private final RuleBoxes rules = new RuleBoxes();
 	private final JCheckBox borderlessBox = new JCheckBox("Borderless full screen: the station fills the screen, with no title bar (F11 or Alt+Enter switches it any time)", Boolean.parseBoolean(HomePlanet.config.getProperty(MainFrame.CFG_BORDERLESS, "false")));
 	private final JCheckBox musicBox = new JCheckBox("Play title music while the game is not open", homeplanet.core.Music.enabled);
+	// crew names (heromedel and McCarthy, 6.33): each race's own list, and how humans are named
+	private static final String[] LISTS_ON_OFF = {"On", "Off"}, HUMAN_GEN = {"Normal", "First Names Only", "First and Last Always"};
+	private static final String[] HUMAN_GEN_CFG = {homeplanet.parser.CrewNames.NORMAL, homeplanet.parser.CrewNames.FIRST, homeplanet.parser.CrewNames.FIRST_LAST};
+	private final javax.swing.JComboBox<String> namesBox = new javax.swing.JComboBox<String>(LISTS_ON_OFF), humanGenBox = new javax.swing.JComboBox<String>(HUMAN_GEN);
+	private static final String[] ENGI = {"Prefix", "Append", "None"};
+	private static final String[] ENGI_CFG = {homeplanet.parser.CrewNames.PREFIX, homeplanet.parser.CrewNames.APPEND, homeplanet.parser.CrewNames.NONE};
+	private final javax.swing.JComboBox<String> engiBox = new javax.swing.JComboBox<String>(ENGI);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging", HomePlanet.debugLogging);
 	private boolean savesChanged = false;
 	/** After a final victory: nothing, rescue her, or a reward of her value (the fleet in use has its own choice). */
@@ -165,6 +172,33 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Station");
 		body.add(borderlessBox, next(c));
 		body.add(musicBox, next(c));
+
+		heading(body, c, "Crew Names");
+		namesBox.setSelectedIndex(homeplanet.parser.CrewNames.listsOn() ? 0 : 1);
+		humanGenBox.setSelectedIndex(java.util.Arrays.asList(HUMAN_GEN_CFG).indexOf(homeplanet.parser.CrewNames.humanGen()));
+		namesBox.setToolTipText("On: the crew The Home Planet Station brings aboard are named from their own race's list (lore/names). Off: every race has FTL's names, as FTL gives them. Crew already aboard keep theirs");
+		final String[] genTips = {
+				"Normal: as FTL names them. FTL's names sometimes have a last name and sometimes don't; with the lists on, about half of humans get one",
+				"First Names Only: a first name alone (with the lists off, FTL's names cut to their first word)",
+				"First and Last Always: a first and a last name (with the lists off, a one-word FTL name borrows a last name from FTL's others)"};
+		final String genAll = "How humans are named. With the name lists off, every race has FTL's human names, so this applies to every race";
+		humanGenBox.setToolTipText("<html>" + genAll + "<br>" + genTips[humanGenBox.getSelectedIndex()] + "</html>");
+		humanGenBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { humanGenBox.setToolTipText("<html>" + genAll + "<br>" + genTips[humanGenBox.getSelectedIndex()] + "</html>"); } });
+		humanGenBox.setRenderer(new javax.swing.DefaultListCellRenderer() { // each choice explains itself in the open list
+			@Override public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index, boolean selected, boolean focus) {
+				java.awt.Component comp = super.getListCellRendererComponent(list, value, index, selected, focus);
+				if (index >= 0 && index < genTips.length) list.setToolTipText(selected ? genTips[index] : list.getToolTipText());
+				return comp;
+			}
+		});
+		body.add(labelled("Custom Name Lists Per Race:", namesBox), next(c));
+		body.add(labelled("Human Name Gen:", humanGenBox), next(c));
+		engiBox.setSelectedIndex(java.util.Arrays.asList(ENGI_CFG).indexOf(homeplanet.parser.CrewNames.engiTranslate()));
+		engiBox.setToolTipText("<html>The Engi's name lists write an English word in hex. Prefix: Byte 4279-7465. Append: 4279-7465 Byte. None: 4279-7465.<br>"
+				+ "Only with the name lists on (the Engi have FTL's names without them)</html>");
+		engiBox.setEnabled(namesBox.getSelectedIndex() == 0);
+		namesBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { engiBox.setEnabled(namesBox.getSelectedIndex() == 0); } });
+		body.add(labelled("Engi Translate:", engiBox), next(c));
 
 		shipTradeBox.setToolTipText("Sandbox fleets always may. A ship traded in arrives commissioned, and only what she does in your fleet counts toward letters, rewards and achievements");
 		anyLevelBox.setToolTipText("Off: your career trades only with careers of its own difficulty");
@@ -527,6 +561,20 @@ public class SettingsDialog extends JDialog {
 		if (toHardBox.isEnabled() && toHardBox.isSelected() != toHardWas) changed.add(TO_HARD + ": " + toHardBox.isSelected());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
+		if ((namesBox.getSelectedIndex() == 0) != homeplanet.parser.CrewNames.listsOn()) {
+			changed.add("Custom Name Lists Per Race: " + namesBox.getSelectedItem());
+			if (namesBox.getSelectedIndex() == 0) HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_LISTS, "true");
+			else HomePlanet.config.remove(homeplanet.parser.CrewNames.CFG_LISTS); // off is the default, as FTL names its crew: the line only while on (6.34)
+		}
+		if (!ENGI_CFG[engiBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.engiTranslate())) {
+			changed.add("Engi Translate: " + engiBox.getSelectedItem());
+			if (engiBox.getSelectedIndex() == 2) HomePlanet.config.remove(homeplanet.parser.CrewNames.CFG_ENGI); // None is the default: the line only while Prefix or Append
+			else HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_ENGI, ENGI_CFG[engiBox.getSelectedIndex()]);
+		}
+		if (!HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.humanGen())) {
+			changed.add("Human Name Gen: " + humanGenBox.getSelectedItem());
+			HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_HUMAN, HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()]);
+		}
 		final java.awt.Window frame = getOwner();
 		if (frame instanceof MainFrame && borderlessBox.isSelected() != ((MainFrame) frame).isBorderless()) {
 			changed.add("Borderless full screen: " + borderlessBox.isSelected());
@@ -681,6 +729,14 @@ public class SettingsDialog extends JDialog {
 			JOptionPane.showMessageDialog(this, "The Home Planet Station could not open the folder:\n" + dir.getPath(),
 					"Open folder", JOptionPane.WARNING_MESSAGE);
 		}
+	}
+
+	/** A label and its choice on one line, the choice at its own width. */
+	private static JPanel labelled(String name, javax.swing.JComponent choice) {
+		JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+		row.add(new JLabel(name));
+		row.add(choice);
+		return row;
 	}
 
 	private static JPanel folderRow(String name, JLabel path, ActionListener change) {

@@ -102,6 +102,14 @@ under the Station heading is rarely needed. Make it a little refresh icon beside
 instead, out of the way but there for the odd time (a file changed by hand, a doubt). The heading folds on a click
 (ROADMAP 25), so the icon has to be its own target, not part of the fold.
 
+## Idea G: custom unlock settings for player designed ships (noted 6.26)
+
+From heromedel: "Custom unlock settings for player designed ships"
+
+Notes: as it stands, a ship from Design Ship ticked as a starter ship is listed in Commission in every career from the
+start, with no unlock of its own; a remodel of one of FTL's ships follows her base ship's unlock when the career's
+unlock rule is on (`CommissionDialog`).
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just

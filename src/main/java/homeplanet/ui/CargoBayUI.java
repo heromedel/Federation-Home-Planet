@@ -1231,7 +1231,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			return;
 		}
 		if (choice != 1) return;
-		String newName = SpaceDockUI.promptForName("Enter a new name for " + cs.getName() + ":", "Rename Crew", cs.getName());
+		String newName = SpaceDockUI.promptForCrewName("Enter a new name for " + cs.getName() + ":", "Rename Crew", cs);
 		if (newName == null || newName.equals(cs.getName())) return;
 		if (!crewRenames.containsKey(cs)) crewRenames.put(cs, cs.getName()); // remember the saved name
 		cs.setName(newName);
