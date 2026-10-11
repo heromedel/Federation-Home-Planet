@@ -35,7 +35,7 @@ Commission: Get new ships in The FHP Station (based on what you have unlocked if
 
 New Journey: Take a Ship on a "New Journey" allowing you to return the ship to a new sector one and keep playing it either allowing you to grind more if you needed to or treat the otherwise vanilla game as an endless mode. Only costs scrap if you set it that way or play one of the immersive mode careers. 
 
-Retrofit: Allows you to change what room is reserved for what systems, and generates a new blueprint which can easily be patched into the game without you having to leave the program. (Offers to Launch slipstream and restart for you.) Undo the retrofit at any time. (Retrofitted ships do not unlock vanilla ship based achievements.)
+Retrofit: Allows you to change what room is reserved for what systems, and generates a new blueprint which can easily be patched into the game without you having to leave the program. (Offers to Launch Slipstream and restart for you.) Undo the retrofit at any time. (Retrofitted ships do not unlock vanilla ship based achievements.)
 
 Remodel: Change a ships room layout without needing to design the entire ship yourself.
 
