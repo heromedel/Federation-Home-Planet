@@ -147,12 +147,11 @@ public class SystemsPanel {
 		panel.add(sub);
 		payer.setCargo(!shipPays());
 		java.awt.Dimension ps = payer.getPreferredSize();
-		int px = 700 + CargoParts.width("INSTALLED SYSTEMS", FtlFont.MENU) + 14; // right after the heading's words (6.45, heromedel)
-		payer.setBounds(px, 0, ps.width, ps.height); // its switch level with the words, "PAY FROM" over it
+		payer.setBounds(700, 0, ps.width, ps.height); // left of the heading's words (6.45, heromedel), its switch level with them, "PAY FROM" over it
 		payer.setToolTipText("Who pays the Dry Dock: the ship's own scrap, or the Cargo Hold's (Cargo; paid on Save)");
 		payer.onChange(new Runnable() { public void run() { switchPayer(); } });
 		panel.add(payer);
-		scrapCount.setBounds(px + ps.width + 12, 8, 120, 22); // the scrap that side has, after the switch
+		scrapCount.setBounds(700 + ps.width + 10 + CargoParts.width("INSTALLED SYSTEMS", FtlFont.MENU) + 12, 8, 120, 22); // the scrap that side has, after the words
 		panel.add(scrapCount);
 		panel.setComponentZOrder(payer, 0);
 		panel.setComponentZOrder(scrapCount, 0);
@@ -255,8 +254,9 @@ public class SystemsPanel {
 		sysList.removeAll();
 		storedList.removeAll();
 		CargoParts.Header h1 = new CargoParts.Header("Installed systems", false);
-		h1.setBounds(0, 0, 564, 22);
-		h1.lineFrom(scrapCount.getX() - 700 + scrapCount.textWidth() + 12); // its line starts after the switch and the scrap
+		int hx = payer.getWidth() + 10; // the words start after Pay From
+		h1.setBounds(hx, 0, 564 - hx, 22);
+		h1.lineFrom(scrapCount.getX() - 700 - hx + scrapCount.textWidth() + 12); // its line starts after the scrap
 		lists.add(h1);
 		y = dryDock(bs, y, w); // the hull and the reactor first, no Dry Dock heading of their own (6.44, heromedel)
 		int i = 0;
