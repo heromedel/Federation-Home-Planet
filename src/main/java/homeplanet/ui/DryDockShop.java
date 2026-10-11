@@ -140,8 +140,7 @@ class DryDockShop {
 		panel.add(buyerBtn);
 		// Pay From (6.45, heromedel): whose scrap pays, whatever the goods are for; remembered, as the Refit's is
 		java.awt.Dimension ps = payFrom.getPreferredSize();
-		int px = dx + CargoBayUI.DROP_W + 20;
-		payFrom.setBounds(px, 22 + (30 - ps.height) / 2 - 3, ps.width, ps.height);
+		payFrom.setBounds(640 - ps.width / 2, 0, ps.width, ps.height); // under the Shop tab's button, where the Refit has it
 		payFrom.setToolTipText("Who pays the Shop: the ship picked in the Cargo Bay, or the Cargo Hold (Cargo; paid on Save)");
 		payFrom.onChange(new Runnable() {
 			public void run() {
@@ -153,7 +152,7 @@ class DryDockShop {
 			}
 		});
 		panel.add(payFrom);
-		scrapCount.setBounds(px + ps.width + 14, 22, 260, 30);
+		scrapCount.setBounds(0, 8, 120, 22); // just left of Pay From (placed in rebuild, by its width)
 		panel.add(scrapCount);
 		aboard.setBounds(dx + CargoBayUI.DROP_W + 20, 54, 1264 - (dx + CargoBayUI.DROP_W + 20), 22);
 		panel.add(aboard);
@@ -216,7 +215,8 @@ class DryDockShop {
 		shipPic.setToolTipText(toStorage ? null : "Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		classLbl.setText(toStorage ? "Items, supplies, and systems for Refit" : CargoBayUI.shipClass(bay.currentState));
 		info.setToolTipText(toStorage ? "What the Cargo Hold is" : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report, and to rename " + homeplanet.model.Words.herObj());
-		scrapCount.set(scrap, "to spend");
+		scrapCount.set(scrap, ""); // what it is: in its tooltip, as on the Refit
+		scrapCount.setBounds(payFrom.getX() - 10 - scrapCount.textWidth(), 8, scrapCount.textWidth() + 2, 22);
 		scrapCount.setToolTipText(homeplanet.model.Words.cap(payerName()) + " has " + scrap + " scrap to spend here (paid on Save)");
 		aboard.show(buyer, toStorage);
 		List<Entry> entries = buildEntries();
