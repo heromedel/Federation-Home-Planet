@@ -141,6 +141,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `RENAME` | ship, `from`, `to` | "Old Glory -> Kestrel  (a3f2)" |
 | `RENAME_CREW` | `what` (`renamed`, `promoted`), `from`, `to`, `crew_id`, `race`, `rank`, `posthumously`, `place`, `ship_name`, `ship_id`, `on_record` (`true` when a rank given on the record is put in her save) | "Gracie -> Sgt. Gracie  (Kestrel)" |
 | `REMODEL` | `ship_name`, `to_class`, `detail.n` | "Kestrel -> PLAYER_SHIP_FED" |
+| `CREW_RESEATED` | ship, `layout`, `class`, `why` (`overhaul_offset`), `crew` (each one moved), `detail.n` (6.47: crew an overhaul before 6.47 left outside her rooms put back on squares of them) | "Kestrel: crew back aboard after the overhaul (Bob, Ann)" |
 | `SCRAP` | `ship_name`, `stripped`, `to`, `detail.n` (what went into storage) | "Kestrel stripped into storage, hull broken up" |
 | `SELL` | from the Space Dock: `ship_name`, `how` (`auction`, `trade_in`), `price`, `to`; from the Cargo Bay: `what` (`cargo_bay`), `count`, `scrap`, `detail.n` | "Kestrel sold at auction for 80 scrap; ..." |
 | `JUNK` | `what` (`cargo_bay`), `count`, `detail.n` (what was thrown out) | "2 items" |

@@ -56,6 +56,7 @@ public final class ShipChecks {
 		for (CompanionMod.Sys s : d.systems.values()) {
 			if (s.room < 0 || s.room >= d.rooms.size()) { p.add(title(s.id) + " is in room " + s.room + ", which doesn't exist."); continue; }
 			ShipDesign.Room room = d.rooms.get(s.room);
+			if (s.square != null && s.square < 0 && !ShipDesign.manned(s.id)) continue; // FTL's own -2 for a Medbay or Clone Bay (Engi B, Federation B...): a slot of the bay's, no station (6.47)
 			if (s.square != null && (s.square < 0 || s.square >= room.w * room.h))
 				p.add(title(s.id) + "'s station is on square " + s.square + ", but room " + s.room + " has only " + room.w * room.h + ".");
 		}

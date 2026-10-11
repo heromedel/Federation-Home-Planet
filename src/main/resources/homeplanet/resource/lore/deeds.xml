@@ -5,7 +5,7 @@
      kind="ACCOLADE" when="of=...": what the career did, in a phrase, one kind to a letter and each kind once a career.
      Where a kind has several, one is picked at random. {ship} is the ship ("the Kestrel"), {n} a count (in words up to
      ten), {model} a ship's model, {crew} a crew member's name, {achievement} an achievement's name; those are all.
-     The ship pronoun tokens {she} {her} {her_obj} {hers} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General).
+     The ship pronoun tokens {she} {her} {her_obj} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General).
      The kinds: ship (her jumps), achievement (the latest), model (the model flown most), fights (enemy ships
      defeated), crew (the longest-serving), expeditions (how many went out).
 

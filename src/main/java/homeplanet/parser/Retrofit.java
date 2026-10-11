@@ -180,16 +180,21 @@ public class Retrofit {
 	 * After her rooms changed (an overhaul): one room state per new room, keeping the air of the old room it overlaps
 	 * most; hull breaches outside the new rooms go; crew standing outside the rooms are moved to a free square (crew keep
 	 * their square when it's still inside a room). Nothing changes when the rooms are the same.
+	 * Crew and breaches stand on FTL's own squares, the layout's plus its X_OFFSET and Y_OFFSET (6.47: without them, an
+	 * overhaul put her crew that many squares off, out in space).
 	 */
 	static void syncRooms(ShipState ship, net.blerf.ftl.model.shiplayout.ShipLayout oldLay, net.blerf.ftl.model.shiplayout.ShipLayout lay, int dx, int dy) {
-		if (dx == 0 && dy == 0 && oldLay != null && sameRooms(oldLay, lay) && ship.getRoomList().size() == lay.getRoomCount()) return;
-		// everything positioned in the old coordinates moves with the rooms
+		int fromX = oldLay != null ? oldLay.getOffsetX() : lay.getOffsetX(), fromY = oldLay != null ? oldLay.getOffsetY() : lay.getOffsetY();
+		int nx = lay.getOffsetX(), ny = lay.getOffsetY();
+		if (dx == 0 && dy == 0 && fromX == nx && fromY == ny && oldLay != null && sameRooms(oldLay, lay) && ship.getRoomList().size() == lay.getRoomCount()) return;
+		// everything positioned in the old squares moves with the rooms, and with any change of offset
+		int sx = dx + nx - fromX, sy = dy + ny - fromY;
 		int sqs = SaveHelper.SQUARE_SIZE;
-		for (net.blerf.ftl.parser.SavedGameParser.CrewState c : ship.getCrewList()) { c.setSpriteX(c.getSpriteX() + dx * sqs); c.setSpriteY(c.getSpriteY() + dy * sqs); }
-		if (dx != 0 || dy != 0) {
+		for (net.blerf.ftl.parser.SavedGameParser.CrewState c : ship.getCrewList()) { c.setSpriteX(c.getSpriteX() + sx * sqs); c.setSpriteY(c.getSpriteY() + sy * sqs); }
+		if (sx != 0 || sy != 0) {
 			java.util.Map<net.blerf.ftl.model.XYPair, Integer> moved = new java.util.LinkedHashMap<net.blerf.ftl.model.XYPair, Integer>();
 			for (java.util.Map.Entry<net.blerf.ftl.model.XYPair, Integer> e : ship.getBreachMap().entrySet())
-				moved.put(new net.blerf.ftl.model.XYPair(e.getKey().x + dx, e.getKey().y + dy), e.getValue());
+				moved.put(new net.blerf.ftl.model.XYPair(e.getKey().x + sx, e.getKey().y + sy), e.getValue());
 			ship.getBreachMap().clear();
 			ship.getBreachMap().putAll(moved);
 		}
@@ -215,14 +220,48 @@ public class Retrofit {
 		// hull breaches: only inside rooms
 		for (java.util.Iterator<net.blerf.ftl.model.XYPair> it = ship.getBreachMap().keySet().iterator(); it.hasNext();) {
 			net.blerf.ftl.model.XYPair p = it.next();
-			if (roomAt(lay, p.x, p.y) < 0) it.remove();
+			if (roomAt(lay, p.x - nx, p.y - ny) < 0) it.remove();
 		}
-		// crew: on a square of a room, one each where possible
+		placeCrew(ship, lay);
+	}
+	/**
+	 * Her crew an overhaul before 6.47 put down without the layout's offset: not in their own room as FTL counts its
+	 * squares, but in it as the layout counts them (it set the room, and the square without the offset). Out in space or
+	 * in another room, whichever the offset made of it. Anyone else not in their room (away on another ship) isn't one.
+	 */
+	public static List<net.blerf.ftl.parser.SavedGameParser.CrewState> stranded(ShipState ship, net.blerf.ftl.model.shiplayout.ShipLayout lay) {
+		List<net.blerf.ftl.parser.SavedGameParser.CrewState> out = new ArrayList<net.blerf.ftl.parser.SavedGameParser.CrewState>();
+		if (lay.getOffsetX() == 0 && lay.getOffsetY() == 0) return out;
+		int sq = SaveHelper.SQUARE_SIZE;
+		for (net.blerf.ftl.parser.SavedGameParser.CrewState c : ship.getCrewList()) {
+			if (c.getRoomId() < 0 || c.getRoomId() >= lay.getRoomCount()) continue;
+			int x = Math.floorDiv(c.getSpriteX(), sq), y = Math.floorDiv(c.getSpriteY(), sq);
+			if (!inRoom(lay, c.getRoomId(), x - lay.getOffsetX(), y - lay.getOffsetY()) && inRoom(lay, c.getRoomId(), x, y)) out.add(c);
+		}
+		return out;
+	}
+	private static boolean inRoom(net.blerf.ftl.model.shiplayout.ShipLayout lay, int room, int x, int y) {
+		net.blerf.ftl.model.shiplayout.ShipLayoutRoom r = lay.getRoom(room);
+		return x >= r.locationX && x < r.locationX + r.squaresH && y >= r.locationY && y < r.locationY + r.squaresV;
+	}
+	/** Puts those crew where that overhaul meant them, the offset added; their names. */
+	public static List<String> reseat(ShipState ship, net.blerf.ftl.model.shiplayout.ShipLayout lay) {
+		List<String> names = new ArrayList<String>();
+		int sq = SaveHelper.SQUARE_SIZE;
+		for (net.blerf.ftl.parser.SavedGameParser.CrewState c : stranded(ship, lay)) {
+			c.setSpriteX(c.getSpriteX() + lay.getOffsetX() * sq);
+			c.setSpriteY(c.getSpriteY() + lay.getOffsetY() * sq);
+			names.add(c.getName());
+		}
+		return names;
+	}
+	/** Her crew on squares of her rooms (the layout's squares; FTL's are those plus the offset), one each where possible. */
+	static void placeCrew(ShipState ship, net.blerf.ftl.model.shiplayout.ShipLayout lay) {
 		java.util.Set<String> taken = new java.util.HashSet<String>();
 		List<net.blerf.ftl.parser.SavedGameParser.CrewState> lost = new ArrayList<net.blerf.ftl.parser.SavedGameParser.CrewState>();
 		int sq = SaveHelper.SQUARE_SIZE;
 		for (net.blerf.ftl.parser.SavedGameParser.CrewState c : ship.getCrewList()) {
-			int tx = Math.floorDiv(c.getSpriteX(), sq), ty = Math.floorDiv(c.getSpriteY(), sq);
+			int tx = Math.floorDiv(c.getSpriteX(), sq) - lay.getOffsetX(), ty = Math.floorDiv(c.getSpriteY(), sq) - lay.getOffsetY();
 			int room = roomAt(lay, tx, ty);
 			if (room < 0 || !taken.add(tx + "," + ty)) { lost.add(c); continue; }
 			place(c, lay, room, tx, ty);
@@ -243,8 +282,8 @@ public class Retrofit {
 		int square = (ty - r.locationY) * r.squaresH + (tx - r.locationX);
 		c.setRoomId(room);
 		c.setRoomSquare(square);
-		c.setSpriteX(tx * SaveHelper.SQUARE_SIZE + SaveHelper.SQUARE_SIZE / 2);
-		c.setSpriteY(ty * SaveHelper.SQUARE_SIZE + SaveHelper.SQUARE_SIZE / 2);
+		c.setSpriteX((tx + lay.getOffsetX()) * SaveHelper.SQUARE_SIZE + SaveHelper.SQUARE_SIZE / 2);
+		c.setSpriteY((ty + lay.getOffsetY()) * SaveHelper.SQUARE_SIZE + SaveHelper.SQUARE_SIZE / 2);
 		if (c.getSavedRoomId() >= lay.getRoomCount()) { c.setSavedRoomId(room); c.setSavedRoomSquare(square); }
 	}
 	static int roomAt(net.blerf.ftl.model.shiplayout.ShipLayout lay, int x, int y) {

@@ -215,7 +215,7 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 				+ "<b>Weapon mounts</b>: click the hull to place a mount, drag to move it, right-click to remove it. R turns the selected mount and S changes which way its weapon slides; the wheel turns it too. "
 				+ "FTL draws weapon slot n on mount n, so give " + homeplanet.model.Words.herObj() + " as many mounts as slots. Alt + middle-drag moves the art whatever tool is on.</p>");
 		if (loadout) sb.append("<h3>Loadout</h3><p>Who " + homeplanet.model.Words.she() + " is, " + homeplanet.model.Words.her() + " numbers, " + homeplanet.model.Words.her() + " starting crew, what " + homeplanet.model.Words.she() + " carries and which systems are installed at the start. "
-				+ "Each number shows " + homeplanet.model.Words.hers() + " over the vanilla max (the most any of the game's ships has) with a bar to that ceiling; type what you like, the bar turns amber past it. "
+				+ "Each number shows " + homeplanet.model.Words.her() + " own over the vanilla max (the most any of the game's ships has) with a bar to that ceiling; type what you like, the bar turns amber past it. "
 				+ "Past the vanilla numbers FTL still takes " + homeplanet.model.Words.herObj() + ", but its bars and upgrade screen are drawn for the vanilla ones.</p>");
 		sb.append("<h3>Keys</h3><p>Ctrl+Z and Ctrl+Y undo and redo. Esc deselects. Delete removes the selected door, mount or room. Ctrl+S " + primaryVerb() + ". F1 opens this help.</p>");
 		sb.append("<h3>View</h3><p>The wheel zooms (Ctrl+plus, Ctrl+minus); middle-drag moves the view; Shift+wheel scrolls; Ctrl+0 (or Fit) shows the whole ship.</p>");

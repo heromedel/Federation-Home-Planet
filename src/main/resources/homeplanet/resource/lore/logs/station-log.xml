@@ -9,7 +9,7 @@
      entries go before the plain ones. An event with no entry here keeps the words the station's code gives it.
      The words are lore-friendly and keep the hard rules: the Rebel Flagship is never destroyed, and time is never told
      in beacons.
-     The ship pronoun tokens {she} {her} {her_obj} {hers} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General). -->
+     The ship pronoun tokens {she} {her} {her_obj} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General). -->
 <lore>
 	<!-- the station's own housekeeping -->
 	<entry kind="CREW_FILES" when="what=converted">Every crew member's record was given a file of their own.</entry>
@@ -54,6 +54,7 @@
 	<entry kind="OVERWRITTEN">FTL's New Game wrote over the {ship_name} with the {by_name}. {Her} last version is kept.</entry>
 	<entry kind="RENAME">The {from} was renamed the {to}.</entry>
 	<entry kind="REMODEL">The {ship_name} was remodeled.</entry>
+	<entry kind="CREW_RESEATED">The {ship_name}'s crew were returned to {her} rooms after {her} overhaul.</entry>
 	<entry kind="NEW_JOURNEY">A new journey was plotted for the {ship_name}, at {difficulty} difficulty.</entry>
 	<entry kind="SCRAP">The {ship_name} was broken up for parts. What {she} carried went into the Cargo Hold.</entry>
 	<entry kind="SELL" when="how=auction">The {ship_name} was sold at auction for {price} scrap.</entry>
@@ -142,7 +143,7 @@
 
 	<!-- the repair job, the claims office -->
 	<entry kind="REPAIR_JOB" when="stage=delivered">The {ship_name} was delivered to the Junkyard for repair.</entry>
-	<entry kind="REPAIR_JOB" when="stage=defied">The {ship_name} is kept. {Her} owner's attorneys will come for {her_obj} value.</entry>
+	<entry kind="REPAIR_JOB" when="stage=defied">The {ship_name} is kept. {Her} owner's attorneys will come for {her} value.</entry>
 	<entry kind="RETURNED" when="what=to_owner&amp;paid=0">The {ship_name} was returned to {her} owner, unpaid.</entry>
 	<entry kind="RETURNED" when="what=to_owner">The {ship_name} was returned to {her} owner for {paid} scrap.</entry>
 	<entry kind="SEIZED" when="what=collected">The {ship_name} was collected by the Federation Office of Salvage and Claims.</entry>

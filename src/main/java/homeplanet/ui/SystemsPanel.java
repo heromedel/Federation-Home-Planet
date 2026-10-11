@@ -205,6 +205,9 @@ public class SystemsPanel {
 		retrofitBtn.setBounds(700 - 8 - BTN_W, 8 + INST_H + 6, BTN_W, 24);
 		remodelBtn.setBounds(700 - 8 - BTN_W, 8 + INST_H + 6 + 30, BTN_W, 24);
 		panel.add(remodelBtn); panel.add(retrofitBtn); panel.add(layoutLbl); // (6.44, heromedel: no hint line under it; the buttons' tooltips say it)
+		// in front of her picture, which reaches under them and took their clicks (heromedel, 6.47)
+		panel.setComponentZOrder(remodelBtn, 0);
+		panel.setComponentZOrder(retrofitBtn, 0);
 		return panel;
 	}
 
@@ -241,6 +244,10 @@ public class SystemsPanel {
 		for (SystemType t : SystemType.values()) { SystemState st = bs.getSystem(t); if (st != null && st.getCapacity() > 0) have.add(t.getId()); }
 		pic.show(bs.getShipBlueprintId(), have);
 		name.setText(bay.currentSave.getPlayerShipName().toUpperCase());
+		// as wide as her name, centred where it was: only the name opens her report, not the blank line beside it (6.47)
+		int nw = CargoParts.width(name.getText(), FtlFont.MENU);
+		if (nw > 638) nw = Math.min(638, CargoParts.width(name.getText(), FtlFont.BODY));
+		name.setBounds(16 + (640 - nw - 4) / 2, 354, nw + 4, 26);
 		// her grey line centred under her name, with the info button to its left (as on the Trade tab)
 		String cls = CargoBayUI.shipClass(bs);
 		sub.setText(cls);

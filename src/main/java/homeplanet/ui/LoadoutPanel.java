@@ -90,7 +90,7 @@ public class LoadoutPanel extends JPanel {
 		p.add(starterBox);
 
 		p.add(heading(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " numbers"));
-		p.add(hint(homeplanet.model.Words.cap(homeplanet.model.Words.hers()) + " / vanilla max: the most any of the game's ships has. Type what you like; past it, FTL's bars are drawn for the vanilla number."));
+		p.add(hint(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " own / vanilla max: the most any of the game's ships has. Type what you like; past it, FTL's bars are drawn for the vanilla number."));
 		ActionListener numbers = new ActionListener() { public void actionPerformed(ActionEvent e) { numbersChanged(); } };
 		p.add(hull = row("Hull", d.hull, VanillaMax.hull(), 1, "Hull points at the start (the game's ships have 30)", numbers));
 		p.add(reactor = row("Reactor", d.reactor, VanillaMax.reactor(), 1, "Reactor power at the start (the game's ships have 8)", numbers));

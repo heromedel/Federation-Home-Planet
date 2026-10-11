@@ -4,7 +4,7 @@
      text is between <![CDATA[ and ]]>, kept as written, line breaks and all (<u>...</u> underlines a word).
      {rank} is the player's rank and {ship} a ship's class and layout ("the {ship}" by the station's rule for ships'
      names); a letter may use only the {tokens} the station's own copy of it uses.
-     The ship pronoun tokens {she} {her} {her_obj} {hers} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General).
+     The ship pronoun tokens {she} {her} {her_obj} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General).
 
      To change a letter, copy it whole into letters.xml in the lore folder beside the program and edit the copy: it wins
      over the station's own, letter by letter. A copy that breaks a rule (the Rebel Flagship destroyed, the rebels

@@ -52,7 +52,7 @@ public final class Words {
 	public static String herself() { return ship("herself", "himself", "itself"); }
 	/**
 	 * The words with a ship's pronoun tokens filled, for the words files in lore/: {she}, {her} (her crew), {her_obj}
-	 * (flies her), {hers}, {herself}, and {She} and {Her} to begin a sentence. Crew have their own ({he}, {him}, {his}).
+	 * (flies her), {herself}, and {She} and {Her} to begin a sentence ({hers} still fills for an old copy, but "it" has no form of it: not offered since 6.47). Crew have their own ({he}, {him}, {his}).
 	 */
 	public static String ship(String words) {
 		if (words == null || words.indexOf('{') < 0) return words;

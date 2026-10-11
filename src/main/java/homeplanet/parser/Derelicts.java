@@ -272,7 +272,7 @@ public final class Derelicts {
 			int n = 1 + rng.nextInt(3);
 			for (int k = 0; k < n; k++) {
 				ShipLayoutRoom r = lay.getRoom(rng.nextInt(lay.getRoomCount()));
-				ship.setBreach(r.locationX + rng.nextInt(Math.max(1, r.squaresH)), r.locationY + rng.nextInt(Math.max(1, r.squaresV)), 100);
+				ship.setBreach(lay.getOffsetX() + r.locationX + rng.nextInt(Math.max(1, r.squaresH)), lay.getOffsetY() + r.locationY + rng.nextInt(Math.max(1, r.squaresV)), 100); // FTL's squares: the layout's plus its offset (6.47)
 			}
 		}
 		return gs;

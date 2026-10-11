@@ -1098,7 +1098,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			else { room = 3; used = destState.getAugmentIdList().size(); }
 			if (used >= room) {
 				String who = destSave.getPlayerShipName();
-				if (kind == 2) { HomePlanet.showNotice(who + "'s augment slots are full (3). Send one of " + homeplanet.model.Words.hers() + " away first.", "Cargo Bay"); return; }
+				if (kind == 2) { HomePlanet.showNotice(who + "'s augment slots are full (3). Send one of " + homeplanet.model.Words.her() + " augments away first.", "Cargo Bay"); return; }
 				if (SaveHelper.cargo(destSave).size() >= 4) { HomePlanet.showNotice(who + " has no room for the " + title + ", and " + homeplanet.model.Words.her() + " cargo hold is full too.", "Cargo Bay"); return; }
 				String q = kind == 1 && room == 0 ? who + " has no Drone Control system. Put the drone in " + homeplanet.model.Words.her() + " cargo hold?" : who + " has no free " + (kind == 0 ? "weapon" : "drone") + " slot. Put the " + title + " in " + homeplanet.model.Words.her() + " cargo hold?";
 				if (JOptionPane.showConfirmDialog(this, q, "Send to cargo?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) return;
