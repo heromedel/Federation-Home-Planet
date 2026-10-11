@@ -194,6 +194,11 @@ public class LinkPeer {
    if (c.equals("idof")) { Ship sh = shipNamed(w[1]); return sh == null ? "none" : sh.id; }
    if (c.equals("voyageline")) { Ship sh = shipNamed(w[1]); if (sh == null) return "none"; Setup.voyage(v, sh, cmd.substring(cmd.indexOf(w[2])).replace('_', ' ')); return "OK"; }
    if (c.equals("shiplog")) { Ship sh = shipNamed(w[1]); if (sh == null) return "none"; List<EventLog.Entry> es = EventLog.voyage(EventLog.read(v), sh.id); return es.size() + " " + (es.isEmpty() ? "" : es.get(0).human.replace(' ', '_') + " from=" + es.get(0).get("received_from", "-").replace(' ', '_')); }
+   if (c.equals("sectorfields")) { // the most ship_sector fields any entry of her log carries (6.47: each trade added another)
+    Ship sh = shipNamed(w[1]); if (sh == null) return "none"; int most = 0;
+    for (EventLog.Entry e : EventLog.voyage(EventLog.read(v), sh.id)) { int n = 0; for (String[] kv : e.fields()) if (kv[0].equals("ship_sector")) n++; most = Math.max(most, n); }
+    return Integer.toString(most);
+   }
    if (c.equals("owners")) { Ship sh = shipNamed(w[1]); if (sh == null) return "none"; ShipStore.Record r = ShipStore.read(v.folderOf(sh)); return r == null ? "none" : String.join(",", r.owners).replace(' ', '_') + "|" + String.join(",", r.pastNames).replace(' ', '_'); }
    if (c.equals("recoverable")) { List<String> n = new ArrayList<String>(); for (Vault.Departed d : v.recoverable()) n.add(d.name.replace(' ', '_')); return n.isEmpty() ? "none" : String.join(",", n); }
    if (c.equals("defeat")) { // FTL's progress on a docked ship: more ships defeated

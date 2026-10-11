@@ -2191,7 +2191,7 @@ public final class Vault {
 				Event who = VoyageLog.shipFields(s).put("received_from", from);
 				for (EventLog.Entry e : EventLog.parse(new String(files.get(PACKAGE_EVENTS), java.nio.charset.StandardCharsets.UTF_8))) {
 					Event x = Event.of(e.kind).put("log", "voyage").putAll(who);
-					for (String[] kv : e.fields()) if (!kv[0].matches("log|ship|ship_name|ship_id|ship_state|day|station|received_from")) x.put(kv[0], kv[1]);
+					for (String[] kv : e.fields()) if (!kv[0].matches("log|ship|ship_name|ship_id|ship_state|ship_sector|ship_difficulty|day|station|received_from")) x.put(kv[0], kv[1]); // where she was comes with who she is (6.47: it doubled with each trade)
 					if (x.get("time") == null) x.put("time", e.time);
 					EventLog.write(this, x.human(e.human));
 				}
