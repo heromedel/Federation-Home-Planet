@@ -8,10 +8,11 @@ Welcome home, Captain, and godspeed.
 
 -----
 
-What is it? It is an external hub that turns FTL's runs into a campaign or career. It is "The home base FTL never had."
+What is it? 
+It is an external hub that turns FTL's runs into a campaign or career. It is "The home base FTL never had."
 
 Federation Home Planet (FHP)
-An external application for use with FTL: Faster Than Light that allows you to keep a fleet between runs: Switch ships, start a new journey with the same ship, or trade gear, crew and scrap through a storage hold or between ships, shop at any other ships' beacons, refit, remodel, design and commission new ships. New blueprints work with Slipstream.
+An external application for use with FTL: Faster Than Light that allows you to keep a fleet between runs: Switch ships, start a new journey with the same ship, or trade gear, crew and scrap through a storage hold or between ships, with other player's via LAN or IP, shop at any other ships' beacons, refit, remodel, design and commission new ships. New blueprints work with Slipstream.
 
 Slipstream can be downloaded through this application and choosing which mods to bundle with your new blueprints can be handled inside of it as well.
 
@@ -19,21 +20,46 @@ You can board a ship, go to the Cargo Bay, trade with other ships or the station
 
 -----
 
-Options to: 
-Restrict docking and trading to only when you are at a store beacon.
-Limit Commissioning new ships to those unlocked in game.
-Limit Commissioning Custom ships based on Vanilla Designs to only those unlocked in game.
-Rename Ships or Crew Members
-Decommission Ships to the Junkyard where you can Scrap them removing the parts or destroy them.
-Refit or Remodel ships completely, moving systems, rooms even doors. 
-Design a ship from scratch using your own art or the ships from the game. 
-     The Federation Home Planet then bundles the new blueprints into a companion mod, 
-     and sends them through Slipstream to patch the blueprints and any other .ftl mod you choose into the game.
-And More. 
+All of the following features are inside of the external program not inside FTL, aside from custom ships and bringing your ships, weapons, drones and such into FTL. Switching ships at any time or only at stores if thats how you have it set. 
+
+But, there is an Experimental feature in settings that allows you to Launch FTL, "Docked" inside of The FHP Station program. Meaning while actively playing FTL you can for example still see your Inbox, keep Long Range Comm. (LAN) powered up and look around your fleet or send crews on expeditions. All without leaving FTL. (Except you cannot trade with the ship currently loaded into FTL withut returning to the main menu.)
+
+Features:
+Tons of options to alter how it works in sandbox mode or switch to any of three locked difficulties as "immersive" modes.
+
+Connect to other players via "Long Range Comm." using LAN or IP address. 
+
+Uninstall and Reinstall Ship Systems whether gotten from in FTL, shopping the Stores from any ship you have parked at one or from the "Junkyard" which has random damaged parts, or ships, which refreshes based on in game actions passing time.
+
+Commission: Get new ships in The FHP Station (based on what you have unlocked if set that way). Including custom designed ships able to be patched into FTL. 
+
+New Journey: Take a Ship on a "New Journey" allowing you to return the ship to a new sector one and keep playing it either allowing you to grind more if you needed to or treat the otherwise vanilla game as an endless mode. Only costs scrap if you set it that way or play one of the immersive mode careers. 
+
+Retrofit: Allows you to change what room is reserved for what systems, and genereates a new blueprint whcih can easily be patched into the game without you having to leave the program. (Offers to Launch slipstream and restart for you.) Undo the retrofit at any time. (Retrofitted ships do not unlock vanilla ship based achievemnts.)
+
+Remodel: Change a ships room layout without needing to design the entire ship yourself.
+
+Design: Choose from FTL Art or Import your own, layout the rooms, doors and weapon mounts, chose where each system would go, the starting systems and levels, starting weapons, drones etc. Then save the design or build the blueprint. Choosing to let it be a starter ship makes it appear in the commission menu in The Station. (At a future point I might add a way to set custom unlocks)
+
+Don't have a ship? If you set commissions to cost scrap or are playing in one of the immersive mode careers, and cannot afford a new ship or to repair one from the junkyard, you may: Plead for a new ship, losing reputation if the reputation system is turned on in settings. Or, earn scrap by sending Crewmembers on Expeditions where they are hired out to do missions without you, reporting back in approx. 1-2 weeks via a text popup or immersive inbox.  
+
+Junkyard: Buy discount derelict ships, very rarely ones you don't even have unlocked. Strip them for systems in your cargo bay or replace missing systems repair them in FTL or in your Cargo Bay. Shop for used parts. Sell off the repaired ship or Auction hoping for a chance of a higher price. (Averages the same as selling it). Or use the ship for playing FTL.
+
+Tons of info screens and logs and a Captains Log in your personal Quarters. 
+
+Keep a separate Fleet in Sandbox mode and each of the three immersive difficulties switch to any of them easily. 
+
+One of many Optional settings turns on Alien names based on race and gender. Hex names for Engi, Insect sounding names for Mantis, Rock based names for Rockmen, Ssllimeyy names for Slugs. Each with unique lists and rules for how the names were chosen and differences based on gender. Huge list of human names and an option to have only first names or always first and last.   
+
+Optional Reputation: If you turn on using Reputation you can use it only as a score, or specifically for pleaing for ships when you don't have any and getting a crew member if you don't have any. Or, for any vanilla breaking action such as installing more systems then a ship should be allowed. Reputation is earned in game in FTL such as by making jumps, destroying ships, doing quests, and more. But just like FTL is does not force you to have any one particular morale structure. Optionally earn stipends, gain ranks and unlock the ability to remodel and design ships based on your Reputation. Even maybe one day unlocking the ability to add Artillery to you ship designs. 
+
+Save Ship from vanishing on Victory: Options to have your ship, (saved just at the beginning of the final stage of the final battle) and have it either, Sent to a Museum and you can be awarded half it's value or rescue the ship and continue playing it. Optionally forcing either one of those or neither and losing the ship like in Vanilla. 
+
+
 
 -----
 
-## What it does
+## What it does (AI Explanation)
 
 - **The Space Dock:** your fleet between runs. Board any docked ship, send her on a New Journey from sector 1 with her
   crew and cargo, or decommission her to the Junkyard. Launch FTL from the station, in its own window or (an option on
