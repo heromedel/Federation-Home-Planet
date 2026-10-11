@@ -13,23 +13,19 @@ import java.awt.event.MouseEvent;
 import javax.swing.JComponent;
 
 /**
- * A little two-way switch drawn as Commission's Original | AE switch is (6.44, heromedel): the Shop's and the Refit's
- * Ship | Cargo Bay, whose scrap they spend. Click flips it; the lit half is the one chosen.
+ * A little two-way switch drawn as Commission's Original | AE switch is (6.44, heromedel): Pay From's Ship | Cargo on the
+ * Shop and the Refit tabs. Each half is sized to its own word, in a small font. Click flips it; the lit half is the one chosen.
  */
 final class FlipSwitch extends JComponent {
 	private static final Color TRACK = new Color(36, 46, 56), EDGE = new Color(90, 108, 120), LIT = new Color(235, 140, 50), LIT_TEXT = new Color(24, 20, 16);
 	private final String left, right;
 	private boolean onRight, hover;
-	private final boolean small;
 	private Runnable onChange;
 
-	FlipSwitch(String left, String right) { this(left, right, false); }
-	/** Small: each half sized to its own word, in a smaller font (6.44, heromedel: the Refit's, beside "Installed systems"). */
-	FlipSwitch(String left, String right, boolean small) {
+	FlipSwitch(String left, String right) {
 		this.left = left;
 		this.right = right;
-		this.small = small;
-		setFont(small ? MenuTheme.LABEL_FONT.deriveFont(11f) : MenuTheme.LABEL_FONT);
+		setFont(MenuTheme.LABEL_FONT.deriveFont(11f));
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
@@ -48,8 +44,7 @@ final class FlipSwitch extends JComponent {
 
 	public Dimension getPreferredSize() {
 		FontMetrics fm = getFontMetrics(getFont());
-		if (small) return new Dimension(fm.stringWidth(left) + fm.stringWidth(right) + 32, fm.getHeight() + 4);
-		return new Dimension(2 * (Math.max(fm.stringWidth(left), fm.stringWidth(right)) + 22), fm.getHeight() + 8);
+		return new Dimension(fm.stringWidth(left) + fm.stringWidth(right) + 32, fm.getHeight() + 4);
 	}
 
 	protected void paintComponent(Graphics g0) {
@@ -57,7 +52,7 @@ final class FlipSwitch extends JComponent {
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 		FontMetrics fm = g.getFontMetrics(getFont());
-		int w = getWidth() - 1, h = getHeight() - 1, r = h, half = small ? fm.stringWidth(left) + 16 : w / 2; // small: each half its own word's width
+		int w = getWidth() - 1, h = getHeight() - 1, r = h, half = fm.stringWidth(left) + 16; // each half its own word's width
 		g.setColor(TRACK);
 		g.fillRoundRect(0, 0, w, h, r, r);
 		g.setColor(LIT);

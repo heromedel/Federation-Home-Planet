@@ -44,6 +44,9 @@ the ship's reactor will go round in FTL before taking her out. It is a simulatio
   its icon blue, a padlock over its bar and its plate's stripes counting down; when it runs out, what it powered goes
   dark from the right (drones, then weapons, then systems) with FTL's sound. Reset ends it. FTL's cooldown before the
   Battery can be used again isn't simulated. Lit buttons when a system has power (FTL's `_on` pictures). PowerT checks.
+- 6.45 (heromedel's fixes): the SUBSYSTEMS box at the panel's far right, as in FTL, with the dark box behind the
+  whole width. The reactor column drawn to FTL's pixel: bars in use a thin white outline, the Battery's a thin orange
+  frame in FTL's own orange (230, 110, 30), a dark gap, and the green inside while it's free.
 - Next: step 6, dragging weapons and drones between slots, when heromedel says.
 
 ## Notes from the study (6.42, FTL 1.6.14 under Wine)

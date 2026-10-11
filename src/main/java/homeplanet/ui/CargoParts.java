@@ -62,8 +62,11 @@ final class CargoParts {
 	static class Header extends JComponent {
 		private String text;
 		private final boolean right;
+		/** Where the line starts, when something sits between it and the words (the Refit's Pay From and scrap, 6.45). */
+		private int lineFrom;
 		Header(String text, boolean right) { this.text = text.toUpperCase(); this.right = right; setOpaque(false); }
 		void setText(String t) { text = t.toUpperCase(); repaint(); }
+		void lineFrom(int x) { lineFrom = x; repaint(); }
 		@Override protected void paintComponent(Graphics g0) {
 			Graphics2D g = (Graphics2D) g0.create();
 			BufferedImage t = FtlFont.MENU.render(text, GOLD);
@@ -75,7 +78,7 @@ final class CargoParts {
 			g.setStroke(new BasicStroke(2f));
 			int ly = y + t.getHeight() / 2;
 			if (right) { if (x - 10 > 0) g.drawLine(0, ly, x - 10, ly); }
-			else if (t.getWidth() + 10 < getWidth()) g.drawLine(t.getWidth() + 10, ly, getWidth() - 1, ly);
+			else if (Math.max(t.getWidth() + 10, lineFrom) < getWidth()) g.drawLine(Math.max(t.getWidth() + 10, lineFrom), ly, getWidth() - 1, ly);
 			g.dispose();
 		}
 	}
@@ -109,6 +112,8 @@ final class CargoParts {
 		private String note = "";
 		ScrapCount() { setOpaque(false); }
 		void set(int amount, String note) { this.amount = amount; this.note = note == null ? "" : note; repaint(); }
+		/** How wide the gear and the number are drawn (the note left out). */
+		int textWidth() { return Math.min(22, getHeight() - 2) + 6 + width(Integer.toString(amount), FtlFont.MENU); }
 		@Override protected void paintComponent(Graphics g0) {
 			Graphics2D g = (Graphics2D) g0.create();
 			javax.swing.Icon gear = IconFactory.supplyIcon("scrap");
