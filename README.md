@@ -49,6 +49,8 @@ Tons of info screens and logs and a Captain's Log in your personal Quarters.
 
 Keep a separate Fleet in Sandbox mode and each of the three immersive difficulties switch to any of them easily. 
 
+Custom Immersive Mode: Choose the settings exactly the way you want them to be and lock them into place for a custom mode as hard or sandbox as you want and play through a career your way.
+
 One of many Optional settings turns on Alien names based on race and gender. Hex names for Engi, Insect sounding names for Mantis, Rock based names for Rockmen, Ssllimeyy names for Slugs. Each with unique lists and rules for how the names were chosen and differences based on gender. Huge list of human names and an option to have only first names or always first and last.   
 
 Optional Reputation: If you turn on using Reputation you can use it only as a score, or specifically for pleading for ships when you don't have any and getting a crew member if you don't have any. Or, for any vanilla breaking action such as installing more systems than a ship should be allowed. Reputation is earned in game in FTL such as by making jumps, destroying ships, doing quests, and more. But just like FTL it does not force you to have any one particular moral structure. Optionally earn stipends, gain ranks and unlock the ability to remodel and design ships based on your Reputation. Even maybe one day unlocking the ability to add Artillery to your ship designs. 

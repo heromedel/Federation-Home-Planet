@@ -31,7 +31,7 @@ final class PowerPanel extends JComponent {
 	// FTL's colours, read off its screen
 	static final Color GREEN = new Color(100, 255, 100), CREAM = new Color(243, 255, 230), GREY = new Color(150, 150, 150);
 	static final Color RED = new Color(255, 60, 50), HATCH_DIM = new Color(150, 150, 150), SLOT_DARK = new Color(30, 24, 28, 200);
-	static final Color TAB_TEXT = new Color(32, 58, 66), ZOLTAN = new Color(255, 230, 60), BATTERY = new Color(255, 120, 40);
+	static final Color TAB_TEXT = new Color(32, 58, 66), ZOLTAN = new Color(255, 230, 60), BATTERY = new Color(230, 110, 30); // FTL's own orange, read off its screen (6.45)
 	/** FTL's order along the panel; the ones a ship hasn't got leave no gap. Doors, Piloting, Sensors and the Backup Battery are left out (heromedel). */
 	static final SystemType[] ORDER = {SystemType.SHIELDS, SystemType.ENGINES, SystemType.MEDBAY, SystemType.CLONEBAY, SystemType.OXYGEN,
 			SystemType.TELEPORTER, SystemType.CLOAKING, SystemType.ARTILLERY, SystemType.MIND, SystemType.HACKING};
@@ -453,7 +453,7 @@ final class PowerPanel extends JComponent {
 		l.wireEnd1 = l.twoRows ? rowEnd - 20 : bx;
 		l.wireEnd2 = bx;
 		int subW = battery != null ? 182 : 158; // FTL's SUBSYSTEMS box, its plate and the Doors' (and the Battery's) buttons
-		if (!subsystems.isEmpty() || battery != null) { int sx = bx + 26; if (sx + subW <= width - 4) { l.subX = sx; l.subEnd = sx + subW; } }
+		if (!subsystems.isEmpty() || battery != null) { int sx = Math.max(bx + 26, width - 10 - subW); if (sx + subW <= width - 4) { l.subX = sx; l.subEnd = sx + subW; } } // at the far right, as in FTL (6.45, heromedel)
 		return l;
 	}
 	private static boolean sidePanel(SystemType t) { return t == SystemType.TELEPORTER || t == SystemType.CLOAKING || t == SystemType.MIND || t == SystemType.HACKING; }
@@ -469,9 +469,9 @@ final class PowerPanel extends JComponent {
 		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 		Layout l = layout(getWidth());
 		hits.clear();
-		// FTL draws its panel over dark space; here the station's dark box behind it, as wide as what's in it
+		// FTL draws its panel over dark space; here the station's dark box behind it, the panel's whole width (6.45: the subsystems sit at its right end)
 		g.setColor(CargoParts.BOX);
-		g.fillPolygon(CargoParts.cut(0, 0, Math.min(getWidth(), Math.max(Math.max(l.wireEnd1, l.wireEnd2), l.subEnd) + 14), getHeight(), 6));
+		g.fillPolygon(CargoParts.cut(0, 0, getWidth(), getHeight(), 6));
 		paintReactor(g, l);
 		// the wire: under the reactor's strip, along under every icon, to the boxes
 		g.setColor(CREAM);
@@ -583,9 +583,13 @@ final class PowerPanel extends JComponent {
 		for (int k = 0; k < reactor; k++) {
 			int bottom = l.baseline1 - 17 - k * step, top = bottom - h;
 			boolean green = k < left;
-			if (green) { g.setColor(GREEN); g.fillRect(x, top, REACTOR_W, h); }
-			else { g.setColor(CREAM); g.setStroke(new BasicStroke(2f)); g.drawRect(x + 1, top + 1, REACTOR_W - 2, h - 2); }
-			if (k < bonus) { g.setColor(BATTERY); g.setStroke(new BasicStroke(2f)); g.drawRect(x + 1, top + 1, REACTOR_W - 2, h - 2); }
+			g.setStroke(new BasicStroke(1f));
+			if (k < bonus) { // the Battery's bar as FTL draws it (6.45): a thin orange frame, a dark gap, and the green inside while it's free
+				g.setColor(BATTERY); g.drawRect(x, top, REACTOR_W - 1, h - 1);
+				if (green && h > 4) { g.setColor(GREEN); g.fillRect(x + 2, top + 2, REACTOR_W - 4, h - 4); }
+			}
+			else if (green) { g.setColor(GREEN); g.fillRect(x, top, REACTOR_W, h); }
+			else { g.setColor(Color.white); g.drawRect(x, top, REACTOR_W - 1, h - 1); } // in use: a thin white outline, as FTL's
 			g.setColor(green ? CREAM : HATCH_DIM);
 			g.setStroke(new BasicStroke(2f));
 			g.drawLine(hx + 1, top, hx + HATCH_W - 2, top + step - 2); // FTL's strip: one stroke beside each bar
