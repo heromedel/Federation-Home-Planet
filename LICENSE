@@ -337,3 +337,166 @@ proprietary programs.  If your program is a subroutine library, you may
 consider it more useful to permit linking proprietary applications with the
 library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.
+
+
+==============================================================================
+THIRD-PARTY NOTICES (Federation Home Planet)
+==============================================================================
+
+Federation Home Planet is licensed under the GNU General Public License,
+version 2, above. The runnable jar built from this source also contains the
+third-party code listed here, each part under its own licence. Where a licence
+asks for its copyright notice and terms to travel with the program, they are
+reproduced below.
+
+1. FTL Profile Editor (net.blerf.ftl), by Vhati
+   https://github.com/Vhati/ftl-profile-editor
+   GNU General Public License, version 2 (the licence above). Files changed
+   for Federation Home Planet say so at the top.
+
+2. Slipstream Mod Manager (net.vhati.ftldat, net.vhati.modmanager.core), by Vhati
+   https://github.com/Vhati/Slipstream-Mod-Manager
+   GNU General Public License, version 2 (the licence above). Copied from a
+   snapshot after 1.9, as each file's first lines say. Slipstream itself is
+   not bundled: the program downloads it on request.
+
+3. Logback (ch.qos.logback: logback-classic, logback-core)
+   Copyright (C) QOS.ch. All rights reserved.
+   https://logback.qos.ch
+   Dual-licensed under the Eclipse Public License v1.0 or the GNU Lesser
+   General Public License, version 2.1; used here under the LGPL 2.1
+   (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html). Its source is
+   at https://github.com/qos-ch/logback.
+
+4. Java Native Access, JNA (com.sun.jna)
+   https://github.com/java-native-access/jna
+   Licensed under the GNU Lesser General Public License, version 2.1 or
+   later, or the Apache License 2.0; used here under the LGPL 2.1
+   (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html).
+
+5. java-vorbis-support (com.github.trilarion), by Trilarion, combining
+   JOrbis (JCraft), VorbisSPI (JavaZOOM) and Tritonus-Share (Tritonus)
+   https://github.com/Trilarion/java-vorbis-support
+   GNU Lesser General Public License, version 3
+   (https://www.gnu.org/licenses/lgpl-3.0.html); the libraries it is built
+   from are under the LGPL, version 2 or later.
+
+6. SLF4J API (org.slf4j)
+   https://www.slf4j.org
+   MIT licence:
+
+   Copyright (c) 2004-2022 QOS.ch Sarl (Switzerland)
+   All rights reserved.
+
+   Permission is hereby granted, free  of charge, to any person obtaining
+   a  copy  of this  software  and  associated  documentation files  (the
+   "Software"), to  deal in  the Software without  restriction, including
+   without limitation  the rights to  use, copy, modify,  merge, publish,
+   distribute,  sublicense, and/or sell  copies of  the Software,  and to
+   permit persons to whom the Software  is furnished to do so, subject to
+   the following conditions:
+
+   The  above  copyright  notice  and  this permission  notice  shall  be
+   included in all copies or substantial portions of the Software.
+
+   THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+   EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+   MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+   LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+   OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+7. JDOM 2 (org.jdom2)
+   http://www.jdom.org
+   This product includes software developed by the JDOM Project
+   (http://www.jdom.org/). Its licence:
+
+   Copyright (C) 2000-2012 Jason Hunter & Brett McLaughlin.
+   All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions
+   are met:
+
+   1. Redistributions of source code must retain the above copyright
+      notice, this list of conditions, and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions, and the disclaimer that follows
+      these conditions in the documentation and/or other materials
+      provided with the distribution.
+
+   3. The name "JDOM" must not be used to endorse or promote products
+      derived from this software without prior written permission.  For
+      written permission, please contact <request_AT_jdom_DOT_org>.
+
+   4. Products derived from this software may not be called "JDOM", nor
+      may "JDOM" appear in their name, without prior written permission
+      from the JDOM Project Management <request_AT_jdom_DOT_org>.
+
+   In addition, we request (but do not require) that you include in the
+   end-user documentation provided with the redistribution and/or in the
+   software itself an acknowledgement equivalent to the following:
+       "This product includes software developed by the
+        JDOM Project (http://www.jdom.org/)."
+   Alternatively, the acknowledgment may be graphical using the logos
+   available at http://www.jdom.org/images/logos.
+
+   THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+   WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+   OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   DISCLAIMED.  IN NO EVENT SHALL THE JDOM AUTHORS OR THE PROJECT
+   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+   OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+   OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+   SUCH DAMAGE.
+
+   This software consists of voluntary contributions made by many
+   individuals on behalf of the JDOM Project and was originally
+   created by Jason Hunter <jhunter_AT_jdom_DOT_org> and
+   Brett McLaughlin <brett_AT_jdom_DOT_org>.  For more information
+   on the JDOM Project, please see <http://www.jdom.org/>.
+
+8. Eclipse Implementation of JAXB (org.glassfish.jaxb: jaxb-runtime, txw2),
+   Jakarta XML Binding API (jakarta.xml.bind), Jakarta Activation
+   (com.sun.activation) and istack commons (com.sun.istack)
+   https://projects.eclipse.org/projects/ee4j.jaxb-impl
+   Eclipse Distribution License, version 1.0:
+
+   Copyright (c) 2018 Oracle and/or its affiliates. All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions
+   are met:
+
+     - Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+     - Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
+
+     - Neither the name of the Eclipse Foundation, Inc. nor the names of its
+       contributors may be used to endorse or promote products derived
+       from this software without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+   IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+   THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+   PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+FTL: Faster Than Light and its art, fonts, sounds and music belong to
+Subset Games. None of them are in this repository or in the program: the
+program reads them from the player's own copy of the game when it runs.
