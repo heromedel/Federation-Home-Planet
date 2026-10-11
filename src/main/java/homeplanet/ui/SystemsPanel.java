@@ -147,11 +147,11 @@ public class SystemsPanel {
 		panel.add(sub);
 		payer.setCargo(!shipPays());
 		java.awt.Dimension ps = payer.getPreferredSize();
-		payer.setBounds(700, 0, ps.width, ps.height); // left of the heading's words (6.45, heromedel), its switch level with them, "PAY FROM" over it
+		payer.setBounds(640 - ps.width / 2, 0, ps.width, ps.height); // under the Shop tab's button, outside every bar (6.45, heromedel); "PAY FROM" over the switch
 		payer.setToolTipText("Who pays the Dry Dock: the ship's own scrap, or the Cargo Hold's (Cargo; paid on Save)");
 		payer.onChange(new Runnable() { public void run() { switchPayer(); } });
 		panel.add(payer);
-		scrapCount.setBounds(700 + ps.width + 10 + CargoParts.width("INSTALLED SYSTEMS", FtlFont.MENU) + 12, 8, 120, 22); // the scrap that side has, after the words
+		scrapCount.setBounds(0, 8, 120, 22); // the scrap that side has, just left of Pay From (placed in refresh, by its width)
 		panel.add(scrapCount);
 		panel.setComponentZOrder(payer, 0);
 		panel.setComponentZOrder(scrapCount, 0);
@@ -248,15 +248,14 @@ public class SystemsPanel {
 		power.show(bs);
 		payer.setCargo(!shipPays());
 		scrapCount.set(hold(), ""); // what's spent here and on Save: in its tooltip
+		scrapCount.setBounds(payer.getX() - 10 - scrapCount.textWidth(), 8, scrapCount.textWidth() + 2, 22);
 		scrapCount.setToolTipText(cap(payerName()) + " has " + hold() + " scrap left to spend here" + (bill > 0 ? " (" + bill + " spent, paid on Save)" : bill < 0 ? " (" + (-bill) + " to come from sales, on Save)" : "")
 				+ (repBill > 0 ? ", and " + repBill + " reputation on Save" : ""));
 		int w = ROW_W, y = 0;
 		sysList.removeAll();
 		storedList.removeAll();
 		CargoParts.Header h1 = new CargoParts.Header("Installed systems", false);
-		int hx = payer.getWidth() + 10; // the words start after Pay From
-		h1.setBounds(hx, 0, 564 - hx, 22);
-		h1.lineFrom(scrapCount.getX() - 700 - hx + scrapCount.textWidth() + 12); // its line starts after the scrap
+		h1.setBounds(0, 0, 564, 22); // the heading as it always was: Pay From and the scrap sit outside it
 		lists.add(h1);
 		y = dryDock(bs, y, w); // the hull and the reactor first, no Dry Dock heading of their own (6.44, heromedel)
 		int i = 0;
