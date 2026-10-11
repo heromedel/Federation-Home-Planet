@@ -54,8 +54,8 @@ public final class BuildDialog extends JDialog {
 		ShipChecks.Report r = ShipChecks.check(d, ShipChecks.Context.DESIGN, null, otherNames);
 		List<String> fix = new ArrayList<String>(r.problems), notes = new ArrayList<String>(r.warnings);
 		// the checker's own loadout/art problems that Build can't do without
-		if (d.art.isEmpty()) fix.add("She needs hull art.");
-		if (d.loadout == null) notes.add("No loadout set: she'd start with three humans, 8 missiles, 2 drone parts and nothing fitted (the Loadout step sets it).");
+		if (d.art.isEmpty()) fix.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " needs hull art.");
+		if (d.loadout == null) notes.add("No loadout set: " + homeplanet.model.Words.she() + "'d start with three humans, 8 missiles, 2 drone parts and nothing fitted (the Loadout step sets it).");
 
 		// the trial ship: her report, and the proof that she loads
 		JComponent report;
@@ -75,21 +75,21 @@ public final class BuildDialog extends JDialog {
 						+ (bp.getMaxPower() == null ? "?" : bp.getMaxPower().amount) + ", " + (bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots())
 						+ " weapon slots, " + (bp.getDroneSlots() == null ? 3 : bp.getDroneSlots()) + " drone slots";
 			} catch (Exception ex) {
-				fix.add("A ship can't be built from her as she stands: " + ex);
+				fix.add("A ship can't be built from " + homeplanet.model.Words.herObj() + " as " + homeplanet.model.Words.she() + " stands: " + ex);
 				report = new JLabel("(no report: see To fix)");
 			}
-		} else report = new JLabel("(no report until she can be built)");
+		} else report = new JLabel("(no report until " + homeplanet.model.Words.she() + " can be built)");
 
 		// what Build does
 		List<String> does = new ArrayList<String>();
 		does.add("Blueprint " + bpId + " (layout " + DesignExport.layoutId(d) + ") goes into the " + homeplanet.parser.CompanionMod.TITLE + ", which then needs sending to FTL via Slipstream (Settings > Mods > Patch mods).");
 		if (snapshot != null && DesignExport.changesBlueprint(snapshot, d)) {
 			List<String> ships = DesignDialog.shipsUsing(DesignExport.bpId(snapshot));
-			if (!ships.isEmpty()) does.add("She was built before (v" + snapshot.version + ") and " + (ships.size() == 1 ? "1 ship flies it" : ships.size() + " ships fly it")
+			if (!ships.isEmpty()) does.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " was built before (v" + snapshot.version + ") and " + (ships.size() == 1 ? "1 ship flies it" : ships.size() + " ships fly it")
 					+ ": " + String.join(", ", ships) + ". This build becomes v" + DesignDialog.nextVersion(d.id) + "; they keep v" + snapshot.version + ".");
-			else does.add("She was built before (v" + snapshot.version + ") and no ship flies it: you'll be asked whether to replace it or make v" + DesignDialog.nextVersion(d.id) + ".");
-		} else if (snapshot != null) does.add("Nothing the game sees has changed since her last build; building again changes nothing in the mod.");
-		does.add(d.starter ? "She's a starter ship: she'll be listed in Commission once the mod is sent to FTL via Slipstream." : "Not a starter ship: she won't be listed in Commission (the Loadout step's tick box).");
+			else does.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " was built before (v" + snapshot.version + ") and no ship flies it: you'll be asked whether to replace it or make v" + DesignDialog.nextVersion(d.id) + ".");
+		} else if (snapshot != null) does.add("Nothing the game sees has changed since " + homeplanet.model.Words.her() + " last build; building again changes nothing in the mod.");
+		does.add(d.starter ? homeplanet.model.Words.cap(homeplanet.model.Words.she()) + "'s a starter ship: " + homeplanet.model.Words.she() + "'ll be listed in Commission once the mod is sent to FTL via Slipstream." : "Not a starter ship: " + homeplanet.model.Words.she() + " won't be listed in Commission (the Loadout step's tick box).");
 
 		JPanel top = new JPanel(new BorderLayout(0, 4));
 		JLabel sl = new JLabel(stats);
@@ -99,7 +99,7 @@ public final class BuildDialog extends JDialog {
 
 		StringBuilder html = new StringBuilder("<html><body style='width:560px'>");
 		if (!fix.isEmpty()) { html.append("<p><b style='color:" + MenuTheme.HTML_RED + "'>To fix (stops the build)</b><ul>"); for (String x : fix) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
-		if (!notes.isEmpty()) { html.append("<p><b style='color:" + MenuTheme.HTML_GOLD + "'>Notes (her choice, not The Station's)</b><ul>"); for (String x : notes) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
+		if (!notes.isEmpty()) { html.append("<p><b style='color:" + MenuTheme.HTML_GOLD + "'>Notes (" + homeplanet.model.Words.her() + " choice, not The Station's)</b><ul>"); for (String x : notes) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p>"); }
 		html.append("<p><b>What Build does</b><ul>"); for (String x : does) html.append("<li>").append(esc(x)).append("</li>"); html.append("</ul></p></body></html>");
 		JLabel lines = new JLabel(html.toString());
 		lines.setVerticalAlignment(JLabel.TOP);
@@ -114,14 +114,14 @@ public final class BuildDialog extends JDialog {
 
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton preview = new JButton("Preview files");
-		preview.setToolTipText("The layout, chassis and blueprint text the game would get for her");
+		preview.setToolTipText("The layout, chassis and blueprint text the game would get for " + homeplanet.model.Words.herObj());
 		preview.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ShipEditorDialog.showTextWindow(BuildDialog.this, "Files for " + d.name, DesignExport.preview(d)); } });
 		JButton loadout = new JButton("Loadout...");
-		loadout.setToolTipText("Back to the editor with the Loadout step in front: her class, name, numbers, crew, weapons, drones, augments and starting systems (closes this screen)");
+		loadout.setToolTipText("Back to the editor with the Loadout step in front: " + homeplanet.model.Words.her() + " class, name, numbers, crew, weapons, drones, augments and starting systems (closes this screen)");
 		loadout.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { choice = Choice.LOADOUT; dispose(); } });
 		JButton build = new JButton(notes.isEmpty() ? "Build blueprint" : "Build anyway");
 		build.setEnabled(fix.isEmpty());
-		build.setToolTipText(fix.isEmpty() ? "Put her blueprint in the Federation Home Planet Mod" : "Not until the To fix list is empty");
+		build.setToolTipText(fix.isEmpty() ? "Put " + homeplanet.model.Words.her() + " blueprint in the Federation Home Planet Mod" : "Not until the To fix list is empty");
 		build.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { choice = Choice.BUILD; dispose(); } });
 		JButton cancel = new JButton("Cancel");
 		cancel.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });

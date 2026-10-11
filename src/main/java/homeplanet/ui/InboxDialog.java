@@ -43,7 +43,7 @@ public class InboxDialog extends JDialog {
 	private final JButton delete = new JButton("Delete");
 	/** A shipment held in the inbox: into this fleet's Cargo Hold, another fleet's, or back to its sender. */
 	private final JButton takeIt = new JButton("Accept"), elsewhere = new JButton("Deliver to another fleet..."), sendBack = new JButton("Return to sender");
-	private final JButton keep = new JButton("Keep her"), museum = new JButton("Accept the museum's offer");
+	private final JButton keep = new JButton("Keep " + homeplanet.model.Words.herObj()), museum = new JButton("Accept the museum's offer");
 	private final JButton payRansom = new JButton("Pay"), refuseRansom = new JButton("Refuse");
 	/** An expedition's prize: a recruit to sign on or send on their way; a ship to the Space Dock, the Junkyard, or not taken. */
 	private final JButton prizeYes = new JButton("Sign them on"), prizeDock = new JButton("Space Dock"), prizeJunk = new JButton("Junkyard"), prizeNo = new JButton("Send them on their way");
@@ -134,9 +134,9 @@ public class InboxDialog extends JDialog {
 		archive.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { archiveSelected(); } });
 		delete.setToolTipText("Delete this receipt for good: the trade stays in the station's history");
 		delete.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { deleteSelected(); } });
-		keep.setToolTipText("She docks at the Space Dock, ready for a new journey from the first sector");
+		keep.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " docks at the Space Dock, ready for a new journey from the first sector");
 		keep.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(true); } });
-		museum.setToolTipText("Her full value goes to the Cargo Hold, and she to the Federation Museum");
+		museum.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " full value goes to the Cargo Hold, and " + homeplanet.model.Words.she() + " to the Federation Museum");
 		museum.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(false); } });
 		payRansom.setToolTipText("Paid from the Cargo Hold; they come back to it");
 		payRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(true); } });
@@ -144,9 +144,9 @@ public class InboxDialog extends JDialog {
 		refuseRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(false); } });
 		prizeYes.setToolTipText("Into the Cargo Hold");
 		prizeYes.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(0); } });
-		prizeDock.setToolTipText("Docked at the Space Dock, as she is");
+		prizeDock.setToolTipText("Docked at the Space Dock, as " + homeplanet.model.Words.she() + " is");
 		prizeDock.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(1); } });
-		prizeJunk.setToolTipText("To the Junkyard, as she is, to be set right or scrapped");
+		prizeJunk.setToolTipText("To the Junkyard, as " + homeplanet.model.Words.she() + " is, to be set right or scrapped");
 		prizeJunk.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(2); } });
 		prizeNo.setToolTipText("Gone for good");
 		prizeNo.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { prize(3); } });
@@ -376,7 +376,7 @@ public class InboxDialog extends JDialog {
 		homeplanet.parser.Assignments.Pending prize = m.key.startsWith("expedition:") && homeplanet.vault.Vault.isOpen() ? homeplanet.parser.Assignments.pendingFor(homeplanet.vault.Vault.get(), m.key) : null;
 		boolean recruit = prize != null && "recruit".equals(prize.kind), ship = prize != null && "ship".equals(prize.kind);
 		prizeYes.setVisible(recruit); prizeDock.setVisible(ship); prizeJunk.setVisible(ship); prizeNo.setVisible(prize != null);
-		prizeNo.setText(ship ? "Don't take her" : "Send them on their way");
+		prizeNo.setText(ship ? "Don't take " + homeplanet.model.Words.herObj() : "Send them on their way");
 		archive.setVisible(true);
 		boolean held = parcel != null && (homeplanet.comm.Shipments.HELD.equals(parcel.state) || homeplanet.comm.Shipments.RETURNING.equals(parcel.state));
 		delete.setVisible(Transmissions.isReceipt(m) || Transmissions.isNote(m) || (m.key.startsWith("parcel:") && !held) || m.key.startsWith("expedition:") || Transmissions.isShipped(m)); // they pile up: archive one or be rid of it (not a shipment still to deal with)
@@ -418,7 +418,7 @@ public class InboxDialog extends JDialog {
 		String settled;
 		try {
 			if (choice == 3) {
-				if (!HomePlanet.confirmNo(this, ("ship".equals(x.kind) ? x.name + " will be left where she lies." : x.name + " will go their own way.") + " Gone for good?", "Expeditions")) return;
+				if (!HomePlanet.confirmNo(this, ("ship".equals(x.kind) ? x.name + " will be left where " + homeplanet.model.Words.she() + " lies." : x.name + " will go their own way.") + " Gone for good?", "Expeditions")) return;
 				homeplanet.parser.Assignments.decline(v, x);
 				settled = "ship".equals(x.kind) ? "Not taken" : "Sent on their way";
 			} else {

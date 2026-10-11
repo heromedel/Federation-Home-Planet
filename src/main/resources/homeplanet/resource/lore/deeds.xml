@@ -5,6 +5,7 @@
      kind="ACCOLADE" when="of=...": what the career did, in a phrase, one kind to a letter and each kind once a career.
      Where a kind has several, one is picked at random. {ship} is the ship ("the Kestrel"), {n} a count (in words up to
      ten), {model} a ship's model, {crew} a crew member's name, {achievement} an achievement's name; those are all.
+     The ship pronoun tokens {she} {her} {her_obj} {hers} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General).
      The kinds: ship (her jumps), achievement (the latest), model (the model flown most), fights (enemy ships
      defeated), crew (the longest-serving), expeditions (how many went out).
 
@@ -29,7 +30,7 @@
 	<entry kind="ACCOLADE" when="of=expeditions">Your {n} expeditions, and every crew that went.</entry>
 	<entry kind="ACCOLADE" when="of=expeditions">Your reports from {n} expeditions.</entry>
 
-	<entry kind="DEED" when="achievement=ACH_SECTOR_5">One of your ships fighting her way to sector 5.</entry>
+	<entry kind="DEED" when="achievement=ACH_SECTOR_5">One of your ships fighting {her} way to sector 5.</entry>
 	<entry kind="DEED" when="achievement=ACH_SECTOR_8">One of your ships making it all the way to sector 8, within reach of the Federation's own base.</entry>
 	<entry kind="DEED" when="achievement=ACH_UNLOCK_ALL">Flying every kind of cruiser the Federation knows of.</entry>
 	<entry kind="DEED" when="achievement=ACH_SCRAP">Your fleet hauling in over 10,000 scrap since you took command.</entry>
@@ -43,7 +44,7 @@
 	<entry kind="DEED" when="achievement=ACH_NO_DEATH">Bringing every one of your crew through to sector 8 alive.</entry>
 	<entry kind="DEED" when="achievement=ACH_BURNING">Setting every room of an enemy ship ablaze at once.</entry>
 	<entry kind="DEED" when="achievement=ACH_BAD_DODGING">Taking five shots in a row with your engines at full, and flying on anyway.</entry>
-	<entry kind="DEED" when="achievement=ACH_ONE_VOLLEY">Destroying an enemy ship in one volley, before she could fire a single shot.</entry>
+	<entry kind="DEED" when="achievement=ACH_ONE_VOLLEY">Destroying an enemy ship in one volley, before {she} could fire a single shot.</entry>
 	<entry kind="DEED" when="achievement=ACH_BOARDING_DRONE">A single boarding drone of yours clearing four enemy crew off their own ship.</entry>
 	<entry kind="DEED" when="achievement=ACH_INVADE_SHIP">Your whole crew going across and taking an enemy ship with their own hands.</entry>
 	<entry kind="DEED" when="achievement=ACH_SLICE_DICE">Your beams sweeping every room of an enemy ship in a matter of seconds.</entry>
@@ -51,9 +52,9 @@
 	<entry kind="DEED" when="achievement=ACH_UNITED_FEDERATION">Six peoples serving side by side aboard your Kestrel Cruiser.</entry>
 	<entry kind="DEED" when="achievement=ACH_FULL_ARSENAL">Running eleven systems aboard one Kestrel Cruiser.</entry>
 	<entry kind="DEED" when="achievement=ACH_TOUGH_SHIP">Bringing a Kestrel Cruiser back from a single point of hull to full strength.</entry>
-	<entry kind="DEED" when="achievement=ACH_ENERGY_SHIELDS">Finishing a fight in your Zoltan Cruiser before the enemy ever got through her shield.</entry>
+	<entry kind="DEED" when="achievement=ACH_ENERGY_SHIELDS">Finishing a fight in your Zoltan Cruiser before the enemy ever got through {her} shield.</entry>
 	<entry kind="DEED" when="achievement=ACH_ENERGY_POWER">Powering a ton of systems on that Zoltan Cruiser, all at once.</entry>
-	<entry kind="DEED" when="achievement=ACH_ENERGY_MANPOWER">Reaching sector 5 in a Zoltan Cruiser on her original reactor.</entry>
+	<entry kind="DEED" when="achievement=ACH_ENERGY_MANPOWER">Reaching sector 5 in a Zoltan Cruiser on {her} original reactor.</entry>
 	<entry kind="DEED" when="achievement=ACH_STEALTH_DESTROY">Taking an enemy from full strength to nothing in a single cloak of your Stealth Cruiser.</entry>
 	<entry kind="DEED" when="achievement=ACH_STEALTH_AVOID">Slipping a storm of fire under a single cloak of your Stealth Cruiser.</entry>
 	<entry kind="DEED" when="achievement=ACH_STEALTH_TACTICAL">Taking your Stealth Cruiser to sector 8 without once flying into a hazard.</entry>
@@ -61,17 +62,17 @@
 	<entry kind="DEED" when="achievement=ACH_ONLY_DRONES">Your Engi Cruiser's drones winning a fight on their own, without a single weapon fired.</entry>
 	<entry kind="DEED" when="achievement=ACH_IONED">Ioning four enemy systems at once from your Engi Cruiser.</entry>
 	<entry kind="DEED" when="achievement=ACH_ROCK_FIRE">Your Rock crew fighting on through the flames aboard an enemy ship, and winning.</entry>
-	<entry kind="DEED" when="achievement=ACH_ROCK_MISSILES">Your Rock Cruiser's missiles getting past an enemy's defense drone to finish her.</entry>
+	<entry kind="DEED" when="achievement=ACH_ROCK_MISSILES">Your Rock Cruiser's missiles getting past an enemy's defense drone to finish {her_obj}.</entry>
 	<entry kind="DEED" when="achievement=ACH_ROCK_CRYSTAL">Your Rock Cruiser finding the hidden Crystal worlds, home of the Rock's ancient ancestors.</entry>
 	<entry kind="DEED" when="achievement=ACH_MANTIS_CREW_DEAD">Your Mantis Cruiser's boarders clearing twenty enemy crews before sector 6.</entry>
-	<entry kind="DEED" when="achievement=ACH_MANTIS_SLAUGHTER">Taking down five enemy crew without a scratch to your Mantis Cruiser or her crew.</entry>
+	<entry kind="DEED" when="achievement=ACH_MANTIS_SLAUGHTER">Taking down five enemy crew without a scratch to your Mantis Cruiser or {her} crew.</entry>
 	<entry kind="DEED" when="achievement=ACH_MANTIS_SURVIVOR">Your last Mantis standing winning the fight aboard the enemy's own ship.</entry>
 	<entry kind="DEED" when="achievement=ACH_SLUG_VISION">Your Slug Cruiser having eyes in every room of an enemy ship, sensors or not.</entry>
 	<entry kind="DEED" when="achievement=ACH_SLUG_NEBULA">Your Slug Cruiser visiting thirty nebulas before sector 8.</entry>
 	<entry kind="DEED" when="achievement=ACH_SLUG_BIO">Taking down three enemy crew with one shot from your Anti-Bio Beam.</entry>
 	<entry kind="DEED" when="achievement=ACH_FED_PATIENCE">Winning a fight with the Artillery Beam alone, without a scratch to the hull.</entry>
 	<entry kind="DEED" when="achievement=ACH_FED_DIPLOMACY">Your Federation Cruiser's crew talking their way through four tight spots before sector 5.</entry>
-	<entry kind="DEED" when="achievement=ACH_FED_UPGRADE">Reaching sector 5 in a Federation Cruiser without upgrading her weapons.</entry>
+	<entry kind="DEED" when="achievement=ACH_FED_UPGRADE">Reaching sector 5 in a Federation Cruiser without upgrading {her} weapons.</entry>
 	<entry kind="DEED" when="achievement=ACH_CRYSTAL_SHARD">Finishing an enemy ship with a shard of Crystal Vengeance.</entry>
 	<entry kind="DEED" when="achievement=ACH_CRYSTAL_LOCKDOWN">Sealing four enemy crew in a single room from your Crystal Cruiser.</entry>
 	<entry kind="DEED" when="achievement=ACH_CRYSTAL_CLASH">Your Crystal Cruiser's defeat of ten Rock ships.</entry>

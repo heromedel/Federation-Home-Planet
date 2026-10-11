@@ -183,7 +183,7 @@ public final class RepairJob {
 		int waiting = Store.num(p, "cost", 0) + ("true".equals(p.getProperty("late")) ? 0 : Store.num(p, "extra", EXTRA_MIN));
 		return s.replace("{waiting}", Integer.toString(waiting)).replace("{class}", cls).replace("{extra}", p.getProperty("extra", Integer.toString(EXTRA_MIN)))
 				.replace("{pay}", Integer.toString(paid)).replace("{value}", p.getProperty("value", "0")).replace("{taken}", p.getProperty("taken", "nothing"))
-				.replace("{paidline}", paid > 0 ? "Your payment for the work is enclosed: " + paid + " scrap. Nothing more." : "She came back unfinished, and I do not pay for unfinished work.");
+				.replace("{paidline}", paid > 0 ? "Your payment for the work is enclosed: " + paid + " scrap. Nothing more." : homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " came back unfinished, and I do not pay for unfinished work.");
 	}
 	/** Her name for the letters, and the job's fills (for a letter sent outside the chain). */
 	public static Map<String, String> fills(Vault v) {
@@ -222,7 +222,7 @@ public final class RepairJob {
 				p.setProperty("stage", "defied");
 				p.setProperty("seizeAt", Integer.toString(v.beaconsSeen() + 7 + new Random().nextInt(8)));
 				write(v, p);
-				HistoryLog.entry("REPAIR JOB", "The " + NAME + " is kept: her owner's attorneys will come for her value", null, Event.of("REPAIR_JOB").put("stage", "defied").put("ship_name", NAME));
+				HistoryLog.entry("REPAIR JOB", "The " + NAME + " is kept: " + homeplanet.model.Words.her() + " owner's attorneys will come for " + homeplanet.model.Words.her() + " value", null, Event.of("REPAIR_JOB").put("stage", "defied").put("ship_name", NAME));
 			}
 		}
 	}
@@ -303,8 +303,8 @@ public final class RepairJob {
 	 */
 	public static String patchNote() {
 		if (CompanionMod.inGameData(BLUEPRINT + Retrofit.SUFFIX)) return null;
-		return "The " + NAME + " is built on a blueprint FTL doesn't have yet.\nShe can be repaired and returned at The Home Planet Station as she is.\n"
-				+ "To fly her in FTL, The Home Planet Station must first send the " + CompanionMod.TITLE + " to FTL via Slipstream (Settings > Mods > Patch mods).";
+		return "The " + NAME + " is built on a blueprint FTL doesn't have yet.\n" + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " can be repaired and returned at The Home Planet Station as " + homeplanet.model.Words.she() + " is.\n"
+				+ "To fly " + homeplanet.model.Words.herObj() + " in FTL, The Home Planet Station must first send the " + CompanionMod.TITLE + " to FTL via Slipstream (Settings > Mods > Patch mods).";
 	}
 
 	/**
@@ -312,15 +312,15 @@ public final class RepairJob {
 	 * at a station; and, to be paid as agreed, whole (a demand takes her back as she is, from the Junkyard too).
 	 */
 	public static String whyNot(Vault v, Ship s, boolean mustBeWhole) {
-		if (s == null) return "The " + NAME + " is no longer in your fleet, so she can't be sent back.";
+		if (s == null) return "The " + NAME + " is no longer in your fleet, so " + homeplanet.model.Words.she() + " can't be sent back.";
 		if (s.state == Ship.State.BOARDED) {
 			if (homeplanet.core.GameGuard.isFtlRunning()) return "FTL is running with the " + NAME + " aboard. " + homeplanet.core.GameGuard.CLOSE_FTL + " Then reply again.";
-			if (!v.mayTrade(s)) return "The " + NAME + " isn't at a station. Take her to a beacon with a store, then reply again.";
+			if (!v.mayTrade(s)) return "The " + NAME + " isn't at a station. Take " + homeplanet.model.Words.herObj() + " to a beacon with a store, then reply again.";
 		}
-		if (mustBeWhole && s.state == Ship.State.JUNKED) return "The " + NAME + " is in the Junkyard. Salvage her, then reply again.";
+		if (mustBeWhole && s.state == Ship.State.JUNKED) return "The " + NAME + " is in the Junkyard. Salvage " + homeplanet.model.Words.herObj() + ", then reply again.";
 		SavedGameState gs = s.save();
 		if (mustBeWhole && (gs == null || !whole(gs.getPlayerShip())))
-			return "The " + NAME + " has been damaged since. Repair her (every hull point, every breach, Engines and Piloting working), then reply again.";
+			return "The " + NAME + " has been damaged since. Repair " + homeplanet.model.Words.herObj() + " (every hull point, every breach, Engines and Piloting working), then reply again.";
 		return null;
 	}
 	/** Has her owner had to ask for her (the bonus is gone)? */
@@ -341,7 +341,7 @@ public final class RepairJob {
 	}
 	/** The Cargo Bay's Return button: she leaves the fleet (RETURNED), her payment goes to the Cargo Hold, and her owner writes. */
 	public static synchronized int returnHer(Vault v, Ship s) throws IOException {
-		if (!ready(v, s)) throw new IOException("The " + NAME + " can't be returned yet: she must be whole (every hull point back, no breaches).");
+		if (!ready(v, s)) throw new IOException("The " + NAME + " can't be returned yet: " + homeplanet.model.Words.she() + " must be whole (every hull point back, no breaches).");
 		return giveBack(v, s, read(v), late(v), true);
 	}
 	/** She goes back: paid in full when whole (less the bonus if late), nothing when she isn't; her owner writes now if {@code letter}. */
@@ -355,7 +355,7 @@ public final class RepairJob {
 		write(v, p);
 		if (pay > 0) {
 			try { v.depositToStorage(pay); }
-			catch (IOException e) { log.error("The " + NAME + "'s payment of " + pay + " scrap could not reach the Cargo Hold", e); throw new IOException("The " + NAME + " was returned, but her payment of " + pay + " scrap could not be put in the Cargo Hold: " + e.getMessage()); }
+			catch (IOException e) { log.error("The " + NAME + "'s payment of " + pay + " scrap could not reach the Cargo Hold", e); throw new IOException("The " + NAME + " was returned, but " + homeplanet.model.Words.her() + " payment of " + pay + " scrap could not be put in the Cargo Hold: " + e.getMessage()); }
 		}
 		HistoryLog.entry("RETURNED", s.name + " (" + s.id + ") to her owner" + (pay > 0 ? ", for " + pay + " scrap" : ", unpaid"), null, Vault.shipEvent("RETURNED", s).put("what", "to_owner").put("paid", pay).put("late", late));
 		if (letter) Transmissions.post(late ? LATE : PAID, late ? LATE : PAID, fills(v));
@@ -388,8 +388,8 @@ public final class RepairJob {
 			}
 		}
 		if (nightjar != null) {
-			if (nightjar.state == Ship.State.DOCKED) { v.remove(nightjar, null, Vault.Fate.SEIZED); taken.add("and the " + NAME + " herself"); }
-			else if (nightjar.state == Ship.State.BOARDED) { p.setProperty("collectLater", "true"); taken.add("and the " + NAME + " herself, as soon as she docks"); }
+			if (nightjar.state == Ship.State.DOCKED) { v.remove(nightjar, null, Vault.Fate.SEIZED); taken.add("and the " + NAME + " " + homeplanet.model.Words.herself()); }
+			else if (nightjar.state == Ship.State.BOARDED) { p.setProperty("collectLater", "true"); taken.add("and the " + NAME + " " + homeplanet.model.Words.herself() + ", as soon as " + homeplanet.model.Words.she() + " docks"); }
 			else p.setProperty("escaped", "true");
 		}
 		p.setProperty("stage", "seized");

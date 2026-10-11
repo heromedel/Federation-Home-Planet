@@ -781,7 +781,7 @@ public final class CrewRegister {
 				for (int i = m.events.size() - 1; i >= 0; i--) if (m.events.get(i).text.startsWith("Lost with ")) { m.events.remove(i); break; }
 				m.status = Status.PRESENT;
 				m.where = "aboard " + the(s.name);
-				m.events.add(new Event(MasterLog.today(v), "Back aboard " + the(s.name) + ": she was restored after FTL's New Game wrote over her."));
+				m.events.add(new Event(MasterLog.today(v), "Back aboard " + the(s.name) + ": " + homeplanet.model.Words.she() + " was restored after FTL's New Game wrote over " + homeplanet.model.Words.herObj() + "."));
 				changed = true;
 			}
 			if (changed) { int[] seen = seen(v); write(v, members, seen[0], seen[1]); }

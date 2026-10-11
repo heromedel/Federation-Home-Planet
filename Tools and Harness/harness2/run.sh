@@ -69,6 +69,7 @@ echo "== ShipStoreT"; run ShipStoreT "$GAME" "$WORLD" "$W/shipstore" | grep -E "
 echo "== JournalT"; run JournalT "$GAME" "$WORLD" "$W/journal" | grep -E "$PICK|^PASS"
 echo "== HoldT"; run HoldT "$GAME" "$WORLD" "$W/hold" | grep -E "$PICK|^PASS"
 echo "== LoreT"; run LoreT "$GAME" "$WORLD" "$W/lore" | grep -E "$PICK|^PASS"
+echo "== PowerT"; run PowerT "$GAME" "$WORLD" "$W/power" | grep -E "$PICK|^PASS"
 echo "== NamesT"; run NamesT "$GAME" "$WORLD" "$W/names" | grep -E "$PICK|^PASS|^SAMPLE"
 echo "== CrewNameT"; run CrewNameT "$GAME" "$WORLD" "$W/cname" | grep -E "$PICK|^PASS"
 echo "== CarryT"; run CarryT "$GAME" "$WORLD" "$W/carry" | grep -E "$PICK|^PASS"
@@ -82,6 +83,8 @@ if command -v xvfb-run >/dev/null; then
 	(cd "$W" && xvfb-run -a java -Dhomeplanet.noGameCheck=true -cp "$CP" GuiT "$GAME" "$WORLD" "$W/gui" 2>&1) | grep -E "$PICK|^PASS|^auction"
 	echo "== EscT"
 	(cd "$W" && xvfb-run -a java -cp "$CP" EscT 2>&1) | grep -E "$PICK"
+	echo "== RemodT"
+	(cd "$W" && xvfb-run -a java -Dhomeplanet.noGameCheck=true -cp "$CP" RemodT "$GAME" "$WORLD" "$W/remod" 2>&1) | grep -E "$PICK|^PASS"
 else echo "(GuiT skipped: no xvfb-run)"; fi
 
 # the converter, only with old Homeworld data to convert

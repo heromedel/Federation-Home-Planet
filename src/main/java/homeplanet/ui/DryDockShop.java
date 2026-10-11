@@ -88,13 +88,18 @@ class DryDockShop {
 	private final JPanel panel = new JPanel(null);
 	private final JPanel content = new JPanel(null);
 	private final JScrollPane scroll = new JScrollPane(content, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-	private final CargoParts.Label scrapLbl = new CargoParts.Label("", FtlFont.MENU, CargoParts.TEXT, -1);
+	/** The scrap of whoever pays, and who pays (6.45, heromedel: apart from what the goods are for, the drop-down). */
+	private final CargoParts.ScrapCount scrapCount = new CargoParts.ScrapCount();
+	private final PayFrom payFrom = new PayFrom();
+	/** The cfg line for the Shop's Pay From: "cargo" while the Cargo Hold pays (the ship is the default). */
+	static final String CFG_PAYS = "shop_pays";
 	private final CargoParts.Label storesLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 1);
 	private FtlButton buyerBtn, info;
 	private final JLabel shipPic = new JLabel();
-	private final CargoParts.Label classLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, -1);
+	private final CargoParts.Label classLbl = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, -1).small(FtlFont.SLOT); // a size smaller before it's cut (6.45)
 	private final Aboard aboard = new Aboard();
 	private boolean toStorage = false; // buying for the Cargo Bay rather than the picked ship
+	private boolean holdPays = false; // the Cargo Hold's scrap pays rather than the picked ship's (6.45)
 
 	/** The Shop tab (built once; its contents are rebuilt from the saves). */
 	JPanel panel() {
@@ -133,8 +138,22 @@ class DryDockShop {
 			}
 		});
 		panel.add(buyerBtn);
-		scrapLbl.setBounds(dx + CargoBayUI.DROP_W + 20, 22, 260, 30);
-		panel.add(scrapLbl);
+		// Pay From (6.45, heromedel): whose scrap pays, whatever the goods are for; remembered, as the Refit's is
+		java.awt.Dimension ps = payFrom.getPreferredSize();
+		payFrom.setBounds(640 - ps.width / 2, 0, ps.width, ps.height); // under the Shop tab's button, where the Refit has it
+		payFrom.setToolTipText("Who pays the Shop: the ship picked in the Cargo Bay, or the Cargo Hold (Cargo; paid on Save)");
+		payFrom.onChange(new Runnable() {
+			public void run() {
+				holdPays = payFrom.cargo();
+				if (holdPays) homeplanet.core.HomePlanet.config.setProperty(CFG_PAYS, "cargo");
+				else homeplanet.core.HomePlanet.config.remove(CFG_PAYS); // the ship is the default: the line only while the Cargo Hold pays
+				homeplanet.core.HomePlanet.saveConfig();
+				rebuild();
+			}
+		});
+		panel.add(payFrom);
+		scrapCount.setBounds(0, 8, 120, 22); // just left of Pay From (placed in rebuild, by its width)
+		panel.add(scrapCount);
 		aboard.setBounds(dx + CargoBayUI.DROP_W + 20, 54, 1264 - (dx + CargoBayUI.DROP_W + 20), 22);
 		panel.add(aboard);
 		CargoParts.Label title = new CargoParts.Label("STORES AT YOUR SHIPS' BEACONS", FtlFont.MENU, CargoParts.GOLD, 1);
@@ -163,6 +182,7 @@ class DryDockShop {
 		purchases.clear();
 		bought.clear();
 		toStorage = false;
+		holdPays = "cargo".equals(homeplanet.core.HomePlanet.config.getProperty(CFG_PAYS)); // as it was left (6.45)
 		rebuild();
 	}
 
@@ -175,6 +195,9 @@ class DryDockShop {
 	void systemsChanged() { rebuild(); }
 
 	private SavedGameState buyer() { return toStorage ? resolve(bay.homeSave) : bay.currentSave; }
+	/** Whose scrap pays: the Pay From switch, apart from what the goods are for (6.45). */
+	private SavedGameState payer() { return holdPays ? resolve(bay.homeSave) : bay.currentSave; }
+	private String payerName() { return holdPays ? "the Cargo Hold" : homeplanet.parser.ShipNames.the(bay.currentSave.getPlayerShipName()); }
 	String helpText() {
 		return "Supplies show how many the store has left and the price of one. Greyed out: hover to see why. Nothing is paid until you Save.";
 	}
@@ -184,14 +207,17 @@ class DryDockShop {
 		if (buyerBtn == null) panel();
 		content.removeAll();
 		if (bay.currentPath == null) { content.revalidate(); content.repaint(); return; }
-		SavedGameState buyer = buyer();
-		int scrap = buyer == null ? 0 : buyer.getPlayerShip().getScrapAmt();
+		SavedGameState buyer = buyer(), payer = payer();
+		int scrap = payer == null ? 0 : payer.getPlayerShip().getScrapAmt() - bay.systems.billOn(holdPays); // less the Refit's bill on the same side
 		buyerBtn.setText(toStorage ? "Cargo Hold" : bay.currentSave.getPlayerShipName());
+		payFrom.setCargo(holdPays);
 		shipPic.setIcon(toStorage ? null : bay.shipIcon(bay.currentSave));
-		shipPic.setToolTipText(toStorage ? null : "Click for her report, and to rename her");
-		classLbl.setText(toStorage ? "Items, supplies, and systems to fit at Refit" : CargoBayUI.shipClass(bay.currentState));
-		info.setToolTipText(toStorage ? "What the Cargo Hold is" : "Her report, and to rename her");
-		scrapLbl.setText(scrap + " scrap to spend");
+		shipPic.setToolTipText(toStorage ? null : "Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
+		classLbl.setText(toStorage ? "Items, supplies, and systems for Refit" : CargoBayUI.shipClass(bay.currentState));
+		info.setToolTipText(toStorage ? "What the Cargo Hold is" : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report, and to rename " + homeplanet.model.Words.herObj());
+		scrapCount.set(scrap, ""); // what it is: in its tooltip, as on the Refit
+		scrapCount.setBounds(payFrom.getX() - 10 - scrapCount.textWidth(), 8, scrapCount.textWidth() + 2, 22);
+		scrapCount.setToolTipText(homeplanet.model.Words.cap(payerName()) + " has " + scrap + " scrap to spend here (paid on Save)");
 		aboard.show(buyer, toStorage);
 		List<Entry> entries = buildEntries();
 		int stores = 0;
@@ -468,13 +494,13 @@ class DryDockShop {
 
 	void buy(Entry e) {
 		if (e == null) return;
-		SavedGameState buyer = toStorage ? resolve(bay.homeSave) : bay.currentSave;
+		SavedGameState buyer = buyer(), payer = payer();
 		SavedGameState source = resolve(e.ship);
-		if (buyer == null || source == null) {
+		if (buyer == null || payer == null || source == null) {
 			homeplanet.core.HomePlanet.showErrorDialog("The Home Planet Station could not read the saves needed for this purchase.");
 			return;
 		}
-		ShipState bs = buyer.getPlayerShip();
+		ShipState bs = buyer.getPlayerShip(), ps = payer.getPlayerShip();
 		String buyerName = toStorage ? "The Cargo Bay" : buyer.getPlayerShipName();
 		String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) : e.kind == Kind.CREW ? raceTitle(e.id) + " crew member" : supplyName(e.kind);
 		if (e.kind == Kind.SYSTEM && !toStorage && systemBlocked(buyer, e.id, name)) return; // before the scrap check: "already has" says more than "not enough scrap"
@@ -485,9 +511,10 @@ class DryDockShop {
 		// past FTL's System Limit a system takes a custom work order to fit, paid with it
 		boolean order = e.kind == Kind.SYSTEM && !toStorage && SaveHelper.pastSystemLimit(bs, SystemType.findById(e.id)); // the hold has no System Limit
 		int fee = order ? homeplanet.core.Economy.workOrderScrap() : 0, cost = e.price + fee, rep = order ? homeplanet.core.Economy.workOrderRep() : 0;
-		if (bs.getScrapAmt() < cost) {
+		int has = ps.getScrapAmt() - bay.systems.billOn(holdPays); // the Refit's work on the same side is paid first, on Save
+		if (has < cost) {
 			JOptionPane.showMessageDialog(bay, name + " costs " + e.price + " scrap" + (order ? ", and the custom work order to fit it " + fee + " more" : "") + ".\n"
-					+ buyerName + " has " + bs.getScrapAmt() + ".", "Not enough scrap", JOptionPane.WARNING_MESSAGE);
+					+ homeplanet.model.Words.cap(payerName()) + " has " + has + (has != ps.getScrapAmt() ? " after the Refit's work" : "") + ".", "Not enough scrap", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		if (rep > bay.systems.repHave()) {
@@ -550,19 +577,20 @@ class DryDockShop {
 			else { left = store.getDroneParts() - 1; if (left < 0) return; store.setDroneParts(left); bs.setDronePartsAmt(bs.getDronePartsAmt() + 1); }
 			e.count = left;
 		}
-		bs.setScrapAmt(bs.getScrapAmt() - cost);
+		ps.setScrapAmt(ps.getScrapAmt() - cost); // whoever Pay From says, whatever the goods are for (6.45)
 		bay.systems.chargeRep(rep, "a custom work order for the " + name); // spent on Save, with the Dry Dock's bill
 
 		// Anything not already written by the Cargo Bay's Save gets written by us
 		markDirty(buyer);
+		markDirty(payer);
 		markDirty(source);
-		note(buyer, "Scrap", -cost);
+		note(payer, "Scrap", -cost);
 		if (e.kind == Kind.ITEM) note(buyer, Items.title(e.id) + (toCargo ? " (cargo)" : ""), 1);
 		else if (e.kind == Kind.CREW) note(buyer, "Crew " + hired, 1);
 		else if (e.kind != Kind.SYSTEM) note(buyer, supplyName(e.kind), 1); // systems aren't in the TRADE inventory
 		if (hired != null) name = hired + " (" + raceTitle(e.id) + ")";
 		if (e.kind == Kind.SYSTEM && !name.toLowerCase().endsWith("system")) name = name + " system"; // "a Cloaking system", in the receipt and the Captain's Log
-		purchases.add(name + " (" + e.price + " scrap) from the store at " + e.shipName + "'s beacon -> " + buyerName + (toCargo ? " (cargo)" : "")
+		purchases.add(name + " (" + e.price + " scrap) from the store at " + e.shipName + "'s beacon -> " + buyerName + (toCargo ? " (cargo)" : "") + (payer != buyer ? ", paid by " + payerName() : "")
 				+ (order ? ", fitted past FTL's System Limit by a custom work order (" + fee + " scrap" + (rep > 0 ? " and " + rep + " reputation" : "") + ")" : ""));
 		log.debug("Bought {} for {} (work order {}) from {} -> {}", name, e.price, fee, e.ship.name, buyerName);
 
@@ -570,7 +598,8 @@ class DryDockShop {
 		bay.systems.refresh(); // a bought system shows on the Refit tab
 		rebuild();
 		bay.help((hired != null ? "Hired " : "Bought ") + name + " for " + e.price + " scrap" + (order ? ", and " + fee + (rep > 0 ? " scrap and " + rep + " reputation" : "") + " for the custom work order to fit it" : "")
-				+ (toCargo ? " (into the cargo hold)" : hired != null && toStorage ? " (waiting in the Cargo Hold)" : e.kind == Kind.SYSTEM && toStorage ? " (stored in the Cargo Hold, to fit at Refit)" : "") + ". Save to make it official.");
+				+ (toCargo ? " (into the cargo hold)" : hired != null && toStorage ? " (waiting in the Cargo Hold)" : e.kind == Kind.SYSTEM && toStorage ? " (stored in the Cargo Hold, to fit at Refit)" : "")
+				+ (payer != buyer ? ", paid by " + payerName() : "") + ". Save to make it official.");
 	}
 
 	/**

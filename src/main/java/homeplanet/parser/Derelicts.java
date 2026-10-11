@@ -144,7 +144,7 @@ public final class Derelicts {
 		Set<String> taken = new HashSet<String>();
 		for (Ship s : v.all()) if (s.name != null) taken.add(s.name);
 		String id = pickModel(rng, Unlocks.read(), false);
-		if (id == null) throw new IOException("No model for her");
+		if (id == null) throw new IOException("No model for " + homeplanet.model.Words.herObj());
 		String name = ShipNames.roll(id, taken, rng);
 		return build(id, name == null ? "Prize" : name, rng);
 	}
@@ -361,10 +361,10 @@ public final class Derelicts {
 		if (oddity.startsWith("swap:")) {
 			String[] s = oddity.substring(5).split(",");
 			// the rooms are swapped whether or not the systems are installed: say so of the rooms
-			return "Rebuilt strangely: the rooms built for her " + homeplanet.model.Items.systemTitle(s[0]) + " and " + homeplanet.model.Items.systemTitle(s[1])
+			return "Rebuilt strangely: the rooms built for " + homeplanet.model.Words.her() + " " + homeplanet.model.Items.systemTitle(s[0]) + " and " + homeplanet.model.Items.systemTitle(s[1])
 					+ " have been swapped, so each installs where the other would";
 		}
-		if (oddity.startsWith("door:")) return "Rebuilt strangely: one of her doors has been welded shut";
+		if (oddity.startsWith("door:")) return "Rebuilt strangely: one of " + homeplanet.model.Words.her() + " doors has been welded shut";
 		return "";
 	}
 	/** Her rebuild as a remodel of her model (not yet on file). */
@@ -399,13 +399,13 @@ public final class Derelicts {
 	 */
 	public static synchronized Ship buy(Vault v, Listing l) throws IOException {
 		Properties p = read(v);
-		if (!"true".equals(p.getProperty(l.index + ".open"))) throw new IOException("She has already been sold");
-		if (v.storageScrap() < l.price) throw new IOException("The Cargo Hold holds " + v.storageScrap() + " scrap; she costs " + l.price);
+		if (!"true".equals(p.getProperty(l.index + ".open"))) throw new IOException(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " has already been sold");
+		if (v.storageScrap() < l.price) throw new IOException("The Cargo Hold holds " + v.storageScrap() + " scrap; " + homeplanet.model.Words.she() + " costs " + l.price);
 		File remodels = v.remodelsFile();
 		byte[] remodelsBefore = remodels.isFile() ? SafeFiles.read(remodels) : null;
 		SavedGameState gs = l.save;
 		if (!l.oddity.isEmpty()) {
-			if (!CompanionMod.intact()) throw new IOException("The station's remodels file can't be read in full, so her blueprint can't be written");
+			if (!CompanionMod.intact()) throw new IOException("The station's remodels file can't be read in full, so " + homeplanet.model.Words.her() + " blueprint can't be written");
 			List<CompanionMod.Remodel> all = CompanionMod.load();
 			CompanionMod.Remodel r = remodel(gs, l.oddity, all);
 			all.add(r);

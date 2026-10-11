@@ -114,14 +114,14 @@ public final class SpaceDock {
 			if (scrapPaid > 0) {
 				if (to.getScrapAmt() < scrapPaid) throw new IOException("the Cargo Hold holds " + to.getScrapAmt() + " scrap, short of the " + scrapPaid + " stripping costs");
 				to.setScrapAmt(to.getScrapAmt() - scrapPaid);
-				scrapped.add("- " + scrapPaid + " scrap (stripping her systems)");
+				scrapped.add("- " + scrapPaid + " scrap (stripping " + homeplanet.model.Words.her() + " systems)");
 			}
-			if (repPaid > 0) scrapped.add("- " + repPaid + " reputation (stripping her systems)");
+			if (repPaid > 0) scrapped.add("- " + repPaid + " reputation (stripping " + homeplanet.model.Words.her() + " systems)");
 		}
 		// the hull broken up in the same note (6.11, CONCERNS 8): never her crew and gear in the hold and still aboard her
 		tx.leave(wreckShip, Vault.Fate.SCRAPPED).commit();
 		HistoryLog.entry("SCRAP", name + " stripped into storage, hull broken up", scrapped, Event.of("SCRAP").put("ship_name", name).put("stripped", strip).put("to", "hold").details(scrapped));
-		if (strip && repPaid > 0) Reputation.spend(v, repPaid, "Stripping " + name + "'s systems when she was scrapped");
+		if (strip && repPaid > 0) Reputation.spend(v, repPaid, "Stripping " + name + "'s systems when " + homeplanet.model.Words.she() + " was scrapped");
 	}
 
 	/** Sells a junked ship (traded in, or at auction, for {@code price}): her scrap and crew to the Cargo Hold with the payment; she leaves the fleet; logged. */
@@ -138,7 +138,7 @@ public final class SpaceDock {
 			if (SaveHelper.hasBody(c) && SaveHelper.placeCrew(to, c, true)) to.getCrewList().add(c);
 		}
 		v.begin().put(storageShip, storage, storageCopy.hash).leave(ship, Vault.Fate.SOLD).commit(); // one note: she goes as her scrap and crew arrive
-		HistoryLog.entry("SELL", name + (auction ? " sold at auction" : " traded in") + " for " + price + " scrap; her scrap and crew to the Cargo Hold", null,
+		HistoryLog.entry("SELL", name + (auction ? " sold at auction" : " traded in") + " for " + price + " scrap; " + homeplanet.model.Words.her() + " scrap and crew to the Cargo Hold", null,
 				Event.of("SELL").put("ship_name", name).put("how", auction ? "auction" : "trade_in").put("price", price).put("to", "hold"));
 	}
 }

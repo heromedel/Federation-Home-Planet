@@ -25,6 +25,10 @@ public class FtlFont {
 	public static final FtlFont BODY = new FtlFont("fonts/JustinFont12Bold.font", 1, new Font(Font.SANS_SERIF, Font.BOLD, 12));
 	/** The Cargo Bay's text (6.39, heromedel): the body font a size down, whose ~ is a tilde (12 Bold draws FTL's scrap gear there, in a female Engi's name). */
 	public static final FtlFont CARGO = new FtlFont("fonts/JustinFont11Bold.font", 1, new Font(Font.SANS_SERIF, Font.BOLD, 12));
+	/** FTL's own small fonts for its bottom panel (6.42, the power simulation): the weapon slots' names, the key numbers, the boxes' tabs. */
+	public static final FtlFont SLOT = new FtlFont("fonts/JustinFont8.font", 1, new Font(Font.SANS_SERIF, Font.PLAIN, 9));
+	public static final FtlFont NUM = new FtlFont("fonts/JustinFont8.font", 1, new Font(Font.SANS_SERIF, Font.PLAIN, 8));
+	public static final FtlFont TAB = MENU;
 
 	private static class Glyph { int x, y, w, h, base, bearing, advance; }
 

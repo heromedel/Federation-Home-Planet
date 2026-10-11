@@ -29,6 +29,8 @@ public class GuiT {
   final MainFrame f = (MainFrame) frame[0];
   bill(v, f, false);
   bill(v, f, true);
+  shipPays(v, f);
+  shopPays(v, f);
   systemLimit(v, f);
   auction(v, f);
   junkyardInfo(v, f);
@@ -148,6 +150,82 @@ public class GuiT {
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { f.showSpaceDock(); } catch (Exception e) { throw new RuntimeException(e); } } });
  }
 
+ /** The Refit's Ship | Cargo Bay switch on Ship (6.44): the Dry Dock's bill comes from the ship's own scrap on Save, the Cargo Hold untouched; remembered in the cfg. */
+ static void shipPays(final Vault v, final MainFrame f) throws Exception {
+  SavedGameParser.SavedGameState g = v.readCopy(v.boarded()).save; g.getPlayerShip().setHullAmt(21); g.getPlayerShip().setScrapAmt(50); v.write(v.boarded(), g);
+  hold(v, 100);
+  final Object[] r = new Object[6];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showCargoBay();
+   CargoBayUI bay = (CargoBayUI) field(f, MainFrame.class, "cargoBay");
+   bay.init();
+   Object sys = field(bay, CargoBayUI.class, "systems");
+   Object sw = ((java.awt.Container) field(sys, sys.getClass(), "payer")).getComponent(0); // Pay From's switch (6.45)
+   ((java.awt.Component) sw).dispatchEvent(new java.awt.event.MouseEvent((java.awt.Component) sw, java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 5, 5, 1, false)); // Cargo Bay -> Ship
+   r[0] = HomePlanet.config.getProperty("refit_pays");
+   call(sys, sys.getClass(), "repairHull", new Class<?>[] {int.class}, Integer.MAX_VALUE);
+   r[1] = call(sys, sys.getClass(), "hold", new Class<?>[0]);
+   r[2] = bay.saveAll();
+   SavedGameParser.SavedGameState after = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
+   r[3] = after.getPlayerShip().getScrapAmt(); r[4] = after.getPlayerShip().getHullAmt(); r[5] = v.storageScrap();
+   ((java.awt.Component) sw).dispatchEvent(new java.awt.event.MouseEvent((java.awt.Component) sw, java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 5, 5, 1, false)); // back to the Cargo Bay
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("S: the Refit's switch on Ship is remembered (refit_pays=ship)", "ship".equals(r[0]));
+  Setup.chk("S: 9 hull points from the ship's 50 scrap: 14 left to spend before Save", Integer.valueOf(14).equals(r[1]));
+  Setup.chk("S: Save takes it from her (14 left, hull 30), the Cargo Hold untouched (100)", Boolean.TRUE.equals(r[2]) && Integer.valueOf(14).equals(r[3]) && Integer.valueOf(30).equals(r[4]) && Integer.valueOf(100).equals(r[5]));
+  Setup.chk("S: switched back, the cfg line goes (the Cargo Hold is the default)", HomePlanet.config.getProperty("refit_pays") == null);
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { f.showSpaceDock(); } catch (Exception e) { throw new RuntimeException(e); } } });
+ }
+
+ /**
+  * The Shop's Pay From (6.45, heromedel): who pays is apart from what the goods are for (the drop-down). Fuel for the ship
+  * with the Cargo Hold paying, then fuel for the Cargo Hold with the ship paying; Save takes each from the side that paid.
+  */
+ static void shopPays(final Vault v, final MainFrame f) throws Exception {
+  final Ship b = v.boarded();
+  SavedGameParser.SavedGameState g = v.readCopy(b).save;
+  g.getPlayerShip().setScrapAmt(50);
+  int at = g.getCurrentBeaconId();
+  while (g.getBeaconList().size() <= at) g.getBeaconList().add(new SavedGameParser.BeaconState());
+  SavedGameParser.StoreState store = new SavedGameParser.StoreState(); store.setFuel(5);
+  g.getBeaconList().get(at).setStore(store);
+  final int fuelBefore = g.getPlayerShip().getFuelAmt();
+  v.write(b, g);
+  hold(v, 100);
+  final int holdFuel = v.readCopy(v.storage()).save.getPlayerShip().getFuelAmt();
+  final int price = homeplanet.parser.Pricing.FUEL;
+  final Object[] r = new Object[8];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showCargoBay();
+   CargoBayUI bay = (CargoBayUI) field(f, MainFrame.class, "cargoBay");
+   bay.init();
+   Object shop = field(bay, CargoBayUI.class, "shop");
+   Object pay = field(shop, shop.getClass(), "payFrom");
+   java.awt.Component sw = ((java.awt.Container) pay).getComponent(0);
+   sw.dispatchEvent(new java.awt.event.MouseEvent(sw, java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 5, 5, 1, false)); // Ship -> Cargo
+   r[0] = HomePlanet.config.getProperty("shop_pays");
+   Object fuel = null;
+   for (Object e : (List<?>) call(shop, shop.getClass(), "buildEntries", new Class<?>[0])) if ("FUEL".equals(String.valueOf(field(e, e.getClass(), "kind"))) && field(e, e.getClass(), "ship") == b) fuel = e;
+   call(shop, shop.getClass(), "buy", new Class<?>[] {fuel.getClass()}, fuel); // for the ship (the drop-down's default), the Cargo Hold paying
+   r[1] = mine(bay).getScrapAmt(); r[2] = mine(bay).getFuelAmt();
+   java.lang.reflect.Field ts = shop.getClass().getDeclaredField("toStorage"); ts.setAccessible(true); ts.set(shop, true); // the drop-down on the Cargo Hold
+   sw.dispatchEvent(new java.awt.event.MouseEvent(sw, java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 5, 5, 1, false)); // Cargo -> Ship
+   r[3] = HomePlanet.config.getProperty("shop_pays");
+   call(shop, shop.getClass(), "buy", new Class<?>[] {fuel.getClass()}, fuel); // for the Cargo Hold, the ship paying
+   r[4] = mine(bay).getScrapAmt();
+   r[5] = bay.saveAll();
+   f.showSpaceDock();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  SavedGameParser.SavedGameState her = v.readCopy(b).save, hold = v.readCopy(v.storage()).save;
+  Setup.chk("P: Pay From on Cargo is remembered (shop_pays=cargo)", "cargo".equals(r[0]));
+  Setup.chk("P: fuel for the ship, the Cargo Hold paying: her scrap stays 50, her fuel one more", Integer.valueOf(50).equals(r[1]) && Integer.valueOf(fuelBefore + 1).equals(r[2]));
+  Setup.chk("P: switched back to Ship, the cfg line goes (the ship is the default)", r[3] == null);
+  Setup.chk("P: fuel for the Cargo Hold, the ship paying: her scrap " + (50 - price), Integer.valueOf(50 - price).equals(r[4]));
+  Setup.chk("P: saved: she paid once and has her fuel, the Cargo Hold paid once and has its fuel (" + her.getPlayerShip().getScrapAmt() + ", " + v.storageScrap() + ")",
+    Boolean.TRUE.equals(r[5]) && her.getPlayerShip().getScrapAmt() == 50 - price && her.getPlayerShip().getFuelAmt() == fuelBefore + 1
+    && v.storageScrap() == 100 - price && hold.getPlayerShip().getFuelAmt() == holdFuel + 1);
+ }
+
  /**
   * FTL's System Limit on a Kestrel at 8 systems. The shop's Hacking shows the custom work order on hover, and Buy asks first
   * (heromedel's words; Install or Cancel, Cancel the default): Cancel changes nothing, Install takes the store's price and 100.
@@ -224,6 +302,7 @@ public class GuiT {
    bay.init();
    Object shop = field(bay, CargoBayUI.class, "shop");
    java.lang.reflect.Field ts = shop.getClass().getDeclaredField("toStorage"); ts.setAccessible(true); ts.set(shop, true);
+   java.lang.reflect.Field hp = shop.getClass().getDeclaredField("holdPays"); hp.setAccessible(true); hp.set(shop, true); // the hold pays for itself, as before 6.45
    call(shop, shop.getClass(), "rebuild", new Class<?>[0]);
    Object hack = null;
    for (Object e : (List<?>) call(shop, shop.getClass(), "buildEntries", new Class<?>[0])) if ("mind".equals(field(e, e.getClass(), "id"))) hack = e;
@@ -364,6 +443,7 @@ public class GuiT {
  static boolean buyFuel(CargoBayUI bay, Ship at) throws Exception {
   Object shop = field(bay, CargoBayUI.class, "shop");
   java.lang.reflect.Field ts = shop.getClass().getDeclaredField("toStorage"); ts.setAccessible(true); ts.set(shop, true);
+  java.lang.reflect.Field hp = shop.getClass().getDeclaredField("holdPays"); hp.setAccessible(true); hp.set(shop, true); // the hold pays for itself, as before 6.45
   call(shop, shop.getClass(), "rebuild", new Class<?>[0]);
   for (Object e : (List<?>) call(shop, shop.getClass(), "buildEntries", new Class<?>[0]))
    if ("FUEL".equals(String.valueOf(field(e, e.getClass(), "kind"))) && field(e, e.getClass(), "ship") == at) { call(shop, shop.getClass(), "buy", new Class<?>[] {e.getClass()}, e); return true; }

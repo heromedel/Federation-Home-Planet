@@ -43,7 +43,7 @@ final class SwitchModeDialog extends JDialog {
 		JPanel body = new JPanel(new BorderLayout(0, 10));
 		body.setBorder(BorderFactory.createEmptyBorder(12, 16, 10, 16));
 		body.add(new JLabel("<html><div style='width:640px'>Each mode has a fleet of its own, and each Immersive career can keep an FTL profile of its own. "
-				+ "Switching docks the boarded ship first; she's boarded again when you come back. " + homeplanet.core.GameGuard.CLOSE_FTL + "</div></html>"), BorderLayout.NORTH);
+				+ "Switching docks the boarded ship first; " + homeplanet.model.Words.she() + "'s boarded again when you come back. " + homeplanet.core.GameGuard.CLOSE_FTL + "</div></html>"), BorderLayout.NORTH);
 		body.add(rows, BorderLayout.CENTER);
 		JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
 		JButton close = new JButton("Close");

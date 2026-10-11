@@ -41,11 +41,11 @@ public final class Dlc {
 			return "This layout exists only in the Advanced Edition.";
 		if (built == null || built.getPlayerShip() == null) return null;
 		ShipState ship = built.getPlayerShip();
-		for (CrewState c : ship.getCrewList()) if (aeOnlyCrew(c)) return "Her crew includes an Advanced Edition race.";
+		for (CrewState c : ship.getCrewList()) if (aeOnlyCrew(c)) return homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " crew includes an Advanced Edition race.";
 		for (String g : SaveHelper.gear(ship)) if (aeOnlyItem(g)) return homeplanet.model.Items.title(g) + " is Advanced Edition only.";
 		for (SystemType t : AE_SYSTEMS) {
 			SystemState sys = ship.getSystem(t);
-			if (sys != null && sys.getCapacity() > 0) return "She starts with an Advanced Edition system.";
+			if (sys != null && sys.getCapacity() > 0) return homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " starts with an Advanced Edition system.";
 		}
 		return null;
 	}

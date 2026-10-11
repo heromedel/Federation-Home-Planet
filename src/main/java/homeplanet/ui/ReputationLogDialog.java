@@ -120,11 +120,11 @@ final class ReputationLogDialog extends JDialog {
 		item(h, "A New Journey", journey > 0 ? journey + " scrap or reputation, or the scrap there is and reputation for the rest" : "free");
 		item(h, "Refit: taking a system off a ship", removal == homeplanet.core.Economy.NOT_ALLOWED ? "not allowed" : removal == 0 ? "free"
 				: removal + " scrap or reputation, or the scrap there is and reputation for the rest");
-		item(h, "Stripping a ship's systems when she's scrapped", !homeplanet.core.Economy.stripAllowed() ? "not allowed" : homeplanet.core.Economy.stripFee() == 0 ? "free"
+		item(h, "Stripping a ship's systems when " + homeplanet.model.Words.she() + "'s scrapped", !homeplanet.core.Economy.stripAllowed() ? "not allowed" : homeplanet.core.Economy.stripFee() == 0 ? "free"
 				: homeplanet.core.Economy.stripFee() + " scrap or reputation a system");
 		item(h, "A custom work order, fitting a system past FTL's System Limit in the Cargo Bay", homeplanet.core.Economy.workOrderWords());
 		item(h, "A plea for a new ship, if you keep the Cargo Hold", homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent())
-				+ " of her value (giving up the hold, " + homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent()) + " of what it doesn't cover)");
+				+ " of " + homeplanet.model.Words.her() + " value (giving up the hold, " + homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent()) + " of what it doesn't cover)");
 		item(h, "A promise of adventure, with no crew anywhere", Integer.toString(homeplanet.parser.Expeditions.PROMISE_REP));
 		item(h, "Resting in your quarters", "the first day free, then 1 more for each day in a row, up to " + homeplanet.parser.Rest.MAX_COST);
 		section(h, gold, "Below zero");

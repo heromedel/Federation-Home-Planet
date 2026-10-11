@@ -86,16 +86,49 @@ final class CargoParts {
 		private final FtlFont font;
 		private Color color;
 		private final int align; // -1 left, 0 centre, 1 right
+		/** A smaller font for text too long for the label, before it's cut short (6.44: a long ship name between the Refit tab's buttons). */
+		private FtlFont small;
 		Label(String text, FtlFont font, Color color, int align) { this.text = text; this.font = font; this.color = color; this.align = align; setOpaque(false); }
+		Label small(FtlFont f) { small = f; return this; }
 		void setText(String t) { text = t == null ? "" : t; repaint(); }
 		void setColor(Color c) { color = c; repaint(); }
 		String getText() { return text; }
 		@Override protected void paintComponent(Graphics g) {
+			FtlFont font = small != null && width(text, this.font) > getWidth() - 2 ? small : this.font;
 			String s = font.fit(text, getWidth() - 2);
 			int w = width(s, font);
 			int x = align < 0 ? 0 : align == 0 ? (getWidth() - w) / 2 : getWidth() - w - 1;
 			int y = (getHeight() - font.render(s, color).getHeight()) / 2;
 			text(g, s, font, color, x, y);
+		}
+	}
+
+	/** FTL's scrap gear and how much there is (6.44, heromedel: in place of the "Cargo Hold: N scrap" line), with an optional note after it in grey. */
+	static class ScrapCount extends JComponent {
+		private int amount;
+		private String note = "";
+		ScrapCount() { setOpaque(false); }
+		void set(int amount, String note) { this.amount = amount; this.note = note == null ? "" : note; repaint(); }
+		/** How wide the gear and the number are drawn (the note left out). */
+		int textWidth() { return Math.min(22, getHeight() - 2) + 6 + width(Integer.toString(amount), FtlFont.MENU); }
+		@Override protected void paintComponent(Graphics g0) {
+			Graphics2D g = (Graphics2D) g0.create();
+			javax.swing.Icon gear = IconFactory.supplyIcon("scrap");
+			int size = Math.min(22, getHeight() - 2), x = 0;
+			if (gear != null) {
+				Graphics2D s = (Graphics2D) g.create(0, (getHeight() - size) / 2, size, size);
+				double k = (double) size / Math.max(gear.getIconWidth(), gear.getIconHeight());
+				s.scale(k, k);
+				s.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+				gear.paintIcon(null, s, 0, 0);
+				s.dispose();
+				x = size + 6;
+			}
+			String n = Integer.toString(amount);
+			int ty = (getHeight() - FtlFont.MENU.render(n, TEXT).getHeight()) / 2;
+			text(g, n, FtlFont.MENU, TEXT, x, ty);
+			if (!note.isEmpty()) text(g, note, FtlFont.CARGO, DIM, x + width(n, FtlFont.MENU) + 8, (getHeight() - 12) / 2);
+			g.dispose();
 		}
 	}
 

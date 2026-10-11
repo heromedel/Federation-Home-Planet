@@ -201,12 +201,13 @@ For example:
   these titles, even mid-sentence.
 - **a station** (lowercase) is an FTL store beacon. Crew "stations" in the ship editor are FTL's manned squares.
 - Slipstream is the transmission channel: mods and blueprints are "sent to FTL via Slipstream".
-- **the rebellion** and **the rebels** are never capitalised: the Federation won't dignify them with a title. Only
-  the Rebel Flagship (FTL's name for that ship) keeps its capitals. Catch phrases: see `docs/STYLE.md`.
+- **the rebellion** and **the rebels** are never capitalised as a title: the Federation won't dignify them with one (a
+  sentence may still start with "Rebels"). Only the Rebel Flagship (FTL's name for that ship) keeps its capitals. Catch phrases: see `docs/STYLE.md`.
 - Never imply the Rebel Flagship has been destroyed: the war goes on. Its weapons come from plans stolen from the
   Rebels, not salvage.
 - Places: the Space Dock, the Cargo Bay, the Cargo Hold (the storage; its save keeps the internal name "Spacedock
-  Storage"), the Dry Dock, the Junkyard. A ship is **decommissioned** (not disbanded). Ships are "she". Never "Home World",
+  Storage"), the Dry Dock, the Junkyard. A ship is **decommissioned** (not disbanded). A ship is her, him or it as the Ship Pronoun setting says (Settings, General, 6.42):
+  `model.Words` (`she()`, `her()`, `herObj()`) in code, `{she}`, `{her}` in lore; never a fixed "she". Never "Home World",
   never "FHP"* in player-facing text. Errors stay actionable (what failed, what to do, the file or path).
   *it may seem like bad form but it is not a hard rule that heromedel ever made
 

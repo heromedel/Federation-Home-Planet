@@ -68,8 +68,8 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 		canvasScroll = new JScrollPane(editor.canvas());
 		body.add(canvasScroll, BorderLayout.CENTER);
 		steps = new JTabbedPane();
-		steps.addTab(stepTitle(1, "Rooms"), null, editor.side(), "Her rooms, doors and systems");
-		if (loadoutPanel != null) steps.addTab(stepTitle(3, "Loadout"), null, loadoutPanel, "Who she is, her numbers, her crew, what she carries, what's installed at the start");
+		steps.addTab(stepTitle(1, "Rooms"), null, editor.side(), homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " rooms, doors and systems");
+		if (loadoutPanel != null) steps.addTab(stepTitle(3, "Loadout"), null, loadoutPanel, "Who " + homeplanet.model.Words.she() + " is, " + homeplanet.model.Words.her() + " numbers, " + homeplanet.model.Words.her() + " crew, what " + homeplanet.model.Words.she() + " carries, what's installed at the start");
 		steps.addChangeListener(new javax.swing.event.ChangeListener() {
 			public void stateChanged(javax.swing.event.ChangeEvent e) {
 				if (loadoutPanel != null && steps.getSelectedComponent() == loadoutPanel) loadoutPanel.fill(); // as the design is now, after the other steps
@@ -170,7 +170,7 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 	protected void showArtPanel(boolean on) {
 		if (on && artPanel == null) {
 			artPanel = new ArtPanel(d, editor, this);
-			steps.insertTab(stepTitle(2, "Art"), null, artPanel, "Her hull picture, floor, weapon mounts and shield", 1);
+			steps.insertTab(stepTitle(2, "Art"), null, artPanel, homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " hull picture, floor, weapon mounts and shield", 1);
 			artPanel.loadArt(false);
 		} else if (!on && artPanel != null) {
 			steps.remove(artPanel);
@@ -202,7 +202,7 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 		boolean rooms = editor.roomsEditable(), art = artPanel != null, loadout = loadoutPanel != null;
 		StringBuilder sb = new StringBuilder("<html><body style='margin:10px 14px'>");
 		if (loadout) sb.append("<h3>The steps</h3><p>The tabs on the right are the steps, in build order: <b>Rooms</b>, <b>Art</b>, <b>Loadout</b>. The ship stays in view through all three; "
-				+ "the line under her says what's left to fix and what comes next.</p>");
+				+ "the line under " + homeplanet.model.Words.herObj() + " says what's left to fix and what comes next.</p>");
 		if (rooms) sb.append("<h3>Rooms</h3><p>Pick a size on the right, then click the grid to place a room. <b>Move rooms</b> drags a room; right-click (or Delete) removes it. "
 				+ "A room's own airlocks move with it; a door to another room stays where the wall is, and is lost if the wall goes.</p>");
 		sb.append("<h3>Systems</h3><p>Click a system (in a room, or in the <i>Systems</i> list), then an empty room to put it there. "
@@ -210,17 +210,17 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 				+ "Right-click a system to take it off the ship.</p>");
 		sb.append("<h3>Doors</h3><p><b>Add door</b>, then click walls: between two rooms for a door, on an outer wall for an airlock. "
 				+ "Click a door, then a wall, to move it; right-click or Delete removes it. Esc stops.</p>");
-		if (art) sb.append("<h3>Art</h3><p><b>Move art</b> drags the hull picture over the rooms (arrow keys nudge it a pixel; Shift: ten). The cyan cross in the grid's middle is where FTL puts her: "
+		if (art) sb.append("<h3>Art</h3><p><b>Move art</b> drags the hull picture over the rooms (arrow keys nudge it a pixel; Shift: ten). The cyan cross in the grid's middle is where FTL puts " + homeplanet.model.Words.herObj() + ": "
 				+ "the rooms and the art sit in the game as they sit round it here, and nothing moves anything else. The faint strip at the top and left is past the game's edge: rooms there sit at its edge in the game. "
 				+ "<b>Weapon mounts</b>: click the hull to place a mount, drag to move it, right-click to remove it. R turns the selected mount and S changes which way its weapon slides; the wheel turns it too. "
-				+ "FTL draws weapon slot n on mount n, so give her as many mounts as slots. Alt + middle-drag moves the art whatever tool is on.</p>");
-		if (loadout) sb.append("<h3>Loadout</h3><p>Who she is, her numbers, her starting crew, what she carries and which systems are installed at the start. "
-				+ "Each number shows hers over the vanilla max (the most any of the game's ships has) with a bar to that ceiling; type what you like, the bar turns amber past it. "
-				+ "Past the vanilla numbers FTL still takes her, but its bars and upgrade screen are drawn for the vanilla ones.</p>");
+				+ "FTL draws weapon slot n on mount n, so give " + homeplanet.model.Words.herObj() + " as many mounts as slots. Alt + middle-drag moves the art whatever tool is on.</p>");
+		if (loadout) sb.append("<h3>Loadout</h3><p>Who " + homeplanet.model.Words.she() + " is, " + homeplanet.model.Words.her() + " numbers, " + homeplanet.model.Words.her() + " starting crew, what " + homeplanet.model.Words.she() + " carries and which systems are installed at the start. "
+				+ "Each number shows " + homeplanet.model.Words.hers() + " over the vanilla max (the most any of the game's ships has) with a bar to that ceiling; type what you like, the bar turns amber past it. "
+				+ "Past the vanilla numbers FTL still takes " + homeplanet.model.Words.herObj() + ", but its bars and upgrade screen are drawn for the vanilla ones.</p>");
 		sb.append("<h3>Keys</h3><p>Ctrl+Z and Ctrl+Y undo and redo. Esc deselects. Delete removes the selected door, mount or room. Ctrl+S " + primaryVerb() + ". F1 opens this help.</p>");
 		sb.append("<h3>View</h3><p>The wheel zooms (Ctrl+plus, Ctrl+minus); middle-drag moves the view; Shift+wheel scrolls; Ctrl+0 (or Fit) shows the whole ship.</p>");
-		sb.append("<h3>Checks</h3><p>The line under the editor says what would stop her working (<i>To fix</i>) and what's worth knowing (<i>Note</i>); it updates as you edit."
-				+ (loadout ? " Notes about her loadout (drone parts, reactor power) are set right on the <b>Loadout</b> step." : "") + "</p>");
+		sb.append("<h3>Checks</h3><p>The line under the editor says what would stop " + homeplanet.model.Words.herObj() + " working (<i>To fix</i>) and what's worth knowing (<i>Note</i>); it updates as you edit."
+				+ (loadout ? " Notes about " + homeplanet.model.Words.her() + " loadout (drone parts, reactor power) are set right on the <b>Loadout</b> step." : "") + "</p>");
 		return sb.append("</body></html>").toString();
 	}
 	/** Opens the help window (or refreshes it). */

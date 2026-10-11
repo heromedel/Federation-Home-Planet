@@ -129,7 +129,7 @@ public final class AssignmentsDialog extends JDialog {
 		Vault v = Vault.get();
 		for (Assignments.Pending x : Assignments.pendingToAsk(v)) { // a letter's own question is answered in the inbox
 			boolean ship = "ship".equals(x.kind);
-			Object[] opts = ship ? new Object[] {"Space Dock", "Junkyard", "Don't take her"} : new Object[] {"Sign them on", "Send them on their way"};
+			Object[] opts = ship ? new Object[] {"Space Dock", "Junkyard", "Don't take " + homeplanet.model.Words.herObj()} : new Object[] {"Sign them on", "Send them on their way"};
 			int pick = JOptionPane.showOptionDialog(owner, x.question(), "Expeditions", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
 			if (pick < 0) continue; // asked again at the next look
 			try { if (pick == opts.length - 1) Assignments.decline(v, x); else Assignments.accept(v, x, ship && pick == 0); }

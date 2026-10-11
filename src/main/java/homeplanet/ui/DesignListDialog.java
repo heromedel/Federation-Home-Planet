@@ -55,12 +55,12 @@ public class DesignListDialog extends JDialog {
 		sp.setPreferredSize(new Dimension(420, 220));
 		JPanel body = new JPanel(new BorderLayout(0, 6));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
-		body.add(new JLabel("<html>Ships you've designed from scratch. Open one and press Build blueprint to put her in the<br>Federation Home Planet Mod; tick her as a starter ship to commission her.</html>"), BorderLayout.NORTH);
+		body.add(new JLabel("<html>Ships you've designed from scratch. Open one and press Build blueprint to put " + homeplanet.model.Words.herObj() + " in the<br>Federation Home Planet Mod; tick " + homeplanet.model.Words.herObj() + " as a starter ship to commission " + homeplanet.model.Words.herObj() + ".</html>"), BorderLayout.NORTH);
 		body.add(sp, BorderLayout.CENTER);
 		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		JButton nw = new JButton("New design");
 		JButton game = new JButton("From a game ship...");
-		game.setToolTipText("A new design that starts as a copy of one of the game's ships: her rooms, systems, art and loadout");
+		game.setToolTipText("A new design that starts as a copy of one of the game's ships: " + homeplanet.model.Words.her() + " rooms, systems, art and loadout");
 		JButton dup = new JButton("Duplicate");
 		dup.setToolTipText("A new design that starts as a copy of the selected one");
 		JButton op = new JButton("Open");
@@ -209,8 +209,8 @@ public class DesignListDialog extends JDialog {
 		homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load()); // the station sees her at once
 		java.io.File mod = homeplanet.core.Slipstream.writeMod();
 		Object[] options = {"Patch Now", "Later"};
-		int p = JOptionPane.showOptionDialog(this, (mod == null ? "Her blueprint is ready, but the " + homeplanet.parser.CompanionMod.TITLE + " could not be written." : "Her blueprint is in the " + homeplanet.parser.CompanionMod.TITLE + ".")
-				+ "\nSend it to FTL via Slipstream to commission her (tick her as a starter ship to see her in Commission).",
+		int p = JOptionPane.showOptionDialog(this, (mod == null ? homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint is ready, but the " + homeplanet.parser.CompanionMod.TITLE + " could not be written." : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint is in the " + homeplanet.parser.CompanionMod.TITLE + ".")
+				+ "\nSend it to FTL via Slipstream to commission " + homeplanet.model.Words.herObj() + " (tick " + homeplanet.model.Words.herObj() + " as a starter ship to see " + homeplanet.model.Words.herObj() + " in Commission).",
 				"Design Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 		if (p == 0) PatchDialog.open(this);
 	}

@@ -106,7 +106,7 @@ final class LockedShipsDialog extends JDialog {
 		if (text != null && !text.trim().isEmpty()) return text.trim();
 		if (l.n == 1) return "Complete 2/3 of the " + cls + " Achievements to unlock this ship.";
 		if (l.n == 2) return "Get to Sector 8 with the " + cls + " Type B and Advanced Mode enabled to unlock this ship.";
-		return "Unlock her in FTL's hangar.";
+		return "Unlock " + homeplanet.model.Words.herObj() + " in FTL's hangar.";
 	}
 	/** Her picture from the game art, greyed as FTL's hangar shows a locked ship; null if there's none. */
 	private static BufferedImage picture(ShipBlueprint bp) {

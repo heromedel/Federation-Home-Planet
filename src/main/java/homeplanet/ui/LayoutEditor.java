@@ -74,7 +74,7 @@ public class LayoutEditor {
 	private boolean roomsEditable;
 	private final java.util.List<java.awt.Component> roomToolParts = new java.util.ArrayList<java.awt.Component>();
 	private JPanel toolColumn; // the buttons under the list; the room tools go in and out of it (a GridLayout keeps room for hidden parts)
-	private final int cols, rows;
+	private int cols, rows;
 	final Canvas canvas = new Canvas();
 	private final DefaultListModel<String> offShip = new DefaultListModel<String>();
 	private final JList<String> offList = new JList<String>(offShip);
@@ -107,6 +107,10 @@ public class LayoutEditor {
 	private int baseW, baseH;                   // the canvas's size before scaling
 	int originX, originY;                       // where grid (0,0) lands on the canvas (unscaled)
 	private boolean artDrag = false, nudging = false, panning = false;
+	/** Remodel's overhaul: her art stays where it is under her rooms (heromedel, 6.42): no art drag, no flip, no whole-ship shift. */
+	private boolean artLocked = false;
+	/** The whole-ship tools (the arrows and the flip): not in a remodel, where her art is locked. */
+	private final List<java.awt.Component> wholeShipParts = new ArrayList<java.awt.Component>();
 	private java.awt.Point panFrom, panView;
 	/** Called after undo/redo puts a snapshot back (the art panel reloads the pictures). */
 	Runnable onRestore;
@@ -165,15 +169,19 @@ public class LayoutEditor {
 			roomToolParts.add(toolButton(g, "Place 2 x 1", RoomTool.ROOM_21, "Click an empty spot to place a 2 x 1 room (wide). Esc stops placing."));
 			roomToolParts.add(toolButton(g, "Place 1 x 2", RoomTool.ROOM_12, "Click an empty spot to place a 1 x 2 room (tall). Esc stops placing."));
 			roomToolParts.add(toolButton(g, "Move rooms", RoomTool.MOVE, "Drag a room to move it; right-click a room to remove it. Esc stops."));
-			roomToolParts.add(new JLabel("Whole ship"));
+			JLabel whole = new JLabel("Whole ship");
+			roomToolParts.add(whole);
+			wholeShipParts.add(whole);
 			JPanel shift = new JPanel(new GridLayout(1, 4, 2, 0));
 			shift.add(smallButton("\u2190", "Move the whole ship (rooms, doors and art) one square left", new ActionListener() { public void actionPerformed(ActionEvent e) { shiftShip(-1, 0); } }));
 			shift.add(smallButton("\u2191", "Move the whole ship one square up", new ActionListener() { public void actionPerformed(ActionEvent e) { shiftShip(0, -1); } }));
 			shift.add(smallButton("\u2193", "Move the whole ship one square down", new ActionListener() { public void actionPerformed(ActionEvent e) { shiftShip(0, 1); } }));
 			shift.add(smallButton("\u2192", "Move the whole ship one square right", new ActionListener() { public void actionPerformed(ActionEvent e) { shiftShip(1, 0); } }));
 			roomToolParts.add(shift);
-			roomToolParts.add(smallButton("Flip top / bottom", "Mirror the ship top to bottom: rooms, doors, stations, art and mounts (FTL's ships face right, so that's the one flip that keeps her flying forward)",
+			wholeShipParts.add(shift);
+			roomToolParts.add(smallButton("Flip top / bottom", "Mirror the ship top to bottom: rooms, doors, stations, art and mounts (FTL's ships face right, so that's the one flip that keeps " + homeplanet.model.Words.herObj() + " flying forward)",
 					new ActionListener() { public void actionPerformed(ActionEvent e) { flipShip(); } }));
+			wholeShipParts.add(roomToolParts.get(roomToolParts.size() - 1));
 			roomToolParts.add(new JLabel("Doors"));
 			toolColumn = buttons;
 			if (roomsEditable) for (java.awt.Component c : roomToolParts) buttons.add(c);
@@ -193,7 +201,7 @@ public class LayoutEditor {
 		systemsHead.setFont(MenuTheme.HEADING_FONT);
 		systemsHead.setForeground(MenuTheme.GOLD);
 		top.add(systemsHead, BorderLayout.NORTH);
-		JLabel systemsHint = new JLabel("<html>Not on her yet. Click one, then an empty room to put it there.</html>");
+		JLabel systemsHint = new JLabel("<html>Not on " + homeplanet.model.Words.herObj() + " yet. Click one, then an empty room to put it there.</html>");
 		systemsHint.setFont(MenuTheme.TEXT_FONT);
 		systemsHint.setForeground(MenuTheme.GREY_GREEN);
 		top.add(systemsHint, BorderLayout.CENTER);
@@ -484,12 +492,12 @@ public class LayoutEditor {
 	boolean hasArtilleryMount() { for (ShipDesign.Mount m : d.mounts) if (m.artillery) return true; return false; }
 	/** Artillery needs a mount for its gun: switch to placing it (or say why not yet). */
 	public void startArtilleryMount() {
-		if (!designArt || baseImg == null) { host.say("Artillery added. Once she has hull art, place the artillery gun's mount on it (Artillery mount)."); return; }
+		if (!designArt || baseImg == null) { host.say("Artillery added. Once " + homeplanet.model.Words.she() + " has hull art, place the artillery gun's mount on it (Artillery mount)."); return; }
 		setRoomTool(RoomTool.MOUNTS);
 		toolButtons.get(RoomTool.MOUNTS).setSelected(true);
 		placingArtilleryMount = true;
 		selMount = null;
-		host.say("Artillery needs a mount for its gun: click her art where the gun sits. Esc cancels.");
+		host.say("Artillery needs a mount for its gun: click " + homeplanet.model.Words.her() + " art where the gun sits. Esc cancels.");
 	}
 	public void repaint() { canvas.repaint(); }
 
@@ -516,12 +524,25 @@ public class LayoutEditor {
 		canvas.repaint();
 	}
 	public boolean roomsEditable() { return roomsEditable; }
+	/** The grid's size in squares (Remodel's overhaul: her own rooms and art, and room to grow; 6.42). */
+	public void setGridSize(int c, int r) {
+		cols = c; rows = r;
+		if (designArt) relayoutDesign(); else { baseW = cols * SQ; baseH = rows * SQ; updateSize(); }
+	}
+	/** Locks her art where it is (Remodel's overhaul): set before {@link #setRoomsEditable}. */
+	public void setArtLocked(boolean on) { artLocked = on; }
+	public boolean artLocked() { return artLocked; }
 	/** A run of small edits (the art size spinner, say) that should undo as one step: the record is taken when the run ends. */
 	public void burstEdit() { nudging = true; nudgeDone.restart(); }
-	/** Remodel's overhaul: rooms become editable (their tools show). */
+	/** Remodel's overhaul: rooms become editable (their tools show); with the art locked, not the whole-ship tools. */
 	public void setRoomsEditable(boolean on) {
 		roomsEditable = on;
-		if (on && roomToolParts.get(0).getParent() == null) { int at = 2; for (java.awt.Component c : roomToolParts) toolColumn.add(c, at++); } // after the View row
+		if (on && roomToolParts.get(0).getParent() == null) {
+			// first in the column, before Add door (6.42: they went in at 2, after a View row no longer there, which threw and
+			// stopped the overhaul halfway: the rooms moved, the art and the tools never came)
+			int at = 0;
+			for (java.awt.Component c : roomToolParts) if (!(artLocked && wholeShipParts.contains(c))) toolColumn.add(c, at++);
+		}
 		else if (!on) for (java.awt.Component c : roomToolParts) toolColumn.remove(c);
 		if (!on) setRoomTool(RoomTool.NONE);
 		side.revalidate();
@@ -539,26 +560,26 @@ public class LayoutEditor {
 
 	/** Moves the whole ship a square; says so if she's at the grid's edge. */
 	public void shiftShip(int dx, int dy) {
-		if (!roomsEditable) return;
-		if (!d.shift(dx, dy)) { host.say("She's at the edge of the grid already."); return; }
+		if (!roomsEditable || artLocked) return;
+		if (!d.shift(dx, dy)) { host.say(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + "'s at the edge of the grid already."); return; }
 		host.say("Ship moved " + (dx < 0 ? "left" : dx > 0 ? "right" : dy < 0 ? "up" : "down") + " one square.");
 		edited();
 	}
 	/** Mirrors the ship top to bottom, pictures included (copies of them go into the art folder). */
 	public void flipShip() {
-		if (!roomsEditable) return;
+		if (!roomsEditable || artLocked) return;
 		if (d.rooms.isEmpty() && baseImg == null) { host.say("Nothing to flip yet."); return; }
 		int h = designArt && baseImg != null ? baseImg.getHeight() : 0;
 		try {
 			if (designArt && baseImg != null) homeplanet.parser.ShipArt.flipVertically(d);
 		} catch (Exception e) {
-			host.say("The Home Planet Station couldn't flip her pictures: " + e.getMessage());
+			host.say("The Home Planet Station couldn't flip " + homeplanet.model.Words.her() + " pictures: " + e.getMessage());
 			return;
 		}
 		d.flipVertically(h);
 		selMount = null;
 		if (onRestore != null) onRestore.run(); // the art panel reloads the flipped pictures
-		host.say("Ship flipped top to bottom." + (h > 0 ? " Her pictures are now copies of her own." : ""));
+		host.say("Ship flipped top to bottom." + (h > 0 ? " " + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " pictures are now copies of " + homeplanet.model.Words.her() + " own." : ""));
 		edited();
 	}
 	/** Moves the selected mount earlier or later in the order (FTL's weapon slots follow it). */
@@ -742,11 +763,12 @@ public class LayoutEditor {
 			return;
 		}
 		if (SwingUtilities.isMiddleMouseButton(e)) {
+			if (artLocked) { host.say(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " art stays where it is in a remodel: move " + homeplanet.model.Words.her() + " rooms and doors over it."); return; }
 			if (designArt && baseImg != null) {
 				artDrag = true;
 				artGrabX = x - originX - d.artX;
 				artGrabY = y - originY - d.artY;
-			} else host.say(designArt ? "Choose her hull art first." : "Her art moves only in an overhaul: Overhaul deck plan... unlocks it.");
+			} else host.say(designArt ? "Choose " + homeplanet.model.Words.her() + " hull art first." : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " art moves only in an overhaul: Overhaul deck plan... unlocks it.");
 			return;
 		}
 
@@ -763,7 +785,7 @@ public class LayoutEditor {
 			return;
 		}
 		if (roomTool == RoomTool.ART) {
-			if (baseImg == null) { host.say("Choose her hull art first."); return; }
+			if (baseImg == null) { host.say("Choose " + homeplanet.model.Words.her() + " hull art first."); return; }
 			dragging = true;
 			artGrabX = x - originX - d.artX;
 			artGrabY = y - originY - d.artY;
@@ -771,7 +793,7 @@ public class LayoutEditor {
 			return;
 		}
 		if (roomTool == RoomTool.MOUNTS) {
-			if (baseImg == null) { host.say("Choose her hull art first."); return; }
+			if (baseImg == null) { host.say("Choose " + homeplanet.model.Words.her() + " hull art first."); return; }
 			int ax = x - originX - d.artX, ay = y - originY - d.artY;
 			ShipDesign.Mount near = null;
 			for (ShipDesign.Mount m : d.mounts) if (Math.abs(m.x - ax) <= 10 && Math.abs(m.y - ay) <= 10) near = m;
@@ -1079,7 +1101,7 @@ public class LayoutEditor {
 			}
 			g.setStroke(new BasicStroke(1f));
 			if (designArt) paintArtExtras(g);
-			if (designArt) { // the anchor: the grid's middle is where FTL puts the ship (DesignExport.SHIP_X / SHIP_Y)
+			if (designArt && !artLocked) { // the anchor: the grid's middle is where FTL puts the ship (DesignExport.SHIP_X / SHIP_Y); a remodel keeps her own place
 				int cx = originX + cols * SQ / 2, cy = originY + rows * SQ / 2;
 				// FTL has no further left or up than offset 0: rooms in this strip sit at the strip's edge in the game
 				g.setColor(new Color(255, 120, 80, 42));
@@ -1091,11 +1113,11 @@ public class LayoutEditor {
 				g.drawOval(cx - 5, cy - 5, 10, 10);
 				g.setStroke(new BasicStroke(1f));
 				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
-				g.drawString("where FTL puts her", cx + 12, cy - 4);
+				g.drawString("where FTL puts " + homeplanet.model.Words.herObj(), cx + 12, cy - 4);
 			}
 			// what to do first, written on the empty grid
-			String hint = roomsEditable && d.rooms.isEmpty() ? "Place her first room: Place 2 x 2, then click the grid. The cross is where FTL puts her."
-					: designArt && baseImg == null && !d.rooms.isEmpty() ? "She needs hull art: the Art step, Import PNG or From the game." : null;
+			String hint = roomsEditable && d.rooms.isEmpty() ? "Place " + homeplanet.model.Words.her() + " first room: Place 2 x 2, then click the grid. The cross is where FTL puts " + homeplanet.model.Words.herObj() + "."
+					: designArt && baseImg == null && !d.rooms.isEmpty() ? homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " needs hull art: the Art step, Import PNG or From the game." : null;
 			if (hint != null) {
 				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
 				int tw = g.getFontMetrics().stringWidth(hint);

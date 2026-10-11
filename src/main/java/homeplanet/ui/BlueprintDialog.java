@@ -117,10 +117,10 @@ public class BlueprintDialog extends JDialog {
 		n.anchor = GridBagConstraints.WEST; n.insets = new Insets(2, 0, 2, 8);
 		names.add(new JLabel("Class:"), n);
 		n.gridx = 1; names.add(classField, n);
-		n.gridx = 2; names.add(hint("What kind of ship she is, e.g. \"Kestrel Cruiser\""), n);
+		n.gridx = 2; names.add(hint("What kind of ship " + homeplanet.model.Words.she() + " is, e.g. \"Kestrel Cruiser\""), n);
 		n.gridx = 0; n.gridy = 1; names.add(new JLabel("Default name:"), n);
 		n.gridx = 1; names.add(nameField, n);
-		n.gridx = 2; names.add(hint("What a newly commissioned ship is called unless you rename her"), n);
+		n.gridx = 2; names.add(hint("What a newly commissioned ship is called unless you rename " + homeplanet.model.Words.herObj()), n);
 		body.add(names, next(c));
 		if (showStarter) {
 			starterBox.setSelected(starter);
@@ -160,7 +160,7 @@ public class BlueprintDialog extends JDialog {
 		mp.add(missiles);
 		body.add(mp, next(c));
 
-		heading(body, c, "Starting drones (" + droneSlots + " slots)" + (hasDrones ? "" : " - she has no Drone Control yet"));
+		heading(body, c, "Starting drones (" + droneSlots + " slots)" + (hasDrones ? "" : " - " + homeplanet.model.Words.she() + " has no Drone Control yet"));
 		List<Item> droneItems = drones();
 		JPanel dp = new JPanel(new GridLayout(0, 2, 10, 4));
 		for (int i = 0; i < droneSlots; i++) {
@@ -189,8 +189,8 @@ public class BlueprintDialog extends JDialog {
 		JPanel buttons = new JPanel(new BorderLayout());
 		JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		if (current != null) {
-			JButton use = new JButton("Use her current loadout");
-			use.setToolTipText("Fill the weapons, drones and augments with what she carries now");
+			JButton use = new JButton("Use " + homeplanet.model.Words.her() + " current loadout");
+			use.setToolTipText("Fill the weapons, drones and augments with what " + homeplanet.model.Words.she() + " carries now");
 			use.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					setBoxes(weaponBoxes, current.weapons);
@@ -259,7 +259,7 @@ public class BlueprintDialog extends JDialog {
 	}
 	private void updateCrewTotal() {
 		int t = crewCount();
-		crewTotal.setText("Total: " + t + " of " + MAX_CREW + (t == 0 ? "  (she needs at least one)" : t > MAX_CREW ? "  (too many: FTL ships hold " + MAX_CREW + ")" : ""));
+		crewTotal.setText("Total: " + t + " of " + MAX_CREW + (t == 0 ? "  (" + homeplanet.model.Words.she() + " needs at least one)" : t > MAX_CREW ? "  (too many: FTL ships hold " + MAX_CREW + ")" : ""));
 		crewTotal.setForeground(t == 0 || t > MAX_CREW ? new Color(255, 170, 90) : null); // null: the panel's own text colour
 	}
 

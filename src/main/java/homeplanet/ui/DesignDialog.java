@@ -76,7 +76,7 @@ public class DesignDialog extends ShipEditorDialog {
 				changed();
 			}
 		}));
-		addBottomButton(button("Build blueprint...", "Her report as she'd be commissioned, what's wrong or worth knowing, then into the Federation Home Planet Mod", new ActionListener() {
+		addBottomButton(button("Build blueprint...", homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report as " + homeplanet.model.Words.she() + "'d be commissioned, what's wrong or worth knowing, then into the Federation Home Planet Mod", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { buildBlueprint(); }
 		}));
 		addBottomButton(button("Save design", "Saves the design to work on later, without building the blueprint or making it available to commission ships (Ctrl+S)", new ActionListener() {
@@ -85,11 +85,11 @@ public class DesignDialog extends ShipEditorDialog {
 		addBottomButton(button("Close", null, new ActionListener() {
 			public void actionPerformed(ActionEvent e) { closeGuarded(); }
 		}));
-		addHelpRowButton(button("Preview files", "The layout, chassis and blueprint text the game would get for her, as they stand", new ActionListener() {
+		addHelpRowButton(button("Preview files", "The layout, chassis and blueprint text the game would get for " + homeplanet.model.Words.herObj() + ", as they stand", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { sync(); showText("Files for " + (d.name.isEmpty() ? d.id : d.name), DesignExport.preview(d)); }
 		}));
 		buildUi(row, true);
-		if (d.rooms.isEmpty()) { editor.startPlacing(); say("Place her first room: click the grid for a 2 x 2 room."); }
+		if (d.rooms.isEmpty()) { editor.startPlacing(); say("Place " + homeplanet.model.Words.her() + " first room: click the grid for a 2 x 2 room."); }
 		changed();
 		editor.resetHistory();
 		fitToScreen();
@@ -100,7 +100,7 @@ public class DesignDialog extends ShipEditorDialog {
 	}
 	protected String nextHint() {
 		if (d.rooms.isEmpty()) return null;
-		if (d.art.isEmpty()) return "Next: the Art step, her hull picture.";
+		if (d.art.isEmpty()) return "Next: the Art step, " + homeplanet.model.Words.her() + " hull picture.";
 		if (d.loadout == null) return "Next: the Loadout step.";
 		return "Ready to build.";
 	}
@@ -147,7 +147,7 @@ public class DesignDialog extends ShipEditorDialog {
 		List<String> p = check().problems;
 		if (!p.isEmpty()) {
 			Object[] opts = {"Save", "Keep working"};
-			int r = JOptionPane.showOptionDialog(this, "She isn't finished yet:\n  " + String.join("\n  ", p)
+			int r = JOptionPane.showOptionDialog(this, homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " isn't finished yet:\n  " + String.join("\n  ", p)
 					+ "\n\nSaving keeps the design to work on later, without building the blueprint or making it available to commission ships.",
 					"Design Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[0]);
 			if (r != 0) return;
@@ -172,7 +172,7 @@ public class DesignDialog extends ShipEditorDialog {
 		if (!ships.isEmpty()) {
 			Object[] opts = {"Build as " + nw, "Keep editing"};
 			int r = JOptionPane.showOptionDialog(this, (ships.size() == 1 ? "1 ship was" : ships.size() + " ships were") + " built from " + cur + ":\n" + String.join(", ", ships) + ".\n\n"
-					+ "Any change to her blueprint reaches ships already built from it: the game can alter them (give them a system you "
+					+ "Any change to " + homeplanet.model.Words.her() + " blueprint reaches ships already built from it: the game can alter them (give them a system you "
 					+ "added, say), and room or door changes stop their saves loading. So this is built as a new blueprint, " + nw + ".\n\n"
 					+ "They keep " + cur + "; ships commissioned from now on use " + nw + ".",
 					"New blueprint version", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[0]);

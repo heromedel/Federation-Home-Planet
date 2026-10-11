@@ -97,7 +97,7 @@ public final class Transmissions {
 				for (Template t : letters(SafeFiles.read(copy))) {
 					Template own = out.get(t.key);
 					String why = homeplanet.core.Lore.rule(t.from + "\n" + t.subject + "\n" + t.body);
-					if (why == null) for (String k : tokens(t)) if (!(own != null ? tokens(own) : anyToken).contains(k)) { why = "{" + k + "} isn't one of this letter's"; break; }
+					if (why == null) for (String k : tokens(t)) if (!(own != null ? tokens(own) : anyToken).contains(k) && !java.util.Arrays.asList(homeplanet.model.Words.SHIP_TOKENS).contains(k)) { why = "{" + k + "} isn't one of this letter's"; break; }
 					if (why == null) out.put(t.key, t);
 					else homeplanet.core.Lore.problem(where + ", letter " + t.key + ": " + why + "; the station's own letter is sent");
 				}
@@ -438,7 +438,7 @@ public final class Transmissions {
 	public static List<String> replyTexts(Message m) {
 		List<String> out = new ArrayList<String>();
 		if (m.replies == null || m.replies.trim().isEmpty()) return out;
-		for (String r : m.replies.split("\\|")) out.add(r.split("->")[0].trim());
+		for (String r : m.replies.split("\\|")) out.add(homeplanet.model.Words.ship(r.split("->")[0].trim())); // {her_obj}: the Ship Pronoun setting
 		return out;
 	}
 	/** Can the player still reply to this letter? */
@@ -449,7 +449,7 @@ public final class Transmissions {
 		String[] options = m.replies.split("\\|");
 		if (option < 0 || option >= options.length) throw new IOException("Choose a reply first");
 		String[] parts = options[option].split("->");
-		String words = parts[0].trim();
+		String words = homeplanet.model.Words.ship(parts[0].trim());
 		// the repair job's replies act first (a reply that can't be carried out is refused, with the reason), before the
 		// inbox is read: what they do may send a letter of its own
 		if (RepairJob.isJob(m.key)) RepairJob.replied(Vault.get(), m.key, option);
@@ -565,6 +565,7 @@ public final class Transmissions {
 		for (String k : new String[] {"ship", "name"}) // "reached the {ship}", "word that the {name} returned": never "the The Adjudicator"
 			if (f.containsKey(k)) for (int i = 0; i < out.length; i++) out[i] = ShipNames.fill(out[i], k, f.get(k));
 		for (int i = 0; i < out.length; i++) for (Map.Entry<String, String> e : f.entrySet()) out[i] = out[i].replace("{" + e.getKey() + "}", e.getValue());
+		for (int i = 0; i < out.length; i++) out[i] = homeplanet.model.Words.ship(out[i]); // {she}, {her}: the Ship Pronoun setting
 		return out;
 	}
 	/** Sends one message now, from its template with the {placeholders} filled; nothing if one with this key was sent before. */
@@ -718,7 +719,8 @@ public final class Transmissions {
 	private static String fill(String s, String rank, String ship) {
 		if (s.contains("{start}")) s = s.replace("{start}", Integer.toString(Career.startingScrap())); // the career's sign-on bonus, by difficulty
 		if (s.contains("{") && Vault.isOpen()) s = RepairJob.fill(Vault.get(), s);
-		return ShipNames.fill(s.replace("{rank}", rank), "ship", ship); // "the {ship}" fitted to her name (5.31)
+		s = homeplanet.model.Words.ship(s); // {she}, {her}: the Ship Pronoun setting
+		return ShipNames.fill(s.replace("{rank}", rank), "ship", ship); // "the {ship}" fitted to the ship's name (5.31)
 	}
 	/** Has a letter with this key been sent to this fleet? */
 	/** An event about a letter: its key, who it is from and its subject. */

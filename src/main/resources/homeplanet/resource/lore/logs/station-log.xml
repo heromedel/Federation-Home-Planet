@@ -8,7 +8,8 @@
      "field" (the event has it) or "!field" (it hasn't), several joined by "&". The first match wins, so the particular
      entries go before the plain ones. An event with no entry here keeps the words the station's code gives it.
      The words are lore-friendly and keep the hard rules: the Rebel Flagship is never destroyed, and time is never told
-     in beacons. -->
+     in beacons.
+     The ship pronoun tokens {she} {her} {her_obj} {hers} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General). -->
 <lore>
 	<!-- the station's own housekeeping -->
 	<entry kind="CREW_FILES" when="what=converted">Every crew member's record was given a file of their own.</entry>
@@ -16,24 +17,24 @@
 	<entry kind="HOLD_FILE" when="what=converted">The Cargo Hold's inventory was written up in a new ledger.</entry>
 	<entry kind="EXPEDITION_FILES" when="what=moved">The expeditions office, the infirmary and the captives' records were filed in rooms of their own.</entry>
 	<entry kind="SMALL_FILES" when="what=moved">The station's records were tidied into one file for each concern.</entry>
-	<entry kind="SHIP_FILES" when="what=folded">Each ship's notes were filed with her record.</entry>
-	<entry kind="LAYOUT" when="what=converted">The station's records were rearranged, every ship into a folder of her own.</entry>
+	<entry kind="SHIP_FILES" when="what=folded">Each ship's notes were filed with {her} record.</entry>
+	<entry kind="LAYOUT" when="what=converted">The station's records were rearranged, every ship into a folder of {her} own.</entry>
 	<entry kind="LOGS_CONVERTED">The station read its old logs into its records once.</entry>
 	<entry kind="LOG_DAYS_REPAIRED">The station put its old log entries back on their own days.</entry>
 	<entry kind="JOURNAL" when="what=finished">The station finished what it had begun.</entry>
 	<entry kind="JOURNAL" when="what=stuck">The station could not finish what it had begun; its note is kept.</entry>
 	<entry kind="VAULT" when="what=adopted_continue">The {ship_name}, a ship the station didn't know, turned up in FTL and was taken in as the boarded ship.</entry>
 	<entry kind="VAULT" when="what=set_aside&amp;other_career=true">A ship from another career's fleet turned up in FTL's saves and was set aside, not taken into this fleet.</entry>
-	<entry kind="VAULT" when="what=set_aside&amp;in_fleet=false">An old copy of the {ship_name}, who has left the fleet, turned up in FTL's saves and was set aside in her records.</entry>
-	<entry kind="VAULT" when="what=set_aside">An old copy of the {ship_name} turned up in FTL's saves and was set aside in her records, not added as a second ship.</entry>
+	<entry kind="VAULT" when="what=set_aside&amp;in_fleet=false">An old copy of the {ship_name}, who has left the fleet, turned up in FTL's saves and was set aside in {her} records.</entry>
+	<entry kind="VAULT" when="what=set_aside">An old copy of the {ship_name} turned up in FTL's saves and was set aside in {her} records, not added as a second ship.</entry>
 	<entry kind="VAULT" when="what=checked">The {ship_name} was checked and confirmed as this fleet's own.</entry>
 	<entry kind="VAULT" when="what=arrived">The {ship_name} arrived from the {from} fleet.</entry>
 	<entry kind="VAULT" when="what=taken_in&amp;to=sandbox">The {ship_name}, found where no ship was expected, was sent to Sandbox Mode's fleet.</entry>
 	<entry kind="VAULT" when="what=taken_in">The {ship_name}, found where no ship was expected, was taken into the fleet.</entry>
-	<entry kind="VAULT" when="what=declined">The {ship_name} was left as she was found.</entry>
-	<entry kind="VAULT" when="what=rebuilt">The {ship_name}'s save was rebuilt from her records.</entry>
+	<entry kind="VAULT" when="what=declined">The {ship_name} was left as {she} was found.</entry>
+	<entry kind="VAULT" when="what=rebuilt">The {ship_name}'s save was rebuilt from {her} records.</entry>
 	<entry kind="VAULT" when="what=save_restored">The {ship_name}'s missing save was put back.</entry>
-	<entry kind="SENT_TO_SANDBOX">The {ship_name} was sent to Sandbox Mode's Junkyard, her crew with her.</entry>
+	<entry kind="SENT_TO_SANDBOX">The {ship_name} was sent to Sandbox Mode's Junkyard, {her} crew with {her_obj}.</entry>
 	<entry kind="VAULT" when="what=taking_stock">The Home Planet Station took stock of the fleet.</entry>
 	<entry kind="SETTINGS" when="commander_name">The commander's name was set to {commander_name}.</entry>
 	<entry kind="SETTINGS">The station's settings were changed.</entry>
@@ -42,26 +43,26 @@
 
 	<!-- ships: the Space Dock, FTL, the Junkyard -->
 	<entry kind="COMMISSION">The {ship_name} was commissioned.</entry>
-	<entry kind="BOARD">The {ship_name} was boarded: FTL flies her now.</entry>
+	<entry kind="BOARD">The {ship_name} was boarded: FTL flies {her_obj} now.</entry>
 	<entry kind="DOCK">The {ship_name} came back to the Space Dock.</entry>
 	<entry kind="DISBAND">The {ship_name} was decommissioned and sent to the Junkyard.</entry>
 	<entry kind="SALVAGE">The {ship_name} was salvaged from the Junkyard and docked at the Space Dock.</entry>
-	<entry kind="DESTROY">The {ship_name} was broken up for good. She is remembered in Memorials and Records.</entry>
+	<entry kind="DESTROY">The {ship_name} was broken up for good. {She} is remembered in Memorials and Records.</entry>
 	<entry kind="RECOVER">The {ship_name} was brought back from Memorials and Records.</entry>
-	<entry kind="RESTORE" when="why=overwritten">The {ship_name} was restored after FTL's New Game wrote over her.</entry>
+	<entry kind="RESTORE" when="why=overwritten">The {ship_name} was restored after FTL's New Game wrote over {her_obj}.</entry>
 	<entry kind="RESTORE">The {ship_name} was restored to an earlier version.</entry>
-	<entry kind="OVERWRITTEN">FTL's New Game wrote over the {ship_name} with the {by_name}. Her last version is kept.</entry>
+	<entry kind="OVERWRITTEN">FTL's New Game wrote over the {ship_name} with the {by_name}. {Her} last version is kept.</entry>
 	<entry kind="RENAME">The {from} was renamed the {to}.</entry>
 	<entry kind="REMODEL">The {ship_name} was remodeled.</entry>
 	<entry kind="NEW_JOURNEY">A new journey was plotted for the {ship_name}, at {difficulty} difficulty.</entry>
-	<entry kind="SCRAP">The {ship_name} was broken up for parts. What she carried went into the Cargo Hold.</entry>
+	<entry kind="SCRAP">The {ship_name} was broken up for parts. What {she} carried went into the Cargo Hold.</entry>
 	<entry kind="SELL" when="how=auction">The {ship_name} was sold at auction for {price} scrap.</entry>
 	<entry kind="SELL" when="how=trade_in">The {ship_name} was traded in for {price} scrap.</entry>
 	<entry kind="SELL" when="what=cargo_bay&amp;count=1">One item was sold in the Cargo Bay, for {scrap} scrap.</entry>
 	<entry kind="SELL" when="what=cargo_bay">{count#} items were sold in the Cargo Bay, for {scrap} scrap.</entry>
 	<entry kind="JUNK" when="what=cargo_bay&amp;count=1">One item was thrown out in the Cargo Bay.</entry>
 	<entry kind="JUNK" when="what=cargo_bay">{count#} items were thrown out in the Cargo Bay.</entry>
-	<entry kind="FINAL_BATTLE">The {ship_name} is on her way to the final battle with the Rebel Flagship. A copy of her is kept.</entry>
+	<entry kind="FINAL_BATTLE">The {ship_name} is on {her} way to the final battle with the Rebel Flagship. A copy of {her_obj} is kept.</entry>
 	<entry kind="VICTORY" when="what=rescued">The {ship_name} was brought home after the final battle, ready for a new journey.</entry>
 	<entry kind="VICTORY">The {ship_name} drove the Rebel Flagship off.</entry>
 	<entry kind="MUSEUM" when="scrap">{scrap} scrap came to the Cargo Hold for the {ship_name}'s place in the Federation Museum.</entry>
@@ -141,9 +142,9 @@
 
 	<!-- the repair job, the claims office -->
 	<entry kind="REPAIR_JOB" when="stage=delivered">The {ship_name} was delivered to the Junkyard for repair.</entry>
-	<entry kind="REPAIR_JOB" when="stage=defied">The {ship_name} is kept. Her owner's attorneys will come for her value.</entry>
-	<entry kind="RETURNED" when="what=to_owner&amp;paid=0">The {ship_name} was returned to her owner, unpaid.</entry>
-	<entry kind="RETURNED" when="what=to_owner">The {ship_name} was returned to her owner for {paid} scrap.</entry>
+	<entry kind="REPAIR_JOB" when="stage=defied">The {ship_name} is kept. {Her} owner's attorneys will come for {her_obj} value.</entry>
+	<entry kind="RETURNED" when="what=to_owner&amp;paid=0">The {ship_name} was returned to {her} owner, unpaid.</entry>
+	<entry kind="RETURNED" when="what=to_owner">The {ship_name} was returned to {her} owner for {paid} scrap.</entry>
 	<entry kind="SEIZED" when="what=collected">The {ship_name} was collected by the Federation Office of Salvage and Claims.</entry>
 	<entry kind="SEIZED" when="what=office">The Federation Office of Salvage and Claims took {taken}.</entry>
 
@@ -153,7 +154,7 @@
 	<entry kind="CLAIM">Claimed from "{subject}": {what}, into the Cargo Hold.</entry>
 	<entry kind="STIPEND" when="months=1">A stipend of {scrap} scrap was issued, to claim from the inbox.</entry>
 	<entry kind="STIPEND">{months#} stipends were issued, {scrap} scrap in all, to claim from the inbox.</entry>
-	<entry kind="OVERFLOW" when="what=shipped">The {ship_name} had no room for an augment, so her crew shipped it home.</entry>
+	<entry kind="OVERFLOW" when="what=shipped">The {ship_name} had no room for an augment, so {her} crew shipped it home.</entry>
 	<entry kind="OVERFLOW" when="what=shipped_home">{title}, shipped home by the crew of the {ship_name}, is in the Cargo Hold.</entry>
 	<entry kind="OVERFLOW" when="what=lost">{title} was lost: an augment with no room aboard isn't shipped home in this career.</entry>
 	<entry kind="GIFT">The Third Fleet Commander sent {title} for the project ship.</entry>
@@ -162,12 +163,12 @@
 	<entry kind="CAREER" when="what=begun&amp;mode=Immersive">An Immersive career began, with {scrap} scrap in the Cargo Hold.</entry>
 	<entry kind="CAREER" when="what=begun">A {mode} career began, with {scrap} scrap in the Cargo Hold.</entry>
 	<entry kind="CAREER" when="what=rescued_to_hard&amp;rescued_to_hard=true">The career's rule was set: a ship rescued after a victory sets out on Hard.</entry>
-	<entry kind="CAREER" when="what=rescued_to_hard">The career's rule was set: a ship rescued after a victory has her next journey's danger chosen when she is kept.</entry>
+	<entry kind="CAREER" when="what=rescued_to_hard">The career's rule was set: a ship rescued after a victory has {her} next journey's danger chosen when {she} is kept.</entry>
 	<entry kind="CAREER" when="what=reputation_rate&amp;level=2">The career's rule was set: reputation is earned as on Hard.</entry>
 	<entry kind="CAREER" when="what=reputation_rate&amp;level=1">The career's rule was set: reputation is earned as on Normal.</entry>
 	<entry kind="CAREER" when="what=reputation_rate">The career's rule was set: reputation is earned as on Easy.</entry>
 	<entry kind="CAREER_ENDED">The {fleet} career was ended. A copy of it is kept.</entry>
-	<entry kind="PLEAD" when="stage=agreed">The Federation Home Planet agreed to send a new ship. Her order waits at Commission.</entry>
+	<entry kind="PLEAD" when="stage=agreed">The Federation Home Planet agreed to send a new ship. {Her} order waits at Commission.</entry>
 	<entry kind="PLEAD" when="stage=hold_given">The Cargo Hold was given up for the new ship.</entry>
 	<entry kind="UNDO_PLEA">The plea for a new ship was withdrawn.</entry>
 	<entry kind="REASSIGN" when="hulls=0">The Cargo Hold was surrendered in a report for reassignment.</entry>
@@ -184,7 +185,7 @@
 	<entry kind="RECEIVED">The {ship_name} arrived from {from_commander}'s fleet over Long Range Comm. and docked at the Space Dock.</entry>
 	<entry kind="RETURNED" when="why=trade_called_off">The trade was called off, and the {ship_name} is back at the Space Dock.</entry>
 	<entry kind="SENT_BACK">The trade was called off, and the {ship_name} stays with {to_commander}'s fleet.</entry>
-	<entry kind="TRADE_CALLED_OFF" when="what=stays_both">The {ship_name} came in a trade that was called off after she had left the Space Dock, so she stays here as well as with {peer}'s fleet.</entry>
+	<entry kind="TRADE_CALLED_OFF" when="what=stays_both">The {ship_name} came in a trade that was called off after {she} had left the Space Dock, so {she} stays here as well as with {peer}'s fleet.</entry>
 	<entry kind="TRADE_CALLED_OFF">The trade with {peer} was called off.</entry>
 	<entry kind="LONG_RANGE_TRADE">Traded with {peer} over Long Range Comm.: gave {gave}, and received {received}.</entry>
 	<entry kind="LONG_RANGE_OUTBOX" when="what=waiting">A message for {to_commander} waits to go out.</entry>

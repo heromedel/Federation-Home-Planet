@@ -436,7 +436,7 @@ public final class Session implements Channel.Listener {
 			withShips(prep, pending);
 		} catch (IOException e) {
 			Exchange.Record r = pending;
-			try { Exchange.callOff(r, "her papers couldn't be read: " + e.getMessage()); } catch (IOException again) { log.error("Could not call off trade " + r.id, again); }
+			try { Exchange.callOff(r, homeplanet.model.Words.her() + " papers couldn't be read: " + e.getMessage()); } catch (IOException again) { log.error("Could not call off trade " + r.id, again); }
 			finish(r);
 			view.problem("The trade couldn't go ahead:\n" + e.getMessage());
 			return;

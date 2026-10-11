@@ -29,7 +29,7 @@ public class RuleBoxes {
 	private final JPanel immersiveRow = row(0);
 	final JCheckBox tradeBox = new JCheckBox("Trading and scrapping need a station (the ship must be at a beacon with a store)", HomePlanet.storeRequirement);
 	final JCheckBox journeyBox = new JCheckBox("New Journey needs a station (the boarded ship must be at a beacon with a store)", HomePlanet.journeyStoreRequirement);
-	final JCheckBox scrapBox = new JCheckBox("Allow stripping when scrapping: her systems can go to the Cargo Hold, at a discount on the removal fee", HomePlanet.stripAllowed);
+	final JCheckBox scrapBox = new JCheckBox("Allow stripping when scrapping: " + homeplanet.model.Words.her() + " systems can go to the Cargo Hold, at a discount on the removal fee", HomePlanet.stripAllowed);
 	final JComboBox<String> removalBox = new JComboBox<String>(new String[] {"not allowed", "free", "25 scrap", "50 scrap", "75 scrap"});
 	private final JLabel removalLabel = new JLabel("Refit: taking a system off a ship is  ");
 	private final JPanel removalRow = row(21);
@@ -37,7 +37,7 @@ public class RuleBoxes {
 	private final JLabel journeyFeeLabel = new JLabel("A New Journey costs  ");
 	private final JLabel journeyFeeAfter = new JLabel("  from the Cargo Hold");
 	private final JPanel journeyFeeRow = row(21);
-	final JCheckBox augmentBox = new JCheckBox("An augment thrown away for want of room is shipped home by her crew, to the inbox (or the Cargo Hold)", HomePlanet.augmentsHome);
+	final JCheckBox augmentBox = new JCheckBox("An augment thrown away for want of room is shipped home by " + homeplanet.model.Words.her() + " crew, to the inbox (or the Cargo Hold)", HomePlanet.augmentsHome);
 	final JCheckBox sellBox = new JCheckBox("Allow selling missiles and drone parts (house rule: FTL's stores don't buy them; half the store price)", HomePlanet.sellSupplies);
 	final JCheckBox sellSystemsBox = new JCheckBox("Allow selling stored systems (house rule: half the system's price, plus half the upgrades paid for)", HomePlanet.sellSystems);
 	final JCheckBox lockedBox = new JCheckBox("Locked ship models cannot be commissioned (as unlocked in your FTL profile)", HomePlanet.commissionUnlockedOnly);
@@ -179,9 +179,9 @@ public class RuleBoxes {
 	public RuleBoxes() {
 		if (HomePlanet.immersiveMode) showOwn(); // the boxes start from the player's own rules; sync() sets Immersive Mode's over them
 		scrapBox.setToolTipText("Optional systems only, each for 10 scrap (20 when Refit charges 50, 30 when it charges 75; free when Refit is free). Standard equipment and damaged systems are lost with the hull. "
-				+ "Off: her systems are lost with the hull");
+				+ "Off: " + homeplanet.model.Words.her() + " systems are lost with the hull");
 		removalBox.setSelectedIndex(indexOf(homeplanet.core.Economy.REMOVAL_FEES, HomePlanet.removalFee));
-		removalBox.setToolTipText("The Refit tab's Uninstall button: what the boarded ship pays to take one of her systems off, or whether she can at all");
+		removalBox.setToolTipText("The Refit tab's Uninstall button: what the boarded ship pays to take one of " + homeplanet.model.Words.her() + " systems off, or whether " + homeplanet.model.Words.she() + " can at all");
 		removalLabel.setToolTipText(removalBox.getToolTipText());
 		removalRow.add(removalLabel);
 		removalRow.add(removalBox);
@@ -192,18 +192,18 @@ public class RuleBoxes {
 		journeyFeeRow.add(journeyFeeBox);
 		journeyFeeRow.add(journeyFeeAfter);
 		sellBox.setToolTipText("Shows a sell button under the supplies in the Cargo Bay: 3 scrap a missile, 4 a drone part. Junking them is always possible");
-		augmentBox.setToolTipText("FTL asks which augment to throw away when a fourth comes aboard away from a store: the one thrown away comes home after her next jump. Off: it's lost, as in FTL");
+		augmentBox.setToolTipText("FTL asks which augment to throw away when a fourth comes aboard away from a store: the one thrown away comes home after " + homeplanet.model.Words.her() + " next jump. Off: it's lost, as in FTL");
 		sellSystemsBox.setToolTipText("Shows a Sell button beside each system stored in the Cargo Bay (Refit tab). The boarded ship is paid");
 		lockedBox.setToolTipText("Commission only offers the layouts (A, B, C) you have unlocked in FTL");
-		customLockedBox.setToolTipText("A starter blueprint is offered only once the layout she was remodeled from is unlocked");
+		customLockedBox.setToolTipText("A starter blueprint is offered only once the layout " + homeplanet.model.Words.she() + " was remodeled from is unlocked");
 		customLockedBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
-		costBox.setToolTipText("Her hull, reactor, systems and levels, weapons, drones, augments, crew, supplies, scrap, rooms and doors, strictly counted. The Commission window shows the price");
-		percentBox.setToolTipText("The share of her price that counts, wherever a ship is priced: Commission, Trade In, Auction, the Junkyard's parts and derelicts, a final victory. Never the stores' prices (an Immersive career: Easy 50%, Normal 75%, Hard 100%)");
+		costBox.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " hull, reactor, systems and levels, weapons, drones, augments, crew, supplies, scrap, rooms and doors, strictly counted. The Commission window shows the price");
+		percentBox.setToolTipText("The share of " + homeplanet.model.Words.her() + " price that counts, wherever a ship is priced: Commission, Trade In, Auction, the Junkyard's parts and derelicts, a final victory. Never the stores' prices (an Immersive career: Easy 50%, Normal 75%, Hard 100%)");
 		percentBox.setSelectedItem(HomePlanet.commissionPercent + "%");
 		costRow.add(costBox);
 		costRow.add(javax.swing.Box.createHorizontalStrut(6));
 		costRow.add(percentBox);
-		costRow.add(new JLabel("  of her price"));
+		costRow.add(new JLabel("  of " + homeplanet.model.Words.her() + " price"));
 		int free = java.util.Arrays.asList(FREE_KEYS).indexOf(homeplanet.parser.FreeCommand.norm(HomePlanet.freeShip));
 		freeBox.setSelectedIndex(free < 0 ? 0 : free);
 		freeTip = "The ship Plead for New Ship (Other... at the Space Dock) offers. The Relief Ship Type A is always offered too. "

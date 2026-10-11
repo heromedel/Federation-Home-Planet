@@ -57,10 +57,10 @@ public final class Accolades {
 			if (from != null && !from.equals(e.source)) break; // the copy's entries come first: they take the kind's place
 			String bad = null;
 			Matcher m = Pattern.compile("\\{([a-z0-9_.]+)\\}").matcher(e.words);
-			while (m.find()) if (!TOKENS.contains(m.group(1))) bad = m.group(1);
+			while (m.find()) if (!TOKENS.contains(m.group(1)) && !java.util.Arrays.asList(homeplanet.model.Words.SHIP_TOKENS).contains(m.group(1))) bad = m.group(1);
 			if (bad != null) { homeplanet.core.Lore.problem(e.source + ", line " + e.line + " (" + when + "): {" + bad + "} isn't an accolade's token; left out"); continue; }
 			from = e.source;
-			out.add(e.words);
+			out.add(homeplanet.model.Words.ship(e.words)); // {she}, {her}: the Ship Pronoun setting
 			if (!all) break;
 		}
 		return out.toArray(new String[0]);
