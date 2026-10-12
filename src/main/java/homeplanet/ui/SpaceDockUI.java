@@ -230,7 +230,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		controls.setLayout(new BoxLayout(controls, BoxLayout.Y_AXIS));
 		controls.setOpaque(false);
 		controls.setBorder(javax.swing.BorderFactory.createEmptyBorder(14, 10, 10, homeplanet.core.FtlDock.active() ? 0 : 16)); // flush right while FTL is docked: more room for it (5.31)
-		launchBtn = controlButton("Launch FTL", "Play FTL");
+		boolean ftlUp = GameGuard.isFtlRunning(); // running: the button goes to it, never a second FTL (heromedel, 6.57)
+		launchBtn = controlButton(ftlUp ? "Switch to FTL" : "Launch FTL", ftlUp ? "FTL is running: bring it to the front, as Alt+Tab would" : "Play FTL");
 		journeyBtn = controlButton("New Journey", "Set out from the first sector with the boarded ship, crew and cargo");
 		commissionBtn = controlButton("Commission", "Have a brand-new ship built, as a new game would start " + homeplanet.model.Words.herObj());
 		salvageBtn = controlButton("Junkyard", "The Junkyard: salvage, scrap or sell a ship, or buy derelicts and parts");
@@ -1130,7 +1131,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else if (o == commBtn) {
 			parent.showLongRangeComm();
 		} else if (o == launchBtn) {
-			HomePlanet.launchFTL();
+			if (GameGuard.isFtlRunning()) switchToFtl(); // as it is now, whatever the label said
+			else HomePlanet.launchFTL();
 		} else if (o == dockLaunchBtn) {
 			if (homeplanet.core.FtlDock.active()) askUndock();
 			else launchDocked();
@@ -1403,6 +1405,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 
 	/** The flip (5.32): the docked ships in FTL's place, FTL hidden but running; again, FTL back where it was. */
+	/** "Switch to FTL" (heromedel, 6.57): FTL to the front as Alt+Tab would bring it, full screen or windowed as it is; docked, in its viewport. */
+	private void switchToFtl() {
+		if (homeplanet.core.FtlDock.active() && homeplanet.core.FtlDock.found()) {
+			if (homeplanet.core.FtlDock.aside()) flip(); // the docked ships were showing in its place
+			homeplanet.core.FtlDock.focus();
+			return;
+		}
+		if (!homeplanet.core.FtlDock.switchTo()) HomePlanet.launchFTL(); // its window not found (another system, or still starting): it says FTL is running
+	}
 	private void flip() {
 		boolean ships = !homeplanet.core.FtlDock.aside();
 		log.debug("FTL docked: {}", ships ? "the Space Dock shown as without FTL" : "back to FTL");
