@@ -677,6 +677,21 @@ public class LayoutEditor {
 		return true;
 	}
 
+	private final Map<String, BufferedImage> greyIcons = new HashMap<String, BufferedImage>();
+	/** A system's icon in grey and half see-through: a system she doesn't start with. */
+	private BufferedImage greyIcon(String id) {
+		BufferedImage g = greyIcons.get(id), ic = icons.get(id);
+		if (g != null || ic == null) return g;
+		g = new BufferedImage(ic.getWidth(), ic.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		for (int y = 0; y < ic.getHeight(); y++) for (int x = 0; x < ic.getWidth(); x++) {
+			int p = ic.getRGB(x, y), a = (p >>> 24) / 2;
+			int l = (int) (((p >> 16) & 255) * 0.3 + ((p >> 8) & 255) * 0.59 + (p & 255) * 0.11);
+			l = 90 + l * 90 / 255; // a mid grey, never bright
+			g.setRGB(x, y, (a << 24) | (l << 16) | (l << 8) | l);
+		}
+		greyIcons.put(id, g);
+		return g;
+	}
 	/** The end of the "added" line: says so when the system isn't installed at the start. */
 	private String notInstalled(String id) {
 		return designArt && !artLocked && d.notAtStart.contains(id) ? ": not installed at the start (the Loadout step can tick it)." : ".";
@@ -1201,10 +1216,12 @@ public class LayoutEditor {
 				// icon(s), centred (two bays: side by side)
 				int n = here.size();
 				for (int k = 0; k < n; k++) {
-					BufferedImage ic = icons.get(here.get(k));
+					// a design's system she doesn't start with: its room is ready, its icon greyed (heromedel, 6.53)
+					boolean waits = designArt && !artLocked && d.notAtStart.contains(here.get(k));
+					BufferedImage ic = waits ? greyIcon(here.get(k)) : icons.get(here.get(k));
 					int cx = rr.x + rr.width / 2 + (n == 2 ? (k == 0 ? -12 : 12) : 0), cy = rr.y + rr.height / 2;
 					if (ic != null) g.drawImage(ic, cx - ic.getWidth() / 2, cy - ic.getHeight() / 2, null);
-					else { g.setColor(Color.WHITE); g.drawString(here.get(k), cx - 10, cy); }
+					else { g.setColor(waits ? new Color(150, 150, 150) : Color.WHITE); g.drawString(here.get(k), cx - 10, cy); }
 				}
 			}
 		}
