@@ -67,6 +67,18 @@ public class DesT {
  ShipDesign b = back.get(had + 2);
  Setup.chk("own art exported", DesignExport.images(b).keySet().toString().contains("_base.png"));
  Setup.chk("game art needs no pictures", DesignExport.images(back.get(had)).isEmpty());
+ // 6.54 (tested in FTL): her own pictures always carry a floor (a blank one for no floor: a missing floor is a warning
+ // sign in the game) and a shield bubble the size of her oval (without one FTL draws no bubble)
+ { ShipDesign o = ShipDesign.copy(b); o.floor = "";
+   Map<String, byte[]> im = DesignExport.images(o); String gg = "img/ship/" + DesignExport.gfx(o);
+   java.awt.image.BufferedImage sh = im.containsKey(gg + "_shields1.png") ? javax.imageio.ImageIO.read(new ByteArrayInputStream(im.get(gg + "_shields1.png"))) : null;
+   int[] e = ShipArt.ellipseOf(o, ShipArt.load(o.art, ""));
+   Setup.chk("6.54: no floor still gives FTL a floor picture (a blank one)", im.containsKey(gg + "_floor.png"));
+   Setup.chk("6.54: a shield bubble the size of her oval: " + (sh == null ? "none" : sh.getWidth() + "x" + sh.getHeight()) + " for " + e[0] + "x" + e[1], sh != null && sh.getWidth() == 2 * e[0] && sh.getHeight() == 2 * e[1]);
+   ShipDesign k2 = ShipDesign.copy(back.get(had)); k2.art = "game:kestral_2"; k2.floor = "game:kestral_2";
+   Map<String, byte[]> i2 = DesignExport.images(k2);
+   Setup.chk("6.54: the Kestrel B's hull (whose bubble is the Kestrel's) gets a set of her own, bubble and all: " + i2.keySet().size(), i2.containsKey("img/ship/" + DesignExport.gfx(k2) + "_shields1.png"));
+ }
  Setup.chk("the mod exports the built copies only", DesignExport.built().size() >= 2 && !DesignExport.built().get(0).isWorking());
  // art files: every import is a new file; the sweep keeps what's used
  String again = ShipArt.importFile(png, b.id, "base");

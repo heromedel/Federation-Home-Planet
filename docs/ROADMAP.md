@@ -856,7 +856,10 @@ the right is three steps in build order.
   at the edge, and a layout written with a negative offset crashes FTL 1.6.14 on loading). The canvas is fixed (the grid with a
   wide border for art hanging over): editing one thing never slides another. The grid covers the whole canvas and the
   canvas sits in the middle of the view, so the cross is the middle of what the player sees (heromedel, 6.53). "Center on the anchor" puts the picture's visible middle on
-  the cross and moves nothing else. The shield ellipse and gibs sit under "Fine adjustment".
+  the cross and moves nothing else. The shield ellipse and gibs sit under "Fine adjustment". In FTL (tested, 6.54) a
+  missing floor picture is a warning sign by the ship and a missing shield picture means no bubble, so her own picture
+  set always carries a floor (a blank one for No floor) and a bubble made to her shield oval (the Kestrel's, stretched),
+  and a new hull picture of her own gets the floor drawn from her rooms (heromedel).
 - **Loadout, one row shape for every number** (heromedel's sketch): hers/max, the name, minus, a typed field, plus, a
   bar of green segments to the vanilla max and amber ones past it, "Over vanilla max" beside. Hull, reactor, weapon
   slots, drone slots, missiles and drone parts under "Her numbers"; each placed system under "Systems at the start" with

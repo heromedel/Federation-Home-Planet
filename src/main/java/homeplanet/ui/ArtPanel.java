@@ -347,8 +347,9 @@ public class ArtPanel extends JPanel {
 			else {
 				boolean hadPicture = !d.floor.isEmpty() && !d.floorFromRooms();
 				d.art = src; d.ellipseW = d.ellipseH = 0; d.artScale = 100;
-				if (hadPicture) { d.floor = ""; d.floorX = d.floorY = 0; } // a floor picture was made for the old hull: it goes with it (one drawn from the rooms follows)
-				if (hadPicture) host.say(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " floor picture went with the old hull: choose one for this hull, or a floor drawn from the rooms.");
+				// a floor picture was made for the old hull: it goes with it. Her own hull gets the floor drawn from her rooms
+				// (heromedel, 6.54), which follows them; a picture of her own, or none, stays a choice here
+				if (hadPicture || d.floor.isEmpty()) { d.floor = ShipDesign.FLOOR_ROOMS; d.floorX = d.floorY = 0; }
 			}
 		} catch (Exception ex) {
 			JOptionPane.showMessageDialog(this, "The Home Planet Station couldn't use that picture:\n" + ex.getMessage(), floor ? "Floor picture" : "Hull art", JOptionPane.WARNING_MESSAGE);
@@ -358,7 +359,8 @@ public class ArtPanel extends JPanel {
 		loadArt();
 		if (!floor) editor.centerArt();
 		host.changed();
-		host.say(floor ? "Floor picture imported." : "Hull art imported, centred on the anchor; Move art (or Alt + middle-drag) lines it up.");
+		host.say(floor ? "Floor picture imported." : "Hull art imported, centred on the anchor; Move art (or Alt + middle-drag) lines it up. "
+				+ homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " floor is drawn from " + homeplanet.model.Words.her() + " rooms (Floor, above, to change it).");
 	}
 	private void pickGameArt() {
 		final java.util.List<String> names = ShipArt.gameArt();
