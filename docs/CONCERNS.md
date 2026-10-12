@@ -25,3 +25,17 @@ would let those go sooner, but each fleet's conversion writes its own log, which
 one a line or a method to delete. Then delete the tests of old fleets. A fleet from before 6.0 would then have to be opened once
 by a 6.x station first: the station could say so plainly when it finds `manifest.xml` or `ships/`. When is heromedel's call
 (5.97: "at some point in a future build").
+
+## 8. The reputation re-evaluation and its correction (noted 6.54)
+
+**What it is.** `vault/Reputation`'s `offer`, `answer` and `rescored` (6.19) re-score a career's log once, for a score counted
+before the rates (6.13, 6.17); `correct` and `Levels` (6.54) put right a re-evaluation that rated each ship at the difficulty she
+flies now (a ship moved to Hard after her victory had her whole career re-scored at Hard), with its notice in `SpaceDockUI`
+(`tellCorrected`) and RepuT's O, C and H checks.
+
+**What it costs.** About 200 lines that only a career from before 6.17 ever runs, once: every career since is counted at the
+rates from the start and marked so.
+
+**What a change would look like.** heromedel, 6.54: it could probably be removed some day, once the careers that needed it have
+opened on 6.54 or later. Delete the methods and the notice, keep `RATED` and `CORRECTED` so the marks in `reputation.xml` still
+read, and drop RepuT's O, C and H checks.

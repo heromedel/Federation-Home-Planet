@@ -6,8 +6,9 @@ public class RankT { public static void main(String[] a) throws Exception {
  HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
  // the ladder
- Setup.chk("L: Major 0, Colonel 250, Commander 500, Captain 1,000, Commodore 2,500, Admiral 10,000", PlayerRank.forReputation(0) == 0 && PlayerRank.forReputation(249) == 0 && PlayerRank.forReputation(250) == 1
-   && PlayerRank.forReputation(500) == 2 && PlayerRank.forReputation(1000) == 3 && PlayerRank.forReputation(2500) == 4 && PlayerRank.forReputation(9999) == 4 && PlayerRank.forReputation(10000) == 5);
+ Setup.chk("L: Major 0, Colonel 250, Commander 500, Captain 1,000, Commodore 2,500, Admiral 5,000 (6.53)", PlayerRank.forReputation(0) == 0 && PlayerRank.forReputation(249) == 0 && PlayerRank.forReputation(250) == 1
+   && PlayerRank.forReputation(500) == 2 && PlayerRank.forReputation(1000) == 3 && PlayerRank.forReputation(2500) == 4 && PlayerRank.forReputation(4999) == 4 && PlayerRank.forReputation(5000) == 5
+   && PlayerRank.forReputation(7500) == 5 && PlayerRank.forReputation(10000) == 5);
  PlayerRank.setting = PlayerRank.FROM_REP; HomePlanet.reputationOn = true;
  int[] mult = new int[6]; for (int r = 0; r < 6; r++) mult[r] = PlayerRank.multiple(r);
  Setup.chk("L: the stipend's multiple: 1, 2, 2, 3, 3, 4", Arrays.equals(mult, new int[] {1, 2, 2, 3, 3, 4}) && PlayerRank.name(5).equals("Admiral") && PlayerRank.name(0).equals("Major"));

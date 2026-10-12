@@ -153,7 +153,7 @@ final class ImmersiveBriefing extends JDialog {
 				"Commander, 500: remodel your ships.",
 				"Captain, 1,000: a larger stipend.",
 				"Commodore, 2,500: design ships, overhaul deck plans, commission custom ships.",
-				"Admiral, 10,000: the Federation's artillery, and the largest stipend.",
+				"Admiral, 5,000: the Federation's artillery, and the largest stipend.",
 				"Each Federation Cruiser layout you unlock in FTL: +100 reputation.",
 				"The plans for the Rebel Flagship's weapons: earn Rule Ten: Greed is Eternal."));
 		p.add(section("Transmissions and the stipend", "An inbox on the Space Dock brings commission orders, promotions and a reward for each FTL achievement "

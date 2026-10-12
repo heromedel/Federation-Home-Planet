@@ -623,19 +623,68 @@ public final class Reputation {
 			}
 		}
 	}
+	/** reputation.xml's mark of a re-evaluation corrected (or found right), once. */
+	static final String CORRECTED = "6.54";
+	/** A correction made: the score before it and after. */
+	public static final class Correction {
+		public final int was, now;
+		Correction(int was, int now) { this.was = was; this.now = now; }
+	}
+	/**
+	 * A career re-evaluated before 6.54 (heromedel): its ships were re-scored at the difficulty they fly now, so a ship
+	 * moved to Hard after her victory had all she earned on Easy counted at Hard. Re-scored once more, at the difficulty
+	 * each flew then, over the entries the re-evaluation saw; only the difference moves the total, so everything since
+	 * stays as it was. One log entry; null when there's nothing to correct (marked, never worked out again).
+	 */
+	public static Correction correct(Vault v) {
+		synchronized (lock(v)) {
+			if (!shown() || RATE_ASK.equals(rateRule())) return null;
+			Properties p = read(v);
+			if (!"true".equals(p.getProperty("reevaluated")) || p.getProperty("corrected") != null) return null;
+			List<homeplanet.core.EventLog.Entry> all = homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v));
+			int at = -1;
+			for (int i = 0; i < all.size(); i++) {
+				homeplanet.core.EventLog.Entry e = all.get(i);
+				if (e.kind.equals("REPUTATION") && "records".equals(e.get("reason")) && e.get("why", "").startsWith("Records updated (")) at = i;
+			}
+			p.setProperty("corrected", CORRECTED);
+			if (at < 0) { write(v, p); return null; } // the entry is gone: nothing to measure against
+			homeplanet.core.EventLog.Entry rec = all.get(at);
+			long wrong = exactUnits(rec.get("total_exact"), rec.num("total", 0)), right = rescored(v, all.subList(0, at));
+			if (right == wrong) { write(v, p); return null; }
+			int was = num(p, "total");
+			long before = units(p);
+			setUnits(p, before + right - wrong);
+			Change ch = plainChange(num(p, "total") - was);
+			ch.movedUnits = right - wrong;
+			if (!write(v, p)) return null;
+			entry(v, "records", ch, "Records corrected (" + signed(ch.moved) + ")", null, null,
+					"corrects", rec.time, "reevaluated_was", unitWords(wrong), "reevaluated_now", unitWords(right));
+			return new Correction(was, num(p, "total"));
+		}
+	}
+	/** total_exact's words back to ten-thousandths ("3104.25"); the whole total if they can't be read. */
+	private static long exactUnits(String words, int whole) {
+		try { return new java.math.BigDecimal(words.trim()).movePointRight(4).setScale(0, java.math.RoundingMode.FLOOR).longValueExact(); }
+		catch (RuntimeException e) { return whole * UNIT; }
+	}
 	/**
 	 * The fleet's reputation log re-scored at the rates (6.19): each earned piece of an entry written before them at the
-	 * career's rate, and if earned in FTL at her difficulty's rate (her save now, a departed ship's as Easy) and the
+	 * career's rate, and if earned in FTL at her difficulty's rate (as she flew then: {@link Levels}, 6.54) and the
 	 * sector's bonus where the entry names her sector; losses, spending and anything unexplained as they were. An entry
 	 * written at the career's rate already (6.13) gets her difficulty and sector only; one written at every rate (6.17), as it is.
 	 */
-	static long rescored(Vault v) {
+	static long rescored(Vault v) { return rescored(v, homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v))); }
+	/** As above, over these entries alone (the correction: those before the re-evaluation it corrects). */
+	static long rescored(Vault v, List<homeplanet.core.EventLog.Entry> entries) {
 		int career = 2 + rateLevel();
-		Map<String, Integer> ships = new java.util.HashMap<String, Integer>();
-		for (Ship s : v.all()) if (s.state != Ship.State.STORAGE) ships.put(s.name, shipLevel(s.save()));
+		Map<String, Levels> ships = new java.util.HashMap<String, Levels>(); // by name, as the entries name them: the fleet's own over a departed namesake
+		for (File d : v.departedFolders()) { String id = ShipStore.idOf(d); if (id != null) ships.put(departedName(v, id), new Levels(d, null)); }
+		for (Ship s : v.all()) if (s.state != Ship.State.STORAGE) ships.put(s.name, new Levels(v.folderOf(s), s));
 		long total = 0;
-		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.sorted(homeplanet.core.EventLog.read(v))) {
+		for (homeplanet.core.EventLog.Entry e : entries) {
 			if (!e.kind.equals("REPUTATION") || !"reputation".equals(e.get("log"))) continue;
+			long when = timeOf(e);
 			int points;
 			try { points = Integer.parseInt(e.get("points", "0").trim()); } catch (NumberFormatException x) { points = 0; }
 			String why = e.get("why", e.human), reason = e.get("reason", "other");
@@ -650,9 +699,9 @@ public final class Reputation {
 			for (String line : lines) {
 				int colon = line.indexOf(": ");
 				String who = colon > 0 ? line.substring(0, colon) : "";
-				Integer ship = ships.get(who);
+				Levels ship = ships.get(who);
 				boolean away = reason.equals("expedition") || reason.equals("achievement") || reason.equals("cruiser") || reason.equals("ransomed");
-				int sl = away ? -1 : ship != null ? ship : 0; // -1: not in FTL (an achievement's name may say "sector": never read as a jump)
+				int sl = away ? -1 : ship != null ? ship.at(when) : 0; // -1: not in FTL (an achievement's name may say "sector": never read as a jump)
 				java.util.regex.Matcher sm = java.util.regex.Pattern.compile("sector (\\d) reached").matcher(line);
 				int at = sm.find() ? sectorIndex(Integer.parseInt(sm.group(1)) - 1) : 0;
 				List<String[]> pcs = pieces(line);
@@ -666,7 +715,7 @@ public final class Reputation {
 					base += n;
 					String t = pc[0].toLowerCase();
 					boolean ftl = sl >= 0 && (t.contains("sector") || t.contains("defeated") || t.contains("scrap") || t.contains("outcome") || t.contains("flagship"));
-					if (reason.equals("flagship")) { ftl = true; sl = ships.containsKey(why.split(" drove off")[0]) ? ships.get(why.split(" drove off")[0]) : 0; }
+					if (reason.equals("flagship")) { ftl = true; Levels won = ships.get(why.split(" drove off")[0]); sl = won != null ? won.at(when) : 0; }
 					if (n <= 0) u += n * UNIT; // a loss, as it is
 					else if (ftl) u += n * (UNIT / 80) * (4 + sl) * (10 + (reason.equals("flagship") ? LAST_STAND : at)) * c;
 					else u += n * (UNIT / 2) * c;
@@ -676,6 +725,42 @@ public final class Reputation {
 			total += u;
 		}
 		return total;
+	}
+
+	/**
+	 * A ship's difficulty over time (heromedel, 6.54): an old entry is re-scored at the difficulty she flew when she earned
+	 * it, never the one she has now (6.19 read her save now, and a ship moved to Hard after her victory had her whole
+	 * career re-scored at Hard). From her kept saves, the victory copies among them: the first kept at or after the entry;
+	 * after the last, her save now (a ship gone: her last kept); Easy if nothing tells. Read only when asked.
+	 */
+	private static final class Levels {
+		private final File folder;
+		private final Ship ship;
+		private List<long[]> kept; // {kept at, level}, oldest first
+		private int now = -1;
+		Levels(File folder, Ship ship) { this.folder = folder; this.ship = ship; }
+		int at(long when) {
+			if (kept == null) load();
+			for (long[] k : kept) if (k[0] >= when) return (int) k[1];
+			return now >= 0 ? now : kept.isEmpty() ? 0 : (int) kept.get(kept.size() - 1)[1];
+		}
+		private void load() {
+			kept = new ArrayList<long[]>();
+			if (ship != null) { SavedGameState gs = ship.save(); if (gs != null) now = shipLevel(gs); }
+			if (folder == null) return;
+			List<File> all = new ArrayList<File>(ShipStore.versions(folder, false));
+			all.addAll(ShipStore.versions(folder, true));
+			for (File f : all) {
+				if (!f.getName().endsWith(".sav")) continue;
+				try { kept.add(new long[] {ShipStore.keptAt(f), shipLevel(HomePlanet.savedGameParser.readSavedGame(f))}); }
+				catch (Exception e) { } // unreadable: the others tell
+			}
+			java.util.Collections.sort(kept, new java.util.Comparator<long[]>() { public int compare(long[] a, long[] b) { return Long.compare(a[0], b[0]); } });
+		}
+	}
+	/** When an entry was written (the event log's local time), or the end of time if it can't be read (her save now). */
+	private static long timeOf(homeplanet.core.EventLog.Entry e) {
+		try { return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(e.time.trim()).getTime(); } catch (Exception x) { return Long.MAX_VALUE; }
 	}
 
 	/** What an entry from the old reputation.log was, from its words (as the tally reads them); "other" if they don't say. */
@@ -824,6 +909,7 @@ public final class Reputation {
 	}
 	private static void pool(Map<String, Integer> pools, String header, int points, List<String> details) {
 		for (String s : SPENT_STARTS) if (header.startsWith(s)) { add(pools, "Spent", points); return; }
+		if (header.startsWith("Records ")) { add(pools, "Other", points); return; } // a re-evaluation or its correction (6.54: a correction down isn't spending)
 		if (header.startsWith("An achievement") || header.matches("\\d+ achievements:.*")) { add(pools, "Achievements", points); return; }
 		if (header.startsWith("Taken captive:") || header.startsWith("Ransomed:")) { add(pools, "Crew", points); return; }
 		List<String[]> pieces = new ArrayList<String[]>();
@@ -865,12 +951,13 @@ public final class Reputation {
 	/** As above, from a {@link Change}: the whole points it moved the total by, and on the machine line the exact change and its rates (6.13, 6.17). */
 	private static void entry(Vault v, String reason, Change ch, String why, List<String> details) { entry(v, reason, ch, why, details, null); }
 	/** As above, about a ship: her id, name, sector and difficulty on the machine line too (6.18). */
-	private static void entry(Vault v, String reason, Change ch, String why, List<String> details, homeplanet.core.Event ship) {
+	private static void entry(Vault v, String reason, Change ch, String why, List<String> details, homeplanet.core.Event ship, String... more) {
 		Properties p = read(v); // the event log alone (5.93): reputation.log and the master log's copy are no longer written
 		homeplanet.core.Event e = homeplanet.core.Event.of("REPUTATION").put("log", "reputation").put("reason", reason).put("points", ch.moved)
 				.put("exact", unitWords(ch.movedUnits)).put("rate", RATE[rateLevel()]).put("rates", RATED); // written at every rate (6.17): a re-evaluation leaves it as it is
 		if (ship != null) for (String k : new String[] {"ship", "ship_name", "ship_id", "ship_state", "stranger", "ship_sector", "ship_difficulty"}) if (ship.get(k) != null) e.put(k, ship.get(k));
 		if (ch.ship >= 0) e.put("ship_rate", SHIP_RATE[ch.ship]).put("sector_rate", sectorRate(ch.sector));
+		for (int i = 0; i + 1 < more.length; i += 2) e.put(more[i], more[i + 1]);
 		homeplanet.core.EventLog.write(v, e.put("total", num(p, "total")).put("total_exact", unitWords(units(p))).put("why", why).details(details).human(why));
 	}
 	/** Ten-thousandths as a number to read: 9, -4, 4.5, 2.0625. */

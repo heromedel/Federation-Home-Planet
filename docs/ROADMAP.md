@@ -191,7 +191,7 @@ ship pays, and Save makes it official (Reset undoes it).
   setting, **Ranks From Rep** (the default; Immersive Mode is locked to it; tooltip "Requires Reputation to be turned on.")
   / **Ranks From Cruiser** (the old rule) / **No Ranks** (everything cleared, the stipend at x1). The reputation ladder: Major
   at the start; Colonel 250 (stipend x2); Commander 500 (remodels); Captain 1,000 (x3); Commodore 2,500 (designs, deck plan
-  overhauls, custom ships); Admiral 10,000 (the Federation's artillery, x4); Major x1, Commander x2, Commodore x3. A rank is
+  overhauls, custom ships); Admiral 5,000 (10,000 until 6.53; the Federation's artillery, x4); Major x1, Commander x2, Commodore x3. A rank is
   never lost. Each promotion is a letter from The Federation Home Planet Fleet Admiralty. Each Federation Cruiser layout
   (A, B, C) unlocked in the career's service gives +100 reputation, once. A career from before 5.56 is checked once: the
   higher of its reputation's rank and its cruiser rank (Captain or Commodore), any clearance it held kept, and one letter
