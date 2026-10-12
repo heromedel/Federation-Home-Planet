@@ -55,8 +55,10 @@ public class DesignExport {
 		if (!gameArt(d) || d.artScale != 100) return false; // resized: her own copies of the pictures
 		String g = d.art.substring(5);
 		if (!d.gameGibs() || !gameHas(g, "_gib1")) return false; // other gibs: FTL would find the game's by name
-		if (d.floor.equals(d.art)) return true;
-		return d.floor.isEmpty() && !gameHas(g, "_floor");
+		// the bubble is found by the hull's name too, and some game hulls borrow another's (the Kestrel B's is the Kestrel's)
+		if (!gameHas(g, "_shields1")) return false;
+		// no floor, or another: her own set, since FTL marks a floor it can't find with a warning sign (tested in FTL, 6.54)
+		return d.floor.equals(d.art);
 	}
 
 	/** Why she can't be built yet (empty when she can): a design needs art and a mount on top of a sound layout. */
@@ -287,11 +289,37 @@ public class DesignExport {
 		String g = "img/ship/" + gfx(d);
 		out.put(g + "_base.png", png(b));
 		BufferedImage f = floor(d);
-		if (f != null) out.put(g + "_floor.png", png(f));
+		// no floor is a blank one: FTL marks a floor it can't find with a warning sign (6.54)
+		out.put(g + "_floor.png", png(f != null ? f : new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB)));
+		out.put(g + "_shields1.png", png(shields(d, b)));
 		BufferedImage gameCloak = gameArt(d) ? ShipArt.scaled(ShipArt.load(d.art, "_cloak"), d.artScale) : null;
 		out.put(g + "_cloak.png", png(gameCloak != null ? gameCloak : cloak(b)));
 		List<ShipArt.Gib> gibs = gibs(d, b);
 		for (int i = 0; i < gibs.size(); i++) out.put(g + "_gib" + (i + 1) + ".png", png(gibs.get(i).img));
+		return out;
+	}
+	/**
+	 * Her shield bubble, the size of her shield oval: the Kestrel's from the game, stretched (a drawn oval if the game's
+	 * isn't there). FTL finds it by her hull's name, and without one it draws no bubble at all (tested in FTL, 6.54).
+	 */
+	static BufferedImage shields(ShipDesign d, BufferedImage b) {
+		int[] e = ShipArt.ellipseOf(d, b);
+		if (e == null) e = new int[] {300, 200, 0, 0};
+		int w = Math.max(2, 2 * e[0]), h = Math.max(2, 2 * e[1]);
+		BufferedImage src = ShipArt.load("game:kestral", "_shields1");
+		BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+		java.awt.Graphics2D g = out.createGraphics();
+		g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+		if (src != null) g.drawImage(src, 0, 0, w, h, null);
+		else {
+			g.setColor(new java.awt.Color(90, 170, 255, 60));
+			g.fillOval(0, 0, w - 1, h - 1);
+			g.setColor(new java.awt.Color(150, 210, 255, 170));
+			g.setStroke(new java.awt.BasicStroke(3f));
+			g.drawOval(2, 2, w - 5, h - 5);
+		}
+		g.dispose();
 		return out;
 	}
 	/** A cloak picture: the hull as a pale blue glow (the game's own are hand-drawn; this is a stand-in). */

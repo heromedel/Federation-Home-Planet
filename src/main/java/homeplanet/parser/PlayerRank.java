@@ -34,7 +34,7 @@ public final class PlayerRank {
 
 	/** The ladder: the ranks, the reputation each needs, and the stipend's multiple for each achievement counted. */
 	public static final String[] REP_RANKS = {"Major", "Colonel", "Commander", "Captain", "Commodore", "Admiral"};
-	public static final int[] REP_STEPS = {0, 250, 500, 1000, 2500, 10000};
+	public static final int[] REP_STEPS = {0, 250, 500, 1000, 2500, 5000}; // Admiral 5,000 (6.53, heromedel; 10,000 before)
 	private static final int[] REP_MULTIPLE = {1, 2, 2, 3, 3, 4};
 	/** The ranks the clearances open at: remodels, then custom ships, then the Federation's artillery. */
 	public static final int COMMANDER = 2, COMMODORE = 4, ADMIRAL = 5;

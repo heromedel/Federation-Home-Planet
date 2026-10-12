@@ -98,6 +98,8 @@ public class LayoutEditor {
 	static final int MARGIN = 4 * SQ;
 	/** The design canvas's border round the grid: room for a big hull picture hanging over the grid's edge. */
 	static final int PAD = 10 * SQ;
+	/** The systems a new design's ship starts with installed when they're placed; the rest wait to be bought or ticked (heromedel, 6.53). */
+	static final java.util.Set<String> STARTS_INSTALLED = new java.util.HashSet<String>(java.util.Arrays.asList("pilot", "oxygen", "engines", "weapons"));
 
 	// art under the rooms (optional): pictures and where they sit relative to the grid origin, in pixels
 	BufferedImage baseImg, floorImg;
@@ -280,6 +282,12 @@ public class LayoutEditor {
 	// ---- view: zoom, fit, centring ----
 
 	double eff() { return scale * zoom; }
+	/** The window stretches a small canvas to fill it: the drawing sits in its middle, not its corner (heromedel, 6.53: the anchor in the middle). */
+	int padX() { return Math.max(0, (canvas.getWidth() - canvas.getPreferredSize().width) / 2); }
+	int padY() { return Math.max(0, (canvas.getHeight() - canvas.getPreferredSize().height) / 2); }
+	/** A mouse position as unscaled canvas pixels. */
+	private int unX(MouseEvent e) { return (int) ((e.getX() - padX()) / eff()); }
+	private int unY(MouseEvent e) { return (int) ((e.getY() - padY()) / eff()); }
 	private void updateSize() {
 		canvas.setPreferredSize(new Dimension((int) (baseW * eff()) + 2, (int) (baseH * eff()) + 2));
 		canvas.setSize(canvas.getPreferredSize());
@@ -307,7 +315,7 @@ public class LayoutEditor {
 			java.awt.Dimension ext = vp == null ? canvas.getSize() : vp.getExtentSize();
 			at = new java.awt.Point(pos.x + ext.width / 2, pos.y + ext.height / 2);
 		}
-		double ux = at.x / eff(), uy = at.y / eff();
+		double ux = (at.x - padX()) / eff(), uy = (at.y - padY()) / eff();
 		int offX = at.x - pos.x, offY = at.y - pos.y;
 		zoom = nz;
 		updateSize();
@@ -342,6 +350,13 @@ public class LayoutEditor {
 			scrollTo((int) (c.getCenterX() * eff()) - ext.width / 2, (int) (c.getCenterY() * eff()) - ext.height / 2);
 		}
 		host.say("Zoom " + Math.round(zoom * 100) + "%.");
+	}
+	/** Scrolls the anchor (the cross: where FTL puts her) to the middle of the view, at the zoom as it is: a new design opens on it. */
+	public void showAnchor() {
+		javax.swing.JViewport vp = viewport();
+		if (vp == null || !designArt) return;
+		java.awt.Dimension ext = vp.getExtentSize();
+		scrollTo((int) ((originX + cols * SQ / 2.0) * eff()) - ext.width / 2, (int) ((originY + rows * SQ / 2.0) * eff()) - ext.height / 2);
 	}
 	/** Puts the picture's visible middle on the anchor (the grid's middle, where FTL puts her). Nothing else moves. */
 	public boolean centerArt() {
@@ -662,6 +677,25 @@ public class LayoutEditor {
 		return true;
 	}
 
+	private final Map<String, BufferedImage> greyIcons = new HashMap<String, BufferedImage>();
+	/** A system's icon in grey and half see-through: a system she doesn't start with. */
+	private BufferedImage greyIcon(String id) {
+		BufferedImage g = greyIcons.get(id), ic = icons.get(id);
+		if (g != null || ic == null) return g;
+		g = new BufferedImage(ic.getWidth(), ic.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		for (int y = 0; y < ic.getHeight(); y++) for (int x = 0; x < ic.getWidth(); x++) {
+			int p = ic.getRGB(x, y), a = (p >>> 24) / 2;
+			int l = (int) (((p >> 16) & 255) * 0.3 + ((p >> 8) & 255) * 0.59 + (p & 255) * 0.11);
+			l = 90 + l * 90 / 255; // a mid grey, never bright
+			g.setRGB(x, y, (a << 24) | (l << 16) | (l << 8) | l);
+		}
+		greyIcons.put(id, g);
+		return g;
+	}
+	/** The end of the "added" line: says so when the system isn't installed at the start. */
+	private String notInstalled(String id) {
+		return designArt && !artLocked && d.notAtStart.contains(id) ? ": not installed at the start (the Loadout step can tick it)." : ".";
+	}
 	private void place(String id, int room) {
 		Sys s = d.systems.get(id);
 		Sys orig = host.original(id);
@@ -669,6 +703,11 @@ public class LayoutEditor {
 			s = new Sys(id);
 			s.power = orig != null ? orig.power : CompanionMod.usualPower(id);
 			d.systems.put(id, s);
+			// Design Ship: a new system's room is ready, but only the four every ship needs are installed at the start (heromedel, 6.53)
+			if (designArt && !artLocked) {
+				if (STARTS_INSTALLED.contains(id)) d.notAtStart.remove(id);
+				else d.notAtStart.add(id);
+			}
 		}
 		s.room = room;
 		if (hasStation(id)) {
@@ -752,7 +791,7 @@ public class LayoutEditor {
 	// ---- clicks ----
 
 	private void pressed(MouseEvent e) {
-		int x = (int) (e.getX() / eff()), y = (int) (e.getY() / eff());
+		int x = unX(e), y = unY(e);
 		int gx = gridX(x), gy = gridY(y);
 		boolean right = SwingUtilities.isRightMouseButton(e);
 
@@ -942,14 +981,14 @@ public class LayoutEditor {
 			selected = null;
 			edited();
 			if (!hasArtilleryMount()) startArtilleryMount();
-			else host.say("Artillery (" + ArtilleryPicker.label(w) + ") added to room " + room + ".");
+			else host.say("Artillery (" + ArtilleryPicker.label(w) + ") added to room " + room + notInstalled("artillery"));
 			return;
 		}
 		if (selected != null && roomFree(room, selected)) {
 			Sys before = d.systems.get(selected);
 			int from = before == null ? -1 : before.room;
 			place(selected, room);
-			host.say(title(selected) + (from < 0 ? " added to room " + room + "." : " moved from room " + from + " to room " + room + ".")
+			host.say(title(selected) + (from < 0 ? " added to room " + room + notInstalled(selected) : " moved from room " + from + " to room " + room + ".")
 					+ (hasStation(selected) ? " Click a square to move its station." : ""));
 			offList.clearSelection();
 			edited();
@@ -973,7 +1012,7 @@ public class LayoutEditor {
 			scrollTo(panView.x - (p.x - panFrom.x), panView.y - (p.y - panFrom.y));
 			return;
 		}
-		int x = (int) (e.getX() / eff()), y = (int) (e.getY() / eff());
+		int x = unX(e), y = unY(e);
 		if (artDrag) {
 			d.artX = x - originX - artGrabX;
 			d.artY = y - originY - artGrabY;
@@ -1050,7 +1089,7 @@ public class LayoutEditor {
 				public void mouseWheelMoved(java.awt.event.MouseWheelEvent e) { LayoutEditor.this.wheel(e); }
 				public void mouseDragged(MouseEvent e) { LayoutEditor.this.dragged(e); }
 				public void mouseMoved(MouseEvent e) {
-					int x = (int) (e.getX() / eff()), y = (int) (e.getY() / eff());
+					int x = unX(e), y = unY(e);
 					if (sizeOf(roomTool) != null) {
 						int hx = gridX(x), hy = gridY(y);
 						if (hx != hoverX || hy != hoverY) { hoverX = hx; hoverY = hy; repaint(); }
@@ -1071,6 +1110,7 @@ public class LayoutEditor {
 			Graphics2D g = (Graphics2D) g0.create();
 			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g.translate(padX(), padY());
 			g.scale(eff(), eff());
 			if (designArt) {
 				if (baseImg != null) g.drawImage(baseImg, originX + d.artX, originY + d.artY, null);
@@ -1080,7 +1120,12 @@ public class LayoutEditor {
 				if (baseImg != null) g.drawImage(baseImg, originX + baseX, originY + baseY, null);
 				if (floorImg != null) g.drawImage(floorImg, originX + floorX, originY + floorY, null);
 			}
-			if (roomsEditable) {
+			if (roomsEditable && designArt && !artLocked) {
+				// a design's grid covers the whole canvas, so its middle is the anchor (heromedel, 6.53): the border is a whole number of squares
+				g.setColor(new Color(255, 255, 255, 22));
+				for (int x = 0; x <= baseW; x += SQ) g.drawLine(x, 0, x, baseH);
+				for (int y = 0; y <= baseH; y += SQ) g.drawLine(0, y, baseW, y);
+			} else if (roomsEditable) {
 				// the grid the rooms snap to
 				g.setColor(new Color(255, 255, 255, 22));
 				int c = gridCols(), rr = gridRows();
@@ -1103,10 +1148,28 @@ public class LayoutEditor {
 			if (designArt) paintArtExtras(g);
 			if (designArt && !artLocked) { // the anchor: the grid's middle is where FTL puts the ship (DesignExport.SHIP_X / SHIP_Y); a remodel keeps her own place
 				int cx = originX + cols * SQ / 2, cy = originY + rows * SQ / 2;
-				// FTL has no further left or up than offset 0: rooms in this strip sit at the strip's edge in the game
-				g.setColor(new Color(255, 120, 80, 42));
-				g.fillRect(originX, originY, homeplanet.parser.DesignExport.ORIGIN_COL * SQ, rows * SQ);
-				g.fillRect(originX, originY, cols * SQ, homeplanet.parser.DesignExport.ORIGIN_ROW * SQ);
+				// FTL has no further left or up than offset 0: everything past it is striped as a caution (heromedel, 6.53),
+				// and rooms in its inner edge sit at the edge in the game
+				int ex = originX + homeplanet.parser.DesignExport.ORIGIN_COL * SQ, ey = originY + homeplanet.parser.DesignExport.ORIGIN_ROW * SQ;
+				java.awt.geom.Area past = new java.awt.geom.Area(new Rectangle(0, 0, ex, baseH));
+				past.add(new java.awt.geom.Area(new Rectangle(0, 0, baseW, ey)));
+				java.awt.Shape clip = g.getClip();
+				g.clip(past);
+				g.setColor(new Color(255, 205, 40, 10));
+				g.fill(past);
+				g.setColor(new Color(255, 205, 40, 36));
+				g.setStroke(new BasicStroke(SQ / 3f));
+				for (int k = -baseH; k < baseW; k += SQ) g.drawLine(k, baseH, k + baseH, 0);
+				g.setClip(clip);
+				// what the stripes mean, on them above the grid (tested in FTL, 6.53: past the edge the game crashes, so the export moves her back)
+				String why = "Past the game's edge: a room placed here moves the whole ship right or down in the game.";
+				g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
+				int ww = g.getFontMetrics().stringWidth(why);
+				int wx = originX + cols * SQ / 2 - ww / 2, wy = originY - SQ / 2 + 5; // above the grid, clear of most hull art
+				g.setColor(new Color(0, 0, 0, 170));
+				g.fillRoundRect(wx - 10, wy - 16, ww + 20, 24, 8, 8);
+				g.setColor(new Color(255, 214, 90));
+				g.drawString(why, wx, wy);
 				g.setColor(new Color(90, 220, 255, 230));
 				g.setStroke(new BasicStroke(2f));
 				g.drawLine(cx - 9, cy, cx + 9, cy); g.drawLine(cx, cy - 9, cx, cy + 9);
@@ -1115,18 +1178,7 @@ public class LayoutEditor {
 				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
 				g.drawString("where FTL puts " + homeplanet.model.Words.herObj(), cx + 12, cy - 4);
 			}
-			// what to do first, written on the empty grid
-			String hint = roomsEditable && d.rooms.isEmpty() ? "Place " + homeplanet.model.Words.her() + " first room: Place 2 x 2, then click the grid. The cross is where FTL puts " + homeplanet.model.Words.herObj() + "."
-					: designArt && baseImg == null && !d.rooms.isEmpty() ? homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " needs hull art: the Art step, Import PNG or From the game." : null;
-			if (hint != null) {
-				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
-				int tw = g.getFontMetrics().stringWidth(hint);
-				int hx = originX + cols * SQ / 2 - tw / 2, hy = originY + (d.rooms.isEmpty() ? rows * SQ / 2 + 2 * SQ : -SQ / 2);
-				g.setColor(new Color(0, 0, 0, 150));
-				g.fillRoundRect(hx - 10, hy - 16, tw + 20, 24, 8, 8);
-				g.setColor(new Color(230, 236, 232));
-				g.drawString(hint, hx, hy);
-			}
+			// no messages on the grid (heromedel, 6.53): what to do next is the line under it ("No hull art yet." among the checks)
 			int[] size = sizeOf(roomTool);
 			if (size != null && hoverX != -1) {
 				boolean ok = d.fits(hoverX, hoverY, size[0], size[1], gridCols(), gridRows(), -1);
@@ -1164,10 +1216,12 @@ public class LayoutEditor {
 				// icon(s), centred (two bays: side by side)
 				int n = here.size();
 				for (int k = 0; k < n; k++) {
-					BufferedImage ic = icons.get(here.get(k));
+					// a design's system she doesn't start with: its room is ready, its icon greyed (heromedel, 6.53)
+					boolean waits = designArt && !artLocked && d.notAtStart.contains(here.get(k));
+					BufferedImage ic = waits ? greyIcon(here.get(k)) : icons.get(here.get(k));
 					int cx = rr.x + rr.width / 2 + (n == 2 ? (k == 0 ? -12 : 12) : 0), cy = rr.y + rr.height / 2;
 					if (ic != null) g.drawImage(ic, cx - ic.getWidth() / 2, cy - ic.getHeight() / 2, null);
-					else { g.setColor(Color.WHITE); g.drawString(here.get(k), cx - 10, cy); }
+					else { g.setColor(waits ? new Color(150, 150, 150) : Color.WHITE); g.drawString(here.get(k), cx - 10, cy); }
 				}
 			}
 		}

@@ -17,7 +17,7 @@ public class ConT { public static void main(String[] a) throws Exception {
  r = StationConsole.answer("/passtime 3");
  Setup.chk("A: a locked command stays hidden: unknown, nothing passes", r.text.startsWith("Unknown command") && r.days == 0);
  r = StationConsole.answer("  /ADMIN  dc   on ");
- String cfg = new String(SafeFiles.read(HomePlanet.propFile), "UTF-8");
+ String cfg = cfgText();
  Setup.chk("A: /admin dc on unlocks them for this run, never in the cfg, without listing them", StationConsole.devOn() && r.text.equals("Dev commands on.") && !cfg.contains("dev_commands"));
  Setup.chk("G: /admin girlpower is gone, even unlocked", StationConsole.answer("/admin girlpower").text.startsWith("Unknown command") && !StationConsole.answer("/admin ?").text.contains("girlpower"));
  Setup.chk("A: /admin ? lists them now, /admin points to it", StationConsole.answer("/admin ?").text.contains("/passtime") && StationConsole.answer("/admin").text.contains("/admin ?"));
@@ -50,6 +50,11 @@ public class ConT { public static void main(String[] a) throws Exception {
  Setup.chk("A: /admin dc off locks them again", !StationConsole.devOn() && StationConsole.answer("/admin ?").text.startsWith("Unknown command") && StationConsole.answer("/passtime 2").days == 0);
  Setup.done();
 }
+ /** The settings as written: beside the program (where things are) and in the saves folder (the station's own, 6.55). */
+ static String cfgText() throws IOException {
+  File st = HomePlanet.stationFile();
+  return new String(SafeFiles.read(HomePlanet.propFile), "UTF-8") + (st != null && st.isFile() ? new String(SafeFiles.read(st), "UTF-8") : "");
+ }
  /** A cfg from before 6.35 with dev commands left on: read at startup, they are locked and the line goes. */
  static void oldSwitch(File work) throws Exception {
   File was = HomePlanet.propFile, cfg = new File(work, "old.cfg");
@@ -64,7 +69,7 @@ public class ConT { public static void main(String[] a) throws Exception {
  static void girlPower(Vault v) throws Exception {
   SavedGameState before = Commission.build("PLAYER_SHIP_HARD", "Before", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(5));
   StationConsole.Reply r = StationConsole.answer("/easter girlpower");
-  String cfg = new String(SafeFiles.read(HomePlanet.propFile), "UTF-8");
+  String cfg = cfgText();
   Setup.chk("G: on: said, kept in the cfg as girlpower=true", StationConsole.girlPower() && r.text.startsWith("Girl power on") && cfg.contains("girlpower=true"));
   boolean women = true;
   for (String race : new String[] {"human", "engi", "mantis", "rock", "slug", "crystal", "energy", "anaerobic"})
@@ -78,7 +83,7 @@ public class ConT { public static void main(String[] a) throws Exception {
   String log = SpaceT.log(v);
   Setup.chk("G: logged as a settings change", log.contains("| SETTINGS |") && log.contains("girlpower=true"));
   r = StationConsole.answer("/easter girlpower");
-  cfg = new String(SafeFiles.read(HomePlanet.propFile), "UTF-8");
+  cfg = cfgText();
   boolean men = false; for (int i = 0; i < 10; i++) if (Commission.volunteer("human", new Random(i)).isMale()) men = true;
   boolean nonHumanMen = false; Random any = new Random(1); for (int i = 0; i < 20; i++) if (Commission.volunteer("engi", any).isMale()) nonHumanMen = true; // 6.33: with the name lists, aliens are men and women
   Setup.chk("G: again: off, the line gone from the cfg, crew rolled as before", !StationConsole.girlPower() && r.text.equals("Girl power off.") && !cfg.contains("girlpower") && men && nonHumanMen

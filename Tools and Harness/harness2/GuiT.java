@@ -45,6 +45,7 @@ public class GuiT {
   ransomPopUp(f);
   infirmaryBay(f);
   designSteps(f);
+  designDefaults(f);
   Setup.done();
   System.exit(0);
  }
@@ -97,6 +98,42 @@ public class GuiT {
   Setup.chk("Steps: the checks line says so, a note not a stop: " + r[4], String.valueOf(r[4]).contains("Past vanilla") && String.valueOf(r[4]).contains("nowhere to draw") && !String.valueOf(r[4]).contains("To fix"));
   Setup.chk("Steps: unticking a system's row takes it off the starting set", Boolean.TRUE.equals(r[6]));
   Setup.chk("Steps: the Art step comes to the front", "Art".equals(r[7]));
+ }
+ /** A new design (Plan AF, 6.53): a starter ship; a system placed on her not installed at the start, but for the four every ship needs. */
+ static void designDefaults(final MainFrame f) throws Exception {
+  final ShipDesign d = ShipDesign.create(ShipDesign.load()); d.name = "Defaults Test";
+  Setup.chk("AF: a new design is a starter ship", d.starter);
+  d.rooms.add(new ShipDesign.Room(6, 5, 2, 2)); d.rooms.add(new ShipDesign.Room(8, 5, 2, 2)); d.rooms.add(new ShipDesign.Room(10, 5, 2, 2));
+  new Thread(new Runnable() { public void run() { DesignDialog.open(f, d, new ArrayList<String>()); } }).start();
+  ShipEditorDialog dlg = null;
+  for (int i = 0; i < 100 && dlg == null; i++) { Thread.sleep(100); for (Window w : Window.getWindows()) if (w instanceof ShipEditorDialog && w.isShowing()) dlg = (ShipEditorDialog) w; }
+  Setup.chk("AF: Design Ship opens", dlg != null);
+  if (dlg == null) return;
+  final ShipEditorDialog ed = dlg;
+  final Object[] r = new Object[6];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   ShipDesign w = (ShipDesign) field(ed, ShipEditorDialog.class, "d"); // the editor works on a copy
+   LayoutEditor le = (LayoutEditor) field(ed, ShipEditorDialog.class, "editor");
+   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "shields", 0);
+   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "pilot", 1);
+   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "engines", 2);
+   r[0] = w.notAtStart.toString();
+   r[1] = call(le, LayoutEditor.class, "notInstalled", new Class<?>[] {String.class}, "shields") + "|" + call(le, LayoutEditor.class, "notInstalled", new Class<?>[] {String.class}, "pilot");
+   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "shields", 2); // moved: stays as it was
+   r[2] = w.notAtStart.contains("shields");
+   call(le, LayoutEditor.class, "edited", new Class<?>[0]);
+   ed.showStep("Loadout");
+   NumberRow sh = null, pi = null;
+   for (NumberRow n : rows(ed)) { if (n.name().equals("Shields")) sh = n; if (n.name().equals("Piloting")) pi = n; }
+   r[3] = sh != null && pi != null && !sh.tick().isSelected() && pi.tick().isSelected();
+   r[4] = w.starter;
+   ed.dispose();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("AF: Shields placed comes in not installed, Piloting and Engines installed: " + r[0], "[shields]".equals(r[0]));
+  Setup.chk("AF: the line says so for Shields and not for Piloting: " + r[1], String.valueOf(r[1]).startsWith(": not installed at the start") && String.valueOf(r[1]).endsWith("|."));
+  Setup.chk("AF: moving a placed system keeps its tick", Boolean.TRUE.equals(r[2]));
+  Setup.chk("AF: the Loadout step shows Shields unticked, Piloting ticked", Boolean.TRUE.equals(r[3]));
+  Setup.chk("AF: the editor's copy is a starter ship too", Boolean.TRUE.equals(r[4]));
  }
  static List<NumberRow> rows(java.awt.Container c) { List<NumberRow> out = new ArrayList<NumberRow>(); for (java.awt.Component x : c.getComponents()) { if (x instanceof NumberRow) out.add((NumberRow) x); if (x instanceof java.awt.Container) out.addAll(rows((java.awt.Container) x)); } return out; }
 

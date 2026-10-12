@@ -466,6 +466,7 @@ public class ShipDesign {
 		ShipDesign d = new ShipDesign();
 		d.id = "DESIGN_" + n;
 		d.made = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+		d.starter = true; // a new design is a starter ship unless the player unticks it (heromedel, 6.53: few found the box)
 		return d;
 	}
 	/** What the editors change (rooms, doors, systems, art, mounts, shield, gibs), as a string for spotting edits. Not the name or blueprint. */

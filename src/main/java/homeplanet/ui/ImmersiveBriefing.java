@@ -153,7 +153,7 @@ final class ImmersiveBriefing extends JDialog {
 				"Commander, 500: remodel your ships.",
 				"Captain, 1,000: a larger stipend.",
 				"Commodore, 2,500: design ships, overhaul deck plans, commission custom ships.",
-				"Admiral, 10,000: the Federation's artillery, and the largest stipend.",
+				"Admiral, 5,000: the Federation's artillery, and the largest stipend.",
 				"Each Federation Cruiser layout you unlock in FTL: +100 reputation.",
 				"The plans for the Rebel Flagship's weapons: earn Rule Ten: Greed is Eternal."));
 		p.add(section("Transmissions and the stipend", "An inbox on the Space Dock brings commission orders, promotions and a reward for each FTL achievement "
@@ -195,7 +195,8 @@ final class ImmersiveBriefing extends JDialog {
 		JPanel useRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		useRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 		useRow.setBorder(BorderFactory.createEmptyBorder(2, 16, 2, 0));
-		repUse.setSelectedIndex(Math.max(0, Math.min(2, HomePlanet.reputationUse - 1)));
+		// each career its own (6.55): one that has begun shows its choice, a new one starts on New Journeys and Pleads
+		repUse.setSelectedIndex(Math.max(0, Math.min(2, (begun ? HomePlanet.reputationUseOf(immersiveRoot, true) : 1) - 1)));
 		repUse.setToolTipText("Hover an option for what it does, or click the info icon");
 		RuleBoxes.explainOptions(repUse);
 		useRow.add(new JLabel("How Reputation Can be Used:  "));

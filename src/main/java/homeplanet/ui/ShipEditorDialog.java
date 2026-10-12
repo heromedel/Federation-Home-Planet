@@ -112,6 +112,7 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 			public void windowOpened(java.awt.event.WindowEvent e) {
 				String was = status.getText();
 				if (!d.rooms.isEmpty() || !d.art.isEmpty()) editor.fitView();
+				else editor.showAnchor(); // a new design: the cross in the middle (heromedel, 6.53)
 				status.setText(was); // the opening message, not "Zoom n%"
 			}
 			public void windowClosing(java.awt.event.WindowEvent e) { closeGuarded(); }
@@ -211,12 +212,14 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 		sb.append("<h3>Doors</h3><p><b>Add door</b>, then click walls: between two rooms for a door, on an outer wall for an airlock. "
 				+ "Click a door, then a wall, to move it; right-click or Delete removes it. Esc stops.</p>");
 		if (art) sb.append("<h3>Art</h3><p><b>Move art</b> drags the hull picture over the rooms (arrow keys nudge it a pixel; Shift: ten). The cyan cross in the grid's middle is where FTL puts " + homeplanet.model.Words.herObj() + ": "
-				+ "the rooms and the art sit in the game as they sit round it here, and nothing moves anything else. The faint strip at the top and left is past the game's edge: rooms there sit at its edge in the game. "
+				+ "the rooms and the art sit in the game as they sit round it here, and nothing moves anything else. The yellow stripes at the top and left are past the game's edge: rooms there sit at its edge in the game. "
 				+ "<b>Weapon mounts</b>: click the hull to place a mount, drag to move it, right-click to remove it. R turns the selected mount and S changes which way its weapon slides; the wheel turns it too. "
 				+ "FTL draws weapon slot n on mount n, so give " + homeplanet.model.Words.herObj() + " as many mounts as slots. Alt + middle-drag moves the art whatever tool is on.</p>");
 		if (loadout) sb.append("<h3>Loadout</h3><p>Who " + homeplanet.model.Words.she() + " is, " + homeplanet.model.Words.her() + " numbers, " + homeplanet.model.Words.her() + " starting crew, what " + homeplanet.model.Words.she() + " carries and which systems are installed at the start. "
 				+ "Each number shows " + homeplanet.model.Words.her() + " own over the vanilla max (the most any of the game's ships has) with a bar to that ceiling; type what you like, the bar turns amber past it. "
-				+ "Past the vanilla numbers FTL still takes " + homeplanet.model.Words.herObj() + ", but its bars and upgrade screen are drawn for the vanilla ones.</p>");
+				+ "Past the vanilla numbers FTL still takes " + homeplanet.model.Words.herObj() + ", but its bars and upgrade screen are drawn for the vanilla ones. "
+				+ "A greyed icon on the grid is a system " + homeplanet.model.Words.she() + " doesn't start with: its room is ready, and its tick here installs it. "
+				+ "A system placed on a new design comes in unticked, but for Piloting, Oxygen, Engines and Weapon Control.</p>");
 		sb.append("<h3>Keys</h3><p>Ctrl+Z and Ctrl+Y undo and redo. Esc deselects. Delete removes the selected door, mount or room. Ctrl+S " + primaryVerb() + ". F1 opens this help.</p>");
 		sb.append("<h3>View</h3><p>The wheel zooms (Ctrl+plus, Ctrl+minus); middle-drag moves the view; Shift+wheel scrolls; Ctrl+0 (or Fit) shows the whole ship.</p>");
 		sb.append("<h3>Checks</h3><p>The line under the editor says what would stop " + homeplanet.model.Words.herObj() + " working (<i>To fix</i>) and what's worth knowing (<i>Note</i>); it updates as you edit."
@@ -259,6 +262,7 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 		if (artPanel != null) artPanel.refreshArtControls();
 		if (loadoutPanel != null) loadoutPanel.systemsChanged();
 		refreshChecks();
+		editor.repaint(); // a system ticked on the Loadout step: its icon on the grid brightens or greys (6.53)
 	}
 	/** The checks for this window's kind of editing. */
 	protected abstract ShipChecks.Report check();
