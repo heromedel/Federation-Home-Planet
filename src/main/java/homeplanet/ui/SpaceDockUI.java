@@ -380,6 +380,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			if (r != null) {
 				askingRecords = true;
 				javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askRecords(r); } });
+			} else {
+				final homeplanet.vault.Reputation.Correction c = homeplanet.vault.Reputation.correct(vault); // a re-evaluation before 6.54, put right once
+				if (c != null) javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { tellCorrected(c); } });
 			}
 		}
 		if (!askingFound && !vault.found().isEmpty()) { // saves and ships found as the fleet opened, waiting on the player's word (6.10)
@@ -621,6 +624,14 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} finally {
 			askingRate = false;
 		}
+	}
+
+	/** heromedel, 6.54: an earlier re-evaluation rated each ship at the difficulty she flies now; corrected once, and said so. */
+	private void tellCorrected(homeplanet.vault.Reputation.Correction c) {
+		JOptionPane.showMessageDialog(null, "The Federation Home Planet has corrected its records.\nYour earlier reevaluation counted what your ships earned at the difficulty they fly now,\n"
+				+ "not the difficulty they flew when they earned it.\n\nWas: " + c.was + "\nNow: " + c.now + "\n\nEverything earned since the reevaluation is kept.",
+				"Reputation", JOptionPane.INFORMATION_MESSAGE);
+		init();
 	}
 
 	private boolean askingRecords = false, recordsPutOff = false;
