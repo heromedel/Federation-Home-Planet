@@ -51,7 +51,7 @@ the ship's reactor will go round in FTL before taking her out. It is a simulatio
   pixels, a faded copy follows the mouse from where it was grabbed (over the whole window), the slot under the mouse
   stays bare and the others close up round it; let go over the box, it takes that place, its power with it and the
   number keys following; let go outside, it goes back. A press without moving is still a click. No sound (FTL has none
-  for it). The hover adds "Hotkey: n" and FTL's "Click and drag to rearrange". The new order is her save's (FTL's slots
+  for it). The hover adds FTL's "Click and drag to rearrange" (6.50: not FTL's "Hotkey: n", heromedel: the station has none). The new order is her save's (FTL's slots
   are her weapon and drone lists' order): kept by the Cargo Bay's Save, undone by its Reset, one "Weapons rearranged"
   line in the Refit's changes. PowerT and GuiT check it.
 

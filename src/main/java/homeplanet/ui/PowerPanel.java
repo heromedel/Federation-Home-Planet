@@ -502,9 +502,8 @@ final class PowerPanel extends JComponent {
 			return b.toString();
 		}
 		Slot sl = (Slot) o;
-		int key = weaponSlots.contains(sl) ? weaponSlots.indexOf(sl) + 1 : weaponSlotCount + droneSlots.indexOf(sl) + 1;
 		return sl.name + "\nPower: " + sl.power + "\n\n" + (sl.on ? "Click to depower" : "Click to power")
-				+ "\n\nHotkey: " + key + "\n" + word("rearrange", "Click and drag to rearrange"); // FTL's own words, as its slots say
+				+ "\n" + word("rearrange", "Click and drag to rearrange"); // FTL's own words; not its hotkey, which the station hasn't (6.50, heromedel)
 	}
 	private static String word(String id, String fallback) { String t = SystemsPanel.ftlText(id); return t == null ? fallback : t; }
 

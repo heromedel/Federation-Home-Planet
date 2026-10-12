@@ -138,7 +138,7 @@ public class PowerT { public static void main(String[] a) throws Exception {
  mouse(pc2, java.awt.event.MouseEvent.MOUSE_DRAGGED, rb.x + 40, rb.y - 80);
  mouse(pc2, java.awt.event.MouseEvent.MOUSE_RELEASED, rb.x + 40, rb.y - 80);
  Setup.chk("O: let go outside the box: it goes back, nothing told", ws.get(0) == bur && ws.get(2) == art && told[0] == -1);
- Setup.chk("O: the hover gives its hotkey and FTL's words for dragging", String.valueOf(call(p, "tip", new Class<?>[] {Object.class}, art)).contains("Hotkey: 3") && String.valueOf(call(p, "tip", new Class<?>[] {Object.class}, art)).contains("drag to rearrange"));
+ Setup.chk("O: the hover gives FTL's words for dragging, and no hotkey (the station has none)", !String.valueOf(call(p, "tip", new Class<?>[] {Object.class}, art)).contains("Hotkey") && String.valueOf(call(p, "tip", new Class<?>[] {Object.class}, art)).contains("drag to rearrange"));
 
  // it draws, at the tab's width and at FTL's
  for (int w : new int[] {1248, 640}) {
