@@ -105,6 +105,41 @@ public class PowerT { public static void main(String[] a) throws Exception {
  click(p, battery, false); call(p, "reset", new Class<?>[0]);
  Setup.chk("N: Reset ends the Battery too", (Long) field(p, "batteryUntil") == 0 && left(p) == saveLeft);
 
+ // dragging a weapon to another slot (6.49, as FTL): the others close up, power goes with it, the Refit is told
+ call(p, "reset", new Class<?>[0]);
+ ((JComponent) p).setSize(1248, 160);
+ java.awt.image.BufferedImage pi = new java.awt.image.BufferedImage(1248, 160, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+ java.awt.Graphics2D pg = pi.createGraphics(); ((JComponent) p).paint(pg); pg.dispose();
+ List<?> ws = (List<?>) field(p, "weaponSlots");
+ Object art = ws.get(0), bur = ws.get(1), hev = ws.get(2), ionb = ws.get(3);
+ click(p, art, false);
+ final int[] told = {-1, -1, -1};
+ Class<?> ri = Class.forName("homeplanet.ui.PowerPanel$Reorder");
+ Object listener = java.lang.reflect.Proxy.newProxyInstance(ri.getClassLoader(), new Class<?>[] {ri}, new java.lang.reflect.InvocationHandler() {
+  public Object invoke(Object o, Method m, Object[] args) { told[0] = (Boolean) args[0] ? 1 : 0; told[1] = (Integer) args[1]; told[2] = (Integer) args[2]; return null; } });
+ call(p, "onReorder", new Class<?>[] {ri}, listener);
+ java.awt.Rectangle ra = (java.awt.Rectangle) call(p, "rectOf", new Class<?>[] {Object.class}, art), rh = (java.awt.Rectangle) call(p, "rectOf", new Class<?>[] {Object.class}, hev);
+ JComponent pc2 = (JComponent) p;
+ mouse(pc2, java.awt.event.MouseEvent.MOUSE_PRESSED, ra.x + 40, ra.y + 15);
+ mouse(pc2, java.awt.event.MouseEvent.MOUSE_DRAGGED, ra.x + 60, ra.y + 15);
+ Setup.chk("O: while held, the slot under the mouse opens and the others close up (" + call(p, "dropIndex", new Class<?>[] {int.class, int.class}, ra.x + 60, ra.y + 15) + ")", (Integer) call(p, "dropIndex", new Class<?>[] {int.class, int.class}, rh.x + 10, rh.y + 10) == 2);
+ mouse(pc2, java.awt.event.MouseEvent.MOUSE_DRAGGED, rh.x + 40, rh.y + 15);
+ mouse(pc2, java.awt.event.MouseEvent.MOUSE_RELEASED, rh.x + 40, rh.y + 15);
+ Setup.chk("O: Artemis dragged to the third slot: Burst, Heavy, Artemis, Ion", ws.get(0) == bur && ws.get(1) == hev && ws.get(2) == art && ws.get(3) == ionb);
+ Setup.chk("O: its power went with it, and the Refit was told (weapons, 0 to 2)", on(art) && power(field(p, "weapons")) == 1 && told[0] == 0 && told[1] == 0 && told[2] == 2);
+ pg = pi.createGraphics(); ((JComponent) p).paint(pg); pg.dispose();
+ java.awt.Rectangle rb = (java.awt.Rectangle) call(p, "rectOf", new Class<?>[] {Object.class}, bur);
+ mouse(pc2, java.awt.event.MouseEvent.MOUSE_PRESSED, rb.x + 40, rb.y + 15);
+ mouse(pc2, java.awt.event.MouseEvent.MOUSE_DRAGGED, rb.x + 41, rb.y + 16);
+ mouse(pc2, java.awt.event.MouseEvent.MOUSE_RELEASED, rb.x + 41, rb.y + 16);
+ Setup.chk("O: pressed without moving off it: a click (Burst Laser II on), the order as it was", on(bur) && ws.get(0) == bur && ws.get(2) == art);
+ told[0] = -1;
+ mouse(pc2, java.awt.event.MouseEvent.MOUSE_PRESSED, rb.x + 40, rb.y + 15);
+ mouse(pc2, java.awt.event.MouseEvent.MOUSE_DRAGGED, rb.x + 40, rb.y - 80);
+ mouse(pc2, java.awt.event.MouseEvent.MOUSE_RELEASED, rb.x + 40, rb.y - 80);
+ Setup.chk("O: let go outside the box: it goes back, nothing told", ws.get(0) == bur && ws.get(2) == art && told[0] == -1);
+ Setup.chk("O: the hover gives FTL's words for dragging, and no hotkey (the station has none)", !String.valueOf(call(p, "tip", new Class<?>[] {Object.class}, art)).contains("Hotkey") && String.valueOf(call(p, "tip", new Class<?>[] {Object.class}, art)).contains("drag to rearrange"));
+
  // it draws, at the tab's width and at FTL's
  for (int w : new int[] {1248, 640}) {
   ((JComponent) p).setSize(w, 160);
@@ -120,6 +155,10 @@ public class PowerT { public static void main(String[] a) throws Exception {
  static boolean on(Object slot) throws Exception { return (Boolean) field(slot, "on"); }
  static int left(Object p) throws Exception { return (Integer) call(p, "left", new Class<?>[0]); }
  static void click(Object p, Object what, boolean right) throws Exception { call(p, "click", new Class<?>[] {Object.class, boolean.class}, what, right); }
+ static void mouse(JComponent c, int id, int x, int y) {
+  int mods = id == java.awt.event.MouseEvent.MOUSE_DRAGGED || id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0;
+  c.dispatchEvent(new java.awt.event.MouseEvent(c, id, System.currentTimeMillis(), mods, x, y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+ }
  static Object field(Object o, String name) throws Exception { Field f = o.getClass().getDeclaredField(name); f.setAccessible(true); return f.get(o); }
  static Object call(Object o, String name, Class<?>[] types, Object... args) throws Exception { Method m = o.getClass().getDeclaredMethod(name, types); m.setAccessible(true); return m.invoke(o, args); }
 }

@@ -76,12 +76,126 @@ final class PowerPanel extends JComponent {
 	/** Where each thing was drawn, for the mouse. */
 	private final List<Object[]> hits = new ArrayList<Object[]>();
 
+	/**
+	 * A weapon or drone dragged to another slot (6.49, as FTL does it): pressed on, it waits to see whether it's a click
+	 * or a drag; once it moves, a faded copy follows the mouse from where it was grabbed, the slot under the mouse opens
+	 * and the others slide round it; let go over the box, it takes that place (outside it, it goes back).
+	 */
+	private Slot pressed, dragging;
+	private List<Slot> dragList;
+	private int dragFrom, pressX, pressY, grabX, grabY, mouseX, mouseY;
+	/** The weapons' and the drones' rows of slots, as last drawn. */
+	private java.awt.Rectangle weaponRow, droneRow;
+	/** Told when a drag puts a weapon or drone in a new place: the Refit keeps it in her save (the simulation's power isn't). */
+	interface Reorder { void moved(boolean drones, int from, int to); }
+	private Reorder onReorder;
+	void onReorder(Reorder r) { onReorder = r; }
+	private static final int DRAG_START = 4;
+
 	PowerPanel() {
 		setOpaque(false);
 		setToolTipText(""); // tips come from getToolTipText(MouseEvent)
-		addMouseListener(new java.awt.event.MouseAdapter() {
-			@Override public void mousePressed(java.awt.event.MouseEvent e) { click(at(e.getX(), e.getY()), javax.swing.SwingUtilities.isRightMouseButton(e)); }
-		});
+		java.awt.event.MouseAdapter mouse = new java.awt.event.MouseAdapter() {
+			@Override public void mousePressed(java.awt.event.MouseEvent e) {
+				Object o = at(e.getX(), e.getY());
+				boolean right = javax.swing.SwingUtilities.isRightMouseButton(e);
+				if (o instanceof Slot && !right) { // a click or the start of a drag: told apart once it moves
+					pressed = (Slot) o; pressX = e.getX(); pressY = e.getY();
+					java.awt.Rectangle r = rectOf(o);
+					grabX = r == null ? 0 : e.getX() - r.x; grabY = r == null ? 0 : e.getY() - r.y;
+					return;
+				}
+				click(o, right);
+			}
+			@Override public void mouseDragged(java.awt.event.MouseEvent e) {
+				if (pressed == null) return;
+				mouseX = e.getX(); mouseY = e.getY();
+				if (dragging == null && Math.abs(mouseX - pressX) + Math.abs(mouseY - pressY) >= DRAG_START) startDrag(pressed);
+				if (dragging != null) { floatCopy(); repaint(); }
+			}
+			@Override public void mouseReleased(java.awt.event.MouseEvent e) {
+				if (pressed == null) return;
+				Slot s = pressed;
+				pressed = null;
+				if (dragging == null) { click(s, false); return; } // it never moved: a click
+				mouseX = e.getX(); mouseY = e.getY();
+				drop();
+			}
+		};
+		addMouseListener(mouse);
+		addMouseMotionListener(mouse);
+	}
+	private void startDrag(Slot s) {
+		dragList = weaponSlots.contains(s) ? weaponSlots : droneSlots;
+		dragFrom = dragList.indexOf(s);
+		dragging = dragFrom < 0 ? null : s;
+		if (dragging != null) floating = null;
+	}
+	/** The faded copy, on the window's drag layer, so it follows the mouse over the rest of the Refit as FTL's does. */
+	private javax.swing.JComponent floating;
+	private boolean floatCopy() {
+		javax.swing.JRootPane root = javax.swing.SwingUtilities.getRootPane(this);
+		if (root == null || dragging == null) return false;
+		if (floating == null) {
+			final BufferedImage img = new BufferedImage(SLOT_W, SLOT_H, BufferedImage.TYPE_INT_ARGB);
+			Graphics2D ig = img.createGraphics();
+			int hitsWere = hits.size();
+			Integer centreWas = centreX.get(dragging);
+			paintSlot(ig, 0, 0, dragging, (dragList == weaponSlots ? 1 : weaponSlotCount + 1) + dragFrom);
+			while (hits.size() > hitsWere) hits.remove(hits.size() - 1); // the copy isn't a place to click
+			if (centreWas != null) centreX.put(dragging, centreWas);
+			ig.dispose();
+			floating = new javax.swing.JComponent() {
+				@Override protected void paintComponent(Graphics g0) {
+					Graphics2D f = (Graphics2D) g0.create();
+					f.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.55f));
+					f.drawImage(img, 0, 0, null);
+					f.dispose();
+				}
+			};
+			root.getLayeredPane().add(floating, javax.swing.JLayeredPane.DRAG_LAYER);
+		}
+		java.awt.Point at = javax.swing.SwingUtilities.convertPoint(this, mouseX - grabX, mouseY - grabY, root.getLayeredPane());
+		floating.setBounds(at.x, at.y, SLOT_W, SLOT_H);
+		floating.repaint();
+		return true;
+	}
+	private void unfloat() {
+		if (floating == null) return;
+		java.awt.Container c = floating.getParent();
+		if (c != null) { java.awt.Rectangle b = floating.getBounds(); c.remove(floating); c.repaint(b.x, b.y, b.width, b.height); }
+		floating = null;
+	}
+	/** The slot the dragged one would take with the mouse here, or -1 outside its box (it goes back). */
+	int dropIndex(int x, int y) {
+		java.awt.Rectangle row = dragList == weaponSlots ? weaponRow : droneRow;
+		if (row == null || x < row.x - SLOT_PITCH / 2 || x > row.x + row.width + SLOT_PITCH / 2 || y < row.y - 24 || y > row.y + row.height + 24) return -1;
+		return Math.max(0, Math.min(dragList.size() - 1, (x - row.x) / SLOT_PITCH));
+	}
+	/** Let go: the dragged weapon or drone takes the slot under the mouse, the others closing up round it. */
+	private void drop() {
+		int to = dropIndex(mouseX, mouseY);
+		Slot s = dragging;
+		dragging = null;
+		unfloat();
+		if (to >= 0 && to != dragFrom) {
+			dragList.remove(dragFrom);
+			dragList.add(to, s);
+			if (onReorder != null) onReorder.moved(dragList == droneSlots, dragFrom, to);
+		}
+		repaint();
+	}
+	/** For tests: a drag of this slot to that one, as the mouse would do it. */
+	void drag(Slot s, int to) {
+		startDrag(s);
+		if (dragging == null) return;
+		java.awt.Rectangle row = dragList == weaponSlots ? weaponRow : droneRow;
+		mouseX = row.x + to * SLOT_PITCH + SLOT_W / 2; mouseY = row.y + SLOT_H / 2;
+		drop();
+	}
+	private java.awt.Rectangle rectOf(Object o) {
+		for (int i = hits.size() - 1; i >= 0; i--) if (hits.get(i)[1] == o) return (java.awt.Rectangle) hits.get(i)[0];
+		return null;
 	}
 
 	/** Takes the ship as her save has her: her reactor, her systems' power and damage, which weapons and drones are on. */
@@ -388,7 +502,8 @@ final class PowerPanel extends JComponent {
 			return b.toString();
 		}
 		Slot sl = (Slot) o;
-		return sl.name + "\nPower: " + sl.power + "\n\n" + (sl.on ? "Click to depower" : "Click to power");
+		return sl.name + "\nPower: " + sl.power + "\n\n" + (sl.on ? "Click to depower" : "Click to power")
+				+ "\n" + word("rearrange", "Click and drag to rearrange"); // FTL's own words; not its hotkey, which the station hasn't (6.50, heromedel)
 	}
 	private static String word(String id, String fallback) { String t = SystemsPanel.ftlText(id); return t == null ? fallback : t; }
 
@@ -487,6 +602,16 @@ final class PowerPanel extends JComponent {
 			paintBox(g, l.dronesBoxX, l.baseline2, droneSlots, droneSlotCount, "DRONES", weaponSlotCount + 1);
 		}
 		if (l.subX > 0) paintSubsystems(g, l.subX, l.baseline1);
+		if (dragging != null && floating == null) { // the one being dragged, faded, where the mouse holds it (FTL's look); here only without a window to float it over
+			Graphics2D f = (Graphics2D) g.create();
+			f.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.55f));
+			int hitsWere = hits.size();
+			Integer centreWas = centreX.get(dragging);
+			paintSlot(f, mouseX - grabX, mouseY - grabY, dragging, (dragList == weaponSlots ? 1 : weaponSlotCount + 1) + dragFrom);
+			while (hits.size() > hitsWere) hits.remove(hits.size() - 1); // the copy isn't a place to click
+			if (centreWas != null) centreX.put(dragging, centreWas);
+			f.dispose();
+		}
 		if (warning != null && System.currentTimeMillis() < warningUntil) { // FTL's warning, over the panel where it was refused
 			String[] lines = warning.split("\n");
 			int wx = warningAtReactor ? l.reactorX + REACTOR_W + HATCH_W + 8 : warningX, wy = 4;
@@ -654,7 +779,18 @@ final class PowerPanel extends JComponent {
 		int w = boxWidth(count);
 		if (frame != null && Math.max(2, Math.min(4, count)) == count) g.drawImage(frame, x - 9, top - 9, null);
 		else { g.setColor(new Color(243, 255, 230, 40)); g.fillRect(x, top, w, 48); g.setColor(CREAM); g.setStroke(new BasicStroke(2f)); g.drawRect(x, top, w, 48); }
-		for (int i = 0; i < count; i++) paintSlot(g, x + 5 + i * SLOT_PITCH, top + 6, i < slots.size() ? slots.get(i) : null, firstKey + i);
+		java.awt.Rectangle row = new java.awt.Rectangle(x + 5, top + 6, count * SLOT_PITCH, SLOT_H);
+		if (slots == weaponSlots) weaponRow = row; else droneRow = row;
+		List<Slot> shown = slots;
+		int gap = -1;
+		if (dragging != null && slots == dragList) { // the others close up round an open slot, left bare as FTL leaves it: under the mouse, or its own outside the box
+			shown = new ArrayList<Slot>(slots);
+			shown.remove(dragging);
+			gap = dropIndex(mouseX, mouseY);
+			if (gap < 0) gap = dragFrom;
+			shown.add(gap, null);
+		}
+		for (int i = 0; i < count; i++) if (i != gap) paintSlot(g, x + 5 + i * SLOT_PITCH, top + 6, i < shown.size() ? shown.get(i) : null, firstKey + i);
 		// the tab: cream, the name in FTL's dark slate, its right end slanted
 		int tw = FtlFont.TAB.width(tab) + 30, ty = top + 48;
 		java.awt.Polygon p = new java.awt.Polygon(new int[] {x, x + tw, x + tw - 24, x}, new int[] {ty, ty, ty + 24, ty + 24}, 4);
