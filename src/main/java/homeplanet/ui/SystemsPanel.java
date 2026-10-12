@@ -166,6 +166,7 @@ public class SystemsPanel {
 		panel.add(ph);
 		power.setBounds(16, CargoBayUI.H - 52 - 26 - 4 - POWER_H + 24, 1248, POWER_H - 24);
 		panel.add(power);
+		power.onReorder(new PowerPanel.Reorder() { public void moved(boolean drones, int from, int to) { rearranged(drones, from, to); } });
 		FtlButton powerReset = new FtlButton("Reset", FtlFont.CARGO, 70, 22);
 		powerReset.setToolTipText("Put the power back as " + homeplanet.model.Words.her() + " save has it (the simulation saves nothing)");
 		powerReset.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { power.reset(); } });
@@ -1110,6 +1111,32 @@ public class SystemsPanel {
 		changed();
 		JOptionPane.showMessageDialog(bay, (undo ? name + " will return to " + homeplanet.model.Words.her() + " original ship model." : name + " will be retrofitted: any of " + homeplanet.model.Words.her() + " systems can be stored.")
 				+ "\nPress Save to make it official.", undo ? "Undo Retrofit" : "Retrofit", JOptionPane.INFORMATION_MESSAGE);
+	}
+
+	/**
+	 * A weapon or drone dragged to another slot in the simulation (6.49): her save takes the new order (FTL's slots are
+	 * her list's order), kept by Save and undone by Reset; one line in the changes says how they stand now.
+	 */
+	private void rearranged(boolean drones, int from, int to) {
+		if (bay.currentSave == null) return;
+		net.blerf.ftl.parser.SavedGameParser.ShipState ship = bay.currentSave.getPlayerShip();
+		List<String> names = new ArrayList<String>();
+		if (drones) {
+			List<net.blerf.ftl.parser.SavedGameParser.DroneState> l = ship.getDroneList();
+			if (from >= l.size() || to >= l.size()) return;
+			l.add(to, l.remove(from));
+			for (net.blerf.ftl.parser.SavedGameParser.DroneState d : l) names.add(homeplanet.model.Items.title(d.getDroneId()));
+		} else {
+			List<net.blerf.ftl.parser.SavedGameParser.WeaponState> l = ship.getWeaponList();
+			if (from >= l.size() || to >= l.size()) return;
+			l.add(to, l.remove(from));
+			for (net.blerf.ftl.parser.SavedGameParser.WeaponState w : l) names.add(homeplanet.model.Items.title(w.getWeaponId()));
+		}
+		String head = drones ? "Drones rearranged: " : "Weapons rearranged: ";
+		for (java.util.Iterator<String> it = changes.iterator(); it.hasNext();) if (it.next().startsWith(head)) it.remove();
+		changes.add(head + String.join(", ", names) + " (on " + bay.currentSave.getPlayerShipName() + ")");
+		bay.markDirty(); // not a refresh: the simulation's power stays as the player left it
+		bay.refreshTrade(); // the Trade tab lists her weapons and drones in slot order
 	}
 
 	private void changed() {

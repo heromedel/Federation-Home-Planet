@@ -31,6 +31,7 @@ public class GuiT {
   bill(v, f, true);
   shipPays(v, f);
   shopPays(v, f);
+  rearrange(v, f);
   systemLimit(v, f);
   auction(v, f);
   junkyardInfo(v, f);
@@ -175,6 +176,34 @@ public class GuiT {
   Setup.chk("S: Save takes it from her (14 left, hull 30), the Cargo Hold untouched (100)", Boolean.TRUE.equals(r[2]) && Integer.valueOf(14).equals(r[3]) && Integer.valueOf(30).equals(r[4]) && Integer.valueOf(100).equals(r[5]));
   Setup.chk("S: switched back, the cfg line goes (the Cargo Hold is the default)", HomePlanet.config.getProperty("refit_pays") == null);
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { f.showSpaceDock(); } catch (Exception e) { throw new RuntimeException(e); } } });
+ }
+
+ /** Weapons dragged to other slots in the Refit's simulation (6.49): her save takes the new order on Save; Reset puts back what was saved. */
+ static void rearrange(final Vault v, final MainFrame f) throws Exception {
+  SavedGameParser.SavedGameState g = v.readCopy(v.boarded()).save;
+  ShipState s = g.getPlayerShip();
+  while (s.getWeaponList().size() < 2) s.getWeaponList().add(SaveHelper.newIdleWeapon(s.getWeaponList().isEmpty() ? "LASER_BURST_2" : "MISSILES_1"));
+  v.write(v.boarded(), g);
+  final String first = s.getWeaponList().get(0).getWeaponId(), second = s.getWeaponList().get(1).getWeaponId();
+  final Object[] r = new Object[6];
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   f.showCargoBay();
+   CargoBayUI bay = (CargoBayUI) field(f, MainFrame.class, "cargoBay");
+   bay.init();
+   Object sys = field(bay, CargoBayUI.class, "systems");
+   call(sys, sys.getClass(), "rearranged", new Class<?>[] {boolean.class, int.class, int.class}, false, 0, 1);
+   r[0] = mine(bay).getWeaponList().get(0).getWeaponId();
+   r[1] = String.valueOf(field(sys, sys.getClass(), "changes"));
+   r[2] = bay.saveAll();
+   call(sys, sys.getClass(), "rearranged", new Class<?>[] {boolean.class, int.class, int.class}, false, 0, 1); // back again, then Reset
+   bay.init();
+   r[3] = mine(bay).getWeaponList().get(0).getWeaponId();
+   f.showSpaceDock();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  SavedGameParser.SavedGameState after = v.readCopy(v.boarded()).save;
+  Setup.chk("W: a weapon dragged to the second slot: her list in the new order, one line in the changes", second.equals(r[0]) && String.valueOf(r[1]).contains("Weapons rearranged: "));
+  Setup.chk("W: Save writes the new order into her save", Boolean.TRUE.equals(r[2]) && second.equals(after.getPlayerShip().getWeaponList().get(0).getWeaponId()) && first.equals(after.getPlayerShip().getWeaponList().get(1).getWeaponId()));
+  Setup.chk("W: dragged again, then Reset: the order as saved", second.equals(r[3]));
  }
 
  /**
