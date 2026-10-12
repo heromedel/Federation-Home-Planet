@@ -115,9 +115,9 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `SHIP_FILES` | `what` (`folded`), `ships` (how many), `files` (how many), `ship.n` (each: her folder `>` the sections her side files became, `+` between) (5.98) | "Each ship's notes were filed with her record." |
 | `LAYOUT` | `what` (`converted`), `to` (`folders`; `6.0` before 5.991), `ships`, `remembered` (ships that had left, now in the memorial), `backup` (the zip beside the fleet's folder) | "The station's records were rearranged: 4 ships and 1 remembered into folders of their own (a copy of the fleet as it was is kept beside it)" |
 | `FINAL_BATTLE` | ship, `copy`, `sector`, `victories_then`, `scores_then` | "Kestrel: the Rebel Flagship is on her way to the last battle. ..." |
-| `VICTORY` | ship, `what` (`rescued`), or from FinalVictory: `victories_then`, `victories_now`, `top_scores`, `after` (the choice), `value` | "Kestrel won the last battle (...)" |
-| `MUSEUM` | ship, `scrap`, `to` | "Kestrel is honoured in the Federation Museum" |
-| `REWARD` | ship, `scrap`, `to` | "120 scrap to the Cargo Hold for the Kestrel" |
+| `VICTORY` | ship, `what` (`rescued`), or from FinalVictory: `victories_then`, `victories_now`, `top_scores`, `after` (the choice: `rescue` is Choice, `museum`; `reward` before 6.47), `museum_pay` (`full`, `half`, `none`; 6.47), `museum_price`, `value` | "Kestrel won the last battle (...)" |
+| `MUSEUM` | ship, `scrap` (0 with the reward None), `pay` (`full`, `half`, `none`; 6.47), `to` | "Kestrel is honoured in the Federation Museum" |
+| `REWARD` | ship, `scrap`, `to` (before 6.47: the reward of her value, now the museum at full value) | "120 scrap to the Cargo Hold for the Kestrel" |
 | `SENT_TO_SANDBOX` | ship, `from`, `to`, `career` (6.10: Destroy in a career, the other way: on to Sandbox Mode's Junkyard) | "Kestrel  junkyard/Kestrel.a3f2 -> Sandbox Mode's Junkyard" |
 | `SENT_AWAY` | ship, `to_commander`, `to` | "Kestrel (a3f2) to Vance's fleet, over Long Range Comm." |
 | `RECEIVED` | ship, `from_commander`, `trade`, `to` | "Kestrel (a3f2) from Vance's fleet, over Long Range Comm.: docked" |

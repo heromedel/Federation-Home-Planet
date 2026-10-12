@@ -88,7 +88,8 @@ Save Ship from vanishing on Victory: Options to have your ship, (saved just at t
   Cargo Hold or answered for with your reputation; the Relief Ship Type A is always on offer.
 - **House rules** (Settings): trading and New Journey only at a store beacon, commissioning that costs scrap, locked
   ships that can't be commissioned, selling supplies and systems, a free commission for each ship you unlock, and
-  what happens after a final victory (rescue the ship, a reward of her value, or nothing).
+  what happens after a final victory (Nothing, Choice: keep the ship or send her to the museum, or Museum) and the
+  museum's reward (full value, half, or none).
 - **Immersive Mode:** four careers (Easy, Normal, Hard, and Custom, which sets each rule's level), each with its own
   fleet and FTL profile. The Federation Home Planet's rules are locked, your reputation lifts you through the ranks
   (Colonel, Commander, Captain, Commodore, Admiral), and the inbox brings commission orders, promotions, achievement

@@ -66,6 +66,7 @@
 	<entry kind="FINAL_BATTLE">The {ship_name} is on {her} way to the final battle with the Rebel Flagship. A copy of {her_obj} is kept.</entry>
 	<entry kind="VICTORY" when="what=rescued">The {ship_name} was brought home after the final battle, ready for a new journey.</entry>
 	<entry kind="VICTORY">The {ship_name} drove the Rebel Flagship off.</entry>
+	<entry kind="MUSEUM" when="pay=none">The {ship_name} was given to the Federation Museum, in honour of {her} service.</entry>
 	<entry kind="MUSEUM" when="scrap">{scrap} scrap came to the Cargo Hold for the {ship_name}'s place in the Federation Museum.</entry>
 	<entry kind="MUSEUM">The {ship_name} is honoured in the Federation Museum.</entry>
 	<entry kind="REWARD">{scrap} scrap came to the Cargo Hold as a reward for the {ship_name}.</entry>

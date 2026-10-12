@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.47";
+	public static final String APP_VERSION = "6.49";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -108,8 +108,10 @@ public class HomePlanet {
 	public static int reputationUse = 1;
 	/** Sandbox Mode's reputation rate (heromedel, 6.13): 0 x1, 1 x1.5, 2 x2; changeable in Settings. A career's is its difficulty's (vault.Reputation.rateLevel). */
 	public static int reputationRate = 0;
-	/** The normal fleet's choice after a final victory: nothing, rescue or reward (see parser.FinalVictory; the Immersive fleet's is in its career). */
+	/** The normal fleet's choice after a final victory: nothing, rescue (Choice) or museum; reward before 6.47 (see parser.FinalVictory; the Immersive fleet's is in its career). */
 	public static String finalVictory = "nothing";
+	/** The museum's reward after a final victory (6.47, heromedel): full, half or none of her value; full as before. */
+	public static String finalVictoryPay = "full";
 	/** Rescued Ships after Victory moved to Hard difficulty (heromedel, 6.02): kept without asking, on Hard. Locked on in a Hard career (see parser.FinalVictory.toHard). */
 	public static boolean rescuedToHard = false;
 	// ---- the rules in force: Sandbox Mode's own (the fields above, as Settings has them), or an Immersive career's, fixed ----
@@ -197,6 +199,7 @@ public class HomePlanet {
 		try { reputationRate = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("reputation_rate", "0").trim()))); } catch (NumberFormatException e) { reputationRate = 0; }
 		try { homeplanet.parser.PlayerRank.setting = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty(homeplanet.parser.PlayerRank.CFG, "0").trim()))); } catch (NumberFormatException e) { homeplanet.parser.PlayerRank.setting = 0; }
 		finalVictory = config.getProperty("final_victory", "nothing");
+		finalVictoryPay = config.getProperty("final_victory_pay", "full");
 		rescuedToHard = Boolean.parseBoolean(config.getProperty("rescued_to_hard", "false"));
 		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 
@@ -395,6 +398,7 @@ public class HomePlanet {
 		config.setProperty("immersive_mode", Boolean.toString(immersiveMode));
 		config.setProperty("immersive_slot", Vault.immersiveSlot);
 		config.setProperty("final_victory", finalVictory);
+		config.setProperty("final_victory_pay", finalVictoryPay);
 		config.setProperty("rescued_to_hard", Boolean.toString(rescuedToHard));
 		config.setProperty("immersive_notifications", Boolean.toString(immersiveNotifications));
 		config.setProperty("immersive_ship_trading", Boolean.toString(immersiveShipTrading));

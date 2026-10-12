@@ -19,26 +19,53 @@ import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
 /**
- * After a final victory: each fleet's choice (nothing, rescue her, or a reward of her value), the copy kept while the
- * Rebel Flagship is on her way to the last battle (the station must be open then), and settling it once the ship is
- * found lost: the profile's victory count gone up means she won.
+ * After a final victory: each fleet's choice (Nothing, Choice: keep her or the museum, or Museum) and the museum's
+ * reward (her full value, half, or none), the copy kept while the Rebel Flagship is on her way to the last battle (the
+ * station must be open then), and settling it once the ship is found lost: the profile's victory count gone up means
+ * she won.
  */
 public final class FinalVictory {
 	private static final Logger log = LoggerFactory.getLogger(FinalVictory.class);
 	private FinalVictory() { }
 
-	public static final String NOTHING = "nothing", RESCUE = "rescue", REWARD = "reward";
-	/** An Immersive career on Hard: the museum takes her, at half her value (never a choice in Settings). */
-	public static final String MUSEUM = "museum";
-	public static final String[] CHOICES = {NOTHING, RESCUE, REWARD};
+	/** Nothing (as in FTL), Choice (RESCUE: keep her, or the museum), Museum (the museum takes her); 6.47, heromedel. */
+	public static final String NOTHING = "nothing", RESCUE = "rescue", MUSEUM = "museum";
+	/** Before 6.47: a reward of her value, she stays lost. Read as the museum at full value (what it paid). */
+	public static final String REWARD = "reward";
+	public static final String[] CHOICES = {NOTHING, RESCUE, MUSEUM};
+	/** The museum's reward, to the Cargo Hold: her full value, half of it, or none (an honour alone). */
+	public static final String FULL = "full", HALF = "half", NONE = "none";
+	public static final String[] PAYS = {FULL, HALF, NONE};
 
-	/** A choice as Settings and the Immersive briefing offer it. */
+	/** A choice as Settings, the House Rules and the Immersive briefing offer it. */
 	public static String label(String choice) {
-		if (RESCUE.equals(choice)) return "Rescue the ship (with an offer to sell " + homeplanet.model.Words.herObj() + " to the museum)";
-		if (REWARD.equals(choice)) return "Receive a reward equal to " + homeplanet.model.Words.her() + " value";
-		return "Nothing (" + homeplanet.model.Words.she() + " is lost with the run)";
+		if (RESCUE.equals(choice)) return "Choice";
+		if (MUSEUM.equals(choice)) return "Museum";
+		return "Nothing";
 	}
-	private static String norm(String c) { return RESCUE.equals(c) || REWARD.equals(c) ? c : NOTHING; }
+	/** What a choice does, in a sentence or two (plain text: the windows wrap it). */
+	public static String explain(String choice) {
+		String she = homeplanet.model.Words.she(), her = homeplanet.model.Words.her(), herObj = homeplanet.model.Words.herObj(), She = homeplanet.model.Words.cap(she);
+		if (RESCUE.equals(choice)) return She + " comes back as " + she + " was moments before the final engagement, and you choose: keep " + herObj
+				+ " for a new journey, or send " + herObj + " to the Federation Museum for its reward (the Museum reward value).";
+		if (MUSEUM.equals(choice)) return She + " goes straight to the Federation Museum, where " + her + " service is remembered, and the museum's reward (the Museum reward value) goes to the Cargo Hold.";
+		return "As in FTL: a ship that wins the last battle is lost with the run. Nothing comes back.";
+	}
+	/** The museum's reward as Settings offers it. */
+	public static String payLabel(String pay) { return FULL.equals(pay) ? "Full value" : HALF.equals(pay) ? "Half value" : "None"; }
+	/** What the museum's reward is (plain text: the windows wrap it). */
+	public static String explainPay() {
+		String her = homeplanet.model.Words.her();
+		return "What the museum pays for " + homeplanet.model.Words.herObj() + ", into the Cargo Hold: " + her + " full value (" + her + " value at the moment of saved before the final battle), half of it, or none (the honour alone). Not used with Nothing.";
+	}
+	/** A tooltip of plain sentences, wrapped. */
+	public static String tip(String... lines) {
+		StringBuilder sb = new StringBuilder("<html><div style='width:380px'>");
+		for (int i = 0; i < lines.length; i++) sb.append(i == 0 ? "" : "<br>").append(lines[i]);
+		return sb.append("</div></html>").toString();
+	}
+	private static String norm(String c) { return RESCUE.equals(c) ? RESCUE : MUSEUM.equals(c) || REWARD.equals(c) ? MUSEUM : NOTHING; }
+	private static String normPay(String p) { return HALF.equals(p) || NONE.equals(p) ? p : FULL; }
 	/** The choice of the fleet in use (the Immersive fleet's is its difficulty's, or, from before difficulties, kept in its career). */
 	public static String choice() {
 		Vault v = Vault.get();
@@ -51,15 +78,32 @@ public final class FinalVictory {
 		CareerRules r = CareerRules.current();
 		return r == null ? null : r.victory();
 	}
-	/** What the museum pays, as a share of her value: the difficulty's (full or half), otherwise full. */
-	public static int museumPercent() {
-		CareerRules r = CareerRules.current();
-		return r == null ? 100 : r.museumPercent();
+	/** The museum's reward for the fleet in use: its difficulty's (full or half), or the player's (full when never chosen, as before 6.47). */
+	public static String pay() {
+		String fixed = fixedPay();
+		if (fixed != null) return fixed;
+		Vault v = Vault.get();
+		return normPay(v.immersive ? Career.finalVictoryPay(v.root) : HomePlanet.finalVictoryPay);
 	}
+	/** The Immersive career's difficulty decides the museum's reward (FULL or HALF), or null where the player chooses. */
+	public static String fixedPay() {
+		CareerRules r = CareerRules.current();
+		return r == null ? null : r.museumPay();
+	}
+	/** Sets the museum's reward of the fleet in use (the normal fleet's is in the cfg: the caller saves it). */
+	public static void setPay(String p) throws IOException {
+		Vault v = Vault.get();
+		if (v.immersive) Career.setFinalVictoryPay(v.root, normPay(p));
+		else HomePlanet.finalVictoryPay = normPay(p);
+	}
+	/** What the museum pays, as a share of her value: 100, 50 or 0. */
+	public static int museumPercent() { String p = pay(); return FULL.equals(p) ? 100 : HALF.equals(p) ? 50 : 0; }
 	/** The museum's price for her. */
 	public static int museumPrice(int value) { return value * museumPercent() / 100; }
-	/** "her full value" or "half her value", for the letters. */
+	/** "her full value" or "half her value", for the letters (none has letters of its own). */
 	static String worth() { return museumPercent() >= 100 ? homeplanet.model.Words.her() + " full value" : "half " + homeplanet.model.Words.her() + " value"; }
+	/** The letter for a rescue's offer or the museum: its own words when the museum pays nothing (6.47). */
+	private static String letter(String key) { return museumPercent() == 0 ? key + "_honour" : key; }
 	/** Sets the choice of the fleet in use (the normal fleet's is in the cfg: the caller saves it). */
 	public static void setChoice(String c) throws IOException {
 		Vault v = Vault.get();
@@ -112,8 +156,8 @@ public final class FinalVictory {
 				fills.put("worth", worth());
 				if ("offered".equals(f.outcome)) {
 					fills.put("value", Integer.toString(museumPrice(value)));
-					if (HomePlanet.immersiveNotifications()) Transmissions.post("rescue:" + f.id, "rescue", fills); // nothing if it's there already
-					else out.add(notice("rescue", fills, f, museumPrice(value)));
+					if (HomePlanet.immersiveNotifications()) Transmissions.post("rescue:" + f.id, letter("rescue"), fills); // nothing if it's there already
+					else out.add(notice(letter("rescue"), fills, f, museumPrice(value)));
 					continue;
 				}
 				if ("rewarded".equals(f.outcome)) { v.closeFinal(f, true); continue; } // paid; only the closing was left
@@ -130,31 +174,21 @@ public final class FinalVictory {
 					continue;
 				}
 				boolean named = u.victoriousScores(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId()) > f.scoresThen;
+				String pay = pay();
 				HistoryLog.entry("VICTORY", f.name + " won the last battle (the profile's victories " + f.victoriesThen + " -> " + u.victories()
-						+ (named ? ", and a Top Scores entry names " + homeplanet.model.Words.herObj() : "") + "); after a final victory: " + c + ", " + homeplanet.model.Words.her() + " value " + value + " scrap", null,
-						battle("VICTORY", f).put("victories_then", f.victoriesThen).put("victories_now", u.victories()).put("top_scores", named).put("after", c).put("value", value));
-				if (MUSEUM.equals(c)) { // Hard: no keeping her; the museum takes her at its price
-					fills.put("value", Integer.toString(museumPrice(value)));
+						+ (named ? ", and a Top Scores entry names " + homeplanet.model.Words.herObj() : "") + "); after a final victory: " + label(c) + ", the museum's reward " + payLabel(pay).toLowerCase()
+						+ ", " + homeplanet.model.Words.her() + " value " + value + " scrap", null,
+						battle("VICTORY", f).put("victories_then", f.victoriesThen).put("victories_now", u.victories()).put("top_scores", named).put("after", c)
+								.put("museum_pay", pay).put("museum_price", museumPrice(value)).put("value", value));
+				fills.put("value", Integer.toString(museumPrice(value)));
+				if (MUSEUM.equals(c)) { // no keeping her: the museum takes her, at its reward
 					museum(f);
-					if (HomePlanet.immersiveNotifications()) Transmissions.post("museum:" + f.id, "museum", fills);
-					else out.add(notice("museum", fills, null, museumPrice(value)));
-				} else if (RESCUE.equals(c)) {
-					fills.put("value", Integer.toString(museumPrice(value)));
+					if (HomePlanet.immersiveNotifications()) Transmissions.post("museum:" + f.id, letter("museum"), fills);
+					else out.add(notice(letter("museum"), fills, null, museumPrice(value)));
+				} else { // Choice: keep her, or the museum's offer
 					v.finalOffered(f);
-					if (HomePlanet.immersiveNotifications()) Transmissions.post("rescue:" + f.id, "rescue", fills);
-					else out.add(notice("rescue", fills, v.finalBattle(f.id), museumPrice(value)));
-				} else {
-					v.finalRewarded(f); // noted before paying: a payment whose note was lost would be paid again
-					try {
-						v.depositToStorage(value);
-					} catch (IOException e) {
-						v.finalUnsettled(f);
-						throw e;
-					}
-					v.closeFinal(f, true);
-					HistoryLog.entry("REWARD", value + " scrap to the Cargo Hold for " + f.name, null, battle("REWARD", f).put("scrap", value).put("to", "hold"));
-					if (HomePlanet.immersiveNotifications()) Transmissions.post("reward:" + f.id, "reward", fills);
-					else out.add(notice("reward", fills, null, value));
+					if (HomePlanet.immersiveNotifications()) Transmissions.post("rescue:" + f.id, letter("rescue"), fills);
+					else out.add(notice(letter("rescue"), fills, v.finalBattle(f.id), museumPrice(value)));
 				}
 			} catch (Exception e) {
 				log.warn("Could not settle {}'s final battle (tried again next time): {}", f.name, e.toString());
@@ -222,16 +256,17 @@ public final class FinalVictory {
 	}
 	/** "Easy", "Normal" or "Hard". */
 	public static String title(Difficulty d) { return d == null ? "" : d.toString().substring(0, 1) + d.toString().substring(1).toLowerCase(); }
-	/** The museum's offer: its price (her value, or half on harder careers) to the Cargo Hold, and she goes to the museum. Returns what came of it, in words. */
 	/** An event about the ship of a final battle (she may have left the fleet). */
 	private static Event battle(String kind, Vault.FinalBattle f) { return Event.of(kind).put("ship", f.name + "." + f.id).put("ship_name", f.name).put("ship_id", f.id); }
+	/** The museum: its reward (full, half or none of her value) to the Cargo Hold, and she goes to the museum. Returns what came of it, in words. */
 	public static String museum(Vault.FinalBattle f) throws IOException {
 		int value = museumPrice(value(HomePlanet.savedGameParser.readSavedGame(f.copy)));
 		Vault v = Vault.get();
-		v.depositToStorage(value);
+		if (value > 0) v.depositToStorage(value);
 		v.toMuseum(f);
 		Museum.preserved(v, f.id, value);
-		HistoryLog.entry("MUSEUM", value + " scrap to the Cargo Hold for " + f.name, null, battle("MUSEUM", f).put("scrap", value).put("to", "hold"));
-		return f.name + " is honoured in the Federation Museum. " + value + " scrap is waiting in the Cargo Hold.";
+		HistoryLog.entry("MUSEUM", value > 0 ? value + " scrap to the Cargo Hold for " + f.name : f.name + " given to the museum, without payment", null,
+				battle("MUSEUM", f).put("scrap", value).put("pay", pay()).put("to", "hold"));
+		return f.name + " is honoured in the Federation Museum." + (value > 0 ? " " + value + " scrap is waiting in the Cargo Hold." : "");
 	}
 }

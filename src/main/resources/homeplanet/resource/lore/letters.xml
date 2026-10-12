@@ -20,8 +20,10 @@
      waiting; the second when a hull waits in the Junkyard), shipped (an augment a ship had no room for, sent home by her
      crew: {name} is her name, {item} the augment, which is the reward), fleet3:* (the Third Fleet Commander: {name} is
      the ship class or the part), promo:1, promo:2 (Ranks From Cruiser), rank:1 to rank:5 (Ranks From Rep: Colonel to
-     Admiral; {accolade} is filled with what the career did), rescue and reward (after a final victory: {ship} is her
-     name, {value} her full value in scrap; also shown as a notice when Transmissions are off).
+     Admiral; {accolade} is filled with what the career did), rescue and museum (after a final victory, Choice and
+     Museum: {ship} is her name, {value} the museum's reward in scrap, {worth} "her full value" or "half her value"; also
+     shown as a notice when Transmissions are off), rescue_honour and museum_honour (the same when the museum's reward is
+     None: no scrap), reward (before 6.47: her value, she stays lost; no longer sent).
 
      Reply chains: replies="words -> next-key 5-10 | other words -> other-key 3-5" gives the letter a Reply button; the
      chosen reply sends next-key's letter a random 5 to 10 days later. then="next-key 5-7" sends the next letter by
@@ -106,7 +108,7 @@ The Rebel Flagship has broken off {her} assault and withdrawn. The line held. Th
 
 Recovery teams reached the {ship} in time, and The Home Planet Station has restored {her_obj} as {she} was moments before the final engagement.
 
-The Federation Home Planet makes an offer: {worth}, {value} scrap, to place {her_obj} in the Federation Museum. Or keep {her_obj}, and {she} will be waiting at the Space Dock for {her} next journey. The decision is yours.
+The Federation Home Planet offers {worth}, {value} scrap, to place {her_obj} in the Federation Museum. Or keep {her_obj}, and {she} will be waiting at the Space Dock for {her} next journey. The decision is yours.
 
 ~ Federation Fleet Command
 ]]></letter>
@@ -118,9 +120,39 @@ Dispatch from Federation Fleet Command.
 
 The Rebel Flagship has broken off {her} assault and withdrawn. The line held. The war continues.
 
-Recovery teams reached the {ship} in time. By order of The Federation Home Planet {she} will not fly again: {she} has been placed in the Federation Museum, where {her} service will be remembered.
+Recovery teams reached the {ship} in time and brought {her_obj} home. In honour of {her} service, {she} has been given a place in the Federation Museum.
 
-In recognition, {worth}, {value} scrap, has been granted to The Home Planet Station. It is waiting in the Station's Cargo Hold.
+In recognition, The Federation Home Planet has granted you {worth}, {value} scrap. It is waiting in the Cargo Hold.
+
+For as long as the Federation endures, {her} service will be remembered.
+
+~ Federation Fleet Command
+]]></letter>
+
+	<letter key="rescue_honour" from="Federation Fleet Command" subject="Rescued from the Final Engagement"><![CDATA[
+{rank},
+
+Dispatch from Federation Fleet Command.
+
+The Rebel Flagship has broken off {her} assault and withdrawn. The line held. The war continues.
+
+Recovery teams reached the {ship} in time, and The Home Planet Station has restored {her_obj} as {she} was moments before the final engagement.
+
+The Federation Home Planet asks that {she} be placed in the Federation Museum, in honour of {her} service. Or keep {her_obj}, and {she} will be waiting at the Space Dock for {her} next journey. The decision is yours.
+
+~ Federation Fleet Command
+]]></letter>
+
+	<letter key="museum_honour" from="Federation Fleet Command" subject="Into the Museum"><![CDATA[
+{rank},
+
+Dispatch from Federation Fleet Command.
+
+The Rebel Flagship has broken off {her} assault and withdrawn. The line held. The war continues.
+
+Recovery teams reached the {ship} in time and brought {her_obj} home. In honour of {her} service, {she} has been given a place in the Federation Museum.
+
+For as long as the Federation endures, {her} service will be remembered.
 
 ~ Federation Fleet Command
 ]]></letter>
