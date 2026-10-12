@@ -195,7 +195,8 @@ final class ImmersiveBriefing extends JDialog {
 		JPanel useRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		useRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 		useRow.setBorder(BorderFactory.createEmptyBorder(2, 16, 2, 0));
-		repUse.setSelectedIndex(Math.max(0, Math.min(2, HomePlanet.reputationUse - 1)));
+		// each career its own (6.55): one that has begun shows its choice, a new one starts on New Journeys and Pleads
+		repUse.setSelectedIndex(Math.max(0, Math.min(2, (begun ? HomePlanet.reputationUseOf(immersiveRoot, true) : 1) - 1)));
 		repUse.setToolTipText("Hover an option for what it does, or click the info icon");
 		RuleBoxes.explainOptions(repUse);
 		useRow.add(new JLabel("How Reputation Can be Used:  "));

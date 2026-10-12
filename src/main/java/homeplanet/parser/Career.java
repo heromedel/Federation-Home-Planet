@@ -71,6 +71,18 @@ public final class Career {
 		return r;
 	}
 
+	/** How reputation can be used in this Immersive career (1 to 3; heromedel, 6.55: each career its own), or dflt if it never chose (a career from before shared Sandbox Mode's). */
+	public static int reputationUse(File immersiveRoot, int dflt) {
+		String v = read(immersiveRoot).getProperty("reputationUse");
+		try { return v == null ? dflt : Math.max(1, Math.min(3, Integer.parseInt(v.trim()))); } catch (NumberFormatException e) { return dflt; }
+	}
+	/** Sets how reputation can be used in this Immersive career (its career must have begun: the file marks that). */
+	public static void setReputationUse(File immersiveRoot, int use) throws IOException {
+		Properties p = read(immersiveRoot);
+		if (Integer.toString(use).equals(p.getProperty("reputationUse"))) return;
+		p.setProperty("reputationUse", Integer.toString(use));
+		write(immersiveRoot, p);
+	}
 	/** What comes after a final victory in this Immersive fleet (FinalVictory.NOTHING, RESCUE or MUSEUM; REWARD before 6.47). */
 	public static String finalVictory(File immersiveRoot) { return read(immersiveRoot).getProperty("finalVictory", FinalVictory.NOTHING); }
 	/** Sets what comes after a final victory in this Immersive fleet (its career must have begun). */

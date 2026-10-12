@@ -123,9 +123,11 @@ it does and CREDITS.md for where the code came from.
 
     mvn -q -B package -DskipTests      # makes target/Federation Home Planet.jar (Java 8 target)
 
-The config (`federation-home-planet.cfg`) is a Java properties file beside the jar. First startup asks for the
-FTL and saves folders, Steam launching (Steam installs only), the House Rules window, then offers
-Slipstream once (`slipstream_offered`).
+The settings (6.55, `docs/CONCERNS.md` 9): `federation-home-planet.cfg` beside the jar keeps only where things are (FTL's
+folder, the saves folder, Slipstream's); the station's own settings are in a `federation-home-planet.cfg` in FTL's saves folder,
+Sandbox Mode's rules in `FederationHomePlanet/rules.xml`, an Immersive career's in its `career.xml`. First startup asks for the
+saves and FTL folders, Steam launching (Steam installs only), the House Rules window, then offers Slipstream once
+(`slipstream_offered`); a new release folder finds the saves folder where FTL keeps it and asks none of it again.
 
 ## Test
 

@@ -39,3 +39,22 @@ rates from the start and marked so.
 **What a change would look like.** heromedel, 6.54: it could probably be removed some day, once the careers that needed it have
 opened on 6.54 or later. Delete the methods and the notice, keep `RATED` and `CORRECTED` so the marks in `reputation.xml` still
 read, and drop RepuT's O, C and H checks.
+
+## 9. Where the settings live (noted 6.55)
+
+**What it is.** heromedel, 6.55 (Plan AI), in place of the 5.94 call that settings stay in the cfg beside the jar
+(`docs/OVERHAUL-6.md` 12): the cfg beside the jar keeps only where things are (`ftlDatsPath`, `ftlSavePath`, `slipstream_dir`);
+the station's own settings, the same for every career, are in `federation-home-planet.cfg` in FTL's saves folder (with a copy of
+the three folders, so a new release folder finds FTL and Slipstream); Sandbox Mode's rules are in `FederationHomePlanet/rules.xml`
+(`HomePlanet.SANDBOX_KEYS`); an Immersive career's are in its own `career.xml` as before, and how reputation can be used is each
+career's own since 6.55 (`Career.reputationUse`, Sandbox Mode's standing in for a career from before). A cfg from before is carried
+over on its first save. Startup now finds the saves folder before FTL's folder, and takes the station's own without asking.
+
+**What it costs.** The one `HomePlanet.config` in memory still holds everything, so nothing that reads a setting changed; only
+`loadConfig`, `loadSavesSettings` and `saveConfig` know the three files. They are written one after another, each whole on its
+own (not through `vault/Journal`): a stop between them leaves the older copy of one file, never a broken one. A new setting goes
+to the station's file unless its key is added to `SANDBOX_KEYS` (Sandbox Mode's own) or `PATH_KEYS` (this computer's).
+
+**What a change would look like.** Moving another setting to a career means its key into `SANDBOX_KEYS` and, for the Immersive
+careers, a `Career` getter and setter like `reputationUse` (CfgT's R checks show how it's tested).
+

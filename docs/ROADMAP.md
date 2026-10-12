@@ -1182,7 +1182,8 @@ and reputation for the rest; with Reputation off, scrap only, as before.
 ## 40. How Reputation Can be Used, and where it came from — built (5.15; harness checks in RepuT)
 
 - **How Reputation Can be Used** (heromedel; Settings, Rules, under Reputation; any mode, never locked by Immersive
-  Mode; `reputation_use` in the cfg): 1 New Journeys and Pleads (the default, until the rest is tried in play),
+  Mode; each career its own since 6.55, Sandbox Mode's `reputation_use` in its `rules.xml`, an Immersive career's in its
+  `career.xml`): 1 New Journeys and Pleads (the default, until the rest is tried in play),
   2 Vanillas Breaking Actions (1, and Refit removal, stripping, a custom work order's share), 3 Only as a score.
   Wherever reputation can't be used, scrap pays: a work order's share in scrap too, a plea with 3 offers giving up the
   Cargo Hold alone. A promise of adventure and rest in quarters cost reputation with 1 and 2 (nobody is locked out of
