@@ -840,8 +840,8 @@ the right is three steps in build order.
   blueprint opens the build screen directly (its Loadout... comes back here with the step in front). Hull, Reactor and
   Drone slots left the title bar for the Loadout step.
 - **Rooms.** Place and Move, then Systems (the old "Not on this ship", with a line saying what to do with it), Doors,
-  Whole ship, the window's own buttons, and the zoom last. An empty grid says what to do first ("Place her first room:
-  Place 2 x 2, then click the grid"); a ship with rooms but no art says to import or pick one. The checks line gains a
+  Whole ship, the window's own buttons, and the zoom last. An empty grid says nothing (heromedel, 6.53: the line under
+  it says what to do first); a ship with rooms but no art says to import or pick one. The checks line gains a
   "Next:" hint when nothing needs fixing, and wraps rather than running off the window.
 - **Art, and the grid's middle as the game's centre** (heromedel: the one place a person expects it). Measured over
   all 28 of the game's player ships, the middle of the room block sits at the same spot in FTL's frame, 8 squares
@@ -849,8 +849,9 @@ the right is three steps in build order.
   cross "where FTL puts her", which never moves. Where the rooms sit round it is her screen offset (`offsets(d)`, read
   off the rooms; the stored offsets and the art-based guess are gone), so rooms left of the middle sit left in the game,
   and a game ship copied in lands where the game has her and gets the game's own offsets back. FTL has no further left
-  or up than offset 0, so the strip past it is shaded faintly. The canvas is fixed (the grid with a wide border for art
-  hanging over): editing one thing never slides another. "Center on the anchor" puts the picture's visible middle on
+  or up than offset 0, so everything past it is striped yellow as a caution (6.53). The canvas is fixed (the grid with a
+  wide border for art hanging over): editing one thing never slides another. The grid covers the whole canvas and the
+  canvas sits in the middle of the view, so the cross is the middle of what the player sees (heromedel, 6.53). "Center on the anchor" puts the picture's visible middle on
   the cross and moves nothing else. The shield ellipse and gibs sit under "Fine adjustment".
 - **Loadout, one row shape for every number** (heromedel's sketch): hers/max, the name, minus, a typed field, plus, a
   bar of green segments to the vanilla max and amber ones past it, "Over vanilla max" beside. Hull, reactor, weapon
