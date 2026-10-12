@@ -57,6 +57,7 @@ final class SwitchModeDialog extends JDialog {
 		pack();
 		setResizable(false);
 		setLocationRelativeTo(getOwner());
+		ScreenFit.keepOnScreen(this);
 	}
 
 	/** One row per mode: its name, what it is, what it holds, and its buttons. */
