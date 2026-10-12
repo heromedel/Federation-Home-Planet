@@ -33,6 +33,8 @@ it does and CREDITS.md for where the code came from.
   version is pushed, the branch stays frozen while heromedel tests it, so what they test is exactly what they merge.
   Newer work stays committed locally until they say it's merged (or needs a fix), then goes up as the next version.
   Don't bring up commits in conversation; the automatic "uncommitted changes" check is answered in a few words.
+- **Catching up (heromedel, 6.55):** when heromedel says to catch up to another branch (merge from it), and the merge and its
+  tests turn up no new bugs or problems, push it without asking. If anything turns up, tell heromedel first, as usual.
 - **Other branches:** before planning work on your branch, fetch and check whether `main` or another session's branch
   has moved on since you last looked (a newer version). If it has, look over what changed, especially files you'll
   touch, settings, names and shared tools. Plan to fit with it (the same patterns and paths, no clashing names or
