@@ -108,8 +108,8 @@ public class SystemsPanel {
 	private final CargoParts.Label name = new CargoParts.Label("", FtlFont.MENU, CargoParts.GOLD, 0).small(FtlFont.BODY);
 	private final CargoParts.Label sub = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 0);
 	/** What the Cargo Hold can still spend at the Dry Dock, always in view under her name. */
-	/** Who pays the Dry Dock (6.44, heromedel): the ship or the Cargo Bay's hold, remembered; and what that side can spend. */
-	private final FlipSwitch payer = new FlipSwitch("Ship", "Cargo", true);
+	/** Who pays the Dry Dock (6.44, heromedel): the ship or the Cargo Bay's hold, remembered; and what that side can spend. The Shop's is the same control (6.45). */
+	private final PayFrom payer = new PayFrom();
 	private final CargoParts.ScrapCount scrapCount = new CargoParts.ScrapCount();
 	/** The cfg line for who pays at Refit: "ship", or the Cargo Hold (the default, as before 6.44). */
 	static final String CFG_PAYS = "refit_pays";
@@ -123,7 +123,9 @@ public class SystemsPanel {
 	/** The installed list's share of the column: its heading and rows; the uninstalled systems take the rest. */
 	private static final int INST_H = 250; // seven rows exactly
 	/** Row width: the column less room for the scroll bar. */
-	private static final int ROW_W = 550, BTN_W = 104;
+	private static final int ROW_W = 550;
+	/** Retrofit and Remodel: wide enough for "Undo Retrofit" (6.45, heromedel). */
+	private static final int BTN_W = Math.max(104, CargoParts.width("Undo Retrofit", FtlFont.CARGO) + 24);
 	/** The power distribution simulation under the ship and the lists: its heading and FTL's panel (6.42). */
 	private static final int POWER_H = 184;
 	private final PowerPanel power = new PowerPanel();
@@ -143,13 +145,13 @@ public class SystemsPanel {
 		panel.add(name);
 		sub.setBounds(16, 384, 640, 16);
 		panel.add(sub);
-		payer.setRight(!shipPays());
+		payer.setCargo(!shipPays());
 		java.awt.Dimension ps = payer.getPreferredSize();
-		payer.setBounds(700 + 564 - ps.width - 2, 8 + (22 - ps.height) / 2, ps.width, ps.height); // on the "Installed systems" heading, at its right end
+		payer.setBounds(640 - ps.width / 2, 0, ps.width, ps.height); // under the Shop tab's button, outside every bar (6.45, heromedel); "PAY FROM" over the switch
 		payer.setToolTipText("Who pays the Dry Dock: the ship's own scrap, or the Cargo Hold's (Cargo; paid on Save)");
 		payer.onChange(new Runnable() { public void run() { switchPayer(); } });
 		panel.add(payer);
-		scrapCount.setBounds(700 + 564 - ps.width - 2 - 96, 8, 90, 22); // the scrap that side has, just left of the switch
+		scrapCount.setBounds(0, 8, 120, 22); // the scrap that side has, just left of Pay From (placed in refresh, by its width)
 		panel.add(scrapCount);
 		panel.setComponentZOrder(payer, 0);
 		panel.setComponentZOrder(scrapCount, 0);
@@ -226,7 +228,7 @@ public class SystemsPanel {
 		layoutLbl.setBounds(gx + 30 + tw + 14, 386, Math.min(lw + 4, 640 - (gx - 16) - 30 - tw - 14), 14);
 	}
 	String helpText() {
-		return "Uninstall takes a system off at its level. Up upgrades it; the Dry Dock repairs " + homeplanet.model.Words.her() + " hull. Greyed out: hover to see why.";
+		return "Uninstall takes a system off at its level, Up upgrades it, and the Hull row repairs " + homeplanet.model.Words.her() + " hull. Greyed out: hover to see why.";
 	}
 
 	/** Lays out the installed and stored systems and the layout section. */
@@ -244,15 +246,16 @@ public class SystemsPanel {
 		sub.setText(cls);
 		lineTwo(cls);
 		power.show(bs);
-		payer.setRight(!shipPays());
+		payer.setCargo(!shipPays());
 		scrapCount.set(hold(), ""); // what's spent here and on Save: in its tooltip
+		scrapCount.setBounds(payer.getX() - 10 - scrapCount.textWidth(), 8, scrapCount.textWidth() + 2, 22);
 		scrapCount.setToolTipText(cap(payerName()) + " has " + hold() + " scrap left to spend here" + (bill > 0 ? " (" + bill + " spent, paid on Save)" : bill < 0 ? " (" + (-bill) + " to come from sales, on Save)" : "")
 				+ (repBill > 0 ? ", and " + repBill + " reputation on Save" : ""));
 		int w = ROW_W, y = 0;
 		sysList.removeAll();
 		storedList.removeAll();
 		CargoParts.Header h1 = new CargoParts.Header("Installed systems", false);
-		h1.setBounds(0, 0, 564 - payer.getWidth() - 106, 22); // its line stops short of the scrap and the switch
+		h1.setBounds(0, 0, 564, 22); // the heading as it always was: Pay From and the scrap sit outside it
 		lists.add(h1);
 		y = dryDock(bs, y, w); // the hull and the reactor first, no Dry Dock heading of their own (6.44, heromedel)
 		int i = 0;
@@ -454,18 +457,19 @@ public class SystemsPanel {
 	private static String cap(String s) { return homeplanet.model.Words.cap(s); }
 	/** The switch flipped: the other side pays from now on, if it can cover what's on the bill. */
 	private void switchPayer() {
-		boolean toShip = !payer.right();
+		boolean toShip = !payer.cargo();
 		boolean was = shipPays();
 		if (toShip) homeplanet.core.HomePlanet.config.setProperty(CFG_PAYS, "ship");
 		else homeplanet.core.HomePlanet.config.remove(CFG_PAYS); // the Cargo Hold is the default: the line only while the ship pays
 		if (bill > 0 && hold() < 0) { // the other side can't cover the work already done here
 			if (was) homeplanet.core.HomePlanet.config.setProperty(CFG_PAYS, "ship"); else homeplanet.core.HomePlanet.config.remove(CFG_PAYS);
-			payer.setRight(!was);
+			payer.setCargo(!was);
 			JOptionPane.showMessageDialog(bay, "The Dry Dock's work so far costs " + bill + " scrap, more than " + payerNameIf(toShip) + " has.\nSave or Reset first, then switch.", "Refit", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		homeplanet.core.HomePlanet.saveConfig();
 		refresh();
+		bay.shop.systemsChanged(); // the Shop's scrap leaves out the Dry Dock's bill on the same side
 	}
 	private String payerNameIf(boolean ship) { return ship && bay.currentSave != null ? homeplanet.parser.ShipNames.the(bay.currentSave.getPlayerShipName()) : "the Cargo Hold"; }
 	/** The scrap the Dry Dock can still spend: the paying side's (the Cargo Hold as the Trade tab has it, when it's the partner) less the bill. */
@@ -473,9 +477,16 @@ public class SystemsPanel {
 		if (shipPays()) return bay.currentSave == null ? 0 : bay.currentSave.getPlayerShip().getScrapAmt() - bill;
 		int have;
 		if (bay.partnerIsStorage() && bay.tradeState != null) have = bay.tradeState.getScrapAmt();
-		else { try { have = homeplanet.vault.Vault.get().storageScrap(); } catch (Exception e) { have = 0; } }
+		else {
+			SavedGameState shopHold = null; // the Shop's copy of the hold, if it read one: what the Shop spent from it shows here too (6.45)
+			try { shopHold = bay.shop.copyOf(homeplanet.vault.Vault.get().storage()); } catch (Exception e) { }
+			if (shopHold != null) have = shopHold.getPlayerShip().getScrapAmt();
+			else { try { have = homeplanet.vault.Vault.get().storageScrap(); } catch (Exception e) { have = 0; } }
+		}
 		return have - bill;
 	}
+	/** What the Dry Dock's bill will take from this side on Save (the Cargo Hold, or the ship): the Shop spends only what's left (6.45). */
+	int billOn(boolean cargoHold) { return bill > 0 && cargoHold != shipPays() ? bill : 0; }
 	/** The reputation the Dry Dock can still spend: the career's, less what's on the bill (0 with Reputation off). */
 	int repHave() {
 		if (!homeplanet.vault.Reputation.shown()) return 0;

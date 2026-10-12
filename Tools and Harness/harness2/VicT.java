@@ -1,7 +1,8 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.model.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
 /**
- * After a final victory: the copy kept while the Rebel Flagship is on her way to the last battle, and the rescue (keep
- * her, or the museum), the reward, "nothing", and a loss. args: gamedir, world saves (from WorldT), work, and
+ * After a final victory: the copy kept while the Rebel Flagship is on her way to the last battle, and Choice (keep
+ * her, or the museum), Museum, "nothing", and a loss; the museum's reward full, half or none (6.47), and an answer
+ * from before 6.47 (the reward) read as the museum at full value. args: gamedir, world saves (from WorldT), work, and
  * optionally a save logger's folder (copies/ of continue.sav and ae_prof.sav, in order, ending in a victory) to replay.
  */
 public class VicT { public static void main(String[] a) throws Exception {
@@ -14,6 +15,7 @@ public class VicT { public static void main(String[] a) throws Exception {
  rescueKeep(v);
  rescueMuseum(v);
  reward(v);
+ museumPay(v);
  inbox(v);
  museum(v);
  toHardRules();
@@ -88,6 +90,11 @@ public class VicT { public static void main(String[] a) throws Exception {
  /** Boards a docked ship not sent out before (the fleet reads in name order since 5.69, so a ship brought home would be first again). */
  static Ship boardNext(Vault v) throws Exception {
   if (v.boarded() == null) for (Ship d : v.docked()) if (used.add(d.id)) { v.board(d); break; }
+  if (v.boarded() == null) { // the test world's ships all sent out: a spare from the Junkyard (6.47 wants more victories)
+   SavedGameState g = Commission.build("PLAYER_SHIP_HARD", "Spare " + used.size(), net.blerf.ftl.constants.Difficulty.NORMAL, new Random(used.size()));
+   Ship spare = v.adoptJunked(g); v.takeStock(); v.salvage(v.byId(spare.id)); v.takeStock();
+   used.add(spare.id); v.board(v.byId(spare.id));
+  }
   v.takeStock();
   return v.boarded();
  }
@@ -154,15 +161,39 @@ public class VicT { public static void main(String[] a) throws Exception {
   Setup.chk("M: the museum's offer: her full value to storage, and she doesn't come back", v.storageScrap() == before + value && v.byId(id) == null && !recoverable);
   Setup.chk("M: her fate is the museum", Setup.fateText(v.folderOfId(id)).startsWith("MUSEUM") && FinalVictory.settle().isEmpty());
  }
+ /** An answer from before 6.47, the reward of her value: now the museum at full value (heromedel). */
  static void reward(Vault v) throws Exception {
+  HomePlanet.finalVictory = FinalVictory.REWARD; HomePlanet.finalVictoryPay = FinalVictory.FULL;
+  Setup.chk("R: the reward (before 6.47) reads as Museum, at full value", FinalVictory.MUSEUM.equals(FinalVictory.choice()) && FinalVictory.FULL.equals(FinalVictory.pay()));
   Ship s = toVictory(v, FinalVictory.REWARD); String id = s.id;
   int value = FinalVictory.value(read(copyOf(v, s)));
   int before = v.storageScrap();
   List<FinalVictory.Notice> n = FinalVictory.settle();
-  Setup.chk("R: a reward: her full value to storage, a notice to read, and she stays lost", n.size() == 1 && n.get(0).offer == null && v.storageScrap() == before + value && v.byId(id) == null && n.get(0).text.contains(value + " scrap"));
+  Setup.chk("R: her full value to storage, a notice to read, and she goes to the museum", n.size() == 1 && n.get(0).offer == null && v.storageScrap() == before + value && v.byId(id) == null
+    && n.get(0).text.contains(value + " scrap") && n.get(0).text.contains("Museum") && Setup.fateText(v.folderOfId(id)).startsWith("MUSEUM"));
   Setup.chk("R: paid once", FinalVictory.settle().isEmpty() && v.storageScrap() == before + value);
   SavedGameState g = read(kept(v, id, "victory-").get(0));
   Setup.chk("R: her value is her price at the rate", value == Pricing.ship(g, Pricing.rate()).total() && value > 0);
+ }
+ /** The museum's reward (6.47, heromedel): Museum at half value, then Choice at none (the honour alone). */
+ static void museumPay(Vault v) throws Exception {
+  HomePlanet.finalVictoryPay = FinalVictory.HALF;
+  Ship s = toVictory(v, FinalVictory.MUSEUM); String id = s.id;
+  int value = FinalVictory.value(read(copyOf(v, s))), before = v.storageScrap();
+  List<FinalVictory.Notice> n = FinalVictory.settle();
+  Setup.chk("P: Museum at half value: half to storage, she goes to the museum", n.size() == 1 && n.get(0).offer == null && value > 1 && v.storageScrap() == before + value / 2
+    && n.get(0).text.contains((value / 2) + " scrap") && n.get(0).text.contains("half") && Setup.fateText(v.folderOfId(id)).startsWith("MUSEUM"));
+  HomePlanet.finalVictoryPay = FinalVictory.NONE;
+  s = toVictory(v, FinalVictory.RESCUE); id = s.id;
+  before = v.storageScrap();
+  n = FinalVictory.settle();
+  Setup.chk("P: Choice with the reward None: an offer of the museum's honour, no scrap in its words", n.size() == 1 && n.get(0).offer != null && n.get(0).value == 0
+    && n.get(0).text.contains("in honour") && !n.get(0).text.contains("scrap"));
+  String what = FinalVictory.museum(FinalVictory.offer(id));
+  Museum.Exhibit ex = null; for (Museum.Exhibit e : Museum.exhibits(v)) if (e.id.equals(id)) ex = e;
+  Setup.chk("P: given to the museum: nothing to storage, Preserved at no price, and the words say no scrap", v.storageScrap() == before && ex != null && ex.status == Museum.Status.PRESERVED
+    && "0".equals(ex.get("price")) && !what.contains("scrap") && Setup.fateText(v.folderOfId(id)).startsWith("MUSEUM"));
+  HomePlanet.finalVictoryPay = FinalVictory.FULL;
  }
  static void inbox(Vault v) throws Exception {
   HomePlanet.immersiveNotifications = true;
@@ -184,9 +215,9 @@ public class VicT { public static void main(String[] a) throws Exception {
   System.out.println("museum: " + n);
   Setup.chk("U: the ship lost without a victory is in the Memorial, and only there", n.containsKey(Museum.Status.MEMORIAL) && n.get(Museum.Status.MEMORIAL) == 1);
   Setup.chk("U: the kept victors are Still in Service", n.containsKey(Museum.Status.IN_SERVICE) && n.get(Museum.Status.IN_SERVICE) == 2);
-  Setup.chk("U: the one sold to the museum is Preserved", n.containsKey(Museum.Status.PRESERVED) && n.get(Museum.Status.PRESERVED) == 1);
-  Setup.chk("U: the one rewarded (not kept) is Honoured in Memory", n.containsKey(Museum.Status.MEMORY) && n.get(Museum.Status.MEMORY) == 1);
-  Setup.chk("U: victories counted, and the Hall before the Memorial", Museum.totalVictories(all) == 4 && all.get(0).victor && !all.get(all.size() - 1).victor);
+  Setup.chk("U: the ones in the museum are Preserved (sold, the old reward now the museum, half, and given in honour)", n.containsKey(Museum.Status.PRESERVED) && n.get(Museum.Status.PRESERVED) == 4);
+  Setup.chk("U: none Honoured in Memory: the reward of her value went with 6.47", !n.containsKey(Museum.Status.MEMORY));
+  Setup.chk("U: victories counted, and the Hall before the Memorial", Museum.totalVictories(all) == 6 && all.get(0).victor && !all.get(all.size() - 1).victor);
   Museum.Exhibit kept = null; for (Museum.Exhibit e : all) if (e.status == Museum.Status.IN_SERVICE) kept = e;
   String[] vd = kept.victoryDetails().get(0);
   Setup.chk("U: a victory's details are kept (date, sector, score from the profile)", !vd[0].isEmpty() && !vd[3].isEmpty() && "4431".equals(vd[1]));

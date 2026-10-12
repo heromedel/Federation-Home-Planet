@@ -63,9 +63,8 @@ public class SettingsDialog extends JDialog {
 	private final javax.swing.JComboBox<String> pronounBox = new javax.swing.JComboBox<String>(homeplanet.model.Words.SHIP_PRONOUNS);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging", HomePlanet.debugLogging);
 	private boolean savesChanged = false;
-	/** After a final victory: nothing, rescue her, or a reward of her value (the fleet in use has its own choice). */
-	private final javax.swing.JRadioButton[] victoryButtons = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
-	private String victoryWas = homeplanet.parser.FinalVictory.choice();
+	/** After a final victory: Nothing, Choice or Museum, and the museum's reward (the fleet in use has its own; 6.47). */
+	private final VictoryRules victory = new VictoryRules();
 	private final JLabel victoryHeading = new JLabel();
 	/** Rescued Ships after Victory moved to Hard difficulty (heromedel, 6.02 and 6.03): the player's in Sandbox Mode and Easy, the career's otherwise. */
 	private static final String TO_HARD = "Rescued Ships after Victory moved to Hard difficulty";
@@ -76,7 +75,6 @@ public class SettingsDialog extends JDialog {
 	private final JCheckBox shipTradeBox = new JCheckBox("Immersive careers: allow trading whole ships (with a career that allows it too; Sandbox fleets always may)", HomePlanet.immersiveShipTrading);
 	private final JCheckBox popupBox = new JCheckBox("Priority messages from other commanders pop up (off: they go to the inbox, marked priority)", HomePlanet.longRangePopups);
 	private final JCheckBox anyLevelBox = new JCheckBox("Immersive careers: allow trading with any Immersive level: Easy, Normal, Hard, Custom (when the other allows it too)", HomePlanet.immersiveAnyLevel);
-	private final javax.swing.ButtonGroup victoryGroup = new javax.swing.ButtonGroup();
 
 	/** Shows the dialog. Returns true if the saves folder changed (so the Space Dock should reload). */
 	public static boolean open(java.awt.Component owner) {
@@ -387,17 +385,10 @@ public class SettingsDialog extends JDialog {
 		victoryHeading.setForeground(MenuTheme.GOLD);
 		victoryHeading.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
 		body.add(victoryHeading, next(c));
-		for (int i = 0; i < victoryButtons.length; i++) {
-			String ch = homeplanet.parser.FinalVictory.CHOICES[i];
-			victoryButtons[i] = new javax.swing.JRadioButton(homeplanet.parser.FinalVictory.label(ch), ch.equals(victoryWas));
-			victoryGroup.add(victoryButtons[i]);
-			body.add(victoryButtons[i], next(c));
-		}
-		refreshVictory();
+		body.add(victory, next(c));
+		victory.onChange(new Runnable() { public void run() { syncToHard(); } });
 		rules.afterFleetChange = new Runnable() { public void run() { refreshVictory(); } };
-		victoryButtons[1].setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " comes back as " + homeplanet.model.Words.she() + " was moments before the final engagement, ready for a new journey; or take " + homeplanet.model.Words.her() + " full value for the museum");
-		victoryButtons[2].setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " full value, as the shipyard would charge for " + homeplanet.model.Words.herObj() + ", goes to the Cargo Hold");
-		JLabel victoryNote = new JLabel("<html><div style='width:520px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>For a rescue or a reward, The Home Planet Station must be open while you play: "
+		JLabel victoryNote = new JLabel("<html><div style='width:520px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>For Choice or Museum, The Home Planet Station must be open while you play: "
 				+ "it keeps " + homeplanet.model.Words.herObj() + " as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
 		victoryNote.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		body.add(victoryNote, next(c));
@@ -562,7 +553,7 @@ public class SettingsDialog extends JDialog {
 				&& (fullscreenBox.getSelectedIndex() != homeplanet.core.FtlDock.fullscreenChosen() || vsyncBox.isSelected() != homeplanet.core.FtlDock.vsyncChosen())))
 			changed.add("Undocked launches: " + (videoBox.isSelected() ? "Fullscreen " + fullscreenBox.getSelectedItem() + ", Vertical Sync " + (vsyncBox.isSelected() ? "on" : "off") : "FTL as last set"));
 		rules.describeChanges(changed);
-		if (!victoryChoice().equals(victoryWas)) changed.add("After a final victory: " + victoryChoice());
+		victory.describeChanges(changed);
 		if (toHardBox.isEnabled() && toHardBox.isSelected() != toHardWas) changed.add(TO_HARD + ": " + toHardBox.isSelected());
 		if (debugBox.isSelected() != HomePlanet.debugLogging) changed.add("Debug logging: " + debugBox.isSelected());
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
@@ -622,8 +613,8 @@ public class SettingsDialog extends JDialog {
 			}
 		}
 		rules.apply();
-		if (!savesChanged && !victoryChoice().equals(victoryWas)) {
-			try { homeplanet.parser.FinalVictory.setChoice(victoryChoice()); }
+		if (!savesChanged) {
+			try { victory.apply(); }
 			catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not record the choice after a final victory:\n" + e.getMessage()); }
 		}
 		if (!savesChanged && toHardBox.isEnabled() && toHardBox.isSelected() != toHardWas) {
@@ -801,22 +792,17 @@ public class SettingsDialog extends JDialog {
 
 	/** The fleet in use's choice after a final victory (entering or leaving Immersive Mode here switches fleets). */
 	private void refreshVictory() {
-		victoryWas = homeplanet.parser.FinalVictory.choice();
+		victory.refresh();
 		homeplanet.parser.CareerRules career = homeplanet.parser.FinalVictory.fixed() != null ? homeplanet.parser.CareerRules.current() : null;
 		homeplanet.vault.Vault v = homeplanet.vault.Vault.get();
-		victoryHeading.setText("After a final victory" + (career != null ? " (" + homeplanet.vault.Vault.title(v.slot) + "): " + career.words(homeplanet.parser.CareerRules.VICTORY)
+		victoryHeading.setText("After a final victory" + (career != null ? " (" + homeplanet.vault.Vault.title(v.slot) + ": set by its difficulty)"
 				: v.immersive ? " (" + homeplanet.vault.Vault.title(v.slot) + ")" : ""));
-		victoryGroup.clearSelection();
-		for (int i = 0; i < victoryButtons.length; i++) {
-			victoryButtons[i].setSelected(homeplanet.parser.FinalVictory.CHOICES[i].equals(victoryWas));
-			victoryButtons[i].setEnabled(career == null); // the career's difficulty decides it
-		}
 		String rule = homeplanet.parser.FinalVictory.toHardRule();
 		homeplanet.parser.CareerRules r = homeplanet.parser.CareerRules.current();
 		boolean none = homeplanet.parser.FinalVictory.TO_HARD_NONE.equals(rule), normal = r != null && homeplanet.parser.CareerRules.NORMAL.equals(r.name);
 		toHardWas = homeplanet.parser.FinalVictory.toHard();
 		toHardBox.setSelected(toHardWas);
-		toHardBox.setEnabled(homeplanet.parser.FinalVictory.TO_HARD_FREE.equals(rule));
+		syncToHard();
 		toHardBox.setText(none ? "<html><s>" + TO_HARD + "</s></html>" : TO_HARD); // crossed out where it can never come into play
 		toHardBox.setToolTipText(none ? (r != null && homeplanet.parser.CareerRules.HARD.equals(r.name) ? "A Hard career" : "This career") + ": the museum takes every victor, so a rescued ship never comes back to fly"
 				: homeplanet.parser.FinalVictory.TO_HARD_ON.equals(rule) ? (normal ? "A Normal career: a rescued ship always sets out on Hard" : "Chosen when this career began: a rescued ship always sets out on Hard")
@@ -824,10 +810,9 @@ public class SettingsDialog extends JDialog {
 				: homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(rule) ? "This career hasn't chosen yet: the Space Dock will ask"
 				: "When you keep a rescued ship, " + homeplanet.model.Words.she() + " sets out on Hard without asking; otherwise you choose " + homeplanet.model.Words.her() + " difficulty. Each fleet has its own choice.");
 	}
-	private String victoryChoice() {
-		if (homeplanet.parser.FinalVictory.fixed() != null) return victoryWas;
-		for (int i = 0; i < victoryButtons.length; i++) if (victoryButtons[i].isSelected()) return homeplanet.parser.FinalVictory.CHOICES[i];
-		return homeplanet.parser.FinalVictory.NOTHING;
+	/** Rescued Ships moved to Hard: the player's only where the fleet leaves it to them, and only with Choice (only a ship kept flies again; 6.47). */
+	private void syncToHard() {
+		toHardBox.setEnabled(homeplanet.parser.FinalVictory.TO_HARD_FREE.equals(homeplanet.parser.FinalVictory.toHardRule()) && homeplanet.parser.FinalVictory.RESCUE.equals(victory.choice()));
 	}
 
 	private static JPanel page() {

@@ -235,17 +235,21 @@ final class ImmersiveBriefing extends JDialog {
 		java.awt.GridBagConstraints c = new java.awt.GridBagConstraints();
 		c.anchor = java.awt.GridBagConstraints.WEST;
 		c.insets = new java.awt.Insets(1, 0, 1, 12);
-		for (int i = 0; i < levels.length; i++) {
+		for (int row = 0; row < levels.length; row++) {
+			int i = CareerRules.ORDER[row]; // the museum's reward under the final victory (6.47)
 			java.util.List<String> words = new java.util.ArrayList<String>();
 			java.util.List<Integer> lv = new java.util.ArrayList<Integer>();
 			for (int l = 0; l < 3; l++) { String w = homeplanet.model.Words.ship(CareerRules.LEVELS[i][l]); if (!words.contains(w)) { words.add(w); lv.add(l); } } // {her}: the Ship Pronoun setting
-			if (i == CareerRules.VICTORY && was.level(i) == CareerRules.OWN_CHOICE) { words.add(was.words(i)); lv.add(CareerRules.OWN_CHOICE); }
+			if ((i == CareerRules.VICTORY || i == CareerRules.MUSEUM_PAY) && was.level(i) == CareerRules.OWN_CHOICE) { words.add(was.words(i)); lv.add(CareerRules.OWN_CHOICE); }
 			levelOf[i] = new int[lv.size()];
 			for (int k = 0; k < levelOf[i].length; k++) levelOf[i][k] = lv.get(k);
 			levels[i] = new JComboBox<String>(words.toArray(new String[0]));
 			levels[i].setSelectedIndex(Math.max(0, lv.indexOf(was.level(i))));
-			c.gridx = 0; c.gridy = i;
-			grid.add(new JLabel(CareerRules.RULES[i]), c);
+			c.gridx = 0; c.gridy = row;
+			JLabel name = new JLabel(CareerRules.RULES[i]);
+			if (i == CareerRules.VICTORY) name.setToolTipText(FinalVictory.tip("Choice: " + FinalVictory.explain(FinalVictory.RESCUE), "Museum: " + FinalVictory.explain(FinalVictory.MUSEUM)));
+			if (i == CareerRules.MUSEUM_PAY) name.setToolTipText(FinalVictory.tip(FinalVictory.explainPay()));
+			grid.add(name, c);
 			c.gridx = 1;
 			grid.add(levels[i], c);
 		}
@@ -383,7 +387,7 @@ final class ImmersiveBriefing extends JDialog {
 		sb.append("<br>");
 		CareerRules r = rules();
 		sb.append("• Difficulty: ").append(r.title());
-		for (int i = 0; i < CareerRules.RULES.length; i++) sb.append("<br>&nbsp;&nbsp;&nbsp;").append(XmlText.text(CareerRules.RULES[i])).append(": ").append(XmlText.text(r.words(i)));
+		for (int i : CareerRules.ORDER) sb.append("<br>&nbsp;&nbsp;&nbsp;").append(XmlText.text(CareerRules.RULES[i])).append(": ").append(XmlText.text(r.words(i)));
 		String rule = FinalVictory.toHardRule(r, CareerRules.CUSTOM.equals(r.name) ? Boolean.toString(toHard.isSelected()) : null);
 		sb.append("<br>&nbsp;&nbsp;&nbsp;").append(TO_HARD).append(": ").append(FinalVictory.TO_HARD_NONE.equals(rule) ? "doesn't apply" : FinalVictory.TO_HARD_FREE.equals(rule) ? "yours to choose in Settings"
 				: FinalVictory.TO_HARD_ON.equals(rule) ? "always" : "never: you choose " + homeplanet.model.Words.her() + " difficulty");

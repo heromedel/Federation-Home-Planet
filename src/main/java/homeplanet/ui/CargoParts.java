@@ -109,6 +109,8 @@ final class CargoParts {
 		private String note = "";
 		ScrapCount() { setOpaque(false); }
 		void set(int amount, String note) { this.amount = amount; this.note = note == null ? "" : note; repaint(); }
+		/** How wide the gear and the number are drawn (the note left out). */
+		int textWidth() { return Math.min(22, getHeight() - 2) + 6 + width(Integer.toString(amount), FtlFont.MENU); }
 		@Override protected void paintComponent(Graphics g0) {
 			Graphics2D g = (Graphics2D) g0.create();
 			javax.swing.Icon gear = IconFactory.supplyIcon("scrap");

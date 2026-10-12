@@ -502,7 +502,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		if (!askingOffers.add(n.offer.id)) return; // already on screen
 		try {
-			Object[] options = {"Keep " + homeplanet.model.Words.herObj(), "Accept the museum's offer (" + n.value + " scrap)", "Decide later"};
+			Object[] options = {"Keep " + homeplanet.model.Words.herObj(), n.value > 0 ? "Accept the museum's offer (" + n.value + " scrap)" : "Give " + homeplanet.model.Words.herObj() + " to the museum", "Decide later"};
 			int c = JOptionPane.showOptionDialog(null, t, n.title, JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 			if (c != 0 && c != 1) { deferredOffers.add(n.offer.id); return; }
 			homeplanet.vault.Vault.FinalBattle f = homeplanet.parser.FinalVictory.offer(n.offer.id);
