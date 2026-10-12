@@ -226,7 +226,7 @@ public final class FinalVictory {
 	/** How it stands for a career with these rules and this saved answer (null: none); null rules, Sandbox Mode. */
 	public static String toHardRule(CareerRules r, String saved) {
 		if (r == null) return TO_HARD_FREE;
-		if (MUSEUM.equals(r.victory())) return TO_HARD_NONE;
+		if (MUSEUM.equals(r.victory()) || NOTHING.equals(r.victory())) return TO_HARD_NONE; // no ship comes back to fly
 		if (CareerRules.NORMAL.equals(r.name)) return TO_HARD_ON; // no saved answer is read: deleting one changes nothing
 		if (CareerRules.CUSTOM.equals(r.name)) return saved == null ? TO_HARD_ASK : Boolean.parseBoolean(saved) ? TO_HARD_ON : TO_HARD_OFF;
 		return TO_HARD_FREE; // Easy, or a career from before difficulties

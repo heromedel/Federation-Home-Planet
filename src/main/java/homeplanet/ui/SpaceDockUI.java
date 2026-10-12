@@ -1606,7 +1606,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		Vault v = Vault.get();
 		boolean waiting = v.freeCommandOpen();
 		orders.add(new OtherOrdersDialog.Order("Plead for New Ship", "Ask The Federation Home Planet for a new ship, paid for with the Cargo Hold or against your reputation.",
-				!HomePlanet.commissionCosts() ? "commissioning is free (Settings, Rules): Commission a new ship instead."
+				!HomePlanet.commissionCosts() ? "commissioning is free (" + (HomePlanet.immersiveMode ? "the career's rules" : "Settings, Rules") + "): Commission a new ship instead."
 						: waiting ? "a ship's order is already waiting for you at Commission." : null,
 				new Runnable() { public void run() { plead(); } }, true));
 		final File last = v.freeCommandForfeit() ? v.lastSurrender() : null;
