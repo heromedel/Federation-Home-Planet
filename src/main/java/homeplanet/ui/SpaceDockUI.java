@@ -1204,12 +1204,17 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	/** The docked launch: FTL windowed, launched, and the Space Dock laid out around its viewport. */
 	private void launchDocked() {
-		try { homeplanet.core.FtlDock.prepareSettings(); }
-		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not set FTL to windowed in its settings.ini:\n" + e.getMessage() + "\n\nFTL may start full screen; it will still be docked if it can be."); }
-		if (!HomePlanet.launchFTL(true)) return;
+		// FTL running already (started before the station, or on its own): its window is docked, and no second FTL launched (heromedel, 6.57)
+		boolean running = GameGuard.isFtlRunning();
+		if (running) log.info("FTL docked: FTL is running already; its window is docked, nothing launched");
+		else {
+			try { homeplanet.core.FtlDock.prepareSettings(); }
+			catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not set FTL to windowed in its settings.ini:\n" + e.getMessage() + "\n\nFTL may start full screen; it will still be docked if it can be."); }
+			if (!HomePlanet.launchFTL(true)) return;
+		}
 		homeplanet.core.FtlDock.begin(javax.swing.SwingUtilities.getWindowAncestor(this));
 		dockStarted = System.currentTimeMillis();
-		ftlSeen = false;
+		ftlSeen = running;
 		init();
 		javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { fitWindow(); } });
 		dockWatch.start();

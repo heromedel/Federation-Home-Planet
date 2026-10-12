@@ -46,6 +46,7 @@ public class GuiT {
   infirmaryBay(f);
   designSteps(f);
   designDefaults(f);
+  oneFtl(f);
   Setup.done();
   System.exit(0);
  }
@@ -134,6 +135,69 @@ public class GuiT {
   Setup.chk("AF: moving a placed system keeps its tick", Boolean.TRUE.equals(r[2]));
   Setup.chk("AF: the Loadout step shows Shields unticked, Piloting ticked", Boolean.TRUE.equals(r[3]));
   Setup.chk("AF: the editor's copy is a starter ship too", Boolean.TRUE.equals(r[4]));
+ }
+ /** One FTL at a time (heromedel, 6.57): docking with FTL running docks it, nothing launched; Launch says it's running; closing with FTL docked asks first. */
+ static void oneFtl(final MainFrame f) throws Exception {
+  File ini = new File(System.getProperty("java.io.tmpdir"), "gui-settings-" + System.nanoTime() + ".ini");
+  SafeFiles.writeText(ini, "fullscreen=1\nvsync=1\n", false);
+  System.setProperty("homeplanet.ftlSettings", ini.getPath());
+  System.setProperty("homeplanet.ftlRunning", "true");
+  try {
+   final boolean[] active = {false};
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    f.showSpaceDock();
+    call(f.spaceDock, SpaceDockUI.class, "launchDocked", new Class<?>[0]);
+    active[0] = FtlDock.active();
+    ((javax.swing.Timer) field(f.spaceDock, SpaceDockUI.class, "dockWatch")).stop(); // no real FTL window here: its watch would end the run
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   String after = new String(SafeFiles.read(ini), "UTF-8");
+   Setup.chk("F: FTL running already, the dock button docks it and launches nothing (its settings.ini untouched: " + after.trim().replace("\n", ", ") + ")", active[0] && after.startsWith("fullscreen=1"));
+   // closing the station while it's docked: asked first (a stand-in for FTL's window, found)
+   java.lang.reflect.Field win = FtlDock.class.getDeclaredField("window"); win.setAccessible(true);
+   win.set(null, "a window");
+   final Object[] ask = {null, null};
+   Thread t = new Thread(new Runnable() { public void run() { try {
+    java.lang.reflect.Method m = MainFrame.class.getDeclaredMethod("confirmCloseWithFtl"); m.setAccessible(true);
+    final Object[] r = {null};
+    SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { r[0] = m.invoke(f); } catch (Exception e) { throw new RuntimeException(e); } } });
+    ask[0] = r[0];
+   } catch (Exception e) { ask[0] = e; } } });
+   t.start();
+   ask[1] = answer("Close The Home Planet Station", "Cancel");
+   t.join(10000);
+   win.set(null, null);
+   Setup.chk("F: closing with FTL docked asks first, and Cancel keeps the station open: " + ask[1] + " -> " + ask[0], String.valueOf(ask[1]).contains("gives FTL its own window back") && Boolean.FALSE.equals(ask[0]));
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { call(f.spaceDock, SpaceDockUI.class, "endDock", new Class<?>[0]); } catch (Exception e) { throw new RuntimeException(e); } } });
+   // the plain Launch with FTL running: said, not launched
+   final boolean[] launched = {true};
+   Thread l = new Thread(new Runnable() { public void run() { launched[0] = HomePlanet.launchFTL(); } });
+   l.start();
+   String said = answer("Launch FTL", null);
+   l.join(10000);
+   Setup.chk("F: Launch with FTL running says so and launches nothing: " + said, !launched[0] && String.valueOf(said).contains("running already"));
+  } finally {
+   System.clearProperty("homeplanet.ftlRunning");
+   System.clearProperty("homeplanet.ftlSettings");
+   ini.delete();
+  }
+ }
+ /** Waits for a pop-up with this title, reads its message, and presses the button named (or closes it). Its message, or null if none came. */
+ static String answer(String title, final String button) throws Exception {
+  for (int i = 0; i < 100; i++) {
+   for (final Window w : Window.getWindows()) {
+    if (!(w instanceof javax.swing.JDialog) || !w.isShowing() || !title.equals(((javax.swing.JDialog) w).getTitle())) continue;
+    final String[] text = {null};
+    SwingUtilities.invokeAndWait(new Runnable() { public void run() {
+     javax.swing.JOptionPane op = find(w, javax.swing.JOptionPane.class);
+     text[0] = op == null ? "" : String.valueOf(op.getMessage());
+     if (op != null && button != null) op.setValue(button); else ((javax.swing.JDialog) w).dispose();
+    } });
+    return text[0];
+   }
+   Thread.sleep(100);
+  }
+  StringBuilder open = new StringBuilder(); for (Window w : Window.getWindows()) if (w instanceof javax.swing.JDialog && w.isShowing()) open.append(" [").append(((javax.swing.JDialog) w).getTitle()).append("]");
+  return "no pop-up titled " + title + "; showing:" + open;
  }
  static List<NumberRow> rows(java.awt.Container c) { List<NumberRow> out = new ArrayList<NumberRow>(); for (java.awt.Component x : c.getComponents()) { if (x instanceof NumberRow) out.add((NumberRow) x); if (x instanceof java.awt.Container) out.addAll(rows((java.awt.Container) x)); } return out; }
 
