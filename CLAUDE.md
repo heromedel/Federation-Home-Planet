@@ -115,6 +115,9 @@ it does and CREDITS.md for where the code came from.
 - `Tools and Harness/hw2fhp-converter/`: the FTL Homeworld to FHP converter (a separate jar) and its tests.
 - `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
   `Current Build\`).
+- `Build A Release.bat` (6.51): builds through the Build .bat's `build` mode, then makes `Release\Federation Home Planet <version>\`
+  (the jar, the Interface, LICENSE, CREDITS.md, README.md) and its zip. The Interface finds Java (`java\` beside it, `..\tools\jdk`,
+  JAVA_HOME, the PATH, Program Files) or offers a portable Java runtime in `java\` or Adoptium's installer.
 
 ## Build
 

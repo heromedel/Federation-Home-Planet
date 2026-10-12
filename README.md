@@ -127,6 +127,12 @@ the Interface on your desktop; 3 launches the station once it's built). The firs
 run puts a fresh `Federation Home Planet.jar` in `Current Build\`, then offers to launch it. Or with your own Maven:
 `mvn package` → `target/Federation Home Planet.jar`.
 
+To make a release, double-click `Build A Release.bat`: it builds the jar, then puts `Release\Federation Home Planet
+<version>\` together with only the jar, the Interface, `LICENSE`, `CREDITS.md` and this README, and zips it to upload
+(it warns if the commit isn't tagged with the version). A player needs nothing else: the Interface finds Java on their
+computer, or offers to download one just for the station (into a `java` folder beside it, no install) or to install
+Java for the whole computer.
+
 To update, use **Check for Updates...** (Settings, About). It compares your version with the main branch on GitHub; if
 main is newer, Update Now puts the new source files in place (only the program's own: `tools\`, your settings, logs
 and fleets aren't touched), closes the station, rebuilds it and opens it again. If the build fails, the old files go

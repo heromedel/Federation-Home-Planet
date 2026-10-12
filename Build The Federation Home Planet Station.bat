@@ -23,6 +23,8 @@ call :plans
 
 rem "update": started by the station's Check for Updates, with the new files in place: rebuild, then open the station
 if /i "%~1"=="update" goto :update
+rem "build": construct only, no menu and no launch, for Build A Release.bat; the exit code says whether it was built (6.51)
+if /i "%~1"=="build" goto :buildonly
 
 :menu
 cls
@@ -59,6 +61,12 @@ echo.
 choice /c 01 /n /m "   Input -> "
 if errorlevel 2 call :launch
 exit /b 0
+
+rem ---- :buildonly: a construction and nothing else ----
+:buildonly
+call :construct
+if defined BUILT exit /b 0
+exit /b 1
 
 rem ---- :update: the station closed itself for new construction plans ----
 :update
