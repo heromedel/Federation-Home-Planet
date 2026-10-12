@@ -71,12 +71,19 @@ public final class Career {
 		return r;
 	}
 
-	/** What comes after a final victory in this Immersive fleet (FinalVictory.NOTHING, RESCUE or REWARD). */
+	/** What comes after a final victory in this Immersive fleet (FinalVictory.NOTHING, RESCUE or MUSEUM; REWARD before 6.47). */
 	public static String finalVictory(File immersiveRoot) { return read(immersiveRoot).getProperty("finalVictory", FinalVictory.NOTHING); }
 	/** Sets what comes after a final victory in this Immersive fleet (its career must have begun). */
 	public static void setFinalVictory(File immersiveRoot, String choice) throws IOException {
 		Properties p = read(immersiveRoot);
 		p.setProperty("finalVictory", choice);
+		write(immersiveRoot, p);
+	}
+	/** The museum's reward this fleet chose (FinalVictory.FULL, HALF or NONE; 6.47), or null: full, as before. Read only where the career leaves it to the player. */
+	public static String finalVictoryPay(File immersiveRoot) { return read(immersiveRoot).getProperty("finalVictoryPay"); }
+	public static void setFinalVictoryPay(File immersiveRoot, String pay) throws IOException {
+		Properties p = read(immersiveRoot);
+		p.setProperty("finalVictoryPay", pay);
 		write(immersiveRoot, p);
 	}
 

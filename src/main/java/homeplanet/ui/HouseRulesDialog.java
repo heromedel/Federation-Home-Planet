@@ -22,7 +22,7 @@ public class HouseRulesDialog extends JDialog {
 
 	private final RuleBoxes rules = new RuleBoxes();
 	/** Sandbox Mode's first setup: what happens after a final victory, as Settings shows it. */
-	private javax.swing.JRadioButton[] victory = null;
+	private VictoryRules victory = null;
 
 	/** Shows the window and waits; the choices are set on HomePlanet when it closes. */
 	public static void ask() { ask(null); }
@@ -53,19 +53,10 @@ public class HouseRulesDialog extends JDialog {
 		rules.addTo(body, c, immersive == null);
 		if (Boolean.FALSE.equals(immersive)) {
 			SettingsDialog.heading(body, c, "After a final victory");
-			victory = new javax.swing.JRadioButton[homeplanet.parser.FinalVictory.CHOICES.length];
-			javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
-			String was = homeplanet.parser.FinalVictory.choice();
-			for (int i = 0; i < victory.length; i++) {
-				String ch = homeplanet.parser.FinalVictory.CHOICES[i];
-				victory[i] = new javax.swing.JRadioButton(homeplanet.parser.FinalVictory.label(ch), ch.equals(was));
-				group.add(victory[i]);
-				body.add(victory[i], (GridBagConstraints) c.clone());
-				c.gridy++;
-			}
-			victory[1].setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " comes back as " + homeplanet.model.Words.she() + " was moments before the final engagement, ready for a new journey; or take " + homeplanet.model.Words.her() + " full value for the museum");
-			victory[2].setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " full value, as the shipyard would charge for " + homeplanet.model.Words.herObj() + ", goes to the Cargo Hold");
-			JLabel note = new JLabel("<html><div style='width:520px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>For a rescue or a reward, The Home Planet Station must be open while you play: "
+			victory = new VictoryRules(); // Nothing, Choice or Museum, and the museum's reward (6.47)
+			body.add(victory, (GridBagConstraints) c.clone());
+			c.gridy++;
+			JLabel note = new JLabel("<html><div style='width:520px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>For Choice or Museum, The Home Planet Station must be open while you play: "
 					+ "it keeps " + homeplanet.model.Words.herObj() + " as the Rebel Flagship heads for the last battle.</font></div></html>");
 			note.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 			body.add(note, (GridBagConstraints) c.clone());
@@ -98,11 +89,8 @@ public class HouseRulesDialog extends JDialog {
 	private void apply() {
 		rules.apply();
 		if (victory != null) {
-			for (int i = 0; i < victory.length; i++) {
-				if (!victory[i].isSelected()) continue;
-				try { homeplanet.parser.FinalVictory.setChoice(homeplanet.parser.FinalVictory.CHOICES[i]); }
-				catch (java.io.IOException e) { homeplanet.core.HomePlanet.showErrorDialog("The Home Planet Station could not record the choice after a final victory:\n" + e.getMessage()); }
-			}
+			try { victory.apply(); }
+			catch (java.io.IOException e) { homeplanet.core.HomePlanet.showErrorDialog("The Home Planet Station could not record the choice after a final victory:\n" + e.getMessage()); }
 		}
 	}
 }

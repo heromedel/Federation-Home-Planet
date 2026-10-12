@@ -264,6 +264,13 @@ A setting (Settings, and the Immersive briefing), each fleet its own choice, def
   she can't be recovered).
 - **Receive a reward equal to her value**: her full value to Spacedock Storage, and she stays lost.
 
+6.47 (heromedel): the choices are **Nothing** (as in FTL), **Choice** (the rescue: keep her, or the museum) and
+**Museum** (the museum takes her), with a second setting under them, **Museum reward value**: Full value, Half value or
+None (the honour alone; its own letters), greyed on Nothing. Rescued Ships moved to Hard is greyed unless Choice. The
+reward of her value went: an answer of Reward reads as Museum at full value. A career's difficulty fills both in (the
+table below); a Custom career has them as two rows, and one begun before 6.47 takes its reward from its old victory
+level (Easy full, otherwise half).
+
 Her value is her price strictly counted, at the difficulty's rate (section 30). The messages come by Transmissions (the rescue offer waits in the inbox), or as a
 notice on the Space Dock when Transmissions are off. The lore holds: the Rebel Flagship withdraws, never destroyed.
 
@@ -361,7 +368,8 @@ Settings (the rules it sets are locked there). Custom picks any level of each ru
 
 | Rule | Easy | Normal | Hard |
 |---|---|---|---|
-| After a final victory | save her, or the museum at full value | save her, or the museum at half value | the museum takes her, at half value |
+| After a final victory | Choice: keep her, or the museum | Choice: keep her, or the museum | Museum: the museum takes her |
+| Museum reward value (6.47) | full value | half value | half value |
 | New Journey | 200 | 500 | 1000 |
 | Plead for New Ship grants (4B.92) | any ship | Kestrel Type A or the Relief Ship | the Relief Ship Type A |
 | Refit removal | free | 25 | 50 |
