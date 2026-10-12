@@ -12,6 +12,12 @@ Tools and Harness/harness2/*.ftl
 Tools and Harness/harness2/work/
 # downloaded by Build The Federation Home Planet Station.bat
 tools/
+# made by Build A Release.bat (6.51)
+Release/
+# the Interface's own Java, when it gets one (6.51)
+Current Build/java/
+Current Build/java-download.zip
+Current Build/java-installer.msi
 # the jar is built by Build The Federation Home Planet Station.bat, not tracked
 Current Build/*.jar
 # the Quick Link icon, made by the build
