@@ -389,7 +389,7 @@ public class SettingsDialog extends JDialog {
 		victory.onChange(new Runnable() { public void run() { syncToHard(); } });
 		rules.afterFleetChange = new Runnable() { public void run() { refreshVictory(); } };
 		JLabel victoryNote = new JLabel("<html><div style='width:520px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>For Choice or Museum, The Home Planet Station must be open while you play: "
-				+ "it keeps " + homeplanet.model.Words.herObj() + " as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
+				+ "it keeps " + homeplanet.model.Words.herObj() + " as " + homeplanet.model.Words.she() + " was as the Rebel Flagship heads for the last battle. Each fleet has its own choice.</font></div></html>");
 		victoryNote.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		body.add(victoryNote, next(c));
 		body.add(toHardBox, next(c));

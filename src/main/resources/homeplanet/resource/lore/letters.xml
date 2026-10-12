@@ -108,7 +108,7 @@ The Rebel Flagship has broken off {her} assault and withdrawn. The line held. Th
 
 Recovery teams reached the {ship} in time, and The Home Planet Station has restored {her_obj} as {she} was moments before the final engagement.
 
-The Federation Home Planet makes an offer: {worth}, {value} scrap, to place {her_obj} in the Federation Museum. Or keep {her_obj}, and {she} will be waiting at the Space Dock for {her} next journey. The decision is yours.
+The Federation Home Planet offers {worth}, {value} scrap, to place {her_obj} in the Federation Museum. Or keep {her_obj}, and {she} will be waiting at the Space Dock for {her} next journey. The decision is yours.
 
 ~ Federation Fleet Command
 ]]></letter>
@@ -120,9 +120,11 @@ Dispatch from Federation Fleet Command.
 
 The Rebel Flagship has broken off {her} assault and withdrawn. The line held. The war continues.
 
-Recovery teams reached the {ship} in time. By order of The Federation Home Planet {she} will not fly again: {she} has been placed in the Federation Museum, where {her} service will be remembered.
+Recovery teams reached the {ship} in time and brought {her_obj} home. In honour of {her} service, {she} has been given a place in the Federation Museum.
 
-In recognition, {worth}, {value} scrap, has been granted to The Home Planet Station. It is waiting in the Station's Cargo Hold.
+In recognition, The Federation Home Planet has granted you {worth}, {value} scrap. It is waiting in the Cargo Hold.
+
+For as long as the Federation endures, {her} service will be remembered.
 
 ~ Federation Fleet Command
 ]]></letter>
@@ -148,7 +150,9 @@ Dispatch from Federation Fleet Command.
 
 The Rebel Flagship has broken off {her} assault and withdrawn. The line held. The war continues.
 
-Recovery teams reached the {ship} in time. By order of The Federation Home Planet {she} will not fly again: {she} has been placed in the Federation Museum, where {her} service will be remembered.
+Recovery teams reached the {ship} in time and brought {her_obj} home. In honour of {her} service, {she} has been given a place in the Federation Museum.
+
+For as long as the Federation endures, {her} service will be remembered.
 
 ~ Federation Fleet Command
 ]]></letter>

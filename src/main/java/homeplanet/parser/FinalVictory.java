@@ -56,8 +56,7 @@ public final class FinalVictory {
 	/** What the museum's reward is (plain text: the windows wrap it). */
 	public static String explainPay() {
 		String her = homeplanet.model.Words.her();
-		return "What the museum pays for " + homeplanet.model.Words.herObj() + ", into the Cargo Hold: " + her + " full value (" + her + " price as " + homeplanet.model.Words.she()
-				+ " was kept, at the commission rate), half of it, or none (the honour alone). Not used with Nothing.";
+		return "What the museum pays for " + homeplanet.model.Words.herObj() + ", into the Cargo Hold: " + her + " full value (" + her + " value at the moment of saved before the final battle), half of it, or none (the honour alone). Not used with Nothing.";
 	}
 	/** A tooltip of plain sentences, wrapped. */
 	public static String tip(String... lines) {
