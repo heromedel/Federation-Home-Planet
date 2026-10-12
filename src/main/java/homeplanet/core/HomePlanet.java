@@ -119,7 +119,11 @@ public class HomePlanet {
 
 	public static boolean storeRequirement() { return immersiveMode || storeRequirement; }
 	public static boolean journeyStoreRequirement() { return immersiveMode || journeyStoreRequirement; }
-	public static boolean commissionCosts() { return immersiveMode || commissionCosts; }
+	public static boolean commissionCosts() {
+		if (!immersiveMode) return commissionCosts;
+		homeplanet.parser.CareerRules r = homeplanet.parser.CareerRules.current();
+		return r == null || !r.commissionFree(); // a Custom career may make it free, as Sandbox Mode can (6.48)
+	}
 	public static boolean sellSupplies() { return immersiveMode || sellSupplies; }
 	public static boolean sellSystems() { return immersiveMode || sellSystems; }
 	public static boolean unlockFreeShips() { return immersiveMode || unlockFreeShips; }

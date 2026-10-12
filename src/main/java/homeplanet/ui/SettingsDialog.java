@@ -804,7 +804,8 @@ public class SettingsDialog extends JDialog {
 		toHardBox.setSelected(toHardWas);
 		syncToHard();
 		toHardBox.setText(none ? "<html><s>" + TO_HARD + "</s></html>" : TO_HARD); // crossed out where it can never come into play
-		toHardBox.setToolTipText(none ? (r != null && homeplanet.parser.CareerRules.HARD.equals(r.name) ? "A Hard career" : "This career") + ": the museum takes every victor, so a rescued ship never comes back to fly"
+		toHardBox.setToolTipText(none ? (r != null && homeplanet.parser.CareerRules.HARD.equals(r.name) ? "A Hard career" : "This career")
+				+ (r != null && homeplanet.parser.FinalVictory.NOTHING.equals(r.victory()) ? ": nothing after a final victory, so no ship comes back to fly" : ": the museum takes every victor, so a rescued ship never comes back to fly")
 				: homeplanet.parser.FinalVictory.TO_HARD_ON.equals(rule) ? (normal ? "A Normal career: a rescued ship always sets out on Hard" : "Chosen when this career began: a rescued ship always sets out on Hard")
 				: homeplanet.parser.FinalVictory.TO_HARD_OFF.equals(rule) ? "Chosen when this career began: when you keep a rescued ship, you choose " + homeplanet.model.Words.her() + " difficulty"
 				: homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(rule) ? "This career hasn't chosen yet: the Space Dock will ask"

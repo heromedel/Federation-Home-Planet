@@ -370,6 +370,11 @@ Settings (the rules it sets are locked there). Custom picks any level of each ru
 |---|---|---|---|
 | After a final victory | Choice: keep her, or the museum | Choice: keep her, or the museum | Museum: the museum takes her |
 | Museum reward value (6.47) | full value | half value | half value |
+
+6.48 (heromedel): a truly Custom career. Six rules also offer Sandbox Mode's level, looser than Easy and only in Custom:
+after a final victory Nothing, the museum's reward None, New Journeys, Refit removal, stripping and commissioning free
+(ship values then at full price, as in Sandbox). The rest are already at Sandbox's at Easy, or Sandbox has nothing
+looser. Stored as level 3 in `career.txt`; Easy, Normal and Hard never use it.
 | New Journey | 200 | 500 | 1000 |
 | Plead for New Ship grants (4B.92) | any ship | Kestrel Type A or the Relief Ship | the Relief Ship Type A |
 | Refit removal | free | 25 | 50 |

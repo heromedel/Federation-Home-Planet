@@ -239,15 +239,16 @@ final class ImmersiveBriefing extends JDialog {
 			int i = CareerRules.ORDER[row]; // the museum's reward under the final victory (6.47)
 			java.util.List<String> words = new java.util.ArrayList<String>();
 			java.util.List<Integer> lv = new java.util.ArrayList<Integer>();
+			if (CareerRules.hasSandbox(i)) { words.add(homeplanet.model.Words.ship(CareerRules.LEVELS[i][CareerRules.SANDBOX])); lv.add(CareerRules.SANDBOX); } // Sandbox's, first: only Custom can choose it (6.48)
 			for (int l = 0; l < 3; l++) { String w = homeplanet.model.Words.ship(CareerRules.LEVELS[i][l]); if (!words.contains(w)) { words.add(w); lv.add(l); } } // {her}: the Ship Pronoun setting
 			if ((i == CareerRules.VICTORY || i == CareerRules.MUSEUM_PAY) && was.level(i) == CareerRules.OWN_CHOICE) { words.add(was.words(i)); lv.add(CareerRules.OWN_CHOICE); }
 			levelOf[i] = new int[lv.size()];
 			for (int k = 0; k < levelOf[i].length; k++) levelOf[i][k] = lv.get(k);
 			levels[i] = new JComboBox<String>(words.toArray(new String[0]));
-			levels[i].setSelectedIndex(Math.max(0, lv.indexOf(was.level(i))));
+			levels[i].setSelectedIndex(entryOf(lv, was.level(i)));
 			c.gridx = 0; c.gridy = row;
 			JLabel name = new JLabel(CareerRules.RULES[i]);
-			if (i == CareerRules.VICTORY) name.setToolTipText(FinalVictory.tip("Choice: " + FinalVictory.explain(FinalVictory.RESCUE), "Museum: " + FinalVictory.explain(FinalVictory.MUSEUM)));
+			if (i == CareerRules.VICTORY) name.setToolTipText(FinalVictory.tip("Nothing: " + FinalVictory.explain(FinalVictory.NOTHING), "Choice: " + FinalVictory.explain(FinalVictory.RESCUE), "Museum: " + FinalVictory.explain(FinalVictory.MUSEUM)));
 			if (i == CareerRules.MUSEUM_PAY) name.setToolTipText(FinalVictory.tip(FinalVictory.explainPay()));
 			grid.add(name, c);
 			c.gridx = 1;
@@ -268,10 +269,17 @@ final class ImmersiveBriefing extends JDialog {
 		levels[CareerRules.VICTORY].addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { syncToHard(); } });
 		grid.setMaximumSize(new Dimension(Integer.MAX_VALUE, grid.getPreferredSize().height)); // room for the line's words to change
 		p.add(grid);
-		p.add(note(begun ? "Its rules were fixed when it began. To begin " + Vault.title(slot) + " afresh (and, for Custom, choose its rules again), end this career in Settings > Switch Game Mode: a copy is kept." : (custom ? "Choose each rule's level. " : "") + "Every other rule is The Federation Home Planet's, the same at every difficulty. "
+		p.add(note(begun ? "Its rules were fixed when it began. To begin " + Vault.title(slot) + " afresh (and, for Custom, choose its rules again), end this career in Settings > Switch Game Mode: a copy is kept." : (custom ? "Choose each rule's level, from Sandbox's to Hard's. " : "") + "Every other rule is The Federation Home Planet's, the same at every difficulty. "
 				+ "A rescue brings " + homeplanet.model.Words.herObj() + " back as " + homeplanet.model.Words.she() + " was moments before the final engagement; The Home Planet Station must be open while you play."));
 		syncLevels();
 		return p;
+	}
+	/** A level's entry in a row's list: its own, or the twin it was merged into (Normal's "Choice" is Easy's); never Sandbox's by mistake. */
+	private static int entryOf(java.util.List<Integer> lv, int level) {
+		if (lv.contains(level)) return lv.indexOf(level);
+		int k = 0;
+		for (int j = 0; j < lv.size(); j++) if (lv.get(j) != CareerRules.SANDBOX && lv.get(j) <= level) k = j;
+		return k;
 	}
 	/** The difficulty's levels in the table; Custom leaves them to the player (and a career already begun, to no one). */
 	private void syncLevels() {
@@ -314,11 +322,11 @@ final class ImmersiveBriefing extends JDialog {
 		boolean none = FinalVictory.TO_HARD_NONE.equals(rule);
 		toHardLabel.setText(none ? "<html><s>" + TO_HARD + "</s></html>" : TO_HARD);
 		toHard.setText(toHardWords(rule, r, choosing));
-		toHard.setToolTipText(none ? "The museum takes every victor, so a rescued ship never comes back to fly" : "When you keep a rescued ship, " + homeplanet.model.Words.she() + " sets out on Hard without asking; otherwise you choose " + homeplanet.model.Words.her() + " difficulty");
+		toHard.setToolTipText(none ? (FinalVictory.NOTHING.equals(r.victory()) ? "Nothing after a final victory: no ship comes back to fly" : "The museum takes every victor, so a rescued ship never comes back to fly") : "When you keep a rescued ship, " + homeplanet.model.Words.she() + " sets out on Hard without asking; otherwise you choose " + homeplanet.model.Words.her() + " difficulty");
 	}
 	private static String toHardWords(String rule, CareerRules r, boolean choosing) {
 		if (choosing) return "fixed once chosen";
-		if (FinalVictory.TO_HARD_NONE.equals(rule)) return "<html><s>doesn't apply</s>: the museum takes every victor</html>";
+		if (FinalVictory.TO_HARD_NONE.equals(rule)) return "<html><s>doesn't apply</s>: " + (FinalVictory.NOTHING.equals(r.victory()) ? "no victor comes back" : "the museum takes every victor") + "</html>";
 		if (FinalVictory.TO_HARD_FREE.equals(rule)) return "yours to choose in Settings";
 		if (FinalVictory.TO_HARD_ASK.equals(rule)) return "not chosen yet: the Space Dock will ask";
 		if (CareerRules.NORMAL.equals(r.name)) return "always";

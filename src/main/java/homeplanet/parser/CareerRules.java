@@ -23,26 +23,33 @@ public final class CareerRules {
 			"An augment with no room aboard", "A custom work order (past the System Limit) costs", "A plea answered with reputation costs", "Museum reward value"};
 	/** The order the rules are shown in: the museum's reward under the final victory it goes with (6.47; kept last in career.txt). */
 	public static final int[] ORDER = {VICTORY, MUSEUM_PAY, JOURNEY, REASSIGNMENT, REMOVAL, STRIPPING, SUPPLIES, STIPEND, COMMISSION, STARTING_SCRAP, AUGMENTS, WORK_ORDER, PLEA};
-	/** Each rule's Easy, Normal and Hard, in words. */
+	/**
+	 * Each rule's Easy, Normal and Hard, in words; a fourth, {@link #SANDBOX}, where Sandbox Mode allows a looser one than
+	 * Easy (6.48, heromedel: a truly Custom career). Only Custom offers it.
+	 */
 	public static final String[][] LEVELS = {
-		{"Choice: keep {her_obj}, or the museum", "Choice: keep {her_obj}, or the museum", "Museum: the museum takes {her_obj}"},
-		{"200 scrap", "500 scrap", "1000 scrap"},
+		{"Choice: keep {her_obj}, or the museum", "Choice: keep {her_obj}, or the museum", "Museum: the museum takes {her_obj}", "Nothing: as in FTL"},
+		{"200 scrap", "500 scrap", "1000 scrap", "free"},
 		{"any ship (or the Relief Ship Type A)", "a Kestrel Type A or the Relief Ship Type A", "the Relief Ship Type A"},
-		{"25 scrap or reputation", "50 scrap or reputation", "75 scrap or reputation"},
-		{"15 scrap or reputation a system", "30 scrap or reputation a system", "60 scrap or reputation a system"},
+		{"25 scrap or reputation", "50 scrap or reputation", "75 scrap or reputation", "free"},
+		{"15 scrap or reputation a system", "30 scrap or reputation a system", "60 scrap or reputation a system", "free"},
 		{"half the store price", "a quarter of the store price", "1 scrap each"},
 		{"one month", "two months", "three months"},
-		{"half {her} price", "75% of {her} price", "{her} full price"},
+		{"half {her} price", "75% of {her} price", "{her} full price", "nothing (values at full price)"},
 		{"50 scrap", "25 scrap", "10 scrap"},
 		{"is shipped home by {her} crew", "is shipped home by {her} crew", "is lost"},
 		{"25 scrap and 25 reputation", "50 scrap and 50 reputation", "75 scrap and 75 reputation"},
 		{"a tenth of {her} value", "a quarter of {her} value", "half {her} value"},
-		{"full value", "half value", "half value"}};
-	private static final int[] JOURNEY_FEES = {200, 500, 1000}, REMOVAL_FEES = {25, 50, 75}, STRIP_FEES = {15, 30, 60}, SUPPLY_PERCENT = {50, 25, 0},
-			STIPEND_MONTHS = {1, 2, 3}, COMMISSION_PERCENT = {50, 75, 100}, START_SCRAP = {50, 25, 10}, WORK_ORDERS = {25, 50, 75}, PLEA_PERCENT = {10, 25, 50};
+		{"full value", "half value", "half value", "none"}};
+	/** A Custom career's level looser than Easy, as Sandbox Mode has it, on the rules whose LEVELS have a fourth (6.48). */
+	public static final int SANDBOX = 3;
+	/** Whether this rule has a Sandbox level for a Custom career to choose. */
+	public static boolean hasSandbox(int rule) { return LEVELS[rule].length > SANDBOX; }
+	private static final int[] JOURNEY_FEES = {200, 500, 1000, 0}, REMOVAL_FEES = {25, 50, 75, 0}, STRIP_FEES = {15, 30, 60, 0}, SUPPLY_PERCENT = {50, 25, 0},
+			STIPEND_MONTHS = {1, 2, 3}, COMMISSION_PERCENT = {50, 75, 100, 100}, START_SCRAP = {50, 25, 10}, WORK_ORDERS = {25, 50, 75}, PLEA_PERCENT = {10, 25, 50};
 	private static final String[] REASSIGN = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF};
-	/** The museum's reward at each level: Easy full value, Normal and Hard half (FinalVictory.FULL, HALF). */
-	private static final String[] MUSEUM_PAYS = {FinalVictory.FULL, FinalVictory.HALF, FinalVictory.HALF};
+	/** The museum's reward at each level: Easy full value, Normal and Hard half (FinalVictory.FULL, HALF); Sandbox none. */
+	private static final String[] MUSEUM_PAYS = {FinalVictory.FULL, FinalVictory.HALF, FinalVictory.HALF, FinalVictory.NONE};
 	/** A career from before difficulties: its final victory and the museum's reward stay the choices made in Settings. */
 	public static final int OWN_CHOICE = -1;
 
@@ -101,7 +108,10 @@ public final class CareerRules {
 	/** Months between stipends (a month is Career.BEACONS_PER_MONTH beacons). */
 	public int stipendMonths() { return STIPEND_MONTHS[level[STIPEND]]; }
 	public int stipendBeacons() { return stipendMonths() * Career.BEACONS_PER_MONTH; }
+	/** A ship's price counts this share wherever one is priced; with commissioning free, her full price (as in Sandbox Mode). */
 	public int commissionPercent() { return COMMISSION_PERCENT[level[COMMISSION]]; }
+	/** Commissioning costs nothing (a Custom career at Sandbox's level, 6.48). */
+	public boolean commissionFree() { return level[COMMISSION] == SANDBOX; }
 	public int startingScrap() { return START_SCRAP[level[STARTING_SCRAP]]; }
 	/** An augment thrown away for want of room comes home (Easy and Normal), or is lost (Hard). */
 	public boolean augmentsHome() { return level[AUGMENTS] < 2; }
@@ -109,10 +119,10 @@ public final class CareerRules {
 	public int workOrder() { return WORK_ORDERS[level[WORK_ORDER]]; }
 	/** A plea answered with reputation: this share of what the Cargo Hold doesn't cover of her value. */
 	public int pleaPercent() { return PLEA_PERCENT[level[PLEA]]; }
-	/** After a final victory: FinalVictory.RESCUE or MUSEUM, or null for an earlier career's own choice. */
+	/** After a final victory: FinalVictory.RESCUE, MUSEUM or NOTHING (Custom at Sandbox's level), or null for an earlier career's own choice. */
 	public String victory() {
 		int l = level[VICTORY];
-		return l == OWN_CHOICE ? null : l == 2 ? FinalVictory.MUSEUM : FinalVictory.RESCUE;
+		return l == OWN_CHOICE ? null : l == SANDBOX ? FinalVictory.NOTHING : l == 2 ? FinalVictory.MUSEUM : FinalVictory.RESCUE;
 	}
 	/** What the museum pays (FinalVictory.FULL or HALF), or null for an earlier career's own choice. */
 	public String museumPay() {
@@ -132,7 +142,7 @@ public final class CareerRules {
 			for (int i = 0; i < lv.length; i++) {
 				if (i >= s.length) { lv[i] = added(i, lv); continue; } // a rule added since it began
 				try { lv[i] = Integer.parseInt(s[i].trim()); } catch (Exception e) { lv[i] = 1; }
-				if (lv[i] < (i == VICTORY || i == MUSEUM_PAY ? OWN_CHOICE : 0) || lv[i] > 2) lv[i] = 1;
+				if (lv[i] < (i == VICTORY || i == MUSEUM_PAY ? OWN_CHOICE : 0) || lv[i] > (hasSandbox(i) && CUSTOM.equals(n) ? SANDBOX : 2)) lv[i] = 1;
 			}
 			return new CareerRules(n, lv);
 		}
