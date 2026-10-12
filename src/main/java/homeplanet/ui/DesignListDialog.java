@@ -132,7 +132,7 @@ public class DesignListDialog extends JDialog {
 		ShipDesign nw = ShipDesign.copy(shown.get(row));
 		ShipDesign fresh = ShipDesign.create(designs);
 		nw.id = fresh.id; nw.made = fresh.made;
-		nw.built = false; nw.starter = false; nw.version = 1; nw.frozenOf = null; nw.snapshotOf = null;
+		nw.built = false; nw.starter = true; nw.version = 1; nw.frozenOf = null; nw.snapshotOf = null;
 		nw.name = uniqueName(nw.name + " copy");
 		ShipDesign d = DesignDialog.open(this, nw, namesBut(nw.id));
 		if (d == null) return;

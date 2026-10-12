@@ -98,6 +98,8 @@ public class LayoutEditor {
 	static final int MARGIN = 4 * SQ;
 	/** The design canvas's border round the grid: room for a big hull picture hanging over the grid's edge. */
 	static final int PAD = 10 * SQ;
+	/** The systems a new design's ship starts with installed when they're placed; the rest wait to be bought or ticked (heromedel, 6.53). */
+	static final java.util.Set<String> STARTS_INSTALLED = new java.util.HashSet<String>(java.util.Arrays.asList("pilot", "oxygen", "engines", "weapons"));
 
 	// art under the rooms (optional): pictures and where they sit relative to the grid origin, in pixels
 	BufferedImage baseImg, floorImg;
@@ -675,6 +677,10 @@ public class LayoutEditor {
 		return true;
 	}
 
+	/** The end of the "added" line: says so when the system isn't installed at the start. */
+	private String notInstalled(String id) {
+		return designArt && !artLocked && d.notAtStart.contains(id) ? ": not installed at the start (the Loadout step can tick it)." : ".";
+	}
 	private void place(String id, int room) {
 		Sys s = d.systems.get(id);
 		Sys orig = host.original(id);
@@ -682,6 +688,11 @@ public class LayoutEditor {
 			s = new Sys(id);
 			s.power = orig != null ? orig.power : CompanionMod.usualPower(id);
 			d.systems.put(id, s);
+			// Design Ship: a new system's room is ready, but only the four every ship needs are installed at the start (heromedel, 6.53)
+			if (designArt && !artLocked) {
+				if (STARTS_INSTALLED.contains(id)) d.notAtStart.remove(id);
+				else d.notAtStart.add(id);
+			}
 		}
 		s.room = room;
 		if (hasStation(id)) {
@@ -955,14 +966,14 @@ public class LayoutEditor {
 			selected = null;
 			edited();
 			if (!hasArtilleryMount()) startArtilleryMount();
-			else host.say("Artillery (" + ArtilleryPicker.label(w) + ") added to room " + room + ".");
+			else host.say("Artillery (" + ArtilleryPicker.label(w) + ") added to room " + room + notInstalled("artillery"));
 			return;
 		}
 		if (selected != null && roomFree(room, selected)) {
 			Sys before = d.systems.get(selected);
 			int from = before == null ? -1 : before.room;
 			place(selected, room);
-			host.say(title(selected) + (from < 0 ? " added to room " + room + "." : " moved from room " + from + " to room " + room + ".")
+			host.say(title(selected) + (from < 0 ? " added to room " + room + notInstalled(selected) : " moved from room " + from + " to room " + room + ".")
 					+ (hasStation(selected) ? " Click a square to move its station." : ""));
 			offList.clearSelection();
 			edited();
@@ -1135,6 +1146,15 @@ public class LayoutEditor {
 				g.setStroke(new BasicStroke(SQ / 3f));
 				for (int k = -baseH; k < baseW; k += SQ) g.drawLine(k, baseH, k + baseH, 0);
 				g.setClip(clip);
+				// what the stripes mean, on them above the grid (tested in FTL, 6.53: past the edge the game crashes, so the export moves her back)
+				String why = "Past the game's edge: a room placed here moves the whole ship right or down in the game.";
+				g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
+				int ww = g.getFontMetrics().stringWidth(why);
+				int wx = originX + cols * SQ / 2 - ww / 2, wy = originY - SQ / 2 + 5; // above the grid, clear of most hull art
+				g.setColor(new Color(0, 0, 0, 170));
+				g.fillRoundRect(wx - 10, wy - 16, ww + 20, 24, 8, 8);
+				g.setColor(new Color(255, 214, 90));
+				g.drawString(why, wx, wy);
 				g.setColor(new Color(90, 220, 255, 230));
 				g.setStroke(new BasicStroke(2f));
 				g.drawLine(cx - 9, cy, cx + 9, cy); g.drawLine(cx, cy - 9, cx, cy + 9);
@@ -1143,17 +1163,7 @@ public class LayoutEditor {
 				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
 				g.drawString("where FTL puts " + homeplanet.model.Words.herObj(), cx + 12, cy - 4);
 			}
-			// rooms with no art say what's next, above the grid (an empty grid says nothing: the line under it does, heromedel 6.53)
-			String hint = designArt && baseImg == null && !d.rooms.isEmpty() ? homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " needs hull art: the Art step, Import PNG or From the game." : null;
-			if (hint != null) {
-				g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
-				int tw = g.getFontMetrics().stringWidth(hint);
-				int hx = originX + cols * SQ / 2 - tw / 2, hy = originY - SQ / 2;
-				g.setColor(new Color(0, 0, 0, 150));
-				g.fillRoundRect(hx - 10, hy - 16, tw + 20, 24, 8, 8);
-				g.setColor(new Color(230, 236, 232));
-				g.drawString(hint, hx, hy);
-			}
+			// no messages on the grid (heromedel, 6.53): what to do next is the line under it ("No hull art yet." among the checks)
 			int[] size = sizeOf(roomTool);
 			if (size != null && hoverX != -1) {
 				boolean ok = d.fits(hoverX, hoverY, size[0], size[1], gridCols(), gridRows(), -1);

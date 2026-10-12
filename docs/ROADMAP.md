@@ -840,8 +840,10 @@ the right is three steps in build order.
   blueprint opens the build screen directly (its Loadout... comes back here with the step in front). Hull, Reactor and
   Drone slots left the title bar for the Loadout step.
 - **Rooms.** Place and Move, then Systems (the old "Not on this ship", with a line saying what to do with it), Doors,
-  Whole ship, the window's own buttons, and the zoom last. An empty grid says nothing (heromedel, 6.53: the line under
-  it says what to do first); a ship with rooms but no art says to import or pick one. The checks line gains a
+  Whole ship, the window's own buttons, and the zoom last. The grid carries no messages (heromedel, 6.53): the line
+  under it says what to do first, and "No hull art yet." is among its checks. A new design is a starter ship, and a
+  system placed on her comes in not installed at the start unless it's Piloting, Oxygen, Engines or Weapon Control
+  (heromedel, 6.53); the line says so, and the Loadout step's tick changes it. The checks line gains a
   "Next:" hint when nothing needs fixing, and wraps rather than running off the window.
 - **Art, and the grid's middle as the game's centre** (heromedel: the one place a person expects it). Measured over
   all 28 of the game's player ships, the middle of the room block sits at the same spot in FTL's frame, 8 squares
@@ -849,7 +851,9 @@ the right is three steps in build order.
   cross "where FTL puts her", which never moves. Where the rooms sit round it is her screen offset (`offsets(d)`, read
   off the rooms; the stored offsets and the art-based guess are gone), so rooms left of the middle sit left in the game,
   and a game ship copied in lands where the game has her and gets the game's own offsets back. FTL has no further left
-  or up than offset 0, so everything past it is striped yellow as a caution (6.53). The canvas is fixed (the grid with a
+  or up than offset 0, so everything past it is striped yellow as a caution and labelled "Past the game's edge: a
+  room placed here moves the whole ship right or down in the game" (6.53; tested in FTL: a design past the edge loads
+  at the edge, and a layout written with a negative offset crashes FTL 1.6.14 on loading). The canvas is fixed (the grid with a
   wide border for art hanging over): editing one thing never slides another. The grid covers the whole canvas and the
   canvas sits in the middle of the view, so the cross is the middle of what the player sees (heromedel, 6.53). "Center on the anchor" puts the picture's visible middle on
   the cross and moves nothing else. The shield ellipse and gibs sit under "Fine adjustment".
