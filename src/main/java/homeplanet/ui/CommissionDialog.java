@@ -265,7 +265,7 @@ public class CommissionDialog extends JDialog {
 				String id = homeplanet.parser.DesignExport.bpId(d);
 				ShipBlueprint bp = DataManager.get().getShip(id);
 				if (bp == null) continue;
-				custom.add(new Entry(id, classOf(bp) + " (designed: " + d.name + (d.version > 1 ? " v" + d.version : "") + ")" + rankNote(id) + patchNote(id)));
+				custom.add(new Entry(id, classOf(bp) + rankNote(id) + patchNote(id))); // her class is the design's name: nothing more to say (6.54, heromedel)
 			}
 			if (!custom.isEmpty()) {
 				rows.add(new Entry(null, "Your blueprints"));
