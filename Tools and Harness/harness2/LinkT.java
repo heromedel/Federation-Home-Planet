@@ -409,6 +409,7 @@ public class LinkT {
   b("offer ship Wanderer"); a("offer supply fuel 1");
   trade("the ship back again");
   Setup.chk("she's back with A", a("fleet").contains("Wanderer") && !b("fleet").contains("Wanderer"));
+  Setup.chk("after two trades, each entry of her log says where she was once (" + a("sectorfields Wanderer") + ")", Integer.parseInt(a("sectorfields Wanderer")) <= 1);
   Setup.chk("her new mark: from Commander Bree, original owner still Captain Ash", a("mark Wanderer").startsWith("from=Commander_Bree original=Captain_Ash"));
   since = a("since Wanderer");
   Setup.chk("her kills for B don't count for A", num(since, "defeated") == 0 && num(since, "lifetime") >= 3);

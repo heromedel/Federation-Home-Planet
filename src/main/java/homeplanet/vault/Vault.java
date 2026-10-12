@@ -858,6 +858,7 @@ public final class Vault {
 		List<String> notes = new ArrayList<String>();
 		findLoose(notes); // a save lying where no ship holds it waits for the player's word (6.10)
 		markShips(); // every save carries her mark (6.10)
+		reseatStranded(); // crew an overhaul before 6.47 left outside her rooms, back aboard
 		if (!notes.isEmpty()) HistoryLog.entry("VAULT", "taking stock", notes, Event.of("VAULT").put("what", "taking_stock").details(notes));
 	}
 
@@ -2190,7 +2191,7 @@ public final class Vault {
 				Event who = VoyageLog.shipFields(s).put("received_from", from);
 				for (EventLog.Entry e : EventLog.parse(new String(files.get(PACKAGE_EVENTS), java.nio.charset.StandardCharsets.UTF_8))) {
 					Event x = Event.of(e.kind).put("log", "voyage").putAll(who);
-					for (String[] kv : e.fields()) if (!kv[0].matches("log|ship|ship_name|ship_id|ship_state|day|station|received_from")) x.put(kv[0], kv[1]);
+					for (String[] kv : e.fields()) if (!kv[0].matches("log|ship|ship_name|ship_id|ship_state|ship_sector|ship_difficulty|day|station|received_from")) x.put(kv[0], kv[1]); // where she was comes with who she is (6.47: it doubled with each trade)
 					if (x.get("time") == null) x.put("time", e.time);
 					EventLog.write(this, x.human(e.human));
 				}
@@ -2384,6 +2385,38 @@ public final class Vault {
 	}
 	/** The ships whose saves were seen marked, by the fingerprint then (so a look reads no record twice). */
 	private final Map<String, String> markedSeen = new java.util.HashMap<String, String>();
+	/** Each ship's save as the stranded-crew check last read it (only a changed save is read again). */
+	private final Map<String, String> reseatSeen = new java.util.HashMap<String, String>();
+	/**
+	 * A remodel overhauled before 6.47 placed her crew without her layout's offset, so FTL shows them outside the ship
+	 * (heromedel, 6.47). A ship on a remodel's blueprint with crew outside every room has them put back on squares of
+	 * her rooms, her save kept as a version first. The boarded ship waits while FTL is running: it may have her.
+	 */
+	private void reseatStranded() {
+		if (net.blerf.ftl.parser.DataManager.get() == null) return; // the fleet opens before FTL's game data
+		for (Ship s : new ArrayList<Ship>(ships)) {
+			if (s.state == Ship.State.STORAGE || !fileOf(s).isFile()) continue;
+			String h = s.hash;
+			if (h != null && h.equals(reseatSeen.get(s.id))) continue;
+			SavedGameState gs = s.save();
+			if (gs == null || !homeplanet.parser.CompanionMod.isRemodelId(gs.getPlayerShip().getShipBlueprintId())) { reseatSeen.put(s.id, h); continue; }
+			net.blerf.ftl.model.shiplayout.ShipLayout lay = net.blerf.ftl.parser.DataManager.get().getShipLayout(gs.getPlayerShip().getShipLayoutId());
+			if (lay == null || homeplanet.parser.Retrofit.stranded(gs.getPlayerShip(), lay).isEmpty()) { reseatSeen.put(s.id, h); continue; }
+			if (s.state == Ship.State.BOARDED && homeplanet.core.GameGuard.isFtlRunning()) continue; // the next look once FTL has closed
+			try {
+				Copy c = readCopy(s);
+				List<String> out = homeplanet.parser.Retrofit.reseat(c.save.getPlayerShip(), lay);
+				if (out.isEmpty()) { reseatSeen.put(s.id, h); continue; }
+				write(s, c.save);
+				reseatSeen.put(s.id, s.hash);
+				Event e = shipEvent("CREW_RESEATED", s).put("layout", gs.getPlayerShip().getShipLayoutId()).put("class", gs.getPlayerShip().getShipBlueprintId()).put("why", "overhaul_offset");
+				for (String n : out) e.put("crew", n);
+				HistoryLog.entry("CREW_RESEATED", s.name + ": crew back aboard after the overhaul (" + String.join(", ", out) + ")", out, e);
+			} catch (IOException x) {
+				log.warn("Could not put {}'s crew back aboard: {}", s.name, x.toString());
+			}
+		}
+	}
 	/** Her record's section for a ship sent here from another career's fleet, until this fleet logs her arrival. */
 	static final String ARRIVAL = "arrival";
 

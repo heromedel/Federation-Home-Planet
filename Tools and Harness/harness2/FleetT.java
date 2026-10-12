@@ -37,9 +37,32 @@ public class FleetT { public static void main(String[] a) throws Exception {
   Setup.chk("D: Hard: missiles and drone parts sell for 1 scrap each", Economy.supplySale(5, Pricing.MISSILE) == 5);
   career.delete();
   Career.start(false, false, new CareerRules(CareerRules.CUSTOM, new int[] {2, 0, 2, 1, 0, 2, 0, 0, 1}));
-  Setup.chk("D: Custom: each rule at its own level", "Custom".equals(CareerRules.current().title()) && FinalVictory.choice().equals(FinalVictory.MUSEUM)
+  Setup.chk("D: Custom: each rule at its own level (the museum's reward from its victory level: half)", "Custom".equals(CareerRules.current().title()) && FinalVictory.choice().equals(FinalVictory.MUSEUM) && FinalVictory.museumPercent() == 50
     && Economy.journeyFee() == 200 && Economy.reassignment().equals(FreeCommand.RELIEF) && Economy.removalFee() == 50 && Economy.stripFee() == 15
     && Economy.supplySale(5, Pricing.MISSILE) == 5 && Career.monthsPerStipend() == 1 && Economy.commissionPercent() == 50);
+  // a truly Custom career (6.48, heromedel): each rule that has one at Sandbox's level
+  career.delete();
+  int[] sb = new int[CareerRules.RULES.length];
+  for (int i = 0; i < sb.length; i++) sb[i] = CareerRules.hasSandbox(i) ? CareerRules.SANDBOX : 0;
+  Career.start(false, false, new CareerRules(CareerRules.CUSTOM, sb));
+  Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
+  Setup.chk("D: Custom at Sandbox's levels: journeys, removal, stripping and commissioning free, ship values at full price",
+    Economy.journeyFee() == 0 && Economy.removalFee() == 0 && Economy.stripAllowed() && Economy.stripFee() == 0 && !HomePlanet.commissionCosts() && Economy.commissionPercent() == 100);
+  Setup.chk("D: and after a final victory Nothing, the museum's reward None, Rescued Ships moved to Hard not applying",
+    FinalVictory.NOTHING.equals(FinalVictory.choice()) && FinalVictory.museumPercent() == 0 && FinalVictory.TO_HARD_NONE.equals(FinalVictory.toHardRule()));
+  Setup.chk("D: its levels kept in career.txt as written", Arrays.equals(Career.rules(v.root).levels(), sb) && "Custom".equals(CareerRules.current().title()));
+  Properties bad = Store.load(career); bad.setProperty("rules", "0,0,3,0,0,0,0,0,0,0,0,0,0"); Store.write(career, bad, "");
+  Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
+  Setup.chk("D: a Sandbox level on a rule that has none reads as Normal", Career.rules(v.root).level(CareerRules.REASSIGNMENT) == 1);
+  // a Custom career begun before 6.47: twelve rules, the museum's reward taken from its final victory's level (Easy full, else half)
+  for (int lvl = 0; lvl < 3; lvl++) {
+   Properties cp = new Properties(); cp.setProperty("difficulty", CareerRules.CUSTOM); cp.setProperty("rules", lvl + ",1,1,1,1,1,1,1,1,1,1,1");
+   cp.setProperty("salaryAll", "false"); cp.setProperty("ownProfile", "false"); cp.setProperty("paidMonths", "0"); cp.setProperty("sectorsAtStart", "0");
+   Store.write(career, cp, "");
+   Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
+   Setup.chk("D: a Custom career from before 6.47 at victory level " + lvl + ": " + (lvl == 2 ? "Museum" : "Choice") + " at " + (lvl == 0 ? "full" : "half") + " value",
+     FinalVictory.choice().equals(lvl == 2 ? FinalVictory.MUSEUM : FinalVictory.RESCUE) && FinalVictory.museumPercent() == (lvl == 0 ? 100 : 50) && FinalVictory.fixedPay() != null);
+  }
   // a career from before difficulties: no difficulty in its career.txt
   Properties p = new Properties(); p.setProperty("salaryAll", "false"); p.setProperty("ownProfile", "false"); p.setProperty("finalVictory", FinalVictory.REWARD);
   p.setProperty("paidMonths", "0"); p.setProperty("sectorsAtStart", "0");
@@ -51,7 +74,8 @@ public class FleetT { public static void main(String[] a) throws Exception {
     CareerRules.EARLIER.equals(e.name) && e.journeyFee() == 200 && FreeCommand.KESTREL.equals(e.reassignment()) && e.removalFee() == 0 && e.stripAllowed() && e.stripFee() == 0
     && e.supplyPercent() == 25 && e.stipendMonths() == 2 && e.commissionPercent() == 100);
   HomePlanet.stripAllowed = false;
-  Setup.chk("D: and its own final victory choice, written down once", FinalVictory.choice().equals(FinalVictory.REWARD) && FinalVictory.fixed() == null
+  Setup.chk("D: and its own final victory choice, written down once (its reward, from before 6.47, now the museum at full value)", FinalVictory.choice().equals(FinalVictory.MUSEUM) && FinalVictory.fixed() == null
+    && FinalVictory.fixedPay() == null && FinalVictory.museumPercent() == 100
     && Career.rules(v.root).stripAllowed() && "earlier".equals(Store.load(career).getProperty("difficulty")));
   HomePlanet.leaveImmersive();
   Vault.switchFleet(false);

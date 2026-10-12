@@ -259,7 +259,7 @@ public class MuseumUI extends JPanel {
 			case PRESERVED: t = "PRESERVED IN THE MUSEUM"; c = GOLD; break;
 			case IN_SERVICE: t = "STILL IN SERVICE"; c = GREEN; break;
 			case TRANSFERRED: t = "TRANSFERRED TO ANOTHER FLEET"; c = SILVER; break;
-			case RETURNED: t = "RETURNED TO HER OWNER"; c = SILVER; break;
+			case RETURNED: t = "RETURNED TO " + homeplanet.model.Words.her().toUpperCase() + " OWNER"; c = SILVER; break; // the Ship Pronoun setting (6.47)
 			case SEIZED: t = "SEIZED BY THE CLAIMS OFFICE"; c = SILVER; break;
 			case LOST: t = "LOST IN ACTION" + (ex.lostSector > 0 ? ", SECTOR " + ex.lostSector : ""); c = SILVER; break;
 			case MEMORIAL: t = "LOST IN ACTION" + (ex.lostSector > 0 ? ", SECTOR " + ex.lostSector : ""); c = SILVER; break;
@@ -434,7 +434,10 @@ public class MuseumUI extends JPanel {
 		row(p, "Scrap collected", String.format("%,d", gs.getTotalScrapCollected()));
 		int lostCrew = lostCrew(ex).size();
 		row(p, "Crew at the end", SaveHelper.getOwnCrew(gs.getPlayerShip()).size() + (lostCrew > 0 ? "  (" + lostCrew + " lost on the way)" : ""));
-		if (ex.status == Museum.Status.PRESERVED && !ex.get("price").isEmpty()) row(p, "Museum's price", String.format("%,d scrap", Integer.parseInt(ex.get("price"))));
+		if (ex.status == Museum.Status.PRESERVED && !ex.get("price").isEmpty()) {
+			int price = Integer.parseInt(ex.get("price"));
+			row(p, "Museum's price", price > 0 ? String.format("%,d scrap", price) : "none: given in honour"); // the museum's reward None (6.47)
+		}
 		if (!ex.victor) return;
 		heading(p, "Honours");
 		mark(p, "★", GOLD, ex.victories == 1 ? "Drove off the Rebel Flagship" : "Drove off the Rebel Flagship " + ex.victories + " times");

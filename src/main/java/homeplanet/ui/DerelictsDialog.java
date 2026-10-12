@@ -141,7 +141,7 @@ final class DerelictsDialog extends JDialog {
 			if (st == null || st.getCapacity() <= 0) continue;
 			String line = Items.systemTitle(t.getId()) + " " + st.getCapacity();
 			if (st.getDamagedBars() > 0) line += " <font color='#d86a4a'>(" + st.getDamagedBars() + " broken)</font>";
-			if (!standard(model, t)) line += " <font color='" + dim + "'>(not " + homeplanet.model.Words.hers() + ")</font>";
+			if (!standard(model, t)) line += " <font color='" + dim + "'>(not " + homeplanet.model.Words.her() + " own)</font>"; // "hers" has no "it" (6.47)
 			sys.add(line);
 		}
 		sb.append("<br><br>Systems: ").append(sys.isEmpty() ? "none" : String.join(", ", sys));

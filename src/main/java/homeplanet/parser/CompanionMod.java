@@ -45,7 +45,7 @@ public class CompanionMod {
 	public static final String FILE = TITLE + ".ftl";
 	public static final String DESCRIPTION = "Companion mod for Federation Home Planet. Lets FTL load ships the station has retrofitted "
 			+ "(any system removable), remodeled (systems moved to other rooms) or designed from scratch. A ship that uses it needs "
-			+ "this mod installed; use Undo Retrofit at the station to return her to the original model.";
+			+ "this mod installed; use Undo Retrofit at the station to return a ship to the original model.";
 	/** The blueprint files the player ships live in; a remodel goes into the same file as its original. */
 	public static final String[] FILES = {"blueprints.xml", "dlcBlueprints.xml", "dlcBlueprintsOverwrite.xml"};
 	/** The remodels file (remodels.xml) and the log retired remodels go to, both in the vault. */

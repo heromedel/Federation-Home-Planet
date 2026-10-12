@@ -63,7 +63,7 @@ public final class ShipPapers {
 		out.put(BLUEPRINT, xml.getBytes(StandardCharsets.UTF_8));
 		for (String src : ShipArt.filesOf(art)) {
 			File f = ShipArt.file(src);
-			if (!f.isFile()) throw new IOException("a picture of " + homeplanet.model.Words.hers() + " is missing: " + f);
+			if (!f.isFile()) throw new IOException("one of " + homeplanet.model.Words.her() + " pictures is missing: " + f);
 			out.put(ART + f.getName(), SafeFiles.read(f));
 		}
 		return out;
@@ -130,7 +130,7 @@ public final class ShipPapers {
 		ShipDesign art = in.art();
 		if (art != null) for (String src : ShipArt.filesOf(art)) {
 			String name = new File(src.substring(5)).getName();
-			if (!src.startsWith("file:art/") || !in.pictures.containsKey(name)) throw new IOException("a picture of " + homeplanet.model.Words.hers() + " didn't come with " + homeplanet.model.Words.herObj() + " (" + shown(name) + ")");
+			if (!src.startsWith("file:art/") || !in.pictures.containsKey(name)) throw new IOException("one of " + homeplanet.model.Words.her() + " pictures didn't come with " + homeplanet.model.Words.herObj() + " (" + shown(name) + ")");
 		}
 		if (art != null) for (String src : new String[] {art.art, art.floor}) {
 			if (src.startsWith("game:") && !src.substring(5).matches("[A-Za-z0-9_]{1,64}")) throw new IOException(homeplanet.model.Words.her() + " blueprint names game art that isn't there");

@@ -37,7 +37,7 @@
      sector="..." on any line but an offer marks it for that sector: it joins the unmarked lines only there. In a line
      after a name, {he} {him} {his} become she, her, her for a woman ({He} {His} to begin a sentence). Every line
      finishes its thought: a reader should never be left asking "decide what?".
-     The ship pronoun tokens {she} {her} {her_obj} {hers} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General).
+     The ship pronoun tokens {she} {her} {her_obj} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General).
 
      Jobs: defend attack negotiate boarded rescue salvage scout repair transport lost escort capture board hijack
      infection spiders. Sectors: civilian engi zoltan mantis pirate rebel rock nebula abandoned crystal. -->

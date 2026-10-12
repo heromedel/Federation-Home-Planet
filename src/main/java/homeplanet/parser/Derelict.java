@@ -102,6 +102,6 @@ public final class Derelict {
 	static void breach(ShipState ship, ShipLayout lay, int roomId) {
 		if (roomId < 0 || roomId >= lay.getRoomCount()) return;
 		ShipLayoutRoom r = lay.getRoom(roomId);
-		ship.setBreach(r.locationX, r.locationY, 100);
+		ship.setBreach(lay.getOffsetX() + r.locationX, lay.getOffsetY() + r.locationY, 100); // FTL's squares: the layout's plus its offset (6.47)
 	}
 }

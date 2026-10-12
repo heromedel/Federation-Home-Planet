@@ -72,7 +72,7 @@ public class LoreT { public static void main(String[] a) throws Exception {
  // E: a copy of the letters wins letter by letter; one with a {token} the letter hasn't got, or breaking a rule, is left out
  Map<String, String> fills = new HashMap<String, String>(); fills.put("ship", "The Adjudicator"); fills.put("rank", "Captain"); fills.put("value", "300"); fills.put("worth", "her worth");
  String ownMuseum = Transmissions.text("museum", fills)[2], ownReward = Transmissions.text("reward", fills)[2];
- Setup.chk("E: the station's own museum letter, \"the {ship}\" by the rule", ownMuseum.contains("Recovery teams reached The Adjudicator in time.") && ownMuseum.contains("the Federation Museum"));
+ Setup.chk("E: the station's own museum letter, \"the {ship}\" by the rule", ownMuseum.contains("Recovery teams reached The Adjudicator in time and brought") && ownMuseum.contains("the Federation Museum"));
  File letters = new File(lore, Lore.LETTERS);
  SafeFiles.writeText(letters, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<letters>\n"
    + "\t<letter key=\"museum\" from=\"Federation Fleet Command\" subject=\"Into the Museum\"><![CDATA[\n{rank},\n\nThe {ship} is in the Museum now: {value} scrap.\n<u>Approved</u>.\n]]></letter>\n"
