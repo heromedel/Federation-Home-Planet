@@ -105,13 +105,19 @@ public class FtlFont {
 	}
 
 	/** The text drawn in this font and colour (cached). */
-	public synchronized BufferedImage render(String s, Color color) {
-		String key = s + "\u0000" + color.getRGB();
+	public BufferedImage render(String s, Color color) {
+		return render(s, color, 0);
+	}
+
+	/** The text with its letters drawn closer, `squeeze` of the font's pixels between each pair (a long button label); the system font ignores it. */
+	public synchronized BufferedImage render(String s, Color color, int squeeze) {
+		String key = s + "\u0000" + color.getRGB() + "\u0000" + squeeze;
 		BufferedImage img = cache.get(key);
 		if (img != null) return img;
 		if (covers(s)) {
 			int w = 0;
 			for (int i = 0; i < s.length(); i++) w += glyphs.get(s.charAt(i)).advance;
+			w -= squeeze * Math.max(0, s.length() - 1);
 			w = Math.max(1, w);
 			int h = Math.max(1, ascent + descent);
 			img = new BufferedImage(w * scale, h * scale, BufferedImage.TYPE_INT_ARGB);
@@ -131,7 +137,7 @@ public class FtlFont {
 							for (int sx = 0; sx < scale; sx++) img.setRGB(px * scale + sx, py * scale + sy, argb);
 					}
 				}
-				x += g.advance;
+				x += g.advance - squeeze;
 			}
 		} else {
 			BufferedImage probe = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
@@ -167,10 +173,15 @@ public class FtlFont {
 
 	/** Cuts the text down with "..." until it fits the width. */
 	public String fit(String s, int maxWidth) {
-		if (render(s, Color.white).getWidth() <= maxWidth) return s;
+		return fit(s, maxWidth, 0);
+	}
+
+	/** As fit, for text drawn with its letters closer (render's squeeze). */
+	public String fit(String s, int maxWidth, int squeeze) {
+		if (render(s, Color.white, squeeze).getWidth() <= maxWidth) return s;
 		for (int n = s.length() - 1; n > 0; n--) {
 			String t = s.substring(0, n).trim() + "...";
-			if (render(t, Color.white).getWidth() <= maxWidth) return t;
+			if (render(t, Color.white, squeeze).getWidth() <= maxWidth) return t;
 		}
 		return s;
 	}

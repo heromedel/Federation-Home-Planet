@@ -144,6 +144,12 @@ public class GuiT {
   System.setProperty("homeplanet.ftlRunning", "true");
   try {
    Setup.chk("F: FTL running, the Launch button reads Switch to FTL: " + launchLabel(f), "Switch to FTL".equals(launchLabel(f)));
+   final int[] ink = {-1, -1};
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    ink[0] = edgeInk((JButton) field(f.spaceDock, SpaceDockUI.class, "launchBtn"));
+    ink[1] = edgeInk((JButton) field(f.spaceDock, SpaceDockUI.class, "disbandBtn"));
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   Setup.chk("AK: Switch to FTL and Decommission sit clear of their buttons' outlines (letters touching it: " + ink[0] + ", " + ink[1] + ")", ink[0] == 0 && ink[1] == 0);
    shown.clear(); optionsShown.clear(); presses.clear();
    SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { ((JButton) field(f.spaceDock, SpaceDockUI.class, "launchBtn")).doClick(); } catch (Exception e) { throw new RuntimeException(e); } } });
    Setup.chk("F: clicked with no FTL window to find (not Windows): it says FTL is running, nothing launched: " + shown, shown.size() == 1 && shown.get(0).contains("running already"));
@@ -176,6 +182,19 @@ public class GuiT {
    ini.delete();
   }
   Setup.chk("F: FTL closed, the button reads Launch FTL again: " + launchLabel(f), "Launch FTL".equals(launchLabel(f)));
+ }
+ /** The button painted on its own: how many bright (lettering) pixels fall in the two columns just inside its outline, at the left and right ends of its middle rows. */
+ static int edgeInk(JButton b) {
+  int w = b.getPreferredSize().width, h = b.getPreferredSize().height;
+  b.setSize(w, h);
+  java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+  java.awt.Graphics2D g = img.createGraphics(); b.paint(g); g.dispose();
+  int n = 0;
+  for (int y = 12; y < h - 12; y++) for (int x : new int[] {3, 4, w - 5, w - 4}) {
+   int p = img.getRGB(x, y);
+   if (((p >> 16) & 0xff) > 150 && ((p >> 8) & 0xff) > 150) n++;
+  }
+  return n;
  }
  /** The Space Dock's Launch button's words, the dock taken stock of first (as it is when the station comes to the front). */
  static String launchLabel(final MainFrame f) throws Exception {
