@@ -842,8 +842,8 @@ the right is three steps in build order.
 - **Rooms.** Place and Move, then Systems (the old "Not on this ship", with a line saying what to do with it), Doors,
   Whole ship, the window's own buttons, and the zoom last. The grid carries no messages (heromedel, 6.53): the line
   under it says what to do first, and "No hull art yet." is among its checks. A new design is a starter ship, and a
-  system placed on her comes in not installed at the start unless it's Piloting, Oxygen, Engines or Weapon Control
-  (heromedel, 6.53); the line says so, its icon on the grid is greyed, and the Loadout step's tick changes it. The checks line gains a
+  system placed on her comes in not installed at the start unless the Kestrel A starts with it (heromedel, 6.53; 6.59: Piloting,
+  Doors, Sensors, Medbay, Oxygen, Shields, Engines, Weapon Control; and 4 weapon slots, 2 drone slots); the line says so, its icon on the grid is greyed, and the Loadout step's tick changes it. The checks line gains a
   "Next:" hint when nothing needs fixing, and wraps rather than running off the window.
 - **Art, and the grid's middle as the game's centre** (heromedel: the one place a person expects it). Measured over
   all 28 of the game's player ships, the middle of the room block sits at the same spot in FTL's frame, 8 squares

@@ -98,8 +98,8 @@ public class LayoutEditor {
 	static final int MARGIN = 4 * SQ;
 	/** The design canvas's border round the grid: room for a big hull picture hanging over the grid's edge. */
 	static final int PAD = 10 * SQ;
-	/** The systems a new design's ship starts with installed when they're placed; the rest wait to be bought or ticked (heromedel, 6.53). */
-	static final java.util.Set<String> STARTS_INSTALLED = new java.util.HashSet<String>(java.util.Arrays.asList("pilot", "oxygen", "engines", "weapons"));
+	/** The systems a new design's ship starts with installed when they're placed, the Kestrel A's; the rest wait to be bought or ticked (heromedel, 6.53 and 6.59). */
+	static final java.util.Set<String> STARTS_INSTALLED = new java.util.HashSet<String>(java.util.Arrays.asList("pilot", "doors", "sensors", "medbay", "oxygen", "shields", "engines", "weapons"));
 
 	// art under the rooms (optional): pictures and where they sit relative to the grid origin, in pixels
 	BufferedImage baseImg, floorImg;
@@ -703,7 +703,7 @@ public class LayoutEditor {
 			s = new Sys(id);
 			s.power = orig != null ? orig.power : CompanionMod.usualPower(id);
 			d.systems.put(id, s);
-			// Design Ship: a new system's room is ready, but only the four every ship needs are installed at the start (heromedel, 6.53)
+			// Design Ship: a new system's room is ready, but only the Kestrel A's are installed at the start (heromedel, 6.53 and 6.59)
 			if (designArt && !artLocked) {
 				if (STARTS_INSTALLED.contains(id)) d.notAtStart.remove(id);
 				else d.notAtStart.add(id);

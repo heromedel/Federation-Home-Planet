@@ -100,11 +100,12 @@ public class GuiT {
   Setup.chk("Steps: unticking a system's row takes it off the starting set", Boolean.TRUE.equals(r[6]));
   Setup.chk("Steps: the Art step comes to the front", "Art".equals(r[7]));
  }
- /** A new design (Plan AF, 6.53): a starter ship; a system placed on her not installed at the start, but for the four every ship needs. */
+ /** A new design (Plan AF, 6.53; AL, 6.59): a starter ship with the Kestrel A's 4 weapon and 2 drone slots; a system placed on her not installed at the start, but for the Kestrel A's. */
  static void designDefaults(final MainFrame f) throws Exception {
   final ShipDesign d = ShipDesign.create(ShipDesign.load()); d.name = "Defaults Test";
   Setup.chk("AF: a new design is a starter ship", d.starter);
-  d.rooms.add(new ShipDesign.Room(6, 5, 2, 2)); d.rooms.add(new ShipDesign.Room(8, 5, 2, 2)); d.rooms.add(new ShipDesign.Room(10, 5, 2, 2));
+  Setup.chk("AL: a new design has 4 weapon slots and 2 drone slots: " + d.weaponSlots + "/" + d.droneSlots, d.weaponSlots == 4 && d.droneSlots == 2);
+  for (int x = 6; x <= 14; x += 2) d.rooms.add(new ShipDesign.Room(x, 5, 2, 2));
   new Thread(new Runnable() { public void run() { DesignDialog.open(f, d, new ArrayList<String>()); } }).start();
   ShipEditorDialog dlg = null;
   for (int i = 0; i < 100 && dlg == null; i++) { Thread.sleep(100); for (Window w : Window.getWindows()) if (w instanceof ShipEditorDialog && w.isShowing()) dlg = (ShipEditorDialog) w; }
@@ -112,28 +113,27 @@ public class GuiT {
   if (dlg == null) return;
   final ShipEditorDialog ed = dlg;
   final Object[] r = new Object[6];
+  final String[] placed = {"drones", "shields", "engines", "sensors", "medbay"};
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
    ShipDesign w = (ShipDesign) field(ed, ShipEditorDialog.class, "d"); // the editor works on a copy
    LayoutEditor le = (LayoutEditor) field(ed, ShipEditorDialog.class, "editor");
-   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "shields", 0);
-   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "pilot", 1);
-   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "engines", 2);
+   for (int i = 0; i < placed.length; i++) call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, placed[i], i);
    r[0] = w.notAtStart.toString();
-   r[1] = call(le, LayoutEditor.class, "notInstalled", new Class<?>[] {String.class}, "shields") + "|" + call(le, LayoutEditor.class, "notInstalled", new Class<?>[] {String.class}, "pilot");
-   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "shields", 2); // moved: stays as it was
-   r[2] = w.notAtStart.contains("shields");
+   r[1] = call(le, LayoutEditor.class, "notInstalled", new Class<?>[] {String.class}, "drones") + "|" + call(le, LayoutEditor.class, "notInstalled", new Class<?>[] {String.class}, "shields");
+   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "drones", 2); // moved: stays as it was
+   r[2] = w.notAtStart.contains("drones");
    call(le, LayoutEditor.class, "edited", new Class<?>[0]);
    ed.showStep("Loadout");
-   NumberRow sh = null, pi = null;
-   for (NumberRow n : rows(ed)) { if (n.name().equals("Shields")) sh = n; if (n.name().equals("Piloting")) pi = n; }
-   r[3] = sh != null && pi != null && !sh.tick().isSelected() && pi.tick().isSelected();
+   StringBuilder ticks = new StringBuilder();
+   for (String id : placed) for (NumberRow n : rows(ed)) if (n.name().equals(homeplanet.model.Items.systemTitle(id)) && n.tick() != null) ticks.append(id).append('=').append(n.tick().isSelected()).append(' ');
+   r[3] = ticks.toString().trim();
    r[4] = w.starter;
    ed.dispose();
   } catch (Exception e) { throw new RuntimeException(e); } } });
-  Setup.chk("AF: Shields placed comes in not installed, Piloting and Engines installed: " + r[0], "[shields]".equals(r[0]));
-  Setup.chk("AF: the line says so for Shields and not for Piloting: " + r[1], String.valueOf(r[1]).startsWith(": not installed at the start") && String.valueOf(r[1]).endsWith("|."));
+  Setup.chk("AL: Drone Control placed comes in not installed, Shields, Engines, Sensors and Medbay installed: " + r[0], "[drones]".equals(r[0]));
+  Setup.chk("AF: the line says so for Drone Control and not for Shields: " + r[1], String.valueOf(r[1]).startsWith(": not installed at the start") && String.valueOf(r[1]).endsWith("|."));
   Setup.chk("AF: moving a placed system keeps its tick", Boolean.TRUE.equals(r[2]));
-  Setup.chk("AF: the Loadout step shows Shields unticked, Piloting ticked", Boolean.TRUE.equals(r[3]));
+  Setup.chk("AL: the Loadout step shows Drone Control unticked, the Kestrel A's ticked: " + r[3], "drones=false shields=true engines=true sensors=true medbay=true".equals(r[3]));
   Setup.chk("AF: the editor's copy is a starter ship too", Boolean.TRUE.equals(r[4]));
  }
  /** One FTL at a time (heromedel, 6.57): the Launch button reads Switch to FTL while FTL runs; docking with FTL running docks it, nothing launched; closing with FTL docked asks first. Pop-ups answered by watchPopUps. */

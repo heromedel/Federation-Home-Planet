@@ -219,7 +219,7 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 				+ "Each number shows " + homeplanet.model.Words.her() + " own over the vanilla max (the most any of the game's ships has) with a bar to that ceiling; type what you like, the bar turns amber past it. "
 				+ "Past the vanilla numbers FTL still takes " + homeplanet.model.Words.herObj() + ", but its bars and upgrade screen are drawn for the vanilla ones. "
 				+ "A greyed icon on the grid is a system " + homeplanet.model.Words.she() + " doesn't start with: its room is ready, and its tick here installs it. "
-				+ "A system placed on a new design comes in unticked, but for Piloting, Oxygen, Engines and Weapon Control.</p>");
+				+ "A system placed on a new design comes in ticked if the Kestrel A starts with it (Piloting, Doors, Sensors, Medbay, Oxygen, Shields, Engines and Weapon Control), the rest unticked.</p>");
 		sb.append("<h3>Keys</h3><p>Ctrl+Z and Ctrl+Y undo and redo. Esc deselects. Delete removes the selected door, mount or room. Ctrl+S " + primaryVerb() + ". F1 opens this help.</p>");
 		sb.append("<h3>View</h3><p>The wheel zooms (Ctrl+plus, Ctrl+minus); middle-drag moves the view; Shift+wheel scrolls; Ctrl+0 (or Fit) shows the whole ship.</p>");
 		sb.append("<h3>Checks</h3><p>The line under the editor says what would stop " + homeplanet.model.Words.herObj() + " working (<i>To fix</i>) and what's worth knowing (<i>Note</i>); it updates as you edit."

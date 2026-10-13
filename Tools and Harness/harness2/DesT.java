@@ -21,7 +21,7 @@ public class DesT {
   String[][] sys = {{"pilot","4"},{"engines","0"},{"oxygen","3"},{"shields","1"},{"weapons","2"}};
   for (String[] s : sys) { CompanionMod.Sys x = new CompanionMod.Sys(s[0]); x.room = Integer.parseInt(s[1]); x.power = CompanionMod.usualPower(s[0]); if (ShipDesign.manned(s[0])) { x.square = 0; x.dir = ShipDesign.defaultDir(s[0]); } d.systems.put(s[0], x); }
   if (k == 0) ShipArt.adoptGameShip(d, "kestral");
-  else { d.art = ShipArt.importFile(png, d.id, "base"); d.artX = 4*35 - 80; d.artY = 5*35 - 150; d.mounts.add(new ShipDesign.Mount(400, 120)); d.mounts.add(new ShipDesign.Mount(400, 320)); }
+  else { d.art = ShipArt.importFile(png, d.id, "base"); d.artX = 4*35 - 80; d.artY = 5*35 - 150; d.mounts.add(new ShipDesign.Mount(400, 120)); d.mounts.add(new ShipDesign.Mount(400, 320)); d.weaponSlots = 2; } // two mounts, two slots (a new design has the Kestrel A's 4, 6.59)
   d.built = true; d.starter = true;
   d.notAtStart.add("shields");
   CompanionMod.Loadout l = new CompanionMod.Loadout(); l.className = d.name + " Class"; l.shipName = "The " + d.name; l.crew.put("human", 2); l.crew.put("engi", 1); l.weapons.add("LASER_BURST_2"); l.missiles = 5; l.droneParts = 1; d.loadout = l;
