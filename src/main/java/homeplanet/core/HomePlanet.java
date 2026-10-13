@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.56";
+	public static final String APP_VERSION = "6.57";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -162,6 +162,7 @@ public class HomePlanet {
 		}
 		homeplanet.ui.MenuTheme.install(); // pop-up windows in the station's dark blue
 		homeplanet.ui.EscClose.install(); // Esc as the close box, in every window but the station's own (6.20)
+		homeplanet.ui.Tips.install(); // tooltips off the mouse and off their button, there while it's pointed at (6.57)
 		ImageIO.setUseCache(false); // small images don't need disk buffering
 		savedGameParser = new SavedGameParser();
 		boolean writeConfig = loadConfig();

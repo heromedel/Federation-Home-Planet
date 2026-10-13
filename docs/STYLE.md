@@ -19,6 +19,9 @@ exceptions can be made (the Museum's plates, say, are sized artistically).
 - On the main screens, leave about 4 pixels between a stat's label ("Sector") and its white value.
 - FTL's own pixel fonts (`FtlFont.MENU` and `FtlFont.BODY`) stay where they are: headings, buttons, ship names,
   the Cargo Bay, the Dry Dock. That's the game's look.
+- Tooltips (heromedel, 6.57; `ui/Tips`, for every tip in the station): up after 0.4 seconds, there as long as the
+  mouse is on the control, gone as soon as it leaves; never under the mouse, never over a button-sized control (above
+  it, or below when there's no room), always on the screen; a little see-through.
 
 ## Colours
 
