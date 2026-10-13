@@ -208,6 +208,7 @@ public abstract class ShipEditorDialog extends JDialog implements LayoutEditor.H
 				+ "A room's own airlocks move with it; a door to another room stays where the wall is, and is lost if the wall goes.</p>");
 		sb.append("<h3>Systems</h3><p>Click a system (in a room, or in the <i>Systems</i> list), then an empty room to put it there. "
 				+ "Click a square in its own room for its station; click the station to turn it. Alt+click another system's room swaps the two. "
+				+ (rooms ? "<b>Move systems</b> (under the list) stops the room tools taking the clicks: click a system to pick it up, then an empty room to move it, or another system's room to swap the two. " : "")
 				+ "Right-click a system to take it off the ship.</p>");
 		sb.append("<h3>Doors</h3><p><b>Add door</b>, then click walls: between two rooms for a door, on an outer wall for an airlock. "
 				+ "Click a door, then a wall, to move it; right-click or Delete removes it. Esc stops.</p>");

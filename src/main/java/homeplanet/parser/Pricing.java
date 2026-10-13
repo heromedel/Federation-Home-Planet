@@ -272,6 +272,58 @@ public final class Pricing {
 		return q;
 	}
 	/**
+	 * A design's price as Commission would charge it once she's built (heromedel, 6.59: the Design Ship window's value): the
+	 * lines of {@link #commission}, counted from the design itself: her systems as ticked, her loadout as the export writes it
+	 * (a human if no crew, the weapons and drones her slots hold), a new ship's fuel and a Normal start's scrap. DesT holds the
+	 * two together on a built design.
+	 */
+	public static Quote design(ShipDesign d, int percent) {
+		Quote q = new Quote();
+		q.percent = percent;
+		q.add("Hull (" + d.hull + " points)", d.hull * HULL_POINT);
+		q.add("Reactor (" + d.reactor + " power)", reactor(d.reactor));
+		// installed as Commission builds her: ticked, and a Medbay ticked beside a Clone Bay gives way to it
+		java.util.Map<String, CompanionMod.Sys> on = new java.util.LinkedHashMap<String, CompanionMod.Sys>();
+		for (CompanionMod.Sys y : d.systems.values()) if (!d.notAtStart.contains(y.id)) on.put(y.id, y);
+		if (on.containsKey("clonebay")) on.remove("medbay");
+		int sys = 0, main = 0;
+		for (CompanionMod.Sys y : on.values()) {
+			sys += system(y.id, Math.max(1, y.power));
+			SystemType t = SystemType.findById(y.id);
+			if (t != null && !t.isSubsystem()) main++;
+		}
+		q.add("Systems and their levels", sys);
+		CompanionMod.Loadout l = d.loadout != null ? d.loadout : new CompanionMod.Loadout();
+		int gear = 0;
+		for (int i = 0; i < Math.min(l.weapons.size(), DesignExport.weaponSlots(d)); i++) gear += item(l.weapons.get(i));
+		for (int i = 0; i < Math.min(l.drones.size(), d.droneSlots); i++) gear += item(l.drones.get(i));
+		for (String a : l.augs) gear += item(a);
+		if (on.containsKey("artillery")) gear += artillery(on.get("artillery").weapon);
+		q.add("Weapons, drones and augments", gear);
+		int crew = 0, n = 0;
+		if (l.crew.isEmpty()) { crew = crew("human"); n = 1; }
+		for (java.util.Map.Entry<String, Integer> c : l.crew.entrySet()) { crew += c.getValue() * crew(c.getKey()); n += c.getValue(); }
+		q.add("Crew (" + n + ")", crew);
+		q.add("Fuel, missiles and drone parts", Commission.START_FUEL * FUEL + l.missiles * MISSILE + l.droneParts * DRONE_PART);
+		q.add("Scrap aboard", Commission.startingScrap(net.blerf.ftl.constants.Difficulty.NORMAL));
+		java.util.Set<Integer> reserved = new java.util.HashSet<Integer>();
+		int roomPrice = 0;
+		for (CompanionMod.Sys y : on.values()) {
+			if (y.room < 0 || !reserved.add(y.room)) continue;
+			roomPrice += system(y.id, 1) * SYSTEM_ROOM_PERCENT / 100;
+		}
+		int empty = Math.max(0, d.rooms.size() - reserved.size());
+		q.add("Rooms with a system (" + reserved.size() + ")", roomPrice);
+		q.add("Rooms without (" + empty + ")", empty * EMPTY_ROOM);
+		q.add("Doors (" + d.doors.size() + ")", d.doors.size() * DOOR);
+		int over = Math.max(0, main - SaveHelper.SYSTEMS_MAX);
+		if (over > 0) {
+			q.fixed = over * homeplanet.core.Economy.commissionWorkOrder();
+			q.lines.add((over == 1 ? "A custom work order (1 system" : over + " custom work orders (" + over + " systems") + " past FTL's System Limit): " + q.fixed);
+		}
+		return q;
+	}
+	/**
 	 * What Commission charges for her: her price at this rate, and a custom work order for each system she starts with
 	 * past FTL's System Limit (outside the rate: Economy.commissionWorkOrder, scrap only). Never part of her value, so nothing of it comes back.
 	 */

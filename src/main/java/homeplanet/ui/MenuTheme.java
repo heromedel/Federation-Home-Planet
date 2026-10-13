@@ -64,6 +64,7 @@ public final class MenuTheme {
 		UIManager.put("OptionPane.background", new ColorUIResource(BG));
 		UIManager.put("OptionPane.messageForeground", new ColorUIResource(TEXT));
 		UIManager.put("TitledBorder.titleColor", new ColorUIResource(TEXT));
+		UIManager.put("ToggleButton.select", new ColorUIResource(SELECT)); // a tool held down (Move systems, Place 2 x 2): white text stays readable, as on a list's pick (6.59)
 		UIManager.put("OptionPaneUI", WrappingOptionPaneUI.class.getName()); // every pop-up wraps its long lines (heromedel, 6.27: one ran off the screen)
 		UIManager.put(WrappingOptionPaneUI.class.getName(), WrappingOptionPaneUI.class);
 		UIManager.put("ToolTipUI", WrappingToolTipUI.class.getName()); // and every long tooltip (6.28: 41 ran out in one strip)

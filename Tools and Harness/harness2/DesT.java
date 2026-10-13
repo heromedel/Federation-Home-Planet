@@ -97,6 +97,9 @@ public class DesT {
   Setup.chk(id + " commissioned: rooms " + rb.getPlayerShip().getRoomList().size() + " doors " + rb.getPlayerShip().getDoorMap().size() + " crew " + rb.getPlayerShip().getCrewList().size(),
    rb.getPlayerShip().getRoomList().size() == d.rooms.size() && rb.getPlayerShip().getDoorMap().size() == d.doors.size());
   if (d == back.get(had)) Setup.chk("commissioned without shields (start=false)", rb.getPlayerShip().getSystem(SystemType.SHIELDS).getCapacity() == 0);
+  homeplanet.parser.Pricing.Quote said = homeplanet.parser.Pricing.design(d, 75), paid = homeplanet.parser.Pricing.commission(rb, 75);
+  Setup.chk("AO: " + d.name + "'s value on the design screen is what Commission charges for her built (" + said.total() + " / " + paid.total() + ")" + (said.lines.equals(paid.lines) ? "" : " " + said.lines + " vs " + paid.lines),
+   said.total() == paid.total() && said.lines.equals(paid.lines) && said.total() > 0);
  }
  // E: a design from a game ship, moved and flipped
  { ShipDesign g = ShipDesign.create(back);

@@ -37,6 +37,8 @@ public class DesignDialog extends ShipEditorDialog {
 	private final List<String> otherNames;
 	private boolean saved = false;
 	private final JTextField nameField = new JTextField(20);
+	/** Her value, beside her name: what Commission would charge for her (heromedel, 6.59). */
+	private final JLabel value = new JLabel(" ");
 
 	/**
 	 * Opens the editor on a copy of the design; {@code otherNames} are the other designs' names (a duplicate is refused).
@@ -88,11 +90,33 @@ public class DesignDialog extends ShipEditorDialog {
 		addHelpRowButton(button("Preview files", "The layout, chassis and blueprint text the game would get for " + homeplanet.model.Words.herObj() + ", as they stand", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { sync(); showText("Files for " + (d.name.isEmpty() ? d.id : d.name), DesignExport.preview(d)); }
 		}));
+		value.setFont(MenuTheme.TEXT_FONT);
+		value.setForeground(MenuTheme.GREY_GREEN);
+		value.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 14, 0, 0)); // a little space after the name (heromedel, 6.59)
+		row.add(value);
 		buildUi(row, true);
 		if (d.rooms.isEmpty()) { editor.startPlacing(); say("Place " + homeplanet.model.Words.her() + " first room: click the grid for a 2 x 2 room."); }
 		changed();
 		editor.resetHistory();
 		fitToScreen();
+	}
+	@Override
+	public void changed() {
+		super.changed();
+		showValue();
+	}
+	/** Her value: what Commission would charge for her at this career's rate, as if commissioning cost scrap even where it doesn't (heromedel, 6.59). */
+	private void showValue() {
+		homeplanet.parser.Pricing.Quote q;
+		try { q = homeplanet.parser.Pricing.design(d, homeplanet.parser.Pricing.rate()); }
+		catch (RuntimeException e) { value.setText(" "); value.setToolTipText(null); return; } // the game data not read: no value rather than no window
+		value.setText("Approx. value: " + q.total() + " scrap");
+		StringBuilder t = new StringBuilder("<html><b>About what The Federation Home Planet would charge to commission " + homeplanet.model.Words.herObj() + "</b>");
+		t.append(q.percent != 100 ? ": " + q.percent + "% of " + q.subtotal + " scrap, this career's rate" : ", at this career's full rate");
+		if (!homeplanet.core.HomePlanet.commissionCosts()) t.append(" (commissioning costs nothing in this career: this is " + homeplanet.model.Words.her() + " worth, not a bill)");
+		t.append(".");
+		for (String line : q.lines) t.append("<br>").append(homeplanet.parser.XmlText.text(line));
+		value.setToolTipText(t.append("</html>").toString());
 	}
 	/** The name field into the design (the Loadout step writes its own fields as they're edited). */
 	private void sync() {

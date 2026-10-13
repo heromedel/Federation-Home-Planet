@@ -46,6 +46,7 @@ public class GuiT {
   infirmaryBay(f);
   designSteps(f);
   designDefaults(f);
+  designTools(f);
   oneFtl(f);
   Setup.done();
   System.exit(0);
@@ -135,6 +136,92 @@ public class GuiT {
   Setup.chk("AF: moving a placed system keeps its tick", Boolean.TRUE.equals(r[2]));
   Setup.chk("AL: the Loadout step shows Drone Control unticked, the Kestrel A's ticked: " + r[3], "drones=false shields=true engines=true sensors=true medbay=true".equals(r[3]));
   Setup.chk("AF: the editor's copy is a starter ship too", Boolean.TRUE.equals(r[4]));
+ }
+ /** The design window's tools (6.59): Move systems (AM) picks up, swaps and moves with plain clicks; the Loadout step's (i) (AN); her value at the top (AO). */
+ static void designTools(final MainFrame f) throws Exception {
+  final ShipDesign d = ShipDesign.create(ShipDesign.load()); d.name = "Tools Test";
+  for (int x = 6; x <= 12; x += 2) d.rooms.add(new ShipDesign.Room(x, 5, 2, 2));
+  new Thread(new Runnable() { public void run() { DesignDialog.open(f, d, new ArrayList<String>()); } }).start();
+  ShipEditorDialog dlg = null;
+  for (int i = 0; i < 100 && dlg == null; i++) { Thread.sleep(100); for (Window w : Window.getWindows()) if (w instanceof ShipEditorDialog && w.isShowing()) dlg = (ShipEditorDialog) w; }
+  Setup.chk("AM: Design Ship opens", dlg != null);
+  if (dlg == null) return;
+  final ShipEditorDialog ed = dlg;
+  final Object[] r = new Object[16];
+  shown.clear(); optionsShown.clear(); presses.clear();
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   ShipDesign w = (ShipDesign) field(ed, ShipEditorDialog.class, "d");
+   LayoutEditor le = (LayoutEditor) field(ed, ShipEditorDialog.class, "editor");
+   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "shields", 0);
+   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "engines", 1);
+   call(le, LayoutEditor.class, "edited", new Class<?>[0]);
+   JToggleButton move = (JToggleButton) field(le, LayoutEditor.class, "moveSystems");
+   r[0] = move.isVisible() && move.isShowing();
+   toolButton(le, "Place 2 x 2").doClick(); // a room tool on, as after placing rooms
+   move.doClick();
+   r[1] = String.valueOf(field(le, LayoutEditor.class, "roomTool"));
+   click(le, 6, 5); click(le, 8, 5); // shields picked up, then the engines' room: swapped
+   r[2] = w.systems.get("shields").room + "/" + w.systems.get("engines").room + "/" + field(le, LayoutEditor.class, "selected") + "/" + field(le, LayoutEditor.class, "roomTool");
+   click(le, 8, 5); click(le, 10, 5); // shields (now in room 1) picked up, then the empty room 2: moved
+   r[3] = w.systems.get("shields").room + "/" + w.rooms.size();
+   click(le, 2, 2); // off the rooms: put down, still moving systems
+   r[4] = field(le, LayoutEditor.class, "selected") + "/" + field(le, LayoutEditor.class, "roomTool");
+   // her value at the top
+   JLabel value = null;
+   for (JLabel l : all(ed.getContentPane(), JLabel.class)) if (l.getText() != null && l.getText().startsWith("Approx. value: ")) value = l;
+   int expect = Pricing.design(w, Pricing.rate()).total();
+   r[5] = value == null ? "none" : value.getText() + " | " + value.getToolTipText();
+   r[6] = value != null && value.getText().equals("Approx. value: " + expect + " scrap") && value.getToolTipText().contains("commission");
+   JTextField name = (JTextField) field(ed, DesignDialog.class, "nameField");
+   java.awt.Point at = value == null ? null : SwingUtilities.convertPoint(value.getParent(), value.getLocation(), ed.getContentPane());
+   java.awt.Point nm = SwingUtilities.convertPoint(name.getParent(), name.getLocation(), ed.getContentPane());
+   int gap = at == null ? -1 : at.x - (nm.x + name.getWidth());
+   r[7] = at == null ? "none" : "at " + at.x + "," + at.y + ", " + gap + " px after the name field";
+   r[8] = at != null && at.y < 40 && gap > 0 && gap < 40 && Math.abs(at.y - nm.y) < 12; // the name's row, just after its field
+   // the Loadout step's (i)
+   ed.showStep("Loadout");
+   LoadoutPanel lp = (LoadoutPanel) field(ed, ShipEditorDialog.class, "loadoutPanel");
+   @SuppressWarnings("unchecked") List<JComboBox<?>> boxes = (List<JComboBox<?>>) field(lp, LoadoutPanel.class, "weaponBoxes");
+   JComboBox<?> box = boxes.get(0);
+   JButton info = (JButton) box.getClientProperty("info");
+   box.setSelectedIndex(0);
+   r[9] = info != null && !info.isEnabled() && info.isShowing();
+   int pick = -1;
+   for (int i = 1; i < box.getItemCount() && pick < 0; i++) if ("LASER_BURST_2".equals(String.valueOf(field(box.getItemAt(i), box.getItemAt(i).getClass(), "id")))) pick = i;
+   box.setSelectedIndex(pick < 0 ? 1 : pick);
+   r[10] = info != null && info.isEnabled();
+   r[11] = String.valueOf(field(box.getSelectedItem(), box.getSelectedItem().getClass(), "id"));
+   if (info != null) info.doClick();
+   r[12] = boxes.size() + " weapon boxes";
+   int after = Pricing.design(w, Pricing.rate()).total();
+   r[13] = after > expect; // the weapon picked: her value goes up
+   r[14] = value != null && value.getText().equals("Approx. value: " + after + " scrap");
+   ed.dispose();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("AM: Move systems shows under the Systems list on Design Ship", Boolean.TRUE.equals(r[0]));
+  Setup.chk("AM: pressing it takes over from the room tool: " + r[1], "SYSTEMS".equals(r[1]));
+  Setup.chk("AM: a click on a system, then on another system's room, swaps the two, and puts down (shields/engines/selected/tool: " + r[2] + ")", "1/0/null/SYSTEMS".equals(r[2]));
+  Setup.chk("AM: a click on a system, then an empty room, moves it there (no room added): " + r[3], "2/4".equals(r[3]));
+  Setup.chk("AM: a click off the rooms puts it down, still moving systems: " + r[4], "null/SYSTEMS".equals(r[4]));
+  Setup.chk("AO: her value at the top: " + r[5], Boolean.TRUE.equals(r[6]));
+  Setup.chk("AO: beside the design name, a little space after its field: " + r[7], Boolean.TRUE.equals(r[8]));
+  Setup.chk("AN: a weapon box's (i) is greyed while it says None", Boolean.TRUE.equals(r[9]));
+  Setup.chk("AN: a weapon picked (" + r[11] + "), its (i) wakes (" + r[12] + ")", Boolean.TRUE.equals(r[10]));
+  Setup.chk("AN: the (i) opens the weapon's card, with its stats: " + shown, shown.size() == 1 && shown.get(0).contains("Power"));
+  Setup.chk("AO: the value follows the loadout (a weapon adds to it)", Boolean.TRUE.equals(r[13]) && Boolean.TRUE.equals(r[14]));
+ }
+ static JToggleButton toolButton(LayoutEditor le, String text) {
+  for (JToggleButton b : all(le.side(), JToggleButton.class)) if (text.equals(b.getText())) return b;
+  throw new IllegalStateException("no " + text + " button");
+ }
+ /** A left click in the middle of a grid square, as the mouse makes it. */
+ static void click(LayoutEditor le, int gx, int gy) throws Exception {
+  int ox = (Integer) field(le, LayoutEditor.class, "originX"), oy = (Integer) field(le, LayoutEditor.class, "originY");
+  double eff = (Double) call(le, LayoutEditor.class, "eff", new Class<?>[0]);
+  int px = (int) Math.round((ox + gx * LayoutEditor.SQ + LayoutEditor.SQ / 2) * eff + ((Number) call(le, LayoutEditor.class, "padX", new Class<?>[0])).doubleValue());
+  int py = (int) Math.round((oy + gy * LayoutEditor.SQ + LayoutEditor.SQ / 2) * eff + ((Number) call(le, LayoutEditor.class, "padY", new Class<?>[0])).doubleValue());
+  java.awt.event.MouseEvent e = new java.awt.event.MouseEvent(le.canvas(), java.awt.event.MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_DOWN_MASK, px, py, 1, false, java.awt.event.MouseEvent.BUTTON1);
+  call(le, LayoutEditor.class, "pressed", new Class<?>[] {java.awt.event.MouseEvent.class}, e);
  }
  /** One FTL at a time (heromedel, 6.57): the Launch button reads Switch to FTL while FTL runs; docking with FTL running docks it, nothing launched; closing with FTL docked asks first. Pop-ups answered by watchPopUps. */
  static void oneFtl(final MainFrame f) throws Exception {

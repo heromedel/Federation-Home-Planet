@@ -67,7 +67,7 @@ public class LayoutEditor {
 	public static final int SQ = 35;
 	private static final String[] DIRS = {"up", "right", "down", "left"};
 
-	enum RoomTool { NONE, ROOM_22, ROOM_21, ROOM_12, MOVE, ART, MOUNTS }
+	enum RoomTool { NONE, ROOM_22, ROOM_21, ROOM_12, MOVE, ART, MOUNTS, SYSTEMS }
 
 	final ShipDesign d;
 	private final Host host;
@@ -87,6 +87,8 @@ public class LayoutEditor {
 	private boolean addingDoor = false;
 	private CompanionMod.Door hover = null;     // wall under the mouse while placing a door
 	private RoomTool roomTool = RoomTool.NONE;
+	/** Move systems: the room tools off, a click on another system's room swaps the two (no Alt needed). */
+	private JToggleButton moveSystems;
 	private int selRoom = -1, dragDX, dragDY, hoverX = -1, hoverY = -1;
 	private ShipDesign.Room dragFrom;                          // where the dragged room started
 	private List<CompanionMod.Door> dragDoors;                 // the doors as they were then (a move through a bad spot mustn't lose them)
@@ -152,7 +154,7 @@ public class LayoutEditor {
 			public void valueChanged(javax.swing.event.ListSelectionEvent e) {
 				if (!e.getValueIsAdjusting() && offList.getSelectedValue() != null) {
 					selected = idOf(offList.getSelectedValue());
-					selDoor = null; addingDoor = false; setRoomTool(RoomTool.NONE);
+					selDoor = null; addingDoor = false; if (roomTool != RoomTool.SYSTEMS) setRoomTool(RoomTool.NONE);
 					host.say("Click an empty room for the " + title(selected) + ".");
 					canvas.repaint();
 				}
@@ -210,7 +212,13 @@ public class LayoutEditor {
 		side.add(top, BorderLayout.NORTH);
 		JScrollPane sp = new JScrollPane(offList);
 		sp.setPreferredSize(new Dimension(170, 150));
-		side.add(sp, BorderLayout.CENTER);
+		JPanel listPart = new JPanel(new BorderLayout(0, 4));
+		listPart.add(sp, BorderLayout.CENTER);
+		// where rooms are placed and dragged (Design Ship, an overhaul), their tools take the clicks: this hands them to the systems (heromedel, 6.59)
+		moveSystems = toolButton(toolGroup, "Move systems", RoomTool.SYSTEMS, "Click a system to pick it up, then an empty room to move it there, or another system's room to swap the two. Esc stops.");
+		moveSystems.setVisible(roomsEditable);
+		listPart.add(moveSystems, BorderLayout.SOUTH);
+		side.add(listPart, BorderLayout.CENTER);
 		// the tools in the order they're used, the window's own buttons under them, and the view last as fine adjustment
 		JPanel south = new JPanel(new BorderLayout(0, 4));
 		south.add(buttons, BorderLayout.NORTH);
@@ -560,6 +568,7 @@ public class LayoutEditor {
 		}
 		else if (!on) for (java.awt.Component c : roomToolParts) toolColumn.remove(c);
 		if (!on) setRoomTool(RoomTool.NONE);
+		moveSystems.setVisible(on);
 		side.revalidate();
 		canvas.repaint();
 	}
@@ -883,8 +892,9 @@ public class LayoutEditor {
 			return;
 		}
 
-		CompanionMod.Door wall = wallAt(x, y);
-		CompanionMod.Door onWall = doorOn(wall);
+		boolean moving = roomTool == RoomTool.SYSTEMS; // Move systems: a click near a wall is still the room's, never its door
+		CompanionMod.Door wall = moving ? null : wallAt(x, y);
+		CompanionMod.Door onWall = moving ? null : doorOn(wall);
 		if (addingDoor) {
 			if (right) { addingDoor = false; hover = null; host.say("Stopped adding doors."); canvas.repaint(); return; }
 			if (!valid(wall)) { host.say("That isn't a wall between two rooms or an outer wall. Esc or right-click stops adding doors."); return; }
@@ -918,6 +928,7 @@ public class LayoutEditor {
 		}
 		int room = d.roomAt(gx, gy);
 		if (room < 0) {
+			if (moving) { selected = null; offList.clearSelection(); host.say("Put down. Click a system to pick it up; Esc stops moving systems."); canvas.repaint(); return; }
 			deselect();
 			host.say("Nothing selected.");
 			return;
@@ -959,7 +970,7 @@ public class LayoutEditor {
 			}
 			return;
 		}
-		if (selected != null && e.isAltDown() && !here.isEmpty() && !here.contains(selected)) {
+		if (selected != null && (e.isAltDown() || moving) && !here.isEmpty() && !here.contains(selected)) {
 			Sys mine = d.systems.get(selected);
 			if (mine == null) { host.say("Put the " + title(selected) + " in an empty room first; a system from the list has no room to swap."); return; }
 			String other = here.size() == 2 ? pickBay(here) : here.get(0);
@@ -967,7 +978,8 @@ public class LayoutEditor {
 			int from = mine.room;
 			place(selected, room);
 			place(other, from);
-			host.say(title(selected) + " and " + title(other) + " swapped rooms (" + from + " and " + room + ").");
+			host.say(title(selected) + " and " + title(other) + " swapped rooms (" + from + " and " + room + ")." + (moving ? " Click a system to pick up the next." : ""));
+			if (moving) selected = null;
 			edited();
 			return;
 		}
@@ -989,14 +1001,16 @@ public class LayoutEditor {
 			int from = before == null ? -1 : before.room;
 			place(selected, room);
 			host.say(title(selected) + (from < 0 ? " added to room " + room + notInstalled(selected) : " moved from room " + from + " to room " + room + ".")
-					+ (hasStation(selected) ? " Click a square to move its station." : ""));
+					+ (moving ? " Click a system to pick up the next." : hasStation(selected) ? " Click a square to move its station." : ""));
 			offList.clearSelection();
+			if (moving) selected = null;
 			edited();
 			return;
 		}
 		if (!here.isEmpty()) {
 			selected = here.size() == 2 ? pickBay(here) : here.get(0);
-			if (selected != null) host.say(title(selected) + " selected. Click an empty room to move it" + (hasStation(selected) ? ", or a square in this room for its station." : "."));
+			if (selected != null) host.say(title(selected) + (moving ? " picked up. Click an empty room to move it, another system's room to swap the two" : " selected. Click an empty room to move it")
+					+ (hasStation(selected) ? ", or a square in this room for its station." : "."));
 			offList.clearSelection();
 		} else if (selected != null) {
 			host.say("Room " + room + " is taken.");
