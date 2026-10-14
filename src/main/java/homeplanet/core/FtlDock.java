@@ -294,6 +294,48 @@ public final class FtlDock {
 			return false;
 		}
 	}
+	/**
+	 * FTL running on its own, full screen (heromedel, 6.60): it can't be docked as it is. Its window covers its screen, or
+	 * it's minimized (a full-screen game is, once the station has the focus) with settings.ini saying full screen. False
+	 * where its window can't be looked at (not Windows, or not found): the docked view's own check (find) still says so.
+	 */
+	public static boolean runningFullScreen() {
+		if (Boolean.getBoolean("homeplanet.ftlFullScreen")) return true; // the harness's stand-in, as homeplanet.ftlRunning is
+		if (!System.getProperty("os.name", "").startsWith("Windows")) return false;
+		try {
+			Object w = Win.find(TITLE);
+			if (w == null) return false;
+			if (Win.minimized(w)) return !"0".equals(settingsFullscreen());
+			java.awt.Rectangle r = Win.bounds(w), screen = Win.screenOf(w);
+			return screen != null && r.width >= screen.width && r.height >= screen.height;
+		} catch (Throwable t) {
+			log.debug("Could not look at FTL's window: {}", t.toString());
+			return false;
+		}
+	}
+	/** settings.ini's fullscreen value ("0": windowed), or null if it has none or can't be read. */
+	static String settingsFullscreen() {
+		File f = settingsFile();
+		if (f == null || !f.isFile()) return null;
+		try {
+			Matcher m = FULLSCREEN.matcher(new String(SafeFiles.read(f), StandardCharsets.UTF_8));
+			return m.find() ? m.group(2).trim() : null;
+		} catch (IOException e) { return null; }
+	}
+	/** FTL running on its own asked to close, as the X on its window does (heromedel, 6.60). False if its window wasn't found. */
+	public static boolean closeRunning() {
+		if (!System.getProperty("os.name", "").startsWith("Windows")) return false;
+		try {
+			Object w = Win.find(TITLE);
+			if (w == null) return false;
+			Win.close(w);
+			log.info("FTL asked to close (it was running full screen, not docked)");
+			return true;
+		} catch (Throwable t) {
+			log.warn("Could not ask FTL to close: {}", t.toString());
+			return false;
+		}
+	}
 	/** FTL's window has been found and docked. */
 	public static boolean found() { return window != null; }
 	/** FTL's window is still there. */
@@ -554,6 +596,7 @@ public final class FtlDock {
 			if (User32.I.IsIconic(h)) User32.I.ShowWindow(h, SW_RESTORE);
 			User32.I.SetForegroundWindow(h);
 		}
+		static boolean minimized(Object w) { return User32.I.IsIconic((com.sun.jna.Pointer) w); }
 		static void focus(Object w) {
 			com.sun.jna.Pointer h = (com.sun.jna.Pointer) w;
 			User32.I.ShowWindow(h, SW_SHOW);

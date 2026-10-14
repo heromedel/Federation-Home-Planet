@@ -48,6 +48,7 @@ public class GuiT {
   designDefaults(f);
   designTools(f);
   oneFtl(f);
+  fullScreenDock(f);
   Setup.done();
   System.exit(0);
  }
@@ -282,6 +283,39 @@ public class GuiT {
    if (((p >> 16) & 0xff) > 150 && ((p >> 8) & 0xff) > 150) n++;
   }
   return n;
+ }
+ /** FTL running full screen can't be docked (heromedel, 6.60): the dock button says what to do (OK, Close FTL, Close and Relaunch, Docked) and docks nothing. */
+ static void fullScreenDock(final MainFrame f) throws Exception {
+  File ini = new File(System.getProperty("java.io.tmpdir"), "gui-settings-" + System.nanoTime() + ".ini");
+  SafeFiles.writeText(ini, "fullscreen=3\nvsync=1\n", false);
+  System.setProperty("homeplanet.ftlSettings", ini.getPath());
+  System.setProperty("homeplanet.ftlRunning", "true");
+  System.setProperty("homeplanet.ftlFullScreen", "true");
+  try {
+   final boolean[] active = {true, true};
+   shown.clear(); optionsShown.clear(); presses.clear(); presses.add(0); // OK
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    f.showSpaceDock();
+    call(f.spaceDock, SpaceDockUI.class, "launchDocked", new Class<?>[0]);
+    active[0] = FtlDock.active();
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   Setup.chk("AP: docking FTL running full screen says so, in heromedel's words: " + shown, shown.size() == 1 && shown.get(0).startsWith("FTL is currently launched in full screen."));
+   Setup.chk("AP: with OK, Close FTL, and Close and Relaunch, Docked: " + (optionsShown.isEmpty() ? "none" : Arrays.asList(optionsShown.get(0))),
+     optionsShown.size() == 1 && Arrays.asList(optionsShown.get(0)).equals(Arrays.asList("OK", "Close FTL", "Close and Relaunch, Docked")));
+   Setup.chk("AP: OK leaves FTL running as it is: nothing docked, its settings.ini untouched", !active[0] && new String(SafeFiles.read(ini), "UTF-8").startsWith("fullscreen=3"));
+   shown.clear(); optionsShown.clear(); presses.clear(); presses.add(2); // Close and Relaunch, Docked: no FTL window here to ask
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    call(f.spaceDock, SpaceDockUI.class, "launchDocked", new Class<?>[0]);
+    active[1] = FtlDock.active();
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   Setup.chk("AP: Close and Relaunch with no FTL window to ask says so, and launches nothing: " + shown, shown.size() == 2 && shown.get(1).contains("could not find FTL's window") && !active[1]
+     && new String(SafeFiles.read(ini), "UTF-8").startsWith("fullscreen=3"));
+  } finally {
+   System.clearProperty("homeplanet.ftlRunning");
+   System.clearProperty("homeplanet.ftlFullScreen");
+   System.clearProperty("homeplanet.ftlSettings");
+   ini.delete();
+  }
  }
  /** The Space Dock's Launch button's words, the dock taken stock of first (as it is when the station comes to the front). */
  static String launchLabel(final MainFrame f) throws Exception {
