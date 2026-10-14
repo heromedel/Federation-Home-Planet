@@ -911,8 +911,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private void itemInfo(boolean mine, int kind) {
 		ItemRef r = (ItemRef) (mine ? cats[kind].mine : cats[kind].theirs).selectedValue();
 		if (r == null) return;
-		String t = ItemTooltips.tooltip(r.id);
-		JOptionPane.showMessageDialog(this, new JLabel(t != null ? t : Items.title(r.id)), Items.title(r.id), JOptionPane.PLAIN_MESSAGE, IconFactory.itemIcon(r.id));
+		ItemTooltips.show(this, r.id);
 	}
 	/** The infirmary's purple (FTL's colour for a crew member not yours to command just now). */
 	private static final Color INFIRMARY = new Color(170, 110, 230);

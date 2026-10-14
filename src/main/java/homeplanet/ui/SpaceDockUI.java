@@ -230,7 +230,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		controls.setLayout(new BoxLayout(controls, BoxLayout.Y_AXIS));
 		controls.setOpaque(false);
 		controls.setBorder(javax.swing.BorderFactory.createEmptyBorder(14, 10, 10, homeplanet.core.FtlDock.active() ? 0 : 16)); // flush right while FTL is docked: more room for it (5.31)
-		launchBtn = controlButton("Launch FTL", "Play FTL");
+		boolean ftlUp = GameGuard.isFtlRunning(); // running: the button goes to it, never a second FTL (heromedel, 6.57)
+		launchBtn = controlButton(ftlUp ? "Switch to FTL" : "Launch FTL", ftlUp ? "FTL is running: bring it to the front, as Alt+Tab would" : "Play FTL");
 		journeyBtn = controlButton("New Journey", "Set out from the first sector with the boarded ship, crew and cargo");
 		commissionBtn = controlButton("Commission", "Have a brand-new ship built, as a new game would start " + homeplanet.model.Words.herObj());
 		salvageBtn = controlButton("Junkyard", "The Junkyard: salvage, scrap or sell a ship, or buy derelicts and parts");
@@ -1130,7 +1131,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else if (o == commBtn) {
 			parent.showLongRangeComm();
 		} else if (o == launchBtn) {
-			HomePlanet.launchFTL();
+			if (GameGuard.isFtlRunning()) switchToFtl(); // as it is now, whatever the label said
+			else HomePlanet.launchFTL();
 		} else if (o == dockLaunchBtn) {
 			if (homeplanet.core.FtlDock.active()) askUndock();
 			else launchDocked();
@@ -1204,15 +1206,60 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	/** The docked launch: FTL windowed, launched, and the Space Dock laid out around its viewport. */
 	private void launchDocked() {
-		try { homeplanet.core.FtlDock.prepareSettings(); }
-		catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not set FTL to windowed in its settings.ini:\n" + e.getMessage() + "\n\nFTL may start full screen; it will still be docked if it can be."); }
-		if (!HomePlanet.launchFTL(true)) return;
+		// FTL running already (started before the station, or on its own): its window is docked, and no second FTL launched (heromedel, 6.57)
+		boolean running = GameGuard.isFtlRunning();
+		if (running && homeplanet.core.FtlDock.runningFullScreen()) { fullScreenFtl(); return; } // full screen, it can't be docked as it is (heromedel, 6.60)
+		if (running) log.info("FTL docked: FTL is running already; its window is docked, nothing launched");
+		else {
+			try { homeplanet.core.FtlDock.prepareSettings(); }
+			catch (IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not set FTL to windowed in its settings.ini:\n" + e.getMessage() + "\n\nFTL may start full screen; it will still be docked if it can be."); }
+			if (!HomePlanet.launchFTL(true)) return;
+		}
 		homeplanet.core.FtlDock.begin(javax.swing.SwingUtilities.getWindowAncestor(this));
 		dockStarted = System.currentTimeMillis();
-		ftlSeen = false;
+		ftlSeen = running;
+		dockedRunning = running;
 		init();
 		javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { fitWindow(); } });
 		dockWatch.start();
+	}
+	/** This docked run took an FTL that was running already: it's brought to the front once its window is in place. */
+	private boolean dockedRunning;
+	/** heromedel's words (6.60) when FTL is running full screen and can't be docked as it is. */
+	static final String FULL_SCREEN_FTL = "FTL is currently launched in full screen. Below are the different methods to make it available as docked instead.\n\n"
+			+ "You can change its settings in game but it may ask you to restart it.\n"
+			+ "You can relaunch it through The Station after setting Undocked launches' Fullscreen to Off in the Settings and then redock it.\n"
+			+ "You could close it and launch it docked by clicking the Icon next to Launch FTL.\n"
+			+ "Or right now The Station could close it for you and relaunch it in docked mode.\n\n"
+			+ "Anything FTL did not or does not save on its own may be lost.";
+	/** FTL full screen, so not docked (heromedel, 6.60): OK leaves it running as it is; the station can close it, and launch it again docked. */
+	private void fullScreenFtl() {
+		Object[] options = {"OK", "Close FTL", "Close and Relaunch, Docked"};
+		int c = JOptionPane.showOptionDialog(this, FULL_SCREEN_FTL, "Play FTL, docked", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+		if (c != 1 && c != 2) return;
+		final boolean relaunch = c == 2;
+		if (!homeplanet.core.FtlDock.closeRunning()) {
+			JOptionPane.showMessageDialog(this, "The Home Planet Station could not find FTL's window to close it. Close FTL" + (relaunch ? ", then launch it docked with the icon next to Launch FTL." : " from its own menu."),
+					"Close FTL", JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+		new Thread(new Runnable() { public void run() { // FTL saves and goes as its own X has it; a docked launch once it's gone
+			boolean open = true;
+			for (int i = 0; i < 20 && open; i++) {
+				try { Thread.sleep(700); } catch (InterruptedException e) { return; }
+				open = GameGuard.isFtlRunning();
+			}
+			final boolean still = open;
+			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() {
+				if (still) {
+					JOptionPane.showMessageDialog(SpaceDockUI.this, "FTL is still open (it may be asking something itself). The Home Planet Station has left it be.", "Close FTL", JOptionPane.INFORMATION_MESSAGE);
+					return;
+				}
+				log.info("FTL closed{}", relaunch ? "; launched again, docked" : "");
+				if (relaunch) launchDocked();
+				else init(); // the Launch button reads Launch FTL again
+			} });
+		} }, "ftl-close-relaunch").start();
 	}
 	/** The station's window grown to hold the viewport, if the screen has room (put back afterwards). */
 	private void fitWindow() {
@@ -1239,11 +1286,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (!homeplanet.core.FtlDock.found()) {
 			checkFtlRunning(); // closed before its window turned up; once it's found, its window going says FTL closed (5.32: tasklist can misread)
 			homeplanet.core.FtlDock.Found f = homeplanet.core.FtlDock.find();
-			if (f == homeplanet.core.FtlDock.Found.DOCKED) { placeViewport(); liftFtl(); if (viewportPanel != null) viewportPanel.repaint(); return; }
-			if (f == homeplanet.core.FtlDock.Found.FULLSCREEN) { // left as it is: say what to change in FTL, once
+			if (f == homeplanet.core.FtlDock.Found.DOCKED) {
+				placeViewport(); liftFtl();
+				if (dockedRunning) { dockedRunning = false; homeplanet.core.FtlDock.focus(); } // an FTL that was running already: to the front once in place, as Unpause would (heromedel, 6.60: it showed Unpause first)
+				if (viewportPanel != null) viewportPanel.repaint();
+				return;
+			}
+			if (f == homeplanet.core.FtlDock.Found.FULLSCREEN) { // left as it is: what to do about it, once
 				endDock();
-				JOptionPane.showMessageDialog(this, "FTL is set to full screen. To play it docked, set Options > Fullscreen to Off in FTL, then launch docked again.",
-						"Play FTL, docked", JOptionPane.INFORMATION_MESSAGE);
+				fullScreenFtl();
 				return;
 			}
 			long wait = HomePlanet.launchThroughSteam ? 300000 : 180000; // Steam may start, update or sync first
@@ -1398,6 +1449,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 
 	/** The flip (5.32): the docked ships in FTL's place, FTL hidden but running; again, FTL back where it was. */
+	/** "Switch to FTL" (heromedel, 6.57): FTL to the front as Alt+Tab would bring it, full screen or windowed as it is; docked, in its viewport. */
+	private void switchToFtl() {
+		if (homeplanet.core.FtlDock.active() && homeplanet.core.FtlDock.found()) {
+			if (homeplanet.core.FtlDock.aside()) flip(); // the docked ships were showing in its place
+			homeplanet.core.FtlDock.focus();
+			return;
+		}
+		if (!homeplanet.core.FtlDock.switchTo()) HomePlanet.launchFTL(); // its window not found (another system, or still starting): it says FTL is running
+	}
 	private void flip() {
 		boolean ships = !homeplanet.core.FtlDock.aside();
 		log.debug("FTL docked: {}", ships ? "the Space Dock shown as without FTL" : "back to FTL");

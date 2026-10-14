@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.57";
+	public static final String APP_VERSION = "6.61";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -592,6 +592,11 @@ public class HomePlanet {
 	public static boolean launchFTL() { return launchFTL(false); }
 	/** Starts FTL (true if it was started: the docked view waits for its window then); outside the dock, with the screen chosen in Settings (5.80). */
 	public static boolean launchFTL(boolean docked) {
+		// one FTL at a time (heromedel, 6.57): a second copy would play the same saves (the docked launch docks the one running instead)
+		if (!docked && GameGuard.isFtlRunning()) {
+			showNotice("FTL is running already. Switch to its window to play (Alt+Tab), or close it before launching it again.", "Launch FTL");
+			return false;
+		}
 		// a retrofitted ship can't load without the companion mod: don't let FTL try
 		File cont = new File(save_location, "continue.sav");
 		if (cont.exists()) {
