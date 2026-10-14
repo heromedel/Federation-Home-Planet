@@ -60,8 +60,7 @@ public final class ShipStore {
 		public String hash = "", marks = "", fresh = "";
 		/**
 		 * The fleet she belongs to (6.10: "sandbox", "easy", "normal", "hard", "custom"), and how she came into it
-		 * ("commissioned.6.10.20261008-174200"; one from before 6.10 "commissioned.pre-6.10.<her first entry's time>.verified-log-COMMISSION").
-		 * Empty in a record from before 6.10 until the fleet's check gives them (Vault.checkShips).
+		 * ("commissioned.6.10.20261008-174200"). A record without them waits for the player's word (Vault.sortShips).
 		 */
 		public String career = "", origin = "";
 		/** Her owners, the first her original (as her trade mark has them today), and her past names, oldest first. */
@@ -335,8 +334,8 @@ public final class ShipStore {
 	// ---- her notes (5.98) ----
 
 	/**
-	 * Her record's sections that hold what her side files did before 5.98 (traded.txt, journey.txt, museum.txt,
-	 * borrowed.txt, voyage.txt, final-battle.txt, overwritten.txt, fate.txt), by their owners' names for them.
+	 * Her record's sections (5.98: her trade mark, journey, museum entry, a borrowing, her last look, the final battle,
+	 * an overwrite, her fate), by their owners' names for them.
 	 */
 	public static final String TRADE = "trade", JOURNEY = "journey", MUSEUM = "museum", BORROWED = "borrowed", LAST = "last",
 			FINAL = "final", OVERWRITTEN = "overwritten", FATE = "fate";

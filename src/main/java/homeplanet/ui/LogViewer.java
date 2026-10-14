@@ -42,7 +42,7 @@ final class LogViewer extends JPanel {
 		Vault v = Vault.get();
 		for (String s : Vault.SLOTS) {
 			File r = Vault.rootOf(v.saves, s);
-			if (!homeplanet.core.EventLog.fileIn(r).isFile() && !homeplanet.convert.OldFleet.historyLogIn(r).isFile() && !s.equals(v.slot)) continue; // a fleet with a log of either kind
+			if (!homeplanet.core.EventLog.fileIn(r).isFile() && !s.equals(v.slot)) continue; // a fleet with a log
 			slots.add(s);
 			fleet.addItem(Vault.title(s) + (s.equals(v.slot) ? " (in use)" : ""));
 		}
@@ -143,22 +143,11 @@ final class LogViewer extends JPanel {
 		String slot = slots.get(Math.max(0, fleet.getSelectedIndex()));
 		showing.setText("Station log, " + Vault.title(slot));
 		File root = Vault.rootOf(Vault.get().saves, slot);
-		if (homeplanet.convert.LogConvert.done(root)) { // its events (5.74); a fleet not opened since 5.73 still shows its old file, as before
-			List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(homeplanet.core.EventLog.fileIn(root)), "station");
-			int entries = 0;
-			for (homeplanet.core.EventLog.Entry e : es) if (RecordsLog.shown(e)) entries++; // the station's business: its housekeeping stays out of view (6.05)
-			count.setText(entries + (entries == 1 ? " entry" : " entries"));
-			show(RecordsLog.station(es, "Nothing logged yet.", true));
-			return;
-		}
-		File f = homeplanet.convert.OldFleet.historyLogIn(root);
-		String text = "";
-		try { if (f.isFile()) text = new String(SafeFiles.read(f), StandardCharsets.UTF_8); }
-		catch (Exception e) { text = "The Home Planet Station could not read " + f + ": " + e.getMessage(); }
+		List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(homeplanet.core.EventLog.fileIn(root)), "station");
 		int entries = 0;
-		for (String line : text.split("\r?\n")) if (!line.isEmpty() && !line.startsWith("  ")) entries++;
+		for (homeplanet.core.EventLog.Entry e : es) if (RecordsLog.shown(e)) entries++; // the station's business: its housekeeping stays out of view (6.05)
 		count.setText(entries + (entries == 1 ? " entry" : " entries"));
-		show(RecordsLog.station(text, "Nothing logged yet.", null));
+		show(RecordsLog.station(es, "Nothing logged yet.", true));
 	}
 
 	/** This run's debug log (the newest in the program's log folder), as plain text: what to read before a bug report. */

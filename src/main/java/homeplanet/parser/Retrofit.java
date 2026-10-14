@@ -224,37 +224,6 @@ public class Retrofit {
 		}
 		placeCrew(ship, lay);
 	}
-	/**
-	 * Her crew an overhaul before 6.47 put down without the layout's offset: not in their own room as FTL counts its
-	 * squares, but in it as the layout counts them (it set the room, and the square without the offset). Out in space or
-	 * in another room, whichever the offset made of it. Anyone else not in their room (away on another ship) isn't one.
-	 */
-	public static List<net.blerf.ftl.parser.SavedGameParser.CrewState> stranded(ShipState ship, net.blerf.ftl.model.shiplayout.ShipLayout lay) {
-		List<net.blerf.ftl.parser.SavedGameParser.CrewState> out = new ArrayList<net.blerf.ftl.parser.SavedGameParser.CrewState>();
-		if (lay.getOffsetX() == 0 && lay.getOffsetY() == 0) return out;
-		int sq = SaveHelper.SQUARE_SIZE;
-		for (net.blerf.ftl.parser.SavedGameParser.CrewState c : ship.getCrewList()) {
-			if (c.getRoomId() < 0 || c.getRoomId() >= lay.getRoomCount()) continue;
-			int x = Math.floorDiv(c.getSpriteX(), sq), y = Math.floorDiv(c.getSpriteY(), sq);
-			if (!inRoom(lay, c.getRoomId(), x - lay.getOffsetX(), y - lay.getOffsetY()) && inRoom(lay, c.getRoomId(), x, y)) out.add(c);
-		}
-		return out;
-	}
-	private static boolean inRoom(net.blerf.ftl.model.shiplayout.ShipLayout lay, int room, int x, int y) {
-		net.blerf.ftl.model.shiplayout.ShipLayoutRoom r = lay.getRoom(room);
-		return x >= r.locationX && x < r.locationX + r.squaresH && y >= r.locationY && y < r.locationY + r.squaresV;
-	}
-	/** Puts those crew where that overhaul meant them, the offset added; their names. */
-	public static List<String> reseat(ShipState ship, net.blerf.ftl.model.shiplayout.ShipLayout lay) {
-		List<String> names = new ArrayList<String>();
-		int sq = SaveHelper.SQUARE_SIZE;
-		for (net.blerf.ftl.parser.SavedGameParser.CrewState c : stranded(ship, lay)) {
-			c.setSpriteX(c.getSpriteX() + lay.getOffsetX() * sq);
-			c.setSpriteY(c.getSpriteY() + lay.getOffsetY() * sq);
-			names.add(c.getName());
-		}
-		return names;
-	}
 	/** Her crew on squares of her rooms (the layout's squares; FTL's are those plus the offset), one each where possible. */
 	static void placeCrew(ShipState ship, net.blerf.ftl.model.shiplayout.ShipLayout lay) {
 		java.util.Set<String> taken = new java.util.HashSet<String>();

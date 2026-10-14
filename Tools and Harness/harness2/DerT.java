@@ -123,10 +123,10 @@ public class DerT { public static void main(String[] a) throws Exception {
   Properties lp = new Properties(); lp.load(new ByteArrayInputStream(kept));
   int i0 = again.get(0).index;
   Setup.chk("L: the list keeps her share of the price, not a price", lp.getProperty(i0 + ".percent") != null && lp.getProperty(i0 + ".price") == null);
-  lp.remove(i0 + ".percent"); lp.setProperty(i0 + ".price", "7");
+  lp.remove(i0 + ".percent");
   ByteArrayOutputStream lb = new ByteArrayOutputStream(); lp.store(lb, null); SafeFiles.write(idx, lb.toByteArray());
   int oldPrice = -1; for (Derelicts.Listing x : Derelicts.current(v)) if (x.index == i0) oldPrice = x.price;
-  Setup.chk("L: a listing from before shares keeps the price it had (" + oldPrice + ")", oldPrice == 7);
+  Setup.chk("L: a listing whose share isn't recorded is priced at the dearest (" + oldPrice + ", was " + again.get(0).price + ")", oldPrice >= again.get(0).price);
   SafeFiles.write(idx, kept);
   Derelicts.Listing pick = again.get(1);
   int scrap = v.storageScrap();

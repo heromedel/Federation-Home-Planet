@@ -1,7 +1,6 @@
 package homeplanet.parser;
 
 
-import net.blerf.ftl.parser.SavedGameParser.CrewState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 
@@ -17,15 +16,13 @@ import homeplanet.vault.Vault;
  * forfeit doesn't cover of her value (the Relief Ship by the same formula as any ship).
  */
 public final class FreeCommand {
-	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FreeCommand.class);
 	private FreeCommand() { }
 
-	/** "variable" was a fourth choice once (a ship by what was surrendered): read as the Kestrel Type A. */
-	public static final String KESTREL = "kestrel", ANY = "any", RELIEF = "relief", VARIABLE = "variable";
+	public static final String KESTREL = "kestrel", ANY = "any", RELIEF = "relief";
 	/** The Relief Ship Type A: what the shipyard charges for her, and her class and default name. */
 	public static final String RELIEF_CLASS = "Relief Ship Type A", RELIEF_NAME = "Hinata";
 
-	/** A free-ship choice as kept (Settings', a career's), with the old Variable read as the Kestrel Type A. */
+	/** A free-ship choice as kept (Settings', a career's); anything else is the Kestrel Type A. */
 	public static String norm(String kind) {
 		return ANY.equals(kind) || RELIEF.equals(kind) ? kind : KESTREL;
 	}
@@ -79,33 +76,6 @@ public final class FreeCommand {
 				for (homeplanet.vault.StoredSystems.Entry s : homeplanet.vault.StoredSystems.read(v))
 					total += Math.max(0, Pricing.systemSale(s.id, s.level, homeplanet.core.Economy.SYSTEM_SALE_PERCENT) - s.broken * Pricing.brokenBarValue(s.id)); // as the Cargo Bay sells it
 			} catch (Exception e) { }
-		}
-		return total;
-	}
-
-	/**
-	 * Everything of value a plea would forfeit, in scrap: the Cargo Hold (scrap, supplies, items,
-	 * crew, stored systems) and the Junkyard's hulls at their full price.
-	 */
-	public static int surrenderValue(Vault v) {
-		int total = 0;
-		try {
-			SavedGameState gs = v.storage().save();
-			if (gs != null) {
-				ShipState s = gs.getPlayerShip();
-				total += s.getScrapAmt() + s.getFuelAmt() * Pricing.FUEL + s.getMissilesAmt() * Pricing.MISSILE + s.getDronePartsAmt() * Pricing.DRONE_PART;
-				for (String g : SaveHelper.gearAndCargo(gs)) total += Pricing.item(g);
-				for (CrewState c : SaveHelper.getOwnCrew(s)) total += Pricing.crew(c.getRace().getId());
-			}
-		} catch (Exception e) { log.debug("Free command: the Cargo Hold could not be read, counted as empty: {}", e.toString()); } // an unreadable hold counts as empty
-		{
-			try {
-				for (homeplanet.vault.StoredSystems.Entry s : homeplanet.vault.StoredSystems.read(v))
-					total += Math.max(0, Pricing.system(s.id, s.level) - s.broken * Pricing.brokenBarValue(s.id));
-			} catch (Exception e) { log.debug("Free command: the stored systems could not be read: {}", e.toString()); }
-		}
-		for (Ship j : v.junked()) {
-			try { SavedGameState g = j.save(); if (g != null) total += Pricing.ship(g, Pricing.rate()).total(); } catch (Exception e) { log.debug("Free command: {} could not be priced: {}", j.name, e.toString()); }
 		}
 		return total;
 	}

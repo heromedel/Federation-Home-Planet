@@ -35,7 +35,7 @@ public final class HoldXml {
 	public static final String ROOT = "cargohold";
 	static final int VERSION = 1;
 
-	/** Is this file the hold's xml (not a save, and not the 5.72 to 5.83 record that had its name)? */
+	/** Is this file the hold's xml? */
 	public static boolean isHold(byte[] b) {
 		String head = new String(b, 0, Math.min(b.length, 400), StandardCharsets.UTF_8);
 		return head.startsWith("<?xml") && head.contains("<" + ROOT);
@@ -44,13 +44,11 @@ public final class HoldXml {
 		try { return f.isFile() && isHold(SafeFiles.read(f)); } catch (IOException e) { return false; }
 	}
 
-	/** A hold's file read, whichever it is: the xml, or a save (a 5.x fleet's storage.sav or cargohold.sav). */
+	/** A hold's file read. */
 	public static SavedGameState read(File f) throws IOException {
 		byte[] b = SafeFiles.read(f);
-		if (isHold(b)) return read(b);
-		try { return new SavedGameParser().readSavedGame(f); }
-		catch (IOException e) { throw e; }
-		catch (Exception e) { throw new IOException(f.getName() + " could not be read: " + e, e); }
+		if (!isHold(b)) throw new IOException(f + " is not the Cargo Hold's file");
+		return read(b);
 	}
 
 	public static byte[] toBytes(SavedGameState gs) throws IOException {

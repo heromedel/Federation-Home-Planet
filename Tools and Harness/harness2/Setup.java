@@ -39,7 +39,7 @@ public class Setup {
   for (File f : fs) { File t = new File(to, f.getName()); if (f.isDirectory()) copyTree(f, t); else java.nio.file.Files.copy(f.toPath(), t.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
  }
  public static int fails = 0;
- /** A ship's save in a folder of ship folders (a shipyard, a Junkyard, a surrender), by her id; null if she isn't there. */
+ /** A ship's save in a folder of ship folders (a shipyard, a Junkyard), by her id; null if she isn't there. */
  public static File savIn(File parent, String id) { for (File d : ShipStore.folders(parent)) if (id.equals(ShipStore.idOf(d))) return ShipStore.sav(d).isFile() ? ShipStore.sav(d) : null; return null; }
  /**
   * What a side file of hers held before 5.98, written as the station keeps it now: the section of her record it became
@@ -72,9 +72,9 @@ public class Setup {
   }
   EventLog.write(v, Event.of(e.kind).put("log", "voyage").put("ship", name + "." + id).put("ship_name", name).put("ship_id", id).putAll(e).human(text));
  }
- /** The crew register forgotten, as a fleet updating to 5.41 had none: its own file, any 5.x crew.txt, and every crew file. */
+ /** The crew register forgotten, as a new fleet has none: its own file and every crew file. */
  public static void forgetCrew(Vault v) {
-  CrewRegister.registerFileOf(v).delete(); new File(v.root, "crew.txt").delete();
+  CrewRegister.registerFileOf(v).delete();
   for (CrewRegister.Member m : CrewRegister.members(v)) { File f = CrewRegister.fileOf(v, m.id); if (f != null) f.delete(); }
  }
  /** When the register's files last changed: its own file and every crew file (to tell a look that wrote nothing). */

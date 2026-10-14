@@ -481,7 +481,7 @@ public final class Assignments {
 		return out;
 	}
 
-	// ---- the board and who's away (expeditions/expeditions.xml in the fleet; assignments.txt at its root before 5.85) ----
+	// ---- the board and who's away (expeditions/expeditions.xml in the fleet) ----
 
 	/** The expeditions' file: the sectors on offer, and the crew away on one. */
 	public static File file(Vault v) { return new File(v.expeditionsDir(), "expeditions.xml"); }
@@ -502,11 +502,9 @@ public final class Assignments {
 		/** The roll's seed: the result was rolled at setting out, and is rolled again, the same, when they're back. */
 		public final long seed;
 		public final List<CrewState> crew;
-		/** Whether the Anti-Ship Battery could come up when they set out (5.05 on; a detail from before rolls as it did, without it). */
-		public final boolean battery;
-		Away(int index, String sector, int sentAt, int until, long seed, List<CrewState> crew, boolean battery) { this.index = index; this.sector = sector; this.sentAt = sentAt; this.until = until; this.seed = seed; this.crew = crew; this.battery = battery; }
+		Away(int index, String sector, int sentAt, int until, long seed, List<CrewState> crew) { this.index = index; this.sector = sector; this.sentAt = sentAt; this.until = until; this.seed = seed; this.crew = crew; }
 		/** What came of it (the same every time: the seed). */
-		public Result result() { return roll(sector, crew, new Random(seed), battery); }
+		public Result result() { return roll(sector, crew, new Random(seed)); }
 		public List<String> names() { List<String> n = new ArrayList<String>(); for (CrewState c : crew) n.add(c.getName()); return n; }
 	}
 
@@ -560,8 +558,7 @@ public final class Assignments {
 			}
 			long seed = 0;
 			try { seed = Long.parseLong(p.getProperty("away." + i + ".seed", "0")); } catch (NumberFormatException e) { }
-			out.add(new Away(i, p.getProperty("away." + i + ".sector"), Store.num(p, "away." + i + ".sentAt", 0), Store.num(p, "away." + i + ".until", 0), seed, crew,
-					"true".equals(p.getProperty("away." + i + ".ae"))));
+			out.add(new Away(i, p.getProperty("away." + i + ".sector"), Store.num(p, "away." + i + ".sentAt", 0), Store.num(p, "away." + i + ".until", 0), seed, crew));
 		}
 		return out;
 	}
@@ -716,7 +713,6 @@ public final class Assignments {
 		}
 		Result r = roll(sector, asLeft, new Random(seed));
 		p.setProperty("away." + i + ".sector", sector);
-		p.setProperty("away." + i + ".ae", "true"); // the battery can come up (the key's name is from 5.05)
 		p.setProperty("away." + i + ".sentAt", Integer.toString(now));
 		p.setProperty("away." + i + ".seed", Long.toString(seed));
 		p.setProperty("away." + i + ".until", Integer.toString(now + days(r, asLeft, rng)));
@@ -797,22 +793,16 @@ public final class Assignments {
 		return (String) JOBS[0][0];
 	}
 	/** A hazard, one time in HAZARD_ONE_IN (a plasma storm only in a nebula, the Anti-Ship Battery only in rebel space), or null. */
-	static String drawHazard(String sector, boolean battery, Random rng) {
+	static String drawHazard(String sector, Random rng) {
 		if (rng.nextInt(HAZARD_ONE_IN) != 0) return null;
 		List<String> fit = new ArrayList<String>();
-		for (Object[] h : HAZARDS) if ((h[2] == null || h[2].equals(sector)) && (battery || !"battery".equals(h[0]))) fit.add((String) h[0]);
+		for (Object[] h : HAZARDS) if (h[2] == null || h[2].equals(sector)) fit.add((String) h[0]);
 		return fit.get(rng.nextInt(fit.size()));
 	}
 	static String race(CrewState c) { return c.getRace() == null ? "human" : c.getRace().getId(); }
 	/** Whether this crew member was sent hurt (their own bonuses count half). */
 	static boolean hurt(CrewState c) { return c.getRace() != null && c.getHealth() < c.getRace().getMaxHealth(); }
 
-	/**
-	 * Rolls an expedition for this detail in this sector (nothing is written): the job, a hazard, each one's d20 with
-	 * its reroll, the pot, the items and the prize, and the report in words.
-	 */
-	public static Result roll(String sector, List<CrewState> party, Random rng) { return roll(sector, party, rng, true); }
-	/** The same, with or without the Anti-Ship Battery (a detail sent before 5.05 was rolled without it). */
 	/**
 	 * Their role's skill on the d20 (heromedel, 5.43; the job's one skill before 6.39): +2 a level over none, +3 a level when their race suits the job too;
 	 * a natural 1 or 20 stays as it fell, and anything else stays between 2 and 19, so only a natural 1 is death and only
@@ -822,12 +812,16 @@ public final class Assignments {
 		if (natural <= 1 || natural >= 20 || level <= 0) return natural;
 		return Math.max(2, Math.min(19, natural + level * (raceSuits ? 3 : 2)));
 	}
-	public static Result roll(String sector, List<CrewState> party, Random rng, boolean battery) {
+	/**
+	 * Rolls an expedition for this detail in this sector (nothing is written): the job, a hazard, each one's d20 with
+	 * its reroll, the pot, the items and the prize, and the report in words.
+	 */
+	public static Result roll(String sector, List<CrewState> party, Random rng) {
 		Result r = new Result();
 		r.seed = rng.nextLong();
 		r.sector = sector;
 		r.job = drawJob(sector, rng);
-		r.hazard = drawHazard(sector, battery, rng);
+		r.hazard = drawHazard(sector, rng);
 		if ("battery".equals(r.hazard)) { // each Engi a chance in BATTERY_HACK of hacking it, for everyone
 			int engi = 0;
 			for (CrewState c : party) if ("engi".equals(race(c))) { engi++; if (r.hacker == null) r.hacker = c; }

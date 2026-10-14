@@ -292,7 +292,7 @@ public final class Shipments {
 		catch (Exception e) { throw new IOException("The " + Vault.title(slot) + " fleet's Cargo Hold couldn't be read: " + e.getMessage()); }
 		for (Line l : p.lines) Exchange.give(gs.getPlayerShip(), l);
 		p.state = ELSEWHERE;
-		v.begin().put(hold, Vault.holdBytes(hold, gs)).put(fileOf(p.id), bytes(p)).commit();
+		v.begin().put(hold, homeplanet.parser.HoldXml.toBytes(gs)).put(fileOf(p.id), bytes(p)).commit();
 		HistoryLog.entry("SHIPMENT ACCEPTED", p.words() + " from " + p.peerTitle + ": in the " + Vault.title(slot) + " fleet's Cargo Hold", null, parcelEvent("SHIPMENT_ACCEPTED", p).put("to", "hold").put("to_fleet", Vault.title(slot)));
 	}
 	/** Returns a held parcel: it waits in the Outbox, addressed back to its sender, and goes when their station is found. */

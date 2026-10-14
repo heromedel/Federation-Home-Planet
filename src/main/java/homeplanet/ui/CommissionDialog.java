@@ -286,7 +286,7 @@ public class CommissionDialog extends JDialog {
 		/** Her row's note: " (on your plea)" for a plea's ship, " (free)" for a free one, or nothing. */
 		String freeNote(String id) {
 			if (!free(id)) return "";
-			return !unlockFree.contains(id) && emptyFree(id) && homeplanet.vault.Vault.get().freeCommandReassigned() && !homeplanet.vault.Vault.get().freeCommandForfeit() ? " (on your plea)" : " (free)";
+			return !unlockFree.contains(id) && emptyFree(id) && homeplanet.vault.Vault.get().freeCommandReassigned() ? " (on your plea)" : " (free)";
 		}
 		boolean emptyFree(String id) {
 			if (!emptyYard) return false;
@@ -368,7 +368,7 @@ public class CommissionDialog extends JDialog {
 			preview.add(stats, BorderLayout.NORTH);
 			preview.add(p, BorderLayout.CENTER);
 			if (HomePlanet.commissionCosts()) {
-				if (emptyFree(e.id) && homeplanet.vault.Vault.get().freeCommandReassigned() && !homeplanet.vault.Vault.get().freeCommandForfeit())
+				if (emptyFree(e.id) && homeplanet.vault.Vault.get().freeCommandReassigned())
 					priceLabel.setText("<html><b>On your plea.</b> When you commission " + homeplanet.model.Words.herObj() + ", give up the Cargo Hold for " + homeplanet.model.Words.herObj() + (homeplanet.core.Economy.repForJourneysAndPleas() ? ", or keep it and answer for " + homeplanet.model.Words.herObj() + " with your reputation" : "") + ".</html>");
 				else if (emptyFree(e.id)) priceLabel.setText("<html><b>Free.</b> The Federation Home Planet grants you your first command at no cost.</html>");
 				else if (free(e.id)) priceLabel.setText("<html><b>Free, once.</b> Newly unlocked in FTL: The Federation Home Planet commissions the first of " + homeplanet.model.Words.her() + " line at no cost.</html>");
@@ -467,7 +467,7 @@ public class CommissionDialog extends JDialog {
 		int price = 0;
 		boolean isFree = free(e.id);
 		// a plea's ship: paid with the Cargo Hold (at what it would sell for), or against the career's reputation
-		boolean plea = isFree && emptyFree(e.id) && vault.freeCommandReassigned() && !vault.freeCommandForfeit(); // (an old report's ship was paid for already)
+		boolean plea = isFree && emptyFree(e.id) && vault.freeCommandReassigned();
 		// what she costs and she herself, as one protection note (6.11, CONCERNS 8: paid first and put back by hand if she failed, before)
 		homeplanet.vault.Vault.Transaction tx = vault.begin();
 		int repCost = 0;

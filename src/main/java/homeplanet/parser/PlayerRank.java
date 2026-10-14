@@ -90,9 +90,7 @@ public final class PlayerRank {
 	public static int reached(Vault v) {
 		return Store.num(read(v), "reached", 0);
 	}
-	/** A clearance an old career held under the cruiser ranks, kept ("custom": remodels and custom ships; "artillery"). */
-	public static boolean kept(Vault v, String what) { return "true".equals(read(v).getProperty("kept." + what)); }
-	/** A career begun now: on the ladder from its start, nothing carried over. */
+	/** A career begun now: on the ladder from its start. */
 	public static void begin(Vault v) {
 		if (file(v).isFile()) return;
 		Properties p = new Properties();
@@ -100,34 +98,25 @@ public final class PlayerRank {
 		write(v, p);
 	}
 
-	/** What a look at the ladder found: the first look for a career from before 5.56, or the ranks newly reached. */
-	public static final class Climb {
-		public boolean first;
-		public final List<Integer> promoted = new ArrayList<Integer>();
-	}
 	/**
-	 * Brings the ladder up to this reputation. A career from before 5.56, the first time: the higher of its
-	 * reputation's rank and its cruiser rank (Captain or Commodore), with any clearance that rank held kept.
+	 * Brings the ladder up to this reputation: the ranks newly reached, lowest first (none if it hasn't climbed). A ladder
+	 * whose file is lost is written down at the rank the reputation gives, quietly: no letter for each rank again.
 	 */
-	public static synchronized Climb climb(Vault v, int reputation, Unlocks u) {
-		Climb c = new Climb();
+	public static synchronized List<Integer> climb(Vault v, int reputation) {
+		List<Integer> promoted = new ArrayList<Integer>();
 		int now = forReputation(reputation);
 		if (!file(v).isFile()) {
-			int old = u == null ? 0 : UnlockGrants.rank(u); // 0 Commander, 1 Captain, 2 Commodore
 			Properties p = new Properties();
-			p.setProperty("reached", Integer.toString(Math.max(now, old >= 2 ? COMMODORE : old >= 1 ? COMMODORE - 1 : 0)));
-			if (old >= 1) p.setProperty("kept.custom", "true");
-			if (old >= 2) p.setProperty("kept.artillery", "true");
+			p.setProperty("reached", Integer.toString(now));
 			write(v, p);
-			c.first = true;
-			return c;
+			return promoted;
 		}
 		Properties p = read(v);
 		int was = Store.num(p, "reached", 0);
-		if (now <= was) return c;
-		for (int r = was + 1; r <= now; r++) c.promoted.add(r);
+		if (now <= was) return promoted;
+		for (int r = was + 1; r <= now; r++) promoted.add(r);
 		p.setProperty("reached", Integer.toString(now));
 		write(v, p);
-		return c;
+		return promoted;
 	}
 }

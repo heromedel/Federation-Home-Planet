@@ -104,7 +104,7 @@ public class PartT { public static void main(String[] a) throws Exception {
   if (dear.price > 3) { try { Parts.buy(v, dear); } catch (IOException e) { refused = e.getMessage().contains("3 scrap"); } }
   Setup.chk("P: too dear for the hold: refused, nothing changed", refused && v.storageScrap() == 3 && new String(SafeFiles.read(v.systemsFile()), "UTF-8").equals(before));
  }
- /** The stipend comes every 15 beacons to a sector of the old rule; a career from sectors keeps what it's owed and its progress. */
+ /** The stipend comes every so many beacons from the career's start; a start lost from the file counts from then. */
  static void stipend(Vault v) throws Exception {
   if (!Career.started(v.root)) Career.start(false, false, false);
   java.lang.reflect.Method unpaid = Career.class.getDeclaredMethod("unpaidMonths"); unpaid.setAccessible(true);
@@ -112,16 +112,15 @@ public class PartT { public static void main(String[] a) throws Exception {
   Properties p = Store.load(cf);
   Setup.chk("S: a career begun now counts beacons from its start", Integer.toString(v.beaconsSeen()).equals(p.getProperty("beaconsAtStart")));
   Setup.chk("S: Sandbox careers: every two months, 56 beacons", Career.beaconsPerStipend() == 56);
-  // a career from before: 9 sectors travelled at 4 a month, 1 month paid: 1 month owed, a sector on to the next
-  p.remove("beaconsAtStart"); p.setProperty("sectorsAtStart", "0"); p.setProperty("paidMonths", "1");
-  Clock.set(v, "sectors", "9");
+  // its start lost from the file: counted from now, nothing owed at once; 56 beacons on, one month
+  p.remove("beaconsAtStart"); p.setProperty("paidMonths", "0");
   Store.write(cf, p, null);
   int owed = (Integer) unpaid.invoke(null);
-  Setup.chk("S: a career from sectors: still 1 month owed after the switch (" + owed + ")", owed == 1);
-  ChainT.jump(v, 32);
-  Setup.chk("S: its 9 sectors carried over as 135 beacons: 32 more is a beacon short of the third 56", (Integer) unpaid.invoke(null) == 1);
+  Setup.chk("S: its start lost: counted from now, nothing owed at once (" + owed + ")", owed == 0 && Store.load(cf).getProperty("beaconsAtStart") != null);
+  ChainT.jump(v, 55);
+  Setup.chk("S: 55 beacons on: a beacon short of a stipend", (Integer) unpaid.invoke(null) == 0);
   ChainT.jump(v, 1);
-  Setup.chk("S: and 33 make the next stipend", (Integer) unpaid.invoke(null) == 2);
+  Setup.chk("S: and 56 make the first", (Integer) unpaid.invoke(null) == 1);
   Setup.chk("S: the difficulties' stipends: 28, 56, 84 beacons (one, two, three months)", CareerRules.of(CareerRules.EASY).stipendBeacons() == 28
     && CareerRules.of(CareerRules.NORMAL).stipendBeacons() == 56 && CareerRules.of(CareerRules.HARD).stipendBeacons() == 84
     && CareerRules.LEVELS[CareerRules.STIPEND][1].equals("two months") && Career.BEACONS_PER_MONTH == 28);

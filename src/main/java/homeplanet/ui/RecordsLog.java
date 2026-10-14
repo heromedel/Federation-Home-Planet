@@ -107,7 +107,7 @@ class RecordsLog extends JComponent implements Scrollable {
 	/**
 	 * Where a station entry belongs in view (heromedel, 6.05: the station log is the station's business, its housekeeping
 	 * kept in events.log and out of view): its plain tag, or null for the station's own housekeeping (patches, taking
-	 * stock, the protection notes, converting files, settings, blueprints, profiles, updates, a message queued, a
+	 * stock, the protection notes, settings, blueprints, profiles, updates, a message queued, a
 	 * shipment packed, a switch between fleets). A kind not listed shows as Station.
 	 */
 	static String tag(homeplanet.core.EventLog.Entry e) {
@@ -123,18 +123,18 @@ class RecordsLog extends JComponent implements Scrollable {
 		for (String[] t : TAGS) if (("," + t[1] + ",").contains("," + k + ",")) return t[0];
 		return "Station";
 	}
-	private static final String HIDDEN = ",LOADED,PATCH,JOURNAL,LAYOUT,LOGS_CONVERTED,LOG_DAYS_REPAIRED,CREW_FILES,HOLD_FILE,EXPEDITION_FILES,"
-			+ "SMALL_FILES,SHIP_FILES,SETTINGS,BLUEPRINT,BLUEPRINTS,CLEAN,PROFILE,UPDATE,CONVERTED,SLIPSTREAM,UNDO_RETROFIT,CLAUDE,"
+	private static final String HIDDEN = ",LOADED,PATCH,JOURNAL,"
+			+ "SETTINGS,BLUEPRINT,BLUEPRINTS,CLEAN,PROFILE,UPDATE,SLIPSTREAM,UNDO_RETROFIT,CLAUDE,"
 			+ "SHIPMENT_PACKED,SHIPMENT_UNPACKED,DAY,SWITCH_FLEET,"; // a switch between fleets reads as the station's own workings, not this career's business (heromedel)
 	private static final String[][] TAGS = {
-		{"Ships", "BOARD,DOCK,COMMISSION,NEW_JOURNEY,RENAME,REMODEL,RESTORE,RECOVER,OVERWRITTEN,FINAL_BATTLE,VICTORY,MUSEUM,REWARD,SENT,HANDED_OVER"},
+		{"Ships", "BOARD,DOCK,COMMISSION,NEW_JOURNEY,RENAME,REMODEL,RESTORE,RECOVER,OVERWRITTEN,FINAL_BATTLE,VICTORY,MUSEUM,SENT,HANDED_OVER"},
 		{"Junkyard", "DISBAND,SALVAGE,SCRAP,DESTROY,REPAIR_JOB,SEIZED,SENT_TO_SANDBOX"},
 		{"Cargo Bay", "TRADE,SYSTEMS,JUNK,OVERFLOW"},
 		{"Crew", "CREW,RETIRE,RENAME_CREW,HIRE,MEDBAY"},
 		{"Expeditions", "EXPEDITION"},
 		{"Quarters", "REST"},
 		{"Inbox", "TRANSMISSION,REPLY,CLAIM,STIPEND,GIFT"},
-		{"Career", "CAREER,CAREER_ENDED,PLEAD,UNDO_PLEA,REASSIGN,UNDO_REASSIGN"},
+		{"Career", "CAREER,CAREER_ENDED,PLEAD,UNDO_PLEA"},
 		{"Long Range Comm.", "SENT_AWAY,RECEIVED,SENT_BACK,TRADE_CALLED_OFF,LONG_RANGE_TRADE,SHIPMENT_SENT,SHIPMENT_RETURNED,SHIPMENT_ARRIVED,SHIPMENT_ACCEPTED,SHIPMENT_RETURNING"}};
 	/** The kinds whose detail lines are business (what moved in a trade, what was bought, sold, thrown out or stripped); the rest keep theirs out of view. */
 	private static final String DETAILED = ",TRADE,BUY,SELL,JUNK,RETIRE,SYSTEMS,SCRAP,LONG_RANGE_TRADE,TRADE_CALLED_OFF,";
@@ -171,53 +171,6 @@ class RecordsLog extends JComponent implements Scrollable {
 				for (int i = 1; e.get("detail." + i) != null; i++) it.details.add(e.get("detail." + i).replace("Spacedock Storage", "the Cargo Hold")); // the hold's save keeps its old name
 			r.tagW = Math.max(r.tagW, BOLD_FM.stringWidth(it.tag) + 16);
 			r.items.add(it);
-		}
-		r.textX = PAD + r.timeW() + TEXT_GAP + (r.tagW > 0 ? r.tagW + TEXT_GAP : 0);
-		return r;
-	}
-	/** The station's log (her entries in history.log), or the empty text if there are none. */
-	static RecordsLog station(String text, String empty) { return station(text, empty, null); }
-	/**
-	 * The station log; with each entry's stardate (in order, one an entry), it's told by stardate, with no clock times
-	 * (heromedel, 5.41: real dates stay in the file, for bug reports, and out of view).
-	 */
-	/** An entry left out of view: its detail lines go with it. */
-	private static final Item SKIPPED = new Item();
-	static RecordsLog station(String text, String empty, int[] stardays) {
-		RecordsLog r = new RecordsLog(empty);
-		r.noClock = stardays != null;
-		String day = null;
-		Item last = null;
-		int entry = 0;
-		for (String line : text.split("\r?\n")) {
-			if (line.trim().isEmpty()) continue;
-			if (line.startsWith("  ") && last != null) { if (last != SKIPPED) last.details.add(line.trim()); continue; }
-			Matcher m = STAMP.matcher(line);
-			Item it = new Item();
-			if (m.matches()) {
-				String heading = stardays == null ? m.group(1)
-						: "Stardate " + homeplanet.vault.MasterLog.stardate(Math.max(1, entry < stardays.length ? stardays[entry] : 1));
-				entry++; // counted even when not shown: the stardates go entry by entry
-				if (m.group(3).startsWith("LOADED")) { last = SKIPPED; continue; } // the fleet's listing: the debug log's now (heromedel, 5.53)
-				if (!heading.equals(day)) {
-					day = heading;
-					Item h = new Item();
-					h.heading = true;
-					h.title = day;
-					r.items.add(h);
-				}
-				if (stardays == null) it.time = m.group(2);
-				String rest = m.group(3);
-				int sp = rest.indexOf("  ");
-				it.tag = sp < 0 ? rest : rest.substring(0, sp);
-				it.mark = tagColour(it.tag);
-				it.segs.add(new Seg(sp < 0 ? "" : rest.substring(sp + 2), TXT));
-				r.tagW = Math.max(r.tagW, BOLD_FM.stringWidth(it.tag) + 16);
-			} else {
-				it.segs.add(new Seg(line, TXT)); // not an entry (the log couldn't be read, say): shown as it is
-			}
-			r.items.add(it);
-			last = it;
 		}
 		r.textX = PAD + r.timeW() + TEXT_GAP + (r.tagW > 0 ? r.tagW + TEXT_GAP : 0);
 		return r;
@@ -260,10 +213,10 @@ class RecordsLog extends JComponent implements Scrollable {
 		if (kind.startsWith("+")) return GOOD; // the reputation log: its change is its tag
 		if (kind.startsWith("\u2212")) return BAD;
 		String k = "," + kind + ",";
-		if (",VICTORY,REWARD,STIPEND,CLAIM,SALVAGE,".contains(k)) return GOOD;
+		if (",VICTORY,STIPEND,CLAIM,SALVAGE,".contains(k)) return GOOD;
 		if (",MUSEUM,COMMISSION,TRADE,BUY,SELL,SCRAP,".contains(k)) return GOLD;
 		if (",LOST,OVERWRITTEN,DISBAND,DECOMMISSION,JUNK,RETIRE,DESTROY,".contains(k)) return BAD;
-		if (",BOARD,DOCK,NEW JOURNEY,TRANSMISSION,SENT,REASSIGN,PLEAD,RESTORE,RECOVER,CAREER,".contains(k)) return BLUE;
+		if (",BOARD,DOCK,NEW JOURNEY,TRANSMISSION,SENT,PLEAD,RESTORE,RECOVER,CAREER,".contains(k)) return BLUE;
 		if (",DESIGN,REMODEL,RENAME,SYSTEMS,BLUEPRINT,BLUEPRINTS,".contains(k)) return PURPLE;
 		return DIM;
 	}

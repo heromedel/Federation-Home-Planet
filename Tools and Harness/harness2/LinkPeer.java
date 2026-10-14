@@ -387,12 +387,12 @@ public class LinkPeer {
    if (k.equals("return")) { if (held == null) return "none"; Shipments.returnIt(held); return "OK"; }
    if (k.equals("deliver")) { if (held == null) return "none"; try { Shipments.deliverTo(held, w[2]); return "OK"; } catch (IOException e) { return "FAILED " + e.getMessage(); } }
    if (k.equals("makefleet")) {
-    File root = Vault.rootOf(v.saves, w[2]); root.mkdirs();
-    SafeFiles.write(new File(root, "storage.sav"), SaveHelper.toBytes(SaveHelper.createStorageSave("Spacedock Storage", true)));
+    File hold = Vault.holdFileIn(Vault.rootOf(v.saves, w[2])); hold.getParentFile().mkdirs();
+    SafeFiles.write(hold, homeplanet.parser.HoldXml.toBytes(SaveHelper.createStorageSave("Spacedock Storage", true)));
     return "OK";
    }
    if (k.equals("holdof")) {
-    SavedGameState gs = new SavedGameParser().readSavedGame(new File(Vault.rootOf(v.saves, w[2]), "storage.sav"));
+    SavedGameState gs = homeplanet.parser.HoldXml.read(Vault.holdFileIn(Vault.rootOf(v.saves, w[2])));
     return holdText(gs);
    }
    return "unknown";

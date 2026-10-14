@@ -801,7 +801,7 @@ public class GuiT {
 
  /** The welcome screen and Switch Game Mode describe each career alike; one already begun offers Continue, not Begin. */
  static void modes() throws Exception {
-  Vault.switchFleet(Vault.CUSTOM); Career.start(false, false, CareerRules.earlier(false));
+  Vault.switchFleet(Vault.CUSTOM); Career.start(false, false, new CareerRules(CareerRules.CUSTOM, CareerRules.of(CareerRules.NORMAL).levels()));
   Vault.switchFleet(Vault.SANDBOX);
   final String[] texts = new String[2]; final List<String> buttons = new ArrayList<String>();
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
@@ -819,9 +819,7 @@ public class GuiT {
    for (JButton b : all(welcome.getContentPane(), JButton.class)) buttons.add(b.getText());
    welcome.dispose(); switcher.dispose();
   } catch (Exception e) { throw new RuntimeException(e); } } });
-  String first = "Your first Immersive career, from before difficulties, with the rules it had.";
-  Setup.chk("M: the welcome screen and Switch Game Mode both say Custom holds the first career, begun", texts[0].contains(first) && texts[1].contains(first)
-    && texts[0].contains("Begun: 0 ships") && texts[1].contains("Begun: 0 ships"));
+  Setup.chk("M: the welcome screen and Switch Game Mode both show the Custom career begun", texts[0].contains("Begun: 0 ships") && texts[1].contains("Begun: 0 ships"));
   Setup.chk("M: the others not begun, on both", texts[0].split("Not begun", -1).length == 4 && texts[1].split("Not begun", -1).length == 4);
   Setup.chk("M: the welcome screen offers Continue for the begun career, Begin for the rest " + buttons, Collections.frequency(buttons, "Continue...") == 1 && Collections.frequency(buttons, "Begin...") == 3);
  }

@@ -119,36 +119,14 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("F: a shipyard with ships isn't empty", !v.shipyardEmpty());
   Ship x = null; for (Ship s : v.docked()) x = s;
   v.board(x); v.disband();
-  String bp = x.save().getPlayerShipBlueprintId();
-  SafeFiles.writeText(v.systemsFile(), SystemsPanelHeader.H + "\nteleporter 2\n", false);
-  // the hold can't be emptied (its versions folder is blocked by a file): the hulls stay in the Junkyard
-  File block = ShipStore.versions(v.historyOf(v.storage())); SafeFiles.deleteTree(block); SafeFiles.writeText(block, "x", false);
-  int junked = v.junked().size(); boolean failed = false;
-  try { v.surrender(); } catch (IOException e) { failed = true; }
-  boolean still = true; for (Ship j : v.junked()) if (!j.file().isFile()) still = false;
-  Setup.chk("F: a failed surrender leaves the hulls in the Junkyard", failed && v.junked().size() == junked && still && v.lastSurrender() == null);
-  block.delete();
-  v.reload();
-  Setup.chk("F: and they're still there after a reload", v.junked().size() == junked);
-    int worth = homeplanet.parser.FreeCommand.surrenderValue(v);
-  Setup.chk("F: what a surrender gives up is valued: the hold's scrap, its stored systems and the Junkyard's hulls", worth > 300 + homeplanet.parser.Pricing.system("teleporter", 2));
-  File dir = v.surrender();
-  Setup.chk("F: surrender empties the hold and the Junkyard", v.junked().isEmpty() && v.storageScrap() == 0 && !v.systemsFile().exists());
-  Setup.chk("F: what was surrendered is kept", Setup.savIn(dir, x.id) != null && new File(dir, "storage.sav").isFile() && new File(dir, "storage-systems.txt").isFile() && dir.equals(v.lastSurrender()));
-  List<String> ids = Retrofit.blueprintIds(Setup.savIn(dir, x.id));
-  Setup.chk("F: a surrendered hull's blueprints still count", ids != null && v.blueprintsInUseOrHistory().containsAll(ids));
+  List<String> ids = Retrofit.blueprintIds(x.file());
+  Setup.chk("F: a hull in the Junkyard: her blueprints still count", ids != null && v.blueprintsInUseOrHistory().containsAll(ids));
   for (Ship s : v.docked()) v.remove(s, "DESTROY");
+  Setup.chk("F: ships docked or junked: not empty", !v.shipyardEmpty());
+  for (Ship s : v.junked()) v.remove(s, "DESTROY");
   Setup.chk("F: no ship docked, boarded or junked: the shipyard is empty", v.shipyardEmpty());
-  v.undoSurrender(dir);
-  Setup.chk("F: undo returns the hold and the hulls", v.storageScrap() == 300 && v.byId(x.id) != null && v.byId(x.id).state == Ship.State.JUNKED && v.systemsFile().isFile() && v.lastSurrender() == null);
-  File dir2 = v.surrender();
-  SavedGameState g = v.readCopy(v.storage()).save; g.getPlayerShip().setScrapAmt(5); v.write(v.storage(), g);
-  boolean refused = false; try { v.undoSurrender(dir2); } catch (IOException e) { refused = e.getMessage().contains("changed"); }
-  Setup.chk("F: undo is refused once the hold has changed", refused && v.storageScrap() == 5);
-  v.useFreeCommand("test");
   plea(v);
  }
- /** Plead for New Ship: the hold's sale value, given up for her (the crew stay), with or without the difference refunded. */
  static void plea(Vault v) throws Exception {
   HomePlanet.sellSupplies = false; HomePlanet.sellSystems = false;
   SavedGameState g = v.readCopy(v.storage()).save;

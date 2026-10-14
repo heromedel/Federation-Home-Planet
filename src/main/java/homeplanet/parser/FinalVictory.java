@@ -30,8 +30,6 @@ public final class FinalVictory {
 
 	/** Nothing (as in FTL), Choice (RESCUE: keep her, or the museum), Museum (the museum takes her); 6.47, heromedel. */
 	public static final String NOTHING = "nothing", RESCUE = "rescue", MUSEUM = "museum";
-	/** Before 6.47: a reward of her value, she stays lost. Read as the museum at full value (what it paid). */
-	public static final String REWARD = "reward";
 	public static final String[] CHOICES = {NOTHING, RESCUE, MUSEUM};
 	/** The museum's reward, to the Cargo Hold: her full value, half of it, or none (an honour alone). */
 	public static final String FULL = "full", HALF = "half", NONE = "none";
@@ -64,38 +62,30 @@ public final class FinalVictory {
 		for (int i = 0; i < lines.length; i++) sb.append(i == 0 ? "" : "<br>").append(lines[i]);
 		return sb.append("</div></html>").toString();
 	}
-	private static String norm(String c) { return RESCUE.equals(c) ? RESCUE : MUSEUM.equals(c) || REWARD.equals(c) ? MUSEUM : NOTHING; }
+	private static String norm(String c) { return RESCUE.equals(c) ? RESCUE : MUSEUM.equals(c) ? MUSEUM : NOTHING; }
 	private static String normPay(String p) { return HALF.equals(p) || NONE.equals(p) ? p : FULL; }
-	/** The choice of the fleet in use (the Immersive fleet's is its difficulty's, or, from before difficulties, kept in its career). */
+	/** The choice of the fleet in use: an Immersive career's difficulty's, or Sandbox Mode's in Settings. */
 	public static String choice() {
-		Vault v = Vault.get();
 		String fixed = fixed();
-		if (fixed != null) return fixed;
-		return norm(v.immersive ? Career.finalVictory(v.root) : HomePlanet.finalVictory);
+		return fixed != null ? fixed : norm(HomePlanet.finalVictory);
 	}
-	/** The Immersive career's difficulty decides it (RESCUE or MUSEUM), or null where the player chooses. */
+	/** The Immersive career's difficulty decides it (RESCUE, MUSEUM or NOTHING), or null in Sandbox Mode, where the player chooses. */
 	public static String fixed() {
 		CareerRules r = CareerRules.current();
 		return r == null ? null : r.victory();
 	}
-	/** The museum's reward for the fleet in use: its difficulty's (full or half), or the player's (full when never chosen, as before 6.47). */
+	/** The museum's reward for the fleet in use: its difficulty's, or Sandbox Mode's in Settings (full when never chosen). */
 	public static String pay() {
 		String fixed = fixedPay();
-		if (fixed != null) return fixed;
-		Vault v = Vault.get();
-		return normPay(v.immersive ? Career.finalVictoryPay(v.root) : HomePlanet.finalVictoryPay);
+		return fixed != null ? fixed : normPay(HomePlanet.finalVictoryPay);
 	}
-	/** The Immersive career's difficulty decides the museum's reward (FULL or HALF), or null where the player chooses. */
+	/** The Immersive career's difficulty decides the museum's reward (FULL, HALF or NONE), or null in Sandbox Mode, where the player chooses. */
 	public static String fixedPay() {
 		CareerRules r = CareerRules.current();
 		return r == null ? null : r.museumPay();
 	}
-	/** Sets the museum's reward of the fleet in use (the normal fleet's is in the cfg: the caller saves it). */
-	public static void setPay(String p) throws IOException {
-		Vault v = Vault.get();
-		if (v.immersive) Career.setFinalVictoryPay(v.root, normPay(p));
-		else HomePlanet.finalVictoryPay = normPay(p);
-	}
+	/** Sets Sandbox Mode's museum reward (in the cfg: the caller saves it). */
+	public static void setPay(String p) { HomePlanet.finalVictoryPay = normPay(p); }
 	/** What the museum pays, as a share of her value: 100, 50 or 0. */
 	public static int museumPercent() { String p = pay(); return FULL.equals(p) ? 100 : HALF.equals(p) ? 50 : 0; }
 	/** The museum's price for her. */
@@ -104,12 +94,8 @@ public final class FinalVictory {
 	static String worth() { return museumPercent() >= 100 ? homeplanet.model.Words.her() + " full value" : "half " + homeplanet.model.Words.her() + " value"; }
 	/** The letter for a rescue's offer or the museum: its own words when the museum pays nothing (6.47). */
 	private static String letter(String key) { return museumPercent() == 0 ? key + "_honour" : key; }
-	/** Sets the choice of the fleet in use (the normal fleet's is in the cfg: the caller saves it). */
-	public static void setChoice(String c) throws IOException {
-		Vault v = Vault.get();
-		if (v.immersive) Career.setFinalVictory(v.root, norm(c));
-		else HomePlanet.finalVictory = norm(c);
-	}
+	/** Sets Sandbox Mode's choice (in the cfg: the caller saves it). */
+	public static void setChoice(String c) { HomePlanet.finalVictory = norm(c); }
 
 	/** Watching continue.sav: keeps the boarded ship's copy if the flagship is on her way to the last battle. */
 	public static void watch() {
@@ -215,8 +201,6 @@ public final class FinalVictory {
 	public static final String TO_HARD_OFF = "off";
 	/** Doesn't apply: the museum takes every victor (Hard, or a Custom career with that rule). */
 	public static final String TO_HARD_NONE = "none";
-	/** A Custom career that hasn't chosen yet: the Space Dock asks, as the briefing would have. */
-	public static final String TO_HARD_ASK = "ask";
 	/** How it stands for the fleet in use. */
 	public static String toHardRule() {
 		CareerRules r = CareerRules.current();
@@ -227,8 +211,8 @@ public final class FinalVictory {
 		if (r == null) return TO_HARD_FREE;
 		if (MUSEUM.equals(r.victory()) || NOTHING.equals(r.victory())) return TO_HARD_NONE; // no ship comes back to fly
 		if (CareerRules.NORMAL.equals(r.name)) return TO_HARD_ON; // no saved answer is read: deleting one changes nothing
-		if (CareerRules.CUSTOM.equals(r.name)) return saved == null ? TO_HARD_ASK : Boolean.parseBoolean(saved) ? TO_HARD_ON : TO_HARD_OFF;
-		return TO_HARD_FREE; // Easy, or a career from before difficulties
+		if (CareerRules.CUSTOM.equals(r.name)) return Boolean.parseBoolean(saved) ? TO_HARD_ON : TO_HARD_OFF; // chosen in its briefing; off if none is recorded
+		return TO_HARD_FREE; // Easy
 	}
 	/** Whether a rescued ship, kept, sets out on Hard without asking. */
 	public static boolean toHard() {
@@ -242,7 +226,7 @@ public final class FinalVictory {
 		if (CareerRules.current() == null) HomePlanet.rescuedToHard = on;
 		else if (TO_HARD_FREE.equals(toHardRule())) Career.setRescuedToHard(Vault.get().root, on);
 	}
-	/** A Custom career's answer, chosen once (the briefing, or the Space Dock's question). */
+	/** A Custom career's answer, chosen once in its briefing. */
 	public static void chooseToHard(java.io.File immersiveRoot, boolean on) throws IOException {
 		Career.setRescuedToHard(immersiveRoot, on);
 		HistoryLog.entry("CAREER", "Rescued Ships after Victory moved to Hard difficulty: " + (on ? "yes" : "no") + " (chosen for the career, fixed)", null,

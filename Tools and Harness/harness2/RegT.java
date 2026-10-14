@@ -11,7 +11,7 @@ public class RegT { public static void main(String[] a) throws Exception {
  Setup.chk("A: the station entries from the event log in the station log's form: minute, kind, headline, then each detail (" + st.split("\n").length + " lines)",
    st.matches("(?s).*\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d  LONG RANGE TRADE  with Commander Bree  \\(trade #7\\)\n  gave: Ash \\(Human\\), Bob \\(Rockman\\)\n  received: Cy \\(Engi\\)\n.*")
    && st.contains("  RENAME  Old Glory -> New Glory  (abc123)\n"));
- Setup.chk("A: history.log is no longer written (5.93)", !v.historyLog().isFile() || !new String(SafeFiles.read(v.historyLog()), "UTF-8").contains("Commander Bree"));
+ Setup.chk("A: history.log is no longer written (5.93)", !new File(v.logsDir(), "history.log").isFile());
  // C: the reputation log from the event log (5.92), as reputation.log wrote it
  HomePlanet.reputationOn = true;
  Reputation.expedition(v, "Nebula, Attack", 24, 0, 2);

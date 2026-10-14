@@ -1,9 +1,8 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
 /**
- * Who a ship is (6.10, heromedel's Plan N): her career and origin in her record, the one-time check of a fleet from
- * before 6.10 (her fingerprint or her history), her mark in every save, saves and records found where no ship holds
- * them (and the player's word on them), Restore marking again, and Destroy in a career sending her on to Sandbox Mode.
- * args: gamedir, world saves (from WorldT; their records are made as before 6.10 here), work
+ * Who a ship is (6.10, heromedel's Plan N): her career and origin in her record, her mark in every save, saves and
+ * records found where no ship holds them (and the player's word on them), Restore marking again, and Destroy in a
+ * career sending her on to Sandbox Mode. args: gamedir, world saves (from WorldT), work
  */
 public class IdT {
  static File saves;
@@ -11,33 +10,31 @@ public class IdT {
   File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
   saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
   HomePlanet.savedGameParser = new SavedGameParser(); if (DataManager.get() == null) { DefaultDataManager dm = new DefaultDataManager(game); DataManager.setInstance(dm); dm.setDLCEnabledByDefault(true); }
-  before610(Vault.rootOf(saves, Vault.SANDBOX)); // the world as a station before 6.10 left it, whatever made it
   HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
 
-  // 1. the one-time check: every ship of a fleet from before 6.10 accepted, her career and origin written, her save marked
-  boolean all = true, pre = true, marked = true; String origins = "";
+  // 1. every ship of the fleet its own: her career and origin written, her save marked
+  boolean all = true, marked = true;
   for (Ship s : ships(v)) {
    ShipStore.Record r = ShipStore.read(v.folderOf(s));
    if (r == null || !Vault.SANDBOX.equals(r.career) || r.origin.isEmpty()) all = false;
-   else { if (!r.origin.contains(".pre-6.10.") || !r.origin.contains(".verified-")) pre = false; origins += r.origin + " "; }
    ShipMark.Found m = ShipMark.read(v.fileOf(s));
    if (m == null || !s.id.equals(m.id) || !Vault.SANDBOX.equals(m.career)) marked = false;
   }
   Setup.chk("C: nothing waits on the player: every ship of the fleet is its own", v.found().isEmpty());
   Setup.chk("C: every record has her career and origin", all);
-  Setup.chk("C: origins from before 6.10 say so, and what proved them (" + origins.trim() + ")", pre);
   Setup.chk("C: every save carries her mark", marked);
-  Setup.chk("C: the check is logged, ship by ship", log(v).contains("what=checked"));
 
-  // 2. a save edited elsewhere (her fingerprint gone), with her history in the log: accepted by her history
+  // 2. her record has lost its career and origin: she waits for the player's word; taken in, she's the fleet's again
   Ship x = ships(v).get(0); String xId = x.id;
   unknow(v.folderOf(x));
-  editSave(v.fileOf(x));
   v = reopen(game);
+  Vault.Found lost = only(v, Vault.Found.Kind.UNPROVEN);
+  Setup.chk("H: a record with no career or origin: offered, not in the fleet", lost != null && xId.equals(lost.id) && v.byId(xId) == null);
+  v.accept(lost);
   ShipStore.Record xr = ShipStore.read(v.folderOf(v.byId(xId)));
-  Setup.chk("H: her save edited elsewhere, her history in the log: accepted by it (" + xr.origin + ")", v.byId(xId) != null && v.found().isEmpty() && xr.origin.contains("verified-log-"));
-  Setup.chk("H: her edited save marked again", xId.equals(ShipMark.read(v.fileOf(v.byId(xId))).id));
+  Setup.chk("H: taken in: in the fleet, her career written, an origin given, marked (" + xr.origin + ")", v.byId(xId) != null && Vault.SANDBOX.equals(xr.career) && !xr.origin.isEmpty()
+    && xId.equals(ShipMark.read(v.fileOf(v.byId(xId))).id));
 
   // 3. a ship's folder with no evidence (a copy made by hand, under an id this fleet never knew): offered, never listed
   Ship y = ships(v).get(1);
@@ -78,8 +75,8 @@ public class IdT {
   // 5. Restore puts an older save back marked
   Ship r5 = ships(v).get(0);
   List<File> hist = v.history(r5);
-  File unmarked = null; for (File f : hist) if (ShipMark.read(f) == null) { unmarked = f; break; }
-  if (unmarked != null) { v.restore(r5, unmarked); }
+  File unmarked = hist.isEmpty() ? null : hist.get(0);
+  if (unmarked != null) { SafeFiles.write(unmarked, ShipMark.strip(SafeFiles.read(unmarked))); v.restore(r5, unmarked); } // a version kept unmarked, as another tool might leave one
   Setup.chk("R: an unmarked version restored comes back marked", unmarked != null && r5.id.equals(ShipMark.read(v.fileOf(r5)).id));
 
   // 6. a loose save in a career's shipyard: never taken into the career; sent to Sandbox Mode's fleet when the player says
@@ -125,21 +122,11 @@ public class IdT {
  static Vault reopen(File game) throws Exception { Vault v = Vault.open(saves); v.takeStock(); return v; }
  static Vault.Found only(Vault v, Vault.Found.Kind k) { for (Vault.Found f : v.found()) if (f.kind == k) return f; return null; }
  static String log(Vault v) throws IOException { File f = new File(v.root, "logs/events.log"); return f.isFile() ? new String(SafeFiles.read(f), "UTF-8") : ""; }
- /** A fleet as a station before 6.10 left it: no career or origin in any record, no mark in any save (her fingerprint its save's). */
- static void before610(File root) throws IOException {
-  for (String where : new String[] {"shipyard", "junkyard"}) for (File d : ShipStore.folders(new File(root, where))) {
-   ShipStore.Record r = ShipStore.read(d); if (r == null) continue;
-   File sav = ShipStore.sav(d);
-   if (sav.isFile()) { SafeFiles.write(sav, ShipMark.strip(SafeFiles.read(sav))); r.hash = SafeFiles.hash(sav); }
-   r.career = ""; r.origin = ""; r.sections.remove("mark");
-   SafeFiles.write(ShipStore.xml(d), ShipStore.bytes(r));
-  }
- }
- /** Her record as from before 6.10: no career, no origin. */
+ /** Her record with no career and no origin, as a damaged or hand-made one might be. */
  static void unknow(File dir) throws IOException { ShipStore.Record r = ShipStore.read(dir); r.career = ""; r.origin = ""; SafeFiles.write(ShipStore.xml(dir), ShipStore.bytes(r)); }
  /** Her save changed by another tool (scrap up one), the station's fingerprint of it no longer matching. */
  static void editSave(File f) throws IOException { SavedGameState gs = HomePlanet.savedGameParser.readSavedGame(f); gs.getPlayerShip().setScrapAmt(gs.getPlayerShip().getScrapAmt() + 1); SaveHelper.writeSavedGame(f, gs); }
- /** A ship's folder copied by hand under another name and id, her record from before 6.10. */
+ /** A ship's folder copied by hand under another name and id, her record naming no career or origin. */
  static void copyAs(File from, File to, String id, String name) throws IOException {
   to.mkdirs();
   SafeFiles.write(ShipStore.sav(to), SafeFiles.read(ShipStore.sav(from)));

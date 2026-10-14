@@ -32,7 +32,7 @@ import org.w3c.dom.Node;
  *
  * <pre>
  *   &lt;lore&gt;
- *     &lt;entry kind="HOLD_FILE"&gt;The Cargo Hold's inventory was written up in a new ledger.&lt;/entry&gt;
+ *     &lt;entry kind="DOCK"&gt;The {ship_name} came back to the Space Dock.&lt;/entry&gt;
  *     &lt;entry kind="CREW_MOVE" when="reason=cargo_bay_save"&gt;{crew_name} was transferred to the {to_name}.&lt;/entry&gt;
  *   &lt;/lore&gt;
  * </pre>

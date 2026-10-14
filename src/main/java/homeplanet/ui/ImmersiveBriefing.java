@@ -221,7 +221,7 @@ final class ImmersiveBriefing extends JDialog {
 		String[] titles = {"Easy", "Normal", "Hard", "Custom"};
 		ActionListener chosen = new ActionListener() { public void actionPerformed(ActionEvent e) { syncLevels(); } };
 		for (int i = 0; i < difficulty.length; i++) {
-			difficulty[i] = new JRadioButton(titles[i], CareerRules.NAMES[i].equals(was.name) || (i == 3 && CareerRules.EARLIER.equals(was.name)));
+			difficulty[i] = new JRadioButton(titles[i], CareerRules.NAMES[i].equals(was.name));
 			difficulty[i].setEnabled(!begun);
 			difficulty[i].addActionListener(chosen);
 			dg.add(difficulty[i]);
@@ -242,7 +242,6 @@ final class ImmersiveBriefing extends JDialog {
 			java.util.List<Integer> lv = new java.util.ArrayList<Integer>();
 			if (CareerRules.hasSandbox(i)) { words.add(homeplanet.model.Words.ship(CareerRules.LEVELS[i][CareerRules.SANDBOX])); lv.add(CareerRules.SANDBOX); } // Sandbox's, first: only Custom can choose it (6.48)
 			for (int l = 0; l < 3; l++) { String w = homeplanet.model.Words.ship(CareerRules.LEVELS[i][l]); if (!words.contains(w)) { words.add(w); lv.add(l); } } // {her}: the Ship Pronoun setting
-			if ((i == CareerRules.VICTORY || i == CareerRules.MUSEUM_PAY) && was.level(i) == CareerRules.OWN_CHOICE) { words.add(was.words(i)); lv.add(CareerRules.OWN_CHOICE); }
 			levelOf[i] = new int[lv.size()];
 			for (int k = 0; k < levelOf[i].length; k++) levelOf[i][k] = lv.get(k);
 			levels[i] = new JComboBox<String>(words.toArray(new String[0]));
@@ -300,14 +299,13 @@ final class ImmersiveBriefing extends JDialog {
 	/** The reputation rate's line, as the difficulty (or a career already begun) has it; Custom chooses it here, once. */
 	private void syncRepRate() {
 		CareerRules r = begun ? Career.rules(immersiveRoot) : rules();
-		boolean custom = CareerRules.CUSTOM.equals(r.name) || CareerRules.EARLIER.equals(r.name);
+		boolean custom = CareerRules.CUSTOM.equals(r.name);
 		String saved = begun ? Career.repRate(immersiveRoot) : null;
 		String rule = homeplanet.vault.Reputation.rateRule(r, saved);
 		boolean choosing = custom && !begun;
 		repRate.setEnabled(choosing);
 		if (!choosing) repRate.setSelectedIndex(homeplanet.vault.Reputation.rateLevel(r, saved));
-		repRateNote.setText(choosing ? "   fixed once chosen" : homeplanet.vault.Reputation.RATE_ASK.equals(rule) ? "   not chosen yet: the Space Dock will ask"
-				: homeplanet.vault.Reputation.RATE_CHOSEN.equals(rule) ? "   chosen when it began" : "   the difficulty's");
+		repRateNote.setText(choosing ? "   fixed once chosen" : homeplanet.vault.Reputation.RATE_CHOSEN.equals(rule) ? "   chosen when it began" : "   the difficulty's");
 	}
 	/** A new Custom career's reputation rate, to keep with it; -1 where the career doesn't choose it. */
 	int repRateChosen() { return repRate.isEnabled() ? repRate.getSelectedIndex() : -1; }
@@ -329,7 +327,6 @@ final class ImmersiveBriefing extends JDialog {
 		if (choosing) return "fixed once chosen";
 		if (FinalVictory.TO_HARD_NONE.equals(rule)) return "<html><s>doesn't apply</s>: " + (FinalVictory.NOTHING.equals(r.victory()) ? "no victor comes back" : "the museum takes every victor") + "</html>";
 		if (FinalVictory.TO_HARD_FREE.equals(rule)) return "yours to choose in Settings";
-		if (FinalVictory.TO_HARD_ASK.equals(rule)) return "not chosen yet: the Space Dock will ask";
 		if (CareerRules.NORMAL.equals(r.name)) return "always";
 		return FinalVictory.TO_HARD_ON.equals(rule) ? "always (chosen when it began)" : "never: you choose " + homeplanet.model.Words.her() + " difficulty (chosen when it began)";
 	}

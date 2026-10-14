@@ -28,9 +28,9 @@ public class TransT { public static void main(String[] a) throws Exception {
   Setup.chk("F: a new fleet: the free command, and one order for it", v.freeCommandOpen() && orders() == 1);
   String setting = HomePlanet.freeShip;
   HomePlanet.freeShip = FreeCommand.ANY;
-  Setup.chk("F: a new fleet starts with a Kestrel Type A, whatever a report would grant", FreeCommand.KESTREL.equals(FreeCommand.ship()));
-  HomePlanet.freeShip = FreeCommand.VARIABLE;
-  Setup.chk("F: the old Variable reads as a Kestrel Type A (or the Relief Ship)", FreeCommand.KESTREL.equals(Economy.reassignment())
+  Setup.chk("F: a new fleet starts with a Kestrel Type A, whatever a plea would grant", FreeCommand.KESTREL.equals(FreeCommand.ship()));
+  HomePlanet.freeShip = FreeCommand.KESTREL;
+  Setup.chk("F: a plea's Kestrel Type A (or the Relief Ship)", FreeCommand.KESTREL.equals(Economy.reassignment())
     && FreeCommand.offered(Economy.reassignment()).contains("Relief Ship Type A"));
   HomePlanet.freeShip = setting;
   Ship stranger = v.adopt(Commission.build("PLAYER_SHIP_HARD", "New Game Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)));
@@ -225,8 +225,8 @@ public class TransT { public static void main(String[] a) throws Exception {
  // the reputation ladder climbed (heromedel, 5.56), now the career has begun
    Reputation.expedition(v, "test standing", 10 * (PlayerRank.REP_STEPS[PlayerRank.COMMODORE] - Reputation.total(v)), 0, 0);
   Transmissions.check();
-  Setup.chk("C: 2,500 reputation: Commodore, a letter for each step from the Fleet Admiralty [rank " + PlayerRank.rank(Unlocks.read()) + ", mode " + PlayerRank.mode() + ", rep " + Reputation.total(v) + ", from " + (find("rank:4") == null ? null : find("rank:4").from) + ", ladder " + (find("rank:ladder") != null) + ", 5 " + (find("rank:5") != null) + "]", PlayerRank.rank(Unlocks.read()) == PlayerRank.COMMODORE && find("rank:1") != null && find("rank:4") != null
-    && find("rank:5") == null && find("rank:4").from.equals("The Federation Home Planet Fleet Admiralty") && find("rank:ladder") == null);
+  Setup.chk("C: 2,500 reputation: Commodore, a letter for each step from the Fleet Admiralty [rank " + PlayerRank.rank(Unlocks.read()) + ", mode " + PlayerRank.mode() + ", rep " + Reputation.total(v) + ", from " + (find("rank:4") == null ? null : find("rank:4").from) + ", 5 " + (find("rank:5") != null) + "]", PlayerRank.rank(Unlocks.read()) == PlayerRank.COMMODORE && find("rank:1") != null && find("rank:4") != null
+    && find("rank:5") == null && find("rank:4").from.equals("The Federation Home Planet Fleet Admiralty"));
   Setup.chk("C: a Commodore may remodel and build custom ships", Clearance.remodelReason() == null && Clearance.customReason() == null);
   Setup.chk("C: the Federation's artillery waits for an Admiral", Clearance.artilleryReason("ARTILLERY_FED") != null && Clearance.artilleryReason("ARTILLERY_FED_C") != null
     && Clearance.artilleryReason("ARTILLERY_FED").contains("Admirals"));

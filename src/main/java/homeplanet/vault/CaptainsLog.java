@@ -305,9 +305,6 @@ public final class CaptainsLog {
 		} else if (kind.equals("MUSEUM")) {
 			if (head.contains(" is honoured in")) once(m, "ships", false, startShip(head.split(" is honoured")[0].trim()) + " went to the Federation Museum.");
 			else { int f = head.lastIndexOf(" for "); if (f > 0) { Line l = once(m, "ships", false, "The museum paid for " + theShip(head.substring(f + 5).trim()) + "."); l.details.add(head.substring(0, f)); } }
-		} else if (kind.equals("REWARD")) {
-			int f = head.lastIndexOf(" for ");
-			if (f > 0) { Line l = once(m, "ships", false, "A reward came in for " + theShip(head.substring(f + 5).trim()) + "."); l.details.add(head.substring(0, f)); }
 		} else if (kind.equals("OVERWRITTEN")) {
 			once(m, "ships", false, startShip(head.replaceAll("\\s*\\([0-9a-f]+\\).*$", "").trim()) + " was lost.");
 		} else if (kind.equals("LONG RANGE TRADE")) {

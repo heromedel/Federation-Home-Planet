@@ -15,7 +15,7 @@ import homeplanet.vault.Vault;
 
 /**
  * The unlock-once house rule: each FTL ship layout unlocked in the profile after the rule was turned on can be
- * commissioned free, once. Kept in the vault (unlock-grants.txt), so a Report for Reassignment doesn't reset it:
+ * commissioned free, once. Kept in the vault (unlock-grants.txt), so a plea for a new ship doesn't reset it:
  * "seen BASE n" for layouts already unlocked when the rule was turned on (they never count), "claimed BASE n" for
  * free ships already taken.
  */

@@ -40,11 +40,8 @@ public final class EventLog {
 	private static final SimpleDateFormat STAMP = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 	public static File file(Vault v) { return new File(v.logsDir(), FILE); }
-	/** A fleet's event log by its folder (logs/ since 5.71, the root before): for a fleet not in use. */
-	public static File fileIn(File fleetRoot) {
-		File f = new File(new File(fleetRoot, "logs"), FILE);
-		return f.isFile() || !new File(fleetRoot, FILE).isFile() ? f : new File(fleetRoot, FILE);
-	}
+	/** A fleet's event log by its folder: for a fleet not in use. */
+	public static File fileIn(File fleetRoot) { return new File(new File(fleetRoot, "logs"), FILE); }
 	/** The entries in time order (a converted entry sits in the file where it was written, not where it happened), the file's order deciding a tie. */
 	public static List<Entry> sorted(List<Entry> es) {
 		List<Entry> out = new ArrayList<Entry>(es);

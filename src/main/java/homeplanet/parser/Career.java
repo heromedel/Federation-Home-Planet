@@ -28,8 +28,6 @@ public final class Career {
 	public static final int STIPEND_BASE = 20, MONTHS_PER_STIPEND = 2;
 	/** A beacon is a day (heromedel, 5.00): a month of the station's time is this many beacons, flown or rested. */
 	public static final int BEACONS_PER_MONTH = 28;
-	/** The oldest careers counted sectors: this many beacons stood for one when they came over to beacons (4B.97; kept for that conversion alone). */
-	public static final int BEACONS_PER_SECTOR = 15;
 	/** Scrap a career in the fleet in use began with: its difficulty's, or a Sandbox career's STARTING_SCRAP. */
 	public static int startingScrap() {
 		CareerRules r = CareerRules.current();
@@ -43,7 +41,7 @@ public final class Career {
 	/** Beacons between stipends in the fleet in use. */
 	public static int beaconsPerStipend() { return monthsPerStipend() * BEACONS_PER_MONTH; }
 
-	static File file(File fleetRoot) { return Store.file(fleetRoot, "career"); } // career.xml (5.86; career.txt in a fleet not opened since)
+	static File file(File fleetRoot) { return Store.file(fleetRoot, "career"); } // career.xml (5.86)
 	private static Properties read(File fleetRoot) { return Store.read(file(fleetRoot)); }
 	private static void write(File fleetRoot, Properties p) throws IOException {
 		Store.write(file(fleetRoot), p, "The Immersive career: its choices are fixed once made");
@@ -57,15 +55,15 @@ public final class Career {
 	public static boolean salaryAll(File immersiveRoot) { return "true".equals(read(immersiveRoot).getProperty("salaryAll")); }
 
 	/**
-	 * This Immersive fleet's difficulty, or null if no career has begun. A career from before difficulties is written
-	 * down as it was (stripping as Settings had it), once, and fixed from then on.
+	 * This Immersive fleet's difficulty, or null if no career has begun. A career whose file has lost its difficulty is
+	 * written down as Normal (the briefing's own default), once, and fixed from then on.
 	 */
 	public static CareerRules rules(File immersiveRoot) {
 		if (!started(immersiveRoot)) return null;
 		Properties p = read(immersiveRoot);
 		CareerRules r = CareerRules.read(p);
 		if (r != null) return r;
-		r = CareerRules.earlier(homeplanet.core.HomePlanet.stripAllowed);
+		r = CareerRules.of(CareerRules.NORMAL);
 		r.write(p);
 		try { write(immersiveRoot, p); } catch (IOException e) { log.warn("Could not record the career's rules: {}", e.toString()); }
 		return r;
@@ -83,22 +81,6 @@ public final class Career {
 		p.setProperty("reputationUse", Integer.toString(use));
 		write(immersiveRoot, p);
 	}
-	/** What comes after a final victory in this Immersive fleet (FinalVictory.NOTHING, RESCUE or MUSEUM; REWARD before 6.47). */
-	public static String finalVictory(File immersiveRoot) { return read(immersiveRoot).getProperty("finalVictory", FinalVictory.NOTHING); }
-	/** Sets what comes after a final victory in this Immersive fleet (its career must have begun). */
-	public static void setFinalVictory(File immersiveRoot, String choice) throws IOException {
-		Properties p = read(immersiveRoot);
-		p.setProperty("finalVictory", choice);
-		write(immersiveRoot, p);
-	}
-	/** The museum's reward this fleet chose (FinalVictory.FULL, HALF or NONE; 6.47), or null: full, as before. Read only where the career leaves it to the player. */
-	public static String finalVictoryPay(File immersiveRoot) { return read(immersiveRoot).getProperty("finalVictoryPay"); }
-	public static void setFinalVictoryPay(File immersiveRoot, String pay) throws IOException {
-		Properties p = read(immersiveRoot);
-		p.setProperty("finalVictoryPay", pay);
-		write(immersiveRoot, p);
-	}
-
 	/**
 	 * Rescued Ships after Victory moved to Hard difficulty, as this career has it: "true", "false", or null where it was
 	 * never chosen (6.03). Read only where the career leaves it to the player: Easy (changed in Settings) and Custom
@@ -113,7 +95,7 @@ public final class Career {
 
 	/**
 	 * The reputation rate a Custom career chose (heromedel, 6.13): "0" (x1, as on Easy), "1" (x1.5) or "2" (x2), or null
-	 * if never chosen. Read only for Custom (and a career from before difficulties); the others' difficulty decides it.
+	 * if never chosen. Read only for Custom; the others' difficulty decides it.
 	 */
 	public static String repRate(File immersiveRoot) { return read(immersiveRoot).getProperty("repRate"); }
 	public static void setRepRate(File immersiveRoot, int level) throws IOException {
@@ -134,7 +116,6 @@ public final class Career {
 		p.setProperty("salaryAll", Boolean.toString(salaryAll));
 		p.setProperty("ownProfile", Boolean.toString(ownProfile));
 		p.setProperty("paidMonths", "0");
-		p.setProperty("sectorsAtStart", Integer.toString(v.sectorsSeen()));
 		p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen()));
 		if (rules != null) rules.write(p);
 		write(v.root, p);
@@ -169,10 +150,8 @@ public final class Career {
 		Vault v = Vault.get();
 		Properties p = read(v.root);
 		int paid = Store.num(p, "paidMonths", 0);
-		if (p.getProperty("beaconsAtStart") == null) {
-			// a career from when the stipend counted sectors: its sectors so far become beacons, so nothing paid or owed changes
-			int sectors = v.sectorsSeen() - Store.num(p, "sectorsAtStart", 0);
-			p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen() - sectors * BEACONS_PER_SECTOR));
+		if (p.getProperty("beaconsAtStart") == null) { // lost from its file: counted from now, never a windfall of back pay
+			p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen()));
 			try { write(v.root, p); } catch (IOException e) { log.warn("Could not record the stipend's beacons: {}", e.toString()); }
 		}
 		int start = Store.num(p, "beaconsAtStart", 0);

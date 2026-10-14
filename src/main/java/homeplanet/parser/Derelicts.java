@@ -48,8 +48,8 @@ public final class Derelicts {
 	public static final int LISTINGS = 3;
 	/** Beacons until new ones come in: 5 times 3 to 9, rolled with each set (30 on average). */
 	static int interval(Random rng) { return 5 * (3 + rng.nextInt(7)); }
-	/** A set from before the interval was rolled waits this long. */
-	private static final int OLD_INTERVAL = 30;
+	/** A set whose interval isn't recorded waits the average. */
+	private static final int AVERAGE_INTERVAL = 30;
 	/** One listing in this many is a model the FTL profile hasn't unlocked; one in this many is oddly built. */
 	public static final int LOCKED_ONE_IN = 30, ODD_ONE_IN = 15;
 	/** The price: this share of her value as she is (her hull damage taken off). */
@@ -82,14 +82,14 @@ public final class Derelicts {
 	public static int beaconsToNext(Vault v) {
 		Properties p = read(v);
 		int at = Store.num(p, "rolledAt", -1);
-		return at < 0 ? 0 : Math.max(0, at + Store.num(p, "interval", OLD_INTERVAL) - v.beaconsSeen());
+		return at < 0 ? 0 : Math.max(0, at + Store.num(p, "interval", AVERAGE_INTERVAL) - v.beaconsSeen());
 	}
 
 	/** What's for sale now: new listings first if it's time (or there have never been any). */
 	public static synchronized List<Listing> current(Vault v) {
 		Properties p = read(v);
 		int at = Store.num(p, "rolledAt", -1);
-		if (at < 0 || v.beaconsSeen() >= at + Store.num(p, "interval", OLD_INTERVAL)) {
+		if (at < 0 || v.beaconsSeen() >= at + Store.num(p, "interval", AVERAGE_INTERVAL)) {
 			try { roll(v, new Random()); p = read(v); }
 			catch (Exception e) { log.warn("Could not bring in new derelicts: {}", e.toString()); }
 		}
@@ -98,9 +98,8 @@ public final class Derelicts {
 			if (!"true".equals(p.getProperty(i + ".open"))) continue;
 			try {
 				SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(saveFile(v, i));
-				// priced when shown, from her share (so a change to the prices reaches listings already in); a listing from before shares keeps its price
-				int pct = Store.num(p, i + ".percent", -1);
-				int price = pct < 0 ? Store.num(p, i + ".price", 0) : price(gs, pct);
+				// priced when shown, from her share (so a change to the prices reaches listings already in); a share not recorded, the dearest
+				int price = price(gs, Store.num(p, i + ".percent", PRICE_MAX));
 				out.add(new Listing(i, gs, p.getProperty(i + ".oddity", ""), price, "true".equals(p.getProperty(i + ".locked"))));
 			} catch (Exception e) {
 				log.warn("Could not read derelict listing {}: {}", i, e.toString());

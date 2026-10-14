@@ -94,7 +94,6 @@ final class VictoryRules extends JPanel {
 				+ (r != null && FinalVictory.NOTHING.equals(r.victory()) ? ": nothing after a final victory, so no ship comes back to fly" : ": the museum takes every victor, so a rescued ship never comes back to fly")
 				: FinalVictory.TO_HARD_ON.equals(rule) ? (normal ? "A Normal career: a rescued ship always sets out on Hard" : "Chosen when this career began: a rescued ship always sets out on Hard")
 				: FinalVictory.TO_HARD_OFF.equals(rule) ? "Chosen when this career began: when you keep a rescued ship, you choose " + homeplanet.model.Words.her() + " difficulty"
-				: FinalVictory.TO_HARD_ASK.equals(rule) ? "This career hasn't chosen yet: the Space Dock will ask"
 				: "When you keep a rescued ship, " + homeplanet.model.Words.she() + " sets out on Hard without asking; otherwise you choose " + homeplanet.model.Words.her() + " difficulty. Each fleet has its own choice.");
 		sync();
 	}

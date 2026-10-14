@@ -37,21 +37,21 @@ public class LoreT { public static void main(String[] a) throws Exception {
  Lore.prepare();
  Setup.chk("A: lore/ beside the program: a readme, and the defaults to copy from", new File(lore, "readme.txt").isFile() && new File(lore, "defaults/logs/station-log.xml").isFile()
    && new File(lore, "defaults/letters.xml").isFile() && new File(lore, "defaults/expeditions.xml").isFile() && new File(lore, "defaults/deeds.xml").isFile());
- Event hold = Event.of("HOLD_FILE").put("what", "converted").put("scrap", 12).human("the writer's words");
- Setup.chk("A: an event with an entry gets the lore's words; one without keeps its writer's", Lore.human(hold).equals("The Cargo Hold's inventory was written up in a new ledger.")
+ Event hold = Event.of("JOURNAL").put("what", "finished").put("steps", 12).human("the writer's words");
+ Setup.chk("A: an event with an entry gets the lore's words; one without keeps its writer's", Lore.human(hold).equals("The station finished what it had begun.")
    && Lore.human(Event.of("NO_SUCH_KIND").human("its own")).equals("its own"));
  // B: a copy wins entry by entry, with tokens, conditions, and its broken entries left out
  File copy = new File(lore, "logs/station-log.xml"); copy.getParentFile().mkdirs();
  SafeFiles.writeText(copy, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<lore>\n"
-   + "\t<entry kind=\"HOLD_FILE\" when=\"what=converted\">{scrap} scrap counted into the new ledger.</entry>\n"
+   + "\t<entry kind=\"JOURNAL\" when=\"what=finished\">{steps} steps finished at last.</entry>\n"
    + "\t<entry kind=\"TEST_MISSING\">{no_such_field} went missing.</entry>\n"
    + "\t<entry kind=\"TEST_FLAG\">The Rebel Flagship was destroyed at last.</entry>\n"
    + "\t<entry kind=\"TEST_BEACONS\">She came home 3 beacons later.</entry>\n"
    + "\t<entry kind=\"TEST_REBELS\">The Rebels fled.</entry>\n"
    + "\t<entry kind=\"TEST_GOOD\">{name} came aboard at a beacon with a store, and the rebels fled from the Rebel Flagship's path.</entry>\n"
    + "</lore>\n", false);
- Setup.chk("B: the copy's entry wins, its {scrap} filled", Lore.human(hold).equals("12 scrap counted into the new ledger."));
- Setup.chk("B: its condition is kept: another what is no entry's (the jar's is for what=converted too): the writer's own words", Lore.human(Event.of("HOLD_FILE").put("what", "other").human("x")).equals("x"));
+ Setup.chk("B: the copy's entry wins, its {steps} filled", Lore.human(hold).equals("12 steps finished at last."));
+ Setup.chk("B: its condition is kept: another what is no entry's (the jar's are for what=finished and stuck): the writer's own words", Lore.human(Event.of("JOURNAL").put("what", "other").human("x")).equals("x"));
  Setup.chk("B: a {field} the event hasn't got: the writer's words, never a raw token", Lore.human(Event.of("TEST_MISSING").human("fallback")).equals("fallback"));
  Setup.chk("B: hard rule 1, the Flagship destroyed: left out", Lore.human(Event.of("TEST_FLAG").human("fallback")).equals("fallback"));
  Setup.chk("B: hard rule 2, time in beacons: left out", Lore.human(Event.of("TEST_BEACONS").human("fallback")).equals("fallback"));
@@ -62,27 +62,27 @@ public class LoreT { public static void main(String[] a) throws Exception {
  String probs = Lore.check().toString();
  Setup.chk("B: the check names the file, the line and the rule (" + probs + ")", probs.contains("lore/logs/station-log.xml, line 5 (TEST_FLAG): hard rule 1") && probs.contains("line 6 (TEST_BEACONS): hard rule 2") && probs.contains("(TEST_REBELS): voice"));
  // C: the event log writes the copy's words
- EventLog.write(v, Event.of("HOLD_FILE").put("what", "converted").put("scrap", 7).human("the writer's words"));
+ EventLog.write(v, Event.of("JOURNAL").put("what", "finished").put("steps", 7).human("the writer's words"));
  String text = new String(SafeFiles.read(EventLog.file(v)), "UTF-8");
- Setup.chk("C: the event log's human line comes from the copy", text.contains("\n7 scrap counted into the new ledger."));
+ Setup.chk("C: the event log's human line comes from the copy", text.contains("\n7 steps finished at last."));
  // D: a copy that's broken XML: the station's own words, and it says so
  Thread.sleep(1100);
- SafeFiles.writeText(copy, "<lore><entry kind=\"HOLD_FILE\">unclosed", false);
- Setup.chk("D: broken XML: the station's own words stand", Lore.human(hold).equals("The Cargo Hold's inventory was written up in a new ledger.") && Lore.problems().toString().contains("could not be read"));
+ SafeFiles.writeText(copy, "<lore><entry kind=\"JOURNAL\">unclosed", false);
+ Setup.chk("D: broken XML: the station's own words stand", Lore.human(hold).equals("The station finished what it had begun.") && Lore.problems().toString().contains("could not be read"));
  // E: a copy of the letters wins letter by letter; one with a {token} the letter hasn't got, or breaking a rule, is left out
  Map<String, String> fills = new HashMap<String, String>(); fills.put("ship", "The Adjudicator"); fills.put("rank", "Captain"); fills.put("value", "300"); fills.put("worth", "her worth");
- String ownMuseum = Transmissions.text("museum", fills)[2], ownReward = Transmissions.text("reward", fills)[2];
+ String ownMuseum = Transmissions.text("museum", fills)[2], ownHonour = Transmissions.text("museum_honour", fills)[2];
  Setup.chk("E: the station's own museum letter, \"the {ship}\" by the rule", ownMuseum.contains("Recovery teams reached The Adjudicator in time and brought") && ownMuseum.contains("the Federation Museum"));
  File letters = new File(lore, Lore.LETTERS);
  SafeFiles.writeText(letters, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<letters>\n"
    + "\t<letter key=\"museum\" from=\"Federation Fleet Command\" subject=\"Into the Museum\"><![CDATA[\n{rank},\n\nThe {ship} is in the Museum now: {value} scrap.\n<u>Approved</u>.\n]]></letter>\n"
-   + "\t<letter key=\"reward\" from=\"Federation Fleet Command\" subject=\"A reward\"><![CDATA[\n{rank}, {no_such_token}.\n]]></letter>\n"
+   + "\t<letter key=\"museum_honour\" from=\"Federation Fleet Command\" subject=\"An honour\"><![CDATA[\n{rank}, {no_such_token}.\n]]></letter>\n"
    + "\t<letter key=\"rescue\" from=\"Federation Fleet Command\" subject=\"Rescued\"><![CDATA[\nThe Rebel Flagship was destroyed.\n]]></letter>\n"
    + "</letters>\n", false);
  String[] museum = Transmissions.text("museum", fills);
  Setup.chk("E: the copy's letter wins, its tokens filled and its text kept as written", museum[2].equals("Captain,\n\nThe Adjudicator is in the Museum now: 300 scrap.\n<u>Approved</u>."));
- Setup.chk("E: a {token} the letter hasn't got, or the Flagship destroyed: the station's own letter", Transmissions.text("reward", fills)[2].equals(ownReward)
-   && !Transmissions.text("rescue", fills)[2].contains("destroyed") && Lore.problems().toString().contains("letter reward: {no_such_token}") && Lore.problems().toString().contains("letter rescue: hard rule 1"));
+ Setup.chk("E: a {token} the letter hasn't got, or the Flagship destroyed: the station's own letter", Transmissions.text("museum_honour", fills)[2].equals(ownHonour)
+   && !Transmissions.text("rescue", fills)[2].contains("destroyed") && Lore.problems().toString().contains("letter museum_honour: {no_such_token}") && Lore.problems().toString().contains("letter rescue: hard rule 1"));
  // F: a copy of the expedition words takes a key's place; a line with a {token} its key doesn't use is left out
  List<String> jarZoltan = new ArrayList<String>(); for (String l : Assignments.allWords()) jarZoltan.add(l);
  SafeFiles.writeText(new File(lore, Lore.EXPEDITIONS), "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<expeditions>\n"

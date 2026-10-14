@@ -134,10 +134,10 @@ public final class Museum {
 		}
 		return out;
 	}
-	/** A victory's honours as kept, for showing: a victory marker's id kept before 5.87 left out. */
+	/** A victory's honours as kept, for showing. */
 	public static List<String> shownHonours(String kept) {
 		List<String> out = new ArrayList<String>();
-		for (String h : (kept == null ? "" : kept).split("\\|")) if (!h.isEmpty() && !h.matches("PLAYER_SHIP_[A-Z0-9_]+_VICTORY")) out.add(h);
+		for (String h : (kept == null ? "" : kept).split("\\|")) if (!h.isEmpty()) out.add(h);
 		return out;
 	}
 	private static String difficulty(SavedGameState gs) { return gs.getDifficulty() == null ? "" : title(gs.getDifficulty().toString()); }

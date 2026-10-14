@@ -21,8 +21,6 @@ public final class StationConsole {
 	private static final Logger log = LoggerFactory.getLogger(StationConsole.class);
 	private StationConsole() { }
 
-	/** The cfg line dev commands were kept in before 6.35: removed at startup (they last one run now). */
-	public static final String DEV = "dev_commands";
 	/** Why a day passed, in the master log (the Captain's Log tells such days as quiet ones). */
 	public static final String DAY_WHY = "a dev command";
 	public static final int PASS_MAX = 365;

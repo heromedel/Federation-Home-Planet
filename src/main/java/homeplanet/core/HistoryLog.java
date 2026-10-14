@@ -1,6 +1,5 @@
 package homeplanet.core;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -28,16 +27,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The station's log: what the station saw and did, each entry its kind, a headline and details, written to the event
- * log (logs/events.log) with its fields. Until 5.93 it was also history.log ("yyyy-MM-dd HH:mm  KIND  headline", details
- * indented two spaces); that file stays as it was, read only by the conversion of a fleet's old logs.
+ * log (logs/events.log) with its fields.
  */
 public class HistoryLog {
 	private static final Logger log = LoggerFactory.getLogger(HistoryLog.class);
 
-	/** Where the old station log is (no longer written: the conversion and the harness read it). */
-	public static File file() {
-		return Vault.isOpen() ? Vault.get().historyLog() : new File(HomePlanet.save_location, "history.log");
-	}
 	private static final String NL = System.getProperty("line.separator");
 
 	/** Writes one entry: a headline plus optional detail lines. Never throws. */

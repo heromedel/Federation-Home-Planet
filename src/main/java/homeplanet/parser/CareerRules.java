@@ -8,11 +8,10 @@ import homeplanet.vault.Vault;
 
 /**
  * An Immersive career's difficulty: Easy, Normal, Hard, or Custom (any level of each rule), chosen when it begins and
- * fixed from then on. A career from before difficulties is "Custom (from before difficulties)", keeping the rules it
- * had. Kept in its career.txt; {@link #current()} is the open Immersive fleet's.
+ * fixed from then on. Kept in its career.txt; {@link #current()} is the open Immersive fleet's.
  */
 public final class CareerRules {
-	public static final String EASY = "easy", NORMAL = "normal", HARD = "hard", CUSTOM = "custom", EARLIER = "earlier";
+	public static final String EASY = "easy", NORMAL = "normal", HARD = "hard", CUSTOM = "custom";
 	public static final String[] NAMES = {EASY, NORMAL, HARD, CUSTOM};
 
 	/** The rules a difficulty sets, in this order (the rows of the briefing's table). */
@@ -50,10 +49,8 @@ public final class CareerRules {
 	private static final String[] REASSIGN = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF};
 	/** The museum's reward at each level: Easy full value, Normal and Hard half (FinalVictory.FULL, HALF); Sandbox none. */
 	private static final String[] MUSEUM_PAYS = {FinalVictory.FULL, FinalVictory.HALF, FinalVictory.HALF, FinalVictory.NONE};
-	/** A career from before difficulties: its final victory and the museum's reward stay the choices made in Settings. */
-	public static final int OWN_CHOICE = -1;
 
-	/** easy, normal, hard, custom or earlier. */
+	/** easy, normal, hard or custom. */
 	public final String name;
 	private final int[] level;
 
@@ -64,11 +61,11 @@ public final class CareerRules {
 	}
 	/**
 	 * A rule a career began without: Normal, except the museum's reward (6.47), which was part of the final victory's
-	 * level: full value on Easy, half otherwise; a career from before difficulties keeps choosing its own.
+	 * level: full value on Easy, half otherwise.
 	 */
 	private static int added(int rule, int[] level) {
 		if (rule != MUSEUM_PAY) return 1;
-		return level[VICTORY] == OWN_CHOICE ? OWN_CHOICE : level[VICTORY] <= 0 ? 0 : 1;
+		return level[VICTORY] <= 0 ? 0 : 1;
 	}
 	/** Easy, Normal or Hard: one level for every rule. */
 	public static CareerRules of(String name) {
@@ -77,32 +74,23 @@ public final class CareerRules {
 		Arrays.fill(lv, l);
 		return new CareerRules(HARD.equals(name) || NORMAL.equals(name) ? name : EASY, lv);
 	}
-	/** A career from before difficulties, as it was: final victory as chosen, journeys 200, a Kestrel or the Relief Ship on a plea, removal free, stripping as Settings had it (free), 25%, the stipend every two months (the nearest to its 60 beacons), full price. */
-	public static CareerRules earlier(boolean stripped) {
-		return new CareerRules(EARLIER, new int[] {OWN_CHOICE, 0, 1, 0, stripped ? 0 : 2, 1, 1, 2, 1, 1, 1, 0, OWN_CHOICE}); // (commission: full price, as it was; a plea a tenth, as it was)
-	}
-
-	/** This rule's level: 0 (Easy), 1 (Normal) or 2 (Hard); OWN_CHOICE for an earlier career's final victory. */
+	/** This rule's level: 0 (Easy), 1 (Normal), 2 (Hard), or 3 (Sandbox's, where a Custom career chose it). */
 	public int level(int rule) { return level[rule]; }
 	public int[] levels() { return level.clone(); }
 
 	public String title() {
-		return EASY.equals(name) ? "Easy" : NORMAL.equals(name) ? "Normal" : HARD.equals(name) ? "Hard" : EARLIER.equals(name) ? "Custom (from before difficulties)" : "Custom";
+		return EASY.equals(name) ? "Easy" : NORMAL.equals(name) ? "Normal" : HARD.equals(name) ? "Hard" : "Custom";
 	}
 	/** A rule's level in words. */
 	public String words(int rule) {
-		if ((rule == VICTORY || rule == MUSEUM_PAY) && level[rule] == OWN_CHOICE) return "as chosen in Settings";
-		if (EARLIER.equals(name) && rule == REMOVAL) return "free";
-		if (EARLIER.equals(name) && rule == STRIPPING) return stripAllowed() ? "allowed, free" : "not allowed";
 		return homeplanet.model.Words.ship(LEVELS[rule][level[rule]]);
 	}
 
 	public int journeyFee() { return JOURNEY_FEES[level[JOURNEY]]; }
 	public String reassignment() { return REASSIGN[level[REASSIGNMENT]]; }
-	/** A career from before difficulties keeps its own: removal free, and stripping free or not allowed, as Settings had it. */
-	public int removalFee() { return EARLIER.equals(name) ? 0 : REMOVAL_FEES[level[REMOVAL]]; }
-	public boolean stripAllowed() { return EARLIER.equals(name) ? level[STRIPPING] != 2 : STRIP_FEES[level[STRIPPING]] >= 0; }
-	public int stripFee() { return EARLIER.equals(name) ? 0 : Math.max(0, STRIP_FEES[level[STRIPPING]]); }
+	public int removalFee() { return REMOVAL_FEES[level[REMOVAL]]; }
+	public boolean stripAllowed() { return STRIP_FEES[level[STRIPPING]] >= 0; }
+	public int stripFee() { return Math.max(0, STRIP_FEES[level[STRIPPING]]); }
 	/** Missiles and drone parts sell at this share of the store price; 0 means 1 scrap each. */
 	public int supplyPercent() { return SUPPLY_PERCENT[level[SUPPLIES]]; }
 	/** Months between stipends (a month is Career.BEACONS_PER_MONTH beacons). */
@@ -119,30 +107,27 @@ public final class CareerRules {
 	public int workOrder() { return WORK_ORDERS[level[WORK_ORDER]]; }
 	/** A plea answered with reputation: this share of what the Cargo Hold doesn't cover of her value. */
 	public int pleaPercent() { return PLEA_PERCENT[level[PLEA]]; }
-	/** After a final victory: FinalVictory.RESCUE, MUSEUM or NOTHING (Custom at Sandbox's level), or null for an earlier career's own choice. */
+	/** After a final victory: FinalVictory.RESCUE, MUSEUM or NOTHING (Custom at Sandbox's level). */
 	public String victory() {
 		int l = level[VICTORY];
-		return l == OWN_CHOICE ? null : l == SANDBOX ? FinalVictory.NOTHING : l == 2 ? FinalVictory.MUSEUM : FinalVictory.RESCUE;
+		return l == SANDBOX ? FinalVictory.NOTHING : l == 2 ? FinalVictory.MUSEUM : FinalVictory.RESCUE;
 	}
-	/** What the museum pays (FinalVictory.FULL or HALF), or null for an earlier career's own choice. */
-	public String museumPay() {
-		int l = level[MUSEUM_PAY];
-		return l == OWN_CHOICE ? null : MUSEUM_PAYS[l];
-	}
+	/** What the museum pays (FinalVictory.FULL, HALF, or NONE at Sandbox's level). */
+	public String museumPay() { return MUSEUM_PAYS[level[MUSEUM_PAY]]; }
 
 	// ---- in career.txt ----
 
-	/** The career's rules, from its properties; one from before difficulties is written down as it was, then fixed. */
+	/** The career's rules, from its properties; null if they name no difficulty. */
 	static CareerRules read(Properties p) {
 		String n = p.getProperty("difficulty");
 		if (n == null) return null;
-		if (CUSTOM.equals(n) || EARLIER.equals(n)) {
+		if (CUSTOM.equals(n)) {
 			String[] s = p.getProperty("rules", "").split(",");
 			int[] lv = new int[RULES.length];
 			for (int i = 0; i < lv.length; i++) {
 				if (i >= s.length) { lv[i] = added(i, lv); continue; } // a rule added since it began
 				try { lv[i] = Integer.parseInt(s[i].trim()); } catch (Exception e) { lv[i] = 1; }
-				if (lv[i] < (i == VICTORY || i == MUSEUM_PAY ? OWN_CHOICE : 0) || lv[i] > (hasSandbox(i) && CUSTOM.equals(n) ? SANDBOX : 2)) lv[i] = 1;
+				if (lv[i] < 0 || lv[i] > (hasSandbox(i) ? SANDBOX : 2)) lv[i] = 1;
 			}
 			return new CareerRules(n, lv);
 		}
@@ -150,7 +135,7 @@ public final class CareerRules {
 	}
 	void write(Properties p) {
 		p.setProperty("difficulty", name);
-		if (CUSTOM.equals(name) || EARLIER.equals(name)) {
+		if (CUSTOM.equals(name)) {
 			StringBuilder sb = new StringBuilder();
 			for (int i = 0; i < level.length; i++) sb.append(i == 0 ? "" : ",").append(level[i]);
 			p.setProperty("rules", sb.toString());

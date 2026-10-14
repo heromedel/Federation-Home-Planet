@@ -29,7 +29,7 @@ import homeplanet.vault.Vault;
 
 /**
  * What the crew expeditions share (heromedel, 5.00; the old board of jobs they were tried beside went at 5.67): the
- * infirmary (crew hurt on an expedition, laid up a while in infirmary.txt), the captives and their ransoms (captives.txt),
+ * infirmary (crew hurt on an expedition, laid up a while), the captives and their ransoms,
  * and hiring (a posting for volunteers, who wait in the Cargo Hold). Expedition_type 0 is hiring alone, 2 the crew
  * expeditions (Assignments).
  */
@@ -65,7 +65,7 @@ public final class Expeditions {
 	 * BAND-AID: the station's records know a crew member by name and race, so two of a name and race
 	 * get mixed up. Until crew who are away leave the Cargo Hold's save (the real fix), this mark tells namesakes apart:
 	 * sex, colouring and the service record, none of which change while they sit in the hold. Records keep it beside the
-	 * name; a record without one (from before) matches any namesake, as it always did.
+	 * name; a record without one (written by hand, or damaged) matches any namesake.
 	 */
 	static String mark(CrewState c) {
 		StringBuilder t = new StringBuilder();
@@ -88,7 +88,7 @@ public final class Expeditions {
 
 	// ---- the infirmary ----
 
-	/** The infirmary's file (infirmary/infirmary.xml; infirmary.txt at the fleet's root before 5.85). */
+	/** The infirmary's file (infirmary/infirmary.xml). */
 	public static File infirmaryFile(Vault v) { return new File(v.infirmaryDir(), "infirmary.xml"); }
 	public static final String INFIRMARY_NOTE = "Crew hurt on expeditions, and when they're on their feet again";
 	/** A crew member laid up: they stay in the Cargo Hold's save, but can't be sent or moved until their time is up. */
@@ -97,7 +97,7 @@ public final class Expeditions {
 		public final int until;
 		/** The last beacon their lay-up cost them a point of skill. */
 		final int drained;
-		/** Their {@link #mark}, or null for a record from before marks (it matches any namesake). */
+		/** Their {@link #mark}, or null for a record without one (it matches any namesake). */
 		final String mark;
 		Patient(String name, String race, int until, int drained, String mark) { this.name = name; this.race = race; this.until = until; this.drained = drained; this.mark = mark; }
 		String key() { return name + "/" + race; }
@@ -209,7 +209,7 @@ public final class Expeditions {
 
 	// ---- captives and ransoms ----
 
-	/** The captives' file (captives/captives.xml; captives.txt at the fleet's root before 5.85). */
+	/** The captives' file (captives/captives.xml). */
 	public static File captivesFile(Vault v) { return new File(v.captivesDir(), "captives.xml"); }
 	/** The captives' file as it stands, read without a lock (for the crew register taking stock). */
 	public static Properties captivesAsIs(Vault v) throws IOException { return Store.load(captivesFile(v)); }
@@ -353,7 +353,7 @@ public final class Expeditions {
 		ShipState hold = cp.save.getPlayerShip();
 		if (hold.getScrapAmt() < c.ransom) throw new IOException("The Cargo Hold holds " + hold.getScrapAmt() + " scrap; the ransom is " + c.ransom);
 		CrewState back = kept(p, c.index);
-		if (back == null) { // a captive from before their record was kept
+		if (back == null) { // a captive whose record can't be read: a volunteer of their race and name stands in
 			back = Commission.volunteer(c.race, new Random());
 			if (back == null) throw new IOException("Unknown crew race " + c.race);
 			back.setName(c.name);
@@ -369,7 +369,7 @@ public final class Expeditions {
 				homeplanet.core.Event.of("EXPEDITION").put("what", "ransomed").put("crew", c.name).put("race", c.race).put("captors", c.captors).put("ransom", c.ransom).put("to", "hold"));
 		homeplanet.vault.Reputation.ransomed(v, c.name); // +2: brought home
 	}
-	/** A captive's kept record (skills, service, looks), or null for one taken before records were kept. */
+	/** A captive's kept record (skills, service, looks), or null if there is none to read. */
 	private static CrewState kept(Properties p, int i) {
 		String pre = i + ".crew.";
 		Map<String, String> f = new LinkedHashMap<String, String>();

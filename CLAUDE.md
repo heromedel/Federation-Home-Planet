@@ -5,6 +5,13 @@ it does and CREDITS.md for where the code came from.
 
 **Fitness log:** this project cannot access heromedel's fitness log. Don't ask about it and don't look for it.
 
+**This branch is the public release (heromedel, 6.60):** a cleaned-up, stripped-down station for brand-new players, most
+likely published outside GitHub. Everything that only served play testers coming from older versions is removed (the 6.0
+fleet conversion, the reputation re-evaluation and its correction, careers from before difficulties, the old Report for
+Reassignment, repairs for old bugs, readers of old file shapes). Don't add any of it back. Never merge this branch into
+`main` on your own: if heromedel asks for that merge, first ask them "Are all the old play testers converted and
+reevaluated, and no longer needing the stripped code?"
+
 ## Working with heromedel
 
 - The workflow: **discuss, create a plan, ask to write, ask to push.** When asked to "discuss" or "don't write
@@ -71,7 +78,7 @@ it does and CREDITS.md for where the code came from.
 
 - `src/main/java/homeplanet/`: the program. `core` (startup, config, Slipstream, music), `ui` (windows),
   `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
-  Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`), `convert` (a fleet from before 6.0 brought across).
+  Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`).
 - **A fleet on disk (6.0, since 5.69):** every ship is a folder (`shipyard/<Name>.<id>/`, `junkyard/`, `memorials_and_records/ships/`
   for the ones that left) with her record as xml (her notes are sections of it, 5.98: trade mark, journey, museum entry, last look, fate and the
   rest; `ShipStore.notes` reads one, `Vault.setNotes` writes one; since 6.10 it names her `career` and her `origin`, and her save carries her
@@ -84,9 +91,8 @@ it does and CREDITS.md for where the code came from.
   `expeditions.xml`, `deeds.xml`) can be overridden in `lore/` beside the jar (`core/Lore`, 5.89 and 5.991; the jar holds the
   defaults in `resource/lore/`; the words are McCarthy's, and LoreT holds every file to the hard and voice rules).
   `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
-  at the top of `vault/Vault.java`. A 5.x fleet is converted the first time it opens, a zip of it kept beside its folder: every step of that, and every
-  reader of an old shape, goes in `homeplanet.convert` (`OldFleet` runs them in order; anything that must stay in its own class is
-  marked `@Before6`), so the package can be deleted one day (`docs/CONCERNS.md` 7). It is frozen: not edited, and no longer tested. There is no
+  at the top of `vault/Vault.java`. On this branch there is no conversion of a 5.x fleet (`homeplanet.convert` was deleted for the
+  public release): a fleet from before 6.0 needs a station from `main` to open it once first. There is no
   index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
   `vault/Journal`** (a note first, the steps, the note deleted; a note left behind is finished at the next opening): never a hand-written undo.
 - **Long Range Comm.:** stations match on `Session.PROTOCOL`, not the version. Bump it only when an older station
