@@ -45,6 +45,10 @@ public class GuiT {
   ransomPopUp(f);
   infirmaryBay(f);
   designSteps(f);
+  designDefaults(f);
+  designTools(f);
+  oneFtl(f);
+  fullScreenDock(f);
   Setup.done();
   System.exit(0);
  }
@@ -97,6 +101,227 @@ public class GuiT {
   Setup.chk("Steps: the checks line says so, a note not a stop: " + r[4], String.valueOf(r[4]).contains("Past vanilla") && String.valueOf(r[4]).contains("nowhere to draw") && !String.valueOf(r[4]).contains("To fix"));
   Setup.chk("Steps: unticking a system's row takes it off the starting set", Boolean.TRUE.equals(r[6]));
   Setup.chk("Steps: the Art step comes to the front", "Art".equals(r[7]));
+ }
+ /** A new design (Plan AF, 6.53; AL, 6.59): a starter ship with the Kestrel A's 4 weapon and 2 drone slots; a system placed on her not installed at the start, but for the Kestrel A's. */
+ static void designDefaults(final MainFrame f) throws Exception {
+  final ShipDesign d = ShipDesign.create(ShipDesign.load()); d.name = "Defaults Test";
+  Setup.chk("AF: a new design is a starter ship", d.starter);
+  Setup.chk("AL: a new design has 4 weapon slots and 2 drone slots: " + d.weaponSlots + "/" + d.droneSlots, d.weaponSlots == 4 && d.droneSlots == 2);
+  for (int x = 6; x <= 14; x += 2) d.rooms.add(new ShipDesign.Room(x, 5, 2, 2));
+  new Thread(new Runnable() { public void run() { DesignDialog.open(f, d, new ArrayList<String>()); } }).start();
+  ShipEditorDialog dlg = null;
+  for (int i = 0; i < 100 && dlg == null; i++) { Thread.sleep(100); for (Window w : Window.getWindows()) if (w instanceof ShipEditorDialog && w.isShowing()) dlg = (ShipEditorDialog) w; }
+  Setup.chk("AF: Design Ship opens", dlg != null);
+  if (dlg == null) return;
+  final ShipEditorDialog ed = dlg;
+  final Object[] r = new Object[6];
+  final String[] placed = {"drones", "shields", "engines", "sensors", "medbay"};
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   ShipDesign w = (ShipDesign) field(ed, ShipEditorDialog.class, "d"); // the editor works on a copy
+   LayoutEditor le = (LayoutEditor) field(ed, ShipEditorDialog.class, "editor");
+   for (int i = 0; i < placed.length; i++) call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, placed[i], i);
+   r[0] = w.notAtStart.toString();
+   r[1] = call(le, LayoutEditor.class, "notInstalled", new Class<?>[] {String.class}, "drones") + "|" + call(le, LayoutEditor.class, "notInstalled", new Class<?>[] {String.class}, "shields");
+   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "drones", 2); // moved: stays as it was
+   r[2] = w.notAtStart.contains("drones");
+   call(le, LayoutEditor.class, "edited", new Class<?>[0]);
+   ed.showStep("Loadout");
+   StringBuilder ticks = new StringBuilder();
+   for (String id : placed) for (NumberRow n : rows(ed)) if (n.name().equals(homeplanet.model.Items.systemTitle(id)) && n.tick() != null) ticks.append(id).append('=').append(n.tick().isSelected()).append(' ');
+   r[3] = ticks.toString().trim();
+   r[4] = w.starter;
+   ed.dispose();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("AL: Drone Control placed comes in not installed, Shields, Engines, Sensors and Medbay installed: " + r[0], "[drones]".equals(r[0]));
+  Setup.chk("AF: the line says so for Drone Control and not for Shields: " + r[1], String.valueOf(r[1]).startsWith(": not installed at the start") && String.valueOf(r[1]).endsWith("|."));
+  Setup.chk("AF: moving a placed system keeps its tick", Boolean.TRUE.equals(r[2]));
+  Setup.chk("AL: the Loadout step shows Drone Control unticked, the Kestrel A's ticked: " + r[3], "drones=false shields=true engines=true sensors=true medbay=true".equals(r[3]));
+  Setup.chk("AF: the editor's copy is a starter ship too", Boolean.TRUE.equals(r[4]));
+ }
+ /** The design window's tools (6.59): Move systems (AM) picks up, swaps and moves with plain clicks; the Loadout step's (i) (AN); her value at the top (AO). */
+ static void designTools(final MainFrame f) throws Exception {
+  final ShipDesign d = ShipDesign.create(ShipDesign.load()); d.name = "Tools Test";
+  for (int x = 6; x <= 12; x += 2) d.rooms.add(new ShipDesign.Room(x, 5, 2, 2));
+  new Thread(new Runnable() { public void run() { DesignDialog.open(f, d, new ArrayList<String>()); } }).start();
+  ShipEditorDialog dlg = null;
+  for (int i = 0; i < 100 && dlg == null; i++) { Thread.sleep(100); for (Window w : Window.getWindows()) if (w instanceof ShipEditorDialog && w.isShowing()) dlg = (ShipEditorDialog) w; }
+  Setup.chk("AM: Design Ship opens", dlg != null);
+  if (dlg == null) return;
+  final ShipEditorDialog ed = dlg;
+  final Object[] r = new Object[16];
+  shown.clear(); optionsShown.clear(); presses.clear();
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+   ShipDesign w = (ShipDesign) field(ed, ShipEditorDialog.class, "d");
+   LayoutEditor le = (LayoutEditor) field(ed, ShipEditorDialog.class, "editor");
+   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "shields", 0);
+   call(le, LayoutEditor.class, "place", new Class<?>[] {String.class, int.class}, "engines", 1);
+   call(le, LayoutEditor.class, "edited", new Class<?>[0]);
+   JToggleButton move = (JToggleButton) field(le, LayoutEditor.class, "moveSystems");
+   r[0] = move.isVisible() && move.isShowing();
+   toolButton(le, "Place 2 x 2").doClick(); // a room tool on, as after placing rooms
+   move.doClick();
+   r[1] = String.valueOf(field(le, LayoutEditor.class, "roomTool"));
+   click(le, 6, 5); click(le, 8, 5); // shields picked up, then the engines' room: swapped
+   r[2] = w.systems.get("shields").room + "/" + w.systems.get("engines").room + "/" + field(le, LayoutEditor.class, "selected") + "/" + field(le, LayoutEditor.class, "roomTool");
+   click(le, 8, 5); click(le, 10, 5); // shields (now in room 1) picked up, then the empty room 2: moved
+   r[3] = w.systems.get("shields").room + "/" + w.rooms.size();
+   click(le, 2, 2); // off the rooms: put down, still moving systems
+   r[4] = field(le, LayoutEditor.class, "selected") + "/" + field(le, LayoutEditor.class, "roomTool");
+   // her value at the top
+   JLabel value = null;
+   for (JLabel l : all(ed.getContentPane(), JLabel.class)) if (l.getText() != null && l.getText().startsWith("Approx. value: ")) value = l;
+   int expect = Pricing.design(w, Pricing.rate()).total();
+   r[5] = value == null ? "none" : value.getText() + " | " + value.getToolTipText();
+   r[6] = value != null && value.getText().equals("Approx. value: " + expect + " scrap") && value.getToolTipText().contains("commission");
+   JTextField name = (JTextField) field(ed, DesignDialog.class, "nameField");
+   java.awt.Point at = value == null ? null : SwingUtilities.convertPoint(value.getParent(), value.getLocation(), ed.getContentPane());
+   java.awt.Point nm = SwingUtilities.convertPoint(name.getParent(), name.getLocation(), ed.getContentPane());
+   int gap = at == null ? -1 : at.x - (nm.x + name.getWidth());
+   r[7] = at == null ? "none" : "at " + at.x + "," + at.y + ", " + gap + " px after the name field";
+   r[8] = at != null && at.y < 40 && gap > 0 && gap < 40 && Math.abs(at.y - nm.y) < 12; // the name's row, just after its field
+   // the Loadout step's (i)
+   ed.showStep("Loadout");
+   LoadoutPanel lp = (LoadoutPanel) field(ed, ShipEditorDialog.class, "loadoutPanel");
+   @SuppressWarnings("unchecked") List<JComboBox<?>> boxes = (List<JComboBox<?>>) field(lp, LoadoutPanel.class, "weaponBoxes");
+   JComboBox<?> box = boxes.get(0);
+   JButton info = (JButton) box.getClientProperty("info");
+   box.setSelectedIndex(0);
+   r[9] = info != null && !info.isEnabled() && info.isShowing();
+   int pick = -1;
+   for (int i = 1; i < box.getItemCount() && pick < 0; i++) if ("LASER_BURST_2".equals(String.valueOf(field(box.getItemAt(i), box.getItemAt(i).getClass(), "id")))) pick = i;
+   box.setSelectedIndex(pick < 0 ? 1 : pick);
+   r[10] = info != null && info.isEnabled();
+   r[11] = String.valueOf(field(box.getSelectedItem(), box.getSelectedItem().getClass(), "id"));
+   if (info != null) info.doClick();
+   r[12] = boxes.size() + " weapon boxes";
+   int after = Pricing.design(w, Pricing.rate()).total();
+   r[13] = after > expect; // the weapon picked: her value goes up
+   r[14] = value != null && value.getText().equals("Approx. value: " + after + " scrap");
+   ed.dispose();
+  } catch (Exception e) { throw new RuntimeException(e); } } });
+  Setup.chk("AM: Move systems shows under the Systems list on Design Ship", Boolean.TRUE.equals(r[0]));
+  Setup.chk("AM: pressing it takes over from the room tool: " + r[1], "SYSTEMS".equals(r[1]));
+  Setup.chk("AM: a click on a system, then on another system's room, swaps the two, and puts down (shields/engines/selected/tool: " + r[2] + ")", "1/0/null/SYSTEMS".equals(r[2]));
+  Setup.chk("AM: a click on a system, then an empty room, moves it there (no room added): " + r[3], "2/4".equals(r[3]));
+  Setup.chk("AM: a click off the rooms puts it down, still moving systems: " + r[4], "null/SYSTEMS".equals(r[4]));
+  Setup.chk("AO: her value at the top: " + r[5], Boolean.TRUE.equals(r[6]));
+  Setup.chk("AO: beside the design name, a little space after its field: " + r[7], Boolean.TRUE.equals(r[8]));
+  Setup.chk("AN: a weapon box's (i) is greyed while it says None", Boolean.TRUE.equals(r[9]));
+  Setup.chk("AN: a weapon picked (" + r[11] + "), its (i) wakes (" + r[12] + ")", Boolean.TRUE.equals(r[10]));
+  Setup.chk("AN: the (i) opens the weapon's card, with its stats: " + shown, shown.size() == 1 && shown.get(0).contains("Power"));
+  Setup.chk("AO: the value follows the loadout (a weapon adds to it)", Boolean.TRUE.equals(r[13]) && Boolean.TRUE.equals(r[14]));
+ }
+ static JToggleButton toolButton(LayoutEditor le, String text) {
+  for (JToggleButton b : all(le.side(), JToggleButton.class)) if (text.equals(b.getText())) return b;
+  throw new IllegalStateException("no " + text + " button");
+ }
+ /** A left click in the middle of a grid square, as the mouse makes it. */
+ static void click(LayoutEditor le, int gx, int gy) throws Exception {
+  int ox = (Integer) field(le, LayoutEditor.class, "originX"), oy = (Integer) field(le, LayoutEditor.class, "originY");
+  double eff = (Double) call(le, LayoutEditor.class, "eff", new Class<?>[0]);
+  int px = (int) Math.round((ox + gx * LayoutEditor.SQ + LayoutEditor.SQ / 2) * eff + ((Number) call(le, LayoutEditor.class, "padX", new Class<?>[0])).doubleValue());
+  int py = (int) Math.round((oy + gy * LayoutEditor.SQ + LayoutEditor.SQ / 2) * eff + ((Number) call(le, LayoutEditor.class, "padY", new Class<?>[0])).doubleValue());
+  java.awt.event.MouseEvent e = new java.awt.event.MouseEvent(le.canvas(), java.awt.event.MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_DOWN_MASK, px, py, 1, false, java.awt.event.MouseEvent.BUTTON1);
+  call(le, LayoutEditor.class, "pressed", new Class<?>[] {java.awt.event.MouseEvent.class}, e);
+ }
+ /** One FTL at a time (heromedel, 6.57): the Launch button reads Switch to FTL while FTL runs; docking with FTL running docks it, nothing launched; closing with FTL docked asks first. Pop-ups answered by watchPopUps. */
+ static void oneFtl(final MainFrame f) throws Exception {
+  File ini = new File(System.getProperty("java.io.tmpdir"), "gui-settings-" + System.nanoTime() + ".ini");
+  SafeFiles.writeText(ini, "fullscreen=1\nvsync=1\n", false);
+  System.setProperty("homeplanet.ftlSettings", ini.getPath());
+  System.setProperty("homeplanet.ftlRunning", "true");
+  try {
+   Setup.chk("F: FTL running, the Launch button reads Switch to FTL: " + launchLabel(f), "Switch to FTL".equals(launchLabel(f)));
+   final int[] ink = {-1, -1};
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    ink[0] = edgeInk((JButton) field(f.spaceDock, SpaceDockUI.class, "launchBtn"));
+    ink[1] = edgeInk((JButton) field(f.spaceDock, SpaceDockUI.class, "disbandBtn"));
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   Setup.chk("AK: Switch to FTL and Decommission sit clear of their buttons' outlines (letters touching it: " + ink[0] + ", " + ink[1] + ")", ink[0] == 0 && ink[1] == 0);
+   shown.clear(); optionsShown.clear(); presses.clear();
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { ((JButton) field(f.spaceDock, SpaceDockUI.class, "launchBtn")).doClick(); } catch (Exception e) { throw new RuntimeException(e); } } });
+   Setup.chk("F: clicked with no FTL window to find (not Windows): it says FTL is running, nothing launched: " + shown, shown.size() == 1 && shown.get(0).contains("running already"));
+   final boolean[] active = {false};
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    f.showSpaceDock();
+    call(f.spaceDock, SpaceDockUI.class, "launchDocked", new Class<?>[0]);
+    active[0] = FtlDock.active();
+    ((javax.swing.Timer) field(f.spaceDock, SpaceDockUI.class, "dockWatch")).stop(); // no real FTL window here: its watch would end the run
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   String after = new String(SafeFiles.read(ini), "UTF-8");
+   Setup.chk("F: FTL running already, the dock button docks it and launches nothing (its settings.ini untouched: " + after.trim().replace("\n", ", ") + ")", active[0] && after.startsWith("fullscreen=1"));
+   // closing the station while it's docked: asked first (a stand-in for FTL's window, found); Cancel pressed
+   java.lang.reflect.Field win = FtlDock.class.getDeclaredField("window"); win.setAccessible(true);
+   win.set(null, "a window");
+   shown.clear(); optionsShown.clear(); presses.clear(); presses.add(1);
+   final Object[] ask = {null};
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { ask[0] = call(f, MainFrame.class, "confirmCloseWithFtl", new Class<?>[0]); } catch (Exception e) { throw new RuntimeException(e); } } });
+   win.set(null, null);
+   Setup.chk("F: closing with FTL docked asks first (Close the station, Cancel), and Cancel keeps the station open: " + shown + " -> " + ask[0], shown.size() == 1 && shown.get(0).contains("gives FTL its own window back")
+     && Arrays.asList(optionsShown.get(0)).equals(Arrays.asList("Close the station", "Cancel")) && Boolean.FALSE.equals(ask[0]));
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { call(f.spaceDock, SpaceDockUI.class, "endDock", new Class<?>[0]); } catch (Exception e) { throw new RuntimeException(e); } } });
+   // Launch itself with FTL running (as Launch FTL after patching calls it): said, not launched
+   shown.clear(); optionsShown.clear(); presses.clear();
+   boolean launched = HomePlanet.launchFTL();
+   Setup.chk("F: Launch with FTL running says so and launches nothing: " + shown, !launched && shown.size() == 1 && shown.get(0).contains("running already"));
+  } finally {
+   System.clearProperty("homeplanet.ftlRunning");
+   System.clearProperty("homeplanet.ftlSettings");
+   ini.delete();
+  }
+  Setup.chk("F: FTL closed, the button reads Launch FTL again: " + launchLabel(f), "Launch FTL".equals(launchLabel(f)));
+ }
+ /** The button painted on its own: how many bright (lettering) pixels fall in the two columns just inside its outline, at the left and right ends of its middle rows. */
+ static int edgeInk(JButton b) {
+  int w = b.getPreferredSize().width, h = b.getPreferredSize().height;
+  b.setSize(w, h);
+  java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+  java.awt.Graphics2D g = img.createGraphics(); b.paint(g); g.dispose();
+  int n = 0;
+  for (int y = 12; y < h - 12; y++) for (int x : new int[] {3, 4, w - 5, w - 4}) {
+   int p = img.getRGB(x, y);
+   if (((p >> 16) & 0xff) > 150 && ((p >> 8) & 0xff) > 150) n++;
+  }
+  return n;
+ }
+ /** FTL running full screen can't be docked (heromedel, 6.60): the dock button says what to do (OK, Close FTL, Close and Relaunch, Docked) and docks nothing. */
+ static void fullScreenDock(final MainFrame f) throws Exception {
+  File ini = new File(System.getProperty("java.io.tmpdir"), "gui-settings-" + System.nanoTime() + ".ini");
+  SafeFiles.writeText(ini, "fullscreen=3\nvsync=1\n", false);
+  System.setProperty("homeplanet.ftlSettings", ini.getPath());
+  System.setProperty("homeplanet.ftlRunning", "true");
+  System.setProperty("homeplanet.ftlFullScreen", "true");
+  try {
+   final boolean[] active = {true, true};
+   shown.clear(); optionsShown.clear(); presses.clear(); presses.add(0); // OK
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    f.showSpaceDock();
+    call(f.spaceDock, SpaceDockUI.class, "launchDocked", new Class<?>[0]);
+    active[0] = FtlDock.active();
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   Setup.chk("AP: docking FTL running full screen says so, in heromedel's words: " + shown, shown.size() == 1 && shown.get(0).startsWith("FTL is currently launched in full screen."));
+   Setup.chk("AP: with OK, Close FTL, and Close and Relaunch, Docked: " + (optionsShown.isEmpty() ? "none" : Arrays.asList(optionsShown.get(0))),
+     optionsShown.size() == 1 && Arrays.asList(optionsShown.get(0)).equals(Arrays.asList("OK", "Close FTL", "Close and Relaunch, Docked")));
+   Setup.chk("AP: OK leaves FTL running as it is: nothing docked, its settings.ini untouched", !active[0] && new String(SafeFiles.read(ini), "UTF-8").startsWith("fullscreen=3"));
+   shown.clear(); optionsShown.clear(); presses.clear(); presses.add(2); // Close and Relaunch, Docked: no FTL window here to ask
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    call(f.spaceDock, SpaceDockUI.class, "launchDocked", new Class<?>[0]);
+    active[1] = FtlDock.active();
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+   Setup.chk("AP: Close and Relaunch with no FTL window to ask says so, and launches nothing: " + shown, shown.size() == 2 && shown.get(1).contains("could not find FTL's window") && !active[1]
+     && new String(SafeFiles.read(ini), "UTF-8").startsWith("fullscreen=3"));
+  } finally {
+   System.clearProperty("homeplanet.ftlRunning");
+   System.clearProperty("homeplanet.ftlFullScreen");
+   System.clearProperty("homeplanet.ftlSettings");
+   ini.delete();
+  }
+ }
+ /** The Space Dock's Launch button's words, the dock taken stock of first (as it is when the station comes to the front). */
+ static String launchLabel(final MainFrame f) throws Exception {
+  final String[] t = {null};
+  SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { f.spaceDock.init(); t[0] = ((JButton) field(f.spaceDock, SpaceDockUI.class, "launchBtn")).getText(); } catch (Exception e) { throw new RuntimeException(e); } } });
+  return t[0];
  }
  static List<NumberRow> rows(java.awt.Container c) { List<NumberRow> out = new ArrayList<NumberRow>(); for (java.awt.Component x : c.getComponents()) { if (x instanceof NumberRow) out.add((NumberRow) x); if (x instanceof java.awt.Container) out.addAll(rows((java.awt.Container) x)); } return out; }
 

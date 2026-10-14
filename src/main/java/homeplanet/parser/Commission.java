@@ -70,8 +70,7 @@ public class Commission {
 		EncounterState enc = gs.getEncounter();
 		enc.setLastEventId("");
 		enc.setChoiceList(new ArrayList<Integer>()); // a brand-new game has no choice recorded yet (Testy Boy)
-		// Starting scrap by difficulty: Normal 10 (Testy Boy, a fresh Normal game); Easy 30 and Hard 0 per the difficulty guide
-		gs.getPlayerShip().setScrapAmt(difficulty == Difficulty.EASY ? 30 : difficulty == Difficulty.HARD ? 0 : 10);
+		gs.getPlayerShip().setScrapAmt(startingScrap(difficulty));
 
 		gs.setTotalShipsDefeated(0);
 		gs.setTotalBeaconsExplored(1);
@@ -118,11 +117,18 @@ public class Commission {
 		return gs;
 	}
 
+	/** A new ship's fuel, as a new game gives it. */
+	public static final int START_FUEL = 16;
+	/** Starting scrap by difficulty: Normal 10 (Testy Boy, a fresh Normal game); Easy 30 and Hard 0 per the difficulty guide. */
+	public static int startingScrap(Difficulty difficulty) {
+		return difficulty == Difficulty.EASY ? 30 : difficulty == Difficulty.HARD ? 0 : 10;
+	}
+
 	static ShipState buildShip(ShipBlueprint bp, String shipName, Difficulty difficulty, Random rng) {
 		ShipState ship = new ShipState(shipName, bp, false);
 		ship.refit(); // systems at their starting levels and power, rooms, doors, augments, hull, missiles, drone parts
 		ship.setHostile(true);            // as FTL writes it for the player ship
-		ship.setFuelAmt(16);
+		ship.setFuelAmt(START_FUEL);
 		ship.setScrapAmt(0);
 		ship.setJumpChargeTicks(0);       // the drive charges from empty, as in a fresh game
 		if (bp.getMaxPower() != null) ship.setReservePowerCapacity(bp.getMaxPower().amount);

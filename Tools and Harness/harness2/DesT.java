@@ -21,7 +21,7 @@ public class DesT {
   String[][] sys = {{"pilot","4"},{"engines","0"},{"oxygen","3"},{"shields","1"},{"weapons","2"}};
   for (String[] s : sys) { CompanionMod.Sys x = new CompanionMod.Sys(s[0]); x.room = Integer.parseInt(s[1]); x.power = CompanionMod.usualPower(s[0]); if (ShipDesign.manned(s[0])) { x.square = 0; x.dir = ShipDesign.defaultDir(s[0]); } d.systems.put(s[0], x); }
   if (k == 0) ShipArt.adoptGameShip(d, "kestral");
-  else { d.art = ShipArt.importFile(png, d.id, "base"); d.artX = 4*35 - 80; d.artY = 5*35 - 150; d.mounts.add(new ShipDesign.Mount(400, 120)); d.mounts.add(new ShipDesign.Mount(400, 320)); }
+  else { d.art = ShipArt.importFile(png, d.id, "base"); d.artX = 4*35 - 80; d.artY = 5*35 - 150; d.mounts.add(new ShipDesign.Mount(400, 120)); d.mounts.add(new ShipDesign.Mount(400, 320)); d.weaponSlots = 2; } // two mounts, two slots (a new design has the Kestrel A's 4, 6.59)
   d.built = true; d.starter = true;
   d.notAtStart.add("shields");
   CompanionMod.Loadout l = new CompanionMod.Loadout(); l.className = d.name + " Class"; l.shipName = "The " + d.name; l.crew.put("human", 2); l.crew.put("engi", 1); l.weapons.add("LASER_BURST_2"); l.missiles = 5; l.droneParts = 1; d.loadout = l;
@@ -67,6 +67,18 @@ public class DesT {
  ShipDesign b = back.get(had + 2);
  Setup.chk("own art exported", DesignExport.images(b).keySet().toString().contains("_base.png"));
  Setup.chk("game art needs no pictures", DesignExport.images(back.get(had)).isEmpty());
+ // 6.54 (tested in FTL): her own pictures always carry a floor (a blank one for no floor: a missing floor is a warning
+ // sign in the game) and a shield bubble the size of her oval (without one FTL draws no bubble)
+ { ShipDesign o = ShipDesign.copy(b); o.floor = "";
+   Map<String, byte[]> im = DesignExport.images(o); String gg = "img/ship/" + DesignExport.gfx(o);
+   java.awt.image.BufferedImage sh = im.containsKey(gg + "_shields1.png") ? javax.imageio.ImageIO.read(new ByteArrayInputStream(im.get(gg + "_shields1.png"))) : null;
+   int[] e = ShipArt.ellipseOf(o, ShipArt.load(o.art, ""));
+   Setup.chk("6.54: no floor still gives FTL a floor picture (a blank one)", im.containsKey(gg + "_floor.png"));
+   Setup.chk("6.54: a shield bubble the size of her oval: " + (sh == null ? "none" : sh.getWidth() + "x" + sh.getHeight()) + " for " + e[0] + "x" + e[1], sh != null && sh.getWidth() == 2 * e[0] && sh.getHeight() == 2 * e[1]);
+   ShipDesign k2 = ShipDesign.copy(back.get(had)); k2.art = "game:kestral_2"; k2.floor = "game:kestral_2";
+   Map<String, byte[]> i2 = DesignExport.images(k2);
+   Setup.chk("6.54: the Kestrel B's hull (whose bubble is the Kestrel's) gets a set of her own, bubble and all: " + i2.keySet().size(), i2.containsKey("img/ship/" + DesignExport.gfx(k2) + "_shields1.png"));
+ }
  Setup.chk("the mod exports the built copies only", DesignExport.built().size() >= 2 && !DesignExport.built().get(0).isWorking());
  // art files: every import is a new file; the sweep keeps what's used
  String again = ShipArt.importFile(png, b.id, "base");
@@ -85,6 +97,9 @@ public class DesT {
   Setup.chk(id + " commissioned: rooms " + rb.getPlayerShip().getRoomList().size() + " doors " + rb.getPlayerShip().getDoorMap().size() + " crew " + rb.getPlayerShip().getCrewList().size(),
    rb.getPlayerShip().getRoomList().size() == d.rooms.size() && rb.getPlayerShip().getDoorMap().size() == d.doors.size());
   if (d == back.get(had)) Setup.chk("commissioned without shields (start=false)", rb.getPlayerShip().getSystem(SystemType.SHIELDS).getCapacity() == 0);
+  homeplanet.parser.Pricing.Quote said = homeplanet.parser.Pricing.design(d, 75), paid = homeplanet.parser.Pricing.commission(rb, 75);
+  Setup.chk("AO: " + d.name + "'s value on the design screen is what Commission charges for her built (" + said.total() + " / " + paid.total() + ")" + (said.lines.equals(paid.lines) ? "" : " " + said.lines + " vs " + paid.lines),
+   said.total() == paid.total() && said.lines.equals(paid.lines) && said.total() > 0);
  }
  // E: a design from a game ship, moved and flipped
  { ShipDesign g = ShipDesign.create(back);

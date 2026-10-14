@@ -49,17 +49,12 @@ public class HouseRulesDialog extends JDialog {
 
 		body.add(new JLabel("Choose how strict The Home Planet Station's functionality is. You can change these any time in Settings."), (GridBagConstraints) c.clone());
 		c.gridy++;
-		SettingsDialog.heading(body, c, "Rules");
+		if (immersive == null) SettingsDialog.heading(body, c, "Rules"); // over Switch Game Mode; Sandbox Mode's first setup goes straight to the rules
 		rules.addTo(body, c, immersive == null);
 		if (Boolean.FALSE.equals(immersive)) {
 			SettingsDialog.heading(body, c, "After a final victory");
 			victory = new VictoryRules(); // Nothing, Choice or Museum, and the museum's reward (6.47)
-			body.add(victory, (GridBagConstraints) c.clone());
-			c.gridy++;
-			JLabel note = new JLabel("<html><div style='width:520px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>For Choice or Museum, The Home Planet Station must be open while you play: "
-					+ "it keeps " + homeplanet.model.Words.herObj() + " as the Rebel Flagship heads for the last battle.</font></div></html>");
-			note.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
-			body.add(note, (GridBagConstraints) c.clone());
+			body.add(victory, (GridBagConstraints) c.clone()); // with its note and Rescued Ships moved to Hard, as Settings has them
 			c.gridy++;
 		}
 
@@ -71,12 +66,13 @@ public class HouseRulesDialog extends JDialog {
 		buttons.add(ok);
 		getRootPane().setDefaultButton(ok);
 
-		getContentPane().add(body, BorderLayout.CENTER);
+		getContentPane().add(ScreenFit.wrap(body, 110, null), BorderLayout.CENTER); // scrolls on a short screen, so OK and the last rules are never off it (6.53)
 		getContentPane().add(buttons, BorderLayout.SOUTH);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		pack();
 		setResizable(false);
 		setLocationRelativeTo(null);
+		ScreenFit.keepOnScreen(this);
 	}
 
 	/** OK and the close button both end here, and both keep what is ticked (before setVisible returns to ask()). */

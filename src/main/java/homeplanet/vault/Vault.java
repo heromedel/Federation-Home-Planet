@@ -53,6 +53,8 @@ import org.slf4j.LoggerFactory;
  *     career.xml, reputation.xml, rest.xml, rank.xml, repair-job.xml, events.xml, crew-register.xml: the career's own state,
  *                                one file per concern (5.86; .txt before); free-command.txt and unlock-grants.txt, two lists
  *     designs.xml, remodels.xml, art/, removed-blueprints.log
+ *     rules.xml                  Sandbox Mode's fleet only: its rules, as Settings sets them (6.55; the station's own settings are in
+ *                                federation-home-planet.cfg beside the fleets, in FTL's saves folder)
  * </pre>
  *
  * A fleet from before 6.0 (manifest.xml, ships/&lt;id&gt;.sav, history/&lt;id&gt;/ before 5.69, and the files each later step
@@ -123,6 +125,7 @@ public final class Vault {
 		instance = v; // before load(), so what load() logs goes into the vault's own log
 		MasterLog.start(v); // the career's day 1, the first time it's opened on 5.17 (a new one: its first moment)
 		v.load();
+		homeplanet.core.HomePlanet.fleetOpened(v); // its own settings in force (6.55: how reputation can be used)
 		return v;
 	}
 

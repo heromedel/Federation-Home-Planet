@@ -55,10 +55,19 @@ public class MainFrame extends JFrame {
 		if (!atSpaceDock && !atMuseum && !atComm && !cargoBay.confirmLeave(doing)) return false;
 		return true;
 	}
-	/** Closes the station (after {@link #mayClose}): the window remembered, then the program ends. */
+	/** Closes the station (after {@link #mayClose}): a docked FTL given its own window back, the window remembered, then the program ends. */
 	public void closeNow() {
+		// FTL keeps running in its own window, frame and all, centred (heromedel, 6.57: it was left borderless where the viewport was)
+		if (homeplanet.core.FtlDock.found()) homeplanet.core.FtlDock.release();
 		rememberWindow(); // its size, position and maximized state
 		System.exit(0);
+	}
+	/** FTL docked in the station's window (heromedel, 6.57): closing gives FTL its own window back, said first. True to go on. */
+	private boolean confirmCloseWithFtl() {
+		if (!homeplanet.core.FtlDock.found()) return true;
+		Object[] options = {"Close the station", "Cancel"};
+		return javax.swing.JOptionPane.showOptionDialog(this, "FTL is docked in The Home Planet Station's window.\n\nClosing the station gives FTL its own window back, and FTL keeps running.",
+				"Close The Home Planet Station", javax.swing.JOptionPane.DEFAULT_OPTION, javax.swing.JOptionPane.WARNING_MESSAGE, null, options, options[1]) == 0;
 	}
 
 	public MainFrame(String appName, String appVersion) {
@@ -67,6 +76,7 @@ public class MainFrame extends JFrame {
 			@Override
 			public void windowClosing(java.awt.event.WindowEvent e) {
 				if (!mayClose("close The Home Planet Station interface")) return;
+				if (!confirmCloseWithFtl()) return;
 				closeNow();
 			}
 			@Override

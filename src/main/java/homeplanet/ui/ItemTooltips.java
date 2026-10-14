@@ -11,6 +11,14 @@ import net.blerf.ftl.xml.WeaponBlueprint;
  */
 public class ItemTooltips {
 
+	/** The item's card, as an (i) opens it (the Cargo Bay, the Loadout step): its picture and stats, or its name if the game data has none. */
+	public static void show(java.awt.Component parent, String id) {
+		if (id == null || id.isEmpty()) return;
+		String t = tooltip(id);
+		javax.swing.JOptionPane.showMessageDialog(parent, new javax.swing.JLabel(t != null ? t : homeplanet.model.Items.title(id)), homeplanet.model.Items.title(id),
+				javax.swing.JOptionPane.PLAIN_MESSAGE, IconFactory.itemIcon(id));
+	}
+
 	public static String tooltip(String id) {
 		if (id == null || id.isEmpty()) return null;
 		WeaponBlueprint w = DataManager.get().getWeapons().get(id);

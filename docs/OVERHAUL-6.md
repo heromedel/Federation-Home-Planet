@@ -574,6 +574,10 @@ Cloud-C-BugsandFeedback ("Buggy Boy"), 5.81, 2026-10-07.
      one line missing. KillT counts these and tells them, without failing on them.
    - **Small, not fixed:** a ship that left before 5.x kept fate notes (seven of eleven in heromedel's Sandbox fleet) is named in
      memorials_and_records by her id; her name is in her saves. The player doesn't see these folders anywhere but on disk.
+   - **Settings, 6.55 (heromedel, Plan AI):** point 12's "settings stay in the program's .cfg beside the jar" no longer holds: the
+     cfg beside the jar keeps only FTL's folder, the saves folder and Slipstream's; the station's settings are in
+     `federation-home-planet.cfg` in FTL's saves folder, Sandbox Mode's rules in `FederationHomePlanet/rules.xml`, and how reputation
+     can be used is each career's own (`docs/CONCERNS.md` 9).
 
 ### Notes from Cloud-C-Primary-Edit (round 3)
 

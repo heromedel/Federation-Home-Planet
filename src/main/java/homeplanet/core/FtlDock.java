@@ -276,6 +276,66 @@ public final class FtlDock {
 		behind = false;
 		cut(true);
 	}
+	/**
+	 * FTL running on its own (not docked) brought to the front as Alt+Tab would (heromedel, 6.57): back up if it had
+	 * minimized (a full-screen game does, losing focus), full screen or windowed as it is; nothing about it changed. False
+	 * if its window wasn't found (not Windows, or FTL still starting).
+	 */
+	public static boolean switchTo() {
+		if (!System.getProperty("os.name", "").startsWith("Windows")) return false;
+		try {
+			Object w = Win.find(TITLE);
+			if (w == null) return false;
+			Win.bringBack(w);
+			log.info("Switched to FTL");
+			return true;
+		} catch (Throwable t) {
+			log.debug("Could not switch to FTL: {}", t.toString());
+			return false;
+		}
+	}
+	/**
+	 * FTL running on its own, full screen (heromedel, 6.60): it can't be docked as it is. Its window covers its screen, or
+	 * it's minimized (a full-screen game is, once the station has the focus) with settings.ini saying full screen. False
+	 * where its window can't be looked at (not Windows, or not found): the docked view's own check (find) still says so.
+	 */
+	public static boolean runningFullScreen() {
+		if (Boolean.getBoolean("homeplanet.ftlFullScreen")) return true; // the harness's stand-in, as homeplanet.ftlRunning is
+		if (!System.getProperty("os.name", "").startsWith("Windows")) return false;
+		try {
+			Object w = Win.find(TITLE);
+			if (w == null) return false;
+			if (Win.minimized(w)) return !"0".equals(settingsFullscreen());
+			java.awt.Rectangle r = Win.bounds(w), screen = Win.screenOf(w);
+			return screen != null && r.width >= screen.width && r.height >= screen.height;
+		} catch (Throwable t) {
+			log.debug("Could not look at FTL's window: {}", t.toString());
+			return false;
+		}
+	}
+	/** settings.ini's fullscreen value ("0": windowed), or null if it has none or can't be read. */
+	static String settingsFullscreen() {
+		File f = settingsFile();
+		if (f == null || !f.isFile()) return null;
+		try {
+			Matcher m = FULLSCREEN.matcher(new String(SafeFiles.read(f), StandardCharsets.UTF_8));
+			return m.find() ? m.group(2).trim() : null;
+		} catch (IOException e) { return null; }
+	}
+	/** FTL running on its own asked to close, as the X on its window does (heromedel, 6.60). False if its window wasn't found. */
+	public static boolean closeRunning() {
+		if (!System.getProperty("os.name", "").startsWith("Windows")) return false;
+		try {
+			Object w = Win.find(TITLE);
+			if (w == null) return false;
+			Win.close(w);
+			log.info("FTL asked to close (it was running full screen, not docked)");
+			return true;
+		} catch (Throwable t) {
+			log.warn("Could not ask FTL to close: {}", t.toString());
+			return false;
+		}
+	}
 	/** FTL's window has been found and docked. */
 	public static boolean found() { return window != null; }
 	/** FTL's window is still there. */
@@ -355,6 +415,7 @@ public final class FtlDock {
 			int GetWindowTextW(com.sun.jna.Pointer hwnd, char[] text, int max);
 			boolean IsWindow(com.sun.jna.Pointer hwnd);
 			boolean IsWindowVisible(com.sun.jna.Pointer hwnd);
+			boolean IsIconic(com.sun.jna.Pointer hwnd);
 			int GetWindowLongW(com.sun.jna.Pointer hwnd, int index);
 			int SetWindowLongW(com.sun.jna.Pointer hwnd, int index, int value);
 			boolean SetWindowPos(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer after, int x, int y, int w, int h, int flags);
@@ -379,7 +440,7 @@ public final class FtlDock {
 		}
 		static final int WS_CAPTION = 0x00C00000, WS_THICKFRAME = 0x00040000, WS_SYSMENU = 0x00080000, WS_MINIMIZEBOX = 0x00020000, WS_MAXIMIZEBOX = 0x00010000;
 		static final int SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOACTIVATE = 0x0010, SWP_FRAMECHANGED = 0x0020, SWP_SHOWWINDOW = 0x0040, SWP_NOZORDER = 0x0004;
-		static final int SW_HIDE = 0, SW_SHOWNOACTIVATE = 4, SW_SHOW = 5;
+		static final int SW_HIDE = 0, SW_SHOWNOACTIVATE = 4, SW_SHOW = 5, SW_RESTORE = 9;
 
 		static Object find(final String title) {
 			final com.sun.jna.Pointer[] found = new com.sun.jna.Pointer[1];
@@ -529,6 +590,13 @@ public final class FtlDock {
 			try { int[] c = new int[1]; return Dwm.I.DwmGetWindowAttribute(h, 14, c, 4) == 0 && c[0] != 0; } // DWMWA_CLOAKED
 			catch (Throwable t) { return false; }
 		}
+		/** A window of FTL's own (not docked) to the front with the keyboard: restored first if minimized, as Alt+Tab does. */
+		static void bringBack(Object w) {
+			com.sun.jna.Pointer h = (com.sun.jna.Pointer) w;
+			if (User32.I.IsIconic(h)) User32.I.ShowWindow(h, SW_RESTORE);
+			User32.I.SetForegroundWindow(h);
+		}
+		static boolean minimized(Object w) { return User32.I.IsIconic((com.sun.jna.Pointer) w); }
 		static void focus(Object w) {
 			com.sun.jna.Pointer h = (com.sun.jna.Pointer) w;
 			User32.I.ShowWindow(h, SW_SHOW);

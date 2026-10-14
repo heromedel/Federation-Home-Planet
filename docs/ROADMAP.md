@@ -191,7 +191,7 @@ ship pays, and Save makes it official (Reset undoes it).
   setting, **Ranks From Rep** (the default; Immersive Mode is locked to it; tooltip "Requires Reputation to be turned on.")
   / **Ranks From Cruiser** (the old rule) / **No Ranks** (everything cleared, the stipend at x1). The reputation ladder: Major
   at the start; Colonel 250 (stipend x2); Commander 500 (remodels); Captain 1,000 (x3); Commodore 2,500 (designs, deck plan
-  overhauls, custom ships); Admiral 10,000 (the Federation's artillery, x4); Major x1, Commander x2, Commodore x3. A rank is
+  overhauls, custom ships); Admiral 5,000 (10,000 until 6.53; the Federation's artillery, x4); Major x1, Commander x2, Commodore x3. A rank is
   never lost. Each promotion is a letter from The Federation Home Planet Fleet Admiralty. Each Federation Cruiser layout
   (A, B, C) unlocked in the career's service gives +100 reputation, once. A career from before 5.56 is checked once: the
   higher of its reputation's rank and its cruiser rank (Captain or Commodore), any clearance it held kept, and one letter
@@ -840,8 +840,10 @@ the right is three steps in build order.
   blueprint opens the build screen directly (its Loadout... comes back here with the step in front). Hull, Reactor and
   Drone slots left the title bar for the Loadout step.
 - **Rooms.** Place and Move, then Systems (the old "Not on this ship", with a line saying what to do with it), Doors,
-  Whole ship, the window's own buttons, and the zoom last. An empty grid says what to do first ("Place her first room:
-  Place 2 x 2, then click the grid"); a ship with rooms but no art says to import or pick one. The checks line gains a
+  Whole ship, the window's own buttons, and the zoom last. The grid carries no messages (heromedel, 6.53): the line
+  under it says what to do first, and "No hull art yet." is among its checks. A new design is a starter ship, and a
+  system placed on her comes in not installed at the start unless the Kestrel A starts with it (heromedel, 6.53; 6.59: Piloting,
+  Doors, Sensors, Medbay, Oxygen, Shields, Engines, Weapon Control; and 4 weapon slots, 2 drone slots); the line says so, its icon on the grid is greyed, and the Loadout step's tick changes it. The checks line gains a
   "Next:" hint when nothing needs fixing, and wraps rather than running off the window.
 - **Art, and the grid's middle as the game's centre** (heromedel: the one place a person expects it). Measured over
   all 28 of the game's player ships, the middle of the room block sits at the same spot in FTL's frame, 8 squares
@@ -849,9 +851,15 @@ the right is three steps in build order.
   cross "where FTL puts her", which never moves. Where the rooms sit round it is her screen offset (`offsets(d)`, read
   off the rooms; the stored offsets and the art-based guess are gone), so rooms left of the middle sit left in the game,
   and a game ship copied in lands where the game has her and gets the game's own offsets back. FTL has no further left
-  or up than offset 0, so the strip past it is shaded faintly. The canvas is fixed (the grid with a wide border for art
-  hanging over): editing one thing never slides another. "Center on the anchor" puts the picture's visible middle on
-  the cross and moves nothing else. The shield ellipse and gibs sit under "Fine adjustment".
+  or up than offset 0, so everything past it is striped yellow as a caution and labelled "Past the game's edge: a
+  room placed here moves the whole ship right or down in the game" (6.53; tested in FTL: a design past the edge loads
+  at the edge, and a layout written with a negative offset crashes FTL 1.6.14 on loading). The canvas is fixed (the grid with a
+  wide border for art hanging over): editing one thing never slides another. The grid covers the whole canvas and the
+  canvas sits in the middle of the view, so the cross is the middle of what the player sees (heromedel, 6.53). "Center on the anchor" puts the picture's visible middle on
+  the cross and moves nothing else. The shield ellipse and gibs sit under "Fine adjustment". In FTL (tested, 6.54) a
+  missing floor picture is a warning sign by the ship and a missing shield picture means no bubble, so her own picture
+  set always carries a floor (a blank one for No floor) and a bubble made to her shield oval (the Kestrel's, stretched),
+  and a new hull picture of her own gets the floor drawn from her rooms (heromedel).
 - **Loadout, one row shape for every number** (heromedel's sketch): hers/max, the name, minus, a typed field, plus, a
   bar of green segments to the vanilla max and amber ones past it, "Over vanilla max" beside. Hull, reactor, weapon
   slots, drone slots, missiles and drone parts under "Her numbers"; each placed system under "Systems at the start" with
@@ -866,6 +874,13 @@ the right is three steps in build order.
 - **Vanilla max read from the game** (`VanillaMax`): the highest any of the game's player ships has of each number, and
   each system's top level from its blueprint, so the column is literally what it says and a modded game shows its own.
 - Later: the Retrofit tab taking the same row shape, so the two screens match.
+- **6.59 (heromedel, Plans AM to AO).** **Move systems**, under the Systems list wherever rooms can change (Design Ship,
+  an overhaul): it takes the clicks from the room tools, so a click picks a system up, a click on an empty room moves
+  it, a click on another system's room swaps the two (no Alt), and a click off the rooms puts it down. The Loadout
+  step's weapon, drone and augment boxes and the artillery's weapon each have an **(i)**, the Cargo Bay's card
+  (`ItemTooltips.show`, one home for both), greyed while the box says None. Her **value** beside the design name: what
+  Commission would charge for her at this career's rate, shown whether or not commissioning costs scrap
+  (`Pricing.design`, the lines of `Pricing.commission` counted from the design; DesT holds the two equal on a built design).
 
 ## 29. The Cargo Bay without boarding, art turned, and two rules — built (5.00; harness checks in GuiT, DesT, ExpT)
 
@@ -1174,7 +1189,8 @@ and reputation for the rest; with Reputation off, scrap only, as before.
 ## 40. How Reputation Can be Used, and where it came from — built (5.15; harness checks in RepuT)
 
 - **How Reputation Can be Used** (heromedel; Settings, Rules, under Reputation; any mode, never locked by Immersive
-  Mode; `reputation_use` in the cfg): 1 New Journeys and Pleads (the default, until the rest is tried in play),
+  Mode; each career its own since 6.55, Sandbox Mode's `reputation_use` in its `rules.xml`, an Immersive career's in its
+  `career.xml`): 1 New Journeys and Pleads (the default, until the rest is tried in play),
   2 Vanillas Breaking Actions (1, and Refit removal, stripping, a custom work order's share), 3 Only as a score.
   Wherever reputation can't be used, scrap pays: a work order's share in scrap too, a plea with 3 offers giving up the
   Cargo Hold alone. A promise of adventure and rest in quarters cost reputation with 1 and 2 (nobody is locked out of

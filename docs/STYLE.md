@@ -19,6 +19,8 @@ exceptions can be made (the Museum's plates, say, are sized artistically).
 - On the main screens, leave about 4 pixels between a stat's label ("Sector") and its white value.
 - FTL's own pixel fonts (`FtlFont.MENU` and `FtlFont.BODY`) stay where they are: headings, buttons, ship names,
   the Cargo Bay, the Dry Dock. That's the game's look.
+- A button's label that would touch its outline is drawn with its letters a pixel closer (6.58, "Switch to FTL"),
+  and cut with "..." only if it still won't fit: the font and its size stay the same.
 
 ## Colours
 

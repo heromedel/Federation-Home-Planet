@@ -214,13 +214,35 @@ public class LoadoutPanel extends JPanel {
 			JComboBox<BlueprintDialog.Item> b = BlueprintDialog.itemBox(items);
 			b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { if (!filling) carriesChanged(); } });
 			into.add(b);
-			g.add(b);
+			g.add(withInfo(b));
 		}
 		boolean was = filling; filling = true;
 		try { BlueprintDialog.setBoxes(into, ids); } finally { filling = was; }
+		for (JComboBox<BlueprintDialog.Item> b : into) infoFor(b);
 		g.setAlignmentX(LEFT_ALIGNMENT);
 		g.setMaximumSize(new java.awt.Dimension(420, Integer.MAX_VALUE));
 		return g;
+	}
+	/** A box with its (i) beside it: the chosen item's card, as the Cargo Bay's (i) shows it (heromedel, 6.59); greyed while the box says None. */
+	private JPanel withInfo(final JComboBox<BlueprintDialog.Item> b) {
+		CargoParts.IconButton info = new CargoParts.IconButton(CargoParts.infoIcon(), "What it does: power, damage, price", new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				BlueprintDialog.Item it = (BlueprintDialog.Item) b.getSelectedItem();
+				if (it != null && it.id != null) ItemTooltips.show(LoadoutPanel.this, it.id);
+			}
+		});
+		b.putClientProperty("info", info);
+		b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { infoFor(b); } });
+		JPanel row = new JPanel(new BorderLayout(4, 0));
+		row.setOpaque(false);
+		row.add(b, BorderLayout.CENTER);
+		row.add(info, BorderLayout.EAST);
+		return row;
+	}
+	private static void infoFor(JComboBox<BlueprintDialog.Item> b) {
+		Object info = b.getClientProperty("info");
+		BlueprintDialog.Item it = (BlueprintDialog.Item) b.getSelectedItem();
+		if (info instanceof JButton) ((JButton) info).setEnabled(it != null && it.id != null);
 	}
 	/** One row per placed system, built again when the systems on the ship change. */
 	private void rebuildSystems() {
@@ -237,6 +259,8 @@ public class LoadoutPanel extends JPanel {
 				r.tick().setSelected(!d.notAtStart.contains(s.id));
 				JButton weapon = (JButton) r.getClientProperty("weapon");
 				if (weapon != null) weaponLabel(weapon, s.weapon);
+				JButton weaponInfo = (JButton) r.getClientProperty("weaponInfo");
+				if (weaponInfo != null) weaponInfo.setEnabled(s.weapon != null);
 			}
 			return;
 		}
@@ -266,10 +290,21 @@ public class LoadoutPanel extends JPanel {
 						now.weapon = w;
 						weaponLabel(weapon, w);
 						host.changed();
+						JButton wi = (JButton) r.getClientProperty("weaponInfo"); // its (i) wakes
+						if (wi != null) wi.setEnabled(true);
 					}
 				});
 				r.putClientProperty("weapon", weapon);
 				r.addExtra(weapon);
+				CargoParts.IconButton weaponInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "What " + homeplanet.model.Words.her() + " artillery fires: power, damage", new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						CompanionMod.Sys now = d.systems.get("artillery");
+						if (now != null && now.weapon != null) ItemTooltips.show(LoadoutPanel.this, now.weapon);
+					}
+				});
+				weaponInfo.setEnabled(s.weapon != null);
+				r.putClientProperty("weaponInfo", weaponInfo);
+				r.addExtra(weaponInfo);
 			}
 			rows.put(s.id, r);
 			systems.add(r);

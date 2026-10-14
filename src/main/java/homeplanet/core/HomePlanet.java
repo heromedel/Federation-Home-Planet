@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.52";
+	public static final String APP_VERSION = "6.60";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -166,48 +166,31 @@ public class HomePlanet {
 		savedGameParser = new SavedGameParser();
 		boolean writeConfig = loadConfig();
 		startFileLog();
-		setDebugLogging(Boolean.parseBoolean(config.getProperty("debug_logging", "false")) || Boolean.getBoolean("homeplanet.debug"));
 		log.info("{} {} on Java {} ({} {}), in {}", APP_NAME, APP_VERSION, System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"), appDir());
 		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
 			public void uncaughtException(Thread t, Throwable e) { log.error("Uncaught in " + t.getName(), e); }
 		});
-		launchThroughSteam = flag("launch_through_steam");
-		launchDirectX = flag("launch_directx");
-		storeRequirement = flag("store_requirement");
-		journeyStoreRequirement = flag("new_journey_store_requirement");
-		stripAllowed = flag("strip_when_scrapping");
-		removalFee = Economy.removalFee(config.getProperty("refit_removal_fee"));
-		journeyFee = Economy.journeyFee(config.getProperty("new_journey_fee"));
-		sellSupplies = flag("sell_supplies");
-		commissionUnlockedOnly = flag("commission_unlocked_only");
-		commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only");
-		sellSystems = flag("sell_systems");
-		augmentsHome = flag("augments_home", true);
-		commissionCosts = flag("commission_costs_scrap");
-		commissionPercent = percent(config.getProperty("commission_price_percent"));
-		try { expeditionType = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("expedition_type", "2").trim()))); } catch (NumberFormatException e) { expeditionType = 2; }
-		if (expeditionType == 1) expeditionType = 2; // the old board of jobs went at 5.67 (heromedel): its setting reads as the crew expeditions
-		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
-		if ("variable".equals(freeShip)) freeShip = "kestrel"; // Variable (a ship by what a report surrendered) is no more
-		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
-		unlockFreeShips = flag("unlock_free_ships");
-		immersiveMode = flag("immersive_mode");
-		Vault.immersiveSlot = Vault.slotOf(config.getProperty("immersive_slot")); // which Immersive career (a fleet from before difficulties is Custom's)
-		immersiveNotifications = flag("immersive_notifications");
-		immersiveShipTrading = flag("immersive_ship_trading");
-		immersiveAnyLevel = flag("immersive_any_level", true);
-		longRangePopups = flag("long_range_popups", true);
-		careerMessages = flag("career_messages");
-		reputationOn = flag("reputation");
-		try { reputationUse = Math.max(1, Math.min(3, Integer.parseInt(config.getProperty("reputation_use", "1").trim()))); } catch (NumberFormatException e) { reputationUse = 1; }
-		try { reputationRate = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("reputation_rate", "0").trim()))); } catch (NumberFormatException e) { reputationRate = 0; }
-		try { homeplanet.parser.PlayerRank.setting = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty(homeplanet.parser.PlayerRank.CFG, "0").trim()))); } catch (NumberFormatException e) { homeplanet.parser.PlayerRank.setting = 0; }
-		finalVictory = config.getProperty("final_victory", "nothing");
-		finalVictoryPay = config.getProperty("final_victory_pay", "full");
-		rescuedToHard = Boolean.parseBoolean(config.getProperty("rescued_to_hard", "false"));
-		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
 
-		// FTL's data and saves: the folders kept in the cfg, else the ones found and confirmed, else the ones chosen
+		// FTL's saves folder first (6.55, heromedel): the station's settings are kept in it, so a new release folder finds
+		// them all (FTL's folder and Slipstream's with them) and asks nothing it was told before
+		save_location = savesFolder();
+		if (save_location == null) {
+			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
+			System.exit(1);
+		}
+		if (!(restarted ? StationLock.claimWaiting(save_location, 10000) : StationLock.claim(save_location))) { // another copy is open on these saves (5.45)
+			final String says = StationLock.inUseMessage(save_location);
+			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
+				JOptionPane.showMessageDialog(null, says, "Already open", JOptionPane.WARNING_MESSAGE);
+				return null;
+			} });
+			System.exit(0);
+		}
+		writeConfig |= !save_location.getAbsolutePath().equals(config.getProperty("ftlSavePath"));
+		writeConfig |= !loadSavesSettings(); // none there yet: a first start, or a cfg from before 6.55 carried over
+		applySettings();
+
+		// FTL's data: the folder kept, else the one found and confirmed, else the one chosen
 		datsPath = gameFolder();
 		if (datsPath == null) {
 			showErrorDialog("FTL's files were not found. The Home Planet Station can't open without them.\nIt will now close.");
@@ -243,21 +226,6 @@ public class HomePlanet {
 			else onEdt(new java.util.concurrent.Callable<Void>() { public Void call() { homeplanet.ui.HouseRulesDialog.ask(); return null; } });
 			writeConfig = true; // saveConfig writes every rule, so this is asked once
 		}
-
-		save_location = savesFolder();
-		if (save_location == null) {
-			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
-			System.exit(1);
-		}
-		if (!(restarted ? StationLock.claimWaiting(save_location, 10000) : StationLock.claim(save_location))) { // another copy is open on these saves (5.45)
-			final String says = StationLock.inUseMessage(save_location);
-			onEdt(new java.util.concurrent.Callable<Void>() { public Void call() {
-				JOptionPane.showMessageDialog(null, says, "Already open", JOptionPane.WARNING_MESSAGE);
-				return null;
-			} });
-			System.exit(0);
-		}
-		writeConfig |= !save_location.getAbsolutePath().equals(config.getProperty("ftlSavePath"));
 		if (writeConfig) saveConfig();
 
 		// the words folder beside the program, and its check: a copy's broken entry is named in the debug log, and the station's own words stand (5.89)
@@ -274,6 +242,51 @@ public class HomePlanet {
 			showErrorDialog("The Home Planet Station could not open its fleet records in:\n" + save_location + "\n\n" + e);
 			System.exit(1);
 		}
+		startRest(chooseMode);
+	}
+
+	/** The settings as the cfg has them, into the fields (the rules in force, the launch, the music). */
+	private static void applySettings() {
+		setDebugLogging(Boolean.parseBoolean(config.getProperty("debug_logging", "false")) || Boolean.getBoolean("homeplanet.debug"));
+		launchThroughSteam = flag("launch_through_steam");
+		launchDirectX = flag("launch_directx");
+		storeRequirement = flag("store_requirement");
+		journeyStoreRequirement = flag("new_journey_store_requirement");
+		stripAllowed = flag("strip_when_scrapping");
+		removalFee = Economy.removalFee(config.getProperty("refit_removal_fee"));
+		journeyFee = Economy.journeyFee(config.getProperty("new_journey_fee"));
+		sellSupplies = flag("sell_supplies");
+		commissionUnlockedOnly = flag("commission_unlocked_only");
+		commissionCustomUnlockedOnly = flag("commission_custom_unlocked_only");
+		sellSystems = flag("sell_systems");
+		augmentsHome = flag("augments_home", true);
+		commissionCosts = flag("commission_costs_scrap");
+		commissionPercent = percent(config.getProperty("commission_price_percent"));
+		try { expeditionType = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("expedition_type", "2").trim()))); } catch (NumberFormatException e) { expeditionType = 2; }
+		if (expeditionType == 1) expeditionType = 2; // the old board of jobs went at 5.67 (heromedel): its setting reads as the crew expeditions
+		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
+		if ("variable".equals(freeShip)) freeShip = "kestrel"; // Variable (a ship by what a report surrendered) is no more
+		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
+		unlockFreeShips = flag("unlock_free_ships");
+		immersiveMode = flag("immersive_mode");
+		Vault.immersiveSlot = Vault.slotOf(config.getProperty("immersive_slot")); // which Immersive career (a fleet from before difficulties is Custom's)
+		immersiveNotifications = flag("immersive_notifications");
+		immersiveShipTrading = flag("immersive_ship_trading");
+		immersiveAnyLevel = flag("immersive_any_level", true);
+		longRangePopups = flag("long_range_popups", true);
+		careerMessages = flag("career_messages");
+		reputationOn = flag("reputation");
+		try { reputationUse = Math.max(1, Math.min(3, Integer.parseInt(config.getProperty("reputation_use", "1").trim()))); } catch (NumberFormatException e) { reputationUse = 1; }
+		try { reputationRate = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("reputation_rate", "0").trim()))); } catch (NumberFormatException e) { reputationRate = 0; }
+		try { homeplanet.parser.PlayerRank.setting = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty(homeplanet.parser.PlayerRank.CFG, "0").trim()))); } catch (NumberFormatException e) { homeplanet.parser.PlayerRank.setting = 0; }
+		finalVictory = config.getProperty("final_victory", "nothing");
+		finalVictoryPay = config.getProperty("final_victory_pay", "full");
+		rescuedToHard = Boolean.parseBoolean(config.getProperty("rescued_to_hard", "false"));
+		Music.enabled = Boolean.parseBoolean(config.getProperty("title_music", "true"));
+	}
+
+	/** The rest of the startup, once the settings, the folders and the fleet are in: Slipstream, FTL's data, the fleet's stock, the window. */
+	private static void startRest(final boolean chooseMode) {
 		// Slipstream, offered once before anything needs it (after the vault opens, so its log entry goes there).
 		// On the event thread: a file chooser opened from this thread comes up empty on Windows, and every later one with it.
 		final boolean[] offered = {false};
@@ -386,7 +399,6 @@ public class HomePlanet {
 		config.setProperty("new_journey_fee", Integer.toString(journeyFee));
 		config.setProperty("career_messages", Boolean.toString(careerMessages));
 		config.setProperty("reputation", Boolean.toString(reputationOn));
-		config.setProperty("reputation_use", Integer.toString(reputationUse));
 		config.setProperty("reputation_rate", Integer.toString(reputationRate));
 		config.setProperty(homeplanet.parser.PlayerRank.CFG, Integer.toString(homeplanet.parser.PlayerRank.setting));
 		config.setProperty("sell_supplies", Boolean.toString(sellSupplies));
@@ -409,16 +421,104 @@ public class HomePlanet {
 		config.setProperty("immersive_any_level", Boolean.toString(immersiveAnyLevel));
 		config.setProperty("long_range_popups", Boolean.toString(longRangePopups));
 		config.setProperty("title_music", Boolean.toString(Music.enabled));
+		// how reputation can be used is the fleet in use's (6.55): an Immersive career keeps its own, the cfg holds Sandbox Mode's
+		if (!Vault.isOpen() || !Vault.get().immersive) config.setProperty("reputation_use", Integer.toString(reputationUse));
+		else if (homeplanet.parser.Career.started(Vault.get().root)) {
+			try { homeplanet.parser.Career.setReputationUse(Vault.get().root, reputationUse); }
+			catch (IOException e) { log.warn("Could not keep how reputation can be used in {}: {}", Vault.get().root, e.toString()); }
+		}
+		// three files (6.55, heromedel): beside the program, where things are; in FTL's saves folder, the station's own
+		// settings; in Sandbox Mode's fleet, its rules. Each whole on its own, so a failed write leaves the others as they were
+		Properties here = new Properties(), station = new Properties(), sandbox = new Properties();
+		for (String k : config.stringPropertyNames()) {
+			String v = config.getProperty(k);
+			if (PATH_KEYS.contains(k)) { here.setProperty(k, v); station.setProperty(k, v); } // the saves folder's copy finds FTL for a new release folder
+			else if (SANDBOX_KEYS.contains(k)) sandbox.setProperty(k, v);
+			else station.setProperty(k, v);
+		}
+		File stationFile = stationFile(), rulesFile = sandboxRulesFile();
+		File failed = null;
 		try {
+			failed = propFile;
 			ByteArrayOutputStream buf = new ByteArrayOutputStream();
-			config.store(buf, APP_NAME + " - config file");
+			here.store(buf, APP_NAME + " - where things are (the station's settings are in FTL's saves folder: " + STATION_CFG + ")");
 			SafeFiles.write(propFile, buf.toByteArray(), false);
+			if (stationFile != null) {
+				failed = stationFile;
+				buf = new ByteArrayOutputStream();
+				station.store(buf, APP_NAME + " - the station's settings, the same for every career (Sandbox Mode's rules are in " + Vault.FOLDER + "/rules.xml)");
+				SafeFiles.write(stationFile, buf.toByteArray(), false);
+			}
+			if (rulesFile != null) {
+				failed = rulesFile;
+				Store.write(rulesFile, sandbox, "Sandbox Mode's rules: its House Rules and the rest Settings sets for it (an Immersive career's are in its own career.xml)");
+			}
 			return true;
 		} catch (IOException e) {
-			log.error("Error saving config to " + propFile.getPath(), e);
-			showErrorDialog("The Home Planet Station could not save its settings to " + propFile.getPath());
+			log.error("Error saving settings to " + failed.getPath(), e);
+			showErrorDialog("The Home Planet Station could not save its settings to " + failed.getPath());
 			return false;
 		}
+	}
+
+	/** The station's settings file in FTL's saves folder (6.55): the same for every career, found again by a new release folder. */
+	public static final String STATION_CFG = "federation-home-planet.cfg";
+	/** Where things are: the only lines kept beside the program (6.55, heromedel). */
+	static final java.util.List<String> PATH_KEYS = java.util.Arrays.asList("ftlDatsPath", "ftlSavePath", Slipstream.CFG_DIR);
+	/** Sandbox Mode's own rules (its House Rules and the rest Settings sets for it): kept in its fleet's rules.xml (6.55). */
+	static final java.util.List<String> SANDBOX_KEYS = java.util.Arrays.asList("store_requirement", "new_journey_store_requirement",
+			"strip_when_scrapping", "refit_removal_fee", "new_journey_fee", "career_messages", "reputation", "reputation_use", "reputation_rate",
+			homeplanet.parser.PlayerRank.CFG, "sell_supplies", "commission_unlocked_only", "commission_custom_unlocked_only", "sell_systems",
+			"augments_home", "commission_costs_scrap", "commission_price_percent", "expedition_type", "free_ship", "unlock_free_ships",
+			"final_victory", "final_victory_pay", "rescued_to_hard", "immersive_notifications");
+	/** The station's settings file, in FTL's saves folder (null until it's known). */
+	public static File stationFile() { return save_location == null ? null : new File(save_location, STATION_CFG); }
+	/** Sandbox Mode's rules, in its fleet's folder (null until the saves folder is known). */
+	public static File sandboxRulesFile() { return save_location == null ? null : Store.file(Vault.rootOf(save_location, Vault.SANDBOX), "rules"); }
+
+	/**
+	 * Reads the settings kept in FTL's saves folder over the ones beside the program: the station's file, then Sandbox
+	 * Mode's rules. A folder kept beside the program stays (this computer's), the rest is the saves folder's. False if
+	 * there were none there (a first start, or a cfg from before 6.55, whose lines move there on the next save).
+	 */
+	private static boolean loadSavesSettings() {
+		boolean any = false;
+		File f = stationFile();
+		if (f != null && f.isFile()) {
+			Properties p = new Properties();
+			InputStream in = null;
+			try {
+				in = new FileInputStream(f);
+				p.load(in);
+				any = true;
+			} catch (IOException e) {
+				log.error("Could not read " + f, e);
+				showErrorDialog("The Home Planet Station could not read its settings from " + f.getPath());
+			} finally {
+				try { if (in != null) in.close(); } catch (IOException e) { }
+			}
+			for (String k : p.stringPropertyNames()) if (!PATH_KEYS.contains(k) || config.getProperty(k) == null) config.setProperty(k, p.getProperty(k));
+		}
+		File r = sandboxRulesFile();
+		if (r != null && r.isFile()) {
+			Properties p = Store.read(r);
+			for (String k : p.stringPropertyNames()) config.setProperty(k, p.getProperty(k));
+			any = true;
+		}
+		return any;
+	}
+
+	/** Sandbox Mode's way reputation can be used (the cfg's), 1 to 3. */
+	public static int sandboxReputationUse() {
+		try { return Math.max(1, Math.min(3, Integer.parseInt(config.getProperty("reputation_use", "1").trim()))); } catch (NumberFormatException e) { return 1; }
+	}
+	/** How reputation can be used in this fleet: an Immersive career's own (6.55), else Sandbox Mode's (a career from before 6.55 shared it). */
+	public static int reputationUseOf(File fleetRoot, boolean immersive) {
+		return immersive ? homeplanet.parser.Career.reputationUse(fleetRoot, sandboxReputationUse()) : sandboxReputationUse();
+	}
+	/** A fleet has just been opened (at startup, or a switch of career): its own settings come into force. */
+	public static void fleetOpened(Vault v) {
+		reputationUse = reputationUseOf(v.root, v.immersive);
 	}
 
 	// ---- dialogs ----
@@ -491,6 +591,11 @@ public class HomePlanet {
 	public static boolean launchFTL() { return launchFTL(false); }
 	/** Starts FTL (true if it was started: the docked view waits for its window then); outside the dock, with the screen chosen in Settings (5.80). */
 	public static boolean launchFTL(boolean docked) {
+		// one FTL at a time (heromedel, 6.57): a second copy would play the same saves (the docked launch docks the one running instead)
+		if (!docked && GameGuard.isFtlRunning()) {
+			showNotice("FTL is running already. Switch to its window to play (Alt+Tab), or close it before launching it again.", "Launch FTL");
+			return false;
+		}
 		// a retrofitted ship can't load without the companion mod: don't let FTL try
 		File cont = new File(save_location, "continue.sav");
 		if (cont.exists()) {
@@ -591,7 +696,7 @@ public class HomePlanet {
 		if (found != null && confirmFound("files", found)) return found;
 		return promptForFtlPath();
 	}
-	/** FTL's saves folder: the one in the cfg, else where FTL keeps its saves (asked to confirm), else the player's choice. */
+	/** FTL's saves folder: the one in the cfg, else where FTL keeps its saves (asked to confirm, unless the station's own is there), else the player's choice. */
 	private static File savesFolder() {
 		File kept = keptFolder("ftlSavePath");
 		if (kept != null) return kept;
@@ -607,6 +712,8 @@ public class HomePlanet {
 		}
 		File found = null;
 		for (File dir : savesPlaces()) if (dir.isDirectory() && hasAny(dir, SAVE_FILES)) { found = dir; break; }
+		// the station's own (its settings or its fleet there): a new release folder takes it without asking (6.55, heromedel)
+		if (found != null && (new File(found, STATION_CFG).isFile() || new File(found, Vault.FOLDER).isDirectory())) return found;
 		if (found != null && confirmFound("saves", found)) return found;
 		return promptForSavePath();
 	}

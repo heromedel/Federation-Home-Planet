@@ -68,8 +68,16 @@ public class FtlButton extends JButton {
 		g.setColor(on ? LINE : DIM);
 		g.drawPolygon(p);
 		String label = getText().toUpperCase();
-		if (reserveRight > 0) label = font.fit(label, getWidth() - 2 * reserveRight);
-		BufferedImage t = font.render(label, hot ? TEXT_HOT : (on ? TEXT : DIM));
+		Color ink = hot ? TEXT_HOT : (on ? TEXT : DIM);
+		BufferedImage t;
+		if (reserveRight > 0) {
+			t = font.render(font.fit(label, getWidth() - 2 * reserveRight), ink);
+		} else {
+			// a label that would touch the outline is drawn with its letters a touch closer, never cut unless it still won't fit (heromedel, 6.58: "Switch to FTL")
+			int room = getWidth() - 8;
+			t = font.render(label, ink);
+			if (t.getWidth() > room) t = font.render(font.fit(label, room, 1), ink, 1);
+		}
 		g.drawImage(t, (getWidth() - t.getWidth()) / 2, (getHeight() - t.getHeight()) / 2 + 1, null);
 		g.dispose();
 	}

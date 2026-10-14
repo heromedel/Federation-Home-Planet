@@ -228,6 +228,41 @@ public class RepuT {
   Setup.chk("O: re-evaluated: the new score, one entry saying what it changed (" + Reputation.recent(v, 1).get(0).trim() + ")", Reputation.total(v) == re.reevaluated && Reputation.recent(v, 1).get(0).contains("Records updated (+") && Reputation.offer(v) == null);
   t = Reputation.tally(v); sum = 0; for (int x : t.values()) sum += x;
   Setup.chk("O: the tally still adds up to the total " + t, sum == Reputation.total(v));
+  // 6.54 (heromedel): an old entry re-scored at the difficulty she flew when she earned it, not the one she flies now
+  Setup.chk("C: a re-evaluation that was right: nothing to correct, never looked at again", Reputation.correct(v) == null && "6.54".equals(Store.read(Store.file(v.root, "reputation")).getProperty("corrected")) && Reputation.correct(v) == null);
+  Ship vh = v.boarded();
+  SavedGameState was = v.readCopy(vh).save;
+  net.blerf.ftl.constants.Difficulty wasDiff = was.getDifficulty();
+  was.setDifficulty(net.blerf.ftl.constants.Difficulty.EASY);
+  File victoryCopy = new File(ShipStore.versions(v.folderOf(vh)), "victory-20991231-000000.sav"); // her victory, kept after the entry: Easy
+  SaveHelper.writeSavedGame(victoryCopy, was);
+  g = v.readCopy(vh).save; g.setDifficulty(net.blerf.ftl.constants.Difficulty.HARD); v.write(vh, g); // rescued, moved to Hard: the station's change, not scored
+  g = cont(v); ftl(v, g);
+  Thread.sleep(1100); // her versions kept in this second are before the entry, not after it
+  pr = Store.read(Store.file(v.root, "reputation")); pr.remove("rated"); pr.remove("reevaluated"); pr.remove("corrected");
+  pr.setProperty("total", Integer.toString(Store.num(pr, "total", 0) + 6)); Store.write(Store.file(v.root, "reputation"), pr, null);
+  EventLog.write(v, Event.of("REPUTATION").put("log", "reputation").put("reason", "voyage").put("points", 6).put("why", vh.name + ": sector 5 reached (+6)").human(vh.name + ": sector 5 reached (+6)")); // earned on Easy, before 6.13
+  cur = Reputation.total(v);
+  re = Reputation.offer(v);
+  Setup.chk("H: moved to Hard after her victory, her old sector 5 (+6) re-scored as Easy: 8.4, not 12.6; Old Timer's re-scored again here, 2.4 more (" + (re == null ? "none" : re.current + " -> " + re.reevaluated) + ")", re != null && re.reevaluated >= cur + 4 && re.reevaluated <= cur + 5);
+  java.lang.reflect.Constructor<Reputation.Reevaluation> rk = Reputation.Reevaluation.class.getDeclaredConstructor(int.class, long.class); rk.setAccessible(true);
+  java.lang.reflect.Field ru = Reputation.Reevaluation.class.getDeclaredField("units"); ru.setAccessible(true);
+  Reputation.answer(v, rk.newInstance(cur, (Long) ru.get(re) + 42000), true); // as 6.19 to 6.53 did it: at Hard, 12.6 for the +6, 4.2 more
+  int wrongTotal = Reputation.total(v);
+  Reputation.ransomed(v, "Dune"); // earned since: kept
+  int beforeFix = Reputation.total(v);
+  Integer spent0 = Reputation.tally(v).get("Spent");
+  Reputation.Correction rc = Reputation.correct(v);
+  String fixLine = Reputation.recent(v, 1).get(0);
+  Setup.chk("H: the wrong re-evaluation (+" + (wrongTotal - cur) + ") corrected once: 4.2 taken away, the ransom since kept (" + (rc == null ? "none" : rc.was + " -> " + rc.now) + ", " + fixLine.trim() + ")",
+    rc != null && rc.was == beforeFix && (rc.now == beforeFix - 4 || rc.now == beforeFix - 5) && Reputation.total(v) == rc.now && fixLine.contains("Records corrected (\u2212") && Reputation.correct(v) == null);
+  ev = new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8");
+  Setup.chk("H: its machine line says what it corrects", ev.contains("reason=records") && ev.contains("corrects=") && ev.contains("reevaluated_was=") && ev.contains("reevaluated_now="));
+  t = Reputation.tally(v); sum = 0; for (int x : t.values()) sum += x;
+  Setup.chk("H: the tally still adds up to the total, the correction under Other " + t, sum == Reputation.total(v) && java.util.Objects.equals(t.get("Spent"), spent0));
+  victoryCopy.delete();
+  g = v.readCopy(vh).save; g.setDifficulty(wasDiff); v.write(vh, g);
+  g = cont(v); ftl(v, g);
   // 6.21 (heromedel): responding to a distress signal, +1 earned in FTL, once an arrival; its own line in her voyage log, before what she met there
   g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.getEncounter().setText("event_DISTRESS_SATELLITE_DEFENSE_text");
   g.setNearbyShip(Commission.build("REBEL_FAT", "Rebel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1)).getPlayerShip()); g.setNearbyShipAI(new NearbyShipAIState()); g.setUnknownXi(0);
