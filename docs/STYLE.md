@@ -114,6 +114,10 @@ success, a very good and an outstanding one, in gold before the line ("was succe
 longer written). The crew member's name is bold wherever it falls (`{name}` in the line), so a line is a whole sentence
 told whichever way reads best. The killed, the hurt and the taken get no mark: their lines already say it.
 
+**A life saved (heromedel, 6.61):** with the infirmary on, a crewmate's outstanding success (★★★) can save one who'd have
+died. The rescue takes the place of the death line (`kind="saved"`, {name} the one saved, {saver} the crewmate), and
+every one says they were badly hurt and where they are now: "alive" alone leaves the player asking in what state.
+
 **Writing them (heromedel):**
 
 - **Whoever acts is the subject.** When the crew member did it, they lead: "Kenji cut through the wreckage blocking the

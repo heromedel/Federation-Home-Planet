@@ -158,6 +158,12 @@ public class RuleBoxes {
 	private final JPanel rateRow = row(22);
 	private final JLabel rateLabel = new JLabel("Reputation earned:  ");
 	final JComboBox<String> rateBox = new JComboBox<String>(homeplanet.vault.Reputation.RATE_WORDS);
+	/** The infirmary (heromedel, 6.61): the fleet in use's, never locked; the briefing shows the same words. */
+	static final String INFIRMARY_LABEL = "Infirmary: on an expedition, a crewmate's outstanding success can save a life";
+	static final String INFIRMARY_TIP = "<html>On expeditions sent from The Home Planet Station, a crew member who would have been killed may be saved by a crewmate who had an outstanding success (\u2605\u2605\u2605)."
+			+ "<br>The one saved is laid up in the infirmary for a while and loses a level in one skill."
+			+ "<br>Off: no one is saved from death, and the badly injured come home injured as usual.</html>";
+	final JCheckBox infirmaryBox = new JCheckBox(INFIRMARY_LABEL, HomePlanet.infirmary);
 	final JCheckBox unlockBox = new JCheckBox("Each ship unlocked in FTL from now on can be commissioned free, once", HomePlanet.unlockFreeShips);
 
 	/** The rules Immersive Mode sets, with their own tooltips (shown again when it's off). */
@@ -260,6 +266,7 @@ public class RuleBoxes {
 		ranksBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) {
 			if (ranksBox.isEnabled() && ranksBox.getSelectedIndex() == 0 && !repBox.isSelected()) ranksBox.setSelectedIndex(1); // needs Reputation
 		} });
+		infirmaryBox.setToolTipText(INFIRMARY_TIP);
 		unlockBox.setToolTipText("Only ships unlocked after this is turned on count, each layout (A, B, C) once. A plea for a new ship doesn't reset it");
 		unlockBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		for (int i = 0; i < locked.length; i++) tips[i] = locked[i].getToolTipText();
@@ -396,7 +403,8 @@ public class RuleBoxes {
 				"The Federation Home Planet", notifyBox, careerBox, repBox, repUseRow, rateRow, ranksRow,
 				"Journeys and trading", tradeBox, journeyBox, journeyFeeRow, augmentBox,
 				"Refit, scrapping and selling", removalRow, scrapBox, sellBox, sellSystemsBox,
-				"Shipyard", lockedBox, customLockedBox, costRow, freeRow, unlockBox};
+				"Shipyard", lockedBox, customLockedBox, costRow, freeRow, unlockBox,
+				"Expeditions", infirmaryBox};
 		for (Object r : rows) {
 			if (r == immersiveRow && !withImmersive) continue;
 			JComponent b = r instanceof String ? group((String) r, c.gridy > 0) : (JComponent) r;
@@ -416,6 +424,7 @@ public class RuleBoxes {
 	/** What apply() would change, for the history log. */
 	public void describeChanges(java.util.List<String> changed) {
 		if (repUseBox.getSelectedIndex() + 1 != HomePlanet.reputationUse) changed.add("How Reputation Can be Used: " + repUseBox.getSelectedItem());
+		if (infirmaryBox.isSelected() != HomePlanet.infirmary) changed.add("Infirmary: " + (infirmaryBox.isSelected() ? "on" : "off"));
 		if (!HomePlanet.immersiveMode && ranksBox.getSelectedIndex() != homeplanet.parser.PlayerRank.setting) changed.add("Ranks: " + ranksBox.getSelectedItem());
 		if (!HomePlanet.immersiveMode) { // (in Immersive Mode the locked boxes show the career's rules; the player's own don't change)
 			if (tradeBox.isSelected() != HomePlanet.storeRequirement) changed.add("Trading requires a station: " + tradeBox.isSelected());
@@ -447,6 +456,7 @@ public class RuleBoxes {
 		if (!HomePlanet.immersiveMode) HomePlanet.reputationOn = repBox.isSelected();
 		if (!HomePlanet.immersiveMode) HomePlanet.reputationRate = rateBox.getSelectedIndex(); // Sandbox Mode's own (6.13)
 		HomePlanet.reputationUse = repUseBox.getSelectedIndex() + 1; // any mode
+		HomePlanet.infirmary = infirmaryBox.isSelected(); // any mode: the fleet in use's
 		if (!HomePlanet.immersiveMode) homeplanet.parser.PlayerRank.setting = ranksBox.getSelectedIndex(); // (Immersive Mode is always Ranks From Rep)
 		if (!HomePlanet.immersiveMode) { // (Immersive Mode's own rules are set by it; the button switched it already)
 			HomePlanet.storeRequirement = tradeBox.isSelected();

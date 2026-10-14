@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.60";
+	public static final String APP_VERSION = "6.61";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -106,6 +106,12 @@ public class HomePlanet {
 	 * Actions (and 1), 3 Only as a score. Wherever it can't be used, scrap pays. Default 1.
 	 */
 	public static int reputationUse = 1;
+	/**
+	 * The infirmary (heromedel, 6.61): on an expedition a crewmate's outstanding success can save a life, and the badly
+	 * hurt are laid up for a while, a level lost. The fleet in use's: Sandbox Mode's in its rules (off unless chosen), an
+	 * Immersive career's in its career file (on unless chosen, and never locked).
+	 */
+	public static boolean infirmary = false;
 	/** Sandbox Mode's reputation rate (heromedel, 6.13): 0 x1, 1 x1.5, 2 x2; changeable in Settings. A career's is its difficulty's (vault.Reputation.rateLevel). */
 	public static int reputationRate = 0;
 	/** The normal fleet's choice after a final victory: nothing, rescue (Choice) or museum; reward before 6.47 (see parser.FinalVictory; the Immersive fleet's is in its career). */
@@ -275,6 +281,7 @@ public class HomePlanet {
 		immersiveAnyLevel = flag("immersive_any_level", true);
 		longRangePopups = flag("long_range_popups", true);
 		careerMessages = flag("career_messages");
+		infirmary = flag("infirmary"); // Sandbox Mode's; an Immersive career's comes in with its fleet (fleetOpened)
 		reputationOn = flag("reputation");
 		try { reputationUse = Math.max(1, Math.min(3, Integer.parseInt(config.getProperty("reputation_use", "1").trim()))); } catch (NumberFormatException e) { reputationUse = 1; }
 		try { reputationRate = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("reputation_rate", "0").trim()))); } catch (NumberFormatException e) { reputationRate = 0; }
@@ -427,6 +434,12 @@ public class HomePlanet {
 			try { homeplanet.parser.Career.setReputationUse(Vault.get().root, reputationUse); }
 			catch (IOException e) { log.warn("Could not keep how reputation can be used in {}: {}", Vault.get().root, e.toString()); }
 		}
+		// the infirmary, the same way (6.61)
+		if (!Vault.isOpen() || !Vault.get().immersive) config.setProperty("infirmary", Boolean.toString(infirmary));
+		else if (homeplanet.parser.Career.started(Vault.get().root)) {
+			try { homeplanet.parser.Career.setInfirmary(Vault.get().root, infirmary); }
+			catch (IOException e) { log.warn("Could not keep the infirmary's setting in {}: {}", Vault.get().root, e.toString()); }
+		}
 		// three files (6.55, heromedel): beside the program, where things are; in FTL's saves folder, the station's own
 		// settings; in Sandbox Mode's fleet, its rules. Each whole on its own, so a failed write leaves the others as they were
 		Properties here = new Properties(), station = new Properties(), sandbox = new Properties();
@@ -467,7 +480,7 @@ public class HomePlanet {
 	static final java.util.List<String> PATH_KEYS = java.util.Arrays.asList("ftlDatsPath", "ftlSavePath", Slipstream.CFG_DIR);
 	/** Sandbox Mode's own rules (its House Rules and the rest Settings sets for it): kept in its fleet's rules.xml (6.55). */
 	static final java.util.List<String> SANDBOX_KEYS = java.util.Arrays.asList("store_requirement", "new_journey_store_requirement",
-			"strip_when_scrapping", "refit_removal_fee", "new_journey_fee", "career_messages", "reputation", "reputation_use", "reputation_rate",
+			"strip_when_scrapping", "refit_removal_fee", "new_journey_fee", "career_messages", "reputation", "reputation_use", "reputation_rate", "infirmary",
 			homeplanet.parser.PlayerRank.CFG, "sell_supplies", "commission_unlocked_only", "commission_custom_unlocked_only", "sell_systems",
 			"augments_home", "commission_costs_scrap", "commission_price_percent", "expedition_type", "free_ship", "unlock_free_ships",
 			"final_victory", "final_victory_pay", "rescued_to_hard", "immersive_notifications");
@@ -516,9 +529,16 @@ public class HomePlanet {
 	public static int reputationUseOf(File fleetRoot, boolean immersive) {
 		return immersive ? homeplanet.parser.Career.reputationUse(fleetRoot, sandboxReputationUse()) : sandboxReputationUse();
 	}
+	/** Sandbox Mode's infirmary (its rules'): off unless chosen. */
+	public static boolean sandboxInfirmary() { return Boolean.parseBoolean(config.getProperty("infirmary", "false").trim()); }
+	/** The infirmary in this fleet: an Immersive career's own (on unless chosen; 6.61), else Sandbox Mode's. */
+	public static boolean infirmaryOf(File fleetRoot, boolean immersive) {
+		return immersive ? homeplanet.parser.Career.infirmary(fleetRoot, true) : sandboxInfirmary();
+	}
 	/** A fleet has just been opened (at startup, or a switch of career): its own settings come into force. */
 	public static void fleetOpened(Vault v) {
 		reputationUse = reputationUseOf(v.root, v.immersive);
+		infirmary = infirmaryOf(v.root, v.immersive);
 	}
 
 	// ---- dialogs ----

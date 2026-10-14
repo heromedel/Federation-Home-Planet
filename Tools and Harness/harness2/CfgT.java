@@ -85,6 +85,20 @@ public class CfgT {
   Setup.chk("R: in the career again: 1", HomePlanet.reputationUse == 1);
   Vault.switchFleet(Vault.SANDBOX); HomePlanet.immersiveMode = false;
   Setup.chk("R: a career from before 6.55 (no choice of its own) has Sandbox Mode's, as it shared it", HomePlanet.reputationUseOf(Vault.rootOf(saves, Vault.HARD), true) == 3);
+
+  // N: the infirmary (heromedel, 6.61), each fleet its own: Sandbox Mode's off unless chosen, a career's on unless chosen
+  Setup.chk("N: Sandbox Mode's infirmary is off unless chosen", !HomePlanet.infirmary);
+  HomePlanet.infirmary = true; HomePlanet.saveConfig();
+  Setup.chk("N: Sandbox Mode's choice is kept in its rules (rules.xml)", "true".equals(props(HomePlanet.sandboxRulesFile()).getProperty("infirmary")));
+  Vault.switchFleet(Vault.NORMAL); HomePlanet.immersiveMode = true;
+  Setup.chk("N: a career that never chose has it on", HomePlanet.infirmary);
+  HomePlanet.infirmary = false; HomePlanet.saveConfig();
+  Setup.chk("N: the career keeps its own off (career.xml), Sandbox Mode's stays on", !Career.infirmary(imm.root, true) && "true".equals(props(HomePlanet.sandboxRulesFile()).getProperty("infirmary")));
+  Vault.switchFleet(Vault.SANDBOX); HomePlanet.immersiveMode = false;
+  Setup.chk("N: back in Sandbox Mode: on", HomePlanet.infirmary);
+  Vault.switchFleet(Vault.NORMAL); HomePlanet.immersiveMode = true;
+  Setup.chk("N: in the career again: off", !HomePlanet.infirmary);
+  Vault.switchFleet(Vault.SANDBOX); HomePlanet.immersiveMode = false;
   Setup.done();
  }
 }

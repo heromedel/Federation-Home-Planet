@@ -671,9 +671,17 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
     in the infirmary can't be moved onto a ship, offered over the Long Range, or renamed (the infirmary knows them by
     name) until they're out; one who leaves the Cargo Hold anyway (retired) is let go quietly when their time is up.
   - A crew member in the Cargo Hold hurt in the game is healed once a beacon has passed (a station heals fast), at
-    no cost. The infirmary costs a point of skill for each beacon laid up, taken from a random skill they have points
-    in; a point that crosses a level's line takes the level with it (rusty after a long lay-up). Not whole levels:
-    heromedel judged that too harsh with a hurt one trip in three.
+    no cost. The infirmary costs a whole level, taken once from one random skill they hold, when they come home
+    (heromedel, 6.61). Until then it was a point of skill for each beacon laid up: whole levels had been judged too
+    harsh with a hurt one trip in three, but the crew expeditions lay someone up rarely (about 1 crew member in 350
+    sent), so a level is a fair price for nearly dying.
+  - The infirmary is a setting (heromedel, 6.61; Settings, Rules, Expeditions, and the House Rules and the briefing):
+    Sandbox Mode's off unless chosen, an Immersive career's on unless chosen, never locked. With it on, a death on an
+    expedition may be saved by a crewmate who had an outstanding success (the top band, a natural 20) and hasn't saved
+    anyone yet that trip: they roll a d20 with their role's skill, and 10 or more lays the one saved up in the infirmary
+    instead (about 5% fewer deaths; a ★★ rescuer would have been about 22%, judged too many). With it off, no one is
+    saved, and the rare badly hurt come home hurt as usual. The rescue lines are `kind="saved"` in expeditions.xml.
+    Later (heromedel): raise the deaths again, perhaps with more clone bay results.
   - `clone 1`: an outcome where the crew member dies and the hiring ship's clone bay brings them back, a level down in
     every skill they held (FTL's clone bay price), the run's experience gone with it; used where the hiring ship could
     have one (the pilot's freighter, the liner). It counts as a hurt: its weight comes out of the hurt's share, never

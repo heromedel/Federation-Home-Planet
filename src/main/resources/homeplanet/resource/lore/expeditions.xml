@@ -30,6 +30,8 @@
        kind="captured" captors       {name} taken on Get Boarded (a ransom letter always follows); captors are
                                      slavers, pirates, rebels or mantis, the same who sign the ransom letter
        kind="infirmary"              {name} badly hurt: in the infirmary a while (both whole sentences since 6.41)
+       kind="saved" job              {name} saved from death by {saver}, a crewmate's outstanding success (6.61, with
+                                     the infirmary on): a whole sentence that says they were badly hurt and are laid up
        kind="offer" sector           the card on the board for a sector; several per sector
        kind="shrug" hazard race      after a crew member's line when their race shrugged the hazard off (not for the
                                      dead, the taken, the infirmary or the injured)
@@ -1542,6 +1544,58 @@
 	<line kind="band" job="negotiate" band="success" skill="pilot" sector="engi">The Engi answered every offer with a counter offer, and {name} answered every counter offer with patience.</line>
 	<line kind="band" job="negotiate" band="high" skill="pilot" sector="zoltan">The Zoltan only deal with those who come unarmed, so {name} left every weapon on the ship and won them over anyway.</line>
 	<line kind="band" job="negotiate" band="failed" skill="combat" sector="rebel">One of the rebels made a remark about the Federation, and {name} answered it with {his} fists.</line>
+
+	<!-- Lives saved (heromedel and McCarthy, 6.61): with the infirmary on, a crewmate's outstanding success (the top band) can
+	     save one who'd have died. The line takes the place of the death: {name} the one saved (and {he}, {him}, {his}),
+	     {saver} the crewmate who saved them; each says they were badly hurt and where they are now. -->
+	<line kind="saved" job="defend">When a raider's volley tore through {name}'s section, {saver} ran in and pulled {him} clear before the next one landed. {name} is badly burned and will be in the infirmary a while.</line>
+	<line kind="saved" job="defend">The boarders had {name} down in the corridor until {saver} drove them back and carried {him} to the infirmary.</line>
+	<line kind="saved" job="defend">{saver} sealed the breach with {name} still breathing on the right side of it, though {he} was hurt badly enough to need the infirmary.</line>
+	<line kind="saved" job="attack">An enemy shot found {name}'s station, but {saver} got {him} out of the fire and kept {him} alive until the fight was over. {He} came home to the infirmary.</line>
+	<line kind="saved" job="attack">The enemy's first volley left {name} pinned under a fallen panel. {saver} lifted it off between shots, and {name} is in the infirmary with a crushed leg.</line>
+	<line kind="saved" job="attack">When fire spread through {name}'s compartment, {saver} vented it and went in after {him}. {name} lived, but the burns will keep {him} in the infirmary for some time.</line>
+	<line kind="saved" job="negotiate">The talks turned violent, and {saver} threw {name} behind the table as the shooting started. {He} took a wound that will keep {him} in the infirmary a while, but {he} lived.</line>
+	<line kind="saved" job="negotiate">Someone at the table drew a knife on {name}. {saver} got between them before it went deep enough to kill, and {name} is recovering in the infirmary.</line>
+	<line kind="saved" job="negotiate">When the talks broke down into shooting, {saver} carried a wounded {name} back to the ship, where the infirmary took over.</line>
+	<line kind="saved" job="boarded">The boarders cut {name} down outside the bridge, and {saver} held them off over {him} until help came. {He} is in the infirmary now.</line>
+	<line kind="saved" job="boarded">{saver} found {name} bleeding in the corridor and got {him} to the infirmary before the fighting was over.</line>
+	<line kind="saved" job="boarded">With the boarders closing on a wounded {name}, {saver} drove them back through the door and sealed it. {name} is alive, laid up in the infirmary.</line>
+	<line kind="saved" job="rescue">{name} went back in for one more survivor and was trapped when the ceiling came down. {saver} dug {him} out, and {he} came home on a stretcher to the infirmary.</line>
+	<line kind="saved" job="rescue">The smoke took {name} halfway through the rescue. {saver} carried {him} out with the last of the survivors, and {he} has been in the infirmary since.</line>
+	<line kind="saved" job="rescue">When the floor gave way under {name}, {saver} caught {his} arm and hauled {him} back up. {He} was badly hurt in the fall and is in the infirmary.</line>
+	<line kind="saved" job="salvage">A bulkhead gave way on {name}. {saver} cut {him} free of it, and {name} is in the infirmary with the injuries it left.</line>
+	<line kind="saved" job="salvage">The wreck's reactor woke up with {name} beside it, and {saver} dragged {him} out of the room before it blew. {name} took the worst of the heat and is in the infirmary.</line>
+	<line kind="saved" job="salvage">{name} was caught in a section losing its air until {saver} forced the door and pulled {him} through, barely conscious. The infirmary has {him} now.</line>
+	<line kind="saved" job="scout">The shuttle was spotted and {name} was hit in the shooting. {saver} flew them out with {name} bleeding in the back and got {him} to the infirmary alive.</line>
+	<line kind="saved" job="scout">An enemy patrol caught the shuttle in the open. {saver} took the controls from a badly wounded {name} and outran them, and {name} went straight to the infirmary.</line>
+	<line kind="saved" job="scout">When the shuttle was ambushed, {saver} kept pressure on {name}'s wound the whole way home. {He} will be in the infirmary a while.</line>
+	<line kind="saved" job="repair">The reactor flared while {name} was working on it. {saver} shut it down and pulled {him} clear, and {name} is in the infirmary with bad burns.</line>
+	<line kind="saved" job="repair">A conduit {name} was working on went live, and {saver} cut the power before it could kill {him}. The shock put {him} in the infirmary.</line>
+	<line kind="saved" job="repair">{saver} found {name} unconscious in a flooding compartment and got {him} out before the air ran out. {He} is recovering in the infirmary.</line>
+	<line kind="saved" job="transport">Raiders caught them between stops and {name} was hit in the fight. {saver} kept {him} alive in the hold until the run was over, and {he} went to the infirmary when they docked.</line>
+	<line kind="saved" job="transport">When the ship was hit partway through the run, {name} was thrown against a bulkhead. {saver} kept {him} breathing until they docked, and the infirmary has {him} now.</line>
+	<line kind="saved" job="transport">{saver} pulled {name} out of a burning compartment, and {name} spent the rest of the run in the medbay. {He} is in the infirmary now.</line>
+	<line kind="saved" job="lost">{name} was nearly lost for good, but {saver} went looking and found {him} barely conscious. {He} is in the infirmary.</line>
+	<line kind="saved" job="lost">{saver} carried {name} the last stretch home when {he} couldn't walk any further. {He} went straight to the infirmary.</line>
+	<line kind="saved" job="lost">By the time the way home was found, {name} could barely stand. {saver} brought {him} the rest of the way, and the infirmary will have {him} for a while.</line>
+	<line kind="saved" job="escort">{name} drew the raiders' fire away from their charge and was badly hit. {saver} pulled {him} out of the wreckage once the raiders broke off, and {he} is in the infirmary.</line>
+	<line kind="saved" job="escort">{saver} got {name} out of a burning compartment while the raiders were still firing. {name} lived, though {he}'ll be in the infirmary for some time.</line>
+	<line kind="saved" job="escort">When the raiders hit {name}'s station, {saver} put out the fire around {him} and carried {him} clear. {He} came home to the infirmary.</line>
+	<line kind="saved" job="capture">The quarry turned and fought, and {name} went down badly wounded. {saver} finished the job and got {him} back to the infirmary alive.</line>
+	<line kind="saved" job="capture">{saver} pulled {name} out of the line of fire when the quarry fought back, but not before {he} was hit. {He} is in the infirmary.</line>
+	<line kind="saved" job="capture">{name} took a bad wound in the capture, and only {saver}'s quick work kept {him} alive long enough to reach the infirmary.</line>
+	<line kind="saved" job="board">{name} went down in the fighting for the engine room. {saver} dragged {him} back across the airlock, and {he} is in the infirmary.</line>
+	<line kind="saved" job="board">The enemy crew had {name} cornered and badly hurt by the time {saver} cut through to {him}. {He} is recovering in the infirmary.</line>
+	<line kind="saved" job="board">{saver} carried a wounded {name} back across the airlock with the enemy still firing down the corridor. The infirmary has {him} now.</line>
+	<line kind="saved" job="hijack">A security drone in the docking bay had {name} down until {saver} shot it apart. {name} is in the infirmary.</line>
+	<line kind="saved" job="hijack">{name} was hit before the ship was clear, and {saver} carried {him} the rest of the way. {He} lived, and is laid up in the infirmary.</line>
+	<line kind="saved" job="hijack">The ship's crew caught {name} alone and left {him} badly hurt. {saver} got there in time and brought {him} out, and {he} is in the infirmary.</line>
+	<line kind="saved" job="infection">{name} caught the infection, and {saver} kept {him} alive with what the medbay had until a cure was found. {He} is still weak, and in the infirmary.</line>
+	<line kind="saved" job="infection">The sickness nearly took {name}. {saver} sat up with {him} through the worst of it and brought the fever down, and {he} is in the infirmary to recover.</line>
+	<line kind="saved" job="infection">{saver} got {name} into quarantine in time, and {he} pulled through. {He} will be in the infirmary a while yet.</line>
+	<line kind="saved" job="spiders">The spiders had {name} pinned in a vent until {saver} burned them back and pulled {him} out, badly bitten. {He} is in the infirmary.</line>
+	<line kind="saved" job="spiders">{saver} cut {name} free of the webs before the spiders came back for {him}. The bites will keep {him} in the infirmary a while.</line>
+	<line kind="saved" job="spiders">The spiders came out of the walls and caught {name}. {saver} fought them off and carried {him} out of there, and {he} is in the infirmary.</line>
 
 	<!-- The roles a job hands out (heromedel and McCarthy, 6.39): its primary skill, two secondaries, and the skills that
 	     have nothing to do in it (na). The rest are its "other" skills, for anyone left over. Skills: pilot engines
