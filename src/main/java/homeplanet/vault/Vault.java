@@ -272,7 +272,11 @@ public final class Vault {
 	public File fileOf(Ship s) {
 		switch (s.state) {
 			case BOARDED: return continueFile();
-			case STORAGE: homeplanet.convert.OldFleet.holdReady(this); return new File(cargoHoldDir(), HOLD_FILE);
+			case STORAGE:
+				// the conversion check takes the fleet's lock, and this runs under the hold's (Ship.save): only when an old save waits, so
+				// a fleet on 6.x never takes the two the wrong way round against a deposit holding the fleet's (6.61, a deadlock Oddity found)
+				if (homeplanet.convert.OldFleet.holdWaiting(this) != null) homeplanet.convert.OldFleet.holdReady(this);
+				return new File(cargoHoldDir(), HOLD_FILE);
 			default: return ShipStore.sav(folderOf(s));
 		}
 	}
