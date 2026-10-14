@@ -37,7 +37,29 @@ public class HoldT { public static void main(String[] a) throws Exception {
  List<File> kept = v.history(v.storage());
  boolean allXml = !kept.isEmpty(); for (File k : kept) allXml &= k.getName().endsWith(".xml") && HoldXml.isHold(k);
  Setup.chk("C: its earlier versions kept as xml (" + kept.size() + "), the newest the one before the last change", allXml && HoldXml.read(kept.get(kept.size() - 1)).getPlayerShip().getScrapAmt() == 601);
+ // D (6.61): reading the hold (its lock held) while another thread deposits (the fleet's lock held, waiting for the hold's):
+ // finding the hold's file must not want the fleet's lock, or the two wait on each other for good
+ final Vault fv = v; final Ship hold = v.storage(); final boolean[] found = {false}; final Throwable[] err = {null};
+ final java.util.concurrent.CountDownLatch holding = new java.util.concurrent.CountDownLatch(1);
+ final Thread depositor = new Thread(new Runnable() { public void run() {
+  try { holding.await(); fv.depositToStorage(1); } catch (Throwable t) { err[0] = t; }
+ } }, "hold-deposit");
+ Thread reader = new Thread(new Runnable() { public void run() {
+  synchronized (hold) { // as Ship.save() holds it
+   holding.countDown();
+   long until = System.currentTimeMillis() + 5000;
+   while (depositor.getState() != Thread.State.BLOCKED && System.currentTimeMillis() < until) { try { Thread.sleep(10); } catch (InterruptedException ie) { return; } }
+   hold.file(); // what Ship.save() does first
+   found[0] = true;
+  }
+ } }, "hold-read");
+ depositor.setDaemon(true); reader.setDaemon(true);
+ depositor.start(); reader.start();
+ reader.join(10000); depositor.join(10000);
+ Setup.chk("D: the hold read while a deposit waits for it: no deadlock (read done " + found[0] + ", deposit done " + !depositor.isAlive() + (err[0] == null ? "" : ", " + err[0]) + ")",
+   found[0] && !depositor.isAlive() && err[0] == null);
  Setup.done();
+ System.exit(0); // a deadlocked pair, if any, would keep the run alive
 }
  /** What a hold holds, in one line: supplies, the ids of its goods, every crew member's FTL bytes. */
  static String picture(SavedGameState gs) throws IOException {
