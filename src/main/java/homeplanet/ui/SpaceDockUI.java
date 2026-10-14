@@ -1228,9 +1228,10 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** heromedel's words (6.60) when FTL is running full screen and can't be docked as it is. */
 	static final String FULL_SCREEN_FTL = "FTL is currently launched in full screen. Below are the different methods to make it available as docked instead.\n\n"
 			+ "You can change its settings in game but it may ask you to restart it.\n"
-			+ "You can relaunch it through The Station after turning off Launch in Full screen in the settings and then redock it.\n"
+			+ "You can relaunch it through The Station after setting Undocked launches' Fullscreen to Off in the Settings and then redock it.\n"
 			+ "You could close it and launch it docked by clicking the Icon next to Launch FTL.\n"
-			+ "Or right now The Station could close it for you and relaunch it in docked mode.";
+			+ "Or right now The Station could close it for you and relaunch it in docked mode.\n\n"
+			+ "Anything FTL did not or does not save on its own may be lost.";
 	/** FTL full screen, so not docked (heromedel, 6.60): OK leaves it running as it is; the station can close it, and launch it again docked. */
 	private void fullScreenFtl() {
 		Object[] options = {"OK", "Close FTL", "Close and Relaunch, Docked"};
