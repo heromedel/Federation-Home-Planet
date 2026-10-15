@@ -127,7 +127,8 @@ reevaluated, and no longer needing the stripped code?"
 - `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
   `Current Build\`).
 - `Build A Release.bat` (6.51): builds through the Build .bat's `build` mode, then makes `Release\Federation Home Planet <version>\`
-  (the jar, the Interface, LICENSE, CREDITS.md, README.md) and its zip; in a clone it tags the commit `release-<version>` locally
+  (the jar, the Interface, and as .txt for Notepad: the players' readme `docs/README for players.txt`, LICENSE, CREDITS without
+  its Markdown marks) and its zip; in a clone it tags the commit `release-<version>` locally
   (heromedel, 6.62: never pushed; git from the PATH or GitHub Desktop's own copy; none in a zip download, so no tag). The Interface finds Java (`java\` beside it, `..\tools\jdk`,
   JAVA_HOME, the PATH, Program Files) or offers a portable Java runtime in `java\` or Adoptium's installer.
 
