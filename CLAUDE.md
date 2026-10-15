@@ -44,7 +44,7 @@ it does and CREDITS.md for where the code came from.
   `main` (a pull request or their own merge).
 - Do not make a pull requst without double checking. Hero prefers simple merges.
 - **The public release branch (heromedel, 6.60):** never catch up to, merge from or copy from
-  `claude/optimistic-mccarthy-jk2qyg`. It is the stripped public release (code for play testers coming from older
+  `Cloud-C-Jar-Stripped-Odditys`. It is the stripped public release (code for play testers coming from older
   versions removed), and only heromedel decides when it goes anywhere.
 - heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build The Federation Home Planet Station.bat`.
   They know how to fetch and build: don't repeat test steps after each commit. Mention what to test only when it's
