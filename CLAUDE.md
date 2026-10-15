@@ -12,6 +12,10 @@ Reassignment, repairs for old bugs, readers of old file shapes). Don't add any o
 `main` on your own: if heromedel asks for that merge, first ask them "Are all the old play testers converted and
 reevaluated, and no longer needing the stripped code?"
 
+**Oddity branch only: catching up from `main` or another branch (heromedel, 6.66):** don't merge back the code or files
+this branch removed on purpose (the stripped code listed above, and its tests). Everything that wasn't cut is updated as
+normal.
+
 ## Working with heromedel
 
 - The workflow: **discuss, create a plan, ask to write, ask to push.** When asked to "discuss" or "don't write
