@@ -22,13 +22,15 @@ echo    Release %VERSION%
 echo ==========================================================
 echo.
 
-rem the version should be a tagged, committed one; a test release carries on after the warning
-where git >nul 2>&1
-if errorlevel 1 (
-	echo Note: git isn't on this computer's PATH, so the tag and uncommitted changes weren't checked.
-) else (
-	git describe --exact-match --tags >nul 2>&1 || echo Warning: this commit has no tag. Tag it %VERSION% for a real release.
-	for /f %%c in ('git status --porcelain --untracked-files=no 2^>nul ^| find /c /v ""') do if not "%%c"=="0" echo Warning: there are changes not yet committed: the release builds them too.
+rem git, in a clone (a zip download has none): on the PATH, or the copy that comes with GitHub Desktop
+set "GIT="
+if exist "%~dp0.git" (
+	where git >nul 2>&1 && set "GIT=git"
+	if not defined GIT for /d %%d in ("%LOCALAPPDATA%\GitHubDesktop\app-*") do if exist "%%d\resources\app\git\cmd\git.exe" set "GIT=%%d\resources\app\git\cmd\git.exe"
+	if not defined GIT echo Note: git couldn't be found, so this release won't be tagged and uncommitted changes weren't checked.
+)
+if defined GIT (
+	call "%GIT%" diff --quiet HEAD -- >nul 2>&1 || echo Warning: there are changes not yet committed: the release builds them too.
 )
 echo.
 
@@ -49,6 +51,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ProgressPreference='SilentlyContinue'; Compress-Archive -Path '%OUT%' -DestinationPath '%OUT%.zip' -Force"
 if not exist "%OUT%.zip" ( echo The zip couldn't be made. The folder is ready in "Release\%NAME%". & goto :failed )
 
+if defined GIT call :tag
 echo.
 echo Release %VERSION% is ready:
 echo    Release\%NAME%\
@@ -61,3 +64,14 @@ exit /b 0
 echo.
 pause
 exit /b 1
+
+rem tags this commit release-<version>, on this computer only (nothing is pushed): the code each release was made from
+:tag
+set "HEAD_ID=" & set "TAGGED="
+for /f %%h in ('call "%GIT%" rev-parse HEAD 2^>nul') do set "HEAD_ID=%%h"
+if not defined HEAD_ID exit /b 0
+for /f %%t in ('call "%GIT%" rev-parse -q --verify "refs/tags/release-%VERSION%" 2^>nul') do set "TAGGED=%%t"
+if "%TAGGED%"=="%HEAD_ID%" exit /b 0
+call "%GIT%" tag -f "release-%VERSION%" >nul 2>&1 || ( echo Note: this commit couldn't be tagged release-%VERSION%. & exit /b 0 )
+if defined TAGGED ( echo Tagged this commit release-%VERSION%, moved from an earlier commit: was the version bumped? ) else ( echo Tagged this commit release-%VERSION% ^(on this computer only^). )
+exit /b 0
