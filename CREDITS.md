@@ -6,9 +6,10 @@ bundled with the program. A few things derived from the game's data are bundled,
 below.
 
 **Vhati** for his work on the save game parser (the FTL Profile Editor) and the Slipstream Mod
-Manager. Everything under `net.blerf.ftl` is Vhati's parser, and `net.vhati.ftldat` his ftl.dat
-reader, from the final FTL Profile Editor source (v28 master, 2020), used under the GPL-2.0. Seven
-of those files were lightly extended for this program; each carries a notice at the top saying
+Manager. Everything under `net.blerf.ftl` is Vhati's parser, from the final FTL Profile Editor
+source (v28 master, 2020), and everything under `net.vhati` is his ftl.dat reader and XML helpers,
+from the Slipstream Mod Manager; both are used under the GPL-2.0 (LICENSE links them). Seven of the
+parser's files were lightly extended for this program; each carries a notice at the top saying
 what changed. Slipstream is not bundled:
 the program can download it, and hands it the mods to patch.
 
@@ -47,13 +48,12 @@ Claude Opus 5.5 and Fable 5.1 for coding and programming.
 
 ## Where the code comes from
 
-Counted at version 6.61 (about 75,000 lines of Java in all), line by line against Vhati's FTL
-Profile Editor (https://github.com/Vhati/ftl-profile-editor, master, 2020) and ManApart's FTL
-Homeworld 3.1 (https://github.com/ManApart/FTL-Homeworld, 2014):
+Counted at version 6.61 (about 75,000 lines of Java in all), line by line against Vhati's code
+and ManApart's FTL Homeworld 3.1 (2014), as LICENSE links them:
 
 | Part | Share |
 |---|---|
-| Vhati's parser and ftl.dat reader, unchanged (about 22,400 lines) | 30% |
+| Vhati's parser, ftl.dat reader and XML helpers, unchanged (about 22,400 lines) | 30% |
 | Our additions to Vhati's files (seven files, about 250 lines, notices at the top) | under 1% |
 | Lines still verbatim from FTL Homeworld 3.1 (about 50, besides everyday Java lines any program has, like `} catch (IOException e) {`) | under 0.1% |
 | New or rewritten for Federation Home Planet (about 52,500 lines) | 70% |

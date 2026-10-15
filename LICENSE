@@ -497,6 +497,12 @@ reproduced below.
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+FTL Homeworld, by ManApart (iceburg333)
+   https://github.com/ManApart/FTL-Homeworld
+   The ship manager Federation Home Planet grew from (version 3.1, 2014).
+   About 50 lines of its code remain, besides everyday Java lines (CREDITS.md
+   counts them). Its repository carries no licence file of its own.
+
 FTL: Faster Than Light and its art, fonts, sounds and music belong to
 Subset Games. None of them are in this repository or in the program: the
 program reads them from the player's own copy of the game when it runs.
