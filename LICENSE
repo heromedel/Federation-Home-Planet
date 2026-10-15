@@ -3,7 +3,6 @@ Federation Home Planet is free software under the GNU General Public License, ve
 Source code:
   Federation Home Planet:                  https://github.com/heromedel/Federation-Home-Planet
   Vhati's FTL Profile Editor (the parser): https://github.com/Vhati/ftl-profile-editor
-  ManApart's FTL Homeworld (the original): https://github.com/ManApart/FTL-Homeworld
 
 ------------------------------------------------------------------------------
 
@@ -505,6 +504,10 @@ reproduced below.
    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+FTL Homeworld, by ManApart (iceburg333)
+   https://github.com/ManApart/FTL-Homeworld
+   The ship manager Federation Home Planet grew from (version 3.1, 2014).
 
 FTL: Faster Than Light and its art, fonts, sounds and music belong to
 Subset Games. None of them are in this repository or in the program: the
