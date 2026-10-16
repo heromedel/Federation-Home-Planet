@@ -1353,6 +1353,29 @@ parts); a Custom career's "nothing (values at full price)" commission level (6.4
 4. Checks: FleetT for the Custom levels; GuiT for Sandbox's rule open with commissioning free, and a derelict's price
    following it.
 
+## 49. Posting for crew ends the day — planned (Plan K, heromedel, 6.64; not built yet)
+
+heromedel: posting to hire someone should end the day. It is an action that costs scrap and has a result, and should
+take time for a reply (not literally); it would also lower the reputation lost when you have no one and keep needing to
+rest. Log that you posted, end the day ("Then I..." and the posted message), then log if someone joined:
+
+    Then I posted...
+
+    Stardate x.x.x.x
+    Hired...
+
+1. Posting for volunteers, paid or a promise of adventure, writes its entry first ("posted"), then ends the day as rest
+   does (`v.countBeacon`): one day passes for the whole fleet, the expeditions, the infirmary and the clock with it.
+2. If someone answered, a second entry is written on the new day ("joined": who, their race, where they went); if no one
+   did, nothing more.
+3. The Captain's Log reads them as "Then I posted for volunteers..." closing the day, and "Hired..." under the next
+   stardate; the station log's words for both come from the lore files, to the hard rules (no days counted aloud).
+4. A day having passed, a rest the day after a post begins a new run (its first day free): the run counts only days
+   rested back to back.
+5. `docs/EVENTS.md` gets both entries' fields.
+6. Checks: ExpT (a post moves the clock one day; two entries when someone joins, one when not) and RestT (rest, post,
+   rest costs nothing).
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo
