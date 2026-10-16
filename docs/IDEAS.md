@@ -138,6 +138,13 @@ offer, her fate cleared, what her loss cost given back), so a rescued ship could
 kept version but with no crew aboard, as she was found (heromedel: the crew lost stay lost). Her value is the one the station already counts at her difficulty's rate
 (`parser.Pricing`).
 
+heromedel, later: Sandbox would need a new setting, like
+
+    Cost to Rescue Abandoned Ship:
+
+Notes: as with the other rules, a career's difficulty would set it (Easy 1/4, Normal 1/3, Hard 1/2) and Sandbox Mode and
+a Custom career would choose it.
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just
