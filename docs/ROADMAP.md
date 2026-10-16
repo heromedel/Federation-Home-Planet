@@ -329,6 +329,18 @@ comes a random number of beacons later (the fleet counts every beacon its ships 
   enemy at all sets it off. The fix: note the beacon where she was first seen at one point of hull, and send the letter
   only once a later save shows she jumped on from it and survived (`getTotalBeaconsExplored` gone up). A ship still in the
   fight, or destroyed there, never starts the chain. ChainT to cover both.
+- **To build (6.64, heromedel): Patience is yours, and the med-bots.** heromedel took "Repair her well. We will ask." to
+  mean she had to be repaired and given back, like the Collector's Nightjar (the repair-job chain), whose letters read
+  almost the same. So: *A vessel in need* gains "She is not a loan. When she arrives, she is yours."; *Delivered* ends,
+  in place of "We will ask", with heromedel's idea in the Engi voice: "Remember, you may keep this treasure. We ask only
+  that you treat her well." Then a new letter, `chain:one-hull:medbay`, from the Engi Restoration Collective
+  (heromedel): the first time the station sees her with a medbay installed (fitted from storage on the Refit tab or
+  bought at a store in FTL; a Clone Bay doesn't count, as the med-bots need a med-bay), they see you took the time to
+  upgrade her and send an Engi Med-bot Dispersal (`NANO_MEDBAY`, `reward="item NANO_MEDBAY"`, claimed into the Cargo
+  Hold). FTL's own words for it: "Engi nano med-bots heal the crew outside of the med-bay (at a reduced speed)"; its
+  blueprint has rarity 0, so no store sells it. She is followed by her id, noted at delivery (a rename doesn't lose her),
+  and only while she hasn't been traded since (`TradeMark`). Logged the two-line way, its kind in `docs/EVENTS.md`.
+  ChainT: a medbay (the letter), a Clone Bay (none), renamed (the letter, her new name), traded (none).
 - **Reply "Tell me about these derelict vessels.":** 5-10 beacons, then *A vessel in need*; 5-7 more, then
   *Delivered*, which puts **Patience** in the Junkyard: a Slug Cruiser A on the station's blank copy, no crew, medbay
   torn out, a broken hacking bay, broken oxygen, piloting 2 and engines 1, a damaged weapons system with only a Mini
