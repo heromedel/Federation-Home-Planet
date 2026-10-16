@@ -1313,6 +1313,22 @@ on its own may be lost."), then sends FTL the close request its own X sends. A s
 Refresh, before FTL's window is found), the docked view with FTL's window gone, or FTL not running, is the normal Space
 Dock again. Tested under Wine (undocktest).
 
+## 46. The Cargo Bay away from a store — planned (Plan H, heromedel, 6.64; not built yet)
+
+Today a boarded ship that isn't at a store opens the Cargo Bay on a notice ("Kestrel is not within range of a station.
+Take her to a beacon with a store to trade, or pick another ship"), the tabs, Save and Reset greyed; with a one-ship fleet
+there is nothing to pick and the bay seems not to open at all. heromedel: it should open all the same, with no ship on the
+left, and the drop-down saying there are no ships in range.
+
+1. A boarded ship away from a store doesn't block the Cargo Bay: it opens on the Trade tab, her side empty and the Cargo
+   Hold on the right, as it does with no ship aboard (the hold's goods there to look over, sell or junk).
+2. The left drop-down lists only the ships that can trade now; with none, it reads "No ships in range" and doesn't open.
+3. A short line under it says why: "Kestrel is not within range of a station: take her to a beacon with a store to
+   trade" (her, him or it as the Ship Pronoun setting says).
+4. The Shop and the Refit tab stay greyed till a ship in range is picked, each tooltip saying why.
+5. GuiT checks a one-ship fleet away from a store: the bay opens on Trade, the drop-down says "No ships in range", the
+   Cargo Hold can be looked over.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo
