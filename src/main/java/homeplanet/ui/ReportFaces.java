@@ -36,27 +36,32 @@ final class ReportFaces {
 		byName.sort(new Comparator<Assignments.Face>() { // the longest name first: "Ann" must not take "Anna"'s line
 			public int compare(Assignments.Face a, Assignments.Face b) { return b.crew.getName().length() - a.crew.getName().length(); }
 		});
+		List<Assignments.Face> inOrder = new ArrayList<Assignments.Face>(faces); // the report tells them in this order
+		List<String> all = new ArrayList<String>();
+		for (Assignments.Face f : byName) all.add(f.crew.getName());
 		String[] lines = body.split("\n", -1);
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
 			int start = doc.getLength();
 			Icon icon = null;
 			String name = null;
-			for (Assignments.Face f : byName) {
-				if (!names(line, f.crew.getName())) continue;
-				name = f.crew.getName();
-				icon = icon(f);
+			// the next in the report's order first: a life saved names the crewmate too (6.61), who mustn't take the line
+			Assignments.Face found = !inOrder.isEmpty() && names(line, inOrder.get(0).crew.getName()) ? inOrder.get(0) : null;
+			if (found == null) for (Assignments.Face f : byName) if (names(line, f.crew.getName())) { found = f; break; }
+			if (found != null) {
+				name = found.crew.getName();
+				icon = icon(found);
 				if (icon != null) {
 					SimpleAttributeSet a = new SimpleAttributeSet();
 					StyleConstants.setIcon(a, icon);
 					doc.insertString(doc.getLength(), " ", a);
 				}
-				byName.remove(f);
-				break;
+				byName.remove(found);
+				inOrder.remove(found);
 			}
 			String end = i < lines.length - 1 ? "\n" : "";
 			if (name == null) doc.insertString(doc.getLength(), line + end, base);
-			else words(doc, line, name, base, end);
+			else words(doc, line, all, base, end);
 			if (icon != null) { // a hanging indent: a line that wraps lines up with the words, not under the face
 				SimpleAttributeSet hang = new SimpleAttributeSet();
 				StyleConstants.setLeftIndent(hang, icon.getIconWidth());
@@ -77,8 +82,8 @@ final class ReportFaces {
 		if (rest.startsWith(name + " ")) return true;
 		return Pattern.compile("(^|[^\\p{L}\\p{N}])" + Pattern.quote(name) + "([^\\p{L}\\p{N}]|$)").matcher(rest).find();
 	}
-	/** A crew member's line: the stars in gold (a cross greyed), their name in bold wherever it falls. */
-	private static void words(StyledDocument doc, String line, String name, AttributeSet base, String end) throws BadLocationException {
+	/** A crew member's line: the stars in gold (a cross greyed), the crew's names in bold wherever they fall (theirs, and a crewmate's who saved them). */
+	private static void words(StyledDocument doc, String line, List<String> names, AttributeSet base, String end) throws BadLocationException {
 		int n = stars(line);
 		if (n > 0) {
 			SimpleAttributeSet st = new SimpleAttributeSet(base == null ? SimpleAttributeSet.EMPTY : base);
@@ -88,11 +93,13 @@ final class ReportFaces {
 		SimpleAttributeSet bold = new SimpleAttributeSet(base == null ? SimpleAttributeSet.EMPTY : base);
 		StyleConstants.setBold(bold, true);
 		String rest = line.substring(n);
-		Matcher m = Pattern.compile("(?<![\\p{L}\\p{N}])" + Pattern.quote(name) + "(?![\\p{L}\\p{N}])").matcher(rest);
+		StringBuilder any = new StringBuilder(); // the longest first, so "Anna" is never bolded as "Ann"
+		for (String x : names) any.append(any.length() == 0 ? "" : "|").append(Pattern.quote(x));
+		Matcher m = Pattern.compile("(?<![\\p{L}\\p{N}])(?:" + any + ")(?![\\p{L}\\p{N}])").matcher(rest);
 		int at = 0;
 		while (m.find()) {
 			doc.insertString(doc.getLength(), rest.substring(at, m.start()), base);
-			doc.insertString(doc.getLength(), name, bold);
+			doc.insertString(doc.getLength(), m.group(), bold);
 			at = m.end();
 		}
 		doc.insertString(doc.getLength(), rest.substring(at) + end, base);

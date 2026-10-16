@@ -133,9 +133,9 @@ public final class Expeditions {
 	/**
 	 * The station's care, at each look: crew hurt in the game, in the Cargo Hold or aboard a docked ship (never the
 	 * boarded one: she may be in FTL), are healed a full beacon after the station first sees them there (a move to another
-	 * place starts the beacon again), each with a line in the history log; the infirmary's laid up lose a point of skill
-	 * for each beacon laid up (from a random skill they have points in), and whoever's time is up is on their feet,
-	 * whole, and back among the crew who can be sent. Returns the names out of the infirmary.
+	 * place starts the beacon again), each with a line in the history log; whoever's time is up in the infirmary is on
+	 * their feet, whole, and back among the crew who can be sent (the lay-up's level was taken when they came home, 6.61;
+	 * before, a point a beacon). Returns the names out of the infirmary.
 	 */
 	public static synchronized List<String> checkInfirmary(Vault v) {
 		List<String> back = new ArrayList<String>();
@@ -158,7 +158,6 @@ public final class Expeditions {
 				Patient mine = null;
 				for (Patient y : all) if (y.is(x) && (mine == null || y.mark != null)) mine = y; // a marked record over one without
 				if (mine != null) {
-					for (int b = mine.drained; b < Math.min(now, mine.until); b++) changed |= Skills.drain(x, rng);
 					if (now >= mine.until) { // on their feet: whole again, and free to go
 						if (x.getHealth() != max) { x.setHealth(max); changed = true; }
 						back.add(x.getName());

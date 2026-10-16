@@ -36,7 +36,10 @@ import homeplanet.core.SafeFiles;
 public final class CrewNames {
 	private CrewNames() { }
 
-	/** cfg: "true" while the lists are on; missing is off, as FTL names its crew (heromedel, 6.34). */
+	/**
+	 * "true" while the lists are on. Each fleet keeps its own (heromedel, 6.62: the names are its crew's): Sandbox Mode with
+	 * its rules, missing off, as FTL names its crew (6.34); an Immersive career in its career.xml, missing on.
+	 */
 	public static final String CFG_LISTS = "custom_crew_names";
 	/** cfg: normal, first or first_last (missing is normal). */
 	public static final String CFG_HUMAN = "human_name_gen";
@@ -44,14 +47,37 @@ public final class CrewNames {
 	public static final String CFG_ENGI = "engi_translate";
 	public static final String PREFIX = "prefix", APPEND = "append", NONE = "none";
 	public static String engiTranslate() {
-		String t = HomePlanet.config.getProperty(CFG_ENGI, NONE);
+		String t = setting(CFG_ENGI, NONE);
 		return PREFIX.equals(t) || APPEND.equals(t) ? t : NONE;
 	}
 	public static final String NORMAL = "normal", FIRST = "first", FIRST_LAST = "first_last";
+	/** The Immersive career open, whose own the name settings are; null in Sandbox Mode (its rules hold them). */
+	private static java.io.File career() {
+		homeplanet.vault.Vault v = homeplanet.vault.Vault.isOpen() ? homeplanet.vault.Vault.get() : null;
+		return v != null && v.immersive ? v.root : null;
+	}
+	private static String setting(String key, String dflt) {
+		java.io.File c = career();
+		String v = c == null ? HomePlanet.config.getProperty(key) : Career.started(c) ? Career.nameSetting(c, key) : null;
+		return v == null ? dflt : v;
+	}
+	/** Sets a name setting for the fleet open (Settings): an Immersive career keeps it in its career.xml, Sandbox Mode with its rules (the default not written there). */
+	public static void set(String key, String value) {
+		java.io.File c = career();
+		if (c != null) {
+			if (!Career.started(c)) return; // no career yet to keep it in: the briefing comes first
+			try { Career.setNameSetting(c, key, value); }
+			catch (java.io.IOException e) { org.slf4j.LoggerFactory.getLogger(CrewNames.class).warn("Could not keep the crew-name setting in {}: {}", c, e.toString()); }
+			return;
+		}
+		boolean dflt = CFG_LISTS.equals(key) ? "false".equals(value) : CFG_ENGI.equals(key) ? NONE.equals(value) : NORMAL.equals(value);
+		if (dflt) HomePlanet.config.remove(key);
+		else HomePlanet.config.setProperty(key, value);
+	}
 
-	public static boolean listsOn() { return "true".equals(HomePlanet.config.getProperty(CFG_LISTS)); }
+	public static boolean listsOn() { return "true".equals(setting(CFG_LISTS, career() != null ? "true" : "false")); }
 	public static String humanGen() {
-		String g = HomePlanet.config.getProperty(CFG_HUMAN, NORMAL);
+		String g = setting(CFG_HUMAN, NORMAL);
 		return FIRST.equals(g) || FIRST_LAST.equals(g) ? g : NORMAL;
 	}
 

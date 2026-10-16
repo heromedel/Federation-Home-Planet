@@ -21,6 +21,9 @@ exceptions can be made (the Museum's plates, say, are sized artistically).
   the Cargo Bay, the Dry Dock. That's the game's look.
 - A button's label that would touch its outline is drawn with its letters a pixel closer (6.58, "Switch to FTL"),
   and cut with "..." only if it still won't fit: the font and its size stay the same.
+- Tooltips (heromedel, 6.57; `ui/Tips`, for every tip in the station): up after 0.4 seconds, there as long as the
+  mouse is on the control, gone as soon as it leaves; never under the mouse, never over a button-sized control (above
+  it, or below when there's no room), always on the screen; a little see-through.
 
 ## Colours
 
@@ -113,6 +116,10 @@ check for sense and tone before it goes in.
 success, a very good and an outstanding one, in gold before the line ("was successful", "was very successful" are no
 longer written). The crew member's name is bold wherever it falls (`{name}` in the line), so a line is a whole sentence
 told whichever way reads best. The killed, the hurt and the taken get no mark: their lines already say it.
+
+**A life saved (heromedel, 6.61):** with the infirmary on, a crewmate's outstanding success (★★★) can save one who'd have
+died. The rescue takes the place of the death line (`kind="saved"`, {name} the one saved, {saver} the crewmate), and
+every one says they were badly hurt and where they are now: "alive" alone leaves the player asking in what state.
 
 **Writing them (heromedel):**
 
