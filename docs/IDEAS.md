@@ -134,8 +134,8 @@ From heromedel:
     score only).
 
 Notes: the station already brings a ship back from her last kept version when FTL's New Game wrote over her (5.55: the
-offer, her fate cleared, what her loss cost given back), so a rescued ship could come home the same way, from the last
-version kept while she still had crew. Her value is the one the station already counts at her difficulty's rate
+offer, her fate cleared, what her loss cost given back), so a rescued ship could come home the same way, from her last
+kept version but with no crew aboard, as she was found (heromedel: the crew lost stay lost). Her value is the one the station already counts at her difficulty's rate
 (`parser.Pricing`).
 
 ## When we get to them
