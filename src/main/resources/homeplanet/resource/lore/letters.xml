@@ -87,10 +87,10 @@ For the Federation, and all its worlds.
 ~ Home Planet Liaison
 ]]></letter>
 
-	<letter key="welcome:career" from="Home Planet Liaison" subject="On the career rolls"><![CDATA[
+	<letter key="welcome:career" from="Home Planet Liaison" subject="Your Federation career begins"><![CDATA[
 {rank},
 
-The Federation Home Planet has added your service to its career rolls. From today your achievements will be noticed, and rewarded. Promotions will follow as they are earned, and a stipend will reach the Cargo Hold as your ships explore the beacons. To start you off, {start} scrap is already waiting there.
+The Federation Home Planet has taken note of your fleet, and from today your service counts as a Federation career. The achievements you earn from now on will be noticed and rewarded, and promotions will come as your rules allow. Every two months a stipend will reach you by letter, to be claimed into the Cargo Hold. To start you off, {start} scrap is already waiting there.
 
 Your fleet stays your own, and so do your rules. The Federation asks only that you keep fighting the rebellion.
 

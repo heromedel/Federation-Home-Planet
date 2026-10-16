@@ -58,7 +58,7 @@ public class RuleBoxes {
 	private final JLabel freeLabel = new JLabel("Plead for New Ship grants:  ");
 	private final JPanel freeRow = row(22);
 	final JCheckBox notifyBox = new JCheckBox("Immersive Notifications: transmissions from The Federation Home Planet (commission orders, news), in an inbox on the Space Dock", HomePlanet.immersiveNotifications);
-	final JCheckBox careerBox = new JCheckBox("Career messages: a welcome, promotions, rewards for FTL achievements and a stipend, in Sandbox Mode too", HomePlanet.careerMessages);
+	final JCheckBox careerBox = new JCheckBox("Career messages: letters from The Federation Home Planet with promotions, rewards for FTL's achievements and a stipend", HomePlanet.careerMessages);
 	final JCheckBox repBox = new JCheckBox("Reputation: earn and lose reputation points for your ships' service, shown on the Space Dock", HomePlanet.reputationOn);
 	/** How Reputation Can be Used (heromedel's words): any mode, never locked by Immersive Mode. */
 	final JComboBox<String> repUseBox = new JComboBox<String>(REP_USE_OPTIONS);
@@ -227,7 +227,7 @@ public class RuleBoxes {
 		freeRow.add(freeBox);
 		notifyBox.setToolTipText("<html>Orders for the free ships the rules grant, the Liaison's word when you're left without a ship, and letters you can reply to."
 				+ "<br>With Career messages (always, in Immersive Mode), also the welcome, promotions, achievement rewards and the stipend.</html>");
-		careerBox.setToolTipText("Your rank rises as you unlock FTL's Federation Cruisers; achievements earned from now on are rewarded, and the stipend comes every "
+		careerBox.setToolTipText("Your service in Sandbox Mode becomes a Federation career. Achievements earned from now on are rewarded, your rank follows the Ranks setting below, and a stipend comes by letter every "
 				+ homeplanet.parser.Career.MONTHS_PER_STIPEND + " months. Your fleet and rules stay your own. (Always on in Immersive Mode, at its difficulty.)");
 		careerBox.setBorder(BorderFactory.createEmptyBorder(0, 44, 0, 0)); // under Immersive Notifications, which it needs
 		careerTip = careerBox.getToolTipText();
