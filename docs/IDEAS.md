@@ -123,6 +123,18 @@ station's words say "she" and "her" for ships throughout (the letters, the log's
 messages), so the setting would mean every such word coming from one place that asks it, and the lore files' words
 given a token for it, the way {he} and {his} already follow a crew member's sex in the expedition words.
 
+## Idea I: our own Captain's Edition flag in a ship's save (noted 6.64, Captain)
+
+From heromedel: if a ship is known to have Captain's Edition content, we could insert our own flag into the save, like
+`CE_True = 1`, in case we want to make our own safety checks later.
+
+Notes: a fresh CE `continue.sav` has no marker of its own: its strings are only the ship, crew, gear and background
+names, and FHP rewrites a save byte for byte, so a flag of ours would survive. What the station could already check
+without a flag is the game's `ftl.dat`: CE's holds files named `data/ce_*` (for example `data/ce_ai_assault.xml`), and a
+CE save only reads with CE's `ftl.dat` (with vanilla's, the parser stops on the Kestrel's doors). Where a flag would go
+and what it would mean is for later; FTL's save has the room we already use for the `fhp.ship.*` and `fhp.boarded.*`
+marks (the ship's mark, `vault/ShipMark`).
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just
