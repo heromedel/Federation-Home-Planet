@@ -323,6 +323,12 @@ comes a random number of beacons later (the fleet counts every beacon its ships 
 
 - **The trigger:** once per fleet, the first time the boarded ship comes out of a battle with one point of hull (no
   hostile ship alongside). The Engi Restoration Collective writes, naming her.
+- **To fix (found 6.64, heromedel):** it fired in the middle of a battle, the ship knocked from 4 hull to 1. The check
+  (`Vault.noteHull`) asks only whether her hull is 1 with no living hostile ship alongside, never whether she left: a save
+  written at the battle's beacon (save and quit, or one where the enemy isn't flagged hostile) or a hazard beacon with no
+  enemy at all sets it off. The fix: note the beacon where she was first seen at one point of hull, and send the letter
+  only once a later save shows she jumped on from it and survived (`getTotalBeaconsExplored` gone up). A ship still in the
+  fight, or destroyed there, never starts the chain. ChainT to cover both.
 - **Reply "Tell me about these derelict vessels.":** 5-10 beacons, then *A vessel in need*; 5-7 more, then
   *Delivered*, which puts **Patience** in the Junkyard: a Slug Cruiser A on the station's blank copy, no crew, medbay
   torn out, a broken hacking bay, broken oxygen, piloting 2 and engines 1, a damaged weapons system with only a Mini
