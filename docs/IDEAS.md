@@ -123,6 +123,21 @@ station's words say "she" and "her" for ships throughout (the letters, the log's
 messages), so the setting would mean every such word coming from one place that asks it, and the lore files' words
 given a token for it, the way {he} and {his} already follow a crew member's sex in the expedition words.
 
+## Idea I: salvage or rescue a crewless ship (noted 6.64)
+
+From heromedel:
+
+    If a ship is seen to have zero crew members before the save vanishes, thus being gone, a message could arrive
+    from the Federation that the ship was left intact, either floating in space or taken by hostiles, and that for
+    the cost of 1/4 her value (1/3 on Normal, 1/2 on Hard) the Federation can attempt to salvage or rescue the ship.
+    If you can't afford the full amount in scrap, the rest could be taken out of reputation (unless it's set to
+    score only).
+
+Notes: the station already brings a ship back from her last kept version when FTL's New Game wrote over her (5.55: the
+offer, her fate cleared, what her loss cost given back), so a rescued ship could come home the same way, from the last
+version kept while she still had crew. Her value is the one the station already counts at her difficulty's rate
+(`parser.Pricing`).
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just
