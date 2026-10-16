@@ -56,13 +56,17 @@ public final class Skills {
 		}
 	}
 	public static void add(CrewState c, int skill, int points) { set(c, skill, points(c, skill) + points); }
-	/** A point off one skill they have points in, at random (the infirmary's price for a beacon); none to lose, nothing. Did it take one? */
-	public static boolean drain(CrewState c, Random rng) {
+	/**
+	 * A level off one skill they hold, at random, their points at the start of what's left (the infirmary's price,
+	 * heromedel 6.61: a whole level, once, now a lay-up is rare); no level held, nothing. Did it take one?
+	 */
+	public static boolean loseLevel(CrewState c, Random rng) {
+		int[] levels = Crew.skillLevels(c);
 		List<Integer> have = new ArrayList<Integer>();
-		for (int i = 0; i < 6; i++) if (points(c, i) > 0) have.add(i);
+		for (int i = 0; i < 6; i++) if (levels[i] > 0) have.add(i);
 		if (have.isEmpty()) return false;
 		int s = have.get(rng.nextInt(have.size()));
-		set(c, s, points(c, s) - 1);
+		set(c, s, (levels[s] - 1) * interval(c, s));
 		return true;
 	}
 	/** Back from a clone bay: a level off each skill they held, their points at the start of what's left. */

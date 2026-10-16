@@ -368,7 +368,7 @@ public final class CaptainsLog {
 		if (back > 0) {
 			List<String> party = new ArrayList<String>(Arrays.asList(head.substring(0, back).split(", ")));
 			String rest = head.substring(back + 11);
-			List<String> killed = after(rest, "; killed: "), taken = after(rest, "; taken: "), laid = after(rest, "; to the infirmary: ");
+			List<String> killed = after(rest, "; killed: "), taken = after(rest, "; taken: "), laid = after(rest, "; to the infirmary: "), saved = after(rest, "; saved: ");
 			List<String> came = new ArrayList<String>(party);
 			for (String k : killed) came.remove(k);
 			for (String k : taken) came.remove(k);
@@ -376,6 +376,10 @@ public final class CaptainsLog {
 			s.append(came.isEmpty() ? "No one came back from the expedition" : join(came) + " came back from the expedition");
 			if (!killed.isEmpty()) s.append("; ").append(join(killed)).append(!came.isEmpty() ? " did not" : killed.size() == 1 ? " was killed" : " were killed");
 			if (!taken.isEmpty()) s.append("; ").append(join(taken)).append(taken.size() == 1 ? " was" : " were").append(" taken captive");
+			for (String sv : saved) { // a crewmate's outstanding success (6.61): "Ann by Kenji"
+				int by = sv.lastIndexOf(" by ");
+				if (by > 0) s.append("; ").append(sv.substring(by + 4).trim()).append(" saved ").append(sv.substring(0, by).trim()).append("'s life");
+			}
 			if (!laid.isEmpty()) s.append("; ").append(join(laid)).append(" went to the infirmary");
 			Line l = once(m, "expedition", false, s.append(".").toString());
 			String where = rest.replaceAll(";.*$", "");

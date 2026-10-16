@@ -175,7 +175,7 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Crew Names");
 		namesBox.setSelectedIndex(homeplanet.parser.CrewNames.listsOn() ? 0 : 1);
 		humanGenBox.setSelectedIndex(java.util.Arrays.asList(HUMAN_GEN_CFG).indexOf(homeplanet.parser.CrewNames.humanGen()));
-		namesBox.setToolTipText("On: the crew The Home Planet Station brings aboard are named from their own race's list (lore/names). Off: every race has FTL's names, as FTL gives them. Crew already aboard keep theirs");
+		namesBox.setToolTipText("On: the crew The Home Planet Station brings aboard are named from their own race's list (lore/names). Off: every race has FTL's names, as FTL gives them. Crew already aboard keep theirs. Each fleet keeps its own: Sandbox Mode, and every Immersive career (on unless changed)");
 		final String[] genTips = {
 				"Normal: as FTL names them. FTL's names sometimes have a last name and sometimes don't; with the lists on, about half of humans get one",
 				"First Names Only: a first name alone (with the lists off, FTL's names cut to their first word)",
@@ -548,13 +548,11 @@ public class SettingsDialog extends JDialog {
 		if (musicBox.isSelected() != homeplanet.core.Music.enabled) changed.add("Title music: " + musicBox.isSelected());
 		if ((namesBox.getSelectedIndex() == 0) != homeplanet.parser.CrewNames.listsOn()) {
 			changed.add("Custom Name Lists Per Race: " + namesBox.getSelectedItem());
-			if (namesBox.getSelectedIndex() == 0) HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_LISTS, "true");
-			else HomePlanet.config.remove(homeplanet.parser.CrewNames.CFG_LISTS); // off is the default, as FTL names its crew: the line only while on (6.34)
+			homeplanet.parser.CrewNames.set(homeplanet.parser.CrewNames.CFG_LISTS, namesBox.getSelectedIndex() == 0 ? "true" : "false"); // the open fleet's own (6.62)
 		}
 		if (!ENGI_CFG[engiBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.engiTranslate())) {
 			changed.add("Engi Translate: " + engiBox.getSelectedItem());
-			if (engiBox.getSelectedIndex() == 2) HomePlanet.config.remove(homeplanet.parser.CrewNames.CFG_ENGI); // None is the default: the line only while Prefix or Append
-			else HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_ENGI, ENGI_CFG[engiBox.getSelectedIndex()]);
+			homeplanet.parser.CrewNames.set(homeplanet.parser.CrewNames.CFG_ENGI, ENGI_CFG[engiBox.getSelectedIndex()]);
 		}
 		if (!pronounBox.getSelectedItem().equals(homeplanet.model.Words.shipPronoun())) {
 			changed.add("Ship Pronoun: " + pronounBox.getSelectedItem());
@@ -563,7 +561,7 @@ public class SettingsDialog extends JDialog {
 		}
 		if (!HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.humanGen())) {
 			changed.add("Human Name Gen: " + humanGenBox.getSelectedItem());
-			HomePlanet.config.setProperty(homeplanet.parser.CrewNames.CFG_HUMAN, HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()]);
+			homeplanet.parser.CrewNames.set(homeplanet.parser.CrewNames.CFG_HUMAN, HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()]);
 		}
 		final java.awt.Window frame = getOwner();
 		if (frame instanceof MainFrame && borderlessBox.isSelected() != ((MainFrame) frame).isBorderless()) {

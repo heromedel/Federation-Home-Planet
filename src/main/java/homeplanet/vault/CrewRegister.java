@@ -508,7 +508,7 @@ public final class CrewRegister {
 				}
 				for (String e : milestones(m, x)) m.events.add(new Event(today, e));
 				if (m.status == Status.MISSING) m.events.add(new Event(today, "Found again, " + x.where + "."));
-				else if (!m.place.equals(x.place)) m.events.add(new Event(today, moved(m, x)));
+				else if (!m.place.equals(x.place)) m.events.add(new Event(today, moved(m, x, m.place.startsWith("away:") ? since(events, m.at, true) : "")));
 			}
 			if (x.sector > 0) { // the first time ever in sector 5, and in sector 8, aboard a ship in flight; arriving where she already is counts for nothing
 				if (known && m.sector >= 0 && m.place.equals(x.place))
@@ -797,12 +797,12 @@ public final class CrewRegister {
 		return now;
 	}
 
-	/** Words for a move between looks. */
-	private static String moved(Member m, Found x) {
+	/** Words for a move between looks ({@code recent}: the station log since their last look, for a detail's homecoming). */
+	private static String moved(Member m, Found x, String recent) {
 		if (x.place.equals("captive")) return "Taken captive; " + x.where + ".";
 		if (m.place.equals("captive")) return "Ransomed; back " + x.where + ".";
 		if (x.place.startsWith("away:")) return "Sent on an expedition " + sectorPhrase(x.place.substring(5)).replaceFirst("^in ", "to ") + ".";
-		if (m.place.startsWith("away:")) return "Back from an expedition " + sectorPhrase(m.place.substring(5)) + "; " + x.where + ".";
+		if (m.place.startsWith("away:")) return "Back from an expedition " + sectorPhrase(m.place.substring(5)) + homecoming(recent, m.name) + "; " + x.where + ".";
 		if (x.place.equals("hold")) return "Moved to the Cargo Hold.";
 		return "Assigned " + x.where.replaceFirst("^aboard ", "to ") + ".";
 	}
@@ -896,6 +896,34 @@ public final class CrewRegister {
 		return text.startsWith("") && text.substring(0, Math.max(0, text.indexOf("\n"))).contains("  RETIRE  ");
 	}
 	/** The name is in the list after this label ("killed: Ash, Bob; taken: ..."). */
+	/**
+	 * What the station log's word of a detail's return says of this crew member (6.61): "; saved from death by Kenji,
+	 * and laid up in the infirmary", "; to the infirmary", "; saved Ann's life", or nothing. The latest such line naming them.
+	 */
+	private static String homecoming(String recent, String name) {
+		String found = null;
+		for (String l : recent.replace("\r", "").split("\n")) if (l.contains("  EXPEDITION  ") && l.contains(" back from ") && listed(l.substring(0, l.indexOf(" back from ")).replaceFirst("^.*  EXPEDITION  ", ";"), ";", name)) found = l;
+		if (found == null) return "";
+		String by = null;
+		List<String> savedOnes = new ArrayList<String>();
+		for (String[] sv : saved(found)) { if (sv[0].equals(name)) by = sv[1]; if (sv[1].equals(name)) savedOnes.add(sv[0]); }
+		return (by != null ? "; saved from death by " + by + ", and laid up in the infirmary" : listed(found, "to the infirmary: ", name) ? "; to the infirmary" : "")
+				+ (savedOnes.isEmpty() ? "" : "; saved " + String.join(" and ", savedOnes) + (savedOnes.size() == 1 ? "'s life" : " from death"));
+	}
+	/** Who was saved by whom on an expedition ("; saved: Ann by Kenji, Bob by Joe", 6.61): pairs of saved and saver. */
+	private static List<String[]> saved(String line) {
+		List<String[]> out = new ArrayList<String[]>();
+		int at = line.indexOf("; saved: ");
+		if (at < 0) return out;
+		String rest = line.substring(at + 9);
+		int end = rest.indexOf(';'), nl = rest.indexOf('\n');
+		if (nl >= 0 && (end < 0 || nl < end)) end = nl;
+		for (String pair : (end < 0 ? rest : rest.substring(0, end)).split(", ")) {
+			int by = pair.lastIndexOf(" by ");
+			if (by > 0) out.add(new String[] {pair.substring(0, by).trim(), pair.substring(by + 4).trim()});
+		}
+		return out;
+	}
 	private static boolean listed(String line, String label, String name) {
 		int at = line.indexOf(label);
 		while (at >= 0) {
@@ -1072,7 +1100,14 @@ public final class CrewRegister {
 				n = n.trim();
 				if (listed(head, "killed: ", n)) { for (Member m : whoever(n, null, byName, renamedFrom, members, Status.KILLED)) m.events.add(new Event(day, "Killed on an expedition " + sectorPhrase(sector) + ".")); continue; }
 				if (listed(head, "taken: ", n)) { for (Member m : whoever(n, null, byName, renamedFrom, members, null)) m.events.add(new Event(day, "Taken captive on an expedition " + sectorPhrase(sector) + ".")); continue; }
-				for (Member m : whoever(n, null, byName, renamedFrom, members, null)) m.events.add(new Event(day, "Back from an expedition " + sectorPhrase(sector) + (listed(head, "to the infirmary: ", n) ? "; to the infirmary." : ".")));
+				// saved from death by a crewmate, or saved someone (6.61): "; saved: Ann by Kenji, ..."
+				String by = null;
+				List<String> savedOnes = new ArrayList<String>();
+				for (String[] sv : saved(head)) { if (sv[0].equals(n)) by = sv[1]; if (sv[1].equals(n)) savedOnes.add(sv[0]); }
+				String said = "Back from an expedition " + sectorPhrase(sector)
+						+ (by != null ? "; saved from death by " + by + ", and laid up in the infirmary" : listed(head, "to the infirmary: ", n) ? "; to the infirmary" : "")
+						+ (savedOnes.isEmpty() ? "" : "; saved " + String.join(" and ", savedOnes) + (savedOnes.size() == 1 ? "'s life" : " from death")) + ".";
+				for (Member m : whoever(n, null, byName, renamedFrom, members, null)) m.events.add(new Event(day, said));
 			}
 		} else if (head.startsWith("EXPEDITION") && head.contains("did not come back: ")) {
 			for (String n : head.substring(head.indexOf("did not come back: ") + 19).split(";")[0].split(", "))

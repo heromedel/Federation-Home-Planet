@@ -18,8 +18,7 @@ import homeplanet.core.SafeFiles;
 /**
  * The career's days and stardates. Each career had a master log (heromedel, 5.17, logs/master.log): every day its clock
  * counted and why, and a copy of every entry its logs got. Since 5.93 nothing writes it: the days are the event log's
- * DAY entries (the Captain's Log and the Cargo Bay's day read them), and the entries are the event log's own. The old
- * file stays, read only by the conversion of a fleet's old logs (LogConvert).
+ * DAY entries (the Captain's Log and the Cargo Bay's day read them), and the entries are the event log's own.
  *
  * A career's day 1 is the day this was first asked of it: a new career's first moment, or the first look at an older
  * one on 5.17 (its earlier entries are Prior to 1.1.1.1). The day is stored as a plain number and shown as a stardate,

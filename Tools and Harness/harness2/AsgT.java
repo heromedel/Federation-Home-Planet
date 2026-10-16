@@ -12,6 +12,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
  rolls();
  report();
  awayAndBack(v);
+ rescues(v);
  twoDueAtOnce(v);
  prizes(v);
  twoPrizesOneDay(v);
@@ -145,6 +146,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   }
   Setup.chk("R: skill in the job's skill pays (" + skilled / n + " to " + raw / n + ")", skilled > raw * 11 / 10);
   // hurt twice: sent wounded and wounded again, a third each: die, the infirmary, half what they had; never for the unhurt
+  boolean infWas = HomePlanet.infirmary; HomePlanet.infirmary = true; // (with it off, the infirmary's third is worn down: rescues() checks off)
   Random tw = new Random(14); int twice = 0, twDied = 0, twInf = 0, twWorn = 0, freshOdd = 0;
   for (int i = 0; i < 40000 && twice < 2000; i++) {
    List<CrewState> wounded = party("human"); wounded.get(0).setHealth(30);
@@ -157,6 +159,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   }
   Setup.chk("R: hurt twice, a third each: " + twDied + " died, " + twInf + " to the infirmary, " + twWorn + " worn down, of " + twice + "; never for someone sent whole (" + freshOdd + ")",
     twice > 0 && twDied > twice / 4 && twDied < twice * 4 / 10 && twInf > twice / 4 && twInf < twice * 45 / 100 && twWorn > twice / 4 && twWorn < twice * 4 / 10 && freshOdd == 0);
+  HomePlanet.infirmary = infWas;
   // sent hurt: half their own bonuses
   List<CrewState> h = party("slug"); h.get(0).setHealth(30);
   Setup.chk("R: a crew member sent hurt counts as hurt", Assignments.roll("nebula", h, new Random(2)).fates.get(0).crew.getHealth() == 30);
@@ -278,6 +281,123 @@ public class AsgT { public static void main(String[] a) throws Exception {
   Setup.chk("A: the dead stay gone, the taken are among the captives (a ransom to come), the badly hurt in the infirmary at a quarter health",
     Assignments.holdCrew(v).size() == 0 && SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip()).size() == 1 && inf.size() == 1 && inf.get(0).name.equals(crew.get(2).getName())
     && cp.getProperty("0.name", "").equals(crew.get(1).getName()) && v.readCopy(v.storage()).save.getPlayerShip().getCrewList().get(0).getHealth() <= 25);
+ }
+ /**
+  * A life saved (heromedel, 6.61): with the infirmary on, a death may be turned by a crewmate who had an outstanding
+  * success (the top band), once each, on a second d20 with their role's skill (10 or more); off, never, and no one is
+  * laid up at all. The saved crew member comes home to the infirmary a level down, and every record tells it.
+  */
+ static void rescues(Vault v) throws Exception {
+  boolean was = HomePlanet.infirmary;
+  java.lang.reflect.Method rescue = Assignments.class.getDeclaredMethod("rescue", Assignments.Result.class, Random.class); rescue.setAccessible(true);
+  List<CrewState> four = party("human", "human", "human", "human");
+  // the rules, on made-up results: who may try, how often, and what a pass does
+  HomePlanet.infirmary = true;
+  int passed = 0, onlyHigh = 0, twoDead = 0, deadSaver = 0;
+  for (int seed = 0; seed < 400; seed++) {
+   Assignments.Result r = made(four, 0, 5, 3, 3);
+   rescue.invoke(null, r, new Random(seed));
+   Assignments.Fate d = r.fates.get(0);
+   if (!d.died) { passed++; if (!d.infirmary || d.savedBy != r.fates.get(1)) passed = -100000; }
+   Assignments.Result hi = made(four, 0, 4, 4, 3); rescue.invoke(null, hi, new Random(seed)); if (!hi.fates.get(0).died) onlyHigh++;
+   Assignments.Result two = made(four, 0, 0, 5, 3); rescue.invoke(null, two, new Random(seed)); if (!two.fates.get(0).died && !two.fates.get(1).died) twoDead++;
+   Assignments.Result gone = made(four, 0, 5, 3, 3); gone.fates.get(1).captured = true; rescue.invoke(null, gone, new Random(seed)); if (!gone.fates.get(0).died) deadSaver++;
+  }
+  Setup.chk("V: a top-band crewmate saves a death about half the time with no skill (" + passed + " of 400), and the one saved is laid up, saved by them", passed > 140 && passed < 260);
+  Setup.chk("V: never a crewmate short of the top band (" + onlyHigh + "), never two lives for one (" + twoDead + "), never a crewmate taken (" + deadSaver + ")", onlyHigh == 0 && twoDead == 0 && deadSaver == 0);
+  List<CrewState> skilled = party("human", "human"); master(skilled.get(1));
+  int skilledPass = 0;
+  for (int seed = 0; seed < 400; seed++) {
+   Assignments.Result r = made(skilled, 0, 5); r.fates.get(1).skill = 0; rescue.invoke(null, r, new Random(seed)); if (!r.fates.get(0).died) skilledPass++;
+  }
+  Setup.chk("V: their role's skill counts on the second roll (" + skilledPass + " of 400 at level 2, " + passed + " with none)", skilledPass > passed + 40);
+  // off: no one saved, and the dice untouched
+  HomePlanet.infirmary = false;
+  Assignments.Result off = made(four, 0, 5, 3, 3); Random fixed = new Random(9); rescue.invoke(null, off, fixed);
+  Setup.chk("V: with the infirmary off, no rescue and no dice rolled", off.fates.get(0).died && fixed.nextInt() == new Random(9).nextInt());
+  // the rate over real rolls, and off: no one laid up at all
+  int deaths = 0, saved = 0, laidOff = 0, n = 6000;
+  String[] sectors = {"civilian", "engi", "zoltan", "mantis", "pirate", "rebel", "rock", "nebula", "abandoned", "crystal"};
+  String[] races = {"human", "engi", "energy", "mantis", "rock", "slug", "crystal", "anaerobic"};
+  Random rr = new Random(21);
+  for (int i = 0; i < n; i++) {
+   String sec = sectors[rr.nextInt(sectors.length)];
+   List<CrewState> p = party(races[rr.nextInt(races.length)], races[rr.nextInt(races.length)], races[rr.nextInt(races.length)]);
+   for (CrewState c : p) if (rr.nextInt(4) == 0) c.setHealth(c.getRace().getMaxHealth() / 2);
+   long seed = rr.nextLong();
+   HomePlanet.infirmary = true;
+   Assignments.Result on = Assignments.roll(sec, p, new Random(seed));
+   for (Assignments.Fate f : on.fates) { if (f.died) deaths++; if (f.savedBy != null) { saved++; deaths++; } }
+   HomePlanet.infirmary = false;
+   for (CrewState c : p) if (rr.nextInt(4) == 0) c.setHealth(c.getRace().getMaxHealth() / 2);
+   for (Assignments.Fate f : Assignments.roll(sec, p, new Random(seed)).fates) if (f.infirmary) laidOff++;
+  }
+  Setup.chk("V: over " + n + " expeditions, " + saved + " of " + deaths + " deaths saved (a few in a hundred); with the infirmary off, no one laid up (" + laidOff + ")",
+    saved > 0 && saved * 100 < deaths * 12 && laidOff == 0);
+  // the report: the rescue line, both named, the infirmary said
+  HomePlanet.infirmary = true;
+  java.lang.reflect.Method tell = Assignments.class.getDeclaredMethod("report", Assignments.Result.class, Random.class); tell.setAccessible(true);
+  int good = 0, jobs = 0; String sample = null;
+  for (String job : new String[] {"defend", "attack", "negotiate", "boarded", "rescue", "salvage", "scout", "repair", "transport", "lost", "escort", "capture", "board", "hijack", "infection", "spiders"}) {
+   Assignments.Result r = made(four, 0, 5, 3, 3); r.job = job; r.sector = "civilian"; r.fates.get(1).skill = 0;
+   r.fates.get(0).died = false; r.fates.get(0).infirmary = true; r.fates.get(0).savedBy = r.fates.get(1);
+   String text = (String) tell.invoke(null, r, new Random(job.hashCode()));
+   String line = null; for (String l : text.split("\n")) if (l.contains(four.get(0).getName()) && l.contains(four.get(1).getName()) && !l.startsWith("\u2605")) line = l;
+   jobs++;
+   if (line != null && line.contains("infirmary") && !line.contains("{") && !text.contains(four.get(0).getName() + " was killed")) good++;
+   if (sample == null) sample = line;
+  }
+  Setup.chk("V: on every job the one saved gets a rescue line naming both, and saying the infirmary (" + good + " of " + jobs + "): " + sample, good == jobs);
+  // brought home: laid up at a quarter health, a level down in one skill; the station log, the Crew Log and the Captain's Log tell it
+  List<CrewState> crew = ExpT.hold(v, "human", "human");
+  homeplanet.model.Skills.set(crew.get(0), 0, 2 * homeplanet.model.Skills.interval(crew.get(0), 0));
+  homeplanet.model.Skills.set(crew.get(0), 4, 1 * homeplanet.model.Skills.interval(crew.get(0), 4));
+  Vault.Copy hc = v.readCopy(v.storage());
+  for (CrewState x : hc.save.getPlayerShip().getCrewList()) if (x.getName().equals(crew.get(0).getName())) { homeplanet.model.Skills.set(x, 0, 2 * homeplanet.model.Skills.interval(x, 0)); homeplanet.model.Skills.set(x, 4, homeplanet.model.Skills.interval(x, 4)); }
+  v.begin().put(v.storage(), hc.save, hc.hash).commit();
+  v.takeStock(); // on the crew register, as the station's look does
+  crew = Assignments.holdCrew(v);
+  CrewState ann = null, ken = null; for (CrewState x : crew) if (homeplanet.model.Crew.skillLevels(x)[0] == 2) ann = x; else ken = x;
+  int levelsBefore = 0; for (int lv : homeplanet.model.Crew.skillLevels(ann)) levelsBefore += lv;
+  Assignments.send(v, Assignments.board(v).get(0).slot, Arrays.asList(ann, ken), new Random(4));
+  v.takeStock(); // the station's look sees them away
+  List<Assignments.Away> away = Assignments.away(v);
+  while (v.beaconsSeen() < away.get(0).until) v.countBeacon();
+  Assignments.Result r = Assignments.roll("civilian", away.get(0).crew, new Random(1));
+  Assignments.Fate fa = null, fk = null; for (Assignments.Fate f : r.fates) if (homeplanet.model.Crew.skillLevels(f.crew)[0] == 2) fa = f; else fk = f;
+  ann = fa.crew; ken = fk.crew; // as the detail's record has them
+  fa.band = 0; fa.died = false; fa.captured = false; fa.worn = false; fa.item = null; fa.infirmary = true; fa.savedBy = fk;
+  fk.band = 5; fk.died = false; fk.captured = false; fk.infirmary = false; fk.item = null; r.prize = null;
+  Assignments.Report rep = Assignments.bringHome(v, away.get(0), r);
+  v.takeStock();
+  CrewState home = null; for (CrewState x : SaveHelper.getOwnCrew(v.readCopy(v.storage()).save.getPlayerShip())) if (x.getName().equals(ann.getName())) home = x;
+  int levelsAfter = 0; for (int lv : homeplanet.model.Crew.skillLevels(home)) levelsAfter += lv;
+  List<Expeditions.Patient> inf = Expeditions.infirmary(v);
+  Setup.chk("V: the one saved is laid up at a quarter health, a level down in one skill (" + levelsBefore + " to " + levelsAfter + ")",
+    inf.size() >= 1 && inf.get(inf.size() - 1).name.equals(ann.getName()) && home.getHealth() <= 25 && levelsAfter == levelsBefore - 1);
+  String log = Setup.stationLog(v), raw = new String(SafeFiles.read(EventLog.file(v)), "UTF-8");
+  Setup.chk("V: the station log keeps who saved whom, in both lines", (raw.contains("saved=" + ann.getName() + ":" + ken.getName()) || raw.contains("saved=\"" + ann.getName() + ":" + ken.getName() + "\"")) && log.contains("; saved: " + ann.getName() + " by " + ken.getName()));
+  String annSays = null, kenSays = null;
+  for (CrewRegister.Member m : CrewRegister.members(v)) for (CrewRegister.Event e : m.events) {
+   if (m.name.equals(ann.getName()) && e.text.contains("saved from death by " + ken.getName())) annSays = e.text;
+   if (m.name.equals(ken.getName()) && e.text.contains("saved " + ann.getName() + "'s life")) kenSays = e.text;
+  }
+  StringBuilder seen = new StringBuilder();
+  if (annSays == null || kenSays == null) for (CrewRegister.Member m : CrewRegister.members(v)) for (CrewRegister.Event e : m.events) if (m.name.equals(ann.getName()) || m.name.equals(ken.getName()) || e.text.contains("saved")) seen.append(" [").append(m.name).append(" ").append(m.id).append(": ").append(e.text).append("]");
+  if (annSays == null) seen.append(" ann=" + ann.getName() + " ken=" + ken.getName());
+  Setup.chk("V: the Crew Log tells it for both: \"" + annSays + "\" / \"" + kenSays + "\"" + seen, annSays != null && annSays.contains("infirmary") && kenSays != null);
+  String cap = null;
+  for (CaptainsLog.Day d : CaptainsLog.days(v)) for (CaptainsLog.Line l : d.lines) if (l.text.contains(ken.getName() + " saved " + ann.getName() + "'s life")) cap = l.text;
+  Setup.chk("V: the Captain's Log tells it: " + cap, cap != null && cap.contains(ann.getName() + " went to the infirmary"));
+  Setup.chk("V: the report the player reads is the rescue: " + rep.text.replace("\n", " | "), rep.text.contains(ann.getName()) && rep.text.contains(ken.getName()) && !rep.text.contains(ann.getName() + " was killed"));
+  for (Assignments.Pending x : Assignments.pending(v)) Assignments.decline(v, x);
+  HomePlanet.infirmary = was;
+ }
+ /** A made-up result: these crew, these bands (0 dead), no roles, nothing found. */
+ static Assignments.Result made(List<CrewState> crew, int... bands) {
+  Assignments.Result r = new Assignments.Result(); r.sector = "civilian"; r.job = "salvage";
+  for (int i = 0; i < bands.length; i++) { Assignments.Fate f = new Assignments.Fate(crew.get(i)); f.band = bands[i]; f.roll = bands[i] == 5 ? 20 : bands[i] == 0 ? 1 : 10; f.natural = f.roll; f.died = bands[i] == 0; r.fates.add(f); }
+  return r;
  }
  /** Two hijacked ships won by details sent on the same day: two prizes, two files (5.20: the renumbered one wrote over the first's). */
  static void twoPrizesOneDay(Vault v) throws Exception {

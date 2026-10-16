@@ -81,6 +81,27 @@ public final class Career {
 		p.setProperty("reputationUse", Integer.toString(use));
 		write(immersiveRoot, p);
 	}
+	/** One of this Immersive career's crew-name settings (CrewNames' keys; heromedel, 6.62: the names are its crew's own), or null if it never chose. */
+	public static String nameSetting(File immersiveRoot, String key) { return read(immersiveRoot).getProperty(key); }
+	/** Sets one of this Immersive career's crew-name settings (its career must have begun). */
+	public static void setNameSetting(File immersiveRoot, String key, String value) throws IOException {
+		Properties p = read(immersiveRoot);
+		if (value.equals(p.getProperty(key))) return;
+		p.setProperty(key, value);
+		write(immersiveRoot, p);
+	}
+	/** The infirmary in this Immersive career (heromedel, 6.61: on unless chosen, never locked), or dflt if it never chose (a career from before). */
+	public static boolean infirmary(File immersiveRoot, boolean dflt) {
+		String v = read(immersiveRoot).getProperty("infirmary");
+		return v == null ? dflt : Boolean.parseBoolean(v.trim());
+	}
+	/** Sets the infirmary in this Immersive career (its career must have begun: the file marks that). */
+	public static void setInfirmary(File immersiveRoot, boolean on) throws IOException {
+		Properties p = read(immersiveRoot);
+		if (Boolean.toString(on).equals(p.getProperty("infirmary"))) return;
+		p.setProperty("infirmary", Boolean.toString(on));
+		write(immersiveRoot, p);
+	}
 	/**
 	 * Rescued Ships after Victory moved to Hard difficulty, as this career has it: "true", "false", or null where it was
 	 * never chosen (6.03). Read only where the career leaves it to the player: Easy (changed in Settings) and Custom

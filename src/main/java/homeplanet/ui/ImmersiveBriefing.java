@@ -50,6 +50,7 @@ final class ImmersiveBriefing extends JDialog {
 	/** What a career leaves to the player (Settings has them too): kept once the career is in use ({@link #keepChoices}). */
 	final JComboBox<String> repUse = new JComboBox<String>(RuleBoxes.REP_USE_OPTIONS);
 	final JCheckBox anyLevel = new JCheckBox("Allow trading with any Immersive level: Easy, Normal, Hard, Custom (when the other station allows it too)");
+	final JCheckBox infirmary = new JCheckBox(RuleBoxes.INFIRMARY_LABEL);
 	/** The difficulty: Easy, Normal, Hard or Custom (CareerRules.NAMES). */
 	private final JRadioButton[] difficulty = new JRadioButton[CareerRules.NAMES.length];
 	/** Each rule's level, chosen freely for Custom; the difficulty's otherwise. */
@@ -120,6 +121,7 @@ final class ImmersiveBriefing extends JDialog {
 	void keepChoices() {
 		HomePlanet.reputationUse = repUse.getSelectedIndex() + 1;
 		HomePlanet.immersiveAnyLevel = anyLevel.isSelected();
+		HomePlanet.infirmary = infirmary.isSelected();
 		HomePlanet.saveConfig();
 	}
 
@@ -211,6 +213,12 @@ final class ImmersiveBriefing extends JDialog {
 		anyLevel.setAlignmentX(Component.LEFT_ALIGNMENT);
 		anyLevel.setBorder(BorderFactory.createEmptyBorder(2, 12, 2, 0));
 		p.add(anyLevel);
+		// the infirmary (6.61): a career's own, on unless chosen
+		infirmary.setSelected(begun ? HomePlanet.infirmaryOf(immersiveRoot, true) : true);
+		infirmary.setToolTipText(RuleBoxes.INFIRMARY_TIP);
+		infirmary.setAlignmentX(Component.LEFT_ALIGNMENT);
+		infirmary.setBorder(BorderFactory.createEmptyBorder(2, 12, 2, 0));
+		p.add(infirmary);
 		p.add(Box.createRigidArea(new Dimension(1, 8)));
 		boolean custom = Vault.CUSTOM.equals(slot);
 		CareerRules was = begun ? Career.rules(immersiveRoot) : custom ? new CareerRules(CareerRules.CUSTOM, CareerRules.of(CareerRules.NORMAL).levels()) : CareerRules.of(slot);
@@ -389,6 +397,7 @@ final class ImmersiveBriefing extends JDialog {
 		}
 		sb.append(begun ? "<br>" : "").append("• How Reputation Can be Used: ").append(repUse.getSelectedItem());
 		sb.append("<br>• Trading with any Immersive level: ").append(anyLevel.isSelected() ? "allowed" : "your own level only");
+		sb.append("<br>• Infirmary: ").append(infirmary.isSelected() ? "on (a crewmate can save a life on an expedition)" : "off (no one is saved from death. The badly injured come home injured as usual)");
 		if (begun) return sb.toString();
 		sb.append("<br>");
 		CareerRules r = rules();

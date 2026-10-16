@@ -253,7 +253,7 @@ final class CargoParts {
 			getVerticalScrollBar().setOpaque(false);
 			getVerticalScrollBar().setUnitIncrement(21);
 		}
-		void setEmptyText(String s) { empty = s; }
+		void setEmptyText(String s) { if (!s.equals(empty)) { empty = s; repaint(); } } // an empty list shows it at once (6.62: it waited for the next repaint)
 		/** Replaces the rows, keeping the selection on the same thing when it's still there. */
 		void setRows(List<Row> rows) {
 			Object keep = selectedValue();

@@ -447,7 +447,7 @@ public final class Assignments {
 		for (Object[] h : HAZARDS) base.add("hazard " + h[0]);
 		for (String[] x : SECTORS) { base.add("offer " + x[0]); sectors.add(x[0]); }
 		for (Object[] h : HAZARDS) for (String race : (String[]) h[3]) base.add("shrug " + h[0] + " " + race);
-		for (Object[] j : JOBS) { base.add("band " + j[0] + " injured cause"); base.add("frame " + j[0]); }
+		for (Object[] j : JOBS) { base.add("band " + j[0] + " injured cause"); base.add("frame " + j[0]); base.add("saved " + j[0]); }
 		for (Object[] j : JOBS) for (int b = 2; b < BANDS.length; b++) for (String sk : Expeditions.SKILLS) base.add("band " + j[0] + " " + BANDS[b] + " " + sk);
 		List<String> out = new ArrayList<String>();
 		for (String k : words().keySet()) {
@@ -477,6 +477,7 @@ public final class Assignments {
 		for (String k : OTHER_KEYS) if (!words().containsKey(k)) out.add(k);
 		for (Object[] h : HAZARDS) for (String race : (String[]) h[3]) if (!words().containsKey("shrug " + h[0] + " " + race)) out.add("shrug " + h[0] + " " + race);
 		for (Object[] j : JOBS) if (!words().containsKey("frame " + j[0])) out.add("frame " + j[0]);
+		for (Object[] j : JOBS) if (!words().containsKey("saved " + j[0])) out.add("saved " + j[0]); // a life saved (6.61)
 		for (Object[] j : JOBS) if (!"spiders".equals(j[0]) && !words().containsKey("band " + j[0] + " injured cause")) out.add("band " + j[0] + " injured cause"); // on Giant Spiders an injury is a death
 		return out;
 	}
@@ -757,6 +758,8 @@ public final class Assignments {
 		/** The d20 as it fell (after the race's reroll), before their role's skill (5.43; the job's one skill before 6.39). */
 		public int natural;
 		public boolean rerolled, died, captured, infirmary;
+		/** The crewmate whose outstanding success saved them from death (6.61; they're in the infirmary instead), or null. */
+		public Fate savedBy;
 		/** Sent hurt and hurt again, and it wasn't worse: half of what they had. */
 		public boolean worn;
 		/** The item a 20 found (an id, or "fuel:3", "missiles:2", "parts:2"), or null. */
@@ -853,15 +856,16 @@ public final class Assignments {
 			else if (f.band == 1) {
 				if ("spiders".equals(r.job)) f.died = true;
 				else if ("boarded".equals(r.job) && rng.nextBoolean()) f.captured = true;
-				else if (sec < 0 && job < 0) f.infirmary = true;
+				else if (sec < 0 && job < 0 && HomePlanet.infirmary) f.infirmary = true; // (with no infirmary, hurt as usual)
 				if (!f.died && !f.captured && hurt(c)) { // hurt twice (heromedel): sent wounded and wounded again, a third each: dead, the infirmary, or half what they had
 					int d = rng.nextInt(3); // a third each
 					if (d == 0) { f.died = true; f.infirmary = false; }
-					else if (d == 1) f.infirmary = true;
+					else if (d == 1 && HomePlanet.infirmary) f.infirmary = true;
 					else if (!f.infirmary) f.worn = true;
 				}
 			}
 		}
+		rescue(r, rng);
 		r.base = 0;
 		for (int i = 0; i < BASE_DICE; i++) r.base += 1 + rng.nextInt(BASE_DIE);
 		r.multiplier = 100 + mods;
@@ -875,6 +879,27 @@ public final class Assignments {
 		}
 		r.report = report(r, new Random(r.seed));
 		return r;
+	}
+	/** What a crewmate's second roll needs to save a life: their role's skill counts, as on the job. */
+	static final int RESCUE_ROLL = 10;
+	/**
+	 * With the infirmary on (heromedel, 6.61): each death in turn may be saved by a crewmate who had an outstanding
+	 * success (the top band, a natural 20), isn't dead or taken, and hasn't tried to save anyone yet. They roll again, a
+	 * d20 with their role's skill, for the life, not the scrap: RESCUE_ROLL or more and the one who'd have died is laid
+	 * up in the infirmary instead. The dice are only rolled when there's someone to try.
+	 */
+	static void rescue(Result r, Random rng) {
+		if (!HomePlanet.infirmary) return;
+		java.util.Set<Fate> tried = new java.util.HashSet<Fate>();
+		for (Fate d : r.fates) {
+			if (!d.died) continue;
+			Fate s = null;
+			for (Fate x : r.fates) if (x != d && x.band == BANDS.length - 1 && !x.died && !x.captured && !tried.contains(x)) { s = x; break; }
+			if (s == null) return;
+			tried.add(s);
+			int level = s.skill < 0 ? 0 : homeplanet.model.Crew.skillLevels(s.crew)[s.skill];
+			if (skilled(1 + rng.nextInt(20), level, false) >= RESCUE_ROLL) { d.died = false; d.worn = false; d.infirmary = true; d.savedBy = s; }
+		}
 	}
 	/** An item worth up to this much: the dearest kind that fits (a weapon, drone or augment FTL's stores sell; else supplies), or null. */
 	static String findItem(int cap, Random rng) {
@@ -931,6 +956,11 @@ public final class Assignments {
 				continue;
 			}
 			if (f.captured) line = sayAt(rng, "was taken by the boarders.", captorsMark(r.sector), "captured");
+			else if (f.savedBy != null) { // saved from death (6.61): the rescue told on their line, both named
+				line = fresh(rng, "{name} was nearly killed, but {saver} saved {him}. {He} is in the infirmary.", used, "saved " + r.job);
+				used.add(line);
+				line = line.replace("{saver}", f.savedBy.name());
+			}
 			else if (f.infirmary) line = sayAt(rng, "was badly hurt and is in the infirmary.", r.sector, "infirmary");
 			else {
 				String fallback = f.died ? "was killed" : BANDS[f.band].equals("top") ? "was extremely successful" : "was " + BANDS[f.band];
@@ -1053,7 +1083,11 @@ public final class Assignments {
 			if (f.died) continue;
 			if (f.captured) { taken.add(m); continue; }
 			int max = m.getRace() == null ? 100 : m.getRace().getMaxHealth();
-			if (f.infirmary) { m.setHealth(Math.max(1, Math.min(m.getHealth(), max / 4))); hurt.add(m); }
+			if (f.infirmary) { // laid up, and a level lost in one skill (6.61), the same whenever the report is told
+				m.setHealth(Math.max(1, Math.min(m.getHealth(), max / 4)));
+				hurt.add(m);
+				Skills.loseLevel(m, new Random(r.seed ^ m.getName().hashCode()));
+			}
 			else if (f.worn) m.setHealth(Math.max(1, m.getHealth() / 2));
 			else if (f.band == 1) m.setHealth(Math.max(1, Math.min(m.getHealth(), max / 2)));
 			int earned = training(f.skill, f.band, f.other);
@@ -1128,6 +1162,8 @@ public final class Assignments {
 				.put("scrap", r.scrap).put("prize", r.prize).put("prize_detail", r.prizeDetail).put("captured", takenCount).put("good", good).put("bad", bad);
 		for (String x : a.names()) back.put("crew", x);
 		for (String x : dead) back.put("killed", x);
+		for (Fate f : r.fates) if (f.infirmary && !f.died) back.put("infirmary", f.name());
+		for (Fate f : r.fates) if (f.savedBy != null) back.put("saved", f.name() + ":" + f.savedBy.name()); // saved:saver (6.61)
 		Roles jr = roles(r.job);
 		for (Fate f : r.fates) { // each one's role and what it taught (6.39): name:skill:kind:band:points
 			if (f.skill < 0) continue;
@@ -1136,7 +1172,7 @@ public final class Assignments {
 		}
 		HistoryLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
 				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead))
-				+ fatesNamed(r, true) + fatesNamed(r, false), null, back);
+				+ fatesNamed(r, true) + fatesNamed(r, false) + savedNamed(r), null, back);
 		if (byLetter) Transmissions.deliver(letter, "Expedition Command", "Back from " + sectorTitle(r.sector), text, String.join(", ", brought));
 		return new Report(r.sector, text, a.names(), faces);
 	}
@@ -1145,6 +1181,12 @@ public final class Assignments {
 		List<String> n = new ArrayList<String>();
 		for (Fate f : r.fates) if (taken ? f.captured : f.infirmary && !f.died) n.add(f.name());
 		return n.isEmpty() ? "" : (taken ? "; taken: " : "; to the infirmary: ") + String.join(", ", n);
+	}
+	/** "; saved: Ann by Kenji" for the station log (6.61), or nothing: whose outstanding success saved whom. */
+	private static String savedNamed(Result r) {
+		List<String> n = new ArrayList<String>();
+		for (Fate f : r.fates) if (f.savedBy != null) n.add(f.name() + " by " + f.savedBy.name());
+		return n.isEmpty() ? "" : "; saved: " + String.join(", ", n);
 	}
 	/** Who holds a captive taken in this sector. */
 	static String sectorCaptors(String sector) {

@@ -22,7 +22,7 @@ public class ExpT { public static void main(String[] a) throws Exception {
   v.begin().put(v.storage(), c.save, c.hash).commit();
   return Expeditions.holdCrew(v);
  }
- /** The station's care: in-game hurts heal after a beacon; the infirmary costs a point of skill a beacon; a clone bay a level; events give experience. */
+ /** The station's care: in-game hurts heal after a beacon; the infirmary costs a level (taken when they come home, 6.61); a clone bay a level; events give experience. */
  static void care(Vault v) throws Exception {
   List<CrewState> two = hold(v, "human", "human");
   Expeditions.checkInfirmary(v); // the station's last look is now
@@ -61,15 +61,23 @@ public class ExpT { public static void main(String[] a) throws Exception {
   byte[] was = SafeFiles.read(v.storage().file());
   Expeditions.checkInfirmary(v);
   Setup.chk("C: a beacon with nobody hurt and nobody laid up: the Cargo Hold's file is left as it was", Arrays.equals(was, SafeFiles.read(v.storage().file())));
-  // the infirmary: a point a beacon off a skill she has, and a level can go with it
+  // the infirmary: the lay-up's level is taken when they come home (6.61; AsgT), nothing more while laid up
   admit(v, a);
   int stay = Expeditions.infirmary(v).get(0).until - v.beaconsSeen();
   ChainT.jump(v, stay);
   Expeditions.checkInfirmary(v);
   CrewState after = crew(v, a.getName());
   int lostPts = 36 - homeplanet.model.Skills.points(after, 0) - homeplanet.model.Skills.points(after, 4);
-  Setup.chk("C: " + stay + " beacons in the infirmary cost " + lostPts + " points of skill, from the skills she had (pilot " + homeplanet.model.Skills.points(after, 0) + ", repair " + homeplanet.model.Skills.points(after, 4) + ")",
-    lostPts == stay && homeplanet.model.Skills.points(after, 2) == 0 && (homeplanet.model.Crew.skillLevels(after)[4] == 1) == (homeplanet.model.Skills.points(after, 4) >= 16));
+  Setup.chk("C: " + stay + " beacons in the infirmary cost no more points of skill (" + lostPts + "); out whole (" + hp(v, a.getName()) + ")", lostPts == 0 && hp(v, a.getName()) == 100);
+  // a level off one skill held, at random; with none held, nothing
+  CrewState lv = Commission.volunteer("human", new Random(5));
+  homeplanet.model.Skills.set(lv, 0, 2 * homeplanet.model.Skills.interval(lv, 0) + 3); homeplanet.model.Skills.set(lv, 4, homeplanet.model.Skills.interval(lv, 4));
+  for (int k = 1; k < 6; k++) if (k != 4) homeplanet.model.Skills.set(lv, k, 0);
+  boolean took = homeplanet.model.Skills.loseLevel(lv, new Random(2));
+  int[] after2 = homeplanet.model.Crew.skillLevels(lv);
+  CrewState none = Commission.volunteer("human", new Random(6)); for (int k = 0; k < 6; k++) homeplanet.model.Skills.set(none, k, 0);
+  Setup.chk("C: a lay-up's level: one off a skill held, its points at that level's start (pilot " + after2[0] + ", repair " + after2[4] + "); none held, nothing",
+    took && after2[0] + after2[4] == 2 && (after2[0] == 1 ? homeplanet.model.Skills.points(lv, 0) == homeplanet.model.Skills.interval(lv, 0) : homeplanet.model.Skills.points(lv, 4) == 0) && !homeplanet.model.Skills.loseLevel(none, new Random(2)));
   // someone laid up who leaves the Cargo Hold (retired, say) is let go quietly when their time is up: no word of them
   List<CrewState> pair = hold(v, "human", "human");
   String leaver = pair.get(0).getName();

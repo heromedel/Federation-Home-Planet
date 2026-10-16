@@ -86,6 +86,8 @@ if command -v xvfb-run >/dev/null; then
 	(cd "$W" && xvfb-run -a java -cp "$CP" EscT 2>&1) | grep -E "$PICK"
 	echo "== RemodT"
 	(cd "$W" && xvfb-run -a java -Dhomeplanet.noGameCheck=true -cp "$CP" RemodT "$GAME" "$WORLD" "$W/remod" 2>&1) | grep -E "$PICK|^PASS"
+	echo "== TipT"
+	(cd "$W" && xvfb-run -a -s "-screen 0 1600x1000x24" java -Dhomeplanet.noGameCheck=true -cp "$CP" TipT "$GAME" "$WORLD" "$W/tip" 2>&1) | grep -E "$PICK|see-through"
 	echo "== OverhaulT"
 	(cd "$W" && xvfb-run -a java -Dhomeplanet.noGameCheck=true -cp "$CP" OverhaulT "$GAME" "$WORLD" "$W/overhaul" 2>&1) | grep -E "$PICK|^PASS"
 else echo "(GuiT skipped: no xvfb-run)"; fi

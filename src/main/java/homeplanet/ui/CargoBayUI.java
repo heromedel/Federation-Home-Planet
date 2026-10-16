@@ -291,8 +291,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	void showTab(String name) {
 		if (tradeUnavailable()) name = "notice";
-		else if (holdOnly()) name = "trade"; // the Shop and the Refit tab work on the picked ship
-		currentTab = name;
+		else if (holdOnly() || name.equals("notice")) name = "trade"; // the Shop and the Refit tab work on the picked ship; the notice gone, Trade
+		if (!name.equals("notice")) currentTab = name; // the notice isn't a tab to come back to: kept, the bay reopened on it after the rule was lifted (6.62, McCarthy)
 		cards.show(tabs, name);
 		for (int i = 0; i < 3; i++) tabButtons[i].setLit(tabNames[i].equals(name));
 		if (name.equals("trade")) help(describeSelection());
@@ -350,6 +350,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		shop.init();
 		systems.init();
 		refreshTrade();
+		notice.setText("");
 		notice2.setText("");
 		if (currentPath == null) notice.setText("No ship picked: pick one below, or board one at the Space Dock.");
 		else if (!Vault.get().mayTrade(currentShip)) {

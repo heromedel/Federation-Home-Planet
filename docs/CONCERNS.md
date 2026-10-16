@@ -47,8 +47,10 @@ read, and drop RepuT's O, C and H checks.
 the station's own settings, the same for every career, are in `federation-home-planet.cfg` in FTL's saves folder (with a copy of
 the three folders, so a new release folder finds FTL and Slipstream); Sandbox Mode's rules are in `FederationHomePlanet/rules.xml`
 (`HomePlanet.SANDBOX_KEYS`); an Immersive career's are in its own `career.xml` as before, and how reputation can be used is each
-career's own since 6.55 (`Career.reputationUse`, Sandbox Mode's standing in for a career from before). A cfg from before is carried
-over on its first save. Startup now finds the saves folder before FTL's folder, and takes the station's own without asking.
+career's own since 6.55 (`Career.reputationUse`, Sandbox Mode's standing in for a career from before). The crew's names (the race
+lists, the human name style, the Engi translation) are each fleet's own since 6.62 (heromedel: they change the names given):
+`CrewNames.set` keeps them with Sandbox Mode's rules (lists off unless chosen) or in the career's `career.xml` (lists on unless chosen).
+A cfg from before is carried over on its first save. Startup now finds the saves folder before FTL's folder, and takes the station's own without asking.
 
 **What it costs.** The one `HomePlanet.config` in memory still holds everything, so nothing that reads a setting changed; only
 `loadConfig`, `loadSavesSettings` and `saveConfig` know the three files. They are written one after another, each whole on its
