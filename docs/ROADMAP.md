@@ -1329,6 +1329,13 @@ left, and the drop-down saying there are no ships in range.
 5. GuiT checks a one-ship fleet away from a store: the bay opens on Trade, the drop-down says "No ships in range", the
    Cargo Hold can be looked over.
 
+## 47. Fuel sold as well — planned (heromedel, 6.64; not built yet)
+
+heromedel: the option to sell missiles and drone parts should include fuel. Today the Cargo Bay's sell (and junk) buttons
+under the supply arrows work on missiles and drone parts only ("Only missiles and drone parts can be sold or junked;
+scrap and fuel move with the arrows"). Fuel would be sold the same way, under the same house rule (`sell_supplies`), at
+the same share of FTL's store price (fuel 3 scrap), and the rule's words and the buttons' tooltips would name fuel too.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo
