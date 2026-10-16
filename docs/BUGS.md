@@ -37,3 +37,8 @@ other systems. Leave it unless players run into it.
 Knocked from 4 hull to 1 in a fight, the Engi Restoration Collective's letter came before she had left the beacon.
 `Vault.noteHull` checks only for one point of hull with no living hostile ship alongside, never for a jump away. The fix
 is planned in `docs/ROADMAP.md` 12 (wait for a later save at a new beacon).
+
+## The Captain's Log loses a move back to the Cargo Hold (found 6.64, heromedel in play)
+
+Crew moved to the Cargo Hold, to a new ship, and back to the Cargo Hold in one day read as only the first two moves:
+`CaptainsLog` merges every move to the same place that day into the first. The fix is planned in `docs/ROADMAP.md` 43.

@@ -1257,6 +1257,14 @@ station", "to sector 3"); "I returned to The Home Planet Station." and "Set out 
 moves between the two; gear bought at a store or picked up. The voyage log gains "Arrived at a store", "Bought at a
 store: …" and "Picked up: …" for it. Hard rule 2 now says days are real: a player may work out that a jump passes a day.
 
+**To fix (found 6.64, heromedel):** a round trip of crew in one day loses a move. heromedel moved crew to the Cargo Hold,
+from it to a new ship (to repair her), and back to the Cargo Hold, then rested; the log read "Moved … to the Cargo Hold",
+"Assigned … to the new ship", took command, returned to the station, rested: the move back is gone. `CaptainsLog` keys
+each move by where it went (`"assign:" + the destination`, line 268), so every move to the same place that day merges
+into the first one, at its place in the day. The fix: merge only moves that come one after another (the same destination
+as the line just before), and say "back" when the same crew return to where they were earlier that day ("Moved them back
+to the Cargo Hold."). A record only: the crew themselves are where they should be. LogT to cover the round trip.
+
 **The beacon (5.19, heromedel):** a jump's line tells what the beacon held and who she met ("Then we jumped into an ion
 storm and met a Rock pirate"), even when it's learned on a later look, on a later day. The voyage log gains "Beacon: …"
 (the save's red giant, pulsar, planetary defence system and asteroid field; a nebula from FTL's count of nebula jumps;
