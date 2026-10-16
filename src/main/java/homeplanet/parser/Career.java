@@ -92,6 +92,18 @@ public final class Career {
 		p.setProperty(key, value);
 		write(immersiveRoot, p);
 	}
+	/** The infirmary in this Immersive career (heromedel, 6.61: on unless chosen, never locked), or dflt if it never chose (a career from before). */
+	public static boolean infirmary(File immersiveRoot, boolean dflt) {
+		String v = read(immersiveRoot).getProperty("infirmary");
+		return v == null ? dflt : Boolean.parseBoolean(v.trim());
+	}
+	/** Sets the infirmary in this Immersive career (its career must have begun: the file marks that). */
+	public static void setInfirmary(File immersiveRoot, boolean on) throws IOException {
+		Properties p = read(immersiveRoot);
+		if (Boolean.toString(on).equals(p.getProperty("infirmary"))) return;
+		p.setProperty("infirmary", Boolean.toString(on));
+		write(immersiveRoot, p);
+	}
 	/** What comes after a final victory in this Immersive fleet (FinalVictory.NOTHING, RESCUE or MUSEUM; REWARD before 6.47). */
 	public static String finalVictory(File immersiveRoot) { return read(immersiveRoot).getProperty("finalVictory", FinalVictory.NOTHING); }
 	/** Sets what comes after a final victory in this Immersive fleet (its career must have begun). */
