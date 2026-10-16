@@ -27,6 +27,7 @@ public class GuiT {
    MainFrame f = new MainFrame("FHP", "test"); f.setSize(1300, 800); f.setVisible(true); frame[0] = f;
   } catch (Exception e) { throw new RuntimeException(e); } } });
   final MainFrame f = (MainFrame) frame[0];
+  noticeClears(v, f); // first: a ship aboard, the Cargo Bay not opened yet
   bill(v, f, false);
   bill(v, f, true);
   shipPays(v, f);
@@ -316,6 +317,52 @@ public class GuiT {
    System.clearProperty("homeplanet.ftlSettings");
    ini.delete();
   }
+ }
+ /** The Cargo Bay with the station rule on and the ship away from a store shows the notice; the rule lifted, it opens on Trade at once; a list's empty words show without another click (6.62, McCarthy's handoff). */
+ static void noticeClears(final Vault v, final MainFrame f) throws Exception {
+  final boolean was = HomePlanet.storeRequirement;
+  final Ship b = v.boarded();
+  final SavedGameParser.SavedGameState orig = v.readCopy(b).save;
+  SavedGameParser.SavedGameState g = v.readCopy(b).save;
+  if (g.getBeaconList() != null && g.getCurrentBeaconId() >= 0 && g.getCurrentBeaconId() < g.getBeaconList().size()) g.getBeaconList().get(g.getCurrentBeaconId()).setStore(null); // no store where she is (no map: none either)
+  g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); // and not where the station set her out
+  v.write(b, g); b.invalidate();
+  HomePlanet.storeRequirement = true;
+  final Object[] r = new Object[6];
+  try {
+   r[0] = !v.mayTrade(v.boarded());
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    f.showCargoBay();
+    CargoBayUI bay = (CargoBayUI) field(f, MainFrame.class, "cargoBay");
+    bay.init();
+    r[1] = shownCard(bay) + "/" + call(field(bay, CargoBayUI.class, "notice"), field(bay, CargoBayUI.class, "notice").getClass(), "getText", new Class<?>[0]);
+    HomePlanet.storeRequirement = false; // Settings, Rules: unticked
+    bay.init(); // the Cargo Bay opened again
+    r[2] = shownCard(bay) + "/" + field(bay, CargoBayUI.class, "currentTab") + "/[" + call(field(bay, CargoBayUI.class, "notice"), field(bay, CargoBayUI.class, "notice").getClass(), "getText", new Class<?>[0]) + "]";
+    // a list's empty words: drawn again as soon as they change (the Long Range list waited for another click)
+    Object[] cats = (Object[]) field(bay, CargoBayUI.class, "cats");
+    JComponent list = (JComponent) field(cats[0], cats[0].getClass(), "mine");
+    RepaintManager rm = RepaintManager.currentManager(list);
+    rm.markCompletelyClean(list);
+    call(list, list.getClass(), "setEmptyText", new Class<?>[] {String.class}, "No stations with hailing frequencies open");
+    r[3] = !rm.getDirtyRegion(list).isEmpty();
+    f.showSpaceDock();
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+  } finally {
+   HomePlanet.storeRequirement = was;
+   v.write(b, orig); b.invalidate();
+  }
+  Setup.chk("AQ: away from a store with the rule on, she may not trade", Boolean.TRUE.equals(r[0]));
+  Setup.chk("AQ: the Cargo Bay shows the notice: " + r[1], String.valueOf(r[1]).startsWith("notice/") && String.valueOf(r[1]).contains("not within range of a station"));
+  Setup.chk("AQ: the rule lifted, the Cargo Bay opens on Trade at once, the notice cleared: " + r[2], "trade/trade/[]".equals(r[2]));
+  Setup.chk("AQ: a list's empty words are drawn again as soon as they change", Boolean.TRUE.equals(r[3]));
+ }
+ /** The Cargo Bay's card on show: trade, shop, refit or notice. */
+ static String shownCard(CargoBayUI bay) throws Exception {
+  JPanel tabs = (JPanel) field(bay, CargoBayUI.class, "tabs");
+  String[] names = {"trade", "shop", "refit", "notice"};
+  for (int i = 0; i < tabs.getComponentCount() && i < names.length; i++) if (tabs.getComponent(i).isVisible()) return names[i];
+  return "none";
  }
  /** The Space Dock's Launch button's words, the dock taken stock of first (as it is when the station comes to the front). */
  static String launchLabel(final MainFrame f) throws Exception {

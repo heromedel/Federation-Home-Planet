@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.61";
+	public static final String APP_VERSION = "6.62";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -175,7 +175,8 @@ public class HomePlanet {
 		// them all (FTL's folder and Slipstream's with them) and asks nothing it was told before
 		save_location = savesFolder();
 		if (save_location == null) {
-			showErrorDialog("The Home Planet Station was unable to find FTL's saves folder. The Inter-Station Services cannot function without it.\nIt will now close.");
+			showErrorDialog("The Home Planet Station could not find FTL's saves folder.\n\nFTL makes it the first time it runs: if FTL hasn't been played on this computer yet, start it once, wait for its main menu, quit it, "
+					+ "then start The Home Planet Station again.\n\nThe Inter-Station Services cannot function without it, so The Home Planet Station will now close."); // heromedel, 6.62: say why, and what to do
 			System.exit(1);
 		}
 		if (!(restarted ? StationLock.claimWaiting(save_location, 10000) : StationLock.claim(save_location))) { // another copy is open on these saves (5.45)
@@ -470,7 +471,8 @@ public class HomePlanet {
 			"strip_when_scrapping", "refit_removal_fee", "new_journey_fee", "career_messages", "reputation", "reputation_use", "reputation_rate",
 			homeplanet.parser.PlayerRank.CFG, "sell_supplies", "commission_unlocked_only", "commission_custom_unlocked_only", "sell_systems",
 			"augments_home", "commission_costs_scrap", "commission_price_percent", "expedition_type", "free_ship", "unlock_free_ships",
-			"final_victory", "final_victory_pay", "rescued_to_hard", "immersive_notifications");
+			"final_victory", "final_victory_pay", "rescued_to_hard", "immersive_notifications",
+			homeplanet.parser.CrewNames.CFG_LISTS, homeplanet.parser.CrewNames.CFG_HUMAN, homeplanet.parser.CrewNames.CFG_ENGI); // the crew's names, each fleet its own (6.62)
 	/** The station's settings file, in FTL's saves folder (null until it's known). */
 	public static File stationFile() { return save_location == null ? null : new File(save_location, STATION_CFG); }
 	/** Sandbox Mode's rules, in its fleet's folder (null until the saves folder is known). */

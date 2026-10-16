@@ -83,6 +83,15 @@ public final class Career {
 		p.setProperty("reputationUse", Integer.toString(use));
 		write(immersiveRoot, p);
 	}
+	/** One of this Immersive career's crew-name settings (CrewNames' keys; heromedel, 6.62: the names are its crew's own), or null if it never chose. */
+	public static String nameSetting(File immersiveRoot, String key) { return read(immersiveRoot).getProperty(key); }
+	/** Sets one of this Immersive career's crew-name settings (its career must have begun). */
+	public static void setNameSetting(File immersiveRoot, String key, String value) throws IOException {
+		Properties p = read(immersiveRoot);
+		if (value.equals(p.getProperty(key))) return;
+		p.setProperty(key, value);
+		write(immersiveRoot, p);
+	}
 	/** What comes after a final victory in this Immersive fleet (FinalVictory.NOTHING, RESCUE or MUSEUM; REWARD before 6.47). */
 	public static String finalVictory(File immersiveRoot) { return read(immersiveRoot).getProperty("finalVictory", FinalVictory.NOTHING); }
 	/** Sets what comes after a final victory in this Immersive fleet (its career must have begun). */

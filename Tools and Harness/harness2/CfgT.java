@@ -1,7 +1,7 @@
 import java.io.*; import java.util.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
 /**
  * Where the settings live (6.55, heromedel, Plan AI): beside the program only where things are (FTL, its saves, Slipstream);
- * the station's own in FTL's saves folder; Sandbox Mode's rules in its fleet; how reputation can be used, each career its own.
+ * the station's own in FTL's saves folder; Sandbox Mode's rules in its fleet; how reputation can be used, and the crew's names (6.62), each career its own.
  * A cfg from before is carried over; a new release folder finds everything and asks nothing (headless: a question would throw).
  * args: gamedir, world saves, work
  */
@@ -22,6 +22,7 @@ public class CfgT {
   o.setProperty(Slipstream.CFG_OFFERED, "true"); o.setProperty("launch_through_steam", "true"); o.setProperty(homeplanet.model.Words.CFG_SHIP, "him"); o.setProperty("window_bounds", "1,2,3,4");
   for (String k : new String[] {"store_requirement", "strip_when_scrapping", "commission_unlocked_only", "commission_custom_unlocked_only"}) o.setProperty(k, "false");
   o.setProperty("new_journey_store_requirement", "true"); o.setProperty("sell_supplies", "true"); o.setProperty("commission_price_percent", "75"); o.setProperty("reputation_use", "3");
+  o.setProperty(CrewNames.CFG_LISTS, "true"); o.setProperty(CrewNames.CFG_HUMAN, CrewNames.FIRST); // the station's own before 6.62
   FileOutputStream out = new FileOutputStream(old); o.store(out, "before 6.55"); out.close();
   HomePlanet.config.clear(); HomePlanet.propFile = old;
   call("loadConfig");
@@ -39,6 +40,8 @@ public class CfgT {
     HomePlanet.sandboxRulesFile().getName().equals("rules.xml") && HomePlanet.sandboxRulesFile().getParentFile().getName().equals(Vault.FOLDER)
     && "false".equals(ru.getProperty("store_requirement")) && "75".equals(ru.getProperty("commission_price_percent")) && "3".equals(ru.getProperty("reputation_use"))
     && ru.getProperty(homeplanet.model.Words.CFG_SHIP) == null && ru.getProperty("ftlDatsPath") == null);
+  Setup.chk("AS: the old crew-name choices are Sandbox Mode's now, with its rules, not the station's",
+    "true".equals(ru.getProperty(CrewNames.CFG_LISTS)) && CrewNames.FIRST.equals(ru.getProperty(CrewNames.CFG_HUMAN)) && st.getProperty(CrewNames.CFG_LISTS) == null && st.getProperty(CrewNames.CFG_HUMAN) == null);
 
   // F: a new release folder: nothing beside it; FTL's saves where FTL keeps them, with the station's settings and fleet in them
   File home = new File(work, "home"), ftlSaves = new File(home, "Documents/My Games/FasterThanLight");
@@ -85,6 +88,22 @@ public class CfgT {
   Setup.chk("R: in the career again: 1", HomePlanet.reputationUse == 1);
   Vault.switchFleet(Vault.SANDBOX); HomePlanet.immersiveMode = false;
   Setup.chk("R: a career from before 6.55 (no choice of its own) has Sandbox Mode's, as it shared it", HomePlanet.reputationUseOf(Vault.rootOf(saves, Vault.HARD), true) == 3);
+
+  // AS: the crew's names, each fleet its own (heromedel, 6.62): Sandbox Mode off unless chosen, an Immersive career on
+  Setup.chk("AS: Sandbox Mode keeps its choices: lists on, human names First", CrewNames.listsOn() && CrewNames.FIRST.equals(CrewNames.humanGen()));
+  Vault.switchFleet(Vault.NORMAL); HomePlanet.immersiveMode = true;
+  Setup.chk("AS: an Immersive career that never chose: lists on, human names Normal, Engi translation None",
+    CrewNames.listsOn() && CrewNames.NORMAL.equals(CrewNames.humanGen()) && CrewNames.NONE.equals(CrewNames.engiTranslate()) && Career.nameSetting(Vault.get().root, CrewNames.CFG_LISTS) == null);
+  CrewNames.set(CrewNames.CFG_LISTS, "false"); CrewNames.set(CrewNames.CFG_ENGI, CrewNames.PREFIX);
+  Setup.chk("AS: the career turns them off and picks Prefix: kept in its career.xml, not locked",
+    !CrewNames.listsOn() && CrewNames.PREFIX.equals(CrewNames.engiTranslate()) && "false".equals(Career.nameSetting(Vault.get().root, CrewNames.CFG_LISTS)));
+  Vault.switchFleet(Vault.SANDBOX); HomePlanet.immersiveMode = false;
+  Setup.chk("AS: Sandbox Mode's untouched by the career's: lists on, Engi None", CrewNames.listsOn() && CrewNames.NONE.equals(CrewNames.engiTranslate()));
+  CrewNames.set(CrewNames.CFG_LISTS, "false"); HomePlanet.saveConfig();
+  Setup.chk("AS: Sandbox Mode turned off: off by its default, the line gone from its rules", !CrewNames.listsOn() && props(HomePlanet.sandboxRulesFile()).getProperty(CrewNames.CFG_LISTS) == null);
+  Vault.switchFleet(Vault.NORMAL); HomePlanet.immersiveMode = true;
+  Setup.chk("AS: the career's own still off, as it chose", !CrewNames.listsOn());
+  Vault.switchFleet(Vault.SANDBOX); HomePlanet.immersiveMode = false;
   Setup.done();
  }
 }
