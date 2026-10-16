@@ -1336,6 +1336,23 @@ under the supply arrows work on missiles and drone parts only ("Only missiles an
 scrap and fuel move with the arrows"). Fuel would be sold the same way, under the same house rule (`sell_supplies`), at
 the same share of FTL's store price (fuel 3 scrap), and the rule's words and the buttons' tooltips would name fuel too.
 
+## 48. Ship and part values apart from Commission's cost — planned (Plan J, heromedel, 6.64; not built yet)
+
+heromedel: with Sandbox's commissioning set to free, the assumed value of ships is 100%, so the Junkyard doesn't look like
+Easy mode. Today the percentage beside "Commissioning a ship costs scrap, paid from the Cargo Hold, at" is greyed while
+commissioning is free, yet it still prices every ship and part (Trade In, Auction, the museum, the Junkyard's derelicts and
+parts); a Custom career's "nothing (values at full price)" commission level (6.48) does the same on purpose.
+
+1. Sandbox's Rules: "Commissioning a ship costs scrap" stands alone, and a separate drop-down, "Ship and part values:
+   100% / 75% / 50%", is always there to choose, its tooltip naming what it prices (Commission when it costs, Trade In,
+   Auction, the museum, the Junkyard's derelicts and parts). In the Immersive careers it shows locked to the career's one
+   (heromedel): Easy 50, Normal 75, Hard 100.
+2. A Custom career's "nothing" commission level no longer means full price: the career's own value level, chosen in the
+   same table with its other rules and then fixed, prices her.
+3. Existing Sandbox fleets keep the percentage they have saved: nothing changes until the player changes it.
+4. Checks: FleetT for the Custom levels; GuiT for Sandbox's rule open with commissioning free, and a derelict's price
+   following it.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo
