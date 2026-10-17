@@ -25,7 +25,7 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 
 All built. What remains is testing in real play and bug checks.
 
-The 6.0 overhaul (storage, logs and code rebuilt; `docs/OVERHAUL-6.md`) is done: 6.00 (heromedel). The kill test was done at
+The 6.0 overhaul (storage, logs and code rebuilt; `docs/OVERHAUL-6.md`, removed at 6.66, in git history) is done: 6.00 (heromedel). The kill test was done at
 5.95 (Buggy Boy), the protocol settled at 5.98 (heromedel: no bump), and McCarthy's words moved into `lore/` with the docs' pass
 at 5.991 (the log's human lines for every kind, the letters, the expedition words and the deeds).
 The kill test (KillT) and the old-fleet conversion's tests are removed from the harness (heromedel, after 5.98): they passed
@@ -785,7 +785,7 @@ From a review of 4B.95 and 4B.96 in main, and heromedel's answers (Plan U).
   write, so it can't be paid twice. The expedition's end writes the Cargo Hold, the infirmary and the captives
   together; a side file that can't be read is an error, never written back empty.
 
-## 27. Bug squashing — in progress (4B.98)
+## 27. Bug squashing — done (4B.98; bugs found since are kept in `docs/BUGS.md`)
 
 Fixes only, from heromedel's testing and the review; no new features. Design debts found on the way go to
 `docs/CONCERNS.md`, not here.
@@ -1330,7 +1330,7 @@ left, and the drop-down saying there are no ships in range.
 5. GuiT checks a one-ship fleet away from a store: the bay opens on Trade, the drop-down says "No ships in range", the
    Cargo Hold can be looked over.
 
-## 47. Fuel sold as well — built (6.66; fuel sells, never junked)
+## 47. Fuel sold as well — built (6.66; fuel sells at the same share and can be junked)
 
 heromedel: the option to sell missiles and drone parts should include fuel. Today the Cargo Bay's sell (and junk) buttons
 under the supply arrows work on missiles and drone parts only ("Only missiles and drone parts can be sold or junked;

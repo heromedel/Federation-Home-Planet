@@ -67,7 +67,7 @@ public class RuleBoxes {
 	static final String[] REP_USE_TIPS = {
 		"<html>Reputation can pay a New Journey's fee, and a plea for a new ship can keep the Cargo Hold.<br>A promise of adventure and a day's rest cost reputation. Everything else is paid in scrap.</html>",
 		"<html>Everything in New Journeys and Pleads, plus what vanilla FTL can't do:<br>taking a system off at Refit, stripping systems when scrapping, and a custom work order's reputation share.</html>",
-		"<html>Reputation is never spent on purchases. A plea gives up the Cargo Hold; everything is paid in scrap.<br>A promise of adventure and a day's rest still cost reputation: they're penalties, not purchases.</html>"};
+		"<html>Reputation is never spent on purchases. A plea gives up the Cargo Hold;<br>everything is paid in scrap.</html>"};
 	private final CargoParts.IconButton repUseInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "What each option does", new ActionListener() {
 		public void actionPerformed(ActionEvent e) { repUseInfo(repUseBox); }
 	});
@@ -106,7 +106,6 @@ public class RuleBoxes {
 				"A custom work order past FTL's System Limit is paid half in scrap, half in reputation."},
 			{"Reputation is a score: nothing buys anything with it.",
 				"A plea for a new ship gives up the Cargo Hold.",
-				"A promise of adventure and a day's rest still cost reputation: they're penalties, not purchases.",
 				"Everything else is paid in scrap."}};
 		StringBuilder h = new StringBuilder("<html><body style='width:460px'>");
 		for (int i = 0; i < names.length; i++) {

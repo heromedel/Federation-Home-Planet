@@ -758,10 +758,10 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		allRight.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { moveAllSupply(true); } });
 		trade.add(allLeft); trade.add(allRight);
 		// missiles and drone parts can be junked (and sold, when the house rule allows): that many, from the side chosen
-		myJunkSupply = icon(CargoParts.trashIcon(), 8, y + 68, "Junk that many of your ship's missiles or drone parts", new ActionListener() { public void actionPerformed(ActionEvent e) { disposeSupply(true, false); } });
+		myJunkSupply = icon(CargoParts.trashIcon(), 8, y + 68, "Junk that many of your ship's fuel, missiles or drone parts", new ActionListener() { public void actionPerformed(ActionEvent e) { disposeSupply(true, false); } });
 		mySellSupply = icon(IconFactory.supplyIcon("scrap"), 34, y + 68, "Sell that many of your ship's fuel, missiles or drone parts (half the store price)", new ActionListener() { public void actionPerformed(ActionEvent e) { disposeSupply(true, true); } });
 		theirSellSupply = icon(IconFactory.supplyIcon("scrap"), GW - 58, y + 68, "Sell that many of the partner's fuel, missiles or drone parts (half the store price)", new ActionListener() { public void actionPerformed(ActionEvent e) { disposeSupply(false, true); } });
-		theirJunkSupply = icon(CargoParts.trashIcon(), GW - 32, y + 68, "Junk that many of the partner's missiles or drone parts", new ActionListener() { public void actionPerformed(ActionEvent e) { disposeSupply(false, false); } });
+		theirJunkSupply = icon(CargoParts.trashIcon(), GW - 32, y + 68, "Junk that many of the partner's fuel, missiles or drone parts", new ActionListener() { public void actionPerformed(ActionEvent e) { disposeSupply(false, false); } });
 		updateSupplyButtons();
 
 		// items and crew
@@ -813,21 +813,21 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		updateSupplyButtons();
 		if (currentTab.equals("trade")) help("Moving " + SUPPLIES[i][1].toLowerCase() + ": set the amount in the middle, then > sends it to " + partnerName() + " and < takes it from them.");
 	}
-	/** The junk and sell buttons under the arrows: junk for missiles and drone parts, sell for fuel too (6.66); sell only under the house rule. */
+	/** The junk and sell buttons under the arrows: fuel, missiles and drone parts (fuel since 6.66); sell only under the house rule. */
 	void updateSupplyButtons() {
 		if (myJunkSupply == null) return;
-		boolean ship = currentState != null && tradeState != null, can = supplyIdx >= 2 && ship, canSell = supplyIdx >= 1 && ship; // fuel sells too, never junked (6.66, heromedel)
+		boolean can = supplyIdx >= 1 && currentState != null && tradeState != null; // fuel sells and junks too (6.66, heromedel)
 		mySellSupply.setVisible(HomePlanet.sellSupplies());
 		String share = homeplanet.core.Economy.supplyShare();
 		mySellSupply.setToolTipText("Sell that many of your ship's fuel, missiles or drone parts (" + share + ")");
 		theirSellSupply.setToolTipText("Sell that many of the partner's fuel, missiles or drone parts (" + share + ")");
 		theirSellSupply.setVisible(HomePlanet.sellSupplies());
-		myJunkSupply.setEnabled(can); mySellSupply.setEnabled(canSell);
-		theirJunkSupply.setEnabled(can); theirSellSupply.setEnabled(canSell);
+		myJunkSupply.setEnabled(can); mySellSupply.setEnabled(can);
+		theirJunkSupply.setEnabled(can); theirSellSupply.setEnabled(can);
 	}
-	/** Junks or sells the chosen amount of one side's missiles or drone parts. */
+	/** Junks or sells the chosen amount of one side's fuel, missiles or drone parts. */
 	private void disposeSupply(boolean mine, boolean sell) {
-		if (supplyIdx < (sell ? 1 : 2)) { help(sell ? "Scrap moves with the arrows; fuel, missiles and drone parts can be sold." : "Only missiles and drone parts can be junked; scrap and fuel move with the arrows."); return; }
+		if (supplyIdx < 1) { help("Scrap moves with the arrows; fuel, missiles and drone parts can be " + (sell ? "sold." : "junked.")); return; }
 		SavedGameState save = mine ? currentSave : tradeSave;
 		ShipState state = mine ? currentState : tradeState;
 		String what = supplyIdx == 1 ? "fuel" : supplyIdx == 2 ? "missiles" : "drone parts", key = supplyIdx == 1 ? "Fuel" : supplyIdx == 2 ? "Missiles" : "Drone parts";
