@@ -1353,7 +1353,7 @@ parts); a Custom career's "nothing (values at full price)" commission level (6.4
 4. Checks: FleetT for the Custom levels; GuiT for Sandbox's rule open with commissioning free, and a derelict's price
    following it.
 
-## 49. Posting for crew ends the day — planned (Plan K, heromedel, 6.64; not built yet)
+## 49. Posting for crew ends the day — built (6.65; Plan K, heromedel; built and compiled, not run through the harness)
 
 heromedel: posting to hire someone should end the day. It is an action that costs scrap and has a result, and should
 take time for a reply (not literally); it would also lower the reputation lost when you have no one and keep needing to

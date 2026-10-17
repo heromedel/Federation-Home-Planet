@@ -134,9 +134,9 @@
 	<entry kind="EXPEDITION" when="what=ransomed">{crew} was ransomed from the {captors} for {ransom} scrap and is back in the Cargo Hold.</entry>
 	<entry kind="HIRE" when="how=rescued">{crew}, rescued on an expedition, signed on and waits in the Cargo Hold.</entry>
 	<entry kind="HIRE" when="how=posted&amp;crew">{crew} answered the call for volunteers and waits in the Cargo Hold ({cost} scrap).</entry>
-	<entry kind="HIRE" when="how=posted">A call for volunteers went out ({cost} scrap), and no one answered.</entry>
+	<entry kind="HIRE" when="how=posted">A call for volunteers went out ({cost} scrap).</entry>
 	<entry kind="HIRE" when="how=promise&amp;crew">{crew} signed on for the promise of adventure and waits in the Cargo Hold.</entry>
-	<entry kind="HIRE" when="how=promise">A promise of adventure went out, and no one answered.</entry>
+	<entry kind="HIRE" when="how=promise">A promise of adventure went out.</entry>
 	<entry kind="MEDBAY">{crew} was seen to in The Home Planet Station's Medbay.</entry>
 	<entry kind="REST" when="days_in_a_row=1">The captain rested in quarters.</entry>
 	<entry kind="REST" when="cost=0">The captain rested in quarters again, {days_in_a_row#} days in a row.</entry>
