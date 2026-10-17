@@ -433,7 +433,7 @@ public final class Assignments {
 				.replace("{He}", m ? "He" : "She").replace("{His}", m ? "His" : "Her");
 	}
 	/** The keys that stand alone, besides each job's, hazard's and sector's. */
-	private static final String[] OTHER_KEYS = {"frame", "hacked", "captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit", "prize hijack recruit", "prize salvage recruit"};
+	private static final String[] OTHER_KEYS = {"frame", "hacked", "captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit", "prize hijack recruit", "prize salvage recruit", "prize hijack supply", "prize salvage supply"};
 	/** Who holds a captive, as the captured lines are marked: slavers, pirates, rebels or mantis. */
 	public static final String[] CAPTORS = {"slavers", "pirates", "rebels", "mantis"};
 	static String captorsMark(String sector) {
@@ -784,6 +784,8 @@ public final class Assignments {
 		/** "ship", "part" or "recruit", or null. */
 		public String prize;
 		public String prizeDetail;
+		/** Supplies found along the way ("missiles:2", "fuel:1", "parts:2"), or null: a great result on a Salvage or Hijack, then 11-20 on a d20. */
+		public String supply;
 		public CrewState recruit;
 		public String report;
 		/** The words' own seed: the report reads the same whenever it's told again. */
@@ -885,6 +887,9 @@ public final class Assignments {
 			else if (d >= 15 && "hijack".equals(r.job)) r.prize = "part";
 			if (r.prize == null && !"rescue".equals(r.job) && rng.nextInt(20) == 0) r.prize = "recruit"; // someone aboard who wishes to join: one in twenty
 		}
+		boolean great = false;
+		for (Fate f : r.fates) if (f.band >= 4) great = true; // a high or top success counts whether or not someone died (heromedel, 6.70)
+		if (great && ("salvage".equals(r.job) || "hijack".equals(r.job)) && 1 + rng.nextInt(20) >= 11) r.supply = new String[] {"missiles", "fuel", "parts"}[rng.nextInt(3)] + ":" + (1 + rng.nextInt(2));
 		r.report = report(r, new Random(r.seed));
 		return r;
 	}
@@ -988,6 +993,7 @@ public final class Assignments {
 			else sb.append(stars).append(f.name()).append(" ").append(pronouns(line, f.crew).trim()).append("\n");
 		}
 		if (r.prize != null) sb.append("\n").append(sayAt(rng, "They brought something back.", r.sector, "prize", r.job, r.prize).replace("{name}", r.prizeDetail == null ? "" : r.prizeDetail)).append("\n"); // the prize stands apart
+		if (r.supply != null) sb.append("\n").append(sayAt(rng, "They brought some supplies.", r.sector, "prize", r.job, "supply").replace("{name}", itemWords(r.supply))).append("\n");
 		sb.append("\nTotal Reward: ").append(r.scrap).append(" scrap");
 		return sb.toString();
 	}
@@ -1104,6 +1110,7 @@ public final class Assignments {
 			hold.getCrewList().add(m);
 			if (f.item != null) { if (byLetter) brought.add(reward(f.item)); else give(hold, f.item); }
 		}
+		if (r.supply != null) { if (byLetter) brought.add(reward(r.supply)); else give(hold, r.supply); }
 		List<String> stored = new ArrayList<String>();
 		File prizeFile = null;
 		byte[] prizeBytes = null;
