@@ -25,6 +25,7 @@ public final class Derelict {
 
 	public static final String BLUEPRINT = "PLAYER_SHIP_JELLY";
 	public static final String NAME = "Patience";
+	public static final String EVENT_PATIENCE = "patience";
 	static final String NOTE = "Delivered to the Junkyard by the Engi Restoration Collective";
 
 	/** Builds her and files her in the Junkyard, set out at The Home Planet Station (so, once salvaged, she may take on crew). */
@@ -32,6 +33,7 @@ public final class Derelict {
 		SavedGameState gs = build(new Random());
 		Ship s = v.adoptJunked(gs);
 		v.setOut(s, gs, NOTE);
+		v.recordEvent(EVENT_PATIENCE, s.id); // followed by her id: a rename doesn't lose her (the med-bots letter)
 		return s;
 	}
 

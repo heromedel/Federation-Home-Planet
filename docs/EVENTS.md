@@ -145,7 +145,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `SCRAP` | `ship_name`, `stripped`, `to`, `detail.n` (what went into storage) | "Kestrel stripped into storage, hull broken up" |
 | `SELL` | from the Space Dock: `ship_name`, `how` (`auction`, `trade_in`), `price`, `to`; from the Cargo Bay: `what` (`cargo_bay`), `count`, `scrap`, `detail.n` | "Kestrel sold at auction for 80 scrap; ..." |
 | `JUNK` | `what` (`cargo_bay`), `count`, `detail.n` (what was thrown out) | "2 items" |
-| `BUY` | `what` (`cargo_bay`: `purchases`, `detail.n`; `derelict`: ship, `ship_class`, `price`, `oddity`; `salvage`: `item`, `title`, `price`; `part`: `system`, `title`, `level`, `broken`, `clearance`, `price`), `from`, `to` | "2 purchases" |
+| `BUY` | `what` (`cargo_bay`: `purchases`, `detail.n`; `derelict`: ship, `ship_class`, `price`, `oddity`; `salvage`: `item`, `title`, `price`; `part`: `system`, `title`, `level`, `broken`, `clearance`, `price`; `search` (6.66): `parts`, `price`), `from`, `to` | "2 purchases" |
 | `TRADE` | `what` (`cargo_bay`), `ship_name`, `ship_id`, `partner_name`, `partner_id`, `detail.n` | "Kestrel <-> Spacedock Storage" |
 | `SYSTEMS` | `ship_name`, `ship_id`, `detail.n` (the changes) | "Kestrel" |
 | `CREW` | `what` (`assigned`), `crew`, `race`, `to` (`hold`, `ship`), `ship_name` | "Gracie assigned to the Kestrel." |
@@ -161,7 +161,7 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | Kind | Fields | Headline today |
 | --- | --- | --- |
 | `EXPEDITION` | `what`: `sent` (`sector`, `sector_id`, `party`, `crew` and `race` repeated); `back` (`sector`, `sector_id`, `job`, `job_id`, `scrap`, `prize`, `prize_detail`, `captured`, `good`, `bad`, `crew` repeated, `killed` repeated, `role` repeated (6.39: `name:skill:kind:band:points`, kind `primary`, `secondary` or `other`; none on a job of race alone), `infirmary` repeated (6.61: laid up), `saved` repeated (6.61: `name:saver`, a life saved by a crewmate's outstanding success; the human line ends `; saved: Ann by Kenji`)); `prize_ship` (ship, `ship_class`, `to`); `recruit_declined`, `prize_ship_declined` (`name`); `job` (`job`, `job_kind`, `event_id`, `scrap`, `item`, `joined`, `lost`, `hurt` repeated); `out_of_infirmary` (`crew`); `captive_lost` (`crew`, `race`, `captors`, `why`); `ransomed` (`crew`, `race`, `captors`, `ransom`, `to`) | "Twin sent to Nebula" |
-| `HIRE` | `how` (`rescued`, `promise`, `posted`), `crew`, `race`, `cost`, `reputation`, `to` | "Posted for volunteers, 40 scrap: Bob (human) joined, in the Cargo Hold" |
+| `HIRE` | `how` (`rescued`, `promise`, `posted`), `crew`, `race`, `cost`, `reputation`, `to` | "Posted for volunteers, 40 scrap", then (6.65: posting ends the day) on the next day, if someone answered, "Answered the posting: Bob (human) joined, in the Cargo Hold" |
 | `MEDBAY` | `crew`, `race`, `place` | "Bob's visited The Station's Medbay" |
 | `REST` | `days_in_a_row`, `cost` | "Rested in quarters (2 days in a row)" |
 | `REPAIR_JOB` | `stage` (`delivered`: ship, `to`, `cost`, `value`; `defied`: `ship_name`) | "The Nightjar delivered to the Junkyard (a3f2)" |

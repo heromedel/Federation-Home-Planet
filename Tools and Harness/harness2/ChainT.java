@@ -16,6 +16,10 @@ public class ChainT { public static void main(String[] a) throws Exception {
  g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1);
  SaveHelper.writeSavedGame(v.continueFile(), g);
  v.takeStock(); Transmissions.check();
+ Setup.chk("C: at one point of hull where she was hit: no letter yet", find("chain:one-hull") == null);
+ g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); // she jumps away alive (6.65)
+ SaveHelper.writeSavedGame(v.continueFile(), g);
+ v.takeStock(); Transmissions.check();
  Transmissions.Message first = find("chain:one-hull");
  Setup.chk("C: one point of hull, the fight over: the Collective writes, naming her", first != null && first.body.contains("the Battered returned"));
  Setup.chk("C: it offers two replies", Transmissions.canReply(first) && Transmissions.replyTexts(first).size() == 2);
@@ -97,6 +101,8 @@ public class ChainT { public static void main(String[] a) throws Exception {
   v.board(k); v.takeStock();
   SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
   g.getPlayerShip().setHullAmt(1); SaveHelper.writeSavedGame(v.continueFile(), g);
+  v.takeStock(); Transmissions.check();
+  g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); SaveHelper.writeSavedGame(v.continueFile(), g); // she jumps away alive (6.65)
   v.takeStock(); Transmissions.check();
   Transmissions.reply(find("chain:one-hull"), 1);
   jump(v, 2); Transmissions.check();
