@@ -33,9 +33,6 @@ echo "== DesT"; run DesT "$GAME" "$WORLD" "$W/des" | grep -E "$PICK"
 echo "== CommT"; run CommT "$GAME" "$WORLD" "$W/comm" | grep -E "$PICK"
 echo "== SafeT"; run SafeT "$GAME" "$WORLD" "$W/safe" | grep -E "$PICK|^PASS"
 echo "== BlueT"; run BlueT "$GAME" "$WORLD" "$W/blue" | grep -E "$PICK|^PASS"
-echo "== SlipT"; run SlipT "$GAME" "$W/slip" | grep -E "$PICK|^PASS"
-echo "== LaunchT"; run LaunchT | grep -E "$PICK|^PASS"
-echo "== RestartT"; run RestartT "$W/restart" | grep -E "$PICK|^PASS"
 echo "== HistT"; run HistT "$GAME" "$WORLD" "$W/hist" | grep -E "$PICK|^PASS"
 echo "== PriceT"; run PriceT "$GAME" "$WORLD" "$W/price" | grep -E "$PICK|^PASS|^Kestrel|^Relief"
 echo "== RuleT"; run RuleT "$GAME" "$WORLD" "$W/rule" | grep -E "$PICK|^PASS"
@@ -63,7 +60,6 @@ echo "== DockT"; run DockT "$GAME" "$WORLD" "$W/dock" | grep -E "$PICK|^PASS"
 echo "== RepT"; run RepT "$GAME" "$WORLD" "$W/rep" | grep -E "$PICK|^PASS"
 echo "== StatT"; run StatT "$GAME" "$WORLD" "$W/stat" | grep -E "$PICK|^PASS"
 echo "== RepuT"; run RepuT "$GAME" "$WORLD" "$W/repu" | grep -E "$PICK|^PASS"
-echo "== UpdT"; run UpdT "$W/upd" | grep -E "$PICK|^PASS"
 echo "== StoreT"; run StoreT "$W/store" | grep -E "$PICK|^PASS"
 echo "== HomeT"; run HomeT "$GAME" "$WORLD" "$W/home" | grep -E "$PICK|^PASS"
 echo "== ShipStoreT"; run ShipStoreT "$GAME" "$WORLD" "$W/shipstore" | grep -E "$PICK|^PASS"
@@ -92,6 +88,8 @@ if command -v xvfb-run >/dev/null; then
 	(cd "$W" && xvfb-run -a java -Dhomeplanet.noGameCheck=true -cp "$CP" OverhaulT "$GAME" "$WORLD" "$W/overhaul" 2>&1) | grep -E "$PICK|^PASS"
 else echo "(GuiT skipped: no xvfb-run)"; fi
 
+# On demand (6.71, heromedel): SlipT, LaunchT, RestartT and UpdT guard old fixes in code that rarely changes; run them by
+# name when Slipstream, launching, restarting or Check for Updates is touched (SlipT gamedir work; LaunchT; RestartT work; UpdT work).
 # the converter, only with old Homeworld data to convert
 if [ $# -ge 3 ]; then
 	OLDSAVES="$(cd "$2" && pwd)"; OLDAPP="$(cd "$3" && pwd)"
