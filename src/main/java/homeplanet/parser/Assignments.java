@@ -433,7 +433,7 @@ public final class Assignments {
 				.replace("{He}", m ? "He" : "She").replace("{His}", m ? "His" : "Her");
 	}
 	/** The keys that stand alone, besides each job's, hazard's and sector's. */
-	private static final String[] OTHER_KEYS = {"frame", "hacked", "captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit"};
+	private static final String[] OTHER_KEYS = {"frame", "hacked", "captured", "infirmary", "prize hijack ship", "prize hijack part", "prize salvage part", "prize rescue recruit", "prize hijack recruit", "prize salvage recruit"};
 	/** Who holds a captive, as the captured lines are marked: slavers, pirates, rebels or mantis. */
 	public static final String[] CAPTORS = {"slavers", "pirates", "rebels", "mantis"};
 	static String captorsMark(String sector) {
@@ -880,8 +880,10 @@ public final class Assignments {
 		boolean wentWell = r.dead().isEmpty() && best >= 16;
 		if (wentWell && ("hijack".equals(r.job) || "salvage".equals(r.job) || "rescue".equals(r.job))) {
 			int d = 1 + rng.nextInt(20);
-			if (d == 20) r.prize = "hijack".equals(r.job) ? "ship" : "salvage".equals(r.job) ? "part" : "recruit";
+			if ("rescue".equals(r.job)) { if (d >= 15) r.prize = "recruit"; } // 15-20: six in twenty (heromedel, 6.69)
+			else if (d == 20) r.prize = "hijack".equals(r.job) ? "ship" : "part";
 			else if (d >= 15 && "hijack".equals(r.job)) r.prize = "part";
+			if (r.prize == null && !"rescue".equals(r.job) && rng.nextInt(20) == 0) r.prize = "recruit"; // someone aboard who wishes to join: one in twenty
 		}
 		r.report = report(r, new Random(r.seed));
 		return r;
@@ -939,7 +941,7 @@ public final class Assignments {
 		sb.append("Sector: ").append(sectorTitle(r.sector)).append("\n\n");
 		// the setup: half the time one of the job's own (and its sector's), else one of the general ones (heromedel's among them)
 		String frame = rng.nextBoolean() ? sayAt(rng, FRAME, r.sector, "frame", r.job) : say(rng, FRAME, "frame");
-		sb.append(frame).append("\n").append(sayAt(rng, "took on a job", r.sector, "event", r.job)).append(".\n");
+		sb.append(frame).append(" ").append(sayAt(rng, "took on a job", r.sector, "event", r.job)).append(".\n");
 		if (r.hazard != null) sb.append(sayAt(rng, "The weather was against them.", r.sector, "hazard", r.hazard)).append("\n");
 		if (r.hacker != null) sb.append(sayAt(rng, "{name} hacked it.", r.sector, "hacked").replace("{name}", r.hacker.getName())).append("\n");
 		sb.append("\n");

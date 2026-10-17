@@ -473,7 +473,7 @@
 
 	<line kind="event" job="hijack">were hired to steal a ship from {her} moorings</line>
 	<line kind="event" job="hijack">went after a ship someone wanted very badly, and would not say why</line>
-	<line kind="event" job="hijack">slipped aboard a ship at anchor to take {her_obj}</line>
+	<line kind="event" job="hijack">crept aboard a ship at anchor to take {her_obj}</line>
 	<line kind="event" job="hijack" sector="pirate">were hired to take back a ship the pirates had taken first</line>
 	<line kind="event" job="hijack" sector="engi">were hired to take an Engi ship whose crew trusted {her} locks a little too much</line>
 	<line kind="event" job="hijack" sector="rebel">were sent to steal a ship out from under a rebel garrison</line>
@@ -583,6 +583,8 @@
 	<line kind="prize" job="salvage" prize="part">The wreck's {name} system came home with them, damaged but worth fitting.</line>
 	<line kind="prize" job="rescue" prize="recruit">One of those they rescued, {name}, asked to sign on.\nThey wait in The Station Lounge for your word.</line>
 	<line kind="prize" job="rescue" prize="recruit">They came back with one more than they left with: {name},\nwho asks to sign on and waits in The Station Lounge.</line>
+	<line kind="prize" job="hijack" prize="recruit">Someone had been aboard the ship all along: {name},\nwho asks to sign on and waits in The Station Lounge.</line>
+	<line kind="prize" job="salvage" prize="recruit">They found {name} alive in the wreck, a survivor who asks to sign on\nand waits in The Station Lounge.</line>
 
 	<!-- The roles' own lines (heromedel and McCarthy, 6.40): what a crew member did in their role, by job, band and skill
 	     (a skill stands for a kind of work: piloting is leading and finding the way, shields is protecting, weapons is
@@ -616,7 +618,7 @@
 	<line kind="band" job="defend" band="success" skill="shields">{name} kept the shields between the raiders and what the crew were there to protect.</line>
 	<line kind="band" job="defend" band="success" skill="shields">The raiders tested {name}'s shields again and again, and they held every time.</line>
 	<line kind="band" job="defend" band="high" skill="shields">The worst of the raiders' fire fell on {name}'s shields, and {he} held them until the raiders gave up.</line>
-	<line kind="band" job="defend" band="high" skill="shields">Twice the shields went down, and both times {name} had them back before the raiders could follow up.</line>
+	<line kind="band" job="defend" band="high" skill="shields">The shields went down twice, and both times {name} had them back before the raiders could follow up.</line>
 	<line kind="band" job="defend" band="top" skill="shields">{name} put the ship between the raiders and everyone else and held the shields until the raiders gave up first.</line>
 	<line kind="band" job="defend" band="top" skill="shields">By the end, the raiders had stopped firing at {name}'s side of the ship at all, because nothing they sent got through.</line>
 	<line kind="band" job="defend" band="failed" skill="weapons">{name} opened fire long before the raiders were in range and had little left when they arrived.</line>

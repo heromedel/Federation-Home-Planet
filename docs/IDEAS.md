@@ -145,7 +145,7 @@ heromedel, later: Sandbox would need a new setting, like
 Notes: as with the other rules, a career's difficulty would set it (Easy 1/4, Normal 1/3, Hard 1/2) and Sandbox Mode and
 a Custom career would choose it.
 
-## Idea J: more crew from expeditions (noted 6.64)
+## Idea J: more crew from expeditions (noted 6.64) — built (6.69)
 
 From heromedel:
 
