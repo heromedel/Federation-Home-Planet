@@ -323,6 +323,24 @@ comes a random number of beacons later (the fleet counts every beacon its ships 
 
 - **The trigger:** once per fleet, the first time the boarded ship comes out of a battle with one point of hull (no
   hostile ship alongside). The Engi Restoration Collective writes, naming her.
+- **Fixed (6.65; found 6.64, heromedel):** it fired in the middle of a battle, the ship knocked from 4 hull to 1. The check
+  (`Vault.noteHull`) asks only whether her hull is 1 with no living hostile ship alongside, never whether she left: a save
+  written at the battle's beacon (save and quit, or one where the enemy isn't flagged hostile) or a hazard beacon with no
+  enemy at all sets it off. The fix: note the beacon where she was first seen at one point of hull, and send the letter
+  only once a later save shows she jumped on from it and survived (`getTotalBeaconsExplored` gone up). A ship still in the
+  fight, or destroyed there, never starts the chain. ChainT to cover both.
+- **Built (6.65, heromedel): Patience is yours, and the med-bots.** heromedel took "Repair her well. We will ask." to
+  mean she had to be repaired and given back, like the Collector's Nightjar (the repair-job chain), whose letters read
+  almost the same. So: *A vessel in need* gains "She is not a loan. When she arrives, she is yours."; *Delivered* ends,
+  in place of "We will ask", with heromedel's idea in the Engi voice: "Remember, you may keep this treasure. We ask only
+  that you treat her well." Then a new letter, `chain:one-hull:medbay`, from the Engi Restoration Collective
+  (heromedel): the first time the station sees her with a medbay installed (fitted from storage on the Refit tab or
+  bought at a store in FTL; a Clone Bay doesn't count, as the med-bots need a med-bay), they see you took the time to
+  upgrade her and send an Engi Med-bot Dispersal (`NANO_MEDBAY`, `reward="item NANO_MEDBAY"`, claimed into the Cargo
+  Hold). FTL's own words for it: "Engi nano med-bots heal the crew outside of the med-bay (at a reduced speed)"; its
+  blueprint has rarity 0, so no store sells it. She is followed by her id, noted at delivery (a rename doesn't lose her),
+  and only while she hasn't been traded since (`TradeMark`). Logged the two-line way, its kind in `docs/EVENTS.md`.
+  ChainT: a medbay (the letter), a Clone Bay (none), renamed (the letter, her new name), traded (none).
 - **Reply "Tell me about these derelict vessels.":** 5-10 beacons, then *A vessel in need*; 5-7 more, then
   *Delivered*, which puts **Patience** in the Junkyard: a Slug Cruiser A on the station's blank copy, no crew, medbay
   torn out, a broken hacking bay, broken oxygen, piloting 2 and engines 1, a damaged weapons system with only a Mini
@@ -1250,6 +1268,14 @@ infirmary. Days aboard (heromedel): "On board the Kestrel.", what happened, "The
 station", "to sector 3"); "I returned to The Home Planet Station." and "Set out on the Kestrel." where the captain
 moves between the two; gear bought at a store or picked up. The voyage log gains "Arrived at a store", "Bought at a
 store: …" and "Picked up: …" for it. Hard rule 2 now says days are real: a player may work out that a jump passes a day.
+
+**Fixed (6.65; found 6.64, heromedel):** a round trip of crew in one day loses a move. heromedel moved crew to the Cargo Hold,
+from it to a new ship (to repair her), and back to the Cargo Hold, then rested; the log read "Moved … to the Cargo Hold",
+"Assigned … to the new ship", took command, returned to the station, rested: the move back is gone. `CaptainsLog` keys
+each move by where it went (`"assign:" + the destination`, line 268), so every move to the same place that day merges
+into the first one, at its place in the day. The fix: merge only moves that come one after another (the same destination
+as the line just before), and say "back" when the same crew return to where they were earlier that day ("Moved them back
+to the Cargo Hold."). A record only: the crew themselves are where they should be. LogT to cover the round trip.
 
 **The beacon (5.19, heromedel):** a jump's line tells what the beacon held and who she met ("Then we jumped into an ion
 storm and met a Rock pirate"), even when it's learned on a later look, on a later day. The voyage log gains "Beacon: …"

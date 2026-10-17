@@ -123,7 +123,24 @@ station's words say "she" and "her" for ships throughout (the letters, the log's
 messages), so the setting would mean every such word coming from one place that asks it, and the lore files' words
 given a token for it, the way {he} and {his} already follow a crew member's sex in the expedition words.
 
-## Idea I: our own Captain's Edition flag in a ship's save (noted 6.64, Captain)
+## Idea I: more crew from expeditions (noted 6.64)
+
+From heromedel:
+
+    I think instead of a 1 in 20 chance for  the resuer to join it should be like 15-20 and then we could look at other
+    events that might return a person such as when you salvage or highjack a ship maybe a 1 in 20 chance they had someone
+    on board who wishes to join
+
+Notes: today (`Assignments`, after the rolls) a Rescue job that went well (no one killed, the best roll 16 or more) rolls
+a d20 and only a natural 20 brings home a survivor who asks to sign on (`prize = "recruit"`), so 1 in 20 of the good
+Rescues. A 15-20 would make it 6 in 20 (30%). The same d20 gives Hijack a ship on a 20 and a part on 15-19, and Salvage
+a part on a 20; the new chance for those two would be a roll of its own (1 in 20 on a Hijack or Salvage that went well),
+so a party could bring home both a prize and a person. The recruit already exists for this (`Assignments.recruit`: a
+volunteer of an unlocked race, one in 20 with a skill; the commander says yes or no; the words in `expeditions.xml`'s
+recruit lines), so the job is mostly the rolls and a line or two for "they had someone aboard". Worth a look at how many
+crew the fleet gains then, against Post for volunteers.
+
+## Idea J: our own Captain's Edition flag in a ship's save (noted 6.64, Captain)
 
 From heromedel: if a ship is known to have Captain's Edition content, we could insert our own flag into the save, like
 `CE_True = 1`, in case we want to make our own safety checks later.

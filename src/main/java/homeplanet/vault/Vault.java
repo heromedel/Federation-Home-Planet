@@ -1194,10 +1194,19 @@ public final class Vault {
 	/** A boarded ship's new save: down to one point of hull with the fight over (no enemy alongside, or one beaten). */
 	private void noteHull(Ship b, SavedGameState gs) {
 		net.blerf.ftl.parser.SavedGameParser.ShipState s = gs.getPlayerShip(), enemy = gs.getNearbyShip();
-		if (s == null || s.getHullAmt() != 1) return;
+		if (s == null || event(EVENT_ONE_HULL) != null) return;
+		String at = gs.getSectorNumber() + ":" + gs.getCurrentBeaconId();
+		String seen = event(ONE_HULL_SEEN + b.id);
+		if (seen != null) { // she was at one point of hull: the letter comes only once she is alive and has jumped away (6.65)
+			if (s.getHullAmt() > 0 && !seen.equals(at)) recordEvent(EVENT_ONE_HULL, gs.getPlayerShipName());
+			return;
+		}
+		if (s.getHullAmt() != 1) return;
 		if (enemy != null && enemy.getHullAmt() > 0 && enemy.isHostile()) return; // still in the fight
-		recordEvent(EVENT_ONE_HULL, gs.getPlayerShipName());
+		recordEvent(ONE_HULL_SEEN + b.id, at);
 	}
+	/** Where (sector:beacon) a ship was first seen at one point of hull, until she jumps away from it (then EVENT_ONE_HULL). */
+	private static final String ONE_HULL_SEEN = "one-hull-seen.";
 	/** FTL's own running counts of work done at a store or on the ship: buying, repairs, system and reactor upgrades. */
 	static final String[] WORK = {"store_purchase", "store_repair", "system_upgrade", "reactor_upgrade"};
 	static int workDone(SavedGameState gs) {
