@@ -556,7 +556,7 @@ public final class CaptainsLog {
 		if (l.kind.equals("buy") && l.text.isEmpty()) l.text = l.things.isEmpty() ? null : "Bought " + things(l.things) + ".";
 		else if (l.kind.equals("sell") && l.text.isEmpty()) l.text = l.things.isEmpty() ? null : "Sold " + things(l.things) + ".";
 		else if (l.kind.equals("junk")) l.text = l.things.isEmpty() ? null : "Threw out " + things(l.things) + ".";
-		else if (l.kind.equals("assign")) l.text = l.things.isEmpty() ? null : (l.ship.endsWith("Cargo Hold") ? "Moved " : "Assigned ") + join(each(l)) + " to " + l.ship + ".";
+		else if (l.kind.equals("assign")) l.text = l.things.isEmpty() ? null : (l.ship.endsWith("Cargo Hold") ? "Moved " : "Assigned ") + join(each(l)) + (l.key.length() > ("assign:" + l.ship).length() ? " back" : "") + " to " + l.ship + "."; // a key with a number after it: the way back (6.70)
 		else if (l.kind.equals("retire")) l.text = l.things.isEmpty() ? null : "Let " + join(new ArrayList<String>(l.things.keySet())) + " go.";
 		else if (l.kind.equals("board")) l.text = "Took command of " + theShip(l.ship) + ".";
 		else if (l.kind.equals("move")) l.text = jumpText(l);
