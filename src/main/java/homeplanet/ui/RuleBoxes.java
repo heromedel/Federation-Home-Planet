@@ -38,7 +38,7 @@ public class RuleBoxes {
 	private final JLabel journeyFeeAfter = new JLabel("  from the Cargo Hold");
 	private final JPanel journeyFeeRow = row(21);
 	final JCheckBox augmentBox = new JCheckBox("An augment thrown away for want of room is shipped home by " + homeplanet.model.Words.her() + " crew, to the inbox (or the Cargo Hold)", HomePlanet.augmentsHome);
-	final JCheckBox sellBox = new JCheckBox("Allow selling missiles and drone parts (house rule: FTL's stores don't buy them; half the store price)", HomePlanet.sellSupplies);
+	final JCheckBox sellBox = new JCheckBox("Allow selling fuel, missiles and drone parts (house rule: FTL's stores don't buy them; half the store price)", HomePlanet.sellSupplies);
 	final JCheckBox sellSystemsBox = new JCheckBox("Allow selling stored systems (house rule: half the system's price, plus half the upgrades paid for)", HomePlanet.sellSystems);
 	final JCheckBox lockedBox = new JCheckBox("Locked ship models cannot be commissioned (as unlocked in your FTL profile)", HomePlanet.commissionUnlockedOnly);
 	final JCheckBox customLockedBox = new JCheckBox("Custom ships based on locked models cannot be commissioned", HomePlanet.commissionCustomUnlockedOnly);
@@ -67,7 +67,7 @@ public class RuleBoxes {
 	static final String[] REP_USE_TIPS = {
 		"<html>Reputation can pay a New Journey's fee, and a plea for a new ship can keep the Cargo Hold.<br>A promise of adventure and a day's rest cost reputation. Everything else is paid in scrap.</html>",
 		"<html>Everything in New Journeys and Pleads, plus what vanilla FTL can't do:<br>taking a system off at Refit, stripping systems when scrapping, and a custom work order's reputation share.</html>",
-		"<html>Reputation is never spent. A plea gives up the Cargo Hold;<br>a promise of adventure and rest are free. Everything is paid in scrap.</html>"};
+		"<html>Reputation is never spent on purchases. A plea gives up the Cargo Hold; everything is paid in scrap.<br>A promise of adventure and a day's rest still cost reputation: they're penalties, not purchases.</html>"};
 	private final CargoParts.IconButton repUseInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "What each option does", new ActionListener() {
 		public void actionPerformed(ActionEvent e) { repUseInfo(repUseBox); }
 	});
@@ -104,9 +104,9 @@ public class RuleBoxes {
 				"Taking a system off at Refit, at the fee your rules set, in scrap or reputation.",
 				"Stripping systems when scrapping a ship, at the fee for each system, in scrap or reputation.",
 				"A custom work order past FTL's System Limit is paid half in scrap, half in reputation."},
-			{"Reputation is a score only: nothing ever spends it.",
+			{"Reputation is a score: nothing buys anything with it.",
 				"A plea for a new ship gives up the Cargo Hold.",
-				"A promise of adventure and a day's rest are free.",
+				"A promise of adventure and a day's rest still cost reputation: they're penalties, not purchases.",
 				"Everything else is paid in scrap."}};
 		StringBuilder h = new StringBuilder("<html><body style='width:460px'>");
 		for (int i = 0; i < names.length; i++) {
@@ -433,7 +433,7 @@ public class RuleBoxes {
 			if (augmentBox.isSelected() != HomePlanet.augmentsHome) changed.add("Augments with no room aboard shipped home: " + augmentBox.isSelected());
 			if (removalFee() != HomePlanet.removalFee) changed.add("Refit removal: " + removalBox.getSelectedItem());
 			if (journeyFee() != HomePlanet.journeyFee) changed.add("New Journey fee: " + journeyFeeBox.getSelectedItem());
-			if (sellBox.isSelected() != HomePlanet.sellSupplies) changed.add("Selling missiles and drone parts: " + sellBox.isSelected());
+			if (sellBox.isSelected() != HomePlanet.sellSupplies) changed.add("Selling fuel, missiles and drone parts: " + sellBox.isSelected());
 			if (lockedBox.isSelected() != HomePlanet.commissionUnlockedOnly) changed.add("Locked models cannot be commissioned: " + lockedBox.isSelected());
 			if (customLockedBox.isSelected() != HomePlanet.commissionCustomUnlockedOnly) changed.add("Custom ships of locked models cannot be commissioned: " + customLockedBox.isSelected());
 			if (sellSystemsBox.isSelected() != HomePlanet.sellSystems) changed.add("Selling stored systems: " + sellSystemsBox.isSelected());

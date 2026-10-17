@@ -1202,7 +1202,8 @@ and reputation for the rest; with Reputation off, scrap only, as before.
   2 Vanillas Breaking Actions (1, and Refit removal, stripping, a custom work order's share), 3 Only as a score.
   Wherever reputation can't be used, scrap pays: a work order's share in scrap too, a plea with 3 offers giving up the
   Cargo Hold alone. A promise of adventure and rest in quarters cost reputation with 1 and 2 (nobody is locked out of
-  them) and are free with 3. Captives and ransoms count with all three: that's score.
+  them) and, since 6.66 (heromedel: they're penalties, and a free promise meant free crew), with 3 as well. Captives and
+  ransoms count with all three: that's score.
 - **Total Reputation From:** a line under the Career Reputation Log, a running tally by pool (Travel, Combat, Crew,
   Scrap, Events, Achievements, Spent), each net, green or red, pools at zero left out. Read from the log itself
   (`Reputation.tally`): each bracketed piece of an entry goes to its pool by its words, so a jump that did three things
@@ -1329,7 +1330,7 @@ left, and the drop-down saying there are no ships in range.
 5. GuiT checks a one-ship fleet away from a store: the bay opens on Trade, the drop-down says "No ships in range", the
    Cargo Hold can be looked over.
 
-## 47. Fuel sold as well — planned (heromedel, 6.64; not built yet)
+## 47. Fuel sold as well — built (6.66; fuel sells, never junked)
 
 heromedel: the option to sell missiles and drone parts should include fuel. Today the Cargo Bay's sell (and junk) buttons
 under the supply arrows work on missiles and drone parts only ("Only missiles and drone parts can be sold or junked;
@@ -1375,6 +1376,18 @@ rest. Log that you posted, end the day ("Then I..." and the posted message), the
 5. `docs/EVENTS.md` gets both entries' fields.
 6. Checks: ExpT (a post moves the clock one day; two entries when someone joins, one when not) and RestT (rest, post,
    rest costs nothing).
+
+## 50. Rest and the promise of adventure cost reputation on every setting — built (6.66, Plan I, heromedel)
+
+heromedel: they're penalties in this station, not vanilla-breaking purchases, and a free promise meant free crew. Both
+now cost reputation whenever reputation is on, "Only as a score" included (`Rest.cost`, `Expeditions.promiseRep`); the
+option's words say so.
+
+## 51. More that takes the day — built (6.66, heromedel, feedback 10/16)
+
+Buying from the Junkyard (a part, salvage or a derelict) takes the day once its message is closed. A ship taken out of
+the dock, her systems or breaches mended, and brought back without a jump took the day too: her broken bars and breaches
+are noted as she's boarded (her record's `aboard` section) and compared as she docks.
 
 ## Naming decisions — settled (4B.30)
 

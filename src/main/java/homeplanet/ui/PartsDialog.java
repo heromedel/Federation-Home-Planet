@@ -140,5 +140,6 @@ final class PartsDialog extends JDialog {
 		}
 		fill();
 		JOptionPane.showMessageDialog(this, "The " + what + (l.salvage() ? " is in the Cargo Hold." : " is in the Cargo Bay's stored systems."), "Parts for sale", JOptionPane.INFORMATION_MESSAGE);
+		Vault.get().countBeacon("a day at the Junkyard"); // a purchase there takes the day, once its message is closed (heromedel, 6.66)
 	}
 }

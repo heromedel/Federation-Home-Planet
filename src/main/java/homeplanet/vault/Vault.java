@@ -1691,6 +1691,12 @@ public final class Vault {
 			sec.setProperty("marked", "true"); sec.setProperty("save", record.hash);
 			if (marked.gs.getPlayerShipBlueprintId() != null) sec.setProperty("class", marked.gs.getPlayerShipBlueprintId());
 		}
+		try { // as she was boarded (6.66): repairs made aboard without a jump end the day when she docks (heromedel)
+			SavedGameState was = marked != null ? marked.gs : homeplanet.core.HomePlanet.savedGameParser.readSavedGame(from);
+			java.util.Properties ab = record.section(ShipStore.ABOARD);
+			ab.setProperty("beacons", Integer.toString(was.getTotalBeaconsExplored()));
+			ab.setProperty("damage", Integer.toString(repairable(was.getPlayerShip())));
+		} catch (Exception e) { log.debug("Could not note {}'s damage as boarded: {}", s.name, e.toString()); }
 		Journal.Note note = Journal.begin(this, "BOARD");
 		note.replace(to, boardedSave);
 		List<File> kept = history(s);
@@ -1742,6 +1748,25 @@ public final class Vault {
 		b.invalidate();
 		saveManifest();
 		HistoryLog.entry("DOCK", b.name + "  continue.sav -> " + place(b), null, shipEvent("DOCK", b).put("from", "continue.sav").put("to", place(b)));
+		repairsTookTheDay(b, to);
+	}
+	/** Broken system bars and hull breaches, weighed as her price weighs them: what her crew can mend aboard. */
+	static int repairable(net.blerf.ftl.parser.SavedGameParser.ShipState s) {
+		return homeplanet.parser.Pricing.brokenValue(s) + homeplanet.parser.Pricing.BREACH_REPAIR * s.getBreachMap().size();
+	}
+	/**
+	 * heromedel, 6.66: a ship taken out of the dock, her systems or breaches mended, and brought back without a jump, took
+	 * the day (a jump counted it already). Read against what was noted as she was boarded.
+	 */
+	private void repairsTookTheDay(Ship b, File save) {
+		try {
+			java.util.Properties ab = ShipStore.notes(save.getParentFile(), ShipStore.ABOARD);
+			if (ab.getProperty("damage") == null) return;
+			SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(save);
+			if (gs.getTotalBeaconsExplored() == Store.num(ab, "beacons", -1) && repairable(gs.getPlayerShip()) < Store.num(ab, "damage", 0))
+				countBeacon("a day of repairs aboard the " + b.name);
+			setNotes(save.getParentFile(), ShipStore.ABOARD, null);
+		} catch (Exception e) { log.debug("Could not tell whether {} was repaired aboard: {}", b.name, e.toString()); }
 	}
 	/** Disbands the boarded ship: continue.sav goes to the junkyard. */
 	public synchronized void disband() throws IOException {
