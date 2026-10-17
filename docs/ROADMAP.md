@@ -1314,7 +1314,7 @@ on its own may be lost."), then sends FTL the close request its own X sends. A s
 Refresh, before FTL's window is found), the docked view with FTL's window gone, or FTL not running, is the normal Space
 Dock again. Tested under Wine (undocktest).
 
-## 46. The Cargo Bay away from a store — planned (Plan H, heromedel, 6.64; not built yet)
+## 46. The Cargo Bay away from a store — built (6.67; Plan H, heromedel, 6.64)
 
 Today a boarded ship that isn't at a store opens the Cargo Bay on a notice ("Kestrel is not within range of a station.
 Take her to a beacon with a store to trade, or pick another ship"), the tabs, Save and Reset greyed; with a one-ship fleet
@@ -1337,7 +1337,7 @@ under the supply arrows work on missiles and drone parts only ("Only missiles an
 scrap and fuel move with the arrows"). Fuel would be sold the same way, under the same house rule (`sell_supplies`), at
 the same share of FTL's store price (fuel 3 scrap), and the rule's words and the buttons' tooltips would name fuel too.
 
-## 48. Ship and part values apart from Commission's cost — planned (Plan J, heromedel, 6.64; not built yet)
+## 48. Ship and part values apart from Commission's cost — built (6.67; Plan J, heromedel, 6.64)
 
 heromedel: with Sandbox's commissioning set to free, the assumed value of ships is 100%, so the Junkyard doesn't look like
 Easy mode. Today the percentage beside "Commissioning a ship costs scrap, paid from the Cargo Hold, at" is greyed while
@@ -1353,6 +1353,10 @@ parts); a Custom career's "nothing (values at full price)" commission level (6.4
 3. Existing Sandbox fleets keep the percentage they have saved: nothing changes until the player changes it.
 4. Checks: FleetT for the Custom levels; GuiT for Sandbox's rule open with commissioning free, and a derelict's price
    following it.
+
+Built: the careers' table has a row of its own, "Ship and part values" (50%, 75%, 100%), under "Commissioning a ship costs"
+({her} value, or nothing). A Custom career begun before 6.67 is read with its values as its commission level priced it (a
+free commission at 100%), so nothing changes for it. The price of a ship and of a derelict follows it in FleetT.
 
 ## 49. Posting for crew ends the day — built (6.65; Plan K, heromedel; built and compiled, not run through the harness)
 

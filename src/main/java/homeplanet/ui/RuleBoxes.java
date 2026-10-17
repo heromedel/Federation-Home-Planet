@@ -42,9 +42,11 @@ public class RuleBoxes {
 	final JCheckBox sellSystemsBox = new JCheckBox("Allow selling stored systems (house rule: half the system's price, plus half the upgrades paid for)", HomePlanet.sellSystems);
 	final JCheckBox lockedBox = new JCheckBox("Locked ship models cannot be commissioned (as unlocked in your FTL profile)", HomePlanet.commissionUnlockedOnly);
 	final JCheckBox customLockedBox = new JCheckBox("Custom ships based on locked models cannot be commissioned", HomePlanet.commissionCustomUnlockedOnly);
-	final JCheckBox costBox = new JCheckBox("Commissioning a ship costs scrap, paid from the Cargo Hold, at", HomePlanet.commissionCosts);
+	final JCheckBox costBox = new JCheckBox("Commissioning a ship costs scrap, paid from the Cargo Hold", HomePlanet.commissionCosts);
 	final JComboBox<String> percentBox = new JComboBox<String>(new String[] {"100%", "75%", "50%"});
 	private final JPanel costRow = row(0);
+	/** Ship and part values: always there to choose, free commissioning or not (heromedel, 6.67, Plan J). */
+	private final JPanel valueRow = row(0);
 	private static final String[] FREE_KEYS = {"kestrel", "relief", "any"};
 	final JComboBox<String> freeBox = new JComboBox<String>(new String[] {"Kestrel Type A or the Relief Ship", "Relief Ship Type A", "Any"});
 	/** Each choice's explanation, shown as the list is open. */
@@ -203,12 +205,13 @@ public class RuleBoxes {
 		customLockedBox.setToolTipText("A starter blueprint is offered only once the layout " + homeplanet.model.Words.she() + " was remodeled from is unlocked");
 		customLockedBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
 		costBox.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " hull, reactor, systems and levels, weapons, drones, augments, crew, supplies, scrap, rooms and doors, strictly counted. The Commission window shows the price");
-		percentBox.setToolTipText("The share of " + homeplanet.model.Words.her() + " price that counts, wherever a ship is priced: Commission, Trade In, Auction, the Junkyard's parts and derelicts, a final victory. Never the stores' prices (an Immersive career: Easy 50%, Normal 75%, Hard 100%)");
+		percentBox.setToolTipText("The share of their price that ships and parts are valued at: Commission (when it costs), Trade In, Auction, the museum, the Junkyard's derelicts and parts. Never the stores' prices (an Immersive career: Easy 50%, Normal 75%, Hard 100%)");
 		percentBox.setSelectedItem(HomePlanet.commissionPercent + "%");
 		costRow.add(costBox);
-		costRow.add(javax.swing.Box.createHorizontalStrut(6));
-		costRow.add(percentBox);
-		costRow.add(new JLabel("  of " + homeplanet.model.Words.her() + " price"));
+		JLabel valueLabel = new JLabel("Ship and part values:  ");
+		valueLabel.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 0)); // in line with the boxes' words
+		valueRow.add(valueLabel);
+		valueRow.add(percentBox);
 		int free = java.util.Arrays.asList(FREE_KEYS).indexOf(homeplanet.parser.FreeCommand.norm(HomePlanet.freeShip));
 		freeBox.setSelectedIndex(free < 0 ? 0 : free);
 		freeTip = "The ship Plead for New Ship (Other... at the Space Dock) offers. The Relief Ship Type A is always offered too. "
@@ -309,7 +312,7 @@ public class RuleBoxes {
 			journeyBox.setSelected(true);
 			sellBox.setSelected(true);
 			sellSystemsBox.setSelected(true);
-			costBox.setSelected(true);
+			costBox.setSelected(HomePlanet.commissionCosts()); // a Custom career may make it free
 			percentBox.setSelectedItem(homeplanet.core.Economy.commissionPercent() + "%");
 			unlockBox.setSelected(true);
 			lockedBox.setSelected(true);
@@ -333,7 +336,6 @@ public class RuleBoxes {
 		showingCareerOwn = !im;
 		careerBox.setToolTipText(im ? SET_BY_IMMERSIVE : careerTip);
 		boolean cost = costBox.isSelected();
-		if (!im) percentBox.setEnabled(cost);
 		// Immersive Mode: the ship a report earns goes by what it surrenders, not by this choice
 		freeBox.setEnabled(cost && !im);
 		freeLabel.setEnabled(cost && !im);
@@ -402,7 +404,7 @@ public class RuleBoxes {
 				"The Federation Home Planet", notifyBox, careerBox, repBox, repUseRow, rateRow, ranksRow,
 				"Journeys and trading", tradeBox, journeyBox, journeyFeeRow, augmentBox,
 				"Refit, scrapping and selling", removalRow, scrapBox, sellBox, sellSystemsBox,
-				"Shipyard", lockedBox, customLockedBox, costRow, freeRow, unlockBox,
+				"Shipyard", lockedBox, customLockedBox, costRow, freeRow, valueRow, unlockBox,
 				"Expeditions", infirmaryBox};
 		for (Object r : rows) {
 			if (r == immersiveRow && !withImmersive) continue;
@@ -437,7 +439,7 @@ public class RuleBoxes {
 			if (customLockedBox.isSelected() != HomePlanet.commissionCustomUnlockedOnly) changed.add("Custom ships of locked models cannot be commissioned: " + customLockedBox.isSelected());
 			if (sellSystemsBox.isSelected() != HomePlanet.sellSystems) changed.add("Selling stored systems: " + sellSystemsBox.isSelected());
 			if (costBox.isSelected() != HomePlanet.commissionCosts) changed.add("Commissioning costs scrap: " + costBox.isSelected());
-			if (percent() != HomePlanet.commissionPercent) changed.add("Commission price: " + percent() + "%");
+			if (percent() != HomePlanet.commissionPercent) changed.add("Ship and part values: " + percent() + "%");
 			if (!FREE_KEYS[freeBox.getSelectedIndex()].equals(HomePlanet.freeShip)) changed.add("Plead for New Ship grants: " + freeBox.getSelectedItem());
 			if (notifyBox.isSelected() != HomePlanet.immersiveNotifications) changed.add("Immersive Notifications: " + notifyBox.isSelected());
 			if (careerBox.isSelected() != HomePlanet.careerMessages) changed.add("Career messages: " + careerBox.isSelected());

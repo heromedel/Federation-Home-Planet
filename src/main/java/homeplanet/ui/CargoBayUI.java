@@ -116,6 +116,8 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	private final CargoParts.Label notice2 = new CargoParts.Label("", FtlFont.CARGO, CargoParts.TEXT, 0);
 	private FtlButton noticePick;
 	private final JPanel noticePanel = new JPanel(null);
+	/** The ship aboard (or picked) who can't trade where she is: the bay opens on the Cargo Hold alone, and says why (heromedel, 6.67, Plan H). */
+	private Ship outOfRange;
 
 	// ---- the Trade tab ----
 	private final JPanel trade = new JPanel(null);
@@ -353,14 +355,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		notice.setText("");
 		notice2.setText("");
 		if (currentPath == null) notice.setText("No ship picked: pick one below, or board one at the Space Dock.");
-		else if (!Vault.get().mayTrade(currentShip)) {
-			notice.setText(currentSave.getPlayerShipName() + " is not within range of a station.");
-			notice2.setText("Take " + homeplanet.model.Words.herObj() + " to a beacon with a store to trade, or pick another ship:");
-		}
 		for (int i = 0; i < tabButtons.length; i++) {
 			boolean shipTab = i > 0; // the Shop and the Refit tab
 			tabButtons[i].setEnabled(!tradeUnavailable() && !(shipTab && holdOnly()));
-			tabButtons[i].setToolTipText(shipTab && holdOnly() ? "Pick a ship first (the button above): the " + (i == 1 ? "Shop sells to" : "Refit tab works on") + " the picked ship" : TAB_TIPS[i]);
+			tabButtons[i].setToolTipText(!shipTab || !holdOnly() ? TAB_TIPS[i]
+					: boardable().isEmpty() ? "No ships in range: the " + (i == 1 ? "Shop sells to" : "Refit tab works on") + " a ship at a beacon with a store"
+					: "Pick a ship first (the button above): the " + (i == 1 ? "Shop sells to" : "Refit tab works on") + " the picked ship");
 		}
 		storedBtn.setVisible(holdOnly() && !systems.storedList().isEmpty());
 		saveBtn.setEnabled(!tradeUnavailable());
@@ -375,6 +375,12 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		Ship flying = outOfReach(); // in flight in the dock (5.29), or her save can't be read (5.81): she stays out of the Cargo Bay
 		currentShip = picked != null && picked != flying && Vault.get().fleet().contains(picked) ? picked : flying != null ? null : Vault.get().boarded();
 		if (currentShip != picked) picked = null; // she's gone (boarded elsewhere, decommissioned): back to the boarded ship
+		outOfRange = null;
+		if (currentShip != null && currentShip.save() != null && !Vault.get().mayTrade(currentShip)) { // away from a store: the hold alone, not a closed bay
+			outOfRange = currentShip;
+			currentShip = null;
+			picked = null;
+		}
 		if (currentShip == null || !currentShip.file().exists()) {
 			currentShip = null;
 			currentPath = null;
@@ -966,9 +972,16 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	void refreshTrade() {
 		if (currentState == null || tradeState == null) return;
 		updateSupplyButtons();
-		boardBtn.setText(currentPath == null ? "Pick a ship" : currentSave.getPlayerShipName());
+		boolean none = currentPath == null && boardable().isEmpty();
+		boardBtn.setText(currentPath != null ? currentSave.getPlayerShipName() : none ? "No ships in range" : "Pick a ship");
+		boardBtn.setEnabled(!none);
+		boardBtn.setToolTipText(none ? "None of your ships is at a beacon with a store" : "Board another of your ships docked at a station, without leaving the Cargo Bay");
 		String cls = currentPath == null ? "" : shipClass(currentState); // no ship aboard: the lists say so, and Stored Systems sits here
 		mySub.setText(cls);
+		boolean stored = holdOnly() && !systems.storedList().isEmpty();
+		mySub.setBounds(LX + DROP_IN + (stored ? 176 : 30), 110 - 52, stored ? 520 : 400, 16); // beside Stored Systems when it's there
+		if (outOfRange != null && currentPath == null) // why she isn't on the left (heromedel, 6.67)
+			mySub.setText(outOfRange.name + " is not within range of a station: take " + homeplanet.model.Words.herObj() + " to a beacon with a store to trade");
 
 		myPic.setIcon(shipIcon(currentSave));
 		partnerBtn.setText(partnerName());
