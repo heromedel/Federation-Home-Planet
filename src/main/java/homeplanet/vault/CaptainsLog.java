@@ -412,6 +412,8 @@ public final class CaptainsLog {
 			once(m, "crew", false, head.split(" \\(")[0].trim() + ", rescued on an expedition, signed on.");
 		} else if (j.find()) {
 			once(m, "crew", true, "Hired " + j.group(1) + ", " + article(race(j.group(2))) + ".");
+		} else if (head.startsWith("Posted for volunteers, ") || head.startsWith("A promise of adventure")) { // the posting; who joined is the next day's line (6.65)
+			once(m, "crew", true, head.startsWith("A promise") ? "Posted a promise of adventure." : "Posted for volunteers.");
 		} else if (head.endsWith("no one answered")) {
 			once(m, "crew", true, (head.startsWith("A promise") ? "Posted a promise of adventure" : "Posted for volunteers") + "; no one answered.");
 		}

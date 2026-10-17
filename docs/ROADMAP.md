@@ -1339,6 +1339,69 @@ on its own may be lost."), then sends FTL the close request its own X sends. A s
 Refresh, before FTL's window is found), the docked view with FTL's window gone, or FTL not running, is the normal Space
 Dock again. Tested under Wine (undocktest).
 
+## 46. The Cargo Bay away from a store — planned (Plan H, heromedel, 6.64; not built yet)
+
+Today a boarded ship that isn't at a store opens the Cargo Bay on a notice ("Kestrel is not within range of a station.
+Take her to a beacon with a store to trade, or pick another ship"), the tabs, Save and Reset greyed; with a one-ship fleet
+there is nothing to pick and the bay seems not to open at all. heromedel: it should open all the same, with no ship on the
+left, and the drop-down saying there are no ships in range.
+
+1. A boarded ship away from a store doesn't block the Cargo Bay: it opens on the Trade tab, her side empty and the Cargo
+   Hold on the right, as it does with no ship aboard (the hold's goods there to look over, sell or junk).
+2. The left drop-down lists only the ships that can trade now; with none, it reads "No ships in range" and doesn't open.
+3. A short line under it says why: "Kestrel is not within range of a station: take her to a beacon with a store to
+   trade" (her, him or it as the Ship Pronoun setting says).
+4. The Shop and the Refit tab stay greyed till a ship in range is picked, each tooltip saying why.
+5. GuiT checks a one-ship fleet away from a store: the bay opens on Trade, the drop-down says "No ships in range", the
+   Cargo Hold can be looked over.
+
+## 47. Fuel sold as well — planned (heromedel, 6.64; not built yet)
+
+heromedel: the option to sell missiles and drone parts should include fuel. Today the Cargo Bay's sell (and junk) buttons
+under the supply arrows work on missiles and drone parts only ("Only missiles and drone parts can be sold or junked;
+scrap and fuel move with the arrows"). Fuel would be sold the same way, under the same house rule (`sell_supplies`), at
+the same share of FTL's store price (fuel 3 scrap), and the rule's words and the buttons' tooltips would name fuel too.
+
+## 48. Ship and part values apart from Commission's cost — planned (Plan J, heromedel, 6.64; not built yet)
+
+heromedel: with Sandbox's commissioning set to free, the assumed value of ships is 100%, so the Junkyard doesn't look like
+Easy mode. Today the percentage beside "Commissioning a ship costs scrap, paid from the Cargo Hold, at" is greyed while
+commissioning is free, yet it still prices every ship and part (Trade In, Auction, the museum, the Junkyard's derelicts and
+parts); a Custom career's "nothing (values at full price)" commission level (6.48) does the same on purpose.
+
+1. Sandbox's Rules: "Commissioning a ship costs scrap" stands alone, and a separate drop-down, "Ship and part values:
+   100% / 75% / 50%", is always there to choose, its tooltip naming what it prices (Commission when it costs, Trade In,
+   Auction, the museum, the Junkyard's derelicts and parts). In the Immersive careers it shows locked to the career's one
+   (heromedel): Easy 50, Normal 75, Hard 100.
+2. A Custom career's "nothing" commission level no longer means full price: the career's own value level, chosen in the
+   same table with its other rules and then fixed, prices her.
+3. Existing Sandbox fleets keep the percentage they have saved: nothing changes until the player changes it.
+4. Checks: FleetT for the Custom levels; GuiT for Sandbox's rule open with commissioning free, and a derelict's price
+   following it.
+
+## 49. Posting for crew ends the day — built (6.65; Plan K, heromedel; built and compiled, not run through the harness)
+
+heromedel: posting to hire someone should end the day. It is an action that costs scrap and has a result, and should
+take time for a reply (not literally); it would also lower the reputation lost when you have no one and keep needing to
+rest. Log that you posted, end the day ("Then I..." and the posted message), then log if someone joined:
+
+    Then I posted...
+
+    Stardate x.x.x.x
+    Hired...
+
+1. Posting for volunteers, paid or a promise of adventure, writes its entry first ("posted"), then ends the day as rest
+   does (`v.countBeacon`): one day passes for the whole fleet, the expeditions, the infirmary and the clock with it.
+2. If someone answered, a second entry is written on the new day ("joined": who, their race, where they went); if no one
+   did, nothing more.
+3. The Captain's Log reads them as "Then I posted for volunteers..." closing the day, and "Hired..." under the next
+   stardate; the station log's words for both come from the lore files, to the hard rules (no days counted aloud).
+4. A day having passed, a rest the day after a post begins a new run (its first day free): the run counts only days
+   rested back to back.
+5. `docs/EVENTS.md` gets both entries' fields.
+6. Checks: ExpT (a post moves the clock one day; two entries when someone joins, one when not) and RestT (rest, post,
+   rest costs nothing).
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

@@ -60,3 +60,15 @@ to the station's file unless its key is added to `SANDBOX_KEYS` (Sandbox Mode's 
 **What a change would look like.** Moving another setting to a career means its key into `SANDBOX_KEYS` and, for the Immersive
 careers, a `Career` getter and setter like `reputationUse` (CfgT's R checks show how it's tested).
 
+
+## 10. The Relief Ship's weapons system (noted 6.64)
+
+**What it is.** heromedel, 6.64: the Relief Ship Type A appears to have her weapons system at level 4, when she only needs
+level 2 to start. `Commission.buildRelief` sets every system to its minimum, the weapons at 2 (two bars for her two guns, a
+Burst Laser I and an Ion Blast), so something after it, or another way of building her, gives her more than it means to.
+
+**What it costs.** Not looked into yet. A plea's ship is meant to be the bare minimum; two extra weapons bars are worth
+scrap at the Dry Dock, and count in her price.
+
+**What a change would look like.** Find where her level 4 comes from (the plea's own build, the price check, or FTL
+reading her blueprint), and keep her at 2.
