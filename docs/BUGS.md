@@ -31,14 +31,3 @@ other systems. Leave it unless players run into it.
 - **Where to look:** the station's log from that run, with debug on, says what Windows answered at each step: the release
   (`FTL undocked: ...`), the new attach (`FTL docked, attached: ...`) and `tuckUnder` (`not, FTL is behind another
   program's window (Unpause shown)`). 6.60's bring-to-front once docked didn't change it.
-
-## The One Point of Hull letter comes mid-battle (found 6.64, heromedel in play)
-
-Knocked from 4 hull to 1 in a fight, the Engi Restoration Collective's letter came before she had left the beacon.
-`Vault.noteHull` checks only for one point of hull with no living hostile ship alongside, never for a jump away. The fix
-is planned in `docs/ROADMAP.md` 12 (wait for a later save at a new beacon).
-
-## The Captain's Log loses a move back to the Cargo Hold (found 6.64, heromedel in play)
-
-Crew moved to the Cargo Hold, to a new ship, and back to the Cargo Hold in one day read as only the first two moves:
-`CaptainsLog` merges every move to the same place that day into the first. The fix is planned in `docs/ROADMAP.md` 43.

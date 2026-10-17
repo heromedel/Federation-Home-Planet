@@ -265,7 +265,12 @@ public final class CaptainsLog {
 			if (w.length == 2) once(m, "ships", true, "Renamed " + theShip(w[0].trim()) + " " + theShip(w[1].trim()) + ".");
 		} else if (kind.equals("CREW")) { // the Cargo Bay's crew moves, one destination a line (heromedel, 5.40)
 			Matcher a = Pattern.compile("^(.+?) assigned to (.+?)\\.?$").matcher(head.trim());
-			if (a.find()) { Line l = line(m, "assign", "assign:" + a.group(2), true, ""); l.ship = a.group(2); add(l, a.group(1), 1); }
+			if (a.find()) { // moves to one place merge only while they follow one another: a round trip keeps its way back (6.65)
+				String key = "assign:" + a.group(2), last = null;
+				for (String k : m.keySet()) last = k;
+				if (m.containsKey(key) && !key.equals(last)) key += ":" + m.size();
+				Line l = line(m, "assign", key, true, ""); l.ship = a.group(2); add(l, a.group(1), 1);
+			}
 		} else if (kind.equals("RENAME CREW")) {
 			String[] w = unowned(head).split(" -> ", 2);
 			String rank = w.length == 2 ? homeplanet.model.Rank.promotion(w[0].trim(), w[1].trim()) : null; // a rank put on (heromedel, 5.52)

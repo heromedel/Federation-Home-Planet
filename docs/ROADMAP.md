@@ -323,13 +323,13 @@ comes a random number of beacons later (the fleet counts every beacon its ships 
 
 - **The trigger:** once per fleet, the first time the boarded ship comes out of a battle with one point of hull (no
   hostile ship alongside). The Engi Restoration Collective writes, naming her.
-- **To fix (found 6.64, heromedel):** it fired in the middle of a battle, the ship knocked from 4 hull to 1. The check
+- **Fixed (6.65; found 6.64, heromedel):** it fired in the middle of a battle, the ship knocked from 4 hull to 1. The check
   (`Vault.noteHull`) asks only whether her hull is 1 with no living hostile ship alongside, never whether she left: a save
   written at the battle's beacon (save and quit, or one where the enemy isn't flagged hostile) or a hazard beacon with no
   enemy at all sets it off. The fix: note the beacon where she was first seen at one point of hull, and send the letter
   only once a later save shows she jumped on from it and survived (`getTotalBeaconsExplored` gone up). A ship still in the
   fight, or destroyed there, never starts the chain. ChainT to cover both.
-- **To build (6.64, heromedel): Patience is yours, and the med-bots.** heromedel took "Repair her well. We will ask." to
+- **Built (6.65, heromedel): Patience is yours, and the med-bots.** heromedel took "Repair her well. We will ask." to
   mean she had to be repaired and given back, like the Collector's Nightjar (the repair-job chain), whose letters read
   almost the same. So: *A vessel in need* gains "She is not a loan. When she arrives, she is yours."; *Delivered* ends,
   in place of "We will ask", with heromedel's idea in the Engi voice: "Remember, you may keep this treasure. We ask only
@@ -1269,7 +1269,7 @@ station", "to sector 3"); "I returned to The Home Planet Station." and "Set out 
 moves between the two; gear bought at a store or picked up. The voyage log gains "Arrived at a store", "Bought at a
 store: …" and "Picked up: …" for it. Hard rule 2 now says days are real: a player may work out that a jump passes a day.
 
-**To fix (found 6.64, heromedel):** a round trip of crew in one day loses a move. heromedel moved crew to the Cargo Hold,
+**Fixed (6.65; found 6.64, heromedel):** a round trip of crew in one day loses a move. heromedel moved crew to the Cargo Hold,
 from it to a new ship (to repair her), and back to the Cargo Hold, then rested; the log read "Moved … to the Cargo Hold",
 "Assigned … to the new ship", took command, returned to the station, rested: the move back is gone. `CaptainsLog` keys
 each move by where it went (`"assign:" + the destination`, line 268), so every move to the same place that day merges
