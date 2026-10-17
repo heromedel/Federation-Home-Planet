@@ -198,6 +198,12 @@ public final class CaptainsLog {
 			Line l = once(m, "rest", true, run <= 1 ? "Rested in my quarters." : "Rested in my quarters for the " + ordinal(run) + " day in a row.");
 			if (cost > 0) l.details.add("−" + cost + " reputation");
 		} else if (kind.equals("BUY")) {
+			if (head.startsWith("Searched the Junkyard")) {
+				Line l = once(m, "junkyard_search", true, "Searched the Junkyard for more parts.");
+				Matcher p = Pattern.compile("for (\\d+) scrap").matcher(head);
+				if (p.find()) l.details.add(p.group(1) + " scrap");
+				return;
+			}
 			if (head.contains(", a derelict, for ")) {
 				String name = head.substring(0, head.indexOf(" (") > 0 ? head.indexOf(" (") : head.indexOf(","));
 				Line l = once(m, "buy", true, "Bought " + theShip(name) + ", a derelict, from the Junkyard.");
@@ -412,6 +418,8 @@ public final class CaptainsLog {
 			once(m, "crew", false, head.split(" \\(")[0].trim() + ", rescued on an expedition, signed on.");
 		} else if (j.find()) {
 			once(m, "crew", true, "Hired " + j.group(1) + ", " + article(race(j.group(2))) + ".");
+		} else if (head.startsWith("Posted for volunteers, ") || head.startsWith("A promise of adventure")) { // the posting; who joined is the next day's line (6.65)
+			once(m, "crew", true, head.startsWith("A promise") ? "Posted a promise of adventure." : "Posted for volunteers.");
 		} else if (head.endsWith("no one answered")) {
 			once(m, "crew", true, (head.startsWith("A promise") ? "Posted a promise of adventure" : "Posted for volunteers") + "; no one answered.");
 		}

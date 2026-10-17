@@ -28,6 +28,7 @@ public class GuiT {
   } catch (Exception e) { throw new RuntimeException(e); } } });
   final MainFrame f = (MainFrame) frame[0];
   noticeClears(v, f); // first: a ship aboard, the Cargo Bay not opened yet
+  values();
   bill(v, f, false);
   bill(v, f, true);
   shipPays(v, f);
@@ -318,15 +319,23 @@ public class GuiT {
    ini.delete();
   }
  }
- /** The Cargo Bay with the station rule on and the ship away from a store shows the notice; the rule lifted, it opens on Trade at once; a list's empty words show without another click (6.62, McCarthy's handoff). */
+ /**
+  * The Cargo Bay with the station rule on and every ship away from a store opens all the same, on the Cargo Hold alone,
+  * the drop-down saying "No ships in range" and why under it (6.67, Plan H); the rule lifted, it opens on Trade at once;
+  * a list's empty words show without another click (6.62, McCarthy's handoff).
+  */
  static void noticeClears(final Vault v, final MainFrame f) throws Exception {
   final boolean was = HomePlanet.storeRequirement;
   final Ship b = v.boarded();
-  final SavedGameParser.SavedGameState orig = v.readCopy(b).save;
-  SavedGameParser.SavedGameState g = v.readCopy(b).save;
-  if (g.getBeaconList() != null && g.getCurrentBeaconId() >= 0 && g.getCurrentBeaconId() < g.getBeaconList().size()) g.getBeaconList().get(g.getCurrentBeaconId()).setStore(null); // no store where she is (no map: none either)
-  g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); // and not where the station set her out
-  v.write(b, g); b.invalidate();
+  final java.util.Map<Ship, SavedGameParser.SavedGameState> origs = new java.util.LinkedHashMap<Ship, SavedGameParser.SavedGameState>();
+  for (Ship s : v.fleet()) {
+   if (s.save() == null) continue;
+   origs.put(s, v.readCopy(s).save);
+   SavedGameParser.SavedGameState g = v.readCopy(s).save;
+   if (g.getBeaconList() != null && g.getCurrentBeaconId() >= 0 && g.getCurrentBeaconId() < g.getBeaconList().size()) g.getBeaconList().get(g.getCurrentBeaconId()).setStore(null); // no store where she is (no map: none either)
+   g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); // and not where the station set her out
+   v.write(s, g); s.invalidate();
+  }
   HomePlanet.storeRequirement = true;
   final Object[] r = new Object[6];
   try {
@@ -335,7 +344,9 @@ public class GuiT {
     f.showCargoBay();
     CargoBayUI bay = (CargoBayUI) field(f, MainFrame.class, "cargoBay");
     bay.init();
-    r[1] = shownCard(bay) + "/" + call(field(bay, CargoBayUI.class, "notice"), field(bay, CargoBayUI.class, "notice").getClass(), "getText", new Class<?>[0]);
+    r[1] = shownCard(bay) + "/" + call(bay, CargoBayUI.class, "holdOnly", new Class<?>[0]) + "/" + ((javax.swing.AbstractButton) field(bay, CargoBayUI.class, "boardBtn")).getText()
+      + "/" + ((javax.swing.AbstractButton) field(bay, CargoBayUI.class, "boardBtn")).isEnabled() + "/" + call(field(bay, CargoBayUI.class, "mySub"), field(bay, CargoBayUI.class, "mySub").getClass(), "getText", new Class<?>[0])
+      + "/" + ((java.awt.Component[]) field(bay, CargoBayUI.class, "tabButtons"))[1].isEnabled() + ((java.awt.Component[]) field(bay, CargoBayUI.class, "tabButtons"))[2].isEnabled();
     HomePlanet.storeRequirement = false; // Settings, Rules: unticked
     bay.init(); // the Cargo Bay opened again
     r[2] = shownCard(bay) + "/" + field(bay, CargoBayUI.class, "currentTab") + "/[" + call(field(bay, CargoBayUI.class, "notice"), field(bay, CargoBayUI.class, "notice").getClass(), "getText", new Class<?>[0]) + "]";
@@ -350,12 +361,27 @@ public class GuiT {
    } catch (Exception e) { throw new RuntimeException(e); } } });
   } finally {
    HomePlanet.storeRequirement = was;
-   v.write(b, orig); b.invalidate();
+   for (java.util.Map.Entry<Ship, SavedGameParser.SavedGameState> e : origs.entrySet()) { v.write(e.getKey(), e.getValue()); e.getKey().invalidate(); }
   }
   Setup.chk("AQ: away from a store with the rule on, she may not trade", Boolean.TRUE.equals(r[0]));
-  Setup.chk("AQ: the Cargo Bay shows the notice: " + r[1], String.valueOf(r[1]).startsWith("notice/") && String.valueOf(r[1]).contains("not within range of a station"));
+  Setup.chk("AQ: the Cargo Bay opens on Trade with the Cargo Hold alone, \"No ships in range\" (not to be opened), why under it, the Shop and Refit greyed: " + r[1],
+    String.valueOf(r[1]).equals("trade/true/No ships in range/false/" + b.name + " is not within range of a station: take " + homeplanet.model.Words.herObj() + " to a beacon with a store to trade/falsefalse"));
   Setup.chk("AQ: the rule lifted, the Cargo Bay opens on Trade at once, the notice cleared: " + r[2], "trade/trade/[]".equals(r[2]));
   Setup.chk("AQ: a list's empty words are drawn again as soon as they change", Boolean.TRUE.equals(r[3]));
+ }
+ /** Sandbox's Rules: "Ship and part values" is there to choose with commissioning free (6.67, Plan J). */
+ static void values() throws Exception {
+  final boolean was = HomePlanet.commissionCosts, im = HomePlanet.immersiveMode;
+  final Object[] r = new Object[2];
+  try {
+   HomePlanet.commissionCosts = false; HomePlanet.immersiveMode = false;
+   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
+    RuleBoxes rb = new RuleBoxes();
+    JComboBox<?> pb = (JComboBox<?>) field(rb, RuleBoxes.class, "percentBox"); JCheckBox cb = (JCheckBox) field(rb, RuleBoxes.class, "costBox");
+    r[0] = pb.isEnabled() + "/" + cb.isSelected() + "/" + cb.getText();
+   } catch (Exception e) { throw new RuntimeException(e); } } });
+  } finally { HomePlanet.commissionCosts = was; HomePlanet.immersiveMode = im; }
+  Setup.chk("J: Sandbox's Rules: commissioning free, the values still to choose: " + r[0], ("true/false/Commissioning a ship costs scrap, paid from the Cargo Hold").equals(r[0]));
  }
  /** The Cargo Bay's card on show: trade, shop, refit or notice. */
  static String shownCard(CargoBayUI bay) throws Exception {

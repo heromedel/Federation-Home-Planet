@@ -2,7 +2,7 @@
 
 What players (heromedel and the testers) send through the station's Send Feedback form, and what became of each. The
 responses are in the sheet linked in `CLAUDE.md`; Cloud-C-Primary-Edit ("Prime") reads it after every push and brings this
-list up to date. The newest response read: **10/9/2026 19:33:13**.
+list up to date. The newest response read: **10/16/2026 3:17:17**.
 
 Status: done (with the version), open, or not for the station (jokes, questions answered).
 
@@ -31,3 +31,11 @@ Status: done (with the version), open, or not for the station (jokes, questions 
 | 10/8 02:53 | 6.04 | An empty line between the folders' Change rows and the Open buttons (Settings > Folders) | done 6.07 |
 | 10/8 03:31 | 6.05 | A ship defeated is always "We defeated a ship": the log knows what kind she was (a rebel ship), so it should say so | done 6.09 ("Encountered a rebel ship.", "Defeated the rebel ship."; the Captain's Log names her too) |
 | 10/9 19:33 | (not given) | Custom ships could show up in the background with the other ships unlocked so far | done 6.36 (the Space Dock backdrop already flew starter blueprints on FTL's hulls; designs with pictures of their own now fly too) |
+| 10/16 01:49 | 6.65 | Weapons in the Junkyard's parts; spend scrap or reputation to search for more parts, ending the day | weapons: already there (now and then a piece of salvage is a weapon, drone or augment); the search done 6.66 (15 scrap, once a week, the day ends; the derelicts untouched) |
+| 10/16 01:55 | 6.65 | Repairs made aboard a ship with broken systems or a hull breach, then back at the station: a day should end | done 6.66 |
+| 10/16 02:24 | 6.65 | Buying from the Junkyard: keep the message up, end the day once it's closed | done 6.66 |
+| 10/16 02:26 | 6.65 | Scrap from expeditions, and a successful expedition, don't seem to raise reputation | checked: expeditions score on their return (not a bug); heromedel thinks it was likely the Captain's branch |
+| 10/16 02:46 | 6.65 | The expedition line "Twice the shields went down, ..." | passed to McCarthy (`docs/FOR-MCCARTHY.md` 1) |
+| 10/16 03:09 | 6.65 | The Junkyard needs an Info button; expeditions could bring back a missile, fuel or a drone part | Info done 6.66 (the parts and salvage, and a hover); supplies passed to McCarthy (`docs/FOR-MCCARTHY.md` 2) |
+| 10/16 03:14 | 6.65 | A tab on the expedition screen for who's out | done 6.66 ("Current expeditions", by team) |
+| 10/16 03:17 | 6.65 | Buying a missile in the Cargo Bay asked for reputation and scrap and wouldn't sell | checked: only system work orders past FTL's limit ask for reputation on this branch; heromedel thinks it was their end or the Captain's branch |

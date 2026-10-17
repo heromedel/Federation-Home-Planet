@@ -25,7 +25,7 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 
 All built. What remains is testing in real play and bug checks.
 
-The 6.0 overhaul (storage, logs and code rebuilt; `docs/OVERHAUL-6.md`) is done: 6.00 (heromedel). The kill test was done at
+The 6.0 overhaul (storage, logs and code rebuilt; `docs/OVERHAUL-6.md`, removed at 6.66, in git history) is done: 6.00 (heromedel). The kill test was done at
 5.95 (Buggy Boy), the protocol settled at 5.98 (heromedel: no bump), and McCarthy's words moved into `lore/` with the docs' pass
 at 5.991 (the log's human lines for every kind, the letters, the expedition words and the deeds).
 The kill test (KillT) and the old-fleet conversion's tests are removed from the harness (heromedel, after 5.98): they passed
@@ -803,7 +803,7 @@ From a review of 4B.95 and 4B.96 in main, and heromedel's answers (Plan U).
   write, so it can't be paid twice. The expedition's end writes the Cargo Hold, the infirmary and the captives
   together; a side file that can't be read is an error, never written back empty.
 
-## 27. Bug squashing — in progress (4B.98)
+## 27. Bug squashing — done (4B.98; bugs found since are kept in `docs/BUGS.md`)
 
 Fixes only, from heromedel's testing and the review; no new features. Design debts found on the way go to
 `docs/CONCERNS.md`, not here.
@@ -1220,7 +1220,8 @@ and reputation for the rest; with Reputation off, scrap only, as before.
   2 Vanillas Breaking Actions (1, and Refit removal, stripping, a custom work order's share), 3 Only as a score.
   Wherever reputation can't be used, scrap pays: a work order's share in scrap too, a plea with 3 offers giving up the
   Cargo Hold alone. A promise of adventure and rest in quarters cost reputation with 1 and 2 (nobody is locked out of
-  them) and are free with 3. Captives and ransoms count with all three: that's score.
+  them) and, since 6.66 (heromedel: they're penalties, and a free promise meant free crew), with 3 as well. Captives and
+  ransoms count with all three: that's score.
 - **Total Reputation From:** a line under the Career Reputation Log, a running tally by pool (Travel, Combat, Crew,
   Scrap, Events, Achievements, Spent), each net, green or red, pools at zero left out. Read from the log itself
   (`Reputation.tally`): each bracketed piece of an entry goes to its pool by its words, so a jump that did three things
@@ -1338,6 +1339,98 @@ screen, still running, and the Space Dock is as usual again. Close asks to confi
 on its own may be lost."), then sends FTL the close request its own X sends. A safety check: on every rebuild (and on
 Refresh, before FTL's window is found), the docked view with FTL's window gone, or FTL not running, is the normal Space
 Dock again. Tested under Wine (undocktest).
+
+## 46. The Cargo Bay away from a store — built (6.67; Plan H, heromedel, 6.64)
+
+Today a boarded ship that isn't at a store opens the Cargo Bay on a notice ("Kestrel is not within range of a station.
+Take her to a beacon with a store to trade, or pick another ship"), the tabs, Save and Reset greyed; with a one-ship fleet
+there is nothing to pick and the bay seems not to open at all. heromedel: it should open all the same, with no ship on the
+left, and the drop-down saying there are no ships in range.
+
+1. A boarded ship away from a store doesn't block the Cargo Bay: it opens on the Trade tab, her side empty and the Cargo
+   Hold on the right, as it does with no ship aboard (the hold's goods there to look over, sell or junk).
+2. The left drop-down lists only the ships that can trade now; with none, it reads "No ships in range" and doesn't open.
+3. A short line under it says why: "Kestrel is not within range of a station: take her to a beacon with a store to
+   trade" (her, him or it as the Ship Pronoun setting says).
+4. The Shop and the Refit tab stay greyed till a ship in range is picked, each tooltip saying why.
+5. GuiT checks a one-ship fleet away from a store: the bay opens on Trade, the drop-down says "No ships in range", the
+   Cargo Hold can be looked over.
+
+## 47. Fuel sold as well — built (6.66; fuel sells at the same share and can be junked)
+
+heromedel: the option to sell missiles and drone parts should include fuel. Today the Cargo Bay's sell (and junk) buttons
+under the supply arrows work on missiles and drone parts only ("Only missiles and drone parts can be sold or junked;
+scrap and fuel move with the arrows"). Fuel would be sold the same way, under the same house rule (`sell_supplies`), at
+the same share of FTL's store price (fuel 3 scrap), and the rule's words and the buttons' tooltips would name fuel too.
+
+## 48. Ship and part values apart from Commission's cost — built (6.67; Plan J, heromedel, 6.64)
+
+heromedel: with Sandbox's commissioning set to free, the assumed value of ships is 100%, so the Junkyard doesn't look like
+Easy mode. Today the percentage beside "Commissioning a ship costs scrap, paid from the Cargo Hold, at" is greyed while
+commissioning is free, yet it still prices every ship and part (Trade In, Auction, the museum, the Junkyard's derelicts and
+parts); a Custom career's "nothing (values at full price)" commission level (6.48) does the same on purpose.
+
+1. Sandbox's Rules: "Commissioning a ship costs scrap" stands alone, and a separate drop-down, "Ship and part values:
+   100% / 75% / 50%", is always there to choose, its tooltip naming what it prices (Commission when it costs, Trade In,
+   Auction, the museum, the Junkyard's derelicts and parts). In the Immersive careers it shows locked to the career's one
+   (heromedel): Easy 50, Normal 75, Hard 100.
+2. A Custom career's "nothing" commission level no longer means full price: the career's own value level, chosen in the
+   same table with its other rules and then fixed, prices her.
+3. Existing Sandbox fleets keep the percentage they have saved: nothing changes until the player changes it.
+4. Checks: FleetT for the Custom levels; GuiT for Sandbox's rule open with commissioning free, and a derelict's price
+   following it.
+
+Built: the careers' table has a row of its own, "Ship and part values" (50%, 75%, 100%), under "Commissioning a ship costs"
+({her} value, or nothing). A Custom career begun before 6.67 is read with its values as its commission level priced it (a
+free commission at 100%), so nothing changes for it. The price of a ship and of a derelict follows it in FleetT.
+
+## 49. Posting for crew ends the day — built (6.65; Plan K, heromedel; built and compiled, not run through the harness)
+
+heromedel: posting to hire someone should end the day. It is an action that costs scrap and has a result, and should
+take time for a reply (not literally); it would also lower the reputation lost when you have no one and keep needing to
+rest. Log that you posted, end the day ("Then I..." and the posted message), then log if someone joined:
+
+    Then I posted...
+
+    Stardate x.x.x.x
+    Hired...
+
+1. Posting for volunteers, paid or a promise of adventure, writes its entry first ("posted"), then ends the day as rest
+   does (`v.countBeacon`): one day passes for the whole fleet, the expeditions, the infirmary and the clock with it.
+2. If someone answered, a second entry is written on the new day ("joined": who, their race, where they went); if no one
+   did, nothing more.
+3. The Captain's Log reads them as "Then I posted for volunteers..." closing the day, and "Hired..." under the next
+   stardate; the station log's words for both come from the lore files, to the hard rules (no days counted aloud).
+4. A day having passed, a rest the day after a post begins a new run (its first day free): the run counts only days
+   rested back to back.
+5. `docs/EVENTS.md` gets both entries' fields.
+6. Checks: ExpT (a post moves the clock one day; two entries when someone joins, one when not) and RestT (rest, post,
+   rest costs nothing).
+
+## 50. Rest and the promise of adventure cost reputation on every setting — built (6.66, Plan I, heromedel)
+
+heromedel: they're penalties in this station, not vanilla-breaking purchases, and a free promise meant free crew. Both
+now cost reputation whenever reputation is on, "Only as a score" included (`Rest.cost`, `Expeditions.promiseRep`); the
+option's words say so.
+
+## 51. More that takes the day — built (6.66, heromedel, feedback 10/16)
+
+Buying from the Junkyard (a part, salvage or a derelict) takes the day once its message is closed. A ship taken out of
+the dock, her systems or breaches mended, and brought back without a jump took the day too: her broken bars and breaches
+are noted as she's boarded (her record's `aboard` section) and compared as she docks.
+
+## 52. Searching the Junkyard for more parts — built (6.66, heromedel, feedback 10/16)
+
+"Search for more parts" on the Junkyard's parts screen: 15 scrap from the Cargo Hold (scrap only), a new set of parts
+and salvage, never the derelicts (searching for more derelicts would read oddly and be easier to exploit), and the day
+ends. Once a week: until then it's greyed, "Come back later". Each part and piece of salvage has an Info button and a
+hover saying what it is.
+
+## 53. Current expeditions — built (6.66, heromedel, feedback 10/16)
+
+The expedition board's tabs: "Choose an Offer" and "Current expeditions", who's out by team (the sector and the stardate
+they left, then each crew member's icon and name), up to three teams across. Never when they're due back. The names
+listed under the sectors went.
 
 ## Naming decisions — settled (4B.30)
 

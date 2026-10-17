@@ -399,7 +399,7 @@ public final class Expeditions {
 	/** What a promise of adventure costs in reputation, with Reputation on (heromedel: nothing was too little; a battle's worth). */
 	public static final int PROMISE_REP = 15;
 	/** The promise's cost right now: PROMISE_REP with Reputation on and no crew anywhere, else 0. */
-	public static int promiseRep(Vault v) { return Vault.isOpen() && homeplanet.core.Economy.repSpends() && fleetCrew(v) == 0 ? PROMISE_REP : 0; }
+	public static int promiseRep(Vault v) { return Vault.isOpen() && homeplanet.vault.Reputation.shown() && fleetCrew(v) == 0 ? PROMISE_REP : 0; } // a penalty, whatever How Reputation Can be Used says (6.66, heromedel: no free crew)
 	/** The chance someone answers: a free promise of adventure, or a paid posting. */
 	public static final int FREE_CHANCE = 50, PAID_CHANCE = 75;
 
@@ -440,10 +440,13 @@ public final class Expeditions {
 		}
 		if (cost > 0 || hired != null) v.begin().put(st, c.save, c.hash).commit();
 		if (rep > 0) homeplanet.vault.Reputation.spend(v, rep, "A promise of adventure posted" + (hired == null ? ", unanswered" : ": " + hired.getName() + " answered"));
-		HistoryLog.entry("HIRE", (cost == 0 ? "A promise of adventure" + (rep > 0 ? ", " + rep + " reputation" : "") : "Posted for volunteers, " + cost + " scrap") + ": "
-				+ (hired == null ? "no one answered" : hired.getName() + " (" + hired.getRace().getId() + ") joined, in the Cargo Hold"), null,
-				homeplanet.core.Event.of("HIRE").put("how", cost == 0 ? "promise" : "posted").put("cost", cost).put("reputation", rep).put("crew", hired == null ? null : hired.getName())
-						.put("race", hired == null ? null : hired.getRace().getId()).put("to", hired == null ? null : "hold"));
+		// the posting ends the day (heromedel, 6.65): logged first, the day passes, then who joined, if anyone, on the new one
+		HistoryLog.entry("HIRE", cost == 0 ? "A promise of adventure" + (rep > 0 ? ", " + rep + " reputation" : "") : "Posted for volunteers, " + cost + " scrap", null,
+				homeplanet.core.Event.of("HIRE").put("how", cost == 0 ? "promise" : "posted").put("cost", cost).put("reputation", rep));
+		v.countBeacon("a day spent waiting for answers to a posting");
+		if (hired != null) HistoryLog.entry("HIRE", "Answered the posting: " + hired.getName() + " (" + hired.getRace().getId() + ") joined, in the Cargo Hold", null,
+				homeplanet.core.Event.of("HIRE").put("how", cost == 0 ? "promise" : "posted").put("cost", cost).put("reputation", rep).put("crew", hired.getName())
+						.put("race", hired.getRace().getId()).put("to", "hold"));
 		return hired;
 	}
 }

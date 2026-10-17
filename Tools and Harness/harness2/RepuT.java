@@ -140,8 +140,8 @@ public class RepuT {
   HomePlanet.reputationUse = 2;
   Setup.chk("U: 2: vanilla-breaking too; the work order half scrap, half reputation", Economy.repForJourneysAndPleas() && Economy.repForVanillaBreaking() && Economy.workOrderScrap() == 50 && Economy.workOrderRep() == 50);
   HomePlanet.reputationUse = 3;
-  Setup.chk("U: 3: only a score: nothing spends it, the promise and rest are free", !Economy.repForJourneysAndPleas() && !Economy.repForVanillaBreaking() && !Economy.repSpends()
-    && Economy.workOrderScrap() == 100 && Expeditions.promiseRep(v) == 0 && Rest.cost(v) == 0);
+  Setup.chk("U: 3: only a score: nothing buys with it, but the promise still costs (6.66: penalties, not purchases)", !Economy.repForJourneysAndPleas() && !Economy.repForVanillaBreaking() && !Economy.repSpends()
+    && Economy.workOrderScrap() == 100 && (Expeditions.fleetCrew(v) > 0 || Expeditions.promiseRep(v) > 0));
   HomePlanet.reputationUse = 1;
   // 5.15: the tally under the log: each piece in its pool, the pools adding up to the total
   Map<String, Integer> t = Reputation.tally(v);
