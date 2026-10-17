@@ -198,6 +198,12 @@ public final class CaptainsLog {
 			Line l = once(m, "rest", true, run <= 1 ? "Rested in my quarters." : "Rested in my quarters for the " + ordinal(run) + " day in a row.");
 			if (cost > 0) l.details.add("−" + cost + " reputation");
 		} else if (kind.equals("BUY")) {
+			if (head.startsWith("Searched the Junkyard")) {
+				Line l = once(m, "junkyard_search", true, "Searched the Junkyard for more parts.");
+				Matcher p = Pattern.compile("for (\\d+) scrap").matcher(head);
+				if (p.find()) l.details.add(p.group(1) + " scrap");
+				return;
+			}
 			if (head.contains(", a derelict, for ")) {
 				String name = head.substring(0, head.indexOf(" (") > 0 ? head.indexOf(" (") : head.indexOf(","));
 				Line l = once(m, "buy", true, "Bought " + theShip(name) + ", a derelict, from the Junkyard.");
