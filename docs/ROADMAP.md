@@ -1389,6 +1389,19 @@ Buying from the Junkyard (a part, salvage or a derelict) takes the day once its 
 the dock, her systems or breaches mended, and brought back without a jump took the day too: her broken bars and breaches
 are noted as she's boarded (her record's `aboard` section) and compared as she docks.
 
+## 52. Searching the Junkyard for more parts — built (6.66, heromedel, feedback 10/16)
+
+"Search for more parts" on the Junkyard's parts screen: 15 scrap from the Cargo Hold (scrap only), a new set of parts
+and salvage, never the derelicts (searching for more derelicts would read oddly and be easier to exploit), and the day
+ends. Once a week: until then it's greyed, "Come back later". Each part and piece of salvage has an Info button and a
+hover saying what it is.
+
+## 53. Current expeditions — built (6.66, heromedel, feedback 10/16)
+
+The expedition board's tabs: "Choose an Offer" and "Current expeditions", who's out by team (the sector and the stardate
+they left, then each crew member's icon and name), up to three teams across. Never when they're due back. The names
+listed under the sectors went.
+
 ## Naming decisions — settled (4B.30)
 
 - The storage is **the Cargo Hold** (in full, The Federation Home Planet Station's Cargo Hold; also the Station's Cargo

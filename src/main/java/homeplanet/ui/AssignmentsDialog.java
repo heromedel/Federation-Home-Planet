@@ -51,7 +51,7 @@ public final class AssignmentsDialog extends JDialog {
 		body.setBorder(BorderFactory.createEmptyBorder(12, 16, 10, 16));
 		body.add(new JLabel("<html><div style='width:720px'>Crews without a ship of their own find work where it's offered. Pick where to send them and who goes, up to "
 				+ Assignments.PARTY_MAX + " from the Cargo Hold. They're away a while, and what they find there is theirs to tell when they're back. Not everyone comes back.</div></html>"), BorderLayout.NORTH);
-		tabs.addTab("Work on offer", cols);
+		tabs.addTab("Choose an Offer", cols);
 		tabs.addTab("Current expeditions", awayTab); // who's out, by team (heromedel, 6.66: the names under the sectors went unseen)
 		MenuTheme.markOpenTab(tabs);
 		body.add(tabs, BorderLayout.CENTER);

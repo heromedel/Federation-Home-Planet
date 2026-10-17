@@ -3,7 +3,7 @@
 Ideas heromedel has had but not yet decided to build. When one is chosen, it moves to `ROADMAP.md` and gets a plan.
 Lettered as in our plans; heromedel's own words first, notes after.
 
-## Idea A: reply chains in the inbox
+## Idea A: reply chains in the inbox — built (ROADMAP 12)
 
 Some letters come with a Reply button, which brings up a choice of two or more replies. Sometimes replies go back and
 forth. For realism, each reply chain waits a set or semi-random number of beacons before the next letter.
@@ -57,7 +57,7 @@ Federation's own offices.
 An Engi writes when a ship comes out of a battle with one point of hull, and offers a derelict to restore or a repair
 tool. Built as the first reply chain, so Idea A's mechanism exists now; Ancestry is next in line for it.
 
-## Idea D: ships on loan over Long Range Comm.
+## Idea D: ships on loan over Long Range Comm. — groundwork only (the Return button asks `vault/Borrowed`)
 
 Players across Long Range Comm. can loan each other ships. The Return button (built for the repair job's Nightjar)
 would prep her for an automatic return on the next connection.
@@ -76,7 +76,7 @@ Notes: the repair job's Return button is set up for this. It asks whether the bo
 use the same mark, with Long Range Comm.'s escrow as her way home. "The right player" is already possible: each
 station has its own random id (`homeplanet.comm.Commander.stationId()`), sent when two stations connect.
 
-## Idea E: crew skills and specialist expeditions
+## Idea E: crew skills and specialist expeditions — partly built (6.39: each crew member's role and skill count on an expedition; specialist postings still to come)
 
 From heromedel, for later (after testing 4B.83 onwards):
 
@@ -95,7 +95,7 @@ Done in part at 4B.93/94: a choice says what it takes (a race that's good at it:
 mind; and a skill by name), the crew member best suited takes it on, earns its experience, and makes its bad outcomes
 rarer. Specialist postings (a pilot wanted, an engineer wanted) are still to come.
 
-## Idea F: the Refresh button as a small icon (noted 4B.98)
+## Idea F: the Refresh button as a small icon (noted 4B.98) — built (a small square button beside Helm)
 
 From heromedel: now that the Space Dock keeps itself current (ROADMAP 27, Plan V), the full labelled **Refresh** button
 under the Station heading is rarely needed. Make it a little refresh icon beside the word "Station" in the heading
