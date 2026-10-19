@@ -242,5 +242,5 @@ For example:
 
 ## Style
 
-Match the surrounding code: tabs, `homeplanet.*` classes referenced by full name where the file already does,
-short comments that say why. Keep Java 8 compatible (no `var`, no newer APIs).
+Write code elegantly whenever possible (heromedel, 6.86). Tabs, short comments that say why. Keep Java 8 compatible (no `var`,
+no newer APIs).
