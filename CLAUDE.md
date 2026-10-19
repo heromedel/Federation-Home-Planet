@@ -137,7 +137,8 @@ it does and CREDITS.md for where the code came from.
 - `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
   `Current Build\`).
 - `Build A Release.bat` (6.51): builds through the Build .bat's `build` mode, then makes `Release\Federation Home Planet <version>\`
-  (the jar, the Interface, LICENSE, CREDITS.md, README.md) and its zip. The Interface finds Java (`java\` beside it, `..\tools\jdk`,
+  (the jar and the Interface; beside them a `Documents` folder with the two manuals, changes.txt, README.md, CREDITS.md and
+  LICENSE, 6.82) and its zip. The Interface finds Java (`java\` beside it, `..\tools\jdk`,
   JAVA_HOME, the PATH, Program Files) or offers a portable Java runtime in `java\` or Adoptium's installer.
 
 ## Build
