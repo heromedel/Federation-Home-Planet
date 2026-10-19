@@ -280,16 +280,21 @@ public final class ManualWindow {
 	}
 	/** The next place the words appear after the last one found, round to the top again; marked and scrolled to. */
 	static boolean findNext(javax.swing.text.JTextComponent ta, String what) {
-		if (what == null || what.isEmpty()) return false;
-		String all, w = what.toLowerCase();
-		try { all = ta.getDocument().getText(0, ta.getDocument().getLength()).toLowerCase(); } // the words as shown (an HTML page's getText is its markup)
+		String[] words = what == null ? new String[0] : what.trim().split("[\\s\\u00a0]+");
+		if (words.length == 0 || words[0].isEmpty()) return false;
+		// the words in order, any spaces or line breaks between them (the text manual is wrapped: a phrase may run over a line; heromedel, 6.76)
+		StringBuilder re = new StringBuilder();
+		for (String w : words) re.append(re.length() == 0 ? "" : "[\\s\\u00a0]+").append(Pattern.quote(w));
+		Pattern pat = Pattern.compile(re.toString(), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+		String all;
+		try { all = ta.getDocument().getText(0, ta.getDocument().getLength()); } // the words as shown (an HTML page's getText is its markup)
 		catch (javax.swing.text.BadLocationException e) { return false; }
-		int at = all.indexOf(w, ta.getSelectionEnd());
-		if (at < 0) at = all.indexOf(w);
-		if (at < 0) { java.awt.Toolkit.getDefaultToolkit().beep(); return false; }
-		ta.select(at, at + w.length()); // where the next search starts; the cursor stays in the Find box, so Enter finds the next
+		Matcher m = pat.matcher(all);
+		if (!m.find(Math.min(ta.getSelectionEnd(), all.length())) && !m.find(0)) { java.awt.Toolkit.getDefaultToolkit().beep(); return false; }
+		int at = m.start(), end = m.end();
+		ta.select(at, end); // where the next search starts; the cursor stays in the Find box, so Enter finds the next
 		ta.getHighlighter().removeAllHighlights();
-		try { ta.getHighlighter().addHighlight(at, at + w.length(), (javax.swing.text.Highlighter.HighlightPainter) ta.getClientProperty(FOUND)); } catch (javax.swing.text.BadLocationException e) { } // shown though the text isn't focused
+		try { ta.getHighlighter().addHighlight(at, end, (javax.swing.text.Highlighter.HighlightPainter) ta.getClientProperty(FOUND)); } catch (javax.swing.text.BadLocationException e) { } // shown though the text isn't focused
 		try {
 			java.awt.Rectangle r = ta.modelToView(at);
 			if (r != null) { r.height = Math.max(r.height, ta.getVisibleRect().height / 3); ta.scrollRectToVisible(r); }
