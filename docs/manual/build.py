@@ -129,6 +129,8 @@ h2{font:700 25px/1.2 system-ui,sans-serif;margin:52px 0 12px;padding-top:20px;bo
 h2 .n{color:var(--accent);margin-right:.35em}
 h3{font:650 18px/1.3 system-ui,sans-serif;margin:30px 0 4px;color:var(--accent)}
 p{margin:12px 0}
+p.top{text-align:right;margin:6px 0 0;font:600 13px system-ui,sans-serif}
+p.top a{text-decoration:none}
 a{color:var(--accent)}
 .ui{font:600 .86em system-ui,sans-serif;letter-spacing:.02em;background:var(--code);border:1px solid var(--line);border-radius:4px;padding:0 5px;white-space:nowrap}
 .step{display:grid;grid-template-columns:2rem 1fr;gap:6px 10px;margin:14px 0}
@@ -165,7 +167,7 @@ def build_html(lines):
     o = ['<!doctype html>', '<html lang="en"><head><meta charset="utf-8">',
          '<meta name="viewport" content="width=device-width,initial-scale=1">',
          '<title>The Home Planet Station User Manual</title><style>%s</style></head><body><main>' % CSS,
-         '<header><div class="eyebrow">Issued by The Federation Home Planet</div><h1>The Home Planet Station</h1>',
+         '<header id="top"><div class="eyebrow">Issued by The Federation Home Planet</div><h1>The Home Planet Station</h1>',
          '<p>User Manual, version %s</p>' % html.escape(version)]
     for p in plain: o.append('<p>%s</p>' % inline(p))
     o.append('</header>')
@@ -209,6 +211,8 @@ def build_html(lines):
         kind[0] = None
 
     pre = []
+    in_section = False
+    TOP = '<p class="top"><a href="#top">Top</a></p>'
 
     def flush_pre():
         if pre:
@@ -229,6 +233,8 @@ def build_html(lines):
             flush_pre()
         if line.startswith('# '):
             flush(); close_step()
+            if in_section: o.append(TOP)
+            in_section = True
             m = re.match(r'# \[(\d+)\] (.*)$', line)
             o.append('<h2 id="s%s"><span class="n">[%s]</span>%s</h2>' % (m.group(1), m.group(1), html.escape(titles.get(m.group(1), m.group(2).title()))))
         elif line.startswith('## '):
@@ -245,6 +251,7 @@ def build_html(lines):
             if not para: kind[0] = 'step' if isstep(line) else 'p'
             para.append(line if line.startswith('|') else line.strip())
     flush(); flush_pre(); close_step()
+    if in_section: o.insert(len(o), TOP)
     if closing: o.append('<footer>%s</footer>' % '<br>'.join(html.escape(c) for c in closing))
     o.append('</main></body></html>')
     return '\n'.join(o) + '\n'

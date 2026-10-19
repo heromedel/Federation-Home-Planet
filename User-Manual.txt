@@ -1,5 +1,5 @@
 THE HOME PLANET STATION
-User Manual, version 6.72
+User Manual, version 6.74
 Issued by The Federation Home Planet
 
 To see which version of the station you have, open SETTINGS and choose the
@@ -968,7 +968,13 @@ About
 -----
 
 The About tab shows the station's version, the credits and the licence, with
-buttons to Check for Updates and Send Feedback.
+buttons to Check for Updates and Send Feedback. Under User Manual are two
+buttons, Html and Text, that open this manual: Html with its pictures, and
+Text as plain words. Beside them, "Open in The Home Planet Station" chooses
+where it opens. On, which is usual, shows it in a window of the station's own,
+where the Html manual has a dark mode that is remembered and the Text manual
+has a Find box (Ctrl+F). Off opens it in your web browser or text editor
+instead.
 
 
 ==============================================================================
