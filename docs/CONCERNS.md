@@ -43,7 +43,7 @@ read, and drop RepuT's O, C and H checks.
 ## 9. Where the settings live (noted 6.55)
 
 **What it is.** heromedel, 6.55 (Plan AI), in place of the 5.94 call that settings stay in the cfg beside the jar
-(`docs/OVERHAUL-6.md` 12): the cfg beside the jar keeps only where things are (`ftlDatsPath`, `ftlSavePath`, `slipstream_dir`);
+(`docs/OVERHAUL-6.md` 12, removed at 6.66, in git history): the cfg beside the jar keeps only where things are (`ftlDatsPath`, `ftlSavePath`, `slipstream_dir`);
 the station's own settings, the same for every career, are in `federation-home-planet.cfg` in FTL's saves folder (with a copy of
 the three folders, so a new release folder finds FTL and Slipstream); Sandbox Mode's rules are in `FederationHomePlanet/rules.xml`
 (`HomePlanet.SANDBOX_KEYS`); an Immersive career's are in its own `career.xml` as before, and how reputation can be used is each
@@ -60,3 +60,15 @@ to the station's file unless its key is added to `SANDBOX_KEYS` (Sandbox Mode's 
 **What a change would look like.** Moving another setting to a career means its key into `SANDBOX_KEYS` and, for the Immersive
 careers, a `Career` getter and setter like `reputationUse` (CfgT's R checks show how it's tested).
 
+
+## 10. The Relief Ship's weapons system (noted 6.64)
+
+**What it is.** heromedel, 6.64: the Relief Ship Type A appears to have her weapons system at level 4, when she only needs
+level 2 to start. `Commission.buildRelief` sets every system to its minimum, the weapons at 2 (two bars for her two guns, a
+Burst Laser I and an Ion Blast), so something after it, or another way of building her, gives her more than it means to.
+
+**What it costs.** Not looked into yet. A plea's ship is meant to be the bare minimum; two extra weapons bars are worth
+scrap at the Dry Dock, and count in her price.
+
+**What a change would look like.** Find where her level 4 comes from (the plea's own build, the price check, or FTL
+reading her blueprint), and keep her at 2.

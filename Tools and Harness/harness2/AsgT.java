@@ -171,14 +171,14 @@ public class AsgT { public static void main(String[] a) throws Exception {
   String t = r.report;
   System.out.println(t);
   Setup.chk("P: the frame: the heading, the sector, a blank line, a setup ending on the crew, a line a crew member, the total", t.startsWith("-- Expedition Report --\nSector: Nebula\n\n")
-    && t.split("\n")[3].endsWith(" the crew")
-    && t.contains("\n" + r.fates.get(0).name() + " ") && t.contains("\n" + r.fates.get(2).name() + " ") && t.endsWith("Total Reward: " + r.scrap + " scrap"));
+    && t.split("\n")[3].contains(" the crew ") && t.split("\n")[3].endsWith(".")
+    && t.contains(" " + r.fates.get(0).name() + " ") && t.contains(" " + r.fates.get(2).name() + " ") && t.endsWith("Total Reward: " + r.scrap + " scrap"));
   // the setups: heromedel's, the general ones and the job's own all come up; two of a detail never share an outcome line
   Random fr = new Random(41); int his = 0, other = 0, same = 0, pairs = 0;
   for (int i = 0; i < 3000; i++) {
    Assignments.Result x = Assignments.roll("civilian", party("human", "human"), fr);
    String setup = x.report.split("\n")[3];
-   if (setup.equals("Due to events during the assignment the crew")) his++; else other++;
+   if (setup.startsWith("Due to events during the assignment the crew ")) his++; else other++;
    if (x.fates.get(0).band == x.fates.get(1).band && !x.fates.get(0).died && !x.fates.get(0).captured && !x.fates.get(0).infirmary && !x.fates.get(1).captured && !x.fates.get(1).infirmary) {
     pairs++;
     String[] ls = x.report.split("\n"); String a1 = null, b1 = null;

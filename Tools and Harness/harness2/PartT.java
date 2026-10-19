@@ -9,6 +9,7 @@ public class PartT { public static void main(String[] a) throws Exception {
  v.takeStock(); v.takeStock();
  damage();
  parts(v);
+ search(v);
  stipend(v);
  work(v);
  clock(v);
@@ -26,6 +27,30 @@ public class PartT { public static void main(String[] a) throws Exception {
   Setup.chk("D: a bar's value by system", Pricing.brokenBarValue("oxygen") == 10 && Pricing.brokenBarValue("weapons") == 5);
   Setup.chk("D: stored lines: a damaged system keeps its broken bars, an undamaged one is as before",
     "shields 3 2".equals(homeplanet.vault.StoredSystems.line("shields", 3, 2)) && "shields 3".equals(homeplanet.vault.StoredSystems.line("shields", 3, 0)) && "clonebay".equals(homeplanet.vault.StoredSystems.line("clonebay", 0, 0)));
+ }
+ /** Search for more parts (6.66): 15 scrap from the Cargo Hold, a new set, the derelicts untouched, once a week, logged. */
+ static void search(Vault v) throws Exception {
+  homeplanet.parser.Derelicts.current(v);
+  File der = homeplanet.parser.Derelicts.dir(v); String derWas = der.isDirectory() ? Arrays.toString(der.list()) + new String(java.nio.file.Files.readAllBytes(new File(der, "listings.txt").toPath()), "UTF-8") : "";
+  SavedGameState h = v.readCopy(v.storage()).save; h.getPlayerShip().setScrapAmt(14); v.write(v.storage(), h);
+  boolean refused = false; try { Parts.search(v); } catch (IOException e) { refused = true; }
+  Setup.chk("L: a search with 14 scrap in the Cargo Hold is refused, nothing spent", refused && v.storageScrap() == 14);
+  h = v.readCopy(v.storage()).save; h.getPlayerShip().setScrapAmt(20); v.write(v.storage(), h);
+  Properties before = Store.read(new File(v.cargoHoldDir(), "parts.txt"));
+  Setup.chk("L: the Junkyard can be searched before it ever has been", Parts.canSearch(v));
+  Parts.search(v);
+  Properties after = Store.read(new File(v.cargoHoldDir(), "parts.txt"));
+  Setup.chk("L: the search cost 15 scrap from the Cargo Hold (" + v.storageScrap() + " left)", v.storageScrap() == 5);
+  Setup.chk("L: a new set of parts came in, the search noted", !before.equals(after) && Store.num(after, "searchedAt", -1) == v.beaconsSeen() && Store.num(after, "rolledAt", -1) == v.beaconsSeen());
+  String derNow = der.isDirectory() ? Arrays.toString(der.list()) + new String(java.nio.file.Files.readAllBytes(new File(der, "listings.txt").toPath()), "UTF-8") : "";
+  Setup.chk("L: the derelicts are untouched", derWas.equals(derNow));
+  Setup.chk("L: not again for a week", !Parts.canSearch(v));
+  Parts.roll(v, new Random(3));
+  Setup.chk("L: a new set by the clock keeps the week", !Parts.canSearch(v) && Store.num(Store.read(new File(v.cargoHoldDir(), "parts.txt")), "searchedAt", -1) >= 0);
+  for (int i = 0; i < Parts.SEARCH_EVERY; i++) v.countBeacon("a harness day");
+  Setup.chk("L: a week later it can be searched again", Parts.canSearch(v));
+  String log = new String(java.nio.file.Files.readAllBytes(EventLog.file(v).toPath()), "UTF-8");
+  Setup.chk("L: the search is in the station log", log.contains("BUY | log=station what=search ") && log.contains("The Junkyard was searched for more parts, for 15 scrap."));
  }
  static void parts(Vault v) throws Exception {
   List<Parts.Listing> l = Parts.current(v);

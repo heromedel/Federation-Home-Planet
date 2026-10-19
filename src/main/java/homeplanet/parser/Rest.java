@@ -36,7 +36,7 @@ public final class Rest {
 		return p.getProperty("last") != null && Store.num(p, "last", 0) == v.beaconsSeen() ? Store.num(p, "run", 0) : 0;
 	}
 	/** What another day would cost now: nothing the first day or without Reputation, else the run, up to MAX_COST. */
-	public static int cost(Vault v) { return homeplanet.core.Economy.repSpends() ? Math.min(MAX_COST, run(v)) : 0; }
+	public static int cost(Vault v) { return homeplanet.vault.Reputation.shown() ? Math.min(MAX_COST, run(v)) : 0; } // a penalty, not a purchase: whatever How Reputation Can be Used says (6.66, heromedel)
 	/** The question, as heromedel wrote it: plain the first day, then the days so far with "What will people think." on a line of its own, and the cost on another when there is one. */
 	public static String question(Vault v) {
 		int run = run(v), cost = cost(v);

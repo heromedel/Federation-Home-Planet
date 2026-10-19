@@ -378,6 +378,13 @@ public final class Transmissions {
 		boolean chained = false;
 		String oneHull = v.event(Vault.EVENT_ONE_HULL);
 		if (oneHull != null && !sent.contains(ONE_HULL)) chained |= chain(all, sent, ONE_HULL, rank, oneHull);
+		String patience = v.event(Derelict.EVENT_PATIENCE); // the med-bots, once she has a medbay again and is still the Collective's gift (not traded since)
+		if (patience != null && !sent.contains(MEDBAY)) {
+			Ship ps = v.byId(patience);
+			net.blerf.ftl.parser.SavedGameParser.SavedGameState pg = ps == null ? null : ps.save();
+			net.blerf.ftl.parser.SavedGameParser.SystemState med = pg == null || pg.getPlayerShip() == null ? null : pg.getPlayerShip().getSystem(SystemType.MEDBAY);
+			if (med != null && med.getCapacity() > 0 && homeplanet.vault.TradeMark.of(v, patience) == null) chained |= chain(all, sent, MEDBAY, rank, ps.name);
+		}
 		for (Pending p : new ArrayList<Pending>(pending)) {
 			if (p.due > v.beaconsSeen()) continue;
 			if (chain(all, sent, p.template, rank, p.name)) { pending.remove(p); chained = true; }
@@ -400,6 +407,7 @@ public final class Transmissions {
 	}
 	/** The first letter of the chain for a ship that came out of a battle with one point of hull. */
 	static final String ONE_HULL = "chain:one-hull";
+	static final String MEDBAY = "chain:one-hull:medbay";
 	/**
 	 * Sends a chain letter (its key is its template's, so each goes once), first doing what it carries (the derelict's
 	 * delivery), and schedules the letter that follows it. False if it must wait (its action failed: tried again later).
