@@ -1,5 +1,5 @@
 !THE HOME PLANET STATION
-!User Manual, version 6.77
+!User Manual, version 6.78
 !Issued by The Federation Home Planet
 !
 To see which version of the station you have, open SETTINGS and choose the About tab. If it is newer than this manual, some screens may differ a little from what is described here.
@@ -274,7 +274,7 @@ Captain's Log, also in your quarters, tells your career as a story, a day at a t
 
 ## The Records tab
 
-The station's logs can be read in SETTINGS on the Records tab. View Station Log shows everything the station has done for your fleet, View Ship Log shows one ship's voyages (choose her from the list below the button), and View Crew Log shows every crew member who has served with you, where they served and what became of them. Each log window has a Search box. It ignores capitals, finds parts of words, and finds words in the order you type them, even across a line break. A ship's Records have the same Search on their log tabs.
+The station's logs can be read in SETTINGS on the Records tab. View Station Log shows everything the station has done for your fleet, View Ship Log shows one ship's voyages (choose her from the list below the button), and View Crew Log shows every crew member who has served with you, where they served and what became of them. The station log and a ship's log each have a Search box, and the Crew Log does not. It ignores capitals, finds parts of words, and finds words in the order you type them, even across a line break. A ship's Records have the same Search on their log tabs.
 
 # [10] LONG RANGE COMM.
 
