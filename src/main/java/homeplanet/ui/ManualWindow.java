@@ -79,7 +79,7 @@ public final class ManualWindow {
 		java.awt.Window from = owner instanceof java.awt.Window ? (java.awt.Window) owner : SwingUtilities.getWindowAncestor(owner);
 		JDialog d = new JDialog(from, "The Home Planet Station User Manual");
 		d.setModalityType(java.awt.Dialog.ModalityType.MODELESS); // read beside the station, not instead of it
-		d.getContentPane().add(html ? htmlPage(text) : textPage(text, d));
+		d.getContentPane().add(html ? htmlPage(text, d) : textPage(text, d));
 		d.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		d.setSize(html ? 820 : 760, 760);
 		d.setLocationRelativeTo(d.getOwner());
@@ -112,7 +112,7 @@ public final class ManualWindow {
 	// ---- the HTML manual, in the station ----
 
 	/** The page as Swing can draw it: its pictures unpacked to files and drawn to fit, its contents links working, its own styles left out for plainer ones; dark or light. */
-	static JComponent htmlPage(String html) {
+	static JComponent htmlPage(String html, JDialog d) {
 		final JEditorPane pane = new JEditorPane();
 		final String page = forSwing(html);
 		pane.setEditable(false);
@@ -138,7 +138,8 @@ public final class ManualWindow {
 				SwingUtilities.invokeLater(new Runnable() { public void run() { bar.setValue((int) Math.round(at * bar.getMaximum())); } }); // the same place in the manual
 			}
 		});
-		JPanel row = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
+		JPanel row = findRow(pane, d); // the same Find as the text manual's (heromedel, 6.76: the HTML one had none)
+		row.add(javax.swing.Box.createHorizontalStrut(24));
 		row.add(darkBox);
 		JPanel p = new JPanel(new BorderLayout());
 		p.add(row, BorderLayout.NORTH);
@@ -165,6 +166,8 @@ public final class ManualWindow {
 			@Override public javax.swing.text.html.StyleSheet getStyleSheet() { return css; }
 		});
 		pane.setBackground(java.awt.Color.decode(bg));
+		pane.setSelectionColor(dark ? new java.awt.Color(107, 84, 32) : new java.awt.Color(243, 214, 140));
+		pane.putClientProperty(FOUND, new javax.swing.text.DefaultHighlighter.DefaultHighlightPainter(pane.getSelectionColor()));
 		pane.setText(named(page));
 	}
 	/**
@@ -229,18 +232,7 @@ public final class ManualWindow {
 		ta.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
 		ta.setCaretPosition(0);
 		ta.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-		final JTextField find = new JTextField(18);
-		JButton next = new JButton("Find next");
-		ActionListener go = new ActionListener() {
-			public void actionPerformed(ActionEvent e) { findNext(ta, find.getText()); }
-		};
-		find.addActionListener(go);
-		next.addActionListener(go);
-		find.setToolTipText("Search the manual: a section's number in brackets, [10] say, jumps to it. Enter finds the next");
-		JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-		row.add(new JLabel("Find:"));
-		row.add(find);
-		row.add(next);
+		JPanel row = findRow(ta, d);
 		final JCheckBox darkBox = darkBox();
 		darkBox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { setDark(darkBox.isSelected()); colour(ta, darkBox.isSelected()); }
@@ -250,14 +242,29 @@ public final class ManualWindow {
 		JPanel p = new JPanel(new BorderLayout());
 		p.add(row, BorderLayout.NORTH);
 		p.add(new JScrollPane(ta), BorderLayout.CENTER);
-		// Ctrl+F, as the manual says, goes to the Find box
-		d.getRootPane().registerKeyboardAction(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { find.requestFocusInWindow(); find.selectAll(); }
-		}, KeyStroke.getKeyStroke(KeyEvent.VK_F, java.awt.event.InputEvent.CTRL_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
 		p.setPreferredSize(new Dimension(760, 760));
 		return p;
 	}
-	/** The text area's client property holding the found words' marker (its colour follows dark or light). */
+	/** The Find row (a box, Find next) for either manual, and Ctrl+F to it, as the manual says. */
+	private static JPanel findRow(final javax.swing.text.JTextComponent page, JDialog d) {
+		final JTextField find = new JTextField(18);
+		JButton next = new JButton("Find next");
+		ActionListener go = new ActionListener() {
+			public void actionPerformed(ActionEvent e) { findNext(page, find.getText()); }
+		};
+		find.addActionListener(go);
+		next.addActionListener(go);
+		find.setToolTipText("Search the manual: a section's number in brackets, [10] say, jumps to it. Enter finds the next");
+		JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
+		row.add(new JLabel("Find:"));
+		row.add(find);
+		row.add(next);
+		d.getRootPane().registerKeyboardAction(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { find.requestFocusInWindow(); find.selectAll(); }
+		}, KeyStroke.getKeyStroke(KeyEvent.VK_F, java.awt.event.InputEvent.CTRL_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
+		return row;
+	}
+	/** The page's client property holding the found words' marker (its colour follows dark or light). */
 	private static final String FOUND = "manual.found";
 	/** The text in dark or light, and the marker for found words to match. */
 	private static void colour(JTextArea ta, boolean dark) {
@@ -272,9 +279,11 @@ public final class ManualWindow {
 		for (javax.swing.text.Highlighter.Highlight h : old) try { ta.getHighlighter().addHighlight(h.getStartOffset(), h.getEndOffset(), (javax.swing.text.Highlighter.HighlightPainter) ta.getClientProperty(FOUND)); } catch (javax.swing.text.BadLocationException e) { }
 	}
 	/** The next place the words appear after the last one found, round to the top again; marked and scrolled to. */
-	static boolean findNext(JTextArea ta, String what) {
+	static boolean findNext(javax.swing.text.JTextComponent ta, String what) {
 		if (what == null || what.isEmpty()) return false;
-		String all = ta.getText().toLowerCase(), w = what.toLowerCase();
+		String all, w = what.toLowerCase();
+		try { all = ta.getDocument().getText(0, ta.getDocument().getLength()).toLowerCase(); } // the words as shown (an HTML page's getText is its markup)
+		catch (javax.swing.text.BadLocationException e) { return false; }
 		int at = all.indexOf(w, ta.getSelectionEnd());
 		if (at < 0) at = all.indexOf(w);
 		if (at < 0) { java.awt.Toolkit.getDefaultToolkit().beep(); return false; }
