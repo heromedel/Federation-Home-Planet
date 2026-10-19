@@ -5,7 +5,7 @@ title The Federation Home Planet Station - Release
 rem Makes a release (6.51): builds the jar with the Construction Yard, then puts together a clean folder with only what
 rem a player needs, and a zip of it to upload:
 rem   Release\Federation Home Planet <version>\  the jar, the Interface (which finds Java, or offers to get it),
-rem                                              README.txt (docs\README for players.txt), User-Manual.txt and .html, LICENSE.txt and CREDITS.txt
+rem                                              README.txt (docs\README for players.txt), User-Manual.txt and .html, changes.txt, LICENSE.txt and CREDITS.txt
 rem   Release\Federation Home Planet <version>.zip
 rem The player's settings, fleets and logs are made beside the jar on first start: nothing of yours goes in.
 
@@ -52,9 +52,10 @@ copy /y "docs\README for players.txt" "%OUT%\README.txt" >nul 2>&1
 copy /y "LICENSE" "%OUT%\LICENSE.txt" >nul 2>&1
 copy /y "User-Manual.txt" "%OUT%\User-Manual.txt" >nul 2>&1
 copy /y "User-Manual.html" "%OUT%\User-Manual.html" >nul 2>&1
+copy /y "changes.txt" "%OUT%\changes.txt" >nul 2>&1
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$t = Get-Content -Raw -Encoding UTF8 'CREDITS.md'; $t = $t -replace '(?m)^#+ ', '' -replace '\*\*', '' -replace '`', ''; Set-Content -Encoding UTF8 -Path '%OUT%\CREDITS.txt' -Value $t"
-for %%f in (README.txt User-Manual.txt User-Manual.html LICENSE.txt CREDITS.txt) do if not exist "%OUT%\%%f" ( echo %%f couldn't be put into the release. & goto :failed )
+for %%f in (README.txt User-Manual.txt User-Manual.html changes.txt LICENSE.txt CREDITS.txt) do if not exist "%OUT%\%%f" ( echo %%f couldn't be put into the release. & goto :failed )
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ProgressPreference='SilentlyContinue'; Compress-Archive -Path '%OUT%' -DestinationPath '%OUT%.zip' -Force"
 if not exist "%OUT%.zip" ( echo The zip couldn't be made. The folder is ready in "Release\%NAME%". & goto :failed )

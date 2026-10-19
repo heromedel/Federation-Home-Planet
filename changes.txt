@@ -19,7 +19,7 @@ Major changes by version
   The fleet on disk and the logs rebuilt toward 6.0. The station's words move into lore/.
 
 6.00 to 6.10
-  Storage, logs and code rebuilt; older fleets convert on first opening.
+  Storage, logs and code rebuilt.
   Faster Board and Dock. Station Log in the station's own words.
   Ship marks: each ship records her career and origin.
 
