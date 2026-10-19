@@ -26,6 +26,7 @@ it does and CREDITS.md for where the code came from.
 - heromedel's own text (letters, messages, names) goes in exactly as written, capitals included (they're often
   deliberate: "Lucky Duck" is a nickname). Suggested edits to it are a short list, only ones that matter, to answer
   yes or no.
+  A sentence's first letter may be capitalised as grammar wants, with one exception: "heromedel" is always lowercase (heromedel, 6.72).
 - Answer questions without writing code, and answer just the question: don't tack status lists onto replies. Keep the
   list of small fixes and requests to yourself, show it only when asked, and do them as one batch; one version per
   batch, not per small change.
@@ -59,6 +60,17 @@ it does and CREDITS.md for where the code came from.
   (what each response asked and what became of it) and tells heromedel what's new. Other sessions leave it to Prime.
   `docs/EVENTS.md` lists every event kind the station logs and its fields: anything that writes a log adds its kind there
   first (the log rule below), and EventT checks the list.
+- **The user manuals (heromedel, 6.72; McCarthy's job):** `User-Manual.txt` and `User-Manual.html` are built from one source,
+  `docs/manual/manual.src`, by `python3 docs/manual/build.py` (the marks are at the top of that file; never edit the two
+  outputs by hand). Every time a branch is caught up to (main, Prime Edit, any other), and whenever a change of your own
+  alters what a player sees or does, check whether it warrants a manual update: read the commits' messages and the roadmap
+  entries, verify each claim in the code (it can depend on a setting or a mode), edit `manual.src`, set its version line
+  (`!User Manual, version`) to the version the branch will have, rebuild, and commit the source and both outputs together.
+  Pictures are screenshots of the station in `docs/manual/images/`. Windows of the station's own (Settings, the house rules,
+  the mode windows) need nothing more; a screenshot that shows FTL's art (the Space Dock, the Cargo Bay) is marked `| fair` in
+  `manual.src` so its caption carries "Fair use screenshot, for instructional purposes only." (heromedel, 6.72). Never commit
+  FTL's own files, only such screenshots, kept small.
+  Words follow the manual's rules: no dashes, no clipped sentences, the Federation's voice, nothing technical.
 - **Handoffs:** before fixing a bug, ask heromedel "Would you like me to work on this or prepare a handoff?". A handoff
   is written as `docs/HANDOFF.md` says (the parts in order, and a page template to publish).
 - The version (4B.nn; after 4B.99 comes 5.00, then 5.01 to 5.99, then 6.00) goes up by one only with a commit: `<version>` in `pom.xml` and
@@ -98,6 +110,7 @@ it does and CREDITS.md for where the code came from.
 - `src/main/java/net/blerf/ftl`, `net/vhati`: Vhati's save parser and ftl.dat reader (GPL, lightly extended;
   each changed file says so at the top).
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
+- `docs/manual/`: the manuals' source (`manual.src`), their builder (`build.py`) and the pictures (`images/`); see the manuals' rule above.
 - `docs/LORE_COMPONENTS.md` is the facts file (real FTL lore with sources) for checking words against: it is never shipped
   and is not part of the 6.0 `lore/` words folder.
 - `docs/NAMES.md` is the style guide for crew names by race (heromedel, 6.28: the Slugs' drawn-out letters, the Engi's
