@@ -165,7 +165,15 @@ public final class ManualWindow {
 			@Override public javax.swing.text.html.StyleSheet getStyleSheet() { return css; }
 		});
 		pane.setBackground(java.awt.Color.decode(bg));
-		pane.setText(page);
+		pane.setText(named(page));
+	}
+	/**
+	 * Swing finds a link's target only as an old-style <a name="..."> (scrollToReference): the manual marks its sections
+	 * with id="...", as browsers read them, so each gets a named anchor in front of it here (heromedel, 6.76: the contents
+	 * and "back to top" links went nowhere). The file itself stays as browsers want it.
+	 */
+	static String named(String page) {
+		return page.replaceAll("<([a-zA-Z][a-zA-Z0-9]*)([^>]*?)\\sid=\"([^\"]+)\"", "<a name=\"$3\"></a><$1$2 id=\"$3\"");
 	}
 
 	private static File pictures;
