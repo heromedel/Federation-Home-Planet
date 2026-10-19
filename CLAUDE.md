@@ -27,6 +27,9 @@ it does and CREDITS.md for where the code came from.
   deliberate: "Lucky Duck" is a nickname). Suggested edits to it are a short list, only ones that matter, to answer
   yes or no.
   A sentence's first letter may be capitalised as grammar wants, with one exception: "heromedel" is always lowercase (heromedel, 6.72).
+- **No pronoun note (heromedel, 6.83):** heromedel did not ask for a pronoun note. Stop adding it back in: no "they/them" line or
+  any note about heromedel's pronouns in docs, handoffs, artifacts or messages; just write "heromedel". If a merge brings one in,
+  remove it.
 - Answer questions without writing code, and answer just the question: don't tack status lists onto replies. Keep the
   list of small fixes and requests to yourself, show it only when asked, and do them as one batch; one version per
   batch, not per small change.
