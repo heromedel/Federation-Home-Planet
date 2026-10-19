@@ -210,7 +210,17 @@ public final class Journal {
 	 */
 	public static List<Settled> settle(Vault v) {
 		List<Settled> out = new ArrayList<Settled>();
-		File[] notes = dir(v).listFiles();
+		// every fleet's notes (6.87): a note's paths are relative to the saves folder, so one fleet's note can reach into
+		// another's (a ship sent to Sandbox Mode's fleet), and whichever fleet opens first finishes it
+		for (String slot : Vault.SLOTS) {
+			File root = Vault.rootOf(v.saves, slot);
+			if (root.isDirectory()) out.addAll(settle(v, new File(root, DIR), root.equals(v.root) ? DIR : root.getName() + "/" + DIR));
+		}
+		return out;
+	}
+	private static List<Settled> settle(Vault v, File jdir, String where) {
+		List<Settled> out = new ArrayList<Settled>();
+		File[] notes = jdir.listFiles();
 		if (notes == null) return out;
 		java.util.Arrays.sort(notes);
 		for (File note : notes) {
@@ -233,10 +243,10 @@ public final class Journal {
 			}
 			boolean finished = trouble.isEmpty();
 			if (finished && !note.delete()) log.warn("Could not remove the finished note {}", note);
-			Event e = Event.of("JOURNAL").put("what", finished ? "finished" : "stuck").put("action", kind).put("steps", n).put("note", DIR + "/" + note.getName())
+			Event e = Event.of("JOURNAL").put("what", finished ? "finished" : "stuck").put("action", kind).put("steps", n).put("note", where + "/" + note.getName())
 					.put("finished", "startup").put("time", time).put("day", day > 0 ? Integer.valueOf(day) : null).put("left_by", station).details(trouble);
 			String words = finished ? "an action the station had begun (" + kind.toLowerCase().replace('_', ' ') + ") was finished at start-up"
-					: "an action the station had begun (" + kind.toLowerCase().replace('_', ' ') + ") could not be finished at start-up: its note is kept in " + DIR + "/" + note.getName();
+					: "an action the station had begun (" + kind.toLowerCase().replace('_', ' ') + ") could not be finished at start-up: its note is kept in " + where + "/" + note.getName();
 			HistoryLog.entry("JOURNAL", words, trouble.isEmpty() ? null : trouble, e.human(finished ? "The station finished what it had begun." : "The station could not finish what it had begun; its note is kept."));
 			if (!finished) log.warn("The note {} could not be finished: {}", note, trouble);
 			out.add(new Settled(kind, time, day, note.getName(), finished));

@@ -105,7 +105,7 @@ public final class Vault {
 	/** How many earlier versions of a ship's save are kept. */
 	public static final int KEEP = 10;
 
-	private static Vault instance;
+	private static volatile Vault instance; // read off any thread (Long Range Comm., the clock), set on one
 	public static Vault get() {
 		if (instance == null) throw new IllegalStateException("The vault hasn't been opened yet");
 		return instance;
@@ -975,12 +975,16 @@ public final class Vault {
 	public synchronized void closeFinal(FinalBattle f, boolean victory) {
 		File dir = folderOfId(f.id); // her folder as it is now (it moves when she's brought home)
 		File copy = new File(dir, FINAL);
-		try {
-			ShipStore.keepVersion(dir, SafeFiles.read(copy), victory ? "victory-" : "final-battle-");
-			if (!copy.delete()) log.warn("Could not remove {}", copy);
-		} catch (IOException e) { log.warn("Could not keep {}'s final battle copy: {}", f.name, e.toString()); }
-		try { setNotes(dir, ShipStore.FINAL, null); }
-		catch (IOException e) { log.warn("Could not close the note on {}'s final battle: {}", f.name, e.toString()); }
+		try { // one note (6.87): her copy kept as a version and gone, the note of her battle closed
+			Journal.Note n = Journal.begin(this, "CLOSE_FINAL");
+			if (copy.isFile()) {
+				n.replace(ShipStore.versionFile(dir, victory ? "victory-" : "final-battle-"), SafeFiles.read(copy));
+				n.delete(copy);
+			}
+			byte[] record = recordWithout(dir, ShipStore.FINAL);
+			if (record != null) n.replace(ShipStore.xml(dir), record);
+			n.commit();
+		} catch (IOException e) { log.warn("Could not close {}'s final battle: {}", f.name, e.toString()); }
 	}
 	/**
 	 * Brings a victorious ship home from her copy: docked, her journey reset as a New Journey would (the flagship and
@@ -995,10 +999,8 @@ public final class Vault {
 		while (it.hasNext()) if (!SaveHelper.isOwnCrew(it.next())) it.remove(); // boarders and the like stay behind
 		Ship s = new Ship(f.id, gs.getPlayerShipName(), Ship.State.DOCKED, gs.isDLCEnabled());
 		File was = folders.get(f.id);
-		if (was != null && was.isDirectory() && !was.getParentFile().getAbsoluteFile().equals(shipyardDir().getAbsoluteFile())) { // her folder back to the shipyard with her save, as one note (5.88)
-			comeHome(s, was, SaveHelper.toBytes(gs));
-			s.written(gs, SafeFiles.hash(fileOf(s)));
-		} else { settleFolder(s); writeQuietly(s, gs); }
+		comeHome(s, was != null && was.isDirectory() ? was : settleFolder(s), SaveHelper.toBytes(gs)); // her folder back to the shipyard with her save, as one note (5.88)
+		s.written(gs, SafeFiles.hash(fileOf(s)));
 		ships.add(s);
 		s.fresh = position(gs); // she's back at The Home Planet Station
 		VoyageLog.baseline(this, s, gs);
@@ -1878,17 +1880,18 @@ public final class Vault {
 	}
 	/**
 	 * A departed ship's folder back to the shipyard with this save, her fate gone, as one protection note (5.88): the
-	 * save written in her folder where it is, then the folder moved. Returns her folder.
+	 * save written in her folder where it is, then the folder moved (6.87: or left, when it's in the shipyard already,
+	 * or was just made there). Returns her folder.
 	 */
 	private File comeHome(Ship s, File folder, byte[] save) throws IOException {
-		File to = new File(shipyardDir(), folder.getName());
-		if (to.exists()) throw new IOException(to + " is already there");
-		if (!shipyardDir().isDirectory() && !shipyardDir().mkdirs()) throw new IOException("Could not create " + shipyardDir());
+		boolean move = !folder.getParentFile().getAbsoluteFile().equals(shipyardDir().getAbsoluteFile());
+		File to = move ? new File(shipyardDir(), folder.getName()) : folder;
+		if (move && to.exists()) throw new IOException(to + " is already there");
 		Journal.Note n = Journal.begin(this, "COME_HOME");
 		n.replace(ShipStore.sav(folder), save);
 		byte[] record = recordWithout(folder, ShipStore.FATE, ShipStore.OVERWRITTEN); // her fate gone, and any offer to bring her back: she's back
 		if (record != null) n.replace(ShipStore.xml(folder), record);
-		n.rename(folder, to);
+		if (move) n.rename(folder, to);
 		n.commit();
 		folders.put(s.id, to);
 		return to;
@@ -2136,9 +2139,8 @@ public final class Vault {
 		if (here != null) return here;
 		byte[] sav = unpack(pkg).get(PACKAGE[0]);
 		Ship s = new Ship(id, "", Ship.State.DOCKED, true);
-		File was = folders.get(id), to;
-		if (was != null && was.isDirectory() && !was.getParentFile().getAbsoluteFile().equals(shipyardDir().getAbsoluteFile())) to = ShipStore.sav(comeHome(s, was, sav)); // her folder from the memorial, as one note (5.88)
-		else { to = ShipStore.sav(settleFolder(s)); SafeFiles.write(to, sav); setNotes(to.getParentFile(), ShipStore.FATE, null); }
+		File was = folders.get(id);
+		File to = ShipStore.sav(comeHome(s, was != null && was.isDirectory() ? was : settleFolder(s), sav)); // her folder from the memorial (or made afresh), as one note (5.88)
 		s.hash = SafeFiles.hash(to);
 		ships.add(s);
 		s.save();
@@ -2603,8 +2605,10 @@ public final class Vault {
 				remark(s);
 				result = f.name + " was taken into the fleet: " + homeplanet.model.Words.she() + " " + (state == Ship.State.JUNKED ? "waits in the Junkyard." : "is docked at the Space Dock.");
 			} else {
-				toSandbox(null, SafeFiles.read(f.file), f.name, newId(), state, origin, "taken_in");
-				if (!f.file.delete()) log.warn("Could not remove {} after sending her to Sandbox Mode", f.file);
+				Journal.Note n = Journal.begin(this, "SEND_TO_SANDBOX"); // one note (6.87): her files there, the loose save gone
+				File to = toSandbox(n, null, SafeFiles.read(f.file), f.name, newId(), state, origin, "taken_in");
+				n.delete(f.file);
+				commitSandbox(n, to);
 				result = f.name + " was sent to Sandbox Mode's fleet: " + homeplanet.model.Words.she() + " waits there " + (state == Ship.State.JUNKED ? "in the Junkyard." : "at the Space Dock.");
 			}
 			HistoryLog.entry("VAULT", f.name + " taken in from " + f.file.getName() + (here ? "" : ", to Sandbox Mode's fleet"), null,
@@ -2629,8 +2633,10 @@ public final class Vault {
 			} else {
 				File save = ShipStore.sav(f.file);
 				if (!save.isFile()) throw new IOException(f.name + "'s folder has no save to send");
-				toSandbox(f.file, SafeFiles.read(save), f.name, f.id, state, origin, f.kind == Found.Kind.OTHER ? "other_career" : "taken_in");
-				SafeFiles.deleteTree(f.file);
+				Journal.Note n = Journal.begin(this, "SEND_TO_SANDBOX"); // one note (6.87): her files there, her folder gone here
+				File to = toSandbox(n, f.file, SafeFiles.read(save), f.name, f.id, state, origin, f.kind == Found.Kind.OTHER ? "other_career" : "taken_in");
+				n.delete(f.file);
+				commitSandbox(n, to);
 				result = f.name + " was sent to Sandbox Mode's fleet.";
 			}
 			HistoryLog.entry("VAULT", f.name + " taken in from " + homeplanet.model.Words.her() + " folder" + (here ? "" : ", to Sandbox Mode's fleet"), null,
@@ -2724,14 +2730,15 @@ public final class Vault {
 	}
 
 	/**
-	 * A ship into Sandbox Mode's fleet (6.10), written straight into its folders (it needn't be open): her folder copied
-	 * (or a new one made for a loose save), her record saying Sandbox and how she came, her save marked for it, her crew's
-	 * files waiting in crew/arrived/ for its register (as a traded ship's do). The fleet logs her arrival when it next opens.
+	 * A ship into Sandbox Mode's fleet (6.10), as steps of a protection note (6.87; written by hand before), straight
+	 * into its folders (it needn't be open): her folder's files copied (none for a loose save), her record saying Sandbox
+	 * and how she came, her save marked for it, her crew's files waiting in crew/arrived/ for its register (as a traded
+	 * ship's do). The caller adds her leaving here and commits ({@link #commitSandbox}); the fleet logs her arrival when
+	 * it next opens. Returns her folder there.
 	 */
-	private File toSandbox(File dir, byte[] save, String name, String id, Ship.State state, String origin, String how) throws IOException {
+	private File toSandbox(Journal.Note n, File dir, byte[] save, String name, String id, Ship.State state, String origin, String how) throws IOException {
 		File sandbox = rootOf(saves, SANDBOX);
 		File parent = new File(sandbox, state == Ship.State.JUNKED ? "junkyard" : "shipyard");
-		if (!parent.isDirectory() && !parent.mkdirs()) throw new IOException("Could not create " + parent);
 		String stem = ShipStore.stem(name, id);
 		File to = new File(parent, stem);
 		if (to.exists() || new File(new File(sandbox, state == Ship.State.JUNKED ? "shipyard" : "junkyard"), stem).exists()) { // her id taken there: a new one
@@ -2739,52 +2746,60 @@ public final class Vault {
 			stem = ShipStore.stem(name, id);
 			to = new File(parent, stem);
 		}
-		try {
-			if (dir != null) copyTree(dir, to, dir.getName(), stem);
-			else if (!to.mkdirs()) throw new IOException("Could not create " + to);
-			File crew = new File(to, CrewRegister.CREW_DIR), arrived = new File(crew, CrewRegister.ARRIVED);
-			File[] cs = crew.listFiles();
-			if (cs != null) for (File c : cs) {
-				if (!c.isFile()) continue;
-				if (!arrived.isDirectory() && !arrived.mkdirs()) throw new IOException("Could not create " + arrived);
-				SafeFiles.move(c, new File(arrived, c.getName()));
-			}
-			ShipStore.Record was = dir == null ? null : ShipStore.read(to);
-			ShipStore.Record r = new ShipStore.Record(id);
-			if (was != null) { r.dlc = was.dlc; r.marks = was.marks; r.stranger = was.stranger; r.owners.addAll(was.owners); r.pastNames.addAll(was.pastNames); r.sections.putAll(was.sections); }
-			else r.dlc = true;
-			r.name = name; r.state = state.key; r.career = SANDBOX;
-			r.origin = origin != null && !origin.isEmpty() ? origin : was != null && !was.origin.isEmpty() ? was.origin : originNow("taken_in");
-			java.util.Properties m = r.section(ShipMark.SECTION);
-			File sav = ShipStore.sav(to);
-			SafeFiles.write(sav, save);
-			ShipMark.Marked mk = ShipMark.mark(sav, SANDBOX, id, Store.num(m, "boards", 0), Store.num(m, "day", 0));
-			SafeFiles.write(sav, mk.bytes);
-			r.hash = SafeFiles.hash(mk.bytes);
-			m.setProperty("marked", "true"); m.setProperty("save", r.hash);
-			if (mk.gs.getPlayerShipBlueprintId() != null) m.setProperty("class", mk.gs.getPlayerShipBlueprintId());
-			java.util.Properties a = r.section(ARRIVAL);
-			a.setProperty("from", title(slot)); a.setProperty("career", slot); a.setProperty("how", how);
-			File oldXml = new File(to, stem + ".xml");
-			SafeFiles.write(oldXml, ShipStore.bytes(r));
-		} catch (IOException e) {
-			SafeFiles.deleteTree(to);
-			throw e;
-		}
+		ShipStore.Record was = dir == null ? null : ShipStore.read(dir);
+		if (dir != null) copySteps(n, dir, to, stem);
+		ShipStore.Record r = new ShipStore.Record(id);
+		if (was != null) { r.dlc = was.dlc; r.marks = was.marks; r.stranger = was.stranger; r.owners.addAll(was.owners); r.pastNames.addAll(was.pastNames); r.sections.putAll(was.sections); }
+		else r.dlc = true;
+		r.name = name; r.state = state.key; r.career = SANDBOX;
+		r.origin = origin != null && !origin.isEmpty() ? origin : was != null && !was.origin.isEmpty() ? was.origin : originNow("taken_in");
+		java.util.Properties m = r.section(ShipMark.SECTION);
+		ShipMark.Marked mk = ShipMark.mark(save, SANDBOX, id, Store.num(m, "boards", 0), Store.num(m, "day", 0));
+		n.replace(ShipStore.sav(to), mk.bytes);
+		r.hash = SafeFiles.hash(mk.bytes);
+		m.setProperty("marked", "true"); m.setProperty("save", r.hash);
+		if (mk.gs.getPlayerShipBlueprintId() != null) m.setProperty("class", mk.gs.getPlayerShipBlueprintId());
+		java.util.Properties a = r.section(ARRIVAL);
+		a.setProperty("from", title(slot)); a.setProperty("career", slot); a.setProperty("how", how);
+		n.replace(ShipStore.xml(to), ShipStore.bytes(r));
 		return to;
 	}
-	/** Copies a folder, the files named for her old stem renamed for the new one. */
-	private static void copyTree(File from, File to, String oldStem, String newStem) throws IOException {
-		if (!to.mkdirs() && !to.isDirectory()) throw new IOException("Could not create " + to);
+	/**
+	 * Her folder's files into a note, copied under her folder in the other fleet: named for her new stem; her save and
+	 * record left out (written afresh by the caller); her crew's own files into crew/arrived/, for that fleet's register.
+	 */
+	private static void copySteps(Journal.Note n, File dir, File to, String stem) throws IOException {
+		File[] fs = dir.listFiles();
+		if (fs == null) return;
+		String oldStem = dir.getName();
+		for (File f : fs) {
+			if (f.equals(ShipStore.sav(dir)) || f.equals(ShipStore.xml(dir))) continue;
+			String name = f.getName().startsWith(oldStem + ".") ? stem + f.getName().substring(oldStem.length()) : f.getName();
+			if (!f.isDirectory()) n.replace(new File(to, name), SafeFiles.read(f));
+			else if (!name.equals(CrewRegister.CREW_DIR)) copySteps(n, f, new File(to, name));
+			else {
+				File arrived = new File(new File(to, CrewRegister.CREW_DIR), CrewRegister.ARRIVED);
+				File[] cs = f.listFiles();
+				if (cs != null) for (File c : cs) {
+					if (c.isDirectory()) copySteps(n, c, arrived); // those already waiting (traded in, not yet taken on)
+					else n.replace(new File(arrived, c.getName()), SafeFiles.read(c));
+				}
+			}
+		}
+	}
+	/** A folder's files into a note, as they are. */
+	private static void copySteps(Journal.Note n, File from, File to) throws IOException {
 		File[] fs = from.listFiles();
 		if (fs == null) return;
 		for (File f : fs) {
-			String n = f.getName();
-			if (n.startsWith(oldStem + ".")) n = newStem + n.substring(oldStem.length());
-			File t = new File(to, n);
-			if (f.isDirectory()) copyTree(f, t, oldStem, newStem);
-			else SafeFiles.write(t, SafeFiles.read(f));
+			if (f.isDirectory()) copySteps(n, f, new File(to, f.getName()));
+			else n.replace(new File(to, f.getName()), SafeFiles.read(f));
 		}
+	}
+	/** A send to Sandbox Mode's fleet done; if its note failed (and was undone), the empty folders it left there go too. */
+	private static void commitSandbox(Journal.Note n, File to) throws IOException {
+		try { n.commit(); }
+		catch (IOException e) { if (countFiles(to) == 0) SafeFiles.deleteTree(to); throw e; }
 	}
 
 	/**
@@ -2795,14 +2810,12 @@ public final class Vault {
 		if (SANDBOX.equals(slot)) throw new IOException(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " is in Sandbox Mode already");
 		if (s.state != Ship.State.JUNKED) throw new IOException(s.name + " isn't in the Junkyard");
 		File dir = settleFolder(s);
-		File to = toSandbox(dir, SafeFiles.read(fileOf(s)), s.name, s.id, Ship.State.JUNKED, null, "sent_from_career");
 		String from = place(s);
-		try {
-			leave(s, Fate.TRANSFERRED, "Sandbox Mode");
-		} catch (IOException e) {
-			SafeFiles.deleteTree(to);
-			throw e;
-		}
+		Journal.Note n = Journal.begin(this, "SEND_TO_SANDBOX"); // one note (6.87): her files there, and her leaving here
+		File to = toSandbox(n, dir, SafeFiles.read(fileOf(s)), s.name, s.id, Ship.State.JUNKED, null, "sent_from_career");
+		File leftTo = leaveSteps(n, s, Fate.TRANSFERRED, "Sandbox Mode");
+		commitSandbox(n, to);
+		left(s, leftTo);
 		ships.remove(s);
 		saveManifest();
 		HistoryLog.entry("SENT TO SANDBOX", s.name + "  " + from + " -> Sandbox Mode's Junkyard", null,
@@ -2992,12 +3005,16 @@ public final class Vault {
 		boolean old = homeplanet.convert.OldFleet.notConverted(other); // not converted yet: it adopts strays from its old folders
 		if (immersive && !old) { // a ship of her own there, never a loose save (6.10: loose saves wait for the player's word)
 			String from = s.isBoarded() ? "continue.sav" : place(s);
-			File her = fileOf(s);
-			File to = toSandbox(settleFolder(s), SafeFiles.read(her), s.name == null || s.name.trim().isEmpty() ? "Unknown ship" : s.name.trim(), s.id,
+			File her = fileOf(s), dir = settleFolder(s), memorial = new File(memorialDir(), dir.getName());
+			boolean move = !dir.getParentFile().getAbsoluteFile().equals(memorialDir().getAbsoluteFile());
+			Journal.Note n = Journal.begin(this, "SEND_TO_SANDBOX"); // one note (6.87): her files there, her save gone here, her folder to the memorial
+			File to = toSandbox(n, dir, SafeFiles.read(her), s.name == null || s.name.trim().isEmpty() ? "Unknown ship" : s.name.trim(), s.id,
 					junkyard ? Ship.State.JUNKED : Ship.State.DOCKED, originNow("adopted"), "uncommissioned");
-			if (!her.delete()) { SafeFiles.deleteTree(to); throw new IOException("Could not remove " + her + " (is FTL running?)"); }
+			n.delete(her);
+			if (move) n.rename(dir, memorial);
+			commitSandbox(n, to);
+			if (move) folders.put(s.id, memorial);
 			ships.remove(s);
-			toMemorial(s);
 			saveManifest();
 			HistoryLog.entry("SENT", s.name + "  " + from + " -> the Sandbox fleet's " + (junkyard ? "Junkyard" : "Space Dock"), null,
 					shipEvent("SENT", s).put("from", from).put("to_fleet", "Sandbox").put("to", to.getParentFile().getName() + "/" + to.getName()));

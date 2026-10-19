@@ -1301,7 +1301,9 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		} catch (Exception e) { return true; }
 	}
 	/** Writes every pending change (ship, trade partner, shop, systems, and the history log entries); true if all of it was written (false after telling the player why not). */
-	public boolean saveAll() {
+	public boolean saveAll() { return saveAll(null, null); }
+	/** As above, with one more file written in the same note (6.87: her blueprint, from Remodel), or none. */
+	public boolean saveAll(File with, byte[] bytes) {
 		boolean holdAlone = currentShip == null && holdOnly(); // no ship picked: only the Cargo Hold (and the stored systems) change
 		if ((currentPath == null || currentShip == null) && !holdAlone) {
 			HomePlanet.showNotice("Nothing to save: no ship is picked. Pick one with the button above, or board one at the Space Dock.", "Cargo Bay");
@@ -1331,6 +1333,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			if (partner && !tradeSame) tx.put(tradeShip, tradeSave, tradeHash);
 			shop.addTo(tx);
 			systems.addTo(tx);
+			if (with != null) tx.put(with, bytes);
 			billed = systems.payBill(tx); // the Refit's work, from the Cargo Hold, in the same save
 			ch.systems.addAll(systems.changes());
 			ch.purchases.addAll(shop.purchases());

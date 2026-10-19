@@ -439,9 +439,12 @@ public final class CrewRegister {
 	}
 	/**
 	 * Writes the register: each crew member's file where they are now (moved when they moved), the register's own state,
-	 * as one protection note; a file that wouldn't change isn't written. A 5.x crew.txt still there goes in the same note.
+	 * as one protection note; a file that wouldn't change isn't written. A 5.x crew.txt still there goes in the same note,
+	 * and so do the traded crew's files just taken in ({@code arrivedUsed}, 6.87: deleted after the note before, so a stop
+	 * between could have taken them in twice).
 	 */
-	private static void write(Vault v, List<Member> members, int histLen, int masterLen) throws IOException {
+	private static void write(Vault v, List<Member> members, int histLen, int masterLen) throws IOException { write(v, members, histLen, masterLen, Collections.<File>emptyList()); }
+	private static void write(Vault v, List<Member> members, int histLen, int masterLen, List<File> arrivedUsed) throws IOException {
 		Map<Integer, File> have = crewFiles(v);
 		Journal.Note n = Journal.begin(v, "CREW_REGISTER");
 		for (Member m : members) {
@@ -455,6 +458,7 @@ public final class CrewRegister {
 		if (!rf.isFile() || !java.util.Arrays.equals(SafeFiles.read(rf), reg)) n.replace(rf, reg);
 		if (file(v).isFile()) n.delete(file(v));
 		if (new File(v.root, FILE + ".bak").isFile()) n.delete(new File(v.root, FILE + ".bak"));
+		for (File f : arrivedUsed) n.delete(f);
 		n.commit();
 	}
 	/** The register in the 5.x shape (one crew.txt), for the harness's way back to the old layout (Layout.unconvert). */
@@ -635,8 +639,7 @@ public final class CrewRegister {
 		}
 		if (renamedShips(v, hist, members)) changed = true;
 		for (Member m : members) if (m.rec.isEmpty() && invent(m)) changed = true;
-		if (changed || seen[0] != histLen || seen[1] != masterLen) write(v, members, histLen, masterLen);
-		for (File f : arrivedUsed) if (!f.delete()) log.warn("Could not remove {}, a traded crew member's file now taken in", f);
+		if (changed || seen[0] != histLen || seen[1] != masterLen || !arrivedUsed.isEmpty()) write(v, members, histLen, masterLen, arrivedUsed);
 	}
 	private static int nextId(List<Member> members) { int n = 1; for (Member m : members) n = Math.max(n, m.id + 1); return n; }
 

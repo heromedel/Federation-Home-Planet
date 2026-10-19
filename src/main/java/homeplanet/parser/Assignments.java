@@ -637,11 +637,11 @@ public final class Assignments {
 			return;
 		}
 		SavedGameState gs = HomePlanet.savedGameParser.readSavedGame(x.save);
-		Ship s = dock ? v.adopt(gs, "brought_home") : v.adoptJunked(gs, "brought_home");
-		v.setOut(s, gs, "Brought home by an expedition");
 		forget(p, x.index);
-		write(v, p);
-		x.save.delete();
+		Vault.Transaction tx = v.begin();
+		Ship s = tx.adopt(gs, dock ? Ship.State.DOCKED : Ship.State.JUNKED, "brought_home");
+		tx.put(file(v), bytes(p)).delete(x.save).commit(); // in the fleet, the offer answered, her waiting save gone, as one note (6.87)
+		v.setOut(s, gs, "Brought home by an expedition");
 		HistoryLog.entry("EXPEDITION", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), brought home by an expedition, kept: " + (dock ? "at the Space Dock" : "in the Junkyard"), null,
 				Vault.shipEvent("EXPEDITION", s).put("what", "prize_ship").put("ship_class", gs.getPlayerShipBlueprintId()).put("to", dock ? "ships" : "junkyard"));
 	}

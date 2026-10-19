@@ -245,23 +245,22 @@ public class Slipstream {
 		}
 		long total = c.getContentLengthLong();
 		InputStream in = c.getInputStream();
-		OutputStream o = new FileOutputStream(out);
 		try {
-			byte[] buf = new byte[65536];
-			long done = 0;
-			int n = in.read(buf);
-			if (n < 2 || buf[0] != 'P' || buf[1] != 'K') throw new IOException("The download wasn't a zip file (got a web page?)");
-			while (n > 0) {
-				if (pm != null && pm.cancelled) return;
-				o.write(buf, 0, n);
-				done += n;
-				if (pm != null && total > 0) pm.update((int) (done * 100 / total), (done / 1024) + " of " + (total / 1024) + " KB");
-				n = in.read(buf);
-			}
-		} finally {
-			o.close();
-			in.close();
-		}
+			OutputStream o = new FileOutputStream(out);
+			try {
+				byte[] buf = new byte[65536];
+				long done = 0;
+				int n = in.read(buf);
+				if (n < 2 || buf[0] != 'P' || buf[1] != 'K') throw new IOException("The download wasn't a zip file (got a web page?)");
+				while (n > 0) {
+					if (pm != null && pm.cancelled) return;
+					o.write(buf, 0, n);
+					done += n;
+					if (pm != null && total > 0) pm.update((int) (done * 100 / total), (done / 1024) + " of " + (total / 1024) + " KB");
+					n = in.read(buf);
+				}
+			} finally { o.close(); }
+		} finally { in.close(); }
 	}
 
 	static void unzip(File zip, File into) throws IOException {
@@ -271,7 +270,7 @@ public class Slipstream {
 			byte[] buf = new byte[65536];
 			while ((e = z.getNextEntry()) != null) {
 				File f = new File(into, e.getName());
-				if (!f.getCanonicalPath().startsWith(into.getCanonicalPath())) throw new IOException("Bad zip entry: " + e.getName());
+				if (!f.getCanonicalPath().startsWith(into.getCanonicalPath() + File.separator)) throw new IOException("Bad zip entry: " + e.getName()); // inside the folder, not one named like it
 				if (e.isDirectory()) { f.mkdirs(); continue; }
 				f.getParentFile().mkdirs();
 				OutputStream o = new FileOutputStream(f);

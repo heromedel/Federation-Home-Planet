@@ -358,10 +358,7 @@ public class RemodelDialog extends ShipEditorDialog {
 		if (bay.currentShip != null && bay.currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "finalize " + homeplanet.model.Words.her() + " blueprint")) return;
 		String name = save.getPlayerShipName();
 		List<Remodel> all = CompanionMod.load();
-		File remodelsFile = CompanionMod.remodelsFile();
-		byte[] remodelsBefore;
-		try { remodelsBefore = remodelsFile.isFile() ? homeplanet.core.SafeFiles.read(remodelsFile) : null; }
-		catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station couldn't read " + remodelsFile + ":\n" + e); return; }
+		byte[] remodelsBytes = null; // the blueprints file as it will be, written in the Cargo Bay's own note with her save (6.87)
 		Remodel before = already ? CompanionMod.find(all, id) : null;
 		String intro = "The Federation Home Planet draws up a custom blueprint for " + homeplanet.parser.XmlText.text(name) + " and saves the Cargo Bay as it stands.<br>"
 				+ homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " can't launch until the updated " + CompanionMod.TITLE + " is sent to FTL via Slipstream. ";
@@ -415,9 +412,9 @@ public class RemodelDialog extends ShipEditorDialog {
 				mine.geometry = null;
 			}
 			try {
-				CompanionMod.save(all);
+				remodelsBytes = CompanionMod.bytes(all);
 			} catch (Exception e) {
-				log.error("Could not write " + CompanionMod.remodelsFile(), e);
+				log.error("Could not make " + CompanionMod.remodelsFile(), e);
 				HomePlanet.showErrorDialog("The Home Planet Station couldn't save " + homeplanet.model.Words.her() + " remodel to " + CompanionMod.remodelsFile().getAbsolutePath() + ":\n" + e + "\n\n" + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint is unchanged.");
 				return;
 			}
@@ -430,19 +427,15 @@ public class RemodelDialog extends ShipEditorDialog {
 		for (Sys s : moved.values()) lines.add(Items.systemTitle(s.id) + (s.room < 0 ? ": off the blueprint" : ": room " + s.room + (s.square != null ? ", square " + s.square + (s.dir != null ? " facing " + s.dir : "") : "")));
 		if (doorsChanged) lines.add("Doors: " + d.doors.size() + " (the model has " + origDoors.size() + ")");
 		if (overhaul) lines.add("Overhauled: " + d.rooms.size() + " rooms, " + d.mounts.size() + " weapon mounts, art " + d.art + (d.floor.isEmpty() ? ", no floor" : ""));
-		if (!bay.saveAll()) {
-			// her save wasn't written: the blueprints go back to how they were, and the Cargo Bay to what's on disk
-			try {
-				if (remodelsBefore == null) remodelsFile.delete(); else homeplanet.core.SafeFiles.write(remodelsFile, remodelsBefore);
-				CompanionMod.register(CompanionMod.load());
-			} catch (java.io.IOException e) {
-				log.error("Could not put back " + remodelsFile, e);
-			}
+		if (!bay.saveAll(remodelsBytes == null ? null : CompanionMod.remodelsFile(), remodelsBytes)) {
+			// neither her save nor her blueprint was written (one note): the blueprints go back to the file's, and the Cargo Bay to what's on disk
+			CompanionMod.register(CompanionMod.load());
 			bay.init();
 			dispose(); // this window still holds the old copy of her save
 			HomePlanet.showErrorDialog(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " remodel was called off: " + homeplanet.model.Words.her() + " save and " + homeplanet.model.Words.her() + " blueprint are as they were before.");
 			return;
 		}
+		if (remodelsBytes != null) CompanionMod.saved(all);
 		HistoryLog.entry("REMODEL", name + " -> " + ship.getShipBlueprintId(), lines, Event.of("REMODEL").put("ship_name", name).put("to_class", ship.getShipBlueprintId()).details(lines));
 		ShipArt.sweep(); // pictures her old overhaul no longer uses (only now that everything is saved)
 		finalized = true;

@@ -44,11 +44,17 @@ public class JournalT { public static void main(String[] a) throws Exception {
  // E: and one that can't be told: both ends of a rename are there
  File e1 = new File(root, "jt-e-from"), e2 = new File(root, "jt-e-to"); e1.mkdirs(); e2.mkdirs();
  SafeFiles.writeText(new File(jdir, "20260101-090100-test_stuck.txt"), "time=2026-01-01 09:01:00\nday=3\nkind=TEST_STUCK\nstation=5.70\nstep.1=rename\t" + r + "jt-e-from\t" + r + "jt-e-to\n", false);
+ // F: a note left in another fleet's folder (a ship sent to Sandbox Mode's fleet from a career) whose step reaches into this one: whichever fleet opens first finishes it (6.87)
+ File ojdir = new File(Vault.rootOf(saves, Vault.EASY), Journal.DIR); ojdir.mkdirs();
+ File f1 = new File(root, "jt-f1.txt"); SafeFiles.writeText(new File(root, "jt-f1.txt.tx"), "from the career\n", false);
+ SafeFiles.writeText(new File(ojdir, "20260101-090200-send_to_sandbox.txt"), "time=2026-01-01 09:02:00\nday=3\nkind=SEND_TO_SANDBOX\nstation=6.87\nstep.1=replace\t" + r + "jt-f1.txt\t\n", false);
  Vault v2 = Vault.open(saves); v2.takeStock();
  Setup.chk("D: at the next opening the note is finished: the waiting bytes moved in, the done ones left alone, the delete done; the note gone", text(d1).equals("after\n") && !new File(root, "jt-d1.txt.tx").exists() && text(d2).equals("done\n")
    && dRenTo.isDirectory() && !dRen.exists() && !dDel.exists() && !new File(jdir, "20260101-090000-test_left.txt").exists());
- EventLog.Entry fin = null, stuck = null;
- for (EventLog.Entry e : EventLog.read(v2)) if (e.kind.equals("JOURNAL")) { if ("finished".equals(e.get("what"))) fin = e; else stuck = e; }
+ EventLog.Entry fin = null, stuck = null, other = null;
+ for (EventLog.Entry e : EventLog.read(v2)) if (e.kind.equals("JOURNAL")) { if ("SEND_TO_SANDBOX".equals(e.get("action"))) other = e; else if ("finished".equals(e.get("what"))) fin = e; else stuck = e; }
+ Setup.chk("F: the other fleet's note is finished as this one opens, and gone; the log names the folder it was in", text(f1).equals("from the career\n") && !new File(root, "jt-f1.txt.tx").exists() && notes(ojdir) == 0
+   && other != null && "finished".equals(other.get("what")) && "startup".equals(other.get("finished")) && other.get("note").startsWith(Vault.rootOf(saves, Vault.EASY).getName() + "/" + Journal.DIR + "/"));
  Setup.chk("D: logged with the note's own time and stardate, finished at start-up", fin != null && fin.time.equals("2026-01-01 09:00:00") && fin.day == 3 && fin.stardate.equals(MasterLog.stardate(3))
    && "startup".equals(fin.get("finished")) && "TEST_LEFT".equals(fin.get("action")) && "5.70".equals(fin.get("left_by")) && fin.num("steps", 0) == 4);
  Setup.chk("E: a note that can't be told stays for a person, and the log says which step and why", stuck != null && "stuck".equals(stuck.get("what")) && new File(jdir, "20260101-090100-test_stuck.txt").isFile()

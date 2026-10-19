@@ -536,6 +536,11 @@ public class CompanionMod {
 
 	public static synchronized void save(List<Remodel> remodels) throws IOException {
 		cache = null; // whatever happens below, the next load() reads the file
+		homeplanet.core.SafeFiles.write(remodelsFile(), bytes(remodels), true);
+		saved(remodels);
+	}
+	/** The file's bytes for this list, for a protection note that writes it with her save (6.87); {@link #saved} once it stands. */
+	public static synchronized byte[] bytes(List<Remodel> remodels) throws IOException {
 		if (!intact()) throw ShipDesign.damaged(remodelsFile()); // the list in hand may be short: writing it would lose remodels
 		StringBuilder sb = new StringBuilder();
 		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>").append(CRLF);
@@ -543,7 +548,11 @@ public class CompanionMod {
 		sb.append("<remodels>").append(CRLF);
 		for (Remodel r : remodels) sb.append(remodelXml(r));
 		sb.append("</remodels>").append(CRLF);
-		homeplanet.core.SafeFiles.writeText(remodelsFile(), sb.toString(), true);
+		return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+	}
+	/** The list is in the file (a note wrote it): the next load() reads it, and each blueprint's backup is kept. */
+	public static synchronized void saved(List<Remodel> remodels) {
+		cache = null;
 		BlueprintBackup.keepRemodels(remodels);
 	}
 	static String remodelXml(Remodel r) {

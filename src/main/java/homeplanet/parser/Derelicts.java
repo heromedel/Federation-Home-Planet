@@ -401,26 +401,29 @@ public final class Derelicts {
 		Properties p = read(v);
 		if (!"true".equals(p.getProperty(l.index + ".open"))) throw new IOException(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " has already been sold");
 		if (v.storageScrap() < l.price) throw new IOException("The Cargo Hold holds " + v.storageScrap() + " scrap; " + homeplanet.model.Words.she() + " costs " + l.price);
-		File remodels = v.remodelsFile();
-		byte[] remodelsBefore = remodels.isFile() ? SafeFiles.read(remodels) : null;
 		SavedGameState gs = l.save;
+		List<CompanionMod.Remodel> all = null; // the blueprints with hers added, when she has one
 		if (!l.oddity.isEmpty()) {
 			if (!CompanionMod.intact()) throw new IOException("The station's remodels file can't be read in full, so " + homeplanet.model.Words.her() + " blueprint can't be written");
-			List<CompanionMod.Remodel> all = CompanionMod.load();
+			all = CompanionMod.load();
 			CompanionMod.Remodel r = remodel(gs, l.oddity, all);
 			all.add(r);
-			CompanionMod.save(all);
-			CompanionMod.register(all);
-			homeplanet.core.Slipstream.writeMod(); // her blueprint goes into the mod's file, to be sent to FTL
+			CompanionMod.register(all); // she can be drawn right away; the file follows in the note below
 			Retrofit.switchTo(gs, r.id);
 			Retrofit.syncStations(gs.getPlayerShip());
 		}
 		try {
-			// paid, in the Junkyard, off the list, as one protection note (6.11, CONCERNS 8: paid, then refunded by hand if she failed)
+			// paid, in the Junkyard, off the list, her blueprint on file, as one protection note (6.11, CONCERNS 8: paid, then
+			// refunded by hand if she failed; 6.87: the blueprint was written first and put back by hand)
 			p.setProperty(l.index + ".open", "false");
 			Vault.Transaction tx = v.begin().pay(l.price);
 			Ship s = tx.adopt(gs, Ship.State.JUNKED, "derelict");
+			if (all != null) tx.put(v.remodelsFile(), CompanionMod.bytes(all));
 			tx.put(index(v), Store.bytes(index(v), p, "The Junkyard's derelicts for sale")).delete(saveFile(v, l.index)).commit();
+			if (all != null) {
+				CompanionMod.saved(all);
+				homeplanet.core.Slipstream.writeMod(); // her blueprint goes into the mod's file, to be sent to FTL
+			}
 			try { v.setOut(s, gs, "Bought as a derelict from the Junkyard"); }
 			catch (IOException e) { log.warn("{} is in the Junkyard, but her voyage log couldn't note where she set out: {}", s.name, e.toString()); }
 			HistoryLog.entry("BUY", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), a derelict, for " + l.price + " scrap from the Cargo Hold"
@@ -430,12 +433,7 @@ public final class Derelicts {
 			return s;
 		} catch (IOException e) {
 			p.setProperty(l.index + ".open", "true"); // still for sale
-			if (!l.oddity.isEmpty()) {
-				try {
-					if (remodelsBefore == null) remodels.delete(); else SafeFiles.write(remodels, remodelsBefore);
-					CompanionMod.register(CompanionMod.load());
-				} catch (IOException again) { e.addSuppressed(again); }
-			}
+			if (all != null) CompanionMod.register(CompanionMod.load()); // her blueprint never reached the file: the blueprints as it has them
 			throw e;
 		}
 	}

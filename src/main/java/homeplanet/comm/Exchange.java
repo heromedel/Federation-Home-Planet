@@ -197,21 +197,19 @@ public final class Exchange {
 		r.out = out;
 		r.in = in;
 		r.file = fileOf(id);
-		dir().mkdirs();
-		// a ship goes as her package, kept in the trade's folder until it's settled
-		for (int i = 0; i < leaving.size(); i++) {
-			File f = null;
-			for (Line l : out) if (l.kind == Line.Kind.SHIP && l.from.equals(leaving.get(i).id)) f = pkgFile(r, true, l.n);
-			f.getParentFile().mkdirs();
-			SafeFiles.write(f, v.packageOf(leaving.get(i)));
-		}
 		Vault.Transaction tx = v.begin();
+		// a ship goes as her package, kept in the trade's folder until it's settled: in the note with the rest (6.87; written first before)
+		for (Ship s : leaving) {
+			File f = null;
+			for (Line l : out) if (l.kind == Line.Kind.SHIP && l.from.equals(s.id)) f = pkgFile(r, true, l.n);
+			tx.put(f, v.packageOf(s));
+		}
 		for (Map.Entry<String, Vault.Copy> e : src.copies.entrySet()) tx.put(src.ships.get(e.getKey()), e.getValue().save, e.getValue().hash);
 		tx.put(r.file, bytes(r));
 		try {
 			tx.commit();
 		} catch (IOException e) {
-			SafeFiles.deleteTree(folderOf(id));
+			SafeFiles.deleteTree(folderOf(id)); // left empty by the note's undo
 			throw e;
 		}
 		for (Ship s : leaving) {
