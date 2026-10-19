@@ -82,6 +82,7 @@
 	<entry kind="BUY" when="what=cargo_bay">{purchases#} purchases were made in the Cargo Bay.</entry>
 	<entry kind="BUY" when="what=derelict">The {ship_name}, a derelict, was bought from the Junkyard for {price} scrap.</entry>
 	<entry kind="BUY" when="what=salvage">{title} was bought as salvage from the Junkyard for {price} scrap.</entry>
+	<entry kind="BUY" when="what=search">The Junkyard was searched for more parts, for {price} scrap.</entry>
 	<entry kind="BUY" when="what=part">A part for {title} was bought from the Junkyard for {price} scrap.</entry>
 	<entry kind="CREW" when="what=assigned&amp;to=hold">{crew} was moved to the Cargo Hold.</entry>
 	<entry kind="CREW" when="what=assigned&amp;ship_name">{crew} was assigned to the {ship_name}.</entry>

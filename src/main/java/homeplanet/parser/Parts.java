@@ -49,6 +49,8 @@ public final class Parts {
 	public static final int SALVAGE_ONE_IN = 5, GEAR_ONE_IN = 4;
 	/** Salvage sells at this share of FTL's store price. */
 	public static final int SALVAGE_MIN = 40, SALVAGE_MAX = 70;
+	/** A search of the Junkyard for more parts (heromedel, 6.66): its scrap from the Cargo Hold, and how often (a week of the station's days). */
+	public static final int SEARCH_COST = 15, SEARCH_EVERY = 7;
 	/** Kinds of listing: a damaged system, or salvage (an item, or a bundle of a supply). */
 	public static final String SYSTEM = "system", ITEM = "item", FUEL = "fuel", MISSILES = "missiles", DRONE_PARTS = "parts";
 
@@ -117,7 +119,9 @@ public final class Parts {
 		List<SystemType> kinds = new ArrayList<SystemType>();
 		for (SystemType t : SystemType.values())
 			if (t != SystemType.ARTILLERY && t != SystemType.CLONEBAY && DataManager.get().getSystem(t.getId()) != null) kinds.add(t); // a Clone Bay's damage is the Medbay's
+		String searched = read(v).getProperty("searchedAt"); // a new set keeps when the Junkyard was last searched
 		Properties p = new Properties();
+		if (searched != null) p.setProperty("searchedAt", searched);
 		p.setProperty("rolledAt", Integer.toString(v.beaconsSeen()));
 		p.setProperty("interval", Integer.toString(interval(rng)));
 		int n = kinds.isEmpty() ? 0 : MIN + rng.nextInt(MAX - MIN + 1);
@@ -220,6 +224,28 @@ public final class Parts {
 		ThirdFleet.partBought(v); // the Third Fleet Commander needn't point the way to them
 		HistoryLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard" + (l.clearance ? " on clearance" : "") + ", for " + l.price + " scrap from the Cargo Hold", null,
 				Event.of("BUY").put("what", "part").put("system", l.id).put("title", homeplanet.model.Items.systemTitle(l.id)).put("level", l.level).put("broken", l.broken).put("clearance", l.clearance).put("price", l.price).put("from", "hold").put("to", "stored_systems"));
+	}
+
+	/** True if the Junkyard can be searched again: never searched, or a week since. */
+	public static boolean canSearch(Vault v) {
+		int at = Store.num(read(v), "searchedAt", -1);
+		return at < 0 || v.beaconsSeen() >= at + SEARCH_EVERY;
+	}
+	/** A search for more parts: SEARCH_COST scrap from the Cargo Hold, and a new set of parts and salvage (never the derelicts). */
+	public static synchronized void search(Vault v) throws IOException {
+		if (!canSearch(v)) throw new IOException("The Junkyard was searched only a few days ago");
+		Ship st = v.storage();
+		Vault.Copy c = v.readCopy(st);
+		int have = c.save.getPlayerShip().getScrapAmt();
+		if (have < SEARCH_COST) throw new IOException("The Cargo Hold holds " + have + " scrap; a search costs " + SEARCH_COST);
+		c.save.getPlayerShip().setScrapAmt(have - SEARCH_COST);
+		v.begin().put(st, c.save, c.hash).commit();
+		roll(v, new Random());
+		Properties p = read(v);
+		p.setProperty("searchedAt", Integer.toString(v.beaconsSeen()));
+		try { write(v, p); } catch (IOException e) { log.warn("Could not note the Junkyard's search: {}", e.toString()); } // searched all the same: at worst it can be searched again sooner
+		HistoryLog.entry("BUY", "Searched the Junkyard for more parts, for " + SEARCH_COST + " scrap from the Cargo Hold", null,
+				Event.of("BUY").put("what", "search").put("parts", Store.num(p, "count", 0)).put("price", SEARCH_COST).put("from", "hold").put("to", "junkyard"));
 	}
 
 	// ---- parts.txt ----

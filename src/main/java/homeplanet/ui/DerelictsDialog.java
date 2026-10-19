@@ -182,6 +182,10 @@ final class DerelictsDialog extends JDialog {
 		}
 		bought = true;
 		fill();
+		try { told(s, name); }
+		finally { Vault.get().countBeacon("a day at the Junkyard"); } // a purchase there takes the day, once its messages are closed (heromedel, 6.66)
+	}
+	private void told(Ship s, String name) {
 		List<String> missing = Retrofit.missingBlueprints(s.file());
 		if (missing.isEmpty()) {
 			JOptionPane.showMessageDialog(this, name + " is in the Junkyard. Salvage " + homeplanet.model.Words.herObj() + " there to bring " + homeplanet.model.Words.herObj() + " to the Space Dock.", "Derelicts for sale", JOptionPane.INFORMATION_MESSAGE);

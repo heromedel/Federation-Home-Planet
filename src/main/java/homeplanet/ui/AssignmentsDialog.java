@@ -31,6 +31,8 @@ import homeplanet.vault.Vault;
  */
 public final class AssignmentsDialog extends JDialog {
 	private final JPanel cols = new JPanel(new GridLayout(1, Assignments.OFFERS, 12, 0));
+	private final JPanel awayTab = new JPanel(new BorderLayout());
+	private final javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
 	private final JLabel foot = new JLabel();
 	private final JButton hireBtn = new JButton();
 	/** For the harness: the random rolls. */
@@ -49,7 +51,10 @@ public final class AssignmentsDialog extends JDialog {
 		body.setBorder(BorderFactory.createEmptyBorder(12, 16, 10, 16));
 		body.add(new JLabel("<html><div style='width:720px'>Crews without a ship of their own find work where it's offered. Pick where to send them and who goes, up to "
 				+ Assignments.PARTY_MAX + " from the Cargo Hold. They're away a while, and what they find there is theirs to tell when they're back. Not everyone comes back.</div></html>"), BorderLayout.NORTH);
-		body.add(cols, BorderLayout.CENTER);
+		tabs.addTab("Choose an Offer", cols);
+		tabs.addTab("Current expeditions", awayTab); // who's out, by team (heromedel, 6.66: the names under the sectors went unseen)
+		MenuTheme.markOpenTab(tabs);
+		body.add(tabs, BorderLayout.CENTER);
 		JPanel south = new JPanel(new BorderLayout(10, 0));
 		south.add(foot, BorderLayout.CENTER);
 		JPanel buttons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 0));
@@ -76,17 +81,65 @@ public final class AssignmentsDialog extends JDialog {
 		for (Assignments.Offer o : Assignments.board(v)) cols.add(card(o));
 		int inHold = 0;
 		try { inHold = Assignments.holdCrew(v).size(); } catch (IOException e) { }
-		List<String> away = new ArrayList<String>(), laidUp = new ArrayList<String>();
-		for (Assignments.Away a : Assignments.away(v)) away.addAll(a.names());
+		List<String> laidUp = new ArrayList<String>();
+		List<Assignments.Away> away = Assignments.away(v);
+		fillAway(v, away);
+		tabs.setTitleAt(1, away.isEmpty() ? "Current expeditions" : "Current expeditions (" + away.size() + ")");
 		for (homeplanet.parser.Expeditions.Patient x : homeplanet.parser.Expeditions.infirmary(v)) laidUp.add(x.name);
 		foot.setText("<html>Crew in the Cargo Hold: " + inHold + ".&nbsp;&nbsp; The Cargo Hold holds " + v.storageScrap() + " scrap."
-				+ (away.isEmpty() ? "" : "<br>Away: " + XmlText.text(String.join(", ", away)) + ".")
 				+ (laidUp.isEmpty() ? "" : "<br>In the infirmary: " + XmlText.text(String.join(", ", laidUp)) + ".") + "</html>");
 		ExpeditionsDialog.hireButton(hireBtn, v);
 		cols.revalidate();
 		cols.repaint();
 		pack();
 	}
+	/** Every team that's out: where and when they left, then each of them with their face; up to three teams across. No word of when they're due. */
+	private void fillAway(Vault v, List<Assignments.Away> away) {
+		awayTab.removeAll();
+		if (away.isEmpty()) {
+			JLabel none = new JLabel("<html><font color='" + MenuTheme.HTML_GREY_GREEN + "'>No one is away on an expedition just now.</font></html>");
+			none.setVerticalAlignment(JLabel.TOP);
+			none.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+			awayTab.add(none, BorderLayout.NORTH);
+		} else {
+			JPanel grid = new JPanel(new GridLayout(0, Math.min(3, away.size()), 12, 12));
+			for (Assignments.Away a : away) grid.add(team(v, a));
+			JPanel top = new FitsWidth(); // the teams fit the tab's width; only a long list scrolls, downward
+			top.add(grid, BorderLayout.NORTH);
+			javax.swing.JScrollPane sp = new javax.swing.JScrollPane(top);
+			sp.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
+			sp.getVerticalScrollBar().setUnitIncrement(16);
+			sp.setHorizontalScrollBarPolicy(javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+			awayTab.add(sp, BorderLayout.CENTER);
+		}
+		awayTab.setPreferredSize(new Dimension(cols.getPreferredSize().width, Math.max(cols.getPreferredSize().height, 180)));
+		awayTab.revalidate();
+		awayTab.repaint();
+	}
+	/** A panel as wide as the scroll pane's view, never wider. */
+	private static final class FitsWidth extends JPanel implements javax.swing.Scrollable {
+		FitsWidth() { super(new BorderLayout()); }
+		public Dimension getPreferredScrollableViewportSize() { return getPreferredSize(); }
+		public int getScrollableUnitIncrement(java.awt.Rectangle r, int o, int d) { return 16; }
+		public int getScrollableBlockIncrement(java.awt.Rectangle r, int o, int d) { return r.height; }
+		public boolean getScrollableTracksViewportWidth() { return true; }
+		public boolean getScrollableTracksViewportHeight() { return false; }
+	}
+	private JPanel team(Vault v, Assignments.Away a) {
+		JPanel p = new JPanel();
+		p.setLayout(new javax.swing.BoxLayout(p, javax.swing.BoxLayout.Y_AXIS));
+		p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MenuTheme.GREY_GREEN), BorderFactory.createEmptyBorder(6, 8, 6, 8)));
+		String where = a.sector == null ? "Unknown sector" : Assignments.sectorTitle(a.sector);
+		p.add(new JLabel("<html><div style='width:205px'><font color='" + MenuTheme.HTML_GOLD + "'><b>" + XmlText.text(where) + "</b></font> - Stardate&nbsp;"
+				+ homeplanet.vault.MasterLog.stardate(Math.max(1, homeplanet.vault.MasterLog.dayAt(v, a.sentAt))) + "</div></html>"));
+		for (CrewState c : a.crew) {
+			JLabel l = new JLabel(c.getName(), IconFactory.crewIcon(c), JLabel.LEFT);
+			l.setToolTipText(homeplanet.model.Crew.raceTitle(c));
+			p.add(l);
+		}
+		return p;
+	}
+
 	private JPanel card(final Assignments.Offer o) {
 		JPanel p = new JPanel(new BorderLayout(0, 8));
 		p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MenuTheme.GREY_GREEN), BorderFactory.createEmptyBorder(8, 10, 8, 10)));

@@ -43,7 +43,7 @@ read, and drop RepuT's O, C and H checks.
 ## 9. Where the settings live (noted 6.55)
 
 **What it is.** heromedel, 6.55 (Plan AI), in place of the 5.94 call that settings stay in the cfg beside the jar
-(`docs/OVERHAUL-6.md` 12): the cfg beside the jar keeps only where things are (`ftlDatsPath`, `ftlSavePath`, `slipstream_dir`);
+(`docs/OVERHAUL-6.md` 12, removed at 6.66, in git history): the cfg beside the jar keeps only where things are (`ftlDatsPath`, `ftlSavePath`, `slipstream_dir`);
 the station's own settings, the same for every career, are in `federation-home-planet.cfg` in FTL's saves folder (with a copy of
 the three folders, so a new release folder finds FTL and Slipstream); Sandbox Mode's rules are in `FederationHomePlanet/rules.xml`
 (`HomePlanet.SANDBOX_KEYS`); an Immersive career's are in its own `career.xml` as before, and how reputation can be used is each
