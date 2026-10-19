@@ -162,6 +162,16 @@ volunteer of an unlocked race, one in 20 with a skill; the commander says yes or
 recruit lines), so the job is mostly the rolls and a line or two for "they had someone aboard". Worth a look at how many
 crew the fleet gains then, against Post for volunteers.
 
+## Idea K: search fields where there's a lot to look through (noted 6.76)
+
+> search field in appropriate places like the store tab
+
+Notes: the Cargo Bay's Shop tab (weapons, drones, augments and systems for sale) first, as heromedel named it. Other
+long lists that could take one: the Trade tab's lists (the ship's and the Cargo Hold's goods and crew), the Junkyard's
+parts and derelicts, the Commission list, and the logs (the Captain's Log, a crew member's log, the station log). Each
+would filter as the reputation log's Search does (6.76), through `ui.TextSearch.matches`, so every search box in the
+station behaves the same: any case, parts of words, the words in order (`docs/STYLE.md`, Search boxes).
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just
