@@ -125,11 +125,13 @@ public class ShipRecordsDialog extends JDialog {
 
 		// three pages under her header: the voyage log, the station's log, and the kept versions
 		List<homeplanet.core.EventLog.Entry> events = homeplanet.core.EventLog.read(Vault.get()); // her events (5.74)
+		final List<homeplanet.core.EventLog.Entry> voyage = homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOf(ship)), ship.id);
+		final List<homeplanet.core.EventLog.Entry> station = logEntries(events, ship);
 		final java.awt.CardLayout cards = new java.awt.CardLayout();
 		final JPanel pages = new JPanel(cards);
-		pages.add(logTab(RecordsLog.voyage(homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOf(ship)), ship.id), "Nothing logged yet. The Home Planet Station writes " + homeplanet.model.Words.her() + " voyage log as FTL saves " + homeplanet.model.Words.herObj() + ",\n"
-				+ "while the station is open (and on Refresh): jumps, sectors, battles, crew, what came aboard, upgrades and repairs.")), "voyage");
-		pages.add(logTab(RecordsLog.station(logEntries(events, ship), "No entries for " + homeplanet.model.Words.herObj() + " yet.", false)), "station");
+		final JScrollPane voyageTab = logTab(voyageLog(voyage, "")), stationTab = logTab(stationLog(station, ""));
+		pages.add(voyageTab, "voyage");
+		pages.add(stationTab, "station");
 		pages.add(kept, "kept");
 		final Tab[] tabs = {new Tab("Voyage log", "Events in FTL, save by save (newest last)", "voyage"),
 				new Tab("Station log", homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " entries in the station's log, newest last", "station"),
@@ -147,9 +149,38 @@ public class ShipRecordsDialog extends JDialog {
 			tabRow.add(t);
 		}
 		tabs[0].on = true;
+		// Search, as the station's other logs have it (heromedel, 6.76): both logs kept to the entries that mention what's typed
+		final javax.swing.JTextField search = new javax.swing.JTextField(16);
+		search.setToolTipText("Only the entries that mention this (a crew member, a sector, a word), in any case");
+		search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+			void again() {
+				String q = search.getText().trim();
+				show(voyageTab, voyageLog(voyage, q));
+				show(stationTab, stationLog(station, q));
+			}
+			public void insertUpdate(javax.swing.event.DocumentEvent e) { again(); }
+			public void removeUpdate(javax.swing.event.DocumentEvent e) { again(); }
+			public void changedUpdate(javax.swing.event.DocumentEvent e) { again(); }
+		});
+		final JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+		searchRow.setOpaque(false);
+		javax.swing.JLabel searchLabel = new javax.swing.JLabel("Search:  ");
+		searchLabel.setForeground(DIM);
+		searchRow.add(searchLabel);
+		searchRow.add(search);
+		for (final Tab t : tabs) {
+			final Runnable was = t.onClick;
+			t.onClick = new Runnable() {
+				public void run() { was.run(); searchRow.setVisible(!t.page.equals("kept")); } // the kept versions are a list of their own
+			};
+		}
+		JPanel tabLine = new JPanel(new BorderLayout(12, 0));
+		tabLine.setOpaque(false);
+		tabLine.add(tabRow, BorderLayout.CENTER);
+		tabLine.add(searchRow, BorderLayout.EAST);
 		JPanel logPanel = new JPanel(new BorderLayout(0, 0));
 		logPanel.setOpaque(false);
-		logPanel.add(tabRow, BorderLayout.NORTH);
+		logPanel.add(tabLine, BorderLayout.NORTH);
 		logPanel.add(pages, BorderLayout.CENTER);
 
 		JPanel body = new JPanel(new BorderLayout(0, 12));
@@ -228,6 +259,24 @@ public class ShipRecordsDialog extends JDialog {
 		int maxW = b.width - in.left - in.right - 20, maxH = b.height - in.top - in.bottom - 20;
 		if (getWidth() > maxW || getHeight() > maxH) setSize(Math.min(getWidth(), maxW), Math.min(getHeight(), maxH));
 		setLocationRelativeTo(getOwner());
+	}
+	/** Her voyage log, kept to the lines that mention what's typed (all of them when nothing is). */
+	private static RecordsLog voyageLog(List<homeplanet.core.EventLog.Entry> all, String q) {
+		if (!q.isEmpty()) return RecordsLog.voyage(TextSearch.filter(all, q, false), "No lines mention \"" + q + "\".");
+		return RecordsLog.voyage(all, "Nothing logged yet. The Home Planet Station writes " + homeplanet.model.Words.her() + " voyage log as FTL saves " + homeplanet.model.Words.herObj() + ",\n"
+				+ "while the station is open (and on Refresh): jumps, sectors, battles, crew, what came aboard, upgrades and repairs.");
+	}
+	/** Her entries in the station's log, kept the same way. */
+	private static RecordsLog stationLog(List<homeplanet.core.EventLog.Entry> all, String q) {
+		if (!q.isEmpty()) return RecordsLog.station(TextSearch.filter(all, q, true), "No entries mention \"" + q + "\".", false);
+		return RecordsLog.station(all, "No entries for " + homeplanet.model.Words.herObj() + " yet.", false);
+	}
+	/** A log put in its tab again, the latest lines in view. */
+	private static void show(final JScrollPane sp, RecordsLog log) {
+		sp.setViewportView(log);
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() { sp.getViewport().revalidate(); javax.swing.JScrollBar b = sp.getVerticalScrollBar(); b.setValue(b.getMaximum()); }
+		});
 	}
 	/** A log in its scroll pane, scrolled to its latest lines. */
 	private static JScrollPane logTab(RecordsLog log) {

@@ -162,6 +162,46 @@ volunteer of an unlocked race, one in 20 with a skill; the commander says yes or
 recruit lines), so the job is mostly the rolls and a line or two for "they had someone aboard". Worth a look at how many
 crew the fleet gains then, against Post for volunteers.
 
+## Idea K: search fields where there's a lot to look through (noted 6.76)
+
+> search field in appropriate places like the store tab
+
+Notes: the Cargo Bay's Shop tab (weapons, drones, augments and systems for sale) first, as heromedel named it. Other
+long lists that could take one: the Trade tab's lists (the ship's and the Cargo Hold's goods and crew), the Junkyard's
+parts and derelicts, the Commission list, and the logs (the Captain's Log, a crew member's log, the station log). Each
+would filter as the reputation log's Search does (6.76), through `ui.TextSearch.matches`, so every search box in the
+station behaves the same: any case, parts of words, the words in order (`docs/STYLE.md`, Search boxes).
+
+## Idea L: a magnifying glass for the Captain's Log (noted 6.76)
+
+> Captains log having a magnifyglass icon to open a search bar
+
+Notes: the other logs have a Search box beside their title since 6.76 (the station log, a ship's voyage log, her Records
+window, the reputation log); the Captain's Log was left without one so as not to crowd its page (heromedel). A small
+magnifying glass in its corner that opens the box when wanted would keep the page as it is, and the box would search
+the same way (`ui.TextSearch`).
+
+## Idea M: highlight and copy the text in any window or log (noted 6.76)
+
+> can you make sure that any window or log lets you highlight and copy from text, im not talking about game buttons and
+> stuff just text windows and logs
+
+Notes: already selectable: the Captain's Log, the inbox's letters, both manuals, the debug log, the console and the
+Museum's text. Not yet: the station-style logs (`ui/RecordsLog`, drawn rather than text: the station log, the voyage
+logs, the reputation log and a ship's Records tabs), the Crew Log (`CrewLogView`, labels), the expedition report cards
+(`CrewReport`, drawn) and the Patch window's notes (`PatchDialog.note`, kept from focus). The plan talked over (Plan AT):
+
+1. The station-style logs: a drag highlights whole lines (an entry and its details), and Ctrl+C or a right-click menu
+   (Copy, Copy all) copies them as plain text with their time or stardate. One change to `RecordsLog` gives it to every
+   log built that way, without losing their look (the coloured tags and dots).
+2. The Crew Log: the same drag and copy over a crew member's career lines.
+3. Expedition reports: a right-click "Copy report" on each card (too tightly laid out for a drag).
+4. The Patch window's notes: selectable like other text.
+5. Each checked with a screenshot of a highlight, and the copied text checked.
+
+The pop-up message boxes (about 217 of them) are game prompts rather than text windows, and are left out unless
+heromedel wants them too: that would be a larger job of its own.
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just
