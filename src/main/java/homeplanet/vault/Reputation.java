@@ -679,7 +679,14 @@ public final class Reputation {
 	public static final String[] POOLS = {"Travel", "Combat", "Crew", "Scrap", "Events", "Achievements", "Spent", "Other"};
 	/** How the log's spending entries begin (what reputation paid for): the whole entry is Spent. */
 	private static final String[] SPENT_STARTS = {"A new ship on your plea", "A promise of adventure", "Rested in quarters", "A new journey plotted",
-			"Stripping ", "The Dry Dock:", "A plea"};
+			"Stripping ", "Refit work:", "A plea"};
+	/** The Refit's entries before 6.82 began with its old name, "The ... Dock:" (no other spending entry names a dock). */
+	private static final java.util.regex.Pattern OLD_REFIT = java.util.regex.Pattern.compile("The \\w+ Dock: .*");
+	/** Whether a log entry's words are reputation spent (the whole entry is Spent), old entries' words included. */
+	private static boolean spending(String why) {
+		for (String sp : SPENT_STARTS) if (why.startsWith(sp)) return true;
+		return OLD_REFIT.matcher(why).matches();
+	}
 	private static final java.util.regex.Pattern PIECE = java.util.regex.Pattern.compile("([^,:;(]*)\\(([+\u2212-])(\\d+)\\)");
 	/**
 	 * The reputation by pool, read from the log: each entry's pieces ("sector 3 reached (+6)", "a crew member killed
@@ -707,7 +714,7 @@ public final class Reputation {
 		}
 	}
 	private static void pool(Map<String, Integer> pools, String header, int points, List<String> details) {
-		for (String s : SPENT_STARTS) if (header.startsWith(s)) { add(pools, "Spent", points); return; }
+		if (spending(header)) { add(pools, "Spent", points); return; }
 		if (header.startsWith("An achievement") || header.matches("\\d+ achievements:.*")) { add(pools, "Achievements", points); return; }
 		if (header.startsWith("Taken captive:") || header.startsWith("Ransomed:")) { add(pools, "Crew", points); return; }
 		List<String[]> pieces = new ArrayList<String[]>();

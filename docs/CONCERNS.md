@@ -68,7 +68,7 @@ level 2 to start. `Commission.buildRelief` sets every system to its minimum, the
 Burst Laser I and an Ion Blast), so something after it, or another way of building her, gives her more than it means to.
 
 **What it costs.** Not looked into yet. A plea's ship is meant to be the bare minimum; two extra weapons bars are worth
-scrap at the Dry Dock, and count in her price.
+scrap at the Refit, and count in her price.
 
 **What a change would look like.** Find where her level 4 comes from (the plea's own build, the price check, or FTL
 reading her blueprint), and keep her at 2.

@@ -9,7 +9,7 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 2. Retired designs, and a blueprint copy with each ship
 3. Ship history and restore
 4. Pricing and house rules (HR1, HR2, Report for Reassignment, free unlock ships, Immersive Mode)
-5. Dry Dock: repairs and upgrades
+5. Refit: repairs and upgrades
 6. Fixes from testing, and the settings moves
 7. Immersive Mode, part 2: its own vault, rules kept apart, uncommissioned-ship detection, rank and locks
 8. Transmissions: the inbox, commission orders, promotions, achievement rewards (draft: docs/TRANSMISSIONS.md)
@@ -20,7 +20,7 @@ the owner's call. Player-facing text follows the Voice section of CLAUDE.md.
 13. The station's economy: Trade In and Auction, Refit removal, stripping, fees (4B.58)
 14. Immersive difficulties: Easy, Normal, Hard and Custom (4B.59)
 15. Switch Game Mode: Sandbox and four careers, each with its own fleet and profile (4B.60)
-16. Derelicts for sale in the Junkyard, and Dry Dock system and breach repairs (4B.61)
+16. Derelicts for sale in the Junkyard, and Refit system and breach repairs (4B.61)
 17. Settings in tabs, and the Station Log window (4B.61)
 
 All built. What remains is testing in real play and bug checks.
@@ -139,7 +139,7 @@ the artillery system costs 150, upgrades 30/50/80.
   selling missiles, drone parts and systems is **on, at 25%** of the store price; restoring old versions of a ship
   is off. The choice after a final victory stays available (each fleet its own). Turning Immersive Mode off unlocks the settings.
 
-## 5. Dry Dock: repairs and upgrades — done (checks in PriceT)
+## 5. Refit: repairs and upgrades — done (checks in PriceT)
 
 Built into the Cargo Bay's Refit tab, so it follows the one trading rule with the rest of the Cargo Bay; the boarded
 ship pays, and Save makes it official (Reset undoes it).
@@ -440,10 +440,10 @@ no letters, you come and check).
   reachable). Only when she's bought does this become a remodel of her own; the patch prompt follows.
 - Price: 25-75% of her value as she is (less 5 a missing hull point and 5 a broken bar), from the Cargo Hold. She goes to the Junkyard,
   set out at The Home Planet Station so she can take on crew once salvaged.
-- The Dry Dock bills the Cargo Hold (4B.64): every price on the Refit tab (upgrades, reactor bars, hull, Fix, Seal,
+- The Refit bills the Cargo Hold (4B.64): every price on the Refit tab (upgrades, reactor bars, hull, Fix, Seal,
   removal fees) goes on a running bill, checked against the Cargo Hold's scrap and paid in the same save as the ship;
   Reset drops it. Selling a stored system pays the Cargo Hold.
-- The Dry Dock now mends broken system bars (5 scrap a bar, shown as Fix instead of the upgrade) and seals breaches
+- The Refit now mends broken system bars (5 scrap a bar, shown as Fix instead of the upgrade) and seals breaches
   (5 each), beside hull repairs.
 - Tidying (4B.67): Immersive Mode no longer writes its rules over the player's own Sandbox settings; each rule asks
   the mode (Immersive always on, Sandbox by its setting), so leaving a career finds Sandbox as it was. New Journey,
@@ -459,7 +459,7 @@ no letters, you come and check).
   Dock or aboard her with FTL closed and at a station; refused with the reason otherwise, and the letter stays
   answerable) or Not yet. Aboard her, the Cargo Bay shows Return (her name) beside her: it returns the borrowed ship
   you're aboard, as decommissioning does (FTL closed), so a ship on loan over Long Range Comm. could use it later
-  (IDEAS.md, Idea D). Either way she goes home for the cost (assessed at delivery at Dry Dock prices) plus the bonus. Not returned 200 beacons after she came, for any reason,
+  (IDEAS.md, Idea D). Either way she goes home for the cost (assessed at delivery at Refit prices) plus the bonus. Not returned 200 beacons after she came, for any reason,
   her owner demands her: sent back then, she pays the cost only if she's whole; refused, 7-14 beacons later the
   Federation Office of Salvage and Claims takes her value from the Cargo Hold's scrap, else a docked ship, else
   everything in the Cargo Hold but its crew, and her too if docked (boarded: when she next docks). Hidden in the
@@ -620,8 +620,8 @@ fitted one anyway; FTL then runs her, but her system bar slides along and its ic
 
       (This would excede the Vanilla FTL system Limit)
 
-  - **The Dry Dock shop:** the store's price and the 100, both from her scrap; greyed only when she can't pay both.
-  - **Install from the Cargo Bay:** the 100 on the Dry Dock's bill (the Cargo Hold pays on Save; Reset drops it).
+  - **The Refit shop:** the store's price and the 100, both from her scrap; greyed only when she can't pay both.
+  - **Install from the Cargo Bay:** the 100 on the Refit's bill (the Cargo Hold pays on Save; Reset drops it).
   - **On hover:** "You've reached the System Limit. Home Planet Station can fit it in as a custom work order. But it
     will cost 100 scrap."
   - Nothing comes back when the system comes off, and the work order is never part of a ship's value.
@@ -761,7 +761,7 @@ the ground up in FTL's own style. 4B.92 is that rebuild; nothing of the old even
   The crew report (Plan KK) is drawn the same way wherever it opens (the Cargo Bay, with Rename; a Long Range offer;
   a click on a name in the ship report, from the Space Dock or the Cargo Bay): portrait, name, race and sex, health or
   the infirmary, the six skills with pips, a bar and the points, and the service record. Health bars also show on the
-  ship report's crew and the Long Range trade lists; not the Museum (finished runs) or the Dry Dock's crew for hire.
+  ship report's crew and the Long Range trade lists; not the Museum (finished runs) or the Refit's crew for hire.
 - In the Cargo Bay's system rows, broken bars are drawn red at the end of the level bar (4B.91).
 - **Folding headings**: a click on a gold heading of the Space Dock's controls folds its buttons away or back,
   lighter under the mouse, a small arrow when folded; remembered in the cfg (`fold_station`, ...).
@@ -1193,10 +1193,10 @@ and reputation for the rest; with Reputation off, scrap only, as before.
 - **A New Journey:** the full fee (200 / 500 / 1000), scrap or reputation one for one.
 - **Refit removal:** Easy 25, Normal 50, Hard 75, scrap or reputation (vanilla can't take systems off; it lets you rebuild
   other systems). Sandbox keeps its own setting, reputation offered beside it. Paid on the Cargo Bay's Save, with the
-  Dry Dock's bill (a reputation bill beside the scrap one, spent once the save stands).
+  Refit's bill (a reputation bill beside the scrap one, spent once the save stands).
 - **Stripping when scrapping:** 15 / 30 / 60 a system, scrap or reputation; Hard allows it now. Cheaper than taking them
   off one by one at Refit, because the hull is lost.
-- **A custom work order** fitting a system past FTL's System Limit in the Cargo Bay (Refit or the Dry Dock's shop):
+- **A custom work order** fitting a system past FTL's System Limit in the Cargo Bay (Refit or the Refit's shop):
   25 / 50 / 75 scrap and as much reputation (Sandbox 50 and 50; with Reputation off, both in scrap). In Commission it's
   part of her price, scrap only, both shares (50 / 100 / 150; Sandbox 100, as it was).
 - **Plead for New Ship:** as it was (give up the Cargo Hold or keep it), the share by difficulty: Easy a tenth, Normal a
@@ -1242,7 +1242,7 @@ waiting is answered No with it). Their save was repaired by hand; its history.lo
 
 ## 42. The Cargo Bay's day, the master log and the Captain's Log — built (5.17; harness test LogT)
 
-heromedel's ideas. **The Cargo Bay's day:** a Save with real business at the station (buying, selling, the Dry Dock's
+heromedel's ideas. **The Cargo Bay's day:** a Save with real business at the station (buying, selling, the Refit's
 work, a system installed or uninstalled; never moving your own things about) passes a day, but not twice running: if
 the last day counted was already a Cargo Bay day, with nothing else moving the clock between, it passes none, so
 selling one missile at a time can't run the clock. **The master log** (`master.log`, hidden, each career's own; never a
@@ -1441,5 +1441,5 @@ listed under the sectors went.
   Immersive Mode (send her to the normal Junkyard, or destroy her).
 - Buttons say **Patch** ("Patch mods...", "Patch Now"): players know what patching is. Sentences describe it as the
   patch being **sent to FTL via Slipstream** ("The Home Planet Station is sending the patch to FTL via Slipstream").
-- The Dry Dock and the Refit → Retrofit → Remodel → Overhaul steps keep their names.
+- The Refit and the Refit → Retrofit → Remodel → Overhaul steps keep their names.
 - README: the owner's part (above the last dashed line) is kept as written; the part below is updated with the features.

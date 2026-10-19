@@ -173,7 +173,7 @@ def build_html(lines):
     o.append('</header>')
     o.append('<nav class="toc"><h2>Contents</h2><ol>')
     for n, t in toc: o.append('<li><a href="#s%s"><span class="n">[%s]</span>%s</a></li>' % (n, n, html.escape(t)))
-    o.append('</ol><p style="font:14px/1.5 system-ui,sans-serif;color:var(--muted);margin:12px 0 0">Buttons on the station\'s main screens are written in capitals, such as LAUNCH FTL, just as they appear on screen. Other buttons and options are written as they are labelled, such as Patch mods.</p></nav>')
+    o.append('</ol><p style="font:14px/1.5 system-ui,sans-serif;color:var(--muted);margin:32px 0 0">Buttons on the station\'s main screens are written in capitals, such as LAUNCH FTL, just as they appear on screen. Other buttons and options are written as they are labelled, such as Patch mods.</p></nav>')
 
     titles = dict(toc)
     closing = []

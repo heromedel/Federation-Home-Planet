@@ -84,7 +84,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 	String currentHash, tradeHash;
 	private int partnerIndex = 0; // in shipSelect
 
-	final DryDockShop shop = new DryDockShop(this);
+	final RefitShop shop = new RefitShop(this);
 	final SystemsPanel systems = new SystemsPanel(this);
 
 	private boolean dirty = false;
@@ -1146,7 +1146,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 
 	/** What FTL's stores pay: half the price, rounded down. */
 	static int sellPrice(String id) {
-		int p = DryDockShop.priceOf(id);
+		int p = RefitShop.priceOf(id);
 		return p <= 0 ? 0 : p / 2;
 	}
 	private void dispose(boolean mine, int kind, boolean sell) {
@@ -1282,7 +1282,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		help(oldName + " will be known as " + newName + ". Save to make it official.");
 	}
 
-	/** A Dry Dock purchase changed a save in memory: show it. */
+	/** A Refit purchase changed a save in memory: show it. */
 	void showPurchase(SavedGameState buyer, String id, boolean toCargo) {
 		markDirty();
 		refreshTrade();
@@ -1310,7 +1310,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 		// FTL's ship is asked about only when this save really changes her, whichever ship is picked (heromedel, 5.81): a
 		// purchase for the Cargo Hold with her picked left her as she was and still asked; one from her own store with
 		// another ship picked changed her and didn't ask, and FTL, mid-game, put the item back on the shelf
-		try { systems.payFromShip(); } // the Dry Dock's bill, when the ship pays (6.44): taken before her save is looked at, so it's written with her
+		try { systems.payFromShip(); } // the Refit's bill, when the ship pays (6.44): taken before her save is looked at, so it's written with her
 		catch (java.io.IOException e) { HomePlanet.showErrorDialog(e.getMessage()); return false; }
 		Ship flying = Vault.get().boarded();
 		boolean currentSame = currentShip != null && currentShip == flying && !changes(flying, currentSave);
@@ -1331,7 +1331,7 @@ public class CargoBayUI extends JPanel implements Scrollable {
 			if (partner && !tradeSame) tx.put(tradeShip, tradeSave, tradeHash);
 			shop.addTo(tx);
 			systems.addTo(tx);
-			billed = systems.payBill(tx); // the Dry Dock's work, from the Cargo Hold, in the same save
+			billed = systems.payBill(tx); // the Refit's work, from the Cargo Hold, in the same save
 			ch.systems.addAll(systems.changes());
 			ch.purchases.addAll(shop.purchases());
 			ch.crewRenames = crewRenames;

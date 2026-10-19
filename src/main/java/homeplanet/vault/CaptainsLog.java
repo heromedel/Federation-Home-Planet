@@ -589,8 +589,8 @@ public final class CaptainsLog {
 		return "We jumped " + where + (l.met.isEmpty() ? "" : " and met " + join(l.met)) + ".";
 	}
 	private static String systemsText(Line l) {
-		if (l.things.isEmpty()) return l.details.isEmpty() ? null : "Had the Dry Dock work on " + theShip(l.ship) + ".";
-		if (l.things.size() > 1) return "Had the Dry Dock work on " + theShip(l.ship) + ".";
+		if (l.things.isEmpty()) return l.details.isEmpty() ? null : "Had refit work done on " + theShip(l.ship) + ".";
+		if (l.things.size() > 1) return "Had refit work done on " + theShip(l.ship) + ".";
 		String a = l.things.keySet().iterator().next();
 		if (a.startsWith("fit:")) return "Had " + article(a.substring(4)) + (a.endsWith("system") ? "" : " system") + " fitted to " + theShip(l.ship) + ".";
 		if (a.startsWith("off:")) return "Had the " + a.substring(4) + " taken off " + theShip(l.ship) + ".";
@@ -598,7 +598,7 @@ public final class CaptainsLog {
 		if (a.startsWith("up:")) return "Had " + theShip(l.ship) + "'s " + a.substring(3) + " upgraded.";
 		if (a.equals("mend")) return "Had " + theShip(l.ship) + " patched up.";
 		if (a.equals("retrofit")) return "Had " + theShip(l.ship) + " retrofitted.";
-		return "Had the Dry Dock work on " + theShip(l.ship) + ".";
+		return "Had refit work done on " + theShip(l.ship) + ".";
 	}
 
 	// ---- words ----
