@@ -17,7 +17,7 @@ import homeplanet.core.HistoryLog;
 /**
  * A Save in the Cargo Bay (heromedel's Plan O, 6.11: moved out of ui/CargoBayUI, which keeps the confirmations, the
  * bill and what's shown). The bay puts every file it changed in one transaction (the ships, the shops bought from,
- * the stored systems, the Dry Dock's bill) and hands it here with what changed: it is written as one protection note,
+ * the stored systems, the Refit's bill) and hands it here with what changed: it is written as one protection note,
  * then logged, in this order: the systems' work, the purchases, renamed ships, renamed crew, crew assigned, what was
  * junked, sold or retired, the trade, and the business day.
  */
@@ -45,7 +45,7 @@ public final class CargoBaySave {
 		/** Their goods, crew and supplies before, as the history log counts them (the bay adds its purchases to them). */
 		public final Map<String, Integer> currentBefore, partnerBefore;
 		final String nameBefore, partnerNameBefore;
-		/** The Dry Dock's work and the purchases, a line each. */
+		/** The Refit's work and the purchases, a line each. */
 		public final List<String> systems = new ArrayList<String>(), purchases = new ArrayList<String>();
 		/** Crew renamed (their record in the save, and the name they had): their own lines, not a "left / joined" pair. */
 		public Map<CrewState, String> crewRenames = new HashMap<CrewState, String>();
@@ -76,12 +76,12 @@ public final class CargoBaySave {
 
 	/**
 	 * Writes the bay's transaction as one protection note, then {@code paid} (what the save spent beyond its files: the
-	 * Dry Dock's reputation), then the log entries. Throws, with nothing written, if the transaction can't be.
+	 * Refit's reputation), then the log entries. Throws, with nothing written, if the transaction can't be.
 	 */
 	public static void save(Vault v, Vault.Transaction tx, Changes c, Runnable paid) throws IOException {
 		tx.commit();
 		if (paid != null) paid.run();
-		// real business at the station passes a day (heromedel, 5.17): buying, selling, the Dry Dock's work, a system in
+		// real business at the station passes a day (heromedel, 5.17): buying, selling, the Refit's work, a system in
 		// or out; never moving your own things about. Not twice running: a Save after a Cargo Bay day, with nothing else
 		// moving the clock between, passes none (selling one missile at a time can't run the clock)
 		boolean business = !c.systems.isEmpty() || !c.purchases.isEmpty();

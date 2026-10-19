@@ -90,7 +90,7 @@ public final class RepairJob {
 	public static boolean whole(ShipState s) {
 		return flyable(s) && Pricing.missingHull(s) == 0 && s.getBreachMap().isEmpty();
 	}
-	/** What the Dry Dock would charge to make her whole: hull points, broken bars and breaches. */
+	/** What the Refit would charge to make her whole: hull points, broken bars and breaches. */
 	public static int repairCost(ShipState s) {
 		return Pricing.HULL_REPAIR * Pricing.missingHull(s) + Pricing.SYSTEM_REPAIR * Pricing.brokenBars(s) + Pricing.BREACH_REPAIR * s.getBreachMap().size();
 	}

@@ -2152,7 +2152,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String coreNote = "";
 		if (!core.isEmpty()) {
 			List<String> names = new java.util.ArrayList<String>();
-			for (SystemType t : core) names.add(DryDockShop.systemTitle(t.getId()));
+			for (SystemType t : core) names.add(RefitShop.systemTitle(t.getId()));
 			coreNote = "No " + String.join(" or ", names) + ": buyers pay " + homeplanet.parser.Pricing.CORE_PENALTY * core.size() + " points less.\n";
 		}
 		String hurt = parts.size() <= 1 ? (parts.isEmpty() ? "" : parts.get(0))
@@ -2211,7 +2211,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		java.util.List<SystemType> core = homeplanet.parser.Pricing.missingCore(s);
 		if (!core.isEmpty()) {
 			java.util.List<String> names = new java.util.ArrayList<String>();
-			for (SystemType t : core) names.add(DryDockShop.systemTitle(t.getId()));
+			for (SystemType t : core) names.add(RefitShop.systemTitle(t.getId()));
 			sb.append("<br>Missing: ").append(String.join(", ", names));
 		}
 		sb.append("<br>Trade In: ").append(homeplanet.parser.Pricing.tradeIn(gs)).append(" scrap</html>");

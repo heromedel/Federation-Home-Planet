@@ -293,7 +293,7 @@ public class RemodelDialog extends ShipEditorDialog {
 		return out;
 	}
 	/**
-	 * Systems lifted off and not put back (heromedel, 6.42): uninstalled for the Dry Dock's price, as the Refit tab does it,
+	 * Systems lifted off and not put back (heromedel, 6.42): uninstalled for the Refit's price, as the Refit tab does it,
 	 * or back to the editor, or the remodel discarded. True to carry on finalizing.
 	 */
 	private boolean placeOrUninstall() {

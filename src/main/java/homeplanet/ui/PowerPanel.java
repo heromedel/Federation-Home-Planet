@@ -483,7 +483,7 @@ final class PowerPanel extends JComponent {
 			Sys x = (Sys) o;
 			String id = x.type.getId();
 			String head = SystemsPanel.ftlText("tooltip_" + (id.equals("pilot") ? "pilot" : id));
-			StringBuilder b = new StringBuilder(head == null ? DryDockShop.systemTitle(id) : head);
+			StringBuilder b = new StringBuilder(head == null ? RefitShop.systemTitle(id) : head);
 			String said = SystemsPanel.levelLabel(id, x.level), lv = SystemsPanel.ftlText("level");
 			if (!said.isEmpty()) b.append("\n\n").append(lv == null ? "Level " + x.level + ": " + said : lv.replace("\\1", Integer.toString(x.level)).replace("\\2", said));
 			b.append("\n\n").append(word("status", "Status:"));
