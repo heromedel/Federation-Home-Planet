@@ -4,8 +4,10 @@ cd /d "%~dp0"
 title The Federation Home Planet Station - Release
 rem Makes a release (6.51): builds the jar with the Construction Yard, then puts together a clean folder with only what
 rem a player needs, and a zip of it to upload:
-rem   Release\Federation Home Planet <version>\  the jar, the Interface (which finds Java, or offers to get it),
-rem                                              LICENSE, CREDITS.md and README.md
+rem   Release\Federation Home Planet <version>\  the jar and the Interface (which finds Java, or offers to get it),
+rem     Documents\                               the manuals, changes.txt, README.md, CREDITS.md and LICENSE
+rem                                              (heromedel, 6.82: the reading in a folder of its own; the station
+rem                                              reads its own copies from inside the jar)
 rem   Release\Federation Home Planet <version>.zip
 rem The player's settings, fleets and logs are made beside the jar on first start: nothing of yours goes in.
 
@@ -41,9 +43,14 @@ echo Putting the release together in "Release\%NAME%" ...
 if exist "%OUT%" rmdir /s /q "%OUT%"
 if exist "%OUT%.zip" del /f /q "%OUT%.zip"
 mkdir "%OUT%"
-for %%f in ("Current Build\Federation Home Planet.jar" "Current Build\Federation Home Planet Interface.bat" "LICENSE" "CREDITS.md" "README.md") do (
+mkdir "%OUT%\Documents"
+for %%f in ("Current Build\Federation Home Planet.jar" "Current Build\Federation Home Planet Interface.bat") do (
 	copy /y %%f "%OUT%\" >nul 2>&1
 	if not exist "%OUT%\%%~nxf" ( echo %%~f couldn't be copied into the release. & goto :failed )
+)
+for %%f in ("User-Manual.html" "User-Manual.txt" "changes.txt" "README.md" "CREDITS.md" "LICENSE") do (
+	copy /y %%f "%OUT%\Documents\" >nul 2>&1
+	if not exist "%OUT%\Documents\%%~nxf" ( echo %%~f couldn't be copied into the release. & goto :failed )
 )
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ProgressPreference='SilentlyContinue'; Compress-Archive -Path '%OUT%' -DestinationPath '%OUT%.zip' -Force"
