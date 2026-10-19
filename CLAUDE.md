@@ -71,6 +71,10 @@ it does and CREDITS.md for where the code came from.
   `manual.src` so its caption carries "Fair use screenshot, for instructional purposes only." (heromedel, 6.72). Never commit
   FTL's own files, only such screenshots, kept small.
   Words follow the manual's rules: no dashes, no clipped sentences, the Federation's voice, nothing technical.
+
+- **Test-only problems (heromedel, 6.71):** a problem only in the harness (a test that no longer fits the station, not a bug a
+  player could meet) needs no question and no handoff: fix it as long as the test stays accurate, or leave a note for Buggy
+  in `docs/BUGS.md`. heromedel doesn't make or use the tests.
 - **Handoffs:** before fixing a bug, ask heromedel "Would you like me to work on this or prepare a handoff?". A handoff
   is written as `docs/HANDOFF.md` says (the parts in order, and a page template to publish).
 - The version (4B.nn; after 4B.99 comes 5.00, then 5.01 to 5.99, then 6.00) goes up by one only with a commit: `<version>` in `pom.xml` and

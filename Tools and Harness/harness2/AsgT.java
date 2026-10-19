@@ -236,6 +236,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   boolean twice = false;
   for (CrewState c : Assignments.holdCrew(v)) { String k = c.getName() + "/" + c.getRace(); if (seen.containsKey(k)) twice = true; seen.put(k, 1); }
   Setup.chk("M: nobody in the Cargo Hold twice", !twice);
+  for (Assignments.Pending x : Assignments.pending(v)) Assignments.decline(v, x); // a recruit they brought home (6.69's odds): answered, so the prize checks start with nothing waiting
  }
  static void awayAndBack(Vault v) throws Exception {
   List<CrewState> crew = ExpT.hold(v, "slug", "human", "engi", "rock");
@@ -435,7 +436,7 @@ public class AsgT { public static void main(String[] a) throws Exception {
   int missilesNow = v.readCopy(v.storage()).save.getPlayerShip().getMissilesAmt(), listingsNow = Derelicts.current(v).size();
   boolean shipOk = pend.size() == 1 && "ship".equals(pend.get(0).kind) && pend.get(0).save.isFile()
     && r.prizeDetail != null && shipRep.text.contains(r.prizeDetail) && listingsNow == listingsBefore && missilesNow == missiles + 4;
-  String why = shipOk ? "" : " [" + r.prizeDetail + " named: " + (r.prizeDetail != null && shipRep.text.contains(r.prizeDetail)) + "; pending " + pend.size() + (pend.isEmpty() ? "" : " " + pend.get(0).kind + " file " + pend.get(0).save.isFile())
+  String why = shipOk ? "" : " [" + r.prizeDetail + " named: " + (r.prizeDetail != null && shipRep.text.contains(r.prizeDetail)) + "; pending " + pend.size() + (pend.isEmpty() ? "" : " " + pend.get(0).kind + " file " + (pend.get(0).save != null && pend.get(0).save.isFile()))
     + "; missiles " + missiles + " -> " + missilesNow + "; listings " + listingsBefore + " -> " + listingsNow + "]"; // said in the FAIL line itself (the harness keeps only PASS and FAIL lines)
   Setup.chk("Z: a Hijack's prize ship waits on the commander's word, named in the report; the items came home" + why, shipOk);
   Assignments.accept(v, pend.get(0), true);
