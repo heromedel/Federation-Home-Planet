@@ -60,6 +60,12 @@ for you. If you didn't, it is still in FTL's saves folder, at FederationHomePlan
 saves folder, and put that one in its place.
 
 
+NEW VERSIONS
+
+In Settings, on the About tab, Check for Updates opens the station's page on Nexus Mods, where the newest
+version is. Unzip the new one anywhere: it finds your fleets by itself.
+
+
 Designed, Produced, Played and Tested by heromedel. 
 With use of Claude Opus 5.5 and Fable 5.1
 

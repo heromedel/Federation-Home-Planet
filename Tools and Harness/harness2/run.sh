@@ -88,8 +88,8 @@ if command -v xvfb-run >/dev/null; then
 	(cd "$W" && xvfb-run -a java -Dhomeplanet.noGameCheck=true -cp "$CP" OverhaulT "$GAME" "$WORLD" "$W/overhaul" 2>&1) | grep -E "$PICK|^PASS"
 else echo "(GuiT skipped: no xvfb-run)"; fi
 
-# On demand (6.71, heromedel): SlipT, LaunchT, RestartT and UpdT guard old fixes in code that rarely changes; run them by
-# name when Slipstream, launching, restarting or Check for Updates is touched (SlipT gamedir work; LaunchT; RestartT work; UpdT work).
+# On demand (6.71, heromedel): SlipT, LaunchT and RestartT guard old fixes in code that rarely changes; run them by
+# name when Slipstream, launching or restarting is touched (SlipT gamedir work; LaunchT; RestartT work).
 # the converter, only with old Homeworld data to convert
 if [ $# -ge 3 ]; then
 	OLDSAVES="$(cd "$2" && pwd)"; OLDAPP="$(cd "$3" && pwd)"

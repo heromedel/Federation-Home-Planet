@@ -134,11 +134,9 @@ To make a release, double-click `Build A Release.bat`: it builds the jar, then p
 computer, or offers to download one just for the station (into a `java` folder beside it, no install) or to install
 Java for the whole computer.
 
-To update, use **Check for Updates...** (Settings, About). It compares your version with the main branch on GitHub; if
-main is newer, Update Now puts the new source files in place (only the program's own: `tools\`, your settings, logs
-and fleets aren't touched), closes the station, rebuilds it and opens it again. If the build fails, the old files go
-back and the version you had stays in `Current Build\`. A git checkout (GitHub Desktop) is updated by fetching
-instead.
+To update, use **Check for Updates...** (Settings, About). On this public release it shows your version and opens the
+station's page on Nexus Mods (https://www.nexusmods.com/fasterthanlight/mods/73), where the newest release is; nothing
+is downloaded by the station itself.
 
 Something wrong, or an idea? **Send Feedback** (Settings, About) opens the feedback form with your version filled in.
 
