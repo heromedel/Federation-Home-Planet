@@ -58,7 +58,6 @@ import net.blerf.ftl.xml.ShipBlueprint;
 import homeplanet.core.HomePlanet;
 import homeplanet.parser.Museum;
 import homeplanet.parser.SaveHelper;
-import homeplanet.parser.XmlText;
 import homeplanet.vault.Vault;
 import homeplanet.vault.VoyageLog;
 
@@ -362,7 +361,7 @@ public class MuseumUI extends JPanel {
 		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 		content.setOpaque(false);
 		content.setBorder(BorderFactory.createEmptyBorder(4, 14, 10, 14));
-		if (gs == null) content.add(label(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " record can't be read: " + (ex.save == null ? "no save kept" : ex.save.getName()), 12, DIMC, false));
+		if (gs == null) content.add(label(homeplanet.model.Words.Her() + " record can't be read: " + (ex.save == null ? "no save kept" : ex.save.getName()), 12, DIMC, false));
 		else if ("Crew".equals(tab)) crew(content, ex, gs);
 		else if ("Voyage".equals(tab)) voyage(content, ex);
 		else if ("Loadout".equals(tab)) loadout(content, gs);
@@ -482,7 +481,7 @@ public class MuseumUI extends JPanel {
 	}
 
 	private void crew(JPanel p, Museum.Exhibit ex, SavedGameState gs) {
-		heading(p, ex.victor ? "At the final engagement" : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " crew at the end");
+		heading(p, ex.victor ? "At the final engagement" : homeplanet.model.Words.Her() + " crew at the end");
 		String[] sk = {"Pilot", "Eng", "Shld", "Weap", "Rep", "Cmbt"};
 		for (CrewState c : SaveHelper.getOwnCrew(gs.getPlayerShip())) {
 			JPanel r = new JPanel(null);

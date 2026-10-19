@@ -46,6 +46,10 @@ public final class Words {
 	public static String her() { return ship("her", "his", "its"); }
 	/** A ship as the object: her, him or it ("FTL flies her now"). */
 	public static String herObj() { return ship("her", "him", "it"); }
+	/** {@link #she} to begin a sentence: She, He or It. */
+	public static String She() { return cap(she()); }
+	/** {@link #her} to begin a sentence: Her, His or Its. */
+	public static String Her() { return cap(her()); }
 	/** A ship's, standing alone: hers, his or its ("the choice is hers"). */
 	public static String hers() { return ship("hers", "his", "its"); }
 	/** A ship herself: herself, himself or itself. */

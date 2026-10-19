@@ -15,6 +15,7 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import homeplanet.core.Event;
 import homeplanet.core.StationLog;
 import homeplanet.core.HomePlanet;
+import homeplanet.model.Words;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
@@ -43,7 +44,7 @@ public final class FinalVictory {
 	}
 	/** What a choice does, in a sentence or two (plain text: the windows wrap it). */
 	public static String explain(String choice) {
-		String she = homeplanet.model.Words.she(), her = homeplanet.model.Words.her(), herObj = homeplanet.model.Words.herObj(), She = homeplanet.model.Words.cap(she);
+		String she = Words.she(), her = Words.her(), herObj = Words.herObj(), She = Words.cap(she);
 		if (RESCUE.equals(choice)) return She + " comes back as " + she + " was moments before the final engagement, and you choose: keep " + herObj
 				+ " for a new journey, or send " + herObj + " to the Federation Museum for its reward (the Museum reward value).";
 		if (MUSEUM.equals(choice)) return She + " goes straight to the Federation Museum, where " + her + " service is remembered, and the museum's reward (the Museum reward value) goes to the Cargo Hold.";
@@ -53,8 +54,8 @@ public final class FinalVictory {
 	public static String payLabel(String pay) { return FULL.equals(pay) ? "Full value" : HALF.equals(pay) ? "Half value" : "None"; }
 	/** What the museum's reward is (plain text: the windows wrap it). */
 	public static String explainPay() {
-		String her = homeplanet.model.Words.her();
-		return "What the museum pays for " + homeplanet.model.Words.herObj() + ", into the Cargo Hold: " + her + " full value (" + her + " value at the moment of saved before the final battle), half of it, or none (the honour alone). Not used with Nothing.";
+		String her = Words.her();
+		return "What the museum pays for " + Words.herObj() + ", into the Cargo Hold: " + her + " full value (" + her + " value at the moment of saved before the final battle), half of it, or none (the honour alone). Not used with Nothing.";
 	}
 	/** A tooltip of plain sentences, wrapped. */
 	public static String tip(String... lines) {
@@ -91,7 +92,7 @@ public final class FinalVictory {
 	/** The museum's price for her. */
 	public static int museumPrice(int value) { return value * museumPercent() / 100; }
 	/** "her full value" or "half her value", for the letters (none has letters of its own). */
-	static String worth() { return museumPercent() >= 100 ? homeplanet.model.Words.her() + " full value" : "half " + homeplanet.model.Words.her() + " value"; }
+	static String worth() { return museumPercent() >= 100 ? Words.her() + " full value" : "half " + Words.her() + " value"; }
 	/** The letter for a rescue's offer or the museum: its own words when the museum pays nothing (6.47). */
 	private static String letter(String key) { return museumPercent() == 0 ? key + "_honour" : key; }
 	/** Sets Sandbox Mode's choice (in the cfg: the caller saves it). */
@@ -162,8 +163,8 @@ public final class FinalVictory {
 				boolean named = u.victoriousScores(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId()) > f.scoresThen;
 				String pay = pay();
 				StationLog.entry("VICTORY", f.name + " won the last battle (the profile's victories " + f.victoriesThen + " -> " + u.victories()
-						+ (named ? ", and a Top Scores entry names " + homeplanet.model.Words.herObj() : "") + "); after a final victory: " + label(c) + ", the museum's reward " + payLabel(pay).toLowerCase()
-						+ ", " + homeplanet.model.Words.her() + " value " + value + " scrap", null,
+						+ (named ? ", and a Top Scores entry names " + Words.herObj() : "") + "); after a final victory: " + label(c) + ", the museum's reward " + payLabel(pay).toLowerCase()
+						+ ", " + Words.her() + " value " + value + " scrap", null,
 						battle("VICTORY", f).put("victories_then", f.victoriesThen).put("victories_now", u.victories()).put("top_scores", named).put("after", c)
 								.put("museum_pay", pay).put("museum_price", museumPrice(value)).put("value", value));
 				fills.put("value", Integer.toString(museumPrice(value)));
@@ -236,7 +237,7 @@ public final class FinalVictory {
 	public static String keep(Vault.FinalBattle f, Difficulty difficulty) throws IOException {
 		Ship s = Vault.get().bringHome(f, difficulty);
 		Museum.kept(Vault.get(), f.id);
-		return s.name + " is docked at the Space Dock, ready for " + homeplanet.model.Words.her() + " next journey" + (difficulty == null ? "." : ", on " + title(difficulty) + ".");
+		return s.name + " is docked at the Space Dock, ready for " + Words.her() + " next journey" + (difficulty == null ? "." : ", on " + title(difficulty) + ".");
 	}
 	/** "Easy", "Normal" or "Hard". */
 	public static String title(Difficulty d) { return d == null ? "" : d.toString().substring(0, 1) + d.toString().substring(1).toLowerCase(); }

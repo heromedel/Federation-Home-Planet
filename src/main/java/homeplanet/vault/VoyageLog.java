@@ -1,10 +1,7 @@
 package homeplanet.vault;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +17,6 @@ import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.SystemState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 
-import homeplanet.core.SafeFiles;
 import homeplanet.core.Event;
 import homeplanet.core.EventLog;
 import homeplanet.core.Store;
@@ -362,13 +358,13 @@ public final class VoyageLog {
 
 	// ---- files ----
 
-	private static Properties last(Vault v, Ship s) { return ShipStore.notes(v.historyOf(s), ShipStore.LAST); }
+	private static Properties last(Vault v, Ship s) { return ShipStore.notes(v.folderOf(s), ShipStore.LAST); }
 	private static Properties last(Vault v, String id) { return ShipStore.notes(v.folderOfId(id), ShipStore.LAST); }
 	/** Her last look as its file in a package (older stations read it from there; her record's last section since 5.98). */
 	static final String LAST_NOTE = "Her last look, for the voyage log";
 	private static void save(Vault v, Ship s, Properties p) {
 		try {
-			v.setNotes(v.historyOf(s), ShipStore.LAST, p);
+			v.setNotes(v.folderOf(s), ShipStore.LAST, p);
 		} catch (IOException e) {
 			log.warn("Could not keep {}'s last look: {}", s, e.toString());
 		}

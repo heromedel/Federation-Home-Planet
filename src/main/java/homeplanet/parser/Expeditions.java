@@ -72,13 +72,11 @@ public final class Expeditions {
 
 	/** The jobs: id, title, base weight, and the skill that helped before 6.39 (unused: each job's roles are in lore/expeditions.xml, read by {@link #roles}). */
 	public static final Object[][] JOBS = {
-		{"defend", "Defend", 14, "shields"}, {"attack", "Attack", 11, "weapons"}, {"negotiate", "Negotiate", 10, null}, {"boarded", "Get Boarded", 9, "combat"},
-		{"rescue", "Rescue", 9, null}, {"salvage", "Salvage", 8, "repair"}, {"scout", "Scout", 8, "pilot"}, {"repair", "Repair", 8, "repair"},
-		{"transport", "Transport", 8, "engines"}, {"lost", "Got Lost", 8, "pilot"}, {"escort", "Escort", 8, "engines"}, {"capture", "Capture", 8, "combat"},
-		{"board", "Board", 7, "combat"}, {"hijack", "Hijack", 7, "pilot"}, {"infection", "Infection", 7, "repair"}, {"spiders", "Giant Spiders", 6, "combat"}};
+		{"defend", "Defend", 14}, {"attack", "Attack", 11}, {"negotiate", "Negotiate", 10}, {"boarded", "Get Boarded", 9},
+		{"rescue", "Rescue", 9}, {"salvage", "Salvage", 8}, {"scout", "Scout", 8}, {"repair", "Repair", 8},
+		{"transport", "Transport", 8}, {"lost", "Got Lost", 8}, {"escort", "Escort", 8}, {"capture", "Capture", 8},
+		{"board", "Board", 7}, {"hijack", "Hijack", 7}, {"infection", "Infection", 7}, {"spiders", "Giant Spiders", 6}};
 	public static String jobTitle(String id) { for (Object[] j : JOBS) if (j[0].equals(id)) return (String) j[1]; return id; }
-	/** The job's primary skill (6.39: from its roles), or -1 for a job of race alone. */
-	public static int jobSkill(String id) { return roles(id).primary; }
 	/** Each sector adds 5 to two jobs and takes 5 from two, so every sector still totals 136. */
 	static final Map<String, String[][]> SECTOR_JOBS = new LinkedHashMap<String, String[][]>();
 	static {
@@ -211,19 +209,7 @@ public final class Expeditions {
 		return r != null ? r : new Roles(-1, new int[0]);
 	}
 	private static Map<String, Roles> readRoles(byte[] bytes, String where) throws IOException {
-		org.w3c.dom.Element root;
-		try {
-			javax.xml.parsers.DocumentBuilderFactory f = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-			f.setExpandEntityReferences(false);
-			javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
-			b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
-				@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
-			});
-			root = b.parse(new java.io.ByteArrayInputStream(bytes)).getDocumentElement();
-		} catch (Exception e) {
-			throw new IOException("broken XML: " + e.getMessage(), e);
-		}
+		org.w3c.dom.Element root = XmlText.parse(bytes);
 		Map<String, Roles> out = new LinkedHashMap<String, Roles>();
 		org.w3c.dom.NodeList nl = root.getElementsByTagName("role");
 		for (int i = 0; i < nl.getLength(); i++) {
@@ -249,7 +235,7 @@ public final class Expeditions {
 		return out;
 	}
 	private static int skill(String name) throws IOException {
-		int s = AwayCrew.skillIndex(name.trim());
+		int s = homeplanet.model.Crew.skill(name.trim());
 		if (s < 0) throw new IOException("no skill " + name.trim());
 		return s;
 	}
@@ -358,19 +344,7 @@ public final class Expeditions {
 	private static final String[] MARKS = {"job", "hazard", "band", "cause", "prize", "race", "captors", "skill", "sector"};
 	/** The lines of an expeditions.xml by key, in order: each line's key made from its marks. */
 	static Map<String, List<String>> lines(byte[] bytes) throws IOException {
-		org.w3c.dom.Element root;
-		try {
-			javax.xml.parsers.DocumentBuilderFactory f = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-			f.setExpandEntityReferences(false);
-			javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
-			b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
-				@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
-			});
-			root = b.parse(new java.io.ByteArrayInputStream(bytes)).getDocumentElement();
-		} catch (Exception e) {
-			throw new IOException("broken XML: " + e.getMessage(), e);
-		}
+		org.w3c.dom.Element root = XmlText.parse(bytes);
 		Map<String, List<String>> out = new LinkedHashMap<String, List<String>>();
 		org.w3c.dom.NodeList nl = root.getElementsByTagName("line");
 		for (int i = 0; i < nl.getLength(); i++) {
@@ -448,7 +422,7 @@ public final class Expeditions {
 		for (String[] x : SECTORS) { base.add("offer " + x[0]); sectors.add(x[0]); }
 		for (Object[] h : HAZARDS) for (String race : (String[]) h[3]) base.add("shrug " + h[0] + " " + race);
 		for (Object[] j : JOBS) { base.add("band " + j[0] + " injured cause"); base.add("frame " + j[0]); base.add("saved " + j[0]); }
-		for (Object[] j : JOBS) for (int b = 2; b < BANDS.length; b++) for (String sk : AwayCrew.SKILLS) base.add("band " + j[0] + " " + BANDS[b] + " " + sk);
+		for (Object[] j : JOBS) for (int b = 2; b < BANDS.length; b++) for (String sk : homeplanet.model.Crew.SKILLS) base.add("band " + j[0] + " " + BANDS[b] + " " + sk);
 		List<String> out = new ArrayList<String>();
 		for (String k : words().keySet()) {
 			if (base.contains(k)) continue;
@@ -620,13 +594,12 @@ public final class Expeditions {
 	}
 	/** Yes: the recruit into the Cargo Hold, or the ship to the Space Dock ({@code dock}) or the Junkyard, set out at the station as she is. */
 	public static synchronized void accept(Vault v, Pending x, boolean dock) throws IOException {
-		Properties p = readStrict(v);
+		Properties p = asIs(v);
 		if (p.getProperty("pending." + x.index + ".kind") == null) throw new IOException("That was answered already");
 		if ("recruit".equals(x.kind)) {
 			Ship st = v.storage();
 			Vault.Copy c = v.readCopy(st);
-			if (!SaveHelper.placeCrew(c.save.getPlayerShip(), x.crew, true)) throw new IOException("The Cargo Hold has no room for " + x.name + "; make room and look again");
-			c.save.getPlayerShip().getCrewList().add(x.crew);
+			SaveHelper.takeIn(c.save.getPlayerShip(), x.crew, "The Cargo Hold has no room for " + x.name + "; make room and look again");
 			forget(p, x.index);
 			v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
 			StationLog.entry("HIRE", x.name + " (" + race(x.crew) + "), rescued on an expedition, signed on: in the Cargo Hold", null,
@@ -644,7 +617,7 @@ public final class Expeditions {
 	}
 	/** No: the recruit goes their way, the ship is left where she lies. */
 	public static synchronized void decline(Vault v, Pending x) throws IOException {
-		Properties p = readStrict(v);
+		Properties p = asIs(v);
 		forget(p, x.index);
 		write(v, p);
 		if (x.save != null) x.save.delete();
@@ -686,7 +659,7 @@ public final class Expeditions {
 
 	public static synchronized void send(Vault v, int slot, List<CrewState> party, Random rng) throws IOException {
 		if (party.isEmpty() || party.size() > PARTY_MAX) throw new IOException("A detail is one to " + PARTY_MAX + " crew");
-		Properties p = readStrict(v);
+		Properties p = asIs(v);
 		String sector = p.getProperty("offer." + slot);
 		if (sector == null) throw new IOException("That offer is no longer on the board");
 		Ship st = v.storage();
@@ -911,15 +884,14 @@ public final class Expeditions {
 	/** An item worth up to this much: the dearest kind that fits (a weapon, drone or augment FTL's stores sell; else supplies), or null. */
 	static String findItem(int cap, Random rng) {
 		List<String> gear = new ArrayList<String>();
-		for (net.blerf.ftl.xml.WeaponBlueprint w : DataManager.get().getWeapons().values()) if (w.getCost() > 0 && w.getCost() <= cap && w.getRarity() > 0 && !w.getId().startsWith("ARTILLERY")) gear.add(w.getId());
-		for (net.blerf.ftl.xml.DroneBlueprint d : DataManager.get().getDrones().values()) if (d.getCost() > 0 && d.getCost() <= cap && d.getRarity() > 0) gear.add(d.getId());
-		for (net.blerf.ftl.xml.AugBlueprint a : DataManager.get().getAugments().values()) if (a.getCost() > 0 && a.getCost() <= cap && a.getRarity() > 0) gear.add(a.getId());
+		for (List<String> sold : java.util.Arrays.asList(homeplanet.model.Items.soldWeapons(), homeplanet.model.Items.soldDrones(), homeplanet.model.Items.soldAugments()))
+			for (String id : sold) if (Pricing.store(id) <= cap) gear.add(id);
 		Collections.sort(gear);
 		if (!gear.isEmpty() && rng.nextInt(3) > 0) return gear.get(rng.nextInt(gear.size()));
 		int k = rng.nextInt(3);
 		int price = k == 0 ? Pricing.FUEL : k == 1 ? Pricing.MISSILE : Pricing.DRONE_PART;
 		int n = Math.max(1, Math.min(6, cap / price));
-		return (k == 0 ? "fuel" : k == 1 ? "missiles" : "parts") + ":" + n;
+		return (k == 0 ? Parts.FUEL : k == 1 ? Parts.MISSILES : Parts.DRONE_PARTS) + ":" + n;
 	}
 	/** An item in words: its title, or "3 fuel". */
 	public static String itemWords(String item) {
@@ -952,7 +924,7 @@ public final class Expeditions {
 			boolean hurt = !f.died && BANDS[f.band].equals("injured");
 			// a role's own line (6.40, heromedel): a whole sentence with the name where it falls, the stars before it
 			String role = f.captured || f.infirmary || f.died || hurt || f.skill < 0 ? null
-					: fresh(rng, null, used, "band " + r.job + " " + BANDS[f.band] + " " + AwayCrew.SKILLS[f.skill], "band " + r.job + " " + BANDS[f.band] + " " + AwayCrew.SKILLS[f.skill] + " " + r.sector);
+					: fresh(rng, null, used, "band " + r.job + " " + BANDS[f.band] + " " + homeplanet.model.Crew.SKILLS[f.skill], "band " + r.job + " " + BANDS[f.band] + " " + homeplanet.model.Crew.SKILLS[f.skill] + " " + r.sector);
 			String stars = f.captured || f.infirmary || f.died || hurt ? "" : STARS[f.band];
 			if (role != null) {
 				used.add(role);
@@ -1071,7 +1043,7 @@ public final class Expeditions {
 	static String key(Away a) { return a.sentAt + ":" + a.seed + ":" + String.join(",", a.names()); }
 	/** Brings a detail home with this result (for the station's round, and tests). */
 	public static synchronized Report bringHome(Vault v, Away a, Result r) throws IOException {
-		Properties p = readStrict(v);
+		Properties p = asIs(v);
 		Away here = null; // the record as the file has it now, found by its lasting name, never by a number read earlier
 		for (Away x : away(p)) if (key(x).equals(key(a))) { here = x; break; }
 		if (here == null) throw new IOException(String.join(", ", a.names()) + " are no longer away; nothing was changed");
@@ -1100,8 +1072,7 @@ public final class Expeditions {
 			else if (f.band == 1) m.setHealth(Math.max(1, Math.min(m.getHealth(), max / 2)));
 			int earned = training(f.skill, f.band, f.other);
 			if (earned > 0) Skills.add(m, f.skill, earned);
-			if (!SaveHelper.placeCrew(hold, m, true)) throw new IOException("The Cargo Hold has no room for " + m.getName() + "; the detail waits");
-			hold.getCrewList().add(m);
+			SaveHelper.takeIn(hold, m, "The Cargo Hold has no room for " + m.getName() + "; the detail waits");
 			if (f.item != null) { if (byLetter) brought.add(reward(f.item)); else give(hold, f.item); }
 		}
 		if (r.supply != null) { if (byLetter) brought.add(reward(r.supply)); else give(hold, r.supply); }
@@ -1177,7 +1148,7 @@ public final class Expeditions {
 		for (Fate f : r.fates) { // each one's role and what it taught (6.39): name:skill:kind:band:points
 			if (f.skill < 0) continue;
 			String kind = f.other ? "other" : f.skill == jr.primary ? "primary" : "secondary";
-			back.put("role", f.name() + ":" + AwayCrew.SKILLS[f.skill] + ":" + kind + ":" + BANDS[f.band] + ":" + (f.died ? 0 : training(f.skill, f.band, f.other)));
+			back.put("role", f.name() + ":" + homeplanet.model.Crew.SKILLS[f.skill] + ":" + kind + ":" + BANDS[f.band] + ":" + (f.died ? 0 : training(f.skill, f.band, f.other)));
 		}
 		StationLog.entry("EXPEDITION", String.join(", ", a.names()) + " back from " + sectorTitle(r.sector) + " (" + jobTitle(r.job) + "): " + r.scrap + " scrap"
 				+ (r.prize == null ? "" : "; " + r.prize + (r.prizeDetail == null ? "" : " " + r.prizeDetail)) + (dead.isEmpty() ? "" : "; killed: " + String.join(", ", dead))
@@ -1210,17 +1181,8 @@ public final class Expeditions {
 	}
 	private static void give(ShipState hold, String item) {
 		int colon = item.indexOf(':');
-		if (colon < 0) {
-			if (homeplanet.model.Items.isWeapon(item)) hold.getWeaponList().add(SaveHelper.newIdleWeapon(item));
-			else if (homeplanet.model.Items.isDrone(item)) hold.getDroneList().add(SaveHelper.newIdleDrone(item));
-			else hold.getAugmentIdList().add(item);
-			return;
-		}
-		String kind = item.substring(0, colon);
-		int n = Integer.parseInt(item.substring(colon + 1));
-		if ("fuel".equals(kind)) hold.setFuelAmt(hold.getFuelAmt() + n);
-		else if ("missiles".equals(kind)) hold.setMissilesAmt(hold.getMissilesAmt() + n);
-		else hold.setDronePartsAmt(hold.getDronePartsAmt() + n);
+		if (colon < 0) SaveHelper.addItem(hold, item);
+		else SaveHelper.addSupply(hold, item.substring(0, colon), Integer.parseInt(item.substring(colon + 1)));
 	}
 	/** A system a part can be (a Junkyard-style part): any but artillery and the Clone Bay. */
 	private static String partId() {
@@ -1240,7 +1202,6 @@ public final class Expeditions {
 	private static Properties read(Vault v) { return Store.read(file(v)); }
 	/** The file as it stands, read without this class's lock (the crew register, taking stock, never takes it). */
 	public static Properties asIs(Vault v) throws IOException { return Store.load(file(v)); }
-	private static Properties readStrict(Vault v) throws IOException { return Store.load(file(v)); }
 	private static byte[] bytes(Properties p) throws IOException { return Store.xml(p, NOTE); }
 	private static void write(Vault v, Properties p) throws IOException { Store.write(file(v), p, NOTE); }
 	/** Every sector's job weights total the same (for tests). */

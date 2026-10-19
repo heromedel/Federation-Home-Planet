@@ -81,7 +81,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   SaveHelper.writeSavedGame(v.continueFile(), g);
   FinalVictory.watch();
  }
- static File copyOf(Vault v, Ship s) { return new File(v.historyOf(s), "final-battle.sav"); }
+ static File copyOf(Vault v, Ship s) { return new File(v.folderOf(s), "final-battle.sav"); }
  /** Her special copies by prefix (in her folder's versions/, 5.69). */
  static List<File> kept(Vault v, String id, String prefix) { List<File> out = new ArrayList<File>(); for (File f : ShipStore.versions(v.folderOfId(id), true)) if (f.getName().startsWith(prefix)) out.add(f); return out; }
  static final Set<String> used = new HashSet<String>();

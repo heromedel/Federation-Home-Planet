@@ -30,7 +30,6 @@ import homeplanet.core.HomePlanet;
 import homeplanet.core.ProfileSwap;
 import homeplanet.parser.Career;
 import homeplanet.parser.CareerRules;
-import homeplanet.parser.Clearance;
 import homeplanet.parser.FinalVictory;
 import homeplanet.parser.XmlText;
 import homeplanet.vault.Vault;

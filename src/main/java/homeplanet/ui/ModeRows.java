@@ -9,7 +9,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import homeplanet.parser.Career;
-import homeplanet.parser.CareerRules;
 import homeplanet.vault.Vault;
 
 /**

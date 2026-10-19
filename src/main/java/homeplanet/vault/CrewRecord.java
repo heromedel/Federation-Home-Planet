@@ -31,7 +31,7 @@ public final class CrewRecord {
 	private CrewRecord() { }
 
 	/** The six skills, in FTL's order. */
-	public static final String[] SKILLS = {"pilot", "engines", "shields", "weapons", "repair", "combat"};
+	public static final String[] SKILLS = homeplanet.model.Crew.SKILLS;
 	/** The service record's counts. */
 	public static final String[] COUNTS = {"repairs", "kills", "evasions", "jumps", "masteries"};
 

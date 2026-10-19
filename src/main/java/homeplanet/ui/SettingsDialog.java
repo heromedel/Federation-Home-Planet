@@ -22,6 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import homeplanet.core.HomePlanet;
+import homeplanet.model.Words;
 
 /**
  * Settings, in four tabs: General (folders, launching, mods, audio), Rules (the game mode, the rules, after a final
@@ -60,7 +61,7 @@ public class SettingsDialog extends JDialog {
 	private static final String[] ENGI_CFG = {homeplanet.parser.CrewNames.PREFIX, homeplanet.parser.CrewNames.APPEND, homeplanet.parser.CrewNames.NONE};
 	private final javax.swing.JComboBox<String> engiBox = new javax.swing.JComboBox<String>(ENGI);
 	/** How the station speaks of a ship (6.42, heromedel): her, him or it. */
-	private final javax.swing.JComboBox<String> pronounBox = new javax.swing.JComboBox<String>(homeplanet.model.Words.SHIP_PRONOUNS);
+	private final javax.swing.JComboBox<String> pronounBox = new javax.swing.JComboBox<String>(Words.SHIP_PRONOUNS);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging", HomePlanet.debugLogging);
 	/** Where the manual opens: On, a window of the station's own; Off, the browser or text editor. */
 	private final javax.swing.JComboBox<String> manualIn = new javax.swing.JComboBox<String>(new String[] {"On", "Off"});
@@ -170,7 +171,7 @@ public class SettingsDialog extends JDialog {
 		heading(body, c, "Station");
 		body.add(borderlessBox, next(c));
 		body.add(musicBox, next(c));
-		pronounBox.setSelectedItem(homeplanet.model.Words.shipPronoun());
+		pronounBox.setSelectedItem(Words.shipPronoun());
 		manualIn.setSelectedIndex(ManualWindow.inStation() ? 0 : 1);
 		pronounBox.setToolTipText("How The Home Planet Station speaks of a ship in its messages, letters and logs: \"her crew\", \"his crew\" or \"its crew\"");
 		body.add(labelled("Ship Pronoun:", pronounBox), next(c));
@@ -202,7 +203,7 @@ public class SettingsDialog extends JDialog {
 		namesBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { engiBox.setEnabled(namesBox.getSelectedIndex() == 0); } });
 		body.add(labelled("Engi Translate:", engiBox), next(c));
 
-		shipTradeBox.setToolTipText("Sandbox fleets always may. A ship traded in arrives commissioned, and only what " + homeplanet.model.Words.she() + " does in your fleet counts toward letters, rewards and achievements");
+		shipTradeBox.setToolTipText("Sandbox fleets always may. A ship traded in arrives commissioned, and only what " + Words.she() + " does in your fleet counts toward letters, rewards and achievements");
 		anyLevelBox.setToolTipText("Off: your career trades only with careers of its own difficulty");
 		heading(body, c, "Long Range Comm.");
 		body.add(shipTradeBox, next(c));
@@ -308,7 +309,7 @@ public class SettingsDialog extends JDialog {
 		body.add(openRow, next(c));
 		// the station's other places (5.86): a folder each, as the player browses them
 		JPanel placesRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-		placesRow.add(placeButton("Open Shipyard", "Open the shipyard (the ships at the Space Dock, a folder each: " + homeplanet.model.Words.her() + " record, " + homeplanet.model.Words.her() + " save, " + homeplanet.model.Words.her() + " log, " + homeplanet.model.Words.her() + " crew, " + homeplanet.model.Words.her() + " earlier versions) in Windows Explorer",
+		placesRow.add(placeButton("Open Shipyard", "Open the shipyard (the ships at the Space Dock, a folder each: " + Words.her() + " record, " + Words.her() + " save, " + Words.her() + " log, " + Words.her() + " crew, " + Words.her() + " earlier versions) in Windows Explorer",
 				"shipyard"));
 		placesRow.add(javax.swing.Box.createHorizontalStrut(8));
 		placesRow.add(placeButton("Open Memorials and Records", "Open the memorials and records (the ships and crew who have left the fleet, remembered) in Windows Explorer",
@@ -584,10 +585,10 @@ public class SettingsDialog extends JDialog {
 			if (manualIn.getSelectedIndex() == 0) HomePlanet.config.remove(ManualWindow.CFG_IN_STATION); // On is the default: the line only while Off
 			else HomePlanet.config.setProperty(ManualWindow.CFG_IN_STATION, "false");
 		}
-		if (!pronounBox.getSelectedItem().equals(homeplanet.model.Words.shipPronoun())) {
+		if (!pronounBox.getSelectedItem().equals(Words.shipPronoun())) {
 			changed.add("Ship Pronoun: " + pronounBox.getSelectedItem());
-			if (pronounBox.getSelectedIndex() == 0) HomePlanet.config.remove(homeplanet.model.Words.CFG_SHIP); // her is the default: the line only while him or it
-			else HomePlanet.config.setProperty(homeplanet.model.Words.CFG_SHIP, (String) pronounBox.getSelectedItem());
+			if (pronounBox.getSelectedIndex() == 0) HomePlanet.config.remove(Words.CFG_SHIP); // her is the default: the line only while him or it
+			else HomePlanet.config.setProperty(Words.CFG_SHIP, (String) pronounBox.getSelectedItem());
 		}
 		if (!HUMAN_GEN_CFG[humanGenBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.humanGen())) {
 			changed.add("Human Name Gen: " + humanGenBox.getSelectedItem());
@@ -602,28 +603,13 @@ public class SettingsDialog extends JDialog {
 		log.debug("Settings saved: {}", changed.isEmpty() ? "nothing changed" : changed);
 		if (!changed.isEmpty()) homeplanet.core.StationLog.entry("SETTINGS", "settings changed", changed, homeplanet.core.Event.of("SETTINGS").details(changed));
 		savesChanged = !saves.equals(HomePlanet.save_location);
-		HomePlanet.save_location = saves;
-		if (savesChanged) {
-			homeplanet.core.StationLock.claim(saves); // this station's now (looked at when chosen), the old folder let go
-			// another saves folder is another vault (its own ships, designs and remodels)
-			try {
-				homeplanet.vault.Vault.open(saves, HomePlanet.immersiveMode);
-				homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load());
-				homeplanet.vault.Vault.get().takeStock();
-			} catch (java.io.IOException e) {
-				HomePlanet.showErrorDialog("The Home Planet Station could not open its fleet records in:\n" + saves + "\n\n" + e);
-			}
-		}
+		if (savesChanged) HomePlanet.changeSavesFolder(saves);
 		HomePlanet.datsPath = game;
 		HomePlanet.launchThroughSteam = steamBox.isSelected();
 		if (homeplanet.core.FtlDock.supported()) {
-			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_ON, Boolean.toString(dockBox.isSelected()));
-			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_SIZE, (String) dockSize.getSelectedItem());
-			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_ATTACHED, Boolean.toString(dockHow.getSelectedIndex() == 1));
+			homeplanet.core.FtlDock.saveChoices(dockBox.isSelected(), (String) dockSize.getSelectedItem(), dockHow.getSelectedIndex() == 1,
+					videoBox.isSelected(), fullscreenBox.getSelectedIndex(), vsyncBox.isSelected());
 			HomePlanet.launchDirectX = directxBox.isSelected();
-			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_VIDEO, Boolean.toString(videoBox.isSelected()));
-			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_FULLSCREEN, Integer.toString(fullscreenBox.getSelectedIndex()));
-			HomePlanet.config.setProperty(homeplanet.core.FtlDock.CFG_VSYNC, Boolean.toString(vsyncBox.isSelected()));
 			if (dockWas && !dockBox.isSelected()) { // FTL's own fullscreen setting back, unless the player has changed it since
 				try { homeplanet.core.FtlDock.restoreSettings(); }
 				catch (java.io.IOException e) { HomePlanet.showErrorDialog("The Home Planet Station could not put FTL's fullscreen setting back in its settings.ini:\n" + e.getMessage()); }
@@ -665,7 +651,7 @@ public class SettingsDialog extends JDialog {
 			b.setToolTipText("Ticked: a starter ship, available to commission");
 			boxes.add(b);
 			JButton edit = new JButton("Edit...");
-			edit.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " class, default name, and what a newly commissioned ship starts with");
+			edit.setToolTipText(Words.Her() + " class, default name, and what a newly commissioned ship starts with");
 			edit.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					homeplanet.parser.CompanionMod.Loadout start = r.loadout != null ? homeplanet.parser.CompanionMod.copy(r.loadout)

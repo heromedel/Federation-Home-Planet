@@ -64,7 +64,7 @@ public class DesignExport {
 	/** Why she can't be built yet (empty when she can): a design needs art and a mount on top of a sound layout. */
 	public static List<String> problems(ShipDesign d) {
 		List<String> out = d.problems();
-		if (d.art.isEmpty()) out.add(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " needs hull art.");
+		if (d.art.isEmpty()) out.add(homeplanet.model.Words.She() + " needs hull art.");
 		return out;
 	}
 

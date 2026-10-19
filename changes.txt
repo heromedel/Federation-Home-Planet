@@ -62,3 +62,4 @@ Major changes by version
 6.81 to 7.00
   The manual in the station's own window. Every move of more than one file is one protection note.
   7.00: support for fleets and careers from before 6.0 removed; Long Range Comm. protocol 3.
+  7.01: the code's shared helpers (one XML reader, one place for what goes aboard the Cargo Hold); nothing a player sees changes.

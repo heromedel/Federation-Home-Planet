@@ -20,6 +20,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 
+import homeplanet.parser.XmlText;
 import homeplanet.model.Crew;
 import homeplanet.vault.CrewRegister;
 import homeplanet.vault.CrewRegister.Member;
@@ -237,7 +238,7 @@ final class CrewLogView extends JPanel {
 			int d = Math.max(1, e.day);
 			if (d != day) {
 				day = d;
-				JLabel h = line("Stardate " + Calendar.stardate(d), MenuTheme.GOLD);
+				JLabel h = line(Calendar.heading(d), MenuTheme.GOLD);
 				h.setFont(MenuTheme.LABEL_FONT);
 				h.setBorder(BorderFactory.createEmptyBorder(6, 0, 2, 0));
 				career.add(h);
@@ -271,7 +272,7 @@ final class CrewLogView extends JPanel {
 			for (Member x : members) if (x.id == e.getKey()) o = x;
 			if (o == null) continue;
 			final Member to = o;
-			JLabel name = line("<html><u>" + esc(o.name) + "</u></html>", new Color(150, 200, 255));
+			JLabel name = line("<html><u>" + XmlText.text(o.name) + "</u></html>", new Color(150, 200, 255));
 			CrewState oc = o.crew();
 			if (oc != null) name.setIcon(IconFactory.crewIcon(oc));
 			name.setIconTextGap(6);
@@ -290,7 +291,6 @@ final class CrewLogView extends JPanel {
 		}
 	}
 	private static String cap(String s) { return homeplanet.model.Words.cap(s); }
-	private static String esc(String s) { return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"); }
 	/** An event's mark: green for joining and coming back, gold for moves and assignments, purple the infirmary, orange taken or missing, red killed. */
 	private static Color mark(String t) {
 		if (t.startsWith("Killed") || t.startsWith("Lost") || t.contains("presumed dead") || t.startsWith("Did not come back")) return RecordsLog.BAD;

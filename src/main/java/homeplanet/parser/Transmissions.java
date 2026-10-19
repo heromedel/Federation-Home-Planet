@@ -11,11 +11,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -121,19 +119,7 @@ public final class Transmissions {
 	}
 	/** The letters of a letters.xml, in order: each one's key, its header attributes, and its text as written. */
 	static List<Template> letters(byte[] bytes) throws IOException {
-		Element root;
-		try {
-			DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
-			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-			f.setExpandEntityReferences(false);
-			javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
-			b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
-				@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
-			});
-			root = b.parse(new java.io.ByteArrayInputStream(bytes)).getDocumentElement();
-		} catch (Exception e) {
-			throw new IOException("broken XML: " + e.getMessage(), e);
-		}
+		Element root = XmlText.parse(bytes);
 		List<Template> out = new ArrayList<Template>();
 		NodeList nl = root.getElementsByTagName("letter");
 		for (int i = 0; i < nl.getLength(); i++) {
@@ -178,9 +164,9 @@ public final class Transmissions {
 		File f = file();
 		if (!f.isFile()) return out;
 		try {
-			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f);
-			emptyOpen = "true".equals(doc.getDocumentElement().getAttribute("emptyOpen"));
-			strandedOpen = "true".equals(doc.getDocumentElement().getAttribute("strandedOpen"));
+			Element doc = XmlText.parse(f);
+			emptyOpen = "true".equals(doc.getAttribute("emptyOpen"));
+			strandedOpen = "true".equals(doc.getAttribute("strandedOpen"));
 			NodeList ns = doc.getElementsByTagName("message");
 			for (int i = 0; i < ns.getLength(); i++) {
 				Element e = (Element) ns.item(i);
@@ -481,7 +467,7 @@ public final class Transmissions {
 		String period = "stipend for the last " + (monthsPaid == 1 ? "month" : monthsPaid + " months"); // a payment every monthsPerStipend months, as the rules say
 		Message m = new Message();
 		m.key = "stipend:" + stamp();
-		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.date = homeplanet.core.Stamps.now();
 		m.from = t.from;
 		m.subject = Character.toUpperCase(period.charAt(0)) + period.substring(1) + ": " + amount + " scrap";
 		m.body = fill(t.body.toString().trim(), rank, null).replace("{period}", period).replace("{amount}", Integer.toString(amount));
@@ -580,7 +566,7 @@ public final class Transmissions {
 		if (t == null) return;
 		Message m = new Message();
 		m.key = key;
-		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.date = homeplanet.core.Stamps.now();
 		m.from = t[0];
 		m.subject = t[1];
 		m.body = t[2];
@@ -615,7 +601,7 @@ public final class Transmissions {
 		for (Message x : all) if (x.key.equals(key)) return;
 		Message m = new Message();
 		m.key = key;
-		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.date = homeplanet.core.Stamps.now();
 		m.from = from;
 		m.subject = subject;
 		m.body = body;
@@ -703,7 +689,7 @@ public final class Transmissions {
 		if (t == null) return; // no message written for it
 		Message m = new Message();
 		m.key = key;
-		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.date = homeplanet.core.Stamps.now();
 		m.from = t.from;
 		m.subject = ShipNames.fill(fill(t.subject, rank, ship), "name", name);
 		m.body = ShipNames.fill(fill(t.body.toString().trim(), rank, ship), "name", name);
@@ -812,19 +798,13 @@ public final class Transmissions {
 			String[] w = p.split("\\s+", 2);
 			String kind = w[0], val = w.length > 1 ? w[1].trim() : "";
 			if (kind.equals("scrap")) s.setScrapAmt(s.getScrapAmt() + Integer.parseInt(val));
-			else if (kind.equals("fuel")) s.setFuelAmt(s.getFuelAmt() + Integer.parseInt(val));
-			else if (kind.equals("missiles")) s.setMissilesAmt(s.getMissilesAmt() + Integer.parseInt(val));
-			else if (kind.equals("parts")) s.setDronePartsAmt(s.getDronePartsAmt() + Integer.parseInt(val));
+			else if (kind.equals(Parts.FUEL) || kind.equals(Parts.MISSILES) || kind.equals(Parts.DRONE_PARTS)) SaveHelper.addSupply(s, kind, Integer.parseInt(val));
 			else if (kind.equals("item")) {
-				if (Items.isWeapon(val)) s.getWeaponList().add(SaveHelper.newIdleWeapon(val));
-				else if (Items.isDrone(val)) s.getDroneList().add(SaveHelper.newIdleDrone(val));
-				else if (Items.isAugment(val)) s.getAugmentIdList().add(val);
-				else throw new IOException("Unknown item in the reward: " + val);
+				if (!SaveHelper.addItem(s, val)) throw new IOException("Unknown item in the reward: " + val);
 			} else if (kind.equals("crew")) {
 				CrewState crew = Commission.volunteer(val, rng);
 				if (crew == null) throw new IOException("Unknown crew race in the reward: " + val);
-				if (!SaveHelper.placeCrew(s, crew, true)) throw new IOException("The Cargo Hold has no room for another crew member");
-				s.getCrewList().add(crew);
+				SaveHelper.takeIn(s, crew, "The Cargo Hold has no room for another crew member");
 			} else if (kind.equals("system")) {
 				String[] sv = val.split("\\s+");
 				SystemType t = SystemType.findById(sv[0]);

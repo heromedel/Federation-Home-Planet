@@ -204,7 +204,7 @@ public class RuleBoxes {
 		lockedBox.setToolTipText("Commission only offers the layouts (A, B, C) you have unlocked in FTL");
 		customLockedBox.setToolTipText("A starter blueprint is offered only once the layout " + homeplanet.model.Words.she() + " was remodeled from is unlocked");
 		customLockedBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
-		costBox.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " hull, reactor, systems and levels, weapons, drones, augments, crew, supplies, scrap, rooms and doors, strictly counted. The Commission window shows the price");
+		costBox.setToolTipText(homeplanet.model.Words.Her() + " hull, reactor, systems and levels, weapons, drones, augments, crew, supplies, scrap, rooms and doors, strictly counted. The Commission window shows the price");
 		percentBox.setToolTipText("The share of their price that ships and parts are valued at: Commission (when it costs), Trade In, Auction, the museum, the Junkyard's derelicts and parts. Never the stores' prices (an Immersive career: Easy 50%, Normal 75%, Hard 100%)");
 		percentBox.setSelectedItem(HomePlanet.commissionPercent + "%");
 		costRow.add(costBox);

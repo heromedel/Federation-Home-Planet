@@ -43,8 +43,6 @@ public final class Parts {
 	static int shareMax(double broken) { return (int) Math.round(95 - 45 * broken); }
 	/** One part in this many is a clearance (the foreman wants it gone): this much off its price. */
 	public static final int CLEARANCE_ONE_IN = 12, CLEARANCE_OFF = 10;
-	/** A Piloting, Oxygen or Engines part at level 1 (FTL's upgrade costs on top): the same price everywhere. */
-	public static final int CORE_PART = Pricing.CORE_SYSTEM;
 	/** One set in this many has a piece of salvage; one piece in GEAR_ONE_IN is a weapon, drone or augment. */
 	public static final int SALVAGE_ONE_IN = 5, GEAR_ONE_IN = 4;
 	/** Salvage sells at this share of FTL's store price. */
@@ -169,19 +167,15 @@ public final class Parts {
 
 	/** A weapon, drone or augment FTL's stores sell (no artillery, nothing unpriced). */
 	static String gear(Random rng) {
-		List<String> from = new ArrayList<String>();
 		int k = rng.nextInt(3);
-		if (k == 0) { for (net.blerf.ftl.xml.WeaponBlueprint w : DataManager.get().getWeapons().values()) if (w.getCost() > 0 && w.getRarity() > 0 && !w.getId().startsWith("ARTILLERY")) from.add(w.getId()); }
-		else if (k == 1) { for (net.blerf.ftl.xml.DroneBlueprint d : DataManager.get().getDrones().values()) if (d.getCost() > 0 && d.getRarity() > 0) from.add(d.getId()); }
-		else { for (net.blerf.ftl.xml.AugBlueprint a : DataManager.get().getAugments().values()) if (a.getCost() > 0 && a.getRarity() > 0) from.add(a.getId()); }
-		java.util.Collections.sort(from);
+		List<String> from = k == 0 ? homeplanet.model.Items.soldWeapons() : k == 1 ? homeplanet.model.Items.soldDrones() : homeplanet.model.Items.soldAugments();
 		return from.isEmpty() ? null : from.get(rng.nextInt(from.size()));
 	}
 	static int storePrice(String kind, String id, int count) {
 		if (ITEM.equals(kind)) return Pricing.item(id);
 		return count * (FUEL.equals(kind) ? Pricing.FUEL : MISSILES.equals(kind) ? Pricing.MISSILE : Pricing.DRONE_PART);
 	}
-	/** What a part is worth whole and new: its price as Commission counts it (CORE_PART and upgrades for Piloting, Oxygen and Engines), at the difficulty's rate. */
+	/** What a part is worth whole and new: its price as Commission counts it (Pricing.CORE_SYSTEM and upgrades for Piloting, Oxygen and Engines), at the difficulty's rate. */
 	public static int worth(String id, int level) {
 		return Pricing.rated(Pricing.system(id, level));
 	}
@@ -204,12 +198,8 @@ public final class Parts {
 		c.save.getPlayerShip().setScrapAmt(have - l.price);
 		if (l.salvage()) {
 			net.blerf.ftl.parser.SavedGameParser.ShipState h = c.save.getPlayerShip();
-			if (FUEL.equals(l.kind)) h.setFuelAmt(h.getFuelAmt() + l.count);
-			else if (MISSILES.equals(l.kind)) h.setMissilesAmt(h.getMissilesAmt() + l.count);
-			else if (DRONE_PARTS.equals(l.kind)) h.setDronePartsAmt(h.getDronePartsAmt() + l.count);
-			else if (homeplanet.model.Items.isWeapon(l.id)) h.getWeaponList().add(SaveHelper.newIdleWeapon(l.id));
-			else if (homeplanet.model.Items.isDrone(l.id)) h.getDroneList().add(SaveHelper.newIdleDrone(l.id));
-			else h.getAugmentIdList().add(l.id);
+			boolean added = ITEM.equals(l.kind) ? SaveHelper.addItem(h, l.id) : SaveHelper.addSupply(h, l.kind, l.count);
+			if (!added) throw new IOException("The Junkyard's file names salvage the station doesn't know (" + l.kind + " " + l.id + "): nothing was spent");
 			p.setProperty(l.index + ".open", "false");
 			v.begin().put(st, c.save, c.hash).put(file(v), bytes(v, p)).commit(); // paid and sold in one note (6.87)
 			StationLog.entry("BUY", l.title() + ", salvage from the Junkyard, for " + l.price + " scrap from the Cargo Hold", null,

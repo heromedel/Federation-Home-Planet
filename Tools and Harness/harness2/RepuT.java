@@ -27,7 +27,7 @@ public class RepuT {
   g = v.readCopy(stealth).save;
   g.setTotalShipsDefeated(8); g.setTotalScrapCollected(300); g.setSectorNumber(3); g.setStateVar("lost_crew", 4);
   v.write(stealth, g);
-  Setup.side(v, v.historyOf(stealth), "traded.txt", "trade=x\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=5\nbeacons=0\nscrap=200\nsectors=2\n");
+  Setup.side(v, v.folderOf(stealth), "traded.txt", "trade=x\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=5\nbeacons=0\nscrap=200\nsectors=2\n");
   departed(v, "lost-early", "Lost One", 2);
   departed(v, "lost-last", "Last Stand", 7);
   int total = Reputation.total(v);

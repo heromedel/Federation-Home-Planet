@@ -8,7 +8,6 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -78,7 +77,7 @@ public class DesignDialog extends ShipEditorDialog {
 				changed();
 			}
 		}));
-		addBottomButton(button("Build blueprint...", homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report as " + homeplanet.model.Words.she() + "'d be commissioned, what's wrong or worth knowing, then into the Federation Home Planet Mod", new ActionListener() {
+		addBottomButton(button("Build blueprint...", homeplanet.model.Words.Her() + " report as " + homeplanet.model.Words.she() + "'d be commissioned, what's wrong or worth knowing, then into the Federation Home Planet Mod", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { buildBlueprint(); }
 		}));
 		addBottomButton(button("Save design", "Saves the design to work on later, without building the blueprint or making it available to commission ships (Ctrl+S)", new ActionListener() {
@@ -171,7 +170,7 @@ public class DesignDialog extends ShipEditorDialog {
 		List<String> p = check().problems;
 		if (!p.isEmpty()) {
 			Object[] opts = {"Save", "Keep working"};
-			int r = JOptionPane.showOptionDialog(this, homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " isn't finished yet:\n  " + String.join("\n  ", p)
+			int r = JOptionPane.showOptionDialog(this, homeplanet.model.Words.She() + " isn't finished yet:\n  " + String.join("\n  ", p)
 					+ "\n\nSaving keeps the design to work on later, without building the blueprint or making it available to commission ships.",
 					"Design Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[0]);
 			if (r != 0) return;

@@ -67,7 +67,7 @@ final class LogViewer extends JPanel {
 			public void actionPerformed(ActionEvent e) { ship = null; fill(); }
 		});
 		final JButton viewShip = new JButton("View Ship Log");
-		viewShip.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " voyage log: " + homeplanet.model.Words.her() + " jumps, sectors, battles, crew, what came aboard, upgrades and repairs");
+		viewShip.setToolTipText(homeplanet.model.Words.Her() + " voyage log: " + homeplanet.model.Words.her() + " jumps, sectors, battles, crew, what came aboard, upgrades and repairs");
 		viewShip.setEnabled(!ships.isEmpty());
 		shipBox.setEnabled(!ships.isEmpty());
 		ActionListener toShip = new ActionListener() {

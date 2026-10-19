@@ -12,7 +12,6 @@ import java.util.Random;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -21,7 +20,6 @@ import net.blerf.ftl.parser.SavedGameParser.CrewState;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.parser.AwayCrew;
-import homeplanet.parser.XmlText;
 import homeplanet.vault.Vault;
 
 /**
@@ -224,7 +222,6 @@ final class ExpeditionsDialog {
 
 	/** A crew member as the picker shows them: portrait, name and race, health if hurt, and the six skills. */
 	static final class CrewCard extends JPanel {
-		private static final String[] SKILL_NAMES = {"Piloting", "Engines", "Shields", "Weapons", "Repair", "Combat"};
 		private CrewState c;
 		CrewCard() { setOpaque(true); setBackground(MenuTheme.BG); setBorder(BorderFactory.createLineBorder(new Color(214, 230, 222, 90))); }
 		void show(CrewState who) { c = who; revalidate(); repaint(); }
@@ -258,7 +255,7 @@ final class ExpeditionsDialog {
 			int y = 70;
 			for (int i = 0; i < 6; i++) {
 				g.setColor(MenuTheme.TEXT);
-				g.drawString(SKILL_NAMES[i], 12, y + 10);
+				g.drawString(homeplanet.model.Crew.SKILL_TITLES[i], 12, y + 10);
 				for (int k = 0; k < 2; k++) { // a pip a level: green for the first, gold for the second, as FTL marks them
 					g.setColor(k < levels[i] ? (k == 0 ? new Color(120, 230, 120) : MenuTheme.GOLD) : new Color(70, 82, 92));
 					g.fillRect(100 + k * 14, y + 2, 10, 9);

@@ -28,6 +28,7 @@ import homeplanet.core.Event;
 import homeplanet.core.StationLog;
 import homeplanet.core.Slipstream;
 import homeplanet.model.Items;
+import homeplanet.model.Words;
 import homeplanet.parser.CompanionMod;
 import homeplanet.parser.CompanionMod.Remodel;
 import homeplanet.parser.CompanionMod.Sys;
@@ -97,7 +98,7 @@ public class RemodelDialog extends ShipEditorDialog {
 
 		editor = new LayoutEditor(d, this, false, 0, 0);
 		showModelArt(current);
-		overhaulBtn = button("Overhaul deck plan...", "Move, add and remove " + homeplanet.model.Words.her() + " rooms; " + homeplanet.model.Words.her() + " art stays as it is", new ActionListener() {
+		overhaulBtn = button("Overhaul deck plan...", "Move, add and remove " + Words.her() + " rooms; " + Words.her() + " art stays as it is", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { askOverhaul(); }
 		});
 		addSideButton(overhaulBtn);
@@ -109,7 +110,7 @@ public class RemodelDialog extends ShipEditorDialog {
 		addSideButton(button("Restore original layout", "Put every room, system and door back where this ship model has them", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { restoreOriginal(); }
 		}));
-		addBottomButton(button("Finalize blueprint", "Make this layout " + homeplanet.model.Words.her() + " blueprint (saves the Cargo Bay too; Ctrl+S)", new ActionListener() {
+		addBottomButton(button("Finalize blueprint", "Make this layout " + Words.her() + " blueprint (saves the Cargo Bay too; Ctrl+S)", new ActionListener() {
 			public void actionPerformed(ActionEvent e) { finalizeBlueprint(); }
 		}));
 		addBottomButton(button("Cancel", null, new ActionListener() {
@@ -122,8 +123,8 @@ public class RemodelDialog extends ShipEditorDialog {
 		openKey = ShipDesign.editKey(d);
 		refreshChecks();
 		fitToScreen();
-		say(overhaul ? "Overhaul: " + homeplanet.model.Words.her() + " rooms, doors and systems are all editable; " + homeplanet.model.Words.her() + " art stays where it is."
-				: "Click a system to move it; right-click one to lift it off while you swap. Overhaul deck plan... unlocks " + homeplanet.model.Words.her() + " rooms.");
+		say(overhaul ? "Overhaul: " + Words.her() + " rooms, doors and systems are all editable; " + Words.her() + " art stays where it is."
+				: "Click a system to move it; right-click one to lift it off while you swap. Overhaul deck plan... unlocks " + Words.her() + " rooms.");
 	}
 
 	// ---- ShipEditorDialog ----
@@ -201,8 +202,8 @@ public class RemodelDialog extends ShipEditorDialog {
 	// ---- the overhaul ----
 
 	private void askOverhaul() {
-		int r = JOptionPane.showConfirmDialog(this, "Overhauling " + homeplanet.model.Words.her() + " deck plan lets you move, add and remove rooms, and move " + homeplanet.model.Words.her() + " doors and systems.\n"
-				+ homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " art, weapon mounts and shield stay as they are.\n\n"
+		int r = JOptionPane.showConfirmDialog(this, "Overhauling " + Words.her() + " deck plan lets you move, add and remove rooms, and move " + Words.her() + " doors and systems.\n"
+				+ Words.Her() + " art, weapon mounts and shield stay as they are.\n\n"
 				+ "Crew standing where a room no longer is are moved to a free square when you finalize.\n\n"
 				+ "Restore original layout undoes the whole overhaul.", "Overhaul deck plan: " + save.getPlayerShipName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
 		if (r != JOptionPane.OK_OPTION) return;
@@ -210,7 +211,7 @@ public class RemodelDialog extends ShipEditorDialog {
 		fitToScreen();
 		SwingUtilities.invokeLater(new Runnable() { public void run() { // once the window has its new size: the whole of her in view
 			editor.fitView();
-			say("Overhaul: the room tools are on the right. " + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " art stays where it is. Finalize when " + homeplanet.model.Words.she() + "'s ready.");
+			say("Overhaul: the room tools are on the right. " + Words.Her() + " art stays where it is. Finalize when " + Words.she() + "'s ready.");
 		} });
 	}
 
@@ -326,7 +327,7 @@ public class RemodelDialog extends ShipEditorDialog {
 		if (r != 1) return false;
 		for (SystemType t : left) {
 			if (!bay.systems.uninstallForRemodel(t)) {
-				JOptionPane.showMessageDialog(this, "The " + Items.systemTitle(t.getId()) + " wasn't uninstalled, so " + homeplanet.model.Words.her() + " remodel waits.\n"
+				JOptionPane.showMessageDialog(this, "The " + Items.systemTitle(t.getId()) + " wasn't uninstalled, so " + Words.her() + " remodel waits.\n"
 						+ "Systems already uninstalled are in the Cargo Bay until you Save or Reset there.", title, JOptionPane.INFORMATION_MESSAGE);
 				return false;
 			}
@@ -355,13 +356,13 @@ public class RemodelDialog extends ShipEditorDialog {
 			return;
 		}
 		// FTL flying her would stop the save at the end, after her blueprint had already changed: ask first
-		if (bay.currentShip != null && bay.currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "finalize " + homeplanet.model.Words.her() + " blueprint")) return;
+		if (bay.currentShip != null && bay.currentShip.isBoarded() && !homeplanet.core.GameGuard.allows(this, "finalize " + Words.her() + " blueprint")) return;
 		String name = save.getPlayerShipName();
 		List<Remodel> all = CompanionMod.load();
 		byte[] remodelsBytes = null; // the blueprints file as it will be, written in the Cargo Bay's own note with her save (6.87)
 		Remodel before = already ? CompanionMod.find(all, id) : null;
 		String intro = "The Federation Home Planet draws up a custom blueprint for " + homeplanet.parser.XmlText.text(name) + " and saves the Cargo Bay as it stands.<br>"
-				+ homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " can't launch until the updated " + CompanionMod.TITLE + " is sent to FTL via Slipstream. ";
+				+ Words.She() + " can't launch until the updated " + CompanionMod.TITLE + " is sent to FTL via Slipstream. ";
 		boolean plain = moved.isEmpty() && !doorsChanged;
 		BlueprintDialog.Result chosen = null;
 		if (plain) {
@@ -415,7 +416,7 @@ public class RemodelDialog extends ShipEditorDialog {
 				remodelsBytes = CompanionMod.bytes(all);
 			} catch (Exception e) {
 				log.error("Could not make " + CompanionMod.remodelsFile(), e);
-				HomePlanet.showErrorDialog("The Home Planet Station couldn't save " + homeplanet.model.Words.her() + " remodel to " + CompanionMod.remodelsFile().getAbsolutePath() + ":\n" + e + "\n\n" + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint is unchanged.");
+				HomePlanet.showErrorDialog("The Home Planet Station couldn't save " + Words.her() + " remodel to " + CompanionMod.remodelsFile().getAbsolutePath() + ":\n" + e + "\n\n" + Words.Her() + " blueprint is unchanged.");
 				return;
 			}
 			net.blerf.ftl.model.shiplayout.ShipLayout oldLay = null; // her rooms as they are now: read before register renames them under the same id
@@ -432,7 +433,7 @@ public class RemodelDialog extends ShipEditorDialog {
 			CompanionMod.register(CompanionMod.load());
 			bay.init();
 			dispose(); // this window still holds the old copy of her save
-			HomePlanet.showErrorDialog(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " remodel was called off: " + homeplanet.model.Words.her() + " save and " + homeplanet.model.Words.her() + " blueprint are as they were before.");
+			HomePlanet.showErrorDialog(Words.Her() + " remodel was called off: " + Words.her() + " save and " + Words.her() + " blueprint are as they were before.");
 			return;
 		}
 		if (remodelsBytes != null) CompanionMod.saved(all);

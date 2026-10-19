@@ -138,9 +138,18 @@ public final class EventLog {
 	public static List<Entry> read(Vault v) { return read(file(v)); }
 	public static List<Entry> read(File f) {
 		if (f == null || !f.isFile()) return new ArrayList<Entry>();
-		try { return parse(new String(SafeFiles.read(f), StandardCharsets.UTF_8)); }
+		String stamp = f.lastModified() + ":" + f.length();
+		synchronized (CACHE) { // read once (7.01): the readers (the Captain's Log, the Crew Log, the calendar) ask several times a screen
+			if (stamp.equals(CACHE_STAMP.get(f))) return new ArrayList<Entry>(CACHE.get(f));
+		}
+		List<Entry> out;
+		try { out = parse(new String(SafeFiles.read(f), StandardCharsets.UTF_8)); }
 		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); return new ArrayList<Entry>(); }
+		synchronized (CACHE) { CACHE.put(f, out); CACHE_STAMP.put(f, stamp); }
+		return new ArrayList<Entry>(out);
 	}
+	private static final java.util.Map<File, List<Entry>> CACHE = new java.util.HashMap<File, List<Entry>>();
+	private static final java.util.Map<File, String> CACHE_STAMP = new java.util.HashMap<File, String>();
 	/** The entries in this text. A machine line is one that starts with a time stamp and " | "; the line after it is its human line. */
 	public static List<Entry> parse(String text) {
 		List<Entry> out = new ArrayList<Entry>();

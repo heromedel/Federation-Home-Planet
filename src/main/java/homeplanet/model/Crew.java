@@ -9,6 +9,15 @@ import net.blerf.ftl.xml.CrewBlueprint;
 public final class Crew {
 	private Crew() { }
 
+	/** The eight playable races' ids, in FTL's order (the companion mod's loadouts and the crew pickers count by them). */
+	public static final String[] RACES = {"human", "engi", "mantis", "rock", "slug", "energy", "crystal", "anaerobic"};
+	/** The six skills' ids, in FTL's order (a crew file's tags, the expeditions' words, the skill art). */
+	public static final String[] SKILLS = {"pilot", "engines", "shields", "weapons", "repair", "combat"};
+	/** The six skills as the station names them, in the same order. */
+	public static final String[] SKILL_TITLES = {"Piloting", "Engines", "Shields", "Weapons", "Repair", "Combat"};
+	/** A skill's index from its id, -1 for none. */
+	public static int skill(String id) { return id == null ? -1 : java.util.Arrays.asList(SKILLS).indexOf(id); }
+
 	/** The race's display name from the game data (e.g. "Zoltan" for energy), or its id. */
 	public static String raceTitle(CrewState cs) {
 		CrewType race = cs.getRace();

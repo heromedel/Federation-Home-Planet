@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -17,12 +16,10 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import homeplanet.resource.ResourceClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -130,7 +127,6 @@ public class CompanionMod {
 	}
 
 	/** Crew races a blueprint can start with (FTL's ids), in the game's usual order. */
-	public static final String[] RACES = {"human", "engi", "mantis", "rock", "slug", "energy", "crystal", "anaerobic"};
 
 	/** What this blueprint starts with now (her own loadout if she has one, else the blueprint's). */
 	public static Loadout loadoutOf(String bpId) {
@@ -499,8 +495,7 @@ public class CompanionMod {
 		}
 	}
 	static void readInto(File REMODELS, List<Remodel> out) throws Exception {
-		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(REMODELS);
-		NodeList rs = doc.getElementsByTagName("remodel");
+		NodeList rs = XmlText.parse(REMODELS).getElementsByTagName("remodel");
 		for (int i = 0; i < rs.getLength(); i++) {
 			Element e = (Element) rs.item(i);
 			Remodel r = new Remodel();
@@ -630,7 +625,7 @@ public class CompanionMod {
 	private static void logRemoved(String xml) throws IOException {
 		java.io.Writer w = new java.io.OutputStreamWriter(new FileOutputStream(removedLog(), true), "UTF-8");
 		try {
-			w.write("<!-- removed " + new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()) + " -->" + CRLF);
+			w.write("<!-- removed " + homeplanet.core.Stamps.now() + " -->" + CRLF);
 			w.write(xml);
 		} finally { w.close(); }
 	}

@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "7.00";
+	public static final String APP_VERSION = "7.01";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -382,6 +382,21 @@ public class HomePlanet {
 	}
 
 	/** Writes the current settings to the cfg (a temporary file, then one move). Returns false, after telling the user, on failure. */
+	/**
+	 * Another saves folder is another fleet (its own ships, designs and remodels): the station claims it, opens its vault and
+	 * takes stock, as at startup. The cfg line is written with the rest by {@link #saveConfig}.
+	 */
+	public static void changeSavesFolder(File saves) {
+		save_location = saves;
+		homeplanet.core.StationLock.claim(saves); // this station's now (looked at when chosen), the old folder let go
+		try {
+			Vault.open(saves, immersiveMode);
+			CompanionMod.register(CompanionMod.load());
+			Vault.get().takeStock();
+		} catch (IOException e) {
+			showErrorDialog("The Home Planet Station could not open its fleet records in:\n" + saves + "\n\n" + e);
+		}
+	}
 	public static boolean saveConfig() {
 		if (save_location != null) config.setProperty("ftlSavePath", save_location.getAbsolutePath());
 		if (datsPath != null) config.setProperty("ftlDatsPath", datsPath.getAbsolutePath());

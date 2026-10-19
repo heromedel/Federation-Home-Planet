@@ -256,7 +256,7 @@ public final class MenuTheme {
 			javax.swing.JToolTip tip = (javax.swing.JToolTip) c;
 			String t = tip.getTipText();
 			if (t != null && t.length() > 80 && !t.regionMatches(true, 0, "<html>", 0, 6))
-				tip.setTipText("<html><div style='width:400px'>" + t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>") + "</div></html>");
+				tip.setTipText("<html><div style='width:400px'>" + homeplanet.parser.XmlText.text(t).replace("\n", "<br>") + "</div></html>");
 			return super.getPreferredSize(c);
 		}
 	}

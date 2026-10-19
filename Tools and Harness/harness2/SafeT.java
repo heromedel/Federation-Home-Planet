@@ -87,7 +87,7 @@ public class SafeT { public static void main(String[] a) throws Exception {
   v.dock();
   Setup.chk("H: once cleared, she docks", v.boarded() == null && was.state == Ship.State.DOCKED && where.isFile());
   // D: Board can't keep her vault copy as a version (a file sits where her versions folder goes)
-  File hist = ShipStore.versions(v.historyOf(next)); SafeFiles.deleteTree(hist); SafeFiles.write(hist, new byte[] {1});
+  File hist = ShipStore.versions(v.folderOf(next)); SafeFiles.deleteTree(hist); SafeFiles.write(hist, new byte[] {1});
   failed = false; try { v.board(next); } catch (IOException e) { failed = true; }
   Setup.chk("D: a failed Board leaves no copy in continue.sav, and her still docked", failed && !v.continueFile().exists() && next.state == Ship.State.DOCKED && next.file().isFile());
   hist.delete();

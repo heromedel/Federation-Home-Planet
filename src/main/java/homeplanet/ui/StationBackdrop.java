@@ -9,13 +9,11 @@ import java.awt.RadialGradientPaint;
 import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import javax.imageio.ImageIO;
 
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.xml.ShipBlueprint;

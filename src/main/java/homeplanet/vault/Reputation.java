@@ -2,9 +2,7 @@ package homeplanet.vault;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -507,7 +505,7 @@ public final class Reputation {
 				details.add("Achievements: " + String.join(", ", names) + "  = " + signed(ch.moved));
 				p.setProperty("achievements", String.join("|", earned));
 			}
-			p.setProperty("counted", new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()));
+			p.setProperty("counted", homeplanet.core.Stamps.now());
 			Change all = new Change(); // the review as one change: its whole total, and its exact one
 			all.moved = num(p, "total"); all.movedUnits = units(p);
 			if (write(v, p)) entry(v, "review", all, "Service record reviewed: the fleet's service so far", details);

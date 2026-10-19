@@ -209,7 +209,7 @@ public class DesignListDialog extends JDialog {
 		homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load()); // the station sees her at once
 		java.io.File mod = homeplanet.core.Slipstream.writeMod();
 		Object[] options = {"Patch Now", "Later"};
-		int p = JOptionPane.showOptionDialog(this, (mod == null ? homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint is ready, but the " + homeplanet.parser.CompanionMod.TITLE + " could not be written." : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint is in the " + homeplanet.parser.CompanionMod.TITLE + ".")
+		int p = JOptionPane.showOptionDialog(this, (mod == null ? homeplanet.model.Words.Her() + " blueprint is ready, but the " + homeplanet.parser.CompanionMod.TITLE + " could not be written." : homeplanet.model.Words.Her() + " blueprint is in the " + homeplanet.parser.CompanionMod.TITLE + ".")
 				+ "\nSend it to FTL via Slipstream to commission " + homeplanet.model.Words.herObj() + " (tick " + homeplanet.model.Words.herObj() + " as a starter ship to see " + homeplanet.model.Words.herObj() + " in Commission).",
 				"Design Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 		if (p == 0) PatchDialog.open(this);

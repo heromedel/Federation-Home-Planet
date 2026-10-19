@@ -35,7 +35,7 @@ public final class JourneyStart {
 		p.setProperty("hired", Integer.toString(gs.getTotalCrewHired()));
 		for (String k : VARS) if (gs.hasStateVar(k)) p.setProperty(k, Integer.toString(gs.getStateVar(k)));
 		try {
-			v.setNotes(v.historyOf(s), ShipStore.JOURNEY, p);
+			v.setNotes(v.folderOf(s), ShipStore.JOURNEY, p);
 		} catch (IOException e) {
 			log.warn("Could not note where {}'s journey began: {}", s.name, e.toString());
 		}

@@ -15,7 +15,6 @@ import homeplanet.core.StationLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
-import homeplanet.parser.SaveHelper;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
@@ -127,7 +126,6 @@ public final class Shipments {
 		}
 		return null;
 	}
-	private static String now() { return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date()); }
 
 	// ---- sending ----
 
@@ -145,7 +143,7 @@ public final class Shipments {
 		Parcel p = new Parcel();
 		p.id = Exchange.newId(Commander.stationId());
 		p.state = PACKED;
-		p.date = now();
+		p.date = homeplanet.core.Stamps.now();
 		p.lines = new ArrayList<Line>(lines);
 		Vault.Transaction tx = v.begin();
 		for (Map.Entry<String, Vault.Copy> e : src.copies.entrySet()) tx.put(src.ships.get(e.getKey()), e.getValue().save, e.getValue().hash);
@@ -246,7 +244,7 @@ public final class Shipments {
 		p.peerAnyLevel = n.anyLevel;
 		p.host = host;
 		p.port = n.replyPort;
-		p.date = now();
+		p.date = homeplanet.core.Stamps.now();
 		p.lines = n.lines;
 		Exchange.dir().mkdirs();
 		SafeFiles.write(fileOf(p.id), bytes(p));

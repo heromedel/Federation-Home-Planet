@@ -52,6 +52,8 @@ import homeplanet.comm.Wire;
 import homeplanet.core.HomePlanet;
 import homeplanet.model.Crew;
 import homeplanet.model.Items;
+import homeplanet.model.Words;
+import homeplanet.parser.XmlText;
 import homeplanet.parser.SaveHelper;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
@@ -264,7 +266,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private void buildLeft() {
 		myPic.setBounds(LX, 60, 110, 62);
 		myPic.setHorizontalAlignment(JLabel.CENTER);
-		myPic.setToolTipText("Click for " + homeplanet.model.Words.her() + " report");
+		myPic.setToolTipText("Click for " + Words.her() + " report");
 		myPic.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 		myPic.addMouseListener(new MouseAdapter() {
 			@Override public void mouseClicked(MouseEvent e) { if (source != null && !source.isStorage() && source.save() != null) parent.spaceDock.showReport(source.save()); }
@@ -1303,12 +1305,11 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	/** A line in the message log: who, what (cut to fit; the whole of it on hover), and when. */
 	private void addMessage(String who, String text, boolean mine) {
 		String time = new java.text.SimpleDateFormat("HH:mm").format(new java.util.Date());
-		messageRows.add(new CargoParts.Row(null, who + ": " + text, time, null, "<html><div style='width:320px'>" + who + ": " + htmlText(text) + "</div></html>", mine));
+		messageRows.add(new CargoParts.Row(null, who + ": " + text, time, null, "<html><div style='width:320px'>" + who + ": " + XmlText.text(text) + "</div></html>", mine));
 		while (messageRows.size() > 100) messageRows.remove(0);
 		messages.setRows(messageRows);
 		messages.list.ensureIndexIsVisible(messageRows.size() - 1);
 	}
-	private static String htmlText(String s) { return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"); }
 	private void sendMessage() {
 		if (session == null) return;
 		String t = message.getText();
@@ -1326,8 +1327,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 			final Exchange.Record rec = r;
 			SwingUtilities.invokeLater(new Runnable() { public void run() {
 				Object[] options = {"Patch Now", "Later"};
-				int p = JOptionPane.showOptionDialog(LongRangeCommUI.this, "A ship from " + rec.peerTitle + " flies on a blueprint of " + homeplanet.model.Words.her() + " own, and it is now in the "
-						+ homeplanet.parser.CompanionMod.TITLE + ".\nSend it to FTL via Slipstream before you board " + homeplanet.model.Words.herObj() + ".", "Long Range Comm.",
+				int p = JOptionPane.showOptionDialog(LongRangeCommUI.this, "A ship from " + rec.peerTitle + " flies on a blueprint of " + Words.her() + " own, and it is now in the "
+						+ homeplanet.parser.CompanionMod.TITLE + ".\nSend it to FTL via Slipstream before you board " + Words.herObj() + ".", "Long Range Comm.",
 						JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 				if (p == 0) PatchDialog.open(LongRangeCommUI.this);
 			} });
@@ -1468,13 +1469,13 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	/** forShip: asked by Offer the whole ship itself, which can dock her first. */
 	private String whyNotShip(boolean forShip) {
 		if (session == null) return "Open a channel first.";
-		if (session.isDraft()) return "A whole ship can't go as a shipment: hail " + homeplanet.model.Words.her() + " new commander to trade " + homeplanet.model.Words.herObj() + ".";
+		if (session.isDraft()) return "A whole ship can't go as a shipment: hail " + Words.her() + " new commander to trade " + Words.herObj() + ".";
 		if (session.noTrade != null) return session.noTrade;
 		if (!session.shipsAllowed())
 			return !shipsAllowed() ? "Allow trading whole ships first (Settings, General)."
 					: session.peer.title + "'s career doesn't allow trading whole ships.";
 		if (source == null || source.isStorage()) return "Choose one of your ships under Offering From.";
-		if (source.isBoarded() && !forShip) return source.name + " is the ship at your command: Offer the whole ship docks " + homeplanet.model.Words.herObj() + " first.";
+		if (source.isBoarded() && !forShip) return source.name + " is the ship at your command: Offer the whole ship docks " + Words.herObj() + " first.";
 		if (sourceOfferedWhole()) return source.name + " is already in the offer.";
 		if (Vault.get().finalBattlePending(source)) return source.name + " has a final battle still to settle.";
 		if (sourceSave == null) return source.name + "'s save can't be read.";
@@ -1485,11 +1486,11 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (why != null) { help(why); return; }
 		if (source.isBoarded()) {
 			// she has to be docked to change hands: the Space Dock's own Dock does it (FTL closed, her save back in the vault)
-			if (!HomePlanet.confirmNo(this, source.name + " is the ship at your command.\nDock " + homeplanet.model.Words.herObj() + " and offer " + homeplanet.model.Words.herObj() + " whole? " + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " crew, weapons, systems and cargo go with " + homeplanet.model.Words.herObj() + ".", "Offer the whole ship")) return;
+			if (!HomePlanet.confirmNo(this, source.name + " is the ship at your command.\nDock " + Words.herObj() + " and offer " + Words.herObj() + " whole? " + Words.Her() + " crew, weapons, systems and cargo go with " + Words.herObj() + ".", "Offer the whole ship")) return;
 			if (!dockFromHere()) return;
 			why = whyNotShip();
 			if (why != null) { help(why); return; }
-		} else if (!HomePlanet.confirmNo(this, "Offer " + source.name + " whole?\n" + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " crew, weapons, systems and cargo go with " + homeplanet.model.Words.herObj() + ".", "Offer the whole ship")) return;
+		} else if (!HomePlanet.confirmNo(this, "Offer " + source.name + " whole?\n" + Words.Her() + " crew, weapons, systems and cargo go with " + Words.herObj() + ".", "Offer the whole ship")) return;
 		for (Line l : new ArrayList<Line>(session.mine())) if (l.from.equals(source.id)) session.remove(l.n); // all of it goes with her now
 		Line l = Line.ship(0, sourceSave.getPlayerShipBlueprintId(), source.name, CargoBayUI.shipClass(sourceSave.getPlayerShip()));
 		session.add(mark(l, false));
@@ -1497,9 +1498,9 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	}
 	/** Why the chosen source can't be boarded (or docked, if she's boarded) from here, or null if she can. */
 	private String whyNotBoardOrDock() {
-		if (source == null || source.isStorage()) return "Choose one of your ships under Offering From to board " + homeplanet.model.Words.herObj();
+		if (source == null || source.isStorage()) return "Choose one of your ships under Offering From to board " + Words.herObj();
 		if (session != null && session.exchanging()) return "Not while the exchange is under way";
-		if (!source.isBoarded() && sourceOfferedWhole()) return source.name + " is offered whole: take " + homeplanet.model.Words.herObj() + " back to board " + homeplanet.model.Words.herObj();
+		if (!source.isBoarded() && sourceOfferedWhole()) return source.name + " is offered whole: take " + Words.herObj() + " back to board " + Words.herObj();
 		if (!source.isBoarded() && sourceSave == null) return source.name + "'s save can't be read";
 		return null;
 	}
@@ -1692,8 +1693,8 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		for (int k = 0; k < 4; k++) offerBtns[k].setToolTipText(comms != null ? comms : k == 3 ? "Put the chosen crew member in your offer" : "Put the chosen item in your offer");
 		String noShip = whyNotShip(true);
 		offerShipBtn.setEnabled(open && noShip == null);
-		offerShipBtn.setToolTipText(noShip != null ? wrapTip(noShip) : "Offer " + (source == null ? homeplanet.model.Words.herObj() : source.name) + " whole: " + homeplanet.model.Words.her() + " crew, weapons, systems and cargo go with " + homeplanet.model.Words.herObj()
-				+ (source != null && source.isBoarded() ? " (" + homeplanet.model.Words.she() + "'s docked first)" : ""));
+		offerShipBtn.setToolTipText(noShip != null ? wrapTip(noShip) : "Offer " + (source == null ? Words.herObj() : source.name) + " whole: " + Words.her() + " crew, weapons, systems and cargo go with " + Words.herObj()
+				+ (source != null && source.isBoarded() ? " (" + Words.she() + "'s docked first)" : ""));
 		String noBoard = whyNotBoardOrDock();
 		boolean ship = source != null && !source.isStorage();
 		boardBtn.setText(ship && source.isBoarded() ? "Dock" : "Board");
@@ -1743,7 +1744,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		sourceBtn.setEnabled(session == null || !session.exchanging());
 	}
 	/** A long reason as a tooltip a few lines tall, not one line across the screen. */
-	private static String wrapTip(String s) { return s.length() < 70 ? s : "<html><div style='width:320px'>" + htmlText(s) + "</div></html>"; }
+	private static String wrapTip(String s) { return s.length() < 70 ? s : "<html><div style='width:320px'>" + XmlText.text(s) + "</div></html>"; }
 	private void help(String s) { help.setText(s == null ? "" : s); }
 
 	// ============================================================== unfinished trades (Other...)

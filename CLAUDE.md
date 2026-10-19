@@ -130,7 +130,12 @@ it does and CREDITS.md for where the code came from.
 - **One home each (6.0, step 10):** race names come from `model.Crew` (`raceTitle(id)`: FTL's title, "Rockman"; `racePeople(id)`:
   the people, "Rock"; `peopleOf(shipId)`), "the" before a ship's name from `parser.ShipNames.the`, capitals and a/an from
   `model.Words`, prices from `parser.Pricing`, a ship's gear from `parser.SaveHelper.gear`, a crew member on disk from `vault.CrewRecord`
-  (6.11: every file that keeps crew; Long Range Comm. converts to its own names), the stored systems from `vault.StoredSystems`, a new crew member's name from `parser.CrewNames` (6.33: the race lists and the Settings):
+  (6.11: every file that keeps crew; Long Range Comm. converts to its own names), the stored systems from `vault.StoredSystems`, a new crew member's name from `parser.CrewNames` (6.33: the race lists and the Settings),
+  and since 7.01: the race and skill ids and the skills' names from `model.Crew` (`RACES`, `SKILLS`, `SKILL_TITLES`), the gear FTL's
+  stores sell from `model.Items` (`soldWeapons`, `soldDrones`, `soldAugments`), the station's XML read by `parser.XmlText.parse`
+  (safe and quiet) and escaped by `XmlText.text`, supplies, items and crew put aboard the Cargo Hold by `SaveHelper.addSupply`,
+  `addItem` and `takeIn`, a date to the minute from `core.Stamps`, a day's log heading from `Calendar.heading`, a sentence's "She"
+  and "Her" from `Words.She()` and `Words.Her()`:
   never a copy of any of them. The windows ask and show; what they save goes through the vault (6.11: the Cargo Bay's Save is
   `vault.CargoBaySave`, the Space Dock's business `vault.SpaceDock`).
 - **Crew names:** avoiding duplicate names is impossible (heromedel): trades, Rename, FTL's own crew, hiring and

@@ -2,8 +2,6 @@ package homeplanet.parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -23,7 +21,6 @@ import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.StationLog;
 import homeplanet.core.Store;
-import homeplanet.model.Skills;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
@@ -47,9 +44,6 @@ public final class AwayCrew {
 	 */
 	public static final int RANSOM_DELAY_MIN = 2, RANSOM_DELAY_MAX = 5, RANSOM_STANDS = 28, REMINDER_BEFORE = 6;
 
-	/** The skills as the expeditions' words name them, in Crew.skillLevels' order. */
-	static final String[] SKILLS = {"pilot", "engines", "shields", "weapons", "repair", "combat"};
-	static int skillIndex(String name) { return name == null ? -1 : java.util.Arrays.asList(SKILLS).indexOf(name); }
 
 	// ---- the crew who can go, and who they are ----
 
@@ -106,7 +100,7 @@ public final class AwayCrew {
 	}
 	public static synchronized List<Patient> infirmary(Vault v) {
 		List<Patient> out = new ArrayList<Patient>();
-		Properties p = readProps(infirmaryFile(v));
+		Properties p = Store.read(infirmaryFile(v));
 		for (int i = 0; p.getProperty(i + ".name") != null; i++) out.add(new Patient(p.getProperty(i + ".name"), p.getProperty(i + ".race", "human"), Store.num(p, i + ".until", 0), Store.num(p, i + ".drained", 0), p.getProperty(i + ".mark")));
 		return out;
 	}
@@ -200,7 +194,6 @@ public final class AwayCrew {
 		q.setProperty(k, Integer.toString(seen));
 		return false;
 	}
-	private static Properties readProps(File f) { return Store.read(f); }
 	/** For a change: a file that can't be read is an error, so it's never written back empty. */
 	private static Properties readPropsStrict(File f) throws IOException { return Store.load(f); }
 	private static byte[] propsBytes(Properties p, String comment) throws IOException { return Store.xml(p, comment); }
@@ -223,7 +216,7 @@ public final class AwayCrew {
 		}
 	}
 	public static final String CAPTIVES_NOTE = "Crew taken on expeditions, and the ransoms asked for them";
-	private static Properties readCaptives(Vault v) { return readProps(captivesFile(v)); }
+	private static Properties readCaptives(Vault v) { return Store.read(captivesFile(v)); }
 	private static void writeCaptives(Vault v, Properties p) throws IOException { writeProps(captivesFile(v), p, CAPTIVES_NOTE); }
 	/**
 	 * Holds a crew member taken (into the captives file's properties, written with the Cargo Hold): their whole record
@@ -273,14 +266,14 @@ public final class AwayCrew {
 				p.setProperty(i + ".until", Integer.toString(now + RANSOM_STANDS)); // the month runs from the letter, however late the station sees it
 				c = captive(p, i);
 				changed = true;
-				Transmissions.deliver("ransom:" + i, capitalised(c.captors), "Ransom: " + c.name, askLetter(c));
+				Transmissions.deliver("ransom:" + i, homeplanet.model.Words.cap(c.captors), "Ransom: " + c.name, askLetter(c));
 				out.add(new RansomNews(c, "ask"));
 			}
 			if (state.equals("asked") && now >= c.until - REMINDER_BEFORE && now <= c.until) {
 				state = "reminded";
 				p.setProperty(i + ".state", state);
 				changed = true;
-				Transmissions.deliver("ransom-reminder:" + i, capitalised(c.captors), "Ransom: " + c.name + ", time is short", reminderLetter(c));
+				Transmissions.deliver("ransom-reminder:" + i, homeplanet.model.Words.cap(c.captors), "Ransom: " + c.name + ", time is short", reminderLetter(c));
 				out.add(new RansomNews(c, "remind"));
 			}
 			if ((state.equals("asked") || state.equals("reminded")) && now > c.until) {
@@ -323,11 +316,11 @@ public final class AwayCrew {
 		return c.name + " is alive. For now, that is our doing, and it can stay that way.\n\n"
 				+ "We ask " + c.ransom + " scrap for their return. Pay it, and they will be on the next transport to your Cargo Hold, "
 				+ "fed and in one piece. You have one month.\n\n"
-				+ "Do not send ships. We will know, and " + c.name + " will be the one who pays for it.\n\n~ " + capitalised(c.captors);
+				+ "Do not send ships. We will know, and " + c.name + " will be the one who pays for it.\n\n~ " + homeplanet.model.Words.cap(c.captors);
 	}
 	static String reminderLetter(Captive c) {
 		return "Time is running short, and so is our patience.\n\n"
-				+ c.ransom + " scrap, and " + c.name + " comes home. Silence, and we will take it as your answer.\n\n~ " + capitalised(c.captors);
+				+ c.ransom + " scrap, and " + c.name + " comes home. Silence, and we will take it as your answer.\n\n~ " + homeplanet.model.Words.cap(c.captors);
 	}
 	/** The Ambassador's letter, for a notice when the inbox is off. */
 	public static String lostWord(Captive c) { return lostLetter(c); }
@@ -340,7 +333,6 @@ public final class AwayCrew {
 				+ c.name + " went out under the Federation's banner, and the Federation does not forget its own.\n\n"
 				+ "With deepest regret,\n\n~ " + AMBASSADOR;
 	}
-	private static String capitalised(String s) { return s.isEmpty() ? s : s.substring(0, 1).toUpperCase() + s.substring(1); }
 	/** Pays a ransom from the Cargo Hold: they come back to it, shaken but whole. */
 	public static synchronized void payRansom(Vault v, Captive c) throws IOException {
 		Properties p = readPropsStrict(captivesFile(v));
@@ -359,8 +351,7 @@ public final class AwayCrew {
 			back.setMale(c.male);
 		}
 		back.setHealth(back.getRace().getMaxHealth()); // shaken, but whole
-		if (!SaveHelper.placeCrew(hold, back, true)) throw new IOException("The Cargo Hold has no room for another crew member");
-		hold.getCrewList().add(back);
+		SaveHelper.takeIn(hold, back, "The Cargo Hold has no room for another crew member");
 		hold.setScrapAmt(hold.getScrapAmt() - c.ransom);
 		p.setProperty(c.index + ".state", "ransomed");
 		v.begin().put(st, cp.save, cp.hash).put(captivesFile(v), propsBytes(p, CAPTIVES_NOTE)).commit(); // paid and marked together: never twice
@@ -435,8 +426,7 @@ public final class AwayCrew {
 		if (rng.nextInt(100) < (cost == 0 ? FREE_CHANCE : PAID_CHANCE)) {
 			List<String> races = hireableRaces();
 			hired = Commission.volunteer(races.get(rng.nextInt(races.size())), rng);
-			if (hired != null && !SaveHelper.placeCrew(hold, hired, true)) throw new IOException("The Cargo Hold has no room for another crew member; nothing was spent");
-			if (hired != null) hold.getCrewList().add(hired);
+			if (hired != null) SaveHelper.takeIn(hold, hired, "The Cargo Hold has no room for another crew member; nothing was spent");
 		}
 		if (cost > 0 || hired != null) v.begin().put(st, c.save, c.hash).commit();
 		if (rep > 0) homeplanet.vault.Reputation.spend(v, rep, "A promise of adventure posted" + (hired == null ? ", unanswered" : ": " + hired.getName() + " answered"));

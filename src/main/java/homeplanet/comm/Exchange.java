@@ -143,7 +143,7 @@ public final class Exchange {
 	public static String shipRefused(String blueprint) {
 		if (homeplanet.parser.ShipPapers.custom(blueprint)) return null;
 		if (!net.blerf.ftl.parser.DataManager.get().getShips().containsKey(blueprint))
-			return homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint (" + blueprint + ") isn't in this station's game data";
+			return homeplanet.model.Words.Her() + " blueprint (" + blueprint + ") isn't in this station's game data";
 		return null;
 	}
 	private static String unknown(Line l) { return l.id + " isn't in this station's game data (a mod the other station uses?)"; }
@@ -193,7 +193,7 @@ public final class Exchange {
 		r.peerStation = peerStation;
 		r.peerTitle = peerTitle;
 		r.state = ESCROW;
-		r.date = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date());
+		r.date = homeplanet.core.Stamps.now();
 		r.out = out;
 		r.in = in;
 		r.file = fileOf(id);
@@ -285,7 +285,7 @@ public final class Exchange {
 		try {
 			SafeFiles.write(tmp, sav);
 			try { return new net.blerf.ftl.parser.SavedGameParser().readSavedGame(tmp); }
-			catch (Exception e) { throw new IOException(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " save couldn't be read: " + e.getMessage()); }
+			catch (Exception e) { throw new IOException(homeplanet.model.Words.Her() + " save couldn't be read: " + e.getMessage()); }
 		} finally {
 			tmp.delete();
 		}
@@ -450,14 +450,11 @@ public final class Exchange {
 	/** Puts one line into the Cargo Hold (in the copy). */
 	static void give(ShipState s, Line l) throws IOException {
 		if (l.kind.isSupply()) setSupply(s, l.kind, supply(s, l.kind) + l.amount);
-		else if (l.kind == Line.Kind.WEAPON) s.getWeaponList().add(SaveHelper.newIdleWeapon(l.id));
-		else if (l.kind == Line.Kind.DRONE) s.getDroneList().add(SaveHelper.newIdleDrone(l.id));
-		else if (l.kind == Line.Kind.AUGMENT) s.getAugmentIdList().add(l.id);
+		else if (l.kind == Line.Kind.WEAPON || l.kind == Line.Kind.DRONE || l.kind == Line.Kind.AUGMENT) SaveHelper.addItem(s, l.id);
 		else if (l.kind == Line.Kind.CREW) {
 			CrewState c = new CrewState(l.crew);
 			c.setHealth(c.getRace().getMaxHealth()); // the trip home mends them
-			if (!SaveHelper.placeCrew(s, c, true)) throw new IOException("The Cargo Hold has no room for " + c.getName());
-			s.getCrewList().add(c);
+			SaveHelper.takeIn(s, c, "The Cargo Hold has no room for " + c.getName());
 		}
 		// a ship isn't the hold's: she was received (or came back) on her own
 	}

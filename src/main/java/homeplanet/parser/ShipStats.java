@@ -73,7 +73,7 @@ public final class ShipStats {
 				st.service.add(new Line("First commissioned by", m.original, 0));
 				String since = homeplanet.vault.Calendar.stardateOf(v, "RECEIVED", s.id);
 				st.traded = "With you" + (since == null ? "" : " since " + since) + ", from " + m.from + (m.original.equals(m.from) ? "" : "; first commissioned by " + m.original)
-						+ ". " + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " service before is counted here too.";
+						+ ". " + homeplanet.model.Words.Her() + " service before is counted here too.";
 			}
 			int journeys = VoyageLog.journeys(v, s);
 			if (journeys > 0) st.service.add(new Line("Journeys", Integer.toString(journeys), 0));

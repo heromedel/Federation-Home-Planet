@@ -25,7 +25,6 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.SystemBlueprint;
 
-import homeplanet.core.Event;
 import homeplanet.core.StationLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
@@ -216,7 +215,7 @@ public final class Derelicts {
 				if (rng.nextInt(SURVIVES_ONE_IN) == 0) ship.addWeapon(SaveHelper.newIdleWeapon(w.getWeaponId()));
 			int slots = bp == null || bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots();
 			if (ship.getWeaponList().size() < slots && rng.nextInt(SURVIVES_ONE_IN) == 0) {
-				String extra = any(storeWeapons(), rng);
+				String extra = any(homeplanet.model.Items.soldWeapons(), rng);
 				if (extra != null) ship.addWeapon(SaveHelper.newIdleWeapon(extra));
 			}
 		}
@@ -228,7 +227,7 @@ public final class Derelicts {
 				if (rng.nextInt(SURVIVES_ONE_IN) == 0) ship.addDrone(SaveHelper.newIdleDrone(d.getDroneId()));
 			int slots = bp == null || bp.getDroneSlots() == null ? 2 : bp.getDroneSlots();
 			if (ship.getDroneList().size() < slots && rng.nextInt(SURVIVES_ONE_IN) == 0) {
-				String extra = any(storeDrones(), rng);
+				String extra = any(homeplanet.model.Items.soldDrones(), rng);
 				if (extra != null) ship.addDrone(SaveHelper.newIdleDrone(extra));
 			}
 		}
@@ -272,18 +271,6 @@ public final class Derelicts {
 			}
 		}
 		return gs;
-	}
-	/** Weapons and drones FTL's stores sell (a price and a rarity: no artillery, no Flagship guns), for the one someone left aboard. */
-	private static List<String> storeWeapons() {
-		List<String> out = new ArrayList<String>();
-		for (net.blerf.ftl.xml.WeaponBlueprint w : DataManager.get().getWeapons().values())
-			if (w.getCost() > 0 && w.getRarity() > 0 && !w.getId().startsWith("ARTILLERY")) out.add(w.getId());
-		return out;
-	}
-	private static List<String> storeDrones() {
-		List<String> out = new ArrayList<String>();
-		for (net.blerf.ftl.xml.DroneBlueprint d : DataManager.get().getDrones().values()) if (d.getCost() > 0 && d.getRarity() > 0) out.add(d.getId());
-		return out;
 	}
 	private static String any(List<String> l, Random rng) { return l.isEmpty() ? null : l.get(rng.nextInt(l.size())); }
 	private static void clear(SystemState st) {
@@ -395,7 +382,7 @@ public final class Derelicts {
 	 */
 	public static synchronized Ship buy(Vault v, Listing l) throws IOException {
 		Properties p = read(v);
-		if (!"true".equals(p.getProperty(l.index + ".open"))) throw new IOException(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " has already been sold");
+		if (!"true".equals(p.getProperty(l.index + ".open"))) throw new IOException(homeplanet.model.Words.She() + " has already been sold");
 		if (v.storageScrap() < l.price) throw new IOException("The Cargo Hold holds " + v.storageScrap() + " scrap; " + homeplanet.model.Words.she() + " costs " + l.price);
 		SavedGameState gs = l.save;
 		List<CompanionMod.Remodel> all = null; // the blueprints with hers added, when she has one

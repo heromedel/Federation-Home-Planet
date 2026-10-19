@@ -8,18 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
-import java.awt.Component;
-import java.awt.Dimension;
 
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-import javax.swing.JComboBox;
-import javax.swing.JList;
-import javax.swing.JScrollPane;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
-import javax.swing.plaf.basic.BasicComboPopup;
 
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.DefaultDataManager;
@@ -29,7 +20,6 @@ import net.blerf.ftl.xml.DroneBlueprint;
 import net.blerf.ftl.xml.WeaponAnim;
 import net.blerf.ftl.xml.WeaponBlueprint;
 
-import homeplanet.model.Items;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +162,6 @@ public class IconFactory {
 		return fit(flat, WEAPON_W, ROW_H);
 	}
 
-	private static final String[] SKILL_ART = {"pilot", "engines", "shields", "weapons", "repair", "combat"};
 	private static final Map<String, Icon> skillIcons = new java.util.HashMap<String, Icon>();
 	/**
 	 * FTL's own skill icon (img/people/skill_*_white.png), tinted as FTL tints a skill: grey untrained, green at the
@@ -188,7 +177,7 @@ public class IconFactory {
 	 */
 	public static Icon skillMarks(int[] levels, int size) {
 		java.util.List<Icon> marks = new java.util.ArrayList<Icon>();
-		for (int i = 0; i < SKILL_ART.length && i < levels.length; i++) {
+		for (int i = 0; i < homeplanet.model.Crew.SKILLS.length && i < levels.length; i++) {
 			if (levels[i] <= 0) continue;
 			Icon m = skillTinted(i, levels[i] >= 2 ? SKILL_GOLD : SKILL_GREY, size);
 			if (m != null) marks.add(m);
@@ -207,7 +196,7 @@ public class IconFactory {
 	private static synchronized Icon skillTinted(int skill, java.awt.Color tint, int size) {
 		String key = skill + "/" + tint.getRGB() + "/" + size;
 		if (skillIcons.containsKey(key)) return skillIcons.get(key);
-		BufferedImage src = load("img/people/skill_" + SKILL_ART[skill] + "_white.png");
+		BufferedImage src = load("img/people/skill_" + homeplanet.model.Crew.SKILLS[skill] + "_white.png");
 		Icon out = null;
 		if (src != null) {
 			BufferedImage t = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);

@@ -63,7 +63,7 @@ public class VaultT { public static void main(String[] a) throws Exception {
  int fleetNow = vo.fleet().size();
  Vault vm = Vault.open(saves); vm.takeStock();
  String told = vm.takeCloudCopy();
- boolean asCloud = false; for (File f : ShipStore.versions(vm.historyOf(vm.byId(g.id)), true)) if (f.getName().startsWith("cloud-")) asCloud = true;
+ boolean asCloud = false; for (File f : ShipStore.versions(vm.folderOf(vm.byId(g.id)), true)) if (f.getName().startsWith("cloud-")) asCloud = true;
  Setup.chk("M: a marked copy of her that matches nothing kept: set aside in her records, not adopted", vm.boarded() == null && !vm.continueFile().exists() && vm.fleet().size() == fleetNow
    && told != null && told.contains(g.name) && told.contains("already in your fleet") && asCloud);
  // a ship that has left the fleet (the one destroyed above)
@@ -116,8 +116,8 @@ public class VaultT { public static void main(String[] a) throws Exception {
  Setup.chk("storage holds untouched", v5.storage().save() != null);
  // kept versions (5.61): a victory copy and a final battle's waiting copy are never pruned with her ordinary versions
  Ship kv = v5.docked().get(0);
- File kd = ShipStore.versions(v5.historyOf(kv)); kd.mkdirs();
- File victory = new File(kd, "victory-20200101-000000.sav"), waiting = new File(v5.historyOf(kv), "final-battle.sav"), cloud = new File(kd, "cloud-20200101-000000.sav");
+ File kd = ShipStore.versions(v5.folderOf(kv)); kd.mkdirs();
+ File victory = new File(kd, "victory-20200101-000000.sav"), waiting = new File(v5.folderOf(kv), "final-battle.sav"), cloud = new File(kd, "cloud-20200101-000000.sav");
  for (File f : new File[] {victory, waiting, cloud}) { SafeFiles.copy(v5.fileOf(kv), f); f.setLastModified(946684800000L); } // the oldest files there
  for (int i = 0; i < 11; i++) { SavedGameState kg = v5.readCopy(kv).save; kg.getPlayerShip().setScrapAmt(1000 + i); v5.write(kv, kg); }
  int ordinaryLeft = 0; for (File f : kd.listFiles()) if (f.getName().matches("\\d{8}-\\d{6}(-\\d+)?\\.sav")) ordinaryLeft++;

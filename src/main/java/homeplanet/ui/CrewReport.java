@@ -25,7 +25,6 @@ import homeplanet.model.Skills;
  * the service record. One window wherever a crew member's report opens.
  */
 final class CrewReport extends JPanel {
-	static final String[] SKILL_NAMES = {"Piloting", "Engines", "Shields", "Weapons", "Repair", "Combat"};
 	/** Health as the station draws it: green for what's left, red for the rest; purple for the infirmary. */
 	static final Color HEALTH = new Color(120, 230, 120), HURT = new Color(225, 70, 55), INFIRMARY = new Color(170, 110, 230);
 	private static final Color TRACK = new Color(70, 82, 92), RIM = new Color(214, 230, 222, 90);
@@ -131,7 +130,7 @@ final class CrewReport extends JPanel {
 			if (skill != null) skill.paintIcon(this, g, 14, y - 12);
 			g.setFont(base.deriveFont(Font.PLAIN, 12f));
 			g.setColor(MenuTheme.TEXT);
-			g.drawString(SKILL_NAMES[i], skill != null ? 33 : 16, y);
+			g.drawString(homeplanet.model.Crew.SKILL_TITLES[i], skill != null ? 33 : 16, y);
 			for (int k = 0; k < 2; k++) { // a pip a level: green for the first, gold for the second
 				g.setColor(k < levels[i] ? (k == 0 ? HEALTH : MenuTheme.GOLD) : TRACK);
 				g.fillRect(100 + k * 14, y - 9, 10, 9);

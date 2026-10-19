@@ -196,11 +196,8 @@ public final class CrewRegister {
 	/** A crew file read as the register's keys (name, race, place, served, with.N, e.N, their record as rec.*): its tags (6.11). */
 	static Properties parseCrewFile(byte[] bytes) throws IOException {
 		org.w3c.dom.Element crew;
-		try {
-			javax.xml.parsers.DocumentBuilderFactory dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-			dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-			crew = dbf.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(bytes)).getDocumentElement();
-		} catch (Exception e) { throw new IOException("not a crew file: " + e.getMessage()); }
+		try { crew = homeplanet.parser.XmlText.parse(bytes); }
+		catch (IOException e) { throw new IOException("not a crew file: " + e.getMessage(), e); }
 		if (!"crew".equals(crew.getTagName())) throw new IOException("not a crew file");
 		Properties p = new Properties();
 		for (org.w3c.dom.Element e : CrewRecord.children(crew)) {
@@ -625,7 +622,6 @@ public final class CrewRegister {
 		l.add(where);
 		return true;
 	}
-	private static final String[] SKILL = {"Piloting", "Engines", "Shields", "Weapons", "Repair", "Combat"};
 	/**
 	 * What they did since the last look worth a line in their career (heromedel, 5.52): a skill mastery earned, the first
 	 * kill, a hundred jumps survived. Only against a look before: nothing is made up for a record first seen now.
@@ -636,8 +632,8 @@ public final class CrewRegister {
 		for (int i = 0; i < 6; i++) {
 			int was = intOr(m.rec.get("mastery." + CrewRecord.SKILLS[i])), now = intOr(x.fields.get("mastery." + CrewRecord.SKILLS[i]));
 			if (was < 0 || now < 0) continue;
-			if (was < 1 && now >= 1) out.add("Earned the first " + SKILL[i] + " mastery.");
-			if (was < 2 && now >= 2) out.add("Mastered " + SKILL[i] + ".");
+			if (was < 1 && now >= 1) out.add("Earned the first " + homeplanet.model.Crew.SKILL_TITLES[i] + " mastery.");
+			if (was < 2 && now >= 2) out.add("Mastered " + homeplanet.model.Crew.SKILL_TITLES[i] + ".");
 		}
 		int kills0 = intOr(m.rec.get("record.kills")), kills = intOr(x.fields.get("record.kills")), jumps0 = intOr(m.rec.get("record.jumps")), jumps = intOr(x.fields.get("record.jumps"));
 		String aboard = x.place.startsWith("ship:") ? ", aboard " + the(x.ship) : "";
@@ -962,6 +958,7 @@ public final class CrewRegister {
 	public static String stationText(Vault v) { return stationText(v, text(homeplanet.core.EventLog.file(v))); }
 
 	private static final String HOLD_NAME = "Spacedock Storage";
+	private static final java.util.regex.Pattern RENAME = java.util.regex.Pattern.compile("^\\S+ \\S+  RENAME  (.+?) -> (.+?)  \\(([0-9a-f]+)\\)\\s*$");
 
 	/**
 	 * A ship renamed (the station log's RENAME, with her id) is one ship: in every list she's kept once, under her name
@@ -969,10 +966,9 @@ public final class CrewRegister {
 	 */
 	private static boolean renamedShips(Vault v, String hist, List<Member> members) {
 		Map<String, List<String>> names = new LinkedHashMap<String, List<String>>(); // id -> her names, oldest first
-		java.util.regex.Pattern p = java.util.regex.Pattern.compile("^\\S+ \\S+  RENAME  (.+?) -> (.+?)  \\(([0-9a-f]+)\\)\\s*$");
 		for (String l : hist.split("\r?\n")) {
 			if (!l.contains("  RENAME  ")) continue; // the pattern only for the lines it can match: most of the history isn't a rename
-			java.util.regex.Matcher x = p.matcher(l);
+			java.util.regex.Matcher x = RENAME.matcher(l);
 			if (!x.find()) continue;
 			List<String> n = names.get(x.group(3));
 			if (n == null) names.put(x.group(3), n = new ArrayList<String>());

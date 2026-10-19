@@ -131,7 +131,7 @@ public final class Notes {
 	/** For a message that waited in its sender's Outbox: when it was written. */
 	public static String waitedNote(Note n) {
 		if (n.written <= 0 || System.currentTimeMillis() - n.written < 120000) return "";
-		return "\n\n(Written " + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date(n.written))
+		return "\n\n(Written " + homeplanet.core.Stamps.at(n.written)
 				+ ", while your station was out of range: it waited in their Outbox.)";
 	}
 	/** Answers the sender: where the message went (or why it didn't), and closes the link. */

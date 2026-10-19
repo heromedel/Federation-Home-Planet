@@ -9,11 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -22,7 +20,6 @@ import org.w3c.dom.NodeList;
 import homeplanet.core.Event;
 import homeplanet.core.EventLog;
 import homeplanet.core.SafeFiles;
-import homeplanet.core.Store;
 import homeplanet.parser.XmlText;
 
 /**
@@ -159,8 +156,7 @@ public final class ShipStore {
 	/** A record from its file's bytes (a package's, 5.75): the id given stands if the record names none. */
 	public static Record parse(byte[] xml, String idIfNone) throws IOException {
 		try {
-			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new java.io.ByteArrayInputStream(xml));
-			Element ship = doc.getDocumentElement();
+			Element ship = homeplanet.parser.XmlText.parse(xml);
 			if (!"ship".equals(ship.getTagName())) throw new IOException("not a ship record");
 			String id = ship.getAttribute("id");
 			if (id.isEmpty()) id = idIfNone;

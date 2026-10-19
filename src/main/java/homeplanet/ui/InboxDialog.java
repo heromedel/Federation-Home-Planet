@@ -134,9 +134,9 @@ public class InboxDialog extends JDialog {
 		archive.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { archiveSelected(); } });
 		delete.setToolTipText("Delete this receipt for good: the trade stays in the station's history");
 		delete.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { deleteSelected(); } });
-		keep.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " docks at the Space Dock, ready for a new journey from the first sector");
+		keep.setToolTipText(homeplanet.model.Words.She() + " docks at the Space Dock, ready for a new journey from the first sector");
 		keep.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(true); } });
-		museum.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " full value goes to the Cargo Hold, and " + homeplanet.model.Words.she() + " to the Federation Museum");
+		museum.setToolTipText(homeplanet.model.Words.Her() + " full value goes to the Cargo Hold, and " + homeplanet.model.Words.she() + " to the Federation Museum");
 		museum.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { decide(false); } });
 		payRansom.setToolTipText("Paid from the Cargo Hold; they come back to it");
 		payRansom.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { ransom(true); } });
