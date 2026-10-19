@@ -74,7 +74,10 @@ public final class ManualWindow {
 			return;
 		}
 		if (!inStation) { outside(owner, html, text); return; }
-		JDialog d = new JDialog(SwingUtilities.getWindowAncestor(owner), "The Home Planet Station User Manual");
+		// owned by the window it was opened from (Settings, modal): owned by the station's window, Settings kept it behind
+		// itself and blocked it (heromedel, 6.75)
+		java.awt.Window from = owner instanceof java.awt.Window ? (java.awt.Window) owner : SwingUtilities.getWindowAncestor(owner);
+		JDialog d = new JDialog(from, "The Home Planet Station User Manual");
 		d.setModalityType(java.awt.Dialog.ModalityType.MODELESS); // read beside the station, not instead of it
 		d.getContentPane().add(html ? htmlPage(text) : textPage(text, d));
 		d.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
