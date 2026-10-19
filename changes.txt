@@ -3,7 +3,7 @@ Major changes by version
 
 4B.01 to 4B.99
   Save safety, retired designs, blueprint backups, ship history and restore.
-  Prices from FTL's own blueprints, house rules, Dry Dock repairs and upgrades.
+  Prices from FTL's own blueprints, house rules, Refit repairs and upgrades.
   Transmissions inbox, the Federation's letters, reply chains (the One Point of Hull).
   Immersive Mode: careers (Easy, Normal, Hard, Custom), Switch Game Mode, rank, stipend.
   After a final victory: rescue her or give her to the museum.

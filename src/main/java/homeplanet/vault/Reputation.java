@@ -880,7 +880,7 @@ public final class Reputation {
 	public static final String[] POOLS = {"Travel", "Combat", "Crew", "Scrap", "Events", "Achievements", "Spent", "Other"};
 	/** How the log's spending entries begin (what reputation paid for): the whole entry is Spent. */
 	private static final String[] SPENT_STARTS = {"A new ship on your plea", "A promise of adventure", "Rested in quarters", "A new journey plotted",
-			"Stripping ", "The Dry Dock:", "A plea"};
+			"Stripping ", "Refit work:", "A plea"};
 	private static final java.util.regex.Pattern PIECE = java.util.regex.Pattern.compile("([^,:;(]*)\\(([+\u2212-])(\\d+)\\)");
 	/**
 	 * The reputation by pool, read from the log: each entry's pieces ("sector 3 reached (+6)", "a crew member killed

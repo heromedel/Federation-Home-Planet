@@ -187,7 +187,7 @@ with `import -window root`. The Steam build runs without Steam; sound fails harm
 
 ## Hard rules
 
-Three rules with no exceptions, in anything the player sees:
+Four rules with no exceptions (the first three in anything the player sees; the fourth anywhere):
 
 1. Never imply the Rebel Flagship has been destroyed: the war goes on.
 2. Never say to the player that time is measured in beacons. The station's clock counts them, hidden; the player hears
@@ -198,6 +198,8 @@ Three rules with no exceptions, in anything the player sees:
 3. Check any system, outcome or message against `docs/LORE_COMPONENTS.md` (real FTL lore, each fact with its source):
    report any inconsistency to heromedel, and add no new ones. Don't edit that file without his permission; when new
    real FTL lore turns up, offer it to him as a numbered list and ask whether it should be added.
+4. Do not use the term "Dry Dock" anywhere: not in player-facing text, code, comments, tests or docs (heromedel, 6.82). The repairs
+   and upgrades are rows on the Refit tab; call them that.
 
 ## Log lines (hard rule)
 
@@ -231,7 +233,7 @@ For example:
 - Never imply the Rebel Flagship has been destroyed: the war goes on. Its weapons come from plans stolen from the
   Rebels, not salvage.
 - Places: the Space Dock, the Cargo Bay, the Cargo Hold (the storage; its save keeps the internal name "Spacedock
-  Storage"), the Dry Dock, the Junkyard. A ship is **decommissioned** (not disbanded). A ship is her, him or it as the Ship Pronoun setting says (Settings, General, 6.42):
+  Storage"), the Junkyard. A ship is **decommissioned** (not disbanded). A ship is her, him or it as the Ship Pronoun setting says (Settings, General, 6.42):
   `model.Words` (`she()`, `her()`, `herObj()`) in code, `{she}`, `{her}` in lore; never a fixed "she". Never "Home World",
   never "FHP"* in player-facing text. Errors stay actionable (what failed, what to do, the file or path).
   *it may seem like bad form but it is not a hard rule that heromedel ever made

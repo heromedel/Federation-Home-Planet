@@ -18,7 +18,7 @@ exceptions can be made (the Museum's plates, say, are sized artistically).
 - Give 12 a few pixels of extra line spacing, so it doesn't feel cramped.
 - On the main screens, leave about 4 pixels between a stat's label ("Sector") and its white value.
 - FTL's own pixel fonts (`FtlFont.MENU` and `FtlFont.BODY`) stay where they are: headings, buttons, ship names,
-  the Cargo Bay, the Dry Dock. That's the game's look.
+  the Cargo Bay, the Refit tab. That's the game's look.
 - A button's label that would touch its outline is drawn with its letters a pixel closer (6.58, "Switch to FTL"),
   and cut with "..." only if it still won't fit: the font and its size stay the same.
 - Tooltips (heromedel, 6.57; `ui/Tips`, for every tip in the station): up after 0.4 seconds, there as long as the

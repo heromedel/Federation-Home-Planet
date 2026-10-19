@@ -1,5 +1,5 @@
 THE HOME PLANET STATION
-User Manual, version 6.81
+User Manual, version 6.82
 Issued by The Federation Home Planet
 
 To see which version of the station you have, open SETTINGS and choose the
@@ -9,25 +9,24 @@ from what is described here.
 CONTENTS
 
 To jump to a section, press Ctrl+F and search for its number in brackets,
-for example [10] for Long Range Comm.
+for example [9] for Long Range Comm.
 
    [1]  Welcome
    [2]  Getting Started
    [3]  Your First Voyage
    [4]  The Space Dock
    [5]  The Cargo Bay
-   [6]  The Dry Dock
-   [7]  The Shipyard
-   [8]  Expeditions
-   [9]  Captain's Quarters and the Records
-   [10] Long Range Comm.
-   [11] Playing FTL Docked
-   [12] Sandbox Mode and Immersive Careers
-   [13] After a Final Victory
-   [14] Settings
-   [15] Slipstream and Your Own Ships
-   [16] When Something Goes Wrong
-   [17] Glossary
+   [6]  The Shipyard
+   [7]  Expeditions
+   [8]  Captain's Quarters and the Records
+   [9]  Long Range Comm.
+   [10] Playing FTL Docked
+   [11] Sandbox Mode and Immersive Careers
+   [12] After a Final Victory
+   [13] Settings
+   [14] Slipstream and Your Own Ships
+   [15] When Something Goes Wrong
+   [16] Glossary
 
 
 Buttons on the station's main screens are written in capitals, such as
@@ -87,7 +86,7 @@ saves folder first, just in case. Where to find it is explained below.
 If you are in the middle of a run in FTL and choose Sandbox Mode, that ship
 becomes the first ship in your fleet, with her crew, weapons, drones and
 cargo. If you have no run in progress, your fleet starts empty and you can
-commission your first ship from the Space Dock (section [7]). If you begin an
+commission your first ship from the Space Dock (section [6]). If you begin an
 Immersive career instead, a run in progress is kept safe in your Sandbox
 fleet, and the career starts afresh with an empty shipyard, a Kestrel to
 commission free of charge and a little scrap.
@@ -164,7 +163,7 @@ time.
 5. How you would like to serve. Sandbox Mode is FTL as you know it, with a
    station behind it and rules you choose for yourself. Immersive Mode is a
    Federation career with a fleet of its own and rules set by its difficulty.
-   Both are explained in section [12]. If you are new to the station, Sandbox
+   Both are explained in section [11]. If you are new to the station, Sandbox
    Mode is the place to start. If you choose it, a window of house rules opens
    next so you can decide how strict the station should be. Leave the ticks as
    they are if you aren't sure. The same rules can be changed at any time in
@@ -173,7 +172,7 @@ time.
 Later, in SETTINGS, you can switch between Sandbox Mode and your careers,
 change the folders on the Folders tab, and change many other options. In an
 Immersive career, most of the rules are set by its difficulty and can't be
-changed (section [12]).
+changed (section [11]).
 
 Where your fleet is kept
 ------------------------
@@ -203,7 +202,7 @@ She is the ship FTL will load when you continue.
    other crew on expeditions, or do anything else that doesn't involve the
    ship you are flying. To change ships, or to do anything with her, save and
    quit to FTL's main menu, or close FTL. If you play FTL docked inside the
-   station's own window instead, see section [11].
+   station's own window instead, see section [10].
 
 3. Back at the station, the Space Dock shows where your ship has been and what
    she carries now. The station takes stock by itself whenever you come back
@@ -227,9 +226,9 @@ differently.
 
 If your ship is destroyed, her run ends as it always does, and the station
 records her as lost in action. She is remembered in the Memorial of the
-Federation Museum (section [13]). In Sandbox Mode she can be brought back from
+Federation Museum (section [12]). In Sandbox Mode she can be brought back from
 the station's last record of her, with Recover a ship under OTHER... (section
-[7]). In an Immersive career, a lost ship stays lost, except one lost to an
+[6]). In an Immersive career, a lost ship stays lost, except one lost to an
 accidental New Game (see below).
 
 If your ship wins the final battle, what happens next depends on your rules.
@@ -237,14 +236,14 @@ She may be gone with her run as in FTL, she may come back so you can choose
 between flying her again and giving her to the Federation Museum for a reward,
 or she may go straight to the museum. In Sandbox Mode it starts on Nothing, as
 in FTL, and in a career the difficulty decides. Either way the station must be
-open while you play. Section [13] explains it in full.
+open while you play. Section [12] explains it in full.
 
 Take care not to start a New Game in FTL while a ship you want to keep is
 aboard. FTL writes the new game over her, and the station has to record her as
 lost. In Sandbox Mode the new run simply becomes the ship aboard, and the old
 one can be brought back with Recover a ship. In an Immersive career the new
 run is a ship the Federation never commissioned, and the station asks what to
-do with her (section [16]), while the old one may be offered back to you once.
+do with her (section [15]), while the old one may be offered back to you once.
 To start a fresh run, dock your ship first and commission a new one, or use
 NEW JOURNEY (section [4]).
 
@@ -287,13 +286,13 @@ charge for a new journey. The fee is paid from the Cargo Hold, or with
 reputation if your reputation can be spent. In an Immersive career both of
 these always apply, with the fee set by the difficulty.
 
-Under STATION are CARGO BAY (section [5]), LONG RANGE (section [10]),
-EXPEDITIONS (section [8]), QUARTERS (section [9]) and SETTINGS (section [14]).
+Under STATION are CARGO BAY (section [5]), LONG RANGE (section [9]),
+EXPEDITIONS (section [7]), QUARTERS (section [8]) and SETTINGS (section [13]).
 Once any ship of yours has won the final battle or been lost in action, a
 MUSEUM button joins the end of this group.
 
 Under SHIPYARD are COMMISSION, DESIGN SHIP, JUNKYARD, DECOMMISSION and
-OTHER..., all described in section [7].
+OTHER..., all described in section [6].
 
 In the top right corner, just left of the HELM heading, is the refresh button,
 a small icon of two round arrows. The station takes stock of your fleet by
@@ -384,7 +383,7 @@ The Cargo Hold
 The Cargo Hold is the station's own storage, and it has no limit on slots.
 Gear, supplies, systems and crew can all be kept there for as long as you
 like. Crew waiting in the Cargo Hold are the ones you can send on expeditions,
-and what your expeditions bring home ends up there (section [8]).
+and what your expeditions bring home ends up there (section [7]).
 
 The Shop tab
 ------------
@@ -415,10 +414,22 @@ be. The Refit tab has its own PAY FROM switch for these costs.
 The systems a ship is built with, her standard equipment, can't come off until
 she has been retrofitted, so their Uninstall buttons are greyed out. Hover
 over one to see why. The Retrofit button here does that, and it needs the
-Federation Home Planet Mod to be in FTL first (section [15]). FTL may then
+Federation Home Planet Mod to be in FTL first (section [14]). FTL may then
 stop counting her as her original ship for its achievements, and the station
 warns you before you retrofit. A retrofitted ship can also be remodeled, which
 in an Immersive career needs the rank of Commander.
+
+Repairs and upgrades
+--------------------
+
+Repairs and upgrades are made on the Refit tab, in the first rows of the
+Installed systems list, with UP and other buttons beside them. The Hull row
+repairs one point at a time or all at once, and a Hull breaches row seals any
+breaches. The Reactor row adds reactor power. Each system has a button to
+upgrade it, or to fix it first if it is damaged. Every button shows its price.
+
+Repairs and upgrades are paid by whichever side the Refit tab's PAY FROM
+switch names, when you click SAVE.
 
 The Power Distribution Simulation shows how her reactor power would spread
 across her systems. Left-click a system to add power and right-click to take
@@ -428,22 +439,7 @@ only a trial, and FTL keeps its own.
 
 
 ==============================================================================
-[6] THE DRY DOCK
-==============================================================================
-
-Repairs and upgrades are made in the Dry Dock. It has no heading of its own:
-its rows are the first ones in the Installed systems list on the Refit tab,
-with UP and other buttons beside them. The Hull row repairs one point at a
-time or all at once, and a Hull breaches row seals any breaches. The Reactor
-row adds reactor power. Each system has a button to upgrade it, or to fix it
-first if it is damaged. Every button shows its price.
-
-Repairs and upgrades are paid by whichever side the Refit tab's PAY FROM
-switch names, when you click SAVE.
-
-
-==============================================================================
-[7] THE SHIPYARD
+[6] THE SHIPYARD
 ==============================================================================
 
 Commission
@@ -470,10 +466,10 @@ costs scrap, at a share of her value set by the difficulty. Your career's
 first ship is free, though, and so is each ship layout you newly unlock in
 FTL, once. The price is shown before you commit, and it is paid from the Cargo
 Hold. In a career, ships of your own design are listed but can only be
-commissioned from the rank of Commodore (section [12]).
+commissioned from the rank of Commodore (section [11]).
 
 A ship marked "not in FTL yet" can still be commissioned, but she can't fly
-until her blueprint has been sent to FTL. See section [15].
+until her blueprint has been sent to FTL. See section [14].
 
 Design Ship
 -----------
@@ -484,7 +480,7 @@ works in steps, shown as tabs along its top, from her rooms and doors to her
 look and her loadout, and Help explains each one. Save design keeps your work
 to finish later. On the Loadout step, tick "Starter ship (available to
 commission)" so that she appears in COMMISSION under Your blueprints, then
-click Build blueprint. She is sent to FTL through Slipstream (section [15]).
+click Build blueprint. She is sent to FTL through Slipstream (section [14]).
 In an Immersive career, DESIGN SHIP opens from the rank of Commodore.
 
 The Junkyard
@@ -516,7 +512,7 @@ The Junkyard's foreman also sells hulls and damaged parts. Derelicts lists old
 hulls you can buy. A derelict is delivered to the Junkyard, where you salvage
 her to fly her. She comes without crew, and is often missing a system such as
 Engines, Piloting or Oxygen. Parts lists damaged systems, which go into
-storage and can be repaired in the Dry Dock once installed. Each part has an
+storage and can be repaired on the Refit tab once installed. Each part has an
 Info button and a hover that say what it is. New stock arrives as your fleet
 travels, and once a week you can click Search for more parts, which costs 15
 scrap from the Cargo Hold and takes the day. It finds parts and salvage, never
@@ -553,7 +549,7 @@ Withdraw Plea, in the same list, cancels a plea that is still waiting.
 
 
 ==============================================================================
-[8] EXPEDITIONS
+[7] EXPEDITIONS
 ==============================================================================
 
 Crew without a ship needn't sit idle. Click EXPEDITIONS on the Space Dock to
@@ -568,7 +564,7 @@ move some crew there first in the Cargo Bay, or post for volunteers.
 
 The party is away for a while, usually a week or two. Time at the station
 passes as your ships travel in FTL, and when you rest in your quarters
-(section [9]). When the party returns, their report arrives, telling what the
+(section [8]). When the party returns, their report arrives, telling what the
 job was and how each of them fared. Each crew member's line is marked with one
 to three gold stars for a success, the more the better, or a cross for a
 failure. Lines for anyone injured, killed or captured carry no mark, since the
@@ -610,7 +606,7 @@ reputation whenever reputation is in use, and fewer people answer it.
 
 
 ==============================================================================
-[9] CAPTAIN'S QUARTERS AND THE RECORDS
+[8] CAPTAIN'S QUARTERS AND THE RECORDS
 ==============================================================================
 
 Captain's Quarters
@@ -640,7 +636,7 @@ Records have the same Search on their log tabs.
 
 
 ==============================================================================
-[10] LONG RANGE COMM.
+[9] LONG RANGE COMM.
 ==============================================================================
 
 Long Range Comm. lets you talk and trade with another commander's Home Planet
@@ -729,7 +725,7 @@ way, or in SETTINGS on the General tab.
 
 
 ==============================================================================
-[11] PLAYING FTL DOCKED
+[10] PLAYING FTL DOCKED
 ==============================================================================
 
 On Windows, FTL can be played inside the station's own window, with your
@@ -775,7 +771,7 @@ vertical sync there too.
 
 
 ==============================================================================
-[12] SANDBOX MODE AND IMMERSIVE CAREERS
+[11] SANDBOX MODE AND IMMERSIVE CAREERS
 ==============================================================================
 
 Sandbox Mode
@@ -861,7 +857,7 @@ come back.
 
 
 ==============================================================================
-[13] AFTER A FINAL VICTORY
+[12] AFTER A FINAL VICTORY
 ==============================================================================
 
 In FTL, a ship that wins the final battle is lost with her run. The station
@@ -895,7 +891,7 @@ action.
 
 
 ==============================================================================
-[14] SETTINGS
+[13] SETTINGS
 ==============================================================================
 
 Click SETTINGS on the Space Dock to open the Settings window. It has six tabs
@@ -910,7 +906,7 @@ General
 
 Under Commander is your name for Long Range Comm. Under Launching you choose
 whether to launch FTL through Steam. On Windows you also find the options for
-playing FTL docked (section [11]) and for launching FTL with DirectX, which
+playing FTL docked (section [10]) and for launching FTL with DirectX, which
 may help it load faster. The last option there sets whether FTL starts full
 screen when launched on its own.
 
@@ -940,8 +936,8 @@ selling covers the fees for taking systems off and what may be sold. Shipyard
 covers which ships can be commissioned and at what price, and Ship and part
 values sets how much ships and parts are worth wherever the station prices
 them: Trade In, Auction, the museum and the Junkyard. In a career it is set by
-the difficulty. Expeditions holds the infirmary (section [8]), and After a
-final victory is explained in section [13].
+the difficulty. Expeditions holds the infirmary (section [7]), and After a
+final victory is explained in section [12].
 
 Folders
 -------
@@ -954,14 +950,14 @@ case you ever need to look inside.
 Mods
 ----
 
-The Mods tab sends your own ships to FTL (section [15]). Blueprints lets you
+The Mods tab sends your own ships to FTL (section [14]). Blueprints lets you
 choose which of your blueprints are starter ships offered in COMMISSION, and
 change their class and name.
 
 Records
 -------
 
-The Records tab shows the station's logs (section [9]). The list under View
+The Records tab shows the station's logs (section [8]). The list under View
 Station Log chooses whose log to read, your Sandbox fleet's or a career's.
 Below them, Send Feedback opens a form where you can report a problem or
 suggest an idea, and Debug Log Folder opens the program's own logs, which are
@@ -982,7 +978,7 @@ instead.
 
 
 ==============================================================================
-[15] SLIPSTREAM AND YOUR OWN SHIPS
+[14] SLIPSTREAM AND YOUR OWN SHIPS
 ==============================================================================
 
 Ships you retrofit, remodel or design yourself need their blueprints sent to
@@ -992,7 +988,7 @@ Federation Home Planet Mod, and sends it to FTL via Slipstream Mod Manager.
 To remodel a ship, open the Refit tab in the Cargo Bay. She must be
 retrofitted first with the Retrofit button there, and then Remodel lets you
 move her systems and doors or rework her deck plan. Designing a ship from
-scratch is done with DESIGN SHIP on the Space Dock (section [7]).
+scratch is done with DESIGN SHIP on the Space Dock (section [6]).
 
 When you finish a remodel or a design, the station offers to send it to FTL
 straight away. You can also do it at any time in SETTINGS, on the Mods tab, by
@@ -1007,7 +1003,7 @@ left unticked is removed. The Federation Home Planet Mod is always included.
 
 
 ==============================================================================
-[16] WHEN SOMETHING GOES WRONG
+[15] WHEN SOMETHING GOES WRONG
 ==============================================================================
 
 "Return to The Station to do this. (Close FTL)"
@@ -1027,7 +1023,7 @@ FTL opened, but my ship isn't there
 
 Make sure she is the ship under ABOARD on the Space Dock before you click
 LAUNCH FTL, then choose Continue on FTL's main menu. If you remodeled or
-designed her, her blueprint must be sent to FTL first (section [15]).
+designed her, her blueprint must be sent to FTL first (section [14]).
 
 A ship is marked "not in FTL yet"
 ---------------------------------
@@ -1047,7 +1043,7 @@ My ship was destroyed, or I started a New Game by mistake
 
 The station records her as lost in action. In Sandbox Mode, OTHER... on the
 Space Dock offers Recover a ship, which brings her back from the station's
-last record of her (section [7]). In an Immersive career a lost ship stays
+last record of her (section [6]). In an Immersive career a lost ship stays
 lost, although one lost to an accidental New Game may be offered back once.
 
 "Steam Cloud brought back an old copy"
@@ -1086,7 +1082,7 @@ Long Range Comm. can't find the other commander
 
 Check that both of you clicked Open Hailing Frequencies and that Windows
 allowed Java on the network. If you aren't on the same home network, use the
-By address box (section [10]).
+By address box (section [9]).
 
 Reporting a problem
 -------------------
@@ -1097,7 +1093,7 @@ same tab opens them.
 
 
 ==============================================================================
-[17] GLOSSARY
+[16] GLOSSARY
 ==============================================================================
 
 The words below are the ones this manual and the station use for particular
@@ -1126,9 +1122,6 @@ A derelict is an old hull for sale in the Junkyard. She comes without crew and
 is often missing a system.
 
 Docked describes a ship kept safe at the station, ready to be boarded.
-
-The Dry Dock is where a ship is repaired and upgraded. Its rows are the first
-ones in the Installed systems list on the Refit tab.
 
 Expeditions are jobs for crew who have no ship. A party goes out for a while
 and comes home with a report.

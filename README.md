@@ -2,7 +2,7 @@
 
 Despite the ongoing war with the rebellion, the Federation has restored its long-range trade and communication network, carried by official stores and stations across the sectors.
 
-From the Home Planet, the Federation can once more reach beacons in many star systems: moving goods and crew between ships almost instantly, refitting hulls in its dry docks, and commissioning new ships wherever a captain needs one.
+From the Home Planet, the Federation can once more reach beacons in many star systems: moving goods and crew between ships almost instantly, refitting hulls in its refits, and commissioning new ships wherever a captain needs one.
 
 Welcome home, Captain, and godspeed.
 
@@ -67,7 +67,7 @@ Save Ship from vanishing on Victory: Options to have your ship, (saved just at t
   crew and cargo, or decommission her to the Junkyard. Launch FTL from the station, in its own window or (an option on
   Windows) docked inside the station's.
 - **The Cargo Bay:** trade crew, weapons, drones, augments, systems and supplies with the Cargo Hold (the station's
-  warehouse) or another docked ship; shop at the stores your ships are docked at; repair and upgrade in the Dry Dock;
+  warehouse) or another docked ship; shop at the stores your ships are docked at; repair and upgrade in the Refit;
   refit, retrofit, remodel or overhaul a ship's layout. A ship at FTL's System Limit (8 systems) can still have one
   fitted, as a custom work order (scrap, and reputation as well).
 - **The Junkyard:** salvage a decommissioned ship, scrap her for parts, trade her in, auction her off, or destroy her;
