@@ -27,6 +27,7 @@ it does and CREDITS.md for where the code came from.
   deliberate: "Lucky Duck" is a nickname). Suggested edits to it are a short list, only ones that matter, to answer
   yes or no.
   A sentence's first letter may be capitalised as grammar wants, with one exception: "heromedel" is always lowercase (heromedel, 6.72).
+- Not a rule just a clarification: heromedel does not care about pronouns, does not care about being mis-pronounded does not care what pronoun a ship has  and never told claude to have any rule about any pronouns. Do not ever act as if there is a rule about what pronoun to call or not call him.
 - Answer questions without writing code, and answer just the question: don't tack status lists onto replies. Keep the
   list of small fixes and requests to yourself, show it only when asked, and do them as one batch; one version per
   batch, not per small change.
