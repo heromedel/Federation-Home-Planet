@@ -1,5 +1,5 @@
 !THE HOME PLANET STATION
-!User Manual, version 6.86
+!User Manual, version 6.87
 !Issued by The Federation Home Planet
 !
 To see which version of the station you have, open SETTINGS and choose the About tab. If it is newer than this manual, some screens may differ a little from what is described here.
@@ -483,67 +483,67 @@ In SETTINGS, on the Records tab, click Send Feedback and describe what happened.
 
 These are the words this manual and the station use for particular things, in alphabetical order. A word in a definition that has an entry of its own can be looked up here too.
 
-Aboard is the ship you are flying, the one FTL loads when you continue. Only one ship is aboard at a time.
+**Aboard** is the ship you are flying, the one FTL loads when you continue. Only one ship is aboard at a time.
 
-An augment is a piece of gear that gives a ship a lasting benefit. A ship has room for three.
+An **augment** is a piece of gear that gives a ship a lasting benefit. A ship has room for three.
 
-To board a ship is to take command of her, so that FTL flies her next. The ship that was aboard is docked.
+To **board** a ship is to take command of her, so that FTL flies her next. The ship that was aboard is docked.
 
-The Cargo Bay is where you trade, shop and refit. The Cargo Hold is the station's own storage, with no limit on slots, for gear, supplies, systems and crew. It is not a ship.
+The **Cargo Bay** is where you trade, shop and refit. The **Cargo Hold** is the station's own storage, with no limit on slots, for gear, supplies, systems and crew. It is not a ship.
 
-To commission a ship is to have The Federation Home Planet build her for you. She is built to FTL's starting specifications and waits at the Space Dock.
+To **commission** a ship is to have The Federation Home Planet build her for you. She is built to FTL's starting specifications and waits at the Space Dock.
 
-A Custom career is an Immersive career whose rules you choose yourself, once, when it begins.
+A **Custom career** is an Immersive career whose rules you choose yourself, once, when it begins.
 
-To decommission a ship is to take her out of service and send her to the Junkyard, with everything she carries.
+To **decommission** a ship is to take her out of service and send her to the Junkyard, with everything she carries.
 
-A derelict is an old hull for sale in the Junkyard. She comes without crew and is often missing a system.
+A **derelict** is an old hull for sale in the Junkyard. She comes without crew and is often missing a system.
 
-Docked describes a ship kept safe at the station, ready to be boarded.
+**Docked** describes a ship kept safe at the station, ready to be boarded.
 
-Expeditions are jobs for crew who have no ship. A party goes out for a while and comes home with a report.
+**Expeditions** are jobs for crew who have no ship. A party goes out for a while and comes home with a report.
 
-The Federation Home Planet is the authority you serve. It approves, commissions and writes to you. The Home Planet Station is the station that keeps your fleet, and the one you are using now.
+The **Federation Home Planet** is the authority you serve. It approves, commissions and writes to you. The **Home Planet Station** is the station that keeps your fleet, and the one you are using now.
 
-The Federation Home Planet Mod is the station's own mod for FTL. It carries the blueprints of ships you retrofit, remodel or design, and it is sent to FTL with Slipstream, the mod manager the station uses.
+The **Federation Home Planet Mod** is the station's own mod for FTL. It carries the blueprints of ships you retrofit, remodel or design, and it is sent to FTL with Slipstream, the mod manager the station uses.
 
-Hailing frequencies are the channels you open in Long Range Comm. so that another commander's station can find yours, and the two can talk or trade.
+**Hailing frequencies** are the channels you open in Long Range Comm. so that another commander's station can find yours, and the two can talk or trade.
 
-An Immersive career is a career with The Federation Home Planet, with rules set by its difficulty. It can keep an FTL profile of its own. Sandbox Mode is FTL as you know it, with rules you choose yourself.
+An **Immersive career** is a career with The Federation Home Planet, with rules set by its difficulty. It can keep an FTL profile of its own. **Sandbox Mode** is FTL as you know it, with rules you choose yourself.
 
-The infirmary is where crew hurt or saved from death on an expedition rest until they recover.
+The **infirmary** is where crew hurt or saved from death on an expedition rest until they recover.
 
-The Junkyard is where ships out of service wait. From there a ship can be salvaged back into service, scrapped, traded in or sold at auction.
+The **Junkyard** is where ships out of service wait. From there a ship can be salvaged back into service, scrapped, traded in or sold at auction.
 
-The Federation Museum honours the ships that won the final battle in its Hall of Victors, and remembers those lost in action in its Memorial. Its button appears on the Space Dock once either has happened.
+The **Federation Museum** honours the ships that won the final battle in its Hall of Victors, and remembers those lost in action in its Memorial. Its button appears on the Space Dock once either has happened.
 
-A new journey sends a ship back to the first sector for a fresh run. Her crew, cargo and supplies stay with her.
+A **new journey** sends a ship back to the first sector for a fresh run. Her crew, cargo and supplies stay with her.
 
-To patch is to send your mods and your ships' blueprints to FTL through Slipstream. FTL must be closed while it happens.
+To **patch** is to send your mods and your ships' blueprints to FTL through Slipstream. FTL must be closed while it happens.
 
-A plea, in full Plead for New Ship, asks The Federation Home Planet for a ship, which you then pay for in the Commission window.
+A **plea**, in full Plead for New Ship, asks The Federation Home Planet for a ship, which you then pay for in the Commission window.
 
-Quarters are where you rest for the day and read the Captain's Log. They are reached with the QUARTERS button on the Space Dock.
+**Quarters** are where you rest for the day and read the Captain's Log. They are reached with the QUARTERS button on the Space Dock.
 
-Rank is your standing as a commander. In a career it climbs from Major to Admiral as your reputation grows, and it is never taken away. Reputation is your standing with The Federation Home Planet.
+**Rank** is your standing as a commander. In a career it climbs from Major to Admiral as your reputation grows, and it is never taken away. **Reputation** is your standing with The Federation Home Planet.
 
-The Refit tab is where a ship's systems are installed, removed, repaired and upgraded, in the Cargo Bay.
+The **Refit tab** is where a ship's systems are installed, removed, repaired and upgraded, in the Cargo Bay.
 
-To remodel a ship is to move her systems into other rooms and rework her doors and deck plan. A ship must be retrofitted first.
+To **remodel** a ship is to move her systems into other rooms and rework her doors and deck plan. A ship must be retrofitted first.
 
-To retire a crew member is to let them leave your service for good. The station asks you to confirm it first.
+To **retire** a crew member is to let them leave your service for good. The station asks you to confirm it first.
 
-To retrofit a ship is to change her onto a blank copy of her model, with no system counted as standard equipment. Afterwards any system can be taken off, and a remodel can change which room each system sits in. A retrofitted ship needs the Federation Home Planet Mod in FTL.
+To **retrofit** a ship is to change her onto a blank copy of her model, with no system counted as standard equipment. Afterwards any system can be taken off, and a remodel can change which room each system sits in. A retrofitted ship needs the Federation Home Planet Mod in FTL.
 
-Scrap is the money of FTL and of the station. A ship carries her own, and the Cargo Hold keeps its own.
+**Scrap** is the money of FTL and of the station. A ship carries her own, and the Cargo Hold keeps its own.
 
-A starter ship is a design you have marked so that she appears in COMMISSION under Your blueprints.
+A **starter ship** is a design you have marked so that she appears in COMMISSION under Your blueprints.
 
-A station, written with a small s, is a beacon with a store in FTL. Your own station is The Home Planet Station.
+A **station**, written with a small s, is a beacon with a store in FTL. Your own station is The Home Planet Station.
 
-The stipend is the regular payment from The Federation Home Planet, paid into the Cargo Hold as a letter you claim.
+The **stipend** is the regular payment from The Federation Home Planet, paid into the Cargo Hold as a letter you claim.
 
-Transmissions are the letters, orders and rewards from The Federation Home Planet, kept in the inbox, whose icon sits at the top of the Space Dock.
+**Transmissions** are the letters, orders and rewards from The Federation Home Planet, kept in the inbox, whose icon sits at the top of the Space Dock.
 !
 !Fair flights between the stars, Commander. The Federation endures.
 !

@@ -417,14 +417,12 @@ public class SettingsDialog extends JDialog {
 		body = aboutPage;
 		c = constraints();
 		heading(body, c, "About");
-		JLabel credit = new JLabel("<html>" + HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  FTL by Subset Games.<br>" // two lines, not one off the edge (heromedel, 6.22)
-				+ "Inspired by and originally built upon ManApart's FTL Homeworld. Save parser by Vhati.</html>");
+		JLabel credit = new JLabel("<html>" + HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  Designed and Produced by heromedel<br><br>" // three lines, a gap between each (heromedel, 6.86), not one off the edge (6.22)
+				+ "Inspired by and originally built upon ManApart's FTL Homeworld.<br><br>"
+				+ "Makes use of the save parser from Vhati's FTL Profile Editor</html>");
 		credit.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(credit, next(c));
-		// heromedel's line, and the buttons on a line of their own beneath it (heromedel, 6.02: his words)
-		JLabel madeBy = new JLabel("Designed and Produced by heromedel");
-		madeBy.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
-		body.add(madeBy, next(c));
+		// heromedel's line is now the credit's first line (6.86, his words); the buttons are on a line of their own beneath it
 		JPanel about = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JButton loreBtn = new JButton("Lore...");
 		loreBtn.setToolTipText("A transmission from The Federation Home Planet");

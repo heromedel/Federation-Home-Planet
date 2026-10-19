@@ -1,5 +1,5 @@
 THE HOME PLANET STATION
-User Manual, version 6.86
+User Manual, version 6.87
 Issued by The Federation Home Planet
 
 To see which version of the station you have, open SETTINGS and choose the

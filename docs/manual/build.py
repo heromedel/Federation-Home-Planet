@@ -66,10 +66,10 @@ def build_text(lines):
             if out and out[-1].strip() and not para: out.append('')
             if line.startswith('>'):
                 if para and kind[0] != 'cont': flush()
-                kind[0] = 'cont'; para.append(line[1:].strip()); continue
+                kind[0] = 'cont'; para.append(line[1:].strip().replace('**', '')); continue
             if para and isstep(line): flush()
             if not para: kind[0] = 'step' if isstep(line) else 'p'
-            para.append(line if line.startswith('|') else line.strip())
+            para.append((line if line.startswith('|') else line.strip()).replace('**', ''))
     flush()
     text = '\n'.join(out).strip('\n') + '\n'
     while '\n\n\n\n' in text: text = text.replace('\n\n\n\n', '\n\n\n')
@@ -84,6 +84,7 @@ UI = re.compile(r'\b[A-Z]{2,}(?:[ ][A-Z]{2,})*(?:\.\.\.)?')
 
 def inline(s):
     s = html.escape(s, quote=False)
+    s = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', s)
     s = re.sub(r'\[(\d+)\]', lambda m: '<a href="#s%s">[%s]</a>' % (m.group(1), m.group(1)), s)
 
     def ui(m):
@@ -129,6 +130,7 @@ h2{font:700 25px/1.2 system-ui,sans-serif;margin:52px 0 12px;padding-top:20px;bo
 h2 .n{color:var(--accent);margin-right:.35em}
 h3{font:650 18px/1.3 system-ui,sans-serif;margin:30px 0 4px;color:var(--accent)}
 p{margin:12px 0}
+p.note{font:14px/1.5 system-ui,sans-serif;color:var(--muted);margin:0}
 p.top{text-align:right;margin:6px 0 0;font:600 13px system-ui,sans-serif}
 p.top a{text-decoration:none}
 a{color:var(--accent)}
@@ -173,7 +175,7 @@ def build_html(lines):
     o.append('</header>')
     o.append('<nav class="toc"><h2>Contents</h2><ol>')
     for n, t in toc: o.append('<li><a href="#s%s"><span class="n">[%s]</span>%s</a></li>' % (n, n, html.escape(t)))
-    o.append('</ol><p style="font:14px/1.5 system-ui,sans-serif;color:var(--muted);margin:32px 0 0">Buttons on the station\'s main screens are written in capitals, such as LAUNCH FTL, just as they appear on screen. Other buttons and options are written as they are labelled, such as Patch mods.</p></nav>')
+    o.append('</ol><p class="note"><br><br>Buttons on the station\'s main screens are written in capitals, such as LAUNCH FTL, just as they appear on screen. Other buttons and options are written as they are labelled, such as Patch mods.</p></nav>')
 
     titles = dict(toc)
     closing = []
