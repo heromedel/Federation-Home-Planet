@@ -52,9 +52,10 @@ normal.
   touch, settings, names and shared tools. Plan to fit with it (the same patterns and paths, no clashing names or
   files), so the later merge is easy, and say what will need care when the branches are merged. Two branches may use
   the same version number meanwhile; the merge renumbers to follow `main`.
-- Never commit or push to `main`. Work only on your own session branch; heromedel decides what goes into
-  `main` (a pull request or their own merge).
-- Do not make a pull requst without double checking. Hero prefers simple merges.
+- Work only on your own session branch: never commit to `main` directly. heromedel decides what goes into `main`.
+- **Merging to main (heromedel, 6.81):** never make a pull request. When heromedel approves a merge to `main` and it is
+  clean (no conflicts, built, tested), merge your branch into `main` yourself (`git checkout main`, `git merge`, push
+  `main`), then return to your own branch. Without that approval, `main` is never touched.
 - **The public release branch (heromedel, 6.60):** never catch up to, merge from or copy from
   `Cloud-C-Jar-Stripped-Odditys`. It is the stripped public release (code for play testers coming from older
   versions removed), and only heromedel decides when it goes anywhere.
@@ -146,7 +147,7 @@ normal.
 - `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
   `Current Build\`).
 - `Build A Release.bat` (6.51): builds through the Build .bat's `build` mode, then makes `Release\Federation Home Planet <version>\`
-  (the jar, the Interface, and as .txt for Notepad: the players' readme `docs/README for players.txt`, McCarthy's `User-Manual.txt` and `User-Manual.html` (6.67, 6.76), `changes.txt` (6.82; on this branch without the 6.0 conversion's line), LICENSE, CREDITS without
+  (the jar and the Interface on top; in a `Documents` folder beside them (6.82), as .txt for Notepad: the players' readme `docs/README for players.txt`, McCarthy's `User-Manual.txt` and `User-Manual.html` (6.67, 6.76), `changes.txt` (6.82; on this branch without the 6.0 conversion's line), LICENSE, CREDITS without
   its Markdown marks) and its zip; in a clone it tags the commit `release-<version>` locally
   (heromedel, 6.62: never pushed; git from the PATH or GitHub Desktop's own copy; none in a zip download, so no tag). The Interface finds Java (`java\` beside it, `..\tools\jdk`,
   JAVA_HOME, the PATH, Program Files) or offers a portable Java runtime in `java\` or Adoptium's installer.

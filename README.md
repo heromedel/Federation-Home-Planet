@@ -128,7 +128,8 @@ run puts a fresh `Federation Home Planet.jar` in `Current Build\`, then offers t
 `mvn package` → `target/Federation Home Planet.jar`.
 
 To make a release, double-click `Build A Release.bat`: it builds the jar, then puts `Release\Federation Home Planet
-<version>\` together with only the jar, the Interface, the players' `README.txt` (from `docs/README for players.txt`), `LICENSE.txt` and `CREDITS.txt`, and zips it to upload
+<version>\` together with only the jar and the Interface, and beside them a `Documents` folder (the players' `README.txt`
+(from `docs/README for players.txt`), the two manuals, `changes.txt`, `LICENSE.txt` and `CREDITS.txt`), and zips it to upload
 (from a GitHub Desktop clone it also tags the commit `release-<version>` on your computer, so you can find the code each release was made from; nothing is pushed). A player needs nothing else: the Interface finds Java on their
 computer, or offers to download one just for the station (into a `java` folder beside it, no install) or to install
 Java for the whole computer.
