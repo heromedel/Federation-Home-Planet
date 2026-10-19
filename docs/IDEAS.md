@@ -172,6 +172,15 @@ parts and derelicts, the Commission list, and the logs (the Captain's Log, a cre
 would filter as the reputation log's Search does (6.76), through `ui.TextSearch.matches`, so every search box in the
 station behaves the same: any case, parts of words, the words in order (`docs/STYLE.md`, Search boxes).
 
+## Idea L: a magnifying glass for the Captain's Log (noted 6.76)
+
+> Captains log having a magnifyglass icon to open a search bar
+
+Notes: the other logs have a Search box beside their title since 6.76 (the station log, a ship's voyage log, her Records
+window, the reputation log); the Captain's Log was left without one so as not to crowd its page (heromedel). A small
+magnifying glass in its corner that opens the box when wanted would keep the page as it is, and the box would search
+the same way (`ui.TextSearch`).
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just

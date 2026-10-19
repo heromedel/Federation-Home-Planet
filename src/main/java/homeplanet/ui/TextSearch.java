@@ -19,6 +19,23 @@ public final class TextSearch {
 		return Pattern.compile(re.toString(), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 	}
 
+	/**
+	 * A log entry's words as a log shows them: its line and its detail lines (what a log's Search looks through). The
+	 * station log tells its entries in the lore's words ({@code told}); a voyage log shows the line as written.
+	 */
+	public static String words(homeplanet.core.EventLog.Entry e, boolean told) {
+		String line = told ? homeplanet.core.Lore.told(e) : e.human;
+		StringBuilder w = new StringBuilder(line == null ? "" : line);
+		for (int i = 1; e.get("detail." + i) != null; i++) w.append('\n').append(told ? e.get("detail." + i).replace("Spacedock Storage", "the Cargo Hold") : e.get("detail." + i)); // as RecordsLog.station shows it
+		return w.toString();
+	}
+	/** The entries that hold what was typed (all of them when nothing was typed), in their order. */
+	public static java.util.List<homeplanet.core.EventLog.Entry> filter(java.util.List<homeplanet.core.EventLog.Entry> es, String typed, boolean told) {
+		if (of(typed) == null) return es;
+		java.util.List<homeplanet.core.EventLog.Entry> out = new java.util.ArrayList<homeplanet.core.EventLog.Entry>();
+		for (homeplanet.core.EventLog.Entry e : es) if (matches(words(e, told), typed)) out.add(e);
+		return out;
+	}
 	/** Whether the text holds what was typed; true when nothing was typed (a filter that keeps everything). */
 	public static boolean matches(String text, String typed) {
 		Pattern p = of(typed);
