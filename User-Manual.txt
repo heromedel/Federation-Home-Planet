@@ -1,5 +1,5 @@
 THE HOME PLANET STATION
-User Manual, version 6.80
+User Manual, version 6.81
 Issued by The Federation Home Planet
 
 To see which version of the station you have, open SETTINGS and choose the
@@ -27,7 +27,8 @@ for example [10] for Long Range Comm.
    [14] Settings
    [15] Slipstream and Your Own Ships
    [16] When Something Goes Wrong
-   [17] Words of the Station
+   [17] Glossary
+
 
 Buttons on the station's main screens are written in capitals, such as
 LAUNCH FTL, just as they appear on screen. Other buttons and options are
@@ -1096,48 +1097,79 @@ same tab opens them.
 
 
 ==============================================================================
-[17] WORDS OF THE STATION
+[17] GLOSSARY
 ==============================================================================
 
-Aboard is the ship you are flying, the one FTL loads when you continue.
+The words below are the ones this manual and the station use for particular
+things, in alphabetical order.
 
-Docked describes a ship kept at the station, ready to be boarded.
+Aboard is the ship you are flying, the one FTL loads when you continue. Only
+one ship is aboard at a time.
 
-To board a ship is to take command of her, so that FTL flies her next.
+To board a ship is to take command of her, so that FTL flies her next. The
+ship that was aboard is docked.
 
-The Cargo Hold is the station's own storage, with no limit on slots.
-
-The Cargo Bay is where you trade, shop and refit.
-
-The Dry Dock is where ships are repaired and upgraded, at the top of the Refit
-tab.
-
-The Junkyard is where ships out of service wait to be salvaged, sold or
-scrapped.
-
-A ship is decommissioned when she is taken out of service and sent to the
-Junkyard.
-
-A station, written with a small s, is a beacon with a store in FTL. Your own
-station is The Home Planet Station.
+The Cargo Bay is where you trade, shop and refit. The Cargo Hold is the
+station's own storage, with no limit on slots, for gear, supplies, systems and
+crew. It is not a ship.
 
 To commission a ship is to have The Federation Home Planet build her for you.
+She is built to FTL's starting specifications and waits at the Space Dock.
 
-A new journey sends a ship back to the first sector for a fresh run.
+A Custom career is an Immersive career whose rules you choose yourself, once,
+when it begins.
 
-A retrofit lets a ship take off her standard equipment, and must come before a
-remodel. It needs the Federation Home Planet Mod in FTL.
+To decommission a ship is to take her out of service and send her to the
+Junkyard, with everything she carries.
 
-Reputation is your standing with The Federation Home Planet, and in a career
-your rank rises with it.
+A derelict is an old hull for sale in the Junkyard. She comes without crew and
+is often missing a system.
 
-Expeditions are jobs for crew without a ship.
+Docked describes a ship kept safe at the station, ready to be boarded.
+
+The Dry Dock is where a ship is repaired and upgraded. Its rows are the first
+ones in the Installed systems list on the Refit tab.
+
+Expeditions are jobs for crew who have no ship. A party goes out for a while
+and comes home with a report.
+
+The Federation Home Planet is the authority you serve. It approves,
+commissions and writes to you. The Home Planet Station is the station that
+keeps your fleet.
+
+An Immersive career is a career with The Federation Home Planet, with rules
+set by its difficulty. Sandbox Mode is FTL as you know it, with rules you
+choose yourself.
 
 The infirmary is where crew hurt or saved from death on an expedition rest
 until they recover.
 
-The Federation Home Planet is the authority you serve. The Home Planet Station
-is the station that keeps your fleet.
+The Junkyard is where ships out of service wait to be salvaged, sold or
+scrapped.
+
+A new journey sends a ship back to the first sector for a fresh run. Her crew,
+cargo and supplies stay with her.
+
+A plea, in full Plead for New Ship, asks The Federation Home Planet for a
+ship, which you then pay for in the Commission window.
+
+Rank is your standing as a commander, from Major up to Admiral. In a career it
+rises with your reputation. Reputation is your standing with The Federation
+Home Planet.
+
+To remodel a ship is to move her systems into other rooms and rework her doors
+and deck plan. A ship must be retrofitted first.
+
+To retrofit a ship is to change her onto a blank copy of her model, with no
+system counted as standard equipment. Afterwards any system can be taken off,
+and a remodel can change which room each system sits in. A retrofitted ship
+needs the Federation Home Planet Mod in FTL.
+
+A station, written with a small s, is a beacon with a store in FTL. Your own
+station is The Home Planet Station.
+
+The stipend is the regular payment from The Federation Home Planet, paid into
+the Cargo Hold as a letter you claim.
 
 
 Fair flights between the stars, Commander. The Federation endures.
