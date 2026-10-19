@@ -16,17 +16,15 @@ import java.util.Map;
 import homeplanet.core.SafeFiles;
 
 /**
- * The career's days and stardates. Each career had a master log (heromedel, 5.17, logs/master.log): every day its clock
- * counted and why, and a copy of every entry its logs got. Since 5.93 nothing writes it: the days are the event log's
- * DAY entries (the Captain's Log and the Cargo Bay's day read them), and the entries are the event log's own. The old
- * file stays, read only by the conversion of a fleet's old logs (LogConvert).
+ * The career's days and stardates (heromedel, 5.17): every day its clock counted and why is a DAY entry in the event
+ * log (the Captain's Log and the Cargo Bay's day read them).
  *
  * A career's day 1 is the day this was first asked of it: a new career's first moment, or the first look at an older
  * one on 5.17 (its earlier entries are Prior to 1.1.1.1). The day is stored as a plain number and shown as a stardate,
  * year.month.week.day: 7-day weeks, 28-day months, 13-month years. A day of 0 or less is Prior.
  */
-public final class MasterLog {
-	private MasterLog() { }
+public final class Calendar {
+	private Calendar() { }
 
 	/** Why a day passed (the reasons the station itself checks). */
 	public static final String CARGO_BAY = "business in the Cargo Bay";
@@ -39,7 +37,7 @@ public final class MasterLog {
 		int at = Clock.num(v, "start", -1);
 		if (at >= 0) return at;
 		at = clock(v);
-		try { Clock.set(v, "start", Integer.toString(at)); } catch (IOException e) { org.slf4j.LoggerFactory.getLogger(MasterLog.class).warn("Could not record the career's day 1: {}", e.toString()); }
+		try { Clock.set(v, "start", Integer.toString(at)); } catch (IOException e) { org.slf4j.LoggerFactory.getLogger(Calendar.class).warn("Could not record the career's day 1: {}", e.toString()); }
 		return at;
 	}
 	/** The career's day now: 1 on its first day. */

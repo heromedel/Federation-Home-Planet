@@ -105,7 +105,7 @@ public final class Outbox {
 		Shipments.Parcel parcel = i.shipment.isEmpty() ? null : Shipments.find(i.shipment);
 		if (parcel != null && !parcel.incoming) Shipments.inOutbox(parcel, toStation, i.toTitle);
 		write(i);
-		homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " waits to go", null,
+		homeplanet.core.StationLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " waits to go", null,
 				homeplanet.core.Event.of("LONG_RANGE_OUTBOX").put("what", "waiting").put("to_commander", i.toTitle).put("to_station", i.toStation).put("message_id", i.id).put("priority", i.priority).put("shipment", i.shipment.isEmpty() ? null : i.shipment));
 		return i;
 	}
@@ -147,21 +147,12 @@ public final class Outbox {
 	 * station's own frequency, for a reply.
 	 */
 	public static List<String> deliver(String station, String host, int port, String version, String myStation, String myTitle, int replyPort) {
-		return deliver(station, host, port, version, myStation, myTitle, replyPort, true);
-	}
-	/** shipmentsOk: their station takes shipments (its search answer says so); one that doesn't is never sent one. */
-	public static List<String> deliver(String station, String host, int port, String version, String myStation, String myTitle, int replyPort, boolean shipmentsOk) {
 		List<String> said = new ArrayList<String>();
 		for (Item i : list()) {
 			if (!i.toStation.equals(station) || !i.refused.isEmpty()) continue;
 			Shipments.Parcel parcel = i.shipment.isEmpty() ? null : Shipments.sendable(i.shipment);
 			if (!i.shipment.isEmpty() && parcel == null) { // its shipment was unpacked meanwhile: the message would promise what isn't there
 				try { refused(i, "Its shipment was unpacked: cancel this message."); } catch (IOException x) { log.debug("Outbox: a message could not be marked refused: {}", x.toString()); }
-				continue;
-			}
-			if (parcel != null && !shipmentsOk) {
-				try { refused(i, i.toTitle + "'s station can't take shipments (it needs a newer version)."); } catch (IOException x) { log.debug("Outbox: a message could not be marked refused: {}", x.toString()); }
-				said.add("A shipment for " + i.toTitle + " can't go: their station needs a newer version.");
 				continue;
 			}
 			try {
@@ -172,7 +163,7 @@ public final class Outbox {
 				remove(i);
 				said.add((Notes.POPUP.equals(where) ? "Shown to " + i.toTitle : "Delivered to " + i.toTitle + "'s inbox") + " (it waited " + waited(i.written) + ")"
 						+ (parcel != null ? ", with the shipment (" + parcel.words() + ")." : "."));
-				homeplanet.core.HistoryLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " delivered, after " + waited(i.written), null,
+				homeplanet.core.StationLog.entry("LONG RANGE OUTBOX", "a message for " + i.toTitle + " delivered, after " + waited(i.written), null,
 						homeplanet.core.Event.of("LONG_RANGE_OUTBOX").put("what", "delivered").put("to_commander", i.toTitle).put("to_station", i.toStation).put("message_id", i.id).put("waited", waited(i.written)).put("shipment", parcel == null ? null : parcel.id));
 			} catch (Notes.Refused e) {
 				if (e.getMessage().contains(Notes.TOO_MANY)) { // busy for a minute: it stays waiting, and goes on a later search

@@ -74,12 +74,8 @@ public final class MessageDialog extends JDialog {
 		JPanel ticks = new JPanel(new java.awt.GridLayout(0, 1));
 		ticks.add(priority);
 		if (packed != null) {
-			homeplanet.comm.Contacts.Entry c = homeplanet.comm.Contacts.get(toStation);
-			boolean takes = c != null && c.shipments;
 			attach.setText("Attach shipment (" + packed.words() + ")");
-			attach.setEnabled(takes);
-			attach.setToolTipText(takes ? "It goes with the message, and waits in their inbox until they accept it or send it back"
-					: toTitle + "'s station can't take shipments (it needs a newer version)");
+			attach.setToolTipText("It goes with the message, and waits in their inbox until they accept it or send it back");
 			ticks.add(attach);
 		}
 		south.add(ticks, BorderLayout.NORTH);

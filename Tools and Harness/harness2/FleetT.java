@@ -78,20 +78,6 @@ public class FleetT { public static void main(String[] a) throws Exception {
    Setup.chk("D: a Custom career from before 6.47 at victory level " + lvl + ": " + (lvl == 2 ? "Museum" : "Choice") + " at " + (lvl == 0 ? "full" : "half") + " value",
      FinalVictory.choice().equals(lvl == 2 ? FinalVictory.MUSEUM : FinalVictory.RESCUE) && FinalVictory.museumPercent() == (lvl == 0 ? 100 : 50) && FinalVictory.fixedPay() != null);
   }
-  // a career from before difficulties: no difficulty in its career.txt
-  Properties p = new Properties(); p.setProperty("salaryAll", "false"); p.setProperty("ownProfile", "false"); p.setProperty("finalVictory", FinalVictory.REWARD);
-  p.setProperty("paidMonths", "0"); p.setProperty("sectorsAtStart", "0");
-  Store.write(career, p, "");
-  Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
-  HomePlanet.stripAllowed = true;
-  CareerRules e = Career.rules(v.root);
-  Setup.chk("D: a career from before difficulties keeps its rules: journeys 200, a Kestrel or the Relief Ship on a plea, free removal and stripping, 25%, every 4 sectors, full price",
-    CareerRules.EARLIER.equals(e.name) && e.journeyFee() == 200 && FreeCommand.KESTREL.equals(e.reassignment()) && e.removalFee() == 0 && e.stripAllowed() && e.stripFee() == 0
-    && e.supplyPercent() == 25 && e.stipendMonths() == 2 && e.commissionPercent() == 100);
-  HomePlanet.stripAllowed = false;
-  Setup.chk("D: and its own final victory choice, written down once (its reward, from before 6.47, now the museum at full value)", FinalVictory.choice().equals(FinalVictory.MUSEUM) && FinalVictory.fixed() == null
-    && FinalVictory.fixedPay() == null && FinalVictory.museumPercent() == 100
-    && Career.rules(v.root).stripAllowed() && "earlier".equals(Store.load(career).getProperty("difficulty")));
   HomePlanet.leaveImmersive();
   Vault.switchFleet(false);
  }

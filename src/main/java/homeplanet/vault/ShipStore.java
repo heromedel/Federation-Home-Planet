@@ -60,8 +60,7 @@ public final class ShipStore {
 		public String hash = "", marks = "", fresh = "";
 		/**
 		 * The fleet she belongs to (6.10: "sandbox", "easy", "normal", "hard", "custom"), and how she came into it
-		 * ("commissioned.6.10.20261008-174200"; one from before 6.10 "commissioned.pre-6.10.<her first entry's time>.verified-log-COMMISSION").
-		 * Empty in a record from before 6.10 until the fleet's check gives them (Vault.checkShips).
+		 * ("commissioned.6.10.20261008-174200"). A record with either empty waits for the player's word (7.0: nothing is taken on evidence).
 		 */
 		public String career = "", origin = "";
 		/** Her owners, the first her original (as her trade mark has them today), and her past names, oldest first. */

@@ -25,7 +25,7 @@ import net.blerf.ftl.xml.ShipChassis;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.Slipstream;
 import homeplanet.model.Items;
 import homeplanet.parser.CompanionMod;
@@ -436,7 +436,7 @@ public class RemodelDialog extends ShipEditorDialog {
 			return;
 		}
 		if (remodelsBytes != null) CompanionMod.saved(all);
-		HistoryLog.entry("REMODEL", name + " -> " + ship.getShipBlueprintId(), lines, Event.of("REMODEL").put("ship_name", name).put("to_class", ship.getShipBlueprintId()).details(lines));
+		StationLog.entry("REMODEL", name + " -> " + ship.getShipBlueprintId(), lines, Event.of("REMODEL").put("ship_name", name).put("to_class", ship.getShipBlueprintId()).details(lines));
 		ShipArt.sweep(); // pictures her old overhaul no longer uses (only now that everything is saved)
 		finalized = true;
 		openKey = ShipDesign.editKey(d);

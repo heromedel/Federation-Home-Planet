@@ -38,8 +38,8 @@ public final class VoyageLog {
 	private static final Logger log = LoggerFactory.getLogger(VoyageLog.class);
 	private VoyageLog() { }
 
-	/** Her voyage log in prose (before 5.76) and her last look (before 5.98), by the names a ship's package still gives them. */
-	public static final String LOG = "voyage.log", LAST = "voyage.txt";
+	/** Her last look, by the name a ship's package gives it. */
+	public static final String LAST = "voyage.txt";
 	/** The sectors a ship (by id) visited in all her journeys, at least the sector she's in in this save. */
 	public static int visited(Vault v, String id, SavedGameState gs) {
 		return Math.max(Store.num(last(v, id), "visited", 0), gs == null ? 0 : gs.getSectorNumber() + 1);

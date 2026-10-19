@@ -87,10 +87,6 @@ public class CrewNameT { public static void main(String[] a) throws Exception {
  HomePlanet.config.remove(StationConsole.GIRL_POWER);
  Setup.chk("C: girl power still makes every one a woman, named from her list", allWomen);
 
- // the looks of crew already on record: rolled as before, whatever the settings
- boolean asBefore = true; for (int s = 0; s < 30; s++) if (!Commission.lookOf("rock", new Random(s)).isMale()) asBefore = false;
- Setup.chk("R: crew already on record keep the old roll (a Rock from the old logs is still a man)", asBefore);
-
  // lists off: FTL's names, aliens men, Human Name Gen for every race
  HomePlanet.config.remove(CrewNames.CFG_LISTS);
  boolean ftl = true, men = true; Set<String> ftlM = new HashSet<String>(net.blerf.ftl.parser.DataManager.get().getCrewNames(true)), ftlF = new HashSet<String>(net.blerf.ftl.parser.DataManager.get().getCrewNames(false));

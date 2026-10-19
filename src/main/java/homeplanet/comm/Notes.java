@@ -159,7 +159,7 @@ public final class Notes {
 			if (why != null) refused = myTitle + "'s station can't take the shipment: " + why;
 		}
 		if (refused != null) { answer(ch, null, refused); return null; }
-		Contacts.seen(n.station, n.title, n.shipment != null ? n.mode : null, ch.host, n.replyPort, true);
+		Contacts.seen(n.station, n.title, n.shipment != null ? n.mode : null, ch.host, n.replyPort);
 		if (n.shipment != null) {
 			try { Shipments.receive(n, ch.host); }
 			catch (IOException e) { answer(ch, null, myTitle + "'s station could not hold the shipment: " + e.getMessage()); return null; }

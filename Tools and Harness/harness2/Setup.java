@@ -72,9 +72,9 @@ public class Setup {
   }
   EventLog.write(v, Event.of(e.kind).put("log", "voyage").put("ship", name + "." + id).put("ship_name", name).put("ship_id", id).putAll(e).human(text));
  }
- /** The crew register forgotten, as a fleet updating to 5.41 had none: its own file, any 5.x crew.txt, and every crew file. */
+ /** The crew register forgotten: its own file and every crew file. */
  public static void forgetCrew(Vault v) {
-  CrewRegister.registerFileOf(v).delete(); new File(v.root, "crew.txt").delete();
+  CrewRegister.registerFileOf(v).delete();
   for (CrewRegister.Member m : CrewRegister.members(v)) { File f = CrewRegister.fileOf(v, m.id); if (f != null) f.delete(); }
  }
  /** When the register's files last changed: its own file and every crew file (to tell a look that wrote nothing). */

@@ -358,15 +358,6 @@ public class ShipDesign {
 		if (!FILE.isFile()) { BlueprintBackup.restoreDesigns(out); return out; }
 		try {
 			readInto(FILE, out);
-			// files from before snapshots: a built design was its own blueprint, so its copy is the snapshot
-			List<ShipDesign> add = new ArrayList<ShipDesign>();
-			for (ShipDesign d : out) {
-				if (!d.built || !d.isWorking() || snapshot(out, d.id) != null) continue;
-				ShipDesign c = copy(d);
-				c.snapshotOf = d.id;
-				add.add(c);
-			}
-			out.addAll(add);
 		} catch (Exception ex) {
 			log.error("Could not read " + FILE, ex);
 		}

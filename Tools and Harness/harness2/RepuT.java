@@ -141,7 +141,7 @@ public class RepuT {
   Setup.chk("U: 2: vanilla-breaking too; the work order half scrap, half reputation", Economy.repForJourneysAndPleas() && Economy.repForVanillaBreaking() && Economy.workOrderScrap() == 50 && Economy.workOrderRep() == 50);
   HomePlanet.reputationUse = 3;
   Setup.chk("U: 3: only a score: nothing buys with it, but the promise still costs (6.66: penalties, not purchases)", !Economy.repForJourneysAndPleas() && !Economy.repForVanillaBreaking() && !Economy.repSpends()
-    && Economy.workOrderScrap() == 100 && (Expeditions.fleetCrew(v) > 0 || Expeditions.promiseRep(v) > 0));
+    && Economy.workOrderScrap() == 100 && (AwayCrew.fleetCrew(v) > 0 || AwayCrew.promiseRep(v) > 0));
   HomePlanet.reputationUse = 1;
   // 5.15: the tally under the log: each piece in its pool, the pools adding up to the total
   Map<String, Integer> t = Reputation.tally(v);
@@ -211,58 +211,6 @@ public class RepuT {
   Setup.chk("W: a reputation entry about her: her id, sector and difficulty", repOk);
   Reputation.ransomed(v, "Dune");
   Setup.chk("Z: away from FTL, the career's rate alone: a ransom +2", Reputation.recent(v, 1).get(0).contains("brought home (+2)"));
-  // 6.19 (heromedel): a score counted before the rates is offered a re-evaluation, once; its log re-scored
-  HomePlanet.reputationRate = 0;
-  Properties pr = Store.read(Store.file(v.root, "reputation"));
-  Setup.chk("O: a score counted at the rates is never offered", pr.getProperty("rated") != null && Reputation.offer(v) == null);
-  pr.remove("rated"); pr.setProperty("total", Integer.toString(Store.num(pr, "total", 0) + 6)); Store.write(Store.file(v.root, "reputation"), pr, null);
-  EventLog.write(v, Event.of("REPUTATION").put("log", "reputation").put("reason", "voyage").put("points", 6).put("why", "Old Timer: sector 5 reached (+6)").human("Old Timer: sector 5 reached (+6)")); // as written before 6.13
-  int cur = Reputation.total(v);
-  Reputation.Reevaluation re = Reputation.offer(v);
-  Setup.chk("O: an old entry: sector 5 reached (+6) re-scored at sector 5's bonus (x1.4): 8.4 (" + (re == null ? "none" : re.current + " -> " + re.reevaluated) + ")", re != null && re.current == cur && re.reevaluated >= cur + 2 && re.reevaluated <= cur + 3);
-  Reputation.answer(v, re, false);
-  Setup.chk("O: kept: the score as it was, the answer logged, never offered again", Reputation.total(v) == cur && Reputation.offer(v) == null && Reputation.recent(v, 1).get(0).contains("Records updated: the current score kept"));
-  pr = Store.read(Store.file(v.root, "reputation")); pr.remove("rated"); Store.write(Store.file(v.root, "reputation"), pr, null);
-  re = Reputation.offer(v);
-  Reputation.answer(v, re, true);
-  Setup.chk("O: re-evaluated: the new score, one entry saying what it changed (" + Reputation.recent(v, 1).get(0).trim() + ")", Reputation.total(v) == re.reevaluated && Reputation.recent(v, 1).get(0).contains("Records updated (+") && Reputation.offer(v) == null);
-  t = Reputation.tally(v); sum = 0; for (int x : t.values()) sum += x;
-  Setup.chk("O: the tally still adds up to the total " + t, sum == Reputation.total(v));
-  // 6.54 (heromedel): an old entry re-scored at the difficulty she flew when she earned it, not the one she flies now
-  Setup.chk("C: a re-evaluation that was right: nothing to correct, never looked at again", Reputation.correct(v) == null && "6.54".equals(Store.read(Store.file(v.root, "reputation")).getProperty("corrected")) && Reputation.correct(v) == null);
-  Ship vh = v.boarded();
-  SavedGameState was = v.readCopy(vh).save;
-  net.blerf.ftl.constants.Difficulty wasDiff = was.getDifficulty();
-  was.setDifficulty(net.blerf.ftl.constants.Difficulty.EASY);
-  File victoryCopy = new File(ShipStore.versions(v.folderOf(vh)), "victory-20991231-000000.sav"); // her victory, kept after the entry: Easy
-  SaveHelper.writeSavedGame(victoryCopy, was);
-  g = v.readCopy(vh).save; g.setDifficulty(net.blerf.ftl.constants.Difficulty.HARD); v.write(vh, g); // rescued, moved to Hard: the station's change, not scored
-  g = cont(v); ftl(v, g);
-  Thread.sleep(1100); // her versions kept in this second are before the entry, not after it
-  pr = Store.read(Store.file(v.root, "reputation")); pr.remove("rated"); pr.remove("reevaluated"); pr.remove("corrected");
-  pr.setProperty("total", Integer.toString(Store.num(pr, "total", 0) + 6)); Store.write(Store.file(v.root, "reputation"), pr, null);
-  EventLog.write(v, Event.of("REPUTATION").put("log", "reputation").put("reason", "voyage").put("points", 6).put("why", vh.name + ": sector 5 reached (+6)").human(vh.name + ": sector 5 reached (+6)")); // earned on Easy, before 6.13
-  cur = Reputation.total(v);
-  re = Reputation.offer(v);
-  Setup.chk("H: moved to Hard after her victory, her old sector 5 (+6) re-scored as Easy: 8.4, not 12.6; Old Timer's re-scored again here, 2.4 more (" + (re == null ? "none" : re.current + " -> " + re.reevaluated) + ")", re != null && re.reevaluated >= cur + 4 && re.reevaluated <= cur + 5);
-  java.lang.reflect.Constructor<Reputation.Reevaluation> rk = Reputation.Reevaluation.class.getDeclaredConstructor(int.class, long.class); rk.setAccessible(true);
-  java.lang.reflect.Field ru = Reputation.Reevaluation.class.getDeclaredField("units"); ru.setAccessible(true);
-  Reputation.answer(v, rk.newInstance(cur, (Long) ru.get(re) + 42000), true); // as 6.19 to 6.53 did it: at Hard, 12.6 for the +6, 4.2 more
-  int wrongTotal = Reputation.total(v);
-  Reputation.ransomed(v, "Dune"); // earned since: kept
-  int beforeFix = Reputation.total(v);
-  Integer spent0 = Reputation.tally(v).get("Spent");
-  Reputation.Correction rc = Reputation.correct(v);
-  String fixLine = Reputation.recent(v, 1).get(0);
-  Setup.chk("H: the wrong re-evaluation (+" + (wrongTotal - cur) + ") corrected once: 4.2 taken away, the ransom since kept (" + (rc == null ? "none" : rc.was + " -> " + rc.now) + ", " + fixLine.trim() + ")",
-    rc != null && rc.was == beforeFix && (rc.now == beforeFix - 4 || rc.now == beforeFix - 5) && Reputation.total(v) == rc.now && fixLine.contains("Records corrected (\u2212") && Reputation.correct(v) == null);
-  ev = new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8");
-  Setup.chk("H: its machine line says what it corrects", ev.contains("reason=records") && ev.contains("corrects=") && ev.contains("reevaluated_was=") && ev.contains("reevaluated_now="));
-  t = Reputation.tally(v); sum = 0; for (int x : t.values()) sum += x;
-  Setup.chk("H: the tally still adds up to the total, the correction under Other " + t, sum == Reputation.total(v) && java.util.Objects.equals(t.get("Spent"), spent0));
-  victoryCopy.delete();
-  g = v.readCopy(vh).save; g.setDifficulty(wasDiff); v.write(vh, g);
-  g = cont(v); ftl(v, g);
   // 6.21 (heromedel): responding to a distress signal, +1 earned in FTL, once an arrival; its own line in her voyage log, before what she met there
   g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.getEncounter().setText("event_DISTRESS_SATELLITE_DEFENSE_text");
   g.setNearbyShip(Commission.build("REBEL_FAT", "Rebel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(1)).getPlayerShip()); g.setNearbyShipAI(new NearbyShipAIState()); g.setUnknownXi(0);
@@ -278,11 +226,10 @@ public class RepuT {
   g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.getEncounter().setText("event_NEBULA_text"); g.setNearbyShip(null); ftl(v, g);
   Setup.chk("D: an ordinary beacon: nothing", count(new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8"), "| DISTRESS |") == d0);
   Setup.chk("D: the Captain's Log: \"We responded to a distress signal. We encountered a rebel ship.\"", captainsDistress());
-  Setup.chk("X: the rule: Sandbox free; Easy x1, Normal x1.5, Hard x2 whatever is saved; Custom asks, then keeps its choice",
-    Reputation.RATE_FREE.equals(Reputation.rateRule(null, null)) && Reputation.rateLevel(CareerRules.of(CareerRules.EASY), "2") == 0 && Reputation.rateLevel(CareerRules.of(CareerRules.NORMAL), null) == 1
-    && Reputation.rateLevel(CareerRules.of(CareerRules.HARD), "0") == 2 && Reputation.RATE_FIXED.equals(Reputation.rateRule(CareerRules.of(CareerRules.HARD), null))
-    && Reputation.RATE_ASK.equals(Reputation.rateRule(custom, null)) && Reputation.rateLevel(custom, null) == 0
-    && Reputation.RATE_CHOSEN.equals(Reputation.rateRule(custom, "2")) && Reputation.rateLevel(custom, "2") == 2 && Reputation.RATE_ASK.equals(Reputation.rateRule(custom, "7")));
+  Setup.chk("X: the rule: Sandbox free; Easy x1, Normal x1.5, Hard x2 whatever is saved; Custom keeps the choice it began with (x1 if none)",
+    Reputation.RATE_FREE.equals(Reputation.rateRule(null)) && Reputation.rateLevel(CareerRules.of(CareerRules.EASY), "2") == 0 && Reputation.rateLevel(CareerRules.of(CareerRules.NORMAL), null) == 1
+    && Reputation.rateLevel(CareerRules.of(CareerRules.HARD), "0") == 2 && Reputation.RATE_FIXED.equals(Reputation.rateRule(CareerRules.of(CareerRules.HARD)))
+    && Reputation.RATE_CHOSEN.equals(Reputation.rateRule(custom)) && Reputation.rateLevel(custom, null) == 0 && Reputation.rateLevel(custom, "2") == 2 && Reputation.rateLevel(custom, "7") == 0);
   Setup.done();
  }
  /** Ten-thousandths of a point (the total's hidden remainder, 6.17). */

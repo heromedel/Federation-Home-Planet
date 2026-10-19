@@ -69,7 +69,7 @@ public class OverT {
   // the rule by difficulty
   CareerRules easy = CareerRules.of(CareerRules.EASY), normal = CareerRules.of(CareerRules.NORMAL), hard = CareerRules.of(CareerRules.HARD);
   Setup.chk("O: shipped home on Easy and Normal, lost on Hard", easy.augmentsHome() && normal.augmentsHome() && !hard.augmentsHome()
-    && CareerRules.earlier(true).augmentsHome() && CareerRules.LEVELS.length == CareerRules.RULES.length);
+    && CareerRules.LEVELS.length == CareerRules.RULES.length);
   Setup.done();
  }
  /** FTL writes her save: these augments, at this many beacons past where she started, at a store or not; the station looks. */

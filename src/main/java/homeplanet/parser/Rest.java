@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.Store;
 import homeplanet.vault.Reputation;
 import homeplanet.vault.Vault;
@@ -49,7 +49,7 @@ public final class Rest {
 		int run = run(v), cost = cost(v);
 		if (cost > 0) Reputation.spend(v, cost, "Rested in quarters again, " + (run == 1 ? "a second day" : "day " + (run + 1) + " in a row"));
 		// logged before the clock moves: the rest belongs to the day spent resting (5.18)
-		HistoryLog.entry("REST", "Rested in quarters" + (run > 0 ? " (" + (run + 1) + " days in a row" + (cost > 0 ? ", \u2212" + cost + " reputation" : "") + ")" : ""), null,
+		StationLog.entry("REST", "Rested in quarters" + (run > 0 ? " (" + (run + 1) + " days in a row" + (cost > 0 ? ", \u2212" + cost + " reputation" : "") + ")" : ""), null,
 				Event.of("REST").put("days_in_a_row", run + 1).put("cost", cost));
 		v.countBeacon("a day of rest in your quarters");
 		Properties p = new Properties();

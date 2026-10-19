@@ -905,7 +905,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 	private void deliverTo(final List<Beacon.Found> found) {
 		if (delivering || post == null || !homeplanet.vault.Vault.isOpen() || !homeplanet.comm.Outbox.anyWaiting()) return;
 		final List<Beacon.Found> those = new ArrayList<Beacon.Found>();
-		for (Beacon.Found f : found) if (f.compatible() && f.notes && !Blocks.blocked(f.station, null) && homeplanet.comm.Outbox.waitingFor(f.station)) those.add(f);
+		for (Beacon.Found f : found) if (f.compatible() && !Blocks.blocked(f.station, null) && homeplanet.comm.Outbox.waitingFor(f.station)) those.add(f);
 		if (those.isEmpty()) return;
 		delivering = true;
 		final String version = HomePlanet.APP_VERSION, me = Commander.stationId(), title = Commander.title();
@@ -913,7 +913,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		new Thread(new Runnable() {
 			public void run() {
 				final List<String> said = new ArrayList<String>();
-				for (Beacon.Found f : those) said.addAll(homeplanet.comm.Outbox.deliver(f.station, f.host, f.port, version, me, title, reply, f.shipments));
+				for (Beacon.Found f : those) said.addAll(homeplanet.comm.Outbox.deliver(f.station, f.host, f.port, version, me, title, reply));
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run() {
 						delivering = false;
@@ -965,13 +965,13 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		Object v = found.selectedValue();
 		if (v instanceof homeplanet.comm.Contacts.Entry) { // out of range: the message goes to the Outbox
 			homeplanet.comm.Contacts.Entry c = (homeplanet.comm.Contacts.Entry) v;
-			if (!c.notes || Blocks.blocked(c.station, null)) return;
+			if (Blocks.blocked(c.station, null)) return;
 			MessageDialog.open(this, c.station, c.host, 0, c.title, new java.util.function.Consumer<String>() { public void accept(String said) { messageSent(said); showFound(null); } });
 			return;
 		}
 		if (!(v instanceof Beacon.Found)) return;
 		Beacon.Found f = (Beacon.Found) v;
-		if (!f.compatible() || !f.notes || Blocks.blocked(f.station, null)) return;
+		if (!f.compatible() || Blocks.blocked(f.station, null)) return;
 		MessageDialog.open(this, f.station, f.host, f.port, f.title, new java.util.function.Consumer<String>() { public void accept(String said) { messageSent(said); } });
 	}
 	/** Blocks the chosen commander (asked first), or unblocks them. */
@@ -1102,7 +1102,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				else {
 					int port = 0;
 					try { port = Integer.parseInt(ch.address.substring(ch.address.lastIndexOf(':') + 1)); } catch (NumberFormatException x) { }
-					homeplanet.comm.Contacts.seen(p.station, p.title, p.mode, ch.host, port, null);
+					homeplanet.comm.Contacts.seen(p.station, p.title, p.mode, ch.host, port);
 					begin(new Session(ch, true, p, Commander.stationId(), shipsAllowed(), cantTrade(p)));
 					return;
 				}
@@ -1228,7 +1228,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		if (System.currentTimeMillis() > until) { ch.close(Session.notAnswered(Commander.title())); missedHail(p); return; }
 		try { ch.send(myHello()); }
 		catch (IOException e) { JOptionPane.showMessageDialog(this, "The link to " + p.title + " was lost.", "Long Range Comm.", JOptionPane.INFORMATION_MESSAGE); return; }
-		homeplanet.comm.Contacts.seen(p.station, p.title, p.mode, ch.host, 0, null);
+		homeplanet.comm.Contacts.seen(p.station, p.title, p.mode, ch.host, 0);
 		begin(new Session(ch, false, p, Commander.stationId(), shipsAllowed(), cantTrade(p)));
 	}
 	/** A window of the station's own open over it (a dialog, or a second frame): a hail waits for it. */
@@ -1389,7 +1389,7 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		}
 		for (CrewState c : SaveHelper.getOwnCrew(s)) {
 			if (!SaveHelper.hasBody(c)) continue;
-			if (source.isStorage() && homeplanet.parser.Expeditions.laidUp(Vault.get(), c)) continue; // in the infirmary: not to be traded away
+			if (source.isStorage() && homeplanet.parser.AwayCrew.laidUp(Vault.get(), c)) continue; // in the infirmary: not to be traded away
 			out.add(mark(Line.crew(0, c), false));
 		}
 		return out;
@@ -1709,11 +1709,10 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		shipTakeBackBtn.setEnabled(drafting && shipList.selectedValue() != null);
 		packBtn.setEnabled(drafting && !session.mine().isEmpty());
 		prepareBtn.setEnabled(session == null && !hailing);
-		boolean chat = session != null && !session.isOver() && session.peer.chat;
+		boolean chat = session != null && !session.isOver();
 		message.setEnabled(chat);
 		sendBtn.setEnabled(chat);
-		String chatTip = session != null && !session.peer.chat ? session.peer.title + "'s station can't show messages (an older version)" : "A message to the other commander (" + Session.SAY_MAX + " letters at most)";
-		message.setToolTipText(chatTip);
+		message.setToolTipText("A message to the other commander (" + Session.SAY_MAX + " letters at most)");
 		boolean idle = session == null && !hailing, freq = post != null;
 		Object f = found.selectedValue();
 		Beacon.Found ff = f instanceof Beacon.Found ? (Beacon.Found) f : null;
@@ -1734,12 +1733,11 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 				: !freq ? "Open Hailing Frequencies first" : "Open a channel to the chosen commander's station: they must answer");
 		hailAddrBtn.setEnabled(idle && freq);
 		hailAddrBtn.setToolTipText(freq ? "Open a channel to the station at that address: they must answer" : "Open Hailing Frequencies first");
-		messageBtn.setEnabled(idle && ((ff != null && ff.compatible() && ff.notes && !blocked) || (away != null && away.notes && !awayBlocked)));
-		messageBtn.setToolTipText(away != null ? (!away.notes ? away.title + "'s station needs a newer version to take messages"
-					: awayBlocked ? "You blocked " + away.title + " (right-click to unblock)"
+		messageBtn.setEnabled(idle && ((ff != null && ff.compatible() && !blocked) || (away != null && !awayBlocked)));
+		messageBtn.setToolTipText(away != null ? (awayBlocked ? "You blocked " + away.title + " (right-click to unblock)"
 					: away.title + " is out of range: your message waits in the Outbox until your station finds theirs")
 				: ff == null ? "Choose a commander in the list"
-				: !ff.compatible() || !ff.notes ? ff.title + "'s station needs a newer version to take messages"
+				: !ff.compatible() ? ff.title + "'s station needs a newer version to take messages"
 				: blocked ? "You blocked " + ff.title + " (right-click to unblock)"
 				: "A message to " + ff.title + ", without a channel: to their inbox, or as a pop-up if you tick Priority");
 		sourceBtn.setEnabled(session == null || !session.exchanging());

@@ -336,7 +336,7 @@ public class RuleBoxes {
 		showingCareerOwn = !im;
 		careerBox.setToolTipText(im ? SET_BY_IMMERSIVE : careerTip);
 		boolean cost = costBox.isSelected();
-		// Immersive Mode: the ship a report earns goes by what it surrenders, not by this choice
+		// Immersive Mode: the ship a plea earns is the career's rule, not this choice
 		freeBox.setEnabled(cost && !im);
 		freeLabel.setEnabled(cost && !im);
 		if (im) freeBox.setSelectedIndex(Math.max(0, java.util.Arrays.asList(FREE_KEYS).indexOf(homeplanet.core.Economy.reassignment()))); // the career's
@@ -360,8 +360,7 @@ public class RuleBoxes {
 		if (im) {
 			rateBox.setSelectedIndex(homeplanet.vault.Reputation.rateLevel());
 			String rule = homeplanet.vault.Reputation.rateRule();
-			rateBox.setToolTipText(homeplanet.vault.Reputation.RATE_ASK.equals(rule) ? "This career hasn't chosen yet: the Space Dock will ask"
-					: homeplanet.vault.Reputation.RATE_CHOSEN.equals(rule) ? "Chosen when this career began, and fixed" : "The career's difficulty sets it");
+			rateBox.setToolTipText(homeplanet.vault.Reputation.RATE_CHOSEN.equals(rule) ? "Chosen when this career began, and fixed" : "The career's difficulty sets it");
 		} else {
 			if (showingRateCareer) rateBox.setSelectedIndex(Math.max(0, Math.min(2, HomePlanet.reputationRate)));
 			rateBox.setToolTipText(rateTip + ". Sandbox Mode's to change anytime");

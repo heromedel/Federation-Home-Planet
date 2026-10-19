@@ -35,7 +35,7 @@ import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.core.GameGuard;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.model.Items;
 import homeplanet.parser.CompanionMod;
@@ -358,7 +358,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		repaint();
 		liftSoon(); // a docked FTL back over its rebuilt viewport (5.33)
 		if (!loggedStartup) {
-			HistoryLog.loaded("startup");
+			StationLog.loaded("startup");
 			loggedStartup = true;
 		}
 		// FTL's New Game wrote over the boarded ship, or continue.sav is a ship the station never commissioned
@@ -368,23 +368,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				JOptionPane.showMessageDialog(null, cloud + "\n\n" // what was set aside, and where (Vault, 6.08: the ship mark)
 						+ "To stop this, turn off Steam Cloud for FTL: in your Steam library, right-click FTL, Properties, General.", "Steam Cloud", JOptionPane.WARNING_MESSAGE);
 			} });
-		}
-		if (!askingToHard && !toHardPutOff && homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(homeplanet.parser.FinalVictory.toHardRule())) { // before any rescue offer it would decide
-			askingToHard = true;
-			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askToHard(); } });
-		}
-		if (!askingRate && !ratePutOff && homeplanet.vault.Reputation.RATE_ASK.equals(homeplanet.vault.Reputation.rateRule())) { // a Custom career from before 6.13
-			askingRate = true;
-			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askRepRate(); } });
-		} else if (!askingRecords && !recordsPutOff) { // a score counted before the rates (6.19): once, after the rate is chosen
-			final homeplanet.vault.Reputation.Reevaluation r = homeplanet.vault.Reputation.offer(vault);
-			if (r != null) {
-				askingRecords = true;
-				javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askRecords(r); } });
-			} else {
-				final homeplanet.vault.Reputation.Correction c = homeplanet.vault.Reputation.correct(vault); // a re-evaluation before 6.54, put right once
-				if (c != null) javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { tellCorrected(c); } });
-			}
 		}
 		if (!askingFound && !vault.found().isEmpty()) { // saves and ships found as the fleet opened, waiting on the player's word (6.10)
 			askingFound = true;
@@ -415,19 +398,19 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	 */
 	void timeRound(boolean later) {
 		Vault vault = Vault.get();
-		tell(HomePlanet.expeditionType == 2 ? homeplanet.parser.Assignments.checkReturns(vault) : new java.util.ArrayList<homeplanet.parser.Assignments.Report>(),
-				homeplanet.parser.Expeditions.checkRansoms(vault), homeplanet.parser.Expeditions.checkInfirmary(vault), later);
+		tell(HomePlanet.expeditionType == 2 ? homeplanet.parser.Expeditions.checkReturns(vault) : new java.util.ArrayList<homeplanet.parser.Expeditions.Report>(),
+				homeplanet.parser.AwayCrew.checkRansoms(vault), homeplanet.parser.AwayCrew.checkInfirmary(vault), later);
 	}
 	/** What a round brought, told (the console's /passtime gathers several days' worth and tells them once, 5.22). */
-	void tell(final List<homeplanet.parser.Assignments.Report> back, final List<homeplanet.parser.Expeditions.RansomNews> ransomNews, final List<String> upAgain, boolean later) {
+	void tell(final List<homeplanet.parser.Expeditions.Report> back, final List<homeplanet.parser.AwayCrew.RansomNews> ransomNews, final List<String> upAgain, boolean later) {
 		Vault vault = Vault.get();
-		final boolean prizes = HomePlanet.expeditionType == 2 && !homeplanet.parser.Assignments.pendingToAsk(vault).isEmpty();
+		final boolean prizes = HomePlanet.expeditionType == 2 && !homeplanet.parser.Expeditions.pendingToAsk(vault).isEmpty();
 		final List<String> fleet3 = HomePlanet.immersiveNotifications() ? new java.util.ArrayList<String>() : homeplanet.parser.ThirdFleet.due(vault); // with the inbox on, his letters go there
 		if ((HomePlanet.immersiveNotifications() || (ransomNews.isEmpty() && back.isEmpty())) && upAgain.isEmpty() && !prizes && fleet3.isEmpty()) return;
 		Runnable word = new Runnable() { public void run() {
-			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Assignments.Report r : back) AssignmentsDialog.showReport(null, r);
+			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Expeditions.Report r : back) AssignmentsDialog.showReport(null, r);
 			if (prizes) AssignmentsDialog.askPending(null); // a recruit to take on, a ship to keep: asked whatever the inbox setting
-			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Expeditions.RansomNews n : ransomNews) ransomNotice(n);
+			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.AwayCrew.RansomNews n : ransomNews) ransomNotice(n);
 			for (String key : fleet3) thirdFleetNotice(key);
 			if (!upAgain.isEmpty())
 				JOptionPane.showMessageDialog(null, String.join(" and ", upAgain) + (upAgain.size() > 1 ? " are" : " is") + " out of the infirmary, on their feet and waiting in the Cargo Hold.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
@@ -462,24 +445,24 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 
 	/** With the inbox off: a ransom's ask or reminder as a pop-up (Pay, Refuse, or Later: the reminder asks again), or word of the loss. */
-	private void ransomNotice(homeplanet.parser.Expeditions.RansomNews n) {
+	private void ransomNotice(homeplanet.parser.AwayCrew.RansomNews n) {
 		javax.swing.JTextArea t = new javax.swing.JTextArea(n.text());
 		t.setEditable(false); t.setLineWrap(true); t.setWrapStyleWord(true); t.setOpaque(false); t.setColumns(52);
 		t.setFont(MenuTheme.TEXT_FONT);
 		t.setSize(new Dimension(520, 10));
 		if (n.kind.equals("lost")) { JOptionPane.showMessageDialog(null, t, n.title(), JOptionPane.INFORMATION_MESSAGE); return; }
 		Vault v = Vault.get();
-		homeplanet.parser.Expeditions.Captive c = homeplanet.parser.Expeditions.openRansom(v, "ransom:" + n.captive.index);
+		homeplanet.parser.AwayCrew.Captive c = homeplanet.parser.AwayCrew.openRansom(v, "ransom:" + n.captive.index);
 		if (c == null) return; // settled meanwhile
 		Object[] opts = {"Pay " + c.ransom + " scrap", "Refuse", "Later"};
 		int r = JOptionPane.showOptionDialog(null, t, n.title(), JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[2]);
 		try {
 			if (r == 0) {
-				homeplanet.parser.Expeditions.payRansom(v, c);
+				homeplanet.parser.AwayCrew.payRansom(v, c);
 				JOptionPane.showMessageDialog(null, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
 			} else if (r == 1 && HomePlanet.confirmNo(null, "Refuse the ransom? " + c.name + " will not be coming back.", "Ransom")) {
-				homeplanet.parser.Expeditions.refuseRansom(v, c);
-				JOptionPane.showMessageDialog(null, homeplanet.parser.Expeditions.lostWord(c), "Presumed dead: " + c.name, JOptionPane.INFORMATION_MESSAGE);
+				homeplanet.parser.AwayCrew.refuseRansom(v, c);
+				JOptionPane.showMessageDialog(null, homeplanet.parser.AwayCrew.lostWord(c), "Presumed dead: " + c.name, JOptionPane.INFORMATION_MESSAGE);
 			}
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The ransom wasn't settled. Nothing was changed:\n" + e.getMessage());
@@ -589,68 +572,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		if (any) init();
 	}
-	private boolean askingToHard = false, toHardPutOff = false;
-	/** A Custom career with no answer to Rescued Ships after Victory moved to Hard difficulty: asked as its briefing would (6.03), then fixed. Closed: asked again at the next start. */
-	private void askToHard() {
-		try {
-			if (!homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(homeplanet.parser.FinalVictory.toHardRule())) return;
-			Object[] options = {"Yes: always to Hard", "No: I'll choose " + homeplanet.model.Words.her() + " difficulty"};
-			int c = JOptionPane.showOptionDialog(null, "Your Custom career hasn't chosen one of its rules yet:\n\n    Rescued Ships after Victory moved to Hard difficulty\n\n"
-					+ "When you keep a ship rescued after a final victory, does " + homeplanet.model.Words.she() + " set out on Hard without asking?\n"
-					+ "Like the career's other rules, it is chosen once and fixed from then on.", "Your Custom career", JOptionPane.DEFAULT_OPTION,
-					JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-			if (c != 0 && c != 1) { toHardPutOff = true; return; }
-			homeplanet.parser.FinalVictory.chooseToHard(Vault.get().root, c == 0);
-		} catch (IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not record the career's choice in its file (it will ask again):\n" + e.getMessage());
-		} finally {
-			askingToHard = false;
-		}
-	}
-
-	private boolean askingRate = false, ratePutOff = false;
-	/** A Custom career with no reputation rate: asked as its briefing would (heromedel, 6.13), then fixed. Closed: asked again at the next start (x1 meanwhile). */
-	private void askRepRate() {
-		try {
-			if (!homeplanet.vault.Reputation.RATE_ASK.equals(homeplanet.vault.Reputation.rateRule())) return;
-			Object[] options = homeplanet.vault.Reputation.RATE_WORDS;
-			int c = JOptionPane.showOptionDialog(null, "Your Custom career hasn't chosen one of its rules yet:\n\n    Reputation earned\n\n"
-					+ "What your ships earn (sectors, ships defeated, scrap, good outcomes, achievements, expeditions) counts at this rate.\n"
-					+ "Losses and spending count as they are. Like the career's other rules, it is chosen once and fixed from then on.", "Your Custom career", JOptionPane.DEFAULT_OPTION,
-					JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-			if (c < 0 || c > 2) { ratePutOff = true; return; }
-			homeplanet.vault.Reputation.chooseRate(Vault.get().root, c);
-		} catch (IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not record the career's choice in its file (it will ask again):\n" + e.getMessage());
-		} finally {
-			askingRate = false;
-		}
-	}
-
-	/** heromedel, 6.54: an earlier re-evaluation rated each ship at the difficulty she flies now; corrected once, and said so. */
-	private void tellCorrected(homeplanet.vault.Reputation.Correction c) {
-		JOptionPane.showMessageDialog(null, "The Federation Home Planet has corrected its records.\nYour earlier reevaluation counted what your ships earned at the difficulty they fly now,\n"
-				+ "not the difficulty they flew when they earned it.\n\nWas: " + c.was + "\nNow: " + c.now + "\n\nEverything earned since the reevaluation is kept.",
-				"Reputation", JOptionPane.INFORMATION_MESSAGE);
-		init();
-	}
-
-	private boolean askingRecords = false, recordsPutOff = false;
-	/** heromedel's question (6.19), with the two scores: re-evaluated at the rates, or kept. Closed: asked again at the next start. */
-	private void askRecords(homeplanet.vault.Reputation.Reevaluation r) {
-		try {
-			Object[] options = {"Reevaluate", "Keep my current score"};
-			int c = JOptionPane.showOptionDialog(null, "The Federation Home Planet is updating its records.\nMany of your accomplishments were before the update and may warrant a different Reputation score.\n\n"
-					+ "Reevaluated: " + r.reevaluated + "\nCurrent: " + r.current + "\n\nWould you like to be reevaluated or keep your current score?",
-					"Reputation", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-			if (c != 0 && c != 1) { recordsPutOff = true; return; }
-			homeplanet.vault.Reputation.answer(Vault.get(), r, c == 0);
-			init();
-		} finally {
-			askingRecords = false;
-		}
-	}
-
 	private boolean askingAboutStranger = false;
 	private static String cap(String s) { return homeplanet.model.Words.cap(s); }
 	/** The offer about a stranger's achievements and unlocks was put off (closed): asked again at the next start. */
@@ -1553,7 +1474,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		homeplanet.core.Music.refresh();
 		SpaceDockScrollPane.reroll(parent, false); // now and then, different ships leaving the station
 		init();
-		HistoryLog.loaded("refresh");
+		StationLog.loaded("refresh");
 		if (homeplanet.core.FtlDock.active()) new Thread(new Runnable() { public void run() { // and on Refresh, FTL not running at all (5.57)
 			if (homeplanet.core.FtlDock.found() || !ftlSeen || GameGuard.isFtlRunning()) return; // once its window is found, the window says (the build checks it: tasklist can misread); a launch still starting isn't ended
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { if (homeplanet.core.FtlDock.active()) endDock(); } });
@@ -1680,12 +1601,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				!HomePlanet.commissionCosts() ? "commissioning is free (" + (HomePlanet.immersiveMode ? "the career's rules" : "Settings, Rules") + "): Commission a new ship instead."
 						: waiting ? "a ship's order is already waiting for you at Commission." : null,
 				new Runnable() { public void run() { plead(); } }, true));
-		final File last = v.freeCommandForfeit() ? v.lastSurrender() : null;
-		if (last != null) { // an old Report for Reassignment, its ship not yet taken
-			orders.add(new OtherOrdersDialog.Order("Undo Reassignment", "Take back the Cargo Hold and hulls surrendered in the last report for reassignment.",
-					HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final." : null,
-					new Runnable() { public void run() { undoReassignment(last); } }, false));
-		} else if (waiting && v.freeCommandReassigned()) {
+		if (waiting && v.freeCommandReassigned()) {
 			orders.add(new OtherOrdersDialog.Order("Withdraw Plea", "Cancel the new ship's order waiting at Commission. Nothing was taken for it yet.",
 					null, new Runnable() { public void run() { withdrawPlea(); } }, false));
 		}
@@ -1699,7 +1615,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private static String freeShipWords() {
 		return homeplanet.parser.FreeCommand.words(homeplanet.parser.FreeCommand.ship());
 	}
-	/** HR2: surrender the storage hold and the Junkyard for a free new command, then open Commission. */
 	/**
 	 * Plead for New Ship: The Federation Home Planet agrees to send one, whatever is at the Space Dock. Nothing is taken
 	 * now: at Commission the captain picks her from what the plea offers, and pays with the Cargo Hold or (with
@@ -1740,23 +1655,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The Home Planet Station could not withdraw the plea:\n" + e.getMessage());
 		}
 		init();
-	}
-	void undoReassignment(File dir) {
-		String hulls;
-		try { hulls = String.join(", ", Vault.get().surrenderedNames(dir)); } catch (IOException e) { hulls = "?"; }
-		if (!HomePlanet.confirmNo(this, "Take back what was surrendered in the last report for reassignment?\n\n"
-				+ "The Cargo Hold returns as it was, and these hulls return to the Junkyard:\n" + (hulls.isEmpty() ? "(none)" : hulls) + ".\n\n"
-				+ "The free command it earned is given up.", "Undo Reassignment")) return;
-		try {
-			Vault.get().undoSurrender(dir);
-		} catch (IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not undo the report for reassignment:\n" + e.getMessage()
-					+ "\n\nWhat was surrendered is still kept in " + dir);
-			init();
-			return;
-		}
-		init();
-		JOptionPane.showMessageDialog(null, "The Cargo Hold and the Junkyard are as they were before your report.", "Undo Reassignment", JOptionPane.INFORMATION_MESSAGE);
 	}
 	/** Brings a destroyed or lost ship back to the Space Dock from her last kept version. */
 	void recoverShip() {

@@ -26,7 +26,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
 import homeplanet.model.Items;
@@ -318,13 +318,9 @@ public final class Transmissions {
 			for (int i = 1; i <= r; i++) send(all, sent, "promo:" + i, "promo:" + i, rank, null);
 		}
 		if (HomePlanet.career() && PlayerRank.mode() == PlayerRank.FROM_REP && Career.started(v.root)) { // the reputation ladder (heromedel, 5.56)
-			PlayerRank.Climb c = PlayerRank.climb(v, homeplanet.vault.Reputation.total(v), u);
+			List<Integer> promoted = PlayerRank.climb(v, homeplanet.vault.Reputation.total(v));
 			rank = rankName(u);
-			if (c.first) { // a career from before: its rank's own letter, once, with up to three accolades (heromedel, 5.57; a Major has none)
-					int at = java.util.Arrays.asList(PlayerRank.REP_RANKS).indexOf(rank);
-					if (at >= 1) send(all, sent, "rank:ladder", "rank:" + at, rank, null);
-				}
-			for (int r : c.promoted) send(all, sent, "rank:" + r, "rank:" + r, rank, null);
+			for (int r : promoted) send(all, sent, "rank:" + r, "rank:" + r, rank, null);
 		}
 		// one order per free command (the fleet's start, a plea for a new ship), never for an empty shipyard alone
 		boolean granted = v.freeCommandOpen();
@@ -371,7 +367,7 @@ public final class Transmissions {
 		}
 		for (homeplanet.vault.Overflow.Parcel x : homeplanet.vault.Overflow.take(v)) { // augments she had no room for, crated up by her crew
 			if (homeplanet.core.Economy.augmentsHome()) shipped(v, all, sent, x, rank);
-			else HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career", null, overflow("lost", x));
+			else StationLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career", null, overflow("lost", x));
 		}
 		if (HomePlanet.career() && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
 		// reply chains: a letter for what the fleet has been through, and the letters now due
@@ -472,7 +468,7 @@ public final class Transmissions {
 		save(all);
 		m.replied = words;
 		m.read = true;
-		HistoryLog.entry("REPLY", m.from + ": " + words, null, letter("REPLY", m).put("reply", words));
+		StationLog.entry("REPLY", m.from + ": " + words, null, letter("REPLY", m).put("reply", words));
 	}
 	/** The stipend for whole months travelled (every 30 to 60 beacons, by difficulty), in one message: its scrap is claimed into the Cargo Hold. */
 	private static void payStipend(List<Message> all, java.util.Set<String> sent, Unlocks u, String rank) {
@@ -507,7 +503,7 @@ public final class Transmissions {
 			return;
 		}
 		sent.add(m.key);
-		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + (months == 1 ? "one stipend" : months + " stipends") + ")", null, Event.of("STIPEND").put("scrap", amount).put("months", months));
+		StationLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + (months == 1 ? "one stipend" : months + " stipends") + ")", null, Event.of("STIPEND").put("scrap", amount).put("months", months));
 	}
 	/** A stipend's notice: deleted rather than archived once claimed, so they don't pile up. */
 	public static boolean isStipend(Message m) { return m.key.startsWith("stipend:"); }
@@ -591,7 +587,7 @@ public final class Transmissions {
 		m.reward = "";
 		all.add(0, m);
 		save(all);
-		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "posted"));
+		StationLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "posted"));
 	}
 	/** A rescued ship's offer (keep her, or the museum's price), until it's decided. */
 	public static boolean isRescue(Message m) { return m.key.startsWith("rescue:"); }
@@ -627,7 +623,7 @@ public final class Transmissions {
 		all.add(0, m);
 		try {
 			save(all);
-			HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "delivered").put("reward", m.reward.isEmpty() ? null : m.reward));
+			StationLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "delivered").put("reward", m.reward.isEmpty() ? null : m.reward));
 		} catch (IOException e) {
 			log.warn("Could not deliver {}: {}", key, e.toString());
 		}
@@ -666,9 +662,9 @@ public final class Transmissions {
 			Ship st = v.storage();
 			Vault.Copy c = v.readCopy(st);
 			for (homeplanet.vault.Overflow.Parcel x : ps) {
-				if (!homeplanet.core.Economy.augmentsHome()) { HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home", null, overflow("lost", x)); continue; }
+				if (!homeplanet.core.Economy.augmentsHome()) { StationLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home", null, overflow("lost", x)); continue; }
 				c.save.getPlayerShip().getAugmentIdList().add(x.augment);
-				HistoryLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of " + ShipNames.the(x.ship) + ", is in the Cargo Hold", null, overflow("shipped_home", x).put("to", "hold"));
+				StationLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of " + ShipNames.the(x.ship) + ", is in the Cargo Hold", null, overflow("shipped_home", x).put("to", "hold"));
 			}
 			v.begin().put(st, c.save, c.hash).commit();
 		} catch (IOException e) {
@@ -712,17 +708,14 @@ public final class Transmissions {
 		m.subject = ShipNames.fill(fill(t.subject, rank, ship), "name", name);
 		m.body = ShipNames.fill(fill(t.body.toString().trim(), rank, ship), "name", name);
 		if (base != null) m.body = m.body.replace("{race}", raceOf(base)).replace("{cruiser}", className(base));
-		if (m.body.contains(Accolades.TOKEN)) { // what the career did, once each (5.57); an old career confirmed three ranks up or more gets three
-			int up = key.equals("rank:ladder") ? java.util.Arrays.asList(PlayerRank.REP_RANKS).indexOf(rank) : 0;
-			m.body = Accolades.fill(Vault.isOpen() ? Vault.get() : null, key, m.body, up >= 3 ? 3 : 1);
-		}
+		if (m.body.contains(Accolades.TOKEN)) m.body = Accolades.fill(Vault.isOpen() ? Vault.get() : null, key, m.body); // what the career did, once each (5.57)
 		m.reward = t.reward;
 		m.replies = t.replies;
 		m.cost = t.cost;
 		if (finish != null) finish.accept(m);
 		all.add(0, m); // newest first
 		sent.add(key);
-		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "sent").put("reward", m.reward == null || m.reward.isEmpty() ? null : m.reward));
+		StationLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "sent").put("reward", m.reward == null || m.reward.isEmpty() ? null : m.reward));
 	}
 	private static String fill(String s, String rank, String ship) {
 		if (s.contains("{start}")) s = s.replace("{start}", Integer.toString(Career.startingScrap())); // the career's sign-on bonus, by difficulty
@@ -861,7 +854,7 @@ public final class Transmissions {
 		}
 		m.claimed = true;
 		m.claimedWhat = what;
-		HistoryLog.entry("CLAIM", m.subject + ": " + what + " to the Cargo Hold", null, letter("CLAIM", m).put("what", what).put("to", "hold"));
+		StationLog.entry("CLAIM", m.subject + ": " + what + " to the Cargo Hold", null, letter("CLAIM", m).put("what", what).put("to", "hold"));
 		return what;
 	}
 	/** Moves a message to the Archive (read), or back to the inbox. */

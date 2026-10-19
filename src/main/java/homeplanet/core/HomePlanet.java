@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.87";
+	public static final String APP_VERSION = "7.00";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -240,7 +240,7 @@ public class HomePlanet {
 		Lore.prepare();
 		Lore.check();
 		homeplanet.parser.Transmissions.loreCheck(); // the letters and the expedition words, read by their own readers (5.991)
-		homeplanet.parser.Assignments.loreCheck();
+		homeplanet.parser.Expeditions.loreCheck();
 
 		// The vault (files only so far; the ships are read once the game data is in)
 		try {
@@ -271,13 +271,11 @@ public class HomePlanet {
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
 		try { expeditionType = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("expedition_type", "2").trim()))); } catch (NumberFormatException e) { expeditionType = 2; }
-		if (expeditionType == 1) expeditionType = 2; // the old board of jobs went at 5.67 (heromedel): its setting reads as the crew expeditions
-		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
-		if ("variable".equals(freeShip)) freeShip = "kestrel"; // Variable (a ship by what a report surrendered) is no more
-		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
+		if (expeditionType == 1) expeditionType = 2; // 1 was the old board of jobs (gone at 5.67, heromedel): 0 is hiring alone, 2 the crew expeditions
+		freeShip = homeplanet.parser.FreeCommand.norm(config.getProperty("free_ship", "relief")); // the relief ship unless chosen otherwise
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
-		Vault.immersiveSlot = Vault.slotOf(config.getProperty("immersive_slot")); // which Immersive career (a fleet from before difficulties is Custom's)
+		Vault.immersiveSlot = Vault.slotOf(config.getProperty("immersive_slot")); // which Immersive career
 		immersiveNotifications = flag("immersive_notifications");
 		immersiveShipTrading = flag("immersive_ship_trading");
 		immersiveAnyLevel = flag("immersive_any_level", true);
@@ -366,32 +364,21 @@ public class HomePlanet {
 	private static final String[] RULE_KEYS = {"store_requirement", "new_journey_store_requirement", "strip_when_scrapping", "sell_supplies",
 			"commission_unlocked_only", "commission_custom_unlocked_only"};
 
-	/** Reads the config; imports FTL Homeworld's old one when there's none yet. Returns true if it should be written. */
+	/** Reads the config beside the program. Returns true if it should be written (there is none yet). */
 	private static boolean loadConfig() {
-		File from = propFile;
-		if (!from.isFile()) {
-			if (secondStation) return true; // a second station starts afresh, never with the first one's settings
-			// before 4B.04 the config was looked for in the folder the program was started from: carry it over
-			File old = new File("federation-home-planet.cfg").getAbsoluteFile();
-			if (!old.isFile() || old.equals(propFile.getAbsoluteFile())) return true;
-			from = old;
-		}
+		if (!propFile.isFile()) return true;
 		InputStream in = null;
 		try {
-			in = new FileInputStream(from);
+			in = new FileInputStream(propFile);
 			config.load(in);
 		} catch (IOException e) {
-			showErrorDialog("The Home Planet Station could not read its settings from " + from.getPath());
-			log.error("Could not read " + from, e);
+			showErrorDialog("The Home Planet Station could not read its settings from " + propFile.getPath());
+			log.error("Could not read " + propFile, e);
 		} finally {
 			try { if (in != null) in.close(); } catch (IOException e) { }
 		}
-		// before 4B.58 scrapping either kept the systems or didn't: now stripping is allowed or not
-		String old = config.getProperty("scrap_keeps_systems");
-		if (old != null && config.getProperty("strip_when_scrapping") == null) config.setProperty("strip_when_scrapping", old);
-		config.remove("scrap_keeps_systems");
-		config.remove(StationConsole.DEV); // before 6.35 dev commands stayed on in the cfg: now they last one run, never left on (heromedel)
-		return from != propFile; // an old config: written to its new place
+		config.remove(StationConsole.DEV); // dev commands last one run, never left on (heromedel, 6.35)
+		return false;
 	}
 
 	/** Writes the current settings to the cfg (a temporary file, then one move). Returns false, after telling the user, on failure. */

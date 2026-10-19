@@ -58,3 +58,7 @@ Major changes by version
 6.73 to 6.80
   Manual opens from Settings, with Find, dark mode and Top links.
   Search added to the station log, ship logs and Career Reputation Log.
+
+6.81 to 7.00
+  The manual in the station's own window. Every move of more than one file is one protection note.
+  7.00: support for fleets and careers from before 6.0 removed; Long Range Comm. protocol 3.

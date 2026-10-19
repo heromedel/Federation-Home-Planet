@@ -9,7 +9,7 @@ import java.util.Properties;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 
@@ -69,7 +69,7 @@ public final class Overflow {
 				for (String a : seen.split(",")) {
 					if (a.isEmpty() || left.remove(a)) continue; // still aboard (each copy counted once)
 					p.setProperty("parcel." + n, "shipped:" + b.id + ":" + at + ":" + n + "|" + a + "|" + gs.getPlayerShipName());
-					HistoryLog.entry("OVERFLOW", gs.getPlayerShipName() + " had no room for " + a + ": her crew ship it home", null,
+					StationLog.entry("OVERFLOW", gs.getPlayerShipName() + " had no room for " + a + ": her crew ship it home", null,
 							Event.of("OVERFLOW").put("what", "shipped").put("augment", a).put("ship", b.name + "." + b.id).put("ship_name", b.name).put("ship_id", b.id).put("parcel", n));
 					n++;
 				}

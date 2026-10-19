@@ -54,23 +54,23 @@ public final class CaptainsLog {
 		Day(int from, int to, List<Line> lines) { this.from = from; this.to = to; this.lines = lines; }
 		/** The heading: "Stardate Today" for the first day, "Stardate 1.1.1.2", or a quiet stretch's "Stardates a – b". */
 		public String heading() {
-			if (from == to) return from == 1 ? "Stardate Today" : "Stardate " + MasterLog.stardate(from);
-			return "Stardates " + (from == 1 ? "Today" : MasterLog.stardate(from)) + " – " + MasterLog.stardate(to);
+			if (from == to) return from == 1 ? "Stardate Today" : "Stardate " + Calendar.stardate(from);
+			return "Stardates " + (from == 1 ? "Today" : Calendar.stardate(from)) + " – " + Calendar.stardate(to);
 		}
 	}
 
 	/** The career's days from its first to today, the quiet ones folded together. */
 	public static List<Day> days(Vault v) {
-		Map<Integer, List<MasterLog.Entry>> byDay = MasterLog.byDay(v);
-		Map<Integer, String> began = MasterLog.dayReasons(v);
-		int today = Math.max(1, MasterLog.today(v));
+		Map<Integer, List<Calendar.Entry>> byDay = Calendar.byDay(v);
+		Map<Integer, String> began = Calendar.dayReasons(v);
+		int today = Math.max(1, Calendar.today(v));
 		for (int d : byDay.keySet()) today = Math.max(today, d);
 		List<Day> out = new ArrayList<Day>();
 		int quiet = 0;
 		Boolean wasAboard = null; // where the last day with lines left the captain
 		Map<String, Line> lastJump = new LinkedHashMap<String, Line>(); // each ship's latest jump line, for what's learned of her beacon later
 		for (int d = 1; d <= today; d++) {
-			List<MasterLog.Entry> es = byDay.get(d);
+			List<Calendar.Entry> es = byDay.get(d);
 			List<Line> later = new ArrayList<Line>();
 			List<Line> lines = es == null ? new ArrayList<Line>() : day(es, began.get(d + 1), wasAboard, later);
 			for (Line b : later) { // a ship met after the jump: it goes with that jump, on whatever day it was
@@ -94,13 +94,13 @@ public final class CaptainsLog {
 	private static List<Line> lines(int n) { return new ArrayList<Line>(n); }
 
 	/** One day's lines: each entry read, the repeats merged, and the action that moved the day on (why the next began) last, with "Then". */
-	static List<Line> day(List<MasterLog.Entry> entries, String endedBy) { return day(entries, endedBy, null); }
+	static List<Line> day(List<Calendar.Entry> entries, String endedBy) { return day(entries, endedBy, null); }
 	/** As above, knowing where the day before left the captain (aboard, at the station, or not known). */
-	static List<Line> day(List<MasterLog.Entry> entries, String endedBy, Boolean wasAboard) { return day(entries, endedBy, wasAboard, new ArrayList<Line>()); }
+	static List<Line> day(List<Calendar.Entry> entries, String endedBy, Boolean wasAboard) { return day(entries, endedBy, wasAboard, new ArrayList<Line>()); }
 	/** As above; what was learned of a beacon reached on an earlier day goes into {@code later}, for that day's jump. */
-	static List<Line> day(List<MasterLog.Entry> entries, String endedBy, Boolean wasAboard, List<Line> later) {
+	static List<Line> day(List<Calendar.Entry> entries, String endedBy, Boolean wasAboard, List<Line> later) {
 		Map<String, Line> merged = new LinkedHashMap<String, Line>();
-		for (MasterLog.Entry e : entries) read(e, merged);
+		for (Calendar.Entry e : entries) read(e, merged);
 		List<Line> lines = new ArrayList<Line>();
 		boolean boughtAboard = false;
 		for (Line l : merged.values()) if (l.kind.equals("ftlbuy")) boughtAboard = true;
@@ -160,7 +160,7 @@ public final class CaptainsLog {
 	/** The kinds of line that moved the day on, by the master log's reason for the day after. */
 	private static List<String> moverKinds(String why) {
 		if (why.startsWith("a day of rest")) return Arrays.asList("rest");
-		if (why.equals(MasterLog.CARGO_BAY)) return Arrays.asList("buy", "hire", "sell", "systems", "junk", "retire");
+		if (why.equals(Calendar.CARGO_BAY)) return Arrays.asList("buy", "hire", "sell", "systems", "junk", "retire");
 		if (why.startsWith("work at a store")) return Arrays.asList("work", "ftlbuy");
 		if (why.startsWith("a jump")) return Arrays.asList("move");
 		if (why.startsWith("a job")) return Arrays.asList("job");
@@ -176,7 +176,7 @@ public final class CaptainsLog {
 	}
 	private static Line once(Map<String, Line> m, String kind, boolean byMe, String text) { return line(m, kind, kind + ":" + m.size(), byMe, text); }
 
-	private static void read(MasterLog.Entry e, Map<String, Line> m) {
+	private static void read(Calendar.Entry e, Map<String, Line> m) {
 		if ("station".equals(e.log)) station(e.text, e.event, m);
 		else if (e.log.startsWith("voyage: ")) voyage(e.log.substring(8), e.text, e.event, m);
 		// reputation has its own log and tally: never a line here
@@ -316,9 +316,6 @@ public final class CaptainsLog {
 		} else if (kind.equals("MUSEUM")) {
 			if (head.contains(" is honoured in")) once(m, "ships", false, startShip(head.split(" is honoured")[0].trim()) + " went to the Federation Museum.");
 			else { int f = head.lastIndexOf(" for "); if (f > 0) { Line l = once(m, "ships", false, "The museum paid for " + theShip(head.substring(f + 5).trim()) + "."); l.details.add(head.substring(0, f)); } }
-		} else if (kind.equals("REWARD")) {
-			int f = head.lastIndexOf(" for ");
-			if (f > 0) { Line l = once(m, "ships", false, "A reward came in for " + theShip(head.substring(f + 5).trim()) + "."); l.details.add(head.substring(0, f)); }
 		} else if (kind.equals("OVERWRITTEN")) {
 			once(m, "ships", false, startShip(head.replaceAll("\\s*\\([0-9a-f]+\\).*$", "").trim()) + " was lost.");
 		} else if (kind.equals("LONG RANGE TRADE")) {

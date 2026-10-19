@@ -15,7 +15,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.SystemBlueprint;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.Store;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
@@ -212,7 +212,7 @@ public final class Parts {
 			else h.getAugmentIdList().add(l.id);
 			p.setProperty(l.index + ".open", "false");
 			v.begin().put(st, c.save, c.hash).put(file(v), bytes(v, p)).commit(); // paid and sold in one note (6.87)
-			HistoryLog.entry("BUY", l.title() + ", salvage from the Junkyard, for " + l.price + " scrap from the Cargo Hold", null,
+			StationLog.entry("BUY", l.title() + ", salvage from the Junkyard, for " + l.price + " scrap from the Cargo Hold", null,
 					Event.of("BUY").put("what", "salvage").put("item", l.id).put("title", l.title()).put("price", l.price).put("from", "hold").put("to", "hold"));
 			return;
 		}
@@ -221,7 +221,7 @@ public final class Parts {
 		homeplanet.vault.StoredSystems.add(tx, v, java.util.Collections.singletonList(homeplanet.vault.StoredSystems.line(l.id, l.level, l.broken)));
 		tx.commit();
 		ThirdFleet.partBought(v); // the Third Fleet Commander needn't point the way to them
-		HistoryLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard" + (l.clearance ? " on clearance" : "") + ", for " + l.price + " scrap from the Cargo Hold", null,
+		StationLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard" + (l.clearance ? " on clearance" : "") + ", for " + l.price + " scrap from the Cargo Hold", null,
 				Event.of("BUY").put("what", "part").put("system", l.id).put("title", homeplanet.model.Items.systemTitle(l.id)).put("level", l.level).put("broken", l.broken).put("clearance", l.clearance).put("price", l.price).put("from", "hold").put("to", "stored_systems"));
 	}
 
@@ -241,7 +241,7 @@ public final class Parts {
 		Properties p = rolled(v, new Random());
 		p.setProperty("searchedAt", Integer.toString(v.beaconsSeen()));
 		v.begin().put(st, c.save, c.hash).put(file(v), bytes(v, p)).commit(); // paid and searched in one note (6.87)
-		HistoryLog.entry("BUY", "Searched the Junkyard for more parts, for " + SEARCH_COST + " scrap from the Cargo Hold", null,
+		StationLog.entry("BUY", "Searched the Junkyard for more parts, for " + SEARCH_COST + " scrap from the Cargo Hold", null,
 				Event.of("BUY").put("what", "search").put("parts", Store.num(p, "count", 0)).put("price", SEARCH_COST).put("from", "hold").put("to", "junkyard"));
 	}
 

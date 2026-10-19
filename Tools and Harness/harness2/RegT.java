@@ -5,13 +5,12 @@ public class RegT { public static void main(String[] a) throws Exception {
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
- HistoryLog.entry("LONG RANGE TRADE", "with Commander Bree  (trade #7)", Arrays.asList("gave: Ash (Human), Bob (Rockman)", "received: Cy (Engi)"));
- HistoryLog.entry("RENAME", "Old Glory -> New Glory  (abc123)");
+ StationLog.entry("LONG RANGE TRADE", "with Commander Bree  (trade #7)", Arrays.asList("gave: Ash (Human), Bob (Rockman)", "received: Cy (Engi)"));
+ StationLog.entry("RENAME", "Old Glory -> New Glory  (abc123)");
  String st = CrewRegister.stationText(v);
  Setup.chk("A: the station entries from the event log in the station log's form: minute, kind, headline, then each detail (" + st.split("\n").length + " lines)",
    st.matches("(?s).*\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d  LONG RANGE TRADE  with Commander Bree  \\(trade #7\\)\n  gave: Ash \\(Human\\), Bob \\(Rockman\\)\n  received: Cy \\(Engi\\)\n.*")
    && st.contains("  RENAME  Old Glory -> New Glory  (abc123)\n"));
- Setup.chk("A: history.log is no longer written (5.93)", !v.historyLog().isFile() || !new String(SafeFiles.read(v.historyLog()), "UTF-8").contains("Commander Bree"));
  // C: the reputation log from the event log (5.92), as reputation.log wrote it
  HomePlanet.reputationOn = true;
  Reputation.expedition(v, "Nebula, Attack", 24, 0, 2);

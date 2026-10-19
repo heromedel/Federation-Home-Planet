@@ -44,14 +44,8 @@ public final class HoldXml {
 		try { return f.isFile() && isHold(SafeFiles.read(f)); } catch (IOException e) { return false; }
 	}
 
-	/** A hold's file read, whichever it is: the xml, or a save (a 5.x fleet's storage.sav or cargohold.sav). */
-	public static SavedGameState read(File f) throws IOException {
-		byte[] b = SafeFiles.read(f);
-		if (isHold(b)) return read(b);
-		try { return new SavedGameParser().readSavedGame(f); }
-		catch (IOException e) { throw e; }
-		catch (Exception e) { throw new IOException(f.getName() + " could not be read: " + e, e); }
-	}
+	/** A hold's file read. */
+	public static SavedGameState read(File f) throws IOException { return read(SafeFiles.read(f)); }
 
 	public static byte[] toBytes(SavedGameState gs) throws IOException {
 		ShipState s = gs.getPlayerShip();

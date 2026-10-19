@@ -27,12 +27,12 @@ import org.w3c.dom.Node;
  * words stand; one that names a field the event hasn't got is passed over when it's written, so a raw {token} never
  * reaches the player. The station always starts: what was left out is named in the debug log, by file, line and rule.
  * Since 5.991 the letters (letters.xml), the expedition words (expeditions.xml) and the accolades and deeds (deeds.xml)
- * live here too; the first two have shapes of their own, read by their readers (parser/Transmissions, parser/Assignments)
+ * live here too; the first two have shapes of their own, read by their readers (parser/Transmissions, parser/Expeditions)
  * with this class's rules, jar, copy and problems.
  *
  * <pre>
  *   &lt;lore&gt;
- *     &lt;entry kind="HOLD_FILE"&gt;The Cargo Hold's inventory was written up in a new ledger.&lt;/entry&gt;
+ *     &lt;entry kind="REMODEL"&gt;The {ship_name} was remodeled.&lt;/entry&gt;
  *     &lt;entry kind="CREW_MOVE" when="reason=cargo_bay_save"&gt;{crew_name} was transferred to the {to_name}.&lt;/entry&gt;
  *   &lt;/lore&gt;
  * </pre>
@@ -50,7 +50,7 @@ public final class Lore {
 	public static final String STATION_LOG = "logs/station-log.xml";
 	/** The Federation's letters (parser/Transmissions reads them, letter by letter). */
 	public static final String LETTERS = "letters.xml";
-	/** The expedition reports' words (parser/Assignments reads them, key by key). */
+	/** The expedition reports' words (parser/Expeditions reads them, key by key). */
 	public static final String EXPEDITIONS = "expeditions.xml";
 	/** The rank letters' accolades and the achievements told as deeds (parser/Accolades reads them, as entries). */
 	public static final String DEEDS = "deeds.xml";
@@ -168,7 +168,7 @@ public final class Lore {
 	 * keeps its old line exactly (6.0 §3.5), and a received ship's entry the words her own station gave it.
 	 */
 	public static String human(Event e) {
-		if ("true".equals(e.get("converted")) || e.get("received_from") != null) return e.human();
+		if (e.get("received_from") != null) return e.human();
 		String w = words(STATION_LOG, e);
 		return w != null ? w : e.human();
 	}

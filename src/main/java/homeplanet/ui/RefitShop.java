@@ -78,7 +78,7 @@ class RefitShop {
 	private final Map<Ship, String> otherHashes = new LinkedHashMap<Ship, String>(); // their files' fingerprints as read
 	private final Set<Ship> dirty = new LinkedHashSet<Ship>();
 	private final List<String> purchases = new ArrayList<String>(); // for the history log
-	// What purchases changed on each buyer, keyed like HistoryLog.inventory, so the TRADE entry leaves them out
+	// What purchases changed on each buyer, keyed like StationLog.inventory, so the TRADE entry leaves them out
 	private final Map<SavedGameState, Map<String, Integer>> bought = new java.util.IdentityHashMap<SavedGameState, Map<String, Integer>>();
 
 

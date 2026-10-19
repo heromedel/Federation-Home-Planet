@@ -1,4 +1,4 @@
-import java.io.*; import java.util.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
+import homeplanet.vault.Calendar; import java.io.*; import java.util.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
 /** The master log and the Captain's Log (5.17): stardates, day lines and entry lines, Prior, the Cargo Bay's day. args: gamedir, world saves, work */
 public class LogT { public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
@@ -6,30 +6,30 @@ public class LogT { public static void main(String[] a) throws Exception {
  HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive(); HomePlanet.reputationOn = false;
  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
  Setup.chk("S: stardates: 1.1.1.1, a week on 1.1.2.1, a month on 1.2.1.1, a year on 2.1.1.1; before day 1, Prior",
-   MasterLog.stardate(1).equals("1.1.1.1") && MasterLog.stardate(8).equals("1.1.2.1") && MasterLog.stardate(29).equals("1.2.1.1") && MasterLog.stardate(365).equals("2.1.1.1")
-   && MasterLog.stardate(0).equals("Prior to 1.1.1.1") && MasterLog.stardate(-1).equals("Prior to 1.1.1.1"));
- Setup.chk("S: the fleet's day 1 is today (its first look on 5.17), written down once", MasterLog.today(v) == 1 && Clock.num(v, "start", -1) >= 0 && MasterLog.start(v) == v.beaconsSeen());
- HistoryLog.entry("CREW", "Ash signed on");
- HistoryLog.entry("LOADED", "(refresh)", Arrays.asList("a ship line"));
+   Calendar.stardate(1).equals("1.1.1.1") && Calendar.stardate(8).equals("1.1.2.1") && Calendar.stardate(29).equals("1.2.1.1") && Calendar.stardate(365).equals("2.1.1.1")
+   && Calendar.stardate(0).equals("Prior to 1.1.1.1") && Calendar.stardate(-1).equals("Prior to 1.1.1.1"));
+ Setup.chk("S: the fleet's day 1 is today (its first look on 5.17), written down once", Calendar.today(v) == 1 && Clock.num(v, "start", -1) >= 0 && Calendar.start(v) == v.beaconsSeen());
+ StationLog.entry("CREW", "Ash signed on");
+ StationLog.entry("LOADED", "(refresh)", Arrays.asList("a ship line"));
  Rest.rest(v);
- Setup.chk("S: a day of rest: day 2, noted with why", MasterLog.today(v) == 2 && "a day of rest in your quarters".equals(MasterLog.lastDayWhy(v)));
- HistoryLog.entry("EXPEDITION", "Ash sent to the Nebula");
- Map<Integer, List<MasterLog.Entry>> days = MasterLog.byDay(v);
+ Setup.chk("S: a day of rest: day 2, noted with why", Calendar.today(v) == 2 && "a day of rest in your quarters".equals(Calendar.lastDayWhy(v)));
+ StationLog.entry("EXPEDITION", "Ash sent to the Nebula");
+ Map<Integer, List<Calendar.Entry>> days = Calendar.byDay(v);
  boolean ash1 = false, ash2 = false;
- for (MasterLog.Entry e : days.get(1)) if (e.text.contains("Ash signed on")) ash1 = true;
- for (MasterLog.Entry e : days.get(2)) if (e.text.contains("Ash sent to the Nebula")) ash2 = true;
+ for (Calendar.Entry e : days.get(1)) if (e.text.contains("Ash signed on")) ash1 = true;
+ for (Calendar.Entry e : days.get(2)) if (e.text.contains("Ash sent to the Nebula")) ash2 = true;
  Setup.chk("S: every station log entry is copied, on its day, with the real time", ash1 && ash2 && days.get(1).get(0).real.matches("\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d"));
  // Prior: no day, 0 or -1 are never in the Captain's Log
  EventLog.write(v, Event.of("CREW").put("log", "station").put("headline", "zero day").put("day", "0").human("zero day"));
  EventLog.write(v, Event.of("CREW").put("log", "station").put("headline", "minus day").put("day", "-1").human("minus day"));
- boolean prior = false; for (List<MasterLog.Entry> l : MasterLog.byDay(v).values()) for (MasterLog.Entry e : l) if (e.text.contains("zero day") || e.text.contains("minus day")) prior = true;
+ boolean prior = false; for (List<Calendar.Entry> l : Calendar.byDay(v).values()) for (Calendar.Entry e : l) if (e.text.contains("zero day") || e.text.contains("minus day")) prior = true;
  Setup.chk("S: an entry of day 0 or -1 is Prior: left out", !prior);
  // the Cargo Bay's day: once, then not again until something else moves the clock
  int c0 = v.beaconsSeen();
- boolean first = MasterLog.businessDay(v), second = MasterLog.businessDay(v);
+ boolean first = Calendar.businessDay(v), second = Calendar.businessDay(v);
  Setup.chk("C: business in the Cargo Bay passes a day; a second Save right after passes none", first && !second && v.beaconsSeen() == c0 + 1);
  Rest.rest(v);
- Setup.chk("C: after something else moves the clock, it counts again", MasterLog.businessDay(v) && v.beaconsSeen() == c0 + 3);
+ Setup.chk("C: after something else moves the clock, it counts again", Calendar.businessDay(v) && v.beaconsSeen() == c0 + 3);
  // 5.18: the Captain's Log as a story, on a fresh fleet of its own
  storyDays(game, new File(work, "story"));
  voyageDays(game, new File(work, "voyage"));
@@ -38,25 +38,12 @@ public class LogT { public static void main(String[] a) throws Exception {
  storeWork(game, new File(work, "storework"));
  System.setProperty("game", game.getPath()); fixes520(v);
  // 5.53 (heromedel): the fleet's listing is the debug log's; old LOADED entries stay in the file, out of view, the stardates still in line
- HistoryLog.loaded("refresh");
+ StationLog.loaded("refresh");
  Setup.chk("L: a refresh's listing no longer goes in the station log", count(Setup.stationLog(v), "LOADED") == 1);
- Class<?> rl = Class.forName("homeplanet.ui.RecordsLog");
- java.lang.reflect.Method st = rl.getDeclaredMethod("station", String.class, String.class, int[].class); st.setAccessible(true);
- Object view = st.invoke(null, "2026-01-01 00:00  CREW  Ash signed on\n2026-01-01 00:01  LOADED  (startup)\n  a ship line\n2026-01-01 00:02  CREW  Bree signed on\n", "", new int[] {1, 2, 3});
- java.lang.reflect.Field items = rl.getDeclaredField("items"); items.setAccessible(true);
- List<String> seen = new ArrayList<String>();
- for (Object it : (List<?>) items.get(view)) {
-  Class<?> ic = it.getClass();
-  java.lang.reflect.Field hf = ic.getDeclaredField("heading"), tf = ic.getDeclaredField("title"), gf = ic.getDeclaredField("tag"), df = ic.getDeclaredField("details");
-  hf.setAccessible(true); tf.setAccessible(true); gf.setAccessible(true); df.setAccessible(true);
-  seen.add((Boolean) hf.get(it) ? (String) tf.get(it) : gf.get(it) + "/" + ((List<?>) df.get(it)).size());
- }
- Setup.chk("L: an old LOADED entry is out of view, its lines with it; the next entry keeps its own stardate " + seen,
-   seen.equals(Arrays.asList("Stardate " + MasterLog.stardate(1), "CREW/0", "Stardate " + MasterLog.stardate(3), "CREW/0")));
  // 6.05 (heromedel): the station log's view is the station's business, in its words; its housekeeping stays in events.log
  EventLog.write(v, Event.of("PATCH").put("log", "station").put("headline", "Patched 2 mods with Slipstream").put("ok", true).put("mods", 2).put("launched_ftl", false));
  EventLog.write(v, Event.of("DOCK").put("log", "station").put("headline", "Kestrel  continue.sav -> shipyard/Kestrel.a3f2").put("ship", "Kestrel.a3f2").put("ship_name", "Kestrel").put("ship_id", "a3f2").put("from", "continue.sav").put("to", "shipyard/Kestrel.a3f2"));
- java.lang.reflect.Method tagOf = rl.getDeclaredMethod("tag", EventLog.Entry.class); tagOf.setAccessible(true);
+ Class<?> rl = Class.forName("homeplanet.ui.RecordsLog"); java.lang.reflect.Method tagOf = rl.getDeclaredMethod("tag", EventLog.Entry.class); tagOf.setAccessible(true);
  EventLog.Entry patch = null, dock = null; for (EventLog.Entry e : EventLog.read(v)) { if (e.kind.equals("PATCH")) patch = e; if (e.kind.equals("DOCK")) dock = e; }
  Setup.chk("V: a patch is housekeeping, out of view; a ship docked is the Space Dock's business, in the station's words, tagged Ships",
    patch != null && tagOf.invoke(null, patch) == null && dock != null && "Ships".equals(tagOf.invoke(null, dock)) && Lore.told(dock).equals("The Kestrel came back to the Space Dock."));
@@ -87,8 +74,8 @@ public class LogT { public static void main(String[] a) throws Exception {
   Setup.voyage(v, "Kestrel", jump);
   Setup.voyage(v, "Kestrel", "Arrived at a store");
   v.countBeacon("a jump");
-  HistoryLog.entry("SELL", "1 item for 6 scrap", Arrays.asList("2 Missiles for 6 scrap  (Spacedock Storage)"));
-  MasterLog.businessDay(v);
+  StationLog.entry("SELL", "1 item for 6 scrap", Arrays.asList("2 Missiles for 6 scrap  (Spacedock Storage)"));
+  Calendar.businessDay(v);
   Setup.voyage(v, "Kestrel", "Sector 3 reached (sectors visited: 3)");
   Setup.voyage(v, "Kestrel", jump);
   v.countBeacon("a jump");
@@ -161,30 +148,30 @@ public class LogT { public static void main(String[] a) throws Exception {
   java.lang.reflect.Method nw = Vault.class.getDeclaredMethod("noteWork", Ship.class, net.blerf.ftl.parser.SavedGameParser.SavedGameState.class); nw.setAccessible(true);
   nw.invoke(v, b, gs); // the stop, first seen
   gs.setStateVar("store_purchase", (gs.hasStateVar("store_purchase") ? gs.getStateVar("store_purchase") : 0) + 1);
-  int before = MasterLog.today(v);
+  int before = Calendar.today(v);
   nw.invoke(v, b, gs); // work done there: a day passes
   int workDay = 0;
-  for (Map.Entry<Integer, List<MasterLog.Entry>> e : MasterLog.byDay(v).entrySet()) for (MasterLog.Entry x : e.getValue()) if (x.text.startsWith("Time spent on work")) workDay = e.getKey();
-  Setup.chk("F: work at a store is told on the stop's own day, then the day passes (" + workDay + ", " + before + " -> " + MasterLog.today(v) + ")", workDay == before && MasterLog.today(v) == before + 1);
+  for (Map.Entry<Integer, List<Calendar.Entry>> e : Calendar.byDay(v).entrySet()) for (Calendar.Entry x : e.getValue()) if (x.text.startsWith("Time spent on work")) workDay = e.getKey();
+  Setup.chk("F: work at a store is told on the stop's own day, then the day passes (" + workDay + ", " + before + " -> " + Calendar.today(v) + ")", workDay == before && Calendar.today(v) == before + 1);
   File saves = new File(v.root.getParentFile().getParentFile(), "sale/saves"); saves.mkdirs(); // the station log writes to the fleet opened last: a fresh one of its own
   v = Setup.open(new File(System.getProperty("game")), saves); v.storage(); v.takeStock();
-  HistoryLog.entry("SELL", "2 items for 36 scrap", Arrays.asList("Burst Laser II for 30 scrap  (Kestrel (cargo))", "Ion Blast for 6 scrap  (The (Odd) Ship)"));
-  MasterLog.businessDay(v);
+  StationLog.entry("SELL", "2 items for 36 scrap", Arrays.asList("Burst Laser II for 30 scrap  (Kestrel (cargo))", "Ion Blast for 6 scrap  (The (Odd) Ship)"));
+  Calendar.businessDay(v);
   String p = page(v, false);
-  HistoryLog.entry("SYSTEMS", "Test Kestrel", Arrays.asList("Bought Cloaking (level 1) into the Cargo Hold"));
-  HistoryLog.entry("BUY", "1 purchase", Arrays.asList("Cloaking system (150 scrap) from the store at Test Kestrel's beacon -> The Cargo Bay"));
-  MasterLog.businessDay(v);
+  StationLog.entry("SYSTEMS", "Test Kestrel", Arrays.asList("Bought Cloaking (level 1) into the Cargo Hold"));
+  StationLog.entry("BUY", "1 purchase", Arrays.asList("Cloaking system (150 scrap) from the store at Test Kestrel's beacon -> The Cargo Bay"));
+  Calendar.businessDay(v);
   String q = page(v, false);
   Setup.chk("F: a system bought into the Cargo Hold: Bought a Cloaking system, and no refit work told for it (5.30)", q.contains("Bought a Cloaking system.") && !q.contains("Had refit work done on the Test Kestrel"));
-  HistoryLog.entry("BUY", "2 purchases", Arrays.asList("Missiles (6 scrap) from the store at Test Kestrel's beacon -> Test Kestrel", "436F~696C Coil (Engi) (45 scrap) from the store at Test Kestrel's beacon -> Test Kestrel"));
-  MasterLog.businessDay(v);
+  StationLog.entry("BUY", "2 purchases", Arrays.asList("Missiles (6 scrap) from the store at Test Kestrel's beacon -> Test Kestrel", "436F~696C Coil (Engi) (45 scrap) from the store at Test Kestrel's beacon -> Test Kestrel"));
+  Calendar.businessDay(v);
   String h = page(v, false);
   Setup.chk("F: crew from a store are hired, not bought (6.40)", h.contains("ired 436F~696C Coil, an Engi, at a station.") && !h.contains("Bought a 436F") && !h.contains("bought a 436F"));
-  HistoryLog.entry("CREW", "Joel assigned to the Test Kestrel.");
-  HistoryLog.entry("CREW", "Ferry assigned to the Test Kestrel.");
-  HistoryLog.entry("CREW", "Kirkner assigned to the Cargo Hold.");
-  HistoryLog.entry("CREW", "Ash signed on"); // another CREW entry: not a move, not told as one
-  MasterLog.businessDay(v);
+  StationLog.entry("CREW", "Joel assigned to the Test Kestrel.");
+  StationLog.entry("CREW", "Ferry assigned to the Test Kestrel.");
+  StationLog.entry("CREW", "Kirkner assigned to the Cargo Hold.");
+  StationLog.entry("CREW", "Ash signed on"); // another CREW entry: not a move, not told as one
+  Calendar.businessDay(v);
   String r = page(v, false);
   Setup.chk("F: crew moved in the Cargo Bay: one line a destination (5.40)", r.contains("Assigned Joel and Ferry to the Test Kestrel.") && r.contains("Moved Kirkner to the Cargo Hold.") && !r.contains("Ash"));
   Setup.chk("F: a sale from a ship's cargo, or a ship with brackets in her name, reads cleanly", p.contains("Sold a Burst Laser II and an Ion Blast.") && !p.contains("(cargo)"));
@@ -233,16 +220,16 @@ public class LogT { public static void main(String[] a) throws Exception {
   HomePlanet.reputationOn = true;
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
   // day 1: a crew back, a letter, then rest
-  HistoryLog.entry("EXPEDITION", "Bob, Joe, Fred back from Nebula (Salvage): 20 scrap; killed: Fred");
-  HistoryLog.entry("TRANSMISSION", "Expedition Command: Back from Nebula");
-  HistoryLog.entry("TRANSMISSION", "Home Planet Shipyard: Commission order: Kestrel Cruiser, Type B");
+  StationLog.entry("EXPEDITION", "Bob, Joe, Fred back from Nebula (Salvage): 20 scrap; killed: Fred");
+  StationLog.entry("TRANSMISSION", "Expedition Command: Back from Nebula");
+  StationLog.entry("TRANSMISSION", "Home Planet Shipyard: Commission order: Kestrel Cruiser, Type B");
   Rest.rest(v);
   // day 2: four missiles sold over two Saves, a ship boarded twice, then business moved the day
-  HistoryLog.entry("BOARD", "Kestrel  ships/a.sav -> continue.sav");
-  HistoryLog.entry("BOARD", "Hinata  ships/b.sav -> continue.sav");
-  HistoryLog.entry("SELL", "1 item for 9 scrap", Arrays.asList("3 Missiles for 9 scrap  (Spacedock Storage)"));
-  HistoryLog.entry("SELL", "1 item for 6 scrap", Arrays.asList("2 Missiles for 6 scrap  (Spacedock Storage)"));
-  MasterLog.businessDay(v);
+  StationLog.entry("BOARD", "Kestrel  ships/a.sav -> continue.sav");
+  StationLog.entry("BOARD", "Hinata  ships/b.sav -> continue.sav");
+  StationLog.entry("SELL", "1 item for 9 scrap", Arrays.asList("3 Missiles for 9 scrap  (Spacedock Storage)"));
+  StationLog.entry("SELL", "1 item for 6 scrap", Arrays.asList("2 Missiles for 6 scrap  (Spacedock Storage)"));
+  Calendar.businessDay(v);
   // days 3 to 5 quiet, then day 6 a second rest in a row
   v.countBeacon(); v.countBeacon(); v.countBeacon();
   Rest.rest(v); Rest.rest(v);
@@ -256,7 +243,7 @@ public class LogT { public static void main(String[] a) throws Exception {
   Setup.chk("L: the second rest in a row says so, and a lone line has no Then", p.contains("Rested in my quarters for the second day in a row.") && !p.contains("Then I rested in my quarters for"));
   Setup.chk("L: details only when asked: the costs and the reputation", !p.contains("reputation") && !p.contains("scrap") && d.contains("\u22121 reputation") && d.contains("Missiles, 9 scrap"));
   Setup.chk("L: never the letter that tells an expedition again, reputation as its own line, housekeeping, why a day passed, or beacons",
-    !p.contains("Expedition Command") && !p.contains("Reputation") && !p.contains(MasterLog.CARGO_BAY) && !p.contains("day of rest") && !p.toLowerCase().contains("beacon"));
+    !p.contains("Expedition Command") && !p.contains("Reputation") && !p.contains(Calendar.CARGO_BAY) && !p.contains("day of rest") && !p.toLowerCase().contains("beacon"));
   String raw = new String(SafeFiles.read(EventLog.file(v)), "UTF-8"); // the event log keeps every entry (5.93: the master log no longer does)
   Setup.chk("L: the event log keeps every entry, merged or not", count(raw, "| SELL |") == 2 && count(raw, "| BOARD |") == 2 && raw.contains("Expedition Command: Back from Nebula"));
  }

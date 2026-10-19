@@ -89,7 +89,7 @@ it does and CREDITS.md for where the code came from.
 
 - `src/main/java/homeplanet/`: the program. `core` (startup, config, Slipstream, music), `ui` (windows),
   `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
-  Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`), `convert` (a fleet from before 6.0 brought across).
+  Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`).
 - **A fleet on disk (6.0, since 5.69):** every ship is a folder (`shipyard/<Name>.<id>/`, `junkyard/`, `memorials_and_records/ships/`
   for the ones that left) with her record as xml (her notes are sections of it, 5.98: trade mark, journey, museum entry, last look, fate and the
   rest; `ShipStore.notes` reads one, `Vault.setNotes` writes one; since 6.10 it names her `career` and her `origin`, and her save carries her
@@ -102,11 +102,10 @@ it does and CREDITS.md for where the code came from.
   `expeditions.xml`, `deeds.xml`) can be overridden in `lore/` beside the jar (`core/Lore`, 5.89 and 5.991; the jar holds the
   defaults in `resource/lore/`; the words are McCarthy's, and LoreT holds every file to the hard and voice rules).
   `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
-  at the top of `vault/Vault.java`. A 5.x fleet is converted the first time it opens, a zip of it kept beside its folder: every step of that, and every
-  reader of an old shape, goes in `homeplanet.convert` (`OldFleet` runs them in order; anything that must stay in its own class is
-  marked `@Before6`), so the package can be deleted one day (`docs/CONCERNS.md` 7). It is frozen: not edited, and no longer tested. There is no
+  at the top of `vault/Vault.java`. A fleet from before 6.0 is not read (7.00, heromedel: nothing that only supported old
+  play-tester careers stays; `docs/CONCERNS.md` 7): a 6.x station opens it once first. There is no
   index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
-  `vault/Journal`** (a note first, the steps, the note deleted; a note left behind is finished at the next opening): never a hand-written undo.
+  `vault/ActionProtection`** (7.00; Journal before: a note first, the steps, the note deleted; a note left behind is finished at the next opening, whichever fleet opens): never a hand-written undo.
 - **Long Range Comm.:** stations match on `Session.PROTOCOL`, not the version. Bump it only when an older station
   would trade wrongly; new fields, kinds and package files are ignored by older stations, so adding one is safe.
 - **Traded ships:** anything that rewards or reacts to what a ship has done (events, rewards, letters, achievements)
@@ -124,8 +123,10 @@ it does and CREDITS.md for where the code came from.
 - `docs/NAMES.md` is the style guide for crew names by race (heromedel, 6.28: the Slugs' drawn-out letters, the Engi's
   hex and the rest): every name in `lore/names/` follows it.
 - Expeditions: `expedition_type` in the cfg (hidden) is 2, the crew expeditions (`Assignments`, `docs/ROADMAP.md` 31; the
-  default), or 0, hiring alone. The infirmary, the captives and ransoms, and hiring live in `Expeditions`; the old board of
-  jobs that used to be 1 went at 5.67 (heromedel), and 1 reads as 2.
+  default), or 0, hiring alone. The crew expeditions are `parser/Expeditions` (Assignments before 7.00); the infirmary, the
+  captives and ransoms, and hiring live in `parser/AwayCrew` (Expeditions before 7.00); the old board of jobs that used to be 1
+  went at 5.67 (heromedel), and 1 reads as 2. The career's days and stardates are `vault/Calendar` (MasterLog before 7.00),
+  the station log's writer `core/StationLog` (HistoryLog before).
 - **One home each (6.0, step 10):** race names come from `model.Crew` (`raceTitle(id)`: FTL's title, "Rockman"; `racePeople(id)`:
   the people, "Rock"; `peopleOf(shipId)`), "the" before a ship's name from `parser.ShipNames.the`, capitals and a/an from
   `model.Words`, prices from `parser.Pricing`, a ship's gear from `parser.SaveHelper.gear`, a crew member on disk from `vault.CrewRecord`
@@ -136,7 +137,6 @@ it does and CREDITS.md for where the code came from.
   recruits all make namesakes, down to the same looks. Never plan or test a fix that prevents them; anything that
   tracks crew has to work with namesakes.
 - `Tools and Harness/harness2/`: the regression harness (Claude's test bench, not a user tool).
-- `Tools and Harness/hw2fhp-converter/`: the FTL Homeworld to FHP converter (a separate jar) and its tests.
 - `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
   `Current Build\`).
 - `Build A Release.bat` (6.51): builds through the Build .bat's `build` mode, then makes `Release\Federation Home Planet <version>\`
@@ -164,13 +164,11 @@ scratchpad, never in the repo. Then, after building the jar:
 It builds a fresh test world from ftl.dat alone (WorldT), then runs VaultT, RoundT, PicT, DesT, CommT and the rest on
 copies of it (LinkT runs a second station in its own process, over localhost; HoldT, LoreT, CarryT and RegT test the 6.0 storage,
 and the harness reads the station log and a voyage log from events with `Setup.stationLog` and `Setup.voyageLog`). Every test should print ALL PASSED, and RoundT "0 differ, 0 unreadable". Scratch goes in
-`harness2/work/` (ignored). The converter tests (ConvT, StoT) run only when old Homeworld saves and program
-folder are passed as the 2nd and 3rd arguments.
+`harness2/work/` (ignored).
 
-The kill test (KillT, which stopped the station before every file it wrote) and the old-fleet conversion's tests (MigT,
-LogConvT, SmallT and the old-fleet parts of HoldT, ExpT, RegT, JournalT and ShipStoreT) were removed after 5.98 (heromedel:
-they passed for the 6.0 conversion, which each player does once, and running them again only cost time). They are in git
-history if ever wanted; Buggy Boy can run an overkill check on request.
+The kill test (KillT, which stopped the station before every file it wrote) was removed after 5.98 (heromedel: it passed for
+the 6.0 conversion, and running it again only cost time); the old-fleet conversion's tests went with the conversion at 7.00.
+They are in git history if ever wanted; Buggy Boy can run an overkill check on request.
 
 **What to run before a commit (heromedel, 6.01):** the tests that cover the change (a handful, usually under a minute:
 `cd "Tools and Harness/harness2/work"`, compile the harness, run each by name as `run.sh` does), plus a check on a copy of

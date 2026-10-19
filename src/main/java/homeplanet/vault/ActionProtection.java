@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
@@ -30,9 +30,9 @@ import homeplanet.core.Store;
  * the next opening {@link #settle settles} it: each step is finished where it can be, else left for a person, and the
  * entry it then writes keeps the note's own time and stardate ({@code finished=startup}).
  */
-public final class Journal {
-	private static final Logger log = LoggerFactory.getLogger(Journal.class);
-	private Journal() { }
+public final class ActionProtection {
+	private static final Logger log = LoggerFactory.getLogger(ActionProtection.class);
+	private ActionProtection() { }
 
 	public static final String DIR = "station-action-protection", WHY = "why.txt";
 	/** The folder, made with its why.txt (heromedel's words) so a player who finds it knows what it is. */
@@ -147,7 +147,7 @@ public final class Journal {
 		private String text() {
 			StringBuilder sb = new StringBuilder();
 			synchronized (STAMP) { sb.append("time=").append(STAMP.format(new Date())).append('\n'); }
-			sb.append("day=").append(MasterLog.today(v)).append('\n');
+			sb.append("day=").append(Calendar.today(v)).append('\n');
 			sb.append("kind=").append(kind).append('\n');
 			sb.append("station=").append(HomePlanet.version()).append('\n');
 			int n = 1;
@@ -247,7 +247,7 @@ public final class Journal {
 					.put("finished", "startup").put("time", time).put("day", day > 0 ? Integer.valueOf(day) : null).put("left_by", station).details(trouble);
 			String words = finished ? "an action the station had begun (" + kind.toLowerCase().replace('_', ' ') + ") was finished at start-up"
 					: "an action the station had begun (" + kind.toLowerCase().replace('_', ' ') + ") could not be finished at start-up: its note is kept in " + where + "/" + note.getName();
-			HistoryLog.entry("JOURNAL", words, trouble.isEmpty() ? null : trouble, e.human(finished ? "The station finished what it had begun." : "The station could not finish what it had begun; its note is kept."));
+			StationLog.entry("JOURNAL", words, trouble.isEmpty() ? null : trouble, e.human(finished ? "The station finished what it had begun." : "The station could not finish what it had begun; its note is kept."));
 			if (!finished) log.warn("The note {} could not be finished: {}", note, trouble);
 			out.add(new Settled(kind, time, day, note.getName(), finished));
 		}

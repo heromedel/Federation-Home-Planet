@@ -26,7 +26,7 @@ import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.SystemBlueprint;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
 import homeplanet.vault.Ship;
@@ -48,8 +48,6 @@ public final class Derelicts {
 	public static final int LISTINGS = 3;
 	/** Beacons until new ones come in: 5 times 3 to 9, rolled with each set (30 on average). */
 	static int interval(Random rng) { return 5 * (3 + rng.nextInt(7)); }
-	/** A set from before the interval was rolled waits this long. */
-	private static final int OLD_INTERVAL = 30;
 	/** One listing in this many is a model the FTL profile hasn't unlocked; one in this many is oddly built. */
 	public static final int LOCKED_ONE_IN = 30, ODD_ONE_IN = 15;
 	/** The price: this share of her value as she is (her hull damage taken off). */
@@ -82,14 +80,14 @@ public final class Derelicts {
 	public static int beaconsToNext(Vault v) {
 		Properties p = read(v);
 		int at = Store.num(p, "rolledAt", -1);
-		return at < 0 ? 0 : Math.max(0, at + Store.num(p, "interval", OLD_INTERVAL) - v.beaconsSeen());
+		return at < 0 ? 0 : Math.max(0, at + Store.num(p, "interval", 0) - v.beaconsSeen());
 	}
 
 	/** What's for sale now: new listings first if it's time (or there have never been any). */
 	public static synchronized List<Listing> current(Vault v) {
 		Properties p = read(v);
 		int at = Store.num(p, "rolledAt", -1);
-		if (at < 0 || v.beaconsSeen() >= at + Store.num(p, "interval", OLD_INTERVAL)) {
+		if (at < 0 || v.beaconsSeen() >= at + Store.num(p, "interval", 0)) {
 			try { roll(v, new Random()); p = read(v); }
 			catch (Exception e) { log.warn("Could not bring in new derelicts: {}", e.toString()); }
 		}
@@ -98,10 +96,8 @@ public final class Derelicts {
 			if (!"true".equals(p.getProperty(i + ".open"))) continue;
 			try {
 				SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(saveFile(v, i));
-				// priced when shown, from her share (so a change to the prices reaches listings already in); a listing from before shares keeps its price
-				int pct = Store.num(p, i + ".percent", -1);
-				int price = pct < 0 ? Store.num(p, i + ".price", 0) : price(gs, pct);
-				out.add(new Listing(i, gs, p.getProperty(i + ".oddity", ""), price, "true".equals(p.getProperty(i + ".locked"))));
+				// priced when shown, from her share (so a change to the prices reaches listings already in)
+				out.add(new Listing(i, gs, p.getProperty(i + ".oddity", ""), price(gs, Store.num(p, i + ".percent", PRICE_MAX)), "true".equals(p.getProperty(i + ".locked"))));
 			} catch (Exception e) {
 				log.warn("Could not read derelict listing {}: {}", i, e.toString());
 			}
@@ -426,7 +422,7 @@ public final class Derelicts {
 			}
 			try { v.setOut(s, gs, "Bought as a derelict from the Junkyard"); }
 			catch (IOException e) { log.warn("{} is in the Junkyard, but her voyage log couldn't note where she set out: {}", s.name, e.toString()); }
-			HistoryLog.entry("BUY", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), a derelict, for " + l.price + " scrap from the Cargo Hold"
+			StationLog.entry("BUY", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), a derelict, for " + l.price + " scrap from the Cargo Hold"
 					+ (l.oddity.isEmpty() ? "" : "; " + words(l.oddity)), null,
 					Vault.shipEvent("BUY", s).put("what", "derelict").put("ship_class", gs.getPlayerShip().getShipBlueprintId()).put("price", l.price).put("oddity", l.oddity.isEmpty() ? null : l.oddity).put("from", "hold").put("to", "junkyard"));
 			ThirdFleet.derelictBought(v, s); // the Third Fleet Commander's project ship, the first time

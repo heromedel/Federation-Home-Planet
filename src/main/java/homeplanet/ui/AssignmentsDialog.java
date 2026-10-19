@@ -20,7 +20,7 @@ import javax.swing.JPanel;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
 
 import homeplanet.core.HomePlanet;
-import homeplanet.parser.Assignments;
+import homeplanet.parser.Expeditions;
 import homeplanet.parser.XmlText;
 import homeplanet.vault.Vault;
 
@@ -30,7 +30,7 @@ import homeplanet.vault.Vault;
  * the foot, as the other board has it.
  */
 public final class AssignmentsDialog extends JDialog {
-	private final JPanel cols = new JPanel(new GridLayout(1, Assignments.OFFERS, 12, 0));
+	private final JPanel cols = new JPanel(new GridLayout(1, Expeditions.OFFERS, 12, 0));
 	private final JPanel awayTab = new JPanel(new BorderLayout());
 	private final javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
 	private final JLabel foot = new JLabel();
@@ -50,7 +50,7 @@ public final class AssignmentsDialog extends JDialog {
 		JPanel body = new JPanel(new BorderLayout(0, 10));
 		body.setBorder(BorderFactory.createEmptyBorder(12, 16, 10, 16));
 		body.add(new JLabel("<html><div style='width:720px'>Crews without a ship of their own find work where it's offered. Pick where to send them and who goes, up to "
-				+ Assignments.PARTY_MAX + " from the Cargo Hold. They're away a while, and what they find there is theirs to tell when they're back. Not everyone comes back.</div></html>"), BorderLayout.NORTH);
+				+ Expeditions.PARTY_MAX + " from the Cargo Hold. They're away a while, and what they find there is theirs to tell when they're back. Not everyone comes back.</div></html>"), BorderLayout.NORTH);
 		tabs.addTab("Choose an Offer", cols);
 		tabs.addTab("Current expeditions", awayTab); // who's out, by team (heromedel, 6.66: the names under the sectors went unseen)
 		MenuTheme.markOpenTab(tabs);
@@ -78,14 +78,14 @@ public final class AssignmentsDialog extends JDialog {
 	private void fill() {
 		Vault v = Vault.get();
 		cols.removeAll();
-		for (Assignments.Offer o : Assignments.board(v)) cols.add(card(o));
+		for (Expeditions.Offer o : Expeditions.board(v)) cols.add(card(o));
 		int inHold = 0;
-		try { inHold = Assignments.holdCrew(v).size(); } catch (IOException e) { }
+		try { inHold = Expeditions.holdCrew(v).size(); } catch (IOException e) { }
 		List<String> laidUp = new ArrayList<String>();
-		List<Assignments.Away> away = Assignments.away(v);
+		List<Expeditions.Away> away = Expeditions.away(v);
 		fillAway(v, away);
 		tabs.setTitleAt(1, away.isEmpty() ? "Current expeditions" : "Current expeditions (" + away.size() + ")");
-		for (homeplanet.parser.Expeditions.Patient x : homeplanet.parser.Expeditions.infirmary(v)) laidUp.add(x.name);
+		for (homeplanet.parser.AwayCrew.Patient x : homeplanet.parser.AwayCrew.infirmary(v)) laidUp.add(x.name);
 		foot.setText("<html>Crew in the Cargo Hold: " + inHold + ".&nbsp;&nbsp; The Cargo Hold holds " + v.storageScrap() + " scrap."
 				+ (laidUp.isEmpty() ? "" : "<br>In the infirmary: " + XmlText.text(String.join(", ", laidUp)) + ".") + "</html>");
 		ExpeditionsDialog.hireButton(hireBtn, v);
@@ -94,7 +94,7 @@ public final class AssignmentsDialog extends JDialog {
 		pack();
 	}
 	/** Every team that's out: where and when they left, then each of them with their face; up to three teams across. No word of when they're due. */
-	private void fillAway(Vault v, List<Assignments.Away> away) {
+	private void fillAway(Vault v, List<Expeditions.Away> away) {
 		awayTab.removeAll();
 		if (away.isEmpty()) {
 			JLabel none = new JLabel("<html><font color='" + MenuTheme.HTML_GREY_GREEN + "'>No one is away on an expedition just now.</font></html>");
@@ -103,7 +103,7 @@ public final class AssignmentsDialog extends JDialog {
 			awayTab.add(none, BorderLayout.NORTH);
 		} else {
 			JPanel grid = new JPanel(new GridLayout(0, Math.min(3, away.size()), 12, 12));
-			for (Assignments.Away a : away) grid.add(team(v, a));
+			for (Expeditions.Away a : away) grid.add(team(v, a));
 			JPanel top = new FitsWidth(); // the teams fit the tab's width; only a long list scrolls, downward
 			top.add(grid, BorderLayout.NORTH);
 			javax.swing.JScrollPane sp = new javax.swing.JScrollPane(top);
@@ -125,13 +125,13 @@ public final class AssignmentsDialog extends JDialog {
 		public boolean getScrollableTracksViewportWidth() { return true; }
 		public boolean getScrollableTracksViewportHeight() { return false; }
 	}
-	private JPanel team(Vault v, Assignments.Away a) {
+	private JPanel team(Vault v, Expeditions.Away a) {
 		JPanel p = new JPanel();
 		p.setLayout(new javax.swing.BoxLayout(p, javax.swing.BoxLayout.Y_AXIS));
 		p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MenuTheme.GREY_GREEN), BorderFactory.createEmptyBorder(6, 8, 6, 8)));
-		String where = a.sector == null ? "Unknown sector" : Assignments.sectorTitle(a.sector);
+		String where = a.sector == null ? "Unknown sector" : Expeditions.sectorTitle(a.sector);
 		p.add(new JLabel("<html><div style='width:205px'><font color='" + MenuTheme.HTML_GOLD + "'><b>" + XmlText.text(where) + "</b></font> - Stardate&nbsp;"
-				+ homeplanet.vault.MasterLog.stardate(Math.max(1, homeplanet.vault.MasterLog.dayAt(v, a.sentAt))) + "</div></html>"));
+				+ homeplanet.vault.Calendar.stardate(Math.max(1, homeplanet.vault.Calendar.dayAt(v, a.sentAt))) + "</div></html>"));
 		for (CrewState c : a.crew) {
 			JLabel l = new JLabel(c.getName(), IconFactory.crewIcon(c), JLabel.LEFT);
 			l.setToolTipText(homeplanet.model.Crew.raceTitle(c));
@@ -140,7 +140,7 @@ public final class AssignmentsDialog extends JDialog {
 		return p;
 	}
 
-	private JPanel card(final Assignments.Offer o) {
+	private JPanel card(final Expeditions.Offer o) {
 		JPanel p = new JPanel(new BorderLayout(0, 8));
 		p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MenuTheme.GREY_GREEN), BorderFactory.createEmptyBorder(8, 10, 8, 10)));
 		JLabel words = new JLabel("<html><div style='width:210px'><font color='" + MenuTheme.HTML_GOLD + "'><b>" + XmlText.text(o.title()) + "</b></font><br><br>"
@@ -154,18 +154,18 @@ public final class AssignmentsDialog extends JDialog {
 		return p;
 	}
 
-	private void send(Assignments.Offer o) {
+	private void send(Expeditions.Offer o) {
 		Vault v = Vault.get();
 		List<CrewState> crew;
-		try { crew = Assignments.holdCrew(v); } catch (IOException e) { HomePlanet.showErrorDialog("The Cargo Hold can't be read:\n" + e.getMessage()); return; }
+		try { crew = Expeditions.holdCrew(v); } catch (IOException e) { HomePlanet.showErrorDialog("The Cargo Hold can't be read:\n" + e.getMessage()); return; }
 		if (crew.isEmpty()) {
 			JOptionPane.showMessageDialog(this, "There is no crew in the Cargo Hold to send.\nMove crew there in the Cargo Bay, or post for volunteers.", "Expeditions", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		String where = "nebula".equals(o.sector) ? "the nebula" : "the " + o.title();
-		List<CrewState> party = ExpeditionsDialog.pickParty(this, "Who goes to " + where + "? Up to " + Assignments.PARTY_MAX + " from the Cargo Hold.", crew);
+		List<CrewState> party = ExpeditionsDialog.pickParty(this, "Who goes to " + where + "? Up to " + Expeditions.PARTY_MAX + " from the Cargo Hold.", crew);
 		if (party == null || party.isEmpty()) return;
-		try { Assignments.send(v, o.slot, party, rng); }
+		try { Expeditions.send(v, o.slot, party, rng); }
 		catch (IOException e) { HomePlanet.showErrorDialog("The detail could not set out:\n" + e.getMessage()); return; }
 		List<String> names = new ArrayList<String>();
 		for (CrewState c : party) names.add(c.getName());
@@ -180,21 +180,21 @@ public final class AssignmentsDialog extends JDialog {
 	/** The prizes waiting on the commander's word: a recruit to take on, a ship to the Space Dock, the Junkyard or not at all. */
 	public static void askPending(java.awt.Component owner) {
 		Vault v = Vault.get();
-		for (Assignments.Pending x : Assignments.pendingToAsk(v)) { // a letter's own question is answered in the inbox
+		for (Expeditions.Pending x : Expeditions.pendingToAsk(v)) { // a letter's own question is answered in the inbox
 			boolean ship = "ship".equals(x.kind);
 			Object[] opts = ship ? new Object[] {"Space Dock", "Junkyard", "Don't take " + homeplanet.model.Words.herObj()} : new Object[] {"Sign them on", "Send them on their way"};
 			int pick = JOptionPane.showOptionDialog(owner, x.question(), "Expeditions", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);
 			if (pick < 0) continue; // asked again at the next look
-			try { if (pick == opts.length - 1) Assignments.decline(v, x); else Assignments.accept(v, x, ship && pick == 0); }
+			try { if (pick == opts.length - 1) Expeditions.decline(v, x); else Expeditions.accept(v, x, ship && pick == 0); }
 			catch (IOException e) { HomePlanet.showErrorDialog("That could not be done:\n" + e.getMessage()); }
 		}
 	}
 	/** A report, read in the station's event box (the words as the crew gave them, no rolls), each crew member's face beside their line. */
-	public static void showReport(java.awt.Component owner, Assignments.Report r) {
+	public static void showReport(java.awt.Component owner, Expeditions.Report r) {
 		JOptionPane.showMessageDialog(owner, reportPane(r.text, r.faces), r.title(), JOptionPane.PLAIN_MESSAGE);
 	}
 	/** The report's words with the crew's faces, wrapped to the event box's width. */
-	static javax.swing.JTextPane reportPane(String text, java.util.List<Assignments.Face> faces) {
+	static javax.swing.JTextPane reportPane(String text, java.util.List<Expeditions.Face> faces) {
 		javax.swing.JTextPane t = new javax.swing.JTextPane();
 		t.setEditable(false); t.setOpaque(false);
 		javax.swing.text.SimpleAttributeSet base = new javax.swing.text.SimpleAttributeSet();

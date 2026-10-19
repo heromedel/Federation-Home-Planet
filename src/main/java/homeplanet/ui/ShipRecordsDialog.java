@@ -43,7 +43,7 @@ import homeplanet.vault.Vault;
 
 /**
  * A ship's records: the earlier versions of her the station keeps (newest first), with Restore this version; her
- * voyage log (events in FTL, save by save); and her entries in history.log.
+ * voyage log (events in FTL, save by save); and her entries in the station log.
  */
 public class ShipRecordsDialog extends JDialog {
 	private static final Color ROW = new Color(36, 46, 56), GOLD = MenuTheme.GOLD, TXT = MenuTheme.WHITE, DIM = MenuTheme.GREY_GREEN;

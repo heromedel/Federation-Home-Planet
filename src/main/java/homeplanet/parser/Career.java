@@ -28,8 +28,6 @@ public final class Career {
 	public static final int STIPEND_BASE = 20, MONTHS_PER_STIPEND = 2;
 	/** A beacon is a day (heromedel, 5.00): a month of the station's time is this many beacons, flown or rested. */
 	public static final int BEACONS_PER_MONTH = 28;
-	/** The oldest careers counted sectors: this many beacons stood for one when they came over to beacons (4B.97; kept for that conversion alone). */
-	public static final int BEACONS_PER_SECTOR = 15;
 	/** Scrap a career in the fleet in use began with: its difficulty's, or a Sandbox career's STARTING_SCRAP. */
 	public static int startingScrap() {
 		CareerRules r = CareerRules.current();
@@ -56,19 +54,10 @@ public final class Career {
 	/** Does the stipend count every achievement in the FTL profile (chosen when it began), rather than only those earned since? */
 	public static boolean salaryAll(File immersiveRoot) { return "true".equals(read(immersiveRoot).getProperty("salaryAll")); }
 
-	/**
-	 * This Immersive fleet's difficulty, or null if no career has begun. A career from before difficulties is written
-	 * down as it was (stripping as Settings had it), once, and fixed from then on.
-	 */
+	/** This Immersive fleet's difficulty, or null if no career has begun. */
 	public static CareerRules rules(File immersiveRoot) {
 		if (!started(immersiveRoot)) return null;
-		Properties p = read(immersiveRoot);
-		CareerRules r = CareerRules.read(p);
-		if (r != null) return r;
-		r = CareerRules.earlier(homeplanet.core.HomePlanet.stripAllowed);
-		r.write(p);
-		try { write(immersiveRoot, p); } catch (IOException e) { log.warn("Could not record the career's rules: {}", e.toString()); }
-		return r;
+		return CareerRules.read(read(immersiveRoot));
 	}
 
 	/** How reputation can be used in this Immersive career (1 to 3; heromedel, 6.55: each career its own), or dflt if it never chose (a career from before shared Sandbox Mode's). */
@@ -104,22 +93,6 @@ public final class Career {
 		p.setProperty("infirmary", Boolean.toString(on));
 		write(immersiveRoot, p);
 	}
-	/** What comes after a final victory in this Immersive fleet (FinalVictory.NOTHING, RESCUE or MUSEUM; REWARD before 6.47). */
-	public static String finalVictory(File immersiveRoot) { return read(immersiveRoot).getProperty("finalVictory", FinalVictory.NOTHING); }
-	/** Sets what comes after a final victory in this Immersive fleet (its career must have begun). */
-	public static void setFinalVictory(File immersiveRoot, String choice) throws IOException {
-		Properties p = read(immersiveRoot);
-		p.setProperty("finalVictory", choice);
-		write(immersiveRoot, p);
-	}
-	/** The museum's reward this fleet chose (FinalVictory.FULL, HALF or NONE; 6.47), or null: full, as before. Read only where the career leaves it to the player. */
-	public static String finalVictoryPay(File immersiveRoot) { return read(immersiveRoot).getProperty("finalVictoryPay"); }
-	public static void setFinalVictoryPay(File immersiveRoot, String pay) throws IOException {
-		Properties p = read(immersiveRoot);
-		p.setProperty("finalVictoryPay", pay);
-		write(immersiveRoot, p);
-	}
-
 	/**
 	 * Rescued Ships after Victory moved to Hard difficulty, as this career has it: "true", "false", or null where it was
 	 * never chosen (6.03). Read only where the career leaves it to the player: Easy (changed in Settings) and Custom
@@ -155,7 +128,6 @@ public final class Career {
 		p.setProperty("salaryAll", Boolean.toString(salaryAll));
 		p.setProperty("ownProfile", Boolean.toString(ownProfile));
 		p.setProperty("paidMonths", "0");
-		p.setProperty("sectorsAtStart", Integer.toString(v.sectorsSeen()));
 		p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen()));
 		if (rules != null) rules.write(p);
 		write(v.root, p);
@@ -164,7 +136,7 @@ public final class Career {
 		int scrap = rules != null ? rules.startingScrap() : STARTING_SCRAP;
 		v.depositToStorage(scrap);
 		if (withShip) v.grantFreeCommand("an Immersive career began", FreeCommand.KESTREL); // a Kestrel Type A, as a new FTL game starts
-		homeplanet.core.HistoryLog.entry("CAREER", (v.immersive ? "Immersive" : "Sandbox") + " career begun: stipend counts " + (salaryAll ? "every achievement" : "achievements earned from now on")
+		homeplanet.core.StationLog.entry("CAREER", (v.immersive ? "Immersive" : "Sandbox") + " career begun: stipend counts " + (salaryAll ? "every achievement" : "achievements earned from now on")
 				+ (ownProfile ? "; its own FTL profile" : "") + "; " + scrap + " scrap in the Cargo Hold" + (rules != null ? "; difficulty " + rules.describe() : ""), null,
 				homeplanet.core.Event.of("CAREER").put("what", "begun").put("mode", v.immersive ? "Immersive" : "Sandbox").put("stipend", salaryAll ? "every_achievement" : "from_now").put("own_profile", ownProfile)
 						.put("scrap", scrap).put("difficulty", rules != null ? rules.describe() : null).put("with_ship", withShip));
@@ -190,12 +162,6 @@ public final class Career {
 		Vault v = Vault.get();
 		Properties p = read(v.root);
 		int paid = Store.num(p, "paidMonths", 0);
-		if (p.getProperty("beaconsAtStart") == null) {
-			// a career from when the stipend counted sectors: its sectors so far become beacons, so nothing paid or owed changes
-			int sectors = v.sectorsSeen() - Store.num(p, "sectorsAtStart", 0);
-			p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen() - sectors * BEACONS_PER_SECTOR));
-			try { write(v.root, p); } catch (IOException e) { log.warn("Could not record the stipend's beacons: {}", e.toString()); }
-		}
 		int start = Store.num(p, "beaconsAtStart", 0);
 		return Math.max(0, (v.beaconsSeen() - start) / beaconsPerStipend() - paid);
 	}
