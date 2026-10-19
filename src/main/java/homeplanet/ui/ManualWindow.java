@@ -280,12 +280,8 @@ public final class ManualWindow {
 	}
 	/** The next place the words appear after the last one found, round to the top again; marked and scrolled to. */
 	static boolean findNext(javax.swing.text.JTextComponent ta, String what) {
-		String[] words = what == null ? new String[0] : what.trim().split("[\\s\\u00a0]+");
-		if (words.length == 0 || words[0].isEmpty()) return false;
-		// the words in order, any spaces or line breaks between them (the text manual is wrapped: a phrase may run over a line; heromedel, 6.76)
-		StringBuilder re = new StringBuilder();
-		for (String w : words) re.append(re.length() == 0 ? "" : "[\\s\\u00a0]+").append(Pattern.quote(w));
-		Pattern pat = Pattern.compile(re.toString(), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+		Pattern pat = TextSearch.of(what); // the station's one way of searching (a phrase may run over a line: the text manual is wrapped)
+		if (pat == null) return false;
 		String all;
 		try { all = ta.getDocument().getText(0, ta.getDocument().getLength()); } // the words as shown (an HTML page's getText is its markup)
 		catch (javax.swing.text.BadLocationException e) { return false; }

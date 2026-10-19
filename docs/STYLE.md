@@ -158,3 +158,7 @@ started on the Unyielding notices a Crew Log that forgets it as surely as a Slug
   name for one ship.
 - **What doesn't match** goes to heromedel as a finding, or as a handoff (`docs/HANDOFF.md`): what is missing or
   contradicted, where, and the lines from both records that show it. Never a silent fix.
+
+- **Search boxes** (6.76, heromedel): every search, the manuals' Find and any log's Search, matches the same way through
+  `ui.TextSearch`: any case, parts of words, the words in order with any spaces or line breaks between, spaces at the ends
+  ignored. A log that gains a search box filters with `TextSearch.matches`; never a matching of its own.
