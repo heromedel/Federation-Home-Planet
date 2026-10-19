@@ -1,5 +1,5 @@
 THE HOME PLANET STATION
-User Manual, version 6.82
+User Manual, version 6.84
 Issued by The Federation Home Planet
 
 To see which version of the station you have, open SETTINGS and choose the
@@ -97,7 +97,9 @@ Starting the station
 Unzip the station's folder somewhere you can easily find it, such as your
 Desktop or Documents. Avoid Program Files, because the station keeps a small
 settings file beside itself and Windows may not let it write there. Then
-double-click "Federation Home Planet Interface.bat".
+double-click "Federation Home Planet Interface.bat". Beside it is a Documents
+folder holding this manual in text and with pictures, the list of changes, and
+the README, so you can read them without starting the station.
 
 Windows may warn you the first time, because the file was downloaded from the
 internet. If it shows "Windows protected your PC", click More info and then
