@@ -62,6 +62,8 @@ public class SettingsDialog extends JDialog {
 	/** How the station speaks of a ship (6.42, heromedel): her, him or it. */
 	private final javax.swing.JComboBox<String> pronounBox = new javax.swing.JComboBox<String>(homeplanet.model.Words.SHIP_PRONOUNS);
 	private final JCheckBox debugBox = new JCheckBox("Debug logging", HomePlanet.debugLogging);
+	/** Where the manual opens: On, a window of the station's own; Off, the browser or text editor. */
+	private final javax.swing.JComboBox<String> manualIn = new javax.swing.JComboBox<String>(new String[] {"On", "Off"});
 	private boolean savesChanged = false;
 	/** After a final victory: Nothing, Choice or Museum, and the museum's reward (the fleet in use has its own; 6.47). */
 	private final VictoryRules victory = new VictoryRules();
@@ -169,6 +171,7 @@ public class SettingsDialog extends JDialog {
 		body.add(borderlessBox, next(c));
 		body.add(musicBox, next(c));
 		pronounBox.setSelectedItem(homeplanet.model.Words.shipPronoun());
+		manualIn.setSelectedIndex(ManualWindow.inStation() ? 0 : 1);
 		pronounBox.setToolTipText("How The Home Planet Station speaks of a ship in its messages, letters and logs: \"her crew\", \"his crew\" or \"its crew\"");
 		body.add(labelled("Ship Pronoun:", pronounBox), next(c));
 
@@ -444,6 +447,30 @@ public class SettingsDialog extends JDialog {
 		about.add(licenceBtn);
 		about.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 		body.add(about, next(c));
+		// the manual, in the station or outside it (heromedel, 6.73)
+		heading(body, c, "User Manual");
+		JPanel manualRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		JButton manualHtml = new JButton("Html");
+		manualHtml.setToolTipText("The manual with its pictures");
+		manualHtml.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { ManualWindow.open(SettingsDialog.this, true, manualIn.getSelectedIndex() == 0); }
+		});
+		manualRow.add(manualHtml);
+		manualRow.add(javax.swing.Box.createHorizontalStrut(8));
+		JButton manualText = new JButton("Text");
+		manualText.setToolTipText("The manual as plain text");
+		manualText.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { ManualWindow.open(SettingsDialog.this, false, manualIn.getSelectedIndex() == 0); }
+		});
+		manualRow.add(manualText);
+		manualRow.add(javax.swing.Box.createHorizontalStrut(16));
+		JLabel manualInLabel = new JLabel("Open in The Home Planet Station:  ");
+		manualIn.setToolTipText("On: the manual opens in a window of the station's own. Off: in your web browser (Html) or text editor (Text)");
+		manualInLabel.setToolTipText(manualIn.getToolTipText());
+		manualRow.add(manualInLabel);
+		manualRow.add(manualIn);
+		manualRow.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+		body.add(manualRow, next(c));
 		JPanel updateRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		updateRow.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0)); // a line of space between the credits and these (heromedel, 5.80)
 		JButton updateBtn = new JButton("Check for Updates...");
@@ -553,6 +580,11 @@ public class SettingsDialog extends JDialog {
 		if (!ENGI_CFG[engiBox.getSelectedIndex()].equals(homeplanet.parser.CrewNames.engiTranslate())) {
 			changed.add("Engi Translate: " + engiBox.getSelectedItem());
 			homeplanet.parser.CrewNames.set(homeplanet.parser.CrewNames.CFG_ENGI, ENGI_CFG[engiBox.getSelectedIndex()]);
+		}
+		if ((manualIn.getSelectedIndex() == 0) != ManualWindow.inStation()) {
+			changed.add("Open the manual in The Home Planet Station: " + manualIn.getSelectedItem());
+			if (manualIn.getSelectedIndex() == 0) HomePlanet.config.remove(ManualWindow.CFG_IN_STATION); // On is the default: the line only while Off
+			else HomePlanet.config.setProperty(ManualWindow.CFG_IN_STATION, "false");
 		}
 		if (!pronounBox.getSelectedItem().equals(homeplanet.model.Words.shipPronoun())) {
 			changed.add("Ship Pronoun: " + pronounBox.getSelectedItem());

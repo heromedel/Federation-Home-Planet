@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>homeplanet</groupId>
 	<artifactId>federation-home-planet</artifactId>
-	<version>6.72</version>
+	<version>6.73</version>
 	<name>Federation Home Planet</name>
 
 	<!--
@@ -68,6 +68,8 @@
 					<include>CREDITS.md</include>
 					<include>LICENSE</include>
 					<include>README.md</include>
+					<include>User-Manual.html</include>
+					<include>User-Manual.txt</include>
 				</includes>
 			</resource>
 		</resources>
