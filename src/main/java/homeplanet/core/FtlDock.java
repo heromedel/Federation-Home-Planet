@@ -30,8 +30,8 @@ public final class FtlDock {
 	public static final String[] HOW = {"as its own window", "attached to the station (testing)"};
 	/** The sizes offered: FTL's own 16:9 steps (1280x720 is the smallest it draws at). */
 	public static final String[] SIZES = {"1280x720", "1600x900", "1920x1080"};
-	/** FTL's window title: how its window is found. */
-	static final String TITLE = "FTL: Faster Than Light";
+	/** FTL's window title: how its window is found. Captain's Edition's ftl.dat sets its own (its text's window_title), so either. */
+	static final String[] TITLES = {"FTL: Faster Than Light", "FTL: Captain's Edition"};
 	/** "Value kept" marker for a settings.ini with no fullscreen line. */
 	private static final String NONE = "(none)";
 
@@ -215,7 +215,7 @@ public final class FtlDock {
 		if (window != null) return Found.DOCKED;
 		if (!System.getProperty("os.name", "").startsWith("Windows")) return Found.NOT_YET;
 		try {
-			Object w = Win.find(TITLE);
+			Object w = Win.find(TITLES);
 			if (w == null) return Found.NOT_YET;
 			java.awt.Rectangle r = Win.bounds(w);
 			java.awt.Rectangle screen = Win.screenOf(w);
@@ -284,7 +284,7 @@ public final class FtlDock {
 	public static boolean switchTo() {
 		if (!System.getProperty("os.name", "").startsWith("Windows")) return false;
 		try {
-			Object w = Win.find(TITLE);
+			Object w = Win.find(TITLES);
 			if (w == null) return false;
 			Win.bringBack(w);
 			log.info("Switched to FTL");
@@ -303,7 +303,7 @@ public final class FtlDock {
 		if (Boolean.getBoolean("homeplanet.ftlFullScreen")) return true; // the harness's stand-in, as homeplanet.ftlRunning is
 		if (!System.getProperty("os.name", "").startsWith("Windows")) return false;
 		try {
-			Object w = Win.find(TITLE);
+			Object w = Win.find(TITLES);
 			if (w == null) return false;
 			if (Win.minimized(w)) return !"0".equals(settingsFullscreen());
 			java.awt.Rectangle r = Win.bounds(w), screen = Win.screenOf(w);
@@ -326,7 +326,7 @@ public final class FtlDock {
 	public static boolean closeRunning() {
 		if (!System.getProperty("os.name", "").startsWith("Windows")) return false;
 		try {
-			Object w = Win.find(TITLE);
+			Object w = Win.find(TITLES);
 			if (w == null) return false;
 			Win.close(w);
 			log.info("FTL asked to close (it was running full screen, not docked)");
@@ -442,13 +442,16 @@ public final class FtlDock {
 		static final int SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOACTIVATE = 0x0010, SWP_FRAMECHANGED = 0x0020, SWP_SHOWWINDOW = 0x0040, SWP_NOZORDER = 0x0004;
 		static final int SW_HIDE = 0, SW_SHOWNOACTIVATE = 4, SW_SHOW = 5, SW_RESTORE = 9;
 
-		static Object find(final String title) {
+		static Object find(final String[] titles) {
 			final com.sun.jna.Pointer[] found = new com.sun.jna.Pointer[1];
 			User32.I.EnumWindows(new User32.Each() {
 				public boolean callback(com.sun.jna.Pointer hwnd, com.sun.jna.Pointer data) {
 					char[] buf = new char[256];
 					int n = User32.I.GetWindowTextW(hwnd, buf, buf.length);
-					if (n > 0 && title.equals(new String(buf, 0, n)) && User32.I.IsWindowVisible(hwnd)) { found[0] = hwnd; return false; }
+					if (n > 0 && User32.I.IsWindowVisible(hwnd)) {
+						String t = new String(buf, 0, n);
+						for (String title : titles) if (title.equals(t)) { found[0] = hwnd; return false; }
+					}
 					return true;
 				}
 			}, null);
