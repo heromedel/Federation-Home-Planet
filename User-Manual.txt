@@ -1,5 +1,5 @@
 THE HOME PLANET STATION
-User Manual, version 6.62
+User Manual, version 6.74
 Issued by The Federation Home Planet
 
 To see which version of the station you have, open SETTINGS and choose the
@@ -367,12 +367,15 @@ When all three augment slots are full, send one of her augments away first.
 The Cargo Bay works on a ship that is at a beacon with a store. A ship that
 hasn't yet left the place where the station set her out, such as one just
 commissioned or sent on a new journey, counts as being at one too. If she
-isn't, the Cargo Bay says so and lets you pick another ship that is. If none
-of your ships is at a store, fly one to a store in FTL first. In Sandbox Mode
-you can lift this rule instead, by unticking "Trading and scrapping need a
-station" in SETTINGS on the Rules tab. That opens the Trade and Refit tabs
-anywhere, though the Shop still only sells from real stores. In an Immersive
-career the rule always applies.
+isn't, the Cargo Bay still opens, on the Trade tab with the Cargo Hold on the
+right, so you can look over what it holds, sell it or junk it. Under the list
+of ships it says why she can't trade, and while no ship in range is chosen,
+the Shop and Refit tabs stay greyed out. Pick another ship that is at a store,
+or fly one to a store in FTL first. In Sandbox Mode you can lift this rule
+instead, by unticking "Trading and scrapping need a station" in SETTINGS on
+the Rules tab. That opens the Trade and Refit tabs anywhere, though the Shop
+still only sells from real stores. In an Immersive career the rule always
+applies.
 
 The Cargo Hold
 --------------
@@ -512,8 +515,11 @@ The Junkyard's foreman also sells hulls and damaged parts. Derelicts lists old
 hulls you can buy. A derelict is delivered to the Junkyard, where you salvage
 her to fly her. She comes without crew, and is often missing a system such as
 Engines, Piloting or Oxygen. Parts lists damaged systems, which go into
-storage and can be repaired in the Dry Dock once installed. New stock arrives
-as your fleet travels.
+storage and can be repaired in the Dry Dock once installed. Each part has an
+Info button and a hover that say what it is. New stock arrives as your fleet
+travels, and once a week you can click Search for more parts, which costs 15
+scrap from the Cargo Hold and takes the day. It finds parts and salvage, never
+derelicts. Buying anything from the Junkyard takes the day as well.
 
 Decommission
 ------------
@@ -552,8 +558,10 @@ Withdraw Plea, in the same list, cancels a plea that is still waiting.
 Crew without a ship needn't sit idle. Click EXPEDITIONS on the Space Dock to
 send them out on jobs.
 
-The Expeditions window shows three offers side by side, each from a different
-sector. To send a party, click Send crew under the offer you like and choose
+The Expeditions window has two tabs. Choose an Offer shows three offers side
+by side, each from a different sector. Current expeditions shows who is out,
+team by team, with the sector and the day they left, but never when they are
+due back. To send a party, click Send crew under the offer you like and choose
 up to three crew from the Cargo Hold. If nobody is waiting in the Cargo Hold,
 move some crew there first in the Cargo Bay, or post for volunteers.
 
@@ -571,10 +579,13 @@ come with the party's report as a letter in your Transmissions, and you claim
 them from there. Otherwise they go straight into the Cargo Hold. Now and then
 a party brings home something bigger. A captured ship or a rescued survivor
 who would like to join you comes with a question about what to do with them,
-and a salvaged system goes straight into storage. Crew also come home a little
-more practised at their work, and when reputation is in use, how the job went
-earns your fleet reputation or costs it some. Expeditions are dangerous,
-though, and not everyone comes back.
+and a salvaged system goes straight into storage. A Rescue job that goes well
+brings home a survivor who wants to sign on fairly often. A Hijack or Salvage
+job now and then finds someone aboard who wishes to join. A really good
+Salvage or Hijack can also bring home a few missiles, some fuel or a few drone
+parts. Crew also come home a little more practised at their work, and when
+reputation is in use, how the job went earns your fleet reputation or costs it
+some. Expeditions are dangerous, though, and not everyone comes back.
 
 When the infirmary is turned on (SETTINGS, Rules tab, under Expeditions), crew
 who come home badly hurt rest in the infirmary for a while, and each loses a
@@ -590,11 +601,11 @@ you refuse, or the month runs out, they are lost for good.
 
 At the bottom of the Expeditions window, Post for volunteers asks for new
 crew. It costs a little scrap from the Cargo Hold, more the larger your
-fleet's crew, and the scrap is spent whether or not anyone answers. Anyone who
-does answer waits in the Cargo Hold. If your fleet has no crew left anywhere,
-the button offers a promise of adventure instead. It costs no scrap, though it
-costs some reputation when your reputation can be spent, and fewer people
-answer it.
+fleet's crew, and the scrap is spent whether or not anyone answers. Posting
+also takes the day. If anyone answers, they are hired on the next day and wait
+in the Cargo Hold. If your fleet has no crew left anywhere, the button offers
+a promise of adventure instead. It costs no scrap, though it costs some
+reputation whenever reputation is in use, and fewer people answer it.
 
 
 ==============================================================================
@@ -922,9 +933,11 @@ whether transmissions and reputation are in use, how reputation can be spent,
 and how ranks are earned. Journeys and trading covers whether trading and new
 journeys need a store, and what a new journey costs. Refit, scrapping and
 selling covers the fees for taking systems off and what may be sold. Shipyard
-covers which ships can be commissioned and at what price. Expeditions holds
-the infirmary (section [8]), and After a final victory is explained in section
-[13].
+covers which ships can be commissioned and at what price, and Ship and part
+values sets how much ships and parts are worth wherever the station prices
+them: Trade In, Auction, the museum and the Junkyard. In a career it is set by
+the difficulty. Expeditions holds the infirmary (section [8]), and After a
+final victory is explained in section [13].
 
 Folders
 -------
@@ -955,7 +968,13 @@ About
 -----
 
 The About tab shows the station's version, the credits and the licence, with
-buttons to Check for Updates and Send Feedback.
+buttons to Check for Updates and Send Feedback. Under User Manual are two
+buttons, Html and Text, that open this manual: Html with its pictures, and
+Text as plain words. Beside them, "Open in The Home Planet Station" chooses
+where it opens. On, which is usual, shows it in a window of the station's own,
+where the Html manual has a dark mode that is remembered and the Text manual
+has a Find box (Ctrl+F). Off opens it in your web browser or text editor
+instead.
 
 
 ==============================================================================
@@ -1119,3 +1138,5 @@ is the station that keeps your fleet.
 
 
 Fair flights between the stars, Commander. The Federation endures.
+
+Information compiled with the help of Claude Opus 5.5 and Sonnet 5.5

@@ -148,6 +148,7 @@ Something wrong, or an idea? **Send Feedback** (Settings, About) opens the feedb
   blueprints, letters and expeditions, `comm` Long Range Comm., `convert` bringing a fleet from before 6.0 across,
   `ui`, `model`). The station's own words are in `src/main/resources/homeplanet/resource/lore/`.
 * `Current Build/` – where the built jar lands, with its start script (settings, logs and `lore/` stay beside it, untracked).
+* `User-Manual.txt` and `User-Manual.html` – the player's guide to the station, from The Federation Home Planet: what each screen does, step by step. Both are built from one source in `docs/manual/` (`python3 docs/manual/build.py`), so they say the same thing.
 * `docs/` – the roadmap (decisions and build order), the 6.0 overhaul, the events the station logs, the letters, the
   style guide, the FTL lore the words are checked against, bugs and feedback.
 * `Tools and Harness/harness2/` – headless regression tests. `Tools and Harness/hw2fhp-converter/` – the one-off
