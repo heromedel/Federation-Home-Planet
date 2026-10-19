@@ -338,7 +338,7 @@ public final class ShipStore {
 	 * an overwrite, her fate), by their owners' names for them.
 	 */
 	public static final String TRADE = "trade", JOURNEY = "journey", MUSEUM = "museum", BORROWED = "borrowed", LAST = "last",
-			FINAL = "final", OVERWRITTEN = "overwritten", FATE = "fate";
+			FINAL = "final", OVERWRITTEN = "overwritten", FATE = "fate", ABOARD = "aboard";
 	/** One section of the record in this folder, as a copy: empty if she has none, or there's no record. Written through {@link Vault#setNotes}. */
 	public static Properties notes(File folder, String section) {
 		Record r = idOf(folder) == null ? null : read(folder); // the Cargo Hold's folder (no id) has no record: its xml is what it holds

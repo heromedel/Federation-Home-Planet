@@ -46,14 +46,29 @@ public class FleetT { public static void main(String[] a) throws Exception {
   for (int i = 0; i < sb.length; i++) sb[i] = CareerRules.hasSandbox(i) ? CareerRules.SANDBOX : 0;
   Career.start(false, false, new CareerRules(CareerRules.CUSTOM, sb));
   Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
-  Setup.chk("D: Custom at Sandbox's levels: journeys, removal, stripping and commissioning free, ship values at full price",
-    Economy.journeyFee() == 0 && Economy.removalFee() == 0 && Economy.stripAllowed() && Economy.stripFee() == 0 && !HomePlanet.commissionCosts() && Economy.commissionPercent() == 100);
+  Setup.chk("D: Custom at Sandbox's levels: journeys, removal, stripping and commissioning free, ship and part values at its own level (Easy's 50%, 6.67)",
+    Economy.journeyFee() == 0 && Economy.removalFee() == 0 && Economy.stripAllowed() && Economy.stripFee() == 0 && !HomePlanet.commissionCosts() && Economy.commissionPercent() == 50);
   Setup.chk("D: and after a final victory Nothing, the museum's reward None, Rescued Ships moved to Hard not applying",
     FinalVictory.NOTHING.equals(FinalVictory.choice()) && FinalVictory.museumPercent() == 0 && FinalVictory.TO_HARD_NONE.equals(FinalVictory.toHardRule()));
   Setup.chk("D: its levels kept in career.txt as written", Arrays.equals(Career.rules(v.root).levels(), sb) && "Custom".equals(CareerRules.current().title()));
   Properties bad = Store.load(career); bad.setProperty("rules", "0,0,3,0,0,0,0,0,0,0,0,0,0"); Store.write(career, bad, "");
   Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
   Setup.chk("D: a Sandbox level on a rule that has none reads as Normal", Career.rules(v.root).level(CareerRules.REASSIGNMENT) == 1);
+  // ship and part values, a rule of their own (6.67, Plan J): free commissioning no longer means full price
+  career.delete();
+  int[] fv = new int[CareerRules.RULES.length]; Arrays.fill(fv, 1); fv[CareerRules.COMMISSION] = CareerRules.SANDBOX; fv[CareerRules.VALUES] = 1;
+  Career.start(false, false, new CareerRules(CareerRules.CUSTOM, fv));
+  Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
+  Setup.chk("J: Custom with commissioning free and values at 75%: free, and valued at 75%", !HomePlanet.commissionCosts() && Economy.commissionPercent() == 75);
+  for (int lvl = 0; lvl <= 3; lvl++) { // a Custom career from before 6.67: thirteen rules, its values kept as its commission level priced them
+   Properties cp = Store.load(career); cp.setProperty("rules", "1,1,1,1,1,1,1," + lvl + ",1,1,1,1,1"); Store.write(career, cp, "");
+   Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
+   int wantPct = lvl == 0 ? 50 : lvl == 1 ? 75 : 100;
+   Setup.chk("J: a Custom career from before 6.67 at commission level " + lvl + " keeps its values (" + Economy.commissionPercent() + "%, wanted " + wantPct + "%)" + (lvl == 3 ? ", commissioning free" : ""),
+     Economy.commissionPercent() == wantPct && HomePlanet.commissionCosts() == (lvl != 3));
+  }
+  Setup.chk("J: Easy, Normal and Hard value at 50, 75 and 100", CareerRules.of(CareerRules.EASY).commissionPercent() == 50 && CareerRules.of(CareerRules.NORMAL).commissionPercent() == 75
+    && CareerRules.of(CareerRules.HARD).commissionPercent() == 100 && !CareerRules.of(CareerRules.EASY).commissionFree());
   // a Custom career begun before 6.47: twelve rules, the museum's reward taken from its final victory's level (Easy full, else half)
   for (int lvl = 0; lvl < 3; lvl++) {
    Properties cp = new Properties(); cp.setProperty("difficulty", CareerRules.CUSTOM); cp.setProperty("rules", lvl + ",1,1,1,1,1,1,1,1,1,1,1");
@@ -149,6 +164,12 @@ public class FleetT { public static void main(String[] a) throws Exception {
   Setup.chk("R: the player's own rules are never written over", !HomePlanet.storeRequirement && !HomePlanet.commissionCosts && HomePlanet.commissionPercent == 50 && !HomePlanet.unlockFreeShips);
   HomePlanet.leaveImmersive();
   Setup.chk("R: and are in force again when it's turned off", !HomePlanet.immersiveMode && !HomePlanet.storeRequirement() && !HomePlanet.commissionCosts() && Economy.commissionPercent() == 50);
+  // Sandbox with commissioning free: ships and parts still valued at the chosen share (6.67, Plan J), a derelict's price with them
+  SavedGameState wreck = Commission.build("PLAYER_SHIP_HARD", "Valued Wreck", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(4));
+  int half = Pricing.auctionBase(wreck);
+  HomePlanet.commissionPercent = 100;
+  int whole = Pricing.auctionBase(wreck);
+  Setup.chk("J: Sandbox, commissioning free: a ship is valued at the chosen share (" + half + " at 50%, " + whole + " at 100%)", !HomePlanet.commissionCosts() && whole > 0 && Math.abs(whole - 2 * half) <= 1);
  }
  static SavedGameState read(File f) throws Exception { return HomePlanet.savedGameParser.readSavedGame(f); }
  static void detection() throws Exception {

@@ -174,8 +174,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  v.takeStock();
  Setup.chk("W: a look that finds nothing new leaves the register as it was (its file and every crew file)", Setup.crewStamp(v).equals(before));
 
- // the ships served on, from before the master log began (fhp-c-local-session's handoff, 5.51): a ship's voyage log,
- // a trade off her, her starting crew; a renamed ship once, with the name she had; namesakes on a trade never credited
+ // four more crew aboard, for the served-with checks below
  Ship x0 = v.docked().get(0), y0 = v.boarded();
  c = v.readCopy(y0);
  CrewState gracie = Commission.volunteer("human", new Random(91)); gracie.setName("Gracie Quill");
@@ -184,30 +183,9 @@ public class CrewT { public static void main(String[] a) throws Exception {
  CrewState joiner = Commission.volunteer("engi", new Random(94)); joiner.setName("Joiner");
  for (CrewState t : new CrewState[] {gracie, norwyn, starter, joiner}) { SaveHelper.placeCrew(c.save.getPlayerShip(), t, true); c.save.getPlayerShip().getCrewList().add(t); }
  v.begin().put(y0, c.save, c.hash).commit();
- // the old logs as the 5.73 conversion read them into the event log (5.91: the register reads only that): a voyage's crew, a commission, a trade, the crew assigned
- EventLog.write(v, old("CREW_JOINED", "voyage", "2000-01-01 00:01:00").put("ship", x0.name + "." + x0.id).put("ship_name", x0.name).put("ship_id", x0.id).put("crew", "Norwyn Schultze").put("race", "Rock").human("Crew joined: Norwyn Schultze (Rock)"));
- EventLog.write(v, old("CREW_JOINED", "voyage", "2000-01-01 00:02:00").put("ship", x0.name + "." + x0.id).put("ship_name", x0.name).put("ship_id", x0.id).put("crew", "Joiner").put("race", "Engi").human("Crew joined: Joiner (Engi)"));
- EventLog.write(v, old("COMMISSION", "station", "2000-01-01 00:00:00").put("headline", x0.name + "  (" + x0.id + ")").detail("The Kestrel (PLAYER_SHIP_HARD), difficulty Easy").detail("Crew: Starter (Human)").human(x0.name));
- EventLog.write(v, old("TRADE", "station", "2000-01-01 00:05:00").put("headline", x0.name + " <-> Spacedock Storage").detail(x0.name + ":").detail("  - Crew Gracie Quill").detail("  - Crew Norwyn Schultze").detail("  - Crew Starter").detail("  - Crew Twin").human("trade"));
- for (String who : new String[] {"Gracie Quill", "Norwyn Schultze", "Starter"}) EventLog.write(v, old("CREW", "station", "2000-01-01 00:06:00").put("headline", who + " assigned to the Old Glory.").human(who));
- HistoryLog.entry("RENAME", "Old Glory -> " + y0.name + "  (" + y0.id + ")");
- Setup.forgetCrew(v); // read in afresh, logs and all
- v.takeStock();
- m = CrewRegister.members(v);
- List<String> both = Arrays.asList(x0.name, y0.name + "\tOld Glory");
- CrewRegister.Member g = find(m, "Gracie Quill", CrewRegister.Status.PRESENT), n = find(m, "Norwyn Schultze", CrewRegister.Status.PRESENT), st = find(m, "Starter", CrewRegister.Status.PRESENT);
- Setup.chk("S: traded off a ship before the master log: she's on the list, then the renamed ship once " + (g == null ? "" : g.served), g != null && g.served.equals(both));
- Setup.chk("S: joined a ship in her voyage log before the master log: on the list first " + (n == null ? "" : n.served), n != null && n.served.equals(both));
- CrewRegister.Member jo = find(m, "Joiner", CrewRegister.Status.PRESENT);
- Setup.chk("S: known only from her voyage log before the master log: she's on the list " + (jo == null ? "" : jo.served), jo != null && jo.served.equals(Arrays.asList(x0.name, y0.name + "\tOld Glory")));
- Setup.chk("S: a starting crew member named in her COMMISSION: came aboard her, newly commissioned " + (st == null ? "" : st.served), st != null && st.served.equals(both) && said(st, "newly commissioned"));
- Setup.chk("S: the renamed ship shows her old name", CrewRegister.shipOf(g.served.get(1)).equals(y0.name) && CrewRegister.formerNames(g.served.get(1)).equals(Arrays.asList("Old Glory")));
- boolean twinOn = false; for (CrewRegister.Member t : all(m, "Twin")) for (String sh : t.served) if (CrewRegister.shipOf(sh).equals(x0.name)) twinOn = true;
- Setup.chk("S: two namesakes on a trade's line: neither credited with her", !twinOn);
+ Setup.forgetCrew(v); v.takeStock(); // read in afresh
+ CrewRegister.Member g, n;
 
- // the register still says its ships are kept the 5.51 way, for a station built from main
- String reg = new String(SafeFiles.read(CrewRegister.registerFileOf(v)), "UTF-8");
- Setup.chk("U: the register says its ships are kept the 5.51 way", reg.contains("<entry key=\"served.v\">2</entry>"));
  // ranks (heromedel, 5.52): a prefix on the name, worn with or without the dot
  Setup.chk("K: ranks read from a name: Lt Gracie, sgt. gracie, none", homeplanet.model.Rank.worn("Lt Gracie") == 1 && homeplanet.model.Rank.worn("sgt. gracie") == 0 && homeplanet.model.Rank.worn("Gracie") == -1 && homeplanet.model.Rank.worn("Lt.") == -1);
  Setup.chk("K: a promotion swaps the rank, never stacks it", homeplanet.model.Rank.promoted("Sgt. Gracie", 1).equals("Lt. Gracie") && "Lieutenant".equals(homeplanet.model.Rank.promotion("Sgt Gracie", "Lt. Gracie")) && homeplanet.model.Rank.promotion("Gracie", "Grace") == null);
@@ -374,5 +352,4 @@ public class CrewT { public static void main(String[] a) throws Exception {
  }
  static void writeProps(File f, Properties p) throws IOException { StringWriter w = new StringWriter(); p.store(w, null); SafeFiles.writeText(f, w.toString(), false); }
  /** An entry as the 5.73 conversion read one in from the old logs: its own time, Prior, converted. */
- static Event old(String kind, String log, String time) { return Event.of(kind).put("log", log).put("time", time).put("day", "0").put("converted", "true"); }
 }

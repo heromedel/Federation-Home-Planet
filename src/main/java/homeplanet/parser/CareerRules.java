@@ -16,12 +16,13 @@ public final class CareerRules {
 
 	/** The rules a difficulty sets, in this order (the rows of the briefing's table). */
 	public static final int VICTORY = 0, JOURNEY = 1, REASSIGNMENT = 2, REMOVAL = 3, STRIPPING = 4, SUPPLIES = 5, STIPEND = 6, COMMISSION = 7, STARTING_SCRAP = 8, AUGMENTS = 9, WORK_ORDER = 10, PLEA = 11,
-			MUSEUM_PAY = 12;
+			MUSEUM_PAY = 12, VALUES = 13;
 	public static final String[] RULES = {"After a final victory", "A New Journey costs", "Plead for New Ship grants", "Refit: taking a system off",
 			"Stripping when scrapping", "Missiles and drone parts sell for", "The stipend comes every", "Commissioning a ship costs", "Scrap to start with",
-			"An augment with no room aboard", "A custom work order (past the System Limit) costs", "A plea answered with reputation costs", "Museum reward value"};
+			"An augment with no room aboard", "A custom work order (past the System Limit) costs", "A plea answered with reputation costs", "Museum reward value",
+			"Ship and part values"};
 	/** The order the rules are shown in: the museum's reward under the final victory it goes with (6.47; kept last in career.txt). */
-	public static final int[] ORDER = {VICTORY, MUSEUM_PAY, JOURNEY, REASSIGNMENT, REMOVAL, STRIPPING, SUPPLIES, STIPEND, COMMISSION, STARTING_SCRAP, AUGMENTS, WORK_ORDER, PLEA};
+	public static final int[] ORDER = {VICTORY, MUSEUM_PAY, JOURNEY, REASSIGNMENT, REMOVAL, STRIPPING, SUPPLIES, STIPEND, COMMISSION, VALUES, STARTING_SCRAP, AUGMENTS, WORK_ORDER, PLEA};
 	/**
 	 * Each rule's Easy, Normal and Hard, in words; a fourth, {@link #SANDBOX}, where Sandbox Mode allows a looser one than
 	 * Easy (6.48, heromedel: a truly Custom career). Only Custom offers it.
@@ -34,18 +35,19 @@ public final class CareerRules {
 		{"15 scrap or reputation a system", "30 scrap or reputation a system", "60 scrap or reputation a system", "free"},
 		{"half the store price", "a quarter of the store price", "1 scrap each"},
 		{"one month", "two months", "three months"},
-		{"half {her} price", "75% of {her} price", "{her} full price", "nothing (values at full price)"},
+		{"{her} value", "{her} value", "{her} value", "nothing"}, // what she's valued at is its own rule (6.67, Plan J)
 		{"50 scrap", "25 scrap", "10 scrap"},
 		{"is shipped home by {her} crew", "is shipped home by {her} crew", "is lost"},
 		{"25 scrap and 25 reputation", "50 scrap and 50 reputation", "75 scrap and 75 reputation"},
 		{"a tenth of {her} value", "a quarter of {her} value", "half {her} value"},
-		{"full value", "half value", "half value", "none"}};
+		{"full value", "half value", "half value", "none"},
+		{"50%", "75%", "100%"}};
 	/** A Custom career's level looser than Easy, as Sandbox Mode has it, on the rules whose LEVELS have a fourth (6.48). */
 	public static final int SANDBOX = 3;
 	/** Whether this rule has a Sandbox level for a Custom career to choose. */
 	public static boolean hasSandbox(int rule) { return LEVELS[rule].length > SANDBOX; }
 	private static final int[] JOURNEY_FEES = {200, 500, 1000, 0}, REMOVAL_FEES = {25, 50, 75, 0}, STRIP_FEES = {15, 30, 60, 0}, SUPPLY_PERCENT = {50, 25, 0},
-			STIPEND_MONTHS = {1, 2, 3}, COMMISSION_PERCENT = {50, 75, 100, 100}, START_SCRAP = {50, 25, 10}, WORK_ORDERS = {25, 50, 75}, PLEA_PERCENT = {10, 25, 50};
+			STIPEND_MONTHS = {1, 2, 3}, VALUE_PERCENT = {50, 75, 100}, START_SCRAP = {50, 25, 10}, WORK_ORDERS = {25, 50, 75}, PLEA_PERCENT = {10, 25, 50};
 	private static final String[] REASSIGN = {FreeCommand.ANY, FreeCommand.KESTREL, FreeCommand.RELIEF};
 	/** The museum's reward at each level: Easy full value, Normal and Hard half (FinalVictory.FULL, HALF); Sandbox none. */
 	private static final String[] MUSEUM_PAYS = {FinalVictory.FULL, FinalVictory.HALF, FinalVictory.HALF, FinalVictory.NONE};
@@ -64,6 +66,7 @@ public final class CareerRules {
 	 * level: full value on Easy, half otherwise.
 	 */
 	private static int added(int rule, int[] level) {
+		if (rule == VALUES) return level[COMMISSION] >= 2 ? 2 : level[COMMISSION]; // as she was priced before it was a rule of its own: free commissioning was full price
 		if (rule != MUSEUM_PAY) return 1;
 		return level[VICTORY] <= 0 ? 0 : 1;
 	}
@@ -96,8 +99,8 @@ public final class CareerRules {
 	/** Months between stipends (a month is Career.BEACONS_PER_MONTH beacons). */
 	public int stipendMonths() { return STIPEND_MONTHS[level[STIPEND]]; }
 	public int stipendBeacons() { return stipendMonths() * Career.BEACONS_PER_MONTH; }
-	/** A ship's price counts this share wherever one is priced; with commissioning free, her full price (as in Sandbox Mode). */
-	public int commissionPercent() { return COMMISSION_PERCENT[level[COMMISSION]]; }
+	/** Ships and parts are valued at this share of their price wherever one is priced (its own rule since 6.67, free commissioning or not). */
+	public int commissionPercent() { return VALUE_PERCENT[level[VALUES]]; }
 	/** Commissioning costs nothing (a Custom career at Sandbox's level, 6.48). */
 	public boolean commissionFree() { return level[COMMISSION] == SANDBOX; }
 	public int startingScrap() { return START_SCRAP[level[STARTING_SCRAP]]; }

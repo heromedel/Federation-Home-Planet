@@ -28,6 +28,7 @@ import homeplanet.vault.Vault;
 final class PartsDialog extends JDialog {
 	private final JPanel cols = new JPanel();
 	private final JLabel foot = new JLabel();
+	private final JButton search = new JButton("Search for more parts");
 
 	static void open(java.awt.Component owner) {
 		PartsDialog d = new PartsDialog(owner);
@@ -45,7 +46,11 @@ final class PartsDialog extends JDialog {
 		south.add(foot, BorderLayout.WEST);
 		JButton close = new JButton("Close");
 		close.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { dispose(); } });
-		south.add(close, BorderLayout.EAST);
+		search.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { search(); } });
+		JPanel buttons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 0));
+		buttons.add(search);
+		buttons.add(close);
+		south.add(buttons, BorderLayout.EAST);
 		body.add(south, BorderLayout.SOUTH);
 		getContentPane().add(body);
 		getRootPane().setDefaultButton(close);
@@ -68,6 +73,10 @@ final class PartsDialog extends JDialog {
 			for (Parts.Listing x : all) if (x.index == i) l = x;
 			cols.add(l == null ? sold() : card(l, hold));
 		}
+		boolean again = Parts.canSearch(v);
+		search.setEnabled(again && hold >= Parts.SEARCH_COST);
+		search.setToolTipText(!again ? "Come back later" : hold < Parts.SEARCH_COST ? "It costs " + Parts.SEARCH_COST + " scrap; the Cargo Hold holds " + hold
+				: Parts.SEARCH_COST + " scrap from the Cargo Hold: the foreman's crew turn over the wrecks for other parts. It takes the day.");
 		foot.setText("More parts come in as the fleet travels: check back in a week or two.   The Cargo Hold holds " + hold + " scrap.");
 		cols.revalidate();
 		cols.repaint();
@@ -101,7 +110,10 @@ final class PartsDialog extends JDialog {
 		buy.setEnabled(hold >= l.price);
 		buy.setToolTipText(hold >= l.price ? "Paid from the Cargo Hold; it goes to the stored systems" : "It costs " + l.price + " scrap; the Cargo Hold holds " + hold);
 		buy.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { buy(l); } });
-		p.add(buy, BorderLayout.SOUTH);
+		p.add(buttons(l, buy), BorderLayout.SOUTH);
+		String tip = systemInfo(l, false);
+		pic.setToolTipText(tip);
+		words.setToolTipText(tip);
 		return p;
 	}
 
@@ -123,8 +135,65 @@ final class PartsDialog extends JDialog {
 		buy.setEnabled(hold >= l.price);
 		buy.setToolTipText(hold >= l.price ? "Paid from the Cargo Hold; it goes to the Cargo Hold" : "It costs " + l.price + " scrap; the Cargo Hold holds " + hold);
 		buy.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { buy(l); } });
-		p.add(buy, BorderLayout.SOUTH);
+		p.add(buttons(l, buy), BorderLayout.SOUTH);
+		String tip = salvageInfo(l);
+		pic.setToolTipText(tip);
+		words.setToolTipText(tip);
 		return p;
+	}
+
+	/** Info above Buy (heromedel, 6.66: what a part is, at a click). */
+	private JPanel buttons(final Parts.Listing l, JButton buy) {
+		JPanel b = new JPanel(new GridLayout(2, 1, 0, 4));
+		JButton info = new JButton("Info");
+		info.setToolTipText("What it is and what it does");
+		info.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { info(l); } });
+		b.add(info);
+		b.add(buy);
+		return b;
+	}
+	private void info(Parts.Listing l) {
+		if (Parts.ITEM.equals(l.kind)) { ItemTooltips.show(this, l.id); return; }
+		javax.swing.Icon icon = l.salvage() ? IconFactory.supplyIcon(Parts.FUEL.equals(l.kind) ? "fuel" : Parts.MISSILES.equals(l.kind) ? "missiles" : "drones")
+				: LayoutEditor.image("img/icons/s_" + l.id + "_overlay.png") == null ? null : new ImageIcon(LayoutEditor.image("img/icons/s_" + l.id + "_overlay.png"));
+		JOptionPane.showMessageDialog(this, new JLabel(l.salvage() ? salvageInfo(l) : systemInfo(l, true)), homeplanet.parser.XmlText.text(l.title()), JOptionPane.PLAIN_MESSAGE, icon);
+	}
+	/** A system part: what the system does (FTL's own words), its level and broken bars, and what it's worth whole; in full for Info, shorter as a hover. */
+	static String systemInfo(Parts.Listing l, boolean full) {
+		net.blerf.ftl.xml.SystemBlueprint b = net.blerf.ftl.parser.DataManager.get().getSystem(l.id);
+		String desc = b == null || b.getDescription() == null ? "" : b.getDescription().getTextValue();
+		if (!full) { int dot = desc.indexOf(". "); if (dot > 0) desc = desc.substring(0, dot + 1); }
+		StringBuilder sb = new StringBuilder("<html><b>").append(Items.systemTitle(l.id)).append("</b>");
+		if (!desc.isEmpty()) sb.append("<div style='width:260px; margin-top:4px'>").append(homeplanet.parser.XmlText.text(desc)).append("</div>");
+		sb.append("<div style='margin-top:4px'>Level ").append(l.level).append(", ").append(l.broken).append(" of ").append(l.level).append(" bars broken")
+				.append("<br>Whole and new: ").append(Parts.worth(l.id, l.level)).append(" scrap");
+		if (full) sb.append("<br><br>It goes to the Cargo Bay's stored systems as it is.<br>Install it on a ship, then have the Dry Dock repair it.");
+		return sb.append("</div></html>").toString();
+	}
+	/** Salvage: a weapon, drone or augment's card, or what a bundle of supplies is. */
+	static String salvageInfo(Parts.Listing l) {
+		if (Parts.ITEM.equals(l.kind)) { String t = ItemTooltips.tooltip(l.id); if (t != null) return t; }
+		String what = Parts.FUEL.equals(l.kind) ? "Fuel for the FTL drive: one jump for each."
+				: Parts.MISSILES.equals(l.kind) ? "Missiles, for the weapons that fire them."
+				: Parts.DRONE_PARTS.equals(l.kind) ? "Drone parts, for deploying drones." : "";
+		return "<html><b>" + homeplanet.parser.XmlText.text(l.title()) + "</b><div style='width:260px; margin-top:4px'>" + what
+				+ "</div><div style='margin-top:4px'>In a store: " + l.storePrice() + " scrap<br>It goes to the Cargo Hold.</div></html>";
+	}
+
+	private void search() {
+		if (!HomePlanet.confirmNo(this, "Search the Junkyard for more parts, for " + Parts.SEARCH_COST + " scrap from the Cargo Hold?\n"
+				+ "The parts and salvage for sale now go back on the heap, and the search takes the day.", "Parts for sale")) return;
+		try {
+			Parts.search(Vault.get());
+		} catch (IOException e) {
+			HomePlanet.showErrorDialog("The search was called off. Nothing was changed:\n" + e.getMessage());
+			fill();
+			return;
+		}
+		fill();
+		JOptionPane.showMessageDialog(this, "The foreman's crew turned over the wrecks: these are what came out of them.", "Parts for sale", JOptionPane.INFORMATION_MESSAGE);
+		Vault.get().countBeacon("a day searching the Junkyard"); // the search takes the day, as a purchase does (heromedel, 6.66)
+		fill();
 	}
 
 	private void buy(Parts.Listing l) {
@@ -140,5 +209,6 @@ final class PartsDialog extends JDialog {
 		}
 		fill();
 		JOptionPane.showMessageDialog(this, "The " + what + (l.salvage() ? " is in the Cargo Hold." : " is in the Cargo Bay's stored systems."), "Parts for sale", JOptionPane.INFORMATION_MESSAGE);
+		Vault.get().countBeacon("a day at the Junkyard"); // a purchase there takes the day, once its message is closed (heromedel, 6.66)
 	}
 }

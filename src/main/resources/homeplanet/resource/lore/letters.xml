@@ -1130,6 +1130,8 @@ We have chosen a vessel for you. {She} is a Slug Cruiser, found drifting, and {s
 
 We find {her_obj} beautiful. {She} is being prepared for transfer to your Junkyard. This will take time.
 
+{She} is not a loan. When {she} arrives, {she} is yours.
+
 ~ Engi Restoration Collective
 ]]></letter>
 
@@ -1140,7 +1142,7 @@ Patience has been delivered to the Junkyard at The Home Planet Station.
 
 To restore {her_obj}, use Salvage at the Space Dock to bring {her_obj} back into service, then move at least one crew member aboard through the Cargo Bay before {she} flies. A ship with no one aboard is only a very large box.
 
-Repair {her_obj} well. We will ask.
+Remember, you may keep this treasure. We ask only that you treat {her_obj} well.
 
 ~ Engi Restoration Collective
 ]]></letter>
@@ -1151,6 +1153,16 @@ Repair {her_obj} well. We will ask.
 We have set aside a Repair Arm for you. It mends the hull a little each time you collect scrap. We ask 25 scrap from your Cargo Hold to cover its parts, which is less than any store will ask. We do not believe in profit from repairs.
 
 Claim it when you are ready.
+
+~ Engi Restoration Collective
+]]></letter>
+
+	<letter key="chain:one-hull:medbay" from="Engi Restoration Collective" subject="We see you" reward="item NANO_MEDBAY"><![CDATA[
+{rank},
+
+We see that you have given the {name} a medbay again. You took the time to mend what someone else tore out, and that is rare.
+
+We have set aside a gift for {her_obj}: Engi nano med-bots. They heal the crew where they stand, outside the medbay, though more slowly. Claim them when you are ready.
 
 ~ Engi Restoration Collective
 ]]></letter>

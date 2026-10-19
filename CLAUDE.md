@@ -64,8 +64,6 @@ normal.
   `docs/CONCERNS.md` lists the design debts talked over (how the station is built, what it costs, what a change would
   take): add to it when one comes up, with the version; read it before planning anything that touches the vault's files
   or how crew are tracked.
-  `docs/OVERHAUL-6.md` is the 6.0 plan (storage, logs and code rebuilt) with every session's notes: read it before planning
-  anything that touches storage or logs, and add thoughts only under your own heading at its end, as it says.
   `docs/BUGS.md` lists bugs found and not yet fixed (heromedel, 6.01): add one there when a fix is put off.
 - **The feedback sheet (Prime only):** Cloud-C-Primary-Edit reads the Send Feedback responses after every push
   (https://docs.google.com/spreadsheets/d/1QxIH-JnaGoCNnucmq1O6qU5eCSABymt-A5NHXfQgRFY), brings `docs/FEEDBACK.md` up to date
@@ -111,7 +109,7 @@ normal.
   each changed file says so at the top).
 - `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
 - `docs/LORE_COMPONENTS.md` is the facts file (real FTL lore with sources) for checking words against: it is never shipped
-  and is not part of the 6.0 `lore/` words folder (`docs/OVERHAUL-6.md` §3.5).
+  and is not part of the 6.0 `lore/` words folder.
 - `docs/NAMES.md` is the style guide for crew names by race (heromedel, 6.28: the Slugs' drawn-out letters, the Engi's
   hex and the rest): every name in `lore/names/` follows it.
 - Expeditions: `expedition_type` in the cfg (hidden) is 2, the crew expeditions (`Assignments`, `docs/ROADMAP.md` 31; the
