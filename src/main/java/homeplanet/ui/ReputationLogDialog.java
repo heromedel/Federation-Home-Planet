@@ -151,12 +151,12 @@ final class ReputationLogDialog extends JDialog {
 	/** The log, kept to the entries that match the search, the latest in view. */
 	private void fill() {
 		java.util.List<homeplanet.core.EventLog.Entry> all = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(Vault.get()), "reputation"); // its events (5.74)
-		String q = search.getText().trim().toLowerCase();
+		String q = search.getText().trim();
 		java.util.List<homeplanet.core.EventLog.Entry> out = new java.util.ArrayList<homeplanet.core.EventLog.Entry>();
 		for (homeplanet.core.EventLog.Entry e : all) {
 			StringBuilder words = new StringBuilder(Reputation.signed(e.num("points", 0))).append(' ').append(e.human);
 			for (int i = 1; e.get("detail." + i) != null; i++) words.append(' ').append(e.get("detail." + i));
-			if (q.isEmpty() || words.toString().toLowerCase().contains(q)) out.add(e);
+			if (TextSearch.matches(words.toString(), q)) out.add(e); // the station's one way of searching (6.76)
 		}
 		int entries = all.size(), shown = out.size();
 		count.setText(q.isEmpty() ? entries + (entries == 1 ? " entry" : " entries") : shown + " of " + entries + (entries == 1 ? " entry" : " entries"));

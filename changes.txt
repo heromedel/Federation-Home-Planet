@@ -1,0 +1,60 @@
+THE HOME PLANET STATION
+Major changes by version
+
+4B.01 to 4B.99
+  Save safety, retired designs, blueprint backups, ship history and restore.
+  Prices from FTL's own blueprints, house rules, Dry Dock repairs and upgrades.
+  Transmissions inbox, the Federation's letters, reply chains (the One Point of Hull).
+  Immersive Mode: careers (Easy, Normal, Hard, Custom), Switch Game Mode, rank, stipend.
+  After a final victory: rescue her or give her to the museum.
+  Junkyard, derelicts and parts. Check for Updates. Plead for New Ship.
+  Long Range Comm. Expeditions and hiring. Reputation. Design Ship in three steps.
+
+5.00 to 5.99
+  Days are real: time passes at the station as ships fly or during some other activities. Captain's Quarters and the Captain's Log.
+  Crew expeditions, the infirmary and ransoms, the Clone Bay.
+  Reputation as a currency. The Third Fleet Commander.
+  Playing FTL docked in the station's window. The console.
+  The Crew Log. Updates to the Refit tab and the Cargo Bay.
+  The fleet on disk and the logs rebuilt toward 6.0. The station's words move into lore/.
+
+6.00 to 6.10
+  Storage, logs and code rebuilt; older fleets convert on first opening.
+  Faster Board and Dock. Station Log in the station's own words.
+  Ship marks: each ship records her career and origin.
+
+6.11 to 6.20
+  Updates to the vault, crew files and the logs.
+  Reputation is earned at each career's rate, by ship difficulty and sector.
+
+6.21 to 6.32
+  Distress signals earn reputation. Stardates replace calendar dates.
+  Updates to pop-ups and tooltips.
+
+6.33 to 6.41
+  Optional crew name lists by race. Engi Translate added.
+  Expedition roles, fixed training and results told by job.
+  Updates to the Captain's Log.
+
+6.42 to 6.52
+  Updates to Refit and Remodel, with a clickable Power Distribution Simulation.
+  Ship Pronoun setting. Final victory choices: Nothing, Choice or Museum.
+  Updates to Custom careers. Build A Release.bat added.
+
+6.53 to 6.60
+  Updates to Design Ship, the house rules and the settings.
+  Updates to docked FTL and tooltips. Admiral comes at 5,000 reputation.
+
+6.61 to 6.64
+  Optional infirmary setting, with a chance to save a crewmate from death.
+  Deadlock fix. First User Manual.
+
+6.65 to 6.72
+  Updates to the One Point of Hull letters, expedition rewards and reports.
+  Posting for crew ends the day. Junkyard parts search.
+  Updates to the Cargo Bay, ship values and the Captain's Log.
+  Manual built in text and HTML.
+
+6.73 to 6.80
+  Manual opens from Settings, with Find, dark mode and Top links.
+  Search added to the station log, ship logs and Career Reputation Log.

@@ -34,6 +34,9 @@ final class LogViewer extends JPanel {
 	private final List<Ship> ships = new ArrayList<Ship>();
 	private final JScrollPane scroll = new JScrollPane();
 	private final JLabel showing = new JLabel(), count = new JLabel();
+	/** Search, as the reputation log has it (heromedel, 6.76): the station log or a voyage log kept to the entries that mention what's typed. */
+	private final javax.swing.JTextField search = new javax.swing.JTextField(16);
+	private final JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
 	/** What's in view: the station log (null) or this ship's voyage log (the debug log is shown by {@link #showDebug}). */
 	private Ship ship;
 
@@ -111,9 +114,20 @@ final class LogViewer extends JPanel {
 		titleRow.add(javax.swing.Box.createHorizontalStrut(12));
 		titleRow.add(count);
 		showing.setFont(MenuTheme.LABEL_FONT);
+		searchRow.add(new JLabel("Search:  "));
+		searchRow.add(search);
+		search.setToolTipText("Only the entries that mention this (a ship's name, a word), in any case");
+		search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+			public void insertUpdate(javax.swing.event.DocumentEvent e) { fill(); }
+			public void removeUpdate(javax.swing.event.DocumentEvent e) { fill(); }
+			public void changedUpdate(javax.swing.event.DocumentEvent e) { fill(); }
+		});
+		JPanel titleLine = new JPanel(new BorderLayout(12, 0));
+		titleLine.add(titleRow, BorderLayout.CENTER);
+		titleLine.add(searchRow, BorderLayout.EAST);
 		JPanel controls = new JPanel(new BorderLayout(0, 2));
 		controls.add(top, BorderLayout.NORTH);
-		controls.add(titleRow, BorderLayout.SOUTH);
+		controls.add(titleLine, BorderLayout.SOUTH);
 
 		scroll.getViewport().setBackground(RecordsLog.BG);
 		scroll.setBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, MenuTheme.GOLD));
@@ -131,10 +145,14 @@ final class LogViewer extends JPanel {
 
 	/** Shows what's chosen, the latest in view. */
 	private void fill() {
+		searchRow.setVisible(true);
+		String q = search.getText().trim();
 		if (ship != null) {
 			showing.setText(ship.name + "'s voyage log");
-			List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOf(ship)), ship.id); // her own log (5.76)
-			count.setText(es.size() + " lines");
+			List<homeplanet.core.EventLog.Entry> all = homeplanet.core.EventLog.voyage(homeplanet.vault.ShipStore.entries(Vault.get().folderOf(ship)), ship.id); // her own log (5.76)
+			List<homeplanet.core.EventLog.Entry> es = TextSearch.filter(all, q, false);
+			count.setText(q.isEmpty() ? all.size() + " lines" : es.size() + " of " + all.size() + " lines");
+			if (!q.isEmpty()) { show(RecordsLog.voyage(es, "No lines mention \"" + q + "\".")); return; }
 			show(RecordsLog.voyage(es, "Nothing logged yet. The Home Planet Station writes " + homeplanet.model.Words.her() + " voyage log as FTL saves " + homeplanet.model.Words.herObj() + ",\n"
 					+ "while the station is open (and on Refresh)."));
 			return;
@@ -143,15 +161,18 @@ final class LogViewer extends JPanel {
 		String slot = slots.get(Math.max(0, fleet.getSelectedIndex()));
 		showing.setText("Station log, " + Vault.title(slot));
 		File root = Vault.rootOf(Vault.get().saves, slot);
-		List<homeplanet.core.EventLog.Entry> es = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(homeplanet.core.EventLog.fileIn(root)), "station");
-		int entries = 0;
-		for (homeplanet.core.EventLog.Entry e : es) if (RecordsLog.shown(e)) entries++; // the station's business: its housekeeping stays out of view (6.05)
-		count.setText(entries + (entries == 1 ? " entry" : " entries"));
-		show(RecordsLog.station(es, "Nothing logged yet.", true));
+		List<homeplanet.core.EventLog.Entry> all = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(homeplanet.core.EventLog.fileIn(root)), "station");
+		List<homeplanet.core.EventLog.Entry> es = TextSearch.filter(all, q, true);
+		int entries = 0, found = 0;
+		for (homeplanet.core.EventLog.Entry e : all) if (RecordsLog.shown(e)) entries++; // the station's business: its housekeeping stays out of view (6.05)
+		for (homeplanet.core.EventLog.Entry e : es) if (RecordsLog.shown(e)) found++;
+		count.setText(q.isEmpty() ? entries + (entries == 1 ? " entry" : " entries") : found + " of " + entries + (entries == 1 ? " entry" : " entries"));
+		show(RecordsLog.station(es, q.isEmpty() ? "Nothing logged yet." : "No entries mention \"" + q + "\".", true));
 	}
 
 	/** This run's debug log (the newest in the program's log folder), as plain text: what to read before a bug report. */
 	void showDebug() {
+		searchRow.setVisible(false); // the program's own text, read whole
 		File newest = Feedback.newestLog();
 		String text;
 		if (newest == null) text = "No debug log has been written yet (the program's log folder beside Federation Home Planet.jar is empty or missing).";
@@ -179,6 +200,7 @@ final class LogViewer extends JPanel {
 	void showCrew() { showCrew(-1); }
 	/** The same, with this crew member's career open (a crew popup's Crew Log..., 5.41). */
 	void showCrew(int id) {
+		searchRow.setVisible(false); // the Crew Log has its own list to pick from
 		CrewLogView view = new CrewLogView(Vault.get(), id);
 		showing.setText("Crew Log, " + Vault.title(Vault.get().slot));
 		count.setText(view.count() + (view.count() == 1 ? " crew member" : " crew members"));
