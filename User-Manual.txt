@@ -1,5 +1,5 @@
 THE HOME PLANET STATION
-User Manual, version 6.78
+User Manual, version 6.79
 Issued by The Federation Home Planet
 
 To see which version of the station you have, open SETTINGS and choose the
@@ -315,7 +315,7 @@ it through good service and loses it through losses. When reputation is in
 use, it shows in gold just right of the inbox, as REP followed by a number.
 Hover over it to see the latest changes, or click it to open the Career
 Reputation Log, which lists every gain and loss and explains how reputation is
-earned and spent.
+earned and spent. It has a Search box too.
 
 
 ==============================================================================
