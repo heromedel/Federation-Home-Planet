@@ -1,5 +1,5 @@
 THE HOME PLANET STATION
-User Manual, version 6.74
+User Manual, version 6.77
 Issued by The Federation Home Planet
 
 To see which version of the station you have, open SETTINGS and choose the
@@ -632,7 +632,9 @@ The station's logs can be read in SETTINGS on the Records tab. View Station
 Log shows everything the station has done for your fleet, View Ship Log shows
 one ship's voyages (choose her from the list below the button), and View Crew
 Log shows every crew member who has served with you, where they served and
-what became of them.
+what became of them. Each log window has a Search box. It ignores capitals,
+finds parts of words, and finds words in the order you type them, even across
+a line break. A ship's Records have the same Search on their log tabs.
 
 
 ==============================================================================
@@ -972,8 +974,8 @@ buttons to Check for Updates and Send Feedback. Under User Manual are two
 buttons, Html and Text, that open this manual: Html with its pictures, and
 Text as plain words. Beside them, "Open in The Home Planet Station" chooses
 where it opens. On, which is usual, shows it in a window of the station's own,
-where the Html manual has a dark mode that is remembered and the Text manual
-has a Find box (Ctrl+F). Off opens it in your web browser or text editor
+where both manuals have a Find box (Ctrl+F) and the Html manual has a dark
+mode that is remembered. Off opens it in your web browser or text editor
 instead.
 
 
