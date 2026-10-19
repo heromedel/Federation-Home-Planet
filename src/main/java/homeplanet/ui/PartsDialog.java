@@ -23,7 +23,7 @@ import homeplanet.vault.Vault;
 
 /**
  * The Junkyard's parts for sale: damaged systems pulled from wrecks, each with its level, its broken bars and its price,
- * and Buy; now and then a piece of salvage for the Cargo Hold. Bought parts go to the stored systems; the Dry Dock mends them once installed.
+ * and Buy; now and then a piece of salvage for the Cargo Hold. Bought parts go to the stored systems; the Refit mends them once installed.
  */
 final class PartsDialog extends JDialog {
 	private final JPanel cols = new JPanel();
@@ -167,7 +167,7 @@ final class PartsDialog extends JDialog {
 		if (!desc.isEmpty()) sb.append("<div style='width:260px; margin-top:4px'>").append(homeplanet.parser.XmlText.text(desc)).append("</div>");
 		sb.append("<div style='margin-top:4px'>Level ").append(l.level).append(", ").append(l.broken).append(" of ").append(l.level).append(" bars broken")
 				.append("<br>Whole and new: ").append(Parts.worth(l.id, l.level)).append(" scrap");
-		if (full) sb.append("<br><br>It goes to the Cargo Bay's stored systems as it is.<br>Install it on a ship, then have the Dry Dock repair it.");
+		if (full) sb.append("<br><br>It goes to the Cargo Bay's stored systems as it is.<br>Install it on a ship, then have it repaired on the Refit tab.");
 		return sb.append("</div></html>").toString();
 	}
 	/** Salvage: a weapon, drone or augment's card, or what a bundle of supplies is. */

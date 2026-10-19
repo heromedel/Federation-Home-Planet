@@ -1,6 +1,6 @@
 import java.io.*; import java.util.*; import java.util.List; import net.blerf.ftl.parser.SavedGameParser.ShipState; import java.awt.*; import javax.swing.*; import net.blerf.ftl.parser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*; import homeplanet.ui.*; import homeplanet.parser.Career; import homeplanet.parser.CareerRules;
 /**
- * The station's windows, driven as a player would (needs a display: run.sh runs it under xvfb-run): the Dry Dock's bill
+ * The station's windows, driven as a player would (needs a display: run.sh runs it under xvfb-run): the Refit's bill
  * paid from the Cargo Hold on Save and dropped on Reset (the hold as the trade partner, and another ship as it); FTL's
  * System Limit in the shop and the Cargo Bay (the custom work order); the auction's three steps; the Junkyard's Info button and list tooltips. args: gamedir, world saves (from WorldT), work
  */
@@ -449,7 +449,7 @@ public class GuiT {
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try { f.showSpaceDock(); } catch (Exception e) { throw new RuntimeException(e); } } });
  }
 
- /** The Refit's Ship | Cargo Bay switch on Ship (6.44): the Dry Dock's bill comes from the ship's own scrap on Save, the Cargo Hold untouched; remembered in the cfg. */
+ /** The Refit's Ship | Cargo Bay switch on Ship (6.44): the Refit's bill comes from the ship's own scrap on Save, the Cargo Hold untouched; remembered in the cfg. */
  static void shipPays(final Vault v, final MainFrame f) throws Exception {
   SavedGameParser.SavedGameState g = v.readCopy(v.boarded()).save; g.getPlayerShip().setHullAmt(21); g.getPlayerShip().setScrapAmt(50); v.write(v.boarded(), g);
   hold(v, 100);
@@ -556,7 +556,7 @@ public class GuiT {
  /**
   * FTL's System Limit on a Kestrel at 8 systems. The shop's Hacking shows the custom work order on hover, and Buy asks first
   * (heromedel's words; Install or Cancel, Cancel the default): Cancel changes nothing, Install takes the store's price and 100.
-  * Install from the Cargo Bay asks the same and puts 100 on the Dry Dock's bill (paid from the Cargo Hold on Save, dropped on
+  * Install from the Cargo Bay asks the same and puts 100 on the Refit's bill (paid from the Cargo Hold on Save, dropped on
   * Reset); a Clone Bay for her Medbay, or any system at 7, asks nothing and costs nothing.
   */
  static void systemLimit(final Vault v, final MainFrame f) throws Exception {
@@ -736,7 +736,7 @@ public class GuiT {
   Setup.chk("X: the Cargo Bay's Install: the hold can pay, so it may", q[0] == null);
   Setup.chk("X: Install from the Cargo Bay asks the same, Cancel the default", shown.size() >= 1 && ask.equals(shown.get(0)) && "Cancel".equals(String.valueOf(defaults.get(0))));
   Setup.chk("X: Cancel changes nothing", Integer.valueOf(0).equals(q[1]) && Integer.valueOf(150).equals(q[2]));
-  Setup.chk("X: Install fits it at its level, 100 on the Dry Dock's bill", Integer.valueOf(2).equals(q[3]) && Integer.valueOf(50).equals(q[4]));
+  Setup.chk("X: Install fits it at its level, 100 on the Refit's bill", Integer.valueOf(2).equals(q[3]) && Integer.valueOf(50).equals(q[4]));
   Setup.chk("X: a Clone Bay for her Medbay asks nothing and costs nothing", Integer.valueOf(0).equals(q[5]) && Integer.valueOf(1).equals(q[6]) && Integer.valueOf(0).equals(q[7]) && Integer.valueOf(50).equals(q[8]));
   Setup.chk("X: Reset drops the bill", Integer.valueOf(150).equals(q[9]) && Integer.valueOf(0).equals(q[10]));
   Setup.chk("X: Save pays it from the Cargo Hold", Boolean.TRUE.equals(q[11]) && Integer.valueOf(50).equals(q[13]) && level(saved, MIND) == 2 && !file.contains("mind") && shown.size() == 3);

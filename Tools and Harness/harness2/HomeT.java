@@ -20,7 +20,7 @@ public class HomeT { public static void main(String[] a) throws Exception {
  // words
  Setup.chk("W: cap and a/an", Words.cap("the Kestrel").equals("The Kestrel") && Words.cap("").isEmpty() && Words.cap(null) == null && Words.a("Engi").equals("an Engi") && Words.a("Rockman").equals("a Rockman") && Words.a("").isEmpty());
  Setup.chk("W: the, as ShipNames has it", ShipNames.the("Kestrel").equals("the Kestrel") && ShipNames.the("The Adjudicator").equals("The Adjudicator") && ShipNames.the("the Nightjar").equals("the Nightjar"));
- // prices: FTL's own store prices under Pricing, as the Dry Dock's shop used to read them itself
+ // prices: FTL's own store prices under Pricing, as the Refit's shop used to read them itself
  Setup.chk("P: a weapon, a drone, an augment at store price; unknown is -1 for the shop and 0 for the sums", Pricing.store("LASER_BURST_1") > 0 && Pricing.store("COMBAT_1") > 0 && Pricing.store("SHIELD_RECHARGE") > 0
    && Pricing.store("NO_SUCH_THING") == -1 && Pricing.item("NO_SUCH_THING") == 0 && Pricing.item("LASER_BURST_1") == Pricing.store("LASER_BURST_1"));
  Setup.chk("P: a crew member and a system at store price", Pricing.crewStore("rock") > 0 && Pricing.crewStore("no_such_race") == -1 && Pricing.crew("no_such_race") == 0 && Pricing.systemStore("shields") > 0 && Pricing.systemStore("no_such") == -1);

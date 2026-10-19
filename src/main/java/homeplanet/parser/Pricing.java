@@ -84,10 +84,10 @@ public final class Pricing {
 	}
 	/** FTL's reactor limit (Advanced Edition). */
 	public static final int REACTOR_MAX = 25;
-	/** One point of hull repaired in the Dry Dock: a flat 4 scrap, the top of FTL's store prices (The Federation charges a premium). */
+	/** One point of hull repaired in the Refit: a flat 4 scrap, the top of FTL's store prices (The Federation charges a premium). */
 	public static final int HULL_REPAIR = 4;
 	public static int hullRepair() { return HULL_REPAIR; }
-	/** Mending one broken bar of a system, and sealing one hull breach, in the Dry Dock. */
+	/** Mending one broken bar of a system, and sealing one hull breach, in the Refit. */
 	public static final int SYSTEM_REPAIR = 5, BREACH_REPAIR = 5;
 	/** Her systems past FTL's System Limit, each a custom work order (a design can start with more than FTL allows). */
 	public static int workOrders(ShipState s) {
@@ -158,7 +158,7 @@ public final class Pricing {
 	public static int missingHull(ShipState s) {
 		return Math.max(0, maxHull(s) - s.getHullAmt());
 	}
-	/** Her broken system bars (each one mended in the Dry Dock for SYSTEM_REPAIR). */
+	/** Her broken system bars (each one mended in the Refit for SYSTEM_REPAIR). */
 	public static int brokenBars(ShipState s) {
 		int n = 0;
 		for (SystemType t : SystemType.values()) { SystemState st = s.getSystem(t); if (st != null && st.getCapacity() > 0) n += st.getDamagedBars(); }

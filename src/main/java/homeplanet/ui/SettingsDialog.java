@@ -772,7 +772,7 @@ public class SettingsDialog extends JDialog {
 			+ "Despite the ongoing war with the rebellion, the Federation has restored its long-range trade and communication network, "
 			+ "carried by official stores and stations across the sectors.\n\n"
 			+ "From the Home Planet, the Federation can once more reach beacons in many star systems: moving goods and crew between ships "
-			+ "almost instantly, refitting hulls in its dry docks, and commissioning new ships wherever a captain needs one.\n\n"
+			+ "almost instantly, refitting hulls in its shipyards, and commissioning new ships wherever a captain needs one.\n\n"
 			+ "Welcome home, Captain, and godspeed.";
 
 	private void showLore() {

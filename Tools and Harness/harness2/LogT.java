@@ -175,7 +175,7 @@ public class LogT { public static void main(String[] a) throws Exception {
   HistoryLog.entry("BUY", "1 purchase", Arrays.asList("Cloaking system (150 scrap) from the store at Test Kestrel's beacon -> The Cargo Bay"));
   MasterLog.businessDay(v);
   String q = page(v, false);
-  Setup.chk("F: a system bought into the Cargo Hold: Bought a Cloaking system, and no Dry Dock work told for it (5.30)", q.contains("Bought a Cloaking system.") && !q.contains("Had the Dry Dock work on the Test Kestrel"));
+  Setup.chk("F: a system bought into the Cargo Hold: Bought a Cloaking system, and no refit work told for it (5.30)", q.contains("Bought a Cloaking system.") && !q.contains("Had refit work done on the Test Kestrel"));
   HistoryLog.entry("BUY", "2 purchases", Arrays.asList("Missiles (6 scrap) from the store at Test Kestrel's beacon -> Test Kestrel", "436F~696C Coil (Engi) (45 scrap) from the store at Test Kestrel's beacon -> Test Kestrel"));
   MasterLog.businessDay(v);
   String h = page(v, false);

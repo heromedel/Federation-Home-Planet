@@ -47,12 +47,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Dry Dock shop in the Cargo Bay: buy from the shop at any of your ships' current beacons.
+ * The Refit shop in the Cargo Bay: buy from the shop at any of your ships' current beacons.
  * Purchases change the saves in memory only; the Cargo Bay's Save button writes them (buyer first,
  * then each shop), and Reset/Pick throw them away like any other unsaved change.
  */
-class DryDockShop {
-	private static final Logger log = LoggerFactory.getLogger(DryDockShop.class);
+class RefitShop {
+	private static final Logger log = LoggerFactory.getLogger(RefitShop.class);
 	// Store prices for supplies (per unit)
 	static final int FUEL_PRICE = homeplanet.parser.Pricing.FUEL, MISSILE_PRICE = homeplanet.parser.Pricing.MISSILE, DRONE_PART_PRICE = homeplanet.parser.Pricing.DRONE_PART;
 	// Where the panel sits (top left, level with the Save panel)
@@ -82,7 +82,7 @@ class DryDockShop {
 	private final Map<SavedGameState, Map<String, Integer>> bought = new java.util.IdentityHashMap<SavedGameState, Map<String, Integer>>();
 
 
-	DryDockShop(CargoBayUI bay) { this.bay = bay; }
+	RefitShop(CargoBayUI bay) { this.bay = bay; }
 
 	// ---- The Shop tab ----
 	private final JPanel panel = new JPanel(null);
@@ -578,7 +578,7 @@ class DryDockShop {
 			e.count = left;
 		}
 		ps.setScrapAmt(ps.getScrapAmt() - cost); // whoever Pay From says, whatever the goods are for (6.45)
-		bay.systems.chargeRep(rep, "a custom work order for the " + name); // spent on Save, with the Dry Dock's bill
+		bay.systems.chargeRep(rep, "a custom work order for the " + name); // spent on Save, with the Refit's bill
 
 		// Anything not already written by the Cargo Bay's Save gets written by us
 		markDirty(buyer);
@@ -709,7 +709,7 @@ class DryDockShop {
 	java.util.Set<Ship> touched() { return new java.util.LinkedHashSet<Ship>(dirty); }
 	/** The shop's own copy of a ship's save (the Cargo Hold read for purchases), or null if it read none: another change to her belongs in it (5.61). */
 	SavedGameState copyOf(Ship s) { return otherSaves.get(s); }
-	/** Puts the shop's copy of her into the save after a change made to it outside the shop (the Dry Dock's bill). */
+	/** Puts the shop's copy of her into the save after a change made to it outside the shop (the Refit's bill). */
 	void putCopy(homeplanet.vault.Vault.Transaction tx, Ship s) {
 		dirty.add(s);
 		tx.put(s, otherSaves.get(s), otherHashes.get(s));
