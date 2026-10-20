@@ -64,3 +64,4 @@ Major changes by version
   7.00: support for fleets and careers from before 6.0 removed; Long Range Comm. protocol 3.
   7.01: the code's shared helpers (one XML reader, one place for what goes aboard the Cargo Hold); nothing a player sees changes.
   7.02: the vault's code split along its seams, long methods split, stale comments removed; nothing a player sees changes.
+  7.03: the watch on FTL's continue.sav keeps its own notes (Steam Cloud's copies, New Game's overwrite); nothing a player sees changes.

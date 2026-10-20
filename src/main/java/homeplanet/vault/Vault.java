@@ -129,6 +129,8 @@ public final class Vault {
 	/** Which mode's fleet: SANDBOX, EASY, NORMAL, HARD or CUSTOM. */
 	public final String slot;
 	final List<Ship> ships = new ArrayList<Ship>();
+	/** What watches continue.sav for this fleet, and keeps what the player is told of it. */
+	private final ContinueWatch watch = new ContinueWatch(this);
 
 	private Vault(File savesFolder, String slot) {
 		this.saves = savesFolder;
@@ -523,7 +525,7 @@ public final class Vault {
 		// a Board stopped partway before 5.95 (her record still saying docked): her save is continue.sav, and nobody else is boarded
 		if (boarded() == null && cont.isFile()) {
 			for (Ship s : ships) {
-				if (s.state != Ship.State.DOCKED || fileOf(s).isFile() || !ContinueWatch.isHers(this, s, cont)) continue;
+				if (s.state != Ship.State.DOCKED || fileOf(s).isFile() || !watch.isHers(s, cont)) continue;
 				s.state = Ship.State.BOARDED;
 				try { s.hash = SafeFiles.hash(cont); } catch (IOException e) { s.hash = ""; }
 				notes.add(s.name + " was being boarded when the station stopped: continue.sav is " + Words.her() + " save, so " + Words.she() + " is boarded");
@@ -559,23 +561,8 @@ public final class Vault {
 			ships.remove(b);
 			b = null;
 		}
-		if (b == null && cont.isFile()) ContinueWatch.setAsideMarked(this, cont, notes); // her mark says whose she is (6.08)
-		if (b == null && cont.isFile()) {
-			Ship original = ContinueWatch.cloudCopyOf(this, cont);
-			if (original != null) {
-				// Steam Cloud brought back a continue.sav the station already has (a docked ship, or one of her kept versions)
-				try {
-					File dir = settleFolder(original);
-					ShipStore.keepVersion(dir, SafeFiles.read(cont), "cloud-");
-					if (!cont.delete()) throw new IOException("Could not remove " + cont);
-					cloudCopy = "Steam Cloud brought back an old copy of " + homeplanet.parser.ShipNames.the(original.name) + ", who is already in your fleet.\n"
-							+ "The copy was set aside in " + Words.her() + " records, not added as a second ship.";
-					notes.add("continue.sav was a copy of " + original.name + " (" + original.state.key + "), brought back by Steam Cloud most likely: set aside in " + dir.getParentFile().getName() + "/" + dir.getName() + "/" + ShipStore.VERSIONS + " (cloud-)");
-				} catch (IOException e) {
-					log.warn("Could not set aside the copy of {} in continue.sav: {}", original, e.toString());
-				}
-			}
-		}
+		if (b == null && cont.isFile()) watch.setAsideMarked(cont, notes); // her mark says whose she is (6.08)
+		if (b == null && cont.isFile()) watch.setAsideCopy(cont, notes); // unmarked, but a copy of one she already has (Steam Cloud)
 		if (b == null && cont.isFile()) {
 			Ship n = new Ship(newId(), "Unknown ship", Ship.State.BOARDED, true);
 			n.origin = Strays.originNow("adopted");
@@ -618,7 +605,7 @@ public final class Vault {
 			s.hash = h;
 			changed = true;
 		}
-		if (ContinueWatch.checkBoarded(this)) changed = true;
+		if (watch.checkBoarded()) changed = true;
 		if (changed) saveManifest();
 		List<String> notes = new ArrayList<String>();
 		Strays.findLoose(this, notes); // a save lying where no ship holds it waits for the player's word (6.10)
@@ -682,9 +669,8 @@ public final class Vault {
 	/** Where a copy marked as another career's ship is set aside (6.08). */
 	public static final String SET_ASIDE = "set-aside";
 
-	String cloudCopy = null;
 	/** What the player is told of a copy continue.sav turned out to be (set aside since this was last asked), or null. */
-	public synchronized String takeCloudCopy() { return ContinueWatch.takeCloudCopy(this); }
+	public synchronized String takeCloudCopy() { return watch.takeCloudCopy(); }
 
 	// ---- sectors travelled (the Immersive stipend) ----
 
@@ -732,16 +718,15 @@ public final class Vault {
 
 	// ---- is continue.sav still her? ----
 
-	String overwritten = null;
 	/** The name of a boarded ship FTL overwrote since this was last asked (her last seen version is in her records), or null. */
-	public synchronized String takeOverwritten() { return ContinueWatch.takeOverwritten(this); }
+	public synchronized String takeOverwritten() { return watch.takeOverwritten(); }
 
 	/**
 	 * A ship the station didn't commission, boarded in Immersive Mode (heromedel, 5.54): the station doesn't watch FTL for
 	 * her (no voyage log, reputation, clock, stipend time, parcels, crew, final battle) until the player decides what
 	 * becomes of her. In Sandbox Mode any ship is the fleet's.
 	 */
-	public boolean ignoring(Ship b) { return ContinueWatch.ignoring(this, b); }
+	public boolean ignoring(Ship b) { return watch.ignoring(b); }
 	// ---- a career ship FTL's New Game wrote over by accident (heromedel, 5.55) ----
 
 	/**
@@ -750,25 +735,41 @@ public final class Vault {
 	 */
 	public static boolean restorable(SavedGameState gs) { return ContinueWatch.restorable(gs); }
 	/** Career ships FTL's New Game wrote over that are to be offered back, newest first. */
-	public synchronized List<Departed> offeredBack() { return ContinueWatch.offeredBack(this); }
+	public synchronized List<Departed> offeredBack() { return watch.offeredBack(); }
 	/** The player said no: she stays lost, and isn't asked about again. */
-	public synchronized void declineBack(Departed d) { ContinueWatch.declineBack(this, d); }
+	public synchronized void declineBack(Departed d) { watch.declineBack(d); }
 	/**
 	 * Brings her back as the boarded ship from her last kept version (into the same battle, if she was in one): an
 	 * uncommissioned ship in continue.sav goes to the Sandbox fleet's Space Dock first; a ship of the fleet's own there
 	 * is left boarded, and she comes back docked. Her fate is cleared and what her loss cost in reputation given back.
 	 * FTL must be closed. Then {@link CrewRegister#shipBack} for her crew (outside the fleet's lock).
 	 */
-	public synchronized Ship restoreBack(Departed d) throws IOException { return ContinueWatch.restoreBack(this, d); }
+	public synchronized Ship restoreBack(Departed d) throws IOException { return watch.restoreBack(d); }
 
 	/** FTL has written continue.sav (the save watcher): the boarded ship's voyage log takes note, if it's her. */
-	public synchronized void observeBoarded() { ContinueWatch.observeBoarded(this); }
+	public synchronized void observeBoarded() { watch.observeBoarded(); }
 	/**
 	 * Writes every ship's record into her folder (the manifest's successor, 5.69): a ship whose name changed gets her
 	 * folder and files renamed with it; one whose folder sits in the wrong place is moved. The Cargo Hold needs none:
 	 * its xml says what it is (5.84).
 	 */
-	public synchronized void saveManifest() throws IOException { ContinueWatch.saveManifest(this); }
+	public synchronized void saveManifest() throws IOException {
+		for (Ship s : ships) {
+			if (s.state == Ship.State.STORAGE) { settleFolder(s); continue; } // its xml is all it needs (5.84)
+			File d = settleFolder(s);
+			ShipStore.Record r = recordOf(s);
+			if (!d.getName().equals(ShipStore.stem(s.name, s.id))) {
+				ShipStore.Record old = ShipStore.read(d);
+				String was = old == null ? null : old.name;
+				r.pastNames.clear(); if (old != null) r.pastNames.addAll(old.pastNames);
+				if (was != null && !was.isEmpty() && !was.equals(s.name)) r.pastNames.add(was);
+				d = ShipStore.renameTo(d, r);
+				folders.put(s.id, d);
+			} else {
+				ShipStore.write(d, r);
+			}
+		}
+	}
 
 	// ---- history ----
 
@@ -787,7 +788,7 @@ public final class Vault {
 		Clock.countBefore(this, s);
 		snapshot(s);
 		writeQuietly(s, state);
-		ContinueWatch.marked(this, s, state);
+		watch.marked(s, state);
 		ShipStore.keepBoarded(this, s);
 		saveManifest();
 	}
@@ -909,7 +910,7 @@ public final class Vault {
 				File leftTo = leaving == null ? null : leaveSteps(note, leaving, leavingFate, null);
 				for (Ship s : pending.keySet()) { Clock.countBefore(Vault.this, s); snapshot(s); }
 				note.commit();
-				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) { e.getKey().written(e.getValue(), SafeFiles.hash(fileOf(e.getKey()))); ContinueWatch.marked(Vault.this, e.getKey(), e.getValue()); ShipStore.keepBoarded(Vault.this, e.getKey()); }
+				for (Map.Entry<Ship, SavedGameState> e : pending.entrySet()) { e.getKey().written(e.getValue(), SafeFiles.hash(fileOf(e.getKey()))); watch.marked(e.getKey(), e.getValue()); ShipStore.keepBoarded(Vault.this, e.getKey()); }
 				for (Map.Entry<Ship, SavedGameState> e : arriving.entrySet()) { Ship s = e.getKey(); folders.put(s.id, folderOf(s)); s.written(e.getValue(), s.hash); ships.add(s); }
 				if (leaving != null) { left(leaving, leftTo); ships.remove(leaving); }
 				saveManifest();
@@ -1258,7 +1259,7 @@ public final class Vault {
 		ShipStore.prune(dir, KEEP);
 		s.invalidate();
 		s.hash = SafeFiles.hash(f);
-		ContinueWatch.marked(this, s, s.save());
+		watch.marked(s, s.save());
 		ShipStore.keepBoarded(this, s);
 		saveManifest();
 		log.info("Restored {}: {}/versions/{} -> {}", s.name, place(s), version.getName(), s.isBoarded() ? "continue.sav" : place(s));

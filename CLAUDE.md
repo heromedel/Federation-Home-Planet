@@ -32,6 +32,10 @@ a helper's word alone.
       1. ...            1. ...
       2. ...            2. ...
 
+- **Explaining plans (heromedel, 7.03):** each step says, in plain words, what the thing is, what is wrong with it now, what
+  the step changes and why that is worth doing (the bug it prevents or what gets better). Background shared by several steps
+  is explained once, before the steps. Code names come after their meaning, never instead of it. A step that can't give its
+  reason in plain words is dropped.
 - Bug fixing takes precedence over feature creep. When a major bug turns up (game-breaking, or a hidden one that
   quietly damages a fleet, like crew being cloned), you may ask heromedel to hold off on the next plan so it can be
   fixed first: occasionally, not in a pushy way.
@@ -157,7 +161,7 @@ For example:
   at the top of `vault/Vault.java`. Since 7.02 Vault keeps the core (opening, the folders, records, the Transaction, board, dock,
   decommission, leave, recover) and its public methods stand, delegating to package helpers: `Trades` (Long Range Comm. packages),
   `Strays` (what the opening finds and the ship marks), `FinalBattles`, `ContinueWatch` (is continue.sav still her, Steam Cloud's copies,
-  New Game's overwrite), `Plea` (the free command), `OtherFleets` (switching, ending a career), `BlueprintUse`; the clock counting is in
+  New Game's overwrite; since 7.03 an object each fleet owns, keeping what the player is told of them), `Plea` (the free command), `OtherFleets` (switching, ending a career), `BlueprintUse`; the clock counting is in
   `Clock`, the versions in `ShipStore`. The ship report is `ui/ShipReport`. A fleet from before 6.0 is not read (7.00, heromedel: nothing that only supported old
   play-tester careers stays): a 6.x station opens it once first. There is no
   index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through

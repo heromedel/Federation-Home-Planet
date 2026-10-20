@@ -18,11 +18,15 @@ import org.slf4j.LoggerFactory;
 
 /** Watching continue.sav (7.02, out of Vault): is it still the boarded ship, Steam Cloud's copies set aside, a career ship FTL's New Game wrote over offered back, and what a new save says (one point of hull, work at a store). */
 final class ContinueWatch {
-	private ContinueWatch() { }
 	private static final Logger log = LoggerFactory.getLogger(ContinueWatch.class);
+	private final Vault v;
+	/** What the player is told next: a copy of continue.sav set aside (Steam Cloud's), and a boarded ship FTL wrote over. */
+	private String cloudCopy, overwritten;
+
+	ContinueWatch(Vault v) { this.v = v; }
 
 	/** What the player is told of a copy continue.sav turned out to be (set aside since this was last asked), or null. */
-	static String takeCloudCopy(Vault v) { String c = v.cloudCopy; v.cloudCopy = null; return c; }
+	String takeCloudCopy() { String c = cloudCopy; cloudCopy = null; return c; }
 
 	/**
 	 * A continue.sav no boarded ship owns, marked (ShipMark, 6.08) as a ship of this career the station knows (in the
@@ -30,7 +34,7 @@ final class ContinueWatch {
 	 * set aside rather than adopted as a second ship. Unmarked, or marked as a ship of this career the station has no
 	 * record of: left to the older checks.
 	 */
-	static void setAsideMarked(Vault v, File cont, List<String> notes) {
+	void setAsideMarked(File cont, List<String> notes) {
 		ShipMark.Found m = ShipMark.read(cont);
 		if (m == null) return;
 		boolean ours = v.slot.equals(m.career);
@@ -57,9 +61,7 @@ final class ContinueWatch {
 			if (!cont.delete()) throw new IOException("Could not remove " + cont);
 			String where = (ours ? dir.getParentFile().getName() + "/" + dir.getName() + "/" + ShipStore.VERSIONS : Vault.SET_ASIDE) + "/" + kept.getName();
 			String career = Vault.title(m.career);
-			v.cloudCopy = ours
-					? "Steam Cloud brought back an old copy of " + homeplanet.parser.ShipNames.the(name) + (s != null ? ", who is already in your fleet" : ", who has left your fleet") + ".\n"
-							+ "The copy was set aside in " + Words.her() + " records, not added as a second ship."
+			cloudCopy = ours ? cloudCopyNote(name, s != null)
 					: "FTL's saves held a ship from your " + career + " fleet, not this one's.\n"
 							+ Words.She() + " was set aside in " + v.root.getName() + "/" + Vault.SET_ASIDE + ", not added to this fleet: switch to " + career + " to fly " + Words.herObj() + " there.";
 			notes.add("continue.sav was " + (ours ? "a copy of " + name : "a ship of the " + career + " fleet") + " (marked " + m.boards + (ours ? " of " + now : "") + " boardings): set aside in " + where);
@@ -72,11 +74,35 @@ final class ContinueWatch {
 		}
 	}
 
+	/** What the player is told of a copy of one of the fleet's ships set aside: she is in the fleet still, or has left it. */
+	private static String cloudCopyNote(String name, boolean inFleet) {
+		return "Steam Cloud brought back an old copy of " + homeplanet.parser.ShipNames.the(name) + (inFleet ? ", who is already in your fleet" : ", who has left your fleet") + ".\n"
+				+ "The copy was set aside in " + Words.her() + " records, not added as a second ship.";
+	}
+
+	/**
+	 * An unmarked continue.sav no boarded ship owns that is a copy of one of the fleet's ships (Steam Cloud bringing back
+	 * one it already has): kept among her versions and taken out of FTL's saves, not adopted as a second ship.
+	 */
+	void setAsideCopy(File cont, List<String> notes) {
+		Ship original = cloudCopyOf(cont);
+		if (original == null) return;
+		try {
+			File dir = v.settleFolder(original);
+			ShipStore.keepVersion(dir, SafeFiles.read(cont), "cloud-");
+			if (!cont.delete()) throw new IOException("Could not remove " + cont);
+			cloudCopy = cloudCopyNote(original.name, true);
+			notes.add("continue.sav was a copy of " + original.name + " (" + original.state.key + "), brought back by Steam Cloud most likely: set aside in " + dir.getParentFile().getName() + "/" + dir.getName() + "/" + ShipStore.VERSIONS + " (cloud-)");
+		} catch (IOException e) {
+			log.warn("Could not set aside the copy of {} in continue.sav: {}", original, e.toString());
+		}
+	}
+
 	/**
 	 * The fleet's ship this continue.sav is a copy of, byte for byte: her current save, or one of her kept versions
 	 * (Steam Cloud restoring the last continue.sav it uploaded after she was docked). Null if it's none of them.
 	 */
-	static Ship cloudCopyOf(Vault v, File cont) {
+	private Ship cloudCopyOf(File cont) {
 		String h;
 		try { h = SafeFiles.hash(cont); } catch (IOException e) { return null; }
 		for (Ship s : v.ships) {
@@ -90,7 +116,7 @@ final class ContinueWatch {
 	}
 
 	/** This save is hers byte for byte: the save her record names, or one of her kept versions (Board keeps one as it takes her save). */
-	static boolean isHers(Vault v, Ship s, File save) {
+	boolean isHers(Ship s, File save) {
 		String h;
 		try { h = SafeFiles.hash(save); } catch (IOException e) { return false; }
 		if (h.equals(s.hash)) return true;
@@ -101,7 +127,7 @@ final class ContinueWatch {
 	}
 
 	/** A boarded ship's new save: down to one point of hull with the fight over (no enemy alongside, or one beaten). */
-	static void noteHull(Vault v, Ship b, SavedGameState gs) {
+	void noteHull(Ship b, SavedGameState gs) {
 		net.blerf.ftl.parser.SavedGameParser.ShipState s = gs.getPlayerShip(), enemy = gs.getNearbyShip();
 		if (s == null || v.event(Vault.EVENT_ONE_HULL) != null) return;
 		String at = gs.getSectorNumber() + ":" + gs.getCurrentBeaconId();
@@ -131,7 +157,7 @@ final class ContinueWatch {
 	 * Time spent on work in FTL counts as a beacon: when the boarded ship has bought, been repaired or upgraded since the
 	 * station last looked, with no jump in between. Once per beacon stop; crew walking about never counts.
 	 */
-	static void noteWork(Vault v, Ship b, SavedGameState gs) {
+	void noteWork(Ship b, SavedGameState gs) {
 		java.util.Properties p;
 		try { p = Clock.read(v); }
 		catch (IOException e) { log.warn("Could not read the fleet's clock: {}", e.toString()); return; } // never written back from a failed read
@@ -170,29 +196,29 @@ final class ContinueWatch {
 	}
 
 	/** The name of a boarded ship FTL overwrote since this was last asked (her last seen version is in her records), or null. */
-	static String takeOverwritten(Vault v) { String o = v.overwritten; v.overwritten = null; return o; }
+	String takeOverwritten() { String o = overwritten; overwritten = null; return o; }
 
 	/**
 	 * Checks continue.sav against the boarded ship as last seen. If it's her, FTL's progress is noted (and kept in
 	 * her records). If not (FTL's New Game wrote over her), she is recorded lost, and continue.sav becomes a new,
 	 * uncommissioned ship. True if the manifest changed.
 	 */
-	static boolean checkBoarded(Vault v) throws IOException {
+	boolean checkBoarded() throws IOException {
 		Ship b = v.boarded();
-		if (b == null) return adoptContinue(v);
+		if (b == null) return adoptContinue();
 		SavedGameState gs = b.save();
 		if (gs == null) return false;
 		String now = marksOf(gs);
 		// her voyage log first, then the clock: what she did at a stop belongs to that stop's day (5.18, the Captain's Log)
 		if (b.marks == null || b.marks.isEmpty()) {
-			if (ignoring(v, b)) quietly(v, b, gs, true);
-			else { VoyageLog.observe(v, b, gs); Clock.countProgress(v, b, gs); noteHull(v, b, gs); }
+			if (ignoring(b)) quietly(b, gs, true);
+			else { VoyageLog.observe(v, b, gs); Clock.countProgress(v, b, gs); noteHull(b, gs); }
 			b.marks = now;
 			return true;
 		}
 		if (sameShip(b.marks, gs)) {
-			if (ignoring(v, b)) quietly(v, b, gs);
-			else { VoyageLog.observe(v, b, gs); noteWork(v, b, gs); Clock.countProgress(v, b, gs); noteHull(v, b, gs); Overflow.note(v, b, gs); } // her voyage log (repairs, trades at a store... change no marks)
+			if (ignoring(b)) quietly(b, gs);
+			else { VoyageLog.observe(v, b, gs); noteWork(b, gs); Clock.countProgress(v, b, gs); noteHull(b, gs); Overflow.note(v, b, gs); } // her voyage log (repairs, trades at a store... change no marks)
 		}
 		if (now.equals(b.marks)) return false;
 		if (sameShip(b.marks, gs)) {
@@ -204,7 +230,7 @@ final class ContinueWatch {
 		b.name = lostName;
 		v.recordFate(b, Vault.Fate.LOST);
 		int took = Reputation.lost(v, b);
-		if (v.immersive) offerBack(v, b, took); // by accident, perhaps: she may be offered back (5.55)
+		if (v.immersive) offerBack(b, took); // by accident, perhaps: she may be offered back (5.55)
 		v.ships.remove(b);
 		Ship n = new Ship(Vault.newId(), gs.getPlayerShipName(), Ship.State.BOARDED, gs.isDLCEnabled());
 		n.origin = Strays.originNow("adopted");
@@ -212,9 +238,9 @@ final class ContinueWatch {
 		n.hash = SafeFiles.hash(v.continueFile());
 		n.marks = now;
 		v.ships.add(n);
-		if (ignoring(v, n)) quietly(v, n, gs, true); // Immersive Mode: none of her run is the career's (heromedel, 5.54)
+		if (ignoring(n)) quietly(n, gs, true); // Immersive Mode: none of her run is the career's (heromedel, 5.54)
 		else { Clock.setClock(v, n, 0, 0); Clock.countProgress(v, n, gs); } // FTL's New Game: her run so far was flown in the fleet's time
-		v.overwritten = lostName;
+		overwritten = lostName;
 		StationLog.entry("OVERWRITTEN", lostName + " (" + b.id + ") was boarded, and continue.sav is now another ship: " + n.name
 				+ " (FTL's New Game, most likely). " + Words.Her() + " last seen version is in " + v.place(b), null,
 				Event.of("OVERWRITTEN").put("ship", lostName + "." + b.id).put("ship_name", lostName).put("ship_id", b.id).put("versions", v.place(b))
@@ -227,16 +253,16 @@ final class ContinueWatch {
 	 * her (no voyage log, reputation, clock, stipend time, parcels, crew, final battle) until the player decides what
 	 * becomes of her. In Sandbox Mode any ship is the fleet's.
 	 */
-	static boolean ignoring(Vault v, Ship b) { return v.immersive && b != null && b.stranger && b.state == Ship.State.BOARDED; }
+	boolean ignoring(Ship b) { return v.immersive && b != null && b.stranger && b.state == Ship.State.BOARDED; }
 
 	/**
 	 * What an ignored ship's look does: keeps up with where she is, so nothing she did is counted later either; FTL's
 	 * unlocks and achievements since are seen, never the career's. Not on her first look: what's new in FTL's profile
 	 * then is most likely the ship before her, her run ending.
 	 */
-	static void quietly(Vault v, Ship b, SavedGameState gs) { quietly(v, b, gs, false); }
+	void quietly(Ship b, SavedGameState gs) { quietly(b, gs, false); }
 
-	static void quietly(Vault v, Ship b, SavedGameState gs, boolean first) {
+	void quietly(Ship b, SavedGameState gs, boolean first) {
 		VoyageLog.baseline(v, b, gs);
 		Clock.setClock(v, b, gs.getSectorNumber(), gs.getTotalBeaconsExplored());
 		if (first) return;
@@ -245,7 +271,7 @@ final class ContinueWatch {
 	}
 
 	/** Nothing boarded, and continue.sav there: FTL started a New Game. She's an uncommissioned ship, boarded (as on opening the fleet). */
-	static boolean adoptContinue(Vault v) throws IOException {
+	boolean adoptContinue() throws IOException {
 		File cont = v.continueFile();
 		if (!cont.isFile()) return false;
 		Ship n = new Ship(Vault.newId(), "Unknown ship", Ship.State.BOARDED, true);
@@ -257,7 +283,7 @@ final class ContinueWatch {
 		n.name = gs.getPlayerShipName();
 		n.hash = SafeFiles.hash(cont);
 		n.marks = marksOf(gs);
-		if (ignoring(v, n)) quietly(v, n, gs, true);
+		if (ignoring(n)) quietly(n, gs, true);
 		else Clock.setClock(v, n, gs.getSectorNumber(), gs.getTotalBeaconsExplored()); // counted from now, as one found on opening the fleet
 		StationLog.entry("VAULT", "taking stock", java.util.Collections.singletonList("continue.sav is a ship the station didn't know (a new game started in FTL, most likely): " + Words.she() + " is now boarded"),
 				Vault.shipEvent("VAULT", n).put("what", "adopted_continue").put("file", "continue.sav"));
@@ -265,7 +291,7 @@ final class ContinueWatch {
 	}
 
 	/** Notes her as one to offer back, if her last kept version can be: out of battle, or in one she can go back into. */
-	static void offerBack(Vault v, Ship b, int repTaken) {
+	void offerBack(Ship b, int repTaken) {
 		List<File> kept = v.history(b);
 		if (kept.isEmpty()) return;
 		SavedGameState gs;
@@ -289,14 +315,14 @@ final class ContinueWatch {
 	}
 
 	/** Career ships FTL's New Game wrote over that are to be offered back, newest first. */
-	static List<Vault.Departed> offeredBack(Vault v) {
+	List<Vault.Departed> offeredBack() {
 		List<Vault.Departed> out = new ArrayList<Vault.Departed>();
 		for (Vault.Departed d : v.recoverable()) if (d.fate == Vault.Fate.LOST && !ShipStore.notes(d.folder, ShipStore.OVERWRITTEN).isEmpty()) out.add(d);
 		return out;
 	}
 
 	/** The player said no: she stays lost, and isn't asked about again. */
-	static void declineBack(Vault v, Vault.Departed d) {
+	void declineBack(Vault.Departed d) {
 		try { v.setNotes(d.folder, ShipStore.OVERWRITTEN, null); }
 		catch (IOException e) { log.warn("Could not note that {} stays lost: {}", d.name, e.toString()); }
 	}
@@ -307,7 +333,7 @@ final class ContinueWatch {
 	 * is left boarded, and she comes back docked. Her fate is cleared and what her loss cost in reputation given back.
 	 * FTL must be closed. Then {@link CrewRegister#shipBack} for her crew (outside the fleet's lock).
 	 */
-	static Ship restoreBack(Vault v, Vault.Departed d) throws IOException {
+	Ship restoreBack(Vault.Departed d) throws IOException {
 		if (v.byId(d.id) != null) throw new IOException(d.name + " is already in the fleet");
 		int taken = Store.num(ShipStore.notes(d.folder, ShipStore.OVERWRITTEN), "reputation", 0); // what her loss took (a negative number)
 		Ship now = v.boarded();
@@ -336,7 +362,7 @@ final class ContinueWatch {
 				Clock.setClock(v, s, gs.getSectorNumber(), gs.getTotalBeaconsExplored()); // the clock carries on from her restored point
 				VoyageLog.baseline(v, s, gs);
 			}
-			saveManifest(v);
+			v.saveManifest();
 		}
 		Reputation.restored(v, s, taken); // the offer went with her fate, in the same note that brought her back
 		log.info("Restored {} after FTL's New Game: {}/versions/{} -> {}", s.name, v.place(s), d.last.getName(), s.isBoarded() ? "continue.sav" : v.place(s));
@@ -346,7 +372,7 @@ final class ContinueWatch {
 	}
 
 	/** After the station writes the boarded ship: her marks follow (a rename, a New Journey, a retrofit are the station's own). */
-	static void marked(Vault v, Ship s, SavedGameState state) {
+	void marked(Ship s, SavedGameState state) {
 		if (s.state == Ship.State.BOARDED && state != null) {
 			s.marks = marksOf(state);
 			Clock.setClock(v, s, state.getSectorNumber(), state.getTotalBeaconsExplored()); // her progress was counted before the write (countBefore)
@@ -355,39 +381,16 @@ final class ContinueWatch {
 	}
 
 	/** FTL has written continue.sav (the save watcher): the boarded ship's voyage log takes note, if it's her. */
-	static void observeBoarded(Vault v) {
+	void observeBoarded() {
 		Ship b = v.boarded();
 		if (b == null || !v.continueFile().isFile()) return;
 		SavedGameState gs;
 		try { gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(v.continueFile()); } catch (Exception e) { return; } // mid-write: Refresh catches up
 		if (b.marks != null && !b.marks.isEmpty() && !sameShip(b.marks, gs)) return;
-		if (ignoring(v, b)) { quietly(v, b, gs); return; } // not the career's ship (5.54)
+		if (ignoring(b)) { quietly(b, gs); return; } // not the career's ship (5.54)
 		VoyageLog.observe(v, b, gs); // her voyage log first: what she did at a stop belongs to that stop's day
 		Clock.countProgress(v, b, gs); // the fleet's clock moves as she flies
-		noteHull(v, b, gs);
+		noteHull(b, gs);
 		Overflow.note(v, b, gs); // an augment she had no room for
-	}
-
-	/**
-	 * Writes every ship's record into her folder (the manifest's successor, 5.69): a ship whose name changed gets her
-	 * folder and files renamed with it; one whose folder sits in the wrong place is moved. The Cargo Hold needs none:
-	 * its xml says what it is (5.84).
-	 */
-	static void saveManifest(Vault v) throws IOException {
-		for (Ship s : v.ships) {
-			if (s.state == Ship.State.STORAGE) { v.settleFolder(s); continue; } // its xml is all it needs (5.84)
-			File d = v.settleFolder(s);
-			ShipStore.Record r = v.recordOf(s);
-			if (!d.getName().equals(ShipStore.stem(s.name, s.id))) {
-				ShipStore.Record old = ShipStore.read(d);
-				String was = old == null ? null : old.name;
-				r.pastNames.clear(); if (old != null) r.pastNames.addAll(old.pastNames);
-				if (was != null && !was.isEmpty() && !was.equals(s.name)) r.pastNames.add(was);
-				d = ShipStore.renameTo(d, r);
-				v.folders.put(s.id, d);
-			} else {
-				ShipStore.write(d, r);
-			}
-		}
 	}
 }
