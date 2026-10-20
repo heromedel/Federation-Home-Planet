@@ -23,7 +23,7 @@ import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
 /**
- * The Records page's log viewer: the station log (a fleet's history.log; Sandbox Mode and each career keep their own)
+ * The Records page's log viewer: the station log (Sandbox Mode and each career keep their own)
  * or one ship's voyage log, in the Records style, inside the page itself, or this run's debug log as plain text. Logs
  * are only ever shown here, read-only: nothing opens them in a text editor.
  */
@@ -45,7 +45,7 @@ final class LogViewer extends JPanel {
 		Vault v = Vault.get();
 		for (String s : Vault.SLOTS) {
 			File r = Vault.rootOf(v.saves, s);
-			if (!homeplanet.core.EventLog.fileIn(r).isFile() && !homeplanet.convert.OldFleet.historyLogIn(r).isFile() && !s.equals(v.slot)) continue; // a fleet with a log of either kind
+			if (!homeplanet.core.EventLog.fileIn(r).isFile() && !s.equals(v.slot)) continue; // a fleet with a log
 			slots.add(s);
 			fleet.addItem(Vault.title(s) + (s.equals(v.slot) ? " (in use)" : ""));
 		}
@@ -67,7 +67,7 @@ final class LogViewer extends JPanel {
 			public void actionPerformed(ActionEvent e) { ship = null; fill(); }
 		});
 		final JButton viewShip = new JButton("View Ship Log");
-		viewShip.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " voyage log: " + homeplanet.model.Words.her() + " jumps, sectors, battles, crew, what came aboard, upgrades and repairs");
+		viewShip.setToolTipText(homeplanet.model.Words.Her() + " voyage log: " + homeplanet.model.Words.her() + " jumps, sectors, battles, crew, what came aboard, upgrades and repairs");
 		viewShip.setEnabled(!ships.isEmpty());
 		shipBox.setEnabled(!ships.isEmpty());
 		ActionListener toShip = new ActionListener() {
@@ -161,25 +161,13 @@ final class LogViewer extends JPanel {
 		String slot = slots.get(Math.max(0, fleet.getSelectedIndex()));
 		showing.setText("Station log, " + Vault.title(slot));
 		File root = Vault.rootOf(Vault.get().saves, slot);
-		if (homeplanet.convert.LogConvert.done(root)) { // its events (5.74); a fleet not opened since 5.73 still shows its old file, as before
-			List<homeplanet.core.EventLog.Entry> all = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(homeplanet.core.EventLog.fileIn(root)), "station");
-			List<homeplanet.core.EventLog.Entry> es = TextSearch.filter(all, q, true);
-			int entries = 0, found = 0;
-			for (homeplanet.core.EventLog.Entry e : all) if (RecordsLog.shown(e)) entries++; // the station's business: its housekeeping stays out of view (6.05)
-			for (homeplanet.core.EventLog.Entry e : es) if (RecordsLog.shown(e)) found++;
-			count.setText(q.isEmpty() ? entries + (entries == 1 ? " entry" : " entries") : found + " of " + entries + (entries == 1 ? " entry" : " entries"));
-			show(RecordsLog.station(es, q.isEmpty() ? "Nothing logged yet." : "No entries mention \"" + q + "\".", true));
-			return;
-		}
-		searchRow.setVisible(false); // a fleet's log from before 5.74, as written: read as it is
-		File f = homeplanet.convert.OldFleet.historyLogIn(root);
-		String text = "";
-		try { if (f.isFile()) text = new String(SafeFiles.read(f), StandardCharsets.UTF_8); }
-		catch (Exception e) { text = "The Home Planet Station could not read " + f + ": " + e.getMessage(); }
-		int entries = 0;
-		for (String line : text.split("\r?\n")) if (!line.isEmpty() && !line.startsWith("  ")) entries++;
-		count.setText(entries + (entries == 1 ? " entry" : " entries"));
-		show(RecordsLog.station(text, "Nothing logged yet.", null));
+		List<homeplanet.core.EventLog.Entry> all = homeplanet.core.EventLog.ofLog(homeplanet.core.EventLog.read(homeplanet.core.EventLog.fileIn(root)), "station");
+		List<homeplanet.core.EventLog.Entry> es = TextSearch.filter(all, q, true);
+		int entries = 0, found = 0;
+		for (homeplanet.core.EventLog.Entry e : all) if (RecordsLog.shown(e)) entries++; // the station's business: its housekeeping stays out of view (6.05)
+		for (homeplanet.core.EventLog.Entry e : es) if (RecordsLog.shown(e)) found++;
+		count.setText(q.isEmpty() ? entries + (entries == 1 ? " entry" : " entries") : found + " of " + entries + (entries == 1 ? " entry" : " entries"));
+		show(RecordsLog.station(es, q.isEmpty() ? "Nothing logged yet." : "No entries mention \"" + q + "\".", true));
 	}
 
 	/** This run's debug log (the newest in the program's log folder), as plain text: what to read before a bug report. */

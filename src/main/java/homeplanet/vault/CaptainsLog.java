@@ -54,23 +54,23 @@ public final class CaptainsLog {
 		Day(int from, int to, List<Line> lines) { this.from = from; this.to = to; this.lines = lines; }
 		/** The heading: "Stardate Today" for the first day, "Stardate 1.1.1.2", or a quiet stretch's "Stardates a – b". */
 		public String heading() {
-			if (from == to) return from == 1 ? "Stardate Today" : "Stardate " + MasterLog.stardate(from);
-			return "Stardates " + (from == 1 ? "Today" : MasterLog.stardate(from)) + " – " + MasterLog.stardate(to);
+			if (from == to) return from == 1 ? "Stardate Today" : "Stardate " + Calendar.stardate(from);
+			return "Stardates " + (from == 1 ? "Today" : Calendar.stardate(from)) + " – " + Calendar.stardate(to);
 		}
 	}
 
 	/** The career's days from its first to today, the quiet ones folded together. */
 	public static List<Day> days(Vault v) {
-		Map<Integer, List<MasterLog.Entry>> byDay = MasterLog.byDay(v);
-		Map<Integer, String> began = MasterLog.dayReasons(v);
-		int today = Math.max(1, MasterLog.today(v));
+		Map<Integer, List<Calendar.Entry>> byDay = Calendar.byDay(v);
+		Map<Integer, String> began = Calendar.dayReasons(v);
+		int today = Math.max(1, Calendar.today(v));
 		for (int d : byDay.keySet()) today = Math.max(today, d);
 		List<Day> out = new ArrayList<Day>();
 		int quiet = 0;
 		Boolean wasAboard = null; // where the last day with lines left the captain
 		Map<String, Line> lastJump = new LinkedHashMap<String, Line>(); // each ship's latest jump line, for what's learned of her beacon later
 		for (int d = 1; d <= today; d++) {
-			List<MasterLog.Entry> es = byDay.get(d);
+			List<Calendar.Entry> es = byDay.get(d);
 			List<Line> later = new ArrayList<Line>();
 			List<Line> lines = es == null ? new ArrayList<Line>() : day(es, began.get(d + 1), wasAboard, later);
 			for (Line b : later) { // a ship met after the jump: it goes with that jump, on whatever day it was
@@ -94,13 +94,13 @@ public final class CaptainsLog {
 	private static List<Line> lines(int n) { return new ArrayList<Line>(n); }
 
 	/** One day's lines: each entry read, the repeats merged, and the action that moved the day on (why the next began) last, with "Then". */
-	static List<Line> day(List<MasterLog.Entry> entries, String endedBy) { return day(entries, endedBy, null); }
+	static List<Line> day(List<Calendar.Entry> entries, String endedBy) { return day(entries, endedBy, null); }
 	/** As above, knowing where the day before left the captain (aboard, at the station, or not known). */
-	static List<Line> day(List<MasterLog.Entry> entries, String endedBy, Boolean wasAboard) { return day(entries, endedBy, wasAboard, new ArrayList<Line>()); }
+	static List<Line> day(List<Calendar.Entry> entries, String endedBy, Boolean wasAboard) { return day(entries, endedBy, wasAboard, new ArrayList<Line>()); }
 	/** As above; what was learned of a beacon reached on an earlier day goes into {@code later}, for that day's jump. */
-	static List<Line> day(List<MasterLog.Entry> entries, String endedBy, Boolean wasAboard, List<Line> later) {
+	static List<Line> day(List<Calendar.Entry> entries, String endedBy, Boolean wasAboard, List<Line> later) {
 		Map<String, Line> merged = new LinkedHashMap<String, Line>();
-		for (MasterLog.Entry e : entries) read(e, merged);
+		for (Calendar.Entry e : entries) read(e, merged);
 		List<Line> lines = new ArrayList<Line>();
 		boolean boughtAboard = false;
 		for (Line l : merged.values()) if (l.kind.equals("ftlbuy")) boughtAboard = true;
@@ -160,7 +160,7 @@ public final class CaptainsLog {
 	/** The kinds of line that moved the day on, by the master log's reason for the day after. */
 	private static List<String> moverKinds(String why) {
 		if (why.startsWith("a day of rest")) return Arrays.asList("rest");
-		if (why.equals(MasterLog.CARGO_BAY)) return Arrays.asList("buy", "hire", "sell", "systems", "junk", "retire");
+		if (why.equals(Calendar.CARGO_BAY)) return Arrays.asList("buy", "hire", "sell", "systems", "junk", "retire");
 		if (why.startsWith("work at a store")) return Arrays.asList("work", "ftlbuy");
 		if (why.startsWith("a jump")) return Arrays.asList("move");
 		if (why.startsWith("a job")) return Arrays.asList("job");
@@ -176,12 +176,25 @@ public final class CaptainsLog {
 	}
 	private static Line once(Map<String, Line> m, String kind, boolean byMe, String text) { return line(m, kind, kind + ":" + m.size(), byMe, text); }
 
-	private static void read(MasterLog.Entry e, Map<String, Line> m) {
+	private static void read(Calendar.Entry e, Map<String, Line> m) {
 		if ("station".equals(e.log)) station(e.text, e.event, m);
 		else if (e.log.startsWith("voyage: ")) voyage(e.log.substring(8), e.text, e.event, m);
 		// reputation has its own log and tally: never a line here
 	}
 	private static final Pattern NUM = Pattern.compile("^(\\d+) (.+)$");
+	private static final Pattern REST_RUN = Pattern.compile("\\((\\d+) days in a row(?:, [\\u2212-]?(\\d+) reputation)?\\)");
+	private static final Pattern FOR_SCRAP = Pattern.compile("for (\\d+) scrap");
+	private static final Pattern IN_SCRAP = Pattern.compile("\\((\\d+) scrap\\)");
+	private static final Pattern ASSIGNED = Pattern.compile("^(.+?) assigned to (.+?)\\.?$");
+	private static final Pattern TO_FLEET = Pattern.compile("^(.+?) \\([0-9a-f]+\\) to (.+?)'s fleet");
+	private static final Pattern FROM_FLEET = Pattern.compile("^(.+?) \\([0-9a-f]+\\) from (.+?)'s fleet");
+	private static final Pattern NO_ROOM = Pattern.compile("^(.+?) had no room for (\\S+): her crew ship it home");
+	private static final Pattern JOINED = Pattern.compile(": (.+?) \\((\\w+)\\) joined");
+	private static final Pattern SECTOR = Pattern.compile("^Sector (\\d+) reached");
+	private static final Pattern DEFEATED = Pattern.compile("^(\\d+) ships? defeated");
+	private static final Pattern FITTED = Pattern.compile("^New system: (.+?) \\d+$");
+	private static final Pattern UPGRADED = Pattern.compile("^(.+?) upgraded to \\d+$");
+	private static final Pattern HULL = Pattern.compile("hull (\\d+)/(\\d+) \\((-\\d+)\\)|Hull damaged to (\\d+)/(\\d+) \\((-\\d+)\\)");
 
 	private static void station(String text, homeplanet.core.EventLog.Entry event, Map<String, Line> m) {
 		String[] parts = text.split(" / ");
@@ -192,7 +205,7 @@ public final class CaptainsLog {
 		List<String> det = new ArrayList<String>();
 		for (int i = 1; i < parts.length; i++) if (!parts[i].trim().isEmpty()) det.add(parts[i].trim());
 		if (kind.equals("REST")) {
-			Matcher r = Pattern.compile("\\((\\d+) days in a row(?:, [\\u2212-]?(\\d+) reputation)?\\)").matcher(head);
+			Matcher r = REST_RUN.matcher(head);
 			int run = 1, cost = 0;
 			if (r.find()) { run = Integer.parseInt(r.group(1)); if (r.group(2) != null) cost = Integer.parseInt(r.group(2)); }
 			Line l = once(m, "rest", true, run <= 1 ? "Rested in my quarters." : "Rested in my quarters for the " + ordinal(run) + " day in a row.");
@@ -200,14 +213,14 @@ public final class CaptainsLog {
 		} else if (kind.equals("BUY")) {
 			if (head.startsWith("Searched the Junkyard")) {
 				Line l = once(m, "junkyard_search", true, "Searched the Junkyard for more parts.");
-				Matcher p = Pattern.compile("for (\\d+) scrap").matcher(head);
+				Matcher p = FOR_SCRAP.matcher(head);
 				if (p.find()) l.details.add(p.group(1) + " scrap");
 				return;
 			}
 			if (head.contains(", a derelict, for ")) {
 				String name = head.substring(0, head.indexOf(" (") > 0 ? head.indexOf(" (") : head.indexOf(","));
 				Line l = once(m, "buy", true, "Bought " + theShip(name) + ", a derelict, from the Junkyard.");
-				Matcher p = Pattern.compile("for (\\d+) scrap").matcher(head);
+				Matcher p = FOR_SCRAP.matcher(head);
 				if (p.find()) l.details.add(p.group(1) + " scrap");
 				return;
 			}
@@ -221,7 +234,7 @@ public final class CaptainsLog {
 				}
 				String item = d.contains(" (") ? d.substring(0, d.indexOf(" (")) : d;
 				add(l, item, 1);
-				Matcher p = Pattern.compile("\\((\\d+) scrap\\)").matcher(d);
+				Matcher p = IN_SCRAP.matcher(d);
 				l.details.add(item + (p.find() ? ", " + p.group(1) + " scrap" : ""));
 			}
 		} else if (kind.equals("SELL") || kind.equals("JUNK")) {
@@ -270,7 +283,7 @@ public final class CaptainsLog {
 			String[] w = unowned(head).split(" -> ", 2);
 			if (w.length == 2) once(m, "ships", true, "Renamed " + theShip(w[0].trim()) + " " + theShip(w[1].trim()) + ".");
 		} else if (kind.equals("CREW")) { // the Cargo Bay's crew moves, one destination a line (heromedel, 5.40)
-			Matcher a = Pattern.compile("^(.+?) assigned to (.+?)\\.?$").matcher(head.trim());
+			Matcher a = ASSIGNED.matcher(head.trim());
 			if (a.find()) { // moves to one place merge only while they follow one another: a round trip keeps its way back (6.65)
 				String key = "assign:" + a.group(2), last = null;
 				for (String k : m.keySet()) last = k;
@@ -316,9 +329,6 @@ public final class CaptainsLog {
 		} else if (kind.equals("MUSEUM")) {
 			if (head.contains(" is honoured in")) once(m, "ships", false, startShip(head.split(" is honoured")[0].trim()) + " went to the Federation Museum.");
 			else { int f = head.lastIndexOf(" for "); if (f > 0) { Line l = once(m, "ships", false, "The museum paid for " + theShip(head.substring(f + 5).trim()) + "."); l.details.add(head.substring(0, f)); } }
-		} else if (kind.equals("REWARD")) {
-			int f = head.lastIndexOf(" for ");
-			if (f > 0) { Line l = once(m, "ships", false, "A reward came in for " + theShip(head.substring(f + 5).trim()) + "."); l.details.add(head.substring(0, f)); }
 		} else if (kind.equals("OVERWRITTEN")) {
 			once(m, "ships", false, startShip(head.replaceAll("\\s*\\([0-9a-f]+\\).*$", "").trim()) + " was lost.");
 		} else if (kind.equals("LONG RANGE TRADE")) {
@@ -328,17 +338,17 @@ public final class CaptainsLog {
 			int f = head.lastIndexOf(" from ");
 			if (f > 0) { Line l = once(m, "comm", false, "A shipment arrived from " + head.substring(f + 6).trim() + "."); l.details.add(head.substring(0, f)); }
 		} else if (kind.equals("SENT AWAY")) {
-			Matcher s = Pattern.compile("^(.+?) \\([0-9a-f]+\\) to (.+?)'s fleet").matcher(head);
+			Matcher s = TO_FLEET.matcher(head);
 			if (s.find()) once(m, "comm", true, "Sent " + theShip(s.group(1)) + " to " + s.group(2) + "'s fleet.");
 		} else if (kind.equals("RECEIVED")) {
-			Matcher s = Pattern.compile("^(.+?) \\([0-9a-f]+\\) from (.+?)'s fleet").matcher(head);
+			Matcher s = FROM_FLEET.matcher(head);
 			if (s.find()) once(m, "comm", false, startShip(s.group(1)) + " arrived from " + s.group(2) + "'s fleet.");
 		} else if (kind.equals("RETURNED") && head.contains(" to her owner")) {
 			once(m, "ships", true, "Returned " + theShip(head.replaceAll("\\s*\\([0-9a-f]+\\).*$", "").trim()) + " to " + homeplanet.model.Words.her() + " owner.");
 		} else if (kind.equals("SEIZED")) {
 			once(m, "ships", false, sentence(head.replaceAll("\\s*\\([0-9a-f]+\\)", "").replace(": collected by", " was collected by")));
 		} else if (kind.equals("OVERFLOW")) {
-			Matcher s = Pattern.compile("^(.+?) had no room for (\\S+): her crew ship it home").matcher(head);
+			Matcher s = NO_ROOM.matcher(head);
 			if (s.find()) once(m, "letter", false, startShip(s.group(1)) + "'s crew shipped " + article(homeplanet.model.Items.title(s.group(2))) + " home.");
 		} else if (kind.equals("CAREER") && head.contains(" career begun")) { // not a rule chosen later (6.03)
 			once(m, "career", false, "My service with The Federation Home Planet began.");
@@ -413,7 +423,7 @@ public final class CaptainsLog {
 		}
 	}
 	private static void hire(String head, Map<String, Line> m) {
-		Matcher j = Pattern.compile(": (.+?) \\((\\w+)\\) joined").matcher(head);
+		Matcher j = JOINED.matcher(head);
 		if (head.contains(", rescued on an expedition, signed on")) {
 			once(m, "crew", false, head.split(" \\(")[0].trim() + ", rescued on an expedition, signed on.");
 		} else if (j.find()) {
@@ -466,7 +476,7 @@ public final class CaptainsLog {
 		return false;
 	}
 	private static void voyageLine(String ship, String text, Map<String, Line> m) {
-		Matcher sector = Pattern.compile("^Sector (\\d+) reached").matcher(text);
+		Matcher sector = SECTOR.matcher(text);
 		if (sector.find()) { jump(ship, m).sector = Integer.parseInt(sector.group(1)); return; }
 		if (text.startsWith("Jumped")) {
 			Line l = jump(ship, m);
@@ -480,7 +490,7 @@ public final class CaptainsLog {
 		if (text.startsWith("Bought at a store: ")) { Line l = line(m, "ftlbuy", "ftlbuy:" + ship, true, ""); for (String x : text.substring(19).split(", ")) add(l, x, 1); return; }
 		if (text.startsWith("Picked up: ")) { Line l = line(m, "found", "found:" + ship, false, ""); l.byWe = true; for (String x : text.substring(11).split(", ")) add(l, x, 1); return; }
 		if (text.startsWith("Hull damaged")) { beating(ship, text, m); return; }
-		Matcher def = Pattern.compile("^(\\d+) ships? defeated").matcher(text);
+		Matcher def = DEFEATED.matcher(text);
 		if (def.find()) { Line l = line(m, "fight", "fight:" + ship, false, ""); l.ship = ship; l.count += Integer.parseInt(def.group(1)); return; }
 		if (text.startsWith("Crew lost: ")) { once(m, "crew", false, "Lost " + join(strip(text.substring(11))) + "."); return; }
 		if (text.startsWith("Crew joined: ")) { once(m, "crew", false, join(strip(text.substring(13))) + " came aboard " + theShip(ship) + "."); return; }
@@ -489,10 +499,10 @@ public final class CaptainsLog {
 		// a stop's work at a store says what was new aboard (heromedel, 5.80); told only on a day with the work note, as a
 		// repair drone, an event's free system or a crew member mending the hull aren't work at a station
 		if (text.startsWith("Time spent on work")) { work(ship, m).station = true; return; }
-		Matcher fitted = Pattern.compile("^New system: (.+?) \\d+$").matcher(text);
+		Matcher fitted = FITTED.matcher(text);
 		if (fitted.find()) { add(work(ship, m), "fit:" + fitted.group(1), 1); return; }
 		if (text.startsWith("Reactor upgraded")) { add(work(ship, m), "up:reactor", 1); return; }
-		Matcher upped = Pattern.compile("^(.+?) upgraded to \\d+$").matcher(text);
+		Matcher upped = UPGRADED.matcher(text);
 		if (upped.find()) { add(work(ship, m), "up:" + upped.group(1), 1); return; }
 		if (text.startsWith("Hull repaired")) { add(work(ship, m), "mend", 1); return; }
 	}
@@ -538,7 +548,7 @@ public final class CaptainsLog {
 	}
 	/** A hard knock (a quarter of her hull or more at once): she took a beating. */
 	private static void beating(String ship, String text, Map<String, Line> m) {
-		Matcher h = Pattern.compile("hull (\\d+)/(\\d+) \\((-\\d+)\\)|Hull damaged to (\\d+)/(\\d+) \\((-\\d+)\\)").matcher(text);
+		Matcher h = HULL.matcher(text);
 		if (!h.find()) return;
 		int max = Integer.parseInt(h.group(2) != null ? h.group(2) : h.group(5)), lost = -Integer.parseInt(h.group(3) != null ? h.group(3) : h.group(6));
 		if (max > 0 && lost * 4 >= max) line(m, "fight", "beating:" + ship, false, startShip(ship) + " took a beating.");
@@ -674,7 +684,7 @@ public final class CaptainsLog {
 	/** A purchase from a store that was a crew member: "Coil (Engi) (45 scrap) from the store at…". */
 	private static final Pattern HIRED = Pattern.compile("^(.+) \\(([^()]+)\\) \\((\\d+) scrap\\) from the store at ");
 	private static boolean isRace(String title) {
-		for (String id : new String[] {"human", "engi", "energy", "mantis", "rockman", "slug", "crystal", "anaerobic"}) if (title.equals(race(id))) return true;
+		for (String id : homeplanet.model.Crew.RACES) if (title.equals(race(id))) return true;
 		return false;
 	}
 	private static String sentence(String s) { s = s.trim(); return s.isEmpty() ? s : homeplanet.model.Words.cap(s) + (s.endsWith(".") ? "" : "."); }

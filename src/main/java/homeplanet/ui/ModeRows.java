@@ -9,7 +9,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import homeplanet.parser.Career;
-import homeplanet.parser.CareerRules;
 import homeplanet.vault.Vault;
 
 /**
@@ -27,13 +26,8 @@ final class ModeRows {
 		"No favours: 1000-scrap journeys, the Relief Ship on a plea, no stripping, and the museum takes {her_obj} after a final victory.",
 		"Choose the level of each rule yourself, once, when the career begins."};
 
-	/** The slot's line; the Custom slot holding the first career (from before difficulties) says so. */
+	/** The slot's line. */
 	static String tag(Vault v, String slot) {
-		File root = Vault.rootOf(v.saves, slot);
-		if (Vault.CUSTOM.equals(slot) && Career.started(root)) {
-			CareerRules r = Career.rules(root);
-			if (r != null && CareerRules.EARLIER.equals(r.name)) return "Your first Immersive career, from before difficulties, with the rules it had.";
-		}
 		for (int i = 0; i < Vault.SLOTS.length; i++) if (Vault.SLOTS[i].equals(slot)) return homeplanet.model.Words.ship(TAGS[i]);
 		return "";
 	}

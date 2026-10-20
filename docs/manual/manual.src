@@ -1,5 +1,5 @@
 !THE HOME PLANET STATION
-!User Manual, version 6.86
+!User Manual, version 7.05
 !Issued by The Federation Home Planet
 !
 To see which version of the station you have, open SETTINGS and choose the About tab. If it is newer than this manual, some screens may differ a little from what is described here.
@@ -97,7 +97,7 @@ Later, in SETTINGS, you can switch between Sandbox Mode and your careers, change
 
 ## Where your fleet is kept
 
-Your fleets and the station's settings are kept in FTL's saves folder, mostly in the folders whose names begin with FederationHomePlanet. Only a small file noting where things are, and the program's own logs, stay beside the program. A newer version of the station can be unzipped anywhere and will find everything without asking again. To back up your fleet, back up FTL's saves folder.
+Your fleets and the station's settings are kept in FTL's saves folder, mostly in the folders whose names begin with FederationHomePlanet. Only a small file noting where things are, and the program's own logs, stay beside the program. A newer version of the station can be unzipped anywhere and will find everything without asking again. To back up your fleet, back up FTL's saves folder. This version does not read a fleet from before version 6.0. If yours is that old, open it once in a 6.x version of the station first, then come back to this one.
 
 # [3] YOUR FIRST VOYAGE
 
@@ -304,7 +304,7 @@ Once connected, your goods are on the left and the other commander's are on the 
 
 A ship can only offer her goods while she is at a beacon with a store, or still where the station set her out, unless your Sandbox rules lift that (section [5]). To offer the ship herself, she must also be docked rather than under ABOARD. A ship offering her crew must keep at least one of them, and crew in the infirmary can't be offered. Only the other commander can add their own goods. When you are both content, each of you clicks Accept. Changing either offer withdraws both acceptances, so nobody can be surprised. Goods you receive arrive in the Cargo Hold, and a ship arrives docked at the Space Dock. There is a chat box below for talking things over, and Disconnect ends the call.
 
-Supplies, weapons, drones, augments and crew can all be traded. Whole ships can be traded too. Sandbox fleets may always trade ships, but Immersive careers may only when both commanders allow it in SETTINGS on the General tab. A Sandbox fleet trades only with other Sandbox fleets, and an Immersive career only with other Immersive careers. Careers of different difficulties can trade too. This is allowed unless either commander turns it off. Otherwise you can still talk, but not trade.
+Supplies, weapons, drones, augments and crew can all be traded. Whole ships can be traded too. Sandbox fleets may always trade ships, but Immersive careers may only when both commanders allow it in SETTINGS on the General tab. A Sandbox fleet trades only with other Sandbox fleets, and an Immersive career only with other Immersive careers. Careers of different difficulties can trade too. This is allowed unless either commander turns it off. Both commanders also need a Long Range Comm. of the same age. If one is older, the Commanders list says so and names both versions, and one of you must update before you can trade. Otherwise you can still talk, but not trade.
 
 ## Messages and shipments
 

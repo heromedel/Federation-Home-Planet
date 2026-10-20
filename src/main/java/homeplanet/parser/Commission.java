@@ -326,11 +326,6 @@ public class Commission {
 
 	/** A crew volunteer of this race (a reward), named and tinted as a new game's crew are, placed nowhere yet. Null for an unknown race. */
 	public static CrewState volunteer(String raceId, Random rng) { return volunteer(raceId, rng, false); }
-	/**
-	 * As {@link #volunteer(String, Random)}, rolled as before 6.22 whatever the settings (no girl power, no name lists):
-	 * the look of someone who already served, the same for the same seed as it always was.
-	 */
-	public static CrewState lookOf(String raceId, Random rng) { return volunteer(raceId, rng, true); }
 	private static CrewState volunteer(String raceId, Random rng, boolean asBefore) {
 		CrewType race = CrewType.findById(raceId);
 		if (race == null) return null;

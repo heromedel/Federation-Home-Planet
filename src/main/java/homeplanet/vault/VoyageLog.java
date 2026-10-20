@@ -1,10 +1,7 @@
 package homeplanet.vault;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,15 +17,13 @@ import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.SystemState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 
-import homeplanet.core.SafeFiles;
 import homeplanet.core.Event;
 import homeplanet.core.EventLog;
 import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 
 /**
- * Each ship's voyage: what FTL did to her between one look and the next, in her own log and the fleet's event log (her
- * voyage.log until 5.93, kept as it was, no longer written; it still travels in her package for an older station) (the
+ * Each ship's voyage: what FTL did to her between one look and the next, in her own log and the fleet's event log (the
  * station looks at each save FTL writes while it's open, and on Refresh): jumps, sectors, ships defeated, crew joined
  * and lost, what came aboard and went, upgrades, damage and repairs, the Rebel Flagship. The last look is kept in
  * voyage.txt, with the sectors she has visited in all her journeys (FTL's save knows only the current one).
@@ -38,8 +33,8 @@ public final class VoyageLog {
 	private static final Logger log = LoggerFactory.getLogger(VoyageLog.class);
 	private VoyageLog() { }
 
-	/** Her voyage log in prose (before 5.76) and her last look (before 5.98), by the names a ship's package still gives them. */
-	public static final String LOG = "voyage.log", LAST = "voyage.txt";
+	/** Her last look, by the name a ship's package gives it. */
+	public static final String LAST = "voyage.txt";
 	/** The sectors a ship (by id) visited in all her journeys, at least the sector she's in in this save. */
 	public static int visited(Vault v, String id, SavedGameState gs) {
 		return Math.max(Store.num(last(v, id), "visited", 0), gs == null ? 0 : gs.getSectorNumber() + 1);
@@ -362,13 +357,13 @@ public final class VoyageLog {
 
 	// ---- files ----
 
-	private static Properties last(Vault v, Ship s) { return ShipStore.notes(v.historyOf(s), ShipStore.LAST); }
+	private static Properties last(Vault v, Ship s) { return ShipStore.notes(v.folderOf(s), ShipStore.LAST); }
 	private static Properties last(Vault v, String id) { return ShipStore.notes(v.folderOfId(id), ShipStore.LAST); }
 	/** Her last look as its file in a package (older stations read it from there; her record's last section since 5.98). */
 	static final String LAST_NOTE = "Her last look, for the voyage log";
 	private static void save(Vault v, Ship s, Properties p) {
 		try {
-			v.setNotes(v.historyOf(s), ShipStore.LAST, p);
+			v.setNotes(v.folderOf(s), ShipStore.LAST, p);
 		} catch (IOException e) {
 			log.warn("Could not keep {}'s last look: {}", s, e.toString());
 		}
@@ -378,7 +373,7 @@ public final class VoyageLog {
 		return Vault.where(Event.of("SHIP").put("ship", s.name + "." + s.id).put("ship_name", s.name).put("ship_id", s.id).put("ship_state", s.state == null ? null : s.state.name().toLowerCase()), s); // her sector and difficulty (6.18)
 	}
 	private static void append(Vault v, Ship s, List<Event> events) {
-		// her own log and the fleet's event log alone (5.93): voyage.log and the master log's copy are no longer written
+		// her own log and the fleet's event log alone (5.93)
 		Event who = shipFields(s);
 		for (Event e : events) EventLog.write(v, Event.of(e.kind).put("log", "voyage").putAll(who).putAll(e).human(e.human()));
 	}

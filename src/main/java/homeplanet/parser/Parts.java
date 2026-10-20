@@ -15,7 +15,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.SystemBlueprint;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.Store;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
@@ -43,8 +43,6 @@ public final class Parts {
 	static int shareMax(double broken) { return (int) Math.round(95 - 45 * broken); }
 	/** One part in this many is a clearance (the foreman wants it gone): this much off its price. */
 	public static final int CLEARANCE_ONE_IN = 12, CLEARANCE_OFF = 10;
-	/** A Piloting, Oxygen or Engines part at level 1 (FTL's upgrade costs on top): the same price everywhere. */
-	public static final int CORE_PART = Pricing.CORE_SYSTEM;
 	/** One set in this many has a piece of salvage; one piece in GEAR_ONE_IN is a weapon, drone or augment. */
 	public static final int SALVAGE_ONE_IN = 5, GEAR_ONE_IN = 4;
 	/** Salvage sells at this share of FTL's store price. */
@@ -115,7 +113,9 @@ public final class Parts {
 	public static int count(Vault v) { return Store.num(read(v), "count", 0); }
 
 	/** New parts, now (the old ones go). */
-	public static synchronized void roll(Vault v, Random rng) throws IOException {
+	public static synchronized void roll(Vault v, Random rng) throws IOException { write(v, rolled(v, rng)); }
+	/** A new set of parts and salvage, not yet written (a search writes it in the note that pays for it, 6.87). */
+	private static Properties rolled(Vault v, Random rng) {
 		List<SystemType> kinds = new ArrayList<SystemType>();
 		for (SystemType t : SystemType.values())
 			if (t != SystemType.ARTILLERY && t != SystemType.CLONEBAY && DataManager.get().getSystem(t.getId()) != null) kinds.add(t); // a Clone Bay's damage is the Medbay's
@@ -158,7 +158,7 @@ public final class Parts {
 			p.setProperty(n + ".percent", Integer.toString(SALVAGE_MIN + rng.nextInt(SALVAGE_MAX - SALVAGE_MIN + 1)));
 			p.setProperty("count", Integer.toString(n + 1));
 		}
-		write(v, p);
+		return p;
 	}
 	static int maxLevel(String id) {
 		SystemBlueprint b = DataManager.get().getSystem(id);
@@ -167,19 +167,15 @@ public final class Parts {
 
 	/** A weapon, drone or augment FTL's stores sell (no artillery, nothing unpriced). */
 	static String gear(Random rng) {
-		List<String> from = new ArrayList<String>();
 		int k = rng.nextInt(3);
-		if (k == 0) { for (net.blerf.ftl.xml.WeaponBlueprint w : DataManager.get().getWeapons().values()) if (w.getCost() > 0 && w.getRarity() > 0 && !w.getId().startsWith("ARTILLERY")) from.add(w.getId()); }
-		else if (k == 1) { for (net.blerf.ftl.xml.DroneBlueprint d : DataManager.get().getDrones().values()) if (d.getCost() > 0 && d.getRarity() > 0) from.add(d.getId()); }
-		else { for (net.blerf.ftl.xml.AugBlueprint a : DataManager.get().getAugments().values()) if (a.getCost() > 0 && a.getRarity() > 0) from.add(a.getId()); }
-		java.util.Collections.sort(from);
+		List<String> from = k == 0 ? homeplanet.model.Items.soldWeapons() : k == 1 ? homeplanet.model.Items.soldDrones() : homeplanet.model.Items.soldAugments();
 		return from.isEmpty() ? null : from.get(rng.nextInt(from.size()));
 	}
 	static int storePrice(String kind, String id, int count) {
 		if (ITEM.equals(kind)) return Pricing.item(id);
 		return count * (FUEL.equals(kind) ? Pricing.FUEL : MISSILES.equals(kind) ? Pricing.MISSILE : Pricing.DRONE_PART);
 	}
-	/** What a part is worth whole and new: its price as Commission counts it (CORE_PART and upgrades for Piloting, Oxygen and Engines), at the difficulty's rate. */
+	/** What a part is worth whole and new: its price as Commission counts it (Pricing.CORE_SYSTEM and upgrades for Piloting, Oxygen and Engines), at the difficulty's rate. */
 	public static int worth(String id, int level) {
 		return Pricing.rated(Pricing.system(id, level));
 	}
@@ -202,27 +198,20 @@ public final class Parts {
 		c.save.getPlayerShip().setScrapAmt(have - l.price);
 		if (l.salvage()) {
 			net.blerf.ftl.parser.SavedGameParser.ShipState h = c.save.getPlayerShip();
-			if (FUEL.equals(l.kind)) h.setFuelAmt(h.getFuelAmt() + l.count);
-			else if (MISSILES.equals(l.kind)) h.setMissilesAmt(h.getMissilesAmt() + l.count);
-			else if (DRONE_PARTS.equals(l.kind)) h.setDronePartsAmt(h.getDronePartsAmt() + l.count);
-			else if (homeplanet.model.Items.isWeapon(l.id)) h.getWeaponList().add(SaveHelper.newIdleWeapon(l.id));
-			else if (homeplanet.model.Items.isDrone(l.id)) h.getDroneList().add(SaveHelper.newIdleDrone(l.id));
-			else h.getAugmentIdList().add(l.id);
-			v.begin().put(st, c.save, c.hash).commit();
+			boolean added = ITEM.equals(l.kind) ? SaveHelper.addItem(h, l.id) : SaveHelper.addSupply(h, l.kind, l.count);
+			if (!added) throw new IOException("The Junkyard's file names salvage the station doesn't know (" + l.kind + " " + l.id + "): nothing was spent");
 			p.setProperty(l.index + ".open", "false");
-			try { write(v, p); } catch (IOException e) { log.warn("Could not mark salvage {} sold: {}", l.index, e.toString()); }
-			HistoryLog.entry("BUY", l.title() + ", salvage from the Junkyard, for " + l.price + " scrap from the Cargo Hold", null,
+			v.begin().put(st, c.save, c.hash).put(file(v), bytes(v, p)).commit(); // paid and sold in one note (6.87)
+			StationLog.entry("BUY", l.title() + ", salvage from the Junkyard, for " + l.price + " scrap from the Cargo Hold", null,
 					Event.of("BUY").put("what", "salvage").put("item", l.id).put("title", l.title()).put("price", l.price).put("from", "hold").put("to", "hold"));
 			return;
 		}
-		Vault.Transaction tx = v.begin().put(st, c.save, c.hash);
+		p.setProperty(l.index + ".open", "false");
+		Vault.Transaction tx = v.begin().put(st, c.save, c.hash).put(file(v), bytes(v, p)); // paid, stored and sold in one note (6.87)
 		homeplanet.vault.StoredSystems.add(tx, v, java.util.Collections.singletonList(homeplanet.vault.StoredSystems.line(l.id, l.level, l.broken)));
 		tx.commit();
-		p.setProperty(l.index + ".open", "false");
-		try { write(v, p); }
-		catch (IOException e) { log.warn("Could not mark part {} sold: {}", l.index, e.toString()); } // bought all the same: at worst it's offered again
 		ThirdFleet.partBought(v); // the Third Fleet Commander needn't point the way to them
-		HistoryLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard" + (l.clearance ? " on clearance" : "") + ", for " + l.price + " scrap from the Cargo Hold", null,
+		StationLog.entry("BUY", homeplanet.model.Items.systemTitle(l.id) + " level " + l.level + " (" + l.broken + " broken), a part from the Junkyard" + (l.clearance ? " on clearance" : "") + ", for " + l.price + " scrap from the Cargo Hold", null,
 				Event.of("BUY").put("what", "part").put("system", l.id).put("title", homeplanet.model.Items.systemTitle(l.id)).put("level", l.level).put("broken", l.broken).put("clearance", l.clearance).put("price", l.price).put("from", "hold").put("to", "stored_systems"));
 	}
 
@@ -239,17 +228,17 @@ public final class Parts {
 		int have = c.save.getPlayerShip().getScrapAmt();
 		if (have < SEARCH_COST) throw new IOException("The Cargo Hold holds " + have + " scrap; a search costs " + SEARCH_COST);
 		c.save.getPlayerShip().setScrapAmt(have - SEARCH_COST);
-		v.begin().put(st, c.save, c.hash).commit();
-		roll(v, new Random());
-		Properties p = read(v);
+		Properties p = rolled(v, new Random());
 		p.setProperty("searchedAt", Integer.toString(v.beaconsSeen()));
-		try { write(v, p); } catch (IOException e) { log.warn("Could not note the Junkyard's search: {}", e.toString()); } // searched all the same: at worst it can be searched again sooner
-		HistoryLog.entry("BUY", "Searched the Junkyard for more parts, for " + SEARCH_COST + " scrap from the Cargo Hold", null,
+		v.begin().put(st, c.save, c.hash).put(file(v), bytes(v, p)).commit(); // paid and searched in one note (6.87)
+		StationLog.entry("BUY", "Searched the Junkyard for more parts, for " + SEARCH_COST + " scrap from the Cargo Hold", null,
 				Event.of("BUY").put("what", "search").put("parts", Store.num(p, "count", 0)).put("price", SEARCH_COST).put("from", "hold").put("to", "junkyard"));
 	}
 
 	// ---- parts.txt ----
 
 	private static Properties read(Vault v) { return Store.read(file(v)); }
-	private static void write(Vault v, Properties p) throws IOException { Store.write(file(v), p, "The Junkyard's parts for sale"); }
+	private static final String NOTE = "The Junkyard's parts for sale";
+	private static void write(Vault v, Properties p) throws IOException { Store.write(file(v), p, NOTE); }
+	private static byte[] bytes(Vault v, Properties p) throws IOException { return Store.bytes(file(v), p, NOTE); }
 }

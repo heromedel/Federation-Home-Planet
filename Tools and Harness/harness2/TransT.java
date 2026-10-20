@@ -29,9 +29,6 @@ public class TransT { public static void main(String[] a) throws Exception {
   String setting = HomePlanet.freeShip;
   HomePlanet.freeShip = FreeCommand.ANY;
   Setup.chk("F: a new fleet starts with a Kestrel Type A, whatever a report would grant", FreeCommand.KESTREL.equals(FreeCommand.ship()));
-  HomePlanet.freeShip = FreeCommand.VARIABLE;
-  Setup.chk("F: the old Variable reads as a Kestrel Type A (or the Relief Ship)", FreeCommand.KESTREL.equals(Economy.reassignment())
-    && FreeCommand.offered(Economy.reassignment()).contains("Relief Ship Type A"));
   HomePlanet.freeShip = setting;
   Ship stranger = v.adopt(Commission.build("PLAYER_SHIP_HARD", "New Game Kestrel", net.blerf.ftl.constants.Difficulty.NORMAL, new Random(3)));
   v.board(stranger); Transmissions.check();

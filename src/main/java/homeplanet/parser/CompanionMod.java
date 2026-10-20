@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -17,12 +16,10 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import homeplanet.resource.ResourceClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -130,7 +127,6 @@ public class CompanionMod {
 	}
 
 	/** Crew races a blueprint can start with (FTL's ids), in the game's usual order. */
-	public static final String[] RACES = {"human", "engi", "mantis", "rock", "slug", "energy", "crystal", "anaerobic"};
 
 	/** What this blueprint starts with now (her own loadout if she has one, else the blueprint's). */
 	public static Loadout loadoutOf(String bpId) {
@@ -184,7 +180,6 @@ public class CompanionMod {
 		Matcher m = Pattern.compile("layout=\"([^\"]+)\"").matcher(block);
 		return m.find() ? m.group(1) : null;
 	}
-	/** The layout id a remodel with her own doors uses (circle_cruiser_r1_hw), or the model's when she keeps its doors. */
 	/** Whether she has a layout of her own (her own doors, or an overhauled shape) rather than the model's. */
 	public static boolean ownLayout(Remodel r) { return r.doors != null || r.geometry != null; }
 	public static String layoutIdOf(Remodel r) {
@@ -499,8 +494,7 @@ public class CompanionMod {
 		}
 	}
 	static void readInto(File REMODELS, List<Remodel> out) throws Exception {
-		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(REMODELS);
-		NodeList rs = doc.getElementsByTagName("remodel");
+		NodeList rs = XmlText.parse(REMODELS).getElementsByTagName("remodel");
 		for (int i = 0; i < rs.getLength(); i++) {
 			Element e = (Element) rs.item(i);
 			Remodel r = new Remodel();
@@ -536,6 +530,11 @@ public class CompanionMod {
 
 	public static synchronized void save(List<Remodel> remodels) throws IOException {
 		cache = null; // whatever happens below, the next load() reads the file
+		homeplanet.core.SafeFiles.write(remodelsFile(), bytes(remodels), true);
+		saved(remodels);
+	}
+	/** The file's bytes for this list, for a protection note that writes it with her save (6.87); {@link #saved} once it stands. */
+	public static synchronized byte[] bytes(List<Remodel> remodels) throws IOException {
 		if (!intact()) throw ShipDesign.damaged(remodelsFile()); // the list in hand may be short: writing it would lose remodels
 		StringBuilder sb = new StringBuilder();
 		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>").append(CRLF);
@@ -543,7 +542,11 @@ public class CompanionMod {
 		sb.append("<remodels>").append(CRLF);
 		for (Remodel r : remodels) sb.append(remodelXml(r));
 		sb.append("</remodels>").append(CRLF);
-		homeplanet.core.SafeFiles.writeText(remodelsFile(), sb.toString(), true);
+		return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+	}
+	/** The list is in the file (a note wrote it): the next load() reads it, and each blueprint's backup is kept. */
+	public static synchronized void saved(List<Remodel> remodels) {
+		cache = null;
 		BlueprintBackup.keepRemodels(remodels);
 	}
 	static String remodelXml(Remodel r) {
@@ -568,7 +571,6 @@ public class CompanionMod {
 		sb.append("\t</remodel>").append(CRLF);
 		return sb.toString();
 	}
-	/** A loadout element (her class, name and new-game loadout) inside a remodel or a design, or null. */
 	/** The element's own children with this tag (not their children's). */
 	static List<Element> children(Element e, String tag) {
 		List<Element> out = new ArrayList<Element>();
@@ -621,7 +623,7 @@ public class CompanionMod {
 	private static void logRemoved(String xml) throws IOException {
 		java.io.Writer w = new java.io.OutputStreamWriter(new FileOutputStream(removedLog(), true), "UTF-8");
 		try {
-			w.write("<!-- removed " + new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()) + " -->" + CRLF);
+			w.write("<!-- removed " + homeplanet.core.Stamps.now() + " -->" + CRLF);
 			w.write(xml);
 		} finally { w.close(); }
 	}

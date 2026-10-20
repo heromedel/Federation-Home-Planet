@@ -15,13 +15,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
 
 /**
- * The journal (docs/OVERHAUL-6.md §3.2; 5.71): an action that moves or writes more than one file is written as a note
+ * The action protection (5.71; the journal until 7.00): an action that moves or writes more than one file is written as a note
  * first, in {@code station-action-protection/} under the fleet's folder (heromedel's name; its why.txt says what it is), then its steps are done, then the note is deleted. A step is a
  * replacement (the new bytes wait beside the file as {@code <name>.tx} before the note is written), a rename (a file
  * or a whole folder, all-or-nothing on one drive) or a deletion; each file once, with one owner. A step refused by
@@ -30,9 +30,9 @@ import homeplanet.core.Store;
  * the next opening {@link #settle settles} it: each step is finished where it can be, else left for a person, and the
  * entry it then writes keeps the note's own time and stardate ({@code finished=startup}).
  */
-public final class Journal {
-	private static final Logger log = LoggerFactory.getLogger(Journal.class);
-	private Journal() { }
+public final class ActionProtection {
+	private static final Logger log = LoggerFactory.getLogger(ActionProtection.class);
+	private ActionProtection() { }
 
 	public static final String DIR = "station-action-protection", WHY = "why.txt";
 	/** The folder, made with its why.txt (heromedel's words) so a player who finds it knows what it is. */
@@ -147,7 +147,7 @@ public final class Journal {
 		private String text() {
 			StringBuilder sb = new StringBuilder();
 			synchronized (STAMP) { sb.append("time=").append(STAMP.format(new Date())).append('\n'); }
-			sb.append("day=").append(MasterLog.today(v)).append('\n');
+			sb.append("day=").append(Calendar.today(v)).append('\n');
 			sb.append("kind=").append(kind).append('\n');
 			sb.append("station=").append(HomePlanet.version()).append('\n');
 			int n = 1;
@@ -210,7 +210,17 @@ public final class Journal {
 	 */
 	public static List<Settled> settle(Vault v) {
 		List<Settled> out = new ArrayList<Settled>();
-		File[] notes = dir(v).listFiles();
+		// every fleet's notes (6.87): a note's paths are relative to the saves folder, so one fleet's note can reach into
+		// another's (a ship sent to Sandbox Mode's fleet), and whichever fleet opens first finishes it
+		for (String slot : Vault.SLOTS) {
+			File root = Vault.rootOf(v.saves, slot);
+			if (root.isDirectory()) out.addAll(settle(v, new File(root, DIR), root.equals(v.root) ? DIR : root.getName() + "/" + DIR));
+		}
+		return out;
+	}
+	private static List<Settled> settle(Vault v, File jdir, String where) {
+		List<Settled> out = new ArrayList<Settled>();
+		File[] notes = jdir.listFiles();
 		if (notes == null) return out;
 		java.util.Arrays.sort(notes);
 		for (File note : notes) {
@@ -233,11 +243,11 @@ public final class Journal {
 			}
 			boolean finished = trouble.isEmpty();
 			if (finished && !note.delete()) log.warn("Could not remove the finished note {}", note);
-			Event e = Event.of("JOURNAL").put("what", finished ? "finished" : "stuck").put("action", kind).put("steps", n).put("note", DIR + "/" + note.getName())
+			Event e = Event.of("JOURNAL").put("what", finished ? "finished" : "stuck").put("action", kind).put("steps", n).put("note", where + "/" + note.getName())
 					.put("finished", "startup").put("time", time).put("day", day > 0 ? Integer.valueOf(day) : null).put("left_by", station).details(trouble);
 			String words = finished ? "an action the station had begun (" + kind.toLowerCase().replace('_', ' ') + ") was finished at start-up"
-					: "an action the station had begun (" + kind.toLowerCase().replace('_', ' ') + ") could not be finished at start-up: its note is kept in " + DIR + "/" + note.getName();
-			HistoryLog.entry("JOURNAL", words, trouble.isEmpty() ? null : trouble, e.human(finished ? "The station finished what it had begun." : "The station could not finish what it had begun; its note is kept."));
+					: "an action the station had begun (" + kind.toLowerCase().replace('_', ' ') + ") could not be finished at start-up: its note is kept in " + where + "/" + note.getName();
+			StationLog.entry("JOURNAL", words, trouble.isEmpty() ? null : trouble, e.human(finished ? "The station finished what it had begun." : "The station could not finish what it had begun; its note is kept."));
 			if (!finished) log.warn("The note {} could not be finished: {}", note, trouble);
 			out.add(new Settled(kind, time, day, note.getName(), finished));
 		}

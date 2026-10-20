@@ -110,6 +110,11 @@ public final class Pricing {
 		if (id != null && id.toUpperCase().startsWith("ARTILLERY") && DataManager.get().getWeapons().get(id) != null) return artillery(id);
 		return Math.max(0, store(id));
 	}
+	/** What FTL's stores pay for a weapon, drone or augment: half the price, rounded down (nothing for one the data doesn't know). */
+	public static int itemSale(String id) {
+		int p = store(id);
+		return p <= 0 ? 0 : p / 2;
+	}
 	/** A weapon, drone or augment at FTL's own store price, as the game data has it; -1 if the data doesn't know it (a removed mod's). */
 	public static int store(String id) {
 		WeaponBlueprint w = DataManager.get().getWeapons().get(id);

@@ -24,7 +24,7 @@ import javax.swing.SwingUtilities;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.parser.ShipDesign;
 
 /** Design Ship: the list of ship designs (new, open, delete). */
@@ -172,7 +172,7 @@ public class DesignListDialog extends JDialog {
 						+ homeplanet.parser.CompanionMod.TITLE + " for as long as any ship needs it.\n\nRetire \"" + d.name + "\"?";
 		if (JOptionPane.showConfirmDialog(this, ask, "Design Ship", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
 		store(ShipDesign.deleteOrRetire(designs, d.id, kept));
-		HistoryLog.entry("DESIGN", (anyKept ? "Retired " : "Deleted ") + d.name + " (" + d.id + ")", null, Event.of("DESIGN").put("what", anyKept ? "retired" : "deleted").put("design", d.name).put("design_id", d.id));
+		StationLog.entry("DESIGN", (anyKept ? "Retired " : "Deleted ") + d.name + " (" + d.id + ")", null, Event.of("DESIGN").put("what", anyKept ? "retired" : "deleted").put("design", d.name).put("design_id", d.id));
 	}
 	/**
 	 * Saves a design the editor handed back. Save alone changes the working copy only; Build blueprint takes a fresh
@@ -187,7 +187,7 @@ public class DesignListDialog extends JDialog {
 			if (old != null) { old.frozenOf = d.id; old.snapshotOf = null; }
 			d.version = d.pendingVersion;
 			d.pendingVersion = 0;
-			HistoryLog.entry("DESIGN", d.name + ": built as v" + d.version + (old != null ? " (v" + old.version + " kept for the ships built from it)" : ""), null,
+			StationLog.entry("DESIGN", d.name + ": built as v" + d.version + (old != null ? " (v" + old.version + " kept for the ships built from it)" : ""), null,
 					Event.of("DESIGN").put("what", "version_built").put("design", d.name).put("design_id", d.id).put("version", d.version).put("kept_version", old != null ? String.valueOf(old.version) : null));
 		} else if (old != null) designs.remove(old);
 		d.built = true;
@@ -209,7 +209,7 @@ public class DesignListDialog extends JDialog {
 		homeplanet.parser.CompanionMod.register(homeplanet.parser.CompanionMod.load()); // the station sees her at once
 		java.io.File mod = homeplanet.core.Slipstream.writeMod();
 		Object[] options = {"Patch Now", "Later"};
-		int p = JOptionPane.showOptionDialog(this, (mod == null ? homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint is ready, but the " + homeplanet.parser.CompanionMod.TITLE + " could not be written." : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint is in the " + homeplanet.parser.CompanionMod.TITLE + ".")
+		int p = JOptionPane.showOptionDialog(this, (mod == null ? homeplanet.model.Words.Her() + " blueprint is ready, but the " + homeplanet.parser.CompanionMod.TITLE + " could not be written." : homeplanet.model.Words.Her() + " blueprint is in the " + homeplanet.parser.CompanionMod.TITLE + ".")
 				+ "\nSend it to FTL via Slipstream to commission " + homeplanet.model.Words.herObj() + " (tick " + homeplanet.model.Words.herObj() + " as a starter ship to see " + homeplanet.model.Words.herObj() + " in Commission).",
 				"Design Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 		if (p == 0) PatchDialog.open(this);

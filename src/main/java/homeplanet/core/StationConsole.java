@@ -6,8 +6,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import homeplanet.parser.Assignments;
 import homeplanet.parser.Expeditions;
+import homeplanet.parser.AwayCrew;
 import homeplanet.vault.Vault;
 
 /**
@@ -73,7 +73,7 @@ public final class StationConsole {
 			if (on) HomePlanet.config.setProperty(GIRL_POWER, "true"); else HomePlanet.config.remove(GIRL_POWER); // never written as false: off leaves no trace
 			if (HomePlanet.propFile != null) HomePlanet.saveConfig();
 			String said = "Girl power: " + (on ? "on" : "off");
-			HistoryLog.entry("SETTINGS", "settings changed", java.util.Collections.singletonList(said), Event.of("SETTINGS").put("girlpower", on).put("by", "easter").detail(said));
+			StationLog.entry("SETTINGS", "settings changed", java.util.Collections.singletonList(said), Event.of("SETTINGS").put("girlpower", on).put("by", "easter").detail(said));
 			return new Reply(on ? "Girl power on: every crew member The Home Planet Station makes from now on is a woman. Crew already aboard, FTL and trades are unchanged."
 					: "Girl power off.", 0);
 		}
@@ -89,16 +89,16 @@ public final class StationConsole {
 
 	/** What the days passed brought, for the Space Dock to tell once they're all done. */
 	public static final class Round {
-		public final List<Assignments.Report> back = new ArrayList<Assignments.Report>();
-		public final List<Expeditions.RansomNews> ransomNews = new ArrayList<Expeditions.RansomNews>();
+		public final List<Expeditions.Report> back = new ArrayList<Expeditions.Report>();
+		public final List<AwayCrew.RansomNews> ransomNews = new ArrayList<AwayCrew.RansomNews>();
 		public final List<String> upAgain = new ArrayList<String>();
 	}
 	/** One day passed by a dev command, and the station's round on it, so whatever falls due lands on its own day. */
 	public static void passDay(Vault v, Round into) {
 		v.countBeacon(DAY_WHY);
-		if (HomePlanet.expeditionType == 2) into.back.addAll(Assignments.checkReturns(v));
-		into.ransomNews.addAll(Expeditions.checkRansoms(v));
-		into.upAgain.addAll(Expeditions.checkInfirmary(v));
+		if (HomePlanet.expeditionType == 2) into.back.addAll(Expeditions.checkReturns(v));
+		into.ransomNews.addAll(AwayCrew.checkRansoms(v));
+		into.upAgain.addAll(AwayCrew.checkInfirmary(v));
 		homeplanet.parser.Transmissions.check(); // the inbox, as the Space Dock reads it: a stipend or letter due lands on its own day (5.23)
 	}
 	/** The debug log notes it, and only the debug log (5.23): the master log's hidden day lines mark each day passed. */

@@ -8,7 +8,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -18,7 +17,6 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import homeplanet.parser.Career;
-import homeplanet.parser.CareerRules;
 import homeplanet.vault.Vault;
 
 /**

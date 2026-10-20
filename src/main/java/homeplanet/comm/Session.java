@@ -25,7 +25,7 @@ public final class Session implements Channel.Listener {
 	 * version: a Laser Cannon is a Laser Cannon in any version. Each side ignores fields and files it doesn't know, so
 	 * adding one is safe; bump this only when an older station would trade wrongly (a new step, a field it must read).
 	 */
-	public static final int PROTOCOL = 2; // 2: custom ships travel with their papers
+	public static final int PROTOCOL = 3; // 2: custom ships travel with their papers; 3 (7.0): a ship's crew travel as their files are on disk
 
 	/** What the screen hears about. All on the event thread. */
 	public interface View {
@@ -52,7 +52,6 @@ public final class Session implements Channel.Listener {
 		public String mode = homeplanet.vault.Vault.SANDBOX;
 		public boolean ships, anyLevel;
 		/** Its station shows messages (one too old for them would drop them unseen). */
-		public boolean chat;
 		public boolean immersive() { return !homeplanet.vault.Vault.SANDBOX.equals(mode); }
 		/** "Sandbox Mode", "Immersive Hard". */
 		public String modeTitle() { return homeplanet.vault.Vault.title(mode); }
@@ -125,7 +124,7 @@ public final class Session implements Channel.Listener {
 	/** This station's hello: who it is, its mode (Sandbox, or an Immersive career's level) and what it allows. */
 	public static Wire.Msg hello(String version, String station, String title, String ship, String mode, boolean ships, boolean anyLevel) {
 		return new Wire.Msg("HELLO").put("protocol", PROTOCOL).put("version", version).put("station", station).put("title", title)
-				.put("ship", ship == null ? "" : ship).put("mode", mode).put("ships", ships).put("anyLevel", anyLevel).put("chat", true);
+				.put("ship", ship == null ? "" : ship).put("mode", mode).put("ships", ships).put("anyLevel", anyLevel);
 	}
 	/** The other station from its hello; Garbled if it isn't one. */
 	public static Peer peerOf(Wire.Msg m) throws Wire.Garbled {
@@ -141,7 +140,6 @@ public final class Session implements Channel.Listener {
 		if (!java.util.Arrays.asList(homeplanet.vault.Vault.SLOTS).contains(p.mode)) throw new Wire.Garbled("mode " + Line.text(p.mode, 16));
 		p.ships = m.flag("ships");
 		p.anyLevel = m.flag("anyLevel");
-		p.chat = m.flag("chat");
 		try { p.protocol = Integer.parseInt(m.get("protocol").trim()); } catch (NumberFormatException e) { throw new Wire.Garbled("protocol"); }
 		return p;
 	}
@@ -248,7 +246,7 @@ public final class Session implements Channel.Listener {
 	/** Sends the other commander a message (trimmed, plain text, cut to length). False if there's nothing to send. */
 	public boolean say(String text) {
 		String t = Line.text(text == null ? "" : text, SAY_MAX);
-		if (over || t.isEmpty() || !peer.chat) return false;
+		if (over || t.isEmpty()) return false;
 		return channel.trySend(new Wire.Msg("SAY").put("text", t));
 	}
 	/** A message from the other commander: plain text, cut to length, and no more than 8 in 4 seconds (the rest dropped). */

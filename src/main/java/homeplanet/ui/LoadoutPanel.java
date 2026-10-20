@@ -23,6 +23,7 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 
 import homeplanet.model.Items;
+import homeplanet.model.Words;
 import homeplanet.parser.CompanionMod;
 import homeplanet.parser.ShipDesign;
 import homeplanet.parser.VanillaMax;
@@ -74,9 +75,9 @@ public class LoadoutPanel extends JPanel {
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
 		p.setBorder(BorderFactory.createEmptyBorder(0, 4, 8, 4));
 
-		p.add(heading("Who " + homeplanet.model.Words.she() + " is"));
-		p.add(labelled("Class", classField, "What kind of ship " + homeplanet.model.Words.she() + " is, e.g. \"Kestrel Cruiser\""));
-		p.add(labelled("Default name", nameField, "What a newly commissioned ship is called unless you rename " + homeplanet.model.Words.herObj()));
+		p.add(heading("Who " + Words.she() + " is"));
+		p.add(labelled("Class", classField, "What kind of ship " + Words.she() + " is, e.g. \"Kestrel Cruiser\""));
+		p.add(labelled("Default name", nameField, "What a newly commissioned ship is called unless you rename " + Words.herObj()));
 		javax.swing.event.DocumentListener names = new javax.swing.event.DocumentListener() {
 			public void insertUpdate(javax.swing.event.DocumentEvent e) { namesTyped(); }
 			public void removeUpdate(javax.swing.event.DocumentEvent e) { namesTyped(); }
@@ -89,27 +90,26 @@ public class LoadoutPanel extends JPanel {
 		starterBox.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { if (!filling) { d.starter = starterBox.isSelected(); host.changed(); } } });
 		p.add(starterBox);
 
-		p.add(heading(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " numbers"));
-		p.add(hint(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " own / vanilla max: the most any of the game's ships has. Type what you like; past it, FTL's bars are drawn for the vanilla number."));
+		p.add(heading(Words.Her() + " numbers"));
+		p.add(hint(Words.Her() + " own / vanilla max: the most any of the game's ships has. Type what you like; past it, FTL's bars are drawn for the vanilla number."));
 		ActionListener numbers = new ActionListener() { public void actionPerformed(ActionEvent e) { numbersChanged(); } };
 		p.add(hull = row("Hull", d.hull, VanillaMax.hull(), 1, "Hull points at the start (the game's ships have 30)", numbers));
 		p.add(reactor = row("Reactor", d.reactor, VanillaMax.reactor(), 1, "Reactor power at the start (the game's ships have 8)", numbers));
-		p.add(weaponSlots = row("Weapon slots", d.weaponSlots, VanillaMax.weaponSlots(), 1, "How many weapons " + homeplanet.model.Words.she() + " can carry. FTL draws slot n's weapon on mount n: give " + homeplanet.model.Words.herObj() + " as many mounts (Art step)", numbers));
-		p.add(droneSlots = row("Drone slots", d.droneSlots, VanillaMax.droneSlots(), 0, "How many drones " + homeplanet.model.Words.she() + " can carry (with Drone Control)", numbers));
+		p.add(weaponSlots = row("Weapon slots", d.weaponSlots, VanillaMax.weaponSlots(), 1, "How many weapons " + Words.she() + " can carry. FTL draws slot n's weapon on mount n: give " + Words.herObj() + " as many mounts (Art step)", numbers));
+		p.add(droneSlots = row("Drone slots", d.droneSlots, VanillaMax.droneSlots(), 0, "How many drones " + Words.she() + " can carry (with Drone Control)", numbers));
 		p.add(missiles = row("Missiles", d.loadout == null ? 8 : d.loadout.missiles, VanillaMax.missiles(), 0, "Missiles aboard at the start", numbers));
 		p.add(droneParts = row("Drone parts", d.loadout == null ? 2 : d.loadout.droneParts, VanillaMax.droneParts(), 0, "Drone parts aboard at the start (Hacking needs one to launch)", numbers));
 
 		p.add(crewHeading);
 		JPanel cg = new JPanel(new GridLayout(0, 2, 12, 2));
-		String[] raceNames = {"Human", "Engi", "Mantis", "Rock", "Slug", "Zoltan", "Crystal", "Lanius"};
 		javax.swing.event.ChangeListener crewEdit = new javax.swing.event.ChangeListener() { public void stateChanged(javax.swing.event.ChangeEvent e) { crewChanged(); } };
-		for (int i = 0; i < CompanionMod.RACES.length; i++) {
+		for (int i = 0; i < homeplanet.model.Crew.RACES.length; i++) {
 			JSpinner sp = new JSpinner(new SpinnerNumberModel(0, 0, VanillaMax.CREW, 1));
 			((JSpinner.DefaultEditor) sp.getEditor()).getTextField().setColumns(2);
 			sp.addChangeListener(crewEdit);
-			crew.put(CompanionMod.RACES[i], sp);
+			crew.put(homeplanet.model.Crew.RACES[i], sp);
 			JPanel cell = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-			JLabel race = new JLabel(raceNames[i]);
+			JLabel race = new JLabel(homeplanet.model.Crew.racePeople(homeplanet.model.Crew.RACES[i]));
 			race.setPreferredSize(new java.awt.Dimension(56, race.getPreferredSize().height));
 			cell.add(race); cell.add(sp);
 			cg.add(cell);
@@ -117,7 +117,7 @@ public class LoadoutPanel extends JPanel {
 		cg.setAlignmentX(LEFT_ALIGNMENT);
 		p.add(cg);
 
-		p.add(heading("What " + homeplanet.model.Words.she() + " carries"));
+		p.add(heading("What " + Words.she() + " carries"));
 		carries.setLayout(new BoxLayout(carries, BoxLayout.Y_AXIS));
 		carries.setAlignmentX(LEFT_ALIGNMENT);
 		p.add(carries);
@@ -201,7 +201,7 @@ public class LoadoutPanel extends JPanel {
 		carries.add(hint("Weapons (" + d.weaponSlots + (d.weaponSlots == 1 ? " slot" : " slots") + ")"));
 		carries.add(boxes(weaponBoxes, BlueprintDialog.weapons(), Math.max(1, d.weaponSlots), l == null ? new ArrayList<String>() : l.weapons));
 		boolean hasDrones = d.systems.containsKey("drones");
-		carries.add(hint("Drones (" + d.droneSlots + (d.droneSlots == 1 ? " slot" : " slots") + ")" + (hasDrones ? "" : " - " + homeplanet.model.Words.she() + " has no Drone Control yet")));
+		carries.add(hint("Drones (" + d.droneSlots + (d.droneSlots == 1 ? " slot" : " slots") + ")" + (hasDrones ? "" : " - " + Words.she() + " has no Drone Control yet")));
 		if (d.droneSlots > 0) carries.add(boxes(droneBoxes, BlueprintDialog.drones(), d.droneSlots, l == null ? new ArrayList<String>() : l.drones));
 		carries.add(hint("Augments"));
 		carries.add(boxes(augBoxes, BlueprintDialog.augments(), BlueprintDialog.MAX_AUGS, l == null ? new ArrayList<String>() : l.augs));
@@ -274,7 +274,7 @@ public class LoadoutPanel extends JPanel {
 			final NumberRow r = new NumberRow(Items.systemTitle(s.id), Math.max(1, s.power), max, 1, true);
 			r.putClientProperty("system", s.id);
 			r.tick().setSelected(!d.notAtStart.contains(s.id));
-			r.tick().setToolTipText("Ticked: " + homeplanet.model.Words.she() + " starts with it installed. Unticked: its room is ready, to buy or install later");
+			r.tick().setToolTipText("Ticked: " + Words.she() + " starts with it installed. Unticked: its room is ready, to buy or install later");
 			r.setTip("Starting level");
 			r.onChange(new ActionListener() { public void actionPerformed(ActionEvent e) { if (!filling) systemChanged(s.id, r, rows); } });
 			if (s.id.equals("artillery")) {
@@ -296,7 +296,7 @@ public class LoadoutPanel extends JPanel {
 				});
 				r.putClientProperty("weapon", weapon);
 				r.addExtra(weapon);
-				CargoParts.IconButton weaponInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "What " + homeplanet.model.Words.her() + " artillery fires: power, damage", new ActionListener() {
+				CargoParts.IconButton weaponInfo = new CargoParts.IconButton(CargoParts.infoIcon(), "What " + Words.her() + " artillery fires: power, damage", new ActionListener() {
 					public void actionPerformed(ActionEvent e) {
 						CompanionMod.Sys now = d.systems.get("artillery");
 						if (now != null && now.weapon != null) ItemTooltips.show(LoadoutPanel.this, now.weapon);
@@ -315,7 +315,7 @@ public class LoadoutPanel extends JPanel {
 
 	private static void weaponLabel(JButton b, String weapon) {
 		b.setText(weapon == null ? "Choose weapon..." : ArtilleryPicker.label(weapon));
-		b.setToolTipText(weapon == null ? "Which weapon " + homeplanet.model.Words.her() + " artillery fires" : ArtilleryPicker.tip(weapon));
+		b.setToolTipText(weapon == null ? "Which weapon " + Words.her() + " artillery fires" : ArtilleryPicker.tip(weapon));
 	}
 
 	// ---- the fields into the design ----

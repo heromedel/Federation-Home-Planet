@@ -14,18 +14,16 @@ public class VicT { public static void main(String[] a) throws Exception {
  loss(v);
  rescueKeep(v);
  rescueMuseum(v);
- reward(v);
  museumPay(v);
  inbox(v);
  museum(v);
  toHardRules();
  if (a.length > 3) replay(game, new File(a[3]), new File(work, "replay"));
- // the honours (5.87, heromedel's Flagarino): the save reader's victory markers aren't honours, and one kept before shows without its id
+ // the honours (5.87, heromedel's Flagarino): the save reader's victory markers aren't honours
  net.blerf.ftl.xml.Achievement real = null;
  for (net.blerf.ftl.xml.Achievement x : DataManager.get().getGeneralAchievements()) if (!x.isVictory() && x.getName() != null) { real = x; break; }
  java.util.List<String> hon = Museum.honours(new java.util.HashSet<String>(), java.util.Arrays.asList("PLAYER_SHIP_ENERGY_VICTORY", real.getId()));
  Setup.chk("V: a victory marker gained during her command is no honour; a real achievement is, by name (" + hon + ")", hon.equals(java.util.Arrays.asList(real.getName().getTextValue())));
- Setup.chk("V: a victory kept before 5.87 with the marker's id shows without it", Museum.shownHonours("Ballistophobia|PLAYER_SHIP_ENERGY_VICTORY|Federation Victory (Easy)").equals(java.util.Arrays.asList("Ballistophobia", "Federation Victory (Easy)")));
  Setup.done();
 }
  /** Rescued Ships after Victory moved to Hard difficulty in each mode (heromedel, 6.03). */
@@ -47,9 +45,9 @@ public class VicT { public static void main(String[] a) throws Exception {
   Setup.chk("T: Hard: doesn't apply (the museum takes every victor)", FinalVictory.TO_HARD_NONE.equals(FinalVictory.toHardRule()) && !FinalVictory.toHard());
   int[] lv = CareerRules.of(CareerRules.NORMAL).levels();
   Vault.switchFleet(Vault.CUSTOM); Career.start(false, false, new CareerRules(CareerRules.CUSTOM, lv));
-  Setup.chk("T: Custom with no answer: the Space Dock asks", FinalVictory.TO_HARD_ASK.equals(FinalVictory.toHardRule()) && !FinalVictory.toHard());
-  FinalVictory.setToHard(true); // Settings can't answer it: only the question can
-  Setup.chk("T: Custom: Settings doesn't write its answer", FinalVictory.TO_HARD_ASK.equals(FinalVictory.toHardRule()));
+  Setup.chk("T: Custom with no answer: never (7.0: a career chooses when it begins)", FinalVictory.TO_HARD_OFF.equals(FinalVictory.toHardRule()) && !FinalVictory.toHard());
+  FinalVictory.setToHard(true); // Settings can't answer it: only the briefing can
+  Setup.chk("T: Custom: Settings doesn't write its answer", FinalVictory.TO_HARD_OFF.equals(FinalVictory.toHardRule()));
   FinalVictory.chooseToHard(Vault.get().root, true);
   Setup.chk("T: Custom, ticked: always", FinalVictory.TO_HARD_ON.equals(FinalVictory.toHardRule()) && FinalVictory.toHard());
   Setup.chk("T: the choice is logged", new String(java.nio.file.Files.readAllBytes(new File(Vault.get().root, "logs/events.log").toPath()), "UTF-8").contains("what=rescued_to_hard rescued_to_hard=true"));
@@ -83,7 +81,7 @@ public class VicT { public static void main(String[] a) throws Exception {
   SaveHelper.writeSavedGame(v.continueFile(), g);
   FinalVictory.watch();
  }
- static File copyOf(Vault v, Ship s) { return new File(v.historyOf(s), "final-battle.sav"); }
+ static File copyOf(Vault v, Ship s) { return new File(v.folderOf(s), "final-battle.sav"); }
  /** Her special copies by prefix (in her folder's versions/, 5.69). */
  static List<File> kept(Vault v, String id, String prefix) { List<File> out = new ArrayList<File>(); for (File f : ShipStore.versions(v.folderOfId(id), true)) if (f.getName().startsWith(prefix)) out.add(f); return out; }
  static final Set<String> used = new HashSet<String>();
@@ -161,20 +159,6 @@ public class VicT { public static void main(String[] a) throws Exception {
   Setup.chk("M: the museum's offer: her full value to storage, and she doesn't come back", v.storageScrap() == before + value && v.byId(id) == null && !recoverable);
   Setup.chk("M: her fate is the museum", Setup.fateText(v.folderOfId(id)).startsWith("MUSEUM") && FinalVictory.settle().isEmpty());
  }
- /** An answer from before 6.47, the reward of her value: now the museum at full value (heromedel). */
- static void reward(Vault v) throws Exception {
-  HomePlanet.finalVictory = FinalVictory.REWARD; HomePlanet.finalVictoryPay = FinalVictory.FULL;
-  Setup.chk("R: the reward (before 6.47) reads as Museum, at full value", FinalVictory.MUSEUM.equals(FinalVictory.choice()) && FinalVictory.FULL.equals(FinalVictory.pay()));
-  Ship s = toVictory(v, FinalVictory.REWARD); String id = s.id;
-  int value = FinalVictory.value(read(copyOf(v, s)));
-  int before = v.storageScrap();
-  List<FinalVictory.Notice> n = FinalVictory.settle();
-  Setup.chk("R: her full value to storage, a notice to read, and she goes to the museum", n.size() == 1 && n.get(0).offer == null && v.storageScrap() == before + value && v.byId(id) == null
-    && n.get(0).text.contains(value + " scrap") && n.get(0).text.contains("Museum") && Setup.fateText(v.folderOfId(id)).startsWith("MUSEUM"));
-  Setup.chk("R: paid once", FinalVictory.settle().isEmpty() && v.storageScrap() == before + value);
-  SavedGameState g = read(kept(v, id, "victory-").get(0));
-  Setup.chk("R: her value is her price at the rate", value == Pricing.ship(g, Pricing.rate()).total() && value > 0);
- }
  /** The museum's reward (6.47, heromedel): Museum at half value, then Choice at none (the honour alone). */
  static void museumPay(Vault v) throws Exception {
   HomePlanet.finalVictoryPay = FinalVictory.HALF;
@@ -215,9 +199,9 @@ public class VicT { public static void main(String[] a) throws Exception {
   System.out.println("museum: " + n);
   Setup.chk("U: the ship lost without a victory is in the Memorial, and only there", n.containsKey(Museum.Status.MEMORIAL) && n.get(Museum.Status.MEMORIAL) == 1);
   Setup.chk("U: the kept victors are Still in Service", n.containsKey(Museum.Status.IN_SERVICE) && n.get(Museum.Status.IN_SERVICE) == 2);
-  Setup.chk("U: the ones in the museum are Preserved (sold, the old reward now the museum, half, and given in honour)", n.containsKey(Museum.Status.PRESERVED) && n.get(Museum.Status.PRESERVED) == 4);
-  Setup.chk("U: none Honoured in Memory: the reward of her value went with 6.47", !n.containsKey(Museum.Status.MEMORY));
-  Setup.chk("U: victories counted, and the Hall before the Memorial", Museum.totalVictories(all) == 6 && all.get(0).victor && !all.get(all.size() - 1).victor);
+  Setup.chk("U: the ones in the museum are Preserved (sold, half, and given in honour)", n.containsKey(Museum.Status.PRESERVED) && n.get(Museum.Status.PRESERVED) == 3);
+  Setup.chk("U: none Honoured in Memory", !n.containsKey(Museum.Status.MEMORY));
+  Setup.chk("U: victories counted, and the Hall before the Memorial", Museum.totalVictories(all) == 5 && all.get(0).victor && !all.get(all.size() - 1).victor);
   Museum.Exhibit kept = null; for (Museum.Exhibit e : all) if (e.status == Museum.Status.IN_SERVICE) kept = e;
   String[] vd = kept.victoryDetails().get(0);
   Setup.chk("U: a victory's details are kept (date, sector, score from the profile)", !vd[0].isEmpty() && !vd[3].isEmpty() && "4431".equals(vd[1]));

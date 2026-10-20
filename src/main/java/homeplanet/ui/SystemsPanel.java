@@ -2,25 +2,14 @@ package homeplanet.ui;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import java.awt.image.BufferedImage;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 
 import net.blerf.ftl.parser.DataManager;
@@ -31,8 +20,8 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.SystemBlueprint;
 
+import homeplanet.model.Words;
 import homeplanet.parser.SaveHelper;
-import homeplanet.resource.ResourceClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,14 +58,14 @@ public class SystemsPanel {
 		Stored(String id, int level) { this(id, level, 0); }
 		Stored(String id, int level, int broken) { this.id = id; this.level = level; this.broken = Math.max(0, broken); }
 		// level 0 = no level of its own (a Clone Bay takes the Medbay's level)
-		public String toString() { return RefitShop.systemTitle(id) + (level > 0 ? " (level " + level + ")" : "") + (broken > 0 ? " (" + broken + " broken)" : ""); }
+		public String toString() { return homeplanet.model.Items.systemTitle(id) + (level > 0 ? " (level " + level + ")" : "") + (broken > 0 ? " (" + broken + " broken)" : ""); }
 	}
 	/** A system installed on the boarded ship. */
 	static class Installed {
 		final SystemType type;
 		final int level;
 		Installed(SystemType type, int level) { this.type = type; this.level = level; }
-		public String toString() { return RefitShop.systemTitle(type.getId()) + " (level " + level + ")"; }
+		public String toString() { return homeplanet.model.Items.systemTitle(type.getId()) + " (level " + level + ")"; }
 	}
 
 	private final CargoBayUI bay;
@@ -107,7 +96,6 @@ public class SystemsPanel {
 	private FtlButton info;
 	private final CargoParts.Label name = new CargoParts.Label("", FtlFont.MENU, CargoParts.GOLD, 0).small(FtlFont.BODY);
 	private final CargoParts.Label sub = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 0);
-	/** What the Cargo Hold can still spend at the Refit, always in view under her name. */
 	/** Who pays the Refit (6.44, heromedel): the ship or the Cargo Bay's hold, remembered; and what that side can spend. The Shop's is the same control (6.45). */
 	private final PayFrom payer = new PayFrom();
 	private final CargoParts.ScrapCount scrapCount = new CargoParts.ScrapCount();
@@ -136,10 +124,10 @@ public class SystemsPanel {
 		if (remodelBtn != null) return panel;
 		panel.setOpaque(false);
 		pic.setBounds(16, 8, 640, 344); // two lines under it now, not three: the picture gets the room (6.44, heromedel)
-		pic.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " rooms and what's in them; a faint icon is a room kept for a system " + homeplanet.model.Words.she() + " doesn't have");
+		pic.setToolTipText(Words.Her() + " rooms and what's in them; a faint icon is a room kept for a system " + Words.she() + " doesn't have");
 		panel.add(pic);
 		name.setBounds(16, 354, 640, 26);
-		name.setToolTipText("Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
+		name.setToolTipText("Click for " + Words.her() + " report, and to rename " + Words.herObj());
 		name.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 		name.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { bay.showCurrentShipInfo(); } });
 		panel.add(name);
@@ -155,7 +143,7 @@ public class SystemsPanel {
 		panel.add(scrapCount);
 		panel.setComponentZOrder(payer, 0);
 		panel.setComponentZOrder(scrapCount, 0);
-		info = new CargoParts.IconButton(CargoParts.infoIcon(), homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report, and to rename " + homeplanet.model.Words.herObj(), new ActionListener() { public void actionPerformed(ActionEvent e) { bay.showCurrentShipInfo(); } });
+		info = new CargoParts.IconButton(CargoParts.infoIcon(), Words.Her() + " report, and to rename " + Words.herObj(), new ActionListener() { public void actionPerformed(ActionEvent e) { bay.showCurrentShipInfo(); } });
 		panel.add(info);
 		lists.setOpaque(false);
 		lists.setBounds(700, 8, 564, CargoBayUI.H - 52 - 26 - 12 - POWER_H);
@@ -168,7 +156,7 @@ public class SystemsPanel {
 		panel.add(power);
 		power.onReorder(new PowerPanel.Reorder() { public void moved(boolean drones, int from, int to) { rearranged(drones, from, to); } });
 		FtlButton powerReset = new FtlButton("Reset", FtlFont.CARGO, 70, 22);
-		powerReset.setToolTipText("Put the power back as " + homeplanet.model.Words.her() + " save has it (the simulation saves nothing)");
+		powerReset.setToolTipText("Put the power back as " + Words.her() + " save has it (the simulation saves nothing)");
 		powerReset.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { power.reset(); } });
 		powerReset.setBounds(16 + 1248 - 74, CargoBayUI.H - 52 - 26 - 4 - POWER_H, 70, 22);
 		panel.add(powerReset);
@@ -192,7 +180,7 @@ public class SystemsPanel {
 		storedScroll.getVerticalScrollBar().setOpaque(false);
 		storedScroll.getVerticalScrollBar().setUnitIncrement(32);
 		remodelBtn = new FtlButton("Remodel...", FtlFont.CARGO, BTN_W, 24);
-		remodelBtn.setToolTipText("Move " + homeplanet.model.Words.her() + " systems and doors, or overhaul " + homeplanet.model.Words.her() + " deck plan (a retrofitted ship only)");
+		remodelBtn.setToolTipText("Move " + Words.her() + " systems and doors, or overhaul " + Words.her() + " deck plan (a retrofitted ship only)");
 		remodelBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String why = homeplanet.parser.Clearance.remodelReason(); // Immersive Mode: a Commander's work (5.56)
@@ -232,7 +220,7 @@ public class SystemsPanel {
 		layoutLbl.setBounds(gx + 30 + tw + 14, 386, Math.min(lw + 4, 640 - (gx - 16) - 30 - tw - 14), 14);
 	}
 	String helpText() {
-		return "Uninstall takes a system off at its level, Up upgrades it, and the Hull row repairs " + homeplanet.model.Words.her() + " hull. Greyed out: hover to see why.";
+		return "Uninstall takes a system off at its level, Up upgrades it, and the Hull row repairs " + Words.her() + " hull. Greyed out: hover to see why.";
 	}
 
 	/** Lays out the installed and stored systems and the layout section. */
@@ -273,8 +261,8 @@ public class SystemsPanel {
 			final SystemType type = t;
 			String why = refitReason(bs, t);
 			int fee = homeplanet.core.Economy.removalFee();
-			SysRow r = new SysRow(RefitShop.systemTitle(t.getId()), st.getCapacity(), "Uninstall", why,
-					why == null ? "Take the " + RefitShop.systemTitle(t.getId()) + " off the ship; it keeps its level" + (fee > 0 ? " (taking it off costs " + fee + " scrap)" : "") : why,
+			SysRow r = new SysRow(homeplanet.model.Items.systemTitle(t.getId()), st.getCapacity(), "Uninstall", why,
+					why == null ? "Take the " + homeplanet.model.Items.systemTitle(t.getId()) + " off the ship; it keeps its level" + (fee > 0 ? " (taking it off costs " + fee + " scrap)" : "") : why,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { storeSystem(type); } });
 			int up = upgradePrice(bs, t), broken = st.getDamagedBars();
 			r.broken = broken;
@@ -283,13 +271,13 @@ public class SystemsPanel {
 			if (broken > 0) { // mended first: then she can be upgraded
 				int scrap = hold(), fix = broken * homeplanet.parser.Pricing.SYSTEM_REPAIR;
 				r.addButton("Fix: " + fix, 78, ROW_W - 108 - 82, scrap >= fix,
-						scrap >= fix ? "Mend the " + RefitShop.systemTitle(t.getId()) + "'s " + broken + (broken == 1 ? " broken bar" : " broken bars") + " for " + fix + " scrap ("
+						scrap >= fix ? "Mend the " + homeplanet.model.Items.systemTitle(t.getId()) + "'s " + broken + (broken == 1 ? " broken bar" : " broken bars") + " for " + fix + " scrap ("
 								+ homeplanet.parser.Pricing.SYSTEM_REPAIR + " a bar)" : "Mending " + broken + (broken == 1 ? " bar" : " bars") + " costs " + fix + " scrap; " + payerName() + " has " + scrap,
 						new ActionListener() { public void actionPerformed(ActionEvent e) { repairSystem(type); } });
 			} else if (up > 0) {
 				int scrap = hold();
 				r.addButton("Up: " + up, 78, ROW_W - 108 - 82, scrap >= up,
-						scrap >= up ? "Upgrade the " + RefitShop.systemTitle(t.getId()) + " to level " + (st.getCapacity() + 1) + " for " + up + " scrap"
+						scrap >= up ? "Upgrade the " + homeplanet.model.Items.systemTitle(t.getId()) + " to level " + (st.getCapacity() + 1) + " for " + up + " scrap"
 						: "Upgrading to level " + (st.getCapacity() + 1) + " costs " + up + " scrap; " + payerName() + " has " + scrap,
 						new ActionListener() { public void actionPerformed(ActionEvent e) { upgradeSystem(type); } });
 			}
@@ -319,8 +307,8 @@ public class SystemsPanel {
 			String why = installReason(s.id);
 			boolean order = why == null && pastLimit(s.id);
 			String damage = s.broken > 0 ? " (" + s.broken + " of its " + s.level + (s.level == 1 ? " bar" : " bars") + " broken, in red: the Refit tab mends them once it's aboard)" : "";
-			SysRow r = new SysRow(RefitShop.systemTitle(s.id), s.level, "Install", why,
-					(why != null ? why : order ? workOrderTip() : "Install the " + RefitShop.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName()) + damage,
+			SysRow r = new SysRow(homeplanet.model.Items.systemTitle(s.id), s.level, "Install", why,
+					(why != null ? why : order ? workOrderTip() : "Install the " + homeplanet.model.Items.systemTitle(s.id) + " on " + bay.currentSave.getPlayerShipName()) + damage,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { installSystem(s); } });
 			r.broken = s.broken;
 			SystemType st2 = SystemType.findById(s.id);
@@ -348,21 +336,20 @@ public class SystemsPanel {
 		layoutLbl.setText("Layout: " + txt + (inGame ? "" : " (not patched in)") + (retro ? " · retrofitted" : ""));
 		lineTwo(cls);
 		layoutLbl.setColor(inGame ? CargoParts.TEXT : CargoParts.ORANGE);
-		layoutLbl.setToolTipText(!retro ? homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " systems are where the ship model puts them"
+		layoutLbl.setToolTipText(!retro ? Words.Her() + " systems are where the ship model puts them"
 				: "Retrofitted: any system can be stored. Blueprint " + id + (inGame ? "" : ". The game data doesn't have it yet: install the mod (Settings > Mods > Patch mods) before launching"));
 		remodelBtn.setEnabled(retro);
 		String remodelLock = homeplanet.parser.Clearance.remodelReason(); // Immersive Mode: a Commander's work (5.56)
-		remodelBtn.setToolTipText(remodelLock == null ? (retro ? "Move " + homeplanet.model.Words.her() + " systems and doors, or overhaul " + homeplanet.model.Words.her() + " deck plan"
-				: "Retrofit first to remodel " + homeplanet.model.Words.herObj() + " or to uninstall standard equipment")
+		remodelBtn.setToolTipText(remodelLock == null ? (retro ? "Move " + Words.her() + " systems and doors, or overhaul " + Words.her() + " deck plan"
+				: "Retrofit first to remodel " + Words.herObj() + " or to uninstall standard equipment")
 				: "<html>" + homeplanet.parser.XmlText.text(remodelLock).replace("\n", "<br>") + "</html>");
 		retrofitBtn.setText(retro ? "Undo Retrofit" : "Retrofit");
-		retrofitBtn.setToolTipText(retro ? "Return this ship to " + homeplanet.model.Words.her() + " original model (needs all " + homeplanet.model.Words.her() + " standard equipment installed)"
+		retrofitBtn.setToolTipText(retro ? "Return this ship to " + Words.her() + " original model (needs all " + Words.her() + " standard equipment installed)"
 				: "Let this ship remove any system, including standard equipment (needs the " + homeplanet.parser.Retrofit.MOD_NAME + ")");
 		lists.revalidate();
 		lists.repaint();
 	}
 
-	/** A system line: name, level bars, and its Uninstall or Install button (greyed out with the reason on hover). */
 	/** Where a row's bars start (6.42: left of where they were, so FTL's eight always clear the Up button). */
 	private static final int BARS_X = 296;
 	private static class SysRow extends JComponent {
@@ -457,12 +444,11 @@ public class SystemsPanel {
 		}
 	}
 
-	/** Adds the stored-systems list to the Cargo Bay's save, if it changed (written with the ships, or not at all). */
 	/** True when the ship pays the Refit (the switch on Ship), else the Cargo Hold does. */
 	static boolean shipPays() { return "ship".equals(homeplanet.core.HomePlanet.config.getProperty(CFG_PAYS)); }
 	/** Who pays, as a sentence names it: "the Kestrel" or "the Cargo Hold". */
 	String payerName() { return shipPays() && bay.currentSave != null ? homeplanet.parser.ShipNames.the(bay.currentSave.getPlayerShipName()) : "the Cargo Hold"; }
-	private static String cap(String s) { return homeplanet.model.Words.cap(s); }
+	private static String cap(String s) { return Words.cap(s); }
 	/** The switch flipped: the other side pays from now on, if it can cover what's on the bill. */
 	private void switchPayer() {
 		boolean toShip = !payer.cargo();
@@ -671,7 +657,7 @@ public class SystemsPanel {
 		}
 		SystemState st = bs.getSystem(sel.type);
 		if (st == null || st.getCapacity() <= 0) return false;
-		String name = RefitShop.systemTitle(sel.type.getId());
+		String name = homeplanet.model.Items.systemTitle(sel.type.getId());
 		int broken = st.getDamagedBars(); // a damaged system goes into storage damaged: storing is no free repair
 		int fee = homeplanet.core.Economy.removalFee();
 		if (fee > 0 && homeplanet.core.Economy.repForVanillaBreaking()) { // scrap or reputation (heromedel, 5.13)
@@ -722,7 +708,7 @@ public class SystemsPanel {
 		SavedGameState save = bay.currentSave;
 		ShipState bs = save.getPlayerShip();
 		SystemType type = SystemType.findById(sel.id);
-		String name = RefitShop.systemTitle(sel.id);
+		String name = homeplanet.model.Items.systemTitle(sel.id);
 		if (SaveHelper.pastSystemLimit(bs, type)) { // past FTL's System Limit: a custom work order, on the Refit's bill
 			int fee = homeplanet.core.Economy.workOrderScrap(), rep = homeplanet.core.Economy.workOrderRep();
 			if (hold() < fee || repHave() < rep) {
@@ -795,7 +781,7 @@ public class SystemsPanel {
 	 */
 	static InfoTip.Model info(String id, int level, int max, String why) {
 		net.blerf.ftl.xml.SystemBlueprint sb = DataManager.get().getSystem(id);
-		String title = sb != null && sb.getTitle() != null ? sb.getTitle().getTextValue() : RefitShop.systemTitle(id);
+		String title = sb != null && sb.getTitle() != null ? sb.getTitle().getTextValue() : homeplanet.model.Items.systemTitle(id);
 		String desc = sb != null && sb.getDescription() != null ? sb.getDescription().getTextValue() : "";
 		InfoTip.Model m = new InfoTip.Model(title, desc);
 		// past the system's most, FTL lists a level no upgrade buys (the doors' and sensors' fourth), its price a dash
@@ -888,7 +874,7 @@ public class SystemsPanel {
 		int breaches = bs.getBreachMap().size();
 		if (breaches > 0) {
 			int seal = breaches * homeplanet.parser.Pricing.BREACH_REPAIR;
-			SysRow br = new SysRow("Hull breaches: " + breaches, -1, "", null, "Holes in " + homeplanet.model.Words.her() + " hull, venting air: " + homeplanet.parser.Pricing.BREACH_REPAIR + " scrap each to seal", null);
+			SysRow br = new SysRow("Hull breaches: " + breaches, -1, "", null, "Holes in " + Words.her() + " hull, venting air: " + homeplanet.parser.Pricing.BREACH_REPAIR + " scrap each to seal", null);
 			br.addButton("Seal: " + seal, 78, ROW_W - 82, scrap >= seal, scrap >= seal ? "Seal all " + breaches + " for " + seal + " scrap" : "Sealing them costs " + seal + " scrap; " + payerName() + " has " + scrap,
 					new ActionListener() { public void actionPerformed(ActionEvent e) { sealBreaches(); } });
 			br.setBounds(0, y, w, 28);
@@ -914,9 +900,9 @@ public class SystemsPanel {
 		SystemState st = bs.getSystem(t);
 		st.setCapacity(st.getCapacity() + 1);
 		if (t.isSubsystem()) st.setPower(st.getCapacity()); // subsystems run at their full level
-		changes.add("Upgraded " + RefitShop.systemTitle(t.getId()) + " to level " + st.getCapacity() + " for " + price + " scrap");
+		changes.add("Upgraded " + homeplanet.model.Items.systemTitle(t.getId()) + " to level " + st.getCapacity() + " for " + price + " scrap");
 		changed();
-		bay.help("Upgraded the " + RefitShop.systemTitle(t.getId()) + " to level " + st.getCapacity() + ". Save makes it official.");
+		bay.help("Upgraded the " + homeplanet.model.Items.systemTitle(t.getId()) + " to level " + st.getCapacity() + ". Save makes it official.");
 	}
 	private void upgradeReactor() {
 		ShipState bs = bay.currentSave.getPlayerShip();
@@ -935,9 +921,9 @@ public class SystemsPanel {
 		if (!charge(price)) return;
 		st.setDamagedBars(0);
 		if (t.isSubsystem()) st.setPower(st.getCapacity()); // subsystems run at their full level
-		changes.add("Mended the " + RefitShop.systemTitle(t.getId()) + " (" + n + (n == 1 ? " bar" : " bars") + ") for " + price + " scrap");
+		changes.add("Mended the " + homeplanet.model.Items.systemTitle(t.getId()) + " (" + n + (n == 1 ? " bar" : " bars") + ") for " + price + " scrap");
 		changed();
-		bay.help("Mended the " + RefitShop.systemTitle(t.getId()) + ". Save makes it official.");
+		bay.help("Mended the " + homeplanet.model.Items.systemTitle(t.getId()) + ". Save makes it official.");
 	}
 	private void sealBreaches() {
 		ShipState bs = bay.currentSave.getPlayerShip();
@@ -966,7 +952,7 @@ public class SystemsPanel {
 		net.blerf.ftl.xml.SystemBlueprint sbp = net.blerf.ftl.parser.DataManager.get().getSystem(id);
 		int level = t == SystemType.CLONEBAY ? 0 : sbp != null ? Math.max(1, sbp.getStartPower()) : 1; // a Clone Bay takes the Medbay's level
 		stored.add(new Stored(id, level));
-		changes.add("Bought " + RefitShop.systemTitle(id) + (level > 0 ? " (level " + level + ")" : "") + " into the Cargo Hold");
+		changes.add("Bought " + homeplanet.model.Items.systemTitle(id) + (level > 0 ? " (level " + level + ")" : "") + " into the Cargo Hold");
 		changed();
 	}
 	/** The systems stored in the Cargo Hold, as the Cargo Bay holds them now (unsaved sales gone). */
@@ -979,7 +965,7 @@ public class SystemsPanel {
 		return Math.max(0, full - s.broken * homeplanet.parser.Pricing.brokenBarValue(s.id)); // a buyer takes off what mending it costs
 	}
 	private void sellSystem(Stored sel) {
-		String name = RefitShop.systemTitle(sel.id) + (sel.level > 0 ? " (level " + sel.level + ")" : "");
+		String name = homeplanet.model.Items.systemTitle(sel.id) + (sel.level > 0 ? " (level " + sel.level + ")" : "");
 		int price = salePrice(sel);
 		if (!homeplanet.core.HomePlanet.confirmNo(bay, "Sell the " + name + " for " + price + " scrap?\n" + cap(payerName()) + " is paid (on Save).", "Sell")) return;
 		stored.remove(sel);
@@ -997,7 +983,7 @@ public class SystemsPanel {
 		for (SystemType t : SystemType.values()) {
 			SystemState st = wreck.getSystem(t);
 			if (st == null || st.getCapacity() <= 0 || storeReason(wreck, t) != null) continue;
-			String name = RefitShop.systemTitle(t.getId());
+			String name = homeplanet.model.Items.systemTitle(t.getId());
 			int level = t == SystemType.CLONEBAY ? 0 : st.getCapacity(), broken = level > 0 ? st.getDamagedBars() : 0; // damaged systems are kept, damaged
 			store.add(homeplanet.vault.StoredSystems.line(t.getId(), level, broken));
 			lines.add("+ " + name + (level > 0 ? " (level " + level + (broken > 0 ? ", " + broken + " broken" : "") + ")" : "") + " (system)");
@@ -1019,11 +1005,11 @@ public class SystemsPanel {
 		for (SystemType t : SystemType.values()) {
 			SystemState st = wreck.getSystem(t);
 			if (st == null || st.getCapacity() <= 0 || storeReason(wreck, t) != null) continue;
-			String name = RefitShop.systemTitle(t.getId()) + (t == SystemType.CLONEBAY ? "" : " (level " + st.getCapacity() + (st.getDamagedBars() > 0 ? ", " + st.getDamagedBars() + " broken" : "") + ")");
+			String name = homeplanet.model.Items.systemTitle(t.getId()) + (t == SystemType.CLONEBAY ? "" : " (level " + st.getCapacity() + (st.getDamagedBars() > 0 ? ", " + st.getDamagedBars() + " broken" : "") + ")");
 			moved.add(name);
 		}
 		StringBuilder sb = new StringBuilder();
-		if (moved.isEmpty()) sb.append(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " has no systems that can be stored; standard equipment stays with the hull.\n");
+		if (moved.isEmpty()) sb.append(Words.She() + " has no systems that can be stored; standard equipment stays with the hull.\n");
 		for (int i = 0; i < moved.size(); i += 3) {
 			boolean more = i + 3 < moved.size();
 			sb.append(i == 0 ? "Systems to the Cargo Bay: " : "    ").append(String.join(", ", moved.subList(i, Math.min(i + 3, moved.size())))).append(more ? ",\n" : "\n");
@@ -1057,9 +1043,9 @@ public class SystemsPanel {
 			List<String> missing = homeplanet.parser.Retrofit.missingStandard(ship);
 			if (!missing.isEmpty()) {
 				List<String> names = new ArrayList<String>();
-				for (String id : missing) names.add(RefitShop.systemTitle(id));
-				JOptionPane.showMessageDialog(bay, name + " is missing standard equipment of " + homeplanet.model.Words.her() + " original model:\n" + String.join(", ", names)
-						+ "\n\nInstall these on " + homeplanet.model.Words.herObj() + " first; otherwise FTL would rebuild them for free.", "Undo Retrofit", JOptionPane.INFORMATION_MESSAGE);
+				for (String id : missing) names.add(homeplanet.model.Items.systemTitle(id));
+				JOptionPane.showMessageDialog(bay, name + " is missing standard equipment of " + Words.her() + " original model:\n" + String.join(", ", names)
+						+ "\n\nInstall these on " + Words.herObj() + " first; otherwise FTL would rebuild them for free.", "Undo Retrofit", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
 			String moves = "";
@@ -1070,21 +1056,21 @@ public class SystemsPanel {
 				StringBuilder sb = new StringBuilder();
 				for (homeplanet.parser.CompanionMod.Sys o : orig.values()) {
 					homeplanet.parser.CompanionMod.Sys n = now.get(o.id);
-					if (n != null && n.room != o.room) sb.append("\n  ").append(RefitShop.systemTitle(o.id)).append(": room ").append(n.room).append(" -> room ").append(o.room);
+					if (n != null && n.room != o.room) sb.append("\n  ").append(homeplanet.model.Items.systemTitle(o.id)).append(": room ").append(n.room).append(" -> room ").append(o.room);
 				}
 				homeplanet.parser.CompanionMod.Remodel mine = homeplanet.parser.CompanionMod.find(
 						homeplanet.parser.CompanionMod.load(), ship.getShipBlueprintId());
 				if (mine != null && mine.doors != null) sb.append("\n  Doors: back to the model's own");
-				if (sb.length() > 0) moves = "\n" + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " remodel is set aside (kept on file) and these move back:" + sb + "\n";
+				if (sb.length() > 0) moves = "\n" + Words.Her() + " remodel is set aside (kept on file) and these move back:" + sb + "\n";
 			}
 			// a system her original model has no room for (artillery, on anything but a Federation Cruiser) comes off her into the stored systems
 			List<SystemType> homeless = homeplanet.parser.Retrofit.homeless(ship);
 			if (!homeless.isEmpty()) {
 				StringBuilder sb = new StringBuilder();
-				for (SystemType t : homeless) sb.append("\n  ").append(RefitShop.systemTitle(t.getId())).append(": no room on " + homeplanet.model.Words.her() + " original model, to the stored systems");
-				moves += "\nTaken off " + homeplanet.model.Words.herObj() + ":" + sb + "\n";
+				for (SystemType t : homeless) sb.append("\n  ").append(homeplanet.model.Items.systemTitle(t.getId())).append(": no room on " + Words.her() + " original model, to the stored systems");
+				moves += "\nTaken off " + Words.herObj() + ":" + sb + "\n";
 			}
-			if (JOptionPane.showConfirmDialog(bay, "Return " + name + " to " + homeplanet.model.Words.her() + " original ship model?\n" + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " standard equipment can no longer be stored afterwards.\n" + moves,
+			if (JOptionPane.showConfirmDialog(bay, "Return " + name + " to " + Words.her() + " original ship model?\n" + Words.Her() + " standard equipment can no longer be stored afterwards.\n" + moves,
 					"Undo Retrofit", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
 			for (SystemType t : homeless) {
 				SystemState st = ship.getSystem(t);
@@ -1092,12 +1078,12 @@ public class SystemsPanel {
 				clear(st);
 				stored.add(new Stored(t.getId(), level, broken));
 				storedSomething = true;
-				changes.add("Stored " + RefitShop.systemTitle(t.getId()) + " (level " + level + (broken > 0 ? ", " + broken + " broken" : "") + ") from " + name + ": no room on " + homeplanet.model.Words.her() + " original model");
+				changes.add("Stored " + homeplanet.model.Items.systemTitle(t.getId()) + " (level " + level + (broken > 0 ? ", " + broken + " broken" : "") + ") from " + name + ": no room on " + Words.her() + " original model");
 			}
 		} else {
-			if (JOptionPane.showConfirmDialog(bay, "Prepare " + name + " so any of " + homeplanet.model.Words.her() + " systems can be removed, including standard equipment.\n\n"
-					+ "Warning: FTL may no longer count " + homeplanet.model.Words.herObj() + " as the original ship model for achievements.\n"
-					+ homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " will only load in FTL once the " + homeplanet.parser.Retrofit.MOD_NAME + " has been sent to FTL via Slipstream.",
+			if (JOptionPane.showConfirmDialog(bay, "Prepare " + name + " so any of " + Words.her() + " systems can be removed, including standard equipment.\n\n"
+					+ "Warning: FTL may no longer count " + Words.herObj() + " as the original ship model for achievements.\n"
+					+ Words.She() + " will only load in FTL once the " + homeplanet.parser.Retrofit.MOD_NAME + " has been sent to FTL via Slipstream.",
 					"Retrofit", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
 		}
 		String before = ship.getShipBlueprintId();
@@ -1116,7 +1102,7 @@ public class SystemsPanel {
 		}
 		changes.add((undo ? "Undo Retrofit: " : "Retrofit: ") + before + " -> " + ship.getShipBlueprintId());
 		changed();
-		JOptionPane.showMessageDialog(bay, (undo ? name + " will return to " + homeplanet.model.Words.her() + " original ship model." : name + " will be retrofitted: any of " + homeplanet.model.Words.her() + " systems can be stored.")
+		JOptionPane.showMessageDialog(bay, (undo ? name + " will return to " + Words.her() + " original ship model." : name + " will be retrofitted: any of " + Words.her() + " systems can be stored.")
 				+ "\nPress Save to make it official.", undo ? "Undo Retrofit" : "Retrofit", JOptionPane.INFORMATION_MESSAGE);
 	}
 

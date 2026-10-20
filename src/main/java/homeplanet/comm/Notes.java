@@ -131,7 +131,7 @@ public final class Notes {
 	/** For a message that waited in its sender's Outbox: when it was written. */
 	public static String waitedNote(Note n) {
 		if (n.written <= 0 || System.currentTimeMillis() - n.written < 120000) return "";
-		return "\n\n(Written " + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date(n.written))
+		return "\n\n(Written " + homeplanet.core.Stamps.at(n.written)
 				+ ", while your station was out of range: it waited in their Outbox.)";
 	}
 	/** Answers the sender: where the message went (or why it didn't), and closes the link. */
@@ -159,7 +159,7 @@ public final class Notes {
 			if (why != null) refused = myTitle + "'s station can't take the shipment: " + why;
 		}
 		if (refused != null) { answer(ch, null, refused); return null; }
-		Contacts.seen(n.station, n.title, n.shipment != null ? n.mode : null, ch.host, n.replyPort, true);
+		Contacts.seen(n.station, n.title, n.shipment != null ? n.mode : null, ch.host, n.replyPort);
 		if (n.shipment != null) {
 			try { Shipments.receive(n, ch.host); }
 			catch (IOException e) { answer(ch, null, myTitle + "'s station could not hold the shipment: " + e.getMessage()); return null; }

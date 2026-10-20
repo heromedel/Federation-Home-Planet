@@ -1,9 +1,9 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.parser.SavedGameParser.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
 /**
- * Who a ship is (6.10, heromedel's Plan N): her career and origin in her record, the one-time check of a fleet from
- * before 6.10 (her fingerprint or her history), her mark in every save, saves and records found where no ship holds
+ * Who a ship is (6.10, heromedel's Plan N): her career and origin in her record (7.0: a record without them waits for the
+ * player's word, nothing is taken on evidence), her mark in every save, saves and records found where no ship holds
  * them (and the player's word on them), Restore marking again, and Destroy in a career sending her on to Sandbox Mode.
- * args: gamedir, world saves (from WorldT; their records are made as before 6.10 here), work
+ * args: gamedir, world saves (from WorldT; their records are stripped of career and origin here), work
  */
 public class IdT {
  static File saves;
@@ -15,29 +15,33 @@ public class IdT {
   HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive();
   Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
 
-  // 1. the one-time check: every ship of a fleet from before 6.10 accepted, her career and origin written, her save marked
-  boolean all = true, pre = true, marked = true; String origins = "";
+  // 1. records with no career or origin (7.0): every one waits for the player's word, off the fleet's list; taken in, each gets her career and origin, her save its mark
+  if (v.boarded() != null) { v.dock(); v = reopen(game); } // the boarded ship's record was stripped too: docked, she waits like the rest
+  int waiting = 0; for (Vault.Found f : v.found()) if (f.kind == Vault.Found.Kind.UNPROVEN) waiting++;
+  Setup.chk("C: nothing is taken on evidence: every ship whose record lacks a career or origin waits for the player's word (" + waiting + ")", waiting > 0 && ships(v).isEmpty());
+  for (Vault.Found f : new ArrayList<Vault.Found>(v.found())) v.accept(f);
+  v = reopen(game);
+  boolean all = true, marked = true;
   for (Ship s : ships(v)) {
    ShipStore.Record r = ShipStore.read(v.folderOf(s));
    if (r == null || !Vault.SANDBOX.equals(r.career) || r.origin.isEmpty()) all = false;
-   else { if (!r.origin.contains(".pre-6.10.") || !r.origin.contains(".verified-")) pre = false; origins += r.origin + " "; }
    ShipMark.Found m = ShipMark.read(v.fileOf(s));
    if (m == null || !s.id.equals(m.id) || !Vault.SANDBOX.equals(m.career)) marked = false;
   }
-  Setup.chk("C: nothing waits on the player: every ship of the fleet is its own", v.found().isEmpty());
-  Setup.chk("C: every record has her career and origin", all);
-  Setup.chk("C: origins from before 6.10 say so, and what proved them (" + origins.trim() + ")", pre);
+  Setup.chk("C: taken in: in the fleet, nothing waiting, every record with her career and origin", ships(v).size() == waiting && v.found().isEmpty() && all);
   Setup.chk("C: every save carries her mark", marked);
-  Setup.chk("C: the check is logged, ship by ship", log(v).contains("what=checked"));
+  Setup.chk("C: taking them in is logged, ship by ship", log(v).contains("what=taken_in"));
 
-  // 2. a save edited elsewhere (her fingerprint gone), with her history in the log: accepted by her history
+  // 2. a save edited elsewhere (her fingerprint gone) and her record unknown: she waits for the player's word, whatever her history in the log
   Ship x = ships(v).get(0); String xId = x.id;
   unknow(v.folderOf(x));
   editSave(v.fileOf(x));
   v = reopen(game);
-  ShipStore.Record xr = ShipStore.read(v.folderOf(v.byId(xId)));
-  Setup.chk("H: her save edited elsewhere, her history in the log: accepted by it (" + xr.origin + ")", v.byId(xId) != null && v.found().isEmpty() && xr.origin.contains("verified-log-"));
-  Setup.chk("H: her edited save marked again", xId.equals(ShipMark.read(v.fileOf(v.byId(xId))).id));
+  Vault.Found xf = only(v, Vault.Found.Kind.UNPROVEN);
+  Setup.chk("H: her record unknown again: offered, not in the fleet, her history in the log notwithstanding", xf != null && xId.equals(xf.id) && v.byId(xId) == null);
+  v.accept(xf);
+  v = reopen(game);
+  Setup.chk("H: taken in again: in the fleet, her edited save marked again", v.byId(xId) != null && xId.equals(ShipMark.read(v.fileOf(v.byId(xId))).id));
 
   // 3. a ship's folder with no evidence (a copy made by hand, under an id this fleet never knew): offered, never listed
   Ship y = ships(v).get(1);

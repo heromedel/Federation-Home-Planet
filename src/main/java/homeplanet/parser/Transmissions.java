@@ -11,11 +11,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -26,7 +24,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.HomePlanet;
 import homeplanet.core.SafeFiles;
 import homeplanet.model.Items;
@@ -121,19 +119,7 @@ public final class Transmissions {
 	}
 	/** The letters of a letters.xml, in order: each one's key, its header attributes, and its text as written. */
 	static List<Template> letters(byte[] bytes) throws IOException {
-		Element root;
-		try {
-			DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
-			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-			f.setExpandEntityReferences(false);
-			javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
-			b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
-				@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
-			});
-			root = b.parse(new java.io.ByteArrayInputStream(bytes)).getDocumentElement();
-		} catch (Exception e) {
-			throw new IOException("broken XML: " + e.getMessage(), e);
-		}
+		Element root = XmlText.parse(bytes);
 		List<Template> out = new ArrayList<Template>();
 		NodeList nl = root.getElementsByTagName("letter");
 		for (int i = 0; i < nl.getLength(); i++) {
@@ -178,9 +164,9 @@ public final class Transmissions {
 		File f = file();
 		if (!f.isFile()) return out;
 		try {
-			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f);
-			emptyOpen = "true".equals(doc.getDocumentElement().getAttribute("emptyOpen"));
-			strandedOpen = "true".equals(doc.getDocumentElement().getAttribute("strandedOpen"));
+			Element doc = XmlText.parse(f);
+			emptyOpen = "true".equals(doc.getAttribute("emptyOpen"));
+			strandedOpen = "true".equals(doc.getAttribute("strandedOpen"));
 			NodeList ns = doc.getElementsByTagName("message");
 			for (int i = 0; i < ns.getLength(); i++) {
 				Element e = (Element) ns.item(i);
@@ -239,7 +225,6 @@ public final class Transmissions {
 
 	// ---- what's due ----
 
-	/** The player's rank, as messages name it. */
 	/** The player's rank now, as messages name it (Captain outside Immersive Mode). */
 	public static String rank() {
 		Unlocks u = Unlocks.read();
@@ -248,7 +233,6 @@ public final class Transmissions {
 	private static String rankName(Unlocks u) {
 		return HomePlanet.career() ? PlayerRank.name(PlayerRank.rank(u)) : UnlockGrants.RANKS[0];
 	}
-	/** A layout's name for messages: "Engi Cruiser, Type A". */
 	/**
 	 * The letter for a commission order: a ship's own tells the story of her Type A's unlock (the Zoltan Council's
 	 * offer, the Mantis raider), so her Type B and C get her people's second letter (`order:nextModel:<base>`, which
@@ -318,13 +302,9 @@ public final class Transmissions {
 			for (int i = 1; i <= r; i++) send(all, sent, "promo:" + i, "promo:" + i, rank, null);
 		}
 		if (HomePlanet.career() && PlayerRank.mode() == PlayerRank.FROM_REP && Career.started(v.root)) { // the reputation ladder (heromedel, 5.56)
-			PlayerRank.Climb c = PlayerRank.climb(v, homeplanet.vault.Reputation.total(v), u);
+			List<Integer> promoted = PlayerRank.climb(v, homeplanet.vault.Reputation.total(v));
 			rank = rankName(u);
-			if (c.first) { // a career from before: its rank's own letter, once, with up to three accolades (heromedel, 5.57; a Major has none)
-					int at = java.util.Arrays.asList(PlayerRank.REP_RANKS).indexOf(rank);
-					if (at >= 1) send(all, sent, "rank:ladder", "rank:" + at, rank, null);
-				}
-			for (int r : c.promoted) send(all, sent, "rank:" + r, "rank:" + r, rank, null);
+			for (int r : promoted) send(all, sent, "rank:" + r, "rank:" + r, rank, null);
 		}
 		// one order per free command (the fleet's start, a plea for a new ship), never for an empty shipyard alone
 		boolean granted = v.freeCommandOpen();
@@ -371,7 +351,7 @@ public final class Transmissions {
 		}
 		for (homeplanet.vault.Overflow.Parcel x : homeplanet.vault.Overflow.take(v)) { // augments she had no room for, crated up by her crew
 			if (homeplanet.core.Economy.augmentsHome()) shipped(v, all, sent, x, rank);
-			else HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career", null, overflow("lost", x));
+			else StationLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home in this career", null, overflow("lost", x));
 		}
 		if (HomePlanet.career() && Career.started(Vault.get().root)) payStipend(all, sent, u, rank);
 		// reply chains: a letter for what the fleet has been through, and the letters now due
@@ -472,7 +452,7 @@ public final class Transmissions {
 		save(all);
 		m.replied = words;
 		m.read = true;
-		HistoryLog.entry("REPLY", m.from + ": " + words, null, letter("REPLY", m).put("reply", words));
+		StationLog.entry("REPLY", m.from + ": " + words, null, letter("REPLY", m).put("reply", words));
 	}
 	/** The stipend for whole months travelled (every 30 to 60 beacons, by difficulty), in one message: its scrap is claimed into the Cargo Hold. */
 	private static void payStipend(List<Message> all, java.util.Set<String> sent, Unlocks u, String rank) {
@@ -485,7 +465,7 @@ public final class Transmissions {
 		String period = "stipend for the last " + (monthsPaid == 1 ? "month" : monthsPaid + " months"); // a payment every monthsPerStipend months, as the rules say
 		Message m = new Message();
 		m.key = "stipend:" + stamp();
-		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.date = homeplanet.core.Stamps.now();
 		m.from = t.from;
 		m.subject = Character.toUpperCase(period.charAt(0)) + period.substring(1) + ": " + amount + " scrap";
 		m.body = fill(t.body.toString().trim(), rank, null).replace("{period}", period).replace("{amount}", Integer.toString(amount));
@@ -507,7 +487,7 @@ public final class Transmissions {
 			return;
 		}
 		sent.add(m.key);
-		HistoryLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + (months == 1 ? "one stipend" : months + " stipends") + ")", null, Event.of("STIPEND").put("scrap", amount).put("months", months));
+		StationLog.entry("STIPEND", amount + " scrap issued, to claim from the inbox (" + (months == 1 ? "one stipend" : months + " stipends") + ")", null, Event.of("STIPEND").put("scrap", amount).put("months", months));
 	}
 	/** A stipend's notice: deleted rather than archived once claimed, so they don't pile up. */
 	public static boolean isStipend(Message m) { return m.key.startsWith("stipend:"); }
@@ -584,14 +564,14 @@ public final class Transmissions {
 		if (t == null) return;
 		Message m = new Message();
 		m.key = key;
-		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.date = homeplanet.core.Stamps.now();
 		m.from = t[0];
 		m.subject = t[1];
 		m.body = t[2];
 		m.reward = "";
 		all.add(0, m);
 		save(all);
-		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "posted"));
+		StationLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "posted"));
 	}
 	/** A rescued ship's offer (keep her, or the museum's price), until it's decided. */
 	public static boolean isRescue(Message m) { return m.key.startsWith("rescue:"); }
@@ -619,7 +599,7 @@ public final class Transmissions {
 		for (Message x : all) if (x.key.equals(key)) return;
 		Message m = new Message();
 		m.key = key;
-		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.date = homeplanet.core.Stamps.now();
 		m.from = from;
 		m.subject = subject;
 		m.body = body;
@@ -627,7 +607,7 @@ public final class Transmissions {
 		all.add(0, m);
 		try {
 			save(all);
-			HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "delivered").put("reward", m.reward.isEmpty() ? null : m.reward));
+			StationLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "delivered").put("reward", m.reward.isEmpty() ? null : m.reward));
 		} catch (IOException e) {
 			log.warn("Could not deliver {}: {}", key, e.toString());
 		}
@@ -666,9 +646,9 @@ public final class Transmissions {
 			Ship st = v.storage();
 			Vault.Copy c = v.readCopy(st);
 			for (homeplanet.vault.Overflow.Parcel x : ps) {
-				if (!homeplanet.core.Economy.augmentsHome()) { HistoryLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home", null, overflow("lost", x)); continue; }
+				if (!homeplanet.core.Economy.augmentsHome()) { StationLog.entry("OVERFLOW", Items.title(x.augment) + " is lost: augments with no room aboard aren't shipped home", null, overflow("lost", x)); continue; }
 				c.save.getPlayerShip().getAugmentIdList().add(x.augment);
-				HistoryLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of " + ShipNames.the(x.ship) + ", is in the Cargo Hold", null, overflow("shipped_home", x).put("to", "hold"));
+				StationLog.entry("OVERFLOW", Items.title(x.augment) + ", shipped home by the crew of " + ShipNames.the(x.ship) + ", is in the Cargo Hold", null, overflow("shipped_home", x).put("to", "hold"));
 			}
 			v.begin().put(st, c.save, c.hash).commit();
 		} catch (IOException e) {
@@ -707,22 +687,19 @@ public final class Transmissions {
 		if (t == null) return; // no message written for it
 		Message m = new Message();
 		m.key = key;
-		m.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		m.date = homeplanet.core.Stamps.now();
 		m.from = t.from;
 		m.subject = ShipNames.fill(fill(t.subject, rank, ship), "name", name);
 		m.body = ShipNames.fill(fill(t.body.toString().trim(), rank, ship), "name", name);
 		if (base != null) m.body = m.body.replace("{race}", raceOf(base)).replace("{cruiser}", className(base));
-		if (m.body.contains(Accolades.TOKEN)) { // what the career did, once each (5.57); an old career confirmed three ranks up or more gets three
-			int up = key.equals("rank:ladder") ? java.util.Arrays.asList(PlayerRank.REP_RANKS).indexOf(rank) : 0;
-			m.body = Accolades.fill(Vault.isOpen() ? Vault.get() : null, key, m.body, up >= 3 ? 3 : 1);
-		}
+		if (m.body.contains(Accolades.TOKEN)) m.body = Accolades.fill(Vault.isOpen() ? Vault.get() : null, key, m.body); // what the career did, once each (5.57)
 		m.reward = t.reward;
 		m.replies = t.replies;
 		m.cost = t.cost;
 		if (finish != null) finish.accept(m);
 		all.add(0, m); // newest first
 		sent.add(key);
-		HistoryLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "sent").put("reward", m.reward == null || m.reward.isEmpty() ? null : m.reward));
+		StationLog.entry("TRANSMISSION", m.from + ": " + m.subject, null, letter("TRANSMISSION", m).put("how", "sent").put("reward", m.reward == null || m.reward.isEmpty() ? null : m.reward));
 	}
 	private static String fill(String s, String rank, String ship) {
 		if (s.contains("{start}")) s = s.replace("{start}", Integer.toString(Career.startingScrap())); // the career's sign-on bonus, by difficulty
@@ -730,7 +707,6 @@ public final class Transmissions {
 		s = homeplanet.model.Words.ship(s); // {she}, {her}: the Ship Pronoun setting
 		return ShipNames.fill(s.replace("{rank}", rank), "ship", ship); // "the {ship}" fitted to the ship's name (5.31)
 	}
-	/** Has a letter with this key been sent to this fleet? */
 	/** An event about a letter: its key, who it is from and its subject. */
 	private static Event letter(String kind, Message m) { return Event.of(kind).put("key", m.key).put("from", m.from).put("subject", m.subject); }
 	/** An event about an augment the boarded ship had no room for. */
@@ -819,19 +795,13 @@ public final class Transmissions {
 			String[] w = p.split("\\s+", 2);
 			String kind = w[0], val = w.length > 1 ? w[1].trim() : "";
 			if (kind.equals("scrap")) s.setScrapAmt(s.getScrapAmt() + Integer.parseInt(val));
-			else if (kind.equals("fuel")) s.setFuelAmt(s.getFuelAmt() + Integer.parseInt(val));
-			else if (kind.equals("missiles")) s.setMissilesAmt(s.getMissilesAmt() + Integer.parseInt(val));
-			else if (kind.equals("parts")) s.setDronePartsAmt(s.getDronePartsAmt() + Integer.parseInt(val));
+			else if (kind.equals(Parts.FUEL) || kind.equals(Parts.MISSILES) || kind.equals(Parts.DRONE_PARTS)) SaveHelper.addSupply(s, kind, Integer.parseInt(val));
 			else if (kind.equals("item")) {
-				if (Items.isWeapon(val)) s.getWeaponList().add(SaveHelper.newIdleWeapon(val));
-				else if (Items.isDrone(val)) s.getDroneList().add(SaveHelper.newIdleDrone(val));
-				else if (Items.isAugment(val)) s.getAugmentIdList().add(val);
-				else throw new IOException("Unknown item in the reward: " + val);
+				if (!SaveHelper.addItem(s, val)) throw new IOException("Unknown item in the reward: " + val);
 			} else if (kind.equals("crew")) {
 				CrewState crew = Commission.volunteer(val, rng);
 				if (crew == null) throw new IOException("Unknown crew race in the reward: " + val);
-				if (!SaveHelper.placeCrew(s, crew, true)) throw new IOException("The Cargo Hold has no room for another crew member");
-				s.getCrewList().add(crew);
+				SaveHelper.takeIn(s, crew, "The Cargo Hold has no room for another crew member");
 			} else if (kind.equals("system")) {
 				String[] sv = val.split("\\s+");
 				SystemType t = SystemType.findById(sv[0]);
@@ -861,7 +831,7 @@ public final class Transmissions {
 		}
 		m.claimed = true;
 		m.claimedWhat = what;
-		HistoryLog.entry("CLAIM", m.subject + ": " + what + " to the Cargo Hold", null, letter("CLAIM", m).put("what", what).put("to", "hold"));
+		StationLog.entry("CLAIM", m.subject + ": " + what + " to the Cargo Hold", null, letter("CLAIM", m).put("what", what).put("to", "hold"));
 		return what;
 	}
 	/** Moves a message to the Archive (read), or back to the inbox. */

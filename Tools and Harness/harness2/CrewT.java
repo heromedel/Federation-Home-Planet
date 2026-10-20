@@ -5,8 +5,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive(); HomePlanet.expeditionType = 2;
  Vault v = Setup.open(game, saves); v.storage();
- HistoryLog.entry("CREW", "Old Hand assigned to the Cargo Hold."); // before the register: read in once
- Setup.voyage(v, "Test Kestrel", "Crew lost: Old Hand (Human)"); // a namesake lost long ago: never pinned on the living one
+ Setup.voyage(v, "Test Kestrel", "Crew lost: Old Hand (Human)"); // a namesake lost before the register: never pinned on the living one (7.0: nothing before the register is read)
  List<CrewState> hold = ExpT.hold(v, "human", "human", "engi", "rock", "human");
  // two namesakes, told apart by their colouring and service record
  Vault.Copy c = v.readCopy(v.storage());
@@ -21,15 +20,15 @@ public class CrewT { public static void main(String[] a) throws Exception {
  for (Ship s : v.all()) { if (s.save() != null && s.save().getPlayerShip() != null) fleet += SaveHelper.getOwnCrew(s.save().getPlayerShip()).size(); }
  Setup.chk("R: a new register: everyone in the fleet has an id, all present", count(m, CrewRegister.Status.PRESENT) == fleet && CrewRegister.registerFileOf(v).isFile() && CrewRegister.fileOf(v, m.get(0).id) != null);
  CrewRegister.Member oldHand = find(m, "Old Hand", CrewRegister.Status.PRESENT);
- Setup.chk("R: the logs read once: the living Old Hand keeps the move, the one lost long ago has an entry of their own",
-   oldHand != null && said(oldHand, "Moved to the Cargo Hold.") && !said(oldHand, "Lost aboard") && find(m, "Old Hand", CrewRegister.Status.KILLED) != null);
+ Setup.chk("R: the register starts from today: the living Old Hand on the records, nothing of the one lost before it",
+   oldHand != null && said(oldHand, "On the station's records from this day") && !said(oldHand, "Lost aboard") && find(m, "Old Hand", CrewRegister.Status.KILLED) == null);
  List<CrewRegister.Member> twins = all(m, "Twin");
  Setup.chk("R: two namesakes, two ids", twins.size() == 2 && twins.get(0).id != twins.get(1).id);
 
  // one Twin sent away: the other stays, and each keeps their own id
- List<CrewState> now = Expeditions.holdCrew(v);
+ List<CrewState> now = AwayCrew.holdCrew(v);
  CrewState veteran = null; for (CrewState x : now) if (x.getName().equals("Twin") && (veteran == null || x.getJumpsSurvived() > veteran.getJumpsSurvived())) veteran = x;
- Assignments.send(v, Assignments.board(v).get(0).slot, Collections.singletonList(veteran), new Random(3));
+ Expeditions.send(v, Expeditions.board(v).get(0).slot, Collections.singletonList(veteran), new Random(3));
  v.takeStock();
  m = CrewRegister.members(v);
  CrewRegister.Member away = null, stayed = null;
@@ -58,12 +57,12 @@ public class CrewT { public static void main(String[] a) throws Exception {
  for (Map.Entry<String, String> e : homeplanet.vault.CrewRecord.of(rock).entrySet()) cap.setProperty("0.crew." + e.getKey(), e.getValue());
  c.save.getPlayerShip().getCrewList().remove(rock);
  v.begin().put(v.storage(), c.save, c.hash).commit();
- Store.write(Expeditions.captivesFile(v), cap, null);
+ Store.write(AwayCrew.captivesFile(v), cap, null);
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("C: taken captive: the same id, missing, held by pirates", byId(m, rockId).status == CrewRegister.Status.CAPTIVE && byId(m, rockId).where.contains("pirates"));
  cap.setProperty("0.state", "gone");
- Store.write(Expeditions.captivesFile(v), cap, null);
+ Store.write(AwayCrew.captivesFile(v), cap, null);
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("C: never ransomed: killed, presumed dead", byId(m, rockId).status == CrewRegister.Status.KILLED && said(byId(m, rockId), "presumed dead"));
@@ -121,19 +120,16 @@ public class CrewT { public static void main(String[] a) throws Exception {
  CrewState last = null; for (CrewState x : SaveHelper.getOwnCrew(c.save.getPlayerShip())) if (x.getName().equals("Sparky")) last = x;
  c.save.getPlayerShip().getCrewList().remove(last);
  v.begin().put(v.storage(), c.save, c.hash).commit();
- HistoryLog.entry("RETIRE", "1 crew member", Arrays.asList("Sparky (Engi)  (Spacedock Storage)"));
+ StationLog.entry("RETIRE", "1 crew member", Arrays.asList("Sparky (Engi)  (Spacedock Storage)"));
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("D: retired: retired, the same id", byId(m, engiId).status == CrewRegister.Status.RETIRED && said(byId(m, engiId), "Retired from the station's service."));
 
  // the crew popup's Crew Log...: the one in the popup, never their namesake
- CrewState home = null; for (CrewState x : Expeditions.holdCrew(v)) if (x.getName().equals("Twin")) home = x;
+ CrewState home = null; for (CrewState x : AwayCrew.holdCrew(v)) if (x.getName().equals("Twin")) home = x;
  m = CrewRegister.members(v);
  int homeId = -1; for (CrewRegister.Member x : all(m, "Twin")) if (x.where.equals("in the Cargo Hold")) homeId = x.id;
  Setup.chk("P: the popup's Twin is the Twin in the Cargo Hold, not the one away", home != null && CrewRegister.identify(v, home) == homeId);
- CrewRegister.Member old = find(m, "Old Hand", CrewRegister.Status.KILLED);
- Setup.chk("P: known only from the old logs: a look of their race, made once and kept", old != null && old.crew() != null && old.crew().getRace().getId().equals("human")
-   && Line_name(old).equals("Old Hand") && CrewRegister.members(v).get(m.indexOf(old)).crew().getSpriteTintIndeces().equals(old.crew().getSpriteTintIndeces()));
  Setup.chk("P: the ships they served on, in order", byId(m, goneId).served.size() >= 1);
 
  // traded away over the Long Range (Cloud-C-BugsandFeedback's handoff, 5.47): discharged as traded; a namesake stays
@@ -150,7 +146,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  int sentId = -1, keptId = -1; for (CrewRegister.Member x : all(m, "Tradewell")) { if (x.crew() != null && x.crew().getJumpsSurvived() == 7) sentId = x.id; else keptId = x.id; }
  c.save.getPlayerShip().getCrewList().remove(sent);
  v.begin().put(v.storage(), c.save, c.hash).commit();
- HistoryLog.entry("LONG RANGE TRADE", "with Commander Vance  (trade t1)", Arrays.asList("gave: Tradewell (Human)", "received (in the Cargo Hold): 20 scrap"));
+ StationLog.entry("LONG RANGE TRADE", "with Commander Vance  (trade t1)", Arrays.asList("gave: Tradewell (Human)", "received (in the Cargo Hold): 20 scrap"));
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("L: traded away alone: transferred to Commander Vance's fleet; the namesake who stayed still present", sentId > 0 && byId(m, sentId).status == CrewRegister.Status.TRANSFERRED
@@ -162,7 +158,7 @@ public class CrewT { public static void main(String[] a) throws Exception {
  CrewState arrived = Commission.volunteer("engi", new Random(77)); arrived.setName("Newcomer");
  SaveHelper.placeCrew(c.save.getPlayerShip(), arrived, true); c.save.getPlayerShip().getCrewList().add(arrived);
  v.begin().put(v.storage(), c.save, c.hash).commit();
- HistoryLog.entry("LONG RANGE TRADE", "with Commander Vance  (trade t2)", Arrays.asList("gave: 3 missiles and Partner (Human)", "received (in the Cargo Hold): 10 scrap, a Burst Laser I and Newcomer (Engi)"));
+ StationLog.entry("LONG RANGE TRADE", "with Commander Vance  (trade t2)", Arrays.asList("gave: 3 missiles and Partner (Human)", "received (in the Cargo Hold): 10 scrap, a Burst Laser I and Newcomer (Engi)"));
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("L: traded along with other things (\"3 missiles and Partner (Human)\"): transferred", byId(m, partnerId).status == CrewRegister.Status.TRANSFERRED && said(byId(m, partnerId), "Transferred to Commander Vance's fleet."));
@@ -203,10 +199,10 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Setup.chk("W: two namesakes aboard together: two ids, each with the other, not themselves", pairs.size() == 2 && pairs.get(0).with.containsKey(pairs.get(1).id) && pairs.get(1).with.containsKey(pairs.get(0).id)
    && !pairs.get(0).with.containsKey(pairs.get(0).id));
  List<CrewState> party = new ArrayList<CrewState>();
- for (CrewState x : Expeditions.holdCrew(v)) if (party.size() < 2 && !x.getName().equals("Twin")) party.add(x);
+ for (CrewState x : AwayCrew.holdCrew(v)) if (party.size() < 2 && !x.getName().equals("Twin")) party.add(x);
  int pa = idIn(m, party.get(0).getName(), "in the Cargo Hold"), pb = idIn(m, party.get(1).getName(), "in the Cargo Hold");
- List<Assignments.Offer> board = Assignments.board(v);
- Assignments.send(v, board.get(board.size() - 1).slot, party, new Random(5));
+ List<Expeditions.Offer> board = Expeditions.board(v);
+ Expeditions.send(v, board.get(board.size() - 1).slot, party, new Random(5));
  v.takeStock();
  m = CrewRegister.members(v);
  Setup.chk("W: sent out together: During Expeditions, both ways", pa > 0 && pb > 0 && byId(m, pa).with.containsKey(pb) && byId(m, pa).with.get(pb).contains(CrewRegister.WITH_EXPEDITION) && byId(m, pb).with.get(pa).contains(CrewRegister.WITH_EXPEDITION));
@@ -299,25 +295,6 @@ public class CrewT { public static void main(String[] a) throws Exception {
  Setup.chk("M: marks kept after a Clone Bay, points at level one: level one (" + Arrays.toString(homeplanet.model.Crew.skillLevels(cloned)) + ")", Arrays.equals(homeplanet.model.Crew.skillLevels(cloned), new int[] {1, 1, 1, 1, 1, 1}));
  Setup.chk("M: and the rank agrees: six skills mastered, a Captain due", homeplanet.model.Rank.mastered(envoy) == 6 && homeplanet.model.Rank.due(envoy) == 5);
 
- // a crew file from pre611 6.11 (Java's properties, the wire's names): read as it is, written as tags at its next save, every field the same (Plan O)
- v.takeStock();
- List<CrewRegister.Member> pre611 = CrewRegister.members(v);
- int olds = 0;
- for (CrewRegister.Member x : pre611) {
-  File f = CrewRegister.fileOf(v, x.id); if (f == null) continue;
-  Properties p = CrewRegister.readFile(f), wire = new Properties(); wire.setProperty("id", Integer.toString(x.id));
-  Map<String, String> rec = new LinkedHashMap<String, String>();
-  for (String k : p.stringPropertyNames()) { if (k.startsWith("rec.")) rec.put(k.substring(4), p.getProperty(k)); else wire.setProperty(k, p.getProperty(k)); }
-  for (Map.Entry<String, String> e : CrewRecord.toWire(rec).entrySet()) wire.setProperty("rec." + e.getKey(), e.getValue());
-  OutputStream o = new FileOutputStream(f); wire.storeToXML(o, null); o.close(); olds++;
- }
- Setup.chk("F: every crew file written the old way (" + olds + ")", olds == pre611.size() && olds > 0);
- Setup.chk("F: read as they are, every field the same", same(pre611, CrewRegister.members(v)));
- HistoryLog.entry("CREW", "A test entry: the log grows, the register writes at its next look.");
- v.takeStock();
- int tags = 0; for (CrewRegister.Member x : pre611) { String t = new String(SafeFiles.read(CrewRegister.fileOf(v, x.id)), "UTF-8"); if (t.contains("<crew>") && t.contains("<last_seen>") && !t.contains("<entry")) tags++; }
- Setup.chk("F: written as tags at the next save (" + tags + " of " + pre611.size() + ")", tags == pre611.size());
- Setup.chk("F: and every field still the same", same(pre611, CrewRegister.members(v)));
  Setup.done();
 }
  /** Two reads of the register the same, member by member: who, where, their ships, who they served with, their days, their whole record. */
@@ -350,6 +327,4 @@ public class CrewT { public static void main(String[] a) throws Exception {
   c.setPilotMasteryOne(b); c.setPilotMasteryTwo(b); c.setEngineMasteryOne(b); c.setEngineMasteryTwo(b); c.setShieldMasteryOne(b); c.setShieldMasteryTwo(b);
   c.setWeaponMasteryOne(b); c.setWeaponMasteryTwo(b); c.setRepairMasteryOne(b); c.setRepairMasteryTwo(b); c.setCombatMasteryOne(b); c.setCombatMasteryTwo(b);
  }
- static void writeProps(File f, Properties p) throws IOException { StringWriter w = new StringWriter(); p.store(w, null); SafeFiles.writeText(f, w.toString(), false); }
- /** An entry as the 5.73 conversion read one in from the old logs: its own time, Prior, converted. */
 }

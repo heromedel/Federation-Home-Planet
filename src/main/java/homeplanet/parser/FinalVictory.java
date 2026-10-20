@@ -13,8 +13,9 @@ import net.blerf.ftl.constants.Difficulty;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.HomePlanet;
+import homeplanet.model.Words;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
@@ -30,8 +31,6 @@ public final class FinalVictory {
 
 	/** Nothing (as in FTL), Choice (RESCUE: keep her, or the museum), Museum (the museum takes her); 6.47, heromedel. */
 	public static final String NOTHING = "nothing", RESCUE = "rescue", MUSEUM = "museum";
-	/** Before 6.47: a reward of her value, she stays lost. Read as the museum at full value (what it paid). */
-	public static final String REWARD = "reward";
 	public static final String[] CHOICES = {NOTHING, RESCUE, MUSEUM};
 	/** The museum's reward, to the Cargo Hold: her full value, half of it, or none (an honour alone). */
 	public static final String FULL = "full", HALF = "half", NONE = "none";
@@ -45,7 +44,7 @@ public final class FinalVictory {
 	}
 	/** What a choice does, in a sentence or two (plain text: the windows wrap it). */
 	public static String explain(String choice) {
-		String she = homeplanet.model.Words.she(), her = homeplanet.model.Words.her(), herObj = homeplanet.model.Words.herObj(), She = homeplanet.model.Words.cap(she);
+		String she = Words.she(), her = Words.her(), herObj = Words.herObj(), She = Words.cap(she);
 		if (RESCUE.equals(choice)) return She + " comes back as " + she + " was moments before the final engagement, and you choose: keep " + herObj
 				+ " for a new journey, or send " + herObj + " to the Federation Museum for its reward (the Museum reward value).";
 		if (MUSEUM.equals(choice)) return She + " goes straight to the Federation Museum, where " + her + " service is remembered, and the museum's reward (the Museum reward value) goes to the Cargo Hold.";
@@ -55,8 +54,8 @@ public final class FinalVictory {
 	public static String payLabel(String pay) { return FULL.equals(pay) ? "Full value" : HALF.equals(pay) ? "Half value" : "None"; }
 	/** What the museum's reward is (plain text: the windows wrap it). */
 	public static String explainPay() {
-		String her = homeplanet.model.Words.her();
-		return "What the museum pays for " + homeplanet.model.Words.herObj() + ", into the Cargo Hold: " + her + " full value (" + her + " value at the moment of saved before the final battle), half of it, or none (the honour alone). Not used with Nothing.";
+		String her = Words.her();
+		return "What the museum pays for " + Words.herObj() + ", into the Cargo Hold: " + her + " full value (" + her + " value at the moment of saved before the final battle), half of it, or none (the honour alone). Not used with Nothing.";
 	}
 	/** A tooltip of plain sentences, wrapped. */
 	public static String tip(String... lines) {
@@ -64,52 +63,40 @@ public final class FinalVictory {
 		for (int i = 0; i < lines.length; i++) sb.append(i == 0 ? "" : "<br>").append(lines[i]);
 		return sb.append("</div></html>").toString();
 	}
-	private static String norm(String c) { return RESCUE.equals(c) ? RESCUE : MUSEUM.equals(c) || REWARD.equals(c) ? MUSEUM : NOTHING; }
+	private static String norm(String c) { return RESCUE.equals(c) ? RESCUE : MUSEUM.equals(c) ? MUSEUM : NOTHING; }
 	private static String normPay(String p) { return HALF.equals(p) || NONE.equals(p) ? p : FULL; }
-	/** The choice of the fleet in use (the Immersive fleet's is its difficulty's, or, from before difficulties, kept in its career). */
+	/** The choice of the fleet in use: an Immersive career's difficulty's, or Sandbox Mode's setting. */
 	public static String choice() {
-		Vault v = Vault.get();
 		String fixed = fixed();
-		if (fixed != null) return fixed;
-		return norm(v.immersive ? Career.finalVictory(v.root) : HomePlanet.finalVictory);
+		return fixed != null ? fixed : norm(HomePlanet.finalVictory);
 	}
 	/** The Immersive career's difficulty decides it (RESCUE or MUSEUM), or null where the player chooses. */
 	public static String fixed() {
 		CareerRules r = CareerRules.current();
 		return r == null ? null : r.victory();
 	}
-	/** The museum's reward for the fleet in use: its difficulty's (full or half), or the player's (full when never chosen, as before 6.47). */
+	/** The museum's reward for the fleet in use: an Immersive career's difficulty's, or Sandbox Mode's setting. */
 	public static String pay() {
 		String fixed = fixedPay();
-		if (fixed != null) return fixed;
-		Vault v = Vault.get();
-		return normPay(v.immersive ? Career.finalVictoryPay(v.root) : HomePlanet.finalVictoryPay);
+		return fixed != null ? fixed : normPay(HomePlanet.finalVictoryPay);
 	}
 	/** The Immersive career's difficulty decides the museum's reward (FULL or HALF), or null where the player chooses. */
 	public static String fixedPay() {
 		CareerRules r = CareerRules.current();
 		return r == null ? null : r.museumPay();
 	}
-	/** Sets the museum's reward of the fleet in use (the normal fleet's is in the cfg: the caller saves it). */
-	public static void setPay(String p) throws IOException {
-		Vault v = Vault.get();
-		if (v.immersive) Career.setFinalVictoryPay(v.root, normPay(p));
-		else HomePlanet.finalVictoryPay = normPay(p);
-	}
+	/** Sets Sandbox Mode's museum reward (in the cfg: the caller saves it). */
+	public static void setPay(String p) { HomePlanet.finalVictoryPay = normPay(p); }
 	/** What the museum pays, as a share of her value: 100, 50 or 0. */
 	public static int museumPercent() { String p = pay(); return FULL.equals(p) ? 100 : HALF.equals(p) ? 50 : 0; }
 	/** The museum's price for her. */
 	public static int museumPrice(int value) { return value * museumPercent() / 100; }
 	/** "her full value" or "half her value", for the letters (none has letters of its own). */
-	static String worth() { return museumPercent() >= 100 ? homeplanet.model.Words.her() + " full value" : "half " + homeplanet.model.Words.her() + " value"; }
+	static String worth() { return museumPercent() >= 100 ? Words.her() + " full value" : "half " + Words.her() + " value"; }
 	/** The letter for a rescue's offer or the museum: its own words when the museum pays nothing (6.47). */
 	private static String letter(String key) { return museumPercent() == 0 ? key + "_honour" : key; }
-	/** Sets the choice of the fleet in use (the normal fleet's is in the cfg: the caller saves it). */
-	public static void setChoice(String c) throws IOException {
-		Vault v = Vault.get();
-		if (v.immersive) Career.setFinalVictory(v.root, norm(c));
-		else HomePlanet.finalVictory = norm(c);
-	}
+	/** Sets Sandbox Mode's choice (in the cfg: the caller saves it). */
+	public static void setChoice(String c) { HomePlanet.finalVictory = norm(c); }
 
 	/** Watching continue.sav: keeps the boarded ship's copy if the flagship is on her way to the last battle. */
 	public static void watch() {
@@ -170,14 +157,14 @@ public final class FinalVictory {
 				if (won) homeplanet.vault.Reputation.flagship(v, f.name, gs); // the career's standing, if one runs, at her difficulty's rate (6.17)
 				if (!won || NOTHING.equals(c)) {
 					v.closeFinal(f, won);
-					if (won) HistoryLog.entry("VICTORY", f.name + " won the last battle and was lost with the run (after a final victory: nothing)", null, battle("VICTORY", f).put("after", "nothing"));
+					if (won) StationLog.entry("VICTORY", f.name + " won the last battle and was lost with the run (after a final victory: nothing)", null, battle("VICTORY", f).put("after", "nothing"));
 					continue;
 				}
 				boolean named = u.victoriousScores(gs.getPlayerShipName(), gs.getPlayerShipBlueprintId()) > f.scoresThen;
 				String pay = pay();
-				HistoryLog.entry("VICTORY", f.name + " won the last battle (the profile's victories " + f.victoriesThen + " -> " + u.victories()
-						+ (named ? ", and a Top Scores entry names " + homeplanet.model.Words.herObj() : "") + "); after a final victory: " + label(c) + ", the museum's reward " + payLabel(pay).toLowerCase()
-						+ ", " + homeplanet.model.Words.her() + " value " + value + " scrap", null,
+				StationLog.entry("VICTORY", f.name + " won the last battle (the profile's victories " + f.victoriesThen + " -> " + u.victories()
+						+ (named ? ", and a Top Scores entry names " + Words.herObj() : "") + "); after a final victory: " + label(c) + ", the museum's reward " + payLabel(pay).toLowerCase()
+						+ ", " + Words.her() + " value " + value + " scrap", null,
 						battle("VICTORY", f).put("victories_then", f.victoriesThen).put("victories_now", u.victories()).put("top_scores", named).put("after", c)
 								.put("museum_pay", pay).put("museum_price", museumPrice(value)).put("value", value));
 				fills.put("value", Integer.toString(museumPrice(value)));
@@ -215,8 +202,6 @@ public final class FinalVictory {
 	public static final String TO_HARD_OFF = "off";
 	/** Doesn't apply: the museum takes every victor (Hard, or a Custom career with that rule). */
 	public static final String TO_HARD_NONE = "none";
-	/** A Custom career that hasn't chosen yet: the Space Dock asks, as the briefing would have. */
-	public static final String TO_HARD_ASK = "ask";
 	/** How it stands for the fleet in use. */
 	public static String toHardRule() {
 		CareerRules r = CareerRules.current();
@@ -227,8 +212,8 @@ public final class FinalVictory {
 		if (r == null) return TO_HARD_FREE;
 		if (MUSEUM.equals(r.victory()) || NOTHING.equals(r.victory())) return TO_HARD_NONE; // no ship comes back to fly
 		if (CareerRules.NORMAL.equals(r.name)) return TO_HARD_ON; // no saved answer is read: deleting one changes nothing
-		if (CareerRules.CUSTOM.equals(r.name)) return saved == null ? TO_HARD_ASK : Boolean.parseBoolean(saved) ? TO_HARD_ON : TO_HARD_OFF;
-		return TO_HARD_FREE; // Easy, or a career from before difficulties
+		if (CareerRules.CUSTOM.equals(r.name)) return Boolean.parseBoolean(saved) ? TO_HARD_ON : TO_HARD_OFF; // chosen when it began
+		return TO_HARD_FREE; // Easy
 	}
 	/** Whether a rescued ship, kept, sets out on Hard without asking. */
 	public static boolean toHard() {
@@ -245,14 +230,14 @@ public final class FinalVictory {
 	/** A Custom career's answer, chosen once (the briefing, or the Space Dock's question). */
 	public static void chooseToHard(java.io.File immersiveRoot, boolean on) throws IOException {
 		Career.setRescuedToHard(immersiveRoot, on);
-		HistoryLog.entry("CAREER", "Rescued Ships after Victory moved to Hard difficulty: " + (on ? "yes" : "no") + " (chosen for the career, fixed)", null,
+		StationLog.entry("CAREER", "Rescued Ships after Victory moved to Hard difficulty: " + (on ? "yes" : "no") + " (chosen for the career, fixed)", null,
 				Event.of("CAREER").put("what", "rescued_to_hard").put("rescued_to_hard", on));
 	}
 	/** Keep her: she docks, ready for a new journey at this difficulty (null: the one she won on). Returns what came of it, in words. */
 	public static String keep(Vault.FinalBattle f, Difficulty difficulty) throws IOException {
 		Ship s = Vault.get().bringHome(f, difficulty);
 		Museum.kept(Vault.get(), f.id);
-		return s.name + " is docked at the Space Dock, ready for " + homeplanet.model.Words.her() + " next journey" + (difficulty == null ? "." : ", on " + title(difficulty) + ".");
+		return s.name + " is docked at the Space Dock, ready for " + Words.her() + " next journey" + (difficulty == null ? "." : ", on " + title(difficulty) + ".");
 	}
 	/** "Easy", "Normal" or "Hard". */
 	public static String title(Difficulty d) { return d == null ? "" : d.toString().substring(0, 1) + d.toString().substring(1).toLowerCase(); }
@@ -265,7 +250,7 @@ public final class FinalVictory {
 		if (value > 0) v.depositToStorage(value);
 		v.toMuseum(f);
 		Museum.preserved(v, f.id, value);
-		HistoryLog.entry("MUSEUM", value > 0 ? value + " scrap to the Cargo Hold for " + f.name : f.name + " given to the museum, without payment", null,
+		StationLog.entry("MUSEUM", value > 0 ? value + " scrap to the Cargo Hold for " + f.name : f.name + " given to the museum, without payment", null,
 				battle("MUSEUM", f).put("scrap", value).put("pay", pay()).put("to", "hold"));
 		return f.name + " is honoured in the Federation Museum." + (value > 0 ? " " + value + " scrap is waiting in the Cargo Hold." : "");
 	}

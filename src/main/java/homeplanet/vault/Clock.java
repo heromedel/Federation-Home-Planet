@@ -9,8 +9,7 @@ import java.util.Properties;
 import homeplanet.core.Store;
 
 /**
- * The fleet's clock (5.86): clock.xml, one file for what were five (sectors.txt, beacons.txt, clock.txt, work.txt and
- * stardate.txt). It holds the sectors and beacons the fleet has been seen to travel ({@code sectors}, {@code beacons}),
+ * The fleet's clock (5.86): clock.xml. It holds the sectors and beacons the fleet has been seen to travel ({@code sectors}, {@code beacons}),
  * where the boarded ship's progress was last counted ({@code last.ship}, {@code last.sector}, {@code last.beacons}),
  * each boarded ship's work at her beacon ({@code work.<id>.*}) and the clock's count on the career's day 1
  * ({@code start}). The station is its only writer, so what it last wrote is kept in memory and read again only when
@@ -26,13 +25,12 @@ public final class Clock {
 	private static final Map<String, Object[]> CACHE = new HashMap<String, Object[]>(); // path: lastModified, length, properties
 
 	/**
-	 * A copy of the clock's file (empty if there isn't one yet). Until a 5.x fleet's opening moves its five files into
-	 * it, they are read instead (the career's day 1 is asked for before the fleet loads), and the first write takes them
-	 * in. An unreadable file is the caller's to deal with: it's never written back from a failed read.
+	 * A copy of the clock's file (empty if there isn't one yet). An unreadable file is the caller's to deal with: it's
+	 * never written back from a failed read.
 	 */
 	public static synchronized Properties read(Vault v) throws IOException {
 		File f = file(v);
-		if (!f.exists()) { Properties old = homeplanet.convert.OldFleet.oldClock(v); return old == null ? new Properties() : old; }
+		if (!f.exists()) return new Properties();
 		Object[] c = CACHE.get(f.getAbsolutePath());
 		if (c == null || (Long) c[0] != f.lastModified() || (Long) c[1] != f.length()) {
 			Properties p = Store.load(f);

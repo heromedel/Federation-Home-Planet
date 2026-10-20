@@ -46,7 +46,6 @@ public class OverhaulT {
    try { Ship s = one(v, f, (String) c[0], (SavedGameState) c[1], work); if (s != null) last = s; }
    catch (Throwable t) { t.printStackTrace(System.out); Setup.chk(c[0] + ": ran to the end (" + t + ")", false); }
   }
-  if (last != null) stranded(v, last);
   refitButtons(v, f);
   for (String sh : GuiT.shown) System.out.println("POPUP " + sh.replace("\n", " / "));
   Setup.done();
@@ -190,34 +189,6 @@ public class OverhaulT {
   return b.toString();
  }
 
- /** A ship overhauled before 6.47: her crew put down without the layout's offset, as it did then; the next look puts them back aboard. */
- static void stranded(Vault v, Ship s) throws Exception {
-  System.out.println("STEP stranded");
-  if (s.isBoarded()) v.dock();
-  s = v.byId(s.id);
-  Vault.Copy c = v.readCopy(s);
-  ShipState sh = c.save.getPlayerShip();
-  net.blerf.ftl.model.shiplayout.ShipLayout lay = DataManager.get().getShipLayout(sh.getShipLayoutId());
-  int sq = SaveHelper.SQUARE_SIZE;
-  for (CrewState cr : sh.getCrewList()) { cr.setSpriteX(cr.getSpriteX() - lay.getOffsetX() * sq); cr.setSpriteY(cr.getSpriteY() - lay.getOffsetY() * sq); }
-  List<String> off = new ArrayList<String>(); for (CrewState x : Retrofit.stranded(sh, lay)) off.add(x.getName());
-  SafeFiles.write(v.fileOf(s), SaveHelper.toBytes(c.save)); // as the old station left her
-  int versions = versions(v, s);
-  int logged0 = reseated(v);
-  v.takeStock();
-  s = v.byId(s.id); s.invalidate();
-  SavedGameState now = HomePlanet.savedGameParser.readSavedGame(v.fileOf(s));
-  List<String> bad = offRoom(now.getPlayerShip(), lay);
-  Setup.chk("R: a ship overhauled before 6.47 had crew outside her rooms (" + off + ")", !off.isEmpty() && (lay.getOffsetX() != 0 || lay.getOffsetY() != 0));
-  Setup.chk("R: the station's next look puts them back aboard" + (bad.isEmpty() ? "" : " " + bad), bad.isEmpty() && crew(now.getPlayerShip()).equals(crew(sh)));
-  Setup.chk("R: her save as it was kept as a version first (" + versions + " -> " + versions(v, s) + ")", versions(v, s) > versions);
-  String ev = new String(SafeFiles.read(EventLog.file(v)), "UTF-8");
-  Setup.chk("R: the station log says so, in its two lines", reseated(v) == logged0 + 1 && ev.contains("crew were returned to"));
-  int before = versions(v, s);
-  v.takeStock();
-  Setup.chk("R: and leaves her alone at the next look", versions(v, s) == before);
- }
- static int reseated(Vault v) throws IOException { File f = EventLog.file(v); int n = 0; if (f.isFile()) for (String l : new String(SafeFiles.read(f), "UTF-8").split("\n")) if (l.contains(" | CREW_RESEATED | ")) n++; return n; }
  static int versions(Vault v, Ship s) { File[] fs = new File(v.folderOf(s), "versions").listFiles(); return fs == null ? 0 : fs.length; }
 
  /** The Refit tab: Retrofit and Remodel take their own clicks; her name opens her report only where it's written. */

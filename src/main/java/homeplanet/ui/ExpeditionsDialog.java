@@ -12,7 +12,6 @@ import java.util.Random;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -20,8 +19,7 @@ import javax.swing.JPanel;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
 
 import homeplanet.core.HomePlanet;
-import homeplanet.parser.Expeditions;
-import homeplanet.parser.XmlText;
+import homeplanet.parser.AwayCrew;
 import homeplanet.vault.Vault;
 
 /**
@@ -132,7 +130,6 @@ final class ExpeditionsDialog {
 		}
 		return out;
 	}
-	/** Up to three crew from the Cargo Hold, ticked. */
 	/**
 	 * Who goes: three seats side by side, each a drop-down of the Cargo Hold's crew (or no one), and under it the one
 	 * chosen: portrait, race, health if hurt, and the six skills (a pip a level, a thin bar toward the next). Someone
@@ -144,11 +141,11 @@ final class ExpeditionsDialog {
 		head.setForeground(MenuTheme.GOLD);
 		head.setFont(head.getFont().deriveFont(java.awt.Font.BOLD, 14f));
 		p.add(head, BorderLayout.NORTH);
-		JPanel slots = new JPanel(new GridLayout(1, Expeditions.PARTY_MAX, 12, 0));
+		JPanel slots = new JPanel(new GridLayout(1, AwayCrew.PARTY_MAX, 12, 0));
 		final List<javax.swing.JComboBox<Object>> picks = new ArrayList<javax.swing.JComboBox<Object>>();
 		final List<CrewCard> cards = new ArrayList<CrewCard>();
 		final String nobody = "No one";
-		for (int i = 0; i < Expeditions.PARTY_MAX; i++) {
+		for (int i = 0; i < AwayCrew.PARTY_MAX; i++) {
 			Object[] items = new Object[crew.size() + 1];
 			items[0] = nobody;
 			for (int k = 0; k < crew.size(); k++) items[k + 1] = crew.get(k);
@@ -224,7 +221,6 @@ final class ExpeditionsDialog {
 
 	/** A crew member as the picker shows them: portrait, name and race, health if hurt, and the six skills. */
 	static final class CrewCard extends JPanel {
-		private static final String[] SKILL_NAMES = {"Piloting", "Engines", "Shields", "Weapons", "Repair", "Combat"};
 		private CrewState c;
 		CrewCard() { setOpaque(true); setBackground(MenuTheme.BG); setBorder(BorderFactory.createLineBorder(new Color(214, 230, 222, 90))); }
 		void show(CrewState who) { c = who; revalidate(); repaint(); }
@@ -258,7 +254,7 @@ final class ExpeditionsDialog {
 			int y = 70;
 			for (int i = 0; i < 6; i++) {
 				g.setColor(MenuTheme.TEXT);
-				g.drawString(SKILL_NAMES[i], 12, y + 10);
+				g.drawString(homeplanet.model.Crew.SKILL_TITLES[i], 12, y + 10);
 				for (int k = 0; k < 2; k++) { // a pip a level: green for the first, gold for the second, as FTL marks them
 					g.setColor(k < levels[i] ? (k == 0 ? new Color(120, 230, 120) : MenuTheme.GOLD) : new Color(70, 82, 92));
 					g.fillRect(100 + k * 14, y + 2, 10, 9);
@@ -276,11 +272,11 @@ final class ExpeditionsDialog {
 	/** The volunteer board (shared by every kind of expeditions, and the Space Dock's Hire Crew with none): did anyone join? */
 	static boolean hire(java.awt.Component owner) {
 		Vault v = Vault.get();
-		int fleet = Expeditions.fleetCrew(v), cost = Expeditions.hireCost(fleet), rep = Expeditions.promiseRep(v);
+		int fleet = AwayCrew.fleetCrew(v), cost = AwayCrew.hireCost(fleet), rep = AwayCrew.promiseRep(v);
 		if (cost > 0 && !HomePlanet.confirmNo(owner, "Post for volunteers for " + cost + " scrap from the Cargo Hold?\nThe scrap is spent whether or not anyone answers.", "Expeditions")) return false;
 		if (rep > 0 && !HomePlanet.confirmNo(owner, "Post a promise of adventure for " + rep + " reputation?\nIt is spent whether or not anyone answers.", "Expeditions")) return false;
 		CrewState c;
-		try { c = Expeditions.hire(v, rng); }
+		try { c = AwayCrew.hire(v, rng); }
 		catch (IOException e) { HomePlanet.showErrorDialog("The posting was called off. Nothing was changed:\n" + e.getMessage()); return false; }
 		JOptionPane.showMessageDialog(owner, c == null ? (cost == 0 ? "No one answered the promise of adventure." + (rep > 0 ? "" : " It costs nothing to try again.") : "No one answered this time.")
 				: c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ") answered, and is waiting in the Cargo Hold.", "Expeditions", JOptionPane.INFORMATION_MESSAGE);
@@ -288,7 +284,7 @@ final class ExpeditionsDialog {
 	}
 	/** The hire button's words and tooltip, for whichever board shows it. */
 	static void hireButton(JButton b, Vault v) {
-		int fleet = Expeditions.fleetCrew(v), cost = Expeditions.hireCost(fleet), rep = Expeditions.promiseRep(v);
+		int fleet = AwayCrew.fleetCrew(v), cost = AwayCrew.hireCost(fleet), rep = AwayCrew.promiseRep(v);
 		b.setText(fleet == 0 ? "Post a promise of adventure" + (rep > 0 ? ": " + rep + " reputation" : "") : "Post for volunteers: " + cost + " scrap");
 		b.setToolTipText(fleet == 0 ? (rep > 0 ? rep + " reputation, spent whether or not anyone answers: " : "Free: ") + "with no crew anywhere, a promise of adventure is all you can offer. Someone may answer."
 				: "5 scrap for each crew member in your fleet (" + fleet + "), at most 60: paid whether or not anyone answers. New crew wait in the Cargo Hold.");

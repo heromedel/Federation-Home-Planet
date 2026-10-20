@@ -10,7 +10,7 @@ import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.model.Items;
 import homeplanet.parser.SaveHelper;
 
@@ -34,7 +34,7 @@ public final class SpaceDock {
 			sgs.getPlayerShip().setShipName(oldName);
 			throw e;
 		}
-		HistoryLog.entry("RENAME", oldName + " -> " + newName + "  (" + ship.id + ")", null, Vault.shipEvent("RENAME", ship).put("from", oldName).put("to", newName));
+		StationLog.entry("RENAME", oldName + " -> " + newName + "  (" + ship.id + ")", null, Vault.shipEvent("RENAME", ship).put("from", oldName).put("to", newName));
 	}
 
 	/**
@@ -64,7 +64,7 @@ public final class SpaceDock {
 			ship.invalidate();
 			throw e;
 		}
-		HistoryLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + difficulty + (fee > 0 ? ", fee " + paidWords + (scrap > 0 ? " (the scrap from the Cargo Hold)" : "") : ""), null,
+		StationLog.entry("NEW JOURNEY", gs.getPlayerShipName() + "  difficulty " + difficulty + (fee > 0 ? ", fee " + paidWords + (scrap > 0 ? " (the scrap from the Cargo Hold)" : "") : ""), null,
 				Vault.shipEvent("NEW_JOURNEY", ship).put("difficulty", difficulty).put("fee", fee).put("paid", fee > 0 ? paidWords : null));
 		if (rep > 0) Reputation.spend(v, rep, "A new journey plotted for " + gs.getPlayerShipName()); // once her journey is saved
 	}
@@ -87,7 +87,7 @@ public final class SpaceDock {
 		Vault.Copy storageCopy;
 		try { storageCopy = v.readCopy(storageShip); } catch (IOException e) { throw new IOException("The Cargo Hold can't be read: " + e.getMessage()); }
 		SavedGameState storage = storageCopy.save;
-		scrapped = HistoryLog.changes(new java.util.HashMap<String, Integer>(), HistoryLog.inventory(wreck));
+		scrapped = StationLog.changes(new java.util.HashMap<String, Integer>(), StationLog.inventory(wreck));
 		ShipState from = wreck.getPlayerShip();
 		ShipState to = storage.getPlayerShip();
 		to.setScrapAmt(to.getScrapAmt() + from.getScrapAmt());
@@ -120,7 +120,7 @@ public final class SpaceDock {
 		}
 		// the hull broken up in the same note (6.11, CONCERNS 8): never her crew and gear in the hold and still aboard her
 		tx.leave(wreckShip, Vault.Fate.SCRAPPED).commit();
-		HistoryLog.entry("SCRAP", name + " stripped into storage, hull broken up", scrapped, Event.of("SCRAP").put("ship_name", name).put("stripped", strip).put("to", "hold").details(scrapped));
+		StationLog.entry("SCRAP", name + " stripped into storage, hull broken up", scrapped, Event.of("SCRAP").put("ship_name", name).put("stripped", strip).put("to", "hold").details(scrapped));
 		if (strip && repPaid > 0) Reputation.spend(v, repPaid, "Stripping " + name + "'s systems when " + homeplanet.model.Words.she() + " was scrapped");
 	}
 
@@ -138,7 +138,7 @@ public final class SpaceDock {
 			if (SaveHelper.hasBody(c) && SaveHelper.placeCrew(to, c, true)) to.getCrewList().add(c);
 		}
 		v.begin().put(storageShip, storage, storageCopy.hash).leave(ship, Vault.Fate.SOLD).commit(); // one note: she goes as her scrap and crew arrive
-		HistoryLog.entry("SELL", name + (auction ? " sold at auction" : " traded in") + " for " + price + " scrap; " + homeplanet.model.Words.her() + " scrap and crew to the Cargo Hold", null,
+		StationLog.entry("SELL", name + (auction ? " sold at auction" : " traded in") + " for " + price + " scrap; " + homeplanet.model.Words.her() + " scrap and crew to the Cargo Hold", null,
 				Event.of("SELL").put("ship_name", name).put("how", auction ? "auction" : "trade_in").put("price", price).put("to", "hold"));
 	}
 }

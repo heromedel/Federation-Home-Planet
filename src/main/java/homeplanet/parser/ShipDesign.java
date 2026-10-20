@@ -1,9 +1,7 @@
 package homeplanet.parser;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -11,11 +9,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -32,8 +28,6 @@ public class ShipDesign {
 	public static File file() { return homeplanet.vault.Vault.get().designsFile(); }
 	private static final String CRLF = "\r\n";
 
-	/** Room sizes FTL's own ships use. */
-	public static final int[][] ROOM_SIZES = {{2, 2}, {2, 1}, {1, 2}};
 
 	public static class Room {
 		public int x, y, w, h;
@@ -358,15 +352,6 @@ public class ShipDesign {
 		if (!FILE.isFile()) { BlueprintBackup.restoreDesigns(out); return out; }
 		try {
 			readInto(FILE, out);
-			// files from before snapshots: a built design was its own blueprint, so its copy is the snapshot
-			List<ShipDesign> add = new ArrayList<ShipDesign>();
-			for (ShipDesign d : out) {
-				if (!d.built || !d.isWorking() || snapshot(out, d.id) != null) continue;
-				ShipDesign c = copy(d);
-				c.snapshotOf = d.id;
-				add.add(c);
-			}
-			out.addAll(add);
 		} catch (Exception ex) {
 			log.error("Could not read " + FILE, ex);
 		}
@@ -374,8 +359,7 @@ public class ShipDesign {
 		return out;
 	}
 	static void readInto(File f, List<ShipDesign> out) throws Exception {
-		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f);
-		NodeList ds = doc.getElementsByTagName("design");
+		NodeList ds = XmlText.parse(f).getElementsByTagName("design");
 		for (int i = 0; i < ds.getLength(); i++) {
 			ShipDesign d = parse((Element) ds.item(i));
 			if (d.id.length() > 0) out.add(d);

@@ -27,8 +27,8 @@ public class EventT { public static void main(String[] a) throws Exception {
  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
  int before = EventLog.read(v).size();
  EventLog.write(v, Event.of("TEST").put("what", "a test entry").human("A test entry."));
- HistoryLog.entry("TEST TWO", "two  (x)", Arrays.asList("d1", "d2"));
- HistoryLog.entry("TEST THREE", "three", null, Event.of("TEST_THREE").put("ship", "Kestrel.a3f2").human("The Kestrel: three."));
+ StationLog.entry("TEST TWO", "two  (x)", Arrays.asList("d1", "d2"));
+ StationLog.entry("TEST THREE", "three", null, Event.of("TEST_THREE").put("ship", "Kestrel.a3f2").human("The Kestrel: three."));
  List<EventLog.Entry> all = EventLog.read(v);
  Setup.chk("W: three entries more, in order, each with day and station", all.size() == before + 3 && all.get(before).kind.equals("TEST") && all.get(before + 1).kind.equals("TEST_TWO") && all.get(before + 2).kind.equals("TEST_THREE")
    && all.get(before).day >= 1 && all.get(before).get("station").equals(HomePlanet.version()));
@@ -42,7 +42,7 @@ public class EventT { public static void main(String[] a) throws Exception {
  Set<String> documented = new TreeSet<String>();
  Matcher m = Pattern.compile("`([A-Z][A-Z0-9_]+)`").matcher(new String(SafeFiles.read(doc), "UTF-8"));
  while (m.find()) documented.add(m.group(1));
- Set<String> seen = new TreeSet<String>(), undocumented = new TreeSet<String>();
+ Set<String> seen = new TreeSet<String>(), undocumented = new TreeSet<String>(), unknown = new TreeSet<String>();
  List<String> bad = new ArrayList<String>();
  int entries = 0, logs = 0;
  Pattern beacons = Pattern.compile("(?i)\\b\\d+ beacons?\\b|\\bbeacons? \\d"), destroyed = Pattern.compile("(?i)flagship[^.]*destroy|destroy[^.]*flagship");
@@ -51,6 +51,7 @@ public class EventT { public static void main(String[] a) throws Exception {
   for (EventLog.Entry en : EventLog.read(f)) {
    entries++; seen.add(en.kind);
    if (!en.kind.startsWith("TEST") && !documented.contains(en.kind)) undocumented.add(en.kind);
+   if (!en.kind.startsWith("TEST") && "station".equals(en.get("log")) && !homeplanet.ui.RecordsLog.known(en.kind)) unknown.add(en.kind); // 7.0: an unknown kind stays out of the station log's view
    if (en.human.isEmpty() || en.get("day") == null || en.get("station") == null) bad.add(f.getParentFile().getName() + ": " + en.kind + " lacks a human line, day or station");
    if (beacons.matcher(en.human).find()) bad.add("beacon count in a human line: " + en.human);
    if (destroyed.matcher(en.human).find()) bad.add("the Rebel Flagship destroyed in a human line: " + en.human);
@@ -59,6 +60,7 @@ public class EventT { public static void main(String[] a) throws Exception {
  }
  System.out.println(logs + " event logs, " + entries + " entries, " + seen.size() + " kinds: " + seen);
  Setup.chk("H: every kind the tests wrote is in docs/EVENTS.md" + (undocumented.isEmpty() ? "" : ": " + undocumented), undocumented.isEmpty() && entries > 50);
+ Setup.chk("H: every station-log kind the station writes is one the station log's view knows (hidden housekeeping, or tagged)" + (unknown.isEmpty() ? "" : ": " + unknown), unknown.isEmpty());
  for (String b : bad) System.out.println("  " + b);
  Setup.chk("H: every entry has its human line, day and station; no human line counts beacons or destroys the Rebel Flagship", bad.isEmpty());
  Setup.done();

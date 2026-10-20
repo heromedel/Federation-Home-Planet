@@ -193,8 +193,9 @@ public final class Channel {
 					while (open) {
 						try {
 							Socket sock = server.accept();
-							if (!open) { sock.close(); return; }
-							h.hailed(new Channel(sock));
+							boolean handed = false;
+							try { if (open) { h.hailed(new Channel(sock)); handed = true; } }
+							finally { if (!handed) sock.close(); } // the post closed, or the hail failed before anyone held it
 						} catch (IOException e) {
 							if (open) log.warn("Long Range Comm. post: {}", e.toString());
 						}

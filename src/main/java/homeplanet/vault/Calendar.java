@@ -1,32 +1,22 @@
 package homeplanet.vault;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import homeplanet.core.SafeFiles;
 
 /**
- * The career's days and stardates. Each career had a master log (heromedel, 5.17, logs/master.log): every day its clock
- * counted and why, and a copy of every entry its logs got. Since 5.93 nothing writes it: the days are the event log's
- * DAY entries (the Captain's Log and the Cargo Bay's day read them), and the entries are the event log's own. The old
- * file stays, read only by the conversion of a fleet's old logs (LogConvert).
+ * The career's days and stardates (heromedel, 5.17): every day its clock counted and why is a DAY entry in the event
+ * log (the Captain's Log and the Cargo Bay's day read them).
  *
  * A career's day 1 is the day this was first asked of it: a new career's first moment, or the first look at an older
  * one on 5.17 (its earlier entries are Prior to 1.1.1.1). The day is stored as a plain number and shown as a stardate,
  * year.month.week.day: 7-day weeks, 28-day months, 13-month years. A day of 0 or less is Prior.
  */
-public final class MasterLog {
-	private MasterLog() { }
+public final class Calendar {
+	private Calendar() { }
 
 	/** Why a day passed (the reasons the station itself checks). */
 	public static final String CARGO_BAY = "business in the Cargo Bay";
@@ -39,14 +29,13 @@ public final class MasterLog {
 		int at = Clock.num(v, "start", -1);
 		if (at >= 0) return at;
 		at = clock(v);
-		try { Clock.set(v, "start", Integer.toString(at)); } catch (IOException e) { org.slf4j.LoggerFactory.getLogger(MasterLog.class).warn("Could not record the career's day 1: {}", e.toString()); }
+		try { Clock.set(v, "start", Integer.toString(at)); } catch (IOException e) { org.slf4j.LoggerFactory.getLogger(Calendar.class).warn("Could not record the career's day 1: {}", e.toString()); }
 		return at;
 	}
 	/** The career's day now: 1 on its first day. */
 	public static int today(Vault v) { return clock(v) - start(v) + 1; }
 	/** The career's day at this count of the clock. */
 	public static int dayAt(Vault v, int clock) { return clock - start(v) + 1; }
-	/** A day as a stardate, year.month.week.day; "Prior to 1.1.1.1" for a day before the first. */
 	/**
 	 * When something happened to a ship, as the player is told it (heromedel, 6.24: stardates, never a calendar date):
 	 * "Stardate 1.2.3.4" from the first entry of this kind about her in the fleet's log, "Prior to Stardate 1.1.1.1" for
@@ -57,10 +46,12 @@ public final class MasterLog {
 		if (v == null || shipId == null) return null;
 		for (homeplanet.core.EventLog.Entry e : homeplanet.core.EventLog.read(v)) {
 			if (!e.kind.equals(kind) || !shipId.equals(e.get("ship_id")) || e.get("received_from") != null) continue;
-			return e.day < 1 ? "Prior to Stardate 1.1.1.1" : "Stardate " + stardate(e.day);
+			return heading(e.day);
 		}
 		return null;
 	}
+	/** A day's heading in a log: "Stardate 1.2.3.4", or "Prior to Stardate 1.1.1.1" for a day before the career's stardates (5.81). */
+	public static String heading(int day) { return day < 1 ? "Prior to Stardate 1.1.1.1" : "Stardate " + stardate(day); }
 	public static String stardate(int day) {
 		if (day < 1) return "Prior to 1.1.1.1";
 		int n = day - 1;
@@ -130,7 +121,6 @@ public final class MasterLog {
 			StringBuilder t = new StringBuilder(x.kind.replace('_', ' '));
 			String head = x.get("headline", x.human);
 			if (!head.isEmpty()) t.append("  ").append(head);
-			for (String d : x.all("detail")) t.append(" / ").append(d);
 			for (int i = 1; x.get("detail." + i) != null; i++) t.append(" / ").append(x.get("detail." + i));
 			return new Entry(x.time, x.day, "station", t.toString(), x); // its fields too (6.30: a commission's crew)
 		}

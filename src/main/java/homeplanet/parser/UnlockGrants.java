@@ -101,7 +101,7 @@ public final class UnlockGrants {
 		File backup = removeFromProfile(keys);
 		strangersAnswered(keys);
 		log.info("FTL profile backed up before the removal: {}", backup);
-		homeplanet.core.HistoryLog.entry("PROFILE", "Removed from FTL's profile: " + String.join(", ", names), null,
+		homeplanet.core.StationLog.entry("PROFILE", "Removed from FTL's profile: " + String.join(", ", names), null,
 				homeplanet.core.Event.of("PROFILE").put("what", "removed").put("removed", String.join(", ", names)).put("keys", String.join(", ", keys)));
 		return backup;
 	}

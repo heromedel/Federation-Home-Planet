@@ -26,18 +26,17 @@ import javax.swing.JPanel;
 
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
-import net.blerf.ftl.parser.SavedGameParser.DroneState;
 import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
-import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.HomePlanet;
 import homeplanet.core.GameGuard;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.model.Items;
+import homeplanet.model.Words;
 import homeplanet.parser.CompanionMod;
 import homeplanet.parser.Retrofit;
 import homeplanet.parser.SaveHelper;
@@ -100,7 +99,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	private final javax.swing.Timer lift = new javax.swing.Timer(200, new ActionListener() { public void actionPerformed(ActionEvent e) { liftFtl(); } });
 	{ lift.setRepeats(false); }
-	/** A docked FTL lifted back over its viewport a moment from now (after a click, a rebuild, the station brought forward). */
 	/** The station's window closed and opened again (borderless full screen switched): a docked FTL put back. */
 	void windowReopened() {
 		homeplanet.core.FtlDock.stationReopened(javax.swing.SwingUtilities.getWindowAncestor(this));
@@ -233,9 +231,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		boolean ftlUp = GameGuard.isFtlRunning(); // running: the button goes to it, never a second FTL (heromedel, 6.57)
 		launchBtn = controlButton(ftlUp ? "Switch to FTL" : "Launch FTL", ftlUp ? "FTL is running: bring it to the front, as Alt+Tab would" : "Play FTL");
 		journeyBtn = controlButton("New Journey", "Set out from the first sector with the boarded ship, crew and cargo");
-		commissionBtn = controlButton("Commission", "Have a brand-new ship built, as a new game would start " + homeplanet.model.Words.herObj());
+		commissionBtn = controlButton("Commission", "Have a brand-new ship built, as a new game would start " + Words.herObj());
 		salvageBtn = controlButton("Junkyard", "The Junkyard: salvage, scrap or sell a ship, or buy derelicts and parts");
-		disbandBtn = controlButton("Decommission", "Decommission the boarded ship: " + homeplanet.model.Words.she() + " goes to the Junkyard");
+		disbandBtn = controlButton("Decommission", "Decommission the boarded ship: " + Words.she() + " goes to the Junkyard");
 		settingsBtn = controlButton("Settings", "Folders, launching and rules");
 		quartersBtn = controlButton("Quarters", "Click here to head to quarters for a quick rest.");
 		refreshBtn = new RefreshButton(); // a small square beside Helm, over the main panel's edge
@@ -358,33 +356,25 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		repaint();
 		liftSoon(); // a docked FTL back over its rebuilt viewport (5.33)
 		if (!loggedStartup) {
-			HistoryLog.loaded("startup");
+			StationLog.loaded("startup");
 			loggedStartup = true;
 		}
-		// FTL's New Game wrote over the boarded ship, or continue.sav is a ship the station never commissioned
+		queueStartupQuestions(vault, victories);
+	}
+
+	/**
+	 * What the player is asked once the screen is up, each in its own pop-up after this build (7.02, out of build): a Steam
+	 * Cloud copy set aside, saves and ships found waiting on their word, a final victory's offer, FTL's New Game having
+	 * written over the boarded ship (or a ship the station never commissioned), and unlocks that came into FTL's profile
+	 * while an uncommissioned ship was boarded.
+	 */
+	private void queueStartupQuestions(Vault vault, List<homeplanet.parser.FinalVictory.Notice> victories) {
 		final String cloud = vault.takeCloudCopy();
 		if (cloud != null) {
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() {
 				JOptionPane.showMessageDialog(null, cloud + "\n\n" // what was set aside, and where (Vault, 6.08: the ship mark)
 						+ "To stop this, turn off Steam Cloud for FTL: in your Steam library, right-click FTL, Properties, General.", "Steam Cloud", JOptionPane.WARNING_MESSAGE);
 			} });
-		}
-		if (!askingToHard && !toHardPutOff && homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(homeplanet.parser.FinalVictory.toHardRule())) { // before any rescue offer it would decide
-			askingToHard = true;
-			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askToHard(); } });
-		}
-		if (!askingRate && !ratePutOff && homeplanet.vault.Reputation.RATE_ASK.equals(homeplanet.vault.Reputation.rateRule())) { // a Custom career from before 6.13
-			askingRate = true;
-			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askRepRate(); } });
-		} else if (!askingRecords && !recordsPutOff) { // a score counted before the rates (6.19): once, after the rate is chosen
-			final homeplanet.vault.Reputation.Reevaluation r = homeplanet.vault.Reputation.offer(vault);
-			if (r != null) {
-				askingRecords = true;
-				javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { askRecords(r); } });
-			} else {
-				final homeplanet.vault.Reputation.Correction c = homeplanet.vault.Reputation.correct(vault); // a re-evaluation before 6.54, put right once
-				if (c != null) javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { tellCorrected(c); } });
-			}
 		}
 		if (!askingFound && !vault.found().isEmpty()) { // saves and ships found as the fleet opened, waiting on the player's word (6.10)
 			askingFound = true;
@@ -415,19 +405,19 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	 */
 	void timeRound(boolean later) {
 		Vault vault = Vault.get();
-		tell(HomePlanet.expeditionType == 2 ? homeplanet.parser.Assignments.checkReturns(vault) : new java.util.ArrayList<homeplanet.parser.Assignments.Report>(),
-				homeplanet.parser.Expeditions.checkRansoms(vault), homeplanet.parser.Expeditions.checkInfirmary(vault), later);
+		tell(HomePlanet.expeditionType == 2 ? homeplanet.parser.Expeditions.checkReturns(vault) : new java.util.ArrayList<homeplanet.parser.Expeditions.Report>(),
+				homeplanet.parser.AwayCrew.checkRansoms(vault), homeplanet.parser.AwayCrew.checkInfirmary(vault), later);
 	}
 	/** What a round brought, told (the console's /passtime gathers several days' worth and tells them once, 5.22). */
-	void tell(final List<homeplanet.parser.Assignments.Report> back, final List<homeplanet.parser.Expeditions.RansomNews> ransomNews, final List<String> upAgain, boolean later) {
+	void tell(final List<homeplanet.parser.Expeditions.Report> back, final List<homeplanet.parser.AwayCrew.RansomNews> ransomNews, final List<String> upAgain, boolean later) {
 		Vault vault = Vault.get();
-		final boolean prizes = HomePlanet.expeditionType == 2 && !homeplanet.parser.Assignments.pendingToAsk(vault).isEmpty();
+		final boolean prizes = HomePlanet.expeditionType == 2 && !homeplanet.parser.Expeditions.pendingToAsk(vault).isEmpty();
 		final List<String> fleet3 = HomePlanet.immersiveNotifications() ? new java.util.ArrayList<String>() : homeplanet.parser.ThirdFleet.due(vault); // with the inbox on, his letters go there
 		if ((HomePlanet.immersiveNotifications() || (ransomNews.isEmpty() && back.isEmpty())) && upAgain.isEmpty() && !prizes && fleet3.isEmpty()) return;
 		Runnable word = new Runnable() { public void run() {
-			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Assignments.Report r : back) AssignmentsDialog.showReport(null, r);
+			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Expeditions.Report r : back) AssignmentsDialog.showReport(null, r);
 			if (prizes) AssignmentsDialog.askPending(null); // a recruit to take on, a ship to keep: asked whatever the inbox setting
-			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.Expeditions.RansomNews n : ransomNews) ransomNotice(n);
+			if (!HomePlanet.immersiveNotifications()) for (homeplanet.parser.AwayCrew.RansomNews n : ransomNews) ransomNotice(n);
 			for (String key : fleet3) thirdFleetNotice(key);
 			if (!upAgain.isEmpty())
 				JOptionPane.showMessageDialog(null, String.join(" and ", upAgain) + (upAgain.size() > 1 ? " are" : " is") + " out of the infirmary, on their feet and waiting in the Cargo Hold.", "Infirmary", JOptionPane.INFORMATION_MESSAGE);
@@ -462,24 +452,24 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 
 	/** With the inbox off: a ransom's ask or reminder as a pop-up (Pay, Refuse, or Later: the reminder asks again), or word of the loss. */
-	private void ransomNotice(homeplanet.parser.Expeditions.RansomNews n) {
+	private void ransomNotice(homeplanet.parser.AwayCrew.RansomNews n) {
 		javax.swing.JTextArea t = new javax.swing.JTextArea(n.text());
 		t.setEditable(false); t.setLineWrap(true); t.setWrapStyleWord(true); t.setOpaque(false); t.setColumns(52);
 		t.setFont(MenuTheme.TEXT_FONT);
 		t.setSize(new Dimension(520, 10));
 		if (n.kind.equals("lost")) { JOptionPane.showMessageDialog(null, t, n.title(), JOptionPane.INFORMATION_MESSAGE); return; }
 		Vault v = Vault.get();
-		homeplanet.parser.Expeditions.Captive c = homeplanet.parser.Expeditions.openRansom(v, "ransom:" + n.captive.index);
+		homeplanet.parser.AwayCrew.Captive c = homeplanet.parser.AwayCrew.openRansom(v, "ransom:" + n.captive.index);
 		if (c == null) return; // settled meanwhile
 		Object[] opts = {"Pay " + c.ransom + " scrap", "Refuse", "Later"};
 		int r = JOptionPane.showOptionDialog(null, t, n.title(), JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opts, opts[2]);
 		try {
 			if (r == 0) {
-				homeplanet.parser.Expeditions.payRansom(v, c);
+				homeplanet.parser.AwayCrew.payRansom(v, c);
 				JOptionPane.showMessageDialog(null, c.name + " is back in the Cargo Hold: shaken, thinner, but whole.", "Ransom", JOptionPane.INFORMATION_MESSAGE);
 			} else if (r == 1 && HomePlanet.confirmNo(null, "Refuse the ransom? " + c.name + " will not be coming back.", "Ransom")) {
-				homeplanet.parser.Expeditions.refuseRansom(v, c);
-				JOptionPane.showMessageDialog(null, homeplanet.parser.Expeditions.lostWord(c), "Presumed dead: " + c.name, JOptionPane.INFORMATION_MESSAGE);
+				homeplanet.parser.AwayCrew.refuseRansom(v, c);
+				JOptionPane.showMessageDialog(null, homeplanet.parser.AwayCrew.lostWord(c), "Presumed dead: " + c.name, JOptionPane.INFORMATION_MESSAGE);
 			}
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The ransom wasn't settled. Nothing was changed:\n" + e.getMessage());
@@ -506,7 +496,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		if (!askingOffers.add(n.offer.id)) return; // already on screen
 		try {
-			Object[] options = {"Keep " + homeplanet.model.Words.herObj(), n.value > 0 ? "Accept the museum's offer (" + n.value + " scrap)" : "Give " + homeplanet.model.Words.herObj() + " to the museum", "Decide later"};
+			Object[] options = {"Keep " + Words.herObj(), n.value > 0 ? "Accept the museum's offer (" + n.value + " scrap)" : "Give " + Words.herObj() + " to the museum", "Decide later"};
 			int c = JOptionPane.showOptionDialog(null, t, n.title, JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 			if (c != 0 && c != 1) { deferredOffers.add(n.offer.id); return; }
 			homeplanet.vault.Vault.FinalBattle f = homeplanet.parser.FinalVictory.offer(n.offer.id);
@@ -534,7 +524,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		Object[] options = {"Easy", "Normal", "Hard", "Cancel"};
 		int now = was == null ? 1 : was.ordinal();
 		int c = JOptionPane.showOptionDialog(parent, f.name + " will set out once more from the first sector, with the rebel fleet in pursuit.\n"
-				+ homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " last journey was on " + options[now] + ". How dangerous will " + homeplanet.model.Words.her() + " next one be?", "Keep " + f.name, JOptionPane.DEFAULT_OPTION,
+				+ Words.Her() + " last journey was on " + options[now] + ". How dangerous will " + Words.her() + " next one be?", "Keep " + f.name, JOptionPane.DEFAULT_OPTION,
 				JOptionPane.QUESTION_MESSAGE, null, options, options[now]);
 		return c >= 0 && c <= 2 ? diffs[c] : null;
 	}
@@ -555,22 +545,22 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				String text, yes, no = "Leave it", title;
 				if (f.kind == Vault.Found.Kind.NO_SAVE) {
 					title = "A ship's save is missing";
-					text = f.name + "'s save is missing from " + homeplanet.model.Words.her() + " folder in " + where + ".\n\n"
-							+ ("marked".equals(f.fix()) ? "A save carrying " + homeplanet.model.Words.her() + " mark was found: " + f.source().getName() + ". Put it back in " + homeplanet.model.Words.her() + " folder?"
-							: "version".equals(f.fix()) ? homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " newest kept version can be put back, as " + homeplanet.model.Words.she() + " was then."
-							: "Nothing of " + homeplanet.model.Words.her() + " save is left, but " + homeplanet.model.Words.she() + " can be rebuilt from " + homeplanet.model.Words.her() + " records: " + homeplanet.model.Words.her() + " class, " + homeplanet.model.Words.her() + " crew and " + homeplanet.model.Words.her() + " supplies;\n" + homeplanet.model.Words.her() + " gear and systems as " + homeplanet.model.Words.her() + " class comes.")
-							+ "\n\nLeft, " + homeplanet.model.Words.she() + " goes to the memorial, as a ship whose save is gone always has.";
-					yes = "rebuild".equals(f.fix()) ? "Rebuild " + homeplanet.model.Words.herObj() : "Put it back";
-					no = "Leave " + homeplanet.model.Words.herObj();
+					text = f.name + "'s save is missing from " + Words.her() + " folder in " + where + ".\n\n"
+							+ ("marked".equals(f.fix()) ? "A save carrying " + Words.her() + " mark was found: " + f.source().getName() + ". Put it back in " + Words.her() + " folder?"
+							: "version".equals(f.fix()) ? Words.Her() + " newest kept version can be put back, as " + Words.she() + " was then."
+							: "Nothing of " + Words.her() + " save is left, but " + Words.she() + " can be rebuilt from " + Words.her() + " records: " + Words.her() + " class, " + Words.her() + " crew and " + Words.her() + " supplies;\n" + Words.her() + " gear and systems as " + Words.her() + " class comes.")
+							+ "\n\nLeft, " + Words.she() + " goes to the memorial, as a ship whose save is gone always has.";
+					yes = "rebuild".equals(f.fix()) ? "Rebuild " + Words.herObj() : "Put it back";
+					no = "Leave " + Words.herObj();
 				} else {
 					title = f.kind == Vault.Found.Kind.LOOSE ? "A ship's save was found" : "A ship the fleet doesn't know";
 					String what = f.kind == Vault.Found.Kind.LOOSE ? f.file.getName() + " was found in " + where + ": " + f.name + ", a ship FTL can fly."
-							: f.kind == Vault.Found.Kind.OTHER ? f.name + "'s folder is in " + where + ", but " + homeplanet.model.Words.her() + " record says " + homeplanet.model.Words.she() + " belongs to the " + Vault.title(f.career) + " fleet."
-							: f.name + "'s folder is in " + where + ", but nothing shows " + homeplanet.model.Words.she() + " belongs to this fleet:\n" + homeplanet.model.Words.her() + " save doesn't match the station's last copy of it, and the fleet's log has no entry for " + homeplanet.model.Words.herObj() + ".";
+							: f.kind == Vault.Found.Kind.OTHER ? f.name + "'s folder is in " + where + ", but " + Words.her() + " record says " + Words.she() + " belongs to the " + Vault.title(f.career) + " fleet."
+							: f.name + "'s folder is in " + where + ", but nothing shows " + Words.she() + " belongs to this fleet:\n" + Words.her() + " save doesn't match the station's last copy of it, and the fleet's log has no entry for " + Words.herObj() + ".";
 					boolean here = sandbox;
-					text = what + "\n\n" + (here ? "Take " + homeplanet.model.Words.herObj() + " into the fleet?" : "Only ships this career knows can join it. " + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " can go to Sandbox Mode's fleet instead.")
-							+ "\n\nLeft, " + homeplanet.model.Words.she() + " isn't asked about again.";
-					yes = here ? "Take " + homeplanet.model.Words.herObj() + " in" : "Send " + homeplanet.model.Words.herObj() + " to Sandbox";
+					text = what + "\n\n" + (here ? "Take " + Words.herObj() + " into the fleet?" : "Only ships this career knows can join it. " + Words.She() + " can go to Sandbox Mode's fleet instead.")
+							+ "\n\nLeft, " + Words.she() + " isn't asked about again.";
+					yes = here ? "Take " + Words.herObj() + " in" : "Send " + Words.herObj() + " to Sandbox";
 				}
 				Object[] options = {yes, no};
 				int c = JOptionPane.showOptionDialog(null, text, title, JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
@@ -589,70 +579,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		if (any) init();
 	}
-	private boolean askingToHard = false, toHardPutOff = false;
-	/** A Custom career with no answer to Rescued Ships after Victory moved to Hard difficulty: asked as its briefing would (6.03), then fixed. Closed: asked again at the next start. */
-	private void askToHard() {
-		try {
-			if (!homeplanet.parser.FinalVictory.TO_HARD_ASK.equals(homeplanet.parser.FinalVictory.toHardRule())) return;
-			Object[] options = {"Yes: always to Hard", "No: I'll choose " + homeplanet.model.Words.her() + " difficulty"};
-			int c = JOptionPane.showOptionDialog(null, "Your Custom career hasn't chosen one of its rules yet:\n\n    Rescued Ships after Victory moved to Hard difficulty\n\n"
-					+ "When you keep a ship rescued after a final victory, does " + homeplanet.model.Words.she() + " set out on Hard without asking?\n"
-					+ "Like the career's other rules, it is chosen once and fixed from then on.", "Your Custom career", JOptionPane.DEFAULT_OPTION,
-					JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-			if (c != 0 && c != 1) { toHardPutOff = true; return; }
-			homeplanet.parser.FinalVictory.chooseToHard(Vault.get().root, c == 0);
-		} catch (IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not record the career's choice in its file (it will ask again):\n" + e.getMessage());
-		} finally {
-			askingToHard = false;
-		}
-	}
-
-	private boolean askingRate = false, ratePutOff = false;
-	/** A Custom career with no reputation rate: asked as its briefing would (heromedel, 6.13), then fixed. Closed: asked again at the next start (x1 meanwhile). */
-	private void askRepRate() {
-		try {
-			if (!homeplanet.vault.Reputation.RATE_ASK.equals(homeplanet.vault.Reputation.rateRule())) return;
-			Object[] options = homeplanet.vault.Reputation.RATE_WORDS;
-			int c = JOptionPane.showOptionDialog(null, "Your Custom career hasn't chosen one of its rules yet:\n\n    Reputation earned\n\n"
-					+ "What your ships earn (sectors, ships defeated, scrap, good outcomes, achievements, expeditions) counts at this rate.\n"
-					+ "Losses and spending count as they are. Like the career's other rules, it is chosen once and fixed from then on.", "Your Custom career", JOptionPane.DEFAULT_OPTION,
-					JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-			if (c < 0 || c > 2) { ratePutOff = true; return; }
-			homeplanet.vault.Reputation.chooseRate(Vault.get().root, c);
-		} catch (IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not record the career's choice in its file (it will ask again):\n" + e.getMessage());
-		} finally {
-			askingRate = false;
-		}
-	}
-
-	/** heromedel, 6.54: an earlier re-evaluation rated each ship at the difficulty she flies now; corrected once, and said so. */
-	private void tellCorrected(homeplanet.vault.Reputation.Correction c) {
-		JOptionPane.showMessageDialog(null, "The Federation Home Planet has corrected its records.\nYour earlier reevaluation counted what your ships earned at the difficulty they fly now,\n"
-				+ "not the difficulty they flew when they earned it.\n\nWas: " + c.was + "\nNow: " + c.now + "\n\nEverything earned since the reevaluation is kept.",
-				"Reputation", JOptionPane.INFORMATION_MESSAGE);
-		init();
-	}
-
-	private boolean askingRecords = false, recordsPutOff = false;
-	/** heromedel's question (6.19), with the two scores: re-evaluated at the rates, or kept. Closed: asked again at the next start. */
-	private void askRecords(homeplanet.vault.Reputation.Reevaluation r) {
-		try {
-			Object[] options = {"Reevaluate", "Keep my current score"};
-			int c = JOptionPane.showOptionDialog(null, "The Federation Home Planet is updating its records.\nMany of your accomplishments were before the update and may warrant a different Reputation score.\n\n"
-					+ "Reevaluated: " + r.reevaluated + "\nCurrent: " + r.current + "\n\nWould you like to be reevaluated or keep your current score?",
-					"Reputation", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-			if (c != 0 && c != 1) { recordsPutOff = true; return; }
-			homeplanet.vault.Reputation.answer(Vault.get(), r, c == 0);
-			init();
-		} finally {
-			askingRecords = false;
-		}
-	}
-
 	private boolean askingAboutStranger = false;
-	private static String cap(String s) { return homeplanet.model.Words.cap(s); }
+	private static String cap(String s) { return Words.cap(s); }
 	/** The offer about a stranger's achievements and unlocks was put off (closed): asked again at the next start. */
 	private boolean profileAsked = false;
 	/** What came into FTL's profile while an uncommissioned ship was boarded: heromedel's offer to take it back out (5.55). */
@@ -692,7 +620,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			int c;
 			try {
 				c = JOptionPane.showConfirmDialog(null, "An Immersive Ship from this career, " + homeplanet.parser.ShipNames.the(d.name) + ", is suspected to have been overwritten by accident.\n"
-						+ "If this is the case, would you like it restored from its last known point?\n\nDo not select yes if " + homeplanet.model.Words.she() + " was destroyed in battle.",
+						+ "If this is the case, would you like it restored from its last known point?\n\nDo not select yes if " + Words.she() + " was destroyed in battle.",
 						"Overwritten by accident?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			} finally {
 				askingAboutStranger = false;
@@ -707,7 +635,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				Ship s = Vault.get().restoreBack(d);
 				homeplanet.vault.CrewRegister.shipBack(Vault.get(), s);
 				JOptionPane.showMessageDialog(null, cap(homeplanet.parser.ShipNames.the(s.name)) + (s.isBoarded() ? " is boarded again" : " waits at the Space Dock")
-						+ ", as " + homeplanet.model.Words.she() + " was at " + homeplanet.model.Words.her() + " last known point." + (stranger != null && s.isBoarded() ? "\n" + stranger.name + " waits at the Sandbox fleet's Space Dock." : ""),
+						+ ", as " + Words.she() + " was at " + Words.her() + " last known point." + (stranger != null && s.isBoarded() ? "\n" + stranger.name + " waits at the Sandbox fleet's Space Dock." : ""),
 						"Restored", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
 				HomePlanet.showErrorDialog("The Home Planet Station could not restore " + d.name + ":\n" + e.getMessage());
@@ -716,9 +644,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		if (over == null && (stranger == null || !HomePlanet.immersiveMode)) return;
-		String lost = over == null ? "" : over + " was boarded, and FTL started a new game over " + homeplanet.model.Words.herObj() + ".\n"
-				+ (HomePlanet.immersiveMode ? homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " is lost. " + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " last version is in the station's records.\n"
-						: homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " last version is in the station's records: Other... > Recover a ship brings " + homeplanet.model.Words.herObj() + " back.\n");
+		String lost = over == null ? "" : over + " was boarded, and FTL started a new game over " + Words.herObj() + ".\n"
+				+ (HomePlanet.immersiveMode ? Words.She() + " is lost. " + Words.Her() + " last version is in the station's records.\n"
+						: Words.Her() + " last version is in the station's records: Other... > Recover a ship brings " + Words.herObj() + " back.\n");
 		if (stranger == null || !HomePlanet.immersiveMode) {
 			JOptionPane.showMessageDialog(null, lost + (stranger == null ? "" : "\n" + stranger.name + " is now boarded."), "New game in FTL", JOptionPane.INFORMATION_MESSAGE);
 			return;
@@ -733,8 +661,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	private void askAboutStranger(String lost, Ship stranger) {
 		String message = "Uncommissioned ship detected.\n\n" + (lost.isEmpty() ? "" : lost + "\n")
 				+ stranger.name + " was not commissioned by The Federation Home Planet: this save was not made in Immersive Mode.\n\n"
-				+ "What should be done with " + homeplanet.model.Words.herObj() + "?";
-		Object[] options = {"Send " + homeplanet.model.Words.herObj() + " to the Sandbox fleet's Space Dock", "Decommission " + homeplanet.model.Words.herObj(), "Switch to Sandbox Mode now", "Close The Home Planet Station"};
+				+ "What should be done with " + Words.herObj() + "?";
+		Object[] options = {"Send " + Words.herObj() + " to the Sandbox fleet's Space Dock", "Decommission " + Words.herObj(), "Switch to Sandbox Mode now", "Close The Home Planet Station"};
 		int c = JOptionPane.showOptionDialog(null, message, "Uncommissioned ship", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
 		if (c == 3) { if (parent != null) parent.dispatchEvent(new java.awt.event.WindowEvent(parent, java.awt.event.WindowEvent.WINDOW_CLOSING)); return; }
 		if (c < 0) { deferredStrangers.add(stranger.id); init(); return; } // closed: asked again at the next start
@@ -748,9 +676,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				v.sendToOtherFleet(stranger, false);
 				JOptionPane.showMessageDialog(null, stranger.name + " waits at the Sandbox fleet's Space Dock.", "Uncommissioned ship", JOptionPane.INFORMATION_MESSAGE);
 			} else if (c == 1) {
-				Object[] how = {"Send " + homeplanet.model.Words.herObj() + " to the normal Junkyard", "Destroy " + homeplanet.model.Words.herObj(), "Cancel"};
+				Object[] how = {"Send " + Words.herObj() + " to the normal Junkyard", "Destroy " + Words.herObj(), "Cancel"};
 				int d = JOptionPane.showOptionDialog(null, "Decommission " + stranger.name + ":\n\n"
-						+ "Send " + homeplanet.model.Words.herObj() + " to the Sandbox fleet's Junkyard, or destroy " + homeplanet.model.Words.herObj() + "?\n(A destroyed ship's last version stays in the station's records.)",
+						+ "Send " + Words.herObj() + " to the Sandbox fleet's Junkyard, or destroy " + Words.herObj() + "?\n(A destroyed ship's last version stays in the station's records.)",
 						"Decommission", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, how, how[2]);
 				if (d == 0) v.sendToOtherFleet(stranger, true);
 				else if (d == 1) v.remove(stranger, "DESTROY");
@@ -899,12 +827,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Board/Dock and Info, side by side. */
 	private JPanel buttonRow(Ship ship0, int w, int h) {
 		FtlButton board = new FtlButton(ship0.isBoarded() ? "Dock" : "Board", FtlFont.BODY, w, h);
-		board.setToolTipText(ship0.isBoarded() ? "Dock " + homeplanet.model.Words.herObj() + " here until " + homeplanet.model.Words.she() + "'s needed again" : "Take command: " + homeplanet.model.Words.she() + " becomes the ship you fly in FTL");
+		board.setToolTipText(ship0.isBoarded() ? "Dock " + Words.herObj() + " here until " + Words.she() + "'s needed again" : "Take command: " + Words.she() + " becomes the ship you fly in FTL");
 		boardButtons.put(board, ship0);
 		board.addActionListener(this);
 		if (homeplanet.core.FtlDock.active()) { board.setEnabled(false); board.setToolTipText(GameGuard.CLOSE_FTL); } // she can't change ships mid-flight (5.29)
 		FtlButton infobtn = new FtlButton("Info", FtlFont.BODY, w, h);
-		infobtn.setToolTipText("Ship's report, and rename " + homeplanet.model.Words.herObj());
+		infobtn.setToolTipText("Ship's report, and rename " + Words.herObj());
 		infobtn.addActionListener(this);
 		infoButtons.put(infobtn, ship0);
 		JPanel row = new JPanel();
@@ -934,7 +862,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.add(smallLabel(beacons(ship0), MenuTheme.GREY_GREEN));
 		boolean off = offStation(ship0);
 		JLabel away = smallLabel(off ? "Not within range of a station" : " ", MenuTheme.ORANGE);
-		if (off) away.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " must reach a beacon with a station before " + homeplanet.model.Words.she() + " can trade.");
+		if (off) away.setToolTipText(Words.She() + " must reach a beacon with a station before " + Words.she() + " can trade.");
 		p.add(away);
 		p.add(Box.createRigidArea(new Dimension(1, 4)));
 		p.add(pictureButton(ship0, shipPicture(ship0, 150, 86, off), 154, 90));
@@ -942,7 +870,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.add(buttonRow(ship0, 74, 26));
 		return p;
 	}
-	/** The boarded ship: header and name above, a large picture, Dock and Info below. */
 	/** The Aboard heading (with the inbox and reputation when they go there), above the boarded ship's berth. */
 	private JPanel aboardRow;
 	private JPanel berthPanel(Ship ship0) {
@@ -977,10 +904,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		p.setToolTipText("The ship at your command, berthed at The Home Planet Station");
 		return p;
 	}
-	/**
-	 * A heading with the transmissions light at the end of its line (where the eye goes first) and the reputation to its
-	 * right, if they go here (either may be off).
-	 */
 	/** The Aboard heading with FTL docked and no ship boarded (6.13): the flip, the inbox and the reputation, as on hers. */
 	private JPanel noneAboardRow() {
 		flipBtn = new FlipButton();
@@ -1448,7 +1371,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 	}
 
-	/** The flip (5.32): the docked ships in FTL's place, FTL hidden but running; again, FTL back where it was. */
 	/** "Switch to FTL" (heromedel, 6.57): FTL to the front as Alt+Tab would bring it, full screen or windowed as it is; docked, in its viewport. */
 	private void switchToFtl() {
 		if (homeplanet.core.FtlDock.active() && homeplanet.core.FtlDock.found()) {
@@ -1491,7 +1413,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 	}
 
-	/** Reads the vault and every changed file again (after playing FTL, or changing files by hand). */
 	/** Captain's Quarters: a day's rest, asked first (No to begin with), then the station's round and the screen rebuilt. */
 	private void quarters() {
 		Vault v = Vault.get();
@@ -1553,14 +1474,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		homeplanet.core.Music.refresh();
 		SpaceDockScrollPane.reroll(parent, false); // now and then, different ships leaving the station
 		init();
-		HistoryLog.loaded("refresh");
+		StationLog.loaded("refresh");
 		if (homeplanet.core.FtlDock.active()) new Thread(new Runnable() { public void run() { // and on Refresh, FTL not running at all (5.57)
 			if (homeplanet.core.FtlDock.found() || !ftlSeen || GameGuard.isFtlRunning()) return; // once its window is found, the window says (the build checks it: tasklist can misread); a launch still starting isn't ended
 			javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { if (homeplanet.core.FtlDock.active()) endDock(); } });
 		} }, "ftl-refresh-check").start();
 	}
 
-	/** The transmissions icon: an antenna, and a green light with the unread count. */
 	/**
 	 * The transmissions light, at the end of the Docked heading (or the Aboard heading, with a ship boarded): a mast and dish, and with anything unread a green
 	 * light and "N NEW" in gold, and a small hop every few seconds until the inbox is opened.
@@ -1669,7 +1589,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** Other...: the station's rarely used orders, in a window of their own. */
 	private void otherOrders() {
 		java.util.List<OtherOrdersDialog.Order> orders = new java.util.ArrayList<OtherOrdersDialog.Order>();
-		orders.add(new OtherOrdersDialog.Order("Recover a ship", "For when a ship is lost to a bug or a malfunction: restores " + homeplanet.model.Words.herObj() + " from the station's last record of " + homeplanet.model.Words.herObj() + ".",
+		orders.add(new OtherOrdersDialog.Order("Recover a ship", "For when a ship is lost to a bug or a malfunction: restores " + Words.herObj() + " from the station's last record of " + Words.herObj() + ".",
 				HomePlanet.immersiveMode ? "Immersive Mode: ships lost or destroyed stay gone." : null,
 				new Runnable() { public void run() { recoverShip(); } }, false));
 		orders.add(new OtherOrdersDialog.Order("Clean up blueprints", "Remove old blueprints no ship uses any more from the Federation Home Planet Mod. Rarely needed.",
@@ -1680,12 +1600,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 				!HomePlanet.commissionCosts() ? "commissioning is free (" + (HomePlanet.immersiveMode ? "the career's rules" : "Settings, Rules") + "): Commission a new ship instead."
 						: waiting ? "a ship's order is already waiting for you at Commission." : null,
 				new Runnable() { public void run() { plead(); } }, true));
-		final File last = v.freeCommandForfeit() ? v.lastSurrender() : null;
-		if (last != null) { // an old Report for Reassignment, its ship not yet taken
-			orders.add(new OtherOrdersDialog.Order("Undo Reassignment", "Take back the Cargo Hold and hulls surrendered in the last report for reassignment.",
-					HomePlanet.immersiveMode ? "Immersive Mode: a report for reassignment is final." : null,
-					new Runnable() { public void run() { undoReassignment(last); } }, false));
-		} else if (waiting && v.freeCommandReassigned()) {
+		if (waiting && v.freeCommandReassigned()) {
 			orders.add(new OtherOrdersDialog.Order("Withdraw Plea", "Cancel the new ship's order waiting at Commission. Nothing was taken for it yet.",
 					null, new Runnable() { public void run() { withdrawPlea(); } }, false));
 		}
@@ -1695,11 +1610,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		OtherOrdersDialog.open(this, orders);
 	}
-	/** What an empty shipyard grants, in words. */
-	private static String freeShipWords() {
-		return homeplanet.parser.FreeCommand.words(homeplanet.parser.FreeCommand.ship());
-	}
-	/** HR2: surrender the storage hold and the Junkyard for a free new command, then open Commission. */
 	/**
 	 * Plead for New Ship: The Federation Home Planet agrees to send one, whatever is at the Space Dock. Nothing is taken
 	 * now: at Commission the captain picks her from what the plea offers, and pays with the Cargo Hold or (with
@@ -1710,15 +1620,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String offered = homeplanet.parser.FreeCommand.offered(homeplanet.core.Economy.reassignment());
 		boolean rep = homeplanet.core.Economy.repForJourneysAndPleas();
 		String message = "Plead for a new ship?\n\n"
-				+ "You put your case to The Federation Home Planet: one more ship, and you'll bring " + homeplanet.model.Words.herObj() + " home. They listen.\n"
-				+ "They will send " + offered + ". " + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " order will wait for you at Commission.\n\n"
-				+ "Nothing is taken now. When you commission " + homeplanet.model.Words.herObj() + ", you choose how to pay:\n"
+				+ "You put your case to The Federation Home Planet: one more ship, and you'll bring " + Words.herObj() + " home. They listen.\n"
+				+ "They will send " + offered + ". " + Words.Her() + " order will wait for you at Commission.\n\n"
+				+ "Nothing is taken now. When you commission " + Words.herObj() + ", you choose how to pay:\n"
 				+ " • Give up the Cargo Hold: everything in it but the crew, at what it would sell for (the Junkyard isn't touched).\n"
-				+ (rep ? " • Keep the Cargo Hold, and answer for " + homeplanet.model.Words.herObj() + " with your reputation.\n"
-						+ "Whatever the hold doesn't cover of " + homeplanet.model.Words.her() + " value, " + homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent()) + " of it comes off your reputation.\n"
+				+ (rep ? " • Keep the Cargo Hold, and answer for " + Words.herObj() + " with your reputation.\n"
+						+ "Whatever the hold doesn't cover of " + Words.her() + " value, " + homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent()) + " of it comes off your reputation.\n"
 						: homeplanet.vault.Reputation.shown() ? "" // How Reputation Can be Used: Only as a score
-						: "  (With the Reputation rule on, you could keep the Cargo Hold and answer for " + homeplanet.model.Words.herObj() + " with your reputation.)\n")
-				+ "\nUntil " + homeplanet.model.Words.she() + "'s commissioned, the plea can be withdrawn (Other... > Withdraw Plea).";
+						: "  (With the Reputation rule on, you could keep the Cargo Hold and answer for " + Words.herObj() + " with your reputation.)\n")
+				+ "\nUntil " + Words.she() + "'s commissioned, the plea can be withdrawn (Other... > Withdraw Plea).";
 		Object[] options = {"Plead", "Cancel"};
 		if (JOptionPane.showOptionDialog(this, message, "Plead for New Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) != 0) return;
 		v.plead();
@@ -1732,7 +1642,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	}
 	/** Withdraw Plea: the order waiting at Commission is cancelled (nothing was taken for it). */
 	void withdrawPlea() {
-		if (!HomePlanet.confirmNo(this, "Withdraw your plea for a new ship?\n\n" + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " order at Commission is cancelled. Nothing was taken for it.", "Withdraw Plea")) return;
+		if (!HomePlanet.confirmNo(this, "Withdraw your plea for a new ship?\n\n" + Words.Her() + " order at Commission is cancelled. Nothing was taken for it.", "Withdraw Plea")) return;
 		try {
 			Vault.get().withdrawPlea();
 			homeplanet.parser.Transmissions.pleaWithdrawn(); // her order leaves the inbox, and the Shipyard says so
@@ -1740,23 +1650,6 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			HomePlanet.showErrorDialog("The Home Planet Station could not withdraw the plea:\n" + e.getMessage());
 		}
 		init();
-	}
-	void undoReassignment(File dir) {
-		String hulls;
-		try { hulls = String.join(", ", Vault.get().surrenderedNames(dir)); } catch (IOException e) { hulls = "?"; }
-		if (!HomePlanet.confirmNo(this, "Take back what was surrendered in the last report for reassignment?\n\n"
-				+ "The Cargo Hold returns as it was, and these hulls return to the Junkyard:\n" + (hulls.isEmpty() ? "(none)" : hulls) + ".\n\n"
-				+ "The free command it earned is given up.", "Undo Reassignment")) return;
-		try {
-			Vault.get().undoSurrender(dir);
-		} catch (IOException e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not undo the report for reassignment:\n" + e.getMessage()
-					+ "\n\nWhat was surrendered is still kept in " + dir);
-			init();
-			return;
-		}
-		init();
-		JOptionPane.showMessageDialog(null, "The Cargo Hold and the Junkyard are as they were before your report.", "Undo Reassignment", JOptionPane.INFORMATION_MESSAGE);
 	}
 	/** Brings a destroyed or lost ship back to the Space Dock from her last kept version. */
 	void recoverShip() {
@@ -1767,16 +1660,15 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			return;
 		}
 		String[] names = new String[gone.size()];
-		java.text.SimpleDateFormat when = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
 		for (int i = 0; i < names.length; i++) {
 			Vault.Departed d = gone.get(i);
-			names[i] = d.name + "  (" + (d.fate == Vault.Fate.LOST ? "lost in action" : "destroyed") + "; last kept " + when.format(new java.util.Date(d.last.lastModified())) + ")";
+			names[i] = d.name + "  (" + (d.fate == Vault.Fate.LOST ? "lost in action" : "destroyed") + "; last kept " + homeplanet.core.Stamps.at(d.last.lastModified()) + ")";
 		}
 		javax.swing.JComboBox<String> pick = new javax.swing.JComboBox<String>(names);
 		JPanel panel = new JPanel(new java.awt.BorderLayout(0, 8));
 		panel.add(new JLabel("<html>The Home Planet Station keeps the last version of every ship that leaves the fleet.<br>"
-				+ "A recovered ship returns to the Space Dock as " + homeplanet.model.Words.she() + " was in that version: " + homeplanet.model.Words.her() + " crew, cargo and journey with " + homeplanet.model.Words.herObj() + ".<br>"
-				+ "(A ship lost in action returns as " + homeplanet.model.Words.she() + " was when the station last saw " + homeplanet.model.Words.herObj() + ", before " + homeplanet.model.Words.her() + " final battle.)<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
+				+ "A recovered ship returns to the Space Dock as " + Words.she() + " was in that version: " + Words.her() + " crew, cargo and journey with " + Words.herObj() + ".<br>"
+				+ "(A ship lost in action returns as " + Words.she() + " was when the station last saw " + Words.herObj() + ", before " + Words.her() + " final battle.)<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
 		panel.add(pick, java.awt.BorderLayout.CENTER);
 		Object[] options = {"Recover", "Cancel"};
 		int choice = JOptionPane.showOptionDialog(null, panel, "Recover a Ship", JOptionPane.DEFAULT_OPTION,
@@ -1788,12 +1680,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			back = Vault.get().recover(d);
 		} catch (IOException e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not recover " + d.name + ":\n" + e.getMessage()
-					+ "\n\n" + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " records are still in " + d.folder);
+					+ "\n\n" + Words.Her() + " records are still in " + d.folder);
 			init();
 			return;
 		}
 		init();
-		JOptionPane.showMessageDialog(null, back.name + " has been recovered. " + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " waits at the Space Dock.", "Recover a Ship", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(null, back.name + " has been recovered. " + Words.She() + " waits at the Space Dock.", "Recover a Ship", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	/**
@@ -1832,7 +1724,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		Ship b = Vault.get().boarded();
 		if (b == null) return false;
 		long g0 = System.nanoTime();
-		if (!GameGuard.allows(this, "dock " + homeplanet.model.Words.herObj())) return false;
+		if (!GameGuard.allows(this, "dock " + Words.herObj())) return false;
 		long t0 = System.nanoTime();
 		try {
 			Vault.get().dock();
@@ -1858,7 +1750,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		SavedGameState sgs = ship.save();
 		if (sgs == null) {
 			JOptionPane.showMessageDialog(this, "The Home Planet Station can't read " + ship.name + "'s save:\n" + ship.readError()
-					+ (Retrofit.missingBlueprints(ship.file()).isEmpty() ? "" : "\n\n" + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " can't fly until The Home Planet Station sends the " + Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Mods > Patch mods)."),
+					+ (Retrofit.missingBlueprints(ship.file()).isEmpty() ? "" : "\n\n" + Words.She() + " can't fly until The Home Planet Station sends the " + Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Mods > Patch mods)."),
 					"Ship's report", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
@@ -1870,13 +1762,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		}
 		if (choice != 1) return;
 		String oldName = sgs.getPlayerShipName();
-		String newName = promptForName("What shall " + homeplanet.model.Words.she() + " be called?", "Rename Ship", oldName);
+		String newName = promptForName("What shall " + Words.she() + " be called?", "Rename Ship", oldName);
 		if (newName == null || newName.equals(oldName)) return;
-		if (ship.isBoarded() && !GameGuard.allows(this, "rename " + homeplanet.model.Words.herObj())) return;
+		if (ship.isBoarded() && !GameGuard.allows(this, "rename " + Words.herObj())) return;
 		try {
 			homeplanet.vault.SpaceDock.rename(Vault.get(), ship, sgs, newName);
 		} catch (Exception e) {
-			HomePlanet.showErrorDialog(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " could not be renamed; " + homeplanet.model.Words.her() + " save could not be written:\n" + e);
+			HomePlanet.showErrorDialog(Words.She() + " could not be renamed; " + Words.her() + " save could not be written:\n" + e);
 			return;
 		}
 		JOptionPane.showMessageDialog(null, oldName + " is now known as " + newName + ".", "Rename Ship", JOptionPane.INFORMATION_MESSAGE);
@@ -1896,12 +1788,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String tag = !retrofitted ? "" : CompanionMod.isRemodelId(bpId) ? " (Remodeled " + CompanionMod.numberOf(bpId) + ")" : " (Retrofitted)";
 		if (retrofitted && !Retrofit.inGame(sgs.getPlayerShip())) tag += " - needs the mod sent to FTL via Slipstream";
 		Object[] options = records ? new Object[] {"OK", "Rename", "Records"} : new Object[] {"OK", "Rename"};
-		java.awt.Component body = fitToScreen(shipSummaryPanel(sgs));
+		java.awt.Component body = fitToScreen(ShipReport.panel(sgs));
 		if (ship != null) {
 			javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
 			tabs.addTab("Report", body);
-			tabs.addTab("Stats", fitToScreen(shipStatsTab(ship, sgs)));
-			tabs.setToolTipTextAt(1, "This journey, " + homeplanet.model.Words.her() + " whole service, and " + homeplanet.model.Words.her() + " crew's best");
+			tabs.addTab("Stats", fitToScreen(ShipReport.statsTab(ship, sgs)));
+			tabs.setToolTipTextAt(1, "This journey, " + Words.her() + " whole service, and " + Words.her() + " crew's best");
 			MenuTheme.markOpenTab(tabs);
 			body = tabs;
 		}
@@ -1964,21 +1856,21 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void disbandCurrentShip() {
 		Ship ship = Vault.get().boarded();
 		if (ship == null || !ship.file().exists()) {
-			JOptionPane.showMessageDialog(null, "No ship is at your command.\nBoard a ship before giving the order to decommission " + homeplanet.model.Words.herObj() + ".", "Decommission", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(null, "No ship is at your command.\nBoard a ship before giving the order to decommission " + Words.herObj() + ".", "Decommission", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		String message = "Decommission " + ship.name + "?\n\n"
-				+ homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " crew will stand down and every scrap, supply and part aboard goes with " + homeplanet.model.Words.herObj() + " to the Junkyard.\n"
-				+ "Should " + homeplanet.model.Words.she() + " ever be salvaged, " + homeplanet.model.Words.her() + " crew will return to their posts.";
+				+ Words.Her() + " crew will stand down and every scrap, supply and part aboard goes with " + Words.herObj() + " to the Junkyard.\n"
+				+ "Should " + Words.she() + " ever be salvaged, " + Words.her() + " crew will return to their posts.";
 		Object[] options = {"Decommission", "Cancel"};
 		int choice = JOptionPane.showOptionDialog(null, message, "Decommission", JOptionPane.DEFAULT_OPTION,
 				JOptionPane.WARNING_MESSAGE, null, options, options[1]); // Cancel is the default
 		if (choice != 0) return;
-		if (!GameGuard.allows(this, "decommission " + homeplanet.model.Words.herObj())) return;
+		if (!GameGuard.allows(this, "decommission " + Words.herObj())) return;
 		try {
 			Vault.get().disband();
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " could not be towed to the Junkyard; " + homeplanet.model.Words.her() + " save was not moved:\n" + e.getMessage());
+			HomePlanet.showErrorDialog(Words.She() + " could not be towed to the Junkyard; " + Words.her() + " save was not moved:\n" + e.getMessage());
 			return;
 		}
 		init();
@@ -1989,13 +1881,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		Ship made = CommissionDialog.open(this);
 		if (made == null) return;
 		init();
-		String done = "The Federation Home Planet has commissioned " + made.name + ". " + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " waits at the Space Dock.";
+		String done = "The Federation Home Planet has commissioned " + made.name + ". " + Words.She() + " waits at the Space Dock.";
 		if (GameGuard.isFtlRunning()) { // boarding now could be lost to FTL's next save: not offered (heromedel, 6.39)
-			JOptionPane.showMessageDialog(null, done + "\n\nFTL is running: board " + homeplanet.model.Words.herObj() + " from the Space Dock once it is at its main menu or closed.",
+			JOptionPane.showMessageDialog(null, done + "\n\nFTL is running: board " + Words.herObj() + " from the Space Dock once it is at its main menu or closed.",
 					"Commission Ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
-		int r = JOptionPane.showConfirmDialog(null, done + "\n\nBoard " + homeplanet.model.Words.herObj() + " now?", "Commission Ship", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+		int r = JOptionPane.showConfirmDialog(null, done + "\n\nBoard " + Words.herObj() + " now?", "Commission Ship", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 		if (r == JOptionPane.YES_OPTION) board(made);
 	}
 
@@ -2009,7 +1901,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		ship.invalidate();
 		SavedGameState gs = ship.save();
 		if (gs == null) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not read " + homeplanet.model.Words.her() + " save:\n" + ship.file() + "\n\n" + ship.readError());
+			HomePlanet.showErrorDialog("The Home Planet Station could not read " + Words.her() + " save:\n" + ship.file() + "\n\n" + ship.readError());
 			return;
 		}
 		if (!Vault.get().mayJourney(ship)) {
@@ -2040,7 +1932,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			}
 			if (!HomePlanet.confirmNo(this, "The Federation Home Planet charges " + fee + " scrap to plot a new journey, paid from the Cargo Hold (which holds " + have + ").\n\nPay it?", "New Journey")) return;
 		}
-		if (!GameGuard.allows(this, "start " + homeplanet.model.Words.her() + " new journey")) return;
+		if (!GameGuard.allows(this, "start " + Words.her() + " new journey")) return;
 		net.blerf.ftl.constants.Difficulty[] diffs = {net.blerf.ftl.constants.Difficulty.EASY,
 				net.blerf.ftl.constants.Difficulty.NORMAL, net.blerf.ftl.constants.Difficulty.HARD};
 		SaveHelper.startJourney(gs, diffs[choice]);
@@ -2053,7 +1945,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			homeplanet.vault.SpaceDock.newJourney(Vault.get(), ship, gs, (String) options[choice], fee, pay[0], pay[1], fee > 0 ? RepPay.words(pay) : null);
 		} catch (Exception e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not save " + homeplanet.model.Words.her() + " new journey. Nothing was changed" + (pay[0] > 0 ? " (the fee stays in the Cargo Hold)" : "") + ":\n" + e.getMessage());
+			HomePlanet.showErrorDialog("The Home Planet Station could not save " + Words.her() + " new journey. Nothing was changed" + (pay[0] > 0 ? " (the fee stays in the Cargo Hold)" : "") + ":\n" + e.getMessage());
 			return;
 		}
 		JOptionPane.showMessageDialog(null, gs.getPlayerShipName() + " is ready to depart: a new journey is plotted, Captain.",
@@ -2072,13 +1964,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		log.debug("Junkyard: Scrap {} ({})", wreckShip.name, wreckShip.id);
 		SavedGameState wreck = wreckShip.save();
 		if (wreck == null) {
-			HomePlanet.showErrorDialog("The Home Planet Station can't read " + wreckShip.name + "'s save, so " + homeplanet.model.Words.she() + " can't be stripped:\n" + wreckShip.readError());
+			HomePlanet.showErrorDialog("The Home Planet Station can't read " + wreckShip.name + "'s save, so " + Words.she() + " can't be stripped:\n" + wreckShip.readError());
 			return;
 		}
 		String name = wreckShip.name;
 		if (!Vault.get().mayTrade(wreckShip)) { // the station rule, as for trading: a store, or just set out at The Home Planet Station
 			JOptionPane.showMessageDialog(null, name + " is not within range of a station.\n"
-					+ "The Home Planet Station cannot scrap " + homeplanet.model.Words.herObj() + " for supplies unless you salvage " + homeplanet.model.Words.herObj() + " and fly " + homeplanet.model.Words.herObj() + " to a beacon with a station first.", "Scrap Ship", JOptionPane.INFORMATION_MESSAGE);
+					+ "The Home Planet Station cannot scrap " + Words.herObj() + " for supplies unless you salvage " + Words.herObj() + " and fly " + Words.herObj() + " to a beacon with a station first.", "Scrap Ship", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		// stripping her systems, where allowed, costs a fee for each, paid from the Cargo Hold and her own scrap together
@@ -2093,9 +1985,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			String fee = stripCost == 0 ? "free of charge" : "for " + stripCost + (repOn ? " scrap or reputation (" : " scrap (") + homeplanet.core.Economy.stripFee() + " a system)"
 					+ (repOn ? "" : ", paid from the Cargo Hold");
 			String message = "Strip " + name + " for parts?\n\nWeapons, drones, augments, cargo, supplies and crew will be moved to the Cargo Hold.\n"
-					+ homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " systems can be stripped too, " + fee + ":\n" + SystemsPanel.scrapPreview(wreck.getPlayerShip())
-					+ (can ? "" : "The Cargo Hold and " + homeplanet.model.Words.her() + " own scrap come to " + have + (repOn ? ", your reputation " + homeplanet.vault.Reputation.signed(repHave) : "")
-							+ ": not enough to strip " + homeplanet.model.Words.her() + " systems.\n")
+					+ Words.Her() + " systems can be stripped too, " + fee + ":\n" + SystemsPanel.scrapPreview(wreck.getPlayerShip())
+					+ (can ? "" : "The Cargo Hold and " + Words.her() + " own scrap come to " + have + (repOn ? ", your reputation " + homeplanet.vault.Reputation.signed(repHave) : "")
+							+ ": not enough to strip " + Words.her() + " systems.\n")
 					+ "\nThe hull will be broken up and can never be recovered.";
 			Object[] options = !can ? new Object[] {"Scrap, systems lost", "Cancel"}
 					: new Object[] {stripCost == 0 ? "Scrap and strip" : "Scrap and strip (" + stripCost + ")", "Scrap, systems lost", "Cancel"};
@@ -2103,11 +1995,11 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			if (c < 0 || c == options.length - 1) return;
 			strip = options.length == 3 && c == 0;
 			if (strip && stripCost > 0 && repOn) {
-				pay = RepPay.choose(null, "Scrap Ship", "Stripping " + name + "'s systems costs", stripCost, have, repHave, "The Cargo Hold, with " + homeplanet.model.Words.her() + " own scrap,");
+				pay = RepPay.choose(null, "Scrap Ship", "Stripping " + name + "'s systems costs", stripCost, have, repHave, "The Cargo Hold, with " + Words.her() + " own scrap,");
 				if (pay == null) return;
 			}
 		} else {
-			String aboard = "Everything aboard will be moved to the Cargo Hold. " + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " systems are lost with the hull"
+			String aboard = "Everything aboard will be moved to the Cargo Hold. " + Words.Her() + " systems are lost with the hull"
 					+ (homeplanet.core.Economy.stripAllowed() ? " (none of them can be stored).\n" : ".\n");
 			if (!confirmIrreversible("Scrap Ship", "Strip " + name + " for parts?\n\n" + aboard
 					+ "The hull will be broken up and can never be recovered.", "Scrap")) return;
@@ -2131,13 +2023,13 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	void sellShip(Ship ship, boolean auction) {
 		SavedGameState gs = ship.save();
 		if (gs == null) {
-			HomePlanet.showErrorDialog("The Home Planet Station can't read " + ship.name + "'s save, so " + homeplanet.model.Words.she() + " can't be sold:\n" + ship.readError());
+			HomePlanet.showErrorDialog("The Home Planet Station can't read " + ship.name + "'s save, so " + Words.she() + " can't be sold:\n" + ship.readError());
 			return;
 		}
 		String name = ship.name;
 		if (!Vault.get().mayTrade(ship)) { // the station rule, as Scrap
 			JOptionPane.showMessageDialog(null, name + " is not within range of a station.\n"
-					+ "Buyers only come to a beacon with a store. Salvage " + homeplanet.model.Words.herObj() + " and fly " + homeplanet.model.Words.herObj() + " to one first.", auction ? "Auction" : "Trade In", JOptionPane.INFORMATION_MESSAGE);
+					+ "Buyers only come to a beacon with a store. Salvage " + Words.herObj() + " and fly " + Words.herObj() + " to one first.", auction ? "Auction" : "Trade In", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		ShipState from = gs.getPlayerShip();
@@ -2152,7 +2044,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		String coreNote = "";
 		if (!core.isEmpty()) {
 			List<String> names = new java.util.ArrayList<String>();
-			for (SystemType t : core) names.add(RefitShop.systemTitle(t.getId()));
+			for (SystemType t : core) names.add(homeplanet.model.Items.systemTitle(t.getId()));
 			coreNote = "No " + String.join(" or ", names) + ": buyers pay " + homeplanet.parser.Pricing.CORE_PENALTY * core.size() + " points less.\n";
 		}
 		String hurt = parts.size() <= 1 ? (parts.isEmpty() ? "" : parts.get(0))
@@ -2165,21 +2057,21 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			price = homeplanet.parser.Pricing.auction(gs, seed);
 			int base = homeplanet.parser.Pricing.auctionBase(gs);
 			message = "Put " + name + " up for auction?\n\n"
-					+ homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " value: " + value + " scrap" + (damage > 0 ? ", less " + damage + " for " + hurt + ": " + base : "") + ".\n"
+					+ Words.Her() + " value: " + value + " scrap" + (damage > 0 ? ", less " + damage + " for " + hurt + ": " + base : "") + ".\n"
 					+ coreNote
 					+ "Bidders will offer between " + homeplanet.parser.Pricing.auctionRange(from)[0] + "% and " + homeplanet.parser.Pricing.auctionRange(from)[1] + "% of that ("
 					+ base * homeplanet.parser.Pricing.auctionRange(from)[0] / 100 + " to " + base * homeplanet.parser.Pricing.auctionRange(from)[1] / 100 + " scrap).\n"
-					+ "The Home Planet Station accepts the highest bid automatically: once the auction is held, " + homeplanet.model.Words.she() + " is sold.\n\n";
+					+ "The Home Planet Station accepts the highest bid automatically: once the auction is held, " + Words.she() + " is sold.\n\n";
 		} else {
 			price = homeplanet.parser.Pricing.tradeIn(gs);
 			int share = Math.max(5, 50 - homeplanet.parser.Pricing.CORE_PENALTY * core.size());
 			message = "The Federation Home Planet's shipyard offers " + price + " scrap for " + name + " in trade:\n"
-					+ (share == 50 ? "half " + homeplanet.model.Words.her() + " value of " : share + "% of " + homeplanet.model.Words.her() + " value of ") + value + " scrap" + (damage > 0 ? ", less " + damage + " for " + hurt : "") + ".\n"
+					+ (share == 50 ? "half " + Words.her() + " value of " : share + "% of " + Words.her() + " value of ") + value + " scrap" + (damage > 0 ? ", less " + damage + " for " + hurt : "") + ".\n"
 					+ coreNote + "\n";
 		}
 		int crew = SaveHelper.getOwnCrew(from).size();
-		message += homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " scrap (" + from.getScrapAmt() + ")" + (crew > 0 ? " and crew (" + crew + ")" : "") + " go to the Cargo Hold first, with the payment.\n"
-				+ homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " fuel, missiles, drone parts, weapons, drones, augments, cargo and systems go with " + homeplanet.model.Words.herObj() + ".\n" + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " leaves the fleet for good.";
+		message += Words.Her() + " scrap (" + from.getScrapAmt() + ")" + (crew > 0 ? " and crew (" + crew + ")" : "") + " go to the Cargo Hold first, with the payment.\n"
+				+ Words.Her() + " fuel, missiles, drone parts, weapons, drones, augments, cargo and systems go with " + Words.herObj() + ".\n" + Words.She() + " leaves the fleet for good.";
 		if (!confirmIrreversible(auction ? "Auction" : "Trade In", message, auction ? "Hold Auction" : "Trade In")) return;
 		try {
 			homeplanet.vault.SpaceDock.sell(Vault.get(), ship, gs, price, auction);
@@ -2191,7 +2083,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			int base = homeplanet.parser.Pricing.auctionBase(gs);
 			Object[] accept = {"Accept Bid"};
 			JOptionPane.showOptionDialog(null, "The auction is over. The highest bid for " + name + ": " + price + " scrap"
-					+ (base > 0 ? " (" + (price * 100 / base) + "% of " + homeplanet.model.Words.her() + " value)" : "") + ".\n\n" + price + " scrap, " + homeplanet.model.Words.her() + " own scrap and " + homeplanet.model.Words.her() + " crew are in the Cargo Hold.",
+					+ (base > 0 ? " (" + (price * 100 / base) + "% of " + Words.her() + " value)" : "") + ".\n\n" + price + " scrap, " + Words.her() + " own scrap and " + Words.her() + " crew are in the Cargo Hold.",
 					"Auction", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, accept, accept[0]);
 		} else {
 			JOptionPane.showMessageDialog(null, name + " is traded in. " + price + " scrap is in the Cargo Hold.", "Trade In", JOptionPane.INFORMATION_MESSAGE);
@@ -2201,7 +2093,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 	/** A junked ship in a few lines, for the Junkyard list's tooltip: her class, hull, crew, what's wrong, and what she'd sell for. */
 	private static String junkTip(Ship ship) {
 		SavedGameState gs = ship.save();
-		if (gs == null) return ship.name + ": " + homeplanet.model.Words.her() + " save can't be read";
+		if (gs == null) return ship.name + ": " + Words.her() + " save can't be read";
 		ShipState s = gs.getPlayerShip();
 		int max = SystemsPanel.maxHull(s), crew = SaveHelper.getOwnCrew(s).size(), broken = homeplanet.parser.Pricing.brokenBars(s), breaches = s.getBreachMap().size();
 		StringBuilder sb = new StringBuilder("<html><b>").append(homeplanet.parser.XmlText.text(gs.getPlayerShipName())).append("</b>, ")
@@ -2211,7 +2103,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		java.util.List<SystemType> core = homeplanet.parser.Pricing.missingCore(s);
 		if (!core.isEmpty()) {
 			java.util.List<String> names = new java.util.ArrayList<String>();
-			for (SystemType t : core) names.add(RefitShop.systemTitle(t.getId()));
+			for (SystemType t : core) names.add(homeplanet.model.Items.systemTitle(t.getId()));
 			sb.append("<br>Missing: ").append(String.join(", ", names));
 		}
 		sb.append("<br>Trade In: ").append(homeplanet.parser.Pricing.tradeIn(gs)).append(" scrap</html>");
@@ -2227,27 +2119,27 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (HomePlanet.immersiveMode) { // or on to Sandbox Mode's fleet, gone from this career all the same (heromedel, 6.10)
 			Object[] options = {"Cancel", "Destroy", "Send to Sandbox"};
 			int c = JOptionPane.showOptionDialog(null, "Destroy " + ship.name + "?\n\n"
-					+ "The ship, " + homeplanet.model.Words.her() + " cargo and " + homeplanet.model.Words.her() + " crew will be lost to this career. This cannot be undone.\n\n"
-					+ "Or send " + homeplanet.model.Words.herObj() + " to Sandbox Mode's Junkyard, " + homeplanet.model.Words.her() + " crew with " + homeplanet.model.Words.herObj() + ": this career counts " + homeplanet.model.Words.herObj() + " as gone all the same.",
+					+ "The ship, " + Words.her() + " cargo and " + Words.her() + " crew will be lost to this career. This cannot be undone.\n\n"
+					+ "Or send " + Words.herObj() + " to Sandbox Mode's Junkyard, " + Words.her() + " crew with " + Words.herObj() + ": this career counts " + Words.herObj() + " as gone all the same.",
 					"Destroy Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
 			if (c != 1 && c != 2) return;
 			try {
 				if (c == 1) Vault.get().remove(ship, "DESTROY");
 				else JOptionPane.showMessageDialog(null, Vault.get().sendToSandbox(ship), "Send to Sandbox", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
-				HomePlanet.showErrorDialog(c == 1 ? homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " could not be destroyed; " + homeplanet.model.Words.her() + " save was not removed:\n" + e
-						: "The Home Planet Station could not send " + homeplanet.model.Words.herObj() + " to Sandbox Mode's fleet; " + homeplanet.model.Words.she() + " is still in the Junkyard:\n" + e.getMessage());
+				HomePlanet.showErrorDialog(c == 1 ? Words.She() + " could not be destroyed; " + Words.her() + " save was not removed:\n" + e
+						: "The Home Planet Station could not send " + Words.herObj() + " to Sandbox Mode's fleet; " + Words.she() + " is still in the Junkyard:\n" + e.getMessage());
 			}
 			init();
 			return;
 		}
 		if (!confirmIrreversible("Destroy Ship", "Destroy " + ship.name + "?\n\n"
-				+ "The ship, " + homeplanet.model.Words.her() + " cargo and " + homeplanet.model.Words.her() + " crew will be lost. "
-				+ "The Home Planet Station keeps " + homeplanet.model.Words.her() + " last records,\nso " + homeplanet.model.Words.she() + " could be recovered later (Other... > Recover a ship).", "Destroy")) return;
+				+ "The ship, " + Words.her() + " cargo and " + Words.her() + " crew will be lost. "
+				+ "The Home Planet Station keeps " + Words.her() + " last records,\nso " + Words.she() + " could be recovered later (Other... > Recover a ship).", "Destroy")) return;
 		try {
 			Vault.get().remove(ship, "DESTROY");
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " could not be destroyed; " + homeplanet.model.Words.her() + " save was not removed:\n" + e);
+			HomePlanet.showErrorDialog(Words.She() + " could not be destroyed; " + Words.her() + " save was not removed:\n" + e);
 			return;
 		}
 		init();
@@ -2267,18 +2159,18 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		for (int i = 0; i < names.length; i++) names[i] = junk.get(i).name;
 		javax.swing.JComboBox<String> pick = new javax.swing.JComboBox<String>(names);
 		JPanel panel = new JPanel(new java.awt.BorderLayout(0, 8));
-		panel.add(new JLabel("<html>The Junkyard foreman awaits your orders. Choose a hull and what's to be done with " + homeplanet.model.Words.herObj() + ":<br><br>"
-				+ "<b>Salvage:</b> haul " + homeplanet.model.Words.herObj() + " back to the Space Dock, crew and cargo intact.<br>"
-				+ "<b>Scrap:</b> strip " + homeplanet.model.Words.herObj() + " down. Weapons, drones, augments, cargo, supplies and crew"
-				+ (homeplanet.core.Economy.stripAllowed() ? ", and " + homeplanet.model.Words.her() + " optional systems<br>if you pay to strip them," : "") + " are sent to "
+		panel.add(new JLabel("<html>The Junkyard foreman awaits your orders. Choose a hull and what's to be done with " + Words.herObj() + ":<br><br>"
+				+ "<b>Salvage:</b> haul " + Words.herObj() + " back to the Space Dock, crew and cargo intact.<br>"
+				+ "<b>Scrap:</b> strip " + Words.herObj() + " down. Weapons, drones, augments, cargo, supplies and crew"
+				+ (homeplanet.core.Economy.stripAllowed() ? ", and " + Words.her() + " optional systems<br>if you pay to strip them," : "") + " are sent to "
 				+ (homeplanet.core.Economy.stripAllowed() ? "" : "<br>") + "the Cargo Hold, and the hull is broken up for good.<br>"
-				+ "<b>Trade In:</b> The Federation Home Planet's shipyard takes " + homeplanet.model.Words.herObj() + " for half " + homeplanet.model.Words.her() + " value, less " + homeplanet.model.Words.her() + " damage (less still without Engines, Piloting or Oxygen).<br>"
-				+ "<b>Auction:</b> sell " + homeplanet.model.Words.herObj() + " to the highest bidder: a quarter to three quarters of " + homeplanet.model.Words.her() + " value, less " + homeplanet.model.Words.her() + " damage.<br>"
-				+ "&nbsp;&nbsp;&nbsp;&nbsp;(Selling " + homeplanet.model.Words.herObj() + " sends " + homeplanet.model.Words.her() + " scrap and crew to the Cargo Hold; all else goes with " + homeplanet.model.Words.herObj() + ".)<br>"
+				+ "<b>Trade In:</b> The Federation Home Planet's shipyard takes " + Words.herObj() + " for half " + Words.her() + " value, less " + Words.her() + " damage (less still without Engines, Piloting or Oxygen).<br>"
+				+ "<b>Auction:</b> sell " + Words.herObj() + " to the highest bidder: a quarter to three quarters of " + Words.her() + " value, less " + Words.her() + " damage.<br>"
+				+ "&nbsp;&nbsp;&nbsp;&nbsp;(Selling " + Words.herObj() + " sends " + Words.her() + " scrap and crew to the Cargo Hold; all else goes with " + Words.herObj() + ".)<br>"
 				+ "<b>Derelicts:</b> see the hulls the foreman has for sale.<br>"
 				+ "<b>Parts:</b> see the damaged systems the foreman has pulled from wrecks.<br>"
-				+ "<b>Destroy:</b> reduce " + homeplanet.model.Words.herObj() + " to space debris, with everything aboard. Nothing is recovered,<br>"
-				+ "and " + homeplanet.model.Words.her() + " crew are retired from service.<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
+				+ "<b>Destroy:</b> reduce " + Words.herObj() + " to space debris, with everything aboard. Nothing is recovered,<br>"
+				+ "and " + Words.her() + " crew are retired from service.<br>&nbsp;</html>"), java.awt.BorderLayout.NORTH);
 		// each hull's short report as the list's tooltip; Info... opens her full report
 		final String[] tips = new String[junk.size()];
 		for (int i = 0; i < tips.length; i++) tips[i] = junkTip(junk.get(i));
@@ -2292,12 +2184,12 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		pick.setToolTipText(tips[0]);
 		pick.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { int i = pick.getSelectedIndex(); if (i >= 0) pick.setToolTipText(tips[i]); } });
 		JButton info = new JButton("Info...");
-		info.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report: what's aboard, " + homeplanet.model.Words.her() + " crew, " + homeplanet.model.Words.her() + " systems");
+		info.setToolTipText(Words.Her() + " report: what's aboard, " + Words.her() + " crew, " + Words.her() + " systems");
 		info.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				SavedGameState gs = junk.get(pick.getSelectedIndex()).save();
-				if (gs == null) { HomePlanet.showErrorDialog(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " save can't be read: " + junk.get(pick.getSelectedIndex()).readError()); return; }
-				JOptionPane.showMessageDialog(info, fitToScreen(shipSummaryPanel(gs)), "Ship's report: " + gs.getPlayerShipName(), JOptionPane.PLAIN_MESSAGE);
+				if (gs == null) { HomePlanet.showErrorDialog(Words.Her() + " save can't be read: " + junk.get(pick.getSelectedIndex()).readError()); return; }
+				JOptionPane.showMessageDialog(info, fitToScreen(ShipReport.panel(gs)), "Ship's report: " + gs.getPlayerShipName(), JOptionPane.PLAIN_MESSAGE);
 			}
 		});
 		JPanel pickRow = new JPanel(new java.awt.BorderLayout(8, 0));
@@ -2318,7 +2210,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		try {
 			Vault.get().salvage(ship);
 		} catch (IOException e) {
-			HomePlanet.showErrorDialog(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " could not be hauled out of the Junkyard; " + homeplanet.model.Words.her() + " save data was not moved:\n" + e);
+			HomePlanet.showErrorDialog(Words.She() + " could not be hauled out of the Junkyard; " + Words.her() + " save data was not moved:\n" + e);
 			return;
 		}
 		init();
@@ -2327,255 +2219,9 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		if (!missing.isEmpty()) {
 			Object[] opts = {"Patch Now", "Later"};
 			int r = JOptionPane.showOptionDialog(this, ship.name + " is a retrofitted hull (" + String.join(", ", missing) + ").\n"
-					+ homeplanet.model.Words.cap(homeplanet.model.Words.she()) + "'ll wait at the Space Dock, but can't fly until The Home Planet Station sends the " + CompanionMod.TITLE + " to FTL via Slipstream.",
+					+ Words.She() + "'ll wait at the Space Dock, but can't fly until The Home Planet Station sends the " + CompanionMod.TITLE + " to FTL via Slipstream.",
 					"Salvage", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opts, opts[0]);
 			if (r == 0) PatchDialog.open(this);
 		}
-	}
-
-	// ---- the report ----
-
-	/** The ship report: a picture of the ship, then supplies, crew, weapons, drones and augments, with FTL's icons. */
-	/** The tallest a ship's picture is drawn in her report. */
-	private static final int REPORT_PIC_H = 170;
-
-	public JPanel shipSummaryPanel(SavedGameState sgs) { return shipSummaryPanel(sgs, null, null); }
-	/**
-	 * As {@link #shipSummaryPanel(SavedGameState)}; with {@code rename}, clicking a crew member's name asks for a new one,
-	 * and with {@code reroll} a die beside the Crew heading rolls new names (Commission).
-	 */
-	public JPanel shipSummaryPanel(SavedGameState sgs, final java.util.function.Consumer<CrewState> rename, Runnable reroll) {
-		ShipState state = sgs.getPlayerShip();
-		JPanel p = new JPanel(new java.awt.BorderLayout(18, 4));
-		JLabel pic = reportPicture(sgs);
-		// two columns from the top: her picture, supplies and crew on the left; weapons, drones, augments, cargo and systems on the right
-		JPanel left = column(), right = column();
-		if (pic != null) { pic.setAlignmentX(LEFT_ALIGNMENT); left.add(pic); }
-		JPanel crew = left, systems = right;
-		reportHeading(left, "Supplies");
-		int maxHull = 0;
-		ShipBlueprint bp = DataManager.get().getShips().get(sgs.getPlayerShipBlueprintId());
-		if (bp != null && bp.getHealth() != null) maxHull = bp.getHealth().amount;
-		reportRow(left, null, "Hull: " + state.getHullAmt() + (maxHull > 0 ? " / " + maxHull : ""));
-		reportRow(left, IconFactory.supplyIcon("fuel"), "Fuel: " + state.getFuelAmt());
-		reportRow(left, IconFactory.supplyIcon("missiles"), "Missiles: " + state.getMissilesAmt());
-		reportRow(left, IconFactory.supplyIcon("drones"), "Drone Parts: " + state.getDronePartsAmt());
-		reportRow(left, IconFactory.supplyIcon("scrap"), "Scrap: " + state.getScrapAmt());
-		if (reroll == null) reportHeading(crew, "Crew");
-		else {
-			crew.add(Box.createRigidArea(new Dimension(0, 6)));
-			JPanel head = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
-			head.setOpaque(false);
-			head.setAlignmentX(LEFT_ALIGNMENT);
-			head.add(shadowLabel("Crew", null, true));
-			head.add(DiceIcon.button("New names for " + homeplanet.model.Words.her() + " crew (or click a name to choose one)", reroll));
-			head.setMaximumSize(head.getPreferredSize());
-			crew.add(head);
-		}
-		for (final CrewState c : SaveHelper.getOwnCrew(state)) {
-			final JLabel row = reportRow(crew, CrewReport.withHealth(IconFactory.crewIcon(c), c), c.getName() + " (" + homeplanet.model.Crew.raceTitle(c) + ")");
-			row.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-			if (rename == null) { // a click opens their report
-				row.setToolTipText("Click for " + c.getName() + "'s report");
-				row.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { CrewReport.show(row, c, false, new Object[] {"OK"}); } });
-				continue;
-			}
-			row.setToolTipText("Click to rename " + c.getName());
-			row.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { rename.accept(c); } });
-		}
-		reportHeading(right, "Weapons");
-		for (WeaponState w : state.getWeaponList()) reportRow(right, IconFactory.itemIcon(w.getWeaponId()), Items.weaponTitle(w.getWeaponId()));
-		reportHeading(right, "Drones");
-		for (DroneState d : state.getDroneList()) reportRow(right, IconFactory.itemIcon(d.getDroneId()), Items.droneTitle(d.getDroneId()));
-		reportHeading(right, "Augments");
-		for (String augmentId : state.getAugmentIdList()) reportRow(right, null, Items.augmentTitle(augmentId));
-		List<String> cargo = SaveHelper.cargo(sgs); // not the augment FTL is asking about (5.52)
-		reportHeading(right, "Cargo (" + cargo.size() + " of " + SaveHelper.CARGO_SLOTS + ")");
-		for (String id : cargo) reportRow(right, IconFactory.itemIcon(id), Items.title(id));
-		reportHeading(systems, "Systems");
-		systemRow(systems, null, "Reactor", state.getReservePowerCapacity(), homeplanet.parser.VanillaMax.reactor(), 0);
-		for (Object[] sys : SYSTEM_NAMES) {
-			net.blerf.ftl.parser.SavedGameParser.SystemType t = (net.blerf.ftl.parser.SavedGameParser.SystemType) sys[0];
-			net.blerf.ftl.parser.SavedGameParser.SystemState st = state.getSystem(t);
-			if (st != null && st.getCapacity() > 0) systemRow(systems, t.getId(), (String) sys[1], st.getCapacity(), homeplanet.parser.VanillaMax.system(t.getId()), st.getDamagedBars());
-		}
-		JPanel cols = new JPanel(new java.awt.GridBagLayout());
-		java.awt.GridBagConstraints gc = new java.awt.GridBagConstraints();
-		gc.anchor = java.awt.GridBagConstraints.NORTHWEST;
-		gc.fill = java.awt.GridBagConstraints.HORIZONTAL;
-		gc.weightx = 1; gc.weighty = 1; // from the top, whatever room the window gives
-		gc.insets = new java.awt.Insets(0, 0, 0, 18);
-		gc.gridx = 0; gc.gridy = 0; cols.add(left, gc);
-		gc.gridx = 1; cols.add(right, gc);
-		p.add(cols, java.awt.BorderLayout.CENTER);
-		return p;
-	}
-	/** A system in the report: FTL's icon for it, the name, its level and a bar of it to the vanilla max (broken bars in red). */
-	private static void systemRow(JPanel p, String systemId, String name, int level, int max, int broken) {
-		JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
-		row.setOpaque(false);
-		row.setAlignmentX(LEFT_ALIGNMENT);
-		javax.swing.Icon icon = systemId == null ? null : systemIcon(systemId);
-		JLabel l = new JLabel(name, icon, JLabel.LEFT);
-		l.setIconTextGap(6);
-		l.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, icon == null ? 40 : 34 - icon.getIconWidth(), 1, 0));
-		l.setPreferredSize(new Dimension(150, l.getPreferredSize().height));
-		row.add(l);
-		// the level and its bar; past the bar's reach, the level in words ("12 / 2 broken") and no bar
-		boolean words = LevelBar.asWords(level, max);
-		JLabel n = new JLabel(words ? LevelBar.words(level, broken) : String.valueOf(level), words ? JLabel.LEFT : JLabel.RIGHT);
-		if (!words) n.setPreferredSize(new Dimension(18, n.getPreferredSize().height));
-		n.setForeground(level > max ? LevelBar.AMBER : MenuTheme.WHITE);
-		n.setToolTipText(level > max ? "Past the vanilla max of " + max : "Of a vanilla max of " + max);
-		row.add(n);
-		if (!words) { row.add(Box.createRigidArea(new Dimension(8, 1))); row.add(new LevelBar(level, max, broken, LevelBar.WIDTH, 12)); }
-		row.setMaximumSize(row.getPreferredSize());
-		p.add(row);
-	}
-	private static final java.util.Map<String, javax.swing.Icon> SYSTEM_ICONS = new java.util.HashMap<String, javax.swing.Icon>();
-	/** FTL's icon for a system (its room overlay, scaled to the report's rows), or null without one. */
-	static synchronized javax.swing.Icon systemIcon(String id) {
-		if (SYSTEM_ICONS.containsKey(id)) return SYSTEM_ICONS.get(id);
-		javax.swing.Icon icon = null;
-		BufferedImage img = LayoutEditor.image("img/icons/s_" + id + "_overlay.png");
-		if (img != null) {
-			int h = 16, w = Math.max(1, img.getWidth() * h / Math.max(1, img.getHeight()));
-			BufferedImage small = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-			Graphics2D g = small.createGraphics();
-			g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-			g.drawImage(img, 0, 0, w, h, null);
-			g.dispose();
-			icon = new ImageIcon(small);
-		}
-		SYSTEM_ICONS.put(id, icon);
-		return icon;
-	}
-	/** Her picture for the report: half the Space Dock size, and no taller than REPORT_PIC_H (the Lanius would push the lists off the screen). */
-	private JLabel reportPicture(SavedGameState sgs) {
-		ShipBlueprint ship = blueprintOf(sgs.getPlayerShipBlueprintId());
-		if (ship == null) return null;
-		BufferedImage img = parent.getResourceImage("img/ship/" + ship.getGraphicsBaseName() + "_base.png", false);
-		if (img == null) return null;
-		double scale = Math.min(0.5, (double) REPORT_PIC_H / img.getHeight());
-		int w = Math.max(1, (int) Math.round(img.getWidth() * scale)), h = Math.max(1, (int) Math.round(img.getHeight() * scale));
-		BufferedImage small = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D g = small.createGraphics();
-		g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-		g.drawImage(img, 0, 0, w, h, null);
-		g.dispose();
-		JLabel pic = new JLabel(new ImageIcon(small));
-		pic.setHorizontalAlignment(JLabel.LEFT);
-		return pic;
-	}
-
-	/** The report's Stats tab: her picture as on the Report tab, then this journey, her service and her crew's standouts, side by side. */
-	JPanel shipStatsTab(Ship ship, SavedGameState sgs) {
-		homeplanet.parser.ShipStats st = homeplanet.parser.ShipStats.of(Vault.get(), ship, sgs);
-		JPanel p = new JPanel(new java.awt.BorderLayout(18, 4));
-		JLabel pic = reportPicture(sgs);
-		if (pic != null) p.add(pic, java.awt.BorderLayout.NORTH);
-		JPanel journey = column(), service = column(), crew = column();
-		reportHeading(journey, "This Journey");
-		statLines(journey, st.journey);
-		if (!st.journeyKnown) statNote(journey, homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " journey's own counts begin with " + homeplanet.model.Words.her() + " next New Journey; until then they're in " + homeplanet.model.Words.her() + " service.");
-		reportHeading(service, homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " Service");
-		statLines(service, st.service);
-		if (st.traded != null) statNote(service, st.traded);
-		reportHeading(crew, homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " Crew");
-		if (st.crew.isEmpty()) statNote(crew, "No standouts yet: " + homeplanet.model.Words.her() + " crew's records grow as they serve.");
-		// each crew member once, with every title she holds beneath her name
-		java.util.LinkedHashMap<CrewState, StringBuilder> titles = new java.util.LinkedHashMap<CrewState, StringBuilder>();
-		for (homeplanet.parser.ShipStats.Standout o : st.crew) {
-			if (!titles.containsKey(o.crew)) titles.put(o.crew, new StringBuilder());
-			titles.get(o.crew).append("<b><font color='").append(MenuTheme.HTML_GOLD).append("'>").append(o.title).append("</font></b>&nbsp;&nbsp;<font color='")
-					.append(MenuTheme.HTML_GREY_GREEN).append("'>").append(o.earned).append("</font><br>");
-		}
-		for (java.util.Map.Entry<CrewState, StringBuilder> e : titles.entrySet()) {
-			JLabel who = reportRow(crew, IconFactory.crewIcon(e.getKey()), e.getKey().getName());
-			who.setForeground(MenuTheme.WHITE);
-			who.setFont(MenuTheme.LABEL_FONT);
-			JLabel why = new JLabel("<html>" + e.getValue() + "</html>");
-			why.setFont(MenuTheme.TEXT_FONT);
-			why.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 40, 6, 0));
-			why.setAlignmentX(LEFT_ALIGNMENT);
-			crew.add(why);
-		}
-		JPanel cols = new JPanel(new java.awt.GridBagLayout());
-		java.awt.GridBagConstraints gc = new java.awt.GridBagConstraints();
-		gc.anchor = java.awt.GridBagConstraints.NORTHWEST;
-		gc.insets = new java.awt.Insets(0, 0, 0, 28);
-		gc.gridy = 0;
-		gc.gridx = 0; cols.add(journey, gc);
-		gc.gridx = 1; cols.add(service, gc);
-		gc.gridx = 2; gc.insets = new java.awt.Insets(0, 0, 0, 0); cols.add(crew, gc);
-		p.add(cols, java.awt.BorderLayout.CENTER);
-		return p;
-	}
-	/** Stats as label and value: the label in grey-green, the value in white (a gain green, a loss red), in two neat columns. */
-	private static void statLines(JPanel p, java.util.List<homeplanet.parser.ShipStats.Line> lines) {
-		JPanel grid = new JPanel(new java.awt.GridBagLayout());
-		grid.setAlignmentX(LEFT_ALIGNMENT);
-		grid.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 12, 0, 0));
-		java.awt.GridBagConstraints c = new java.awt.GridBagConstraints();
-		c.insets = new java.awt.Insets(2, 0, 2, 14);
-		c.anchor = java.awt.GridBagConstraints.WEST;
-		for (int i = 0; i < lines.size(); i++) {
-			homeplanet.parser.ShipStats.Line l = lines.get(i);
-			JLabel k = new JLabel(l.label);
-			k.setFont(MenuTheme.LABEL_FONT);
-			k.setForeground(MenuTheme.GREY_GREEN);
-			JLabel v = new JLabel(l.value);
-			v.setFont(MenuTheme.TEXT_FONT);
-			v.setForeground(l.tone > 0 ? MenuTheme.GREEN : l.tone < 0 ? MenuTheme.RED : MenuTheme.WHITE);
-			c.gridy = i;
-			c.gridx = 0; c.anchor = java.awt.GridBagConstraints.WEST; grid.add(k, c);
-			c.gridx = 1; c.anchor = java.awt.GridBagConstraints.EAST; grid.add(v, c);
-		}
-		grid.setMaximumSize(grid.getPreferredSize());
-		p.add(grid);
-	}
-	private static void statNote(JPanel p, String text) {
-		JLabel n = new JLabel("<html><div style='width:200px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>" + homeplanet.parser.XmlText.text(text) + "</font></div></html>");
-		n.setFont(MenuTheme.TEXT_FONT);
-		n.setBorder(javax.swing.BorderFactory.createEmptyBorder(6, 12, 0, 0));
-		n.setAlignmentX(LEFT_ALIGNMENT);
-		p.add(n);
-	}
-
-	private static JPanel column() {
-		JPanel c = new JPanel();
-		c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS));
-		return c;
-	}
-	// Systems in FTL's order, with the names players see
-	private static final Object[][] SYSTEM_NAMES = {
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.SHIELDS, "Shields"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.ENGINES, "Engines"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.OXYGEN, "Oxygen"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.WEAPONS, "Weapons"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.DRONE_CTRL, "Drone Control"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.MEDBAY, "Medbay"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.CLONEBAY, "Clone Bay"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.TELEPORTER, "Crew Teleporter"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.CLOAKING, "Cloaking"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.MIND, "Mind Control"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.HACKING, "Hacking"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.ARTILLERY, "Artillery"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.BATTERY, "Backup Battery"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.PILOT, "Piloting"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.SENSORS, "Sensors"},
-		{net.blerf.ftl.parser.SavedGameParser.SystemType.DOORS, "Door System"},
-	};
-	private static void reportHeading(JPanel p, String text) {
-		p.add(Box.createRigidArea(new Dimension(0, 6)));
-		p.add(shadowLabel(text, null, true));
-	}
-	private static JLabel reportRow(JPanel p, javax.swing.Icon icon, String text) {
-		JLabel l = new JLabel(text, icon, JLabel.LEFT);
-		l.setIconTextGap(6);
-		l.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, (icon == null ? 40 : 34 - icon.getIconWidth()), 1, 0));
-		l.setAlignmentX(LEFT_ALIGNMENT);
-		p.add(l);
-		return l;
 	}
 }

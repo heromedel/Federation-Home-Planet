@@ -379,7 +379,6 @@ final class PowerPanel extends JComponent {
 		for (int i = slots.size() - 1; i >= 0; i--) if (slots.get(i).on) return off(slots.get(i), x);
 		return false;
 	}
-	/** Back as the save had it. */
 	/** The Backup Battery on: its bars join the reactor for 30 seconds, counted down on its plate. */
 	void startBattery() {
 		batteryUntil = System.currentTimeMillis() + BATTERY_MS;
@@ -483,7 +482,7 @@ final class PowerPanel extends JComponent {
 			Sys x = (Sys) o;
 			String id = x.type.getId();
 			String head = SystemsPanel.ftlText("tooltip_" + (id.equals("pilot") ? "pilot" : id));
-			StringBuilder b = new StringBuilder(head == null ? RefitShop.systemTitle(id) : head);
+			StringBuilder b = new StringBuilder(head == null ? homeplanet.model.Items.systemTitle(id) : head);
 			String said = SystemsPanel.levelLabel(id, x.level), lv = SystemsPanel.ftlText("level");
 			if (!said.isEmpty()) b.append("\n\n").append(lv == null ? "Level " + x.level + ": " + said : lv.replace("\\1", Integer.toString(x.level)).replace("\\2", said));
 			b.append("\n\n").append(word("status", "Status:"));

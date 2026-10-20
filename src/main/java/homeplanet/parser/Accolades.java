@@ -67,21 +67,12 @@ public final class Accolades {
 	}
 
 	/** The letter's text with its {accolade} filled, or that paragraph taken out when there's nothing left to say. */
-	public static String fill(Vault v, String letterKey, String body) { return fill(v, letterKey, body, 1); }
-	/** As above, with up to this many accolades in the one paragraph (an old career confirmed three ranks up or more). */
-	public static String fill(Vault v, String letterKey, String body, int many) {
+	public static String fill(Vault v, String letterKey, String body) {
 		if (!body.contains(TOKEN)) return body;
-		StringBuilder said = new StringBuilder();
-		Random rng = new Random();
-		try {
-			for (int i = 0; i < many; i++) {
-				String one = pick(v, letterKey, rng);
-				if (one == null) break;
-				said.append(said.length() == 0 ? "" : "\n").append(one); // one to a line, under "were:"
-			}
-		} catch (RuntimeException e) { log.warn("Could not find an accolade for {}: {}", letterKey, e.toString()); }
-		String line = said.length() == 0 ? null : said.toString();
-		if (line != null) return (line.contains("\n") ? body.replace("was:\n" + TOKEN, "were:\n" + TOKEN) : body).replace(TOKEN, line);
+		String line = null;
+		try { line = pick(v, letterKey, new Random()); }
+		catch (RuntimeException e) { log.warn("Could not find an accolade for {}: {}", letterKey, e.toString()); }
+		if (line != null) return body.replace(TOKEN, line);
 		return body.replaceAll("(?m)^[^\\n]*:\\n\\Q" + TOKEN + "\\E\\n*", "").replaceAll("\\n*\\Q" + TOKEN + "\\E\\n*", "\n\n").trim(); // its heading goes with it
 	}
 

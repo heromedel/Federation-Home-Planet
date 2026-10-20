@@ -58,3 +58,11 @@ Major changes by version
 6.73 to 6.80
   Manual opens from Settings, with Find, dark mode and Top links.
   Search added to the station log, ship logs and Career Reputation Log.
+
+6.81 to 7.00
+  The manual in the station's own window. Every move of more than one file is one protection note.
+  7.00: support for fleets and careers from before 6.0 removed; Long Range Comm. protocol 3.
+  7.01: the code's shared helpers (one XML reader, one place for what goes aboard the Cargo Hold); nothing a player sees changes.
+  7.02: the vault's code split along its seams, long methods split, stale comments removed; nothing a player sees changes.
+  7.03: the watch on FTL's continue.sav keeps its own notes (Steam Cloud's copies, New Game's overwrite); nothing a player sees changes.
+  7.04: the vault back as it was at 7.01, one class in charge of the fleet (7.02's split had its helpers reaching into the fleet's list); everything else from 7.02 kept. Nothing a player sees changes.

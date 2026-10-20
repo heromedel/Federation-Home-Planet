@@ -24,7 +24,7 @@ public class CarryT { public static void main(String[] a) throws Exception {
  int crewIn = 0; for (String k : got.keySet()) if (k.startsWith("crew/")) crewIn++;
  Setup.chk("B: her package carries her crew's files (" + crewIn + " of " + files.length + ")", crewIn == files.length);
  String inPkg = new String(got.get("crew/" + one.getName()), "UTF-8");
- Setup.chk("B: in the package, the form every station reads (properties, the wire's names), her past kept", inPkg.contains("<!DOCTYPE properties") && inPkg.contains("key=\"rec.s0\"") && inPkg.contains("The Old Glory|") && inPkg.contains("Held the line"));
+ Setup.chk("B: in the package, her file as it is on disk (7.0: tags), her past kept", inPkg.contains("<crew>") && inPkg.contains("<skills>") && inPkg.contains("The Old Glory") && inPkg.contains("Held the line"));
  // a package can't put a file outside her folder
  ByteArrayOutputStream bo = new ByteArrayOutputStream(); java.util.zip.ZipOutputStream z = new java.util.zip.ZipOutputStream(bo);
  z.putNextEntry(new java.util.zip.ZipEntry("ship.sav")); z.write(got.get("ship.sav")); z.closeEntry();

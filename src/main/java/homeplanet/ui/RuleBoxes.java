@@ -204,7 +204,7 @@ public class RuleBoxes {
 		lockedBox.setToolTipText("Commission only offers the layouts (A, B, C) you have unlocked in FTL");
 		customLockedBox.setToolTipText("A starter blueprint is offered only once the layout " + homeplanet.model.Words.she() + " was remodeled from is unlocked");
 		customLockedBox.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
-		costBox.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " hull, reactor, systems and levels, weapons, drones, augments, crew, supplies, scrap, rooms and doors, strictly counted. The Commission window shows the price");
+		costBox.setToolTipText(homeplanet.model.Words.Her() + " hull, reactor, systems and levels, weapons, drones, augments, crew, supplies, scrap, rooms and doors, strictly counted. The Commission window shows the price");
 		percentBox.setToolTipText("The share of their price that ships and parts are valued at: Commission (when it costs), Trade In, Auction, the museum, the Junkyard's derelicts and parts. Never the stores' prices (an Immersive career: Easy 50%, Normal 75%, Hard 100%)");
 		percentBox.setSelectedItem(HomePlanet.commissionPercent + "%");
 		costRow.add(costBox);
@@ -336,7 +336,7 @@ public class RuleBoxes {
 		showingCareerOwn = !im;
 		careerBox.setToolTipText(im ? SET_BY_IMMERSIVE : careerTip);
 		boolean cost = costBox.isSelected();
-		// Immersive Mode: the ship a report earns goes by what it surrenders, not by this choice
+		// Immersive Mode: the ship a plea earns is the career's rule, not this choice
 		freeBox.setEnabled(cost && !im);
 		freeLabel.setEnabled(cost && !im);
 		if (im) freeBox.setSelectedIndex(Math.max(0, java.util.Arrays.asList(FREE_KEYS).indexOf(homeplanet.core.Economy.reassignment()))); // the career's
@@ -360,8 +360,7 @@ public class RuleBoxes {
 		if (im) {
 			rateBox.setSelectedIndex(homeplanet.vault.Reputation.rateLevel());
 			String rule = homeplanet.vault.Reputation.rateRule();
-			rateBox.setToolTipText(homeplanet.vault.Reputation.RATE_ASK.equals(rule) ? "This career hasn't chosen yet: the Space Dock will ask"
-					: homeplanet.vault.Reputation.RATE_CHOSEN.equals(rule) ? "Chosen when this career began, and fixed" : "The career's difficulty sets it");
+			rateBox.setToolTipText(homeplanet.vault.Reputation.RATE_CHOSEN.equals(rule) ? "Chosen when this career began, and fixed" : "The career's difficulty sets it");
 		} else {
 			if (showingRateCareer) rateBox.setSelectedIndex(Math.max(0, Math.min(2, HomePlanet.reputationRate)));
 			rateBox.setToolTipText(rateTip + ". Sandbox Mode's to change anytime");

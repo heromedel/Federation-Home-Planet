@@ -23,11 +23,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Finding other stations on the local network: a scan broadcasts "any stations?" to the stations' ports, and each
  * station with its hailing frequencies open answers with its commander, the ship they're aboard and where to hail it.
- * Text only, one short line each way; an answer that doesn't parse is ignored.
- * <p>
- * A scan asks twice: once with its station's id after the question (so a station that blocked it can stay silent),
- * and once without, for stations older than 4B.70, which answer only the bare question. A newer station answers the
- * first and ignores the bare one from the same scan.
+ * Text only, one short line each way; an answer that doesn't parse is ignored. The question carries the asking
+ * station's id, so a station that blocked it can stay silent.
  */
 public final class Beacon {
 	private static final Logger log = LoggerFactory.getLogger(Beacon.class);
@@ -43,10 +40,6 @@ public final class Beacon {
 		public final int port;
 		/** Its Long Range Comm. protocol: stations trade when theirs match. */
 		public int protocol;
-		/** It takes messages without a channel ({@link Notes}): 4B.72 and later. */
-		public boolean notes;
-		/** It takes shipments with them ({@link Shipments}): 4B.81 and later. */
-		public boolean shipments;
 		public boolean compatible() { return protocol == Session.PROTOCOL; }
 		Found(String host, int port, String title, String ship, String version, String station, String mode) {
 			this.host = host; this.port = port; this.title = title; this.ship = ship; this.version = version; this.station = station; this.mode = mode;
@@ -60,8 +53,6 @@ public final class Beacon {
 	public static final class Responder {
 		private final DatagramSocket socket;
 		private volatile boolean open = true;
-		/** Where an id-bearing question last came from, and when (read and written on the beacon's own thread). */
-		private final Map<String, Long> asked = new LinkedHashMap<String, Long>();
 		public Responder(final Self self) throws IOException {
 			DatagramSocket s = null;
 			for (int i = 0; i < Channel.PORTS && s == null; i++) {
@@ -78,19 +69,8 @@ public final class Beacon {
 							DatagramPacket p = new DatagramPacket(buf, buf.length);
 							socket.receive(p);
 							String q = new String(p.getData(), 0, p.getLength(), StandardCharsets.UTF_8);
-							String from = p.getSocketAddress().toString(), host = p.getAddress().getHostAddress();
-							long now = System.currentTimeMillis();
-							if (q.startsWith(ASK + "\n")) {
-								asked.put(from, now); // its bare question, right behind, is the same scan
-								while (asked.size() > 64) asked.remove(asked.keySet().iterator().next());
-								if (Blocks.blocked(q.substring(ASK.length() + 1).trim(), host)) continue;
-							} else if (q.equals(ASK)) {
-								Long t = asked.get(from);
-								if (t != null && now - t < 5000) continue;
-								if (Blocks.blocked(null, host)) continue;
-							} else {
-								continue;
-							}
+							String host = p.getAddress().getHostAddress();
+							if (!q.startsWith(ASK + "\n") || Blocks.blocked(q.substring(ASK.length() + 1).trim(), host)) continue;
 							byte[] a = (ANSWER + "\n" + self.answer()).getBytes(StandardCharsets.UTF_8);
 							socket.send(new DatagramPacket(a, a.length, p.getSocketAddress()));
 						} catch (IOException e) {
@@ -105,12 +85,9 @@ public final class Beacon {
 		public void close() { open = false; socket.close(); }
 	}
 
-	/**
-	 * The answer's text: one field a line (tcp port, protocol, version, station id, title, ship, mode, then what it
-	 * takes beyond trading, comma-separated: "notes"). Older stations read the first lines and ignore the rest.
-	 */
+	/** The answer's text: one field a line (tcp port, protocol, version, station id, title, ship, mode). A station ignores lines it doesn't know. */
 	public static String answer(int tcpPort, String version, String station, String title, String ship, String mode) {
-		return tcpPort + "\n" + Session.PROTOCOL + "\n" + version + "\n" + station + "\n" + title + "\n" + (ship == null ? "" : ship) + "\n" + mode + "\nnotes,shipments";
+		return tcpPort + "\n" + Session.PROTOCOL + "\n" + version + "\n" + station + "\n" + title + "\n" + (ship == null ? "" : ship) + "\n" + mode;
 	}
 
 	/** Asks every station in reach, listening for answers this long. Not on the event thread. Leaves out this station. */
@@ -120,13 +97,11 @@ public final class Beacon {
 		try {
 			s = new DatagramSocket();
 			s.setBroadcast(true);
-			byte[] q = (ASK + "\n" + self).getBytes(StandardCharsets.UTF_8), bare = ASK.getBytes(StandardCharsets.UTF_8);
+			byte[] q = (ASK + "\n" + self).getBytes(StandardCharsets.UTF_8);
 			for (InetAddress a : targets()) {
 				for (int i = 0; i < Channel.PORTS; i++) {
-					try {
-						s.send(new DatagramPacket(q, q.length, a, Channel.PORT0 + i));
-						s.send(new DatagramPacket(bare, bare.length, a, Channel.PORT0 + i));
-					} catch (IOException e) { /* that network refused: the others may not */ }
+					try { s.send(new DatagramPacket(q, q.length, a, Channel.PORT0 + i)); }
+					catch (IOException e) { /* that network refused: the others may not */ }
 				}
 			}
 			long end = System.currentTimeMillis() + ms;
@@ -159,9 +134,6 @@ public final class Beacon {
 			String mode = l.length > 7 && java.util.Arrays.asList(homeplanet.vault.Vault.SLOTS).contains(l[7].trim()) ? l[7].trim() : homeplanet.vault.Vault.SANDBOX;
 			Found f = new Found(host, port, Line.text(l[5], 48), Line.text(l[6], 64), Line.text(l[3], 16), l[4], mode);
 			try { f.protocol = Integer.parseInt(l[2].trim()); } catch (NumberFormatException e) { f.protocol = -1; }
-			List<String> takes = l.length > 8 ? java.util.Arrays.asList(l[8].trim().split(",")) : new ArrayList<String>();
-			f.notes = takes.contains("notes");
-			f.shipments = takes.contains("shipments");
 			return f;
 		} catch (NumberFormatException e) {
 			return null;

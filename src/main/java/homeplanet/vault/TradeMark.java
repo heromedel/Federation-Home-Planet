@@ -67,7 +67,7 @@ public final class TradeMark {
 	static Properties mark(String trade, String from, String original, String commissioned, SavedGameState gs, int sectors) throws IOException {
 		Properties p = new Properties();
 		p.setProperty("trade", trade);
-		p.setProperty("date", new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date()));
+		p.setProperty("date", homeplanet.core.Stamps.now());
 		p.setProperty("from", from);
 		p.setProperty("original", original);
 		if (commissioned != null && !commissioned.isEmpty()) p.setProperty("commissioned", commissioned);

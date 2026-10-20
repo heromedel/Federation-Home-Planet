@@ -12,22 +12,12 @@
      The ship pronoun tokens {she} {her} {her_obj} {herself} {She} {Her} follow the Ship Pronoun setting (Settings, General). -->
 <lore>
 	<!-- the station's own housekeeping -->
-	<entry kind="CREW_FILES" when="what=converted">Every crew member's record was given a file of their own.</entry>
-	<entry kind="CREW_FILES" when="what=positions">The crew register was brought up to date with the station's log.</entry>
-	<entry kind="HOLD_FILE" when="what=converted">The Cargo Hold's inventory was written up in a new ledger.</entry>
-	<entry kind="EXPEDITION_FILES" when="what=moved">The expeditions office, the infirmary and the captives' records were filed in rooms of their own.</entry>
-	<entry kind="SMALL_FILES" when="what=moved">The station's records were tidied into one file for each concern.</entry>
-	<entry kind="SHIP_FILES" when="what=folded">Each ship's notes were filed with {her} record.</entry>
-	<entry kind="LAYOUT" when="what=converted">The station's records were rearranged, every ship into a folder of {her} own.</entry>
-	<entry kind="LOGS_CONVERTED">The station read its old logs into its records once.</entry>
-	<entry kind="LOG_DAYS_REPAIRED">The station put its old log entries back on their own days.</entry>
 	<entry kind="JOURNAL" when="what=finished">The station finished what it had begun.</entry>
 	<entry kind="JOURNAL" when="what=stuck">The station could not finish what it had begun; its note is kept.</entry>
 	<entry kind="VAULT" when="what=adopted_continue">The {ship_name}, a ship the station didn't know, turned up in FTL and was taken in as the boarded ship.</entry>
 	<entry kind="VAULT" when="what=set_aside&amp;other_career=true">A ship from another career's fleet turned up in FTL's saves and was set aside, not taken into this fleet.</entry>
 	<entry kind="VAULT" when="what=set_aside&amp;in_fleet=false">An old copy of the {ship_name}, who has left the fleet, turned up in FTL's saves and was set aside in {her} records.</entry>
 	<entry kind="VAULT" when="what=set_aside">An old copy of the {ship_name} turned up in FTL's saves and was set aside in {her} records, not added as a second ship.</entry>
-	<entry kind="VAULT" when="what=checked">The {ship_name} was checked and confirmed as this fleet's own.</entry>
 	<entry kind="VAULT" when="what=arrived">The {ship_name} arrived from the {from} fleet.</entry>
 	<entry kind="VAULT" when="what=taken_in&amp;to=sandbox">The {ship_name}, found where no ship was expected, was sent to Sandbox Mode's fleet.</entry>
 	<entry kind="VAULT" when="what=taken_in">The {ship_name}, found where no ship was expected, was taken into the fleet.</entry>
@@ -54,7 +44,6 @@
 	<entry kind="OVERWRITTEN">FTL's New Game wrote over the {ship_name} with the {by_name}. {Her} last version is kept.</entry>
 	<entry kind="RENAME">The {from} was renamed the {to}.</entry>
 	<entry kind="REMODEL">The {ship_name} was remodeled.</entry>
-	<entry kind="CREW_RESEATED">The {ship_name}'s crew were returned to {her} rooms after {her} overhaul.</entry>
 	<entry kind="NEW_JOURNEY">A new journey was plotted for the {ship_name}, at {difficulty} difficulty.</entry>
 	<entry kind="SCRAP">The {ship_name} was broken up for parts. What {she} carried went into the Cargo Hold.</entry>
 	<entry kind="SELL" when="how=auction">The {ship_name} was sold at auction for {price} scrap.</entry>
@@ -69,7 +58,6 @@
 	<entry kind="MUSEUM" when="pay=none">The {ship_name} was given to the Federation Museum, in honour of {her} service.</entry>
 	<entry kind="MUSEUM" when="scrap">{scrap} scrap came to the Cargo Hold for the {ship_name}'s place in the Federation Museum.</entry>
 	<entry kind="MUSEUM">The {ship_name} is honoured in the Federation Museum.</entry>
-	<entry kind="REWARD">{scrap} scrap came to the Cargo Hold as a reward for the {ship_name}.</entry>
 
 	<!-- the Cargo Bay -->
 	<entry kind="TRADE" when="ship_name&amp;partner_id">Crew and cargo were moved between the {ship_name} and the {partner_name} in the Cargo Bay.</entry>
@@ -174,10 +162,6 @@
 	<entry kind="PLEAD" when="stage=agreed">The Federation Home Planet agreed to send a new ship. {Her} order waits at Commission.</entry>
 	<entry kind="PLEAD" when="stage=hold_given">The Cargo Hold was given up for the new ship.</entry>
 	<entry kind="UNDO_PLEA">The plea for a new ship was withdrawn.</entry>
-	<entry kind="REASSIGN" when="hulls=0">The Cargo Hold was surrendered in a report for reassignment.</entry>
-	<entry kind="REASSIGN" when="hulls=1">The Cargo Hold and a hull from the Junkyard were surrendered in a report for reassignment.</entry>
-	<entry kind="REASSIGN">The Cargo Hold and {hulls#} hulls from the Junkyard were surrendered in a report for reassignment.</entry>
-	<entry kind="UNDO_REASSIGN">The report for reassignment was undone, and what it surrendered came back.</entry>
 	<entry kind="SENT">The {ship_name} was sent to the {to_fleet} fleet.</entry>
 	<entry kind="HANDED_OVER">The {ship_name}, flying in FTL, was handed over to the {to_fleet} fleet.</entry>
 	<entry kind="SWITCH_FLEET" when="stage=leaving">The station switched over to the {to_fleet} fleet.</entry>

@@ -7,9 +7,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -44,14 +42,8 @@ public final class HoldXml {
 		try { return f.isFile() && isHold(SafeFiles.read(f)); } catch (IOException e) { return false; }
 	}
 
-	/** A hold's file read, whichever it is: the xml, or a save (a 5.x fleet's storage.sav or cargohold.sav). */
-	public static SavedGameState read(File f) throws IOException {
-		byte[] b = SafeFiles.read(f);
-		if (isHold(b)) return read(b);
-		try { return new SavedGameParser().readSavedGame(f); }
-		catch (IOException e) { throw e; }
-		catch (Exception e) { throw new IOException(f.getName() + " could not be read: " + e, e); }
-	}
+	/** A hold's file read. */
+	public static SavedGameState read(File f) throws IOException { return read(SafeFiles.read(f)); }
 
 	public static byte[] toBytes(SavedGameState gs) throws IOException {
 		ShipState s = gs.getPlayerShip();
@@ -89,12 +81,8 @@ public final class HoldXml {
 	public static SavedGameState read(byte[] bytes) throws IOException {
 		Element root;
 		try {
-			DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
-			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-			f.setExpandEntityReferences(false);
-			Document doc = quiet(f.newDocumentBuilder()).parse(new ByteArrayInputStream(bytes));
-			root = doc.getDocumentElement();
-		} catch (Exception e) {
+			root = XmlText.parse(bytes);
+		} catch (IOException e) {
 			throw new IOException("The Cargo Hold's file could not be read (" + e.getMessage() + "): put back a copy from its versions folder, or send it with a bug report", e);
 		}
 		if (!ROOT.equals(root.getTagName())) throw new IOException("The Cargo Hold's file holds <" + root.getTagName() + ">, not <" + ROOT + ">");
@@ -154,12 +142,5 @@ public final class HoldXml {
 	}
 	private static int num(String s, int otherwise) {
 		try { return s == null || s.trim().isEmpty() ? otherwise : Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return otherwise; }
-	}
-	/** A builder that keeps quiet: its errors come back as the exception, not printed to the console. */
-	private static javax.xml.parsers.DocumentBuilder quiet(javax.xml.parsers.DocumentBuilder b) {
-		b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
-			@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
-		});
-		return b;
 	}
 }

@@ -103,6 +103,15 @@ public final class FtlDock {
 	public static int fullscreenChosen() {
 		try { return Math.max(0, Math.min(3, Integer.parseInt(HomePlanet.config.getProperty(CFG_FULLSCREEN, "3").trim()))); } catch (NumberFormatException e) { return 3; }
 	}
+	/** The Settings window's choices into the cfg (written with the rest by HomePlanet.saveConfig). */
+	public static void saveChoices(boolean on, String size, boolean attached, boolean video, int fullscreen, boolean vsync) {
+		HomePlanet.config.setProperty(CFG_ON, Boolean.toString(on));
+		HomePlanet.config.setProperty(CFG_SIZE, size);
+		HomePlanet.config.setProperty(CFG_ATTACHED, Boolean.toString(attached));
+		HomePlanet.config.setProperty(CFG_VIDEO, Boolean.toString(video));
+		HomePlanet.config.setProperty(CFG_FULLSCREEN, Integer.toString(fullscreen));
+		HomePlanet.config.setProperty(CFG_VSYNC, Boolean.toString(vsync));
+	}
 	public static boolean vsyncChosen() { return Boolean.parseBoolean(HomePlanet.config.getProperty(CFG_VSYNC, "true")); }
 	/**
 	 * Before a launch outside the dock: the fullscreen mode and V-Sync chosen in Settings written into FTL's settings.ini

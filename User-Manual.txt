@@ -1,5 +1,5 @@
 THE HOME PLANET STATION
-User Manual, version 6.86
+User Manual, version 7.05
 Issued by The Federation Home Planet
 
 To see which version of the station you have, open SETTINGS and choose the
@@ -184,7 +184,9 @@ in the folders whose names begin with FederationHomePlanet. Only a small file
 noting where things are, and the program's own logs, stay beside the program.
 A newer version of the station can be unzipped anywhere and will find
 everything without asking again. To back up your fleet, back up FTL's saves
-folder.
+folder. This version does not read a fleet from before version 6.0. If yours
+is that old, open it once in a 6.x version of the station first, then come
+back to this one.
 
 
 ==============================================================================
@@ -707,8 +709,10 @@ can be traded too. Sandbox fleets may always trade ships, but Immersive
 careers may only when both commanders allow it in SETTINGS on the General tab.
 A Sandbox fleet trades only with other Sandbox fleets, and an Immersive career
 only with other Immersive careers. Careers of different difficulties can trade
-too. This is allowed unless either commander turns it off. Otherwise you can
-still talk, but not trade.
+too. This is allowed unless either commander turns it off. Both commanders
+also need a Long Range Comm. of the same age. If one is older, the Commanders
+list says so and names both versions, and one of you must update before you
+can trade. Otherwise you can still talk, but not trade.
 
 Messages and shipments
 ----------------------

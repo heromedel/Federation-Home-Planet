@@ -23,7 +23,7 @@
      Admiral; {accolade} is filled with what the career did), rescue and museum (after a final victory, Choice and
      Museum: {ship} is her name, {value} the museum's reward in scrap, {worth} "her full value" or "half her value"; also
      shown as a notice when Transmissions are off), rescue_honour and museum_honour (the same when the museum's reward is
-     None: no scrap), reward (before 6.47: her value, she stays lost; no longer sent).
+     None: no scrap).
 
      Reply chains: replies="words -> next-key 5-10 | other words -> other-key 3-5" gives the letter a Reply button; the
      chosen reply sends next-key's letter a random 5 to 10 days later. then="next-key 5-7" sends the next letter by
@@ -155,20 +155,6 @@ Recovery teams reached the {ship} in time and brought {her_obj} home. In honour 
 For as long as the Federation endures, {her} service will be remembered.
 
 ~ Federation Fleet Command
-]]></letter>
-
-	<letter key="reward" from="The Federation Home Planet" subject="In Recognition"><![CDATA[
-Official notice from The Federation Home Planet
-
-{rank},
-
-The Rebel Flagship has withdrawn. The {ship} was lost in the engagement that forced {her_obj} back. Recovery was not possible.
-
-In recognition of {her} service, {her} full value of {value} scrap has been granted to The Home Planet Station. It is waiting in the Station's Cargo Hold: enough to commission a ship of equal worth.
-
-{Her} name has been entered in the fleet's records.
-
-~ The Federation Home Planet
 ]]></letter>
 
 	<letter key="stipend" from="The Federation Home Planet" subject="Stipend"><![CDATA[

@@ -38,7 +38,6 @@ import net.blerf.ftl.xml.DroneBlueprint;
 import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.WeaponBlueprint;
 
-import homeplanet.parser.CompanionMod;
 import homeplanet.parser.CompanionMod.Loadout;
 
 /**
@@ -56,7 +55,6 @@ public class BlueprintDialog extends JDialog {
 	}
 
 	static final int MAX_CREW = 8, MAX_AUGS = 3;
-	private static final String[] RACE_NAMES = {"Human", "Engi", "Mantis", "Rock", "Slug", "Zoltan", "Crystal", "Lanius"};
 
 	/** A choice in a drop-down: an item id and what it's called. */
 	static class Item {
@@ -132,12 +130,12 @@ public class BlueprintDialog extends JDialog {
 		ChangeListener recount = new ChangeListener() {
 			public void stateChanged(ChangeEvent e) { updateCrewTotal(); }
 		};
-		for (int i = 0; i < CompanionMod.RACES.length; i++) {
+		for (int i = 0; i < homeplanet.model.Crew.RACES.length; i++) {
 			JSpinner sp = new JSpinner(new SpinnerNumberModel(0, 0, MAX_CREW, 1));
 			sp.addChangeListener(recount);
-			crewSpinners.put(CompanionMod.RACES[i], sp);
+			crewSpinners.put(homeplanet.model.Crew.RACES[i], sp);
 			JPanel cell = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-			JLabel race = new JLabel(RACE_NAMES[i]);
+			JLabel race = new JLabel(homeplanet.model.Crew.racePeople(homeplanet.model.Crew.RACES[i]));
 			race.setPreferredSize(new java.awt.Dimension(64, race.getPreferredSize().height));
 			cell.add(race);
 			cell.add(sp);
