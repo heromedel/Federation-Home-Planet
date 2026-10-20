@@ -18,7 +18,7 @@ Changes should not just be busy work with no improvement.
 - In discussions, talk in normal paragraphs, like a conversation: start with what you think of the idea (what's good
   about it, what you'd build from it), and fold practical details in or handle them in the plan. Don't answer an idea
   with lists of problems, issues and questions; keep lists for the plans themselves.
-- Plans and ideas are lettered; their steps are numbered Questions use "Q1", "Q2", etc. as labels:
+- Plans and ideas are lettered; their steps are numbered; questions use "Q1", "Q2", etc. as labels:
 
       Idea A            Plan B
       1. ...            1. ...
@@ -27,20 +27,17 @@ Changes should not just be busy work with no improvement.
 - Bug fixing takes precedence over feature creep. When a major bug turns up (game-breaking, or a hidden one that
   quietly damages a fleet, like crew being cloned), you may ask heromedel to hold off on the next plan so it can be
   fixed first: occasionally, not in a pushy way.
-- heromedel's own text (letters, messages, names) is usually a strong suggestion and have spelling and grammar fixed or suggestions made.
-in many cases his use of capilization inside of quotes is intentional. But sentences can always capitilize the first word. Consistency in lore 
-is important but exact, perfect absolute consistency is to much. For example one charcter might call a ship "her" and another might call a ship "it".
-
-
-  A sentence's first letter may be capitalised as grammar wants, with one exception: "heromedel" is always lowercase (heromedel, 6.72).
+- heromedel's own text (letters, messages, names) is usually a strong suggestion: fix its spelling and grammar, or suggest
+  changes. In many cases heromedel's capitalization inside quotes is intentional, but a sentence can always capitalize its
+  first word; "heromedel" is always lowercase (heromedel, 6.72). Consistency in lore is important, but exact, perfect
+  consistency is too much: one character might call a ship "her" and another might call a ship "it".
 - Not a rule just a clarification: heromedel does not care about pronouns, does not care about being mis-pronounded does not care what pronoun a ship has  and never told claude to have any rule about any pronouns. Do not ever act as if there is a rule about what pronoun to call or not call him.
 - Answer questions without writing code, and answer just the question: don't tack status lists onto replies. Keep the
   list of small fixes and requests to yourself, show it only when asked, and do them as one batch; one version per
   batch, not per small change.
 - **The flow (heromedel, 6.86):** one version per branch. Commit without asking whenever the work is safe (built and
   tested); ask before pushing. A merge from another branch is the exception: a quick check, then push it without asking
-  (if anything turns up, tell heromedel first).
-
+  (if anything turns up, tell heromedel first). Only Buggy does a full check after a merge, except in special situations.
   The automatic "uncommitted changes" check is answered in a few words or just dont mention it.
 - **Other branches:** before planning work on your branch, fetch and check whether `main` or another session's branch
   has moved on since you last looked (a newer version). If it has, look over what changed, especially files you'll
@@ -51,6 +48,9 @@ is important but exact, perfect absolute consistency is to much. For example one
 - **Merging to main (heromedel, 6.81):** never merge to `main` without being told to, and never make a pull request. When
   heromedel says to merge and it is clean (no conflicts, built, tested), merge your branch into `main` yourself
   (`git checkout main`, `git merge`, push `main`), then return to your own branch.
+- heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then the project's build script
+  (here `Build The Federation Home Planet Station.bat`). heromedel knows how to fetch and build: don't repeat test steps
+  after each commit. Mention what to test only when it's something unusual heromedel wouldn't find without being told.
 
 
   -- For Federation Home Planet --
@@ -91,18 +91,15 @@ For example:
     2026-10-07 14:02:11 | 1.2.3.4 | CREW_MOVE | crew=Bob.17 race=human sex=male tints=0.2 rank=Sgt. skills=s0:13,s1:0,s2:4,s3:58,s4:0,s5:7 record=repairs:3,kills:12,evasions:0,jumps:41,masteries:2 from=ship:Kestrel.a3f2 from_class=PLAYER_SHIP_HARD from_folder=shipyard/Kestrel.a3f2 to=ship:Shippy McShipface.c77a to_class=PLAYER_SHIP_FED to_folder=shipyard/Shippy McShipface.c77a reason=cargo_bay_save by=player station=6.00
     Bob was transferred to the Shippy McShipface.
 
-  Only Buggy does a full check after a merge, except in special situations.
+## Working on this project
 
 - **The public release branch (heromedel, 6.60):** never catch up to, merge from or copy from
   `Cloud-C-Jar-Stripped-Odditys`. It is the stripped public release (code for play testers coming from older
   versions removed), and only heromedel decides when it goes anywhere.
-- heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build The Federation Home Planet Station.bat`.
-  heromedel knows how to fetch and build: don't repeat test steps after each commit. Mention what to test only when it's
-  something unusual heromedel wouldn't find without being told.
 - `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
   `docs/CONCERNS.md` lists the design debts talked over (how the station is built, what it costs, what a change would
-  take): add to it when one comes up, with the version; read it before planning anything that touches the vault's files
-  or how crew are tracked.
+  take): add one only when heromedel raises it, and ask first (its top says so); read it before planning anything that
+  touches the vault's files or how crew are tracked.
   `docs/BUGS.md` lists bugs found and not yet fixed (heromedel, 6.01): add one there when a fix is put off.
 - **The feedback sheet (Prime only):** Cloud-C-Primary-Edit reads the Send Feedback responses after every push, brings
   `docs/FEEDBACK.md` up to date (what each response asked and what became of it) and tells heromedel what's new. Other
@@ -154,7 +151,7 @@ For example:
   `Strays` (what the opening finds and the ship marks), `FinalBattles`, `ContinueWatch` (is continue.sav still her, Steam Cloud's copies,
   New Game's overwrite), `Plea` (the free command), `OtherFleets` (switching, ending a career), `BlueprintUse`; the clock counting is in
   `Clock`, the versions in `ShipStore`. The ship report is `ui/ShipReport`. A fleet from before 6.0 is not read (7.00, heromedel: nothing that only supported old
-  play-tester careers stays; `docs/CONCERNS.md` 7): a 6.x station opens it once first. There is no
+  play-tester careers stays): a 6.x station opens it once first. There is no
   index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
   `vault/ActionProtection`** (7.00; Journal before: a note first, the steps, the note deleted; a note left behind is finished at the next opening, whichever fleet opens): never a hand-written undo.
 - **Long Range Comm.:** stations match on `Session.PROTOCOL`, not the version. Bump it only when an older station
@@ -173,7 +170,7 @@ For example:
   and is not part of the 6.0 `lore/` words folder.
 - `docs/NAMES.md` is the style guide for crew names by race (heromedel, 6.28: the Slugs' drawn-out letters, the Engi's
   hex and the rest): every name in `lore/names/` follows it.
-- Expeditions: `expedition_type` in the cfg (hidden) is 2, the crew expeditions (`Assignments`, `docs/ROADMAP.md` 31; the
+- Expeditions: `expedition_type` in the cfg (hidden) is 2, the crew expeditions (the
   default), or 0, hiring alone. The crew expeditions are `parser/Expeditions` (Assignments before 7.00); the infirmary, the
   captives and ransoms, and hiring live in `parser/AwayCrew` (Expeditions before 7.00); the old board of jobs that used to be 1
   went at 5.67 (heromedel), and 1 reads as 2. The career's days and stardates are `vault/Calendar` (MasterLog before 7.00),
@@ -204,7 +201,7 @@ For example:
 
     mvn -q -B package -DskipTests      # makes target/Federation Home Planet.jar (Java 8 target)
 
-The settings (6.55, `docs/CONCERNS.md` 9): `federation-home-planet.cfg` beside the jar keeps only where things are (FTL's
+The settings (6.55): `federation-home-planet.cfg` beside the jar keeps only where things are (FTL's
 folder, the saves folder, Slipstream's); the station's own settings are in a `federation-home-planet.cfg` in FTL's saves folder,
 Sandbox Mode's rules in `FederationHomePlanet/rules.xml`, an Immersive career's in its `career.xml`. First startup asks for the
 saves and FTL folders, Steam launching (Steam installs only), the House Rules window, then offers Slipstream once
