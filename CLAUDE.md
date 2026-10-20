@@ -1,9 +1,8 @@
 # Federation Home Planet: notes for Claude
 
-A save-game manager for FTL: Faster Than Light 1.6.x (Java Swing, one runnable jar). See README.md for what
-it does and CREDITS.md for where the code came from.
+-- Rules for Any Project --
 
-**Fitness log:** this project cannot access heromedel's fitness log. Don't ask about it and don't look for it.
+**Fitness log:** cloud projects cannot access heromedel's fitness log. Don't ask about it and don't look for it.
 
 **Hard rule (heromedel, 7.02):** Always check if a suggested change would actually make the code better and more elegant.
 Additions should be added in an elegant way making use of existing functions or future proofing for future functions.
@@ -13,12 +12,13 @@ Changes should not just be busy work with no improvement.
 
 - The workflow: **discuss, create a plan, ask to write, ask to push.** When asked to "discuss" or "don't write
   yet", don't edit. Those two asks (write, push) are the only gates: the plan itself makes the sensible choices
-  (from `docs/VOICES.md`, `docs/STYLE.md`, the roadmap) rather than stopping on each one. Ask only what can't be
-  worked out; never about wording, capitals or details you can decide.
+  (from `docs/VOICES.md`, `docs/STYLE.md`, the roadmap) rather than stopping on each one. Unless it is major change
+  to the code structure or major feature then ask in plain english and explain.
+  
 - In discussions, talk in normal paragraphs, like a conversation: start with what you think of the idea (what's good
   about it, what you'd build from it), and fold practical details in or handle them in the plan. Don't answer an idea
   with lists of problems, issues and questions; keep lists for the plans themselves.
-- Plans and ideas are lettered; their steps are numbered:
+- Plans and ideas are lettered; their steps are numbered Questions use "Q1", "Q2", etc. as labels:
 
       Idea A            Plan B
       1. ...            1. ...
@@ -27,9 +27,11 @@ Changes should not just be busy work with no improvement.
 - Bug fixing takes precedence over feature creep. When a major bug turns up (game-breaking, or a hidden one that
   quietly damages a fleet, like crew being cloned), you may ask heromedel to hold off on the next plan so it can be
   fixed first: occasionally, not in a pushy way.
-- heromedel's own text (letters, messages, names) goes in exactly as written, capitals included (they're often
-  deliberate: "Lucky Duck" is a nickname). Suggested edits to it are a short list, only ones that matter, to answer
-  yes or no.
+- heromedel's own text (letters, messages, names) is usually a strong suggestion and have spelling and grammar fixed or suggestions made.
+in many cases his use of capilization inside of quotes is intentional. But sentences can always capitilize the first word. Consistency in lore 
+is important but exact, perfect absolute consistency is to much. For example one charcter might call a ship "her" and another might call a ship "it".
+
+
   A sentence's first letter may be capitalised as grammar wants, with one exception: "heromedel" is always lowercase (heromedel, 6.72).
 - Not a rule just a clarification: heromedel does not care about pronouns, does not care about being mis-pronounded does not care what pronoun a ship has  and never told claude to have any rule about any pronouns. Do not ever act as if there is a rule about what pronoun to call or not call him.
 - Answer questions without writing code, and answer just the question: don't tack status lists onto replies. Keep the
@@ -37,8 +39,9 @@ Changes should not just be busy work with no improvement.
   batch, not per small change.
 - **The flow (heromedel, 6.86):** one version per branch. Commit without asking whenever the work is safe (built and
   tested); ask before pushing. A merge from another branch is the exception: a quick check, then push it without asking
-  (if anything turns up, tell heromedel first). Only Buggy does a full check after a merge, except in special situations.
-  The automatic "uncommitted changes" check is answered in a few words.
+  (if anything turns up, tell heromedel first).
+
+  The automatic "uncommitted changes" check is answered in a few words or just dont mention it.
 - **Other branches:** before planning work on your branch, fetch and check whether `main` or another session's branch
   has moved on since you last looked (a newer version). If it has, look over what changed, especially files you'll
   touch, settings, names and shared tools. Plan to fit with it (the same patterns and paths, no clashing names or
@@ -48,6 +51,48 @@ Changes should not just be busy work with no improvement.
 - **Merging to main (heromedel, 6.81):** never merge to `main` without being told to, and never make a pull request. When
   heromedel says to merge and it is clean (no conflicts, built, tested), merge your branch into `main` yourself
   (`git checkout main`, `git merge`, push `main`), then return to your own branch.
+
+
+  -- For Federation Home Planet --
+
+A save-game manager for FTL: Faster Than Light 1.6.x (Java Swing, one runnable jar). See README.md for what
+it does and CREDITS.md for where the code came from.
+
+  ## Hard rules
+
+Four rules with no exceptions (the first three in anything the player sees; the fourth anywhere):
+
+1. Never imply the Rebel Flagship has been destroyed: the war goes on.
+2. Never say to the player that time is measured in beacons. The station's clock counts them, hidden; the player hears
+   "some time", "a while", "one month" (as the ransom letters say), never a number of beacons or "a beacon later".
+   A beacon is a day (5.00): 28 beacons are a month (the ransom's month; `Career.BEACONS_PER_MONTH`), and the stipend
+   comes every one, two or three months by difficulty (28, 56, 84). A day in Captain's Quarters is one beacon.
+   Days are real now: a player may work out that a jump passes a day; never say time is only beacons underneath.
+3. Check any system, outcome or message against `docs/LORE_COMPONENTS.md` (real FTL lore, each fact with its source):
+   report any inconsistency to heromedel, and add no new ones. Don't edit that file without heromedel's permission; when new
+   real FTL lore turns up, offer it to heromedel as a numbered list and ask whether it should be added.
+4. Do not use the term "Dry Dock" anywhere: not in player-facing text, code, comments, tests or docs (heromedel, 6.82). The repairs
+   and upgrades are rows on the Refit tab; call them that.
+
+## Log lines (hard rule)
+
+heromedel, 5.57: anything new that writes a log follows this from now on, and the 6.0 storage overhaul brings every
+log to it. Every log entry is two lines:
+
+1. A machine line: real time, stardate, the kind of event, then everything the program could ever need as `key=value`
+   fields: ids, names, races, places and folders, classes, the systems involved, the station's version. The fields
+   listed here are a minimum: more data than the rule names is always better than missing data.
+2. A human line, written from the machine line (never separately, so the two can't disagree): simple, lore-friendly,
+   and following the hard rules above (never a beacon count). Readers (the Captain's Log, the Crew Log, the station
+   log) read the machine lines and word them their own way; nothing parses the human line.
+
+For example:
+
+    2026-10-07 14:02:11 | 1.2.3.4 | CREW_MOVE | crew=Bob.17 race=human sex=male tints=0.2 rank=Sgt. skills=s0:13,s1:0,s2:4,s3:58,s4:0,s5:7 record=repairs:3,kills:12,evasions:0,jumps:41,masteries:2 from=ship:Kestrel.a3f2 from_class=PLAYER_SHIP_HARD from_folder=shipyard/Kestrel.a3f2 to=ship:Shippy McShipface.c77a to_class=PLAYER_SHIP_FED to_folder=shipyard/Shippy McShipface.c77a reason=cargo_bay_save by=player station=6.00
+    Bob was transferred to the Shippy McShipface.
+
+  Only Buggy does a full check after a merge, except in special situations.
+
 - **The public release branch (heromedel, 6.60):** never catch up to, merge from or copy from
   `Cloud-C-Jar-Stripped-Odditys`. It is the stripped public release (code for play testers coming from older
   versions removed), and only heromedel decides when it goes anywhere.
@@ -195,38 +240,7 @@ Build a save with `Commission.build` against the patched copy, drop it in as `co
 with `LIBGL_ALWAYS_SOFTWARE=1`, drive the menus with `xdotool` (press and release with a short hold) and screenshot
 with `import -window root`. The Steam build runs without Steam; sound fails harmlessly.
 
-## Hard rules
 
-Four rules with no exceptions (the first three in anything the player sees; the fourth anywhere):
-
-1. Never imply the Rebel Flagship has been destroyed: the war goes on.
-2. Never say to the player that time is measured in beacons. The station's clock counts them, hidden; the player hears
-   "some time", "a while", "one month" (as the ransom letters say), never a number of beacons or "a beacon later".
-   A beacon is a day (5.00): 28 beacons are a month (the ransom's month; `Career.BEACONS_PER_MONTH`), and the stipend
-   comes every one, two or three months by difficulty (28, 56, 84). A day in Captain's Quarters is one beacon.
-   Days are real now: a player may work out that a jump passes a day; never say time is only beacons underneath.
-3. Check any system, outcome or message against `docs/LORE_COMPONENTS.md` (real FTL lore, each fact with its source):
-   report any inconsistency to heromedel, and add no new ones. Don't edit that file without heromedel's permission; when new
-   real FTL lore turns up, offer it to heromedel as a numbered list and ask whether it should be added.
-4. Do not use the term "Dry Dock" anywhere: not in player-facing text, code, comments, tests or docs (heromedel, 6.82). The repairs
-   and upgrades are rows on the Refit tab; call them that.
-
-## Log lines (hard rule)
-
-heromedel, 5.57: anything new that writes a log follows this from now on, and the 6.0 storage overhaul brings every
-log to it. Every log entry is two lines:
-
-1. A machine line: real time, stardate, the kind of event, then everything the program could ever need as `key=value`
-   fields: ids, names, races, places and folders, classes, the systems involved, the station's version. The fields
-   listed here are a minimum: more data than the rule names is always better than missing data.
-2. A human line, written from the machine line (never separately, so the two can't disagree): simple, lore-friendly,
-   and following the hard rules above (never a beacon count). Readers (the Captain's Log, the Crew Log, the station
-   log) read the machine lines and word them their own way; nothing parses the human line.
-
-For example:
-
-    2026-10-07 14:02:11 | 1.2.3.4 | CREW_MOVE | crew=Bob.17 race=human sex=male tints=0.2 rank=Sgt. skills=s0:13,s1:0,s2:4,s3:58,s4:0,s5:7 record=repairs:3,kills:12,evasions:0,jumps:41,masteries:2 from=ship:Kestrel.a3f2 from_class=PLAYER_SHIP_HARD from_folder=shipyard/Kestrel.a3f2 to=ship:Shippy McShipface.c77a to_class=PLAYER_SHIP_FED to_folder=shipyard/Shippy McShipface.c77a reason=cargo_bay_save by=player station=6.00
-    Bob was transferred to the Shippy McShipface.
 
 ## Voice (player-facing text)
 
@@ -248,5 +262,6 @@ For example:
 
 ## Style
 
-Write code elegantly whenever possible (heromedel, 6.86). Tabs, short comments that say why. Keep Java 8 compatible (no `var`,
-no newer APIs).
+Write code elegantly whenever possible (heromedel, 6.86). Tabs, short comments that say why. 
+
+If there is a good reason to stop being java 8 compatiable explain why.
