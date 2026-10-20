@@ -31,46 +31,44 @@ Changes should not just be busy work with no improvement.
   deliberate: "Lucky Duck" is a nickname). Suggested edits to it are a short list, only ones that matter, to answer
   yes or no.
   A sentence's first letter may be capitalised as grammar wants, with one exception: "heromedel" is always lowercase (heromedel, 6.72).
-- **No pronoun note (heromedel, 6.83):** heromedel did not ask for a pronoun note. Stop adding it back in: no "they/them" line or
-  any note about heromedel's pronouns in docs, handoffs, artifacts or messages; just write "heromedel". If a merge brings one in,
-  remove it.
+- Not a rule just a clarification: heromedel does not care about pronouns, does not care about being mis-pronounded does not care what pronoun a ship has  and never told claude to have any rule about any pronouns. Do not ever act as if there is a rule about what pronoun to call or not call him.
 - Answer questions without writing code, and answer just the question: don't tack status lists onto replies. Keep the
   list of small fixes and requests to yourself, show it only when asked, and do them as one batch; one version per
   batch, not per small change.
-- Commit whenever the work is safe (built and tested); ask before pushing. One version on the branch at a time: once a
-  version is pushed, the branch stays frozen while heromedel tests it, so what they test is exactly what they merge.
-  Newer work stays committed locally until they say it's merged (or needs a fix), then goes up as the next version.
-  Don't bring up commits in conversation; the automatic "uncommitted changes" check is answered in a few words.
-- **Catching up (heromedel, 6.55):** when heromedel says to catch up to another branch (merge from it), and the merge and its
-  tests turn up no new bugs or problems, push it without asking. If anything turns up, tell heromedel first, as usual.
+- **The flow (heromedel, 6.86):** one version per branch. Commit without asking whenever the work is safe (built and
+  tested); ask before pushing. A merge from another branch is the exception: a quick check, then push it without asking
+  (if anything turns up, tell heromedel first). Only Buggy does a full check after a merge, except in special situations.
+  The automatic "uncommitted changes" check is answered in a few words.
 - **Other branches:** before planning work on your branch, fetch and check whether `main` or another session's branch
   has moved on since you last looked (a newer version). If it has, look over what changed, especially files you'll
   touch, settings, names and shared tools. Plan to fit with it (the same patterns and paths, no clashing names or
   files), so the later merge is easy, and say what will need care when the branches are merged. Two branches may use
   the same version number meanwhile; the merge renumbers to follow `main`.
 - Work only on your own session branch: never commit to `main` directly. heromedel decides what goes into `main`.
-- **Merging to main (heromedel, 6.81):** never make a pull request. When heromedel approves a merge to `main` and it is
-  clean (no conflicts, built, tested), merge your branch into `main` yourself (`git checkout main`, `git merge`, push
-  `main`), then return to your own branch. Without that approval, `main` is never touched.
+- **Merging to main (heromedel, 6.81):** never merge to `main` without being told to, and never make a pull request. When
+  heromedel says to merge and it is clean (no conflicts, built, tested), merge your branch into `main` yourself
+  (`git checkout main`, `git merge`, push `main`), then return to your own branch.
 - **The public release branch (heromedel, 6.60):** never catch up to, merge from or copy from
   `Cloud-C-Jar-Stripped-Odditys`. It is the stripped public release (code for play testers coming from older
   versions removed), and only heromedel decides when it goes anywhere.
 - heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build The Federation Home Planet Station.bat`.
-  They know how to fetch and build: don't repeat test steps after each commit. Mention what to test only when it's
-  something unusual they wouldn't find on their own.
+  heromedel knows how to fetch and build: don't repeat test steps after each commit. Mention what to test only when it's
+  something unusual heromedel wouldn't find without being told.
 - `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
   `docs/CONCERNS.md` lists the design debts talked over (how the station is built, what it costs, what a change would
   take): add to it when one comes up, with the version; read it before planning anything that touches the vault's files
   or how crew are tracked.
   `docs/BUGS.md` lists bugs found and not yet fixed (heromedel, 6.01): add one there when a fix is put off.
-- **The feedback sheet (Prime only):** Cloud-C-Primary-Edit reads the Send Feedback responses after every push
-  (https://docs.google.com/spreadsheets/d/1QxIH-JnaGoCNnucmq1O6qU5eCSABymt-A5NHXfQgRFY), brings `docs/FEEDBACK.md` up to date
-  (what each response asked and what became of it) and tells heromedel what's new. Other sessions leave it to Prime.
+- **The feedback sheet (Prime only):** Cloud-C-Primary-Edit reads the Send Feedback responses after every push, brings
+  `docs/FEEDBACK.md` up to date (what each response asked and what became of it) and tells heromedel what's new. Other
+  sessions leave it to Prime. The responses sheet's address never goes in the repo (heromedel, 6.86: it can hold players'
+  Google details): only in a session's scratchpad.
   `docs/EVENTS.md` lists every event kind the station logs and its fields: anything that writes a log adds its kind there
   first (the log rule below), and EventT checks the list.
-- **The user manuals (heromedel, 6.72; McCarthy's job):** `User-Manual.txt` and `User-Manual.html` are built from one source,
-  `docs/manual/manual.src`, by `python3 docs/manual/build.py` (the marks are at the top of that file; never edit the two
-  outputs by hand). Every time a branch is caught up to (main, Prime Edit, any other), and whenever a change of your own
+- **The user manuals (heromedel, 6.72): McCarthy's job only.** Other sessions never edit the manuals; when a change
+  alters what a player sees or does, tell McCarthy. For McCarthy: `User-Manual.txt` and `User-Manual.html` are built from
+  one source, `docs/manual/manual.src`, by `python3 docs/manual/build.py` (the marks are at the top of that file; never edit
+  the two outputs by hand). Every time McCarthy catches up to a branch (main, Prime Edit, any other), and whenever a change
   alters what a player sees or does, check whether it warrants a manual update: read the commits' messages and the roadmap
   entries, verify each claim in the code (it can depend on a setting or a mode), edit `manual.src`, set its version line
   (`!User Manual, version`) to the version the branch will have, rebuild, and commit the source and both outputs together.
@@ -85,8 +83,8 @@ Changes should not just be busy work with no improvement.
   in `docs/BUGS.md`. heromedel doesn't make or use the tests.
 - **Handoffs:** before fixing a bug, ask heromedel "Would you like me to work on this or prepare a handoff?". A handoff
   is written as `docs/HANDOFF.md` says (the parts in order, and a page template to publish).
-- The version (4B.nn; after 4B.99 comes 5.00, then 5.01 to 5.99, then 6.00) goes up by one only with a commit: `<version>` in `pom.xml` and
-  `APP_VERSION` in `HomePlanet.java`, always together.
+- The version goes up by one only with a commit: `<version>` in `pom.xml` and `APP_VERSION` in `HomePlanet.java`, always
+  together.
 - The repo is public. Never commit FTL's game files (ftl.dat, its pictures or music) or a link to them.
 
 ## Layout
@@ -179,10 +177,6 @@ copies of it (LinkT runs a second station in its own process, over localhost; Ho
 and the harness reads the station log and a voyage log from events with `Setup.stationLog` and `Setup.voyageLog`). Every test should print ALL PASSED, and RoundT "0 differ, 0 unreadable". Scratch goes in
 `harness2/work/` (ignored).
 
-The kill test (KillT, which stopped the station before every file it wrote) was removed after 5.98 (heromedel: it passed for
-the 6.0 conversion, and running it again only cost time); the old-fleet conversion's tests went with the conversion at 7.00.
-They are in git history if ever wanted; Buggy Boy can run an overkill check on request.
-
 **What to run before a commit (heromedel, 6.01):** the tests that cover the change (a handful, usually under a minute:
 `cd "Tools and Harness/harness2/work"`, compile the harness, run each by name as `run.sh` does), plus a check on a copy of
 heromedel's real fleet where the change touches what it holds. Not the full harness: that runs only when heromedel asks,
@@ -212,8 +206,8 @@ Four rules with no exceptions (the first three in anything the player sees; the 
    comes every one, two or three months by difficulty (28, 56, 84). A day in Captain's Quarters is one beacon.
    Days are real now: a player may work out that a jump passes a day; never say time is only beacons underneath.
 3. Check any system, outcome or message against `docs/LORE_COMPONENTS.md` (real FTL lore, each fact with its source):
-   report any inconsistency to heromedel, and add no new ones. Don't edit that file without his permission; when new
-   real FTL lore turns up, offer it to him as a numbered list and ask whether it should be added.
+   report any inconsistency to heromedel, and add no new ones. Don't edit that file without heromedel's permission; when new
+   real FTL lore turns up, offer it to heromedel as a numbered list and ask whether it should be added.
 4. Do not use the term "Dry Dock" anywhere: not in player-facing text, code, comments, tests or docs (heromedel, 6.82). The repairs
    and upgrades are rows on the Refit tab; call them that.
 
@@ -246,15 +240,13 @@ For example:
 - Slipstream is the transmission channel: mods and blueprints are "sent to FTL via Slipstream".
 - **the rebellion** and **the rebels** are never capitalised as a title: the Federation won't dignify them with one (a
   sentence may still start with "Rebels"). Only the Rebel Flagship (FTL's name for that ship) keeps its capitals. Catch phrases: see `docs/STYLE.md`.
-- Never imply the Rebel Flagship has been destroyed: the war goes on. Its weapons come from plans stolen from the
-  Rebels, not salvage.
+- The Rebel Flagship's weapons come from plans stolen from the Rebels, not salvage.
 - Places: the Space Dock, the Cargo Bay, the Cargo Hold (the storage; its save keeps the internal name "Spacedock
   Storage"), the Junkyard. A ship is **decommissioned** (not disbanded). A ship is her, him or it as the Ship Pronoun setting says (Settings, General, 6.42):
-  `model.Words` (`she()`, `her()`, `herObj()`) in code, `{she}`, `{her}` in lore; never a fixed "she". Never "Home World",
-  never "FHP"* in player-facing text. Errors stay actionable (what failed, what to do, the file or path).
-  *it may seem like bad form but it is not a hard rule that heromedel ever made
+  `model.Words` (`she()`, `her()`, `herObj()`) in code, `{she}`, `{her}` in lore; never a fixed "she". Never "Home World"
+  in player-facing text. Errors stay actionable (what failed, what to do, the file or path).
 
 ## Style
 
-Match the surrounding code: tabs, `homeplanet.*` classes referenced by full name where the file already does,
-short comments that say why. Keep Java 8 compatible (no `var`, no newer APIs).
+Write code elegantly whenever possible (heromedel, 6.86). Tabs, short comments that say why. Keep Java 8 compatible (no `var`,
+no newer APIs).
