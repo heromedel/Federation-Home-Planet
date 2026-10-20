@@ -4,6 +4,9 @@
 
 **Fitness log:** cloud projects cannot access heromedel's fitness log. Don't ask about it and don't look for it.
 
+**Game standards:** read `docs/GAME-STANDARDS.md` (heromedel's standard rules, elegant code principles and design philosophy)
+before planning or writing code.
+
 **Hard rule (heromedel, 7.02):** Always check if a suggested change would actually make the code better and more elegant.
 Additions should be added in an elegant way making use of existing functions or future proofing for future functions.
 Changes should not just be busy work with no improvement.
