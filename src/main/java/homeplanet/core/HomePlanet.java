@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "7.01";
+	public static final String APP_VERSION = "7.02";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -140,7 +140,6 @@ public class HomePlanet {
 	public static void leaveImmersive() { immersiveMode = false; }
 	public static boolean debugLogging = false;
 
-	/** The config file, beside the program (whatever folder it was started from), and its values (the Settings window changes and saves them). */
 	/** The settings file: beside the program, or in the folder a second station was started with (--station). */
 	public static File propFile = new File(appDir(), "federation-home-planet.cfg");
 	/** A second station on this computer (for trying Long Range Comm. alone): its own settings and saves folder. */
@@ -381,7 +380,6 @@ public class HomePlanet {
 		return false;
 	}
 
-	/** Writes the current settings to the cfg (a temporary file, then one move). Returns false, after telling the user, on failure. */
 	/**
 	 * Another saves folder is another fleet (its own ships, designs and remodels): the station claims it, opens its vault and
 	 * takes stock, as at startup. The cfg line is written with the rest by {@link #saveConfig}.

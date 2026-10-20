@@ -248,10 +248,6 @@ public class ShipArt {
 		return out;
 	}
 
-	/**
-	 * Fills a design's art settings from a game ship that uses this picture: where the art sits over the rooms, the floor,
-	 * the weapon mounts and the shield ellipse. The rooms themselves aren't touched.
-	 */
 	/** What a game ship has to offer with her art: {floor, mounts and shield, gibs}. */
 	public static boolean[] gameExtras(String gfx) {
 		boolean mounts = false;
@@ -334,7 +330,6 @@ public class ShipArt {
 		}
 	}
 
-	/** A shield ellipse from the art's size when none has been set (a little larger than the hull; unverified in game). */
 	/** The box of a picture's visible pixels (alpha above a whisker), or the whole picture if it has none. */
 	public static java.awt.Rectangle opaqueBounds(BufferedImage img) {
 		int minX = img.getWidth(), minY = img.getHeight(), maxX = -1, maxY = -1;

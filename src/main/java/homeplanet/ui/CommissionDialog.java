@@ -358,7 +358,7 @@ public class CommissionDialog extends JDialog {
 			aeSwitch.lock(homeplanet.parser.Dlc.needsAE(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id, s));
 			final Entry shown = e;
 			final List<net.blerf.ftl.parser.SavedGameParser.CrewState> aboard = SaveHelper.getOwnCrew(s.getPlayerShip());
-			JPanel p = dock.shipSummaryPanel(s, new java.util.function.Consumer<net.blerf.ftl.parser.SavedGameParser.CrewState>() {
+			JPanel p = ShipReport.panel(s, new java.util.function.Consumer<net.blerf.ftl.parser.SavedGameParser.CrewState>() {
 				public void accept(net.blerf.ftl.parser.SavedGameParser.CrewState c) { renameCrew(shown, aboard.indexOf(c), c); }
 			}, new Runnable() { public void run() { crewFor = null; showPreview(shown); } });
 			JLabel stats = new JLabel("<html>" + (RELIEF.equals(e.id) ? homeplanet.parser.FreeCommand.RELIEF_CLASS : classOf(bp)) + ": hull " + bp.getHealth().amount + ", reactor "

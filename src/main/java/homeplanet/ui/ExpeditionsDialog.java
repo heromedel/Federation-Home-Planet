@@ -130,7 +130,6 @@ final class ExpeditionsDialog {
 		}
 		return out;
 	}
-	/** Up to three crew from the Cargo Hold, ticked. */
 	/**
 	 * Who goes: three seats side by side, each a drop-down of the Cargo Hold's crew (or no one), and under it the one
 	 * chosen: portrait, race, health if hurt, and the six skills (a pip a level, a thin bar toward the next). Someone

@@ -96,7 +96,6 @@ public class SystemsPanel {
 	private FtlButton info;
 	private final CargoParts.Label name = new CargoParts.Label("", FtlFont.MENU, CargoParts.GOLD, 0).small(FtlFont.BODY);
 	private final CargoParts.Label sub = new CargoParts.Label("", FtlFont.CARGO, CargoParts.DIM, 0);
-	/** What the Cargo Hold can still spend at the Refit, always in view under her name. */
 	/** Who pays the Refit (6.44, heromedel): the ship or the Cargo Bay's hold, remembered; and what that side can spend. The Shop's is the same control (6.45). */
 	private final PayFrom payer = new PayFrom();
 	private final CargoParts.ScrapCount scrapCount = new CargoParts.ScrapCount();
@@ -351,7 +350,6 @@ public class SystemsPanel {
 		lists.repaint();
 	}
 
-	/** A system line: name, level bars, and its Uninstall or Install button (greyed out with the reason on hover). */
 	/** Where a row's bars start (6.42: left of where they were, so FTL's eight always clear the Up button). */
 	private static final int BARS_X = 296;
 	private static class SysRow extends JComponent {
@@ -446,7 +444,6 @@ public class SystemsPanel {
 		}
 	}
 
-	/** Adds the stored-systems list to the Cargo Bay's save, if it changed (written with the ships, or not at all). */
 	/** True when the ship pays the Refit (the switch on Ship), else the Cargo Hold does. */
 	static boolean shipPays() { return "ship".equals(homeplanet.core.HomePlanet.config.getProperty(CFG_PAYS)); }
 	/** Who pays, as a sentence names it: "the Kestrel" or "the Cargo Hold". */

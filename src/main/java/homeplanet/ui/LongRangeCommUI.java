@@ -940,7 +940,6 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 			}
 		}, "Long Range Comm. outbox search").start();
 	}
-	/** A message to the chosen commander, without a channel. */
 	/** "Sent to Wolfy: 50 scrap", from "Delivered to Commander Wolfy's inbox ..., with the shipment (50 scrap)." */
 	private static String sentLine(String said) {
 		int inbox = said.indexOf("'s inbox"), open = said.lastIndexOf('('), close = said.lastIndexOf(')');
@@ -1014,7 +1013,6 @@ public class LongRangeCommUI extends JPanel implements Scrollable, Session.View 
 		HomePlanet.saveConfig();
 		hail(host, ports, host);
 	}
-	/** Hails a station: connects (trying each port until one answers), says hello, waits for their commander to answer. */
 	/** The hail going out: its link (once connected), whether it was withdrawn, and the window that waits with it. */
 	private volatile Channel hailCh;
 	private volatile boolean hailWithdrawn;

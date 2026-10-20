@@ -95,11 +95,56 @@ public class SettingsDialog extends JDialog {
 
 	private SettingsDialog(Window owner) {
 		super(owner, "Settings", ModalityType.APPLICATION_MODAL);
-		// six tabs (heromedel, 5.70): General (the settings), Rules, Folders (places, not settings), Mods, Records, About
-		JPanel general = page(), rulesPage = page(), foldersPage = page(), modsPage = page(), recordsPage = page(), aboutPage = page();
-		JPanel body = general;
-		GridBagConstraints c = constraints();
+		// six tabs (heromedel, 5.70): General (the settings), Rules, Folders (places, not settings), Mods, Records, About; built in
+		// the order the code grew in (General, Folders, Mods, Rules, Records, About), a method each (7.02)
+		JPanel general = generalPage(owner), foldersPage = foldersPage(owner), modsPage = modsPage(owner), rulesPage = rulesPage(owner),
+				recordsPage = recordsPage(owner), aboutPage = aboutPage(owner);
 
+		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		JButton ok = new JButton("OK");
+		JButton cancel = new JButton("Cancel");
+		ok.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { apply(); }
+		});
+		cancel.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { dispose(); }
+		});
+		buttons.add(ok);
+		buttons.add(cancel);
+		getRootPane().setDefaultButton(ok);
+
+		refreshLabels();
+		javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
+		JPanel[] pages = {general, rulesPage, foldersPage, modsPage, recordsPage, aboutPage};
+		String[] names = {"General", "Rules", "Folders", "Mods", "Records", "About"};
+		for (int i = 0; i < pages.length; i++) {
+			JPanel holder = new JPanel(new BorderLayout());
+			holder.add(pages[i], BorderLayout.NORTH); // each page at the top of its tab
+			tabs.addTab(names[i], holder);
+		}
+		final javax.swing.JTabbedPane t = tabs;
+		tabsShown = tabs;
+		final java.awt.Color normal = new java.awt.Color(220, 228, 235); // as the theme draws the others
+		javax.swing.event.ChangeListener mark = new javax.swing.event.ChangeListener() { // the open tab's name in dark on its light tab
+			public void stateChanged(javax.swing.event.ChangeEvent e) {
+				for (int i = 0; i < t.getTabCount(); i++) t.setForegroundAt(i, i == t.getSelectedIndex() ? new java.awt.Color(20, 28, 40) : normal);
+			}
+		};
+		tabs.addChangeListener(mark);
+		mark.stateChanged(null);
+		getContentPane().add(ScreenFit.wrap(tabs, 120, owner), BorderLayout.CENTER); // scrolls on a short screen
+		getContentPane().add(buttons, BorderLayout.SOUTH);
+		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		pack();
+		setResizable(false);
+		setLocationRelativeTo(owner);
+		ScreenFit.keepOnScreen(this); // all of it on its screen, never under the taskbar
+	}
+
+	/** The General tab: the commander, the ship pronoun, launching, the docked FTL, the manual, music and debug logging. */
+	private JPanel generalPage(Window owner) {
+		JPanel body = page();
+		GridBagConstraints c = constraints();
 		heading(body, c, "Commander");
 		JPanel nameRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		JLabel nameLabel = new JLabel("Name:");
@@ -227,13 +272,13 @@ public class SettingsDialog extends JDialog {
 		blockRow.add(unblockBtn);
 		blockRow.add(blockedLabel);
 		body.add(blockRow, next(c));
+		return body;
+	}
 
-
-
-
-
-		body = foldersPage;
-		c = constraints();
+	/** The Folders tab: where FTL, its saves and Slipstream are (places, not settings). */
+	private JPanel foldersPage(Window owner) {
+		JPanel body = page();
+		GridBagConstraints c = constraints();
 		heading(body, c, "Folders");
 		body.add(folderRow("Saves folder:", savesLabel, new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -285,15 +330,6 @@ public class SettingsDialog extends JDialog {
 				openFolder(junk);
 			}
 		});
-		JButton openLogs = new JButton("Debug Log Folder");
-		openLogs.setToolTipText("The program's own logs (one file per run): what to send along with a bug report");
-		openLogs.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				File d = HomePlanet.logDir();
-				if (d == null || !d.isDirectory()) { JOptionPane.showMessageDialog(SettingsDialog.this, "No log folder could be made beside Federation Home Planet.jar.", "Logs", JOptionPane.INFORMATION_MESSAGE); return; }
-				openFolder(d);
-			}
-		});
 		openRow.add(openSaves);
 		openRow.add(javax.swing.Box.createHorizontalStrut(8));
 		openRow.add(openStation);
@@ -340,9 +376,13 @@ public class SettingsDialog extends JDialog {
 		});
 		ftlRow.add(ftlLogs);
 		body.add(ftlRow, next(c));
+		return body;
+	}
 
-		body = modsPage;
-		c = constraints();
+	/** The Mods tab: the companion mod, Slipstream and the blueprints of your own. */
+	private JPanel modsPage(Window owner) {
+		JPanel body = page();
+		GridBagConstraints c = constraints();
 		heading(body, c, "Mods");
 		JLabel modsNote = new JLabel("<html><div style='width:600px'>Your blueprints and designs reach FTL as the Federation Home Planet Mod, sent to FTL via Slipstream. "
 				+ "Patch after changing a design or a remodel, and whenever the station says a patch is needed: FTL must be closed, and it starts with the new blueprints the next time it runs.<br><br>"
@@ -375,9 +415,13 @@ public class SettingsDialog extends JDialog {
 		modRow.add(javax.swing.Box.createHorizontalStrut(8));
 		modRow.add(modsBtn);
 		body.add(modRow, next(c));
+		return body;
+	}
 
-		body = rulesPage;
-		c = constraints();
+	/** The Rules tab: the game mode and its rules. */
+	private JPanel rulesPage(Window owner) {
+		JPanel body = page();
+		GridBagConstraints c = constraints();
 		heading(body, c, "Game mode and rules");
 		rules.addTo(body, c);
 
@@ -388,9 +432,13 @@ public class SettingsDialog extends JDialog {
 		body.add(victory, next(c)); // with its note and Rescued Ships moved to Hard (6.53)
 		rules.afterFleetChange = new Runnable() { public void run() { refreshVictory(); } };
 		refreshVictory();
+		return body;
+	}
 
-		body = recordsPage;
-		c = constraints();
+	/** The Records tab: the logs and the feedback form. */
+	private JPanel recordsPage(Window owner) {
+		JPanel body = page();
+		GridBagConstraints c = constraints();
 		heading(body, c, "Records");
 		final LogViewer logViewer = new LogViewer();
 		records = logViewer;
@@ -401,6 +449,15 @@ public class SettingsDialog extends JDialog {
 		recordsStation.setToolTipText("The fleet in use's own folder: its station log, and a folder for each ship's records");
 		recordsStation.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { openFolder(homeplanet.vault.Vault.get().root); }
+		});
+		JButton openLogs = new JButton("Debug Log Folder");
+		openLogs.setToolTipText("The program's own logs (one file per run): what to send along with a bug report");
+		openLogs.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				File d = HomePlanet.logDir();
+				if (d == null || !d.isDirectory()) { JOptionPane.showMessageDialog(SettingsDialog.this, "No log folder could be made beside Federation Home Planet.jar.", "Logs", JOptionPane.INFORMATION_MESSAGE); return; }
+				openFolder(d);
+			}
 		});
 		folderRow.add(recordsStation);
 		folderRow.add(javax.swing.Box.createHorizontalStrut(8));
@@ -414,9 +471,13 @@ public class SettingsDialog extends JDialog {
 				+ "send them along with a bug report. Debug logging adds detail to them. " + FEEDBACK_LINE + "</font></div></html>");
 		debugNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
 		body.add(debugNote, next(c));
+		return body;
+	}
 
-		body = aboutPage;
-		c = constraints();
+	/** The About tab: the version, the credits and the feedback form. */
+	private JPanel aboutPage(Window owner) {
+		JPanel body = page();
+		GridBagConstraints c = constraints();
 		heading(body, c, "About");
 		JLabel credit = new JLabel("<html>" + HomePlanet.APP_NAME + " " + HomePlanet.APP_VERSION + "  -  GPL-2.0.  Designed and Produced by heromedel<br><br>" // three lines, a gap between each (heromedel, 6.86), not one off the edge (6.22)
 				+ "Inspired by and originally built upon ManApart's FTL Homeworld.<br><br>"
@@ -484,47 +545,9 @@ public class SettingsDialog extends JDialog {
 		JLabel feedbackNote = new JLabel("<html><div style='width:560px'><font color='" + MenuTheme.HTML_GREY_GREEN + "'>" + FEEDBACK_LINE + "</font></div></html>");
 		feedbackNote.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
 		body.add(feedbackNote, next(c));
-
-		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-		JButton ok = new JButton("OK");
-		JButton cancel = new JButton("Cancel");
-		ok.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { apply(); }
-		});
-		cancel.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { dispose(); }
-		});
-		buttons.add(ok);
-		buttons.add(cancel);
-		getRootPane().setDefaultButton(ok);
-
-		refreshLabels();
-		javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
-		JPanel[] pages = {general, rulesPage, foldersPage, modsPage, recordsPage, aboutPage};
-		String[] names = {"General", "Rules", "Folders", "Mods", "Records", "About"};
-		for (int i = 0; i < pages.length; i++) {
-			JPanel holder = new JPanel(new BorderLayout());
-			holder.add(pages[i], BorderLayout.NORTH); // each page at the top of its tab
-			tabs.addTab(names[i], holder);
-		}
-		final javax.swing.JTabbedPane t = tabs;
-		tabsShown = tabs;
-		final java.awt.Color normal = new java.awt.Color(220, 228, 235); // as the theme draws the others
-		javax.swing.event.ChangeListener mark = new javax.swing.event.ChangeListener() { // the open tab's name in dark on its light tab
-			public void stateChanged(javax.swing.event.ChangeEvent e) {
-				for (int i = 0; i < t.getTabCount(); i++) t.setForegroundAt(i, i == t.getSelectedIndex() ? new java.awt.Color(20, 28, 40) : normal);
-			}
-		};
-		tabs.addChangeListener(mark);
-		mark.stateChanged(null);
-		getContentPane().add(ScreenFit.wrap(tabs, 120, owner), BorderLayout.CENTER); // scrolls on a short screen
-		getContentPane().add(buttons, BorderLayout.SOUTH);
-		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		pack();
-		setResizable(false);
-		setLocationRelativeTo(owner);
-		ScreenFit.keepOnScreen(this); // all of it on its screen, never under the taskbar
+		return body;
 	}
+
 
 	/** The words under each Send Feedback... button, the same on both tabs. */
 	private static final String FEEDBACK_LINE = "Found a bug or have an idea? Send Feedback... opens the form.";

@@ -31,3 +31,12 @@ other systems. Leave it unless players run into it.
 - **Where to look:** the station's log from that run, with debug on, says what Windows answered at each step: the release
   (`FTL undocked: ...`), the new attach (`FTL docked, attached: ...`) and `tuckUnder` (`not, FTL is behind another
   program's window (Unpause shown)`). 6.60's bring-to-front once docked didn't change it.
+
+## The crew register with identical namesakes on two ships (found 7.02, Prime, in the harness; not seen by a player)
+
+- **Seen:** a test world whose random names gave two crew members the same name, race and sex (one aboard each of two ships,
+  fresh crew with the same service record and no colouring). CrewT's M check removes one from her ship: the register marked
+  the *other* one missing. A rebuilt world (different names) passed. The pairing (`CrewRegister.score`) ties on everything
+  but the place, which should break it; worth a look at why it didn't (the records' `tints` or counts?). Nothing is lost
+  either way (both are tracked, one id swapped), so it waits for Buggy Boy.
+

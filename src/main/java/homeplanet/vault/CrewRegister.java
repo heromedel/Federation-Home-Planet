@@ -841,7 +841,6 @@ public final class CrewRegister {
 		}
 		return text.startsWith("") && text.substring(0, Math.max(0, text.indexOf("\n"))).contains("  RETIRE  ");
 	}
-	/** The name is in the list after this label ("killed: Ash, Bob; taken: ..."). */
 	/**
 	 * What the station log's word of a detail's return says of this crew member (6.61): "; saved from death by Kenji,
 	 * and laid up in the infirmary", "; to the infirmary", "; saved Ann's life", or nothing. The latest such line naming them.

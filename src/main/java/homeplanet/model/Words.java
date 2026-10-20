@@ -6,7 +6,6 @@ public final class Words {
 
 	/** With its first letter capitalised ("the Kestrel" to "The Kestrel"). */
 	public static String cap(String s) { return s == null || s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
-	/** With "a" or "an" before it, by its first letter ("an Engi", "a Rockman"). */
 	/** "a rebel ship", "an automated ship" as one now known: "the rebel ship" (6.09); anything else with "the " before it. */
 	public static String the(String s) {
 		if (s == null || s.isEmpty()) return "";

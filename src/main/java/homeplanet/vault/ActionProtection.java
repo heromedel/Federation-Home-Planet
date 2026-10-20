@@ -21,7 +21,7 @@ import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
 
 /**
- * The journal (docs/OVERHAUL-6.md §3.2; 5.71): an action that moves or writes more than one file is written as a note
+ * The action protection (5.71; the journal until 7.00): an action that moves or writes more than one file is written as a note
  * first, in {@code station-action-protection/} under the fleet's folder (heromedel's name; its why.txt says what it is), then its steps are done, then the note is deleted. A step is a
  * replacement (the new bytes wait beside the file as {@code <name>.tx} before the note is written), a rename (a file
  * or a whole folder, all-or-nothing on one drive) or a deletion; each file once, with one owner. A step refused by

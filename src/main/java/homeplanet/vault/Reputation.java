@@ -551,7 +551,7 @@ public final class Reputation {
 		return n + (m == null ? 1 : 0); // her first journey began in sector 1 as well
 	}
 	private static SavedGameState lastSave(File dir) {
-		File newest = Vault.newestKept(dir); // her newest version, not a copy kept for a reason of its own (5.61)
+		File newest = ShipStore.newestKept(dir); // her newest version, not a copy kept for a reason of its own (5.61)
 		if (newest == null) return null;
 		try { return HomePlanet.savedGameParser.readSavedGame(newest); } catch (Exception e) { return null; }
 	}

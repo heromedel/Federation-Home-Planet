@@ -23,8 +23,7 @@ import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 
 /**
- * Each ship's voyage: what FTL did to her between one look and the next, in her own log and the fleet's event log (her
- * voyage.log until 5.93, kept as it was, no longer written; it still travels in her package for an older station) (the
+ * Each ship's voyage: what FTL did to her between one look and the next, in her own log and the fleet's event log (the
  * station looks at each save FTL writes while it's open, and on Refresh): jumps, sectors, ships defeated, crew joined
  * and lost, what came aboard and went, upgrades, damage and repairs, the Rebel Flagship. The last look is kept in
  * voyage.txt, with the sectors she has visited in all her journeys (FTL's save knows only the current one).
@@ -374,7 +373,7 @@ public final class VoyageLog {
 		return Vault.where(Event.of("SHIP").put("ship", s.name + "." + s.id).put("ship_name", s.name).put("ship_id", s.id).put("ship_state", s.state == null ? null : s.state.name().toLowerCase()), s); // her sector and difficulty (6.18)
 	}
 	private static void append(Vault v, Ship s, List<Event> events) {
-		// her own log and the fleet's event log alone (5.93): voyage.log and the master log's copy are no longer written
+		// her own log and the fleet's event log alone (5.93)
 		Event who = shipFields(s);
 		for (Event e : events) EventLog.write(v, Event.of(e.kind).put("log", "voyage").putAll(who).putAll(e).human(e.human()));
 	}

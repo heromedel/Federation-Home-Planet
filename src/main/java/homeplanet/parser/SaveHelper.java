@@ -622,11 +622,6 @@ public final class SaveHelper {
 		log.debug( "Wrote {} ({} bytes)", saveFile, bytes.length );
 	}
 
-	/**
-	 * Her cargo as the station shows, trades, counts and prices it: the weapons and drones there. An augment in the cargo
-	 * list is the one FTL is over capacity on, asking which to leave behind at the jump (written there twice; seen in
-	 * FTL 1.6.14): it's FTL's question, so the station never shows it (heromedel, 5.52), and leaves it in her save.
-	 */
 	/** Her fitted gear's ids, in order: weapons, drones, augments (not her cargo). */
 	public static List<String> gear(ShipState s) {
 		List<String> out = new java.util.ArrayList<String>();

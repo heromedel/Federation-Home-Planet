@@ -102,7 +102,11 @@ it does and CREDITS.md for where the code came from.
   `expeditions.xml`, `deeds.xml`) can be overridden in `lore/` beside the jar (`core/Lore`, 5.89 and 5.991; the jar holds the
   defaults in `resource/lore/`; the words are McCarthy's, and LoreT holds every file to the hard and voice rules).
   `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
-  at the top of `vault/Vault.java`. A fleet from before 6.0 is not read (7.00, heromedel: nothing that only supported old
+  at the top of `vault/Vault.java`. Since 7.02 Vault keeps the core (opening, the folders, records, the Transaction, board, dock,
+  decommission, leave, recover) and its public methods stand, delegating to package helpers: `Trades` (Long Range Comm. packages),
+  `Strays` (what the opening finds and the ship marks), `FinalBattles`, `ContinueWatch` (is continue.sav still her, Steam Cloud's copies,
+  New Game's overwrite), `Plea` (the free command), `OtherFleets` (switching, ending a career), `BlueprintUse`; the clock counting is in
+  `Clock`, the versions in `ShipStore`. The ship report is `ui/ShipReport`. A fleet from before 6.0 is not read (7.00, heromedel: nothing that only supported old
   play-tester careers stays; `docs/CONCERNS.md` 7): a 6.x station opens it once first. There is no
   index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
   `vault/ActionProtection`** (7.00; Journal before: a note first, the steps, the note deleted; a note left behind is finished at the next opening, whichever fleet opens): never a hand-written undo.

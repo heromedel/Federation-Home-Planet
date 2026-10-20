@@ -72,7 +72,7 @@ public final class BuildDialog extends JDialog {
 				ShipBlueprint bp = DataManager.get().getShip(bpId);
 				String name = d.loadout != null && !d.loadout.shipName.isEmpty() ? d.loadout.shipName : "The " + d.name;
 				SavedGameState s = Commission.build(bpId, name, Difficulty.EASY, new Random(0));
-				report = frame.spaceDock.shipSummaryPanel(s);
+				report = ShipReport.panel(s);
 				stats = CommissionDialog.classOf(bp) + ": hull " + bp.getHealth().amount + ", reactor "
 						+ (bp.getMaxPower() == null ? "?" : bp.getMaxPower().amount) + ", " + (bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots())
 						+ " weapon slots, " + (bp.getDroneSlots() == null ? 3 : bp.getDroneSlots()) + " drone slots";

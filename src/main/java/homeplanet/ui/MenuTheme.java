@@ -153,7 +153,6 @@ public final class MenuTheme {
 		}
 	}
 
-	/** Recolours the component and everything inside it. */
 	/** The open tab's name in dark on its light tab, the others as the theme draws them (as Settings does). */
 	public static void markOpenTab(final javax.swing.JTabbedPane t) {
 		final Color normal = new Color(220, 228, 235), open = new Color(20, 28, 40);

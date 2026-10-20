@@ -225,7 +225,6 @@ public final class Transmissions {
 
 	// ---- what's due ----
 
-	/** The player's rank, as messages name it. */
 	/** The player's rank now, as messages name it (Captain outside Immersive Mode). */
 	public static String rank() {
 		Unlocks u = Unlocks.read();
@@ -234,7 +233,6 @@ public final class Transmissions {
 	private static String rankName(Unlocks u) {
 		return HomePlanet.career() ? PlayerRank.name(PlayerRank.rank(u)) : UnlockGrants.RANKS[0];
 	}
-	/** A layout's name for messages: "Engi Cruiser, Type A". */
 	/**
 	 * The letter for a commission order: a ship's own tells the story of her Type A's unlock (the Zoltan Council's
 	 * offer, the Mantis raider), so her Type B and C get her people's second letter (`order:nextModel:<base>`, which
@@ -709,7 +707,6 @@ public final class Transmissions {
 		s = homeplanet.model.Words.ship(s); // {she}, {her}: the Ship Pronoun setting
 		return ShipNames.fill(s.replace("{rank}", rank), "ship", ship); // "the {ship}" fitted to the ship's name (5.31)
 	}
-	/** Has a letter with this key been sent to this fleet? */
 	/** An event about a letter: its key, who it is from and its subject. */
 	private static Event letter(String kind, Message m) { return Event.of(kind).put("key", m.key).put("from", m.from).put("subject", m.subject); }
 	/** An event about an augment the boarded ship had no room for. */

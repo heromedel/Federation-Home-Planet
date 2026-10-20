@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,21 +24,19 @@ import homeplanet.core.SafeFiles;
 import homeplanet.parser.XmlText;
 
 /**
- * A ship's folder (Overhaul 6.0, Phase 2 step 13; docs/OVERHAUL-6.md §3.1 and §3.3): everything about her in one
- * place, so moving her is moving the folder.
+ * A ship's folder (6.0): everything about her in one place, so moving her is moving the folder.
  *
  * <pre>
  * shipyard/&lt;Name&gt;.&lt;id&gt;/
- *   &lt;Name&gt;.&lt;id&gt;.xml      her record: what the manifest and her side files hold today (§3.1), as attributes
+ *   &lt;Name&gt;.&lt;id&gt;.xml      her record: who she is and her notes, as attributes
  *                         and sections (fate, trade, journey, museum, borrowed, last, final, overwritten, owners, names)
  *   &lt;Name&gt;.&lt;id&gt;.sav      her FTL save, exactly as FTL wrote it
  *   &lt;Name&gt;.&lt;id&gt;.log      her log, two-line entries (CLAUDE.md "Log lines")
  *   versions/             her kept versions, named by their stamp; victory-, final-battle- and cloud- copies kept apart
  * </pre>
  *
- * The name in the folder's name is for people (cleaned for Windows and capped, docs/OVERHAUL-6.md §3.1); the id is
- * the key, and {@link #idOf} reads it from the folder. This is the store alone: the Vault moves onto it in the steps
- * after (each fleet converted on opening).
+ * The name in the folder's name is for people (cleaned for Windows and capped); the id is the key, and {@link #idOf}
+ * reads it from the folder. This is the store alone: the Vault and its helpers (Strays, Trades, FinalBattles) move the folders.
  */
 public final class ShipStore {
 	private static final Logger log = LoggerFactory.getLogger(ShipStore.class);
@@ -319,7 +318,8 @@ public final class ShipStore {
 	/** A kept version's name: a save, or the Cargo Hold's xml. */
 	static boolean kept(String n) { return n.endsWith(".sav") || n.endsWith(".xml"); }
 	private static int count(String s) { try { return Integer.parseInt(s); } catch (NumberFormatException e) { return 0; } }
-	private static final java.text.SimpleDateFormat STAMP = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss");
+	/** History file names: UTC, so they keep their order across clock changes (daylight saving). */
+	static final java.text.SimpleDateFormat STAMP = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss");
 	static { STAMP.setTimeZone(java.util.TimeZone.getTimeZone("UTC")); }
 	/** Prunes her ordinary versions to the newest {@code keep}; the special copies are never touched. */
 	public static void prune(File folder, int keep) {
@@ -356,5 +356,49 @@ public final class ShipStore {
 		if (detail != null && !detail.isEmpty()) p.setProperty("detail", detail);
 		p.setProperty("when", Long.toString(System.currentTimeMillis()));
 		return p;
+	}
+
+
+	/** Copies her current save into her history folder (before it's changed), keeping the last KEEP. Nothing if her newest kept version is the same. */
+	static void snapshot(Vault v, Ship s) throws IOException {
+		File f = v.fileOf(s);
+		if (!f.isFile()) return;
+		File dir = v.settleFolder(s);
+		List<File> kept = history(v, s);
+		if (!kept.isEmpty() && SafeFiles.hash(kept.get(kept.size() - 1)).equals(SafeFiles.hash(f))) return;
+		ShipStore.keepVersion(dir, SafeFiles.read(f), null);
+		ShipStore.prune(dir, Vault.KEEP);
+	}
+
+	/**
+	 * After the station writes the boarded ship: her new version goes into her history too. FTL ends a run by deleting
+	 * continue.sav, and then her history is all that's left of her; without this, a lost ship would come back as she
+	 * was before the station's last change (with goods she had already traded away, say). Not fatal if it fails.
+	 */
+	static void keepBoarded(Vault v, Ship s) {
+		if (s.state != Ship.State.BOARDED) return;
+		try { snapshot(v, s); } catch (IOException e) { log.warn("Could not keep {}'s new version in her history: {}", s, e.toString()); }
+	}
+
+	/** Her earlier versions, oldest first: the ordinary ones (the copies kept for a reason of their own are in {@link #kept}). */
+	static List<File> history(Vault v, Ship s) { return ShipStore.versions(v.folderOf(s), false); }
+
+	/** Every save kept of her, oldest first: her versions and the copies kept for a reason of their own (the Records' Restore list). */
+	static List<File> kept(Vault v, Ship s) {
+		List<File> out = ShipStore.versions(v.folderOf(s), false);
+		out.addAll(ShipStore.versions(v.folderOf(s), true));
+		File waiting = new File(v.folderOf(s), FinalBattles.FINAL); // the final battle's waiting copy, at her folder's root
+		if (waiting.isFile()) out.add(waiting);
+		Collections.sort(out, OLDEST_FIRST);
+		return out;
+	}
+
+	/** The newest save kept in a ship's folder: her newest ordinary version, or the newest of any if she has none. */
+	static File newestKept(File folder) {
+		List<File> saves = ShipStore.versions(folder, false);
+		if (saves.isEmpty()) saves = ShipStore.versions(folder, true);
+		if (saves.isEmpty()) return null;
+		Collections.sort(saves, OLDEST_FIRST);
+		return saves.get(saves.size() - 1);
 	}
 }

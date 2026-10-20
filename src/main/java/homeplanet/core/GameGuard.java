@@ -120,12 +120,6 @@ public final class GameGuard {
 		return found;
 	}
 
-	/**
-	 * True if it's safe to go ahead with {@code action} ("board a ship", say). When FTL is running, says why the station
-	 * would rather not and lets the player choose; the first answer is a plain "nevermind" (the default), never a
-	 * warning that something is wrong. It's a question rather than a wall because FTL at its main menu hasn't loaded
-	 * the save yet, and a player who knows that may want to carry on.
-	 */
 	/** heromedel's words (5.29), wherever the station says to close FTL first. */
 	public static final String CLOSE_FTL = "Return to The Station to do this. (Close FTL)";
 	public static boolean allows(Component owner, String action) {

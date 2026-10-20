@@ -214,7 +214,6 @@ public class InboxDialog extends JDialog {
 		fill();
 	}
 
-	/** Deletes a receipt for good (it asks first). */
 	/** A shipment's transmission's parcel, or null if it isn't one. */
 	private static homeplanet.comm.Shipments.Parcel parcelOf(Transmissions.Message m) {
 		return m != null && m.key.startsWith("parcel:") && homeplanet.vault.Vault.isOpen() ? homeplanet.comm.Shipments.find(m.key.substring(7)) : null;

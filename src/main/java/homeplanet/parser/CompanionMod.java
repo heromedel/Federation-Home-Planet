@@ -180,7 +180,6 @@ public class CompanionMod {
 		Matcher m = Pattern.compile("layout=\"([^\"]+)\"").matcher(block);
 		return m.find() ? m.group(1) : null;
 	}
-	/** The layout id a remodel with her own doors uses (circle_cruiser_r1_hw), or the model's when she keeps its doors. */
 	/** Whether she has a layout of her own (her own doors, or an overhauled shape) rather than the model's. */
 	public static boolean ownLayout(Remodel r) { return r.doors != null || r.geometry != null; }
 	public static String layoutIdOf(Remodel r) {
@@ -572,7 +571,6 @@ public class CompanionMod {
 		sb.append("\t</remodel>").append(CRLF);
 		return sb.toString();
 	}
-	/** A loadout element (her class, name and new-game loadout) inside a remodel or a design, or null. */
 	/** The element's own children with this tag (not their children's). */
 	static List<Element> children(Element e, String tag) {
 		List<Element> out = new ArrayList<Element>();

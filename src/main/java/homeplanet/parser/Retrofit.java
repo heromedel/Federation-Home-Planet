@@ -48,7 +48,6 @@ public class Retrofit {
 		return ship != null && CompanionMod.inGameData(vanillaId(ship.getShipBlueprintId()) + SUFFIX);
 	}
 
-	/** The standard systems of the ship's original model that aren't installed (empty = Undo Retrofit is safe). */
 	/**
 	 * Her installed systems that her original model has no room for (artillery on anything but a Federation Cruiser: a
 	 * remodel can add it, the vanilla blueprint can't hold it). An Undo Retrofit takes these off her into the stored

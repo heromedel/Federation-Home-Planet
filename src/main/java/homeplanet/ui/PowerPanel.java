@@ -379,7 +379,6 @@ final class PowerPanel extends JComponent {
 		for (int i = slots.size() - 1; i >= 0; i--) if (slots.get(i).on) return off(slots.get(i), x);
 		return false;
 	}
-	/** Back as the save had it. */
 	/** The Backup Battery on: its bars join the reactor for 30 seconds, counted down on its plate. */
 	void startBattery() {
 		batteryUntil = System.currentTimeMillis() + BATTERY_MS;

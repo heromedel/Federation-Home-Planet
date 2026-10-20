@@ -210,7 +210,8 @@ public class IconFactory {
 		return out;
 	}
 
-	private static BufferedImage load(String innerPath) {
+	/** A picture from FTL's files (null if missing), read each time: for art shown once (the ship report's picture, 7.02). */
+	static BufferedImage load(String innerPath) {
 		InputStream in = null;
 		try {
 			in = DataManager.get().getResourceInputStream(innerPath);

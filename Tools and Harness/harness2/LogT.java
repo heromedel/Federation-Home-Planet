@@ -145,11 +145,11 @@ public class LogT { public static void main(String[] a) throws Exception {
  static void fixes520(Vault v) throws Exception {
   Ship b = v.docked().get(0);
   net.blerf.ftl.parser.SavedGameParser.SavedGameState gs = v.readCopy(b).save;
-  java.lang.reflect.Method nw = Vault.class.getDeclaredMethod("noteWork", Ship.class, net.blerf.ftl.parser.SavedGameParser.SavedGameState.class); nw.setAccessible(true);
-  nw.invoke(v, b, gs); // the stop, first seen
+  java.lang.reflect.Method nw = Class.forName("homeplanet.vault.ContinueWatch").getDeclaredMethod("noteWork", Vault.class, Ship.class, net.blerf.ftl.parser.SavedGameParser.SavedGameState.class); nw.setAccessible(true); // 7.02: out of Vault
+  nw.invoke(null, v, b, gs); // the stop, first seen
   gs.setStateVar("store_purchase", (gs.hasStateVar("store_purchase") ? gs.getStateVar("store_purchase") : 0) + 1);
   int before = Calendar.today(v);
-  nw.invoke(v, b, gs); // work done there: a day passes
+  nw.invoke(null, v, b, gs); // work done there: a day passes
   int workDay = 0;
   for (Map.Entry<Integer, List<Calendar.Entry>> e : Calendar.byDay(v).entrySet()) for (Calendar.Entry x : e.getValue()) if (x.text.startsWith("Time spent on work")) workDay = e.getKey();
   Setup.chk("F: work at a store is told on the stop's own day, then the day passes (" + workDay + ", " + before + " -> " + Calendar.today(v) + ")", workDay == before && Calendar.today(v) == before + 1);

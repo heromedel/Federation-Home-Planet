@@ -639,10 +639,6 @@ public final class Expeditions {
 	public static List<CrewState> holdCrew(Vault v) throws IOException { return AwayCrew.holdCrew(v); }
 
 	/**
-	 * Sends a detail to the sector on offer in this slot: they leave the Cargo Hold's save for the fleet's assignments
-	 * file, due back in AWAY_MIN to AWAY_MAX beacons (and the job's extras); setting out passes no time; the offer is replaced.
-	 */
-	/**
 	 * The hold's own record of a crew member picked from a list read on its own (never the same objects): the same object,
 	 * else the same whole record (name, race, skills, service, looks, health), else the same name and race; never one
 	 * already picked. Namesakes can't be avoided: by name alone two picked were one person sent twice, the other left
@@ -782,10 +778,6 @@ public final class Expeditions {
 	static boolean hurt(CrewState c) { return c.getRace() != null && c.getHealth() < c.getRace().getMaxHealth(); }
 
 	/**
-	 * Rolls an expedition for this detail in this sector (nothing is written): the job, a hazard, each one's d20 with
-	 * its reroll, the pot, the items and the prize, and the report in words.
-	 */
-	/**
 	 * Their role's skill on the d20 (heromedel, 5.43; the job's one skill before 6.39): +2 a level over none, +3 a level when their race suits the job too;
 	 * a natural 1 or 20 stays as it fell, and anything else stays between 2 and 19, so only a natural 1 is death and only
 	 * a natural 20 the top (and its find). The skill's +10% of the pot a level stays as well.
@@ -904,7 +896,6 @@ public final class Expeditions {
 	}
 	private static String aOrAn(String s) { return homeplanet.model.Words.a(s); }
 
-	/** The report, as heromedel laid it out: the frame, the job line, a hazard, a line per crew member, the prize, the total. Never a roll. */
 	/** heromedel's frame, the first setup line: one of the general ones, and the fallback for every other. */
 	static final String FRAME = "Due to events during the assignment the crew";
 	static String report(Result r, Random rng) {
@@ -1119,15 +1110,7 @@ public final class Expeditions {
 		if (prizeFile != null) tx.put(prizeFile, prizeBytes);
 		AwayCrew.admitAndTake(tx, v, hurt, taken, sectorCaptors(r.sector), v.beaconsSeen(), new Random());
 		homeplanet.vault.StoredSystems.add(tx, v, stored);
-		// the away record goes, and the rest are renumbered without a gap
-		Properties q = new Properties();
-		int n = 0;
-		for (int i = 0; i < 100; i++) {
-			if (i == a.index || p.getProperty("away." + i + ".sector") == null) continue;
-			for (String key : p.stringPropertyNames()) if (key.startsWith("away." + i + ".")) q.setProperty("away." + n + key.substring(("away." + i).length()), p.getProperty(key));
-			n++;
-		}
-		for (String key : p.stringPropertyNames()) if (!key.startsWith("away.")) q.setProperty(key, p.getProperty(key));
+		Properties q = withoutAway(p, a.index);
 		keepFaces(q, letter, faces);
 		tx.put(file(v), bytes(q)).commit();
 		String text = r.report = report(r, new Random(r.seed)); // told again now everything is settled (the prize, the recruit's name), in the same words
@@ -1171,6 +1154,22 @@ public final class Expeditions {
 	/** Who holds a captive taken in this sector. */
 	static String sectorCaptors(String sector) {
 		return "rebel".equals(sector) ? "the rebels" : "mantis".equals(sector) ? "a Mantis clan" : "pirate".equals(sector) ? "pirates" : "slavers";
+	}
+	/**
+	 * The file without one away record: the rest renumbered without a gap (away.0, away.1 ...), everything else kept. The
+	 * numbers are positions, never identities: a detail is found again by its lasting name ({@link #key}), so a renumbering
+	 * between two looks can't point at the wrong one.
+	 */
+	private static Properties withoutAway(Properties p, int index) {
+		Properties q = new Properties();
+		int n = 0;
+		for (int i = 0; i < 100; i++) {
+			if (i == index || p.getProperty("away." + i + ".sector") == null) continue;
+			for (String key : p.stringPropertyNames()) if (key.startsWith("away." + i + ".")) q.setProperty("away." + n + key.substring(("away." + i).length()), p.getProperty(key));
+			n++;
+		}
+		for (String key : p.stringPropertyNames()) if (!key.startsWith("away.")) q.setProperty(key, p.getProperty(key));
+		return q;
 	}
 	/** A crew member's find as a letter's reward: "item ID", or "fuel N" / "missiles N" / "parts N". */
 	private static String reward(String item) {

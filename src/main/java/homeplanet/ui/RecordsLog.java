@@ -72,7 +72,7 @@ public class RecordsLog extends JComponent implements Scrollable {
 		setBackground(BG);
 	}
 
-	/** The voyage log (voyage.log's text), or the empty text if there's nothing in it yet. */
+	/** A ship's voyage log as text, or the empty text if there's nothing in it yet. */
 	static RecordsLog voyage(String text, String empty) {
 		RecordsLog r = new RecordsLog(empty);
 		String lastStamp = null;

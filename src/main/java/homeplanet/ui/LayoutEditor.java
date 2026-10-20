@@ -276,7 +276,6 @@ public class LayoutEditor {
 		floorImg = homeplanet.parser.ShipArt.floorFromRooms(d, baseImg.getWidth(), baseImg.getHeight());
 		drawnFloorKey = key;
 	}
-	/** Sizes the design canvas around the rooms and the art (art hanging off the top or left moves the grid over). */
 	/**
 	 * The design canvas: the grid with a fixed border of {@link #PAD} all round for art that hangs over its edge. Nothing
 	 * here moves when something is edited (heromedel): the anchor, the grid's middle, is where FTL puts the ship, and the
@@ -823,88 +822,101 @@ public class LayoutEditor {
 
 		// room tools (Design Ship)
 		int[] size = sizeOf(roomTool);
-		if (size != null) {
-			if (right) { deselect(); host.say("Stopped placing rooms."); return; }
-			if (d.fits(gx, gy, size[0], size[1], gridCols(), gridRows(), -1)) {
-				d.rooms.add(new ShipDesign.Room(gx, gy, size[0], size[1]));
-				d.refreshDoors();
-				host.say("Room " + (d.rooms.size() - 1) + " placed.");
-				edited();
-			} else host.say("A " + size[0] + " x " + size[1] + " room doesn't fit there.");
-			return;
-		}
-		if (roomTool == RoomTool.ART) {
-			if (baseImg == null) { host.say("Choose " + Words.her() + " hull art first."); return; }
-			dragging = true;
-			artGrabX = x - originX - d.artX;
-			artGrabY = y - originY - d.artY;
-			host.say("Drag the art into place over the rooms. Arrow keys nudge it one pixel.");
-			return;
-		}
-		if (roomTool == RoomTool.MOUNTS) {
-			if (baseImg == null) { host.say("Choose " + Words.her() + " hull art first."); return; }
-			int ax = x - originX - d.artX, ay = y - originY - d.artY;
-			ShipDesign.Mount near = null;
-			for (ShipDesign.Mount m : d.mounts) if (Math.abs(m.x - ax) <= 10 && Math.abs(m.y - ay) <= 10) near = m;
-			if (right) {
-				if (near != null) { d.mounts.remove(near); if (near == selMount) selMount = null; host.say("Mount removed."); edited(); }
-				return;
-			}
-			if (near != null) {
-				selMount = near;
-				dragging = true;
-				host.say("Mount " + (d.mounts.indexOf(near) + 1) + " selected: drag to move it; set its facing on the right. Right-click removes it.");
-			} else {
-				ShipDesign.Mount m = new ShipDesign.Mount(ax, ay);
-				m.slide = ay < baseImg.getHeight() / 2 ? "up" : "down";
-				m.mirror = ay < baseImg.getHeight() / 2;
-				d.mounts.add(m);
-				selMount = m;
-				dragging = true;
-				if (placingArtilleryMount) {
-					m.artillery = true;
-					m.rotate = false; // the Federation Cruiser's points up (as her file has it)
-					m.slide = "no";
-					placingArtilleryMount = false;
-					host.say("Artillery mount placed. Drag to adjust; the Weapon mounts tool carries on with ordinary mounts.");
-				} else host.say("Mount " + d.mounts.size() + " placed. Drag to adjust; set its facing on the right.");
-			}
-			edited();
-			return;
-		}
-		if (roomTool == RoomTool.MOVE) {
-			int room = d.roomAt(gx, gy);
-			if (right) {
-				if (room >= 0 && removeRoom(room)) { selRoom = -1; host.say("Room " + room + " removed (the rooms after it are renumbered)."); edited(); }
-				return;
-			}
-			selRoom = room;
-			if (room >= 0) {
-				dragging = true;
-				ShipDesign.Room r = d.rooms.get(room);
-				dragDX = gx - r.x;
-				dragDY = gy - r.y;
-				dragFrom = new ShipDesign.Room(r.x, r.y, r.w, r.h);
-				dragDoors = new ArrayList<CompanionMod.Door>();
-				for (CompanionMod.Door dr : d.doors) dragDoors.add(new CompanionMod.Door(dr.x, dr.y, dr.a, dr.b, dr.v));
-				host.say("Room " + room + ": drag to move it. Right-click or Delete removes it.");
-			}
-			canvas.repaint();
-			return;
-		}
+		if (size != null) { placeRoom(gx, gy, size, right); return; }
+		if (roomTool == RoomTool.ART) { grabArt(x, y); return; }
+		if (roomTool == RoomTool.MOUNTS) { placeMount(x, y, right); return; }
+		if (roomTool == RoomTool.MOVE) { moveRoom(gx, gy, right); return; }
+		if (pressedWall(x, y, right)) return;
+		pressedRoom(e, gx, gy, right);
+	}
 
+	/** A room tool (Design Ship): a room of that size where the click fell, if it fits; the right button stops placing. */
+	private void placeRoom(int gx, int gy, int[] size, boolean right) {
+		if (right) { deselect(); host.say("Stopped placing rooms."); return; }
+		if (d.fits(gx, gy, size[0], size[1], gridCols(), gridRows(), -1)) {
+			d.rooms.add(new ShipDesign.Room(gx, gy, size[0], size[1]));
+			d.refreshDoors();
+			host.say("Room " + (d.rooms.size() - 1) + " placed.");
+			edited();
+		} else host.say("A " + size[0] + " x " + size[1] + " room doesn't fit there.");
+	}
+
+	/** The Art tool: takes hold of the hull art to drag it over the rooms. */
+	private void grabArt(int x, int y) {
+		if (baseImg == null) { host.say("Choose " + Words.her() + " hull art first."); return; }
+		dragging = true;
+		artGrabX = x - originX - d.artX;
+		artGrabY = y - originY - d.artY;
+		host.say("Drag the art into place over the rooms. Arrow keys nudge it one pixel.");
+	}
+
+	/** The Mounts tool: a weapon mount on the art where the click fell (the right button takes one away). */
+	private void placeMount(int x, int y, boolean right) {
+		if (baseImg == null) { host.say("Choose " + Words.her() + " hull art first."); return; }
+		int ax = x - originX - d.artX, ay = y - originY - d.artY;
+		ShipDesign.Mount near = null;
+		for (ShipDesign.Mount m : d.mounts) if (Math.abs(m.x - ax) <= 10 && Math.abs(m.y - ay) <= 10) near = m;
+		if (right) {
+			if (near != null) { d.mounts.remove(near); if (near == selMount) selMount = null; host.say("Mount removed."); edited(); }
+			return;
+		}
+		if (near != null) {
+			selMount = near;
+			dragging = true;
+			host.say("Mount " + (d.mounts.indexOf(near) + 1) + " selected: drag to move it; set its facing on the right. Right-click removes it.");
+		} else {
+			ShipDesign.Mount m = new ShipDesign.Mount(ax, ay);
+			m.slide = ay < baseImg.getHeight() / 2 ? "up" : "down";
+			m.mirror = ay < baseImg.getHeight() / 2;
+			d.mounts.add(m);
+			selMount = m;
+			dragging = true;
+			if (placingArtilleryMount) {
+				m.artillery = true;
+				m.rotate = false; // the Federation Cruiser's points up (as her file has it)
+				m.slide = "no";
+				placingArtilleryMount = false;
+				host.say("Artillery mount placed. Drag to adjust; the Weapon mounts tool carries on with ordinary mounts.");
+			} else host.say("Mount " + d.mounts.size() + " placed. Drag to adjust; set its facing on the right.");
+		}
+		edited();
+	}
+
+	/** The Move tool: picks up or puts down a room (the right button removes one). */
+	private void moveRoom(int gx, int gy, boolean right) {
+		int room = d.roomAt(gx, gy);
+		if (right) {
+			if (room >= 0 && removeRoom(room)) { selRoom = -1; host.say("Room " + room + " removed (the rooms after it are renumbered)."); edited(); }
+			return;
+		}
+		selRoom = room;
+		if (room >= 0) {
+			dragging = true;
+			ShipDesign.Room r = d.rooms.get(room);
+			dragDX = gx - r.x;
+			dragDY = gy - r.y;
+			dragFrom = new ShipDesign.Room(r.x, r.y, r.w, r.h);
+			dragDoors = new ArrayList<CompanionMod.Door>();
+			for (CompanionMod.Door dr : d.doors) dragDoors.add(new CompanionMod.Door(dr.x, dr.y, dr.a, dr.b, dr.v));
+			host.say("Room " + room + ": drag to move it. Right-click or Delete removes it.");
+		}
+		canvas.repaint();
+	}
+
+	/** A click on a wall: adding a door, selecting or removing one, or moving the selected door there. True if it was one. */
+	private boolean pressedWall(int x, int y, boolean right) {
 		boolean moving = roomTool == RoomTool.SYSTEMS; // Move systems: a click near a wall is still the room's, never its door
 		CompanionMod.Door wall = moving ? null : wallAt(x, y);
 		CompanionMod.Door onWall = moving ? null : doorOn(wall);
 		if (addingDoor) {
-			if (right) { addingDoor = false; hover = null; host.say("Stopped adding doors."); canvas.repaint(); return; }
-			if (!valid(wall)) { host.say("That isn't a wall between two rooms or an outer wall. Esc or right-click stops adding doors."); return; }
-			if (onWall != null) { host.say("There's already a door there."); return; }
+			if (right) { addingDoor = false; hover = null; host.say("Stopped adding doors."); canvas.repaint(); return true; }
+			if (!valid(wall)) { host.say("That isn't a wall between two rooms or an outer wall. Esc or right-click stops adding doors."); return true; }
+			if (onWall != null) { host.say("There's already a door there."); return true; }
 			d.doors.add(wall);
 			selDoor = null;
 			host.say("Added the " + doorName(wall) + ". Click another wall for the next door; Esc or right-click stops.");
 			edited();
-			return;
+			return true;
 		}
 		if (onWall != null) {
 			if (right) {
@@ -917,16 +929,22 @@ public class LayoutEditor {
 				host.say("Selected the " + doorName(onWall) + ". Click a wall to move it, Delete to remove it.");
 				canvas.repaint();
 			}
-			return;
+			return true;
 		}
 		if (selDoor != null && wall != null) {
-			if (!valid(wall)) { host.say("That isn't a wall between two rooms or an outer wall."); return; }
+			if (!valid(wall)) { host.say("That isn't a wall between two rooms or an outer wall."); return true; }
 			d.doors.set(d.doors.indexOf(selDoor), wall);
 			selDoor = null; hover = null;
 			host.say("Moved it: now the " + doorName(wall) + ".");
 			edited();
-			return;
+			return true;
 		}
+		return false;
+	}
+
+	/** A click in a room: takes a system off (right button), moves or places the selected one, or picks what is there. */
+	private void pressedRoom(MouseEvent e, int gx, int gy, boolean right) {
+		boolean moving = roomTool == RoomTool.SYSTEMS; // Move systems: picking up and putting down, never a station
 		int room = d.roomAt(gx, gy);
 		if (room < 0) {
 			if (moving) { selected = null; offList.clearSelection(); host.say("Put down. Click a system to pick it up; Esc stops moving systems."); canvas.repaint(); return; }

@@ -1081,7 +1081,7 @@ public class GuiT {
    SavedGameParser.SavedGameState sg = v.readCopy(v.boarded()).save;
    SavedGameParser.CrewState first = SaveHelper.getOwnCrew(sg.getPlayerShip()).get(0);
    first.setHealth(first.getRace().getMaxHealth() / 2);
-   JPanel panel = f.spaceDock.shipSummaryPanel(sg);
+   JPanel panel = homeplanet.ui.ShipReport.panel(sg);
    int clickable = 0, barred = 0;
    for (JLabel l : all(panel, JLabel.class)) {
     if (l.getToolTipText() != null && l.getToolTipText().startsWith("Click for ")) clickable++;

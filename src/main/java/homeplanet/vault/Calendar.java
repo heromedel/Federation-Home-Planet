@@ -36,7 +36,6 @@ public final class Calendar {
 	public static int today(Vault v) { return clock(v) - start(v) + 1; }
 	/** The career's day at this count of the clock. */
 	public static int dayAt(Vault v, int clock) { return clock - start(v) + 1; }
-	/** A day as a stardate, year.month.week.day; "Prior to 1.1.1.1" for a day before the first. */
 	/**
 	 * When something happened to a ship, as the player is told it (heromedel, 6.24: stardates, never a calendar date):
 	 * "Stardate 1.2.3.4" from the first entry of this kind about her in the fleet's log, "Prior to Stardate 1.1.1.1" for
