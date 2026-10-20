@@ -5,6 +5,10 @@ it does and CREDITS.md for where the code came from.
 
 **Fitness log:** this project cannot access heromedel's fitness log. Don't ask about it and don't look for it.
 
+**Hard rule (heromedel, 7.02):** Always check it a suggested change would actually make the code better and more elegant.
+Additions should be added in an elegant way making use of existing functions or future proofing for future functions.
+Changes should not just be busy work with no improvement.
+
 ## Working with heromedel
 
 - The workflow: **discuss, create a plan, ask to write, ask to push.** When asked to "discuss" or "don't write
