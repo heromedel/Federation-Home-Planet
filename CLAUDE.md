@@ -11,6 +11,11 @@ before planning or writing code.
 Additions should be added in an elegant way making use of existing functions or future proofing for future functions.
 Changes should not just be busy work with no improvement.
 
+**Hard rule (heromedel, 7.02):** Large checks and changes are never left to helper agents alone. What a helper reports is a
+lead, not a finding: before acting on it, check it yourself in the code. A bug it finds has to really exist, a duplicate it
+finds has to really mean the same thing, and a change it suggests has to really make the code better. Never change code on
+a helper's word alone.
+
 ## Working with heromedel
 
 - The workflow: **discuss, create a plan, ask to write, ask to push.** When asked to "discuss" or "don't write
