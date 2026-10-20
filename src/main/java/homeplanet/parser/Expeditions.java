@@ -602,7 +602,7 @@ public final class Expeditions {
 			SaveHelper.takeIn(c.save.getPlayerShip(), x.crew, "The Cargo Hold has no room for " + x.name + "; make room and look again");
 			forget(p, x.index);
 			v.begin().put(st, c.save, c.hash).put(file(v), bytes(p)).commit();
-			StationLog.entry("HIRE", x.name + " (" + race(x.crew) + "), rescued on an expedition, signed on: in the Cargo Hold", null,
+			StationLog.entry("HIRE", x.name + " (" + homeplanet.model.Crew.raceTitle(x.crew) + "), rescued on an expedition, signed on: in the Cargo Hold", null,
 				Event.of("HIRE").put("how", "rescued").put("crew", x.name).put("race", race(x.crew)).put("to", "hold"));
 			return;
 		}

@@ -739,11 +739,11 @@ public final class Transmissions {
 		if (kind.equals("parts")) return v + " drone parts";
 		if (kind.equals("item")) return Items.title(v);
 		if (kind.equals("crew")) {
-			return "a " + homeplanet.model.Crew.racePeople(v) + " crew volunteer";
+			return homeplanet.model.Words.a(homeplanet.model.Crew.racePeople(v) + " crew volunteer");
 		}
 		if (kind.equals("system")) { // "system ID", or "system ID level broken" (an expedition's part, 6.02)
 			String[] s = v.trim().split("\\s+");
-			return "a " + Items.systemTitle(s[0]) + " system" + (s.length > 2 && !"0".equals(s[2]) ? ", damaged" : "");
+			return homeplanet.model.Words.a(Items.systemTitle(s[0]) + " system") + (s.length > 2 && !"0".equals(s[2]) ? ", damaged" : "");
 		}
 		if (kind.equals("choice")) {
 			List<String> names = new ArrayList<String>();

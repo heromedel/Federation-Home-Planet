@@ -434,7 +434,7 @@ public final class AwayCrew {
 		StationLog.entry("HIRE", cost == 0 ? "A promise of adventure" + (rep > 0 ? ", " + rep + " reputation" : "") : "Posted for volunteers, " + cost + " scrap", null,
 				homeplanet.core.Event.of("HIRE").put("how", cost == 0 ? "promise" : "posted").put("cost", cost).put("reputation", rep));
 		v.countBeacon("a day spent waiting for answers to a posting");
-		if (hired != null) StationLog.entry("HIRE", "Answered the posting: " + hired.getName() + " (" + hired.getRace().getId() + ") joined, in the Cargo Hold", null,
+		if (hired != null) StationLog.entry("HIRE", "Answered the posting: " + hired.getName() + " (" + homeplanet.model.Crew.raceTitle(hired) + ") joined, in the Cargo Hold", null,
 				homeplanet.core.Event.of("HIRE").put("how", cost == 0 ? "promise" : "posted").put("cost", cost).put("reputation", rep).put("crew", hired.getName())
 						.put("race", hired.getRace().getId()).put("to", "hold"));
 		return hired;
