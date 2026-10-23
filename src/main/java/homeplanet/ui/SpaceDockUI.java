@@ -1608,7 +1608,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			orders.add(new OtherOrdersDialog.Order("Unfinished trades", "Long Range Comm. trades a lost link left unsettled: what you gave is held until they're settled.",
 					null, new Runnable() { public void run() { LongRangeCommUI.reviewUnfinished(SpaceDockUI.this); init(); } }, true));
 		}
-		if (parent != null) orders.add(new OtherOrdersDialog.Order("Close Station Interface", "Leave the Space Dock and close The Home Planet Station interface, as Esc does here.",
+		if (parent != null) orders.add(new OtherOrdersDialog.Order("Close Station Interface", "Close Home Planet Station's Interface.",
 				null, new Runnable() { public void run() { parent.askToQuit(); } }, true));
 		OtherOrdersDialog.open(this, orders);
 	}
