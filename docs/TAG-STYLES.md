@@ -13,6 +13,7 @@ heromedel has agreed to each point. Ai-Generated-Proposal is assumed not agreed 
   below).
 - **Ai-Generated-Proposal:** written by Claude, not agreed until heromedel reviews it. Used the same way as Proposed.
 - **Open:** not discussed yet; nothing is built on it.
+- **Unlikely:** kept on record, but not expected to be added; nothing is built on it unless heromedel raises it.
 - **Rejected:** turned down, with a line saying why; never brought back unless heromedel raises it.
 
 ## When to set them
@@ -23,6 +24,7 @@ A tag comes from how heromedel said it, and Claude sets it from those words:
 - "We are going to go with X": **Decided**.
 - "We will likely go with X": **Likely**.
 - "I was thinking we could do X, but let's worry about that later": **Proposed**.
+- "X is unlikely", "probably not": **Unlikely**.
 - "No", "we're not doing X": **Rejected**, with heromedel's reason.
 - Something named but not talked through yet: **Open**.
 - Anything Claude came up with itself: **Ai-Generated-Proposal**. It moves up only when heromedel's answer agrees to the
@@ -33,6 +35,9 @@ A tag comes from how heromedel said it, and Claude sets it from those words:
     **Ai-Generated-Proposal**: heromedel agreed to the next step, not to every line in them.
 
 When in doubt, use a weaker tag: a tag never claims more than heromedel said.
+
+Tags follow who wrote what: text heromedel wrote or agreed to is tagged from his words; only Claude's own additions
+are Ai-Generated-Proposal.
 
 ## How a tag is written
 
@@ -45,17 +50,21 @@ When a point's tag changes, its version changes with it.
 
 ## Working with proposals
 
-Proposed and Ai-Generated-Proposal points are not a reason to stop and ask. They may be used when they're part of a job
-heromedel asked for, or a system heromedel agreed to, and they make sense there without complicating the job or adding
-just to add. They're never a reason to start something new on their own.
+Proposed and Ai-Generated-Proposal points may be used when they're part of a job heromedel asked for, or a system
+heromedel agreed to, and they make sense there without complicating the job or adding just to add. They're never a
+reason to start something new on their own.
+
+"Ask before writing" means asking before the work starts. Once heromedel has agreed to the work, don't keep stopping
+to ask; stopping for a question mid-job is a light guideline, kept for real blockers.
 
 Work built on proposals is no firmer than they are: it carries the Ai-Generated-Proposal tag until heromedel reviews it,
 and so does any gap the work filled in itself.
 
-When the work is done, the report opens with the split of what it was based on, so heromedel can see at once whether it
-matched what was expected, for example:
+When the work is done, the report opens with the split of what it was based on: count the points used, then give
+the percentages, so heromedel can see at once whether it matched what was expected, for example:
 
-    Based on: 5% agreed content (Hard Rule, Decided, Likely), 80% proposals, 15% filled in as I went.
+    Based on: 20 points. 1 agreed (Hard Rule, Decided, Likely), 16 proposals, 3 filled in as I went
+    (5% / 80% / 15%).
 
 Then whatever needs reporting: which proposal points the work leaned on, any concerns about them (or that there were
 none), and the gaps it filled in itself.
