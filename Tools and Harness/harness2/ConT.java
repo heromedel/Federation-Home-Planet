@@ -4,7 +4,7 @@ public class ConT { public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive(); HomePlanet.expeditionType = 2;
- HomePlanet.propFile = new File(work, "test.cfg");
+ HomePlanet.propFile = new File(work, "test.cfg"); 
  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
  StationConsole.Reply r = StationConsole.answer("/admin");
  Setup.chk("A: locked, /admin, /admin ? and /admin dc are unknown commands: nothing says there is anything to unlock", r.text.equals("Unknown command: /admin") && r.days == 0

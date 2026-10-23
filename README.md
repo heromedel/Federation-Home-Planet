@@ -167,7 +167,8 @@ Everything the station keeps is in `FederationHomePlanet` inside FTL's saves fol
 
 Each Immersive career keeps its own fleet in `FederationHomePlanet-Immersive-Easy`, `-Normal`, `-Hard`, or
 `FederationHomePlanet-Immersive` for Custom (with its own FTL profile while it isn't in use); ended careers are zipped
-into `FederationHomePlanet/old-immersive-careers`.
+into `FederationHomePlanet/old-immersive-careers`. A fleet from before 6.0 is not read: open it once in a 6.x station
+first.
 The ship you are flying is FTL's own `continue.sav`, as always. Custom blueprints reach the game through
 `Federation Home Planet Mod.ftl`, which the station rebuilds and sends to FTL via Slipstream.
 

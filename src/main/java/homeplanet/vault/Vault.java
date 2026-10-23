@@ -2573,7 +2573,7 @@ public final class Vault {
 		return out;
 	}
 	/**
-	 * Every blueprint the other fleet's saves name: its docked and junked ships, the ones that left, and their kept versions.
+	 * Every blueprint the other fleet's saves name: its docked and junked ships and their kept versions.
 	 * (Its boarded ship, if any, was docked into it when the player switched fleets.)
 	 */
 	public java.util.Set<String> otherFleetBlueprints() {
@@ -2614,7 +2614,7 @@ public final class Vault {
 	private List<File> otherFleetSaves() {
 		List<File> out = new ArrayList<File>();
 		for (File other : otherRoots())
-			for (String dir : new String[] {"junkyard", "shipyard", "memorials_and_records"}) collectSaves(new File(other, dir), out, 4);
+			for (String dir : new String[] {"shipyard", "junkyard", "memorials_and_records"}) collectSaves(new File(other, dir), out, 4); // her save, her versions, the ones who left
 		return out;
 	}
 	private static void collectSaves(File dir, List<File> out, int depth) {

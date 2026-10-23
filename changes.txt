@@ -66,3 +66,10 @@ Major changes by version
   7.02: the vault's code split along its seams, long methods split, stale comments removed; nothing a player sees changes.
   7.03: the watch on FTL's continue.sav keeps its own notes (Steam Cloud's copies, New Game's overwrite); nothing a player sees changes.
   7.04: the vault back as it was at 7.01, one class in charge of the fleet (7.02's split had its helpers reaching into the fleet's list); everything else from 7.02 kept. Nothing a player sees changes.
+
+7.05 to 7.08
+  7.06: small wording fixes (a/an in letters, a design name starting with "The", the race named in the hiring log lines).
+  7.07: the last pieces kept only for fleets from before 6.0 removed. Such a fleet is not read: a 6.x station has to open it once first, so the 6.00 note above no longer applies.
+
+7.09 to 7.11
+  7.11: Other... has Close Station Interface, which asks the same question as Esc at the Space Dock.
