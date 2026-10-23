@@ -335,7 +335,6 @@ public final class CrewRegister {
 			m.place = p.getProperty(k + "place", "");
 			m.where = p.getProperty(k + "where", "");
 			String st = p.getProperty(k + "status", "PRESENT");
-			if (st.equals("DISCHARGED")) st = "RETIRED"; // 5.41's word for it
 			try { m.status = Status.valueOf(st); } catch (IllegalArgumentException e) { m.status = Status.MISSING; }
 			m.at = Store.num(p, k + "at", registerAt);
 			for (String key : p.stringPropertyNames()) if (key.startsWith(k + "rec.")) m.rec.put(key.substring((k + "rec.").length()), p.getProperty(key));

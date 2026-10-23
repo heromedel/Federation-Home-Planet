@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "7.06";
+	public static final String APP_VERSION = "7.07";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -269,8 +269,7 @@ public class HomePlanet {
 		augmentsHome = flag("augments_home", true);
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
-		try { expeditionType = Math.max(0, Math.min(2, Integer.parseInt(config.getProperty("expedition_type", "2").trim()))); } catch (NumberFormatException e) { expeditionType = 2; }
-		if (expeditionType == 1) expeditionType = 2; // 1 was the old board of jobs (gone at 5.67, heromedel): 0 is hiring alone, 2 the crew expeditions
+		expeditionType = "0".equals(config.getProperty("expedition_type", "2").trim()) ? 0 : 2; // 0 is hiring alone, anything else the crew expeditions
 		freeShip = homeplanet.parser.FreeCommand.norm(config.getProperty("free_ship", "relief")); // the relief ship unless chosen otherwise
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
@@ -376,7 +375,6 @@ public class HomePlanet {
 		} finally {
 			try { if (in != null) in.close(); } catch (IOException e) { }
 		}
-		config.remove(StationConsole.DEV); // dev commands last one run, never left on (heromedel, 6.35)
 		return false;
 	}
 

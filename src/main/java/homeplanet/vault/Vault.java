@@ -591,16 +591,6 @@ public final class Vault {
 	private void reconcile() {
 		List<String> notes = new ArrayList<String>();
 		File cont = continueFile();
-		// a Board stopped partway before 5.95 (her record still saying docked): her save is continue.sav, and nobody else is boarded
-		if (boarded() == null && cont.isFile()) {
-			for (Ship s : ships) {
-				if (s.state != Ship.State.DOCKED || fileOf(s).isFile() || !isHers(s, cont)) continue;
-				s.state = Ship.State.BOARDED;
-				try { s.hash = SafeFiles.hash(cont); } catch (IOException e) { s.hash = ""; }
-				notes.add(s.name + " was being boarded when the station stopped: continue.sav is " + Words.her() + " save, so " + Words.she() + " is boarded");
-				break;
-			}
-		}
 		// ships whose files vanished
 		for (Ship s : new ArrayList<Ship>(ships)) {
 			if (s.state == Ship.State.BOARDED) continue;
@@ -614,13 +604,6 @@ public final class Vault {
 		}
 		// the boarded ship: continue.sav is hers, if it's there
 		Ship b = boarded();
-		// a Dock stopped partway before 5.95 (her record still saying boarded): her save is back in her folder, so she's docked, not lost
-		if (b != null && !cont.isFile() && ShipStore.sav(folderOf(b)).isFile()) {
-			b.state = Ship.State.DOCKED;
-			try { b.hash = SafeFiles.hash(fileOf(b)); } catch (IOException e) { b.hash = ""; }
-			notes.add(b.name + " was being docked when the station stopped: " + Words.her() + " save is in " + Words.her() + " folder, so " + Words.she() + " is docked");
-			b = null;
-		}
 		// never while FTL is running: it rewrites continue.sav by deleting it first, so a missing file there proves nothing
 		if (b != null && !cont.isFile() && !homeplanet.core.GameGuard.isFtlRunning()) {
 			notes.add(b.name + " was boarded, and continue.sav is gone: lost in action (FTL ends a run by deleting the save). "
@@ -919,16 +902,6 @@ public final class Vault {
 			}
 		}
 		return null;
-	}
-	/** This save is hers byte for byte: the save her record names, or one of her kept versions (Board keeps one as it takes her save). */
-	private boolean isHers(Ship s, File save) {
-		String h;
-		try { h = SafeFiles.hash(save); } catch (IOException e) { return false; }
-		if (h.equals(s.hash)) return true;
-		for (File f : kept(s)) {
-			try { if (h.equals(SafeFiles.hash(f))) return true; } catch (IOException e) { }
-		}
-		return false;
 	}
 
 	// ---- sectors travelled (the Immersive stipend) ----
@@ -2641,7 +2614,7 @@ public final class Vault {
 	private List<File> otherFleetSaves() {
 		List<File> out = new ArrayList<File>();
 		for (File other : otherRoots())
-			for (String dir : new String[] {"ships", "junkyard", "history", "shipyard", "memorials_and_records", "surrendered"}) collectSaves(new File(other, dir), out, 4); // both layouts
+			for (String dir : new String[] {"shipyard", "junkyard", "memorials_and_records"}) collectSaves(new File(other, dir), out, 4); // her save, her versions, the ones who left
 		return out;
 	}
 	private static void collectSaves(File dir, List<File> out, int depth) {

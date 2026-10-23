@@ -4,12 +4,11 @@ public class ConT { public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
  HomePlanet.immersiveMode = false; HomePlanet.leaveImmersive(); HomePlanet.expeditionType = 2;
- HomePlanet.propFile = new File(work, "test.cfg"); HomePlanet.config.remove(StationConsole.DEV);
+ HomePlanet.propFile = new File(work, "test.cfg"); 
  Vault v = Setup.open(game, saves); v.storage(); v.takeStock();
  StationConsole.Reply r = StationConsole.answer("/admin");
  Setup.chk("A: locked, /admin, /admin ? and /admin dc are unknown commands: nothing says there is anything to unlock", r.text.equals("Unknown command: /admin") && r.days == 0
    && StationConsole.answer("/admin ?").text.startsWith("Unknown command") && StationConsole.answer("/admin dc").text.startsWith("Unknown command"));
- oldSwitch(work);
  Setup.chk("E: /? lists /? and /easter, and nothing else", StationConsole.answer("/?").text.equals("/?\n/easter"));
  Setup.chk("E: /easter: \"Wouldn't you like to know, Weather Boy.\"", StationConsole.answer("/easter").text.equals("Wouldn't you like to know, Weather Boy."));
  Setup.chk("E: /easter ? gives the hint", StationConsole.answer("/easter ?").text.equals("* When sisters unite they have.."));
@@ -54,16 +53,6 @@ public class ConT { public static void main(String[] a) throws Exception {
  static String cfgText() throws IOException {
   File st = HomePlanet.stationFile();
   return new String(SafeFiles.read(HomePlanet.propFile), "UTF-8") + (st != null && st.isFile() ? new String(SafeFiles.read(st), "UTF-8") : "");
- }
- /** A cfg from before 6.35 with dev commands left on: read at startup, they are locked and the line goes. */
- static void oldSwitch(File work) throws Exception {
-  File was = HomePlanet.propFile, cfg = new File(work, "old.cfg");
-  SafeFiles.writeText(cfg, "dev_commands=true\n", false);
-  HomePlanet.propFile = cfg;
-  java.lang.reflect.Method load = HomePlanet.class.getDeclaredMethod("loadConfig"); load.setAccessible(true); load.invoke(null);
-  HomePlanet.propFile = was;
-  Setup.chk("Y: an old cfg's dev_commands=true: locked at startup, the line gone", !StationConsole.devOn() && HomePlanet.config.getProperty(StationConsole.DEV) == null
-    && StationConsole.answer("/passtime 2").text.startsWith("Unknown command"));
  }
  /** /easter girlpower (6.22; an easter egg since 6.35): every crew member the station makes is a woman while it's on; the cfg has the line only then; crew already made are as they were. */
  static void girlPower(Vault v) throws Exception {
