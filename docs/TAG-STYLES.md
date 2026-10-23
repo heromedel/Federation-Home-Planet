@@ -25,8 +25,12 @@ A tag comes from how heromedel said it, and Claude sets it from those words:
 - "I was thinking we could do X, but let's worry about that later": **Proposed**.
 - "No", "we're not doing X": **Rejected**, with heromedel's reason.
 - Something named but not talked through yet: **Open**.
-- Anything Claude came up with itself: **Ai-Generated-Proposal**, until heromedel says otherwise; then it takes the tag
-  heromedel's answer gives it ("sure, let's do that" is Decided).
+- Anything Claude came up with itself: **Ai-Generated-Proposal**. It moves up only when heromedel's answer agrees to the
+  point itself, and only as far as the answer goes. Agreeing to use proposals is not agreeing to what they say:
+  - "Should we go with X, and assume that's how it will be going forward?" "Sure." X is **Decided**.
+  - "We could do X for now." "I guess." X is **Proposed**, or **Likely** at most.
+  - "I've finished the AI proposals for the task; would you like to use these for the next step?" "Yes." They stay
+    **Ai-Generated-Proposal**: heromedel agreed to the next step, not to every line in them.
 
 When the words could mean either of two tags, use the weaker one: a tag never claims more than heromedel said.
 
