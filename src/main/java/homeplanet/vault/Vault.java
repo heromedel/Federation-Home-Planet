@@ -2573,7 +2573,7 @@ public final class Vault {
 		return out;
 	}
 	/**
-	 * Every blueprint the other fleet's saves name: its docked and junked ships, their kept versions and surrenders.
+	 * Every blueprint the other fleet's saves name: its docked and junked ships and their kept versions.
 	 * (Its boarded ship, if any, was docked into it when the player switched fleets.)
 	 */
 	public java.util.Set<String> otherFleetBlueprints() {
