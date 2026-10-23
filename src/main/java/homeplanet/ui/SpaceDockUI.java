@@ -269,7 +269,7 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 		} else {
 			dockLaunchBtn = null;
 		}
-		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment");
+		otherBtn = controlButton("Other...", "Orders the station rarely needs: recover a lost or destroyed ship, clean up blueprints, report for reassignment, close the station interface");
 		if (homeplanet.parser.Museum.anything(vault)) { // once a ship has won, or been lost in action
 			museumBtn = controlButton("Museum", "The Federation Museum: the Hall of Victors, and the Memorial to ships lost in action");
 			controlGroup(controls, "Station", cargoBtn, commBtn, expeditionsBtn, quartersBtn, settingsBtn, museumBtn);
@@ -1608,6 +1608,8 @@ public class SpaceDockUI extends JPanel implements ActionListener {
 			orders.add(new OtherOrdersDialog.Order("Unfinished trades", "Long Range Comm. trades a lost link left unsettled: what you gave is held until they're settled.",
 					null, new Runnable() { public void run() { LongRangeCommUI.reviewUnfinished(SpaceDockUI.this); init(); } }, true));
 		}
+		if (parent != null) orders.add(new OtherOrdersDialog.Order("Close Station Interface", "Close Home Planet Station's Interface.",
+				null, new Runnable() { public void run() { parent.askToQuit(); } }, true));
 		OtherOrdersDialog.open(this, orders);
 	}
 	/**

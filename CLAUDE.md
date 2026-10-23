@@ -108,7 +108,8 @@ For example:
 - **The public release branch (heromedel, 6.60):** never catch up to, merge from or copy from
   `Cloud-C-Jar-Stripped-Odditys`. It is the stripped public release (code for play testers coming from older
   versions removed), and only heromedel decides when it goes anywhere.
-- `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
+- `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features. Points in it and the
+  other design documents carry the tags in `docs/TAG-STYLES.md` (how firmly heromedel agreed, and what Claude may do with each).
   `docs/CONCERNS.md` lists the design debts talked over (how the station is built, what it costs, what a change would
   take): add one only when heromedel raises it, and ask first (its top says so); read it before planning anything that
   touches the vault's files or how crew are tracked.

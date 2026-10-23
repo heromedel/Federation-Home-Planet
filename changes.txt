@@ -70,3 +70,6 @@ Major changes by version
 7.05 to 7.08
   7.06: small wording fixes (a/an in letters, a design name starting with "The", the race named in the hiring log lines).
   7.07: the last pieces kept only for fleets from before 6.0 removed. Such a fleet is not read: a 6.x station has to open it once first, so the 6.00 note above no longer applies.
+
+7.09 to 7.11
+  7.11: Other... has Close Station Interface, which asks the same question as Esc at the Space Dock.

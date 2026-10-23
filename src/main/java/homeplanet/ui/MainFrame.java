@@ -169,13 +169,16 @@ public class MainFrame extends JFrame {
 		getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "quitPrompt");
 		getRootPane().getActionMap().put("quitPrompt", new javax.swing.AbstractAction() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
-				if (!atSpaceDock || !isFocused()) return;
-				Object[] opts = {"Yes", "No"};
-				int r = javax.swing.JOptionPane.showOptionDialog(MainFrame.this, "Leave the Space Dock and close The Home Planet Station interface?", "Quit",
-						javax.swing.JOptionPane.DEFAULT_OPTION, javax.swing.JOptionPane.QUESTION_MESSAGE, null, opts, opts[1]);
-				if (r == 0) dispatchEvent(new java.awt.event.WindowEvent(MainFrame.this, java.awt.event.WindowEvent.WINDOW_CLOSING)); // the same path as the close box
+				if (atSpaceDock && isFocused()) askToQuit();
 			}
 		});
+	}
+	/** Asks before closing the station (Esc at the Space Dock, and Other... > Close Station Interface); Yes closes it as the close box does. */
+	public void askToQuit() {
+		Object[] opts = {"Yes", "No"};
+		int r = javax.swing.JOptionPane.showOptionDialog(this, "Leave the Space Dock and close The Home Planet Station interface?", "Quit",
+				javax.swing.JOptionPane.DEFAULT_OPTION, javax.swing.JOptionPane.QUESTION_MESSAGE, null, opts, opts[1]);
+		if (r == 0) dispatchEvent(new java.awt.event.WindowEvent(this, java.awt.event.WindowEvent.WINDOW_CLOSING)); // the same path as the close box
 	}
 	private boolean atSpaceDock = true, atMuseum = false, atComm = false;
 	public final MuseumUI museum;
