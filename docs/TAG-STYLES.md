@@ -15,7 +15,20 @@ heromedel has agreed to each point. Ai-Generated-Proposal is assumed not agreed 
 - **Open:** not discussed yet; nothing is built on it.
 - **Rejected:** turned down, with a line saying why; never brought back unless heromedel raises it.
 
-Only heromedel gives or changes a tag. Anything new Claude writes into a design document is tagged Ai-Generated-Proposal.
+## When to set them
+
+A tag comes from how heromedel said it, and Claude sets it from those words:
+
+- "This is a hard rule", "never do X": **Hard Rule**.
+- "We are going to go with X": **Decided**.
+- "We will likely go with X": **Likely**.
+- "I was thinking we could do X, but let's worry about that later": **Proposed**.
+- "No", "we're not doing X": **Rejected**, with heromedel's reason.
+- Something named but not talked through yet: **Open**.
+- Anything Claude came up with itself: **Ai-Generated-Proposal**, until heromedel says otherwise; then it takes the tag
+  heromedel's answer gives it ("sure, let's do that" is Decided).
+
+When the words could mean either of two tags, use the weaker one: a tag never claims more than heromedel said.
 
 ## How a tag is written
 
