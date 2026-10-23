@@ -1,5 +1,5 @@
 THE HOME PLANET STATION
-User Manual, version 7.06
+User Manual, version 7.12
 Issued by The Federation Home Planet
 
 To see which version of the station you have, open SETTINGS and choose the
@@ -550,6 +550,11 @@ you in COMMISSION. You pay for her there by giving up the Cargo Hold's
 contents. Its crew stay, and any value left over is offered back. If your
 reputation can be spent, you can keep the hold and pay in reputation instead.
 Withdraw Plea, in the same list, cancels a plea that is still waiting.
+
+The last one, Close Station Interface, closes The Home Planet Station's
+interface. It first asks whether you want to leave the Space Dock and close
+the interface, the same question that appears when you press Esc at the Space
+Dock, and choosing Yes closes it just as the close box does.
 
 
 ==============================================================================
