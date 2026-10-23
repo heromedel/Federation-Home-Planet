@@ -892,7 +892,9 @@ public class GuiT {
    for (JButton b : all(welcome.getContentPane(), JButton.class)) buttons.add(b.getText());
    welcome.dispose(); switcher.dispose();
   } catch (Exception e) { throw new RuntimeException(e); } } });
-  Setup.chk("M: the welcome screen and Switch Game Mode both show the Custom career begun", texts[0].contains("Begun: 0 ships") && texts[1].contains("Begun: 0 ships"));
+  String first = "Choose the level of each rule yourself, once, when the career begins.";
+  Setup.chk("M: the welcome screen and Switch Game Mode both describe Custom, begun", texts[0].contains(first) && texts[1].contains(first)
+    && texts[0].contains("Begun: 0 ships") && texts[1].contains("Begun: 0 ships"));
   Setup.chk("M: the others not begun, on both", texts[0].split("Not begun", -1).length == 4 && texts[1].split("Not begun", -1).length == 4);
   Setup.chk("M: the welcome screen offers Continue for the begun career, Begin for the rest " + buttons, Collections.frequency(buttons, "Continue...") == 1 && Collections.frequency(buttons, "Begin...") == 3);
  }
@@ -1023,7 +1025,7 @@ public class GuiT {
    SaveHelper.placeCrew(h, x, true); h.getCrewList().add(x);
   }
   v.begin().put(v.storage(), c.save, c.hash).commit();
-  final File inf = Expeditions.infirmaryFile(v);
+  final File inf = AwayCrew.infirmaryFile(v);
   Store.write(inf, Store.parse(("healed_at=" + v.beaconsSeen() + "\n0.name=Laid Ulm\n0.race=human\n0.until=" + (v.beaconsSeen() + 4) + "\n0.drained=" + v.beaconsSeen() + "\n").getBytes("UTF-8")), null);
   final Map<String, Object[]> bars = new HashMap<String, Object[]>();
   final Object[] r = new Object[3];
@@ -1079,7 +1081,7 @@ public class GuiT {
    SavedGameParser.SavedGameState sg = v.readCopy(v.boarded()).save;
    SavedGameParser.CrewState first = SaveHelper.getOwnCrew(sg.getPlayerShip()).get(0);
    first.setHealth(first.getRace().getMaxHealth() / 2);
-   JPanel panel = f.spaceDock.shipSummaryPanel(sg);
+   JPanel panel = homeplanet.ui.ShipReport.panel(sg);
    int clickable = 0, barred = 0;
    for (JLabel l : all(panel, JLabel.class)) {
     if (l.getToolTipText() != null && l.getToolTipText().startsWith("Click for ")) clickable++;
@@ -1121,32 +1123,32 @@ public class GuiT {
  /** Jobs follow one another without a look at the Space Dock: whoever's time is up leaves the infirmary between them, with the pop-up. */
  static void infirmaryBetweenJobs(final MainFrame f) throws Exception {
   final Vault v = Vault.get();
-  SavedGameParser.CrewState hurt = Expeditions.holdCrew(v).get(0);
+  SavedGameParser.CrewState hurt = AwayCrew.holdCrew(v).get(0);
   Properties inf = new Properties();
   inf.setProperty("0.name", hurt.getName()); inf.setProperty("0.race", hurt.getRace().getId()); inf.setProperty("0.until", Integer.toString(v.beaconsSeen())); inf.setProperty("0.drained", Integer.toString(v.beaconsSeen()));
-  Store.write(Expeditions.infirmaryFile(v), inf, null);
-  int free = Expeditions.holdCrew(v).size();
+  Store.write(AwayCrew.infirmaryFile(v), inf, null);
+  int free = AwayCrew.holdCrew(v).size();
   shown.clear(); presses.clear(); presses.add(0);
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
    call(f.spaceDock, SpaceDockUI.class, "timeRound", new Class<?>[] {boolean.class}, false); // the station's round (the job board's afterJob went with it at 5.67)
   } catch (Exception e) { throw new RuntimeException(e); } } });
   boolean word = false; for (String t : shown) if (t.contains(hurt.getName()) && t.contains("out of the infirmary")) word = true;
-  Setup.chk("X: at the station's round, " + hurt.getName() + "'s time up: out of the infirmary with the pop-up, free to send again (" + free + " -> " + Expeditions.holdCrew(v).size() + ")",
-    word && Expeditions.holdCrew(v).size() == free + 1 && Expeditions.infirmary(v).isEmpty());
+  Setup.chk("X: at the station's round, " + hurt.getName() + "'s time up: out of the infirmary with the pop-up, free to send again (" + free + " -> " + AwayCrew.holdCrew(v).size() + ")",
+    word && AwayCrew.holdCrew(v).size() == free + 1 && AwayCrew.infirmary(v).isEmpty());
  }
  /** With the inbox off, a ransom comes up at the Space Dock: Pay brings them home. */
  static void ransomPopUp(final MainFrame f) throws Exception {
   final Vault v = Vault.get();
   ExpT.take(v, Commission.volunteer("energy", new Random(8)));
   for (int i = 0; i < 6; i++) { SavedGameParser.SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile()); g.setTotalBeaconsExplored(g.getTotalBeaconsExplored() + 1); SaveHelper.writeSavedGame(v.continueFile(), g); v.takeStock(); }
-  final List<Expeditions.RansomNews> news = Expeditions.checkRansoms(v);
+  final List<AwayCrew.RansomNews> news = AwayCrew.checkRansoms(v);
   hold(v, 200);
   final String name = news.isEmpty() ? "?" : news.get(0).captive.name;
   shown.clear(); optionsShown.clear(); presses.clear(); presses.addAll(Arrays.asList(0, 0)); // Pay; the note that they're home
   SwingUtilities.invokeAndWait(new Runnable() { public void run() { try {
-   call(f.spaceDock, SpaceDockUI.class, "ransomNotice", new Class<?>[] {Expeditions.RansomNews.class}, news.get(0));
+   call(f.spaceDock, SpaceDockUI.class, "ransomNotice", new Class<?>[] {AwayCrew.RansomNews.class}, news.get(0));
   } catch (Exception e) { throw new RuntimeException(e); } } });
-  boolean home = false; for (SavedGameParser.CrewState x : Expeditions.holdCrew(v)) if (x.getName().equals(name)) home = true;
+  boolean home = false; for (SavedGameParser.CrewState x : AwayCrew.holdCrew(v)) if (x.getName().equals(name)) home = true;
   Setup.chk("R: with the inbox off, the ransom comes up at the Space Dock with Pay, Refuse and Later; Pay brings " + name + " home",
     news.size() == 1 && !optionsShown.isEmpty() && Arrays.asList(optionsShown.get(0)).contains("Refuse") && home);
  }

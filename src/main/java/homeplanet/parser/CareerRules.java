@@ -8,7 +8,7 @@ import homeplanet.vault.Vault;
 
 /**
  * An Immersive career's difficulty: Easy, Normal, Hard, or Custom (any level of each rule), chosen when it begins and
- * fixed from then on. Kept in its career.txt; {@link #current()} is the open Immersive fleet's.
+ * fixed from then on. Kept in its career.xml; {@link #current()} is the open Immersive fleet's.
  */
 public final class CareerRules {
 	public static final String EASY = "easy", NORMAL = "normal", HARD = "hard", CUSTOM = "custom";
@@ -77,7 +77,7 @@ public final class CareerRules {
 		Arrays.fill(lv, l);
 		return new CareerRules(HARD.equals(name) || NORMAL.equals(name) ? name : EASY, lv);
 	}
-	/** This rule's level: 0 (Easy), 1 (Normal), 2 (Hard), or 3 (Sandbox's, where a Custom career chose it). */
+	/** This rule's level: 0 (Easy), 1 (Normal), 2 (Hard) or SANDBOX. */
 	public int level(int rule) { return level[rule]; }
 	public int[] levels() { return level.clone(); }
 
@@ -115,12 +115,12 @@ public final class CareerRules {
 		int l = level[VICTORY];
 		return l == SANDBOX ? FinalVictory.NOTHING : l == 2 ? FinalVictory.MUSEUM : FinalVictory.RESCUE;
 	}
-	/** What the museum pays (FinalVictory.FULL, HALF, or NONE at Sandbox's level). */
+	/** What the museum pays (FinalVictory.FULL, HALF or NONE). */
 	public String museumPay() { return MUSEUM_PAYS[level[MUSEUM_PAY]]; }
 
-	// ---- in career.txt ----
+	// ---- in career.xml ----
 
-	/** The career's rules, from its properties; null if they name no difficulty. */
+	/** The career's rules, from its properties; null if it has none. */
 	static CareerRules read(Properties p) {
 		String n = p.getProperty("difficulty");
 		if (n == null) return null;

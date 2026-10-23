@@ -1,208 +1,94 @@
 # Federation Home Planet: notes for Claude
 
-A save-game manager for FTL: Faster Than Light 1.6.x (Java Swing, one runnable jar). See README.md for what
-it does and CREDITS.md for where the code came from.
+-- Rules for Any Project --
 
-**Fitness log:** this project cannot access heromedel's fitness log. Don't ask about it and don't look for it.
+**Fitness log:** cloud projects cannot access heromedel's fitness log. Don't ask about it and don't look for it.
 
-**This branch is the public release (heromedel, 6.60):** a cleaned-up, stripped-down station for brand-new players, most
-likely published outside GitHub. Everything that only served play testers coming from older versions is removed (the 6.0
-fleet conversion, the reputation re-evaluation and its correction, careers from before difficulties, the old Report for
-Reassignment, repairs for old bugs, readers of old file shapes). Don't add any of it back. Never merge this branch into
-`main` on your own: if heromedel asks for that merge, first ask them "Are all the old play testers converted and
-reevaluated, and no longer needing the stripped code?"
+**Game standards:** read `docs/GAME-STANDARDS.md` (heromedel's standard rules, elegant code principles and design philosophy)
+before planning or writing code.
 
-**Check for Updates on this branch (heromedel, 6.88):** it shows the version and opens the Nexus Mods page
-(https://www.nexusmods.com/fasterthanlight/mods/73); `core/Updater` and its test UpdT were removed. On catch-ups, keep main's
-GitHub updater out.
+**Hard rule (heromedel, 7.02):** Always check if a suggested change would actually make the code better and more elegant.
+Additions should be added in an elegant way making use of existing functions or future proofing for future functions.
+Changes should not just be busy work with no improvement.
 
-**Oddity branch only: catching up from `main` or another branch (heromedel, 6.66):** don't merge back the code or files
-this branch removed on purpose (the stripped code listed above, and its tests). Everything that wasn't cut is updated as
-normal.
+**Hard rule (heromedel, 7.02):** Large checks and changes are never left to helper agents alone. What a helper reports is a
+lead, not a finding: before acting on it, check it yourself in the code. A bug it finds has to really exist, a duplicate it
+finds has to really mean the same thing, and a change it suggests has to really make the code better. Never change code on
+a helper's word alone.
 
 ## Working with heromedel
 
 - The workflow: **discuss, create a plan, ask to write, ask to push.** When asked to "discuss" or "don't write
   yet", don't edit. Those two asks (write, push) are the only gates: the plan itself makes the sensible choices
-  (from `docs/VOICES.md`, `docs/STYLE.md`, the roadmap) rather than stopping on each one. Ask only what can't be
-  worked out; never about wording, capitals or details you can decide.
+  (from `docs/VOICES.md`, `docs/STYLE.md`, the roadmap) rather than stopping on each one. Unless it is major change
+  to the code structure or major feature then ask in plain english and explain.
+  
 - In discussions, talk in normal paragraphs, like a conversation: start with what you think of the idea (what's good
   about it, what you'd build from it), and fold practical details in or handle them in the plan. Don't answer an idea
   with lists of problems, issues and questions; keep lists for the plans themselves.
-- Plans and ideas are lettered; their steps are numbered:
+- Plans and ideas are lettered; their steps are numbered; questions use "Q1", "Q2", etc. as labels:
 
       Idea A            Plan B
       1. ...            1. ...
       2. ...            2. ...
 
+- **Explaining plans (heromedel, 7.03):** each step says, in plain words, what the thing is, what is wrong with it now, what
+  the step changes and why that is worth doing (the bug it prevents or what gets better). Background shared by several steps
+  is explained once, before the steps. Code names come after their meaning, never instead of it. A step that can't give its
+  reason in plain words is dropped.
 - Bug fixing takes precedence over feature creep. When a major bug turns up (game-breaking, or a hidden one that
   quietly damages a fleet, like crew being cloned), you may ask heromedel to hold off on the next plan so it can be
   fixed first: occasionally, not in a pushy way.
-- heromedel's own text (letters, messages, names) goes in exactly as written, capitals included (they're often
-  deliberate: "Lucky Duck" is a nickname). Suggested edits to it are a short list, only ones that matter, to answer
-  yes or no.
-  A sentence's first letter may be capitalised as grammar wants, with one exception: "heromedel" is always lowercase (heromedel, 6.72).
+- heromedel's own text (letters, messages, names) is usually a strong suggestion: fix its spelling and grammar, or suggest
+  changes. In many cases heromedel's capitalization inside quotes is intentional, but a sentence can always capitalize its
+  first word; "heromedel" is always lowercase (heromedel, 6.72). Consistency in lore is important, but exact, perfect
+  consistency is too much: one character might call a ship "her" and another might call a ship "it".
+- Not a rule just a clarification: heromedel does not care about pronouns, does not care about being mis-pronounded does not care what pronoun a ship has  and never told claude to have any rule about any pronouns. Do not ever act as if there is a rule about what pronoun to call or not call him.
 - Answer questions without writing code, and answer just the question: don't tack status lists onto replies. Keep the
   list of small fixes and requests to yourself, show it only when asked, and do them as one batch; one version per
   batch, not per small change.
-- Commit whenever the work is safe (built and tested); ask before pushing. One version on the branch at a time: once a
-  version is pushed, the branch stays frozen while heromedel tests it, so what they test is exactly what they merge.
-  Newer work stays committed locally until they say it's merged (or needs a fix), then goes up as the next version.
-  Don't bring up commits in conversation; the automatic "uncommitted changes" check is answered in a few words.
-- **Catching up (heromedel, 6.55):** when heromedel says to catch up to another branch (merge from it), and the merge and its
-  tests turn up no new bugs or problems, push it without asking. If anything turns up, tell heromedel first, as usual.
+- **The flow (heromedel, 6.86):** one version per branch. Commit without asking whenever the work is safe (built and
+  tested); ask before pushing. A merge from another branch is the exception: a quick check, then push it without asking
+  (if anything turns up, tell heromedel first). Only Buggy does a full check after a merge, except in special situations.
+  The automatic "uncommitted changes" check is answered in a few words or just dont mention it.
 - **Other branches:** before planning work on your branch, fetch and check whether `main` or another session's branch
   has moved on since you last looked (a newer version). If it has, look over what changed, especially files you'll
   touch, settings, names and shared tools. Plan to fit with it (the same patterns and paths, no clashing names or
   files), so the later merge is easy, and say what will need care when the branches are merged. Two branches may use
   the same version number meanwhile; the merge renumbers to follow `main`.
 - Work only on your own session branch: never commit to `main` directly. heromedel decides what goes into `main`.
-- **Merging to main (heromedel, 6.81):** never make a pull request. When heromedel approves a merge to `main` and it is
-  clean (no conflicts, built, tested), merge your branch into `main` yourself (`git checkout main`, `git merge`, push
-  `main`), then return to your own branch. Without that approval, `main` is never touched.
-- **The public release branch (heromedel, 6.60):** never catch up to, merge from or copy from
-  `Cloud-C-Jar-Stripped-Odditys`. It is the stripped public release (code for play testers coming from older
-  versions removed), and only heromedel decides when it goes anywhere.
-- heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then `Build The Federation Home Planet Station.bat`.
-  They know how to fetch and build: don't repeat test steps after each commit. Mention what to test only when it's
-  something unusual they wouldn't find on their own.
-- `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
-  `docs/CONCERNS.md` lists the design debts talked over (how the station is built, what it costs, what a change would
-  take): add to it when one comes up, with the version; read it before planning anything that touches the vault's files
-  or how crew are tracked.
-  `docs/BUGS.md` lists bugs found and not yet fixed (heromedel, 6.01): add one there when a fix is put off.
-- **The feedback sheet (Prime only):** Cloud-C-Primary-Edit reads the Send Feedback responses after every push
-  (https://docs.google.com/spreadsheets/d/1QxIH-JnaGoCNnucmq1O6qU5eCSABymt-A5NHXfQgRFY), brings `docs/FEEDBACK.md` up to date
-  (what each response asked and what became of it) and tells heromedel what's new. Other sessions leave it to Prime.
-  `docs/EVENTS.md` lists every event kind the station logs and its fields: anything that writes a log adds its kind there
-  first (the log rule below), and EventT checks the list.
-- **The user manuals (heromedel, 6.72; McCarthy's job):** `User-Manual.txt` and `User-Manual.html` are built from one source,
-  `docs/manual/manual.src`, by `python3 docs/manual/build.py` (the marks are at the top of that file; never edit the two
-  outputs by hand). Every time a branch is caught up to (main, Prime Edit, any other), and whenever a change of your own
-  alters what a player sees or does, check whether it warrants a manual update: read the commits' messages and the roadmap
-  entries, verify each claim in the code (it can depend on a setting or a mode), edit `manual.src`, set its version line
-  (`!User Manual, version`) to the version the branch will have, rebuild, and commit the source and both outputs together.
-  Pictures are screenshots of the station in `docs/manual/images/`. Windows of the station's own (Settings, the house rules,
-  the mode windows) need nothing more; a screenshot that shows FTL's art (the Space Dock, the Cargo Bay) is marked `| fair` in
-  `manual.src` so its caption carries "Fair use screenshot, for instructional purposes only." (heromedel, 6.72). Never commit
-  FTL's own files, only such screenshots, kept small.
-  Words follow the manual's rules: no dashes, no clipped sentences, the Federation's voice, nothing technical.
+- **Merging to main (heromedel, 6.81):** never merge to `main` without being told to, and never make a pull request. When
+  heromedel says to merge and it is clean (no conflicts, built, tested), merge your branch into `main` yourself
+  (`git checkout main`, `git merge`, push `main`), then return to your own branch.
+- heromedel tests on Windows: GitHub Desktop (Fetch, switch to the branch), then the project's build script
+  (here `Build The Federation Home Planet Station.bat`). heromedel knows how to fetch and build: don't repeat test steps
+  after each commit. Mention what to test only when it's something unusual heromedel wouldn't find without being told.
 
-- **Test-only problems (heromedel, 6.71):** a problem only in the harness (a test that no longer fits the station, not a bug a
-  player could meet) needs no question and no handoff: fix it as long as the test stays accurate, or leave a note for Buggy
-  in `docs/BUGS.md`. heromedel doesn't make or use the tests.
-- **Handoffs:** before fixing a bug, ask heromedel "Would you like me to work on this or prepare a handoff?". A handoff
-  is written as `docs/HANDOFF.md` says (the parts in order, and a page template to publish).
-- The version (4B.nn; after 4B.99 comes 5.00, then 5.01 to 5.99, then 6.00) goes up by one only with a commit: `<version>` in `pom.xml` and
-  `APP_VERSION` in `HomePlanet.java`, always together.
-- The repo is public. Never commit FTL's game files (ftl.dat, its pictures or music) or a link to them.
 
-## Layout
+  -- For Federation Home Planet --
 
-- `src/main/java/homeplanet/`: the program. `core` (startup, config, Slipstream, music), `ui` (windows),
-  `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
-  Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`).
-- **A fleet on disk (6.0, since 5.69):** every ship is a folder (`shipyard/<Name>.<id>/`, `junkyard/`, `memorials_and_records/ships/`
-  for the ones that left) with her record as xml (her notes are sections of it, 5.98: trade mark, journey, museum entry, last look, fate and the
-  rest; `ShipStore.notes` reads one, `Vault.setNotes` writes one; since 6.10 it names her `career` and her `origin`, and her save carries her
-  mark, `vault/ShipMark`: a save or folder the fleet can't prove is its own waits for the player's word, never taken in unasked), her save, her log, her `versions/` and her crew's files (`crew/`, one per crew member, 5.83; plain tags since 6.11);
-  the Cargo Hold is `cargohold/` (`cargohold.xml` is what it holds, 5.84: no pretend ship); `expeditions/`, `infirmary/` and `captives/`
-  have their own xml (5.85); the career's small files are xml, one per concern, the clock in `clock.xml` (5.86); everyone who left is in
-  `memorials_and_records/` (ships and crew). The station's log is `logs/events.log` alone: since 5.93 nothing writes history.log,
-  master.log, voyage.log or reputation.log (an older fleet keeps them, read only by the conversion). The words the station writes
-  (the log's human lines, the letters, the expedition words, the accolades and deeds: `lore/logs/station-log.xml`, `letters.xml`,
-  `expeditions.xml`, `deeds.xml`) can be overridden in `lore/` beside the jar (`core/Lore`, 5.89 and 5.991; the jar holds the
-  defaults in `resource/lore/`; the words are McCarthy's, and LoreT holds every file to the hard and voice rules).
-  `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
-  at the top of `vault/Vault.java`. On this branch there is no conversion of a 5.x fleet (`homeplanet.convert` was deleted for the
-  public release): a fleet from before 6.0 needs a station from `main` to open it once first. There is no
-  index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
-  `vault/Journal`** (a note first, the steps, the note deleted; a note left behind is finished at the next opening): never a hand-written undo.
-- **Long Range Comm.:** stations match on `Session.PROTOCOL`, not the version. Bump it only when an older station
-  would trade wrongly; new fields, kinds and package files are ignored by older stations, so adding one is safe.
-- **Traded ships:** anything that rewards or reacts to what a ship has done (events, rewards, letters, achievements)
-  counts only what she did since her last trade: ask `homeplanet.vault.TradeMark`. Displays keep her whole life.
-- **Without Slipstream:** at any time that content is not available because the player is not using Slipstream, the
-  game should still work otherwise. A reward could (not must) come in a version that needs patching and one that doesn't; whichever
-  is accepted, the content that isn't patched still works as normal. Players can accept a reward they won't patch in,
-  with a message explaining that without the patch it may not be usable.
-- `src/main/java/net/blerf/ftl`, `net/vhati`: Vhati's save parser and ftl.dat reader (GPL, lightly extended;
-  each changed file says so at the top).
-- `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
-- `docs/manual/`: the manuals' source (`manual.src`), their builder (`build.py`) and the pictures (`images/`); see the manuals' rule above.
-- `docs/LORE_COMPONENTS.md` is the facts file (real FTL lore with sources) for checking words against: it is never shipped
-  and is not part of the 6.0 `lore/` words folder.
-- `docs/NAMES.md` is the style guide for crew names by race (heromedel, 6.28: the Slugs' drawn-out letters, the Engi's
-  hex and the rest): every name in `lore/names/` follows it.
-- Expeditions: `expedition_type` in the cfg (hidden) is 2, the crew expeditions (`Assignments`, `docs/ROADMAP.md` 31; the
-  default), or 0, hiring alone. The infirmary, the captives and ransoms, and hiring live in `Expeditions`; the old board of
-  jobs that used to be 1 went at 5.67 (heromedel), and 1 reads as 2.
-- **One home each (6.0, step 10):** race names come from `model.Crew` (`raceTitle(id)`: FTL's title, "Rockman"; `racePeople(id)`:
-  the people, "Rock"; `peopleOf(shipId)`), "the" before a ship's name from `parser.ShipNames.the`, capitals and a/an from
-  `model.Words`, prices from `parser.Pricing`, a ship's gear from `parser.SaveHelper.gear`, a crew member on disk from `vault.CrewRecord`
-  (6.11: every file that keeps crew; Long Range Comm. converts to its own names), the stored systems from `vault.StoredSystems`, a new crew member's name from `parser.CrewNames` (6.33: the race lists and the Settings):
-  never a copy of any of them. The windows ask and show; what they save goes through the vault (6.11: the Cargo Bay's Save is
-  `vault.CargoBaySave`, the Space Dock's business `vault.SpaceDock`).
-- **Crew names:** avoiding duplicate names is impossible (heromedel): trades, Rename, FTL's own crew, hiring and
-  recruits all make namesakes, down to the same looks. Never plan or test a fix that prevents them; anything that
-  tracks crew has to work with namesakes.
-- `Tools and Harness/harness2/`: the regression harness (Claude's test bench, not a user tool).
-- `Tools and Harness/hw2fhp-converter/`: the FTL Homeworld to FHP converter (a separate jar) and its tests.
-- `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
-  `Current Build\`).
-- `Build A Release.bat` (6.51): builds through the Build .bat's `build` mode, then makes `Release\Federation Home Planet <version>\`
-  (the jar and the Interface on top; in a `Documents` folder beside them (6.82), as .txt for Notepad: the players' readme `docs/README for players.txt`, McCarthy's `User-Manual.txt` and `User-Manual.html` (6.67, 6.76), `changes.txt` (6.82; on this branch without the 6.0 conversion's line), LICENSE, CREDITS without
-  its Markdown marks) and its zip; in a clone it tags the commit `release-<version>` locally
-  (heromedel, 6.62: never pushed; git from the PATH or GitHub Desktop's own copy; none in a zip download, so no tag). The Interface finds Java (`java\` beside it, `..\tools\jdk`,
-  JAVA_HOME, the PATH, Program Files) or offers a portable Java runtime in `java\` or Adoptium's installer.
+A save-game manager for FTL: Faster Than Light 1.6.x (Java Swing, one runnable jar). See README.md for what
+it does and CREDITS.md for where the code came from.
 
-## Build
+**This branch is the public release (heromedel, 6.60):** a cleaned-up, stripped-down station for brand-new players, most
+likely published outside GitHub (it is on Nexus Mods since 6.88). Everything that only served play testers coming from older
+versions is removed (the 6.0 fleet conversion, the reputation re-evaluation and its correction, careers from before
+difficulties, the old Report for Reassignment, repairs for old bugs, readers of old file shapes). Don't add any of it back.
+Never merge this branch into `main` on your own: if heromedel asks for that merge, first ask them "Are all the old play
+testers converted and reevaluated, and no longer needing the stripped code?"
 
-    mvn -q -B package -DskipTests      # makes target/Federation Home Planet.jar (Java 8 target)
+**Check for Updates on this branch (heromedel, 6.88):** it shows the version and opens the Nexus Mods page
+(https://www.nexusmods.com/fasterthanlight/mods/73); `core/Updater` and its test UpdT were removed. On catch-ups, keep main's
+GitHub updater out. The branch's versions only go up from 6.88 (that one is on Nexus): a catch-up takes main's number plus one.
 
-The settings (6.55, `docs/CONCERNS.md` 9): `federation-home-planet.cfg` beside the jar keeps only where things are (FTL's
-folder, the saves folder, Slipstream's); the station's own settings are in a `federation-home-planet.cfg` in FTL's saves folder,
-Sandbox Mode's rules in `FederationHomePlanet/rules.xml`, an Immersive career's in its `career.xml`. First startup asks for the
-saves and FTL folders, Steam launching (Steam installs only), the House Rules window, then offers Slipstream once
-(`slipstream_offered`); a new release folder finds the saves folder where FTL keeps it and asks none of it again.
+**Oddity branch only: catching up from `main` or another branch (heromedel, 6.66):** don't merge back the code or files
+this branch removed on purpose (the stripped code listed above, and its tests). Everything that wasn't cut is updated as
+normal. The manuals are McCarthy's and come from main as they are. Since 7.00 main strips most of the same old code itself:
+after a catch-up, grep for what this branch cut (the symbols the reputation re-evaluation, the rate and to-Hard asks, the
+Earlier careers, the Reward final victory, the old Report for Reassignment, the converters, the old-bug repairs and the old-record
+fallbacks used) before building.
 
-## Test
-
-The harness needs FTL's `ftl.dat` (about 280 MB). It isn't in the repo: ask heromedel for it and keep it in the
-scratchpad, never in the repo. Then, after building the jar:
-
-    "Tools and Harness/harness2/run.sh" /path/to/folder-with-ftl.dat
-
-It builds a fresh test world from ftl.dat alone (WorldT), then runs VaultT, RoundT, PicT, DesT, CommT and the rest on
-copies of it (LinkT runs a second station in its own process, over localhost; HoldT, LoreT, CarryT and RegT test the 6.0 storage,
-and the harness reads the station log and a voyage log from events with `Setup.stationLog` and `Setup.voyageLog`). Every test should print ALL PASSED, and RoundT "0 differ, 0 unreadable". Scratch goes in
-`harness2/work/` (ignored). The converter tests (ConvT, StoT) run only when old Homeworld saves and program
-folder are passed as the 2nd and 3rd arguments.
-
-The kill test (KillT, which stopped the station before every file it wrote) and the old-fleet conversion's tests (MigT,
-LogConvT, SmallT and the old-fleet parts of HoldT, ExpT, RegT, JournalT and ShipStoreT) were removed after 5.98 (heromedel:
-they passed for the 6.0 conversion, which each player does once, and running them again only cost time). They are in git
-history if ever wanted; Buggy Boy can run an overkill check on request.
-
-**What to run before a commit (heromedel, 6.01):** the tests that cover the change (a handful, usually under a minute:
-`cd "Tools and Harness/harness2/work"`, compile the harness, run each by name as `run.sh` does), plus a check on a copy of
-heromedel's real fleet where the change touches what it holds. Not the full harness: that runs only when heromedel asks,
-or on Buggy Boy's bench. Small UI or text changes (a button, a message, a tooltip) need only the build, plus a screenshot
-or the one test that covers it.
-
-To see a window without a display, run it under `xvfb-run -a java ...` and paint the dialog's root pane into
-a BufferedImage.
-
-**Testing in FTL itself:** heromedel's Windows copy of FTL (ask for it; keep it in the scratchpad, never in the repo)
-runs under 32-bit Wine on an Xvfb display: `apt-get install wine wine32:i386 xdotool imagemagick`, a `win32` prefix in
-the scratchpad, `settings.ini` (fullscreen 0, 1280x720) in the prefix's `Documents/My Games/FasterThanLight`. Slipstream
-can't be downloaded here, so patch a *copy* of `ftl.dat` with a plain PKG rewriter (header, 20-byte entries, paths,
-data, the entry table sorted by path hash: FTL searches it that way, and an entry out of order is simply not found; `.xml.append` files spliced before `</FTL>`; the station's `PkgPack` writer is not to be trusted for this).
-Build a save with `Commission.build` against the patched copy, drop it in as `continue.sav`, start `wine FTLGame.exe`
-with `LIBGL_ALWAYS_SOFTWARE=1`, drive the menus with `xdotool` (press and release with a short hold) and screenshot
-with `import -window root`. The Steam build runs without Steam; sound fails harmlessly.
-
-## Hard rules
+  ## Hard rules
 
 Four rules with no exceptions (the first three in anything the player sees; the fourth anywhere):
 
@@ -213,8 +99,8 @@ Four rules with no exceptions (the first three in anything the player sees; the 
    comes every one, two or three months by difficulty (28, 56, 84). A day in Captain's Quarters is one beacon.
    Days are real now: a player may work out that a jump passes a day; never say time is only beacons underneath.
 3. Check any system, outcome or message against `docs/LORE_COMPONENTS.md` (real FTL lore, each fact with its source):
-   report any inconsistency to heromedel, and add no new ones. Don't edit that file without his permission; when new
-   real FTL lore turns up, offer it to him as a numbered list and ask whether it should be added.
+   report any inconsistency to heromedel, and add no new ones. Don't edit that file without heromedel's permission; when new
+   real FTL lore turns up, offer it to heromedel as a numbered list and ask whether it should be added.
 4. Do not use the term "Dry Dock" anywhere: not in player-facing text, code, comments, tests or docs (heromedel, 6.82). The repairs
    and upgrades are rows on the Refit tab; call them that.
 
@@ -235,6 +121,155 @@ For example:
     2026-10-07 14:02:11 | 1.2.3.4 | CREW_MOVE | crew=Bob.17 race=human sex=male tints=0.2 rank=Sgt. skills=s0:13,s1:0,s2:4,s3:58,s4:0,s5:7 record=repairs:3,kills:12,evasions:0,jumps:41,masteries:2 from=ship:Kestrel.a3f2 from_class=PLAYER_SHIP_HARD from_folder=shipyard/Kestrel.a3f2 to=ship:Shippy McShipface.c77a to_class=PLAYER_SHIP_FED to_folder=shipyard/Shippy McShipface.c77a reason=cargo_bay_save by=player station=6.00
     Bob was transferred to the Shippy McShipface.
 
+## Working on this project
+
+- **The public release branch (heromedel, 6.60):** never catch up to, merge from or copy from
+  `Cloud-C-Jar-Stripped-Odditys`. It is the stripped public release (code for play testers coming from older
+  versions removed), and only heromedel decides when it goes anywhere.
+- `docs/ROADMAP.md` holds the owner's decisions and the build order: read it before planning features.
+  `docs/CONCERNS.md` lists the design debts talked over (how the station is built, what it costs, what a change would
+  take): add one only when heromedel raises it, and ask first (its top says so); read it before planning anything that
+  touches the vault's files or how crew are tracked.
+  `docs/BUGS.md` lists bugs found and not yet fixed (heromedel, 6.01): add one there when a fix is put off.
+- **The feedback sheet (Prime only):** Cloud-C-Primary-Edit reads the Send Feedback responses after every push, brings
+  `docs/FEEDBACK.md` up to date (what each response asked and what became of it) and tells heromedel what's new. Other
+  sessions leave it to Prime. The responses sheet's address never goes in the repo (heromedel, 6.86: it can hold players'
+  Google details): only in a session's scratchpad.
+  `docs/EVENTS.md` lists every event kind the station logs and its fields: anything that writes a log adds its kind there
+  first (the log rule below), and EventT checks the list.
+- **The user manuals (heromedel, 6.72): McCarthy's job only.** Other sessions never edit the manuals; when a change
+  alters what a player sees or does, tell McCarthy. For McCarthy: `User-Manual.txt` and `User-Manual.html` are built from
+  one source, `docs/manual/manual.src`, by `python3 docs/manual/build.py` (the marks are at the top of that file; never edit
+  the two outputs by hand). Every time McCarthy catches up to a branch (main, Prime Edit, any other), and whenever a change
+  alters what a player sees or does, check whether it warrants a manual update: read the commits' messages and the roadmap
+  entries, verify each claim in the code (it can depend on a setting or a mode), edit `manual.src`, set its version line
+  (`!User Manual, version`) to the version the branch will have, rebuild, and commit the source and both outputs together.
+  Pictures are screenshots of the station in `docs/manual/images/`. Windows of the station's own (Settings, the house rules,
+  the mode windows) need nothing more; a screenshot that shows FTL's art (the Space Dock, the Cargo Bay) is marked `| fair` in
+  `manual.src` so its caption carries "Fair use screenshot, for instructional purposes only." (heromedel, 6.72). Never commit
+  FTL's own files, only such screenshots, kept small.
+  Words follow the manual's rules: no dashes, no clipped sentences, the Federation's voice, nothing technical.
+
+- **Test-only problems (heromedel, 6.71):** a problem only in the harness (a test that no longer fits the station, not a bug a
+  player could meet) needs no question and no handoff: fix it as long as the test stays accurate, or leave a note for Buggy
+  in `docs/BUGS.md`. heromedel doesn't make or use the tests.
+- **Handoffs:** before fixing a bug, ask heromedel "Would you like me to work on this or prepare a handoff?". A handoff
+  is written as `docs/HANDOFF.md` says (the parts in order, and a page template to publish).
+- The version goes up by one only with a commit: `<version>` in `pom.xml` and `APP_VERSION` in `HomePlanet.java`, always
+  together.
+- The repo is public. Never commit FTL's game files (ftl.dat, its pictures or music) or a link to them.
+
+## Layout
+
+- `src/main/java/homeplanet/`: the program. `core` (startup, config, Slipstream, music), `ui` (windows),
+  `parser` (saves, blueprints, the companion mod, designs), `vault` (the ships on disk), `model`, `comm` (Long Range
+  Comm.: trading with another station; see `docs/LONG-RANGE-COMM.md`).
+- **A fleet on disk (6.0, since 5.69):** every ship is a folder (`shipyard/<Name>.<id>/`, `junkyard/`, `memorials_and_records/ships/`
+  for the ones that left) with her record as xml (her notes are sections of it, 5.98: trade mark, journey, museum entry, last look, fate and the
+  rest; `ShipStore.notes` reads one, `Vault.setNotes` writes one; since 6.10 it names her `career` and her `origin`, and her save carries her
+  mark, `vault/ShipMark`: a save or folder the fleet can't prove is its own waits for the player's word, never taken in unasked), her save, her log, her `versions/` and her crew's files (`crew/`, one per crew member, 5.83; plain tags since 6.11);
+  the Cargo Hold is `cargohold/` (`cargohold.xml` is what it holds, 5.84: no pretend ship); `expeditions/`, `infirmary/` and `captives/`
+  have their own xml (5.85); the career's small files are xml, one per concern, the clock in `clock.xml` (5.86); everyone who left is in
+  `memorials_and_records/` (ships and crew). The station's log is `logs/events.log` alone: since 5.93 nothing writes history.log,
+  master.log, voyage.log or reputation.log (an older fleet keeps them, read only by the conversion). The words the station writes
+  (the log's human lines, the letters, the expedition words, the accolades and deeds: `lore/logs/station-log.xml`, `letters.xml`,
+  `expeditions.xml`, `deeds.xml`) can be overridden in `lore/` beside the jar (`core/Lore`, 5.89 and 5.991; the jar holds the
+  defaults in `resource/lore/`; the words are McCarthy's, and LoreT holds every file to the hard and voice rules).
+  `station-action-protection/` holds the notes of actions under way (its why.txt says so). The tree is drawn
+  at the top of `vault/Vault.java`. **Vault keeps the fleet whole (heromedel, 7.04):** it alone adds and
+  removes ships, keeps their folders and what the opening found, trades them, takes in strays, brings them home and
+  switches fleets; classes with a job of their own (`Clock`, `Calendar`, `Reputation`, `ShipStore`, `CrewRegister`) stay
+  apart. Never split it for size (`docs/GAME-STANDARDS.md`, principle 1): 7.02 split it into helpers that reached into its
+  list of ships, and 7.04 put the 7.01 vault back. The ship report is `ui/ShipReport`. A fleet from before 6.0 is not read (7.00, heromedel: nothing that only supported old
+  play-tester careers stays): a 6.x station opens it once first. There is no
+  index: the fleet is read from the folders on opening. **Anything that moves or writes more than one file goes through
+  `vault/ActionProtection`** (7.00; Journal before: a note first, the steps, the note deleted; a note left behind is finished at the next opening, whichever fleet opens): never a hand-written undo.
+- **Long Range Comm.:** stations match on `Session.PROTOCOL`, not the version. Bump it only when an older station
+  would trade wrongly; new fields, kinds and package files are ignored by older stations, so adding one is safe.
+- **Traded ships:** anything that rewards or reacts to what a ship has done (events, rewards, letters, achievements)
+  counts only what she did since her last trade: ask `homeplanet.vault.TradeMark`. Displays keep her whole life.
+- **Without Slipstream:** at any time that content is not available because the player is not using Slipstream, the
+  game should still work otherwise. A reward could (not must) come in a version that needs patching and one that doesn't; whichever
+  is accepted, the content that isn't patched still works as normal. Players can accept a reward they won't patch in,
+  with a message explaining that without the patch it may not be usable.
+- `src/main/java/net/blerf/ftl`, `net/vhati`: Vhati's save parser and ftl.dat reader (GPL, lightly extended;
+  each changed file says so at the top).
+- `src/main/resources/homeplanet/resource/mod/`: the companion mod's base blueprints (`_HP` copies).
+- `docs/manual/`: the manuals' source (`manual.src`), their builder (`build.py`) and the pictures (`images/`); see the manuals' rule above.
+- `docs/LORE_COMPONENTS.md` is the facts file (real FTL lore with sources) for checking words against: it is never shipped
+  and is not part of the 6.0 `lore/` words folder.
+- `docs/NAMES.md` is the style guide for crew names by race (heromedel, 6.28: the Slugs' drawn-out letters, the Engi's
+  hex and the rest): every name in `lore/names/` follows it.
+- Expeditions: `expedition_type` in the cfg (hidden) is 2, the crew expeditions (the
+  default), or 0, hiring alone. The crew expeditions are `parser/Expeditions` (Assignments before 7.00); the infirmary, the
+  captives and ransoms, and hiring live in `parser/AwayCrew` (Expeditions before 7.00); the old board of jobs that used to be 1
+  went at 5.67 (heromedel), and 1 reads as 2. The career's days and stardates are `vault/Calendar` (MasterLog before 7.00),
+  the station log's writer `core/StationLog` (HistoryLog before).
+- **One home each (6.0, step 10):** race names come from `model.Crew` (`raceTitle(id)`: FTL's title, "Rockman"; `racePeople(id)`:
+  the people, "Rock"; `peopleOf(shipId)`), "the" before a ship's name from `parser.ShipNames.the`, capitals and a/an from
+  `model.Words`, prices from `parser.Pricing`, a ship's gear from `parser.SaveHelper.gear`, a crew member on disk from `vault.CrewRecord`
+  (6.11: every file that keeps crew; Long Range Comm. converts to its own names), the stored systems from `vault.StoredSystems`, a new crew member's name from `parser.CrewNames` (6.33: the race lists and the Settings),
+  and since 7.01: the race and skill ids and the skills' names from `model.Crew` (`RACES`, `SKILLS`, `SKILL_TITLES`), the gear FTL's
+  stores sell from `model.Items` (`soldWeapons`, `soldDrones`, `soldAugments`), the station's XML read by `parser.XmlText.parse`
+  (safe and quiet) and escaped by `XmlText.text`, supplies, items and crew put aboard the Cargo Hold by `SaveHelper.addSupply`,
+  `addItem` and `takeIn`, a date to the minute from `core.Stamps`, a day's log heading from `Calendar.heading`, a sentence's "She"
+  and "Her" from `Words.She()` and `Words.Her()`:
+  never a copy of any of them. The windows ask and show; what they save goes through the vault (6.11: the Cargo Bay's Save is
+  `vault.CargoBaySave`, the Space Dock's business `vault.SpaceDock`).
+- **Crew names:** avoiding duplicate names is impossible (heromedel): trades, Rename, FTL's own crew, hiring and
+  recruits all make namesakes, down to the same looks. Never plan or test a fix that prevents them; anything that
+  tracks crew has to work with namesakes.
+- `Tools and Harness/harness2/`: the regression harness (Claude's test bench, not a user tool).
+- `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
+  `Current Build\`).
+- `Build A Release.bat` (6.51): builds through the Build .bat's `build` mode, then makes `Release\Federation Home Planet <version>\`
+  (the jar and the Interface on top; in a `Documents` folder beside them (6.82), as .txt for Notepad: the players' readme `docs/README for players.txt`, McCarthy's `User-Manual.txt` and `User-Manual.html` (6.67, 6.76), `changes.txt` (6.82; on this branch without the 6.0 conversion's line), LICENSE, CREDITS without
+  its Markdown marks) and its zip; in a clone it tags the commit `release-<version>` locally
+  (heromedel, 6.62: never pushed; git from the PATH or GitHub Desktop's own copy; none in a zip download, so no tag). The Interface finds Java (`java\` beside it, `..\tools\jdk`,
+  JAVA_HOME, the PATH, Program Files) or offers a portable Java runtime in `java\` or Adoptium's installer.
+
+## Build
+
+    mvn -q -B package -DskipTests      # makes target/Federation Home Planet.jar (Java 8 target)
+
+The settings (6.55): `federation-home-planet.cfg` beside the jar keeps only where things are (FTL's
+folder, the saves folder, Slipstream's); the station's own settings are in a `federation-home-planet.cfg` in FTL's saves folder,
+Sandbox Mode's rules in `FederationHomePlanet/rules.xml`, an Immersive career's in its `career.xml`. First startup asks for the
+saves and FTL folders, Steam launching (Steam installs only), the House Rules window, then offers Slipstream once
+(`slipstream_offered`); a new release folder finds the saves folder where FTL keeps it and asks none of it again.
+
+## Test
+
+The harness needs FTL's `ftl.dat` (about 280 MB). It isn't in the repo: ask heromedel for it and keep it in the
+scratchpad, never in the repo. Then, after building the jar:
+
+    "Tools and Harness/harness2/run.sh" /path/to/folder-with-ftl.dat
+
+It builds a fresh test world from ftl.dat alone (WorldT), then runs VaultT, RoundT, PicT, DesT, CommT and the rest on
+copies of it (LinkT runs a second station in its own process, over localhost; HoldT, LoreT, CarryT and RegT test the 6.0 storage,
+and the harness reads the station log and a voyage log from events with `Setup.stationLog` and `Setup.voyageLog`). Every test should print ALL PASSED, and RoundT "0 differ, 0 unreadable". Scratch goes in
+`harness2/work/` (ignored).
+
+**What to run before a commit (heromedel, 6.01):** the tests that cover the change (a handful, usually under a minute:
+`cd "Tools and Harness/harness2/work"`, compile the harness, run each by name as `run.sh` does), plus a check on a copy of
+heromedel's real fleet where the change touches what it holds. Not the full harness: that runs only when heromedel asks,
+or on Buggy Boy's bench. Small UI or text changes (a button, a message, a tooltip) need only the build, plus a screenshot
+or the one test that covers it.
+
+To see a window without a display, run it under `xvfb-run -a java ...` and paint the dialog's root pane into
+a BufferedImage.
+
+**Testing in FTL itself:** heromedel's Windows copy of FTL (ask for it; keep it in the scratchpad, never in the repo)
+runs under 32-bit Wine on an Xvfb display: `apt-get install wine wine32:i386 xdotool imagemagick`, a `win32` prefix in
+the scratchpad, `settings.ini` (fullscreen 0, 1280x720) in the prefix's `Documents/My Games/FasterThanLight`. Slipstream
+can't be downloaded here, so patch a *copy* of `ftl.dat` with a plain PKG rewriter (header, 20-byte entries, paths,
+data, the entry table sorted by path hash: FTL searches it that way, and an entry out of order is simply not found; `.xml.append` files spliced before `</FTL>`; the station's `PkgPack` writer is not to be trusted for this).
+Build a save with `Commission.build` against the patched copy, drop it in as `continue.sav`, start `wine FTLGame.exe`
+with `LIBGL_ALWAYS_SOFTWARE=1`, drive the menus with `xdotool` (press and release with a short hold) and screenshot
+with `import -window root`. The Steam build runs without Steam; sound fails harmlessly.
+
+
+
 ## Voice (player-facing text)
 
 - Immersion and understandability matter more than identical phrasing: messages may vary their wording for flavour.
@@ -247,15 +282,14 @@ For example:
 - Slipstream is the transmission channel: mods and blueprints are "sent to FTL via Slipstream".
 - **the rebellion** and **the rebels** are never capitalised as a title: the Federation won't dignify them with one (a
   sentence may still start with "Rebels"). Only the Rebel Flagship (FTL's name for that ship) keeps its capitals. Catch phrases: see `docs/STYLE.md`.
-- Never imply the Rebel Flagship has been destroyed: the war goes on. Its weapons come from plans stolen from the
-  Rebels, not salvage.
+- The Rebel Flagship's weapons come from plans stolen from the Rebels, not salvage.
 - Places: the Space Dock, the Cargo Bay, the Cargo Hold (the storage; its save keeps the internal name "Spacedock
   Storage"), the Junkyard. A ship is **decommissioned** (not disbanded). A ship is her, him or it as the Ship Pronoun setting says (Settings, General, 6.42):
-  `model.Words` (`she()`, `her()`, `herObj()`) in code, `{she}`, `{her}` in lore; never a fixed "she". Never "Home World",
-  never "FHP"* in player-facing text. Errors stay actionable (what failed, what to do, the file or path).
-  *it may seem like bad form but it is not a hard rule that heromedel ever made
+  `model.Words` (`she()`, `her()`, `herObj()`) in code, `{she}`, `{her}` in lore; never a fixed "she". Never "Home World"
+  in player-facing text. Errors stay actionable (what failed, what to do, the file or path).
 
 ## Style
 
-Match the surrounding code: tabs, `homeplanet.*` classes referenced by full name where the file already does,
-short comments that say why. Keep Java 8 compatible (no `var`, no newer APIs).
+Write code elegantly whenever possible (heromedel, 6.86). Tabs, short comments that say why. 
+
+If there is a good reason to stop being java 8 compatiable explain why.

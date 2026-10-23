@@ -27,7 +27,7 @@ public class RepuT {
   g = v.readCopy(stealth).save;
   g.setTotalShipsDefeated(8); g.setTotalScrapCollected(300); g.setSectorNumber(3); g.setStateVar("lost_crew", 4);
   v.write(stealth, g);
-  Setup.side(v, v.historyOf(stealth), "traded.txt", "trade=x\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=5\nbeacons=0\nscrap=200\nsectors=2\n");
+  Setup.side(v, v.folderOf(stealth), "traded.txt", "trade=x\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=5\nbeacons=0\nscrap=200\nsectors=2\n");
   departed(v, "lost-early", "Lost One", 2);
   departed(v, "lost-last", "Last Stand", 7);
   int total = Reputation.total(v);
@@ -141,7 +141,7 @@ public class RepuT {
   Setup.chk("U: 2: vanilla-breaking too; the work order half scrap, half reputation", Economy.repForJourneysAndPleas() && Economy.repForVanillaBreaking() && Economy.workOrderScrap() == 50 && Economy.workOrderRep() == 50);
   HomePlanet.reputationUse = 3;
   Setup.chk("U: 3: only a score: nothing buys with it, but the promise still costs (6.66: penalties, not purchases)", !Economy.repForJourneysAndPleas() && !Economy.repForVanillaBreaking() && !Economy.repSpends()
-    && Economy.workOrderScrap() == 100 && (Expeditions.fleetCrew(v) > 0 || Expeditions.promiseRep(v) > 0));
+    && Economy.workOrderScrap() == 100 && (AwayCrew.fleetCrew(v) > 0 || AwayCrew.promiseRep(v) > 0));
   HomePlanet.reputationUse = 1;
   // 5.15: the tally under the log: each piece in its pool, the pools adding up to the total
   Map<String, Integer> t = Reputation.tally(v);
@@ -226,11 +226,10 @@ public class RepuT {
   g = cont(v); g.setCurrentBeaconId(g.getCurrentBeaconId() + 1); g.getEncounter().setText("event_NEBULA_text"); g.setNearbyShip(null); ftl(v, g);
   Setup.chk("D: an ordinary beacon: nothing", count(new String(SafeFiles.read(new File(v.root, "logs/events.log")), "UTF-8"), "| DISTRESS |") == d0);
   Setup.chk("D: the Captain's Log: \"We responded to a distress signal. We encountered a rebel ship.\"", captainsDistress());
-  Setup.chk("X: the rule: Sandbox free; Easy x1, Normal x1.5, Hard x2 whatever is saved; Custom keeps its briefing's choice (x1 if none)",
-    Reputation.RATE_FREE.equals(Reputation.rateRule(null, null)) && Reputation.rateLevel(CareerRules.of(CareerRules.EASY), "2") == 0 && Reputation.rateLevel(CareerRules.of(CareerRules.NORMAL), null) == 1
-    && Reputation.rateLevel(CareerRules.of(CareerRules.HARD), "0") == 2 && Reputation.RATE_FIXED.equals(Reputation.rateRule(CareerRules.of(CareerRules.HARD), null))
-    && Reputation.RATE_CHOSEN.equals(Reputation.rateRule(custom, null)) && Reputation.rateLevel(custom, null) == 0
-    && Reputation.RATE_CHOSEN.equals(Reputation.rateRule(custom, "2")) && Reputation.rateLevel(custom, "2") == 2 && Reputation.rateLevel(custom, "7") == 0);
+  Setup.chk("X: the rule: Sandbox free; Easy x1, Normal x1.5, Hard x2 whatever is saved; Custom keeps the choice it began with (x1 if none)",
+    Reputation.RATE_FREE.equals(Reputation.rateRule(null)) && Reputation.rateLevel(CareerRules.of(CareerRules.EASY), "2") == 0 && Reputation.rateLevel(CareerRules.of(CareerRules.NORMAL), null) == 1
+    && Reputation.rateLevel(CareerRules.of(CareerRules.HARD), "0") == 2 && Reputation.RATE_FIXED.equals(Reputation.rateRule(CareerRules.of(CareerRules.HARD)))
+    && Reputation.RATE_CHOSEN.equals(Reputation.rateRule(custom)) && Reputation.rateLevel(custom, null) == 0 && Reputation.rateLevel(custom, "2") == 2 && Reputation.rateLevel(custom, "7") == 0);
   Setup.done();
  }
  /** Ten-thousandths of a point (the total's hidden remainder, 6.17). */
@@ -238,7 +237,7 @@ public class RepuT {
  /** What a point earned in FTL is worth on an Easy run in Sandbox Mode at x1, in this sector (0 is sector 1): 1 + 0.1 a sector after the first. */
  static long inFtl(int points, int sector) { return points * 1000L * (10 + Math.max(0, Math.min(7, sector))); }
  /** The total exactly, in ten-thousandths, as its file keeps it. */
- static long units(Vault v) { Properties p = Store.read(Store.file(v.root, "reputation")); long rest = Store.num(p, "rest", 0); return Store.num(p, "total", 0) * U + rest; }
+ static long units(Vault v) { Properties p = Store.read(Store.file(v.root, "reputation")); long rest = Store.num(p, "rest", "1".equals(p.getProperty("half")) ? 5000 : 0); return Store.num(p, "total", 0) * U + rest; }
  /** The Captain's Log's jump line at a distress beacon where a ship was met (6.21). */
  static boolean captainsDistress() throws Exception {
   java.lang.reflect.Constructor<homeplanet.vault.CaptainsLog.Line> k = homeplanet.vault.CaptainsLog.Line.class.getDeclaredConstructor(String.class, String.class, boolean.class, String.class); k.setAccessible(true);

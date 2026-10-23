@@ -23,7 +23,7 @@ import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
 /**
- * The Records page's log viewer: the station log (a fleet's history.log; Sandbox Mode and each career keep their own)
+ * The Records page's log viewer: the station log (Sandbox Mode and each career keep their own)
  * or one ship's voyage log, in the Records style, inside the page itself, or this run's debug log as plain text. Logs
  * are only ever shown here, read-only: nothing opens them in a text editor.
  */
@@ -67,7 +67,7 @@ final class LogViewer extends JPanel {
 			public void actionPerformed(ActionEvent e) { ship = null; fill(); }
 		});
 		final JButton viewShip = new JButton("View Ship Log");
-		viewShip.setToolTipText(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " voyage log: " + homeplanet.model.Words.her() + " jumps, sectors, battles, crew, what came aboard, upgrades and repairs");
+		viewShip.setToolTipText(homeplanet.model.Words.Her() + " voyage log: " + homeplanet.model.Words.her() + " jumps, sectors, battles, crew, what came aboard, upgrades and repairs");
 		viewShip.setEnabled(!ships.isEmpty());
 		shipBox.setEnabled(!ships.isEmpty());
 		ActionListener toShip = new ActionListener() {

@@ -41,7 +41,7 @@ public final class Career {
 	/** Beacons between stipends in the fleet in use. */
 	public static int beaconsPerStipend() { return monthsPerStipend() * BEACONS_PER_MONTH; }
 
-	static File file(File fleetRoot) { return Store.file(fleetRoot, "career"); } // career.xml (5.86)
+	static File file(File fleetRoot) { return Store.file(fleetRoot, "career"); } // career.xml (5.86; career.txt in a fleet not opened since)
 	private static Properties read(File fleetRoot) { return Store.read(file(fleetRoot)); }
 	private static void write(File fleetRoot, Properties p) throws IOException {
 		Store.write(file(fleetRoot), p, "The Immersive career: its choices are fixed once made");
@@ -54,19 +54,10 @@ public final class Career {
 	/** Does the stipend count every achievement in the FTL profile (chosen when it began), rather than only those earned since? */
 	public static boolean salaryAll(File immersiveRoot) { return "true".equals(read(immersiveRoot).getProperty("salaryAll")); }
 
-	/**
-	 * This Immersive fleet's difficulty, or null if no career has begun. A career whose file has lost its difficulty is
-	 * written down as Normal (the briefing's own default), once, and fixed from then on.
-	 */
+	/** This Immersive fleet's difficulty, or null if no career has begun. */
 	public static CareerRules rules(File immersiveRoot) {
 		if (!started(immersiveRoot)) return null;
-		Properties p = read(immersiveRoot);
-		CareerRules r = CareerRules.read(p);
-		if (r != null) return r;
-		r = CareerRules.of(CareerRules.NORMAL);
-		r.write(p);
-		try { write(immersiveRoot, p); } catch (IOException e) { log.warn("Could not record the career's rules: {}", e.toString()); }
-		return r;
+		return CareerRules.read(read(immersiveRoot));
 	}
 
 	/** How reputation can be used in this Immersive career (1 to 3; heromedel, 6.55: each career its own), or dflt if it never chose (a career from before shared Sandbox Mode's). */
@@ -116,7 +107,7 @@ public final class Career {
 
 	/**
 	 * The reputation rate a Custom career chose (heromedel, 6.13): "0" (x1, as on Easy), "1" (x1.5) or "2" (x2), or null
-	 * if never chosen. Read only for Custom; the others' difficulty decides it.
+	 * if never chosen. Read only for Custom (and a career from before difficulties); the others' difficulty decides it.
 	 */
 	public static String repRate(File immersiveRoot) { return read(immersiveRoot).getProperty("repRate"); }
 	public static void setRepRate(File immersiveRoot, int level) throws IOException {
@@ -145,7 +136,7 @@ public final class Career {
 		int scrap = rules != null ? rules.startingScrap() : STARTING_SCRAP;
 		v.depositToStorage(scrap);
 		if (withShip) v.grantFreeCommand("an Immersive career began", FreeCommand.KESTREL); // a Kestrel Type A, as a new FTL game starts
-		homeplanet.core.HistoryLog.entry("CAREER", (v.immersive ? "Immersive" : "Sandbox") + " career begun: stipend counts " + (salaryAll ? "every achievement" : "achievements earned from now on")
+		homeplanet.core.StationLog.entry("CAREER", (v.immersive ? "Immersive" : "Sandbox") + " career begun: stipend counts " + (salaryAll ? "every achievement" : "achievements earned from now on")
 				+ (ownProfile ? "; its own FTL profile" : "") + "; " + scrap + " scrap in the Cargo Hold" + (rules != null ? "; difficulty " + rules.describe() : ""), null,
 				homeplanet.core.Event.of("CAREER").put("what", "begun").put("mode", v.immersive ? "Immersive" : "Sandbox").put("stipend", salaryAll ? "every_achievement" : "from_now").put("own_profile", ownProfile)
 						.put("scrap", scrap).put("difficulty", rules != null ? rules.describe() : null).put("with_ship", withShip));
@@ -171,10 +162,6 @@ public final class Career {
 		Vault v = Vault.get();
 		Properties p = read(v.root);
 		int paid = Store.num(p, "paidMonths", 0);
-		if (p.getProperty("beaconsAtStart") == null) { // lost from its file: counted from now, never a windfall of back pay
-			p.setProperty("beaconsAtStart", Integer.toString(v.beaconsSeen()));
-			try { write(v.root, p); } catch (IOException e) { log.warn("Could not record the stipend's beacons: {}", e.toString()); }
-		}
 		int start = Store.num(p, "beaconsAtStart", 0);
 		return Math.max(0, (v.beaconsSeen() - start) / beaconsPerStipend() - paid);
 	}

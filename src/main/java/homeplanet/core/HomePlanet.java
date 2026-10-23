@@ -37,7 +37,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "6.88";
+	public static final String APP_VERSION = "7.07";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -140,7 +140,6 @@ public class HomePlanet {
 	public static void leaveImmersive() { immersiveMode = false; }
 	public static boolean debugLogging = false;
 
-	/** The config file, beside the program (whatever folder it was started from), and its values (the Settings window changes and saves them). */
 	/** The settings file: beside the program, or in the folder a second station was started with (--station). */
 	public static File propFile = new File(appDir(), "federation-home-planet.cfg");
 	/** A second station on this computer (for trying Long Range Comm. alone): its own settings and saves folder. */
@@ -240,7 +239,7 @@ public class HomePlanet {
 		Lore.prepare();
 		Lore.check();
 		homeplanet.parser.Transmissions.loreCheck(); // the letters and the expedition words, read by their own readers (5.991)
-		homeplanet.parser.Assignments.loreCheck();
+		homeplanet.parser.Expeditions.loreCheck();
 
 		// The vault (files only so far; the ships are read once the game data is in)
 		try {
@@ -271,8 +270,7 @@ public class HomePlanet {
 		commissionCosts = flag("commission_costs_scrap");
 		commissionPercent = percent(config.getProperty("commission_price_percent"));
 		expeditionType = "0".equals(config.getProperty("expedition_type", "2").trim()) ? 0 : 2; // hiring alone, or the crew expeditions
-		freeShip = config.getProperty("free_ship", "relief"); // the relief ship unless chosen otherwise
-		if (!"any".equals(freeShip) && !"kestrel".equals(freeShip)) freeShip = "relief";
+		freeShip = homeplanet.parser.FreeCommand.norm(config.getProperty("free_ship", "relief")); // the relief ship unless chosen otherwise
 		unlockFreeShips = flag("unlock_free_ships");
 		immersiveMode = flag("immersive_mode");
 		Vault.immersiveSlot = Vault.slotOf(config.getProperty("immersive_slot")); // which Immersive career
@@ -364,24 +362,37 @@ public class HomePlanet {
 	private static final String[] RULE_KEYS = {"store_requirement", "new_journey_store_requirement", "strip_when_scrapping", "sell_supplies",
 			"commission_unlocked_only", "commission_custom_unlocked_only"};
 
-	/** Reads the config. Returns true if it should be written (there's none yet). */
+	/** Reads the config beside the program. Returns true if it should be written (there is none yet). */
 	private static boolean loadConfig() {
-		File from = propFile;
-		if (!from.isFile()) return true; // a first start (a second station's too: never the first one's settings)
+		if (!propFile.isFile()) return true;
 		InputStream in = null;
 		try {
-			in = new FileInputStream(from);
+			in = new FileInputStream(propFile);
 			config.load(in);
 		} catch (IOException e) {
-			showErrorDialog("The Home Planet Station could not read its settings from " + from.getPath());
-			log.error("Could not read " + from, e);
+			showErrorDialog("The Home Planet Station could not read its settings from " + propFile.getPath());
+			log.error("Could not read " + propFile, e);
 		} finally {
 			try { if (in != null) in.close(); } catch (IOException e) { }
 		}
 		return false;
 	}
 
-	/** Writes the current settings to the cfg (a temporary file, then one move). Returns false, after telling the user, on failure. */
+	/**
+	 * Another saves folder is another fleet (its own ships, designs and remodels): the station claims it, opens its vault and
+	 * takes stock, as at startup. The cfg line is written with the rest by {@link #saveConfig}.
+	 */
+	public static void changeSavesFolder(File saves) {
+		save_location = saves;
+		homeplanet.core.StationLock.claim(saves); // this station's now (looked at when chosen), the old folder let go
+		try {
+			Vault.open(saves, immersiveMode);
+			CompanionMod.register(CompanionMod.load());
+			Vault.get().takeStock();
+		} catch (IOException e) {
+			showErrorDialog("The Home Planet Station could not open its fleet records in:\n" + saves + "\n\n" + e);
+		}
+	}
 	public static boolean saveConfig() {
 		if (save_location != null) config.setProperty("ftlSavePath", save_location.getAbsolutePath());
 		if (datsPath != null) config.setProperty("ftlDatsPath", datsPath.getAbsolutePath());

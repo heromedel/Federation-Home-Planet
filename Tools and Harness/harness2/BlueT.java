@@ -78,7 +78,7 @@ public class BlueT { public static void main(String[] a) throws Exception {
   // her ship is destroyed: her last save stays in her history, which still names the blueprint
   v.remove(ship, "DESTROY");
   Setup.chk("R: a destroyed ship's kept records still count", v.usingBlueprint(flown).isEmpty() && v.blueprintsInUseOrHistory().contains(flown));
-  SafeFiles.deleteTree(v.historyOf(ship));
+  SafeFiles.deleteTree(v.folderOf(ship));
   Setup.chk("R: once nothing names it, it's free to clean up", !v.blueprintsInUseOrHistory().contains(flown));
   // reload keeps the flag
   Setup.chk("R: the retired flag survives a reload", copyOf(flown) != null && copyOf(flown).retired);

@@ -49,7 +49,7 @@ public class ShipStoreT { public static void main(String[] a) throws Exception {
  boolean refused = false; try { ShipStore.move(moved, junk); } catch (IOException e) { refused = true; }
  Setup.chk("M: a move onto a folder already there is refused", refused && moved.isDirectory());
  // her notes as sections of her record (5.98), read back through ShipStore.notes and ShipStore.fate
- ShipStore.Record t = ShipStore.read(v.historyOf(d));
+ ShipStore.Record t = ShipStore.read(v.folderOf(d));
  t.sections.put(ShipStore.FATE, ShipStore.fateNotes("TRANSFERRED", d.name, "Commander Vance"));
  t.section(ShipStore.TRADE).setProperty("trade", "t1"); t.section(ShipStore.TRADE).setProperty("from", "Commander Vance"); t.section(ShipStore.TRADE).setProperty("original", "heromedel");
  t.section("museum").setProperty("epitaph", "She came home.\nTwice, \"almost\" & <once> more.\tThe end");

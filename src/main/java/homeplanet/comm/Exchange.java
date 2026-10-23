@@ -15,7 +15,7 @@ import net.blerf.ftl.parser.SavedGameParser.ShipState;
 import net.blerf.ftl.parser.SavedGameParser.WeaponState;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
 import homeplanet.model.Items;
@@ -143,7 +143,7 @@ public final class Exchange {
 	public static String shipRefused(String blueprint) {
 		if (homeplanet.parser.ShipPapers.custom(blueprint)) return null;
 		if (!net.blerf.ftl.parser.DataManager.get().getShips().containsKey(blueprint))
-			return homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " blueprint (" + blueprint + ") isn't in this station's game data";
+			return homeplanet.model.Words.Her() + " blueprint (" + blueprint + ") isn't in this station's game data";
 		return null;
 	}
 	private static String unknown(Line l) { return l.id + " isn't in this station's game data (a mod the other station uses?)"; }
@@ -193,25 +193,23 @@ public final class Exchange {
 		r.peerStation = peerStation;
 		r.peerTitle = peerTitle;
 		r.state = ESCROW;
-		r.date = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date());
+		r.date = homeplanet.core.Stamps.now();
 		r.out = out;
 		r.in = in;
 		r.file = fileOf(id);
-		dir().mkdirs();
-		// a ship goes as her package, kept in the trade's folder until it's settled
-		for (int i = 0; i < leaving.size(); i++) {
-			File f = null;
-			for (Line l : out) if (l.kind == Line.Kind.SHIP && l.from.equals(leaving.get(i).id)) f = pkgFile(r, true, l.n);
-			f.getParentFile().mkdirs();
-			SafeFiles.write(f, v.packageOf(leaving.get(i)));
-		}
 		Vault.Transaction tx = v.begin();
+		// a ship goes as her package, kept in the trade's folder until it's settled: in the note with the rest (6.87; written first before)
+		for (Ship s : leaving) {
+			File f = null;
+			for (Line l : out) if (l.kind == Line.Kind.SHIP && l.from.equals(s.id)) f = pkgFile(r, true, l.n);
+			tx.put(f, v.packageOf(s));
+		}
 		for (Map.Entry<String, Vault.Copy> e : src.copies.entrySet()) tx.put(src.ships.get(e.getKey()), e.getValue().save, e.getValue().hash);
 		tx.put(r.file, bytes(r));
 		try {
 			tx.commit();
 		} catch (IOException e) {
-			SafeFiles.deleteTree(folderOf(id));
+			SafeFiles.deleteTree(folderOf(id)); // left empty by the note's undo
 			throw e;
 		}
 		for (Ship s : leaving) {
@@ -287,7 +285,7 @@ public final class Exchange {
 		try {
 			SafeFiles.write(tmp, sav);
 			try { return new net.blerf.ftl.parser.SavedGameParser().readSavedGame(tmp); }
-			catch (Exception e) { throw new IOException(homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " save couldn't be read: " + e.getMessage()); }
+			catch (Exception e) { throw new IOException(homeplanet.model.Words.Her() + " save couldn't be read: " + e.getMessage()); }
 		} finally {
 			tmp.delete();
 		}
@@ -381,7 +379,7 @@ public final class Exchange {
 		lines.add("gave: " + r.outWords());
 		String where = whereTheyGo(r.in);
 		lines.add("received" + (where.isEmpty() ? "" : " (" + where + ")") + ": " + r.inWords()); // a one-sided trade receives nothing, and goes nowhere
-		HistoryLog.entry("LONG RANGE TRADE", "with " + r.peerTitle + "  (trade " + r.id + ")", lines,
+		StationLog.entry("LONG RANGE TRADE", "with " + r.peerTitle + "  (trade " + r.id + ")", lines,
 				Event.of("LONG_RANGE_TRADE").put("trade", r.id).put("peer", r.peerTitle).put("peer_station", r.peerStation).put("gave", r.outWords()).put("received", r.inWords()).put("received_to", where).details(lines));
 		homeplanet.parser.Transmissions.deliver("trade:" + r.id, "Home Planet Quartermaster", RECEIPT_SUBJECT, receipt(r));
 	}
@@ -430,7 +428,7 @@ public final class Exchange {
 		if (!sentBack.isEmpty()) lines.add("sent back (received before it was called off): " + String.join(", ", sentBack));
 		lines.add("came back (" + whereTheyGo(r.out) + "): " + r.outWords());
 		if (why != null && !why.isEmpty()) lines.add("why: " + why);
-		HistoryLog.entry("TRADE CALLED OFF", "with " + r.peerTitle + "  (trade " + r.id + ")", lines,
+		StationLog.entry("TRADE CALLED OFF", "with " + r.peerTitle + "  (trade " + r.id + ")", lines,
 				Event.of("TRADE_CALLED_OFF").put("trade", r.id).put("peer", r.peerTitle).put("peer_station", r.peerStation).put("why", why).put("came_back", r.outWords()).put("sent_back", sentBack.isEmpty() ? null : String.join(", ", sentBack)).details(lines));
 	}
 	/** A settled trade's ships' packages have done their job: only the record stays, as a receipt. */
@@ -452,14 +450,11 @@ public final class Exchange {
 	/** Puts one line into the Cargo Hold (in the copy). */
 	static void give(ShipState s, Line l) throws IOException {
 		if (l.kind.isSupply()) setSupply(s, l.kind, supply(s, l.kind) + l.amount);
-		else if (l.kind == Line.Kind.WEAPON) s.getWeaponList().add(SaveHelper.newIdleWeapon(l.id));
-		else if (l.kind == Line.Kind.DRONE) s.getDroneList().add(SaveHelper.newIdleDrone(l.id));
-		else if (l.kind == Line.Kind.AUGMENT) s.getAugmentIdList().add(l.id);
+		else if (l.kind == Line.Kind.WEAPON || l.kind == Line.Kind.DRONE || l.kind == Line.Kind.AUGMENT) SaveHelper.addItem(s, l.id);
 		else if (l.kind == Line.Kind.CREW) {
 			CrewState c = new CrewState(l.crew);
 			c.setHealth(c.getRace().getMaxHealth()); // the trip home mends them
-			if (!SaveHelper.placeCrew(s, c, true)) throw new IOException("The Cargo Hold has no room for " + c.getName());
-			s.getCrewList().add(c);
+			SaveHelper.takeIn(s, c, "The Cargo Hold has no room for " + c.getName());
 		}
 		// a ship isn't the hold's: she was received (or came back) on her own
 	}

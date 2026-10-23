@@ -1,12 +1,8 @@
 package homeplanet.ui;
 
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Font;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -14,19 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
-import javax.swing.JSpinner;
-import javax.swing.event.ChangeListener;
 
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser;
@@ -42,7 +30,6 @@ import net.blerf.ftl.xml.ShipBlueprint;
 import homeplanet.model.Items;
 import homeplanet.vault.Ship;
 import homeplanet.parser.SaveHelper;
-import homeplanet.resource.ResourceClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +43,6 @@ class RefitShop {
 	// Store prices for supplies (per unit)
 	static final int FUEL_PRICE = homeplanet.parser.Pricing.FUEL, MISSILE_PRICE = homeplanet.parser.Pricing.MISSILE, DRONE_PART_PRICE = homeplanet.parser.Pricing.DRONE_PART;
 	// Where the panel sits (top left, level with the Save panel)
-	static final int PX = 6, PY = 48; // below the Return to Dock panel
 
 	enum Kind { HEADER, ITEM, SYSTEM, CREW, FUEL, MISSILES, PARTS }
 
@@ -78,7 +64,7 @@ class RefitShop {
 	private final Map<Ship, String> otherHashes = new LinkedHashMap<Ship, String>(); // their files' fingerprints as read
 	private final Set<Ship> dirty = new LinkedHashSet<Ship>();
 	private final List<String> purchases = new ArrayList<String>(); // for the history log
-	// What purchases changed on each buyer, keyed like HistoryLog.inventory, so the TRADE entry leaves them out
+	// What purchases changed on each buyer, keyed like StationLog.inventory, so the TRADE entry leaves them out
 	private final Map<SavedGameState, Map<String, Integer>> bought = new java.util.IdentityHashMap<SavedGameState, Map<String, Integer>>();
 
 
@@ -214,7 +200,7 @@ class RefitShop {
 		shipPic.setIcon(toStorage ? null : bay.shipIcon(bay.currentSave));
 		shipPic.setToolTipText(toStorage ? null : "Click for " + homeplanet.model.Words.her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		classLbl.setText(toStorage ? "Items, supplies, and systems for Refit" : CargoBayUI.shipClass(bay.currentState));
-		info.setToolTipText(toStorage ? "What the Cargo Hold is" : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " report, and to rename " + homeplanet.model.Words.herObj());
+		info.setToolTipText(toStorage ? "What the Cargo Hold is" : homeplanet.model.Words.Her() + " report, and to rename " + homeplanet.model.Words.herObj());
 		scrapCount.set(scrap, ""); // what it is: in its tooltip, as on the Refit
 		scrapCount.setBounds(payFrom.getX() - 10 - scrapCount.textWidth(), 8, scrapCount.textWidth() + 2, 22);
 		scrapCount.setToolTipText(homeplanet.model.Words.cap(payerName()) + " has " + scrap + " scrap to spend here (paid on Save)");
@@ -345,8 +331,8 @@ class RefitShop {
 			javax.swing.Icon ic = iconFor(e);
 			int tx = 8;
 			if (ic != null) { ic.paintIcon(this, g, 6 + (30 - ic.getIconWidth()) / 2, 15 - ic.getIconHeight() / 2); tx = 42; }
-			String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) + (installed ? "  (installed)" : "")
-					: e.kind == Kind.CREW ? raceTitle(e.id) : supplyName(e.kind) + "  x" + e.count;
+			String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? homeplanet.model.Items.systemTitle(e.id) + (installed ? "  (installed)" : "")
+					: e.kind == Kind.CREW ? homeplanet.model.Crew.raceTitle(e.id) : supplyName(e.kind) + "  x" + e.count;
 			int px = getWidth() - 110;
 			CargoParts.text(g, FtlFont.CARGO.fit(name, px - tx - 8), FtlFont.CARGO, can ? CargoParts.TEXT : CargoParts.DIM, tx, 8);
 			javax.swing.Icon sc = IconFactory.supplyIcon("scrap");
@@ -434,9 +420,9 @@ class RefitShop {
 				for (int i = 0; i < shelf.getItems().size(); i++) {
 					StoreItem it = shelf.getItems().get(i);
 					if (!it.isAvailable()) continue; // already bought
-					int price = sys ? systemPrice(it.getItemId()) : crew ? crewPrice(it.getItemId()) : priceOf(it.getItemId());
+					int price = sys ? homeplanet.parser.Pricing.systemStore(it.getItemId()) : crew ? homeplanet.parser.Pricing.crewStore(it.getItemId()) : homeplanet.parser.Pricing.store(it.getItemId());
 					if (price < 0) continue; // not in the game data (removed mod?)
-					String title = sys ? systemTitle(it.getItemId()) : crew ? raceTitle(it.getItemId()) : Items.title(it.getItemId());
+					String title = sys ? homeplanet.model.Items.systemTitle(it.getItemId()) : crew ? homeplanet.model.Crew.raceTitle(it.getItemId()) : Items.title(it.getItemId());
 					Entry e = new Entry(sys ? Kind.SYSTEM : crew ? Kind.CREW : Kind.ITEM, title + " · " + price);
 					e.id = it.getItemId();
 					e.shelf = s;
@@ -502,7 +488,7 @@ class RefitShop {
 		}
 		ShipState bs = buyer.getPlayerShip(), ps = payer.getPlayerShip();
 		String buyerName = toStorage ? "The Cargo Bay" : buyer.getPlayerShipName();
-		String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? systemTitle(e.id) : e.kind == Kind.CREW ? raceTitle(e.id) + " crew member" : supplyName(e.kind);
+		String name = e.kind == Kind.ITEM ? Items.title(e.id) : e.kind == Kind.SYSTEM ? homeplanet.model.Items.systemTitle(e.id) : e.kind == Kind.CREW ? homeplanet.model.Crew.raceTitle(e.id) + " crew member" : supplyName(e.kind);
 		if (e.kind == Kind.SYSTEM && !toStorage && systemBlocked(buyer, e.id, name)) return; // before the scrap check: "already has" says more than "not enough scrap"
 		String refused = e.kind == Kind.ITEM && !toStorage ? homeplanet.parser.Dlc.refusesItem(buyer, e.id) : null;
 		if (refused != null) { JOptionPane.showMessageDialog(bay, refused, "Advanced Edition only", JOptionPane.INFORMATION_MESSAGE); return; }
@@ -588,7 +574,7 @@ class RefitShop {
 		if (e.kind == Kind.ITEM) note(buyer, Items.title(e.id) + (toCargo ? " (cargo)" : ""), 1);
 		else if (e.kind == Kind.CREW) note(buyer, "Crew " + hired, 1);
 		else if (e.kind != Kind.SYSTEM) note(buyer, supplyName(e.kind), 1); // systems aren't in the TRADE inventory
-		if (hired != null) name = hired + " (" + raceTitle(e.id) + ")";
+		if (hired != null) name = hired + " (" + homeplanet.model.Crew.raceTitle(e.id) + ")";
 		if (e.kind == Kind.SYSTEM && !name.toLowerCase().endsWith("system")) name = name + " system"; // "a Cloaking system", in the receipt and the Captain's Log
 		purchases.add(name + " (" + e.price + " scrap) from the store at " + e.shipName + "'s beacon -> " + buyerName + (toCargo ? " (cargo)" : "") + (payer != buyer ? ", paid by " + payerName() : "")
 				+ (order ? ", fitted past FTL's System Limit by a custom work order (" + fee + " scrap" + (rep > 0 ? " and " + rep + " reputation" : "") + ")" : ""));
@@ -618,7 +604,7 @@ class RefitShop {
 		SystemType other = type == SystemType.CLONEBAY ? SystemType.MEDBAY : type == SystemType.MEDBAY ? SystemType.CLONEBAY : null;
 		SavedGameParser.SystemState os = other == null ? null : bs.getSystem(other);
 		if (os != null && os.getCapacity() > 0) {
-			String otherName = systemTitle(other.getId());
+			String otherName = homeplanet.model.Items.systemTitle(other.getId());
 			if (!homeplanet.core.HomePlanet.confirmNo(bay, "Replace the " + otherName + " with a " + name + "? It keeps the " + otherName + "'s level.",
 					"Replace " + otherName + "?")) return false;
 			level = os.getCapacity();
@@ -733,11 +719,6 @@ class RefitShop {
 
 	// ---- Names, prices, icons ----
 
-	static int priceOf(String id) { return homeplanet.parser.Pricing.store(id); } // FTL's own store prices, -1 when the data doesn't know the item (Pricing is the one home)
-	static int crewPrice(String race) { return homeplanet.parser.Pricing.crewStore(race); }
-	static String raceTitle(String race) { return homeplanet.model.Crew.raceTitle(race); }
-	static int systemPrice(String id) { return homeplanet.parser.Pricing.systemStore(id); }
-	static String systemTitle(String id) { return Items.systemTitle(id); }
 	private static String supplyName(Kind k) {
 		return k == Kind.FUEL ? "Fuel" : k == Kind.MISSILES ? "Missiles" : "Drone parts";
 	}
@@ -762,13 +743,13 @@ class RefitShop {
 		if (e.kind == Kind.SYSTEM) {
 			net.blerf.ftl.xml.SystemBlueprint s = DataManager.get().getSystem(e.id);
 			String desc = (s == null || s.getDescription() == null) ? "" : s.getDescription().getTextValue();
-			return "<html><b>" + homeplanet.parser.XmlText.text(systemTitle(e.id)) + "</b><div style='width:260px; margin-top:4px'>" + homeplanet.parser.XmlText.text(desc) + "</div>"
+			return "<html><b>" + homeplanet.parser.XmlText.text(homeplanet.model.Items.systemTitle(e.id)) + "</b><div style='width:260px; margin-top:4px'>" + homeplanet.parser.XmlText.text(desc) + "</div>"
 					+ "<div style='margin-top:4px'>Price: " + e.price + " scrap</div><div style='margin-top:4px'><i>" + homeplanet.parser.XmlText.text(from) + "</i></div></html>";
 		}
 		if (e.kind == Kind.CREW) {
 			net.blerf.ftl.xml.CrewBlueprint b = DataManager.get().getCrews().get(e.id);
 			String desc = b == null || b.getDescription() == null ? "" : b.getDescription().getTextValue();
-			return "<html><b>" + homeplanet.parser.XmlText.text(raceTitle(e.id)) + "</b> crew member<div style='width:260px; margin-top:4px'>" + homeplanet.parser.XmlText.text(desc == null ? "" : desc) + "</div>"
+			return "<html><b>" + homeplanet.parser.XmlText.text(homeplanet.model.Crew.raceTitle(e.id)) + "</b> crew member<div style='width:260px; margin-top:4px'>" + homeplanet.parser.XmlText.text(desc == null ? "" : desc) + "</div>"
 					+ "<div style='margin-top:4px'>Price: " + e.price + " scrap. Joins with a name of their own.</div><div style='margin-top:4px'><i>" + homeplanet.parser.XmlText.text(from) + "</i></div></html>";
 		}
 		if (e.kind == Kind.ITEM) {

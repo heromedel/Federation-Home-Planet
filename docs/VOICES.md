@@ -4,6 +4,8 @@ Titles, not names: leaving names out lets the player imagine them, and no one in
 Each contact has a voice of their own; write their letters in it. The catch phrases and the rebellion rule are in
 `STYLE.md`. Letters end with a signature line: `~ Title`.
 
+New Characters can be added (Usually only by Mccarthy)
+
 ## Home Planet Liaison
 
 The player's handler, and the first voice they hear (the welcome to the Front). Loyal, and believes in loyalty.

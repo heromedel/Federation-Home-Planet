@@ -12,10 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -38,12 +36,13 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 
 import homeplanet.core.GameGuard;
 import homeplanet.core.HomePlanet;
+import homeplanet.model.Words;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 
 /**
  * A ship's records: the earlier versions of her the station keeps (newest first), with Restore this version; her
- * voyage log (events in FTL, save by save); and her entries in history.log.
+ * voyage log (events in FTL, save by save); and her entries in the station log.
  */
 public class ShipRecordsDialog extends JDialog {
 	private static final Color ROW = new Color(36, 46, 56), GOLD = MenuTheme.GOLD, TXT = MenuTheme.WHITE, DIM = MenuTheme.GREY_GREEN;
@@ -59,7 +58,7 @@ public class ShipRecordsDialog extends JDialog {
 		String error;
 		int sector, beacons, hull, maxHull, scrap, fuel;
 		Version(File f) {
-			when = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(f.lastModified()));
+			when = homeplanet.core.Stamps.at(f.lastModified());
 			try {
 				SavedGameState gs = HomePlanet.savedGameParser.readSavedGame(f);
 				sector = gs.getSectorNumber() + 1;
@@ -98,7 +97,7 @@ public class ShipRecordsDialog extends JDialog {
 		});
 		restore.setEnabled(false);
 		restore.setToolTipText(HomePlanet.immersiveMode ? "Immersive Mode: what's done is done. Earlier versions can't be restored"
-				: "Put " + homeplanet.model.Words.herObj() + " back as " + homeplanet.model.Words.she() + " was in this version. " + homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " current version is kept here too, so this can be undone.");
+				: "Put " + Words.herObj() + " back as " + Words.she() + " was in this version. " + Words.Her() + " current version is kept here too, so this can be undone.");
 		restore.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) { restoreSelected(); }
 		});
@@ -107,17 +106,17 @@ public class ShipRecordsDialog extends JDialog {
 		JPanel kept = new JPanel(new BorderLayout(0, 10));
 		kept.setBackground(RecordsLog.BG);
 		kept.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, GOLD), BorderFactory.createEmptyBorder(12, 14, 12, 14)));
-		kept.add(text("The Home Planet Station keeps " + homeplanet.model.Words.her() + " last " + Vault.KEEP + " versions: the one before each change the station makes, "
-				+ "and the one " + homeplanet.model.Words.she() + " had when " + homeplanet.model.Words.she() + " was boarded. Newest first.", DIM), BorderLayout.NORTH);
+		kept.add(text("The Home Planet Station keeps " + Words.her() + " last " + Vault.KEEP + " versions: the one before each change the station makes, "
+				+ "and the one " + Words.she() + " had when " + Words.she() + " was boarded. Newest first.", DIM), BorderLayout.NORTH);
 		JScrollPane vs = new JScrollPane(list);
 		vs.getViewport().setBackground(RecordsLog.BG);
 		vs.setBorder(BorderFactory.createLineBorder(RecordsLog.LINE));
-		kept.add(versions.isEmpty() ? text("No earlier versions of " + homeplanet.model.Words.herObj() + " are kept yet.", DIM) : vs, BorderLayout.CENTER);
+		kept.add(versions.isEmpty() ? text("No earlier versions of " + Words.herObj() + " are kept yet.", DIM) : vs, BorderLayout.CENTER);
 		JPanel restoreRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		restoreRow.setOpaque(false);
 		restoreRow.add(restore);
 		restoreRow.add(Box.createHorizontalStrut(14));
-		javax.swing.JLabel note = new javax.swing.JLabel(HomePlanet.immersiveMode ? "Immersive Mode: what's done is done." : homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " current version is kept too, so a restore can be undone.");
+		javax.swing.JLabel note = new javax.swing.JLabel(HomePlanet.immersiveMode ? "Immersive Mode: what's done is done." : Words.Her() + " current version is kept too, so a restore can be undone.");
 		note.setFont(MenuTheme.TEXT_FONT);
 		note.setForeground(DIM);
 		restoreRow.add(note);
@@ -134,8 +133,8 @@ public class ShipRecordsDialog extends JDialog {
 		pages.add(stationTab, "station");
 		pages.add(kept, "kept");
 		final Tab[] tabs = {new Tab("Voyage log", "Events in FTL, save by save (newest last)", "voyage"),
-				new Tab("Station log", homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " entries in the station's log, newest last", "station"),
-				new Tab("Kept versions (" + versions.size() + ")", homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " earlier versions, to look back on or restore", "kept")};
+				new Tab("Station log", Words.Her() + " entries in the station's log, newest last", "station"),
+				new Tab("Kept versions (" + versions.size() + ")", Words.Her() + " earlier versions, to look back on or restore", "kept")};
 		JPanel tabRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		tabRow.setOpaque(false);
 		for (final Tab t : tabs) {
@@ -263,13 +262,13 @@ public class ShipRecordsDialog extends JDialog {
 	/** Her voyage log, kept to the lines that mention what's typed (all of them when nothing is). */
 	private static RecordsLog voyageLog(List<homeplanet.core.EventLog.Entry> all, String q) {
 		if (!q.isEmpty()) return RecordsLog.voyage(TextSearch.filter(all, q, false), "No lines mention \"" + q + "\".");
-		return RecordsLog.voyage(all, "Nothing logged yet. The Home Planet Station writes " + homeplanet.model.Words.her() + " voyage log as FTL saves " + homeplanet.model.Words.herObj() + ",\n"
+		return RecordsLog.voyage(all, "Nothing logged yet. The Home Planet Station writes " + Words.her() + " voyage log as FTL saves " + Words.herObj() + ",\n"
 				+ "while the station is open (and on Refresh): jumps, sectors, battles, crew, what came aboard, upgrades and repairs.");
 	}
 	/** Her entries in the station's log, kept the same way. */
 	private static RecordsLog stationLog(List<homeplanet.core.EventLog.Entry> all, String q) {
 		if (!q.isEmpty()) return RecordsLog.station(TextSearch.filter(all, q, true), "No entries mention \"" + q + "\".", false);
-		return RecordsLog.station(all, "No entries for " + homeplanet.model.Words.herObj() + " yet.", false);
+		return RecordsLog.station(all, "No entries for " + Words.herObj() + " yet.", false);
 	}
 	/** A log put in its tab again, the latest lines in view. */
 	private static void show(final JScrollPane sp, RecordsLog log) {
@@ -387,13 +386,13 @@ public class ShipRecordsDialog extends JDialog {
 		File version = versions.get(i);
 		if (HomePlanet.immersiveMode) return;
 		if (!HomePlanet.confirmNo(this, "Restore " + ship.name + " to this version?\n\n" + describe(list.getSelectedValue()) + "\n\n"
-				+ "Everything since then is undone: " + homeplanet.model.Words.her() + " crew, cargo, scrap and journey go back to how they were.\n"
-				+ homeplanet.model.Words.cap(homeplanet.model.Words.her()) + " current version is kept in " + homeplanet.model.Words.her() + " records, so you can restore it again.", "Restore this version")) return;
-		if (ship.isBoarded() && !GameGuard.allows(this, "restore " + homeplanet.model.Words.herObj())) return;
+				+ "Everything since then is undone: " + Words.her() + " crew, cargo, scrap and journey go back to how they were.\n"
+				+ Words.Her() + " current version is kept in " + Words.her() + " records, so you can restore it again.", "Restore this version")) return;
+		if (ship.isBoarded() && !GameGuard.allows(this, "restore " + Words.herObj())) return;
 		try {
 			Vault.get().restore(ship, version);
 		} catch (Exception e) {
-			HomePlanet.showErrorDialog("The Home Planet Station could not restore " + homeplanet.model.Words.herObj() + "; " + homeplanet.model.Words.her() + " current save was not changed:\n" + e.getMessage());
+			HomePlanet.showErrorDialog("The Home Planet Station could not restore " + Words.herObj() + "; " + Words.her() + " current save was not changed:\n" + e.getMessage());
 			return;
 		}
 		restored = true;

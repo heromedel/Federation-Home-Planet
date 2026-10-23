@@ -3,8 +3,8 @@
 The list of everything the station logs (Overhaul 6.0, Phase 1 step 9; the rule is CLAUDE.md "Log lines"). Every
 entry of every log goes to `events.log` in the career folder as two lines: a machine line and a human line written
 from it. The words files (step 9a, McCarthy) are keyed by these kinds, and the readers (Phase 3) read these fields;
-so a new kind or field is added here first, by whoever writes it. Started at 5.63; the old logs (`history.log`,
-`master.log`, `voyage.log`, `reputation.log`) keep their own files and wording beside it until 6.0.
+so a new kind or field is added here first, by whoever writes it. Started at 5.63; the only log since 6.0 (7.0 reads
+nothing older).
 
 ## The lines
 
@@ -18,7 +18,7 @@ so a new kind or field is added here first, by whoever writes it. Started at 5.6
 - **The human line:** one line, simple and lore-friendly, under the three hard rules: never a beacon count, never the
   Rebel Flagship destroyed, every outcome true to `docs/LORE_COMPONENTS.md`. Nothing parses it.
 - **Writing:** `Event.of("KIND").put("key", value)...human("...")`, then `EventLog.write(vault, event)`; or through
-  `HistoryLog.entry(kind, headline, details, event)` for an entry the station log shows too. `Event.put` leaves a null
+  `StationLog.entry(kind, headline, details, event)` for an entry the station log shows too. `Event.put` leaves a null
   value out, so optional fields need no check.
 - **Reading:** `EventLog.read(vault)` gives the entries, oldest first, each with `kind`, `time`, `stardate`, `day`,
   `get(key)`, `all(key)` and `human`. It is the one parser; nothing else reads a machine line.
@@ -32,7 +32,6 @@ so a new kind or field is added here first, by whoever writes it. Started at 5.6
 | `station` | The station's version that wrote it. |
 | (her own log) | Every entry that names a ship by `ship_id` is written into her folder's log as well as the fleet's (5.76): the same two lines. Her voyage views, the museum and her package read her log. |
 | `received_from` | On a voyage entry that came with a ship over Long Range Comm. (5.75): the commander she came from. Her entries travel in her package under her new id; their time is their own, their day this career's. |
-| `converted` | `true` on an entry read in from an old log once (5.73, `LogConvert`): the human line is the old line exactly as it was, the fields what it gave away, `time` and `day` its own. |
 | `time`, `day` (given by the writer) | An entry about something that happened earlier (a journal note finished at start-up, 5.71): the writer gives the time (`yyyy-MM-dd HH:mm:ss`) and the day it happened, and the entry's own columns follow them instead of the clock. |
 
 A ship is named by `ship=<name>.<id>` with `ship_name` and `ship_id` beside it (and `ship_state` where known). Since 6.18
@@ -47,7 +46,7 @@ member, when crew files come (Phase 2), by `crew=<name>.<id>`; until then by `cr
 | --- | --- | --- |
 | `DAY` | `clock` (the station's count after), `why` (a jump, time passed, business in the Cargo Bay, a day of rest in your quarters, work at a store in FTL) | "A day passed: a jump." |
 
-## A ship's voyage (`log=voyage`; her log in her folder's `voyage.log`, `shipyard/<Name>.<id>/` since 5.69)
+## A ship's voyage (`log=voyage`; her log in her folder, `shipyard/<Name>.<id>/`)
 
 Every voyage entry carries the ship's fields. Those marked **state** also carry her state at the look: `hull`,
 `max_hull`, `hull_change`, `scrap`, `scrap_change`, `fuel`, `fuel_change`, `missiles`, `missiles_change`,
@@ -80,15 +79,15 @@ count), `beacons_jumped` (since the last look), `at_store`.
 
 | Kind | Fields | Human line today |
 | --- | --- | --- |
-| `REPUTATION` | `reason` (`achievement`, `cruiser`, `voyage`, `ship_lost`, `restored`, `expedition`, `captive`, `ransomed`, `spent`, `flagship`, `review`, `other`), `rates` (`6.17`: written at every rate), `points` (signed, the whole points the total moved), `exact` (6.13: the change itself, to the ten-thousandth since 6.17: `4.5`, `2.0625`), `rate` (6.13: `1`, `1.5` or `2`, the career's rate), `ship_rate` and `sector_rate` (6.17, on what a ship earned in FTL: her difficulty's `1`, `1.25` or `1.5`; the sector's `1` to `1.7`), `total` (after, its whole part), `total_exact` (6.13), `detail.n` | The reputation log's own line: "Expedition: ... (+3)", each piece at what it added |
+| `REPUTATION` | `reason` (`achievement`, `cruiser`, `voyage`, `ship_lost`, `restored`, `expedition`, `captive`, `ransomed`, `spent`, `flagship`, `review`, `other`), `points` (signed, the whole points the total moved), `exact` (6.13: the change itself, to the ten-thousandth since 6.17: `4.5`, `2.0625`), `rate` (6.13: `1`, `1.5` or `2`, the career's rate), `ship_rate` and `sector_rate` (6.17, on what a ship earned in FTL: her difficulty's `1`, `1.25` or `1.5`; the sector's `1` to `1.7`), `total` (after, its whole part), `total_exact` (6.13), `detail.n` | The reputation log's own line: "Expedition: ... (+3)", each piece at what it added |
 
-## The station log (`log=station`; `history.log`)
+## The station log (`log=station`)
 
-Every station-log entry carries `headline` (the entry's first line as `history.log` shows it) and `detail.n` (its
-indented lines), so the old wording is never lost, plus the fields below. A kind with several shapes says which in
+Every station-log entry carries `headline` (the entry's first line) and `detail.n` (its indented lines), plus the
+fields below. A kind with several shapes says which in
 `what` (or `stage`, `how`). A ship's fields are `ship`, `ship_name`, `ship_id`, `ship_state`, `stranger`; a file or
 folder is given as it sits under the career folder (her folder, `shipyard/Kestrel.a3f2`, `junkyard/...` or
-`memorials_and_records/ships/...` since 5.69; before it `ships/<id>.sav`, `history/<id>/`; `continue.sav`); `hold` is the
+`memorials_and_records/ships/...`; `continue.sav`); `hold` is the
 Cargo Hold, `junkyard` the Junkyard, `stored_systems` the stored-systems list. A kind not in this table is still
 written (the writer never refuses one), but it is a bug to leave it undocumented.
 
@@ -104,8 +103,8 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | `RECOVER` | ship, `fate` (the fate she had), `from`, `to` | "Kestrel (scrapped)  memorials_and_records/ships/Kestrel.a3f2 -> shipyard/Kestrel.a3f2" |
 | `RESTORE` | ship, `why` (`version`, `overwritten`), `from`, `to`, `reputation_back` | "Restored the Kestrel to an earlier version" |
 | `OVERWRITTEN` | ship (the one lost), `versions`, `by`, `by_name`, `by_id`, `by_stranger` (the ship now in continue.sav) | "Kestrel (a3f2) was boarded, and continue.sav is now another ship: ..." |
-| `VAULT` | `what` (`taking_stock`, `adopted_continue`, `set_aside`; 6.10: `arrived`, `taken_in`, `declined`, `rebuilt`, `save_restored`), ship (when one is named), `file`, `detail.n` (the notes); `set_aside` (6.08, the ship mark): `to`, `mark_career`, `mark_boards`, `mark_day`, `boards_now`, `in_fleet`, `other_career`; `arrived` (sent here from a career): `from_career`, `from`, `how`, `origin`; `taken_in`: `to` (`here`, `sandbox`), `origin`, `record_career`; `declined`: `found` (`loose`, `unproven`, `other`, `no_save`); `rebuilt`/`save_restored`: `from` | "taking stock" |
-| `JOURNAL` | `what` (`finished`, `stuck`), `action` (the note's kind: `SAVE`, `BOARD`, `DOCK`, `CREW_REGISTER`, `LEAVE`, `DISBAND`, `COME_HOME`, `RESTORE`, `RECEIVE`, `MARK` (6.10: her mark written into her save) and `RESTORE_VERSION` (6.11: a kept version put back, already marked, with the save it replaced kept as her newest)), `steps`, `note` (its file), `finished=startup`, `time` and `day` (the note's own), `left_by` (the station's version that wrote the note), `detail.n` (what couldn't be told, when stuck) | "The station finished what it had begun." |
+| `VAULT` | `what` (`taking_stock`, `adopted_continue`, `set_aside`; 6.10: `arrived`, `taken_in`, `declined`, `rebuilt`, `save_restored`), ship (when one is named), `file`, `detail.n` (the notes); `set_aside` (6.08, the ship mark): `to`, `mark_career`, `mark_boards`, `mark_day`, `boards_now`, `in_fleet`, `other_career`; `checked` (6.10, a record from before 6.10 accepted on evidence): `origin`, `fingerprint`, `history`, `career`; `arrived` (sent here from a career): `from_career`, `from`, `how`, `origin`; `taken_in`: `to` (`here`, `sandbox`), `origin`, `record_career`; `declined`: `found` (`loose`, `unproven`, `other`, `no_save`); `rebuilt`/`save_restored`: `from` | "taking stock" |
+| `JOURNAL` | `what` (`finished`, `stuck`), `action` (the note's kind: `SAVE`, `BOARD`, `DOCK`, `CREW_REGISTER`, `LEAVE`, `DISBAND`, `COME_HOME`, `RESTORE`, `RECEIVE`, `MARK` (6.10: her mark written into her save) `RESTORE_VERSION` (6.11: a kept version put back, already marked, with the save it replaced kept as her newest), `SEND_TO_SANDBOX` (6.87: a ship into Sandbox Mode's fleet, her leaving and her files there in one note) and `CLOSE_FINAL` (6.87: her final battle's copy kept as a version and its note closed)), `steps`, `note` (its file; since 6.87 under another fleet's folder when the note was left there, as every fleet's notes are settled by whichever opens first), `finished=startup`, `time` and `day` (the note's own), `left_by` (the station's version that wrote the note), `detail.n` (what couldn't be told, when stuck) | "The station finished what it had begun." |
 | `FINAL_BATTLE` | ship, `copy`, `sector`, `victories_then`, `scores_then` | "Kestrel: the Rebel Flagship is on her way to the last battle. ..." |
 | `VICTORY` | ship, `what` (`rescued`), or from FinalVictory: `victories_then`, `victories_now`, `top_scores`, `after` (the choice: `rescue` is Choice, `museum`), `museum_pay` (`full`, `half`, `none`; 6.47), `museum_price`, `value` | "Kestrel won the last battle (...)" |
 | `MUSEUM` | ship, `scrap` (0 with the reward None), `pay` (`full`, `half`, `none`; 6.47), `to` | "Kestrel is honoured in the Federation Museum" |
@@ -183,13 +182,11 @@ written (the writer never refuses one), but it is a bug to leave it undocumented
 | Kind | Fields |
 | --- | --- |
 | `LOADED` | the fleet's listing at a refresh, the debug log's since 5.53: `headline`, `detail.n` |
-| `CONVERTED` | the FTL Homeworld files brought into the vault (the converter): `headline` |
 | `PROFILE` | FTL's profile backed up, set aside or brought back (Immersive Mode's own profile): `headline` |
 | `SLIPSTREAM` | which Slipstream the station found and uses: `headline` (its folder) |
 | `UNDO_RETROFIT` | a retrofit undone (4B): `headline` (her name, the blueprints, her file) |
 | `CLAUDE` | a note a session wrote into a player's log by hand (a repair, a test): `headline`, `detail.n` |
 
-A converted entry (5.73) carries the kind the old line had (its spaces as underscores), `headline`, `detail.n`, `converted=true`, its own `time` and `day`, and, when the headline names one ship the fleet has or remembers by her id (5.77), her `ship`, `ship_name` and `ship_id`, so it goes into her log as well.
 
 ## Adding a kind
 

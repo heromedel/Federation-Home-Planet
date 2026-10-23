@@ -214,6 +214,24 @@ CE save only reads with CE's `ftl.dat` (with vanilla's, the parser stops on the 
 and what it would mean is for later; FTL's save has the room we already use for the `fhp.ship.*` and `fhp.boarded.*`
 marks (the ship's mark, `vault/ShipMark`).
 
+## Idea O: readers that take any version in their stride (noted 6.86, for 7.10)
+
+From heromedel, after the 7.0 plan:
+
+    Previous: Code specifically to support old versions
+    Current Plan: Cut out old code
+    What if instead: We change the code to be able to more elegantly hand information from any version without
+    cluttered old code
+
+    Maybe future proofing against other complete strips or more elegant log read can be the 7.10 plan
+
+Notes: 7.0 is the full strip (the old-tester code cut, trading at protocol 3). After it, the readers of today's files
+could be made tolerant: a field that's missing takes a default, one that isn't known is ignored, so a file from any
+later version reads as well as it can with no code kept for it. Log entries would record facts (a ship, a crew member,
+housekeeping) and each reader decide where to show them, by a few general rules for kinds it doesn't know, rather than
+the entry naming its place (a placement written into old entries could never be changed; heromedel's point). It stops
+at files that move or change shape: those are a conversion, and a strip.
+
 ## When we get to them
 
 Idea A first: the mechanism is small (a Reply button, a choice, a countdown in beacons), and then each chain is just

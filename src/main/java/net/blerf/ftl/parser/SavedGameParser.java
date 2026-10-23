@@ -1,6 +1,7 @@
 /*
  * This file comes from Vhati's FTL Profile Editor (GPL-2.0) and was modified for Federation Home Planet:
- * readCrewMember made public (the Cargo Hold keeps its crew in its own xml, 5.84).
+ * readCrewMember made public (the Cargo Hold keeps its crew in its own xml, 5.84); readSavedGame reads any InputStream
+ * (a save's bytes in memory, 6.87).
  */
 // Variables with unknown meanings are named with greek letters.
 // Classes for unknown objects are named after deities.
@@ -73,7 +74,7 @@ public class SavedGameParser extends Parser {
 		return gameState;
 	}
 
-	public SavedGameState readSavedGame( FileInputStream in ) throws IOException {
+	public SavedGameState readSavedGame( InputStream in ) throws IOException {
 		InputStream layoutStream = null;
 		try {
 			SavedGameState gameState = new SavedGameState();
@@ -283,7 +284,7 @@ public class SavedGameParser extends Parser {
 
 			// The stream should end here.
 
-			int bytesRemaining = (int)(in.getChannel().size() - in.getChannel().position());
+			int bytesRemaining = in instanceof FileInputStream ? (int)(((FileInputStream)in).getChannel().size() - ((FileInputStream)in).getChannel().position()) : in.available();
 			if ( bytesRemaining > 0 ) {
 				gameState.addMysteryBytes( new MysteryBytes(in, bytesRemaining) );
 			}
@@ -1578,7 +1579,7 @@ public class SavedGameParser extends Parser {
 		}
 	}
 
-	private NearbyShipAIState readNearbyShipAI( FileInputStream in ) throws IOException {
+	private NearbyShipAIState readNearbyShipAI( InputStream in ) throws IOException {
 		NearbyShipAIState ai = new NearbyShipAIState();
 
 		ai.setSurrendered( readBool( in ) );
@@ -1608,7 +1609,7 @@ public class SavedGameParser extends Parser {
 		writeInt( out, ai.getBoardersNeeded() );
 	}
 
-	private EnvironmentState readEnvironment( FileInputStream in ) throws IOException {
+	private EnvironmentState readEnvironment( InputStream in ) throws IOException {
 		EnvironmentState env = new EnvironmentState();
 
 		env.setRedGiantPresent( readBool( in ) );
@@ -1731,7 +1732,7 @@ public class SavedGameParser extends Parser {
 		writeInt( out, anim.getY() );
 	}
 
-	private ProjectileState readProjectile( FileInputStream in, int fileFormat ) throws IOException {
+	private ProjectileState readProjectile( InputStream in, int fileFormat ) throws IOException {
 		//log.debug( String.format( "Projectile: @%d", in.getChannel().position() ) );
 
 		ProjectileState projectile = new ProjectileState();
@@ -1973,7 +1974,7 @@ public class SavedGameParser extends Parser {
 		writeInt( out, damage.getStunAmount() );
 	}
 
-	private BeamProjectileInfo readBeamProjectileInfo( FileInputStream in ) throws IOException {
+	private BeamProjectileInfo readBeamProjectileInfo( InputStream in ) throws IOException {
 		BeamProjectileInfo beamInfo = new BeamProjectileInfo();
 
 		beamInfo.setEmissionEndX( readInt( in ) );
@@ -2045,7 +2046,7 @@ public class SavedGameParser extends Parser {
 		writeBool( out, beamInfo.getUnknownNu() );
 	}
 
-	private BombProjectileInfo readBombProjectileInfo( FileInputStream in ) throws IOException {
+	private BombProjectileInfo readBombProjectileInfo( InputStream in ) throws IOException {
 		BombProjectileInfo bombInfo = new BombProjectileInfo();
 
 		bombInfo.setUnknownAlpha( readInt( in ) );
@@ -2065,7 +2066,7 @@ public class SavedGameParser extends Parser {
 		writeBool( out, bombInfo.hasArrived() );
 	}
 
-	private LaserProjectileInfo readLaserProjectileInfo( FileInputStream in ) throws IOException {
+	private LaserProjectileInfo readLaserProjectileInfo( InputStream in ) throws IOException {
 		LaserProjectileInfo laserInfo = new LaserProjectileInfo();
 
 		laserInfo.setUnknownAlpha( readInt( in ) );
@@ -2079,7 +2080,7 @@ public class SavedGameParser extends Parser {
 		writeInt( out, laserInfo.getSpin() );
 	}
 
-	private PDSProjectileInfo readPDSProjectileInfo( FileInputStream in ) throws IOException {
+	private PDSProjectileInfo readPDSProjectileInfo( InputStream in ) throws IOException {
 		PDSProjectileInfo pdsInfo = new PDSProjectileInfo();
 
 		pdsInfo.setUnknownAlpha( readInt( in ) );
@@ -10298,7 +10299,7 @@ public class SavedGameParser extends Parser {
 	 *
 	 * This method does not involve a dedicated class.
 	 */
-	private void readExtendedShipInfo( FileInputStream in, ShipState shipState, int fileFormat ) throws IOException {
+	private void readExtendedShipInfo( InputStream in, ShipState shipState, int fileFormat ) throws IOException {
 		// There is no explicit list count for drones.
 		for ( DroneState drone : shipState.getDroneList() ) {
 			ExtendedDroneInfo droneInfo = new ExtendedDroneInfo();
@@ -10527,7 +10528,7 @@ public class SavedGameParser extends Parser {
 		}
 	}
 
-	private DronePodState readDronePod( FileInputStream in, DroneType droneType ) throws IOException {
+	private DronePodState readDronePod( InputStream in, DroneType droneType ) throws IOException {
 		if ( droneType == null ) throw new IllegalArgumentException( "DroneType cannot be null." );
 
 		//log.debug( String.format( "Drone Pod: @%d", in.getChannel().position() ) );
@@ -10714,7 +10715,7 @@ public class SavedGameParser extends Parser {
 		}
 	}
 
-	private WeaponModuleState readWeaponModule( FileInputStream in, int fileFormat ) throws IOException {
+	private WeaponModuleState readWeaponModule( InputStream in, int fileFormat ) throws IOException {
 		WeaponModuleState weaponMod = new WeaponModuleState();
 
 		weaponMod.setCooldownTicks( readInt( in ) );
@@ -10807,7 +10808,7 @@ public class SavedGameParser extends Parser {
 		}
 	}
 
-	private XYPair readReticleCoordinate( FileInputStream in ) throws IOException {
+	private XYPair readReticleCoordinate( InputStream in ) throws IOException {
 		int reticleX = readInt( in );
 		int reticleY = readInt( in );
 

@@ -9,11 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -22,25 +20,22 @@ import org.w3c.dom.NodeList;
 import homeplanet.core.Event;
 import homeplanet.core.EventLog;
 import homeplanet.core.SafeFiles;
-import homeplanet.core.Store;
 import homeplanet.parser.XmlText;
 
 /**
- * A ship's folder (Overhaul 6.0, Phase 2 step 13; docs/OVERHAUL-6.md §3.1 and §3.3): everything about her in one
- * place, so moving her is moving the folder.
+ * A ship's folder (6.0): everything about her in one place, so moving her is moving the folder.
  *
  * <pre>
  * shipyard/&lt;Name&gt;.&lt;id&gt;/
- *   &lt;Name&gt;.&lt;id&gt;.xml      her record: what the manifest and her side files hold today (§3.1), as attributes
+ *   &lt;Name&gt;.&lt;id&gt;.xml      her record: who she is and her notes, as attributes
  *                         and sections (fate, trade, journey, museum, borrowed, last, final, overwritten, owners, names)
  *   &lt;Name&gt;.&lt;id&gt;.sav      her FTL save, exactly as FTL wrote it
  *   &lt;Name&gt;.&lt;id&gt;.log      her log, two-line entries (CLAUDE.md "Log lines")
  *   versions/             her kept versions, named by their stamp; victory-, final-battle- and cloud- copies kept apart
  * </pre>
  *
- * The name in the folder's name is for people (cleaned for Windows and capped, docs/OVERHAUL-6.md §3.1); the id is
- * the key, and {@link #idOf} reads it from the folder. This is the store alone: the Vault moves onto it in the steps
- * after (each fleet converted on opening).
+ * The name in the folder's name is for people (cleaned for Windows and capped); the id is the key, and {@link #idOf}
+ * reads it from the folder. This is the store alone: the Vault moves the folders.
  */
 public final class ShipStore {
 	private static final Logger log = LoggerFactory.getLogger(ShipStore.class);
@@ -60,7 +55,7 @@ public final class ShipStore {
 		public String hash = "", marks = "", fresh = "";
 		/**
 		 * The fleet she belongs to (6.10: "sandbox", "easy", "normal", "hard", "custom"), and how she came into it
-		 * ("commissioned.6.10.20261008-174200"). A record without them waits for the player's word (Vault.sortShips).
+		 * ("commissioned.6.10.20261008-174200"). A record with either empty waits for the player's word (7.0: nothing is taken on evidence).
 		 */
 		public String career = "", origin = "";
 		/** Her owners, the first her original (as her trade mark has them today), and her past names, oldest first. */
@@ -159,8 +154,7 @@ public final class ShipStore {
 	/** A record from its file's bytes (a package's, 5.75): the id given stands if the record names none. */
 	public static Record parse(byte[] xml, String idIfNone) throws IOException {
 		try {
-			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new java.io.ByteArrayInputStream(xml));
-			Element ship = doc.getDocumentElement();
+			Element ship = homeplanet.parser.XmlText.parse(xml);
 			if (!"ship".equals(ship.getTagName())) throw new IOException("not a ship record");
 			String id = ship.getAttribute("id");
 			if (id.isEmpty()) id = idIfNone;
@@ -334,8 +328,8 @@ public final class ShipStore {
 	// ---- her notes (5.98) ----
 
 	/**
-	 * Her record's sections (5.98: her trade mark, journey, museum entry, a borrowing, her last look, the final battle,
-	 * an overwrite, her fate), by their owners' names for them.
+	 * Her record's sections that hold what her side files did before 5.98 (traded.txt, journey.txt, museum.txt,
+	 * borrowed.txt, voyage.txt, final-battle.txt, overwritten.txt, fate.txt), by their owners' names for them.
 	 */
 	public static final String TRADE = "trade", JOURNEY = "journey", MUSEUM = "museum", BORROWED = "borrowed", LAST = "last",
 			FINAL = "final", OVERWRITTEN = "overwritten", FATE = "fate", ABOARD = "aboard";

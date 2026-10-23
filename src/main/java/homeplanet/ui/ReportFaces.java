@@ -20,7 +20,7 @@ import javax.swing.text.StyledDocument;
 
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
 
-import homeplanet.parser.Assignments;
+import homeplanet.parser.Expeditions;
 
 /**
  * An expedition report with its crew's faces: each crew member's line starts with their icon, a health bar under it as
@@ -31,14 +31,14 @@ final class ReportFaces {
 	private ReportFaces() {}
 
 	/** The report's words into this document, a face before each crew member's line. */
-	static void insert(StyledDocument doc, String body, List<Assignments.Face> faces, AttributeSet base) throws BadLocationException {
-		List<Assignments.Face> byName = new ArrayList<Assignments.Face>(faces);
-		byName.sort(new Comparator<Assignments.Face>() { // the longest name first: "Ann" must not take "Anna"'s line
-			public int compare(Assignments.Face a, Assignments.Face b) { return b.crew.getName().length() - a.crew.getName().length(); }
+	static void insert(StyledDocument doc, String body, List<Expeditions.Face> faces, AttributeSet base) throws BadLocationException {
+		List<Expeditions.Face> byName = new ArrayList<Expeditions.Face>(faces);
+		byName.sort(new Comparator<Expeditions.Face>() { // the longest name first: "Ann" must not take "Anna"'s line
+			public int compare(Expeditions.Face a, Expeditions.Face b) { return b.crew.getName().length() - a.crew.getName().length(); }
 		});
-		List<Assignments.Face> inOrder = new ArrayList<Assignments.Face>(faces); // the report tells them in this order
+		List<Expeditions.Face> inOrder = new ArrayList<Expeditions.Face>(faces); // the report tells them in this order
 		List<String> all = new ArrayList<String>();
-		for (Assignments.Face f : byName) all.add(f.crew.getName());
+		for (Expeditions.Face f : byName) all.add(f.crew.getName());
 		String[] lines = body.split("\n", -1);
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
@@ -46,8 +46,8 @@ final class ReportFaces {
 			Icon icon = null;
 			String name = null;
 			// the next in the report's order first: a life saved names the crewmate too (6.61), who mustn't take the line
-			Assignments.Face found = !inOrder.isEmpty() && names(line, inOrder.get(0).crew.getName()) ? inOrder.get(0) : null;
-			if (found == null) for (Assignments.Face f : byName) if (names(line, f.crew.getName())) { found = f; break; }
+			Expeditions.Face found = !inOrder.isEmpty() && names(line, inOrder.get(0).crew.getName()) ? inOrder.get(0) : null;
+			if (found == null) for (Expeditions.Face f : byName) if (names(line, f.crew.getName())) { found = f; break; }
 			if (found != null) {
 				name = found.crew.getName();
 				icon = icon(found);
@@ -108,7 +108,7 @@ final class ReportFaces {
 	private static final java.awt.Color CROSS = new java.awt.Color(200, 110, 100);
 
 	/** A face: the crew icon with its health bar (purple and full in the infirmary), greyed for the dead and the taken. */
-	static Icon icon(Assignments.Face f) {
+	static Icon icon(Expeditions.Face f) {
 		Icon face = IconFactory.crewIcon(f.crew);
 		if (face == null) return null;
 		if ("dead".equals(f.state) || "taken".equals(f.state)) return grey(face);

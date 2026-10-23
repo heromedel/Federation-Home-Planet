@@ -12,7 +12,7 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.parser.SavedGameParser.ShipState;
 
 import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 
 /**
  * A Save in the Cargo Bay (heromedel's Plan O, 6.11: moved out of ui/CargoBayUI, which keeps the confirmations, the
@@ -63,9 +63,9 @@ public final class CargoBaySave {
 			try {
 				// the ships as their files have them: the vault's own parse (a fresh read could fail after a remodel changed her layout)
 				SavedGameState onDisk = current == null ? null : current.save();
-				if (onDisk != null) { nb = onDisk.getPlayerShipName(); cb = HistoryLog.inventory(onDisk); }
+				if (onDisk != null) { nb = onDisk.getPlayerShipName(); cb = StationLog.inventory(onDisk); }
 				SavedGameState partnerDisk = partner != null ? partner.save() : null;
-				if (partnerDisk != null) { pnb = partnerDisk.getPlayerShipName(); pb = HistoryLog.inventory(partnerDisk); }
+				if (partnerDisk != null) { pnb = partnerDisk.getPlayerShipName(); pb = StationLog.inventory(partnerDisk); }
 			} catch (Exception e) {
 				log.warn("Could not read saves for the history log", e);
 			}
@@ -87,17 +87,17 @@ public final class CargoBaySave {
 		boolean business = !c.systems.isEmpty() || !c.purchases.isEmpty();
 		for (Disposal dp : c.disposals) if ("SELL".equals(dp.kind)) business = true;
 		if (!c.systems.isEmpty())
-			HistoryLog.entry("SYSTEMS", c.currentSave.getPlayerShipName(), new ArrayList<String>(c.systems),
+			StationLog.entry("SYSTEMS", c.currentSave.getPlayerShipName(), new ArrayList<String>(c.systems),
 					Event.of("SYSTEMS").put("ship_name", c.currentSave.getPlayerShipName()).put("ship_id", c.current == null ? null : c.current.id).details(new ArrayList<String>(c.systems)));
 		for (String s : c.systems) if (s.startsWith("Installed ")) { homeplanet.parser.ThirdFleet.partInstalled(v); break; } // the technicians tell the Third Fleet Commander
 		if (!c.purchases.isEmpty())
-			HistoryLog.entry("BUY", c.purchases.size() == 1 ? "1 purchase" : c.purchases.size() + " purchases",
+			StationLog.entry("BUY", c.purchases.size() == 1 ? "1 purchase" : c.purchases.size() + " purchases",
 					new ArrayList<String>(c.purchases), Event.of("BUY").put("what", "cargo_bay").put("purchases", c.purchases.size()).details(new ArrayList<String>(c.purchases)));
 		if (c.current != null && c.nameBefore != null && !c.nameBefore.equals(c.currentSave.getPlayerShipName()))
-			HistoryLog.entry("RENAME", c.nameBefore + " -> " + c.currentSave.getPlayerShipName() + "  (" + c.current.id + ")", null,
+			StationLog.entry("RENAME", c.nameBefore + " -> " + c.currentSave.getPlayerShipName() + "  (" + c.current.id + ")", null,
 					Vault.shipEvent("RENAME", c.current).put("from", c.nameBefore).put("to", c.currentSave.getPlayerShipName()));
 		if (c.partnerNameBefore != null && !c.partnerIsHold && !c.partnerNameBefore.equals(c.partnerSave.getPlayerShipName()))
-			HistoryLog.entry("RENAME", c.partnerNameBefore + " -> " + c.partnerSave.getPlayerShipName() + "  (" + c.partner.id + ")", null,
+			StationLog.entry("RENAME", c.partnerNameBefore + " -> " + c.partnerSave.getPlayerShipName() + "  (" + c.partner.id + ")", null,
 					Vault.shipEvent("RENAME", c.partner).put("from", c.partnerNameBefore).put("to", c.partnerSave.getPlayerShipName()));
 		Map<String, Integer> curBefore = c.currentBefore, partnerBefore = c.partnerBefore;
 		// crew renames get their own lines, not a "left / joined" pair in the trade
@@ -111,7 +111,7 @@ public final class CargoBaySave {
 					m.put("Crew " + newN, (m.containsKey("Crew " + newN) ? m.get("Crew " + newN) : 0) + n);
 				}
 			}
-			HistoryLog.entry("RENAME CREW", oldN + " -> " + newN + "  (" + ship + ")", null, Event.of("RENAME_CREW").put("what", "renamed").put("from", oldN).put("to", newN).put("ship_name", ship));
+			StationLog.entry("RENAME CREW", oldN + " -> " + newN + "  (" + ship + ")", null, Event.of("RENAME_CREW").put("what", "renamed").put("from", oldN).put("to", newN).put("ship_name", ship));
 		}
 		// crew who came aboard a ship or into the Cargo Hold: "Lisandra assigned to the Kestrel." (their arrival at the
 		// station's medbay counts from here)
@@ -137,23 +137,23 @@ public final class CargoBaySave {
 			int n = countByKind.get(k.getKey());
 			String head = k.getKey().equals("RETIRE") ? (n == 1 ? "1 crew member" : n + " crew members") : (n == 1 ? "1 item" : n + " items");
 			if (k.getKey().equals("SELL")) head += " for " + sellTotal + " scrap";
-			HistoryLog.entry(k.getKey(), head, k.getValue(),
+			StationLog.entry(k.getKey(), head, k.getValue(),
 					Event.of(k.getKey()).put("what", "cargo_bay").put("count", n).put("scrap", k.getKey().equals("SELL") ? String.valueOf(sellTotal) : null).details(k.getValue()));
 		}
 		List<String> lines = new ArrayList<String>();
 		if (curBefore != null) {
-			List<String> ch = HistoryLog.changes(curBefore, HistoryLog.inventory(c.currentSave));
+			List<String> ch = StationLog.changes(curBefore, StationLog.inventory(c.currentSave));
 			if (!ch.isEmpty()) { lines.add(c.currentSave.getPlayerShipName() + ":"); for (String l : ch) lines.add("  " + l); }
 		}
 		if (partnerBefore != null) {
-			List<String> ch = HistoryLog.changes(partnerBefore, HistoryLog.inventory(c.partnerSave));
+			List<String> ch = StationLog.changes(partnerBefore, StationLog.inventory(c.partnerSave));
 			if (!ch.isEmpty()) { lines.add(c.partnerSave.getPlayerShipName() + ":"); for (String l : ch) lines.add("  " + l); }
 		}
 		if (!lines.isEmpty())
-			HistoryLog.entry("TRADE", c.current == null ? c.partnerSave.getPlayerShipName() : c.currentSave.getPlayerShipName() + (c.partnerSave != null ? " <-> " + c.partnerSave.getPlayerShipName() : ""), lines,
+			StationLog.entry("TRADE", c.current == null ? c.partnerSave.getPlayerShipName() : c.currentSave.getPlayerShipName() + (c.partnerSave != null ? " <-> " + c.partnerSave.getPlayerShipName() : ""), lines,
 					Event.of("TRADE").put("what", "cargo_bay").put("ship_name", c.current == null ? null : c.currentSave.getPlayerShipName()).put("ship_id", c.current == null ? null : c.current.id)
 							.put("partner_name", c.partnerSave == null ? null : c.partnerSave.getPlayerShipName()).put("partner_id", c.partner == null ? null : c.partner.id).details(lines));
-		if (business) MasterLog.businessDay(v); // after its entries: they belong to the day the business ended
+		if (business) Calendar.businessDay(v); // after its entries: they belong to the day the business ended
 	}
 
 	/** Crew who came aboard her (or into the Cargo Hold) since her file was read: a CREW entry each. */
@@ -167,7 +167,7 @@ public final class CargoBaySave {
 			if (had != null && n <= had) continue;
 			String ship = save.getPlayerShipName();
 			String place = hold ? "the Cargo Hold" : homeplanet.parser.ShipNames.the(ship);
-			HistoryLog.entry("CREW", c.getName() + " assigned to " + place + ".", null,
+			StationLog.entry("CREW", c.getName() + " assigned to " + place + ".", null,
 					Event.of("CREW").put("what", "assigned").put("crew", c.getName()).put("race", c.getRace() == null ? null : c.getRace().getId()).put("to", hold ? "hold" : "ship").put("ship_name", hold ? null : ship));
 		}
 	}

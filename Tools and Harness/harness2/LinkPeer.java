@@ -34,7 +34,6 @@ public class LinkPeer {
   public void notice(String t) { notices.add(t); }
   final List<String> heard = Collections.synchronizedList(new ArrayList<String>());
   public void said(String who, String text) { heard.add(who + "|" + text); }
-  volatile boolean chat = true;
   /** Turns every hail away as busy ("decline on"): the commander pressing Decline. */
   volatile boolean decline = false;
   /** Leaves a hail unanswered ("holdhail on"), counting those withdrawn while it waited. */
@@ -44,7 +43,6 @@ public class LinkPeer {
   volatile boolean popupsOn = true;
   final List<String> popups = Collections.synchronizedList(new ArrayList<String>());
   /** Answers searches as a station older than messages does ("oldanswer on"). */
-  volatile boolean oldAnswer = false;
   public void problem(String t) { problems.add(t); }
   public void settled(Exchange.Record r) { settled++; }
   public void ended(String why) { ended = why; session = null; ends++; }
@@ -57,7 +55,7 @@ public class LinkPeer {
   volatile String mode = Vault.SANDBOX; volatile boolean anyLevel = true;
   /** The version and protocol its hello claims ("version 4B.99", "protocol 2": a newer station). */
   volatile String version = HomePlanet.APP_VERSION; volatile int protocol = Session.PROTOCOL;
-  Wire.Msg hello() { return Session.hello(version, id, title, "", mode, ships, anyLevel).put("protocol", protocol).put("chat", chat); }
+  Wire.Msg hello() { return Session.hello(version, id, title, "", mode, ships, anyLevel).put("protocol", protocol); }
   String why(Session.Peer p) { return Session.incompatible(p, HomePlanet.APP_VERSION, id); }
   /** Talk only (another mode or level), as the screen works it out: null if the two trade. */
   String noTrade(Session.Peer p) { return tradeAnyway ? null : Session.cantTrade(p, mode, anyLevel); }
@@ -103,8 +101,7 @@ public class LinkPeer {
     } });
     final int port = post.port;
     responder = new Beacon.Responder(new Beacon.Self() { public String answer() {
-     String a = Beacon.answer(port, HomePlanet.APP_VERSION, id, title, "Wanderer", mode);
-     return oldAnswer ? a.substring(0, a.lastIndexOf('\n')) : a; // as a station before messages answers: no "notes"
+     return Beacon.answer(port, HomePlanet.APP_VERSION, id, title, "Wanderer", mode);
     } });
     return "PORT " + post.port;
    }
@@ -132,7 +129,6 @@ public class LinkPeer {
    if (c.equals("say")) { final String t = cmd.length() > 4 ? cmd.substring(4) : ""; return edt(new java.util.concurrent.Callable<String>() { public String call() { return "" + session.say(t); } }); }
    if (c.equals("heard")) return heard.isEmpty() ? "none" : heard.get(heard.size() - 1);
    if (c.equals("heardcount")) return "" + heard.size();
-   if (c.equals("nochat")) { chat = w.length > 1 && w[1].equals("off"); return "OK"; }
    if (c.equals("ends")) return "" + ends;
    if (c.equals("unlisten")) { if (post != null) post.close(); if (responder != null) responder.close(); post = null; responder = null; return "OK"; }
    if (c.equals("tradeanyway")) { tradeAnyway = w[1].equals("on"); return "OK"; }
@@ -149,9 +145,8 @@ public class LinkPeer {
     return "OK";
    }
    if (c.equals("contactscan")) { Contacts.seenAll(Beacon.scan(1200, id)); return "OK"; }
-   if (c.equals("contacts")) { List<String> n = new ArrayList<String>(); for (Contacts.Entry e : Contacts.list()) n.add(e.station + "|" + e.title + "|" + e.notes); return n.isEmpty() ? "none" : String.join(";", n); }
+   if (c.equals("contacts")) { List<String> n = new ArrayList<String>(); for (Contacts.Entry e : Contacts.list()) n.add(e.station + "|" + e.title); return n.isEmpty() ? "none" : String.join(";", n); }
    if (c.equals("forget")) { Contacts.remove(w[1]); return "OK"; }
-   if (c.equals("oldanswer")) { oldAnswer = w[1].equals("on"); return "OK"; }
    if (c.equals("notewith")) { for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m) && m.body.contains(w[1].replace('_', ' '))) return m.body.replace('\n', ' '); return "none"; }
    if (c.equals("notes")) { int k = 0; String last = "none"; for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m)) { if (k++ == 0) last = m.from + "|" + m.subject + "|" + m.body.replace('\n', ' '); } return k + " " + last; }
    if (c.equals("delnote")) { for (Transmissions.Message m : Transmissions.load()) if (Transmissions.isNote(m)) { Transmissions.delete(m); return "OK"; } return "none"; }
@@ -322,7 +317,7 @@ public class LinkPeer {
     List<String> said = new ArrayList<String>();
     List<Beacon.Found> found = Beacon.scan(1200, id);
     Contacts.seenAll(found);
-    for (Beacon.Found f : found) if (f.notes && Outbox.waitingFor(f.station)) said.addAll(Outbox.deliver(f.station, f.host, f.port, HomePlanet.APP_VERSION, me, title, 0, f.shipments));
+    for (Beacon.Found f : found) if (Outbox.waitingFor(f.station)) said.addAll(Outbox.deliver(f.station, f.host, f.port, HomePlanet.APP_VERSION, me, title, 0));
     return said.isEmpty() ? "nothing" : String.join(" / ", said);
    }
    if (k.equals("cancel")) { List<Outbox.Item> l = Outbox.list(); if (l.isEmpty()) return "none"; Outbox.cancel(l.get(0)); return "OK"; }
@@ -387,12 +382,12 @@ public class LinkPeer {
    if (k.equals("return")) { if (held == null) return "none"; Shipments.returnIt(held); return "OK"; }
    if (k.equals("deliver")) { if (held == null) return "none"; try { Shipments.deliverTo(held, w[2]); return "OK"; } catch (IOException e) { return "FAILED " + e.getMessage(); } }
    if (k.equals("makefleet")) {
-    File hold = Vault.holdFileIn(Vault.rootOf(v.saves, w[2])); hold.getParentFile().mkdirs();
-    SafeFiles.write(hold, homeplanet.parser.HoldXml.toBytes(SaveHelper.createStorageSave("Spacedock Storage", true)));
+    File root = Vault.rootOf(v.saves, w[2]); root.mkdirs();
+    SafeFiles.write(Vault.holdFileIn(root), HoldXml.toBytes(SaveHelper.createStorageSave("Spacedock Storage", true))); // a 6.0 fleet's Cargo Hold
     return "OK";
    }
    if (k.equals("holdof")) {
-    SavedGameState gs = homeplanet.parser.HoldXml.read(Vault.holdFileIn(Vault.rootOf(v.saves, w[2])));
+    SavedGameState gs = HoldXml.read(Vault.holdFileIn(Vault.rootOf(v.saves, w[2])));
     return holdText(gs);
    }
    return "unknown";

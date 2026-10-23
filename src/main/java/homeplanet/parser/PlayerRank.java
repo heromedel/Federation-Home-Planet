@@ -90,7 +90,7 @@ public final class PlayerRank {
 	public static int reached(Vault v) {
 		return Store.num(read(v), "reached", 0);
 	}
-	/** A career begun now: on the ladder from its start. */
+	/** A career begun now: on the ladder from its start, nothing carried over. */
 	public static void begin(Vault v) {
 		if (file(v).isFile()) return;
 		Properties p = new Properties();
@@ -98,19 +98,10 @@ public final class PlayerRank {
 		write(v, p);
 	}
 
-	/**
-	 * Brings the ladder up to this reputation: the ranks newly reached, lowest first (none if it hasn't climbed). A ladder
-	 * whose file is lost is written down at the rank the reputation gives, quietly: no letter for each rank again.
-	 */
+	/** Brings the ladder up to this reputation: the ranks newly reached, lowest first (none when it stands). */
 	public static synchronized List<Integer> climb(Vault v, int reputation) {
 		List<Integer> promoted = new ArrayList<Integer>();
 		int now = forReputation(reputation);
-		if (!file(v).isFile()) {
-			Properties p = new Properties();
-			p.setProperty("reached", Integer.toString(now));
-			write(v, p);
-			return promoted;
-		}
 		Properties p = read(v);
 		int was = Store.num(p, "reached", 0);
 		if (now <= was) return promoted;

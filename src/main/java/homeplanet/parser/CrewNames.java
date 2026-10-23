@@ -1,6 +1,5 @@
 package homeplanet.parser;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +14,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -239,14 +237,7 @@ public final class CrewNames {
 		return got;
 	}
 	static Lists read(byte[] bytes) throws Exception {
-		DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
-		f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-		f.setExpandEntityReferences(false);
-		javax.xml.parsers.DocumentBuilder b = f.newDocumentBuilder();
-		b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
-			@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
-		});
-		Element root = b.parse(new ByteArrayInputStream(bytes)).getDocumentElement();
+		Element root = XmlText.parse(bytes);
 		Lists out = new Lists();
 		Element first = child(root, "first"), last = child(root, "last");
 		if (first != null || last != null) {

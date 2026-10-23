@@ -1,5 +1,9 @@
 package homeplanet.model;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.xml.AugBlueprint;
 import net.blerf.ftl.xml.DroneBlueprint;
@@ -33,6 +37,28 @@ public final class Items {
 		if (isDrone(id)) return droneTitle(id);
 		if (isAugment(id)) return augmentTitle(id);
 		return id;
+	}
+	/** The weapons FTL's stores sell (a price and a rarity: no artillery, no Flagship guns), in id order (7.01). */
+	public static List<String> soldWeapons() {
+		List<String> out = new ArrayList<String>();
+		for (WeaponBlueprint w : DataManager.get().getWeapons().values())
+			if (w.getCost() > 0 && w.getRarity() > 0 && !w.getId().startsWith("ARTILLERY")) out.add(w.getId());
+		Collections.sort(out);
+		return out;
+	}
+	/** The drones FTL's stores sell, in id order. */
+	public static List<String> soldDrones() {
+		List<String> out = new ArrayList<String>();
+		for (DroneBlueprint d : DataManager.get().getDrones().values()) if (d.getCost() > 0 && d.getRarity() > 0) out.add(d.getId());
+		Collections.sort(out);
+		return out;
+	}
+	/** The augments FTL's stores sell, in id order. */
+	public static List<String> soldAugments() {
+		List<String> out = new ArrayList<String>();
+		for (AugBlueprint a : DataManager.get().getAugments().values()) if (a.getCost() > 0 && a.getRarity() > 0) out.add(a.getId());
+		Collections.sort(out);
+		return out;
 	}
 	/** A ship system's name ("Clone Bay" for clonebay); the id itself when the game data doesn't have it. */
 	public static String systemTitle(String id) {

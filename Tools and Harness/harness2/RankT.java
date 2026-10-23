@@ -1,5 +1,5 @@
 import java.io.*; import java.util.*; import net.blerf.ftl.parser.*; import net.blerf.ftl.model.*; import homeplanet.core.*; import homeplanet.parser.*; import homeplanet.vault.*;
-/** The player's ranks (heromedel, 5.56): Ranks From Rep, From Cruiser, or none; Immersive Mode locked to Ranks From Rep; a lost ladder climbed again. args: gamedir, world saves, work */
+/** The player's ranks (heromedel, 5.56): Ranks From Rep, From Cruiser, or none; Immersive Mode locked to Ranks From Rep; an old career's rank checked once. args: gamedir, world saves, work */
 public class RankT { public static void main(String[] a) throws Exception {
  File game = new File(a[0]), work = new File(a[2]); SafeFiles.deleteTree(work);
  File saves = new File(work, "saves"); Setup.copyTree(new File(a[1]), saves);
@@ -20,7 +20,7 @@ public class RankT { public static void main(String[] a) throws Exception {
  PlayerRank.setting = PlayerRank.FROM_REP; HomePlanet.reputationOn = false;
  Setup.chk("S: Ranks From Rep without Reputation: the cruiser's ranks meanwhile", PlayerRank.mode() == PlayerRank.FROM_CRUISER);
  HomePlanet.reputationOn = true;
- // a Sandbox career: a Captain by the Federation Cruiser A under the cruiser's ranks
+ // a Sandbox career from before 5.56: a Captain by the Federation Cruiser A
  HomePlanet.immersiveNotifications = true; HomePlanet.careerMessages = true;
  PlayerRank.setting = PlayerRank.FROM_CRUISER;
  TransT.profile(saves, new String[] {"PLAYER_SHIP_HARD"}, new String[0]);
@@ -28,31 +28,25 @@ public class RankT { public static void main(String[] a) throws Exception {
  UnlockGrants.turnedOn(Unlocks.read());
  TransT.profile(saves, new String[] {"PLAYER_SHIP_HARD", "PLAYER_SHIP_FED"}, new String[0]);
  Setup.chk("O: under the cruiser's ranks, a Captain", PlayerRank.rank(Unlocks.read()) == 1 && Transmissions.rank().equals("Captain"));
- Reputation.expedition(v, "an old expedition", 0, 0, 1); Reputation.expedition(v, "another old expedition", 0, 0, 1); // something for its letters to recall
- // on the ladder: to Captain, then rank.xml lost; it climbs again from Major, a letter for each rank once
+ Reputation.expedition(v, "an old expedition", 0, 0, 1); Reputation.expedition(v, "another old expedition", 0, 0, 1); // something for its letter to recall
  PlayerRank.setting = PlayerRank.FROM_REP;
- int captain = Arrays.asList(PlayerRank.REP_RANKS).indexOf("Captain");
- Reputation.expedition(v, "test standing", 10 * (PlayerRank.REP_STEPS[captain] - Reputation.total(v)), 0, 0);
  Transmissions.check();
- Setup.chk("O: 1,000 reputation: a Captain, a letter for each rank reached", PlayerRank.rank(Unlocks.read()) == captain && TransT.find("rank:1") != null && TransT.find("rank:3") != null
-   && TransT.find("rank:3").body.contains("Captain") && TransT.find("rank:ladder") == null);
- Store.file(v.root, "rank").delete();
- Transmissions.check();
- int threes = 0; for (Transmissions.Message m : Transmissions.load()) if (m.key.equals("rank:3")) threes++;
- Setup.chk("O: rank.xml lost: still a Captain, its letters not sent again", PlayerRank.rank(Unlocks.read()) == captain && PlayerRank.reached(v) == captain && threes == 1);
+ int major = PlayerRank.forReputation(Reputation.total(v));
+ Setup.chk("O: on the ladder, the rank its reputation gives (" + major + "), no letter about the ranks (7.0: a career is on the ladder from its start)",
+   PlayerRank.rank(Unlocks.read()) == major && major == 0 && TransT.find("rank:ladder") == null && TransT.find("rank:1") == null);
  // reputation lost: never a rank
  Reputation.expedition(v, "a hard expedition", 0, 30, -1);
  Transmissions.check();
- Setup.chk("R: reputation lost, the rank kept", PlayerRank.rank(Unlocks.read()) == captain);
+ Setup.chk("R: reputation lost, the rank kept", PlayerRank.rank(Unlocks.read()) == major);
  // climbing on
  Reputation.expedition(v, "test standing", 10 * (PlayerRank.REP_STEPS[PlayerRank.COMMODORE] - Reputation.total(v)), 0, 0);
  Transmissions.check();
- Setup.chk("R: 2,500 reputation: Commodore, its letter alone", PlayerRank.rank(Unlocks.read()) == PlayerRank.COMMODORE && TransT.find("rank:4") != null && TransT.find("rank:5") == null
+ Setup.chk("R: 2,500 reputation: Commodore, a letter for each rank passed", PlayerRank.rank(Unlocks.read()) == PlayerRank.COMMODORE && TransT.find("rank:4") != null && TransT.find("rank:3") != null
    && TransT.find("rank:4").body.startsWith("The Federation Home Planet Admiralty is thrilled to inform you"));
  // what the career did, once each (heromedel, 5.57): no token left, never the same line twice, never the Rebel Flagship
- String l0 = TransT.find("rank:3").body, l4 = TransT.find("rank:4").body;
- Setup.chk("A: the letters' accolades filled or left out, no two alike: [" + l0.replace("\n", " / ") + "] [" + l4.replace("\n", " / ") + "]",
-   !l0.contains("{") && !l4.contains("{") && !l0.contains("\n\n\n") && !l4.contains("\n\n\n") && !l0.contains("Flagship") && !l4.contains("Flagship"));
+ String l3 = TransT.find("rank:3").body, l4 = TransT.find("rank:4").body;
+ Setup.chk("A: the letters' accolades filled or left out, no two alike: [" + l3.replace("\n", " / ") + "] [" + l4.replace("\n", " / ") + "]",
+   !l3.contains("{") && !l4.contains("{") && !l3.contains("\n\n\n") && !l4.contains("\n\n\n") && !l3.contains("Flagship") && !l4.contains("Flagship") && !l3.equals(l4));
  java.lang.reflect.Method aid = Accolades.class.getDeclaredMethod("achievementId", String.class); aid.setAccessible(true);
  Setup.chk("A: an achievement is told as its deed: FTL's name found (" + aid.invoke(null, "Givin' her all she's got, Captain!") + ")", "ACH_ENERGY_POWER".equals(aid.invoke(null, "Givin' her all she's got, Captain!")) && "ACH_SECTOR_5".equals(aid.invoke(null, "Just Getting Started")));
  String rest = "A\n\n{accolade}\n\nB", once = null; java.util.Set<String> said = new java.util.HashSet<String>(); boolean twice = false;

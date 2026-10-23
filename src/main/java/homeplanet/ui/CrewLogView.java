@@ -20,11 +20,12 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 
+import homeplanet.parser.XmlText;
 import homeplanet.model.Crew;
 import homeplanet.vault.CrewRegister;
 import homeplanet.vault.CrewRegister.Member;
 import homeplanet.vault.CrewRegister.Status;
-import homeplanet.vault.MasterLog;
+import homeplanet.vault.Calendar;
 import homeplanet.vault.Ship;
 import homeplanet.vault.Vault;
 import net.blerf.ftl.parser.SavedGameParser.CrewState;
@@ -54,7 +55,7 @@ final class CrewLogView extends JPanel {
 		CrewRegister.sweep(v); // as they are now
 		members = CrewRegister.members(v);
 		java.util.Set<String> laidUp = new java.util.HashSet<String>();
-		for (homeplanet.parser.Expeditions.Patient p : homeplanet.parser.Expeditions.infirmary(v)) laidUp.add(p.name + "/" + p.race);
+		for (homeplanet.parser.AwayCrew.Patient p : homeplanet.parser.AwayCrew.infirmary(v)) laidUp.add(p.name + "/" + p.race);
 		for (Member m : members) m.laidUp = m.status == Status.PRESENT && m.where.equals("in the Cargo Hold") && laidUp.contains(m.name + "/" + m.race);
 
 		// the sections: each ship (aboard first, then docked, then the Junkyard's), the hold, on assignment, then the gone
@@ -206,7 +207,7 @@ final class CrewLogView extends JPanel {
 		if (m.status != Status.PRESENT && c != null) side.add(line("The card shows them as last seen.", RecordsLog.DIM));
 		if (!m.events.isEmpty()) {
 			side.add(heading("On the station's records"));
-			side.add(line("Since Stardate " + MasterLog.stardate(Math.max(1, m.events.get(0).day)) + ".", MenuTheme.TEXT));
+			side.add(line("Since Stardate " + Calendar.stardate(Math.max(1, m.events.get(0).day)) + ".", MenuTheme.TEXT));
 		}
 		int sent = 0, back = 0;
 		for (CrewRegister.Event e : m.events) { if (e.text.startsWith("Sent on an expedition") || e.text.startsWith("Sent on assignment")) sent++; if (e.text.startsWith("Back from an expedition") || e.text.startsWith("Back from an assignment")) back++; } // 5.46 records said "assignment"
@@ -237,7 +238,7 @@ final class CrewLogView extends JPanel {
 			int d = Math.max(1, e.day);
 			if (d != day) {
 				day = d;
-				JLabel h = line("Stardate " + MasterLog.stardate(d), MenuTheme.GOLD);
+				JLabel h = line(Calendar.heading(d), MenuTheme.GOLD);
 				h.setFont(MenuTheme.LABEL_FONT);
 				h.setBorder(BorderFactory.createEmptyBorder(6, 0, 2, 0));
 				career.add(h);
@@ -271,7 +272,7 @@ final class CrewLogView extends JPanel {
 			for (Member x : members) if (x.id == e.getKey()) o = x;
 			if (o == null) continue;
 			final Member to = o;
-			JLabel name = line("<html><u>" + esc(o.name) + "</u></html>", new Color(150, 200, 255));
+			JLabel name = line("<html><u>" + XmlText.text(o.name) + "</u></html>", new Color(150, 200, 255));
 			CrewState oc = o.crew();
 			if (oc != null) name.setIcon(IconFactory.crewIcon(oc));
 			name.setIconTextGap(6);
@@ -290,7 +291,6 @@ final class CrewLogView extends JPanel {
 		}
 	}
 	private static String cap(String s) { return homeplanet.model.Words.cap(s); }
-	private static String esc(String s) { return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"); }
 	/** An event's mark: green for joining and coming back, gold for moves and assignments, purple the infirmary, orange taken or missing, red killed. */
 	private static Color mark(String t) {
 		if (t.startsWith("Killed") || t.startsWith("Lost") || t.contains("presumed dead") || t.startsWith("Did not come back")) return RecordsLog.BAD;

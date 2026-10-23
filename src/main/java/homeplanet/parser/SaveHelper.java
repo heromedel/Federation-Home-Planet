@@ -2,12 +2,7 @@ package homeplanet.parser;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,8 +62,6 @@ public final class SaveHelper {
 	public static final int CARGO_SLOTS = 4, AUGMENT_SLOTS = 3, CREW_MAX = 8, WEAPON_SLOTS_MAX = 4, DRONE_SLOTS_MAX = 3;
 	/** FTL's System Limit: 8 systems, the subsystems (Piloting, Sensors, Doors, the Backup Battery) aside. The game's own, the same for every ship. */
 	public static final int SYSTEMS_MAX = 8;
-	/** One layout square, in pixels of the ship pictures. */
-	public static final int SQUARE = 35;
 
 
 	private static final Logger log = LoggerFactory.getLogger( SaveHelper.class );
@@ -629,11 +622,6 @@ public final class SaveHelper {
 		log.debug( "Wrote {} ({} bytes)", saveFile, bytes.length );
 	}
 
-	/**
-	 * Her cargo as the station shows, trades, counts and prices it: the weapons and drones there. An augment in the cargo
-	 * list is the one FTL is over capacity on, asking which to leave behind at the jump (written there twice; seen in
-	 * FTL 1.6.14): it's FTL's question, so the station never shows it (heromedel, 5.52), and leaves it in her save.
-	 */
 	/** Her fitted gear's ids, in order: weapons, drones, augments (not her cargo). */
 	public static List<String> gear(ShipState s) {
 		List<String> out = new java.util.ArrayList<String>();
@@ -673,5 +661,29 @@ public final class SaveHelper {
 	/** True unless the station rule is on and this ship isn't at a station. */
 	public static boolean mayTrade(SavedGameState gs) {
 		return !homeplanet.core.HomePlanet.storeRequirement() || isAtStation(gs);
+	}
+
+	// ---- putting things aboard (7.01: the one place for a reward, a purchase, a find or a trade) ----
+
+	/** Adds n of a supply ("fuel", "missiles" or "parts", as {@link Parts} names them); false (nothing added) for any other kind. */
+	public static boolean addSupply(ShipState ship, String kind, int n) {
+		if (Parts.FUEL.equals(kind)) ship.setFuelAmt(ship.getFuelAmt() + n);
+		else if (Parts.MISSILES.equals(kind)) ship.setMissilesAmt(ship.getMissilesAmt() + n);
+		else if (Parts.DRONE_PARTS.equals(kind)) ship.setDronePartsAmt(ship.getDronePartsAmt() + n);
+		else return false;
+		return true;
+	}
+	/** Adds a weapon, drone or augment by id, idle; false (nothing added) if the game data doesn't know it. */
+	public static boolean addItem(ShipState ship, String id) {
+		if (homeplanet.model.Items.isWeapon(id)) ship.getWeaponList().add(newIdleWeapon(id));
+		else if (homeplanet.model.Items.isDrone(id)) ship.getDroneList().add(newIdleDrone(id));
+		else if (homeplanet.model.Items.isAugment(id)) ship.getAugmentIdList().add(id);
+		else return false;
+		return true;
+	}
+	/** Puts a crew member aboard the Cargo Hold (a square shared if none is free); the message is the exception when there is no room at all. */
+	public static void takeIn(ShipState hold, CrewState crew, String noRoom) throws IOException {
+		if (!placeCrew(hold, crew, true)) throw new IOException(noRoom);
+		hold.getCrewList().add(crew);
 	}
 }

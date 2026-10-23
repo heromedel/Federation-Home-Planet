@@ -30,7 +30,6 @@ import homeplanet.core.HomePlanet;
 import homeplanet.core.ProfileSwap;
 import homeplanet.parser.Career;
 import homeplanet.parser.CareerRules;
-import homeplanet.parser.Clearance;
 import homeplanet.parser.FinalVictory;
 import homeplanet.parser.XmlText;
 import homeplanet.vault.Vault;
@@ -309,7 +308,7 @@ final class ImmersiveBriefing extends JDialog {
 		CareerRules r = begun ? Career.rules(immersiveRoot) : rules();
 		boolean custom = CareerRules.CUSTOM.equals(r.name);
 		String saved = begun ? Career.repRate(immersiveRoot) : null;
-		String rule = homeplanet.vault.Reputation.rateRule(r, saved);
+		String rule = homeplanet.vault.Reputation.rateRule(r);
 		boolean choosing = custom && !begun;
 		repRate.setEnabled(choosing);
 		if (!choosing) repRate.setSelectedIndex(homeplanet.vault.Reputation.rateLevel(r, saved));

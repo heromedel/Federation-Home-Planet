@@ -72,19 +72,12 @@ public class FleetT { public static void main(String[] a) throws Exception {
   // a Custom career begun before 6.47: twelve rules, the museum's reward taken from its final victory's level (Easy full, else half)
   for (int lvl = 0; lvl < 3; lvl++) {
    Properties cp = new Properties(); cp.setProperty("difficulty", CareerRules.CUSTOM); cp.setProperty("rules", lvl + ",1,1,1,1,1,1,1,1,1,1,1");
-   cp.setProperty("salaryAll", "false"); cp.setProperty("ownProfile", "false"); cp.setProperty("paidMonths", "0"); cp.setProperty("beaconsAtStart", "0");
+   cp.setProperty("salaryAll", "false"); cp.setProperty("ownProfile", "false"); cp.setProperty("paidMonths", "0"); cp.setProperty("sectorsAtStart", "0");
    Store.write(career, cp, "");
    Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
    Setup.chk("D: a Custom career from before 6.47 at victory level " + lvl + ": " + (lvl == 2 ? "Museum" : "Choice") + " at " + (lvl == 0 ? "full" : "half") + " value",
      FinalVictory.choice().equals(lvl == 2 ? FinalVictory.MUSEUM : FinalVictory.RESCUE) && FinalVictory.museumPercent() == (lvl == 0 ? 100 : 50) && FinalVictory.fixedPay() != null);
   }
-  // a begun career whose file has lost its difficulty: Normal, written down once
-  Properties p = new Properties(); p.setProperty("salaryAll", "false"); p.setProperty("ownProfile", "false");
-  p.setProperty("paidMonths", "0"); p.setProperty("beaconsAtStart", "0");
-  Store.write(career, p, "");
-  Thread.sleep(20); career.setLastModified(System.currentTimeMillis());
-  Setup.chk("D: a career with no difficulty in its file reads as Normal, written down once", CareerRules.NORMAL.equals(Career.rules(v.root).name)
-    && CareerRules.NORMAL.equals(Store.load(career).getProperty("difficulty")) && FinalVictory.choice().equals(FinalVictory.RESCUE) && FinalVictory.fixedPay() != null);
   HomePlanet.leaveImmersive();
   Vault.switchFleet(false);
  }

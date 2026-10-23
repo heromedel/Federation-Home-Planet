@@ -20,7 +20,7 @@ import javax.swing.Scrollable;
  * heading for each day, each entry with its kind as a tag. The time shows once for each save (each entry). Oldest
  * first, as the files are; long lines wrap.
  */
-class RecordsLog extends JComponent implements Scrollable {
+public class RecordsLog extends JComponent implements Scrollable {
 	static final Color BG = new Color(20, 27, 34), LINE = new Color(70, 86, 96), TXT = MenuTheme.WHITE, DIM = MenuTheme.GREY_GREEN,
 			GOLD = MenuTheme.GOLD, GOOD = MenuTheme.GREEN, BAD = MenuTheme.RED,
 			BLUE = new Color(110, 170, 235), PURPLE = new Color(170, 140, 235), FLAG = new Color(235, 70, 70); // the last three: marks only
@@ -72,7 +72,7 @@ class RecordsLog extends JComponent implements Scrollable {
 		setBackground(BG);
 	}
 
-	/** The voyage log (voyage.log's text), or the empty text if there's nothing in it yet. */
+	/** A ship's voyage log as text, or the empty text if there's nothing in it yet. */
 	static RecordsLog voyage(String text, String empty) {
 		RecordsLog r = new RecordsLog(empty);
 		String lastStamp = null;
@@ -107,8 +107,8 @@ class RecordsLog extends JComponent implements Scrollable {
 	/**
 	 * Where a station entry belongs in view (heromedel, 6.05: the station log is the station's business, its housekeeping
 	 * kept in events.log and out of view): its plain tag, or null for the station's own housekeeping (patches, taking
-	 * stock, the protection notes, settings, blueprints, profiles, updates, a message queued, a
-	 * shipment packed, a switch between fleets). A kind not listed shows as Station.
+	 * stock, the protection notes, converting files, settings, blueprints, profiles, updates, a message queued, a
+	 * shipment packed, a switch between fleets). A kind not listed stays out of view (7.0: an old station's kinds, say).
 	 */
 	static String tag(homeplanet.core.EventLog.Entry e) {
 		String k = e.kind, what = e.get("what", "");
@@ -121,10 +121,10 @@ class RecordsLog extends JComponent implements Scrollable {
 		if (k.equals("SELL")) return what.equals("cargo_bay") ? "Cargo Bay" : "Junkyard";
 		if (k.equals("RETURNED")) return what.equals("to_owner") ? "Junkyard" : "Long Range Comm.";
 		for (String[] t : TAGS) if (("," + t[1] + ",").contains("," + k + ",")) return t[0];
-		return "Station";
+		return null;
 	}
-	private static final String HIDDEN = ",LOADED,PATCH,JOURNAL,"
-			+ "SETTINGS,BLUEPRINT,BLUEPRINTS,CLEAN,PROFILE,UPDATE,SLIPSTREAM,UNDO_RETROFIT,CLAUDE,"
+	/** The station's housekeeping: logged, never shown. Every other kind the station writes has a tag above (EventT holds it to docs/EVENTS.md). */
+	private static final String HIDDEN = ",LOADED,PATCH,JOURNAL,SETTINGS,BLUEPRINT,BLUEPRINTS,CLEAN,PROFILE,UPDATE,SLIPSTREAM,UNDO_RETROFIT,CLAUDE,"
 			+ "SHIPMENT_PACKED,SHIPMENT_UNPACKED,DAY,SWITCH_FLEET,"; // a switch between fleets reads as the station's own workings, not this career's business (heromedel)
 	private static final String[][] TAGS = {
 		{"Ships", "BOARD,DOCK,COMMISSION,NEW_JOURNEY,RENAME,REMODEL,RESTORE,RECOVER,OVERWRITTEN,FINAL_BATTLE,VICTORY,MUSEUM,SENT,HANDED_OVER"},
@@ -140,6 +140,12 @@ class RecordsLog extends JComponent implements Scrollable {
 	private static final String DETAILED = ",TRADE,BUY,SELL,JUNK,RETIRE,SYSTEMS,SCRAP,LONG_RANGE_TRADE,TRADE_CALLED_OFF,";
 	/** An entry shown in the station log's view. */
 	static boolean shown(homeplanet.core.EventLog.Entry e) { return tag(e) != null; }
+	/** Whether the view knows this kind: housekeeping, or one with a tag (7.0: a kind it doesn't know is never shown; EventT holds every kind the station writes to this). */
+	public static boolean known(String kind) {
+		if (HIDDEN.contains("," + kind + ",") || kind.matches("REPUTATION|VAULT|DESIGN|LONG_RANGE_OUTBOX|BUY|SELL|RETURNED")) return true;
+		for (String[] t : TAGS) if (("," + t[1] + ",").contains("," + kind + ",")) return true;
+		return false;
+	}
 
 	/**
 	 * The station's log from its events (5.74; 6.05 as the station's business): each entry with its plain tag (the reputation
@@ -153,7 +159,7 @@ class RecordsLog extends JComponent implements Scrollable {
 		for (homeplanet.core.EventLog.Entry e : es) {
 			String tag = tag(e);
 			if (tag == null) continue; // the station's own housekeeping: in events.log, out of view (heromedel, 5.53 and 6.05)
-			String heading = byStardate ? (e.day == 0 ? "Prior to Stardate 1.1.1.1" : "Stardate " + homeplanet.vault.MasterLog.stardate(Math.max(1, e.day))) : e.time.length() >= 10 ? e.time.substring(0, 10) : e.time; // 0: from before the career's stardates (5.81)
+			String heading = byStardate ? homeplanet.vault.Calendar.heading(e.day) : e.time.length() >= 10 ? e.time.substring(0, 10) : e.time; // 0: from before the career's stardates (5.81)
 			if (!heading.equals(day)) {
 				day = heading;
 				Item h = new Item();

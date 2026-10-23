@@ -1,12 +1,6 @@
 package homeplanet.core;
 
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +23,8 @@ import org.slf4j.LoggerFactory;
  * The station's log: what the station saw and did, each entry its kind, a headline and details, written to the event
  * log (logs/events.log) with its fields.
  */
-public class HistoryLog {
-	private static final Logger log = LoggerFactory.getLogger(HistoryLog.class);
+public class StationLog {
+	private static final Logger log = LoggerFactory.getLogger(StationLog.class);
 
 	private static final String NL = System.getProperty("line.separator");
 
@@ -42,7 +36,7 @@ public class HistoryLog {
 	 * event given, one is made from the kind, the headline and the details; it only lacks the fields.
 	 */
 	public static synchronized void entry(String kind, String headline, List<String> details, Event event) {
-		// the event log alone (5.93): history.log and the master log's copy are no longer written; the old files stay as they are
+		// the event log alone (5.93)
 		if (Vault.isOpen()) {
 			Event e = event != null ? event : Event.of(kind);
 			if (e.get("headline") == null) e.put("headline", headline); // the old wording kept beside the fields, always

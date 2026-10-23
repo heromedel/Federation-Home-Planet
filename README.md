@@ -144,14 +144,13 @@ Something wrong, or an idea? **Send Feedback** (Settings, About) opens the feedb
 
 * `src/`, `pom.xml` – the application. `net.blerf.ftl` is Vhati's FTL Profile Editor parser; `homeplanet.*` is the
   station (`core` start-up, settings and the words in `lore/`, `vault` the fleet on disk, `parser` save editing,
-  blueprints, letters and expeditions, `comm` Long Range Comm., `convert` bringing a fleet from before 6.0 across,
+  blueprints, letters and expeditions, `comm` Long Range Comm.,
   `ui`, `model`). The station's own words are in `src/main/resources/homeplanet/resource/lore/`.
 * `Current Build/` – where the built jar lands, with its start script (settings, logs and `lore/` stay beside it, untracked).
 * `User-Manual.txt` and `User-Manual.html` – the player's guide to the station, from The Federation Home Planet: what each screen does, step by step. Both are built from one source in `docs/manual/` (`python3 docs/manual/build.py`), so they say the same thing.
 * `docs/` – the roadmap (decisions and build order), the 6.0 overhaul, the events the station logs, the letters, the
   style guide, the FTL lore the words are checked against, bugs and feedback.
-* `Tools and Harness/harness2/` – headless regression tests. `Tools and Harness/hw2fhp-converter/` – the one-off
-  converter from FTL Homeworld's files (not shipped with the app).
+* `Tools and Harness/harness2/` – headless regression tests.
 
 ## Where your ships live
 
@@ -168,8 +167,7 @@ Everything the station keeps is in `FederationHomePlanet` inside FTL's saves fol
 
 Each Immersive career keeps its own fleet in `FederationHomePlanet-Immersive-Easy`, `-Normal`, `-Hard`, or
 `FederationHomePlanet-Immersive` for Custom (with its own FTL profile while it isn't in use); ended careers are zipped
-into `FederationHomePlanet/old-immersive-careers`. A fleet from before 6.0 is brought into this layout the first time
-it opens, and a zip of it as it was is kept beside its folder (`…-before-conversion-…`).
+into `FederationHomePlanet/old-immersive-careers`.
 The ship you are flying is FTL's own `continue.sav`, as always. Custom blueprints reach the game through
 `Federation Home Planet Mod.ftl`, which the station rebuilds and sends to FTL via Slipstream.
 

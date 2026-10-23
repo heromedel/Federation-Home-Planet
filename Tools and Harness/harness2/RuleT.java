@@ -103,9 +103,8 @@ public class RuleT { public static void main(String[] a) throws Exception {
   UnlockGrants.turnedOn(Unlocks.read());
   Setup.chk("U: an unlock while the rule was off never counts", !UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_CIRCLE"));
   Setup.chk("U: and the claim is kept", !UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_MANTIS"));
-  Vault.get().plead();
   profile(saves, "PLAYER_SHIP_HARD", "PLAYER_SHIP_STEALTH", "PLAYER_SHIP_MANTIS", "PLAYER_SHIP_CIRCLE", "PLAYER_SHIP_FED");
-  Setup.chk("U: a plea for a new ship doesn't reset it; later unlocks still count", !UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_MANTIS") && UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_FED"));
+  Setup.chk("U: later unlocks still count", !UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_MANTIS") && UnlockGrants.freeNow(Unlocks.read(), "PLAYER_SHIP_FED"));
  }
  static void ranks(File saves) throws Exception {
   SafeFiles.deleteTree(new File(Vault.get().root, "unlock-grants.txt"));

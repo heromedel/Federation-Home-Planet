@@ -117,7 +117,6 @@ public class Music {
 		return trackData;
 	}
 
-	/** True if FTLGame.exe is running (Windows task list). Elsewhere, assumes not. */
 	/** FTL's own music takes over while the game runs (GameGuard knows how to tell on Windows, Linux and macOS). */
 	public static boolean isFtlRunning() {
 		return GameGuard.isFtlRunning();

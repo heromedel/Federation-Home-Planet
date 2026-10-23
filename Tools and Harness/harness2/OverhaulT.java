@@ -40,9 +40,10 @@ public class OverhaulT {
    } catch (Exception e) { System.out.println("SKIP " + sf.getName() + ": " + e); }
   }
   String only = System.getProperty("only");
+  Ship last = null;
   for (Object[] c : cases) {
    if (only != null && !((String) c[0]).contains(only)) continue;
-   try { one(v, f, (String) c[0], (SavedGameState) c[1], work); }
+   try { Ship s = one(v, f, (String) c[0], (SavedGameState) c[1], work); if (s != null) last = s; }
    catch (Throwable t) { t.printStackTrace(System.out); Setup.chk(c[0] + ": ran to the end (" + t + ")", false); }
   }
   refitButtons(v, f);
@@ -188,6 +189,7 @@ public class OverhaulT {
   return b.toString();
  }
 
+ static int versions(Vault v, Ship s) { File[] fs = new File(v.folderOf(s), "versions").listFiles(); return fs == null ? 0 : fs.length; }
 
  /** The Refit tab: Retrofit and Remodel take their own clicks; her name opens her report only where it's written. */
  static void refitButtons(final Vault v, final MainFrame f) throws Exception {

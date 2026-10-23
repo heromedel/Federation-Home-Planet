@@ -6,7 +6,6 @@ public final class Words {
 
 	/** With its first letter capitalised ("the Kestrel" to "The Kestrel"). */
 	public static String cap(String s) { return s == null || s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
-	/** With "a" or "an" before it, by its first letter ("an Engi", "a Rockman"). */
 	/** "a rebel ship", "an automated ship" as one now known: "the rebel ship" (6.09); anything else with "the " before it. */
 	public static String the(String s) {
 		if (s == null || s.isEmpty()) return "";
@@ -46,6 +45,10 @@ public final class Words {
 	public static String her() { return ship("her", "his", "its"); }
 	/** A ship as the object: her, him or it ("FTL flies her now"). */
 	public static String herObj() { return ship("her", "him", "it"); }
+	/** {@link #she} to begin a sentence: She, He or It. */
+	public static String She() { return cap(she()); }
+	/** {@link #her} to begin a sentence: Her, His or Its. */
+	public static String Her() { return cap(her()); }
 	/** A ship's, standing alone: hers, his or its ("the choice is hers"). */
 	public static String hers() { return ship("hers", "his", "its"); }
 	/** A ship herself: herself, himself or itself. */

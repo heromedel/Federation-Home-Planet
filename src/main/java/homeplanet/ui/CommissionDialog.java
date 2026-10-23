@@ -10,7 +10,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -36,7 +35,8 @@ import net.blerf.ftl.parser.SavedGameParser.SavedGameState;
 import net.blerf.ftl.xml.ShipBlueprint;
 
 import homeplanet.core.HomePlanet;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
+import homeplanet.model.Words;
 import homeplanet.parser.Commission;
 import homeplanet.parser.CompanionMod;
 import homeplanet.parser.SaveHelper;
@@ -125,12 +125,12 @@ public class CommissionDialog extends JDialog {
 		c.gridx = 1;
 		JPanel named = new JPanel(new java.awt.BorderLayout(2, 0));
 		named.add(nameField, java.awt.BorderLayout.CENTER);
-		named.add(DiceIcon.button("A new name for " + homeplanet.model.Words.herObj(), new Runnable() { public void run() { rollShipName(); } }), java.awt.BorderLayout.EAST);
+		named.add(DiceIcon.button("A new name for " + Words.herObj(), new Runnable() { public void run() { rollShipName(); } }), java.awt.BorderLayout.EAST);
 		form.add(named, c);
 		c.gridx = 2;
 		form.add(new JLabel("  Difficulty:"), c);
 		c.gridx = 3;
-		difficulty.setToolTipText("How dangerous " + homeplanet.model.Words.her() + " first journey will be");
+		difficulty.setToolTipText("How dangerous " + Words.her() + " first journey will be");
 		difficulty.setSelectedIndex(1); // Normal, as FTL starts
 		form.add(difficulty, c);
 		c.gridx = 4;
@@ -153,8 +153,8 @@ public class CommissionDialog extends JDialog {
 
 		JPanel body = new JPanel(new BorderLayout(10, 8));
 		body.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
-		JLabel intro = new JLabel("<html>Choose a ship to commission. The Home Planet Station builds " + homeplanet.model.Words.herObj() + " to FTL specifications: first sector, "
-				+ "starting crew, weapons and supplies. " + homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " will wait at the Space Dock.</html>");
+		JLabel intro = new JLabel("<html>Choose a ship to commission. The Home Planet Station builds " + Words.herObj() + " to FTL specifications: first sector, "
+				+ "starting crew, weapons and supplies. " + Words.She() + " will wait at the Space Dock.</html>");
 		if (listing.listNote != null) {
 			JPanel top = new JPanel(new BorderLayout(0, 4));
 			top.add(intro, BorderLayout.NORTH);
@@ -358,7 +358,7 @@ public class CommissionDialog extends JDialog {
 			aeSwitch.lock(homeplanet.parser.Dlc.needsAE(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id, s));
 			final Entry shown = e;
 			final List<net.blerf.ftl.parser.SavedGameParser.CrewState> aboard = SaveHelper.getOwnCrew(s.getPlayerShip());
-			JPanel p = dock.shipSummaryPanel(s, new java.util.function.Consumer<net.blerf.ftl.parser.SavedGameParser.CrewState>() {
+			JPanel p = ShipReport.panel(s, new java.util.function.Consumer<net.blerf.ftl.parser.SavedGameParser.CrewState>() {
 				public void accept(net.blerf.ftl.parser.SavedGameParser.CrewState c) { renameCrew(shown, aboard.indexOf(c), c); }
 			}, new Runnable() { public void run() { crewFor = null; showPreview(shown); } });
 			JLabel stats = new JLabel("<html>" + (RELIEF.equals(e.id) ? homeplanet.parser.FreeCommand.RELIEF_CLASS : classOf(bp)) + ": hull " + bp.getHealth().amount + ", reactor "
@@ -369,9 +369,9 @@ public class CommissionDialog extends JDialog {
 			preview.add(p, BorderLayout.CENTER);
 			if (HomePlanet.commissionCosts()) {
 				if (emptyFree(e.id) && homeplanet.vault.Vault.get().freeCommandReassigned())
-					priceLabel.setText("<html><b>On your plea.</b> When you commission " + homeplanet.model.Words.herObj() + ", give up the Cargo Hold for " + homeplanet.model.Words.herObj() + (homeplanet.core.Economy.repForJourneysAndPleas() ? ", or keep it and answer for " + homeplanet.model.Words.herObj() + " with your reputation" : "") + ".</html>");
+					priceLabel.setText("<html><b>On your plea.</b> When you commission " + Words.herObj() + ", give up the Cargo Hold for " + Words.herObj() + (homeplanet.core.Economy.repForJourneysAndPleas() ? ", or keep it and answer for " + Words.herObj() + " with your reputation" : "") + ".</html>");
 				else if (emptyFree(e.id)) priceLabel.setText("<html><b>Free.</b> The Federation Home Planet grants you your first command at no cost.</html>");
-				else if (free(e.id)) priceLabel.setText("<html><b>Free, once.</b> Newly unlocked in FTL: The Federation Home Planet commissions the first of " + homeplanet.model.Words.her() + " line at no cost.</html>");
+				else if (free(e.id)) priceLabel.setText("<html><b>Free, once.</b> Newly unlocked in FTL: The Federation Home Planet commissions the first of " + Words.her() + " line at no cost.</html>");
 				else showPrice(quote(e.id, s));
 			}
 		} catch (Exception ex) {
@@ -447,12 +447,12 @@ public class CommissionDialog extends JDialog {
 		String why = rankReason(e.id);
 		if (why != null) { JOptionPane.showMessageDialog(this, why, "Commission Ship", JOptionPane.INFORMATION_MESSAGE); return; }
 		String name = nameField.getText().trim();
-		if (name.isEmpty()) { JOptionPane.showMessageDialog(this, homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " needs a name.", "Commission Ship", JOptionPane.INFORMATION_MESSAGE); return; }
+		if (name.isEmpty()) { JOptionPane.showMessageDialog(this, Words.She() + " needs a name.", "Commission Ship", JOptionPane.INFORMATION_MESSAGE); return; }
 		// a blueprint FTL doesn't have yet (or not as it is now): she can still be commissioned, and waits for the mod
 		if (!RELIEF.equals(e.id) && (CompanionMod.isRemodelId(e.id) || e.id.startsWith("PLAYER_SHIP_DESIGN_")) && !CompanionMod.inGameData(e.id)
 				&& !HomePlanet.confirmNo(this, "FTL doesn't have " + e.label.replace(" - not in FTL yet", "") + "'s blueprint yet, as it is now.\n\n"
-				+ "You can commission " + homeplanet.model.Words.herObj() + " all the same: " + homeplanet.model.Words.she() + " waits at the Space Dock, and can't fly until The Home Planet Station sends the "
-				+ homeplanet.parser.Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Mods > Patch mods).\n\nCommission " + homeplanet.model.Words.herObj() + " anyway?", "Commission Ship")) return;
+				+ "You can commission " + Words.herObj() + " all the same: " + Words.she() + " waits at the Space Dock, and can't fly until The Home Planet Station sends the "
+				+ homeplanet.parser.Retrofit.MOD_NAME + " to FTL via Slipstream (Settings > Mods > Patch mods).\n\nCommission " + Words.herObj() + " anyway?", "Commission Ship")) return;
 		SavedGameState s;
 		try {
 			s = make(e.id, name, chosenDifficulty(), rng);
@@ -460,7 +460,7 @@ public class CommissionDialog extends JDialog {
 			// Original: Advanced Edition content off for her runs, unless she needs it (then the switch was locked on)
 			if (!aeSwitch.ae() && homeplanet.parser.Dlc.needsAE(RELIEF.equals(e.id) ? Commission.RELIEF_BASE : e.id, s) == null) s.setDLCEnabled(false);
 		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("The shipyard could not build " + homeplanet.model.Words.herObj() + ":\n" + ex);
+			HomePlanet.showErrorDialog("The shipyard could not build " + Words.herObj() + ":\n" + ex);
 			return;
 		}
 		homeplanet.vault.Vault vault = homeplanet.vault.Vault.get();
@@ -479,14 +479,14 @@ public class CommissionDialog extends JDialog {
 			StringBuilder msg = new StringBuilder(name + " is worth " + value + " scrap.\nYour Cargo Hold would sell for " + hold + " scrap.\n\n");
 			String share = homeplanet.core.Economy.share(homeplanet.core.Economy.pleaPercent());
 			if (rep && hold <= 0) {
-				msg.append("The hold has nothing to sell, so either way " + share + " of " + homeplanet.model.Words.her() + " value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").\n"
+				msg.append("The hold has nothing to sell, so either way " + share + " of " + Words.her() + " value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").\n"
 						+ "Giving it up still takes everything in it but the crew, who stay.");
 			} else if (rep) {
-				msg.append("Give it up (everything in it but the crew, who stay): ").append(costGiving == 0 ? homeplanet.model.Words.she() + " costs your reputation nothing.\n"
+				msg.append("Give it up (everything in it but the crew, who stay): ").append(costGiving == 0 ? Words.she() + " costs your reputation nothing.\n"
 						: share + " of the " + (value - hold) + " it doesn't cover comes off your reputation (" + homeplanet.vault.Reputation.signed(-costGiving) + ").\n\n");
-				msg.append("Keep it: " + share + " of " + homeplanet.model.Words.her() + " whole value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").");
+				msg.append("Keep it: " + share + " of " + Words.her() + " whole value comes off your reputation (" + homeplanet.vault.Reputation.signed(-costKeeping) + ").");
 			} else {
-				msg.append("The Federation Home Planet takes the Cargo Hold for " + homeplanet.model.Words.herObj() + " (everything in it but the crew, who stay), whatever it's worth.");
+				msg.append("The Federation Home Planet takes the Cargo Hold for " + Words.herObj() + " (everything in it but the crew, who stay), whatever it's worth.");
 			}
 			Object[] options = rep ? new Object[] {"Give up the Cargo Hold", "Keep the Cargo Hold", "Cancel"} : new Object[] {"Give up the Cargo Hold", "Cancel"};
 			int pick = JOptionPane.showOptionDialog(this, msg.toString(), "Plead for New Ship", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[options.length - 1]);
@@ -513,7 +513,7 @@ public class CommissionDialog extends JDialog {
 			log.debug("Commission quote for {}: {} scrap ({})", e.id, price, q.lines);
 			int have = vault.storageScrap();
 			if (have < price) {
-				JOptionPane.showMessageDialog(this, "The shipyard asks " + price + " scrap for " + homeplanet.model.Words.herObj() + ", and the Cargo Hold has " + have + ".\n"
+				JOptionPane.showMessageDialog(this, "The shipyard asks " + price + " scrap for " + Words.herObj() + ", and the Cargo Hold has " + have + ".\n"
 						+ "Store more scrap in the Cargo Bay, or choose a smaller ship.", "Commission Ship", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
@@ -531,7 +531,7 @@ public class CommissionDialog extends JDialog {
 			ship = tx.adopt(s, homeplanet.vault.Ship.State.DOCKED, "commissioned");
 			tx.commit();
 		} catch (Exception ex) {
-			HomePlanet.showErrorDialog("The new ship could not be docked; " + homeplanet.model.Words.her() + " save could not be written. Nothing was changed"
+			HomePlanet.showErrorDialog("The new ship could not be docked; " + Words.her() + " save could not be written. Nothing was changed"
 					+ (price > 0 || plea ? " (the Cargo Hold is as it was)" : "") + ":\n" + ex);
 			return;
 		}
@@ -566,7 +566,7 @@ public class CommissionDialog extends JDialog {
 		lines.add("Crew: " + (crew.length() == 0 ? "none" : crew.toString()));
 		homeplanet.core.Event ev = homeplanet.vault.Vault.shipEvent("COMMISSION", ship).details(lines);
 		for (String[] c : aboard) ev.put("crew", c[0]).put("race", c[1]);
-		HistoryLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines, ev);
+		StationLog.entry("COMMISSION", name + "  (" + ship.id + ")", lines, ev);
 		made = ship;
 		dispose();
 	}

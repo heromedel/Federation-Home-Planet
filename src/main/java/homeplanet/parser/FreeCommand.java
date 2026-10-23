@@ -16,6 +16,7 @@ import homeplanet.vault.Vault;
  * forfeit doesn't cover of her value (the Relief Ship by the same formula as any ship).
  */
 public final class FreeCommand {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FreeCommand.class);
 	private FreeCommand() { }
 
 	public static final String KESTREL = "kestrel", ANY = "any", RELIEF = "relief";
@@ -79,4 +80,5 @@ public final class FreeCommand {
 		}
 		return total;
 	}
+
 }

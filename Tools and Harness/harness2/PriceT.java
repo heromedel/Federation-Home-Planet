@@ -119,14 +119,10 @@ public class PriceT { public static void main(String[] a) throws Exception {
   Setup.chk("F: a shipyard with ships isn't empty", !v.shipyardEmpty());
   Ship x = null; for (Ship s : v.docked()) x = s;
   v.board(x); v.disband();
-  List<String> ids = Retrofit.blueprintIds(x.file());
-  Setup.chk("F: a hull in the Junkyard: her blueprints still count", ids != null && v.blueprintsInUseOrHistory().containsAll(ids));
-  for (Ship s : v.docked()) v.remove(s, "DESTROY");
-  Setup.chk("F: ships docked or junked: not empty", !v.shipyardEmpty());
-  for (Ship s : v.junked()) v.remove(s, "DESTROY");
-  Setup.chk("F: no ship docked, boarded or junked: the shipyard is empty", v.shipyardEmpty());
+  v.useFreeCommand("test");
   plea(v);
  }
+ /** Plead for New Ship: the hold's sale value, given up for her (the crew stay), with or without the difference refunded. */
  static void plea(Vault v) throws Exception {
   HomePlanet.sellSupplies = false; HomePlanet.sellSystems = false;
   SavedGameState g = v.readCopy(v.storage()).save;

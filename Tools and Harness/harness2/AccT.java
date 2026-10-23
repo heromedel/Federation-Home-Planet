@@ -24,7 +24,7 @@ public class AccT {
   Ship b = v.boarded();
   SavedGameState g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());
   int start = g.getTotalBeaconsExplored(), herDefeats = g.getTotalShipsDefeated(), defeatedBefore = Reputation.defeatedInService(v) - herDefeats, linesBefore = jumped(v, b);
-  Setup.side(v, v.historyOf(b), "traded.txt", "trade=x\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=" + g.getTotalShipsDefeated()
+  Setup.side(v, v.folderOf(b), "traded.txt", "trade=x\ndate=2026-01-01 00:00\nfrom=Commander Bree\ndefeated=" + g.getTotalShipsDefeated()
     + "\nbeacons=" + (start + 4) + "\nscrap=0\nsectors=1\n");
   for (int i = 1; i <= 2; i++) {
    g = HomePlanet.savedGameParser.readSavedGame(v.continueFile());

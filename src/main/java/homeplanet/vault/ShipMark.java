@@ -48,8 +48,12 @@ public final class ShipMark {
 	}
 	static Marked mark(File save, String career, String id, int boards) throws IOException { return mark(save, career, id, boards, today()); }
 	/** As above, with the day she was last boarded (0 or less: none, for a ship marked without a Board, 6.10). */
-	static Marked mark(File save, String career, String id, int boards, int day) throws IOException {
-		SavedGameState gs = parse(save);
+	static Marked mark(File save, String career, String id, int boards, int day) throws IOException { return mark(parse(save), career, id, boards, day); }
+	/** As above, from the save's bytes (6.87: for a protection note, which writes the file itself). */
+	static Marked mark(byte[] save, String career, String id, int boards, int day) throws IOException {
+		return mark(HomePlanet.savedGameParser.readSavedGame(new java.io.ByteArrayInputStream(save)), career, id, boards, day);
+	}
+	private static Marked mark(SavedGameState gs, String career, String id, int boards, int day) throws IOException {
 		strip(gs);
 		gs.setStateVar(COUNT + career + "." + id, boards);
 		if (day > 0) gs.setStateVar(DAY + career + "." + id, day);

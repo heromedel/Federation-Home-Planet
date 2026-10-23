@@ -25,8 +25,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.SystemBlueprint;
 
-import homeplanet.core.Event;
-import homeplanet.core.HistoryLog;
+import homeplanet.core.StationLog;
 import homeplanet.core.SafeFiles;
 import homeplanet.core.Store;
 import homeplanet.vault.Ship;
@@ -48,8 +47,6 @@ public final class Derelicts {
 	public static final int LISTINGS = 3;
 	/** Beacons until new ones come in: 5 times 3 to 9, rolled with each set (30 on average). */
 	static int interval(Random rng) { return 5 * (3 + rng.nextInt(7)); }
-	/** A set whose interval isn't recorded waits the average. */
-	private static final int AVERAGE_INTERVAL = 30;
 	/** One listing in this many is a model the FTL profile hasn't unlocked; one in this many is oddly built. */
 	public static final int LOCKED_ONE_IN = 30, ODD_ONE_IN = 15;
 	/** The price: this share of her value as she is (her hull damage taken off). */
@@ -82,14 +79,14 @@ public final class Derelicts {
 	public static int beaconsToNext(Vault v) {
 		Properties p = read(v);
 		int at = Store.num(p, "rolledAt", -1);
-		return at < 0 ? 0 : Math.max(0, at + Store.num(p, "interval", AVERAGE_INTERVAL) - v.beaconsSeen());
+		return at < 0 ? 0 : Math.max(0, at + Store.num(p, "interval", 0) - v.beaconsSeen());
 	}
 
 	/** What's for sale now: new listings first if it's time (or there have never been any). */
 	public static synchronized List<Listing> current(Vault v) {
 		Properties p = read(v);
 		int at = Store.num(p, "rolledAt", -1);
-		if (at < 0 || v.beaconsSeen() >= at + Store.num(p, "interval", AVERAGE_INTERVAL)) {
+		if (at < 0 || v.beaconsSeen() >= at + Store.num(p, "interval", 0)) {
 			try { roll(v, new Random()); p = read(v); }
 			catch (Exception e) { log.warn("Could not bring in new derelicts: {}", e.toString()); }
 		}
@@ -98,9 +95,8 @@ public final class Derelicts {
 			if (!"true".equals(p.getProperty(i + ".open"))) continue;
 			try {
 				SavedGameState gs = homeplanet.core.HomePlanet.savedGameParser.readSavedGame(saveFile(v, i));
-				// priced when shown, from her share (so a change to the prices reaches listings already in); a share not recorded, the dearest
-				int price = price(gs, Store.num(p, i + ".percent", PRICE_MAX));
-				out.add(new Listing(i, gs, p.getProperty(i + ".oddity", ""), price, "true".equals(p.getProperty(i + ".locked"))));
+				// priced when shown, from her share (so a change to the prices reaches listings already in)
+				out.add(new Listing(i, gs, p.getProperty(i + ".oddity", ""), price(gs, Store.num(p, i + ".percent", PRICE_MAX)), "true".equals(p.getProperty(i + ".locked"))));
 			} catch (Exception e) {
 				log.warn("Could not read derelict listing {}: {}", i, e.toString());
 			}
@@ -219,7 +215,7 @@ public final class Derelicts {
 				if (rng.nextInt(SURVIVES_ONE_IN) == 0) ship.addWeapon(SaveHelper.newIdleWeapon(w.getWeaponId()));
 			int slots = bp == null || bp.getWeaponSlots() == null ? 4 : bp.getWeaponSlots();
 			if (ship.getWeaponList().size() < slots && rng.nextInt(SURVIVES_ONE_IN) == 0) {
-				String extra = any(storeWeapons(), rng);
+				String extra = any(homeplanet.model.Items.soldWeapons(), rng);
 				if (extra != null) ship.addWeapon(SaveHelper.newIdleWeapon(extra));
 			}
 		}
@@ -231,7 +227,7 @@ public final class Derelicts {
 				if (rng.nextInt(SURVIVES_ONE_IN) == 0) ship.addDrone(SaveHelper.newIdleDrone(d.getDroneId()));
 			int slots = bp == null || bp.getDroneSlots() == null ? 2 : bp.getDroneSlots();
 			if (ship.getDroneList().size() < slots && rng.nextInt(SURVIVES_ONE_IN) == 0) {
-				String extra = any(storeDrones(), rng);
+				String extra = any(homeplanet.model.Items.soldDrones(), rng);
 				if (extra != null) ship.addDrone(SaveHelper.newIdleDrone(extra));
 			}
 		}
@@ -275,18 +271,6 @@ public final class Derelicts {
 			}
 		}
 		return gs;
-	}
-	/** Weapons and drones FTL's stores sell (a price and a rarity: no artillery, no Flagship guns), for the one someone left aboard. */
-	private static List<String> storeWeapons() {
-		List<String> out = new ArrayList<String>();
-		for (net.blerf.ftl.xml.WeaponBlueprint w : DataManager.get().getWeapons().values())
-			if (w.getCost() > 0 && w.getRarity() > 0 && !w.getId().startsWith("ARTILLERY")) out.add(w.getId());
-		return out;
-	}
-	private static List<String> storeDrones() {
-		List<String> out = new ArrayList<String>();
-		for (net.blerf.ftl.xml.DroneBlueprint d : DataManager.get().getDrones().values()) if (d.getCost() > 0 && d.getRarity() > 0) out.add(d.getId());
-		return out;
 	}
 	private static String any(List<String> l, Random rng) { return l.isEmpty() ? null : l.get(rng.nextInt(l.size())); }
 	private static void clear(SystemState st) {
@@ -398,43 +382,41 @@ public final class Derelicts {
 	 */
 	public static synchronized Ship buy(Vault v, Listing l) throws IOException {
 		Properties p = read(v);
-		if (!"true".equals(p.getProperty(l.index + ".open"))) throw new IOException(homeplanet.model.Words.cap(homeplanet.model.Words.she()) + " has already been sold");
+		if (!"true".equals(p.getProperty(l.index + ".open"))) throw new IOException(homeplanet.model.Words.She() + " has already been sold");
 		if (v.storageScrap() < l.price) throw new IOException("The Cargo Hold holds " + v.storageScrap() + " scrap; " + homeplanet.model.Words.she() + " costs " + l.price);
-		File remodels = v.remodelsFile();
-		byte[] remodelsBefore = remodels.isFile() ? SafeFiles.read(remodels) : null;
 		SavedGameState gs = l.save;
+		List<CompanionMod.Remodel> all = null; // the blueprints with hers added, when she has one
 		if (!l.oddity.isEmpty()) {
 			if (!CompanionMod.intact()) throw new IOException("The station's remodels file can't be read in full, so " + homeplanet.model.Words.her() + " blueprint can't be written");
-			List<CompanionMod.Remodel> all = CompanionMod.load();
+			all = CompanionMod.load();
 			CompanionMod.Remodel r = remodel(gs, l.oddity, all);
 			all.add(r);
-			CompanionMod.save(all);
-			CompanionMod.register(all);
-			homeplanet.core.Slipstream.writeMod(); // her blueprint goes into the mod's file, to be sent to FTL
+			CompanionMod.register(all); // she can be drawn right away; the file follows in the note below
 			Retrofit.switchTo(gs, r.id);
 			Retrofit.syncStations(gs.getPlayerShip());
 		}
 		try {
-			// paid, in the Junkyard, off the list, as one protection note (6.11, CONCERNS 8: paid, then refunded by hand if she failed)
+			// paid, in the Junkyard, off the list, her blueprint on file, as one protection note (6.11, CONCERNS 8: paid, then
+			// refunded by hand if she failed; 6.87: the blueprint was written first and put back by hand)
 			p.setProperty(l.index + ".open", "false");
 			Vault.Transaction tx = v.begin().pay(l.price);
 			Ship s = tx.adopt(gs, Ship.State.JUNKED, "derelict");
+			if (all != null) tx.put(v.remodelsFile(), CompanionMod.bytes(all));
 			tx.put(index(v), Store.bytes(index(v), p, "The Junkyard's derelicts for sale")).delete(saveFile(v, l.index)).commit();
+			if (all != null) {
+				CompanionMod.saved(all);
+				homeplanet.core.Slipstream.writeMod(); // her blueprint goes into the mod's file, to be sent to FTL
+			}
 			try { v.setOut(s, gs, "Bought as a derelict from the Junkyard"); }
 			catch (IOException e) { log.warn("{} is in the Junkyard, but her voyage log couldn't note where she set out: {}", s.name, e.toString()); }
-			HistoryLog.entry("BUY", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), a derelict, for " + l.price + " scrap from the Cargo Hold"
+			StationLog.entry("BUY", gs.getPlayerShipName() + " (" + gs.getPlayerShip().getShipBlueprintId() + "), a derelict, for " + l.price + " scrap from the Cargo Hold"
 					+ (l.oddity.isEmpty() ? "" : "; " + words(l.oddity)), null,
 					Vault.shipEvent("BUY", s).put("what", "derelict").put("ship_class", gs.getPlayerShip().getShipBlueprintId()).put("price", l.price).put("oddity", l.oddity.isEmpty() ? null : l.oddity).put("from", "hold").put("to", "junkyard"));
 			ThirdFleet.derelictBought(v, s); // the Third Fleet Commander's project ship, the first time
 			return s;
 		} catch (IOException e) {
 			p.setProperty(l.index + ".open", "true"); // still for sale
-			if (!l.oddity.isEmpty()) {
-				try {
-					if (remodelsBefore == null) remodels.delete(); else SafeFiles.write(remodels, remodelsBefore);
-					CompanionMod.register(CompanionMod.load());
-				} catch (IOException again) { e.addSuppressed(again); }
-			}
+			if (all != null) CompanionMod.register(CompanionMod.load()); // her blueprint never reached the file: the blueprints as it has them
 			throw e;
 		}
 	}

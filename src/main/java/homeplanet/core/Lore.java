@@ -1,6 +1,5 @@
 package homeplanet.core;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,7 +12,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +25,12 @@ import org.w3c.dom.Node;
  * words stand; one that names a field the event hasn't got is passed over when it's written, so a raw {token} never
  * reaches the player. The station always starts: what was left out is named in the debug log, by file, line and rule.
  * Since 5.991 the letters (letters.xml), the expedition words (expeditions.xml) and the accolades and deeds (deeds.xml)
- * live here too; the first two have shapes of their own, read by their readers (parser/Transmissions, parser/Assignments)
+ * live here too; the first two have shapes of their own, read by their readers (parser/Transmissions, parser/Expeditions)
  * with this class's rules, jar, copy and problems.
  *
  * <pre>
  *   &lt;lore&gt;
- *     &lt;entry kind="DOCK"&gt;The {ship_name} came back to the Space Dock.&lt;/entry&gt;
+ *     &lt;entry kind="REMODEL"&gt;The {ship_name} was remodeled.&lt;/entry&gt;
  *     &lt;entry kind="CREW_MOVE" when="reason=cargo_bay_save"&gt;{crew_name} was transferred to the {to_name}.&lt;/entry&gt;
  *   &lt;/lore&gt;
  * </pre>
@@ -50,7 +48,7 @@ public final class Lore {
 	public static final String STATION_LOG = "logs/station-log.xml";
 	/** The Federation's letters (parser/Transmissions reads them, letter by letter). */
 	public static final String LETTERS = "letters.xml";
-	/** The expedition reports' words (parser/Assignments reads them, key by key). */
+	/** The expedition reports' words (parser/Expeditions reads them, key by key). */
 	public static final String EXPEDITIONS = "expeditions.xml";
 	/** The rank letters' accolades and the achievements told as deeds (parser/Accolades reads them, as entries). */
 	public static final String DEEDS = "deeds.xml";
@@ -168,7 +166,7 @@ public final class Lore {
 	 * keeps its old line exactly (6.0 §3.5), and a received ship's entry the words her own station gave it.
 	 */
 	public static String human(Event e) {
-		if ("true".equals(e.get("converted")) || e.get("received_from") != null) return e.human();
+		if (e.get("received_from") != null) return e.human();
 		String w = words(STATION_LOG, e);
 		return w != null ? w : e.human();
 	}
@@ -269,15 +267,7 @@ public final class Lore {
 
 	/** Parses a lore file, each entry with its line number. */
 	static List<Entry> parse(byte[] bytes, String source) throws IOException {
-		Element root;
-		try {
-			DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
-			f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-			f.setExpandEntityReferences(false);
-			root = quiet(f.newDocumentBuilder()).parse(new ByteArrayInputStream(bytes)).getDocumentElement();
-		} catch (Exception e) {
-			throw new IOException("broken XML: " + e.getMessage(), e);
-		}
+		Element root = homeplanet.parser.XmlText.parse(bytes);
 		String text = new String(bytes, StandardCharsets.UTF_8);
 		List<Entry> out = new ArrayList<Entry>();
 		int from = 0;
@@ -344,11 +334,4 @@ public final class Lore {
 			+ "Pronoun setting says (Settings, General: her, him or it).\r\n"
 			+ "Something that breaks a rule (the Rebel Flagship is never destroyed, the rebels are never capitalised, a {field}\r\n"
 			+ "that isn't there) is left out, and the debug log says which file, which entry and which rule.\r\n";
-	/** A builder that keeps quiet: its errors come back as the exception, not printed to the console. */
-	private static javax.xml.parsers.DocumentBuilder quiet(javax.xml.parsers.DocumentBuilder b) {
-		b.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
-			@Override public void fatalError(org.xml.sax.SAXParseException e) throws org.xml.sax.SAXException { throw e; }
-		});
-		return b;
-	}
 }

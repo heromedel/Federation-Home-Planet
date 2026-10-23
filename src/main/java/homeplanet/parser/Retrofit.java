@@ -48,7 +48,6 @@ public class Retrofit {
 		return ship != null && CompanionMod.inGameData(vanillaId(ship.getShipBlueprintId()) + SUFFIX);
 	}
 
-	/** The standard systems of the ship's original model that aren't installed (empty = Undo Retrofit is safe). */
 	/**
 	 * Her installed systems that her original model has no room for (artillery on anything but a Federation Cruiser: a
 	 * remodel can add it, the vanilla blueprint can't hold it). An Undo Retrofit takes these off her into the stored
@@ -293,7 +292,7 @@ public class Retrofit {
 
 	/** One of our blueprints as a player knows her: "PLAYER_SHIP_DESIGN_3_HP (the Spear of Artemis design)", or the id alone. */
 	public static String described(String id) {
-		for (ShipDesign d : DesignExport.built()) if (DesignExport.bpId(d).equals(id)) return id + " (the " + d.name + " design)";
+		for (ShipDesign d : DesignExport.built()) if (DesignExport.bpId(d).equals(id)) return id + " (" + ShipNames.the(d.name) + " design)";
 		CompanionMod.Remodel r = CompanionMod.find(CompanionMod.load(), id);
 		if (r != null && r.ship != null && !r.ship.isEmpty()) return id + " (" + r.ship + "'s remodel)";
 		return id;

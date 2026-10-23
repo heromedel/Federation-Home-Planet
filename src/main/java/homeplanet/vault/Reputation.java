@@ -2,9 +2,7 @@ package homeplanet.vault;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +22,7 @@ import homeplanet.core.Store;
 import homeplanet.parser.SaveHelper;
 
 /**
- * A career's standing with The Federation Home Planet (reputation.txt and reputation.log in the fleet's folder): earned
+ * A career's standing with The Federation Home Planet (reputation.xml in the fleet's folder, its log in the event log): earned
  * by what the fleet's ships do in FTL, lost by what they lose. Counted at each look the station takes at a save FTL
  * wrote (the voyage log's moment), against the last count kept here for each ship, so nothing counts twice; the
  * station's own changes (a trade, a New Journey, commissioning) move the count without scoring. The first time a
@@ -73,19 +71,15 @@ public final class Reputation {
 	public static final String RATE_FREE = "free";
 	/** Easy, Normal or Hard: the difficulty's. */
 	public static final String RATE_FIXED = "fixed";
-	/** A Custom career: chosen in its briefing, fixed from then on (x1 if none is recorded). */
+	/** A Custom career chose its rate when it began, fixed from then on. */
 	public static final String RATE_CHOSEN = "chosen";
-	/** How the rate stands for a career with these rules and this saved answer (null: none); null rules, Sandbox Mode. */
-	public static String rateRule(homeplanet.parser.CareerRules r, String saved) {
+	/** How the rate stands for a career with these rules; null rules, Sandbox Mode. */
+	public static String rateRule(homeplanet.parser.CareerRules r) {
 		if (r == null) return RATE_FREE;
-		if (homeplanet.parser.CareerRules.CUSTOM.equals(r.name)) return RATE_CHOSEN;
-		return RATE_FIXED; // no saved answer is read: deleting one changes nothing
+		return homeplanet.parser.CareerRules.CUSTOM.equals(r.name) ? RATE_CHOSEN : RATE_FIXED; // no saved answer is read: deleting one changes nothing
 	}
 	/** How it stands for the fleet in use. */
-	public static String rateRule() {
-		homeplanet.parser.CareerRules r = homeplanet.parser.CareerRules.current();
-		return rateRule(r, r == null ? null : homeplanet.parser.Career.repRate(Vault.get().root));
-	}
+	public static String rateRule() { return rateRule(homeplanet.parser.CareerRules.current()); }
 	/** The rate's level (0 x1, 1 x1.5, 2 x2) for a career with these rules and this saved answer; null rules, Sandbox Mode's setting. */
 	public static int rateLevel(homeplanet.parser.CareerRules r, String saved) {
 		if (r == null) return Math.max(0, Math.min(2, HomePlanet.reputationRate));
@@ -106,7 +100,7 @@ public final class Reputation {
 	/** A Custom career's rate, chosen once in its briefing, and logged. */
 	public static void chooseRate(File immersiveRoot, int level) throws IOException {
 		homeplanet.parser.Career.setRepRate(immersiveRoot, level);
-		homeplanet.core.HistoryLog.entry("CAREER", "Reputation earned at " + RATE_WORDS[level] + " (chosen for the career, fixed)", null,
+		homeplanet.core.StationLog.entry("CAREER", "Reputation earned at " + RATE_WORDS[level] + " (chosen for the career, fixed)", null,
 				homeplanet.core.Event.of("CAREER").put("what", "reputation_rate").put("rate", RATE[level]).put("level", level));
 	}
 	/** Each level as a number for the log. */
@@ -125,8 +119,7 @@ public final class Reputation {
 	/** The sector bonus in words for the log: 1 + 0.1 a sector after the first. */
 	static String sectorRate(int index) { return index == 0 ? "1" : "1." + index; }
 
-	// ---- the total: its whole part in "total", as always (every reader reads it), and a hidden remainder in ten-thousandths
-	// in "rest" (6.17) ----
+	// ---- the total: its whole part in "total", as always (every reader reads it), and a hidden remainder in ten-thousandths in "rest" (6.17) ----
 
 	/** Ten-thousandths of a point. */
 	static final long UNIT = 10000;
@@ -271,8 +264,7 @@ public final class Reputation {
 	}
 	/**
 	 * The Career Reputation Log, oldest first (empty if none yet), in its own form: each change's minute, the change, why,
-	 * and its details under it. From the event log (5.92; reputation.log before): each REPUTATION entry's points, its
-	 * why (the human line for one written before 5.92, which the lore never words), its details.
+	 * and its details under it. From the event log (5.92): each REPUTATION entry's points, its why, its details.
 	 */
 	public static String log(Vault v) {
 		StringBuilder sb = new StringBuilder();
@@ -513,8 +505,7 @@ public final class Reputation {
 				details.add("Achievements: " + String.join(", ", names) + "  = " + signed(ch.moved));
 				p.setProperty("achievements", String.join("|", earned));
 			}
-			p.setProperty("counted", new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()));
-			p.setProperty("rated", RATED); // counted at the rates from the start: a station built from main offers no re-evaluation
+			p.setProperty("counted", homeplanet.core.Stamps.now());
 			Change all = new Change(); // the review as one change: its whole total, and its exact one
 			all.moved = num(p, "total"); all.movedUnits = units(p);
 			if (write(v, p)) entry(v, "review", all, "Service record reviewed: the fleet's service so far", details);
@@ -575,9 +566,6 @@ public final class Reputation {
 	private static int lastSectorOf(Vault v, String id) {
 		return VoyageLog.lastSector(v, id);
 	}
-
-	/** The rates every entry is counted at (6.17), noted in each. */
-	static final String RATED = "6.17";
 
 	// ---- a ship's count ----
 
@@ -680,12 +668,10 @@ public final class Reputation {
 	/** How the log's spending entries begin (what reputation paid for): the whole entry is Spent. */
 	private static final String[] SPENT_STARTS = {"A new ship on your plea", "A promise of adventure", "Rested in quarters", "A new journey plotted",
 			"Stripping ", "Refit work:", "A plea"};
-	/** The Refit's entries before 6.82 began with its old name, "The ... Dock:" (no other spending entry names a dock). */
-	private static final java.util.regex.Pattern OLD_REFIT = java.util.regex.Pattern.compile("The \\w+ Dock: .*");
-	/** Whether a log entry's words are reputation spent (the whole entry is Spent), old entries' words included. */
+	/** Whether a log entry's words are reputation spent (the whole entry is Spent). */
 	private static boolean spending(String why) {
 		for (String sp : SPENT_STARTS) if (why.startsWith(sp)) return true;
-		return OLD_REFIT.matcher(why).matches();
+		return false;
 	}
 	private static final java.util.regex.Pattern PIECE = java.util.regex.Pattern.compile("([^,:;(]*)\\(([+\u2212-])(\\d+)\\)");
 	/**
@@ -757,9 +743,9 @@ public final class Reputation {
 	private static void entry(Vault v, String reason, Change ch, String why, List<String> details) { entry(v, reason, ch, why, details, null); }
 	/** As above, about a ship: her id, name, sector and difficulty on the machine line too (6.18). */
 	private static void entry(Vault v, String reason, Change ch, String why, List<String> details, homeplanet.core.Event ship, String... more) {
-		Properties p = read(v); // the event log alone (5.93): reputation.log and the master log's copy are no longer written
+		Properties p = read(v);
 		homeplanet.core.Event e = homeplanet.core.Event.of("REPUTATION").put("log", "reputation").put("reason", reason).put("points", ch.moved)
-				.put("exact", unitWords(ch.movedUnits)).put("rate", RATE[rateLevel()]).put("rates", RATED);
+				.put("exact", unitWords(ch.movedUnits)).put("rate", RATE[rateLevel()]);
 		if (ship != null) for (String k : new String[] {"ship", "ship_name", "ship_id", "ship_state", "stranger", "ship_sector", "ship_difficulty"}) if (ship.get(k) != null) e.put(k, ship.get(k));
 		if (ch.ship >= 0) e.put("ship_rate", SHIP_RATE[ch.ship]).put("sector_rate", sectorRate(ch.sector));
 		for (int i = 0; i + 1 < more.length; i += 2) e.put(more[i], more[i + 1]);

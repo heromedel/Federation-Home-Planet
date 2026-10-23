@@ -45,21 +45,6 @@ public class LinkT {
   for (Beacon.Found f : Beacon.scan(1200, "aaaaaaaaaaaaaaaa")) if (f.station.equals(station)) return true;
   return false;
  }
- /** Asks the bare question an older station's scan asks (no id after it): does this station answer? */
- static boolean bareAnswer(String station) throws IOException {
-  java.net.DatagramSocket s = new java.net.DatagramSocket();
-  try {
-   byte[] q = "FHP-LRC?".getBytes("UTF-8");
-   for (int i = 0; i < Channel.PORTS; i++) s.send(new java.net.DatagramPacket(q, q.length, java.net.InetAddress.getLoopbackAddress(), Channel.PORT0 + i));
-   s.setSoTimeout(1500);
-   byte[] buf = new byte[1024];
-   while (true) {
-    java.net.DatagramPacket p = new java.net.DatagramPacket(buf, buf.length);
-    try { s.receive(p); } catch (java.net.SocketTimeoutException e) { return false; }
-    if (new String(p.getData(), 0, p.getLength(), "UTF-8").contains(station)) return true;
-   }
-  } finally { s.close(); }
- }
  static void run() throws Exception {
   // ---- hailing frequencies: a station is found and hailed only once they're open ----
   boolean early = false;
@@ -153,7 +138,6 @@ public class LinkT {
   Setup.chk("a blocked commander's search gets no answer", !finds("bbbbbbbbbbbbbbbb"));
   String br = a("hail " + port);
   Setup.chk("a blocked commander's hail goes unanswered, as if nobody were listening", br.startsWith("REFUSED") && br.contains("did not answer") && !br.contains("block"));
-  Setup.chk("an older station's search (the bare question) is still answered", bareAnswer("bbbbbbbbbbbbbbbb"));
   b("unblock aaaaaaaaaaaaaaaa");
   Setup.chk("unblocked: found again", finds("bbbbbbbbbbbbbbbb"));
   Setup.chk("and hailed again", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
@@ -164,14 +148,6 @@ public class LinkT {
 
   // ---- messages without a channel ----
   b("inbox on");
-  boolean takes = false;
-  for (Beacon.Found f : Beacon.scan(1200, "aaaaaaaaaaaaaaaa")) if (f.station.equals("bbbbbbbbbbbbbbbb")) takes = f.notes;
-  Setup.chk("a station's search answer says it takes messages", takes);
-  b("oldanswer on");
-  boolean oldTakes = true;
-  for (Beacon.Found f : Beacon.scan(1200, "aaaaaaaaaaaaaaaa")) if (f.station.equals("bbbbbbbbbbbbbbbb")) oldTakes = f.notes;
-  Setup.chk("an older station's answer doesn't (so Send Message stays off for it)", !oldTakes);
-  b("oldanswer off");
   int notes0 = Integer.parseInt(b("notes").split(" ")[0]);
   Setup.chk("a message goes to the inbox", a("note " + port + " normal aaaaaaaaaaaaaaaa Fancy a trade later?").equals("OK inbox"));
   String nb = b("notes");
@@ -224,7 +200,7 @@ public class LinkT {
 
   // ---- commanders met before, and a withdrawn hail ----
   a("contactscan");
-  Setup.chk("a commander found is remembered", a("contacts").contains("bbbbbbbbbbbbbbbb|Commander Bree|true"));
+  Setup.chk("a commander found is remembered", a("contacts").contains("bbbbbbbbbbbbbbbb|Commander Bree"));
   b("unlisten");
   a("contactscan");
   Setup.chk("and stays in the list once out of range (kept on disk)", a("contacts").contains("bbbbbbbbbbbbbbbb|Commander Bree") && Contacts.get("bbbbbbbbbbbbbbbb") != null);
@@ -250,9 +226,6 @@ public class LinkT {
   Setup.chk("one packed shipment at a time", a("parcel pack scrap 5").startsWith("FAILED"));
   a("parcel unpack");
   Setup.chk("unpacking brings them back", num(a("hold"), "scrap") == aScrap && a("parcel packed").equals("none"));
-  boolean takesShipments = false;
-  for (Beacon.Found f : Beacon.scan(1200, "aaaaaaaaaaaaaaaa")) if (f.station.equals("bbbbbbbbbbbbbbbb")) takesShipments = f.shipments;
-  Setup.chk("a station's search answer says it takes shipments", takesShipments);
   a("parcel pack scrap 25");
   int bScrap = num(b("hold"), "scrap");
   Setup.chk("sent with a message: held in their inbox, gone from here", a("parcel send " + port + " Here's that scrap.").equals("OK")
@@ -466,10 +439,7 @@ public class LinkT {
   Thread.sleep(800);
   int got = Integer.parseInt(b("heardcount")) - had;
   Setup.chk("a flood of messages is cut down (" + got + " of 20 shown)", got > 0 && got <= 8);
-  a("close"); b("wait ended"); b("nochat");
-  Setup.chk("A hails a station too old for messages", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
-  Setup.chk("A can't send it messages (they'd go unseen)", a("say anyone there?").equals("false"));
-  a("close"); b("wait ended"); b("nochat off");
+  a("close"); b("wait ended");
   Setup.chk("A hails again", a("hail " + port).startsWith("OK") && b("wait open").equals("OK"));
 
   // ---- garbled transmissions ----

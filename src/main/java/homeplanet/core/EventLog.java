@@ -14,7 +14,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import homeplanet.vault.MasterLog;
+import homeplanet.vault.Calendar;
 import homeplanet.vault.Vault;
 
 /**
@@ -42,7 +42,7 @@ public final class EventLog {
 	public static File file(Vault v) { return new File(v.logsDir(), FILE); }
 	/** A fleet's event log by its folder: for a fleet not in use. */
 	public static File fileIn(File fleetRoot) { return new File(new File(fleetRoot, "logs"), FILE); }
-	/** The entries in time order (a converted entry sits in the file where it was written, not where it happened), the file's order deciding a tie. */
+	/** The entries in time order (a traded ship's events sit in the file where they were received, not when they happened), the file's order deciding a tie. */
 	public static List<Entry> sorted(List<Entry> es) {
 		List<Entry> out = new ArrayList<Entry>(es);
 		java.util.Collections.sort(out, new java.util.Comparator<Entry>() { public int compare(Entry a, Entry b) { return a.time.compareTo(b.time); } });
@@ -75,10 +75,10 @@ public final class EventLog {
 	/** The event's two lines as {@link #write} puts them in a log (for many written at once, in one protection note: 5.992). */
 	public static String lines(Vault v, Event e) {
 		// an entry about something that happened earlier (a journal note finished at start-up) carries its own time and day, and the columns follow them
-		int day = e.get("day") != null ? dayOf(e.get("day"), MasterLog.today(v)) : MasterLog.today(v);
+		int day = e.get("day") != null ? dayOf(e.get("day"), Calendar.today(v)) : Calendar.today(v);
 		String stamp = e.get("time") != null && e.get("time").matches("\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d") ? e.get("time") : null;
 		if (stamp == null) synchronized (STAMP) { stamp = STAMP.format(new Date()); }
-		String machine = stamp + " | " + (day < 1 ? "prior" : MasterLog.stardate(day)) + " | " + e.kind + " | " + e.fieldText()
+		String machine = stamp + " | " + (day < 1 ? "prior" : Calendar.stardate(day)) + " | " + e.kind + " | " + e.fieldText()
 				+ (e.get("day") == null ? " day=" + day : "") + " station=" + HomePlanet.version();
 		String human = Lore.human(e).replace('\r', ' ').replace('\n', ' ').trim(); // lore/'s words for it, if it has some (5.89)
 		return machine + NL + human + NL;
@@ -138,9 +138,18 @@ public final class EventLog {
 	public static List<Entry> read(Vault v) { return read(file(v)); }
 	public static List<Entry> read(File f) {
 		if (f == null || !f.isFile()) return new ArrayList<Entry>();
-		try { return parse(new String(SafeFiles.read(f), StandardCharsets.UTF_8)); }
+		String stamp = f.lastModified() + ":" + f.length();
+		synchronized (CACHE) { // read once (7.01): the readers (the Captain's Log, the Crew Log, the calendar) ask several times a screen
+			if (stamp.equals(CACHE_STAMP.get(f))) return new ArrayList<Entry>(CACHE.get(f));
+		}
+		List<Entry> out;
+		try { out = parse(new String(SafeFiles.read(f), StandardCharsets.UTF_8)); }
 		catch (IOException e) { log.warn("Could not read {}: {}", f, e.toString()); return new ArrayList<Entry>(); }
+		synchronized (CACHE) { CACHE.put(f, out); CACHE_STAMP.put(f, stamp); }
+		return new ArrayList<Entry>(out);
 	}
+	private static final java.util.Map<File, List<Entry>> CACHE = new java.util.HashMap<File, List<Entry>>();
+	private static final java.util.Map<File, String> CACHE_STAMP = new java.util.HashMap<File, String>();
 	/** The entries in this text. A machine line is one that starts with a time stamp and " | "; the line after it is its human line. */
 	public static List<Entry> parse(String text) {
 		List<Entry> out = new ArrayList<Entry>();
