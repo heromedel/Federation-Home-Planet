@@ -32,7 +32,7 @@ A tag comes from how heromedel said it, and Claude sets it from those words:
   - "I've finished the AI proposals for the task; would you like to use these for the next step?" "Yes." They stay
     **Ai-Generated-Proposal**: heromedel agreed to the next step, not to every line in them.
 
-When the words could mean either of two tags, use the weaker one: a tag never claims more than heromedel said.
+When in doubt, use a weaker tag: a tag never claims more than heromedel said.
 
 ## How a tag is written
 
