@@ -164,6 +164,7 @@ public class SettingsDialog extends JDialog {
 		cloud.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
 		body.add(cloud, next(c));
 		if (homeplanet.core.FtlDock.supported()) {
+			boolean windows = System.getProperty("os.name", "").startsWith("Windows"); // the attached way and -directx are Windows' own (7.14: docking on Linux too)
 			JPanel dockRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 			dockBox.setToolTipText("<html><font color='" + MenuTheme.HTML_ORANGE + "'>(Experimental)</font> Adds an icon beside Launch FTL on the Space Dock: FTL plays in a frame in the station's window,"
 					+ "<br>with the inbox, the reputation and the station's buttons beside it. FTL is set to windowed for it.</html>");
@@ -172,31 +173,35 @@ public class SettingsDialog extends JDialog {
 			dockRow.add(dockBox);
 			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
 			dockRow.add(dockSize);
-			dockRow.add(javax.swing.Box.createHorizontalStrut(6));
 			dockHow.setSelectedIndex(homeplanet.core.FtlDock.attachedChosen() ? 1 : 0);
-			dockHow.setToolTipText("<html>As its own window: FTL kept over the station's window by the station.<br>"
-					+ "Attached (testing): FTL's window belongs to the station's, so it stays over it and the station's popups come over both.</html>");
-			dockRow.add(dockHow);
+			if (windows) {
+				dockHow.setToolTipText("<html>As its own window: FTL kept over the station's window by the station.<br>"
+						+ "Attached (testing): FTL's window belongs to the station's, so it stays over it and the station's popups come over both.</html>");
+				dockRow.add(javax.swing.Box.createHorizontalStrut(6));
+				dockRow.add(dockHow);
+			}
 			dockRow.add(javax.swing.Box.createHorizontalStrut(8));
 			JLabel experimental = new JLabel("(Experimental)"); // heromedel, 5.38
 			experimental.setForeground(MenuTheme.ORANGE);
 			experimental.setToolTipText(dockBox.getToolTipText());
 			dockRow.add(experimental);
 			body.add(dockRow, next(c));
-			directxBox.setToolTipText("<html>FTL draws with Direct3D instead of OpenGL (its own -directx switch).<br>"
-					+ "On some PCs FTL in a window, docked included, loads much faster with it.</html>");
-			JPanel directxRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-			directxRow.add(directxBox);
-			JLabel directxNote = new JLabel("   (may speed up load times in windowed or docked mode)"); // heromedel, 5.71
-			directxNote.setForeground(MenuTheme.GREY_GREEN);
-			directxNote.setToolTipText(directxBox.getToolTipText());
-			directxRow.add(directxNote);
-			body.add(directxRow, next(c));
-			JLabel steamDirectx = new JLabel("<html><div style='width:560px; color:" + MenuTheme.HTML_GREY_GREEN + "'>If also launching through Steam: Steam may ask each time before passing -directx on. "
-					+ "To skip the question: in your Steam library, right-click FTL, choose Properties, then General, and type -directx under Launch Options. "
-					+ "Leave this box off then: Steam adds it every time by itself.</div></html>"); // heromedel's words, 5.72
-			steamDirectx.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
-			body.add(steamDirectx, next(c));
+			if (windows) {
+				directxBox.setToolTipText("<html>FTL draws with Direct3D instead of OpenGL (its own -directx switch).<br>"
+						+ "On some PCs FTL in a window, docked included, loads much faster with it.</html>");
+				JPanel directxRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+				directxRow.add(directxBox);
+				JLabel directxNote = new JLabel("   (may speed up load times in windowed or docked mode)"); // heromedel, 5.71
+				directxNote.setForeground(MenuTheme.GREY_GREEN);
+				directxNote.setToolTipText(directxBox.getToolTipText());
+				directxRow.add(directxNote);
+				body.add(directxRow, next(c));
+				JLabel steamDirectx = new JLabel("<html><div style='width:560px; color:" + MenuTheme.HTML_GREY_GREEN + "'>If also launching through Steam: Steam may ask each time before passing -directx on. "
+						+ "To skip the question: in your Steam library, right-click FTL, choose Properties, then General, and type -directx under Launch Options. "
+						+ "Leave this box off then: Steam adds it every time by itself.</div></html>"); // heromedel's words, 5.72
+				steamDirectx.setBorder(BorderFactory.createEmptyBorder(0, 24, 4, 0));
+				body.add(steamDirectx, next(c));
+			}
 			JPanel videoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 			String videoTip = "<html>Written into FTL's own settings each time the station launches it outside the dock, as FTL's Options name them.<br>"
 					+ "Not for docked play: docked, FTL always runs in a window. Unticked, FTL starts as you last set it.</html>";

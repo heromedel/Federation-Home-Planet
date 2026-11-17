@@ -122,7 +122,8 @@ final victories) and takes stock when you switch back to it.
 On Linux, the Steam Deck's Desktop Mode included, `Federation Home Planet Interface.sh` does the same. The first time, run it
 with `sh "Federation Home Planet Interface.sh"`, since a zip made on Windows doesn't mark it as runnable. With no Java on the
 computer it offers to download one into a `java` folder beside the station, as SteamOS has none. Playing FTL docked in the
-station's window is Windows only for now.
+station's window works on Linux desktops that run X11 (most do, the Steam Deck's Desktop Mode included), not under Wayland
+or in the Deck's Gaming Mode.
 
 If your FTL is the Steam version, turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties,
 General): it can bring back an old copy of a docked ship, or an old FTL profile.

@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>homeplanet</groupId>
 	<artifactId>federation-home-planet</artifactId>
-	<version>7.13</version>
+	<version>7.14</version>
 	<name>Federation Home Planet</name>
 
 	<!--
@@ -109,13 +109,21 @@
 									</excludes>
 								</filter>
 								<filter>
-									<!-- docking FTL is Windows-only: JNA's natives for other systems stay out of the jar -->
+									<!-- docking FTL: Windows, and X11 on Linux PCs and the Steam Deck (7.14); JNA's natives for other systems stay out -->
 									<artifact>net.java.dev.jna:jna</artifact>
 									<excludes>
 										<exclude>com/sun/jna/aix-*/**</exclude>
 										<exclude>com/sun/jna/darwin-*/**</exclude>
 										<exclude>com/sun/jna/freebsd-*/**</exclude>
-										<exclude>com/sun/jna/linux-*/**</exclude>
+										<exclude>com/sun/jna/linux-arm/**</exclude>
+										<exclude>com/sun/jna/linux-armel/**</exclude>
+										<exclude>com/sun/jna/linux-loongarch64/**</exclude>
+										<exclude>com/sun/jna/linux-mips64el/**</exclude>
+										<exclude>com/sun/jna/linux-ppc/**</exclude>
+										<exclude>com/sun/jna/linux-ppc64le/**</exclude>
+										<exclude>com/sun/jna/linux-riscv64/**</exclude>
+										<exclude>com/sun/jna/linux-s390x/**</exclude>
+										<exclude>com/sun/jna/linux-x86/**</exclude>
 										<exclude>com/sun/jna/openbsd-*/**</exclude>
 										<exclude>com/sun/jna/sunos-*/**</exclude>
 									</excludes>
