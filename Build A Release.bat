@@ -4,7 +4,7 @@ cd /d "%~dp0"
 title The Federation Home Planet Station - Release
 rem Makes a release (6.51): builds the jar with the Construction Yard, then puts together a clean folder with only what
 rem a player needs, and a zip of it to upload:
-rem   Release\Federation Home Planet <version>\  the jar and the Interface (which finds Java, or offers to get it),
+rem   Release\Federation Home Planet <version>\  the jar and the Interface, .bat and .sh for Linux (which find Java, or offer to get it),
 rem     Documents\                               the manuals, changes.txt, README.md, CREDITS.md and LICENSE
 rem                                              (heromedel, 6.82: the reading in a folder of its own; the station
 rem                                              reads its own copies from inside the jar)
@@ -44,7 +44,7 @@ if exist "%OUT%" rmdir /s /q "%OUT%"
 if exist "%OUT%.zip" del /f /q "%OUT%.zip"
 mkdir "%OUT%"
 mkdir "%OUT%\Documents"
-for %%f in ("Current Build\Federation Home Planet.jar" "Current Build\Federation Home Planet Interface.bat") do (
+for %%f in ("Current Build\Federation Home Planet.jar" "Current Build\Federation Home Planet Interface.bat" "Current Build\Federation Home Planet Interface.sh") do (
 	copy /y %%f "%OUT%\" >nul 2>&1
 	if not exist "%OUT%\%%~nxf" ( echo %%~f couldn't be copied into the release. & goto :failed )
 )

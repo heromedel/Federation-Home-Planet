@@ -99,10 +99,8 @@ public final class ManualWindow {
 		File f = new File(System.getProperty("java.io.tmpdir"), "Home Planet Station User Manual " + HomePlanet.APP_VERSION + (html ? ".html" : ".txt"));
 		try {
 			java.nio.file.Files.write(f.toPath(), text.getBytes("UTF-8"));
-			java.awt.Desktop desk = java.awt.Desktop.isDesktopSupported() ? java.awt.Desktop.getDesktop() : null;
-			if (desk == null) throw new IOException("this system can't open files from Java");
-			if (html) desk.browse(f.toURI());
-			else desk.open(f);
+			if (html) homeplanet.core.Links.browse(f.toURI());
+			else homeplanet.core.Links.open(f);
 		} catch (Exception e) {
 			HomePlanet.showErrorDialog("The Home Planet Station could not open the manual outside the station:\n" + e.getMessage()
 					+ "\n\nIt was written to " + f.getPath() + "\nOpen it from there, or set Open in The Home Planet Station to On (Settings, About).");
@@ -121,7 +119,7 @@ public final class ManualWindow {
 				if (e.getEventType() != HyperlinkEvent.EventType.ACTIVATED) return;
 				String to = e.getDescription();
 				if (to != null && to.startsWith("#")) { pane.scrollToReference(to.substring(1)); return; } // the contents
-				try { java.awt.Desktop.getDesktop().browse(e.getURL().toURI()); } catch (Exception x) { } // a link off the page: the browser
+				try { homeplanet.core.Links.browse(e.getURL().toURI()); } catch (Exception x) { } // a link off the page: the browser
 			}
 		});
 		final JScrollPane sp = new JScrollPane(pane);

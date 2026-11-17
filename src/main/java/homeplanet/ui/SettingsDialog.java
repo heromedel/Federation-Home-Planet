@@ -747,7 +747,7 @@ public class SettingsDialog extends JDialog {
 	}
 	private void openFolder(File dir) {
 		try {
-			Desktop.getDesktop().open(dir);
+			homeplanet.core.Links.open(dir);
 		} catch (Exception ex) {
 			JOptionPane.showMessageDialog(this, "The Home Planet Station could not open the folder:\n" + dir.getPath(),
 					"Open folder", JOptionPane.WARNING_MESSAGE);

@@ -66,10 +66,8 @@ final class Feedback {
 		}
 		if (copied) about = "This run's debug log is copied: paste it into the last question.";
 		try {
-			if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
-				java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
-				return;
-			}
+			homeplanet.core.Links.browse(new java.net.URI(url));
+			return;
 		} catch (Exception e) { log.debug("Feedback: the form could not be opened: {}", e.toString()); }
 		// no browser: the link, to copy by hand
 		final JTextField field = new JTextField(url, 48);

@@ -3,4 +3,5 @@
 *.png binary
 *.ftl binary
 *.bat text eol=crlf
+*.sh text eol=lf
 User-Manual.txt text eol=crlf

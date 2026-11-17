@@ -119,6 +119,11 @@ asks where FTL is (the folder with `ftl.dat`) and where the saves are. Quit FTL 
 the Cargo Bay. Keep the station open while you play: it notices FTL's saves as they're written (for the ships' logs and
 final victories) and takes stock when you switch back to it.
 
+On Linux, the Steam Deck's Desktop Mode included, `Federation Home Planet Interface.sh` does the same. The first time, run it
+with `sh "Federation Home Planet Interface.sh"`, since a zip made on Windows doesn't mark it as runnable. With no Java on the
+computer it offers to download one into a `java` folder beside the station, as SteamOS has none. Playing FTL docked in the
+station's window is Windows only for now.
+
 If your FTL is the Steam version, turn off Steam Cloud for FTL (in your Steam library, right-click FTL, Properties,
 General): it can bring back an old copy of a docked ship, or an old FTL profile.
 

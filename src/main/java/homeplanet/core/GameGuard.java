@@ -34,7 +34,8 @@ public final class GameGuard {
 				p = new ProcessBuilder("tasklist", "/FI", "IMAGENAME eq FTLGame.exe", "/NH").redirectErrorStream(true).start();
 				return outputContains(p, "ftlgame.exe");
 			}
-			// Linux and macOS: the Steam and GOG builds run as "FTL" (or FTL.amd64 / FTL.x86); ps lists every command name
+			// Linux and macOS: the Steam and GOG builds run as "FTL" (or FTL.amd64 / FTL.x86), the Windows build under Proton as
+			// FTLGame.exe; ps lists every command name
 			p = new ProcessBuilder("ps", "-A", "-o", "comm=").redirectErrorStream(true).start();
 			return outputMatches(p);
 		} catch (Exception e) {
@@ -114,7 +115,7 @@ public final class GameGuard {
 			String name = l.trim();
 			int slash = name.lastIndexOf('/');
 			if (slash >= 0) name = name.substring(slash + 1);
-			if (name.equals("FTL") || name.startsWith("FTL.") || name.equalsIgnoreCase("FTLGame")) found = true;
+			if (name.equals("FTL") || name.startsWith("FTL.") || name.equalsIgnoreCase("FTLGame") || name.equalsIgnoreCase("FTLGame.exe")) found = true; // FTLGame.exe: the Windows FTL through Proton or Wine (7.13)
 		}
 		p.waitFor();
 		return found;

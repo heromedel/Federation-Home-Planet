@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -37,7 +38,7 @@ public class HomePlanet {
 	private static final Logger log = LoggerFactory.getLogger(HomePlanet.class);
 
 	public static final String APP_NAME = "Federation Home Planet";
-	public static final String APP_VERSION = "7.12";
+	public static final String APP_VERSION = "7.13";
 	public static String version() { return APP_VERSION; }
 
 	/** FTL's saves folder (continue.sav lives here; the vault is a folder inside it). */
@@ -648,7 +649,7 @@ public class HomePlanet {
 			log.debug("Running FTL through Steam{}: {}", dx ? ", with DirectX" : "", steamUri);
 			try {
 				if (System.getProperty("os.name").startsWith("Windows")) new ProcessBuilder("cmd", "/c", "start", "", steamUri).start();
-				else java.awt.Desktop.getDesktop().browse(new java.net.URI(steamUri));
+				else Links.browse(new java.net.URI(steamUri));
 			} catch (Exception ex) {
 				log.error("Could not launch FTL through Steam.", ex);
 				showErrorDialog("The Home Planet Station could not launch FTL through Steam:\n" + ex);
@@ -714,8 +715,17 @@ public class HomePlanet {
 		File kept = keptFolder("ftlDatsPath");
 		if (kept != null && FTLUtilities.isDatsDirValid(kept)) return kept;
 		File found = FTLUtilities.findDatsDir(); // the usual Steam, GOG and Humble folders
+		if (found == null) found = steamLibraryFtl(); // Steam's other libraries: a Steam Deck's SD card, a second drive (7.13)
 		if (found != null && confirmFound("files", found)) return found;
 		return promptForFtlPath();
+	}
+	/** FTL in any Steam library: the Linux build keeps its data in data/, the Windows build (Proton's too) beside its program. */
+	private static File steamLibraryFtl() {
+		for (File lib : SteamLibraries.steamapps()) {
+			File ftl = new File(lib, SteamLibraries.FTL_FOLDER);
+			for (File dir : new File[] {new File(ftl, "data"), ftl}) if (FTLUtilities.isDatsDirValid(dir)) return dir;
+		}
+		return null;
 	}
 	/** FTL's saves folder: the one in the cfg, else where FTL keeps its saves (asked to confirm, unless the station's own is there), else the player's choice. */
 	private static File savesFolder() {
@@ -753,14 +763,28 @@ public class HomePlanet {
 		for (String n : names) if (new File(dir, n).isFile()) return true;
 		return false;
 	}
-	/** Where FTL keeps its saves on each system. */
-	private static File[] savesPlaces() {
-		String home = System.getProperty("user.home"), xdg = System.getenv("XDG_DATA_HOME");
-		return new File[] {
-				new File(home, "Documents/My Games/FasterThanLight"), // Windows
-				new File(home, "My Documents/My Games/FasterThanLight"), // Windows XP
-				new File(xdg != null ? xdg : home + "/.local/share", "FasterThanLight"), // Linux
-				new File(home, "Library/Application Support/FasterThanLight") }; // macOS
+	/** Where FTL keeps its saves on each system, then the Windows FTL's under Proton in each Steam library (7.13). */
+	private static List<File> savesPlaces() {
+		List<File> out = new ArrayList<File>();
+		out.add(new File(home(), "Documents/My Games/FasterThanLight")); // Windows
+		out.add(new File(home(), "My Documents/My Games/FasterThanLight")); // Windows XP
+		out.add(linuxSaves()); // Linux, the Steam Deck included
+		out.add(new File(home(), "Library/Application Support/FasterThanLight")); // macOS
+		for (File lib : SteamLibraries.steamapps()) out.add(new File(lib, SteamLibraries.PROTON_SAVES));
+		return out;
+	}
+	private static File home() { return new File(System.getProperty("user.home")); }
+	private static File linuxSaves() {
+		String xdg = System.getenv("XDG_DATA_HOME");
+		return new File(xdg != null ? xdg : home() + "/.local/share", "FasterThanLight");
+	}
+	/** Where the saves usually are on this system, for the player picking them by hand. */
+	private static String usualSaves() {
+		String os = System.getProperty("os.name", "");
+		if (os.startsWith("Windows")) return "Documents/My Games/FasterThanLight";
+		if (os.contains("OS X") || os.startsWith("Mac")) return "~/Library/Application Support/FasterThanLight";
+		return linuxSaves().getPath().replace(System.getProperty("user.home"), "~")
+				+ "\n(or, for the Windows FTL through Proton, " + SteamLibraries.PROTON_SAVES + " in Steam's steamapps folder)";
 	}
 
 	/** Asks for FTL's data: ftl.dat (or an older data.dat), or FTL.app on a Mac. Null if none was chosen, or it isn't FTL's. */
@@ -775,7 +799,7 @@ public class HomePlanet {
 	/** Asks for FTL's saves folder, by one of its files. Null if none was chosen. */
 	public static File promptForSavePath() {
 		File f = choose("The Home Planet Station sends ships out using FTL's saves, but its search could not find FTL's saves folder on its own.\n\n"
-				+ "Select '/Documents/My Games/FasterThanLight/continue.sav' (or ae_prof.sav).",
+				+ "Select continue.sav (or ae_prof.sav) in " + usualSaves() + ".",
 				"FTL Save Not Found", "Find continue.sav or ae_prof.sav", "FTL save files (continue.sav, ae_prof.sav, prof.sav)", SAVE_FILES);
 		File dir = f == null ? null : f.getParentFile();
 		return dir != null && dir.isDirectory() ? dir : null;

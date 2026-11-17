@@ -205,8 +205,12 @@ For example:
 - `Tools and Harness/harness2/`: the regression harness (Claude's test bench, not a user tool).
 - `Build The Federation Home Planet Station.bat`: the Windows build (downloads a JDK and Maven into `tools\` once; the jar goes to
   `Current Build\`).
+- `Current Build/Federation Home Planet Interface.sh` (7.13): the Linux Interface (the Steam Deck's Desktop Mode included), the
+  .bat's twin: it finds Java or downloads a portable one into `java/` (SteamOS has none and keeps its system locked). Kept with
+  Unix line endings (`.gitattributes`). Steam's other libraries (an SD card, a second drive) come from `core/SteamLibraries`,
+  links and folders open through `core/Links` (xdg-open where Java can't).
 - `Build A Release.bat` (6.51): builds through the Build .bat's `build` mode, then makes `Release\Federation Home Planet <version>\`
-  (the jar and the Interface; beside them a `Documents` folder with the two manuals, changes.txt, README.md, CREDITS.md and
+  (the jar and the Interface, .bat and .sh; beside them a `Documents` folder with the two manuals, changes.txt, README.md, CREDITS.md and
   LICENSE, 6.82) and its zip. The Interface finds Java (`java\` beside it, `..\tools\jdk`,
   JAVA_HOME, the PATH, Program Files) or offers a portable Java runtime in `java\` or Adoptium's installer.
 
